@@ -1,0 +1,19 @@
+async fn register_user(
+    token: &UserToken,
+    harness: &impl RegisterUserHarness,
+    params: RegisterUserParams
+) -> usecase::Result<User> {
+    // check invitation and then register
+    harness
+        .run_transaction(async |cx| {
+            let member_inviation = cx.get_member_invitation_by_qid(params.qid).await?;
+
+            // check...
+            cx.register_user(params).await?;
+            
+            cx.invalidate_member_invitation(member_inviation.id).await?;
+        })
+        .await?;
+
+    core.touch_user_last_active_at().await?;
+}
