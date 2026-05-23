@@ -1,54 +1,61 @@
 use diesel::prelude::*;
 use time::OffsetDateTime;
 
+use crate::domain::model::aggr::user::User;
 use crate::infra::query::schema;
 
-// UserInfo is the result of a selection.
+// ── Queryable / Selectable ─────────────────────────────────────────────────
+
 #[derive(Queryable, Selectable)]
-#[diesel(table_name = schema::tbl_user)]
+#[diesel(table_name = schema::t_user)]
 pub struct UserInfo {
-    pub id: String,
-
-    pub nickname: String,
-    pub qid: String,
-
-    pub is_sadmin: bool,
-
-    pub avatar_key: Option<String>,
-    pub avatar_source: Option<String>,
-    pub avatar_uploaded: bool,
-
-    pub last_active_at: OffsetDateTime,
-
-    pub created_at: OffsetDateTime,
-    pub updated_at: OffsetDateTime,
+    pub f_id: String,
+    pub f_nickname: String,
+    pub f_qid: String,
+    pub f_is_sadmin: bool,
+    pub f_avatar_key: Option<String>,
+    pub f_avatar_source: Option<String>,
+    pub f_avatar_uploaded: bool,
+    pub f_last_active_at: OffsetDateTime,
+    pub f_created_at: OffsetDateTime,
+    pub f_updated_at: OffsetDateTime,
 }
 
-// UserCredential is the result of a selection, but only contains fields related to authentication.
 #[derive(Queryable)]
-#[diesel(table_name = schema::tbl_user)]
+#[diesel(table_name = schema::t_user)]
 pub struct UserCredential {
-    pub qid: String,
-    pub password_hash: String,
+    pub f_qid: String,
+    pub f_password_hash: String,
 }
 
-// UserEntry is the struct used for only inserting a user.
+// ── Insertable ─────────────────────────────────────────────────────────────
+
 #[derive(Insertable)]
-#[diesel(table_name = schema::tbl_user)]
+#[diesel(table_name = schema::t_user)]
 pub struct UserEntry {
-    pub id: String,
-
-    pub nickname: String,
-    pub qid: String,
-
-    // password_hash must be provided when inserting a new user.
-    pub password_hash: String,
-
-    pub last_active_at: OffsetDateTime,
-
-    pub created_at: OffsetDateTime,
-    pub updated_at: OffsetDateTime,
+    pub f_id: String,
+    pub f_nickname: String,
+    pub f_qid: String,
+    pub f_password_hash: String,
+    pub f_last_active_at: OffsetDateTime,
+    pub f_created_at: OffsetDateTime,
+    pub f_updated_at: OffsetDateTime,
 }
 
-// NOTE: No update struct for now, as update logics are complecated and
-// are not so easy to be contained in one single struct.
+// ── Conversions ────────────────────────────────────────────────────────────
+
+impl From<UserInfo> for User {
+    fn from(v: UserInfo) -> Self {
+        Self {
+            id: v.f_id,
+            nickname: v.f_nickname,
+            qid: v.f_qid,
+            is_sadmin: v.f_is_sadmin,
+            avatar_key: v.f_avatar_key.unwrap_or_default(),
+            avatar_uploaded: v.f_avatar_uploaded,
+            last_active_at: v.f_last_active_at,
+            created_at: v.f_created_at,
+            updated_at: v.f_updated_at,
+        }
+    }
+}

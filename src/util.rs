@@ -13,5 +13,5 @@ pub mod time {
 }
 
 pub mod rename {
-    pub type StdResult<T, E> = std::result::Result<T, E>;
+    pub type StdRetVal<T, E> = std::result::Result<T, E>;
 }

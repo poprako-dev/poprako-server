@@ -1,22 +1,128 @@
+use diesel::prelude::*;
 use diesel_async::AsyncPgConnection;
+use diesel_async::RunQueryDsl;
+use time::OffsetDateTime;
 
 use crate::domain::model::aggr::user::{User, UserCredential, UserForm};
-use crate::domain::query;
+use crate::domain::query as domain_query;
+use crate::domain::query::QueryRetVal;
+use crate::infra::query::Query;
+use crate::infra::query::TransactionalQuery;
+use crate::infra::query::entity::user::UserEntry;
+use crate::infra::query::entity::user::UserInfo;
+use crate::infra::query::schema::t_user::dsl::*;
 
-pub(crate) async fn get_by_id(conn: &mut AsyncPgConnection, id: &str) -> query::QueryResult<User> {
-    todo!()
+pub async fn get_by_id(conn: &mut AsyncPgConnection, id: &str) -> QueryRetVal<User> {
+    let info: UserInfo = t_user
+        .filter(f_id.eq(id))
+        .select(UserInfo::as_select())
+        .first(conn)
+        .await?;
+
+    Ok(info.into())
 }
 
-pub(crate) async fn get_credential_by_qid(
+pub async fn get_credential_by_qid(
     conn: &mut AsyncPgConnection,
-    id: &str,
-) -> query::QueryResult<UserCredential> {
-    todo!()
+    qid: &str,
+) -> QueryRetVal<UserCredential> {
+    #[derive(Queryable)]
+    struct Row {
+        f_qid: String,
+        f_password_hash: String,
+    }
+
+    let row: Row = t_user
+        .filter(f_qid.eq(qid))
+        .select((f_qid, f_password_hash))
+        .first(conn)
+        .await?;
+
+    Ok(UserCredential {
+        qid: row.f_qid,
+        password_hash: row.f_password_hash,
+    })
 }
 
-pub(crate) async fn create(
-    conn: &mut AsyncPgConnection,
-    form: &UserForm,
-) -> query::QueryResult<User> {
-    todo!()
+pub async fn create(conn: &mut AsyncPgConnection, form: &UserForm) -> QueryRetVal<User> {
+    let now = OffsetDateTime::now_utc();
+
+    let entry = UserEntry {
+        f_id: form.id.clone(),
+        f_nickname: form.nickname.clone(),
+        f_qid: form.qid.clone(),
+        f_password_hash: form.generate_password_hash(),
+        f_last_active_at: now,
+        f_created_at: now,
+        f_updated_at: now,
+    };
+
+    diesel::insert_into(t_user)
+        .values(&entry)
+        .execute(conn)
+        .await?;
+
+    let info: UserInfo = t_user
+        .filter(f_id.eq(&entry.f_id))
+        .select(UserInfo::as_select())
+        .first(conn)
+        .await?;
+
+    Ok(info.into())
+}
+
+// ── Marker traits ──────────────────────────────────────────────────────────
+
+trait UserQuery: domain_query::user::UserQeury {}
+
+trait UserQeuryMut: domain_query::user::UserQeuryMut {}
+
+// ── impls ──────────────────────────────────────────────────────────────────
+
+#[async_trait::async_trait]
+impl domain_query::user::UserQeury for Query {
+    async fn get_by_id(&self, id: &str) -> QueryRetVal<User> {
+        let mut conn = self
+            .pool
+            .get()
+            .await
+            .map_err(|e| domain_query::QueryError::Unrecoverable(e.to_string()))?;
+
+        get_by_id(&mut conn, id).await
+    }
+
+    async fn get_credentials_by_qid(&self, qid: &str) -> QueryRetVal<UserCredential> {
+        let mut conn = self
+            .pool
+            .get()
+            .await
+            .map_err(|e| domain_query::QueryError::Unrecoverable(e.to_string()))?;
+
+        get_credential_by_qid(&mut conn, qid).await
+    }
+
+    async fn create(&self, form: UserForm) -> QueryRetVal<User> {
+        let mut conn = self
+            .pool
+            .get()
+            .await
+            .map_err(|e| domain_query::QueryError::Unrecoverable(e.to_string()))?;
+
+        create(&mut conn, &form).await
+    }
+}
+
+#[async_trait::async_trait]
+impl<'c> domain_query::user::UserQeuryMut for TransactionalQuery<'c> {
+    async fn get_by_id(&mut self, id: &str) -> QueryRetVal<User> {
+        get_by_id(self.conn, id).await
+    }
+
+    async fn get_credentials_by_qid(&mut self, qid: &str) -> QueryRetVal<UserCredential> {
+        get_credential_by_qid(self.conn, qid).await
+    }
+
+    async fn create(&mut self, form: UserForm) -> QueryRetVal<User> {
+        create(self.conn, &form).await
+    }
 }

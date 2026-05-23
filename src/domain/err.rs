@@ -1,5 +1,5 @@
 use crate::domain::query::QueryError;
-use crate::util::rename::StdResult;
+use crate::util::rename::StdRetVal;
 
 // `RunError` represents any error that may be encountered
 // in a `run_with` function.
@@ -14,4 +14,4 @@ pub enum DomainError {
     Business(String),
 }
 
-pub type DomainResult<T> = StdResult<T, DomainError>;
+pub type DomainRetVal<T> = StdRetVal<T, DomainError>;

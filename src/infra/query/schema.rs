@@ -1,17 +1,17 @@
 // @generated automatically by Diesel CLI.
 
 diesel::table! {
-    tbl_user (id) {
-        id -> Text,
-        nickname -> Text,
-        qid -> Text,
-        is_sadmin -> Bool,
-        avatar_key -> Nullable<Text>,
-        avatar_source -> Nullable<Text>,
-        avatar_uploaded -> Bool,
-        password_hash -> Text,
-        last_active_at -> Timestamptz,
-        created_at -> Timestamptz,
-        updated_at -> Timestamptz,
+    t_user (f_id) {
+        f_id -> Text,
+        f_nickname -> Text,
+        f_qid -> Text,
+        f_is_sadmin -> Bool,
+        f_avatar_key -> Nullable<Text>,
+        f_avatar_source -> Nullable<Text>,
+        f_avatar_uploaded -> Bool,
+        f_password_hash -> Text,
+        f_last_active_at -> Timestamptz,
+        f_created_at -> Timestamptz,
+        f_updated_at -> Timestamptz,
     }
 }

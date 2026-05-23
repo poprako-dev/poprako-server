@@ -1,6 +1,6 @@
 use std::mem;
 
-use crate::domain::model::event::{DomainEvent, EventBuffer, EventEmit};
+use crate::domain::model::event::{DomainEvent, EventEmit, EventSink};
 
 use time::OffsetDateTime;
 
@@ -53,6 +53,8 @@ impl UserCredential {
 }
 
 pub struct UserForm {
+    pub id: String,
+
     pub qid: String,
     pub nickname: String,
 
@@ -67,7 +69,7 @@ impl UserForm {
     }
 }
 
-impl EventBuffer for UserForm {
+impl EventSink for UserForm {
     fn push_event(&mut self, event: DomainEvent) {
         self.events.push(event);
     }

@@ -3,65 +3,47 @@ pub mod user;
 mod entity;
 mod schema;
 
-use async_trait::async_trait;
 use diesel_async::AsyncPgConnection;
 use diesel_async::pooled_connection::deadpool::Pool;
 use futures_util::future::BoxFuture;
 
-use crate::domain::err::{DomainError, DomainResult};
-use crate::domain::model::aggr::user::{User, UserCredential, UserForm};
+use crate::domain::err::{DomainError, DomainRetVal};
 use crate::domain::query as domain_query;
-use crate::domain::query::user::UserQeury;
-use crate::domain::query::{QueryError, QueryResult, TransactionRunner};
+use crate::domain::query::{QueryError, Transactional};
 
-impl From<diesel::result::Error> for DomainError {
-    fn from(value: diesel::result::Error) -> Self {
-        match value {
-            diesel::result::Error::NotFound => QueryError::NotFound.into(),
-            _ => QueryError::Unrecoverable(value.to_string()).into(),
+impl From<diesel::result::Error> for QueryError {
+    fn from(val: diesel::result::Error) -> Self {
+        match val {
+            diesel::result::Error::NotFound => QueryError::NotFound,
+            _ => QueryError::Unrecoverable(val.to_string()),
         }
     }
 }
 
-pub struct Harness {
+impl From<diesel::result::Error> for DomainError {
+    fn from(val: diesel::result::Error) -> Self {
+        QueryError::from(val).into()
+    }
+}
+
+pub struct Query {
     pool: Pool<AsyncPgConnection>,
 }
 
-pub struct TransactionHarness<'c> {
-    conn: &'c mut AsyncPgConnection,
-}
-
-impl Harness {
-    fn build_transaction_harness(conn: &mut AsyncPgConnection) -> TransactionHarness<'_> {
-        TransactionHarness { conn }
+impl Query {
+    fn build_transactional_query(conn: &mut AsyncPgConnection) -> TransactionalQuery<'_> {
+        TransactionalQuery::new(conn)
     }
 }
 
-impl<'c> domain_query::TransactionHarness for TransactionHarness<'c> {}
+#[async_trait::async_trait]
+impl Transactional for Query {
+    type Query<'a> = TransactionalQuery<'a>;
 
-#[async_trait]
-impl<'c> UserQeury for TransactionHarness<'c> {
-    async fn get_by_id(&mut self, id: &str) -> QueryResult<User> {
-        user::get_by_id(self.conn, id).await
-    }
-
-    async fn get_credentials_by_qid(&mut self, qid: &str) -> QueryResult<UserCredential> {
-        user::get_credential_by_qid(self.conn, qid).await
-    }
-
-    async fn create(&mut self, form: UserForm) -> QueryResult<User> {
-        user::create(self.conn, &form).await
-    }
-}
-
-#[async_trait]
-impl TransactionRunner for Harness {
-    type Harness<'a> = TransactionHarness<'a>;
-
-    async fn run_in_transaction<F, T>(&self, f: F) -> DomainResult<T>
+    async fn run_in_transaction<F, T>(&self, f: F) -> DomainRetVal<T>
     where
         T: Send,
-        F: for<'a> FnOnce(&'a mut Self::Harness<'a>) -> BoxFuture<'a, DomainResult<T>> + Send,
+        F: for<'a> FnOnce(&'a mut Self::Query<'a>) -> BoxFuture<'a, DomainRetVal<T>> + Send,
     {
         let mut conn = self
             .pool
@@ -71,9 +53,21 @@ impl TransactionRunner for Harness {
 
         conn.build_transaction()
             .run(async move |conn| {
-                let mut harness = Self::build_transaction_harness(conn);
+                let mut harness = Self::build_transactional_query(conn);
                 f(&mut harness).await
             })
             .await
+    }
+}
+
+pub struct TransactionalQuery<'c> {
+    conn: &'c mut AsyncPgConnection,
+}
+
+impl<'c> domain_query::TransactionalQuery for TransactionalQuery<'c> {}
+
+impl<'c> TransactionalQuery<'c> {
+    pub fn new(conn: &'c mut AsyncPgConnection) -> Self {
+        Self { conn }
     }
 }

@@ -1,4 +1,4 @@
-pub mod action;
+pub mod actor;
 pub mod err;
 pub mod external;
 pub mod hook;
