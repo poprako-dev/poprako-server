@@ -1,11 +1,13 @@
-use crate::domain::actor::ActorRetVal;
-use crate::domain::model::aggr::user::{User, UserForm};
-use crate::domain::query::Transactional;
-use crate::domain::query::user::UserQeury;
+use crate::domain::{actor::ActorRetVal, model::aggr::user::UserToken};
 
-pub async fn register_user<H>(harn: &H, form: UserForm) -> ActorRetVal<User>
-where
-    H: Transactional + UserQeury,
-{
+pub fn hash_password(password: &str) -> ActorRetVal<String> {
+    unimplemented!()
+}
+
+pub fn sign_token(unsigned_token: &UserToken) -> ActorRetVal<String> {
+    unimplemented!()
+}
+
+pub fn parse_token(signed_token: &str) -> ActorRetVal<UserToken> {
     unimplemented!()
 }

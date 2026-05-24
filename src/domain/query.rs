@@ -1,11 +1,15 @@
+pub mod member;
+pub mod member_invitation;
+pub mod user;
+
 use async_trait::async_trait;
 use futures_util::future::BoxFuture;
 
-use crate::domain::err::DomainRetVal;
+use crate::domain::result::DomainRetVal;
+use crate::domain::query::member::MemberQueryMut;
+use crate::domain::query::member_invitation::MemberInvitationQueryMut;
 use crate::domain::query::user::UserQeuryMut;
 use crate::util::rename::StdRetVal;
-
-pub mod user;
 
 #[derive(Debug, thiserror::Error)]
 pub enum QueryError {
@@ -19,7 +23,10 @@ pub enum QueryError {
 
 pub type QueryRetVal<T> = StdRetVal<T, QueryError>;
 
-pub trait TransactionalQuery: Send + UserQeuryMut {}
+pub trait TransactionalQuery:
+    Send + UserQeuryMut + MemberQueryMut + MemberInvitationQueryMut
+{
+}
 
 #[async_trait]
 pub trait Transactional: Send + Sync {

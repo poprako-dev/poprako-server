@@ -51,7 +51,7 @@ pub async fn create(conn: &mut AsyncPgConnection, form: &UserForm) -> QueryRetVa
         f_id: form.id.clone(),
         f_nickname: form.nickname.clone(),
         f_qid: form.qid.clone(),
-        f_password_hash: form.generate_password_hash(),
+        f_password_hash: form.password_hash.clone(),
         f_last_active_at: now,
         f_created_at: now,
         f_updated_at: now,
@@ -114,14 +114,6 @@ impl domain_query::user::UserQeury for Query {
 
 #[async_trait::async_trait]
 impl<'c> domain_query::user::UserQeuryMut for TransactionalQuery<'c> {
-    async fn get_by_id(&mut self, id: &str) -> QueryRetVal<User> {
-        get_by_id(self.conn, id).await
-    }
-
-    async fn get_credentials_by_qid(&mut self, qid: &str) -> QueryRetVal<UserCredential> {
-        get_credential_by_qid(self.conn, qid).await
-    }
-
     async fn create(&mut self, form: UserForm) -> QueryRetVal<User> {
         create(self.conn, &form).await
     }

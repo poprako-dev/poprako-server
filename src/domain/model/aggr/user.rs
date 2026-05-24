@@ -3,9 +3,16 @@ use std::mem;
 use crate::domain::model::event::{DomainEvent, EventEmit, EventSink};
 
 use time::OffsetDateTime;
+use uuid::Uuid;
 
 pub struct UserToken {
-    pub id: String,
+    pub user_id: String,
+}
+
+impl UserToken {
+    pub fn new(user_id: String) -> Self {
+        Self { user_id }
+    }
 }
 
 pub struct User {
@@ -26,18 +33,12 @@ pub struct User {
 }
 
 impl User {
-    pub fn generate_one_token(&self) -> UserToken {
-        UserToken {
-            id: self.id.clone(),
-        }
+    pub fn generate_id() -> String {
+        format!("user-{}", Uuid::now_v7())
     }
 
     pub fn generate_avatar_key(&self) -> String {
-        format!(
-            "user/{}/avatar/{}",
-            self.id,
-            OffsetDateTime::now_utc().unix_timestamp()
-        )
+        format!("user_avatar/{}", self.id,)
     }
 }
 
@@ -58,14 +59,20 @@ pub struct UserForm {
     pub qid: String,
     pub nickname: String,
 
-    pub password: String,
+    pub password_hash: String,
 
     events: Vec<DomainEvent>,
 }
 
 impl UserForm {
-    pub fn generate_password_hash(&self) -> String {
-        unimplemented!()
+    pub fn new(qid: String, nickname: String, password: String) -> Self {
+        Self {
+            id: User::generate_id(),
+            qid,
+            nickname,
+            password_hash: password,
+            events: Vec::new(),
+        }
     }
 }
 

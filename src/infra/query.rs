@@ -1,3 +1,5 @@
+pub mod member;
+pub mod member_invitation;
 pub mod user;
 
 mod entity;
@@ -7,7 +9,7 @@ use diesel_async::AsyncPgConnection;
 use diesel_async::pooled_connection::deadpool::Pool;
 use futures_util::future::BoxFuture;
 
-use crate::domain::err::{DomainError, DomainRetVal};
+use crate::domain::result::{DomainError, DomainRetVal};
 use crate::domain::query as domain_query;
 use crate::domain::query::{QueryError, Transactional};
 

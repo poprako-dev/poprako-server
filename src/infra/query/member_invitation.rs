@@ -1,0 +1,64 @@
+use diesel::prelude::*;
+use diesel_async::AsyncPgConnection;
+use diesel_async::RunQueryDsl;
+use time::OffsetDateTime;
+
+use crate::domain::model::aggr::member_invitation::MemberInvitation;
+use crate::domain::query as domain_query;
+use crate::domain::query::QueryRetVal;
+use crate::infra::query::TransactionalQuery;
+use crate::infra::query::entity::member_invitation::MemberInvitationRow;
+use crate::infra::query::schema::t_member_invitation::dsl::*;
+
+pub async fn get_pending_by_invitee_qid(
+    conn: &mut AsyncPgConnection,
+    invitee_qid: &str,
+) -> QueryRetVal<MemberInvitation> {
+    let row: MemberInvitationRow = t_member_invitation
+        .filter(f_invitee_qid.eq(invitee_qid))
+        .filter(f_pending.eq(true))
+        .order(f_created_at.desc())
+        .select(MemberInvitationRow::as_select())
+        .first(conn)
+        .await?;
+
+    Ok(row.into())
+}
+
+pub async fn mark_as_used(conn: &mut AsyncPgConnection, id: &str) -> QueryRetVal<()> {
+    let rows_affected = diesel::update(
+        t_member_invitation.filter(f_id.eq(id)),
+    )
+    .set((
+        f_pending.eq(false),
+        f_updated_at.eq(OffsetDateTime::now_utc()),
+    ))
+    .execute(conn)
+    .await?;
+
+    if rows_affected == 0 {
+        return Err(crate::domain::query::QueryError::NotFound);
+    }
+
+    Ok(())
+}
+
+// ── Marker traits ──────────────────────────────────────────────────────────
+
+trait MemberInvitationQuery: domain_query::member_invitation::MemberInvitationQueryMut {}
+
+// ── impls ──────────────────────────────────────────────────────────────────
+
+#[async_trait::async_trait]
+impl<'c> domain_query::member_invitation::MemberInvitationQueryMut for TransactionalQuery<'c> {
+    async fn get_pending_by_invitee_qid(
+        &mut self,
+        invitee_qid: &str,
+    ) -> QueryRetVal<MemberInvitation> {
+        get_pending_by_invitee_qid(self.conn, invitee_qid).await
+    }
+
+    async fn mark_as_used(&mut self, id: &str) -> QueryRetVal<()> {
+        mark_as_used(self.conn, id).await
+    }
+}

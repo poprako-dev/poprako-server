@@ -42,3 +42,17 @@ impl User {
         }
     }
 }
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+pub struct RegisterUserParams {
+    pub qid: String,
+    pub nickname: String,
+    pub password: String,
+    pub invitation_code: String,
+}
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+pub struct RegisterUserRet {
+    pub user_id: String,
+    pub token: String,
+}
