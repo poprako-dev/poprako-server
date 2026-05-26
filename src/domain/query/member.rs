@@ -2,6 +2,6 @@
 pub trait MemberQueryMut {
     async fn create(
         &mut self,
-        form: crate::domain::model::aggr::member::MemberForm,
-    ) -> crate::domain::query::QueryRetVal<crate::domain::model::aggr::member::Member>;
+        form: crate::domain::model::aggregate::member::MemberForm,
+    ) -> crate::domain::result::DomainRetVal<crate::domain::model::aggregate::member::Member>;
 }

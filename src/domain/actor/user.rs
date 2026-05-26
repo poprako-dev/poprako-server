@@ -1,13 +1,14 @@
-use crate::domain::{actor::ActorRetVal, model::aggr::user::UserToken};
+use crate::domain::model::aggregate::user::UserToken;
+use crate::domain::result::DomainRetVal;
 
-pub fn hash_password(password: &str) -> ActorRetVal<String> {
+pub fn hash_password(password: &str) -> DomainRetVal<String> {
     unimplemented!()
 }
 
-pub fn sign_token(unsigned_token: &UserToken) -> ActorRetVal<String> {
+pub fn sign_token(unsigned_token: &UserToken) -> DomainRetVal<String> {
     unimplemented!()
 }
 
-pub fn parse_token(signed_token: &str) -> ActorRetVal<UserToken> {
+pub fn parse_token(signed_token: &str) -> DomainRetVal<UserToken> {
     unimplemented!()
 }

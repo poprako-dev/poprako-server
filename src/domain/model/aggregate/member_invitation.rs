@@ -1,13 +1,13 @@
 use time::OffsetDateTime;
 
-use crate::domain::model::aggr::user::User;
-use crate::domain::model::val::role::RoleMask;
+use crate::domain::model::aggregate::user::UserAggr;
+use crate::domain::model::value::role::RoleMask;
 
 pub struct MemberInvitation {
     pub id: String,
 
     pub invitor_id: String,
-    pub invitor: Option<User>,
+    pub invitor: Option<UserAggr>,
     pub team_id: String,
 
     pub invitee_qid: String,

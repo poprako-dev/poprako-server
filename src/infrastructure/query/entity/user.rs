@@ -1,8 +1,8 @@
 use diesel::prelude::*;
 use time::OffsetDateTime;
 
-use crate::domain::model::aggr::user::User;
-use crate::infra::query::schema;
+use crate::domain::model::aggregate::user::UserAggr;
+use crate::infrastructure::query::schema;
 
 // ── Queryable / Selectable ─────────────────────────────────────────────────
 
@@ -44,7 +44,7 @@ pub struct UserEntry {
 
 // ── Conversions ────────────────────────────────────────────────────────────
 
-impl From<UserInfo> for User {
+impl From<UserInfo> for UserAggr {
     fn from(v: UserInfo) -> Self {
         Self {
             id: v.f_id,

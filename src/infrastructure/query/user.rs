@@ -3,21 +3,26 @@ use diesel_async::AsyncPgConnection;
 use diesel_async::RunQueryDsl;
 use time::OffsetDateTime;
 
-use crate::domain::model::aggr::user::{User, UserCredential, UserForm};
+use crate::domain::model::aggregate::user::{UserAggr, UserCredential, UserForm};
 use crate::domain::query as domain_query;
-use crate::domain::query::QueryRetVal;
-use crate::infra::query::Query;
-use crate::infra::query::TransactionalQuery;
-use crate::infra::query::entity::user::UserEntry;
-use crate::infra::query::entity::user::UserInfo;
-use crate::infra::query::schema::t_user::dsl::*;
+use crate::domain::result::{DomainError, DomainRetVal, ExpectedError};
+use crate::infrastructure::query::Query;
+use crate::infrastructure::query::TransactionalQuery;
+use crate::infrastructure::query::entity::user::UserEntry;
+use crate::infrastructure::query::entity::user::UserInfo;
+use crate::infrastructure::query::schema::t_user::dsl::*;
 
-pub async fn get_by_id(conn: &mut AsyncPgConnection, id: &str) -> QueryRetVal<User> {
+pub async fn get_by_id(conn: &mut AsyncPgConnection, id: &str) -> DomainRetVal<UserAggr> {
     let info: UserInfo = t_user
         .filter(f_id.eq(id))
         .select(UserInfo::as_select())
         .first(conn)
-        .await?;
+        .await
+        .optional()?
+        .ok_or(DomainError::Expected {
+            variant: ExpectedError::Parameter,
+            message: "该用户不存在".to_string(),
+        })?;
 
     Ok(info.into())
 }
@@ -25,7 +30,7 @@ pub async fn get_by_id(conn: &mut AsyncPgConnection, id: &str) -> QueryRetVal<Us
 pub async fn get_credential_by_qid(
     conn: &mut AsyncPgConnection,
     qid: &str,
-) -> QueryRetVal<UserCredential> {
+) -> DomainRetVal<UserCredential> {
     #[derive(Queryable)]
     struct Row {
         f_qid: String,
@@ -36,7 +41,12 @@ pub async fn get_credential_by_qid(
         .filter(f_qid.eq(qid))
         .select((f_qid, f_password_hash))
         .first(conn)
-        .await?;
+        .await
+        .optional()?
+        .ok_or(DomainError::Expected {
+            variant: ExpectedError::Parameter,
+            message: "该用户不存在".to_string(),
+        })?;
 
     Ok(UserCredential {
         qid: row.f_qid,
@@ -44,7 +54,7 @@ pub async fn get_credential_by_qid(
     })
 }
 
-pub async fn create(conn: &mut AsyncPgConnection, form: &UserForm) -> QueryRetVal<User> {
+pub async fn create(conn: &mut AsyncPgConnection, form: &UserForm) -> DomainRetVal<UserAggr> {
     let now = OffsetDateTime::now_utc();
 
     let entry = UserEntry {
@@ -81,32 +91,38 @@ trait UserQeuryMut: domain_query::user::UserQeuryMut {}
 
 #[async_trait::async_trait]
 impl domain_query::user::UserQeury for Query {
-    async fn get_by_id(&self, id: &str) -> QueryRetVal<User> {
+    async fn get_by_id(&self, id: &str) -> DomainRetVal<UserAggr> {
         let mut conn = self
             .pool
             .get()
             .await
-            .map_err(|e| domain_query::QueryError::Unrecoverable(e.to_string()))?;
+            .map_err(|e| DomainError::Unrecoverable {
+                message: e.to_string(),
+            })?;
 
         get_by_id(&mut conn, id).await
     }
 
-    async fn get_credentials_by_qid(&self, qid: &str) -> QueryRetVal<UserCredential> {
+    async fn get_credentials_by_qid(&self, qid: &str) -> DomainRetVal<UserCredential> {
         let mut conn = self
             .pool
             .get()
             .await
-            .map_err(|e| domain_query::QueryError::Unrecoverable(e.to_string()))?;
+            .map_err(|e| DomainError::Unrecoverable {
+                message: e.to_string(),
+            })?;
 
         get_credential_by_qid(&mut conn, qid).await
     }
 
-    async fn create(&self, form: UserForm) -> QueryRetVal<User> {
+    async fn create(&self, form: UserForm) -> DomainRetVal<UserAggr> {
         let mut conn = self
             .pool
             .get()
             .await
-            .map_err(|e| domain_query::QueryError::Unrecoverable(e.to_string()))?;
+            .map_err(|e| DomainError::Unrecoverable {
+                message: e.to_string(),
+            })?;
 
         create(&mut conn, &form).await
     }
@@ -114,7 +130,7 @@ impl domain_query::user::UserQeury for Query {
 
 #[async_trait::async_trait]
 impl<'c> domain_query::user::UserQeuryMut for TransactionalQuery<'c> {
-    async fn create(&mut self, form: UserForm) -> QueryRetVal<User> {
+    async fn create(&mut self, form: UserForm) -> DomainRetVal<UserAggr> {
         create(self.conn, &form).await
     }
 }

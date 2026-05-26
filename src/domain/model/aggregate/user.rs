@@ -15,7 +15,7 @@ impl UserToken {
     }
 }
 
-pub struct User {
+pub struct UserAggr {
     pub id: String,
 
     pub qid: String,
@@ -32,7 +32,7 @@ pub struct User {
     pub updated_at: OffsetDateTime,
 }
 
-impl User {
+impl UserAggr {
     pub fn generate_id() -> String {
         format!("user-{}", Uuid::now_v7())
     }
@@ -67,7 +67,7 @@ pub struct UserForm {
 impl UserForm {
     pub fn new(qid: String, nickname: String, password: String) -> Self {
         Self {
-            id: User::generate_id(),
+            id: UserAggr::generate_id(),
             qid,
             nickname,
             password_hash: password,

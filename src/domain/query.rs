@@ -9,19 +9,6 @@ use crate::domain::result::DomainRetVal;
 use crate::domain::query::member::MemberQueryMut;
 use crate::domain::query::member_invitation::MemberInvitationQueryMut;
 use crate::domain::query::user::UserQeuryMut;
-use crate::util::rename::StdRetVal;
-
-#[derive(Debug, thiserror::Error)]
-pub enum QueryError {
-    #[error("not found")]
-    NotFound,
-    #[error("conflict")]
-    Conflict,
-    #[error("unrecoverable: {0}")]
-    Unrecoverable(String),
-}
-
-pub type QueryRetVal<T> = StdRetVal<T, QueryError>;
 
 pub trait TransactionalQuery:
     Send + UserQeuryMut + MemberQueryMut + MemberInvitationQueryMut

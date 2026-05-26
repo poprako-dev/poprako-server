@@ -9,22 +9,16 @@ use diesel_async::AsyncPgConnection;
 use diesel_async::pooled_connection::deadpool::Pool;
 use futures_util::future::BoxFuture;
 
-use crate::domain::result::{DomainError, DomainRetVal};
 use crate::domain::query as domain_query;
-use crate::domain::query::{QueryError, Transactional};
-
-impl From<diesel::result::Error> for QueryError {
-    fn from(val: diesel::result::Error) -> Self {
-        match val {
-            diesel::result::Error::NotFound => QueryError::NotFound,
-            _ => QueryError::Unrecoverable(val.to_string()),
-        }
-    }
-}
+use crate::domain::query::Transactional;
+use crate::domain::result::{DomainError, DomainRetVal};
 
 impl From<diesel::result::Error> for DomainError {
     fn from(val: diesel::result::Error) -> Self {
-        QueryError::from(val).into()
+        // NotFound is handled by each function with a contextual message; the rest become Unrecoverable.
+        DomainError::Unrecoverable {
+            message: val.to_string(),
+        }
     }
 }
 
@@ -51,7 +45,9 @@ impl Transactional for Query {
             .pool
             .get()
             .await
-            .map_err(|e| QueryError::Unrecoverable(e.to_string()))?;
+            .map_err(|e| DomainError::Unrecoverable {
+                message: e.to_string(),
+            })?;
 
         conn.build_transaction()
             .run(async move |conn| {

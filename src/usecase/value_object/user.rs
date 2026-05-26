@@ -1,11 +1,11 @@
 use crate::domain::external::oss::OssGetSigner;
-use crate::domain::model::aggr::user::User as UserAggr;
+use crate::domain::model::aggregate::user::UserAggr;
 use crate::util::time::ToUnixMilli as _;
 
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct User {
+pub struct UserVal {
     pub id: String,
 
     pub nickname: String,
@@ -21,7 +21,7 @@ pub struct User {
     pub updated_at: i64,
 }
 
-impl User {
+impl UserVal {
     pub fn from_aggr<S>(aggr: UserAggr, signer: S) -> Self
     where
         S: OssGetSigner,
@@ -52,7 +52,7 @@ pub struct RegisterUserParams {
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
-pub struct RegisterUserRet {
+pub struct RegisterUserReply {
     pub user_id: String,
     pub token: String,
 }

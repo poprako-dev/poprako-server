@@ -3,29 +3,34 @@ use diesel_async::AsyncPgConnection;
 use diesel_async::RunQueryDsl;
 use time::OffsetDateTime;
 
-use crate::domain::model::aggr::member_invitation::MemberInvitation;
+use crate::domain::model::aggregate::member_invitation::MemberInvitation;
 use crate::domain::query as domain_query;
-use crate::domain::query::QueryRetVal;
-use crate::infra::query::TransactionalQuery;
-use crate::infra::query::entity::member_invitation::MemberInvitationRow;
-use crate::infra::query::schema::t_member_invitation::dsl::*;
+use crate::domain::result::{DomainError, DomainRetVal, ExpectedError};
+use crate::infrastructure::query::TransactionalQuery;
+use crate::infrastructure::query::entity::member_invitation::MemberInvitationRow;
+use crate::infrastructure::query::schema::t_member_invitation::dsl::*;
 
 pub async fn get_pending_by_invitee_qid(
     conn: &mut AsyncPgConnection,
     invitee_qid: &str,
-) -> QueryRetVal<MemberInvitation> {
+) -> DomainRetVal<MemberInvitation> {
     let row: MemberInvitationRow = t_member_invitation
         .filter(f_invitee_qid.eq(invitee_qid))
         .filter(f_pending.eq(true))
         .order(f_created_at.desc())
         .select(MemberInvitationRow::as_select())
         .first(conn)
-        .await?;
+        .await
+        .optional()?
+        .ok_or(DomainError::Expected {
+            variant: ExpectedError::Parameter,
+            message: "不存在待处理的邀请".to_string(),
+        })?;
 
     Ok(row.into())
 }
 
-pub async fn mark_as_used(conn: &mut AsyncPgConnection, id: &str) -> QueryRetVal<()> {
+pub async fn mark_as_used(conn: &mut AsyncPgConnection, id: &str) -> DomainRetVal<()> {
     let rows_affected = diesel::update(
         t_member_invitation.filter(f_id.eq(id)),
     )
@@ -37,7 +42,10 @@ pub async fn mark_as_used(conn: &mut AsyncPgConnection, id: &str) -> QueryRetVal
     .await?;
 
     if rows_affected == 0 {
-        return Err(crate::domain::query::QueryError::NotFound);
+        return Err(DomainError::Expected {
+            variant: ExpectedError::Parameter,
+            message: "邀请记录不存在".to_string(),
+        });
     }
 
     Ok(())
@@ -54,11 +62,11 @@ impl<'c> domain_query::member_invitation::MemberInvitationQueryMut for Transacti
     async fn get_pending_by_invitee_qid(
         &mut self,
         invitee_qid: &str,
-    ) -> QueryRetVal<MemberInvitation> {
+    ) -> DomainRetVal<MemberInvitation> {
         get_pending_by_invitee_qid(self.conn, invitee_qid).await
     }
 
-    async fn mark_as_used(&mut self, id: &str) -> QueryRetVal<()> {
+    async fn mark_as_used(&mut self, id: &str) -> DomainRetVal<()> {
         mark_as_used(self.conn, id).await
     }
 }

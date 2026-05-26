@@ -3,18 +3,18 @@ use diesel_async::AsyncPgConnection;
 use diesel_async::RunQueryDsl;
 use time::OffsetDateTime;
 
-use crate::domain::model::aggr::member::Member;
-use crate::domain::model::aggr::member::MemberForm;
-use crate::domain::model::val::role::Role;
-use crate::domain::model::val::role::RoleMask;
+use crate::domain::model::aggregate::member::Member;
+use crate::domain::model::aggregate::member::MemberForm;
+use crate::domain::model::value::role::Role;
+use crate::domain::model::value::role::RoleMask;
 use crate::domain::query as domain_query;
-use crate::domain::query::QueryRetVal;
-use crate::infra::query::TransactionalQuery;
-use crate::infra::query::entity::member::MemberEntry;
-use crate::infra::query::entity::member::MemberRow;
-use crate::infra::query::schema::t_member::dsl::*;
+use crate::domain::result::DomainRetVal;
+use crate::infrastructure::query::TransactionalQuery;
+use crate::infrastructure::query::entity::member::MemberEntry;
+use crate::infrastructure::query::entity::member::MemberRow;
+use crate::infrastructure::query::schema::t_member::dsl::*;
 
-pub async fn create(conn: &mut AsyncPgConnection, form: &MemberForm) -> QueryRetVal<Member> {
+pub async fn create(conn: &mut AsyncPgConnection, form: &MemberForm) -> DomainRetVal<Member> {
     let now = OffsetDateTime::now_utc();
     let roles = form.roles;
 
@@ -62,7 +62,7 @@ trait MemberQuery: domain_query::member::MemberQueryMut {}
 
 #[async_trait::async_trait]
 impl<'c> domain_query::member::MemberQueryMut for TransactionalQuery<'c> {
-    async fn create(&mut self, form: MemberForm) -> QueryRetVal<Member> {
+    async fn create(&mut self, form: MemberForm) -> DomainRetVal<Member> {
         create(self.conn, &form).await
     }
 }

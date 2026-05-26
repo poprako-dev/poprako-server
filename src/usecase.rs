@@ -1,10 +1,9 @@
 pub mod hook;
-pub mod val;
+pub mod value_object;
 
 pub mod user;
 
 pub mod result {
-    use crate::domain::actor::ActorError;
     use crate::domain::result::DomainError;
     use crate::util::rename::StdRetVal;
 
@@ -16,17 +15,8 @@ pub mod result {
     impl From<DomainError> for UseCaseError {
         fn from(value: DomainError) -> Self {
             match value {
-                DomainError::Expected(m) => UseCaseError::Params(m),
-                DomainError::Unrecoverable(m) => UseCaseError::Unrecoverable(m),
-            }
-        }
-    }
-
-    impl From<ActorError> for UseCaseError {
-        fn from(value: ActorError) -> Self {
-            match value {
-                ActorError::Expected(m) => UseCaseError::Params(m),
-                ActorError::Unrecoverable(m) => UseCaseError::Unrecoverable(m),
+                DomainError::Expected { message, .. } => UseCaseError::Params(message),
+                DomainError::Unrecoverable { message } => UseCaseError::Unrecoverable(message),
             }
         }
     }

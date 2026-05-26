@@ -1,8 +1,8 @@
 use diesel::prelude::*;
 use time::OffsetDateTime;
 
-use crate::domain::model::aggr::member::Member;
-use crate::infra::query::schema;
+use crate::domain::model::aggregate::member::Member;
+use crate::infrastructure::query::schema;
 
 // ── Queryable / Selectable ─────────────────────────────────────────────────
 

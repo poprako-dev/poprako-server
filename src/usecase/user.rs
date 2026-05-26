@@ -1,28 +1,22 @@
 use futures_util::FutureExt as _;
 
-use crate::domain::actor::user::hash_password;
-use crate::domain::actor::user::sign_token;
-use crate::domain::model::aggr::member::MemberForm;
-use crate::domain::model::aggr::user::UserForm;
-use crate::domain::model::aggr::user::UserToken;
-use crate::domain::model::event::DomainEvent;
-use crate::domain::model::event::EventSink;
-use crate::domain::model::event::user::UserRegisteredEvent;
-use crate::domain::query::QueryError;
+use crate::domain::actor::user::{hash_password, sign_token};
+use crate::domain::model::aggregate::member::MemberForm;
+use crate::domain::model::aggregate::user::{UserForm, UserToken};
+use crate::domain::model::event::{DomainEvent, EventSink, user::UserRegisteredEvent};
 use crate::domain::query::Transactional;
 use crate::domain::query::member::MemberQueryMut;
 use crate::domain::query::member_invitation::MemberInvitationQueryMut;
 use crate::domain::query::user::UserQeuryMut;
-use crate::domain::result::DomainError;
-use crate::usecase::result::UseCaseError;
-use crate::usecase::result::UseCaseRetVal;
-use crate::usecase::val::user::{RegisterUserParams, RegisterUserRet};
+use crate::domain::result::{DomainError, ExpectedError};
+use crate::usecase::result::{UseCaseError, UseCaseRetVal};
+use crate::usecase::value_object::user::{RegisterUserParams, RegisterUserReply};
 
 #[tracing::instrument(skip(harn))]
 pub async fn register_user<H>(
     harn: &H,
     params: RegisterUserParams,
-) -> UseCaseRetVal<RegisterUserRet>
+) -> UseCaseRetVal<RegisterUserReply>
 where
     H: Clone + Transactional,
 {
@@ -31,21 +25,18 @@ where
         .run_in_transaction(move |query| {
             async move {
                 // 1. Fetch pending invitation by invitee qid.
-                let invitation = query
-                    .get_pending_by_invitee_qid(&params.qid)
-                    .await
-                    .map_err(|e| match e {
-                        QueryError::NotFound => DomainError::Expected("无效的邀请码".to_string()),
-                        other => DomainError::from(other),
-                    })?;
+                let invitation = query.get_pending_by_invitee_qid(&params.qid).await?;
 
                 // 2. Validate the invitation code.
                 if !invitation.verify_code(&params.invitation_code) {
-                    return Err(DomainError::Expected("无效的邀请码".to_string()));
+                    return Err(DomainError::Expected {
+                        variant: ExpectedError::Parameter,
+                        message: "无效的邀请码".to_string(),
+                    });
                 }
 
                 // 3. Generate password hash.
-                let password_hash = hash_password(&params.password).map_err(DomainError::from)?;
+                let password_hash = hash_password(&params.password)?;
 
                 // 4. Build the UserForm aggregate.
                 let mut user_form =
@@ -84,5 +75,5 @@ where
     // 7. Generate a signed token for the newly registered user.
     let token = sign_token(&UserToken::new(user_id.clone()))?;
 
-    Ok(RegisterUserRet { user_id, token })
+    Ok(RegisterUserReply { user_id, token })
 }

@@ -1,5 +1,5 @@
 mod api;
 mod domain;
-mod infra;
+mod infrastructure;
 mod usecase;
 mod util;

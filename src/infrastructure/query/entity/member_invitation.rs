@@ -1,9 +1,9 @@
 use diesel::prelude::*;
 use time::OffsetDateTime;
 
-use crate::domain::model::aggr::member_invitation::MemberInvitation;
-use crate::domain::model::val::role::RoleMask;
-use crate::infra::query::schema;
+use crate::domain::model::aggregate::member_invitation::MemberInvitation;
+use crate::domain::model::value::role::RoleMask;
+use crate::infrastructure::query::schema;
 
 // ── Queryable / Selectable ─────────────────────────────────────────────────
 

@@ -1,15 +1,15 @@
 use time::OffsetDateTime;
 use uuid::Uuid;
 
-use crate::domain::model::aggr::team::Team;
-use crate::domain::model::aggr::user::User;
-use crate::domain::model::val::role::RoleMask;
+use crate::domain::model::aggregate::team::Team;
+use crate::domain::model::aggregate::user::UserAggr;
+use crate::domain::model::value::role::RoleMask;
 
 pub struct Member {
     pub id: String,
 
     pub user_id: String,
-    pub user: Option<User>,
+    pub user: Option<UserAggr>,
 
     pub team_id: String,
     pub team: Option<Team>,
