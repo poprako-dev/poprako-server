@@ -10,8 +10,9 @@ use crate::domain::query::member_invitation::MemberInvitationQueryMut;
 use crate::domain::query::user::UserQeuryMut;
 use crate::domain::result::DomainErr;
 use crate::usecase::result::{UseCaseErr, UseCaseResl};
-use crate::util::err::ErrorTrace as _;
 use crate::usecase::value_object::user::{SignUpUserParams, SignUprUserReply};
+use crate::util::err::ErrorTrace as _;
+use crate::util::i18n::trl;
 
 #[tracing::instrument(skip(harn))]
 pub async fn sign_up_user<H>(harn: &H, params: SignUpUserParams) -> UseCaseResl<SignUprUserReply>
@@ -27,7 +28,7 @@ where
 
                 // 2. Validate the invitation code.
                 if !invitation.verify_code(&params.invitation_code) {
-                    return Err(DomainErr::expected_argument("无效的邀请码".to_string()))
+                    return Err(DomainErr::expected_argument(trl("error-invalid-invitation-code")))
                     .trace_debug();
                 }
 

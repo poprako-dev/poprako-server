@@ -15,6 +15,7 @@ use crate::infrastructure::query::entity::user::UserEntry;
 use crate::infrastructure::query::entity::user::UserInfo;
 use crate::infrastructure::query::schema::t_user::dsl::*;
 use crate::util::err::ErrorTrace as _;
+use crate::util::i18n::trl;
 
 #[instrument(skip(conn), level = Level::DEBUG)]
 pub async fn get_by_id(conn: &mut AsyncPgConnection, id: &str) -> DomainResl<UserAggr> {
@@ -24,7 +25,7 @@ pub async fn get_by_id(conn: &mut AsyncPgConnection, id: &str) -> DomainResl<Use
         .first(conn)
         .await
         .optional()?
-        .ok_or(DomainErr::expected_argument("该用户不存在".to_string()))
+        .ok_or(DomainErr::expected_argument(trl("error-user-not-found")))
         .trace_debug()?;
 
     Ok(info.into())
@@ -46,7 +47,7 @@ pub async fn get_credential_by_qid(
         .first(conn)
         .await
         .optional()?
-        .ok_or(DomainErr::expected_argument("该用户不存在".to_string()))
+        .ok_or(DomainErr::expected_argument(trl("error-user-not-found")))
         .trace_debug()?;
 
     Ok(UserCredential {

@@ -56,3 +56,26 @@ pub mod err {
 pub mod rename {
     pub type StdResl<T, E> = std::result::Result<T, E>;
 }
+
+pub mod i18n {
+    use std::sync::LazyLock;
+
+    use fluent_templates::{Loader as _, static_loader};
+    use unic_langid::{LanguageIdentifier, langid};
+
+    static_loader! {
+        static LOCALES = {
+            locales: "locales",
+            fallback_language: "zh-CN",
+        };
+    }
+
+    static LANGUAGE: LazyLock<LanguageIdentifier> = LazyLock::new(|| {
+        let language = std::env::var("LANGUAGE").unwrap_or_else(|_| "zh-CN".to_string());
+        language.parse().unwrap_or_else(|_| langid!("zh-CN"))
+    });
+
+    pub fn trl(key: &str) -> String {
+        LOCALES.lookup(&LANGUAGE, key).to_string()
+    }
+}

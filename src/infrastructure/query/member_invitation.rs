@@ -7,9 +7,10 @@ use crate::domain::model::aggregate::member_invitation::MemberInvitation;
 use crate::domain::query as domain_query;
 use crate::domain::result::{DomainErr, DomainResl};
 use crate::infrastructure::query::TransactionalQuery;
-use crate::util::err::ErrorTrace as _;
 use crate::infrastructure::query::entity::member_invitation::MemberInvitationRow;
 use crate::infrastructure::query::schema::t_member_invitation::dsl::*;
+use crate::util::err::ErrorTrace as _;
+use crate::util::i18n::trl;
 
 pub async fn get_pending_by_invitee_qid(
     conn: &mut AsyncPgConnection,
@@ -23,7 +24,7 @@ pub async fn get_pending_by_invitee_qid(
         .first(conn)
         .await
         .optional()?
-        .ok_or(DomainErr::expected_argument("不存在待处理的邀请".to_string()))
+        .ok_or(DomainErr::expected_argument(trl("error-no-pending-invitation")))
         .trace_debug()?;
 
     Ok(row.into())
@@ -39,7 +40,7 @@ pub async fn mark_as_used(conn: &mut AsyncPgConnection, id: &str) -> DomainResl<
         .await?;
 
     if rows_affected == 0 {
-        return Err(DomainErr::expected_argument("邀请记录不存在".to_string()))
+        return Err(DomainErr::expected_argument(trl("error-invitation-not-found")))
         .trace_debug();
     }
 
