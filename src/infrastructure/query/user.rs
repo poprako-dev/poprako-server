@@ -3,6 +3,9 @@ use diesel_async::AsyncPgConnection;
 use diesel_async::RunQueryDsl;
 use time::OffsetDateTime;
 
+use tracing::Level;
+use tracing::instrument;
+
 use crate::domain::model::aggregate::user::{UserAggr, UserCredential, UserForm};
 use crate::domain::query as domain_query;
 use crate::domain::result::{DomainErr, DomainResl};
@@ -11,7 +14,9 @@ use crate::infrastructure::query::TransactionalQuery;
 use crate::infrastructure::query::entity::user::UserEntry;
 use crate::infrastructure::query::entity::user::UserInfo;
 use crate::infrastructure::query::schema::t_user::dsl::*;
+use crate::util::err::ErrorTrace as _;
 
+#[instrument(skip(conn), level = Level::DEBUG)]
 pub async fn get_by_id(conn: &mut AsyncPgConnection, id: &str) -> DomainResl<UserAggr> {
     let info: UserInfo = t_user
         .filter(f_id.eq(id))
@@ -19,7 +24,8 @@ pub async fn get_by_id(conn: &mut AsyncPgConnection, id: &str) -> DomainResl<Use
         .first(conn)
         .await
         .optional()?
-        .ok_or(DomainErr::expected_argument("该用户不存在".to_string()))?;
+        .ok_or(DomainErr::expected_argument("该用户不存在".to_string()))
+        .trace_debug()?;
 
     Ok(info.into())
 }
@@ -40,7 +46,8 @@ pub async fn get_credential_by_qid(
         .first(conn)
         .await
         .optional()?
-        .ok_or(DomainErr::expected_argument("该用户不存在".to_string()))?;
+        .ok_or(DomainErr::expected_argument("该用户不存在".to_string()))
+        .trace_debug()?;
 
     Ok(UserCredential {
         qid: row.f_qid,
@@ -85,32 +92,50 @@ trait UserQeuryMut: domain_query::user::UserQeuryMut {}
 
 #[async_trait::async_trait]
 impl domain_query::user::UserQeury for Query {
+    #[tracing::instrument(skip(self), level = Level::DEBUG)]
     async fn get_by_id(&self, id: &str) -> DomainResl<UserAggr> {
         let mut conn = self
             .pool
             .get()
             .await
-            .map_err(|e| DomainErr::unrecoverable(e.to_string()))?;
+            .map_err(|e| {
+                DomainErr::unrecoverable(format!(
+                    "[Query::get_by_id] error getting connection: {}",
+                    e
+                ))
+            })
+            .trace_error()?;
 
         get_by_id(&mut conn, id).await
     }
 
+    #[tracing::instrument(skip(self), level = Level::DEBUG)]
     async fn get_credentials_by_qid(&self, qid: &str) -> DomainResl<UserCredential> {
         let mut conn = self
             .pool
             .get()
             .await
-            .map_err(|e| DomainErr::unrecoverable(e.to_string()))?;
+            .map_err(|e| {
+                DomainErr::unrecoverable(format!(
+                    "[Query::get_credentials_by_qid] error getting connection: {}",
+                    e
+                ))
+            })
+            .trace_error()?;
 
         get_credential_by_qid(&mut conn, qid).await
     }
 
+    #[tracing::instrument(skip(self, form), level = Level::DEBUG)]
     async fn create(&self, form: UserForm) -> DomainResl<UserAggr> {
         let mut conn = self
             .pool
             .get()
             .await
-            .map_err(|e| DomainErr::unrecoverable(e.to_string()))?;
+            .map_err(|e| {
+                DomainErr::unrecoverable(format!("[Query::create] error getting connection: {}", e))
+            })
+            .trace_error()?;
 
         create(&mut conn, &form).await
     }

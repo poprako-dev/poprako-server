@@ -1,10 +1,12 @@
 use jsonwebtoken::{DecodingKey, EncodingKey, Header, TokenData, Validation, decode, encode};
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
+use tracing::Level;
 
 use crate::domain::external::token::TokenCodec;
 use crate::domain::model::aggregate::user::UserToken;
 use crate::domain::result::{DomainErr, DomainResl};
+use crate::util::err::ErrorTrace as _;
 
 #[derive(Debug, Serialize, Deserialize)]
 struct Claims {
@@ -35,26 +37,35 @@ impl JwtCodec {
 }
 
 impl TokenCodec for JwtCodec {
+    #[tracing::instrument(skip(self), level = Level::DEBUG)]
     fn sign(&self, unsigned_token: &UserToken) -> DomainResl<String> {
         let now = OffsetDateTime::now_utc();
-        let iat = now.unix_timestamp() as usize;
-        let exp = iat + self.expiration_seconds as usize;
+
+        let issued_at = now.unix_timestamp() as usize;
+        let expiration = issued_at + self.expiration_seconds as usize;
 
         let claims = Claims {
             sub: unsigned_token.user_id.clone(),
-            iat,
-            exp,
+            iat: issued_at,
+            exp: expiration,
         };
 
         encode(&Header::default(), &claims, &self.encoding_key)
-            .map_err(|e| DomainErr::unrecoverable(format!("jwt encode error: {e}")))
+            .map_err(|e| {
+                DomainErr::unrecoverable(format!("[JwtCodec::sign] error when encoding: {}", e))
+            })
+            .trace_error()
     }
 
+    #[tracing::instrument(skip(self), level = Level::DEBUG)]
     fn parse(&self, signed_token: &str) -> DomainResl<UserToken> {
         let validation = Validation::default();
 
         let token_data: TokenData<Claims> = decode(signed_token, &self.decoding_key, &validation)
-            .map_err(|e| DomainErr::unrecoverable(format!("jwt decode error: {e}")))?;
+            .map_err(|e| {
+                DomainErr::unrecoverable(format!("[JwtCodec::parse] error when decoding: {}", e))
+            })
+            .trace_error()?;
 
         Ok(UserToken::new(token_data.claims.sub))
     }

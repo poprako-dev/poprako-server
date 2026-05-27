@@ -50,5 +50,11 @@ pub mod result {
         }
     }
 
+    impl std::fmt::Display for DomainErr {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "{:?}", self)
+        }
+    }
+
     pub type DomainResl<T> = StdResl<T, DomainErr>;
 }

@@ -9,14 +9,19 @@ use diesel_async::AsyncPgConnection;
 use diesel_async::pooled_connection::deadpool::Pool;
 use futures_util::future::BoxFuture;
 
+use tracing::Level;
+
 use crate::domain::query as domain_query;
 use crate::domain::query::Transactional;
 use crate::domain::result::{DomainErr, DomainResl};
+use crate::util::err::ErrorTrace as _;
 
 impl From<diesel::result::Error> for DomainErr {
     fn from(val: diesel::result::Error) -> Self {
         // NotFound is handled by each function with a contextual message; the rest become Unrecoverable.
-        DomainErr::unrecoverable(val.to_string())
+        let err = DomainErr::unrecoverable(val.to_string());
+        tracing::error!("[trace_error] {}", err);
+        err
     }
 }
 
@@ -38,6 +43,7 @@ impl Query {
 impl Transactional for Query {
     type Query<'a> = TransactionalQuery<'a>;
 
+    #[tracing::instrument(skip(self, f), level = Level::DEBUG)]
     async fn run_in_transaction<F, T>(&self, f: F) -> DomainResl<T>
     where
         T: Send,
@@ -47,7 +53,13 @@ impl Transactional for Query {
             .pool
             .get()
             .await
-            .map_err(|e| DomainErr::unrecoverable(e.to_string()))?;
+            .map_err(|e| {
+                DomainErr::unrecoverable(format!(
+                    "[Query::run_in_transaction] error getting connection: {}",
+                    e
+                ))
+            })
+            .trace_error()?;
 
         conn.build_transaction()
             .run(async move |conn| {
