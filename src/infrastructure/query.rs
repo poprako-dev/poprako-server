@@ -11,14 +11,12 @@ use futures_util::future::BoxFuture;
 
 use crate::domain::query as domain_query;
 use crate::domain::query::Transactional;
-use crate::domain::result::{DomainError, DomainRetVal};
+use crate::domain::result::{DomainErr, DomainResl};
 
-impl From<diesel::result::Error> for DomainError {
+impl From<diesel::result::Error> for DomainErr {
     fn from(val: diesel::result::Error) -> Self {
         // NotFound is handled by each function with a contextual message; the rest become Unrecoverable.
-        DomainError::Unrecoverable {
-            message: val.to_string(),
-        }
+        DomainErr::unrecoverable(val.to_string())
     }
 }
 
@@ -27,6 +25,10 @@ pub struct Query {
 }
 
 impl Query {
+    pub fn new(database_url: &str) -> anyhow::Result<Self> {
+        unimplemented!()
+    }
+
     fn build_transactional_query(conn: &mut AsyncPgConnection) -> TransactionalQuery<'_> {
         TransactionalQuery::new(conn)
     }
@@ -36,18 +38,16 @@ impl Query {
 impl Transactional for Query {
     type Query<'a> = TransactionalQuery<'a>;
 
-    async fn run_in_transaction<F, T>(&self, f: F) -> DomainRetVal<T>
+    async fn run_in_transaction<F, T>(&self, f: F) -> DomainResl<T>
     where
         T: Send,
-        F: for<'a> FnOnce(&'a mut Self::Query<'a>) -> BoxFuture<'a, DomainRetVal<T>> + Send,
+        F: for<'a> FnOnce(&'a mut Self::Query<'a>) -> BoxFuture<'a, DomainResl<T>> + Send,
     {
         let mut conn = self
             .pool
             .get()
             .await
-            .map_err(|e| DomainError::Unrecoverable {
-                message: e.to_string(),
-            })?;
+            .map_err(|e| DomainErr::unrecoverable(e.to_string()))?;
 
         conn.build_transaction()
             .run(async move |conn| {
@@ -65,7 +65,7 @@ pub struct TransactionalQuery<'c> {
 impl<'c> domain_query::TransactionalQuery for TransactionalQuery<'c> {}
 
 impl<'c> TransactionalQuery<'c> {
-    pub fn new(conn: &'c mut AsyncPgConnection) -> Self {
+    fn new(conn: &'c mut AsyncPgConnection) -> Self {
         Self { conn }
     }
 }

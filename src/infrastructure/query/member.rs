@@ -8,13 +8,13 @@ use crate::domain::model::aggregate::member::MemberForm;
 use crate::domain::model::value::role::Role;
 use crate::domain::model::value::role::RoleMask;
 use crate::domain::query as domain_query;
-use crate::domain::result::DomainRetVal;
+use crate::domain::result::DomainResl;
 use crate::infrastructure::query::TransactionalQuery;
 use crate::infrastructure::query::entity::member::MemberEntry;
 use crate::infrastructure::query::entity::member::MemberRow;
 use crate::infrastructure::query::schema::t_member::dsl::*;
 
-pub async fn create(conn: &mut AsyncPgConnection, form: &MemberForm) -> DomainRetVal<Member> {
+pub async fn create(conn: &mut AsyncPgConnection, form: &MemberForm) -> DomainResl<Member> {
     let now = OffsetDateTime::now_utc();
     let roles = form.roles;
 
@@ -62,7 +62,7 @@ trait MemberQuery: domain_query::member::MemberQueryMut {}
 
 #[async_trait::async_trait]
 impl<'c> domain_query::member::MemberQueryMut for TransactionalQuery<'c> {
-    async fn create(&mut self, form: MemberForm) -> DomainRetVal<Member> {
+    async fn create(&mut self, form: MemberForm) -> DomainResl<Member> {
         create(self.conn, &form).await
     }
 }

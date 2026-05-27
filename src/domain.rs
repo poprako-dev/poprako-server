@@ -5,13 +5,13 @@ pub mod model;
 pub mod query;
 
 pub mod result {
-    use crate::util::rename::StdRetVal;
+    use crate::util::rename::StdResl;
 
     #[derive(Debug)]
-    pub enum ExpectedError {
-        /// Validation / resource errors → HTTP 400
-        Parameter,
-        /// Authentication errors → HTTP 401
+    pub enum ExpectedErr {
+        /// Validation / resource errors
+        Argument,
+        /// Authentication errors
         Authentication,
     }
 
@@ -20,9 +20,9 @@ pub mod result {
     /// - `Expected`: business-logic errors, the message is returned to the end user.
     /// - `Unrecoverable`: internal failures, the message is only used for logging.
     #[derive(Debug)]
-    pub enum DomainError {
+    pub enum DomainErr {
         Expected {
-            variant: ExpectedError,
+            variant: ExpectedErr,
             message: String,
         },
         Unrecoverable {
@@ -30,5 +30,25 @@ pub mod result {
         },
     }
 
-    pub type DomainRetVal<T> = StdRetVal<T, DomainError>;
+    impl DomainErr {
+        pub fn expected_argument(msg: String) -> Self {
+            Self::Expected {
+                variant: ExpectedErr::Argument,
+                message: msg,
+            }
+        }
+
+        pub fn expected_authentication(msg: String) -> Self {
+            Self::Expected {
+                variant: ExpectedErr::Authentication,
+                message: msg,
+            }
+        }
+
+        pub fn unrecoverable(msg: String) -> Self {
+            Self::Unrecoverable { message: msg }
+        }
+    }
+
+    pub type DomainResl<T> = StdResl<T, DomainErr>;
 }

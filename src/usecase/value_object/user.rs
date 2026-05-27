@@ -44,7 +44,7 @@ impl UserVal {
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
-pub struct RegisterUserParams {
+pub struct SignUpUserParams {
     pub qid: String,
     pub nickname: String,
     pub password: String,
@@ -52,7 +52,7 @@ pub struct RegisterUserParams {
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
-pub struct RegisterUserReply {
+pub struct SignUprUserReply {
     pub user_id: String,
     pub token: String,
 }

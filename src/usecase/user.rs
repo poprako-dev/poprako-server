@@ -8,15 +8,12 @@ use crate::domain::query::Transactional;
 use crate::domain::query::member::MemberQueryMut;
 use crate::domain::query::member_invitation::MemberInvitationQueryMut;
 use crate::domain::query::user::UserQeuryMut;
-use crate::domain::result::{DomainError, ExpectedError};
-use crate::usecase::result::{UseCaseError, UseCaseRetVal};
-use crate::usecase::value_object::user::{RegisterUserParams, RegisterUserReply};
+use crate::domain::result::DomainErr;
+use crate::usecase::result::{UseCaseErr, UseCaseResl};
+use crate::usecase::value_object::user::{SignUpUserParams, SignUprUserReply};
 
 #[tracing::instrument(skip(harn))]
-pub async fn register_user<H>(
-    harn: &H,
-    params: RegisterUserParams,
-) -> UseCaseRetVal<RegisterUserReply>
+pub async fn sign_up_user<H>(harn: &H, params: SignUpUserParams) -> UseCaseResl<SignUprUserReply>
 where
     H: Clone + Transactional,
 {
@@ -29,10 +26,7 @@ where
 
                 // 2. Validate the invitation code.
                 if !invitation.verify_code(&params.invitation_code) {
-                    return Err(DomainError::Expected {
-                        variant: ExpectedError::Parameter,
-                        message: "无效的邀请码".to_string(),
-                    });
+                    return Err(DomainErr::expected_argument("无效的邀请码".to_string()));
                 }
 
                 // 3. Generate password hash.
@@ -69,11 +63,10 @@ where
             }
             .boxed()
         })
-        .await
-        .map_err(UseCaseError::from)?;
+        .await?;
 
     // 7. Generate a signed token for the newly registered user.
     let token = sign_token(&UserToken::new(user_id.clone()))?;
 
-    Ok(RegisterUserReply { user_id, token })
+    Ok(SignUprUserReply { user_id, token })
 }

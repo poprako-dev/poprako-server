@@ -4,22 +4,22 @@ pub mod value_object;
 pub mod user;
 
 pub mod result {
-    use crate::domain::result::DomainError;
-    use crate::util::rename::StdRetVal;
+    use crate::domain::result::DomainErr;
+    use crate::util::rename::StdResl;
 
-    pub enum UseCaseError {
-        Params(String),
-        Unrecoverable(String),
-    }
+    pub struct UseCaseErr(DomainErr);
 
-    impl From<DomainError> for UseCaseError {
-        fn from(value: DomainError) -> Self {
-            match value {
-                DomainError::Expected { message, .. } => UseCaseError::Params(message),
-                DomainError::Unrecoverable { message } => UseCaseError::Unrecoverable(message),
-            }
+    impl AsRef<DomainErr> for UseCaseErr {
+        fn as_ref(&self) -> &DomainErr {
+            &self.0
         }
     }
 
-    pub type UseCaseRetVal<T> = StdRetVal<T, UseCaseError>;
+    impl From<DomainErr> for UseCaseErr {
+        fn from(value: DomainErr) -> Self {
+            UseCaseErr(value)
+        }
+    }
+
+    pub type UseCaseResl<T> = StdResl<T, UseCaseErr>;
 }

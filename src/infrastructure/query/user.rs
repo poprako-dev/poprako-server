@@ -5,24 +5,21 @@ use time::OffsetDateTime;
 
 use crate::domain::model::aggregate::user::{UserAggr, UserCredential, UserForm};
 use crate::domain::query as domain_query;
-use crate::domain::result::{DomainError, DomainRetVal, ExpectedError};
+use crate::domain::result::{DomainErr, DomainResl};
 use crate::infrastructure::query::Query;
 use crate::infrastructure::query::TransactionalQuery;
 use crate::infrastructure::query::entity::user::UserEntry;
 use crate::infrastructure::query::entity::user::UserInfo;
 use crate::infrastructure::query::schema::t_user::dsl::*;
 
-pub async fn get_by_id(conn: &mut AsyncPgConnection, id: &str) -> DomainRetVal<UserAggr> {
+pub async fn get_by_id(conn: &mut AsyncPgConnection, id: &str) -> DomainResl<UserAggr> {
     let info: UserInfo = t_user
         .filter(f_id.eq(id))
         .select(UserInfo::as_select())
         .first(conn)
         .await
         .optional()?
-        .ok_or(DomainError::Expected {
-            variant: ExpectedError::Parameter,
-            message: "该用户不存在".to_string(),
-        })?;
+        .ok_or(DomainErr::expected_argument("该用户不存在".to_string()))?;
 
     Ok(info.into())
 }
@@ -30,7 +27,7 @@ pub async fn get_by_id(conn: &mut AsyncPgConnection, id: &str) -> DomainRetVal<U
 pub async fn get_credential_by_qid(
     conn: &mut AsyncPgConnection,
     qid: &str,
-) -> DomainRetVal<UserCredential> {
+) -> DomainResl<UserCredential> {
     #[derive(Queryable)]
     struct Row {
         f_qid: String,
@@ -43,10 +40,7 @@ pub async fn get_credential_by_qid(
         .first(conn)
         .await
         .optional()?
-        .ok_or(DomainError::Expected {
-            variant: ExpectedError::Parameter,
-            message: "该用户不存在".to_string(),
-        })?;
+        .ok_or(DomainErr::expected_argument("该用户不存在".to_string()))?;
 
     Ok(UserCredential {
         qid: row.f_qid,
@@ -54,7 +48,7 @@ pub async fn get_credential_by_qid(
     })
 }
 
-pub async fn create(conn: &mut AsyncPgConnection, form: &UserForm) -> DomainRetVal<UserAggr> {
+pub async fn create(conn: &mut AsyncPgConnection, form: &UserForm) -> DomainResl<UserAggr> {
     let now = OffsetDateTime::now_utc();
 
     let entry = UserEntry {
@@ -91,38 +85,32 @@ trait UserQeuryMut: domain_query::user::UserQeuryMut {}
 
 #[async_trait::async_trait]
 impl domain_query::user::UserQeury for Query {
-    async fn get_by_id(&self, id: &str) -> DomainRetVal<UserAggr> {
+    async fn get_by_id(&self, id: &str) -> DomainResl<UserAggr> {
         let mut conn = self
             .pool
             .get()
             .await
-            .map_err(|e| DomainError::Unrecoverable {
-                message: e.to_string(),
-            })?;
+            .map_err(|e| DomainErr::unrecoverable(e.to_string()))?;
 
         get_by_id(&mut conn, id).await
     }
 
-    async fn get_credentials_by_qid(&self, qid: &str) -> DomainRetVal<UserCredential> {
+    async fn get_credentials_by_qid(&self, qid: &str) -> DomainResl<UserCredential> {
         let mut conn = self
             .pool
             .get()
             .await
-            .map_err(|e| DomainError::Unrecoverable {
-                message: e.to_string(),
-            })?;
+            .map_err(|e| DomainErr::unrecoverable(e.to_string()))?;
 
         get_credential_by_qid(&mut conn, qid).await
     }
 
-    async fn create(&self, form: UserForm) -> DomainRetVal<UserAggr> {
+    async fn create(&self, form: UserForm) -> DomainResl<UserAggr> {
         let mut conn = self
             .pool
             .get()
             .await
-            .map_err(|e| DomainError::Unrecoverable {
-                message: e.to_string(),
-            })?;
+            .map_err(|e| DomainErr::unrecoverable(e.to_string()))?;
 
         create(&mut conn, &form).await
     }
@@ -130,7 +118,7 @@ impl domain_query::user::UserQeury for Query {
 
 #[async_trait::async_trait]
 impl<'c> domain_query::user::UserQeuryMut for TransactionalQuery<'c> {
-    async fn create(&mut self, form: UserForm) -> DomainRetVal<UserAggr> {
+    async fn create(&mut self, form: UserForm) -> DomainResl<UserAggr> {
         create(self.conn, &form).await
     }
 }
