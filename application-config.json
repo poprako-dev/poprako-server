@@ -1,4 +1,4 @@
 {
-  "http_host": "localhost",
+  "http_host": "127.0.0.1",
   "http_port": 8888
 }

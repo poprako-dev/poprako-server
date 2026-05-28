@@ -1,4 +1,4 @@
-use std::net::SocketAddr;
+use std::net::{SocketAddr, ToSocketAddrs};
 
 use poprako_r::api::harness::Harness;
 use poprako_r::api::http::server::serve;
@@ -22,9 +22,11 @@ async fn main() {
         .await
         .expect("Failed to load application configuration");
 
-    let http_addr: SocketAddr = format!("{}:{}", config.http_host, config.http_port)
-        .parse()
-        .expect("Failed to parse HTTP listen address");
+    let http_addr: SocketAddr =
+        ToSocketAddrs::to_socket_addrs(&format!("{}:{}", config.http_host, config.http_port))
+            .expect("Failed to resolve HTTP listen address")
+            .next()
+            .expect("No address resolved for HTTP listen address");
 
     let query = Query::from_env().await.expect("Failed to initialize query");
 

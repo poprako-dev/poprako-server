@@ -25,7 +25,9 @@ where
         .run_in_transaction(move |query| {
             async move {
                 // 1. Fetch pending invitation by invitee qid.
-                let invitation = query.get_pending_by_invitee_qid(&params.qid).await?;
+                let invitation =
+                    MemberInvitationQueryMut::get_pending_by_invitee_qid(query, &params.qid)
+                        .await?;
 
                 // 2. Validate the invitation code.
                 if !invitation.verify_code(&params.invitation_code) {

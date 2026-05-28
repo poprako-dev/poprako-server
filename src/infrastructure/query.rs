@@ -5,8 +5,10 @@ pub mod user;
 mod entity;
 mod schema;
 
+use anyhow::Context as _;
 use async_trait::async_trait;
 use diesel_async::AsyncPgConnection;
+use diesel_async::pooled_connection::AsyncDieselConnectionManager;
 use diesel_async::pooled_connection::deadpool::Pool;
 use futures_util::future::BoxFuture;
 
@@ -33,7 +35,19 @@ pub struct Query {
 
 impl Query {
     pub async fn from_env() -> anyhow::Result<Self> {
-        unimplemented!()
+        let database_url = std::env::var("DATABASE_URL")
+            .with_context(|| "[Query::from_env] DATABASE_URL is not set")?;
+
+        let manager =
+            AsyncDieselConnectionManager::<AsyncPgConnection>::new(database_url);
+
+        let pool = Pool::builder(manager)
+            .build()
+            .with_context(|| "[Query::from_env] failed to build connection pool")?;
+
+        tracing::debug!("[Query::from_env] configured");
+
+        Ok(Self { pool })
     }
 
     fn build_transactional_query(conn: &mut AsyncPgConnection) -> TransactionalQuery<'_> {
