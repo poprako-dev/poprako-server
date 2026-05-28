@@ -67,10 +67,18 @@ impl From<RoleMask> for u32 {
     }
 }
 
+/// Entities whose role mask can be read.
+///
+/// Implemented by [`Member`](crate::domain::model::aggregate::member::Member),
+/// [`MemberInvitation`](crate::domain::model::aggregate::member_invitation::MemberInvitation),
+/// and assignment aggregates.
 pub trait RoleViewable {
+    /// Returns the current [`RoleMask`] for this entity.
     fn roles(&self) -> RoleMask;
 }
 
+/// Entities whose role mask can be set.
 pub trait RoleAssignable {
+    /// Overwrites the role mask with the given value.
     fn assign_roles(&mut self, mask: RoleMask);
 }

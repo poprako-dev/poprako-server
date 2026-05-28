@@ -29,13 +29,13 @@ use tracing::Level;
 /// - `R2_BUCKET_NAME`    — required
 /// - `R2_CUSTOM_DOMAIN`  — required for GET URL generation
 #[derive(Clone)]
-pub struct R2OssClient {
+pub struct R2ImagePool {
     client: Client,
     bucket: String,
     domain: String,
 }
 
-impl R2OssClient {
+impl R2ImagePool {
     pub fn from_env() -> anyhow::Result<Self> {
         let account_id = std::env::var("R2_ACCOUNT_ID")
             .context("[R2OssClient::new] R2_ACCOUNT_ID is not set")?;
@@ -80,7 +80,7 @@ impl R2OssClient {
 // ---------------------------------------------------------------------------
 
 #[async_trait::async_trait]
-impl ImageGet for R2OssClient {
+impl ImageGet for R2ImagePool {
     #[tracing::instrument(skip(self), level = Level::DEBUG)]
     async fn get_signed(&self, key: &str) -> DomainResl<Url> {
         if self.domain.is_empty() {
@@ -106,7 +106,7 @@ impl ImageGet for R2OssClient {
 // ---------------------------------------------------------------------------
 
 #[async_trait::async_trait]
-impl ImagePut for R2OssClient {
+impl ImagePut for R2ImagePool {
     #[tracing::instrument(skip(self), level = Level::DEBUG)]
     async fn put_signed(&self, key: &str) -> DomainResl<Url> {
         const EXPIRATION: Duration = Duration::from_secs(600); // 10 minutes
@@ -155,7 +155,7 @@ impl ImagePut for R2OssClient {
 // ---------------------------------------------------------------------------
 
 #[async_trait::async_trait]
-impl ImageDelete for R2OssClient {
+impl ImageDelete for R2ImagePool {
     #[tracing::instrument(skip(self), level = Level::DEBUG)]
     async fn delete_batch(&self, keys: &[&str]) -> DomainResl<()> {
         const MAX_RETRY: usize = 3;

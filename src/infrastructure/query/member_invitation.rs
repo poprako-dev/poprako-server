@@ -53,6 +53,8 @@ pub async fn mark_as_used(conn: &mut AsyncPgConnection, id: &str) -> DomainResl<
 
 // ── Marker traits ──────────────────────────────────────────────────────────
 
+/// Blanket-impl marker: every [`TransactionalQuery`] is a
+/// [`MemberInvitationQueryMut`](crate::domain::query::member_invitation::MemberInvitationQueryMut).
 trait MemberInvitationQuery: domain_query::member_invitation::MemberInvitationQueryMut {}
 
 // ── impls ──────────────────────────────────────────────────────────────────

@@ -84,8 +84,13 @@ pub async fn create(conn: &mut AsyncPgConnection, form: &UserForm) -> DomainResl
 
 // ── Marker traits ──────────────────────────────────────────────────────────
 
+/// Blanket-impl marker: every [`Query`] is a [`UserQeury`](crate::domain::query::user::UserQeury).
+/// Exists only so that `TransactionalQuery` bounds can reference a single trait instead of
+/// listing every super-trait on every impl block.
 trait UserQuery: domain_query::user::UserQeury {}
 
+/// Blanket-impl marker: every [`TransactionalQuery`] is a
+/// [`UserQeuryMut`](crate::domain::query::user::UserQeuryMut).
 trait UserQeuryMut: domain_query::user::UserQeuryMut {}
 
 // ── impls ──────────────────────────────────────────────────────────────────

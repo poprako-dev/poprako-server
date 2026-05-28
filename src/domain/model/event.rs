@@ -19,12 +19,21 @@ impl DomainEvent {
     }
 }
 
+/// Accumulates domain events during a business operation.
+///
+/// Implemented by input aggregates (e.g. [`UserForm`](crate::domain::model::aggregate::user::UserForm))
+/// that carry a private `events: Vec<DomainEvent>` field. The usecase layer pushes events
+/// into the form before passing it to the query layer's `create`.
 pub trait EventSink {
-    // push_event pushes a domain event to the event root.
+    /// Appends a domain event to the internal buffer.
     fn push_event(&mut self, event: DomainEvent);
 }
 
+/// Drains all accumulated domain events from an input aggregate.
+///
+/// Called **after** a successful transaction commit so events can be
+/// published to the event bus. The internal buffer is cleared.
 pub trait EventEmit {
-    // pull_events pulls all the domain events from the event root, and clears the event source.
+    /// Takes all pending domain events out and leaves the buffer empty.
     fn pull_events(&mut self) -> Vec<DomainEvent>;
 }

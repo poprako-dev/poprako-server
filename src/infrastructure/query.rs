@@ -46,8 +46,8 @@ impl Transactional for Query {
     #[tracing::instrument(skip(self, f), level = Level::DEBUG)]
     async fn run_in_transaction<F, T>(&self, f: F) -> DomainResl<T>
     where
-        T: Send,
-        F: for<'a> FnOnce(&'a mut Self::Query<'a>) -> BoxFuture<'a, DomainResl<T>> + Send,
+        T: Send, // Return value must cross .await boundaries; Tokio multi-threaded runtime requires Send
+        F: for<'a> FnOnce(&'a mut Self::Query<'a>) -> BoxFuture<'a, DomainResl<T>> + Send, // BoxFuture requires the closure to be Send
     {
         let mut conn = self
             .pool

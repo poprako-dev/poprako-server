@@ -37,7 +37,7 @@ Key reference files:
 
 ## Project Skills
 
-Three project-local skills define coding conventions for specific layers:
+Project-local skills define coding conventions for specific layers:
 
 - **`poprako-conventions`** — Infra/query layer (Diesel) conventions
   (`src/infrastructure/query/`)
@@ -47,9 +47,19 @@ Three project-local skills define coding conventions for specific layers:
   (`tracing::instrument`, `serde::Serialize`, etc.)
 - **`tracing-usage-spec`** — Where `#[tracing::instrument]` should and should
   NOT be placed (no constructors, no domain pure logic)
+- **`trait-def-spec`** — Documentation and formatting conventions for all
+  `trait` definitions (doc comments, blank lines between methods)
+- **`error-handling-spec`** — Error definition and handling philosophy across
+  all layers
 
 These skills are in `.pi/skills/` and are auto-triggered when working in the
 corresponding source paths.
+
+---
+
+## Conventions
+
+- **English-only comments**: All comments (line `//`, block `/* */`, and doc `///` / `//!`) must be written in English. No other language is permitted in source code comments.
 
 ---
 

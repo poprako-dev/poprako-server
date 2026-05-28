@@ -56,6 +56,8 @@ fn role_bit(roles: &RoleMask, role_val: u32) -> bool {
 
 // ── Marker traits ──────────────────────────────────────────────────────────
 
+/// Blanket-impl marker: every [`TransactionalQuery`] is a
+/// [`MemberQueryMut`](crate::domain::query::member::MemberQueryMut).
 trait MemberQuery: domain_query::member::MemberQueryMut {}
 
 // ── impls ──────────────────────────────────────────────────────────────────
