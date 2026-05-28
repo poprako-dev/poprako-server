@@ -5,11 +5,13 @@ pub mod user;
 mod entity;
 mod schema;
 
+use async_trait::async_trait;
 use diesel_async::AsyncPgConnection;
 use diesel_async::pooled_connection::deadpool::Pool;
 use futures_util::future::BoxFuture;
 
 use tracing::Level;
+use tracing::instrument;
 
 use crate::domain::query as domain_query;
 use crate::domain::query::Transactional;
@@ -30,7 +32,7 @@ pub struct Query {
 }
 
 impl Query {
-    pub fn new(database_url: &str) -> anyhow::Result<Self> {
+    pub async fn from_env() -> anyhow::Result<Self> {
         unimplemented!()
     }
 
@@ -39,11 +41,11 @@ impl Query {
     }
 }
 
-#[async_trait::async_trait]
+#[async_trait]
 impl Transactional for Query {
     type Query<'a> = TransactionalQuery<'a>;
 
-    #[tracing::instrument(skip(self, f), level = Level::DEBUG)]
+    #[instrument(skip(self, f), level = Level::DEBUG)]
     async fn run_in_transaction<F, T>(&self, f: F) -> DomainResl<T>
     where
         T: Send, // Return value must cross .await boundaries; Tokio multi-threaded runtime requires Send

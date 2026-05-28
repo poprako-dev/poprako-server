@@ -1,9 +1,11 @@
+use async_trait::async_trait;
 use diesel::prelude::*;
 use diesel_async::AsyncPgConnection;
 use diesel_async::RunQueryDsl;
 use time::OffsetDateTime;
 
 use tracing::Level;
+use tracing::instrument;
 
 use crate::domain::model::aggregate::user::{UserAggr, UserCredential, UserForm};
 use crate::domain::query as domain_query;
@@ -16,7 +18,7 @@ use crate::infrastructure::query::schema::t_user::dsl::*;
 use crate::util::err::ErrorTrace as _;
 use crate::util::i18n::trl;
 
-#[tracing::instrument(skip(conn), level = Level::DEBUG)]
+#[instrument(skip(conn), level = Level::DEBUG)]
 pub async fn get_by_id(conn: &mut AsyncPgConnection, id: &str) -> DomainResl<UserAggr> {
     let info: UserInfo = t_user
         .filter(f_id.eq(id))
@@ -95,9 +97,9 @@ trait UserQeuryMut: domain_query::user::UserQeuryMut {}
 
 // ── impls ──────────────────────────────────────────────────────────────────
 
-#[async_trait::async_trait]
+#[async_trait]
 impl domain_query::user::UserQeury for Query {
-    #[tracing::instrument(skip(self), level = Level::DEBUG)]
+    #[instrument(skip(self), level = Level::DEBUG)]
     async fn get_by_id(&self, id: &str) -> DomainResl<UserAggr> {
         let mut conn = self
             .pool
@@ -114,7 +116,7 @@ impl domain_query::user::UserQeury for Query {
         get_by_id(&mut conn, id).await
     }
 
-    #[tracing::instrument(skip(self), level = Level::DEBUG)]
+    #[instrument(skip(self), level = Level::DEBUG)]
     async fn get_credentials_by_qid(&self, qid: &str) -> DomainResl<UserCredential> {
         let mut conn = self
             .pool
@@ -131,7 +133,7 @@ impl domain_query::user::UserQeury for Query {
         get_credential_by_qid(&mut conn, qid).await
     }
 
-    #[tracing::instrument(skip(self, form), level = Level::DEBUG)]
+    #[instrument(skip(self, form), level = Level::DEBUG)]
     async fn create(&self, form: UserForm) -> DomainResl<UserAggr> {
         let mut conn = self
             .pool
@@ -146,7 +148,7 @@ impl domain_query::user::UserQeury for Query {
     }
 }
 
-#[async_trait::async_trait]
+#[async_trait]
 impl<'c> domain_query::user::UserQeuryMut for TransactionalQuery<'c> {
     async fn create(&mut self, form: UserForm) -> DomainResl<UserAggr> {
         create(self.conn, &form).await

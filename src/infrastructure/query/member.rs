@@ -1,3 +1,4 @@
+use async_trait::async_trait;
 use diesel::prelude::*;
 use diesel_async::AsyncPgConnection;
 use diesel_async::RunQueryDsl;
@@ -62,7 +63,7 @@ trait MemberQuery: domain_query::member::MemberQueryMut {}
 
 // ── impls ──────────────────────────────────────────────────────────────────
 
-#[async_trait::async_trait]
+#[async_trait]
 impl<'c> domain_query::member::MemberQueryMut for TransactionalQuery<'c> {
     async fn create(&mut self, form: MemberForm) -> DomainResl<Member> {
         create(self.conn, &form).await

@@ -1,9 +1,11 @@
+use async_trait::async_trait;
+
 use crate::domain::model::aggregate::member_invitation::MemberInvitation;
 use crate::domain::result::DomainResl;
 
 /// Mutable persistence contract for [`MemberInvitation`](crate::domain::model::aggregate::member_invitation::MemberInvitation),
 /// used **only** inside a transaction via [`TransactionalQuery`](crate::domain::query::TransactionalQuery).
-#[async_trait::async_trait]
+#[async_trait]
 pub trait MemberInvitationQueryMut {
     /// Returns the most recent pending invitation for the given invitee qualified ID,
     /// or an expected error if none exists.

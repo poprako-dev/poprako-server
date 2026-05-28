@@ -1,4 +1,5 @@
 use futures_util::FutureExt as _;
+use tracing::instrument;
 
 use crate::domain::actor::user::{hash_password, sign_token};
 use crate::domain::model::aggregate::member::MemberForm;
@@ -9,13 +10,13 @@ use crate::domain::query::member::MemberQueryMut;
 use crate::domain::query::member_invitation::MemberInvitationQueryMut;
 use crate::domain::query::user::UserQeuryMut;
 use crate::domain::result::DomainErr;
-use crate::usecase::result::{UseCaseErr, UseCaseResl};
-use crate::usecase::value_object::user::{SignUpUserParams, SignUprUserReply};
+use crate::usecase::result::UseCaseResl;
+use crate::usecase::value_object::user::{SignUpUserParams, SignUpUserReply};
 use crate::util::err::ErrorTrace as _;
 use crate::util::i18n::trl;
 
-#[tracing::instrument(skip(harn))]
-pub async fn sign_up_user<H>(harn: &H, params: SignUpUserParams) -> UseCaseResl<SignUprUserReply>
+#[instrument(skip(harn))]
+pub async fn sign_up_user<H>(harn: &H, params: SignUpUserParams) -> UseCaseResl<SignUpUserReply>
 where
     H: Clone + Transactional,
 {
@@ -74,5 +75,5 @@ where
     // 7. Generate a signed token for the newly registered user.
     let token = sign_token(&UserToken::new(user_id.clone()))?;
 
-    Ok(SignUprUserReply { user_id, token })
+    Ok(SignUpUserReply { user_id, token })
 }

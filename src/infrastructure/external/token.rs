@@ -1,14 +1,16 @@
 use anyhow::Context;
 use jsonwebtoken::{DecodingKey, EncodingKey, Header, TokenData, Validation, decode, encode};
+use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 use tracing::Level;
+use tracing::instrument;
 
 use crate::domain::external::token::TokenCodec;
 use crate::domain::model::aggregate::user::UserToken;
 use crate::domain::result::{DomainErr, DomainResl};
 use crate::util::err::ErrorTrace as _;
 
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 struct Claims {
     /// Subject — the user id.
     sub: String,
@@ -29,11 +31,11 @@ pub struct JwtCodec {
 impl JwtCodec {
     pub fn from_env() -> anyhow::Result<Self> {
         let secret_key = std::env::var("JWT_SECRET_KEY")
-            .context("[JwtCodec::from_env] JWT_SECRET_KEY is not set")?;
+            .with_context(|| "[JwtCodec::from_env] JWT_SECRET_KEY is not set")?;
         let expiration_hours: i64 = std::env::var("JWT_EXPIRATION_HOURS")
-            .context("[JwtCodec::from_env] JWT_EXPIRATION_HOURS is not set")?
+            .with_context(|| "[JwtCodec::from_env] JWT_EXPIRATION_HOURS is not set")?
             .parse()
-            .context("[JwtCodec::from_env] JWT_EXPIRATION_HOURS must be a valid integer")?;
+            .with_context(|| "[JwtCodec::from_env] JWT_EXPIRATION_HOURS must be a valid integer")?;
         let expiration_seconds = expiration_hours * 3600;
 
         tracing::debug!(
@@ -50,7 +52,7 @@ impl JwtCodec {
 }
 
 impl TokenCodec for JwtCodec {
-    #[tracing::instrument(skip(self), level = Level::DEBUG)]
+    #[instrument(skip(self), level = Level::DEBUG)]
     fn sign(&self, unsigned_token: &UserToken) -> DomainResl<String> {
         let now = OffsetDateTime::now_utc();
 
@@ -70,7 +72,7 @@ impl TokenCodec for JwtCodec {
             .trace_error()
     }
 
-    #[tracing::instrument(skip(self), level = Level::DEBUG)]
+    #[instrument(skip(self), level = Level::DEBUG)]
     fn parse(&self, signed_token: &str) -> DomainResl<UserToken> {
         let validation = Validation::default();
 

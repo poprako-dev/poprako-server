@@ -1,2 +1,2 @@
-mod harn;
-mod http;
+pub mod harness;
+pub mod http;

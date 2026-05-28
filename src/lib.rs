@@ -1,5 +1,6 @@
-mod api;
+pub mod api;
+pub mod config;
 mod domain;
-mod infrastructure;
+pub mod infrastructure;
 mod usecase;
 mod util;

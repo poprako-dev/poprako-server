@@ -1,3 +1,5 @@
+use async_trait::async_trait;
+
 use crate::domain::model::aggregate::user::{UserAggr, UserCredential, UserForm};
 use crate::domain::result::DomainResl;
 
@@ -5,7 +7,7 @@ use crate::domain::result::DomainResl;
 ///
 /// Each method takes an immutable `&self` reference, suitable for
 /// non-transactional queries backed by a connection pool.
-#[async_trait::async_trait]
+#[async_trait]
 pub trait UserQeury {
     /// Returns the user with the given ID, or an expected error if not found.
     async fn get_by_id(&self, id: &str) -> DomainResl<UserAggr>;
@@ -21,7 +23,7 @@ pub trait UserQeury {
 /// [`Transactional::run_in_transaction`](crate::domain::query::Transactional::run_in_transaction).
 ///
 /// Takes `&mut self` to enforce single-writer semantics within a transaction.
-#[async_trait::async_trait]
+#[async_trait]
 pub trait UserQeuryMut {
     /// Creates a new user from the registration form inside a transaction.
     async fn create(&mut self, form: UserForm) -> DomainResl<UserAggr>;

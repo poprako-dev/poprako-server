@@ -1,3 +1,4 @@
+use async_trait::async_trait;
 use std::time::Duration;
 
 use anyhow::Context;
@@ -14,6 +15,7 @@ use crate::domain::external::image_pool::{ImageDelete, ImageGet, ImagePut};
 use crate::domain::result::{DomainErr, DomainResl};
 use crate::util::err::ErrorTrace as _;
 use tracing::Level;
+use tracing::instrument;
 
 // ---------------------------------------------------------------------------
 // R2OssClient
@@ -29,25 +31,25 @@ use tracing::Level;
 /// - `R2_BUCKET_NAME`    — required
 /// - `R2_CUSTOM_DOMAIN`  — required for GET URL generation
 #[derive(Clone)]
-pub struct R2ImagePool {
+pub struct OssImagePool {
     client: Client,
     bucket: String,
     domain: String,
 }
 
-impl R2ImagePool {
-    pub fn from_env() -> anyhow::Result<Self> {
+impl OssImagePool {
+    pub fn from_env_r2() -> anyhow::Result<Self> {
         let account_id = std::env::var("R2_ACCOUNT_ID")
-            .context("[R2OssClient::new] R2_ACCOUNT_ID is not set")?;
+            .with_context(|| "[R2OssClient::from_env] R2_ACCOUNT_ID is not set")?;
         let access_key_id = std::env::var("R2_ACCESS_KEY_ID")
-            .context("[R2OssClient::new] R2_ACCESS_KEY_ID is not set")?;
+            .with_context(|| "[R2OssClient::from_env] R2_ACCESS_KEY_ID is not set")?;
         let secret_access_key = std::env::var("R2_SECRET_ACCESS_KEY")
-            .context("[R2OssClient::new] R2_SECRET_ACCESS_KEY is not set")?;
+            .with_context(|| "[R2OssClient::from_env] R2_SECRET_ACCESS_KEY is not set")?;
         let region = std::env::var("R2_REGION").unwrap_or_else(|_| "auto".to_string());
         let bucket = std::env::var("R2_BUCKET_NAME")
-            .context("[R2OssClient::new] R2_BUCKET_NAME is not set")?;
+            .with_context(|| "[R2OssClient::from_env] R2_BUCKET_NAME is not set")?;
         let domain = std::env::var("R2_CUSTOM_DOMAIN")
-            .context("[R2OssClient::new] R2_CUSTOM_DOMAIN is not set")?;
+            .with_context(|| "[R2OssClient::from_env] R2_CUSTOM_DOMAIN is not set")?;
 
         let endpoint = format!("https://{}.r2.cloudflarestorage.com", account_id);
 
@@ -64,7 +66,7 @@ impl R2ImagePool {
             bucket = %bucket,
             domain = %domain,
             endpoint = %endpoint,
-            "[R2OssClient::new] configured",
+            "[R2ImagePool::from_env] configured",
         );
 
         Ok(Self {
@@ -79,9 +81,9 @@ impl R2ImagePool {
 // ImageGet
 // ---------------------------------------------------------------------------
 
-#[async_trait::async_trait]
-impl ImageGet for R2ImagePool {
-    #[tracing::instrument(skip(self), level = Level::DEBUG)]
+#[async_trait]
+impl ImageGet for OssImagePool {
+    #[instrument(skip(self), level = Level::DEBUG)]
     async fn get_signed(&self, key: &str) -> DomainResl<Url> {
         if self.domain.is_empty() {
             return Err(DomainErr::unrecoverable(
@@ -105,9 +107,9 @@ impl ImageGet for R2ImagePool {
 // ImagePut
 // ---------------------------------------------------------------------------
 
-#[async_trait::async_trait]
-impl ImagePut for R2ImagePool {
-    #[tracing::instrument(skip(self), level = Level::DEBUG)]
+#[async_trait]
+impl ImagePut for OssImagePool {
+    #[instrument(skip(self), level = Level::DEBUG)]
     async fn put_signed(&self, key: &str) -> DomainResl<Url> {
         const EXPIRATION: Duration = Duration::from_secs(600); // 10 minutes
 
@@ -154,9 +156,9 @@ impl ImagePut for R2ImagePool {
 // ImageDelete
 // ---------------------------------------------------------------------------
 
-#[async_trait::async_trait]
-impl ImageDelete for R2ImagePool {
-    #[tracing::instrument(skip(self), level = Level::DEBUG)]
+#[async_trait]
+impl ImageDelete for OssImagePool {
+    #[instrument(skip(self), level = Level::DEBUG)]
     async fn delete_batch(&self, keys: &[&str]) -> DomainResl<()> {
         const MAX_RETRY: usize = 3;
         const RETRY_DELAY: Duration = Duration::from_secs(1);

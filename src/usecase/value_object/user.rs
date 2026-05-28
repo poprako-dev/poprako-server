@@ -1,8 +1,11 @@
+use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
+
 use crate::domain::external::image_pool::ImageGet;
 use crate::domain::model::aggregate::user::UserAggr;
 use crate::util::time::ToUnixMilli as _;
 
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct UserBase {
     pub id: String,
 
@@ -46,7 +49,7 @@ impl UserBase {
     }
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct SignUpUserParams {
     pub qid: String,
     pub nickname: String,
@@ -54,8 +57,8 @@ pub struct SignUpUserParams {
     pub invitation_code: String,
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
-pub struct SignUprUserReply {
+#[derive(Debug, Serialize, ToSchema)]
+pub struct SignUpUserReply {
     pub user_id: String,
     pub token: String,
 }

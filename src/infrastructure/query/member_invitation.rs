@@ -1,3 +1,4 @@
+use async_trait::async_trait;
 use diesel::prelude::*;
 use diesel_async::AsyncPgConnection;
 use diesel_async::RunQueryDsl;
@@ -59,7 +60,7 @@ trait MemberInvitationQuery: domain_query::member_invitation::MemberInvitationQu
 
 // ── impls ──────────────────────────────────────────────────────────────────
 
-#[async_trait::async_trait]
+#[async_trait]
 impl<'c> domain_query::member_invitation::MemberInvitationQueryMut for TransactionalQuery<'c> {
     async fn get_pending_by_invitee_qid(
         &mut self,

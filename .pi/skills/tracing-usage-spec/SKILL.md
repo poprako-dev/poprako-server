@@ -111,6 +111,6 @@ per-operation observability.
 
 ## Relationship to thirdparty-macro-usage-spec
 
-The `thirdparty-macro-usage-spec` skill governs **how** macros are written
-(fully qualified paths). This skill governs **where** `#[tracing::instrument]`
-belongs. Both apply when working with `#[tracing::instrument]`.
+The `thirdparty-macro-usage-spec` skill governs **how** macros are imported
+(`use` imports with bare names). This skill governs **where** `#[instrument]`
+belongs. Both apply when working with `#[instrument]`.

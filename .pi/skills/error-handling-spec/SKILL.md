@@ -262,25 +262,41 @@ Constructors fall into two categories with different rules.
 - No `trace_*` calls
 - These cannot fail — if they do, it's a programmer error that panics
 
-### Infrastructure Constructors (`Query::new`, `R2OssClient::from_env`)
+### Infrastructure Constructors (`Query::new`, `R2ImagePool::from_env`, `JwtCodec::from_env`)
 
 - No `#[tracing::instrument]`
 - No `trace_*` calls
 - Return `anyhow::Result<Self>` — errors are flat construction failures
-- **Every `.context()` message must carry `[Struct::new]` prefix**:
+- **Always use `.with_context()` (never `.context()`)** — the closure form saves a
+  heap allocation for the error message string on the happy path.
+- **Every `.with_context()` message must carry `[Struct::method]` prefix**:
   ```rust
-  .context("[R2OssClient::new] R2_ACCOUNT_ID is not set")?
-  .context("[R2OssClient::new] R2_BUCKET_NAME is not set")?
+  .with_context(|| "[R2ImagePool::from_env] R2_ACCOUNT_ID is not set")?
+  .with_context(|| "[R2ImagePool::from_env] R2_BUCKET_NAME is not set")?
   ```
 - These will **panic immediately in `main()`**, so tracing is unnecessary —
   the process hasn't started serving yet
-- Still log a debug message on success with `[Struct::new]` prefix:
+- Still log a debug message on success with `[Struct::method]` prefix:
   ```rust
   tracing::debug!(
       bucket = %bucket,
       domain = %domain,
-      "[R2OssClient::new] configured",
+      "[R2ImagePool::from_env] configured",
   );
+  ```
+
+### API / Server Constructor (`server::serve`)
+
+- Returns `anyhow::Result<()>` — server bootstrap errors are fatal
+- **Always use `.with_context()` (never `.context()`)**:
+  ```rust
+  let listener = TcpListener::bind(&addr)
+      .await
+      .with_context(|| format!("[server::serve] failed to bind listener on {addr:?}"))?;
+
+  axum::serve(listener, app)
+      .await
+      .with_context(|| "[server::serve] server error")
   ```
 
 ---
@@ -352,12 +368,17 @@ DomainErr::unrecoverable(format!("error getting connection: {}", e))
 let err = DomainErr::expected_argument(trl("x")).trace_debug();
 return Err(err).trace_debug();  // second trace is redundant
 
+// ❌ .context() on anyhow::Result — use .with_context() always
+let val = std::env::var("KEY").context("[Struct::method] KEY is not set")?;
+
 // ❌ Instrument on constructor
-#[tracing::instrument]
+use tracing::instrument;
+#[instrument]
 pub fn new(qid: String, ...) -> Self { ... }
 
 // ❌ Instrument on pure domain logic
-#[tracing::instrument]
+use tracing::instrument;
+#[instrument]
 pub fn verify_password(&self, password: &str) -> bool { ... }
 ```
 

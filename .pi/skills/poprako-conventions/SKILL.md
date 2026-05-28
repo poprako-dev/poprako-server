@@ -16,13 +16,15 @@ the actual trait impls there.
 Pattern: `infrastructure/query/user.rs` defines marker traits and their impls:
 
 ```rust
+use async_trait::async_trait;
+
 trait UserQuery: domain_query::user::UserQeury {}
 trait UserQeuryMut: domain_query::user::UserQeuryMut {}
 
 impl UserQuery for Query {}
 impl<'c> UserQeuryMut for TransactionalQuery<'c> {}
 
-#[async_trait::async_trait]
+#[async_trait]
 impl domain_query::user::UserQeury for Query {
     async fn get_by_id(&self, id: &str) -> DomainResl<UserAggr> {
         let mut conn = self.pool.get()...;
@@ -30,7 +32,7 @@ impl domain_query::user::UserQeury for Query {
     }
 }
 
-#[async_trait::async_trait]
+#[async_trait]
 impl<'c> domain_query::user::UserQeuryMut for TransactionalQuery<'c> {
     async fn create(&mut self, form: UserForm) -> DomainResl<UserAggr> {
         create(self.conn, &form).await
@@ -61,6 +63,8 @@ without the standard suffix (`UserCredential`).
 
 **Do:**
 ```rust
+use diesel::prelude::*;
+
 #[derive(Insertable)]
 #[diesel(table_name = schema::t_user)]
 pub struct UserEntry { ... }
@@ -86,6 +90,8 @@ All database columns use the `f_` prefix (e.g., `f_id`, `f_nickname`).
 Entity struct fields mirror this prefix exactly:
 
 ```rust
+use diesel::prelude::*;
+
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = schema::t_user)]
 pub struct UserRow {
@@ -141,6 +147,8 @@ define a local `#[derive(Queryable)] struct Row { ... }` instead of:
 
 **Do:**
 ```rust
+use diesel::prelude::*;
+
 #[derive(Queryable)]
 struct Row {
     f_qid: String,
@@ -210,7 +218,9 @@ pub async fn create(conn: &mut AsyncPgConnection, form: &UserForm) -> DomainResl
 
 This keeps the `Query` / `TransactionalQuery` impl blocks thin:
 ```rust
-#[async_trait::async_trait]
+use async_trait::async_trait;
+
+#[async_trait]
 impl domain_query::user::UserQeury for Query {
     async fn get_by_id(&self, id: &str) -> DomainResl<UserAggr> {
         let mut conn = self.pool.get().await...?;
@@ -218,7 +228,7 @@ impl domain_query::user::UserQeury for Query {
     }
 }
 
-#[async_trait::async_trait]
+#[async_trait]
 impl<'c> domain_query::user::UserQeuryMut for TransactionalQuery<'c> {
     async fn create(&mut self, form: UserForm) -> DomainResl<UserAggr> {
         create(self.conn, &form).await

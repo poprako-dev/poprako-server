@@ -1,3 +1,5 @@
+error-internal = 服务器内部错误
+
 error-user-not-found = 该用户不存在
 error-no-pending-invitation = 不存在待处理的邀请
 error-invitation-not-found = 邀请记录不存在
