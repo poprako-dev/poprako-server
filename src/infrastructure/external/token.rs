@@ -1,5 +1,5 @@
+use anyhow::Context;
 use jsonwebtoken::{DecodingKey, EncodingKey, Header, TokenData, Validation, decode, encode};
-use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 use tracing::Level;
 
@@ -8,7 +8,7 @@ use crate::domain::model::aggregate::user::UserToken;
 use crate::domain::result::{DomainErr, DomainResl};
 use crate::util::err::ErrorTrace as _;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
 struct Claims {
     /// Subject — the user id.
     sub: String,
@@ -27,12 +27,25 @@ pub struct JwtCodec {
 }
 
 impl JwtCodec {
-    pub fn new(secret_key: String, expiration_seconds: i64) -> Self {
-        Self {
+    pub fn from_env() -> anyhow::Result<Self> {
+        let secret_key = std::env::var("JWT_SECRET_KEY")
+            .context("[JwtCodec::from_env] JWT_SECRET_KEY is not set")?;
+        let expiration_hours: i64 = std::env::var("JWT_EXPIRATION_HOURS")
+            .context("[JwtCodec::from_env] JWT_EXPIRATION_HOURS is not set")?
+            .parse()
+            .context("[JwtCodec::from_env] JWT_EXPIRATION_HOURS must be a valid integer")?;
+        let expiration_seconds = expiration_hours * 3600;
+
+        tracing::debug!(
+            expiration_hours = %expiration_hours,
+            "[JwtCodec::from_env] configured",
+        );
+
+        Ok(Self {
             expiration_seconds,
             encoding_key: EncodingKey::from_secret(secret_key.as_bytes()),
             decoding_key: DecodingKey::from_secret(secret_key.as_bytes()),
-        }
+        })
     }
 }
 

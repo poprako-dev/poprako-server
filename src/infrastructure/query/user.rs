@@ -4,7 +4,6 @@ use diesel_async::RunQueryDsl;
 use time::OffsetDateTime;
 
 use tracing::Level;
-use tracing::instrument;
 
 use crate::domain::model::aggregate::user::{UserAggr, UserCredential, UserForm};
 use crate::domain::query as domain_query;
@@ -17,7 +16,7 @@ use crate::infrastructure::query::schema::t_user::dsl::*;
 use crate::util::err::ErrorTrace as _;
 use crate::util::i18n::trl;
 
-#[instrument(skip(conn), level = Level::DEBUG)]
+#[tracing::instrument(skip(conn), level = Level::DEBUG)]
 pub async fn get_by_id(conn: &mut AsyncPgConnection, id: &str) -> DomainResl<UserAggr> {
     let info: UserInfo = t_user
         .filter(f_id.eq(id))

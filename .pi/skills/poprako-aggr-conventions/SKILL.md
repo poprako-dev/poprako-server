@@ -2,7 +2,7 @@
 name: poprako-aggr-conventions
 description: |
   Conventions for the domain aggregate layer in poprako-r.
-  Use whenever writing or modifying code under src/domain/model/aggr/.
+  Use whenever writing or modifying code under src/domain/model/aggregate/.
 ---
 
 # Poprako-r Aggregate Conventions
@@ -14,11 +14,11 @@ All domain aggregates fall into exactly one of two categories.
 ### 1. Read-model aggregates (query outputs)
 
 Returned from the query layer. All fields are `pub` for ergonomic reading.
-No constructor — created by `From<EntityRow>` impls in `infra/query/entity/`.
+No constructor — created by `From<EntityRow>` impls in `infrastructure/query/entity/`.
 
 ```rust
-// domain/model/aggr/user.rs
-pub struct User {
+// domain/model/aggregate/user.rs
+pub struct UserAggr {
     pub id: String,
     pub qid: String,
     pub nickname: String,
@@ -27,7 +27,7 @@ pub struct User {
 ```
 
 **Do NOT** add `new()` constructors. Construction happens exclusively through
-`From<EntityRow> for Aggregate` conversions in the infra entity layer.
+`From<EntityRow> for Aggregate` conversions in the infrastructure entity layer.
 
 **OK to have** domain methods on read aggregates:
 ```rust
@@ -46,8 +46,8 @@ Used as input parameters to query trait methods (`create`, `update`, etc.).
 allowed way to build them from outside the defining module.
 
 ```rust
-// domain/model/aggr/user.rs
-impl User {
+// domain/model/aggregate/user.rs
+impl UserAggr {
     pub fn generate_id() -> String {
         format!("user-{}", uuid::Uuid::now_v7())
     }
@@ -126,15 +126,15 @@ pulled and published.
 
 ## File organization
 
-- One file per aggregate family under `domain/model/aggr/`
-- Co-locate related types: `User`, `UserToken`, `UserCredential`, `UserForm`,
+- One file per aggregate family under `domain/model/aggregate/`
+- Co-locate related types: `UserAggr`, `UserToken`, `UserCredential`, `UserForm`,
   `UserInfoUpdate` all live in `user.rs`
 - `Form` suffix for creation inputs (`UserForm`, `MemberForm`)
 - `Update` suffix for PUT update inputs (`UserInfoUpdate`)
-- No suffix for read aggregates (`User`, `Member`, `MemberInvitation`)
+- No suffix for read aggregates (`UserAggr`, `Member`, `MemberInvitation`)
 
 ## `From` conversions
 
 `From<EntityRow> for Aggregate` conversions live in the **entity** module
-(`infra/query/entity/user.rs`), **not** in the aggr module. The domain layer
-must not know about Diesel entity types.
+(`infrastructure/query/entity/user.rs`), **not** in the aggregate module.
+The domain layer must not know about Diesel entity types.

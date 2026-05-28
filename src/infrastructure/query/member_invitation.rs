@@ -24,7 +24,9 @@ pub async fn get_pending_by_invitee_qid(
         .first(conn)
         .await
         .optional()?
-        .ok_or(DomainErr::expected_argument(trl("error-no-pending-invitation")))
+        .ok_or(DomainErr::expected_argument(trl(
+            "error-no-pending-invitation",
+        )))
         .trace_debug()?;
 
     Ok(row.into())
@@ -40,7 +42,9 @@ pub async fn mark_as_used(conn: &mut AsyncPgConnection, id: &str) -> DomainResl<
         .await?;
 
     if rows_affected == 0 {
-        return Err(DomainErr::expected_argument(trl("error-invitation-not-found")))
+        return Err(DomainErr::expected_argument(trl(
+            "error-invitation-not-found",
+        )))
         .trace_debug();
     }
 

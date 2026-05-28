@@ -2,7 +2,6 @@ pub mod member;
 pub mod member_invitation;
 pub mod user;
 
-use async_trait::async_trait;
 use futures_util::future::BoxFuture;
 
 use crate::domain::query::member::MemberQueryMut;
@@ -15,7 +14,7 @@ pub trait TransactionalQuery:
 {
 }
 
-#[async_trait]
+#[async_trait::async_trait]
 pub trait Transactional: Send + Sync {
     // Context is the provider that gives out queries with transaction context injected.
     type Query<'a>: TransactionalQuery + 'a

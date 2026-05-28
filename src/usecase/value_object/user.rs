@@ -1,11 +1,9 @@
-use crate::domain::external::oss::OssGetSigner;
+use crate::domain::external::image_pool::ImageGet;
 use crate::domain::model::aggregate::user::UserAggr;
 use crate::util::time::ToUnixMilli as _;
 
-use serde::{Deserialize, Serialize};
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct UserVal {
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+pub struct UserBase {
     pub id: String,
 
     pub nickname: String,
@@ -21,20 +19,25 @@ pub struct UserVal {
     pub updated_at: i64,
 }
 
-impl UserVal {
-    pub fn from_aggr<S>(aggr: UserAggr, signer: S) -> Self
+impl UserBase {
+    pub async fn from_aggr<S>(aggr: UserAggr, signer: &S) -> Self
     where
-        S: OssGetSigner,
+        S: ImageGet,
     {
+        let avatar_url = match aggr.avatar_uploaded {
+            true => signer
+                .get_signed(&aggr.avatar_key)
+                .await
+                .ok()
+                .map(|url| url.to_string()),
+            false => None,
+        };
+
         Self {
             id: aggr.id,
             qid: aggr.qid,
             nickname: aggr.nickname,
-            avatar_url: aggr
-                .avatar_uploaded
-                .then(|| signer.sign_get(&aggr.avatar_key))
-                .flatten()
-                .map(|url| url.to_string()),
+            avatar_url,
             is_sadmin: aggr.is_sadmin,
             last_active_at: aggr.last_active_at.to_unix_milli(),
             created_at: aggr.created_at.to_unix_milli(),

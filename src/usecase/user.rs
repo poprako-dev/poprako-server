@@ -28,7 +28,9 @@ where
 
                 // 2. Validate the invitation code.
                 if !invitation.verify_code(&params.invitation_code) {
-                    return Err(DomainErr::expected_argument(trl("error-invalid-invitation-code")))
+                    return Err(DomainErr::expected_argument(trl(
+                        "error-invalid-invitation-code",
+                    )))
                     .trace_debug();
                 }
 
@@ -40,6 +42,7 @@ where
                     UserForm::new(params.qid.clone(), params.nickname.clone(), password_hash);
 
                 // Push domain event (publish happens after commit).
+                // TODO: handle this event.
                 user_form.push_event(DomainEvent::UserRegistered(UserRegisteredEvent {
                     team_id: invitation.team_id.clone(),
                     invitor_id: invitation.invitor_id.clone(),
