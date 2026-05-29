@@ -1,7 +1,7 @@
 pub mod authorization;
 pub mod user;
 
-pub use result::{HttpError, HttpResl};
+pub use result::{HttpError, HttpResult};
 
 mod result {
     use axum::Json;
@@ -12,7 +12,7 @@ mod result {
     use utoipa::ToSchema;
 
     use crate::domain::result::{DomainError, ExpectedVariant};
-    use crate::usecase::result::UseCaseError;
+    use crate::usecase::result::{UseCaseError, UseCaseResult};
     use crate::util::i18n::trl;
     use crate::util::rename::StdResult;
 
@@ -116,12 +116,29 @@ mod result {
         }
     }
 
-    pub type HttpResl<T> = StdResult<HttpResponse<T>, HttpError>;
+    pub type HttpResult<T> = StdResult<HttpResponse<T>, HttpError>;
 
-    pub fn accept<T>(data: T) -> HttpResl<T>
+    pub fn accept<T>(data: T) -> HttpResult<T>
     where
         T: Serialize,
     {
         Ok(HttpResponse::from(data))
+    }
+
+    pub trait Accept {
+        type Data: Serialize;
+
+        fn accept(self) -> HttpResult<Self::Data>;
+    }
+
+    impl<T> Accept for T
+    where
+        T: Serialize,
+    {
+        type Data = T;
+
+        fn accept(self) -> HttpResult<Self::Data> {
+            accept(self)
+        }
     }
 }
