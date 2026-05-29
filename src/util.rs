@@ -18,7 +18,7 @@ pub mod time {
 }
 
 pub mod err {
-    use crate::util::rename::StdResl;
+    use crate::util::rename::StdResult;
 
     /// Emits a [`tracing`] event when a `Result` is `Err`, then passes the
     /// result through unchanged.
@@ -42,7 +42,7 @@ pub mod err {
         fn trace_error(self) -> Self;
     }
 
-    impl<T, E> ErrorTrace for StdResl<T, E>
+    impl<T, E> ErrorTrace for StdResult<T, E>
     where
         E: std::fmt::Debug + std::fmt::Display,
     {
@@ -70,7 +70,7 @@ pub mod err {
 }
 
 pub mod rename {
-    pub type StdResl<T, E> = std::result::Result<T, E>;
+    pub type StdResult<T, E> = std::result::Result<T, E>;
 }
 
 pub mod i18n {

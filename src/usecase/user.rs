@@ -1,27 +1,30 @@
 use futures_util::FutureExt as _;
 use tracing::instrument;
 
-use crate::domain::actor::user::{hash_password, sign_token};
+use crate::domain::compound::user::{hash_password, sign_token};
+use crate::domain::effect::{Effect as _, EffectSink};
 use crate::domain::model::aggregate::member::MemberForm;
 use crate::domain::model::aggregate::user::{UserForm, UserToken};
-use crate::domain::model::event::{DomainEvent, EventSink, user::UserRegisteredEvent};
+use crate::domain::model::event::{
+    Event, EventBatch, EventEmit, EventSink, user::UserSignedUpEvent,
+};
 use crate::domain::query::Transactional;
 use crate::domain::query::member::MemberQueryMut;
 use crate::domain::query::member_invitation::MemberInvitationQueryMut;
 use crate::domain::query::user::UserQeuryMut;
-use crate::domain::result::DomainErr;
-use crate::usecase::result::UseCaseResl;
+use crate::domain::result::DomainError;
+use crate::usecase::result::UseCaseResult;
 use crate::usecase::value_object::user::{SignUpUserParams, SignUpUserReply};
 use crate::util::err::ErrorTrace as _;
 use crate::util::i18n::trl;
 
 #[instrument(skip(harn))]
-pub async fn sign_up_user<H>(harn: &H, params: SignUpUserParams) -> UseCaseResl<SignUpUserReply>
+pub async fn sign_up_user<H>(harn: &H, params: SignUpUserParams) -> UseCaseResult<SignUpUserReply>
 where
-    H: Clone + Transactional,
+    H: Clone + Transactional + EffectSink + Send + Sync,
 {
     // Run the core registration logic inside a database transaction.
-    let user_id: String = harn
+    let (user_id, events): (String, Vec<Event>) = harn
         .run_in_transaction(move |query| {
             async move {
                 // 1. Fetch pending invitation by invitee qid.
@@ -31,7 +34,7 @@ where
 
                 // 2. Validate the invitation code.
                 if !invitation.verify_code(&params.invitation_code) {
-                    return Err(DomainErr::expected_argument(trl(
+                    return Err(DomainError::expected_argument(trl(
                         "error-invalid-invitation-code",
                     )))
                     .trace_debug();
@@ -44,13 +47,15 @@ where
                 let mut user_form =
                     UserForm::new(params.qid.clone(), params.nickname.clone(), password_hash);
 
-                // Push domain event (publish happens after commit).
-                // TODO: handle this event.
-                user_form.push_event(DomainEvent::UserRegistered(UserRegisteredEvent {
+                // Push domain event (published after commit via effect sink).
+                user_form.push_event(Event::UserSignedUp(UserSignedUpEvent {
                     team_id: invitation.team_id.clone(),
                     invitor_id: invitation.invitor_id.clone(),
                     invitor_qid: invitation.invitee_qid.clone(),
                 }));
+
+                // Drain events before user_form is consumed by create().
+                let events = user_form.pull_events();
 
                 // 5. Create the user.
                 let user = UserQeuryMut::create(query, user_form).await?;
@@ -68,13 +73,17 @@ where
                 // 7. Mark the invitation as consumed.
                 query.mark_as_used(&invitation.id).await?;
 
-                Ok(user.id.clone())
+                Ok((user.id.clone(), events))
             }
             .boxed()
         })
         .await?;
 
-    // 7. Generate a signed token for the newly registered user.
+    // Publish events after successful transaction commit.
+    let mut batch = EventBatch(events);
+    batch.run_effect(harn).await;
+
+    // Generate a signed token for the newly registered user.
     let token = sign_token(&UserToken::new(user_id.clone()))?;
 
     Ok(SignUpUserReply { user_id, token })

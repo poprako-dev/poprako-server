@@ -1,6 +1,6 @@
 use std::mem;
 
-use crate::domain::model::event::{DomainEvent, EventEmit, EventSink};
+use crate::domain::model::event::{Event, EventEmit, EventSink};
 
 use time::OffsetDateTime;
 use uuid::Uuid;
@@ -62,7 +62,7 @@ pub struct UserForm {
 
     pub password_hash: String,
 
-    events: Vec<DomainEvent>,
+    events: Vec<Event>,
 }
 
 impl UserForm {
@@ -78,13 +78,13 @@ impl UserForm {
 }
 
 impl EventSink for UserForm {
-    fn push_event(&mut self, event: DomainEvent) {
+    fn push_event(&mut self, event: Event) {
         self.events.push(event);
     }
 }
 
 impl EventEmit for UserForm {
-    fn pull_events(&mut self) -> Vec<DomainEvent> {
+    fn pull_events(&mut self) -> Vec<Event> {
         // A swap-and-clear pattern to avoid cloning the events.
         mem::take(&mut self.events)
     }
