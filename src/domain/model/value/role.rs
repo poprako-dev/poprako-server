@@ -2,7 +2,7 @@
 /// assignment can have.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u32)]
-pub enum Role {
+pub enum RoleFlag {
     RawProvider = 1 << 0,
     Translator = 1 << 1,
     Proofreader = 1 << 2,
@@ -13,9 +13,9 @@ pub enum Role {
     Admin = 1 << 7,
 }
 
-impl Into<u32> for Role {
-    fn into(self) -> u32 {
-        self as u32
+impl From<RoleFlag> for u32 {
+    fn from(val: RoleFlag) -> Self {
+        val as u32
     }
 }
 
@@ -26,32 +26,32 @@ impl Into<u32> for Role {
 pub struct RoleMask(u32);
 
 impl RoleMask {
-    pub fn has_any_role(&self, roles: &[Role]) -> bool {
-        for role in roles {
-            if self.has_role(*role) {
+    pub fn has_any_role(&self, flags: &[RoleFlag]) -> bool {
+        for f in flags {
+            if self.has_role(*f) {
                 return true;
             }
         }
         false
     }
 
-    pub fn has_every_role(&self, roles: &[Role]) -> bool {
-        for role in roles {
-            if !self.has_role(*role) {
+    pub fn has_every_role(&self, flags: &[RoleFlag]) -> bool {
+        for f in flags {
+            if !self.has_role(*f) {
                 return false;
             }
         }
         true
     }
 
-    fn has_role(&self, role: Role) -> bool {
-        self.0 & (role as u32) != 0
+    fn has_role(&self, flag: RoleFlag) -> bool {
+        self.0 & (flag as u32) != 0
     }
 }
 
-impl From<Role> for RoleMask {
-    fn from(role: Role) -> Self {
-        Self(role as u32)
+impl From<RoleFlag> for RoleMask {
+    fn from(flag: RoleFlag) -> Self {
+        Self(flag as u32)
     }
 }
 

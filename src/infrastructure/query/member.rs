@@ -6,16 +6,16 @@ use time::OffsetDateTime;
 
 use crate::domain::model::aggregate::member::Member;
 use crate::domain::model::aggregate::member::MemberForm;
-use crate::domain::model::value::role::Role;
+use crate::domain::model::value::role::RoleFlag;
 use crate::domain::model::value::role::RoleMask;
 use crate::domain::query as domain_query;
-use crate::domain::result::DomainResl;
+use crate::domain::result::DomainResult;
 use crate::infrastructure::query::TransactionalQuery;
 use crate::infrastructure::query::entity::member::MemberEntry;
 use crate::infrastructure::query::entity::member::MemberRow;
 use crate::infrastructure::query::schema::t_member::dsl::*;
 
-pub async fn create(conn: &mut AsyncPgConnection, form: &MemberForm) -> DomainResl<Member> {
+pub async fn create(conn: &mut AsyncPgConnection, form: &MemberForm) -> DomainResult<Member> {
     let now = OffsetDateTime::now_utc();
     let roles = form.roles;
 
@@ -24,14 +24,14 @@ pub async fn create(conn: &mut AsyncPgConnection, form: &MemberForm) -> DomainRe
         f_user_id: form.user_id.clone(),
         f_user_nickname: form.user_nickname.clone(),
         f_team_id: form.team_id.clone(),
-        f_assigned_raw_provider_at: role_bit(&roles, Role::RawProvider.into()).then_some(now),
-        f_assigned_translator_at: role_bit(&roles, Role::Translator.into()).then_some(now),
-        f_assigned_proofreader_at: role_bit(&roles, Role::Proofreader.into()).then_some(now),
-        f_assigned_typesetter_at: role_bit(&roles, Role::Typesetter.into()).then_some(now),
-        f_assigned_redrawer_at: role_bit(&roles, Role::Redrawer.into()).then_some(now),
-        f_assigned_reviewer_at: role_bit(&roles, Role::Reviewer.into()).then_some(now),
-        f_assigned_publisher_at: role_bit(&roles, Role::Publisher.into()).then_some(now),
-        f_assigned_admin_at: role_bit(&roles, Role::Admin.into()).then_some(now),
+        f_assigned_raw_provider_at: role_bit(&roles, RoleFlag::RawProvider.into()).then_some(now),
+        f_assigned_translator_at: role_bit(&roles, RoleFlag::Translator.into()).then_some(now),
+        f_assigned_proofreader_at: role_bit(&roles, RoleFlag::Proofreader.into()).then_some(now),
+        f_assigned_typesetter_at: role_bit(&roles, RoleFlag::Typesetter.into()).then_some(now),
+        f_assigned_redrawer_at: role_bit(&roles, RoleFlag::Redrawer.into()).then_some(now),
+        f_assigned_reviewer_at: role_bit(&roles, RoleFlag::Reviewer.into()).then_some(now),
+        f_assigned_publisher_at: role_bit(&roles, RoleFlag::Publisher.into()).then_some(now),
+        f_assigned_admin_at: role_bit(&roles, RoleFlag::Admin.into()).then_some(now),
         f_created_at: now,
         f_updated_at: now,
     };
@@ -65,7 +65,7 @@ trait MemberQuery: domain_query::member::MemberQueryMut {}
 
 #[async_trait]
 impl<'c> domain_query::member::MemberQueryMut for TransactionalQuery<'c> {
-    async fn create(&mut self, form: MemberForm) -> DomainResl<Member> {
+    async fn create(&mut self, form: MemberForm) -> DomainResult<Member> {
         create(self.conn, &form).await
     }
 }

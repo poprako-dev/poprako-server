@@ -8,7 +8,7 @@ use futures_util::future::BoxFuture;
 use crate::domain::query::member::MemberQueryMut;
 use crate::domain::query::member_invitation::MemberInvitationQueryMut;
 use crate::domain::query::user::UserQeuryMut;
-use crate::domain::result::DomainResl;
+use crate::domain::result::DomainResult;
 
 /// Composite of all mutable query traits required inside a transaction.
 ///
@@ -35,8 +35,8 @@ pub trait Transactional {
     /// If `f` returns `Ok`, the transaction is committed. If `f` returns `Err`,
     /// the transaction is rolled back. The closure is boxed (→ `BoxFuture`) so it
     /// can cross `.await` boundaries on a multi-threaded Tokio runtime.
-    async fn run_in_transaction<F, T>(&self, f: F) -> DomainResl<T>
+    async fn run_in_transaction<F, T>(&self, f: F) -> DomainResult<T>
     where
         T: Send,
-        F: for<'a> FnOnce(&'a mut Self::Query<'a>) -> BoxFuture<'a, DomainResl<T>> + Send;
+        F: for<'a> FnOnce(&'a mut Self::Query<'a>) -> BoxFuture<'a, DomainResult<T>> + Send;
 }

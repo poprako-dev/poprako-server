@@ -6,7 +6,7 @@ use time::OffsetDateTime;
 
 use crate::domain::model::aggregate::member_invitation::MemberInvitation;
 use crate::domain::query as domain_query;
-use crate::domain::result::{DomainErr, DomainResl};
+use crate::domain::result::{DomainError, DomainResult};
 use crate::infrastructure::query::TransactionalQuery;
 use crate::infrastructure::query::entity::member_invitation::MemberInvitationRow;
 use crate::infrastructure::query::schema::t_member_invitation::dsl::*;
@@ -16,7 +16,7 @@ use crate::util::i18n::trl;
 pub async fn get_pending_by_invitee_qid(
     conn: &mut AsyncPgConnection,
     invitee_qid: &str,
-) -> DomainResl<MemberInvitation> {
+) -> DomainResult<MemberInvitation> {
     let row: MemberInvitationRow = t_member_invitation
         .filter(f_invitee_qid.eq(invitee_qid))
         .filter(f_pending.eq(true))
@@ -25,7 +25,7 @@ pub async fn get_pending_by_invitee_qid(
         .first(conn)
         .await
         .optional()?
-        .ok_or(DomainErr::expected_argument(trl(
+        .ok_or(DomainError::expected_argument(trl(
             "error-no-pending-invitation",
         )))
         .trace_debug()?;
@@ -33,7 +33,7 @@ pub async fn get_pending_by_invitee_qid(
     Ok(row.into())
 }
 
-pub async fn mark_as_used(conn: &mut AsyncPgConnection, id: &str) -> DomainResl<()> {
+pub async fn mark_as_used(conn: &mut AsyncPgConnection, id: &str) -> DomainResult<()> {
     let rows_affected = diesel::update(t_member_invitation.filter(f_id.eq(id)))
         .set((
             f_pending.eq(false),
@@ -43,7 +43,7 @@ pub async fn mark_as_used(conn: &mut AsyncPgConnection, id: &str) -> DomainResl<
         .await?;
 
     if rows_affected == 0 {
-        return Err(DomainErr::expected_argument(trl(
+        return Err(DomainError::expected_argument(trl(
             "error-invitation-not-found",
         )))
         .trace_debug();
@@ -65,11 +65,11 @@ impl<'c> domain_query::member_invitation::MemberInvitationQueryMut for Transacti
     async fn get_pending_by_invitee_qid(
         &mut self,
         invitee_qid: &str,
-    ) -> DomainResl<MemberInvitation> {
+    ) -> DomainResult<MemberInvitation> {
         get_pending_by_invitee_qid(self.conn, invitee_qid).await
     }
 
-    async fn mark_as_used(&mut self, id: &str) -> DomainResl<()> {
+    async fn mark_as_used(&mut self, id: &str) -> DomainResult<()> {
         mark_as_used(self.conn, id).await
     }
 }

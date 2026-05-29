@@ -11,10 +11,10 @@ mod result {
     use serde::Serialize;
     use utoipa::ToSchema;
 
-    use crate::domain::result::{DomainErr, ExpectedErr};
-    use crate::usecase::result::UseCaseErr;
+    use crate::domain::result::{DomainError, ExpectedVariant};
+    use crate::usecase::result::UseCaseError;
     use crate::util::i18n::trl;
-    use crate::util::rename::StdResl;
+    use crate::util::rename::StdResult;
 
     #[derive(Debug, Serialize, ToSchema)]
     pub struct HttpError {
@@ -27,14 +27,14 @@ mod result {
     }
 
     impl HttpError {
-        pub fn expected(variant: &ExpectedErr, message: &str) -> Self {
+        pub fn expected(variant: &ExpectedVariant, message: &str) -> Self {
             match variant {
-                ExpectedErr::Argument => Self {
+                ExpectedVariant::Argument => Self {
                     status: StatusCode::BAD_REQUEST,
                     code: 2,
                     message: Some(message.to_string()),
                 },
-                ExpectedErr::Authentication => Self {
+                ExpectedVariant::Authentication => Self {
                     status: StatusCode::UNAUTHORIZED,
                     code: 3,
                     message: Some(message.to_string()),
@@ -51,11 +51,11 @@ mod result {
         }
     }
 
-    impl From<UseCaseErr> for HttpError {
-        fn from(err: UseCaseErr) -> Self {
+    impl From<UseCaseError> for HttpError {
+        fn from(err: UseCaseError) -> Self {
             match err.as_ref() {
-                DomainErr::Expected { variant, message } => Self::expected(variant, message),
-                DomainErr::Unrecoverable { .. } => {
+                DomainError::Expected { variant, message } => Self::expected(variant, message),
+                DomainError::Unrecoverable { .. } => {
                     tracing::warn!("[HttpError::from<UseCaseErr>] Unrecoverable error concealed");
                     Self::internal(Some(trl("error-internal")))
                 }
@@ -116,7 +116,7 @@ mod result {
         }
     }
 
-    pub type HttpResl<T> = StdResl<HttpResponse<T>, HttpError>;
+    pub type HttpResl<T> = StdResult<HttpResponse<T>, HttpError>;
 
     pub fn accept<T>(data: T) -> HttpResl<T>
     where

@@ -17,13 +17,13 @@ use tracing::instrument;
 
 use crate::domain::query as domain_query;
 use crate::domain::query::Transactional;
-use crate::domain::result::{DomainErr, DomainResl};
+use crate::domain::result::{DomainError, DomainResult};
 use crate::util::err::ErrorTrace as _;
 
-impl From<diesel::result::Error> for DomainErr {
+impl From<diesel::result::Error> for DomainError {
     fn from(val: diesel::result::Error) -> Self {
         // NotFound is handled by each function with a contextual message; the rest become Unrecoverable.
-        let err = DomainErr::unrecoverable(val.to_string());
+        let err = DomainError::unrecoverable(val.to_string());
         tracing::error!("[trace_error] {}", err);
         err
     }
@@ -38,8 +38,7 @@ impl Query {
         let database_url = std::env::var("DATABASE_URL")
             .with_context(|| "[Query::from_env] DATABASE_URL is not set")?;
 
-        let manager =
-            AsyncDieselConnectionManager::<AsyncPgConnection>::new(database_url);
+        let manager = AsyncDieselConnectionManager::<AsyncPgConnection>::new(database_url);
 
         let pool = Pool::builder(manager)
             .build()
@@ -60,17 +59,17 @@ impl Transactional for Query {
     type Query<'a> = TransactionalQuery<'a>;
 
     #[instrument(skip(self, f), level = Level::DEBUG)]
-    async fn run_in_transaction<F, T>(&self, f: F) -> DomainResl<T>
+    async fn run_in_transaction<F, T>(&self, f: F) -> DomainResult<T>
     where
         T: Send, // Return value must cross .await boundaries; Tokio multi-threaded runtime requires Send
-        F: for<'a> FnOnce(&'a mut Self::Query<'a>) -> BoxFuture<'a, DomainResl<T>> + Send, // BoxFuture requires the closure to be Send
+        F: for<'a> FnOnce(&'a mut Self::Query<'a>) -> BoxFuture<'a, DomainResult<T>> + Send, // BoxFuture requires the closure to be Send
     {
         let mut conn = self
             .pool
             .get()
             .await
             .map_err(|e| {
-                DomainErr::unrecoverable(format!(
+                DomainError::unrecoverable(format!(
                     "[Query::run_in_transaction] error getting connection: {}",
                     e
                 ))

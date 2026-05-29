@@ -1,14 +1,14 @@
-pub mod actor;
+pub mod compound;
+pub mod effect;
 pub mod external;
-pub mod hook;
 pub mod model;
 pub mod query;
 
 pub mod result {
-    use crate::util::rename::StdResl;
+    use crate::util::rename::StdResult;
 
     #[derive(Debug)]
-    pub enum ExpectedErr {
+    pub enum ExpectedVariant {
         /// Validation / resource errors
         Argument,
         /// Authentication errors
@@ -20,9 +20,9 @@ pub mod result {
     /// - `Expected`: business-logic errors, the message is returned to the end user.
     /// - `Unrecoverable`: internal failures, the message is only used for logging.
     #[derive(Debug)]
-    pub enum DomainErr {
+    pub enum DomainError {
         Expected {
-            variant: ExpectedErr,
+            variant: ExpectedVariant,
             message: String,
         },
         Unrecoverable {
@@ -30,17 +30,17 @@ pub mod result {
         },
     }
 
-    impl DomainErr {
+    impl DomainError {
         pub fn expected_argument(msg: String) -> Self {
             Self::Expected {
-                variant: ExpectedErr::Argument,
+                variant: ExpectedVariant::Argument,
                 message: msg,
             }
         }
 
         pub fn expected_authentication(msg: String) -> Self {
             Self::Expected {
-                variant: ExpectedErr::Authentication,
+                variant: ExpectedVariant::Authentication,
                 message: msg,
             }
         }
@@ -50,11 +50,11 @@ pub mod result {
         }
     }
 
-    impl std::fmt::Display for DomainErr {
+    impl std::fmt::Display for DomainError {
         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
             write!(f, "{:?}", self)
         }
     }
 
-    pub type DomainResl<T> = StdResl<T, DomainErr>;
+    pub type DomainResult<T> = StdResult<T, DomainError>;
 }

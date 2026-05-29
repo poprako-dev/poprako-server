@@ -9,7 +9,7 @@ use tracing::instrument;
 
 use crate::domain::model::aggregate::user::{UserAggr, UserCredential, UserForm};
 use crate::domain::query as domain_query;
-use crate::domain::result::{DomainErr, DomainResl};
+use crate::domain::result::{DomainError, DomainResult};
 use crate::infrastructure::query::Query;
 use crate::infrastructure::query::TransactionalQuery;
 use crate::infrastructure::query::entity::user::UserEntry;
@@ -19,14 +19,14 @@ use crate::util::err::ErrorTrace as _;
 use crate::util::i18n::trl;
 
 #[instrument(skip(conn), level = Level::DEBUG)]
-pub async fn get_by_id(conn: &mut AsyncPgConnection, id: &str) -> DomainResl<UserAggr> {
+pub async fn get_by_id(conn: &mut AsyncPgConnection, id: &str) -> DomainResult<UserAggr> {
     let info: UserInfo = t_user
         .filter(f_id.eq(id))
         .select(UserInfo::as_select())
         .first(conn)
         .await
         .optional()?
-        .ok_or(DomainErr::expected_argument(trl("error-user-not-found")))
+        .ok_or(DomainError::expected_argument(trl("error-user-not-found")))
         .trace_debug()?;
 
     Ok(info.into())
@@ -35,7 +35,7 @@ pub async fn get_by_id(conn: &mut AsyncPgConnection, id: &str) -> DomainResl<Use
 pub async fn get_credential_by_qid(
     conn: &mut AsyncPgConnection,
     qid: &str,
-) -> DomainResl<UserCredential> {
+) -> DomainResult<UserCredential> {
     #[derive(Queryable)]
     struct Row {
         f_qid: String,
@@ -48,7 +48,7 @@ pub async fn get_credential_by_qid(
         .first(conn)
         .await
         .optional()?
-        .ok_or(DomainErr::expected_argument(trl("error-user-not-found")))
+        .ok_or(DomainError::expected_argument(trl("error-user-not-found")))
         .trace_debug()?;
 
     Ok(UserCredential {
@@ -57,7 +57,7 @@ pub async fn get_credential_by_qid(
     })
 }
 
-pub async fn create(conn: &mut AsyncPgConnection, form: &UserForm) -> DomainResl<UserAggr> {
+pub async fn create(conn: &mut AsyncPgConnection, form: &UserForm) -> DomainResult<UserAggr> {
     let now = OffsetDateTime::now_utc();
 
     let entry = UserEntry {
@@ -100,13 +100,13 @@ trait UserQeuryMut: domain_query::user::UserQeuryMut {}
 #[async_trait]
 impl domain_query::user::UserQeury for Query {
     #[instrument(skip(self), level = Level::DEBUG)]
-    async fn get_by_id(&self, id: &str) -> DomainResl<UserAggr> {
+    async fn get_by_id(&self, id: &str) -> DomainResult<UserAggr> {
         let mut conn = self
             .pool
             .get()
             .await
             .map_err(|e| {
-                DomainErr::unrecoverable(format!(
+                DomainError::unrecoverable(format!(
                     "[Query::get_by_id] error getting connection: {}",
                     e
                 ))
@@ -117,13 +117,13 @@ impl domain_query::user::UserQeury for Query {
     }
 
     #[instrument(skip(self), level = Level::DEBUG)]
-    async fn get_credentials_by_qid(&self, qid: &str) -> DomainResl<UserCredential> {
+    async fn get_credentials_by_qid(&self, qid: &str) -> DomainResult<UserCredential> {
         let mut conn = self
             .pool
             .get()
             .await
             .map_err(|e| {
-                DomainErr::unrecoverable(format!(
+                DomainError::unrecoverable(format!(
                     "[Query::get_credentials_by_qid] error getting connection: {}",
                     e
                 ))
@@ -134,13 +134,16 @@ impl domain_query::user::UserQeury for Query {
     }
 
     #[instrument(skip(self, form), level = Level::DEBUG)]
-    async fn create(&self, form: UserForm) -> DomainResl<UserAggr> {
+    async fn create(&self, form: UserForm) -> DomainResult<UserAggr> {
         let mut conn = self
             .pool
             .get()
             .await
             .map_err(|e| {
-                DomainErr::unrecoverable(format!("[Query::create] error getting connection: {}", e))
+                DomainError::unrecoverable(format!(
+                    "[Query::create] error getting connection: {}",
+                    e
+                ))
             })
             .trace_error()?;
 
@@ -150,7 +153,7 @@ impl domain_query::user::UserQeury for Query {
 
 #[async_trait]
 impl<'c> domain_query::user::UserQeuryMut for TransactionalQuery<'c> {
-    async fn create(&mut self, form: UserForm) -> DomainResl<UserAggr> {
+    async fn create(&mut self, form: UserForm) -> DomainResult<UserAggr> {
         create(self.conn, &form).await
     }
 }
