@@ -14,7 +14,7 @@ where
 
     tracing::info!("[server::serve] listening on {:?}", addr);
 
-    let app = router::new().with_state(harn);
+    let app = router::new(harn.clone()).with_state(harn);
 
     axum::serve(listener, app)
         .await

@@ -3,6 +3,7 @@ use tracing::instrument;
 
 use crate::domain::compound::user::{hash_password, sign_token};
 use crate::domain::effect::{Effect as _, EffectSink};
+use crate::domain::external::token::TokenCodec;
 use crate::domain::model::aggregate::member::MemberForm;
 use crate::domain::model::aggregate::user::{UserForm, UserToken};
 use crate::domain::model::event::{
@@ -21,7 +22,7 @@ use crate::util::i18n::trl;
 #[instrument(skip(harn))]
 pub async fn sign_up_user<H>(harn: &H, params: SignUpUserParams) -> UseCaseResult<SignUpUserReply>
 where
-    H: Clone + Transactional + EffectSink + Send + Sync,
+    H: Clone + Transactional + EffectSink + TokenCodec + Send + Sync,
 {
     // Run the core registration logic inside a database transaction.
     let (user_id, events): (String, Vec<Event>) = harn
@@ -84,7 +85,7 @@ where
     batch.run_effect(harn).await;
 
     // Generate a signed token for the newly registered user.
-    let token = sign_token(&UserToken::new(user_id.clone()))?;
+    let token = sign_token(harn, &UserToken::new(user_id.clone()))?;
 
     Ok(SignUpUserReply { user_id, token })
 }

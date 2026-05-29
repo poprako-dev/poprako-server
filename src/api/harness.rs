@@ -7,6 +7,8 @@ use tracing::instrument;
 
 use crate::domain::effect::EffectSink;
 use crate::domain::external::image_pool::{ImageDelete, ImageGet, ImagePut};
+use crate::domain::external::token::TokenCodec;
+use crate::domain::model::aggregate::user::UserToken;
 use crate::domain::model::event::EventEmit;
 use crate::domain::query::Transactional;
 use crate::domain::result::DomainResult;
@@ -89,6 +91,18 @@ impl ImageDelete for HarnessInner {
     }
 }
 
+impl TokenCodec for HarnessInner {
+    #[instrument(skip(self), level = Level::DEBUG)]
+    fn sign(&self, unsigned_token: &UserToken) -> DomainResult<String> {
+        self.jwt_codec.sign(unsigned_token)
+    }
+
+    #[instrument(skip(self), level = Level::DEBUG)]
+    fn parse(&self, signed_token: &str) -> DomainResult<UserToken> {
+        self.jwt_codec.parse(signed_token)
+    }
+}
+
 // ── Delegation impls on Harness (for usecase generic bounds) ───────────────
 
 #[async_trait]
@@ -115,5 +129,17 @@ impl EffectSink for Harness {
         E: EventEmit + Send,
     {
         self.effect_sink.handle(src).await
+    }
+}
+
+impl TokenCodec for Harness {
+    #[instrument(skip(self), level = Level::DEBUG)]
+    fn sign(&self, unsigned_token: &UserToken) -> DomainResult<String> {
+        self.inner.sign(unsigned_token)
+    }
+
+    #[instrument(skip(self), level = Level::DEBUG)]
+    fn parse(&self, signed_token: &str) -> DomainResult<UserToken> {
+        self.inner.parse(signed_token)
     }
 }
