@@ -25,7 +25,7 @@ use crate::infrastructure::effect::user::notify_invitor_handler;
 pub struct AsyncEffectSink {
     accepting: Arc<AtomicBool>,
 
-    entry: MAsyncTx<mpsc::Array<Event>>,
+    inlet: MAsyncTx<mpsc::Array<Event>>,
     shutdown: Mutex<Option<TxOneshot<()>>>,
     done: Mutex<Option<RxOneshot<()>>>,
 }
@@ -37,10 +37,10 @@ impl AsyncEffectSink {
     /// them to hardcoded effect handlers. The given `harn` is cloned for use
     /// by the background task.
     pub fn new(harn: Arc<HarnessInner>, buffer: usize) -> Self {
-        let (entry, outlet) = mpsc::bounded_async::<Event>(buffer);
+        let (inlet, outlet) = mpsc::bounded_async(buffer);
 
-        let (shutdown_entry, shutdown_outlet) = oneshot::oneshot::<()>();
-        let (done_entry, done_outlet) = oneshot::oneshot::<()>();
+        let (shutdown_inlet, shutdown_outlet) = oneshot::oneshot();
+        let (done_inlet, done_outlet) = oneshot::oneshot();
 
         let accepting = Arc::new(AtomicBool::new(true));
         let accepting_task = Arc::clone(&accepting);
@@ -52,15 +52,15 @@ impl AsyncEffectSink {
                 harn_task,
                 outlet,
                 shutdown_outlet,
-                done_entry,
+                done_inlet,
                 accepting_task,
             )
             .await;
         });
 
         Self {
-            entry,
-            shutdown: Mutex::new(Some(shutdown_entry)),
+            inlet,
+            shutdown: Mutex::new(Some(shutdown_inlet)),
             done: Mutex::new(Some(done_outlet)),
             accepting,
         }
@@ -78,8 +78,8 @@ impl AsyncEffectSink {
         }
 
         // Signal the background task to begin shutdown.
-        if let Some(entry) = self.shutdown.lock().unwrap().take() {
-            entry.send(());
+        if let Some(inlet) = self.shutdown.lock().unwrap().take() {
+            inlet.send(());
         }
 
         // Wait for the background task to finish draining.
@@ -103,7 +103,7 @@ impl EffectSink for AsyncEffectSink {
         }
 
         for event in src.pull_events() {
-            match self.entry.try_send(event) {
+            match self.inlet.try_send(event) {
                 Ok(()) => {}
                 Err(TrySendError::Full(ev)) => {
                     tracing::warn!(
@@ -129,7 +129,7 @@ async fn handle_task(
     harn: Arc<HarnessInner>,
     outlet: AsyncRx<mpsc::Array<Event>>,
     shutdown_outlet: RxOneshot<()>,
-    done_entry: TxOneshot<()>,
+    done_inlet: TxOneshot<()>,
     accepting: Arc<AtomicBool>,
 ) {
     // Main loop: receive and dispatch events.
@@ -157,7 +157,7 @@ async fn handle_task(
     }
 
     // Signal that drain is complete.
-    done_entry.send(());
+    done_inlet.send(());
 }
 
 // ── Dispatch ───────────────────────────────────────────────────────────────

@@ -1,9 +1,12 @@
 use axum::Json;
 use axum::extract::State;
+use cookie::Cookie;
+use cookie::SameSite;
 
 use crate::api::harness::Harness;
 use crate::api::http::handler::HttpResult;
-use crate::api::http::handler::result::Accept as _;
+use crate::api::http::handler::result::HttpResponse;
+use crate::api::http::middleware::AUTHORIZATION_COOKIE_NAME;
 use crate::usecase;
 use crate::usecase::value_object::user::{SignUpUserParams, SignUpUserReply};
 
@@ -11,5 +14,11 @@ pub async fn sign_up_user(
     State(harn): State<Harness>,
     Json(params): Json<SignUpUserParams>,
 ) -> HttpResult<SignUpUserReply> {
-    usecase::user::sign_up_user(&harn, params).await?.accept()
+    let reply = usecase::user::sign_up_user(&harn, params).await?;
+    let cookie = Cookie::build((AUTHORIZATION_COOKIE_NAME, format!("Bearer {}", reply.token)))
+        .path("/")
+        .http_only(true)
+        .same_site(SameSite::Lax)
+        .build();
+    Ok(HttpResponse::from(reply).with_cookie(&cookie))
 }

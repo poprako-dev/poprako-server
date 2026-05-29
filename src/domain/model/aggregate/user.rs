@@ -5,7 +5,7 @@ use crate::domain::model::event::{Event, EventEmit, EventSink};
 use time::OffsetDateTime;
 use uuid::Uuid;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct UserToken {
     pub user_id: String,
 }
