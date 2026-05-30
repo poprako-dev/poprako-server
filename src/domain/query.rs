@@ -5,8 +5,8 @@ pub mod user;
 use async_trait::async_trait;
 use futures_util::future::BoxFuture;
 
-use crate::domain::query::member::MemberQueryMut;
-use crate::domain::query::member_invitation::MemberInvitationQueryMut;
+use crate::domain::query::member::MemberQueryTransactional;
+use crate::domain::query::member_invitation::MemberInvitationQueryTransactional;
 use crate::domain::query::user::UserQeuryTransactional;
 use crate::domain::result::DomainResult;
 
@@ -14,8 +14,16 @@ use crate::domain::result::DomainResult;
 ///
 /// Must be `Send` because it is boxed inside [`Transactional::run_in_transaction`]
 /// and passed across `.await` boundaries on a multi-threaded Tokio runtime.
-pub trait TransactionalQuery:
-    Send + UserQeuryTransactional + MemberQueryMut + MemberInvitationQueryMut
+pub trait QueryTransactional:
+    Send + UserQeuryTransactional + MemberQueryTransactional + MemberInvitationQueryTransactional
+{
+}
+
+impl<T> QueryTransactional for T where
+    T: Send
+        + UserQeuryTransactional
+        + MemberQueryTransactional
+        + MemberInvitationQueryTransactional
 {
 }
 
@@ -26,7 +34,7 @@ pub trait TransactionalQuery:
 #[async_trait]
 pub trait Transactional {
     /// Provider that yields mutable queries with an active transaction context.
-    type Query<'a>: TransactionalQuery + 'a
+    type Query<'a>: QueryTransactional + 'a
     where
         Self: 'a;
 

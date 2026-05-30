@@ -32,7 +32,7 @@ pub trait UserQeury { ... }
 Private marker traits also get `///`:
 
 ```rust
-/// Blanket-impl marker: every [`TransactionalQuery`] is a
+/// Blanket-impl marker: every [`QueryTransactional`] is a
 /// [`MemberQueryMut`](crate::domain::query::member::MemberQueryMut).
 trait MemberQuery: domain_query::member::MemberQueryMut {}
 ```
@@ -114,7 +114,7 @@ compile-time link checking.
 | Link target | Syntax |
 |---|---|
 | Type in same crate | `` [`UserAggr`] `` |
-| Trait in same crate | `` [`TransactionalQuery`] `` |
+| Trait in same crate | `` [`QueryTransactional`] `` |
 | Method with path | `` [`run_in_transaction`](crate::domain::query::Transactional::run_in_transaction) `` |
 | Type from dependency | `` [`OffsetDateTime`](time::OffsetDateTime) `` |
 
@@ -129,15 +129,14 @@ compile-time link checking.
 - For mutable traits: mention `` **only** inside `Transactional::run_in_transaction` ``.
 
 ```rust
+use async_trait::async_trait;
+
 /// Mutable persistence contract for [`Member`](crate::domain::model::aggregate::member::Member),
-/// used **only** inside a transaction via [`TransactionalQuery`](crate::domain::query::TransactionalQuery).
+/// used **only** inside a transaction via [`QueryTransactional`](crate::domain::query::QueryTransactional).
 #[async_trait]
-pub trait MemberQueryMut {
+pub trait MemberQueryTransactional {
     /// Inserts a new member row from the creation form.
-    async fn create(
-        &mut self,
-        form: crate::domain::model::aggregate::member::MemberForm,
-    ) -> crate::domain::result::DomainResl<crate::domain::model::aggregate::member::Member>;
+    async fn create(&mut self, form: MemberForm) -> DomainResult<Member>;
 }
 ```
 
@@ -161,7 +160,7 @@ pub trait MemberQueryMut {
 - Private, blanket-impl markers. Comment format:
 
 ```rust
-/// Blanket-impl marker: every [`TransactionalQuery`] is a
+/// Blanket-impl marker: every [`QueryTransactional`] is a
 /// [`UserQeuryMut`](crate::domain::query::user::UserQeuryMut).
 trait UserQeuryMut: domain_query::user::UserQeuryMut {}
 ```
