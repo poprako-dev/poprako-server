@@ -11,12 +11,12 @@ use crate::domain::model::aggregate::user::{UserAggr, UserCredential, UserForm};
 use crate::domain::query::user::UserQeury;
 use crate::domain::query::user::UserQeuryTransactional;
 use crate::domain::result::{DomainError, DomainResult};
-use crate::execute_query;
 use crate::infrastructure::query::Query;
 use crate::infrastructure::query::QueryTransactional;
 use crate::infrastructure::query::entity::user::UserEntry;
 use crate::infrastructure::query::entity::user::UserInfo;
 use crate::infrastructure::query::schema::t_user::dsl::*;
+use crate::submit_query;
 use crate::util::err::ErrorTrace as _;
 use crate::util::i18n::trl;
 
@@ -92,12 +92,12 @@ pub async fn create(conn: &mut AsyncPgConnection, form: UserForm) -> DomainResul
 impl UserQeury for Query {
     #[instrument(skip(self), level = Level::DEBUG)]
     async fn get_credentials_by_qid(&self, qid: String) -> DomainResult<UserCredential> {
-        execute_query!(self.pool, get_credential_by_qid, qid)
+        submit_query!(self.pool, get_credential_by_qid, qid)
     }
 
     #[instrument(skip(self), level = Level::DEBUG)]
     async fn get_by_id(&self, id: String) -> DomainResult<UserAggr> {
-        execute_query!(self.pool, get_by_id, id)
+        submit_query!(self.pool, get_by_id, id)
     }
 }
 

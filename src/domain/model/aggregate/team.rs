@@ -1,6 +1,6 @@
 use time::OffsetDateTime;
 
-pub struct Team {
+pub struct TeamAggr {
     pub id: String,
 
     pub name: String,

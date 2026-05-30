@@ -13,6 +13,8 @@ pub mod result {
         Argument,
         /// Authentication errors
         Authentication,
+        /// Resource conflict errors (e.g. unique constraint violations)
+        Conflict,
     }
 
     /// Unified error type for the domain layer.
@@ -41,6 +43,13 @@ pub mod result {
         pub fn expected_authentication(msg: String) -> Self {
             Self::Expected {
                 variant: ExpectedVariant::Authentication,
+                message: msg,
+            }
+        }
+
+        pub fn expected_conflict(msg: String) -> Self {
+            Self::Expected {
+                variant: ExpectedVariant::Conflict,
                 message: msg,
             }
         }

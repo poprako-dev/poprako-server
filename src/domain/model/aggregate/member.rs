@@ -1,7 +1,7 @@
 use time::OffsetDateTime;
 use uuid::Uuid;
 
-use crate::domain::model::aggregate::team::Team;
+use crate::domain::model::aggregate::team::TeamAggr;
 use crate::domain::model::aggregate::user::UserAggr;
 use crate::domain::model::value::role::RoleMask;
 
@@ -12,7 +12,7 @@ pub struct Member {
     pub user: Option<UserAggr>,
 
     pub team_id: String,
-    pub team: Option<Team>,
+    pub team: Option<TeamAggr>,
 
     pub assigned_raw_provider_at: Option<OffsetDateTime>,
     pub assigned_translator_at: Option<OffsetDateTime>,

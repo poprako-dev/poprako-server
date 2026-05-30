@@ -112,5 +112,11 @@ per-operation observability.
 ## Relationship to thirdparty-macro-usage-spec
 
 The `thirdparty-macro-usage-spec` skill governs **how** macros are imported
-(`use` imports with bare names). This skill governs **where** `#[instrument]`
-belongs. Both apply when working with `#[instrument]`.
+and invoked:
+- `#[instrument]` uses `use tracing::instrument;` + bare name.
+- `tracing::error!`, `tracing::warn!`, `tracing::info!`, `tracing::debug!`
+  must use fully qualified paths at the call site — never imported into scope.
+
+This skill (`tracing-usage-spec`) governs **where** `#[instrument]`
+belongs. Both apply when working with `#[instrument]` and tracing event
+macros.

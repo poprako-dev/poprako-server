@@ -41,6 +41,11 @@ pub mod result {
                     code: 3,
                     message: Some(message.to_string()),
                 },
+                ExpectedVariant::Conflict => Self {
+                    status: StatusCode::CONFLICT,
+                    code: 4,
+                    message: Some(message.to_string()),
+                },
             }
         }
 

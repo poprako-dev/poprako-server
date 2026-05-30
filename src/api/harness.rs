@@ -38,7 +38,7 @@ impl Harness {
 }
 
 pub struct HarnessInner {
-    query: Query,
+    pub query: Query,
     jwt_codec: JwtCodec,
     image_pool: OssImagePool,
 }
