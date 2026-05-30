@@ -34,6 +34,17 @@ diesel::table! {
 }
 
 diesel::table! {
+    t_system_mail (id) {
+        id -> Text,
+        receiver_id -> Text,
+        title -> Text,
+        content -> Text,
+        read -> Bool,
+        created_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
     t_team (f_id) {
         f_id -> Text,
         f_name -> Text,
@@ -67,4 +78,4 @@ diesel::joinable!(t_member -> t_user (f_user_id));
 diesel::joinable!(t_member_invitation -> t_team (f_team_id));
 diesel::joinable!(t_member_invitation -> t_user (f_inviter_id));
 
-diesel::allow_tables_to_appear_in_same_query!(t_member, t_member_invitation, t_team, t_user,);
+diesel::allow_tables_to_appear_in_same_query!(t_member, t_member_invitation, t_system_mail, t_team, t_user,);

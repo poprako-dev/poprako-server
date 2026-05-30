@@ -1,5 +1,7 @@
 pub mod member;
 pub mod member_invitation;
+pub mod sys_mail;
+pub mod team;
 pub mod user;
 
 mod entity;
@@ -43,7 +45,7 @@ macro_rules! allocate_connection {
 /// get_by_id(conn.as_mut(), id).await
 /// ```
 #[macro_export]
-macro_rules! execute_query {
+macro_rules! submit_query {
     ($pool:expr, $fn:path $(, $arg:expr)* $(,)?) => {{
         let mut conn = $crate::allocate_connection!($pool, concat!("Query::", stringify!($fn)));
         $fn(conn.as_mut(), $($arg),*).await
@@ -63,13 +65,55 @@ use tracing::instrument;
 use crate::domain::query::Transactional;
 use crate::domain::result::{DomainError, DomainResult};
 use crate::util::err::ErrorTrace as _;
+use crate::util::i18n::trl;
 
+/// Converts a raw Diesel error into a structured [`DomainError`].
+///
+/// This is the single trace point for all Diesel-originated errors — every
+/// `?` on a Diesel result passes through this conversion, which performs both
+/// classification (Expected vs Unrecoverable) and structured observability
+/// (trace call with contextual fields).
 impl From<diesel::result::Error> for DomainError {
     fn from(val: diesel::result::Error) -> Self {
-        // NotFound is handled by each function with a contextual message; the rest become Unrecoverable.
-        let err = DomainError::unrecoverable(val.to_string());
-        tracing::error!("[trace_error] {}", err);
-        err
+        match &val {
+            // Unique violation → business conflict (user-facing i18n).
+            diesel::result::Error::DatabaseError(
+                diesel::result::DatabaseErrorKind::UniqueViolation,
+                information,
+            ) => {
+                tracing::debug!(
+                    constraint = %information.constraint_name().unwrap_or("<unknown>"),
+                    details = %information.message(),
+                    "[From<diesel::Error>] unique violation mapped to Expected::Conflict",
+                );
+
+                DomainError::expected_conflict(trl("error-already-exists"))
+            }
+
+            // NotFound is deliberately excluded — each query call site must
+            // call `.optional()?` and convert `None` to a contextual Expected
+            // error with `.ok_or(...)`.  Everything else is an internal failure.
+            diesel::result::Error::NotFound => {
+                tracing::error!(
+                    error = %val,
+                    "[From<diesel::Error>] unexpected NotFound converted to Unrecoverable",
+                );
+
+                DomainError::unrecoverable(format!(
+                    "[From<diesel::Error>] unexpected NotFound — a required row was not found: {}",
+                    val,
+                ))
+            }
+
+            _ => {
+                tracing::error!(
+                    error = %val,
+                    "[From<diesel::Error>] diesel error converted to Unrecoverable",
+                );
+
+                DomainError::unrecoverable(format!("[From<diesel::Error>] diesel error: {}", val,))
+            }
+        }
     }
 }
 
@@ -108,9 +152,10 @@ impl Transactional for Query {
         T: Send, // Return value must cross .await boundaries; Tokio multi-threaded runtime requires Send
         F: for<'a> FnOnce(&'a mut Self::Query<'a>) -> BoxFuture<'a, DomainResult<T>> + Send, // BoxFuture requires the closure to be Send
     {
-        let mut conn = allocate_connection!(self.pool, "Query::run_in_transaction");
+        let mut connection = allocate_connection!(self.pool, "Query::run_in_transaction");
 
-        conn.build_transaction()
+        connection
+            .build_transaction()
             .run(async move |conn| {
                 let mut harness = Self::build_transactional_query(conn);
                 f(&mut harness).await

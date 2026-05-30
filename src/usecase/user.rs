@@ -53,7 +53,7 @@ where
                 user_form.push_event(Event::UserSignedUp(UserSignedUpEvent {
                     team_id: invitation.team_id.clone(),
                     invitor_id: invitation.invitor_id.clone(),
-                    invitor_qid: invitation.invitee_qid.clone(),
+                    invitee_qid: params.qid.clone(),
                 }));
 
                 // 5. Create the user.
