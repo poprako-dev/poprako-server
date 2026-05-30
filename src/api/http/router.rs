@@ -1,25 +1,18 @@
 use axum::Router;
-use axum::middleware;
 use axum::routing::post;
 
 use crate::api::harness::Harness;
-use crate::api::http::handler;
-use crate::api::http::middleware::authorize;
+use crate::api::http::handler::authorization;
+use crate::api::http::middleware::{with_authorization, with_request_id};
 
 pub fn new(harn: Harness) -> Router<Harness> {
     // Public auth routes — no authorization required.
-    let auth_routes = Router::new().route(
-        "/api/v1/auth/register",
-        post(handler::authorization::sign_up_user),
-    );
+    let authorize_routes =
+        Router::new().route("/api/v1/auth/register", post(authorization::sign_up_user));
 
     // Protected routes — require a valid authorization token.
-    let protected_routes = Router::new()
-        // Future protected routes go here.
-        .layer(middleware::from_fn_with_state(
-            harn.clone(),
-            authorize,
-        ));
+    let protected_routes = with_authorization(Router::new(), harn.clone());
 
-    auth_routes.merge(protected_routes)
+    // Wrap with request-id + tracing middleware (outermost layer).
+    with_request_id(authorize_routes.merge(protected_routes))
 }

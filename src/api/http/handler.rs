@@ -131,8 +131,7 @@ pub mod result {
         /// Sets a `Set-Cookie` header.
         pub fn with_cookie(mut self, cookie: &Cookie) -> Self {
             if let Ok(value) = HeaderValue::from_str(&cookie.to_string()) {
-                self.headers
-                    .insert(axum::http::header::SET_COOKIE, value);
+                self.headers.insert(axum::http::header::SET_COOKIE, value);
             }
             self
         }

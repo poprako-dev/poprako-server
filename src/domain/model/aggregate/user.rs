@@ -1,6 +1,7 @@
 use std::mem;
 
 use crate::domain::model::event::{Event, EventEmit, EventSink};
+use crate::util::err::ErrorTrace as _;
 
 use time::OffsetDateTime;
 use uuid::Uuid;
@@ -43,6 +44,14 @@ impl UserAggr {
     }
 }
 
+impl EventEmit for UserAggr {
+    fn pull_events(&mut self) -> Vec<Event> {
+        // UserAggr is a pure read model and should never have any events.
+        // This is just a safeguard to catch any accidental misuse.
+        Vec::new()
+    }
+}
+
 pub struct UserCredential {
     pub qid: String,
     pub password_hash: String,
@@ -50,7 +59,9 @@ pub struct UserCredential {
 
 impl UserCredential {
     pub fn verify_password(&self, password: &str) -> bool {
-        unimplemented!()
+        bcrypt::verify(password, &self.password_hash)
+            .trace_error()
+            .unwrap_or(false)
     }
 }
 
@@ -72,6 +83,17 @@ impl UserForm {
             qid,
             nickname,
             password_hash: password,
+            events: Vec::new(),
+        }
+    }
+
+    pub fn clone_without_events(&self) -> Self {
+        // TODO: not elegant.
+        Self {
+            id: self.id.clone(),
+            qid: self.qid.clone(),
+            nickname: self.nickname.clone(),
+            password_hash: self.password_hash.clone(),
             events: Vec::new(),
         }
     }

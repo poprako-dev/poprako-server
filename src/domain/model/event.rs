@@ -8,7 +8,7 @@ pub enum EventType {
     UserSignedUp,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum Event {
     UserSignedUp(UserSignedUpEvent),
 }
@@ -38,17 +38,4 @@ pub trait EventSink {
 pub trait EventEmit {
     /// Takes all pending domain events out and leaves the buffer empty.
     fn pull_events(&mut self) -> Vec<Event>;
-}
-
-/// A transient container for domain events collected during a transaction.
-///
-/// Implements [`EventEmit`] so it can be passed to
-/// [`Effect::run_effect`](crate::domain::effect::Effect::run_effect) after
-/// a successful commit.
-pub struct EventBatch(pub Vec<Event>);
-
-impl EventEmit for EventBatch {
-    fn pull_events(&mut self) -> Vec<Event> {
-        std::mem::take(&mut self.0)
-    }
 }

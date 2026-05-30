@@ -2,7 +2,7 @@ use std::net::{SocketAddr, ToSocketAddrs};
 
 use poprako_r::api::harness::Harness;
 use poprako_r::api::http::server::serve;
-use poprako_r::config::ApplicationConfig;
+use poprako_r::config::AppConfig;
 use poprako_r::infrastructure::external::image_pool::OssImagePool;
 use poprako_r::infrastructure::external::token::JwtCodec;
 use poprako_r::infrastructure::query::Query;
@@ -18,7 +18,7 @@ async fn main() {
         .with(tracing_subscriber::EnvFilter::from_default_env())
         .init();
 
-    let config = ApplicationConfig::from_default_file()
+    let config = AppConfig::from_default_file()
         .await
         .expect("Failed to load application configuration");
 

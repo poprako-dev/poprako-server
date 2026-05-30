@@ -6,9 +6,7 @@ use crate::domain::effect::{Effect as _, EffectSink};
 use crate::domain::external::token::TokenCodec;
 use crate::domain::model::aggregate::member::MemberForm;
 use crate::domain::model::aggregate::user::{UserForm, UserToken};
-use crate::domain::model::event::{
-    Event, EventBatch, EventEmit, EventSink, user::UserSignedUpEvent,
-};
+use crate::domain::model::event::{Event, EventEmit, EventSink, user::UserSignedUpEvent};
 use crate::domain::query::Transactional;
 use crate::domain::query::member::MemberQueryMut;
 use crate::domain::query::member_invitation::MemberInvitationQueryMut;
@@ -25,7 +23,7 @@ where
     H: Clone + Transactional + EffectSink + TokenCodec + Send + Sync,
 {
     // Run the core registration logic inside a database transaction.
-    let (user_id, events): (String, Vec<Event>) = harn
+    let mut user_form = harn
         .run_in_transaction(move |query| {
             async move {
                 // 1. Fetch pending invitation by invitee qid.
@@ -55,11 +53,8 @@ where
                     invitor_qid: invitation.invitee_qid.clone(),
                 }));
 
-                // Drain events before user_form is consumed by create().
-                let events = user_form.pull_events();
-
                 // 5. Create the user.
-                let user = UserQeuryMut::create(query, user_form).await?;
+                let user = UserQeuryMut::create(query, user_form.clone_without_events()).await?;
 
                 // 6. Create a member record so the user belongs to the team.
                 let member_form = MemberForm::new(
@@ -74,18 +69,20 @@ where
                 // 7. Mark the invitation as consumed.
                 query.mark_as_used(&invitation.id).await?;
 
-                Ok((user.id.clone(), events))
+                Ok(user_form)
             }
             .boxed()
         })
         .await?;
 
     // Publish events after successful transaction commit.
-    let mut batch = EventBatch(events);
-    batch.run_effect(harn).await;
+    user_form.run_effect(harn).await;
 
     // Generate a signed token for the newly registered user.
-    let token = sign_token(harn, &UserToken::new(user_id.clone()))?;
+    let token = sign_token(harn, &UserToken::new(user_form.id.clone()))?;
 
-    Ok(SignUpUserReply { user_id, token })
+    Ok(SignUpUserReply {
+        user_id: user_form.id,
+        token,
+    })
 }
