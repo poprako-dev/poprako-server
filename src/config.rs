@@ -2,12 +2,12 @@ use anyhow::Context;
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
-pub struct ApplicationConfig {
+pub struct AppConfig {
     pub http_host: String,
     pub http_port: u16,
 }
 
-impl ApplicationConfig {
+impl AppConfig {
     pub async fn from_default_file() -> anyhow::Result<Self> {
         let content = tokio::fs::read_to_string("application-config.json")
             .await
