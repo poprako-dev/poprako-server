@@ -10,7 +10,7 @@ use crate::domain::model::event::{Event, EventEmit, EventSink, user::UserSignedU
 use crate::domain::query::Transactional;
 use crate::domain::query::member::MemberQueryMut;
 use crate::domain::query::member_invitation::MemberInvitationQueryMut;
-use crate::domain::query::user::UserQeuryMut;
+use crate::domain::query::user::UserQeuryTransactional;
 use crate::domain::result::DomainError;
 use crate::usecase::result::UseCaseResult;
 use crate::usecase::value_object::user::{SignUpUserParams, SignUpUserReply};
@@ -54,7 +54,8 @@ where
                 }));
 
                 // 5. Create the user.
-                let user = UserQeuryMut::create(query, user_form.clone_without_events()).await?;
+                let user =
+                    UserQeuryTransactional::create(query, user_form.clone_without_events()).await?;
 
                 // 6. Create a member record so the user belongs to the team.
                 let member_form = MemberForm::new(
