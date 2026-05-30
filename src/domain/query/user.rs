@@ -10,10 +10,10 @@ use crate::domain::result::DomainResult;
 #[async_trait]
 pub trait UserQeury {
     /// Returns the user with the given ID, or an expected error if not found.
-    async fn get_by_id(&self, id: &str) -> DomainResult<UserAggr>;
+    async fn get_by_id(&self, id: String) -> DomainResult<UserAggr>;
 
     /// Returns credentials (hashed password) for the given qualified ID.
-    async fn get_credentials_by_qid(&self, qid: &str) -> DomainResult<UserCredential>;
+    async fn get_credentials_by_qid(&self, qid: String) -> DomainResult<UserCredential>;
 }
 
 /// Mutable persistence contract for [`UserAggr`], used **only** inside

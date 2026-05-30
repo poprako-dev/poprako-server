@@ -6,10 +6,10 @@ use crate::domain::effect::{Effect as _, EffectSink};
 use crate::domain::external::token::TokenCodec;
 use crate::domain::model::aggregate::member::MemberForm;
 use crate::domain::model::aggregate::user::{UserForm, UserToken};
-use crate::domain::model::event::{Event, EventEmit, EventSink, user::UserSignedUpEvent};
+use crate::domain::model::event::{Event, EventSink, user::UserSignedUpEvent};
 use crate::domain::query::Transactional;
-use crate::domain::query::member::MemberQueryMut;
-use crate::domain::query::member_invitation::MemberInvitationQueryMut;
+use crate::domain::query::member::MemberQueryTransactional;
+use crate::domain::query::member_invitation::MemberInvitationQueryTransactional;
 use crate::domain::query::user::UserQeuryTransactional;
 use crate::domain::result::DomainError;
 use crate::usecase::result::UseCaseResult;
@@ -26,13 +26,16 @@ where
     let mut user_form = harn
         .run_in_transaction(move |query| {
             async move {
-                // 1. Fetch pending invitation by invitee qid.
-                let invitation =
-                    MemberInvitationQueryMut::get_pending_by_invitee_qid(query, &params.qid)
-                        .await?;
+                // 1. Acquire an exclusive row lock on the pending invitation by its code.
+                //    This serialises concurrent attempts to consume the same invitation.
+                let invitation = MemberInvitationQueryTransactional::get_by_code_ex(
+                    query,
+                    params.invitation_code.clone(),
+                )
+                .await?;
 
-                // 2. Validate the invitation code.
-                if !invitation.verify_code(&params.invitation_code) {
+                // 2. Validate the invitee identity.
+                if invitation.invitee_qid != params.qid {
                     return Err(DomainError::expected_argument(trl(
                         "error-invalid-invitation-code",
                     )))
@@ -65,10 +68,10 @@ where
                     invitation.roles,
                 );
 
-                MemberQueryMut::create(query, member_form).await?;
+                MemberQueryTransactional::create(query, member_form).await?;
 
                 // 7. Mark the invitation as consumed.
-                query.mark_as_used(&invitation.id).await?;
+                query.mark_pending_as_used(invitation.id).await?;
 
                 Ok(user_form)
             }

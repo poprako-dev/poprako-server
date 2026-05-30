@@ -5,6 +5,51 @@ pub mod user;
 mod entity;
 mod schema;
 
+/// Allocates a connection from the pool, mapping pool errors to
+/// [`DomainError::Unrecoverable`].  Prefer [`execute_query`] in `Query`
+/// impl blocks; this macro is for call sites that need the raw
+/// [`deadpool::managed::Object`] (e.g. `run_in_transaction`).
+#[macro_export]
+macro_rules! allocate_connection {
+    ($pool:expr, $loc:expr) => {
+        $pool
+            .get()
+            .await
+            .map_err(|e| {
+                $crate::domain::result::DomainError::unrecoverable(format!(
+                    "[{}] error getting connection: {}",
+                    $loc, e
+                ))
+            })
+            .trace_error()?
+    };
+}
+
+/// Allocates a connection and immediately calls a query function on it.
+///
+/// The query function must accept `(&mut AsyncPgConnection, args...)` and
+/// return a `Future<Output = DomainResult<_>>`.
+///
+/// # Examples
+///
+/// ```ignore
+/// execute_query!(self.pool, get_credential_by_qid, qid)
+/// execute_query!(self.pool, get_by_id, id)
+/// ```
+///
+/// The macro expands to:
+/// ```ignore
+/// let mut conn = allocate_connection!(self.pool, "Query::get_by_id");
+/// get_by_id(conn.as_mut(), id).await
+/// ```
+#[macro_export]
+macro_rules! execute_query {
+    ($pool:expr, $fn:path $(, $arg:expr)* $(,)?) => {{
+        let mut conn = $crate::allocate_connection!($pool, concat!("Query::", stringify!($fn)));
+        $fn(conn.as_mut(), $($arg),*).await
+    }};
+}
+
 use anyhow::Context as _;
 use async_trait::async_trait;
 use diesel_async::AsyncPgConnection;
@@ -15,7 +60,6 @@ use futures_util::future::BoxFuture;
 use tracing::Level;
 use tracing::instrument;
 
-use crate::domain::query as domain_query;
 use crate::domain::query::Transactional;
 use crate::domain::result::{DomainError, DomainResult};
 use crate::util::err::ErrorTrace as _;
@@ -49,14 +93,14 @@ impl Query {
         Ok(Self { pool })
     }
 
-    fn build_transactional_query(conn: &mut AsyncPgConnection) -> TransactionalQuery<'_> {
-        TransactionalQuery::new(conn)
+    fn build_transactional_query(conn: &mut AsyncPgConnection) -> QueryTransactional<'_> {
+        QueryTransactional { conn }
     }
 }
 
 #[async_trait]
 impl Transactional for Query {
-    type Query<'a> = TransactionalQuery<'a>;
+    type Query<'a> = QueryTransactional<'a>;
 
     #[instrument(skip(self, f), level = Level::DEBUG)]
     async fn run_in_transaction<F, T>(&self, f: F) -> DomainResult<T>
@@ -64,17 +108,7 @@ impl Transactional for Query {
         T: Send, // Return value must cross .await boundaries; Tokio multi-threaded runtime requires Send
         F: for<'a> FnOnce(&'a mut Self::Query<'a>) -> BoxFuture<'a, DomainResult<T>> + Send, // BoxFuture requires the closure to be Send
     {
-        let mut conn = self
-            .pool
-            .get()
-            .await
-            .map_err(|e| {
-                DomainError::unrecoverable(format!(
-                    "[Query::run_in_transaction] error getting connection: {}",
-                    e
-                ))
-            })
-            .trace_error()?;
+        let mut conn = allocate_connection!(self.pool, "Query::run_in_transaction");
 
         conn.build_transaction()
             .run(async move |conn| {
@@ -85,14 +119,6 @@ impl Transactional for Query {
     }
 }
 
-pub struct TransactionalQuery<'c> {
+pub struct QueryTransactional<'c> {
     conn: &'c mut AsyncPgConnection,
-}
-
-impl<'c> domain_query::TransactionalQuery for TransactionalQuery<'c> {}
-
-impl<'c> TransactionalQuery<'c> {
-    fn new(conn: &'c mut AsyncPgConnection) -> Self {
-        Self { conn }
-    }
 }

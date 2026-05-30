@@ -4,16 +4,20 @@ use crate::domain::model::aggregate::member_invitation::MemberInvitation;
 use crate::domain::result::DomainResult;
 
 /// Mutable persistence contract for [`MemberInvitation`](crate::domain::model::aggregate::member_invitation::MemberInvitation),
-/// used **only** inside a transaction via [`TransactionalQuery`](crate::domain::query::TransactionalQuery).
+/// used **only** inside a transaction via [`QueryTransactional`](crate::domain::query::QueryTransactional).
 #[async_trait]
-pub trait MemberInvitationQueryMut {
-    /// Returns the most recent pending invitation for the given invitee qualified ID,
-    /// or an expected error if none exists.
-    async fn get_pending_by_invitee_qid(
-        &mut self,
-        invitee_qid: &str,
-    ) -> DomainResult<MemberInvitation>;
+pub trait MemberInvitationQueryTransactional {
+    /// Returns the pending invitation for the given invitation code,
+    /// acquiring an exclusive row-level lock (`SELECT ... FOR UPDATE`).
+    ///
+    /// The lock is held until the enclosing transaction commits or rolls back,
+    /// preventing concurrent consumption of the same invitation.
+    async fn get_by_code_ex(&mut self, invitation_code: String) -> DomainResult<MemberInvitation>;
 
-    /// Marks an invitation as no longer pending (i.e. consumed), without deleting the row.
-    async fn mark_as_used(&mut self, id: &str) -> DomainResult<()>;
+    /// Marks an invitation as consumed by atomically clearing `f_pending`.
+    ///
+    /// The update is conditional on `f_pending = true` so it is safe to call
+    /// even when the row lock acquired by [`get_by_code_ex`](Self::get_by_code_ex)
+    /// has already been released.
+    async fn mark_pending_as_used(&mut self, id: String) -> DomainResult<()>;
 }
