@@ -14,9 +14,6 @@ pub trait UserQeury {
 
     /// Returns credentials (hashed password) for the given qualified ID.
     async fn get_credentials_by_qid(&self, qid: &str) -> DomainResult<UserCredential>;
-
-    /// Creates a new user from the registration form and returns the persisted aggregate.
-    async fn create(&self, form: UserForm) -> DomainResult<UserAggr>;
 }
 
 /// Mutable persistence contract for [`UserAggr`], used **only** inside
@@ -24,7 +21,7 @@ pub trait UserQeury {
 ///
 /// Takes `&mut self` to enforce single-writer semantics within a transaction.
 #[async_trait]
-pub trait UserQeuryMut {
+pub trait UserQeuryTransactional {
     /// Creates a new user from the registration form inside a transaction.
     async fn create(&mut self, form: UserForm) -> DomainResult<UserAggr>;
 }

@@ -1,0 +1,51 @@
+CREATE TABLE IF NOT EXISTS "t_member" (
+    "f_id" TEXT PRIMARY KEY,
+
+    "f_user_id" TEXT NOT NULL REFERENCES "t_user" ("f_id") ON DELETE CASCADE,
+    "f_user_nickname" TEXT NOT NULL,
+    "f_team_id" TEXT NOT NULL REFERENCES "t_team" ("f_id") ON DELETE CASCADE,
+
+    "f_assigned_raw_provider_at" TIMESTAMPTZ,
+    "f_assigned_translator_at" TIMESTAMPTZ,
+    "f_assigned_proofreader_at" TIMESTAMPTZ,
+    "f_assigned_typesetter_at" TIMESTAMPTZ,
+    "f_assigned_redrawer_at" TIMESTAMPTZ,
+    "f_assigned_reviewer_at" TIMESTAMPTZ,
+    "f_assigned_publisher_at" TIMESTAMPTZ,
+    "f_assigned_admin_at" TIMESTAMPTZ,
+
+    "f_created_at" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    "f_updated_at" TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS "uidx_member_user_team"
+    ON "t_member" ("f_user_id", "f_team_id");
+CREATE INDEX IF NOT EXISTS "idx_member_user_id"
+    ON "t_member" ("f_user_id");
+CREATE INDEX IF NOT EXISTS "idx_member_team_id"
+    ON "t_member" ("f_team_id");
+
+CREATE INDEX IF NOT EXISTS "idx_member_team_raw_provider"
+    ON "t_member" ("f_team_id", "f_assigned_raw_provider_at")
+    WHERE "f_assigned_raw_provider_at" IS NOT NULL;
+CREATE INDEX IF NOT EXISTS "idx_member_team_translator"
+    ON "t_member" ("f_team_id", "f_assigned_translator_at")
+    WHERE "f_assigned_translator_at" IS NOT NULL;
+CREATE INDEX IF NOT EXISTS "idx_member_team_proofreader"
+    ON "t_member" ("f_team_id", "f_assigned_proofreader_at")
+    WHERE "f_assigned_proofreader_at" IS NOT NULL;
+CREATE INDEX IF NOT EXISTS "idx_member_team_typesetter"
+    ON "t_member" ("f_team_id", "f_assigned_typesetter_at")
+    WHERE "f_assigned_typesetter_at" IS NOT NULL;
+CREATE INDEX IF NOT EXISTS "idx_member_team_redrawer"
+    ON "t_member" ("f_team_id", "f_assigned_redrawer_at")
+    WHERE "f_assigned_redrawer_at" IS NOT NULL;
+CREATE INDEX IF NOT EXISTS "idx_member_team_reviewer"
+    ON "t_member" ("f_team_id", "f_assigned_reviewer_at")
+    WHERE "f_assigned_reviewer_at" IS NOT NULL;
+CREATE INDEX IF NOT EXISTS "idx_member_team_publisher"
+    ON "t_member" ("f_team_id", "f_assigned_publisher_at")
+    WHERE "f_assigned_publisher_at" IS NOT NULL;
+CREATE INDEX IF NOT EXISTS "idx_member_team_admin"
+    ON "t_member" ("f_team_id", "f_assigned_admin_at")
+    WHERE "f_assigned_admin_at" IS NOT NULL;

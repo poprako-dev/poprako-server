@@ -7,7 +7,7 @@ use futures_util::future::BoxFuture;
 
 use crate::domain::query::member::MemberQueryMut;
 use crate::domain::query::member_invitation::MemberInvitationQueryMut;
-use crate::domain::query::user::UserQeuryMut;
+use crate::domain::query::user::UserQeuryTransactional;
 use crate::domain::result::DomainResult;
 
 /// Composite of all mutable query traits required inside a transaction.
@@ -15,7 +15,7 @@ use crate::domain::result::DomainResult;
 /// Must be `Send` because it is boxed inside [`Transactional::run_in_transaction`]
 /// and passed across `.await` boundaries on a multi-threaded Tokio runtime.
 pub trait TransactionalQuery:
-    Send + UserQeuryMut + MemberQueryMut + MemberInvitationQueryMut
+    Send + UserQeuryTransactional + MemberQueryMut + MemberInvitationQueryMut
 {
 }
 

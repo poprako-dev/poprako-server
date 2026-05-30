@@ -93,29 +93,12 @@ trait UserQuery: domain_query::user::UserQeury {}
 
 /// Blanket-impl marker: every [`TransactionalQuery`] is a
 /// [`UserQeuryMut`](crate::domain::query::user::UserQeuryMut).
-trait UserQeuryMut: domain_query::user::UserQeuryMut {}
+trait UserQeuryTransactional: domain_query::user::UserQeuryTransactional {}
 
 // ── impls ──────────────────────────────────────────────────────────────────
 
 #[async_trait]
 impl domain_query::user::UserQeury for Query {
-    #[instrument(skip(self), level = Level::DEBUG)]
-    async fn get_by_id(&self, id: &str) -> DomainResult<UserAggr> {
-        let mut conn = self
-            .pool
-            .get()
-            .await
-            .map_err(|e| {
-                DomainError::unrecoverable(format!(
-                    "[Query::get_by_id] error getting connection: {}",
-                    e
-                ))
-            })
-            .trace_error()?;
-
-        get_by_id(&mut conn, id).await
-    }
-
     #[instrument(skip(self), level = Level::DEBUG)]
     async fn get_credentials_by_qid(&self, qid: &str) -> DomainResult<UserCredential> {
         let mut conn = self
@@ -133,26 +116,26 @@ impl domain_query::user::UserQeury for Query {
         get_credential_by_qid(&mut conn, qid).await
     }
 
-    #[instrument(skip(self, form), level = Level::DEBUG)]
-    async fn create(&self, form: UserForm) -> DomainResult<UserAggr> {
+    #[instrument(skip(self), level = Level::DEBUG)]
+    async fn get_by_id(&self, id: &str) -> DomainResult<UserAggr> {
         let mut conn = self
             .pool
             .get()
             .await
             .map_err(|e| {
                 DomainError::unrecoverable(format!(
-                    "[Query::create] error getting connection: {}",
+                    "[Query::get_by_id] error getting connection: {}",
                     e
                 ))
             })
             .trace_error()?;
 
-        create(&mut conn, &form).await
+        get_by_id(&mut conn, id).await
     }
 }
 
 #[async_trait]
-impl<'c> domain_query::user::UserQeuryMut for TransactionalQuery<'c> {
+impl<'c> domain_query::user::UserQeuryTransactional for TransactionalQuery<'c> {
     async fn create(&mut self, form: UserForm) -> DomainResult<UserAggr> {
         create(self.conn, &form).await
     }
