@@ -17,7 +17,7 @@ use crate::util::i18n::trl;
 /// with an exclusive row lock, or an expected error if none matches.
 pub async fn get_by_code_ex(
     conn: &mut AsyncPgConnection,
-    invitation_code: String,
+    invitation_code: &str,
 ) -> DomainResult<MemberInvitationAggr> {
     let row: MemberInvitationRow = t_member_invitation
         .filter(f_invitation_code.eq(&invitation_code))
@@ -39,7 +39,10 @@ pub async fn get_by_code_ex(
 ///
 /// The `WHERE f_pending = true` guard ensures this is a no-op on an already-consumed row,
 /// which acts as a safety net regardless of the row lock held by [`get_by_code_ex`].
-pub async fn mark_pending_as_used(conn: &mut AsyncPgConnection, id: String) -> DomainResult<()> {
+pub async fn mark_pending_as_used(
+    conn: &mut AsyncPgConnection,
+    id: &str,
+) -> DomainResult<()> {
     let rows_affected = diesel::update(
         t_member_invitation
             .filter(f_id.eq(id))
@@ -68,12 +71,12 @@ pub async fn mark_pending_as_used(conn: &mut AsyncPgConnection, id: String) -> D
 impl<'c> MemberInvitationQueryTransactional for QueryTransactional<'c> {
     async fn get_by_code_ex(
         &mut self,
-        invitation_code: String,
+        invitation_code: &str,
     ) -> DomainResult<MemberInvitationAggr> {
         get_by_code_ex(self.conn, invitation_code).await
     }
 
-    async fn mark_pending_as_used(&mut self, id: String) -> DomainResult<()> {
+    async fn mark_pending_as_used(&mut self, id: &str) -> DomainResult<()> {
         mark_pending_as_used(self.conn, id).await
     }
 }

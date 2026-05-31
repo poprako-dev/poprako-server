@@ -21,7 +21,10 @@ use crate::util::err::ErrorTrace as _;
 use crate::util::i18n::trl;
 
 #[instrument(skip(conn), level = Level::DEBUG)]
-pub async fn get_by_id(conn: &mut AsyncPgConnection, id: String) -> DomainResult<UserAggr> {
+pub async fn get_by_id(
+    conn: &mut AsyncPgConnection,
+    id: &str,
+) -> DomainResult<UserAggr> {
     let info: UserInfo = t_user
         .filter(f_id.eq(&id))
         .select(UserInfo::as_select())
@@ -36,7 +39,7 @@ pub async fn get_by_id(conn: &mut AsyncPgConnection, id: String) -> DomainResult
 
 pub async fn get_credential_by_qid(
     conn: &mut AsyncPgConnection,
-    qid: String,
+    qid: &str,
 ) -> DomainResult<UserCredential> {
     #[derive(Queryable)]
     struct Row {
@@ -56,9 +59,9 @@ pub async fn get_credential_by_qid(
     Ok(UserCredential::new(row.f_qid, row.f_password_hash))
 }
 
-pub async fn create<'a, 'c>(
-    conn: &'c mut AsyncPgConnection,
-    form: &'a UserForm,
+pub async fn create(
+    conn: &mut AsyncPgConnection,
+    form: &UserForm,
 ) -> DomainResult<UserAggr> {
     let now = OffsetDateTime::now_utc();
 
@@ -91,19 +94,19 @@ pub async fn create<'a, 'c>(
 #[async_trait]
 impl UserQuery for Query {
     #[instrument(skip(self), level = Level::DEBUG)]
-    async fn get_credentials_by_qid(&self, qid: String) -> DomainResult<UserCredential> {
+    async fn get_credentials_by_qid(&self, qid: &str) -> DomainResult<UserCredential> {
         submit_query!(self.pool, get_credential_by_qid, qid)
     }
 
     #[instrument(skip(self), level = Level::DEBUG)]
-    async fn get_by_id(&self, id: String) -> DomainResult<UserAggr> {
+    async fn get_by_id(&self, id: &str) -> DomainResult<UserAggr> {
         submit_query!(self.pool, get_by_id, id)
     }
 }
 
 #[async_trait]
 impl<'c> UserQueryTransactional for QueryTransactional<'c> {
-    async fn create<'s, 'a>(&'s mut self, form: &'a UserForm) -> DomainResult<UserAggr> {
+    async fn create(&mut self, form: &UserForm) -> DomainResult<UserAggr> {
         create(self.conn, form).await
     }
 }

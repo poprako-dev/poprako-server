@@ -17,7 +17,10 @@ use crate::util::err::ErrorTrace as _;
 use crate::util::i18n::trl;
 
 #[instrument(skip(conn), level = Level::DEBUG)]
-pub async fn get_by_id(conn: &mut AsyncPgConnection, id: String) -> DomainResult<TeamAggr> {
+pub async fn get_by_id(
+    conn: &mut AsyncPgConnection,
+    id: &str,
+) -> DomainResult<TeamAggr> {
     let row: TeamRow = t_team
         .filter(f_id.eq(&id))
         .select(TeamRow::as_select())
@@ -35,7 +38,7 @@ pub async fn get_by_id(conn: &mut AsyncPgConnection, id: String) -> DomainResult
 #[async_trait]
 impl TeamQuery for Query {
     #[instrument(skip(self), level = Level::DEBUG)]
-    async fn get_by_id(&self, id: String) -> DomainResult<TeamAggr> {
+    async fn get_by_id(&self, id: &str) -> DomainResult<TeamAggr> {
         submit_query!(self.pool, get_by_id, id)
     }
 }

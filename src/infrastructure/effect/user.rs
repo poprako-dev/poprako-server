@@ -10,7 +10,7 @@ use crate::domain::query::team::TeamQuery;
 /// their invitation code.
 pub async fn notify_invitor_handler(harn: &HarnessInner, event: UserSignedUpEvent) {
     // Look up the team name for the notification content.
-    let Some(team) = TeamQuery::get_by_id(harn.deref(), event.team_id.clone())
+    let Some(team) = TeamQuery::get_by_id(harn.deref(), &event.team_id)
         .await
         .ok()
     else {
@@ -31,7 +31,7 @@ pub async fn notify_invitor_handler(harn: &HarnessInner, event: UserSignedUpEven
 
     let mail = SystemMailForm::new(invitor_id.clone(), title, content);
 
-    if let Err(e) = SystemMailQuery::send(harn.deref(), mail).await {
+    if let Err(e) = SystemMailQuery::send(harn.deref(), &mail).await {
         tracing::error!(
             error = %e,
             invitor_id = %invitor_id,

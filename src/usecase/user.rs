@@ -30,7 +30,7 @@ where
                 //    This serialises concurrent attempts to consume the same invitation.
                 let invitation = MemberInvitationQueryTransactional::get_by_code_ex(
                     query,
-                    params.invitation_code.clone(),
+                    &params.invitation_code,
                 )
                 .await?;
 
@@ -70,7 +70,7 @@ where
                 MemberQueryTransactional::create(query, &member_form).await?;
 
                 // 7. Mark the invitation as consumed.
-                MemberInvitationQueryTransactional::mark_pending_as_used(query, invitation.id)
+                MemberInvitationQueryTransactional::mark_pending_as_used(query, &invitation.id)
                     .await?;
 
                 Ok(user_form)

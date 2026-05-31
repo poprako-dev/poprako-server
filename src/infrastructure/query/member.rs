@@ -15,9 +15,9 @@ use crate::infrastructure::query::entity::member::MemberEntry;
 use crate::infrastructure::query::entity::member::MemberRow;
 use crate::infrastructure::query::schema::t_member::dsl::*;
 
-pub async fn create<'a, 'c>(
-    conn: &'c mut AsyncPgConnection,
-    form: &'a MemberForm,
+pub async fn create(
+    conn: &mut AsyncPgConnection,
+    form: &MemberForm,
 ) -> DomainResult<MemberAggr> {
     let now = OffsetDateTime::now_utc();
     let roles = form.roles;
@@ -63,7 +63,7 @@ fn has_role(roles: &RoleMask, flag: RoleFlag) -> bool {
 
 #[async_trait]
 impl<'c> MemberQueryTransactional for QueryTransactional<'c> {
-    async fn create<'s, 'a>(&'s mut self, form: &'a MemberForm) -> DomainResult<MemberAggr> {
+    async fn create(&mut self, form: &MemberForm) -> DomainResult<MemberAggr> {
         create(self.conn, form).await
     }
 }

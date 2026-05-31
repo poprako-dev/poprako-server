@@ -10,5 +10,5 @@ use crate::domain::result::DomainResult;
 #[async_trait]
 pub trait SystemMailQuery {
     /// Sends a system mail notification by inserting a row into `t_system_mail`.
-    async fn send(&self, form: SystemMailForm) -> DomainResult<()>;
+    async fn send(&self, form: &SystemMailForm) -> DomainResult<()>;
 }
