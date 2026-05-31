@@ -23,12 +23,13 @@ pub struct MemberAggr {
     pub assigned_reviewer_at: Option<OffsetDateTime>,
     pub assigned_publisher_at: Option<OffsetDateTime>,
     pub assigned_admin_at: Option<OffsetDateTime>,
+    pub assigned_assistant_at: Option<OffsetDateTime>,
 
     pub created_at: OffsetDateTime,
     pub updated_at: OffsetDateTime,
 
     /// Private marker to forbid struct literal construction outside this module.
-    _p: PrivateMarker,
+    _m: PrivateMarker,
 }
 
 impl MemberAggr {
@@ -36,6 +37,7 @@ impl MemberAggr {
         format!("member-{}", Uuid::now_v7())
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         id: String,
         user_id: String,
@@ -50,6 +52,7 @@ impl MemberAggr {
         assigned_reviewer_at: Option<OffsetDateTime>,
         assigned_publisher_at: Option<OffsetDateTime>,
         assigned_admin_at: Option<OffsetDateTime>,
+        assigned_assistant_at: Option<OffsetDateTime>,
         created_at: OffsetDateTime,
         updated_at: OffsetDateTime,
     ) -> Self {
@@ -67,12 +70,15 @@ impl MemberAggr {
             assigned_reviewer_at,
             assigned_publisher_at,
             assigned_admin_at,
+            assigned_assistant_at,
             created_at,
             updated_at,
-            _p: PrivateMarker,
+            _m: PrivateMarker,
         }
     }
 }
+
+
 
 pub struct MemberForm {
     pub id: String,
@@ -85,7 +91,7 @@ pub struct MemberForm {
     pub roles: RoleMask,
 
     /// Private marker to forbid struct literal construction outside this module.
-    _p: PrivateMarker,
+    _m: PrivateMarker,
 }
 
 impl MemberForm {
@@ -96,7 +102,7 @@ impl MemberForm {
             user_nickname,
             team_id,
             roles,
-            _p: PrivateMarker,
+            _m: PrivateMarker,
         }
     }
 }

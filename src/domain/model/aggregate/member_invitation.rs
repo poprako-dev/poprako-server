@@ -21,7 +21,7 @@ pub struct MemberInvitationAggr {
     pub created_at: OffsetDateTime,
 
     /// Private marker to forbid struct literal construction outside this module.
-    _p: PrivateMarker,
+    _m: PrivateMarker,
 }
 
 impl MemberInvitationAggr {
@@ -33,6 +33,7 @@ impl MemberInvitationAggr {
         self.code == code
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         id: String,
         invitor_id: String,
@@ -54,7 +55,7 @@ impl MemberInvitationAggr {
             pending,
             roles,
             created_at,
-            _p: PrivateMarker,
+            _m: PrivateMarker,
         }
     }
 }

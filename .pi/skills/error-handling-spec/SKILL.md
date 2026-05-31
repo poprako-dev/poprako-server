@@ -247,14 +247,17 @@ See also: `tracing-usage-spec` skill for rationale on prohibited placements.
 | Domain model (`src/domain/model/`) | ❌ Never | Pure business logic, no I/O |
 | Domain actor (`src/domain/actor/`) | ❌ Never | Pure business logic, no I/O |
 | UseCase functions (`src/usecase/`) | ✅ Always | Orchestration boundary, full request lifecycle |
-| Infra query with `trace_*` | ✅ Always | Database I/O — observe duration and parameters |
+| Infra query | ✅ Permitted | Database I/O — useful for tracing individual query duration and parameters |
 | Infra query delegate (QueryTransactional) | ❌ Never | Delegate wraps the call — the free function already has instrument |
 | Infra external with `trace_*` | ✅ Always | External service calls — isolate latency |
 | API handlers (`src/api/`) | ✅ Always | HTTP request entry boundary |
+| Harness delegation (`src/api/harness.rs`) | ❌ Never | Pure delegation — underlying impls already instrumented. See `harness-spec` |
 | Pure logic without `trace_*` | ❌ Never | No diagnostic benefit |
 
-**Heuristic**: if a function calls `.trace_debug()` or `.trace_error()`, and
-it is not a constructor or pure logic, it needs `#[tracing::instrument]`.
+**Heuristic**: if a function is an orchestration boundary (usecase, API handler)
+or an external service call, it benefits from `#[tracing::instrument]`. For
+infra query free functions, `#[instrument]` is **permitted but not required**;
+add it when the observability benefit outweighs the span overhead.
 
 ---
 

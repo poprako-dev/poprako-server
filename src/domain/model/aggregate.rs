@@ -1,7 +1,7 @@
 /// Zero-sized marker type that prevents struct literal construction
 /// of input aggregates from outside the defining module.
 ///
-/// Include `_p: PrivateMarker` as a field in any input aggregate struct
+/// Include `_m: PrivateMarker` as a field in any input aggregate struct
 /// whose construction should be limited to `new()` constructors.
 #[derive(Default, Clone, Copy)]
 pub struct PrivateMarker;

@@ -7,7 +7,8 @@ use time::OffsetDateTime;
 use crate::domain::model::aggregate::member_invitation::MemberInvitationAggr;
 use crate::domain::query::member_invitation::MemberInvitationQueryTransactional;
 use crate::domain::result::{DomainError, DomainResult};
-use crate::infrastructure::query::QueryTransactional;
+use crate::infrastructure::query::RdbQueryTransactional;
+use crate::infrastructure::query::entity::member_invitation::MemberInvitationAspect;
 use crate::infrastructure::query::entity::member_invitation::MemberInvitationRow;
 use crate::infrastructure::query::schema::t_member_invitation::dsl::*;
 use crate::util::err::ErrorTrace as _;
@@ -39,19 +40,20 @@ pub async fn get_by_code_ex(
 ///
 /// The `WHERE f_pending = true` guard ensures this is a no-op on an already-consumed row,
 /// which acts as a safety net regardless of the row lock held by [`get_by_code_ex`].
-pub async fn mark_pending_as_used(
-    conn: &mut AsyncPgConnection,
-    id: &str,
-) -> DomainResult<()> {
+pub async fn mark_pending_as_used(conn: &mut AsyncPgConnection, id: &str) -> DomainResult<()> {
+    let now = OffsetDateTime::now_utc();
+
+    let aspect = MemberInvitationAspect {
+        f_pending: false,
+        f_updated_at: now,
+    };
+
     let rows_affected = diesel::update(
         t_member_invitation
             .filter(f_id.eq(id))
             .filter(f_pending.eq(true)),
     )
-    .set((
-        f_pending.eq(false),
-        f_updated_at.eq(OffsetDateTime::now_utc()),
-    ))
+    .set(&aspect)
     .execute(conn)
     .await?;
 
@@ -68,7 +70,7 @@ pub async fn mark_pending_as_used(
 // ── impls ──────────────────────────────────────────────────────────────────
 
 #[async_trait]
-impl<'c> MemberInvitationQueryTransactional for QueryTransactional<'c> {
+impl<'c> MemberInvitationQueryTransactional for RdbQueryTransactional<'c> {
     async fn get_by_code_ex(
         &mut self,
         invitation_code: &str,

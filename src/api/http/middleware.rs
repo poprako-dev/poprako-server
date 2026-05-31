@@ -14,7 +14,7 @@ use uuid::Uuid;
 
 use crate::api::harness::Harness;
 use crate::api::http::handler::result::HttpError;
-use crate::domain::external::token::TokenCodec;
+use crate::domain::external::token::TokenParse;
 use crate::domain::model::aggregate::user::UserToken;
 use crate::domain::result::ExpectedVariant;
 use crate::util::i18n::trl;

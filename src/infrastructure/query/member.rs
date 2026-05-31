@@ -10,15 +10,12 @@ use crate::domain::model::value::role::RoleFlag;
 use crate::domain::model::value::role::RoleMask;
 use crate::domain::query::member::MemberQueryTransactional;
 use crate::domain::result::DomainResult;
-use crate::infrastructure::query::QueryTransactional;
+use crate::infrastructure::query::RdbQueryTransactional;
 use crate::infrastructure::query::entity::member::MemberEntry;
 use crate::infrastructure::query::entity::member::MemberRow;
 use crate::infrastructure::query::schema::t_member::dsl::*;
 
-pub async fn create(
-    conn: &mut AsyncPgConnection,
-    form: &MemberForm,
-) -> DomainResult<MemberAggr> {
+pub async fn create(conn: &mut AsyncPgConnection, form: &MemberForm) -> DomainResult<MemberAggr> {
     let now = OffsetDateTime::now_utc();
     let roles = form.roles;
 
@@ -27,14 +24,15 @@ pub async fn create(
         f_user_id: &form.user_id,
         f_user_nickname: &form.user_nickname,
         f_team_id: &form.team_id,
-        f_assigned_raw_provider_at: roles.has_any_role(&[RoleFlag::RawProvider]).then_some(now),
-        f_assigned_translator_at: roles.has_any_role(&[RoleFlag::Translator]).then_some(now),
-        f_assigned_proofreader_at: roles.has_any_role(&[RoleFlag::Proofreader]).then_some(now),
-        f_assigned_typesetter_at: roles.has_any_role(&[RoleFlag::Typesetter]).then_some(now),
-        f_assigned_redrawer_at: roles.has_any_role(&[RoleFlag::Redrawer]).then_some(now),
-        f_assigned_reviewer_at: roles.has_any_role(&[RoleFlag::Reviewer]).then_some(now),
-        f_assigned_publisher_at: roles.has_any_role(&[RoleFlag::Publisher]).then_some(now),
-        f_assigned_admin_at: roles.has_any_role(&[RoleFlag::Admin]).then_some(now),
+        f_assigned_raw_provider_at: roles.has_role(RoleFlag::RawProvider).then_some(now),
+        f_assigned_translator_at: roles.has_role(RoleFlag::Translator).then_some(now),
+        f_assigned_proofreader_at: roles.has_role(RoleFlag::Proofreader).then_some(now),
+        f_assigned_typesetter_at: roles.has_role(RoleFlag::Typesetter).then_some(now),
+        f_assigned_redrawer_at: roles.has_role(RoleFlag::Redrawer).then_some(now),
+        f_assigned_reviewer_at: roles.has_role(RoleFlag::Reviewer).then_some(now),
+        f_assigned_publisher_at: roles.has_role(RoleFlag::Publisher).then_some(now),
+        f_assigned_admin_at: roles.has_role(RoleFlag::Admin).then_some(now),
+        f_assigned_assistant_at: roles.has_role(RoleFlag::Assistant).then_some(now),
         f_created_at: now,
         f_updated_at: now,
     };
@@ -62,7 +60,7 @@ fn has_role(roles: &RoleMask, flag: RoleFlag) -> bool {
 // ── impls ──────────────────────────────────────────────────────────────────
 
 #[async_trait]
-impl<'c> MemberQueryTransactional for QueryTransactional<'c> {
+impl<'c> MemberQueryTransactional for RdbQueryTransactional<'c> {
     async fn create(&mut self, form: &MemberForm) -> DomainResult<MemberAggr> {
         create(self.conn, form).await
     }

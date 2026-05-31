@@ -1,6 +1,6 @@
 use std::ops::Deref;
 
-use crate::api::harness::HarnessInner;
+use crate::api::harness::HarnessBase;
 use crate::domain::model::aggregate::system_mail::SystemMailForm;
 use crate::domain::model::event::user::UserSignedUpEvent;
 use crate::domain::query::system_mail::SystemMailQuery;
@@ -8,7 +8,7 @@ use crate::domain::query::team::TeamQuery;
 
 /// Notifies the invitor via system mail that a new user has registered using
 /// their invitation code.
-pub async fn notify_invitor_handler(harn: &HarnessInner, event: UserSignedUpEvent) {
+pub async fn notify_invitor_handler(harn: &HarnessBase, event: UserSignedUpEvent) {
     // Look up the team name for the notification content.
     let Some(team) = TeamQuery::get_by_id(harn.deref(), &event.team_id)
         .await

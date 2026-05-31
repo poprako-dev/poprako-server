@@ -24,7 +24,7 @@ pub struct UserAggr {
     pub updated_at: OffsetDateTime,
 
     /// Private marker to forbid struct literal construction outside this module.
-    _p: PrivateMarker,
+    _m: PrivateMarker,
 }
 
 impl UserAggr {
@@ -36,6 +36,7 @@ impl UserAggr {
         format!("user_avatar/{}", self.id,)
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         id: String,
         nickname: String,
@@ -57,7 +58,7 @@ impl UserAggr {
             last_active_at,
             created_at,
             updated_at,
-            _p: PrivateMarker,
+            _m: PrivateMarker,
         }
     }
 }
@@ -75,14 +76,14 @@ pub struct UserToken {
     pub user_id: String,
 
     /// Private marker to forbid struct literal construction outside this module.
-    _p: PrivateMarker,
+    _m: PrivateMarker,
 }
 
 impl UserToken {
     pub fn new(user_id: String) -> Self {
         Self {
             user_id,
-            _p: PrivateMarker,
+            _m: PrivateMarker,
         }
     }
 }
@@ -92,7 +93,7 @@ pub struct UserCredential {
     pub password_hash: String,
 
     /// Private marker to forbid struct literal construction outside this module.
-    _p: PrivateMarker,
+    _m: PrivateMarker,
 }
 
 impl UserCredential {
@@ -100,7 +101,7 @@ impl UserCredential {
         Self {
             qid,
             password_hash,
-            _p: PrivateMarker,
+            _m: PrivateMarker,
         }
     }
 
@@ -122,7 +123,7 @@ pub struct UserForm {
     events: Vec<Event>,
 
     /// Private marker to forbid struct literal construction outside this module.
-    _p: PrivateMarker,
+    _m: PrivateMarker,
 }
 
 impl UserForm {
@@ -133,7 +134,7 @@ impl UserForm {
             nickname,
             password_hash: password,
             events: Vec::new(),
-            _p: PrivateMarker,
+            _m: PrivateMarker,
         }
     }
 
@@ -145,7 +146,7 @@ impl UserForm {
             nickname: self.nickname.clone(),
             password_hash: self.password_hash.clone(),
             events: Vec::new(),
-            _p: PrivateMarker,
+            _m: PrivateMarker,
         }
     }
 }
@@ -172,7 +173,7 @@ pub struct UserInfoUpdate {
     pub nickname: String,
 
     /// Private marker to forbid struct literal construction outside this module.
-    _p: PrivateMarker,
+    _m: PrivateMarker,
 }
 
 impl UserInfoUpdate {
@@ -184,7 +185,29 @@ impl UserInfoUpdate {
             id,
             qid,
             nickname,
-            _p: PrivateMarker,
+            _m: PrivateMarker,
+        }
+    }
+}
+
+pub struct UserPasswordUpdate {
+    pub id: String,
+
+    pub password_hash: String,
+
+    /// Private marker to forbid struct literal construction outside this module.
+    _m: PrivateMarker,
+}
+
+impl UserPasswordUpdate {
+    /// Creates a new `UserPasswordUpdate`.
+    ///
+    /// `id` is the existing user ID (provided by the caller, not generated).
+    pub fn new(id: String, password_hash: String) -> Self {
+        Self {
+            id,
+            password_hash,
+            _m: PrivateMarker,
         }
     }
 }

@@ -1,6 +1,6 @@
 pub mod member;
 pub mod member_invitation;
-pub mod sys_mail;
+pub mod system_mail;
 pub mod team;
 pub mod user;
 
@@ -117,11 +117,11 @@ impl From<diesel::result::Error> for DomainError {
     }
 }
 
-pub struct Query {
+pub struct RdbQuery {
     pool: Pool<AsyncPgConnection>,
 }
 
-impl Query {
+impl RdbQuery {
     pub async fn from_env() -> anyhow::Result<Self> {
         let database_url = std::env::var("DATABASE_URL")
             .with_context(|| "[Query::from_env] DATABASE_URL is not set")?;
@@ -137,14 +137,14 @@ impl Query {
         Ok(Self { pool })
     }
 
-    fn build_transactional_query(conn: &mut AsyncPgConnection) -> QueryTransactional<'_> {
-        QueryTransactional { conn }
+    fn build_transactional_query(conn: &mut AsyncPgConnection) -> RdbQueryTransactional<'_> {
+        RdbQueryTransactional { conn }
     }
 }
 
 #[async_trait]
-impl Transactional for Query {
-    type Query<'a> = QueryTransactional<'a>;
+impl Transactional for RdbQuery {
+    type Query<'a> = RdbQueryTransactional<'a>;
 
     #[instrument(skip(self, f), level = Level::DEBUG)]
     async fn run_in_transaction<F, T>(&self, f: F) -> DomainResult<T>
@@ -164,6 +164,6 @@ impl Transactional for Query {
     }
 }
 
-pub struct QueryTransactional<'c> {
+pub struct RdbQueryTransactional<'c> {
     conn: &'c mut AsyncPgConnection,
 }
