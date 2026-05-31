@@ -15,15 +15,18 @@ use crate::infrastructure::query::entity::member::MemberEntry;
 use crate::infrastructure::query::entity::member::MemberRow;
 use crate::infrastructure::query::schema::t_member::dsl::*;
 
-pub async fn create(conn: &mut AsyncPgConnection, form: MemberForm) -> DomainResult<MemberAggr> {
+pub async fn create<'a, 'c>(
+    conn: &'c mut AsyncPgConnection,
+    form: &'a MemberForm,
+) -> DomainResult<MemberAggr> {
     let now = OffsetDateTime::now_utc();
     let roles = form.roles;
 
     let entry = MemberEntry {
-        f_id: form.id.clone(),
-        f_user_id: form.user_id.clone(),
-        f_user_nickname: form.user_nickname.clone(),
-        f_team_id: form.team_id.clone(),
+        f_id: &form.id,
+        f_user_id: &form.user_id,
+        f_user_nickname: &form.user_nickname,
+        f_team_id: &form.team_id,
         f_assigned_raw_provider_at: roles.has_any_role(&[RoleFlag::RawProvider]).then_some(now),
         f_assigned_translator_at: roles.has_any_role(&[RoleFlag::Translator]).then_some(now),
         f_assigned_proofreader_at: roles.has_any_role(&[RoleFlag::Proofreader]).then_some(now),
@@ -60,7 +63,7 @@ fn has_role(roles: &RoleMask, flag: RoleFlag) -> bool {
 
 #[async_trait]
 impl<'c> MemberQueryTransactional for QueryTransactional<'c> {
-    async fn create(&mut self, form: MemberForm) -> DomainResult<MemberAggr> {
+    async fn create<'s, 'a>(&'s mut self, form: &'a MemberForm) -> DomainResult<MemberAggr> {
         create(self.conn, form).await
     }
 }

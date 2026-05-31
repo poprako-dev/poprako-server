@@ -8,5 +8,5 @@ use crate::domain::result::DomainResult;
 #[async_trait]
 pub trait MemberQueryTransactional {
     /// Inserts a new member row from the creation form.
-    async fn create(&mut self, form: MemberForm) -> DomainResult<MemberAggr>;
+    async fn create<'s, 'a>(&'s mut self, form: &'a MemberForm) -> DomainResult<MemberAggr>;
 }

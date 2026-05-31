@@ -57,8 +57,7 @@ where
                 }));
 
                 // 5. Create the user.
-                let user =
-                    UserQueryTransactional::create(query, user_form.clone_without_events()).await?;
+                let user = UserQueryTransactional::create(query, &user_form).await?;
 
                 // 6. Create a member record so the user belongs to the team.
                 let member_form = MemberForm::new(
@@ -68,10 +67,11 @@ where
                     invitation.roles,
                 );
 
-                MemberQueryTransactional::create(query, member_form).await?;
+                MemberQueryTransactional::create(query, &member_form).await?;
 
                 // 7. Mark the invitation as consumed.
-                MemberInvitationQueryTransactional::mark_pending_as_used(query, invitation.id).await?;
+                MemberInvitationQueryTransactional::mark_pending_as_used(query, invitation.id)
+                    .await?;
 
                 Ok(user_form)
             }

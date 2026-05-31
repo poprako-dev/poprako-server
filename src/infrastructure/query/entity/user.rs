@@ -32,11 +32,11 @@ pub struct UserCredentialRow {
 
 #[derive(Insertable)]
 #[diesel(table_name = schema::t_user)]
-pub struct UserEntry {
-    pub f_id: String,
-    pub f_nickname: String,
-    pub f_qid: String,
-    pub f_password_hash: String,
+pub struct UserEntry<'a> {
+    pub f_id: &'a str,
+    pub f_nickname: &'a str,
+    pub f_qid: &'a str,
+    pub f_password_hash: &'a str,
     pub f_last_active_at: OffsetDateTime,
     pub f_created_at: OffsetDateTime,
     pub f_updated_at: OffsetDateTime,
