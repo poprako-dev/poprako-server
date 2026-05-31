@@ -14,7 +14,7 @@ pub trait MemberInvitationQueryTransactional {
     /// preventing concurrent consumption of the same invitation.
     async fn get_by_code_ex(
         &mut self,
-        invitation_code: String,
+        invitation_code: &str,
     ) -> DomainResult<MemberInvitationAggr>;
 
     /// Marks an invitation as consumed by atomically clearing `f_pending`.
@@ -22,5 +22,5 @@ pub trait MemberInvitationQueryTransactional {
     /// The update is conditional on `f_pending = true` so it is safe to call
     /// even when the row lock acquired by [`get_by_code_ex`](Self::get_by_code_ex)
     /// has already been released.
-    async fn mark_pending_as_used(&mut self, id: String) -> DomainResult<()>;
+    async fn mark_pending_as_used(&mut self, id: &str) -> DomainResult<()>;
 }

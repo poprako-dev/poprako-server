@@ -16,7 +16,10 @@ use crate::submit_query;
 use crate::util::err::ErrorTrace as _;
 
 #[instrument(skip(conn), level = Level::DEBUG)]
-pub async fn send(conn: &mut AsyncPgConnection, form: SystemMailForm) -> DomainResult<()> {
+pub async fn send(
+    conn: &mut AsyncPgConnection,
+    form: &SystemMailForm,
+) -> DomainResult<()> {
     let now = OffsetDateTime::now_utc();
 
     diesel::insert_into(t_system_mail::table)
@@ -36,7 +39,7 @@ pub async fn send(conn: &mut AsyncPgConnection, form: SystemMailForm) -> DomainR
 #[async_trait]
 impl SystemMailQuery for Query {
     #[instrument(skip(self), level = Level::DEBUG)]
-    async fn send(&self, form: SystemMailForm) -> DomainResult<()> {
+    async fn send(&self, form: &SystemMailForm) -> DomainResult<()> {
         submit_query!(self.pool, send, form)
     }
 }
