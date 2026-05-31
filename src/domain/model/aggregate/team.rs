@@ -15,7 +15,7 @@ pub struct TeamAggr {
     pub updated_at: OffsetDateTime,
 
     /// Private marker to forbid struct literal construction outside this module.
-    _p: PrivateMarker,
+    _m: PrivateMarker,
 }
 
 impl TeamAggr {
@@ -36,7 +36,7 @@ impl TeamAggr {
             avatar_uploaded,
             created_at,
             updated_at,
-            _p: PrivateMarker,
+            _m: PrivateMarker,
         }
     }
 }

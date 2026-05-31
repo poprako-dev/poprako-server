@@ -11,30 +11,27 @@ use crate::domain::model::aggregate::user::{UserAggr, UserCredential, UserForm};
 use crate::domain::query::user::UserQuery;
 use crate::domain::query::user::UserQueryTransactional;
 use crate::domain::result::{DomainError, DomainResult};
-use crate::infrastructure::query::Query;
-use crate::infrastructure::query::QueryTransactional;
+use crate::infrastructure::query::RdbQuery;
+use crate::infrastructure::query::RdbQueryTransactional;
 use crate::infrastructure::query::entity::user::UserEntry;
-use crate::infrastructure::query::entity::user::UserInfo;
+use crate::infrastructure::query::entity::user::UserRow;
 use crate::infrastructure::query::schema::t_user::dsl::*;
 use crate::submit_query;
 use crate::util::err::ErrorTrace as _;
 use crate::util::i18n::trl;
 
 #[instrument(skip(conn), level = Level::DEBUG)]
-pub async fn get_by_id(
-    conn: &mut AsyncPgConnection,
-    id: &str,
-) -> DomainResult<UserAggr> {
-    let info: UserInfo = t_user
+pub async fn get_by_id(conn: &mut AsyncPgConnection, id: &str) -> DomainResult<UserAggr> {
+    let row: UserRow = t_user
         .filter(f_id.eq(&id))
-        .select(UserInfo::as_select())
+        .select(UserRow::as_select())
         .first(conn)
         .await
         .optional()?
         .ok_or(DomainError::expected_argument(trl("error-user-not-found")))
         .trace_debug()?;
 
-    Ok(info.into())
+    Ok(row.into())
 }
 
 pub async fn get_credential_by_qid(
@@ -59,10 +56,7 @@ pub async fn get_credential_by_qid(
     Ok(UserCredential::new(row.f_qid, row.f_password_hash))
 }
 
-pub async fn create(
-    conn: &mut AsyncPgConnection,
-    form: &UserForm,
-) -> DomainResult<UserAggr> {
+pub async fn create(conn: &mut AsyncPgConnection, form: &UserForm) -> DomainResult<UserAggr> {
     let now = OffsetDateTime::now_utc();
 
     let entry = UserEntry {
@@ -80,19 +74,19 @@ pub async fn create(
         .execute(conn)
         .await?;
 
-    let info: UserInfo = t_user
+    let row: UserRow = t_user
         .filter(f_id.eq(&entry.f_id))
-        .select(UserInfo::as_select())
+        .select(UserRow::as_select())
         .first(conn)
         .await?;
 
-    Ok(info.into())
+    Ok(row.into())
 }
 
 // ── impls ──────────────────────────────────────────────────────────────────
 
 #[async_trait]
-impl UserQuery for Query {
+impl UserQuery for RdbQuery {
     #[instrument(skip(self), level = Level::DEBUG)]
     async fn get_credentials_by_qid(&self, qid: &str) -> DomainResult<UserCredential> {
         submit_query!(self.pool, get_credential_by_qid, qid)
@@ -105,7 +99,7 @@ impl UserQuery for Query {
 }
 
 #[async_trait]
-impl<'c> UserQueryTransactional for QueryTransactional<'c> {
+impl<'c> UserQueryTransactional for RdbQueryTransactional<'c> {
     async fn create(&mut self, form: &UserForm) -> DomainResult<UserAggr> {
         create(self.conn, form).await
     }

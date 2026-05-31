@@ -15,7 +15,7 @@ pub struct SystemMailAggr {
     pub created_at: OffsetDateTime,
 
     /// Private marker to forbid struct literal construction outside this module.
-    _p: PrivateMarker,
+    _m: PrivateMarker,
 }
 
 impl SystemMailAggr {
@@ -34,7 +34,7 @@ impl SystemMailAggr {
             title,
             content,
             created_at,
-            _p: PrivateMarker,
+            _m: PrivateMarker,
         }
     }
 }
@@ -49,7 +49,7 @@ pub struct SystemMailForm {
     pub content: String,
 
     /// Private marker to forbid struct literal construction outside this module.
-    _p: PrivateMarker,
+    _m: PrivateMarker,
 }
 
 impl SystemMailForm {
@@ -60,7 +60,7 @@ impl SystemMailForm {
             receiver_id,
             title,
             content,
-            _p: PrivateMarker,
+            _m: PrivateMarker,
         }
     }
 }

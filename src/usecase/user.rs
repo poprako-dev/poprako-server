@@ -3,7 +3,7 @@ use tracing::instrument;
 
 use crate::domain::compound::user::{hash_password, sign_token};
 use crate::domain::effect::{Effect as _, EffectSink};
-use crate::domain::external::token::TokenCodec;
+use crate::domain::external::token::TokenSign;
 use crate::domain::model::aggregate::member::MemberForm;
 use crate::domain::model::aggregate::user::{UserForm, UserToken};
 use crate::domain::model::event::{Event, EventSink, user::UserSignedUpEvent};
@@ -20,7 +20,7 @@ use crate::util::i18n::trl;
 #[instrument(skip(harn))]
 pub async fn sign_up_user<H>(harn: &H, params: SignUpUserParams) -> UseCaseResult<SignUpUserReply>
 where
-    H: Clone + Transactional + EffectSink + TokenCodec + Send + Sync,
+    H: Clone + Transactional + EffectSink + TokenSign + Send + Sync,
 {
     // Run the core registration logic inside a database transaction.
     let mut user_form = harn
@@ -80,7 +80,7 @@ where
         .await?;
 
     // Publish events after successful transaction commit.
-    user_form.run_effect(harn).await;
+    user_form.develop_effect(harn).await;
 
     // Generate a signed token for the newly registered user.
     let token = sign_token(harn, &UserToken::new(user_form.id.clone()))?;

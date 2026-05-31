@@ -10,7 +10,7 @@ description: |
 ## Universal rule
 
 **Every** struct defined under `src/domain/model/aggregate/` carries a private
-marker field `_p: PrivateMarker` and provides a `pub fn new(...)` constructor.
+marker field `_m: PrivateMarker` and provides a `pub fn new(...)` constructor.
 Struct literal construction (`S { .. }`) is forbidden outside the defining
 module — enforced at compile time by the private marker.
 
@@ -42,7 +42,7 @@ pub struct UserAggr {
     // ...
 
     /// Private marker to forbid struct literal construction outside this module.
-    _p: PrivateMarker,
+    _m: PrivateMarker,
 }
 
 impl UserAggr {
@@ -65,7 +65,7 @@ impl UserAggr {
             qid,
             nickname,
             // ...
-            _p: PrivateMarker,
+            _m: PrivateMarker,
         }
     }
 }
@@ -86,7 +86,7 @@ pub struct UserForm {
     events: Vec<Event>,
 
     /// Private marker to forbid struct literal construction outside this module.
-    _p: PrivateMarker,
+    _m: PrivateMarker,
 }
 
 impl UserForm {
@@ -97,7 +97,7 @@ impl UserForm {
             nickname,
             password_hash: password,
             events: Vec::new(),
-            _p: PrivateMarker,
+            _m: PrivateMarker,
         }
     }
 }
@@ -115,7 +115,7 @@ pub struct UserInfoUpdate {
     pub nickname: String,
 
     /// Private marker to forbid struct literal construction outside this module.
-    _p: PrivateMarker,
+    _m: PrivateMarker,
 }
 
 impl UserInfoUpdate {
@@ -127,7 +127,7 @@ impl UserInfoUpdate {
             id,
             qid,
             nickname,
-            _p: PrivateMarker,
+            _m: PrivateMarker,
         }
     }
 }
@@ -148,7 +148,7 @@ Defined once in `src/domain/model/aggregate.rs`:
 /// Zero-sized marker type that prevents struct literal construction
 /// of input aggregates from outside the defining module.
 ///
-/// Include `_p: PrivateMarker` as a field in any aggregate struct
+/// Include `_m: PrivateMarker` as a field in any aggregate struct
 /// whose construction should be limited to `new()` constructors.
 #[derive(Default, Clone, Copy)]
 pub struct PrivateMarker;
@@ -175,7 +175,7 @@ Input aggregates that produce domain events must:
 2. Implement `EventSink` (to push events in)
 3. Implement `EventEmit` (to pull events out after transaction commit)
 
-The `events` field is placed **before** the `_p` marker in the struct layout.
+The `events` field is placed **before** the `_m` marker in the struct layout.
 
 ---
 
@@ -223,7 +223,7 @@ impl From<UserInfo> for UserAggr {
 ## Quick checklist
 
 - [ ] Every aggregate file has a `*Aggr` read-model struct.
-- [ ] Every struct has `_p: PrivateMarker` with `///` doc comment.
+- [ ] Every struct has `_m: PrivateMarker` with `///` doc comment.
 - [ ] Every struct has a `pub fn new(...)` constructor.
 - [ ] No struct literal construction of aggregate types outside their module.
 - [ ] `Form::new()` generates ID; `Update::new()` / `Patch::new()` takes `id: String` as first param.

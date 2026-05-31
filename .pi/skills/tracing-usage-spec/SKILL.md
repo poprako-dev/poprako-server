@@ -102,12 +102,18 @@ impl UserCredential {
 | Layer | Rationale |
 |-------|-----------|
 | `src/usecase/` | Orchestration boundaries — spans mark the start of a use-case, capturing the full request lifecycle |
-| `src/infrastructure/query/` | Database I/O — spans let you trace individual queries, their duration, and parameters |
+| `src/infrastructure/query/` | Database I/O — `#[instrument]` is **permitted** on free functions and `Query` impl methods. Use it when the observability benefit (tracing individual queries, their duration, and parameters) outweighs the span overhead. Never place it on `QueryTransactional` impl blocks |
 | `src/infrastructure/external/` | External service calls (OSS, token generation, etc.) — spans isolate external latency |
 | `src/api/` | HTTP handler entry points — spans mark request boundaries |
 
 These layers perform I/O, can fail independently, and benefit from
 per-operation observability.
+
+> **Exception — Harness delegation**: `src/api/harness.rs` (`Harness` /
+> `HarnessInner` impl blocks) must **never** carry `#[instrument]`.
+> Every method in the harness is a pure delegation to the underlying
+> implementation, which already has its own instrumentation. See
+> `harness-spec` for details.
 
 ## Relationship to thirdparty-macro-usage-spec
 

@@ -5,7 +5,7 @@ use time::OffsetDateTime;
 use tracing::Level;
 use tracing::instrument;
 
-use crate::domain::external::token::TokenCodec;
+use crate::domain::external::token::{TokenParse, TokenSign};
 use crate::domain::model::aggregate::user::UserToken;
 use crate::domain::result::{DomainError, DomainResult};
 use crate::util::err::ErrorTrace as _;
@@ -51,7 +51,7 @@ impl JwtCodec {
     }
 }
 
-impl TokenCodec for JwtCodec {
+impl TokenSign for JwtCodec {
     #[instrument(skip(self), level = Level::DEBUG)]
     fn sign(&self, unsigned_token: &UserToken) -> DomainResult<String> {
         let now = OffsetDateTime::now_utc();
@@ -71,7 +71,9 @@ impl TokenCodec for JwtCodec {
             })
             .trace_error()
     }
+}
 
+impl TokenParse for JwtCodec {
     #[instrument(skip(self), level = Level::DEBUG)]
     fn parse(&self, signed_token: &str) -> DomainResult<UserToken> {
         let validation = Validation::default();

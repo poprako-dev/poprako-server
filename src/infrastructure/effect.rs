@@ -4,16 +4,18 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
 use async_trait::async_trait;
-use crossfire::mpsc;
+use crossfire::mpsc::{Array, bounded_async};
 use crossfire::oneshot::{self, RxOneshot, TxOneshot};
 use crossfire::{AsyncRx, MAsyncTx, TrySendError};
 use tracing::Level;
 use tracing::instrument;
 
-use crate::api::harness::HarnessInner;
+use crate::api::harness::HarnessBase;
 use crate::domain::effect::EffectSink;
 use crate::domain::model::event::{Event, EventEmit};
 use crate::infrastructure::effect::user::notify_invitor_handler;
+
+pub type SharedEffectSink = Arc<AsyncEffectSink>;
 
 /// An async effect sink that dispatches domain events to hardcoded handlers
 /// via a background task.
@@ -25,7 +27,8 @@ use crate::infrastructure::effect::user::notify_invitor_handler;
 pub struct AsyncEffectSink {
     accepting: Arc<AtomicBool>,
 
-    inlet: MAsyncTx<mpsc::Array<Event>>,
+    // TODO: is a masyntx really necessary?
+    inlet: MAsyncTx<Array<Event>>,
 
     shutdown: Mutex<Option<TxOneshot<()>>>,
     done: Mutex<Option<RxOneshot<()>>>,
@@ -37,8 +40,8 @@ impl AsyncEffectSink {
     /// The background task receives events from the mpsc channel and dispatches
     /// them to hardcoded effect handlers. The given `harn` is cloned for use
     /// by the background task.
-    pub fn new(harn: Arc<HarnessInner>, buffer: usize) -> Self {
-        let (inlet, outlet) = mpsc::bounded_async(buffer);
+    pub fn new(harn: Arc<HarnessBase>, buffer: usize) -> Self {
+        let (inlet, outlet) = bounded_async(buffer);
 
         let (shutdown_inlet, shutdown_outlet) = oneshot::oneshot();
         let (done_inlet, done_outlet) = oneshot::oneshot();
@@ -127,8 +130,8 @@ impl EffectSink for AsyncEffectSink {
 
 #[instrument(skip_all, level = Level::DEBUG)]
 async fn handle_task(
-    harn: Arc<HarnessInner>,
-    outlet: AsyncRx<mpsc::Array<Event>>,
+    harn: Arc<HarnessBase>,
+    outlet: AsyncRx<Array<Event>>,
     shutdown_outlet: RxOneshot<()>,
     done_inlet: TxOneshot<()>,
     accepting: Arc<AtomicBool>,
@@ -164,7 +167,7 @@ async fn handle_task(
 // ── Dispatch ───────────────────────────────────────────────────────────────
 
 /// Dispatches a domain event to the appropriate hardcoded effect handler.
-async fn dispatch(harn: &HarnessInner, event: Event) {
+async fn dispatch(harn: &HarnessBase, event: Event) {
     match event {
         Event::UserSignedUp(payload) => {
             notify_invitor_handler(harn, payload).await;

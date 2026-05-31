@@ -3,7 +3,7 @@ name: aggregate-definition-spec
 description: |
   Structural specification for domain aggregate struct definitions in poprako-r.
   Covers the four aggregate categories (read-model, Form, Update, Patch),
-  the `_p: PrivateMarker` compile-time guard, `new()` constructor requirements,
+  the `_m: PrivateMarker` compile-time guard, `new()` constructor requirements,
   ID generation rules, and file organization. Use whenever defining or modifying
   structs under src/domain/model/aggregate/.
 ---
@@ -18,7 +18,7 @@ category split, see `poprako-aggr-conventions`.
 
 ## 1. Four aggregate categories
 
-| Category | Suffix | Constructor | ID source | `_p` |
+| Category | Suffix | Constructor | ID source | `_m` |
 |----------|--------|-------------|-----------|------|
 | **Read-model** | `Aggr` | `new(all_fields)` | From entity row | ✅ |
 | **Input: Form** | `Form` | `new(biz_params)` | `*Aggr::generate_id()` | ✅ |
@@ -27,13 +27,13 @@ category split, see `poprako-aggr-conventions`.
 
 ---
 
-## 2. Universal: `_p` marker
+## 2. Universal: `_m` marker
 
 **Every** struct includes as its last field:
 
 ```rust
 /// Private marker to forbid struct literal construction outside this module.
-_p: PrivateMarker,
+_m: PrivateMarker,
 ```
 
 The `PrivateMarker` type is defined once in `src/domain/model/aggregate.rs` and
@@ -59,10 +59,9 @@ pub fn new(
     Self {
         id,
         // ...
-        _p: PrivateMarker,
+        _m: PrivateMarker,
     }
 }
-```
 
 - Name: `new`.
 - Visibility: `pub`.
@@ -82,7 +81,7 @@ pub struct TeamAggr {
     pub updated_at: OffsetDateTime,
 
     /// Private marker to forbid struct literal construction outside this module.
-    _p: PrivateMarker,
+    _m: PrivateMarker,
 }
 
 impl TeamAggr {
@@ -103,7 +102,7 @@ impl TeamAggr {
             avatar_uploaded,
             created_at,
             updated_at,
-            _p: PrivateMarker,
+            _m: PrivateMarker,
         }
     }
 }
@@ -120,10 +119,9 @@ pub fn new(biz_param_1: String, biz_param_2: String, ...) -> Self {
     Self {
         id: Aggr::generate_id(),
         // business fields
-        _p: PrivateMarker,
+        _m: PrivateMarker,
     }
 }
-```
 
 - ID generated via sibling `*Aggr::generate_id()`.
 - No `id` parameter in the constructor signature.
@@ -142,10 +140,9 @@ pub fn new(id: String, biz_params...) -> Self {
     Self {
         id,
         // business fields
-        _p: PrivateMarker,
+        _m: PrivateMarker,
     }
 }
-```
 
 - `id` is the **first** parameter, provided by the caller.
 - Constructor has a `///` doc comment explaining the ID semantics.
@@ -159,7 +156,7 @@ Within any aggregate struct:
 1. `pub id: String,`
 2. Business fields (all `pub`)
 3. Event field if event-carrying (`events: Vec<Event>,` — no visibility keyword)
-4. `/// Private marker ...` + `_p: PrivateMarker,`
+4. `/// Private marker ...` + `_m: PrivateMarker,`
 
 Within the constructor `Self { .. }` block, fields are listed in the same order
 as the struct declaration.
@@ -199,7 +196,7 @@ UUID generation uses `Uuid::now_v7()`.
 ## 9. Quick checklist
 
 - [ ] Category correctly identified (Aggr / Form / Update / Patch).
-- [ ] `_p: PrivateMarker` field present with exact `///` comment.
+- [ ] `_m: PrivateMarker` field present with exact `///` comment.
 - [ ] `pub fn new(...)` exists on every struct.
 - [ ] `Form::new()` generates ID; `Update::new()` / `Patch::new()` takes `id: String` as first param.
 - [ ] Constructor field order matches declaration order.

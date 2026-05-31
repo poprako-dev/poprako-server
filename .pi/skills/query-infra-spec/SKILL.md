@@ -10,35 +10,7 @@ description: |
 ## `infrastructure/query.rs` stays lean
 
 Do **NOT** bloat `infrastructure/query.rs` with `#[async_trait]` impl blocks.
-Use marker traits in the per-entity file to inherit domain traits, then place
-the actual trait impls there.
-
-Pattern: `infrastructure/query/user.rs` defines marker traits and their impls:
-
-```rust
-use async_trait::async_trait;
-
-trait UserQuery: domain_query::user::UserQuery {}
-trait UserQueryTransactional: domain_query::user::UserQueryTransactional {}
-
-impl UserQuery for Query {}
-impl<'c> UserQueryTransactional for QueryTransactional<'c> {}
-
-#[async_trait]
-impl domain_query::user::UserQuery for Query {
-    async fn get_by_id(&self, id: &str) -> DomainResl<UserAggr> {
-        let mut conn = self.pool.get()...;
-        get_by_id(&mut conn, id).await
-    }
-}
-
-#[async_trait]
-impl<'c> domain_query::user::UserQueryTransactional for QueryTransactional<'c> {
-    async fn create(&mut self, form: UserForm) -> DomainResl<UserAggr> {
-        create(self.conn, &form).await
-    }
-}
-```
+Place all trait impls in the per-entity files under `src/infrastructure/query/`.
 
 `infrastructure/query.rs` only contains:
 - Module declarations
@@ -82,6 +54,64 @@ pub struct UserAspect { ... }
 ```rust
 pub struct NewUser { ... }       // no: ad-hoc name for insert
 pub struct UserChange { ... }    // no: use Aspect
+```
+
+## Struct-only insertion and querying
+
+All `INSERT` and `SELECT` operations **MUST** use the corresponding entity
+struct (`*Entry` / `*Row`) with `.values(&entry)` / `.select(TheRow::as_select())`.
+Inline tuple-based `.values(( col.eq(val), ... ))` or raw
+`.first::<(Type1, Type2)>(conn)` are **FORBIDDEN**.
+
+**DO — Entry struct for INSERT:**
+```rust
+// entity/my_entity.rs
+#[derive(Insertable)]
+#[diesel(table_name = schema::t_my_entity)]
+pub struct MyEntityEntry<'a> {
+    pub f_id: &'a str,
+    pub f_name: &'a str,
+    pub f_created_at: OffsetDateTime,
+}
+
+// my_entity.rs (query logic)
+let entry = MyEntityEntry {
+    f_id: &form.id,
+    f_name: &form.name,
+    f_created_at: now,
+};
+diesel::insert_into(t_my_entity).values(&entry).execute(conn).await?;
+```
+
+**DO NOT — inline tuple for INSERT:**
+```rust
+// FORBIDDEN
+diesel::insert_into(t_my_entity::table)
+    .values((
+        t_my_entity::f_id.eq(&form.id),
+        t_my_entity::f_name.eq(&form.name),
+        t_my_entity::f_created_at.eq(now),
+    ))
+    .execute(conn)
+    .await?;
+```
+
+**DO — Row struct for SELECT:**
+```rust
+let row: MyEntityRow = t_my_entity
+    .filter(f_id.eq(id))
+    .select(MyEntityRow::as_select())
+    .first(conn)
+    .await?;
+```
+
+**DO NOT — raw tuple for SELECT:**
+```rust
+// FORBIDDEN
+let (id, name, created_at) = t_my_entity
+    .filter(f_id.eq(id))
+    .first::<(String, String, OffsetDateTime)>(conn)
+    .await?;
 ```
 
 ## Database column prefix

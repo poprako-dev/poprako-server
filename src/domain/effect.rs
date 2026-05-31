@@ -15,7 +15,7 @@ pub trait EffectSink {
 #[async_trait]
 pub trait Effect {
     /// Executes the side effect, without returning a result(keep siltent even when it fails).
-    async fn run_effect<S>(&mut self, handler: &S)
+    async fn develop_effect<S>(&mut self, handler: &S)
     where
         S: EffectSink + Send + Sync;
 }
@@ -25,7 +25,7 @@ impl<E> Effect for E
 where
     E: EventEmit + Send,
 {
-    async fn run_effect<S>(&mut self, handler: &S)
+    async fn develop_effect<S>(&mut self, handler: &S)
     where
         S: EffectSink + Send + Sync,
     {

@@ -21,6 +21,7 @@ pub struct MemberRow {
     pub f_assigned_reviewer_at: Option<OffsetDateTime>,
     pub f_assigned_publisher_at: Option<OffsetDateTime>,
     pub f_assigned_admin_at: Option<OffsetDateTime>,
+    pub f_assigned_assistant_at: Option<OffsetDateTime>,
     pub f_created_at: OffsetDateTime,
     pub f_updated_at: OffsetDateTime,
 }
@@ -42,6 +43,7 @@ pub struct MemberEntry<'a> {
     pub f_assigned_reviewer_at: Option<OffsetDateTime>,
     pub f_assigned_publisher_at: Option<OffsetDateTime>,
     pub f_assigned_admin_at: Option<OffsetDateTime>,
+    pub f_assigned_assistant_at: Option<OffsetDateTime>,
     pub f_created_at: OffsetDateTime,
     pub f_updated_at: OffsetDateTime,
 }
@@ -64,6 +66,7 @@ impl From<MemberRow> for MemberAggr {
             v.f_assigned_reviewer_at,
             v.f_assigned_publisher_at,
             v.f_assigned_admin_at,
+            v.f_assigned_assistant_at,
             v.f_created_at,
             v.f_updated_at,
         )

@@ -37,6 +37,15 @@ pub struct MemberInvitationEntry<'a> {
     pub f_updated_at: OffsetDateTime,
 }
 
+// ── Update Aspect ──────────────────────────────────────────────────────────
+
+#[derive(AsChangeset)]
+#[diesel(table_name = schema::t_member_invitation)]
+pub struct MemberInvitationAspect {
+    pub f_pending: bool,
+    pub f_updated_at: OffsetDateTime,
+}
+
 // ── Conversions ────────────────────────────────────────────────────────────
 
 impl From<MemberInvitationRow> for MemberInvitationAggr {

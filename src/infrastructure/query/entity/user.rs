@@ -8,7 +8,7 @@ use crate::infrastructure::query::schema;
 
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = schema::t_user)]
-pub struct UserInfo {
+pub struct UserRow {
     pub f_id: String,
     pub f_nickname: String,
     pub f_qid: String,
@@ -19,13 +19,6 @@ pub struct UserInfo {
     pub f_last_active_at: OffsetDateTime,
     pub f_created_at: OffsetDateTime,
     pub f_updated_at: OffsetDateTime,
-}
-
-#[derive(Queryable)]
-#[diesel(table_name = schema::t_user)]
-pub struct UserCredentialRow {
-    pub f_qid: String,
-    pub f_password_hash: String,
 }
 
 // ── Insertable ─────────────────────────────────────────────────────────────
@@ -44,8 +37,8 @@ pub struct UserEntry<'a> {
 
 // ── Conversions ────────────────────────────────────────────────────────────
 
-impl From<UserInfo> for UserAggr {
-    fn from(v: UserInfo) -> Self {
+impl From<UserRow> for UserAggr {
+    fn from(v: UserRow) -> Self {
         UserAggr::new(
             v.f_id,
             v.f_nickname,

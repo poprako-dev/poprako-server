@@ -3,7 +3,7 @@ name: query-domain-spec
 description: |
   Domain-layer query trait conventions for poprako-r. Covers
   `src/domain/query/` trait naming, method placement rules (Query vs
-  QueryTransactional split), parameter ownership, trait file organization,
+  QueryTransactional split), trait file organization,
   and the `QueryTransactional` supertrait aggregation point. Use whenever
   defining or modifying trait files under src/domain/query/.
 ---
@@ -114,26 +114,23 @@ pub trait UserQuery {
 
 ---
 
-## 5. Parameters prefer owned types (ownership over borrowing)
+## 5. Prefer reference types over owned types
 
-All trait method parameters should use **owned** types. Avoid borrowing
-parameters (`&str`, `&Form`) in `async_trait` method signatures.
+All `async_trait` method parameters should use **reference** types (`&str`,
+`&UserForm`, etc.) rather than owned types.
 
-Owning parameters avoids the lifetime complications that `async_trait`
-introduces with references — the trait object is `Box<dyn Future>` behind
-the scenes, and borrowed arguments force explicit lifetime annotations that
-quickly become unwieldy.
-
-The caller moves ownership in; the implementation can then freely pass data
-across `.await` points without worrying about the borrow living long enough.
+References avoid unnecessary cloning at the call site. The caller already
+has the data on the stack or in an `Arc`; taking a reference lets the
+implementation borrow it without moving ownership into the trait object.
 
 ```rust
-// good — owned
+// good — reference types
+async fn get_by_id(&self, id: &str) -> DomainResult<UserAggr>;
+async fn create(&mut self, form: &UserForm) -> DomainResult<UserAggr>;
+
+// bad — owned (unnecessary clone at call site)
 async fn get_by_id(&self, id: String) -> DomainResult<UserAggr>;
 async fn create(&mut self, form: UserForm) -> DomainResult<UserAggr>;
-
-// bad — borrowed (avoid in async_trait signatures)
-async fn get_by_id(&self, id: &str) -> DomainResult<UserAggr>;
 ```
 
 This rule applies to **domain query trait signatures only**. Free functions
