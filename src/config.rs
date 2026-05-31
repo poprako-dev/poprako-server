@@ -11,7 +11,9 @@ impl AppConfig {
     pub async fn from_default_file() -> anyhow::Result<Self> {
         let content = tokio::fs::read_to_string("application-config.json")
             .await
-            .expect("Failed to read application_config.json");
+            .with_context(
+                || "[ApplicationConfig::from_default_file] Failed to read application_config.json",
+            )?;
 
         serde_json::from_str(&content).with_context(
             || "[ApplicationConfig::from_default_file] Failed to parse application_config.json",

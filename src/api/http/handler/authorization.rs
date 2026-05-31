@@ -15,10 +15,12 @@ pub async fn sign_up_user(
     Json(params): Json<SignUpUserParams>,
 ) -> HttpResult<SignUpUserReply> {
     let reply = usecase::user::sign_up_user(&harn, params).await?;
+
     let cookie = Cookie::build((AUTHORIZATION_COOKIE_NAME, format!("Bearer {}", reply.token)))
         .path("/")
         .http_only(true)
         .same_site(SameSite::Lax)
         .build();
+
     Ok(HttpResponse::from(reply).with_cookie(&cookie))
 }

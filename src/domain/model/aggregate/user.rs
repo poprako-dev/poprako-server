@@ -1,21 +1,11 @@
 use std::mem;
 
+use crate::domain::model::aggregate::PrivateMarker;
 use crate::domain::model::event::{Event, EventEmit, EventSink};
 use crate::util::err::ErrorTrace as _;
 
 use time::OffsetDateTime;
 use uuid::Uuid;
-
-#[derive(Debug, Clone)]
-pub struct UserToken {
-    pub user_id: String,
-}
-
-impl UserToken {
-    pub fn new(user_id: String) -> Self {
-        Self { user_id }
-    }
-}
 
 pub struct UserAggr {
     pub id: String,
@@ -32,6 +22,9 @@ pub struct UserAggr {
 
     pub created_at: OffsetDateTime,
     pub updated_at: OffsetDateTime,
+
+    /// Private marker to forbid struct literal construction outside this module.
+    _p: PrivateMarker,
 }
 
 impl UserAggr {
@@ -41,6 +34,31 @@ impl UserAggr {
 
     pub fn generate_avatar_key(&self) -> String {
         format!("user_avatar/{}", self.id,)
+    }
+
+    pub fn new(
+        id: String,
+        nickname: String,
+        qid: String,
+        is_sadmin: bool,
+        avatar_key: String,
+        avatar_uploaded: bool,
+        last_active_at: OffsetDateTime,
+        created_at: OffsetDateTime,
+        updated_at: OffsetDateTime,
+    ) -> Self {
+        Self {
+            id,
+            qid,
+            nickname,
+            avatar_key,
+            avatar_uploaded,
+            is_sadmin,
+            last_active_at,
+            created_at,
+            updated_at,
+            _p: PrivateMarker,
+        }
     }
 }
 
@@ -52,12 +70,40 @@ impl EventEmit for UserAggr {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct UserToken {
+    pub user_id: String,
+
+    /// Private marker to forbid struct literal construction outside this module.
+    _p: PrivateMarker,
+}
+
+impl UserToken {
+    pub fn new(user_id: String) -> Self {
+        Self {
+            user_id,
+            _p: PrivateMarker,
+        }
+    }
+}
+
 pub struct UserCredential {
     pub qid: String,
     pub password_hash: String,
+
+    /// Private marker to forbid struct literal construction outside this module.
+    _p: PrivateMarker,
 }
 
 impl UserCredential {
+    pub fn new(qid: String, password_hash: String) -> Self {
+        Self {
+            qid,
+            password_hash,
+            _p: PrivateMarker,
+        }
+    }
+
     pub fn verify_password(&self, password: &str) -> bool {
         bcrypt::verify(password, &self.password_hash)
             .trace_error()
@@ -74,6 +120,9 @@ pub struct UserForm {
     pub password_hash: String,
 
     events: Vec<Event>,
+
+    /// Private marker to forbid struct literal construction outside this module.
+    _p: PrivateMarker,
 }
 
 impl UserForm {
@@ -84,6 +133,7 @@ impl UserForm {
             nickname,
             password_hash: password,
             events: Vec::new(),
+            _p: PrivateMarker,
         }
     }
 
@@ -95,6 +145,7 @@ impl UserForm {
             nickname: self.nickname.clone(),
             password_hash: self.password_hash.clone(),
             events: Vec::new(),
+            _p: PrivateMarker,
         }
     }
 }
@@ -112,11 +163,28 @@ impl EventEmit for UserForm {
     }
 }
 
-// UserInfoUpdate is used for **PUT** update of user info.
+/// Input aggregate for updating user info via PUT.
 // TODO: No password update support for now.
 pub struct UserInfoUpdate {
     pub id: String,
 
     pub qid: String,
     pub nickname: String,
+
+    /// Private marker to forbid struct literal construction outside this module.
+    _p: PrivateMarker,
+}
+
+impl UserInfoUpdate {
+    /// Creates a new `UserInfoUpdate`.
+    ///
+    /// `id` is the existing user ID (provided by the caller, not generated).
+    pub fn new(id: String, qid: String, nickname: String) -> Self {
+        Self {
+            id,
+            qid,
+            nickname,
+            _p: PrivateMarker,
+        }
+    }
 }

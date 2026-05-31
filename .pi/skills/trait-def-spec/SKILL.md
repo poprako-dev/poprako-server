@@ -26,7 +26,7 @@ represents, not the implementation.
 /// Each method takes an immutable `&self` reference, suitable for
 /// non-transactional queries backed by a connection pool.
 #[async_trait]
-pub trait UserQeury { ... }
+pub trait UserQuery { ... }
 ```
 
 Private marker traits also get `///`:
@@ -45,7 +45,7 @@ Every trait method must have a leading `///` line. Describe what the method
 **does** and, when relevant, its error semantics.
 
 ```rust
-pub trait UserQeury {
+pub trait UserQuery {
     /// Returns the user with the given ID, or an expected error if not found.
     async fn get_by_id(&self, id: &str) -> DomainResl<UserAggr>;
 }
@@ -75,7 +75,7 @@ by exactly one blank line.
 **Do:**
 
 ```rust
-pub trait UserQeury {
+pub trait UserQuery {
     /// Returns the user with the given ID, or an expected error if not found.
     async fn get_by_id(&self, id: &str) -> DomainResl<UserAggr>;
 
@@ -92,7 +92,7 @@ pub trait UserQeury {
 
 ```rust
 // ❌ No blank line between methods.
-pub trait UserQeury {
+pub trait UserQuery {
     async fn get_by_id(&self, id: &str) -> DomainResl<UserAggr>;
     async fn get_credentials_by_qid(&self, qid: &str) -> DomainResl<UserCredential>;
 }
@@ -161,8 +161,8 @@ pub trait MemberQueryTransactional {
 
 ```rust
 /// Blanket-impl marker: every [`QueryTransactional`] is a
-/// [`UserQeuryMut`](crate::domain::query::user::UserQeuryMut).
-trait UserQeuryMut: domain_query::user::UserQeuryMut {}
+/// [`UserQueryMut`](crate::domain::query::user::UserQueryMut).
+trait UserQueryMut: domain_query::user::UserQueryMut {}
 ```
 
 ---

@@ -16,42 +16,23 @@ use crate::infrastructure::effect::AsyncEffectSink;
 use crate::infrastructure::external::image_pool::OssImagePool;
 use crate::infrastructure::external::token::JwtCodec;
 use crate::infrastructure::query::Query;
+use crate::util::DerefTo;
 
-#[derive(Clone)]
-pub struct Harness {
-    inner: Arc<HarnessInner>,
-    effect_sink: Arc<AsyncEffectSink>,
-}
-
-impl Harness {
-    pub fn new(query: Query, jwt_codec: JwtCodec, image_pool: OssImagePool) -> Self {
-        let inner = Arc::new(HarnessInner {
-            query,
-            jwt_codec,
-            image_pool,
-        });
-
-        let effect_sink = Arc::new(AsyncEffectSink::new(Arc::clone(&inner), 1024));
-
-        Harness { inner, effect_sink }
-    }
-}
+// ── HarnessInner: shared core for DB access, image pool, and token codec ───
 
 pub struct HarnessInner {
-    pub query: Query,
+    query: Query,
     jwt_codec: JwtCodec,
     image_pool: OssImagePool,
 }
 
-impl std::ops::Deref for Harness {
-    type Target = HarnessInner;
+impl std::ops::Deref for HarnessInner {
+    type Target = Query;
 
     fn deref(&self) -> &Self::Target {
-        &self.inner
+        &self.query
     }
 }
-
-// ── Trait impls on HarnessInner (used by bg task for DB access) ────────────
 
 #[async_trait]
 impl Transactional for HarnessInner {
@@ -103,22 +84,33 @@ impl TokenCodec for HarnessInner {
     }
 }
 
-// ── Delegation impls on Harness (for usecase generic bounds) ───────────────
+// ── Harness: public facade with effect sink and Deref to HarnessInner ──────
 
-#[async_trait]
-impl Transactional for Harness {
-    type Query<'a>
-        = <Query as Transactional>::Query<'a>
-    where
-        Self: 'a;
+#[derive(Clone)]
+pub struct Harness {
+    inner: Arc<HarnessInner>,
+    effect_sink: Arc<AsyncEffectSink>,
+}
 
-    #[instrument(skip(self, f), level = Level::DEBUG)]
-    async fn run_in_transaction<F, T>(&self, f: F) -> DomainResult<T>
-    where
-        T: Send,
-        F: for<'a> FnOnce(&'a mut Self::Query<'a>) -> BoxFuture<'a, DomainResult<T>> + Send,
-    {
-        self.inner.run_in_transaction(f).await
+impl Harness {
+    pub fn new(query: Query, jwt_codec: JwtCodec, image_pool: OssImagePool) -> Self {
+        let inner = Arc::new(HarnessInner {
+            query,
+            jwt_codec,
+            image_pool,
+        });
+
+        let effect_sink = Arc::new(AsyncEffectSink::new(Arc::clone(&inner), 1024));
+
+        Harness { inner, effect_sink }
+    }
+}
+
+impl std::ops::Deref for Harness {
+    type Target = HarnessInner;
+
+    fn deref(&self) -> &Self::Target {
+        &self.inner
     }
 }
 
@@ -132,14 +124,10 @@ impl EffectSink for Harness {
     }
 }
 
-impl TokenCodec for Harness {
-    #[instrument(skip(self), level = Level::DEBUG)]
-    fn sign(&self, unsigned_token: &UserToken) -> DomainResult<String> {
-        self.inner.sign(unsigned_token)
-    }
+impl DerefTo for Harness {
+    type Target = HarnessInner;
 
-    #[instrument(skip(self), level = Level::DEBUG)]
-    fn parse(&self, signed_token: &str) -> DomainResult<UserToken> {
-        self.inner.parse(signed_token)
+    fn deref_to(&self) -> &HarnessInner {
+        &self.inner
     }
 }

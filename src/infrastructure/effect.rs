@@ -26,6 +26,7 @@ pub struct AsyncEffectSink {
     accepting: Arc<AtomicBool>,
 
     inlet: MAsyncTx<mpsc::Array<Event>>,
+
     shutdown: Mutex<Option<TxOneshot<()>>>,
     done: Mutex<Option<RxOneshot<()>>>,
 }

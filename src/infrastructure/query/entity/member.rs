@@ -1,7 +1,7 @@
 use diesel::prelude::*;
 use time::OffsetDateTime;
 
-use crate::domain::model::aggregate::member::Member;
+use crate::domain::model::aggregate::member::MemberAggr;
 use crate::infrastructure::query::schema;
 
 // ── Queryable / Selectable ─────────────────────────────────────────────────
@@ -48,24 +48,24 @@ pub struct MemberEntry {
 
 // ── Conversions ────────────────────────────────────────────────────────────
 
-impl From<MemberRow> for Member {
+impl From<MemberRow> for MemberAggr {
     fn from(v: MemberRow) -> Self {
-        Self {
-            id: v.f_id,
-            user_id: v.f_user_id,
-            user: None,
-            team_id: v.f_team_id,
-            team: None,
-            assigned_raw_provider_at: v.f_assigned_raw_provider_at,
-            assigned_translator_at: v.f_assigned_translator_at,
-            assigned_proofreader_at: v.f_assigned_proofreader_at,
-            assigned_typesetter_at: v.f_assigned_typesetter_at,
-            assigned_redrawer_at: v.f_assigned_redrawer_at,
-            assigned_reviewer_at: v.f_assigned_reviewer_at,
-            assigned_publisher_at: v.f_assigned_publisher_at,
-            assigned_admin_at: v.f_assigned_admin_at,
-            created_at: v.f_created_at,
-            updated_at: v.f_updated_at,
-        }
+        MemberAggr::new(
+            v.f_id,
+            v.f_user_id,
+            None,
+            v.f_team_id,
+            None,
+            v.f_assigned_raw_provider_at,
+            v.f_assigned_translator_at,
+            v.f_assigned_proofreader_at,
+            v.f_assigned_typesetter_at,
+            v.f_assigned_redrawer_at,
+            v.f_assigned_reviewer_at,
+            v.f_assigned_publisher_at,
+            v.f_assigned_admin_at,
+            v.f_created_at,
+            v.f_updated_at,
+        )
     }
 }

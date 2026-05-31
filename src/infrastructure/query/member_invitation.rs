@@ -4,7 +4,7 @@ use diesel_async::AsyncPgConnection;
 use diesel_async::RunQueryDsl;
 use time::OffsetDateTime;
 
-use crate::domain::model::aggregate::member_invitation::MemberInvitation;
+use crate::domain::model::aggregate::member_invitation::MemberInvitationAggr;
 use crate::domain::query::member_invitation::MemberInvitationQueryTransactional;
 use crate::domain::result::{DomainError, DomainResult};
 use crate::infrastructure::query::QueryTransactional;
@@ -18,7 +18,7 @@ use crate::util::i18n::trl;
 pub async fn get_by_code_ex(
     conn: &mut AsyncPgConnection,
     invitation_code: String,
-) -> DomainResult<MemberInvitation> {
+) -> DomainResult<MemberInvitationAggr> {
     let row: MemberInvitationRow = t_member_invitation
         .filter(f_invitation_code.eq(&invitation_code))
         .filter(f_pending.eq(true))
@@ -66,7 +66,10 @@ pub async fn mark_pending_as_used(conn: &mut AsyncPgConnection, id: String) -> D
 
 #[async_trait]
 impl<'c> MemberInvitationQueryTransactional for QueryTransactional<'c> {
-    async fn get_by_code_ex(&mut self, invitation_code: String) -> DomainResult<MemberInvitation> {
+    async fn get_by_code_ex(
+        &mut self,
+        invitation_code: String,
+    ) -> DomainResult<MemberInvitationAggr> {
         get_by_code_ex(self.conn, invitation_code).await
     }
 

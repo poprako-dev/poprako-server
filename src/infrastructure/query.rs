@@ -157,8 +157,8 @@ impl Transactional for Query {
         connection
             .build_transaction()
             .run(async move |conn| {
-                let mut harness = Self::build_transactional_query(conn);
-                f(&mut harness).await
+                let mut query = Self::build_transactional_query(conn);
+                f(&mut query).await
             })
             .await
     }

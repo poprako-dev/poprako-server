@@ -18,14 +18,14 @@ Pattern: `infrastructure/query/user.rs` defines marker traits and their impls:
 ```rust
 use async_trait::async_trait;
 
-trait UserQuery: domain_query::user::UserQeury {}
-trait UserQeuryTransactional: domain_query::user::UserQeuryTransactional {}
+trait UserQuery: domain_query::user::UserQuery {}
+trait UserQueryTransactional: domain_query::user::UserQueryTransactional {}
 
 impl UserQuery for Query {}
-impl<'c> UserQeuryTransactional for QueryTransactional<'c> {}
+impl<'c> UserQueryTransactional for QueryTransactional<'c> {}
 
 #[async_trait]
-impl domain_query::user::UserQeury for Query {
+impl domain_query::user::UserQuery for Query {
     async fn get_by_id(&self, id: &str) -> DomainResl<UserAggr> {
         let mut conn = self.pool.get()...;
         get_by_id(&mut conn, id).await
@@ -33,7 +33,7 @@ impl domain_query::user::UserQeury for Query {
 }
 
 #[async_trait]
-impl<'c> domain_query::user::UserQeuryTransactional for QueryTransactional<'c> {
+impl<'c> domain_query::user::UserQueryTransactional for QueryTransactional<'c> {
     async fn create(&mut self, form: UserForm) -> DomainResl<UserAggr> {
         create(self.conn, &form).await
     }
@@ -198,7 +198,7 @@ This keeps the `Query` / `QueryTransactional` impl blocks thin:
 use async_trait::async_trait;
 
 #[async_trait]
-impl domain_query::user::UserQeury for Query {
+impl domain_query::user::UserQuery for Query {
     async fn get_by_id(&self, id: &str) -> DomainResl<UserAggr> {
         let mut conn = self.pool.get().await...?;
         get_by_id(&mut conn, id).await
@@ -206,7 +206,7 @@ impl domain_query::user::UserQeury for Query {
 }
 
 #[async_trait]
-impl<'c> domain_query::user::UserQeuryTransactional for QueryTransactional<'c> {
+impl<'c> domain_query::user::UserQueryTransactional for QueryTransactional<'c> {
     async fn create(&mut self, form: UserForm) -> DomainResl<UserAggr> {
         create(self.conn, &form).await
     }
@@ -220,7 +220,7 @@ per-entity `*Transactional` traits via supertraits:
 
 ```rust
 pub trait QueryTransactional:
-    Send + UserQeuryTransactional + MemberQueryTransactional + MemberInvitationQueryTransactional
+    Send + UserQueryTransactional + MemberQueryTransactional + MemberInvitationQueryTransactional
 {
 }
 ```

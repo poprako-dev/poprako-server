@@ -23,7 +23,7 @@ pub struct UserInfo {
 
 #[derive(Queryable)]
 #[diesel(table_name = schema::t_user)]
-pub struct UserCredential {
+pub struct UserCredentialRow {
     pub f_qid: String,
     pub f_password_hash: String,
 }
@@ -46,16 +46,16 @@ pub struct UserEntry {
 
 impl From<UserInfo> for UserAggr {
     fn from(v: UserInfo) -> Self {
-        Self {
-            id: v.f_id,
-            nickname: v.f_nickname,
-            qid: v.f_qid,
-            is_sadmin: v.f_is_sadmin,
-            avatar_key: v.f_avatar_key.unwrap_or_default(),
-            avatar_uploaded: v.f_avatar_uploaded,
-            last_active_at: v.f_last_active_at,
-            created_at: v.f_created_at,
-            updated_at: v.f_updated_at,
-        }
+        UserAggr::new(
+            v.f_id,
+            v.f_nickname,
+            v.f_qid,
+            v.f_is_sadmin,
+            v.f_avatar_key.unwrap_or_default(),
+            v.f_avatar_uploaded,
+            v.f_last_active_at,
+            v.f_created_at,
+            v.f_updated_at,
+        )
     }
 }
