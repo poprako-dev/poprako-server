@@ -56,14 +56,17 @@ pub async fn get_credential_by_qid(
     Ok(UserCredential::new(row.f_qid, row.f_password_hash))
 }
 
-pub async fn create(conn: &mut AsyncPgConnection, form: UserForm) -> DomainResult<UserAggr> {
+pub async fn create<'a, 'c>(
+    conn: &'c mut AsyncPgConnection,
+    form: &'a UserForm,
+) -> DomainResult<UserAggr> {
     let now = OffsetDateTime::now_utc();
 
     let entry = UserEntry {
-        f_id: form.id,
-        f_nickname: form.nickname,
-        f_qid: form.qid,
-        f_password_hash: form.password_hash,
+        f_id: &form.id,
+        f_nickname: &form.nickname,
+        f_qid: &form.qid,
+        f_password_hash: &form.password_hash,
         f_last_active_at: now,
         f_created_at: now,
         f_updated_at: now,
@@ -100,7 +103,7 @@ impl UserQuery for Query {
 
 #[async_trait]
 impl<'c> UserQueryTransactional for QueryTransactional<'c> {
-    async fn create(&mut self, form: UserForm) -> DomainResult<UserAggr> {
+    async fn create<'s, 'a>(&'s mut self, form: &'a UserForm) -> DomainResult<UserAggr> {
         create(self.conn, form).await
     }
 }

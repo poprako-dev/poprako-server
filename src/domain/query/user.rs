@@ -23,5 +23,5 @@ pub trait UserQuery {
 #[async_trait]
 pub trait UserQueryTransactional {
     /// Creates a new user from the registration form inside a transaction.
-    async fn create(&mut self, form: UserForm) -> DomainResult<UserAggr>;
+    async fn create<'s, 'a>(&'s mut self, form: &'a UserForm) -> DomainResult<UserAggr>;
 }

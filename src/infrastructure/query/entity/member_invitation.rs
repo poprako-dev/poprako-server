@@ -25,12 +25,12 @@ pub struct MemberInvitationRow {
 
 #[derive(Insertable)]
 #[diesel(table_name = schema::t_member_invitation)]
-pub struct MemberInvitationEntry {
-    pub f_id: String,
-    pub f_inviter_id: String,
-    pub f_team_id: String,
-    pub f_invitee_qid: String,
-    pub f_invitation_code: String,
+pub struct MemberInvitationEntry<'a> {
+    pub f_id: &'a str,
+    pub f_inviter_id: &'a str,
+    pub f_team_id: &'a str,
+    pub f_invitee_qid: &'a str,
+    pub f_invitation_code: &'a str,
     pub f_pending: bool,
     pub f_role_mask: i64,
     pub f_created_at: OffsetDateTime,
