@@ -4,28 +4,31 @@ use diesel_async::AsyncPgConnection;
 use diesel_async::RunQueryDsl;
 use time::OffsetDateTime;
 
-use crate::domain::model::aggregate::member_invitation::MemberInvitation;
-use crate::domain::query as domain_query;
-use crate::domain::result::{DomainErr, DomainResl};
-use crate::infrastructure::query::TransactionalQuery;
+use crate::domain::model::aggregate::member_invitation::MemberInvitationAggr;
+use crate::domain::query::member_invitation::MemberInvitationQueryTransactional;
+use crate::domain::result::{DomainError, DomainResult};
+use crate::infrastructure::query::RdbQueryTransactional;
+use crate::infrastructure::query::entity::member_invitation::MemberInvitationAspect;
 use crate::infrastructure::query::entity::member_invitation::MemberInvitationRow;
 use crate::infrastructure::query::schema::t_member_invitation::dsl::*;
 use crate::util::err::ErrorTrace as _;
 use crate::util::i18n::trl;
 
-pub async fn get_pending_by_invitee_qid(
+/// SELECT ... FOR UPDATE: returns the pending invitation for the given code
+/// with an exclusive row lock, or an expected error if none matches.
+pub async fn get_by_code_ex(
     conn: &mut AsyncPgConnection,
-    invitee_qid: &str,
-) -> DomainResl<MemberInvitation> {
+    invitation_code: &str,
+) -> DomainResult<MemberInvitationAggr> {
     let row: MemberInvitationRow = t_member_invitation
-        .filter(f_invitee_qid.eq(invitee_qid))
+        .filter(f_invitation_code.eq(&invitation_code))
         .filter(f_pending.eq(true))
-        .order(f_created_at.desc())
         .select(MemberInvitationRow::as_select())
+        .for_update()
         .first(conn)
         .await
         .optional()?
-        .ok_or(DomainErr::expected_argument(trl(
+        .ok_or(DomainError::expected_argument(trl(
             "error-no-pending-invitation",
         )))
         .trace_debug()?;
@@ -33,17 +36,29 @@ pub async fn get_pending_by_invitee_qid(
     Ok(row.into())
 }
 
-pub async fn mark_as_used(conn: &mut AsyncPgConnection, id: &str) -> DomainResl<()> {
-    let rows_affected = diesel::update(t_member_invitation.filter(f_id.eq(id)))
-        .set((
-            f_pending.eq(false),
-            f_updated_at.eq(OffsetDateTime::now_utc()),
-        ))
-        .execute(conn)
-        .await?;
+/// Conditionally marks an invitation as consumed.
+///
+/// The `WHERE f_pending = true` guard ensures this is a no-op on an already-consumed row,
+/// which acts as a safety net regardless of the row lock held by [`get_by_code_ex`].
+pub async fn mark_pending_as_used(conn: &mut AsyncPgConnection, id: &str) -> DomainResult<()> {
+    let now = OffsetDateTime::now_utc();
+
+    let aspect = MemberInvitationAspect {
+        f_pending: false,
+        f_updated_at: now,
+    };
+
+    let rows_affected = diesel::update(
+        t_member_invitation
+            .filter(f_id.eq(id))
+            .filter(f_pending.eq(true)),
+    )
+    .set(&aspect)
+    .execute(conn)
+    .await?;
 
     if rows_affected == 0 {
-        return Err(DomainErr::expected_argument(trl(
+        return Err(DomainError::expected_argument(trl(
             "error-invitation-not-found",
         )))
         .trace_debug();
@@ -52,24 +67,18 @@ pub async fn mark_as_used(conn: &mut AsyncPgConnection, id: &str) -> DomainResl<
     Ok(())
 }
 
-// ── Marker traits ──────────────────────────────────────────────────────────
-
-/// Blanket-impl marker: every [`TransactionalQuery`] is a
-/// [`MemberInvitationQueryMut`](crate::domain::query::member_invitation::MemberInvitationQueryMut).
-trait MemberInvitationQuery: domain_query::member_invitation::MemberInvitationQueryMut {}
-
 // ── impls ──────────────────────────────────────────────────────────────────
 
 #[async_trait]
-impl<'c> domain_query::member_invitation::MemberInvitationQueryMut for TransactionalQuery<'c> {
-    async fn get_pending_by_invitee_qid(
+impl<'c> MemberInvitationQueryTransactional for RdbQueryTransactional<'c> {
+    async fn get_by_code_ex(
         &mut self,
-        invitee_qid: &str,
-    ) -> DomainResl<MemberInvitation> {
-        get_pending_by_invitee_qid(self.conn, invitee_qid).await
+        invitation_code: &str,
+    ) -> DomainResult<MemberInvitationAggr> {
+        get_by_code_ex(self.conn, invitation_code).await
     }
 
-    async fn mark_as_used(&mut self, id: &str) -> DomainResl<()> {
-        mark_as_used(self.conn, id).await
+    async fn mark_pending_as_used(&mut self, id: &str) -> DomainResult<()> {
+        mark_pending_as_used(self.conn, id).await
     }
 }

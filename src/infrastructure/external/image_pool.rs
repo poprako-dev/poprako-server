@@ -12,7 +12,7 @@ use aws_sdk_s3::{Client, Config};
 use url::Url;
 
 use crate::domain::external::image_pool::{ImageDelete, ImageGet, ImagePut};
-use crate::domain::result::{DomainErr, DomainResl};
+use crate::domain::result::{DomainError, DomainResult};
 use crate::util::err::ErrorTrace as _;
 use tracing::Level;
 use tracing::instrument;
@@ -84,9 +84,9 @@ impl OssImagePool {
 #[async_trait]
 impl ImageGet for OssImagePool {
     #[instrument(skip(self), level = Level::DEBUG)]
-    async fn get_signed(&self, key: &str) -> DomainResl<Url> {
+    async fn get_signed(&self, key: &str) -> DomainResult<Url> {
         if self.domain.is_empty() {
-            return Err(DomainErr::unrecoverable(
+            return Err(DomainError::unrecoverable(
                 "[R2OssClient::get_signed] custom domain is not configured".into(),
             ));
         }
@@ -94,7 +94,7 @@ impl ImageGet for OssImagePool {
         let url_str = format!("{}/{}", self.domain.trim_end_matches('/'), key);
         Url::parse(&url_str)
             .map_err(|e| {
-                DomainErr::unrecoverable(format!(
+                DomainError::unrecoverable(format!(
                     "[R2OssClient::get_signed] failed to parse URL '{}': {}",
                     url_str, e
                 ))
@@ -110,18 +110,18 @@ impl ImageGet for OssImagePool {
 #[async_trait]
 impl ImagePut for OssImagePool {
     #[instrument(skip(self), level = Level::DEBUG)]
-    async fn put_signed(&self, key: &str) -> DomainResl<Url> {
+    async fn put_signed(&self, key: &str) -> DomainResult<Url> {
         const EXPIRATION: Duration = Duration::from_secs(600); // 10 minutes
 
         let content_type = detect_content_type(key).ok_or_else(|| {
-            DomainErr::expected_argument(format!(
+            DomainError::expected_argument(format!(
                 "[R2OssClient::put_signed] unsupported file type for key: {}",
                 key
             ))
         })?;
 
         let presigned_config = PresigningConfig::expires_in(EXPIRATION).map_err(|e| {
-            DomainErr::unrecoverable(format!(
+            DomainError::unrecoverable(format!(
                 "[R2OssClient::put_signed] failed to build presigning config: {}",
                 e
             ))
@@ -136,7 +136,7 @@ impl ImagePut for OssImagePool {
             .presigned(presigned_config)
             .await
             .map_err(|e| {
-                DomainErr::unrecoverable(format!(
+                DomainError::unrecoverable(format!(
                     "[R2OssClient::put_signed] failed to generate presigned put URL: {}",
                     e
                 ))
@@ -144,7 +144,7 @@ impl ImagePut for OssImagePool {
             .trace_error()?;
 
         Url::parse(presigned_request.uri()).map_err(|e| {
-            DomainErr::unrecoverable(format!(
+            DomainError::unrecoverable(format!(
                 "[R2OssClient::put_signed] failed to parse presigned URI: {}",
                 e
             ))
@@ -159,7 +159,7 @@ impl ImagePut for OssImagePool {
 #[async_trait]
 impl ImageDelete for OssImagePool {
     #[instrument(skip(self), level = Level::DEBUG)]
-    async fn delete_batch(&self, keys: &[&str]) -> DomainResl<()> {
+    async fn delete_batch(&self, keys: &[&str]) -> DomainResult<()> {
         const MAX_RETRY: usize = 3;
         const RETRY_DELAY: Duration = Duration::from_secs(1);
 
@@ -230,7 +230,7 @@ impl ImageDelete for OssImagePool {
             }
         }
 
-        Err(DomainErr::unrecoverable(
+        Err(DomainError::unrecoverable(
             last_err.unwrap_or_else(|| "unknown error".into()),
         ))
     }

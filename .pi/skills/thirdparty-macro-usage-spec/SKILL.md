@@ -1,8 +1,10 @@
 ---
 name: thirdparty-macro-usage-spec
 description: |
-  Enforces that all third-party macros in poprako-r use `use` imports with
-  bare names (e.g., `use tracing::instrument;` then `#[instrument]`).
+  Enforces that all third-party attribute and derive macros in poprako-r use
+  `use` imports with bare names (e.g., `use tracing::instrument;` then
+  `#[instrument]`).  Call-like macros from `tracing` are explicitly excluded —
+  they must always use fully qualified paths at the call site.
   Use whenever writing or reviewing Rust code that imports or invokes macros
   from tracing, serde, async_trait, diesel, or any other external crate.
   Also use when adding new third-party dependencies that export macros.
@@ -10,62 +12,58 @@ description: |
 
 # Third-Party Macro Usage Specification
 
-All third-party (non-std) macros **must** be brought into scope via `use`
-imports and invoked with their bare (unqualified) name. Do not use
-crate-qualified paths at the call site (e.g., `#[tracing::instrument]`).
+All third-party (non-std) **attribute** and **derive** macros **must** be
+brought into scope via `use` imports and invoked with their bare
+(unqualified) name.  Do not use crate-qualified paths at the call site
+e.g., `#[tracing::instrument]`).
+
+**Exception**: `tracing` call-like event macros (`tracing::error!`,
+`tracing::warn!`, `tracing::info!`, `tracing::debug!`, `tracing::trace!`)
+must **always** be invoked with a fully qualified `tracing::` path at the
+call site.  They are never imported into scope via `use`.
 
 ## Why
 
-Using bare names via `use` imports follows standard Rust conventions and
-keeps the call site concise. The `use` block at the top of the file
-already documents every third-party crate in use, so readers can see
-the origin without needing qualified paths on every invocation.
+For `use`-imported macros (attribute and derive): Using bare names via `use`
+imports follows standard Rust conventions and keeps the attribute call site
+concise.  The `use` block at the top of the file already documents every
+third-party crate in use.
 
-Benefits:
-- **Brevity**: `#[instrument]` vs `#[tracing::instrument]` — less visual noise.
-- **Consistency**: Derive macros like `#[derive(Serialize)]` look the same
-  as built-in derives like `#[derive(Debug, Clone)]`.
-- **Standard practice**: This is how the Rust ecosystem is designed to work;
-  `use` imports are the norm.
+For `tracing` event macros: Bare `error!`, `debug!`, etc. shadows the
+identifiers in the `log` crate, which many dependencies use.  Requiring
+fully qualified `tracing::error!` avoids ambiguity and makes the origin
+explicit at the call site without needing to scan import lists.
 
 ## Rule
 
-**All third-party macros must be imported via `use` and invoked with bare
-names at the call site.**
-
-No crate-qualified macro paths (e.g., `#[tracing::instrument]`, `#[serde::Serialize]`).
+| Macro kind | Rule | Example |
+|------------|------|---------|
+| Attribute macros (`#[...]`) | `use` import + bare name | `#[instrument]` |
+| Derive macros (`#[derive(...)]`) | `use` import + bare name | `#[derive(Serialize)]` |
+| `tracing` event macros (`!`) | Fully qualified at call site | `tracing::error!(...)` |
 
 ## Macro import table
 
-| Crate | Macro | Import form | Kind |
-|-------|-------|-------------|------|
-| `tracing` | `instrument` | `use tracing::instrument;` | attribute |
-| `async_trait` | `async_trait` | `use async_trait::async_trait;` | attribute |
-| `serde` | `Serialize` | `use serde::Serialize;` | derive |
-| `serde` | `Deserialize` | `use serde::Deserialize;` | derive |
-| `diesel` | `Queryable` | `use diesel::prelude::*;` (or specific path) | derive |
-| `diesel` | `Selectable` | `use diesel::prelude::*;` (or specific path) | derive |
-| `diesel` | `Insertable` | `use diesel::prelude::*;` (or specific path) | derive |
-| `diesel` | `AsChangeset` | `use diesel::prelude::*;` (or specific path) | derive |
+| Crate | Macro | Import / call-site form | Kind |
+|-------|-------|-------------------------|------|
+| `tracing` | `instrument` | `use tracing::instrument;` → `#[instrument]` | attribute |
+| `tracing` | `error!`, `warn!`, `info!`, `debug!`, `trace!` | Fully qualified only: `tracing::error!(...)` | call-like (event) |
+| `async_trait` | `async_trait` | `use async_trait::async_trait;` → `#[async_trait]` | attribute |
+| `serde` | `Serialize` | `use serde::Serialize;` → `#[derive(Serialize)]` | derive |
+| `serde` | `Deserialize` | `use serde::Deserialize;` → `#[derive(Deserialize)]` | derive |
+| `diesel` | `Queryable` | `use diesel::prelude::*;` → `#[derive(Queryable)]` | derive |
+| `diesel` | `Selectable` | `use diesel::prelude::*;` → `#[derive(Selectable)]` | derive |
+| `diesel` | `Insertable` | `use diesel::prelude::*;` → `#[derive(Insertable)]` | derive |
+| `diesel` | `AsChangeset` | `use diesel::prelude::*;` → `#[derive(AsChangeset)]` | derive |
 | `fluent_templates` | `static_loader` | `use fluent_templates::static_loader;` | proc macro |
 | `unic_langid` | `langid` | `use unic_langid::langid;` | proc macro |
-
-## No exceptions
-
-Every third-party macro follows the same rule: `use` import + bare name.
-There are no special exceptions. Diesel derive macros (`Queryable`,
-`Selectable`, `Insertable`, `AsChangeset`) are imported via
-`use diesel::prelude::*;` or a specific import path, and used bare just like
-any other derive. The `#[diesel(table_name = ...)]` helper attribute is not
-a macro — it is automatically recognized by the diesel derive macros and
-does not need any import.
 
 > When adding a new third-party dependency that exports macros, add a row to
 > the import table above.
 
 ## Do / Don't
 
-### tracing
+### tracing: attribute macro (`#[instrument]`)
 
 **Do NOT:**
 ```rust
@@ -73,9 +71,6 @@ does not need any import.
 
 #[tracing::instrument]
 async fn foo() { ... }
-
-#[tracing::instrument(skip(x), level = Level::DEBUG)]
-async fn bar(x: &str) { ... }
 ```
 
 **Do:**
@@ -84,17 +79,38 @@ use tracing::instrument;
 
 #[instrument]
 async fn foo() { ... }
+```
 
-#[instrument(skip(x), level = Level::DEBUG)]
-async fn bar(x: &str) { ... }
+### tracing: event macros (`error!`, `warn!`, `info!`, `debug!`, `trace!`)
+
+**Do NOT:**
+```rust
+// Never import tracing event macros into scope
+use tracing::{error, warn, info, debug};
+
+error!(
+    error = %e,
+    "[Struct::method] something broke",
+);
+```
+
+**Do:**
+```rust
+tracing::error!(
+    error = %e,
+    "[Struct::method] something broke",
+);
+
+tracing::debug!(
+    constraint = %name,
+    "[From<diesel::Error>] unique violation",
+);
 ```
 
 ### async_trait
 
 **Do NOT:**
 ```rust
-// No `use async_trait::async_trait;` — wrong
-
 #[async_trait::async_trait]
 pub trait MyTrait { ... }
 ```
@@ -111,8 +127,6 @@ pub trait MyTrait { ... }
 
 **Do NOT:**
 ```rust
-// No `use serde::{Deserialize, Serialize};` — wrong
-
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 struct MyStruct { ... }
 ```
@@ -129,8 +143,6 @@ struct MyStruct { ... }
 
 **Do NOT:**
 ```rust
-// No `use diesel::...` — wrong
-
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = schema::t_user)]
 pub struct Row { ... }
@@ -147,12 +159,14 @@ pub struct Row { ... }
 
 ## When adding new code
 
-1. Add `use` imports for each third-party macro at the top of the file.
-2. Use **bare names** at every invocation site (`#[instrument]`, `#[async_trait]`,
-   `#[derive(Serialize, Deserialize)]`, etc.).
-3. Search for existing qualified third-party macro usage with:
+1. For attribute and derive macros: add `use` imports at the top of the file.
+2. Use **bare names** for those macros at every invocation site.
+3. For `tracing` event macros: use **fully qualified paths** at every call site;
+   never import them into scope.
+4. Search for violations with:
    ```bash
    rg "#\[tracing::instrument\]|#\[async_trait::async_trait\]|serde::(Serialize|Deserialize)" -g '*.rs' src/
+   rg "\btracing::(error|warn|info|debug|trace)!" -g '*.rs' src/   # these are correct
+   rg "\b(error|warn|info|debug|trace)!" -g '*.rs' src/            # suspect — may be bare
    ```
-4. Replace any qualified invocations with bare names and add `use` imports.
 5. Re-run `cargo check` to confirm the code compiles.

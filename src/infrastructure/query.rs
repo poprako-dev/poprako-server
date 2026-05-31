@@ -1,9 +1,56 @@
 pub mod member;
 pub mod member_invitation;
+pub mod system_mail;
+pub mod team;
 pub mod user;
 
 mod entity;
 mod schema;
+
+/// Allocates a connection from the pool, mapping pool errors to
+/// [`DomainError::Unrecoverable`].  Prefer [`execute_query`] in `Query`
+/// impl blocks; this macro is for call sites that need the raw
+/// [`deadpool::managed::Object`] (e.g. `run_in_transaction`).
+#[macro_export]
+macro_rules! allocate_connection {
+    ($pool:expr, $loc:expr) => {
+        $pool
+            .get()
+            .await
+            .map_err(|e| {
+                $crate::domain::result::DomainError::unrecoverable(format!(
+                    "[{}] error getting connection: {}",
+                    $loc, e
+                ))
+            })
+            .trace_error()?
+    };
+}
+
+/// Allocates a connection and immediately calls a query function on it.
+///
+/// The query function must accept `(&mut AsyncPgConnection, args...)` and
+/// return a `Future<Output = DomainResult<_>>`.
+///
+/// # Examples
+///
+/// ```ignore
+/// execute_query!(self.pool, get_credential_by_qid, qid)
+/// execute_query!(self.pool, get_by_id, id)
+/// ```
+///
+/// The macro expands to:
+/// ```ignore
+/// let mut conn = allocate_connection!(self.pool, "Query::get_by_id");
+/// get_by_id(conn.as_mut(), id).await
+/// ```
+#[macro_export]
+macro_rules! submit_query {
+    ($pool:expr, $fn:path $(, $arg:expr)* $(,)?) => {{
+        let mut conn = $crate::allocate_connection!($pool, concat!("Query::", stringify!($fn)));
+        $fn(conn.as_mut(), $($arg),*).await
+    }};
+}
 
 use anyhow::Context as _;
 use async_trait::async_trait;
@@ -15,31 +62,71 @@ use futures_util::future::BoxFuture;
 use tracing::Level;
 use tracing::instrument;
 
-use crate::domain::query as domain_query;
 use crate::domain::query::Transactional;
-use crate::domain::result::{DomainErr, DomainResl};
+use crate::domain::result::{DomainError, DomainResult};
 use crate::util::err::ErrorTrace as _;
+use crate::util::i18n::trl;
 
-impl From<diesel::result::Error> for DomainErr {
+/// Converts a raw Diesel error into a structured [`DomainError`].
+///
+/// This is the single trace point for all Diesel-originated errors — every
+/// `?` on a Diesel result passes through this conversion, which performs both
+/// classification (Expected vs Unrecoverable) and structured observability
+/// (trace call with contextual fields).
+impl From<diesel::result::Error> for DomainError {
     fn from(val: diesel::result::Error) -> Self {
-        // NotFound is handled by each function with a contextual message; the rest become Unrecoverable.
-        let err = DomainErr::unrecoverable(val.to_string());
-        tracing::error!("[trace_error] {}", err);
-        err
+        match &val {
+            // Unique violation → business conflict (user-facing i18n).
+            diesel::result::Error::DatabaseError(
+                diesel::result::DatabaseErrorKind::UniqueViolation,
+                information,
+            ) => {
+                tracing::debug!(
+                    constraint = %information.constraint_name().unwrap_or("<unknown>"),
+                    details = %information.message(),
+                    "[From<diesel::Error>] unique violation mapped to Expected::Conflict",
+                );
+
+                DomainError::expected_conflict(trl("error-already-exists"))
+            }
+
+            // NotFound is deliberately excluded — each query call site must
+            // call `.optional()?` and convert `None` to a contextual Expected
+            // error with `.ok_or(...)`.  Everything else is an internal failure.
+            diesel::result::Error::NotFound => {
+                tracing::error!(
+                    error = %val,
+                    "[From<diesel::Error>] unexpected NotFound converted to Unrecoverable",
+                );
+
+                DomainError::unrecoverable(format!(
+                    "[From<diesel::Error>] unexpected NotFound — a required row was not found: {}",
+                    val,
+                ))
+            }
+
+            _ => {
+                tracing::error!(
+                    error = %val,
+                    "[From<diesel::Error>] diesel error converted to Unrecoverable",
+                );
+
+                DomainError::unrecoverable(format!("[From<diesel::Error>] diesel error: {}", val,))
+            }
+        }
     }
 }
 
-pub struct Query {
+pub struct RdbQuery {
     pool: Pool<AsyncPgConnection>,
 }
 
-impl Query {
+impl RdbQuery {
     pub async fn from_env() -> anyhow::Result<Self> {
         let database_url = std::env::var("DATABASE_URL")
             .with_context(|| "[Query::from_env] DATABASE_URL is not set")?;
 
-        let manager =
-            AsyncDieselConnectionManager::<AsyncPgConnection>::new(database_url);
+        let manager = AsyncDieselConnectionManager::<AsyncPgConnection>::new(database_url);
 
         let pool = Pool::builder(manager)
             .build()
@@ -50,50 +137,33 @@ impl Query {
         Ok(Self { pool })
     }
 
-    fn build_transactional_query(conn: &mut AsyncPgConnection) -> TransactionalQuery<'_> {
-        TransactionalQuery::new(conn)
+    fn build_transactional_query(conn: &mut AsyncPgConnection) -> RdbQueryTransactional<'_> {
+        RdbQueryTransactional { conn }
     }
 }
 
 #[async_trait]
-impl Transactional for Query {
-    type Query<'a> = TransactionalQuery<'a>;
+impl Transactional for RdbQuery {
+    type Query<'a> = RdbQueryTransactional<'a>;
 
     #[instrument(skip(self, f), level = Level::DEBUG)]
-    async fn run_in_transaction<F, T>(&self, f: F) -> DomainResl<T>
+    async fn run_in_transaction<F, T>(&self, f: F) -> DomainResult<T>
     where
         T: Send, // Return value must cross .await boundaries; Tokio multi-threaded runtime requires Send
-        F: for<'a> FnOnce(&'a mut Self::Query<'a>) -> BoxFuture<'a, DomainResl<T>> + Send, // BoxFuture requires the closure to be Send
+        F: for<'a> FnOnce(&'a mut Self::Query<'a>) -> BoxFuture<'a, DomainResult<T>> + Send, // BoxFuture requires the closure to be Send
     {
-        let mut conn = self
-            .pool
-            .get()
-            .await
-            .map_err(|e| {
-                DomainErr::unrecoverable(format!(
-                    "[Query::run_in_transaction] error getting connection: {}",
-                    e
-                ))
-            })
-            .trace_error()?;
+        let mut connection = allocate_connection!(self.pool, "Query::run_in_transaction");
 
-        conn.build_transaction()
+        connection
+            .build_transaction()
             .run(async move |conn| {
-                let mut harness = Self::build_transactional_query(conn);
-                f(&mut harness).await
+                let mut query = Self::build_transactional_query(conn);
+                f(&mut query).await
             })
             .await
     }
 }
 
-pub struct TransactionalQuery<'c> {
+pub struct RdbQueryTransactional<'c> {
     conn: &'c mut AsyncPgConnection,
-}
-
-impl<'c> domain_query::TransactionalQuery for TransactionalQuery<'c> {}
-
-impl<'c> TransactionalQuery<'c> {
-    fn new(conn: &'c mut AsyncPgConnection) -> Self {
-        Self { conn }
-    }
 }
