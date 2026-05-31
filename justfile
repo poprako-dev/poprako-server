@@ -1,10 +1,10 @@
 mgr-run:
     diesel migration run
 
-mgr-revert:
+mgr-rev:
     diesel migration revert
 
-mgr-create name:
+mgr-add name:
     diesel migration generate {{name}}
 
 # This command is only used for creating database.

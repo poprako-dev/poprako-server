@@ -3,18 +3,20 @@ pub mod user;
 use user::*;
 
 // DomainEventType is used for a lightweight check for event sink and handler.
-pub enum DomainEventType {
-    UserRegistered,
+#[derive(Debug)]
+pub enum EventType {
+    UserSignedUp,
 }
 
-pub enum DomainEvent {
-    UserRegistered(UserRegisteredEvent),
+#[derive(Clone, Debug)]
+pub enum Event {
+    UserSignedUp(UserSignedUpEvent),
 }
 
-impl DomainEvent {
-    pub fn event_type(&self) -> DomainEventType {
+impl Event {
+    pub fn event_type(&self) -> EventType {
         match self {
-            DomainEvent::UserRegistered(_) => DomainEventType::UserRegistered,
+            Event::UserSignedUp(_) => EventType::UserSignedUp,
         }
     }
 }
@@ -26,7 +28,7 @@ impl DomainEvent {
 /// into the form before passing it to the query layer's `create`.
 pub trait EventSink {
     /// Appends a domain event to the internal buffer.
-    fn push_event(&mut self, event: DomainEvent);
+    fn push_event(&mut self, event: Event);
 }
 
 /// Drains all accumulated domain events from an input aggregate.
@@ -35,5 +37,5 @@ pub trait EventSink {
 /// published to the event bus. The internal buffer is cleared.
 pub trait EventEmit {
     /// Takes all pending domain events out and leaves the buffer empty.
-    fn pull_events(&mut self) -> Vec<DomainEvent>;
+    fn pull_events(&mut self) -> Vec<Event>;
 }

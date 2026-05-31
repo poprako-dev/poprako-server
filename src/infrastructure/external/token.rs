@@ -5,9 +5,9 @@ use time::OffsetDateTime;
 use tracing::Level;
 use tracing::instrument;
 
-use crate::domain::external::token::TokenCodec;
+use crate::domain::external::token::{TokenParse, TokenSign};
 use crate::domain::model::aggregate::user::UserToken;
-use crate::domain::result::{DomainErr, DomainResl};
+use crate::domain::result::{DomainError, DomainResult};
 use crate::util::err::ErrorTrace as _;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -51,9 +51,9 @@ impl JwtCodec {
     }
 }
 
-impl TokenCodec for JwtCodec {
+impl TokenSign for JwtCodec {
     #[instrument(skip(self), level = Level::DEBUG)]
-    fn sign(&self, unsigned_token: &UserToken) -> DomainResl<String> {
+    fn sign(&self, unsigned_token: &UserToken) -> DomainResult<String> {
         let now = OffsetDateTime::now_utc();
 
         let issued_at = now.unix_timestamp() as usize;
@@ -67,18 +67,20 @@ impl TokenCodec for JwtCodec {
 
         encode(&Header::default(), &claims, &self.encoding_key)
             .map_err(|e| {
-                DomainErr::unrecoverable(format!("[JwtCodec::sign] error when encoding: {}", e))
+                DomainError::unrecoverable(format!("[JwtCodec::sign] error when encoding: {}", e))
             })
             .trace_error()
     }
+}
 
+impl TokenParse for JwtCodec {
     #[instrument(skip(self), level = Level::DEBUG)]
-    fn parse(&self, signed_token: &str) -> DomainResl<UserToken> {
+    fn parse(&self, signed_token: &str) -> DomainResult<UserToken> {
         let validation = Validation::default();
 
         let token_data: TokenData<Claims> = decode(signed_token, &self.decoding_key, &validation)
             .map_err(|e| {
-                DomainErr::unrecoverable(format!("[JwtCodec::parse] error when decoding: {}", e))
+                DomainError::unrecoverable(format!("[JwtCodec::parse] error when decoding: {}", e))
             })
             .trace_error()?;
 

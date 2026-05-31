@@ -23,6 +23,27 @@ This binary split means every error decision reduces to one question:
 - Yes → `Expected` with `trl()` i18n key, `trace_debug`.
 - No  → `Unrecoverable` with `[Struct::method]` prefix, `trace_error`.
 
+### Trace responsibility: one source, not every propagation
+
+Each error is traced **exactly once**: at the site where the error value is
+first produced.  Propagation through `?` operators never adds a second trace.
+
+For Diesel errors specifically, the trace lives inside the `From` impl
+(`infrastructure/query.rs`).  The `?` at every Diesel call site triggers
+that `From` conversion, which emits `tracing::error!`.  Adding `.trace_error()`
+before the `?` on the bare Diesel result would:
+
+1. Produce a **duplicate** log entry — the `From` impl already emits one.
+2. Trace the raw Diesel error text, losing the `DomainError::Unrecoverable`
+   wrapper and its `[Struct::method]` prefix.
+3. Add **runtime overhead** on every Diesel call (error or not) —
+   `.trace_error()` always evaluates `tracing::error!` even when the error
+   level is filtered out.
+
+For **directly constructed** `DomainError` values (both `Expected` via
+`.ok_or()` and `Unrecoverable` via `.map_err()`), the trace call is
+mandatory — there is no intermediary conversion to delegate to.
+
 ---
 
 ## Error Type Hierarchy
@@ -197,26 +218,11 @@ use crate::util::err::ErrorTrace as _;
 
 ### Diesel Error Auto-Conversion
 
-Diesel errors (except `NotFound`) are automatically converted to `Unrecoverable`
-via a blanket `From` impl:
+Diesel errors (except `NotFound`) are converted to `Unrecoverable` via a
+blanket `From` impl in `infrastructure/query.rs`.  The trace is performed
+inside the `From` impl, so call sites use plain `?` without `.trace_error()`.
 
-```rust
-// infrastructure/query.rs
-impl From<diesel::result::Error> for DomainErr {
-    fn from(val: diesel::result::Error) -> Self {
-        let err = DomainErr::unrecoverable(val.to_string());
-        tracing::error!("[trace_error] {}", err);
-        err
-    }
-}
-```
-
-Note: The trace is performed inside the `From` impl because call sites use `?`
-without an explicit `.trace_error()`. The message uses Diesel's own `Display`,
-which includes query context.
-
-**NotFound is excluded** from this conversion by always calling `.optional()?`
-before `.ok_or(...)`, which maps `NotFound` to `Ok(None)`:
+`NotFound` is excluded by always calling `.optional()?` before `.ok_or(...)`,
 
 ```rust
 let info: UserInfo = t_user
@@ -241,14 +247,17 @@ See also: `tracing-usage-spec` skill for rationale on prohibited placements.
 | Domain model (`src/domain/model/`) | ❌ Never | Pure business logic, no I/O |
 | Domain actor (`src/domain/actor/`) | ❌ Never | Pure business logic, no I/O |
 | UseCase functions (`src/usecase/`) | ✅ Always | Orchestration boundary, full request lifecycle |
-| Infra query with `trace_*` | ✅ Always | Database I/O — observe duration and parameters |
-| Infra query delegate (TransactionalQuery) | ❌ Never | Delegate wraps the call — the free function already has instrument |
+| Infra query | ✅ Permitted | Database I/O — useful for tracing individual query duration and parameters |
+| Infra query delegate (QueryTransactional) | ❌ Never | Delegate wraps the call — the free function already has instrument |
 | Infra external with `trace_*` | ✅ Always | External service calls — isolate latency |
 | API handlers (`src/api/`) | ✅ Always | HTTP request entry boundary |
+| Harness delegation (`src/api/harness.rs`) | ❌ Never | Pure delegation — underlying impls already instrumented. See `harness-spec` |
 | Pure logic without `trace_*` | ❌ Never | No diagnostic benefit |
 
-**Heuristic**: if a function calls `.trace_debug()` or `.trace_error()`, and
-it is not a constructor or pure logic, it needs `#[tracing::instrument]`.
+**Heuristic**: if a function is an orchestration boundary (usecase, API handler)
+or an external service call, it benefits from `#[tracing::instrument]`. For
+infra query free functions, `#[instrument]` is **permitted but not required**;
+add it when the observability benefit outweighs the span overhead.
 
 ---
 

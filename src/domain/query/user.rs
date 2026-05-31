@@ -1,22 +1,19 @@
 use async_trait::async_trait;
 
 use crate::domain::model::aggregate::user::{UserAggr, UserCredential, UserForm};
-use crate::domain::result::DomainResl;
+use crate::domain::result::DomainResult;
 
 /// Read-only persistence contract for [`UserAggr`].
 ///
 /// Each method takes an immutable `&self` reference, suitable for
 /// non-transactional queries backed by a connection pool.
 #[async_trait]
-pub trait UserQeury {
+pub trait UserQuery {
     /// Returns the user with the given ID, or an expected error if not found.
-    async fn get_by_id(&self, id: &str) -> DomainResl<UserAggr>;
+    async fn get_by_id(&self, id: &str) -> DomainResult<UserAggr>;
 
     /// Returns credentials (hashed password) for the given qualified ID.
-    async fn get_credentials_by_qid(&self, qid: &str) -> DomainResl<UserCredential>;
-
-    /// Creates a new user from the registration form and returns the persisted aggregate.
-    async fn create(&self, form: UserForm) -> DomainResl<UserAggr>;
+    async fn get_credentials_by_qid(&self, qid: &str) -> DomainResult<UserCredential>;
 }
 
 /// Mutable persistence contract for [`UserAggr`], used **only** inside
@@ -24,7 +21,7 @@ pub trait UserQeury {
 ///
 /// Takes `&mut self` to enforce single-writer semantics within a transaction.
 #[async_trait]
-pub trait UserQeuryMut {
+pub trait UserQueryTransactional {
     /// Creates a new user from the registration form inside a transaction.
-    async fn create(&mut self, form: UserForm) -> DomainResl<UserAggr>;
+    async fn create(&mut self, form: &UserForm) -> DomainResult<UserAggr>;
 }

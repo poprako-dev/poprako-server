@@ -18,7 +18,7 @@ pub mod time {
 }
 
 pub mod err {
-    use crate::util::rename::StdResl;
+    use crate::util::rename::StdResult;
 
     /// Emits a [`tracing`] event when a `Result` is `Err`, then passes the
     /// result through unchanged.
@@ -35,27 +35,17 @@ pub mod err {
         /// Logs `Err` at `DEBUG` level. Use for expected business errors.
         fn trace_debug(self) -> Self;
 
-        /// Logs `Err` at `INFO` level. Use for notable but non-critical events.
-        fn trace_info(self) -> Self;
-
         /// Logs `Err` at `ERROR` level. Use for unrecoverable internal failures.
         fn trace_error(self) -> Self;
     }
 
-    impl<T, E> ErrorTrace for StdResl<T, E>
+    impl<T, E> ErrorTrace for StdResult<T, E>
     where
         E: std::fmt::Debug + std::fmt::Display,
     {
         fn trace_debug(self) -> Self {
             if let Err(e) = &self {
                 tracing::debug!("[trace_debug] {}", e);
-            }
-            self
-        }
-
-        fn trace_info(self) -> Self {
-            if let Err(e) = &self {
-                tracing::info!("[trace_info] {}", e);
             }
             self
         }
@@ -70,7 +60,20 @@ pub mod err {
 }
 
 pub mod rename {
-    pub type StdResl<T, E> = std::result::Result<T, E>;
+    pub type StdResult<T, E> = std::result::Result<T, E>;
+}
+
+/// Abstracts access to the inner type behind a wrapper.
+///
+/// Unlike [`Deref`](std::ops::Deref), this trait is implemented
+/// manually for each wrapper type that wants to forward trait
+/// implementations to its inner value via blanket impls.
+pub trait DerefTo {
+    /// The inner type this value dereferences to.
+    type Target: ?Sized;
+
+    /// Returns a shared reference to the inner value.
+    fn deref_to(&self) -> &Self::Target;
 }
 
 pub mod i18n {
