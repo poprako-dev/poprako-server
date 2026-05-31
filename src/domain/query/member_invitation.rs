@@ -1,10 +1,10 @@
 use async_trait::async_trait;
 
-use crate::domain::model::aggregate::member_invitation::MemberInvitation;
+use crate::domain::model::aggregate::member_invitation::MemberInvitationAggr;
 use crate::domain::result::DomainResult;
 
-/// Mutable persistence contract for [`MemberInvitation`](crate::domain::model::aggregate::member_invitation::MemberInvitation),
-/// used **only** inside a transaction via [`QueryTransactional`](crate::domain::query::QueryTransactional).
+/// Mutable persistence contract for [`MemberInvitationAggr`], used **only**
+/// inside a transaction via [`QueryTransactional`](crate::domain::query::QueryTransactional).
 #[async_trait]
 pub trait MemberInvitationQueryTransactional {
     /// Returns the pending invitation for the given invitation code,
@@ -12,7 +12,10 @@ pub trait MemberInvitationQueryTransactional {
     ///
     /// The lock is held until the enclosing transaction commits or rolls back,
     /// preventing concurrent consumption of the same invitation.
-    async fn get_by_code_ex(&mut self, invitation_code: String) -> DomainResult<MemberInvitation>;
+    async fn get_by_code_ex(
+        &mut self,
+        invitation_code: String,
+    ) -> DomainResult<MemberInvitationAggr>;
 
     /// Marks an invitation as consumed by atomically clearing `f_pending`.
     ///

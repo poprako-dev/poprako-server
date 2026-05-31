@@ -35,9 +35,6 @@ pub mod err {
         /// Logs `Err` at `DEBUG` level. Use for expected business errors.
         fn trace_debug(self) -> Self;
 
-        /// Logs `Err` at `INFO` level. Use for notable but non-critical events.
-        fn trace_info(self) -> Self;
-
         /// Logs `Err` at `ERROR` level. Use for unrecoverable internal failures.
         fn trace_error(self) -> Self;
     }
@@ -53,13 +50,6 @@ pub mod err {
             self
         }
 
-        fn trace_info(self) -> Self {
-            if let Err(e) = &self {
-                tracing::info!("[trace_info] {}", e);
-            }
-            self
-        }
-
         fn trace_error(self) -> Self {
             if let Err(e) = &self {
                 tracing::error!("[trace_error] {}", e);
@@ -71,6 +61,19 @@ pub mod err {
 
 pub mod rename {
     pub type StdResult<T, E> = std::result::Result<T, E>;
+}
+
+/// Abstracts access to the inner type behind a wrapper.
+///
+/// Unlike [`Deref`](std::ops::Deref), this trait is implemented
+/// manually for each wrapper type that wants to forward trait
+/// implementations to its inner value via blanket impls.
+pub trait DerefTo {
+    /// The inner type this value dereferences to.
+    type Target: ?Sized;
+
+    /// Returns a shared reference to the inner value.
+    fn deref_to(&self) -> &Self::Target;
 }
 
 pub mod i18n {

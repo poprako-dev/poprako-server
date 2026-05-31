@@ -44,28 +44,26 @@ parallel, independent traits — neither inherits from the other.
 
 | Trait | `self` kind | Impl target | Purpose |
 |-------|------------|-------------|---------|
-| `{Aggr}Qeury` | `&self` | `Query` (pool) | Read-only queries outside transactions |
-| `{Aggr}QueryTransactional` | `&mut self` | `TransactionalQuery<'c>` | Reads and writes inside a transaction |
+| `{Aggr}Query` | `&self` | `Query` (pool) | Operations outside transactions |
+| `{Aggr}QueryTransactional` | `&mut self` | `TransactionalQuery<'c>` | Operations inside transactions |
 
 `Query` 和 `TransactionalQuery` 的关系可以理解为：业务上需要事务保证的操作
-放到 `*QueryTransactional`，不需要的留在 `*Qeury`。两者没有层级或继承关系，
+放到 `*QueryTransactional`，不需要的留在 `*Query`。两者没有层级或继承关系，
 各自保持最精简。
 
 Naming detail:
-- The read-only trait uses the typo spelling `Qeury` (e followed by u) as a
-  deliberate and consistent convention in this codebase. Do not "fix" it to
-  `Query`.
+- The read-only trait uses `Query` (not `Qeury`).
 
 ```rust
 use async_trait::async_trait;
 
 #[async_trait]
-pub trait UserQeury {
+pub trait UserQuery {
     async fn get_by_id(&self, id: String) -> DomainResult<UserAggr>;
 }
 
 #[async_trait]
-pub trait UserQeuryTransactional {
+pub trait UserQueryTransactional {
     async fn create(&mut self, form: UserForm) -> DomainResult<UserAggr>;
 }
 ```
@@ -76,9 +74,11 @@ pub trait UserQeuryTransactional {
 
 Add a method to the trait that best reflects its business context:
 
-- **`{Aggr}Qeury`** — for operations that are safe to run outside a
-  transaction: pure reads, lookups, existence checks. Uses `&self` because
-  the backing `Query` struct borrows from a connection pool.
+- **`{Aggr}Query`** — for operations that run outside a transaction.
+  This includes reads, lookups, existence checks, and also **writes that
+  do not require transaction guarantees** (e.g. fire-and-forget inserts
+  via optimistic concurrency). Uses `&self` because the backing `Query`
+  struct borrows from a connection pool.
 - **`{Aggr}QueryTransactional`** — for operations that must run inside
   `Transactional::run_in_transaction`: inserts, updates, deletes, or reads
   that acquire row locks (`SELECT ... FOR UPDATE`). Uses `&mut self` to
@@ -86,14 +86,14 @@ Add a method to the trait that best reflects its business context:
 
 Do **not** add the same method to both traits. Put each method in the
 single most appropriate place. If an operation never needs a transaction,
-it belongs in `*Qeury`. If it always runs inside one, it belongs in
+it belongs in `*Query`. If it always runs inside one, it belongs in
 `*QueryTransactional`.
 
 ---
 
 ## 4. `&mut self` for transactional traits only
 
-Only `*QueryTransactional` traits use `&mut self`. The `*Qeury` trait
+Only `*QueryTransactional` traits use `&mut self`. The `*Query` trait
 always uses `&self`.
 
 The `&mut self` on transactional traits communicates two things:
@@ -107,7 +107,7 @@ pub trait MemberQueryTransactional {
 }
 
 // good — read-only trait
-pub trait UserQeury {
+pub trait UserQuery {
     async fn get_by_id(&self, id: String) -> DomainResult<UserAggr>;
 }
 ```
@@ -147,7 +147,7 @@ by it.
 Each trait contains **only** the methods that its callers actually need.
 Resist the urge to pre-emptively add "just in case" methods.
 
-`*Qeury` and `*QueryTransactional` are not CRUD interfaces — they are the
+`*Query` and `*QueryTransactional` are not CRUD interfaces — they are the
 precise set of operations required by the use-case layer. When the use case
 grows, add the new method then.
 
@@ -167,7 +167,7 @@ use crate::domain::query::new_aggregate::NewAggregateQueryTransactional;
 ```rust
 pub trait QueryTransactional:
     Send
-    + UserQeuryTransactional
+    + UserQueryTransactional
     + MemberQueryTransactional
     + MemberInvitationQueryTransactional
     + NewAggregateQueryTransactional  // ← add here
@@ -178,7 +178,7 @@ pub trait QueryTransactional:
 ```rust
 impl<T> QueryTransactional for T where
     T: Send
-        + UserQeuryTransactional
+        + UserQueryTransactional
         + MemberQueryTransactional
         + MemberInvitationQueryTransactional
         + NewAggregateQueryTransactional  // ← add here

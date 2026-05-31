@@ -10,7 +10,7 @@ use crate::domain::model::event::{Event, EventSink, user::UserSignedUpEvent};
 use crate::domain::query::Transactional;
 use crate::domain::query::member::MemberQueryTransactional;
 use crate::domain::query::member_invitation::MemberInvitationQueryTransactional;
-use crate::domain::query::user::UserQeuryTransactional;
+use crate::domain::query::user::UserQueryTransactional;
 use crate::domain::result::DomainError;
 use crate::usecase::result::UseCaseResult;
 use crate::usecase::value_object::user::{SignUpUserParams, SignUpUserReply};
@@ -58,7 +58,7 @@ where
 
                 // 5. Create the user.
                 let user =
-                    UserQeuryTransactional::create(query, user_form.clone_without_events()).await?;
+                    UserQueryTransactional::create(query, user_form.clone_without_events()).await?;
 
                 // 6. Create a member record so the user belongs to the team.
                 let member_form = MemberForm::new(
@@ -71,7 +71,7 @@ where
                 MemberQueryTransactional::create(query, member_form).await?;
 
                 // 7. Mark the invitation as consumed.
-                query.mark_pending_as_used(invitation.id).await?;
+                MemberInvitationQueryTransactional::mark_pending_as_used(query, invitation.id).await?;
 
                 Ok(user_form)
             }

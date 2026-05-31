@@ -69,8 +69,8 @@ impl From<RoleMask> for u32 {
 
 /// Entities whose role mask can be read.
 ///
-/// Implemented by [`Member`](crate::domain::model::aggregate::member::Member),
-/// [`MemberInvitation`](crate::domain::model::aggregate::member_invitation::MemberInvitation),
+/// Implemented by [`MemberAggr`](crate::domain::model::aggregate::member::MemberAggr),
+/// [`MemberInvitationAggr`](crate::domain::model::aggregate::member_invitation::MemberInvitationAggr),
 /// and assignment aggregates.
 pub trait RoleViewable {
     /// Returns the current [`RoleMask`] for this entity.

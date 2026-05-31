@@ -8,8 +8,8 @@ use tracing::Level;
 use tracing::instrument;
 
 use crate::domain::model::aggregate::user::{UserAggr, UserCredential, UserForm};
-use crate::domain::query::user::UserQeury;
-use crate::domain::query::user::UserQeuryTransactional;
+use crate::domain::query::user::UserQuery;
+use crate::domain::query::user::UserQueryTransactional;
 use crate::domain::result::{DomainError, DomainResult};
 use crate::infrastructure::query::Query;
 use crate::infrastructure::query::QueryTransactional;
@@ -53,10 +53,7 @@ pub async fn get_credential_by_qid(
         .ok_or(DomainError::expected_argument(trl("error-user-not-found")))
         .trace_debug()?;
 
-    Ok(UserCredential {
-        qid: row.f_qid,
-        password_hash: row.f_password_hash,
-    })
+    Ok(UserCredential::new(row.f_qid, row.f_password_hash))
 }
 
 pub async fn create(conn: &mut AsyncPgConnection, form: UserForm) -> DomainResult<UserAggr> {
@@ -89,7 +86,7 @@ pub async fn create(conn: &mut AsyncPgConnection, form: UserForm) -> DomainResul
 // ── impls ──────────────────────────────────────────────────────────────────
 
 #[async_trait]
-impl UserQeury for Query {
+impl UserQuery for Query {
     #[instrument(skip(self), level = Level::DEBUG)]
     async fn get_credentials_by_qid(&self, qid: String) -> DomainResult<UserCredential> {
         submit_query!(self.pool, get_credential_by_qid, qid)
@@ -102,7 +99,7 @@ impl UserQeury for Query {
 }
 
 #[async_trait]
-impl<'c> UserQeuryTransactional for QueryTransactional<'c> {
+impl<'c> UserQueryTransactional for QueryTransactional<'c> {
     async fn create(&mut self, form: UserForm) -> DomainResult<UserAggr> {
         create(self.conn, form).await
     }

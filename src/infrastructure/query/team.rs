@@ -7,7 +7,7 @@ use tracing::Level;
 use tracing::instrument;
 
 use crate::domain::model::aggregate::team::TeamAggr;
-use crate::domain::query::team::TeamQeury;
+use crate::domain::query::team::TeamQuery;
 use crate::domain::result::{DomainError, DomainResult};
 use crate::infrastructure::query::Query;
 use crate::infrastructure::query::entity::team::TeamRow;
@@ -33,7 +33,7 @@ pub async fn get_by_id(conn: &mut AsyncPgConnection, id: String) -> DomainResult
 // ── impls ──────────────────────────────────────────────────────────────────
 
 #[async_trait]
-impl TeamQeury for Query {
+impl TeamQuery for Query {
     #[instrument(skip(self), level = Level::DEBUG)]
     async fn get_by_id(&self, id: String) -> DomainResult<TeamAggr> {
         submit_query!(self.pool, get_by_id, id)

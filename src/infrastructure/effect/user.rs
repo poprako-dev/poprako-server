@@ -1,22 +1,24 @@
+use std::ops::Deref;
+
 use crate::api::harness::HarnessInner;
-use crate::domain::model::aggregate::sys_mail::SysMailCre;
+use crate::domain::model::aggregate::system_mail::SystemMailForm;
 use crate::domain::model::event::user::UserSignedUpEvent;
-use crate::domain::query::team::TeamQeury as _;
+use crate::domain::query::system_mail::SystemMailQuery;
+use crate::domain::query::team::TeamQuery;
 
 /// Notifies the invitor via system mail that a new user has registered using
 /// their invitation code.
 pub async fn notify_invitor_handler(harn: &HarnessInner, event: UserSignedUpEvent) {
     // Look up the team name for the notification content.
-    let team = match harn.query.get_by_id(event.team_id.clone()).await {
-        Ok(team) => team,
-        Err(e) => {
-            tracing::error!(
-                error = %e,
-                team_id = %event.team_id,
-                "[notify_invitor_handler] failed to look up team, skipping notification",
-            );
-            return;
-        }
+    let Some(team) = TeamQuery::get_by_id(harn.deref(), event.team_id.clone())
+        .await
+        .ok()
+    else {
+        tracing::error!(
+            team_id = %event.team_id,
+            "[notify_invitor_handler] failed to look up team for notification",
+        );
+        return;
     };
 
     let title = "你的邀请码已被使用".to_string();
@@ -26,9 +28,10 @@ pub async fn notify_invitor_handler(harn: &HarnessInner, event: UserSignedUpEven
     );
 
     let invitor_id = event.invitor_id;
-    let mail = SysMailCre::new(invitor_id.clone(), title, content);
 
-    if let Err(e) = harn.query.send_sys_mail(&mail).await {
+    let mail = SystemMailForm::new(invitor_id.clone(), title, content);
+
+    if let Err(e) = SystemMailQuery::send(harn.deref(), mail).await {
         tracing::error!(
             error = %e,
             invitor_id = %invitor_id,

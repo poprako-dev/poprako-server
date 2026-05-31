@@ -4,7 +4,7 @@ use diesel_async::AsyncPgConnection;
 use diesel_async::RunQueryDsl;
 use time::OffsetDateTime;
 
-use crate::domain::model::aggregate::member::Member;
+use crate::domain::model::aggregate::member::MemberAggr;
 use crate::domain::model::aggregate::member::MemberForm;
 use crate::domain::model::value::role::RoleFlag;
 use crate::domain::model::value::role::RoleMask;
@@ -15,7 +15,7 @@ use crate::infrastructure::query::entity::member::MemberEntry;
 use crate::infrastructure::query::entity::member::MemberRow;
 use crate::infrastructure::query::schema::t_member::dsl::*;
 
-pub async fn create(conn: &mut AsyncPgConnection, form: MemberForm) -> DomainResult<Member> {
+pub async fn create(conn: &mut AsyncPgConnection, form: MemberForm) -> DomainResult<MemberAggr> {
     let now = OffsetDateTime::now_utc();
     let roles = form.roles;
 
@@ -60,7 +60,7 @@ fn has_role(roles: &RoleMask, flag: RoleFlag) -> bool {
 
 #[async_trait]
 impl<'c> MemberQueryTransactional for QueryTransactional<'c> {
-    async fn create(&mut self, form: MemberForm) -> DomainResult<Member> {
+    async fn create(&mut self, form: MemberForm) -> DomainResult<MemberAggr> {
         create(self.conn, form).await
     }
 }
