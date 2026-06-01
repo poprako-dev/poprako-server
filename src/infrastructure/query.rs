@@ -4,6 +4,9 @@ pub mod system_mail;
 pub mod team;
 pub mod user;
 
+#[cfg(test)]
+pub mod memory_mock;
+
 mod entity;
 mod schema;
 

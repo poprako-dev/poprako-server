@@ -21,17 +21,3 @@ CREATE TABLE IF NOT EXISTS "t_user" (
 CREATE UNIQUE INDEX IF NOT EXISTS "uidx_user_qid"
     ON "t_user" ("f_qid");
 
--- Create super admin directly in database.
-INSERT INTO "t_user" (
-    "f_id",
-    "f_qid",
-    "f_nickname",
-    "f_password_hash",
-    "f_is_sadmin"
-) VALUES (
-    'user-00000000-0000-0000-0000-000000000001',
-    '123456789',
-    'SuperAdmin-OvO',
-    '$2a$10$eEEkAsc7h3jdkOyjahdH6OX20w/dHKdGVaH7MNREkh54O57v.E2y2', -- 123456
-    TRUE
-) ON CONFLICT ("f_id") DO NOTHING;

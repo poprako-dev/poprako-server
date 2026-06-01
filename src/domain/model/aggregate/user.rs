@@ -7,6 +7,7 @@ use crate::util::err::ErrorTrace as _;
 use time::OffsetDateTime;
 use uuid::Uuid;
 
+#[cfg_attr(test, derive(Clone))]
 pub struct UserAggr {
     pub id: String,
 
@@ -88,6 +89,7 @@ impl UserToken {
     }
 }
 
+#[cfg_attr(test, derive(Clone))]
 pub struct UserCredential {
     pub qid: String,
     pub password_hash: String,
