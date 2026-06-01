@@ -6,6 +6,7 @@ use crate::domain::model::aggregate::team::TeamAggr;
 use crate::domain::model::aggregate::user::UserAggr;
 use crate::domain::model::value::role::RoleMask;
 
+#[cfg_attr(test, derive(Clone))]
 pub struct MemberAggr {
     pub id: String,
 

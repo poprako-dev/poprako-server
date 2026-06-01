@@ -4,6 +4,7 @@ use crate::domain::model::aggregate::PrivateMarker;
 use crate::domain::model::aggregate::user::UserAggr;
 use crate::domain::model::value::role::RoleMask;
 
+#[cfg_attr(test, derive(Clone))]
 pub struct MemberInvitationAggr {
     pub id: String,
 

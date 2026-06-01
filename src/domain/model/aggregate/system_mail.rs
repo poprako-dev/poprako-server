@@ -3,6 +3,7 @@ use uuid::Uuid;
 
 use crate::domain::model::aggregate::PrivateMarker;
 
+#[cfg_attr(test, derive(Clone))]
 pub struct SystemMailAggr {
     pub id: String,
 

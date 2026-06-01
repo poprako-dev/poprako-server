@@ -2,6 +2,7 @@ use time::OffsetDateTime;
 
 use crate::domain::model::aggregate::PrivateMarker;
 
+#[cfg_attr(test, derive(Clone))]
 pub struct TeamAggr {
     pub id: String,
 
