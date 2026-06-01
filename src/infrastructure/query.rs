@@ -147,7 +147,7 @@ impl Transactional for RdbQuery {
     type Query<'a> = RdbQueryTransactional<'a>;
 
     #[instrument(skip(self, f), level = Level::DEBUG)]
-    async fn run_in_transaction<F, T>(&self, f: F) -> DomainResult<T>
+    async fn transaction_scoped<F, T>(&self, f: F) -> DomainResult<T>
     where
         T: Send, // Return value must cross .await boundaries; Tokio multi-threaded runtime requires Send
         F: for<'a> FnOnce(&'a mut Self::Query<'a>) -> BoxFuture<'a, DomainResult<T>> + Send, // BoxFuture requires the closure to be Send

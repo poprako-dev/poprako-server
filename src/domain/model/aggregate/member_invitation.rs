@@ -59,3 +59,46 @@ impl MemberInvitationAggr {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    fn dummy_aggr(code: &str) -> MemberInvitationAggr {
+        let now = OffsetDateTime::now_utc();
+        MemberInvitationAggr::new(
+            MemberInvitationAggr::generate_id(),
+            "invitor-1".into(),
+            None,
+            "team-1".into(),
+            "invitee".into(),
+            code.into(),
+            true,
+            RoleMask::from(crate::domain::model::value::role::RoleFlag::Admin),
+            now,
+        )
+    }
+
+    #[test]
+    fn verify_code_match() {
+        let aggr = dummy_aggr("ABC123");
+        assert!(aggr.verify_code("ABC123"));
+    }
+
+    #[test]
+    fn verify_code_mismatch_empty() {
+        let aggr = dummy_aggr("ABC123");
+        assert!(!aggr.verify_code(""));
+    }
+
+    #[test]
+    fn verify_code_mismatch_case() {
+        let aggr = dummy_aggr("ABC123");
+        assert!(!aggr.verify_code("abc123"));
+    }
+
+    #[test]
+    fn verify_code_mismatch_prefix() {
+        let aggr = dummy_aggr("ABC123");
+        assert!(!aggr.verify_code("ABC1234"));
+    }
+}

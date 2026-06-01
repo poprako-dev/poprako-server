@@ -66,4 +66,63 @@ pub mod result {
     }
 
     pub type DomainResult<T> = StdResult<T, DomainError>;
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+
+        #[test]
+        fn expected_argument_variant() {
+            let err = DomainError::expected_argument("bad input".into());
+            match err {
+                DomainError::Expected { variant, message } => {
+                    assert!(matches!(variant, ExpectedVariant::Argument));
+                    assert_eq!(message, "bad input");
+                }
+                _ => panic!("expected Expected variant"),
+            }
+        }
+
+        #[test]
+        fn expected_authentication_variant() {
+            let err = DomainError::expected_authentication("no access".into());
+            match err {
+                DomainError::Expected { variant, message } => {
+                    assert!(matches!(variant, ExpectedVariant::Authentication));
+                    assert_eq!(message, "no access");
+                }
+                _ => panic!("expected Expected variant"),
+            }
+        }
+
+        #[test]
+        fn expected_conflict_variant() {
+            let err = DomainError::expected_conflict("duplicate".into());
+            match err {
+                DomainError::Expected { variant, message } => {
+                    assert!(matches!(variant, ExpectedVariant::Conflict));
+                    assert_eq!(message, "duplicate");
+                }
+                _ => panic!("expected Expected variant"),
+            }
+        }
+
+        #[test]
+        fn unrecoverable_variant() {
+            let err = DomainError::unrecoverable("boom".into());
+            match err {
+                DomainError::Unrecoverable { message } => {
+                    assert_eq!(message, "boom");
+                }
+                _ => panic!("expected Unrecoverable variant"),
+            }
+        }
+
+        #[test]
+        fn display_contains_message() {
+            let err = DomainError::expected_argument("hello world".into());
+            let s = err.to_string();
+            assert!(s.contains("hello world"), "Display output: {}", s);
+        }
+    }
 }

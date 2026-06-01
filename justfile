@@ -11,3 +11,6 @@ mgr-add name:
 mgr-setup:
     diesel database setup
 
+mgr-list:
+    diesel migration list
+
