@@ -77,8 +77,11 @@ pub trait DerefTo {
 }
 
 pub mod i18n {
+    use std::borrow::Cow;
+    use std::collections::HashMap;
     use std::sync::LazyLock;
 
+    use fluent_templates::fluent_bundle::FluentValue;
     use fluent_templates::{Loader as _, static_loader};
     use unic_langid::{LanguageIdentifier, langid};
 
@@ -96,5 +99,14 @@ pub mod i18n {
 
     pub fn trl(key: &str) -> String {
         LOCALES.lookup(&LANGUAGE, key).to_string()
+    }
+
+    /// Looks up a parameterized Fluent message for the current language.
+    ///
+    /// `args` maps Fluent variable names (without the `$` prefix) to their
+    /// [`FluentValue`] replacements.  Variables in the `.ftl` file must use
+    /// the `{$name}` syntax.
+    pub fn trl_kv(key: &str, args: &HashMap<Cow<'static, str>, FluentValue>) -> String {
+        LOCALES.lookup_with_args(&LANGUAGE, key, args)
     }
 }

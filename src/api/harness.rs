@@ -7,9 +7,14 @@ use url::Url;
 use crate::domain::effect::EffectSink;
 use crate::domain::external::image_pool::{ImageDelete, ImageGet, ImagePut};
 use crate::domain::external::token::{TokenParse, TokenSign};
-use crate::domain::model::aggregate::user::UserToken;
+use crate::domain::model::aggregate::system_mail::SystemMailForm;
+use crate::domain::model::aggregate::team::TeamAggr;
+use crate::domain::model::aggregate::user::{UserAggr, UserCredential, UserToken};
 use crate::domain::model::event::EventEmit;
 use crate::domain::query::Transactional;
+use crate::domain::query::system_mail::SystemMailQuery;
+use crate::domain::query::team::TeamQuery;
+use crate::domain::query::user::UserQuery;
 use crate::domain::result::DomainResult;
 use crate::infrastructure::effect::{AsyncEffectSink, SharedEffectSink};
 use crate::infrastructure::external::image_pool::OssImagePool;
@@ -34,18 +39,43 @@ impl std::ops::Deref for HarnessBase {
 }
 
 #[async_trait]
+impl TeamQuery for HarnessBase {
+    async fn get_by_id(&self, id: &str) -> DomainResult<TeamAggr> {
+        TeamQuery::get_by_id(&self.rdb_query, id).await
+    }
+}
+
+#[async_trait]
+impl UserQuery for HarnessBase {
+    async fn get_by_id(&self, id: &str) -> DomainResult<UserAggr> {
+        UserQuery::get_by_id(&self.rdb_query, id).await
+    }
+
+    async fn get_credentials_by_qid(&self, qid: &str) -> DomainResult<UserCredential> {
+        self.rdb_query.get_credentials_by_qid(qid).await
+    }
+}
+
+#[async_trait]
+impl SystemMailQuery for HarnessBase {
+    async fn send(&self, form: &SystemMailForm) -> DomainResult<()> {
+        self.rdb_query.send(form).await
+    }
+}
+
+#[async_trait]
 impl Transactional for HarnessBase {
     type Query<'a>
         = <RdbQuery as Transactional>::Query<'a>
     where
         Self: 'a;
 
-    async fn run_in_transaction<F, T>(&self, f: F) -> DomainResult<T>
+    async fn transaction_scoped<F, T>(&self, f: F) -> DomainResult<T>
     where
         T: Send,
         F: for<'a> FnOnce(&'a mut Self::Query<'a>) -> BoxFuture<'a, DomainResult<T>> + Send,
     {
-        self.rdb_query.run_in_transaction(f).await
+        self.rdb_query.transaction_scoped(f).await
     }
 }
 

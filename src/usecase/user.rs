@@ -24,7 +24,7 @@ where
 {
     // Run the core registration logic inside a database transaction.
     let mut user_form = harn
-        .run_in_transaction(move |query| {
+        .transaction_scoped(move |query| {
             async move {
                 // 1. Acquire an exclusive row lock on the pending invitation by its code.
                 //    This serialises concurrent attempts to consume the same invitation.

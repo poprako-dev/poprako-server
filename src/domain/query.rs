@@ -46,7 +46,7 @@ pub trait Transactional {
     /// If `f` returns `Ok`, the transaction is committed. If `f` returns `Err`,
     /// the transaction is rolled back. The closure is boxed (→ `BoxFuture`) so it
     /// can cross `.await` boundaries on a multi-threaded Tokio runtime.
-    async fn run_in_transaction<F, T>(&self, f: F) -> DomainResult<T>
+    async fn transaction_scoped<F, T>(&self, f: F) -> DomainResult<T>
     where
         T: Send,
         F: for<'a> FnOnce(&'a mut Self::Query<'a>) -> BoxFuture<'a, DomainResult<T>> + Send;
@@ -65,11 +65,11 @@ where
     where
         Self: 'a;
 
-    async fn run_in_transaction<F, U>(&self, f: F) -> DomainResult<U>
+    async fn transaction_scoped<F, U>(&self, f: F) -> DomainResult<U>
     where
         U: Send,
         F: for<'a> FnOnce(&'a mut Self::Query<'a>) -> BoxFuture<'a, DomainResult<U>> + Send,
     {
-        self.deref_to().run_in_transaction(f).await
+        self.deref_to().transaction_scoped(f).await
     }
 }

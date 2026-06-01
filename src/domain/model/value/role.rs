@@ -92,3 +92,68 @@ pub trait RoleAssign {
     /// Overwrites the role mask with the given value.
     fn assign_roles(&mut self, mask: RoleMask);
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn has_role_single_bit() {
+        let mask = RoleMask::from(RoleFlag::Admin);
+        assert!(mask.has_role(RoleFlag::Admin));
+        assert!(!mask.has_role(RoleFlag::Translator));
+    }
+
+    #[test]
+    fn has_any_role_true() {
+        let mask: RoleMask = RoleFlag::Admin.into();
+        assert!(mask.has_any_role(&[RoleFlag::Translator, RoleFlag::Admin]));
+    }
+
+    #[test]
+    fn has_any_role_false() {
+        let mask: RoleMask = RoleFlag::Admin.into();
+        assert!(!mask.has_any_role(&[RoleFlag::Translator, RoleFlag::Proofreader]));
+    }
+
+    #[test]
+    fn has_every_role_true() {
+        let mut mask: u32 = 0;
+        mask |= Into::<u32>::into(RoleFlag::Translator);
+        mask |= Into::<u32>::into(RoleFlag::Proofreader);
+        let mask: RoleMask = mask.into();
+        assert!(mask.has_every_role(&[RoleFlag::Translator, RoleFlag::Proofreader]));
+    }
+
+    #[test]
+    fn has_every_role_false_missing_one() {
+        let mask: RoleMask = RoleFlag::Translator.into();
+        assert!(!mask.has_every_role(&[RoleFlag::Translator, RoleFlag::Proofreader]));
+    }
+
+    #[test]
+    fn from_u32_invalid_bits_panics_in_debug() {
+        let bad: u32 = RoleMask::VALID_BITS << 1;
+        let result = std::panic::catch_unwind(|| {
+            let _mask: RoleMask = bad.into();
+        });
+        if cfg!(debug_assertions) {
+            assert!(result.is_err(), "expected panic on invalid bits in debug mode");
+        } else {
+            assert!(result.is_ok(), "no panic expected in release mode");
+        }
+    }
+
+    #[test]
+    fn valid_bits_constant() {
+        assert_eq!(RoleMask::VALID_BITS, (1 << 9) - 1);
+    }
+
+    #[test]
+    fn roundtrip_u32_to_mask_to_u32() {
+        let original: u32 = 0b0000_0000_0010_0101;
+        let mask: RoleMask = original.into();
+        let back: u32 = mask.into();
+        assert_eq!(back, original);
+    }
+}

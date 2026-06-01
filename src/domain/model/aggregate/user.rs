@@ -164,6 +164,82 @@ impl EventEmit for UserForm {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::domain::model::event::user::UserSignedUpEvent;
+
+    // ── UserCredential::verify_password ───────────────────────────────
+
+    #[test]
+    fn verify_password_match() {
+        let hash = bcrypt::hash("secret123", bcrypt::DEFAULT_COST).unwrap();
+        let credential = UserCredential::new("qid-1".into(), hash);
+        assert!(credential.verify_password("secret123"));
+    }
+
+    #[test]
+    fn verify_password_mismatch() {
+        let hash = bcrypt::hash("secret123", bcrypt::DEFAULT_COST).unwrap();
+        let credential = UserCredential::new("qid-1".into(), hash);
+        assert!(!credential.verify_password("wrong"));
+    }
+
+    #[test]
+    fn verify_password_corrupted_hash_returns_false() {
+        let credential = UserCredential::new("qid-1".into(), "not-a-valid-bcrypt-hash".into());
+        // bcrypt::verify fails → trace_error → unwrap_or(false)
+        assert!(!credential.verify_password("anything"));
+    }
+
+    // ── UserForm event lifecycle ─────────────────────────────────────
+
+    #[test]
+    fn clone_without_events_preserves_fields_clears_events() {
+        let mut original = UserForm::new("qid".into(), "nick".into(), "pw".into());
+
+        let ev = Event::UserSignedUp(UserSignedUpEvent {
+            team_id: "team-1".into(),
+            invitor_id: "user-9".into(),
+            invitee_qid: "qid".into(),
+        });
+        original.push_event(ev);
+
+        let mut cloned = original.clone_without_events();
+
+        assert_eq!(cloned.id, original.id);
+        assert_eq!(cloned.qid, original.qid);
+        assert_eq!(cloned.nickname, original.nickname);
+        assert_eq!(cloned.password_hash, original.password_hash);
+        assert!(cloned.pull_events().is_empty());
+        // Original still has its events.
+        assert_eq!(original.pull_events().len(), 1);
+    }
+
+    #[test]
+    fn push_and_pull_events_swap_and_clear() {
+        let mut form = UserForm::new("qid".into(), "nick".into(), "pw".into());
+
+        let ev1 = Event::UserSignedUp(UserSignedUpEvent {
+            team_id: "t".into(),
+            invitor_id: "u".into(),
+            invitee_qid: "q".into(),
+        });
+        let ev2 = Event::UserSignedUp(UserSignedUpEvent {
+            team_id: "t2".into(),
+            invitor_id: "u2".into(),
+            invitee_qid: "q2".into(),
+        });
+        form.push_event(ev1);
+        form.push_event(ev2);
+
+        let pulled = form.pull_events();
+        assert_eq!(pulled.len(), 2);
+        // After pull, events buffer is empty (swap-and-clear).
+        assert!(form.pull_events().is_empty());
+    }
+}
+
 /// Input aggregate for updating user info via PUT.
 // TODO: No password update support for now.
 pub struct UserInfoUpdate {
