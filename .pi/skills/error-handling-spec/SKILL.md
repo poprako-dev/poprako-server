@@ -15,8 +15,8 @@ All errors in poprako-r fall into exactly one of two categories:
 
 | Category | Variant | Audience | trace level | Contains location? |
 |----------|---------|----------|-------------|---------------------|
-| Expected | `DomainErr::Expected` | End user (via i18n) | `trace_debug` | No — message goes to user |
-| Unrecoverable | `DomainErr::Unrecoverable` | Developer (logs only) | `trace_error` | Yes — `[Struct::method]` prefix |
+| Expected | `DomainError::Expected` | End user (via i18n) | `trace_debug` | No — message goes to user |
+| Unrecoverable | `DomainError::Unrecoverable` | Developer (logs only) | `trace_error` | Yes — `[Struct::method]` prefix |
 
 This binary split means every error decision reduces to one question:
 **"Should the end user see this message?"**
@@ -49,25 +49,25 @@ mandatory — there is no intermediary conversion to delegate to.
 ## Error Type Hierarchy
 
 ```
-StdResl<T, E>                    ← util::rename (alias for std::result::Result)
-  ├── DomainResl<T>              ← DomainErr (domain layer)
-  │     ├── Expected   { variant: ExpectedErr, message: String }
+StdResult<T, E>                    ← util::rename (alias for std::result::Result)
+  ├── DomainResult<T>              ← DomainError (domain layer)
+  │     ├── Expected   { variant: ExpectedVariant, message: String }
   │     └── Unrecoverable { message: String }
-  └── UseCaseResl<T>             ← UseCaseErr(DomainErr) — transparent newtype
+  └── UseCaseResult<T>             ← UseCaseError(DomainError) — transparent newtype
 ```
 
-### DomainErr (`src/domain.rs`)
+### DomainError (`src/domain.rs`)
 
 ```rust
-pub enum ExpectedErr {
+pub enum ExpectedVariant {
     /// Validation / resource errors
     Argument,
     /// Authentication errors
     Authentication,
 }
 
-pub enum DomainErr {
-    Expected { variant: ExpectedErr, message: String },
+pub enum DomainError {
+    Expected { variant: ExpectedVariant, message: String },
     Unrecoverable { message: String },
 }
 ```
@@ -75,24 +75,24 @@ pub enum DomainErr {
 Convenience constructors **must** be used instead of struct literals:
 
 ```rust
-impl DomainErr {
+impl DomainError {
     pub fn expected_argument(msg: String) -> Self { ... }
     pub fn expected_authentication(msg: String) -> Self { ... }
     pub fn unrecoverable(msg: String) -> Self { ... }
 }
 ```
 
-### UseCaseErr (`src/usecase.rs`)
+### UseCaseError (`src/usecase.rs`)
 
 ```rust
-pub struct UseCaseErr(DomainErr);
+pub struct UseCaseError(DomainError);
 
-impl From<DomainErr> for UseCaseErr { ... }   // upward conversion
-impl AsRef<DomainErr> for UseCaseErr { ... }  // downward inspection
+impl From<DomainError> for UseCaseError { ... }   // upward conversion
+impl AsRef<DomainError> for UseCaseError { ... }  // downward inspection
 ```
 
-`UseCaseErr` adds **no new variants**. It exists solely for layer isolation:
-the API/HTTP layer matches on `UseCaseErr` without importing `DomainErr`.
+`UseCaseError` adds **no new variants**. It exists solely for layer isolation:
+the API/HTTP layer matches on `UseCaseError` without importing `DomainError`.
 
 ---
 
@@ -105,7 +105,7 @@ pub trait ErrorTrace {
     fn trace_error(self) -> Self;   // Unrecoverable errors
 }
 
-impl<T, E> ErrorTrace for StdResl<T, E>
+impl<T, E> ErrorTrace for StdResult<T, E>
 where E: Debug + Display { ... }
 ```
 
@@ -128,7 +128,7 @@ where the error is born.
 **Do:**
 ```rust
 // Construction site — trace here
-return Err(DomainErr::expected_argument(trl("error-user-not-found")))
+return Err(DomainError::expected_argument(trl("error-user-not-found")))
     .trace_debug();
 ```
 
@@ -155,18 +155,18 @@ use crate::util::err::ErrorTrace as _;
 use crate::util::i18n::trl;
 
 // When Diesel .optional()? returns None:
-.ok_or(DomainErr::expected_argument(trl("error-user-not-found")))
+.ok_or(DomainError::expected_argument(trl("error-user-not-found")))
 .trace_debug()?;
 
 // For business validation failures:
 if !invitation.verify_code(&params.invitation_code) {
-    return Err(DomainErr::expected_argument(trl("error-invalid-invitation-code")))
+    return Err(DomainError::expected_argument(trl("error-invalid-invitation-code")))
         .trace_debug();
 }
 
 // For update with zero affected rows:
 if rows_affected == 0 {
-    return Err(DomainErr::expected_argument(trl("error-invitation-not-found")))
+    return Err(DomainError::expected_argument(trl("error-invitation-not-found")))
         .trace_debug();
 }
 ```
@@ -204,13 +204,13 @@ When adding a new Expected error:
 use crate::util::err::ErrorTrace as _;
 
 // Pool connection failure:
-.map_err(|e| DomainErr::unrecoverable(format!(
+.map_err(|e| DomainError::unrecoverable(format!(
     "[Query::run_in_transaction] error getting connection: {}", e
 )))
 .trace_error()?;
 
 // External service failure:
-.map_err(|e| DomainErr::unrecoverable(format!(
+.map_err(|e| DomainError::unrecoverable(format!(
     "[R2OssClient::put_signed] failed to generate presigned put URL: {}", e
 )))
 .trace_error()?;
@@ -231,7 +231,7 @@ let info: UserInfo = t_user
     .first(conn)
     .await
     .optional()?          // NotFound → Ok(None), other errors → Err(Unrecoverable)
-    .ok_or(DomainErr::expected_argument(trl("error-user-not-found")))
+    .ok_or(DomainError::expected_argument(trl("error-user-not-found")))
     .trace_debug()?;      // None → Expected with i18n
 ```
 
@@ -314,11 +314,11 @@ Constructors fall into two categories with different rules.
 
 | Layer | Error type | Creates errors? | Trace at | Instrument? |
 |-------|-----------|-----------------|----------|-------------|
-| **Domain** | `DomainErr` | Yes — via constructors + `trl()` / format with prefix | Construction site | No |
-| **UseCase** | `UseCaseErr` (wraps `DomainErr`) | Rarely — mostly propagates via `?` | Only if creating a new error | Yes |
-| **Infrastructure query** | `DomainErr` | Yes — NotFound → Expected, pool fail → Unrecoverable | Construction site | Yes (free functions + Query impl) |
-| **Infrastructure external** | `DomainErr` | Yes — all external failures → Unrecoverable | Construction site | Yes |
-| **API** | TBD | Converts `UseCaseErr` → HTTP responses | TBD | Yes |
+| **Domain** | `DomainError` | Yes — via constructors + `trl()` / format with prefix | Construction site | No |
+| **UseCase** | `UseCaseError` (wraps `DomainError`) | Rarely — mostly propagates via `?` | Only if creating a new error | Yes |
+| **Infrastructure query** | `DomainError` | Yes — NotFound → Expected, pool fail → Unrecoverable | Construction site | Yes (free functions + Query impl) |
+| **Infrastructure external** | `DomainError` | Yes — all external failures → Unrecoverable | Construction site | Yes |
+| **API** | TBD | Converts `UseCaseError` → HTTP responses | TBD | Yes |
 
 ---
 
@@ -326,27 +326,27 @@ Constructors fall into two categories with different rules.
 
 ```rust
 // ── Expected (user-facing) ─────────────────────────────────────────────────
-// Pattern: DomainErr::expected_{variant}(trl("error-xxx")).trace_debug()
+// Pattern: DomainError::expected_{variant}(trl("error-xxx")).trace_debug()
 
 // Not found:
-.ok_or(DomainErr::expected_argument(trl("error-user-not-found"))).trace_debug()?;
+.ok_or(DomainError::expected_argument(trl("error-user-not-found"))).trace_debug()?;
 
 // Validation failure:
-return Err(DomainErr::expected_argument(trl("error-invalid-code"))).trace_debug();
+return Err(DomainError::expected_argument(trl("error-invalid-code"))).trace_debug();
 
 // Authentication failure:
-return Err(DomainErr::expected_authentication(trl("error-unauthorized"))).trace_debug();
+return Err(DomainError::expected_authentication(trl("error-unauthorized"))).trace_debug();
 
 // ── Unrecoverable (internal) ───────────────────────────────────────────────
-// Pattern: DomainErr::unrecoverable(format!("[Struct::method] detail: {e}")).trace_error()
+// Pattern: DomainError::unrecoverable(format!("[Struct::method] detail: {e}")).trace_error()
 
 // Connection pool:
-.map_err(|e| DomainErr::unrecoverable(format!(
+.map_err(|e| DomainError::unrecoverable(format!(
     "[Query::get_by_id] error getting connection: {}", e
 ))).trace_error()?;
 
 // External API:
-.map_err(|e| DomainErr::unrecoverable(format!(
+.map_err(|e| DomainError::unrecoverable(format!(
     "[JwtCodec::sign] error when encoding: {}", e
 ))).trace_error()?;
 
@@ -362,19 +362,19 @@ let row = diesel_query.execute(conn).await?;  // ? triggers From<diesel::Error>
 
 ```rust
 // ❌ Struct literal instead of constructor
-DomainErr::Unrecoverable { message: "something broke".into() }
+DomainError::Unrecoverable { message: "something broke".into() }
 
 // ❌ Expected with hardcoded language
-DomainErr::expected_argument("该用户不存在".into())
+DomainError::expected_argument("该用户不存在".into())
 
 // ❌ Expected with [Struct::method] prefix (leaked to user)
-DomainErr::expected_argument("[UserQuery::get_by_id] 该用户不存在".into())
+DomainError::expected_argument("[UserQuery::get_by_id] 该用户不存在".into())
 
 // ❌ Unrecoverable without [Struct::method] prefix (can't trace origin)
-DomainErr::unrecoverable(format!("error getting connection: {}", e))
+DomainError::unrecoverable(format!("error getting connection: {}", e))
 
 // ❌ Double-tracing — trace at both construction and propagation
-let err = DomainErr::expected_argument(trl("x")).trace_debug();
+let err = DomainError::expected_argument(trl("x")).trace_debug();
 return Err(err).trace_debug();  // second trace is redundant
 
 // ❌ .context() on anyhow::Result — use .with_context() always

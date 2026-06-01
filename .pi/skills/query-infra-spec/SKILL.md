@@ -114,6 +114,29 @@ let (id, name, created_at) = t_my_entity
     .await?;
 ```
 
+## Type annotation on `let`, never turbofish in query chains
+
+On Diesel query chains, annotate the `let` binding instead of adding turbofish
+type parameters inside the chain.
+
+**Do:**
+```rust
+let row: UserRow = t_user
+    .filter(f_id.eq(user_id))
+    .select(UserRow::as_select())
+    .first(conn)
+    .await?;
+```
+
+**Do NOT:**
+```rust
+let row = t_user
+    .filter(f_id.eq(user_id))
+    .select(UserRow::as_select())
+    .first::<UserRow>(conn)
+    .await?;
+```
+
 ## Database column prefix
 
 All database columns use the `f_` prefix (e.g., `f_id`, `f_nickname`).
@@ -209,7 +232,7 @@ These are then called by both the `Query` and `QueryTransactional` impl blocks.
 
 ```rust
 // infrastructure/query/user.rs
-pub async fn get_by_id(conn: &mut AsyncPgConnection, id: &str) -> DomainResl<UserAggr> {
+pub async fn get_by_id(conn: &mut AsyncPgConnection, id: &str) -> DomainResult<UserAggr> {
     let row: UserRow = t_user
         .filter(f_id.eq(id))
         .select(UserRow::as_select())
@@ -218,7 +241,7 @@ pub async fn get_by_id(conn: &mut AsyncPgConnection, id: &str) -> DomainResl<Use
     Ok(row.into())
 }
 
-pub async fn create(conn: &mut AsyncPgConnection, form: &UserForm) -> DomainResl<UserAggr> {
+pub async fn create(conn: &mut AsyncPgConnection, form: &UserForm) -> DomainResult<UserAggr> {
     // ...
 }
 ```
@@ -229,7 +252,7 @@ use async_trait::async_trait;
 
 #[async_trait]
 impl domain_query::user::UserQuery for Query {
-    async fn get_by_id(&self, id: &str) -> DomainResl<UserAggr> {
+    async fn get_by_id(&self, id: &str) -> DomainResult<UserAggr> {
         let mut conn = self.pool.get().await...?;
         get_by_id(&mut conn, id).await
     }
@@ -237,7 +260,7 @@ impl domain_query::user::UserQuery for Query {
 
 #[async_trait]
 impl<'c> domain_query::user::UserQueryTransactional for QueryTransactional<'c> {
-    async fn create(&mut self, form: UserForm) -> DomainResl<UserAggr> {
+    async fn create(&mut self, form: UserForm) -> DomainResult<UserAggr> {
         create(self.conn, &form).await
     }
 }

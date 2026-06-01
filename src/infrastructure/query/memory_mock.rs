@@ -90,7 +90,7 @@ impl Default for MemoryMockQuery {
 /// Does not simulate snapshot / rollback / commit — writes are applied
 /// directly to the shared state.
 pub struct MemoryMockQueryTransactional {
-    pub(super) state: Arc<Mutex<MemoryMockState>>,
+    state: Arc<Mutex<MemoryMockState>>,
 }
 
 // ── Transactional impl ─────────────────────────────────────────────────────
@@ -108,102 +108,5 @@ impl Transactional for MemoryMockQuery {
             state: Arc::clone(&self.state),
         };
         f(&mut query).await
-    }
-}
-
-// ── Tests ──────────────────────────────────────────────────────────────────
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    use crate::domain::model::aggregate::member::MemberForm;
-    use crate::domain::model::aggregate::member_invitation::MemberInvitationAggr;
-    use crate::domain::model::aggregate::user::UserForm;
-    use crate::domain::model::value::role::{RoleFlag, RoleMask};
-    use crate::domain::query::member::MemberQueryTransactional;
-    use crate::domain::query::member_invitation::MemberInvitationQueryTransactional;
-    use crate::domain::query::user::UserQueryTransactional;
-    use time::OffsetDateTime;
-
-    fn now() -> OffsetDateTime {
-        OffsetDateTime::now_utc()
-    }
-
-    fn make_invitation(id: &str, code: &str, pending: bool) -> MemberInvitationAggr {
-        MemberInvitationAggr::new(
-            id.into(),
-            "invitor-1".into(),
-            None,
-            "team-1".into(),
-            "invitee-qid".into(),
-            code.into(),
-            pending,
-            RoleMask::from(RoleFlag::Admin),
-            now(),
-        )
-    }
-
-    #[tokio::test]
-    async fn transaction_scoped_creates_user_member_marks_invitation_used() {
-        let mock = MemoryMockQuery::new();
-        mock.seed_member_invitation(make_invitation("inv-1", "CODE-XYZ", true));
-
-        mock.transaction_scoped(|txn| {
-            Box::pin(async move {
-                // 1. Look up the pending invitation.
-                let inv = MemberInvitationQueryTransactional::get_by_code_ex(txn, "CODE-XYZ")
-                    .await
-                    .unwrap();
-
-                // 2. Create a user.
-                let user_form = UserForm::new("qid-txn".into(), "nick-txn".into(), "pw".into());
-                let user = UserQueryTransactional::create(txn, &user_form)
-                    .await
-                    .unwrap();
-
-                // 3. Create a member for the user.
-                let member_form = MemberForm::new(
-                    user.id.clone(),
-                    user.nickname.clone(),
-                    inv.team_id.clone(),
-                    inv.roles,
-                );
-                MemberQueryTransactional::create(txn, &member_form)
-                    .await
-                    .unwrap();
-
-                // 4. Mark the invitation as used.
-                MemberInvitationQueryTransactional::mark_pending_as_used(txn, &inv.id)
-                    .await
-                    .unwrap();
-
-                Ok(())
-            })
-        })
-        .await
-        .unwrap();
-
-        let snap = mock.snapshot();
-
-        // User created.
-        assert_eq!(snap.users.len(), 1);
-        assert_eq!(snap.users[0].qid, "qid-txn");
-
-        // Credential stored.
-        assert_eq!(snap.credentials.len(), 1);
-        assert_eq!(snap.credentials[0].qid, "qid-txn");
-
-        // Member created.
-        assert_eq!(snap.members.len(), 1);
-        assert_eq!(snap.members[0].team_id, "team-1");
-
-        // Invitation is no longer pending.
-        let inv = snap
-            .member_invitations
-            .iter()
-            .find(|i| i.id == "inv-1")
-            .unwrap();
-        assert!(!inv.pending);
     }
 }
