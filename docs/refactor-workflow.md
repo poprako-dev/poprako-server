@@ -20,10 +20,10 @@ with use cases and API integration once all dependencies exist.
 Relevant local skill files:
 
 - `.pi/skills/aggregate-definition-spec/SKILL.md`
+- `.pi/skills/general-conventions/SKILL.md`
 - `.pi/skills/poprako-aggr-conventions/SKILL.md`
 - `.pi/skills/query-domain-spec/SKILL.md`
 - `.pi/skills/query-infra-spec/SKILL.md`
-- `.pi/skills/poprako-conventions/SKILL.md`
 - `.pi/skills/error-handling-spec/SKILL.md`
 - `.pi/skills/trait-def-spec/SKILL.md`
 - `.pi/skills/tracing-usage-spec/SKILL.md`

@@ -7,7 +7,6 @@ use time::OffsetDateTime;
 use crate::domain::model::aggregate::member::MemberAggr;
 use crate::domain::model::aggregate::member::MemberForm;
 use crate::domain::model::value::role::RoleFlag;
-use crate::domain::model::value::role::RoleMask;
 use crate::domain::query::member::MemberQueryTransactional;
 use crate::domain::result::DomainResult;
 use crate::infrastructure::query::RdbQueryTransactional;
@@ -49,12 +48,6 @@ pub async fn create(conn: &mut AsyncPgConnection, form: &MemberForm) -> DomainRe
         .await?;
 
     Ok(row.into())
-}
-
-fn has_role(roles: &RoleMask, flag: RoleFlag) -> bool {
-    let roles: u32 = (*roles).into();
-    let flag: u32 = flag.into();
-    roles & flag != 0
 }
 
 // ── impls ──────────────────────────────────────────────────────────────────
