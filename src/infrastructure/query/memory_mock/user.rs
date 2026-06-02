@@ -44,16 +44,13 @@ impl UserQueryTransactional for MemoryMockQueryTransactional {
 
         // Check uniqueness constraints.
         if state.users.iter().any(|u| u.id == form.id) {
-            return Err(DomainError::expected_conflict(trl("error-already-exists")))
-                .trace_debug();
+            return Err(DomainError::expected_conflict(trl("error-already-exists"))).trace_debug();
         }
         if state.users.iter().any(|u| u.qid == form.qid) {
-            return Err(DomainError::expected_conflict(trl("error-already-exists")))
-                .trace_debug();
+            return Err(DomainError::expected_conflict(trl("error-already-exists"))).trace_debug();
         }
         if state.users.iter().any(|u| u.nickname == form.nickname) {
-            return Err(DomainError::expected_conflict(trl("error-already-exists")))
-                .trace_debug();
+            return Err(DomainError::expected_conflict(trl("error-already-exists"))).trace_debug();
         }
 
         // Build the user aggregate from the form.
@@ -62,12 +59,12 @@ impl UserQueryTransactional for MemoryMockQueryTransactional {
             form.id.clone(),
             form.nickname.clone(),
             form.qid.clone(),
-            false,        // is_sadmin
+            false,         // is_sadmin
             String::new(), // avatar_key
-            false,        // avatar_uploaded
-            now,          // last_active_at
-            now,          // created_at
-            now,          // updated_at
+            false,         // avatar_uploaded
+            now,           // last_active_at
+            now,           // created_at
+            now,           // updated_at
         );
 
         let credential = UserCredential::new(form.qid.clone(), form.password_hash.clone());
