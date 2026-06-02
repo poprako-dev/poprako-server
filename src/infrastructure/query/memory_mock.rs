@@ -87,8 +87,8 @@ impl Default for MemoryMockQuery {
 /// Mutable query handle passed to closures inside
 /// [`Transactional::transaction_scoped`].
 ///
-/// Does not simulate snapshot / rollback / commit — writes are applied
-/// directly to the shared state.
+/// Writes are applied directly to the shared state and restored from a
+/// snapshot if the transaction returns an error.
 pub struct MemoryMockQueryTransactional {
     state: Arc<Mutex<MemoryMockState>>,
 }
@@ -104,9 +104,44 @@ impl Transactional for MemoryMockQuery {
         T: Send,
         F: for<'a> FnOnce(&'a mut Self::Query<'a>) -> BoxFuture<'a, DomainResult<T>> + Send,
     {
+        let snapshot = self.state.lock().unwrap().clone();
         let mut query = MemoryMockQueryTransactional {
             state: Arc::clone(&self.state),
         };
-        f(&mut query).await
+        let res = f(&mut query).await;
+
+        if res.is_err() {
+            *self.state.lock().unwrap() = snapshot;
+        }
+
+        res
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::domain::model::aggregate::user::UserForm;
+    use crate::domain::query::user::UserQueryTransactional;
+    use crate::domain::result::DomainError;
+
+    #[tokio::test]
+    async fn transaction_scoped_restores_snapshot_on_error() {
+        let mock = MemoryMockQuery::new();
+
+        let err = mock
+            .transaction_scoped(|txn| {
+                Box::pin(async move {
+                    let form = UserForm::new("qid-1".into(), "nick-1".into(), "pw".into());
+                    UserQueryTransactional::create(txn, &form).await?;
+                    Err::<(), DomainError>(DomainError::unrecoverable("rollback".into()))
+                })
+            })
+            .await
+            .err()
+            .unwrap();
+
+        assert!(matches!(err, DomainError::Unrecoverable { .. }));
+        assert!(mock.snapshot().users.is_empty());
     }
 }

@@ -1,6 +1,5 @@
 use std::borrow::Cow;
 use std::collections::HashMap;
-use std::ops::Deref;
 
 use fluent_templates::fluent_bundle::FluentValue;
 use tracing::Level;
@@ -20,7 +19,7 @@ where
     H: TeamQuery + SystemMailQuery,
 {
     // Look up the team name for the notification content.
-    let Some(team) = TeamQuery::get_by_id(harn.deref(), &event.team_id)
+    let Some(team) = TeamQuery::get_by_id(harn, &event.team_id)
         .await
         .trace_error()
         .ok()
@@ -50,7 +49,7 @@ where
 
     let mail = SystemMailForm::new(invitor_id, title, content);
 
-    if let Err(e) = SystemMailQuery::send(harn.deref(), &mail).await {
+    if let Err(e) = SystemMailQuery::send(harn, &mail).await {
         tracing::error!(
             error = %e,
             mail = ?mail,

@@ -90,3 +90,275 @@ where
         token,
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use std::sync::{Arc, Mutex};
+
+    use async_trait::async_trait;
+    use time::OffsetDateTime;
+
+    use super::*;
+    use crate::domain::model::aggregate::member_invitation::MemberInvitationAggr;
+    use crate::domain::model::event::EventEmit;
+    use crate::domain::model::value::role::{RoleFlag, RoleMask};
+    use crate::domain::result::{DomainResult, ExpectedVariant};
+    use crate::infrastructure::query::memory_mock::MemoryMockQuery;
+    use crate::util::DerefTo;
+
+    #[derive(Clone)]
+    struct TestHarness {
+        query: Arc<MemoryMockQuery>,
+        events: Arc<Mutex<Vec<Event>>>,
+        token_fails: bool,
+    }
+
+    impl TestHarness {
+        fn new() -> Self {
+            Self {
+                query: Arc::new(MemoryMockQuery::new()),
+                events: Arc::new(Mutex::new(Vec::new())),
+                token_fails: false,
+            }
+        }
+
+        fn with_token_failure() -> Self {
+            Self {
+                token_fails: true,
+                ..Self::new()
+            }
+        }
+
+        fn seed_invitation(&self, invitation: MemberInvitationAggr) {
+            self.query.seed_member_invitation(invitation);
+        }
+
+        fn snapshot(&self) -> crate::infrastructure::query::memory_mock::MemoryMockState {
+            self.query.snapshot()
+        }
+
+        fn events(&self) -> Vec<Event> {
+            self.events.lock().unwrap().clone()
+        }
+    }
+
+    impl DerefTo for TestHarness {
+        type Target = MemoryMockQuery;
+
+        fn deref_to(&self) -> &MemoryMockQuery {
+            &self.query
+        }
+    }
+
+    #[async_trait]
+    impl EffectSink for TestHarness {
+        async fn handle<E>(&self, src: &mut E)
+        where
+            E: EventEmit + Send,
+        {
+            self.events.lock().unwrap().extend(src.pull_events());
+        }
+    }
+
+    impl TokenSign for TestHarness {
+        fn sign(&self, unsigned_token: &UserToken) -> DomainResult<String> {
+            if self.token_fails {
+                return Err(DomainError::unrecoverable("token failed".into()));
+            }
+
+            Ok(format!("token:{}", unsigned_token.user_id))
+        }
+    }
+
+    fn invitation(code: &str, invitee_qid: &str, pending: bool) -> MemberInvitationAggr {
+        let mask = u32::from(RoleFlag::Admin) | u32::from(RoleFlag::Translator);
+
+        MemberInvitationAggr::new(
+            "invitation-1".into(),
+            "invitor-1".into(),
+            None,
+            "team-1".into(),
+            invitee_qid.into(),
+            code.into(),
+            pending,
+            RoleMask::from(mask),
+            OffsetDateTime::now_utc(),
+        )
+    }
+
+    fn sign_up_params(code: &str, qid: &str, nickname: &str) -> SignUpUserParams {
+        SignUpUserParams {
+            qid: qid.into(),
+            nickname: nickname.into(),
+            password: "secret-password".into(),
+            invitation_code: code.into(),
+        }
+    }
+
+    fn is_expected_argument(err: &crate::usecase::result::UseCaseError) -> bool {
+        matches!(
+            err.as_ref(),
+            DomainError::Expected {
+                variant: ExpectedVariant::Argument,
+                ..
+            }
+        )
+    }
+
+    fn is_unrecoverable(err: &crate::usecase::result::UseCaseError) -> bool {
+        matches!(err.as_ref(), DomainError::Unrecoverable { .. })
+    }
+
+    #[tokio::test]
+    async fn sign_up_user_creates_user_member_consumes_invitation_emits_event_and_signs_token() {
+        let harn = TestHarness::new();
+        harn.seed_invitation(invitation("CODE123", "invitee-qid", true));
+
+        let reply = sign_up_user(
+            &harn,
+            sign_up_params("CODE123", "invitee-qid", "Invitee"),
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(reply.token, format!("token:{}", reply.user_id));
+
+        let snapshot = harn.snapshot();
+        assert_eq!(snapshot.users.len(), 1);
+        assert_eq!(snapshot.credentials.len(), 1);
+        assert_eq!(snapshot.members.len(), 1);
+        assert_eq!(snapshot.member_invitations.len(), 1);
+
+        let user = &snapshot.users[0];
+        assert_eq!(user.id, reply.user_id);
+        assert_eq!(user.qid, "invitee-qid");
+        assert_eq!(user.nickname, "Invitee");
+
+        let credential = &snapshot.credentials[0];
+        assert_eq!(credential.qid, "invitee-qid");
+        assert!(bcrypt::verify("secret-password", &credential.password_hash).unwrap());
+
+        let member = &snapshot.members[0];
+        assert_eq!(member.user_id, reply.user_id);
+        assert_eq!(member.team_id, "team-1");
+        assert!(member.assigned_admin_at.is_some());
+        assert!(member.assigned_translator_at.is_some());
+        assert!(member.assigned_proofreader_at.is_none());
+
+        assert!(!snapshot.member_invitations[0].pending);
+
+        let events = harn.events();
+        assert_eq!(events.len(), 1);
+        match &events[0] {
+            Event::UserSignedUp(event) => {
+                assert_eq!(event.team_id, "team-1");
+                assert_eq!(event.invitor_id, "invitor-1");
+                assert_eq!(event.invitee_qid, "invitee-qid");
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn sign_up_user_rejects_missing_invitation_without_side_effects() {
+        let harn = TestHarness::new();
+
+        let err = sign_up_user(
+            &harn,
+            sign_up_params("MISSING", "invitee-qid", "Invitee"),
+        )
+        .await
+        .err()
+        .unwrap();
+
+        assert!(is_expected_argument(&err));
+
+        let snapshot = harn.snapshot();
+        assert!(snapshot.users.is_empty());
+        assert!(snapshot.credentials.is_empty());
+        assert!(snapshot.members.is_empty());
+        assert!(harn.events().is_empty());
+    }
+
+    #[tokio::test]
+    async fn sign_up_user_rejects_qid_mismatch_and_rolls_back() {
+        let harn = TestHarness::new();
+        harn.seed_invitation(invitation("CODE123", "invitee-qid", true));
+
+        let err = sign_up_user(&harn, sign_up_params("CODE123", "other-qid", "Invitee"))
+            .await
+            .err()
+            .unwrap();
+
+        assert!(is_expected_argument(&err));
+
+        let snapshot = harn.snapshot();
+        assert!(snapshot.users.is_empty());
+        assert!(snapshot.credentials.is_empty());
+        assert!(snapshot.members.is_empty());
+        assert!(snapshot.member_invitations[0].pending);
+        assert!(harn.events().is_empty());
+    }
+
+    #[tokio::test]
+    async fn sign_up_user_rolls_back_when_member_create_fails() {
+        let harn = TestHarness::new();
+        harn.seed_invitation(invitation("CODE123", "invitee-qid", true));
+
+        let first = sign_up_user(
+            &harn,
+            sign_up_params("CODE123", "invitee-qid", "Invitee"),
+        )
+        .await
+        .unwrap();
+        harn.seed_invitation(invitation("CODE456", "second-qid", true));
+
+        let err = sign_up_user(&harn, sign_up_params("CODE456", "second-qid", "Invitee"))
+            .await
+            .err()
+            .unwrap();
+
+        assert!(matches!(
+            err.as_ref(),
+            DomainError::Expected {
+                variant: ExpectedVariant::Conflict,
+                ..
+            }
+        ));
+
+        let snapshot = harn.snapshot();
+        assert_eq!(snapshot.users.len(), 1);
+        assert_eq!(snapshot.credentials.len(), 1);
+        assert_eq!(snapshot.members.len(), 1);
+        assert_eq!(snapshot.users[0].id, first.user_id);
+        assert!(snapshot
+            .member_invitations
+            .iter()
+            .find(|inv| inv.code == "CODE456")
+            .unwrap()
+            .pending);
+        assert_eq!(harn.events().len(), 1);
+    }
+
+    #[tokio::test]
+    async fn sign_up_user_token_failure_happens_after_commit_and_event_publish() {
+        let harn = TestHarness::with_token_failure();
+        harn.seed_invitation(invitation("CODE123", "invitee-qid", true));
+
+        let err = sign_up_user(
+            &harn,
+            sign_up_params("CODE123", "invitee-qid", "Invitee"),
+        )
+        .await
+        .err()
+        .unwrap();
+
+        assert!(is_unrecoverable(&err));
+
+        let snapshot = harn.snapshot();
+        assert_eq!(snapshot.users.len(), 1);
+        assert_eq!(snapshot.credentials.len(), 1);
+        assert_eq!(snapshot.members.len(), 1);
+        assert!(!snapshot.member_invitations[0].pending);
+        assert_eq!(harn.events().len(), 1);
+    }
+}

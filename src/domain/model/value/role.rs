@@ -138,7 +138,10 @@ mod tests {
             let _mask: RoleMask = bad.into();
         });
         if cfg!(debug_assertions) {
-            assert!(result.is_err(), "expected panic on invalid bits in debug mode");
+            assert!(
+                result.is_err(),
+                "expected panic on invalid bits in debug mode"
+            );
         } else {
             assert!(result.is_ok(), "no panic expected in release mode");
         }

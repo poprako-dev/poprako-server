@@ -79,8 +79,6 @@ impl MemberAggr {
     }
 }
 
-
-
 pub struct MemberForm {
     pub id: String,
 

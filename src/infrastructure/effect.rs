@@ -108,7 +108,6 @@ impl EffectSink for AsyncEffectSink {
 
         for event in src.pull_events() {
             match self.inlet.try_send(event) {
-                Ok(()) => {}
                 Err(TrySendError::Full(ev)) => {
                     tracing::warn!(
                         event_type = ?ev.event_type(),
@@ -121,6 +120,7 @@ impl EffectSink for AsyncEffectSink {
                     );
                     break;
                 }
+                _ => {}
             }
         }
     }
