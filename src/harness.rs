@@ -102,6 +102,7 @@ pub mod tests {
     use async_trait::async_trait;
 
     use crate::domain::effect::EffectSink;
+    use crate::domain::external::token::TokenParse;
     use crate::domain::external::token::TokenSign;
     use crate::domain::model::aggregate::member_invitation::MemberInvitationAggr;
     use crate::domain::model::aggregate::user::UserToken;
@@ -164,6 +165,18 @@ pub mod tests {
             }
 
             Ok(format!("token:{}", unsigned_token.user_id))
+        }
+    }
+
+    impl TokenParse for TestHarness {
+        fn parse(&self, signed_token: &str) -> DomainResult<UserToken> {
+            if self.token_fails {
+                return Err(DomainError::unrecoverable("token failed".into()));
+            }
+
+            Ok(UserToken {
+                user_id: signed_token.replace("token:", ""),
+            })
         }
     }
 }

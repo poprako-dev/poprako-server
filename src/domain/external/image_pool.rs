@@ -1,70 +1,31 @@
 use async_trait::async_trait;
+use poprako_macro::forward_ref;
 use url::Url;
 
 use crate::domain::result::DomainResult;
-use crate::util::ForwardRef;
-
-/// Forwarding marker for [`ImageGet`].
-pub struct ImageGetForward;
-
-/// Forwarding marker for [`ImagePut`].
-pub struct ImagePutForward;
-
-/// Forwarding marker for [`ImageDelete`].
-pub struct ImageDeleteForward;
 
 /// Generates a pre-signed download URL for an object in the image pool.
+#[forward_ref]
 #[async_trait]
 pub trait ImageGet {
     /// Returns a signed GET URL valid for a limited time window.
     async fn get_signed(&self, key: &str) -> DomainResult<Url>;
 }
 
-#[async_trait]
-impl<T> ImageGet for T
-where
-    T: ForwardRef<ImageGetForward> + Sync,
-    T::Target: ImageGet + Sync,
-{
-    async fn get_signed(&self, key: &str) -> DomainResult<Url> {
-        self.forward_ref().get_signed(key).await
-    }
-}
-
 /// Generates a pre-signed upload URL for an object in the image pool.
+#[forward_ref]
 #[async_trait]
 pub trait ImagePut {
     /// Returns a signed PUT URL that clients can use to upload content.
     async fn put_signed(&self, key: &str) -> DomainResult<Url>;
 }
 
-#[async_trait]
-impl<T> ImagePut for T
-where
-    T: ForwardRef<ImagePutForward> + Sync,
-    T::Target: ImagePut + Sync,
-{
-    async fn put_signed(&self, key: &str) -> DomainResult<Url> {
-        self.forward_ref().put_signed(key).await
-    }
-}
-
 /// Deletes one or more objects from the image pool in a single batch operation.
+#[forward_ref]
 #[async_trait]
 pub trait ImageDelete {
     /// Deletes every object whose key appears in `keys`. No-op if none exist.
     async fn delete_batch(&self, keys: &[&str]) -> DomainResult<()>;
-}
-
-#[async_trait]
-impl<T> ImageDelete for T
-where
-    T: ForwardRef<ImageDeleteForward> + Sync,
-    T::Target: ImageDelete + Sync,
-{
-    async fn delete_batch(&self, keys: &[&str]) -> DomainResult<()> {
-        self.forward_ref().delete_batch(keys).await
-    }
 }
 
 /// Composite of all image-pool capabilities.

@@ -9,9 +9,16 @@ use futures_util::future::BoxFuture;
 
 use crate::domain::query::member::MemberQueryTransactional;
 use crate::domain::query::member_invitation::MemberInvitationQueryTransactional;
-use crate::domain::query::user::UserQueryTransactional;
+use crate::domain::query::system_mail::SystemMailQuery;
+use crate::domain::query::team::TeamQuery;
+use crate::domain::query::user::{UserQuery, UserQueryTransactional};
 use crate::domain::result::DomainResult;
 use crate::util::ForwardRef;
+
+/// Composite read-only query contract for non-transactional use cases.
+pub trait Query: UserQuery + TeamQuery + SystemMailQuery {}
+
+impl<T> Query for T where T: UserQuery + TeamQuery + SystemMailQuery {}
 
 /// Forwarding marker for [`Transactional`].
 pub struct TransactionalForward;
@@ -21,15 +28,12 @@ pub struct TransactionalForward;
 /// Must be `Send` because it is boxed inside [`Transactional::run_in_transaction`]
 /// and passed across `.await` boundaries on a multi-threaded Tokio runtime.
 pub trait QueryTransactional:
-    Send + UserQueryTransactional + MemberQueryTransactional + MemberInvitationQueryTransactional
+    UserQueryTransactional + MemberQueryTransactional + MemberInvitationQueryTransactional
 {
 }
 
 impl<T> QueryTransactional for T where
-    T: Send
-        + UserQueryTransactional
-        + MemberQueryTransactional
-        + MemberInvitationQueryTransactional
+    T: UserQueryTransactional + MemberQueryTransactional + MemberInvitationQueryTransactional
 {
 }
 
@@ -40,7 +44,7 @@ impl<T> QueryTransactional for T where
 #[async_trait]
 pub trait Transactional {
     /// Provider that yields mutable queries with an active transaction context.
-    type Query<'a>: QueryTransactional + 'a
+    type Query<'a>: QueryTransactional + Send + 'a
     where
         Self: 'a;
 

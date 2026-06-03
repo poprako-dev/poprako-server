@@ -1,5 +1,8 @@
 set dotenv-load := true
 
+default:
+    just --list
+
 mgr-run:
     diesel migration run
 

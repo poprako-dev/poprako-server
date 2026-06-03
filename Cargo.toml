@@ -1,3 +1,7 @@
+[workspace]
+members = [".", "poprako-macro"]
+resolver = "3"
+
 [package]
 name = "poprako-r"
 version = "0.1.0"
@@ -21,6 +25,7 @@ dotenvy = "0.15.7"
 fluent-templates = "0.14.0"
 futures-util = "0.3.32"
 jsonwebtoken = "10.4.0"
+poprako-macro = { path = "poprako-macro" }
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.149"
 time = { version = "0.3.47", features = ["serde"] }

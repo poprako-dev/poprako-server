@@ -3,7 +3,7 @@ use tracing::instrument;
 
 use crate::domain::compound::user::{hash_password, sign_token};
 use crate::domain::effect::{Effect as _, EffectSink};
-use crate::domain::external::token::TokenSign;
+use crate::domain::external::token::TokenIssuer;
 use crate::domain::model::aggregate::member::{MemberAggr, MemberForm};
 use crate::domain::model::aggregate::user::{UserAggr, UserForm, UserToken};
 use crate::domain::model::event::user::UserSignedUpEvent;
@@ -21,7 +21,7 @@ use crate::util::i18n::trl;
 #[instrument(skip(harn))]
 pub async fn sign_up_user<H>(harn: &H, params: SignUpUserParams) -> UseCaseResult<SignUpUserReply>
 where
-    H: Clone + Transactional + EffectSink + TokenSign + Send + Sync,
+    H: Clone + Transactional + EffectSink + TokenIssuer + Send + Sync,
 {
     // Run the core registration logic inside a database transaction.
     let mut user_form = harn
@@ -54,11 +54,10 @@ where
                     password_hash,
                 );
 
-                // Push domain event (published after commit via effect sink).
                 let invitation_id = invitation.id;
-                let event_team_id = invitation.team_id.clone();
+
                 user_form.push_event(Event::UserSignedUp(UserSignedUpEvent {
-                    team_id: event_team_id,
+                    team_id: invitation.team_id.clone(),
                     invitor_id: invitation.invitor_id,
                     invitee_qid: user_form.qid.clone(),
                 }));
@@ -94,11 +93,12 @@ where
     let user_token = UserToken {
         user_id: user_form.id,
     };
-    let token = sign_token(harn, &user_token)?;
+
+    let signed_token = sign_token(harn, &user_token)?;
 
     Ok(SignUpUserReply {
         user_id: user_token.user_id,
-        token,
+        token: signed_token,
     })
 }
 
