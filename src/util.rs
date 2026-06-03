@@ -18,6 +18,9 @@ pub mod time {
 }
 
 pub mod err {
+    use std::fmt::Debug;
+    use std::fmt::Display;
+
     use crate::util::rename::StdResult;
 
     /// Emits a [`tracing`] event when a `Result` is `Err`, then passes the
@@ -41,7 +44,7 @@ pub mod err {
 
     impl<T, E> ErrorTrace for StdResult<T, E>
     where
-        E: std::fmt::Debug + std::fmt::Display,
+        E: Debug + Display,
     {
         fn trace_debug(self) -> Self {
             if let Err(e) = &self {
@@ -63,17 +66,32 @@ pub mod rename {
     pub type StdResult<T, E> = std::result::Result<T, E>;
 }
 
-/// Abstracts access to the inner type behind a wrapper.
+/// Abstracts marker-specific access to an inner type behind a wrapper.
 ///
-/// Unlike [`Deref`](std::ops::Deref), this trait is implemented
-/// manually for each wrapper type that wants to forward trait
-/// implementations to its inner value via blanket impls.
-pub trait DerefTo {
-    /// The inner type this value dereferences to.
+/// The marker parameter lets one wrapper forward different trait families to
+/// different fields without exposing those fields directly.
+pub trait ForwardRef<M> {
+    /// The inner type this value forwards to for marker `M`.
     type Target: ?Sized;
 
-    /// Returns a shared reference to the inner value.
-    fn deref_to(&self) -> &Self::Target;
+    /// Returns a shared reference to the target selected by marker `M`.
+    fn forward_ref(&self) -> &Self::Target;
+}
+
+/// Implements [`ForwardRef`] for one or more marker types using the same field.
+#[macro_export]
+macro_rules! impl_forward_ref {
+    ($source:ty => $target:ty, $field:ident, $($marker:ty),+ $(,)?) => {
+        $(
+            impl $crate::util::ForwardRef<$marker> for $source {
+                type Target = $target;
+
+                fn forward_ref(&self) -> &$target {
+                    &self.$field
+                }
+            }
+        )+
+    };
 }
 
 pub mod i18n {

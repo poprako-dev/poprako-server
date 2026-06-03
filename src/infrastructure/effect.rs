@@ -10,9 +10,9 @@ use crossfire::{AsyncRx, MAsyncTx, TrySendError};
 use tracing::Level;
 use tracing::instrument;
 
-use crate::api::harness::HarnessBase;
 use crate::domain::effect::EffectSink;
 use crate::domain::model::event::{Event, EventEmit};
+use crate::harness::HarnessBase;
 use crate::infrastructure::effect::user::notify_invitor_handler;
 
 pub type SharedEffectSink = Arc<AsyncEffectSink>;

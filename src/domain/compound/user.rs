@@ -25,9 +25,23 @@ pub fn parse_token<C: TokenParse>(codec: &C, signed_token: &str) -> DomainResult
 
 #[cfg(test)]
 mod tests {
+    // hash_password_returns_bcrypt_prefix(hash_password)(positive): hashing should return a bcrypt hash with the expected prefix.
+    // hash_password_same_input_produces_different_hashes(hash_password)(positive): hashing the same password twice should use different salts.
+    // hash_password_empty_string(hash_password)(positive): hashing an empty password should still return a bcrypt hash.
+    // hash_password_can_be_verified_by_bcrypt(hash_password)(positive): bcrypt should verify the original password and reject a wrong one.
+    // sign_token_delegates_to_codec(sign_token)(positive): token signing should delegate to the provided codec.
+    // sign_token_returns_codec_error(sign_token)(negative): token signing should propagate codec errors.
+    // parse_token_delegates_to_codec(parse_token)(positive): token parsing should delegate to the provided codec.
+    // parse_token_returns_codec_error(parse_token)(negative): token parsing should propagate codec errors.
+
     use crate::domain::external::token::{TokenParse, TokenSign};
 
-    use super::*;
+    use super::hash_password;
+    use super::parse_token;
+    use super::sign_token;
+    use crate::domain::model::aggregate::user::UserToken;
+    use crate::domain::result::DomainError;
+    use crate::domain::result::DomainResult;
 
     struct FakeCodec {
         fail: bool,
@@ -49,7 +63,9 @@ mod tests {
                 return Err(DomainError::unrecoverable("parse failed".into()));
             }
 
-            Ok(UserToken::new(signed_token.replace("signed:", "")))
+            Ok(UserToken {
+                user_id: signed_token.replace("signed:", ""),
+            })
         }
     }
 
@@ -82,7 +98,9 @@ mod tests {
     #[test]
     fn sign_token_delegates_to_codec() {
         let codec = FakeCodec { fail: false };
-        let token = UserToken::new("user-1".into());
+        let token = UserToken {
+            user_id: "user-1".into(),
+        };
 
         let signed = sign_token(&codec, &token).unwrap();
 
@@ -92,7 +110,9 @@ mod tests {
     #[test]
     fn sign_token_returns_codec_error() {
         let codec = FakeCodec { fail: true };
-        let token = UserToken::new("user-1".into());
+        let token = UserToken {
+            user_id: "user-1".into(),
+        };
 
         let err = sign_token(&codec, &token).err().unwrap();
 

@@ -53,7 +53,10 @@ pub async fn get_credential_by_qid(
         .ok_or(DomainError::expected_argument(trl("error-user-not-found")))
         .trace_debug()?;
 
-    Ok(UserCredential::new(row.f_qid, row.f_password_hash))
+    Ok(UserCredential {
+        qid: row.f_qid,
+        password_hash: row.f_password_hash,
+    })
 }
 
 pub async fn create(conn: &mut AsyncPgConnection, form: &UserForm) -> DomainResult<UserAggr> {

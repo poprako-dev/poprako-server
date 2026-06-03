@@ -25,34 +25,31 @@ impl TeamQuery for MemoryMockQuery {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::domain::result::{DomainError, ExpectedVariant};
+    // find_by_id_after_seed(TeamQuery::get_by_id)(positive): seeded teams should be found by ID.
+    // get_by_id_missing_returns_expected_error(TeamQuery::get_by_id)(negative): missing teams should return an expected argument error.
+
     use time::OffsetDateTime;
+
+    use crate::domain::model::aggregate::team::TeamAggr;
+    use crate::domain::query::team::TeamQuery;
+    use crate::infrastructure::query::memory_mock::MemoryMockQuery;
+    use crate::test_util::is_expected_argument;
 
     fn now() -> OffsetDateTime {
         OffsetDateTime::now_utc()
     }
 
     fn make_team(id: &str) -> TeamAggr {
-        TeamAggr::new(
-            id.into(),
-            "team-name".into(),
-            "desc".into(),
-            String::new(),
-            false,
-            now(),
-            now(),
-        )
-    }
-
-    fn is_expected_argument(err: &DomainError) -> bool {
-        matches!(
-            err,
-            DomainError::Expected {
-                variant: ExpectedVariant::Argument,
-                ..
-            }
-        )
+        let n = now();
+        TeamAggr {
+            id: id.into(),
+            name: "team-name".into(),
+            description: "desc".into(),
+            avatar_key: String::new(),
+            avatar_uploaded: false,
+            created_at: n,
+            updated_at: n,
+        }
     }
 
     #[tokio::test]

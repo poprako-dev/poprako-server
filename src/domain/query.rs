@@ -11,7 +11,10 @@ use crate::domain::query::member::MemberQueryTransactional;
 use crate::domain::query::member_invitation::MemberInvitationQueryTransactional;
 use crate::domain::query::user::UserQueryTransactional;
 use crate::domain::result::DomainResult;
-use crate::util::DerefTo;
+use crate::util::ForwardRef;
+
+/// Forwarding marker for [`Transactional`].
+pub struct TransactionalForward;
 
 /// Composite of all mutable query traits required inside a transaction.
 ///
@@ -52,12 +55,12 @@ pub trait Transactional {
         F: for<'a> FnOnce(&'a mut Self::Query<'a>) -> BoxFuture<'a, DomainResult<T>> + Send;
 }
 
-/// Any type whose [`DerefTo::Target`] implements [`Transactional`] is itself
-/// [`Transactional`], delegating `run_in_transaction` via [`DerefTo::deref_to`].
+/// Any type whose transaction forwarding target implements [`Transactional`]
+/// is itself [`Transactional`], delegating to the selected target.
 #[async_trait]
 impl<T> Transactional for T
 where
-    T: DerefTo + Send + Sync + 'static,
+    T: ForwardRef<TransactionalForward> + Send + Sync + 'static,
     T::Target: Transactional,
 {
     type Query<'a>
@@ -70,6 +73,6 @@ where
         U: Send,
         F: for<'a> FnOnce(&'a mut Self::Query<'a>) -> BoxFuture<'a, DomainResult<U>> + Send,
     {
-        self.deref_to().transaction_scoped(f).await
+        self.forward_ref().transaction_scoped(f).await
     }
 }

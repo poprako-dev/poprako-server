@@ -52,40 +52,36 @@ impl MemberInvitationQueryTransactional for MemoryMockQueryTransactional {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    // find_pending_by_code(MemberInvitationQueryTransactional::get_by_code_ex)(positive): pending invitations should be found by code.
+    // get_by_code_ex_no_pending_returns_expected_error(MemberInvitationQueryTransactional::get_by_code_ex)(negative): missing pending invitations should return an expected argument error.
+    // mark_pending_as_used_then_not_found(MemberInvitationQueryTransactional::mark_pending_as_used)(positive): marking an invitation used should make it unavailable by code.
+    // mark_pending_as_used_nonexistent_returns_error(MemberInvitationQueryTransactional::mark_pending_as_used)(negative): marking an unknown invitation should return an expected argument error.
+
+    use time::OffsetDateTime;
+
     use crate::domain::model::aggregate::member_invitation::MemberInvitationAggr;
     use crate::domain::model::value::role::{RoleFlag, RoleMask};
     use crate::domain::query::Transactional;
-    use crate::domain::result::{DomainError, ExpectedVariant};
+    use crate::domain::query::member_invitation::MemberInvitationQueryTransactional;
     use crate::infrastructure::query::memory_mock::MemoryMockQuery;
-    use time::OffsetDateTime;
+    use crate::test_util::is_expected_argument;
 
     fn now() -> OffsetDateTime {
         OffsetDateTime::now_utc()
     }
 
     fn make_invitation(id: &str, code: &str, pending: bool) -> MemberInvitationAggr {
-        MemberInvitationAggr::new(
-            id.into(),
-            "invitor-1".into(),
-            None,
-            "team-1".into(),
-            "invitee-qid".into(),
-            code.into(),
+        MemberInvitationAggr {
+            id: id.into(),
+            invitor_id: "invitor-1".into(),
+            invitor: None,
+            team_id: "team-1".into(),
+            invitee_qid: "invitee-qid".into(),
+            code: code.into(),
             pending,
-            RoleMask::from(RoleFlag::Admin),
-            now(),
-        )
-    }
-
-    fn is_expected_argument(err: &DomainError) -> bool {
-        matches!(
-            err,
-            DomainError::Expected {
-                variant: ExpectedVariant::Argument,
-                ..
-            }
-        )
+            roles: RoleMask::from(RoleFlag::Admin),
+            created_at: now(),
+        }
     }
 
     #[tokio::test]

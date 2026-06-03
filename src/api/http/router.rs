@@ -1,9 +1,9 @@
 use axum::Router;
 use axum::routing::post;
 
-use crate::api::harness::Harness;
 use crate::api::http::handler::authorization;
 use crate::api::http::middleware::{with_authorization, with_request_id};
+use crate::harness::Harness;
 
 pub fn new(harn: Harness) -> Router<Harness> {
     // Public auth routes — no authorization required.

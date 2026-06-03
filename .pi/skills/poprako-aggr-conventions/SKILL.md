@@ -9,21 +9,22 @@ description: |
 
 ## Universal rule
 
-**Every** struct defined under `src/domain/model/aggregate/` carries a private
-marker field `_m: PrivateMarker` and provides a `pub fn new(...)` constructor.
-Struct literal construction (`S { .. }`) is forbidden outside the defining
-module — enforced at compile time by the private marker.
+All structs under `src/domain/model/aggregate/` use **struct literal**
+construction (`S { .. }`). There are no `new()` constructors on aggregate
+types, **except** for aggregates that carry an `events` field (see
+"Aggregates with an `events` field" below). All fields are `pub`, **except**
+the `events` field on aggregates that carry one, which is private.
 
 ---
 
 ## Four categories of aggregates
 
-| Category | Suffix | Constructor signature | Generates ID? | Examples |
-|----------|--------|-----------------------|--------------|----------|
-| **Read-model** | `Aggr` | `new(all fields)` | ❌ | `UserAggr`, `MemberAggr` |
-| **Input: Form** | `Form` | `new(biz_params)` | ✅ | `UserForm`, `MemberForm` |
-| **Input: Update** | `Update` | `new(id, biz_params)` | ❌ (caller provides) | `UserInfoUpdate` |
-| **Input: Patch** | `Patch` | `new(id, optional_fields)` | ❌ (caller provides) | — (none yet) |
+| Category | Suffix | Generates ID? | Examples |
+|----------|--------|--------------|----------|
+| **Read-model** | `Aggr` | ❌ | `UserAggr`, `MemberAggr` |
+| **Input: Form** | `Form` | ✅ (via `Aggr::generate_id()`) | `UserForm`, `MemberForm` |
+| **Input: Update** | `Update` | ❌ (caller provides) | `UserInfoUpdate` |
+| **Input: Patch** | `Patch` | ❌ (caller provides) | — (none yet) |
 
 ### 1. Read-model aggregates (`*Aggr`)
 
@@ -31,8 +32,8 @@ The primary persistent entity for each aggregate file. Every file **must** have
 exactly one `*Aggr` struct as its read model.
 
 Constructed via `From<EntityRow>` conversions in
-`src/infrastructure/query/entity/`. The `From` implementation calls `new(...)`
-with all fields.
+`src/infrastructure/query/entity/`. The `From` implementation uses struct
+literal syntax.
 
 ```rust
 pub struct UserAggr {
@@ -40,9 +41,6 @@ pub struct UserAggr {
     pub qid: String,
     pub nickname: String,
     // ...
-
-    /// Private marker to forbid struct literal construction outside this module.
-    _m: PrivateMarker,
 }
 
 impl UserAggr {
@@ -53,84 +51,53 @@ impl UserAggr {
     pub fn generate_avatar_key(&self) -> String {
         format!("user_avatar/{}", self.id)
     }
-
-    pub fn new(
-        id: String,
-        qid: String,
-        nickname: String,
-        // ... all fields in declaration order
-    ) -> Self {
-        Self {
-            id,
-            qid,
-            nickname,
-            // ...
-            _m: PrivateMarker,
-        }
-    }
 }
 ```
 
 ### 2. Input aggregates — Form (`*Form`)
 
-Creation payload. Constructor generates its own ID via the sibling `*Aggr`'s
-`generate_id()`.
+Creation payload. Callers generate the ID via the sibling `*Aggr`'s
+`generate_id()` and construct via struct literal.
 
 ```rust
-pub struct UserForm {
+pub struct MemberForm {
     pub id: String,
-    pub qid: String,
-    pub nickname: String,
-    pub password_hash: String,
-
-    events: Vec<Event>,
-
-    /// Private marker to forbid struct literal construction outside this module.
-    _m: PrivateMarker,
+    pub user_id: String,
+    pub user_nickname: String,
+    pub team_id: String,
+    pub roles: RoleMask,
 }
 
-impl UserForm {
-    pub fn new(qid: String, nickname: String, password: String) -> Self {
-        Self {
-            id: UserAggr::generate_id(),
-            qid,
-            nickname,
-            password_hash: password,
-            events: Vec::new(),
-            _m: PrivateMarker,
-        }
-    }
-}
+// Construction at call site:
+let form = MemberForm {
+    id: MemberAggr::generate_id(),
+    user_id,
+    user_nickname,
+    team_id,
+    roles,
+};
 ```
+
+Aggregates that carry an `events` field cannot use struct literal construction
+— see "Aggregates with an `events` field" below.
 
 ### 3. Input aggregates — Update (`*Update`)
 
-PUT update payload. Constructor receives the `id` from the caller (e.g., URL
-path parameter).
+PUT update payload. The caller provides the `id` explicitly.
 
 ```rust
 pub struct UserInfoUpdate {
     pub id: String,
     pub qid: String,
     pub nickname: String,
-
-    /// Private marker to forbid struct literal construction outside this module.
-    _m: PrivateMarker,
 }
 
-impl UserInfoUpdate {
-    /// Creates a new `UserInfoUpdate`.
-    ///
-    /// `id` is the existing user ID (provided by the caller, not generated).
-    pub fn new(id: String, qid: String, nickname: String) -> Self {
-        Self {
-            id,
-            qid,
-            nickname,
-            _m: PrivateMarker,
-        }
-    }
-}
+// Construction at call site:
+let update = UserInfoUpdate {
+    id: existing_id,
+    qid,
+    nickname,
+};
 ```
 
 ### 4. Input aggregates — Patch (`*Patch`)
@@ -140,42 +107,47 @@ PATCH update payload. Like `Update`, the `id` is caller-provided. Differs from
 
 ---
 
-## `PrivateMarker`
+## Aggregates with an `events` field
 
-Defined once in `src/domain/model/aggregate.rs`:
+Any aggregate (of any category — Aggr, Form, Update, Patch) that carries an
+`events` field must:
+1. Keep the `events` field **private** (`events: Vec<Event>` without `pub`).
+2. Provide a `new(id, ...)` constructor that initializes `events: Vec::new()`.
+3. Implement `EventSink` (to push events in).
+4. Implement `EventEmit` (to pull events out after transaction commit).
+
+The `events` field is placed last among the fields in the struct layout.
 
 ```rust
-/// Zero-sized marker type that prevents struct literal construction
-/// of input aggregates from outside the defining module.
-///
-/// Include `_m: PrivateMarker` as a field in any aggregate struct
-/// whose construction should be limited to `new()` constructors.
-#[derive(Default, Clone, Copy)]
-pub struct PrivateMarker;
+pub struct UserForm {
+    pub id: String,
+    pub qid: String,
+    pub nickname: String,
+    pub password_hash: String,
 
-impl std::fmt::Debug for PrivateMarker {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "")
+    events: Vec<Event>,  // private — must use new()
+}
+
+impl UserForm {
+    pub fn new(id: String, qid: String, nickname: String, password_hash: String) -> Self {
+        Self {
+            id,
+            qid,
+            nickname,
+            password_hash,
+            events: Vec::new(),
+        }
     }
 }
+
+// Construction at call site:
+let mut form = UserForm::new(
+    UserAggr::generate_id(),
+    qid,
+    nickname,
+    password_hash,
+);
 ```
-
-Import in each aggregate file as:
-
-```rust
-use crate::domain::model::aggregate::PrivateMarker;
-```
-
----
-
-## Event-carrying aggregates
-
-Input aggregates that produce domain events must:
-1. Keep the `events` field **private**
-2. Implement `EventSink` (to push events in)
-3. Implement `EventEmit` (to pull events out after transaction commit)
-
-The `events` field is placed **before** the `_m` marker in the struct layout.
 
 ---
 
@@ -198,22 +170,22 @@ The `events` field is placed **before** the `_m` marker in the struct layout.
 (`src/infrastructure/query/entity/`), **not** in the aggregate module.
 The domain layer must not know about Diesel entity types.
 
-The `From` impl calls `new(...)`:
+The `From` impl uses struct literal syntax:
 
 ```rust
-impl From<UserInfo> for UserAggr {
-    fn from(v: UserInfo) -> Self {
-        UserAggr::new(
-            v.f_id,
-            v.f_nickname,
-            v.f_qid,
-            v.f_is_sadmin,
-            v.f_avatar_key.unwrap_or_default(),
-            v.f_avatar_uploaded,
-            v.f_last_active_at,
-            v.f_created_at,
-            v.f_updated_at,
-        )
+impl From<UserRow> for UserAggr {
+    fn from(v: UserRow) -> Self {
+        UserAggr {
+            id: v.f_id,
+            nickname: v.f_nickname,
+            qid: v.f_qid,
+            is_sadmin: v.f_is_sadmin,
+            avatar_key: v.f_avatar_key.unwrap_or_default(),
+            avatar_uploaded: v.f_avatar_uploaded,
+            last_active_at: v.f_last_active_at,
+            created_at: v.f_created_at,
+            updated_at: v.f_updated_at,
+        }
     }
 }
 ```
@@ -223,9 +195,9 @@ impl From<UserInfo> for UserAggr {
 ## Quick checklist
 
 - [ ] Every aggregate file has a `*Aggr` read-model struct.
-- [ ] Every struct has `_m: PrivateMarker` with `///` doc comment.
-- [ ] Every struct has a `pub fn new(...)` constructor.
-- [ ] No struct literal construction of aggregate types outside their module.
-- [ ] `Form::new()` generates ID; `Update::new()` / `Patch::new()` takes `id: String` as first param.
-- [ ] `From<EntityRow>` conversions call `new(...)`, not struct literal.
+- [ ] No `new()` constructors except for aggregates that carry an `events` field.
+- [ ] All fields are `pub`, except `events` on aggregates that carry one is private.
+- [ ] No `_m` / `PrivateMarker` fields.
+- [ ] `Form` ID generated via `Aggr::generate_id()`; `Update` / `Patch` takes caller-provided `id`.
+- [ ] `From<EntityRow>` conversions use struct literal, not `new(...)`.
 - [ ] No `Cre` suffix — use `Form`.
