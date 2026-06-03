@@ -5,7 +5,6 @@ use crate::domain::model::aggregate::user::{UserAggr, UserCredential, UserForm};
 use crate::domain::query::user::{UserQuery, UserQueryTransactional};
 use crate::domain::result::{DomainError, DomainResult};
 use crate::infrastructure::query::memory_mock::{MemoryMockQuery, MemoryMockQueryTransactional};
-use crate::util::err::ErrorTrace as _;
 use crate::util::i18n::trl;
 
 // ── Query impls ────────────────────────────────────────────────────────────
@@ -19,8 +18,7 @@ impl UserQuery for MemoryMockQuery {
             .iter()
             .find(|u| u.id == id)
             .cloned()
-            .ok_or(DomainError::expected_argument(trl("error-user-not-found")))
-            .trace_debug()
+            .ok_or_else(|| DomainError::expected_argument(trl("error-user-not-found")).trace())
     }
 
     async fn get_credentials_by_qid(&self, qid: &str) -> DomainResult<UserCredential> {
@@ -30,8 +28,7 @@ impl UserQuery for MemoryMockQuery {
             .iter()
             .find(|c| c.qid == qid)
             .cloned()
-            .ok_or(DomainError::expected_argument(trl("error-user-not-found")))
-            .trace_debug()
+            .ok_or_else(|| DomainError::expected_argument(trl("error-user-not-found")).trace())
     }
 }
 
@@ -44,13 +41,13 @@ impl UserQueryTransactional for MemoryMockQueryTransactional {
 
         // Check uniqueness constraints.
         if state.users.iter().any(|u| u.id == form.id) {
-            return Err(DomainError::expected_conflict(trl("error-already-exists"))).trace_debug();
+            return Err(DomainError::expected_conflict(trl("error-already-exists")).trace());
         }
         if state.users.iter().any(|u| u.qid == form.qid) {
-            return Err(DomainError::expected_conflict(trl("error-already-exists"))).trace_debug();
+            return Err(DomainError::expected_conflict(trl("error-already-exists")).trace());
         }
         if state.users.iter().any(|u| u.nickname == form.nickname) {
-            return Err(DomainError::expected_conflict(trl("error-already-exists"))).trace_debug();
+            return Err(DomainError::expected_conflict(trl("error-already-exists")).trace());
         }
 
         // Build the user aggregate from the form.

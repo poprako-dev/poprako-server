@@ -11,7 +11,6 @@ use crate::infrastructure::query::RdbQueryTransactional;
 use crate::infrastructure::query::entity::member_invitation::MemberInvitationAspect;
 use crate::infrastructure::query::entity::member_invitation::MemberInvitationRow;
 use crate::infrastructure::query::schema::t_member_invitation::dsl::*;
-use crate::util::err::ErrorTrace as _;
 use crate::util::i18n::trl;
 
 /// SELECT ... FOR UPDATE: returns the pending invitation for the given code
@@ -28,10 +27,9 @@ pub async fn get_by_code_ex(
         .first(conn)
         .await
         .optional()?
-        .ok_or(DomainError::expected_argument(trl(
-            "error-no-pending-invitation",
-        )))
-        .trace_debug()?;
+        .ok_or_else(|| {
+            DomainError::expected_argument(trl("error-no-pending-invitation")).trace()
+        })?;
 
     Ok(row.into())
 }
@@ -58,10 +56,7 @@ pub async fn mark_pending_as_used(conn: &mut AsyncPgConnection, id: &str) -> Dom
     .await?;
 
     if rows_affected == 0 {
-        return Err(DomainError::expected_argument(trl(
-            "error-invitation-not-found",
-        )))
-        .trace_debug();
+        return Err(DomainError::expected_argument(trl("error-invitation-not-found")).trace());
     }
 
     Ok(())

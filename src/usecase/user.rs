@@ -15,7 +15,6 @@ use crate::domain::query::user::UserQueryTransactional;
 use crate::domain::result::DomainError;
 use crate::usecase::result::UseCaseResult;
 use crate::usecase::value_object::user::{SignUpUserParams, SignUpUserReply};
-use crate::util::err::ErrorTrace as _;
 use crate::util::i18n::trl;
 
 #[instrument(skip(harn))]
@@ -39,8 +38,8 @@ where
                 if invitation.invitee_qid != params.qid {
                     return Err(DomainError::expected_argument(trl(
                         "error-invalid-invitation-code",
-                    )))
-                    .trace_debug();
+                    ))
+                    .trace());
                 }
 
                 // 3. Generate password hash.

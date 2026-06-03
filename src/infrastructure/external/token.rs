@@ -8,7 +8,6 @@ use tracing::instrument;
 use crate::domain::external::token::{TokenParse, TokenSign};
 use crate::domain::model::aggregate::user::UserToken;
 use crate::domain::result::{DomainError, DomainResult};
-use crate::util::err::ErrorTrace as _;
 
 #[derive(Debug, Serialize)]
 struct SignClaims<'a> {
@@ -77,11 +76,10 @@ impl TokenSign for JwtIssuer {
             exp: expiration,
         };
 
-        encode(&Header::default(), &claims, &self.encoding_key)
-            .map_err(|e| {
-                DomainError::unrecoverable(format!("[JwtCodec::sign] error when encoding: {}", e))
-            })
-            .trace_error()
+        encode(&Header::default(), &claims, &self.encoding_key).map_err(|e| {
+            DomainError::unrecoverable(format!("[JwtCodec::sign] error when encoding: {}", e))
+                .trace()
+        })
     }
 }
 
@@ -92,9 +90,9 @@ impl TokenParse for JwtIssuer {
 
         let token_data: TokenData<Claims> = decode(signed_token, &self.decoding_key, &validation)
             .map_err(|e| {
-                DomainError::unrecoverable(format!("[JwtCodec::parse] error when decoding: {}", e))
-            })
-            .trace_error()?;
+            DomainError::unrecoverable(format!("[JwtCodec::parse] error when decoding: {}", e))
+                .trace()
+        })?;
 
         let Claims { sub, .. } = token_data.claims;
 

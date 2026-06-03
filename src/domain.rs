@@ -5,10 +5,6 @@ pub mod model;
 pub mod query;
 
 pub mod result {
-    use std::fmt::Display;
-    use std::fmt::Formatter;
-    use std::fmt::Result as FmtResult;
-
     use crate::util::rename::StdResult;
 
     #[derive(Debug)]
@@ -61,11 +57,25 @@ pub mod result {
         pub fn unrecoverable(msg: String) -> Self {
             Self::Unrecoverable { message: msg }
         }
-    }
 
-    impl Display for DomainError {
-        fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-            write!(f, "{:?}", self)
+        pub fn trace(self) -> Self {
+            match &self {
+                Self::Expected { variant, message } => {
+                    tracing::debug!(
+                        variant = ?variant,
+                        message = %message,
+                        "[DomainError] expected error produced",
+                    );
+                }
+                Self::Unrecoverable { message } => {
+                    tracing::error!(
+                        error = %message,
+                        "[DomainError] unrecoverable error produced",
+                    );
+                }
+            }
+
+            self
         }
     }
 
@@ -77,8 +87,6 @@ pub mod result {
         // expected_authentication_variant(DomainError::expected_authentication)(positive): expected authentication errors should carry the Authentication variant and message.
         // expected_conflict_variant(DomainError::expected_conflict)(positive): expected conflict errors should carry the Conflict variant and message.
         // unrecoverable_variant(DomainError::unrecoverable)(positive): unrecoverable errors should carry their diagnostic message.
-        // display_contains_message(DomainError::fmt)(positive): Display output should include the error message.
-
         use super::DomainError;
         use super::ExpectedVariant;
 
@@ -127,13 +135,6 @@ pub mod result {
                 }
                 _ => panic!("expected Unrecoverable variant"),
             }
-        }
-
-        #[test]
-        fn display_contains_message() {
-            let err = DomainError::expected_argument("hello world".into());
-            let s = err.to_string();
-            assert!(s.contains("hello world"), "Display output: {}", s);
         }
     }
 }

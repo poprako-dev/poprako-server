@@ -17,7 +17,6 @@ use crate::infrastructure::query::entity::user::UserEntry;
 use crate::infrastructure::query::entity::user::UserRow;
 use crate::infrastructure::query::schema::t_user::dsl::*;
 use crate::submit_query;
-use crate::util::err::ErrorTrace as _;
 use crate::util::i18n::trl;
 
 #[instrument(skip(conn), level = Level::DEBUG)]
@@ -28,8 +27,7 @@ pub async fn get_by_id(conn: &mut AsyncPgConnection, id: &str) -> DomainResult<U
         .first(conn)
         .await
         .optional()?
-        .ok_or(DomainError::expected_argument(trl("error-user-not-found")))
-        .trace_debug()?;
+        .ok_or_else(|| DomainError::expected_argument(trl("error-user-not-found")).trace())?;
 
     Ok(row.into())
 }
@@ -50,8 +48,7 @@ pub async fn get_credential_by_qid(
         .first(conn)
         .await
         .optional()?
-        .ok_or(DomainError::expected_argument(trl("error-user-not-found")))
-        .trace_debug()?;
+        .ok_or_else(|| DomainError::expected_argument(trl("error-user-not-found")).trace())?;
 
     Ok(UserCredential {
         qid: row.f_qid,

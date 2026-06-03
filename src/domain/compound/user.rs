@@ -1,18 +1,16 @@
 use crate::domain::external::token::{TokenParse, TokenSign};
 use crate::domain::model::aggregate::user::UserToken;
 use crate::domain::result::{DomainError, DomainResult};
-use crate::util::err::ErrorTrace as _;
 
 /// Hashes a password with bcrypt using the default cost factor.
 pub fn hash_password(password: &str) -> DomainResult<String> {
-    bcrypt::hash(password, bcrypt::DEFAULT_COST)
-        .map_err(|e| {
-            DomainError::unrecoverable(format!(
-                "[user::hash_password] bcrypt hashing failed: {}",
-                e
-            ))
-        })
-        .trace_error()
+    bcrypt::hash(password, bcrypt::DEFAULT_COST).map_err(|e| {
+        DomainError::unrecoverable(format!(
+            "[user::hash_password] bcrypt hashing failed: {}",
+            e
+        ))
+        .trace()
+    })
 }
 
 pub fn sign_token<C>(codec: &C, unsigned_token: &UserToken) -> DomainResult<String>

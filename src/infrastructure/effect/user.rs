@@ -8,7 +8,6 @@ use crate::domain::model::aggregate::system_mail::{SystemMailAggr, SystemMailFor
 use crate::domain::model::event::user::UserSignedUpEvent;
 use crate::domain::query::system_mail::SystemMailQuery;
 use crate::domain::query::team::TeamQuery;
-use crate::util::err::ErrorTrace as _;
 use crate::util::i18n::{trl, trl_kv};
 
 /// Notifies the invitor via system mail that a new user has registered using
@@ -19,11 +18,7 @@ where
     H: TeamQuery + SystemMailQuery,
 {
     // Look up the team name for the notification content.
-    let Some(team) = TeamQuery::get_by_id(harn, &event.team_id)
-        .await
-        .trace_error()
-        .ok()
-    else {
+    let Some(team) = TeamQuery::get_by_id(harn, &event.team_id).await.ok() else {
         tracing::error!(
             team_id = %event.team_id,
             "[notify_invitor_handler] failed to look up team for notification",
@@ -56,7 +51,7 @@ where
 
     if let Err(e) = SystemMailQuery::send(harn, &mail).await {
         tracing::error!(
-            error = %e,
+            error = ?e,
             mail = ?mail,
             "[notify_invitor_handler] failed to send notification mail",
         );
