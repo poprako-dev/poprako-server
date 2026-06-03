@@ -10,25 +10,36 @@ use crate::domain::model::aggregate::user::UserToken;
 use crate::domain::result::{DomainError, DomainResult};
 use crate::util::err::ErrorTrace as _;
 
-#[derive(Debug, Serialize, Deserialize)]
-struct Claims {
+#[derive(Debug, Serialize)]
+struct SignClaims<'a> {
     /// Subject — the user id.
-    sub: String,
+    sub: &'a str,
     /// Issued at (unix timestamp).
     iat: usize,
     /// Expiration (unix timestamp).
     exp: usize,
 }
 
-/// A JWT-based implementation of the `TokenCodec` trait.
-pub struct JwtCodec {
+#[derive(Debug, Deserialize)]
+struct Claims {
+    /// Subject — the user id.
+    sub: String,
+    /// Issued at (unix timestamp).
+    #[allow(dead_code)]
+    iat: usize,
+    /// Expiration (unix timestamp).
+    #[allow(dead_code)]
+    exp: usize,
+}
+
+pub struct JwtIssuer {
     expiration_seconds: i64,
 
     encoding_key: EncodingKey,
     decoding_key: DecodingKey,
 }
 
-impl JwtCodec {
+impl JwtIssuer {
     pub fn from_env() -> anyhow::Result<Self> {
         let secret_key = std::env::var("JWT_SECRET_KEY")
             .with_context(|| "[JwtCodec::from_env] JWT_SECRET_KEY is not set")?;
@@ -36,6 +47,7 @@ impl JwtCodec {
             .with_context(|| "[JwtCodec::from_env] JWT_EXPIRATION_HOURS is not set")?
             .parse()
             .with_context(|| "[JwtCodec::from_env] JWT_EXPIRATION_HOURS must be a valid integer")?;
+
         let expiration_seconds = expiration_hours * 3600;
 
         tracing::debug!(
@@ -51,7 +63,7 @@ impl JwtCodec {
     }
 }
 
-impl TokenSign for JwtCodec {
+impl TokenSign for JwtIssuer {
     #[instrument(skip(self), level = Level::DEBUG)]
     fn sign(&self, unsigned_token: &UserToken) -> DomainResult<String> {
         let now = OffsetDateTime::now_utc();
@@ -59,8 +71,8 @@ impl TokenSign for JwtCodec {
         let issued_at = now.unix_timestamp() as usize;
         let expiration = issued_at + self.expiration_seconds as usize;
 
-        let claims = Claims {
-            sub: unsigned_token.user_id.clone(),
+        let claims = SignClaims {
+            sub: &unsigned_token.user_id,
             iat: issued_at,
             exp: expiration,
         };
@@ -73,7 +85,7 @@ impl TokenSign for JwtCodec {
     }
 }
 
-impl TokenParse for JwtCodec {
+impl TokenParse for JwtIssuer {
     #[instrument(skip(self), level = Level::DEBUG)]
     fn parse(&self, signed_token: &str) -> DomainResult<UserToken> {
         let validation = Validation::default();
@@ -84,8 +96,8 @@ impl TokenParse for JwtCodec {
             })
             .trace_error()?;
 
-        Ok(UserToken {
-            user_id: token_data.claims.sub,
-        })
+        let Claims { sub, .. } = token_data.claims;
+
+        Ok(UserToken { user_id: sub })
     }
 }

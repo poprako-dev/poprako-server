@@ -35,9 +35,7 @@ impl MemberInvitationQueryTransactional for MemoryMockQueryTransactional {
 
         match idx {
             Some(pos) => {
-                let mut invitation = state.member_invitations[pos].clone();
-                invitation.pending = false;
-                state.member_invitations[pos] = invitation;
+                state.member_invitations[pos].pending = false;
                 Ok(())
             }
             None => Err(DomainError::expected_argument(trl(

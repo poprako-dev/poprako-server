@@ -116,7 +116,7 @@ pub mod i18n {
     });
 
     pub fn trl(key: &str) -> String {
-        LOCALES.lookup(&LANGUAGE, key).to_string()
+        LOCALES.lookup(&LANGUAGE, key)
     }
 
     /// Looks up a parameterized Fluent message for the current language.
