@@ -12,11 +12,11 @@ use tower_http::trace::TraceLayer;
 use tracing::{Level, info_span, instrument};
 use uuid::Uuid;
 
-use crate::api::harness::Harness;
-use crate::api::http::handler::result::HttpError;
+use crate::api::http::result::HttpError;
 use crate::domain::external::token::TokenParse;
 use crate::domain::model::aggregate::user::UserToken;
 use crate::domain::result::ExpectedVariant;
+use crate::harness::Harness;
 use crate::util::i18n::trl;
 
 /// Name of the cookie that carries the authorization token.
@@ -128,12 +128,10 @@ impl MakeRequestId for MakeRequestUuidV7 {
 /// 3. **Response propagation** — the request-id is copied from the
 ///    request to the response headers so clients can correlate.
 pub fn with_request_id(router: Router<Harness>) -> Router<Harness> {
-    let x_request_id = HeaderName::from_static(REQUEST_ID_HEADER);
-
     router.layer(
         ServiceBuilder::new()
             .layer(SetRequestIdLayer::new(
-                x_request_id.clone(),
+                HeaderName::from_static(REQUEST_ID_HEADER),
                 MakeRequestUuidV7,
             ))
             .layer(
@@ -148,6 +146,8 @@ pub fn with_request_id(router: Router<Harness>) -> Router<Harness> {
                     info_span!("http_request", request_id = request_id)
                 }),
             )
-            .layer(PropagateRequestIdLayer::new(x_request_id)),
+            .layer(PropagateRequestIdLayer::new(HeaderName::from_static(
+                REQUEST_ID_HEADER,
+            ))),
     )
 }

@@ -13,13 +13,3 @@ CREATE TABLE IF NOT EXISTS "t_team" (
     "f_updated_at" TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Create a default team directly in database.
-INSERT INTO "t_team" (
-    "f_id",
-    "f_name",
-    "f_description"
-) VALUES (
-    'team-00000000-0000-0000-0000-000000000001',
-    'PRTS 汉化组',
-    '测测你的'
-) ON CONFLICT ("f_id") DO NOTHING;

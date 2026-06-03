@@ -2204,6 +2204,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "19f132c84eca552bf34cab8ec81f1c1dcc229b811638f9d283dceabe58c5569e"
 
 [[package]]
+name = "poprako-macro"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "poprako-r"
 version = "0.1.0"
 dependencies = [
@@ -2222,6 +2231,7 @@ dependencies = [
  "fluent-templates",
  "futures-util",
  "jsonwebtoken",
+ "poprako-macro",
  "serde",
  "serde_json",
  "time",

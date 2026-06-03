@@ -1,12 +1,11 @@
 use async_trait::async_trait;
+use poprako_macro::forward_ref;
 
 use crate::domain::model::aggregate::team::TeamAggr;
 use crate::domain::result::DomainResult;
 
-/// Read-only persistence contract for [`TeamAggr`].
-///
-/// Each method takes an immutable `&self` reference, suitable for
-/// non-transactional queries backed by a connection pool.
+/// Persistence contract for [`TeamAggr`].
+#[forward_ref]
 #[async_trait]
 pub trait TeamQuery {
     /// Returns the team with the given ID, or an expected error if not found.

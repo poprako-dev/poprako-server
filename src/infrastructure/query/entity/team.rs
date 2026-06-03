@@ -23,14 +23,14 @@ pub struct TeamRow {
 
 impl From<TeamRow> for TeamAggr {
     fn from(v: TeamRow) -> Self {
-        TeamAggr::new(
-            v.f_id,
-            v.f_name,
-            v.f_description.unwrap_or_default(),
-            v.f_avatar_key.unwrap_or_default(),
-            v.f_avatar_uploaded,
-            v.f_created_at,
-            v.f_updated_at,
-        )
+        TeamAggr {
+            id: v.f_id,
+            name: v.f_name,
+            description: v.f_description.unwrap_or_default(),
+            avatar_key: v.f_avatar_key.unwrap_or_default(),
+            avatar_uploaded: v.f_avatar_uploaded,
+            created_at: v.f_created_at,
+            updated_at: v.f_updated_at,
+        }
     }
 }

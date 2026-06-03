@@ -1,6 +1,6 @@
 pub mod user;
 
-use user::*;
+use user::UserSignedUpEvent;
 
 // DomainEventType is used for a lightweight check for event sink and handler.
 #[derive(Debug)]

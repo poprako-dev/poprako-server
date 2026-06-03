@@ -50,16 +50,16 @@ pub struct MemberInvitationAspect {
 
 impl From<MemberInvitationRow> for MemberInvitationAggr {
     fn from(v: MemberInvitationRow) -> Self {
-        MemberInvitationAggr::new(
-            v.f_id,
-            v.f_inviter_id,
-            None,
-            v.f_team_id,
-            v.f_invitee_qid,
-            v.f_invitation_code,
-            v.f_pending,
-            RoleMask::from(v.f_role_mask as u32),
-            v.f_created_at,
-        )
+        MemberInvitationAggr {
+            id: v.f_id,
+            invitor_id: v.f_inviter_id,
+            invitor: None,
+            team_id: v.f_team_id,
+            invitee_qid: v.f_invitee_qid,
+            code: v.f_invitation_code,
+            pending: v.f_pending,
+            roles: RoleMask::from(v.f_role_mask as u32),
+            created_at: v.f_created_at,
+        }
     }
 }

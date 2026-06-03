@@ -1,12 +1,11 @@
 use async_trait::async_trait;
+use poprako_macro::forward_ref;
 
 use crate::domain::model::aggregate::user::{UserAggr, UserCredential, UserForm};
 use crate::domain::result::DomainResult;
 
-/// Read-only persistence contract for [`UserAggr`].
-///
-/// Each method takes an immutable `&self` reference, suitable for
-/// non-transactional queries backed by a connection pool.
+/// Persistence contract for [`UserAggr`].
+#[forward_ref]
 #[async_trait]
 pub trait UserQuery {
     /// Returns the user with the given ID, or an expected error if not found.

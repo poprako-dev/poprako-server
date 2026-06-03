@@ -1,9 +1,9 @@
 use time::OffsetDateTime;
 
-use crate::domain::model::aggregate::PrivateMarker;
 use crate::domain::model::aggregate::user::UserAggr;
 use crate::domain::model::value::role::RoleMask;
 
+#[cfg_attr(test, derive(Clone))]
 pub struct MemberInvitationAggr {
     pub id: String,
 
@@ -19,9 +19,6 @@ pub struct MemberInvitationAggr {
     pub roles: RoleMask,
 
     pub created_at: OffsetDateTime,
-
-    /// Private marker to forbid struct literal construction outside this module.
-    _m: PrivateMarker,
 }
 
 impl MemberInvitationAggr {
@@ -32,30 +29,57 @@ impl MemberInvitationAggr {
     pub fn verify_code(&self, code: &str) -> bool {
         self.code == code
     }
+}
 
-    #[allow(clippy::too_many_arguments)]
-    pub fn new(
-        id: String,
-        invitor_id: String,
-        invitor: Option<UserAggr>,
-        team_id: String,
-        invitee_qid: String,
-        code: String,
-        pending: bool,
-        roles: RoleMask,
-        created_at: OffsetDateTime,
-    ) -> Self {
-        Self {
-            id,
-            invitor_id,
-            invitor,
-            team_id,
-            invitee_qid,
-            code,
-            pending,
-            roles,
-            created_at,
-            _m: PrivateMarker,
+#[cfg(test)]
+mod tests {
+    // verify_code_match(MemberInvitationAggr::verify_code)(positive): verification should pass when the code matches exactly.
+    // verify_code_mismatch_empty(MemberInvitationAggr::verify_code)(negative): verification should fail for an empty code.
+    // verify_code_mismatch_case(MemberInvitationAggr::verify_code)(negative): verification should fail when letter case differs.
+    // verify_code_mismatch_prefix(MemberInvitationAggr::verify_code)(negative): verification should fail when the input has extra characters.
+
+    use time::OffsetDateTime;
+
+    use super::MemberInvitationAggr;
+    use crate::domain::model::value::role::RoleFlag;
+    use crate::domain::model::value::role::RoleMask;
+
+    fn dummy_aggr(code: &str) -> MemberInvitationAggr {
+        let now = OffsetDateTime::now_utc();
+        MemberInvitationAggr {
+            id: MemberInvitationAggr::generate_id(),
+            invitor_id: "invitor-1".into(),
+            invitor: None,
+            team_id: "team-1".into(),
+            invitee_qid: "invitee".into(),
+            code: code.into(),
+            pending: true,
+            roles: RoleMask::from(RoleFlag::Admin),
+            created_at: now,
         }
+    }
+
+    #[test]
+    fn verify_code_match() {
+        let aggr = dummy_aggr("ABC123");
+        assert!(aggr.verify_code("ABC123"));
+    }
+
+    #[test]
+    fn verify_code_mismatch_empty() {
+        let aggr = dummy_aggr("ABC123");
+        assert!(!aggr.verify_code(""));
+    }
+
+    #[test]
+    fn verify_code_mismatch_case() {
+        let aggr = dummy_aggr("ABC123");
+        assert!(!aggr.verify_code("abc123"));
+    }
+
+    #[test]
+    fn verify_code_mismatch_prefix() {
+        let aggr = dummy_aggr("ABC123");
+        assert!(!aggr.verify_code("ABC1234"));
     }
 }
