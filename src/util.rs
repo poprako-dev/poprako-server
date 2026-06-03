@@ -48,14 +48,14 @@ pub mod err {
     {
         fn trace_debug(self) -> Self {
             if let Err(e) = &self {
-                tracing::debug!("[trace_debug] {}", e);
+                tracing::debug!(error = %e, "[trace_debug]");
             }
             self
         }
 
         fn trace_error(self) -> Self {
             if let Err(e) = &self {
-                tracing::error!("[trace_error] {}", e);
+                tracing::error!(error = %e, "[trace_error]");
             }
             self
         }

@@ -14,6 +14,7 @@ use url::Url;
 use crate::domain::external::image_pool::{ImageDelete, ImageGet, ImagePut};
 use crate::domain::result::{DomainError, DomainResult};
 use crate::util::err::ErrorTrace as _;
+use crate::util::i18n::trl;
 use tracing::Level;
 use tracing::instrument;
 
@@ -88,7 +89,8 @@ impl ImageGet for OssImagePool {
         if self.domain.is_empty() {
             return Err(DomainError::unrecoverable(
                 "[R2OssClient::get_signed] custom domain is not configured".into(),
-            ));
+            ))
+            .trace_error();
         }
 
         let url_str = format!("{}/{}", self.domain.trim_end_matches('/'), key);
@@ -114,18 +116,17 @@ impl ImagePut for OssImagePool {
         const EXPIRATION: Duration = Duration::from_secs(600); // 10 minutes
 
         let content_type = detect_content_type(key).ok_or_else(|| {
-            DomainError::expected_argument(format!(
-                "[R2OssClient::put_signed] unsupported file type for key: {}",
-                key
-            ))
-        })?;
+            DomainError::expected_argument(trl("error-unsupported-file-type"))
+        })
+        .trace_debug()?;
 
         let presigned_config = PresigningConfig::expires_in(EXPIRATION).map_err(|e| {
             DomainError::unrecoverable(format!(
                 "[R2OssClient::put_signed] failed to build presigning config: {}",
                 e
             ))
-        })?;
+        })
+        .trace_error()?;
 
         let presigned_request = self
             .client
@@ -239,6 +240,7 @@ impl ImageDelete for OssImagePool {
         Err(DomainError::unrecoverable(
             last_err.unwrap_or_else(|| "unknown error".into()),
         ))
+        .trace_error()
     }
 }
 

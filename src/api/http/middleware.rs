@@ -12,7 +12,7 @@ use tower_http::trace::TraceLayer;
 use tracing::{Level, info_span, instrument};
 use uuid::Uuid;
 
-use crate::api::http::handler::result::HttpError;
+use crate::api::http::result::HttpError;
 use crate::domain::external::token::TokenParse;
 use crate::domain::model::aggregate::user::UserToken;
 use crate::domain::result::ExpectedVariant;

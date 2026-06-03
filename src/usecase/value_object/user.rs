@@ -27,13 +27,14 @@ impl UserBase {
     where
         S: ImageGet,
     {
-        let avatar_url = match aggr.avatar_uploaded {
-            true => signer
+        let avatar_url = if aggr.avatar_uploaded {
+            signer
                 .get_signed(&aggr.avatar_key)
                 .await
                 .ok()
-                .map(|url| url.to_string()),
-            false => None,
+                .map(|url| url.to_string())
+        } else {
+            None
         };
 
         Self {
