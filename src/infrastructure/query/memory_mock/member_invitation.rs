@@ -4,7 +4,6 @@ use crate::domain::model::aggregate::member_invitation::MemberInvitationAggr;
 use crate::domain::query::member_invitation::MemberInvitationQueryTransactional;
 use crate::domain::result::{DomainError, DomainResult};
 use crate::infrastructure::query::memory_mock::MemoryMockQueryTransactional;
-use crate::util::err::ErrorTrace as _;
 use crate::util::i18n::trl;
 
 #[async_trait]
@@ -19,10 +18,9 @@ impl MemberInvitationQueryTransactional for MemoryMockQueryTransactional {
             .iter()
             .find(|inv| inv.code == invitation_code && inv.pending)
             .cloned()
-            .ok_or(DomainError::expected_argument(trl(
-                "error-no-pending-invitation",
-            )))
-            .trace_debug()
+            .ok_or_else(|| {
+                DomainError::expected_argument(trl("error-no-pending-invitation")).trace()
+            })
     }
 
     async fn mark_pending_as_used(&mut self, id: &str) -> DomainResult<()> {
@@ -38,10 +36,7 @@ impl MemberInvitationQueryTransactional for MemoryMockQueryTransactional {
                 state.member_invitations[pos].pending = false;
                 Ok(())
             }
-            None => Err(DomainError::expected_argument(trl(
-                "error-invitation-not-found",
-            )))
-            .trace_debug(),
+            None => Err(DomainError::expected_argument(trl("error-invitation-not-found")).trace()),
         }
     }
 }

@@ -17,16 +17,13 @@ mod schema;
 #[macro_export]
 macro_rules! allocate_connection {
     ($pool:expr, $loc:expr) => {
-        $pool
-            .get()
-            .await
-            .map_err(|e| {
-                $crate::domain::result::DomainError::unrecoverable(format!(
-                    "[{}] error getting connection: {}",
-                    $loc, e
-                ))
-            })
-            .trace_error()?
+        $pool.get().await.map_err(|e| {
+            $crate::domain::result::DomainError::unrecoverable(format!(
+                "[{}] error getting connection: {}",
+                $loc, e
+            ))
+            .trace()
+        })?
     };
 }
 
@@ -67,7 +64,6 @@ use tracing::instrument;
 
 use crate::domain::query::Transactional;
 use crate::domain::result::{DomainError, DomainResult};
-use crate::util::err::ErrorTrace as _;
 use crate::util::i18n::trl;
 
 /// Converts a raw Diesel error into a structured [`DomainError`].
@@ -75,46 +71,28 @@ use crate::util::i18n::trl;
 /// This is the single trace point for all Diesel-originated errors — every
 /// `?` on a Diesel result passes through this conversion, which performs both
 /// classification (Expected vs Unrecoverable) and structured observability
-/// (trace call with contextual fields).
+/// through `DomainError::trace`.
 impl From<diesel::result::Error> for DomainError {
     fn from(val: diesel::result::Error) -> Self {
         match &val {
             // Unique violation → business conflict (user-facing i18n).
             diesel::result::Error::DatabaseError(
                 diesel::result::DatabaseErrorKind::UniqueViolation,
-                information,
-            ) => {
-                tracing::debug!(
-                    constraint = %information.constraint_name().unwrap_or("<unknown>"),
-                    details = %information.message(),
-                    "[From<diesel::Error>] unique violation mapped to Expected::Conflict",
-                );
-
-                DomainError::expected_conflict(trl("error-already-exists"))
-            }
+                _,
+            ) => DomainError::expected_conflict(trl("error-already-exists")).trace(),
 
             // NotFound is deliberately excluded — each query call site must
             // call `.optional()?` and convert `None` to a contextual Expected
-            // error with `.ok_or(...)`.  Everything else is an internal failure.
-            diesel::result::Error::NotFound => {
-                tracing::error!(
-                    error = %val,
-                    "[From<diesel::Error>] unexpected NotFound converted to Unrecoverable",
-                );
-
-                DomainError::unrecoverable(format!(
-                    "[From<diesel::Error>] unexpected NotFound — a required row was not found: {}",
-                    val,
-                ))
-            }
+            // error with `.ok_or_else(...)`.  Everything else is an internal failure.
+            diesel::result::Error::NotFound => DomainError::unrecoverable(format!(
+                "[From<diesel::Error>] unexpected NotFound — a required row was not found: {}",
+                val,
+            ))
+            .trace(),
 
             _ => {
-                tracing::error!(
-                    error = %val,
-                    "[From<diesel::Error>] diesel error converted to Unrecoverable",
-                );
-
                 DomainError::unrecoverable(format!("[From<diesel::Error>] diesel error: {}", val,))
+                    .trace()
             }
         }
     }

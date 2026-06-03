@@ -13,7 +13,6 @@ use crate::infrastructure::query::RdbQuery;
 use crate::infrastructure::query::entity::system_mail::SystemMailEntry;
 use crate::infrastructure::query::schema::t_system_mail::dsl::*;
 use crate::submit_query;
-use crate::util::err::ErrorTrace as _;
 
 #[instrument(skip(conn), level = Level::DEBUG)]
 pub async fn send(conn: &mut AsyncPgConnection, form: &SystemMailForm) -> DomainResult<()> {

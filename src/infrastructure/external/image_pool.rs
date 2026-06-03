@@ -13,7 +13,6 @@ use url::Url;
 
 use crate::domain::external::image_pool::{ImageDelete, ImageGet, ImagePut};
 use crate::domain::result::{DomainError, DomainResult};
-use crate::util::err::ErrorTrace as _;
 use crate::util::i18n::trl;
 use tracing::Level;
 use tracing::instrument;
@@ -89,19 +88,18 @@ impl ImageGet for OssImagePool {
         if self.domain.is_empty() {
             return Err(DomainError::unrecoverable(
                 "[R2OssClient::get_signed] custom domain is not configured".into(),
-            ))
-            .trace_error();
+            )
+            .trace());
         }
 
         let url_str = format!("{}/{}", self.domain.trim_end_matches('/'), key);
-        Url::parse(&url_str)
-            .map_err(|e| {
-                DomainError::unrecoverable(format!(
-                    "[R2OssClient::get_signed] failed to parse URL '{}': {}",
-                    url_str, e
-                ))
-            })
-            .trace_error()
+        Url::parse(&url_str).map_err(|e| {
+            DomainError::unrecoverable(format!(
+                "[R2OssClient::get_signed] failed to parse URL '{}': {}",
+                url_str, e
+            ))
+            .trace()
+        })
     }
 }
 
@@ -116,17 +114,16 @@ impl ImagePut for OssImagePool {
         const EXPIRATION: Duration = Duration::from_secs(600); // 10 minutes
 
         let content_type = detect_content_type(key).ok_or_else(|| {
-            DomainError::expected_argument(trl("error-unsupported-file-type"))
-        })
-        .trace_debug()?;
+            DomainError::expected_argument(trl("error-unsupported-file-type")).trace()
+        })?;
 
         let presigned_config = PresigningConfig::expires_in(EXPIRATION).map_err(|e| {
             DomainError::unrecoverable(format!(
                 "[R2OssClient::put_signed] failed to build presigning config: {}",
                 e
             ))
-        })
-        .trace_error()?;
+            .trace()
+        })?;
 
         let presigned_request = self
             .client
@@ -141,14 +138,15 @@ impl ImagePut for OssImagePool {
                     "[R2OssClient::put_signed] failed to generate presigned put URL: {}",
                     e
                 ))
-            })
-            .trace_error()?;
+                .trace()
+            })?;
 
         Url::parse(presigned_request.uri()).map_err(|e| {
             DomainError::unrecoverable(format!(
                 "[R2OssClient::put_signed] failed to parse presigned URI: {}",
                 e
             ))
+            .trace()
         })
     }
 }
@@ -237,10 +235,7 @@ impl ImageDelete for OssImagePool {
             }
         }
 
-        Err(DomainError::unrecoverable(
-            last_err.unwrap_or_else(|| "unknown error".into()),
-        ))
-        .trace_error()
+        Err(DomainError::unrecoverable(last_err.unwrap_or_else(|| "unknown error".into())).trace())
     }
 }
 

@@ -1,7 +1,6 @@
 use std::mem;
 
 use crate::domain::model::event::{Event, EventEmit, EventSink};
-use crate::util::err::ErrorTrace as _;
 
 use time::OffsetDateTime;
 use uuid::Uuid;
@@ -55,9 +54,7 @@ pub struct UserCredential {
 
 impl UserCredential {
     pub fn verify_password(&self, password: &str) -> bool {
-        bcrypt::verify(password, &self.password_hash)
-            .trace_error()
-            .unwrap_or(false)
+        bcrypt::verify(password, &self.password_hash).unwrap_or(false)
     }
 }
 

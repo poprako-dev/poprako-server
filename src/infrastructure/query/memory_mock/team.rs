@@ -4,7 +4,6 @@ use crate::domain::model::aggregate::team::TeamAggr;
 use crate::domain::query::team::TeamQuery;
 use crate::domain::result::{DomainError, DomainResult};
 use crate::infrastructure::query::memory_mock::MemoryMockQuery;
-use crate::util::err::ErrorTrace as _;
 use crate::util::i18n::trl;
 
 #[async_trait]
@@ -16,8 +15,7 @@ impl TeamQuery for MemoryMockQuery {
             .iter()
             .find(|t| t.id == id)
             .cloned()
-            .ok_or(DomainError::expected_argument(trl("error-team-not-found")))
-            .trace_debug()
+            .ok_or_else(|| DomainError::expected_argument(trl("error-team-not-found")).trace())
     }
 }
 

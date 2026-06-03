@@ -17,51 +17,6 @@ pub mod time {
     }
 }
 
-pub mod err {
-    use std::fmt::Debug;
-    use std::fmt::Display;
-
-    use crate::util::rename::StdResult;
-
-    /// Emits a [`tracing`] event when a `Result` is `Err`, then passes the
-    /// result through unchanged.
-    ///
-    /// Implemented blanket for [`StdResl<T, E>`](crate::util::rename::StdResl)
-    /// where `E: Debug + Display`.
-    ///
-    /// | Method | Level | Typical use |
-    /// |--------|-------|-------------|
-    /// | [`trace_debug`](ErrorTrace::trace_debug) | `DEBUG` | Expected/user-facing errors |
-    /// | [`trace_info`](ErrorTrace::trace_info) | `INFO` | Informational events |
-    /// | [`trace_error`](ErrorTrace::trace_error) | `ERROR` | Unrecoverable/internal errors |
-    pub trait ErrorTrace {
-        /// Logs `Err` at `DEBUG` level. Use for expected business errors.
-        fn trace_debug(self) -> Self;
-
-        /// Logs `Err` at `ERROR` level. Use for unrecoverable internal failures.
-        fn trace_error(self) -> Self;
-    }
-
-    impl<T, E> ErrorTrace for StdResult<T, E>
-    where
-        E: Debug + Display,
-    {
-        fn trace_debug(self) -> Self {
-            if let Err(e) = &self {
-                tracing::debug!(error = %e, "[trace_debug]");
-            }
-            self
-        }
-
-        fn trace_error(self) -> Self {
-            if let Err(e) = &self {
-                tracing::error!(error = %e, "[trace_error]");
-            }
-            self
-        }
-    }
-}
-
 pub mod rename {
     pub type StdResult<T, E> = std::result::Result<T, E>;
 }

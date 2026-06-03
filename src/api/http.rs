@@ -157,7 +157,7 @@ mod result {
 
     pub type HttpResult<T> = StdResult<HttpResponse<T>, HttpError>;
 
-    pub fn accept<T>(data: T, status_code: StatusCode) -> HttpResult<T>
+    pub fn accept<T>(data: T, _status_code: StatusCode) -> HttpResult<T>
     where
         T: Serialize,
     {

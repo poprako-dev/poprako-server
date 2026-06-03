@@ -6,7 +6,6 @@ use crate::domain::model::value::role::RoleFlag;
 use crate::domain::query::member::MemberQueryTransactional;
 use crate::domain::result::{DomainError, DomainResult};
 use crate::infrastructure::query::memory_mock::MemoryMockQueryTransactional;
-use crate::util::err::ErrorTrace as _;
 use crate::util::i18n::trl;
 
 #[async_trait]
@@ -16,14 +15,14 @@ impl MemberQueryTransactional for MemoryMockQueryTransactional {
 
         // Check uniqueness constraints.
         if state.members.iter().any(|m| m.id == form.id) {
-            return Err(DomainError::expected_conflict(trl("error-already-exists"))).trace_debug();
+            return Err(DomainError::expected_conflict(trl("error-already-exists")).trace());
         }
         if state
             .members
             .iter()
             .any(|m| m.user_id == form.user_id && m.team_id == form.team_id)
         {
-            return Err(DomainError::expected_conflict(trl("error-already-exists"))).trace_debug();
+            return Err(DomainError::expected_conflict(trl("error-already-exists")).trace());
         }
 
         // Build the member aggregate from the form.
