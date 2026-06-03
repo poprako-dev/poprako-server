@@ -168,7 +168,7 @@ impl ImageDelete for OssImagePool {
         // expected to be small (usually less than 10), and the likelihood of
         // transient errors is relatively low.
 
-        let obj_ids: Vec<ObjectIdentifier> = keys
+        let mut obj_ids: Vec<ObjectIdentifier> = keys
             .iter()
             .map(|k| {
                 ObjectIdentifier::builder()
@@ -185,8 +185,14 @@ impl ImageDelete for OssImagePool {
                 tokio::time::sleep(RETRY_DELAY).await;
             }
 
+            let objects = if attempt + 1 == MAX_RETRY {
+                std::mem::take(&mut obj_ids)
+            } else {
+                obj_ids.clone()
+            };
+
             let delete = Delete::builder()
-                .set_objects(Some(obj_ids.clone()))
+                .set_objects(Some(objects))
                 .quiet(true)
                 .build()
                 .expect("Delete build should never fail");

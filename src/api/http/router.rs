@@ -11,7 +11,7 @@ pub fn new(harn: Harness) -> Router<Harness> {
         Router::new().route("/api/v1/auth/register", post(authorization::sign_up_user));
 
     // Protected routes — require a valid authorization token.
-    let protected_routes = with_authorization(Router::new(), harn.clone());
+    let protected_routes = with_authorization(Router::new(), harn);
 
     // Wrap with request-id + tracing middleware (outermost layer).
     with_request_id(authorize_routes.merge(protected_routes))

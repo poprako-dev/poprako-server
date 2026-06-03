@@ -49,16 +49,18 @@ where
                 // 4. Build the UserForm aggregate.
                 let mut user_form = UserForm::new(
                     UserAggr::generate_id(),
-                    params.qid.clone(),
-                    params.nickname.clone(),
+                    params.qid,
+                    params.nickname,
                     password_hash,
                 );
 
                 // Push domain event (published after commit via effect sink).
+                let invitation_id = invitation.id;
+                let event_team_id = invitation.team_id.clone();
                 user_form.push_event(Event::UserSignedUp(UserSignedUpEvent {
-                    team_id: invitation.team_id.clone(),
-                    invitor_id: invitation.invitor_id.clone(),
-                    invitee_qid: params.qid.clone(),
+                    team_id: event_team_id,
+                    invitor_id: invitation.invitor_id,
+                    invitee_qid: user_form.qid.clone(),
                 }));
 
                 // 5. Create the user.
@@ -67,16 +69,16 @@ where
                 // 6. Create a member record so the user belongs to the team.
                 let member_form = MemberForm {
                     id: MemberAggr::generate_id(),
-                    user_id: user.id.clone(),
-                    user_nickname: user.nickname.clone(),
-                    team_id: invitation.team_id.clone(),
+                    user_id: user.id,
+                    user_nickname: user.nickname,
+                    team_id: invitation.team_id,
                     roles: invitation.roles,
                 };
 
                 MemberQueryTransactional::create(query, &member_form).await?;
 
                 // 7. Mark the invitation as consumed.
-                MemberInvitationQueryTransactional::mark_pending_as_used(query, &invitation.id)
+                MemberInvitationQueryTransactional::mark_pending_as_used(query, &invitation_id)
                     .await?;
 
                 Ok(user_form)
@@ -89,12 +91,13 @@ where
     user_form.develop_effect(harn).await;
 
     // Generate a signed token for the newly registered user.
-    let token = sign_token(harn, &UserToken {
-        user_id: user_form.id.clone(),
-    })?;
+    let user_token = UserToken {
+        user_id: user_form.id,
+    };
+    let token = sign_token(harn, &user_token)?;
 
     Ok(SignUpUserReply {
-        user_id: user_form.id,
+        user_id: user_token.user_id,
         token,
     })
 }

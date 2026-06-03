@@ -4,7 +4,7 @@ use poprako_r::api::http::server::serve;
 use poprako_r::config::AppConfig;
 use poprako_r::harness::Harness;
 use poprako_r::infrastructure::external::image_pool::OssImagePool;
-use poprako_r::infrastructure::external::token::JwtCodec;
+use poprako_r::infrastructure::external::token::JwtIssuer;
 use poprako_r::infrastructure::query::RdbQuery;
 use tracing_subscriber::layer::SubscriberExt as _;
 use tracing_subscriber::util::SubscriberInitExt as _;
@@ -32,7 +32,7 @@ async fn main() {
         .await
         .expect("Failed to initialize query");
 
-    let jwt_codec = JwtCodec::from_env().expect("Failed to initialize JWT codec");
+    let jwt_codec = JwtIssuer::from_env().expect("Failed to initialize JWT codec");
 
     let image_pool = OssImagePool::from_env_r2().expect("Failed to initialize image pool");
 

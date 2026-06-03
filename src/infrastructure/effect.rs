@@ -15,8 +15,6 @@ use crate::domain::model::event::{Event, EventEmit};
 use crate::harness::HarnessBase;
 use crate::infrastructure::effect::user::notify_invitor_handler;
 
-pub type SharedEffectSink = Arc<AsyncEffectSink>;
-
 /// An async effect sink that dispatches domain events to hardcoded handlers
 /// via a background task.
 ///
@@ -33,6 +31,8 @@ pub struct AsyncEffectSink {
     shutdown: Mutex<Option<TxOneshot<()>>>,
     done: Mutex<Option<RxOneshot<()>>>,
 }
+
+pub type SharedEffectSink = Arc<AsyncEffectSink>;
 
 impl AsyncEffectSink {
     /// Creates a new `AsyncEffectSink` and spawns a background task.
@@ -93,6 +93,10 @@ impl AsyncEffectSink {
 
         let _ = outlet.await;
     }
+}
+
+pub fn shared_effect_sink(harn: Arc<HarnessBase>, buffer: usize) -> SharedEffectSink {
+    Arc::new(AsyncEffectSink::new(harn, buffer))
 }
 
 #[async_trait]

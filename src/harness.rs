@@ -11,17 +11,17 @@ use crate::domain::query::system_mail::SystemMailQueryForward;
 use crate::domain::query::team::TeamQueryForward;
 use crate::domain::query::user::UserQueryForward;
 use crate::impl_forward_ref;
-use crate::infrastructure::effect::{AsyncEffectSink, SharedEffectSink};
+use crate::infrastructure::effect::{SharedEffectSink, shared_effect_sink};
 use crate::infrastructure::external::image_pool::OssImagePool;
-use crate::infrastructure::external::token::JwtCodec;
+use crate::infrastructure::external::token::JwtIssuer;
 use crate::infrastructure::query::RdbQuery;
 
 // ── HarnessBase: shared core for database access, image pool, and token codec ───
 
 pub struct HarnessBase {
     rdb_query: RdbQuery,
-    jwt_codec: JwtCodec,
-    oss_pool: OssImagePool,
+    jwt_issuer: JwtIssuer,
+    oss_image_pool: OssImagePool,
 }
 
 impl_forward_ref!(
@@ -34,15 +34,15 @@ impl_forward_ref!(
 );
 
 impl_forward_ref!(
-    HarnessBase => JwtCodec,
-    jwt_codec,
+    HarnessBase => JwtIssuer,
+    jwt_issuer,
     TokenSignForward,
     TokenParseForward,
 );
 
 impl_forward_ref!(
     HarnessBase => OssImagePool,
-    oss_pool,
+    oss_image_pool,
     ImageGetForward,
     ImagePutForward,
     ImageDeleteForward,
@@ -58,14 +58,14 @@ pub struct Harness {
 
 impl Harness {
     #[allow(clippy::too_many_arguments)]
-    pub fn new(query: RdbQuery, jwt_codec: JwtCodec, image_pool: OssImagePool) -> Self {
+    pub fn new(query: RdbQuery, token_issuer: JwtIssuer, image_pool: OssImagePool) -> Self {
         let base = Arc::new(HarnessBase {
             rdb_query: query,
-            jwt_codec,
-            oss_pool: image_pool,
+            jwt_issuer: token_issuer,
+            oss_image_pool: image_pool,
         });
 
-        let effect_sink = Arc::new(AsyncEffectSink::new(Arc::clone(&base), 1024));
+        let effect_sink = shared_effect_sink(Arc::clone(&base), 1024);
 
         Harness { base, effect_sink }
     }

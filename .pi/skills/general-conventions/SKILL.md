@@ -58,6 +58,20 @@ Curly braces in `use` statements must satisfy the `check-use-braces` skill:
 braces are allowed only at the final leaf segment. `use a::b::{c, d};` is valid;
 `use a::{b, c::d};` is not.
 
+## Ownership before cloning
+
+Prefer the cheapest ownership form that preserves correctness:
+
+1. Move owned values when the current use is the value's final use.
+2. Borrow by reference when the callee does not need ownership.
+3. Clone only when multiple owned values are genuinely required, or when an
+   interface boundary accepts only a borrowed value but an owned result must be
+   retained elsewhere.
+
+Do not write `.clone()` at a value's final use just to keep earlier code shape
+unchanged. Reorder construction or introduce a short-lived local when that
+allows the final use to move the value cleanly.
+
 ## Visibility: only private and `pub`
 
 Visibility qualifiers other than `pub` are forbidden everywhere. This includes:
