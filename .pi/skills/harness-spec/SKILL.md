@@ -2,22 +2,22 @@
 name: harness-spec
 description: |
   Conventions for the harness layer in poprako-r. The harness
-  (`src/api/harness.rs`) is a bridge/facade that wires infrastructure
+  (`src/harness.rs`) is a bridge/facade that wires infrastructure
   implementations to the domain trait contracts. Use whenever modifying
   or adding `impl` blocks in the harness module.
 ---
 
 # Harness Specification
 
-The harness (`Harness` / `HarnessInner`) is a **bridge layer** that sits
+The harness (`Harness` / `HarnessBase`) is a **bridge layer** that sits
 between the API/HTTP layer and the infrastructure implementations. Its
 sole purpose is to wire concrete infrastructure types (`Query`,
 `JwtCodec`, `OssImagePool`) to the domain's trait contracts
 (`Transactional`, `ImageGet`, `ImagePut`, `ImageDelete`, `TokenSign`,
 `TokenParse`).
 
-Every `impl` block in the harness is a **pure delegation** — it forwards
-the call to the underlying implementation without adding any business
+Every `ForwardRef` implementation in the harness is a **pure delegation**
+that selects the underlying implementation without adding any business
 logic, error handling, or I/O.
 
 ---
@@ -34,58 +34,48 @@ in the harness would produce a redundant wrapper span with no additional
 diagnostic value — every harness call would generate two nested spans
 pointing to the same operation.
 
-**Do NOT:**
+**Do NOT add handwritten delegation when a forwarding marker exists:**
 ```rust
-use tracing::instrument;
-
-#[async_trait]
-impl ImageGet for HarnessInner {
-    #[instrument(skip(self))]           // BAD — pure delegation
-    async fn get_signed(&self, key: &str) -> DomainResult<url::Url> {
-        self.image_pool.get_signed(key).await
-    }
-}
+impl ImageGet for HarnessBase { /* BAD */ }
 ```
 
 **Do:**
 ```rust
-#[async_trait]
-impl ImageGet for HarnessInner {
-    async fn get_signed(&self, key: &str) -> DomainResult<url::Url> {
-        self.image_pool.get_signed(key).await
-    }
-}
+use crate::impl_forward_ref;
+
+impl_forward_ref!(HarnessBase => OssImagePool, oss_pool, ImageGetForward);
 ```
 
 ---
 
 ## 2. Harness structure
 
-`HarnessInner` holds the concrete infrastructure dependencies:
+`HarnessBase` holds the concrete infrastructure dependencies:
 
 ```rust
-pub struct HarnessInner {
-    query: Query,
+pub struct HarnessBase {
+    rdb_query: RdbQuery,
     jwt_codec: JwtCodec,
-    image_pool: OssImagePool,
+    oss_pool: OssImagePool,
 }
 ```
 
 It implements:
-- `Deref<Target = Query>` — so `*Query` traits are available via deref
-- `Transactional` — delegates to `self.query.run_in_transaction`
-- Domain external traits (`ImageGet`, `ImagePut`, `ImageDelete`, `TokenSign`, `TokenParse`) — each delegates to the corresponding inner field
+- `ForwardRef<TransactionalForward>` and query forward markers to `RdbQuery`
+- `ForwardRef<TokenSignForward>` and `ForwardRef<TokenParseForward>` to `JwtCodec`
+- `ForwardRef<ImageGetForward>`, `ForwardRef<ImagePutForward>`, and `ForwardRef<ImageDeleteForward>` to `OssImagePool`
 
-`Harness` wraps `HarnessInner` in an `Arc` and adds an `EffectSink`:
+`Harness` wraps `HarnessBase` in an `Arc` and adds an `EffectSink`:
 
 ```rust
 pub struct Harness {
-    inner: Arc<HarnessInner>,
-    effect_sink: Arc<AsyncEffectSink>,
+    base: Arc<HarnessBase>,
+    effect_sink: SharedEffectSink,
 }
 ```
 
-It implements `Deref<Target = HarnessInner>`, `DerefTo<Target = HarnessInner>`, and `EffectSink`.
+It implements the same forwarding markers to `HarnessBase` and implements
+`EffectSink`.
 
 ---
 
@@ -93,23 +83,20 @@ It implements `Deref<Target = HarnessInner>`, `DerefTo<Target = HarnessInner>`, 
 
 When adding a new infrastructure dependency to the harness:
 
-1. Add the field to `HarnessInner`.
-2. Add it to `HarnessInner`'s constructor call site in `Harness::new`.
-3. Implement the domain trait for `HarnessInner` with a single-line delegation.
-4. Do **not** add `#[instrument]` to the delegation method.
+1. Add the field to `HarnessBase`.
+2. Add it to `HarnessBase`'s constructor call site in `Harness::new`.
+3. Define a forwarding marker in the trait's own module.
+4. Add a blanket trait implementation for `T: ForwardRef<ThatMarker>`.
+5. Add an `impl_forward_ref!` entry in `src/harness.rs`.
+6. Do **not** add `#[instrument]` to the delegation method.
 
 ```rust
 // 1. Field
-pub struct HarnessInner {
+pub struct HarnessBase {
     // ...
     new_service: NewService,
 }
 
-// 3. Delegation
-#[async_trait]
-impl NewServiceTrait for HarnessInner {
-    async fn do_thing(&self, arg: &str) -> DomainResult<Thing> {
-        self.new_service.do_thing(arg).await
-    }
-}
+// 5. Forwarding
+impl_forward_ref!(HarnessBase => NewService, new_service, NewServiceForward);
 ```

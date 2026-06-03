@@ -3,14 +3,18 @@ pub mod value_object;
 pub mod user;
 
 pub mod result {
+    use std::fmt::Display;
+    use std::fmt::Formatter;
+    use std::fmt::Result as FmtResult;
+
     use crate::domain::result::DomainError;
     use crate::util::rename::StdResult;
 
     #[derive(Debug)]
     pub struct UseCaseError(DomainError);
 
-    impl std::fmt::Display for UseCaseError {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    impl Display for UseCaseError {
+        fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
             write!(f, "UseCaseError({})", self.0)
         }
     }

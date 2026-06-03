@@ -26,6 +26,38 @@ Source comments must describe the Rust code itself. Do not mention reference
 implementation paths, reference language function names, or migration notes in
 comments that will live in `src/`.
 
+## Import style
+
+Prefer importing the concrete item that is used in the file. Do not keep a
+module partially qualified at the call site unless that qualification carries
+useful meaning or avoids an actual ambiguity.
+
+Use a partially qualified module path only for explicit exceptions, such as:
+
+- API/HTTP code calling usecase functions, where the final submodule and
+  function names may be identical. Import `crate::usecase`, then call
+  `usecase::user::sign_up_user(...)`.
+- Schema DSL imports and framework preludes where the local convention already
+  expects a module-shaped namespace, such as Diesel `dsl::*` and
+  `diesel::prelude::*`.
+- Macros or associated paths that another project skill explicitly requires to
+  stay fully qualified.
+
+Every ordinary type, trait, value function, error type, and result alias should
+be brought into scope with a `use` item, then referenced by its leaf name. This
+is especially important for `DomainError`, `DomainResult`, `UseCaseError`,
+`UseCaseResult`, and `ExpectedVariant`; do not write long paths such as
+`crate::domain::result::DomainError` in signatures or matches when a normal
+import is possible.
+
+Do not use wildcard imports such as `use super::*` or `use module::*` in tests
+or implementation code, except for framework/schema imports covered by the
+explicit exceptions above.
+
+Curly braces in `use` statements must satisfy the `check-use-braces` skill:
+braces are allowed only at the final leaf segment. `use a::b::{c, d};` is valid;
+`use a::{b, c::d};` is not.
+
 ## Visibility: only private and `pub`
 
 Visibility qualifiers other than `pub` are forbidden everywhere. This includes:

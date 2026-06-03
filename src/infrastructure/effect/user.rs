@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use fluent_templates::fluent_bundle::FluentValue;
 use tracing::Level;
 
-use crate::domain::model::aggregate::system_mail::SystemMailForm;
+use crate::domain::model::aggregate::system_mail::{SystemMailAggr, SystemMailForm};
 use crate::domain::model::event::user::UserSignedUpEvent;
 use crate::domain::query::system_mail::SystemMailQuery;
 use crate::domain::query::team::TeamQuery;
@@ -47,7 +47,12 @@ where
         ]),
     );
 
-    let mail = SystemMailForm::new(invitor_id, title, content);
+    let mail = SystemMailForm {
+        id: SystemMailAggr::generate_id(),
+        receiver_id: invitor_id,
+        title,
+        content,
+    };
 
     if let Err(e) = SystemMailQuery::send(harn, &mail).await {
         tracing::error!(

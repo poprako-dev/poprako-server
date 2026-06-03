@@ -84,6 +84,8 @@ impl TokenParse for JwtCodec {
             })
             .trace_error()?;
 
-        Ok(UserToken::new(token_data.claims.sub))
+        Ok(UserToken {
+            user_id: token_data.claims.sub,
+        })
     }
 }

@@ -4,9 +4,10 @@ use tracing::instrument;
 use crate::domain::compound::user::{hash_password, sign_token};
 use crate::domain::effect::{Effect as _, EffectSink};
 use crate::domain::external::token::TokenSign;
-use crate::domain::model::aggregate::member::MemberForm;
-use crate::domain::model::aggregate::user::{UserForm, UserToken};
-use crate::domain::model::event::{Event, EventSink, user::UserSignedUpEvent};
+use crate::domain::model::aggregate::member::{MemberAggr, MemberForm};
+use crate::domain::model::aggregate::user::{UserAggr, UserForm, UserToken};
+use crate::domain::model::event::user::UserSignedUpEvent;
+use crate::domain::model::event::{Event, EventSink};
 use crate::domain::query::Transactional;
 use crate::domain::query::member::MemberQueryTransactional;
 use crate::domain::query::member_invitation::MemberInvitationQueryTransactional;
@@ -46,8 +47,12 @@ where
                 let password_hash = hash_password(&params.password)?;
 
                 // 4. Build the UserForm aggregate.
-                let mut user_form =
-                    UserForm::new(params.qid.clone(), params.nickname.clone(), password_hash);
+                let mut user_form = UserForm::new(
+                    UserAggr::generate_id(),
+                    params.qid.clone(),
+                    params.nickname.clone(),
+                    password_hash,
+                );
 
                 // Push domain event (published after commit via effect sink).
                 user_form.push_event(Event::UserSignedUp(UserSignedUpEvent {
@@ -60,12 +65,13 @@ where
                 let user = UserQueryTransactional::create(query, &user_form).await?;
 
                 // 6. Create a member record so the user belongs to the team.
-                let member_form = MemberForm::new(
-                    user.id.clone(),
-                    user.nickname.clone(),
-                    invitation.team_id.clone(),
-                    invitation.roles,
-                );
+                let member_form = MemberForm {
+                    id: MemberAggr::generate_id(),
+                    user_id: user.id.clone(),
+                    user_nickname: user.nickname.clone(),
+                    team_id: invitation.team_id.clone(),
+                    roles: invitation.roles,
+                };
 
                 MemberQueryTransactional::create(query, &member_form).await?;
 
@@ -83,7 +89,9 @@ where
     user_form.develop_effect(harn).await;
 
     // Generate a signed token for the newly registered user.
-    let token = sign_token(harn, &UserToken::new(user_form.id.clone()))?;
+    let token = sign_token(harn, &UserToken {
+        user_id: user_form.id.clone(),
+    })?;
 
     Ok(SignUpUserReply {
         user_id: user_form.id,
@@ -93,97 +101,38 @@ where
 
 #[cfg(test)]
 mod tests {
-    use std::sync::{Arc, Mutex};
+    // sign_up_user_creates_user_member_consumes_invitation_emits_event_and_signs_token(sign_up_user)(positive): sign up should succeed when the invitation matches the qid and code.
+    // sign_up_user_rejects_missing_invitation_without_side_effects(sign_up_user)(negative): sign up should fail without writes or events when the invitation code is missing.
+    // sign_up_user_rejects_qid_mismatch_and_rolls_back(sign_up_user)(negative): sign up should fail and roll back when invitation qid does not match params qid.
+    // sign_up_user_rolls_back_when_member_create_fails(sign_up_user)(negative): sign up should roll back user creation when member creation fails.
+    // sign_up_user_token_failure_happens_after_commit_and_event_publish(sign_up_user)(negative): token failures should occur after commit and event publication.
 
-    use async_trait::async_trait;
     use time::OffsetDateTime;
 
-    use super::*;
+    use super::sign_up_user;
     use crate::domain::model::aggregate::member_invitation::MemberInvitationAggr;
-    use crate::domain::model::event::EventEmit;
+    use crate::domain::model::event::Event;
     use crate::domain::model::value::role::{RoleFlag, RoleMask};
-    use crate::domain::result::{DomainResult, ExpectedVariant};
-    use crate::infrastructure::query::memory_mock::MemoryMockQuery;
-    use crate::util::DerefTo;
-
-    #[derive(Clone)]
-    struct TestHarness {
-        query: Arc<MemoryMockQuery>,
-        events: Arc<Mutex<Vec<Event>>>,
-        token_fails: bool,
-    }
-
-    impl TestHarness {
-        fn new() -> Self {
-            Self {
-                query: Arc::new(MemoryMockQuery::new()),
-                events: Arc::new(Mutex::new(Vec::new())),
-                token_fails: false,
-            }
-        }
-
-        fn with_token_failure() -> Self {
-            Self {
-                token_fails: true,
-                ..Self::new()
-            }
-        }
-
-        fn seed_invitation(&self, invitation: MemberInvitationAggr) {
-            self.query.seed_member_invitation(invitation);
-        }
-
-        fn snapshot(&self) -> crate::infrastructure::query::memory_mock::MemoryMockState {
-            self.query.snapshot()
-        }
-
-        fn events(&self) -> Vec<Event> {
-            self.events.lock().unwrap().clone()
-        }
-    }
-
-    impl DerefTo for TestHarness {
-        type Target = MemoryMockQuery;
-
-        fn deref_to(&self) -> &MemoryMockQuery {
-            &self.query
-        }
-    }
-
-    #[async_trait]
-    impl EffectSink for TestHarness {
-        async fn handle<E>(&self, src: &mut E)
-        where
-            E: EventEmit + Send,
-        {
-            self.events.lock().unwrap().extend(src.pull_events());
-        }
-    }
-
-    impl TokenSign for TestHarness {
-        fn sign(&self, unsigned_token: &UserToken) -> DomainResult<String> {
-            if self.token_fails {
-                return Err(DomainError::unrecoverable("token failed".into()));
-            }
-
-            Ok(format!("token:{}", unsigned_token.user_id))
-        }
-    }
+    use crate::harness::tests::TestHarness;
+    use crate::test_util::usecase_is_expected_argument;
+    use crate::test_util::usecase_is_expected_conflict;
+    use crate::test_util::usecase_is_unrecoverable;
+    use crate::usecase::value_object::user::SignUpUserParams;
 
     fn invitation(code: &str, invitee_qid: &str, pending: bool) -> MemberInvitationAggr {
         let mask = u32::from(RoleFlag::Admin) | u32::from(RoleFlag::Translator);
 
-        MemberInvitationAggr::new(
-            "invitation-1".into(),
-            "invitor-1".into(),
-            None,
-            "team-1".into(),
-            invitee_qid.into(),
-            code.into(),
+        MemberInvitationAggr {
+            id: "invitation-1".into(),
+            invitor_id: "invitor-1".into(),
+            invitor: None,
+            team_id: "team-1".into(),
+            invitee_qid: invitee_qid.into(),
+            code: code.into(),
             pending,
-            RoleMask::from(mask),
-            OffsetDateTime::now_utc(),
-        )
+            roles: RoleMask::from(mask),
+            created_at: OffsetDateTime::now_utc(),
+        }
     }
 
     fn sign_up_params(code: &str, qid: &str, nickname: &str) -> SignUpUserParams {
@@ -195,31 +144,14 @@ mod tests {
         }
     }
 
-    fn is_expected_argument(err: &crate::usecase::result::UseCaseError) -> bool {
-        matches!(
-            err.as_ref(),
-            DomainError::Expected {
-                variant: ExpectedVariant::Argument,
-                ..
-            }
-        )
-    }
-
-    fn is_unrecoverable(err: &crate::usecase::result::UseCaseError) -> bool {
-        matches!(err.as_ref(), DomainError::Unrecoverable { .. })
-    }
-
     #[tokio::test]
     async fn sign_up_user_creates_user_member_consumes_invitation_emits_event_and_signs_token() {
-        let harn = TestHarness::new();
+        let harn = TestHarness::default();
         harn.seed_invitation(invitation("CODE123", "invitee-qid", true));
 
-        let reply = sign_up_user(
-            &harn,
-            sign_up_params("CODE123", "invitee-qid", "Invitee"),
-        )
-        .await
-        .unwrap();
+        let reply = sign_up_user(&harn, sign_up_params("CODE123", "invitee-qid", "Invitee"))
+            .await
+            .unwrap();
 
         assert_eq!(reply.token, format!("token:{}", reply.user_id));
 
@@ -260,17 +192,14 @@ mod tests {
 
     #[tokio::test]
     async fn sign_up_user_rejects_missing_invitation_without_side_effects() {
-        let harn = TestHarness::new();
+        let harn = TestHarness::default();
 
-        let err = sign_up_user(
-            &harn,
-            sign_up_params("MISSING", "invitee-qid", "Invitee"),
-        )
-        .await
-        .err()
-        .unwrap();
+        let err = sign_up_user(&harn, sign_up_params("MISSING", "invitee-qid", "Invitee"))
+            .await
+            .err()
+            .unwrap();
 
-        assert!(is_expected_argument(&err));
+        assert!(usecase_is_expected_argument(&err));
 
         let snapshot = harn.snapshot();
         assert!(snapshot.users.is_empty());
@@ -281,7 +210,7 @@ mod tests {
 
     #[tokio::test]
     async fn sign_up_user_rejects_qid_mismatch_and_rolls_back() {
-        let harn = TestHarness::new();
+        let harn = TestHarness::default();
         harn.seed_invitation(invitation("CODE123", "invitee-qid", true));
 
         let err = sign_up_user(&harn, sign_up_params("CODE123", "other-qid", "Invitee"))
@@ -289,7 +218,7 @@ mod tests {
             .err()
             .unwrap();
 
-        assert!(is_expected_argument(&err));
+        assert!(usecase_is_expected_argument(&err));
 
         let snapshot = harn.snapshot();
         assert!(snapshot.users.is_empty());
@@ -301,15 +230,12 @@ mod tests {
 
     #[tokio::test]
     async fn sign_up_user_rolls_back_when_member_create_fails() {
-        let harn = TestHarness::new();
+        let harn = TestHarness::default();
         harn.seed_invitation(invitation("CODE123", "invitee-qid", true));
 
-        let first = sign_up_user(
-            &harn,
-            sign_up_params("CODE123", "invitee-qid", "Invitee"),
-        )
-        .await
-        .unwrap();
+        let first = sign_up_user(&harn, sign_up_params("CODE123", "invitee-qid", "Invitee"))
+            .await
+            .unwrap();
         harn.seed_invitation(invitation("CODE456", "second-qid", true));
 
         let err = sign_up_user(&harn, sign_up_params("CODE456", "second-qid", "Invitee"))
@@ -317,25 +243,21 @@ mod tests {
             .err()
             .unwrap();
 
-        assert!(matches!(
-            err.as_ref(),
-            DomainError::Expected {
-                variant: ExpectedVariant::Conflict,
-                ..
-            }
-        ));
+        assert!(usecase_is_expected_conflict(&err));
 
         let snapshot = harn.snapshot();
         assert_eq!(snapshot.users.len(), 1);
         assert_eq!(snapshot.credentials.len(), 1);
         assert_eq!(snapshot.members.len(), 1);
         assert_eq!(snapshot.users[0].id, first.user_id);
-        assert!(snapshot
-            .member_invitations
-            .iter()
-            .find(|inv| inv.code == "CODE456")
-            .unwrap()
-            .pending);
+        assert!(
+            snapshot
+                .member_invitations
+                .iter()
+                .find(|inv| inv.code == "CODE456")
+                .unwrap()
+                .pending
+        );
         assert_eq!(harn.events().len(), 1);
     }
 
@@ -344,15 +266,12 @@ mod tests {
         let harn = TestHarness::with_token_failure();
         harn.seed_invitation(invitation("CODE123", "invitee-qid", true));
 
-        let err = sign_up_user(
-            &harn,
-            sign_up_params("CODE123", "invitee-qid", "Invitee"),
-        )
-        .await
-        .err()
-        .unwrap();
+        let err = sign_up_user(&harn, sign_up_params("CODE123", "invitee-qid", "Invitee"))
+            .await
+            .err()
+            .unwrap();
 
-        assert!(is_unrecoverable(&err));
+        assert!(usecase_is_unrecoverable(&err));
 
         let snapshot = harn.snapshot();
         assert_eq!(snapshot.users.len(), 1);

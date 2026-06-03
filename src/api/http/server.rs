@@ -1,12 +1,13 @@
 use anyhow::Context;
+use std::fmt::Debug;
 use tokio::net::{TcpListener, ToSocketAddrs};
 
-use crate::api::harness::Harness;
 use crate::api::http::router;
+use crate::harness::Harness;
 
 pub async fn serve<A>(harn: Harness, addr: A) -> anyhow::Result<()>
 where
-    A: ToSocketAddrs + std::fmt::Debug,
+    A: ToSocketAddrs + Debug,
 {
     let listener = TcpListener::bind(&addr)
         .await

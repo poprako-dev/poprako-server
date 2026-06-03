@@ -1,6 +1,12 @@
 use crate::domain::model::aggregate::user::UserToken;
 use crate::domain::result::DomainResult;
-use crate::util::DerefTo;
+use crate::util::ForwardRef;
+
+/// Forwarding marker for [`TokenSign`].
+pub struct TokenSignForward;
+
+/// Forwarding marker for [`TokenParse`].
+pub struct TokenParseForward;
 
 /// Signs unsigned [`UserToken`]s into encoded strings (JWT).
 pub trait TokenSign {
@@ -10,11 +16,11 @@ pub trait TokenSign {
 
 impl<T> TokenSign for T
 where
-    T: DerefTo,
+    T: ForwardRef<TokenSignForward>,
     T::Target: TokenSign,
 {
     fn sign(&self, unsigned_token: &UserToken) -> DomainResult<String> {
-        self.deref_to().sign(unsigned_token)
+        self.forward_ref().sign(unsigned_token)
     }
 }
 
@@ -27,11 +33,11 @@ pub trait TokenParse {
 
 impl<T> TokenParse for T
 where
-    T: DerefTo,
+    T: ForwardRef<TokenParseForward>,
     T::Target: TokenParse,
 {
     fn parse(&self, signed_token: &str) -> DomainResult<UserToken> {
-        self.deref_to().parse(signed_token)
+        self.forward_ref().parse(signed_token)
     }
 }
 

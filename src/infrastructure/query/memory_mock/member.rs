@@ -30,24 +30,24 @@ impl MemberQueryTransactional for MemoryMockQueryTransactional {
         let now = OffsetDateTime::now_utc();
         let roles = form.roles;
 
-        let member = MemberAggr::new(
-            form.id.clone(),
-            form.user_id.clone(),
-            None, // user not populated in mock
-            form.team_id.clone(),
-            None, // team not populated in mock
-            roles.has_role(RoleFlag::RawProvider).then_some(now),
-            roles.has_role(RoleFlag::Translator).then_some(now),
-            roles.has_role(RoleFlag::Proofreader).then_some(now),
-            roles.has_role(RoleFlag::Typesetter).then_some(now),
-            roles.has_role(RoleFlag::Redrawer).then_some(now),
-            roles.has_role(RoleFlag::Reviewer).then_some(now),
-            roles.has_role(RoleFlag::Publisher).then_some(now),
-            roles.has_role(RoleFlag::Admin).then_some(now),
-            roles.has_role(RoleFlag::Assistant).then_some(now),
-            now, // created_at
-            now, // updated_at
-        );
+        let member = MemberAggr {
+            id: form.id.clone(),
+            user_id: form.user_id.clone(),
+            user: None, // user not populated in mock
+            team_id: form.team_id.clone(),
+            team: None, // team not populated in mock
+            assigned_raw_provider_at: roles.has_role(RoleFlag::RawProvider).then_some(now),
+            assigned_translator_at: roles.has_role(RoleFlag::Translator).then_some(now),
+            assigned_proofreader_at: roles.has_role(RoleFlag::Proofreader).then_some(now),
+            assigned_typesetter_at: roles.has_role(RoleFlag::Typesetter).then_some(now),
+            assigned_redrawer_at: roles.has_role(RoleFlag::Redrawer).then_some(now),
+            assigned_reviewer_at: roles.has_role(RoleFlag::Reviewer).then_some(now),
+            assigned_publisher_at: roles.has_role(RoleFlag::Publisher).then_some(now),
+            assigned_admin_at: roles.has_role(RoleFlag::Admin).then_some(now),
+            assigned_assistant_at: roles.has_role(RoleFlag::Assistant).then_some(now),
+            created_at: now,
+            updated_at: now,
+        };
 
         state.members.push(member.clone());
 
@@ -59,22 +59,14 @@ impl MemberQueryTransactional for MemoryMockQueryTransactional {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::domain::model::aggregate::member::MemberForm;
+    // duplicate_user_team_returns_conflict(MemberQueryTransactional::create)(negative): duplicate user-team membership should return an expected conflict.
+
+    use crate::domain::model::aggregate::member::{MemberAggr, MemberForm};
     use crate::domain::model::value::role::{RoleFlag, RoleMask};
     use crate::domain::query::Transactional;
-    use crate::domain::result::{DomainError, ExpectedVariant};
+    use crate::domain::query::member::MemberQueryTransactional;
     use crate::infrastructure::query::memory_mock::MemoryMockQuery;
-
-    fn is_expected_conflict(err: &DomainError) -> bool {
-        matches!(
-            err,
-            DomainError::Expected {
-                variant: ExpectedVariant::Conflict,
-                ..
-            }
-        )
-    }
+    use crate::test_util::is_expected_conflict;
 
     #[tokio::test]
     async fn duplicate_user_team_returns_conflict() {
@@ -82,12 +74,13 @@ mod tests {
 
         mock.transaction_scoped(|txn| {
             Box::pin(async move {
-                let form = MemberForm::new(
-                    "user-1".into(),
-                    "nick".into(),
-                    "team-1".into(),
-                    RoleMask::from(RoleFlag::Admin),
-                );
+                let form = MemberForm {
+                    id: MemberAggr::generate_id(),
+                    user_id: "user-1".into(),
+                    user_nickname: "nick".into(),
+                    team_id: "team-1".into(),
+                    roles: RoleMask::from(RoleFlag::Admin),
+                };
                 MemberQueryTransactional::create(txn, &form).await.unwrap();
                 Ok(())
             })
@@ -98,12 +91,13 @@ mod tests {
         let err = mock
             .transaction_scoped(|txn| {
                 Box::pin(async move {
-                    let form = MemberForm::new(
-                        "user-1".into(),
-                        "nick".into(),
-                        "team-1".into(),
-                        RoleMask::from(RoleFlag::Translator),
-                    );
+                    let form = MemberForm {
+                        id: MemberAggr::generate_id(),
+                        user_id: "user-1".into(),
+                        user_nickname: "nick".into(),
+                        team_id: "team-1".into(),
+                        roles: RoleMask::from(RoleFlag::Translator),
+                    };
                     MemberQueryTransactional::create(txn, &form).await
                 })
             })

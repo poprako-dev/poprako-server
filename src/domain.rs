@@ -5,6 +5,10 @@ pub mod model;
 pub mod query;
 
 pub mod result {
+    use std::fmt::Display;
+    use std::fmt::Formatter;
+    use std::fmt::Result as FmtResult;
+
     use crate::util::rename::StdResult;
 
     #[derive(Debug)]
@@ -59,8 +63,8 @@ pub mod result {
         }
     }
 
-    impl std::fmt::Display for DomainError {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    impl Display for DomainError {
+        fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
             write!(f, "{:?}", self)
         }
     }
@@ -69,7 +73,14 @@ pub mod result {
 
     #[cfg(test)]
     mod tests {
-        use super::*;
+        // expected_argument_variant(DomainError::expected_argument)(positive): expected argument errors should carry the Argument variant and message.
+        // expected_authentication_variant(DomainError::expected_authentication)(positive): expected authentication errors should carry the Authentication variant and message.
+        // expected_conflict_variant(DomainError::expected_conflict)(positive): expected conflict errors should carry the Conflict variant and message.
+        // unrecoverable_variant(DomainError::unrecoverable)(positive): unrecoverable errors should carry their diagnostic message.
+        // display_contains_message(DomainError::fmt)(positive): Display output should include the error message.
+
+        use super::DomainError;
+        use super::ExpectedVariant;
 
         #[test]
         fn expected_argument_variant() {

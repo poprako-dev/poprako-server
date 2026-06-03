@@ -95,7 +95,17 @@ pub trait RoleAssign {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    // has_role_single_bit(RoleMask::has_role)(positive): a single-role mask should report only that role.
+    // has_any_role_true(RoleMask::has_any_role)(positive): matching any role should return true when one role is present.
+    // has_any_role_false(RoleMask::has_any_role)(negative): matching any role should return false when none are present.
+    // has_every_role_true(RoleMask::has_every_role)(positive): matching every role should return true when all roles are present.
+    // has_every_role_false_missing_one(RoleMask::has_every_role)(negative): matching every role should return false when one is missing.
+    // from_u32_invalid_bits_panics_in_debug(RoleMask::from)(negative): invalid role bits should panic in debug builds.
+    // valid_bits_constant(RoleMask::VALID_BITS)(positive): valid role bitmask should cover all defined roles.
+    // roundtrip_u32_to_mask_to_u32(RoleMask::from/u32::from)(positive): converting from and back to u32 should preserve valid bits.
+
+    use super::RoleFlag;
+    use super::RoleMask;
 
     #[test]
     fn has_role_single_bit() {
