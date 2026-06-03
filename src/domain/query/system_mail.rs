@@ -1,12 +1,11 @@
 use async_trait::async_trait;
+use poprako_macro::forward_ref;
 
 use crate::domain::model::aggregate::system_mail::SystemMailForm;
 use crate::domain::result::DomainResult;
 
-/// Read-only persistence contract for system mail delivery.
-///
-/// Each method takes an immutable `&self` reference, suitable for
-/// non-transactional queries backed by a connection pool.
+/// Persistence contract for system mail delivery.
+#[forward_ref]
 #[async_trait]
 pub trait SystemMailQuery {
     /// Sends a system mail notification by inserting a row into `t_system_mail`.

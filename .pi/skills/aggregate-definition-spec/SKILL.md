@@ -3,7 +3,6 @@ name: aggregate-definition-spec
 description: |
   Structural specification for domain aggregate struct definitions in poprako-r.
   Covers the four aggregate categories (read-model, Form, Update, Patch),
-  the `_m: PrivateMarker` compile-time guard, `new()` constructor requirements,
   ID generation rules, and file organization. Use whenever defining or modifying
   structs under src/domain/model/aggregate/.
 ---
@@ -18,55 +17,42 @@ category split, see `poprako-aggr-conventions`.
 
 ## 1. Four aggregate categories
 
-| Category | Suffix | Constructor | ID source | `_m` |
-|----------|--------|-------------|-----------|------|
-| **Read-model** | `Aggr` | `new(all_fields)` | From entity row | ✅ |
-| **Input: Form** | `Form` | `new(biz_params)` | `*Aggr::generate_id()` | ✅ |
-| **Input: Update** | `Update` | `new(id, biz_params)` | Caller provides | ✅ |
-| **Input: Patch** | `Patch` | `new(id, optional_fields)` | Caller provides | ✅ |
+| Category | Suffix | ID source |
+|----------|--------|-----------|
+| **Read-model** | `Aggr` | From entity row |
+| **Input: Form** | `Form` | `*Aggr::generate_id()` |
+| **Input: Update** | `Update` | Caller provides |
+| **Input: Patch** | `Patch` | Caller provides |
+
+All construction uses **struct literal** syntax (`S { .. }`). There are no
+`new()` constructors on aggregate types, except for aggregates that carry an
+`events` field (see §5).
 
 ---
 
-## 2. Universal: `_m` marker
-
-**Every** struct includes as its last field:
-
-```rust
-/// Private marker to forbid struct literal construction outside this module.
-_m: PrivateMarker,
-```
-
-The `PrivateMarker` type is defined once in `src/domain/model/aggregate.rs` and
-imported as `use crate::domain::model::aggregate::PrivateMarker;` in each
-aggregate file.
-
-The comment is **always** `///` (doc comment), with the **exact** text:
-"Private marker to forbid struct literal construction outside this module."
-
----
-
-## 3. Read-model aggregates (`*Aggr`)
+## 2. Read-model aggregates (`*Aggr`)
 
 Every aggregate file **must** contain exactly one `*Aggr` struct.
 
-### Constructor
+### Construction
+
+Read-model aggregates are constructed via struct literal in `From<EntityRow>`
+conversions:
 
 ```rust
-pub fn new(
-    id: String,
-    // ... all fields in declaration order
-) -> Self {
-    Self {
-        id,
-        // ...
-        _m: PrivateMarker,
+impl From<UserRow> for UserAggr {
+    fn from(v: UserRow) -> Self {
+        UserAggr {
+            id: v.f_id,
+            nickname: v.f_nickname,
+            qid: v.f_qid,
+            // ...
+        }
     }
 }
+```
 
-- Name: `new`.
-- Visibility: `pub`.
-- Parameters: one per field, **in the same order** as the struct declaration.
-- Called from `From<EntityRow>` conversions in `src/infrastructure/query/entity/`.
+Conversions live in `src/infrastructure/query/entity/`.
 
 ### Example
 
@@ -79,73 +65,87 @@ pub struct TeamAggr {
     pub avatar_uploaded: bool,
     pub created_at: OffsetDateTime,
     pub updated_at: OffsetDateTime,
-
-    /// Private marker to forbid struct literal construction outside this module.
-    _m: PrivateMarker,
-}
-
-impl TeamAggr {
-    pub fn new(
-        id: String,
-        name: String,
-        description: String,
-        avatar_key: String,
-        avatar_uploaded: bool,
-        created_at: OffsetDateTime,
-        updated_at: OffsetDateTime,
-    ) -> Self {
-        Self {
-            id,
-            name,
-            description,
-            avatar_key,
-            avatar_uploaded,
-            created_at,
-            updated_at,
-            _m: PrivateMarker,
-        }
-    }
 }
 ```
 
 ---
 
-## 4. Input aggregates: Form
+## 3. Input aggregates: Form
 
-### Constructor
+### Construction
+
+Callers construct via struct literal, generating the `id` from the sibling
+`*Aggr::generate_id()`:
 
 ```rust
-pub fn new(biz_param_1: String, biz_param_2: String, ...) -> Self {
-    Self {
-        id: Aggr::generate_id(),
-        // business fields
-        _m: PrivateMarker,
-    }
-}
+let form = MemberForm {
+    id: MemberAggr::generate_id(),
+    user_id: user.id.clone(),
+    user_nickname: user.nickname.clone(),
+    team_id,
+    roles,
+};
+```
 
-- ID generated via sibling `*Aggr::generate_id()`.
-- No `id` parameter in the constructor signature.
+Aggregates that carry an `events` field cannot use struct literal
+construction — see §5.
+
+- `id` is generated via sibling `*Aggr::generate_id()`.
 
 ---
 
-## 5. Input aggregates: Update / Patch
+## 4. Input aggregates: Update / Patch
 
-### Constructor
+### Construction
+
+Callers construct via struct literal, providing the `id` explicitly:
 
 ```rust
-/// Creates a new `FooUpdate`.
-///
-/// `id` is the existing entity ID (provided by the caller, not generated).
-pub fn new(id: String, biz_params...) -> Self {
-    Self {
-        id,
-        // business fields
-        _m: PrivateMarker,
-    }
+let update = UserInfoUpdate {
+    id: existing_id,
+    qid,
+    nickname,
+};
+```
+
+- `id` is provided by the caller (e.g., URL path parameter).
+
+---
+
+## 5. Aggregates with an `events` field
+
+Any aggregate (of any category — Aggr, Form, Update, Patch) that carries an
+`events` field is an exception to the no-`new()` rule:
+
+- The `events` field is **private** (`events: Vec<Event>` without `pub`).
+- A `new(id, ...)` constructor is provided that initializes `events:
+  Vec::new()`.
+- Struct literal construction is unavailable to callers outside the defining
+  module because the private `events` field cannot be set from outside. Callers
+  inside the same module (tests) must also use `new()` for consistency.
+
+```rust
+pub struct UserForm {
+    pub id: String,
+    pub qid: String,
+    pub nickname: String,
+    pub password_hash: String,
+
+    events: Vec<Event>,  // private — must use new()
 }
 
-- `id` is the **first** parameter, provided by the caller.
-- Constructor has a `///` doc comment explaining the ID semantics.
+impl UserForm {
+    pub fn new(id: String, qid: String, nickname: String, password_hash: String) -> Self {
+        Self {
+            id,
+            qid,
+            nickname,
+            password_hash,
+            events: Vec::new(),
+        }
+    }
+}
+```
 
 ---
 
@@ -155,10 +155,10 @@ Within any aggregate struct:
 
 1. `pub id: String,`
 2. Business fields (all `pub`)
-3. Event field if event-carrying (`events: Vec<Event>,` — no visibility keyword)
-4. `/// Private marker ...` + `_m: PrivateMarker,`
+3. Event field if present (`events: Vec<Event>` — **private** for any aggregate
+   that carries one)
 
-Within the constructor `Self { .. }` block, fields are listed in the same order
+All fields are `pub`. Struct literal fields in call sites follow the same order
 as the struct declaration.
 
 ---
@@ -196,10 +196,9 @@ UUID generation uses `Uuid::now_v7()`.
 ## 9. Quick checklist
 
 - [ ] Category correctly identified (Aggr / Form / Update / Patch).
-- [ ] `_m: PrivateMarker` field present with exact `///` comment.
-- [ ] `pub fn new(...)` exists on every struct.
-- [ ] `Form::new()` generates ID; `Update::new()` / `Patch::new()` takes `id: String` as first param.
+- [ ] All fields are `pub`.
+- [ ] No `new()` constructors except for aggregates that carry an `events` field.
+- [ ] `Form` ID generated via `Aggr::generate_id()`; `Update` / `Patch` takes caller-provided `id`.
 - [ ] Constructor field order matches declaration order.
-- [ ] `PrivateMarker` imported from `crate::domain::model::aggregate`.
-- [ ] `From<EntityRow>` conversion calls `new(...)`, never struct literal.
+- [ ] `From<EntityRow>` conversion uses struct literal.
 - [ ] No `Cre` suffix — use `Form`.

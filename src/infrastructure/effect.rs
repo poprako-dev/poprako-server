@@ -10,12 +10,10 @@ use crossfire::{AsyncRx, MAsyncTx, TrySendError};
 use tracing::Level;
 use tracing::instrument;
 
-use crate::api::harness::HarnessBase;
 use crate::domain::effect::EffectSink;
 use crate::domain::model::event::{Event, EventEmit};
+use crate::harness::HarnessBase;
 use crate::infrastructure::effect::user::notify_invitor_handler;
-
-pub type SharedEffectSink = Arc<AsyncEffectSink>;
 
 /// An async effect sink that dispatches domain events to hardcoded handlers
 /// via a background task.
@@ -33,6 +31,8 @@ pub struct AsyncEffectSink {
     shutdown: Mutex<Option<TxOneshot<()>>>,
     done: Mutex<Option<RxOneshot<()>>>,
 }
+
+pub type SharedEffectSink = Arc<AsyncEffectSink>;
 
 impl AsyncEffectSink {
     /// Creates a new `AsyncEffectSink` and spawns a background task.
@@ -95,6 +95,10 @@ impl AsyncEffectSink {
     }
 }
 
+pub fn shared_effect_sink(harn: Arc<HarnessBase>, buffer: usize) -> SharedEffectSink {
+    Arc::new(AsyncEffectSink::new(harn, buffer))
+}
+
 #[async_trait]
 impl EffectSink for AsyncEffectSink {
     async fn handle<E>(&self, src: &mut E)
@@ -108,7 +112,6 @@ impl EffectSink for AsyncEffectSink {
 
         for event in src.pull_events() {
             match self.inlet.try_send(event) {
-                Ok(()) => {}
                 Err(TrySendError::Full(ev)) => {
                     tracing::warn!(
                         event_type = ?ev.event_type(),
@@ -121,6 +124,7 @@ impl EffectSink for AsyncEffectSink {
                     );
                     break;
                 }
+                _ => {}
             }
         }
     }

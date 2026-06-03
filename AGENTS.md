@@ -37,9 +37,13 @@ Key reference files:
 
 ## Project Skills
 
-Project-local skills define coding conventions for specific layers:
+Project-local skills define coding conventions for the project and specific
+layers:
 
-- **`poprako-conventions`** — Infra/query layer (Diesel) conventions
+- **`general-conventions`** — Project-wide Rust coding conventions
+- **`query-domain-spec`** — Domain query trait conventions
+  (`src/domain/query/`)
+- **`query-infra-spec`** — Infra/query layer (Diesel) conventions
   (`src/infrastructure/query/`)
 - **`poprako-aggr-conventions`** — Domain aggregate layer conventions
   (`src/domain/model/aggregate/`)

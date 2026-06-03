@@ -47,7 +47,7 @@ Every trait method must have a leading `///` line. Describe what the method
 ```rust
 pub trait UserQuery {
     /// Returns the user with the given ID, or an expected error if not found.
-    async fn get_by_id(&self, id: &str) -> DomainResl<UserAggr>;
+    async fn get_by_id(&self, id: &str) -> DomainResult<UserAggr>;
 }
 ```
 
@@ -61,7 +61,7 @@ pub trait MemberInvitationQueryMut {
     async fn get_pending_by_invitee_qid(
         &mut self,
         invitee_qid: &str,
-    ) -> DomainResl<MemberInvitation>;
+    ) -> DomainResult<MemberInvitation>;
 }
 ```
 
@@ -77,14 +77,14 @@ by exactly one blank line.
 ```rust
 pub trait UserQuery {
     /// Returns the user with the given ID, or an expected error if not found.
-    async fn get_by_id(&self, id: &str) -> DomainResl<UserAggr>;
+    async fn get_by_id(&self, id: &str) -> DomainResult<UserAggr>;
 
     /// Returns credentials (hashed password) for the given qualified ID.
-    async fn get_credentials_by_qid(&self, qid: &str) -> DomainResl<UserCredential>;
+    async fn get_credentials_by_qid(&self, qid: &str) -> DomainResult<UserCredential>;
 
     /// Creates a new user from the registration form and returns the persisted
     /// aggregate.
-    async fn create(&self, form: UserForm) -> DomainResl<UserAggr>;
+    async fn create(&self, form: UserForm) -> DomainResult<UserAggr>;
 }
 ```
 
@@ -93,8 +93,8 @@ pub trait UserQuery {
 ```rust
 // ❌ No blank line between methods.
 pub trait UserQuery {
-    async fn get_by_id(&self, id: &str) -> DomainResl<UserAggr>;
-    async fn get_credentials_by_qid(&self, qid: &str) -> DomainResl<UserCredential>;
+    async fn get_by_id(&self, id: &str) -> DomainResult<UserAggr>;
+    async fn get_credentials_by_qid(&self, qid: &str) -> DomainResult<UserCredential>;
 }
 ```
 

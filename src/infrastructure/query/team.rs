@@ -13,7 +13,6 @@ use crate::infrastructure::query::RdbQuery;
 use crate::infrastructure::query::entity::team::TeamRow;
 use crate::infrastructure::query::schema::t_team::dsl::*;
 use crate::submit_query;
-use crate::util::err::ErrorTrace as _;
 use crate::util::i18n::trl;
 
 #[instrument(skip(conn), level = Level::DEBUG)]
@@ -24,8 +23,7 @@ pub async fn get_by_id(conn: &mut AsyncPgConnection, id: &str) -> DomainResult<T
         .first(conn)
         .await
         .optional()?
-        .ok_or(DomainError::expected_argument(trl("error-team-not-found")))
-        .trace_debug()?;
+        .ok_or_else(|| DomainError::expected_argument(trl("error-team-not-found")).trace())?;
 
     Ok(row.into())
 }

@@ -15,17 +15,23 @@ CREATE TABLE IF NOT EXISTS "t_member" (
     "f_assigned_admin_at" TIMESTAMPTZ,
     "f_assigned_assistant_at" TIMESTAMPTZ,
 
+    "f_last_active_at" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
     "f_created_at" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     "f_updated_at" TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS "uidx_member_user_team"
+-- For listing team members.
+CREATE INDEX IF NOT EXISTS "uidx_member_team_last_active"
+    ON "t_member" ("f_team_id", "f_last_active_at" DESC);
+-- For exsitence check of a user in a team.
+CREATE UNIQUE INDEX IF NOT EXISTS "uidx_member_user_team_last_active"
     ON "t_member" ("f_user_id", "f_team_id");
+-- For listing teams of a user.
 CREATE INDEX IF NOT EXISTS "idx_member_user_id"
     ON "t_member" ("f_user_id");
-CREATE INDEX IF NOT EXISTS "idx_member_team_id"
-    ON "t_member" ("f_team_id");
 
+-- For listing members with specific role in a team.
 CREATE INDEX IF NOT EXISTS "idx_member_team_raw_provider"
     ON "t_member" ("f_team_id", "f_assigned_raw_provider_at")
     WHERE "f_assigned_raw_provider_at" IS NOT NULL;

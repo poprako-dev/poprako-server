@@ -1,19 +1,24 @@
-use std::ops::Deref;
+use std::borrow::Cow;
+use std::collections::HashMap;
 
-use crate::api::harness::HarnessBase;
-use crate::domain::model::aggregate::system_mail::SystemMailForm;
+use fluent_templates::fluent_bundle::FluentValue;
+use tracing::Level;
+
+use crate::domain::model::aggregate::system_mail::{SystemMailAggr, SystemMailForm};
 use crate::domain::model::event::user::UserSignedUpEvent;
 use crate::domain::query::system_mail::SystemMailQuery;
 use crate::domain::query::team::TeamQuery;
+use crate::util::i18n::{trl, trl_kv};
 
 /// Notifies the invitor via system mail that a new user has registered using
 /// their invitation code.
-pub async fn notify_invitor_handler(harn: &HarnessBase, event: UserSignedUpEvent) {
+#[tracing::instrument(skip(harn, event), level = Level::DEBUG)]
+pub async fn notify_invitor_handler<H>(harn: &H, event: UserSignedUpEvent)
+where
+    H: TeamQuery + SystemMailQuery,
+{
     // Look up the team name for the notification content.
-    let Some(team) = TeamQuery::get_by_id(harn.deref(), &event.team_id)
-        .await
-        .ok()
-    else {
+    let Some(team) = TeamQuery::get_by_id(harn, &event.team_id).await.ok() else {
         tracing::error!(
             team_id = %event.team_id,
             "[notify_invitor_handler] failed to look up team for notification",
@@ -21,22 +26,33 @@ pub async fn notify_invitor_handler(harn: &HarnessBase, event: UserSignedUpEvent
         return;
     };
 
-    let title = "你的邀请码已被使用".to_string();
-    let content = format!(
-        "你的邀请码已被使用，「{}」已加入汉化组「{}」",
-        event.invitee_qid, team.name,
+    let invitor_id = event.invitor_id;
+    let title = trl("mail-invitation-used-title");
+    let content = trl_kv(
+        "mail-invitation-used-body",
+        &HashMap::from([
+            (
+                Cow::Borrowed("invitee_qid"),
+                FluentValue::from(event.invitee_qid.as_str()),
+            ),
+            (
+                Cow::Borrowed("team_name"),
+                FluentValue::from(team.name.as_str()),
+            ),
+        ]),
     );
 
-    let invitor_id = event.invitor_id;
+    let mail = SystemMailForm {
+        id: SystemMailAggr::generate_id(),
+        receiver_id: invitor_id,
+        title,
+        content,
+    };
 
-    let mail = SystemMailForm::new(invitor_id.clone(), title, content);
-
-    if let Err(e) = SystemMailQuery::send(harn.deref(), &mail).await {
+    if let Err(e) = SystemMailQuery::send(harn, &mail).await {
         tracing::error!(
-            error = %e,
-            invitor_id = %invitor_id,
-            invitee_qid = %event.invitee_qid,
-            team_name = %team.name,
+            error = ?e,
+            mail = ?mail,
             "[notify_invitor_handler] failed to send notification mail",
         );
     }
