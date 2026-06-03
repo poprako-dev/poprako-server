@@ -15,11 +15,17 @@ pub fn hash_password(password: &str) -> DomainResult<String> {
         .trace_error()
 }
 
-pub fn sign_token<C: TokenSign>(codec: &C, unsigned_token: &UserToken) -> DomainResult<String> {
+pub fn sign_token<C>(codec: &C, unsigned_token: &UserToken) -> DomainResult<String>
+where
+    C: TokenSign,
+{
     codec.sign(unsigned_token)
 }
 
-pub fn parse_token<C: TokenParse>(codec: &C, signed_token: &str) -> DomainResult<UserToken> {
+pub fn parse_token<C>(codec: &C, signed_token: &str) -> DomainResult<UserToken>
+where
+    C: TokenParse,
+{
     codec.parse(signed_token)
 }
 

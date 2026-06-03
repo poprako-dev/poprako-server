@@ -360,7 +360,7 @@ Use this checklist for every domain PR.
 - Migration updated and schema regenerated.
 - Aggregate has exactly one `*Aggr` read model and uses `PrivateMarker`.
 - Input structs use `Form`, `Update`, or `Patch` suffixes.
-- Domain query traits are split into read-only and transactional traits.
+- Domain query traits are split into non-transactional and transactional traits.
 - Transactional trait registered in `src/domain/query.rs` when needed.
 - Infra entity structs use `Entry`, `Row`, `Aspect`, or `Snapshot` suffixes.
 - Diesel inserts/selects use entity structs, not inline tuples.

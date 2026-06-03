@@ -1,13 +1,11 @@
 use async_trait::async_trait;
+use poprako_macro::forward_ref;
 
 use crate::domain::model::aggregate::user::{UserAggr, UserCredential, UserForm};
 use crate::domain::result::DomainResult;
-use crate::util::ForwardRef;
-
-/// Forwarding marker for [`UserQuery`].
-pub struct UserQueryForward;
 
 /// Persistence contract for [`UserAggr`].
+#[forward_ref]
 #[async_trait]
 pub trait UserQuery {
     /// Returns the user with the given ID, or an expected error if not found.
@@ -15,21 +13,6 @@ pub trait UserQuery {
 
     /// Returns credentials (hashed password) for the given qualified ID.
     async fn get_credentials_by_qid(&self, qid: &str) -> DomainResult<UserCredential>;
-}
-
-#[async_trait]
-impl<T> UserQuery for T
-where
-    T: ForwardRef<UserQueryForward> + Sync,
-    T::Target: UserQuery + Sync,
-{
-    async fn get_by_id(&self, id: &str) -> DomainResult<UserAggr> {
-        self.forward_ref().get_by_id(id).await
-    }
-
-    async fn get_credentials_by_qid(&self, qid: &str) -> DomainResult<UserCredential> {
-        self.forward_ref().get_credentials_by_qid(qid).await
-    }
 }
 
 /// Mutable persistence contract for [`UserAggr`], used **only** inside
