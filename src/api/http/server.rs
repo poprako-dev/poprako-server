@@ -13,7 +13,7 @@ where
         .await
         .with_context(|| format!("[server::serve] failed to bind listener on {:?}", addr))?;
 
-    tracing::info!("[server::serve] listening on {:?}", addr);
+    tracing::info!(addr = ?addr, "[server::serve] listening");
 
     let app = router::new(harn.clone()).with_state(harn);
 

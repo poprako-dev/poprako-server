@@ -45,9 +45,13 @@ list and imports.
 
 ## Import style
 
-Test modules follow `general-conventions` import rules:
+Test modules must use `use super::*` to bring all parent-module items into
+scope. This is the only place where wildcard imports (`*`) are permitted —
+outside of test modules, `use super::*` and any other wildcard import are
+forbidden.
 
-- Import concrete items.
-- Do not use `use super::*`.
-- Do not use wildcard imports except for explicit framework/schema exceptions.
+- Always use `use super::*` at the top of each `#[cfg(test)] mod tests` block.
+- Import additional concrete items below `use super::*` as needed.
+- Do not use wildcard imports except for `use super::*` in tests and explicit
+  framework/schema exceptions.
 - Keep `check-use-braces` satisfied.

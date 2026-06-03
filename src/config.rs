@@ -9,7 +9,7 @@ pub struct AppConfig {
 
 impl AppConfig {
     pub async fn from_default_file() -> anyhow::Result<Self> {
-        let content = tokio::fs::read_to_string("application-config.json")
+        let content = tokio::fs::read_to_string("application_config.json")
             .await
             .with_context(
                 || "[ApplicationConfig::from_default_file] Failed to read application_config.json",

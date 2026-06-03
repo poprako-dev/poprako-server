@@ -50,9 +50,10 @@ is especially important for `DomainError`, `DomainResult`, `UseCaseError`,
 `crate::domain::result::DomainError` in signatures or matches when a normal
 import is possible.
 
-Do not use wildcard imports such as `use super::*` or `use module::*` in tests
-or implementation code, except for framework/schema imports covered by the
-explicit exceptions above.
+Do not use wildcard imports such as `use super::*` or `use module::*` in
+implementation code — the only exception is `use super::*` inside `#[cfg(test)]
+mod tests` blocks (see `test-spec`). Framework/schema imports covered by the
+explicit exceptions above remain allowed.
 
 Curly braces in `use` statements must satisfy the `check-use-braces` skill:
 braces are allowed only at the final leaf segment. `use a::b::{c, d};` is valid;
