@@ -1,11 +1,10 @@
 pub mod api;
 pub mod config;
 pub mod harness;
-pub mod infrastructure;
+pub mod infra;
 
 mod domain;
 mod usecase;
-mod util;
 
 #[cfg(test)]
 mod test_util;

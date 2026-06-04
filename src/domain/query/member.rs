@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::domain::model::aggregate::member::{MemberAggr, MemberForm};
+use crate::domain::model::aggr::member::{MemberAggr, MemberForm};
 use crate::domain::result::DomainResult;
 
 /// Mutable persistence contract for [`MemberAggr`], used **only** inside

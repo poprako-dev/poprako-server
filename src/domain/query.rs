@@ -13,7 +13,7 @@ use crate::domain::query::system_mail::SystemMailQuery;
 use crate::domain::query::team::TeamQuery;
 use crate::domain::query::user::{UserQuery, UserQueryTransactional};
 use crate::domain::result::DomainResult;
-use crate::util::ForwardRef;
+use poprako_util::ForwardRef;
 
 /// Composite read-only query contract for non-transactional use cases.
 pub trait Query: UserQuery + TeamQuery + SystemMailQuery {}

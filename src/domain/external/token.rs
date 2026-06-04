@@ -1,6 +1,6 @@
 use poprako_macro::forward_ref;
 
-use crate::domain::model::aggregate::user::UserToken;
+use crate::domain::model::aggr::user::UserToken;
 use crate::domain::result::DomainResult;
 
 /// Signs unsigned [`UserToken`]s into encoded strings (JWT).

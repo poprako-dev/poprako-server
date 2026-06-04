@@ -5,7 +5,7 @@ pub mod model;
 pub mod query;
 
 pub mod result {
-    use crate::util::rename::StdResult;
+    use poprako_util::rename::StdResult;
 
     #[derive(Debug)]
     pub enum ExpectedVariant {

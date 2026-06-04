@@ -14,10 +14,10 @@ use uuid::Uuid;
 
 use crate::api::http::result::HttpError;
 use crate::domain::external::token::TokenParse;
-use crate::domain::model::aggregate::user::UserToken;
+use crate::domain::model::aggr::user::UserToken;
 use crate::domain::result::ExpectedVariant;
 use crate::harness::Harness;
-use crate::util::i18n::trl;
+use poprako_util::i18n::trl;
 
 /// Name of the cookie that carries the authorization token.
 pub const AUTHORIZATION_COOKIE_NAME: &str = "authorization-token";

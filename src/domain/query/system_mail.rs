@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use poprako_macro::forward_ref;
 
-use crate::domain::model::aggregate::system_mail::SystemMailForm;
+use crate::domain::model::aggr::system_mail::SystemMailForm;
 use crate::domain::result::DomainResult;
 
 /// Persistence contract for system mail delivery.

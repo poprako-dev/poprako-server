@@ -1,3 +1,3 @@
-pub mod aggregate;
+pub mod aggr;
 pub mod event;
 pub mod value;

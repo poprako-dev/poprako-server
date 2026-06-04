@@ -2,8 +2,8 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
 use crate::domain::external::image_pool::ImageGet;
-use crate::domain::model::aggregate::user::UserAggr;
-use crate::util::time::ToUnixMilli as _;
+use crate::domain::model::aggr::user::UserAggr;
+use poprako_util::time::ToUnixMilli as _;
 
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct UserBase {
