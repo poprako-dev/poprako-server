@@ -3,7 +3,7 @@ use axum::extract::State;
 use cookie::Cookie;
 use cookie::SameSite;
 
-use crate::api::http::middleware::AUTHORIZATION_COOKIE_NAME;
+use crate::api::http::auth_token::AUTHORIZATION_COOKIE_NAME;
 use crate::api::http::result::HttpResponse;
 use crate::api::http::result::HttpResult;
 use crate::harness::Harness;

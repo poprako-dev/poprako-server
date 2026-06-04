@@ -1,7 +1,12 @@
+mod auth_token;
+mod middleware;
+
 pub mod handler;
-pub mod middleware;
 pub mod router;
 pub mod server;
+
+pub use middleware::AuthorizeLayer;
+pub use middleware::IdTraceLayer;
 
 mod result {
     use axum::Json;
@@ -80,14 +85,14 @@ mod result {
 
     #[derive(Debug, Serialize, ToSchema)]
     pub struct HttpResponse<T> {
-        /// Only for Into<Response> implementation, not serialized in response body.
+        /// Only for IntoResponse implementation, not serialized in response body.
         #[serde(skip)]
         status: StatusCode,
 
         #[serde(skip)]
         headers: HeaderMap,
 
-        /// Buisness-level status code. Always 0 for successful response, non-zero for error response.
+        /// Business-level status code. Always 0 for successful response, non-zero for error response.
         code: u16,
         #[serde(skip_serializing_if = "Option::is_none")]
         message: Option<String>,
