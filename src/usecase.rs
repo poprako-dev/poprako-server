@@ -1,4 +1,4 @@
-pub mod value_object;
+pub mod data_object;
 
 pub mod user;
 

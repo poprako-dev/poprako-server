@@ -13,8 +13,8 @@ use crate::domain::query::member::MemberQueryTransactional;
 use crate::domain::query::member_invitation::MemberInvitationQueryTransactional;
 use crate::domain::query::user::UserQueryTransactional;
 use crate::domain::result::DomainError;
+use crate::usecase::data_object::user::{SignUpUserParams, SignUpUserReply};
 use crate::usecase::result::UseCaseResult;
-use crate::usecase::value_object::user::{SignUpUserParams, SignUpUserReply};
 use crate::util::i18n::trl;
 
 #[instrument(skip(harn))]
@@ -119,7 +119,7 @@ mod tests {
     use crate::test_util::usecase_is_expected_argument;
     use crate::test_util::usecase_is_expected_conflict;
     use crate::test_util::usecase_is_unrecoverable;
-    use crate::usecase::value_object::user::SignUpUserParams;
+    use crate::usecase::data_object::user::SignUpUserParams;
 
     fn invitation(code: &str, invitee_qid: &str, pending: bool) -> MemberInvitationAggr {
         let mask = u32::from(RoleFlag::Admin) | u32::from(RoleFlag::Translator);

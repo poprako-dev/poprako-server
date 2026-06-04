@@ -8,7 +8,7 @@ use crate::api::http::result::HttpResponse;
 use crate::api::http::result::HttpResult;
 use crate::harness::Harness;
 use crate::usecase;
-use crate::usecase::value_object::user::{SignUpUserParams, SignUpUserReply};
+use crate::usecase::data_object::user::{SignUpUserParams, SignUpUserReply};
 
 pub async fn sign_up_user(
     State(harn): State<Harness>,
