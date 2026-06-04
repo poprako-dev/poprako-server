@@ -1,5 +1,5 @@
 use crate::domain::external::token::{TokenParse, TokenSign};
-use crate::domain::model::aggregate::user::UserToken;
+use crate::domain::model::aggr::user::UserToken;
 use crate::domain::result::{DomainError, DomainResult};
 
 /// Hashes a password with bcrypt using the default cost factor.
@@ -43,7 +43,7 @@ mod tests {
     use super::hash_password;
     use super::parse_token;
     use super::sign_token;
-    use crate::domain::model::aggregate::user::UserToken;
+    use crate::domain::model::aggr::user::UserToken;
     use crate::domain::result::DomainError;
     use crate::domain::result::DomainResult;
 

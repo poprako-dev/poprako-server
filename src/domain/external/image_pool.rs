@@ -42,20 +42,22 @@ mod tests {
     use std::sync::{Arc, Mutex};
 
     use async_trait::async_trait;
+    use poprako_macro::ForwardRefs;
     use url::Url;
 
     use crate::domain::external::image_pool::{
         ImageDelete, ImageDeleteForward, ImageGet, ImageGetForward, ImagePut, ImagePutForward,
     };
     use crate::domain::result::DomainResult;
-    use crate::impl_forward_ref;
 
     #[derive(Clone, Default)]
     struct FakeImagePool {
         calls: Arc<Mutex<Vec<String>>>,
     }
 
+    #[derive(ForwardRefs)]
     struct FakeHarness {
+        #[forward_ref(ImageGet, ImagePut, ImageDelete)]
         image_pool: FakeImagePool,
     }
 
@@ -64,14 +66,6 @@ mod tests {
             image_pool: FakeImagePool::default(),
         }
     }
-
-    impl_forward_ref!(
-        FakeHarness => FakeImagePool,
-        image_pool,
-        ImageGetForward,
-        ImagePutForward,
-        ImageDeleteForward,
-    );
 
     #[async_trait]
     impl ImageGet for FakeImagePool {

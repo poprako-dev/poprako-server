@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use poprako_macro::forward_ref;
 
-use crate::domain::model::aggregate::team::TeamAggr;
+use crate::domain::model::aggr::team::TeamAggr;
 use crate::domain::result::DomainResult;
 
 /// Persistence contract for [`TeamAggr`].

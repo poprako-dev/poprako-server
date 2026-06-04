@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::domain::model::aggregate::member_invitation::MemberInvitationAggr;
+use crate::domain::model::aggr::member_invitation::MemberInvitationAggr;
 use crate::domain::result::DomainResult;
 
 /// Mutable persistence contract for [`MemberInvitationAggr`], used **only**

@@ -2232,6 +2232,7 @@ dependencies = [
  "futures-util",
  "jsonwebtoken",
  "poprako-macro",
+ "poprako-util",
  "serde",
  "serde_json",
  "time",
@@ -2244,6 +2245,15 @@ dependencies = [
  "url",
  "utoipa",
  "uuid",
+]
+
+[[package]]
+name = "poprako-util"
+version = "0.1.0"
+dependencies = [
+ "fluent-templates",
+ "time",
+ "unic-langid",
 ]
 
 [[package]]

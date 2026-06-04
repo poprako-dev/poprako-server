@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
+use poprako_macro::ForwardRefs;
 
 use crate::domain::effect::EffectSink;
 use crate::domain::external::image_pool::{ImageDeleteForward, ImageGetForward, ImagePutForward};
@@ -10,49 +11,43 @@ use crate::domain::query::TransactionalForward;
 use crate::domain::query::system_mail::SystemMailQueryForward;
 use crate::domain::query::team::TeamQueryForward;
 use crate::domain::query::user::UserQueryForward;
-use crate::impl_forward_ref;
-use crate::infrastructure::effect::{SharedEffectSink, shared_effect_sink};
-use crate::infrastructure::external::image_pool::OssImagePool;
-use crate::infrastructure::external::token::JwtIssuer;
-use crate::infrastructure::query::RdbQuery;
+use crate::infra::effect::{SharedEffectSink, shared_effect_sink};
+use crate::infra::external::image_pool::OssImagePool;
+use crate::infra::external::token::JwtIssuer;
+use crate::infra::query::RdbQuery;
 
 // ── HarnessBase: shared core for database access, image pool, and token codec ───
 
+#[derive(ForwardRefs)]
 pub struct HarnessBase {
+    #[forward_ref(Transactional, UserQuery, TeamQuery, SystemMailQuery)]
     rdb_query: RdbQuery,
+
+    #[forward_ref(TokenSign, TokenParse)]
     jwt_issuer: JwtIssuer,
+
+    #[forward_ref(ImageGet, ImagePut, ImageDelete)]
     oss_image_pool: OssImagePool,
 }
 
-impl_forward_ref!(
-    HarnessBase => RdbQuery,
-    rdb_query,
-    TransactionalForward,
-    UserQueryForward,
-    TeamQueryForward,
-    SystemMailQueryForward,
-);
-
-impl_forward_ref!(
-    HarnessBase => JwtIssuer,
-    jwt_issuer,
-    TokenSignForward,
-    TokenParseForward,
-);
-
-impl_forward_ref!(
-    HarnessBase => OssImagePool,
-    oss_image_pool,
-    ImageGetForward,
-    ImagePutForward,
-    ImageDeleteForward,
-);
-
 // ── Harness: public facade with effect sink and forwarding to HarnessBase ──
 
-#[derive(Clone)]
+#[derive(Clone, ForwardRefs)]
 pub struct Harness {
+    #[forward_ref(
+        target = HarnessBase,
+        Transactional,
+        UserQuery,
+        TeamQuery,
+        SystemMailQuery,
+        TokenSign,
+        TokenParse,
+        ImageGet,
+        ImagePut,
+        ImageDelete
+    )]
     base: Arc<HarnessBase>,
+
     effect_sink: SharedEffectSink,
 }
 
@@ -81,40 +76,27 @@ impl EffectSink for Harness {
     }
 }
 
-impl_forward_ref!(
-    Harness => HarnessBase,
-    base,
-    TransactionalForward,
-    UserQueryForward,
-    TeamQueryForward,
-    SystemMailQueryForward,
-    TokenSignForward,
-    TokenParseForward,
-    ImageGetForward,
-    ImagePutForward,
-    ImageDeleteForward,
-);
-
 #[cfg(test)]
 pub mod tests {
     use std::sync::{Arc, Mutex};
 
     use async_trait::async_trait;
+    use poprako_macro::ForwardRefs;
 
     use crate::domain::effect::EffectSink;
     use crate::domain::external::token::TokenParse;
     use crate::domain::external::token::TokenSign;
-    use crate::domain::model::aggregate::member_invitation::MemberInvitationAggr;
-    use crate::domain::model::aggregate::user::UserToken;
+    use crate::domain::model::aggr::member_invitation::MemberInvitationAggr;
+    use crate::domain::model::aggr::user::UserToken;
     use crate::domain::model::event::{Event, EventEmit};
     use crate::domain::query::TransactionalForward;
     use crate::domain::query::user::UserQueryForward;
     use crate::domain::result::{DomainError, DomainResult};
-    use crate::impl_forward_ref;
-    use crate::infrastructure::query::memory_mock::{MemoryMockQuery, MemoryMockState};
+    use crate::infra::query::memory_mock::{MemoryMockQuery, MemoryMockState};
 
-    #[derive(Clone, Default)]
+    #[derive(Clone, Default, ForwardRefs)]
     pub struct TestHarness {
+        #[forward_ref(target = MemoryMockQuery, Transactional, UserQuery)]
         query: Arc<MemoryMockQuery>,
         events: Arc<Mutex<Vec<Event>>>,
         token_fails: bool,
@@ -140,13 +122,6 @@ pub mod tests {
             self.events.lock().unwrap().clone()
         }
     }
-
-    impl_forward_ref!(
-        TestHarness => MemoryMockQuery,
-        query,
-        TransactionalForward,
-        UserQueryForward,
-    );
 
     #[async_trait]
     impl EffectSink for TestHarness {

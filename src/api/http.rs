@@ -14,8 +14,8 @@ mod result {
 
     use crate::domain::result::{DomainError, ExpectedVariant};
     use crate::usecase::result::UseCaseError;
-    use crate::util::i18n::trl;
-    use crate::util::rename::StdResult;
+    use poprako_util::i18n::trl;
+    use poprako_util::rename::StdResult;
 
     #[derive(Debug, Serialize, ToSchema)]
     pub struct HttpError {

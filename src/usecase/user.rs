@@ -4,8 +4,8 @@ use tracing::instrument;
 use crate::domain::compound::user::{hash_password, sign_token};
 use crate::domain::effect::{Effect as _, EffectSink};
 use crate::domain::external::token::TokenIssuer;
-use crate::domain::model::aggregate::member::{MemberAggr, MemberForm};
-use crate::domain::model::aggregate::user::{UserAggr, UserForm, UserToken};
+use crate::domain::model::aggr::member::{MemberAggr, MemberForm};
+use crate::domain::model::aggr::user::{UserAggr, UserForm, UserToken};
 use crate::domain::model::event::user::UserSignedUpEvent;
 use crate::domain::model::event::{Event, EventSink};
 use crate::domain::query::Transactional;
@@ -15,7 +15,7 @@ use crate::domain::query::user::UserQueryTransactional;
 use crate::domain::result::DomainError;
 use crate::usecase::data_object::user::{SignUpUserParams, SignUpUserReply};
 use crate::usecase::result::UseCaseResult;
-use crate::util::i18n::trl;
+use poprako_util::i18n::trl;
 
 #[instrument(skip(harn))]
 pub async fn sign_up_user<H>(harn: &H, params: SignUpUserParams) -> UseCaseResult<SignUpUserReply>
@@ -112,7 +112,7 @@ mod tests {
     use time::OffsetDateTime;
 
     use super::sign_up_user;
-    use crate::domain::model::aggregate::member_invitation::MemberInvitationAggr;
+    use crate::domain::model::aggr::member_invitation::MemberInvitationAggr;
     use crate::domain::model::event::Event;
     use crate::domain::model::value::role::{RoleFlag, RoleMask};
     use crate::harness::tests::TestHarness;
