@@ -26,6 +26,8 @@ pub struct MemberAggr {
     pub assigned_admin_at: Option<OffsetDateTime>,
     pub assigned_assistant_at: Option<OffsetDateTime>,
 
+    pub user_last_active_at: OffsetDateTime,
+
     pub created_at: OffsetDateTime,
     pub updated_at: OffsetDateTime,
 }

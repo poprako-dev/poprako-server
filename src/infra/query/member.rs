@@ -33,6 +33,7 @@ pub async fn create(conn: &mut AsyncPgConnection, form: &MemberForm) -> DomainRe
         f_assigned_publisher_at: roles.has_role(RoleFlag::Publisher).then_some(now),
         f_assigned_admin_at: roles.has_role(RoleFlag::Admin).then_some(now),
         f_assigned_assistant_at: roles.has_role(RoleFlag::Assistant).then_some(now),
+        f_user_last_active_at: now,
         f_created_at: now,
         f_updated_at: now,
     };
@@ -68,6 +69,22 @@ pub async fn update_user_nickname(
     Ok(())
 }
 
+pub async fn touch_last_active(
+    conn: &mut AsyncPgConnection,
+    user_id: &str,
+) -> DomainResult<()> {
+    let now = OffsetDateTime::now_utc();
+
+    let changes = MemberAspect::new(now).user_last_active_at(now);
+
+    diesel::update(t_member.filter(f_user_id.eq(user_id)))
+        .set(&changes)
+        .execute(conn)
+        .await?;
+
+    Ok(())
+}
+
 // ── impls ──────────────────────────────────────────────────────────────────
 
 #[async_trait]
@@ -78,5 +95,9 @@ impl<'c> MemberQueryTransactional for RdbQueryTransactional<'c> {
 
     async fn update_user_nickname(&mut self, user_id: &str, nickname: &str) -> DomainResult<()> {
         update_user_nickname(self.conn, user_id, nickname).await
+    }
+
+    async fn touch_last_active(&mut self, user_id: &str) -> DomainResult<()> {
+        touch_last_active(self.conn, user_id).await
     }
 }

@@ -20,8 +20,6 @@ pub trait UserQuery {
     /// Marks the user's avatar as uploaded.
     async fn mark_avatar_uploaded(&self, id: &str) -> DomainResult<()>;
 
-    /// Updates the user's last active timestamp.
-    async fn touch_last_active(&self, id: &str) -> DomainResult<()>;
 }
 
 /// Mutable persistence contract for [`UserAggr`], used **only** inside
@@ -35,4 +33,7 @@ pub trait UserQueryTransactional {
 
     /// Updates user profile fields via PUT semantics inside a transaction.
     async fn update_info(&mut self, input: &UserInfoUpdate) -> DomainResult<UserAggr>;
+
+    /// Updates the user's last active timestamp inside a transaction.
+    async fn touch_last_active(&mut self, id: &str) -> DomainResult<()>;
 }

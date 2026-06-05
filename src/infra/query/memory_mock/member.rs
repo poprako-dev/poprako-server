@@ -45,6 +45,7 @@ impl MemberQueryTransactional for MemoryMockQueryTransactional {
             assigned_publisher_at: roles.has_role(RoleFlag::Publisher).then_some(now),
             assigned_admin_at: roles.has_role(RoleFlag::Admin).then_some(now),
             assigned_assistant_at: roles.has_role(RoleFlag::Assistant).then_some(now),
+            user_last_active_at: now,
             created_at: now,
             updated_at: now,
         };
@@ -60,6 +61,19 @@ impl MemberQueryTransactional for MemoryMockQueryTransactional {
         for member in state.members.iter_mut() {
             if member.user_id == user_id {
                 member.user_nickname = nickname.to_string();
+            }
+        }
+
+        Ok(())
+    }
+
+    async fn touch_last_active(&mut self, user_id: &str) -> DomainResult<()> {
+        let mut state = self.state.lock().unwrap();
+        let now = OffsetDateTime::now_utc();
+
+        for member in state.members.iter_mut() {
+            if member.user_id == user_id {
+                member.user_last_active_at = now;
             }
         }
 

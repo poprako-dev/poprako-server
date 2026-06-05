@@ -122,6 +122,8 @@ impl Transactional for MemoryMockQuery {
 mod tests {
     // transaction_scoped_restores_snapshot_on_error(Transactional::transaction_scoped)(negative): transaction errors should restore the pre-transaction snapshot.
 
+    use futures_util::FutureExt as _;
+
     use crate::domain::model::aggr::user::{UserAggr, UserForm};
     use crate::domain::query::Transactional;
     use crate::domain::query::user::UserQueryTransactional;
@@ -134,7 +136,7 @@ mod tests {
 
         let err = mock
             .transaction_scoped(|txn| {
-                Box::pin(async move {
+                async move {
                     let form = UserForm::new(
                         UserAggr::generate_id(),
                         "qid-1".into(),
@@ -143,7 +145,8 @@ mod tests {
                     );
                     UserQueryTransactional::create(txn, &form).await?;
                     Err::<(), DomainError>(DomainError::unrecoverable("rollback".into()))
-                })
+                }
+                .boxed()
             })
             .await
             .err()

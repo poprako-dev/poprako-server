@@ -125,6 +125,56 @@ pub(crate) fn helper() {}
 pub(super) struct Internal {}
 ```
 
+## Trait method calls: UFCS required
+
+Every trait method called on a harness or harness-like reference must use
+UFCS (Universal Function Call Syntax) — `Trait::method(instance, args)` — never
+dot syntax (`instance.method(args)`).
+
+**Rationale**: Harnesses in this project use `ForwardRefs` to delegate trait
+methods to inner implementations. When the binding is invisible at the call
+site, dot syntax hides which trait a method belongs to, making review harder
+and enabling accidental resolution to the wrong trait.
+
+**Applies to:**
+
+- The `harn` parameter in usecase functions.
+- Any variable typed as a harness (`Harness`, `HarnessBase`, `TestHarness`,
+  `FakeHarness`, etc.) in any source file — production code, test code,
+  examples, and benchmarks.
+- The `query` parameter inside `transaction_scoped` closures (which is
+  a `MemoryMockQueryTransactional` or `RdbQueryTransactional`).
+
+```rust
+// ✅ Correct — UFCS everywhere
+UserQuery::get_by_id(harn, id).await?;
+ImagePut::put_signed(harn, &key).await?;
+Transactional::transaction_scoped(harn, move |query| {
+    async move {
+        UserQueryTransactional::create(query, &form).await?;
+        Ok(())
+    }.boxed()
+}).await?;
+ImageGet::get_signed(&harn, "page-1.png").await.unwrap();
+
+// ❌ Wrong — dot syntax
+harn.get_by_id(id).await?;
+harn.put_signed(&key).await?;
+harn.transaction_scoped(move |query| { ... }).await?;
+harn.get_signed("page-1.png").await.unwrap();
+```
+
+**Exception**: Inherent methods (defined in `impl Harness` / `impl TestHarness`
+blocks) may use dot syntax. These are not trait methods, so UFCS does not
+apply:
+
+```rust
+harn.seed_user(user, credential);   // ✅ inherent method
+harn.snapshot();                      // ✅ inherent method
+```
+
+> For detailed usecase-layer examples, see `implement-fullchain-spec` §6.1.
+
 ## Field visibility
 
 Types that carry behavior through `impl` blocks keep their fields private.

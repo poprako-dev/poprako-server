@@ -50,6 +50,7 @@ mod tests {
     // mark_pending_as_used_then_not_found(MemberInvitationQueryTransactional::mark_pending_as_used)(positive): marking an invitation used should make it unavailable by code.
     // mark_pending_as_used_nonexistent_returns_error(MemberInvitationQueryTransactional::mark_pending_as_used)(negative): marking an unknown invitation should return an expected argument error.
 
+    use futures_util::FutureExt as _;
     use time::OffsetDateTime;
 
     use crate::domain::model::aggr::member_invitation::MemberInvitationAggr;
@@ -83,14 +84,15 @@ mod tests {
         mock.seed_member_invitation(make_invitation("inv-1", "CODE123", true));
 
         mock.transaction_scoped(|txn| {
-            Box::pin(async move {
+            async move {
                 let inv = MemberInvitationQueryTransactional::get_by_code_ex(txn, "CODE123")
                     .await
                     .unwrap();
                 assert_eq!(inv.id, "inv-1");
                 assert!(inv.pending);
                 Ok(())
-            })
+            }
+            .boxed()
         })
         .await
         .unwrap();
@@ -102,9 +104,10 @@ mod tests {
 
         let err = mock
             .transaction_scoped(|txn| {
-                Box::pin(async move {
+                async move {
                     MemberInvitationQueryTransactional::get_by_code_ex(txn, "NOPE").await
-                })
+                }
+                .boxed()
             })
             .await
             .err()
@@ -119,21 +122,23 @@ mod tests {
         mock.seed_member_invitation(make_invitation("inv-1", "CODE123", true));
 
         mock.transaction_scoped(|txn| {
-            Box::pin(async move {
+            async move {
                 MemberInvitationQueryTransactional::mark_pending_as_used(txn, "inv-1")
                     .await
                     .unwrap();
                 Ok(())
-            })
+            }
+            .boxed()
         })
         .await
         .unwrap();
 
         let err = mock
             .transaction_scoped(|txn| {
-                Box::pin(async move {
+                async move {
                     MemberInvitationQueryTransactional::get_by_code_ex(txn, "CODE123").await
-                })
+                }
+                .boxed()
             })
             .await
             .err()
@@ -148,9 +153,10 @@ mod tests {
 
         let err = mock
             .transaction_scoped(|txn| {
-                Box::pin(async move {
+                async move {
                     MemberInvitationQueryTransactional::mark_pending_as_used(txn, "nope").await
-                })
+                }
+                .boxed()
             })
             .await
             .err()

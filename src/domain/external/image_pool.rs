@@ -95,7 +95,7 @@ mod tests {
     async fn get_signed_forwards_to_target() {
         let harn = harn();
 
-        let url = harn.get_signed("page-1.png").await.unwrap();
+        let url = ImageGet::get_signed(&harn, "page-1.png").await.unwrap();
 
         assert_eq!(url.as_str(), "https://example.test/get");
         assert_eq!(
@@ -108,7 +108,7 @@ mod tests {
     async fn put_signed_forwards_to_target() {
         let harn = harn();
 
-        let url = harn.put_signed("page-2.png").await.unwrap();
+        let url = ImagePut::put_signed(&harn, "page-2.png").await.unwrap();
 
         assert_eq!(url.as_str(), "https://example.test/put");
         assert_eq!(
@@ -121,7 +121,7 @@ mod tests {
     async fn delete_batch_forwards_to_target() {
         let harn = harn();
 
-        harn.delete_batch(&["page-1.png", "page-2.png"])
+        ImageDelete::delete_batch(&harn, &["page-1.png", "page-2.png"])
             .await
             .unwrap();
 

@@ -153,16 +153,28 @@ pub async fn mark_avatar_uploaded(conn: &mut AsyncPgConnection, id: &str) -> Dom
 pub async fn touch_last_active(conn: &mut AsyncPgConnection, id: &str) -> DomainResult<()> {
     let now = OffsetDateTime::now_utc();
 
+    // Lock the user row to serialise concurrent touch/creation operations
+    // for this user.  This prevents phantom reads on the member table:
+    // any concurrent member INSERT that references the user must also
+    // acquire this row lock first.
+    let exists = t_user
+        .filter(f_id.eq(id))
+        .select(f_id)
+        .for_update()
+        .first::<String>(conn)
+        .await
+        .optional()?;
+
+    if exists.is_none() {
+        return Err(DomainError::expected_argument(trl("error-user-not-found")).trace());
+    }
+
     let changes = UserAspect::new(now).last_active_at(now);
 
-    let affected = diesel::update(t_user.filter(f_id.eq(id)))
+    diesel::update(t_user.filter(f_id.eq(id)))
         .set(&changes)
         .execute(conn)
         .await?;
-
-    if affected == 0 {
-        return Err(DomainError::expected_argument(trl("error-user-not-found")).trace());
-    }
 
     Ok(())
 }
@@ -191,10 +203,6 @@ impl UserQuery for RdbQuery {
         submit_query!(self.pool, mark_avatar_uploaded, id)
     }
 
-    #[instrument(skip(self), level = Level::DEBUG)]
-    async fn touch_last_active(&self, id: &str) -> DomainResult<()> {
-        submit_query!(self.pool, touch_last_active, id)
-    }
 }
 
 #[async_trait]
@@ -205,5 +213,10 @@ impl<'c> UserQueryTransactional for RdbQueryTransactional<'c> {
 
     async fn update_info(&mut self, input: &UserInfoUpdate) -> DomainResult<UserAggr> {
         update_user(self.conn, input).await
+    }
+
+    #[instrument(skip(self), level = Level::DEBUG)]
+    async fn touch_last_active(&mut self, id: &str) -> DomainResult<()> {
+        touch_last_active(self.conn, id).await
     }
 }

@@ -15,17 +15,17 @@ CREATE TABLE IF NOT EXISTS "t_member" (
     "f_assigned_admin_at" TIMESTAMPTZ,
     "f_assigned_assistant_at" TIMESTAMPTZ,
 
-    "f_last_active_at" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    "f_user_last_active_at" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
     "f_created_at" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     "f_updated_at" TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- For listing team members.
-CREATE INDEX IF NOT EXISTS "uidx_member_team_last_active"
-    ON "t_member" ("f_team_id", "f_last_active_at" DESC);
+CREATE INDEX IF NOT EXISTS "idx_member_team_last_active"
+    ON "t_member" ("f_team_id", "f_user_last_active_at" DESC);
 -- For exsitence check of a user in a team.
-CREATE UNIQUE INDEX IF NOT EXISTS "uidx_member_user_team_last_active"
+CREATE UNIQUE INDEX IF NOT EXISTS "uidx_member_user_team"
     ON "t_member" ("f_user_id", "f_team_id");
 -- For listing teams of a user.
 CREATE INDEX IF NOT EXISTS "idx_member_user_id"
@@ -33,29 +33,29 @@ CREATE INDEX IF NOT EXISTS "idx_member_user_id"
 
 -- For listing members with specific role in a team.
 CREATE INDEX IF NOT EXISTS "idx_member_team_raw_provider"
-    ON "t_member" ("f_team_id", "f_assigned_raw_provider_at")
+    ON "t_member" ("f_team_id")
     WHERE "f_assigned_raw_provider_at" IS NOT NULL;
 CREATE INDEX IF NOT EXISTS "idx_member_team_translator"
-    ON "t_member" ("f_team_id", "f_assigned_translator_at")
+    ON "t_member" ("f_team_id")
     WHERE "f_assigned_translator_at" IS NOT NULL;
 CREATE INDEX IF NOT EXISTS "idx_member_team_proofreader"
-    ON "t_member" ("f_team_id", "f_assigned_proofreader_at")
+    ON "t_member" ("f_team_id")
     WHERE "f_assigned_proofreader_at" IS NOT NULL;
 CREATE INDEX IF NOT EXISTS "idx_member_team_typesetter"
-    ON "t_member" ("f_team_id", "f_assigned_typesetter_at")
+    ON "t_member" ("f_team_id")
     WHERE "f_assigned_typesetter_at" IS NOT NULL;
 CREATE INDEX IF NOT EXISTS "idx_member_team_redrawer"
-    ON "t_member" ("f_team_id", "f_assigned_redrawer_at")
+    ON "t_member" ("f_team_id")
     WHERE "f_assigned_redrawer_at" IS NOT NULL;
 CREATE INDEX IF NOT EXISTS "idx_member_team_reviewer"
-    ON "t_member" ("f_team_id", "f_assigned_reviewer_at")
+    ON "t_member" ("f_team_id")
     WHERE "f_assigned_reviewer_at" IS NOT NULL;
 CREATE INDEX IF NOT EXISTS "idx_member_team_publisher"
-    ON "t_member" ("f_team_id", "f_assigned_publisher_at")
+    ON "t_member" ("f_team_id")
     WHERE "f_assigned_publisher_at" IS NOT NULL;
 CREATE INDEX IF NOT EXISTS "idx_member_team_admin"
-    ON "t_member" ("f_team_id", "f_assigned_admin_at")
+    ON "t_member" ("f_team_id")
     WHERE "f_assigned_admin_at" IS NOT NULL;
 CREATE INDEX IF NOT EXISTS "idx_member_team_assistant"
-    ON "t_member" ("f_team_id", "f_assigned_assistant_at")
+    ON "t_member" ("f_team_id")
     WHERE "f_assigned_assistant_at" IS NOT NULL;

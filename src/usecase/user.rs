@@ -210,9 +210,22 @@ where
 #[instrument(skip(harn))]
 pub async fn touch_last_active<H>(harn: &H, id: &str) -> UseCaseResult<()>
 where
-    H: Query + Send + Sync,
+    H: Clone + Transactional + Send + Sync,
 {
-    UserQuery::touch_last_active(harn, id).await?;
+    let owned_id = id.to_owned();
+
+    Transactional::transaction_scoped(harn, move |query| {
+        let id = owned_id.clone();
+
+        async move {
+            UserQueryTransactional::touch_last_active(query, &id).await?;
+            MemberQueryTransactional::touch_last_active(query, &id).await?;
+
+            Ok(())
+        }
+        .boxed()
+    })
+    .await?;
 
     Ok(())
 }
