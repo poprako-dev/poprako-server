@@ -82,21 +82,25 @@ pub mod tests {
 
     use async_trait::async_trait;
     use poprako_macro::ForwardRefs;
+    use url::Url;
 
     use crate::domain::effect::EffectSink;
+    use crate::domain::external::image_pool::{ImageGet, ImagePut};
     use crate::domain::external::token::TokenParse;
     use crate::domain::external::token::TokenSign;
     use crate::domain::model::aggr::member_invitation::MemberInvitationAggr;
-    use crate::domain::model::aggr::user::UserToken;
+    use crate::domain::model::aggr::user::{UserAggr, UserCredential, UserToken};
     use crate::domain::model::event::{Event, EventEmit};
     use crate::domain::query::TransactionalForward;
+    use crate::domain::query::system_mail::SystemMailQueryForward;
+    use crate::domain::query::team::TeamQueryForward;
     use crate::domain::query::user::UserQueryForward;
     use crate::domain::result::{DomainError, DomainResult};
     use crate::infra::query::memory_mock::{MemoryMockQuery, MemoryMockState};
 
     #[derive(Clone, Default, ForwardRefs)]
     pub struct TestHarness {
-        #[forward_ref(target = MemoryMockQuery, Transactional, UserQuery)]
+        #[forward_ref(target = MemoryMockQuery, Transactional, UserQuery, TeamQuery, SystemMailQuery)]
         query: Arc<MemoryMockQuery>,
         events: Arc<Mutex<Vec<Event>>>,
         token_fails: bool,
@@ -112,6 +116,10 @@ pub mod tests {
 
         pub fn seed_invitation(&self, invitation: MemberInvitationAggr) {
             self.query.seed_member_invitation(invitation);
+        }
+
+        pub fn seed_user(&self, user: UserAggr, credential: UserCredential) {
+            self.query.seed_user(user, credential);
         }
 
         pub fn snapshot(&self) -> MemoryMockState {
@@ -152,6 +160,20 @@ pub mod tests {
             Ok(UserToken {
                 user_id: signed_token.replace("token:", ""),
             })
+        }
+    }
+
+    #[async_trait]
+    impl ImageGet for TestHarness {
+        async fn get_signed(&self, key: &str) -> DomainResult<Url> {
+            Ok(Url::parse(&format!("https://test.test/get/{}", key)).unwrap())
+        }
+    }
+
+    #[async_trait]
+    impl ImagePut for TestHarness {
+        async fn put_signed(&self, key: &str) -> DomainResult<Url> {
+            Ok(Url::parse(&format!("https://test.test/put/{}", key)).unwrap())
         }
     }
 }

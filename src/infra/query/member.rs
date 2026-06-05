@@ -10,6 +10,7 @@ use crate::domain::model::value::role::RoleFlag;
 use crate::domain::query::member::MemberQueryTransactional;
 use crate::domain::result::DomainResult;
 use crate::infra::query::RdbQueryTransactional;
+use crate::infra::query::entity::member::MemberAspect;
 use crate::infra::query::entity::member::MemberEntry;
 use crate::infra::query::entity::member::MemberRow;
 use crate::infra::query::schema::t_member::dsl::*;
@@ -50,11 +51,32 @@ pub async fn create(conn: &mut AsyncPgConnection, form: &MemberForm) -> DomainRe
     Ok(row.into())
 }
 
+pub async fn update_user_nickname(
+    conn: &mut AsyncPgConnection,
+    user_id: &str,
+    nickname: &str,
+) -> DomainResult<()> {
+    let now = OffsetDateTime::now_utc();
+
+    let changes = MemberAspect::new(now).user_nickname(nickname);
+
+    diesel::update(t_member.filter(f_user_id.eq(user_id)))
+        .set(&changes)
+        .execute(conn)
+        .await?;
+
+    Ok(())
+}
+
 // ── impls ──────────────────────────────────────────────────────────────────
 
 #[async_trait]
 impl<'c> MemberQueryTransactional for RdbQueryTransactional<'c> {
     async fn create(&mut self, form: &MemberForm) -> DomainResult<MemberAggr> {
         create(self.conn, form).await
+    }
+
+    async fn update_user_nickname(&mut self, user_id: &str, nickname: &str) -> DomainResult<()> {
+        update_user_nickname(self.conn, user_id, nickname).await
     }
 }

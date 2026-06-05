@@ -48,6 +48,34 @@ pub struct MemberEntry<'a> {
     pub f_updated_at: OffsetDateTime,
 }
 
+// ── Changeset (AsChangeset) ────────────────────────────────────────────────
+
+/// Changeset for updating member fields via partial updates.
+///
+/// Only `Some` fields are included in the generated `SET` clause;
+/// `None` fields are omitted.
+#[derive(AsChangeset)]
+#[diesel(table_name = schema::t_member)]
+pub struct MemberAspect<'a> {
+    pub f_user_nickname: Option<&'a str>,
+    pub f_updated_at: OffsetDateTime,
+}
+
+impl<'a> MemberAspect<'a> {
+    /// Creates a new changeset with all optional fields set to `None`.
+    pub fn new(updated_at: OffsetDateTime) -> Self {
+        Self {
+            f_user_nickname: None,
+            f_updated_at: updated_at,
+        }
+    }
+
+    pub fn user_nickname(mut self, val: &'a str) -> Self {
+        self.f_user_nickname = Some(val);
+        self
+    }
+}
+
 // ── Conversions ────────────────────────────────────────────────────────────
 
 impl From<MemberRow> for MemberAggr {
@@ -55,6 +83,7 @@ impl From<MemberRow> for MemberAggr {
         MemberAggr {
             id: v.f_id,
             user_id: v.f_user_id,
+            user_nickname: v.f_user_nickname,
             user: None,
             team_id: v.f_team_id,
             team: None,

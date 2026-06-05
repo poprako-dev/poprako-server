@@ -8,12 +8,12 @@ use crate::api::http::result::HttpResponse;
 use crate::api::http::result::HttpResult;
 use crate::harness::Harness;
 use crate::usecase;
-use crate::usecase::data_object::user::{SignUpUserParams, SignUpUserReply};
+use crate::usecase::data_object::user::{SignUpParams, SignUpReply};
 
 pub async fn sign_up_user(
     State(harn): State<Harness>,
-    Json(params): Json<SignUpUserParams>,
-) -> HttpResult<SignUpUserReply> {
+    Json(params): Json<SignUpParams>,
+) -> HttpResult<SignUpReply> {
     let reply = usecase::user::sign_up_user(&harn, params).await?;
 
     let cookie = Cookie::build((AUTHORIZATION_COOKIE_NAME, format!("Bearer {}", reply.token)))

@@ -28,8 +28,8 @@ impl UserAggr {
         format!("user-{}", Uuid::now_v7())
     }
 
-    pub fn generate_avatar_key(&self) -> String {
-        format!("user_avatar/{}", self.id,)
+    pub fn generate_avatar_key(user_id: &str) -> String {
+        format!("user_avatar/{}", user_id)
     }
 }
 
@@ -48,7 +48,7 @@ pub struct UserToken {
 
 #[cfg_attr(test, derive(Clone))]
 pub struct UserCredential {
-    pub qid: String,
+    pub user_id: String,
     pub password_hash: String,
 }
 
@@ -94,19 +94,14 @@ impl EventEmit for UserForm {
     }
 }
 
-/// Input aggregate for updating user info via PUT.
-// TODO: No password update support for now.
+/// Input aggregate for updating user profile fields via PUT.
+///
+/// Does NOT include password — password updates use a separate flow.
 pub struct UserInfoUpdate {
     pub id: String,
 
     pub qid: String,
     pub nickname: String,
-}
-
-pub struct UserPasswordUpdate {
-    pub id: String,
-
-    pub password_hash: String,
 }
 
 #[cfg(test)]
@@ -129,7 +124,7 @@ mod tests {
     fn verify_password_match() {
         let hash = bcrypt::hash("secret123", bcrypt::DEFAULT_COST).unwrap();
         let credential = UserCredential {
-            qid: "qid-1".into(),
+            user_id: "user-1".into(),
             password_hash: hash,
         };
         assert!(credential.verify_password("secret123"));
@@ -139,7 +134,7 @@ mod tests {
     fn verify_password_mismatch() {
         let hash = bcrypt::hash("secret123", bcrypt::DEFAULT_COST).unwrap();
         let credential = UserCredential {
-            qid: "qid-1".into(),
+            user_id: "user-1".into(),
             password_hash: hash,
         };
         assert!(!credential.verify_password("wrong"));
@@ -148,7 +143,7 @@ mod tests {
     #[test]
     fn verify_password_corrupted_hash_returns_false() {
         let credential = UserCredential {
-            qid: "qid-1".into(),
+            user_id: "user-1".into(),
             password_hash: "not-a-valid-bcrypt-hash".into(),
         };
         assert!(!credential.verify_password("anything"));

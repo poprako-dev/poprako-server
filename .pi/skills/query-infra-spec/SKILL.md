@@ -56,6 +56,120 @@ pub struct NewUser { ... }       // no: ad-hoc name for insert
 pub struct UserChange { ... }    // no: use Aspect
 ```
 
+## Rationale: Why three entity structs per table
+
+Diesel's derive macros impose mutually incompatible type requirements on the
+same table column across different operations:
+
+| Entity | Operation | Field type | Diesel derive |
+|--------|-----------|------------|---------------|
+| `*Row` | SELECT | `String` (owned) | `Queryable`, `Selectable` |
+| `*Entry` | INSERT | `&'a str` (borrowed) | `Insertable` |
+| `*Aspect` | UPDATE … SET | `Option<&'a str>` (optional) | `AsChangeset` |
+
+- `Queryable` requires owned types (`String`) because it deserializes rows
+  into the struct.
+- `Insertable` accepts borrowed references (`&str`) for zero-copy insertion.
+- `AsChangeset` uses `Option<T>` to express "set only this column"; `None`
+  fields are omitted from the generated `SET` clause.
+
+A single struct cannot simultaneously derive `Queryable` (requires `String`)
+and `Insertable` (requires `&'a str`), and neither can carry `Option<T>` for
+the `AsChangeset` partial-update semantics. These three forms are therefore
+**mandatory** — not a design choice.
+
+Moreover, `*Row` and `*Entry` frequently diverge in which columns they
+include:
+- Columns with database-side defaults (e.g., `f_created_at` with `DEFAULT`)
+  belong only in `*Row`.
+- Write-only columns (e.g., `f_password_hash`) belong only in `*Entry` and
+  are never selected back into memory.
+- Read-only computed columns belong only in `*Row`.
+
+When a table currently has identical fields between `*Row` and `*Entry`,
+keep both structs rather than merging them — schema evolution will inevitably
+cause divergence.
+
+## Aspect struct construction: `new()` + builder
+
+Every `*Aspect` struct that contains at least one `Option` field **MUST**
+provide:
+
+- A `pub fn new(updated_at: OffsetDateTime) -> Self` constructor that
+  initializes all `Option` fields to `None`.
+- One builder method per `Option` field, named after the field without the
+  `f_` prefix, taking the inner (unwrapped) type and returning `Self`.
+
+**Do:**
+
+```rust
+// entity/user.rs
+#[derive(AsChangeset)]
+#[diesel(table_name = schema::t_user)]
+pub struct UserAspect<'a> {
+    pub f_nickname: Option<&'a str>,
+    pub f_qid: Option<&'a str>,
+    pub f_updated_at: OffsetDateTime,
+}
+
+impl<'a> UserAspect<'a> {
+    /// Creates a new changeset with all optional fields set to `None`.
+    pub fn new(updated_at: OffsetDateTime) -> Self {
+        Self {
+            f_nickname: None,
+            f_qid: None,
+            f_updated_at: updated_at,
+        }
+    }
+
+    pub fn nickname(mut self, val: &'a str) -> Self {
+        self.f_nickname = Some(val);
+        self
+    }
+
+    pub fn qid(mut self, val: &'a str) -> Self {
+        self.f_qid = Some(val);
+        self
+    }
+}
+```
+
+At every call site, **always** construct the changeset via the constructor +
+builder chain. Struct literals for `*Aspect` are **FORBIDDEN** when a
+constructor exists.
+
+**Do:**
+
+```rust
+// user.rs — update_user
+let changes = UserAspect::new(now).nickname(&input.nickname).qid(&input.qid);
+
+// user.rs — prefill_avatar_key (single field)
+let changes = UserAspect::new(now).avatar_key(key);
+
+// member.rs — update_user_nickname
+let changes = MemberAspect::new(now).user_nickname(nickname);
+```
+
+**Do NOT:**
+
+```rust
+// Struct literal — all optional fields must be spelled out, relevant fields
+// are buried among None lines.
+let changes = UserAspect {
+    f_nickname: Some(&input.nickname),
+    f_qid: Some(&input.qid),
+    f_avatar_key: None,
+    f_avatar_uploaded: None,
+    f_last_active_at: None,
+    f_updated_at: now,
+};
+```
+
+When an Aspect has no `Option` fields (e.g., `MemberInvitationAspect` where
+every field is mandatory), the builder pattern is unnecessary and the struct
+literal form is acceptable.
+
 ## Struct-only insertion and querying
 
 All `INSERT` and `SELECT` operations **MUST** use the corresponding entity
