@@ -64,19 +64,6 @@ impl UserQuery for MemoryMockQuery {
         Ok(())
     }
 
-    async fn touch_last_active(&self, id: &str) -> DomainResult<()> {
-        let mut state = self.state.lock().unwrap();
-
-        let user =
-            state.users.iter_mut().find(|u| u.id == id).ok_or_else(|| {
-                DomainError::expected_argument(trl("error-user-not-found")).trace()
-            })?;
-
-        user.last_active_at = OffsetDateTime::now_utc();
-        user.updated_at = OffsetDateTime::now_utc();
-
-        Ok(())
-    }
 }
 
 // ── QueryTransactional impls ───────────────────────────────────────────────
@@ -136,6 +123,20 @@ impl UserQueryTransactional for MemoryMockQueryTransactional {
         user.updated_at = OffsetDateTime::now_utc();
 
         Ok(user.clone())
+    }
+
+    async fn touch_last_active(&mut self, id: &str) -> DomainResult<()> {
+        let mut state = self.state.lock().unwrap();
+
+        let user =
+            state.users.iter_mut().find(|u| u.id == id).ok_or_else(|| {
+                DomainError::expected_argument(trl("error-user-not-found")).trace()
+            })?;
+
+        user.last_active_at = OffsetDateTime::now_utc();
+        user.updated_at = OffsetDateTime::now_utc();
+
+        Ok(())
     }
 }
 
@@ -469,7 +470,14 @@ mod tests {
 
         tokio::time::sleep(std::time::Duration::from_millis(5)).await;
 
-        UserQuery::touch_last_active(&mock, "user-1").await.unwrap();
+        mock.transaction_scoped(|txn| {
+            async move {
+                UserQueryTransactional::touch_last_active(txn, "user-1").await
+            }
+            .boxed()
+        })
+        .await
+        .unwrap();
 
         let after = UserQuery::get_by_id(&mock, "user-1")
             .await
@@ -482,7 +490,14 @@ mod tests {
     async fn touch_last_active_missing_user_returns_expected_error() {
         let mock = MemoryMockQuery::new();
 
-        let err = UserQuery::touch_last_active(&mock, "nonexistent")
+        let err = mock
+            .transaction_scoped(|txn| {
+                async move {
+                    UserQueryTransactional::touch_last_active(txn, "nonexistent")
+                        .await
+                }
+                .boxed()
+            })
             .await
             .err()
             .unwrap();

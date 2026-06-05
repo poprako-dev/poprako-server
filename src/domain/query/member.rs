@@ -12,4 +12,7 @@ pub trait MemberQueryTransactional {
 
     /// Updates the nickname on all member rows belonging to the given user.
     async fn update_user_nickname(&mut self, user_id: &str, nickname: &str) -> DomainResult<()>;
+
+    /// Updates the last active timestamp on all member rows belonging to the given user.
+    async fn touch_last_active(&mut self, user_id: &str) -> DomainResult<()>;
 }

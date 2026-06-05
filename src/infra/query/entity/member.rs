@@ -22,6 +22,7 @@ pub struct MemberRow {
     pub f_assigned_publisher_at: Option<OffsetDateTime>,
     pub f_assigned_admin_at: Option<OffsetDateTime>,
     pub f_assigned_assistant_at: Option<OffsetDateTime>,
+    pub f_user_last_active_at: OffsetDateTime,
     pub f_created_at: OffsetDateTime,
     pub f_updated_at: OffsetDateTime,
 }
@@ -44,6 +45,7 @@ pub struct MemberEntry<'a> {
     pub f_assigned_publisher_at: Option<OffsetDateTime>,
     pub f_assigned_admin_at: Option<OffsetDateTime>,
     pub f_assigned_assistant_at: Option<OffsetDateTime>,
+    pub f_user_last_active_at: OffsetDateTime,
     pub f_created_at: OffsetDateTime,
     pub f_updated_at: OffsetDateTime,
 }
@@ -58,6 +60,7 @@ pub struct MemberEntry<'a> {
 #[diesel(table_name = schema::t_member)]
 pub struct MemberAspect<'a> {
     pub f_user_nickname: Option<&'a str>,
+    pub f_user_last_active_at: Option<OffsetDateTime>,
     pub f_updated_at: OffsetDateTime,
 }
 
@@ -66,12 +69,20 @@ impl<'a> MemberAspect<'a> {
     pub fn new(updated_at: OffsetDateTime) -> Self {
         Self {
             f_user_nickname: None,
+            f_user_last_active_at: None,
             f_updated_at: updated_at,
         }
     }
 
     pub fn user_nickname(mut self, val: &'a str) -> Self {
         self.f_user_nickname = Some(val);
+        self
+    }
+
+    /// Sets the last active timestamp on member rows.
+    #[allow(dead_code)]
+    pub fn user_last_active_at(mut self, val: OffsetDateTime) -> Self {
+        self.f_user_last_active_at = Some(val);
         self
     }
 }
@@ -96,6 +107,7 @@ impl From<MemberRow> for MemberAggr {
             assigned_publisher_at: v.f_assigned_publisher_at,
             assigned_admin_at: v.f_assigned_admin_at,
             assigned_assistant_at: v.f_assigned_assistant_at,
+            user_last_active_at: v.f_user_last_active_at,
             created_at: v.f_created_at,
             updated_at: v.f_updated_at,
         }
