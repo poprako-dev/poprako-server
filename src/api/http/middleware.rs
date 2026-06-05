@@ -20,9 +20,11 @@ use uuid::Uuid;
 use crate::api::http::auth_token::AUTHORIZATION_BEARER_PREFIX;
 use crate::api::http::auth_token::AUTHORIZATION_COOKIE_NAME;
 use crate::api::http::result::HttpError;
+use crate::domain::compound::user::parse_token;
 use crate::domain::external::token::TokenParse;
 use crate::domain::result::ExpectedVariant;
 use crate::harness::Harness;
+use crate::usecase;
 
 use poprako_util::i18n::trl;
 
@@ -65,13 +67,16 @@ fn authorize(State(harn): State<Harness>, mut request: Request, next: Next) -> S
         async move {
             let raw_token = extract_token(&request);
 
-            let Ok(user_token) = harn.parse(&raw_token) else {
+            let Ok(user_token) = parse_token(&harn, &raw_token) else {
                 return HttpError::expected(
                     &ExpectedVariant::Authentication,
                     &trl("error-unauthorized"),
                 )
                 .into_response();
             };
+
+            // Update last active timestamp on every authenticated request.
+            let _ = usecase::user::touch_last_active(&harn, &user_token.user_id).await;
 
             request.extensions_mut().insert(user_token);
 

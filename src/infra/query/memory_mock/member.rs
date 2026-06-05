@@ -32,6 +32,7 @@ impl MemberQueryTransactional for MemoryMockQueryTransactional {
         let member = MemberAggr {
             id: form.id.clone(),
             user_id: form.user_id.clone(),
+            user_nickname: form.user_nickname.clone(),
             user: None, // user not populated in mock
             team_id: form.team_id.clone(),
             team: None, // team not populated in mock
@@ -52,6 +53,18 @@ impl MemberQueryTransactional for MemoryMockQueryTransactional {
 
         Ok(member)
     }
+
+    async fn update_user_nickname(&mut self, user_id: &str, nickname: &str) -> DomainResult<()> {
+        let mut state = self.state.lock().unwrap();
+
+        for member in state.members.iter_mut() {
+            if member.user_id == user_id {
+                member.user_nickname = nickname.to_string();
+            }
+        }
+
+        Ok(())
+    }
 }
 
 // ── Tests ──────────────────────────────────────────────────────────────────
@@ -59,6 +72,10 @@ impl MemberQueryTransactional for MemoryMockQueryTransactional {
 #[cfg(test)]
 mod tests {
     // duplicate_user_team_returns_conflict(MemberQueryTransactional::create)(negative): duplicate user-team membership should return an expected conflict.
+    // update_user_nickname_updates_all_members_for_a_user(update_user_nickname)(positive): update_user_nickname should update the nickname on all members belonging to the user.
+    // update_user_nickname_succeeds_when_user_has_no_members(update_user_nickname)(positive): update_user_nickname should succeed (no-op) when the user has no members.
+
+    use futures_util::FutureExt as _;
 
     use crate::domain::model::aggr::member::{MemberAggr, MemberForm};
     use crate::domain::model::value::role::{RoleFlag, RoleMask};
@@ -72,7 +89,7 @@ mod tests {
         let mock = MemoryMockQuery::new();
 
         mock.transaction_scoped(|txn| {
-            Box::pin(async move {
+            async move {
                 let form = MemberForm {
                     id: MemberAggr::generate_id(),
                     user_id: "user-1".into(),
@@ -82,14 +99,15 @@ mod tests {
                 };
                 MemberQueryTransactional::create(txn, &form).await.unwrap();
                 Ok(())
-            })
+            }
+            .boxed()
         })
         .await
         .unwrap();
 
         let err = mock
             .transaction_scoped(|txn| {
-                Box::pin(async move {
+                async move {
                     let form = MemberForm {
                         id: MemberAggr::generate_id(),
                         user_id: "user-1".into(),
@@ -98,12 +116,86 @@ mod tests {
                         roles: RoleMask::from(RoleFlag::Translator),
                     };
                     MemberQueryTransactional::create(txn, &form).await
-                })
+                }
+                .boxed()
             })
             .await
             .err()
             .unwrap();
 
         assert!(is_expected_conflict(&err));
+    }
+
+    #[tokio::test]
+    async fn update_user_nickname_updates_all_members_for_a_user() {
+        let mock = MemoryMockQuery::new();
+
+        // Create two members for the same user in different teams.
+        mock.transaction_scoped(|txn| {
+            async move {
+                let form1 = MemberForm {
+                    id: MemberAggr::generate_id(),
+                    user_id: "user-1".into(),
+                    user_nickname: "OldNick".into(),
+                    team_id: "team-1".into(),
+                    roles: RoleMask::from(RoleFlag::Admin),
+                };
+                MemberQueryTransactional::create(txn, &form1).await.unwrap();
+
+                let form2 = MemberForm {
+                    id: MemberAggr::generate_id(),
+                    user_id: "user-1".into(),
+                    user_nickname: "OldNick".into(),
+                    team_id: "team-2".into(),
+                    roles: RoleMask::from(RoleFlag::Translator),
+                };
+                MemberQueryTransactional::create(txn, &form2).await.unwrap();
+
+                Ok(())
+            }
+            .boxed()
+        })
+        .await
+        .unwrap();
+
+        // Update the nickname.
+        mock.transaction_scoped(|txn| {
+            async move {
+                MemberQueryTransactional::update_user_nickname(
+                    txn,
+                    "user-1",
+                    "NewNick",
+                )
+                .await
+            }
+            .boxed()
+        })
+        .await
+        .unwrap();
+
+        let snapshot = mock.snapshot();
+        assert_eq!(snapshot.members.len(), 2);
+
+        for member in &snapshot.members {
+            assert_eq!(member.user_id, "user-1");
+            assert_eq!(member.user_nickname, "NewNick");
+        }
+    }
+
+    #[tokio::test]
+    async fn update_user_nickname_succeeds_when_user_has_no_members() {
+        let mock = MemoryMockQuery::new();
+
+        let result = mock
+            .transaction_scoped(|txn| {
+                async move {
+                    MemberQueryTransactional::update_user_nickname(txn, "no-such-user", "Nick")
+                        .await
+                }
+                .boxed()
+            })
+            .await;
+
+        assert!(result.is_ok());
     }
 }

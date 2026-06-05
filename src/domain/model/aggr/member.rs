@@ -10,6 +10,7 @@ pub struct MemberAggr {
     pub id: String,
 
     pub user_id: String,
+    pub user_nickname: String,
     pub user: Option<UserAggr>,
 
     pub team_id: String,

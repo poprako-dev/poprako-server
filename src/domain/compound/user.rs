@@ -13,18 +13,18 @@ pub fn hash_password(password: &str) -> DomainResult<String> {
     })
 }
 
-pub fn sign_token<C>(codec: &C, unsigned_token: &UserToken) -> DomainResult<String>
+pub fn sign_token<S>(signer: &S, unsigned_token: &UserToken) -> DomainResult<String>
 where
-    C: TokenSign,
+    S: TokenSign,
 {
-    codec.sign(unsigned_token)
+    signer.sign(unsigned_token)
 }
 
-pub fn parse_token<C>(codec: &C, signed_token: &str) -> DomainResult<UserToken>
+pub fn parse_token<P>(parser: &P, signed_token: &str) -> DomainResult<UserToken>
 where
-    C: TokenParse,
+    P: TokenParse,
 {
-    codec.parse(signed_token)
+    parser.parse(signed_token)
 }
 
 #[cfg(test)]

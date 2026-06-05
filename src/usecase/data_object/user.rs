@@ -5,7 +5,7 @@ use crate::domain::external::image_pool::ImageGet;
 use crate::domain::model::aggr::user::UserAggr;
 use poprako_util::time::ToUnixMilli as _;
 
-#[derive(Debug, Deserialize, ToSchema)]
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub struct UserBase {
     pub id: String,
 
@@ -51,7 +51,7 @@ impl UserBase {
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
-pub struct SignUpUserParams {
+pub struct SignUpParams {
     pub qid: String,
     pub nickname: String,
     pub password: String,
@@ -59,7 +59,35 @@ pub struct SignUpUserParams {
 }
 
 #[derive(Debug, Serialize, ToSchema)]
-pub struct SignUpUserReply {
+pub struct SignUpReply {
     pub user_id: String,
     pub token: String,
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct SignInParams {
+    pub qid: String,
+    pub password: String,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct SignInReply {
+    pub user_id: String,
+    pub token: String,
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct UserInfoUpdateParams {
+    pub nickname: String,
+    pub qid: String,
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct ReserveAvatarParams {
+    pub file_extension: String,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct ReserveAvatarReply {
+    pub put_url: String,
 }

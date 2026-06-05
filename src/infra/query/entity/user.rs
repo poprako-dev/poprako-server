@@ -35,6 +35,62 @@ pub struct UserEntry<'a> {
     pub f_updated_at: OffsetDateTime,
 }
 
+// ── Changeset (AsChangeset) ────────────────────────────────────────────────
+
+/// Changeset for updating user fields via partial updates.
+///
+/// Only `Some` fields are included in the generated `SET` clause;
+/// `None` fields are omitted.
+#[derive(AsChangeset)]
+#[diesel(table_name = schema::t_user)]
+pub struct UserAspect<'a> {
+    pub f_nickname: Option<&'a str>,
+    pub f_qid: Option<&'a str>,
+    pub f_avatar_key: Option<&'a str>,
+    pub f_avatar_uploaded: Option<bool>,
+    pub f_last_active_at: Option<OffsetDateTime>,
+    pub f_updated_at: OffsetDateTime,
+}
+
+impl<'a> UserAspect<'a> {
+    /// Creates a new changeset with all optional fields set to `None`.
+    pub fn new(updated_at: OffsetDateTime) -> Self {
+        Self {
+            f_nickname: None,
+            f_qid: None,
+            f_avatar_key: None,
+            f_avatar_uploaded: None,
+            f_last_active_at: None,
+            f_updated_at: updated_at,
+        }
+    }
+
+    pub fn nickname(mut self, val: &'a str) -> Self {
+        self.f_nickname = Some(val);
+        self
+    }
+
+    pub fn qid(mut self, val: &'a str) -> Self {
+        self.f_qid = Some(val);
+        self
+    }
+
+    pub fn avatar_key(mut self, val: &'a str) -> Self {
+        self.f_avatar_key = Some(val);
+        self
+    }
+
+    pub fn avatar_uploaded(mut self, val: bool) -> Self {
+        self.f_avatar_uploaded = Some(val);
+        self
+    }
+
+    pub fn last_active_at(mut self, val: OffsetDateTime) -> Self {
+        self.f_last_active_at = Some(val);
+        self
+    }
+}
+
 // ── Conversions ────────────────────────────────────────────────────────────
 
 impl From<UserRow> for UserAggr {

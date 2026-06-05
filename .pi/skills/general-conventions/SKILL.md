@@ -59,6 +59,31 @@ Curly braces in `use` statements must satisfy the `check-use-braces` skill:
 braces are allowed only at the final leaf segment. `use a::b::{c, d};` is valid;
 `use a::{b, c::d};` is not.
 
+## Prefer constructor over struct literal
+
+When a type provides a `new()` constructor (with or without builder methods),
+use it instead of writing a struct literal directly.
+
+Struct literal syntax is reserved for destructuring patterns (`let Foo { a, b } = val;`)
+and for types that have no constructor.
+
+**Do:**
+
+```rust
+let entry = UserEntry::new(&form.id, &form.nickname, now);
+let changes = UserAspect::new(now).nickname(&input.nickname);
+```
+
+**Do NOT:**
+
+```rust
+let entry = UserEntry {
+    f_id: &form.id,
+    f_nickname: &form.nickname,
+    f_created_at: now,
+};
+```
+
 ## Ownership before cloning
 
 Prefer the cheapest ownership form that preserves correctness:
