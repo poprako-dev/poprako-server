@@ -27,7 +27,7 @@ and are wired into `Harness`. Only their **remaining use cases** are listed belo
 | 0.10 | Infra query: `RdbQuery`, `MemoryMockQuery` | ✅ |
 | 0.11 | Infra external: `JwtIssuer`, `OssImagePool` | ✅ |
 | 0.12 | Use case: `User::sign_up_user` | ✅ |
-| 0.13 | API: HTTP server, middleware, router scaffolding, `/user/sign-up` | ✅ |
+| 0.13 | API: HTTP server, middleware, router scaffolding, `/auth/register` | ✅ |
 
 ---
 
@@ -75,12 +75,13 @@ and are wired into `Harness`. Only their **remaining use cases** are listed belo
 
 ### 1.3 — API Handlers
 
-- [ ] `GET    /user/info` → `get_info` (when `id` = token user)
-- [ ] `POST   /user/login` → `login`
-- [ ] `POST   /user/register` → `register` (if kept separate)
-- [ ] `PUT    /user` → `update`
-- [ ] `POST   /user/avatar/reserve` → `resv_avatar`
-- [ ] `POST   /user/avatar/uploaded` → `mark_avatar_uploaded`
+- [x] `GET    /users/:user_id` → `get_info`
+- [x] `GET    /users/me` → `get_info` (current token user alias)
+- [x] `POST   /auth/login` → `login`
+- [x] `POST   /auth/register` → `register` / `sign_up_user`
+- [x] `PUT    /users/me` → `update`
+- [x] `POST   /users/:user_id/avatar` → `resv_avatar` (requires `user_id` = token user)
+- [x] `POST   /users/:user_id/avatar/confirm` → `mark_avatar_uploaded` (requires `user_id` = token user)
 
 ---
 
