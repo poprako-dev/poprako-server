@@ -27,7 +27,7 @@ use crate::usecase::data_object::user::{
 use crate::usecase::result::UseCaseResult;
 
 #[instrument(err, skip(harn))]
-pub async fn sign_up_user<H>(harn: &H, params: SignUpParams) -> UseCaseResult<SignUpReply>
+pub async fn sign_up<H>(harn: &H, params: SignUpParams) -> UseCaseResult<SignUpReply>
 where
     H: Clone + Transactional + EffectSink + TokenIssuer + Send + Sync,
 {
@@ -234,7 +234,7 @@ mod tests {
     // sign_up_user_rolls_back_when_member_create_fails(sign_up_user)(negative): sign up should roll back user creation when member creation fails.
     // sign_up_user_token_failure_happens_after_commit_and_event_publish(sign_up_user)(negative): token failures should occur after commit and event publication.
 
-    use super::sign_up_user;
+    use super::sign_up;
 
     use time::OffsetDateTime;
 
@@ -277,7 +277,7 @@ mod tests {
         let harn = TestHarness::default();
         harn.seed_invitation(invitation("CODE123", "invitee-qid", true));
 
-        let reply = sign_up_user(&harn, sign_up_params("CODE123", "invitee-qid", "Invitee"))
+        let reply = sign_up(&harn, sign_up_params("CODE123", "invitee-qid", "Invitee"))
             .await
             .unwrap();
 
@@ -321,7 +321,7 @@ mod tests {
     async fn sign_up_user_rejects_missing_invitation_without_side_effects() {
         let harn = TestHarness::default();
 
-        let err = sign_up_user(&harn, sign_up_params("MISSING", "invitee-qid", "Invitee"))
+        let err = sign_up(&harn, sign_up_params("MISSING", "invitee-qid", "Invitee"))
             .await
             .err()
             .unwrap();
@@ -340,7 +340,7 @@ mod tests {
         let harn = TestHarness::default();
         harn.seed_invitation(invitation("CODE123", "invitee-qid", true));
 
-        let err = sign_up_user(&harn, sign_up_params("CODE123", "other-qid", "Invitee"))
+        let err = sign_up(&harn, sign_up_params("CODE123", "other-qid", "Invitee"))
             .await
             .err()
             .unwrap();
@@ -360,12 +360,12 @@ mod tests {
         let harn = TestHarness::default();
         harn.seed_invitation(invitation("CODE123", "invitee-qid", true));
 
-        let first = sign_up_user(&harn, sign_up_params("CODE123", "invitee-qid", "Invitee"))
+        let first = sign_up(&harn, sign_up_params("CODE123", "invitee-qid", "Invitee"))
             .await
             .unwrap();
         harn.seed_invitation(invitation("CODE456", "second-qid", true));
 
-        let err = sign_up_user(&harn, sign_up_params("CODE456", "second-qid", "Invitee"))
+        let err = sign_up(&harn, sign_up_params("CODE456", "second-qid", "Invitee"))
             .await
             .err()
             .unwrap();
@@ -393,7 +393,7 @@ mod tests {
         let harn = TestHarness::with_token_failure();
         harn.seed_invitation(invitation("CODE123", "invitee-qid", true));
 
-        let err = sign_up_user(&harn, sign_up_params("CODE123", "invitee-qid", "Invitee"))
+        let err = sign_up(&harn, sign_up_params("CODE123", "invitee-qid", "Invitee"))
             .await
             .err()
             .unwrap();

@@ -3,7 +3,7 @@ members = [".", "poprako-macro", "poprako-util"]
 resolver = "3"
 
 [package]
-name = "poprako-r"
+name = "poprako_r"
 version = "0.1.0"
 edition = "2024"
 
@@ -35,5 +35,6 @@ tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter", "time"] }
 unic-langid = "0.9.6"
 url = "2.5.8"
-utoipa = "5.5.0"
+utoipa = { version = "5.5.0", features = ["axum_extras"] }
+utoipa-swagger-ui = { version = "9", features = ["axum"] }
 uuid = { version = "1.23.1", features = ["v7"] }

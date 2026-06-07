@@ -1,5 +1,6 @@
 mod auth_token;
 mod middleware;
+mod openapi;
 
 pub mod handler;
 pub mod router;
@@ -9,6 +10,8 @@ pub use middleware::AuthorizeLayer;
 pub use middleware::IdTraceLayer;
 
 mod result {
+    use std::num::NonZeroU16;
+
     use axum::Json;
     use axum::http::StatusCode;
     use axum::http::header::{HeaderMap, HeaderName, HeaderValue, SET_COOKIE};
@@ -28,7 +31,8 @@ mod result {
         #[serde(skip)]
         status: StatusCode,
 
-        code: u16,
+        #[schema(value_type = u16)]
+        code: NonZeroU16,
         #[serde(skip_serializing_if = "Option::is_none")]
         message: Option<String>,
     }
@@ -38,26 +42,34 @@ mod result {
             match variant {
                 ExpectedVariant::Argument => Self {
                     status: StatusCode::BAD_REQUEST,
-                    code: 2,
+                    code: NonZeroU16::new(2).unwrap(),
                     message: Some(message.to_string()),
                 },
                 ExpectedVariant::Authentication => Self {
                     status: StatusCode::UNAUTHORIZED,
-                    code: 3,
+                    code: NonZeroU16::new(3).unwrap(),
                     message: Some(message.to_string()),
                 },
                 ExpectedVariant::Conflict => Self {
                     status: StatusCode::CONFLICT,
-                    code: 4,
+                    code: NonZeroU16::new(4).unwrap(),
                     message: Some(message.to_string()),
                 },
+            }
+        }
+
+        pub fn not_found() -> Self {
+            Self {
+                status: StatusCode::NOT_FOUND,
+                code: NonZeroU16::new(5).unwrap(),
+                message: None,
             }
         }
 
         pub fn internal(message: Option<String>) -> Self {
             Self {
                 status: StatusCode::INTERNAL_SERVER_ERROR,
-                code: 1, // placeholder
+                code: NonZeroU16::new(1).unwrap(), // placeholder
                 message,
             }
         }
