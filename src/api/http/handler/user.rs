@@ -3,9 +3,9 @@ use axum::extract::{Extension, Path, State};
 use axum::http::StatusCode;
 
 use crate::api::http::handler::util::ensure_current_user;
+use crate::api::http::result::Accept as _;
 use crate::api::http::result::HttpError;
 use crate::api::http::result::HttpResult;
-use crate::api::http::result::{Accept as _, HttpResponse};
 use crate::domain::model::aggr::user::UserToken;
 use crate::harness::Harness;
 use crate::usecase;
@@ -50,7 +50,7 @@ pub async fn get_my_info(
 ) -> HttpResult<UserBase> {
     let base = usecase::user::get_info(&harn, &user_token.user_id).await?;
 
-    Ok(HttpResponse::from(base))
+    base.accept(StatusCode::OK)
 }
 
 #[utoipa::path(
@@ -72,7 +72,7 @@ pub async fn update_info(
 ) -> HttpResult<()> {
     usecase::user::update_info(&harn, user_token, params).await?;
 
-    Ok(HttpResponse::from(()))
+    ().accept(StatusCode::OK)
 }
 
 #[utoipa::path(
@@ -100,7 +100,7 @@ pub async fn reserve_avatar(
 
     let reply = usecase::user::reserve_avatar(&harn, user_token, params).await?;
 
-    Ok(HttpResponse::from(reply))
+    reply.accept(StatusCode::OK)
 }
 
 #[utoipa::path(
@@ -126,5 +126,5 @@ pub async fn mark_avatar_uploaded(
 
     usecase::user::mark_avatar_uploaded(&harn, user_token).await?;
 
-    Ok(HttpResponse::from(()))
+    ().accept(StatusCode::OK)
 }

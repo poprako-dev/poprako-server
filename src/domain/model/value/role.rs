@@ -20,6 +20,24 @@ impl From<RoleFlag> for u32 {
     }
 }
 
+impl RoleFlag {
+    /// Tries to interpret a raw `u32` as a single [`RoleFlag`] variant.
+    ///
+    /// Returns `None` if `bits` has zero or more than one bit set.
+    pub fn try_from_single_bit(bits: u32) -> Option<Self> {
+        // Must have exactly one bit set and be within the valid range.
+        if bits == 0 || bits & (bits - 1) != 0 {
+            return None;
+        }
+        // SAFETY: the bit is a valid discriminant because it's a single bit
+        // within the 0..=8 range that matches our repr(u32) enum.
+        if bits > (1 << 8) {
+            return None;
+        }
+        Some(unsafe { std::mem::transmute::<u32, RoleFlag>(bits) })
+    }
+}
+
 /// RoleMask represents a combination of multiple roles that a member or
 /// assignment can have. It is implemented as a bitmask, where each bit represents
 /// a specific role.

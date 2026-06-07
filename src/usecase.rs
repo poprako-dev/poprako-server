@@ -1,6 +1,9 @@
 pub mod data_object;
 
+pub mod member;
+pub mod team;
 pub mod user;
+pub mod workset;
 
 pub mod result {
     use poprako_util::rename::StdResult;

@@ -61,6 +61,15 @@ pub struct MemberEntry<'a> {
 pub struct MemberAspect<'a> {
     pub f_user_nickname: Option<&'a str>,
     pub f_user_last_active_at: Option<OffsetDateTime>,
+    pub f_assigned_raw_provider_at: Option<Option<OffsetDateTime>>,
+    pub f_assigned_translator_at: Option<Option<OffsetDateTime>>,
+    pub f_assigned_proofreader_at: Option<Option<OffsetDateTime>>,
+    pub f_assigned_typesetter_at: Option<Option<OffsetDateTime>>,
+    pub f_assigned_redrawer_at: Option<Option<OffsetDateTime>>,
+    pub f_assigned_reviewer_at: Option<Option<OffsetDateTime>>,
+    pub f_assigned_publisher_at: Option<Option<OffsetDateTime>>,
+    pub f_assigned_admin_at: Option<Option<OffsetDateTime>>,
+    pub f_assigned_assistant_at: Option<Option<OffsetDateTime>>,
     pub f_updated_at: OffsetDateTime,
 }
 
@@ -70,6 +79,15 @@ impl<'a> MemberAspect<'a> {
         Self {
             f_user_nickname: None,
             f_user_last_active_at: None,
+            f_assigned_raw_provider_at: None,
+            f_assigned_translator_at: None,
+            f_assigned_proofreader_at: None,
+            f_assigned_typesetter_at: None,
+            f_assigned_redrawer_at: None,
+            f_assigned_reviewer_at: None,
+            f_assigned_publisher_at: None,
+            f_assigned_admin_at: None,
+            f_assigned_assistant_at: None,
             f_updated_at: updated_at,
         }
     }
@@ -79,10 +97,53 @@ impl<'a> MemberAspect<'a> {
         self
     }
 
-    /// Sets the last active timestamp on member rows.
-    #[allow(dead_code)]
     pub fn user_last_active_at(mut self, val: OffsetDateTime) -> Self {
         self.f_user_last_active_at = Some(val);
+        self
+    }
+
+    pub fn assigned_raw_provider_at(mut self, val: Option<OffsetDateTime>) -> Self {
+        self.f_assigned_raw_provider_at = Some(val);
+        self
+    }
+
+    pub fn assigned_translator_at(mut self, val: Option<OffsetDateTime>) -> Self {
+        self.f_assigned_translator_at = Some(val);
+        self
+    }
+
+    pub fn assigned_proofreader_at(mut self, val: Option<OffsetDateTime>) -> Self {
+        self.f_assigned_proofreader_at = Some(val);
+        self
+    }
+
+    pub fn assigned_typesetter_at(mut self, val: Option<OffsetDateTime>) -> Self {
+        self.f_assigned_typesetter_at = Some(val);
+        self
+    }
+
+    pub fn assigned_redrawer_at(mut self, val: Option<OffsetDateTime>) -> Self {
+        self.f_assigned_redrawer_at = Some(val);
+        self
+    }
+
+    pub fn assigned_reviewer_at(mut self, val: Option<OffsetDateTime>) -> Self {
+        self.f_assigned_reviewer_at = Some(val);
+        self
+    }
+
+    pub fn assigned_publisher_at(mut self, val: Option<OffsetDateTime>) -> Self {
+        self.f_assigned_publisher_at = Some(val);
+        self
+    }
+
+    pub fn assigned_admin_at(mut self, val: Option<OffsetDateTime>) -> Self {
+        self.f_assigned_admin_at = Some(val);
+        self
+    }
+
+    pub fn assigned_assistant_at(mut self, val: Option<OffsetDateTime>) -> Self {
+        self.f_assigned_assistant_at = Some(val);
         self
     }
 }

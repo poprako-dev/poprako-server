@@ -9,6 +9,8 @@ error-invalid-invitation-code = 无效的邀请码
 error-unauthorized = 无效的授权信息，请尝试重新登录
 error-unsupported-file-type = 不支持的文件类型
 error-team-not-found = 该汉化组不存在
+error-workset-not-found = 该作品集不存在
+error-member-not-found = 该成员不存在
 error-wrong-credentials = 用户不存在或密码错误
 
 mail-invitation-used-title = 你的邀请码已被使用

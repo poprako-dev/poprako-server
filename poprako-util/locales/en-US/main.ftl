@@ -9,6 +9,8 @@ error-invalid-invitation-code = Invalid invitation code
 error-unauthorized = Invalid authorization info, please try logging in again
 error-unsupported-file-type = Unsupported file type
 error-team-not-found = Team not found
+error-workset-not-found = Workset not found
+error-member-not-found = Member not found
 error-wrong-credentials = User does not exist or password is incorrect
 
 mail-invitation-used-title = Your Invitation Code Has Been Used

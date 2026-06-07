@@ -1,11 +1,14 @@
 use axum::Router;
-use axum::routing::{get, post};
+use axum::routing::{get, post, put};
 
 use crate::api::http::AuthorizeLayer;
 use crate::api::http::IdTraceLayer;
 use crate::api::http::handler::authorization;
 use crate::api::http::handler::health;
+use crate::api::http::handler::member;
+use crate::api::http::handler::team;
 use crate::api::http::handler::user;
+use crate::api::http::handler::workset;
 use crate::api::http::openapi::ApiDoc;
 use crate::harness::Harness;
 
@@ -27,6 +30,30 @@ pub fn new(harn: Harness) -> Router<Harness> {
         .route(
             "/users/{user_id}/avatar/mark-uploaded",
             post(user::mark_avatar_uploaded),
+        )
+        .route("/teams", get(team::list).post(team::create))
+        .route(
+            "/teams/{team_id}",
+            get(team::get_info).put(team::update).delete(team::delete),
+        )
+        .route(
+            "/teams/{team_id}/avatar/reserve",
+            post(team::reserve_avatar),
+        )
+        .route(
+            "/teams/{team_id}/avatar/mark-uploaded",
+            post(team::mark_avatar_uploaded),
+        )
+        .route("/members", get(member::list).post(member::create))
+        .route("/members/detail", get(member::get_detail))
+        .route(
+            "/members/{member_id}",
+            put(member::update_roles).delete(member::delete),
+        )
+        .route("/worksets", get(workset::list).post(workset::create))
+        .route(
+            "/worksets/{workset_id}",
+            put(workset::update).delete(workset::delete),
         )
         .layer(AuthorizeLayer::new(harn));
 
