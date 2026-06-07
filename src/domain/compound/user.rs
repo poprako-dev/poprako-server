@@ -9,7 +9,6 @@ pub fn hash_password(password: &str) -> DomainResult<String> {
             "[user::hash_password] bcrypt hashing failed: {}",
             e
         ))
-        .trace()
     })
 }
 

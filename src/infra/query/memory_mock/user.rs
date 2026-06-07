@@ -18,7 +18,7 @@ impl UserQuery for MemoryMockQuery {
             .iter()
             .find(|u| u.id == id)
             .cloned()
-            .ok_or_else(|| DomainError::expected_argument(trl("error-user-not-found")).trace())
+            .ok_or_else(|| DomainError::expected_argument(trl("error-user-not-found")))
     }
 
     async fn get_credentials_by_qid(&self, qid: &str) -> DomainResult<UserCredential> {
@@ -27,22 +27,23 @@ impl UserQuery for MemoryMockQuery {
             .users
             .iter()
             .find(|u| u.qid == qid)
-            .ok_or_else(|| DomainError::expected_argument(trl("error-user-not-found")).trace())?;
+            .ok_or_else(|| DomainError::expected_argument(trl("error-user-not-found")))?;
         state
             .credentials
             .iter()
             .find(|c| c.user_id == user.id)
             .cloned()
-            .ok_or_else(|| DomainError::expected_argument(trl("error-user-not-found")).trace())
+            .ok_or_else(|| DomainError::expected_argument(trl("error-user-not-found")))
     }
 
     async fn prefill_avatar_key(&self, id: &str, key: &str) -> DomainResult<()> {
         let mut state = self.state.lock().unwrap();
 
-        let user =
-            state.users.iter_mut().find(|u| u.id == id).ok_or_else(|| {
-                DomainError::expected_argument(trl("error-user-not-found")).trace()
-            })?;
+        let user = state
+            .users
+            .iter_mut()
+            .find(|u| u.id == id)
+            .ok_or_else(|| DomainError::expected_argument(trl("error-user-not-found")))?;
 
         user.avatar_key = key.to_string();
         user.updated_at = OffsetDateTime::now_utc();
@@ -53,17 +54,17 @@ impl UserQuery for MemoryMockQuery {
     async fn mark_avatar_uploaded(&self, id: &str) -> DomainResult<()> {
         let mut state = self.state.lock().unwrap();
 
-        let user =
-            state.users.iter_mut().find(|u| u.id == id).ok_or_else(|| {
-                DomainError::expected_argument(trl("error-user-not-found")).trace()
-            })?;
+        let user = state
+            .users
+            .iter_mut()
+            .find(|u| u.id == id)
+            .ok_or_else(|| DomainError::expected_argument(trl("error-user-not-found")))?;
 
         user.avatar_uploaded = true;
         user.updated_at = OffsetDateTime::now_utc();
 
         Ok(())
     }
-
 }
 
 // ── QueryTransactional impls ───────────────────────────────────────────────
@@ -75,13 +76,13 @@ impl UserQueryTransactional for MemoryMockQueryTransactional {
 
         // Check uniqueness constraints.
         if state.users.iter().any(|u| u.id == form.id) {
-            return Err(DomainError::expected_conflict(trl("error-already-exists")).trace());
+            return Err(DomainError::expected_conflict(trl("error-already-exists")));
         }
         if state.users.iter().any(|u| u.qid == form.qid) {
-            return Err(DomainError::expected_conflict(trl("error-already-exists")).trace());
+            return Err(DomainError::expected_conflict(trl("error-already-exists")));
         }
         if state.users.iter().any(|u| u.nickname == form.nickname) {
-            return Err(DomainError::expected_conflict(trl("error-already-exists")).trace());
+            return Err(DomainError::expected_conflict(trl("error-already-exists")));
         }
 
         // Build the user aggregate from the form.
@@ -116,7 +117,7 @@ impl UserQueryTransactional for MemoryMockQueryTransactional {
             .users
             .iter_mut()
             .find(|u| u.id == input.id)
-            .ok_or_else(|| DomainError::expected_argument(trl("error-user-not-found")).trace())?;
+            .ok_or_else(|| DomainError::expected_argument(trl("error-user-not-found")))?;
 
         user.nickname = input.nickname.clone();
         user.qid = input.qid.clone();
@@ -128,10 +129,11 @@ impl UserQueryTransactional for MemoryMockQueryTransactional {
     async fn touch_last_active(&mut self, id: &str) -> DomainResult<()> {
         let mut state = self.state.lock().unwrap();
 
-        let user =
-            state.users.iter_mut().find(|u| u.id == id).ok_or_else(|| {
-                DomainError::expected_argument(trl("error-user-not-found")).trace()
-            })?;
+        let user = state
+            .users
+            .iter_mut()
+            .find(|u| u.id == id)
+            .ok_or_else(|| DomainError::expected_argument(trl("error-user-not-found")))?;
 
         user.last_active_at = OffsetDateTime::now_utc();
         user.updated_at = OffsetDateTime::now_utc();
@@ -471,10 +473,7 @@ mod tests {
         tokio::time::sleep(std::time::Duration::from_millis(5)).await;
 
         mock.transaction_scoped(|txn| {
-            async move {
-                UserQueryTransactional::touch_last_active(txn, "user-1").await
-            }
-            .boxed()
+            async move { UserQueryTransactional::touch_last_active(txn, "user-1").await }.boxed()
         })
         .await
         .unwrap();
@@ -492,11 +491,8 @@ mod tests {
 
         let err = mock
             .transaction_scoped(|txn| {
-                async move {
-                    UserQueryTransactional::touch_last_active(txn, "nonexistent")
-                        .await
-                }
-                .boxed()
+                async move { UserQueryTransactional::touch_last_active(txn, "nonexistent").await }
+                    .boxed()
             })
             .await
             .err()

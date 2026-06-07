@@ -18,7 +18,10 @@ pub fn new(harn: Harness) -> Router<Harness> {
         .route("/api/v1/user/info", get(user::get_info))
         .route("/api/v1/user", put(user::update_info))
         .route("/api/v1/user/avatar/reserve", post(user::reserve_avatar))
-        .route("/api/v1/user/avatar/uploaded", post(user::mark_avatar_uploaded))
+        .route(
+            "/api/v1/user/avatar/uploaded",
+            post(user::mark_avatar_uploaded),
+        )
         .layer(AuthorizeLayer::new(harn));
 
     // Wrap with request-id + tracing middleware (outermost layer).

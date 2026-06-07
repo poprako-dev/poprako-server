@@ -3,6 +3,8 @@ use diesel::prelude::*;
 use diesel_async::AsyncPgConnection;
 use diesel_async::RunQueryDsl;
 use time::OffsetDateTime;
+use tracing::Level;
+use tracing::instrument;
 
 use crate::domain::model::aggr::member_invitation::MemberInvitationAggr;
 use crate::domain::query::member_invitation::MemberInvitationQueryTransactional;
@@ -15,6 +17,7 @@ use poprako_util::i18n::trl;
 
 /// SELECT ... FOR UPDATE: returns the pending invitation for the given code
 /// with an exclusive row lock, or an expected error if none matches.
+#[instrument(err, skip(conn), level = Level::DEBUG)]
 pub async fn get_by_code_ex(
     conn: &mut AsyncPgConnection,
     invitation_code: &str,
@@ -27,9 +30,7 @@ pub async fn get_by_code_ex(
         .first(conn)
         .await
         .optional()?
-        .ok_or_else(|| {
-            DomainError::expected_argument(trl("error-no-pending-invitation")).trace()
-        })?;
+        .ok_or_else(|| DomainError::expected_argument(trl("error-no-pending-invitation")))?;
 
     Ok(row.into())
 }
@@ -38,6 +39,7 @@ pub async fn get_by_code_ex(
 ///
 /// The `WHERE f_pending = true` guard ensures this is a no-op on an already-consumed row,
 /// which acts as a safety net regardless of the row lock held by [`get_by_code_ex`].
+#[instrument(err, skip(conn), level = Level::DEBUG)]
 pub async fn mark_pending_as_used(conn: &mut AsyncPgConnection, id: &str) -> DomainResult<()> {
     let now = OffsetDateTime::now_utc();
 
@@ -56,7 +58,9 @@ pub async fn mark_pending_as_used(conn: &mut AsyncPgConnection, id: &str) -> Dom
     .await?;
 
     if rows_affected == 0 {
-        return Err(DomainError::expected_argument(trl("error-invitation-not-found")).trace());
+        return Err(DomainError::expected_argument(trl(
+            "error-invitation-not-found",
+        )));
     }
 
     Ok(())

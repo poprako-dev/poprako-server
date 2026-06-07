@@ -3,8 +3,8 @@ name: error-handling-spec
 description: |
   Describes poprako-r's error definition and handling philosophy across all
   layers (domain, usecase, infrastructure, api). Use whenever adding or
-  modifying error types, constructing errors, adding trace_* calls, placing
-  #[tracing::instrument], or introducing new i18n error keys.
+  modifying error types, constructing errors, placing #[instrument(err, ...)],
+  or introducing new i18n error keys.
 ---
 
 # Poprako-r Error Handling Specification
@@ -13,35 +13,35 @@ description: |
 
 All errors in poprako-r fall into exactly one of two categories:
 
-| Category | Variant | Audience | trace level | Contains location? |
-|----------|---------|----------|-------------|---------------------|
-| Expected | `DomainError::Expected` | End user (via i18n) | `DEBUG` via `DomainError::trace` | No — message goes to user |
-| Unrecoverable | `DomainError::Unrecoverable` | Developer (logs only) | `ERROR` via `DomainError::trace` | Yes — `[Struct::method]` prefix |
+| Category | Variant | Audience | Logged by | Contains location? |
+|----------|---------|----------|-----------|---------------------|
+| Expected | `DomainError::Expected` | End user (via i18n) | `#[instrument(err, ...)]` on the returning boundary | No — message goes to user |
+| Unrecoverable | `DomainError::Unrecoverable` | Developer (logs only) | `#[instrument(err, ...)]` on the returning boundary | Yes — `[Struct::method]` prefix |
 
 This binary split means every error decision reduces to one question:
 **"Should the end user see this message?"**
-- Yes → `Expected` with `trl()` i18n key, then `DomainError::trace`.
-- No  → `Unrecoverable` with `[Struct::method]` prefix, then `DomainError::trace`.
+- Yes → `Expected` with `trl()` i18n key.
+- No  → `Unrecoverable` with `[Struct::method]` prefix.
 
-### Trace responsibility: one source, not every propagation
+### Trace responsibility: instrumented boundaries, not error constructors
 
-Each error is traced **exactly once**: at the site where the error value is
-first produced.  Propagation through `?` operators never adds a second trace.
+`DomainError` is a data type, not a logging hook. It has no `.trace()` method.
+Returned errors are recorded by `#[instrument(err, ...)]` on functions that
+perform I/O or orchestrate a usecase.
 
-For Diesel errors specifically, the trace lives inside the `From` impl
-(`infrastructure/query.rs`).  The `?` at every Diesel call site triggers
-that `From` conversion, which constructs a `DomainError` and calls
-`DomainError::trace`.  Adding another `.trace()` before the `?` on a
-`DomainResult` would:
+Only the leaf node in the error propagation tree may log an error directly.
+This is the first site where the error occurs and is usually the smallest span
+in the span tree. Parent functions that merely propagate the error with `?`
+must not add another direct `tracing::error!` / `tracing::debug!` event.
 
-1. Produce a **duplicate** log entry — the `From` impl already emits one.
-2. Trace the raw Diesel error text, losing the `DomainError::Unrecoverable`
-   wrapper and its `[Struct::method]` prefix.
+For Diesel errors specifically, the `From` impl (`src/infra/query.rs`) only
+classifies the raw Diesel error into `DomainError`. The caller's
+`#[instrument(err, ...)]` span records the returned error.
 
-For **directly constructed** `DomainError` values (both `Expected` via
-`.ok_or_else()` and `Unrecoverable` via `.map_err()`), call `.trace()` on the
-constructed `DomainError` itself — there is no intermediary conversion to
-delegate to.
+Do not add manual `tracing::error!` / `tracing::debug!` calls when a function can
+return the error through an instrumented `Result` boundary. Manual tracing is
+reserved for swallowed errors, fire-and-forget handlers, and other cases where
+no error is returned.
 
 ---
 
@@ -95,41 +95,25 @@ the API/HTTP layer matches on `UseCaseError` without importing `DomainError`.
 
 ---
 
-## DomainError Trace Mechanism
+## Returned Error Tracing
 
-```rust
-impl DomainError {
-    pub fn trace(self) -> Self { ... }
-}
-```
-
-`DomainError::trace` emits exactly one tracing event at the level implied by
-the error variant. There is no tracing extension on `Result`; only the error
-value can be traced.
-
-### Trace Level Selection
-
-| Error kind | Method | Rationale |
-|------------|--------|-----------|
-| `Expected` | `.trace()` → `DEBUG` | Business errors are normal — don't pollute error logs |
-| `Unrecoverable` | `.trace()` → `ERROR` | Internal failures are serious — must surface in error dashboards |
-
-### Where to call trace
-
-**Only at the construction site.** When an error propagates through layers via
-`?`, do **NOT** add another trace call in the intermediate function. Trace once,
-where the error is born.
+Use `#[instrument(err, ...)]` on fallible functions in observable layers:
+usecase orchestration, infra query free functions, infra query `Query` impls,
+infra external calls, and API handlers.
 
 **Do:**
 ```rust
-// Construction site — trace here
-return Err(DomainError::expected_argument(trl("error-user-not-found")).trace());
+use tracing::instrument;
+
+#[instrument(err, skip(conn), level = Level::DEBUG)]
+pub async fn get_by_id(conn: &mut AsyncPgConnection, id: &str) -> DomainResult<UserAggr> {
+    // ...
+}
 ```
 
 **Do NOT:**
 ```rust
-// Propagation site — do NOT trace again
-let user = query.get_by_id(id).await?;  // Error already traced upstream
+return Err(DomainError::expected_argument(trl("error-user-not-found")).trace());
 ```
 
 ---
@@ -140,7 +124,7 @@ let user = query.get_by_id(id).await?;  // Error already traced upstream
 
 1. Use `trl("error-xxx")` for the message — **never** hardcode a language string
 2. No `[Struct::method]` prefix — the message goes directly to the user
-3. Trace the constructed `DomainError` immediately with `.trace()`
+3. Return the constructed `DomainError`; the instrumented caller records it
 
 ### Pattern
 
@@ -148,16 +132,16 @@ let user = query.get_by_id(id).await?;  // Error already traced upstream
 use crate::util::i18n::trl;
 
 // When Diesel .optional()? returns None:
-.ok_or_else(|| DomainError::expected_argument(trl("error-user-not-found")).trace())?;
+.ok_or_else(|| DomainError::expected_argument(trl("error-user-not-found")))?;
 
 // For business validation failures:
 if !invitation.verify_code(&params.invitation_code) {
-    return Err(DomainError::expected_argument(trl("error-invalid-invitation-code")).trace());
+    return Err(DomainError::expected_argument(trl("error-invalid-invitation-code")));
 }
 
 // For update with zero affected rows:
 if rows_affected == 0 {
-    return Err(DomainError::expected_argument(trl("error-invitation-not-found")).trace());
+    return Err(DomainError::expected_argument(trl("error-invitation-not-found")));
 }
 ```
 
@@ -186,7 +170,7 @@ When adding a new Expected error:
 
 1. **Always include `[StructName::method_name]` prefix** in the message
 2. Append the technical detail (e.g., the inner error's `Display`)
-3. Trace the constructed `DomainError` immediately with `.trace()`
+3. Return the constructed `DomainError`; the instrumented caller records it
 
 ### Pattern
 
@@ -194,19 +178,19 @@ When adding a new Expected error:
 // Pool connection failure:
 .map_err(|e| DomainError::unrecoverable(format!(
     "[Query::run_in_transaction] error getting connection: {}", e
-)).trace())?;
+)))?;
 
 // External service failure:
 .map_err(|e| DomainError::unrecoverable(format!(
     "[R2OssClient::put_signed] failed to generate presigned put URL: {}", e
-)).trace())?;
+)))?;
 ```
 
 ### Diesel Error Auto-Conversion
 
 Diesel errors (except `NotFound`) are converted to `Unrecoverable` via a
-blanket `From` impl in `infrastructure/query.rs`.  The trace is performed
-inside the `From` impl, so call sites use plain `?` without `.trace()`.
+blanket `From` impl in `src/infra/query.rs`. Call sites use plain `?`; the
+instrumented function returning the `DomainResult` records the error.
 
 `NotFound` is excluded by always calling `.optional()?` before `.ok_or_else(...)`,
 
@@ -217,16 +201,16 @@ let info: UserInfo = t_user
     .first(conn)
     .await
     .optional()?          // NotFound → Ok(None), other errors → Err(Unrecoverable)
-    .ok_or_else(|| DomainError::expected_argument(trl("error-user-not-found")).trace())?;
+    .ok_or_else(|| DomainError::expected_argument(trl("error-user-not-found")))?;
 ```
 
 ---
 
-## `#[tracing::instrument]` Placement Rules
+## `#[instrument(err, ...)]` Placement Rules
 
 See also: `tracing-usage-spec` skill for rationale on prohibited placements.
 
-| Layer / Function kind | `#[tracing::instrument]`? | Rationale |
+| Layer / Function kind | `#[instrument(err, ...)]`? | Rationale |
 |-----------------------|---------------------------|-----------|
 | Constructors (`new`, `from`, `generate_id`) | ❌ Never | Pure assignment, high frequency, no I/O |
 | Domain model (`src/domain/model/`) | ❌ Never | Pure business logic, no I/O |
@@ -234,15 +218,15 @@ See also: `tracing-usage-spec` skill for rationale on prohibited placements.
 | UseCase functions (`src/usecase/`) | ✅ Always | Orchestration boundary, full request lifecycle |
 | Infra query | ✅ Permitted | Database I/O — useful for tracing individual query duration and parameters |
 | Infra query delegate (QueryTransactional) | ❌ Never | Delegate wraps the call — the free function already has instrument |
-| Infra external with `DomainError::trace` | ✅ Always | External service calls — isolate latency |
+| Infra external returning `DomainResult` | ✅ Always | External service calls — isolate latency |
 | API handlers (`src/api/`) | ✅ Always | HTTP request entry boundary |
 | Harness delegation (`src/api/harness.rs`) | ❌ Never | Pure delegation — underlying impls already instrumented. See `harness-spec` |
-| Pure logic without traced `DomainError` construction | ❌ Never | No diagnostic benefit |
+| Pure logic without I/O | ❌ Never | No diagnostic benefit |
 
 **Heuristic**: if a function is an orchestration boundary (usecase, API handler)
-or an external service call, it benefits from `#[tracing::instrument]`. For
-infra query free functions, `#[instrument]` is **permitted but not required**;
-add it when the observability benefit outweighs the span overhead.
+or an external service call, it benefits from `#[instrument(err, ...)]`. For
+infra query free functions, `#[instrument(err, ...)]` is **permitted but not
+required**; add it when the observability benefit outweighs the span overhead.
 
 ---
 
@@ -252,14 +236,12 @@ Constructors fall into two categories with different rules.
 
 ### Domain Constructors (aggregate `new`, `generate_id`, `From`)
 
-- No `#[tracing::instrument]`
-- No `DomainError::trace` calls
+- No `#[instrument]`
 - These cannot fail — if they do, it's a programmer error that panics
 
 ### Infrastructure Constructors (`Query::new`, `R2ImagePool::from_env`, `JwtCodec::from_env`)
 
-- No `#[tracing::instrument]`
-- No `DomainError::trace` calls
+- No `#[instrument]`
 - Return `anyhow::Result<Self>` — errors are flat construction failures
 - **Always use `.with_context()` (never `.context()`)** — the closure form saves a
   heap allocation for the error message string on the happy path.
@@ -299,11 +281,11 @@ Constructors fall into two categories with different rules.
 
 | Layer | Error type | Creates errors? | Trace at | Instrument? |
 |-------|-----------|-----------------|----------|-------------|
-| **Domain** | `DomainError` | Yes — via constructors + `trl()` / format with prefix | Construction site | No |
-| **UseCase** | `UseCaseError` (wraps `DomainError`) | Rarely — mostly propagates via `?` | Only if creating a new error | Yes |
-| **Infrastructure query** | `DomainError` | Yes — NotFound → Expected, pool fail → Unrecoverable | Construction site | Yes (free functions + Query impl) |
-| **Infrastructure external** | `DomainError` | Yes — all external failures → Unrecoverable | Construction site | Yes |
-| **API** | TBD | Converts `UseCaseError` → HTTP responses | TBD | Yes |
+| **Domain** | `DomainError` | Yes — via constructors + `trl()` / format with prefix | Returned by instrumented caller | No |
+| **UseCase** | `UseCaseError` (wraps `DomainError`) | Rarely — mostly propagates via `?` | Function return via `err` | Yes |
+| **Infrastructure query** | `DomainError` | Yes — NotFound → Expected, pool fail → Unrecoverable | Function return via `err` | Yes (free functions + Query impl) |
+| **Infrastructure external** | `DomainError` | Yes — all external failures → Unrecoverable | Function return via `err` | Yes |
+| **API** | TBD | Converts `UseCaseError` → HTTP responses | Function return via `err` | Yes |
 
 ---
 
@@ -311,31 +293,31 @@ Constructors fall into two categories with different rules.
 
 ```rust
 // ── Expected (user-facing) ─────────────────────────────────────────────────
-// Pattern: DomainError::expected_{variant}(trl("error-xxx")).trace()
+// Pattern: DomainError::expected_{variant}(trl("error-xxx"))
 
 // Not found:
-.ok_or_else(|| DomainError::expected_argument(trl("error-user-not-found")).trace())?;
+.ok_or_else(|| DomainError::expected_argument(trl("error-user-not-found")))?;
 
 // Validation failure:
-return Err(DomainError::expected_argument(trl("error-invalid-code")).trace());
+return Err(DomainError::expected_argument(trl("error-invalid-code")));
 
 // Authentication failure:
-return Err(DomainError::expected_authentication(trl("error-unauthorized")).trace());
+return Err(DomainError::expected_authentication(trl("error-unauthorized")));
 
 // ── Unrecoverable (internal) ───────────────────────────────────────────────
-// Pattern: DomainError::unrecoverable(format!("[Struct::method] detail: {}", e)).trace()
+// Pattern: DomainError::unrecoverable(format!("[Struct::method] detail: {}", e))
 
 // Connection pool:
 .map_err(|e| DomainError::unrecoverable(format!(
     "[Query::get_by_id] error getting connection: {}", e
-)).trace())?;
+)))?;
 
 // External API:
 .map_err(|e| DomainError::unrecoverable(format!(
     "[JwtCodec::sign] error when encoding: {}", e
-)).trace())?;
+)))?;
 
-// Diesel errors (automatic via From impl — no explicit trace needed):
+// Diesel errors (automatic via From impl — no manual tracing needed):
 let row = diesel_query.execute(conn).await?;  // ? triggers From<diesel::Error>
 ```
 
@@ -358,9 +340,9 @@ DomainError::expected_argument("[UserQuery::get_by_id] 该用户不存在".into(
 // ❌ Unrecoverable without [Struct::method] prefix (can't trace origin)
 DomainError::unrecoverable(format!("error getting connection: {}", e))
 
-// ❌ Double-tracing — trace at both construction and propagation
-let err = DomainError::expected_argument(trl("x")).trace();
-return Err(err).trace();  // second trace is redundant
+// ❌ Manual tracing at construction — use #[instrument(err, ...)] on the caller
+tracing::error!("failed");
+return Err(DomainError::expected_argument(trl("x")));
 
 // ❌ .context() on anyhow::Result — use .with_context() always
 let val = std::env::var("KEY").context("[Struct::method] KEY is not set")?;

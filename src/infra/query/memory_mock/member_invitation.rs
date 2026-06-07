@@ -18,9 +18,7 @@ impl MemberInvitationQueryTransactional for MemoryMockQueryTransactional {
             .iter()
             .find(|inv| inv.code == invitation_code && inv.pending)
             .cloned()
-            .ok_or_else(|| {
-                DomainError::expected_argument(trl("error-no-pending-invitation")).trace()
-            })
+            .ok_or_else(|| DomainError::expected_argument(trl("error-no-pending-invitation")))
     }
 
     async fn mark_pending_as_used(&mut self, id: &str) -> DomainResult<()> {
@@ -36,7 +34,9 @@ impl MemberInvitationQueryTransactional for MemoryMockQueryTransactional {
                 state.member_invitations[pos].pending = false;
                 Ok(())
             }
-            None => Err(DomainError::expected_argument(trl("error-invitation-not-found")).trace()),
+            None => Err(DomainError::expected_argument(trl(
+                "error-invitation-not-found",
+            ))),
         }
     }
 }
@@ -104,10 +104,8 @@ mod tests {
 
         let err = mock
             .transaction_scoped(|txn| {
-                async move {
-                    MemberInvitationQueryTransactional::get_by_code_ex(txn, "NOPE").await
-                }
-                .boxed()
+                async move { MemberInvitationQueryTransactional::get_by_code_ex(txn, "NOPE").await }
+                    .boxed()
             })
             .await
             .err()

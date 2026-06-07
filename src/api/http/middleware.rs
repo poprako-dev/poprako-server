@@ -28,9 +28,9 @@ use crate::usecase;
 
 use poprako_util::i18n::trl;
 
-type StaticFuture = BoxFuture<'static, Response>;
+type LayerFuture = BoxFuture<'static, Response>;
 
-type LayerFn = fn(State<Harness>, Request, Next) -> StaticFuture;
+type LayerFn = fn(State<Harness>, Request, Next) -> LayerFuture;
 type FromFnLayer = middleware::FromFnLayer<LayerFn, Harness, (State<Harness>, Request)>;
 
 /// Tower layer that validates the authorization token.
@@ -62,7 +62,7 @@ where
     }
 }
 
-fn authorize(State(harn): State<Harness>, mut request: Request, next: Next) -> StaticFuture {
+fn authorize(State(harn): State<Harness>, mut request: Request, next: Next) -> LayerFuture {
     async move {
         let raw_token = extract_token(&request);
 

@@ -19,7 +19,6 @@ pub trait UserQuery {
 
     /// Marks the user's avatar as uploaded.
     async fn mark_avatar_uploaded(&self, id: &str) -> DomainResult<()>;
-
 }
 
 /// Mutable persistence contract for [`UserAggr`], used **only** inside

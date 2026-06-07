@@ -22,7 +22,6 @@ macro_rules! allocate_connection {
                 "[{}] error getting connection: {}",
                 $loc, e
             ))
-            .trace()
         })?
     };
 }
@@ -68,10 +67,9 @@ use poprako_util::i18n::trl;
 
 /// Converts a raw Diesel error into a structured [`DomainError`].
 ///
-/// This is the single trace point for all Diesel-originated errors — every
-/// `?` on a Diesel result passes through this conversion, which performs both
-/// classification (Expected vs Unrecoverable) and structured observability
-/// through `DomainError::trace`.
+/// Every `?` on a Diesel result passes through this conversion, which keeps
+/// Diesel-originated errors classified before the instrumented caller records
+/// the returned error.
 impl From<diesel::result::Error> for DomainError {
     fn from(val: diesel::result::Error) -> Self {
         match &val {
@@ -79,7 +77,7 @@ impl From<diesel::result::Error> for DomainError {
             diesel::result::Error::DatabaseError(
                 diesel::result::DatabaseErrorKind::UniqueViolation,
                 _,
-            ) => DomainError::expected_conflict(trl("error-already-exists")).trace(),
+            ) => DomainError::expected_conflict(trl("error-already-exists")),
 
             // NotFound is deliberately excluded — each query call site must
             // call `.optional()?` and convert `None` to a contextual Expected
@@ -87,12 +85,10 @@ impl From<diesel::result::Error> for DomainError {
             diesel::result::Error::NotFound => DomainError::unrecoverable(format!(
                 "[From<diesel::Error>] unexpected NotFound — a required row was not found: {}",
                 val,
-            ))
-            .trace(),
+            )),
 
             _ => {
                 DomainError::unrecoverable(format!("[From<diesel::Error>] diesel error: {}", val,))
-                    .trace()
             }
         }
     }
@@ -127,7 +123,7 @@ impl RdbQuery {
 impl Transactional for RdbQuery {
     type Query<'a> = RdbQueryTransactional<'a>;
 
-    #[instrument(skip(self, f), level = Level::DEBUG)]
+    #[instrument(err, skip(self, f), level = Level::DEBUG)]
     async fn transaction_scoped<F, T>(&self, f: F) -> DomainResult<T>
     where
         T: Send, // Return value must cross .await boundaries; Tokio multi-threaded runtime requires Send
