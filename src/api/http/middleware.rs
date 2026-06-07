@@ -1,55 +1,88 @@
-use axum::Router;
 use axum::extract::{Request, State};
 use axum::http::HeaderName;
 use axum::http::header;
-use axum::middleware::{self, Next};
+use axum::middleware::{self, Next, from_fn_with_state};
 use axum::response::{IntoResponse, Response};
+use futures_util::FutureExt as _;
+use futures_util::future::BoxFuture;
+use tower::Layer;
 use tower::ServiceBuilder;
+use tower::layer::util::{Identity, Stack};
 use tower_http::request_id::{
     MakeRequestId, PropagateRequestIdLayer, RequestId, SetRequestIdLayer,
 };
-use tower_http::trace::TraceLayer;
-use tracing::{Level, info_span, instrument};
+use tower_http::trace::{
+    DefaultOnBodyChunk, DefaultOnEos, DefaultOnFailure, DefaultOnRequest, DefaultOnResponse,
+    HttpMakeClassifier, MakeSpan, TraceLayer,
+};
+use tracing::Instrument;
 use uuid::Uuid;
 
+use poprako_util::i18n::trl;
+
+use crate::api::http::auth_token::AUTHORIZATION_BEARER_PREFIX;
+use crate::api::http::auth_token::AUTHORIZATION_COOKIE_NAME;
 use crate::api::http::result::HttpError;
-use crate::domain::external::token::TokenParse;
-use crate::domain::model::aggregate::user::UserToken;
+use crate::domain::compound::user::parse_token;
 use crate::domain::result::ExpectedVariant;
 use crate::harness::Harness;
-use crate::util::i18n::trl;
+use crate::usecase;
 
-/// Name of the cookie that carries the authorization token.
-pub const AUTHORIZATION_COOKIE_NAME: &str = "authorization-token";
+type LayerFuture = BoxFuture<'static, Response>;
 
-/// Prefix to strip from the `Authorization` header value.
-pub const AUTHORIZATION_BEARER_PREFIX: &str = "Bearer ";
+type LayerFn = fn(State<Harness>, Request, Next) -> LayerFuture;
+type FromFnLayer = middleware::FromFnLayer<LayerFn, Harness, (State<Harness>, Request)>;
 
-/// Extension key for the parsed [`UserToken`].
+/// Tower layer that validates the authorization token.
 ///
-/// Inserted by [`authorize`] into [`Request::extensions`].
-/// Handlers consume it via the request extensions API.
-#[derive(Clone, Debug)]
-pub struct AuthUser(pub UserToken);
+/// Reads the token from the `authorization-token` cookie first, falling back to
+/// the `Authorization` header. The parsed token is inserted into request
+/// extensions for handlers that need the current user.
+#[derive(Clone)]
+pub struct AuthorizeLayer {
+    layer: FromFnLayer,
+}
 
-/// Axum middleware that validates the authorization token.
-///
-/// Reads the token from the `authorization-token` cookie first,
-/// falling back to the `Authorization` header. Parses the token
-/// via [`TokenCodec`] and stores the resulting [`UserToken`] as
-/// an [`AuthUser`] extension. Returns 401 on any failure.
-#[instrument(skip(request, harn), level = Level::DEBUG)]
-async fn authorize(State(harn): State<Harness>, mut request: Request, next: Next) -> Response {
-    let raw_token = extract_token(&request);
+impl AuthorizeLayer {
+    pub fn new(harn: Harness) -> Self {
+        Self {
+            layer: from_fn_with_state(harn, authorize as LayerFn),
+        }
+    }
+}
 
-    let Ok(user_token) = harn.parse(&raw_token) else {
-        return HttpError::expected(&ExpectedVariant::Authentication, &trl("error-unauthorized"))
+impl<S> Layer<S> for AuthorizeLayer
+where
+    FromFnLayer: Layer<S>,
+{
+    type Service = <FromFnLayer as Layer<S>>::Service;
+
+    fn layer(&self, inner: S) -> Self::Service {
+        self.layer.layer(inner)
+    }
+}
+
+fn authorize(State(harn): State<Harness>, mut request: Request, next: Next) -> LayerFuture {
+    async move {
+        let raw_token = extract_token(&request);
+
+        let Ok(user_token) = parse_token(&harn, &raw_token) else {
+            return HttpError::expected(
+                &ExpectedVariant::Authentication,
+                &trl("error-unauthorized"),
+            )
             .into_response();
-    };
+        };
 
-    request.extensions_mut().insert(AuthUser(user_token));
+        // Update last active timestamp on every authenticated request.
+        let _ = usecase::user::touch_last_active(&harn, &user_token.user_id).await;
 
-    next.run(request).await
+        request.extensions_mut().insert(user_token);
+
+        next.run(request).await
+    }
+    .instrument(tracing::debug_span!("authorize"))
+    .boxed()
 }
 
 /// Extracts the raw token string from the request.
@@ -83,22 +116,7 @@ fn extract_token(request: &Request) -> String {
     String::new()
 }
 
-/// Wraps a [`Router<Harness>`] with authorization middleware.
-///
-/// Applies [`authorize`] via [`middleware::from_fn_with_state`] so that
-/// every request flowing through the returned router must carry a valid
-/// authorization token (cookie or `Authorization` header).
-/// Requests that fail validation receive a 401 response.
-pub fn with_authorization(router: Router<Harness>, harn: Harness) -> Router<Harness> {
-    router.layer(middleware::from_fn_with_state(harn, authorize))
-}
-
-/// Name of the header that carries the request ID.
-///
-/// Used by [`with_request_id`] for both incoming propagation
-/// (reading an existing ID forwarded by a proxy) and outgoing
-/// propagation (writing the ID to the response headers).
-pub const REQUEST_ID_HEADER: &str = "x-request-id";
+const REQUEST_ID_HEADER: &str = "x-request-id";
 
 /// A [`MakeRequestId`] implementation that generates UUID v7.
 ///
@@ -117,37 +135,68 @@ impl MakeRequestId for MakeRequestUuidV7 {
     }
 }
 
-/// Wraps a [`Router<Harness>`] with request-id and tracing middleware.
-///
-/// The middleware stack, composed via [`ServiceBuilder`], provides:
-///
-/// 1. **Request ID generation** — if the incoming request lacks an
-///    `x-request-id` header, a UUID v7 is generated and attached.
-/// 2. **Structured tracing** — every request is instrumented with an
-///    [`info_span`] that carries the request-id, method, and URI.
-/// 3. **Response propagation** — the request-id is copied from the
-///    request to the response headers so clients can correlate.
-pub fn with_request_id(router: Router<Harness>) -> Router<Harness> {
-    router.layer(
-        ServiceBuilder::new()
-            .layer(SetRequestIdLayer::new(
-                HeaderName::from_static(REQUEST_ID_HEADER),
-                MakeRequestUuidV7,
-            ))
-            .layer(
-                TraceLayer::new_for_http().make_span_with(|request: &axum::http::Request<_>| {
-                    let request_id = request
-                        .headers()
-                        .get(REQUEST_ID_HEADER)
-                        .and_then(|v| v.to_str().ok())
-                        .map(|v| v.to_owned())
-                        .unwrap_or_else(|| Uuid::now_v7().to_string());
+#[derive(Clone, Debug)]
+pub struct MakeHttpRequestSpan;
 
-                    info_span!("http_request", request_id = request_id)
-                }),
-            )
-            .layer(PropagateRequestIdLayer::new(HeaderName::from_static(
-                REQUEST_ID_HEADER,
-            ))),
-    )
+impl<B> MakeSpan<B> for MakeHttpRequestSpan {
+    fn make_span(&mut self, request: &axum::http::Request<B>) -> tracing::Span {
+        let request_id = request
+            .headers()
+            .get(REQUEST_ID_HEADER)
+            .and_then(|v| v.to_str().ok())
+            .map(|v| v.to_owned())
+            .unwrap_or_else(|| Uuid::now_v7().to_string());
+
+        tracing::info_span!("http_request", request_id = %request_id)
+    }
+}
+
+type HttpTraceLayer = TraceLayer<
+    HttpMakeClassifier,
+    MakeHttpRequestSpan,
+    DefaultOnRequest,
+    DefaultOnResponse,
+    DefaultOnBodyChunk,
+    DefaultOnEos,
+    DefaultOnFailure,
+>;
+
+type IdTraceLayerInner = ServiceBuilder<
+    Stack<
+        PropagateRequestIdLayer,
+        Stack<HttpTraceLayer, Stack<SetRequestIdLayer<MakeRequestUuidV7>, Identity>>,
+    >,
+>;
+
+/// Tower layer that sets, traces, and propagates the request ID.
+#[derive(Clone, Debug, Default)]
+pub struct IdTraceLayer;
+
+impl IdTraceLayer {
+    pub fn new() -> Self {
+        Self
+    }
+}
+
+impl<S> Layer<S> for IdTraceLayer
+where
+    IdTraceLayerInner: Layer<S>,
+{
+    type Service = <IdTraceLayerInner as Layer<S>>::Service;
+
+    fn layer(&self, inner: S) -> Self::Service {
+        Layer::layer(&id_trace_layer(), inner)
+    }
+}
+
+fn id_trace_layer() -> IdTraceLayerInner {
+    ServiceBuilder::new()
+        .layer(SetRequestIdLayer::new(
+            HeaderName::from_static(REQUEST_ID_HEADER),
+            MakeRequestUuidV7,
+        ))
+        .layer(TraceLayer::new_for_http().make_span_with(MakeHttpRequestSpan))
+        .layer(PropagateRequestIdLayer::new(HeaderName::from_static(
+            REQUEST_ID_HEADER,
+        )))
 }

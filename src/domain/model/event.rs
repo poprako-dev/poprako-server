@@ -23,7 +23,7 @@ impl Event {
 
 /// Accumulates domain events during a business operation.
 ///
-/// Implemented by input aggregates (e.g. [`UserForm`](crate::domain::model::aggregate::user::UserForm))
+/// Implemented by input aggregates (e.g. [`UserForm`](crate::domain::model::aggr::user::UserForm))
 /// that carry a private `events: Vec<DomainEvent>` field. The usecase layer pushes events
 /// into the form before passing it to the query layer's `create`.
 pub trait EventSink {

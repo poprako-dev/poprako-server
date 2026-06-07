@@ -1,0 +1,503 @@
+use async_trait::async_trait;
+use time::OffsetDateTime;
+
+use poprako_util::i18n::trl;
+
+use crate::domain::model::aggr::user::{UserAggr, UserCredential, UserForm, UserInfoUpdate};
+use crate::domain::query::user::{UserQuery, UserQueryTransactional};
+use crate::domain::result::{DomainError, DomainResult};
+use crate::infra::query::memory_mock::{MemoryMockQuery, MemoryMockQueryTransactional};
+
+// ── Query impls ────────────────────────────────────────────────────────────
+
+#[async_trait]
+impl UserQuery for MemoryMockQuery {
+    async fn get_by_id(&self, id: &str) -> DomainResult<UserAggr> {
+        let state = self.state.lock().unwrap();
+        state
+            .users
+            .iter()
+            .find(|u| u.id == id)
+            .cloned()
+            .ok_or_else(|| DomainError::expected_argument(trl("error-user-not-found")))
+    }
+
+    async fn get_credentials_by_qid(&self, qid: &str) -> DomainResult<UserCredential> {
+        let state = self.state.lock().unwrap();
+        let user = state
+            .users
+            .iter()
+            .find(|u| u.qid == qid)
+            .ok_or_else(|| DomainError::expected_argument(trl("error-user-not-found")))?;
+        state
+            .credentials
+            .iter()
+            .find(|c| c.user_id == user.id)
+            .cloned()
+            .ok_or_else(|| DomainError::expected_argument(trl("error-user-not-found")))
+    }
+
+    async fn prefill_avatar_key(&self, id: &str, key: &str) -> DomainResult<()> {
+        let mut state = self.state.lock().unwrap();
+
+        let user = state
+            .users
+            .iter_mut()
+            .find(|u| u.id == id)
+            .ok_or_else(|| DomainError::expected_argument(trl("error-user-not-found")))?;
+
+        user.avatar_key = key.to_string();
+        user.updated_at = OffsetDateTime::now_utc();
+
+        Ok(())
+    }
+
+    async fn mark_avatar_uploaded(&self, id: &str) -> DomainResult<()> {
+        let mut state = self.state.lock().unwrap();
+
+        let user = state
+            .users
+            .iter_mut()
+            .find(|u| u.id == id)
+            .ok_or_else(|| DomainError::expected_argument(trl("error-user-not-found")))?;
+
+        user.avatar_uploaded = true;
+        user.updated_at = OffsetDateTime::now_utc();
+
+        Ok(())
+    }
+}
+
+// ── QueryTransactional impls ───────────────────────────────────────────────
+
+#[async_trait]
+impl UserQueryTransactional for MemoryMockQueryTransactional {
+    async fn create(&mut self, form: &UserForm) -> DomainResult<UserAggr> {
+        let mut state = self.state.lock().unwrap();
+
+        // Check uniqueness constraints.
+        if state.users.iter().any(|u| u.id == form.id) {
+            return Err(DomainError::expected_conflict(trl("error-already-exists")));
+        }
+        if state.users.iter().any(|u| u.qid == form.qid) {
+            return Err(DomainError::expected_conflict(trl("error-already-exists")));
+        }
+        if state.users.iter().any(|u| u.nickname == form.nickname) {
+            return Err(DomainError::expected_conflict(trl("error-already-exists")));
+        }
+
+        // Build the user aggregate from the form.
+        let now = OffsetDateTime::now_utc();
+        let user = UserAggr {
+            id: form.id.clone(),
+            nickname: form.nickname.clone(),
+            qid: form.qid.clone(),
+            is_sadmin: false,
+            avatar_key: String::new(),
+            avatar_uploaded: false,
+            last_active_at: now,
+            created_at: now,
+            updated_at: now,
+        };
+
+        let credential = UserCredential {
+            user_id: form.id.clone(),
+            password_hash: form.password_hash.clone(),
+        };
+
+        state.users.push(user.clone());
+        state.credentials.push(credential);
+
+        Ok(user)
+    }
+
+    async fn update_info(&mut self, input: &UserInfoUpdate) -> DomainResult<UserAggr> {
+        let mut state = self.state.lock().unwrap();
+
+        let user = state
+            .users
+            .iter_mut()
+            .find(|u| u.id == input.id)
+            .ok_or_else(|| DomainError::expected_argument(trl("error-user-not-found")))?;
+
+        user.nickname = input.nickname.clone();
+        user.qid = input.qid.clone();
+        user.updated_at = OffsetDateTime::now_utc();
+
+        Ok(user.clone())
+    }
+
+    async fn touch_last_active(&mut self, id: &str) -> DomainResult<()> {
+        let mut state = self.state.lock().unwrap();
+
+        let user = state
+            .users
+            .iter_mut()
+            .find(|u| u.id == id)
+            .ok_or_else(|| DomainError::expected_argument(trl("error-user-not-found")))?;
+
+        user.last_active_at = OffsetDateTime::now_utc();
+        user.updated_at = OffsetDateTime::now_utc();
+
+        Ok(())
+    }
+}
+
+// ── Tests ──────────────────────────────────────────────────────────────────
+
+#[cfg(test)]
+mod tests {
+    // find_by_id_after_seed(UserQuery::get_by_id)(positive): seeded users should be found by ID.
+    // find_credential_by_qid_after_seed(UserQuery::get_credentials_by_qid)(positive): seeded credentials should be found by qualified ID.
+    // get_by_id_missing_returns_expected_error(UserQuery::get_by_id)(negative): missing users should return an expected argument error.
+    // create_then_find(UserQueryTransactional::create)(positive): created users should be readable after transaction commit.
+    // duplicate_qid_returns_conflict(UserQueryTransactional::create)(negative): duplicate qualified IDs should return an expected conflict.
+    // duplicate_nickname_returns_conflict(UserQueryTransactional::create)(negative): duplicate nicknames should return an expected conflict.
+    // update_changes_fields_and_is_readable_after_commit(UserQueryTransactional::update_info)(positive): updates should persist nickname and qid.
+    // update_missing_user_returns_expected_error(UserQueryTransactional::update_info)(negative): updating a non-existent user should fail.
+    // prefill_avatar_key_sets_avatar_key(UserQuery::prefill_avatar_key)(positive): prefill should set the avatar key.
+    // prefill_avatar_key_missing_user_returns_expected_error(UserQuery::prefill_avatar_key)(negative): prefilling for a missing user should fail.
+    // mark_avatar_uploaded_sets_flag(UserQuery::mark_avatar_uploaded)(positive): marking should set avatar_uploaded to true.
+    // mark_avatar_uploaded_missing_user_returns_expected_error(UserQuery::mark_avatar_uploaded)(negative): marking for a missing user should fail.
+    // touch_last_active_updates_timestamp(UserQuery::touch_last_active)(positive): touching should update last_active_at.
+    // touch_last_active_missing_user_returns_expected_error(UserQuery::touch_last_active)(negative): touching for a missing user should fail.
+
+    use futures_util::FutureExt as _;
+    use time::OffsetDateTime;
+
+    use crate::domain::model::aggr::user::{UserAggr, UserCredential, UserForm, UserInfoUpdate};
+    use crate::domain::query::Transactional;
+    use crate::domain::query::user::UserQuery;
+    use crate::domain::query::user::UserQueryTransactional;
+    use crate::infra::query::memory_mock::MemoryMockQuery;
+    use crate::test_util::is_expected_argument;
+    use crate::test_util::is_expected_conflict;
+
+    fn now() -> OffsetDateTime {
+        OffsetDateTime::now_utc()
+    }
+
+    fn make_user(id: &str, qid: &str, nickname: &str) -> UserAggr {
+        let n = now();
+        UserAggr {
+            id: id.into(),
+            nickname: nickname.into(),
+            qid: qid.into(),
+            is_sadmin: false,
+            avatar_key: String::new(),
+            avatar_uploaded: false,
+            last_active_at: n,
+            created_at: n,
+            updated_at: n,
+        }
+    }
+
+    fn make_credential(user_id: &str) -> UserCredential {
+        UserCredential {
+            user_id: user_id.into(),
+            password_hash: "hashed-pw".into(),
+        }
+    }
+
+    #[tokio::test]
+    async fn find_by_id_after_seed() {
+        let mock = MemoryMockQuery::new();
+        mock.seed_user(
+            make_user("user-1", "qid-1", "nick"),
+            make_credential("user-1"),
+        );
+
+        let found = UserQuery::get_by_id(&mock, "user-1").await.unwrap();
+        assert_eq!(found.id, "user-1");
+        assert_eq!(found.qid, "qid-1");
+    }
+
+    #[tokio::test]
+    async fn find_credential_by_qid_after_seed() {
+        let mock = MemoryMockQuery::new();
+        mock.seed_user(
+            make_user("user-1", "qid-1", "nick"),
+            make_credential("user-1"),
+        );
+
+        let cred = UserQuery::get_credentials_by_qid(&mock, "qid-1")
+            .await
+            .unwrap();
+        assert_eq!(cred.password_hash, "hashed-pw");
+    }
+
+    #[tokio::test]
+    async fn get_by_id_missing_returns_expected_error() {
+        let mock = MemoryMockQuery::new();
+
+        let err = UserQuery::get_by_id(&mock, "nonexistent")
+            .await
+            .err()
+            .unwrap();
+        assert!(is_expected_argument(&err));
+    }
+
+    #[tokio::test]
+    async fn create_then_find() {
+        let mock = MemoryMockQuery::new();
+
+        mock.transaction_scoped(|txn| {
+            async move {
+                let form = UserForm::new(
+                    UserAggr::generate_id(),
+                    "qid-new".into(),
+                    "nick-new".into(),
+                    "pw".into(),
+                );
+                let user = UserQueryTransactional::create(txn, &form).await.unwrap();
+                assert_eq!(user.qid, "qid-new");
+                assert_eq!(user.nickname, "nick-new");
+                Ok(())
+            }
+            .boxed()
+        })
+        .await
+        .unwrap();
+
+        // User readable from outside the transaction.
+        let found = UserQuery::get_by_id(&mock, &mock.snapshot().users[0].id)
+            .await
+            .unwrap();
+        assert_eq!(found.qid, "qid-new");
+    }
+
+    #[tokio::test]
+    async fn duplicate_qid_returns_conflict() {
+        let mock = MemoryMockQuery::new();
+
+        mock.transaction_scoped(|txn| {
+            async move {
+                let form = UserForm::new(
+                    UserAggr::generate_id(),
+                    "dup-qid".into(),
+                    "nick-1".into(),
+                    "pw".into(),
+                );
+                UserQueryTransactional::create(txn, &form).await.unwrap();
+                Ok(())
+            }
+            .boxed()
+        })
+        .await
+        .unwrap();
+
+        let err = mock
+            .transaction_scoped(|txn| {
+                async move {
+                    let form = UserForm::new(
+                        UserAggr::generate_id(),
+                        "dup-qid".into(),
+                        "nick-2".into(),
+                        "pw".into(),
+                    );
+                    UserQueryTransactional::create(txn, &form).await
+                }
+                .boxed()
+            })
+            .await
+            .err()
+            .unwrap();
+
+        assert!(is_expected_conflict(&err));
+    }
+
+    #[tokio::test]
+    async fn duplicate_nickname_returns_conflict() {
+        let mock = MemoryMockQuery::new();
+
+        mock.transaction_scoped(|txn| {
+            async move {
+                let form = UserForm::new(
+                    UserAggr::generate_id(),
+                    "qid-1".into(),
+                    "dup-nick".into(),
+                    "pw".into(),
+                );
+                UserQueryTransactional::create(txn, &form).await.unwrap();
+                Ok(())
+            }
+            .boxed()
+        })
+        .await
+        .unwrap();
+
+        let err = mock
+            .transaction_scoped(|txn| {
+                async move {
+                    let form = UserForm::new(
+                        UserAggr::generate_id(),
+                        "qid-2".into(),
+                        "dup-nick".into(),
+                        "pw".into(),
+                    );
+                    UserQueryTransactional::create(txn, &form).await
+                }
+                .boxed()
+            })
+            .await
+            .err()
+            .unwrap();
+
+        assert!(is_expected_conflict(&err));
+    }
+
+    #[tokio::test]
+    async fn update_changes_fields_and_is_readable_after_commit() {
+        let mock = MemoryMockQuery::new();
+        mock.seed_user(
+            make_user("user-1", "qid-1", "old-nick"),
+            make_credential("user-1"),
+        );
+
+        mock.transaction_scoped(|txn| {
+            async move {
+                let input = UserInfoUpdate {
+                    id: "user-1".into(),
+                    qid: "new-qid".into(),
+                    nickname: "new-nick".into(),
+                };
+                let updated = UserQueryTransactional::update_info(txn, &input)
+                    .await
+                    .unwrap();
+                assert_eq!(updated.qid, "new-qid");
+                assert_eq!(updated.nickname, "new-nick");
+                Ok(())
+            }
+            .boxed()
+        })
+        .await
+        .unwrap();
+
+        let found = UserQuery::get_by_id(&mock, "user-1").await.unwrap();
+        assert_eq!(found.qid, "new-qid");
+        assert_eq!(found.nickname, "new-nick");
+    }
+
+    #[tokio::test]
+    async fn update_missing_user_returns_expected_error() {
+        let mock = MemoryMockQuery::new();
+
+        let err = mock
+            .transaction_scoped(|txn| {
+                async move {
+                    let input = UserInfoUpdate {
+                        id: "nonexistent".into(),
+                        qid: "q".into(),
+                        nickname: "n".into(),
+                    };
+                    UserQueryTransactional::update_info(txn, &input).await
+                }
+                .boxed()
+            })
+            .await
+            .err()
+            .unwrap();
+
+        assert!(is_expected_argument(&err));
+    }
+
+    #[tokio::test]
+    async fn prefill_avatar_key_sets_avatar_key() {
+        let mock = MemoryMockQuery::new();
+        mock.seed_user(
+            make_user("user-1", "qid-1", "nick"),
+            make_credential("user-1"),
+        );
+
+        UserQuery::prefill_avatar_key(&mock, "user-1", "avatars/new-key.png")
+            .await
+            .unwrap();
+
+        let found = UserQuery::get_by_id(&mock, "user-1").await.unwrap();
+        assert_eq!(found.avatar_key, "avatars/new-key.png");
+    }
+
+    #[tokio::test]
+    async fn prefill_avatar_key_missing_user_returns_expected_error() {
+        let mock = MemoryMockQuery::new();
+
+        let err = UserQuery::prefill_avatar_key(&mock, "nonexistent", "some-key")
+            .await
+            .err()
+            .unwrap();
+
+        assert!(is_expected_argument(&err));
+    }
+
+    #[tokio::test]
+    async fn mark_avatar_uploaded_sets_flag() {
+        let mock = MemoryMockQuery::new();
+        mock.seed_user(
+            make_user("user-1", "qid-1", "nick"),
+            make_credential("user-1"),
+        );
+
+        UserQuery::mark_avatar_uploaded(&mock, "user-1")
+            .await
+            .unwrap();
+
+        let found = UserQuery::get_by_id(&mock, "user-1").await.unwrap();
+        assert!(found.avatar_uploaded);
+    }
+
+    #[tokio::test]
+    async fn mark_avatar_uploaded_missing_user_returns_expected_error() {
+        let mock = MemoryMockQuery::new();
+
+        let err = UserQuery::mark_avatar_uploaded(&mock, "nonexistent")
+            .await
+            .err()
+            .unwrap();
+
+        assert!(is_expected_argument(&err));
+    }
+
+    #[tokio::test]
+    async fn touch_last_active_updates_timestamp() {
+        let mock = MemoryMockQuery::new();
+        mock.seed_user(
+            make_user("user-1", "qid-1", "nick"),
+            make_credential("user-1"),
+        );
+
+        let before = UserQuery::get_by_id(&mock, "user-1")
+            .await
+            .unwrap()
+            .last_active_at;
+
+        tokio::time::sleep(std::time::Duration::from_millis(5)).await;
+
+        mock.transaction_scoped(|txn| {
+            async move { UserQueryTransactional::touch_last_active(txn, "user-1").await }.boxed()
+        })
+        .await
+        .unwrap();
+
+        let after = UserQuery::get_by_id(&mock, "user-1")
+            .await
+            .unwrap()
+            .last_active_at;
+        assert!(after > before);
+    }
+
+    #[tokio::test]
+    async fn touch_last_active_missing_user_returns_expected_error() {
+        let mock = MemoryMockQuery::new();
+
+        let err = mock
+            .transaction_scoped(|txn| {
+                async move { UserQueryTransactional::touch_last_active(txn, "nonexistent").await }
+                    .boxed()
+            })
+            .await
+            .err()
+            .unwrap();
+
+        assert!(is_expected_argument(&err));
+    }
+}
