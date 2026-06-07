@@ -38,7 +38,9 @@ async fn main() {
                     .with_writer(non_blocking)
                     .with_ansi(false),
             )
-            .with(tracing_subscriber::EnvFilter::new(LevelFilter::INFO.to_string()))
+            .with(tracing_subscriber::EnvFilter::new(
+                LevelFilter::INFO.to_string(),
+            ))
             .init();
 
         // Keep the guard alive for the entire program lifetime.

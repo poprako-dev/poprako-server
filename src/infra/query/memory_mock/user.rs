@@ -162,8 +162,8 @@ mod tests {
     // touch_last_active_updates_timestamp(UserQuery::touch_last_active)(positive): touching should update last_active_at.
     // touch_last_active_missing_user_returns_expected_error(UserQuery::touch_last_active)(negative): touching for a missing user should fail.
 
-    use time::OffsetDateTime;
     use futures_util::FutureExt as _;
+    use time::OffsetDateTime;
 
     use crate::domain::model::aggr::user::{UserAggr, UserCredential, UserForm, UserInfoUpdate};
     use crate::domain::query::Transactional;
