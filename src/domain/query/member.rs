@@ -1,7 +1,44 @@
 use async_trait::async_trait;
 
-use crate::domain::model::aggr::member::{MemberAggr, MemberForm};
+use poprako_macro::forward_ref;
+
+use crate::domain::model::aggr::member::{MemberAggr, MemberForm, MemberRoleUpdate};
+use crate::domain::model::value::role::RoleFlag;
 use crate::domain::result::DomainResult;
+
+/// Read-only persistence contract for [`MemberAggr`].
+///
+/// Each method takes an immutable `&self` reference, suitable for
+/// non-transactional queries backed by a connection pool.
+#[forward_ref]
+#[async_trait]
+pub trait MemberQuery {
+    /// Returns the member with the given ID, or an expected error if not found.
+    async fn get_by_id(&self, id: &str) -> DomainResult<MemberAggr>;
+
+    /// Returns the member matching the given user and team IDs, or an expected error if not found.
+    async fn get_by_user_and_team_id(
+        &self,
+        user_id: &str,
+        team_id: &str,
+    ) -> DomainResult<MemberAggr>;
+
+    /// Lists members for the given team, with optional keyword and role filters.
+    ///
+    /// `keyword` performs an ILIKE search on `user_nickname`.
+    /// `role` filters members that hold the given single role (IS NOT NULL on the column).
+    async fn list(
+        &self,
+        team_id: &str,
+        keyword: Option<&str>,
+        role: Option<RoleFlag>,
+        offset: i64,
+        limit: i64,
+    ) -> DomainResult<Vec<MemberAggr>>;
+
+    /// Returns whether a member exists for the given user and team IDs.
+    async fn exist_by_user_and_team_id(&self, user_id: &str, team_id: &str) -> DomainResult<bool>;
+}
 
 /// Mutable persistence contract for [`MemberAggr`], used **only** inside
 /// a transaction via [`QueryTransactional`](crate::domain::query::QueryTransactional).
@@ -15,4 +52,11 @@ pub trait MemberQueryTransactional {
 
     /// Updates the last active timestamp on all member rows belonging to the given user.
     async fn touch_last_active(&mut self, user_id: &str) -> DomainResult<()>;
+
+    /// Updates the roles for a member (PUT-style: clears all role timestamps,
+    /// then sets only those in the [`RoleMask`] to the current time).
+    async fn update_roles(&mut self, update: &MemberRoleUpdate) -> DomainResult<()>;
+
+    /// Hard-deletes the member with the given ID.
+    async fn delete(&mut self, id: &str) -> DomainResult<()>;
 }

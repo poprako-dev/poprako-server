@@ -3,23 +3,25 @@ pub mod member_invitation;
 pub mod system_mail;
 pub mod team;
 pub mod user;
+pub mod workset;
 
 use async_trait::async_trait;
 use futures_util::future::BoxFuture;
 
 use poprako_util::ForwardRef;
 
-use crate::domain::query::member::MemberQueryTransactional;
+use crate::domain::query::member::{MemberQuery, MemberQueryTransactional};
 use crate::domain::query::member_invitation::MemberInvitationQueryTransactional;
 use crate::domain::query::system_mail::SystemMailQuery;
-use crate::domain::query::team::TeamQuery;
+use crate::domain::query::team::{TeamQuery, TeamQueryTransactional};
 use crate::domain::query::user::{UserQuery, UserQueryTransactional};
+use crate::domain::query::workset::{WorksetQuery, WorksetQueryTransactional};
 use crate::domain::result::DomainResult;
 
 /// Composite read-only query contract for non-transactional use cases.
-pub trait Query: UserQuery + TeamQuery + SystemMailQuery {}
+pub trait Query: UserQuery + TeamQuery + SystemMailQuery + WorksetQuery + MemberQuery {}
 
-impl<T> Query for T where T: UserQuery + TeamQuery + SystemMailQuery {}
+impl<T> Query for T where T: UserQuery + TeamQuery + SystemMailQuery + WorksetQuery + MemberQuery {}
 
 /// Forwarding marker for [`Transactional`].
 pub struct TransactionalForward;
@@ -29,12 +31,20 @@ pub struct TransactionalForward;
 /// Must be `Send` because it is boxed inside [`Transactional::run_in_transaction`]
 /// and passed across `.await` boundaries on a multi-threaded Tokio runtime.
 pub trait QueryTransactional:
-    UserQueryTransactional + MemberQueryTransactional + MemberInvitationQueryTransactional
+    UserQueryTransactional
+    + MemberQueryTransactional
+    + MemberInvitationQueryTransactional
+    + TeamQueryTransactional
+    + WorksetQueryTransactional
 {
 }
 
 impl<T> QueryTransactional for T where
-    T: UserQueryTransactional + MemberQueryTransactional + MemberInvitationQueryTransactional
+    T: UserQueryTransactional
+        + MemberQueryTransactional
+        + MemberInvitationQueryTransactional
+        + TeamQueryTransactional
+        + WorksetQueryTransactional
 {
 }
 

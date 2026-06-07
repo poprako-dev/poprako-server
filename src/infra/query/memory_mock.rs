@@ -3,6 +3,7 @@ pub mod member_invitation;
 pub mod system_mail;
 pub mod team;
 pub mod user;
+pub mod workset;
 
 use std::sync::{Arc, Mutex};
 
@@ -14,6 +15,7 @@ use crate::domain::model::aggr::member_invitation::MemberInvitationAggr;
 use crate::domain::model::aggr::system_mail::SystemMailAggr;
 use crate::domain::model::aggr::team::TeamAggr;
 use crate::domain::model::aggr::user::{UserAggr, UserCredential};
+use crate::domain::model::aggr::workset::WorksetAggr;
 use crate::domain::query::Transactional;
 use crate::domain::result::DomainResult;
 
@@ -31,6 +33,7 @@ pub struct MemoryMockState {
     pub members: Vec<MemberAggr>,
     pub member_invitations: Vec<MemberInvitationAggr>,
     pub system_mails: Vec<SystemMailAggr>,
+    pub worksets: Vec<WorksetAggr>,
 }
 
 // ── Non-transactional query handle ─────────────────────────────────────────
@@ -68,6 +71,18 @@ impl MemoryMockQuery {
     pub fn seed_member_invitation(&self, invitation: MemberInvitationAggr) {
         let mut state = self.state.lock().unwrap();
         state.member_invitations.push(invitation);
+    }
+
+    /// Pre-populates the store with a workset.
+    pub fn seed_workset(&self, workset: WorksetAggr) {
+        let mut state = self.state.lock().unwrap();
+        state.worksets.push(workset);
+    }
+
+    /// Pre-populates the store with a member.
+    pub fn seed_member(&self, member: MemberAggr) {
+        let mut state = self.state.lock().unwrap();
+        state.members.push(member);
     }
 
     /// Returns a snapshot of the current state for test assertions.

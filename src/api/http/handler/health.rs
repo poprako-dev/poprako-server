@@ -3,7 +3,7 @@ use std::net::SocketAddr;
 use axum::extract::ConnectInfo;
 use axum::http::StatusCode;
 
-use crate::api::http::result::Accept;
+use crate::api::http::result::Accept as _;
 use crate::api::http::result::HttpError;
 use crate::api::http::result::HttpResult;
 

@@ -9,9 +9,11 @@ use crate::domain::external::image_pool::{ImageDeleteForward, ImageGetForward, I
 use crate::domain::external::token::{TokenParseForward, TokenSignForward};
 use crate::domain::model::event::EventEmit;
 use crate::domain::query::TransactionalForward;
+use crate::domain::query::member::MemberQueryForward;
 use crate::domain::query::system_mail::SystemMailQueryForward;
 use crate::domain::query::team::TeamQueryForward;
 use crate::domain::query::user::UserQueryForward;
+use crate::domain::query::workset::WorksetQueryForward;
 use crate::infra::effect::{AsyncEffectSink, SharedEffectSink};
 use crate::infra::external::image_pool::OssImagePool;
 use crate::infra::external::token::JwtIssuer;
@@ -21,7 +23,14 @@ use crate::infra::query::RdbQuery;
 
 #[derive(ForwardRefs)]
 pub struct HarnessBase {
-    #[forward_ref(Transactional, UserQuery, TeamQuery, SystemMailQuery)]
+    #[forward_ref(
+        Transactional,
+        UserQuery,
+        TeamQuery,
+        SystemMailQuery,
+        WorksetQuery,
+        MemberQuery
+    )]
     rdb_query: RdbQuery,
 
     #[forward_ref(TokenSign, TokenParse)]
@@ -41,6 +50,8 @@ pub struct Harness {
         UserQuery,
         TeamQuery,
         SystemMailQuery,
+        WorksetQuery,
+        MemberQuery,
         TokenSign,
         TokenParse,
         ImageGet,
@@ -90,19 +101,24 @@ pub mod tests {
     use crate::domain::external::image_pool::{ImageGet, ImagePut};
     use crate::domain::external::token::TokenParse;
     use crate::domain::external::token::TokenSign;
+    use crate::domain::model::aggr::member::MemberAggr;
     use crate::domain::model::aggr::member_invitation::MemberInvitationAggr;
+    use crate::domain::model::aggr::team::TeamAggr;
     use crate::domain::model::aggr::user::{UserAggr, UserCredential, UserToken};
+    use crate::domain::model::aggr::workset::WorksetAggr;
     use crate::domain::model::event::{Event, EventEmit};
     use crate::domain::query::TransactionalForward;
+    use crate::domain::query::member::MemberQueryForward;
     use crate::domain::query::system_mail::SystemMailQueryForward;
     use crate::domain::query::team::TeamQueryForward;
     use crate::domain::query::user::UserQueryForward;
+    use crate::domain::query::workset::WorksetQueryForward;
     use crate::domain::result::{DomainError, DomainResult};
     use crate::infra::query::memory_mock::{MemoryMockQuery, MemoryMockState};
 
     #[derive(Clone, Default, ForwardRefs)]
     pub struct TestHarness {
-        #[forward_ref(target = MemoryMockQuery, Transactional, UserQuery, TeamQuery, SystemMailQuery)]
+        #[forward_ref(target = MemoryMockQuery, Transactional, UserQuery, TeamQuery, SystemMailQuery, WorksetQuery, MemberQuery)]
         query: Arc<MemoryMockQuery>,
         events: Arc<Mutex<Vec<Event>>>,
         token_fails: bool,
@@ -122,6 +138,18 @@ pub mod tests {
 
         pub fn seed_user(&self, user: UserAggr, credential: UserCredential) {
             self.query.seed_user(user, credential);
+        }
+
+        pub fn seed_team(&self, team: TeamAggr) {
+            self.query.seed_team(team);
+        }
+
+        pub fn seed_workset(&self, workset: WorksetAggr) {
+            self.query.seed_workset(workset);
+        }
+
+        pub fn seed_member(&self, member: MemberAggr) {
+            self.query.seed_member(member);
         }
 
         pub fn snapshot(&self) -> MemoryMockState {

@@ -3,7 +3,7 @@ members = [".", "poprako-macro", "poprako-util"]
 resolver = "3"
 
 [package]
-name = "poprako_r"
+name = "poprako-r"
 version = "0.1.0"
 edition = "2024"
 

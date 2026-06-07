@@ -3,7 +3,7 @@ use uuid::Uuid;
 
 use crate::domain::model::aggr::team::TeamAggr;
 use crate::domain::model::aggr::user::UserAggr;
-use crate::domain::model::value::role::RoleMask;
+use crate::domain::model::value::role::{RoleFlag, RoleMask};
 
 #[cfg_attr(test, derive(Clone))]
 pub struct MemberAggr {
@@ -36,6 +36,51 @@ impl MemberAggr {
     pub fn generate_id() -> String {
         format!("member-{}", Uuid::now_v7())
     }
+
+    /// Builds a [`RoleMask`] from the non-None role timestamp fields.
+    pub fn role_mask(&self) -> RoleMask {
+        let mut bits: u32 = 0;
+
+        if self.assigned_raw_provider_at.is_some() {
+            bits |= u32::from(RoleFlag::RawProvider);
+        }
+        if self.assigned_translator_at.is_some() {
+            bits |= u32::from(RoleFlag::Translator);
+        }
+        if self.assigned_proofreader_at.is_some() {
+            bits |= u32::from(RoleFlag::Proofreader);
+        }
+        if self.assigned_typesetter_at.is_some() {
+            bits |= u32::from(RoleFlag::Typesetter);
+        }
+        if self.assigned_redrawer_at.is_some() {
+            bits |= u32::from(RoleFlag::Redrawer);
+        }
+        if self.assigned_reviewer_at.is_some() {
+            bits |= u32::from(RoleFlag::Reviewer);
+        }
+        if self.assigned_publisher_at.is_some() {
+            bits |= u32::from(RoleFlag::Publisher);
+        }
+        if self.assigned_admin_at.is_some() {
+            bits |= u32::from(RoleFlag::Admin);
+        }
+        if self.assigned_assistant_at.is_some() {
+            bits |= u32::from(RoleFlag::Assistant);
+        }
+
+        RoleMask::from(bits)
+    }
+
+    /// Reports whether the member has at least one of the given roles.
+    pub fn has_any_role(&self, flags: &[RoleFlag]) -> bool {
+        self.role_mask().has_any_role(flags)
+    }
+
+    /// Reports whether the member has every one of the given roles.
+    pub fn has_every_role(&self, flags: &[RoleFlag]) -> bool {
+        self.role_mask().has_every_role(flags)
+    }
 }
 
 pub struct MemberForm {
@@ -45,6 +90,15 @@ pub struct MemberForm {
     pub user_nickname: String,
 
     pub team_id: String,
+
+    pub roles: RoleMask,
+}
+
+/// Input aggregate for updating the roles of an existing member (PUT semantics).
+///
+/// The caller provides the existing member `id` and the target [`RoleMask`].
+pub struct MemberRoleUpdate {
+    pub id: String,
 
     pub roles: RoleMask,
 }

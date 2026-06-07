@@ -1,10 +1,12 @@
 use axum::Json;
 use axum::extract::State;
+use axum::http::StatusCode;
 use cookie::Cookie;
 use cookie::SameSite;
 
 use crate::api::http::auth_token::AUTHORIZATION_COOKIE_NAME;
-use crate::api::http::result::{HttpError, HttpResponse, HttpResult};
+use crate::api::http::result::Accept as _;
+use crate::api::http::result::{HttpError, HttpResult};
 use crate::harness::Harness;
 use crate::usecase;
 use crate::usecase::data_object::user::{SignInParams, SignInReply, SignUpParams, SignUpReply};
@@ -32,7 +34,9 @@ pub async fn sign_up(
         .same_site(SameSite::Lax)
         .build();
 
-    Ok(HttpResponse::from(reply).with_cookie(&cookie))
+    reply
+        .accept(StatusCode::OK)
+        .map(|response| response.with_cookie(&cookie))
 }
 
 #[utoipa::path(
@@ -58,5 +62,7 @@ pub async fn sign_in(
         .same_site(SameSite::Lax)
         .build();
 
-    Ok(HttpResponse::from(reply).with_cookie(&cookie))
+    reply
+        .accept(StatusCode::OK)
+        .map(|response| response.with_cookie(&cookie))
 }

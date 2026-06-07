@@ -2269,16 +2269,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "poprako-util"
-version = "0.1.0"
-dependencies = [
- "fluent-templates",
- "time",
- "unic-langid",
-]
-
-[[package]]
-name = "poprako_r"
+name = "poprako-r"
 version = "0.1.0"
 dependencies = [
  "anyhow",
@@ -2311,6 +2302,15 @@ dependencies = [
  "utoipa",
  "utoipa-swagger-ui",
  "uuid",
+]
+
+[[package]]
+name = "poprako-util"
+version = "0.1.0"
+dependencies = [
+ "fluent-templates",
+ "time",
+ "unic-langid",
 ]
 
 [[package]]

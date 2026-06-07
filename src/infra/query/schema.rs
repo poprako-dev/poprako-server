@@ -75,11 +75,26 @@ diesel::table! {
     }
 }
 
+diesel::table! {
+    t_workset (f_id) {
+        f_id -> Text,
+        f_team_id -> Text,
+        f_index -> Int4,
+        f_name -> Text,
+        f_description -> Nullable<Text>,
+        f_comic_count -> Int4,
+        f_comic_next_index -> Int4,
+        f_created_at -> Timestamptz,
+        f_updated_at -> Timestamptz,
+    }
+}
+
 diesel::joinable!(t_member -> t_team (f_team_id));
 diesel::joinable!(t_member -> t_user (f_user_id));
 diesel::joinable!(t_member_invitation -> t_team (f_team_id));
 diesel::joinable!(t_member_invitation -> t_user (f_inviter_id));
 diesel::joinable!(t_system_mail -> t_user (f_receiver_id));
+diesel::joinable!(t_workset -> t_team (f_team_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
     t_member,
@@ -87,4 +102,5 @@ diesel::allow_tables_to_appear_in_same_query!(
     t_system_mail,
     t_team,
     t_user,
+    t_workset,
 );
