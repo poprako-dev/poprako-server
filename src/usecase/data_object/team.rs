@@ -56,7 +56,7 @@ pub struct TeamCreateParams {
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
-pub struct TeamUpdateParams {
+pub struct TeamInfoUpdateParams {
     pub name: String,
     pub description: String,
 }

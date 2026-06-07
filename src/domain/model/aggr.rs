@@ -1,3 +1,4 @@
+pub mod mandate;
 pub mod member;
 pub mod member_invitation;
 pub mod system_mail;

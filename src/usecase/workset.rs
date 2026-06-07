@@ -1,4 +1,5 @@
 use futures_util::FutureExt as _;
+use poprako_util::page::Page;
 use tracing::instrument;
 
 use crate::domain::external::image_pool::ImageGet;
@@ -71,13 +72,12 @@ where
 pub async fn list<H>(
     harn: &H,
     team_id: &str,
-    offset: i64,
-    limit: i64,
+    page: Page,
 ) -> UseCaseResult<Vec<WorksetBase>>
 where
     H: Query + ImageGet + Send + Sync,
 {
-    let worksets = WorksetQuery::list(harn, team_id, offset, limit).await?;
+    let worksets = WorksetQuery::list(harn, team_id, page).await?;
 
     let mut bases = Vec::with_capacity(worksets.len());
     for workset in worksets {
@@ -94,7 +94,7 @@ pub async fn update<H>(
     params: WorksetUpdateParams,
 ) -> UseCaseResult<()>
 where
-    H: Clone + Transactional + Send + Sync,
+    H: Query + Send + Sync,
 {
     let input = WorksetUpdate {
         id: workset_id,
@@ -102,10 +102,7 @@ where
         description: params.description,
     };
 
-    Transactional::transaction_scoped(harn, move |query| {
-        async move { WorksetQueryTransactional::update(query, &input).await }.boxed()
-    })
-    .await?;
+    WorksetQuery::update(harn, &input).await?;
 
     Ok(())
 }
@@ -113,13 +110,9 @@ where
 #[instrument(err, skip(harn))]
 pub async fn delete<H>(harn: &H, workset_id: String) -> UseCaseResult<()>
 where
-    H: Clone + Transactional + Send + Sync,
+    H: Query + Send + Sync,
 {
-    Transactional::transaction_scoped(harn, move |query| {
-        let id = workset_id.clone();
-        async move { WorksetQueryTransactional::delete(query, &id).await }.boxed()
-    })
-    .await?;
+    WorksetQuery::delete(harn, &workset_id).await?;
 
     Ok(())
 }
@@ -255,7 +248,7 @@ mod tests {
         .await
         .unwrap();
 
-        let list = super::list(&harn, "team-1", 0, 10).await.unwrap();
+        let list = super::list(&harn, "team-1", Page { offset: 0, limit: 10 }).await.unwrap();
         assert_eq!(list.len(), 2);
     }
 

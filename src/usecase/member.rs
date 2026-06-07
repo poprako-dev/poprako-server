@@ -1,4 +1,5 @@
 use futures_util::FutureExt as _;
+use poprako_util::page::Page;
 use tracing::instrument;
 
 use crate::domain::external::image_pool::ImageGet;
@@ -71,13 +72,12 @@ pub async fn list<H>(
     team_id: &str,
     keyword: Option<&str>,
     role: Option<RoleFlag>,
-    offset: i64,
-    limit: i64,
+    page: Page,
 ) -> UseCaseResult<Vec<MemberBase>>
 where
     H: Query + ImageGet + Send + Sync,
 {
-    let members = MemberQuery::list(harn, team_id, keyword, role, offset, limit).await?;
+    let members = MemberQuery::list(harn, team_id, keyword, role, page).await?;
 
     let mut bases = Vec::with_capacity(members.len());
     for member in members {
@@ -94,17 +94,14 @@ pub async fn update_roles<H>(
     params: MemberRoleUpdateParams,
 ) -> UseCaseResult<()>
 where
-    H: Clone + Transactional + Send + Sync,
+    H: Query + Send + Sync,
 {
     let update = MemberRoleUpdate {
         id: member_id,
         roles: RoleMask::from(params.roles),
     };
 
-    Transactional::transaction_scoped(harn, move |query| {
-        async move { MemberQueryTransactional::update_roles(query, &update).await }.boxed()
-    })
-    .await?;
+    MemberQuery::update_roles(harn, &update).await?;
 
     Ok(())
 }
@@ -112,13 +109,9 @@ where
 #[instrument(err, skip(harn))]
 pub async fn delete<H>(harn: &H, member_id: String) -> UseCaseResult<()>
 where
-    H: Clone + Transactional + Send + Sync,
+    H: Query + Send + Sync,
 {
-    Transactional::transaction_scoped(harn, move |query| {
-        let id = member_id.clone();
-        async move { MemberQueryTransactional::delete(query, &id).await }.boxed()
-    })
-    .await?;
+    MemberQuery::delete(harn, &member_id).await?;
 
     Ok(())
 }
@@ -241,7 +234,7 @@ mod tests {
             RoleFlag::Admin.into(),
         ));
 
-        let list = super::list(&harn, "team-1", None, None, 0, 10)
+        let list = super::list(&harn, "team-1", None, None, Page { offset: 0, limit: 10 })
             .await
             .unwrap();
         assert_eq!(list.len(), 2);

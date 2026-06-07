@@ -7,6 +7,7 @@ use tracing::Level;
 use tracing::instrument;
 
 use poprako_util::i18n::trl;
+use poprako_util::page::Page;
 
 use crate::domain::model::aggr::team::{TeamAggr, TeamForm, TeamUpdate};
 use crate::domain::query::team::TeamQuery;
@@ -38,13 +39,12 @@ pub async fn get_by_id(conn: &mut AsyncPgConnection, id: &str) -> DomainResult<T
 #[instrument(err, skip(conn), level = Level::DEBUG)]
 pub async fn list(
     conn: &mut AsyncPgConnection,
-    offset: i64,
-    limit: i64,
+    page: Page,
 ) -> DomainResult<Vec<TeamAggr>> {
     let rows: Vec<TeamRow> = t_team
         .order(f_created_at.desc())
-        .offset(offset)
-        .limit(limit)
+        .offset(page.offset as i64)
+        .limit(page.limit as i64)
         .select(TeamRow::as_select())
         .load(conn)
         .await?;
@@ -188,8 +188,8 @@ impl TeamQuery for RdbQuery {
     }
 
     #[instrument(err, skip(self), level = Level::DEBUG)]
-    async fn list(&self, offset: i64, limit: i64) -> DomainResult<Vec<TeamAggr>> {
-        submit_query!(self.pool, list, offset, limit)
+    async fn list(&self, page: Page) -> DomainResult<Vec<TeamAggr>> {
+        submit_query!(self.pool, list, page)
     }
 
     #[instrument(err, skip(self), level = Level::DEBUG)]
@@ -201,22 +201,25 @@ impl TeamQuery for RdbQuery {
     async fn mark_avatar_uploaded(&self, id: &str) -> DomainResult<()> {
         submit_query!(self.pool, mark_avatar_uploaded, id)
     }
+
+    #[instrument(err, skip(self, form), level = Level::DEBUG)]
+    async fn create(&self, form: &TeamForm) -> DomainResult<TeamAggr> {
+        submit_query!(self.pool, create, form)
+    }
+
+    #[instrument(err, skip(self, input), level = Level::DEBUG)]
+    async fn update(&self, input: &TeamUpdate) -> DomainResult<()> {
+        submit_query!(self.pool, update, input)
+    }
+
+    #[instrument(err, skip(self), level = Level::DEBUG)]
+    async fn delete(&self, id: &str) -> DomainResult<()> {
+        submit_query!(self.pool, delete, id)
+    }
 }
 
 #[async_trait]
 impl<'c> TeamQueryTransactional for RdbQueryTransactional<'c> {
-    async fn create(&mut self, form: &TeamForm) -> DomainResult<TeamAggr> {
-        create(self.conn, form).await
-    }
-
-    async fn update(&mut self, input: &TeamUpdate) -> DomainResult<()> {
-        update(self.conn, input).await
-    }
-
-    async fn delete(&mut self, id: &str) -> DomainResult<()> {
-        delete(self.conn, id).await
-    }
-
     async fn increment_workset_next_index(&mut self, id: &str) -> DomainResult<i32> {
         increment_workset_next_index(self.conn, id).await
     }

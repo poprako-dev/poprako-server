@@ -1,6 +1,6 @@
 ---
 name: implement-fullchain-spec
-description: Full-chain implementation checklist: domain model → query trait → infra entity/impl/mock → usecase → i18n → API → router → TestHarness. Mandatory sequence with layer-specific rules.
+description: "Full-chain implementation checklist: domain model → query trait → infra entity/impl/mock → usecase → i18n → API → router → TestHarness. Mandatory sequence with layer-specific rules."
 ---
 
 # Full-Chain Implementation Specification

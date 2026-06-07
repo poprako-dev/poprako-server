@@ -4,6 +4,8 @@ use axum::http::StatusCode;
 use serde::Deserialize;
 use utoipa::IntoParams;
 
+use poprako_util::page::Page;
+
 use crate::api::http::result::Accept as _;
 use crate::api::http::result::HttpError;
 use crate::api::http::result::HttpResult;
@@ -61,15 +63,13 @@ pub async fn list(
 ) -> HttpResult<Vec<MemberBase>> {
     let role = params.role.and_then(RoleFlag::try_from_single_bit);
 
-    let bases = usecase::member::list(
-        &harn,
-        &params.team_id,
-        params.keyword.as_deref(),
-        role,
-        params.offset.unwrap_or(0),
-        params.limit.unwrap_or(20),
-    )
-    .await?;
+    let page = Page {
+        offset: params.offset.unwrap_or(0) as usize,
+        limit: params.limit.unwrap_or(20) as usize,
+    };
+
+    let bases = usecase::member::list(&harn, &params.team_id, params.keyword.as_deref(), role, page)
+        .await?;
 
     bases.accept(StatusCode::OK)
 }

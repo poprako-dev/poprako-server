@@ -1,6 +1,6 @@
 ---
 name: tracing-usage-spec
-description: Where #[instrument] belongs: usecase/infra-query/infra-external/api-handlers YES. constructors/domain-model/harness/QueryTransactional-impl NO.
+description: "Where #[instrument] belongs: usecase/infra-query/infra-external/api-handlers YES. constructors/domain-model/harness/QueryTransactional-impl NO."
 ---
 
 # Tracing Instrument Usage Specification

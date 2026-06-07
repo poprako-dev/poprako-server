@@ -1,21 +1,20 @@
-use futures_util::FutureExt as _;
+use poprako_util::page::Page;
 use tracing::instrument;
 
 use crate::domain::external::image_pool::{ImageGet, ImagePut};
 use crate::domain::model::aggr::team::{TeamAggr, TeamForm, TeamUpdate};
 use crate::domain::query::Query;
-use crate::domain::query::Transactional;
 use crate::domain::query::team::TeamQuery;
-use crate::domain::query::team::TeamQueryTransactional;
 use crate::usecase::data_object::team::{
-    ReserveTeamAvatarParams, ReserveTeamAvatarReply, TeamBase, TeamCreateParams, TeamUpdateParams,
+    ReserveTeamAvatarParams, ReserveTeamAvatarReply, TeamBase, TeamCreateParams,
+    TeamInfoUpdateParams,
 };
 use crate::usecase::result::UseCaseResult;
 
 #[instrument(err, skip(harn))]
 pub async fn create<H>(harn: &H, params: TeamCreateParams) -> UseCaseResult<TeamBase>
 where
-    H: Clone + Transactional + ImageGet + Send + Sync,
+    H: Query + ImageGet + Send + Sync,
 {
     let id = TeamAggr::generate_id();
 
@@ -25,10 +24,7 @@ where
         description: params.description,
     };
 
-    let team = Transactional::transaction_scoped(harn, move |query| {
-        async move { TeamQueryTransactional::create(query, &form).await }.boxed()
-    })
-    .await?;
+    let team = TeamQuery::create(harn, &form).await?;
 
     let base = TeamBase::from_aggr(team, harn).await;
 
@@ -48,11 +44,11 @@ where
 }
 
 #[instrument(err, skip(harn))]
-pub async fn list<H>(harn: &H, offset: i64, limit: i64) -> UseCaseResult<Vec<TeamBase>>
+pub async fn list<H>(harn: &H, page: Page) -> UseCaseResult<Vec<TeamBase>>
 where
     H: Query + ImageGet + Send + Sync,
 {
-    let teams = TeamQuery::list(harn, offset, limit).await?;
+    let teams = TeamQuery::list(harn, page).await?;
 
     let mut bases = Vec::with_capacity(teams.len());
     for team in teams {
@@ -63,9 +59,13 @@ where
 }
 
 #[instrument(err, skip(harn))]
-pub async fn update<H>(harn: &H, team_id: String, params: TeamUpdateParams) -> UseCaseResult<()>
+pub async fn update_info<H>(
+    harn: &H,
+    team_id: String,
+    params: TeamInfoUpdateParams,
+) -> UseCaseResult<()>
 where
-    H: Clone + Transactional + Send + Sync,
+    H: Query + Send + Sync,
 {
     let input = TeamUpdate {
         id: team_id,
@@ -73,10 +73,7 @@ where
         description: params.description,
     };
 
-    Transactional::transaction_scoped(harn, move |query| {
-        async move { TeamQueryTransactional::update(query, &input).await }.boxed()
-    })
-    .await?;
+    TeamQuery::update(harn, &input).await?;
 
     Ok(())
 }
@@ -114,13 +111,9 @@ where
 #[instrument(err, skip(harn))]
 pub async fn delete<H>(harn: &H, team_id: String) -> UseCaseResult<()>
 where
-    H: Clone + Transactional + Send + Sync,
+    H: Query + Send + Sync,
 {
-    Transactional::transaction_scoped(harn, move |query| {
-        let id = team_id.clone();
-        async move { TeamQueryTransactional::delete(query, &id).await }.boxed()
-    })
-    .await?;
+    TeamQuery::delete(harn, &team_id).await?;
 
     Ok(())
 }
@@ -130,8 +123,8 @@ mod tests {
     // create_team_persists_and_returns_team_base(create)(positive): create should persist a team and return a TeamBase.
     // get_info_fails_for_nonexistent_team(get_info)(negative): get_info should fail with expected error for missing team.
     // list_returns_all_teams(list)(positive): list should return all seeded teams.
-    // update_modifies_team_fields(update)(positive): update should modify team name and description.
-    // update_fails_for_nonexistent_team(update)(negative): update should fail with expected error for missing team.
+    // update_info_modifies_team_fields(update_info)(positive): update_info should modify team name and description.
+    // update_info_fails_for_nonexistent_team(update_info)(negative): update_info should fail with expected error for missing team.
     // delete_removes_team(delete)(positive): delete should remove the team.
     // delete_fails_for_nonexistent_team(delete)(negative): delete should fail with expected error for missing team.
     // reserve_avatar_generates_key_and_put_url(reserve_avatar)(positive): reserve_avatar should generate an avatar key and a signed PUT URL.
@@ -144,7 +137,7 @@ mod tests {
     use crate::domain::model::aggr::team::TeamAggr;
     use crate::harness::tests::TestHarness;
     use crate::test_util::usecase_is_expected_argument;
-    use crate::usecase::data_object::team::{TeamCreateParams, TeamUpdateParams};
+    use crate::usecase::data_object::team::{TeamCreateParams, TeamInfoUpdateParams};
 
     fn make_test_team(id: &str) -> TeamAggr {
         let now = time::OffsetDateTime::now_utc();
@@ -196,12 +189,12 @@ mod tests {
         harn.seed_team(make_test_team("team-a"));
         harn.seed_team(make_test_team("team-b"));
 
-        let teams = list(&harn, 0, 10).await.unwrap();
+        let teams = list(&harn, Page { offset: 0, limit: 10 }).await.unwrap();
         assert_eq!(teams.len(), 2);
     }
 
     #[tokio::test]
-    async fn update_modifies_team_fields() {
+    async fn update_info_modifies_team_fields() {
         let harn = TestHarness::default();
 
         let base = create(
@@ -214,10 +207,10 @@ mod tests {
         .await
         .unwrap();
 
-        update(
+        update_info(
             &harn,
             base.id.clone(),
-            TeamUpdateParams {
+            TeamInfoUpdateParams {
                 name: "New".into(),
                 description: "New desc".into(),
             },
@@ -231,12 +224,12 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn update_fails_for_nonexistent_team() {
+    async fn update_info_fails_for_nonexistent_team() {
         let harn = TestHarness::default();
-        let err = update(
+        let err = update_info(
             &harn,
             "no-such-team".into(),
-            TeamUpdateParams {
+            TeamInfoUpdateParams {
                 name: "X".into(),
                 description: "Y".into(),
             },

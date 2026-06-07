@@ -1,6 +1,6 @@
 ---
 name: poprako-aggr-conventions
-description: Domain aggregate conventions: four categories (Aggr/Form/Update/Patch), struct literal construction, no new() except for events-carrying aggregates, From conversions in entity module.
+description: "Domain aggregate conventions: four categories (Aggr/Form/Update/Patch), struct literal construction, no new() except for events-carrying aggregates, From conversions in entity module."
 ---
 
 # Poprako-r Aggregate Conventions

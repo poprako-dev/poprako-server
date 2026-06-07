@@ -1,6 +1,21 @@
 // @generated automatically by Diesel CLI.
 
 diesel::table! {
+    t_mandate (f_id) {
+        f_id -> Text,
+        f_topic -> Text,
+        f_status -> Text,
+        f_payload -> Jsonb,
+        f_last_error -> Nullable<Text>,
+        f_retried_count -> Int8,
+        f_lease -> Int8,
+        f_visible_at -> Timestamptz,
+        f_created_at -> Timestamptz,
+        f_updated_at -> Timestamptz,
+    }
+}
+
+diesel::table! {
     t_member (f_id) {
         f_id -> Text,
         f_user_id -> Text,
@@ -97,6 +112,7 @@ diesel::joinable!(t_system_mail -> t_user (f_receiver_id));
 diesel::joinable!(t_workset -> t_team (f_team_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
+    t_mandate,
     t_member,
     t_member_invitation,
     t_system_mail,

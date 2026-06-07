@@ -2,6 +2,7 @@ use async_trait::async_trait;
 use time::OffsetDateTime;
 
 use poprako_util::i18n::trl;
+use poprako_util::page::Page;
 
 use crate::domain::model::aggr::workset::{WorksetAggr, WorksetForm, WorksetUpdate};
 use crate::domain::query::workset::{WorksetQuery, WorksetQueryTransactional};
@@ -25,8 +26,7 @@ impl WorksetQuery for MemoryMockQuery {
     async fn list(
         &self,
         team_id_filter: &str,
-        offset: i64,
-        limit: i64,
+        page: Page,
     ) -> DomainResult<Vec<WorksetAggr>> {
         let state = self.state.lock().unwrap();
         let mut worksets: Vec<WorksetAggr> = state
@@ -46,8 +46,8 @@ impl WorksetQuery for MemoryMockQuery {
         // Sort by index ascending.
         worksets.sort_by_key(|w| w.index);
 
-        let skip = offset as usize;
-        let take = limit as usize;
+        let skip = page.offset;
+        let take = page.limit;
 
         if skip >= worksets.len() {
             return Ok(Vec::new());
@@ -65,6 +65,36 @@ impl WorksetQuery for MemoryMockQuery {
             .filter(|w| w.team_id == team_id_filter)
             .count() as i64;
         Ok(total)
+    }
+
+    async fn update(&self, input: &WorksetUpdate) -> DomainResult<()> {
+        let mut state = self.state.lock().unwrap();
+
+        let workset = state
+            .worksets
+            .iter_mut()
+            .find(|w| w.id == input.id)
+            .ok_or_else(|| DomainError::expected_argument(trl("error-workset-not-found")))?;
+
+        workset.name = input.name.clone();
+        workset.description = input.description.clone();
+        workset.updated_at = OffsetDateTime::now_utc();
+
+        Ok(())
+    }
+
+    async fn delete(&self, id: &str) -> DomainResult<()> {
+        let mut state = self.state.lock().unwrap();
+
+        let pos = state
+            .worksets
+            .iter()
+            .position(|w| w.id == id)
+            .ok_or_else(|| DomainError::expected_argument(trl("error-workset-not-found")))?;
+
+        state.worksets.remove(pos);
+
+        Ok(())
     }
 }
 
@@ -106,22 +136,6 @@ impl WorksetQueryTransactional for MemoryMockQueryTransactional {
         Ok(workset)
     }
 
-    async fn update(&mut self, input: &WorksetUpdate) -> DomainResult<()> {
-        let mut state = self.state.lock().unwrap();
-
-        let workset = state
-            .worksets
-            .iter_mut()
-            .find(|w| w.id == input.id)
-            .ok_or_else(|| DomainError::expected_argument(trl("error-workset-not-found")))?;
-
-        workset.name = input.name.clone();
-        workset.description = input.description.clone();
-        workset.updated_at = OffsetDateTime::now_utc();
-
-        Ok(())
-    }
-
     async fn update_comic_count(&mut self, id: &str, delta: i32) -> DomainResult<()> {
         let mut state = self.state.lock().unwrap();
 
@@ -153,23 +167,74 @@ impl WorksetQueryTransactional for MemoryMockQueryTransactional {
 
         Ok(allocated)
     }
+}
 
-    async fn delete(&mut self, id: &str) -> DomainResult<()> {
+// ── Tests ──────────────────────────────────────────────────────────────────
+
+// ── WorksetQuery forwarding on transactional handle ────────────────────────
+
+#[async_trait]
+impl WorksetQuery for MemoryMockQueryTransactional {
+    async fn get_by_id(&self, id: &str) -> DomainResult<WorksetAggr> {
+        let state = self.state.lock().unwrap();
+        state
+            .worksets
+            .iter()
+            .find(|w| w.id == id)
+            .cloned()
+            .ok_or_else(|| DomainError::expected_argument(trl("error-workset-not-found")))
+    }
+
+    async fn list(&self, team_id: &str, page: Page) -> DomainResult<Vec<WorksetAggr>> {
+        let state = self.state.lock().unwrap();
+        let filtered: Vec<WorksetAggr> = state
+            .worksets
+            .iter()
+            .filter(|w| w.team_id == team_id)
+            .cloned()
+            .collect();
+        let skip = page.offset;
+        let take = page.limit;
+        if skip >= filtered.len() {
+            return Ok(Vec::new());
+        }
+        let end = std::cmp::min(skip + take, filtered.len());
+        Ok(filtered[skip..end].to_vec())
+    }
+
+    async fn count(&self, team_id: &str) -> DomainResult<i64> {
+        let state = self.state.lock().unwrap();
+        Ok(state
+            .worksets
+            .iter()
+            .filter(|w| w.team_id == team_id)
+            .count() as i64)
+    }
+
+    async fn update(&self, input: &WorksetUpdate) -> DomainResult<()> {
         let mut state = self.state.lock().unwrap();
+        let workset = state
+            .worksets
+            .iter_mut()
+            .find(|w| w.id == input.id)
+            .ok_or_else(|| DomainError::expected_argument(trl("error-workset-not-found")))?;
+        workset.name = input.name.clone();
+        workset.description = input.description.clone();
+        workset.updated_at = OffsetDateTime::now_utc();
+        Ok(())
+    }
 
+    async fn delete(&self, id: &str) -> DomainResult<()> {
+        let mut state = self.state.lock().unwrap();
         let pos = state
             .worksets
             .iter()
             .position(|w| w.id == id)
             .ok_or_else(|| DomainError::expected_argument(trl("error-workset-not-found")))?;
-
         state.worksets.remove(pos);
-
         Ok(())
     }
 }
-
-// ── Tests ──────────────────────────────────────────────────────────────────
 
 #[cfg(test)]
 mod tests {
@@ -179,17 +244,19 @@ mod tests {
     // count_returns_correct_value(WorksetQuery::count)(positive): count should return the correct number of worksets for a team.
     // create_then_find(WorksetQueryTransactional::create)(positive): created worksets should be readable after transaction commit.
     // create_duplicate_index_returns_conflict(WorksetQueryTransactional::create)(negative): duplicate team+index should return an expected conflict.
-    // update_changes_fields(WorksetQueryTransactional::update)(positive): update should change name and description.
-    // update_missing_returns_error(WorksetQueryTransactional::update)(negative): updating a missing workset should fail.
+    // update_changes_fields(WorksetQuery::update)(positive): update should change name and description.
+    // update_missing_returns_error(WorksetQuery::update)(negative): updating a missing workset should fail.
     // update_comic_count_applies_delta(WorksetQueryTransactional::update_comic_count)(positive): delta should be applied and clamped to zero.
     // update_comic_count_missing_returns_error(WorksetQueryTransactional::update_comic_count)(negative): updating a missing workset should fail.
     // increment_comic_next_index_returns_allocated(WorksetQueryTransactional::increment_comic_next_index)(positive): each call should return the current value and increment it.
     // increment_comic_next_index_missing_returns_error(WorksetQueryTransactional::increment_comic_next_index)(negative): incrementing a missing workset should fail.
-    // delete_removes_workset(WorksetQueryTransactional::delete)(positive): deleting a workset should remove it from storage.
-    // delete_missing_returns_error(WorksetQueryTransactional::delete)(negative): deleting a missing workset should fail.
+    // delete_removes_workset(WorksetQuery::delete)(positive): deleting a workset should remove it from storage.
+    // delete_missing_returns_error(WorksetQuery::delete)(negative): deleting a missing workset should fail.
 
     use futures_util::FutureExt as _;
     use time::OffsetDateTime;
+
+    use poprako_util::page::Page;
 
     use crate::domain::model::aggr::workset::{WorksetAggr, WorksetForm, WorksetUpdate};
     use crate::domain::query::Transactional;
@@ -246,14 +313,14 @@ mod tests {
         mock.seed_workset(make_workset("workset-2", "team-1", 1, "A"));
         mock.seed_workset(make_workset("workset-3", "team-2", 0, "Other"));
 
-        let list = WorksetQuery::list(&mock, "team-1", 0, 10).await.unwrap();
+        let list = WorksetQuery::list(&mock, "team-1", Page { offset: 0, limit: 10 }).await.unwrap();
         assert_eq!(list.len(), 2);
         // Should be ordered by index ascending.
         assert_eq!(list[0].id, "workset-2");
         assert_eq!(list[1].id, "workset-1");
 
-        // Pagination: offset 1, limit 1
-        let page = WorksetQuery::list(&mock, "team-1", 1, 1).await.unwrap();
+        // Pagination: page.offset 1, page.limit 1
+        let page = WorksetQuery::list(&mock, "team-1", Page { offset: 1, limit: 1 }).await.unwrap();
         assert_eq!(page.len(), 1);
         assert_eq!(page[0].id, "workset-1");
     }
@@ -357,7 +424,7 @@ mod tests {
                     name: "New Name".into(),
                     description: Some("New Desc".into()),
                 };
-                WorksetQueryTransactional::update(txn, &input).await
+                WorksetQuery::update(txn, &input).await
             }
             .boxed()
         })
@@ -381,7 +448,7 @@ mod tests {
                         name: "X".into(),
                         description: None,
                     };
-                    WorksetQueryTransactional::update(txn, &input).await
+                    WorksetQuery::update(txn, &input).await
                 }
                 .boxed()
             })
@@ -464,7 +531,8 @@ mod tests {
             let idx = mock
                 .transaction_scoped(|txn| {
                     async move {
-                        WorksetQueryTransactional::increment_comic_next_index(txn, "workset-1").await
+                        WorksetQueryTransactional::increment_comic_next_index(txn, "workset-1")
+                            .await
                     }
                     .boxed()
                 })
@@ -500,7 +568,7 @@ mod tests {
         mock.seed_workset(make_workset("workset-1", "team-1", 0, "Test"));
 
         mock.transaction_scoped(|txn| {
-            async move { WorksetQueryTransactional::delete(txn, "workset-1").await }.boxed()
+            async move { WorksetQuery::delete(txn, "workset-1").await }.boxed()
         })
         .await
         .unwrap();
@@ -515,7 +583,7 @@ mod tests {
 
         let err = mock
             .transaction_scoped(|txn| {
-                async move { WorksetQueryTransactional::delete(txn, "nonexistent").await }.boxed()
+                async move { WorksetQuery::delete(txn, "nonexistent").await }.boxed()
             })
             .await
             .err()

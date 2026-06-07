@@ -4,6 +4,8 @@ use axum::http::StatusCode;
 use serde::Deserialize;
 use utoipa::IntoParams;
 
+use poprako_util::page::Page;
+
 use crate::api::http::result::Accept as _;
 use crate::api::http::result::HttpError;
 use crate::api::http::result::HttpResult;
@@ -56,13 +58,12 @@ pub async fn list(
     State(harn): State<Harness>,
     Query(params): Query<WorksetListQuery>,
 ) -> HttpResult<Vec<WorksetBase>> {
-    let bases = usecase::workset::list(
-        &harn,
-        &params.team_id,
-        params.offset.unwrap_or(0),
-        params.limit.unwrap_or(20),
-    )
-    .await?;
+    let page = Page {
+        offset: params.offset.unwrap_or(0) as usize,
+        limit: params.limit.unwrap_or(20) as usize,
+    };
+
+    let bases = usecase::workset::list(&harn, &params.team_id, page).await?;
 
     bases.accept(StatusCode::OK)
 }

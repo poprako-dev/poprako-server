@@ -1,6 +1,6 @@
 ---
 name: general-conventions
-description: Project-wide Rust conventions: English comments, import style, visibility (pub only), UFCS for trait calls, field exposure, constructor precedence, no abbreviations.
+description: "Project-wide Rust conventions: English comments, import style, visibility (pub only), UFCS for trait calls, field exposure, constructor precedence, no abbreviations."
 ---
 
 # Poprako-r General Conventions
