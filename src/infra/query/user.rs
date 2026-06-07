@@ -20,7 +20,7 @@ use crate::infra::query::schema::t_user::dsl::*;
 use crate::submit_query;
 use poprako_util::i18n::trl;
 
-#[instrument(skip(conn), level = Level::DEBUG)]
+#[instrument(err, skip(conn), level = Level::DEBUG)]
 pub async fn get_by_id(conn: &mut AsyncPgConnection, id: &str) -> DomainResult<UserAggr> {
     let row: UserRow = t_user
         .filter(f_id.eq(&id))
@@ -28,11 +28,12 @@ pub async fn get_by_id(conn: &mut AsyncPgConnection, id: &str) -> DomainResult<U
         .first(conn)
         .await
         .optional()?
-        .ok_or_else(|| DomainError::expected_argument(trl("error-user-not-found")).trace())?;
+        .ok_or_else(|| DomainError::expected_argument(trl("error-user-not-found")))?;
 
     Ok(row.into())
 }
 
+#[instrument(err, skip(conn), level = Level::DEBUG)]
 pub async fn get_credential_by_qid(
     conn: &mut AsyncPgConnection,
     qid: &str,
@@ -49,7 +50,7 @@ pub async fn get_credential_by_qid(
         .first(conn)
         .await
         .optional()?
-        .ok_or_else(|| DomainError::expected_argument(trl("error-user-not-found")).trace())?;
+        .ok_or_else(|| DomainError::expected_argument(trl("error-user-not-found")))?;
 
     Ok(UserCredential {
         user_id: row.f_id,
@@ -57,6 +58,7 @@ pub async fn get_credential_by_qid(
     })
 }
 
+#[instrument(err, skip(conn, form), level = Level::DEBUG)]
 pub async fn create(conn: &mut AsyncPgConnection, form: &UserForm) -> DomainResult<UserAggr> {
     let now = OffsetDateTime::now_utc();
 
@@ -84,6 +86,7 @@ pub async fn create(conn: &mut AsyncPgConnection, form: &UserForm) -> DomainResu
     Ok(row.into())
 }
 
+#[instrument(err, skip(conn, input), level = Level::DEBUG)]
 pub async fn update_user(
     conn: &mut AsyncPgConnection,
     input: &UserInfoUpdate,
@@ -100,7 +103,7 @@ pub async fn update_user(
         .await?;
 
     if affected == 0 {
-        return Err(DomainError::expected_argument(trl("error-user-not-found")).trace());
+        return Err(DomainError::expected_argument(trl("error-user-not-found")));
     }
 
     let row: UserRow = t_user
@@ -112,6 +115,7 @@ pub async fn update_user(
     Ok(row.into())
 }
 
+#[instrument(err, skip(conn), level = Level::DEBUG)]
 pub async fn prefill_avatar_key(
     conn: &mut AsyncPgConnection,
     id: &str,
@@ -127,12 +131,13 @@ pub async fn prefill_avatar_key(
         .await?;
 
     if affected == 0 {
-        return Err(DomainError::expected_argument(trl("error-user-not-found")).trace());
+        return Err(DomainError::expected_argument(trl("error-user-not-found")));
     }
 
     Ok(())
 }
 
+#[instrument(err, skip(conn), level = Level::DEBUG)]
 pub async fn mark_avatar_uploaded(conn: &mut AsyncPgConnection, id: &str) -> DomainResult<()> {
     let now = OffsetDateTime::now_utc();
 
@@ -144,12 +149,13 @@ pub async fn mark_avatar_uploaded(conn: &mut AsyncPgConnection, id: &str) -> Dom
         .await?;
 
     if affected == 0 {
-        return Err(DomainError::expected_argument(trl("error-user-not-found")).trace());
+        return Err(DomainError::expected_argument(trl("error-user-not-found")));
     }
 
     Ok(())
 }
 
+#[instrument(err, skip(conn), level = Level::DEBUG)]
 pub async fn touch_last_active(conn: &mut AsyncPgConnection, id: &str) -> DomainResult<()> {
     let now = OffsetDateTime::now_utc();
 
@@ -166,7 +172,7 @@ pub async fn touch_last_active(conn: &mut AsyncPgConnection, id: &str) -> Domain
         .optional()?;
 
     if exists.is_none() {
-        return Err(DomainError::expected_argument(trl("error-user-not-found")).trace());
+        return Err(DomainError::expected_argument(trl("error-user-not-found")));
     }
 
     let changes = UserAspect::new(now).last_active_at(now);
@@ -183,26 +189,25 @@ pub async fn touch_last_active(conn: &mut AsyncPgConnection, id: &str) -> Domain
 
 #[async_trait]
 impl UserQuery for RdbQuery {
-    #[instrument(skip(self), level = Level::DEBUG)]
+    #[instrument(err, skip(self), level = Level::DEBUG)]
     async fn get_credentials_by_qid(&self, qid: &str) -> DomainResult<UserCredential> {
         submit_query!(self.pool, get_credential_by_qid, qid)
     }
 
-    #[instrument(skip(self), level = Level::DEBUG)]
+    #[instrument(err, skip(self), level = Level::DEBUG)]
     async fn get_by_id(&self, id: &str) -> DomainResult<UserAggr> {
         submit_query!(self.pool, get_by_id, id)
     }
 
-    #[instrument(skip(self), level = Level::DEBUG)]
+    #[instrument(err, skip(self), level = Level::DEBUG)]
     async fn prefill_avatar_key(&self, id: &str, key: &str) -> DomainResult<()> {
         submit_query!(self.pool, prefill_avatar_key, id, key)
     }
 
-    #[instrument(skip(self), level = Level::DEBUG)]
+    #[instrument(err, skip(self), level = Level::DEBUG)]
     async fn mark_avatar_uploaded(&self, id: &str) -> DomainResult<()> {
         submit_query!(self.pool, mark_avatar_uploaded, id)
     }
-
 }
 
 #[async_trait]
@@ -215,7 +220,7 @@ impl<'c> UserQueryTransactional for RdbQueryTransactional<'c> {
         update_user(self.conn, input).await
     }
 
-    #[instrument(skip(self), level = Level::DEBUG)]
+    #[instrument(err, skip(self), level = Level::DEBUG)]
     async fn touch_last_active(&mut self, id: &str) -> DomainResult<()> {
         touch_last_active(self.conn, id).await
     }

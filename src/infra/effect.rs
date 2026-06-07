@@ -26,7 +26,7 @@ pub struct AsyncEffectSink {
     accepting: Arc<AtomicBool>,
 
     // TODO: is a masyntx really necessary?
-    inlet: MAsyncTx<Array<Event>>,
+    send: MAsyncTx<Array<Event>>,
 
     shutdown: Mutex<Option<TxOneshot<()>>>,
     done: Mutex<Option<RxOneshot<()>>>,
@@ -41,10 +41,10 @@ impl AsyncEffectSink {
     /// them to hardcoded effect handlers. The given `harn` is cloned for use
     /// by the background task.
     pub fn new(harn: Arc<HarnessBase>, buffer: usize) -> Self {
-        let (inlet, outlet) = bounded_async(buffer);
+        let (send, recv) = bounded_async(buffer);
 
-        let (shutdown_inlet, shutdown_outlet) = oneshot::oneshot();
-        let (done_inlet, done_outlet) = oneshot::oneshot();
+        let (shutdown_send, shutdown_recv) = oneshot::oneshot();
+        let (done_send, done_recv) = oneshot::oneshot();
 
         let accepting = Arc::new(AtomicBool::new(true));
         let accepting_task = Arc::clone(&accepting);
@@ -52,20 +52,13 @@ impl AsyncEffectSink {
         let harn_task = Arc::clone(&harn);
 
         tokio::spawn(async move {
-            handle_task(
-                harn_task,
-                outlet,
-                shutdown_outlet,
-                done_inlet,
-                accepting_task,
-            )
-            .await;
+            handle_task(harn_task, recv, shutdown_recv, done_send, accepting_task).await;
         });
 
         Self {
-            inlet,
-            shutdown: Mutex::new(Some(shutdown_inlet)),
-            done: Mutex::new(Some(done_outlet)),
+            send,
+            shutdown: Mutex::new(Some(shutdown_send)),
+            done: Mutex::new(Some(done_recv)),
             accepting,
         }
     }
@@ -82,16 +75,16 @@ impl AsyncEffectSink {
         }
 
         // Signal the background task to begin shutdown.
-        if let Some(inlet) = self.shutdown.lock().unwrap().take() {
-            inlet.send(());
+        if let Some(send) = self.shutdown.lock().unwrap().take() {
+            send.send(());
         }
 
         // Wait for the background task to finish draining.
-        let Some(outlet) = self.done.lock().unwrap().take() else {
+        let Some(recv) = self.done.lock().unwrap().take() else {
             return;
         };
 
-        let _ = outlet.await;
+        let _ = recv.await;
     }
 }
 
@@ -111,7 +104,7 @@ impl EffectSink for AsyncEffectSink {
         }
 
         for event in src.pull_events() {
-            match self.inlet.try_send(event) {
+            match self.send.try_send(event) {
                 Err(TrySendError::Full(ev)) => {
                     tracing::warn!(
                         event_type = ?ev.event_type(),
@@ -135,23 +128,23 @@ impl EffectSink for AsyncEffectSink {
 #[instrument(skip_all, level = Level::DEBUG)]
 async fn handle_task(
     harn: Arc<HarnessBase>,
-    outlet: AsyncRx<Array<Event>>,
-    shutdown_outlet: RxOneshot<()>,
-    done_inlet: TxOneshot<()>,
+    recv: AsyncRx<Array<Event>>,
+    shutdown_recv: RxOneshot<()>,
+    done_send: TxOneshot<()>,
     accepting: Arc<AtomicBool>,
 ) {
     // Main loop: receive and dispatch events.
-    tokio::pin!(shutdown_outlet);
+    tokio::pin!(shutdown_recv);
 
     loop {
         tokio::select! {
-            result = outlet.recv() => {
+            result = recv.recv() => {
                 match result {
                     Ok(event) => dispatch(&harn, event).await,
                     Err(_) => break, // channel closed — all senders dropped
                 }
             }
-            _ = &mut shutdown_outlet => {
+            _ = &mut shutdown_recv => {
                 // Stop accepting new events (handle() checks this flag).
                 accepting.store(false, Ordering::Release);
                 break;
@@ -160,12 +153,12 @@ async fn handle_task(
     }
 
     // Drain: process any events that were already in the channel.
-    while let Ok(event) = outlet.try_recv() {
+    while let Ok(event) = recv.try_recv() {
         dispatch(&harn, event).await;
     }
 
     // Signal that drain is complete.
-    done_inlet.send(());
+    done_send.send(());
 }
 
 // ── Dispatch ───────────────────────────────────────────────────────────────

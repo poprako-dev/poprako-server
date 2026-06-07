@@ -3,6 +3,8 @@ use diesel::prelude::*;
 use diesel_async::AsyncPgConnection;
 use diesel_async::RunQueryDsl;
 use time::OffsetDateTime;
+use tracing::Level;
+use tracing::instrument;
 
 use crate::domain::model::aggr::member::MemberAggr;
 use crate::domain::model::aggr::member::MemberForm;
@@ -15,6 +17,7 @@ use crate::infra::query::entity::member::MemberEntry;
 use crate::infra::query::entity::member::MemberRow;
 use crate::infra::query::schema::t_member::dsl::*;
 
+#[instrument(err, skip(conn, form), level = Level::DEBUG)]
 pub async fn create(conn: &mut AsyncPgConnection, form: &MemberForm) -> DomainResult<MemberAggr> {
     let now = OffsetDateTime::now_utc();
     let roles = form.roles;
@@ -52,6 +55,7 @@ pub async fn create(conn: &mut AsyncPgConnection, form: &MemberForm) -> DomainRe
     Ok(row.into())
 }
 
+#[instrument(err, skip(conn), level = Level::DEBUG)]
 pub async fn update_user_nickname(
     conn: &mut AsyncPgConnection,
     user_id: &str,
@@ -69,10 +73,8 @@ pub async fn update_user_nickname(
     Ok(())
 }
 
-pub async fn touch_last_active(
-    conn: &mut AsyncPgConnection,
-    user_id: &str,
-) -> DomainResult<()> {
+#[instrument(err, skip(conn), level = Level::DEBUG)]
+pub async fn touch_last_active(conn: &mut AsyncPgConnection, user_id: &str) -> DomainResult<()> {
     let now = OffsetDateTime::now_utc();
 
     let changes = MemberAspect::new(now).user_last_active_at(now);

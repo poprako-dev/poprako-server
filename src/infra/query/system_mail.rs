@@ -14,7 +14,7 @@ use crate::infra::query::entity::system_mail::SystemMailEntry;
 use crate::infra::query::schema::t_system_mail::dsl::*;
 use crate::submit_query;
 
-#[instrument(skip(conn), level = Level::DEBUG)]
+#[instrument(err, skip(conn), level = Level::DEBUG)]
 pub async fn send(conn: &mut AsyncPgConnection, form: &SystemMailForm) -> DomainResult<()> {
     let now = OffsetDateTime::now_utc();
 
@@ -36,7 +36,7 @@ pub async fn send(conn: &mut AsyncPgConnection, form: &SystemMailForm) -> Domain
 
 #[async_trait]
 impl SystemMailQuery for RdbQuery {
-    #[instrument(skip(self), level = Level::DEBUG)]
+    #[instrument(err, skip(self), level = Level::DEBUG)]
     async fn send(&self, form: &SystemMailForm) -> DomainResult<()> {
         submit_query!(self.pool, send, form)
     }

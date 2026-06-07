@@ -63,7 +63,7 @@ impl JwtIssuer {
 }
 
 impl TokenSign for JwtIssuer {
-    #[instrument(skip(self), level = Level::DEBUG)]
+    #[instrument(err, skip(self), level = Level::DEBUG)]
     fn sign(&self, unsigned_token: &UserToken) -> DomainResult<String> {
         let now = OffsetDateTime::now_utc();
 
@@ -78,20 +78,18 @@ impl TokenSign for JwtIssuer {
 
         encode(&Header::default(), &claims, &self.encoding_key).map_err(|e| {
             DomainError::unrecoverable(format!("[JwtCodec::sign] error when encoding: {}", e))
-                .trace()
         })
     }
 }
 
 impl TokenParse for JwtIssuer {
-    #[instrument(skip(self), level = Level::DEBUG)]
+    #[instrument(err, skip(self), level = Level::DEBUG)]
     fn parse(&self, signed_token: &str) -> DomainResult<UserToken> {
         let validation = Validation::default();
 
         let token_data: TokenData<Claims> = decode(signed_token, &self.decoding_key, &validation)
             .map_err(|e| {
             DomainError::unrecoverable(format!("[JwtCodec::parse] error when decoding: {}", e))
-                .trace()
         })?;
 
         let Claims { sub, .. } = token_data.claims;

@@ -57,25 +57,16 @@ pub mod result {
         pub fn unrecoverable(msg: String) -> Self {
             Self::Unrecoverable { message: msg }
         }
+    }
 
-        pub fn trace(self) -> Self {
-            match &self {
+    impl std::fmt::Display for DomainError {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
                 Self::Expected { variant, message } => {
-                    tracing::debug!(
-                        variant = ?variant,
-                        message = %message,
-                        "[DomainError] expected error produced",
-                    );
+                    write!(f, "[expected error: {:?}: {}]", variant, message)
                 }
-                Self::Unrecoverable { message } => {
-                    tracing::error!(
-                        error = %message,
-                        "[DomainError] unrecoverable error produced",
-                    );
-                }
+                Self::Unrecoverable { message } => write!(f, "[unrecoverable error: {}]", message),
             }
-
-            self
         }
     }
 

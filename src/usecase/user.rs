@@ -26,7 +26,7 @@ use crate::usecase::result::UseCaseResult;
 
 use poprako_util::i18n::trl;
 
-#[instrument(skip(harn))]
+#[instrument(err, skip(harn))]
 pub async fn sign_up_user<H>(harn: &H, params: SignUpParams) -> UseCaseResult<SignUpReply>
 where
     H: Clone + Transactional + EffectSink + TokenIssuer + Send + Sync,
@@ -42,9 +42,9 @@ where
 
             // 2. Validate the invitee identity.
             if invitation.invitee_qid != params.qid {
-                return Err(
-                    DomainError::expected_argument(trl("error-invalid-invitation-code")).trace(),
-                );
+                return Err(DomainError::expected_argument(trl(
+                    "error-invalid-invitation-code",
+                )));
             }
 
             // 3. Generate password hash.
@@ -105,7 +105,7 @@ where
     })
 }
 
-#[instrument(skip(harn))]
+#[instrument(err, skip(harn))]
 pub async fn sign_in<H>(harn: &H, params: SignInParams) -> UseCaseResult<SignInReply>
 where
     H: Query + TokenSign + Send + Sync,
@@ -113,11 +113,7 @@ where
     let credentials = UserQuery::get_credentials_by_qid(harn, &params.qid).await?;
 
     if !credentials.verify_password(&params.password) {
-        return Err(
-            DomainError::expected_authentication(trl("error-wrong-credentials"))
-                .trace()
-                .into(),
-        );
+        return Err(DomainError::expected_authentication(trl("error-wrong-credentials")).into());
     }
 
     let user_id = credentials.user_id.clone();
@@ -134,7 +130,7 @@ where
     })
 }
 
-#[instrument(skip(harn))]
+#[instrument(err, skip(harn))]
 pub async fn get_info<H>(harn: &H, id: &str) -> UseCaseResult<UserBase>
 where
     H: Query + ImageGet + Send + Sync,
@@ -146,7 +142,7 @@ where
     Ok(base)
 }
 
-#[instrument(skip(harn))]
+#[instrument(err, skip(harn))]
 pub async fn update_info<H>(
     harn: &H,
     token: UserToken,
@@ -178,7 +174,7 @@ where
     Ok(())
 }
 
-#[instrument(skip(harn))]
+#[instrument(err, skip(harn))]
 pub async fn reserve_avatar<H>(
     harn: &H,
     token: UserToken,
@@ -197,7 +193,7 @@ where
     Ok(ReserveAvatarReply { put_url })
 }
 
-#[instrument(skip(harn))]
+#[instrument(err, skip(harn))]
 pub async fn mark_avatar_uploaded<H>(harn: &H, token: UserToken) -> UseCaseResult<()>
 where
     H: Query + Send + Sync,
@@ -207,7 +203,7 @@ where
     Ok(())
 }
 
-#[instrument(skip(harn))]
+#[instrument(err, skip(harn))]
 pub async fn touch_last_active<H>(harn: &H, id: &str) -> UseCaseResult<()>
 where
     H: Clone + Transactional + Send + Sync,

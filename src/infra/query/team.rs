@@ -15,7 +15,7 @@ use crate::infra::query::schema::t_team::dsl::*;
 use crate::submit_query;
 use poprako_util::i18n::trl;
 
-#[instrument(skip(conn), level = Level::DEBUG)]
+#[instrument(err, skip(conn), level = Level::DEBUG)]
 pub async fn get_by_id(conn: &mut AsyncPgConnection, id: &str) -> DomainResult<TeamAggr> {
     let row: TeamRow = t_team
         .filter(f_id.eq(&id))
@@ -23,7 +23,7 @@ pub async fn get_by_id(conn: &mut AsyncPgConnection, id: &str) -> DomainResult<T
         .first(conn)
         .await
         .optional()?
-        .ok_or_else(|| DomainError::expected_argument(trl("error-team-not-found")).trace())?;
+        .ok_or_else(|| DomainError::expected_argument(trl("error-team-not-found")))?;
 
     Ok(row.into())
 }
@@ -32,7 +32,7 @@ pub async fn get_by_id(conn: &mut AsyncPgConnection, id: &str) -> DomainResult<T
 
 #[async_trait]
 impl TeamQuery for RdbQuery {
-    #[instrument(skip(self), level = Level::DEBUG)]
+    #[instrument(err, skip(self), level = Level::DEBUG)]
     async fn get_by_id(&self, id: &str) -> DomainResult<TeamAggr> {
         submit_query!(self.pool, get_by_id, id)
     }
