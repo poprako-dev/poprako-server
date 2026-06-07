@@ -37,11 +37,11 @@ mod tests {
     // parse_token_delegates_to_codec(parse_token)(positive): token parsing should delegate to the provided codec.
     // parse_token_returns_codec_error(parse_token)(negative): token parsing should propagate codec errors.
 
-    use crate::domain::external::token::{TokenParse, TokenSign};
-
     use super::hash_password;
     use super::parse_token;
     use super::sign_token;
+
+    use crate::domain::external::token::{TokenParse, TokenSign};
     use crate::domain::model::aggr::user::UserToken;
     use crate::domain::result::DomainError;
     use crate::domain::result::DomainResult;

@@ -38,9 +38,10 @@ mod tests {
     // verify_code_mismatch_case(MemberInvitationAggr::verify_code)(negative): verification should fail when letter case differs.
     // verify_code_mismatch_prefix(MemberInvitationAggr::verify_code)(negative): verification should fail when the input has extra characters.
 
+    use super::MemberInvitationAggr;
+
     use time::OffsetDateTime;
 
-    use super::MemberInvitationAggr;
     use crate::domain::model::value::role::RoleFlag;
     use crate::domain::model::value::role::RoleMask;
 

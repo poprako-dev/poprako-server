@@ -3,9 +3,10 @@ use diesel::prelude::*;
 use diesel_async::AsyncPgConnection;
 use diesel_async::RunQueryDsl;
 use time::OffsetDateTime;
-
 use tracing::Level;
 use tracing::instrument;
+
+use poprako_util::i18n::trl;
 
 use crate::domain::model::aggr::user::{UserAggr, UserCredential, UserForm, UserInfoUpdate};
 use crate::domain::query::user::UserQuery;
@@ -18,7 +19,6 @@ use crate::infra::query::entity::user::UserEntry;
 use crate::infra::query::entity::user::UserRow;
 use crate::infra::query::schema::t_user::dsl::*;
 use crate::submit_query;
-use poprako_util::i18n::trl;
 
 #[instrument(err, skip(conn), level = Level::DEBUG)]
 pub async fn get_by_id(conn: &mut AsyncPgConnection, id: &str) -> DomainResult<UserAggr> {

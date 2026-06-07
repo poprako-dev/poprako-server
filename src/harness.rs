@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
+
 use poprako_macro::ForwardRefs;
 
 use crate::domain::effect::EffectSink;
@@ -11,7 +12,7 @@ use crate::domain::query::TransactionalForward;
 use crate::domain::query::system_mail::SystemMailQueryForward;
 use crate::domain::query::team::TeamQueryForward;
 use crate::domain::query::user::UserQueryForward;
-use crate::infra::effect::{SharedEffectSink, shared_effect_sink};
+use crate::infra::effect::{AsyncEffectSink, SharedEffectSink};
 use crate::infra::external::image_pool::OssImagePool;
 use crate::infra::external::token::JwtIssuer;
 use crate::infra::query::RdbQuery;
@@ -60,7 +61,7 @@ impl Harness {
             oss_image_pool: image_pool,
         });
 
-        let effect_sink = shared_effect_sink(Arc::clone(&base), 1024);
+        let effect_sink = AsyncEffectSink::new_shared(Arc::clone(&base), 1024);
 
         Harness { base, effect_sink }
     }
@@ -81,8 +82,9 @@ pub mod tests {
     use std::sync::{Arc, Mutex};
 
     use async_trait::async_trait;
-    use poprako_macro::ForwardRefs;
     use url::Url;
+
+    use poprako_macro::ForwardRefs;
 
     use crate::domain::effect::EffectSink;
     use crate::domain::external::image_pool::{ImageGet, ImagePut};

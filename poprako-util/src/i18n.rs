@@ -8,7 +8,7 @@ use unic_langid::{LanguageIdentifier, langid};
 
 static_loader! {
     static LOCALES = {
-        locales: "../locales",
+        locales: "locales",
         fallback_language: "zh-CN",
     };
 }

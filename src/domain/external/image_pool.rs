@@ -1,6 +1,7 @@
 use async_trait::async_trait;
-use poprako_macro::forward_ref;
 use url::Url;
+
+use poprako_macro::forward_ref;
 
 use crate::domain::result::DomainResult;
 
@@ -42,8 +43,9 @@ mod tests {
     use std::sync::{Arc, Mutex};
 
     use async_trait::async_trait;
-    use poprako_macro::ForwardRefs;
     use url::Url;
+
+    use poprako_macro::ForwardRefs;
 
     use crate::domain::external::image_pool::{
         ImageDelete, ImageDeleteForward, ImageGet, ImageGetForward, ImagePut, ImagePutForward,

@@ -3,8 +3,9 @@ pub mod data_object;
 pub mod user;
 
 pub mod result {
-    use crate::domain::result::DomainError;
     use poprako_util::rename::StdResult;
+
+    use crate::domain::result::DomainError;
 
     #[derive(Debug)]
     pub struct UseCaseError(DomainError);
