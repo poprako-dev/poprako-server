@@ -4,8 +4,6 @@ use anyhow::Context;
 use async_trait::async_trait;
 use aws_credential_types::Credentials;
 use aws_sdk_s3::config::{BehaviorVersion, Region};
-use aws_sdk_s3::error::{ProvideErrorMetadata, SdkError};
-use aws_sdk_s3::operation::delete_objects::DeleteObjectsError;
 use aws_sdk_s3::presigning::PresigningConfig;
 use aws_sdk_s3::types::{Delete, ObjectIdentifier};
 use aws_sdk_s3::{Client, Config};
@@ -154,24 +152,26 @@ impl ImagePut for OssImagePool {
 impl ImageDelete for OssImagePool {
     #[instrument(err, skip(self), level = Level::DEBUG)]
     async fn delete_batch(&self, keys: &[&str]) -> DomainResult<()> {
+        const MAX_DELETE_OBJECTS: usize = 1000;
+
+        if keys.is_empty() {
+            return Ok(());
+        }
+
+        for chunk in keys.chunks(MAX_DELETE_OBJECTS) {
+            self.delete_chunk(chunk).await?;
+        }
+
+        Ok(())
+    }
+}
+
+impl OssImagePool {
+    async fn delete_chunk(&self, keys: &[&str]) -> DomainResult<()> {
         const MAX_RETRY: usize = 3;
         const RETRY_DELAY: Duration = Duration::from_secs(1);
 
-        // At current stage, we do not use an exponential backoff strategy for
-        // retrying failed deletions, as the number of keys in a batch is
-        // expected to be small (usually less than 10), and the likelihood of
-        // transient errors is relatively low.
-
-        let mut obj_ids: Vec<ObjectIdentifier> = keys
-            .iter()
-            .map(|k| {
-                ObjectIdentifier::builder()
-                    .key(*k)
-                    .build()
-                    .expect("ObjectIdentifier build should never fail")
-            })
-            .collect();
-
+        let mut pending = keys.iter().map(|key| key.to_string()).collect::<Vec<_>>();
         let mut last_err: Option<String> = None;
 
         for attempt in 0..MAX_RETRY {
@@ -179,17 +179,7 @@ impl ImageDelete for OssImagePool {
                 tokio::time::sleep(RETRY_DELAY).await;
             }
 
-            let objects = if attempt + 1 == MAX_RETRY {
-                std::mem::take(&mut obj_ids)
-            } else {
-                obj_ids.clone()
-            };
-
-            let delete = Delete::builder()
-                .set_objects(Some(objects))
-                .quiet(true)
-                .build()
-                .expect("Delete build should never fail");
+            let delete = build_delete_payload(&pending)?;
 
             let result = self
                 .client
@@ -201,31 +191,33 @@ impl ImageDelete for OssImagePool {
 
             match result {
                 Ok(output) => {
-                    // Collect errors that are *not* NoSuchKey.
-                    let non_not_found: Vec<_> = output
+                    let failed_keys = output
                         .errors()
                         .iter()
-                        .filter(|e| e.code() != Some("NoSuchKey"))
-                        .collect();
+                        .filter(|e| !is_already_deleted_error(e))
+                        .map(|e| {
+                            e.key().map(|key| key.to_string()).ok_or_else(|| {
+                                DomainError::unrecoverable(format!(
+                                    "[R2OssClient::delete_batch] missing key in delete error: {:?}",
+                                    e
+                                ))
+                            })
+                        })
+                        .collect::<DomainResult<Vec<_>>>()?;
 
-                    if non_not_found.is_empty() {
+                    if failed_keys.is_empty() {
                         return Ok(());
                     }
 
                     last_err = Some(format!(
                         "[R2OssClient::delete_batch] partial failure: {:?}",
-                        non_not_found
+                        output.errors()
                     ));
-                    // fall through to retry
+
+                    pending = failed_keys;
                 }
                 Err(e) => {
-                    // If the entire batch returned NoSuchKey, treat as success.
-                    if is_no_such_key_error(&e) {
-                        return Ok(());
-                    }
-
                     last_err = Some(format!("[R2OssClient::delete_batch] {}", e));
-                    // fall through to retry
                 }
             }
         }
@@ -257,10 +249,31 @@ fn detect_content_type(key: &str) -> Option<&'static str> {
     }
 }
 
-/// Checks whether the top-level S3 error is `NoSuchKey`.
-fn is_no_such_key_error(err: &SdkError<DeleteObjectsError>) -> bool {
-    if let SdkError::ServiceError(service_err) = err {
-        return service_err.err().code() == Some("NoSuchKey");
-    }
-    false
+fn build_delete_payload(keys: &[String]) -> DomainResult<Delete> {
+    let objects = keys
+        .iter()
+        .map(|k| {
+            ObjectIdentifier::builder().key(k).build().map_err(|e| {
+                DomainError::unrecoverable(format!(
+                    "[R2OssClient::delete_batch] failed to build object identifier: {}",
+                    e
+                ))
+            })
+        })
+        .collect::<DomainResult<Vec<_>>>()?;
+
+    Delete::builder()
+        .set_objects(Some(objects))
+        .quiet(true)
+        .build()
+        .map_err(|e| {
+            DomainError::unrecoverable(format!(
+                "[R2OssClient::delete_batch] failed to build delete payload: {}",
+                e
+            ))
+        })
+}
+
+fn is_already_deleted_error(err: &aws_sdk_s3::types::Error) -> bool {
+    err.code() == Some("NoSuchKey")
 }
