@@ -1,6 +1,7 @@
 use async_trait::async_trait;
-use poprako_macro::forward_ref;
 use url::Url;
+
+use poprako_macro::forward_ref;
 
 use crate::domain::result::DomainResult;
 
@@ -44,18 +45,21 @@ mod tests {
     use async_trait::async_trait;
     use url::Url;
 
+    use poprako_macro::ForwardRefs;
+
     use crate::domain::external::image_pool::{
         ImageDelete, ImageDeleteForward, ImageGet, ImageGetForward, ImagePut, ImagePutForward,
     };
     use crate::domain::result::DomainResult;
-    use crate::impl_forward_ref;
 
     #[derive(Clone, Default)]
     struct FakeImagePool {
         calls: Arc<Mutex<Vec<String>>>,
     }
 
+    #[derive(ForwardRefs)]
     struct FakeHarness {
+        #[forward_ref(ImageGet, ImagePut, ImageDelete)]
         image_pool: FakeImagePool,
     }
 
@@ -64,14 +68,6 @@ mod tests {
             image_pool: FakeImagePool::default(),
         }
     }
-
-    impl_forward_ref!(
-        FakeHarness => FakeImagePool,
-        image_pool,
-        ImageGetForward,
-        ImagePutForward,
-        ImageDeleteForward,
-    );
 
     #[async_trait]
     impl ImageGet for FakeImagePool {
@@ -101,7 +97,7 @@ mod tests {
     async fn get_signed_forwards_to_target() {
         let harn = harn();
 
-        let url = harn.get_signed("page-1.png").await.unwrap();
+        let url = ImageGet::get_signed(&harn, "page-1.png").await.unwrap();
 
         assert_eq!(url.as_str(), "https://example.test/get");
         assert_eq!(
@@ -114,7 +110,7 @@ mod tests {
     async fn put_signed_forwards_to_target() {
         let harn = harn();
 
-        let url = harn.put_signed("page-2.png").await.unwrap();
+        let url = ImagePut::put_signed(&harn, "page-2.png").await.unwrap();
 
         assert_eq!(url.as_str(), "https://example.test/put");
         assert_eq!(
@@ -127,7 +123,7 @@ mod tests {
     async fn delete_batch_forwards_to_target() {
         let harn = harn();
 
-        harn.delete_batch(&["page-1.png", "page-2.png"])
+        ImageDelete::delete_batch(&harn, &["page-1.png", "page-2.png"])
             .await
             .unwrap();
 

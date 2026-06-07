@@ -3,18 +3,54 @@ use axum::extract::State;
 use cookie::Cookie;
 use cookie::SameSite;
 
-use crate::api::http::middleware::AUTHORIZATION_COOKIE_NAME;
-use crate::api::http::result::HttpResponse;
-use crate::api::http::result::HttpResult;
+use crate::api::http::auth_token::AUTHORIZATION_COOKIE_NAME;
+use crate::api::http::result::{HttpError, HttpResponse, HttpResult};
 use crate::harness::Harness;
 use crate::usecase;
-use crate::usecase::value_object::user::{SignUpUserParams, SignUpUserReply};
+use crate::usecase::data_object::user::{SignInParams, SignInReply, SignUpParams, SignUpReply};
 
-pub async fn sign_up_user(
+#[utoipa::path(
+    post,
+    path = "/auth/sign-up",
+    tag = "auth",
+    request_body = SignUpParams,
+    responses(
+        (status = 200, description = "Registration successful, sets auth cookie", body = SignUpReply),
+        (status = 400, description = "Invalid request parameters", body = HttpError),
+        (status = 409, description = "User already exists", body = HttpError)
+    )
+)]
+pub async fn sign_up(
     State(harn): State<Harness>,
-    Json(params): Json<SignUpUserParams>,
-) -> HttpResult<SignUpUserReply> {
-    let reply = usecase::user::sign_up_user(&harn, params).await?;
+    Json(params): Json<SignUpParams>,
+) -> HttpResult<SignUpReply> {
+    let reply = usecase::user::sign_up(&harn, params).await?;
+
+    let cookie = Cookie::build((AUTHORIZATION_COOKIE_NAME, format!("Bearer {}", reply.token)))
+        .path("/")
+        .http_only(true)
+        .same_site(SameSite::Lax)
+        .build();
+
+    Ok(HttpResponse::from(reply).with_cookie(&cookie))
+}
+
+#[utoipa::path(
+    post,
+    path = "/auth/sign-in",
+    tag = "auth",
+    request_body = SignInParams,
+    responses(
+        (status = 200, description = "Login successful, sets auth cookie", body = SignInReply),
+        (status = 400, description = "Invalid request parameters", body = HttpError),
+        (status = 401, description = "Invalid credentials", body = HttpError)
+    )
+)]
+pub async fn sign_in(
+    State(harn): State<Harness>,
+    Json(params): Json<SignInParams>,
+) -> HttpResult<SignInReply> {
+    let reply = usecase::user::sign_in(&harn, params).await?;
 
     let cookie = Cookie::build((AUTHORIZATION_COOKIE_NAME, format!("Bearer {}", reply.token)))
         .path("/")

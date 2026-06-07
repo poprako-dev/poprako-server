@@ -1,10 +1,11 @@
-pub mod value_object;
+pub mod data_object;
 
 pub mod user;
 
 pub mod result {
+    use poprako_util::rename::StdResult;
+
     use crate::domain::result::DomainError;
-    use crate::util::rename::StdResult;
 
     #[derive(Debug)]
     pub struct UseCaseError(DomainError);
@@ -18,6 +19,12 @@ pub mod result {
     impl From<DomainError> for UseCaseError {
         fn from(value: DomainError) -> Self {
             UseCaseError(value)
+        }
+    }
+
+    impl std::fmt::Display for UseCaseError {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            self.0.fmt(f)
         }
     }
 

@@ -1,0 +1,9 @@
+[package]
+name = "poprako-util"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+fluent-templates = "0.14.0"
+time = "0.3.47"
+unic-langid = "0.9.6"

@@ -1,5 +1,5 @@
 use crate::domain::external::token::{TokenParse, TokenSign};
-use crate::domain::model::aggregate::user::UserToken;
+use crate::domain::model::aggr::user::UserToken;
 use crate::domain::result::{DomainError, DomainResult};
 
 /// Hashes a password with bcrypt using the default cost factor.
@@ -9,22 +9,21 @@ pub fn hash_password(password: &str) -> DomainResult<String> {
             "[user::hash_password] bcrypt hashing failed: {}",
             e
         ))
-        .trace()
     })
 }
 
-pub fn sign_token<C>(codec: &C, unsigned_token: &UserToken) -> DomainResult<String>
+pub fn sign_token<S>(signer: &S, unsigned_token: &UserToken) -> DomainResult<String>
 where
-    C: TokenSign,
+    S: TokenSign,
 {
-    codec.sign(unsigned_token)
+    signer.sign(unsigned_token)
 }
 
-pub fn parse_token<C>(codec: &C, signed_token: &str) -> DomainResult<UserToken>
+pub fn parse_token<P>(parser: &P, signed_token: &str) -> DomainResult<UserToken>
 where
-    C: TokenParse,
+    P: TokenParse,
 {
-    codec.parse(signed_token)
+    parser.parse(signed_token)
 }
 
 #[cfg(test)]
@@ -38,12 +37,12 @@ mod tests {
     // parse_token_delegates_to_codec(parse_token)(positive): token parsing should delegate to the provided codec.
     // parse_token_returns_codec_error(parse_token)(negative): token parsing should propagate codec errors.
 
-    use crate::domain::external::token::{TokenParse, TokenSign};
-
     use super::hash_password;
     use super::parse_token;
     use super::sign_token;
-    use crate::domain::model::aggregate::user::UserToken;
+
+    use crate::domain::external::token::{TokenParse, TokenSign};
+    use crate::domain::model::aggr::user::UserToken;
     use crate::domain::result::DomainError;
     use crate::domain::result::DomainResult;
 
