@@ -69,6 +69,7 @@ corresponding source paths.
 
 - **English-only comments**: All comments (line `//`, block `/* */`, and doc `///` / `//!`) must be written in English. No other language is permitted in source code comments.
 - **No Go references in comments**: Source code comments must not reference Go counterparts (e.g., file paths, function names, or patterns from `references/poprako-s/`). Comments describe what the Rust code does, not how the Go version does it.
+- **Never modify user-authored changes**: The user may have already modified files or is in the process of modifying them. Never overwrite, revert, or undo changes that the user has made. If a change the user made conflicts with a convention or new requirement, flag it explicitly and ask before modifying. Never use `git checkout` or `git reset` on files that the user has edited in the working tree.
 
 ---
 

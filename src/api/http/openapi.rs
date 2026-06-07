@@ -47,7 +47,7 @@ use crate::api::http::handler;
         crate::usecase::data_object::user::ReserveAvatarReply,
         crate::usecase::data_object::team::TeamBase,
         crate::usecase::data_object::team::TeamCreateParams,
-        crate::usecase::data_object::team::TeamUpdateParams,
+        crate::usecase::data_object::team::TeamInfoUpdateParams,
         crate::usecase::data_object::team::ReserveTeamAvatarParams,
         crate::usecase::data_object::team::ReserveTeamAvatarReply,
         crate::usecase::data_object::member::MemberBase,

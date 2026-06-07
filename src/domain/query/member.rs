@@ -1,12 +1,13 @@
 use async_trait::async_trait;
 
 use poprako_macro::forward_ref;
+use poprako_util::page::Page;
 
 use crate::domain::model::aggr::member::{MemberAggr, MemberForm, MemberRoleUpdate};
 use crate::domain::model::value::role::RoleFlag;
 use crate::domain::result::DomainResult;
 
-/// Read-only persistence contract for [`MemberAggr`].
+/// Persistence contract for [`MemberAggr`].
 ///
 /// Each method takes an immutable `&self` reference, suitable for
 /// non-transactional queries backed by a connection pool.
@@ -32,15 +33,21 @@ pub trait MemberQuery {
         team_id: &str,
         keyword: Option<&str>,
         role: Option<RoleFlag>,
-        offset: i64,
-        limit: i64,
+        page: Page,
     ) -> DomainResult<Vec<MemberAggr>>;
 
     /// Returns whether a member exists for the given user and team IDs.
     async fn exist_by_user_and_team_id(&self, user_id: &str, team_id: &str) -> DomainResult<bool>;
+
+    /// Updates the roles for a member (PUT-style: clears all role timestamps,
+    /// then sets only those in the [`RoleMask`] to the current time).
+    async fn update_roles(&self, update: &MemberRoleUpdate) -> DomainResult<()>;
+
+    /// Hard-deletes the member with the given ID.
+    async fn delete(&self, id: &str) -> DomainResult<()>;
 }
 
-/// Mutable persistence contract for [`MemberAggr`], used **only** inside
+/// Transactional persistence contract for [`MemberAggr`], used **only** inside
 /// a transaction via [`QueryTransactional`](crate::domain::query::QueryTransactional).
 #[async_trait]
 pub trait MemberQueryTransactional {
@@ -52,11 +59,4 @@ pub trait MemberQueryTransactional {
 
     /// Updates the last active timestamp on all member rows belonging to the given user.
     async fn touch_last_active(&mut self, user_id: &str) -> DomainResult<()>;
-
-    /// Updates the roles for a member (PUT-style: clears all role timestamps,
-    /// then sets only those in the [`RoleMask`] to the current time).
-    async fn update_roles(&mut self, update: &MemberRoleUpdate) -> DomainResult<()>;
-
-    /// Hard-deletes the member with the given ID.
-    async fn delete(&mut self, id: &str) -> DomainResult<()>;
 }

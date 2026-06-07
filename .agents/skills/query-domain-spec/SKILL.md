@@ -1,6 +1,6 @@
 ---
 name: query-domain-spec
-description: Domain query trait conventions: one file per aggregate, Query vs QueryTransactional split, &self vs &mut self, reference params, QueryTransactional supertrait registration.
+description: "Domain query trait conventions: one file per aggregate, Query vs QueryTransactional split, &self vs &mut self, reference params, QueryTransactional supertrait registration."
 ---
 
 # Domain Query Trait Specification

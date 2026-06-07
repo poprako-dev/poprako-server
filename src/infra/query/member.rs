@@ -7,6 +7,7 @@ use tracing::Level;
 use tracing::instrument;
 
 use poprako_util::i18n::trl;
+use poprako_util::page::Page;
 
 use crate::domain::model::aggr::member::{MemberAggr, MemberForm, MemberRoleUpdate};
 use crate::domain::model::value::role::RoleFlag;
@@ -59,8 +60,7 @@ pub async fn list(
     team_id: &str,
     keyword: Option<&str>,
     role: Option<RoleFlag>,
-    offset: i64,
-    limit: i64,
+    page: Page,
 ) -> DomainResult<Vec<MemberAggr>> {
     let mut query = t_member.filter(f_team_id.eq(team_id)).into_boxed();
 
@@ -86,8 +86,8 @@ pub async fn list(
     }
 
     let rows: Vec<MemberRow> = query
-        .offset(offset)
-        .limit(limit)
+        .offset(page.offset as i64)
+        .limit(page.limit as i64)
         .select(MemberRow::as_select())
         .load(conn)
         .await?;
@@ -172,10 +172,7 @@ pub async fn update_user_nickname(
 }
 
 #[instrument(err, skip(conn), level = Level::DEBUG)]
-pub async fn touch_last_active(
-    conn: &mut AsyncPgConnection,
-    user_id: &str,
-) -> DomainResult<()> {
+pub async fn touch_last_active(conn: &mut AsyncPgConnection, user_id: &str) -> DomainResult<()> {
     let now = OffsetDateTime::now_utc();
 
     let changes = MemberAspect::new(now).user_last_active_at(now);
@@ -249,32 +246,24 @@ impl MemberQuery for RdbQuery {
         team_id: &str,
         keyword: Option<&str>,
         role: Option<RoleFlag>,
-        offset: i64,
-        limit: i64,
+        page: Page,
     ) -> DomainResult<Vec<MemberAggr>> {
-        submit_query!(
-            self.pool,
-            list,
-            team_id,
-            keyword,
-            role,
-            offset,
-            limit
-        )
+        submit_query!(self.pool, list, team_id, keyword, role, page)
     }
 
     #[instrument(err, skip(self), level = Level::DEBUG)]
-    async fn exist_by_user_and_team_id(
-        &self,
-        user_id: &str,
-        team_id: &str,
-    ) -> DomainResult<bool> {
-        submit_query!(
-            self.pool,
-            exist_by_user_and_team_id,
-            user_id,
-            team_id
-        )
+    async fn exist_by_user_and_team_id(&self, user_id: &str, team_id: &str) -> DomainResult<bool> {
+        submit_query!(self.pool, exist_by_user_and_team_id, user_id, team_id)
+    }
+
+    #[instrument(err, skip(self, update_data), level = Level::DEBUG)]
+    async fn update_roles(&self, update_data: &MemberRoleUpdate) -> DomainResult<()> {
+        submit_query!(self.pool, update_roles, update_data)
+    }
+
+    #[instrument(err, skip(self), level = Level::DEBUG)]
+    async fn delete(&self, id: &str) -> DomainResult<()> {
+        submit_query!(self.pool, delete_member, id)
     }
 }
 
@@ -284,23 +273,11 @@ impl<'c> MemberQueryTransactional for RdbQueryTransactional<'c> {
         create(self.conn, form).await
     }
 
-    async fn update_user_nickname(
-        &mut self,
-        user_id: &str,
-        nickname: &str,
-    ) -> DomainResult<()> {
+    async fn update_user_nickname(&mut self, user_id: &str, nickname: &str) -> DomainResult<()> {
         update_user_nickname(self.conn, user_id, nickname).await
     }
 
     async fn touch_last_active(&mut self, user_id: &str) -> DomainResult<()> {
         touch_last_active(self.conn, user_id).await
-    }
-
-    async fn update_roles(&mut self, update_data: &MemberRoleUpdate) -> DomainResult<()> {
-        update_roles(self.conn, update_data).await
-    }
-
-    async fn delete(&mut self, id: &str) -> DomainResult<()> {
-        delete_member(self.conn, id).await
     }
 }

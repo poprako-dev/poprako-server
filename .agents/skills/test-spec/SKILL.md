@@ -1,6 +1,6 @@
 ---
 name: test-spec
-description: Test module conventions: use super::* first, test-case descriptions before imports, format // name(target)(positive|negative): desc, no comments above #[test].
+description: "Test module conventions: use super::* first, test-case descriptions before imports, format // name(target)(positive|negative): desc, no comments above #[test]."
 ---
 
 # Poprako-r Test Specification

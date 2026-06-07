@@ -19,7 +19,7 @@ tower-http = { version = "0.6", features = ["request-id", "trace"] }
 bcrypt = "0.19.1"
 cookie = "0.18"
 crossfire = { version = "3.1.16", features = ["tokio"] }
-diesel = { version = "2.3.7", features = ["postgres", "time"] }
+diesel = { version = "2.3.7", features = ["postgres", "serde_json", "time"] }
 diesel-async = { version = "0.9.0", features = ["deadpool", "postgres"] }
 dotenvy = "0.15.7"
 fluent-templates = "0.14.0"

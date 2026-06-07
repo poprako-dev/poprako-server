@@ -1,6 +1,6 @@
 ---
 name: thirdparty-macro-usage-spec
-description: Third-party macro rules: attribute/derive macros must use `use` import + bare name. tracing event macros must use fully qualified path at call site.
+description: "Third-party macro rules: attribute/derive macros must use `use` import + bare name. tracing event macros must use fully qualified path at call site."
 ---
 
 # Third-Party Macro Usage Specification

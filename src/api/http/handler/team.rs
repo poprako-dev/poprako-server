@@ -1,6 +1,7 @@
 use axum::Json;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
+use poprako_util::page::Page;
 
 use crate::api::http::result::Accept as _;
 use crate::api::http::result::HttpError;
@@ -8,7 +9,8 @@ use crate::api::http::result::HttpResult;
 use crate::harness::Harness;
 use crate::usecase;
 use crate::usecase::data_object::team::{
-    ReserveTeamAvatarParams, ReserveTeamAvatarReply, TeamBase, TeamCreateParams, TeamUpdateParams,
+    ReserveTeamAvatarParams, ReserveTeamAvatarReply, TeamBase, TeamCreateParams,
+    TeamInfoUpdateParams,
 };
 
 #[utoipa::path(
@@ -70,12 +72,12 @@ pub async fn list(
     State(harn): State<Harness>,
     axum::extract::Query(params): axum::extract::Query<TeamListQuery>,
 ) -> HttpResult<Vec<TeamBase>> {
-    let bases = usecase::team::list(
-        &harn,
-        params.offset.unwrap_or(0),
-        params.limit.unwrap_or(20),
-    )
-    .await?;
+    let page = Page {
+        offset: params.offset.unwrap_or(0) as usize,
+        limit: params.limit.unwrap_or(20) as usize,
+    };
+
+    let bases = usecase::team::list(&harn, page).await?;
 
     bases.accept(StatusCode::OK)
 }
@@ -94,7 +96,7 @@ pub struct TeamListQuery {
     params(
         ("team_id" = String, Path, description = "Team ID")
     ),
-    request_body = TeamUpdateParams,
+    request_body = TeamInfoUpdateParams,
     responses(
         (status = 200, description = "Team updated"),
         (status = 400, description = "Invalid request parameters", body = HttpError),
@@ -104,9 +106,9 @@ pub struct TeamListQuery {
 pub async fn update(
     State(harn): State<Harness>,
     Path(team_id): Path<String>,
-    Json(params): Json<TeamUpdateParams>,
+    Json(params): Json<TeamInfoUpdateParams>,
 ) -> HttpResult<()> {
-    usecase::team::update(&harn, team_id, params).await?;
+    usecase::team::update_info(&harn, team_id, params).await?;
 
     ().accept(StatusCode::OK)
 }

@@ -1,6 +1,6 @@
 ---
 name: query-infra-spec
-description: Infra query (Diesel) conventions: Row/Entry/Aspect entity naming, Aspect builder pattern, f_ column prefix, let-type-annotation (no turbofish), struct-only insert/select, From in entity module.
+description: "Infra query (Diesel) conventions: Row/Entry/Aspect entity naming, Aspect builder pattern, f_ column prefix, let-type-annotation (no turbofish), struct-only insert/select, From in entity module."
 ---
 
 # Poprako-r Infra Query Conventions

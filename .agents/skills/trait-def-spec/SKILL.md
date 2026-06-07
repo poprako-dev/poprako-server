@@ -1,6 +1,6 @@
 ---
 name: trait-def-spec
-description: Trait documentation conventions: every trait and method needs /// doc comment, blank line between methods, prefer intra-doc [links].
+description: "Trait documentation conventions: every trait and method needs /// doc comment, blank line between methods, prefer intra-doc [links]."
 ---
 
 # Trait Definition Specification

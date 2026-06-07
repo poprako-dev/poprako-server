@@ -2,6 +2,7 @@ use async_trait::async_trait;
 use time::OffsetDateTime;
 
 use poprako_util::i18n::trl;
+use poprako_util::page::Page;
 
 use crate::domain::model::aggr::team::{TeamAggr, TeamForm, TeamUpdate};
 use crate::domain::query::team::{TeamQuery, TeamQueryTransactional};
@@ -22,15 +23,15 @@ impl TeamQuery for MemoryMockQuery {
             .ok_or_else(|| DomainError::expected_argument(trl("error-team-not-found")))
     }
 
-    async fn list(&self, offset: i64, limit: i64) -> DomainResult<Vec<TeamAggr>> {
+    async fn list(&self, page: Page) -> DomainResult<Vec<TeamAggr>> {
         let state = self.state.lock().unwrap();
         let mut teams: Vec<TeamAggr> = state.teams.clone();
 
         // Sort by created_at descending.
         teams.sort_by(|a, b| b.created_at.cmp(&a.created_at));
 
-        let skip = offset as usize;
-        let take = limit as usize;
+        let skip = page.offset;
+        let take = page.limit;
 
         if skip >= teams.len() {
             return Ok(Vec::new());
@@ -70,16 +71,10 @@ impl TeamQuery for MemoryMockQuery {
 
         Ok(())
     }
-}
 
-// ── QueryTransactional impls ───────────────────────────────────────────────
-
-#[async_trait]
-impl TeamQueryTransactional for MemoryMockQueryTransactional {
-    async fn create(&mut self, form: &TeamForm) -> DomainResult<TeamAggr> {
+    async fn create(&self, form: &TeamForm) -> DomainResult<TeamAggr> {
         let mut state = self.state.lock().unwrap();
 
-        // Check uniqueness constraints.
         if state.teams.iter().any(|t| t.id == form.id) {
             return Err(DomainError::expected_conflict(trl("error-already-exists")));
         }
@@ -104,7 +99,7 @@ impl TeamQueryTransactional for MemoryMockQueryTransactional {
         Ok(team)
     }
 
-    async fn update(&mut self, input: &TeamUpdate) -> DomainResult<()> {
+    async fn update(&self, input: &TeamUpdate) -> DomainResult<()> {
         let mut state = self.state.lock().unwrap();
 
         let team = state
@@ -120,7 +115,7 @@ impl TeamQueryTransactional for MemoryMockQueryTransactional {
         Ok(())
     }
 
-    async fn delete(&mut self, id: &str) -> DomainResult<()> {
+    async fn delete(&self, id: &str) -> DomainResult<()> {
         let mut state = self.state.lock().unwrap();
 
         let pos = state
@@ -133,7 +128,12 @@ impl TeamQueryTransactional for MemoryMockQueryTransactional {
 
         Ok(())
     }
+}
 
+// ── QueryTransactional impls ───────────────────────────────────────────────
+
+#[async_trait]
+impl TeamQueryTransactional for MemoryMockQueryTransactional {
     async fn increment_workset_next_index(&mut self, id: &str) -> DomainResult<i32> {
         let mut state = self.state.lock().unwrap();
 
@@ -153,6 +153,107 @@ impl TeamQueryTransactional for MemoryMockQueryTransactional {
 
 // ── Tests ──────────────────────────────────────────────────────────────────
 
+// ── TeamQuery forwarding on transactional handle ───────────────────────────
+
+#[async_trait]
+impl TeamQuery for MemoryMockQueryTransactional {
+    async fn get_by_id(&self, id: &str) -> DomainResult<TeamAggr> {
+        let state = self.state.lock().unwrap();
+        state
+            .teams
+            .iter()
+            .find(|t| t.id == id)
+            .cloned()
+            .ok_or_else(|| DomainError::expected_argument(trl("error-team-not-found")))
+    }
+
+    async fn list(&self, page: Page) -> DomainResult<Vec<TeamAggr>> {
+        let state = self.state.lock().unwrap();
+        let mut teams: Vec<TeamAggr> = state.teams.clone();
+        teams.sort_by(|a, b| b.created_at.cmp(&a.created_at));
+        let skip = page.offset;
+        let take = page.limit;
+        if skip >= teams.len() {
+            return Ok(Vec::new());
+        }
+        let end = std::cmp::min(skip + take, teams.len());
+        Ok(teams[skip..end].to_vec())
+    }
+
+    async fn prefill_avatar_key(&self, id: &str, key: &str) -> DomainResult<()> {
+        let mut state = self.state.lock().unwrap();
+        let team = state
+            .teams
+            .iter_mut()
+            .find(|t| t.id == id)
+            .ok_or_else(|| DomainError::expected_argument(trl("error-team-not-found")))?;
+        team.avatar_key = key.to_string();
+        team.avatar_uploaded = false;
+        team.updated_at = OffsetDateTime::now_utc();
+        Ok(())
+    }
+
+    async fn mark_avatar_uploaded(&self, id: &str) -> DomainResult<()> {
+        let mut state = self.state.lock().unwrap();
+        let team = state
+            .teams
+            .iter_mut()
+            .find(|t| t.id == id)
+            .ok_or_else(|| DomainError::expected_argument(trl("error-team-not-found")))?;
+        team.avatar_uploaded = true;
+        team.updated_at = OffsetDateTime::now_utc();
+        Ok(())
+    }
+
+    async fn create(&self, form: &TeamForm) -> DomainResult<TeamAggr> {
+        let mut state = self.state.lock().unwrap();
+        if state
+            .teams
+            .iter()
+            .any(|t| t.id == form.id || t.name == form.name)
+        {
+            return Err(DomainError::expected_conflict(trl("error-already-exists")));
+        }
+        let now = OffsetDateTime::now_utc();
+        let team = TeamAggr {
+            id: form.id.clone(),
+            name: form.name.clone(),
+            description: form.description.clone(),
+            avatar_key: String::new(),
+            avatar_uploaded: false,
+            workset_next_index: 0,
+            created_at: now,
+            updated_at: now,
+        };
+        state.teams.push(team.clone());
+        Ok(team)
+    }
+
+    async fn update(&self, input: &TeamUpdate) -> DomainResult<()> {
+        let mut state = self.state.lock().unwrap();
+        let team = state
+            .teams
+            .iter_mut()
+            .find(|t| t.id == input.id)
+            .ok_or_else(|| DomainError::expected_argument(trl("error-team-not-found")))?;
+        team.name = input.name.clone();
+        team.description = input.description.clone();
+        team.updated_at = OffsetDateTime::now_utc();
+        Ok(())
+    }
+
+    async fn delete(&self, id: &str) -> DomainResult<()> {
+        let mut state = self.state.lock().unwrap();
+        let pos = state
+            .teams
+            .iter()
+            .position(|t| t.id == id)
+            .ok_or_else(|| DomainError::expected_argument(trl("error-team-not-found")))?;
+        state.teams.remove(pos);
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     // find_by_id_after_seed(TeamQuery::get_by_id)(positive): seeded teams should be found by ID.
@@ -160,17 +261,19 @@ mod tests {
     // list_returns_teams_ordered_by_created_at_desc(TeamQuery::list)(positive): list should return teams ordered by created_at DESC.
     // prefill_avatar_key_sets_avatar_key(TeamQuery::prefill_avatar_key)(positive): prefill should set the avatar key and clear uploaded flag.
     // mark_avatar_uploaded_sets_flag(TeamQuery::mark_avatar_uploaded)(positive): marking should set avatar_uploaded to true.
-    // create_then_find(TeamQueryTransactional::create)(positive): created teams should be readable after transaction commit.
-    // create_duplicate_name_returns_conflict(TeamQueryTransactional::create)(negative): duplicate team names should return a conflict.
-    // update_changes_fields(TeamQueryTransactional::update)(positive): update should change name and description.
-    // update_missing_returns_error(TeamQueryTransactional::update)(negative): updating a missing team should fail.
-    // delete_removes_team(TeamQueryTransactional::delete)(positive): deleting a team should remove it from storage.
-    // delete_missing_returns_error(TeamQueryTransactional::delete)(negative): deleting a missing team should fail.
+    // create_then_find(TeamQuery::create)(positive): created teams should be readable after transaction commit.
+    // create_duplicate_name_returns_conflict(TeamQuery::create)(negative): duplicate team names should return a conflict.
+    // update_changes_fields(TeamQuery::update)(positive): update should change name and description.
+    // update_missing_returns_error(TeamQuery::update)(negative): updating a missing team should fail.
+    // delete_removes_team(TeamQuery::delete)(positive): deleting a team should remove it from storage.
+    // delete_missing_returns_error(TeamQuery::delete)(negative): deleting a missing team should fail.
     // increment_workset_next_index_returns_allocated(TeamQueryTransactional::increment_workset_next_index)(positive): each call should return the current value and increment it.
     // increment_workset_next_index_missing_returns_error(TeamQueryTransactional::increment_workset_next_index)(negative): incrementing a missing team should fail.
 
     use futures_util::FutureExt as _;
     use time::OffsetDateTime;
+
+    use poprako_util::page::Page;
 
     use crate::domain::model::aggr::team::{TeamAggr, TeamForm, TeamUpdate};
     use crate::domain::query::Transactional;
@@ -225,7 +328,7 @@ mod tests {
         mock.seed_team(make_team("team-2", "B"));
         mock.seed_team(make_team("team-3", "C"));
 
-        let list = TeamQuery::list(&mock, 0, 10).await.unwrap();
+        let list = TeamQuery::list(&mock, Page { offset: 0, limit: 10 }).await.unwrap();
         assert_eq!(list.len(), 3);
     }
 
@@ -267,7 +370,7 @@ mod tests {
                     name: "New Team".into(),
                     description: "A new team".into(),
                 };
-                let team = TeamQueryTransactional::create(txn, &form).await.unwrap();
+                let team = TeamQuery::create(txn, &form).await.unwrap();
                 assert_eq!(team.name, "New Team");
                 assert_eq!(team.workset_next_index, 0);
                 Ok(())
@@ -292,7 +395,7 @@ mod tests {
                     name: "My Team".into(),
                     description: "desc".into(),
                 };
-                TeamQueryTransactional::create(txn, &form).await.unwrap();
+                TeamQuery::create(txn, &form).await.unwrap();
                 Ok(())
             }
             .boxed()
@@ -308,7 +411,7 @@ mod tests {
                         name: "My Team".into(),
                         description: "desc".into(),
                     };
-                    TeamQueryTransactional::create(txn, &form).await
+                    TeamQuery::create(txn, &form).await
                 }
                 .boxed()
             })
@@ -331,7 +434,7 @@ mod tests {
                     name: "New Name".into(),
                     description: "New Desc".into(),
                 };
-                TeamQueryTransactional::update(txn, &input).await
+                TeamQuery::update(txn, &input).await
             }
             .boxed()
         })
@@ -355,7 +458,7 @@ mod tests {
                         name: "X".into(),
                         description: "Y".into(),
                     };
-                    TeamQueryTransactional::update(txn, &input).await
+                    TeamQuery::update(txn, &input).await
                 }
                 .boxed()
             })
@@ -372,7 +475,7 @@ mod tests {
         mock.seed_team(make_team("team-1", "A"));
 
         mock.transaction_scoped(|txn| {
-            async move { TeamQueryTransactional::delete(txn, "team-1").await }.boxed()
+            async move { TeamQuery::delete(txn, "team-1").await }.boxed()
         })
         .await
         .unwrap();
@@ -387,7 +490,7 @@ mod tests {
 
         let err = mock
             .transaction_scoped(|txn| {
-                async move { TeamQueryTransactional::delete(txn, "nonexistent").await }.boxed()
+                async move { TeamQuery::delete(txn, "nonexistent").await }.boxed()
             })
             .await
             .err()

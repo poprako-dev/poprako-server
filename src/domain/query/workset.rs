@@ -1,11 +1,12 @@
 use async_trait::async_trait;
 
 use poprako_macro::forward_ref;
+use poprako_util::page::Page;
 
 use crate::domain::model::aggr::workset::{WorksetAggr, WorksetForm, WorksetUpdate};
 use crate::domain::result::DomainResult;
 
-/// Read-only persistence contract for [`WorksetAggr`].
+/// Persistence contract for [`WorksetAggr`].
 ///
 /// Each method takes an immutable `&self` reference, suitable for
 /// non-transactional queries backed by a connection pool.
@@ -17,25 +18,26 @@ pub trait WorksetQuery {
 
     /// Lists worksets for the given team, ordered by `index` ascending.
     ///
-    /// The `offset` and `limit` parameters control pagination.
+    /// The `page` parameter controls pagination.
     /// Preloads the owning team on each workset.
-    async fn list(&self, team_id: &str, offset: i64, limit: i64) -> DomainResult<Vec<WorksetAggr>>;
+    async fn list(&self, team_id: &str, page: Page) -> DomainResult<Vec<WorksetAggr>>;
 
     /// Returns the total count of worksets for the given team.
     async fn count(&self, team_id: &str) -> DomainResult<i64>;
+
+    /// Updates a workset's mutable fields (name, description) via PUT semantics.
+    async fn update(&self, input: &WorksetUpdate) -> DomainResult<()>;
+
+    /// Hard-deletes the workset with the given ID.
+    async fn delete(&self, id: &str) -> DomainResult<()>;
 }
 
-/// Mutable persistence contract for [`WorksetAggr`], used **only** inside
+/// Transactional persistence contract for [`WorksetAggr`], used **only** inside
 /// a transaction via [`QueryTransactional`](crate::domain::query::QueryTransactional).
 #[async_trait]
 pub trait WorksetQueryTransactional {
     /// Creates a new workset from the creation form inside a transaction.
     async fn create(&mut self, form: &WorksetForm) -> DomainResult<WorksetAggr>;
-
-    /// Updates a workset's mutable fields (name, description) via PUT semantics.
-    ///
-    /// The `id` in the update input identifies the workset to modify.
-    async fn update(&mut self, input: &WorksetUpdate) -> DomainResult<()>;
 
     /// Applies a delta to the `comic_count` counter of the workset.
     ///
@@ -43,10 +45,5 @@ pub trait WorksetQueryTransactional {
     async fn update_comic_count(&mut self, id: &str, delta: i32) -> DomainResult<()>;
 
     /// Atomically increments and returns the next comic index from the workset-scoped sequence.
-    ///
-    /// Uses `UPDATE ... RETURNING` for atomic allocation.
     async fn increment_comic_next_index(&mut self, id: &str) -> DomainResult<i32>;
-
-    /// Hard-deletes the workset with the given ID.
-    async fn delete(&mut self, id: &str) -> DomainResult<()>;
 }
