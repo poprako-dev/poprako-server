@@ -5,16 +5,17 @@ use fluent_templates::fluent_bundle::FluentValue;
 use tracing::Level;
 use tracing::instrument;
 
+use poprako_util::i18n::{trl, trl_kv};
+
 use crate::domain::model::aggr::system_mail::{SystemMailAggr, SystemMailForm};
 use crate::domain::model::event::user::UserSignedUpEvent;
 use crate::domain::query::system_mail::SystemMailQuery;
 use crate::domain::query::team::TeamQuery;
-use poprako_util::i18n::{trl, trl_kv};
 
 /// Notifies the invitor via system mail that a new user has registered using
 /// their invitation code.
 #[instrument(skip(harn, event), level = Level::DEBUG)]
-pub async fn notify_invitor_handler<H>(harn: &H, event: UserSignedUpEvent)
+pub async fn notify_invitor<H>(harn: &H, event: UserSignedUpEvent)
 where
     H: TeamQuery + SystemMailQuery,
 {

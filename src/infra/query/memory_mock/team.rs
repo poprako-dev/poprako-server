@@ -1,10 +1,11 @@
 use async_trait::async_trait;
 
+use poprako_util::i18n::trl;
+
 use crate::domain::model::aggr::team::TeamAggr;
 use crate::domain::query::team::TeamQuery;
 use crate::domain::result::{DomainError, DomainResult};
 use crate::infra::query::memory_mock::MemoryMockQuery;
-use poprako_util::i18n::trl;
 
 #[async_trait]
 impl TeamQuery for MemoryMockQuery {

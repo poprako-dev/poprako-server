@@ -7,13 +7,14 @@ pub mod user;
 use async_trait::async_trait;
 use futures_util::future::BoxFuture;
 
+use poprako_util::ForwardRef;
+
 use crate::domain::query::member::MemberQueryTransactional;
 use crate::domain::query::member_invitation::MemberInvitationQueryTransactional;
 use crate::domain::query::system_mail::SystemMailQuery;
 use crate::domain::query::team::TeamQuery;
 use crate::domain::query::user::{UserQuery, UserQueryTransactional};
 use crate::domain::result::DomainResult;
-use poprako_util::ForwardRef;
 
 /// Composite read-only query contract for non-transactional use cases.
 pub trait Query: UserQuery + TeamQuery + SystemMailQuery {}

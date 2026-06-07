@@ -1,11 +1,12 @@
 use async_trait::async_trait;
 use time::OffsetDateTime;
 
+use poprako_util::i18n::trl;
+
 use crate::domain::model::aggr::user::{UserAggr, UserCredential, UserForm, UserInfoUpdate};
 use crate::domain::query::user::{UserQuery, UserQueryTransactional};
 use crate::domain::result::{DomainError, DomainResult};
 use crate::infra::query::memory_mock::{MemoryMockQuery, MemoryMockQueryTransactional};
-use poprako_util::i18n::trl;
 
 // ── Query impls ────────────────────────────────────────────────────────────
 
@@ -162,7 +163,6 @@ mod tests {
     // touch_last_active_missing_user_returns_expected_error(UserQuery::touch_last_active)(negative): touching for a missing user should fail.
 
     use time::OffsetDateTime;
-
     use futures_util::FutureExt as _;
 
     use crate::domain::model::aggr::user::{UserAggr, UserCredential, UserForm, UserInfoUpdate};

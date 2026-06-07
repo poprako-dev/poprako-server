@@ -1,9 +1,9 @@
 use std::mem;
 
-use crate::domain::model::event::{Event, EventEmit, EventSink};
-
 use time::OffsetDateTime;
 use uuid::Uuid;
+
+use crate::domain::model::event::{Event, EventEmit, EventSink};
 
 #[cfg_attr(test, derive(Clone))]
 pub struct UserAggr {

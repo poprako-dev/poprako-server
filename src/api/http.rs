@@ -17,10 +17,11 @@ mod result {
     use serde::Serialize;
     use utoipa::ToSchema;
 
-    use crate::domain::result::{DomainError, ExpectedVariant};
-    use crate::usecase::result::UseCaseError;
     use poprako_util::i18n::trl;
     use poprako_util::rename::StdResult;
+
+    use crate::domain::result::{DomainError, ExpectedVariant};
+    use crate::usecase::result::UseCaseError;
 
     #[derive(Debug, Serialize, ToSchema)]
     pub struct HttpError {

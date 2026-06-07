@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+
 use poprako_macro::forward_ref;
 
 use crate::domain::model::aggr::user::{UserAggr, UserCredential, UserForm, UserInfoUpdate};

@@ -57,13 +57,13 @@ use diesel_async::AsyncPgConnection;
 use diesel_async::pooled_connection::AsyncDieselConnectionManager;
 use diesel_async::pooled_connection::deadpool::Pool;
 use futures_util::future::BoxFuture;
-
 use tracing::Level;
 use tracing::instrument;
 
+use poprako_util::i18n::trl;
+
 use crate::domain::query::Transactional;
 use crate::domain::result::{DomainError, DomainResult};
-use poprako_util::i18n::trl;
 
 /// Converts a raw Diesel error into a structured [`DomainError`].
 ///

@@ -18,6 +18,8 @@ use tower_http::trace::{
 use tracing::Instrument;
 use uuid::Uuid;
 
+use poprako_util::i18n::trl;
+
 use crate::api::http::auth_token::AUTHORIZATION_BEARER_PREFIX;
 use crate::api::http::auth_token::AUTHORIZATION_COOKIE_NAME;
 use crate::api::http::result::HttpError;
@@ -25,8 +27,6 @@ use crate::domain::compound::user::parse_token;
 use crate::domain::result::ExpectedVariant;
 use crate::harness::Harness;
 use crate::usecase;
-
-use poprako_util::i18n::trl;
 
 type LayerFuture = BoxFuture<'static, Response>;
 

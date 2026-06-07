@@ -13,7 +13,86 @@ use tracing::instrument;
 use crate::domain::effect::EffectSink;
 use crate::domain::model::event::{Event, EventEmit};
 use crate::harness::HarnessBase;
-use crate::infra::effect::user::notify_invitor_handler;
+use crate::infra::effect::user::notify_invitor;
+
+// ── Dispatch ───────────────────────────────────────────────────────────────
+
+/// Dispatches a domain event to the appropriate hardcoded effect handler.
+async fn dispatch(harn: &HarnessBase, event: Event) {
+    match event {
+        Event::UserSignedUp(payload) => {
+            notify_invitor(harn, payload).await;
+        }
+    }
+}
+
+// ── Background task ────────────────────────────────────────────────────────
+
+/// Background task that receives events from the mpsc channel and dispatches them to
+/// hardcoded effect handlers.
+struct BackgroundHandler {
+    harness: Arc<HarnessBase>,
+    recv: AsyncRx<Array<Event>>,
+    shutdown_recv: RxOneshot<()>,
+    done_send: TxOneshot<()>,
+    accepting: Arc<AtomicBool>,
+}
+
+impl BackgroundHandler {
+    pub fn new(
+        harness: Arc<HarnessBase>,
+        recv: AsyncRx<Array<Event>>,
+        shutdown_recv: RxOneshot<()>,
+        done_send: TxOneshot<()>,
+        accepting: Arc<AtomicBool>,
+    ) -> Self {
+        Self {
+            harness,
+            recv,
+            shutdown_recv,
+            done_send,
+            accepting,
+        }
+    }
+
+    #[instrument(skip_all, level = Level::DEBUG)]
+    pub async fn run(self) {
+        // Main loop: receive and dispatch events.
+        let Self {
+            harness: harn,
+            recv,
+            shutdown_recv,
+            done_send,
+            accepting,
+        } = self;
+
+        tokio::pin!(shutdown_recv);
+
+        loop {
+            tokio::select! {
+                result = recv.recv() => {
+                    match result {
+                        Ok(event) => dispatch(&harn, event).await,
+                        Err(_) => break, // channel closed — all senders dropped
+                    }
+                }
+                _ = &mut shutdown_recv => {
+                    // Stop accepting new events (handle() checks this flag).
+                    accepting.store(false, Ordering::Release);
+                    break;
+                }
+            }
+        }
+
+        // Drain: process any events that were already in the channel.
+        while let Ok(event) = recv.try_recv() {
+            dispatch(&harn, event).await;
+        }
+
+        // Signal that drain is complete.
+        done_send.send(());
+    }
+}
 
 /// An async effect sink that dispatches domain events to hardcoded handlers
 /// via a background task.
@@ -47,12 +126,14 @@ impl AsyncEffectSink {
         let (done_send, done_recv) = oneshot::oneshot();
 
         let accepting = Arc::new(AtomicBool::new(true));
-        let accepting_task = Arc::clone(&accepting);
 
-        let harn_task = Arc::clone(&harn);
+        tokio::spawn({
+            let accepting = Arc::clone(&accepting);
+            let harn = Arc::clone(&harn);
 
-        tokio::spawn(async move {
-            handle_task(harn_task, recv, shutdown_recv, done_send, accepting_task).await;
+            let handler = BackgroundHandler::new(harn, recv, shutdown_recv, done_send, accepting);
+
+            async move { handler.run().await }
         });
 
         Self {
@@ -61,6 +142,10 @@ impl AsyncEffectSink {
             done: Mutex::new(Some(done_recv)),
             accepting,
         }
+    }
+
+    pub fn new_shared(harn: Arc<HarnessBase>, buf_size: usize) -> SharedEffectSink {
+        Arc::new(Self::new(harn, buf_size))
     }
 
     /// Signals the background task to shut down, then waits for it to drain
@@ -86,10 +171,6 @@ impl AsyncEffectSink {
 
         let _ = recv.await;
     }
-}
-
-pub fn shared_effect_sink(harn: Arc<HarnessBase>, buffer: usize) -> SharedEffectSink {
-    Arc::new(AsyncEffectSink::new(harn, buffer))
 }
 
 #[async_trait]
@@ -119,55 +200,6 @@ impl EffectSink for AsyncEffectSink {
                 }
                 _ => {}
             }
-        }
-    }
-}
-
-// ── Background task ────────────────────────────────────────────────────────
-
-#[instrument(skip_all, level = Level::DEBUG)]
-async fn handle_task(
-    harn: Arc<HarnessBase>,
-    recv: AsyncRx<Array<Event>>,
-    shutdown_recv: RxOneshot<()>,
-    done_send: TxOneshot<()>,
-    accepting: Arc<AtomicBool>,
-) {
-    // Main loop: receive and dispatch events.
-    tokio::pin!(shutdown_recv);
-
-    loop {
-        tokio::select! {
-            result = recv.recv() => {
-                match result {
-                    Ok(event) => dispatch(&harn, event).await,
-                    Err(_) => break, // channel closed — all senders dropped
-                }
-            }
-            _ = &mut shutdown_recv => {
-                // Stop accepting new events (handle() checks this flag).
-                accepting.store(false, Ordering::Release);
-                break;
-            }
-        }
-    }
-
-    // Drain: process any events that were already in the channel.
-    while let Ok(event) = recv.try_recv() {
-        dispatch(&harn, event).await;
-    }
-
-    // Signal that drain is complete.
-    done_send.send(());
-}
-
-// ── Dispatch ───────────────────────────────────────────────────────────────
-
-/// Dispatches a domain event to the appropriate hardcoded effect handler.
-async fn dispatch(harn: &HarnessBase, event: Event) {
-    match event {
-        Event::UserSignedUp(payload) => {
-            notify_invitor_handler(harn, payload).await;
         }
     }
 }

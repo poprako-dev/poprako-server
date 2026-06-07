@@ -2,7 +2,6 @@ use async_trait::async_trait;
 use diesel_async::AsyncPgConnection;
 use diesel_async::RunQueryDsl;
 use time::OffsetDateTime;
-
 use tracing::Level;
 use tracing::instrument;
 

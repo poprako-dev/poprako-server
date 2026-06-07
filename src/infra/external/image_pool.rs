@@ -1,7 +1,7 @@
-use async_trait::async_trait;
 use std::time::Duration;
 
 use anyhow::Context;
+use async_trait::async_trait;
 use aws_credential_types::Credentials;
 use aws_sdk_s3::config::{BehaviorVersion, Region};
 use aws_sdk_s3::error::{ProvideErrorMetadata, SdkError};
@@ -9,13 +9,14 @@ use aws_sdk_s3::operation::delete_objects::DeleteObjectsError;
 use aws_sdk_s3::presigning::PresigningConfig;
 use aws_sdk_s3::types::{Delete, ObjectIdentifier};
 use aws_sdk_s3::{Client, Config};
+use tracing::Level;
+use tracing::instrument;
 use url::Url;
+
+use poprako_util::i18n::trl;
 
 use crate::domain::external::image_pool::{ImageDelete, ImageGet, ImagePut};
 use crate::domain::result::{DomainError, DomainResult};
-use poprako_util::i18n::trl;
-use tracing::Level;
-use tracing::instrument;
 
 // ---------------------------------------------------------------------------
 // R2OssClient

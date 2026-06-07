@@ -1,6 +1,8 @@
 use futures_util::FutureExt as _;
 use tracing::instrument;
 
+use poprako_util::i18n::trl;
+
 use crate::domain::compound::user::{hash_password, sign_token};
 use crate::domain::effect::{Effect as _, EffectSink};
 use crate::domain::external::image_pool::ImageGet;
@@ -23,8 +25,6 @@ use crate::usecase::data_object::user::{
     UserBase, UserInfoUpdateParams,
 };
 use crate::usecase::result::UseCaseResult;
-
-use poprako_util::i18n::trl;
 
 #[instrument(err, skip(harn))]
 pub async fn sign_up_user<H>(harn: &H, params: SignUpParams) -> UseCaseResult<SignUpReply>
@@ -234,9 +234,10 @@ mod tests {
     // sign_up_user_rolls_back_when_member_create_fails(sign_up_user)(negative): sign up should roll back user creation when member creation fails.
     // sign_up_user_token_failure_happens_after_commit_and_event_publish(sign_up_user)(negative): token failures should occur after commit and event publication.
 
+    use super::sign_up_user;
+
     use time::OffsetDateTime;
 
-    use super::sign_up_user;
     use crate::domain::model::aggr::member_invitation::MemberInvitationAggr;
     use crate::domain::model::event::Event;
     use crate::domain::model::value::role::{RoleFlag, RoleMask};
@@ -420,6 +421,7 @@ mod user_use_cases_tests {
     // touch_last_active_fails_for_nonexistent_user(touch_last_active)(negative): touch_last_active should fail for missing user.
 
     use super::*;
+
     use time::OffsetDateTime;
 
     use crate::domain::model::aggr::user::UserCredential;
