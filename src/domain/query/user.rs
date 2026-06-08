@@ -2,7 +2,9 @@ use async_trait::async_trait;
 
 use poprako_macro::forward_ref;
 
-use crate::domain::model::aggr::user::{UserAggr, UserCredential, UserForm, UserInfoUpdate};
+use crate::domain::model::aggr::user::{
+    UserAggr, UserAvatarReservation, UserCredential, UserForm, UserInfoUpdate,
+};
 use crate::domain::result::DomainResult;
 
 /// Persistence contract for [`UserAggr`].
@@ -14,12 +16,6 @@ pub trait UserQuery {
 
     /// Returns credentials (hashed password) for the given qualified ID.
     async fn get_credentials_by_qid(&self, qid: &str) -> DomainResult<UserCredential>;
-
-    /// Sets the avatar key for the given user.
-    async fn prefill_avatar_key(&self, id: &str, key: &str) -> DomainResult<()>;
-
-    /// Marks the user's avatar as uploaded.
-    async fn mark_avatar_uploaded(&self, id: &str) -> DomainResult<()>;
 }
 
 /// Mutable persistence contract for [`UserAggr`], used **only** inside
@@ -36,4 +32,17 @@ pub trait UserQueryTransactional {
 
     /// Updates the user's last active timestamp inside a transaction.
     async fn touch_last_active(&mut self, id: &str) -> DomainResult<()>;
+
+    /// Returns the user inside a transaction, or an expected error if not found.
+    async fn get_by_id(&mut self, id: &str) -> DomainResult<UserAggr>;
+
+    /// Reserves the next avatar object key and clears the uploaded flag.
+    async fn reserve_avatar(
+        &mut self,
+        id: &str,
+        file_extension: &str,
+    ) -> DomainResult<UserAvatarReservation>;
+
+    /// Marks the user's current avatar version as uploaded.
+    async fn mark_avatar_uploaded(&mut self, id: &str, image_version: i64) -> DomainResult<()>;
 }

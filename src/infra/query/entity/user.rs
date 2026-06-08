@@ -16,6 +16,7 @@ pub struct UserRow {
     pub f_avatar_key: Option<String>,
     pub f_avatar_source: Option<String>,
     pub f_avatar_uploaded: bool,
+    pub f_avatar_version: i64,
     pub f_last_active_at: OffsetDateTime,
     pub f_created_at: OffsetDateTime,
     pub f_updated_at: OffsetDateTime,
@@ -48,6 +49,7 @@ pub struct UserAspect<'a> {
     pub f_qid: Option<&'a str>,
     pub f_avatar_key: Option<&'a str>,
     pub f_avatar_uploaded: Option<bool>,
+    pub f_avatar_version: Option<i64>,
     pub f_last_active_at: Option<OffsetDateTime>,
     pub f_updated_at: OffsetDateTime,
 }
@@ -60,6 +62,7 @@ impl<'a> UserAspect<'a> {
             f_qid: None,
             f_avatar_key: None,
             f_avatar_uploaded: None,
+            f_avatar_version: None,
             f_last_active_at: None,
             f_updated_at: updated_at,
         }
@@ -85,6 +88,11 @@ impl<'a> UserAspect<'a> {
         self
     }
 
+    pub fn avatar_version(mut self, val: i64) -> Self {
+        self.f_avatar_version = Some(val);
+        self
+    }
+
     pub fn last_active_at(mut self, val: OffsetDateTime) -> Self {
         self.f_last_active_at = Some(val);
         self
@@ -102,6 +110,7 @@ impl From<UserRow> for UserAggr {
             is_sadmin: v.f_is_sadmin,
             avatar_key: v.f_avatar_key.unwrap_or_default(),
             avatar_uploaded: v.f_avatar_uploaded,
+            avatar_version: v.f_avatar_version,
             last_active_at: v.f_last_active_at,
             created_at: v.f_created_at,
             updated_at: v.f_updated_at,

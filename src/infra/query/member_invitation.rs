@@ -44,10 +44,7 @@ pub async fn get_by_code_ex(
 pub async fn mark_pending_as_used(conn: &mut AsyncPgConnection, id: &str) -> DomainResult<()> {
     let now = OffsetDateTime::now_utc();
 
-    let aspect = MemberInvitationAspect {
-        f_pending: false,
-        f_updated_at: now,
-    };
+    let aspect = MemberInvitationAspect::new(now).pending(false);
 
     let rows_affected = diesel::update(
         t_member_invitation

@@ -2,6 +2,7 @@ use axum::Json;
 use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
 use serde::Deserialize;
+use tracing::instrument;
 use utoipa::IntoParams;
 
 use poprako_util::page::Page;
@@ -27,6 +28,7 @@ use crate::usecase::data_object::member::{
         (status = 401, description = "Authentication required", body = HttpError)
     )
 )]
+#[instrument(err, skip(harn, params))]
 pub async fn create(
     State(harn): State<Harness>,
     Json(params): Json<MemberCreateParams>,
@@ -36,7 +38,7 @@ pub async fn create(
     reply.accept(StatusCode::CREATED)
 }
 
-#[derive(Deserialize, IntoParams)]
+#[derive(Debug, Deserialize, IntoParams)]
 #[into_params(parameter_in = Query)]
 pub struct MemberListQuery {
     pub team_id: String,
@@ -57,6 +59,7 @@ pub struct MemberListQuery {
         (status = 401, description = "Authentication required", body = HttpError)
     )
 )]
+#[instrument(err, skip(harn))]
 pub async fn list(
     State(harn): State<Harness>,
     Query(params): Query<MemberListQuery>,
@@ -80,7 +83,7 @@ pub async fn list(
     bases.accept(StatusCode::OK)
 }
 
-#[derive(Deserialize, IntoParams)]
+#[derive(Debug, Deserialize, IntoParams)]
 #[into_params(parameter_in = Query)]
 pub struct MemberDetailQuery {
     pub user_id: String,
@@ -98,6 +101,7 @@ pub struct MemberDetailQuery {
         (status = 401, description = "Authentication required", body = HttpError)
     )
 )]
+#[instrument(err, skip(harn))]
 pub async fn get_detail(
     State(harn): State<Harness>,
     Query(params): Query<MemberDetailQuery>,
@@ -122,6 +126,7 @@ pub async fn get_detail(
         (status = 401, description = "Authentication required", body = HttpError)
     )
 )]
+#[instrument(err, skip(harn, params))]
 pub async fn update_roles(
     State(harn): State<Harness>,
     Path(member_id): Path<String>,
@@ -145,6 +150,7 @@ pub async fn update_roles(
         (status = 401, description = "Authentication required", body = HttpError)
     )
 )]
+#[instrument(err, skip(harn))]
 pub async fn delete(State(harn): State<Harness>, Path(member_id): Path<String>) -> HttpResult<()> {
     usecase::member::delete(&harn, member_id).await?;
 

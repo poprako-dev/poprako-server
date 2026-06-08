@@ -1,13 +1,18 @@
+use futures::future::join_all;
+use futures_util::FutureExt as _;
 use poprako_util::page::Page;
+use time::Duration;
 use tracing::instrument;
 
 use crate::domain::external::image_pool::{ImageGet, ImagePut};
-use crate::domain::model::aggr::team::{TeamAggr, TeamForm, TeamUpdate};
-use crate::domain::query::Query;
-use crate::domain::query::team::TeamQuery;
+use crate::domain::local_message::message::{ImageLocalMessage, ImageResourceKind};
+use crate::domain::model::aggr::team::{TeamAggr, TeamForm, TeamInfoUpdate};
+use crate::domain::query::local_message::LocalMessageQueryTransactional;
+use crate::domain::query::team::{TeamQuery, TeamQueryTransactional};
+use crate::domain::query::{Query, Transactional};
 use crate::usecase::data_object::team::{
-    ReserveTeamAvatarParams, ReserveTeamAvatarReply, TeamBase, TeamCreateParams,
-    TeamInfoUpdateParams,
+    MarkTeamAvatarUploadedParams, ReserveTeamAvatarParams, ReserveTeamAvatarReply, TeamBase,
+    TeamCreateParams, TeamInfoUpdateParams,
 };
 use crate::usecase::result::UseCaseResult;
 
@@ -50,10 +55,12 @@ where
 {
     let teams = TeamQuery::list(harn, page).await?;
 
-    let mut bases = Vec::with_capacity(teams.len());
-    for team in teams {
-        bases.push(TeamBase::from_aggr(team, harn).await);
-    }
+    let bases = join_all(
+        teams
+            .into_iter()
+            .map(|team| TeamBase::from_aggr(team, harn)),
+    )
+    .await;
 
     Ok(bases)
 }
@@ -67,13 +74,13 @@ pub async fn update_info<H>(
 where
     H: Query + Send + Sync,
 {
-    let input = TeamUpdate {
+    let input = TeamInfoUpdate {
         id: team_id,
         name: params.name,
         description: params.description,
     };
 
-    TeamQuery::update(harn, &input).await?;
+    TeamQuery::update_info(harn, &input).await?;
 
     Ok(())
 }
@@ -85,25 +92,63 @@ pub async fn reserve_avatar<H>(
     params: ReserveTeamAvatarParams,
 ) -> UseCaseResult<ReserveTeamAvatarReply>
 where
-    H: Query + ImagePut + Send + Sync,
+    H: Clone + Transactional + ImagePut + Send + Sync,
 {
-    // Fetch team just to call generate_avatar_key.
-    let team = TeamQuery::get_by_id(harn, &team_id).await?;
-    let avatar_key = team.generate_avatar_key(&params.file_extension);
+    let reservation = Transactional::transaction_scoped(harn, move |query| {
+        async move {
+            let reservation =
+                TeamQueryTransactional::reserve_avatar(query, &team_id, &params.file_extension)
+                    .await?;
 
-    TeamQuery::prefill_avatar_key(harn, &team_id, &avatar_key).await?;
+            if let Some(previous_object_key) = reservation.previous_object_key.clone() {
+                let message =
+                    ImageLocalMessage::delete(previous_object_key).into_form(Duration::seconds(0));
+                LocalMessageQueryTransactional::append(query, &message).await?;
+            }
 
-    let put_url = ImagePut::put_signed(harn, &avatar_key).await?.to_string();
+            let message = ImageLocalMessage::check_uploaded(
+                ImageResourceKind::TeamAvatar,
+                team_id,
+                reservation.object_key.clone(),
+                reservation.image_version,
+            )
+            .into_form(Duration::minutes(15));
+            LocalMessageQueryTransactional::append(query, &message).await?;
 
-    Ok(ReserveTeamAvatarReply { put_url })
+            Ok(reservation)
+        }
+        .boxed()
+    })
+    .await?;
+
+    let put_url = ImagePut::put_signed(harn, &reservation.object_key)
+        .await?
+        .to_string();
+
+    Ok(ReserveTeamAvatarReply {
+        put_url,
+        image_version: reservation.image_version,
+    })
 }
 
 #[instrument(err, skip(harn))]
-pub async fn mark_avatar_uploaded<H>(harn: &H, team_id: String) -> UseCaseResult<()>
+pub async fn mark_avatar_uploaded<H>(
+    harn: &H,
+    team_id: String,
+    params: MarkTeamAvatarUploadedParams,
+) -> UseCaseResult<()>
 where
-    H: Query + Send + Sync,
+    H: Clone + Transactional + Send + Sync,
 {
-    TeamQuery::mark_avatar_uploaded(harn, &team_id).await?;
+    Transactional::transaction_scoped(harn, move |query| {
+        async move {
+            TeamQueryTransactional::mark_avatar_uploaded(query, &team_id, params.image_version)
+                .await?;
+            Ok(())
+        }
+        .boxed()
+    })
+    .await?;
 
     Ok(())
 }
@@ -111,9 +156,20 @@ where
 #[instrument(err, skip(harn))]
 pub async fn delete<H>(harn: &H, team_id: String) -> UseCaseResult<()>
 where
-    H: Query + Send + Sync,
+    H: Clone + Transactional + Send + Sync,
 {
-    TeamQuery::delete(harn, &team_id).await?;
+    Transactional::transaction_scoped(harn, move |query| {
+        async move {
+            let avatar_key = TeamQueryTransactional::delete(query, &team_id).await?;
+            if let Some(object_key) = avatar_key {
+                let message = ImageLocalMessage::delete(object_key).into_form(Duration::seconds(0));
+                LocalMessageQueryTransactional::append(query, &message).await?;
+            }
+            Ok(())
+        }
+        .boxed()
+    })
+    .await?;
 
     Ok(())
 }
@@ -132,12 +188,13 @@ mod tests {
 
     use super::*;
 
-    use time::OffsetDateTime;
-
+    use crate::domain::local_message::message::{ImageLocalMessage, ImageResourceKind};
     use crate::domain::model::aggr::team::TeamAggr;
     use crate::harness::tests::TestHarness;
     use crate::test_util::usecase_is_expected_argument;
-    use crate::usecase::data_object::team::{TeamCreateParams, TeamInfoUpdateParams};
+    use crate::usecase::data_object::team::{
+        MarkTeamAvatarUploadedParams, TeamCreateParams, TeamInfoUpdateParams,
+    };
 
     fn make_test_team(id: &str) -> TeamAggr {
         let now = time::OffsetDateTime::now_utc();
@@ -147,6 +204,7 @@ mod tests {
             description: "A test team".into(),
             avatar_key: String::new(),
             avatar_uploaded: false,
+            avatar_version: 0,
             workset_next_index: 0,
             created_at: now,
             updated_at: now,
@@ -302,6 +360,26 @@ mod tests {
         assert!(reply.put_url.contains("put"));
         assert!(reply.put_url.contains("team_avatar"));
         assert!(reply.put_url.contains("png"));
+        assert_eq!(reply.image_version, 1);
+
+        let snapshot = harn.snapshot();
+        assert_eq!(snapshot.local_messages.len(), 1);
+        let message: ImageLocalMessage =
+            serde_json::from_value(snapshot.local_messages[0].payload.clone()).unwrap();
+        match message {
+            ImageLocalMessage::CheckUploaded {
+                resource_kind,
+                resource_id,
+                object_key,
+                image_version,
+            } => {
+                assert_eq!(resource_kind, ImageResourceKind::TeamAvatar);
+                assert_eq!(resource_id, base.id);
+                assert_eq!(object_key, format!("team_avatar/{}-1.png", resource_id));
+                assert_eq!(image_version, 1);
+            }
+            ImageLocalMessage::Delete { .. } => panic!("expected check-upload message"),
+        }
     }
 
     #[tokio::test]
@@ -319,7 +397,7 @@ mod tests {
         .unwrap();
 
         // First reserve to set avatar_key.
-        reserve_avatar(
+        let reply = reserve_avatar(
             &harn,
             base.id.clone(),
             ReserveTeamAvatarParams {
@@ -329,7 +407,15 @@ mod tests {
         .await
         .unwrap();
 
-        mark_avatar_uploaded(&harn, base.id.clone()).await.unwrap();
+        mark_avatar_uploaded(
+            &harn,
+            base.id.clone(),
+            MarkTeamAvatarUploadedParams {
+                image_version: reply.image_version,
+            },
+        )
+        .await
+        .unwrap();
 
         let found = get_info(&harn, &base.id).await.unwrap();
         assert!(found.avatar_url.is_some());

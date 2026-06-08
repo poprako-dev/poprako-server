@@ -37,6 +37,17 @@ mod result {
         message: Option<String>,
     }
 
+    impl std::fmt::Display for HttpError {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(
+                f,
+                "HttpError(code={}, message={})",
+                self.code,
+                self.message.as_deref().unwrap_or("(no message)"),
+            )
+        }
+    }
+
     impl HttpError {
         pub fn expected(variant: &ExpectedVariant, message: &str) -> Self {
             match variant {

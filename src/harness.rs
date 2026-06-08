@@ -13,6 +13,7 @@ use crate::domain::query::TransactionalForward;
 use crate::infra::effect::{AsyncEffectSink, SharedEffectSink};
 use crate::infra::external::image_pool::OssImagePool;
 use crate::infra::external::token::JwtIssuer;
+use crate::infra::local_message::LocalMessageIngestor;
 use crate::infra::query::RdbQuery;
 
 // ── HarnessBase: shared core for database access, image pool, and token codec ───
@@ -55,6 +56,7 @@ impl Harness {
         });
 
         let effect_sink = AsyncEffectSink::new_shared(Arc::clone(&base), 1024);
+        LocalMessageIngestor::new(Arc::clone(&base)).run();
 
         Harness { base, effect_sink }
     }
@@ -80,7 +82,7 @@ pub mod tests {
     use poprako_macro::ForwardRefs;
 
     use crate::domain::effect::EffectSink;
-    use crate::domain::external::image_pool::{ImageGet, ImagePut};
+    use crate::domain::external::image_pool::{ImageGet, ImageInspect, ImagePut};
     use crate::domain::external::token::TokenParse;
     use crate::domain::external::token::TokenSign;
     use crate::domain::model::aggr::member::MemberAggr;
@@ -182,6 +184,13 @@ pub mod tests {
     impl ImagePut for TestHarness {
         async fn put_signed(&self, key: &str) -> DomainResult<Url> {
             Ok(Url::parse(&format!("https://test.test/put/{}", key)).unwrap())
+        }
+    }
+
+    #[async_trait]
+    impl ImageInspect for TestHarness {
+        async fn exists(&self, _key: &str) -> DomainResult<bool> {
+            Ok(true)
         }
     }
 }

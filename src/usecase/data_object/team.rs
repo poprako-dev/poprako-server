@@ -69,4 +69,10 @@ pub struct ReserveTeamAvatarParams {
 #[derive(Debug, Serialize, ToSchema)]
 pub struct ReserveTeamAvatarReply {
     pub put_url: String,
+    pub image_version: i64,
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct MarkTeamAvatarUploadedParams {
+    pub image_version: i64,
 }

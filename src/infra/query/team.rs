@@ -9,7 +9,7 @@ use tracing::instrument;
 use poprako_util::i18n::trl;
 use poprako_util::page::Page;
 
-use crate::domain::model::aggr::team::{TeamAggr, TeamForm, TeamUpdate};
+use crate::domain::model::aggr::team::{TeamAggr, TeamAvatarReservation, TeamForm, TeamInfoUpdate};
 use crate::domain::query::team::TeamQuery;
 use crate::domain::query::team::TeamQueryTransactional;
 use crate::domain::result::{DomainError, DomainResult};
@@ -79,7 +79,7 @@ pub async fn create(conn: &mut AsyncPgConnection, form: &TeamForm) -> DomainResu
 }
 
 #[instrument(err, skip(conn, input), level = Level::DEBUG)]
-pub async fn update(conn: &mut AsyncPgConnection, input: &TeamUpdate) -> DomainResult<()> {
+pub async fn update(conn: &mut AsyncPgConnection, input: &TeamInfoUpdate) -> DomainResult<()> {
     let now = OffsetDateTime::now_utc();
 
     let changes = TeamAspect::new(now)
@@ -99,27 +99,35 @@ pub async fn update(conn: &mut AsyncPgConnection, input: &TeamUpdate) -> DomainR
 }
 
 #[instrument(err, skip(conn), level = Level::DEBUG)]
-pub async fn delete(conn: &mut AsyncPgConnection, id: &str) -> DomainResult<()> {
-    let affected = diesel::delete(t_team.filter(f_id.eq(id)))
-        .execute(conn)
-        .await?;
+pub async fn get_by_id_ex(conn: &mut AsyncPgConnection, id: &str) -> DomainResult<TeamAggr> {
+    let row: TeamRow = t_team
+        .filter(f_id.eq(&id))
+        .select(TeamRow::as_select())
+        .for_update()
+        .first(conn)
+        .await
+        .optional()?
+        .ok_or_else(|| DomainError::expected_argument(trl("error-team-not-found")))?;
 
-    if affected == 0 {
-        return Err(DomainError::expected_argument(trl("error-team-not-found")));
-    }
-
-    Ok(())
+    Ok(row.into())
 }
 
 #[instrument(err, skip(conn), level = Level::DEBUG)]
-pub async fn prefill_avatar_key(
+pub async fn reserve_avatar(
     conn: &mut AsyncPgConnection,
     id: &str,
-    key: &str,
-) -> DomainResult<()> {
+    file_extension: &str,
+) -> DomainResult<TeamAvatarReservation> {
+    let team = get_by_id_ex(conn, id).await?;
     let now = OffsetDateTime::now_utc();
+    let image_version = team.avatar_version + 1;
+    let object_key = TeamAggr::generate_avatar_key(id, image_version, file_extension);
+    let previous_object_key = (!team.avatar_key.is_empty()).then_some(team.avatar_key);
 
-    let changes = TeamAspect::new(now).avatar_key(key).avatar_uploaded(false);
+    let changes = TeamAspect::new(now)
+        .avatar_key(&object_key)
+        .avatar_uploaded(false)
+        .avatar_version(image_version);
 
     let affected = diesel::update(t_team.filter(f_id.eq(id)))
         .set(&changes)
@@ -130,11 +138,30 @@ pub async fn prefill_avatar_key(
         return Err(DomainError::expected_argument(trl("error-team-not-found")));
     }
 
-    Ok(())
+    Ok(TeamAvatarReservation {
+        object_key,
+        previous_object_key,
+        image_version,
+    })
 }
 
 #[instrument(err, skip(conn), level = Level::DEBUG)]
-pub async fn mark_avatar_uploaded(conn: &mut AsyncPgConnection, id: &str) -> DomainResult<()> {
+pub async fn mark_avatar_uploaded(
+    conn: &mut AsyncPgConnection,
+    id: &str,
+    image_version: i64,
+) -> DomainResult<()> {
+    let team = get_by_id_ex(conn, id).await?;
+    if team.avatar_version != image_version {
+        return Err(DomainError::expected_argument(trl(
+            "error-stale-avatar-upload",
+        )));
+    }
+
+    if team.avatar_uploaded {
+        return Ok(());
+    }
+
     let now = OffsetDateTime::now_utc();
 
     let changes = TeamAspect::new(now).avatar_uploaded(true);
@@ -149,6 +176,22 @@ pub async fn mark_avatar_uploaded(conn: &mut AsyncPgConnection, id: &str) -> Dom
     }
 
     Ok(())
+}
+
+#[instrument(err, skip(conn), level = Level::DEBUG)]
+pub async fn delete(conn: &mut AsyncPgConnection, id: &str) -> DomainResult<Option<String>> {
+    let team = get_by_id_ex(conn, id).await?;
+    let avatar_key = (!team.avatar_key.is_empty()).then_some(team.avatar_key);
+
+    let affected = diesel::delete(t_team.filter(f_id.eq(id)))
+        .execute(conn)
+        .await?;
+
+    if affected == 0 {
+        return Err(DomainError::expected_argument(trl("error-team-not-found")));
+    }
+
+    Ok(avatar_key)
 }
 
 #[instrument(err, skip(conn), level = Level::DEBUG)]
@@ -189,29 +232,14 @@ impl TeamQuery for RdbQuery {
         submit_query!(self.pool, list, page)
     }
 
-    #[instrument(err, skip(self), level = Level::DEBUG)]
-    async fn prefill_avatar_key(&self, id: &str, key: &str) -> DomainResult<()> {
-        submit_query!(self.pool, prefill_avatar_key, id, key)
-    }
-
-    #[instrument(err, skip(self), level = Level::DEBUG)]
-    async fn mark_avatar_uploaded(&self, id: &str) -> DomainResult<()> {
-        submit_query!(self.pool, mark_avatar_uploaded, id)
-    }
-
     #[instrument(err, skip(self, form), level = Level::DEBUG)]
     async fn create(&self, form: &TeamForm) -> DomainResult<TeamAggr> {
         submit_query!(self.pool, create, form)
     }
 
     #[instrument(err, skip(self, input), level = Level::DEBUG)]
-    async fn update(&self, input: &TeamUpdate) -> DomainResult<()> {
+    async fn update_info(&self, input: &TeamInfoUpdate) -> DomainResult<()> {
         submit_query!(self.pool, update, input)
-    }
-
-    #[instrument(err, skip(self), level = Level::DEBUG)]
-    async fn delete(&self, id: &str) -> DomainResult<()> {
-        submit_query!(self.pool, delete, id)
     }
 }
 
@@ -219,5 +247,25 @@ impl TeamQuery for RdbQuery {
 impl<'c> TeamQueryTransactional for RdbQueryTransactional<'c> {
     async fn increment_workset_next_index(&mut self, id: &str) -> DomainResult<i32> {
         increment_workset_next_index(self.conn, id).await
+    }
+
+    async fn get_by_id(&mut self, id: &str) -> DomainResult<TeamAggr> {
+        get_by_id_ex(self.conn, id).await
+    }
+
+    async fn reserve_avatar(
+        &mut self,
+        id: &str,
+        file_extension: &str,
+    ) -> DomainResult<TeamAvatarReservation> {
+        reserve_avatar(self.conn, id, file_extension).await
+    }
+
+    async fn mark_avatar_uploaded(&mut self, id: &str, image_version: i64) -> DomainResult<()> {
+        mark_avatar_uploaded(self.conn, id, image_version).await
+    }
+
+    async fn delete(&mut self, id: &str) -> DomainResult<Option<String>> {
+        delete(self.conn, id).await
     }
 }

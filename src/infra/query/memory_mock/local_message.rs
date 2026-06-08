@@ -176,6 +176,14 @@ impl LocalMessageQueryTransactional for MemoryMockQueryTransactional {
 
         Ok(m)
     }
+
+    async fn mark(&mut self, marks: &[&LocalMessageMark]) -> DomainResult<()> {
+        let query = MemoryMockQuery {
+            state: self.state.clone(),
+        };
+
+        LocalMessageQuery::mark(&query, marks).await
+    }
 }
 
 #[cfg(test)]

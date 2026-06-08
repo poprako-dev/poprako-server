@@ -29,9 +29,9 @@ where
     };
 
     let invitor_id = event.invitor_id;
-    let title = trl("mail-invitation-used-title");
+    let title = trl("error-invitation-used-title");
     let content = trl_kv(
-        "mail-invitation-used-body",
+        "error-invitation-used-body",
         &HashMap::from([
             (
                 Cow::Borrowed("invitee_qid"),

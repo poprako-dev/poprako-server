@@ -13,7 +13,7 @@ use url::Url;
 
 use poprako_util::i18n::trl;
 
-use crate::domain::external::image_pool::{ImageDelete, ImageGet, ImagePut};
+use crate::domain::external::image_pool::{ImageDelete, ImageGet, ImageInspect, ImagePut};
 use crate::domain::result::{DomainError, DomainResult};
 
 // ---------------------------------------------------------------------------
@@ -166,12 +166,39 @@ impl ImageDelete for OssImagePool {
     }
 }
 
+// ---------------------------------------------------------------------------
+// ImageInspect
+// ---------------------------------------------------------------------------
+
+#[async_trait]
+impl ImageInspect for OssImagePool {
+    #[instrument(err, skip(self), level = Level::DEBUG)]
+    async fn exists(&self, key: &str) -> DomainResult<bool> {
+        let result = self
+            .client
+            .head_object()
+            .bucket(&self.bucket)
+            .key(key)
+            .send()
+            .await;
+
+        match result {
+            Ok(_) => Ok(true),
+            Err(e) if is_missing_object_error(&e) => Ok(false),
+            Err(e) => Err(DomainError::unrecoverable(format!(
+                "[R2OssClient::exists] failed to inspect object: {}",
+                e
+            ))),
+        }
+    }
+}
+
 impl OssImagePool {
     async fn delete_chunk(&self, keys: &[&str]) -> DomainResult<()> {
         const MAX_RETRY: usize = 3;
         const RETRY_DELAY: Duration = Duration::from_secs(1);
 
-        let mut pending = keys.iter().map(|key| key.to_string()).collect::<Vec<_>>();
+        let mut pending: Vec<_> = keys.iter().map(|key| key.to_string()).collect();
         let mut last_err: Option<String> = None;
 
         for attempt in 0..MAX_RETRY {
@@ -191,19 +218,16 @@ impl OssImagePool {
 
             match result {
                 Ok(output) => {
-                    let failed_keys = output
-                        .errors()
-                        .iter()
-                        .filter(|e| !is_already_deleted_error(e))
-                        .map(|e| {
-                            e.key().map(|key| key.to_string()).ok_or_else(|| {
-                                DomainError::unrecoverable(format!(
-                                    "[R2OssClient::delete_batch] missing key in delete error: {:?}",
-                                    e
-                                ))
-                            })
-                        })
-                        .collect::<DomainResult<Vec<_>>>()?;
+                    let mut failed_keys = Vec::new();
+                    for e in output.errors().iter().filter(|e| !is_already_deleted_error(e)) {
+                        let key = e.key().map(|key| key.to_string()).ok_or_else(|| {
+                            DomainError::unrecoverable(format!(
+                                "[R2OssClient::delete_batch] missing key in delete error: {:?}",
+                                e
+                            ))
+                        })?;
+                        failed_keys.push(key);
+                    }
 
                     if failed_keys.is_empty() {
                         return Ok(());
@@ -250,17 +274,16 @@ fn detect_content_type(key: &str) -> Option<&'static str> {
 }
 
 fn build_delete_payload(keys: &[String]) -> DomainResult<Delete> {
-    let objects = keys
-        .iter()
-        .map(|k| {
-            ObjectIdentifier::builder().key(k).build().map_err(|e| {
-                DomainError::unrecoverable(format!(
-                    "[R2OssClient::delete_batch] failed to build object identifier: {}",
-                    e
-                ))
-            })
-        })
-        .collect::<DomainResult<Vec<_>>>()?;
+    let mut objects = Vec::new();
+    for k in keys.iter() {
+        let obj = ObjectIdentifier::builder().key(k).build().map_err(|e| {
+            DomainError::unrecoverable(format!(
+                "[R2OssClient::delete_batch] failed to build object identifier: {}",
+                e
+            ))
+        })?;
+        objects.push(obj);
+    }
 
     Delete::builder()
         .set_objects(Some(objects))
@@ -276,4 +299,11 @@ fn build_delete_payload(keys: &[String]) -> DomainResult<Delete> {
 
 fn is_already_deleted_error(err: &aws_sdk_s3::types::Error) -> bool {
     err.code() == Some("NoSuchKey")
+}
+
+fn is_missing_object_error<E>(err: &E) -> bool
+where
+    E: aws_sdk_s3::error::ProvideErrorMetadata,
+{
+    matches!(err.code(), Some("NoSuchKey" | "NotFound" | "404"))
 }

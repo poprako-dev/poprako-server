@@ -14,6 +14,7 @@ pub struct UserAggr {
 
     pub avatar_key: String,
     pub avatar_uploaded: bool,
+    pub avatar_version: i64,
 
     pub is_sadmin: bool,
 
@@ -28,9 +29,15 @@ impl UserAggr {
         format!("user-{}", Uuid::now_v7())
     }
 
-    pub fn generate_avatar_key(user_id: &str) -> String {
-        format!("user_avatar/{}", user_id)
+    pub fn generate_avatar_key(user_id: &str, image_version: i64, ext: &str) -> String {
+        format!("user_avatar/{}-{}.{}", user_id, image_version, ext)
     }
+}
+
+pub struct UserAvatarReservation {
+    pub object_key: String,
+    pub previous_object_key: Option<String>,
+    pub image_version: i64,
 }
 
 impl EventEmit for UserAggr {

@@ -3,7 +3,9 @@ use time::OffsetDateTime;
 
 use poprako_util::i18n::trl;
 
-use crate::domain::model::aggr::user::{UserAggr, UserCredential, UserForm, UserInfoUpdate};
+use crate::domain::model::aggr::user::{
+    UserAggr, UserAvatarReservation, UserCredential, UserForm, UserInfoUpdate,
+};
 use crate::domain::query::user::{UserQuery, UserQueryTransactional};
 use crate::domain::result::{DomainError, DomainResult};
 use crate::infra::query::memory_mock::{MemoryMockQuery, MemoryMockQueryTransactional};
@@ -36,36 +38,6 @@ impl UserQuery for MemoryMockQuery {
             .cloned()
             .ok_or_else(|| DomainError::expected_argument(trl("error-user-not-found")))
     }
-
-    async fn prefill_avatar_key(&self, id: &str, key: &str) -> DomainResult<()> {
-        let mut state = self.state.lock().unwrap();
-
-        let user = state
-            .users
-            .iter_mut()
-            .find(|u| u.id == id)
-            .ok_or_else(|| DomainError::expected_argument(trl("error-user-not-found")))?;
-
-        user.avatar_key = key.to_string();
-        user.updated_at = OffsetDateTime::now_utc();
-
-        Ok(())
-    }
-
-    async fn mark_avatar_uploaded(&self, id: &str) -> DomainResult<()> {
-        let mut state = self.state.lock().unwrap();
-
-        let user = state
-            .users
-            .iter_mut()
-            .find(|u| u.id == id)
-            .ok_or_else(|| DomainError::expected_argument(trl("error-user-not-found")))?;
-
-        user.avatar_uploaded = true;
-        user.updated_at = OffsetDateTime::now_utc();
-
-        Ok(())
-    }
 }
 
 // ── QueryTransactional impls ───────────────────────────────────────────────
@@ -95,6 +67,7 @@ impl UserQueryTransactional for MemoryMockQueryTransactional {
             is_sadmin: false,
             avatar_key: String::new(),
             avatar_uploaded: false,
+            avatar_version: 0,
             last_active_at: now,
             created_at: now,
             updated_at: now,
@@ -141,6 +114,70 @@ impl UserQueryTransactional for MemoryMockQueryTransactional {
 
         Ok(())
     }
+
+    async fn get_by_id(&mut self, id: &str) -> DomainResult<UserAggr> {
+        let state = self.state.lock().unwrap();
+        state
+            .users
+            .iter()
+            .find(|u| u.id == id)
+            .cloned()
+            .ok_or_else(|| DomainError::expected_argument(trl("error-user-not-found")))
+    }
+
+    async fn reserve_avatar(
+        &mut self,
+        id: &str,
+        file_extension: &str,
+    ) -> DomainResult<UserAvatarReservation> {
+        let mut state = self.state.lock().unwrap();
+
+        let user = state
+            .users
+            .iter_mut()
+            .find(|u| u.id == id)
+            .ok_or_else(|| DomainError::expected_argument(trl("error-user-not-found")))?;
+
+        let image_version = user.avatar_version + 1;
+        let object_key = UserAggr::generate_avatar_key(id, image_version, file_extension);
+        let previous_object_key = (!user.avatar_key.is_empty()).then_some(user.avatar_key.clone());
+
+        user.avatar_key = object_key.clone();
+        user.avatar_uploaded = false;
+        user.avatar_version = image_version;
+        user.updated_at = OffsetDateTime::now_utc();
+
+        Ok(UserAvatarReservation {
+            object_key,
+            previous_object_key,
+            image_version,
+        })
+    }
+
+    async fn mark_avatar_uploaded(&mut self, id: &str, image_version: i64) -> DomainResult<()> {
+        let mut state = self.state.lock().unwrap();
+
+        let user = state
+            .users
+            .iter_mut()
+            .find(|u| u.id == id)
+            .ok_or_else(|| DomainError::expected_argument(trl("error-user-not-found")))?;
+
+        if user.avatar_version != image_version {
+            return Err(DomainError::expected_argument(trl(
+                "error-stale-avatar-upload",
+            )));
+        }
+
+        if user.avatar_uploaded {
+            return Ok(());
+        }
+
+        user.avatar_uploaded = true;
+        user.updated_at = OffsetDateTime::now_utc();
+
+        Ok(())
+    }
 }
 
 // ── Tests ──────────────────────────────────────────────────────────────────
@@ -155,10 +192,10 @@ mod tests {
     // duplicate_nickname_returns_conflict(UserQueryTransactional::create)(negative): duplicate nicknames should return an expected conflict.
     // update_changes_fields_and_is_readable_after_commit(UserQueryTransactional::update_info)(positive): updates should persist nickname and qid.
     // update_missing_user_returns_expected_error(UserQueryTransactional::update_info)(negative): updating a non-existent user should fail.
-    // prefill_avatar_key_sets_avatar_key(UserQuery::prefill_avatar_key)(positive): prefill should set the avatar key.
-    // prefill_avatar_key_missing_user_returns_expected_error(UserQuery::prefill_avatar_key)(negative): prefilling for a missing user should fail.
-    // mark_avatar_uploaded_sets_flag(UserQuery::mark_avatar_uploaded)(positive): marking should set avatar_uploaded to true.
-    // mark_avatar_uploaded_missing_user_returns_expected_error(UserQuery::mark_avatar_uploaded)(negative): marking for a missing user should fail.
+    // reserve_avatar_sets_key_and_version(UserQueryTransactional::reserve_avatar)(positive): reserve should set the avatar key and increment version.
+    // reserve_avatar_missing_user_returns_expected_error(UserQueryTransactional::reserve_avatar)(negative): reserving for a missing user should fail.
+    // mark_avatar_uploaded_sets_flag(UserQueryTransactional::mark_avatar_uploaded)(positive): marking should set avatar_uploaded to true.
+    // mark_avatar_uploaded_missing_user_returns_expected_error(UserQueryTransactional::mark_avatar_uploaded)(negative): marking for a missing user should fail.
     // touch_last_active_updates_timestamp(UserQuery::touch_last_active)(positive): touching should update last_active_at.
     // touch_last_active_missing_user_returns_expected_error(UserQuery::touch_last_active)(negative): touching for a missing user should fail.
 
@@ -186,6 +223,7 @@ mod tests {
             is_sadmin: false,
             avatar_key: String::new(),
             avatar_uploaded: false,
+            avatar_version: 0,
             last_active_at: n,
             created_at: n,
             updated_at: n,
@@ -402,26 +440,38 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn prefill_avatar_key_sets_avatar_key() {
+    async fn reserve_avatar_sets_key_and_version() {
         let mock = MemoryMockQuery::new();
         mock.seed_user(
             make_user("user-1", "qid-1", "nick"),
             make_credential("user-1"),
         );
 
-        UserQuery::prefill_avatar_key(&mock, "user-1", "avatars/new-key.png")
+        let reservation = mock
+            .transaction_scoped(|txn| {
+                async move { UserQueryTransactional::reserve_avatar(txn, "user-1", "png").await }
+                    .boxed()
+            })
             .await
             .unwrap();
 
         let found = UserQuery::get_by_id(&mock, "user-1").await.unwrap();
-        assert_eq!(found.avatar_key, "avatars/new-key.png");
+        assert_eq!(reservation.image_version, 1);
+        assert_eq!(found.avatar_key, "user_avatar/user-1-1.png");
+        assert_eq!(found.avatar_version, 1);
     }
 
     #[tokio::test]
-    async fn prefill_avatar_key_missing_user_returns_expected_error() {
+    async fn reserve_avatar_missing_user_returns_expected_error() {
         let mock = MemoryMockQuery::new();
 
-        let err = UserQuery::prefill_avatar_key(&mock, "nonexistent", "some-key")
+        let err = mock
+            .transaction_scoped(|txn| {
+                async move {
+                    UserQueryTransactional::reserve_avatar(txn, "nonexistent", "png").await
+                }
+                .boxed()
+            })
             .await
             .err()
             .unwrap();
@@ -437,9 +487,15 @@ mod tests {
             make_credential("user-1"),
         );
 
-        UserQuery::mark_avatar_uploaded(&mock, "user-1")
-            .await
-            .unwrap();
+        mock.transaction_scoped(|txn| {
+            async move {
+                UserQueryTransactional::reserve_avatar(txn, "user-1", "png").await?;
+                UserQueryTransactional::mark_avatar_uploaded(txn, "user-1", 1).await
+            }
+            .boxed()
+        })
+        .await
+        .unwrap();
 
         let found = UserQuery::get_by_id(&mock, "user-1").await.unwrap();
         assert!(found.avatar_uploaded);
@@ -449,7 +505,13 @@ mod tests {
     async fn mark_avatar_uploaded_missing_user_returns_expected_error() {
         let mock = MemoryMockQuery::new();
 
-        let err = UserQuery::mark_avatar_uploaded(&mock, "nonexistent")
+        let err = mock
+            .transaction_scoped(|txn| {
+                async move {
+                    UserQueryTransactional::mark_avatar_uploaded(txn, "nonexistent", 1).await
+                }
+                .boxed()
+            })
             .await
             .err()
             .unwrap();

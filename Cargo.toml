@@ -38,3 +38,4 @@ url = "2.5.8"
 utoipa = { version = "5.5.0", features = ["axum_extras"] }
 utoipa-swagger-ui = { version = "9", features = ["axum"] }
 uuid = { version = "1.23.1", features = ["v7"] }
+futures = "0.3.32"

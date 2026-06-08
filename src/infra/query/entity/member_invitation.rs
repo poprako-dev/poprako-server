@@ -46,6 +46,20 @@ pub struct MemberInvitationAspect {
     pub f_updated_at: OffsetDateTime,
 }
 
+impl MemberInvitationAspect {
+    pub fn new(updated_at: OffsetDateTime) -> Self {
+        Self {
+            f_pending: false,
+            f_updated_at: updated_at,
+        }
+    }
+
+    pub fn pending(mut self, val: bool) -> Self {
+        self.f_pending = val;
+        self
+    }
+}
+
 // ── Conversions ────────────────────────────────────────────────────────────
 
 impl From<MemberInvitationRow> for MemberInvitationAggr {

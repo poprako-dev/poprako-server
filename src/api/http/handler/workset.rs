@@ -2,6 +2,7 @@ use axum::Json;
 use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
 use serde::Deserialize;
+use tracing::instrument;
 use utoipa::IntoParams;
 
 use poprako_util::page::Page;
@@ -26,6 +27,7 @@ use crate::usecase::data_object::workset::{
         (status = 401, description = "Authentication required", body = HttpError)
     )
 )]
+#[instrument(err, skip(harn, params))]
 pub async fn create(
     State(harn): State<Harness>,
     Json(params): Json<WorksetCreateParams>,
@@ -35,7 +37,7 @@ pub async fn create(
     reply.accept(StatusCode::CREATED)
 }
 
-#[derive(Deserialize, IntoParams)]
+#[derive(Debug, Deserialize, IntoParams)]
 #[into_params(parameter_in = Query)]
 pub struct WorksetListQuery {
     pub team_id: String,
@@ -54,6 +56,7 @@ pub struct WorksetListQuery {
         (status = 401, description = "Authentication required", body = HttpError)
     )
 )]
+#[instrument(err, skip(harn))]
 pub async fn list(
     State(harn): State<Harness>,
     Query(params): Query<WorksetListQuery>,
@@ -82,6 +85,7 @@ pub async fn list(
         (status = 401, description = "Authentication required", body = HttpError)
     )
 )]
+#[instrument(err, skip(harn, params))]
 pub async fn update(
     State(harn): State<Harness>,
     Path(workset_id): Path<String>,
@@ -105,6 +109,7 @@ pub async fn update(
         (status = 401, description = "Authentication required", body = HttpError)
     )
 )]
+#[instrument(err, skip(harn))]
 pub async fn delete(State(harn): State<Harness>, Path(workset_id): Path<String>) -> HttpResult<()> {
     usecase::workset::delete(&harn, workset_id).await?;
 
