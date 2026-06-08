@@ -1,2 +1,2 @@
 -- This file should undo anything in `up.sql`
-DROP TABLE IF EXISTS "t_mandate";
+DROP TABLE IF EXISTS "t_local_message";

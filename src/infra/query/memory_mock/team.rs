@@ -328,7 +328,15 @@ mod tests {
         mock.seed_team(make_team("team-2", "B"));
         mock.seed_team(make_team("team-3", "C"));
 
-        let list = TeamQuery::list(&mock, Page { offset: 0, limit: 10 }).await.unwrap();
+        let list = TeamQuery::list(
+            &mock,
+            Page {
+                offset: 0,
+                limit: 10,
+            },
+        )
+        .await
+        .unwrap();
         assert_eq!(list.len(), 3);
     }
 

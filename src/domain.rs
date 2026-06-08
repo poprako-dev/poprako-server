@@ -1,4 +1,4 @@
-pub mod compound;
+pub mod complex;
 pub mod effect;
 pub mod external;
 pub mod model;

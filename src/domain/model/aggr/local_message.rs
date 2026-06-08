@@ -3,19 +3,30 @@ use time::OffsetDateTime;
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum MandateStatus {
+pub enum LocalMessageStatus {
     Pending,
     Processing,
     Completed,
     Dead,
 }
 
+impl LocalMessageStatus {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Pending => "local_message_status:pending",
+            Self::Processing => "local_message_status:processing",
+            Self::Completed => "local_message_status:completed",
+            Self::Dead => "local_message_status:dead",
+        }
+    }
+}
+
 #[cfg_attr(test, derive(Clone))]
-pub struct MandateAggr {
+pub struct LocalMessageAggr {
     pub id: String,
 
     pub topic: String,
-    pub status: MandateStatus,
+    pub status: LocalMessageStatus,
     pub payload: Value,
 
     pub last_error: Option<String>,
@@ -27,13 +38,13 @@ pub struct MandateAggr {
     pub updated_at: OffsetDateTime,
 }
 
-impl MandateAggr {
+impl LocalMessageAggr {
     pub fn generate_id() -> String {
-        format!("mandate-{}", Uuid::now_v7())
+        format!("local_message-{}", Uuid::now_v7())
     }
 }
 
-pub struct MandateForm {
+pub struct LocalMessageForm {
     pub id: String,
 
     pub topic: String,
@@ -42,10 +53,10 @@ pub struct MandateForm {
     pub visible_at: OffsetDateTime,
 }
 
-/// Requested state transition for a claimed mandate.
+/// Requested state transition for a claimed local message.
 ///
 /// `Processing` is marked by query infra when `claim` returns.
-pub enum MandateMark {
+pub enum LocalMessageMark {
     Pending {
         id: String,
         lease: i64,

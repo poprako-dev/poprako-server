@@ -1,4 +1,4 @@
-use poprako_macro::forward_ref;
+use poprako_macro::{forward_ref, forward_ref_sub};
 
 use crate::domain::model::aggr::user::UserToken;
 use crate::domain::result::DomainResult;
@@ -19,6 +19,7 @@ pub trait TokenParse {
 }
 
 /// Composite token issuing contract for signing and parsing authentication tokens.
+#[forward_ref_sub]
 pub trait TokenIssuer: TokenSign + TokenParse {}
 
 impl<T> TokenIssuer for T where T: TokenSign + TokenParse {}

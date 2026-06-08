@@ -3,7 +3,7 @@ use tracing::instrument;
 
 use poprako_util::i18n::trl;
 
-use crate::domain::compound::user::{hash_password, sign_token};
+use crate::domain::complex::user::{hash_password, sign_token};
 use crate::domain::effect::{Effect as _, EffectSink};
 use crate::domain::external::image_pool::ImageGet;
 use crate::domain::external::image_pool::ImagePut;

@@ -1,3 +1,4 @@
+pub mod local_message;
 pub mod member;
 pub mod member_invitation;
 pub mod system_mail;
@@ -10,6 +11,7 @@ use std::sync::{Arc, Mutex};
 use async_trait::async_trait;
 use futures_util::future::BoxFuture;
 
+use crate::domain::model::aggr::local_message::LocalMessageAggr;
 use crate::domain::model::aggr::member::MemberAggr;
 use crate::domain::model::aggr::member_invitation::MemberInvitationAggr;
 use crate::domain::model::aggr::system_mail::SystemMailAggr;
@@ -34,6 +36,7 @@ pub struct MemoryMockState {
     pub member_invitations: Vec<MemberInvitationAggr>,
     pub system_mails: Vec<SystemMailAggr>,
     pub worksets: Vec<WorksetAggr>,
+    pub local_messages: Vec<LocalMessageAggr>,
 }
 
 // ── Non-transactional query handle ─────────────────────────────────────────
@@ -83,6 +86,12 @@ impl MemoryMockQuery {
     pub fn seed_member(&self, member: MemberAggr) {
         let mut state = self.state.lock().unwrap();
         state.members.push(member);
+    }
+
+    /// Pre-populates the store with a local message.
+    pub fn seed_local_message(&self, local_message: LocalMessageAggr) {
+        let mut state = self.state.lock().unwrap();
+        state.local_messages.push(local_message);
     }
 
     /// Returns a snapshot of the current state for test assertions.

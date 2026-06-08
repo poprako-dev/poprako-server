@@ -37,10 +37,7 @@ pub async fn get_by_id(conn: &mut AsyncPgConnection, id: &str) -> DomainResult<T
 }
 
 #[instrument(err, skip(conn), level = Level::DEBUG)]
-pub async fn list(
-    conn: &mut AsyncPgConnection,
-    page: Page,
-) -> DomainResult<Vec<TeamAggr>> {
+pub async fn list(conn: &mut AsyncPgConnection, page: Page) -> DomainResult<Vec<TeamAggr>> {
     let rows: Vec<TeamRow> = t_team
         .order(f_created_at.desc())
         .offset(page.offset as i64)

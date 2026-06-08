@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use url::Url;
 
-use poprako_macro::forward_ref;
+use poprako_macro::{forward_ref, forward_ref_sub};
 
 use crate::domain::result::DomainResult;
 
@@ -30,6 +30,7 @@ pub trait ImageDelete {
 }
 
 /// Composite of all image-pool capabilities.
+#[forward_ref_sub]
 pub trait ImagePool: ImageGet + ImagePut + ImageDelete {}
 
 impl<T> ImagePool for T where T: ImageGet + ImagePut + ImageDelete {}

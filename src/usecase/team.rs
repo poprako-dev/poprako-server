@@ -189,7 +189,15 @@ mod tests {
         harn.seed_team(make_test_team("team-a"));
         harn.seed_team(make_test_team("team-b"));
 
-        let teams = list(&harn, Page { offset: 0, limit: 10 }).await.unwrap();
+        let teams = list(
+            &harn,
+            Page {
+                offset: 0,
+                limit: 10,
+            },
+        )
+        .await
+        .unwrap();
         assert_eq!(teams.len(), 2);
     }
 

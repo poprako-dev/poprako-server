@@ -557,22 +557,49 @@ mod tests {
         });
 
         // List by team only.
-        let list = MemberQuery::list(&mock, "team-1", None, None, Page { offset: 0, limit: 10 })
-            .await
-            .unwrap();
+        let list = MemberQuery::list(
+            &mock,
+            "team-1",
+            None,
+            None,
+            Page {
+                offset: 0,
+                limit: 10,
+            },
+        )
+        .await
+        .unwrap();
         assert_eq!(list.len(), 2);
 
         // List by team + keyword.
-        let list = MemberQuery::list(&mock, "team-1", Some("Ali"), None, Page { offset: 0, limit: 10 })
-            .await
-            .unwrap();
+        let list = MemberQuery::list(
+            &mock,
+            "team-1",
+            Some("Ali"),
+            None,
+            Page {
+                offset: 0,
+                limit: 10,
+            },
+        )
+        .await
+        .unwrap();
         assert_eq!(list.len(), 1);
         assert_eq!(list[0].id, "m-1");
 
         // List by team + role.
-        let list = MemberQuery::list(&mock, "team-1", None, Some(RoleFlag::Translator), Page { offset: 0, limit: 10 })
-            .await
-            .unwrap();
+        let list = MemberQuery::list(
+            &mock,
+            "team-1",
+            None,
+            Some(RoleFlag::Translator),
+            Page {
+                offset: 0,
+                limit: 10,
+            },
+        )
+        .await
+        .unwrap();
         assert_eq!(list.len(), 1);
         assert_eq!(list[0].id, "m-2");
     }
