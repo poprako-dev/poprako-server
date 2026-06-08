@@ -23,11 +23,7 @@ impl WorksetQuery for MemoryMockQuery {
             .ok_or_else(|| DomainError::expected_argument(trl("error-workset-not-found")))
     }
 
-    async fn list(
-        &self,
-        team_id_filter: &str,
-        page: Page,
-    ) -> DomainResult<Vec<WorksetAggr>> {
+    async fn list(&self, team_id_filter: &str, page: Page) -> DomainResult<Vec<WorksetAggr>> {
         let state = self.state.lock().unwrap();
         let mut worksets: Vec<WorksetAggr> = state
             .worksets
@@ -313,14 +309,32 @@ mod tests {
         mock.seed_workset(make_workset("workset-2", "team-1", 1, "A"));
         mock.seed_workset(make_workset("workset-3", "team-2", 0, "Other"));
 
-        let list = WorksetQuery::list(&mock, "team-1", Page { offset: 0, limit: 10 }).await.unwrap();
+        let list = WorksetQuery::list(
+            &mock,
+            "team-1",
+            Page {
+                offset: 0,
+                limit: 10,
+            },
+        )
+        .await
+        .unwrap();
         assert_eq!(list.len(), 2);
         // Should be ordered by index ascending.
         assert_eq!(list[0].id, "workset-2");
         assert_eq!(list[1].id, "workset-1");
 
         // Pagination: page.offset 1, page.limit 1
-        let page = WorksetQuery::list(&mock, "team-1", Page { offset: 1, limit: 1 }).await.unwrap();
+        let page = WorksetQuery::list(
+            &mock,
+            "team-1",
+            Page {
+                offset: 1,
+                limit: 1,
+            },
+        )
+        .await
+        .unwrap();
         assert_eq!(page.len(), 1);
         assert_eq!(page[0].id, "workset-1");
     }

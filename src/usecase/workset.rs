@@ -69,11 +69,7 @@ where
 }
 
 #[instrument(err, skip(harn))]
-pub async fn list<H>(
-    harn: &H,
-    team_id: &str,
-    page: Page,
-) -> UseCaseResult<Vec<WorksetBase>>
+pub async fn list<H>(harn: &H, team_id: &str, page: Page) -> UseCaseResult<Vec<WorksetBase>>
 where
     H: Query + ImageGet + Send + Sync,
 {
@@ -248,7 +244,16 @@ mod tests {
         .await
         .unwrap();
 
-        let list = super::list(&harn, "team-1", Page { offset: 0, limit: 10 }).await.unwrap();
+        let list = super::list(
+            &harn,
+            "team-1",
+            Page {
+                offset: 0,
+                limit: 10,
+            },
+        )
+        .await
+        .unwrap();
         assert_eq!(list.len(), 2);
     }
 

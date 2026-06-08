@@ -68,8 +68,14 @@ pub async fn list(
         limit: params.limit.unwrap_or(20) as usize,
     };
 
-    let bases = usecase::member::list(&harn, &params.team_id, params.keyword.as_deref(), role, page)
-        .await?;
+    let bases = usecase::member::list(
+        &harn,
+        &params.team_id,
+        params.keyword.as_deref(),
+        role,
+        page,
+    )
+    .await?;
 
     bases.accept(StatusCode::OK)
 }

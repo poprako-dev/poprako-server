@@ -234,9 +234,18 @@ mod tests {
             RoleFlag::Admin.into(),
         ));
 
-        let list = super::list(&harn, "team-1", None, None, Page { offset: 0, limit: 10 })
-            .await
-            .unwrap();
+        let list = super::list(
+            &harn,
+            "team-1",
+            None,
+            None,
+            Page {
+                offset: 0,
+                limit: 10,
+            },
+        )
+        .await
+        .unwrap();
         assert_eq!(list.len(), 2);
     }
 
