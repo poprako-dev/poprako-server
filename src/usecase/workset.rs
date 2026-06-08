@@ -141,6 +141,7 @@ mod tests {
             description: "D".into(),
             avatar_key: String::new(),
             avatar_uploaded: false,
+            avatar_version: 0,
             workset_next_index: 0,
             created_at: now,
             updated_at: now,

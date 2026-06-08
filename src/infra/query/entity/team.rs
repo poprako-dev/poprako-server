@@ -14,6 +14,7 @@ pub struct TeamRow {
     pub f_description: Option<String>,
     pub f_avatar_key: Option<String>,
     pub f_avatar_uploaded: bool,
+    pub f_avatar_version: i64,
     pub f_workset_next_index: i32,
     pub f_created_at: OffsetDateTime,
     pub f_updated_at: OffsetDateTime,
@@ -45,6 +46,7 @@ pub struct TeamAspect<'a> {
     pub f_description: Option<&'a str>,
     pub f_avatar_key: Option<&'a str>,
     pub f_avatar_uploaded: Option<bool>,
+    pub f_avatar_version: Option<i64>,
     pub f_updated_at: OffsetDateTime,
 }
 
@@ -56,6 +58,7 @@ impl<'a> TeamAspect<'a> {
             f_description: None,
             f_avatar_key: None,
             f_avatar_uploaded: None,
+            f_avatar_version: None,
             f_updated_at: updated_at,
         }
     }
@@ -79,6 +82,11 @@ impl<'a> TeamAspect<'a> {
         self.f_avatar_uploaded = Some(val);
         self
     }
+
+    pub fn avatar_version(mut self, val: i64) -> Self {
+        self.f_avatar_version = Some(val);
+        self
+    }
 }
 
 // ── Conversions ────────────────────────────────────────────────────────────
@@ -91,6 +99,7 @@ impl From<TeamRow> for TeamAggr {
             description: v.f_description.unwrap_or_default(),
             avatar_key: v.f_avatar_key.unwrap_or_default(),
             avatar_uploaded: v.f_avatar_uploaded,
+            avatar_version: v.f_avatar_version,
             workset_next_index: v.f_workset_next_index,
             created_at: v.f_created_at,
             updated_at: v.f_updated_at,

@@ -23,12 +23,12 @@ impl WorksetQuery for MemoryMockQuery {
             .ok_or_else(|| DomainError::expected_argument(trl("error-workset-not-found")))
     }
 
-    async fn list(&self, team_id_filter: &str, page: Page) -> DomainResult<Vec<WorksetAggr>> {
+    async fn list(&self, team_id: &str, page: Page) -> DomainResult<Vec<WorksetAggr>> {
         let state = self.state.lock().unwrap();
         let mut worksets: Vec<WorksetAggr> = state
             .worksets
             .iter()
-            .filter(|w| w.team_id == team_id_filter)
+            .filter(|w| w.team_id == team_id)
             .cloned()
             .collect();
 
@@ -53,12 +53,12 @@ impl WorksetQuery for MemoryMockQuery {
         Ok(worksets[skip..end].to_vec())
     }
 
-    async fn count(&self, team_id_filter: &str) -> DomainResult<i64> {
+    async fn count(&self, team_id: &str) -> DomainResult<i64> {
         let state = self.state.lock().unwrap();
         let total = state
             .worksets
             .iter()
-            .filter(|w| w.team_id == team_id_filter)
+            .filter(|w| w.team_id == team_id)
             .count() as i64;
         Ok(total)
     }

@@ -1,4 +1,5 @@
 use futures_util::FutureExt as _;
+use time::Duration;
 use tracing::instrument;
 
 use poprako_util::i18n::trl;
@@ -9,20 +10,22 @@ use crate::domain::external::image_pool::ImageGet;
 use crate::domain::external::image_pool::ImagePut;
 use crate::domain::external::token::TokenIssuer;
 use crate::domain::external::token::TokenSign;
+use crate::domain::local_message::message::{ImageLocalMessage, ImageResourceKind};
 use crate::domain::model::aggr::member::{MemberAggr, MemberForm};
 use crate::domain::model::aggr::user::{UserAggr, UserForm, UserInfoUpdate, UserToken};
 use crate::domain::model::event::user::UserSignedUpEvent;
 use crate::domain::model::event::{Event, EventSink};
 use crate::domain::query::Query;
 use crate::domain::query::Transactional;
+use crate::domain::query::local_message::LocalMessageQueryTransactional;
 use crate::domain::query::member::MemberQueryTransactional;
 use crate::domain::query::member_invitation::MemberInvitationQueryTransactional;
 use crate::domain::query::user::UserQuery;
 use crate::domain::query::user::UserQueryTransactional;
 use crate::domain::result::DomainError;
 use crate::usecase::data_object::user::{
-    ReserveAvatarParams, ReserveAvatarReply, SignInParams, SignInReply, SignUpParams, SignUpReply,
-    UserBase, UserInfoUpdateParams,
+    MarkAvatarUploadedParams, ReserveAvatarParams, ReserveAvatarReply, SignInParams, SignInReply,
+    SignUpParams, SignUpReply, UserBase, UserInfoUpdateParams,
 };
 use crate::usecase::result::UseCaseResult;
 
@@ -181,24 +184,65 @@ pub async fn reserve_avatar<H>(
     params: ReserveAvatarParams,
 ) -> UseCaseResult<ReserveAvatarReply>
 where
-    H: Query + ImagePut + Send + Sync,
+    H: Clone + Transactional + ImagePut + Send + Sync,
 {
-    let avatar_key = UserAggr::generate_avatar_key(&token.user_id);
-    let key = format!("{}.{}", avatar_key, params.file_extension);
+    let user_id = token.user_id;
+    let reservation = Transactional::transaction_scoped(harn, move |query| {
+        async move {
+            let reservation =
+                UserQueryTransactional::reserve_avatar(query, &user_id, &params.file_extension)
+                    .await?;
 
-    UserQuery::prefill_avatar_key(harn, &token.user_id, &key).await?;
+            if let Some(previous_object_key) = reservation.previous_object_key.clone() {
+                let message =
+                    ImageLocalMessage::delete(previous_object_key).into_form(Duration::seconds(0));
+                LocalMessageQueryTransactional::append(query, &message).await?;
+            }
 
-    let put_url = ImagePut::put_signed(harn, &key).await?.to_string();
+            let message = ImageLocalMessage::check_uploaded(
+                ImageResourceKind::UserAvatar,
+                user_id,
+                reservation.object_key.clone(),
+                reservation.image_version,
+            )
+            .into_form(Duration::minutes(15));
+            LocalMessageQueryTransactional::append(query, &message).await?;
 
-    Ok(ReserveAvatarReply { put_url })
+            Ok(reservation)
+        }
+        .boxed()
+    })
+    .await?;
+
+    let put_url = ImagePut::put_signed(harn, &reservation.object_key)
+        .await?
+        .to_string();
+
+    Ok(ReserveAvatarReply {
+        put_url,
+        image_version: reservation.image_version,
+    })
 }
 
 #[instrument(err, skip(harn))]
-pub async fn mark_avatar_uploaded<H>(harn: &H, token: UserToken) -> UseCaseResult<()>
+pub async fn mark_avatar_uploaded<H>(
+    harn: &H,
+    token: UserToken,
+    params: MarkAvatarUploadedParams,
+) -> UseCaseResult<()>
 where
-    H: Query + Send + Sync,
+    H: Clone + Transactional + Send + Sync,
 {
-    UserQuery::mark_avatar_uploaded(harn, &token.user_id).await?;
+    let user_id = token.user_id;
+    Transactional::transaction_scoped(harn, move |query| {
+        async move {
+            UserQueryTransactional::mark_avatar_uploaded(query, &user_id, params.image_version)
+                .await?;
+            Ok(())
+        }
+        .boxed()
+    })
+    .await?;
 
     Ok(())
 }
@@ -424,11 +468,12 @@ mod user_use_cases_tests {
 
     use time::OffsetDateTime;
 
+    use crate::domain::local_message::message::{ImageLocalMessage, ImageResourceKind};
     use crate::domain::model::aggr::user::UserCredential;
     use crate::harness::tests::TestHarness;
     use crate::test_util::{usecase_is_expected_argument, usecase_is_unrecoverable};
     use crate::usecase::data_object::user::{
-        ReserveAvatarParams, SignInParams, UserInfoUpdateParams,
+        MarkAvatarUploadedParams, ReserveAvatarParams, SignInParams, UserInfoUpdateParams,
     };
 
     fn make_test_user(
@@ -445,6 +490,7 @@ mod user_use_cases_tests {
             is_sadmin: false,
             avatar_key: String::new(),
             avatar_uploaded: false,
+            avatar_version: 0,
             last_active_at: now,
             created_at: now,
             updated_at: now,
@@ -616,6 +662,26 @@ mod user_use_cases_tests {
         assert!(reply.put_url.contains("put"));
         assert!(reply.put_url.contains("user_avatar"));
         assert!(reply.put_url.contains("png"));
+        assert_eq!(reply.image_version, 1);
+
+        let snapshot = harn.snapshot();
+        assert_eq!(snapshot.local_messages.len(), 1);
+        let message: ImageLocalMessage =
+            serde_json::from_value(snapshot.local_messages[0].payload.clone()).unwrap();
+        match message {
+            ImageLocalMessage::CheckUploaded {
+                resource_kind,
+                resource_id,
+                object_key,
+                image_version,
+            } => {
+                assert_eq!(resource_kind, ImageResourceKind::UserAvatar);
+                assert_eq!(resource_id, "user-1");
+                assert_eq!(object_key, "user_avatar/user-1-1.png");
+                assert_eq!(image_version, 1);
+            }
+            ImageLocalMessage::Delete { .. } => panic!("expected check-upload message"),
+        }
 
         // Verify that the avatar_key was persisted.
         let base = get_info(&harn, "user-1").await.unwrap();
@@ -654,7 +720,25 @@ mod user_use_cases_tests {
             user_id: "user-1".into(),
         };
 
-        mark_avatar_uploaded(&harn, token).await.unwrap();
+        let reply = reserve_avatar(
+            &harn,
+            token.clone(),
+            ReserveAvatarParams {
+                file_extension: "png".into(),
+            },
+        )
+        .await
+        .unwrap();
+
+        mark_avatar_uploaded(
+            &harn,
+            token,
+            MarkAvatarUploadedParams {
+                image_version: reply.image_version,
+            },
+        )
+        .await
+        .unwrap();
 
         let base = get_info(&harn, "user-1").await.unwrap();
         assert!(base.avatar_url.is_some());
@@ -667,7 +751,10 @@ mod user_use_cases_tests {
             user_id: "nonexistent".into(),
         };
 
-        let err = mark_avatar_uploaded(&harn, token).await.err().unwrap();
+        let err = mark_avatar_uploaded(&harn, token, MarkAvatarUploadedParams { image_version: 1 })
+            .await
+            .err()
+            .unwrap();
 
         assert!(usecase_is_expected_argument(&err));
     }

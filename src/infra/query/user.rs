@@ -8,7 +8,9 @@ use tracing::instrument;
 
 use poprako_util::i18n::trl;
 
-use crate::domain::model::aggr::user::{UserAggr, UserCredential, UserForm, UserInfoUpdate};
+use crate::domain::model::aggr::user::{
+    UserAggr, UserAvatarReservation, UserCredential, UserForm, UserInfoUpdate,
+};
 use crate::domain::query::user::UserQuery;
 use crate::domain::query::user::UserQueryTransactional;
 use crate::domain::result::{DomainError, DomainResult};
@@ -116,14 +118,35 @@ pub async fn update_user(
 }
 
 #[instrument(err, skip(conn), level = Level::DEBUG)]
-pub async fn prefill_avatar_key(
+pub async fn get_by_id_ex(conn: &mut AsyncPgConnection, id: &str) -> DomainResult<UserAggr> {
+    let row: UserRow = t_user
+        .filter(f_id.eq(&id))
+        .select(UserRow::as_select())
+        .for_update()
+        .first(conn)
+        .await
+        .optional()?
+        .ok_or_else(|| DomainError::expected_argument(trl("error-user-not-found")))?;
+
+    Ok(row.into())
+}
+
+#[instrument(err, skip(conn), level = Level::DEBUG)]
+pub async fn reserve_avatar(
     conn: &mut AsyncPgConnection,
     id: &str,
-    key: &str,
-) -> DomainResult<()> {
+    file_extension: &str,
+) -> DomainResult<UserAvatarReservation> {
+    let user = get_by_id_ex(conn, id).await?;
     let now = OffsetDateTime::now_utc();
+    let image_version = user.avatar_version + 1;
+    let object_key = UserAggr::generate_avatar_key(id, image_version, file_extension);
+    let previous_object_key = (!user.avatar_key.is_empty()).then_some(user.avatar_key);
 
-    let changes = UserAspect::new(now).avatar_key(key);
+    let changes = UserAspect::new(now)
+        .avatar_key(&object_key)
+        .avatar_uploaded(false)
+        .avatar_version(image_version);
 
     let affected = diesel::update(t_user.filter(f_id.eq(id)))
         .set(&changes)
@@ -134,11 +157,30 @@ pub async fn prefill_avatar_key(
         return Err(DomainError::expected_argument(trl("error-user-not-found")));
     }
 
-    Ok(())
+    Ok(UserAvatarReservation {
+        object_key,
+        previous_object_key,
+        image_version,
+    })
 }
 
 #[instrument(err, skip(conn), level = Level::DEBUG)]
-pub async fn mark_avatar_uploaded(conn: &mut AsyncPgConnection, id: &str) -> DomainResult<()> {
+pub async fn mark_avatar_uploaded(
+    conn: &mut AsyncPgConnection,
+    id: &str,
+    image_version: i64,
+) -> DomainResult<()> {
+    let user = get_by_id_ex(conn, id).await?;
+    if user.avatar_version != image_version {
+        return Err(DomainError::expected_argument(trl(
+            "error-stale-avatar-upload",
+        )));
+    }
+
+    if user.avatar_uploaded {
+        return Ok(());
+    }
+
     let now = OffsetDateTime::now_utc();
 
     let changes = UserAspect::new(now).avatar_uploaded(true);
@@ -163,11 +205,11 @@ pub async fn touch_last_active(conn: &mut AsyncPgConnection, id: &str) -> Domain
     // for this user.  This prevents phantom reads on the member table:
     // any concurrent member INSERT that references the user must also
     // acquire this row lock first.
-    let exists = t_user
+    let exists: Option<String> = t_user
         .filter(f_id.eq(id))
         .select(f_id)
         .for_update()
-        .first::<String>(conn)
+        .first(conn)
         .await
         .optional()?;
 
@@ -198,16 +240,6 @@ impl UserQuery for RdbQuery {
     async fn get_by_id(&self, id: &str) -> DomainResult<UserAggr> {
         submit_query!(self.pool, get_by_id, id)
     }
-
-    #[instrument(err, skip(self), level = Level::DEBUG)]
-    async fn prefill_avatar_key(&self, id: &str, key: &str) -> DomainResult<()> {
-        submit_query!(self.pool, prefill_avatar_key, id, key)
-    }
-
-    #[instrument(err, skip(self), level = Level::DEBUG)]
-    async fn mark_avatar_uploaded(&self, id: &str) -> DomainResult<()> {
-        submit_query!(self.pool, mark_avatar_uploaded, id)
-    }
 }
 
 #[async_trait]
@@ -223,5 +255,21 @@ impl<'c> UserQueryTransactional for RdbQueryTransactional<'c> {
     #[instrument(err, skip(self), level = Level::DEBUG)]
     async fn touch_last_active(&mut self, id: &str) -> DomainResult<()> {
         touch_last_active(self.conn, id).await
+    }
+
+    async fn get_by_id(&mut self, id: &str) -> DomainResult<UserAggr> {
+        get_by_id_ex(self.conn, id).await
+    }
+
+    async fn reserve_avatar(
+        &mut self,
+        id: &str,
+        file_extension: &str,
+    ) -> DomainResult<UserAvatarReservation> {
+        reserve_avatar(self.conn, id, file_extension).await
+    }
+
+    async fn mark_avatar_uploaded(&mut self, id: &str, image_version: i64) -> DomainResult<()> {
+        mark_avatar_uploaded(self.conn, id, image_version).await
     }
 }

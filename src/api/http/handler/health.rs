@@ -2,6 +2,7 @@ use std::net::SocketAddr;
 
 use axum::extract::ConnectInfo;
 use axum::http::StatusCode;
+use tracing::instrument;
 
 use crate::api::http::result::Accept as _;
 use crate::api::http::result::HttpError;
@@ -16,6 +17,7 @@ use crate::api::http::result::HttpResult;
         (status = 404, description = "Not found (non-loopback request)", body = HttpError)
     )
 )]
+#[instrument(err, level = tracing::Level::DEBUG)]
 pub async fn check_health(ConnectInfo(addr): ConnectInfo<SocketAddr>) -> HttpResult<&'static str> {
     if !addr.ip().is_loopback() {
         return Err(HttpError::not_found());

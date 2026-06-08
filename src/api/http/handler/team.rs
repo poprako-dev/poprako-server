@@ -2,6 +2,7 @@ use axum::Json;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use poprako_util::page::Page;
+use tracing::instrument;
 
 use crate::api::http::result::Accept as _;
 use crate::api::http::result::HttpError;
@@ -9,8 +10,8 @@ use crate::api::http::result::HttpResult;
 use crate::harness::Harness;
 use crate::usecase;
 use crate::usecase::data_object::team::{
-    ReserveTeamAvatarParams, ReserveTeamAvatarReply, TeamBase, TeamCreateParams,
-    TeamInfoUpdateParams,
+    MarkTeamAvatarUploadedParams, ReserveTeamAvatarParams, ReserveTeamAvatarReply, TeamBase,
+    TeamCreateParams, TeamInfoUpdateParams,
 };
 
 #[utoipa::path(
@@ -24,6 +25,7 @@ use crate::usecase::data_object::team::{
         (status = 401, description = "Authentication required", body = HttpError)
     )
 )]
+#[instrument(err, skip(harn, params))]
 pub async fn create(
     State(harn): State<Harness>,
     Json(params): Json<TeamCreateParams>,
@@ -46,6 +48,7 @@ pub async fn create(
         (status = 401, description = "Authentication required", body = HttpError)
     )
 )]
+#[instrument(err, skip(harn))]
 pub async fn get_info(
     State(harn): State<Harness>,
     Path(team_id): Path<String>,
@@ -68,6 +71,7 @@ pub async fn get_info(
         (status = 401, description = "Authentication required", body = HttpError)
     )
 )]
+#[instrument(err, skip(harn))]
 pub async fn list(
     State(harn): State<Harness>,
     axum::extract::Query(params): axum::extract::Query<TeamListQuery>,
@@ -82,7 +86,7 @@ pub async fn list(
     bases.accept(StatusCode::OK)
 }
 
-#[derive(serde::Deserialize, utoipa::IntoParams)]
+#[derive(Debug, serde::Deserialize, utoipa::IntoParams)]
 #[into_params(parameter_in = Query)]
 pub struct TeamListQuery {
     pub offset: Option<i64>,
@@ -103,6 +107,7 @@ pub struct TeamListQuery {
         (status = 401, description = "Authentication required", body = HttpError)
     )
 )]
+#[instrument(err, skip(harn, params))]
 pub async fn update(
     State(harn): State<Harness>,
     Path(team_id): Path<String>,
@@ -127,6 +132,7 @@ pub async fn update(
         (status = 401, description = "Authentication required", body = HttpError)
     )
 )]
+#[instrument(err, skip(harn, params))]
 pub async fn reserve_avatar(
     State(harn): State<Harness>,
     Path(team_id): Path<String>,
@@ -144,17 +150,20 @@ pub async fn reserve_avatar(
     params(
         ("team_id" = String, Path, description = "Team ID")
     ),
+    request_body = MarkTeamAvatarUploadedParams,
     responses(
         (status = 200, description = "Avatar upload confirmed"),
         (status = 400, description = "Team not found", body = HttpError),
         (status = 401, description = "Authentication required", body = HttpError)
     )
 )]
+#[instrument(err, skip(harn))]
 pub async fn mark_avatar_uploaded(
     State(harn): State<Harness>,
     Path(team_id): Path<String>,
+    Json(params): Json<MarkTeamAvatarUploadedParams>,
 ) -> HttpResult<()> {
-    usecase::team::mark_avatar_uploaded(&harn, team_id).await?;
+    usecase::team::mark_avatar_uploaded(&harn, team_id, params).await?;
 
     ().accept(StatusCode::OK)
 }
@@ -172,6 +181,7 @@ pub async fn mark_avatar_uploaded(
         (status = 401, description = "Authentication required", body = HttpError)
     )
 )]
+#[instrument(err, skip(harn))]
 pub async fn delete(State(harn): State<Harness>, Path(team_id): Path<String>) -> HttpResult<()> {
     usecase::team::delete(&harn, team_id).await?;
 

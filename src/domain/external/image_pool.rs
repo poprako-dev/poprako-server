@@ -29,17 +29,26 @@ pub trait ImageDelete {
     async fn delete_batch(&self, keys: &[&str]) -> DomainResult<()>;
 }
 
+/// Inspects object metadata in the image pool.
+#[forward_ref]
+#[async_trait]
+pub trait ImageInspect {
+    /// Returns whether an object exists at the given key.
+    async fn exists(&self, key: &str) -> DomainResult<bool>;
+}
+
 /// Composite of all image-pool capabilities.
 #[forward_ref_sub]
-pub trait ImagePool: ImageGet + ImagePut + ImageDelete {}
+pub trait ImagePool: ImageGet + ImagePut + ImageDelete + ImageInspect {}
 
-impl<T> ImagePool for T where T: ImageGet + ImagePut + ImageDelete {}
+impl<T> ImagePool for T where T: ImageGet + ImagePut + ImageDelete + ImageInspect {}
 
 #[cfg(test)]
 mod tests {
     // get_signed_forwards_to_target(ForwardRef<ImageGetForward>)(positive): wrapper should delegate signed get URL creation to image pool target
     // put_signed_forwards_to_target(ForwardRef<ImagePutForward>)(positive): wrapper should delegate signed put URL creation to image pool target
-    // delete_batch_forwards_to_target(ForwardRef<ImageDeleteForward>)(positive): wrapper should delegate batch deletion to image pool target
+    // delete_batch_forwards_to_target(ForwardRef<ImageDeleteForward>)(positive): wrapper should delegate batch deletion to image pool target.
+    // exists_forwards_to_target(ForwardRef<ImageInspectForward>)(positive): wrapper should delegate object inspection to image pool target.
 
     use std::sync::{Arc, Mutex};
 
@@ -49,7 +58,8 @@ mod tests {
     use poprako_macro::ForwardRefs;
 
     use crate::domain::external::image_pool::{
-        ImageDelete, ImageDeleteForward, ImageGet, ImageGetForward, ImagePut, ImagePutForward,
+        ImageDelete, ImageDeleteForward, ImageGet, ImageGetForward, ImageInspect,
+        ImageInspectForward, ImagePut, ImagePutForward,
     };
     use crate::domain::result::DomainResult;
 
@@ -60,7 +70,7 @@ mod tests {
 
     #[derive(ForwardRefs)]
     struct FakeHarness {
-        #[forward_ref(ImageGet, ImagePut, ImageDelete)]
+        #[forward_ref(ImageGet, ImagePut, ImageDelete, ImageInspect)]
         image_pool: FakeImagePool,
     }
 
@@ -91,6 +101,14 @@ mod tests {
         async fn delete_batch(&self, keys: &[&str]) -> DomainResult<()> {
             self.calls.lock().unwrap().push(keys.join(","));
             Ok(())
+        }
+    }
+
+    #[async_trait]
+    impl ImageInspect for FakeImagePool {
+        async fn exists(&self, key: &str) -> DomainResult<bool> {
+            self.calls.lock().unwrap().push(format!("exists:{}", key));
+            Ok(true)
         }
     }
 
@@ -131,6 +149,19 @@ mod tests {
         assert_eq!(
             harn.image_pool.calls.lock().unwrap().as_slice(),
             ["page-1.png,page-2.png"]
+        );
+    }
+
+    #[tokio::test]
+    async fn exists_forwards_to_target() {
+        let harn = harn();
+
+        let exists = ImageInspect::exists(&harn, "page-1.png").await.unwrap();
+
+        assert!(exists);
+        assert_eq!(
+            harn.image_pool.calls.lock().unwrap().as_slice(),
+            ["exists:page-1.png"]
         );
     }
 }

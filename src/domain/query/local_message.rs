@@ -37,4 +37,7 @@ pub trait LocalMessageQuery {
 pub trait LocalMessageQueryTransactional {
     /// Appends a message and makes it visible only after the transaction commits.
     async fn append(&mut self, form: &LocalMessageForm) -> DomainResult<LocalMessageAggr>;
+
+    /// Applies consumer-side state changes inside the current transaction.
+    async fn mark(&mut self, marks: &[&LocalMessageMark]) -> DomainResult<()>;
 }

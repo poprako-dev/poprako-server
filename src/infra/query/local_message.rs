@@ -57,44 +57,36 @@ pub async fn claim(
 ) -> DomainResult<Vec<LocalMessageAggr>> {
     let now = OffsetDateTime::now_utc();
 
-    let rows: Vec<LocalMessageRow> = diesel::sql_query(
-        r#"
-        WITH claimed AS (
-            SELECT f_id
-            FROM t_local_message
-            WHERE f_topic = $1
-              AND f_status = $2
-              AND f_visible_at <= $3
-            ORDER BY f_created_at ASC
-            LIMIT $4
-            FOR UPDATE SKIP LOCKED
-        )
-        UPDATE t_local_message
-        SET f_status = $5,
-            f_last_error = NULL,
-            f_lease = f_lease + 1,
-            f_updated_at = $3
-        WHERE f_id IN (SELECT f_id FROM claimed)
-        RETURNING
-            f_id,
-            f_topic,
-            f_status,
-            f_payload,
-            f_last_error,
-            f_retried_count,
-            f_lease,
-            f_visible_at,
-            f_created_at,
-            f_updated_at
-        "#,
-    )
-    .bind::<diesel::sql_types::Text, _>(target_topic)
-    .bind::<diesel::sql_types::Text, _>(LocalMessageStatus::Pending.as_str())
-    .bind::<diesel::sql_types::Timestamptz, _>(now)
-    .bind::<diesel::sql_types::BigInt, _>(limit)
-    .bind::<diesel::sql_types::Text, _>(LocalMessageStatus::Processing.as_str())
-    .load(conn)
-    .await?;
+    // Step 1: Atomically claim message IDs with row-level locking.
+    let claimed: Vec<String> = t_local_message
+        .filter(f_topic.eq(target_topic))
+        .filter(f_status.eq(LocalMessageStatus::Pending.as_str()))
+        .filter(f_visible_at.le(now))
+        .order(f_created_at.asc())
+        .limit(limit)
+        .select(f_id)
+        .for_update()
+        .skip_locked()
+        .load(conn)
+        .await?;
+
+    if claimed.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    // Step 2: Update the claimed messages and return the updated rows.
+    let no_error: Option<String> = None;
+    let rows: Vec<LocalMessageRow> = diesel::update(t_local_message)
+        .filter(f_id.eq_any(&claimed))
+        .set((
+            f_status.eq(LocalMessageStatus::Processing.as_str()),
+            f_last_error.eq(no_error),
+            f_lease.eq(f_lease + 1),
+            f_updated_at.eq(now),
+        ))
+        .returning(LocalMessageRow::as_returning())
+        .get_results(conn)
+        .await?;
 
     rows.into_iter().map(TryInto::try_into).collect()
 }
@@ -118,6 +110,7 @@ async fn mark_one(conn: &mut AsyncPgConnection, mark: &LocalMessageMark) -> Doma
                 .ok_or_else(|| stale_mark_error(id, *lease))?;
 
             let now = OffsetDateTime::now_utc();
+
             let changes = LocalMessageAspect::new(now)
                 .status(LocalMessageStatus::Pending.as_str())
                 .last_error(Some(last_error))
@@ -275,5 +268,9 @@ impl LocalMessageQuery for RdbQuery {
 impl<'c> LocalMessageQueryTransactional for RdbQueryTransactional<'c> {
     async fn append(&mut self, form: &LocalMessageForm) -> DomainResult<LocalMessageAggr> {
         append(self.conn, form).await
+    }
+
+    async fn mark(&mut self, marks: &[&LocalMessageMark]) -> DomainResult<()> {
+        mark(self.conn, marks).await
     }
 }

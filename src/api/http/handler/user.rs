@@ -1,6 +1,7 @@
 use axum::Json;
 use axum::extract::{Extension, Path, State};
 use axum::http::StatusCode;
+use tracing::instrument;
 
 use crate::api::http::handler::util::ensure_current_user;
 use crate::api::http::result::Accept as _;
@@ -10,7 +11,8 @@ use crate::domain::model::aggr::user::UserToken;
 use crate::harness::Harness;
 use crate::usecase;
 use crate::usecase::data_object::user::{
-    ReserveAvatarParams, ReserveAvatarReply, UserBase, UserInfoUpdateParams,
+    MarkAvatarUploadedParams, ReserveAvatarParams, ReserveAvatarReply, UserBase,
+    UserInfoUpdateParams,
 };
 
 #[utoipa::path(
@@ -26,6 +28,7 @@ use crate::usecase::data_object::user::{
         (status = 404, description = "User not found", body = HttpError)
     )
 )]
+#[instrument(err, skip(harn))]
 pub async fn get_info(
     State(harn): State<Harness>,
     Path(user_id): Path<String>,
@@ -44,6 +47,7 @@ pub async fn get_info(
         (status = 401, description = "Authentication required", body = HttpError)
     )
 )]
+#[instrument(err, skip(harn))]
 pub async fn get_my_info(
     State(harn): State<Harness>,
     Extension(user_token): Extension<UserToken>,
@@ -65,6 +69,7 @@ pub async fn get_my_info(
         (status = 409, description = "QID already taken", body = HttpError)
     )
 )]
+#[instrument(err, skip(harn, params))]
 pub async fn update_info(
     State(harn): State<Harness>,
     Extension(user_token): Extension<UserToken>,
@@ -90,6 +95,7 @@ pub async fn update_info(
         (status = 403, description = "Cannot modify another user's avatar", body = HttpError)
     )
 )]
+#[instrument(err, skip(harn, params))]
 pub async fn reserve_avatar(
     State(harn): State<Harness>,
     Path(user_id): Path<String>,
@@ -110,6 +116,7 @@ pub async fn reserve_avatar(
     params(
         ("user_id" = String, Path, description = "Target user ID (must match authenticated user)")
     ),
+    request_body = MarkAvatarUploadedParams,
     responses(
         (status = 200, description = "Avatar upload confirmed"),
         (status = 400, description = "Invalid request parameters", body = HttpError),
@@ -117,14 +124,16 @@ pub async fn reserve_avatar(
         (status = 403, description = "Cannot confirm another user's avatar", body = HttpError)
     )
 )]
+#[instrument(err, skip(harn))]
 pub async fn mark_avatar_uploaded(
     State(harn): State<Harness>,
     Path(user_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
+    Json(params): Json<MarkAvatarUploadedParams>,
 ) -> HttpResult<()> {
     ensure_current_user(&user_id, &user_token)?;
 
-    usecase::user::mark_avatar_uploaded(&harn, user_token).await?;
+    usecase::user::mark_avatar_uploaded(&harn, user_token, params).await?;
 
     ().accept(StatusCode::OK)
 }

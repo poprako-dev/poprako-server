@@ -3,6 +3,7 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use cookie::Cookie;
 use cookie::SameSite;
+use tracing::instrument;
 
 use crate::api::http::auth_token::AUTHORIZATION_COOKIE_NAME;
 use crate::api::http::result::Accept as _;
@@ -22,6 +23,7 @@ use crate::usecase::data_object::user::{SignInParams, SignInReply, SignUpParams,
         (status = 409, description = "User already exists", body = HttpError)
     )
 )]
+#[instrument(err, skip(harn, params))]
 pub async fn sign_up(
     State(harn): State<Harness>,
     Json(params): Json<SignUpParams>,
@@ -50,6 +52,7 @@ pub async fn sign_up(
         (status = 401, description = "Invalid credentials", body = HttpError)
     )
 )]
+#[instrument(err, skip(harn, params))]
 pub async fn sign_in(
     State(harn): State<Harness>,
     Json(params): Json<SignInParams>,
