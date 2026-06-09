@@ -97,7 +97,7 @@ impl From<TeamRow> for TeamAggr {
             id: v.f_id,
             name: v.f_name,
             description: v.f_description.unwrap_or_default(),
-            avatar_key: v.f_avatar_key.unwrap_or_default(),
+            avatar_key: v.f_avatar_key,
             avatar_uploaded: v.f_avatar_uploaded,
             avatar_version: v.f_avatar_version,
             workset_next_index: v.f_workset_next_index,

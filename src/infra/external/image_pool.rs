@@ -247,7 +247,7 @@ impl OssImagePool {
         }
 
         Err(DomainError::unrecoverable(
-            last_err.unwrap_or_else(|| "unknown error".into()),
+            last_err.unwrap_or_else(|| "[R2OssClient::delete_batch] unknown error".into()),
         ))
     }
 }

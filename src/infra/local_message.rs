@@ -142,14 +142,14 @@ impl LocalMessageIngestor {
             async move {
                 let current = match resource_kind {
                     ImageResourceKind::UserAvatar => {
-                        let user = UserQueryTransactional::get_by_id(query, &resource_id).await?;
+                        let user = UserQueryTransactional::get_by_id_excluded(query, &resource_id).await?;
                         AvatarState {
                             image_version: user.avatar_version,
                             uploaded: user.avatar_uploaded,
                         }
                     }
                     ImageResourceKind::TeamAvatar => {
-                        let team = TeamQueryTransactional::get_by_id(query, &resource_id).await?;
+                        let team = TeamQueryTransactional::get_by_id_excluded(query, &resource_id).await?;
                         AvatarState {
                             image_version: team.avatar_version,
                             uploaded: team.avatar_uploaded,
@@ -182,7 +182,7 @@ impl LocalMessageIngestor {
                     id: message_id,
                     lease,
                 };
-                LocalMessageQueryTransactional::mark(query, &[&mark]).await?;
+                LocalMessageQueryTransactional::mark_transactional(query, &[&mark]).await?;
 
                 Ok(())
             }
@@ -212,14 +212,14 @@ impl LocalMessageIngestor {
             async move {
                 match resource_kind {
                     ImageResourceKind::UserAvatar => {
-                        let user = UserQueryTransactional::get_by_id(query, &resource_id).await?;
+                        let user = UserQueryTransactional::get_by_id_excluded(query, &resource_id).await?;
                         Ok(AvatarState {
                             image_version: user.avatar_version,
                             uploaded: user.avatar_uploaded,
                         })
                     }
                     ImageResourceKind::TeamAvatar => {
-                        let team = TeamQueryTransactional::get_by_id(query, &resource_id).await?;
+                        let team = TeamQueryTransactional::get_by_id_excluded(query, &resource_id).await?;
                         Ok(AvatarState {
                             image_version: team.avatar_version,
                             uploaded: team.avatar_uploaded,

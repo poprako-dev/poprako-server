@@ -28,21 +28,16 @@ impl UserBase {
     where
         S: ImageGet,
     {
-        let avatar_url = if aggr.avatar_uploaded {
-            signer
-                .get_signed(&aggr.avatar_key)
-                .await
-                .ok()
-                .map(|url| url.to_string())
-        } else {
-            None
+        let avatar_url = match (aggr.avatar_uploaded, &aggr.avatar_key) {
+            (true, Some(key)) => signer.get_signed(key).await.ok(),
+            _ => None,
         };
 
         Self {
             id: aggr.id,
             qid: aggr.qid,
             nickname: aggr.nickname,
-            avatar_url,
+            avatar_url: avatar_url.map(Into::into),
             is_sadmin: aggr.is_sadmin,
             last_active_at: aggr.last_active_at.to_unix_milli(),
             created_at: aggr.created_at.to_unix_milli(),
@@ -84,17 +79,17 @@ pub struct UserInfoUpdateParams {
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
-pub struct ReserveAvatarParams {
+pub struct AvatarReserveParams {
     pub file_extension: String,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
-pub struct ReserveAvatarReply {
+pub struct AvatarReserveReply {
     pub put_url: String,
     pub image_version: i64,
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
-pub struct MarkAvatarUploadedParams {
+pub struct AvatarMarkUploadedParams {
     pub image_version: i64,
 }

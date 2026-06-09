@@ -26,10 +26,7 @@ pub trait WorksetQuery {
     async fn count(&self, team_id: &str) -> DomainResult<i64>;
 
     /// Updates a workset's mutable fields (name, description) via PUT semantics.
-    async fn update(&self, input: &WorksetUpdate) -> DomainResult<()>;
-
-    /// Hard-deletes the workset with the given ID.
-    async fn delete(&self, id: &str) -> DomainResult<()>;
+    async fn update(&self, update: &WorksetUpdate) -> DomainResult<()>;
 }
 
 /// Transactional persistence contract for [`WorksetAggr`], used **only** inside
@@ -46,4 +43,10 @@ pub trait WorksetQueryTransactional {
 
     /// Atomically increments and returns the next comic index from the workset-scoped sequence.
     async fn increment_comic_next_index(&mut self, id: &str) -> DomainResult<i32>;
+
+    /// Hard-deletes the workset with the given ID.
+    async fn delete(&mut self, id: &str) -> DomainResult<()>;
+
+    /// Lists all worksets for the given team (no pagination).
+    async fn list_by_team_id_excluded(&mut self, team_id: &str) -> DomainResult<Vec<WorksetAggr>>;
 }

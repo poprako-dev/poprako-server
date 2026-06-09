@@ -110,15 +110,15 @@ pub async fn create(conn: &mut AsyncPgConnection, form: &WorksetForm) -> DomainR
     Ok(row.into())
 }
 
-#[instrument(err, skip(conn, input), level = Level::DEBUG)]
-pub async fn update(conn: &mut AsyncPgConnection, input: &WorksetUpdate) -> DomainResult<()> {
+#[instrument(err, skip(conn, update), level = Level::DEBUG)]
+pub async fn update(conn: &mut AsyncPgConnection, update: &WorksetUpdate) -> DomainResult<()> {
     let now = OffsetDateTime::now_utc();
 
     let changes = WorksetAspect::new(now)
-        .name(&input.name)
-        .description(input.description.as_deref());
+        .name(&update.name)
+        .description(update.description.as_deref());
 
-    let affected = diesel::update(t_workset.filter(f_id.eq(&input.id)))
+    let affected = diesel::update(t_workset.filter(f_id.eq(&update.id)))
         .set(&changes)
         .execute(conn)
         .await?;
@@ -199,6 +199,21 @@ pub async fn delete(conn: &mut AsyncPgConnection, workset_id: &str) -> DomainRes
     Ok(())
 }
 
+#[instrument(err, skip(conn), level = Level::DEBUG)]
+pub async fn list_by_team_id_excluded(
+    conn: &mut AsyncPgConnection,
+    team_id: &str,
+) -> DomainResult<Vec<WorksetAggr>> {
+    let rows: Vec<WorksetRow> = t_workset
+        .filter(f_team_id.eq(team_id))
+        .for_update()
+        .select(WorksetRow::as_select())
+        .load(conn)
+        .await?;
+
+    Ok(rows.into_iter().map(|r| r.into()).collect())
+}
+
 // ── impls ──────────────────────────────────────────────────────────────────
 
 #[async_trait]
@@ -218,14 +233,9 @@ impl WorksetQuery for RdbQuery {
         submit_query!(self.pool, count, team_id)
     }
 
-    #[instrument(err, skip(self, input), level = Level::DEBUG)]
-    async fn update(&self, input: &WorksetUpdate) -> DomainResult<()> {
-        submit_query!(self.pool, update, input)
-    }
-
-    #[instrument(err, skip(self), level = Level::DEBUG)]
-    async fn delete(&self, id: &str) -> DomainResult<()> {
-        submit_query!(self.pool, delete, id)
+    #[instrument(err, skip(self, params), level = Level::DEBUG)]
+    async fn update(&self, params: &WorksetUpdate) -> DomainResult<()> {
+        submit_query!(self.pool, update, params)
     }
 }
 
@@ -241,5 +251,13 @@ impl<'c> WorksetQueryTransactional for RdbQueryTransactional<'c> {
 
     async fn increment_comic_next_index(&mut self, id: &str) -> DomainResult<i32> {
         increment_comic_next_index(self.conn, id).await
+    }
+
+    async fn delete(&mut self, id: &str) -> DomainResult<()> {
+        delete(self.conn, id).await
+    }
+
+    async fn list_by_team_id_excluded(&mut self, team_id: &str) -> DomainResult<Vec<WorksetAggr>> {
+        list_by_team_id_excluded(self.conn, team_id).await
     }
 }

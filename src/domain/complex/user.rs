@@ -1,5 +1,12 @@
+use time::Duration;
+
 use crate::domain::external::token::{TokenParse, TokenSign};
+use crate::domain::local_message::message::ImageLocalMessage;
 use crate::domain::model::aggr::user::UserToken;
+use crate::domain::query::QueryTransactional;
+use crate::domain::query::local_message::LocalMessageQueryTransactional;
+use crate::domain::query::member::MemberQueryTransactional;
+use crate::domain::query::user::UserQueryTransactional;
 use crate::domain::result::{DomainError, DomainResult};
 
 /// Hashes a password with bcrypt using the default cost factor.
@@ -24,6 +31,34 @@ where
     P: TokenParse,
 {
     parser.parse(signed_token)
+}
+
+/// Deletes the user and all their member records across teams, and queues
+/// a local message to delete the user avatar if one was present.
+pub async fn delete_cascade<Q>(query: &mut Q, id: &str) -> DomainResult<()>
+where
+    Q: QueryTransactional,
+{
+    // Read avatar key before deletion so we can schedule cleanup.
+    let user = UserQueryTransactional::get_by_id_excluded(query, id).await?;
+
+    let avatar_key = user.avatar_key;
+
+    // Delete each member record belonging to this user.
+    let members = MemberQueryTransactional::list_by_user_id_excluded(query, id).await?;
+    for m in &members {
+        MemberQueryTransactional::delete_transactional(query, &m.id).await?;
+    }
+
+    UserQueryTransactional::delete(query, id).await?;
+
+    // Queue avatar file deletion if there was one.
+    if let Some(object_key) = avatar_key {
+        let message = ImageLocalMessage::delete(object_key).into_form(Duration::seconds(0));
+        LocalMessageQueryTransactional::append(query, &message).await?;
+    }
+
+    Ok(())
 }
 
 #[cfg(test)]
@@ -53,7 +88,7 @@ mod tests {
     impl TokenSign for FakeCodec {
         fn sign(&self, unsigned_token: &UserToken) -> DomainResult<String> {
             if self.fail {
-                return Err(DomainError::unrecoverable("sign failed".into()));
+                return Err(DomainError::unrecoverable("[FakeCodec::sign] sign failed".into()));
             }
 
             Ok(format!("signed:{}", unsigned_token.user_id))
@@ -63,7 +98,7 @@ mod tests {
     impl TokenParse for FakeCodec {
         fn parse(&self, signed_token: &str) -> DomainResult<UserToken> {
             if self.fail {
-                return Err(DomainError::unrecoverable("parse failed".into()));
+                return Err(DomainError::unrecoverable("[FakeCodec::parse] parse failed".into()));
             }
 
             Ok(UserToken {

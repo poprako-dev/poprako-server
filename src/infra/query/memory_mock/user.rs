@@ -65,7 +65,7 @@ impl UserQueryTransactional for MemoryMockQueryTransactional {
             nickname: form.nickname.clone(),
             qid: form.qid.clone(),
             is_sadmin: false,
-            avatar_key: String::new(),
+            avatar_key: None,
             avatar_uploaded: false,
             avatar_version: 0,
             last_active_at: now,
@@ -84,17 +84,17 @@ impl UserQueryTransactional for MemoryMockQueryTransactional {
         Ok(user)
     }
 
-    async fn update_info(&mut self, input: &UserInfoUpdate) -> DomainResult<UserAggr> {
+    async fn update_info(&mut self, update: &UserInfoUpdate) -> DomainResult<UserAggr> {
         let mut state = self.state.lock().unwrap();
 
         let user = state
             .users
             .iter_mut()
-            .find(|u| u.id == input.id)
+            .find(|u| u.id == update.id)
             .ok_or_else(|| DomainError::expected_argument(trl("error-user-not-found")))?;
 
-        user.nickname = input.nickname.clone();
-        user.qid = input.qid.clone();
+        user.nickname = update.nickname.clone();
+        user.qid = update.qid.clone();
         user.updated_at = OffsetDateTime::now_utc();
 
         Ok(user.clone())
@@ -115,7 +115,7 @@ impl UserQueryTransactional for MemoryMockQueryTransactional {
         Ok(())
     }
 
-    async fn get_by_id(&mut self, id: &str) -> DomainResult<UserAggr> {
+    async fn get_by_id_excluded(&mut self, id: &str) -> DomainResult<UserAggr> {
         let state = self.state.lock().unwrap();
         state
             .users
@@ -140,9 +140,9 @@ impl UserQueryTransactional for MemoryMockQueryTransactional {
 
         let image_version = user.avatar_version + 1;
         let object_key = UserAggr::generate_avatar_key(id, image_version, file_extension);
-        let previous_object_key = (!user.avatar_key.is_empty()).then_some(user.avatar_key.clone());
+        let previous_object_key = user.avatar_key.clone();
 
-        user.avatar_key = object_key.clone();
+        user.avatar_key = Some(object_key.clone());
         user.avatar_uploaded = false;
         user.avatar_version = image_version;
         user.updated_at = OffsetDateTime::now_utc();
@@ -178,6 +178,22 @@ impl UserQueryTransactional for MemoryMockQueryTransactional {
 
         Ok(())
     }
+
+    async fn delete(&mut self, id: &str) -> DomainResult<()> {
+        let mut state = self.state.lock().unwrap();
+
+        let pos = state
+            .users
+            .iter()
+            .position(|u| u.id == id)
+            .ok_or_else(|| DomainError::expected_argument(trl("error-user-not-found")))?;
+        state.users.remove(pos);
+
+        // Remove credentials linked to this user.
+        state.credentials.retain(|c| c.user_id != id);
+
+        Ok(())
+    }
 }
 
 // ── Tests ──────────────────────────────────────────────────────────────────
@@ -198,6 +214,8 @@ mod tests {
     // mark_avatar_uploaded_missing_user_returns_expected_error(UserQueryTransactional::mark_avatar_uploaded)(negative): marking for a missing user should fail.
     // touch_last_active_updates_timestamp(UserQuery::touch_last_active)(positive): touching should update last_active_at.
     // touch_last_active_missing_user_returns_expected_error(UserQuery::touch_last_active)(negative): touching for a missing user should fail.
+    // delete_removes_user_and_credentials(UserQueryTransactional::delete)(positive): deleting a user should remove the user and its credentials.
+    // delete_missing_returns_error(UserQueryTransactional::delete)(negative): deleting a missing user should fail.
 
     use futures_util::FutureExt as _;
     use time::OffsetDateTime;
@@ -221,7 +239,7 @@ mod tests {
             nickname: nickname.into(),
             qid: qid.into(),
             is_sadmin: false,
-            avatar_key: String::new(),
+            avatar_key: None,
             avatar_uploaded: false,
             avatar_version: 0,
             last_active_at: n,
@@ -394,12 +412,12 @@ mod tests {
 
         mock.transaction_scoped(|txn| {
             async move {
-                let input = UserInfoUpdate {
+                let update = UserInfoUpdate {
                     id: "user-1".into(),
                     qid: "new-qid".into(),
                     nickname: "new-nick".into(),
                 };
-                let updated = UserQueryTransactional::update_info(txn, &input)
+                let updated = UserQueryTransactional::update_info(txn, &update)
                     .await
                     .unwrap();
                 assert_eq!(updated.qid, "new-qid");
@@ -423,12 +441,12 @@ mod tests {
         let err = mock
             .transaction_scoped(|txn| {
                 async move {
-                    let input = UserInfoUpdate {
+                    let update = UserInfoUpdate {
                         id: "nonexistent".into(),
                         qid: "q".into(),
                         nickname: "n".into(),
                     };
-                    UserQueryTransactional::update_info(txn, &input).await
+                    UserQueryTransactional::update_info(txn, &update).await
                 }
                 .boxed()
             })
@@ -457,7 +475,7 @@ mod tests {
 
         let found = UserQuery::get_by_id(&mock, "user-1").await.unwrap();
         assert_eq!(reservation.image_version, 1);
-        assert_eq!(found.avatar_key, "user_avatar/user-1-1.png");
+        assert_eq!(found.avatar_key, Some("user_avatar/user-1-1.png".into()));
         assert_eq!(found.avatar_version, 1);
     }
 
@@ -555,6 +573,40 @@ mod tests {
             .transaction_scoped(|txn| {
                 async move { UserQueryTransactional::touch_last_active(txn, "nonexistent").await }
                     .boxed()
+            })
+            .await
+            .err()
+            .unwrap();
+
+        assert!(is_expected_argument(&err));
+    }
+
+    #[tokio::test]
+    async fn delete_removes_user_and_credentials_without_avatar() {
+        let mock = MemoryMockQuery::new();
+        mock.seed_user(
+            make_user("user-1", "qid-1", "nick"),
+            make_credential("user-1"),
+        );
+
+        mock.transaction_scoped(|txn| {
+            async move { UserQueryTransactional::delete(txn, "user-1").await }.boxed()
+        })
+        .await
+        .unwrap();
+
+        let snapshot = mock.snapshot();
+        assert!(snapshot.users.is_empty());
+        assert!(snapshot.credentials.is_empty());
+    }
+
+    #[tokio::test]
+    async fn delete_missing_user_returns_error() {
+        let mock = MemoryMockQuery::new();
+
+        let err = mock
+            .transaction_scoped(|txn| {
+                async move { UserQueryTransactional::delete(txn, "nonexistent").await }.boxed()
             })
             .await
             .err()

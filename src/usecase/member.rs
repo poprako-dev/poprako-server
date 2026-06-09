@@ -119,8 +119,15 @@ where
 #[cfg(test)]
 mod tests {
     // create_persists_member(create)(positive): create should persist a member.
+    // create_duplicate_user_team_returns_conflict(create)(negative): create should fail with conflict when user+team pair already exists.
+    // get_by_id_returns_member_base(get_by_id)(positive): get_by_id should return a MemberBase for an existing member.
     // get_by_id_fails_for_nonexistent(get_by_id)(negative): get_by_id should fail with expected error for missing member.
+    // get_by_user_and_team_returns_member_base(get_by_user_and_team)(positive): get_by_user_and_team should return a MemberBase for an existing member.
+    // get_by_user_and_team_fails_for_nonexistent(get_by_user_and_team)(negative): get_by_user_and_team should fail for nonexistent user+team pair.
     // list_filters_by_team(list)(positive): list should filter members by team_id.
+    // list_filters_by_keyword(list)(positive): list should filter members by keyword.
+    // list_filters_by_role(list)(positive): list should filter members by role.
+    // list_empty_with_offset_past_end(list)(positive): list should return an empty vector when offset is past the last member.
     // update_roles_modifies_all_roles(update_roles)(positive): update_roles should replace all role timestamps.
     // update_roles_fails_for_nonexistent(update_roles)(negative): update_roles should fail with expected error for missing member.
     // delete_removes_member(delete)(positive): delete should remove the member.
@@ -135,6 +142,7 @@ mod tests {
     use crate::domain::model::value::role::{RoleFlag, RoleMask};
     use crate::harness::tests::TestHarness;
     use crate::test_util::usecase_is_expected_argument;
+    use crate::test_util::usecase_is_expected_conflict;
     use crate::usecase::data_object::member::{MemberCreateParams, MemberRoleUpdateParams};
 
     fn make_test_member(id: &str, user_id: &str, team_id: &str, roles: RoleMask) -> MemberAggr {
@@ -178,7 +186,7 @@ mod tests {
             id: "team-1".into(),
             name: "T".into(),
             description: "D".into(),
-            avatar_key: String::new(),
+            avatar_key: None,
             avatar_uploaded: false,
             avatar_version: 0,
             workset_next_index: 0,
@@ -257,7 +265,7 @@ mod tests {
             id: "team-1".into(),
             name: "T".into(),
             description: "D".into(),
-            avatar_key: String::new(),
+            avatar_key: None,
             avatar_uploaded: false,
             avatar_version: 0,
             workset_next_index: 0,
@@ -312,7 +320,7 @@ mod tests {
             id: "team-1".into(),
             name: "T".into(),
             description: "D".into(),
-            avatar_key: String::new(),
+            avatar_key: None,
             avatar_uploaded: false,
             avatar_version: 0,
             workset_next_index: 0,
@@ -342,5 +350,177 @@ mod tests {
         let harn = TestHarness::default();
         let err = delete(&harn, "no-such-member".into()).await.err().unwrap();
         assert!(usecase_is_expected_argument(&err));
+    }
+
+    #[tokio::test]
+    async fn create_duplicate_user_team_returns_conflict() {
+        let harn = TestHarness::default();
+        harn.seed_team(TeamAggr {
+            id: "team-1".into(),
+            name: "T".into(),
+            description: "D".into(),
+            avatar_key: None,
+            avatar_uploaded: false,
+            avatar_version: 0,
+            workset_next_index: 0,
+            created_at: OffsetDateTime::now_utc(),
+            updated_at: OffsetDateTime::now_utc(),
+        });
+
+        create(
+            &harn,
+            MemberCreateParams {
+                user_id: "u-1".into(),
+                team_id: "team-1".into(),
+                role_mask: u32::from(RoleFlag::Admin),
+            },
+        )
+        .await
+        .unwrap();
+
+        let err = create(
+            &harn,
+            MemberCreateParams {
+                user_id: "u-1".into(),
+                team_id: "team-1".into(),
+                role_mask: u32::from(RoleFlag::Translator),
+            },
+        )
+        .await
+        .err()
+        .unwrap();
+
+        assert!(usecase_is_expected_conflict(&err));
+    }
+
+    #[tokio::test]
+    async fn get_by_id_returns_member_base() {
+        let harn = TestHarness::default();
+        harn.seed_member(make_test_member(
+            "m-1",
+            "u-1",
+            "team-1",
+            RoleFlag::Admin.into(),
+        ));
+
+        let base = get_by_id(&harn, "m-1").await.unwrap();
+        assert_eq!(base.user_id, "u-1");
+        assert_eq!(base.team_id, "team-1");
+    }
+
+    #[tokio::test]
+    async fn get_by_user_and_team_returns_member_base() {
+        let harn = TestHarness::default();
+        harn.seed_member(make_test_member(
+            "m-1",
+            "u-1",
+            "team-1",
+            RoleFlag::Admin.into(),
+        ));
+
+        let base = get_by_user_and_team(&harn, "u-1", "team-1")
+            .await
+            .unwrap();
+        assert_eq!(base.user_id, "u-1");
+        assert_eq!(base.team_id, "team-1");
+    }
+
+    #[tokio::test]
+    async fn get_by_user_and_team_fails_for_nonexistent() {
+        let harn = TestHarness::default();
+
+        let err = get_by_user_and_team(&harn, "u-none", "t-none")
+            .await
+            .err()
+            .unwrap();
+
+        assert!(usecase_is_expected_argument(&err));
+    }
+
+    #[tokio::test]
+    async fn list_filters_by_keyword() {
+        let harn = TestHarness::default();
+        harn.seed_member({
+            let mut m = make_test_member("m-1", "u-1", "team-1", RoleFlag::Admin.into());
+            m.user_nickname = "Alice".into();
+            m
+        });
+        harn.seed_member({
+            let mut m = make_test_member("m-2", "u-2", "team-1", RoleFlag::Translator.into());
+            m.user_nickname = "Bob".into();
+            m
+        });
+
+        let list = super::list(
+            &harn,
+            "team-1",
+            Some("Ali"),
+            None,
+            Page {
+                offset: 0,
+                limit: 10,
+            },
+        )
+        .await
+        .unwrap();
+        assert_eq!(list.len(), 1);
+        assert_eq!(list[0].user_nickname, "Alice");
+    }
+
+    #[tokio::test]
+    async fn list_filters_by_role() {
+        let harn = TestHarness::default();
+        harn.seed_member(make_test_member(
+            "m-1",
+            "u-1",
+            "team-1",
+            RoleFlag::Admin.into(),
+        ));
+        harn.seed_member(make_test_member(
+            "m-2",
+            "u-2",
+            "team-1",
+            RoleFlag::Translator.into(),
+        ));
+
+        let list = super::list(
+            &harn,
+            "team-1",
+            None,
+            Some(RoleFlag::Translator),
+            Page {
+                offset: 0,
+                limit: 10,
+            },
+        )
+        .await
+        .unwrap();
+        assert_eq!(list.len(), 1);
+        assert_eq!(list[0].user_id, "u-2");
+    }
+
+    #[tokio::test]
+    async fn list_empty_with_offset_past_end() {
+        let harn = TestHarness::default();
+        harn.seed_member(make_test_member(
+            "m-1",
+            "u-1",
+            "team-1",
+            RoleFlag::Admin.into(),
+        ));
+
+        let list = super::list(
+            &harn,
+            "team-1",
+            None,
+            None,
+            Page {
+                offset: 10,
+                limit: 5,
+            },
+        )
+        .await
+        .unwrap();
+        assert!(list.is_empty());
     }
 }

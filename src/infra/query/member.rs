@@ -222,6 +222,21 @@ pub async fn delete_member(conn: &mut AsyncPgConnection, member_id: &str) -> Dom
     Ok(())
 }
 
+#[instrument(err, skip(conn), level = Level::DEBUG)]
+pub async fn list_by_user_id_excluded(
+    conn: &mut AsyncPgConnection,
+    user_id: &str,
+) -> DomainResult<Vec<MemberAggr>> {
+    let rows: Vec<MemberRow> = t_member
+        .filter(f_user_id.eq(user_id))
+        .for_update()
+        .select(MemberRow::as_select())
+        .load(conn)
+        .await?;
+
+    Ok(rows.into_iter().map(|r| r.into()).collect())
+}
+
 // ── impls ──────────────────────────────────────────────────────────────────
 
 #[async_trait]
@@ -279,5 +294,13 @@ impl<'c> MemberQueryTransactional for RdbQueryTransactional<'c> {
 
     async fn touch_last_active(&mut self, user_id: &str) -> DomainResult<()> {
         touch_last_active(self.conn, user_id).await
+    }
+
+    async fn list_by_user_id_excluded(&mut self, user_id: &str) -> DomainResult<Vec<MemberAggr>> {
+        list_by_user_id_excluded(self.conn, user_id).await
+    }
+
+    async fn delete_transactional(&mut self, id: &str) -> DomainResult<()> {
+        delete_member(self.conn, id).await
     }
 }

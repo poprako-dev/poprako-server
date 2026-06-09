@@ -11,7 +11,7 @@ use crate::domain::model::aggr::user::UserToken;
 use crate::harness::Harness;
 use crate::usecase;
 use crate::usecase::data_object::user::{
-    MarkAvatarUploadedParams, ReserveAvatarParams, ReserveAvatarReply, UserBase,
+    AvatarMarkUploadedParams, AvatarReserveParams, AvatarReserveReply, UserBase,
     UserInfoUpdateParams,
 };
 
@@ -87,9 +87,9 @@ pub async fn update_info(
     params(
         ("user_id" = String, Path, description = "Target user ID (must match authenticated user)")
     ),
-    request_body = ReserveAvatarParams,
+    request_body = AvatarReserveParams,
     responses(
-        (status = 200, description = "Avatar upload URL reserved", body = ReserveAvatarReply),
+        (status = 200, description = "Avatar upload URL reserved", body = AvatarReserveReply),
         (status = 400, description = "Invalid request parameters", body = HttpError),
         (status = 401, description = "Authentication required", body = HttpError),
         (status = 403, description = "Cannot modify another user's avatar", body = HttpError)
@@ -100,8 +100,8 @@ pub async fn reserve_avatar(
     State(harn): State<Harness>,
     Path(user_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Json(params): Json<ReserveAvatarParams>,
-) -> HttpResult<ReserveAvatarReply> {
+    Json(params): Json<AvatarReserveParams>,
+) -> HttpResult<AvatarReserveReply> {
     ensure_current_user(&user_id, &user_token)?;
 
     let reply = usecase::user::reserve_avatar(&harn, user_token, params).await?;
@@ -116,7 +116,7 @@ pub async fn reserve_avatar(
     params(
         ("user_id" = String, Path, description = "Target user ID (must match authenticated user)")
     ),
-    request_body = MarkAvatarUploadedParams,
+    request_body = AvatarMarkUploadedParams,
     responses(
         (status = 200, description = "Avatar upload confirmed"),
         (status = 400, description = "Invalid request parameters", body = HttpError),
@@ -129,7 +129,7 @@ pub async fn mark_avatar_uploaded(
     State(harn): State<Harness>,
     Path(user_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Json(params): Json<MarkAvatarUploadedParams>,
+    Json(params): Json<AvatarMarkUploadedParams>,
 ) -> HttpResult<()> {
     ensure_current_user(&user_id, &user_token)?;
 

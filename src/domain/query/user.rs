@@ -28,13 +28,13 @@ pub trait UserQueryTransactional {
     async fn create(&mut self, form: &UserForm) -> DomainResult<UserAggr>;
 
     /// Updates user profile fields via PUT semantics inside a transaction.
-    async fn update_info(&mut self, input: &UserInfoUpdate) -> DomainResult<UserAggr>;
+    async fn update_info(&mut self, update: &UserInfoUpdate) -> DomainResult<UserAggr>;
 
     /// Updates the user's last active timestamp inside a transaction.
     async fn touch_last_active(&mut self, id: &str) -> DomainResult<()>;
 
     /// Returns the user inside a transaction, or an expected error if not found.
-    async fn get_by_id(&mut self, id: &str) -> DomainResult<UserAggr>;
+    async fn get_by_id_excluded(&mut self, id: &str) -> DomainResult<UserAggr>;
 
     /// Reserves the next avatar object key and clears the uploaded flag.
     async fn reserve_avatar(
@@ -45,4 +45,7 @@ pub trait UserQueryTransactional {
 
     /// Marks the user's current avatar version as uploaded.
     async fn mark_avatar_uploaded(&mut self, id: &str, image_version: i64) -> DomainResult<()>;
+
+    /// Hard-deletes the user and credentials.
+    async fn delete(&mut self, id: &str) -> DomainResult<()>;
 }

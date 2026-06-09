@@ -154,7 +154,7 @@ pub mod tests {
     impl TokenSign for TestHarness {
         fn sign(&self, unsigned_token: &UserToken) -> DomainResult<String> {
             if self.token_fails {
-                return Err(DomainError::unrecoverable("token failed".into()));
+                return Err(DomainError::unrecoverable("[TestHarness::sign] token failed".into()));
             }
 
             Ok(format!("token:{}", unsigned_token.user_id))
@@ -164,7 +164,7 @@ pub mod tests {
     impl TokenParse for TestHarness {
         fn parse(&self, signed_token: &str) -> DomainResult<UserToken> {
             if self.token_fails {
-                return Err(DomainError::unrecoverable("token failed".into()));
+                return Err(DomainError::unrecoverable("[TestHarness::parse] token failed".into()));
             }
 
             Ok(UserToken {
