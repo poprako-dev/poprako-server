@@ -2,6 +2,7 @@ use futures_util::FutureExt as _;
 use poprako_util::page::Page;
 use tracing::instrument;
 
+use crate::domain::complex;
 use crate::domain::external::image_pool::ImageGet;
 use crate::domain::model::aggr::workset::{WorksetAggr, WorksetForm, WorksetUpdate};
 use crate::domain::query::Query;
@@ -46,9 +47,10 @@ where
 
     // Re-fetch to include team preload for the response.
     let aggr = WorksetQuery::get_by_id(harn, &base.id).await?;
-    let base_reply = WorksetBase::from_aggr(aggr, harn).await;
 
-    Ok(WorksetCreateReply { id: base_reply.id })
+    let base = WorksetBase::from_aggr(aggr, harn).await;
+
+    Ok(WorksetCreateReply { id: base.id })
 }
 
 /// Internal holder to keep the workset id alive while assembling the base.
@@ -92,13 +94,13 @@ pub async fn update<H>(
 where
     H: Query + Send + Sync,
 {
-    let input = WorksetUpdate {
+    let update = WorksetUpdate {
         id: workset_id,
         name: params.name,
         description: params.description,
     };
 
-    WorksetQuery::update(harn, &input).await?;
+    WorksetQuery::update(harn, &update).await?;
 
     Ok(())
 }
@@ -106,9 +108,16 @@ where
 #[instrument(err, skip(harn))]
 pub async fn delete<H>(harn: &H, workset_id: String) -> UseCaseResult<()>
 where
-    H: Query + Send + Sync,
+    H: Clone + Transactional + Send + Sync,
 {
-    WorksetQuery::delete(harn, &workset_id).await?;
+    Transactional::transaction_scoped(harn, move |query| {
+        async move {
+            complex::workset::delete_cascade(query, &workset_id).await?;
+            Ok(())
+        }
+        .boxed()
+    })
+    .await?;
 
     Ok(())
 }
@@ -117,8 +126,11 @@ where
 mod tests {
     // create_workset_allocates_index_and_persists(create)(positive): create should allocate the next workset index and persist the workset.
     // create_two_worksets_allocates_sequential_indices(create)(positive): two creates should allocate sequential indices.
+    // create_fails_for_nonexistent_team(create)(negative): create should fail when the team does not exist.
+    // get_by_id_returns_workset_base(get_by_id)(positive): get_by_id should return a WorksetBase for an existing workset.
     // get_by_id_fails_for_nonexistent(get_by_id)(negative): get_by_id should fail with expected error for missing workset.
     // list_returns_worksets_for_team(list)(positive): list should return worksets for the given team.
+    // list_empty_with_offset_past_end(list)(positive): list should return an empty vector when offset is past the last workset.
     // update_modifies_workset_fields(update)(positive): update should modify workset name and description.
     // update_fails_for_nonexistent(update)(negative): update should fail with expected error for missing workset.
     // delete_removes_workset(delete)(positive): delete should remove the workset.
@@ -139,7 +151,7 @@ mod tests {
             id: id.into(),
             name: "T".into(),
             description: "D".into(),
-            avatar_key: String::new(),
+            avatar_key: None,
             avatar_uploaded: false,
             avatar_version: 0,
             workset_next_index: 0,
@@ -334,5 +346,75 @@ mod tests {
         let harn = TestHarness::default();
         let err = delete(&harn, "no-such-workset".into()).await.err().unwrap();
         assert!(usecase_is_expected_argument(&err));
+    }
+
+    #[tokio::test]
+    async fn create_fails_for_nonexistent_team() {
+        let harn = TestHarness::default();
+
+        let err = create(
+            &harn,
+            WorksetCreateParams {
+                team_id: "no-such-team".into(),
+                name: "WS".into(),
+                description: None,
+            },
+        )
+        .await
+        .err()
+        .unwrap();
+
+        assert!(usecase_is_expected_argument(&err));
+    }
+
+    #[tokio::test]
+    async fn get_by_id_returns_workset_base() {
+        let harn = TestHarness::default();
+        harn.seed_team(make_test_team("team-1"));
+
+        let reply = create(
+            &harn,
+            WorksetCreateParams {
+                team_id: "team-1".into(),
+                name: "MyWS".into(),
+                description: None,
+            },
+        )
+        .await
+        .unwrap();
+
+        let base = get_by_id(&harn, &reply.id).await.unwrap();
+        assert_eq!(base.name, "MyWS");
+        assert_eq!(base.team_id, "team-1");
+        assert_eq!(base.index, 0);
+    }
+
+    #[tokio::test]
+    async fn list_empty_with_offset_past_end() {
+        let harn = TestHarness::default();
+        harn.seed_team(make_test_team("team-1"));
+
+        create(
+            &harn,
+            WorksetCreateParams {
+                team_id: "team-1".into(),
+                name: "WS".into(),
+                description: None,
+            },
+        )
+        .await
+        .unwrap();
+
+        let list = super::list(
+            &harn,
+            "team-1",
+            Page {
+                offset: 10,
+                limit: 5,
+            },
+        )
+        .await
+        .unwrap();
+        assert!(list.is_empty());
     }
 }

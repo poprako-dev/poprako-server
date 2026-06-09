@@ -4,6 +4,7 @@ use tracing::instrument;
 
 use poprako_util::i18n::trl;
 
+use crate::domain::complex;
 use crate::domain::complex::user::{hash_password, sign_token};
 use crate::domain::effect::{Effect as _, EffectSink};
 use crate::domain::external::image_pool::ImageGet;
@@ -24,7 +25,7 @@ use crate::domain::query::user::UserQuery;
 use crate::domain::query::user::UserQueryTransactional;
 use crate::domain::result::DomainError;
 use crate::usecase::data_object::user::{
-    MarkAvatarUploadedParams, ReserveAvatarParams, ReserveAvatarReply, SignInParams, SignInReply,
+    AvatarMarkUploadedParams, AvatarReserveParams, AvatarReserveReply, SignInParams, SignInReply,
     SignUpParams, SignUpReply, UserBase, UserInfoUpdateParams,
 };
 use crate::usecase::result::UseCaseResult;
@@ -158,15 +159,15 @@ where
 
     Transactional::transaction_scoped(harn, move |query| {
         async move {
-            let input = UserInfoUpdate {
+            let update = UserInfoUpdate {
                 id: user_id,
                 qid: params.qid,
                 nickname: params.nickname,
             };
 
-            UserQueryTransactional::update_info(query, &input).await?;
+            UserQueryTransactional::update_info(query, &update).await?;
 
-            MemberQueryTransactional::update_user_nickname(query, &input.id, &input.nickname)
+            MemberQueryTransactional::update_user_nickname(query, &update.id, &update.nickname)
                 .await?;
             Ok(())
         }
@@ -181,8 +182,8 @@ where
 pub async fn reserve_avatar<H>(
     harn: &H,
     token: UserToken,
-    params: ReserveAvatarParams,
-) -> UseCaseResult<ReserveAvatarReply>
+    params: AvatarReserveParams,
+) -> UseCaseResult<AvatarReserveReply>
 where
     H: Clone + Transactional + ImagePut + Send + Sync,
 {
@@ -218,7 +219,7 @@ where
         .await?
         .to_string();
 
-    Ok(ReserveAvatarReply {
+    Ok(AvatarReserveReply {
         put_url,
         image_version: reservation.image_version,
     })
@@ -228,7 +229,7 @@ where
 pub async fn mark_avatar_uploaded<H>(
     harn: &H,
     token: UserToken,
-    params: MarkAvatarUploadedParams,
+    params: AvatarMarkUploadedParams,
 ) -> UseCaseResult<()>
 where
     H: Clone + Transactional + Send + Sync,
@@ -270,6 +271,25 @@ where
     Ok(())
 }
 
+#[instrument(err, skip(harn))]
+pub async fn delete_user<H>(harn: &H, token: UserToken) -> UseCaseResult<()>
+where
+    H: Clone + Transactional + Send + Sync,
+{
+    let user_id = token.user_id;
+
+    Transactional::transaction_scoped(harn, move |query| {
+        async move {
+            complex::user::delete_cascade(query, &user_id).await?;
+            Ok(())
+        }
+        .boxed()
+    })
+    .await?;
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     // sign_up_user_creates_user_member_consumes_invitation_emits_event_and_signs_token(sign_up_user)(positive): sign up should succeed when the invitation matches the qid and code.
@@ -278,7 +298,7 @@ mod tests {
     // sign_up_user_rolls_back_when_member_create_fails(sign_up_user)(negative): sign up should roll back user creation when member creation fails.
     // sign_up_user_token_failure_happens_after_commit_and_event_publish(sign_up_user)(negative): token failures should occur after commit and event publication.
 
-    use super::sign_up;
+    use super::*;
 
     use time::OffsetDateTime;
 
@@ -463,18 +483,26 @@ mod user_use_cases_tests {
     // mark_avatar_uploaded_fails_for_nonexistent_user(mark_avatar_uploaded)(negative): mark_avatar_uploaded should fail for missing user.
     // touch_last_active_updates_timestamp(touch_last_active)(positive): touch_last_active should update the last active timestamp.
     // touch_last_active_fails_for_nonexistent_user(touch_last_active)(negative): touch_last_active should fail for missing user.
+    // delete_user_removes_user_and_credentials(delete_user)(positive): delete_user should remove the user and its credentials.
+    // delete_user_queues_avatar_cleanup_message_when_avatar_present(delete_user)(positive): delete_user should queue a local message to delete the avatar when one was reserved.
+    // delete_user_cascades_members(delete_user)(positive): delete_user should cascade-delete all member records belonging to the user.
+    // delete_user_fails_for_nonexistent_user(delete_user)(negative): delete_user should fail for missing user.
 
     use super::*;
 
     use time::OffsetDateTime;
 
     use crate::domain::local_message::message::{ImageLocalMessage, ImageResourceKind};
+    use crate::domain::model::aggr::team::TeamAggr;
     use crate::domain::model::aggr::user::UserCredential;
+    use crate::domain::model::value::role::RoleFlag;
     use crate::harness::tests::TestHarness;
     use crate::test_util::{usecase_is_expected_argument, usecase_is_unrecoverable};
+    use crate::usecase::data_object::member::MemberCreateParams;
     use crate::usecase::data_object::user::{
-        MarkAvatarUploadedParams, ReserveAvatarParams, SignInParams, UserInfoUpdateParams,
+        AvatarMarkUploadedParams, AvatarReserveParams, SignInParams, UserInfoUpdateParams,
     };
+    use crate::usecase::member;
 
     fn make_test_user(
         id: &str,
@@ -488,7 +516,7 @@ mod user_use_cases_tests {
             nickname: nickname.into(),
             qid: qid.into(),
             is_sadmin: false,
-            avatar_key: String::new(),
+            avatar_key: None,
             avatar_uploaded: false,
             avatar_version: 0,
             last_active_at: now,
@@ -502,8 +530,6 @@ mod user_use_cases_tests {
         };
         (user, credential)
     }
-
-    // ── login ──────────────────────────────────────────────────────────────
 
     #[tokio::test]
     async fn login_succeeds_with_correct_credentials() {
@@ -563,8 +589,6 @@ mod user_use_cases_tests {
         assert!(usecase_is_expected_argument(&err));
     }
 
-    // ── get_info ───────────────────────────────────────────────────────────
-
     #[tokio::test]
     async fn get_info_returns_user_base() {
         let harn = TestHarness::default();
@@ -586,8 +610,6 @@ mod user_use_cases_tests {
 
         assert!(usecase_is_expected_argument(&err));
     }
-
-    // ── update ─────────────────────────────────────────────────────────────
 
     #[tokio::test]
     async fn update_modifies_nickname_and_qid() {
@@ -637,8 +659,6 @@ mod user_use_cases_tests {
         assert!(usecase_is_expected_argument(&err));
     }
 
-    // ── reserve_avatar ────────────────────────────────────────────────────
-
     #[tokio::test]
     async fn reserve_avatar_generates_key_and_put_url() {
         let harn = TestHarness::default();
@@ -652,7 +672,7 @@ mod user_use_cases_tests {
         let reply = reserve_avatar(
             &harn,
             token,
-            ReserveAvatarParams {
+            AvatarReserveParams {
                 file_extension: "png".into(),
             },
         )
@@ -698,7 +718,7 @@ mod user_use_cases_tests {
         let err = reserve_avatar(
             &harn,
             token,
-            ReserveAvatarParams {
+            AvatarReserveParams {
                 file_extension: "png".into(),
             },
         )
@@ -708,8 +728,6 @@ mod user_use_cases_tests {
 
         assert!(usecase_is_expected_argument(&err));
     }
-
-    // ── mark_avatar_uploaded ───────────────────────────────────────────────
 
     #[tokio::test]
     async fn mark_avatar_uploaded_sets_flag() {
@@ -723,7 +741,7 @@ mod user_use_cases_tests {
         let reply = reserve_avatar(
             &harn,
             token.clone(),
-            ReserveAvatarParams {
+            AvatarReserveParams {
                 file_extension: "png".into(),
             },
         )
@@ -733,7 +751,7 @@ mod user_use_cases_tests {
         mark_avatar_uploaded(
             &harn,
             token,
-            MarkAvatarUploadedParams {
+            AvatarMarkUploadedParams {
                 image_version: reply.image_version,
             },
         )
@@ -751,15 +769,13 @@ mod user_use_cases_tests {
             user_id: "nonexistent".into(),
         };
 
-        let err = mark_avatar_uploaded(&harn, token, MarkAvatarUploadedParams { image_version: 1 })
+        let err = mark_avatar_uploaded(&harn, token, AvatarMarkUploadedParams { image_version: 1 })
             .await
             .err()
             .unwrap();
 
         assert!(usecase_is_expected_argument(&err));
     }
-
-    // ── touch_last_active ──────────────────────────────────────────────────
 
     #[tokio::test]
     async fn touch_last_active_updates_timestamp() {
@@ -782,6 +798,127 @@ mod user_use_cases_tests {
         let harn = TestHarness::default();
 
         let err = touch_last_active(&harn, "nonexistent").await.err().unwrap();
+
+        assert!(usecase_is_expected_argument(&err));
+    }
+
+    #[tokio::test]
+    async fn delete_user_removes_user_and_credentials() {
+        let harn = TestHarness::default();
+        let (user, credential) = make_test_user("user-1", "qid-1", "Alice", "pw");
+        harn.seed_user(user, credential);
+
+        let token = UserToken {
+            user_id: "user-1".into(),
+        };
+
+        delete_user(&harn, token).await.unwrap();
+
+        let snapshot = harn.snapshot();
+        assert!(snapshot.users.is_empty());
+        assert!(snapshot.credentials.is_empty());
+    }
+
+    #[tokio::test]
+    async fn delete_user_queues_avatar_cleanup_message_when_avatar_present() {
+        let harn = TestHarness::default();
+        let (user, credential) = make_test_user("user-1", "qid-1", "Alice", "pw");
+        harn.seed_user(user, credential);
+
+        let token = UserToken {
+            user_id: "user-1".into(),
+        };
+
+        // Reserve an avatar so the user has an avatar_key.
+        reserve_avatar(
+            &harn,
+            token.clone(),
+            AvatarReserveParams {
+                file_extension: "png".into(),
+            },
+        )
+        .await
+        .unwrap();
+
+        let before_messages = harn.snapshot().local_messages.len();
+
+        delete_user(&harn, token).await.unwrap();
+
+        let snapshot = harn.snapshot();
+        assert!(snapshot.users.is_empty());
+        assert!(snapshot.credentials.is_empty());
+
+        // One additional local message was queued for the avatar deletion.
+        assert_eq!(snapshot.local_messages.len(), before_messages + 1);
+        let new_msg = snapshot.local_messages.last().unwrap();
+        let message: ImageLocalMessage = serde_json::from_value(new_msg.payload.clone()).unwrap();
+        match message {
+            ImageLocalMessage::Delete { object_key, .. } => {
+                assert!(object_key.contains("user_avatar"));
+            }
+            other => panic!(
+                "expected Delete message, got {:?}",
+                std::mem::discriminant(&other)
+            ),
+        }
+    }
+
+    #[tokio::test]
+    async fn delete_user_cascades_members() {
+        let harn = TestHarness::default();
+        let (user, credential) = make_test_user("user-1", "qid-1", "Alice", "pw");
+        harn.seed_user(user, credential);
+
+        // Create a member record for the user in a team.
+        harn.seed_team(TeamAggr {
+            id: "team-1".into(),
+            name: "T".into(),
+            description: "D".into(),
+            avatar_key: None,
+            avatar_uploaded: false,
+            avatar_version: 0,
+            workset_next_index: 0,
+            created_at: time::OffsetDateTime::now_utc(),
+            updated_at: time::OffsetDateTime::now_utc(),
+        });
+        let member = member::create(
+            &harn,
+            MemberCreateParams {
+                user_id: "user-1".into(),
+                team_id: "team-1".into(),
+                role_mask: u32::from(RoleFlag::Admin),
+            },
+        )
+        .await
+        .unwrap();
+
+        let token = UserToken {
+            user_id: "user-1".into(),
+        };
+
+        delete_user(&harn, token).await.unwrap();
+
+        // User and credentials are gone.
+        let snapshot = harn.snapshot();
+        assert!(snapshot.users.is_empty());
+        assert!(snapshot.credentials.is_empty());
+
+        // Member record is cascade-deleted.
+        let err = member::get_by_id(&harn, &member.id)
+            .await
+            .err()
+            .unwrap();
+        assert!(usecase_is_expected_argument(&err));
+    }
+
+    #[tokio::test]
+    async fn delete_user_fails_for_nonexistent_user() {
+        let harn = TestHarness::default();
+        let token = UserToken {
+            user_id: "nonexistent".into(),
+        };
+
+        let err = delete_user(&harn, token).await.err().unwrap();
 
         assert!(usecase_is_expected_argument(&err));
     }

@@ -56,7 +56,7 @@ impl TeamQuery for MemoryMockQuery {
             id: form.id.clone(),
             name: form.name.clone(),
             description: form.description.clone(),
-            avatar_key: String::new(),
+            avatar_key: None,
             avatar_uploaded: false,
             avatar_version: 0,
             workset_next_index: 0,
@@ -69,17 +69,17 @@ impl TeamQuery for MemoryMockQuery {
         Ok(team)
     }
 
-    async fn update_info(&self, input: &TeamInfoUpdate) -> DomainResult<()> {
+    async fn update_info(&self, update: &TeamInfoUpdate) -> DomainResult<()> {
         let mut state = self.state.lock().unwrap();
 
         let team = state
             .teams
             .iter_mut()
-            .find(|t| t.id == input.id)
+            .find(|t| t.id == update.id)
             .ok_or_else(|| DomainError::expected_argument(trl("error-team-not-found")))?;
 
-        team.name = input.name.clone();
-        team.description = input.description.clone();
+        team.name = update.name.clone();
+        team.description = update.description.clone();
         team.updated_at = OffsetDateTime::now_utc();
 
         Ok(())
@@ -106,7 +106,7 @@ impl TeamQueryTransactional for MemoryMockQueryTransactional {
         Ok(allocated)
     }
 
-    async fn get_by_id(&mut self, id: &str) -> DomainResult<TeamAggr> {
+    async fn get_by_id_excluded(&mut self, id: &str) -> DomainResult<TeamAggr> {
         let state = self.state.lock().unwrap();
         state
             .teams
@@ -131,9 +131,9 @@ impl TeamQueryTransactional for MemoryMockQueryTransactional {
 
         let image_version = team.avatar_version + 1;
         let object_key = TeamAggr::generate_avatar_key(id, image_version, file_extension);
-        let previous_object_key = (!team.avatar_key.is_empty()).then_some(team.avatar_key.clone());
+        let previous_object_key = team.avatar_key.clone();
 
-        team.avatar_key = object_key.clone();
+        team.avatar_key = Some(object_key.clone());
         team.avatar_uploaded = false;
         team.avatar_version = image_version;
         team.updated_at = OffsetDateTime::now_utc();
@@ -170,7 +170,7 @@ impl TeamQueryTransactional for MemoryMockQueryTransactional {
         Ok(())
     }
 
-    async fn delete(&mut self, id: &str) -> DomainResult<Option<String>> {
+    async fn delete(&mut self, id: &str) -> DomainResult<()> {
         let mut state = self.state.lock().unwrap();
 
         let pos = state
@@ -178,9 +178,9 @@ impl TeamQueryTransactional for MemoryMockQueryTransactional {
             .iter()
             .position(|t| t.id == id)
             .ok_or_else(|| DomainError::expected_argument(trl("error-team-not-found")))?;
-        let team = state.teams.remove(pos);
+        state.teams.remove(pos);
 
-        Ok((!team.avatar_key.is_empty()).then_some(team.avatar_key))
+        Ok(())
     }
 }
 
@@ -198,6 +198,8 @@ mod tests {
     // update_changes_fields(TeamQuery::update)(positive): update should change name and description.
     // update_missing_returns_error(TeamQuery::update)(negative): updating a missing team should fail.
     // delete_removes_team(TeamQuery::delete)(positive): deleting a team should remove it from storage.
+    // delete_cascade_deletes_worksets(TeamQuery::delete)(positive): deleting a team should cascade-delete all worksets belonging to the team.
+    // delete_does_not_cascade_worksets_when_called_directly(TeamQuery::delete)(positive): calling delete directly before the cascade wrapper should NOT remove worksets — cascade is handled by complex::team::delete_cascade.
     // delete_missing_returns_error(TeamQuery::delete)(negative): deleting a missing team should fail.
     // increment_workset_next_index_returns_allocated(TeamQueryTransactional::increment_workset_next_index)(positive): each call should return the current value and increment it.
     // increment_workset_next_index_missing_returns_error(TeamQueryTransactional::increment_workset_next_index)(negative): incrementing a missing team should fail.
@@ -208,6 +210,7 @@ mod tests {
     use poprako_util::page::Page;
 
     use crate::domain::model::aggr::team::{TeamAggr, TeamForm, TeamInfoUpdate};
+    use crate::domain::model::aggr::workset::WorksetAggr;
     use crate::domain::query::Transactional;
     use crate::domain::query::team::{TeamQuery, TeamQueryTransactional};
     use crate::infra::query::memory_mock::MemoryMockQuery;
@@ -224,7 +227,7 @@ mod tests {
             id: id.into(),
             name: name.into(),
             description: "desc".into(),
-            avatar_key: String::new(),
+            avatar_key: None,
             avatar_uploaded: false,
             avatar_version: 0,
             workset_next_index: 0,
@@ -288,7 +291,7 @@ mod tests {
 
         let found = TeamQuery::get_by_id(&mock, "team-1").await.unwrap();
         assert_eq!(reservation.image_version, 1);
-        assert_eq!(found.avatar_key, "team_avatar/team-1-1.png");
+        assert_eq!(found.avatar_key, Some("team_avatar/team-1-1.png".into()));
         assert_eq!(found.avatar_version, 1);
         assert!(!found.avatar_uploaded);
     }
@@ -355,12 +358,12 @@ mod tests {
         let mock = MemoryMockQuery::new();
         mock.seed_team(make_team("team-1", "Old Name"));
 
-        let input = TeamInfoUpdate {
+        let update = TeamInfoUpdate {
             id: "team-1".into(),
             name: "New Name".into(),
             description: "New Desc".into(),
         };
-        TeamQuery::update_info(&mock, &input).await.unwrap();
+        TeamQuery::update_info(&mock, &update).await.unwrap();
 
         let found = TeamQuery::get_by_id(&mock, "team-1").await.unwrap();
         assert_eq!(found.name, "New Name");
@@ -371,12 +374,12 @@ mod tests {
     async fn update_missing_returns_error() {
         let mock = MemoryMockQuery::new();
 
-        let input = TeamInfoUpdate {
+        let update = TeamInfoUpdate {
             id: "nonexistent".into(),
             name: "X".into(),
             description: "Y".into(),
         };
-        let err = TeamQuery::update_info(&mock, &input).await.err().unwrap();
+        let err = TeamQuery::update_info(&mock, &update).await.err().unwrap();
 
         assert!(is_expected_argument(&err));
     }
@@ -398,6 +401,43 @@ mod tests {
 
         let snapshot = mock.snapshot();
         assert!(snapshot.teams.is_empty());
+    }
+
+    #[tokio::test]
+    async fn delete_does_not_cascade_worksets_when_called_directly() {
+        let mock = MemoryMockQuery::new();
+        mock.seed_team(make_team("team-1", "A"));
+
+        let n = now();
+        mock.seed_workset(WorksetAggr {
+            id: "ws-1".into(),
+            team_id: "team-1".into(),
+            team: None,
+            index: 0,
+            name: "WS1".into(),
+            description: None,
+            comic_count: 0,
+            comic_next_index: 0,
+            created_at: n,
+            updated_at: n,
+        });
+
+        mock.transaction_scoped(|txn| {
+            async move {
+                TeamQueryTransactional::delete(txn, "team-1").await?;
+                Ok(())
+            }
+            .boxed()
+        })
+        .await
+        .unwrap();
+
+        let snapshot = mock.snapshot();
+        // Team is gone.
+        assert!(snapshot.teams.is_empty());
+        // Worksets survive — cascade is handled by complex::team::delete_cascade.
+        assert_eq!(snapshot.worksets.len(), 1);
+        assert_eq!(snapshot.worksets[0].id, "ws-1");
     }
 
     #[tokio::test]

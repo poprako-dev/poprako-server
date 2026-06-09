@@ -270,7 +270,7 @@ impl<'c> LocalMessageQueryTransactional for RdbQueryTransactional<'c> {
         append(self.conn, form).await
     }
 
-    async fn mark(&mut self, marks: &[&LocalMessageMark]) -> DomainResult<()> {
+    async fn mark_transactional(&mut self, marks: &[&LocalMessageMark]) -> DomainResult<()> {
         mark(self.conn, marks).await
     }
 }

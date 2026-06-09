@@ -25,7 +25,7 @@ pub trait TeamQuery {
     async fn create(&self, form: &TeamForm) -> DomainResult<TeamAggr>;
 
     /// Updates a team's mutable fields (name, description) via PUT semantics.
-    async fn update_info(&self, input: &TeamInfoUpdate) -> DomainResult<()>;
+    async fn update_info(&self, update: &TeamInfoUpdate) -> DomainResult<()>;
 }
 
 /// Transactional persistence contract for [`TeamAggr`], used **only** inside
@@ -36,7 +36,7 @@ pub trait TeamQueryTransactional {
     async fn increment_workset_next_index(&mut self, id: &str) -> DomainResult<i32>;
 
     /// Returns the team inside a transaction, or an expected error if not found.
-    async fn get_by_id(&mut self, id: &str) -> DomainResult<TeamAggr>;
+    async fn get_by_id_excluded(&mut self, id: &str) -> DomainResult<TeamAggr>;
 
     /// Reserves the next avatar object key and clears the uploaded flag.
     async fn reserve_avatar(
@@ -48,6 +48,6 @@ pub trait TeamQueryTransactional {
     /// Marks the team's current avatar version as uploaded.
     async fn mark_avatar_uploaded(&mut self, id: &str, image_version: i64) -> DomainResult<()>;
 
-    /// Hard-deletes the team and returns its current avatar object key, if any.
-    async fn delete(&mut self, id: &str) -> DomainResult<Option<String>>;
+    /// Hard-deletes the team.
+    async fn delete(&mut self, id: &str) -> DomainResult<()>;
 }

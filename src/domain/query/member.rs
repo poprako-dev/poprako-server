@@ -59,4 +59,10 @@ pub trait MemberQueryTransactional {
 
     /// Updates the last active timestamp on all member rows belonging to the given user.
     async fn touch_last_active(&mut self, user_id: &str) -> DomainResult<()>;
+
+    /// Lists all members belonging to the given user.
+    async fn list_by_user_id_excluded(&mut self, user_id: &str) -> DomainResult<Vec<MemberAggr>>;
+
+    /// Hard-deletes the member with the given ID.
+    async fn delete_transactional(&mut self, id: &str) -> DomainResult<()>;
 }

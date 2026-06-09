@@ -63,32 +63,18 @@ impl WorksetQuery for MemoryMockQuery {
         Ok(total)
     }
 
-    async fn update(&self, input: &WorksetUpdate) -> DomainResult<()> {
+    async fn update(&self, update: &WorksetUpdate) -> DomainResult<()> {
         let mut state = self.state.lock().unwrap();
 
         let workset = state
             .worksets
             .iter_mut()
-            .find(|w| w.id == input.id)
+            .find(|w| w.id == update.id)
             .ok_or_else(|| DomainError::expected_argument(trl("error-workset-not-found")))?;
 
-        workset.name = input.name.clone();
-        workset.description = input.description.clone();
+        workset.name = update.name.clone();
+        workset.description = update.description.clone();
         workset.updated_at = OffsetDateTime::now_utc();
-
-        Ok(())
-    }
-
-    async fn delete(&self, id: &str) -> DomainResult<()> {
-        let mut state = self.state.lock().unwrap();
-
-        let pos = state
-            .worksets
-            .iter()
-            .position(|w| w.id == id)
-            .ok_or_else(|| DomainError::expected_argument(trl("error-workset-not-found")))?;
-
-        state.worksets.remove(pos);
 
         Ok(())
     }
@@ -163,6 +149,31 @@ impl WorksetQueryTransactional for MemoryMockQueryTransactional {
 
         Ok(allocated)
     }
+
+    async fn delete(&mut self, id: &str) -> DomainResult<()> {
+        let mut state = self.state.lock().unwrap();
+
+        let pos = state
+            .worksets
+            .iter()
+            .position(|w| w.id == id)
+            .ok_or_else(|| DomainError::expected_argument(trl("error-workset-not-found")))?;
+
+        state.worksets.remove(pos);
+
+        Ok(())
+    }
+
+    async fn list_by_team_id_excluded(&mut self, team_id: &str) -> DomainResult<Vec<WorksetAggr>> {
+        let state = self.state.lock().unwrap();
+        let worksets: Vec<WorksetAggr> = state
+            .worksets
+            .iter()
+            .filter(|w| w.team_id == team_id)
+            .cloned()
+            .collect();
+        Ok(worksets)
+    }
 }
 
 // ── Tests ──────────────────────────────────────────────────────────────────
@@ -207,27 +218,16 @@ impl WorksetQuery for MemoryMockQueryTransactional {
             .count() as i64)
     }
 
-    async fn update(&self, input: &WorksetUpdate) -> DomainResult<()> {
+    async fn update(&self, update: &WorksetUpdate) -> DomainResult<()> {
         let mut state = self.state.lock().unwrap();
         let workset = state
             .worksets
             .iter_mut()
-            .find(|w| w.id == input.id)
+            .find(|w| w.id == update.id)
             .ok_or_else(|| DomainError::expected_argument(trl("error-workset-not-found")))?;
-        workset.name = input.name.clone();
-        workset.description = input.description.clone();
+        workset.name = update.name.clone();
+        workset.description = update.description.clone();
         workset.updated_at = OffsetDateTime::now_utc();
-        Ok(())
-    }
-
-    async fn delete(&self, id: &str) -> DomainResult<()> {
-        let mut state = self.state.lock().unwrap();
-        let pos = state
-            .worksets
-            .iter()
-            .position(|w| w.id == id)
-            .ok_or_else(|| DomainError::expected_argument(trl("error-workset-not-found")))?;
-        state.worksets.remove(pos);
         Ok(())
     }
 }
@@ -433,12 +433,12 @@ mod tests {
 
         mock.transaction_scoped(|txn| {
             async move {
-                let input = WorksetUpdate {
+                let update = WorksetUpdate {
                     id: "workset-1".into(),
                     name: "New Name".into(),
                     description: Some("New Desc".into()),
                 };
-                WorksetQuery::update(txn, &input).await
+                WorksetQuery::update(txn, &update).await
             }
             .boxed()
         })
@@ -457,12 +457,12 @@ mod tests {
         let err = mock
             .transaction_scoped(|txn| {
                 async move {
-                    let input = WorksetUpdate {
+                    let update = WorksetUpdate {
                         id: "nonexistent".into(),
                         name: "X".into(),
                         description: None,
                     };
-                    WorksetQuery::update(txn, &input).await
+                    WorksetQuery::update(txn, &update).await
                 }
                 .boxed()
             })
@@ -582,7 +582,7 @@ mod tests {
         mock.seed_workset(make_workset("workset-1", "team-1", 0, "Test"));
 
         mock.transaction_scoped(|txn| {
-            async move { WorksetQuery::delete(txn, "workset-1").await }.boxed()
+            async move { WorksetQueryTransactional::delete(txn, "workset-1").await }.boxed()
         })
         .await
         .unwrap();
@@ -597,7 +597,7 @@ mod tests {
 
         let err = mock
             .transaction_scoped(|txn| {
-                async move { WorksetQuery::delete(txn, "nonexistent").await }.boxed()
+                async move { WorksetQueryTransactional::delete(txn, "nonexistent").await }.boxed()
             })
             .await
             .err()

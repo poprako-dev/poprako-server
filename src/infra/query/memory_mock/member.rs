@@ -203,6 +203,28 @@ impl MemberQueryTransactional for MemoryMockQueryTransactional {
 
         Ok(())
     }
+
+    async fn list_by_user_id_excluded(&mut self, user_id: &str) -> DomainResult<Vec<MemberAggr>> {
+        let state = self.state.lock().unwrap();
+        let members: Vec<MemberAggr> = state
+            .members
+            .iter()
+            .filter(|m| m.user_id == user_id)
+            .cloned()
+            .collect();
+        Ok(members)
+    }
+
+    async fn delete_transactional(&mut self, id: &str) -> DomainResult<()> {
+        let mut state = self.state.lock().unwrap();
+        let pos = state
+            .members
+            .iter()
+            .position(|m| m.id == id)
+            .ok_or_else(|| DomainError::expected_argument(trl("error-member-not-found")))?;
+        state.members.remove(pos);
+        Ok(())
+    }
 }
 
 // ── Tests ──────────────────────────────────────────────────────────────────

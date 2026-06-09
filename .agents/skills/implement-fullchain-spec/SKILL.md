@@ -493,7 +493,7 @@ impl ImagePut for TestHarness {
 9. **API handler** — create/update handlers.  Apply rule §9.1–9.2.
 10. **Router** — register routes.  Apply rule §10.1.
 11. **TestHarness** — forward new traits.  Apply rule §11.1.
-12. **Use case tests** — add tests in the usecase file (same module).
+12. **Use case tests** — add tests in the usecase file (same module).  Follow the [`test-spec`](../test-spec/SKILL.md) § Usecase test-case minimums: at least 1 positive and 1 negative test per `pub` usecase function. Add more tests for functions with filtering parameters or multiple distinct error paths.
 13. **`cargo check` + `cargo test`** — verify.
 
 ---
@@ -515,5 +515,6 @@ impl ImagePut for TestHarness {
 - [ ] **API handler**: names match usecase names (§9.2)
 - [ ] **Router**: handler references match handler names (§10.1)
 - [ ] **TestHarness**: forwards every trait the usecase bounds need (§11.1)
+- [ ] **Usecase tests**: ≥1 positive + ≥1 negative per `pub` function; more for filtered/complex functions (see [test-spec](../test-spec/SKILL.md))
 - [ ] **`cargo check`** compiles clean
 - [ ] **`cargo test`** all tests pass

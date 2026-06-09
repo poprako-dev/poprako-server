@@ -1,6 +1,6 @@
 ---
 name: test-spec
-description: "Test module conventions: use super::* first, test-case descriptions before imports, format // name(target)(positive|negative): desc, no comments above #[test]."
+description: "Test module conventions: use super::* first, test-case descriptions before imports, format // name(target)(positive|negative): desc, no comments above #[test], ≥1 positive + ≥1 negative per pub usecase function, more tests for complex functions."
 ---
 
 # Poprako-r Test Specification
@@ -39,6 +39,40 @@ functions or modules:
 
 Keep helpers above the test functions and below the module-level description
 list and imports.
+
+## Usecase test-case minimums
+
+Every `pub` function in `src/usecase/` must have **at least** the following
+number of test cases in the corresponding `#[cfg(test)] mod tests` block:
+
+| Category  | Minimum | Purpose                                         |
+|-----------|---------|-------------------------------------------------|
+| positive  | 1       | Verify the happy path succeeds without error.   |
+| negative  | 1       | Verify at least one failure propagates correctly. |
+
+These are **minimums** — every `pub` usecase function must have at least one
+positive and one negative test, even if the function is a thin wrapper around
+a single query.
+
+### When to add more tests
+
+**More positive tests** are required when:
+
+- The function accepts parameters that produce **observably different
+  outcomes** in the response or side effects (e.g., `list` with keyword vs.
+  without, different `RoleFlag` filters, pagination edge cases).
+- The function has **multiple semantically distinct happy-path branches**
+  (e.g., `reserve_avatar` producing a delete-message vs. not when a previous
+  avatar exists).
+
+**More negative tests** are required **for each genuinely distinct error
+path** the function can traverse:
+
+- Not-found error vs. conflict error vs. authentication error vs.
+  unrecoverable error — each counts as one distinct path.
+- Do **not** write multiple negative tests that all hit the same error
+  variant with only trivial input variations.  If the function only has one
+  error path (e.g., "not found"), one negative test is sufficient.
 
 ## Import style
 

@@ -108,7 +108,7 @@ impl From<UserRow> for UserAggr {
             nickname: v.f_nickname,
             qid: v.f_qid,
             is_sadmin: v.f_is_sadmin,
-            avatar_key: v.f_avatar_key.unwrap_or_default(),
+            avatar_key: v.f_avatar_key,
             avatar_uploaded: v.f_avatar_uploaded,
             avatar_version: v.f_avatar_version,
             last_active_at: v.f_last_active_at,

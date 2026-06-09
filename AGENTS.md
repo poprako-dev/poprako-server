@@ -67,6 +67,7 @@ corresponding source paths.
 
 ## Conventions
 
+- **Learn conventions from existing layer code**: Before modifying or adding code in a layer (e.g., `src/usecase/`, `src/infra/query/`, `src/api/http/handler/`, `src/domain/`), first **read the existing implementations in the same layer** to understand the actual conventions used — import style, path qualification, error handling patterns, calling conventions, and struct/function idioms. The existing code is the source of truth for how that layer should be written. Do not rely solely on skill files or general expectations.
 - **English-only comments**: All comments (line `//`, block `/* */`, and doc `///` / `//!`) must be written in English. No other language is permitted in source code comments.
 - **No Go references in comments**: Source code comments must not reference Go counterparts (e.g., file paths, function names, or patterns from `references/poprako-s/`). Comments describe what the Rust code does, not how the Go version does it.
 - **Never modify user-authored changes**: The user may have already modified files or is in the process of modifying them. Never overwrite, revert, or undo changes that the user has made. If a change the user made conflicts with a convention or new requirement, flag it explicitly and ask before modifying. Never use `git checkout` or `git reset` on files that the user has edited in the working tree.

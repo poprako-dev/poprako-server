@@ -88,18 +88,18 @@ pub async fn create(conn: &mut AsyncPgConnection, form: &UserForm) -> DomainResu
     Ok(row.into())
 }
 
-#[instrument(err, skip(conn, input), level = Level::DEBUG)]
+#[instrument(err, skip(conn, update), level = Level::DEBUG)]
 pub async fn update_user(
     conn: &mut AsyncPgConnection,
-    input: &UserInfoUpdate,
+    update: &UserInfoUpdate,
 ) -> DomainResult<UserAggr> {
     let now = OffsetDateTime::now_utc();
 
     let changes = UserAspect::new(now)
-        .nickname(&input.nickname)
-        .qid(&input.qid);
+        .nickname(&update.nickname)
+        .qid(&update.qid);
 
-    let affected = diesel::update(t_user.filter(f_id.eq(&input.id)))
+    let affected = diesel::update(t_user.filter(f_id.eq(&update.id)))
         .set(&changes)
         .execute(conn)
         .await?;
@@ -109,7 +109,7 @@ pub async fn update_user(
     }
 
     let row: UserRow = t_user
-        .filter(f_id.eq(&input.id))
+        .filter(f_id.eq(&update.id))
         .select(UserRow::as_select())
         .first(conn)
         .await?;
@@ -141,7 +141,7 @@ pub async fn reserve_avatar(
     let now = OffsetDateTime::now_utc();
     let image_version = user.avatar_version + 1;
     let object_key = UserAggr::generate_avatar_key(id, image_version, file_extension);
-    let previous_object_key = (!user.avatar_key.is_empty()).then_some(user.avatar_key);
+    let previous_object_key = user.avatar_key.clone();
 
     let changes = UserAspect::new(now)
         .avatar_key(&object_key)
@@ -248,8 +248,8 @@ impl<'c> UserQueryTransactional for RdbQueryTransactional<'c> {
         create(self.conn, form).await
     }
 
-    async fn update_info(&mut self, input: &UserInfoUpdate) -> DomainResult<UserAggr> {
-        update_user(self.conn, input).await
+    async fn update_info(&mut self, update: &UserInfoUpdate) -> DomainResult<UserAggr> {
+        update_user(self.conn, update).await
     }
 
     #[instrument(err, skip(self), level = Level::DEBUG)]
@@ -257,7 +257,7 @@ impl<'c> UserQueryTransactional for RdbQueryTransactional<'c> {
         touch_last_active(self.conn, id).await
     }
 
-    async fn get_by_id(&mut self, id: &str) -> DomainResult<UserAggr> {
+    async fn get_by_id_excluded(&mut self, id: &str) -> DomainResult<UserAggr> {
         get_by_id_ex(self.conn, id).await
     }
 
@@ -272,4 +272,25 @@ impl<'c> UserQueryTransactional for RdbQueryTransactional<'c> {
     async fn mark_avatar_uploaded(&mut self, id: &str, image_version: i64) -> DomainResult<()> {
         mark_avatar_uploaded(self.conn, id, image_version).await
     }
+
+    async fn delete(&mut self, id: &str) -> DomainResult<()> {
+        delete_user(self.conn, id).await
+    }
 }
+
+#[instrument(err, skip(conn), level = Level::DEBUG)]
+pub async fn delete_user(
+    conn: &mut AsyncPgConnection,
+    id: &str,
+) -> DomainResult<()> {
+    let affected = diesel::delete(t_user.filter(f_id.eq(id)))
+        .execute(conn)
+        .await?;
+
+    if affected == 0 {
+        return Err(DomainError::expected_argument(trl("error-user-not-found")));
+    }
+
+    Ok(())
+}
+

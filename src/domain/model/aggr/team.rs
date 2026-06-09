@@ -9,7 +9,7 @@ pub struct TeamAggr {
     pub name: String,
     pub description: String,
 
-    pub avatar_key: String,
+    pub avatar_key: Option<String>,
     pub avatar_uploaded: bool,
     pub avatar_version: i64,
 

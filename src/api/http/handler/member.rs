@@ -102,7 +102,7 @@ pub struct MemberDetailQuery {
     )
 )]
 #[instrument(err, skip(harn))]
-pub async fn get_detail(
+pub async fn get_by_user_and_team(
     State(harn): State<Harness>,
     Query(params): Query<MemberDetailQuery>,
 ) -> HttpResult<MemberBase> {

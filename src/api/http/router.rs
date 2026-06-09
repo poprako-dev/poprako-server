@@ -34,7 +34,7 @@ pub fn new(harn: Harness) -> Router<Harness> {
         .route("/teams", get(team::list).post(team::create))
         .route(
             "/teams/{team_id}",
-            get(team::get_info).put(team::update).delete(team::delete),
+            get(team::get_info).put(team::update_info).delete(team::delete),
         )
         .route(
             "/teams/{team_id}/avatar/reserve",
@@ -45,7 +45,7 @@ pub fn new(harn: Harness) -> Router<Harness> {
             post(team::mark_avatar_uploaded),
         )
         .route("/members", get(member::list).post(member::create))
-        .route("/members/detail", get(member::get_detail))
+        .route("/members/detail", get(member::get_by_user_and_team))
         .route(
             "/members/{member_id}",
             put(member::update_roles).delete(member::delete),
