@@ -12,6 +12,10 @@ error-stale-avatar-upload = Avatar upload version is stale
 error-team-not-found = Team not found
 error-workset-not-found = Workset not found
 error-member-not-found = Member not found
+error-team-member-required = You are not a member of this team
+error-team-admin-required = You are not an admin of this team
+error-sadmin-required = Only super admins can perform this operation
+error-already-team-member = You are already a member of this team
 error-wrong-credentials = User does not exist or password is incorrect
 
 mail-invitation-used-title = Your Invitation Code Has Been Used

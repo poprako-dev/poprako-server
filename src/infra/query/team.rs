@@ -151,7 +151,7 @@ pub async fn mark_avatar_uploaded(
     id: &str,
     image_version: i64,
 ) -> DomainResult<()> {
-    let team = get_by_id_ex(conn, id).await?;
+    let team = get_by_id(conn, id).await?;
     if team.avatar_version != image_version {
         return Err(DomainError::expected_argument(trl(
             "error-stale-avatar-upload",
@@ -238,6 +238,11 @@ impl TeamQuery for RdbQuery {
     async fn update_info(&self, params: &TeamInfoUpdate) -> DomainResult<()> {
         submit_query!(self.pool, update, params)
     }
+
+    #[instrument(err, skip(self), level = Level::DEBUG)]
+    async fn mark_avatar_uploaded(&self, id: &str, image_version: i64) -> DomainResult<()> {
+        submit_query!(self.pool, mark_avatar_uploaded, id, image_version)
+    }
 }
 
 #[async_trait]
@@ -258,11 +263,11 @@ impl<'c> TeamQueryTransactional for RdbQueryTransactional<'c> {
         reserve_avatar(self.conn, id, file_extension).await
     }
 
-    async fn mark_avatar_uploaded(&mut self, id: &str, image_version: i64) -> DomainResult<()> {
-        mark_avatar_uploaded(self.conn, id, image_version).await
-    }
-
     async fn delete(&mut self, id: &str) -> DomainResult<()> {
         delete(self.conn, id).await
+    }
+
+    async fn mark_avatar_uploaded(&mut self, id: &str, image_version: i64) -> DomainResult<()> {
+        mark_avatar_uploaded(self.conn, id, image_version).await
     }
 }

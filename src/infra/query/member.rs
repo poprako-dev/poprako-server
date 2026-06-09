@@ -115,6 +115,58 @@ pub async fn exist_by_user_and_team_id(
     Ok(exists_result)
 }
 
+#[instrument(err, skip(conn), level = Level::DEBUG)]
+pub async fn list_by_user_id(
+    conn: &mut AsyncPgConnection,
+    user_id: &str,
+    page: Page,
+) -> DomainResult<Vec<MemberAggr>> {
+    let rows: Vec<MemberRow> = t_member
+        .filter(f_user_id.eq(user_id))
+        .offset(page.offset as i64)
+        .limit(page.limit as i64)
+        .select(MemberRow::as_select())
+        .load(conn)
+        .await?;
+
+    Ok(rows.into_iter().map(|r| r.into()).collect())
+}
+
+#[instrument(err, skip(conn), level = Level::DEBUG)]
+pub async fn get_by_id_excluded(
+    conn: &mut AsyncPgConnection,
+    id: &str,
+) -> DomainResult<MemberAggr> {
+    let row: MemberRow = t_member
+        .filter(f_id.eq(&id))
+        .select(MemberRow::as_select())
+        .for_update()
+        .first(conn)
+        .await
+        .optional()?
+        .ok_or_else(|| DomainError::expected_argument(trl("error-member-not-found")))?;
+
+    Ok(row.into())
+}
+
+#[instrument(err, skip(conn), level = Level::DEBUG)]
+pub async fn get_by_user_and_team_id_excluded(
+    conn: &mut AsyncPgConnection,
+    user_id: &str,
+    team_id: &str,
+) -> DomainResult<MemberAggr> {
+    let row: MemberRow = t_member
+        .filter(f_user_id.eq(user_id).and(f_team_id.eq(team_id)))
+        .select(MemberRow::as_select())
+        .for_update()
+        .first(conn)
+        .await
+        .optional()?
+        .ok_or_else(|| DomainError::expected_argument(trl("error-member-not-found")))?;
+
+    Ok(row.into())
+}
+
 #[instrument(err, skip(conn, form), level = Level::DEBUG)]
 pub async fn create(conn: &mut AsyncPgConnection, form: &MemberForm) -> DomainResult<MemberAggr> {
     let now = OffsetDateTime::now_utc();
@@ -185,8 +237,23 @@ pub async fn touch_last_active(conn: &mut AsyncPgConnection, user_id: &str) -> D
     Ok(())
 }
 
+#[instrument(err, skip(conn), level = Level::DEBUG)]
+pub async fn list_by_user_id_excluded(
+    conn: &mut AsyncPgConnection,
+    user_id: &str,
+) -> DomainResult<Vec<MemberAggr>> {
+    let rows: Vec<MemberRow> = t_member
+        .filter(f_user_id.eq(user_id))
+        .for_update()
+        .select(MemberRow::as_select())
+        .load(conn)
+        .await?;
+
+    Ok(rows.into_iter().map(|r| r.into()).collect())
+}
+
 #[instrument(err, skip(conn, update_data), level = Level::DEBUG)]
-pub async fn update_roles(
+pub async fn update_roles_fn(
     conn: &mut AsyncPgConnection,
     update_data: &MemberRoleUpdate,
 ) -> DomainResult<()> {
@@ -220,21 +287,6 @@ pub async fn delete_member(conn: &mut AsyncPgConnection, member_id: &str) -> Dom
         .await?;
 
     Ok(())
-}
-
-#[instrument(err, skip(conn), level = Level::DEBUG)]
-pub async fn list_by_user_id_excluded(
-    conn: &mut AsyncPgConnection,
-    user_id: &str,
-) -> DomainResult<Vec<MemberAggr>> {
-    let rows: Vec<MemberRow> = t_member
-        .filter(f_user_id.eq(user_id))
-        .for_update()
-        .select(MemberRow::as_select())
-        .load(conn)
-        .await?;
-
-    Ok(rows.into_iter().map(|r| r.into()).collect())
 }
 
 // ── impls ──────────────────────────────────────────────────────────────────
@@ -271,14 +323,9 @@ impl MemberQuery for RdbQuery {
         submit_query!(self.pool, exist_by_user_and_team_id, user_id, team_id)
     }
 
-    #[instrument(err, skip(self, update_data), level = Level::DEBUG)]
-    async fn update_roles(&self, update_data: &MemberRoleUpdate) -> DomainResult<()> {
-        submit_query!(self.pool, update_roles, update_data)
-    }
-
     #[instrument(err, skip(self), level = Level::DEBUG)]
-    async fn delete(&self, id: &str) -> DomainResult<()> {
-        submit_query!(self.pool, delete_member, id)
+    async fn list_by_user_id(&self, user_id: &str, page: Page) -> DomainResult<Vec<MemberAggr>> {
+        submit_query!(self.pool, list_by_user_id, user_id, page)
     }
 }
 
@@ -286,6 +333,18 @@ impl MemberQuery for RdbQuery {
 impl<'c> MemberQueryTransactional for RdbQueryTransactional<'c> {
     async fn create(&mut self, form: &MemberForm) -> DomainResult<MemberAggr> {
         create(self.conn, form).await
+    }
+
+    async fn get_by_id_excluded(&mut self, id: &str) -> DomainResult<MemberAggr> {
+        get_by_id_excluded(self.conn, id).await
+    }
+
+    async fn get_by_user_and_team_id_excluded(
+        &mut self,
+        user_id: &str,
+        team_id: &str,
+    ) -> DomainResult<MemberAggr> {
+        get_by_user_and_team_id_excluded(self.conn, user_id, team_id).await
     }
 
     async fn update_user_nickname(&mut self, user_id: &str, nickname: &str) -> DomainResult<()> {
@@ -300,7 +359,11 @@ impl<'c> MemberQueryTransactional for RdbQueryTransactional<'c> {
         list_by_user_id_excluded(self.conn, user_id).await
     }
 
-    async fn delete_transactional(&mut self, id: &str) -> DomainResult<()> {
+    async fn update_roles(&mut self, update_data: &MemberRoleUpdate) -> DomainResult<()> {
+        update_roles_fn(self.conn, update_data).await
+    }
+
+    async fn delete(&mut self, id: &str) -> DomainResult<()> {
         delete_member(self.conn, id).await
     }
 }

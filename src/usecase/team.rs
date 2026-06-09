@@ -49,7 +49,7 @@ where
 }
 
 #[instrument(err, skip(harn))]
-pub async fn list<H>(harn: &H, page: Page) -> UseCaseResult<Vec<TeamBase>>
+pub async fn list_infos<H>(harn: &H, page: Page) -> UseCaseResult<Vec<TeamBase>>
 where
     H: Query + ImageGet + Send + Sync,
 {
@@ -98,9 +98,9 @@ where
                 TeamQueryTransactional::reserve_avatar(query, &team_id, &params.file_extension)
                     .await?;
 
-            if let Some(previous_object_key) = reservation.previous_object_key.clone() {
-                let message =
-                    ImageLocalMessage::delete(previous_object_key).into_form(Duration::seconds(0));
+            if let Some(previous_object_key) = &reservation.previous_object_key {
+                let message = ImageLocalMessage::delete(previous_object_key.clone())
+                    .into_form(Duration::seconds(0));
 
                 LocalMessageQueryTransactional::append(query, &message).await?;
             }
@@ -138,18 +138,9 @@ pub async fn mark_avatar_uploaded<H>(
     params: TeamAvatarMarkUploadedParams,
 ) -> UseCaseResult<()>
 where
-    H: Clone + Transactional + Send + Sync,
+    H: Query + Send + Sync,
 {
-    Transactional::transaction_scoped(harn, move |query| {
-        async move {
-            TeamQueryTransactional::mark_avatar_uploaded(query, &team_id, params.image_version)
-                .await?;
-
-            Ok(())
-        }
-        .boxed()
-    })
-    .await?;
+    TeamQuery::mark_avatar_uploaded(harn, &team_id, params.image_version).await?;
 
     Ok(())
 }
@@ -256,7 +247,7 @@ mod tests {
         harn.seed_team(make_test_team("team-a"));
         harn.seed_team(make_test_team("team-b"));
 
-        let teams = list(
+        let teams = list_infos(
             &harn,
             Page {
                 offset: 0,
@@ -572,7 +563,7 @@ mod tests {
         let harn = TestHarness::default();
         harn.seed_team(make_test_team("team-1"));
 
-        let teams = list(
+        let teams = list_infos(
             &harn,
             Page {
                 offset: 10,

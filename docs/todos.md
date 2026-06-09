@@ -1,4 +1,4 @@
 # TODO
 
 - [ ] remove pub(crate)
-- [ ] style checker: clone, qualify
+- [ ] style checker: code structure, clone, qualify

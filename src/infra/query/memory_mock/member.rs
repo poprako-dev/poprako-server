@@ -87,44 +87,29 @@ impl MemberQuery for MemoryMockQuery {
             .any(|m| m.user_id == user_id && m.team_id == team_id))
     }
 
-    async fn update_roles(&self, update_data: &MemberRoleUpdate) -> DomainResult<()> {
-        let mut state = self.state.lock().unwrap();
+    async fn list_by_user_id(
+        &self,
+        user_id: &str,
+        page: Page,
+    ) -> DomainResult<Vec<MemberAggr>> {
+        let state = self.state.lock().unwrap();
 
-        let member = state
-            .members
-            .iter_mut()
-            .find(|m| m.id == update_data.id)
-            .ok_or_else(|| DomainError::expected_argument(trl("error-member-not-found")))?;
-
-        let now = OffsetDateTime::now_utc();
-        let roles = update_data.roles;
-
-        member.assigned_raw_provider_at = roles.has_role(RoleFlag::RawProvider).then_some(now);
-        member.assigned_translator_at = roles.has_role(RoleFlag::Translator).then_some(now);
-        member.assigned_proofreader_at = roles.has_role(RoleFlag::Proofreader).then_some(now);
-        member.assigned_typesetter_at = roles.has_role(RoleFlag::Typesetter).then_some(now);
-        member.assigned_redrawer_at = roles.has_role(RoleFlag::Redrawer).then_some(now);
-        member.assigned_reviewer_at = roles.has_role(RoleFlag::Reviewer).then_some(now);
-        member.assigned_publisher_at = roles.has_role(RoleFlag::Publisher).then_some(now);
-        member.assigned_admin_at = roles.has_role(RoleFlag::Admin).then_some(now);
-        member.assigned_assistant_at = roles.has_role(RoleFlag::Assistant).then_some(now);
-        member.updated_at = now;
-
-        Ok(())
-    }
-
-    async fn delete(&self, id: &str) -> DomainResult<()> {
-        let mut state = self.state.lock().unwrap();
-
-        let pos = state
+        let filtered: Vec<MemberAggr> = state
             .members
             .iter()
-            .position(|m| m.id == id)
-            .ok_or_else(|| DomainError::expected_argument(trl("error-member-not-found")))?;
+            .filter(|m| m.user_id == user_id)
+            .cloned()
+            .collect();
 
-        state.members.remove(pos);
+        let skip = page.offset;
+        let take = page.limit;
 
-        Ok(())
+        if skip >= filtered.len() {
+            return Ok(Vec::new());
+        }
+
+        let end = std::cmp::min(skip + take, filtered.len());
+        Ok(filtered[skip..end].to_vec())
     }
 }
 
@@ -176,6 +161,30 @@ impl MemberQueryTransactional for MemoryMockQueryTransactional {
         Ok(member)
     }
 
+    async fn get_by_id_excluded(&mut self, id: &str) -> DomainResult<MemberAggr> {
+        let state = self.state.lock().unwrap();
+        state
+            .members
+            .iter()
+            .find(|m| m.id == id)
+            .cloned()
+            .ok_or_else(|| DomainError::expected_argument(trl("error-member-not-found")))
+    }
+
+    async fn get_by_user_and_team_id_excluded(
+        &mut self,
+        user_id: &str,
+        team_id: &str,
+    ) -> DomainResult<MemberAggr> {
+        let state = self.state.lock().unwrap();
+        state
+            .members
+            .iter()
+            .find(|m| m.user_id == user_id && m.team_id == team_id)
+            .cloned()
+            .ok_or_else(|| DomainError::expected_argument(trl("error-member-not-found")))
+    }
+
     async fn update_user_nickname(&mut self, user_id: &str, nickname: &str) -> DomainResult<()> {
         let mut state = self.state.lock().unwrap();
         let now = OffsetDateTime::now_utc();
@@ -215,7 +224,33 @@ impl MemberQueryTransactional for MemoryMockQueryTransactional {
         Ok(members)
     }
 
-    async fn delete_transactional(&mut self, id: &str) -> DomainResult<()> {
+    async fn update_roles(&mut self, update_data: &MemberRoleUpdate) -> DomainResult<()> {
+        let mut state = self.state.lock().unwrap();
+
+        let member = state
+            .members
+            .iter_mut()
+            .find(|m| m.id == update_data.id)
+            .ok_or_else(|| DomainError::expected_argument(trl("error-member-not-found")))?;
+
+        let now = OffsetDateTime::now_utc();
+        let roles = update_data.roles;
+
+        member.assigned_raw_provider_at = roles.has_role(RoleFlag::RawProvider).then_some(now);
+        member.assigned_translator_at = roles.has_role(RoleFlag::Translator).then_some(now);
+        member.assigned_proofreader_at = roles.has_role(RoleFlag::Proofreader).then_some(now);
+        member.assigned_typesetter_at = roles.has_role(RoleFlag::Typesetter).then_some(now);
+        member.assigned_redrawer_at = roles.has_role(RoleFlag::Redrawer).then_some(now);
+        member.assigned_reviewer_at = roles.has_role(RoleFlag::Reviewer).then_some(now);
+        member.assigned_publisher_at = roles.has_role(RoleFlag::Publisher).then_some(now);
+        member.assigned_admin_at = roles.has_role(RoleFlag::Admin).then_some(now);
+        member.assigned_assistant_at = roles.has_role(RoleFlag::Assistant).then_some(now);
+        member.updated_at = now;
+
+        Ok(())
+    }
+
+    async fn delete(&mut self, id: &str) -> DomainResult<()> {
         let mut state = self.state.lock().unwrap();
         let pos = state
             .members
@@ -229,109 +264,6 @@ impl MemberQueryTransactional for MemoryMockQueryTransactional {
 
 // ── Tests ──────────────────────────────────────────────────────────────────
 
-// ── MemberQuery forwarding on transactional handle ─────────────────────────
-//
-// Tests inside transaction_scoped receive a MemoryMockQueryTransactional handle.
-// Since update_roles and delete live on MemberQuery (&self), the transactional
-// handle needs a forwarding impl that locks the shared state directly.
-
-#[async_trait]
-impl MemberQuery for MemoryMockQueryTransactional {
-    async fn get_by_id(&self, id: &str) -> DomainResult<MemberAggr> {
-        let state = self.state.lock().unwrap();
-        state
-            .members
-            .iter()
-            .find(|m| m.id == id)
-            .cloned()
-            .ok_or_else(|| DomainError::expected_argument(trl("error-member-not-found")))
-    }
-
-    async fn get_by_user_and_team_id(
-        &self,
-        user_id: &str,
-        team_id: &str,
-    ) -> DomainResult<MemberAggr> {
-        let state = self.state.lock().unwrap();
-        state
-            .members
-            .iter()
-            .find(|m| m.user_id == user_id && m.team_id == team_id)
-            .cloned()
-            .ok_or_else(|| DomainError::expected_argument(trl("error-member-not-found")))
-    }
-
-    async fn list(
-        &self,
-        team_id: &str,
-        keyword: Option<&str>,
-        role: Option<RoleFlag>,
-        page: Page,
-    ) -> DomainResult<Vec<MemberAggr>> {
-        let state = self.state.lock().unwrap();
-        let filtered: Vec<MemberAggr> = state
-            .members
-            .iter()
-            .filter(|m| m.team_id == team_id)
-            .filter(|m| {
-                keyword.map_or(true, |kw| {
-                    m.user_nickname.to_lowercase().contains(&kw.to_lowercase())
-                })
-            })
-            .filter(|m| role.map_or(true, |flag| m.has_any_role(&[flag])))
-            .cloned()
-            .collect();
-        let skip = page.offset;
-        let take = page.limit;
-        if skip >= filtered.len() {
-            return Ok(Vec::new());
-        }
-        let end = std::cmp::min(skip + take, filtered.len());
-        Ok(filtered[skip..end].to_vec())
-    }
-
-    async fn exist_by_user_and_team_id(&self, user_id: &str, team_id: &str) -> DomainResult<bool> {
-        let state = self.state.lock().unwrap();
-        Ok(state
-            .members
-            .iter()
-            .any(|m| m.user_id == user_id && m.team_id == team_id))
-    }
-
-    async fn update_roles(&self, update_data: &MemberRoleUpdate) -> DomainResult<()> {
-        let mut state = self.state.lock().unwrap();
-        let member = state
-            .members
-            .iter_mut()
-            .find(|m| m.id == update_data.id)
-            .ok_or_else(|| DomainError::expected_argument(trl("error-member-not-found")))?;
-        let now = OffsetDateTime::now_utc();
-        let roles = update_data.roles;
-        member.assigned_raw_provider_at = roles.has_role(RoleFlag::RawProvider).then_some(now);
-        member.assigned_translator_at = roles.has_role(RoleFlag::Translator).then_some(now);
-        member.assigned_proofreader_at = roles.has_role(RoleFlag::Proofreader).then_some(now);
-        member.assigned_typesetter_at = roles.has_role(RoleFlag::Typesetter).then_some(now);
-        member.assigned_redrawer_at = roles.has_role(RoleFlag::Redrawer).then_some(now);
-        member.assigned_reviewer_at = roles.has_role(RoleFlag::Reviewer).then_some(now);
-        member.assigned_publisher_at = roles.has_role(RoleFlag::Publisher).then_some(now);
-        member.assigned_admin_at = roles.has_role(RoleFlag::Admin).then_some(now);
-        member.assigned_assistant_at = roles.has_role(RoleFlag::Assistant).then_some(now);
-        member.updated_at = now;
-        Ok(())
-    }
-
-    async fn delete(&self, id: &str) -> DomainResult<()> {
-        let mut state = self.state.lock().unwrap();
-        let pos = state
-            .members
-            .iter()
-            .position(|m| m.id == id)
-            .ok_or_else(|| DomainError::expected_argument(trl("error-member-not-found")))?;
-        state.members.remove(pos);
-        Ok(())
-    }
-}
-
 #[cfg(test)]
 mod tests {
     // duplicate_user_team_returns_conflict(MemberQueryTransactional::create)(negative): duplicate user-team membership should return an expected conflict.
@@ -344,10 +276,11 @@ mod tests {
     // list_filters_by_team_keyword_role(MemberQuery::list)(positive): list should filter by team, keyword, and role.
     // exist_by_user_and_team_id_true(MemberQuery::exist_by_user_and_team_id)(positive): exist check should return true for existing member.
     // exist_by_user_and_team_id_false(MemberQuery::exist_by_user_and_team_id)(positive): exist check should return false for non-existing member.
-    // update_roles_replaces_all_roles(MemberQuery::update_roles)(positive): update_roles should clear all roles and set only those in the mask.
-    // update_roles_missing_returns_error(MemberQuery::update_roles)(negative): updating roles on a missing member should fail.
-    // delete_removes_member(MemberQuery::delete)(positive): deleting a member should remove it from storage.
-    // delete_missing_returns_error(MemberQuery::delete)(negative): deleting a missing member should fail.
+    // list_by_user_id_returns_user_members(MemberQuery::list_by_user_id)(positive): list_by_user_id should return all memberships for a user.
+    // update_roles_replaces_all_roles(MemberQueryTransactional::update_roles)(positive): update_roles should clear all roles and set only those in the mask.
+    // update_roles_missing_returns_error(MemberQueryTransactional::update_roles)(negative): updating roles on a missing member should fail.
+    // delete_removes_member(MemberQueryTransactional::delete)(positive): deleting a member should remove it from storage.
+    // delete_missing_returns_error(MemberQueryTransactional::delete)(negative): deleting a missing member should fail.
 
     use futures_util::FutureExt as _;
     use time::OffsetDateTime;
@@ -648,6 +581,26 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn list_by_user_id_returns_user_members() {
+        let mock = MemoryMockQuery::new();
+        mock.seed_member(make_member("m-1", "user-1", "team-1", RoleFlag::Admin.into()));
+        mock.seed_member(make_member("m-2", "user-1", "team-2", RoleFlag::Translator.into()));
+        mock.seed_member(make_member("m-3", "user-2", "team-1", RoleFlag::Admin.into()));
+
+        let list = MemberQuery::list_by_user_id(
+            &mock,
+            "user-1",
+            Page {
+                offset: 0,
+                limit: 10,
+            },
+        )
+        .await
+        .unwrap();
+        assert_eq!(list.len(), 2);
+    }
+
+    #[tokio::test]
     async fn update_roles_replaces_all_roles() {
         let mock = MemoryMockQuery::new();
         mock.seed_member(make_member("m-1", "u-1", "team-1", RoleFlag::Admin.into()));
@@ -664,7 +617,7 @@ mod tests {
                     id: "m-1".into(),
                     roles: new_roles,
                 };
-                MemberQuery::update_roles(txn, &update).await
+                MemberQueryTransactional::update_roles(txn, &update).await
             }
             .boxed()
         })
@@ -687,7 +640,7 @@ mod tests {
                         id: "nonexistent".into(),
                         roles: RoleMask::from(RoleFlag::Admin),
                     };
-                    MemberQuery::update_roles(txn, &update).await
+                    MemberQueryTransactional::update_roles(txn, &update).await
                 }
                 .boxed()
             })
@@ -703,9 +656,11 @@ mod tests {
         let mock = MemoryMockQuery::new();
         mock.seed_member(make_member("m-1", "u-1", "team-1", RoleFlag::Admin.into()));
 
-        mock.transaction_scoped(|txn| async move { MemberQuery::delete(txn, "m-1").await }.boxed())
-            .await
-            .unwrap();
+        mock.transaction_scoped(|txn| {
+            async move { MemberQueryTransactional::delete(txn, "m-1").await }.boxed()
+        })
+        .await
+        .unwrap();
 
         let snapshot = mock.snapshot();
         assert!(snapshot.members.is_empty());
@@ -717,7 +672,7 @@ mod tests {
 
         let err = mock
             .transaction_scoped(|txn| {
-                async move { MemberQuery::delete(txn, "nonexistent").await }.boxed()
+                async move { MemberQueryTransactional::delete(txn, "nonexistent").await }.boxed()
             })
             .await
             .err()

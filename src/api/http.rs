@@ -58,9 +58,14 @@ mod result {
                     code: NonZeroU16::new(3).unwrap(),
                     message: Some(message.to_string()),
                 },
+                ExpectedVariant::Forbidden => Self {
+                    status: StatusCode::FORBIDDEN,
+                    code: NonZeroU16::new(4).unwrap(),
+                    message: Some(message.to_string()),
+                },
                 ExpectedVariant::Conflict => Self {
                     status: StatusCode::CONFLICT,
-                    code: NonZeroU16::new(4).unwrap(),
+                    code: NonZeroU16::new(5).unwrap(),
                     message: Some(message.to_string()),
                 },
             }
@@ -69,7 +74,7 @@ mod result {
         pub fn not_found() -> Self {
             Self {
                 status: StatusCode::NOT_FOUND,
-                code: NonZeroU16::new(5).unwrap(),
+                code: NonZeroU16::new(6).unwrap(),
                 message: None,
             }
         }

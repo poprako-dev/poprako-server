@@ -12,6 +12,10 @@ error-stale-avatar-upload = 头像上传版本已过期
 error-team-not-found = 该汉化组不存在
 error-workset-not-found = 该作品集不存在
 error-member-not-found = 该成员不存在
+error-team-member-required = 您不是该汉化组的成员
+error-team-admin-required = 您不是该汉化组的管理员
+error-sadmin-required = 只有超级管理员可以执行此操作
+error-already-team-member = 您已经是该汉化组的成员
 error-wrong-credentials = 用户不存在或密码错误
 
 mail-invitation-used-title = 你的邀请码已被使用
