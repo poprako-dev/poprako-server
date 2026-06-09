@@ -9,57 +9,63 @@ use crate::domain::query::member::MemberQueryTransactional;
 use crate::domain::query::user::UserQueryTransactional;
 use crate::domain::result::{DomainError, DomainResult};
 
-/// Hashes a password with bcrypt using the default cost factor.
-pub fn hash_password(password: &str) -> DomainResult<String> {
-    bcrypt::hash(password, bcrypt::DEFAULT_COST).map_err(|e| {
-        DomainError::unrecoverable(format!(
-            "[user::hash_password] bcrypt hashing failed: {}",
-            e
-        ))
-    })
-}
+pub struct UserComplex;
 
-pub fn sign_token<S>(signer: &S, unsigned_token: &UserToken) -> DomainResult<String>
-where
-    S: TokenSign,
-{
-    signer.sign(unsigned_token)
-}
-
-pub fn parse_token<P>(parser: &P, signed_token: &str) -> DomainResult<UserToken>
-where
-    P: TokenParse,
-{
-    parser.parse(signed_token)
-}
-
-/// Deletes the user and all their member records across teams, and queues
-/// a local message to delete the user avatar if one was present.
-pub async fn delete_cascade<Q>(query: &mut Q, id: &str) -> DomainResult<()>
-where
-    Q: QueryTransactional,
-{
-    // Read avatar key before deletion so we can schedule cleanup.
-    let user = UserQueryTransactional::get_by_id_excluded(query, id).await?;
-
-    let avatar_key = user.avatar_key;
-
-    // Delete each member record belonging to this user.
-    let members = MemberQueryTransactional::list_by_user_id_excluded(query, id).await?;
-    for m in &members {
-        MemberQueryTransactional::delete_transactional(query, &m.id).await?;
+impl UserComplex {
+    /// Hashes a password with bcrypt using the default cost factor.
+    pub fn hash_password(password: &str) -> DomainResult<String> {
+        bcrypt::hash(password, bcrypt::DEFAULT_COST).map_err(|e| {
+            DomainError::unrecoverable(format!(
+                "[user::hash_password] bcrypt hashing failed: {}",
+                e
+            ))
+        })
     }
 
-    UserQueryTransactional::delete(query, id).await?;
-
-    // Queue avatar file deletion if there was one.
-    if let Some(object_key) = avatar_key {
-        let message = ImageLocalMessage::delete(object_key).into_form(Duration::seconds(0));
-        LocalMessageQueryTransactional::append(query, &message).await?;
+    pub fn sign_token<S>(signer: &S, unsigned_token: &UserToken) -> DomainResult<String>
+    where
+        S: TokenSign,
+    {
+        signer.sign(unsigned_token)
     }
 
-    Ok(())
+    pub fn parse_token<P>(parser: &P, signed_token: &str) -> DomainResult<UserToken>
+    where
+        P: TokenParse,
+    {
+        parser.parse(signed_token)
+    }
+
+    /// Deletes the user and all their member records across teams, and queues
+    /// a local message to delete the user avatar if one was present.
+    pub async fn delete_cascade<Q>(query: &mut Q, id: &str) -> DomainResult<()>
+    where
+        Q: QueryTransactional,
+    {
+        // Read avatar key before deletion so we can schedule cleanup.
+        let user = UserQueryTransactional::get_by_id_excluded(query, id).await?;
+
+        let avatar_key = user.avatar_key;
+
+        // Delete each member record belonging to this user.
+        let members = MemberQueryTransactional::list_by_user_id_excluded(query, id).await?;
+        for m in &members {
+            MemberQueryTransactional::delete_transactional(query, &m.id).await?;
+        }
+
+        UserQueryTransactional::delete(query, id).await?;
+
+        // Queue avatar file deletion if there was one.
+        if let Some(object_key) = avatar_key {
+            let message = ImageLocalMessage::delete(object_key).into_form(Duration::seconds(0));
+            LocalMessageQueryTransactional::append(query, &message).await?;
+        }
+
+        Ok(())
+    }
 }
+
+pub struct UserPermissionComplex;
 
 #[cfg(test)]
 mod tests {
@@ -72,9 +78,7 @@ mod tests {
     // parse_token_delegates_to_codec(parse_token)(positive): token parsing should delegate to the provided codec.
     // parse_token_returns_codec_error(parse_token)(negative): token parsing should propagate codec errors.
 
-    use super::hash_password;
-    use super::parse_token;
-    use super::sign_token;
+    use super::UserComplex;
 
     use crate::domain::external::token::{TokenParse, TokenSign};
     use crate::domain::model::aggr::user::UserToken;
@@ -88,7 +92,9 @@ mod tests {
     impl TokenSign for FakeCodec {
         fn sign(&self, unsigned_token: &UserToken) -> DomainResult<String> {
             if self.fail {
-                return Err(DomainError::unrecoverable("[FakeCodec::sign] sign failed".into()));
+                return Err(DomainError::unrecoverable(
+                    "[FakeCodec::sign] sign failed".into(),
+                ));
             }
 
             Ok(format!("signed:{}", unsigned_token.user_id))
@@ -98,7 +104,9 @@ mod tests {
     impl TokenParse for FakeCodec {
         fn parse(&self, signed_token: &str) -> DomainResult<UserToken> {
             if self.fail {
-                return Err(DomainError::unrecoverable("[FakeCodec::parse] parse failed".into()));
+                return Err(DomainError::unrecoverable(
+                    "[FakeCodec::parse] parse failed".into(),
+                ));
             }
 
             Ok(UserToken {
@@ -109,26 +117,26 @@ mod tests {
 
     #[test]
     fn hash_password_returns_bcrypt_prefix() {
-        let hash = hash_password("my-password").unwrap();
+        let hash = UserComplex::hash_password("my-password").unwrap();
         assert!(hash.starts_with("$2b$"));
     }
 
     #[test]
     fn hash_password_same_input_produces_different_hashes() {
-        let h1 = hash_password("my-password").unwrap();
-        let h2 = hash_password("my-password").unwrap();
+        let h1 = UserComplex::hash_password("my-password").unwrap();
+        let h2 = UserComplex::hash_password("my-password").unwrap();
         assert_ne!(h1, h2, "bcrypt must use a random salt for each hash");
     }
 
     #[test]
     fn hash_password_empty_string() {
-        let hash = hash_password("").unwrap();
+        let hash = UserComplex::hash_password("").unwrap();
         assert!(hash.starts_with("$2b$"));
     }
 
     #[test]
     fn hash_password_can_be_verified_by_bcrypt() {
-        let hash = hash_password("my-password").unwrap();
+        let hash = UserComplex::hash_password("my-password").unwrap();
         assert!(bcrypt::verify("my-password", &hash).unwrap());
         assert!(!bcrypt::verify("wrong-password", &hash).unwrap());
     }
@@ -140,7 +148,7 @@ mod tests {
             user_id: "user-1".into(),
         };
 
-        let signed = sign_token(&codec, &token).unwrap();
+        let signed = UserComplex::sign_token(&codec, &token).unwrap();
 
         assert_eq!(signed, "signed:user-1");
     }
@@ -152,7 +160,7 @@ mod tests {
             user_id: "user-1".into(),
         };
 
-        let err = sign_token(&codec, &token).err().unwrap();
+        let err = UserComplex::sign_token(&codec, &token).err().unwrap();
 
         assert!(matches!(err, DomainError::Unrecoverable { .. }));
     }
@@ -161,7 +169,7 @@ mod tests {
     fn parse_token_delegates_to_codec() {
         let codec = FakeCodec { fail: false };
 
-        let parsed = parse_token(&codec, "signed:user-1").unwrap();
+        let parsed = UserComplex::parse_token(&codec, "signed:user-1").unwrap();
 
         assert_eq!(parsed.user_id, "user-1");
     }
@@ -170,7 +178,9 @@ mod tests {
     fn parse_token_returns_codec_error() {
         let codec = FakeCodec { fail: true };
 
-        let err = parse_token(&codec, "signed:user-1").err().unwrap();
+        let err = UserComplex::parse_token(&codec, "signed:user-1")
+            .err()
+            .unwrap();
 
         assert!(matches!(err, DomainError::Unrecoverable { .. }));
     }

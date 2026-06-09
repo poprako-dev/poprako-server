@@ -4,8 +4,7 @@ use tracing::instrument;
 
 use poprako_util::i18n::trl;
 
-use crate::domain::complex;
-use crate::domain::complex::user::{hash_password, sign_token};
+use crate::domain::complex::user::UserComplex;
 use crate::domain::effect::{Effect as _, EffectSink};
 use crate::domain::external::image_pool::ImageGet;
 use crate::domain::external::image_pool::ImagePut;
@@ -52,7 +51,7 @@ where
             }
 
             // 3. Generate password hash.
-            let password_hash = hash_password(&params.password)?;
+            let password_hash = UserComplex::hash_password(&params.password)?;
 
             // 4. Build the UserForm aggregate.
             let mut user_form = UserForm::new(
@@ -101,7 +100,7 @@ where
         user_id: user_form.id,
     };
 
-    let signed_token = sign_token(harn, &user_token)?;
+    let signed_token = UserComplex::sign_token(harn, &user_token)?;
 
     Ok(SignUpReply {
         user_id: user_token.user_id,
@@ -126,7 +125,7 @@ where
         user_id: user_id.clone(),
     };
 
-    let signed_token = sign_token(harn, &user_token)?;
+    let signed_token = UserComplex::sign_token(harn, &user_token)?;
 
     Ok(SignInReply {
         user_id,
@@ -169,6 +168,7 @@ where
 
             MemberQueryTransactional::update_user_nickname(query, &update.id, &update.nickname)
                 .await?;
+
             Ok(())
         }
         .boxed()
@@ -197,6 +197,7 @@ where
             if let Some(previous_object_key) = reservation.previous_object_key.clone() {
                 let message =
                     ImageLocalMessage::delete(previous_object_key).into_form(Duration::seconds(0));
+
                 LocalMessageQueryTransactional::append(query, &message).await?;
             }
 
@@ -207,6 +208,7 @@ where
                 reservation.image_version,
             )
             .into_form(Duration::minutes(15));
+
             LocalMessageQueryTransactional::append(query, &message).await?;
 
             Ok(reservation)
@@ -239,6 +241,7 @@ where
         async move {
             UserQueryTransactional::mark_avatar_uploaded(query, &user_id, params.image_version)
                 .await?;
+
             Ok(())
         }
         .boxed()
@@ -280,7 +283,8 @@ where
 
     Transactional::transaction_scoped(harn, move |query| {
         async move {
-            complex::user::delete_cascade(query, &user_id).await?;
+            UserComplex::delete_cascade(query, &user_id).await?;
+
             Ok(())
         }
         .boxed()
@@ -904,10 +908,7 @@ mod user_use_cases_tests {
         assert!(snapshot.credentials.is_empty());
 
         // Member record is cascade-deleted.
-        let err = member::get_by_id(&harn, &member.id)
-            .await
-            .err()
-            .unwrap();
+        let err = member::get_by_id(&harn, &member.id).await.err().unwrap();
         assert!(usecase_is_expected_argument(&err));
     }
 

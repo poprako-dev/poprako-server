@@ -1,13 +1,10 @@
 mod auth_token;
-mod middleware;
+pub mod middleware;
 mod openapi;
 
 pub mod handler;
 pub mod router;
 pub mod server;
-
-pub use middleware::AuthorizeLayer;
-pub use middleware::IdTraceLayer;
 
 mod result {
     use std::num::NonZeroU16;

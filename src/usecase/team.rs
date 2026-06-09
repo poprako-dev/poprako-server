@@ -3,7 +3,7 @@ use poprako_util::page::Page;
 use time::Duration;
 use tracing::instrument;
 
-use crate::domain::complex;
+use crate::domain::complex::team::TeamComplex;
 use crate::domain::external::image_pool::{ImageGet, ImagePut};
 use crate::domain::local_message::message::{ImageLocalMessage, ImageResourceKind};
 use crate::domain::model::aggr::team::{TeamAggr, TeamForm, TeamInfoUpdate};
@@ -101,6 +101,7 @@ where
             if let Some(previous_object_key) = reservation.previous_object_key.clone() {
                 let message =
                     ImageLocalMessage::delete(previous_object_key).into_form(Duration::seconds(0));
+
                 LocalMessageQueryTransactional::append(query, &message).await?;
             }
 
@@ -111,6 +112,7 @@ where
                 reservation.image_version,
             )
             .into_form(Duration::minutes(15));
+
             LocalMessageQueryTransactional::append(query, &message).await?;
 
             Ok(reservation)
@@ -142,6 +144,7 @@ where
         async move {
             TeamQueryTransactional::mark_avatar_uploaded(query, &team_id, params.image_version)
                 .await?;
+
             Ok(())
         }
         .boxed()
@@ -158,7 +161,8 @@ where
 {
     Transactional::transaction_scoped(harn, move |query| {
         async move {
-            complex::team::delete_cascade(query, &team_id).await?;
+            TeamComplex::delete_cascade(query, &team_id).await?;
+
             Ok(())
         }
         .boxed()

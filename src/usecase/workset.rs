@@ -2,7 +2,7 @@ use futures_util::FutureExt as _;
 use poprako_util::page::Page;
 use tracing::instrument;
 
-use crate::domain::complex;
+use crate::domain::complex::workset::WorksetComplex;
 use crate::domain::external::image_pool::ImageGet;
 use crate::domain::model::aggr::workset::{WorksetAggr, WorksetForm, WorksetUpdate};
 use crate::domain::query::Query;
@@ -112,7 +112,7 @@ where
 {
     Transactional::transaction_scoped(harn, move |query| {
         async move {
-            complex::workset::delete_cascade(query, &workset_id).await?;
+            WorksetComplex::delete_cascade(query, &workset_id).await?;
             Ok(())
         }
         .boxed()
