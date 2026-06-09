@@ -1,9 +1,7 @@
 use axum::Json;
 use axum::extract::{Extension, Path, Query, State};
 use axum::http::StatusCode;
-use serde::Deserialize;
 use tracing::instrument;
-use utoipa::IntoParams;
 
 use poprako_util::i18n::trl;
 use poprako_util::page::Page;
@@ -18,8 +16,8 @@ use crate::domain::result::ExpectedVariant;
 use crate::harness::Harness;
 use crate::usecase;
 use crate::usecase::data_object::member::{
-    ListMyMembersParams, MemberBase, MemberCreateParams, MemberCreateReply, MemberJoinParams,
-    MemberListParams, MemberMineParams, MemberRoleUpdateParams,
+    MemberCreateParams, MemberCreateReply, MemberInfo, MemberJoinParams, MemberListParams,
+    MemberListQuery, MemberMineQuery, MemberRoleUpdateParams,
 };
 
 fn invalid_role_argument() -> HttpError {
@@ -49,24 +47,13 @@ pub async fn create(
     reply.accept(StatusCode::CREATED)
 }
 
-#[derive(Debug, Deserialize, IntoParams)]
-#[into_params(parameter_in = Query)]
-pub struct MemberListQuery {
-    pub team_id: String,
-    pub keyword: Option<String>,
-    pub role: Option<u32>,
-    pub offset: Option<i64>,
-    pub limit: Option<i64>,
-    pub includes: Option<String>,
-}
-
 #[utoipa::path(
     get,
     path = "/members",
     tag = "members",
     params(MemberListQuery),
     responses(
-        (status = 200, description = "Members listed", body = Vec<MemberBase>),
+        (status = 200, description = "Members listed", body = Vec<MemberInfo>),
         (status = 400, description = "Invalid request parameters", body = HttpError),
         (status = 401, description = "Authentication required", body = HttpError),
         (status = 403, description = "Insufficient permissions", body = HttpError)
@@ -77,7 +64,7 @@ pub async fn list_infos(
     State(harn): State<Harness>,
     Extension(user_token): Extension<UserToken>,
     Query(params): Query<MemberListQuery>,
-) -> HttpResult<Vec<MemberBase>> {
+) -> HttpResult<Vec<MemberInfo>> {
     let role = match params.role {
         Some(bits) if bits != 0 => {
             let flag = RoleFlag::try_from_single_bit(bits).ok_or_else(invalid_role_argument)?;
@@ -92,52 +79,18 @@ pub async fn list_infos(
         limit: params.limit.unwrap_or(20) as usize,
     };
 
-    let usecase_params = MemberListParams {
-        team_id: params.team_id,
+    let list_params = MemberListParams {
+        team_id: Some(params.team_id),
+        user_id: None,
         keyword: params.keyword,
         role,
         page,
         includes: MemberInclusion::parse(params.includes.as_deref()),
     };
 
-    let bases = usecase::member::list_infos(&harn, &user_token, &usecase_params).await?;
+    let infos = usecase::member::list_infos(&harn, &user_token, &list_params).await?;
 
-    bases.accept(StatusCode::OK)
-}
-
-#[derive(Debug, Deserialize, IntoParams)]
-#[into_params(parameter_in = Query)]
-pub struct ListMyMembersQuery {
-    pub team_id: String,
-    pub includes: Option<String>,
-}
-
-#[utoipa::path(
-    get,
-    path = "/members/detail",
-    tag = "members",
-    params(ListMyMembersQuery),
-    responses(
-        (status = 200, description = "Member detail retrieved", body = MemberBase),
-        (status = 400, description = "Member not found", body = HttpError),
-        (status = 401, description = "Authentication required", body = HttpError),
-        (status = 403, description = "Insufficient permissions", body = HttpError)
-    )
-)]
-#[instrument(err, skip(harn))]
-pub async fn list_my_members(
-    State(harn): State<Harness>,
-    Extension(user_token): Extension<UserToken>,
-    Query(params): Query<ListMyMembersQuery>,
-) -> HttpResult<MemberBase> {
-    let usecase_params = ListMyMembersParams {
-        team_id: params.team_id,
-        includes: MemberInclusion::parse(params.includes.as_deref()),
-    };
-
-    let base = usecase::member::list_my_members(&harn, &user_token, &usecase_params).await?;
-
-    base.accept(StatusCode::OK)
+    infos.accept(StatusCode::OK)
 }
 
 #[utoipa::path(
@@ -192,31 +145,27 @@ pub async fn delete(
     ().accept(StatusCode::OK)
 }
 
-#[derive(Debug, Deserialize, IntoParams)]
-#[into_params(parameter_in = Query)]
-pub struct MemberMineQuery {
-    pub offset: Option<i64>,
-    pub limit: Option<i64>,
-    pub includes: Option<String>,
-}
-
 #[utoipa::path(
     get,
     path = "/members/mine",
     tag = "members",
     params(MemberMineQuery),
     responses(
-        (status = 200, description = "Current user memberships listed", body = Vec<MemberBase>),
+        (status = 200, description = "Current user memberships listed", body = Vec<MemberInfo>),
         (status = 401, description = "Authentication required", body = HttpError)
     )
 )]
 #[instrument(err, skip(harn))]
-pub async fn list_mine(
+pub async fn list_my_infos(
     State(harn): State<Harness>,
     Extension(user_token): Extension<UserToken>,
     Query(params): Query<MemberMineQuery>,
-) -> HttpResult<Vec<MemberBase>> {
-    let usecase_params = MemberMineParams {
+) -> HttpResult<Vec<MemberInfo>> {
+    let list_params = MemberListParams {
+        team_id: None,
+        user_id: Some(user_token.user_id.clone()),
+        keyword: None,
+        role: None,
         page: Page {
             offset: params.offset.unwrap_or(0) as usize,
             limit: params.limit.unwrap_or(20) as usize,
@@ -224,9 +173,9 @@ pub async fn list_mine(
         includes: MemberInclusion::parse(params.includes.as_deref()),
     };
 
-    let bases = usecase::member::list_mine(&harn, &user_token, &usecase_params).await?;
+    let infos = usecase::member::list_infos(&harn, &user_token, &list_params).await?;
 
-    bases.accept(StatusCode::OK)
+    infos.accept(StatusCode::OK)
 }
 
 #[utoipa::path(

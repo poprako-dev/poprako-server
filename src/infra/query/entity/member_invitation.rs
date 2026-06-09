@@ -3,6 +3,7 @@ use time::OffsetDateTime;
 
 use crate::domain::model::aggr::member_invitation::MemberInvitationAggr;
 use crate::domain::model::value::role::RoleMask;
+use crate::domain::result::DomainError;
 use crate::infra::query::schema;
 
 // ── Queryable / Selectable ─────────────────────────────────────────────────
@@ -62,9 +63,18 @@ impl MemberInvitationAspect {
 
 // ── Conversions ────────────────────────────────────────────────────────────
 
-impl From<MemberInvitationRow> for MemberInvitationAggr {
-    fn from(v: MemberInvitationRow) -> Self {
-        MemberInvitationAggr {
+impl TryFrom<MemberInvitationRow> for MemberInvitationAggr {
+    type Error = DomainError;
+
+    fn try_from(v: MemberInvitationRow) -> Result<Self, Self::Error> {
+        let roles = RoleMask::try_from(v.f_role_mask as u32).map_err(|_| {
+            DomainError::unrecoverable(format!(
+                "[MemberInvitationAggr::try_from] invalid role mask: {}",
+                v.f_role_mask
+            ))
+        })?;
+
+        Ok(MemberInvitationAggr {
             id: v.f_id,
             invitor_id: v.f_inviter_id,
             invitor: None,
@@ -72,8 +82,8 @@ impl From<MemberInvitationRow> for MemberInvitationAggr {
             invitee_qid: v.f_invitee_qid,
             code: v.f_invitation_code,
             pending: v.f_pending,
-            roles: RoleMask::from(v.f_role_mask as u32),
+            roles,
             created_at: v.f_created_at,
-        }
+        })
     }
 }

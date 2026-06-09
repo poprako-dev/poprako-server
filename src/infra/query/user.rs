@@ -197,6 +197,7 @@ pub async fn mark_avatar_uploaded(
     Ok(())
 }
 
+
 #[instrument(err, skip(conn), level = Level::DEBUG)]
 pub async fn touch_last_active(conn: &mut AsyncPgConnection, id: &str) -> DomainResult<()> {
     let now = OffsetDateTime::now_utc();
@@ -293,4 +294,3 @@ pub async fn delete_user(
 
     Ok(())
 }
-

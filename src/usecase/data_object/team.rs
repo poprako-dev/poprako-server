@@ -8,7 +8,7 @@ use crate::domain::model::aggr::team::TeamAggr;
 
 /// Public-facing representation of a translation team.
 #[derive(Debug, Serialize, ToSchema)]
-pub struct TeamBase {
+pub struct TeamInfo {
     pub id: String,
 
     pub name: String,
@@ -22,7 +22,7 @@ pub struct TeamBase {
     pub updated_at: i64,
 }
 
-impl TeamBase {
+impl TeamInfo {
     pub async fn from_aggr<S>(aggr: TeamAggr, signer: &S) -> Self
     where
         S: ImageGet,

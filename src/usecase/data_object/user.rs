@@ -7,7 +7,7 @@ use crate::domain::external::image_pool::ImageGet;
 use crate::domain::model::aggr::user::UserAggr;
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
-pub struct UserBase {
+pub struct UserInfo {
     pub id: String,
 
     pub nickname: String,
@@ -23,7 +23,7 @@ pub struct UserBase {
     pub updated_at: i64,
 }
 
-impl UserBase {
+impl UserInfo {
     pub async fn from_aggr<S>(aggr: UserAggr, signer: &S) -> Self
     where
         S: ImageGet,

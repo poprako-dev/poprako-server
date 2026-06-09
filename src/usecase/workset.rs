@@ -11,9 +11,21 @@ use crate::domain::query::team::TeamQueryTransactional;
 use crate::domain::query::workset::WorksetQuery;
 use crate::domain::query::workset::WorksetQueryTransactional;
 use crate::usecase::data_object::workset::{
-    WorksetBase, WorksetCreateParams, WorksetCreateReply, WorksetUpdateParams,
+    WorksetCreateParams, WorksetCreateReply, WorksetInfo, WorksetUpdateParams,
 };
 use crate::usecase::result::UseCaseResult;
+
+async fn worksets_to_infos<H>(worksets: Vec<WorksetAggr>, harn: &H) -> Vec<WorksetInfo>
+where
+    H: ImageGet,
+{
+    let mut infos = Vec::with_capacity(worksets.len());
+    for workset in worksets {
+        infos.push(WorksetInfo::from_aggr(workset, harn).await);
+    }
+
+    infos
+}
 
 #[instrument(err, skip(harn))]
 pub async fn create<H>(harn: &H, params: WorksetCreateParams) -> UseCaseResult<WorksetCreateReply>
@@ -22,7 +34,7 @@ where
 {
     let id = WorksetAggr::generate_id();
 
-    let (_workset, base) = Transactional::transaction_scoped(harn, move |query| {
+    let (_workset, info_placeholder) = Transactional::transaction_scoped(harn, move |query| {
         async move {
             // Atomically allocate the next index from the team-level sequence.
             let index =
@@ -39,50 +51,45 @@ where
 
             let created = WorksetQueryTransactional::create(query, &form).await?;
 
-            Ok((created, BasePlaceholder { id: id.clone() }))
+            Ok((created, InfoPlaceholder { id: id.clone() }))
         }
         .boxed()
     })
     .await?;
 
     // Re-fetch to include team preload for the response.
-    let aggr = WorksetQuery::get_by_id(harn, &base.id).await?;
+    let aggr = WorksetQuery::get_by_id(harn, &info_placeholder.id).await?;
 
-    let base = WorksetBase::from_aggr(aggr, harn).await;
+    let info = WorksetInfo::from_aggr(aggr, harn).await;
 
-    Ok(WorksetCreateReply { id: base.id })
+    Ok(WorksetCreateReply { id: info.id })
 }
 
-/// Internal holder to keep the workset id alive while assembling the base.
-struct BasePlaceholder {
+/// Internal holder to keep the workset id alive while assembling the info.
+struct InfoPlaceholder {
     id: String,
 }
 
 #[instrument(err, skip(harn))]
-pub async fn get_by_id<H>(harn: &H, id: &str) -> UseCaseResult<WorksetBase>
+pub async fn get_by_id<H>(harn: &H, id: &str) -> UseCaseResult<WorksetInfo>
 where
     H: Query + ImageGet + Send + Sync,
 {
     let workset = WorksetQuery::get_by_id(harn, id).await?;
 
-    let base = WorksetBase::from_aggr(workset, harn).await;
+    let info = WorksetInfo::from_aggr(workset, harn).await;
 
-    Ok(base)
+    Ok(info)
 }
 
 #[instrument(err, skip(harn))]
-pub async fn list<H>(harn: &H, team_id: &str, page: Page) -> UseCaseResult<Vec<WorksetBase>>
+pub async fn list<H>(harn: &H, team_id: &str, page: Page) -> UseCaseResult<Vec<WorksetInfo>>
 where
     H: Query + ImageGet + Send + Sync,
 {
     let worksets = WorksetQuery::list(harn, team_id, page).await?;
 
-    let mut bases = Vec::with_capacity(worksets.len());
-    for workset in worksets {
-        bases.push(WorksetBase::from_aggr(workset, harn).await);
-    }
-
-    Ok(bases)
+    Ok(worksets_to_infos(worksets, harn).await)
 }
 
 #[instrument(err, skip(harn))]
@@ -127,7 +134,7 @@ mod tests {
     // create_workset_allocates_index_and_persists(create)(positive): create should allocate the next workset index and persist the workset.
     // create_two_worksets_allocates_sequential_indices(create)(positive): two creates should allocate sequential indices.
     // create_fails_for_nonexistent_team(create)(negative): create should fail when the team does not exist.
-    // get_by_id_returns_workset_base(get_by_id)(positive): get_by_id should return a WorksetBase for an existing workset.
+    // get_by_id_returns_workset_info(get_by_id)(positive): get_by_id should return a WorksetInfo for an existing workset.
     // get_by_id_fails_for_nonexistent(get_by_id)(negative): get_by_id should fail with expected error for missing workset.
     // list_returns_worksets_for_team(list)(positive): list should return worksets for the given team.
     // list_empty_with_offset_past_end(list)(positive): list should return an empty vector when offset is past the last workset.
@@ -226,7 +233,7 @@ mod tests {
         harn.seed_team(make_test_team("team-1"));
         harn.seed_team(make_test_team("team-2"));
 
-        let r1 = create(
+        create(
             &harn,
             WorksetCreateParams {
                 team_id: "team-1".into(),
@@ -236,7 +243,7 @@ mod tests {
         )
         .await
         .unwrap();
-        let r2 = create(
+        create(
             &harn,
             WorksetCreateParams {
                 team_id: "team-1".into(),
@@ -383,10 +390,10 @@ mod tests {
         .await
         .unwrap();
 
-        let base = get_by_id(&harn, &reply.id).await.unwrap();
-        assert_eq!(base.name, "MyWS");
-        assert_eq!(base.team_id, "team-1");
-        assert_eq!(base.index, 0);
+        let info = get_by_id(&harn, &reply.id).await.unwrap();
+        assert_eq!(info.name, "MyWS");
+        assert_eq!(info.team_id, "team-1");
+        assert_eq!(info.index, 0);
     }
 
     #[tokio::test]

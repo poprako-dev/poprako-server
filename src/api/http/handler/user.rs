@@ -11,7 +11,7 @@ use crate::domain::model::aggr::user::UserToken;
 use crate::harness::Harness;
 use crate::usecase;
 use crate::usecase::data_object::user::{
-    AvatarMarkUploadedParams, AvatarReserveParams, AvatarReserveReply, UserBase,
+    AvatarMarkUploadedParams, AvatarReserveParams, AvatarReserveReply, UserInfo,
     UserInfoUpdateParams,
 };
 
@@ -23,7 +23,7 @@ use crate::usecase::data_object::user::{
         ("user_id" = String, Path, description = "Target user ID")
     ),
     responses(
-        (status = 200, description = "User info retrieved", body = UserBase),
+        (status = 200, description = "User info retrieved", body = UserInfo),
         (status = 401, description = "Authentication required", body = HttpError),
         (status = 404, description = "User not found", body = HttpError)
     )
@@ -32,10 +32,10 @@ use crate::usecase::data_object::user::{
 pub async fn get_info(
     State(harn): State<Harness>,
     Path(user_id): Path<String>,
-) -> HttpResult<UserBase> {
-    let base = usecase::user::get_info(&harn, &user_id).await?;
+) -> HttpResult<UserInfo> {
+    let info = usecase::user::get_info(&harn, &user_id).await?;
 
-    base.accept(StatusCode::OK)
+    info.accept(StatusCode::OK)
 }
 
 #[utoipa::path(
@@ -43,7 +43,7 @@ pub async fn get_info(
     path = "/users/me",
     tag = "users",
     responses(
-        (status = 200, description = "Current user info retrieved", body = UserBase),
+        (status = 200, description = "Current user info retrieved", body = UserInfo),
         (status = 401, description = "Authentication required", body = HttpError)
     )
 )]
@@ -51,10 +51,10 @@ pub async fn get_info(
 pub async fn get_my_info(
     State(harn): State<Harness>,
     Extension(user_token): Extension<UserToken>,
-) -> HttpResult<UserBase> {
-    let base = usecase::user::get_info(&harn, &user_token.user_id).await?;
+) -> HttpResult<UserInfo> {
+    let info = usecase::user::get_info(&harn, &user_token.user_id).await?;
 
-    base.accept(StatusCode::OK)
+    info.accept(StatusCode::OK)
 }
 
 #[utoipa::path(

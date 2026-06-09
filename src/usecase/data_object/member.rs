@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use utoipa::ToSchema;
+use utoipa::{IntoParams, ToSchema};
 
 use poprako_util::page::Page;
 use poprako_util::time::ToUnixMilli as _;
@@ -8,20 +8,20 @@ use crate::domain::external::image_pool::ImageGet;
 use crate::domain::model::aggr::member::MemberAggr;
 use crate::domain::model::value::member_inclusion::MemberInclusion;
 use crate::domain::model::value::role::RoleFlag;
-use crate::usecase::data_object::team::TeamBase;
-use crate::usecase::data_object::user::UserBase;
+use crate::usecase::data_object::team::TeamInfo;
+use crate::usecase::data_object::user::UserInfo;
 
 /// Public-facing representation of a team member.
 #[derive(Debug, Serialize, ToSchema)]
-pub struct MemberBase {
+pub struct MemberInfo {
     pub id: String,
 
     pub user_id: String,
     pub user_nickname: String,
-    pub user: Option<UserBase>,
+    pub user: Option<UserInfo>,
 
     pub team_id: String,
-    pub team: Option<TeamBase>,
+    pub team: Option<TeamInfo>,
 
     pub roles: u32,
 
@@ -31,7 +31,7 @@ pub struct MemberBase {
     pub updated_at: i64,
 }
 
-impl MemberBase {
+impl MemberInfo {
     pub async fn from_aggr<S>(aggr: MemberAggr, signer: &S) -> Self
     where
         S: ImageGet,
@@ -44,13 +44,13 @@ impl MemberBase {
         let team_aggr = aggr.team;
 
         let user = if let Some(u) = user_aggr {
-            Some(UserBase::from_aggr(u, signer).await)
+            Some(UserInfo::from_aggr(u, signer).await)
         } else {
             None
         };
 
         let team = if let Some(t) = team_aggr {
-            Some(TeamBase::from_aggr(t, signer).await)
+            Some(TeamInfo::from_aggr(t, signer).await)
         } else {
             None
         };
@@ -99,23 +99,31 @@ pub struct MemberJoinParams {
 /// Query parameters for listing members.
 #[derive(Debug)]
 pub struct MemberListParams {
-    pub team_id: String,
+    pub team_id: Option<String>,
+    pub user_id: Option<String>,
     pub keyword: Option<String>,
     pub role: Option<RoleFlag>,
     pub page: Page,
     pub includes: MemberInclusion,
 }
 
-/// Query parameters for listing the current user's membership in a specific team.
-#[derive(Debug)]
-pub struct ListMyMembersParams {
+/// HTTP query parameters for listing members.
+#[derive(Debug, Deserialize, IntoParams)]
+#[into_params(parameter_in = Query)]
+pub struct MemberListQuery {
     pub team_id: String,
-    pub includes: MemberInclusion,
+    pub keyword: Option<String>,
+    pub role: Option<u32>,
+    pub offset: Option<i64>,
+    pub limit: Option<i64>,
+    pub includes: Option<String>,
 }
 
-/// Query parameters for listing the current user's memberships.
-#[derive(Debug)]
-pub struct MemberMineParams {
-    pub page: Page,
-    pub includes: MemberInclusion,
+/// HTTP query parameters for listing the current user's memberships.
+#[derive(Debug, Deserialize, IntoParams)]
+#[into_params(parameter_in = Query)]
+pub struct MemberMineQuery {
+    pub offset: Option<i64>,
+    pub limit: Option<i64>,
+    pub includes: Option<String>,
 }

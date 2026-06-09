@@ -5,15 +5,15 @@ use poprako_util::time::ToUnixMilli as _;
 
 use crate::domain::external::image_pool::ImageGet;
 use crate::domain::model::aggr::workset::WorksetAggr;
-use crate::usecase::data_object::team::TeamBase;
+use crate::usecase::data_object::team::TeamInfo;
 
 /// Public-facing representation of a workset.
 #[derive(Debug, Serialize, ToSchema)]
-pub struct WorksetBase {
+pub struct WorksetInfo {
     pub id: String,
 
     pub team_id: String,
-    pub team: Option<TeamBase>,
+    pub team: Option<TeamInfo>,
 
     pub index: i32,
     pub name: String,
@@ -25,13 +25,13 @@ pub struct WorksetBase {
     pub updated_at: i64,
 }
 
-impl WorksetBase {
+impl WorksetInfo {
     pub async fn from_aggr<S>(aggr: WorksetAggr, signer: &S) -> Self
     where
         S: ImageGet,
     {
         let team = if let Some(t) = aggr.team {
-            Some(TeamBase::from_aggr(t, signer).await)
+            Some(TeamInfo::from_aggr(t, signer).await)
         } else {
             None
         };

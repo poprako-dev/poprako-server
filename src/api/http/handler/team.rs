@@ -11,8 +11,8 @@ use crate::api::http::result::HttpResult;
 use crate::harness::Harness;
 use crate::usecase;
 use crate::usecase::data_object::team::{
-    TeamAvatarMarkUploadedParams, TeamAvatarReserveParams, TeamAvatarReserveReply, TeamBase,
-    TeamCreateParams, TeamInfoUpdateParams,
+    TeamAvatarMarkUploadedParams, TeamAvatarReserveParams, TeamAvatarReserveReply,
+    TeamCreateParams, TeamInfo, TeamInfoUpdateParams,
 };
 
 #[utoipa::path(
@@ -21,7 +21,7 @@ use crate::usecase::data_object::team::{
     tag = "teams",
     request_body = TeamCreateParams,
     responses(
-        (status = 201, description = "Team created", body = TeamBase),
+        (status = 201, description = "Team created", body = TeamInfo),
         (status = 400, description = "Invalid request parameters", body = HttpError),
         (status = 401, description = "Authentication required", body = HttpError)
     )
@@ -30,10 +30,10 @@ use crate::usecase::data_object::team::{
 pub async fn create(
     State(harn): State<Harness>,
     Json(params): Json<TeamCreateParams>,
-) -> HttpResult<TeamBase> {
-    let base = usecase::team::create(&harn, params).await?;
+) -> HttpResult<TeamInfo> {
+    let info = usecase::team::create(&harn, params).await?;
 
-    base.accept(StatusCode::CREATED)
+    info.accept(StatusCode::CREATED)
 }
 
 #[utoipa::path(
@@ -44,7 +44,7 @@ pub async fn create(
         ("team_id" = String, Path, description = "Team ID")
     ),
     responses(
-        (status = 200, description = "Team info retrieved", body = TeamBase),
+        (status = 200, description = "Team info retrieved", body = TeamInfo),
         (status = 400, description = "Team not found", body = HttpError),
         (status = 401, description = "Authentication required", body = HttpError)
     )
@@ -53,10 +53,10 @@ pub async fn create(
 pub async fn get_info(
     State(harn): State<Harness>,
     Path(team_id): Path<String>,
-) -> HttpResult<TeamBase> {
-    let base = usecase::team::get_info(&harn, &team_id).await?;
+) -> HttpResult<TeamInfo> {
+    let info = usecase::team::get_info(&harn, &team_id).await?;
 
-    base.accept(StatusCode::OK)
+    info.accept(StatusCode::OK)
 }
 
 #[utoipa::path(
@@ -68,7 +68,7 @@ pub async fn get_info(
         ("limit" = Option<i64>, Query, description = "Pagination limit")
     ),
     responses(
-        (status = 200, description = "Teams listed", body = Vec<TeamBase>),
+        (status = 200, description = "Teams listed", body = Vec<TeamInfo>),
         (status = 401, description = "Authentication required", body = HttpError)
     )
 )]
@@ -76,15 +76,15 @@ pub async fn get_info(
 pub async fn list(
     State(harn): State<Harness>,
     axum::extract::Query(params): axum::extract::Query<TeamListQuery>,
-) -> HttpResult<Vec<TeamBase>> {
+) -> HttpResult<Vec<TeamInfo>> {
     let page = Page {
         offset: params.offset.unwrap_or(0) as usize,
         limit: params.limit.unwrap_or(20) as usize,
     };
 
-    let bases = usecase::team::list_infos(&harn, page).await?;
+    let infos = usecase::team::list_infos(&harn, page).await?;
 
-    bases.accept(StatusCode::OK)
+    infos.accept(StatusCode::OK)
 }
 
 #[derive(Debug, Deserialize, utoipa::IntoParams)]

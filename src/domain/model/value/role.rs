@@ -46,7 +46,7 @@ pub struct RoleMask(u32);
 
 impl RoleMask {
     /// Bitmask of all valid role bits (bit 0 through 8).
-    pub const VALID_BITS: u32 = (1 << 9) - 1;
+    const VALID_BITS: u32 = (1 << 9) - 1;
 
     pub fn has_any_role(&self, flags: &[RoleFlag]) -> bool {
         for f in flags {
@@ -77,15 +77,15 @@ impl From<RoleFlag> for RoleMask {
     }
 }
 
-impl From<u32> for RoleMask {
-    fn from(v: u32) -> Self {
-        debug_assert!(
-            v & !RoleMask::VALID_BITS == 0,
-            "u32 value {:#010b} contains invalid role bits (valid bits: {:#010b})",
-            v,
-            RoleMask::VALID_BITS,
-        );
-        Self(v)
+impl TryFrom<u32> for RoleMask {
+    type Error = ();
+
+    fn try_from(value: u32) -> Result<Self, Self::Error> {
+        match value {
+            0 => Err(()),
+            bits if bits & !RoleMask::VALID_BITS != 0 => Err(()),
+            bits => Ok(Self(bits)),
+        }
     }
 }
 
@@ -118,9 +118,10 @@ mod tests {
     // has_any_role_false(RoleMask::has_any_role)(negative): matching any role should return false when none are present.
     // has_every_role_true(RoleMask::has_every_role)(positive): matching every role should return true when all roles are present.
     // has_every_role_false_missing_one(RoleMask::has_every_role)(negative): matching every role should return false when one is missing.
-    // from_u32_invalid_bits_panics_in_debug(RoleMask::from)(negative): invalid role bits should panic in debug builds.
+    // try_from_zero_fails(RoleMask::try_from)(negative): zero should not build a role mask.
+    // try_from_invalid_bits_fails(RoleMask::try_from)(negative): invalid role bits should be rejected.
     // valid_bits_constant(RoleMask::VALID_BITS)(positive): valid role bitmask should cover all defined roles.
-    // roundtrip_u32_to_mask_to_u32(RoleMask::from/u32::from)(positive): converting from and back to u32 should preserve valid bits.
+    // roundtrip_u32_to_mask_to_u32(RoleMask::try_from/u32::from)(positive): converting from and back to u32 should preserve valid bits.
 
     use super::RoleFlag;
     use super::RoleMask;
@@ -149,7 +150,7 @@ mod tests {
         let mut mask: u32 = 0;
         mask |= Into::<u32>::into(RoleFlag::Translator);
         mask |= Into::<u32>::into(RoleFlag::Proofreader);
-        let mask: RoleMask = mask.into();
+        let mask = RoleMask::try_from(mask).unwrap();
         assert!(mask.has_every_role(&[RoleFlag::Translator, RoleFlag::Proofreader]));
     }
 
@@ -160,19 +161,16 @@ mod tests {
     }
 
     #[test]
-    fn from_u32_invalid_bits_panics_in_debug() {
+    fn try_from_zero_fails() {
+        let result = RoleMask::try_from(0);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn try_from_invalid_bits_fails() {
         let bad: u32 = RoleMask::VALID_BITS << 1;
-        let result = std::panic::catch_unwind(|| {
-            let _mask: RoleMask = bad.into();
-        });
-        if cfg!(debug_assertions) {
-            assert!(
-                result.is_err(),
-                "expected panic on invalid bits in debug mode"
-            );
-        } else {
-            assert!(result.is_ok(), "no panic expected in release mode");
-        }
+        let result = RoleMask::try_from(bad);
+        assert!(result.is_err());
     }
 
     #[test]
@@ -183,7 +181,7 @@ mod tests {
     #[test]
     fn roundtrip_u32_to_mask_to_u32() {
         let original: u32 = 0b0000_0000_0010_0101;
-        let mask: RoleMask = original.into();
+        let mask = RoleMask::try_from(original).unwrap();
         let back: u32 = mask.into();
         assert_eq!(back, original);
     }
