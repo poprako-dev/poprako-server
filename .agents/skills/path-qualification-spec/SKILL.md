@@ -1,6 +1,6 @@
 ---
 name: path-qualification-spec
-description: "Call-site path rules: crate:: prefix forbidden at call sites; intra-layer calls use bare submodule names; cross-layer calls add layer qualifier (usecase::, complex::); third-party exceptions: serde_json, jwt, diesel allow qualified paths."
+description: "Call-site path rules: crate:: prefix forbidden at call sites; intra-layer calls use bare submodule names; cross-layer calls add layer qualifier (usecase::, domain::, infra::, api::); Complex must be imported and called bare; third-party exceptions: serde_json, jwt, diesel allow qualified paths."
 ---
 
 # Call-Site Path Qualification Specification
@@ -29,15 +29,17 @@ description: "Call-site path rules: crate:: prefix forbidden at call sites; intr
 | 场景 | 调用处写法 | 示例 |
 |------|-----------|------|
 | **同层内不同子模块** | 子模块名直接调用 | `usecase/user.rs` 中调 `member::create(...)` |
-| **跨层调用** | 加层 qualifier | `usecase/team.rs` 中调 `complex::team::delete_cascade(...)` |
+| **跨层调用** | 加层 qualifier（但 complex 函数必须 import 类型后调用，见 1e） | — |
 | `crate::` 前缀 | ❌ 永远禁止 | `crate::domain::complex::team::delete_cascade(...)` |
 
 **层 qualifier 列表**（跨层时必须加的顶层模块名）：
 - `usecase::` — usecase 层
-- `complex::` — domain/complex 层
 - `domain::` — domain 层
 - `infra::` — infra 层
 - `api::` — API 层
+
+> `complex::` 不在跨层 qualifier 列表中——Complex 函数必须 import 其 struct
+> 后调用，见规则 1e。
 
 **层内不允许加层 qualifier**——同层调用带层前缀属于冗余。
 例如 `usecase/team.rs` 中调 `workset::create(...)` → ✅
@@ -74,15 +76,37 @@ let params = crate::usecase::data_object::member::MemberCreateParams { ... };
 |-----------|------|------|
 | `member::create(...)` | ✅ 合法 | 同层内调用子模块 |
 | `workset::get_by_id(...)` | ✅ 合法 | 同层内调用子模块 |
-| `complex::team::delete_cascade(...)` | ✅ 合法 | 跨层调用，加层 qualifier |
-| `complex::user::delete_cascade(...)` | ✅ 合法 | 跨层调用 |
+| `complex::team::TeamComplex::delete_cascade(...)` | ❌ 非法 | 禁止 `complex::` qualifier，应 import 后裸名调用（见 1e） |
+| `complex::user::UserComplex::delete_cascade(...)` | ❌ 非法 | 同上 |
 | `usecase::member::create(...)` | ❌ 非法 | 同层内冗余的层前缀 |
-| `domain::complex::team::delete_cascade(...)` | ❌ 非法 | 同层内（domain 内跨 complex 不需要再写 domain::） |
+| `domain::complex::team::TeamComplex::delete_cascade(...)` | ❌ 非法 | 同层内 + 禁止 `complex::` qualifier |
 | `crate::usecase::member::create(...)` | ❌ 非法 | `crate::` 禁止 |
 | `crate::domain::complex::team::delete_cascade(...)` | ❌ 非法 | `crate::` 禁止 |
 
-> 注：`complex` 本身已是 domain 下的一个子模块，所以 `domain::complex` 是冗余的。
-> 在 domain 内部跨到 complex 只需要 `complex::`。
+> 注：`complex` 本身已是 domain 下的一个子模块，Complex struct 必须
+> 通过 `use` 导入后在调用处以裸名使用，不得在调用处保留 `complex::` 前缀。见规则 1e。
+
+### 1e. Complex 调用必须 import struct 后用裸名
+
+所有 `complex` 层的函数现在都是 struct associated function（如 `TeamComplex::delete_cascade`、
+`UserComplex::hash_password`、`WorksetComplex::delete_cascade`）。调用处必须先 `use` 导入对应的
+Complex struct，再以 `StructName::function(...)` 裸名调用。不得在调用处使用 `complex::` 前缀。
+
+```rust
+// ✅ 正确：import struct 后裸名调用
+use crate::domain::complex::team::TeamComplex;
+TeamComplex::delete_cascade(query, &team_id).await?;
+
+use crate::domain::complex::user::UserComplex;
+UserComplex::hash_password(password)?;
+UserComplex::parse_token(parser, token)?;
+
+// ❌ 错误：调用处保留 complex:: 前缀
+complex::team::TeamComplex::delete_cascade(query, &team_id).await?;
+complex::user::UserComplex::hash_password(password)?;
+```
+
+> 此规则替换了旧版允许 `complex::function(...)` 跨层 qualifier 的例外。
 
 ---
 
