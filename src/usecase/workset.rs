@@ -5,7 +5,6 @@ use tracing::instrument;
 use crate::domain::complex::workset::WorksetComplex;
 use crate::domain::external::image_pool::ImageGet;
 use crate::domain::model::aggr::workset::{WorksetAggr, WorksetForm, WorksetUpdate};
-use crate::domain::query::Query;
 use crate::domain::query::Transactional;
 use crate::domain::query::team::TeamQueryTransactional;
 use crate::domain::query::workset::WorksetQuery;
@@ -15,7 +14,7 @@ use crate::usecase::data_object::workset::{
 };
 use crate::usecase::result::UseCaseResult;
 
-async fn worksets_to_infos<H>(worksets: Vec<WorksetAggr>, harn: &H) -> Vec<WorksetInfo>
+async fn to_infos<H>(worksets: Vec<WorksetAggr>, harn: &H) -> Vec<WorksetInfo>
 where
     H: ImageGet,
 {
@@ -30,7 +29,7 @@ where
 #[instrument(err, skip(harn))]
 pub async fn create<H>(harn: &H, params: WorksetCreateParams) -> UseCaseResult<WorksetCreateReply>
 where
-    H: Clone + Transactional + Query + Send + Sync,
+    H: Clone + Transactional + Send + Sync,
 {
     let id = WorksetAggr::generate_id();
 
@@ -65,11 +64,11 @@ where
 #[instrument(err, skip(harn))]
 pub async fn list_infos<H>(harn: &H, team_id: &str, page: Page) -> UseCaseResult<Vec<WorksetInfo>>
 where
-    H: Query + ImageGet + Send + Sync,
+    H: WorksetQuery + ImageGet + Send + Sync,
 {
     let worksets = WorksetQuery::list(harn, team_id, page).await?;
 
-    Ok(worksets_to_infos(worksets, harn).await)
+    Ok(to_infos(worksets, harn).await)
 }
 
 #[instrument(err, skip(harn))]
@@ -79,7 +78,7 @@ pub async fn update_info<H>(
     params: WorksetUpdateParams,
 ) -> UseCaseResult<()>
 where
-    H: Query + Send + Sync,
+    H: WorksetQuery + Send + Sync,
 {
     let update = WorksetUpdate {
         id: workset_id,
@@ -129,7 +128,9 @@ mod tests {
     use time::OffsetDateTime;
 
     use crate::domain::model::aggr::team::TeamAggr;
+    use crate::domain::query::workset::WorksetQuery;
     use crate::harness::tests::TestHarness;
+    use crate::test_util::is_expected_argument;
     use crate::test_util::usecase_is_expected_argument;
     use crate::usecase::data_object::workset::{WorksetCreateParams, WorksetUpdateParams};
 
@@ -164,7 +165,7 @@ mod tests {
         .await
         .unwrap();
 
-        let found = get_by_id(&harn, &reply.id).await.unwrap();
+        let found = WorksetQuery::get_by_id(&harn, &reply.id).await.unwrap();
         assert_eq!(found.name, "WS1");
         assert_eq!(found.index, 0);
     }
@@ -195,8 +196,8 @@ mod tests {
         .await
         .unwrap();
 
-        let w1 = get_by_id(&harn, &r1.id).await.unwrap();
-        let w2 = get_by_id(&harn, &r2.id).await.unwrap();
+        let w1 = WorksetQuery::get_by_id(&harn, &r1.id).await.unwrap();
+        let w2 = WorksetQuery::get_by_id(&harn, &r2.id).await.unwrap();
         assert_eq!(w1.index, 0);
         assert_eq!(w2.index, 1);
     }
@@ -204,8 +205,11 @@ mod tests {
     #[tokio::test]
     async fn get_by_id_fails_for_nonexistent() {
         let harn = TestHarness::default();
-        let err = get_by_id(&harn, "no-such-workset").await.err().unwrap();
-        assert!(usecase_is_expected_argument(&err));
+        let err = WorksetQuery::get_by_id(&harn, "no-such-workset")
+            .await
+            .err()
+            .unwrap();
+        assert!(is_expected_argument(&err));
     }
 
     #[tokio::test]
@@ -285,7 +289,7 @@ mod tests {
         .await
         .unwrap();
 
-        let found = get_by_id(&harn, &reply.id).await.unwrap();
+        let found = WorksetQuery::get_by_id(&harn, &reply.id).await.unwrap();
         assert_eq!(found.name, "New");
         assert_eq!(found.description, Some("Updated desc".into()));
     }
@@ -325,8 +329,11 @@ mod tests {
 
         delete(&harn, reply.id.clone()).await.unwrap();
 
-        let err = get_by_id(&harn, &reply.id).await.err().unwrap();
-        assert!(usecase_is_expected_argument(&err));
+        let err = WorksetQuery::get_by_id(&harn, &reply.id)
+            .await
+            .err()
+            .unwrap();
+        assert!(is_expected_argument(&err));
     }
 
     #[tokio::test]
@@ -371,7 +378,7 @@ mod tests {
         .await
         .unwrap();
 
-        let info = get_by_id(&harn, &reply.id).await.unwrap();
+        let info = WorksetQuery::get_by_id(&harn, &reply.id).await.unwrap();
         assert_eq!(info.name, "MyWS");
         assert_eq!(info.team_id, "team-1");
         assert_eq!(info.index, 0);

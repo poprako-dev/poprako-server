@@ -40,7 +40,7 @@ pub fn forward_ref(attr: TokenStream, item: TokenStream) -> TokenStream {
 /// # Example
 ///
 /// ```ignore
-/// #[forward_ref_sub]
+/// #[forward_ref_super]
 /// pub trait Query: UserQuery + TeamQuery {
 /// }
 /// ```
@@ -53,7 +53,7 @@ pub fn forward_ref(attr: TokenStream, item: TokenStream) -> TokenStream {
 /// Use `Query` as a single marker in `#[derive(ForwardRefs)]` instead of listing
 /// each sub-trait individually.
 #[proc_macro_attribute]
-pub fn forward_ref_sub(attr: TokenStream, item: TokenStream) -> TokenStream {
+pub fn forward_ref_super(attr: TokenStream, item: TokenStream) -> TokenStream {
     parse_macro_input!(attr as EmptyArgs);
     let item_trait = parse_macro_input!(item as ItemTrait);
 
@@ -239,7 +239,7 @@ fn expand_forward_sub(item_trait: ItemTrait) -> Result<proc_macro2::TokenStream>
     if !item_trait.generics.params.is_empty() || item_trait.generics.where_clause.is_some() {
         return Err(Error::new_spanned(
             &item_trait.generics,
-            "forward_ref_sub does not support trait generics",
+            "forward_ref_super does not support trait generics",
         ));
     }
 
@@ -262,7 +262,7 @@ fn expand_forward_sub(item_trait: ItemTrait) -> Result<proc_macro2::TokenStream>
     if super_paths.is_empty() {
         return Err(Error::new_spanned(
             &item_trait,
-            "forward_ref_sub requires at least one supertrait bound",
+            "forward_ref_super requires at least one supertrait bound",
         ));
     }
 
