@@ -69,7 +69,7 @@ impl MemberAggr {
             bits |= u32::from(RoleFlag::Assistant);
         }
 
-        RoleMask::from(bits)
+        RoleMask::try_from(bits).expect("member role timestamps should produce a valid role mask")
     }
 
     /// Reports whether the member has at least one of the given roles.

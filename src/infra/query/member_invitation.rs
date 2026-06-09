@@ -33,7 +33,7 @@ pub async fn get_by_code_ex(
         .optional()?
         .ok_or_else(|| DomainError::expected_argument(trl("error-no-pending-invitation")))?;
 
-    Ok(row.into())
+    row.try_into()
 }
 
 /// Conditionally marks an invitation as consumed.

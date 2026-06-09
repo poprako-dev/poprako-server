@@ -13,7 +13,7 @@ use crate::api::http::result::HttpResult;
 use crate::harness::Harness;
 use crate::usecase;
 use crate::usecase::data_object::workset::{
-    WorksetBase, WorksetCreateParams, WorksetCreateReply, WorksetUpdateParams,
+    WorksetCreateParams, WorksetCreateReply, WorksetInfo, WorksetUpdateParams,
 };
 
 #[utoipa::path(
@@ -51,7 +51,7 @@ pub struct WorksetListQuery {
     tag = "worksets",
     params(WorksetListQuery),
     responses(
-        (status = 200, description = "Worksets listed", body = Vec<WorksetBase>),
+        (status = 200, description = "Worksets listed", body = Vec<WorksetInfo>),
         (status = 400, description = "Invalid request parameters", body = HttpError),
         (status = 401, description = "Authentication required", body = HttpError)
     )
@@ -60,15 +60,15 @@ pub struct WorksetListQuery {
 pub async fn list(
     State(harn): State<Harness>,
     Query(params): Query<WorksetListQuery>,
-) -> HttpResult<Vec<WorksetBase>> {
+) -> HttpResult<Vec<WorksetInfo>> {
     let page = Page {
         offset: params.offset.unwrap_or(0) as usize,
         limit: params.limit.unwrap_or(20) as usize,
     };
 
-    let bases = usecase::workset::list(&harn, &params.team_id, page).await?;
+    let infos = usecase::workset::list(&harn, &params.team_id, page).await?;
 
-    bases.accept(StatusCode::OK)
+    infos.accept(StatusCode::OK)
 }
 
 #[utoipa::path(

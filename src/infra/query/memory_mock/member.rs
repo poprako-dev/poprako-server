@@ -5,8 +5,10 @@ use poprako_util::i18n::trl;
 use poprako_util::page::Page;
 
 use crate::domain::model::aggr::member::{MemberAggr, MemberForm, MemberRoleUpdate};
+use crate::domain::model::value::member_inclusion::MemberInclusion;
 use crate::domain::model::value::role::RoleFlag;
-use crate::domain::query::member::{MemberQuery, MemberQueryTransactional};
+use crate::domain::query::member::MemberQuery;
+use crate::domain::query::member::MemberQueryTransactional;
 use crate::domain::result::{DomainError, DomainResult};
 use crate::infra::query::memory_mock::{MemoryMockQuery, MemoryMockQueryTransactional};
 
@@ -40,33 +42,51 @@ impl MemberQuery for MemoryMockQuery {
 
     async fn list(
         &self,
-        team_id: &str,
+        team_id: Option<&str>,
+        user_id: Option<&str>,
         keyword: Option<&str>,
         role: Option<RoleFlag>,
         page: Page,
+        includes: &MemberInclusion,
     ) -> DomainResult<Vec<MemberAggr>> {
         let state = self.state.lock().unwrap();
 
-        let filtered: Vec<MemberAggr> = state
+        let mut filtered: Vec<MemberAggr> = state
             .members
             .iter()
-            .filter(|m| m.team_id == team_id)
-            .filter(|m| {
-                if let Some(kw) = keyword {
-                    m.user_nickname.to_lowercase().contains(&kw.to_lowercase())
-                } else {
-                    true
-                }
+            .filter(|member| team_id.is_none_or(|id| member.team_id == id))
+            .filter(|member| user_id.is_none_or(|id| member.user_id == id))
+            .filter(|member| {
+                keyword.is_none_or(|text| {
+                    member
+                        .user_nickname
+                        .to_lowercase()
+                        .contains(&text.to_lowercase())
+                })
             })
-            .filter(|m| {
-                if let Some(flag) = role {
-                    m.has_any_role(&[flag])
-                } else {
-                    true
-                }
-            })
+            .filter(|member| role.is_none_or(|flag| member.has_any_role(&[flag])))
             .cloned()
             .collect();
+
+        if includes.user {
+            for member in filtered.iter_mut() {
+                member.user = state
+                    .users
+                    .iter()
+                    .find(|user| user.id == member.user_id)
+                    .cloned();
+            }
+        }
+
+        if includes.team {
+            for member in filtered.iter_mut() {
+                member.team = state
+                    .teams
+                    .iter()
+                    .find(|team| team.id == member.team_id)
+                    .cloned();
+            }
+        }
 
         let skip = page.offset;
         let take = page.limit;
@@ -85,31 +105,6 @@ impl MemberQuery for MemoryMockQuery {
             .members
             .iter()
             .any(|m| m.user_id == user_id && m.team_id == team_id))
-    }
-
-    async fn list_by_user_id(
-        &self,
-        user_id: &str,
-        page: Page,
-    ) -> DomainResult<Vec<MemberAggr>> {
-        let state = self.state.lock().unwrap();
-
-        let filtered: Vec<MemberAggr> = state
-            .members
-            .iter()
-            .filter(|m| m.user_id == user_id)
-            .cloned()
-            .collect();
-
-        let skip = page.offset;
-        let take = page.limit;
-
-        if skip >= filtered.len() {
-            return Ok(Vec::new());
-        }
-
-        let end = std::cmp::min(skip + take, filtered.len());
-        Ok(filtered[skip..end].to_vec())
     }
 }
 
@@ -276,7 +271,7 @@ mod tests {
     // list_filters_by_team_keyword_role(MemberQuery::list)(positive): list should filter by team, keyword, and role.
     // exist_by_user_and_team_id_true(MemberQuery::exist_by_user_and_team_id)(positive): exist check should return true for existing member.
     // exist_by_user_and_team_id_false(MemberQuery::exist_by_user_and_team_id)(positive): exist check should return false for non-existing member.
-    // list_by_user_id_returns_user_members(MemberQuery::list_by_user_id)(positive): list_by_user_id should return all memberships for a user.
+    // list_user_filter_returns_user_members(MemberQuery::list)(positive): user filter should return all memberships for a user.
     // update_roles_replaces_all_roles(MemberQueryTransactional::update_roles)(positive): update_roles should clear all roles and set only those in the mask.
     // update_roles_missing_returns_error(MemberQueryTransactional::update_roles)(negative): updating roles on a missing member should fail.
     // delete_removes_member(MemberQueryTransactional::delete)(positive): deleting a member should remove it from storage.
@@ -288,6 +283,7 @@ mod tests {
     use poprako_util::page::Page;
 
     use crate::domain::model::aggr::member::{MemberAggr, MemberForm, MemberRoleUpdate};
+    use crate::domain::model::value::member_inclusion::MemberInclusion;
     use crate::domain::model::value::role::{RoleFlag, RoleMask};
     use crate::domain::query::Transactional;
     use crate::domain::query::member::{MemberQuery, MemberQueryTransactional};
@@ -514,13 +510,15 @@ mod tests {
         // List by team only.
         let list = MemberQuery::list(
             &mock,
-            "team-1",
+            Some("team-1"),
+            None,
             None,
             None,
             Page {
                 offset: 0,
                 limit: 10,
             },
+            &MemberInclusion::default(),
         )
         .await
         .unwrap();
@@ -529,13 +527,15 @@ mod tests {
         // List by team + keyword.
         let list = MemberQuery::list(
             &mock,
-            "team-1",
+            Some("team-1"),
+            None,
             Some("Ali"),
             None,
             Page {
                 offset: 0,
                 limit: 10,
             },
+            &MemberInclusion::default(),
         )
         .await
         .unwrap();
@@ -545,13 +545,15 @@ mod tests {
         // List by team + role.
         let list = MemberQuery::list(
             &mock,
-            "team-1",
+            Some("team-1"),
+            None,
             None,
             Some(RoleFlag::Translator),
             Page {
                 offset: 0,
                 limit: 10,
             },
+            &MemberInclusion::default(),
         )
         .await
         .unwrap();
@@ -581,19 +583,38 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn list_by_user_id_returns_user_members() {
+    async fn list_user_filter_returns_user_members() {
         let mock = MemoryMockQuery::new();
-        mock.seed_member(make_member("m-1", "user-1", "team-1", RoleFlag::Admin.into()));
-        mock.seed_member(make_member("m-2", "user-1", "team-2", RoleFlag::Translator.into()));
-        mock.seed_member(make_member("m-3", "user-2", "team-1", RoleFlag::Admin.into()));
-
-        let list = MemberQuery::list_by_user_id(
-            &mock,
+        mock.seed_member(make_member(
+            "m-1",
             "user-1",
+            "team-1",
+            RoleFlag::Admin.into(),
+        ));
+        mock.seed_member(make_member(
+            "m-2",
+            "user-1",
+            "team-2",
+            RoleFlag::Translator.into(),
+        ));
+        mock.seed_member(make_member(
+            "m-3",
+            "user-2",
+            "team-1",
+            RoleFlag::Admin.into(),
+        ));
+
+        let list = MemberQuery::list(
+            &mock,
+            None,
+            Some("user-1"),
+            None,
+            None,
             Page {
                 offset: 0,
                 limit: 10,
             },
+            &MemberInclusion::default(),
         )
         .await
         .unwrap();
@@ -609,7 +630,7 @@ mod tests {
         let mut roles_bits: u32 = 0;
         roles_bits |= u32::from(RoleFlag::Translator);
         roles_bits |= u32::from(RoleFlag::Proofreader);
-        let new_roles = RoleMask::from(roles_bits);
+        let new_roles = RoleMask::try_from(roles_bits).unwrap();
 
         mock.transaction_scoped(|txn| {
             async move {

@@ -1,80 +1,40 @@
 use futures_util::FutureExt as _;
 use poprako_util::i18n::trl;
-use poprako_util::page::Page;
 use tracing::instrument;
 
 use crate::domain::external::image_pool::ImageGet;
 use crate::domain::model::aggr::member::{MemberAggr, MemberForm, MemberRoleUpdate};
 use crate::domain::model::aggr::user::UserToken;
-use crate::domain::model::value::member_inclusion::MemberInclusion;
 use crate::domain::model::value::role::{RoleFlag, RoleMask};
 use crate::domain::query::Query;
 use crate::domain::query::Transactional;
 use crate::domain::query::member::MemberQuery;
 use crate::domain::query::member::MemberQueryTransactional;
 use crate::domain::query::member_invitation::MemberInvitationQueryTransactional;
-use crate::domain::query::team::TeamQuery;
 use crate::domain::query::team::TeamQueryTransactional;
-use crate::domain::query::user::UserQuery;
 use crate::domain::query::user::UserQueryTransactional;
 use crate::domain::result::{DomainError, DomainResult};
 use crate::usecase::data_object::member::{
-    ListMyMembersParams, MemberBase, MemberCreateParams, MemberCreateReply, MemberJoinParams,
-    MemberListParams, MemberMineParams, MemberRoleUpdateParams,
+    MemberCreateParams, MemberCreateReply, MemberInfo, MemberJoinParams, MemberListParams,
+    MemberRoleUpdateParams,
 };
 use crate::usecase::result::UseCaseResult;
 
-/// Validates that a role_mask u32 value is non-zero and contains only valid role bits.
 fn validate_role_mask(mask: u32) -> DomainResult<RoleMask> {
-    if mask == 0 {
-        return Err(DomainError::expected_argument(trl(
-            "error-member-not-found",
-        )));
-    }
-    if mask & !RoleMask::VALID_BITS != 0 {
-        return Err(DomainError::expected_argument(trl(
-            "error-member-not-found",
-        )));
-    }
-
-    Ok(RoleMask::from(mask))
+    RoleMask::try_from(mask)
+        .map_err(|_| DomainError::expected_argument(trl("error-member-not-found")))
 }
 
-async fn populate_includes<H>(harn: &H, members: &mut [MemberAggr], includes: &MemberInclusion)
-where
-    H: Query + ImageGet,
-{
-    if includes.is_empty() {
-        return;
-    }
-
-    if includes.user {
-        for member in members.iter_mut() {
-            if let Ok(user) = UserQuery::get_by_id(harn, &member.user_id).await {
-                member.user = Some(user);
-            }
-        }
-    }
-
-    if includes.team {
-        for member in members.iter_mut() {
-            if let Ok(team) = TeamQuery::get_by_id(harn, &member.team_id).await {
-                member.team = Some(team);
-            }
-        }
-    }
-}
-
-async fn members_to_bases<H>(members: Vec<MemberAggr>, harn: &H) -> Vec<MemberBase>
+async fn members_to_infos<H>(members: Vec<MemberAggr>, harn: &H) -> Vec<MemberInfo>
 where
     H: ImageGet,
 {
-    let mut bases = Vec::with_capacity(members.len());
+    let mut infos = Vec::with_capacity(members.len());
     for member in members {
-        bases.push(MemberBase::from_aggr(member, harn).await);
+        infos.push(MemberInfo::from_aggr(member, harn).await);
     }
 
-    bases
+    infos
 }
 
 #[instrument(err, skip(harn))]
@@ -133,56 +93,30 @@ pub async fn list_infos<H>(
     harn: &H,
     user_token: &UserToken,
     params: &MemberListParams,
-) -> UseCaseResult<Vec<MemberBase>>
+) -> UseCaseResult<Vec<MemberInfo>>
 where
     H: Query + ImageGet + Send + Sync,
 {
-    // Verify current user is a member of the target team.
-    let is_member =
-        MemberQuery::exist_by_user_and_team_id(harn, &user_token.user_id, &params.team_id).await?;
-    if !is_member {
-        return Err(DomainError::expected_forbidden(trl("error-team-member-required")).into());
+    if let Some(team_id) = &params.team_id {
+        let is_member =
+            MemberQuery::exist_by_user_and_team_id(harn, &user_token.user_id, team_id).await?;
+        if !is_member {
+            return Err(DomainError::expected_forbidden(trl("error-team-member-required")).into());
+        }
     }
 
-    let mut members = MemberQuery::list(
+    let members = MemberQuery::list(
         harn,
-        &params.team_id,
+        params.team_id.as_deref(),
+        params.user_id.as_deref(),
         params.keyword.as_deref(),
         params.role,
         params.page,
+        &params.includes,
     )
     .await?;
 
-    populate_includes(harn, &mut members, &params.includes).await;
-
-    Ok(members_to_bases(members, harn).await)
-}
-
-#[instrument(err, skip(harn, params))]
-pub async fn list_my_members<H>(
-    harn: &H,
-    user_token: &UserToken,
-    params: &ListMyMembersParams,
-) -> UseCaseResult<MemberBase>
-where
-    H: Query + ImageGet + Send + Sync,
-{
-    // Verify current user is a member of the target team.
-    let is_member =
-        MemberQuery::exist_by_user_and_team_id(harn, &user_token.user_id, &params.team_id).await?;
-    if !is_member {
-        return Err(DomainError::expected_forbidden(trl(
-            "error-team-member-required",
-        ))
-        .into());
-    }
-
-    let mut member =
-        MemberQuery::get_by_user_and_team_id(harn, &user_token.user_id, &params.team_id).await?;
-
-    populate_includes(harn, std::slice::from_mut(&mut member), &params.includes).await;
-
-    Ok(MemberBase::from_aggr(member, harn).await)
+    Ok(members_to_infos(members, harn).await)
 }
 
 #[instrument(err, skip(harn))]
@@ -269,23 +203,6 @@ where
     Ok(())
 }
 
-#[instrument(err, skip(harn, params))]
-pub async fn list_mine<H>(
-    harn: &H,
-    user_token: &UserToken,
-    params: &MemberMineParams,
-) -> UseCaseResult<Vec<MemberBase>>
-where
-    H: Query + ImageGet + Send + Sync,
-{
-    let mut members =
-        MemberQuery::list_by_user_id(harn, &user_token.user_id, params.page).await?;
-
-    populate_includes(harn, &mut members, &params.includes).await;
-
-    Ok(members_to_bases(members, harn).await)
-}
-
 #[instrument(err, skip(harn))]
 pub async fn join<H>(
     harn: &H,
@@ -364,8 +281,7 @@ mod tests {
     // list_nonmember_returns_forbidden(list_infos)(negative): non-member should get forbidden.
     // list_includes_user_fills_user(list_infos)(positive): includes=user should fill the user field.
     // list_includes_team_fills_team(list_infos)(positive): includes=team should fill the team field.
-    // list_my_members_team_member_succeeds(list_my_members)(positive): team member should be able to list own membership.
-    // list_my_members_nonmember_returns_forbidden(list_my_members)(negative): non-member should get forbidden.
+    // list_infos_user_filter_returns_user_members(list_infos)(positive): user filter should return only that user's memberships.
     // update_roles_admin_succeeds(update_roles)(positive): team admin should be able to update roles.
     // update_roles_nonadmin_returns_forbidden(update_roles)(negative): non-admin should get forbidden.
     // update_roles_target_member_not_found_fails(update_roles)(negative): nonexistent target member should fail.
@@ -373,7 +289,6 @@ mod tests {
     // delete_admin_succeeds(delete)(positive): team admin should be able to delete a member.
     // delete_nonadmin_returns_forbidden(delete)(negative): non-admin should get forbidden.
     // delete_target_member_not_found_fails(delete)(negative): nonexistent target member should fail.
-    // list_mine_returns_user_members(list_mine)(positive): should return only current user's memberships.
     // join_by_code_succeeds(join)(positive): should join by invitation code.
     // join_code_not_found_fails(join)(negative): nonexistent code should fail.
     // join_wrong_qid_fails(join)(negative): mismatched qid should fail.
@@ -381,25 +296,23 @@ mod tests {
 
     use super::*;
 
+    use poprako_util::page::Page;
     use time::OffsetDateTime;
 
     use crate::domain::model::aggr::member::MemberAggr;
     use crate::domain::model::aggr::member_invitation::MemberInvitationAggr;
     use crate::domain::model::aggr::team::TeamAggr;
     use crate::domain::model::aggr::user::{UserAggr, UserCredential, UserToken};
+    use crate::domain::model::value::member_inclusion::MemberInclusion;
     use crate::domain::model::value::role::{RoleFlag, RoleMask};
-    use crate::domain::query::Transactional;
     use crate::domain::query::member::MemberQuery;
-    use crate::domain::query::member::MemberQueryTransactional;
-    use crate::domain::query::member_invitation::MemberInvitationQueryTransactional;
     use crate::harness::tests::TestHarness;
     use crate::test_util::is_expected_argument;
     use crate::test_util::usecase_is_expected_argument;
     use crate::test_util::usecase_is_expected_conflict;
     use crate::test_util::usecase_is_expected_forbidden;
     use crate::usecase::data_object::member::{
-        ListMyMembersParams, MemberCreateParams, MemberJoinParams, MemberListParams,
-        MemberMineParams, MemberRoleUpdateParams,
+        MemberCreateParams, MemberJoinParams, MemberListParams, MemberRoleUpdateParams,
     };
 
     fn make_user(id: &str, qid: &str, is_sadmin: bool) -> UserAggr {
@@ -681,7 +594,8 @@ mod tests {
             &harn,
             &user_token("u-1"),
             &MemberListParams {
-                team_id: "team-1".into(),
+                team_id: Some("team-1".into()),
+                user_id: None,
                 keyword: None,
                 role: None,
                 page: Page {
@@ -706,7 +620,8 @@ mod tests {
             &harn,
             &user_token("u-1"),
             &MemberListParams {
-                team_id: "team-1".into(),
+                team_id: Some("team-1".into()),
+                user_id: None,
                 keyword: None,
                 role: None,
                 page: Page {
@@ -719,52 +634,6 @@ mod tests {
         .await
         .err()
         .unwrap();
-
-        assert!(usecase_is_expected_forbidden(&err));
-    }
-
-    #[tokio::test]
-    async fn list_my_members_team_member_succeeds() {
-        let harn = TestHarness::default();
-        harn.seed_user(make_user("u-1", "qid-1", false), make_credential("u-1"));
-        harn.seed_team(make_team("team-1"));
-        harn.seed_member(make_test_member(
-            "m-1",
-            "u-1",
-            "team-1",
-            RoleFlag::Admin.into(),
-        ));
-
-        let base = super::list_my_members(
-            &harn,
-            &user_token("u-1"),
-            &ListMyMembersParams {
-                team_id: "team-1".into(),
-                includes: MemberInclusion::default(),
-            },
-        )
-        .await
-        .unwrap();
-        assert_eq!(base.user_id, "u-1");
-    }
-
-    #[tokio::test]
-    async fn list_my_members_nonmember_returns_forbidden() {
-        let harn = TestHarness::default();
-        harn.seed_user(make_user("u-1", "qid-1", false), make_credential("u-1"));
-        harn.seed_team(make_team("team-1"));
-
-        let err = super::list_my_members(
-            &harn,
-            &user_token("u-1"),
-            &ListMyMembersParams {
-                team_id: "team-1".into(),
-                includes: MemberInclusion::default(),
-            },
-        )
-            .await
-            .err()
-            .unwrap();
 
         assert!(usecase_is_expected_forbidden(&err));
     }
@@ -1004,7 +873,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn list_mine_returns_user_members() {
+    async fn list_infos_user_filter_returns_user_members() {
         let harn = TestHarness::default();
         harn.seed_user(make_user("u-1", "qid-1", false), make_credential("u-1"));
         harn.seed_team(make_team("team-1"));
@@ -1028,10 +897,14 @@ mod tests {
             RoleFlag::Admin.into(),
         ));
 
-        let list = super::list_mine(
+        let list = super::list_infos(
             &harn,
             &user_token("u-1"),
-            &MemberMineParams {
+            &MemberListParams {
+                team_id: None,
+                user_id: Some("u-1".into()),
+                keyword: None,
+                role: None,
                 page: Page {
                     offset: 0,
                     limit: 10,

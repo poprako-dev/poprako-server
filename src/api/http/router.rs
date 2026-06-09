@@ -1,15 +1,15 @@
 use axum::Router;
 use axum::routing::{get, post, put};
 
-use crate::api::http::middleware::authorize::AuthorizeLayer;
-use crate::api::http::middleware::latency::LogLatencyLayer;
-use crate::api::http::middleware::trace::IdTraceLayer;
 use crate::api::http::handler::authorization;
 use crate::api::http::handler::health;
 use crate::api::http::handler::member;
 use crate::api::http::handler::team;
 use crate::api::http::handler::user;
 use crate::api::http::handler::workset;
+use crate::api::http::middleware::authorize::AuthorizeLayer;
+use crate::api::http::middleware::latency::LogLatencyLayer;
+use crate::api::http::middleware::trace::IdTraceLayer;
 use crate::api::http::openapi::ApiDoc;
 use crate::harness::Harness;
 
@@ -37,7 +37,9 @@ pub fn new(harn: Harness) -> Router<Harness> {
         .route("/teams", get(team::list).post(team::create))
         .route(
             "/teams/{team_id}",
-            get(team::get_info).put(team::update_info).delete(team::delete),
+            get(team::get_info)
+                .put(team::update_info)
+                .delete(team::delete),
         )
         .route(
             "/teams/{team_id}/avatar/reserve",
@@ -50,9 +52,8 @@ pub fn new(harn: Harness) -> Router<Harness> {
 
     let v1_member = Router::new()
         .route("/members", get(member::list_infos).post(member::create))
-        .route("/members/mine", get(member::list_mine))
+        .route("/members/mine", get(member::list_my_infos))
         .route("/members/join", post(member::join))
-        .route("/members/detail", get(member::list_my_members))
         .route(
             "/members/{member_id}",
             put(member::update_roles).delete(member::delete),

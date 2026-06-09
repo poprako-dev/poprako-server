@@ -11,13 +11,25 @@ use crate::domain::query::local_message::LocalMessageQueryTransactional;
 use crate::domain::query::team::{TeamQuery, TeamQueryTransactional};
 use crate::domain::query::{Query, Transactional};
 use crate::usecase::data_object::team::{
-    TeamAvatarMarkUploadedParams, TeamAvatarReserveParams, TeamAvatarReserveReply, TeamBase,
-    TeamCreateParams, TeamInfoUpdateParams,
+    TeamAvatarMarkUploadedParams, TeamAvatarReserveParams, TeamAvatarReserveReply,
+    TeamCreateParams, TeamInfo, TeamInfoUpdateParams,
 };
 use crate::usecase::result::UseCaseResult;
 
+async fn teams_to_infos<H>(teams: Vec<TeamAggr>, harn: &H) -> Vec<TeamInfo>
+where
+    H: ImageGet,
+{
+    let mut infos = Vec::with_capacity(teams.len());
+    for team in teams {
+        infos.push(TeamInfo::from_aggr(team, harn).await);
+    }
+
+    infos
+}
+
 #[instrument(err, skip(harn))]
-pub async fn create<H>(harn: &H, params: TeamCreateParams) -> UseCaseResult<TeamBase>
+pub async fn create<H>(harn: &H, params: TeamCreateParams) -> UseCaseResult<TeamInfo>
 where
     H: Query + ImageGet + Send + Sync,
 {
@@ -31,36 +43,31 @@ where
 
     let team = TeamQuery::create(harn, &form).await?;
 
-    let base = TeamBase::from_aggr(team, harn).await;
+    let info = TeamInfo::from_aggr(team, harn).await;
 
-    Ok(base)
+    Ok(info)
 }
 
 #[instrument(err, skip(harn))]
-pub async fn get_info<H>(harn: &H, id: &str) -> UseCaseResult<TeamBase>
+pub async fn get_info<H>(harn: &H, id: &str) -> UseCaseResult<TeamInfo>
 where
     H: Query + ImageGet + Send + Sync,
 {
     let team = TeamQuery::get_by_id(harn, id).await?;
 
-    let base = TeamBase::from_aggr(team, harn).await;
+    let info = TeamInfo::from_aggr(team, harn).await;
 
-    Ok(base)
+    Ok(info)
 }
 
 #[instrument(err, skip(harn))]
-pub async fn list_infos<H>(harn: &H, page: Page) -> UseCaseResult<Vec<TeamBase>>
+pub async fn list_infos<H>(harn: &H, page: Page) -> UseCaseResult<Vec<TeamInfo>>
 where
     H: Query + ImageGet + Send + Sync,
 {
     let teams = TeamQuery::list(harn, page).await?;
 
-    let mut bases = Vec::with_capacity(teams.len());
-    for team in teams {
-        bases.push(TeamBase::from_aggr(team, harn).await);
-    }
-
-    Ok(bases)
+    Ok(teams_to_infos(teams, harn).await)
 }
 
 #[instrument(err, skip(harn))]
@@ -165,7 +172,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    // create_team_persists_and_returns_team_base(create)(positive): create should persist a team and return a TeamBase.
+    // create_team_persists_and_returns_team_info(create)(positive): create should persist a team and return a TeamInfo.
     // get_info_fails_for_nonexistent_team(get_info)(negative): get_info should fail with expected error for missing team.
     // list_returns_all_teams(list)(positive): list should return all seeded teams.
     // update_info_modifies_team_fields(update_info)(positive): update_info should modify team name and description.
@@ -177,7 +184,7 @@ mod tests {
     // reserve_avatar_generates_key_and_put_url(reserve_avatar)(positive): reserve_avatar should generate an avatar key and a signed PUT URL.
     // mark_avatar_uploaded_sets_flag(mark_avatar_uploaded)(positive): mark_avatar_uploaded should set the avatar_uploaded flag.
     // create_duplicate_name_returns_conflict(create)(negative): create should fail with conflict when team name already exists.
-    // get_info_returns_team_base(get_info)(positive): get_info should return a TeamBase for an existing team.
+    // get_info_returns_team_info(get_info)(positive): get_info should return a TeamInfo for an existing team.
     // list_empty_with_offset_past_end(list)(positive): list should return an empty vector when offset is past the last team.
     // reserve_avatar_fails_for_nonexistent_team(reserve_avatar)(negative): reserve_avatar should fail for missing team.
     // mark_avatar_uploaded_fails_for_nonexistent_team(mark_avatar_uploaded)(negative): mark_avatar_uploaded should fail for missing team.
@@ -215,7 +222,7 @@ mod tests {
     async fn create_team_persists_and_returns_team_base() {
         let harn = TestHarness::default();
 
-        let base = create(
+        let info = create(
             &harn,
             TeamCreateParams {
                 name: "My Team".into(),
@@ -225,10 +232,10 @@ mod tests {
         .await
         .unwrap();
 
-        assert_eq!(base.name, "My Team");
-        assert_eq!(base.description, "Desc");
+        assert_eq!(info.name, "My Team");
+        assert_eq!(info.description, "Desc");
 
-        let found = get_info(&harn, &base.id).await.unwrap();
+        let found = get_info(&harn, &info.id).await.unwrap();
         assert_eq!(found.name, "My Team");
     }
 
@@ -263,7 +270,7 @@ mod tests {
     async fn update_info_modifies_team_fields() {
         let harn = TestHarness::default();
 
-        let base = create(
+        let info = create(
             &harn,
             TeamCreateParams {
                 name: "Old".into(),
@@ -275,7 +282,7 @@ mod tests {
 
         update_info(
             &harn,
-            base.id.clone(),
+            info.id.clone(),
             TeamInfoUpdateParams {
                 name: "New".into(),
                 description: "New desc".into(),
@@ -284,7 +291,7 @@ mod tests {
         .await
         .unwrap();
 
-        let found = get_info(&harn, &base.id).await.unwrap();
+        let found = get_info(&harn, &info.id).await.unwrap();
         assert_eq!(found.name, "New");
         assert_eq!(found.description, "New desc");
     }
@@ -310,7 +317,7 @@ mod tests {
     async fn delete_removes_team() {
         let harn = TestHarness::default();
 
-        let base = create(
+        let info = create(
             &harn,
             TeamCreateParams {
                 name: "ToDelete".into(),
@@ -320,9 +327,9 @@ mod tests {
         .await
         .unwrap();
 
-        delete(&harn, base.id.clone()).await.unwrap();
+        delete(&harn, info.id.clone()).await.unwrap();
 
-        let err = get_info(&harn, &base.id).await.err().unwrap();
+        let err = get_info(&harn, &info.id).await.err().unwrap();
         assert!(usecase_is_expected_argument(&err));
     }
 
@@ -337,7 +344,7 @@ mod tests {
     async fn delete_queues_avatar_cleanup_message() {
         let harn = TestHarness::default();
 
-        let base = create(
+        let info = create(
             &harn,
             TeamCreateParams {
                 name: "AvatarTeam".into(),
@@ -350,7 +357,7 @@ mod tests {
         // Reserve an avatar so the team has an avatar_key.
         reserve_avatar(
             &harn,
-            base.id.clone(),
+            info.id.clone(),
             TeamAvatarReserveParams {
                 file_extension: "png".into(),
             },
@@ -360,10 +367,10 @@ mod tests {
 
         let before_messages = harn.snapshot().local_messages.len();
 
-        delete(&harn, base.id.clone()).await.unwrap();
+        delete(&harn, info.id.clone()).await.unwrap();
 
         // Team is gone.
-        let err = get_info(&harn, &base.id).await.err().unwrap();
+        let err = get_info(&harn, &info.id).await.err().unwrap();
         assert!(usecase_is_expected_argument(&err));
 
         // A delete local message was queued for the avatar.
@@ -387,7 +394,7 @@ mod tests {
     async fn delete_cascade_deletes_worksets() {
         let harn = TestHarness::default();
 
-        let base = create(
+        let info = create(
             &harn,
             TeamCreateParams {
                 name: "CascadeTeam".into(),
@@ -401,7 +408,7 @@ mod tests {
         let r1 = workset::create(
             &harn,
             WorksetCreateParams {
-                team_id: base.id.clone(),
+                team_id: info.id.clone(),
                 name: "WS1".into(),
                 description: None,
             },
@@ -411,7 +418,7 @@ mod tests {
         let r2 = workset::create(
             &harn,
             WorksetCreateParams {
-                team_id: base.id.clone(),
+                team_id: info.id.clone(),
                 name: "WS2".into(),
                 description: None,
             },
@@ -419,10 +426,10 @@ mod tests {
         .await
         .unwrap();
 
-        delete(&harn, base.id.clone()).await.unwrap();
+        delete(&harn, info.id.clone()).await.unwrap();
 
         // Team is gone.
-        let err = get_info(&harn, &base.id).await.err().unwrap();
+        let err = get_info(&harn, &info.id).await.err().unwrap();
         assert!(usecase_is_expected_argument(&err));
 
         // Both worksets should be cascade-deleted.
@@ -436,7 +443,7 @@ mod tests {
     async fn reserve_avatar_generates_key_and_put_url() {
         let harn = TestHarness::default();
 
-        let base = create(
+        let info = create(
             &harn,
             TeamCreateParams {
                 name: "AvatarTeam".into(),
@@ -448,7 +455,7 @@ mod tests {
 
         let reply = reserve_avatar(
             &harn,
-            base.id.clone(),
+            info.id.clone(),
             TeamAvatarReserveParams {
                 file_extension: "png".into(),
             },
@@ -473,7 +480,7 @@ mod tests {
                 image_version,
             } => {
                 assert_eq!(resource_kind, ImageResourceKind::TeamAvatar);
-                assert_eq!(resource_id, base.id);
+                assert_eq!(resource_id, info.id);
                 assert_eq!(object_key, format!("team_avatar/{}-1.png", resource_id));
                 assert_eq!(image_version, 1);
             }
@@ -485,7 +492,7 @@ mod tests {
     async fn mark_avatar_uploaded_sets_flag() {
         let harn = TestHarness::default();
 
-        let base = create(
+        let info = create(
             &harn,
             TeamCreateParams {
                 name: "MarkAvatar".into(),
@@ -498,7 +505,7 @@ mod tests {
         // First reserve to set avatar_key.
         let reply = reserve_avatar(
             &harn,
-            base.id.clone(),
+            info.id.clone(),
             TeamAvatarReserveParams {
                 file_extension: "png".into(),
             },
@@ -508,7 +515,7 @@ mod tests {
 
         mark_avatar_uploaded(
             &harn,
-            base.id.clone(),
+            info.id.clone(),
             TeamAvatarMarkUploadedParams {
                 image_version: reply.image_version,
             },
@@ -516,7 +523,7 @@ mod tests {
         .await
         .unwrap();
 
-        let found = get_info(&harn, &base.id).await.unwrap();
+        let found = get_info(&harn, &info.id).await.unwrap();
         assert!(found.avatar_url.is_some());
     }
 
@@ -553,9 +560,9 @@ mod tests {
         let harn = TestHarness::default();
         harn.seed_team(make_test_team("team-1"));
 
-        let base = get_info(&harn, "team-1").await.unwrap();
-        assert_eq!(base.id, "team-1");
-        assert_eq!(base.name, "Test Team");
+        let info = get_info(&harn, "team-1").await.unwrap();
+        assert_eq!(info.id, "team-1");
+        assert_eq!(info.name, "Test Team");
     }
 
     #[tokio::test]
@@ -613,7 +620,7 @@ mod tests {
     async fn mark_avatar_uploaded_fails_for_stale_version() {
         let harn = TestHarness::default();
 
-        let base = create(
+        let info = create(
             &harn,
             TeamCreateParams {
                 name: "StaleVer".into(),
@@ -625,7 +632,7 @@ mod tests {
 
         reserve_avatar(
             &harn,
-            base.id.clone(),
+            info.id.clone(),
             TeamAvatarReserveParams {
                 file_extension: "png".into(),
             },
@@ -635,7 +642,7 @@ mod tests {
 
         let err = mark_avatar_uploaded(
             &harn,
-            base.id.clone(),
+            info.id.clone(),
             TeamAvatarMarkUploadedParams { image_version: 999 },
         )
         .await

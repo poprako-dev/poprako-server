@@ -25,7 +25,7 @@ use crate::domain::query::user::UserQueryTransactional;
 use crate::domain::result::DomainError;
 use crate::usecase::data_object::user::{
     AvatarMarkUploadedParams, AvatarReserveParams, AvatarReserveReply, SignInParams, SignInReply,
-    SignUpParams, SignUpReply, UserBase, UserInfoUpdateParams,
+    SignUpParams, SignUpReply, UserInfo, UserInfoUpdateParams,
 };
 use crate::usecase::result::UseCaseResult;
 
@@ -134,15 +134,15 @@ where
 }
 
 #[instrument(err, skip(harn))]
-pub async fn get_info<H>(harn: &H, id: &str) -> UseCaseResult<UserBase>
+pub async fn get_info<H>(harn: &H, id: &str) -> UseCaseResult<UserInfo>
 where
     H: Query + ImageGet + Send + Sync,
 {
     let user = UserQuery::get_by_id(harn, id).await?;
 
-    let base = UserBase::from_aggr(user, harn).await;
+    let info = UserInfo::from_aggr(user, harn).await;
 
-    Ok(base)
+    Ok(info)
 }
 
 #[instrument(err, skip(harn))]
@@ -310,7 +310,6 @@ mod tests {
     use crate::domain::model::event::Event;
     use crate::domain::model::value::role::{RoleFlag, RoleMask};
     use crate::harness::tests::TestHarness;
-    use crate::test_util::is_expected_argument;
     use crate::test_util::usecase_is_expected_argument;
     use crate::test_util::usecase_is_expected_conflict;
     use crate::test_util::usecase_is_unrecoverable;
@@ -327,7 +326,7 @@ mod tests {
             invitee_qid: invitee_qid.into(),
             code: code.into(),
             pending,
-            roles: RoleMask::from(mask),
+            roles: RoleMask::try_from(mask).unwrap(),
             created_at: OffsetDateTime::now_utc(),
         }
     }
@@ -501,9 +500,11 @@ mod user_use_cases_tests {
     use crate::domain::model::aggr::team::TeamAggr;
     use crate::domain::model::aggr::user::UserCredential;
     use crate::domain::model::value::role::RoleFlag;
-    use crate::harness::tests::TestHarness;
     use crate::domain::query::member::MemberQuery;
-    use crate::test_util::{is_expected_argument, usecase_is_expected_argument, usecase_is_unrecoverable};
+    use crate::harness::tests::TestHarness;
+    use crate::test_util::{
+        is_expected_argument, usecase_is_expected_argument, usecase_is_unrecoverable,
+    };
     use crate::usecase::data_object::member::MemberCreateParams;
     use crate::usecase::data_object::user::{
         AvatarMarkUploadedParams, AvatarReserveParams, SignInParams, UserInfoUpdateParams,
@@ -601,11 +602,11 @@ mod user_use_cases_tests {
         let (user, credential) = make_test_user("user-1", "qid-1", "Alice", "pw");
         harn.seed_user(user, credential);
 
-        let base = get_info(&harn, "user-1").await.unwrap();
+        let info = get_info(&harn, "user-1").await.unwrap();
 
-        assert_eq!(base.id, "user-1");
-        assert_eq!(base.qid, "qid-1");
-        assert_eq!(base.nickname, "Alice");
+        assert_eq!(info.id, "user-1");
+        assert_eq!(info.qid, "qid-1");
+        assert_eq!(info.nickname, "Alice");
     }
 
     #[tokio::test]
@@ -638,9 +639,9 @@ mod user_use_cases_tests {
         .await
         .unwrap();
 
-        let base = get_info(&harn, "user-1").await.unwrap();
-        assert_eq!(base.qid, "new-qid");
-        assert_eq!(base.nickname, "NewNick");
+        let info = get_info(&harn, "user-1").await.unwrap();
+        assert_eq!(info.qid, "new-qid");
+        assert_eq!(info.nickname, "NewNick");
     }
 
     #[tokio::test]
@@ -710,8 +711,8 @@ mod user_use_cases_tests {
         }
 
         // Verify that the avatar_key was persisted.
-        let base = get_info(&harn, "user-1").await.unwrap();
-        assert!(base.avatar_url.is_none());
+        let info = get_info(&harn, "user-1").await.unwrap();
+        assert!(info.avatar_url.is_none());
     }
 
     #[tokio::test]
@@ -764,8 +765,8 @@ mod user_use_cases_tests {
         .await
         .unwrap();
 
-        let base = get_info(&harn, "user-1").await.unwrap();
-        assert!(base.avatar_url.is_some());
+        let info = get_info(&harn, "user-1").await.unwrap();
+        assert!(info.avatar_url.is_some());
     }
 
     #[tokio::test]
@@ -926,7 +927,10 @@ mod user_use_cases_tests {
         assert!(snapshot.credentials.is_empty());
 
         // Member record is cascade-deleted.
-        let err = MemberQuery::get_by_id(&harn, &member.id).await.err().unwrap();
+        let err = MemberQuery::get_by_id(&harn, &member.id)
+            .await
+            .err()
+            .unwrap();
         assert!(is_expected_argument(&err));
     }
 

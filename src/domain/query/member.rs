@@ -4,6 +4,7 @@ use poprako_macro::forward_ref;
 use poprako_util::page::Page;
 
 use crate::domain::model::aggr::member::{MemberAggr, MemberForm, MemberRoleUpdate};
+use crate::domain::model::value::member_inclusion::MemberInclusion;
 use crate::domain::model::value::role::RoleFlag;
 use crate::domain::result::DomainResult;
 
@@ -24,27 +25,22 @@ pub trait MemberQuery {
         team_id: &str,
     ) -> DomainResult<MemberAggr>;
 
-    /// Lists members for the given team, with optional keyword and role filters.
+    /// Lists members with optional team, user, keyword, role, and inclusion filters.
     ///
     /// `keyword` performs an ILIKE search on `user_nickname`.
     /// `role` filters members that hold the given single role (IS NOT NULL on the column).
     async fn list(
         &self,
-        team_id: &str,
+        team_id: Option<&str>,
+        user_id: Option<&str>,
         keyword: Option<&str>,
         role: Option<RoleFlag>,
         page: Page,
+        includes: &MemberInclusion,
     ) -> DomainResult<Vec<MemberAggr>>;
 
     /// Returns whether a member exists for the given user and team IDs.
     async fn exist_by_user_and_team_id(&self, user_id: &str, team_id: &str) -> DomainResult<bool>;
-
-    /// Lists all members belonging to the given user.
-    async fn list_by_user_id(
-        &self,
-        user_id: &str,
-        page: Page,
-    ) -> DomainResult<Vec<MemberAggr>>;
 }
 
 /// Transactional persistence contract for [`MemberAggr`], used **only** inside
