@@ -49,8 +49,10 @@ pub fn new(harn: Harness) -> Router<Harness> {
         );
 
     let v1_member = Router::new()
-        .route("/members", get(member::list).post(member::create))
-        .route("/members/detail", get(member::get_by_user_and_team))
+        .route("/members", get(member::list_infos).post(member::create))
+        .route("/members/mine", get(member::list_mine))
+        .route("/members/join", post(member::join))
+        .route("/members/detail", get(member::list_my_members))
         .route(
             "/members/{member_id}",
             put(member::update_roles).delete(member::delete),

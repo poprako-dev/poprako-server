@@ -1,149 +1,429 @@
 use futures_util::FutureExt as _;
+use poprako_util::i18n::trl;
 use poprako_util::page::Page;
 use tracing::instrument;
 
 use crate::domain::external::image_pool::ImageGet;
 use crate::domain::model::aggr::member::{MemberAggr, MemberForm, MemberRoleUpdate};
+use crate::domain::model::aggr::user::UserToken;
+use crate::domain::model::value::member_inclusion::MemberInclusion;
 use crate::domain::model::value::role::{RoleFlag, RoleMask};
 use crate::domain::query::Query;
 use crate::domain::query::Transactional;
 use crate::domain::query::member::MemberQuery;
 use crate::domain::query::member::MemberQueryTransactional;
+use crate::domain::query::member_invitation::MemberInvitationQueryTransactional;
+use crate::domain::query::team::TeamQuery;
+use crate::domain::query::team::TeamQueryTransactional;
+use crate::domain::query::user::UserQuery;
+use crate::domain::query::user::UserQueryTransactional;
+use crate::domain::result::{DomainError, DomainResult};
 use crate::usecase::data_object::member::{
-    MemberBase, MemberCreateParams, MemberCreateReply, MemberRoleUpdateParams,
+    ListMyMembersParams, MemberBase, MemberCreateParams, MemberCreateReply, MemberJoinParams,
+    MemberListParams, MemberMineParams, MemberRoleUpdateParams,
 };
 use crate::usecase::result::UseCaseResult;
 
+/// Validates that a role_mask u32 value is non-zero and contains only valid role bits.
+fn validate_role_mask(mask: u32) -> DomainResult<RoleMask> {
+    if mask == 0 {
+        return Err(DomainError::expected_argument(trl(
+            "error-member-not-found",
+        )));
+    }
+    if mask & !RoleMask::VALID_BITS != 0 {
+        return Err(DomainError::expected_argument(trl(
+            "error-member-not-found",
+        )));
+    }
+
+    Ok(RoleMask::from(mask))
+}
+
+async fn populate_includes<H>(harn: &H, members: &mut [MemberAggr], includes: &MemberInclusion)
+where
+    H: Query + ImageGet,
+{
+    if includes.is_empty() {
+        return;
+    }
+
+    if includes.user {
+        for member in members.iter_mut() {
+            if let Ok(user) = UserQuery::get_by_id(harn, &member.user_id).await {
+                member.user = Some(user);
+            }
+        }
+    }
+
+    if includes.team {
+        for member in members.iter_mut() {
+            if let Ok(team) = TeamQuery::get_by_id(harn, &member.team_id).await {
+                member.team = Some(team);
+            }
+        }
+    }
+}
+
+async fn members_to_bases<H>(members: Vec<MemberAggr>, harn: &H) -> Vec<MemberBase>
+where
+    H: ImageGet,
+{
+    let mut bases = Vec::with_capacity(members.len());
+    for member in members {
+        bases.push(MemberBase::from_aggr(member, harn).await);
+    }
+
+    bases
+}
+
 #[instrument(err, skip(harn))]
-pub async fn create<H>(harn: &H, params: MemberCreateParams) -> UseCaseResult<MemberCreateReply>
+pub async fn create<H>(
+    harn: &H,
+    user_token: &UserToken,
+    params: MemberCreateParams,
+) -> UseCaseResult<MemberCreateReply>
 where
     H: Clone + Transactional + Send + Sync,
 {
+    let role_mask = validate_role_mask(params.role_mask)?;
     let id = MemberAggr::generate_id();
-    let role_mask = RoleMask::from(params.role_mask);
+    let target_user_id = params.user_id;
+    let target_team_id = params.team_id;
 
-    let form = MemberForm {
-        id,
-        user_id: params.user_id,
-        user_nickname: String::new(),
-        team_id: params.team_id,
-        roles: role_mask,
-    };
+    let current_user_id = user_token.user_id.clone();
 
     let member = Transactional::transaction_scoped(harn, move |query| {
-        async move { MemberQueryTransactional::create(query, &form).await }.boxed()
+        async move {
+            // Verify current user is sadmin.
+            let current_user =
+                UserQueryTransactional::get_by_id_excluded(query, &current_user_id).await?;
+            if !current_user.is_sadmin {
+                return Err(DomainError::expected_forbidden(trl(
+                    "error-sadmin-required",
+                )));
+            }
+
+            // Read target user to get real nickname.
+            let target_user =
+                UserQueryTransactional::get_by_id_excluded(query, &target_user_id).await?;
+
+            // Verify team exists.
+            let _team = TeamQueryTransactional::get_by_id_excluded(query, &target_team_id).await?;
+
+            let form = MemberForm {
+                id,
+                user_id: target_user_id,
+                user_nickname: target_user.nickname,
+                team_id: target_team_id,
+                roles: role_mask,
+            };
+
+            MemberQueryTransactional::create(query, &form).await
+        }
+        .boxed()
     })
     .await?;
 
     Ok(MemberCreateReply { id: member.id })
 }
 
-#[instrument(err, skip(harn))]
-pub async fn get_by_id<H>(harn: &H, id: &str) -> UseCaseResult<MemberBase>
-where
-    H: Query + ImageGet + Send + Sync,
-{
-    let member = MemberQuery::get_by_id(harn, id).await?;
-
-    let base = MemberBase::from_aggr(member, harn).await;
-
-    Ok(base)
-}
-
-#[instrument(err, skip(harn))]
-pub async fn get_by_user_and_team<H>(
+#[instrument(err, skip(harn, params))]
+pub async fn list_infos<H>(
     harn: &H,
-    user_id: &str,
-    team_id: &str,
-) -> UseCaseResult<MemberBase>
-where
-    H: Query + ImageGet + Send + Sync,
-{
-    let member = MemberQuery::get_by_user_and_team_id(harn, user_id, team_id).await?;
-
-    let base = MemberBase::from_aggr(member, harn).await;
-
-    Ok(base)
-}
-
-#[instrument(err, skip(harn))]
-pub async fn list<H>(
-    harn: &H,
-    team_id: &str,
-    keyword: Option<&str>,
-    role: Option<RoleFlag>,
-    page: Page,
+    user_token: &UserToken,
+    params: &MemberListParams,
 ) -> UseCaseResult<Vec<MemberBase>>
 where
     H: Query + ImageGet + Send + Sync,
 {
-    let members = MemberQuery::list(harn, team_id, keyword, role, page).await?;
-
-    let mut bases = Vec::with_capacity(members.len());
-    for member in members {
-        bases.push(MemberBase::from_aggr(member, harn).await);
+    // Verify current user is a member of the target team.
+    let is_member =
+        MemberQuery::exist_by_user_and_team_id(harn, &user_token.user_id, &params.team_id).await?;
+    if !is_member {
+        return Err(DomainError::expected_forbidden(trl("error-team-member-required")).into());
     }
 
-    Ok(bases)
+    let mut members = MemberQuery::list(
+        harn,
+        &params.team_id,
+        params.keyword.as_deref(),
+        params.role,
+        params.page,
+    )
+    .await?;
+
+    populate_includes(harn, &mut members, &params.includes).await;
+
+    Ok(members_to_bases(members, harn).await)
+}
+
+#[instrument(err, skip(harn, params))]
+pub async fn list_my_members<H>(
+    harn: &H,
+    user_token: &UserToken,
+    params: &ListMyMembersParams,
+) -> UseCaseResult<MemberBase>
+where
+    H: Query + ImageGet + Send + Sync,
+{
+    // Verify current user is a member of the target team.
+    let is_member =
+        MemberQuery::exist_by_user_and_team_id(harn, &user_token.user_id, &params.team_id).await?;
+    if !is_member {
+        return Err(DomainError::expected_forbidden(trl(
+            "error-team-member-required",
+        ))
+        .into());
+    }
+
+    let mut member =
+        MemberQuery::get_by_user_and_team_id(harn, &user_token.user_id, &params.team_id).await?;
+
+    populate_includes(harn, std::slice::from_mut(&mut member), &params.includes).await;
+
+    Ok(MemberBase::from_aggr(member, harn).await)
 }
 
 #[instrument(err, skip(harn))]
 pub async fn update_roles<H>(
     harn: &H,
+    user_token: &UserToken,
     member_id: String,
     params: MemberRoleUpdateParams,
 ) -> UseCaseResult<()>
 where
-    H: Query + Send + Sync,
+    H: Clone + Transactional + Send + Sync,
 {
-    let update = MemberRoleUpdate {
-        id: member_id,
-        roles: RoleMask::from(params.roles),
-    };
+    let role_mask = validate_role_mask(params.roles)?;
 
-    MemberQuery::update_roles(harn, &update).await?;
+    let current_user_id = user_token.user_id.clone();
+
+    Transactional::transaction_scoped(harn, move |query| {
+        async move {
+            // Lock the target member.
+            let target_member =
+                MemberQueryTransactional::get_by_id_excluded(query, &member_id).await?;
+
+            // Verify current user is an admin of the target member's team.
+            let current_member = MemberQueryTransactional::get_by_user_and_team_id_excluded(
+                query,
+                &current_user_id,
+                &target_member.team_id,
+            )
+            .await?;
+
+            if !current_member.has_any_role(&[RoleFlag::Admin]) {
+                return Err(DomainError::expected_forbidden(trl(
+                    "error-team-admin-required",
+                )));
+            }
+
+            let update = MemberRoleUpdate {
+                id: member_id,
+                roles: role_mask,
+            };
+
+            MemberQueryTransactional::update_roles(query, &update).await
+        }
+        .boxed()
+    })
+    .await?;
 
     Ok(())
 }
 
 #[instrument(err, skip(harn))]
-pub async fn delete<H>(harn: &H, member_id: String) -> UseCaseResult<()>
+pub async fn delete<H>(harn: &H, user_token: &UserToken, member_id: String) -> UseCaseResult<()>
 where
-    H: Query + Send + Sync,
+    H: Clone + Transactional + Send + Sync,
 {
-    MemberQuery::delete(harn, &member_id).await?;
+    let current_user_id = user_token.user_id.clone();
+
+    Transactional::transaction_scoped(harn, move |query| {
+        async move {
+            // Lock the target member.
+            let target_member =
+                MemberQueryTransactional::get_by_id_excluded(query, &member_id).await?;
+
+            // Verify current user is an admin of the target member's team.
+            let current_member = MemberQueryTransactional::get_by_user_and_team_id_excluded(
+                query,
+                &current_user_id,
+                &target_member.team_id,
+            )
+            .await?;
+
+            if !current_member.has_any_role(&[RoleFlag::Admin]) {
+                return Err(DomainError::expected_forbidden(trl(
+                    "error-team-admin-required",
+                )));
+            }
+
+            MemberQueryTransactional::delete(query, &member_id).await
+        }
+        .boxed()
+    })
+    .await?;
 
     Ok(())
 }
 
+#[instrument(err, skip(harn, params))]
+pub async fn list_mine<H>(
+    harn: &H,
+    user_token: &UserToken,
+    params: &MemberMineParams,
+) -> UseCaseResult<Vec<MemberBase>>
+where
+    H: Query + ImageGet + Send + Sync,
+{
+    let mut members =
+        MemberQuery::list_by_user_id(harn, &user_token.user_id, params.page).await?;
+
+    populate_includes(harn, &mut members, &params.includes).await;
+
+    Ok(members_to_bases(members, harn).await)
+}
+
+#[instrument(err, skip(harn))]
+pub async fn join<H>(
+    harn: &H,
+    user_token: &UserToken,
+    params: MemberJoinParams,
+) -> UseCaseResult<MemberCreateReply>
+where
+    H: Clone + Transactional + Send + Sync,
+{
+    let invitation_code = params.invitation_code;
+
+    let current_user_id = user_token.user_id.clone();
+
+    let member = Transactional::transaction_scoped(harn, move |query| {
+        async move {
+            // Lock the pending invitation by code.
+            let invitation =
+                MemberInvitationQueryTransactional::get_by_code_ex(query, &invitation_code).await?;
+
+            // Read current user to verify qid matches.
+            let current_user =
+                UserQueryTransactional::get_by_id_excluded(query, &current_user_id).await?;
+
+            // Verify invitation belongs to the current user by qid.
+            if current_user.qid != invitation.invitee_qid {
+                return Err(DomainError::expected_argument(trl(
+                    "error-no-pending-invitation",
+                )));
+            }
+
+            // Verify current user is not already a member of the target team.
+            let already = MemberQueryTransactional::get_by_user_and_team_id_excluded(
+                query,
+                &current_user_id,
+                &invitation.team_id,
+            )
+            .await;
+            if already.is_ok() {
+                return Err(DomainError::expected_conflict(trl(
+                    "error-already-team-member",
+                )));
+            }
+
+            // Create the member record.
+            let form = MemberForm {
+                id: MemberAggr::generate_id(),
+                user_id: current_user_id,
+                user_nickname: current_user.nickname,
+                team_id: invitation.team_id,
+                roles: invitation.roles,
+            };
+
+            let new_member = MemberQueryTransactional::create(query, &form).await?;
+
+            // Mark invitation as used.
+            MemberInvitationQueryTransactional::mark_pending_as_used(query, &invitation.id).await?;
+
+            Ok(new_member)
+        }
+        .boxed()
+    })
+    .await?;
+
+    Ok(MemberCreateReply { id: member.id })
+}
+
 #[cfg(test)]
 mod tests {
-    // create_persists_member(create)(positive): create should persist a member.
-    // create_duplicate_user_team_returns_conflict(create)(negative): create should fail with conflict when user+team pair already exists.
-    // get_by_id_returns_member_base(get_by_id)(positive): get_by_id should return a MemberBase for an existing member.
-    // get_by_id_fails_for_nonexistent(get_by_id)(negative): get_by_id should fail with expected error for missing member.
-    // get_by_user_and_team_returns_member_base(get_by_user_and_team)(positive): get_by_user_and_team should return a MemberBase for an existing member.
-    // get_by_user_and_team_fails_for_nonexistent(get_by_user_and_team)(negative): get_by_user_and_team should fail for nonexistent user+team pair.
-    // list_filters_by_team(list)(positive): list should filter members by team_id.
-    // list_filters_by_keyword(list)(positive): list should filter members by keyword.
-    // list_filters_by_role(list)(positive): list should filter members by role.
-    // list_empty_with_offset_past_end(list)(positive): list should return an empty vector when offset is past the last member.
-    // update_roles_modifies_all_roles(update_roles)(positive): update_roles should replace all role timestamps.
-    // update_roles_fails_for_nonexistent(update_roles)(negative): update_roles should fail with expected error for missing member.
-    // delete_removes_member(delete)(positive): delete should remove the member.
-    // delete_fails_for_nonexistent(delete)(negative): delete should fail with expected error for missing member.
+    // create_sadmin_succeeds(create)(positive): sadmin should be able to create a member.
+    // create_nonsadmin_returns_forbidden(create)(negative): non-sadmin should get forbidden.
+    // create_fills_target_user_nickname(create)(positive): the target user's nickname should be written to the member.
+    // create_target_user_not_found_fails(create)(negative): nonexistent target user should fail.
+    // create_target_team_not_found_fails(create)(negative): nonexistent target team should fail.
+    // create_duplicate_user_team_returns_conflict(create)(negative): duplicate user+team pair should return conflict.
+    // list_team_member_succeeds(list_infos)(positive): team member should be able to list.
+    // list_nonmember_returns_forbidden(list_infos)(negative): non-member should get forbidden.
+    // list_includes_user_fills_user(list_infos)(positive): includes=user should fill the user field.
+    // list_includes_team_fills_team(list_infos)(positive): includes=team should fill the team field.
+    // list_my_members_team_member_succeeds(list_my_members)(positive): team member should be able to list own membership.
+    // list_my_members_nonmember_returns_forbidden(list_my_members)(negative): non-member should get forbidden.
+    // update_roles_admin_succeeds(update_roles)(positive): team admin should be able to update roles.
+    // update_roles_nonadmin_returns_forbidden(update_roles)(negative): non-admin should get forbidden.
+    // update_roles_target_member_not_found_fails(update_roles)(negative): nonexistent target member should fail.
+    // update_roles_zero_role_mask_fails(update_roles)(negative): zero role mask should fail.
+    // delete_admin_succeeds(delete)(positive): team admin should be able to delete a member.
+    // delete_nonadmin_returns_forbidden(delete)(negative): non-admin should get forbidden.
+    // delete_target_member_not_found_fails(delete)(negative): nonexistent target member should fail.
+    // list_mine_returns_user_members(list_mine)(positive): should return only current user's memberships.
+    // join_by_code_succeeds(join)(positive): should join by invitation code.
+    // join_code_not_found_fails(join)(negative): nonexistent code should fail.
+    // join_wrong_qid_fails(join)(negative): mismatched qid should fail.
+    // join_already_member_returns_conflict(join)(negative): already a member should return conflict.
 
     use super::*;
 
     use time::OffsetDateTime;
 
     use crate::domain::model::aggr::member::MemberAggr;
+    use crate::domain::model::aggr::member_invitation::MemberInvitationAggr;
     use crate::domain::model::aggr::team::TeamAggr;
+    use crate::domain::model::aggr::user::{UserAggr, UserCredential, UserToken};
     use crate::domain::model::value::role::{RoleFlag, RoleMask};
+    use crate::domain::query::Transactional;
+    use crate::domain::query::member::MemberQuery;
+    use crate::domain::query::member::MemberQueryTransactional;
+    use crate::domain::query::member_invitation::MemberInvitationQueryTransactional;
     use crate::harness::tests::TestHarness;
+    use crate::test_util::is_expected_argument;
     use crate::test_util::usecase_is_expected_argument;
     use crate::test_util::usecase_is_expected_conflict;
-    use crate::usecase::data_object::member::{MemberCreateParams, MemberRoleUpdateParams};
+    use crate::test_util::usecase_is_expected_forbidden;
+    use crate::usecase::data_object::member::{
+        ListMyMembersParams, MemberCreateParams, MemberJoinParams, MemberListParams,
+        MemberMineParams, MemberRoleUpdateParams,
+    };
+
+    fn make_user(id: &str, qid: &str, is_sadmin: bool) -> UserAggr {
+        let now = OffsetDateTime::now_utc();
+        UserAggr {
+            id: id.into(),
+            qid: qid.into(),
+            nickname: "nick".into(),
+            avatar_key: None,
+            avatar_uploaded: false,
+            avatar_version: 0,
+            is_sadmin,
+            last_active_at: now,
+            created_at: now,
+            updated_at: now,
+        }
+    }
+
+    fn make_credential(user_id: &str) -> UserCredential {
+        UserCredential {
+            user_id: user_id.into(),
+            password_hash: bcrypt::hash("pw", bcrypt::DEFAULT_COST).unwrap(),
+        }
+    }
 
     fn make_test_member(id: &str, user_id: &str, team_id: &str, roles: RoleMask) -> MemberAggr {
         let now = OffsetDateTime::now_utc();
@@ -179,11 +459,9 @@ mod tests {
         m
     }
 
-    #[tokio::test]
-    async fn create_persists_member() {
-        let harn = TestHarness::default();
-        harn.seed_team(TeamAggr {
-            id: "team-1".into(),
+    fn make_team(id: &str) -> TeamAggr {
+        TeamAggr {
+            id: id.into(),
             name: "T".into(),
             description: "D".into(),
             avatar_key: None,
@@ -192,89 +470,34 @@ mod tests {
             workset_next_index: 0,
             created_at: OffsetDateTime::now_utc(),
             updated_at: OffsetDateTime::now_utc(),
-        });
+        }
+    }
 
-        let reply = create(
-            &harn,
-            MemberCreateParams {
-                user_id: "u-1".into(),
-                team_id: "team-1".into(),
-                role_mask: u32::from(RoleFlag::Admin) | u32::from(RoleFlag::Translator),
-            },
-        )
-        .await
-        .unwrap();
+    fn sadmin_token() -> UserToken {
+        UserToken {
+            user_id: "sadmin".into(),
+        }
+    }
 
-        let found = get_by_id(&harn, &reply.id).await.unwrap();
-        assert_eq!(found.user_id, "u-1");
-        assert_eq!(found.team_id, "team-1");
-        assert_eq!(
-            found.roles,
-            u32::from(RoleFlag::Admin) | u32::from(RoleFlag::Translator)
+    fn user_token(user_id: &str) -> UserToken {
+        UserToken {
+            user_id: user_id.into(),
+        }
+    }
+
+    #[tokio::test]
+    async fn create_sadmin_succeeds() {
+        let harn = TestHarness::default();
+        harn.seed_user(
+            make_user("sadmin", "sadmin-qid", true),
+            make_credential("sadmin"),
         );
-    }
-
-    #[tokio::test]
-    async fn get_by_id_fails_for_nonexistent() {
-        let harn = TestHarness::default();
-        let err = get_by_id(&harn, "no-such-member").await.err().unwrap();
-        assert!(usecase_is_expected_argument(&err));
-    }
-
-    #[tokio::test]
-    async fn list_filters_by_team() {
-        let harn = TestHarness::default();
-        harn.seed_member(make_test_member(
-            "m-1",
-            "u-1",
-            "team-1",
-            RoleFlag::Admin.into(),
-        ));
-        harn.seed_member(make_test_member(
-            "m-2",
-            "u-2",
-            "team-1",
-            RoleFlag::Translator.into(),
-        ));
-        harn.seed_member(make_test_member(
-            "m-3",
-            "u-3",
-            "team-2",
-            RoleFlag::Admin.into(),
-        ));
-
-        let list = super::list(
-            &harn,
-            "team-1",
-            None,
-            None,
-            Page {
-                offset: 0,
-                limit: 10,
-            },
-        )
-        .await
-        .unwrap();
-        assert_eq!(list.len(), 2);
-    }
-
-    #[tokio::test]
-    async fn update_roles_modifies_all_roles() {
-        let harn = TestHarness::default();
-        harn.seed_team(TeamAggr {
-            id: "team-1".into(),
-            name: "T".into(),
-            description: "D".into(),
-            avatar_key: None,
-            avatar_uploaded: false,
-            avatar_version: 0,
-            workset_next_index: 0,
-            created_at: OffsetDateTime::now_utc(),
-            updated_at: OffsetDateTime::now_utc(),
-        });
+        harn.seed_user(make_user("u-1", "u-1-qid", false), make_credential("u-1"));
+        harn.seed_team(make_team("team-1"));
 
         let reply = create(
             &harn,
+            &sadmin_token(),
             MemberCreateParams {
                 user_id: "u-1".into(),
                 team_id: "team-1".into(),
@@ -284,52 +507,57 @@ mod tests {
         .await
         .unwrap();
 
-        // Update to Translator only.
-        update_roles(
-            &harn,
-            reply.id.clone(),
-            MemberRoleUpdateParams {
-                roles: u32::from(RoleFlag::Translator),
-            },
-        )
-        .await
-        .unwrap();
-
-        let found = get_by_id(&harn, &reply.id).await.unwrap();
-        assert_eq!(found.roles, u32::from(RoleFlag::Translator));
+        let found = MemberQuery::get_by_id(&harn, &reply.id).await.unwrap();
+        assert_eq!(found.user_id, "u-1");
+        assert_eq!(found.team_id, "team-1");
     }
 
     #[tokio::test]
-    async fn update_roles_fails_for_nonexistent() {
+    async fn create_nonsadmin_returns_forbidden() {
         let harn = TestHarness::default();
-        let err = update_roles(
+        harn.seed_user(
+            make_user("regular", "reg-qid", false),
+            make_credential("regular"),
+        );
+        harn.seed_user(make_user("u-1", "u-1-qid", false), make_credential("u-1"));
+        harn.seed_team(make_team("team-1"));
+
+        let err = create(
             &harn,
-            "no-such-member".into(),
-            MemberRoleUpdateParams { roles: 1 },
+            &user_token("regular"),
+            MemberCreateParams {
+                user_id: "u-1".into(),
+                team_id: "team-1".into(),
+                role_mask: u32::from(RoleFlag::Admin),
+            },
         )
         .await
         .err()
         .unwrap();
-        assert!(usecase_is_expected_argument(&err));
+
+        assert!(usecase_is_expected_forbidden(&err));
     }
 
     #[tokio::test]
-    async fn delete_removes_member() {
+    async fn create_fills_target_user_nickname() {
         let harn = TestHarness::default();
-        harn.seed_team(TeamAggr {
-            id: "team-1".into(),
-            name: "T".into(),
-            description: "D".into(),
-            avatar_key: None,
-            avatar_uploaded: false,
-            avatar_version: 0,
-            workset_next_index: 0,
-            created_at: OffsetDateTime::now_utc(),
-            updated_at: OffsetDateTime::now_utc(),
-        });
+        harn.seed_user(
+            make_user("sadmin", "sadmin-qid", true),
+            make_credential("sadmin"),
+        );
+        harn.seed_user(
+            {
+                let mut u = make_user("u-1", "u-1-qid", false);
+                u.nickname = "RealNick".into();
+                u
+            },
+            make_credential("u-1"),
+        );
+        harn.seed_team(make_team("team-1"));
 
         let reply = create(
             &harn,
+            &sadmin_token(),
             MemberCreateParams {
                 user_id: "u-1".into(),
                 team_id: "team-1".into(),
@@ -339,36 +567,73 @@ mod tests {
         .await
         .unwrap();
 
-        delete(&harn, reply.id.clone()).await.unwrap();
+        let found = MemberQuery::get_by_id(&harn, &reply.id).await.unwrap();
+        assert_eq!(found.user_nickname, "RealNick");
+    }
 
-        let err = get_by_id(&harn, &reply.id).await.err().unwrap();
+    #[tokio::test]
+    async fn create_target_user_not_found_fails() {
+        let harn = TestHarness::default();
+        harn.seed_user(
+            make_user("sadmin", "sadmin-qid", true),
+            make_credential("sadmin"),
+        );
+        harn.seed_team(make_team("team-1"));
+
+        let err = create(
+            &harn,
+            &sadmin_token(),
+            MemberCreateParams {
+                user_id: "no-such-user".into(),
+                team_id: "team-1".into(),
+                role_mask: u32::from(RoleFlag::Admin),
+            },
+        )
+        .await
+        .err()
+        .unwrap();
+
         assert!(usecase_is_expected_argument(&err));
     }
 
     #[tokio::test]
-    async fn delete_fails_for_nonexistent() {
+    async fn create_target_team_not_found_fails() {
         let harn = TestHarness::default();
-        let err = delete(&harn, "no-such-member".into()).await.err().unwrap();
+        harn.seed_user(
+            make_user("sadmin", "sadmin-qid", true),
+            make_credential("sadmin"),
+        );
+        harn.seed_user(make_user("u-1", "u-1-qid", false), make_credential("u-1"));
+
+        let err = create(
+            &harn,
+            &sadmin_token(),
+            MemberCreateParams {
+                user_id: "u-1".into(),
+                team_id: "no-such-team".into(),
+                role_mask: u32::from(RoleFlag::Admin),
+            },
+        )
+        .await
+        .err()
+        .unwrap();
+
         assert!(usecase_is_expected_argument(&err));
     }
 
     #[tokio::test]
     async fn create_duplicate_user_team_returns_conflict() {
         let harn = TestHarness::default();
-        harn.seed_team(TeamAggr {
-            id: "team-1".into(),
-            name: "T".into(),
-            description: "D".into(),
-            avatar_key: None,
-            avatar_uploaded: false,
-            avatar_version: 0,
-            workset_next_index: 0,
-            created_at: OffsetDateTime::now_utc(),
-            updated_at: OffsetDateTime::now_utc(),
-        });
+        harn.seed_user(
+            make_user("sadmin", "sadmin-qid", true),
+            make_credential("sadmin"),
+        );
+        harn.seed_user(make_user("u-1", "u-1-qid", false), make_credential("u-1"));
+        harn.seed_team(make_team("team-1"));
 
         create(
             &harn,
+            &sadmin_token(),
             MemberCreateParams {
                 user_id: "u-1".into(),
                 team_id: "team-1".into(),
@@ -380,6 +645,7 @@ mod tests {
 
         let err = create(
             &harn,
+            &sadmin_token(),
             MemberCreateParams {
                 user_id: "u-1".into(),
                 team_id: "team-1".into(),
@@ -394,82 +660,10 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn get_by_id_returns_member_base() {
+    async fn list_team_member_succeeds() {
         let harn = TestHarness::default();
-        harn.seed_member(make_test_member(
-            "m-1",
-            "u-1",
-            "team-1",
-            RoleFlag::Admin.into(),
-        ));
-
-        let base = get_by_id(&harn, "m-1").await.unwrap();
-        assert_eq!(base.user_id, "u-1");
-        assert_eq!(base.team_id, "team-1");
-    }
-
-    #[tokio::test]
-    async fn get_by_user_and_team_returns_member_base() {
-        let harn = TestHarness::default();
-        harn.seed_member(make_test_member(
-            "m-1",
-            "u-1",
-            "team-1",
-            RoleFlag::Admin.into(),
-        ));
-
-        let base = get_by_user_and_team(&harn, "u-1", "team-1")
-            .await
-            .unwrap();
-        assert_eq!(base.user_id, "u-1");
-        assert_eq!(base.team_id, "team-1");
-    }
-
-    #[tokio::test]
-    async fn get_by_user_and_team_fails_for_nonexistent() {
-        let harn = TestHarness::default();
-
-        let err = get_by_user_and_team(&harn, "u-none", "t-none")
-            .await
-            .err()
-            .unwrap();
-
-        assert!(usecase_is_expected_argument(&err));
-    }
-
-    #[tokio::test]
-    async fn list_filters_by_keyword() {
-        let harn = TestHarness::default();
-        harn.seed_member({
-            let mut m = make_test_member("m-1", "u-1", "team-1", RoleFlag::Admin.into());
-            m.user_nickname = "Alice".into();
-            m
-        });
-        harn.seed_member({
-            let mut m = make_test_member("m-2", "u-2", "team-1", RoleFlag::Translator.into());
-            m.user_nickname = "Bob".into();
-            m
-        });
-
-        let list = super::list(
-            &harn,
-            "team-1",
-            Some("Ali"),
-            None,
-            Page {
-                offset: 0,
-                limit: 10,
-            },
-        )
-        .await
-        .unwrap();
-        assert_eq!(list.len(), 1);
-        assert_eq!(list[0].user_nickname, "Alice");
-    }
-
-    #[tokio::test]
-    async fn list_filters_by_role() {
-        let harn = TestHarness::default();
+        harn.seed_user(make_user("u-1", "qid-1", false), make_credential("u-1"));
+        harn.seed_team(make_team("team-1"));
         harn.seed_member(make_test_member(
             "m-1",
             "u-1",
@@ -483,25 +677,57 @@ mod tests {
             RoleFlag::Translator.into(),
         ));
 
-        let list = super::list(
+        let list = super::list_infos(
             &harn,
-            "team-1",
-            None,
-            Some(RoleFlag::Translator),
-            Page {
-                offset: 0,
-                limit: 10,
+            &user_token("u-1"),
+            &MemberListParams {
+                team_id: "team-1".into(),
+                keyword: None,
+                role: None,
+                page: Page {
+                    offset: 0,
+                    limit: 10,
+                },
+                includes: MemberInclusion::default(),
             },
         )
         .await
         .unwrap();
-        assert_eq!(list.len(), 1);
-        assert_eq!(list[0].user_id, "u-2");
+        assert_eq!(list.len(), 2);
     }
 
     #[tokio::test]
-    async fn list_empty_with_offset_past_end() {
+    async fn list_nonmember_returns_forbidden() {
         let harn = TestHarness::default();
+        harn.seed_user(make_user("u-1", "qid-1", false), make_credential("u-1"));
+        harn.seed_team(make_team("team-1"));
+
+        let err = super::list_infos(
+            &harn,
+            &user_token("u-1"),
+            &MemberListParams {
+                team_id: "team-1".into(),
+                keyword: None,
+                role: None,
+                page: Page {
+                    offset: 0,
+                    limit: 10,
+                },
+                includes: MemberInclusion::default(),
+            },
+        )
+        .await
+        .err()
+        .unwrap();
+
+        assert!(usecase_is_expected_forbidden(&err));
+    }
+
+    #[tokio::test]
+    async fn list_my_members_team_member_succeeds() {
+        let harn = TestHarness::default();
+        harn.seed_user(make_user("u-1", "qid-1", false), make_credential("u-1"));
+        harn.seed_team(make_team("team-1"));
         harn.seed_member(make_test_member(
             "m-1",
             "u-1",
@@ -509,18 +735,450 @@ mod tests {
             RoleFlag::Admin.into(),
         ));
 
-        let list = super::list(
+        let base = super::list_my_members(
             &harn,
-            "team-1",
-            None,
-            None,
-            Page {
-                offset: 10,
-                limit: 5,
+            &user_token("u-1"),
+            &ListMyMembersParams {
+                team_id: "team-1".into(),
+                includes: MemberInclusion::default(),
             },
         )
         .await
         .unwrap();
-        assert!(list.is_empty());
+        assert_eq!(base.user_id, "u-1");
+    }
+
+    #[tokio::test]
+    async fn list_my_members_nonmember_returns_forbidden() {
+        let harn = TestHarness::default();
+        harn.seed_user(make_user("u-1", "qid-1", false), make_credential("u-1"));
+        harn.seed_team(make_team("team-1"));
+
+        let err = super::list_my_members(
+            &harn,
+            &user_token("u-1"),
+            &ListMyMembersParams {
+                team_id: "team-1".into(),
+                includes: MemberInclusion::default(),
+            },
+        )
+            .await
+            .err()
+            .unwrap();
+
+        assert!(usecase_is_expected_forbidden(&err));
+    }
+
+    #[tokio::test]
+    async fn update_roles_admin_succeeds() {
+        let harn = TestHarness::default();
+        let admin_user_id = "admin-1";
+        let target_user_id = "target-1";
+        let team_id = "team-1";
+
+        harn.seed_user(
+            make_user(admin_user_id, "admin-qid", false),
+            make_credential(admin_user_id),
+        );
+        harn.seed_user(
+            make_user(target_user_id, "target-qid", false),
+            make_credential(target_user_id),
+        );
+        harn.seed_team(make_team(team_id));
+        harn.seed_member(make_test_member(
+            "m-admin",
+            admin_user_id,
+            team_id,
+            RoleFlag::Admin.into(),
+        ));
+        harn.seed_member(make_test_member(
+            "m-target",
+            target_user_id,
+            team_id,
+            RoleFlag::Translator.into(),
+        ));
+
+        super::update_roles(
+            &harn,
+            &user_token(admin_user_id),
+            "m-target".into(),
+            MemberRoleUpdateParams {
+                roles: u32::from(RoleFlag::Proofreader),
+            },
+        )
+        .await
+        .unwrap();
+
+        let found = MemberQuery::get_by_id(&harn, "m-target").await.unwrap();
+        assert!(!found.has_any_role(&[RoleFlag::Translator]));
+        assert!(found.has_any_role(&[RoleFlag::Proofreader]));
+    }
+
+    #[tokio::test]
+    async fn update_roles_nonadmin_returns_forbidden() {
+        let harn = TestHarness::default();
+        let team_id = "team-1";
+
+        harn.seed_user(
+            make_user("regular", "reg-qid", false),
+            make_credential("regular"),
+        );
+        harn.seed_user(
+            make_user("target", "target-qid", false),
+            make_credential("target"),
+        );
+        harn.seed_team(make_team(team_id));
+        harn.seed_member(make_test_member(
+            "m-regular",
+            "regular",
+            team_id,
+            RoleFlag::Translator.into(),
+        ));
+        harn.seed_member(make_test_member(
+            "m-target",
+            "target",
+            team_id,
+            RoleFlag::Translator.into(),
+        ));
+
+        let err = super::update_roles(
+            &harn,
+            &user_token("regular"),
+            "m-target".into(),
+            MemberRoleUpdateParams {
+                roles: u32::from(RoleFlag::Admin),
+            },
+        )
+        .await
+        .err()
+        .unwrap();
+
+        assert!(usecase_is_expected_forbidden(&err));
+    }
+
+    #[tokio::test]
+    async fn update_roles_target_member_not_found_fails() {
+        let harn = TestHarness::default();
+        let team_id = "team-1";
+
+        harn.seed_user(
+            make_user("admin", "admin-qid", false),
+            make_credential("admin"),
+        );
+        harn.seed_team(make_team(team_id));
+        harn.seed_member(make_test_member(
+            "m-admin",
+            "admin",
+            team_id,
+            RoleFlag::Admin.into(),
+        ));
+
+        let err = super::update_roles(
+            &harn,
+            &user_token("admin"),
+            "no-such-member".into(),
+            MemberRoleUpdateParams {
+                roles: u32::from(RoleFlag::Admin),
+            },
+        )
+        .await
+        .err()
+        .unwrap();
+
+        assert!(usecase_is_expected_argument(&err));
+    }
+
+    #[tokio::test]
+    async fn update_roles_zero_role_mask_fails() {
+        let harn = TestHarness::default();
+
+        let err = super::update_roles(
+            &harn,
+            &user_token("anyone"),
+            "m-1".into(),
+            MemberRoleUpdateParams { roles: 0 },
+        )
+        .await
+        .err()
+        .unwrap();
+
+        assert!(usecase_is_expected_argument(&err));
+    }
+
+    #[tokio::test]
+    async fn delete_admin_succeeds() {
+        let harn = TestHarness::default();
+        let team_id = "team-1";
+
+        harn.seed_user(
+            make_user("admin", "admin-qid", false),
+            make_credential("admin"),
+        );
+        harn.seed_user(
+            make_user("target", "target-qid", false),
+            make_credential("target"),
+        );
+        harn.seed_team(make_team(team_id));
+        harn.seed_member(make_test_member(
+            "m-admin",
+            "admin",
+            team_id,
+            RoleFlag::Admin.into(),
+        ));
+        harn.seed_member(make_test_member(
+            "m-target",
+            "target",
+            team_id,
+            RoleFlag::Translator.into(),
+        ));
+
+        super::delete(&harn, &user_token("admin"), "m-target".into())
+            .await
+            .unwrap();
+
+        let err = MemberQuery::get_by_id(&harn, "m-target")
+            .await
+            .err()
+            .unwrap();
+        assert!(is_expected_argument(&err));
+    }
+
+    #[tokio::test]
+    async fn delete_nonadmin_returns_forbidden() {
+        let harn = TestHarness::default();
+        let team_id = "team-1";
+
+        harn.seed_user(
+            make_user("regular", "reg-qid", false),
+            make_credential("regular"),
+        );
+        harn.seed_user(
+            make_user("target", "target-qid", false),
+            make_credential("target"),
+        );
+        harn.seed_team(make_team(team_id));
+        harn.seed_member(make_test_member(
+            "m-regular",
+            "regular",
+            team_id,
+            RoleFlag::Translator.into(),
+        ));
+        harn.seed_member(make_test_member(
+            "m-target",
+            "target",
+            team_id,
+            RoleFlag::Translator.into(),
+        ));
+
+        let err = super::delete(&harn, &user_token("regular"), "m-target".into())
+            .await
+            .err()
+            .unwrap();
+
+        assert!(usecase_is_expected_forbidden(&err));
+    }
+
+    #[tokio::test]
+    async fn delete_target_member_not_found_fails() {
+        let harn = TestHarness::default();
+        let team_id = "team-1";
+
+        harn.seed_user(
+            make_user("admin", "admin-qid", false),
+            make_credential("admin"),
+        );
+        harn.seed_team(make_team(team_id));
+        harn.seed_member(make_test_member(
+            "m-admin",
+            "admin",
+            team_id,
+            RoleFlag::Admin.into(),
+        ));
+
+        let err = super::delete(&harn, &user_token("admin"), "no-such-member".into())
+            .await
+            .err()
+            .unwrap();
+
+        assert!(usecase_is_expected_argument(&err));
+    }
+
+    #[tokio::test]
+    async fn list_mine_returns_user_members() {
+        let harn = TestHarness::default();
+        harn.seed_user(make_user("u-1", "qid-1", false), make_credential("u-1"));
+        harn.seed_team(make_team("team-1"));
+        harn.seed_team(make_team("team-2"));
+        harn.seed_member(make_test_member(
+            "m-1",
+            "u-1",
+            "team-1",
+            RoleFlag::Admin.into(),
+        ));
+        harn.seed_member(make_test_member(
+            "m-2",
+            "u-1",
+            "team-2",
+            RoleFlag::Translator.into(),
+        ));
+        harn.seed_member(make_test_member(
+            "m-3",
+            "u-2",
+            "team-1",
+            RoleFlag::Admin.into(),
+        ));
+
+        let list = super::list_mine(
+            &harn,
+            &user_token("u-1"),
+            &MemberMineParams {
+                page: Page {
+                    offset: 0,
+                    limit: 10,
+                },
+                includes: MemberInclusion::default(),
+            },
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(list.len(), 2);
+        assert!(list.iter().all(|m| m.user_id == "u-1"));
+    }
+
+    #[tokio::test]
+    async fn join_by_code_succeeds() {
+        let harn = TestHarness::default();
+        harn.seed_user(
+            {
+                let mut u = make_user("u-1", "invitee-qid", false);
+                u.nickname = "MyNick".into();
+                u
+            },
+            make_credential("u-1"),
+        );
+        harn.seed_team(make_team("team-1"));
+
+        let invitation = MemberInvitationAggr {
+            id: MemberInvitationAggr::generate_id(),
+            invitor_id: "invitor-1".into(),
+            invitor: None,
+            team_id: "team-1".into(),
+            invitee_qid: "invitee-qid".into(),
+            code: "CODE123".into(),
+            pending: true,
+            roles: RoleMask::from(RoleFlag::Translator),
+            created_at: OffsetDateTime::now_utc(),
+        };
+        harn.seed_invitation(invitation);
+
+        let reply = super::join(
+            &harn,
+            &user_token("u-1"),
+            MemberJoinParams {
+                invitation_code: "CODE123".into(),
+            },
+        )
+        .await
+        .unwrap();
+
+        let found = MemberQuery::get_by_id(&harn, &reply.id).await.unwrap();
+        assert_eq!(found.user_id, "u-1");
+        assert_eq!(found.team_id, "team-1");
+        assert_eq!(found.user_nickname, "MyNick");
+    }
+
+    #[tokio::test]
+    async fn join_code_not_found_fails() {
+        let harn = TestHarness::default();
+        harn.seed_user(make_user("u-1", "qid-1", false), make_credential("u-1"));
+
+        let err = super::join(
+            &harn,
+            &user_token("u-1"),
+            MemberJoinParams {
+                invitation_code: "NO-SUCH-CODE".into(),
+            },
+        )
+        .await
+        .err()
+        .unwrap();
+
+        assert!(usecase_is_expected_argument(&err));
+    }
+
+    #[tokio::test]
+    async fn join_wrong_qid_fails() {
+        let harn = TestHarness::default();
+        harn.seed_user(make_user("u-1", "wrong-qid", false), make_credential("u-1"));
+        harn.seed_team(make_team("team-1"));
+
+        let invitation = MemberInvitationAggr {
+            id: MemberInvitationAggr::generate_id(),
+            invitor_id: "invitor-1".into(),
+            invitor: None,
+            team_id: "team-1".into(),
+            invitee_qid: "right-qid".into(),
+            code: "CODE123".into(),
+            pending: true,
+            roles: RoleMask::from(RoleFlag::Translator),
+            created_at: OffsetDateTime::now_utc(),
+        };
+        harn.seed_invitation(invitation);
+
+        let err = super::join(
+            &harn,
+            &user_token("u-1"),
+            MemberJoinParams {
+                invitation_code: "CODE123".into(),
+            },
+        )
+        .await
+        .err()
+        .unwrap();
+
+        assert!(usecase_is_expected_argument(&err));
+    }
+
+    #[tokio::test]
+    async fn join_already_member_returns_conflict() {
+        let harn = TestHarness::default();
+        harn.seed_user(
+            make_user("u-1", "invitee-qid", false),
+            make_credential("u-1"),
+        );
+        harn.seed_team(make_team("team-1"));
+        harn.seed_member(make_test_member(
+            "m-1",
+            "u-1",
+            "team-1",
+            RoleFlag::Admin.into(),
+        ));
+
+        let invitation = MemberInvitationAggr {
+            id: MemberInvitationAggr::generate_id(),
+            invitor_id: "invitor-1".into(),
+            invitor: None,
+            team_id: "team-1".into(),
+            invitee_qid: "invitee-qid".into(),
+            code: "CODE123".into(),
+            pending: true,
+            roles: RoleMask::from(RoleFlag::Translator),
+            created_at: OffsetDateTime::now_utc(),
+        };
+        harn.seed_invitation(invitation);
+
+        let err = super::join(
+            &harn,
+            &user_token("u-1"),
+            MemberJoinParams {
+                invitation_code: "CODE123".into(),
+            },
+        )
+        .await
+        .err()
+        .unwrap();
+
+        assert!(usecase_is_expected_conflict(&err));
     }
 }

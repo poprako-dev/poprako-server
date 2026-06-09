@@ -82,7 +82,7 @@ pub async fn list(
         limit: params.limit.unwrap_or(20) as usize,
     };
 
-    let bases = usecase::team::list(&harn, page).await?;
+    let bases = usecase::team::list_infos(&harn, page).await?;
 
     bases.accept(StatusCode::OK)
 }

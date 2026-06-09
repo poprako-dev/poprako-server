@@ -310,6 +310,7 @@ mod tests {
     use crate::domain::model::event::Event;
     use crate::domain::model::value::role::{RoleFlag, RoleMask};
     use crate::harness::tests::TestHarness;
+    use crate::test_util::is_expected_argument;
     use crate::test_util::usecase_is_expected_argument;
     use crate::test_util::usecase_is_expected_conflict;
     use crate::test_util::usecase_is_unrecoverable;
@@ -501,7 +502,8 @@ mod user_use_cases_tests {
     use crate::domain::model::aggr::user::UserCredential;
     use crate::domain::model::value::role::RoleFlag;
     use crate::harness::tests::TestHarness;
-    use crate::test_util::{usecase_is_expected_argument, usecase_is_unrecoverable};
+    use crate::domain::query::member::MemberQuery;
+    use crate::test_util::{is_expected_argument, usecase_is_expected_argument, usecase_is_unrecoverable};
     use crate::usecase::data_object::member::MemberCreateParams;
     use crate::usecase::data_object::user::{
         AvatarMarkUploadedParams, AvatarReserveParams, SignInParams, UserInfoUpdateParams,
@@ -870,7 +872,23 @@ mod user_use_cases_tests {
     #[tokio::test]
     async fn delete_user_cascades_members() {
         let harn = TestHarness::default();
-        let (user, credential) = make_test_user("user-1", "qid-1", "Alice", "pw");
+        // Make user-1 a sadmin so it can create members via the create endpoint.
+        let user = UserAggr {
+            id: "user-1".into(),
+            qid: "qid-1".into(),
+            nickname: "Alice".into(),
+            avatar_key: None,
+            avatar_uploaded: false,
+            avatar_version: 0,
+            is_sadmin: true,
+            last_active_at: time::OffsetDateTime::now_utc(),
+            created_at: time::OffsetDateTime::now_utc(),
+            updated_at: time::OffsetDateTime::now_utc(),
+        };
+        let credential = UserCredential {
+            user_id: "user-1".into(),
+            password_hash: bcrypt::hash("pw", bcrypt::DEFAULT_COST).unwrap(),
+        };
         harn.seed_user(user, credential);
 
         // Create a member record for the user in a team.
@@ -885,8 +903,12 @@ mod user_use_cases_tests {
             created_at: time::OffsetDateTime::now_utc(),
             updated_at: time::OffsetDateTime::now_utc(),
         });
+        let user_token = UserToken {
+            user_id: "user-1".into(),
+        };
         let member = member::create(
             &harn,
+            &user_token,
             MemberCreateParams {
                 user_id: "user-1".into(),
                 team_id: "team-1".into(),
@@ -896,11 +918,7 @@ mod user_use_cases_tests {
         .await
         .unwrap();
 
-        let token = UserToken {
-            user_id: "user-1".into(),
-        };
-
-        delete_user(&harn, token).await.unwrap();
+        delete_user(&harn, user_token).await.unwrap();
 
         // User and credentials are gone.
         let snapshot = harn.snapshot();
@@ -908,8 +926,8 @@ mod user_use_cases_tests {
         assert!(snapshot.credentials.is_empty());
 
         // Member record is cascade-deleted.
-        let err = member::get_by_id(&harn, &member.id).await.err().unwrap();
-        assert!(usecase_is_expected_argument(&err));
+        let err = MemberQuery::get_by_id(&harn, &member.id).await.err().unwrap();
+        assert!(is_expected_argument(&err));
     }
 
     #[tokio::test]

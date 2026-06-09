@@ -46,7 +46,7 @@ pub struct RoleMask(u32);
 
 impl RoleMask {
     /// Bitmask of all valid role bits (bit 0 through 8).
-    const VALID_BITS: u32 = (1 << 9) - 1;
+    pub const VALID_BITS: u32 = (1 << 9) - 1;
 
     pub fn has_any_role(&self, flags: &[RoleFlag]) -> bool {
         for f in flags {

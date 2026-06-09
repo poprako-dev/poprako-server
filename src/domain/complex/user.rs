@@ -50,7 +50,7 @@ impl UserComplex {
         // Delete each member record belonging to this user.
         let members = MemberQueryTransactional::list_by_user_id_excluded(query, id).await?;
         for m in &members {
-            MemberQueryTransactional::delete_transactional(query, &m.id).await?;
+            MemberQueryTransactional::delete(query, &m.id).await?;
         }
 
         UserQueryTransactional::delete(query, id).await?;

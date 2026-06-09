@@ -26,6 +26,9 @@ pub trait TeamQuery {
 
     /// Updates a team's mutable fields (name, description) via PUT semantics.
     async fn update_info(&self, update: &TeamInfoUpdate) -> DomainResult<()>;
+
+    /// Marks the team's current avatar version as uploaded.
+    async fn mark_avatar_uploaded(&self, id: &str, image_version: i64) -> DomainResult<()>;
 }
 
 /// Transactional persistence contract for [`TeamAggr`], used **only** inside

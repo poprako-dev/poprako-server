@@ -84,6 +84,31 @@ impl TeamQuery for MemoryMockQuery {
 
         Ok(())
     }
+
+    async fn mark_avatar_uploaded(&self, id: &str, image_version: i64) -> DomainResult<()> {
+        let mut state = self.state.lock().unwrap();
+
+        let team = state
+            .teams
+            .iter_mut()
+            .find(|t| t.id == id)
+            .ok_or_else(|| DomainError::expected_argument(trl("error-team-not-found")))?;
+
+        if team.avatar_version != image_version {
+            return Err(DomainError::expected_argument(trl(
+                "error-stale-avatar-upload",
+            )));
+        }
+
+        if team.avatar_uploaded {
+            return Ok(());
+        }
+
+        team.avatar_uploaded = true;
+        team.updated_at = OffsetDateTime::now_utc();
+
+        Ok(())
+    }
 }
 
 // ── QueryTransactional impls ───────────────────────────────────────────────
@@ -147,26 +172,19 @@ impl TeamQueryTransactional for MemoryMockQueryTransactional {
 
     async fn mark_avatar_uploaded(&mut self, id: &str, image_version: i64) -> DomainResult<()> {
         let mut state = self.state.lock().unwrap();
-
         let team = state
             .teams
             .iter_mut()
             .find(|t| t.id == id)
             .ok_or_else(|| DomainError::expected_argument(trl("error-team-not-found")))?;
-
         if team.avatar_version != image_version {
-            return Err(DomainError::expected_argument(trl(
-                "error-stale-avatar-upload",
-            )));
+            return Err(DomainError::expected_argument(trl("error-stale-avatar-upload")));
         }
-
         if team.avatar_uploaded {
             return Ok(());
         }
-
         team.avatar_uploaded = true;
         team.updated_at = OffsetDateTime::now_utc();
-
         Ok(())
     }
 
@@ -192,7 +210,7 @@ mod tests {
     // get_by_id_missing_returns_expected_error(TeamQuery::get_by_id)(negative): missing teams should return an expected argument error.
     // list_returns_teams_ordered_by_created_at_desc(TeamQuery::list)(positive): list should return teams ordered by created_at DESC.
     // reserve_avatar_sets_key_and_version(TeamQueryTransactional::reserve_avatar)(positive): reserve should set the avatar key, clear uploaded flag, and increment version.
-    // mark_avatar_uploaded_sets_flag(TeamQueryTransactional::mark_avatar_uploaded)(positive): marking should set avatar_uploaded to true.
+    // mark_avatar_uploaded_sets_flag(TeamQuery::mark_avatar_uploaded)(positive): marking should set avatar_uploaded to true.
     // create_then_find(TeamQuery::create)(positive): created teams should be readable after transaction commit.
     // create_duplicate_name_returns_conflict(TeamQuery::create)(negative): duplicate team names should return a conflict.
     // update_changes_fields(TeamQuery::update)(positive): update should change name and description.
@@ -303,13 +321,16 @@ mod tests {
 
         mock.transaction_scoped(|txn| {
             async move {
-                TeamQueryTransactional::reserve_avatar(txn, "team-1", "png").await?;
-                TeamQueryTransactional::mark_avatar_uploaded(txn, "team-1", 1).await
+                TeamQueryTransactional::reserve_avatar(txn, "team-1", "png").await
             }
             .boxed()
         })
         .await
         .unwrap();
+
+        TeamQuery::mark_avatar_uploaded(&mock, "team-1", 1)
+            .await
+            .unwrap();
 
         let found = TeamQuery::get_by_id(&mock, "team-1").await.unwrap();
         assert!(found.avatar_uploaded);

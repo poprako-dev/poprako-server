@@ -14,6 +14,8 @@ pub mod result {
         Argument,
         /// Authentication errors
         Authentication,
+        /// Authorization errors (insufficient permissions)
+        Forbidden,
         /// Resource conflict errors (e.g. unique constraint violations)
         Conflict,
     }
@@ -48,6 +50,13 @@ pub mod result {
             }
         }
 
+        pub fn expected_forbidden(msg: String) -> Self {
+            Self::Expected {
+                variant: ExpectedVariant::Forbidden,
+                message: msg,
+            }
+        }
+
         pub fn expected_conflict(msg: String) -> Self {
             Self::Expected {
                 variant: ExpectedVariant::Conflict,
@@ -77,8 +86,8 @@ pub mod result {
     mod tests {
         // expected_argument_variant(DomainError::expected_argument)(positive): expected argument errors should carry the Argument variant and message.
         // expected_authentication_variant(DomainError::expected_authentication)(positive): expected authentication errors should carry the Authentication variant and message.
+        // expected_forbidden_variant(DomainError::expected_forbidden)(positive): expected forbidden errors should carry the Forbidden variant and message.
         // expected_conflict_variant(DomainError::expected_conflict)(positive): expected conflict errors should carry the Conflict variant and message.
-        // unrecoverable_variant(DomainError::unrecoverable)(positive): unrecoverable errors should carry their diagnostic message.
         use super::DomainError;
         use super::ExpectedVariant;
 
@@ -101,6 +110,18 @@ pub mod result {
                 DomainError::Expected { variant, message } => {
                     assert!(matches!(variant, ExpectedVariant::Authentication));
                     assert_eq!(message, "no access");
+                }
+                _ => panic!("expected Expected variant"),
+            }
+        }
+
+        #[test]
+        fn expected_forbidden_variant() {
+            let err = DomainError::expected_forbidden("no permission".into());
+            match err {
+                DomainError::Expected { variant, message } => {
+                    assert!(matches!(variant, ExpectedVariant::Forbidden));
+                    assert_eq!(message, "no permission");
                 }
                 _ => panic!("expected Expected variant"),
             }
