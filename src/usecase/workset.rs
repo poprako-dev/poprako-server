@@ -30,11 +30,13 @@ where
 #[instrument(err, skip(harn))]
 pub async fn create<H>(harn: &H, params: WorksetCreateParams) -> UseCaseResult<WorksetCreateReply>
 where
-    H: Clone + Transactional + Query + ImageGet + Send + Sync,
+    H: Clone + Transactional + Query + Send + Sync,
 {
     let id = WorksetAggr::generate_id();
 
-    let (_workset, info_placeholder) = Transactional::transaction_scoped(harn, move |query| {
+    Transactional::transaction_scoped(harn, |query| {
+        let id = id.clone();
+
         async move {
             // Atomically allocate the next index from the team-level sequence.
             let index =
@@ -42,48 +44,26 @@ where
                     .await?;
 
             let form = WorksetForm {
-                id: id.clone(),
-                team_id: params.team_id.clone(),
+                id,
+                team_id: params.team_id,
                 index,
-                name: params.name.clone(),
-                description: params.description.clone(),
+                name: params.name,
+                description: params.description,
             };
 
-            let created = WorksetQueryTransactional::create(query, &form).await?;
+            WorksetQueryTransactional::create(query, &form).await?;
 
-            Ok((created, InfoPlaceholder { id: id.clone() }))
+            Ok(())
         }
         .boxed()
     })
     .await?;
 
-    // Re-fetch to include team preload for the response.
-    let aggr = WorksetQuery::get_by_id(harn, &info_placeholder.id).await?;
-
-    let info = WorksetInfo::from_aggr(aggr, harn).await;
-
-    Ok(WorksetCreateReply { id: info.id })
-}
-
-/// Internal holder to keep the workset id alive while assembling the info.
-struct InfoPlaceholder {
-    id: String,
+    Ok(WorksetCreateReply { id })
 }
 
 #[instrument(err, skip(harn))]
-pub async fn get_by_id<H>(harn: &H, id: &str) -> UseCaseResult<WorksetInfo>
-where
-    H: Query + ImageGet + Send + Sync,
-{
-    let workset = WorksetQuery::get_by_id(harn, id).await?;
-
-    let info = WorksetInfo::from_aggr(workset, harn).await;
-
-    Ok(info)
-}
-
-#[instrument(err, skip(harn))]
-pub async fn list<H>(harn: &H, team_id: &str, page: Page) -> UseCaseResult<Vec<WorksetInfo>>
+pub async fn list_infos<H>(harn: &H, team_id: &str, page: Page) -> UseCaseResult<Vec<WorksetInfo>>
 where
     H: Query + ImageGet + Send + Sync,
 {
@@ -93,7 +73,7 @@ where
 }
 
 #[instrument(err, skip(harn))]
-pub async fn update<H>(
+pub async fn update_info<H>(
     harn: &H,
     workset_id: String,
     params: WorksetUpdateParams,
@@ -120,6 +100,7 @@ where
     Transactional::transaction_scoped(harn, move |query| {
         async move {
             WorksetComplex::delete_cascade(query, &workset_id).await?;
+
             Ok(())
         }
         .boxed()
@@ -264,7 +245,7 @@ mod tests {
         .await
         .unwrap();
 
-        let list = super::list(
+        let list = super::list_infos(
             &harn,
             "team-1",
             Page {
@@ -293,7 +274,7 @@ mod tests {
         .await
         .unwrap();
 
-        update(
+        update_info(
             &harn,
             reply.id.clone(),
             WorksetUpdateParams {
@@ -312,7 +293,7 @@ mod tests {
     #[tokio::test]
     async fn update_fails_for_nonexistent() {
         let harn = TestHarness::default();
-        let err = update(
+        let err = update_info(
             &harn,
             "no-such-workset".into(),
             WorksetUpdateParams {
@@ -412,7 +393,7 @@ mod tests {
         .await
         .unwrap();
 
-        let list = super::list(
+        let list = super::list_infos(
             &harn,
             "team-1",
             Page {

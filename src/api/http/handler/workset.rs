@@ -66,7 +66,7 @@ pub async fn list(
         limit: params.limit.unwrap_or(20) as usize,
     };
 
-    let infos = usecase::workset::list(&harn, &params.team_id, page).await?;
+    let infos = usecase::workset::list_infos(&harn, &params.team_id, page).await?;
 
     infos.accept(StatusCode::OK)
 }
@@ -91,7 +91,7 @@ pub async fn update(
     Path(workset_id): Path<String>,
     Json(params): Json<WorksetUpdateParams>,
 ) -> HttpResult<()> {
-    usecase::workset::update(&harn, workset_id, params).await?;
+    usecase::workset::update_info(&harn, workset_id, params).await?;
 
     ().accept(StatusCode::OK)
 }
