@@ -15,7 +15,6 @@ use crate::domain::model::aggr::member::{MemberAggr, MemberForm};
 use crate::domain::model::aggr::user::{UserAggr, UserForm, UserInfoUpdate, UserToken};
 use crate::domain::model::event::user::UserSignedUpEvent;
 use crate::domain::model::event::{Event, EventSink};
-use crate::domain::query::Query;
 use crate::domain::query::Transactional;
 use crate::domain::query::local_message::LocalMessageQueryTransactional;
 use crate::domain::query::member::MemberQueryTransactional;
@@ -111,7 +110,7 @@ where
 #[instrument(err, skip(harn))]
 pub async fn sign_in<H>(harn: &H, params: SignInParams) -> UseCaseResult<SignInReply>
 where
-    H: Query + TokenSign + Send + Sync,
+    H: UserQuery + TokenSign + Send + Sync,
 {
     let credentials = UserQuery::get_credentials_by_qid(harn, &params.qid).await?;
 
@@ -136,7 +135,7 @@ where
 #[instrument(err, skip(harn))]
 pub async fn get_info<H>(harn: &H, id: &str) -> UseCaseResult<UserInfo>
 where
-    H: Query + ImageGet + Send + Sync,
+    H: UserQuery + ImageGet + Send + Sync,
 {
     let user = UserQuery::get_by_id(harn, id).await?;
 

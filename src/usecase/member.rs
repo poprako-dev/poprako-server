@@ -6,7 +6,6 @@ use crate::domain::external::image_pool::ImageGet;
 use crate::domain::model::aggr::member::{MemberAggr, MemberForm, MemberRoleUpdate};
 use crate::domain::model::aggr::user::UserToken;
 use crate::domain::model::value::role::{RoleFlag, RoleMask};
-use crate::domain::query::Query;
 use crate::domain::query::Transactional;
 use crate::domain::query::member::MemberQuery;
 use crate::domain::query::member::MemberQueryTransactional;
@@ -25,7 +24,7 @@ fn validate_role_mask(mask: u32) -> DomainResult<RoleMask> {
         .map_err(|_| DomainError::expected_argument(trl("error-member-not-found")))
 }
 
-async fn members_to_infos<H>(members: Vec<MemberAggr>, harn: &H) -> Vec<MemberInfo>
+async fn to_infos<H>(members: Vec<MemberAggr>, harn: &H) -> Vec<MemberInfo>
 where
     H: ImageGet,
 {
@@ -95,7 +94,7 @@ pub async fn list_infos<H>(
     params: &MemberListParams,
 ) -> UseCaseResult<Vec<MemberInfo>>
 where
-    H: Query + ImageGet + Send + Sync,
+    H: MemberQuery + ImageGet + Send + Sync,
 {
     if let Some(team_id) = &params.team_id {
         let is_member =
@@ -116,7 +115,7 @@ where
     )
     .await?;
 
-    Ok(members_to_infos(members, harn).await)
+    Ok(to_infos(members, harn).await)
 }
 
 #[instrument(err, skip(harn))]

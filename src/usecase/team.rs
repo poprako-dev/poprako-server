@@ -9,14 +9,14 @@ use crate::domain::local_message::message::{ImageLocalMessage, ImageResourceKind
 use crate::domain::model::aggr::team::{TeamAggr, TeamForm, TeamInfoUpdate};
 use crate::domain::query::local_message::LocalMessageQueryTransactional;
 use crate::domain::query::team::{TeamQuery, TeamQueryTransactional};
-use crate::domain::query::{Query, Transactional};
+use crate::domain::query::Transactional;
 use crate::usecase::data_object::team::{
     TeamAvatarMarkUploadedParams, TeamAvatarReserveParams, TeamAvatarReserveReply,
     TeamCreateParams, TeamInfo, TeamInfoUpdateParams,
 };
 use crate::usecase::result::UseCaseResult;
 
-async fn teams_to_infos<H>(teams: Vec<TeamAggr>, harn: &H) -> Vec<TeamInfo>
+async fn to_infos<H>(teams: Vec<TeamAggr>, harn: &H) -> Vec<TeamInfo>
 where
     H: ImageGet,
 {
@@ -31,7 +31,7 @@ where
 #[instrument(err, skip(harn))]
 pub async fn create<H>(harn: &H, params: TeamCreateParams) -> UseCaseResult<TeamInfo>
 where
-    H: Query + ImageGet + Send + Sync,
+    H: TeamQuery + ImageGet + Send + Sync,
 {
     let id = TeamAggr::generate_id();
 
@@ -51,7 +51,7 @@ where
 #[instrument(err, skip(harn))]
 pub async fn get_info<H>(harn: &H, id: &str) -> UseCaseResult<TeamInfo>
 where
-    H: Query + ImageGet + Send + Sync,
+    H: TeamQuery + ImageGet + Send + Sync,
 {
     let team = TeamQuery::get_by_id(harn, id).await?;
 
@@ -63,11 +63,11 @@ where
 #[instrument(err, skip(harn))]
 pub async fn list_infos<H>(harn: &H, page: Page) -> UseCaseResult<Vec<TeamInfo>>
 where
-    H: Query + ImageGet + Send + Sync,
+    H: TeamQuery + ImageGet + Send + Sync,
 {
     let teams = TeamQuery::list(harn, page).await?;
 
-    Ok(teams_to_infos(teams, harn).await)
+    Ok(to_infos(teams, harn).await)
 }
 
 #[instrument(err, skip(harn))]
@@ -77,7 +77,7 @@ pub async fn update_info<H>(
     params: TeamInfoUpdateParams,
 ) -> UseCaseResult<()>
 where
-    H: Query + Send + Sync,
+    H: TeamQuery + Send + Sync,
 {
     let update = TeamInfoUpdate {
         id: team_id,
@@ -145,7 +145,7 @@ pub async fn mark_avatar_uploaded<H>(
     params: TeamAvatarMarkUploadedParams,
 ) -> UseCaseResult<()>
 where
-    H: Query + Send + Sync,
+    H: TeamQuery + Send + Sync,
 {
     TeamQuery::mark_avatar_uploaded(harn, &team_id, params.image_version).await?;
 
@@ -194,7 +194,9 @@ mod tests {
 
     use crate::domain::local_message::message::{ImageLocalMessage, ImageResourceKind};
     use crate::domain::model::aggr::team::TeamAggr;
+    use crate::domain::query::workset::WorksetQuery;
     use crate::harness::tests::TestHarness;
+    use crate::test_util::is_expected_argument;
     use crate::test_util::usecase_is_expected_argument;
     use crate::test_util::usecase_is_expected_conflict;
     use crate::usecase::data_object::team::{
@@ -433,10 +435,10 @@ mod tests {
         assert!(usecase_is_expected_argument(&err));
 
         // Both worksets should be cascade-deleted.
-        let err = workset::get_by_id(&harn, &r1.id).await.err().unwrap();
-        assert!(usecase_is_expected_argument(&err));
-        let err = workset::get_by_id(&harn, &r2.id).await.err().unwrap();
-        assert!(usecase_is_expected_argument(&err));
+        let err = WorksetQuery::get_by_id(&harn, &r1.id).await.err().unwrap();
+        assert!(is_expected_argument(&err));
+        let err = WorksetQuery::get_by_id(&harn, &r2.id).await.err().unwrap();
+        assert!(is_expected_argument(&err));
     }
 
     #[tokio::test]
