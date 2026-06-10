@@ -1,15 +1,16 @@
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
 
-use poprako_util::page::Page;
 use poprako_util::time::ToUnixMilli as _;
 
 use crate::domain::external::image_pool::ImageGet;
 use crate::domain::model::aggr::member::MemberAggr;
-use crate::domain::model::value::member_inclusion::MemberInclusion;
 use crate::domain::model::value::role::RoleFlag;
+use crate::domain::result::DomainError;
+use crate::domain::result::DomainResult;
 use crate::usecase::data_object::team::TeamInfo;
 use crate::usecase::data_object::user::UserInfo;
+use poprako_util::i18n::trl;
 
 /// Public-facing representation of a team member.
 #[derive(Debug, Serialize, ToSchema)]
@@ -72,13 +73,13 @@ impl MemberInfo {
 
 /// Request body for updating a member's roles.
 #[derive(Debug, Deserialize, ToSchema)]
-pub struct MemberRoleUpdateParams {
+pub struct RoleUpdateParams {
     pub roles: u32,
 }
 
 /// Request body for creating a member directly (sadmin only).
 #[derive(Debug, Deserialize, ToSchema)]
-pub struct MemberCreateParams {
+pub struct CreateParams {
     pub user_id: String,
     pub team_id: String,
     pub role_mask: u32,
@@ -86,44 +87,59 @@ pub struct MemberCreateParams {
 
 /// Response body after creating a member.
 #[derive(Debug, Serialize, ToSchema)]
-pub struct MemberCreateReply {
+pub struct CreateReply {
     pub id: String,
 }
 
 /// Request body for joining a team by invitation code.
 #[derive(Debug, Deserialize, ToSchema)]
-pub struct MemberJoinParams {
+pub struct JoinParams {
     pub invitation_code: String,
 }
 
 /// Query parameters for listing members.
-#[derive(Debug)]
-pub struct MemberListParams {
+#[derive(Debug, Default, Deserialize, IntoParams)]
+pub struct ListParams {
     pub team_id: Option<String>,
     pub user_id: Option<String>,
-    pub keyword: Option<String>,
-    pub role: Option<RoleFlag>,
-    pub page: Page,
-    pub includes: MemberInclusion,
-}
-
-/// HTTP query parameters for listing members.
-#[derive(Debug, Deserialize, IntoParams)]
-#[into_params(parameter_in = Query)]
-pub struct MemberListQuery {
-    pub team_id: String,
     pub keyword: Option<String>,
     pub role: Option<u32>,
     pub offset: Option<i64>,
     pub limit: Option<i64>,
-    pub includes: Option<String>,
+    pub includes: Vec<String>,
 }
 
-/// HTTP query parameters for listing the current user's memberships.
-#[derive(Debug, Deserialize, IntoParams)]
-#[into_params(parameter_in = Query)]
-pub struct MemberMineQuery {
-    pub offset: Option<i64>,
-    pub limit: Option<i64>,
-    pub includes: Option<String>,
+impl ListParams {
+    /// Validates query parameters for member listing.
+    ///
+    /// Checks that `offset` is non-negative, `limit` is in [1, 200],
+    /// and `role` (if present) is a single bit value.
+    pub fn validate(&self) -> DomainResult<()> {
+        if let Some(offset) = self.offset
+            && offset < 0
+        {
+            return Err(DomainError::expected_argument(trl("error-invalid-offset")));
+        }
+
+        if let Some(limit) = self.limit
+            && !(1..31).contains(&limit)
+        {
+            return Err(DomainError::expected_argument(trl("error-invalid-limit")));
+        }
+
+        if let Some(role) = self.role
+            && RoleFlag::try_from_single_bit(role).is_none()
+        {
+            return Err(DomainError::expected_argument(trl("error-invalid-role")));
+        }
+
+        if self.team_id.is_none() && self.user_id.is_none() {
+            // FIXME: ftl
+            return Err(DomainError::expected_argument(trl(
+                "error-team-or-user-required",
+            )));
+        }
+
+        Ok(())
+    }
 }

@@ -1,10 +1,12 @@
 use futures_util::FutureExt as _;
 use poprako_util::i18n::trl;
+use poprako_util::page::Page;
 use tracing::instrument;
 
 use crate::domain::external::image_pool::ImageGet;
 use crate::domain::model::aggr::member::{MemberAggr, MemberForm, MemberRoleUpdate};
 use crate::domain::model::aggr::user::UserToken;
+use crate::domain::model::value::member_inclusion::MemberInclusion;
 use crate::domain::model::value::role::{RoleFlag, RoleMask};
 use crate::domain::query::Transactional;
 use crate::domain::query::member::MemberQuery;
@@ -14,8 +16,7 @@ use crate::domain::query::team::TeamQueryTransactional;
 use crate::domain::query::user::UserQueryTransactional;
 use crate::domain::result::{DomainError, DomainResult};
 use crate::usecase::data_object::member::{
-    MemberCreateParams, MemberCreateReply, MemberInfo, MemberJoinParams, MemberListParams,
-    MemberRoleUpdateParams,
+    CreateParams, CreateReply, JoinParams, ListParams, MemberInfo, RoleUpdateParams,
 };
 use crate::usecase::result::UseCaseResult;
 
@@ -40,8 +41,8 @@ where
 pub async fn create<H>(
     harn: &H,
     user_token: &UserToken,
-    params: MemberCreateParams,
-) -> UseCaseResult<MemberCreateReply>
+    params: CreateParams,
+) -> UseCaseResult<CreateReply>
 where
     H: Clone + Transactional + Send + Sync,
 {
@@ -75,7 +76,7 @@ where
                 user_id: target_user_id,
                 user_nickname: target_user.nickname,
                 team_id: target_team_id,
-                roles: role_mask,
+                role_mask: role_mask,
             };
 
             MemberQueryTransactional::create(query, &form).await
@@ -84,18 +85,21 @@ where
     })
     .await?;
 
-    Ok(MemberCreateReply { id: member.id })
+    Ok(CreateReply { id: member.id })
 }
 
 #[instrument(err, skip(harn, params))]
 pub async fn list_infos<H>(
     harn: &H,
     user_token: &UserToken,
-    params: &MemberListParams,
+    params: &ListParams,
 ) -> UseCaseResult<Vec<MemberInfo>>
 where
     H: MemberQuery + ImageGet + Send + Sync,
 {
+    // Validate params before any permission checks to fail fast on invalid requests.
+    params.validate()?;
+
     if let Some(team_id) = &params.team_id {
         let is_member =
             MemberQuery::exist_by_user_and_team_id(harn, &user_token.user_id, team_id).await?;
@@ -104,16 +108,28 @@ where
         }
     }
 
-    let members = MemberQuery::list(
-        harn,
-        params.team_id.as_deref(),
-        params.user_id.as_deref(),
-        params.keyword.as_deref(),
-        params.role,
-        params.page,
-        &params.includes,
-    )
-    .await?;
+    let page = Page {
+        offset: params.offset.unwrap_or(0) as usize,
+        limit: params.limit.unwrap_or(20) as usize,
+    };
+
+    let includes = MemberInclusion::parse(params.includes.as_slice());
+
+    let members = match (&params.user_id, &params.team_id) {
+        (Some(user_id), _) => MemberQuery::list_by_user_id(harn, user_id, page, &includes).await?,
+        (_, Some(team_id)) => {
+            MemberQuery::list_by_team_id(
+                harn,
+                team_id,
+                params.keyword.as_deref(),
+                params.role.and_then(RoleFlag::try_from_single_bit),
+                page,
+                &includes,
+            )
+            .await?
+        }
+        _ => unreachable!(),
+    };
 
     Ok(to_infos(members, harn).await)
 }
@@ -123,7 +139,7 @@ pub async fn update_roles<H>(
     harn: &H,
     user_token: &UserToken,
     member_id: String,
-    params: MemberRoleUpdateParams,
+    params: RoleUpdateParams,
 ) -> UseCaseResult<()>
 where
     H: Clone + Transactional + Send + Sync,
@@ -154,7 +170,7 @@ where
 
             let update = MemberRoleUpdate {
                 id: member_id,
-                roles: role_mask,
+                role_mask,
             };
 
             MemberQueryTransactional::update_roles(query, &update).await
@@ -206,8 +222,8 @@ where
 pub async fn join<H>(
     harn: &H,
     user_token: &UserToken,
-    params: MemberJoinParams,
-) -> UseCaseResult<MemberCreateReply>
+    params: JoinParams,
+) -> UseCaseResult<CreateReply>
 where
     H: Clone + Transactional + Send + Sync,
 {
@@ -219,7 +235,8 @@ where
         async move {
             // Lock the pending invitation by code.
             let invitation =
-                MemberInvitationQueryTransactional::get_by_code_ex(query, &invitation_code).await?;
+                MemberInvitationQueryTransactional::get_by_code_excluded(query, &invitation_code)
+                    .await?;
 
             // Read current user to verify qid matches.
             let current_user =
@@ -251,7 +268,7 @@ where
                 user_id: current_user_id,
                 user_nickname: current_user.nickname,
                 team_id: invitation.team_id,
-                roles: invitation.roles,
+                role_mask: invitation.role_mask,
             };
 
             let new_member = MemberQueryTransactional::create(query, &form).await?;
@@ -265,7 +282,7 @@ where
     })
     .await?;
 
-    Ok(MemberCreateReply { id: member.id })
+    Ok(CreateReply { id: member.id })
 }
 
 #[cfg(test)]
@@ -295,14 +312,12 @@ mod tests {
 
     use super::*;
 
-    use poprako_util::page::Page;
     use time::OffsetDateTime;
 
     use crate::domain::model::aggr::member::MemberAggr;
     use crate::domain::model::aggr::member_invitation::MemberInvitationAggr;
     use crate::domain::model::aggr::team::TeamAggr;
     use crate::domain::model::aggr::user::{UserAggr, UserCredential, UserToken};
-    use crate::domain::model::value::member_inclusion::MemberInclusion;
     use crate::domain::model::value::role::{RoleFlag, RoleMask};
     use crate::domain::query::member::MemberQuery;
     use crate::harness::tests::TestHarness;
@@ -311,7 +326,7 @@ mod tests {
     use crate::test_util::usecase_is_expected_conflict;
     use crate::test_util::usecase_is_expected_forbidden;
     use crate::usecase::data_object::member::{
-        MemberCreateParams, MemberJoinParams, MemberListParams, MemberRoleUpdateParams,
+        CreateParams, JoinParams, ListParams, RoleUpdateParams,
     };
 
     fn make_user(id: &str, qid: &str, is_sadmin: bool) -> UserAggr {
@@ -410,7 +425,7 @@ mod tests {
         let reply = create(
             &harn,
             &sadmin_token(),
-            MemberCreateParams {
+            CreateParams {
                 user_id: "u-1".into(),
                 team_id: "team-1".into(),
                 role_mask: u32::from(RoleFlag::Admin),
@@ -437,7 +452,7 @@ mod tests {
         let err = create(
             &harn,
             &user_token("regular"),
-            MemberCreateParams {
+            CreateParams {
                 user_id: "u-1".into(),
                 team_id: "team-1".into(),
                 role_mask: u32::from(RoleFlag::Admin),
@@ -470,7 +485,7 @@ mod tests {
         let reply = create(
             &harn,
             &sadmin_token(),
-            MemberCreateParams {
+            CreateParams {
                 user_id: "u-1".into(),
                 team_id: "team-1".into(),
                 role_mask: u32::from(RoleFlag::Admin),
@@ -495,7 +510,7 @@ mod tests {
         let err = create(
             &harn,
             &sadmin_token(),
-            MemberCreateParams {
+            CreateParams {
                 user_id: "no-such-user".into(),
                 team_id: "team-1".into(),
                 role_mask: u32::from(RoleFlag::Admin),
@@ -520,7 +535,7 @@ mod tests {
         let err = create(
             &harn,
             &sadmin_token(),
-            MemberCreateParams {
+            CreateParams {
                 user_id: "u-1".into(),
                 team_id: "no-such-team".into(),
                 role_mask: u32::from(RoleFlag::Admin),
@@ -546,7 +561,7 @@ mod tests {
         create(
             &harn,
             &sadmin_token(),
-            MemberCreateParams {
+            CreateParams {
                 user_id: "u-1".into(),
                 team_id: "team-1".into(),
                 role_mask: u32::from(RoleFlag::Admin),
@@ -558,7 +573,7 @@ mod tests {
         let err = create(
             &harn,
             &sadmin_token(),
-            MemberCreateParams {
+            CreateParams {
                 user_id: "u-1".into(),
                 team_id: "team-1".into(),
                 role_mask: u32::from(RoleFlag::Translator),
@@ -592,16 +607,14 @@ mod tests {
         let list = super::list_infos(
             &harn,
             &user_token("u-1"),
-            &MemberListParams {
+            &ListParams {
                 team_id: Some("team-1".into()),
                 user_id: None,
                 keyword: None,
                 role: None,
-                page: Page {
-                    offset: 0,
-                    limit: 10,
-                },
-                includes: MemberInclusion::default(),
+                offset: Some(0),
+                limit: Some(10),
+                ..Default::default()
             },
         )
         .await
@@ -618,16 +631,14 @@ mod tests {
         let err = super::list_infos(
             &harn,
             &user_token("u-1"),
-            &MemberListParams {
+            &ListParams {
                 team_id: Some("team-1".into()),
                 user_id: None,
                 keyword: None,
                 role: None,
-                page: Page {
-                    offset: 0,
-                    limit: 10,
-                },
-                includes: MemberInclusion::default(),
+                offset: Some(0),
+                limit: Some(10),
+                ..Default::default()
             },
         )
         .await
@@ -670,7 +681,7 @@ mod tests {
             &harn,
             &user_token(admin_user_id),
             "m-target".into(),
-            MemberRoleUpdateParams {
+            RoleUpdateParams {
                 roles: u32::from(RoleFlag::Proofreader),
             },
         )
@@ -713,7 +724,7 @@ mod tests {
             &harn,
             &user_token("regular"),
             "m-target".into(),
-            MemberRoleUpdateParams {
+            RoleUpdateParams {
                 roles: u32::from(RoleFlag::Admin),
             },
         )
@@ -745,7 +756,7 @@ mod tests {
             &harn,
             &user_token("admin"),
             "no-such-member".into(),
-            MemberRoleUpdateParams {
+            RoleUpdateParams {
                 roles: u32::from(RoleFlag::Admin),
             },
         )
@@ -764,7 +775,7 @@ mod tests {
             &harn,
             &user_token("anyone"),
             "m-1".into(),
-            MemberRoleUpdateParams { roles: 0 },
+            RoleUpdateParams { roles: 0 },
         )
         .await
         .err()
@@ -899,16 +910,14 @@ mod tests {
         let list = super::list_infos(
             &harn,
             &user_token("u-1"),
-            &MemberListParams {
+            &ListParams {
                 team_id: None,
                 user_id: Some("u-1".into()),
                 keyword: None,
                 role: None,
-                page: Page {
-                    offset: 0,
-                    limit: 10,
-                },
-                includes: MemberInclusion::default(),
+                offset: Some(0),
+                limit: Some(10),
+                ..Default::default()
             },
         )
         .await
@@ -939,7 +948,7 @@ mod tests {
             invitee_qid: "invitee-qid".into(),
             code: "CODE123".into(),
             pending: true,
-            roles: RoleMask::from(RoleFlag::Translator),
+            role_mask: RoleMask::from(RoleFlag::Translator),
             created_at: OffsetDateTime::now_utc(),
         };
         harn.seed_invitation(invitation);
@@ -947,7 +956,7 @@ mod tests {
         let reply = super::join(
             &harn,
             &user_token("u-1"),
-            MemberJoinParams {
+            JoinParams {
                 invitation_code: "CODE123".into(),
             },
         )
@@ -968,7 +977,7 @@ mod tests {
         let err = super::join(
             &harn,
             &user_token("u-1"),
-            MemberJoinParams {
+            JoinParams {
                 invitation_code: "NO-SUCH-CODE".into(),
             },
         )
@@ -993,7 +1002,7 @@ mod tests {
             invitee_qid: "right-qid".into(),
             code: "CODE123".into(),
             pending: true,
-            roles: RoleMask::from(RoleFlag::Translator),
+            role_mask: RoleMask::from(RoleFlag::Translator),
             created_at: OffsetDateTime::now_utc(),
         };
         harn.seed_invitation(invitation);
@@ -1001,7 +1010,7 @@ mod tests {
         let err = super::join(
             &harn,
             &user_token("u-1"),
-            MemberJoinParams {
+            JoinParams {
                 invitation_code: "CODE123".into(),
             },
         )
@@ -1035,7 +1044,7 @@ mod tests {
             invitee_qid: "invitee-qid".into(),
             code: "CODE123".into(),
             pending: true,
-            roles: RoleMask::from(RoleFlag::Translator),
+            role_mask: RoleMask::from(RoleFlag::Translator),
             created_at: OffsetDateTime::now_utc(),
         };
         harn.seed_invitation(invitation);
@@ -1043,7 +1052,7 @@ mod tests {
         let err = super::join(
             &harn,
             &user_token("u-1"),
-            MemberJoinParams {
+            JoinParams {
                 invitation_code: "CODE123".into(),
             },
         )

@@ -16,7 +16,7 @@ pub struct MemberInvitationAggr {
     pub code: String,
     pub pending: bool,
 
-    pub roles: RoleMask,
+    pub role_mask: RoleMask,
 
     pub created_at: OffsetDateTime,
 }
@@ -55,7 +55,7 @@ mod tests {
             invitee_qid: "invitee".into(),
             code: code.into(),
             pending: true,
-            roles: RoleMask::from(RoleFlag::Admin),
+            role_mask: RoleMask::from(RoleFlag::Admin),
             created_at: now,
         }
     }

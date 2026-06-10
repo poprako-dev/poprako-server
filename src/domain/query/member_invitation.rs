@@ -12,8 +12,10 @@ pub trait MemberInvitationQueryTransactional {
     ///
     /// The lock is held until the enclosing transaction commits or rolls back,
     /// preventing concurrent consumption of the same invitation.
-    async fn get_by_code_ex(&mut self, invitation_code: &str)
-    -> DomainResult<MemberInvitationAggr>;
+    async fn get_by_code_excluded(
+        &mut self,
+        invitation_code: &str,
+    ) -> DomainResult<MemberInvitationAggr>;
 
     /// Marks an invitation as consumed by atomically clearing `f_pending`.
     ///

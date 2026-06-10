@@ -23,8 +23,8 @@ use crate::domain::query::user::UserQuery;
 use crate::domain::query::user::UserQueryTransactional;
 use crate::domain::result::DomainError;
 use crate::usecase::data_object::user::{
-    AvatarMarkUploadedParams, AvatarReserveParams, AvatarReserveReply, SignInParams, SignInReply,
-    SignUpParams, SignUpReply, UserInfo, UserInfoUpdateParams,
+    AvatarMarkUploadedParams, AvatarReserveParams, AvatarReserveReply, InfoUpdateParams,
+    SignInParams, SignInReply, SignUpParams, SignUpReply, UserInfo,
 };
 use crate::usecase::result::UseCaseResult;
 
@@ -38,9 +38,11 @@ where
         async move {
             // 1. Acquire an exclusive row lock on the pending invitation by its code.
             //    This serialises concurrent attempts to consume the same invitation.
-            let invitation =
-                MemberInvitationQueryTransactional::get_by_code_ex(query, &params.invitation_code)
-                    .await?;
+            let invitation = MemberInvitationQueryTransactional::get_by_code_excluded(
+                query,
+                &params.invitation_code,
+            )
+            .await?;
 
             // 2. Validate the invitee identity.
             if invitation.invitee_qid != params.qid {
@@ -77,7 +79,7 @@ where
                 user_id: user.id,
                 user_nickname: user.nickname,
                 team_id: invitation.team_id,
-                roles: invitation.roles,
+                role_mask: invitation.role_mask,
             };
 
             MemberQueryTransactional::create(query, &member_form).await?;
@@ -148,7 +150,7 @@ where
 pub async fn update_info<H>(
     harn: &H,
     token: UserToken,
-    params: UserInfoUpdateParams,
+    params: InfoUpdateParams,
 ) -> UseCaseResult<()>
 where
     H: Clone + Transactional + Send + Sync,
@@ -325,7 +327,7 @@ mod tests {
             invitee_qid: invitee_qid.into(),
             code: code.into(),
             pending,
-            roles: RoleMask::try_from(mask).unwrap(),
+            role_mask: RoleMask::try_from(mask).unwrap(),
             created_at: OffsetDateTime::now_utc(),
         }
     }
@@ -504,9 +506,9 @@ mod user_use_cases_tests {
     use crate::test_util::{
         is_expected_argument, usecase_is_expected_argument, usecase_is_unrecoverable,
     };
-    use crate::usecase::data_object::member::MemberCreateParams;
+    use crate::usecase::data_object::member::CreateParams;
     use crate::usecase::data_object::user::{
-        AvatarMarkUploadedParams, AvatarReserveParams, SignInParams, UserInfoUpdateParams,
+        AvatarMarkUploadedParams, AvatarReserveParams, InfoUpdateParams, SignInParams,
     };
     use crate::usecase::member;
 
@@ -630,7 +632,7 @@ mod user_use_cases_tests {
         update_info(
             &harn,
             token,
-            UserInfoUpdateParams {
+            InfoUpdateParams {
                 qid: "new-qid".into(),
                 nickname: "NewNick".into(),
             },
@@ -653,7 +655,7 @@ mod user_use_cases_tests {
         let err = update_info(
             &harn,
             token,
-            UserInfoUpdateParams {
+            InfoUpdateParams {
                 qid: "q".into(),
                 nickname: "n".into(),
             },
@@ -909,7 +911,7 @@ mod user_use_cases_tests {
         let member = member::create(
             &harn,
             &user_token,
-            MemberCreateParams {
+            CreateParams {
                 user_id: "user-1".into(),
                 team_id: "team-1".into(),
                 role_mask: u32::from(RoleFlag::Admin),

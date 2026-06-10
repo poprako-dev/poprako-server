@@ -4,20 +4,16 @@ use axum::http::StatusCode;
 use tracing::instrument;
 
 use poprako_util::i18n::trl;
-use poprako_util::page::Page;
 
 use crate::api::http::result::Accept as _;
 use crate::api::http::result::HttpError;
 use crate::api::http::result::HttpResult;
 use crate::domain::model::aggr::user::UserToken;
-use crate::domain::model::value::member_inclusion::MemberInclusion;
-use crate::domain::model::value::role::RoleFlag;
 use crate::domain::result::ExpectedVariant;
 use crate::harness::Harness;
 use crate::usecase;
 use crate::usecase::data_object::member::{
-    MemberCreateParams, MemberCreateReply, MemberInfo, MemberJoinParams, MemberListParams,
-    MemberListQuery, MemberMineQuery, MemberRoleUpdateParams,
+    CreateParams, CreateReply, JoinParams, ListParams, MemberInfo, RoleUpdateParams,
 };
 
 fn invalid_role_argument() -> HttpError {
@@ -28,9 +24,9 @@ fn invalid_role_argument() -> HttpError {
     post,
     path = "/members",
     tag = "members",
-    request_body = MemberCreateParams,
+    request_body = CreateParams,
     responses(
-        (status = 201, description = "Member created", body = MemberCreateReply),
+        (status = 201, description = "Member created", body = CreateReply),
         (status = 400, description = "Invalid request parameters", body = HttpError),
         (status = 401, description = "Authentication required", body = HttpError),
         (status = 403, description = "Insufficient permissions", body = HttpError)
@@ -40,8 +36,8 @@ fn invalid_role_argument() -> HttpError {
 pub async fn create(
     State(harn): State<Harness>,
     Extension(user_token): Extension<UserToken>,
-    Json(params): Json<MemberCreateParams>,
-) -> HttpResult<MemberCreateReply> {
+    Json(params): Json<CreateParams>,
+) -> HttpResult<CreateReply> {
     let reply = usecase::member::create(&harn, &user_token, params).await?;
 
     reply.accept(StatusCode::CREATED)
@@ -51,7 +47,7 @@ pub async fn create(
     get,
     path = "/members",
     tag = "members",
-    params(MemberListQuery),
+    params(ListParams),
     responses(
         (status = 200, description = "Members listed", body = Vec<MemberInfo>),
         (status = 400, description = "Invalid request parameters", body = HttpError),
@@ -63,29 +59,17 @@ pub async fn create(
 pub async fn list_infos(
     State(harn): State<Harness>,
     Extension(user_token): Extension<UserToken>,
-    Query(params): Query<MemberListQuery>,
+    Query(params): Query<ListParams>,
 ) -> HttpResult<Vec<MemberInfo>> {
-    let role = match params.role {
-        Some(bits) if bits != 0 => {
-            let flag = RoleFlag::try_from_single_bit(bits).ok_or_else(invalid_role_argument)?;
-            Some(flag)
-        }
-        Some(_) => return Err(invalid_role_argument()),
-        None => None,
-    };
-
-    let page = Page {
-        offset: params.offset.unwrap_or(0) as usize,
-        limit: params.limit.unwrap_or(20) as usize,
-    };
-
-    let list_params = MemberListParams {
-        team_id: Some(params.team_id),
-        user_id: None,
+    // Filter out invalid params for listing members, e.g. user_id.
+    let list_params = ListParams {
+        team_id: params.team_id,
         keyword: params.keyword,
-        role,
-        page,
-        includes: MemberInclusion::parse(params.includes.as_deref()),
+        role: params.role,
+        offset: params.offset,
+        limit: params.limit,
+        includes: params.includes,
+        ..Default::default()
     };
 
     let infos = usecase::member::list_infos(&harn, &user_token, &list_params).await?;
@@ -100,7 +84,7 @@ pub async fn list_infos(
     params(
         ("member_id" = String, Path, description = "Member ID")
     ),
-    request_body = MemberRoleUpdateParams,
+    request_body = RoleUpdateParams,
     responses(
         (status = 200, description = "Member roles updated"),
         (status = 400, description = "Invalid request parameters", body = HttpError),
@@ -113,7 +97,7 @@ pub async fn update_roles(
     State(harn): State<Harness>,
     Extension(user_token): Extension<UserToken>,
     Path(member_id): Path<String>,
-    Json(params): Json<MemberRoleUpdateParams>,
+    Json(params): Json<RoleUpdateParams>,
 ) -> HttpResult<()> {
     usecase::member::update_roles(&harn, &user_token, member_id, params).await?;
 
@@ -147,9 +131,8 @@ pub async fn delete(
 
 #[utoipa::path(
     get,
-    path = "/members/mine",
+    path = "/members/me",
     tag = "members",
-    params(MemberMineQuery),
     responses(
         (status = 200, description = "Current user memberships listed", body = Vec<MemberInfo>),
         (status = 401, description = "Authentication required", body = HttpError)
@@ -159,18 +142,15 @@ pub async fn delete(
 pub async fn list_my_infos(
     State(harn): State<Harness>,
     Extension(user_token): Extension<UserToken>,
-    Query(params): Query<MemberMineQuery>,
+    Query(params): Query<ListParams>,
 ) -> HttpResult<Vec<MemberInfo>> {
-    let list_params = MemberListParams {
-        team_id: None,
+    // Filter out invalid params for listing current user's memberships.
+    let list_params = ListParams {
         user_id: Some(user_token.user_id.clone()),
-        keyword: None,
-        role: None,
-        page: Page {
-            offset: params.offset.unwrap_or(0) as usize,
-            limit: params.limit.unwrap_or(20) as usize,
-        },
-        includes: MemberInclusion::parse(params.includes.as_deref()),
+        offset: params.offset,
+        limit: params.limit,
+        includes: params.includes,
+        ..Default::default()
     };
 
     let infos = usecase::member::list_infos(&harn, &user_token, &list_params).await?;
@@ -182,9 +162,9 @@ pub async fn list_my_infos(
     post,
     path = "/members/join",
     tag = "members",
-    request_body = MemberJoinParams,
+    request_body = JoinParams,
     responses(
-        (status = 200, description = "Joined team successfully", body = MemberCreateReply),
+        (status = 200, description = "Joined team successfully", body = CreateReply),
         (status = 400, description = "Invalid request parameters", body = HttpError),
         (status = 401, description = "Authentication required", body = HttpError),
         (status = 409, description = "Already a team member", body = HttpError)
@@ -194,8 +174,8 @@ pub async fn list_my_infos(
 pub async fn join(
     State(harn): State<Harness>,
     Extension(user_token): Extension<UserToken>,
-    Json(params): Json<MemberJoinParams>,
-) -> HttpResult<MemberCreateReply> {
+    Json(params): Json<JoinParams>,
+) -> HttpResult<CreateReply> {
     let reply = usecase::member::join(&harn, &user_token, params).await?;
 
     reply.accept(StatusCode::OK)

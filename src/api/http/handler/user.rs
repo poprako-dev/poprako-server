@@ -11,8 +11,7 @@ use crate::domain::model::aggr::user::UserToken;
 use crate::harness::Harness;
 use crate::usecase;
 use crate::usecase::data_object::user::{
-    AvatarMarkUploadedParams, AvatarReserveParams, AvatarReserveReply, UserInfo,
-    UserInfoUpdateParams,
+    AvatarMarkUploadedParams, AvatarReserveParams, AvatarReserveReply, InfoUpdateParams, UserInfo,
 };
 
 #[utoipa::path(
@@ -61,7 +60,7 @@ pub async fn get_my_info(
     put,
     path = "/users/me",
     tag = "users",
-    request_body = UserInfoUpdateParams,
+    request_body = InfoUpdateParams,
     responses(
         (status = 200, description = "Profile updated"),
         (status = 400, description = "Invalid request parameters", body = HttpError),
@@ -73,7 +72,7 @@ pub async fn get_my_info(
 pub async fn update_info(
     State(harn): State<Harness>,
     Extension(user_token): Extension<UserToken>,
-    Json(params): Json<UserInfoUpdateParams>,
+    Json(params): Json<InfoUpdateParams>,
 ) -> HttpResult<()> {
     usecase::user::update_info(&harn, user_token, params).await?;
 

@@ -57,7 +57,7 @@ pub struct WorksetListQuery {
     )
 )]
 #[instrument(err, skip(harn))]
-pub async fn list(
+pub async fn list_infos(
     State(harn): State<Harness>,
     Query(params): Query<WorksetListQuery>,
 ) -> HttpResult<Vec<WorksetInfo>> {
@@ -86,7 +86,7 @@ pub async fn list(
     )
 )]
 #[instrument(err, skip(harn, params))]
-pub async fn update(
+pub async fn update_infos(
     State(harn): State<Harness>,
     Path(workset_id): Path<String>,
     Json(params): Json<WorksetUpdateParams>,

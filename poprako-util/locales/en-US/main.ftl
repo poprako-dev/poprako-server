@@ -17,6 +17,9 @@ error-team-admin-required = You are not an admin of this team
 error-sadmin-required = Only super admins can perform this operation
 error-already-team-member = You are already a member of this team
 error-wrong-credentials = User does not exist or password is incorrect
+error-invalid-offset = offset cannot be negative
+error-invalid-limit = limit must be between 1 and 200
+error-invalid-role = role must be a single role value
 
 mail-invitation-used-title = Your Invitation Code Has Been Used
 mail-invitation-used-body = Your invitation code has been used. "{$invitee_qid}" has joined the team "{$team_name}"

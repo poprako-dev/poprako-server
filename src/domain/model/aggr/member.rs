@@ -91,7 +91,7 @@ pub struct MemberForm {
 
     pub team_id: String,
 
-    pub roles: RoleMask,
+    pub role_mask: RoleMask,
 }
 
 /// Input aggregate for updating the roles of an existing member (PUT semantics).
@@ -100,5 +100,5 @@ pub struct MemberForm {
 pub struct MemberRoleUpdate {
     pub id: String,
 
-    pub roles: RoleMask,
+    pub role_mask: RoleMask,
 }

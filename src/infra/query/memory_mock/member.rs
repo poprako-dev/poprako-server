@@ -40,10 +40,9 @@ impl MemberQuery for MemoryMockQuery {
             .ok_or_else(|| DomainError::expected_argument(trl("error-member-not-found")))
     }
 
-    async fn list(
+    async fn list_by_team_id(
         &self,
-        team_id: Option<&str>,
-        user_id: Option<&str>,
+        team_id: &str,
         keyword: Option<&str>,
         role: Option<RoleFlag>,
         page: Page,
@@ -54,8 +53,7 @@ impl MemberQuery for MemoryMockQuery {
         let mut filtered: Vec<MemberAggr> = state
             .members
             .iter()
-            .filter(|member| team_id.is_none_or(|id| member.team_id == id))
-            .filter(|member| user_id.is_none_or(|id| member.user_id == id))
+            .filter(|member| member.team_id == team_id)
             .filter(|member| {
                 keyword.is_none_or(|text| {
                     member
@@ -65,6 +63,52 @@ impl MemberQuery for MemoryMockQuery {
                 })
             })
             .filter(|member| role.is_none_or(|flag| member.has_any_role(&[flag])))
+            .cloned()
+            .collect();
+
+        if includes.user {
+            for member in filtered.iter_mut() {
+                member.user = state
+                    .users
+                    .iter()
+                    .find(|user| user.id == member.user_id)
+                    .cloned();
+            }
+        }
+
+        if includes.team {
+            for member in filtered.iter_mut() {
+                member.team = state
+                    .teams
+                    .iter()
+                    .find(|team| team.id == member.team_id)
+                    .cloned();
+            }
+        }
+
+        let skip = page.offset;
+        let take = page.limit;
+
+        if skip >= filtered.len() {
+            return Ok(Vec::new());
+        }
+
+        let end = std::cmp::min(skip + take, filtered.len());
+        Ok(filtered[skip..end].to_vec())
+    }
+
+    async fn list_by_user_id(
+        &self,
+        user_id: &str,
+        page: Page,
+        includes: &MemberInclusion,
+    ) -> DomainResult<Vec<MemberAggr>> {
+        let state = self.state.lock().unwrap();
+
+        let mut filtered: Vec<MemberAggr> = state
+            .members
+            .iter()
+            .filter(|member| member.user_id == user_id)
             .cloned()
             .collect();
 
@@ -128,7 +172,7 @@ impl MemberQueryTransactional for MemoryMockQueryTransactional {
         }
 
         let now = OffsetDateTime::now_utc();
-        let roles = form.roles;
+        let roles = form.role_mask;
 
         let member = MemberAggr {
             id: form.id.clone(),
@@ -229,7 +273,7 @@ impl MemberQueryTransactional for MemoryMockQueryTransactional {
             .ok_or_else(|| DomainError::expected_argument(trl("error-member-not-found")))?;
 
         let now = OffsetDateTime::now_utc();
-        let roles = update_data.roles;
+        let roles = update_data.role_mask;
 
         member.assigned_raw_provider_at = roles.has_role(RoleFlag::RawProvider).then_some(now);
         member.assigned_translator_at = roles.has_role(RoleFlag::Translator).then_some(now);
@@ -330,7 +374,7 @@ mod tests {
                     user_id: "user-1".into(),
                     user_nickname: "nick".into(),
                     team_id: "team-1".into(),
-                    roles: RoleMask::from(RoleFlag::Admin),
+                    role_mask: RoleMask::from(RoleFlag::Admin),
                 };
                 MemberQueryTransactional::create(txn, &form).await.unwrap();
                 Ok(())
@@ -348,7 +392,7 @@ mod tests {
                         user_id: "user-1".into(),
                         user_nickname: "nick".into(),
                         team_id: "team-1".into(),
-                        roles: RoleMask::from(RoleFlag::Translator),
+                        role_mask: RoleMask::from(RoleFlag::Translator),
                     };
                     MemberQueryTransactional::create(txn, &form).await
                 }
@@ -373,7 +417,7 @@ mod tests {
                     user_id: "user-1".into(),
                     user_nickname: "OldNick".into(),
                     team_id: "team-1".into(),
-                    roles: RoleMask::from(RoleFlag::Admin),
+                    role_mask: RoleMask::from(RoleFlag::Admin),
                 };
                 MemberQueryTransactional::create(txn, &form1).await.unwrap();
 
@@ -382,7 +426,7 @@ mod tests {
                     user_id: "user-1".into(),
                     user_nickname: "OldNick".into(),
                     team_id: "team-2".into(),
-                    roles: RoleMask::from(RoleFlag::Translator),
+                    role_mask: RoleMask::from(RoleFlag::Translator),
                 };
                 MemberQueryTransactional::create(txn, &form2).await.unwrap();
 
@@ -508,10 +552,9 @@ mod tests {
         });
 
         // List by team only.
-        let list = MemberQuery::list(
+        let list = MemberQuery::list_by_team_id(
             &mock,
-            Some("team-1"),
-            None,
+            "team-1",
             None,
             None,
             Page {
@@ -525,10 +568,9 @@ mod tests {
         assert_eq!(list.len(), 2);
 
         // List by team + keyword.
-        let list = MemberQuery::list(
+        let list = MemberQuery::list_by_team_id(
             &mock,
-            Some("team-1"),
-            None,
+            "team-1",
             Some("Ali"),
             None,
             Page {
@@ -543,10 +585,9 @@ mod tests {
         assert_eq!(list[0].id, "m-1");
 
         // List by team + role.
-        let list = MemberQuery::list(
+        let list = MemberQuery::list_by_team_id(
             &mock,
-            Some("team-1"),
-            None,
+            "team-1",
             None,
             Some(RoleFlag::Translator),
             Page {
@@ -604,12 +645,9 @@ mod tests {
             RoleFlag::Admin.into(),
         ));
 
-        let list = MemberQuery::list(
+        let list = MemberQuery::list_by_user_id(
             &mock,
-            None,
-            Some("user-1"),
-            None,
-            None,
+            "user-1",
             Page {
                 offset: 0,
                 limit: 10,
@@ -636,7 +674,7 @@ mod tests {
             async move {
                 let update = MemberRoleUpdate {
                     id: "m-1".into(),
-                    roles: new_roles,
+                    role_mask: new_roles,
                 };
                 MemberQueryTransactional::update_roles(txn, &update).await
             }
@@ -659,7 +697,7 @@ mod tests {
                 async move {
                     let update = MemberRoleUpdate {
                         id: "nonexistent".into(),
-                        roles: RoleMask::from(RoleFlag::Admin),
+                        role_mask: RoleMask::from(RoleFlag::Admin),
                     };
                     MemberQueryTransactional::update_roles(txn, &update).await
                 }
