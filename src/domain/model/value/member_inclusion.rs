@@ -11,21 +11,12 @@ impl MemberInclusion {
     /// Parses a comma-separated includes string.
     ///
     /// Unknown tokens are silently ignored.
-    pub fn parse(includes: Option<&str>) -> Self {
-        let Some(includes_str) = includes else {
-            return Self::default();
-        };
-
-        let mut user = false;
-        let mut team = false;
-
-        for part in includes_str.split(',') {
-            match part.trim() {
-                "user" => user = true,
-                "team" => team = true,
-                _ => {}
-            }
-        }
+    pub fn parse<I>(includes: &[I]) -> Self
+    where
+        I: AsRef<str>,
+    {
+        let user = includes.iter().any(|s| s.as_ref() == "user");
+        let team = includes.iter().any(|s| s.as_ref() == "team");
 
         Self { user, team }
     }

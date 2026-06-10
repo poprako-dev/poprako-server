@@ -73,7 +73,7 @@ pub struct SignInReply {
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
-pub struct UserInfoUpdateParams {
+pub struct InfoUpdateParams {
     pub nickname: String,
     pub qid: String,
 }

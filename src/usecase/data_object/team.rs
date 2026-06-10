@@ -45,29 +45,29 @@ impl TeamInfo {
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
-pub struct TeamCreateParams {
+pub struct CreateParams {
     pub name: String,
     pub description: String,
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
-pub struct TeamInfoUpdateParams {
+pub struct InfoUpdateParams {
     pub name: String,
     pub description: String,
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
-pub struct TeamAvatarReserveParams {
+pub struct AvatarReserveParams {
     pub file_extension: String,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
-pub struct TeamAvatarReserveReply {
+pub struct AvatarReserveReply {
     pub put_url: String,
     pub image_version: i64,
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
-pub struct TeamAvatarMarkUploadedParams {
+pub struct AvatarMarkUploadedParams {
     pub image_version: i64,
 }

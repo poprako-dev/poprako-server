@@ -9,7 +9,7 @@ use crate::infra::query::memory_mock::MemoryMockQueryTransactional;
 
 #[async_trait]
 impl MemberInvitationQueryTransactional for MemoryMockQueryTransactional {
-    async fn get_by_code_ex(
+    async fn get_by_code_excluded(
         &mut self,
         invitation_code: &str,
     ) -> DomainResult<MemberInvitationAggr> {
@@ -74,7 +74,7 @@ mod tests {
             invitee_qid: "invitee-qid".into(),
             code: code.into(),
             pending,
-            roles: RoleMask::from(RoleFlag::Admin),
+            role_mask: RoleMask::from(RoleFlag::Admin),
             created_at: now(),
         }
     }
@@ -86,7 +86,7 @@ mod tests {
 
         mock.transaction_scoped(|txn| {
             async move {
-                let inv = MemberInvitationQueryTransactional::get_by_code_ex(txn, "CODE123")
+                let inv = MemberInvitationQueryTransactional::get_by_code_excluded(txn, "CODE123")
                     .await
                     .unwrap();
                 assert_eq!(inv.id, "inv-1");
@@ -105,8 +105,10 @@ mod tests {
 
         let err = mock
             .transaction_scoped(|txn| {
-                async move { MemberInvitationQueryTransactional::get_by_code_ex(txn, "NOPE").await }
-                    .boxed()
+                async move {
+                    MemberInvitationQueryTransactional::get_by_code_excluded(txn, "NOPE").await
+                }
+                .boxed()
             })
             .await
             .err()
@@ -135,7 +137,7 @@ mod tests {
         let err = mock
             .transaction_scoped(|txn| {
                 async move {
-                    MemberInvitationQueryTransactional::get_by_code_ex(txn, "CODE123").await
+                    MemberInvitationQueryTransactional::get_by_code_excluded(txn, "CODE123").await
                 }
                 .boxed()
             })

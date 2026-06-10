@@ -7,12 +7,12 @@ use crate::domain::complex::team::TeamComplex;
 use crate::domain::external::image_pool::{ImageGet, ImagePut};
 use crate::domain::local_message::message::{ImageLocalMessage, ImageResourceKind};
 use crate::domain::model::aggr::team::{TeamAggr, TeamForm, TeamInfoUpdate};
+use crate::domain::query::Transactional;
 use crate::domain::query::local_message::LocalMessageQueryTransactional;
 use crate::domain::query::team::{TeamQuery, TeamQueryTransactional};
-use crate::domain::query::Transactional;
 use crate::usecase::data_object::team::{
-    TeamAvatarMarkUploadedParams, TeamAvatarReserveParams, TeamAvatarReserveReply,
-    TeamCreateParams, TeamInfo, TeamInfoUpdateParams,
+    AvatarMarkUploadedParams, AvatarReserveParams, AvatarReserveReply, CreateParams,
+    InfoUpdateParams, TeamInfo,
 };
 use crate::usecase::result::UseCaseResult;
 
@@ -29,7 +29,7 @@ where
 }
 
 #[instrument(err, skip(harn))]
-pub async fn create<H>(harn: &H, params: TeamCreateParams) -> UseCaseResult<TeamInfo>
+pub async fn create<H>(harn: &H, params: CreateParams) -> UseCaseResult<TeamInfo>
 where
     H: TeamQuery + ImageGet + Send + Sync,
 {
@@ -74,7 +74,7 @@ where
 pub async fn update_info<H>(
     harn: &H,
     team_id: String,
-    params: TeamInfoUpdateParams,
+    params: InfoUpdateParams,
 ) -> UseCaseResult<()>
 where
     H: TeamQuery + Send + Sync,
@@ -94,8 +94,8 @@ where
 pub async fn reserve_avatar<H>(
     harn: &H,
     team_id: String,
-    params: TeamAvatarReserveParams,
-) -> UseCaseResult<TeamAvatarReserveReply>
+    params: AvatarReserveParams,
+) -> UseCaseResult<AvatarReserveReply>
 where
     H: Clone + Transactional + ImagePut + Send + Sync,
 {
@@ -132,7 +132,7 @@ where
         .await?
         .to_string();
 
-    Ok(TeamAvatarReserveReply {
+    Ok(AvatarReserveReply {
         put_url,
         image_version: reservation.image_version,
     })
@@ -142,7 +142,7 @@ where
 pub async fn mark_avatar_uploaded<H>(
     harn: &H,
     team_id: String,
-    params: TeamAvatarMarkUploadedParams,
+    params: AvatarMarkUploadedParams,
 ) -> UseCaseResult<()>
 where
     H: TeamQuery + Send + Sync,
@@ -200,7 +200,7 @@ mod tests {
     use crate::test_util::usecase_is_expected_argument;
     use crate::test_util::usecase_is_expected_conflict;
     use crate::usecase::data_object::team::{
-        TeamAvatarMarkUploadedParams, TeamCreateParams, TeamInfoUpdateParams,
+        AvatarMarkUploadedParams, CreateParams, InfoUpdateParams,
     };
     use crate::usecase::data_object::workset::WorksetCreateParams;
     use crate::usecase::workset;
@@ -226,7 +226,7 @@ mod tests {
 
         let info = create(
             &harn,
-            TeamCreateParams {
+            CreateParams {
                 name: "My Team".into(),
                 description: "Desc".into(),
             },
@@ -274,7 +274,7 @@ mod tests {
 
         let info = create(
             &harn,
-            TeamCreateParams {
+            CreateParams {
                 name: "Old".into(),
                 description: "Old desc".into(),
             },
@@ -285,7 +285,7 @@ mod tests {
         update_info(
             &harn,
             info.id.clone(),
-            TeamInfoUpdateParams {
+            InfoUpdateParams {
                 name: "New".into(),
                 description: "New desc".into(),
             },
@@ -304,7 +304,7 @@ mod tests {
         let err = update_info(
             &harn,
             "no-such-team".into(),
-            TeamInfoUpdateParams {
+            InfoUpdateParams {
                 name: "X".into(),
                 description: "Y".into(),
             },
@@ -321,7 +321,7 @@ mod tests {
 
         let info = create(
             &harn,
-            TeamCreateParams {
+            CreateParams {
                 name: "ToDelete".into(),
                 description: "X".into(),
             },
@@ -348,7 +348,7 @@ mod tests {
 
         let info = create(
             &harn,
-            TeamCreateParams {
+            CreateParams {
                 name: "AvatarTeam".into(),
                 description: "X".into(),
             },
@@ -360,7 +360,7 @@ mod tests {
         reserve_avatar(
             &harn,
             info.id.clone(),
-            TeamAvatarReserveParams {
+            AvatarReserveParams {
                 file_extension: "png".into(),
             },
         )
@@ -398,7 +398,7 @@ mod tests {
 
         let info = create(
             &harn,
-            TeamCreateParams {
+            CreateParams {
                 name: "CascadeTeam".into(),
                 description: "X".into(),
             },
@@ -447,7 +447,7 @@ mod tests {
 
         let info = create(
             &harn,
-            TeamCreateParams {
+            CreateParams {
                 name: "AvatarTeam".into(),
                 description: "X".into(),
             },
@@ -458,7 +458,7 @@ mod tests {
         let reply = reserve_avatar(
             &harn,
             info.id.clone(),
-            TeamAvatarReserveParams {
+            AvatarReserveParams {
                 file_extension: "png".into(),
             },
         )
@@ -496,7 +496,7 @@ mod tests {
 
         let info = create(
             &harn,
-            TeamCreateParams {
+            CreateParams {
                 name: "MarkAvatar".into(),
                 description: "X".into(),
             },
@@ -508,7 +508,7 @@ mod tests {
         let reply = reserve_avatar(
             &harn,
             info.id.clone(),
-            TeamAvatarReserveParams {
+            AvatarReserveParams {
                 file_extension: "png".into(),
             },
         )
@@ -518,7 +518,7 @@ mod tests {
         mark_avatar_uploaded(
             &harn,
             info.id.clone(),
-            TeamAvatarMarkUploadedParams {
+            AvatarMarkUploadedParams {
                 image_version: reply.image_version,
             },
         )
@@ -535,7 +535,7 @@ mod tests {
 
         create(
             &harn,
-            TeamCreateParams {
+            CreateParams {
                 name: "Dupe".into(),
                 description: "First".into(),
             },
@@ -545,7 +545,7 @@ mod tests {
 
         let err = create(
             &harn,
-            TeamCreateParams {
+            CreateParams {
                 name: "Dupe".into(),
                 description: "Second".into(),
             },
@@ -591,7 +591,7 @@ mod tests {
         let err = reserve_avatar(
             &harn,
             "no-such-team".into(),
-            TeamAvatarReserveParams {
+            AvatarReserveParams {
                 file_extension: "png".into(),
             },
         )
@@ -609,7 +609,7 @@ mod tests {
         let err = mark_avatar_uploaded(
             &harn,
             "no-such-team".into(),
-            TeamAvatarMarkUploadedParams { image_version: 1 },
+            AvatarMarkUploadedParams { image_version: 1 },
         )
         .await
         .err()
@@ -624,7 +624,7 @@ mod tests {
 
         let info = create(
             &harn,
-            TeamCreateParams {
+            CreateParams {
                 name: "StaleVer".into(),
                 description: "X".into(),
             },
@@ -635,7 +635,7 @@ mod tests {
         reserve_avatar(
             &harn,
             info.id.clone(),
-            TeamAvatarReserveParams {
+            AvatarReserveParams {
                 file_extension: "png".into(),
             },
         )
@@ -645,7 +645,7 @@ mod tests {
         let err = mark_avatar_uploaded(
             &harn,
             info.id.clone(),
-            TeamAvatarMarkUploadedParams { image_version: 999 },
+            AvatarMarkUploadedParams { image_version: 999 },
         )
         .await
         .err()

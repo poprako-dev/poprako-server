@@ -67,7 +67,7 @@ impl TryFrom<MemberInvitationRow> for MemberInvitationAggr {
     type Error = DomainError;
 
     fn try_from(v: MemberInvitationRow) -> Result<Self, Self::Error> {
-        let roles = RoleMask::try_from(v.f_role_mask as u32).map_err(|_| {
+        let role_mask = RoleMask::try_from(v.f_role_mask as u32).map_err(|_| {
             DomainError::unrecoverable(format!(
                 "[MemberInvitationAggr::try_from] invalid role mask: {}",
                 v.f_role_mask
@@ -82,7 +82,7 @@ impl TryFrom<MemberInvitationRow> for MemberInvitationAggr {
             invitee_qid: v.f_invitee_qid,
             code: v.f_invitation_code,
             pending: v.f_pending,
-            roles,
+            role_mask,
             created_at: v.f_created_at,
         })
     }

@@ -11,15 +11,15 @@ use crate::api::http::result::HttpResult;
 use crate::harness::Harness;
 use crate::usecase;
 use crate::usecase::data_object::team::{
-    TeamAvatarMarkUploadedParams, TeamAvatarReserveParams, TeamAvatarReserveReply,
-    TeamCreateParams, TeamInfo, TeamInfoUpdateParams,
+    AvatarMarkUploadedParams, AvatarReserveParams, AvatarReserveReply, CreateParams,
+    InfoUpdateParams, TeamInfo,
 };
 
 #[utoipa::path(
     post,
     path = "/teams",
     tag = "teams",
-    request_body = TeamCreateParams,
+    request_body = CreateParams,
     responses(
         (status = 201, description = "Team created", body = TeamInfo),
         (status = 400, description = "Invalid request parameters", body = HttpError),
@@ -29,7 +29,7 @@ use crate::usecase::data_object::team::{
 #[instrument(err, skip(harn, params))]
 pub async fn create(
     State(harn): State<Harness>,
-    Json(params): Json<TeamCreateParams>,
+    Json(params): Json<CreateParams>,
 ) -> HttpResult<TeamInfo> {
     let info = usecase::team::create(&harn, params).await?;
 
@@ -73,7 +73,7 @@ pub async fn get_info(
     )
 )]
 #[instrument(err, skip(harn))]
-pub async fn list(
+pub async fn list_infos(
     State(harn): State<Harness>,
     axum::extract::Query(params): axum::extract::Query<TeamListQuery>,
 ) -> HttpResult<Vec<TeamInfo>> {
@@ -101,7 +101,7 @@ pub struct TeamListQuery {
     params(
         ("team_id" = String, Path, description = "Team ID")
     ),
-    request_body = TeamInfoUpdateParams,
+    request_body = InfoUpdateParams,
     responses(
         (status = 200, description = "Team updated"),
         (status = 400, description = "Invalid request parameters", body = HttpError),
@@ -112,7 +112,7 @@ pub struct TeamListQuery {
 pub async fn update_info(
     State(harn): State<Harness>,
     Path(team_id): Path<String>,
-    Json(params): Json<TeamInfoUpdateParams>,
+    Json(params): Json<InfoUpdateParams>,
 ) -> HttpResult<()> {
     usecase::team::update_info(&harn, team_id, params).await?;
 
@@ -126,9 +126,9 @@ pub async fn update_info(
     params(
         ("team_id" = String, Path, description = "Team ID")
     ),
-    request_body = TeamAvatarReserveParams,
+    request_body = AvatarReserveParams,
     responses(
-        (status = 200, description = "Avatar upload URL reserved", body = TeamAvatarReserveReply),
+        (status = 200, description = "Avatar upload URL reserved", body = AvatarReserveReply),
         (status = 400, description = "Invalid request parameters", body = HttpError),
         (status = 401, description = "Authentication required", body = HttpError)
     )
@@ -137,8 +137,8 @@ pub async fn update_info(
 pub async fn reserve_avatar(
     State(harn): State<Harness>,
     Path(team_id): Path<String>,
-    Json(params): Json<TeamAvatarReserveParams>,
-) -> HttpResult<TeamAvatarReserveReply> {
+    Json(params): Json<AvatarReserveParams>,
+) -> HttpResult<AvatarReserveReply> {
     let reply = usecase::team::reserve_avatar(&harn, team_id, params).await?;
 
     reply.accept(StatusCode::OK)
@@ -151,7 +151,7 @@ pub async fn reserve_avatar(
     params(
         ("team_id" = String, Path, description = "Team ID")
     ),
-    request_body = TeamAvatarMarkUploadedParams,
+    request_body = AvatarMarkUploadedParams,
     responses(
         (status = 200, description = "Avatar upload confirmed"),
         (status = 400, description = "Team not found", body = HttpError),
@@ -162,7 +162,7 @@ pub async fn reserve_avatar(
 pub async fn mark_avatar_uploaded(
     State(harn): State<Harness>,
     Path(team_id): Path<String>,
-    Json(params): Json<TeamAvatarMarkUploadedParams>,
+    Json(params): Json<AvatarMarkUploadedParams>,
 ) -> HttpResult<()> {
     usecase::team::mark_avatar_uploaded(&harn, team_id, params).await?;
 

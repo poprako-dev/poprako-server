@@ -64,24 +64,15 @@ pub async fn get_by_user_and_team_id(
 }
 
 #[instrument(err, skip(conn), level = Level::DEBUG)]
-pub async fn list(
+pub async fn list_by_team_id(
     conn: &mut AsyncPgConnection,
-    team_id: Option<&str>,
-    user_id: Option<&str>,
+    team_id: &str,
     keyword: Option<&str>,
     role: Option<RoleFlag>,
     page: Page,
     includes: &MemberInclusion,
 ) -> DomainResult<Vec<MemberAggr>> {
-    let mut query = t_member.into_boxed();
-
-    if let Some(team_id) = team_id {
-        query = query.filter(f_team_id.eq(team_id));
-    }
-
-    if let Some(user_id) = user_id {
-        query = query.filter(f_user_id.eq(user_id));
-    }
+    let mut query = t_member.filter(f_team_id.eq(team_id)).into_boxed();
 
     // Apply optional ILIKE filter on user_nickname.
     if let Some(kw) = keyword {
@@ -105,6 +96,28 @@ pub async fn list(
     }
 
     let rows: Vec<MemberRow> = query
+        .offset(page.offset as i64)
+        .limit(page.limit as i64)
+        .select(MemberRow::as_select())
+        .load(conn)
+        .await?;
+
+    let mut result: Vec<MemberAggr> = rows.into_iter().map(|r| r.into()).collect();
+
+    populate_inclusions(conn, &mut result, includes).await?;
+
+    Ok(result)
+}
+
+#[instrument(err, skip(conn), level = Level::DEBUG)]
+pub async fn list_by_user_id(
+    conn: &mut AsyncPgConnection,
+    user_id: &str,
+    page: Page,
+    includes: &MemberInclusion,
+) -> DomainResult<Vec<MemberAggr>> {
+    let rows: Vec<MemberRow> = t_member
+        .filter(f_user_id.eq(user_id))
         .offset(page.offset as i64)
         .limit(page.limit as i64)
         .select(MemberRow::as_select())
@@ -259,7 +272,7 @@ pub async fn get_by_user_and_team_id_excluded(
 #[instrument(err, skip(conn, form), level = Level::DEBUG)]
 pub async fn create(conn: &mut AsyncPgConnection, form: &MemberForm) -> DomainResult<MemberAggr> {
     let now = OffsetDateTime::now_utc();
-    let roles = form.roles;
+    let roles = form.role_mask;
 
     let entry = MemberEntry {
         f_id: &form.id,
@@ -347,7 +360,7 @@ pub async fn update_roles_fn(
     update_data: &MemberRoleUpdate,
 ) -> DomainResult<()> {
     let now = OffsetDateTime::now_utc();
-    let roles = update_data.roles;
+    let roles = update_data.role_mask;
 
     // PUT-style: clear all 9 role timestamp columns, then set only those in the mask.
     let changes = MemberAspect::new(now)
@@ -397,18 +410,33 @@ impl MemberQuery for RdbQuery {
     }
 
     #[instrument(err, skip(self), level = Level::DEBUG)]
-    async fn list(
+    async fn list_by_team_id(
         &self,
-        team_id: Option<&str>,
-        user_id: Option<&str>,
+        team_id: &str,
         keyword: Option<&str>,
         role: Option<RoleFlag>,
         page: Page,
         includes: &MemberInclusion,
     ) -> DomainResult<Vec<MemberAggr>> {
         submit_query!(
-            self.pool, list, team_id, user_id, keyword, role, page, includes
+            self.pool,
+            list_by_team_id,
+            team_id,
+            keyword,
+            role,
+            page,
+            includes
         )
+    }
+
+    #[instrument(err, skip(self), level = Level::DEBUG)]
+    async fn list_by_user_id(
+        &self,
+        user_id: &str,
+        page: Page,
+        includes: &MemberInclusion,
+    ) -> DomainResult<Vec<MemberAggr>> {
+        submit_query!(self.pool, list_by_user_id, user_id, page, includes)
     }
 
     #[instrument(err, skip(self), level = Level::DEBUG)]

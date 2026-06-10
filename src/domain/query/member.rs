@@ -25,16 +25,26 @@ pub trait MemberQuery {
         team_id: &str,
     ) -> DomainResult<MemberAggr>;
 
-    /// Lists members with optional team, user, keyword, role, and inclusion filters.
+    /// Lists members in the given team via `t_member LEFT JOIN t_user LEFT JOIN t_team`.
     ///
     /// `keyword` performs an ILIKE search on `user_nickname`.
     /// `role` filters members that hold the given single role (IS NOT NULL on the column).
-    async fn list(
+    /// `includes` controls which joined aggregates are populated into the result.
+    async fn list_by_team_id(
         &self,
-        team_id: Option<&str>,
-        user_id: Option<&str>,
+        team_id: &str,
         keyword: Option<&str>,
         role: Option<RoleFlag>,
+        page: Page,
+        includes: &MemberInclusion,
+    ) -> DomainResult<Vec<MemberAggr>>;
+
+    /// Lists all memberships of the given user via `t_member LEFT JOIN t_user LEFT JOIN t_team`.
+    ///
+    /// `includes` controls which joined aggregates are populated into the result.
+    async fn list_by_user_id(
+        &self,
+        user_id: &str,
         page: Page,
         includes: &MemberInclusion,
     ) -> DomainResult<Vec<MemberAggr>>;

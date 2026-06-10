@@ -68,7 +68,7 @@ pub async fn mark_pending_as_used(conn: &mut AsyncPgConnection, id: &str) -> Dom
 
 #[async_trait]
 impl<'c> MemberInvitationQueryTransactional for RdbQueryTransactional<'c> {
-    async fn get_by_code_ex(
+    async fn get_by_code_excluded(
         &mut self,
         invitation_code: &str,
     ) -> DomainResult<MemberInvitationAggr> {

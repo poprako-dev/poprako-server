@@ -34,7 +34,7 @@ pub fn new(harn: Harness) -> Router<Harness> {
         );
 
     let v1_team = Router::new()
-        .route("/teams", get(team::list).post(team::create))
+        .route("/teams", get(team::list_infos).post(team::create))
         .route(
             "/teams/{team_id}",
             get(team::get_info)
@@ -52,7 +52,7 @@ pub fn new(harn: Harness) -> Router<Harness> {
 
     let v1_member = Router::new()
         .route("/members", get(member::list_infos).post(member::create))
-        .route("/members/mine", get(member::list_my_infos))
+        .route("/members/me", get(member::list_my_infos))
         .route("/members/join", post(member::join))
         .route(
             "/members/{member_id}",
@@ -60,10 +60,10 @@ pub fn new(harn: Harness) -> Router<Harness> {
         );
 
     let v1_workset = Router::new()
-        .route("/worksets", get(workset::list).post(workset::create))
+        .route("/worksets", get(workset::list_infos).post(workset::create))
         .route(
             "/worksets/{workset_id}",
-            put(workset::update).delete(workset::delete),
+            put(workset::update_infos).delete(workset::delete),
         );
 
     // Merge all protected sub-routers and apply authorization layer.
