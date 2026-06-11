@@ -1,5 +1,5 @@
 use std::sync::Arc;
-use time::Duration;
+use std::time::Duration;
 use time::OffsetDateTime;
 
 use futures_util::FutureExt as _;
@@ -20,17 +20,18 @@ pub struct LocalMessageIngestor {
 }
 
 struct LocalMessageIngestorOptions {
-    poll_interval: std::time::Duration,
+    poll_interval: Duration,
     claim_limit: i64,
     max_retry: i64,
 }
 
+// FIXME: too large
 impl LocalMessageIngestor {
     pub fn new(harness: Arc<HarnessBase>) -> Self {
         Self {
             harness,
             options: LocalMessageIngestorOptions {
-                poll_interval: std::time::Duration::from_secs(30),
+                poll_interval: Duration::from_secs(30),
                 claim_limit: 50,
                 max_retry: 10,
             },
@@ -88,19 +89,19 @@ impl LocalMessageIngestor {
                 resource_kind,
                 resource_id,
                 object_key,
-                image_version,
+                avatar_version,
             } => {
-                self.handle_check_uploaded(
+                self.handle_image_check_uploaded(
                     &message,
                     resource_kind,
                     &resource_id,
                     &object_key,
-                    image_version,
+                    avatar_version,
                 )
                 .await
             }
             ImageLocalMessage::Delete { object_key } => {
-                self.handle_delete(&message, &object_key).await
+                self.handle_image_delete(&message, &object_key).await
             }
         };
 
@@ -110,13 +111,13 @@ impl LocalMessageIngestor {
         }
     }
 
-    async fn handle_check_uploaded(
+    async fn handle_image_check_uploaded(
         &self,
         message: &LocalMessageAggr,
         resource_kind: ImageResourceKind,
         resource_id: &str,
         object_key: &str,
-        image_version: i64,
+        avatar_version: i64,
     ) -> DomainResult<()> {
         let current = self.load_current_avatar(resource_kind, resource_id).await?;
 
@@ -125,7 +126,7 @@ impl LocalMessageIngestor {
             return Ok(());
         };
 
-        if current.image_version != image_version || current.uploaded {
+        if current.avatar_version != avatar_version || current.uploaded {
             self.mark_completed(message).await?;
             return Ok(());
         }
@@ -142,28 +143,30 @@ impl LocalMessageIngestor {
             async move {
                 let current = match resource_kind {
                     ImageResourceKind::UserAvatar => {
-                        let user = UserQueryTransactional::get_by_id_excluded(query, &resource_id).await?;
+                        let user =
+                            UserQueryTransactional::get_by_id_excluded(query, &resource_id).await?;
                         AvatarState {
-                            image_version: user.avatar_version,
+                            avatar_version: user.avatar_version,
                             uploaded: user.avatar_uploaded,
                         }
                     }
                     ImageResourceKind::TeamAvatar => {
-                        let team = TeamQueryTransactional::get_by_id_excluded(query, &resource_id).await?;
+                        let team =
+                            TeamQueryTransactional::get_by_id_excluded(query, &resource_id).await?;
                         AvatarState {
-                            image_version: team.avatar_version,
+                            avatar_version: team.avatar_version,
                             uploaded: team.avatar_uploaded,
                         }
                     }
                 };
 
-                if current.image_version == image_version && !current.uploaded {
+                if current.avatar_version == avatar_version && !current.uploaded {
                     match resource_kind {
                         ImageResourceKind::UserAvatar => {
                             UserQueryTransactional::mark_avatar_uploaded(
                                 query,
                                 &resource_id,
-                                image_version,
+                                avatar_version,
                             )
                             .await?;
                         }
@@ -171,7 +174,7 @@ impl LocalMessageIngestor {
                             TeamQueryTransactional::mark_avatar_uploaded(
                                 query,
                                 &resource_id,
-                                image_version,
+                                avatar_version,
                             )
                             .await?;
                         }
@@ -193,7 +196,7 @@ impl LocalMessageIngestor {
         Ok(())
     }
 
-    async fn handle_delete(
+    async fn handle_image_delete(
         &self,
         message: &LocalMessageAggr,
         object_key: &str,
@@ -212,16 +215,18 @@ impl LocalMessageIngestor {
             async move {
                 match resource_kind {
                     ImageResourceKind::UserAvatar => {
-                        let user = UserQueryTransactional::get_by_id_excluded(query, &resource_id).await?;
+                        let user =
+                            UserQueryTransactional::get_by_id_excluded(query, &resource_id).await?;
                         Ok(AvatarState {
-                            image_version: user.avatar_version,
+                            avatar_version: user.avatar_version,
                             uploaded: user.avatar_uploaded,
                         })
                     }
                     ImageResourceKind::TeamAvatar => {
-                        let team = TeamQueryTransactional::get_by_id_excluded(query, &resource_id).await?;
+                        let team =
+                            TeamQueryTransactional::get_by_id_excluded(query, &resource_id).await?;
                         Ok(AvatarState {
-                            image_version: team.avatar_version,
+                            avatar_version: team.avatar_version,
                             uploaded: team.avatar_uploaded,
                         })
                     }
@@ -275,17 +280,17 @@ impl LocalMessageIngestor {
 }
 
 struct AvatarState {
-    image_version: i64,
+    avatar_version: i64,
     uploaded: bool,
 }
 
-fn retry_backoff(retried_count: i64) -> Duration {
+fn retry_backoff(retried_count: i64) -> time::Duration {
     match retried_count {
-        0 => Duration::minutes(1),
-        1 => Duration::minutes(2),
-        2 => Duration::minutes(4),
-        3 => Duration::minutes(8),
-        4 => Duration::minutes(16),
-        _ => Duration::minutes(30),
+        0 => time::Duration::minutes(1),
+        1 => time::Duration::minutes(2),
+        2 => time::Duration::minutes(4),
+        3 => time::Duration::minutes(8),
+        4 => time::Duration::minutes(16),
+        _ => time::Duration::minutes(30),
     }
 }

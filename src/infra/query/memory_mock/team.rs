@@ -85,7 +85,7 @@ impl TeamQuery for MemoryMockQuery {
         Ok(())
     }
 
-    async fn mark_avatar_uploaded(&self, id: &str, image_version: i64) -> DomainResult<()> {
+    async fn mark_avatar_uploaded(&self, id: &str, avatar_version: i64) -> DomainResult<()> {
         let mut state = self.state.lock().unwrap();
 
         let team = state
@@ -94,7 +94,7 @@ impl TeamQuery for MemoryMockQuery {
             .find(|t| t.id == id)
             .ok_or_else(|| DomainError::expected_argument(trl("error-team-not-found")))?;
 
-        if team.avatar_version != image_version {
+        if team.avatar_version != avatar_version {
             return Err(DomainError::expected_argument(trl(
                 "error-stale-avatar-upload",
             )));
@@ -154,30 +154,30 @@ impl TeamQueryTransactional for MemoryMockQueryTransactional {
             .find(|t| t.id == id)
             .ok_or_else(|| DomainError::expected_argument(trl("error-team-not-found")))?;
 
-        let image_version = team.avatar_version + 1;
-        let object_key = TeamAggr::generate_avatar_key(id, image_version, file_extension);
+        let avatar_version = team.avatar_version + 1;
+        let object_key = TeamAggr::generate_avatar_key(id, avatar_version, file_extension);
         let previous_object_key = team.avatar_key.clone();
 
         team.avatar_key = Some(object_key.clone());
         team.avatar_uploaded = false;
-        team.avatar_version = image_version;
+        team.avatar_version = avatar_version;
         team.updated_at = OffsetDateTime::now_utc();
 
         Ok(TeamAvatarReservation {
             object_key,
             previous_object_key,
-            image_version,
+            avatar_version,
         })
     }
 
-    async fn mark_avatar_uploaded(&mut self, id: &str, image_version: i64) -> DomainResult<()> {
+    async fn mark_avatar_uploaded(&mut self, id: &str, avatar_version: i64) -> DomainResult<()> {
         let mut state = self.state.lock().unwrap();
         let team = state
             .teams
             .iter_mut()
             .find(|t| t.id == id)
             .ok_or_else(|| DomainError::expected_argument(trl("error-team-not-found")))?;
-        if team.avatar_version != image_version {
+        if team.avatar_version != avatar_version {
             return Err(DomainError::expected_argument(trl("error-stale-avatar-upload")));
         }
         if team.avatar_uploaded {
@@ -308,7 +308,7 @@ mod tests {
             .unwrap();
 
         let found = TeamQuery::get_by_id(&mock, "team-1").await.unwrap();
-        assert_eq!(reservation.image_version, 1);
+        assert_eq!(reservation.avatar_version, 1);
         assert_eq!(found.avatar_key, Some("team_avatar/team-1-1.png".into()));
         assert_eq!(found.avatar_version, 1);
         assert!(!found.avatar_uploaded);

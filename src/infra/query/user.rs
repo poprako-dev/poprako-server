@@ -139,14 +139,14 @@ pub async fn reserve_avatar(
 ) -> DomainResult<UserAvatarReservation> {
     let user = get_by_id_ex(conn, id).await?;
     let now = OffsetDateTime::now_utc();
-    let image_version = user.avatar_version + 1;
-    let object_key = UserAggr::generate_avatar_key(id, image_version, file_extension);
+    let avatar_version = user.avatar_version + 1;
+    let object_key = UserAggr::generate_avatar_key(id, avatar_version, file_extension);
     let previous_object_key = user.avatar_key.clone();
 
     let changes = UserAspect::new(now)
         .avatar_key(&object_key)
         .avatar_uploaded(false)
-        .avatar_version(image_version);
+        .avatar_version(avatar_version);
 
     let affected = diesel::update(t_user.filter(f_id.eq(id)))
         .set(&changes)
@@ -160,7 +160,7 @@ pub async fn reserve_avatar(
     Ok(UserAvatarReservation {
         object_key,
         previous_object_key,
-        image_version,
+        avatar_version,
     })
 }
 
@@ -168,10 +168,10 @@ pub async fn reserve_avatar(
 pub async fn mark_avatar_uploaded(
     conn: &mut AsyncPgConnection,
     id: &str,
-    image_version: i64,
+    avatar_version: i64,
 ) -> DomainResult<()> {
     let user = get_by_id_ex(conn, id).await?;
-    if user.avatar_version != image_version {
+    if user.avatar_version != avatar_version {
         return Err(DomainError::expected_argument(trl(
             "error-stale-avatar-upload",
         )));
@@ -270,8 +270,8 @@ impl<'c> UserQueryTransactional for RdbQueryTransactional<'c> {
         reserve_avatar(self.conn, id, file_extension).await
     }
 
-    async fn mark_avatar_uploaded(&mut self, id: &str, image_version: i64) -> DomainResult<()> {
-        mark_avatar_uploaded(self.conn, id, image_version).await
+    async fn mark_avatar_uploaded(&mut self, id: &str, avatar_version: i64) -> DomainResult<()> {
+        mark_avatar_uploaded(self.conn, id, avatar_version).await
     }
 
     async fn delete(&mut self, id: &str) -> DomainResult<()> {

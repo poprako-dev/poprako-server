@@ -29,23 +29,15 @@ impl UserAggr {
         format!("user-{}", Uuid::now_v7())
     }
 
-    pub fn generate_avatar_key(user_id: &str, image_version: i64, ext: &str) -> String {
-        format!("user_avatar/{}-{}.{}", user_id, image_version, ext)
+    pub fn generate_avatar_key(user_id: &str, avatar_version: i64, ext: &str) -> String {
+        format!("user_avatar/{}-{}.{}", user_id, avatar_version, ext)
     }
 }
 
 pub struct UserAvatarReservation {
     pub object_key: String,
     pub previous_object_key: Option<String>,
-    pub image_version: i64,
-}
-
-impl EventEmit for UserAggr {
-    fn pull_events(&mut self) -> Vec<Event> {
-        // UserAggr is a pure read model and should never have any events.
-        // This is just a safeguard to catch any accidental misuse.
-        Vec::new()
-    }
+    pub avatar_version: i64,
 }
 
 #[derive(Debug, Clone)]

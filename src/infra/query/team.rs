@@ -120,14 +120,14 @@ pub async fn reserve_avatar(
 ) -> DomainResult<TeamAvatarReservation> {
     let team = get_by_id_ex(conn, id).await?;
     let now = OffsetDateTime::now_utc();
-    let image_version = team.avatar_version + 1;
-    let object_key = TeamAggr::generate_avatar_key(id, image_version, file_extension);
+    let avatar_version = team.avatar_version + 1;
+    let object_key = TeamAggr::generate_avatar_key(id, avatar_version, file_extension);
     let previous_object_key = team.avatar_key.clone();
 
     let changes = TeamAspect::new(now)
         .avatar_key(&object_key)
         .avatar_uploaded(false)
-        .avatar_version(image_version);
+        .avatar_version(avatar_version);
 
     let affected = diesel::update(t_team.filter(f_id.eq(id)))
         .set(&changes)
@@ -141,7 +141,7 @@ pub async fn reserve_avatar(
     Ok(TeamAvatarReservation {
         object_key,
         previous_object_key,
-        image_version,
+        avatar_version,
     })
 }
 
@@ -149,10 +149,10 @@ pub async fn reserve_avatar(
 pub async fn mark_avatar_uploaded(
     conn: &mut AsyncPgConnection,
     id: &str,
-    image_version: i64,
+    avatar_version: i64,
 ) -> DomainResult<()> {
     let team = get_by_id(conn, id).await?;
-    if team.avatar_version != image_version {
+    if team.avatar_version != avatar_version {
         return Err(DomainError::expected_argument(trl(
             "error-stale-avatar-upload",
         )));
@@ -240,8 +240,8 @@ impl TeamQuery for RdbQuery {
     }
 
     #[instrument(err, skip(self), level = Level::DEBUG)]
-    async fn mark_avatar_uploaded(&self, id: &str, image_version: i64) -> DomainResult<()> {
-        submit_query!(self.pool, mark_avatar_uploaded, id, image_version)
+    async fn mark_avatar_uploaded(&self, id: &str, avatar_version: i64) -> DomainResult<()> {
+        submit_query!(self.pool, mark_avatar_uploaded, id, avatar_version)
     }
 }
 
@@ -267,7 +267,7 @@ impl<'c> TeamQueryTransactional for RdbQueryTransactional<'c> {
         delete(self.conn, id).await
     }
 
-    async fn mark_avatar_uploaded(&mut self, id: &str, image_version: i64) -> DomainResult<()> {
-        mark_avatar_uploaded(self.conn, id, image_version).await
+    async fn mark_avatar_uploaded(&mut self, id: &str, avatar_version: i64) -> DomainResult<()> {
+        mark_avatar_uploaded(self.conn, id, avatar_version).await
     }
 }

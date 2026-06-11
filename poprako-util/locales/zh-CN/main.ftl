@@ -10,6 +10,7 @@ error-unauthorized = 无效的授权信息，请尝试重新登录
 error-unsupported-file-type = 不支持的文件类型
 error-stale-avatar-upload = 头像上传版本已过期
 error-team-not-found = 该汉化组不存在
+error-team-or-user-required = 必须提供 team_id 或 user_id
 error-workset-not-found = 该作品集不存在
 error-member-not-found = 该成员不存在
 error-team-member-required = 您不是该汉化组的成员

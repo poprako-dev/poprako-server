@@ -206,7 +206,7 @@ where
                 ImageResourceKind::UserAvatar,
                 user_id,
                 reservation.object_key.clone(),
-                reservation.image_version,
+                reservation.avatar_version,
             )
             .into_form(Duration::minutes(15));
 
@@ -224,7 +224,7 @@ where
 
     Ok(AvatarReserveReply {
         put_url,
-        image_version: reservation.image_version,
+        avatar_version: reservation.avatar_version,
     })
 }
 
@@ -240,7 +240,7 @@ where
     let user_id = token.user_id;
     Transactional::transaction_scoped(harn, move |query| {
         async move {
-            UserQueryTransactional::mark_avatar_uploaded(query, &user_id, params.image_version)
+            UserQueryTransactional::mark_avatar_uploaded(query, &user_id, params.avatar_version)
                 .await?;
 
             Ok(())
@@ -690,7 +690,7 @@ mod user_use_cases_tests {
         assert!(reply.put_url.contains("put"));
         assert!(reply.put_url.contains("user_avatar"));
         assert!(reply.put_url.contains("png"));
-        assert_eq!(reply.image_version, 1);
+        assert_eq!(reply.avatar_version, 1);
 
         let snapshot = harn.snapshot();
         assert_eq!(snapshot.local_messages.len(), 1);
@@ -701,12 +701,12 @@ mod user_use_cases_tests {
                 resource_kind,
                 resource_id,
                 object_key,
-                image_version,
+                avatar_version,
             } => {
                 assert_eq!(resource_kind, ImageResourceKind::UserAvatar);
                 assert_eq!(resource_id, "user-1");
                 assert_eq!(object_key, "user_avatar/user-1-1.png");
-                assert_eq!(image_version, 1);
+                assert_eq!(avatar_version, 1);
             }
             ImageLocalMessage::Delete { .. } => panic!("expected check-upload message"),
         }
@@ -760,7 +760,7 @@ mod user_use_cases_tests {
             &harn,
             token,
             AvatarMarkUploadedParams {
-                image_version: reply.image_version,
+                avatar_version: reply.avatar_version,
             },
         )
         .await
@@ -777,7 +777,7 @@ mod user_use_cases_tests {
             user_id: "nonexistent".into(),
         };
 
-        let err = mark_avatar_uploaded(&harn, token, AvatarMarkUploadedParams { image_version: 1 })
+        let err = mark_avatar_uploaded(&harn, token, AvatarMarkUploadedParams { avatar_version: 1 })
             .await
             .err()
             .unwrap();
