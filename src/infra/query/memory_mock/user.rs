@@ -138,23 +138,23 @@ impl UserQueryTransactional for MemoryMockQueryTransactional {
             .find(|u| u.id == id)
             .ok_or_else(|| DomainError::expected_argument(trl("error-user-not-found")))?;
 
-        let image_version = user.avatar_version + 1;
-        let object_key = UserAggr::generate_avatar_key(id, image_version, file_extension);
+        let avatar_version = user.avatar_version + 1;
+        let object_key = UserAggr::generate_avatar_key(id, avatar_version, file_extension);
         let previous_object_key = user.avatar_key.clone();
 
         user.avatar_key = Some(object_key.clone());
         user.avatar_uploaded = false;
-        user.avatar_version = image_version;
+        user.avatar_version = avatar_version;
         user.updated_at = OffsetDateTime::now_utc();
 
         Ok(UserAvatarReservation {
             object_key,
             previous_object_key,
-            image_version,
+            avatar_version,
         })
     }
 
-    async fn mark_avatar_uploaded(&mut self, id: &str, image_version: i64) -> DomainResult<()> {
+    async fn mark_avatar_uploaded(&mut self, id: &str, avatar_version: i64) -> DomainResult<()> {
         let mut state = self.state.lock().unwrap();
 
         let user = state
@@ -163,7 +163,7 @@ impl UserQueryTransactional for MemoryMockQueryTransactional {
             .find(|u| u.id == id)
             .ok_or_else(|| DomainError::expected_argument(trl("error-user-not-found")))?;
 
-        if user.avatar_version != image_version {
+        if user.avatar_version != avatar_version {
             return Err(DomainError::expected_argument(trl(
                 "error-stale-avatar-upload",
             )));
@@ -474,7 +474,7 @@ mod tests {
             .unwrap();
 
         let found = UserQuery::get_by_id(&mock, "user-1").await.unwrap();
-        assert_eq!(reservation.image_version, 1);
+        assert_eq!(reservation.avatar_version, 1);
         assert_eq!(found.avatar_key, Some("user_avatar/user-1-1.png".into()));
         assert_eq!(found.avatar_version, 1);
     }

@@ -28,7 +28,7 @@ pub trait TeamQuery {
     async fn update_info(&self, update: &TeamInfoUpdate) -> DomainResult<()>;
 
     /// Marks the team's current avatar version as uploaded.
-    async fn mark_avatar_uploaded(&self, id: &str, image_version: i64) -> DomainResult<()>;
+    async fn mark_avatar_uploaded(&self, id: &str, avatar_version: i64) -> DomainResult<()>;
 }
 
 /// Transactional persistence contract for [`TeamAggr`], used **only** inside
@@ -49,7 +49,7 @@ pub trait TeamQueryTransactional {
     ) -> DomainResult<TeamAvatarReservation>;
 
     /// Marks the team's current avatar version as uploaded.
-    async fn mark_avatar_uploaded(&mut self, id: &str, image_version: i64) -> DomainResult<()>;
+    async fn mark_avatar_uploaded(&mut self, id: &str, avatar_version: i64) -> DomainResult<()>;
 
     /// Hard-deletes the team.
     async fn delete(&mut self, id: &str) -> DomainResult<()>;

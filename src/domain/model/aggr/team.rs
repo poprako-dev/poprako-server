@@ -25,15 +25,15 @@ impl TeamAggr {
     }
 
     /// Returns the OSS object key for the team avatar with the given file extension.
-    pub fn generate_avatar_key(team_id: &str, image_version: i64, ext: &str) -> String {
-        format!("team_avatar/{}-{}.{}", team_id, image_version, ext)
+    pub fn generate_avatar_key(team_id: &str, avatar_version: i64, ext: &str) -> String {
+        format!("team_avatar/{}-{}.{}", team_id, avatar_version, ext)
     }
 }
 
 pub struct TeamAvatarReservation {
     pub object_key: String,
     pub previous_object_key: Option<String>,
-    pub image_version: i64,
+    pub avatar_version: i64,
 }
 
 /// Input aggregate for creating a new team.

@@ -64,10 +64,10 @@ pub struct AvatarReserveParams {
 #[derive(Debug, Serialize, ToSchema)]
 pub struct AvatarReserveReply {
     pub put_url: String,
-    pub image_version: i64,
+    pub avatar_version: i64,
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct AvatarMarkUploadedParams {
-    pub image_version: i64,
+    pub avatar_version: i64,
 }

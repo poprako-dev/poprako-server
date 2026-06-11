@@ -19,7 +19,7 @@ pub enum ImageLocalMessage {
         resource_kind: ImageResourceKind,
         resource_id: String,
         object_key: String,
-        image_version: i64,
+        avatar_version: i64,
     },
     Delete {
         object_key: String,
@@ -31,13 +31,13 @@ impl ImageLocalMessage {
         resource_kind: ImageResourceKind,
         resource_id: String,
         object_key: String,
-        image_version: i64,
+        avatar_version: i64,
     ) -> Self {
         Self::CheckUploaded {
             resource_kind,
             resource_id,
             object_key,
-            image_version,
+            avatar_version,
         }
     }
 

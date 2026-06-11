@@ -24,8 +24,8 @@ impl TeamComplex {
 
         // Cascade-delete each workset through its own delete_cascade.
         let worksets = WorksetQueryTransactional::list_by_team_id_excluded(query, id).await?;
-        for ws in &worksets {
-            WorksetComplex::delete_cascade(query, &ws.id).await?;
+        for workset in &worksets {
+            WorksetComplex::delete_cascade(query, &workset.id).await?;
         }
 
         TeamQueryTransactional::delete(query, id).await?;

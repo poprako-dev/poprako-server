@@ -10,6 +10,7 @@ error-unauthorized = Invalid authorization info, please try logging in again
 error-unsupported-file-type = Unsupported file type
 error-stale-avatar-upload = Avatar upload version is stale
 error-team-not-found = Team not found
+error-team-or-user-required = Either team_id or user_id must be provided
 error-workset-not-found = Workset not found
 error-member-not-found = Member not found
 error-team-member-required = You are not a member of this team

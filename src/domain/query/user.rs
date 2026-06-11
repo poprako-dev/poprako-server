@@ -44,7 +44,7 @@ pub trait UserQueryTransactional {
     ) -> DomainResult<UserAvatarReservation>;
 
     /// Marks the user's current avatar version as uploaded.
-    async fn mark_avatar_uploaded(&mut self, id: &str, image_version: i64) -> DomainResult<()>;
+    async fn mark_avatar_uploaded(&mut self, id: &str, avatar_version: i64) -> DomainResult<()>;
 
     /// Hard-deletes the user and credentials.
     async fn delete(&mut self, id: &str) -> DomainResult<()>;

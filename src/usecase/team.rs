@@ -116,7 +116,7 @@ where
                 ImageResourceKind::TeamAvatar,
                 team_id,
                 reservation.object_key.clone(),
-                reservation.image_version,
+                reservation.avatar_version,
             )
             .into_form(Duration::minutes(15));
 
@@ -134,7 +134,7 @@ where
 
     Ok(AvatarReserveReply {
         put_url,
-        image_version: reservation.image_version,
+        avatar_version: reservation.avatar_version,
     })
 }
 
@@ -147,7 +147,7 @@ pub async fn mark_avatar_uploaded<H>(
 where
     H: TeamQuery + Send + Sync,
 {
-    TeamQuery::mark_avatar_uploaded(harn, &team_id, params.image_version).await?;
+    TeamQuery::mark_avatar_uploaded(harn, &team_id, params.avatar_version).await?;
 
     Ok(())
 }
@@ -188,7 +188,7 @@ mod tests {
     // list_empty_with_offset_past_end(list)(positive): list should return an empty vector when offset is past the last team.
     // reserve_avatar_fails_for_nonexistent_team(reserve_avatar)(negative): reserve_avatar should fail for missing team.
     // mark_avatar_uploaded_fails_for_nonexistent_team(mark_avatar_uploaded)(negative): mark_avatar_uploaded should fail for missing team.
-    // mark_avatar_uploaded_fails_for_stale_version(mark_avatar_uploaded)(negative): mark_avatar_uploaded should fail when image_version does not match.
+    // mark_avatar_uploaded_fails_for_stale_version(mark_avatar_uploaded)(negative): mark_avatar_uploaded should fail when avatar_version does not match.
 
     use super::*;
 
@@ -468,7 +468,7 @@ mod tests {
         assert!(reply.put_url.contains("put"));
         assert!(reply.put_url.contains("team_avatar"));
         assert!(reply.put_url.contains("png"));
-        assert_eq!(reply.image_version, 1);
+        assert_eq!(reply.avatar_version, 1);
 
         let snapshot = harn.snapshot();
         assert_eq!(snapshot.local_messages.len(), 1);
@@ -479,12 +479,12 @@ mod tests {
                 resource_kind,
                 resource_id,
                 object_key,
-                image_version,
+                avatar_version,
             } => {
                 assert_eq!(resource_kind, ImageResourceKind::TeamAvatar);
                 assert_eq!(resource_id, info.id);
                 assert_eq!(object_key, format!("team_avatar/{}-1.png", resource_id));
-                assert_eq!(image_version, 1);
+                assert_eq!(avatar_version, 1);
             }
             ImageLocalMessage::Delete { .. } => panic!("expected check-upload message"),
         }
@@ -519,7 +519,7 @@ mod tests {
             &harn,
             info.id.clone(),
             AvatarMarkUploadedParams {
-                image_version: reply.image_version,
+                avatar_version: reply.avatar_version,
             },
         )
         .await
@@ -609,7 +609,7 @@ mod tests {
         let err = mark_avatar_uploaded(
             &harn,
             "no-such-team".into(),
-            AvatarMarkUploadedParams { image_version: 1 },
+            AvatarMarkUploadedParams { avatar_version: 1 },
         )
         .await
         .err()
@@ -645,7 +645,7 @@ mod tests {
         let err = mark_avatar_uploaded(
             &harn,
             info.id.clone(),
-            AvatarMarkUploadedParams { image_version: 999 },
+            AvatarMarkUploadedParams { avatar_version: 999 },
         )
         .await
         .err()
