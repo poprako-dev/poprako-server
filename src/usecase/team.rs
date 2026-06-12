@@ -1,12 +1,14 @@
 use futures_util::FutureExt as _;
-use poprako_util::page::Page;
 use time::Duration;
 use tracing::instrument;
 
+use poprako_util::page::Page;
+
 use crate::domain::complex::team::TeamComplex;
 use crate::domain::external::image_pool::{ImageGet, ImagePut};
-use crate::domain::local_message::message::{ImageLocalMessage, ImageResourceKind};
+use crate::domain::model::aggr::local_message::LocalMessageForm;
 use crate::domain::model::aggr::team::{TeamAggr, TeamForm, TeamInfoUpdate};
+use crate::domain::model::value::local_message::{ImageLocalMessage, ImageResourceKind};
 use crate::domain::query::Transactional;
 use crate::domain::query::local_message::LocalMessageQueryTransactional;
 use crate::domain::query::team::{TeamQuery, TeamQueryTransactional};
@@ -106,19 +108,23 @@ where
                     .await?;
 
             if let Some(previous_object_key) = &reservation.previous_object_key {
-                let message = ImageLocalMessage::delete(previous_object_key.clone())
-                    .into_form(Duration::seconds(0));
+                let message = LocalMessageForm::from_image_message(
+                    ImageLocalMessage::delete(previous_object_key.clone()),
+                    Duration::seconds(0),
+                );
 
                 LocalMessageQueryTransactional::append(query, &message).await?;
             }
 
-            let message = ImageLocalMessage::check_uploaded(
-                ImageResourceKind::TeamAvatar,
-                team_id,
-                reservation.object_key.clone(),
-                reservation.avatar_version,
-            )
-            .into_form(Duration::minutes(15));
+            let message = LocalMessageForm::from_image_message(
+                ImageLocalMessage::check_uploaded(
+                    ImageResourceKind::TeamAvatar,
+                    team_id,
+                    reservation.object_key.clone(),
+                    reservation.avatar_version,
+                ),
+                Duration::minutes(15),
+            );
 
             LocalMessageQueryTransactional::append(query, &message).await?;
 
@@ -189,16 +195,17 @@ mod tests {
     // reserve_avatar_fails_for_nonexistent_team(reserve_avatar)(negative): reserve_avatar should fail for missing team.
     // mark_avatar_uploaded_fails_for_nonexistent_team(mark_avatar_uploaded)(negative): mark_avatar_uploaded should fail for missing team.
     // mark_avatar_uploaded_fails_for_stale_version(mark_avatar_uploaded)(negative): mark_avatar_uploaded should fail when avatar_version does not match.
+    // reserve_avatar_with_previous_deletes_old_avatar(reserve_avatar)(positive): reserving a second avatar should queue a delete-local-message for the old one.
 
     use super::*;
 
-    use crate::domain::local_message::message::{ImageLocalMessage, ImageResourceKind};
     use crate::domain::model::aggr::team::TeamAggr;
+    use crate::domain::model::value::local_message::{ImageLocalMessage, ImageResourceKind};
     use crate::domain::query::workset::WorksetQuery;
     use crate::harness::tests::TestHarness;
-    use crate::test_util::is_expected_argument;
-    use crate::test_util::usecase_is_expected_argument;
-    use crate::test_util::usecase_is_expected_conflict;
+    use crate::test_util::{
+        is_expected_argument, usecase_is_expected_argument, usecase_is_expected_conflict,
+    };
     use crate::usecase::data_object::team::{
         AvatarMarkUploadedParams, CreateParams, InfoUpdateParams,
     };
@@ -479,12 +486,12 @@ mod tests {
                 resource_kind,
                 resource_id,
                 object_key,
-                avatar_version,
+                image_version,
             } => {
                 assert_eq!(resource_kind, ImageResourceKind::TeamAvatar);
                 assert_eq!(resource_id, info.id);
                 assert_eq!(object_key, format!("team_avatar/{}-1.png", resource_id));
-                assert_eq!(avatar_version, 1);
+                assert_eq!(image_version, 1);
             }
             ImageLocalMessage::Delete { .. } => panic!("expected check-upload message"),
         }
@@ -645,12 +652,57 @@ mod tests {
         let err = mark_avatar_uploaded(
             &harn,
             info.id.clone(),
-            AvatarMarkUploadedParams { avatar_version: 999 },
+            AvatarMarkUploadedParams {
+                avatar_version: 999,
+            },
         )
         .await
         .err()
         .unwrap();
 
         assert!(usecase_is_expected_argument(&err));
+    }
+
+    #[tokio::test]
+    async fn reserve_avatar_with_previous_deletes_old_avatar() {
+        let harn = TestHarness::default();
+
+        let info = create(
+            &harn,
+            CreateParams {
+                name: "ReAvatar".into(),
+                description: "X".into(),
+            },
+        )
+        .await
+        .unwrap();
+
+        // First reservation creates the avatar_key.
+        reserve_avatar(
+            &harn,
+            info.id.clone(),
+            AvatarReserveParams {
+                file_extension: "png".into(),
+            },
+        )
+        .await
+        .unwrap();
+
+        let before = harn.snapshot().local_messages.len();
+
+        // Second reservation triggers previous_object_key cleanup path.
+        reserve_avatar(
+            &harn,
+            info.id.clone(),
+            AvatarReserveParams {
+                file_extension: "jpg".into(),
+            },
+        )
+        .await
+        .unwrap();
+
+        // Two new local messages: one delete for old avatar, one check-uploaded for new.
+        let snapshot = harn.snapshot();
+        assert_eq!(snapshot.local_messages.len(), before + 2);
     }
 }

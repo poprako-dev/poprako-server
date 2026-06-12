@@ -123,8 +123,7 @@ mod tests {
     // valid_bits_constant(RoleMask::VALID_BITS)(positive): valid role bitmask should cover all defined roles.
     // roundtrip_u32_to_mask_to_u32(RoleMask::try_from/u32::from)(positive): converting from and back to u32 should preserve valid bits.
 
-    use super::RoleFlag;
-    use super::RoleMask;
+    use super::*;
 
     #[test]
     fn has_role_single_bit() {

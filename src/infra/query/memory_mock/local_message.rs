@@ -197,6 +197,7 @@ mod tests {
     use super::*;
 
     use futures_util::FutureExt as _;
+
     use serde_json::json;
 
     use poprako_util::page::Page;

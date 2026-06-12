@@ -1,7 +1,7 @@
 use std::fmt::Debug;
 use std::net::SocketAddr;
 
-use anyhow::Context;
+use anyhow::Context as _;
 use tokio::net::{TcpListener, ToSocketAddrs};
 use tokio::signal;
 

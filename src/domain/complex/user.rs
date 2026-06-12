@@ -1,7 +1,8 @@
 use time::Duration;
 
 use crate::domain::external::token::{TokenParse, TokenSign};
-use crate::domain::local_message::message::ImageLocalMessage;
+use crate::domain::model::aggr::local_message::LocalMessageForm;
+use crate::domain::model::value::local_message::ImageLocalMessage;
 use crate::domain::model::aggr::user::UserToken;
 use crate::domain::query::QueryTransactional;
 use crate::domain::query::local_message::LocalMessageQueryTransactional;
@@ -14,7 +15,12 @@ pub struct UserComplex;
 impl UserComplex {
     /// Hashes a password with bcrypt using the default cost factor.
     pub fn hash_password(password: &str) -> DomainResult<String> {
-        bcrypt::hash(password, bcrypt::DEFAULT_COST).map_err(|e| {
+        Self::hash_password_at_cost(password, bcrypt::DEFAULT_COST)
+    }
+
+    /// Same as [`hash_password`] but with an explicit cost factor (for testing).
+    fn hash_password_at_cost(password: &str, cost: u32) -> DomainResult<String> {
+        bcrypt::hash(password, cost).map_err(|e| {
             DomainError::unrecoverable(format!(
                 "[user::hash_password] bcrypt hashing failed: {}",
                 e
@@ -57,7 +63,10 @@ impl UserComplex {
 
         // Queue avatar file deletion if there was one.
         if let Some(object_key) = avatar_key {
-            let message = ImageLocalMessage::delete(object_key).into_form(Duration::seconds(0));
+            let message = LocalMessageForm::from_image_message(
+                ImageLocalMessage::delete(object_key),
+                Duration::seconds(0),
+            );
             LocalMessageQueryTransactional::append(query, &message).await?;
         }
 
@@ -73,17 +82,17 @@ mod tests {
     // hash_password_same_input_produces_different_hashes(hash_password)(positive): hashing the same password twice should use different salts.
     // hash_password_empty_string(hash_password)(positive): hashing an empty password should still return a bcrypt hash.
     // hash_password_can_be_verified_by_bcrypt(hash_password)(positive): bcrypt should verify the original password and reject a wrong one.
+    // hash_password_returns_error_on_invalid_cost(hash_password_at_cost)(negative): passing an out-of-range cost should return an Unrecoverable error.
     // sign_token_delegates_to_codec(sign_token)(positive): token signing should delegate to the provided codec.
     // sign_token_returns_codec_error(sign_token)(negative): token signing should propagate codec errors.
     // parse_token_delegates_to_codec(parse_token)(positive): token parsing should delegate to the provided codec.
     // parse_token_returns_codec_error(parse_token)(negative): token parsing should propagate codec errors.
 
-    use super::UserComplex;
+    use super::*;
 
     use crate::domain::external::token::{TokenParse, TokenSign};
     use crate::domain::model::aggr::user::UserToken;
-    use crate::domain::result::DomainError;
-    use crate::domain::result::DomainResult;
+    use crate::domain::result::{DomainError, DomainResult};
 
     struct FakeCodec {
         fail: bool,
@@ -139,6 +148,14 @@ mod tests {
         let hash = UserComplex::hash_password("my-password").unwrap();
         assert!(bcrypt::verify("my-password", &hash).unwrap());
         assert!(!bcrypt::verify("wrong-password", &hash).unwrap());
+    }
+
+    #[test]
+    fn hash_password_returns_error_on_invalid_cost() {
+        let err = UserComplex::hash_password_at_cost("password", 100)
+            .err()
+            .unwrap();
+        assert!(matches!(err, DomainError::Unrecoverable { .. }));
     }
 
     #[test]

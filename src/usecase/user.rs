@@ -6,21 +6,19 @@ use poprako_util::i18n::trl;
 
 use crate::domain::complex::user::UserComplex;
 use crate::domain::effect::{Effect as _, EffectSink};
-use crate::domain::external::image_pool::ImageGet;
-use crate::domain::external::image_pool::ImagePut;
-use crate::domain::external::token::TokenIssuer;
-use crate::domain::external::token::TokenSign;
-use crate::domain::local_message::message::{ImageLocalMessage, ImageResourceKind};
+use crate::domain::external::image_pool::{ImageGet, ImagePut};
+use crate::domain::external::token::{TokenIssuer, TokenSign};
+use crate::domain::model::aggr::local_message::LocalMessageForm;
 use crate::domain::model::aggr::member::{MemberAggr, MemberForm};
 use crate::domain::model::aggr::user::{UserAggr, UserForm, UserInfoUpdate, UserToken};
 use crate::domain::model::event::user::UserSignedUpEvent;
 use crate::domain::model::event::{Event, EventSink};
+use crate::domain::model::value::local_message::{ImageLocalMessage, ImageResourceKind};
 use crate::domain::query::Transactional;
 use crate::domain::query::local_message::LocalMessageQueryTransactional;
 use crate::domain::query::member::MemberQueryTransactional;
 use crate::domain::query::member_invitation::MemberInvitationQueryTransactional;
-use crate::domain::query::user::UserQuery;
-use crate::domain::query::user::UserQueryTransactional;
+use crate::domain::query::user::{UserQuery, UserQueryTransactional};
 use crate::domain::result::DomainError;
 use crate::usecase::data_object::user::{
     AvatarMarkUploadedParams, AvatarReserveParams, AvatarReserveReply, InfoUpdateParams,
@@ -196,19 +194,23 @@ where
                     .await?;
 
             if let Some(previous_object_key) = reservation.previous_object_key.clone() {
-                let message =
-                    ImageLocalMessage::delete(previous_object_key).into_form(Duration::seconds(0));
+                let message = LocalMessageForm::from_image_message(
+                    ImageLocalMessage::delete(previous_object_key),
+                    Duration::seconds(0),
+                );
 
                 LocalMessageQueryTransactional::append(query, &message).await?;
             }
 
-            let message = ImageLocalMessage::check_uploaded(
-                ImageResourceKind::UserAvatar,
-                user_id,
-                reservation.object_key.clone(),
-                reservation.avatar_version,
-            )
-            .into_form(Duration::minutes(15));
+            let message = LocalMessageForm::from_image_message(
+                ImageLocalMessage::check_uploaded(
+                    ImageResourceKind::UserAvatar,
+                    user_id,
+                    reservation.object_key.clone(),
+                    reservation.avatar_version,
+                ),
+                Duration::minutes(15),
+            );
 
             LocalMessageQueryTransactional::append(query, &message).await?;
 
@@ -311,9 +313,7 @@ mod tests {
     use crate::domain::model::event::Event;
     use crate::domain::model::value::role::{RoleFlag, RoleMask};
     use crate::harness::tests::TestHarness;
-    use crate::test_util::usecase_is_expected_argument;
-    use crate::test_util::usecase_is_expected_conflict;
-    use crate::test_util::usecase_is_unrecoverable;
+    use crate::test_util::{usecase_is_expected_argument, usecase_is_expected_conflict, usecase_is_unrecoverable};
     use crate::usecase::data_object::user::SignUpParams;
 
     fn invitation(code: &str, invitee_qid: &str, pending: bool) -> MemberInvitationAggr {
@@ -493,13 +493,16 @@ mod user_use_cases_tests {
     // delete_user_cascades_members(delete_user)(positive): delete_user should cascade-delete all member records belonging to the user.
     // delete_user_fails_for_nonexistent_user(delete_user)(negative): delete_user should fail for missing user.
 
-    use super::*;
+    use super::{
+        delete_user, get_info, mark_avatar_uploaded, reserve_avatar, sign_in, touch_last_active,
+        update_info,
+    };
 
     use time::OffsetDateTime;
 
-    use crate::domain::local_message::message::{ImageLocalMessage, ImageResourceKind};
     use crate::domain::model::aggr::team::TeamAggr;
-    use crate::domain::model::aggr::user::UserCredential;
+    use crate::domain::model::aggr::user::{UserAggr, UserCredential, UserToken};
+    use crate::domain::model::value::local_message::{ImageLocalMessage, ImageResourceKind};
     use crate::domain::model::value::role::RoleFlag;
     use crate::domain::query::member::MemberQuery;
     use crate::harness::tests::TestHarness;
@@ -701,12 +704,12 @@ mod user_use_cases_tests {
                 resource_kind,
                 resource_id,
                 object_key,
-                avatar_version,
+                image_version,
             } => {
                 assert_eq!(resource_kind, ImageResourceKind::UserAvatar);
                 assert_eq!(resource_id, "user-1");
                 assert_eq!(object_key, "user_avatar/user-1-1.png");
-                assert_eq!(avatar_version, 1);
+                assert_eq!(image_version, 1);
             }
             ImageLocalMessage::Delete { .. } => panic!("expected check-upload message"),
         }
@@ -735,6 +738,45 @@ mod user_use_cases_tests {
         .unwrap();
 
         assert!(usecase_is_expected_argument(&err));
+    }
+
+    #[tokio::test]
+    async fn reserve_avatar_with_previous_deletes_old_avatar() {
+        let harn = TestHarness::default();
+        let (user, credential) = make_test_user("user-1", "qid-1", "Alice", "pw");
+        harn.seed_user(user, credential);
+
+        let token = UserToken {
+            user_id: "user-1".into(),
+        };
+
+        // First reservation creates avatar_key.
+        reserve_avatar(
+            &harn,
+            token.clone(),
+            AvatarReserveParams {
+                file_extension: "png".into(),
+            },
+        )
+        .await
+        .unwrap();
+
+        let before = harn.snapshot().local_messages.len();
+
+        // Second reservation triggers previous_object_key cleanup path.
+        reserve_avatar(
+            &harn,
+            token,
+            AvatarReserveParams {
+                file_extension: "jpg".into(),
+            },
+        )
+        .await
+        .unwrap();
+
+        // Two new local messages: one delete for old avatar, one check-uploaded for new.
+        let snapshot = harn.snapshot();
+        assert_eq!(snapshot.local_messages.len(), before + 2);
     }
 
     #[tokio::test]
@@ -777,10 +819,11 @@ mod user_use_cases_tests {
             user_id: "nonexistent".into(),
         };
 
-        let err = mark_avatar_uploaded(&harn, token, AvatarMarkUploadedParams { avatar_version: 1 })
-            .await
-            .err()
-            .unwrap();
+        let err =
+            mark_avatar_uploaded(&harn, token, AvatarMarkUploadedParams { avatar_version: 1 })
+                .await
+                .err()
+                .unwrap();
 
         assert!(usecase_is_expected_argument(&err));
     }

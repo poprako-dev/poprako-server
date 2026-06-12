@@ -1,24 +1,18 @@
 use async_trait::async_trait;
 use diesel::prelude::*;
-use diesel_async::AsyncPgConnection;
-use diesel_async::RunQueryDsl;
+use diesel_async::{AsyncPgConnection, RunQueryDsl};
 use time::OffsetDateTime;
-use tracing::Level;
-use tracing::instrument;
+use tracing::{instrument, Level};
 
 use poprako_util::i18n::trl;
 
 use crate::domain::model::aggr::user::{
     UserAggr, UserAvatarReservation, UserCredential, UserForm, UserInfoUpdate,
 };
-use crate::domain::query::user::UserQuery;
-use crate::domain::query::user::UserQueryTransactional;
+use crate::domain::query::user::{UserQuery, UserQueryTransactional};
 use crate::domain::result::{DomainError, DomainResult};
-use crate::infra::query::RdbQuery;
-use crate::infra::query::RdbQueryTransactional;
-use crate::infra::query::entity::user::UserAspect;
-use crate::infra::query::entity::user::UserEntry;
-use crate::infra::query::entity::user::UserRow;
+use crate::infra::query::{RdbQuery, RdbQueryTransactional};
+use crate::infra::query::entity::user::{UserAspect, UserEntry, UserRow};
 use crate::infra::query::schema::t_user::dsl::*;
 use crate::submit_query;
 

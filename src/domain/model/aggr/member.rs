@@ -94,6 +94,99 @@ pub struct MemberForm {
     pub role_mask: RoleMask,
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use time::OffsetDateTime;
+    use crate::domain::model::value::role::RoleFlag;
+
+    fn make_member_with_roles(roles: &[(RoleFlag, Option<OffsetDateTime>)]) -> MemberAggr {
+        let now = OffsetDateTime::now_utc();
+        let mut m = MemberAggr {
+            id: "m-test".into(),
+            user_id: "u-1".into(),
+            user_nickname: "Test".into(),
+            user: None,
+            team_id: "t-1".into(),
+            team: None,
+            assigned_raw_provider_at: None,
+            assigned_translator_at: None,
+            assigned_proofreader_at: None,
+            assigned_typesetter_at: None,
+            assigned_redrawer_at: None,
+            assigned_reviewer_at: None,
+            assigned_publisher_at: None,
+            assigned_admin_at: None,
+            assigned_assistant_at: None,
+            user_last_active_at: now,
+            created_at: now,
+            updated_at: now,
+        };
+        for (flag, ts) in roles {
+            match flag {
+                RoleFlag::RawProvider => m.assigned_raw_provider_at = *ts,
+                RoleFlag::Translator => m.assigned_translator_at = *ts,
+                RoleFlag::Proofreader => m.assigned_proofreader_at = *ts,
+                RoleFlag::Typesetter => m.assigned_typesetter_at = *ts,
+                RoleFlag::Redrawer => m.assigned_redrawer_at = *ts,
+                RoleFlag::Reviewer => m.assigned_reviewer_at = *ts,
+                RoleFlag::Publisher => m.assigned_publisher_at = *ts,
+                RoleFlag::Admin => m.assigned_admin_at = *ts,
+                RoleFlag::Assistant => m.assigned_assistant_at = *ts,
+            }
+        }
+        m
+    }
+
+    #[test]
+    fn role_mask_with_all_roles_includes_every_flag() {
+        let now = OffsetDateTime::now_utc();
+        let flags = [
+            RoleFlag::RawProvider,
+            RoleFlag::Translator,
+            RoleFlag::Proofreader,
+            RoleFlag::Typesetter,
+            RoleFlag::Redrawer,
+            RoleFlag::Reviewer,
+            RoleFlag::Publisher,
+            RoleFlag::Admin,
+            RoleFlag::Assistant,
+        ];
+        let roles: Vec<_> = flags.iter().map(|f| (*f, Some(now))).collect();
+        let m = make_member_with_roles(&roles);
+        let mask: u32 = m.role_mask().into();
+        for flag in &flags {
+            assert!(mask & u32::from(*flag) != 0, "missing {flag:?}");
+        }
+    }
+
+    #[test]
+    fn has_any_role_checks_any_flag() {
+        let now = OffsetDateTime::now_utc();
+        let m = make_member_with_roles(&[(RoleFlag::Admin, Some(now))]);
+        assert!(m.has_any_role(&[RoleFlag::Admin]));
+        assert!(m.has_any_role(&[RoleFlag::Admin, RoleFlag::Translator]));
+        assert!(!m.has_any_role(&[RoleFlag::Translator]));
+    }
+
+    #[test]
+    fn has_every_role_checks_all_flags() {
+        let now = OffsetDateTime::now_utc();
+        let m = make_member_with_roles(&[
+            (RoleFlag::Admin, Some(now)),
+            (RoleFlag::Translator, Some(now)),
+        ]);
+        assert!(m.has_every_role(&[RoleFlag::Admin, RoleFlag::Translator]));
+        assert!(!m.has_every_role(&[RoleFlag::Admin, RoleFlag::Proofreader]));
+    }
+
+    #[test]
+    fn generate_id_produces_prefixed_uuid() {
+        let id = MemberAggr::generate_id();
+        assert!(id.starts_with("member-"));
+    }
+}
+
 /// Input aggregate for updating the roles of an existing member (PUT semantics).
 ///
 /// The caller provides the existing member `id` and the target [`RoleMask`].

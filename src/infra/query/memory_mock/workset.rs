@@ -250,6 +250,7 @@ mod tests {
     // delete_missing_returns_error(WorksetQuery::delete)(negative): deleting a missing workset should fail.
 
     use futures_util::FutureExt as _;
+
     use time::OffsetDateTime;
 
     use poprako_util::page::Page;
@@ -258,8 +259,7 @@ mod tests {
     use crate::domain::query::Transactional;
     use crate::domain::query::workset::{WorksetQuery, WorksetQueryTransactional};
     use crate::infra::query::memory_mock::MemoryMockQuery;
-    use crate::test_util::is_expected_argument;
-    use crate::test_util::is_expected_conflict;
+    use crate::test_util::{is_expected_argument, is_expected_conflict};
 
     fn now() -> OffsetDateTime {
         OffsetDateTime::now_utc()

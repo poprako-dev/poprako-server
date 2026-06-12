@@ -50,6 +50,8 @@ mod tests {
     // delete_batch_forwards_to_target(ForwardRef<ImageDeleteForward>)(positive): wrapper should delegate batch deletion to image pool target.
     // exists_forwards_to_target(ForwardRef<ImageInspectForward>)(positive): wrapper should delegate object inspection to image pool target.
 
+    use super::*;
+
     use std::sync::{Arc, Mutex};
 
     use async_trait::async_trait;

@@ -52,6 +52,7 @@ mod tests {
     // mark_pending_as_used_nonexistent_returns_error(MemberInvitationQueryTransactional::mark_pending_as_used)(negative): marking an unknown invitation should return an expected argument error.
 
     use futures_util::FutureExt as _;
+
     use time::OffsetDateTime;
 
     use crate::domain::model::aggr::member_invitation::MemberInvitationAggr;

@@ -3,14 +3,14 @@ use utoipa::{IntoParams, ToSchema};
 
 use poprako_util::time::ToUnixMilli as _;
 
+use poprako_util::i18n::trl;
+
 use crate::domain::external::image_pool::ImageGet;
 use crate::domain::model::aggr::member::MemberAggr;
 use crate::domain::model::value::role::RoleFlag;
-use crate::domain::result::DomainError;
-use crate::domain::result::DomainResult;
+use crate::domain::result::{DomainError, DomainResult};
 use crate::usecase::data_object::team::TeamInfo;
 use crate::usecase::data_object::user::UserInfo;
-use poprako_util::i18n::trl;
 
 /// Public-facing representation of a team member.
 #[derive(Debug, Serialize, ToSchema)]

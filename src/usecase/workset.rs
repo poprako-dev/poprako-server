@@ -1,14 +1,14 @@
 use futures_util::FutureExt as _;
-use poprako_util::page::Page;
 use tracing::instrument;
+
+use poprako_util::page::Page;
 
 use crate::domain::complex::workset::WorksetComplex;
 use crate::domain::external::image_pool::ImageGet;
 use crate::domain::model::aggr::workset::{WorksetAggr, WorksetForm, WorksetUpdate};
 use crate::domain::query::Transactional;
 use crate::domain::query::team::TeamQueryTransactional;
-use crate::domain::query::workset::WorksetQuery;
-use crate::domain::query::workset::WorksetQueryTransactional;
+use crate::domain::query::workset::{WorksetQuery, WorksetQueryTransactional};
 use crate::usecase::data_object::workset::{
     WorksetCreateParams, WorksetCreateReply, WorksetInfo, WorksetUpdateParams,
 };
@@ -130,8 +130,7 @@ mod tests {
     use crate::domain::model::aggr::team::TeamAggr;
     use crate::domain::query::workset::WorksetQuery;
     use crate::harness::tests::TestHarness;
-    use crate::test_util::is_expected_argument;
-    use crate::test_util::usecase_is_expected_argument;
+    use crate::test_util::{is_expected_argument, usecase_is_expected_argument};
     use crate::usecase::data_object::workset::{WorksetCreateParams, WorksetUpdateParams};
 
     fn make_test_team(id: &str) -> TeamAggr {

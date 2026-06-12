@@ -1,13 +1,11 @@
-use axum::Json;
 use axum::extract::{Extension, Path, Query, State};
 use axum::http::StatusCode;
+use axum::Json;
 use tracing::instrument;
 
 use poprako_util::i18n::trl;
 
-use crate::api::http::result::Accept as _;
-use crate::api::http::result::HttpError;
-use crate::api::http::result::HttpResult;
+use crate::api::http::result::{Accept as _, HttpError, HttpResult};
 use crate::domain::model::aggr::user::UserToken;
 use crate::domain::result::ExpectedVariant;
 use crate::harness::Harness;

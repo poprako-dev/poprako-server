@@ -1,11 +1,11 @@
+use std::time::Instant;
+
 use axum::extract::Request;
-use axum::middleware::{self, Next, from_fn};
+use axum::middleware::{self, from_fn, Next};
 use futures_util::FutureExt as _;
 use tower::Layer;
 
-use std::time::Instant;
-
-use super::LayerFuture;
+use crate::api::http::middleware::LayerFuture;
 
 type LogLatencyFn = fn(Request, Next) -> LayerFuture;
 type LogLatencyFromFnLayer = middleware::FromFnLayer<LogLatencyFn, (), (Request,)>;

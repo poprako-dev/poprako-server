@@ -1,15 +1,13 @@
-use axum::Json;
 use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
+use axum::Json;
 use serde::Deserialize;
 use tracing::instrument;
 use utoipa::IntoParams;
 
 use poprako_util::page::Page;
 
-use crate::api::http::result::Accept as _;
-use crate::api::http::result::HttpError;
-use crate::api::http::result::HttpResult;
+use crate::api::http::result::{Accept as _, HttpError, HttpResult};
 use crate::harness::Harness;
 use crate::usecase;
 use crate::usecase::data_object::workset::{

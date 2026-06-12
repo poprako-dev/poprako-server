@@ -1,10 +1,8 @@
 use async_trait::async_trait;
 use diesel::prelude::*;
-use diesel_async::AsyncPgConnection;
-use diesel_async::RunQueryDsl;
+use diesel_async::{AsyncPgConnection, RunQueryDsl};
 use time::OffsetDateTime;
-use tracing::Level;
-use tracing::instrument;
+use tracing::{instrument, Level};
 
 use poprako_util::i18n::trl;
 
@@ -12,8 +10,7 @@ use crate::domain::model::aggr::member_invitation::MemberInvitationAggr;
 use crate::domain::query::member_invitation::MemberInvitationQueryTransactional;
 use crate::domain::result::{DomainError, DomainResult};
 use crate::infra::query::RdbQueryTransactional;
-use crate::infra::query::entity::member_invitation::MemberInvitationAspect;
-use crate::infra::query::entity::member_invitation::MemberInvitationRow;
+use crate::infra::query::entity::member_invitation::{MemberInvitationAspect, MemberInvitationRow};
 use crate::infra::query::schema::t_member_invitation::dsl::*;
 
 /// SELECT ... FOR UPDATE: returns the pending invitation for the given code

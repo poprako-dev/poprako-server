@@ -1,12 +1,10 @@
-use axum::Json;
 use axum::extract::{Extension, Path, State};
 use axum::http::StatusCode;
+use axum::Json;
 use tracing::instrument;
 
 use crate::api::http::handler::util::ensure_current_user;
-use crate::api::http::result::Accept as _;
-use crate::api::http::result::HttpError;
-use crate::api::http::result::HttpResult;
+use crate::api::http::result::{Accept as _, HttpError, HttpResult};
 use crate::domain::model::aggr::user::UserToken;
 use crate::harness::Harness;
 use crate::usecase;

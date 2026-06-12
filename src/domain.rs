@@ -1,7 +1,6 @@
 pub mod complex;
 pub mod effect;
 pub mod external;
-pub mod local_message;
 pub mod model;
 pub mod query;
 
@@ -88,8 +87,7 @@ pub mod result {
         // expected_authentication_variant(DomainError::expected_authentication)(positive): expected authentication errors should carry the Authentication variant and message.
         // expected_forbidden_variant(DomainError::expected_forbidden)(positive): expected forbidden errors should carry the Forbidden variant and message.
         // expected_conflict_variant(DomainError::expected_conflict)(positive): expected conflict errors should carry the Conflict variant and message.
-        use super::DomainError;
-        use super::ExpectedVariant;
+        use super::*;
 
         #[test]
         fn expected_argument_variant() {
