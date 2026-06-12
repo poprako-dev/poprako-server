@@ -1,9 +1,4 @@
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
-use time::Duration;
-use time::OffsetDateTime;
-
-use crate::domain::model::aggr::local_message::{LocalMessageAggr, LocalMessageForm};
 
 pub const IMAGE_TOPIC: &str = "local_message_topic:image";
 
@@ -16,10 +11,11 @@ pub enum ImageResourceKind {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ImageLocalMessage {
     CheckUploaded {
+        // FIXME: Necessary?
         resource_kind: ImageResourceKind,
         resource_id: String,
         object_key: String,
-        avatar_version: i64,
+        image_version: i64,
     },
     Delete {
         object_key: String,
@@ -31,29 +27,18 @@ impl ImageLocalMessage {
         resource_kind: ImageResourceKind,
         resource_id: String,
         object_key: String,
-        avatar_version: i64,
+        image_version: i64,
     ) -> Self {
         Self::CheckUploaded {
             resource_kind,
             resource_id,
             object_key,
-            avatar_version,
+            image_version,
         }
     }
 
     pub fn delete(object_key: String) -> Self {
         Self::Delete { object_key }
-    }
-
-    pub fn into_form(self, delay: Duration) -> LocalMessageForm {
-        let payload = serde_json::to_value(self).unwrap_or(Value::Null);
-
-        LocalMessageForm {
-            id: LocalMessageAggr::generate_id(),
-            topic: IMAGE_TOPIC.to_string(),
-            payload,
-            visible_at: OffsetDateTime::now_utc() + delay,
-        }
     }
 }
 

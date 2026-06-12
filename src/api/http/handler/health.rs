@@ -4,9 +4,7 @@ use axum::extract::ConnectInfo;
 use axum::http::StatusCode;
 use tracing::instrument;
 
-use crate::api::http::result::Accept as _;
-use crate::api::http::result::HttpError;
-use crate::api::http::result::HttpResult;
+use crate::api::http::result::{Accept as _, HttpError, HttpResult};
 
 #[utoipa::path(
     get,

@@ -1,7 +1,8 @@
 use futures_util::FutureExt as _;
+use tracing::instrument;
+
 use poprako_util::i18n::trl;
 use poprako_util::page::Page;
-use tracing::instrument;
 
 use crate::domain::external::image_pool::ImageGet;
 use crate::domain::model::aggr::member::{MemberAggr, MemberForm, MemberRoleUpdate};
@@ -9,8 +10,7 @@ use crate::domain::model::aggr::user::UserToken;
 use crate::domain::model::value::member_inclusion::MemberInclusion;
 use crate::domain::model::value::role::{RoleFlag, RoleMask};
 use crate::domain::query::Transactional;
-use crate::domain::query::member::MemberQuery;
-use crate::domain::query::member::MemberQueryTransactional;
+use crate::domain::query::member::{MemberQuery, MemberQueryTransactional};
 use crate::domain::query::member_invitation::MemberInvitationQueryTransactional;
 use crate::domain::query::team::TeamQueryTransactional;
 use crate::domain::query::user::UserQueryTransactional;
@@ -293,8 +293,11 @@ mod tests {
     // create_target_user_not_found_fails(create)(negative): nonexistent target user should fail.
     // create_target_team_not_found_fails(create)(negative): nonexistent target team should fail.
     // create_duplicate_user_team_returns_conflict(create)(negative): duplicate user+team pair should return conflict.
+    // create_invalid_role_mask_returns_argument(create)(negative): invalid (zero) role mask should return argument error.
     // list_team_member_succeeds(list_infos)(positive): team member should be able to list.
     // list_nonmember_returns_forbidden(list_infos)(negative): non-member should get forbidden.
+    // list_infos_invalid_negative_offset(validate)(negative): negative offset should return argument error.
+    // list_infos_invalid_limit_zero(validate)(negative): limit 0 should return argument error.
     // list_includes_user_fills_user(list_infos)(positive): includes=user should fill the user field.
     // list_includes_team_fills_team(list_infos)(positive): includes=team should fill the team field.
     // list_infos_user_filter_returns_user_members(list_infos)(positive): user filter should return only that user's memberships.
@@ -321,10 +324,10 @@ mod tests {
     use crate::domain::model::value::role::{RoleFlag, RoleMask};
     use crate::domain::query::member::MemberQuery;
     use crate::harness::tests::TestHarness;
-    use crate::test_util::is_expected_argument;
-    use crate::test_util::usecase_is_expected_argument;
-    use crate::test_util::usecase_is_expected_conflict;
-    use crate::test_util::usecase_is_expected_forbidden;
+    use crate::test_util::{
+        is_expected_argument, usecase_is_expected_argument, usecase_is_expected_conflict,
+        usecase_is_expected_forbidden,
+    };
     use crate::usecase::data_object::member::{
         CreateParams, JoinParams, ListParams, RoleUpdateParams,
     };
@@ -584,6 +587,173 @@ mod tests {
         .unwrap();
 
         assert!(usecase_is_expected_conflict(&err));
+    }
+
+    #[tokio::test]
+    async fn create_invalid_role_mask_returns_argument() {
+        let harn = TestHarness::default();
+
+        let err = create(
+            &harn,
+            &sadmin_token(),
+            CreateParams {
+                user_id: "u-1".into(),
+                team_id: "team-1".into(),
+                role_mask: 0,
+            },
+        )
+        .await
+        .err()
+        .unwrap();
+
+        assert!(usecase_is_expected_argument(&err));
+    }
+
+    #[tokio::test]
+    async fn list_infos_invalid_negative_offset() {
+        let harn = TestHarness::default();
+
+        let err = super::list_infos(
+            &harn,
+            &user_token("u-1"),
+            &ListParams {
+                team_id: Some("team-1".into()),
+                user_id: None,
+                offset: Some(-1),
+                ..Default::default()
+            },
+        )
+        .await
+        .err()
+        .unwrap();
+
+        assert!(usecase_is_expected_argument(&err));
+    }
+
+    #[tokio::test]
+    async fn list_infos_invalid_limit_zero() {
+        let harn = TestHarness::default();
+
+        let err = super::list_infos(
+            &harn,
+            &user_token("u-1"),
+            &ListParams {
+                team_id: Some("team-1".into()),
+                user_id: None,
+                limit: Some(0),
+                ..Default::default()
+            },
+        )
+        .await
+        .err()
+        .unwrap();
+
+        assert!(usecase_is_expected_argument(&err));
+    }
+
+    #[tokio::test]
+    async fn list_infos_invalid_role_filter() {
+        let harn = TestHarness::default();
+
+        let err = super::list_infos(
+            &harn,
+            &user_token("u-1"),
+            &ListParams {
+                team_id: Some("team-1".into()),
+                user_id: None,
+                role: Some(0b11),
+                ..Default::default()
+            },
+        )
+        .await
+        .err()
+        .unwrap();
+
+        assert!(usecase_is_expected_argument(&err));
+    }
+
+    #[tokio::test]
+    async fn list_infos_with_keyword_and_role() {
+        let harn = TestHarness::default();
+        harn.seed_user(make_user("u-1", "qid-1", false), make_credential("u-1"));
+        harn.seed_team(make_team("team-1"));
+        harn.seed_member(make_test_member(
+            "m-1",
+            "u-1",
+            "team-1",
+            RoleFlag::Admin.into(),
+        ));
+        harn.seed_member(make_test_member(
+            "m-2",
+            "u-2",
+            "team-1",
+            RoleFlag::Translator.into(),
+        ));
+
+        let list = super::list_infos(
+            &harn,
+            &user_token("u-1"),
+            &ListParams {
+                team_id: Some("team-1".into()),
+                user_id: None,
+                keyword: Some("TestUser".into()),
+                role: Some(u32::from(RoleFlag::Admin)),
+                offset: Some(0),
+                limit: Some(10),
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap();
+        // m-1 has Admin role and nickname "TestUser", m-2 has Translator role
+        assert_eq!(list.len(), 1);
+        assert_eq!(list[0].id, "m-1");
+    }
+
+    #[tokio::test]
+    async fn list_infos_with_both_ids_uses_user_filter() {
+        let harn = TestHarness::default();
+        harn.seed_user(make_user("u-1", "qid-1", false), make_credential("u-1"));
+        harn.seed_team(make_team("team-1"));
+        harn.seed_member(make_test_member(
+            "m-1",
+            "u-1",
+            "team-1",
+            RoleFlag::Admin.into(),
+        ));
+
+        let list = super::list_infos(
+            &harn,
+            &user_token("u-1"),
+            &ListParams {
+                team_id: Some("team-1".into()),
+                user_id: Some("u-1".into()),
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap();
+        assert_eq!(list.len(), 1);
+    }
+
+    #[tokio::test]
+    async fn list_infos_missing_both_ids_returns_argument() {
+        let harn = TestHarness::default();
+
+        let err = super::list_infos(
+            &harn,
+            &user_token("u-1"),
+            &ListParams {
+                team_id: None,
+                user_id: None,
+                ..Default::default()
+            },
+        )
+        .await
+        .err()
+        .unwrap();
+
+        assert!(usecase_is_expected_argument(&err));
     }
 
     #[tokio::test]

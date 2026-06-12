@@ -38,12 +38,11 @@ mod tests {
     // verify_code_mismatch_case(MemberInvitationAggr::verify_code)(negative): verification should fail when letter case differs.
     // verify_code_mismatch_prefix(MemberInvitationAggr::verify_code)(negative): verification should fail when the input has extra characters.
 
-    use super::MemberInvitationAggr;
+    use super::*;
 
     use time::OffsetDateTime;
 
-    use crate::domain::model::value::role::RoleFlag;
-    use crate::domain::model::value::role::RoleMask;
+    use crate::domain::model::value::role::{RoleFlag, RoleMask};
 
     fn dummy_aggr(code: &str) -> MemberInvitationAggr {
         let now = OffsetDateTime::now_utc();

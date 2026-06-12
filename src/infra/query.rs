@@ -54,13 +54,13 @@ macro_rules! submit_query {
 }
 
 use anyhow::Context as _;
+
 use async_trait::async_trait;
 use diesel_async::AsyncPgConnection;
 use diesel_async::pooled_connection::AsyncDieselConnectionManager;
 use diesel_async::pooled_connection::deadpool::Pool;
 use futures_util::future::BoxFuture;
-use tracing::Level;
-use tracing::instrument;
+use tracing::{instrument, Level};
 
 use poprako_util::i18n::trl;
 

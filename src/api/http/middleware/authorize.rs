@@ -1,22 +1,20 @@
 use axum::extract::{Request, State};
 use axum::http::header;
-use axum::middleware::{self, Next, from_fn_with_state};
+use axum::middleware::{self, from_fn_with_state, Next};
 use axum::response::IntoResponse;
 use futures_util::FutureExt as _;
 use tower::Layer;
-use tracing::Instrument;
+use tracing::Instrument as _;
 
 use poprako_util::i18n::trl;
 
-use crate::api::http::auth_token::AUTHORIZATION_BEARER_PREFIX;
-use crate::api::http::auth_token::AUTHORIZATION_COOKIE_NAME;
+use crate::api::http::auth_token::{AUTHORIZATION_BEARER_PREFIX, AUTHORIZATION_COOKIE_NAME};
+use crate::api::http::middleware::LayerFuture;
 use crate::api::http::result::HttpError;
 use crate::domain::complex::user::UserComplex;
 use crate::domain::result::ExpectedVariant;
 use crate::harness::Harness;
 use crate::usecase;
-
-use super::LayerFuture;
 
 type LayerFn = fn(State<Harness>, Request, Next) -> LayerFuture;
 type FromFnLayer = middleware::FromFnLayer<LayerFn, Harness, (State<Harness>, Request)>;

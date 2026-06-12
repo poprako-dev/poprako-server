@@ -1,13 +1,11 @@
-use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
-use cookie::Cookie;
-use cookie::SameSite;
+use axum::Json;
+use cookie::{Cookie, SameSite};
 use tracing::instrument;
 
 use crate::api::http::auth_token::AUTHORIZATION_COOKIE_NAME;
-use crate::api::http::result::Accept as _;
-use crate::api::http::result::{HttpError, HttpResult};
+use crate::api::http::result::{Accept as _, HttpError, HttpResult};
 use crate::harness::Harness;
 use crate::usecase;
 use crate::usecase::data_object::user::{SignInParams, SignInReply, SignUpParams, SignUpReply};

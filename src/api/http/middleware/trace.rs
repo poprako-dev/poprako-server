@@ -1,7 +1,6 @@
 use axum::http::HeaderName;
-use tower::Layer;
-use tower::ServiceBuilder;
 use tower::layer::util::{Identity, Stack};
+use tower::{Layer, ServiceBuilder};
 use tower_http::request_id::{
     MakeRequestId, PropagateRequestIdLayer, RequestId, SetRequestIdLayer,
 };

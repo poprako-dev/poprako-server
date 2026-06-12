@@ -146,6 +146,8 @@ impl Transactional for MemoryMockQuery {
 mod tests {
     // transaction_scoped_restores_snapshot_on_error(Transactional::transaction_scoped)(negative): transaction errors should restore the pre-transaction snapshot.
 
+    use super::*;
+
     use futures_util::FutureExt as _;
 
     use crate::domain::model::aggr::user::{UserAggr, UserForm};

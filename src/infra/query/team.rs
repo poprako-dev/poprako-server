@@ -1,23 +1,17 @@
 use async_trait::async_trait;
 use diesel::prelude::*;
-use diesel_async::AsyncPgConnection;
-use diesel_async::RunQueryDsl;
+use diesel_async::{AsyncPgConnection, RunQueryDsl};
 use time::OffsetDateTime;
-use tracing::Level;
-use tracing::instrument;
+use tracing::{instrument, Level};
 
 use poprako_util::i18n::trl;
 use poprako_util::page::Page;
 
 use crate::domain::model::aggr::team::{TeamAggr, TeamAvatarReservation, TeamForm, TeamInfoUpdate};
-use crate::domain::query::team::TeamQuery;
-use crate::domain::query::team::TeamQueryTransactional;
+use crate::domain::query::team::{TeamQuery, TeamQueryTransactional};
 use crate::domain::result::{DomainError, DomainResult};
-use crate::infra::query::RdbQuery;
-use crate::infra::query::RdbQueryTransactional;
-use crate::infra::query::entity::team::TeamAspect;
-use crate::infra::query::entity::team::TeamEntry;
-use crate::infra::query::entity::team::TeamRow;
+use crate::infra::query::{RdbQuery, RdbQueryTransactional};
+use crate::infra::query::entity::team::{TeamAspect, TeamEntry, TeamRow};
 use crate::infra::query::schema::t_team::dsl::*;
 use crate::submit_query;
 

@@ -7,8 +7,7 @@ use poprako_util::page::Page;
 use crate::domain::model::aggr::member::{MemberAggr, MemberForm, MemberRoleUpdate};
 use crate::domain::model::value::member_inclusion::MemberInclusion;
 use crate::domain::model::value::role::RoleFlag;
-use crate::domain::query::member::MemberQuery;
-use crate::domain::query::member::MemberQueryTransactional;
+use crate::domain::query::member::{MemberQuery, MemberQueryTransactional};
 use crate::domain::result::{DomainError, DomainResult};
 use crate::infra::query::memory_mock::{MemoryMockQuery, MemoryMockQueryTransactional};
 
@@ -322,6 +321,7 @@ mod tests {
     // delete_missing_returns_error(MemberQueryTransactional::delete)(negative): deleting a missing member should fail.
 
     use futures_util::FutureExt as _;
+
     use time::OffsetDateTime;
 
     use poprako_util::page::Page;
@@ -332,8 +332,7 @@ mod tests {
     use crate::domain::query::Transactional;
     use crate::domain::query::member::{MemberQuery, MemberQueryTransactional};
     use crate::infra::query::memory_mock::MemoryMockQuery;
-    use crate::test_util::is_expected_argument;
-    use crate::test_util::is_expected_conflict;
+    use crate::test_util::{is_expected_argument, is_expected_conflict};
 
     fn now() -> OffsetDateTime {
         OffsetDateTime::now_utc()

@@ -1,12 +1,7 @@
-use axum::Router;
 use axum::routing::{get, post, put};
+use axum::Router;
 
-use crate::api::http::handler::authorization;
-use crate::api::http::handler::health;
-use crate::api::http::handler::member;
-use crate::api::http::handler::team;
-use crate::api::http::handler::user;
-use crate::api::http::handler::workset;
+use crate::api::http::handler::{authorization, health, member, team, user, workset};
 use crate::api::http::middleware::authorize::AuthorizeLayer;
 use crate::api::http::middleware::latency::LogLatencyLayer;
 use crate::api::http::middleware::trace::IdTraceLayer;

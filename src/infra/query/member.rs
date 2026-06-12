@@ -2,11 +2,9 @@ use std::collections::HashMap;
 
 use async_trait::async_trait;
 use diesel::prelude::*;
-use diesel_async::AsyncPgConnection;
-use diesel_async::RunQueryDsl;
+use diesel_async::{AsyncPgConnection, RunQueryDsl};
 use time::OffsetDateTime;
-use tracing::Level;
-use tracing::instrument;
+use tracing::{instrument, Level};
 
 use poprako_util::i18n::trl;
 use poprako_util::page::Page;
@@ -16,14 +14,10 @@ use crate::domain::model::aggr::team::TeamAggr;
 use crate::domain::model::aggr::user::UserAggr;
 use crate::domain::model::value::member_inclusion::MemberInclusion;
 use crate::domain::model::value::role::RoleFlag;
-use crate::domain::query::member::MemberQuery;
-use crate::domain::query::member::MemberQueryTransactional;
+use crate::domain::query::member::{MemberQuery, MemberQueryTransactional};
 use crate::domain::result::{DomainError, DomainResult};
-use crate::infra::query::RdbQuery;
-use crate::infra::query::RdbQueryTransactional;
-use crate::infra::query::entity::member::MemberAspect;
-use crate::infra::query::entity::member::MemberEntry;
-use crate::infra::query::entity::member::MemberRow;
+use crate::infra::query::{RdbQuery, RdbQueryTransactional};
+use crate::infra::query::entity::member::{MemberAspect, MemberEntry, MemberRow};
 use crate::infra::query::entity::team::TeamRow;
 use crate::infra::query::entity::user::UserRow;
 use crate::infra::query::schema::t_member::dsl::*;
@@ -222,8 +216,7 @@ pub async fn exist_by_user_and_team_id(
     user_id: &str,
     team_id: &str,
 ) -> DomainResult<bool> {
-    use diesel::dsl::exists;
-    use diesel::dsl::select;
+    use diesel::dsl::{exists, select};
 
     let exists_result: bool = select(exists(
         t_member.filter(f_user_id.eq(user_id).and(f_team_id.eq(team_id))),

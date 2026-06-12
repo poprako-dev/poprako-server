@@ -1,12 +1,15 @@
 use std::sync::Arc;
 use std::time::Duration;
+
 use time::OffsetDateTime;
 
 use futures_util::FutureExt as _;
 
 use crate::domain::external::image_pool::{ImageDelete, ImageInspect};
-use crate::domain::local_message::message::{IMAGE_TOPIC, ImageLocalMessage, ImageResourceKind};
 use crate::domain::model::aggr::local_message::{LocalMessageAggr, LocalMessageMark};
+use crate::domain::model::value::local_message::{
+    IMAGE_TOPIC, ImageLocalMessage, ImageResourceKind,
+};
 use crate::domain::query::Transactional;
 use crate::domain::query::local_message::{LocalMessageQuery, LocalMessageQueryTransactional};
 use crate::domain::query::team::TeamQueryTransactional;
@@ -89,14 +92,14 @@ impl LocalMessageIngestor {
                 resource_kind,
                 resource_id,
                 object_key,
-                avatar_version,
+                image_version,
             } => {
                 self.handle_image_check_uploaded(
                     &message,
                     resource_kind,
                     &resource_id,
                     &object_key,
-                    avatar_version,
+                    image_version,
                 )
                 .await
             }
