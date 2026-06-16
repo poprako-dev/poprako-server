@@ -2342,6 +2342,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "poprako-transactional"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "futures",
+]
+
+[[package]]
 name = "poprako-util"
 version = "0.1.0"
 dependencies = [

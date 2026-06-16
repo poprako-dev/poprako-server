@@ -1,5 +1,5 @@
 [workspace]
-members = [".", "poprako-macro", "poprako-util"]
+members = [".", "poprako-macro", "poprako-transactional", "poprako-util"]
 resolver = "3"
 
 [package]
