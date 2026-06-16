@@ -1,8 +1,8 @@
 pub mod result;
 
+use crate::backend::Backend;
+use crate::handle::Handle as _;
 use crate::manager::result::Error as ScopedError;
-use crate::proxy::Proxy;
-use crate::state::{Backend, StateTransactional};
 use crate::util::DynFut;
 
 pub struct Manager<B> {
@@ -19,45 +19,28 @@ impl<B> Manager<B>
 where
     B: Backend,
 {
-    pub async fn transactional_scoped<S, I, T, E, F>(
+    pub async fn transactional_scoped<S, W, T, E, F>(
         &self,
-        init: I,
         func: F,
-    ) -> Result<T, ScopedError<B::Error, S::Error, E>>
+    ) -> Result<T, ScopedError<B::Error, E>>
     where
-        S: StateTransactional,
-        I: FnOnce(B::Handle) -> S,
-        F: for<'s> FnOnce(&'s mut Proxy<S>) -> DynFut<'s, Result<T, E>>,
+        F: for<'s> FnOnce(&'s mut B::Handle) -> DynFut<'s, Result<T, E>>,
     {
-        let handle = self.backend.begin().await.map_err(ScopedError::Begin)?;
+        // FIXME: cancellation drop.
+        let mut handle = self.backend.begin().await.map_err(ScopedError::Begin)?;
 
-        let state = init(handle);
+        let result = func(&mut handle).await;
 
-        let mut proxy = Proxy::new(state);
-
-        let result = func(&mut proxy).await;
-
-        let rollback = proxy.rollback();
-        let state = proxy.into_state();
-
-        let output = match result {
-            Ok(o) => o,
-            Err(e) => {
-                if let Err(re) = state.rollback().await {
-                    return Err(ScopedError::Rollback(Some(e), Some(re)));
-                }
-                return Err(ScopedError::StepError(e));
-            }
-        };
-
-        if rollback {
-            if let Err(re) = state.rollback().await {
+        let Ok(output) = result else {
+            if let Err(re) = handle.rollback().await {
                 return Err(ScopedError::Rollback(None, Some(re)));
             }
-            return Err(ScopedError::Rollback(None, None));
-        }
+            return Err(ScopedError::StepError(result.err().unwrap()));
+        };
 
-        state.commit().await.map_err(ScopedError::Commit)?;
+        handle.commit().await.map_err(ScopedError::Commit)?;
+
+        // FIXME: cancellation drop.
 
         Ok(output)
     }

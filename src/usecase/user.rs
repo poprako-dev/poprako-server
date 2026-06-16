@@ -266,6 +266,7 @@ where
 
         async move {
             UserQueryTransactional::touch_last_active(query, &id).await?;
+
             MemberQueryTransactional::touch_last_active(query, &id).await?;
 
             Ok(())
@@ -313,7 +314,9 @@ mod tests {
     use crate::domain::model::event::Event;
     use crate::domain::model::value::role::{RoleFlag, RoleMask};
     use crate::harness::tests::TestHarness;
-    use crate::test_util::{usecase_is_expected_argument, usecase_is_expected_conflict, usecase_is_unrecoverable};
+    use crate::test_util::{
+        usecase_is_expected_argument, usecase_is_expected_conflict, usecase_is_unrecoverable,
+    };
     use crate::usecase::data_object::user::SignUpParams;
 
     fn invitation(code: &str, invitee_qid: &str, pending: bool) -> MemberInvitationAggr {
