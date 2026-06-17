@@ -7,8 +7,8 @@ use tracing::instrument;
 use crate::api::http::auth_token::AUTHORIZATION_COOKIE_NAME;
 use crate::api::http::result::{Accept as _, HttpError, HttpResult};
 use crate::harness::Harness;
-use crate::usecase;
-use crate::usecase::data_object::user::{SignInParams, SignInReply, SignUpParams, SignUpReply};
+use crate::usecase_legacy;
+use crate::usecase_legacy::data_object::user::{SignInParams, SignInReply, SignUpParams, SignUpReply};
 
 #[utoipa::path(
     post,
@@ -26,7 +26,7 @@ pub async fn sign_up(
     State(harn): State<Harness>,
     Json(params): Json<SignUpParams>,
 ) -> HttpResult<SignUpReply> {
-    let reply = usecase::user::sign_up(&harn, params).await?;
+    let reply = usecase_legacy::user::sign_up(&harn, params).await?;
 
     let cookie = Cookie::build((AUTHORIZATION_COOKIE_NAME, format!("Bearer {}", reply.token)))
         .path("/")
@@ -55,7 +55,7 @@ pub async fn sign_in(
     State(harn): State<Harness>,
     Json(params): Json<SignInParams>,
 ) -> HttpResult<SignInReply> {
-    let reply = usecase::user::sign_in(&harn, params).await?;
+    let reply = usecase_legacy::user::sign_in(&harn, params).await?;
 
     let cookie = Cookie::build((AUTHORIZATION_COOKIE_NAME, format!("Bearer {}", reply.token)))
         .path("/")

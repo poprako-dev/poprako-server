@@ -1,5 +1,5 @@
-use crate::domain::query::QueryTransactional;
-use crate::domain::query::workset::WorksetQueryTransactional;
+use crate::domain::query_legacy::QueryTransactional;
+use crate::domain::query_legacy::workset::WorksetQueryTransactional;
 use crate::domain::result::DomainResult;
 
 pub struct WorksetComplex;

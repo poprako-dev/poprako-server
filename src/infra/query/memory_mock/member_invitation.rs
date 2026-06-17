@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use poprako_util::i18n::trl;
 
 use crate::domain::model::aggr::member_invitation::MemberInvitationAggr;
-use crate::domain::query::member_invitation::MemberInvitationQueryTransactional;
+use crate::domain::query_legacy::member_invitation::MemberInvitationQueryTransactional;
 use crate::domain::result::{DomainError, DomainResult};
 use crate::infra::query::memory_mock::MemoryMockQueryTransactional;
 
@@ -57,8 +57,8 @@ mod tests {
 
     use crate::domain::model::aggr::member_invitation::MemberInvitationAggr;
     use crate::domain::model::value::role::{RoleFlag, RoleMask};
-    use crate::domain::query::Transactional;
-    use crate::domain::query::member_invitation::MemberInvitationQueryTransactional;
+    use crate::domain::query_legacy::Transactional;
+    use crate::domain::query_legacy::member_invitation::MemberInvitationQueryTransactional;
     use crate::infra::query::memory_mock::MemoryMockQuery;
     use crate::test_util::is_expected_argument;
 

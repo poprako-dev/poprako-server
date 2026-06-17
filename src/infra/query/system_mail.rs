@@ -4,7 +4,7 @@ use time::OffsetDateTime;
 use tracing::{instrument, Level};
 
 use crate::domain::model::aggr::system_mail::SystemMailForm;
-use crate::domain::query::system_mail::SystemMailQuery;
+use crate::domain::query_legacy::system_mail::SystemMailQuery;
 use crate::domain::result::DomainResult;
 use crate::infra::query::RdbQuery;
 use crate::infra::query::entity::system_mail::SystemMailEntry;

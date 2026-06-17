@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use time::OffsetDateTime;
 
 use crate::domain::model::aggr::system_mail::{SystemMailAggr, SystemMailForm};
-use crate::domain::query::system_mail::SystemMailQuery;
+use crate::domain::query_legacy::system_mail::SystemMailQuery;
 use crate::domain::result::DomainResult;
 use crate::infra::query::memory_mock::MemoryMockQuery;
 
@@ -32,7 +32,7 @@ mod tests {
     // send_saves_aggregate(SystemMailQuery::send)(positive): sending system mail should save the aggregate in memory.
 
     use crate::domain::model::aggr::system_mail::{SystemMailAggr, SystemMailForm};
-    use crate::domain::query::system_mail::SystemMailQuery;
+    use crate::domain::query_legacy::system_mail::SystemMailQuery;
     use crate::infra::query::memory_mock::MemoryMockQuery;
 
     #[tokio::test]

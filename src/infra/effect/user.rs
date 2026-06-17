@@ -8,8 +8,8 @@ use poprako_util::i18n::{trl, trl_kv};
 
 use crate::domain::model::aggr::system_mail::{SystemMailAggr, SystemMailForm};
 use crate::domain::model::event::user::UserSignedUpEvent;
-use crate::domain::query::system_mail::SystemMailQuery;
-use crate::domain::query::team::TeamQuery;
+use crate::domain::query_legacy::system_mail::SystemMailQuery;
+use crate::domain::query_legacy::team::TeamQuery;
 
 /// Notifies the invitor via system mail that a new user has registered using
 /// their invitation code.

@@ -6,8 +6,13 @@ pub mod infra;
 
 pub use forward_ref::ForwardRef;
 
-mod domain;
+mod atom;
+mod part;
+mod result;
 mod usecase;
+
+mod domain;
+mod usecase_legacy;
 
 #[cfg(test)]
 mod test_util;

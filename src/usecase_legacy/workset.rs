@@ -6,13 +6,13 @@ use poprako_util::page::Page;
 use crate::domain::complex::workset::WorksetComplex;
 use crate::domain::external::image_pool::ImageGet;
 use crate::domain::model::aggr::workset::{WorksetAggr, WorksetForm, WorksetUpdate};
-use crate::domain::query::Transactional;
-use crate::domain::query::team::TeamQueryTransactional;
-use crate::domain::query::workset::{WorksetQuery, WorksetQueryTransactional};
-use crate::usecase::data_object::workset::{
+use crate::domain::query_legacy::Transactional;
+use crate::domain::query_legacy::team::TeamQueryTransactional;
+use crate::domain::query_legacy::workset::{WorksetQuery, WorksetQueryTransactional};
+use crate::usecase_legacy::data_object::workset::{
     WorksetCreateParams, WorksetCreateReply, WorksetInfo, WorksetUpdateParams,
 };
-use crate::usecase::result::UseCaseResult;
+use crate::usecase_legacy::result::UseCaseResult;
 
 async fn to_infos<H>(worksets: Vec<WorksetAggr>, harn: &H) -> Vec<WorksetInfo>
 where
@@ -128,10 +128,10 @@ mod tests {
     use time::OffsetDateTime;
 
     use crate::domain::model::aggr::team::TeamAggr;
-    use crate::domain::query::workset::WorksetQuery;
+    use crate::domain::query_legacy::workset::WorksetQuery;
     use crate::harness::tests::TestHarness;
     use crate::test_util::{is_expected_argument, usecase_is_expected_argument};
-    use crate::usecase::data_object::workset::{WorksetCreateParams, WorksetUpdateParams};
+    use crate::usecase_legacy::data_object::workset::{WorksetCreateParams, WorksetUpdateParams};
 
     fn make_test_team(id: &str) -> TeamAggr {
         let now = OffsetDateTime::now_utc();

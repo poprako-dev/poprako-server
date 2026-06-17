@@ -18,7 +18,7 @@ use crate::domain::model::aggr::system_mail::SystemMailAggr;
 use crate::domain::model::aggr::team::TeamAggr;
 use crate::domain::model::aggr::user::{UserAggr, UserCredential};
 use crate::domain::model::aggr::workset::WorksetAggr;
-use crate::domain::query::Transactional;
+use crate::domain::query_legacy::Transactional;
 use crate::domain::result::DomainResult;
 
 // ── Shared in-memory state ─────────────────────────────────────────────────
@@ -151,8 +151,8 @@ mod tests {
     use futures_util::FutureExt as _;
 
     use crate::domain::model::aggr::user::{UserAggr, UserForm};
-    use crate::domain::query::Transactional;
-    use crate::domain::query::user::UserQueryTransactional;
+    use crate::domain::query_legacy::Transactional;
+    use crate::domain::query_legacy::user::UserQueryTransactional;
     use crate::domain::result::DomainError;
     use crate::infra::query::memory_mock::MemoryMockQuery;
 

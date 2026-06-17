@@ -8,7 +8,7 @@ use poprako_util::i18n::trl;
 use poprako_util::page::Page;
 
 use crate::domain::model::aggr::workset::{WorksetAggr, WorksetForm, WorksetUpdate};
-use crate::domain::query::workset::{WorksetQuery, WorksetQueryTransactional};
+use crate::domain::query_legacy::workset::{WorksetQuery, WorksetQueryTransactional};
 use crate::domain::result::{DomainError, DomainResult};
 use crate::infra::query::{RdbQuery, RdbQueryTransactional};
 use crate::infra::query::entity::workset::{WorksetAspect, WorksetEntry, WorksetRow};

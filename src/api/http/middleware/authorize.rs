@@ -14,7 +14,7 @@ use crate::api::http::result::HttpError;
 use crate::domain::complex::user::UserComplex;
 use crate::domain::result::ExpectedVariant;
 use crate::harness::Harness;
-use crate::usecase;
+use crate::usecase_legacy;
 
 type LayerFn = fn(State<Harness>, Request, Next) -> LayerFuture;
 type FromFnLayer = middleware::FromFnLayer<LayerFn, Harness, (State<Harness>, Request)>;
@@ -61,7 +61,7 @@ fn authorize(State(harn): State<Harness>, mut request: Request, next: Next) -> L
         };
 
         // Update last active timestamp on every authenticated request.
-        let _ = usecase::user::touch_last_active(&harn, &user_token.user_id).await;
+        let _ = usecase_legacy::user::touch_last_active(&harn, &user_token.user_id).await;
 
         request.extensions_mut().insert(user_token);
 

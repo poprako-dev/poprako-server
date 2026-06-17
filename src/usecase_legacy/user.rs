@@ -14,17 +14,17 @@ use crate::domain::model::aggr::user::{UserAggr, UserForm, UserInfoUpdate, UserT
 use crate::domain::model::event::user::UserSignedUpEvent;
 use crate::domain::model::event::{Event, EventSink};
 use crate::domain::model::value::local_message::{ImageLocalMessage, ImageResourceKind};
-use crate::domain::query::Transactional;
-use crate::domain::query::local_message::LocalMessageQueryTransactional;
-use crate::domain::query::member::MemberQueryTransactional;
-use crate::domain::query::member_invitation::MemberInvitationQueryTransactional;
-use crate::domain::query::user::{UserQuery, UserQueryTransactional};
+use crate::domain::query_legacy::Transactional;
+use crate::domain::query_legacy::local_message::LocalMessageQueryTransactional;
+use crate::domain::query_legacy::member::MemberQueryTransactional;
+use crate::domain::query_legacy::member_invitation::MemberInvitationQueryTransactional;
+use crate::domain::query_legacy::user::{UserQuery, UserQueryTransactional};
 use crate::domain::result::DomainError;
-use crate::usecase::data_object::user::{
+use crate::usecase_legacy::data_object::user::{
     AvatarMarkUploadedParams, AvatarReserveParams, AvatarReserveReply, InfoUpdateParams,
     SignInParams, SignInReply, SignUpParams, SignUpReply, UserInfo,
 };
-use crate::usecase::result::UseCaseResult;
+use crate::usecase_legacy::result::UseCaseResult;
 
 #[instrument(err, skip(harn))]
 pub async fn sign_up<H>(harn: &H, params: SignUpParams) -> UseCaseResult<SignUpReply>
@@ -317,7 +317,7 @@ mod tests {
     use crate::test_util::{
         usecase_is_expected_argument, usecase_is_expected_conflict, usecase_is_unrecoverable,
     };
-    use crate::usecase::data_object::user::SignUpParams;
+    use crate::usecase_legacy::data_object::user::SignUpParams;
 
     fn invitation(code: &str, invitee_qid: &str, pending: bool) -> MemberInvitationAggr {
         let mask = u32::from(RoleFlag::Admin) | u32::from(RoleFlag::Translator);
@@ -507,16 +507,16 @@ mod user_use_cases_tests {
     use crate::domain::model::aggr::user::{UserAggr, UserCredential, UserToken};
     use crate::domain::model::value::local_message::{ImageLocalMessage, ImageResourceKind};
     use crate::domain::model::value::role::RoleFlag;
-    use crate::domain::query::member::MemberQuery;
+    use crate::domain::query_legacy::member::MemberQuery;
     use crate::harness::tests::TestHarness;
     use crate::test_util::{
         is_expected_argument, usecase_is_expected_argument, usecase_is_unrecoverable,
     };
-    use crate::usecase::data_object::member::CreateParams;
-    use crate::usecase::data_object::user::{
+    use crate::usecase_legacy::data_object::member::CreateParams;
+    use crate::usecase_legacy::data_object::user::{
         AvatarMarkUploadedParams, AvatarReserveParams, InfoUpdateParams, SignInParams,
     };
-    use crate::usecase::member;
+    use crate::usecase_legacy::member;
 
     fn make_test_user(
         id: &str,

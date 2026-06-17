@@ -1,47 +1,20 @@
 pub mod result;
 
-use crate::backend::Backend;
-use crate::handle::Handle as _;
+use async_trait::async_trait;
+
 use crate::manager::result::Error as ScopedError;
-use crate::util::DynFut;
+use crate::util::AsyncFnMark;
 
-pub struct Manager<B> {
-    backend: B,
-}
+#[async_trait]
+pub trait Manager<H> {
+    /// The error type.
+    type Error;
 
-impl<B> Manager<B> {
-    pub fn new(backend: B) -> Self {
-        Self { backend }
-    }
-}
-
-impl<B> Manager<B>
-where
-    B: Backend,
-{
-    pub async fn transactional_scoped<S, W, T, E, F>(
-        &self,
-        func: F,
-    ) -> Result<T, ScopedError<B::Error, E>>
+    async fn transactional_scoped<T, E, F>(&self, f: F) -> Result<T, ScopedError<E, Self::Error>>
     where
-        F: for<'s> FnOnce(&'s mut B::Handle) -> DynFut<'s, Result<T, E>>,
-    {
-        // FIXME: cancellation drop.
-        let mut handle = self.backend.begin().await.map_err(ScopedError::Begin)?;
-
-        let result = func(&mut handle).await;
-
-        let Ok(output) = result else {
-            if let Err(re) = handle.rollback().await {
-                return Err(ScopedError::Rollback(None, Some(re)));
-            }
-            return Err(ScopedError::StepError(result.err().unwrap()));
-        };
-
-        handle.commit().await.map_err(ScopedError::Commit)?;
-
-        // FIXME: cancellation drop.
-
-        Ok(output)
-    }
+        T: Send,
+        E: Send,
+        for<'h> F: AsyncFnOnce(&'h mut H) -> Result<T, E>
+            + AsyncFnMark<&'h mut H, Result<T, E>, Fut: Send>
+            + Send;
 }

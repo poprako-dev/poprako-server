@@ -5,7 +5,7 @@ use poprako_util::time::ToUnixMilli as _;
 
 use crate::domain::external::image_pool::ImageGet;
 use crate::domain::model::aggr::workset::WorksetAggr;
-use crate::usecase::data_object::team::TeamInfo;
+use crate::usecase_legacy::data_object::team::TeamInfo;
 
 /// Public-facing representation of a workset.
 #[derive(Debug, Serialize, ToSchema)]

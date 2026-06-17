@@ -8,8 +8,8 @@ use poprako_util::page::Page;
 
 use crate::api::http::result::{Accept as _, HttpError, HttpResult};
 use crate::harness::Harness;
-use crate::usecase;
-use crate::usecase::data_object::team::{
+use crate::usecase_legacy;
+use crate::usecase_legacy::data_object::team::{
     AvatarMarkUploadedParams, AvatarReserveParams, AvatarReserveReply, CreateParams,
     InfoUpdateParams, TeamInfo,
 };
@@ -30,7 +30,7 @@ pub async fn create(
     State(harn): State<Harness>,
     Json(params): Json<CreateParams>,
 ) -> HttpResult<TeamInfo> {
-    let info = usecase::team::create(&harn, params).await?;
+    let info = usecase_legacy::team::create(&harn, params).await?;
 
     info.accept(StatusCode::CREATED)
 }
@@ -53,7 +53,7 @@ pub async fn get_info(
     State(harn): State<Harness>,
     Path(team_id): Path<String>,
 ) -> HttpResult<TeamInfo> {
-    let info = usecase::team::get_info(&harn, &team_id).await?;
+    let info = usecase_legacy::team::get_info(&harn, &team_id).await?;
 
     info.accept(StatusCode::OK)
 }
@@ -81,7 +81,7 @@ pub async fn list_infos(
         limit: params.limit.unwrap_or(20) as usize,
     };
 
-    let infos = usecase::team::list_infos(&harn, page).await?;
+    let infos = usecase_legacy::team::list_infos(&harn, page).await?;
 
     infos.accept(StatusCode::OK)
 }
@@ -113,7 +113,7 @@ pub async fn update_info(
     Path(team_id): Path<String>,
     Json(params): Json<InfoUpdateParams>,
 ) -> HttpResult<()> {
-    usecase::team::update_info(&harn, team_id, params).await?;
+    usecase_legacy::team::update_info(&harn, team_id, params).await?;
 
     ().accept(StatusCode::OK)
 }
@@ -138,7 +138,7 @@ pub async fn reserve_avatar(
     Path(team_id): Path<String>,
     Json(params): Json<AvatarReserveParams>,
 ) -> HttpResult<AvatarReserveReply> {
-    let reply = usecase::team::reserve_avatar(&harn, team_id, params).await?;
+    let reply = usecase_legacy::team::reserve_avatar(&harn, team_id, params).await?;
 
     reply.accept(StatusCode::OK)
 }
@@ -163,7 +163,7 @@ pub async fn mark_avatar_uploaded(
     Path(team_id): Path<String>,
     Json(params): Json<AvatarMarkUploadedParams>,
 ) -> HttpResult<()> {
-    usecase::team::mark_avatar_uploaded(&harn, team_id, params).await?;
+    usecase_legacy::team::mark_avatar_uploaded(&harn, team_id, params).await?;
 
     ().accept(StatusCode::OK)
 }
@@ -183,7 +183,7 @@ pub async fn mark_avatar_uploaded(
 )]
 #[instrument(err, skip(harn))]
 pub async fn delete(State(harn): State<Harness>, Path(team_id): Path<String>) -> HttpResult<()> {
-    usecase::team::delete(&harn, team_id).await?;
+    usecase_legacy::team::delete(&harn, team_id).await?;
 
     ().accept(StatusCode::OK)
 }

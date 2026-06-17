@@ -2,7 +2,7 @@ use utoipa::OpenApi;
 
 use crate::api::http::handler;
 use crate::api::http::result::HttpError;
-use crate::usecase::data_object;
+use crate::usecase_legacy::data_object;
 
 /// Top-level OpenAPI documentation for the PopRaKo-R HTTP API.
 ///

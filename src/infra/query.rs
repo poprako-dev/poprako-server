@@ -64,7 +64,7 @@ use tracing::{instrument, Level};
 
 use poprako_util::i18n::trl;
 
-use crate::domain::query::Transactional;
+use crate::domain::query_legacy::Transactional;
 use crate::domain::result::{DomainError, DomainResult};
 
 /// Converts a raw Diesel error into a structured [`DomainError`].

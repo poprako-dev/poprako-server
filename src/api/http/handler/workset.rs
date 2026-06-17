@@ -9,8 +9,8 @@ use poprako_util::page::Page;
 
 use crate::api::http::result::{Accept as _, HttpError, HttpResult};
 use crate::harness::Harness;
-use crate::usecase;
-use crate::usecase::data_object::workset::{
+use crate::usecase_legacy;
+use crate::usecase_legacy::data_object::workset::{
     WorksetCreateParams, WorksetCreateReply, WorksetInfo, WorksetUpdateParams,
 };
 
@@ -30,7 +30,7 @@ pub async fn create(
     State(harn): State<Harness>,
     Json(params): Json<WorksetCreateParams>,
 ) -> HttpResult<WorksetCreateReply> {
-    let reply = usecase::workset::create(&harn, params).await?;
+    let reply = usecase_legacy::workset::create(&harn, params).await?;
 
     reply.accept(StatusCode::CREATED)
 }
@@ -64,7 +64,7 @@ pub async fn list_infos(
         limit: params.limit.unwrap_or(20) as usize,
     };
 
-    let infos = usecase::workset::list_infos(&harn, &params.team_id, page).await?;
+    let infos = usecase_legacy::workset::list_infos(&harn, &params.team_id, page).await?;
 
     infos.accept(StatusCode::OK)
 }
@@ -89,7 +89,7 @@ pub async fn update_infos(
     Path(workset_id): Path<String>,
     Json(params): Json<WorksetUpdateParams>,
 ) -> HttpResult<()> {
-    usecase::workset::update_info(&harn, workset_id, params).await?;
+    usecase_legacy::workset::update_info(&harn, workset_id, params).await?;
 
     ().accept(StatusCode::OK)
 }
@@ -109,7 +109,7 @@ pub async fn update_infos(
 )]
 #[instrument(err, skip(harn))]
 pub async fn delete(State(harn): State<Harness>, Path(workset_id): Path<String>) -> HttpResult<()> {
-    usecase::workset::delete(&harn, workset_id).await?;
+    usecase_legacy::workset::delete(&harn, workset_id).await?;
 
     ().accept(StatusCode::OK)
 }

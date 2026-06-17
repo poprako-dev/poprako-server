@@ -4,10 +4,10 @@ use crate::domain::external::token::{TokenParse, TokenSign};
 use crate::domain::model::aggr::local_message::LocalMessageForm;
 use crate::domain::model::value::local_message::ImageLocalMessage;
 use crate::domain::model::aggr::user::UserToken;
-use crate::domain::query::QueryTransactional;
-use crate::domain::query::local_message::LocalMessageQueryTransactional;
-use crate::domain::query::member::MemberQueryTransactional;
-use crate::domain::query::user::UserQueryTransactional;
+use crate::domain::query_legacy::QueryTransactional;
+use crate::domain::query_legacy::local_message::LocalMessageQueryTransactional;
+use crate::domain::query_legacy::member::MemberQueryTransactional;
+use crate::domain::query_legacy::user::UserQueryTransactional;
 use crate::domain::result::{DomainError, DomainResult};
 
 pub struct UserComplex;

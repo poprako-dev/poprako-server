@@ -7,7 +7,7 @@ use poprako_util::page::Page;
 use crate::domain::model::aggr::member::{MemberAggr, MemberForm, MemberRoleUpdate};
 use crate::domain::model::value::member_inclusion::MemberInclusion;
 use crate::domain::model::value::role::RoleFlag;
-use crate::domain::query::member::{MemberQuery, MemberQueryTransactional};
+use crate::domain::query_legacy::member::{MemberQuery, MemberQueryTransactional};
 use crate::domain::result::{DomainError, DomainResult};
 use crate::infra::query::memory_mock::{MemoryMockQuery, MemoryMockQueryTransactional};
 
@@ -329,8 +329,8 @@ mod tests {
     use crate::domain::model::aggr::member::{MemberAggr, MemberForm, MemberRoleUpdate};
     use crate::domain::model::value::member_inclusion::MemberInclusion;
     use crate::domain::model::value::role::{RoleFlag, RoleMask};
-    use crate::domain::query::Transactional;
-    use crate::domain::query::member::{MemberQuery, MemberQueryTransactional};
+    use crate::domain::query_legacy::Transactional;
+    use crate::domain::query_legacy::member::{MemberQuery, MemberQueryTransactional};
     use crate::infra::query::memory_mock::MemoryMockQuery;
     use crate::test_util::{is_expected_argument, is_expected_conflict};
 
