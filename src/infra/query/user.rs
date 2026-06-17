@@ -9,7 +9,7 @@ use poprako_util::i18n::trl;
 use crate::domain::model::aggr::user::{
     UserAggr, UserAvatarReservation, UserCredential, UserForm, UserInfoUpdate,
 };
-use crate::domain::query::user::{UserQuery, UserQueryTransactional};
+use crate::domain::query_legacy::user::{UserQuery, UserQueryTransactional};
 use crate::domain::result::{DomainError, DomainResult};
 use crate::infra::query::{RdbQuery, RdbQueryTransactional};
 use crate::infra::query::entity::user::{UserAspect, UserEntry, UserRow};

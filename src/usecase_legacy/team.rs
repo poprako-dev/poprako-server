@@ -9,14 +9,14 @@ use crate::domain::external::image_pool::{ImageGet, ImagePut};
 use crate::domain::model::aggr::local_message::LocalMessageForm;
 use crate::domain::model::aggr::team::{TeamAggr, TeamForm, TeamInfoUpdate};
 use crate::domain::model::value::local_message::{ImageLocalMessage, ImageResourceKind};
-use crate::domain::query::Transactional;
-use crate::domain::query::local_message::LocalMessageQueryTransactional;
-use crate::domain::query::team::{TeamQuery, TeamQueryTransactional};
-use crate::usecase::data_object::team::{
+use crate::domain::query_legacy::Transactional;
+use crate::domain::query_legacy::local_message::LocalMessageQueryTransactional;
+use crate::domain::query_legacy::team::{TeamQuery, TeamQueryTransactional};
+use crate::usecase_legacy::data_object::team::{
     AvatarMarkUploadedParams, AvatarReserveParams, AvatarReserveReply, CreateParams,
     InfoUpdateParams, TeamInfo,
 };
-use crate::usecase::result::UseCaseResult;
+use crate::usecase_legacy::result::UseCaseResult;
 
 async fn to_infos<H>(teams: Vec<TeamAggr>, harn: &H) -> Vec<TeamInfo>
 where
@@ -201,16 +201,16 @@ mod tests {
 
     use crate::domain::model::aggr::team::TeamAggr;
     use crate::domain::model::value::local_message::{ImageLocalMessage, ImageResourceKind};
-    use crate::domain::query::workset::WorksetQuery;
+    use crate::domain::query_legacy::workset::WorksetQuery;
     use crate::harness::tests::TestHarness;
     use crate::test_util::{
         is_expected_argument, usecase_is_expected_argument, usecase_is_expected_conflict,
     };
-    use crate::usecase::data_object::team::{
+    use crate::usecase_legacy::data_object::team::{
         AvatarMarkUploadedParams, CreateParams, InfoUpdateParams,
     };
-    use crate::usecase::data_object::workset::WorksetCreateParams;
-    use crate::usecase::workset;
+    use crate::usecase_legacy::data_object::workset::WorksetCreateParams;
+    use crate::usecase_legacy::workset;
 
     fn make_test_team(id: &str) -> TeamAggr {
         let now = time::OffsetDateTime::now_utc();

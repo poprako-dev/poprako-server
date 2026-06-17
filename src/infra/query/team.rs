@@ -8,7 +8,7 @@ use poprako_util::i18n::trl;
 use poprako_util::page::Page;
 
 use crate::domain::model::aggr::team::{TeamAggr, TeamAvatarReservation, TeamForm, TeamInfoUpdate};
-use crate::domain::query::team::{TeamQuery, TeamQueryTransactional};
+use crate::domain::query_legacy::team::{TeamQuery, TeamQueryTransactional};
 use crate::domain::result::{DomainError, DomainResult};
 use crate::infra::query::{RdbQuery, RdbQueryTransactional};
 use crate::infra::query::entity::team::{TeamAspect, TeamEntry, TeamRow};

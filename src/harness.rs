@@ -8,7 +8,7 @@ use crate::domain::effect::EffectSink;
 use crate::domain::external::image_pool::ImagePoolForward;
 use crate::domain::external::token::TokenIssuerForward;
 use crate::domain::model::event::EventEmit;
-use crate::domain::query::{QueryForward, TransactionalForward};
+use crate::domain::query_legacy::{QueryForward, TransactionalForward};
 use crate::infra::effect::{AsyncEffectSink, SharedEffectSink};
 use crate::infra::external::image_pool::OssImagePool;
 use crate::infra::external::token::JwtIssuer;
@@ -89,7 +89,7 @@ pub mod tests {
     use crate::domain::model::aggr::user::{UserAggr, UserCredential, UserToken};
     use crate::domain::model::aggr::workset::WorksetAggr;
     use crate::domain::model::event::{Event, EventEmit};
-    use crate::domain::query::{QueryForward, TransactionalForward};
+    use crate::domain::query_legacy::{QueryForward, TransactionalForward};
     use crate::domain::result::{DomainError, DomainResult};
     use crate::infra::query::memory_mock::{MemoryMockQuery, MemoryMockState};
 

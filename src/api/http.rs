@@ -21,7 +21,7 @@ mod result {
     use poprako_util::rename::StdResult;
 
     use crate::domain::result::{DomainError, ExpectedVariant};
-    use crate::usecase::result::UseCaseError;
+    use crate::usecase_legacy::result::UseCaseError;
 
     #[derive(Debug, Serialize, ToSchema)]
     pub struct HttpError {

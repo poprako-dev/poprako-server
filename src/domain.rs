@@ -2,7 +2,7 @@ pub mod complex;
 pub mod effect;
 pub mod external;
 pub mod model;
-pub mod query;
+pub mod query_legacy;
 
 pub mod result {
     use poprako_util::rename::StdResult;

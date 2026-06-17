@@ -1,5 +1,5 @@
 use crate::domain::result::{DomainError, ExpectedVariant};
-use crate::usecase::result::UseCaseError;
+use crate::usecase_legacy::result::UseCaseError;
 
 pub fn is_expected_argument(err: &DomainError) -> bool {
     matches!(

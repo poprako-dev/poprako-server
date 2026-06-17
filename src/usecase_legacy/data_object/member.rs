@@ -9,8 +9,8 @@ use crate::domain::external::image_pool::ImageGet;
 use crate::domain::model::aggr::member::MemberAggr;
 use crate::domain::model::value::role::RoleFlag;
 use crate::domain::result::{DomainError, DomainResult};
-use crate::usecase::data_object::team::TeamInfo;
-use crate::usecase::data_object::user::UserInfo;
+use crate::usecase_legacy::data_object::team::TeamInfo;
+use crate::usecase_legacy::data_object::user::UserInfo;
 
 /// Public-facing representation of a team member.
 #[derive(Debug, Serialize, ToSchema)]

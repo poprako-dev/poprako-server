@@ -7,7 +7,7 @@ use tracing::{instrument, Level};
 use poprako_util::i18n::trl;
 
 use crate::domain::model::aggr::member_invitation::MemberInvitationAggr;
-use crate::domain::query::member_invitation::MemberInvitationQueryTransactional;
+use crate::domain::query_legacy::member_invitation::MemberInvitationQueryTransactional;
 use crate::domain::result::{DomainError, DomainResult};
 use crate::infra::query::RdbQueryTransactional;
 use crate::infra::query::entity::member_invitation::{MemberInvitationAspect, MemberInvitationRow};

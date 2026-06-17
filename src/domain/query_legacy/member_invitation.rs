@@ -4,7 +4,7 @@ use crate::domain::model::aggr::member_invitation::MemberInvitationAggr;
 use crate::domain::result::DomainResult;
 
 /// Mutable persistence contract for [`MemberInvitationAggr`], used **only**
-/// inside a transaction via [`QueryTransactional`](crate::domain::query::QueryTransactional).
+/// inside a transaction via [`QueryTransactional`](crate::domain::query_legacy::QueryTransactional).
 #[async_trait]
 pub trait MemberInvitationQueryTransactional {
     /// Returns the pending invitation for the given invitation code,

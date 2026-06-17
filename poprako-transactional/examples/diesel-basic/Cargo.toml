@@ -1,13 +1,14 @@
 [workspace]
 
 [package]
-name = "sqlx-basic"
+name = "diesel-basic"
 version = "0.1.0"
 edition = "2024"
 
 [dependencies]
 poprako-transactional = { path = "../.." }
 async-trait = "0.1.89"
+diesel = { version = "2", features = ["postgres"] }
+diesel-async = { version = "0.9", features = ["deadpool", "postgres"] }
 futures = "0.3.32"
-sqlx = { version = "0.8", features = ["runtime-tokio", "postgres"] }
 tokio = { version = "1", features = ["full"] }

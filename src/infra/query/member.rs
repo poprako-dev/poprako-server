@@ -14,7 +14,7 @@ use crate::domain::model::aggr::team::TeamAggr;
 use crate::domain::model::aggr::user::UserAggr;
 use crate::domain::model::value::member_inclusion::MemberInclusion;
 use crate::domain::model::value::role::RoleFlag;
-use crate::domain::query::member::{MemberQuery, MemberQueryTransactional};
+use crate::domain::query_legacy::member::{MemberQuery, MemberQueryTransactional};
 use crate::domain::result::{DomainError, DomainResult};
 use crate::infra::query::{RdbQuery, RdbQueryTransactional};
 use crate::infra::query::entity::member::{MemberAspect, MemberEntry, MemberRow};

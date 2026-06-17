@@ -10,10 +10,10 @@ use crate::domain::model::aggr::local_message::{LocalMessageAggr, LocalMessageMa
 use crate::domain::model::value::local_message::{
     IMAGE_TOPIC, ImageLocalMessage, ImageResourceKind,
 };
-use crate::domain::query::Transactional;
-use crate::domain::query::local_message::{LocalMessageQuery, LocalMessageQueryTransactional};
-use crate::domain::query::team::TeamQueryTransactional;
-use crate::domain::query::user::UserQueryTransactional;
+use crate::domain::query_legacy::Transactional;
+use crate::domain::query_legacy::local_message::{LocalMessageQuery, LocalMessageQueryTransactional};
+use crate::domain::query_legacy::team::TeamQueryTransactional;
+use crate::domain::query_legacy::user::UserQueryTransactional;
 use crate::domain::result::{DomainError, DomainResult};
 use crate::harness::HarnessBase;
 

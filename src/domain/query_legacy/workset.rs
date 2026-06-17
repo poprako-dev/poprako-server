@@ -30,7 +30,7 @@ pub trait WorksetQuery {
 }
 
 /// Transactional persistence contract for [`WorksetAggr`], used **only** inside
-/// a transaction via [`QueryTransactional`](crate::domain::query::QueryTransactional).
+/// a transaction via [`QueryTransactional`](crate::domain::query_legacy::QueryTransactional).
 #[async_trait]
 pub trait WorksetQueryTransactional {
     /// Creates a new workset from the creation form inside a transaction.

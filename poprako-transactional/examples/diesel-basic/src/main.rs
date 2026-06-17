@@ -4,9 +4,13 @@ use poprako_transactional::manager::Manager;
 use poprako_transactional::manager::result::Error as ScopedError;
 use poprako_transactional::step::Step;
 use poprako_transactional::util::AsyncFnMark;
-use sqlx::PgPool;
-use sqlx::Postgres;
-use sqlx::Transaction;
+
+use diesel_async::AnsiTransactionManager;
+use diesel_async::AsyncPgConnection;
+use diesel_async::RunQueryDsl;
+use diesel_async::TransactionManager;
+use diesel_async::pooled_connection::AsyncDieselConnectionManager;
+use diesel_async::pooled_connection::deadpool::{Object, Pool};
 
 // ---- Domain: Step definitions ----
 
@@ -75,31 +79,45 @@ where
         .await
 }
 
-// ---- Infra: sqlx ----
+// ---- Infra: diesel_async ----
 
-pub struct PgHandle(Transaction<'static, Postgres>);
+type Conn = Object<AsyncPgConnection>;
+
+pub struct PgHandle(Conn);
 
 impl PgHandle {
-    async fn commit(self) -> Result<(), sqlx::Error> {
-        self.0.commit().await
+    async fn commit(mut self) -> Result<(), diesel::result::Error> {
+        AnsiTransactionManager::commit_transaction(&mut *self.0).await
     }
 
-    async fn rollback(self) -> Result<(), sqlx::Error> {
-        self.0.rollback().await
+    async fn rollback(mut self) -> Result<(), diesel::result::Error> {
+        AnsiTransactionManager::rollback_transaction(&mut *self.0).await
     }
 }
 
-pub struct PgBackend(PgPool);
+#[derive(Debug)]
+pub enum PgBackendError {
+    Pool(String),
+    Diesel(diesel::result::Error),
+}
+
+impl From<diesel::result::Error> for PgBackendError {
+    fn from(e: diesel::result::Error) -> Self {
+        PgBackendError::Diesel(e)
+    }
+}
+
+pub struct PgBackend(Pool<AsyncPgConnection>);
 
 impl PgBackend {
-    pub fn new(pool: PgPool) -> Self {
+    pub fn new(pool: Pool<AsyncPgConnection>) -> Self {
         Self(pool)
     }
 }
 
 #[async_trait]
 impl Manager<PgHandle> for PgBackend {
-    type Error = sqlx::Error;
+    type Error = PgBackendError;
 
     async fn transactional_scoped<T, E, F>(&self, f: F) -> Result<T, ScopedError<E, Self::Error>>
     where
@@ -109,14 +127,26 @@ impl Manager<PgHandle> for PgBackend {
             + AsyncFnMark<&'h mut PgHandle, Result<T, E>, Fut: Send>
             + Send,
     {
-        let tx = self.0.begin().await.map_err(ScopedError::Backend)?;
-        let mut handle = PgHandle(tx);
+        let mut conn = self
+            .0
+            .get()
+            .await
+            .map_err(|e| ScopedError::Backend(PgBackendError::Pool(e.to_string())))?;
+
+        AnsiTransactionManager::begin_transaction(&mut *conn)
+            .await
+            .map_err(|e| ScopedError::Backend(PgBackendError::Diesel(e)))?;
+
+        let mut handle = PgHandle(conn);
 
         let result = f(&mut handle).await;
 
         match result {
             Ok(t) => {
-                handle.commit().await.map_err(ScopedError::Backend)?;
+                handle
+                    .commit()
+                    .await
+                    .map_err(|e| ScopedError::Backend(PgBackendError::Diesel(e)))?;
                 Ok(t)
             }
             Err(e) => {
@@ -133,16 +163,16 @@ pub struct DecreaseProductAdvance;
 
 #[async_trait]
 impl Advance<DecreaseProduct, PgHandle> for DecreaseProductAdvance {
-    type Error = sqlx::Error;
+    type Error = diesel::result::Error;
 
     async fn advance(
         &mut self,
         step: DecreaseProduct,
         handle: &mut PgHandle,
-    ) -> Result<(), sqlx::Error> {
-        sqlx::query("UPDATE products SET stock = stock - $1 WHERE id = $2")
-            .bind(step.quantity)
-            .bind(step.product_id)
+    ) -> Result<(), diesel::result::Error> {
+        diesel::sql_query("UPDATE products SET stock = stock - $1 WHERE id = $2")
+            .bind::<diesel::sql_types::Integer, _>(step.quantity)
+            .bind::<diesel::sql_types::Integer, _>(step.product_id)
             .execute(&mut *handle.0)
             .await?;
         Ok(())
@@ -153,17 +183,17 @@ pub struct CreateOrderAdvance;
 
 #[async_trait]
 impl Advance<CreateOrder, PgHandle> for CreateOrderAdvance {
-    type Error = sqlx::Error;
+    type Error = diesel::result::Error;
 
     async fn advance(
         &mut self,
         step: CreateOrder,
         handle: &mut PgHandle,
-    ) -> Result<(), sqlx::Error> {
-        sqlx::query("INSERT INTO orders (user_id, product_id, quantity) VALUES ($1, $2, $3)")
-            .bind(step.user_id)
-            .bind(step.product_id)
-            .bind(step.quantity)
+    ) -> Result<(), diesel::result::Error> {
+        diesel::sql_query("INSERT INTO orders (user_id, product_id, quantity) VALUES ($1, $2, $3)")
+            .bind::<diesel::sql_types::Integer, _>(step.user_id)
+            .bind::<diesel::sql_types::Integer, _>(step.product_id)
+            .bind::<diesel::sql_types::Integer, _>(step.quantity)
             .execute(&mut *handle.0)
             .await?;
         Ok(())
@@ -176,11 +206,13 @@ impl Advance<CreateOrder, PgHandle> for CreateOrderAdvance {
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let database_url =
         std::env::var("DATABASE_URL").unwrap_or_else(|_| "postgres://localhost:5432/test".into());
-    let pool = PgPool::connect(&database_url).await?;
+
+    let config = AsyncDieselConnectionManager::<AsyncPgConnection>::new(database_url);
+    let pool = Pool::builder(config).build()?;
 
     let backend = PgBackend::new(pool);
 
-    let result = run_order_usecase::<_, _, sqlx::Error, _, _>(
+    let result = run_order_usecase::<_, _, diesel::result::Error, _, _>(
         &backend,
         DecreaseProductAdvance,
         CreateOrderAdvance,

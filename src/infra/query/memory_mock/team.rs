@@ -5,7 +5,7 @@ use poprako_util::i18n::trl;
 use poprako_util::page::Page;
 
 use crate::domain::model::aggr::team::{TeamAggr, TeamAvatarReservation, TeamForm, TeamInfoUpdate};
-use crate::domain::query::team::{TeamQuery, TeamQueryTransactional};
+use crate::domain::query_legacy::team::{TeamQuery, TeamQueryTransactional};
 use crate::domain::result::{DomainError, DomainResult};
 use crate::infra::query::memory_mock::{MemoryMockQuery, MemoryMockQueryTransactional};
 
@@ -230,8 +230,8 @@ mod tests {
 
     use crate::domain::model::aggr::team::{TeamAggr, TeamForm, TeamInfoUpdate};
     use crate::domain::model::aggr::workset::WorksetAggr;
-    use crate::domain::query::Transactional;
-    use crate::domain::query::team::{TeamQuery, TeamQueryTransactional};
+    use crate::domain::query_legacy::Transactional;
+    use crate::domain::query_legacy::team::{TeamQuery, TeamQueryTransactional};
     use crate::infra::query::memory_mock::MemoryMockQuery;
     use crate::test_util::{is_expected_argument, is_expected_conflict};
 

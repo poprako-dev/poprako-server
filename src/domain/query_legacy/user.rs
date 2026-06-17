@@ -19,7 +19,7 @@ pub trait UserQuery {
 }
 
 /// Mutable persistence contract for [`UserAggr`], used **only** inside
-/// [`Transactional::run_in_transaction`](crate::domain::query::Transactional::run_in_transaction).
+/// [`Transactional::run_in_transaction`](crate::domain::query_legacy::Transactional::run_in_transaction).
 ///
 /// Takes `&mut self` to enforce single-writer semantics within a transaction.
 #[async_trait]

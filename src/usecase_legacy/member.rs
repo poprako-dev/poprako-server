@@ -9,16 +9,16 @@ use crate::domain::model::aggr::member::{MemberAggr, MemberForm, MemberRoleUpdat
 use crate::domain::model::aggr::user::UserToken;
 use crate::domain::model::value::member_inclusion::MemberInclusion;
 use crate::domain::model::value::role::{RoleFlag, RoleMask};
-use crate::domain::query::Transactional;
-use crate::domain::query::member::{MemberQuery, MemberQueryTransactional};
-use crate::domain::query::member_invitation::MemberInvitationQueryTransactional;
-use crate::domain::query::team::TeamQueryTransactional;
-use crate::domain::query::user::UserQueryTransactional;
+use crate::domain::query_legacy::Transactional;
+use crate::domain::query_legacy::member::{MemberQuery, MemberQueryTransactional};
+use crate::domain::query_legacy::member_invitation::MemberInvitationQueryTransactional;
+use crate::domain::query_legacy::team::TeamQueryTransactional;
+use crate::domain::query_legacy::user::UserQueryTransactional;
 use crate::domain::result::{DomainError, DomainResult};
-use crate::usecase::data_object::member::{
+use crate::usecase_legacy::data_object::member::{
     CreateParams, CreateReply, JoinParams, ListParams, MemberInfo, RoleUpdateParams,
 };
-use crate::usecase::result::UseCaseResult;
+use crate::usecase_legacy::result::UseCaseResult;
 
 fn validate_role_mask(mask: u32) -> DomainResult<RoleMask> {
     RoleMask::try_from(mask)
@@ -322,13 +322,13 @@ mod tests {
     use crate::domain::model::aggr::team::TeamAggr;
     use crate::domain::model::aggr::user::{UserAggr, UserCredential, UserToken};
     use crate::domain::model::value::role::{RoleFlag, RoleMask};
-    use crate::domain::query::member::MemberQuery;
+    use crate::domain::query_legacy::member::MemberQuery;
     use crate::harness::tests::TestHarness;
     use crate::test_util::{
         is_expected_argument, usecase_is_expected_argument, usecase_is_expected_conflict,
         usecase_is_expected_forbidden,
     };
-    use crate::usecase::data_object::member::{
+    use crate::usecase_legacy::data_object::member::{
         CreateParams, JoinParams, ListParams, RoleUpdateParams,
     };
 

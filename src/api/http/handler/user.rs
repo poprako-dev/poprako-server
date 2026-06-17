@@ -7,8 +7,8 @@ use crate::api::http::handler::util::ensure_current_user;
 use crate::api::http::result::{Accept as _, HttpError, HttpResult};
 use crate::domain::model::aggr::user::UserToken;
 use crate::harness::Harness;
-use crate::usecase;
-use crate::usecase::data_object::user::{
+use crate::usecase_legacy;
+use crate::usecase_legacy::data_object::user::{
     AvatarMarkUploadedParams, AvatarReserveParams, AvatarReserveReply, InfoUpdateParams, UserInfo,
 };
 
@@ -30,7 +30,7 @@ pub async fn get_info(
     State(harn): State<Harness>,
     Path(user_id): Path<String>,
 ) -> HttpResult<UserInfo> {
-    let info = usecase::user::get_info(&harn, &user_id).await?;
+    let info = usecase_legacy::user::get_info(&harn, &user_id).await?;
 
     info.accept(StatusCode::OK)
 }
@@ -49,7 +49,7 @@ pub async fn get_my_info(
     State(harn): State<Harness>,
     Extension(user_token): Extension<UserToken>,
 ) -> HttpResult<UserInfo> {
-    let info = usecase::user::get_info(&harn, &user_token.user_id).await?;
+    let info = usecase_legacy::user::get_info(&harn, &user_token.user_id).await?;
 
     info.accept(StatusCode::OK)
 }
@@ -72,7 +72,7 @@ pub async fn update_info(
     Extension(user_token): Extension<UserToken>,
     Json(params): Json<InfoUpdateParams>,
 ) -> HttpResult<()> {
-    usecase::user::update_info(&harn, user_token, params).await?;
+    usecase_legacy::user::update_info(&harn, user_token, params).await?;
 
     ().accept(StatusCode::OK)
 }
@@ -101,7 +101,7 @@ pub async fn reserve_avatar(
 ) -> HttpResult<AvatarReserveReply> {
     ensure_current_user(&user_id, &user_token)?;
 
-    let reply = usecase::user::reserve_avatar(&harn, user_token, params).await?;
+    let reply = usecase_legacy::user::reserve_avatar(&harn, user_token, params).await?;
 
     reply.accept(StatusCode::OK)
 }
@@ -130,7 +130,7 @@ pub async fn mark_avatar_uploaded(
 ) -> HttpResult<()> {
     ensure_current_user(&user_id, &user_token)?;
 
-    usecase::user::mark_avatar_uploaded(&harn, user_token, params).await?;
+    usecase_legacy::user::mark_avatar_uploaded(&harn, user_token, params).await?;
 
     ().accept(StatusCode::OK)
 }

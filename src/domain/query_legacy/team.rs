@@ -32,7 +32,7 @@ pub trait TeamQuery {
 }
 
 /// Transactional persistence contract for [`TeamAggr`], used **only** inside
-/// a transaction via [`QueryTransactional`](crate::domain::query::QueryTransactional).
+/// a transaction via [`QueryTransactional`](crate::domain::query_legacy::QueryTransactional).
 #[async_trait]
 pub trait TeamQueryTransactional {
     /// Atomically increments and returns the next workset index from the team-scoped sequence.

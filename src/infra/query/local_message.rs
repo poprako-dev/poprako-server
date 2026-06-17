@@ -9,7 +9,7 @@ use poprako_util::page::Page;
 use crate::domain::model::aggr::local_message::{
     LocalMessageAggr, LocalMessageForm, LocalMessageMark, LocalMessageStatus,
 };
-use crate::domain::query::local_message::{LocalMessageQuery, LocalMessageQueryTransactional};
+use crate::domain::query_legacy::local_message::{LocalMessageQuery, LocalMessageQueryTransactional};
 use crate::domain::result::{DomainError, DomainResult};
 use crate::infra::query::entity::local_message::{
     LocalMessageAspect, LocalMessageEntry, LocalMessageRow,

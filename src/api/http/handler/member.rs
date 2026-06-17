@@ -9,8 +9,8 @@ use crate::api::http::result::{Accept as _, HttpError, HttpResult};
 use crate::domain::model::aggr::user::UserToken;
 use crate::domain::result::ExpectedVariant;
 use crate::harness::Harness;
-use crate::usecase;
-use crate::usecase::data_object::member::{
+use crate::usecase_legacy;
+use crate::usecase_legacy::data_object::member::{
     CreateParams, CreateReply, JoinParams, ListParams, MemberInfo, RoleUpdateParams,
 };
 
@@ -36,7 +36,7 @@ pub async fn create(
     Extension(user_token): Extension<UserToken>,
     Json(params): Json<CreateParams>,
 ) -> HttpResult<CreateReply> {
-    let reply = usecase::member::create(&harn, &user_token, params).await?;
+    let reply = usecase_legacy::member::create(&harn, &user_token, params).await?;
 
     reply.accept(StatusCode::CREATED)
 }
@@ -70,7 +70,7 @@ pub async fn list_infos(
         ..Default::default()
     };
 
-    let infos = usecase::member::list_infos(&harn, &user_token, &list_params).await?;
+    let infos = usecase_legacy::member::list_infos(&harn, &user_token, &list_params).await?;
 
     infos.accept(StatusCode::OK)
 }
@@ -97,7 +97,7 @@ pub async fn update_roles(
     Path(member_id): Path<String>,
     Json(params): Json<RoleUpdateParams>,
 ) -> HttpResult<()> {
-    usecase::member::update_roles(&harn, &user_token, member_id, params).await?;
+    usecase_legacy::member::update_roles(&harn, &user_token, member_id, params).await?;
 
     ().accept(StatusCode::OK)
 }
@@ -122,7 +122,7 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
     Path(member_id): Path<String>,
 ) -> HttpResult<()> {
-    usecase::member::delete(&harn, &user_token, member_id).await?;
+    usecase_legacy::member::delete(&harn, &user_token, member_id).await?;
 
     ().accept(StatusCode::OK)
 }
@@ -151,7 +151,7 @@ pub async fn list_my_infos(
         ..Default::default()
     };
 
-    let infos = usecase::member::list_infos(&harn, &user_token, &list_params).await?;
+    let infos = usecase_legacy::member::list_infos(&harn, &user_token, &list_params).await?;
 
     infos.accept(StatusCode::OK)
 }
@@ -174,7 +174,7 @@ pub async fn join(
     Extension(user_token): Extension<UserToken>,
     Json(params): Json<JoinParams>,
 ) -> HttpResult<CreateReply> {
-    let reply = usecase::member::join(&harn, &user_token, params).await?;
+    let reply = usecase_legacy::member::join(&harn, &user_token, params).await?;
 
     reply.accept(StatusCode::OK)
 }

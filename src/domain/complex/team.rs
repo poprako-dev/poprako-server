@@ -3,10 +3,10 @@ use time::Duration;
 use crate::domain::complex::workset::WorksetComplex;
 use crate::domain::model::aggr::local_message::LocalMessageForm;
 use crate::domain::model::value::local_message::ImageLocalMessage;
-use crate::domain::query::QueryTransactional;
-use crate::domain::query::local_message::LocalMessageQueryTransactional;
-use crate::domain::query::team::TeamQueryTransactional;
-use crate::domain::query::workset::WorksetQueryTransactional;
+use crate::domain::query_legacy::QueryTransactional;
+use crate::domain::query_legacy::local_message::LocalMessageQueryTransactional;
+use crate::domain::query_legacy::team::TeamQueryTransactional;
+use crate::domain::query_legacy::workset::WorksetQueryTransactional;
 use crate::domain::result::DomainResult;
 
 pub struct TeamComplex;
