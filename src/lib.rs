@@ -7,6 +7,8 @@ pub mod infra;
 pub use forward_ref::ForwardRef;
 
 mod atom;
+mod data;
+mod model;
 mod part;
 mod result;
 mod usecase;

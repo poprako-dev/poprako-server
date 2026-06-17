@@ -17,5 +17,5 @@ where
     type Error;
 
     /// Executes the step against the given handle.
-    async fn advance(&mut self, step: S, handle: &mut H) -> Result<S::Output, Self::Error>;
+    async fn advance(&mut self, handle: &mut H, step: S) -> Result<S::Output, Self::Error>;
 }
