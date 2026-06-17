@@ -1,8 +1,14 @@
-pub enum ErrorVariant {}
+use poprako_transactional::run::result::Error as RunError;
+
+pub enum ExpectedVariant {
+    Args,
+    Auth,
+    Perm,
+}
 
 pub enum Error {
     Expected {
-        variant: ErrorVariant,
+        variant: ExpectedVariant,
         message: String,
     },
     Unrecoverable {
@@ -12,6 +18,23 @@ pub enum Error {
 
 pub type Result<T> = std::result::Result<T, Error>;
 
-pub type ScopeError = Error;
+pub fn accept<T>(v: T) -> Result<T> {
+    Ok(v)
+}
 
-pub type ScopeResult<T> = Result<T>;
+pub type RootError = Error;
+
+pub type RootResult<T> = Result<T>;
+
+impl<E, BE> From<RunError<E, BE>> for Error
+where
+    E: Into<Error>,
+    BE: Into<Error>,
+{
+    fn from(value: RunError<E, BE>) -> Self {
+        match value {
+            RunError::Advance(e) => e.into(),
+            RunError::Backend(e) => e.into(),
+        }
+    }
+}

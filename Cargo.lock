@@ -2325,6 +2325,7 @@ dependencies = [
  "futures-util",
  "jsonwebtoken",
  "poprako-macro",
+ "poprako-transactional",
  "poprako-util",
  "serde",
  "serde_json",

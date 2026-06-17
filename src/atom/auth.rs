@@ -1,6 +1,6 @@
-use crate::result::ScopeResult;
+use crate::result::RootResult;
 
-pub fn hash_password(password: &str) -> ScopeResult<String> {
+pub fn hash_password(password: &str) -> RootResult<String> {
     // TODO: argon2.
     todo!()
 }

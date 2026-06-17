@@ -1,5 +1,9 @@
-use crate::result::ScopeResult;
+use crate::result::RootResult;
 
-pub async fn register() -> ScopeResult<()> {
+pub async fn register() -> RootResult<()> {
+    todo!()
+}
+
+pub async fn login() -> RootResult<()> {
     todo!()
 }
