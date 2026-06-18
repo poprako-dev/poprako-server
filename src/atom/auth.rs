@@ -1,11 +1,11 @@
-use crate::result::RootResult;
+use crate::result::{RootError, RootResult};
 
 pub fn hash_password(password: &str) -> RootResult<String> {
-    // TODO: argon2.
-    todo!()
+    bcrypt::hash(password, bcrypt::DEFAULT_COST).map_err(|e| RootError::Unrecoverable {
+        message: format!("[auth::hash_password] bcrypt hashing failed: {}", e),
+    })
 }
 
 pub fn verify_password(password: &str, password_hash: &str) -> bool {
-    // TODO: argon2.
-    todo!()
+    bcrypt::verify(password, password_hash).unwrap_or(false)
 }

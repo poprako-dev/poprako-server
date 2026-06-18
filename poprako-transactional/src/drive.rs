@@ -2,16 +2,15 @@ pub mod result;
 
 use async_trait::async_trait;
 
-use crate::run::result::Error as RunError;
+use crate::drive::result::Error as DriveError;
 use crate::util::AsyncFnMark;
 
-// TODO: rename.
 #[async_trait]
-pub trait Run<H> {
+pub trait Drive<H> {
     /// The error type.
     type Error;
 
-    async fn with_scope<T, E, F>(&self, f: F) -> Result<T, RunError<E, Self::Error>>
+    async fn run_transactional<T, E, F>(&self, f: F) -> Result<T, DriveError<E, Self::Error>>
     where
         T: Send,
         E: Send,
