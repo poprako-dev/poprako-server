@@ -7,7 +7,7 @@ use async_trait::async_trait;
 use crossfire::mpsc::{Array, bounded_async};
 use crossfire::oneshot::{self, RxOneshot, TxOneshot};
 use crossfire::{AsyncRx, MAsyncTx, TrySendError};
-use tracing::{instrument, Level};
+use tracing::{Level, instrument};
 
 use crate::domain::effect::EffectSink;
 use crate::domain::model::event::{Event, EventEmit};

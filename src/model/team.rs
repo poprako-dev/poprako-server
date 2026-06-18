@@ -18,12 +18,6 @@ pub struct TeamForm {
     pub description: String,
 }
 
-pub struct TeamInfoUpdate<'a> {
-    pub id: &'a str,
-    pub name: &'a str,
-    pub description: &'a str,
-}
-
 pub struct TeamAvatarReservation {
     pub object_key: String,
     pub previous_object_key: Option<String>,

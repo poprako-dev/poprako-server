@@ -2,14 +2,16 @@ use async_trait::async_trait;
 use diesel::prelude::*;
 use diesel_async::{AsyncPgConnection, RunQueryDsl};
 use time::OffsetDateTime;
-use tracing::{instrument, Level};
+use tracing::{Level, instrument};
 
 use poprako_util::page::Page;
 
 use crate::domain::model::aggr::local_message::{
     LocalMessageAggr, LocalMessageForm, LocalMessageMark, LocalMessageStatus,
 };
-use crate::domain::query_legacy::local_message::{LocalMessageQuery, LocalMessageQueryTransactional};
+use crate::domain::query_legacy::local_message::{
+    LocalMessageQuery, LocalMessageQueryTransactional,
+};
 use crate::domain::result::{DomainError, DomainResult};
 use crate::infra::query::entity::local_message::{
     LocalMessageAspect, LocalMessageEntry, LocalMessageRow,

@@ -13,13 +13,17 @@ use poprako_macro::forward_ref_super;
 
 use crate::ForwardRef;
 
-use crate::domain::query_legacy::local_message::{LocalMessageQuery, LocalMessageQueryTransactional};
+use crate::domain::query_legacy::local_message::{
+    LocalMessageQuery, LocalMessageQueryTransactional,
+};
 use crate::domain::query_legacy::member::{MemberQuery, MemberQueryTransactional};
 use crate::domain::query_legacy::member_invitation::MemberInvitationQueryTransactional;
 use crate::domain::query_legacy::system_mail::{SystemMailQuery, SystemMailQueryForward};
 use crate::domain::query_legacy::team::{TeamQuery, TeamQueryForward, TeamQueryTransactional};
 use crate::domain::query_legacy::user::{UserQuery, UserQueryForward, UserQueryTransactional};
-use crate::domain::query_legacy::workset::{WorksetQuery, WorksetQueryForward, WorksetQueryTransactional};
+use crate::domain::query_legacy::workset::{
+    WorksetQuery, WorksetQueryForward, WorksetQueryTransactional,
+};
 use crate::domain::result::DomainResult;
 
 // Import forward markers for composite sub-traits so the blanket ForwardRef

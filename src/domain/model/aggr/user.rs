@@ -114,8 +114,8 @@ mod tests {
     use super::*;
 
     use crate::domain::model::aggr::user::UserAggr;
-    use crate::domain::model::event::{Event, EventEmit, EventSink};
     use crate::domain::model::event::user::UserSignedUpEvent;
+    use crate::domain::model::event::{Event, EventEmit, EventSink};
 
     #[test]
     fn verify_password_match() {

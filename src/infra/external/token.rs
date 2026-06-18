@@ -2,7 +2,7 @@ use anyhow::Context as _;
 use jsonwebtoken::{DecodingKey, EncodingKey, Header, TokenData, Validation, decode, encode};
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
-use tracing::{instrument, Level};
+use tracing::{Level, instrument};
 
 use crate::domain::external::token::{TokenParse, TokenSign};
 use crate::domain::model::aggr::user::UserToken;

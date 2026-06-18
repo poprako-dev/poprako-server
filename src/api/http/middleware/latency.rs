@@ -1,7 +1,7 @@
 use std::time::Instant;
 
 use axum::extract::Request;
-use axum::middleware::{self, from_fn, Next};
+use axum::middleware::{self, Next, from_fn};
 use futures_util::FutureExt as _;
 use tower::Layer;
 

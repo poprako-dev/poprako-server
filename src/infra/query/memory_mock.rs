@@ -170,7 +170,9 @@ mod tests {
                         "pw".into(),
                     );
                     UserQueryTransactional::create(txn, &form).await?;
-                    Err::<(), DomainError>(DomainError::unrecoverable("[transaction_scoped_restores_snapshot_on_error] rollback".into()))
+                    Err::<(), DomainError>(DomainError::unrecoverable(
+                        "[transaction_scoped_restores_snapshot_on_error] rollback".into(),
+                    ))
                 }
                 .boxed()
             })

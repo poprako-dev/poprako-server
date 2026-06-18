@@ -7,7 +7,7 @@ use aws_sdk_s3::config::{BehaviorVersion, Region};
 use aws_sdk_s3::presigning::PresigningConfig;
 use aws_sdk_s3::types::{Delete, ObjectIdentifier};
 use aws_sdk_s3::{Client, Config};
-use tracing::{instrument, Level};
+use tracing::{Level, instrument};
 use url::Url;
 
 use poprako_util::i18n::trl;
@@ -218,7 +218,11 @@ impl OssImagePool {
             match result {
                 Ok(output) => {
                     let mut failed_keys = Vec::new();
-                    for e in output.errors().iter().filter(|e| !is_already_deleted_error(e)) {
+                    for e in output
+                        .errors()
+                        .iter()
+                        .filter(|e| !is_already_deleted_error(e))
+                    {
                         let key = e.key().map(|key| key.to_string()).ok_or_else(|| {
                             DomainError::unrecoverable(format!(
                                 "[R2OssClient::delete_batch] missing key in delete error: {:?}",
@@ -245,9 +249,9 @@ impl OssImagePool {
             }
         }
 
-        Err(DomainError::unrecoverable(
-            last_err.unwrap_or_else(|| "[R2OssClient::delete_batch] unknown error".into()),
-        ))
+        Err(DomainError::unrecoverable(last_err.unwrap_or_else(|| {
+            "[R2OssClient::delete_batch] unknown error".into()
+        })))
     }
 }
 

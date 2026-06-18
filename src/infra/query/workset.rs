@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use diesel::prelude::*;
 use diesel_async::{AsyncPgConnection, RunQueryDsl};
 use time::OffsetDateTime;
-use tracing::{instrument, Level};
+use tracing::{Level, instrument};
 
 use poprako_util::i18n::trl;
 use poprako_util::page::Page;
@@ -10,9 +10,9 @@ use poprako_util::page::Page;
 use crate::domain::model::aggr::workset::{WorksetAggr, WorksetForm, WorksetUpdate};
 use crate::domain::query_legacy::workset::{WorksetQuery, WorksetQueryTransactional};
 use crate::domain::result::{DomainError, DomainResult};
-use crate::infra::query::{RdbQuery, RdbQueryTransactional};
 use crate::infra::query::entity::workset::{WorksetAspect, WorksetEntry, WorksetRow};
 use crate::infra::query::schema::t_workset::dsl::*;
+use crate::infra::query::{RdbQuery, RdbQueryTransactional};
 use crate::submit_query;
 
 // ── Free functions ─────────────────────────────────────────────────────────

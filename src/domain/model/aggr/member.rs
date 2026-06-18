@@ -97,8 +97,8 @@ pub struct MemberForm {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use time::OffsetDateTime;
     use crate::domain::model::value::role::RoleFlag;
+    use time::OffsetDateTime;
 
     fn make_member_with_roles(roles: &[(RoleFlag, Option<OffsetDateTime>)]) -> MemberAggr {
         let now = OffsetDateTime::now_utc();

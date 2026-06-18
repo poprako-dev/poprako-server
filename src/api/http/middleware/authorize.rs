@@ -1,6 +1,6 @@
 use axum::extract::{Request, State};
 use axum::http::header;
-use axum::middleware::{self, from_fn_with_state, Next};
+use axum::middleware::{self, Next, from_fn_with_state};
 use axum::response::IntoResponse;
 use futures_util::FutureExt as _;
 use tower::Layer;
