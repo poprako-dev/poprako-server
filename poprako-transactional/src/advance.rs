@@ -9,7 +9,7 @@ use crate::step::Step;
 /// parameter, no construction ceremony.  This makes it a clean DI injection
 /// point at the usecase layer.
 #[async_trait]
-pub trait Advance<S, H>: Sized
+pub trait Advance<S, H>
 where
     S: Step,
 {

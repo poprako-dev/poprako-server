@@ -1,6 +1,6 @@
 use poprako_transactional::advance::Advance;
 
-use crate::part::query::action::member::UpdateUserNickname;
+use crate::part::query::action::member::MemberUpdUserNickname;
 use crate::result::RootError;
 
 pub trait MemberQuery<H> {
@@ -10,6 +10,6 @@ pub trait MemberQuery<H> {
 }
 
 pub trait MemberQueryTransactional<H>:
-    for<'a> Advance<UpdateUserNickname<'a>, H, Error = RootError> + Sized
+    for<'a> Advance<MemberUpdUserNickname<'a>, H, Error = RootError> + Sized
 {
 }
