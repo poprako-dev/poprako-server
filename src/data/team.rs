@@ -21,11 +21,7 @@ impl TeamInfoVal {
     {
         let avatar_url = if model.avatar_uploaded {
             match &model.avatar_key {
-                Some(key) => image_pool
-                    .get_signed(key)
-                    .await
-                    .ok()
-                    .map(|u| u.to_string()),
+                Some(key) => image_pool.get_signed(key).await.ok().map(|u| u.to_string()),
                 None => None,
             }
         } else {

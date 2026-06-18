@@ -31,13 +31,6 @@ pub struct UserForm {
     pub password_hash: String,
 }
 
-pub struct UserInfoUpdate<'a> {
-    pub id: &'a str,
-
-    pub qid: &'a str,
-    pub nickname: &'a str,
-}
-
 pub struct UserAvatarReservation {
     pub object_key: String,
     pub previous_object_key: Option<String>,

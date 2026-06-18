@@ -1,6 +1,6 @@
+use axum::Json;
 use axum::extract::{Extension, Path, State};
 use axum::http::StatusCode;
-use axum::Json;
 use tracing::instrument;
 
 use crate::api::http::handler::util::ensure_current_user;

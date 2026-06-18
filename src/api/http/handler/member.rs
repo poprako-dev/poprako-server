@@ -1,6 +1,6 @@
+use axum::Json;
 use axum::extract::{Extension, Path, Query, State};
 use axum::http::StatusCode;
-use axum::Json;
 use tracing::instrument;
 
 use poprako_util::i18n::trl;

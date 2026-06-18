@@ -178,7 +178,9 @@ impl TeamQueryTransactional for MemoryMockQueryTransactional {
             .find(|t| t.id == id)
             .ok_or_else(|| DomainError::expected_argument(trl("error-team-not-found")))?;
         if team.avatar_version != avatar_version {
-            return Err(DomainError::expected_argument(trl("error-stale-avatar-upload")));
+            return Err(DomainError::expected_argument(trl(
+                "error-stale-avatar-upload",
+            )));
         }
         if team.avatar_uploaded {
             return Ok(());
@@ -320,10 +322,8 @@ mod tests {
         mock.seed_team(make_team("team-1", "A"));
 
         mock.transaction_scoped(|txn| {
-            async move {
-                TeamQueryTransactional::reserve_avatar(txn, "team-1", "png").await
-            }
-            .boxed()
+            async move { TeamQueryTransactional::reserve_avatar(txn, "team-1", "png").await }
+                .boxed()
         })
         .await
         .unwrap();

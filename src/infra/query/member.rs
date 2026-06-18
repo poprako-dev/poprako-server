@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use diesel::prelude::*;
 use diesel_async::{AsyncPgConnection, RunQueryDsl};
 use time::OffsetDateTime;
-use tracing::{instrument, Level};
+use tracing::{Level, instrument};
 
 use poprako_util::i18n::trl;
 use poprako_util::page::Page;
@@ -16,13 +16,13 @@ use crate::domain::model::value::member_inclusion::MemberInclusion;
 use crate::domain::model::value::role::RoleFlag;
 use crate::domain::query_legacy::member::{MemberQuery, MemberQueryTransactional};
 use crate::domain::result::{DomainError, DomainResult};
-use crate::infra::query::{RdbQuery, RdbQueryTransactional};
 use crate::infra::query::entity::member::{MemberAspect, MemberEntry, MemberRow};
 use crate::infra::query::entity::team::TeamRow;
 use crate::infra::query::entity::user::UserRow;
 use crate::infra::query::schema::t_member::dsl::*;
 use crate::infra::query::schema::t_team::dsl as team_dsl;
 use crate::infra::query::schema::t_user::dsl as user_dsl;
+use crate::infra::query::{RdbQuery, RdbQueryTransactional};
 use crate::submit_query;
 
 // ── Free functions ─────────────────────────────────────────────────────────

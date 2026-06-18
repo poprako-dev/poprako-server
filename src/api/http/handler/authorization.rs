@@ -1,6 +1,6 @@
+use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
-use axum::Json;
 use cookie::{Cookie, SameSite};
 use tracing::instrument;
 
@@ -8,7 +8,9 @@ use crate::api::http::auth_token::AUTHORIZATION_COOKIE_NAME;
 use crate::api::http::result::{Accept as _, HttpError, HttpResult};
 use crate::harness::Harness;
 use crate::usecase_legacy;
-use crate::usecase_legacy::data_object::user::{SignInParams, SignInReply, SignUpParams, SignUpReply};
+use crate::usecase_legacy::data_object::user::{
+    SignInParams, SignInReply, SignUpParams, SignUpReply,
+};
 
 #[utoipa::path(
     post,

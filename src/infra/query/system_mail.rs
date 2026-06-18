@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use diesel_async::{AsyncPgConnection, RunQueryDsl};
 use time::OffsetDateTime;
-use tracing::{instrument, Level};
+use tracing::{Level, instrument};
 
 use crate::domain::model::aggr::system_mail::SystemMailForm;
 use crate::domain::query_legacy::system_mail::SystemMailQuery;

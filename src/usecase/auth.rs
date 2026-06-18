@@ -4,6 +4,7 @@ use poprako_util::i18n::trl;
 use uuid::Uuid;
 
 use crate::atom;
+use crate::atom::auth::hash_password;
 use crate::data::auth::{LoginData, LoginVal, RegisterData, RegisterVal};
 use crate::model::member::MemberForm;
 use crate::model::user::{UserForm, UserToken};
@@ -12,24 +13,20 @@ use crate::part::effect::event::user::UserSignedUpPayload;
 use crate::part::effect::{Develop, EffectEmit as _};
 use crate::part::query::member::{MemberQuery, MemberQueryTransactional};
 use crate::part::query::member_invitation::{
-    MemberInvitationQuery,
-    MemberInvitationQueryTransactional,
+    MemberInvitationQuery, MemberInvitationQueryTransactional,
 };
-use crate::part::query::step::member::MemberCreate;
-use crate::part::query::step::member_invitation::{
-    MemberInvitationGetByCodeExcluded,
-    MemberInvitationMarkPendingAsUsed,
-};
-use crate::part::query::step::user::{UserCreate, UserGetCredentialByQid};
+use crate::part::query::step::member::MemberStep;
+use crate::part::query::step::member_invitation::MemberInvitationStep;
+use crate::part::query::step::user::UserStep;
 use crate::part::query::user::{UserQuery, UserQueryTransactional};
 use crate::part::query::{DeriveTransactional, Execute, map_drive_err};
 use crate::part::token::TokenIssuer;
 use crate::result::{ExpectedVariant, RootError, RootResult, accept};
 
-pub async fn register<D, H, Q, T, E>(
+pub async fn register<D, H, Q, I, E>(
     drive: D,
     query: Q,
-    token_issuer: &T,
+    issuer: &I,
     develop: &E,
     input: RegisterData,
 ) -> RootResult<RegisterVal>
@@ -38,12 +35,11 @@ where
     D::Error: Into<RootError>,
     H: Send,
     Q: UserQuery<H> + MemberQuery<H> + MemberInvitationQuery<H> + Send,
-    <Q as DeriveTransactional>::Transactional:
-        UserQueryTransactional<H>
+    <Q as DeriveTransactional>::Transactional: UserQueryTransactional<H>
         + MemberQueryTransactional<H>
         + MemberInvitationQueryTransactional<H>
         + Send,
-    T: TokenIssuer,
+    I: TokenIssuer,
     E: Develop + Send + Sync,
 {
     let (user_id, team_id, invitor_id, invitee_qid) = drive
@@ -53,9 +49,7 @@ where
             let invitation = query
                 .advance(
                     handle,
-                    MemberInvitationGetByCodeExcluded {
-                        invitation_code: &input.invitation_code,
-                    },
+                    MemberInvitationStep::get_info_by_code_excluded(&input.invitation_code),
                 )
                 .await?;
 
@@ -66,7 +60,7 @@ where
                 });
             }
 
-            let password_hash = atom::auth::hash_password(&input.password)?;
+            let password_hash = hash_password(&input.password)?;
 
             let user_form = UserForm {
                 id: format!("user-{}", Uuid::now_v7()),
@@ -75,9 +69,7 @@ where
                 password_hash,
             };
 
-            let user_info = query
-                .advance(handle, UserCreate { form: &user_form })
-                .await?;
+            let user_info = query.advance(handle, UserStep::create(&user_form)).await?;
 
             let member_form = MemberForm {
                 id: format!("member-{}", Uuid::now_v7()),
@@ -88,15 +80,13 @@ where
             };
 
             query
-                .advance(handle, MemberCreate { form: &member_form })
+                .advance(handle, MemberStep::create(&member_form))
                 .await?;
 
             query
                 .advance(
                     handle,
-                    MemberInvitationMarkPendingAsUsed {
-                        id: &invitation.id,
-                    },
+                    MemberInvitationStep::mark_pending_as_used(&invitation.id),
                 )
                 .await?;
 
@@ -118,24 +108,20 @@ where
     .emit(develop)
     .await;
 
-    let token = token_issuer.sign(&UserToken {
+    let token = issuer.sign(&UserToken {
         user_id: user_id.clone(),
     })?;
 
     Ok(RegisterVal { user_id, token })
 }
 
-pub async fn login<H, Q, T>(
-    query: Q,
-    token_issuer: &T,
-    input: LoginData,
-) -> RootResult<LoginVal>
+pub async fn login<H, Q, I>(query: Q, issuer: &I, input: LoginData) -> RootResult<LoginVal>
 where
     Q: UserQuery<H>,
     <Q as DeriveTransactional>::Transactional: UserQueryTransactional<H>,
-    T: TokenIssuer,
+    I: TokenIssuer,
 {
-    let credential = Execute::execute(&query, UserGetCredentialByQid { qid: &input.qid }).await?;
+    let credential = Execute::execute(&query, UserStep::get_credential_by_qid(&input.qid)).await?;
 
     if !credential.verify_password(&input.password) {
         return Err(RootError::Expected {
@@ -144,7 +130,7 @@ where
         });
     }
 
-    let token = token_issuer.sign(&UserToken {
+    let token = issuer.sign(&UserToken {
         user_id: credential.user_id.clone(),
     })?;
 

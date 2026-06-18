@@ -60,7 +60,7 @@ use diesel_async::AsyncPgConnection;
 use diesel_async::pooled_connection::AsyncDieselConnectionManager;
 use diesel_async::pooled_connection::deadpool::Pool;
 use futures_util::future::BoxFuture;
-use tracing::{instrument, Level};
+use tracing::{Level, instrument};
 
 use poprako_util::i18n::trl;
 

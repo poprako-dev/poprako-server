@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use diesel::prelude::*;
 use diesel_async::{AsyncPgConnection, RunQueryDsl};
 use time::OffsetDateTime;
-use tracing::{instrument, Level};
+use tracing::{Level, instrument};
 
 use poprako_util::i18n::trl;
 
@@ -11,9 +11,9 @@ use crate::domain::model::aggr::user::{
 };
 use crate::domain::query_legacy::user::{UserQuery, UserQueryTransactional};
 use crate::domain::result::{DomainError, DomainResult};
-use crate::infra::query::{RdbQuery, RdbQueryTransactional};
 use crate::infra::query::entity::user::{UserAspect, UserEntry, UserRow};
 use crate::infra::query::schema::t_user::dsl::*;
+use crate::infra::query::{RdbQuery, RdbQueryTransactional};
 use crate::submit_query;
 
 #[instrument(err, skip(conn), level = Level::DEBUG)]
@@ -191,7 +191,6 @@ pub async fn mark_avatar_uploaded(
     Ok(())
 }
 
-
 #[instrument(err, skip(conn), level = Level::DEBUG)]
 pub async fn touch_last_active(conn: &mut AsyncPgConnection, id: &str) -> DomainResult<()> {
     let now = OffsetDateTime::now_utc();
@@ -274,10 +273,7 @@ impl<'c> UserQueryTransactional for RdbQueryTransactional<'c> {
 }
 
 #[instrument(err, skip(conn), level = Level::DEBUG)]
-pub async fn delete_user(
-    conn: &mut AsyncPgConnection,
-    id: &str,
-) -> DomainResult<()> {
+pub async fn delete_user(conn: &mut AsyncPgConnection, id: &str) -> DomainResult<()> {
     let affected = diesel::delete(t_user.filter(f_id.eq(id)))
         .execute(conn)
         .await?;

@@ -2,8 +2,8 @@ use time::Duration;
 
 use crate::domain::external::token::{TokenParse, TokenSign};
 use crate::domain::model::aggr::local_message::LocalMessageForm;
-use crate::domain::model::value::local_message::ImageLocalMessage;
 use crate::domain::model::aggr::user::UserToken;
+use crate::domain::model::value::local_message::ImageLocalMessage;
 use crate::domain::query_legacy::QueryTransactional;
 use crate::domain::query_legacy::local_message::LocalMessageQueryTransactional;
 use crate::domain::query_legacy::member::MemberQueryTransactional;

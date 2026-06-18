@@ -2,7 +2,7 @@ use serde_json::Value;
 use time::{Duration, OffsetDateTime};
 use uuid::Uuid;
 
-use crate::domain::model::value::local_message::{ImageLocalMessage, IMAGE_TOPIC};
+use crate::domain::model::value::local_message::{IMAGE_TOPIC, ImageLocalMessage};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LocalMessageStatus {
@@ -74,10 +74,22 @@ mod tests {
 
     #[test]
     fn status_as_str_maps_all_variants() {
-        assert_eq!(LocalMessageStatus::Pending.as_str(), "local_message_status:pending");
-        assert_eq!(LocalMessageStatus::Processing.as_str(), "local_message_status:processing");
-        assert_eq!(LocalMessageStatus::Completed.as_str(), "local_message_status:completed");
-        assert_eq!(LocalMessageStatus::Dead.as_str(), "local_message_status:dead");
+        assert_eq!(
+            LocalMessageStatus::Pending.as_str(),
+            "local_message_status:pending"
+        );
+        assert_eq!(
+            LocalMessageStatus::Processing.as_str(),
+            "local_message_status:processing"
+        );
+        assert_eq!(
+            LocalMessageStatus::Completed.as_str(),
+            "local_message_status:completed"
+        );
+        assert_eq!(
+            LocalMessageStatus::Dead.as_str(),
+            "local_message_status:dead"
+        );
     }
 
     #[test]
@@ -90,7 +102,10 @@ mod tests {
     fn from_image_message_sets_topic_and_payload() {
         let msg = ImageLocalMessage::delete("test-key".into());
         let form = LocalMessageForm::from_image_message(msg, time::Duration::seconds(0));
-        assert_eq!(form.topic, crate::domain::model::value::local_message::IMAGE_TOPIC);
+        assert_eq!(
+            form.topic,
+            crate::domain::model::value::local_message::IMAGE_TOPIC
+        );
         assert!(form.payload.is_object());
     }
 }
