@@ -7,6 +7,7 @@ error-no-pending-invitation = No pending invitation
 error-invitation-not-found = Invitation record not found
 error-invalid-invitation-code = Invalid invitation code
 error-unauthorized = Invalid authorization info, please try logging in again
+error-forbidden = You do not have permission to perform this operation
 error-unsupported-file-type = Unsupported file type
 error-stale-avatar-upload = Avatar upload version is stale
 error-team-not-found = Team not found

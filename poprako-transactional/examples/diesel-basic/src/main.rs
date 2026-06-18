@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use poprako_transactional::advance::Advance;
-use poprako_transactional::run::Run;
-use poprako_transactional::run::result::Error as ScopedError;
+use poprako_transactional::drive::Drive;
+use poprako_transactional::drive::result::Error as ScopedError;
 use poprako_transactional::step::Step;
 use poprako_transactional::util::AsyncFnMark;
 
@@ -44,7 +44,7 @@ async fn run_order_usecase<M, H, E, D, C>(
     quantity: i32,
 ) -> Result<(), ScopedError<E, M::Error>>
 where
-    M: Run<H>,
+    M: Drive<H>,
     E: Send,
     D: Advance<DecreaseProduct, H> + Send,
     C: Advance<CreateOrder, H> + Send,
@@ -116,7 +116,7 @@ impl PgBackend {
 }
 
 #[async_trait]
-impl Run<PgHandle> for PgBackend {
+impl Drive<PgHandle> for PgBackend {
     type Error = PgBackendError;
 
     async fn scope<T, E, F>(&self, f: F) -> Result<T, ScopedError<E, Self::Error>>

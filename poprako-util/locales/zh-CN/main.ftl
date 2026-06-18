@@ -7,6 +7,7 @@ error-no-pending-invitation = 不存在待处理的邀请
 error-invitation-not-found = 邀请记录不存在
 error-invalid-invitation-code = 无效的邀请码
 error-unauthorized = 无效的授权信息，请尝试重新登录
+error-forbidden = 您没有权限执行此操作
 error-unsupported-file-type = 不支持的文件类型
 error-stale-avatar-upload = 头像上传版本已过期
 error-team-not-found = 该汉化组不存在

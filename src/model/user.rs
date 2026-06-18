@@ -31,9 +31,26 @@ pub struct UserForm {
     pub password_hash: String,
 }
 
-pub struct UserInfoUpd<'a> {
+pub struct UserInfoUpdate<'a> {
     pub id: &'a str,
 
     pub qid: &'a str,
     pub nickname: &'a str,
+}
+
+pub struct UserAvatarReservation {
+    pub object_key: String,
+    pub previous_object_key: Option<String>,
+    pub avatar_version: i64,
+}
+
+pub struct UserCredential {
+    pub user_id: String,
+    pub password_hash: String,
+}
+
+impl UserCredential {
+    pub fn verify_password(&self, password: &str) -> bool {
+        crate::atom::auth::verify_password(password, &self.password_hash)
+    }
 }

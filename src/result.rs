@@ -1,4 +1,4 @@
-use poprako_transactional::run::result::Error as RunError;
+use poprako_transactional::drive::result::Error as DriveError;
 
 pub enum ExpectedVariant {
     Args,
@@ -26,15 +26,15 @@ pub type RootError = Error;
 
 pub type RootResult<T> = Result<T>;
 
-impl<E, BE> From<RunError<E, BE>> for Error
+impl<E, BE> From<DriveError<E, BE>> for Error
 where
     E: Into<Error>,
     BE: Into<Error>,
 {
-    fn from(value: RunError<E, BE>) -> Self {
+    fn from(value: DriveError<E, BE>) -> Self {
         match value {
-            RunError::Advance(e) => e.into(),
-            RunError::Backend(e) => e.into(),
+            DriveError::Advance(e) => e.into(),
+            DriveError::Backend(e) => e.into(),
         }
     }
 }
