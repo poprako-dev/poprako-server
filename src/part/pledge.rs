@@ -4,12 +4,14 @@ use time::OffsetDateTime;
 use poprako_transactional::advance::Advance;
 use poprako_transactional::step::Step;
 
-use crate::part::intention::ImageLocalMessage;
+use crate::part::pledge::intention::ImageIntention;
 use crate::result::RootError;
+
+pub mod intention;
 
 #[derive(Serialize, Deserialize)]
 pub enum Payload {
-    Image(ImageLocalMessage),
+    Image(ImageIntention),
 }
 
 pub struct Append<'a> {

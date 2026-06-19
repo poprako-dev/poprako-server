@@ -13,8 +13,8 @@ use crate::model::user::UserToken;
 use crate::part::effect::event::Event;
 use crate::part::effect::event::user::UserActivePayload;
 use crate::part::effect::{Develop, EffectEmit as _};
-use crate::part::image_pool::ImagePool;
-use crate::part::intention::{IMAGE_TOPIC, ImageLocalMessage, ImageResourceKind};
+use crate::part::image::ImagePool;
+use crate::part::pledge::intention::{IMAGE_TOPIC, ImageIntention, ImageResourceKind};
 use crate::part::pledge::{Payload, Pledge, PledgeStep};
 use crate::part::query::member::{MemberQuery, MemberQueryTransactional};
 use crate::part::query::step::member::MemberStep;
@@ -36,7 +36,7 @@ where
     P: ImagePool,
     D: Develop + Send + Sync,
 {
-    let info_model = Execute::execute(&query, UserStep::get_info_by_id(&id)).await?;
+    let info_model = query.execute(UserStep::get_info_by_id(&id)).await?;
 
     if token.user_id == id {
         Event::UserActive(UserActivePayload {
@@ -94,14 +94,13 @@ where
         .map_err(map_drive_err)
 }
 
-pub async fn reserve_avatar<D, H, Q, PL, P>(
+pub async fn reserve_avatar<D, H, Q, P, I>(
     drive: D,
     query: Q,
-    pledge: PL,
-    image_pool: P,
+    pledge: P,
+    image: I,
     token: UserToken,
-    user_id: String,
-    input: ReserveUserAvatarData,
+    data: ReserveUserAvatarData,
 ) -> RootResult<ReserveUserAvatarVal>
 where
     D: Drive<H>,
@@ -109,36 +108,32 @@ where
     H: Send,
     Q: UserQuery<H> + Send,
     <Q as DeriveTransactional>::Transactional: UserQueryTransactional<H> + Send,
-    PL: Pledge<H> + Send,
-    P: ImagePool,
+    P: Pledge<H> + Send,
+    I: ImagePool,
 {
-    if token.user_id != user_id {
-        return Err(RootError::Expected {
-            variant: ExpectedVariant::Perm,
-            message: trl("error-forbidden"),
-        });
-    }
-
     let (object_key, avatar_version) = drive
         .run_transactional(async move |handle| {
             let mut query = DeriveTransactional::transactional(&query).await;
-            let mut pledge = pledge;
 
             let reservation = query
-                .advance(handle, UserStep::reserve_avatar(&user_id, &input.file_ext))
+                .advance(
+                    handle,
+                    UserStep::reserve_avatar(&token.user_id, &data.file_ext),
+                )
                 .await?;
 
             let now = OffsetDateTime::now_utc();
 
             if let Some(previous_key) = &reservation.previous_object_key {
                 let delete_id = format!("lm-{}", Uuid::now_v7());
+
                 pledge
                     .advance(
                         handle,
                         PledgeStep::append(
                             &delete_id,
                             IMAGE_TOPIC.to_string(),
-                            Payload::Image(ImageLocalMessage::Delete {
+                            Payload::Image(ImageIntention::Delete {
                                 object_key: previous_key.clone(),
                             }),
                             &now,
@@ -156,9 +151,9 @@ where
                     PledgeStep::append(
                         &check_id,
                         IMAGE_TOPIC.to_string(),
-                        Payload::Image(ImageLocalMessage::CheckUploaded {
+                        Payload::Image(ImageIntention::CheckUploaded {
                             resource_kind: ImageResourceKind::UserAvatar,
-                            resource_id: user_id.clone(),
+                            resource_id: token.user_id.clone(),
                             object_key: reservation.object_key.clone(),
                             image_version: reservation.avatar_version,
                         }),
@@ -172,7 +167,7 @@ where
         .await
         .map_err(map_drive_err)?;
 
-    let put_url = image_pool.put_signed(&object_key).await?.to_string();
+    let put_url = image.put_signed(&object_key).await?.to_string();
 
     Ok(ReserveUserAvatarVal {
         put_url,
@@ -184,8 +179,8 @@ pub async fn mark_avatar_uploaded<D, H, Q>(
     drive: D,
     query: Q,
     token: UserToken,
-    user_id: String,
-    input: MarkUserAvatarUploadedData,
+    id: String,
+    data: MarkUserAvatarUploadedData,
 ) -> RootResult<()>
 where
     D: Drive<H>,
@@ -194,7 +189,7 @@ where
     Q: UserQuery<H> + Send,
     <Q as DeriveTransactional>::Transactional: UserQueryTransactional<H> + Send,
 {
-    if token.user_id != user_id {
+    if token.user_id != id {
         return Err(RootError::Expected {
             variant: ExpectedVariant::Perm,
             message: trl("error-forbidden"),
@@ -208,7 +203,7 @@ where
             query
                 .advance(
                     handle,
-                    UserStep::mark_avatar_uploaded(&user_id, input.avatar_version),
+                    UserStep::mark_avatar_uploaded(&id, data.avatar_version),
                 )
                 .await?;
 
@@ -245,12 +240,12 @@ where
         .map_err(map_drive_err)
 }
 
-pub async fn delete_user<D, H, Q, PL>(
+pub async fn delete_user<D, H, Q, P>(
     drive: D,
     query: Q,
-    pledge: PL,
+    pledge: P,
     token: UserToken,
-    user_id: String,
+    id: String,
 ) -> RootResult<()>
 where
     D: Drive<H>,
@@ -259,9 +254,10 @@ where
     Q: UserQuery<H> + MemberQuery<H> + Send,
     <Q as DeriveTransactional>::Transactional:
         UserQueryTransactional<H> + MemberQueryTransactional<H> + Send,
-    PL: Pledge<H> + Send,
+    P: Pledge<H> + Send,
 {
-    if token.user_id != user_id {
+    if token.user_id != id {
+        // TODO: perm check.
         return Err(RootError::Expected {
             variant: ExpectedVariant::Perm,
             message: trl("error-forbidden"),
@@ -271,36 +267,34 @@ where
     drive
         .run_transactional(async move |handle| {
             let mut query = DeriveTransactional::transactional(&query).await;
-            let mut pledge = pledge;
 
             let user_info = query
-                .advance(handle, UserStep::get_info_excluded(&user_id))
+                .advance(handle, UserStep::get_info_excluded(&id))
                 .await?;
 
-            let members = query
-                .advance(handle, MemberStep::list_by_user_id_excluded(&user_id))
+            let member_infos = query
+                .advance(handle, MemberStep::list_by_user_id_excluded(&id))
                 .await?;
 
-            for member in &members {
-                query
-                    .advance(handle, MemberStep::delete(&member.id))
-                    .await?;
+            for mi in &member_infos {
+                query.advance(handle, MemberStep::delete(&mi.id)).await?;
             }
 
-            query.advance(handle, UserStep::delete(&user_id)).await?;
+            query.advance(handle, UserStep::delete(&id)).await?;
 
             if let Some(avatar_key) = &user_info.avatar_key
                 && user_info.avatar_uploaded
             {
                 let now = OffsetDateTime::now_utc();
                 let delete_id = format!("lm-{}", Uuid::now_v7());
+
                 pledge
                     .advance(
                         handle,
                         PledgeStep::append(
                             &delete_id,
                             IMAGE_TOPIC.to_string(),
-                            Payload::Image(ImageLocalMessage::Delete {
+                            Payload::Image(ImageIntention::Delete {
                                 object_key: avatar_key.clone(),
                             }),
                             &now,
