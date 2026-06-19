@@ -1,4 +1,3 @@
-pub mod local_message;
 pub mod member;
 pub mod member_invitation;
 pub mod role;

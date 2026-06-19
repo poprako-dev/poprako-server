@@ -1,5 +1,7 @@
 use time::OffsetDateTime;
 
+use crate::atom::auth;
+
 pub struct UserToken {
     pub user_id: String,
 }
@@ -44,6 +46,6 @@ pub struct UserCredential {
 
 impl UserCredential {
     pub fn verify_password(&self, password: &str) -> bool {
-        crate::atom::auth::verify_password(password, &self.password_hash)
+        auth::verify_password(password, &self.password_hash)
     }
 }

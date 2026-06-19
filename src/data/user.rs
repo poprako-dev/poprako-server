@@ -23,21 +23,16 @@ impl UserInfoVal {
     where
         P: ImagePool,
     {
-        // FIXME: bad taste.
-        let avatar_url = if model.avatar_uploaded {
-            match &model.avatar_key {
-                Some(key) => image_pool.get_signed(key).await.ok().map(|u| u.to_string()),
-                None => None,
-            }
-        } else {
-            None
+        let avatar_url = match (model.avatar_uploaded, &model.avatar_key) {
+            (true, Some(key)) => image_pool.get_signed(key).await.ok(),
+            _ => None,
         };
 
         Ok(Self {
             id: model.id,
             nickname: model.nickname,
             qid: model.qid,
-            avatar_url,
+            avatar_url: avatar_url.map(Into::into),
             is_sadmin: model.is_sadmin,
             last_active_at: model.last_active_at.to_unix_milli(),
             created_at: model.created_at.to_unix_milli(),
@@ -46,22 +41,22 @@ impl UserInfoVal {
     }
 }
 
-pub struct UserInfoUpdateData {
+pub struct UpdateUserInfoData {
     pub id: String,
 
     pub qid: String,
     pub nickname: String,
 }
 
-pub struct UserAvatarReserveData {
+pub struct ReserveUserAvatarData {
     pub file_ext: String,
 }
 
-pub struct UserAvatarReserveVal {
+pub struct ReserveUserAvatarVal {
     pub put_url: String,
     pub avatar_version: i64,
 }
 
-pub struct UserAvatarMarkUploadedData {
+pub struct MarkUserAvatarUploadedData {
     pub avatar_version: i64,
 }

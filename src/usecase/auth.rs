@@ -1,9 +1,9 @@
+use uuid::Uuid;
+
 use poprako_transactional::advance::Advance;
 use poprako_transactional::drive::Drive;
 use poprako_util::i18n::trl;
-use uuid::Uuid;
 
-use crate::atom;
 use crate::atom::auth::hash_password;
 use crate::data::auth::{LoginData, LoginVal, RegisterData, RegisterVal};
 use crate::model::member::MemberForm;
@@ -20,15 +20,15 @@ use crate::part::query::step::member_invitation::MemberInvitationStep;
 use crate::part::query::step::user::UserStep;
 use crate::part::query::user::{UserQuery, UserQueryTransactional};
 use crate::part::query::{DeriveTransactional, Execute, map_drive_err};
-use crate::part::token::TokenIssuer;
+use crate::part::token::TokenAuth;
 use crate::result::{ExpectedVariant, RootError, RootResult, accept};
 
-pub async fn register<D, H, Q, I, E>(
+pub async fn register<D, H, Q, A, Dv>(
     drive: D,
     query: Q,
-    issuer: &I,
-    develop: &E,
-    input: RegisterData,
+    auth: &A,
+    develop: &Dv,
+    data: RegisterData,
 ) -> RootResult<RegisterVal>
 where
     D: Drive<H>,
@@ -39,8 +39,8 @@ where
         + MemberQueryTransactional<H>
         + MemberInvitationQueryTransactional<H>
         + Send,
-    I: TokenIssuer,
-    E: Develop + Send + Sync,
+    A: TokenAuth,
+    Dv: Develop + Send + Sync,
 {
     let (user_id, team_id, invitor_id, invitee_qid) = drive
         .run_transactional(async move |handle| {
@@ -49,23 +49,23 @@ where
             let invitation = query
                 .advance(
                     handle,
-                    MemberInvitationStep::get_info_by_code_excluded(&input.invitation_code),
+                    MemberInvitationStep::get_info_by_code_excluded(&data.invitation_code),
                 )
                 .await?;
 
-            if invitation.invitee_qid != input.qid {
+            if invitation.invitee_qid != data.qid {
                 return Err(RootError::Expected {
                     variant: ExpectedVariant::Args,
                     message: trl("error-invalid-invitation-code"),
                 });
             }
 
-            let password_hash = hash_password(&input.password)?;
+            let password_hash = hash_password(&data.password)?;
 
             let user_form = UserForm {
                 id: format!("user-{}", Uuid::now_v7()),
-                qid: input.qid.clone(),
-                nickname: input.nickname.clone(),
+                qid: data.qid.clone(),
+                nickname: data.nickname.clone(),
                 password_hash,
             };
 
@@ -108,29 +108,29 @@ where
     .emit(develop)
     .await;
 
-    let token = issuer.sign(&UserToken {
+    let token = auth.sign(&UserToken {
         user_id: user_id.clone(),
     })?;
 
     Ok(RegisterVal { user_id, token })
 }
 
-pub async fn login<H, Q, I>(query: Q, issuer: &I, input: LoginData) -> RootResult<LoginVal>
+pub async fn login<H, Q, A>(query: Q, auth: &A, data: LoginData) -> RootResult<LoginVal>
 where
     Q: UserQuery<H>,
     <Q as DeriveTransactional>::Transactional: UserQueryTransactional<H>,
-    I: TokenIssuer,
+    A: TokenAuth,
 {
-    let credential = Execute::execute(&query, UserStep::get_credential_by_qid(&input.qid)).await?;
+    let credential = Execute::execute(&query, UserStep::get_credential_by_qid(&data.qid)).await?;
 
-    if !credential.verify_password(&input.password) {
+    if !credential.verify_password(&data.password) {
         return Err(RootError::Expected {
             variant: ExpectedVariant::Auth,
             message: trl("error-wrong-credentials"),
         });
     }
 
-    let token = issuer.sign(&UserToken {
+    let token = auth.sign(&UserToken {
         user_id: credential.user_id.clone(),
     })?;
 

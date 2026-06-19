@@ -1,21 +1,21 @@
+use time::{Duration, OffsetDateTime};
+use uuid::Uuid;
+
 use poprako_transactional::advance::Advance;
 use poprako_transactional::drive::Drive;
 use poprako_util::i18n::trl;
-use time::Duration;
-use time::OffsetDateTime;
-use uuid::Uuid;
 
 use crate::data::user::{
-    UserAvatarMarkUploadedData, UserAvatarReserveData, UserAvatarReserveVal, UserInfoUpdateData,
+    MarkUserAvatarUploadedData, ReserveUserAvatarData, ReserveUserAvatarVal, UpdateUserInfoData,
     UserInfoVal,
 };
-use crate::model::local_message::{IMAGE_TOPIC, ImageLocalMessage, ImageResourceKind};
 use crate::model::user::UserToken;
 use crate::part::effect::event::Event;
 use crate::part::effect::event::user::UserActivePayload;
 use crate::part::effect::{Develop, EffectEmit as _};
 use crate::part::image_pool::ImagePool;
-use crate::part::pledge::{Append, Payload, Pledge};
+use crate::part::intention::{IMAGE_TOPIC, ImageLocalMessage, ImageResourceKind};
+use crate::part::pledge::{Payload, Pledge, PledgeStep};
 use crate::part::query::member::{MemberQuery, MemberQueryTransactional};
 use crate::part::query::step::member::MemberStep;
 use crate::part::query::step::user::UserStep;
@@ -53,7 +53,7 @@ pub async fn update_info<D, H, Q>(
     drive: D,
     query: Q,
     token: UserToken,
-    input: UserInfoUpdateData,
+    input: UpdateUserInfoData,
 ) -> RootResult<()>
 where
     D: Drive<H>,
@@ -101,8 +101,8 @@ pub async fn reserve_avatar<D, H, Q, PL, P>(
     image_pool: P,
     token: UserToken,
     user_id: String,
-    input: UserAvatarReserveData,
-) -> RootResult<UserAvatarReserveVal>
+    input: ReserveUserAvatarData,
+) -> RootResult<ReserveUserAvatarVal>
 where
     D: Drive<H>,
     D::Error: Into<RootError>,
@@ -135,14 +135,14 @@ where
                 pledge
                     .advance(
                         handle,
-                        Append {
-                            id: &delete_id,
-                            topic: IMAGE_TOPIC.to_string(),
-                            payload: Payload::Image(ImageLocalMessage::Delete {
+                        PledgeStep::append(
+                            &delete_id,
+                            IMAGE_TOPIC.to_string(),
+                            Payload::Image(ImageLocalMessage::Delete {
                                 object_key: previous_key.clone(),
                             }),
-                            visible_at: &now,
-                        },
+                            &now,
+                        ),
                     )
                     .await?;
             }
@@ -153,17 +153,17 @@ where
             pledge
                 .advance(
                     handle,
-                    Append {
-                        id: &check_id,
-                        topic: IMAGE_TOPIC.to_string(),
-                        payload: Payload::Image(ImageLocalMessage::CheckUploaded {
+                    PledgeStep::append(
+                        &check_id,
+                        IMAGE_TOPIC.to_string(),
+                        Payload::Image(ImageLocalMessage::CheckUploaded {
                             resource_kind: ImageResourceKind::UserAvatar,
                             resource_id: user_id.clone(),
                             object_key: reservation.object_key.clone(),
                             image_version: reservation.avatar_version,
                         }),
-                        visible_at: &check_visible_at,
-                    },
+                        &check_visible_at,
+                    ),
                 )
                 .await?;
 
@@ -174,7 +174,7 @@ where
 
     let put_url = image_pool.put_signed(&object_key).await?.to_string();
 
-    Ok(UserAvatarReserveVal {
+    Ok(ReserveUserAvatarVal {
         put_url,
         avatar_version,
     })
@@ -185,7 +185,7 @@ pub async fn mark_avatar_uploaded<D, H, Q>(
     query: Q,
     token: UserToken,
     user_id: String,
-    input: UserAvatarMarkUploadedData,
+    input: MarkUserAvatarUploadedData,
 ) -> RootResult<()>
 where
     D: Drive<H>,
@@ -289,24 +289,24 @@ where
 
             query.advance(handle, UserStep::delete(&user_id)).await?;
 
-            if let Some(ref avatar_key) = user_info.avatar_key {
-                if user_info.avatar_uploaded {
-                    let now = OffsetDateTime::now_utc();
-                    let delete_id = format!("lm-{}", Uuid::now_v7());
-                    pledge
-                        .advance(
-                            handle,
-                            Append {
-                                id: &delete_id,
-                                topic: IMAGE_TOPIC.to_string(),
-                                payload: Payload::Image(ImageLocalMessage::Delete {
-                                    object_key: avatar_key.clone(),
-                                }),
-                                visible_at: &now,
-                            },
-                        )
-                        .await?;
-                }
+            if let Some(avatar_key) = &user_info.avatar_key
+                && user_info.avatar_uploaded
+            {
+                let now = OffsetDateTime::now_utc();
+                let delete_id = format!("lm-{}", Uuid::now_v7());
+                pledge
+                    .advance(
+                        handle,
+                        PledgeStep::append(
+                            &delete_id,
+                            IMAGE_TOPIC.to_string(),
+                            Payload::Image(ImageLocalMessage::Delete {
+                                object_key: avatar_key.clone(),
+                            }),
+                            &now,
+                        ),
+                    )
+                    .await?;
             }
 
             accept(())
