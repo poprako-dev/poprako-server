@@ -19,20 +19,16 @@ impl TeamInfoVal {
     where
         P: ImagePool,
     {
-        let avatar_url = if model.avatar_uploaded {
-            match &model.avatar_key {
-                Some(key) => image_pool.get_signed(key).await.ok().map(|u| u.to_string()),
-                None => None,
-            }
-        } else {
-            None
+        let avatar_url = match (model.avatar_uploaded, &model.avatar_key) {
+            (true, Some(key)) => image_pool.get_signed(key).await.ok(),
+            _ => None,
         };
 
         Ok(Self {
             id: model.id,
             name: model.name,
             description: model.description,
-            avatar_url,
+            avatar_url: avatar_url.map(Into::into),
             workset_next_index: model.workset_next_index,
             created_at: model.created_at.to_unix_milli(),
             updated_at: model.updated_at.to_unix_milli(),
@@ -40,26 +36,26 @@ impl TeamInfoVal {
     }
 }
 
-pub struct TeamCreateData {
+pub struct CreateTeamData {
     pub name: String,
     pub description: String,
 }
 
-pub struct TeamInfoUpdateData {
+pub struct UpdateTeamInfoData {
     pub id: String,
     pub name: String,
     pub description: String,
 }
 
-pub struct TeamAvatarReserveData {
+pub struct ReserveTeamAvatarData {
     pub file_ext: String,
 }
 
-pub struct TeamAvatarReserveVal {
+pub struct ReserveTeamAvatarVal {
     pub put_url: String,
     pub avatar_version: i64,
 }
 
-pub struct TeamAvatarMarkUploadedData {
+pub struct MarkTeamAvatarUploadedData {
     pub avatar_version: i64,
 }

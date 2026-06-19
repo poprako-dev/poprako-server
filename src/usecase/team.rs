@@ -1,18 +1,18 @@
+use time::{Duration, OffsetDateTime};
+use uuid::Uuid;
+
 use poprako_transactional::advance::Advance;
 use poprako_transactional::drive::Drive;
 use poprako_util::page::Page;
-use time::Duration;
-use time::OffsetDateTime;
-use uuid::Uuid;
 
 use crate::data::team::{
-    TeamAvatarMarkUploadedData, TeamAvatarReserveData, TeamAvatarReserveVal, TeamCreateData,
-    TeamInfoUpdateData, TeamInfoVal,
+    CreateTeamData, MarkTeamAvatarUploadedData, ReserveTeamAvatarData, ReserveTeamAvatarVal,
+    TeamInfoVal, UpdateTeamInfoData,
 };
-use crate::model::local_message::{IMAGE_TOPIC, ImageLocalMessage, ImageResourceKind};
 use crate::model::team::TeamForm;
 use crate::part::image_pool::ImagePool;
-use crate::part::pledge::{Append, Payload, Pledge};
+use crate::part::intention::{IMAGE_TOPIC, ImageLocalMessage, ImageResourceKind};
+use crate::part::pledge::{Payload, Pledge, PledgeStep};
 use crate::part::query::step::team::TeamStep;
 use crate::part::query::step::workset::WorksetStep;
 use crate::part::query::team::{TeamQuery, TeamQueryTransactional};
@@ -23,7 +23,7 @@ use crate::result::{RootError, RootResult, accept};
 pub async fn create<H, Q, P>(
     query: Q,
     image_pool: P,
-    input: TeamCreateData,
+    data: CreateTeamData,
 ) -> RootResult<TeamInfoVal>
 where
     Q: TeamQuery<H>,
@@ -32,8 +32,8 @@ where
 {
     let team_form = TeamForm {
         id: format!("team-{}", Uuid::now_v7()),
-        name: input.name,
-        description: input.description,
+        name: data.name,
+        description: data.description,
     };
 
     let team_info = Execute::execute(&query, TeamStep::create(&team_form)).await?;
@@ -72,7 +72,7 @@ where
     Ok(vals)
 }
 
-pub async fn update_info<H, Q>(query: Q, input: TeamInfoUpdateData) -> RootResult<()>
+pub async fn update_info<H, Q>(query: Q, input: UpdateTeamInfoData) -> RootResult<()>
 where
     Q: TeamQuery<H>,
     <Q as DeriveTransactional>::Transactional: TeamQueryTransactional<H>,
@@ -92,8 +92,8 @@ pub async fn reserve_avatar<D, H, Q, Pl, P>(
     pledge: Pl,
     image_pool: P,
     team_id: String,
-    input: TeamAvatarReserveData,
-) -> RootResult<TeamAvatarReserveVal>
+    input: ReserveTeamAvatarData,
+) -> RootResult<ReserveTeamAvatarVal>
 where
     D: Drive<H>,
     D::Error: Into<RootError>,
@@ -114,19 +114,19 @@ where
 
             let now = OffsetDateTime::now_utc();
 
-            if let Some(ref previous_key) = reservation.previous_object_key {
+            if let Some(previous_key) = &reservation.previous_object_key {
                 let delete_id = format!("lm-{}", Uuid::now_v7());
                 pledge
                     .advance(
                         handle,
-                        Append {
-                            id: &delete_id,
-                            topic: IMAGE_TOPIC.to_string(),
-                            payload: Payload::Image(ImageLocalMessage::Delete {
+                        PledgeStep::append(
+                            &delete_id,
+                            IMAGE_TOPIC.to_string(),
+                            Payload::Image(ImageLocalMessage::Delete {
                                 object_key: previous_key.clone(),
                             }),
-                            visible_at: &now,
-                        },
+                            &now,
+                        ),
                     )
                     .await?;
             }
@@ -136,17 +136,17 @@ where
             pledge
                 .advance(
                     handle,
-                    Append {
-                        id: &check_id,
-                        topic: IMAGE_TOPIC.to_string(),
-                        payload: Payload::Image(ImageLocalMessage::CheckUploaded {
+                    PledgeStep::append(
+                        &check_id,
+                        IMAGE_TOPIC.to_string(),
+                        Payload::Image(ImageLocalMessage::CheckUploaded {
                             resource_kind: ImageResourceKind::TeamAvatar,
                             resource_id: team_id.clone(),
                             object_key: reservation.object_key.clone(),
                             image_version: reservation.avatar_version,
                         }),
-                        visible_at: &check_visible_at,
-                    },
+                        &check_visible_at,
+                    ),
                 )
                 .await?;
 
@@ -157,7 +157,7 @@ where
 
     let put_url = image_pool.put_signed(&object_key).await?.to_string();
 
-    Ok(TeamAvatarReserveVal {
+    Ok(ReserveTeamAvatarVal {
         put_url,
         avatar_version,
     })
@@ -166,7 +166,7 @@ where
 pub async fn mark_avatar_uploaded<H, Q>(
     query: Q,
     team_id: String,
-    input: TeamAvatarMarkUploadedData,
+    input: MarkTeamAvatarUploadedData,
 ) -> RootResult<()>
 where
     Q: TeamQuery<H>,
@@ -220,14 +220,14 @@ where
                 pledge
                     .advance(
                         handle,
-                        Append {
-                            id: &delete_id,
-                            topic: IMAGE_TOPIC.to_string(),
-                            payload: Payload::Image(ImageLocalMessage::Delete {
+                        PledgeStep::append(
+                            &delete_id,
+                            IMAGE_TOPIC.to_string(),
+                            Payload::Image(ImageLocalMessage::Delete {
                                 object_key: avatar_key.clone(),
                             }),
-                            visible_at: &now,
-                        },
+                            &now,
+                        ),
                     )
                     .await?;
             }
