@@ -46,14 +46,14 @@ where
         .run_transactional(async move |handle| {
             let mut query = DeriveTransactional::transactional(&query).await;
 
-            let invitation = query
+            let invitation_info = query
                 .advance(
                     handle,
                     MemberInvitationStep::get_info_by_code_excluded(&data.invitation_code),
                 )
                 .await?;
 
-            if invitation.invitee_qid != data.qid {
+            if invitation_info.invitee_qid != data.qid {
                 return Err(RootError::Expected {
                     variant: ExpectedVariant::Args,
                     message: trl("error-invalid-invitation-code"),
@@ -75,8 +75,8 @@ where
                 id: format!("member-{}", Uuid::now_v7()),
                 user_id: user_info.id.clone(),
                 user_nickname: user_info.nickname.clone(),
-                team_id: invitation.team_id.clone(),
-                role_mask: invitation.role_mask,
+                team_id: invitation_info.team_id.clone(),
+                role_mask: invitation_info.role_mask,
             };
 
             query
@@ -86,15 +86,15 @@ where
             query
                 .advance(
                     handle,
-                    MemberInvitationStep::mark_pending_as_used(&invitation.id),
+                    MemberInvitationStep::mark_pending_as_used(&invitation_info.id),
                 )
                 .await?;
 
             accept((
                 user_info.id,
-                invitation.team_id,
-                invitation.invitor_id,
-                invitation.invitee_qid,
+                invitation_info.team_id,
+                invitation_info.invitor_id,
+                invitation_info.invitee_qid,
             ))
         })
         .await
@@ -121,7 +121,9 @@ where
     <Q as DeriveTransactional>::Transactional: UserQueryTransactional<H>,
     A: TokenAuth,
 {
-    let credential = Execute::execute(&query, UserStep::get_credential_by_qid(&data.qid)).await?;
+    let credential = query
+        .execute(UserStep::get_credential_by_qid(&data.qid))
+        .await?;
 
     if !credential.verify_password(&data.password) {
         return Err(RootError::Expected {

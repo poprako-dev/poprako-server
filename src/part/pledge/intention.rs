@@ -9,7 +9,7 @@ pub enum ImageResourceKind {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub enum ImageLocalMessage {
+pub enum ImageIntention {
     CheckUploaded {
         resource_kind: ImageResourceKind,
         resource_id: String,
