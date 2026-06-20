@@ -2,6 +2,6 @@
 
 pub mod effect;
 pub mod image;
-pub mod pledge;
+pub mod prom;
 pub mod query;
 pub mod token;

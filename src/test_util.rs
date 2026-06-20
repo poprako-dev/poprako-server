@@ -1,48 +1,49 @@
-use crate::domain::result::{DomainError, ExpectedVariant};
-use crate::usecase_legacy::result::UseCaseError;
-
-pub fn is_expected_argument(err: &DomainError) -> bool {
-    matches!(
-        err,
-        DomainError::Expected {
-            variant: ExpectedVariant::Argument,
-            ..
-        }
-    )
-}
-
-pub fn is_expected_forbidden(err: &DomainError) -> bool {
-    matches!(
-        err,
-        DomainError::Expected {
-            variant: ExpectedVariant::Forbidden,
-            ..
-        }
-    )
-}
-
-pub fn is_expected_conflict(err: &DomainError) -> bool {
-    matches!(
-        err,
-        DomainError::Expected {
-            variant: ExpectedVariant::Conflict,
-            ..
-        }
-    )
-}
-
-pub fn usecase_is_expected_argument(err: &UseCaseError) -> bool {
-    is_expected_argument(err.as_ref())
-}
-
-pub fn usecase_is_expected_forbidden(err: &UseCaseError) -> bool {
-    is_expected_forbidden(err.as_ref())
-}
-
-pub fn usecase_is_expected_conflict(err: &UseCaseError) -> bool {
-    is_expected_conflict(err.as_ref())
-}
-
-pub fn usecase_is_unrecoverable(err: &UseCaseError) -> bool {
-    matches!(err.as_ref(), DomainError::Unrecoverable { .. })
-}
+// LEGACY DISABLED: Do not use. This file is intentionally commented out.
+// use crate::domain::result::{DomainError, ExpectedVariant};
+// use crate::usecase_legacy::result::UseCaseError;
+//
+// pub fn is_expected_argument(err: &DomainError) -> bool {
+//     matches!(
+//         err,
+//         DomainError::Expected {
+//             variant: ExpectedVariant::Argument,
+//             ..
+//         }
+//     )
+// }
+//
+// pub fn is_expected_forbidden(err: &DomainError) -> bool {
+//     matches!(
+//         err,
+//         DomainError::Expected {
+//             variant: ExpectedVariant::Forbidden,
+//             ..
+//         }
+//     )
+// }
+//
+// pub fn is_expected_conflict(err: &DomainError) -> bool {
+//     matches!(
+//         err,
+//         DomainError::Expected {
+//             variant: ExpectedVariant::Conflict,
+//             ..
+//         }
+//     )
+// }
+//
+// pub fn usecase_is_expected_argument(err: &UseCaseError) -> bool {
+//     is_expected_argument(err.as_ref())
+// }
+//
+// pub fn usecase_is_expected_forbidden(err: &UseCaseError) -> bool {
+//     is_expected_forbidden(err.as_ref())
+// }
+//
+// pub fn usecase_is_expected_conflict(err: &UseCaseError) -> bool {
+//     is_expected_conflict(err.as_ref())
+// }
+//
+// pub fn usecase_is_unrecoverable(err: &UseCaseError) -> bool {
+//     matches!(err.as_ref(), DomainError::Unrecoverable { .. })
+// }

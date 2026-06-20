@@ -17,5 +17,5 @@ where
     type Error;
 
     /// Executes the step against the given context.
-    async fn advance(&self, context: &mut C, step: S) -> Result<S::Output, Self::Error>;
+    async fn advance(&self, context: &mut C, step: &S) -> Result<S::Output, Self::Error>;
 }
