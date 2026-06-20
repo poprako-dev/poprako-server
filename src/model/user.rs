@@ -1,7 +1,5 @@
 use time::OffsetDateTime;
 
-use crate::atom::auth;
-
 #[cfg_attr(test, derive(Clone))]
 pub struct UserToken {
     pub user_id: String,
@@ -47,10 +45,4 @@ pub struct UserAvatarReservation {
 pub struct UserCredential {
     pub user_id: String,
     pub password_hash: String,
-}
-
-impl UserCredential {
-    pub fn verify_password(&self, password: &str) -> bool {
-        auth::verify_password(password, &self.password_hash)
-    }
 }

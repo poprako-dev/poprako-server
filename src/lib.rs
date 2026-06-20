@@ -6,7 +6,6 @@ pub mod infra;
 
 pub use forward_ref::ForwardRef;
 
-mod atom;
 mod complex;
 mod data;
 mod model;
