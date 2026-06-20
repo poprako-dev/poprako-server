@@ -1,8 +1,8 @@
 use poprako_transactional::advance::Advance;
 
-use crate::part::query::DeriveTransactional;
 use crate::part::query::step::workset::{DeleteCascade, ListByTeamIdExcluded};
 use crate::result::RootError;
+use crate::util::DeriveTransactional;
 
 pub trait WorksetQuery<C>: DeriveTransactional
 where

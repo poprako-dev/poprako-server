@@ -1,0 +1,42 @@
+use async_trait::async_trait;
+
+use crate::part::effect::{Develop, EffectIter};
+use crate::part_impl::query_mock::Mock;
+
+#[async_trait]
+impl Develop for Mock {
+    async fn develop<I>(&self, iter: I)
+    where
+        I: EffectIter + Send,
+    {
+        self.events.lock().unwrap().extend(iter.into_iter());
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    // develop_collects_events(Develop::develop)(positive): emitted events should be stored for later draining.
+
+    use super::*;
+
+    use crate::part::effect::event::Event;
+    use crate::part::effect::event::user::UserActivePayload;
+
+    #[tokio::test]
+    async fn develop_collects_events() {
+        let mock = Mock::new();
+
+        Develop::develop(
+            &mock,
+            Event::UserActive(UserActivePayload {
+                user_id: "user-1".into(),
+            }),
+        )
+        .await;
+
+        assert_eq!(mock.event_count(), 1);
+        let events = mock.drain_events();
+        assert_eq!(events.len(), 1);
+        assert_eq!(mock.event_count(), 0);
+    }
+}

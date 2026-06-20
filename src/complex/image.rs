@@ -1,7 +1,8 @@
 pub struct ImageComplex;
 
+// TODO: wtf?
 impl ImageComplex {
-    pub fn generate_delete_id() -> String {
+    pub fn gen_delete_id() -> String {
         format!("lm-{}", uuid::Uuid::now_v7())
     }
 }

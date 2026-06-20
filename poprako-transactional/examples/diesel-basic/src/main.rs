@@ -56,7 +56,7 @@ where
             decrease_adv
                 .advance(
                     context,
-                    DecreaseProduct {
+                    &DecreaseProduct {
                         product_id,
                         quantity,
                     },
@@ -66,7 +66,7 @@ where
             create_adv
                 .advance(
                     context,
-                    CreateOrder {
+                    &CreateOrder {
                         user_id,
                         product_id,
                         quantity,
@@ -168,7 +168,7 @@ impl Advance<DecreaseProduct, PgContext> for DecreaseProductAdvance {
     async fn advance(
         &self,
         context: &mut PgContext,
-        step: DecreaseProduct,
+        step: &DecreaseProduct,
     ) -> Result<(), diesel::result::Error> {
         diesel::sql_query("UPDATE products SET stock = stock - $1 WHERE id = $2")
             .bind::<diesel::sql_types::Integer, _>(step.quantity)
@@ -188,7 +188,7 @@ impl Advance<CreateOrder, PgContext> for CreateOrderAdvance {
     async fn advance(
         &self,
         context: &mut PgContext,
-        step: CreateOrder,
+        step: &CreateOrder,
     ) -> Result<(), diesel::result::Error> {
         diesel::sql_query("INSERT INTO orders (user_id, product_id, quantity) VALUES ($1, $2, $3)")
             .bind::<diesel::sql_types::Integer, _>(step.user_id)

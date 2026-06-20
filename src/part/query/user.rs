@@ -1,11 +1,12 @@
 use poprako_transactional::advance::Advance;
 
+use crate::part::query::Execute;
 use crate::part::query::step::user::{
     Create, Delete, GetCredentialByQid, GetInfoById, GetInfoExcluded, MarkAvatarUploaded,
     ReserveAvatar, TouchLastActive, UpdateInfo,
 };
-use crate::part::query::{DeriveTransactional, Execute};
 use crate::result::RootError;
+use crate::util::DeriveTransactional;
 
 pub trait UserQuery<C>:
     DeriveTransactional

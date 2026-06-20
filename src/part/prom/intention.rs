@@ -1,9 +1,9 @@
 use serde::{Deserialize, Serialize};
 
-pub const IMAGE_TOPIC: &str = "local_message_topic:image";
+pub const IMAGE_TOPIC: &str = "image";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum ImageResourceKind {
+pub enum ImageKind {
     UserAvatar,
     TeamAvatar,
 }
@@ -11,7 +11,7 @@ pub enum ImageResourceKind {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ImageIntention {
     CheckUploaded {
-        resource_kind: ImageResourceKind,
+        kind: ImageKind,
         resource_id: String,
         object_key: String,
         image_version: i64,

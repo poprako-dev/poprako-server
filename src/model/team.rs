@@ -1,5 +1,6 @@
 use time::OffsetDateTime;
 
+#[cfg_attr(test, derive(Clone))]
 pub struct TeamInfo {
     pub id: String,
     pub name: String,
@@ -12,12 +13,14 @@ pub struct TeamInfo {
     pub updated_at: OffsetDateTime,
 }
 
+#[cfg_attr(test, derive(Clone))]
 pub struct TeamForm {
     pub id: String,
     pub name: String,
     pub description: String,
 }
 
+#[cfg_attr(test, derive(Clone))]
 pub struct TeamAvatarReservation {
     pub object_key: String,
     pub previous_object_key: Option<String>,

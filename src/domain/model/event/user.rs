@@ -1,7 +1,8 @@
-#[derive(Clone, Debug)]
-pub struct UserSignedUpEvent {
-    pub team_id: String,
-    pub invitor_id: String,
-
-    pub invitee_qid: String,
-}
+// LEGACY DISABLED: Do not use. This file is intentionally commented out.
+// #[derive(Clone, Debug)]
+// pub struct UserSignedUpEvent {
+//     pub team_id: String,
+//     pub invitor_id: String,
+// 
+//     pub invitee_qid: String,
+// }

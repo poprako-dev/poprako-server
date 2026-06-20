@@ -4,12 +4,13 @@ use time::OffsetDateTime;
 use poprako_transactional::advance::Advance;
 use poprako_transactional::step::Step;
 
-use crate::part::pledge::intention::ImageIntention;
+use crate::part::prom::intention::ImageIntention;
 use crate::result::RootError;
 use crate::util::DeriveTransactional;
 
 pub mod intention;
 
+#[cfg_attr(test, derive(Debug, Clone, PartialEq, Eq))]
 #[derive(Serialize, Deserialize)]
 pub enum Payload {
     Image(ImageIntention),

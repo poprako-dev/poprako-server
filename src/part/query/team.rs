@@ -1,11 +1,12 @@
 use poprako_transactional::advance::Advance;
 
+use crate::part::query::Execute;
 use crate::part::query::step::team::{
     Create, Delete, GetInfoById, GetInfoExcluded, List, MarkAvatarUploaded, ReserveAvatar,
     UpdateInfo,
 };
-use crate::part::query::{DeriveTransactional, Execute};
 use crate::result::RootError;
+use crate::util::DeriveTransactional;
 
 pub trait TeamQuery<C>:
     DeriveTransactional
