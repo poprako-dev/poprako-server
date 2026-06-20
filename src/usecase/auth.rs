@@ -2,9 +2,8 @@ use poprako_transactional::advance::Advance;
 use poprako_transactional::drive::Drive;
 use poprako_util::i18n::trl;
 
-use crate::atom::auth::hash_password;
-use crate::complex::member::MemberComplex;
 use crate::complex::user::UserComplex;
+use crate::complex::member::MemberComplex;
 use crate::data::auth::{LoginData, LoginVal, RegisterData, RegisterVal};
 use crate::model::member::MemberForm;
 use crate::model::user::{UserForm, UserToken};
@@ -61,7 +60,7 @@ where
                 });
             }
 
-            let password_hash = hash_password(&data.password)?;
+            let password_hash = UserComplex::hash_password(&data.password)?;
 
             let user_form = UserForm {
                 id: UserComplex::gen_id(),
@@ -128,7 +127,7 @@ where
         .execute(&UserStep::get_credential_by_qid(&data.qid))
         .await?;
 
-    if !credential.verify_password(&data.password) {
+    if !UserComplex::verify_password(&data.password, &credential.password_hash) {
         return Err(RootError::Expected {
             variant: ExpectedVariant::Auth,
             message: trl("error-wrong-credentials"),
