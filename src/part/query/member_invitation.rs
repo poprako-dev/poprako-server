@@ -4,14 +4,14 @@ use crate::part::query::DeriveTransactional;
 use crate::part::query::step::member_invitation::{GetInfoByCodeExcluded, MarkPendingAsUsed};
 use crate::result::RootError;
 
-pub trait MemberInvitationQuery<H>: DeriveTransactional
+pub trait MemberInvitationQuery<C>: DeriveTransactional
 where
-    Self::Transactional: MemberInvitationQueryTransactional<H>,
+    Self::Transactional: MemberInvitationQueryTransactional<C>,
 {
 }
 
-pub trait MemberInvitationQueryTransactional<H>:
-    for<'a> Advance<GetInfoByCodeExcluded<'a>, H, Error = RootError>
-    + for<'a> Advance<MarkPendingAsUsed<'a>, H, Error = RootError>
+pub trait MemberInvitationQueryTransactional<C>:
+    for<'a> Advance<GetInfoByCodeExcluded<'a>, C, Error = RootError>
+    + for<'a> Advance<MarkPendingAsUsed<'a>, C, Error = RootError>
 {
 }

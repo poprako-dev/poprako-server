@@ -4,14 +4,14 @@ use crate::part::query::DeriveTransactional;
 use crate::part::query::step::workset::{DeleteCascade, ListByTeamIdExcluded};
 use crate::result::RootError;
 
-pub trait WorksetQuery<H>: DeriveTransactional
+pub trait WorksetQuery<C>: DeriveTransactional
 where
-    Self::Transactional: WorksetQueryTransactional<H>,
+    Self::Transactional: WorksetQueryTransactional<C>,
 {
 }
 
-pub trait WorksetQueryTransactional<H>:
-    for<'a> Advance<ListByTeamIdExcluded<'a>, H, Error = RootError>
-    + for<'a> Advance<DeleteCascade<'a>, H, Error = RootError>
+pub trait WorksetQueryTransactional<C>:
+    for<'a> Advance<ListByTeamIdExcluded<'a>, C, Error = RootError>
+    + for<'a> Advance<DeleteCascade<'a>, C, Error = RootError>
 {
 }

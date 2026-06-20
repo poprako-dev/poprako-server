@@ -16,6 +16,8 @@ mod result;
 mod usecase;
 mod value;
 
+mod util;
+
 mod domain;
 mod usecase_legacy;
 

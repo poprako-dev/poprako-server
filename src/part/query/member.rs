@@ -6,18 +6,18 @@ use crate::part::query::step::member::{
 };
 use crate::result::RootError;
 
-pub trait MemberQuery<H>: DeriveTransactional
+pub trait MemberQuery<C>: DeriveTransactional
 where
-    Self::Transactional: MemberQueryTransactional<H>,
+    Self::Transactional: MemberQueryTransactional<C>,
 {
 }
 
-pub trait MemberQueryTransactional<H>:
-    for<'a> Advance<Create<'a>, H, Error = RootError>
-    + for<'a> Advance<UpdateUserNickname<'a>, H, Error = RootError>
-    + for<'a> Advance<TouchLastActive<'a>, H, Error = RootError>
-    + for<'a> Advance<ListByUserIdExcluded<'a>, H, Error = RootError>
-    + for<'a> Advance<Delete<'a>, H, Error = RootError>
+pub trait MemberQueryTransactional<C>:
+    for<'a> Advance<Create<'a>, C, Error = RootError>
+    + for<'a> Advance<UpdateUserNickname<'a>, C, Error = RootError>
+    + for<'a> Advance<TouchLastActive<'a>, C, Error = RootError>
+    + for<'a> Advance<ListByUserIdExcluded<'a>, C, Error = RootError>
+    + for<'a> Advance<Delete<'a>, C, Error = RootError>
     + Sized
 {
 }

@@ -1,10 +1,10 @@
 use uuid::Uuid;
 
-pub struct UserComplex;
+pub struct TeamComplex;
 
-impl UserComplex {
-    pub fn generate_user_id() -> String {
-        format!("user-{}", Uuid::now_v7())
+impl TeamComplex {
+    pub fn generate_id() -> String {
+        format!("team-{}", Uuid::now_v7())
     }
 
     pub fn generate_avatar_delete_id() -> String {
