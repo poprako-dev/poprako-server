@@ -4,6 +4,7 @@ use poprako_transactional::drive::result::Error as DriveError;
 use poprako_transactional::step::Step;
 
 use crate::result::RootError;
+pub use crate::util::DeriveTransactional;
 
 pub mod member;
 pub mod member_invitation;
@@ -20,13 +21,6 @@ where
     type Error;
 
     async fn execute(&self, step: S) -> Result<S::Output, Self::Error>;
-}
-
-#[async_trait]
-pub trait DeriveTransactional {
-    type Transactional;
-
-    async fn transactional(&self) -> Self::Transactional;
 }
 
 pub fn map_drive_err<E, BE>(err: DriveError<E, BE>) -> RootError

@@ -1,10 +1,10 @@
-use uuid::Uuid;
-
 use poprako_transactional::advance::Advance;
 use poprako_transactional::drive::Drive;
 use poprako_util::i18n::trl;
 
 use crate::atom::auth::hash_password;
+use crate::complex::member::MemberComplex;
+use crate::complex::user::UserComplex;
 use crate::data::auth::{LoginData, LoginVal, RegisterData, RegisterVal};
 use crate::model::member::MemberForm;
 use crate::model::user::{UserForm, UserToken};
@@ -19,36 +19,36 @@ use crate::part::query::step::member::MemberStep;
 use crate::part::query::step::member_invitation::MemberInvitationStep;
 use crate::part::query::step::user::UserStep;
 use crate::part::query::user::{UserQuery, UserQueryTransactional};
-use crate::part::query::{DeriveTransactional, Execute, map_drive_err};
+use crate::part::query::{DeriveTransactional, map_drive_err};
 use crate::part::token::TokenAuth;
 use crate::result::{ExpectedVariant, RootError, RootResult, accept};
 
-pub async fn register<D, H, Q, A, Dv>(
-    drive: D,
-    query: Q,
+pub async fn register<D, C, Q, A, V>(
+    drive: &D,
+    query: &Q,
     auth: &A,
-    develop: &Dv,
+    develop: &V,
     data: RegisterData,
 ) -> RootResult<RegisterVal>
 where
-    D: Drive<H>,
+    D: Drive<C>,
     D::Error: Into<RootError>,
-    H: Send,
-    Q: UserQuery<H> + MemberQuery<H> + MemberInvitationQuery<H> + Send,
-    <Q as DeriveTransactional>::Transactional: UserQueryTransactional<H>
-        + MemberQueryTransactional<H>
-        + MemberInvitationQueryTransactional<H>
+    C: Send,
+    Q: UserQuery<C> + MemberQuery<C> + MemberInvitationQuery<C> + Send + Sync,
+    <Q as DeriveTransactional>::Transactional: UserQueryTransactional<C>
+        + MemberQueryTransactional<C>
+        + MemberInvitationQueryTransactional<C>
         + Send,
     A: TokenAuth,
-    Dv: Develop + Send + Sync,
+    V: Develop + Send + Sync,
 {
     let (user_id, team_id, invitor_id, invitee_qid) = drive
-        .run_transactional(async move |handle| {
-            let mut query = DeriveTransactional::transactional(&query).await;
+        .with_context(async move |context| {
+            let query = DeriveTransactional::transactional(query).await;
 
             let invitation_info = query
                 .advance(
-                    handle,
+                    context,
                     MemberInvitationStep::get_info_by_code_excluded(&data.invitation_code),
                 )
                 .await?;
@@ -63,16 +63,16 @@ where
             let password_hash = hash_password(&data.password)?;
 
             let user_form = UserForm {
-                id: format!("user-{}", Uuid::now_v7()),
+                id: UserComplex::generate_user_id(),
                 qid: data.qid.clone(),
                 nickname: data.nickname.clone(),
                 password_hash,
             };
 
-            let user_info = query.advance(handle, UserStep::create(&user_form)).await?;
+            let user_info = query.advance(context, UserStep::create(&user_form)).await?;
 
             let member_form = MemberForm {
-                id: format!("member-{}", Uuid::now_v7()),
+                id: MemberComplex::generate_id(),
                 user_id: user_info.id.clone(),
                 user_nickname: user_info.nickname.clone(),
                 team_id: invitation_info.team_id.clone(),
@@ -80,12 +80,12 @@ where
             };
 
             query
-                .advance(handle, MemberStep::create(&member_form))
+                .advance(context, MemberStep::create(&member_form))
                 .await?;
 
             query
                 .advance(
-                    handle,
+                    context,
                     MemberInvitationStep::mark_pending_as_used(&invitation_info.id),
                 )
                 .await?;
@@ -115,10 +115,10 @@ where
     Ok(RegisterVal { user_id, token })
 }
 
-pub async fn login<H, Q, A>(query: Q, auth: &A, data: LoginData) -> RootResult<LoginVal>
+pub async fn login<C, Q, A>(query: &Q, auth: &A, data: LoginData) -> RootResult<LoginVal>
 where
-    Q: UserQuery<H>,
-    <Q as DeriveTransactional>::Transactional: UserQueryTransactional<H>,
+    Q: UserQuery<C>,
+    <Q as DeriveTransactional>::Transactional: UserQueryTransactional<C>,
     A: TokenAuth,
 {
     let credential = query

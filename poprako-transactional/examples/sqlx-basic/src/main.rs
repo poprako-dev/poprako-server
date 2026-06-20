@@ -31,42 +31,42 @@ impl Step for CreateOrder {
 
 // ---- Usecase (fully generic — zero infra knowledge) ----
 
-async fn run_order_usecase<M, H, E, D, C>(
+async fn run_order_usecase<M, C, E, D, A>(
     backend: &M,
-    mut decrease_adv: D,
-    mut create_adv: C,
+    decrease_adv: D,
+    create_adv: A,
     product_id: i32,
     user_id: i32,
     quantity: i32,
 ) -> Result<(), ScopedError<E, M::Error>>
 where
-    M: Drive<H>,
+    M: Drive<C>,
     E: Send,
-    D: Advance<DecreaseProduct, H> + Send,
-    C: Advance<CreateOrder, H> + Send,
-    E: From<D::Error> + From<C::Error>,
-    H: Send,
+    D: Advance<DecreaseProduct, C> + Send,
+    A: Advance<CreateOrder, C> + Send,
+    E: From<D::Error> + From<A::Error>,
+    C: Send,
 {
     backend
-        .scope::<(), E, _>(async move |handle| {
+        .with_context::<(), E, _>(async move |context| {
             decrease_adv
                 .advance(
+                    context,
                     DecreaseProduct {
                         product_id,
                         quantity,
                     },
-                    handle,
                 )
                 .await?;
 
             create_adv
                 .advance(
+                    context,
                     CreateOrder {
                         user_id,
                         product_id,
                         quantity,
                     },
-                    handle,
                 )
                 .await?;
 
@@ -77,9 +77,9 @@ where
 
 // ---- Infra: sqlx ----
 
-pub struct PgHandle(Transaction<'static, Postgres>);
+pub struct PgContext(Transaction<'static, Postgres>);
 
-impl PgHandle {
+impl PgContext {
     async fn commit(self) -> Result<(), sqlx::Error> {
         self.0.commit().await
     }
@@ -98,52 +98,52 @@ impl PgBackend {
 }
 
 #[async_trait]
-impl Drive<PgHandle> for PgBackend {
+impl Drive<PgContext> for PgBackend {
     type Error = sqlx::Error;
 
-    async fn scope<T, E, F>(&self, f: F) -> Result<T, ScopedError<E, Self::Error>>
+    async fn with_context<T, E, F>(&self, f: F) -> Result<T, ScopedError<E, Self::Error>>
     where
         T: Send,
         E: Send,
-        for<'h> F: AsyncFnOnce(&'h mut PgHandle) -> Result<T, E>
-            + AsyncFnMark<&'h mut PgHandle, Result<T, E>, Fut: Send>
+        for<'c> F: AsyncFnOnce(&'c mut PgContext) -> Result<T, E>
+            + AsyncFnMark<&'c mut PgContext, Result<T, E>, Fut: Send>
             + Send,
     {
         let tx = self.0.begin().await.map_err(ScopedError::Backend)?;
-        let mut handle = PgHandle(tx);
+        let mut context = PgContext(tx);
 
-        let result = f(&mut handle).await;
+        let result = f(&mut context).await;
 
         match result {
             Ok(t) => {
-                handle.commit().await.map_err(ScopedError::Backend)?;
+                context.commit().await.map_err(ScopedError::Backend)?;
                 Ok(t)
             }
             Err(e) => {
-                let _ = handle.rollback().await;
+                let _ = context.rollback().await;
                 Err(ScopedError::Advance(e))
             }
         }
     }
 }
 
-// ---- Advance implementations (ZSTs — no lifetime, no handle field) ----
+// ---- Advance implementations (ZSTs — no lifetime, no context field) ----
 
 pub struct DecreaseProductAdvance;
 
 #[async_trait]
-impl Advance<DecreaseProduct, PgHandle> for DecreaseProductAdvance {
+impl Advance<DecreaseProduct, PgContext> for DecreaseProductAdvance {
     type Error = sqlx::Error;
 
     async fn advance(
-        &mut self,
+        &self,
+        context: &mut PgContext,
         step: DecreaseProduct,
-        handle: &mut PgHandle,
     ) -> Result<(), sqlx::Error> {
         sqlx::query("UPDATE products SET stock = stock - $1 WHERE id = $2")
             .bind(step.quantity)
             .bind(step.product_id)
-            .execute(&mut *handle.0)
+            .execute(&mut *context.0)
             .await?;
         Ok(())
     }
@@ -152,19 +152,19 @@ impl Advance<DecreaseProduct, PgHandle> for DecreaseProductAdvance {
 pub struct CreateOrderAdvance;
 
 #[async_trait]
-impl Advance<CreateOrder, PgHandle> for CreateOrderAdvance {
+impl Advance<CreateOrder, PgContext> for CreateOrderAdvance {
     type Error = sqlx::Error;
 
     async fn advance(
-        &mut self,
+        &self,
+        context: &mut PgContext,
         step: CreateOrder,
-        handle: &mut PgHandle,
     ) -> Result<(), sqlx::Error> {
         sqlx::query("INSERT INTO orders (user_id, product_id, quantity) VALUES ($1, $2, $3)")
             .bind(step.user_id)
             .bind(step.product_id)
             .bind(step.quantity)
-            .execute(&mut *handle.0)
+            .execute(&mut *context.0)
             .await?;
         Ok(())
     }

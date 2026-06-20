@@ -7,7 +7,7 @@ use crate::part::query::step::team::{
 use crate::part::query::{DeriveTransactional, Execute};
 use crate::result::RootError;
 
-pub trait TeamQuery<H>:
+pub trait TeamQuery<C>:
     DeriveTransactional
     + for<'a> Execute<Create<'a>, Error = RootError>
     + for<'a> Execute<GetInfoById<'a>, Error = RootError>
@@ -15,14 +15,14 @@ pub trait TeamQuery<H>:
     + for<'a> Execute<UpdateInfo<'a>, Error = RootError>
     + for<'a> Execute<MarkAvatarUploaded<'a>, Error = RootError>
 where
-    Self::Transactional: TeamQueryTransactional<H>,
+    Self::Transactional: TeamQueryTransactional<C>,
 {
 }
 
-pub trait TeamQueryTransactional<H>:
-    for<'a> Advance<ReserveAvatar<'a>, H, Error = RootError>
-    + for<'a> Advance<MarkAvatarUploaded<'a>, H, Error = RootError>
-    + for<'a> Advance<GetInfoExcluded<'a>, H, Error = RootError>
-    + for<'a> Advance<Delete<'a>, H, Error = RootError>
+pub trait TeamQueryTransactional<C>:
+    for<'a> Advance<ReserveAvatar<'a>, C, Error = RootError>
+    + for<'a> Advance<MarkAvatarUploaded<'a>, C, Error = RootError>
+    + for<'a> Advance<GetInfoExcluded<'a>, C, Error = RootError>
+    + for<'a> Advance<Delete<'a>, C, Error = RootError>
 {
 }

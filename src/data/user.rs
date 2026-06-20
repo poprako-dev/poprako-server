@@ -1,7 +1,7 @@
 use poprako_util::time::ToUnixMilli;
 
 use crate::model::user::UserInfo as UserInfoModel;
-use crate::part::image_pool::ImagePool;
+use crate::part::image::ImagePool;
 use crate::result::RootResult;
 
 pub struct UserInfoVal {

@@ -1,10 +1,10 @@
 use time::{Duration, OffsetDateTime};
-use uuid::Uuid;
 
 use poprako_transactional::advance::Advance;
 use poprako_transactional::drive::Drive;
 use poprako_util::page::Page;
 
+use crate::complex::team::TeamComplex;
 use crate::data::team::{
     CreateTeamData, MarkTeamAvatarUploadedData, ReserveTeamAvatarData, ReserveTeamAvatarVal,
     TeamInfoVal, UpdateTeamInfoData,
@@ -12,46 +12,46 @@ use crate::data::team::{
 use crate::model::team::TeamForm;
 use crate::part::image::ImagePool;
 use crate::part::pledge::intention::{IMAGE_TOPIC, ImageIntention, ImageResourceKind};
-use crate::part::pledge::{Payload, Pledge, PledgeStep};
+use crate::part::pledge::{Payload, Prom, PromStep, PromTransactional};
 use crate::part::query::step::team::TeamStep;
 use crate::part::query::step::workset::WorksetStep;
 use crate::part::query::team::{TeamQuery, TeamQueryTransactional};
 use crate::part::query::workset::{WorksetQuery, WorksetQueryTransactional};
-use crate::part::query::{DeriveTransactional, Execute, map_drive_err};
+use crate::part::query::{DeriveTransactional, map_drive_err};
 use crate::result::{RootError, RootResult, accept};
 
-pub async fn create<H, Q, I>(query: Q, image: I, data: CreateTeamData) -> RootResult<TeamInfoVal>
+pub async fn create<C, Q, I>(query: &Q, image: &I, data: CreateTeamData) -> RootResult<TeamInfoVal>
 where
-    Q: TeamQuery<H>,
-    <Q as DeriveTransactional>::Transactional: TeamQueryTransactional<H>,
+    Q: TeamQuery<C>,
+    <Q as DeriveTransactional>::Transactional: TeamQueryTransactional<C>,
     I: ImagePool,
 {
     let form = TeamForm {
-        id: format!("team-{}", Uuid::now_v7()),
+        id: TeamComplex::generate_id(),
         name: data.name,
         description: data.description,
     };
 
     let info = query.execute(TeamStep::create(&form)).await?;
 
-    TeamInfoVal::from_model(&image, info).await
+    TeamInfoVal::from_model(image, info).await
 }
 
-pub async fn get_info<H, Q, I>(query: Q, image: I, id: String) -> RootResult<TeamInfoVal>
+pub async fn get_info<C, Q, I>(query: &Q, image: &I, id: String) -> RootResult<TeamInfoVal>
 where
-    Q: TeamQuery<H>,
-    <Q as DeriveTransactional>::Transactional: TeamQueryTransactional<H>,
+    Q: TeamQuery<C>,
+    <Q as DeriveTransactional>::Transactional: TeamQueryTransactional<C>,
     I: ImagePool,
 {
     let info = query.execute(TeamStep::get_info_by_id(&id)).await?;
 
-    TeamInfoVal::from_model(&image, info).await
+    TeamInfoVal::from_model(image, info).await
 }
 
-pub async fn list_infos<H, Q, I>(query: Q, image: I, page: Page) -> RootResult<Vec<TeamInfoVal>>
+pub async fn list_infos<C, Q, I>(query: &Q, image: &I, page: Page) -> RootResult<Vec<TeamInfoVal>>
 where
-    Q: TeamQuery<H>,
-    <Q as DeriveTransactional>::Transactional: TeamQueryTransactional<H>,
+    Q: TeamQuery<C>,
+    <Q as DeriveTransactional>::Transactional: TeamQueryTransactional<C>,
     I: ImagePool,
 {
     let infos = query.execute(TeamStep::list(page)).await?;
@@ -59,16 +59,16 @@ where
     // TODO: join all.
     let mut vals = Vec::with_capacity(infos.len());
     for info in infos {
-        vals.push(TeamInfoVal::from_model(&image, info).await?);
+        vals.push(TeamInfoVal::from_model(image, info).await?);
     }
 
     Ok(vals)
 }
 
-pub async fn update_info<H, Q>(query: Q, data: UpdateTeamInfoData) -> RootResult<()>
+pub async fn update_info<C, Q>(query: &Q, data: UpdateTeamInfoData) -> RootResult<()>
 where
-    Q: TeamQuery<H>,
-    <Q as DeriveTransactional>::Transactional: TeamQueryTransactional<H>,
+    Q: TeamQuery<C>,
+    <Q as DeriveTransactional>::Transactional: TeamQueryTransactional<C>,
 {
     query
         .execute(TeamStep::update_info(
@@ -81,70 +81,70 @@ where
     Ok(())
 }
 
-pub async fn reserve_avatar<D, H, Q, P, I>(
-    drive: D,
-    query: Q,
-    pledge: P,
-    image: I,
+pub async fn reserve_avatar<D, C, Q, P, I>(
+    drive: &D,
+    query: &Q,
+    pledge: &P,
+    image: &I,
     id: String,
-    input: ReserveTeamAvatarData,
+    data: ReserveTeamAvatarData,
 ) -> RootResult<ReserveTeamAvatarVal>
 where
-    D: Drive<H>,
+    D: Drive<C>,
     D::Error: Into<RootError>,
-    H: Send,
-    Q: TeamQuery<H> + Send,
-    <Q as DeriveTransactional>::Transactional: TeamQueryTransactional<H> + Send,
-    P: Pledge<H> + Send,
+    C: Send,
+    Q: TeamQuery<C> + Send + Sync,
+    <Q as DeriveTransactional>::Transactional: TeamQueryTransactional<C> + Send,
+    P: Prom<C> + Send + Sync,
+    <P as DeriveTransactional>::Transactional: PromTransactional<C> + Send + Sync,
     I: ImagePool,
 {
     let (object_key, avatar_version) = drive
-        .run_transactional(async move |handle| {
-            let mut query = DeriveTransactional::transactional(&query).await;
+        .with_context(async move |context| {
+            let query = DeriveTransactional::transactional(query).await;
+            let prom = DeriveTransactional::transactional(pledge).await;
 
             let reservation = query
-                .advance(handle, TeamStep::reserve_avatar(&id, &input.file_ext))
+                .advance(context, TeamStep::reserve_avatar(&id, &data.file_ext))
                 .await?;
 
             let now = OffsetDateTime::now_utc();
 
             if let Some(previous_key) = &reservation.previous_object_key {
-                let delete_id = format!("lm-{}", Uuid::now_v7());
+                let delete_id = TeamComplex::generate_avatar_delete_id();
 
-                pledge
-                    .advance(
-                        handle,
-                        PledgeStep::append(
-                            &delete_id,
-                            IMAGE_TOPIC.to_string(),
-                            Payload::Image(ImageIntention::Delete {
-                                object_key: previous_key.clone(),
-                            }),
-                            &now,
-                        ),
-                    )
-                    .await?;
-            }
-
-            let check_id = format!("lm-{}", Uuid::now_v7());
-            let check_visible_at = now + Duration::minutes(15);
-
-            pledge
-                .advance(
-                    handle,
-                    PledgeStep::append(
-                        &check_id,
-                        IMAGE_TOPIC.to_string(),
-                        Payload::Image(ImageIntention::CheckUploaded {
-                            resource_kind: ImageResourceKind::TeamAvatar,
-                            resource_id: id.clone(),
-                            object_key: reservation.object_key.clone(),
-                            image_version: reservation.avatar_version,
+                prom.advance(
+                    context,
+                    PromStep::append(
+                        &delete_id,
+                        IMAGE_TOPIC,
+                        Payload::Image(ImageIntention::Delete {
+                            object_key: previous_key.clone(),
                         }),
-                        &check_visible_at,
+                        &now,
                     ),
                 )
                 .await?;
+            }
+
+            let check_id = TeamComplex::generate_avatar_check_id();
+            let check_visible_at = now + Duration::minutes(15);
+
+            prom.advance(
+                context,
+                PromStep::append(
+                    &check_id,
+                    IMAGE_TOPIC,
+                    Payload::Image(ImageIntention::CheckUploaded {
+                        resource_kind: ImageResourceKind::TeamAvatar,
+                        resource_id: id.clone(),
+                        object_key: reservation.object_key.clone(),
+                        image_version: reservation.avatar_version,
+                    }),
+                    &check_visible_at,
+                ),
+            )
+            .await?;
 
             accept((reservation.object_key, reservation.avatar_version))
         })
@@ -159,14 +159,14 @@ where
     })
 }
 
-pub async fn mark_avatar_uploaded<H, Q>(
-    query: Q,
+pub async fn mark_avatar_uploaded<C, Q>(
+    query: &Q,
     id: String,
     data: MarkTeamAvatarUploadedData,
 ) -> RootResult<()>
 where
-    Q: TeamQuery<H>,
-    <Q as DeriveTransactional>::Transactional: TeamQueryTransactional<H>,
+    Q: TeamQuery<C>,
+    <Q as DeriveTransactional>::Transactional: TeamQueryTransactional<C>,
 {
     query
         .execute(TeamStep::mark_avatar_uploaded(&id, data.avatar_version))
@@ -175,55 +175,56 @@ where
     Ok(())
 }
 
-pub async fn delete<D, H, Q, P>(drive: D, query: Q, pledge: P, id: String) -> RootResult<()>
+pub async fn delete<D, C, Q, P>(drive: &D, query: &Q, pledge: &P, id: String) -> RootResult<()>
 where
-    D: Drive<H>,
+    D: Drive<C>,
     D::Error: Into<RootError>,
-    H: Send,
-    Q: TeamQuery<H> + WorksetQuery<H> + Send,
+    C: Send,
+    Q: TeamQuery<C> + WorksetQuery<C> + Send + Sync,
     <Q as DeriveTransactional>::Transactional:
-        TeamQueryTransactional<H> + WorksetQueryTransactional<H> + Send,
-    P: Pledge<H> + Send,
+        TeamQueryTransactional<C> + WorksetQueryTransactional<C> + Send + Sync,
+    P: Prom<C> + Send + Sync,
+    <P as DeriveTransactional>::Transactional: PromTransactional<C> + Send + Sync,
 {
     drive
-        .run_transactional(async move |handle| {
-            let mut query = DeriveTransactional::transactional(&query).await;
-            let mut pledge = pledge;
+        .with_context(async move |context| {
+            let query = DeriveTransactional::transactional(query).await;
+            let prom = DeriveTransactional::transactional(pledge).await;
 
             let team_info = query
-                .advance(handle, TeamStep::get_info_excluded(&id))
+                .advance(context, TeamStep::get_info_excluded(&id))
                 .await?;
 
-            let worksets = query
-                .advance(handle, WorksetStep::list_by_team_id_excluded(&id))
+            let workset_infos = query
+                .advance(context, WorksetStep::list_by_team_id_excluded(&id))
                 .await?;
 
-            for workset in &worksets {
+            for workset in &workset_infos {
                 query
-                    .advance(handle, WorksetStep::delete_cascade(&workset.id))
+                    .advance(context, WorksetStep::delete_cascade(&workset.id))
                     .await?;
             }
 
-            query.advance(handle, TeamStep::delete(&id)).await?;
+            query.advance(context, TeamStep::delete(&id)).await?;
 
             if let Some(avatar_key) = &team_info.avatar_key
                 && team_info.avatar_uploaded
             {
                 let now = OffsetDateTime::now_utc();
-                let delete_id = format!("lm-{}", Uuid::now_v7());
-                pledge
-                    .advance(
-                        handle,
-                        PledgeStep::append(
-                            &delete_id,
-                            IMAGE_TOPIC.to_string(),
-                            Payload::Image(ImageIntention::Delete {
-                                object_key: avatar_key.clone(),
-                            }),
-                            &now,
-                        ),
-                    )
-                    .await?;
+                let delete_id = TeamComplex::generate_avatar_delete_id();
+
+                prom.advance(
+                    context,
+                    PromStep::append(
+                        &delete_id,
+                        IMAGE_TOPIC,
+                        Payload::Image(ImageIntention::Delete {
+                            object_key: avatar_key.clone(),
+                        }),
+                        &now,
+                    ),
+                )
+                .await?;
             }
 
             accept(())
