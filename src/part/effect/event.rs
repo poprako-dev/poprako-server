@@ -1,6 +1,6 @@
 use std::vec::IntoIter;
 
-use crate::part::effect::EffectIter;
+use crate::part::effect::EventIter;
 use crate::part::effect::event::user::{UserActivePayload, UserSignedUpPayload};
 
 pub mod user;
@@ -21,7 +21,7 @@ impl EventBuffer {
     }
 }
 
-impl EffectIter for EventBuffer {
+impl EventIter for EventBuffer {
     type Iter = IntoIter<Event>;
 
     fn into_iter(self) -> Self::Iter {

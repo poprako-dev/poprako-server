@@ -1,13 +1,13 @@
 use async_trait::async_trait;
 
-use crate::part::effect::{Develop, EffectIter};
+use crate::part::effect::{EffectDevelop, EventIter};
 use crate::part_impl::query_mock::Mock;
 
 #[async_trait]
-impl Develop for Mock {
+impl EffectDevelop for Mock {
     async fn develop<I>(&self, iter: I)
     where
-        I: EffectIter + Send,
+        I: EventIter + Send,
     {
         self.events.lock().unwrap().extend(iter.into_iter());
     }
@@ -26,7 +26,7 @@ mod tests {
     async fn develop_collects_events() {
         let mock = Mock::new();
 
-        Develop::develop(
+        EffectDevelop::develop(
             &mock,
             Event::UserActive(UserActivePayload {
                 user_id: "user-1".into(),
