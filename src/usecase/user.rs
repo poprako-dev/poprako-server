@@ -12,7 +12,7 @@ use crate::data::user::{
 use crate::model::user::UserToken;
 use crate::part::effect::event::Event;
 use crate::part::effect::event::user::UserActivePayload;
-use crate::part::effect::{Develop, EffectEmit as _};
+use crate::part::effect::{EffectDevelop, EffectEmit as _};
 use crate::part::image::ImagePool;
 use crate::part::prom::intention::{IMAGE_TOPIC, ImageIntention, ImageKind};
 use crate::part::prom::{Payload, Prom, PromStep, PromTransactional};
@@ -24,9 +24,9 @@ use crate::part::query::user::{UserQuery, UserQueryTransactional};
 use crate::result::{ExpectedVariant, RootError, RootResult, accept};
 use crate::util::DeriveTransactional;
 
-pub async fn get_info<C, Q, P, V>(
+pub async fn get_info<C, Q, I, V>(
     query: &Q,
-    image_pool: &P,
+    image: &I,
     develop: &V,
     token: UserToken,
     id: String,
@@ -34,10 +34,10 @@ pub async fn get_info<C, Q, P, V>(
 where
     Q: UserQuery<C>,
     <Q as DeriveTransactional>::Transactional: UserQueryTransactional<C>,
-    P: ImagePool,
-    V: Develop + Send + Sync,
+    I: ImagePool,
+    V: EffectDevelop + Send + Sync,
 {
-    let info_model = query.execute(&UserStep::get_info_by_id(&id)).await?;
+    let user_info = query.execute(&UserStep::get_info_by_id(&id)).await?;
 
     if token.user_id == id {
         Event::UserActive(UserActivePayload {
@@ -47,7 +47,7 @@ where
         .await;
     }
 
-    UserInfoVal::from_model(image_pool, info_model).await
+    UserInfoVal::from_model(image, user_info).await
 }
 
 pub async fn update_info<D, C, Q>(
@@ -98,7 +98,7 @@ where
 pub async fn reserve_avatar<D, C, Q, P, I>(
     drive: &D,
     query: &Q,
-    pledge: &P,
+    prom: &P,
     image: &I,
     token: UserToken,
     data: ReserveUserAvatarData,
@@ -116,7 +116,7 @@ where
     let (object_key, avatar_version) = drive
         .with_context(async move |context| {
             let query = DeriveTransactional::transactional(query).await;
-            let prom = DeriveTransactional::transactional(pledge).await;
+            let prom = DeriveTransactional::transactional(prom).await;
 
             let reservation = query
                 .advance(
@@ -244,7 +244,7 @@ where
 pub async fn delete<D, C, Q, P>(
     drive: &D,
     query: &Q,
-    pledge: &P,
+    prom: &P,
     token: UserToken,
     id: String,
 ) -> RootResult<()>
@@ -269,7 +269,7 @@ where
     drive
         .with_context(async move |context| {
             let query = DeriveTransactional::transactional(query).await;
-            let prom = DeriveTransactional::transactional(pledge).await;
+            let prom = DeriveTransactional::transactional(prom).await;
 
             let user_info = query
                 .advance(context, &UserStep::get_info_excluded(&id))

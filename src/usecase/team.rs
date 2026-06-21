@@ -55,15 +55,15 @@ where
     <Q as DeriveTransactional>::Transactional: TeamQueryTransactional<C>,
     I: ImagePool,
 {
-    let infos = query.execute(&TeamStep::list(page)).await?;
+    let team_infos = query.execute(&TeamStep::list(page)).await?;
 
     // TODO: join all.
-    let mut vals = Vec::with_capacity(infos.len());
-    for info in infos {
-        vals.push(TeamInfoVal::from_model(image, info).await?);
+    let mut team_info_vals = Vec::with_capacity(team_infos.len());
+    for info in team_infos {
+        team_info_vals.push(TeamInfoVal::from_model(image, info).await?);
     }
 
-    Ok(vals)
+    Ok(team_info_vals)
 }
 
 pub async fn update_info<C, Q>(query: &Q, data: UpdateTeamInfoData) -> RootResult<()>
@@ -85,7 +85,7 @@ where
 pub async fn reserve_avatar<D, C, Q, P, I>(
     drive: &D,
     query: &Q,
-    pledge: &P,
+    prom: &P,
     image: &I,
     id: String,
     data: ReserveTeamAvatarData,
@@ -103,7 +103,7 @@ where
     let (object_key, avatar_version) = drive
         .with_context(async move |context| {
             let query = DeriveTransactional::transactional(query).await;
-            let prom = DeriveTransactional::transactional(pledge).await;
+            let prom = DeriveTransactional::transactional(prom).await;
 
             let reservation = query
                 .advance(context, &TeamStep::reserve_avatar(&id, &data.file_ext))
@@ -176,7 +176,7 @@ where
     Ok(())
 }
 
-pub async fn delete<D, C, Q, P>(drive: &D, query: &Q, pledge: &P, id: String) -> RootResult<()>
+pub async fn delete<D, C, Q, P>(drive: &D, query: &Q, prom: &P, id: String) -> RootResult<()>
 where
     D: Drive<C>,
     D::Error: Into<RootError>,
@@ -190,7 +190,7 @@ where
     drive
         .with_context(async move |context| {
             let query = DeriveTransactional::transactional(query).await;
-            let prom = DeriveTransactional::transactional(pledge).await;
+            let prom = DeriveTransactional::transactional(prom).await;
 
             let team_info = query
                 .advance(context, &TeamStep::get_info_excluded(&id))

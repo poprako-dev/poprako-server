@@ -22,7 +22,7 @@ edit `src/infra/query/**`, `src/infra/query/memory_mock/**`, `src/part_impl/**`,
     `TeamReserveAvatar`), but the module name is `step`, not `action`.
 - Local-message behavior:
   - Do not add a local-message query trait.
-  - Use `part::pledge::{Append, Pledge}` for local-message/table appends.
+  - Use `part::prom::{Append, Prom}` for local-message/table appends.
   - Transaction compatibility is expressed by sharing the same `H` handle between
     query transactional traits and `Pledge<H>`.
 - Out of scope:
@@ -848,9 +848,9 @@ pub trait WorksetQueryTransactional<H>:
 
 ## Pledge Changes
 
-### `src/part/pledge.rs`
+### `src/part/prom.rs`
 
-The existing file already defines `Append<'a>` and `Pledge<H>`. Extend
+The existing file already defines `Append<'a>` and `Prom<C>`. Extend
 `Payload` so usecases can append image-related local messages without using a
 local-message query:
 
@@ -1171,4 +1171,4 @@ Required keys if not already present:
 - User/team avatar and delete local-message effects go through `Pledge<H>` with
   the same transaction handle `H`.
 - `cargo check` is expected to pass once only the planned usecase, data, model,
-  step, trait, pledge, image-pool, auth-atom, and token files are edited.
+  step, trait, prom, image-pool, auth-atom, and token files are edited.

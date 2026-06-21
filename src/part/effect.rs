@@ -7,13 +7,13 @@ use crate::part::effect::event::Event;
 
 pub mod event;
 
-pub trait EffectIter {
+pub trait EventIter {
     type Iter: Iterator<Item = Event>;
 
     fn into_iter(self) -> Self::Iter;
 }
 
-impl EffectIter for Vec<Event> {
+impl EventIter for Vec<Event> {
     type Iter = IntoIter<Event>;
 
     fn into_iter(self) -> Self::Iter {
@@ -21,7 +21,7 @@ impl EffectIter for Vec<Event> {
     }
 }
 
-impl EffectIter for Event {
+impl EventIter for Event {
     type Iter = Once<Event>;
 
     fn into_iter(self) -> Self::Iter {
@@ -30,16 +30,16 @@ impl EffectIter for Event {
 }
 
 #[async_trait]
-pub trait Develop {
+pub trait EffectDevelop {
     async fn develop<I>(&self, iter: I)
     where
-        I: EffectIter + Send;
+        I: EventIter + Send;
 }
 
 #[async_trait]
 pub trait EffectEmit<D>
 where
-    D: Develop + Send + Sync,
+    D: EffectDevelop + Send + Sync,
 {
     async fn emit(self, develop: &D);
 }
@@ -47,8 +47,8 @@ where
 #[async_trait]
 impl<T, D> EffectEmit<D> for T
 where
-    T: EffectIter + Send,
-    D: Develop + Send + Sync,
+    T: EventIter + Send,
+    D: EffectDevelop + Send + Sync,
 {
     async fn emit(self, develop: &D) {
         develop.develop(self).await;
