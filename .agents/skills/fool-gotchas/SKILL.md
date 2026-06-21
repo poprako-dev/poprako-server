@@ -5,7 +5,7 @@ description: Recurring mistakes and pitfalls in poprako-r made by AIs. Each entr
 
 # Gotchas
 
-- `*QueryTransactional::delete` returns `DomainResult<()>`, never leaks orphaned data through the return type
+- `*RepoTransactional::delete` returns `DomainResult<()>`, never leaks orphaned data through the return type
 - Side-effect cleanup (avatar files, etc.) belongs inside the `complex` function, not in the usecase
 - No nested `if` — use `match` on a tuple to handle multi-condition branching in a single arm
 - Data-object types name the aggregate root first, verb after: `TeamAvatarReserveParams` not `ReserveTeamAvatarParams`

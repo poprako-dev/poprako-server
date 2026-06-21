@@ -1,6 +1,6 @@
 // LEGACY DISABLED: Do not use. This file is intentionally commented out.
 // use axum::Json;
-// use axum::extract::{Extension, Path, Query, State};
+// use axum::extract::{Extension, Path, Repo, State};
 // use axum::http::StatusCode;
 // use tracing::instrument;
 // 
@@ -58,7 +58,7 @@
 // pub async fn list_infos(
 //     State(harn): State<Harness>,
 //     Extension(user_token): Extension<UserToken>,
-//     Query(params): Query<ListParams>,
+//     Repo(params): Repo<ListParams>,
 // ) -> HttpResult<Vec<MemberInfo>> {
 //     // Filter out invalid params for listing members, e.g. user_id.
 //     let list_params = ListParams {
@@ -141,7 +141,7 @@
 // pub async fn list_my_infos(
 //     State(harn): State<Harness>,
 //     Extension(user_token): Extension<UserToken>,
-//     Query(params): Query<ListParams>,
+//     Repo(params): Repo<ListParams>,
 // ) -> HttpResult<Vec<MemberInfo>> {
 //     // Filter out invalid params for listing current user's memberships.
 //     let list_params = ListParams {

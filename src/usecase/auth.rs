@@ -10,22 +10,22 @@ use crate::model::user::{UserForm, UserToken};
 use crate::part::effect::event::Event;
 use crate::part::effect::event::user::UserSignedUpPayload;
 use crate::part::effect::{EffectDevelop, EffectEmit as _};
-use crate::part::query::map_drive_err;
-use crate::part::query::member::{MemberQuery, MemberQueryTransactional};
-use crate::part::query::member_invitation::{
-    MemberInvitationQuery, MemberInvitationQueryTransactional,
+use crate::part::repo::map_drive_err;
+use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
+use crate::part::repo::member_invitation::{
+    MemberInvitationRepo, MemberInvitationRepoTransactional,
 };
-use crate::part::query::step::member::MemberStep;
-use crate::part::query::step::member_invitation::MemberInvitationStep;
-use crate::part::query::step::user::UserStep;
-use crate::part::query::user::{UserQuery, UserQueryTransactional};
+use crate::part::repo::step::member::MemberStep;
+use crate::part::repo::step::member_invitation::MemberInvitationStep;
+use crate::part::repo::step::user::UserStep;
+use crate::part::repo::user::{UserRepo, UserRepoTransactional};
 use crate::part::token::TokenAuth;
 use crate::result::{ExpectedVariant, RootError, RootResult, accept};
 use crate::util::DeriveTransactional;
 
-pub async fn register<D, C, Q, A, V>(
+pub async fn register<D, C, R, A, V>(
     drive: &D,
-    query: &Q,
+    repo: &R,
     auth: &A,
     develop: &V,
     data: RegisterData,
@@ -34,19 +34,19 @@ where
     D: Drive<C>,
     D::Error: Into<RootError>,
     C: Send,
-    Q: UserQuery<C> + MemberQuery<C> + MemberInvitationQuery<C> + Send + Sync,
-    <Q as DeriveTransactional>::Transactional: UserQueryTransactional<C>
-        + MemberQueryTransactional<C>
-        + MemberInvitationQueryTransactional<C>
+    R: UserRepo<C> + MemberRepo<C> + MemberInvitationRepo<C> + Send + Sync,
+    <R as DeriveTransactional>::Transactional: UserRepoTransactional<C>
+        + MemberRepoTransactional<C>
+        + MemberInvitationRepoTransactional<C>
         + Send,
     A: TokenAuth,
     V: EffectDevelop + Send + Sync,
 {
     let (user_id, team_id, invitor_id, invitee_qid) = drive
         .with_context(async move |context| {
-            let query = DeriveTransactional::transactional(query).await;
+            let repo = DeriveTransactional::transactional(repo).await;
 
-            let invitation_info = query
+            let invitation_info = repo
                 .advance(
                     context,
                     &MemberInvitationStep::get_info_by_code_excluded(&data.invitation_code),
@@ -69,7 +69,7 @@ where
                 password_hash,
             };
 
-            let user_info = query
+            let user_info = repo
                 .advance(context, &UserStep::create(&user_form))
                 .await?;
 
@@ -81,11 +81,11 @@ where
                 role_mask: invitation_info.role_mask,
             };
 
-            query
+            repo
                 .advance(context, &MemberStep::create(&member_form))
                 .await?;
 
-            query
+            repo
                 .advance(
                     context,
                     &MemberInvitationStep::mark_pending_as_used(&invitation_info.id),
@@ -117,13 +117,13 @@ where
     Ok(RegisterVal { user_id, token })
 }
 
-pub async fn login<C, Q, A>(query: &Q, auth: &A, data: LoginData) -> RootResult<LoginVal>
+pub async fn login<C, R, A>(repo: &R, auth: &A, data: LoginData) -> RootResult<LoginVal>
 where
-    Q: UserQuery<C>,
-    <Q as DeriveTransactional>::Transactional: UserQueryTransactional<C>,
+    R: UserRepo<C>,
+    <R as DeriveTransactional>::Transactional: UserRepoTransactional<C>,
     A: TokenAuth,
 {
-    let user_credential = query
+    let user_credential = repo
         .execute(&UserStep::get_credential_by_qid(&data.qid))
         .await?;
 

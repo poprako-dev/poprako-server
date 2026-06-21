@@ -113,7 +113,7 @@
 // 
 // /// Requested state transition for a claimed local message.
 // ///
-// /// `Processing` is marked by query infra when `claim` returns.
+// /// `Processing` is marked by repo infra when `claim` returns.
 // pub enum LocalMessageMark {
 //     Pending {
 //         id: String,

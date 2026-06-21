@@ -6,7 +6,7 @@
 // use poprako_r::harness::Harness;
 // use poprako_r::infra::external::image_pool::OssImagePool;
 // use poprako_r::infra::external::token::JwtIssuer;
-// use poprako_r::infra::query::RdbQuery;
+// use poprako_r::infra::repo::RdbQuery;
 //
 // #[tokio::main]
 // async fn main() {
@@ -57,15 +57,15 @@
 //             .next()
 //             .expect("No address resolved for HTTP listen address");
 //
-//     let query = RdbQuery::from_env()
+//     let repo = RdbQuery::from_env()
 //         .await
-//         .expect("Failed to initialize query");
+//         .expect("Failed to initialize repo");
 //
 //     let jwt_codec = JwtIssuer::from_env().expect("Failed to initialize JWT codec");
 //
 //     let image_pool = OssImagePool::from_env_r2().expect("Failed to initialize image pool");
 //
-//     let harn = Harness::new(query, jwt_codec, image_pool);
+//     let harn = Harness::new(repo, jwt_codec, image_pool);
 //
 //     serve(harn, http_addr)
 //         .await

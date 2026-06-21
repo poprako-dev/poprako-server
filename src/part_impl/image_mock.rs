@@ -4,7 +4,7 @@ use url::Url;
 use poprako_util::i18n::trl;
 
 use crate::part::image::ImagePool;
-use crate::part_impl::query_mock::Mock;
+use crate::part_impl::repo_mock::Mock;
 use crate::result::{ExpectedVariant, RootError, RootResult};
 
 #[async_trait]

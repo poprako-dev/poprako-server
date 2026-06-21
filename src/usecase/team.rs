@@ -13,18 +13,18 @@ use crate::model::team::TeamForm;
 use crate::part::image::ImagePool;
 use crate::part::prom::intention::{IMAGE_TOPIC, ImageIntention, ImageKind};
 use crate::part::prom::{Payload, Prom, PromStep, PromTransactional};
-use crate::part::query::map_drive_err;
-use crate::part::query::step::team::TeamStep;
-use crate::part::query::step::workset::WorksetStep;
-use crate::part::query::team::{TeamQuery, TeamQueryTransactional};
-use crate::part::query::workset::{WorksetQuery, WorksetQueryTransactional};
+use crate::part::repo::map_drive_err;
+use crate::part::repo::step::team::TeamStep;
+use crate::part::repo::step::workset::WorksetStep;
+use crate::part::repo::team::{TeamRepo, TeamRepoTransactional};
+use crate::part::repo::workset::{WorksetRepo, WorksetRepoTransactional};
 use crate::result::{RootError, RootResult, accept};
 use crate::util::DeriveTransactional;
 
-pub async fn create<C, Q, I>(query: &Q, image: &I, data: CreateTeamData) -> RootResult<TeamInfoVal>
+pub async fn create<C, R, I>(repo: &R, image: &I, data: CreateTeamData) -> RootResult<TeamInfoVal>
 where
-    Q: TeamQuery<C>,
-    <Q as DeriveTransactional>::Transactional: TeamQueryTransactional<C>,
+    R: TeamRepo<C>,
+    <R as DeriveTransactional>::Transactional: TeamRepoTransactional<C>,
     I: ImagePool,
 {
     let form = TeamForm {
@@ -33,29 +33,29 @@ where
         description: data.description,
     };
 
-    let info = query.execute(&TeamStep::create(&form)).await?;
+    let info = repo.execute(&TeamStep::create(&form)).await?;
 
     TeamInfoVal::from_model(image, info).await
 }
 
-pub async fn get_info<C, Q, I>(query: &Q, image: &I, id: String) -> RootResult<TeamInfoVal>
+pub async fn get_info<C, R, I>(repo: &R, image: &I, id: String) -> RootResult<TeamInfoVal>
 where
-    Q: TeamQuery<C>,
-    <Q as DeriveTransactional>::Transactional: TeamQueryTransactional<C>,
+    R: TeamRepo<C>,
+    <R as DeriveTransactional>::Transactional: TeamRepoTransactional<C>,
     I: ImagePool,
 {
-    let info = query.execute(&TeamStep::get_info_by_id(&id)).await?;
+    let info = repo.execute(&TeamStep::get_info_by_id(&id)).await?;
 
     TeamInfoVal::from_model(image, info).await
 }
 
-pub async fn list_infos<C, Q, I>(query: &Q, image: &I, page: Page) -> RootResult<Vec<TeamInfoVal>>
+pub async fn list_infos<C, R, I>(repo: &R, image: &I, page: Page) -> RootResult<Vec<TeamInfoVal>>
 where
-    Q: TeamQuery<C>,
-    <Q as DeriveTransactional>::Transactional: TeamQueryTransactional<C>,
+    R: TeamRepo<C>,
+    <R as DeriveTransactional>::Transactional: TeamRepoTransactional<C>,
     I: ImagePool,
 {
-    let team_infos = query.execute(&TeamStep::list(page)).await?;
+    let team_infos = repo.execute(&TeamStep::list(page)).await?;
 
     // TODO: join all.
     let mut team_info_vals = Vec::with_capacity(team_infos.len());
@@ -66,12 +66,12 @@ where
     Ok(team_info_vals)
 }
 
-pub async fn update_info<C, Q>(query: &Q, data: UpdateTeamInfoData) -> RootResult<()>
+pub async fn update_info<C, R>(repo: &R, data: UpdateTeamInfoData) -> RootResult<()>
 where
-    Q: TeamQuery<C>,
-    <Q as DeriveTransactional>::Transactional: TeamQueryTransactional<C>,
+    R: TeamRepo<C>,
+    <R as DeriveTransactional>::Transactional: TeamRepoTransactional<C>,
 {
-    query
+    repo
         .execute(&TeamStep::update_info(
             &data.id,
             &data.name,
@@ -82,9 +82,9 @@ where
     Ok(())
 }
 
-pub async fn reserve_avatar<D, C, Q, P, I>(
+pub async fn reserve_avatar<D, C, R, P, I>(
     drive: &D,
-    query: &Q,
+    repo: &R,
     prom: &P,
     image: &I,
     id: String,
@@ -94,18 +94,18 @@ where
     D: Drive<C>,
     D::Error: Into<RootError>,
     C: Send,
-    Q: TeamQuery<C> + Send + Sync,
-    <Q as DeriveTransactional>::Transactional: TeamQueryTransactional<C> + Send,
+    R: TeamRepo<C> + Send + Sync,
+    <R as DeriveTransactional>::Transactional: TeamRepoTransactional<C> + Send,
     P: Prom<C> + Send + Sync,
     <P as DeriveTransactional>::Transactional: PromTransactional<C> + Send + Sync,
     I: ImagePool,
 {
     let (object_key, avatar_version) = drive
         .with_context(async move |context| {
-            let query = DeriveTransactional::transactional(query).await;
+            let repo = DeriveTransactional::transactional(repo).await;
             let prom = DeriveTransactional::transactional(prom).await;
 
-            let reservation = query
+            let reservation = repo
                 .advance(context, &TeamStep::reserve_avatar(&id, &data.file_ext))
                 .await?;
 
@@ -160,53 +160,53 @@ where
     })
 }
 
-pub async fn mark_avatar_uploaded<C, Q>(
-    query: &Q,
+pub async fn mark_avatar_uploaded<C, R>(
+    repo: &R,
     id: String,
     data: MarkTeamAvatarUploadedData,
 ) -> RootResult<()>
 where
-    Q: TeamQuery<C>,
-    <Q as DeriveTransactional>::Transactional: TeamQueryTransactional<C>,
+    R: TeamRepo<C>,
+    <R as DeriveTransactional>::Transactional: TeamRepoTransactional<C>,
 {
-    query
+    repo
         .execute(&TeamStep::mark_avatar_uploaded(&id, data.avatar_version))
         .await?;
 
     Ok(())
 }
 
-pub async fn delete<D, C, Q, P>(drive: &D, query: &Q, prom: &P, id: String) -> RootResult<()>
+pub async fn delete<D, C, R, P>(drive: &D, repo: &R, prom: &P, id: String) -> RootResult<()>
 where
     D: Drive<C>,
     D::Error: Into<RootError>,
     C: Send,
-    Q: TeamQuery<C> + WorksetQuery<C> + Send + Sync,
-    <Q as DeriveTransactional>::Transactional:
-        TeamQueryTransactional<C> + WorksetQueryTransactional<C> + Send + Sync,
+    R: TeamRepo<C> + WorksetRepo<C> + Send + Sync,
+    <R as DeriveTransactional>::Transactional:
+        TeamRepoTransactional<C> + WorksetRepoTransactional<C> + Send + Sync,
     P: Prom<C> + Send + Sync,
     <P as DeriveTransactional>::Transactional: PromTransactional<C> + Send + Sync,
 {
     drive
         .with_context(async move |context| {
-            let query = DeriveTransactional::transactional(query).await;
+            let repo = DeriveTransactional::transactional(repo).await;
             let prom = DeriveTransactional::transactional(prom).await;
 
-            let team_info = query
+            let team_info = repo
                 .advance(context, &TeamStep::get_info_excluded(&id))
                 .await?;
 
-            let workset_infos = query
+            let workset_infos = repo
                 .advance(context, &WorksetStep::list_by_team_id_excluded(&id))
                 .await?;
 
             for workset in &workset_infos {
-                query
+                repo
                     .advance(context, &WorksetStep::delete_cascade(&workset.id))
                     .await?;
             }
 
-            query.advance(context, &TeamStep::delete(&id)).await?;
+            repo.advance(context, &TeamStep::delete(&id)).await?;
 
             if let Some(avatar_key) = &team_info.avatar_key
                 && team_info.avatar_uploaded

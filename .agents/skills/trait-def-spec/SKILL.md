@@ -29,7 +29,7 @@ pub trait UserQuery { ... }
 Private marker traits also get `///`:
 
 ```rust
-/// Blanket-impl marker: every [`QueryTransactional`] is a
+/// Blanket-impl marker: every [`RepoTransactional`] is a
 /// [`MemberQueryMut`](crate::domain::query::member::MemberQueryMut).
 trait MemberQuery: domain_query::member::MemberQueryMut {}
 ```
@@ -111,7 +111,7 @@ compile-time link checking.
 | Link target | Syntax |
 |---|---|
 | Type in same crate | `` [`UserAggr`] `` |
-| Trait in same crate | `` [`QueryTransactional`] `` |
+| Trait in same crate | `` [`RepoTransactional`] `` |
 | Method with path | `` [`run_in_transaction`](crate::domain::query::Transactional::run_in_transaction) `` |
 | Type from dependency | `` [`OffsetDateTime`](time::OffsetDateTime) `` |
 
@@ -129,9 +129,9 @@ compile-time link checking.
 use async_trait::async_trait;
 
 /// Mutable persistence contract for [`Member`](crate::domain::model::aggregate::member::Member),
-/// used **only** inside a transaction via [`QueryTransactional`](crate::domain::query::QueryTransactional).
+/// used **only** inside a transaction via [`RepoTransactional`](crate::domain::query::RepoTransactional).
 #[async_trait]
-pub trait MemberQueryTransactional {
+pub trait MemberRepoTransactional {
     /// Inserts a new member row from the creation form.
     async fn create(&mut self, form: MemberForm) -> DomainResult<Member>;
 }
@@ -157,7 +157,7 @@ pub trait MemberQueryTransactional {
 - Private, blanket-impl markers. Comment format:
 
 ```rust
-/// Blanket-impl marker: every [`QueryTransactional`] is a
+/// Blanket-impl marker: every [`RepoTransactional`] is a
 /// [`UserQueryMut`](crate::domain::query::user::UserQueryMut).
 trait UserQueryMut: domain_query::user::UserQueryMut {}
 ```

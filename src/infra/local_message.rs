@@ -11,12 +11,12 @@
 // use crate::domain::model::value::local_message::{
 //     IMAGE_TOPIC, ImageLocalMessage, ImageResourceKind,
 // };
-// use crate::domain::query_legacy::Transactional;
-// use crate::domain::query_legacy::local_message::{
-//     LocalMessageQuery, LocalMessageQueryTransactional,
+// use crate::domain::repo_legacy::Transactional;
+// use crate::domain::repo_legacy::local_message::{
+//     LocalMessageQuery, LocalMessageRepoTransactional,
 // };
-// use crate::domain::query_legacy::team::TeamQueryTransactional;
-// use crate::domain::query_legacy::user::UserQueryTransactional;
+// use crate::domain::repo_legacy::team::TeamRepoTransactional;
+// use crate::domain::repo_legacy::user::UserRepoTransactional;
 // use crate::domain::result::{DomainError, DomainResult};
 // use crate::harness::HarnessBase;
 // 
@@ -145,12 +145,12 @@
 //         let message_id = message.id.clone();
 //         let lease = message.lease;
 //         let resource_id = resource_id.to_string();
-//         Transactional::transaction_scoped(self.harness.as_ref(), move |query| {
+//         Transactional::transaction_scoped(self.harness.as_ref(), move |repo| {
 //             async move {
 //                 let current = match resource_kind {
 //                     ImageResourceKind::UserAvatar => {
 //                         let user =
-//                             UserQueryTransactional::get_by_id_excluded(query, &resource_id).await?;
+//                             UserRepoTransactional::get_by_id_excluded(repo, &resource_id).await?;
 //                         AvatarState {
 //                             avatar_version: user.avatar_version,
 //                             uploaded: user.avatar_uploaded,
@@ -158,7 +158,7 @@
 //                     }
 //                     ImageResourceKind::TeamAvatar => {
 //                         let team =
-//                             TeamQueryTransactional::get_by_id_excluded(query, &resource_id).await?;
+//                             TeamRepoTransactional::get_by_id_excluded(repo, &resource_id).await?;
 //                         AvatarState {
 //                             avatar_version: team.avatar_version,
 //                             uploaded: team.avatar_uploaded,
@@ -169,16 +169,16 @@
 //                 if current.avatar_version == avatar_version && !current.uploaded {
 //                     match resource_kind {
 //                         ImageResourceKind::UserAvatar => {
-//                             UserQueryTransactional::mark_avatar_uploaded(
-//                                 query,
+//                             UserRepoTransactional::mark_avatar_uploaded(
+//                                 repo,
 //                                 &resource_id,
 //                                 avatar_version,
 //                             )
 //                             .await?;
 //                         }
 //                         ImageResourceKind::TeamAvatar => {
-//                             TeamQueryTransactional::mark_avatar_uploaded(
-//                                 query,
+//                             TeamRepoTransactional::mark_avatar_uploaded(
+//                                 repo,
 //                                 &resource_id,
 //                                 avatar_version,
 //                             )
@@ -191,7 +191,7 @@
 //                     id: message_id,
 //                     lease,
 //                 };
-//                 LocalMessageQueryTransactional::mark_transactional(query, &[&mark]).await?;
+//                 LocalMessageRepoTransactional::mark_transactional(repo, &[&mark]).await?;
 // 
 //                 Ok(())
 //             }
@@ -217,12 +217,12 @@
 //         resource_id: &str,
 //     ) -> DomainResult<Option<AvatarState>> {
 //         let resource_id = resource_id.to_string();
-//         let result = Transactional::transaction_scoped(self.harness.as_ref(), move |query| {
+//         let result = Transactional::transaction_scoped(self.harness.as_ref(), move |repo| {
 //             async move {
 //                 match resource_kind {
 //                     ImageResourceKind::UserAvatar => {
 //                         let user =
-//                             UserQueryTransactional::get_by_id_excluded(query, &resource_id).await?;
+//                             UserRepoTransactional::get_by_id_excluded(repo, &resource_id).await?;
 //                         Ok(AvatarState {
 //                             avatar_version: user.avatar_version,
 //                             uploaded: user.avatar_uploaded,
@@ -230,7 +230,7 @@
 //                     }
 //                     ImageResourceKind::TeamAvatar => {
 //                         let team =
-//                             TeamQueryTransactional::get_by_id_excluded(query, &resource_id).await?;
+//                             TeamRepoTransactional::get_by_id_excluded(repo, &resource_id).await?;
 //                         Ok(AvatarState {
 //                             avatar_version: team.avatar_version,
 //                             uploaded: team.avatar_uploaded,

@@ -1,5 +1,5 @@
 // LEGACY DISABLED: Do not use. This file is intentionally commented out.
-// /// Typed value object for the `includes` query parameter on member endpoints.
+// /// Typed value object for the `includes` repo parameter on member endpoints.
 // ///
 // /// Parsed from a comma-separated string with valid tokens `user` and `team`.
 // #[derive(Debug, Clone, Copy, Default)]

@@ -1,6 +1,6 @@
 // LEGACY DISABLED: Do not use. This file is intentionally commented out.
 // use axum::Json;
-// use axum::extract::{Path, Query, State};
+// use axum::extract::{Path, Repo, State};
 // use axum::http::StatusCode;
 // use serde::Deserialize;
 // use tracing::instrument;
@@ -37,7 +37,7 @@
 // }
 // 
 // #[derive(Debug, Deserialize, IntoParams)]
-// #[into_params(parameter_in = Query)]
+// #[into_params(parameter_in = Repo)]
 // pub struct WorksetListQuery {
 //     pub team_id: String,
 //     pub offset: Option<i64>,
@@ -58,7 +58,7 @@
 // #[instrument(err, skip(harn))]
 // pub async fn list_infos(
 //     State(harn): State<Harness>,
-//     Query(params): Query<WorksetListQuery>,
+//     Repo(params): Repo<WorksetListQuery>,
 // ) -> HttpResult<Vec<WorksetInfo>> {
 //     let page = Page {
 //         offset: params.offset.unwrap_or(0) as usize,

@@ -16,28 +16,28 @@ use crate::part::effect::{EffectDevelop, EffectEmit as _};
 use crate::part::image::ImagePool;
 use crate::part::prom::intention::{IMAGE_TOPIC, ImageIntention, ImageKind};
 use crate::part::prom::{Payload, Prom, PromStep, PromTransactional};
-use crate::part::query::map_drive_err;
-use crate::part::query::member::{MemberQuery, MemberQueryTransactional};
-use crate::part::query::step::member::MemberStep;
-use crate::part::query::step::user::UserStep;
-use crate::part::query::user::{UserQuery, UserQueryTransactional};
+use crate::part::repo::map_drive_err;
+use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
+use crate::part::repo::step::member::MemberStep;
+use crate::part::repo::step::user::UserStep;
+use crate::part::repo::user::{UserRepo, UserRepoTransactional};
 use crate::result::{ExpectedVariant, RootError, RootResult, accept};
 use crate::util::DeriveTransactional;
 
-pub async fn get_info<C, Q, I, V>(
-    query: &Q,
+pub async fn get_info<C, R, I, V>(
+    repo: &R,
     image: &I,
     develop: &V,
     token: UserToken,
     id: String,
 ) -> RootResult<UserInfoVal>
 where
-    Q: UserQuery<C>,
-    <Q as DeriveTransactional>::Transactional: UserQueryTransactional<C>,
+    R: UserRepo<C>,
+    <R as DeriveTransactional>::Transactional: UserRepoTransactional<C>,
     I: ImagePool,
     V: EffectDevelop + Send + Sync,
 {
-    let user_info = query.execute(&UserStep::get_info_by_id(&id)).await?;
+    let user_info = repo.execute(&UserStep::get_info_by_id(&id)).await?;
 
     if token.user_id == id {
         Event::UserActive(UserActivePayload {
@@ -50,9 +50,9 @@ where
     UserInfoVal::from_model(image, user_info).await
 }
 
-pub async fn update_info<D, C, Q>(
+pub async fn update_info<D, C, R>(
     drive: &D,
-    query: &Q,
+    repo: &R,
     token: UserToken,
     data: UpdateUserInfoData,
 ) -> RootResult<()>
@@ -60,9 +60,9 @@ where
     D: Drive<C>,
     D::Error: Into<RootError>,
     C: Send,
-    Q: UserQuery<C> + MemberQuery<C> + Send + Sync,
-    <Q as DeriveTransactional>::Transactional:
-        UserQueryTransactional<C> + MemberQueryTransactional<C> + Send,
+    R: UserRepo<C> + MemberRepo<C> + Send + Sync,
+    <R as DeriveTransactional>::Transactional:
+        UserRepoTransactional<C> + MemberRepoTransactional<C> + Send,
 {
     if token.user_id != data.id {
         return Err(RootError::Expected {
@@ -73,16 +73,16 @@ where
 
     drive
         .with_context(async move |context| {
-            let query = DeriveTransactional::transactional(query).await;
+            let repo = DeriveTransactional::transactional(repo).await;
 
-            query
+            repo
                 .advance(
                     context,
                     &UserStep::update_info(&token.user_id, &data.qid, &data.nickname),
                 )
                 .await?;
 
-            query
+            repo
                 .advance(
                     context,
                     &MemberStep::update_user_nickname(&token.user_id, &data.nickname),
@@ -95,9 +95,9 @@ where
         .map_err(map_drive_err)
 }
 
-pub async fn reserve_avatar<D, C, Q, P, I>(
+pub async fn reserve_avatar<D, C, R, P, I>(
     drive: &D,
-    query: &Q,
+    repo: &R,
     prom: &P,
     image: &I,
     token: UserToken,
@@ -107,18 +107,18 @@ where
     D: Drive<C>,
     D::Error: Into<RootError>,
     C: Send,
-    Q: UserQuery<C> + Send + Sync,
-    <Q as DeriveTransactional>::Transactional: UserQueryTransactional<C> + Send,
+    R: UserRepo<C> + Send + Sync,
+    <R as DeriveTransactional>::Transactional: UserRepoTransactional<C> + Send,
     P: Prom<C> + Send + Sync,
     <P as DeriveTransactional>::Transactional: PromTransactional<C> + Send + Sync,
     I: ImagePool,
 {
     let (object_key, avatar_version) = drive
         .with_context(async move |context| {
-            let query = DeriveTransactional::transactional(query).await;
+            let repo = DeriveTransactional::transactional(repo).await;
             let prom = DeriveTransactional::transactional(prom).await;
 
-            let reservation = query
+            let reservation = repo
                 .advance(
                     context,
                     &UserStep::reserve_avatar(&token.user_id, &data.file_ext),
@@ -176,9 +176,9 @@ where
     })
 }
 
-pub async fn mark_avatar_uploaded<D, C, Q>(
+pub async fn mark_avatar_uploaded<D, C, R>(
     drive: &D,
-    query: &Q,
+    repo: &R,
     token: UserToken,
     id: String,
     data: MarkUserAvatarUploadedData,
@@ -187,8 +187,8 @@ where
     D: Drive<C>,
     D::Error: Into<RootError>,
     C: Send,
-    Q: UserQuery<C> + Send + Sync,
-    <Q as DeriveTransactional>::Transactional: UserQueryTransactional<C> + Send,
+    R: UserRepo<C> + Send + Sync,
+    <R as DeriveTransactional>::Transactional: UserRepoTransactional<C> + Send,
 {
     if token.user_id != id {
         return Err(RootError::Expected {
@@ -199,9 +199,9 @@ where
 
     drive
         .with_context(async move |context| {
-            let query = DeriveTransactional::transactional(query).await;
+            let repo = DeriveTransactional::transactional(repo).await;
 
-            query
+            repo
                 .advance(
                     context,
                     &UserStep::mark_avatar_uploaded(&id, data.avatar_version),
@@ -214,24 +214,24 @@ where
         .map_err(map_drive_err)
 }
 
-pub async fn touch_last_active<D, C, Q>(drive: &D, query: &Q, token: UserToken) -> RootResult<()>
+pub async fn touch_last_active<D, C, R>(drive: &D, repo: &R, token: UserToken) -> RootResult<()>
 where
     D: Drive<C>,
     D::Error: Into<RootError>,
     C: Send,
-    Q: UserQuery<C> + MemberQuery<C> + Send + Sync,
-    <Q as DeriveTransactional>::Transactional:
-        UserQueryTransactional<C> + MemberQueryTransactional<C> + Send,
+    R: UserRepo<C> + MemberRepo<C> + Send + Sync,
+    <R as DeriveTransactional>::Transactional:
+        UserRepoTransactional<C> + MemberRepoTransactional<C> + Send,
 {
     drive
         .with_context(async move |context| {
-            let query = DeriveTransactional::transactional(query).await;
+            let repo = DeriveTransactional::transactional(repo).await;
 
-            query
+            repo
                 .advance(context, &UserStep::touch_last_active(&token.user_id))
                 .await?;
 
-            query
+            repo
                 .advance(context, &MemberStep::touch_last_active(&token.user_id))
                 .await?;
 
@@ -241,9 +241,9 @@ where
         .map_err(map_drive_err)
 }
 
-pub async fn delete<D, C, Q, P>(
+pub async fn delete<D, C, R, P>(
     drive: &D,
-    query: &Q,
+    repo: &R,
     prom: &P,
     token: UserToken,
     id: String,
@@ -252,9 +252,9 @@ where
     D: Drive<C>,
     D::Error: Into<RootError>,
     C: Send,
-    Q: UserQuery<C> + MemberQuery<C> + Send + Sync,
-    <Q as DeriveTransactional>::Transactional:
-        UserQueryTransactional<C> + MemberQueryTransactional<C> + Send + Sync,
+    R: UserRepo<C> + MemberRepo<C> + Send + Sync,
+    <R as DeriveTransactional>::Transactional:
+        UserRepoTransactional<C> + MemberRepoTransactional<C> + Send + Sync,
     P: Prom<C> + Send + Sync,
     <P as DeriveTransactional>::Transactional: PromTransactional<C> + Send + Sync,
 {
@@ -268,22 +268,22 @@ where
 
     drive
         .with_context(async move |context| {
-            let query = DeriveTransactional::transactional(query).await;
+            let repo = DeriveTransactional::transactional(repo).await;
             let prom = DeriveTransactional::transactional(prom).await;
 
-            let user_info = query
+            let user_info = repo
                 .advance(context, &UserStep::get_info_excluded(&id))
                 .await?;
 
-            let member_infos = query
+            let member_infos = repo
                 .advance(context, &MemberStep::list_by_user_id_excluded(&id))
                 .await?;
 
             for mi in &member_infos {
-                query.advance(context, &MemberStep::delete(&mi.id)).await?;
+                repo.advance(context, &MemberStep::delete(&mi.id)).await?;
             }
 
-            query.advance(context, &UserStep::delete(&id)).await?;
+            repo.advance(context, &UserStep::delete(&id)).await?;
 
             if let Some(avatar_key) = &user_info.avatar_key
                 && user_info.avatar_uploaded

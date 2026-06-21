@@ -26,7 +26,7 @@
 // ///
 // /// Implemented by input aggregates (e.g. [`UserForm`](crate::domain::model::aggr::user::UserForm))
 // /// that carry a private `events: Vec<DomainEvent>` field. The usecase layer pushes events
-// /// into the form before passing it to the query layer's `create`.
+// /// into the form before passing it to the repo layer's `create`.
 // pub trait EventSink {
 //     /// Appends a domain event to the internal buffer.
 //     fn push_event(&mut self, event: Event);

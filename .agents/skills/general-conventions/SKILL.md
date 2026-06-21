@@ -139,7 +139,7 @@ and enabling accidental resolution to the wrong trait.
   `FakeHarness`, etc.) in any source file — production code, test code,
   examples, and benchmarks.
 - The `query` parameter inside `transaction_scoped` closures (which is
-  a `MemoryMockQueryTransactional` or `RdbQueryTransactional`).
+  a `MemoryMockRepoTransactional` or `RdbRepoTransactional`).
 
 ```rust
 // ✅ Correct — UFCS everywhere
@@ -147,7 +147,7 @@ UserQuery::get_by_id(harn, id).await?;
 ImagePut::put_signed(harn, &key).await?;
 Transactional::transaction_scoped(harn, move |query| {
     async move {
-        UserQueryTransactional::create(query, &form).await?;
+        UserRepoTransactional::create(query, &form).await?;
         Ok(())
     }.boxed()
 }).await?;

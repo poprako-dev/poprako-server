@@ -9,18 +9,18 @@
 // 
 // use crate::domain::model::aggr::system_mail::{SystemMailAggr, SystemMailForm};
 // use crate::domain::model::event::user::UserSignedUpEvent;
-// use crate::domain::query_legacy::system_mail::SystemMailQuery;
-// use crate::domain::query_legacy::team::TeamQuery;
+// use crate::domain::repo_legacy::system_mail::SystemMailQuery;
+// use crate::domain::repo_legacy::team::TeamRepo;
 // 
 // /// Notifies the invitor via system mail that a new user has registered using
 // /// their invitation code.
 // #[instrument(skip(harn, event), level = Level::DEBUG)]
 // pub async fn notify_invitor<H>(harn: &H, event: UserSignedUpEvent)
 // where
-//     H: TeamQuery + SystemMailQuery,
+//     H: TeamRepo + SystemMailQuery,
 // {
 //     // Look up the team name for the notification content.
-//     let Some(team) = TeamQuery::get_by_id(harn, &event.team_id).await.ok() else {
+//     let Some(team) = TeamRepo::get_by_id(harn, &event.team_id).await.ok() else {
 //         tracing::error!(
 //             team_id = %event.team_id,
 //             "[notify_invitor_handler] failed to look up team for notification",
