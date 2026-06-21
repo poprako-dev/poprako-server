@@ -64,8 +64,8 @@
 //     path = "/teams",
 //     tag = "teams",
 //     params(
-//         ("offset" = Option<i64>, Query, description = "Pagination offset"),
-//         ("limit" = Option<i64>, Query, description = "Pagination limit")
+//         ("offset" = Option<i64>, Repo, description = "Pagination offset"),
+//         ("limit" = Option<i64>, Repo, description = "Pagination limit")
 //     ),
 //     responses(
 //         (status = 200, description = "Teams listed", body = Vec<TeamInfo>),
@@ -75,7 +75,7 @@
 // #[instrument(err, skip(harn))]
 // pub async fn list_infos(
 //     State(harn): State<Harness>,
-//     axum::extract::Query(params): axum::extract::Query<TeamListQuery>,
+//     axum::extract::Repo(params): axum::extract::Repo<TeamListQuery>,
 // ) -> HttpResult<Vec<TeamInfo>> {
 //     let page = Page {
 //         offset: params.offset.unwrap_or(0) as usize,
@@ -88,7 +88,7 @@
 // }
 // 
 // #[derive(Debug, Deserialize, utoipa::IntoParams)]
-// #[into_params(parameter_in = Query)]
+// #[into_params(parameter_in = Repo)]
 // pub struct TeamListQuery {
 //     pub offset: Option<i64>,
 //     pub limit: Option<i64>,

@@ -56,7 +56,7 @@ The suffix is mandatory (`*Update`), the prefix describes scope
 
 ## 2. Domain Query Trait Layer (`src/domain/query/`)
 
-### 2.1 Query vs QueryTransactional: the boundary
+### 2.1 Query vs RepoTransactional: the boundary
 
 **This is the most common mistake.**  Every new method must go on the
 correct trait:
@@ -64,7 +64,7 @@ correct trait:
 | Trait | `self` type | When to use |
 |---|---|---|
 | `UserQuery` | `&self` | Single-row read or single-row write. No cross-aggregate atomicity needed. |
-| `UserQueryTransactional` | `&mut self` | Must run inside a transaction because the usecase needs atomic writes across multiple aggregates or tables. |
+| `UserRepoTransactional` | `&mut self` | Must run inside a transaction because the usecase needs atomic writes across multiple aggregates or tables. |
 
 ```rust
 // ✅ UserQuery — single-row operations, no transaction needed
@@ -76,8 +76,8 @@ pub trait UserQuery {
     async fn touch_last_active(&self, id: &str) -> DomainResult<()>;
 }
 
-// ✅ UserQueryTransactional — only when cross-aggregate atomicity is required
-pub trait UserQueryTransactional {
+// ✅ UserRepoTransactional — only when cross-aggregate atomicity is required
+pub trait UserRepoTransactional {
     async fn create(&mut self, form: &UserForm) -> DomainResult<UserAggr>;
     async fn update_info(&mut self, input: &UserInfoUpdate) -> DomainResult<UserAggr>;
 }
@@ -139,7 +139,7 @@ pub struct UserAspect { ... }
 
 ## 4. Infra Query Layer (`src/infra/query/`)
 
-### 4.1 Query impl vs QueryTransactional impl
+### 4.1 Query impl vs RepoTransactional impl
 
 Methods on `UserQuery` (`&self`) are implemented on `RdbQuery` using
 `submit_query!`:
@@ -162,13 +162,13 @@ impl UserQuery for RdbQuery {
 }
 ```
 
-Methods on `UserQueryTransactional` (`&mut self`) are implemented on
-`RdbQueryTransactional` by delegating to the free function with
+Methods on `UserRepoTransactional` (`&mut self`) are implemented on
+`RdbRepoTransactional` by delegating to the free function with
 `self.conn`:
 
 ```rust
 #[async_trait]
-impl<'c> UserQueryTransactional for RdbQueryTransactional<'c> {
+impl<'c> UserRepoTransactional for RdbRepoTransactional<'c> {
     async fn create(&mut self, form: &UserForm) -> DomainResult<UserAggr> {
         create(self.conn, form).await
     }
@@ -181,19 +181,19 @@ impl<'c> UserQueryTransactional for RdbQueryTransactional<'c> {
 ### 4.2 Free functions: `submit_query!` for Query, direct conn for Transactional
 
 Free functions for `UserQuery` methods use `submit_query!` (the pool
-allocates a connection).  Free functions for `UserQueryTransactional`
+allocates a connection).  Free functions for `UserRepoTransactional`
 methods take `conn: &mut AsyncPgConnection` directly.
 
 ---
 
 ## 5. Infra Memory Mock Layer (`src/infra/query/memory_mock/`)
 
-### 5.1 Mirror the Query/QueryTransactional split
+### 5.1 Mirror the Query/RepoTransactional split
 
 `UserQuery` methods → `impl ... for MemoryMockQuery`
-`UserQueryTransactional` methods → `impl ... for MemoryMockQueryTransactional`
+`UserRepoTransactional` methods → `impl ... for MemoryMockRepoTransactional`
 
-Never put a `UserQuery` method on `MemoryMockQueryTransactional` or vice
+Never put a `UserQuery` method on `MemoryMockRepoTransactional` or vice
 versa.
 
 ### 5.2 Tests: use `.boxed()` not `Box::pin`
@@ -203,7 +203,7 @@ Every test that uses `transaction_scoped` must use `.boxed()`:
 ```rust
 mock.transaction_scoped(|txn| {
     async move {
-        UserQueryTransactional::create(txn, &form).await.unwrap();
+        UserRepoTransactional::create(txn, &form).await.unwrap();
         Ok(())
     }
     .boxed()
@@ -244,8 +244,8 @@ harn.transaction_scoped(move |query| { ... }).await?;
 Inside `transaction_scoped` closures, use UFCS on `query`:
 
 ```rust
-UserQueryTransactional::create(query, &form).await?;
-MemberInvitationQueryTransactional::get_by_code_ex(query, code).await?;
+UserRepoTransactional::create(query, &form).await?;
+MemberInvitationRepoTransactional::get_by_code_ex(query, code).await?;
 ```
 
 ### 6.2 Composite traits in where bounds
@@ -454,9 +454,9 @@ When a usecase uses `H: Query + ImagePut + Send + Sync`, the `TestHarness`
 must implement `Query` and `ImagePut`:
 
 ```rust
-use crate::domain::query::system_mail::SystemMailQueryForward;
-use crate::domain::query::team::TeamQueryForward;
-use crate::domain::query::user::UserQueryForward;
+use crate::domain::query::system_mail::SystemMailRepoForward;
+use crate::domain::query::team::TeamRepoForward;
+use crate::domain::query::user::UserRepoForward;
 use crate::domain::external::image_pool::{ImageGet, ImagePut};
 
 #[derive(Clone, Default, ForwardRefs)]
@@ -483,10 +483,10 @@ impl ImagePut for TestHarness {
 ## 12. Full Implementation Sequence
 
 1. **Domain model** — add new aggregate structs to `src/domain/model/aggr/`.  Apply rules §1.1–1.3.
-2. **Domain query trait** — add methods to `UserQuery` or `UserQueryTransactional`.  Apply rule §2.1.
+2. **Domain query trait** — add methods to `UserQuery` or `UserRepoTransactional`.  Apply rule §2.1.
 3. **Infra query entity** — add `Row` / `Entry` / `Aspect` structs.  Apply rule §3.1.
 4. **Infra query impl** — implement free functions + trait impls.  Apply rules §4.1–4.2.
-5. **Memory mock** — implement on `MemoryMockQuery` / `MemoryMockQueryTransactional`.  Apply rules §5.1–5.2.  Add tests.
+5. **Memory mock** — implement on `MemoryMockQuery` / `MemoryMockRepoTransactional`.  Apply rules §5.1–5.2.  Add tests.
 6. **Use case data objects** — add params/reply structs.  Apply rule §7.1.
 7. **Use case** — implement the function.  Apply rules §6.1–6.4.
 8. **i18n keys** — add to both locale files.  Apply rule §8.1.
@@ -502,9 +502,9 @@ impl ImagePut for TestHarness {
 
 - [ ] **All layers**: no abbreviations in new identifiers (§1.1, §7.1)
 - [ ] **Domain model**: name precisely scopes what is affected (§1.2)
-- [ ] **Domain query trait**: methods on correct trait — `UserQuery` vs `UserQueryTransactional` (§2.1)
+- [ ] **Domain query trait**: methods on correct trait — `UserQuery` vs `UserRepoTransactional` (§2.1)
 - [ ] **Infra entity**: suffix matches Diesel derive — `Entry`/`Row`/`Aspect` (§3.1)
-- [ ] **Infra query**: impl on correct struct — `RdbQuery` vs `RdbQueryTransactional` (§4.1)
+- [ ] **Infra query**: impl on correct struct — `RdbQuery` vs `RdbRepoTransactional` (§4.1)
 - [ ] **Memory mock**: impl on correct struct; tests use `.boxed()` (§5.1–5.2)
 - [ ] **Usecase**: UFCS for ALL trait calls (§6.1)
 - [ ] **Usecase**: composite traits in where bounds (§6.2, §2.2)

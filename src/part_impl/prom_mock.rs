@@ -4,7 +4,7 @@ use time::OffsetDateTime;
 use poprako_transactional::advance::Advance;
 
 use crate::part::prom::{Append, Payload, Prom, PromTransactional};
-use crate::part_impl::query_mock::{Mock, MockContext, MockTransactional};
+use crate::part_impl::repo_mock::{Mock, MockContext, MockTransactional};
 use crate::result::RootError;
 
 #[cfg_attr(test, derive(Clone))]

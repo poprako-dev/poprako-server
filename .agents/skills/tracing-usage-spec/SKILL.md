@@ -1,6 +1,6 @@
 ---
 name: tracing-usage-spec
-description: "Where #[instrument] belongs: usecase/infra-query/infra-external/api-handlers YES. constructors/domain-model/harness/QueryTransactional-impl NO."
+description: "Where #[instrument] belongs: usecase/infra-query/infra-external/api-handlers YES. constructors/domain-model/harness/RepoTransactional-impl NO."
 ---
 
 # Tracing Instrument Usage Specification
@@ -99,7 +99,7 @@ impl UserCredential {
 | Layer | Rationale |
 |-------|-----------|
 | `src/usecase/` | Orchestration boundaries — spans mark the start of a use-case, capturing the full request lifecycle |
-| `src/infrastructure/query/` | Database I/O — `#[instrument]` is **permitted** on free functions and `Query` impl methods. Use it when the observability benefit (tracing individual queries, their duration, and parameters) outweighs the span overhead. Never place it on `QueryTransactional` impl blocks |
+| `src/infrastructure/query/` | Database I/O — `#[instrument]` is **permitted** on free functions and `Query` impl methods. Use it when the observability benefit (tracing individual queries, their duration, and parameters) outweighs the span overhead. Never place it on `RepoTransactional` impl blocks |
 | `src/infrastructure/external/` | External service calls (OSS, token generation, etc.) — spans isolate external latency |
 | `src/api/` | HTTP handler entry points — spans mark request boundaries |
 

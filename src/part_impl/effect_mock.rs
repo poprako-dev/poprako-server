@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 
 use crate::part::effect::{EffectDevelop, EventIter};
-use crate::part_impl::query_mock::Mock;
+use crate::part_impl::repo_mock::Mock;
 
 #[async_trait]
 impl EffectDevelop for Mock {

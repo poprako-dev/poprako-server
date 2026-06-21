@@ -5,10 +5,10 @@
 // use crate::domain::model::aggr::local_message::LocalMessageForm;
 // use crate::domain::model::aggr::user::UserToken;
 // use crate::domain::model::value::local_message::ImageLocalMessage;
-// use crate::domain::query_legacy::QueryTransactional;
-// use crate::domain::query_legacy::local_message::LocalMessageQueryTransactional;
-// use crate::domain::query_legacy::member::MemberQueryTransactional;
-// use crate::domain::query_legacy::user::UserQueryTransactional;
+// use crate::domain::repo_legacy::RepoTransactional;
+// use crate::domain::repo_legacy::local_message::LocalMessageRepoTransactional;
+// use crate::domain::repo_legacy::member::MemberRepoTransactional;
+// use crate::domain::repo_legacy::user::UserRepoTransactional;
 // use crate::domain::result::{DomainError, DomainResult};
 // 
 // pub struct UserComplex;
@@ -45,22 +45,22 @@
 // 
 //     /// Deletes the user and all their member records across teams, and queues
 //     /// a local message to delete the user avatar if one was present.
-//     pub async fn delete_cascade<Q>(query: &mut Q, id: &str) -> DomainResult<()>
+//     pub async fn delete_cascade<R>(repo: &mut R, id: &str) -> DomainResult<()>
 //     where
-//         Q: QueryTransactional,
+//         R: RepoTransactional,
 //     {
 //         // Read avatar key before deletion so we can schedule cleanup.
-//         let user = UserQueryTransactional::get_by_id_excluded(query, id).await?;
+//         let user = UserRepoTransactional::get_by_id_excluded(repo, id).await?;
 // 
 //         let avatar_key = user.avatar_key;
 // 
 //         // Delete each member record belonging to this user.
-//         let members = MemberQueryTransactional::list_by_user_id_excluded(query, id).await?;
+//         let members = MemberRepoTransactional::list_by_user_id_excluded(repo, id).await?;
 //         for m in &members {
-//             MemberQueryTransactional::delete(query, &m.id).await?;
+//             MemberRepoTransactional::delete(repo, &m.id).await?;
 //         }
 // 
-//         UserQueryTransactional::delete(query, id).await?;
+//         UserRepoTransactional::delete(repo, id).await?;
 // 
 //         // Queue avatar file deletion if there was one.
 //         if let Some(object_key) = avatar_key {
@@ -68,7 +68,7 @@
 //                 ImageLocalMessage::delete(object_key),
 //                 Duration::seconds(0),
 //             );
-//             LocalMessageQueryTransactional::append(query, &message).await?;
+//             LocalMessageRepoTransactional::append(repo, &message).await?;
 //         }
 // 
 //         Ok(())

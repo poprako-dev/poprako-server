@@ -697,11 +697,11 @@ pub trait UserQuery<H>:
     + for<'a> Execute<UserGetInfoById<'a>, Error = RootError>
     + for<'a> Execute<UserGetCredentialByQid<'a>, Error = RootError>
 where
-    Self::Transactional: UserQueryTransactional<H>,
+    Self::Transactional: UserRepoTransactional<H>,
 {
 }
 
-pub trait UserQueryTransactional<H>:
+pub trait UserRepoTransactional<H>:
     for<'a> Advance<UserCreate<'a>, H, Error = RootError>
     + for<'a> Advance<UserUpdateInfo<'a>, H, Error = RootError>
     + for<'a> Advance<UserReserveAvatar<'a>, H, Error = RootError>
@@ -736,11 +736,11 @@ Trait shape:
 ```rust
 pub trait MemberQuery<H>: DeriveTransactional
 where
-    Self::Transactional: MemberQueryTransactional<H>,
+    Self::Transactional: MemberRepoTransactional<H>,
 {
 }
 
-pub trait MemberQueryTransactional<H>:
+pub trait MemberRepoTransactional<H>:
     for<'a> Advance<MemberCreate<'a>, H, Error = RootError>
     + for<'a> Advance<MemberUpdateUserNickname<'a>, H, Error = RootError>
     + for<'a> Advance<MemberTouchLastActive<'a>, H, Error = RootError>
@@ -767,11 +767,11 @@ use crate::result::RootError;
 
 pub trait MemberInvitationQuery<H>: DeriveTransactional
 where
-    Self::Transactional: MemberInvitationQueryTransactional<H>,
+    Self::Transactional: MemberInvitationRepoTransactional<H>,
 {
 }
 
-pub trait MemberInvitationQueryTransactional<H>:
+pub trait MemberInvitationRepoTransactional<H>:
     for<'a> Advance<MemberInvitationGetByCodeExcluded<'a>, H, Error = RootError>
     + for<'a> Advance<MemberInvitationMarkPendingAsUsed<'a>, H, Error = RootError>
 {
@@ -806,11 +806,11 @@ pub trait TeamQuery<H>:
     + for<'a> Execute<TeamUpdateInfo<'a>, Error = RootError>
     + for<'a> Execute<TeamMarkAvatarUploaded<'a>, Error = RootError>
 where
-    Self::Transactional: TeamQueryTransactional<H>,
+    Self::Transactional: TeamRepoTransactional<H>,
 {
 }
 
-pub trait TeamQueryTransactional<H>:
+pub trait TeamRepoTransactional<H>:
     for<'a> Advance<TeamReserveAvatar<'a>, H, Error = RootError>
     + for<'a> Advance<TeamMarkAvatarUploaded<'a>, H, Error = RootError>
     + for<'a> Advance<TeamGetInfoExcluded<'a>, H, Error = RootError>
@@ -835,11 +835,11 @@ use crate::result::RootError;
 
 pub trait WorksetQuery<H>: DeriveTransactional
 where
-    Self::Transactional: WorksetQueryTransactional<H>,
+    Self::Transactional: WorksetRepoTransactional<H>,
 {
 }
 
-pub trait WorksetQueryTransactional<H>:
+pub trait WorksetRepoTransactional<H>:
     for<'a> Advance<WorksetListByTeamIdExcluded<'a>, H, Error = RootError>
     + for<'a> Advance<WorksetDeleteCascade<'a>, H, Error = RootError>
 {
@@ -948,9 +948,9 @@ Bounds:
 - `H: Send`
 - `Q: UserQuery<H> + MemberQuery<H> + MemberInvitationQuery<H> + Send`
 - `<Q as DeriveTransactional>::Transactional:
-  UserQueryTransactional<H>
-  + MemberQueryTransactional<H>
-  + MemberInvitationQueryTransactional<H>
+  UserRepoTransactional<H>
+  + MemberRepoTransactional<H>
+  + MemberInvitationRepoTransactional<H>
   + Send`
 - `T: TokenIssuer`
 - `E: Develop + Send + Sync`
@@ -988,7 +988,7 @@ pub async fn login<H, Q, T>(
 Bounds:
 
 - `Q: UserQuery<H>`
-- `<Q as DeriveTransactional>::Transactional: UserQueryTransactional<H>`
+- `<Q as DeriveTransactional>::Transactional: UserRepoTransactional<H>`
 - `T: TokenIssuer`
 
 Flow:
@@ -1037,7 +1037,7 @@ Bounds:
 - `H: Send`
 - `Q: UserQuery<H> + Send`
 - `<Q as DeriveTransactional>::Transactional:
-  UserQueryTransactional<H> + Pledge<H> + Send`
+  UserRepoTransactional<H> + Pledge<H> + Send`
 - `P: ImagePool`
 
 Flow:
@@ -1066,7 +1066,7 @@ Flow:
 Bounds must include:
 
 - `<Q as DeriveTransactional>::Transactional:
-  UserQueryTransactional<H> + MemberQueryTransactional<H> + Pledge<H> + Send`
+  UserRepoTransactional<H> + MemberRepoTransactional<H> + Pledge<H> + Send`
 
 Flow:
 
@@ -1111,7 +1111,7 @@ Bounds:
 - `H: Send`
 - `Q: TeamQuery<H> + Send`
 - `<Q as DeriveTransactional>::Transactional:
-  TeamQueryTransactional<H> + Pledge<H> + Send`
+  TeamRepoTransactional<H> + Pledge<H> + Send`
 - `P: ImagePool`
 
 Flow:
@@ -1135,7 +1135,7 @@ Bounds:
 - `H: Send`
 - `Q: TeamQuery<H> + WorksetQuery<H> + Send`
 - `<Q as DeriveTransactional>::Transactional:
-  TeamQueryTransactional<H> + WorksetQueryTransactional<H> + Pledge<H> + Send`
+  TeamRepoTransactional<H> + WorksetRepoTransactional<H> + Pledge<H> + Send`
 
 Flow:
 

@@ -2,7 +2,7 @@ use poprako_util::i18n::trl;
 
 use crate::model::user::UserToken;
 use crate::part::token::TokenAuth;
-use crate::part_impl::query_mock::Mock;
+use crate::part_impl::repo_mock::Mock;
 use crate::result::{ExpectedVariant, RootError, RootResult};
 
 impl TokenAuth for Mock {

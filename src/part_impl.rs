@@ -5,6 +5,6 @@ pub mod image_mock;
 #[cfg(test)]
 pub mod prom_mock;
 #[cfg(test)]
-pub mod query_mock;
+pub mod repo_mock;
 #[cfg(test)]
 pub mod token_mock;

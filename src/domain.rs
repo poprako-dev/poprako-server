@@ -3,7 +3,7 @@
 // pub mod effect;
 // pub mod external;
 // pub mod model;
-// pub mod query_legacy;
+// pub mod repo_legacy;
 //
 // pub mod result {
 //     use poprako_util::rename::StdResult;

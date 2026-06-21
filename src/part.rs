@@ -3,5 +3,5 @@
 pub mod effect;
 pub mod image;
 pub mod prom;
-pub mod query;
+pub mod repo;
 pub mod token;

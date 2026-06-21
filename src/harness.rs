@@ -9,18 +9,18 @@
 // use crate::domain::external::image_pool::ImagePoolForward;
 // use crate::domain::external::token::TokenIssuerForward;
 // use crate::domain::model::event::EventEmit;
-// use crate::domain::query_legacy::{QueryForward, TransactionalForward};
+// use crate::domain::repo_legacy::{RepoForward, TransactionalForward};
 // use crate::infra::effect::{AsyncEffectSink, SharedEffectSink};
 // use crate::infra::external::image_pool::OssImagePool;
 // use crate::infra::external::token::JwtIssuer;
 // use crate::infra::local_message::LocalMessageIngestor;
-// use crate::infra::query::RdbQuery;
+// use crate::infra::repo::RdbQuery;
 //
 // // ── HarnessBase: shared core for database access, image pool, and token codec ───
 //
 // #[derive(ForwardRefs)]
 // pub struct HarnessBase {
-//     #[forward_ref(Query, Transactional)]
+//     #[forward_ref(Repo, Transactional)]
 //     rdb_query: RdbQuery,
 //
 //     #[forward_ref(TokenIssuer)]
@@ -37,7 +37,7 @@
 //     #[forward_ref(
 //         target = HarnessBase,
 //         Transactional,
-//         Query,
+//         Repo,
 //         TokenIssuer,
 //         ImagePool
 //     )]
@@ -48,9 +48,9 @@
 //
 // impl Harness {
 //     #[allow(clippy::too_many_arguments)]
-//     pub fn new(query: RdbQuery, token_issuer: JwtIssuer, image_pool: OssImagePool) -> Self {
+//     pub fn new(repo: RdbQuery, token_issuer: JwtIssuer, image_pool: OssImagePool) -> Self {
 //         let base = Arc::new(HarnessBase {
-//             rdb_query: query,
+//             rdb_query: repo,
 //             jwt_issuer: token_issuer,
 //             oss_image_pool: image_pool,
 //         });
@@ -90,14 +90,14 @@
 //     use crate::domain::model::aggr::user::{UserAggr, UserCredential, UserToken};
 //     use crate::domain::model::aggr::workset::WorksetAggr;
 //     use crate::domain::model::event::{Event, EventEmit};
-//     use crate::domain::query_legacy::{QueryForward, TransactionalForward};
+//     use crate::domain::repo_legacy::{RepoForward, TransactionalForward};
 //     use crate::domain::result::{DomainError, DomainResult};
-//     use crate::infra::query::memory_mock::{MemoryMockQuery, MemoryMockState};
+//     use crate::infra::repo::memory_mock::{MemoryMockQuery, MemoryMockState};
 //
 //     #[derive(Clone, Default, ForwardRefs)]
 //     pub struct TestHarness {
-//         #[forward_ref(target = MemoryMockQuery, Transactional, Query)]
-//         query: Arc<MemoryMockQuery>,
+//         #[forward_ref(target = MemoryMockQuery, Transactional, Repo)]
+//         repo: Arc<MemoryMockQuery>,
 //         events: Arc<Mutex<Vec<Event>>>,
 //         token_fails: bool,
 //     }
@@ -111,27 +111,27 @@
 //         }
 //
 //         pub fn seed_invitation(&self, invitation: MemberInvitationAggr) {
-//             self.query.seed_member_invitation(invitation);
+//             self.repo.seed_member_invitation(invitation);
 //         }
 //
 //         pub fn seed_user(&self, user: UserAggr, credential: UserCredential) {
-//             self.query.seed_user(user, credential);
+//             self.repo.seed_user(user, credential);
 //         }
 //
 //         pub fn seed_team(&self, team: TeamAggr) {
-//             self.query.seed_team(team);
+//             self.repo.seed_team(team);
 //         }
 //
 //         pub fn seed_workset(&self, workset: WorksetAggr) {
-//             self.query.seed_workset(workset);
+//             self.repo.seed_workset(workset);
 //         }
 //
 //         pub fn seed_member(&self, member: MemberAggr) {
-//             self.query.seed_member(member);
+//             self.repo.seed_member(member);
 //         }
 //
 //         pub fn snapshot(&self) -> MemoryMockState {
-//             self.query.snapshot()
+//             self.repo.snapshot()
 //         }
 //
 //         pub fn events(&self) -> Vec<Event> {

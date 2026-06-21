@@ -69,7 +69,7 @@ description: All 70 formatting/naming/structural rules across every poprako-r la
 23. **No instrument on constructors** — `new`, `generate_id`, `From`, `Default`.
 24. **No instrument on domain model** — any function under `src/domain/`.
 25. **No instrument on harness** — `src/harness.rs` impl blocks.
-26. **No instrument on QueryTransactional impl** — pure delegation.
+26. **No instrument on RepoTransactional impl** — pure delegation.
 27. **Allowed on**: usecase functions, infra query free functions, infra `Query` impl, infra external services, API handlers.
 
 ---
@@ -130,9 +130,9 @@ description: All 70 formatting/naming/structural rules across every poprako-r la
 ## O. Domain Query Trait Layer (6 rules)
 
 51. **One file per aggregate** under `src/domain/query/`.
-52. **Two traits**: `{Aggr}Query` (`&self`) and `{Aggr}QueryTransactional` (`&mut self`).
+52. **Two traits**: `{Aggr}Query` (`&self`) and `{Aggr}RepoTransactional` (`&mut self`).
 53. **`*Query` = single-row ops, no transaction**.
-54. **`*QueryTransactional` = cross-aggregate atomicity needed**.
+54. **`*RepoTransactional` = cross-aggregate atomicity needed**.
 55. **Never same method on both traits**.
 56. **Reference params in trait signatures**: `&str`, `&Form` (not owned).
 
@@ -151,14 +151,14 @@ description: All 70 formatting/naming/structural rules across every poprako-r la
 
 61. **Free functions take `conn: &mut AsyncPgConnection`** — `pub async fn`.
 62. **`RdbQuery` impl uses `submit_query!`** — `submit_query!(self.pool, free_fn, args...)`.
-63. **`RdbQueryTransactional` impl delegates directly** — `free_fn(self.conn, args).await`.
+63. **`RdbRepoTransactional` impl delegates directly** — `free_fn(self.conn, args).await`.
 64. **INSERT uses `*Entry` struct** — `.values(&entry)`, never inline tuples.
 
 ---
 
 ## R. Memory Mock Layer (1 rule)
 
-65. **`MemoryMockQuery` impls `*Query`; `MemoryMockQueryTransactional` impls `*QueryTransactional`**.
+65. **`MemoryMockQuery` impls `*Query`; `MemoryMockRepoTransactional` impls `*RepoTransactional`**.
 
 ---
 
