@@ -25,7 +25,6 @@ use crate::result::{RootError, RootResult, accept};
 use crate::util::DeriveTransactional;
 
 #[cfg(test)]
-#[cfg(test)]
 pub(crate) mod tests;
 
 /// Creates a new team.

@@ -27,7 +27,6 @@ use crate::result::{ExpectedVariant, RootError, RootResult, accept};
 use crate::util::DeriveTransactional;
 
 #[cfg(test)]
-#[cfg(test)]
 pub(crate) mod tests;
 
 /// Fetches a user's profile with avatar URL resolution.
@@ -110,19 +109,17 @@ where
         .with_context(async move |context| {
             let repo = DeriveTransactional::transactional(repo).await;
 
-            repo
-                .advance(
-                    context,
-                    &UserStep::update_info(&token.user_id, &data.qid, &data.nickname),
-                )
-                .await?;
+            repo.advance(
+                context,
+                &UserStep::update_info(&token.user_id, &data.qid, &data.nickname),
+            )
+            .await?;
 
-            repo
-                .advance(
-                    context,
-                    &MemberStep::update_user_nickname(&token.user_id, &data.nickname),
-                )
-                .await?;
+            repo.advance(
+                context,
+                &MemberStep::update_user_nickname(&token.user_id, &data.nickname),
+            )
+            .await?;
 
             accept(())
         })
@@ -269,12 +266,11 @@ where
         .with_context(async move |context| {
             let repo = DeriveTransactional::transactional(repo).await;
 
-            repo
-                .advance(
-                    context,
-                    &UserStep::mark_avatar_uploaded(&id, data.avatar_version),
-                )
-                .await?;
+            repo.advance(
+                context,
+                &UserStep::mark_avatar_uploaded(&id, data.avatar_version),
+            )
+            .await?;
 
             accept(())
         })
@@ -305,12 +301,10 @@ where
         .with_context(async move |context| {
             let repo = DeriveTransactional::transactional(repo).await;
 
-            repo
-                .advance(context, &UserStep::touch_last_active(&token.user_id))
+            repo.advance(context, &UserStep::touch_last_active(&token.user_id))
                 .await?;
 
-            repo
-                .advance(context, &MemberStep::touch_last_active(&token.user_id))
+            repo.advance(context, &MemberStep::touch_last_active(&token.user_id))
                 .await?;
 
             accept(())

@@ -32,7 +32,6 @@ impl ImagePool for Mock {
     }
 }
 
-#[cfg(test)]
 mod tests {
     // put_signed_returns_stable_url(ImagePool::put_signed)(positive): put URLs should be deterministic for assertions.
     // get_signed_failure_returns_expected_error(ImagePool::get_signed)(negative): configured get failures should return an expected error.

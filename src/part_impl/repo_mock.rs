@@ -200,7 +200,6 @@ pub mod team;
 pub mod user;
 pub mod workset;
 
-#[cfg(test)]
 mod tests {
     // execute_reads_seeded_user(Execute<UserStep::get_info_by_id>)(positive): a seeded user should be readable outside a transaction.
     // transaction_commits_repo_and_prom(Drive::with_context)(positive): successful transactions should commit repo and prom state together.

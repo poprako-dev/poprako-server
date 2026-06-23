@@ -38,7 +38,6 @@ impl<'a> Advance<Append<'a>, MockContext> for MockTransactional {
     }
 }
 
-#[cfg(test)]
 mod tests {
     // append_records_payload(PromTransactional::advance)(positive): prom append should store the record in transaction state.
 
