@@ -23,6 +23,9 @@ use crate::part::token::TokenAuth;
 use crate::result::{ExpectedVariant, RootError, RootResult, accept};
 use crate::util::DeriveTransactional;
 
+#[cfg(test)]
+mod tests;
+
 pub async fn register<D, C, R, A, V>(
     drive: &D,
     repo: &R,
@@ -69,9 +72,7 @@ where
                 password_hash,
             };
 
-            let user_info = repo
-                .advance(context, &UserStep::create(&user_form))
-                .await?;
+            let user_info = repo.advance(context, &UserStep::create(&user_form)).await?;
 
             let member_form = MemberForm {
                 id: MemberComplex::gen_id(),
@@ -81,16 +82,14 @@ where
                 role_mask: invitation_info.role_mask,
             };
 
-            repo
-                .advance(context, &MemberStep::create(&member_form))
+            repo.advance(context, &MemberStep::create(&member_form))
                 .await?;
 
-            repo
-                .advance(
-                    context,
-                    &MemberInvitationStep::mark_pending_as_used(&invitation_info.id),
-                )
-                .await?;
+            repo.advance(
+                context,
+                &MemberInvitationStep::mark_pending_as_used(&invitation_info.id),
+            )
+            .await?;
 
             accept((
                 user_info.id,

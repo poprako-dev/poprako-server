@@ -21,6 +21,9 @@ use crate::part::repo::workset::{WorksetRepo, WorksetRepoTransactional};
 use crate::result::{RootError, RootResult, accept};
 use crate::util::DeriveTransactional;
 
+#[cfg(test)]
+mod tests;
+
 pub async fn create<C, R, I>(repo: &R, image: &I, data: CreateTeamData) -> RootResult<TeamInfoVal>
 where
     R: TeamRepo<C>,
@@ -71,13 +74,12 @@ where
     R: TeamRepo<C>,
     <R as DeriveTransactional>::Transactional: TeamRepoTransactional<C>,
 {
-    repo
-        .execute(&TeamStep::update_info(
-            &data.id,
-            &data.name,
-            &data.description,
-        ))
-        .await?;
+    repo.execute(&TeamStep::update_info(
+        &data.id,
+        &data.name,
+        &data.description,
+    ))
+    .await?;
 
     Ok(())
 }
@@ -169,8 +171,7 @@ where
     R: TeamRepo<C>,
     <R as DeriveTransactional>::Transactional: TeamRepoTransactional<C>,
 {
-    repo
-        .execute(&TeamStep::mark_avatar_uploaded(&id, data.avatar_version))
+    repo.execute(&TeamStep::mark_avatar_uploaded(&id, data.avatar_version))
         .await?;
 
     Ok(())
@@ -201,8 +202,7 @@ where
                 .await?;
 
             for workset in &workset_infos {
-                repo
-                    .advance(context, &WorksetStep::delete_cascade(&workset.id))
+                repo.advance(context, &WorksetStep::delete_cascade(&workset.id))
                     .await?;
             }
 
