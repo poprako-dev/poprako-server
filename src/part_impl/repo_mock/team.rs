@@ -1,6 +1,7 @@
 use async_trait::async_trait;
 use poprako_transactional::advance::Advance;
 
+use crate::complex::team::TeamComplex;
 use crate::model::team::{TeamAvatarReservation, TeamInfo};
 use crate::part::repo::Execute;
 use crate::part::repo::step::team::{
@@ -16,10 +17,6 @@ use crate::result::RootError;
 impl TeamRepo<MockContext> for Mock {}
 
 impl TeamRepoTransactional<MockContext> for MockTransactional {}
-
-fn team_avatar_key(id: &str, avatar_version: i64, file_ext: &str) -> String {
-    format!("team_avatar/{}-{}.{}", id, avatar_version, file_ext)
-}
 
 fn mark_team_avatar_uploaded(
     state: &mut MockState,
@@ -143,7 +140,7 @@ impl<'a> Advance<ReserveAvatar<'a>, MockContext> for MockTransactional {
             .find(|team| team.id == step.id)
             .ok_or_else(|| expected("error-team-not-found"))?;
         let avatar_version = team.avatar_version + 1;
-        let object_key = team_avatar_key(step.id, avatar_version, step.file_extension);
+        let object_key = TeamComplex::gen_avatar_key(step.id, avatar_version, step.file_extension);
         let previous_object_key = team.avatar_key.clone();
         team.avatar_key = Some(object_key.clone());
         team.avatar_uploaded = false;

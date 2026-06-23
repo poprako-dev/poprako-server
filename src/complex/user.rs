@@ -43,9 +43,8 @@ impl UserComplex {
             .is_ok()
     }
 
-    // TODO: use.
-    pub fn gen_avatar_key(prev_version: Option<&str>) -> String {
-        todo!()
+    pub fn gen_avatar_key(id: &str, avatar_version: i64, file_ext: &str) -> String {
+        format!("user_avatar/{}-{}.{}", id, avatar_version, file_ext)
     }
 
     pub fn gen_avatar_delete_id() -> String {
