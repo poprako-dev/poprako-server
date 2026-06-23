@@ -23,7 +23,10 @@ use async_trait::async_trait;
 use poprako_transactional::advance::Advance;
 use poprako_util::page::Page;
 
+use time::OffsetDateTime;
+
 use crate::model::team::TeamInfo;
+use crate::model::workset::WorksetInfo;
 use crate::part::prom::Payload;
 use crate::part::prom::intention::{ImageIntention, ImageKind};
 use crate::part::repo::Execute;
@@ -35,7 +38,7 @@ use crate::part::repo::team::{TeamRepo, TeamRepoTransactional};
 use crate::part_impl::prom_mock::MockPromRecord;
 use crate::part_impl::repo_mock::{Mock, MockContext};
 use crate::result::{ExpectedVariant, RootError};
-use crate::test_util::{assert_expected_variant, team, team_with_avatar, workset};
+use crate::test_util::assert_expected_variant;
 use crate::util::DeriveTransactional;
 
 struct FailingCreateRepo;
@@ -54,6 +57,45 @@ impl TeamRepo<MockContext> for FailingCreateRepo {}
 struct FailingTeamTransactional;
 
 impl TeamRepoTransactional<MockContext> for FailingTeamTransactional {}
+
+pub(crate) fn team(id: &str, name: &str, description: &str) -> TeamInfo {
+    let time = OffsetDateTime::now_utc();
+
+    TeamInfo {
+        id: id.into(),
+        name: name.into(),
+        description: description.into(),
+        avatar_key: None,
+        avatar_uploaded: false,
+        avatar_version: 0,
+        workset_next_index: 0,
+        created_at: time,
+        updated_at: time,
+    }
+}
+
+pub(crate) fn team_with_avatar(
+    id: &str,
+    name: &str,
+    description: &str,
+    avatar_key: &str,
+    avatar_uploaded: bool,
+    avatar_version: i64,
+) -> TeamInfo {
+    TeamInfo {
+        avatar_key: Some(avatar_key.into()),
+        avatar_uploaded,
+        avatar_version,
+        ..team(id, name, description)
+    }
+}
+
+pub(crate) fn workset(id: &str, team_id: &str) -> WorksetInfo {
+    WorksetInfo {
+        id: id.into(),
+        team_id: team_id.into(),
+    }
+}
 
 fn expected_error() -> RootError {
     RootError::Expected {
