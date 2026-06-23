@@ -38,7 +38,7 @@ and are wired into `Harness`. Only their **remaining use cases** are listed belo
 ### 1.1 — Domain Model & Query (incomplete items only)
 
 - [x] `UserAggr`, `UserForm`, `UserToken` — ✅
-- [x] `UserQuery` + `UserQueryTransactional` traits — ✅
+- [x] `UserQuery` + `UserRepoTransactional` traits — ✅
 - [x] Infra entity (`UserRow`, `UserCredentialRow`) + Diesel impl + mock — ✅
 - [ ] Add `UserPatch` / `UserUpdate` aggregate types for `Update` use case
   → (put semantics: nil for nullable fields means write SQL NULL)
@@ -92,7 +92,7 @@ and are wired into `Harness`. Only their **remaining use cases** are listed belo
 ### 2.1 — Domain Model & Query
 
 - [x] `TeamAggr`, `TeamForm` — ✅
-- [x] `TeamQuery` + `TeamQueryTransactional` traits — ✅
+- [x] `TeamQuery` + `TeamRepoTransactional` traits — ✅
 - [x] Infra entity + Diesel impl + mock — ✅
 - [ ] Add `TeamPatch` / `TeamUpdate` for `Update` use case
 - [ ] Add avatar fields (`avatar_key`, `avatar_uploaded_at`) to `TeamForm`
@@ -142,7 +142,7 @@ and are wired into `Harness`. Only their **remaining use cases** are listed belo
 ### 3.1 — Domain Model & Query
 
 - [x] `MemberAggr`, `MemberForm` — ✅
-- [x] `MemberQuery` + `MemberQueryTransactional` traits — ✅
+- [x] `MemberQuery` + `MemberRepoTransactional` traits — ✅
 - [x] Infra entity + Diesel impl + mock — ✅
 
 ### 3.2 — Use Cases
@@ -193,7 +193,7 @@ and are wired into `Harness`. Only their **remaining use cases** are listed belo
 ### 4.1 — Domain Model & Query
 
 - [x] `MemberInvitationAggr`, `MemberInvitationForm` — ✅
-- [x] `MemberInvitationQuery` + `MemberInvitationQueryTransactional` traits — ✅
+- [x] `MemberInvitationQuery` + `MemberInvitationRepoTransactional` traits — ✅
 - [x] Infra entity + Diesel impl + mock — ✅
 
 ### 4.2 — Use Cases
@@ -228,7 +228,7 @@ and are wired into `Harness`. Only their **remaining use cases** are listed belo
 ### 5.1 — Domain Model & Query
 
 - [x] `SystemMailAggr` — ✅
-- [x] `SystemMailQuery` + `SystemMailQueryTransactional` traits — ✅
+- [x] `SystemMailQuery` + `SystemMailRepoTransactional` traits — ✅
 - [x] Infra entity + Diesel impl + mock — ✅
 
 ### 5.2 — Use Cases
@@ -266,17 +266,17 @@ and are wired into `Harness`. Only their **remaining use cases** are listed belo
 
 ### 6.2 — Domain Query Trait
 
-- [-] Create `src/domain/query/workset.rs` with `WorksetQuery` + `WorksetQueryTransactional`
+- [-] Create `src/domain/query/workset.rs` with `WorksetQuery` + `WorksetRepoTransactional`
   - `WorksetQuery`: `get_by_id`, `list_by_team` (paginated, active filter)
-  - `WorksetQueryTransactional`: `create`, `update`, `delete`, `inc_comic_count`, `dec_comic_count`
-- [ ] Register `WorksetQueryForward` forward-trait in harness macro
+  - `WorksetRepoTransactional`: `create`, `update`, `delete`, `inc_comic_count`, `dec_comic_count`
+- [ ] Register `WorksetRepoForward` forward-trait in harness macro
 
 ### 6.3 — Infra Query
 
 - [ ] Create `src/infra/query/entity/workset.rs` — `WorksetRow` with Diesel `Queryable`
   - Table: `workset_table` (hard-delete, so no `deleted_at`)
 - [ ] Add `workset_table` to `schema.rs` (via `diesel print-schema` — ensure migration exists)
-- [ ] Create `src/infra/query/workset.rs` — Diesel impl of `WorksetQuery` + `WorksetQueryTransactional`
+- [ ] Create `src/infra/query/workset.rs` — Diesel impl of `WorksetQuery` + `WorksetRepoTransactional`
 - [ ] Create `src/infra/query/memory_mock/workset.rs` — in-memory mock for tests
 - [ ] Register mock in `MemoryMockQuery` builder/seed/snapshot methods
 
@@ -327,11 +327,11 @@ and are wired into `Harness`. Only their **remaining use cases** are listed belo
 
 ### 7.2 — Domain Query Trait
 
-- [-] Create `src/domain/query/comic.rs` with `ComicQuery` + `ComicQueryTransactional`
+- [-] Create `src/domain/query/comic.rs` with `ComicQuery` + `ComicRepoTransactional`
   - `ComicQuery`: `get_by_id`, `list_by_workset` (paginated, workflow filter support)
-  - `ComicQueryTransactional`: `create`, `update`, `delete`, `inc_chapter_count`, `dec_chapter_count`
+  - `ComicRepoTransactional`: `create`, `update`, `delete`, `inc_chapter_count`, `dec_chapter_count`
   - `update_pinned_replicas` (used by event handlers, not repo directly)
-- [ ] Register `ComicQueryForward` in harness
+- [ ] Register `ComicRepoForward` in harness
 
 ### 7.3 — Infra Query
 
@@ -415,11 +415,11 @@ and are wired into `Harness`. Only their **remaining use cases** are listed belo
 
 ### 8.2 — Domain Query Trait
 
-- [-] Create `src/domain/query/chapter.rs` with `ChapterQuery` + `ChapterQueryTransactional`
+- [-] Create `src/domain/query/chapter.rs` with `ChapterQuery` + `ChapterRepoTransactional`
   - `ChapterQuery`: `get_by_id`, `list_by_comic` (paginated), `get_pinned_by_comic`
-  - `ChapterQueryTransactional`: `create` (with pin-unset), `update`, `delete`
+  - `ChapterRepoTransactional`: `create` (with pin-unset), `update`, `delete`
   - `inc_page_count`, `dec_page_count`, `update_workflow_timestamp`
-- [ ] Register `ChapterQueryForward` in harness
+- [ ] Register `ChapterRepoForward` in harness
 
 ### 8.3 — Infra Query
 
@@ -490,10 +490,10 @@ and are wired into `Harness`. Only their **remaining use cases** are listed belo
 
 ### 9.2 — Domain Query Trait
 
-- [-] Create `src/domain/query/page.rs` with `PageQuery` + `PageQueryTransactional`
+- [-] Create `src/domain/query/page.rs` with `PageQuery` + `PageRepoTransactional`
   - `PageQuery`: `list_by_chapter` (by order), `get_by_id`
-  - `PageQueryTransactional`: `batch_create`, `delete_by_id`, `delete_by_chapter`, `update_upload_status`
-- [ ] Register `PageQueryForward` in harness
+  - `PageRepoTransactional`: `batch_create`, `delete_by_id`, `delete_by_chapter`, `update_upload_status`
+- [ ] Register `PageRepoForward` in harness
 
 ### 9.3 — Infra Query
 
@@ -553,10 +553,10 @@ and are wired into `Harness`. Only their **remaining use cases** are listed belo
 
 ### 10.2 — Domain Query Trait
 
-- [-] Create `src/domain/query/unit.rs` with `UnitQuery` + `UnitQueryTransactional`
+- [-] Create `src/domain/query/unit.rs` with `UnitQuery` + `UnitRepoTransactional`
   - `UnitQuery`: `list_by_page`
-  - `UnitQueryTransactional`: `batch_upsert`, `batch_delete_by_ids`, `delete_by_page_id`
-- [ ] Register `UnitQueryForward` in harness
+  - `UnitRepoTransactional`: `batch_upsert`, `batch_delete_by_ids`, `delete_by_page_id`
+- [ ] Register `UnitRepoForward` in harness
 
 ### 10.3 — Infra Query
 
@@ -601,10 +601,10 @@ and are wired into `Harness`. Only their **remaining use cases** are listed belo
 
 ### 11.2 — Domain Query Trait
 
-- [-] Create `src/domain/query/assignment.rs` with `AssignmentQuery` + `AssignmentQueryTransactional`
+- [-] Create `src/domain/query/assignment.rs` with `AssignmentQuery` + `AssignmentRepoTransactional`
   - `AssignmentQuery`: `list_by_chapter` (preload user), `list_by_user` (across chapters/comics/worksets)
-  - `AssignmentQueryTransactional`: `upsert`, `delete`
-- [ ] Register `AssignmentQueryForward` in harness
+  - `AssignmentRepoTransactional`: `upsert`, `delete`
+- [ ] Register `AssignmentRepoForward` in harness
 
 ### 11.3 — Infra Query
 
@@ -657,10 +657,10 @@ and are wired into `Harness`. Only their **remaining use cases** are listed belo
 
 ### 12.2 — Domain Query Trait
 
-- [-] Create `src/domain/query/assignment_invitation.rs` with `AssignmentInvitationQuery` + `AssignmentInvitationQueryTransactional`
+- [-] Create `src/domain/query/assignment_invitation.rs` with `AssignmentInvitationQuery` + `AssignmentInvitationRepoTransactional`
   - `AssignmentInvitationQuery`: `list_by_chapter`, `get_by_code`
-  - `AssignmentInvitationQueryTransactional`: `create`, `delete`, `mark_used`
-- [ ] Register `AssignmentInvitationQueryForward` in harness
+  - `AssignmentInvitationRepoTransactional`: `create`, `delete`, `mark_used`
+- [ ] Register `AssignmentInvitationRepoForward` in harness
 
 ### 12.3 — Infra Query
 
@@ -710,11 +710,11 @@ and are wired into `Harness`. Only their **remaining use cases** are listed belo
 
 ### 13.2 — Domain Query Trait
 
-- [-] Create `src/domain/query/announcement.rs` with `AnnouncementQuery` + `AnnouncementQueryTransactional`
+- [-] Create `src/domain/query/announcement.rs` with `AnnouncementQuery` + `AnnouncementRepoTransactional`
   - `AnnouncementQuery`: `list_by_team` (paginated, ordered by `created_at DESC`)
-  - `AnnouncementQueryTransactional`: `create`
+  - `AnnouncementRepoTransactional`: `create`
   - (No delete in Go interface — confirm; check if there's a separate delete)
-- [ ] Register `AnnouncementQueryForward` in harness
+- [ ] Register `AnnouncementRepoForward` in harness
 
 ### 13.3 — Infra Query
 
@@ -756,10 +756,10 @@ and are wired into `Harness`. Only their **remaining use cases** are listed belo
 
 ### 14.2 — Domain Query Trait
 
-- [-] Create `src/domain/query/comment.rs` with `CommentQuery` + `CommentQueryTransactional`
+- [-] Create `src/domain/query/comment.rs` with `CommentQuery` + `CommentRepoTransactional`
   - `CommentQuery`: `list_by_team` (paginated, ordered by `created_at DESC`)
-  - `CommentQueryTransactional`: `create`
-- [ ] Register `CommentQueryForward` in harness
+  - `CommentRepoTransactional`: `create`
+- [ ] Register `CommentRepoForward` in harness
 
 ### 14.3 — Infra Query
 
@@ -882,14 +882,14 @@ These span multiple aggregates and should be done alongside or after the core re
 
 - [ ] Implement `WorkflowPhase` enum + `derive_phase(timestamps)` logic
 - [ ] Implement `start_phase`, `complete_phase` on `ChapterAggr`
-- [ ] Implement pinned-unique invariant in `ChapterQueryTransactional::create`
+- [ ] Implement pinned-unique invariant in `ChapterRepoTransactional::create`
 
 ### 17.5 — Comic `pinned_*` Replica Fields
 
 > Go ref: `app/impl/comic_util.go` (459 loc), `app/impl/comic_log.go` (179 loc)
 > These are event-driven updates that mirror pinned-chapter workflow onto comic rows.
 
-- [ ] Implement `update_pinned_replicas` on `ComicQueryTransactional`
+- [ ] Implement `update_pinned_replicas` on `ComicRepoTransactional`
 - [ ] Implement event handler: on chapter pinned/workflow change → update comic's pinned_* fields
 - [ ] Implement `applyComicWorkflowFilter` for comic list queries
 - [ ] Validate filtering logic against Go's `comic_util.go`
