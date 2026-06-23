@@ -22,7 +22,8 @@ use crate::result::{RootError, RootResult, accept};
 use crate::util::DeriveTransactional;
 
 #[cfg(test)]
-mod tests;
+#[cfg(test)]
+pub(crate) mod tests;
 
 pub async fn create<C, R, I>(repo: &R, image: &I, data: CreateTeamData) -> RootResult<TeamInfoVal>
 where

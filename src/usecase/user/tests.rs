@@ -26,7 +26,73 @@ use crate::part::prom::intention::{ImageIntention, ImageKind};
 use crate::part_impl::prom_mock::MockPromRecord;
 use crate::part_impl::repo_mock::Mock;
 use crate::result::ExpectedVariant;
-use crate::test_util::{assert_expected_variant, credential, member, user, user_with_avatar};
+use time::OffsetDateTime;
+
+use crate::complex::user::UserComplex;
+use crate::model::member::MemberInfo;
+use crate::model::user::{UserCredential, UserInfo};
+use crate::test_util::assert_expected_variant;
+
+pub(crate) fn user(id: &str, qid: &str, nickname: &str) -> UserInfo {
+    let time = OffsetDateTime::now_utc();
+
+    UserInfo {
+        id: id.into(),
+        qid: qid.into(),
+        nickname: nickname.into(),
+        avatar_key: None,
+        avatar_uploaded: false,
+        avatar_version: 0,
+        is_sadmin: false,
+        last_active_at: time,
+        created_at: time,
+        updated_at: time,
+    }
+}
+
+pub(crate) fn user_with_avatar(
+    id: &str,
+    qid: &str,
+    nickname: &str,
+    avatar_key: &str,
+    avatar_uploaded: bool,
+    avatar_version: i64,
+) -> UserInfo {
+    UserInfo {
+        avatar_key: Some(avatar_key.into()),
+        avatar_uploaded,
+        avatar_version,
+        ..user(id, qid, nickname)
+    }
+}
+
+pub(crate) fn credential(user_id: &str, password: &str) -> UserCredential {
+    let password_hash = match UserComplex::hash_password(password) {
+        Ok(password_hash) => password_hash,
+        Err(_) => panic!("failed to hash password"),
+    };
+
+    UserCredential {
+        user_id: user_id.into(),
+        password_hash,
+    }
+}
+
+pub(crate) fn invalid_credential(user_id: &str) -> UserCredential {
+    UserCredential {
+        user_id: user_id.into(),
+        password_hash: "invalid-password-hash".into(),
+    }
+}
+
+pub(crate) fn member(id: &str, user_id: &str, user_nickname: &str, team_id: &str) -> MemberInfo {
+    MemberInfo {
+        id: id.into(),
+        user_id: user_id.into(),
+        user_nickname: user_nickname.into(),
+        team_id: team_id.into(),
+    }
+}
 
 fn token(user_id: &str) -> UserToken {
     UserToken {

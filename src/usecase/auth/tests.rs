@@ -11,9 +11,28 @@ use super::*;
 use crate::part::effect::event::Event;
 use crate::part_impl::repo_mock::Mock;
 use crate::result::ExpectedVariant;
-use crate::test_util::{
-    assert_expected_variant, credential, invalid_credential, invitation, team, user,
-};
+use crate::test_util::assert_expected_variant;
+use crate::usecase::team::tests::{team, workset};
+use crate::usecase::user::tests::{credential, invalid_credential, user};
+
+fn invitation(
+    id: &str,
+    team_id: &str,
+    invitor_id: &str,
+    invitee_qid: &str,
+    code: &str,
+    pending: bool,
+) -> crate::model::member_invitation::MemberInvitationInfo {
+    crate::model::member_invitation::MemberInvitationInfo {
+        id: id.into(),
+        team_id: team_id.into(),
+        invitor_id: invitor_id.into(),
+        invitee_qid: invitee_qid.into(),
+        code: code.into(),
+        pending,
+        role_mask: crate::model::role::RoleMask(1),
+    }
+}
 
 fn register_data(qid: &str, nickname: &str, code: &str) -> RegisterData {
     RegisterData {
