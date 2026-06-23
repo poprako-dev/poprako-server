@@ -13,7 +13,6 @@ impl EffectDevelop for Mock {
     }
 }
 
-#[cfg(test)]
 mod tests {
     // develop_collects_events(Develop::develop)(positive): emitted events should be stored for later draining.
 

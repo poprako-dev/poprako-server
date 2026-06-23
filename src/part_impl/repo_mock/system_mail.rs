@@ -148,7 +148,6 @@ impl<'a> Execute<MarkRead<'a>> for Mock {
     }
 }
 
-#[cfg(test)]
 mod tests {
     // send_saves_unread_mail(Send)(positive): a sent mail should be persisted with read=false.
     // send_rejects_duplicate_id_without_mutation(Send)(negative): sending a mail with an existing id should error without altering state.

@@ -18,7 +18,6 @@ impl TokenAuth for Mock {
     }
 }
 
-#[cfg(test)]
 mod tests {
     // sign_returns_stable_token(TokenAuth::sign)(positive): token signing should return the deterministic mock token.
     // sign_failure_returns_expected_auth(TokenAuth::sign)(negative): configured token failures should return an expected auth error.
