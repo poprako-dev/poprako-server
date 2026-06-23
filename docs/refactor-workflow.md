@@ -114,7 +114,8 @@ This slice closes one user-visible behavior end to end.
 6. Add usecase function with transaction boundaries.
 7. Add fake-harness usecase unit tests.
 8. Wire harness delegation for any newly required trait.
-9. Add API handler/router changes.
+9. Add API handler/router/OpenAPI changes following
+   `docs/how-to-implement-api-http.md`.
 10. Add API integration tests.
 11. Run `cargo check`, targeted tests, and then broader test suite.
 

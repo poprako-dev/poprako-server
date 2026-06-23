@@ -34,7 +34,35 @@ pub fn forward_ref(attr: TokenStream, item: TokenStream) -> TokenStream {
         .into()
 }
 
-/// Generates [`poprako_util::ForwardRef`] implementations from field markers.
+/// Generates a forwarding marker and blanket [`ForwardRef`] bridge impls for a
+/// composite trait whose supertraits each have their own [`forward_ref`] markers.
+///
+/// # Example
+///
+/// ```ignore
+/// #[forward_ref_super]
+/// pub trait Query: UserQuery + TeamQuery {
+/// }
+/// ```
+///
+/// This generates:
+/// - `pub struct QueryForward;` — the forwarding marker for [`Query`]
+/// - Blanket `ForwardRef<UserQueryForward>` and `ForwardRef<TeamQueryForward>`
+///   impls that delegate to `ForwardRef<QueryForward>`
+///
+/// Use `Query` as a single marker in `#[derive(ForwardRefs)]` instead of listing
+/// each sub-trait individually.
+#[proc_macro_attribute]
+pub fn forward_ref_super(attr: TokenStream, item: TokenStream) -> TokenStream {
+    parse_macro_input!(attr as EmptyArgs);
+    let item_trait = parse_macro_input!(item as ItemTrait);
+
+    expand_forward_sub(item_trait)
+        .unwrap_or_else(Error::into_compile_error)
+        .into()
+}
+
+/// Generates [`crate::ForwardRef`] implementations from field markers.
 #[proc_macro_derive(ForwardRefs, attributes(forward_ref))]
 pub fn derive_forward_refs(item: TokenStream) -> TokenStream {
     let input = parse_macro_input!(item as DeriveInput);
@@ -101,7 +129,7 @@ fn expand_forward_impl(item_trait: ItemTrait) -> Result<proc_macro2::TokenStream
         #async_trait_attr
         impl<T> #trait_ident for T
         where
-            T: poprako_util::ForwardRef<#marker> #sync_bound,
+            T: crate::ForwardRef<#marker> #sync_bound,
             T::Target: #trait_ident #target_sync_bound,
         {
             #(#methods)*
@@ -204,6 +232,72 @@ fn method_call_arg(input: &FnArg) -> Result<proc_macro2::TokenStream> {
     }
 }
 
+fn expand_forward_sub(item_trait: ItemTrait) -> Result<proc_macro2::TokenStream> {
+    let trait_ident = &item_trait.ident;
+    let vis = &item_trait.vis;
+
+    if !item_trait.generics.params.is_empty() || item_trait.generics.where_clause.is_some() {
+        return Err(Error::new_spanned(
+            &item_trait.generics,
+            "forward_ref_super does not support trait generics",
+        ));
+    }
+
+    let marker = Ident::new(&format!("{}Forward", trait_ident), trait_ident.span());
+    let marker_doc = syn::LitStr::new(
+        &format!("Forwarding marker for [`{}`].", trait_ident),
+        Span::call_site(),
+    );
+
+    // Extract supertrait paths from `trait Foo: A + B + C`.
+    let super_paths: Vec<Path> = item_trait
+        .supertraits
+        .iter()
+        .filter_map(|bound| match bound {
+            syn::TypeParamBound::Trait(trait_bound) => Some(trait_bound.path.clone()),
+            _ => None,
+        })
+        .collect();
+
+    if super_paths.is_empty() {
+        return Err(Error::new_spanned(
+            &item_trait,
+            "forward_ref_super requires at least one supertrait bound",
+        ));
+    }
+
+    // For each supertrait, build the forward marker path by appending "Forward"
+    // to the last segment.  Then emit a blanket ForwardRef<ChildForward> impl
+    // that delegates to ForwardRef<ParentForward>.
+    let bridge_impls = super_paths
+        .iter()
+        .map(|super_path| {
+            let child_marker = marker_forward_path(super_path.clone())?;
+            Ok(quote! {
+                impl<T> crate::ForwardRef<#child_marker> for T
+                where
+                    T: crate::ForwardRef<#marker>,
+                {
+                    type Target = <T as crate::ForwardRef<#marker>>::Target;
+
+                    fn forward_ref(&self) -> &Self::Target {
+                        <T as crate::ForwardRef<#marker>>::forward_ref(self)
+                    }
+                }
+            })
+        })
+        .collect::<Result<Vec<_>>>()?;
+
+    Ok(quote! {
+        #[doc = #marker_doc]
+        #vis struct #marker;
+
+        #item_trait
+
+        #(#bridge_impls)*
+    })
+}
+
 fn expand_forward_refs(input: DeriveInput) -> Result<proc_macro2::TokenStream> {
     let struct_ident = &input.ident;
     let fields = match &input.data {
@@ -284,7 +378,7 @@ fn expand_field_forward_refs(
         let target = target.unwrap_or_else(|| field.ty.clone());
         impls.extend(markers.into_iter().map(|marker| {
             quote! {
-                impl #impl_generics poprako_util::ForwardRef<#marker>
+                impl #impl_generics crate::ForwardRef<#marker>
                     for #struct_ident #ty_generics #where_clause
                 {
                     type Target = #target;

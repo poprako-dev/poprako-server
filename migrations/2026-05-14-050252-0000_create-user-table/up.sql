@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS "t_user" (
     "f_avatar_key" TEXT,
     "f_avatar_source" TEXT,
     "f_avatar_uploaded" BOOLEAN NOT NULL DEFAULT FALSE,
+    "f_avatar_version" BIGINT NOT NULL DEFAULT 0,
 
     "f_password_hash" TEXT NOT NULL,
 
@@ -20,4 +21,3 @@ CREATE TABLE IF NOT EXISTS "t_user" (
 
 CREATE UNIQUE INDEX IF NOT EXISTS "uidx_user_qid"
     ON "t_user" ("f_qid");
-
