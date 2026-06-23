@@ -24,6 +24,9 @@ use crate::part::repo::user::{UserRepo, UserRepoTransactional};
 use crate::result::{ExpectedVariant, RootError, RootResult, accept};
 use crate::util::DeriveTransactional;
 
+#[cfg(test)]
+mod tests;
+
 pub async fn get_info<C, R, I, V>(
     repo: &R,
     image: &I,
