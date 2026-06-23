@@ -1,6 +1,7 @@
 use async_trait::async_trait;
 use poprako_transactional::advance::Advance;
 
+use crate::complex::user::UserComplex;
 use crate::model::user::{UserAvatarReservation, UserCredential, UserForm, UserInfo};
 use crate::part::repo::Execute;
 use crate::part::repo::step::user::{
@@ -16,10 +17,6 @@ use crate::result::RootError;
 impl UserRepo<MockContext> for Mock {}
 
 impl UserRepoTransactional<MockContext> for MockTransactional {}
-
-fn user_avatar_key(id: &str, avatar_version: i64, file_ext: &str) -> String {
-    format!("user_avatar/{}-{}.{}", id, avatar_version, file_ext)
-}
 
 fn create_user(state: &mut MockState, form: &UserForm) -> Result<UserInfo, RootError> {
     if state.users.iter().any(|user| user.id == form.id) {
@@ -138,7 +135,7 @@ impl<'a> Advance<ReserveAvatar<'a>, MockContext> for MockTransactional {
             .find(|user| user.id == step.id)
             .ok_or_else(|| expected("error-user-not-found"))?;
         let avatar_version = user.avatar_version + 1;
-        let object_key = user_avatar_key(step.id, avatar_version, step.file_ext);
+        let object_key = UserComplex::gen_avatar_key(step.id, avatar_version, step.file_ext);
         let previous_object_key = user.avatar_key.clone();
         user.avatar_key = Some(object_key.clone());
         user.avatar_uploaded = false;
