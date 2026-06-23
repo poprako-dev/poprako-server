@@ -18,6 +18,7 @@ error-team-member-required = 您不是该汉化组的成员
 error-team-admin-required = 您不是该汉化组的管理员
 error-sadmin-required = 只有超级管理员可以执行此操作
 error-already-team-member = 您已经是该汉化组的成员
+error-system-mail-not-found = 系统消息不存在
 error-wrong-credentials = 用户不存在或密码错误
 error-invalid-offset = offset 不能小于 0
 error-invalid-limit = limit 必须在 1 到 200 之间
