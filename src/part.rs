@@ -13,7 +13,7 @@
 //! | [`image`]  | Object-storage signed URL resolution |
 //! | [`prom`]   | Deferred actions executed after transaction commit |
 //! | [`repo`]   | Persistent storage with transactional support |
-//! | [`token`]  | Authentication token signing |
+//! | [`auth`]   | Authentication token signing |
 //!
 //! [`part_impl`]: super::part_impl
 
@@ -21,4 +21,4 @@ pub mod effect;
 pub mod image;
 pub mod prom;
 pub mod repo;
-pub mod token;
+pub mod auth;

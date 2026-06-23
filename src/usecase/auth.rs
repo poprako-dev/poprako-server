@@ -8,7 +8,8 @@ use crate::complex::member::MemberComplex;
 use crate::complex::user::UserComplex;
 use crate::data::auth::{LoginData, LoginVal, RegisterData, RegisterVal};
 use crate::model::member::MemberForm;
-use crate::model::user::{UserForm, UserToken};
+use crate::model::user::{UserForm, UserTokenRef};
+use crate::part::auth::TokenAuth;
 use crate::part::effect::event::Event;
 use crate::part::effect::event::user::UserSignedUpPayload;
 use crate::part::effect::{EffectDevelop, EffectEmit as _};
@@ -21,11 +22,9 @@ use crate::part::repo::step::member::MemberStep;
 use crate::part::repo::step::member_invitation::MemberInvitationStep;
 use crate::part::repo::step::user::UserStep;
 use crate::part::repo::user::{UserRepo, UserRepoTransactional};
-use crate::part::token::TokenAuth;
 use crate::result::{ExpectedVariant, RootError, RootResult, accept};
 use crate::util::DeriveTransactional;
 
-#[cfg(test)]
 #[cfg(test)]
 pub(crate) mod tests;
 
@@ -137,9 +136,7 @@ where
     .emit(develop)
     .await;
 
-    let token = auth.sign(&UserToken {
-        user_id: user_id.clone(),
-    })?;
+    let token = auth.sign_token(&UserTokenRef { user_id: &user_id })?;
 
     Ok(RegisterVal { user_id, token })
 }
@@ -174,8 +171,8 @@ where
         });
     }
 
-    let token = auth.sign(&UserToken {
-        user_id: user_credential.user_id.clone(),
+    let token = auth.sign_token(&UserTokenRef {
+        user_id: &user_credential.user_id,
     })?;
 
     Ok(LoginVal {
