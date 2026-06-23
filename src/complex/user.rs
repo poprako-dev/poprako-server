@@ -47,11 +47,4 @@ impl UserComplex {
         format!("user_avatar/{}-{}.{}", id, avatar_version, file_ext)
     }
 
-    pub fn gen_avatar_delete_id() -> String {
-        format!("lm-{}", Uuid::now_v7())
-    }
-
-    pub fn gen_avatar_check_id() -> String {
-        format!("lm-{}", Uuid::now_v7())
-    }
 }

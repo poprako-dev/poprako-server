@@ -1,3 +1,22 @@
+//! Prom (promise) port for deferred actions.
+//!
+//! Prom records are enqueued during a transaction and processed after the
+//! transaction commits. This allows side-effects that must not run inside
+//! the transaction — such as deleting old avatar files from object storage
+//! or checking whether an upload completed — to be scheduled atomically
+//! with the state change that triggers them.
+//!
+//! # Pattern
+//!
+//! 1. During a [`Drive::with_context`] closure, use [`PromStep::append`]
+//!    to enqueue an [`Append`] step with a [`Payload`] and a `visible_at`
+//!    time.
+//! 2. After the transaction commits, a background worker processes the
+//!    prom table, executing the deferred actions once their `visible_at`
+//!    timestamp has passed.
+//!
+//! [`Drive::with_context`]: poprako_transactional::drive::Drive::with_context
+
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 
@@ -10,16 +29,23 @@ use crate::util::DeriveTransactional;
 
 pub mod intention;
 
+/// A serializable deferred-action payload.
+///
+/// Currently only carries [`ImageIntention`] variants. Additional intention
+/// types can be added as new enum variants.
 #[cfg_attr(test, derive(Debug, Clone, PartialEq, Eq))]
 #[derive(Serialize, Deserialize)]
 pub enum Payload {
     Image(ImageIntention),
 }
 
+/// A [`Step`] that appends a deferred-action record.
+///
+/// Enqueued during a transaction via [`PromStep::append`]. The prom worker
+/// will not process this record until `visible_at` has passed.
 pub struct Append<'a> {
     pub id: &'a str,
 
-    // TODO: ref.
     pub topic: &'a str,
     pub payload: Payload,
 
@@ -30,9 +56,11 @@ impl<'a> Step for Append<'a> {
     type Output = ();
 }
 
+/// Factory for constructing [`Append`] steps.
 pub struct PromStep;
 
 impl PromStep {
+    /// Constructs an [`Append`] step that enqueues a deferred action.
     pub fn append<'a>(
         id: &'a str,
         topic: &'a str,
@@ -48,10 +76,18 @@ impl PromStep {
     }
 }
 
+/// Non-transactional prom trait.
+///
+/// Requires [`DeriveTransactional`] so a transactional handle can be
+/// obtained, and constrains that handle to implement [`PromTransactional<C>`].
 pub trait Prom<C>: DeriveTransactional
 where
     Self::Transactional: PromTransactional<C>,
 {
 }
 
+/// Transactional prom trait — can [`Advance`] an [`Append`] step.
+///
+/// This is the trait that the transactional handle must implement to
+/// support enqueuing deferred actions within a transaction.
 pub trait PromTransactional<C>: for<'a> Advance<Append<'a>, C, Error = RootError> {}

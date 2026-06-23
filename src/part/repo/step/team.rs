@@ -1,8 +1,11 @@
+//! Step types for team repository operations.
+
 use poprako_transactional::step::Step;
 use poprako_util::page::Page;
 
 use crate::model::team::{TeamAvatarReservation, TeamForm, TeamInfo};
 
+/// Step that inserts a new team row.
 pub struct Create<'a> {
     pub form: &'a TeamForm,
 }
@@ -11,6 +14,7 @@ impl<'a> Step for Create<'a> {
     type Output = TeamInfo;
 }
 
+/// Step that fetches a team by its identifier.
 pub struct GetInfoById<'a> {
     pub id: &'a str,
 }
@@ -19,6 +23,7 @@ impl<'a> Step for GetInfoById<'a> {
     type Output = TeamInfo;
 }
 
+/// Step that lists teams with pagination.
 pub struct List {
     pub page: Page,
 }
@@ -27,6 +32,7 @@ impl Step for List {
     type Output = Vec<TeamInfo>;
 }
 
+/// Step that updates a team's name and description.
 pub struct UpdateInfo<'a> {
     pub id: &'a str,
     pub name: &'a str,
@@ -37,6 +43,7 @@ impl<'a> Step for UpdateInfo<'a> {
     type Output = ();
 }
 
+/// Step that reserves a new avatar upload slot for a team.
 pub struct ReserveAvatar<'a> {
     pub id: &'a str,
     pub file_extension: &'a str,
@@ -46,6 +53,7 @@ impl<'a> Step for ReserveAvatar<'a> {
     type Output = TeamAvatarReservation;
 }
 
+/// Step that marks a reserved team avatar as successfully uploaded.
 pub struct MarkAvatarUploaded<'a> {
     pub id: &'a str,
     pub avatar_version: i64,
@@ -55,6 +63,7 @@ impl<'a> Step for MarkAvatarUploaded<'a> {
     type Output = ();
 }
 
+/// Step that fetches a team by ID with a pessimistic lock.
 pub struct GetInfoExcluded<'a> {
     pub id: &'a str,
 }
@@ -63,6 +72,7 @@ impl<'a> Step for GetInfoExcluded<'a> {
     type Output = TeamInfo;
 }
 
+/// Step that deletes a team by its identifier.
 pub struct Delete<'a> {
     pub id: &'a str,
 }
@@ -71,21 +81,26 @@ impl<'a> Step for Delete<'a> {
     type Output = ();
 }
 
+/// Factory for constructing team repository [`Step`] values.
 pub struct TeamStep;
 
 impl TeamStep {
+    /// Constructs a step to insert a new team.
     pub fn create<'a>(form: &'a TeamForm) -> Create<'a> {
         Create { form }
     }
 
+    /// Constructs a step to fetch a team by ID.
     pub fn get_info_by_id<'a>(id: &'a str) -> GetInfoById<'a> {
         GetInfoById { id }
     }
 
+    /// Constructs a step to list teams with pagination.
     pub fn list(page: Page) -> List {
         List { page }
     }
 
+    /// Constructs a step to update a team's name and description.
     pub fn update_info<'a>(id: &'a str, name: &'a str, description: &'a str) -> UpdateInfo<'a> {
         UpdateInfo {
             id,
@@ -94,18 +109,22 @@ impl TeamStep {
         }
     }
 
+    /// Constructs a step to reserve a new team avatar upload slot.
     pub fn reserve_avatar<'a>(id: &'a str, file_extension: &'a str) -> ReserveAvatar<'a> {
         ReserveAvatar { id, file_extension }
     }
 
+    /// Constructs a step to confirm a team avatar upload completed.
     pub fn mark_avatar_uploaded<'a>(id: &'a str, avatar_version: i64) -> MarkAvatarUploaded<'a> {
         MarkAvatarUploaded { id, avatar_version }
     }
 
+    /// Constructs a step to fetch a team with a pessimistic lock.
     pub fn get_info_excluded<'a>(id: &'a str) -> GetInfoExcluded<'a> {
         GetInfoExcluded { id }
     }
 
+    /// Constructs a step to delete a team.
     pub fn delete<'a>(id: &'a str) -> Delete<'a> {
         Delete { id }
     }

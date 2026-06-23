@@ -1,5 +1,12 @@
+//! Domain models for member invitations.
+
 use crate::model::role::RoleMask;
 
+/// An invitation record for joining a team.
+///
+/// Carries an opaque invitation code, the inviter and invitee identifiers,
+/// a pending flag indicating whether the invitation has been consumed,
+/// and the [`RoleMask`] that will be assigned upon acceptance.
 #[cfg_attr(test, derive(Clone))]
 pub struct MemberInvitationInfo {
     pub id: String,

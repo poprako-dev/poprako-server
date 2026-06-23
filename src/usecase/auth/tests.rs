@@ -1,3 +1,13 @@
+//! Test fixtures and cases for the authentication use case module.
+//!
+//! Tests exercise the [`register`] and [`login`] functions against a
+//! [`Mock`] that doubles as the driver, repository, token authority,
+//! and effect developer.
+//!
+//! [`register`]: super::register
+//! [`login`]: super::login
+//! [`Mock`]: crate::part_impl::repo_mock::Mock
+
 // register(register)(positive): pending invitation should create a user and member, consume the invitation, emit signup, and return a token.
 // register(register)(negative): qid mismatch should rollback user and member creation without consuming the invitation.
 // register(register)(negative): token signing failure should propagate after the transaction and signup event finish.
@@ -15,6 +25,7 @@ use crate::test_util::assert_expected_variant;
 use crate::usecase::team::tests::{team, workset};
 use crate::usecase::user::tests::{credential, invalid_credential, user};
 
+/// Builds a pending [`MemberInvitationInfo`] fixture.
 fn invitation(
     id: &str,
     team_id: &str,
@@ -34,6 +45,7 @@ fn invitation(
     }
 }
 
+/// Builds a [`RegisterData`] fixture with a fixed password.
 fn register_data(qid: &str, nickname: &str, code: &str) -> RegisterData {
     RegisterData {
         qid: qid.into(),
@@ -43,6 +55,7 @@ fn register_data(qid: &str, nickname: &str, code: &str) -> RegisterData {
     }
 }
 
+/// Builds a [`LoginData`] fixture.
 fn login_data(qid: &str, password: &str) -> LoginData {
     LoginData {
         qid: qid.into(),

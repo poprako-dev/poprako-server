@@ -1,3 +1,12 @@
+//! Test fixtures and cases for the team use case module.
+//!
+//! Tests exercise team CRUD, avatar management, and deletion against
+//! a [`Mock`] that doubles as the driver, repository, prom enqueuer,
+//! and image pool. Negative cases use [`FailingCreateRepo`] to simulate
+//! repository errors.
+//!
+//! [`Mock`]: crate::part_impl::repo_mock::Mock
+
 // create(create)(positive): creating a team should persist it and return team info.
 // create(create)(negative): create repo failure should propagate.
 // get_info(get_info)(positive): existing team should return info with avatar URL when uploaded.
@@ -41,6 +50,11 @@ use crate::result::{ExpectedVariant, RootError};
 use crate::test_util::assert_expected_variant;
 use crate::util::DeriveTransactional;
 
+/// A repository whose [`Execute`] and [`Advance`] impls always fail.
+///
+/// Used in negative tests to verify error propagation from the repo layer.
+/// Implements all [`TeamRepo`] operations by delegating to
+/// [`FailingTeamTransactional`].
 struct FailingCreateRepo;
 
 #[async_trait]
@@ -58,6 +72,7 @@ struct FailingTeamTransactional;
 
 impl TeamRepoTransactional<MockContext> for FailingTeamTransactional {}
 
+/// Builds a [`TeamInfo`] fixture with default timestamps and no avatar.
 pub(crate) fn team(id: &str, name: &str, description: &str) -> TeamInfo {
     let time = OffsetDateTime::now_utc();
 
@@ -74,6 +89,7 @@ pub(crate) fn team(id: &str, name: &str, description: &str) -> TeamInfo {
     }
 }
 
+/// Builds a [`TeamInfo`] fixture with avatar fields set.
 pub(crate) fn team_with_avatar(
     id: &str,
     name: &str,
@@ -90,6 +106,7 @@ pub(crate) fn team_with_avatar(
     }
 }
 
+/// Builds a [`WorksetInfo`] fixture.
 pub(crate) fn workset(id: &str, team_id: &str) -> WorksetInfo {
     WorksetInfo {
         id: id.into(),
@@ -97,6 +114,7 @@ pub(crate) fn workset(id: &str, team_id: &str) -> WorksetInfo {
     }
 }
 
+/// Builds a standard error for negative test cases.
 fn expected_error() -> RootError {
     RootError::Expected {
         variant: ExpectedVariant::Args,
@@ -104,20 +122,24 @@ fn expected_error() -> RootError {
     }
 }
 
+/// Builds a [`Page`] with given offset and limit.
 fn page(offset: usize, limit: usize) -> Page {
     Page { offset, limit }
 }
 
+/// Builds a [`ReserveTeamAvatarData`] fixture.
 fn reserve_data(file_ext: &str) -> ReserveTeamAvatarData {
     ReserveTeamAvatarData {
         file_ext: file_ext.into(),
     }
 }
 
+/// Builds a [`MarkTeamAvatarUploadedData`] fixture.
 fn mark_data(avatar_version: i64) -> MarkTeamAvatarUploadedData {
     MarkTeamAvatarUploadedData { avatar_version }
 }
 
+/// Builds an [`UpdateTeamInfoData`] fixture.
 fn update_data(id: &str, name: &str, description: &str) -> UpdateTeamInfoData {
     UpdateTeamInfoData {
         id: id.into(),
@@ -126,6 +148,7 @@ fn update_data(id: &str, name: &str, description: &str) -> UpdateTeamInfoData {
     }
 }
 
+/// Counts [`Delete`](ImageIntention::Delete) prom records matching the given object key.
 fn count_delete_records(records: &[MockPromRecord], object_key: &str) -> usize {
     records
         .iter()
@@ -139,6 +162,7 @@ fn count_delete_records(records: &[MockPromRecord], object_key: &str) -> usize {
         .count()
 }
 
+/// Counts [`CheckUploaded`](ImageIntention::CheckUploaded) prom records for team avatars.
 fn count_team_check_records(
     records: &[MockPromRecord],
     resource_id: &str,
