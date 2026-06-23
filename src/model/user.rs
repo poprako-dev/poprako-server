@@ -8,6 +8,10 @@ pub struct UserToken {
     pub user_id: String,
 }
 
+pub struct UserTokenRef<'a> {
+    pub user_id: &'a str,
+}
+
 /// A user profile record as stored in the database.
 ///
 /// Carries raw [`OffsetDateTime`] timestamps; convert to [`UserInfoVal`] for

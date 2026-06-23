@@ -1,12 +1,12 @@
 use poprako_util::i18n::trl;
 
-use crate::model::user::UserToken;
-use crate::part::token::TokenAuth;
+use crate::model::user::UserTokenRef;
+use crate::part::auth::TokenAuth;
 use crate::part_impl::repo_mock::Mock;
 use crate::result::{ExpectedVariant, RootError, RootResult};
 
 impl TokenAuth for Mock {
-    fn sign(&self, token: &UserToken) -> RootResult<String> {
+    fn sign_token(&self, token: &UserTokenRef) -> RootResult<String> {
         if self.flags.lock().unwrap().token_failure {
             return Err(RootError::Expected {
                 variant: ExpectedVariant::Auth,
@@ -29,10 +29,10 @@ mod tests {
     fn sign_returns_stable_token() {
         let mock = Mock::new();
 
-        let signed = TokenAuth::sign(
+        let signed = TokenAuth::sign_token(
             &mock,
-            &UserToken {
-                user_id: "user-1".into(),
+            &UserTokenRef {
+                user_id: "user-1",
             },
         );
         assert!(signed.is_ok());
@@ -45,10 +45,10 @@ mod tests {
     fn sign_failure_returns_expected_auth() {
         let mock = Mock::new().with_token_failure();
 
-        let err = TokenAuth::sign(
+        let err = TokenAuth::sign_token(
             &mock,
-            &UserToken {
-                user_id: "user-1".into(),
+            &UserTokenRef {
+                user_id: "user-1",
             },
         )
         .err()

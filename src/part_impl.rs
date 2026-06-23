@@ -7,4 +7,4 @@ pub mod prom_mock;
 #[cfg(test)]
 pub mod repo_mock;
 #[cfg(test)]
-pub mod token_mock;
+pub mod auth_mock;
