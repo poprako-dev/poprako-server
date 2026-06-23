@@ -10,6 +10,7 @@ use poprako_util::i18n::trl;
 
 use crate::model::member::MemberInfo;
 use crate::model::member_invitation::MemberInvitationInfo;
+use crate::model::system_mail::SystemMailInfo;
 use crate::model::team::TeamInfo;
 use crate::model::user::{UserCredential, UserInfo};
 use crate::model::workset::WorksetInfo;
@@ -24,6 +25,7 @@ pub struct MockState {
     pub members: Vec<MemberInfo>,
     pub member_invitations: Vec<MemberInvitationInfo>,
     pub worksets: Vec<WorksetInfo>,
+    pub system_mails: Vec<SystemMailInfo>,
     pub prom_records: Vec<super::prom_mock::MockPromRecord>,
 }
 
@@ -35,6 +37,7 @@ pub struct MockSnapshot {
     pub members: Vec<MemberInfo>,
     pub member_invitations: Vec<MemberInvitationInfo>,
     pub worksets: Vec<WorksetInfo>,
+    pub system_mails: Vec<SystemMailInfo>,
     pub prom_records: Vec<super::prom_mock::MockPromRecord>,
 }
 
@@ -47,6 +50,7 @@ impl From<MockState> for MockSnapshot {
             members: state.members,
             member_invitations: state.member_invitations,
             worksets: state.worksets,
+            system_mails: state.system_mails,
             prom_records: state.prom_records,
         }
     }
@@ -99,6 +103,10 @@ impl Mock {
 
     pub fn seed_workset(&self, workset: WorksetInfo) {
         self.state.lock().unwrap().worksets.push(workset);
+    }
+
+    pub fn seed_system_mail(&self, system_mail: SystemMailInfo) {
+        self.state.lock().unwrap().system_mails.push(system_mail);
     }
 
     pub fn snapshot(&self) -> MockSnapshot {
@@ -187,6 +195,7 @@ pub(super) fn now() -> OffsetDateTime {
 
 pub mod member;
 pub mod member_invitation;
+pub mod system_mail;
 pub mod team;
 pub mod user;
 pub mod workset;
@@ -314,9 +323,7 @@ mod tests {
                 ),
             )
             .await?;
-            Err::<(), RootError>(unrecoverable(
-                "[transaction_rolls_back_repo_and_prom] fail",
-            ))
+            Err::<(), RootError>(unrecoverable("[transaction_rolls_back_repo_and_prom] fail"))
         })
         .await
         .err()

@@ -9,9 +9,7 @@ use crate::part::repo::step::team::{
     UpdateInfo,
 };
 use crate::part::repo::team::{TeamRepo, TeamRepoTransactional};
-use crate::part_impl::repo_mock::{
-    Mock, MockContext, MockState, MockTransactional, expected, now,
-};
+use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactional, expected, now};
 use crate::result::RootError;
 
 impl TeamRepo<MockContext> for Mock {}

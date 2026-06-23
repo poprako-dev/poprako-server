@@ -9,9 +9,7 @@ use crate::part::repo::step::user::{
     ReserveAvatar, TouchLastActive, UpdateInfo,
 };
 use crate::part::repo::user::{UserRepo, UserRepoTransactional};
-use crate::part_impl::repo_mock::{
-    Mock, MockContext, MockState, MockTransactional, expected, now,
-};
+use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactional, expected, now};
 use crate::result::RootError;
 
 impl UserRepo<MockContext> for Mock {}
