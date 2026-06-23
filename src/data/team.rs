@@ -1,9 +1,16 @@
+//! Data transfer objects for team profile use cases.
+
 use poprako_util::time::ToUnixMilli;
 
 use crate::model::team::TeamInfo as TeamInfoModel;
 use crate::part::image::ImagePool;
 use crate::result::RootResult;
 
+/// Presentation-ready team profile information.
+///
+/// Converts the raw [`TeamInfoModel`] timestamps to Unix milliseconds and
+/// resolves the avatar key to a signed download URL via [`ImagePool`] when
+/// the avatar has been uploaded.
 pub struct TeamInfoVal {
     pub id: String,
     pub name: String,
@@ -15,6 +22,13 @@ pub struct TeamInfoVal {
 }
 
 impl TeamInfoVal {
+    /// Converts a [`TeamInfoModel`] into a presentation-ready value.
+    ///
+    /// Resolves a signed avatar download URL when the avatar has
+    /// been uploaded and a key is present. Timestamps are converted
+    /// from [`OffsetDateTime`] to Unix milliseconds.
+    ///
+    /// [`OffsetDateTime`]: time::OffsetDateTime
     pub async fn from_model<P>(image_pool: &P, model: TeamInfoModel) -> RootResult<Self>
     where
         P: ImagePool,
@@ -36,26 +50,31 @@ impl TeamInfoVal {
     }
 }
 
+/// Input parameters for creating a new team.
 pub struct CreateTeamData {
     pub name: String,
     pub description: String,
 }
 
+/// Input parameters for updating a team's profile.
 pub struct UpdateTeamInfoData {
     pub id: String,
     pub name: String,
     pub description: String,
 }
 
+/// Input parameters for reserving a new team avatar upload slot.
 pub struct ReserveTeamAvatarData {
     pub file_ext: String,
 }
 
+/// Return value from a successful team avatar reservation.
 pub struct ReserveTeamAvatarVal {
     pub put_url: String,
     pub avatar_version: i64,
 }
 
+/// Input parameters for confirming a team avatar upload completed.
 pub struct MarkTeamAvatarUploadedData {
     pub avatar_version: i64,
 }

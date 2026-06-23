@@ -1,3 +1,5 @@
+//! Authentication use cases — registration and login.
+
 use poprako_transactional::advance::Advance;
 use poprako_transactional::drive::Drive;
 use poprako_util::i18n::trl;
@@ -27,6 +29,29 @@ use crate::util::DeriveTransactional;
 #[cfg(test)]
 pub(crate) mod tests;
 
+/// Registers a new user using an invitation code.
+///
+/// Within a single transaction, this function:
+///
+/// 1. Fetches and validates the invitation, ensuring the invitee QQ ID matches.
+/// 2. Hashes the password via [`UserComplex::hash_password`].
+/// 3. Inserts a new [`UserForm`] row.
+/// 4. Creates a [`MemberForm`] linking the new user to the inviting team with
+///    the role specified in the invitation.
+/// 5. Marks the invitation as consumed.
+///
+/// After the transaction commits:
+///
+/// - A [`UserSignedUp`] event is emitted for side-effect processing.
+/// - An authentication token is signed and returned.
+///
+/// # Type Parameters
+///
+/// * `D: Drive<C>` — Drives the transaction lifecycle.
+/// * `C` — Context anchor (see the [repo module](crate::part::repo) for details).
+/// * `R` — Repository bundle: [`UserRepo`], [`MemberRepo`], [`MemberInvitationRepo`].
+/// * `A: TokenAuth` — Signs the session token.
+/// * `V: EffectDevelop` — Processes the signup event.
 pub async fn register<D, C, R, A, V>(
     drive: &D,
     repo: &R,
@@ -57,6 +82,7 @@ where
                 )
                 .await?;
 
+            // Verify the invitation was issued for this QQ ID.
             if invitation_info.invitee_qid != data.qid {
                 return Err(RootError::Expected {
                     variant: ExpectedVariant::Args,
@@ -102,6 +128,7 @@ where
         .await
         .map_err(map_drive_err)?;
 
+    // Emit event after successful commit so side-effects don't run inside the transaction.
     Event::UserSignedUp(UserSignedUpPayload {
         team_id: team_id.clone(),
         invitor_id,
@@ -117,6 +144,19 @@ where
     Ok(RegisterVal { user_id, token })
 }
 
+/// Authenticates a user with QQ ID and password.
+///
+/// This is a non-transactional read-only operation:
+///
+/// 1. Fetches the stored credential by QQ ID.
+/// 2. Verifies the supplied password against the stored hash.
+/// 3. Signs and returns an authentication token on success.
+///
+/// # Type Parameters
+///
+/// * `C` — Context anchor.
+/// * `R: UserRepo<C>` — Provides credential lookup.
+/// * `A: TokenAuth` — Signs the session token.
 pub async fn login<C, R, A>(repo: &R, auth: &A, data: LoginData) -> RootResult<LoginVal>
 where
     R: UserRepo<C>,

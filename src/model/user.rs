@@ -1,10 +1,20 @@
+//! Domain models for user authentication and profile storage.
+
 use time::OffsetDateTime;
 
+/// A deserialized authentication token identifying a user session.
 #[cfg_attr(test, derive(Clone))]
 pub struct UserToken {
     pub user_id: String,
 }
 
+/// A user profile record as stored in the database.
+///
+/// Carries raw [`OffsetDateTime`] timestamps; convert to [`UserInfoVal`] for
+/// presentation. Avatar fields track a multi-step upload flow: a key is
+/// reserved, the client uploads to that key, then the upload is marked complete.
+///
+/// [`UserInfoVal`]: crate::data::user::UserInfoVal
 #[cfg_attr(test, derive(Clone))]
 pub struct UserInfo {
     pub id: String,
@@ -24,6 +34,7 @@ pub struct UserInfo {
     pub updated_at: OffsetDateTime,
 }
 
+/// The data needed to insert a new user row.
 #[cfg_attr(test, derive(Clone))]
 pub struct UserForm {
     pub id: String,
@@ -34,6 +45,11 @@ pub struct UserForm {
     pub password_hash: String,
 }
 
+/// The result of reserving a new avatar upload slot.
+///
+/// Contains the generated object-storage key for the client to PUT to,
+/// the previous key (if any) to clean up after the new upload succeeds,
+/// and the version number that must match when marking the upload complete.
 #[cfg_attr(test, derive(Clone))]
 pub struct UserAvatarReservation {
     pub object_key: String,
@@ -41,6 +57,7 @@ pub struct UserAvatarReservation {
     pub avatar_version: i64,
 }
 
+/// A stored password credential used during login verification.
 #[cfg_attr(test, derive(Clone))]
 pub struct UserCredential {
     pub user_id: String,

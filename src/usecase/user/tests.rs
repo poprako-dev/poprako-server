@@ -1,3 +1,11 @@
+//! Test fixtures and cases for the user use case module.
+//!
+//! Tests exercise user profile reads, updates, avatar management, activity
+//! tracking, and account deletion against a [`Mock`] that doubles as the
+//! driver, repository, prom enqueuer, image pool, and effect developer.
+//!
+//! [`Mock`]: crate::part_impl::repo_mock::Mock
+
 // get_info(get_info)(positive): a user reading itself should receive info and emit UserActive.
 // get_info(get_info)(positive): reading another user should not emit UserActive.
 // get_info(get_info)(negative): missing user should propagate an argument error.
@@ -33,6 +41,7 @@ use crate::model::member::MemberInfo;
 use crate::model::user::{UserCredential, UserInfo};
 use crate::test_util::assert_expected_variant;
 
+/// Builds a [`UserInfo`] fixture with default timestamps and no avatar.
 pub(crate) fn user(id: &str, qid: &str, nickname: &str) -> UserInfo {
     let time = OffsetDateTime::now_utc();
 
@@ -50,6 +59,7 @@ pub(crate) fn user(id: &str, qid: &str, nickname: &str) -> UserInfo {
     }
 }
 
+/// Builds a [`UserInfo`] fixture with avatar fields set.
 pub(crate) fn user_with_avatar(
     id: &str,
     qid: &str,
@@ -66,6 +76,7 @@ pub(crate) fn user_with_avatar(
     }
 }
 
+/// Builds a [`UserCredential`] with a properly hashed password.
 pub(crate) fn credential(user_id: &str, password: &str) -> UserCredential {
     let password_hash = match UserComplex::hash_password(password) {
         Ok(password_hash) => password_hash,
@@ -78,6 +89,7 @@ pub(crate) fn credential(user_id: &str, password: &str) -> UserCredential {
     }
 }
 
+/// Builds a [`UserCredential`] that will never match any real password.
 pub(crate) fn invalid_credential(user_id: &str) -> UserCredential {
     UserCredential {
         user_id: user_id.into(),
@@ -85,6 +97,7 @@ pub(crate) fn invalid_credential(user_id: &str) -> UserCredential {
     }
 }
 
+/// Builds a [`MemberInfo`] fixture.
 pub(crate) fn member(id: &str, user_id: &str, user_nickname: &str, team_id: &str) -> MemberInfo {
     MemberInfo {
         id: id.into(),
@@ -94,12 +107,14 @@ pub(crate) fn member(id: &str, user_id: &str, user_nickname: &str, team_id: &str
     }
 }
 
+/// Builds a [`UserToken`] fixture for the given user ID.
 fn token(user_id: &str) -> UserToken {
     UserToken {
         user_id: user_id.into(),
     }
 }
 
+/// Builds an [`UpdateUserInfoData`] fixture.
 fn update_data(id: &str, qid: &str, nickname: &str) -> UpdateUserInfoData {
     UpdateUserInfoData {
         id: id.into(),
@@ -108,16 +123,19 @@ fn update_data(id: &str, qid: &str, nickname: &str) -> UpdateUserInfoData {
     }
 }
 
+/// Builds a [`ReserveUserAvatarData`] fixture.
 fn reserve_data(file_ext: &str) -> ReserveUserAvatarData {
     ReserveUserAvatarData {
         file_ext: file_ext.into(),
     }
 }
 
+/// Builds a [`MarkUserAvatarUploadedData`] fixture.
 fn mark_data(avatar_version: i64) -> MarkUserAvatarUploadedData {
     MarkUserAvatarUploadedData { avatar_version }
 }
 
+/// Counts [`Delete`](ImageIntention::Delete) prom records matching the given object key.
 fn count_delete_records(records: &[MockPromRecord], object_key: &str) -> usize {
     records
         .iter()
@@ -131,6 +149,7 @@ fn count_delete_records(records: &[MockPromRecord], object_key: &str) -> usize {
         .count()
 }
 
+/// Counts [`CheckUploaded`](ImageIntention::CheckUploaded) prom records for user avatars.
 fn count_user_check_records(
     records: &[MockPromRecord],
     resource_id: &str,
