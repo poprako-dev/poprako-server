@@ -11,6 +11,7 @@
 //! [`UserStep`]: crate::part::repo::step::user::UserStep
 //! [`TeamStep`]: crate::part::repo::step::team::TeamStep
 
+pub mod comic;
 pub mod member;
 pub mod member_invitation;
 pub mod system_mail;

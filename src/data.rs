@@ -8,6 +8,8 @@
 //! [`ImagePool`]: crate::part::image::ImagePool
 
 pub mod auth;
+pub mod comic;
 pub mod system_mail;
 pub mod team;
 pub mod user;
+pub mod workset;

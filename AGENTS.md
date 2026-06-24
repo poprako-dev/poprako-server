@@ -5,6 +5,8 @@ for managing manga (comic) translation projects. It handles teams, worksets,
 comics, chapters, pages, translation units, assignments, and user/member
 management.
 
+Rust-idiomatic code style over simply copying Go code is perferred(or even enforce to apply).
+
 - **Runtime**: Tokio async
 - **Web framework**: Axum
 - **ORM**: Diesel (async via `diesel-async`)
@@ -24,16 +26,16 @@ functionally correct.
 
 Key reference files:
 
-| Area | Go path |
-|------|---------|
-| Architecture overview | `references/poprako-s/AGENTS.md` |
-| Domain models | `references/poprako-s/internal/domain/model/` |
-| Repository interfaces | `references/poprako-s/internal/domain/repo/` |
-| Use-case implementations | `references/poprako-s/internal/app/impl/` |
-| Infrastructure (GORM repos) | `references/poprako-s/internal/infra/repo/` |
-| Workflow state machine | `references/poprako-s/internal/domain/model/workflow.go` |
-| Event definitions | `references/poprako-s/internal/domain/event/` |
-| Migrations (SQL) | `references/poprako-s/migrations/` |
+| Area                        | Go path                                                  |
+| --------------------------- | -------------------------------------------------------- |
+| Architecture overview       | `references/poprako-s/AGENTS.md`                         |
+| Domain models               | `references/poprako-s/internal/domain/model/`            |
+| Repository interfaces       | `references/poprako-s/internal/domain/repo/`             |
+| Use-case implementations    | `references/poprako-s/internal/app/impl/`                |
+| Infrastructure (GORM repos) | `references/poprako-s/internal/infra/repo/`              |
+| Workflow state machine      | `references/poprako-s/internal/domain/model/workflow.go` |
+| Event definitions           | `references/poprako-s/internal/domain/event/`            |
+| Migrations (SQL)            | `references/poprako-s/migrations/`                       |
 
 ---
 
@@ -134,9 +136,9 @@ table), follow these steps in order:
 
 Available `just` commands:
 
-| Command | Description |
-|---------|-------------|
-| `mgr-run` | `diesel migration run` — apply pending migrations |
-| `mgr-rev` | `diesel migration revert` — roll back the last migration |
+| Command          | Description                                                      |
+| ---------------- | ---------------------------------------------------------------- |
+| `mgr-run`        | `diesel migration run` — apply pending migrations                |
+| `mgr-rev`        | `diesel migration revert` — roll back the last migration         |
 | `mgr-add <name>` | `diesel migration generate <name>` — create a new migration pair |
-| `mgr-setup` | `diesel database setup` — create the database (one-time) |
+| `mgr-setup`      | `diesel database setup` — create the database (one-time)         |
