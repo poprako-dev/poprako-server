@@ -5,8 +5,8 @@ use crate::complex::team::TeamComplex;
 use crate::model::team::{TeamAvatarReservation, TeamInfo};
 use crate::part::repo::Execute;
 use crate::part::repo::step::team::{
-    Create, Delete, GetInfoById, GetInfoExcluded, List, MarkAvatarUploaded, ReserveAvatar,
-    UpdateInfo,
+    Create, Delete, GetInfoById, GetInfoExcluded, IncrementWorksetNextIndex, List,
+    MarkAvatarUploaded, ReserveAvatar, UpdateInfo,
 };
 use crate::part::repo::team::{TeamRepo, TeamRepoTransactional};
 use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactional, expected, now};
@@ -201,5 +201,27 @@ impl<'a> Advance<Delete<'a>, MockContext> for MockTransactional {
             .ok_or_else(|| expected("error-team-not-found"))?;
         context.state.teams.remove(pos);
         Ok(())
+    }
+}
+
+#[async_trait]
+impl<'a> Advance<IncrementWorksetNextIndex<'a>, MockContext> for MockTransactional {
+    type Error = RootError;
+
+    async fn advance(
+        &self,
+        context: &mut MockContext,
+        step: &IncrementWorksetNextIndex<'a>,
+    ) -> Result<i32, Self::Error> {
+        let team = context
+            .state
+            .teams
+            .iter_mut()
+            .find(|team| team.id == step.id)
+            .ok_or_else(|| expected("error-team-not-found"))?;
+        let index = team.workset_next_index;
+        team.workset_next_index += 1;
+        team.updated_at = now();
+        Ok(index)
     }
 }

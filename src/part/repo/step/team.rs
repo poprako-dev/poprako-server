@@ -81,6 +81,15 @@ impl<'a> Step for Delete<'a> {
     type Output = ();
 }
 
+/// Step that allocates one workset index from a team-scoped sequence.
+pub struct IncrementWorksetNextIndex<'a> {
+    pub id: &'a str,
+}
+
+impl<'a> Step for IncrementWorksetNextIndex<'a> {
+    type Output = i32;
+}
+
 /// Factory for constructing team repository [`Step`] values.
 pub struct TeamStep;
 
@@ -127,5 +136,10 @@ impl TeamStep {
     /// Constructs a step to delete a team.
     pub fn delete<'a>(id: &'a str) -> Delete<'a> {
         Delete { id }
+    }
+
+    /// Constructs a step to allocate a workset index.
+    pub fn increment_workset_next_index<'a>(id: &'a str) -> IncrementWorksetNextIndex<'a> {
+        IncrementWorksetNextIndex { id }
     }
 }

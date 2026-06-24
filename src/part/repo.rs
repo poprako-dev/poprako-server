@@ -49,6 +49,7 @@ use poprako_transactional::step::Step;
 
 use crate::result::RootError;
 
+pub mod comic;
 pub mod member;
 pub mod member_invitation;
 pub mod step;
@@ -58,6 +59,7 @@ pub mod user;
 pub mod workset;
 
 /// Executes a single non-transactional [`Step`] against the repository.
+/// It is designed to keep consistency with `Advance`.
 ///
 /// Each `execute` call uses its own database connection and commits
 /// independently. For operations that must be atomic with other steps,

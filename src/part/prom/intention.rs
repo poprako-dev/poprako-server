@@ -15,6 +15,7 @@ pub const IMAGE_TOPIC: &str = "image";
 pub enum ImageKind {
     UserAvatar,
     TeamAvatar,
+    ComicCover,
 }
 
 /// A deferred image operation to be executed after transaction commit.
@@ -37,7 +38,5 @@ pub enum ImageIntention {
         image_version: i64,
     },
     /// Delete an object from storage (e.g., an old avatar after a replacement).
-    Delete {
-        object_key: String,
-    },
+    Delete { object_key: String },
 }

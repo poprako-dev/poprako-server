@@ -40,8 +40,8 @@ use crate::part::prom::Payload;
 use crate::part::prom::intention::{ImageIntention, ImageKind};
 use crate::part::repo::Execute;
 use crate::part::repo::step::team::{
-    Create, Delete, GetInfoById, GetInfoExcluded, List, MarkAvatarUploaded, ReserveAvatar,
-    UpdateInfo,
+    Create, Delete, GetInfoById, GetInfoExcluded, IncrementWorksetNextIndex, List,
+    MarkAvatarUploaded, ReserveAvatar, UpdateInfo,
 };
 use crate::part::repo::team::{TeamRepo, TeamRepoTransactional};
 use crate::part_impl::prom_mock::MockPromRecord;
@@ -108,9 +108,18 @@ pub(crate) fn team_with_avatar(
 
 /// Builds a [`WorksetInfo`] fixture.
 pub(crate) fn workset(id: &str, team_id: &str) -> WorksetInfo {
+    let time = OffsetDateTime::now_utc();
+
     WorksetInfo {
         id: id.into(),
         team_id: team_id.into(),
+        index: 0,
+        name: "workset".into(),
+        description: None,
+        comic_count: 0,
+        comic_next_index: 0,
+        created_at: time,
+        updated_at: time,
     }
 }
 
@@ -278,6 +287,19 @@ impl<'a> Advance<Delete<'a>, MockContext> for FailingTeamTransactional {
         _context: &mut MockContext,
         _step: &Delete<'a>,
     ) -> Result<(), Self::Error> {
+        Err(expected_error())
+    }
+}
+
+#[async_trait]
+impl<'a> Advance<IncrementWorksetNextIndex<'a>, MockContext> for FailingTeamTransactional {
+    type Error = RootError;
+
+    async fn advance(
+        &self,
+        _context: &mut MockContext,
+        _step: &IncrementWorksetNextIndex<'a>,
+    ) -> Result<i32, Self::Error> {
         Err(expected_error())
     }
 }

@@ -8,6 +8,7 @@ use poprako_transactional::drive::result::Error as DriveError;
 use poprako_transactional::util::AsyncFnMark;
 use poprako_util::i18n::trl;
 
+use crate::model::comic::ComicInfo;
 use crate::model::member::MemberInfo;
 use crate::model::member_invitation::MemberInvitationInfo;
 use crate::model::system_mail::SystemMailInfo;
@@ -25,6 +26,7 @@ pub struct MockState {
     pub members: Vec<MemberInfo>,
     pub member_invitations: Vec<MemberInvitationInfo>,
     pub worksets: Vec<WorksetInfo>,
+    pub comics: Vec<ComicInfo>,
     pub system_mails: Vec<SystemMailInfo>,
     pub prom_records: Vec<super::prom_mock::MockPromRecord>,
 }
@@ -37,6 +39,7 @@ pub struct MockSnapshot {
     pub members: Vec<MemberInfo>,
     pub member_invitations: Vec<MemberInvitationInfo>,
     pub worksets: Vec<WorksetInfo>,
+    pub comics: Vec<ComicInfo>,
     pub system_mails: Vec<SystemMailInfo>,
     pub prom_records: Vec<super::prom_mock::MockPromRecord>,
 }
@@ -50,6 +53,7 @@ impl From<MockState> for MockSnapshot {
             members: state.members,
             member_invitations: state.member_invitations,
             worksets: state.worksets,
+            comics: state.comics,
             system_mails: state.system_mails,
             prom_records: state.prom_records,
         }
@@ -103,6 +107,10 @@ impl Mock {
 
     pub fn seed_workset(&self, workset: WorksetInfo) {
         self.state.lock().unwrap().worksets.push(workset);
+    }
+
+    pub fn seed_comic(&self, comic: ComicInfo) {
+        self.state.lock().unwrap().comics.push(comic);
     }
 
     pub fn seed_system_mail(&self, system_mail: SystemMailInfo) {
@@ -193,6 +201,7 @@ pub(super) fn now() -> OffsetDateTime {
     OffsetDateTime::now_utc()
 }
 
+pub mod comic;
 pub mod member;
 pub mod member_invitation;
 pub mod system_mail;
