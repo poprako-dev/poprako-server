@@ -43,15 +43,15 @@ where
     <R as DeriveTransactional>::Transactional: TeamRepoTransactional<C>,
     I: ImagePool,
 {
-    let form = TeamForm {
+    let team_form = TeamForm {
         id: TeamComplex::gen_id(),
         name: data.name,
         description: data.description,
     };
 
-    let info = repo.execute(&TeamStep::create(&form)).await?;
+    let team_info = repo.execute(&TeamStep::create(&team_form)).await?;
 
-    TeamInfoVal::from_model(image, info).await
+    TeamInfoVal::from_model(image, team_info).await
 }
 
 /// Fetches a team by ID with avatar URL resolution.
@@ -69,9 +69,9 @@ where
     <R as DeriveTransactional>::Transactional: TeamRepoTransactional<C>,
     I: ImagePool,
 {
-    let info = repo.execute(&TeamStep::get_info_by_id(&id)).await?;
+    let team_info = repo.execute(&TeamStep::get_info_by_id(&id)).await?;
 
-    TeamInfoVal::from_model(image, info).await
+    TeamInfoVal::from_model(image, team_info).await
 }
 
 /// Lists teams with pagination.
@@ -93,8 +93,8 @@ where
 
     // TODO: join all.
     let mut team_info_vals = Vec::with_capacity(team_infos.len());
-    for info in team_infos {
-        team_info_vals.push(TeamInfoVal::from_model(image, info).await?);
+    for team_info in team_infos {
+        team_info_vals.push(TeamInfoVal::from_model(image, team_info).await?);
     }
 
     Ok(team_info_vals)

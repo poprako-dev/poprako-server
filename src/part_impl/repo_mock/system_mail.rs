@@ -63,15 +63,19 @@ impl<'a> Execute<SendBatch<'a>> for Mock {
         }
 
         // Check for duplicate ids against existing mails.
-        for form in step.forms {
-            if state.system_mails.iter().any(|mail| mail.id == form.id) {
+        for system_mail_form in step.forms {
+            if state
+                .system_mails
+                .iter()
+                .any(|mail| mail.id == system_mail_form.id)
+            {
                 return Err(expected("error-already-exists"));
             }
         }
 
         // All-or-nothing insert.
-        for form in step.forms {
-            insert_mail(&mut state, form);
+        for system_mail_form in step.forms {
+            insert_mail(&mut state, system_mail_form);
         }
 
         Ok(())
@@ -199,9 +203,11 @@ mod tests {
     #[tokio::test]
     async fn send_saves_unread_mail() {
         let mock = Mock::new();
-        let form = mail_form("sys_mail-1", "user-1");
+        let system_mail_form = mail_form("sys_mail-1", "user-1");
 
-        let result = mock.execute(&SystemMailStep::send(&form)).await;
+        let result = mock
+            .execute(&SystemMailStep::send(&system_mail_form))
+            .await;
         assert!(result.is_ok());
 
         let snapshot = mock.snapshot();
@@ -216,10 +222,10 @@ mod tests {
         let time = now();
         mock.seed_system_mail(mail_info("sys_mail-1", "user-1", false, time));
 
-        let form = mail_form("sys_mail-1", "user-2");
+        let system_mail_form = mail_form("sys_mail-1", "user-2");
 
         let err = mock
-            .execute(&SystemMailStep::send(&form))
+            .execute(&SystemMailStep::send(&system_mail_form))
             .await
             .err()
             .unwrap();
@@ -233,12 +239,14 @@ mod tests {
     #[tokio::test]
     async fn send_batch_saves_all_mails() {
         let mock = Mock::new();
-        let forms = vec![
+        let system_mail_forms = vec![
             mail_form("sys_mail-1", "user-1"),
             mail_form("sys_mail-2", "user-1"),
         ];
 
-        let result = mock.execute(&SystemMailStep::send_batch(&forms)).await;
+        let result = mock
+            .execute(&SystemMailStep::send_batch(&system_mail_forms))
+            .await;
         assert!(result.is_ok());
 
         let snapshot = mock.snapshot();
@@ -251,13 +259,13 @@ mod tests {
         let time = now();
         mock.seed_system_mail(mail_info("sys_mail-1", "user-1", false, time));
 
-        let forms = vec![
+        let system_mail_forms = vec![
             mail_form("sys_mail-2", "user-1"),
             mail_form("sys_mail-1", "user-1"),
         ];
 
         let err = mock
-            .execute(&SystemMailStep::send_batch(&forms))
+            .execute(&SystemMailStep::send_batch(&system_mail_forms))
             .await
             .err()
             .unwrap();
@@ -279,13 +287,16 @@ mod tests {
         mock.seed_system_mail(mail_info("sys_mail-3", "user-1", true, t2)); // already read
         mock.seed_system_mail(mail_info("sys_mail-4", "user-2", false, t2)); // other user
 
-        let spec = SystemMailListSpec {
+        let mail_list_spec = SystemMailListSpec {
             read: Some(false),
             page: page(0, 10),
         };
 
         let result = mock
-            .execute(&SystemMailStep::list_by_receiver_id("user-1", &spec))
+            .execute(&SystemMailStep::list_by_receiver_id(
+                "user-1",
+                &mail_list_spec,
+            ))
             .await;
         assert!(result.is_ok());
         let mails = result.ok().unwrap();

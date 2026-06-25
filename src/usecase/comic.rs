@@ -42,16 +42,19 @@ where
         ComicRepoTransactional<C> + WorksetRepoTransactional<C> + Send,
     I: ImagePool,
 {
-    let info = drive
+    let comic_info = drive
         .with_context(async move |context| {
             let repo = DeriveTransactional::transactional(repo).await;
+
             let index = repo
                 .advance(
                     context,
+                    // FIXME: excluded?
                     &WorksetStep::increment_comic_next_index(&data.workset_id),
                 )
                 .await?;
-            let form = ComicForm {
+
+            let comic_form = ComicForm {
                 id: ComicComplex::gen_id(),
                 workset_id: data.workset_id,
                 index,
@@ -60,19 +63,24 @@ where
                 description: data.description,
                 creator_id: data.creator_id,
             };
-            let info = repo.advance(context, &ComicStep::create(&form)).await?;
+
+            let comic_info = repo
+                .advance(context, &ComicStep::create(&comic_form))
+                .await?;
+
             repo.advance(
                 context,
-                &WorksetStep::update_comic_count(&form.workset_id, 1),
+                &WorksetStep::update_comic_count(&comic_form.workset_id, 1),
             )
             .await?;
-            accept(info)
+
+            accept(comic_info)
         })
         .await
         .map_err(map_drive_err)?;
 
     Ok(ComicCreateVal {
-        comic: ComicInfoVal::from_model(image, info).await?,
+        comic: ComicInfoVal::from_model(image, comic_info).await?,
     })
 }
 
@@ -83,9 +91,9 @@ where
     <R as DeriveTransactional>::Transactional: ComicRepoTransactional<C>,
     I: ImagePool,
 {
-    let info = repo.execute(&ComicStep::get_info_by_id(&id)).await?;
+    let comic_info = repo.execute(&ComicStep::get_info_by_id(&id)).await?;
 
-    ComicInfoVal::from_model(image, info).await
+    ComicInfoVal::from_model(image, comic_info).await
 }
 
 /// Lists comics for a workset.
@@ -99,12 +107,14 @@ where
     <R as DeriveTransactional>::Transactional: ComicRepoTransactional<C>,
     I: ImagePool,
 {
-    let infos = repo
+    let comic_infos = repo
         .execute(&ComicStep::list_by_workset_id(&data.workset_id))
         .await?;
-    let mut values = Vec::with_capacity(infos.len());
-    for info in infos {
-        values.push(ComicInfoVal::from_model(image, info).await?);
+
+    let mut values = Vec::with_capacity(comic_infos.len());
+    for comic_info in comic_infos {
+        // FIXME: join
+        values.push(ComicInfoVal::from_model(image, comic_info).await?);
     }
 
     Ok(values)
@@ -243,7 +253,10 @@ where
             let comic = repo
                 .advance(context, &ComicStep::get_info_excluded(&id))
                 .await?;
+
+            // FIXME: ComicComplex::delete_cascade
             repo.advance(context, &ComicStep::delete(&id)).await?;
+
             repo.advance(
                 context,
                 &WorksetStep::update_comic_count(&comic.workset_id, -1),
