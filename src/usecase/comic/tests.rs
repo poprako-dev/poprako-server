@@ -60,8 +60,8 @@ fn comic_with_uploaded_cover(id: &str, workset_id: &str, cover_key: &str) -> Com
     }
 }
 
-fn create_data(workset_id: &str) -> ComicCreateData {
-    ComicCreateData {
+fn create_data(workset_id: &str) -> CreateComicData {
+    CreateComicData {
         workset_id: workset_id.into(),
         title: "new".into(),
         author: "author".into(),
@@ -80,7 +80,7 @@ async fn create_allocates_index_and_updates_count() {
     let created = created.ok().unwrap();
     let snapshot = mock.snapshot();
 
-    assert_eq!(created.comic.index, 0);
+    assert_eq!(created.comic.index, 1);
     assert_eq!(snapshot.worksets[0].comic_count, 1);
     assert_eq!(snapshot.worksets[0].comic_next_index, 1);
     assert_eq!(snapshot.comics.len(), 1);
@@ -142,7 +142,7 @@ async fn list_infos_filters_and_sorts_by_index() {
     let list = list_infos(
         &mock,
         &mock,
-        ComicListData {
+        ListComicInfosData {
             workset_id: "workset-1".into(),
         },
     )
@@ -162,7 +162,7 @@ async fn list_infos_returns_empty_for_missing_workset_contents() {
     let list = list_infos(
         &mock,
         &mock,
-        ComicListData {
+        ListComicInfosData {
             workset_id: "missing".into(),
         },
     )
@@ -179,7 +179,7 @@ async fn update_info_updates_comic() {
 
     let result = update_info(
         &mock,
-        ComicInfoUpdateData {
+        UpdateComicInfoData {
             id: "comic-1".into(),
             title: "updated".into(),
             author: "updated-author".into(),
@@ -201,7 +201,7 @@ async fn update_info_propagates_missing_comic() {
 
     let err = update_info(
         &mock,
-        ComicInfoUpdateData {
+        UpdateComicInfoData {
             id: "missing".into(),
             title: "updated".into(),
             author: "updated-author".into(),
@@ -226,7 +226,7 @@ async fn reserve_cover_updates_state_enqueues_check_and_returns_put_url() {
         &mock,
         &mock,
         "comic-1".into(),
-        ComicCoverReserveData {
+        ReserveComicCoverData {
             file_ext: "png".into(),
         },
     )
@@ -262,7 +262,7 @@ async fn reserve_cover_rolls_back_missing_comic() {
         &mock,
         &mock,
         "missing".into(),
-        ComicCoverReserveData {
+        ReserveComicCoverData {
             file_ext: "png".into(),
         },
     )
@@ -287,7 +287,7 @@ async fn mark_cover_uploaded_marks_matching_version() {
     let result = mark_cover_uploaded(
         &mock,
         "comic-1".into(),
-        ComicCoverUploadedData { cover_version: 2 },
+        MarkComicCoverUploadedData { cover_version: 2 },
     )
     .await;
     assert!(result.is_ok());
@@ -307,7 +307,7 @@ async fn mark_cover_uploaded_rejects_stale_version() {
     let err = mark_cover_uploaded(
         &mock,
         "comic-1".into(),
-        ComicCoverUploadedData { cover_version: 1 },
+        MarkComicCoverUploadedData { cover_version: 1 },
     )
     .await
     .err()

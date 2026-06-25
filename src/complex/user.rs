@@ -1,3 +1,5 @@
+//! Complex domain logic for [User] aggregates — password hashing, ID generation, and avatar storage key construction.
+
 use argon2::Argon2;
 use argon2::password_hash::PasswordHash;
 use argon2::password_hash::PasswordHasher as _;
@@ -9,13 +11,16 @@ use uuid::Uuid;
 use crate::result::Error as RootError;
 use crate::result::RootResult;
 
+/// Domain operations for [User] aggregates: password hashing and verification via Argon2id, ID generation, and avatar storage key computation.
 pub struct UserComplex;
 
 impl UserComplex {
+    /// Generates a unique user identifier with a `user-` prefix using UUID v7.
     pub fn gen_id() -> String {
         format!("user-{}", Uuid::now_v7())
     }
 
+    /// Hashes a plaintext password with Argon2id and a random salt, returning the encoded hash string.
     pub fn hash_password(password: &str) -> RootResult<String> {
         let salt = SaltString::generate(OsRng);
 
@@ -27,6 +32,7 @@ impl UserComplex {
             })
     }
 
+    /// Verifies a plaintext password against an Argon2id-encoded hash. Returns `false` on parse or verification failure.
     pub fn verify_password(password: &str, password_hash: &str) -> bool {
         let Ok(parsed) = PasswordHash::new(password_hash) else {
             return false;
@@ -43,6 +49,7 @@ impl UserComplex {
             .is_ok()
     }
 
+    /// Constructs the object storage key for a user's avatar image from the user ID, version counter, and file extension.
     pub fn gen_avatar_key(id: &str, avatar_version: i64, file_ext: &str) -> String {
         format!("user_avatar/{}-{}.{}", id, avatar_version, file_ext)
     }

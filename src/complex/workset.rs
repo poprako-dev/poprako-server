@@ -1,3 +1,6 @@
+//! Complex-domain operations for workset entities: identity generation and
+//! recursive deletion with owned comic cleanup.
+
 use uuid::Uuid;
 
 use crate::complex::comic::ComicComplex;
@@ -8,13 +11,17 @@ use crate::part::repo::step::workset::WorksetStep;
 use crate::part::repo::workset::WorksetRepoTransactional;
 use crate::result::RootResult;
 
+/// Domain operations for workset entities.
 pub struct WorksetComplex;
 
 impl WorksetComplex {
+    /// Generate a unique, time-ordered workset identifier (e.g. `workset-<uuid-v7>`).
     pub fn gen_id() -> String {
         format!("workset-{}", Uuid::now_v7())
     }
 
+    /// Recursively delete a workset and all owned resources: cascades into comic
+    /// deletion for every comic in the workset, then deletes the workset record.
     pub async fn delete_cascade<C, R, P>(
         repo: &R,
         prom: &P,

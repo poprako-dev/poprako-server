@@ -1,3 +1,5 @@
+//! Mock implementations of `MemberRepo` and `MemberRepoTransactional` for in-memory testing.
+
 use async_trait::async_trait;
 use poprako_transactional::advance::Advance;
 use time::OffsetDateTime;
@@ -16,11 +18,14 @@ impl MemberRepo<MockContext> for Mock {}
 
 impl MemberRepoTransactional<MockContext> for MockTransactional {}
 
+/// Returns [`Some(now)`] when the given role mask has any bits set, used to timestamp role
+/// assignments.
 fn role_time(mask: crate::model::role::RoleMask) -> Option<OffsetDateTime> {
     let crate::model::role::RoleMask(bits) = mask;
     (bits != 0).then_some(now())
 }
 
+/// Inserts a new member record, rejecting duplicates by id or by the same user+team pair.
 fn create_member(state: &mut MockState, form: &MemberForm) -> Result<MemberInfo, RootError> {
     if state.members.iter().any(|member| member.id == form.id) {
         return Err(expected("error-already-exists"));

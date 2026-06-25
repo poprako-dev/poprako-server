@@ -4,15 +4,15 @@ use time::{Duration, OffsetDateTime};
 
 use poprako_transactional::advance::Advance;
 use poprako_transactional::drive::Drive;
-use poprako_util::page::Page;
 
 use crate::complex::image::ImageComplex;
-use crate::complex::team::TeamComplex;
+use crate::complex::team::{TeamComplex, TeamPermComplex};
 use crate::data::team::{
-    CreateTeamData, MarkTeamAvatarUploadedData, ReserveTeamAvatarData, ReserveTeamAvatarVal,
-    TeamInfoVal, UpdateTeamInfoData,
+    CreateTeamData, ListTeamInfosData, MarkTeamAvatarUploadedData, ReserveTeamAvatarData,
+    ReserveTeamAvatarVal, TeamInfoVal, UpdateTeamInfoData,
 };
 use crate::model::team::TeamForm;
+use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
 use crate::part::prom::intention::{IMAGE_TOPIC, ImageIntention, ImageKind};
 use crate::part::prom::{Payload, Prom, PromStep, PromTransactional};
@@ -20,6 +20,7 @@ use crate::part::repo::comic::{ComicRepo, ComicRepoTransactional};
 use crate::part::repo::map_drive_err;
 use crate::part::repo::step::team::TeamStep;
 use crate::part::repo::team::{TeamRepo, TeamRepoTransactional};
+use crate::part::repo::user::{UserRepo, UserRepoTransactional};
 use crate::part::repo::workset::{WorksetRepo, WorksetRepoTransactional};
 use crate::result::{RootError, RootResult, accept};
 use crate::util::DeriveTransactional;
@@ -90,20 +91,34 @@ where
 pub async fn list_infos<C, R, I>(
     repo: &R,
     image_pool: &I,
-    page: Page,
+    token: UserToken,
+    data: ListTeamInfosData,
 ) -> RootResult<Vec<TeamInfoVal>>
 where
-    R: TeamRepo<C>,
-    <R as DeriveTransactional>::Transactional: TeamRepoTransactional<C>,
+    R: TeamRepo<C> + UserRepo<C>,
+    <R as DeriveTransactional>::Transactional: TeamRepoTransactional<C> + UserRepoTransactional<C>,
     I: ImagePool,
 {
-    let team_infos = repo.execute(&TeamStep::list(page)).await?;
-
-    // TODO: join all.
-    let mut team_info_vals = Vec::with_capacity(team_infos.len());
-    for team_info in team_infos {
-        team_info_vals.push(TeamInfoVal::from_model(image_pool, team_info).await?);
+    if data.user_id.is_none() {
+        TeamPermComplex::can_user_list_all_teams(repo, &token.user_id).await?;
     }
+
+    let team_infos = repo
+        .execute(&TeamStep::list_infos(
+            data.user_id.as_deref(),
+            data.offset,
+            data.limit,
+        ))
+        .await?;
+
+    let team_info_vals = futures_util::future::join_all(
+        team_infos
+            .into_iter()
+            .map(|team_info| TeamInfoVal::from_model(image_pool, team_info)),
+    )
+    .await
+    .into_iter()
+    .collect::<RootResult<Vec<_>>>()?;
 
     Ok(team_info_vals)
 }

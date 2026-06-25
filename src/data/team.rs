@@ -1,5 +1,6 @@
 //! Data transfer objects for team profile use cases.
 
+use poprako_macro::Paginate;
 use poprako_util::time::ToUnixMilli;
 
 use crate::model::team::TeamInfo as TeamInfoModel;
@@ -54,6 +55,16 @@ impl TeamInfoVal {
 pub struct CreateTeamData {
     pub name: String,
     pub description: String,
+}
+
+/// Input parameters for listing teams.
+///
+/// When `user_id` is [`None`], the request lists all teams and must be made
+/// by a super-admin. When `user_id` is [`Some`], the request lists teams joined
+/// by that user.
+#[Paginate]
+pub struct ListTeamInfosData {
+    pub user_id: Option<String>,
 }
 
 /// Input parameters for updating a team's profile.

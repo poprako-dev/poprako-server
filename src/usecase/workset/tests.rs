@@ -43,8 +43,8 @@ fn workset(id: &str, team_id: &str, index: i32) -> WorksetInfo {
     }
 }
 
-fn create_data(team_id: &str) -> WorksetCreateData {
-    WorksetCreateData {
+fn create_data(team_id: &str) -> CreateWorksetData {
+    CreateWorksetData {
         team_id: team_id.into(),
         name: "new".into(),
         description: Some("desc".into()),
@@ -148,7 +148,7 @@ async fn list_infos_filters_and_sorts_by_index() {
 
     let list = list_infos(
         &mock,
-        WorksetListData {
+        ListWorksetInfosData {
             team_id: "team-1".into(),
         },
     )
@@ -167,7 +167,7 @@ async fn list_infos_returns_empty_for_missing_team_contents() {
 
     let list = list_infos(
         &mock,
-        WorksetListData {
+        ListWorksetInfosData {
             team_id: "missing".into(),
         },
     )
@@ -184,7 +184,7 @@ async fn update_info_updates_workset() {
 
     let result = update_info(
         &mock,
-        WorksetInfoUpdateData {
+        UpdateWorksetInfoData {
             id: "workset-1".into(),
             name: "updated".into(),
             description: Some("updated-desc".into()),
@@ -207,7 +207,7 @@ async fn update_info_propagates_missing_workset() {
 
     let err = update_info(
         &mock,
-        WorksetInfoUpdateData {
+        UpdateWorksetInfoData {
             id: "missing".into(),
             name: "updated".into(),
             description: None,

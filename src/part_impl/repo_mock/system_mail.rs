@@ -1,3 +1,6 @@
+//! Mock implementations of `SystemMailRepo` and `SystemMailRepoTransactional` for in-memory
+//! testing.
+
 use async_trait::async_trait;
 use time::OffsetDateTime;
 
@@ -14,6 +17,7 @@ impl SystemMailRepo<MockContext> for Mock {}
 
 impl SystemMailRepoTransactional<MockContext> for MockTransactional {}
 
+/// Appends a new system mail as unread to the in-memory store.
 fn insert_mail(state: &mut crate::part_impl::repo_mock::MockState, form: &SystemMailForm) {
     state.system_mails.push(SystemMailInfo {
         id: form.id.clone(),
@@ -152,6 +156,7 @@ impl<'a> Execute<MarkRead<'a>> for Mock {
     }
 }
 
+/// Unit tests for the system mail mock repository.
 mod tests {
     // send_saves_unread_mail(Send)(positive): a sent mail should be persisted with read=false.
     // send_rejects_duplicate_id_without_mutation(Send)(negative): sending a mail with an existing id should error without altering state.

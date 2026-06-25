@@ -1,3 +1,6 @@
+//! Mock implementations of `MemberInvitationRepo` and `MemberInvitationRepoTransactional`
+//! for in-memory testing.
+
 use async_trait::async_trait;
 use poprako_transactional::advance::Advance;
 

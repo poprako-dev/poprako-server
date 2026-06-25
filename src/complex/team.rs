@@ -1,5 +1,10 @@
+//! Complex-domain operations for team entities: identity and avatar-storage key
+//! generation, cascading deletion, and permission checks.
+
 use time::OffsetDateTime;
 use uuid::Uuid;
+
+use poprako_util::i18n::trl;
 
 use crate::complex::image::ImageComplex;
 use crate::complex::workset::WorksetComplex;
@@ -7,22 +12,30 @@ use crate::part::prom::intention::{IMAGE_TOPIC, ImageIntention};
 use crate::part::prom::{Payload, PromStep, PromTransactional};
 use crate::part::repo::comic::ComicRepoTransactional;
 use crate::part::repo::step::team::TeamStep;
+use crate::part::repo::step::user::UserStep;
 use crate::part::repo::step::workset::WorksetStep;
 use crate::part::repo::team::TeamRepoTransactional;
+use crate::part::repo::user::{UserRepo, UserRepoTransactional};
 use crate::part::repo::workset::WorksetRepoTransactional;
-use crate::result::RootResult;
+use crate::result::{ExpectedVariant, RootError, RootResult, accept};
+use crate::util::DeriveTransactional;
 
+/// Domain operations for team entities.
 pub struct TeamComplex;
 
 impl TeamComplex {
+    /// Generate a unique, time-ordered team identifier (e.g. `team-<uuid-v7>`).
     pub fn gen_id() -> String {
         format!("team-{}", Uuid::now_v7())
     }
 
+    /// Generate the object-storage key for a team avatar image.
     pub fn gen_avatar_key(id: &str, avatar_version: i64, file_ext: &str) -> String {
         format!("team_avatar/{}-{}.{}", id, avatar_version, file_ext)
     }
 
+    /// Recursively delete a team and all owned resources: enqueues avatar-image
+    /// deletion, cascades into workset deletion, then deletes the team record.
     pub async fn delete_cascade<C, R, P>(
         repo: &R,
         prom: &P,
@@ -31,7 +44,11 @@ impl TeamComplex {
     ) -> RootResult<()>
     where
         C: Send,
-        R: TeamRepoTransactional<C> + WorksetRepoTransactional<C> + ComicRepoTransactional<C> + Send + Sync,
+        R: TeamRepoTransactional<C>
+            + WorksetRepoTransactional<C>
+            + ComicRepoTransactional<C>
+            + Send
+            + Sync,
         P: PromTransactional<C> + Send + Sync,
     {
         let team_info = repo
@@ -69,5 +86,29 @@ impl TeamComplex {
         repo.advance(context, &TeamStep::delete(id)).await?;
 
         Ok(())
+    }
+}
+
+/// Permission-gate operations for team entities.
+pub struct TeamPermComplex;
+
+impl TeamPermComplex {
+    /// Verify the user has super-admin privileges required to list all teams.
+    /// Returns an `Expected::Perm` error if the user is not a super-admin.
+    pub async fn can_user_list_all_teams<C, R>(repo: &R, user_id: &str) -> RootResult<bool>
+    where
+        R: UserRepo<C>,
+        <R as DeriveTransactional>::Transactional: UserRepoTransactional<C>,
+    {
+        let user_info = repo.execute(&UserStep::get_info_by_id(user_id)).await?;
+
+        if !user_info.is_sadmin {
+            return Err(RootError::Expected {
+                variant: ExpectedVariant::Perm,
+                message: trl("error-no-permission"),
+            });
+        }
+
+        accept(true)
     }
 }

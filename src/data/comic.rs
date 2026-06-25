@@ -57,7 +57,7 @@ impl ComicInfoVal {
 }
 
 /// Input parameters for creating a comic.
-pub struct ComicCreateData {
+pub struct CreateComicData {
     pub workset_id: String,
     pub title: String,
     pub author: String,
@@ -66,12 +66,12 @@ pub struct ComicCreateData {
 }
 
 /// Return value from a successful comic creation.
-pub struct ComicCreateVal {
+pub struct CreateComicVal {
     pub comic: ComicInfoVal,
 }
 
 /// Input parameters for updating a comic's profile.
-pub struct ComicInfoUpdateData {
+pub struct UpdateComicInfoData {
     pub id: String,
     pub title: String,
     pub author: String,
@@ -79,22 +79,22 @@ pub struct ComicInfoUpdateData {
 }
 
 /// Input parameters for listing comics.
-pub struct ComicListData {
+pub struct ListComicInfosData {
     pub workset_id: String,
 }
 
 /// Input parameters for reserving a new cover upload slot.
-pub struct ComicCoverReserveData {
+pub struct ReserveComicCoverData {
     pub file_ext: String,
 }
 
 /// Return value from a successful cover reservation.
-pub struct ComicCoverReserveVal {
+pub struct ReserveComicCoverVal {
     pub put_url: String,
     pub cover_version: i64,
 }
 
 /// Input parameters for confirming a cover upload completed.
-pub struct ComicCoverUploadedData {
+pub struct MarkComicCoverUploadedData {
     pub cover_version: i64,
 }
