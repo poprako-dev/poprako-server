@@ -38,19 +38,19 @@ where
         page: data.page,
     };
 
-    let mail_infos = repo
+    let system_mail_infos = repo
         .execute(&SystemMailStep::list_by_receiver_id(
             &token.user_id,
             &mail_list_spec,
         ))
         .await?;
 
-    let mail_vals = mail_infos
+    let system_mail_vals = system_mail_infos
         .into_iter()
         .map(SystemMailVal::from_model)
         .collect();
 
-    Ok(mail_vals)
+    Ok(system_mail_vals)
 }
 
 /// Marks a batch of system mails as read for the current user.
@@ -68,16 +68,20 @@ where
     R: SystemMailRepo<C>,
     <R as DeriveTransactional>::Transactional: SystemMailRepoTransactional<C>,
 {
-    let mails = repo.execute(&SystemMailStep::list_by_ids(&ids)).await?;
+    let system_mail_infos =
+        repo.execute(&SystemMailStep::list_by_ids(&ids)).await?;
 
-    if mails.len() != ids.len() {
+    if system_mail_infos.len() != ids.len() {
         return Err(RootError::Expected {
             variant: ExpectedVariant::Args,
             message: trl("error-system-mail-not-found"),
         });
     }
 
-    if mails.iter().any(|m| m.receiver_id != token.user_id) {
+    if system_mail_infos
+        .iter()
+        .any(|system_mail_info| system_mail_info.receiver_id != token.user_id)
+    {
         return Err(RootError::Expected {
             variant: ExpectedVariant::Perm,
             message: trl("error-forbidden"),

@@ -6,8 +6,8 @@ use crate::model::comic::{ComicCoverReservation, ComicInfo};
 use crate::part::repo::Execute;
 use crate::part::repo::comic::{ComicRepo, ComicRepoTransactional};
 use crate::part::repo::step::comic::{
-    Create, Delete, GetInfoById, GetInfoExcluded, ListByWorksetId, MarkCompleted,
-    MarkCoverUploaded, ReserveCover, UpdateInfo,
+    Create, Delete, GetInfoById, GetInfoExcluded, ListByWorksetId, ListByWorksetIdExcluded,
+    MarkCompleted, MarkCoverUploaded, ReserveCover, UpdateInfo,
 };
 use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactional, expected, now};
 use crate::result::RootError;
@@ -153,6 +153,27 @@ impl<'a> Advance<GetInfoExcluded<'a>, MockContext> for MockTransactional {
             .find(|comic| comic.id == step.id)
             .cloned()
             .ok_or_else(|| expected("error-comic-not-found"))
+    }
+}
+
+#[async_trait]
+impl<'a> Advance<ListByWorksetIdExcluded<'a>, MockContext> for MockTransactional {
+    type Error = RootError;
+
+    async fn advance(
+        &self,
+        context: &mut MockContext,
+        step: &ListByWorksetIdExcluded<'a>,
+    ) -> Result<Vec<ComicInfo>, Self::Error> {
+        let mut comics = context
+            .state
+            .comics
+            .iter()
+            .filter(|comic| comic.workset_id == step.workset_id)
+            .cloned()
+            .collect::<Vec<_>>();
+        comics.sort_by(|left, right| left.index.cmp(&right.index));
+        Ok(comics)
     }
 }
 

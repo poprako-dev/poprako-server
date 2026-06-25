@@ -357,6 +357,7 @@ async fn delete_rolls_back_missing_comic() {
 
     assert_expected_variant(err, ExpectedVariant::Args);
     assert_eq!(snapshot.worksets.len(), 1);
+    assert!(snapshot.prom_records.is_empty());
 }
 
 #[tokio::test]

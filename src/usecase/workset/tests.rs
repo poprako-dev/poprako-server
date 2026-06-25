@@ -6,15 +6,23 @@
 // list_infos(list_infos)(negative): missing team contents should return an empty list.
 // update_info(update_info)(positive): existing workset should update name and description.
 // update_info(update_info)(negative): missing workset should propagate an argument error.
-// delete(delete)(positive): existing workset should be removed.
+// delete(delete)(positive): deleting a workset with covered comics should enqueue cover deletions.
+// delete(delete)(positive): direct repo delete should not create prom records.
 // delete(delete)(negative): missing workset should rollback state.
 
 use super::*;
 
+use poprako_transactional::advance::Advance;
+use poprako_transactional::drive::Drive;
+
 use time::OffsetDateTime;
 
 use crate::model::workset::WorksetInfo;
-use crate::part_impl::repo_mock::Mock;
+use crate::part::prom::intention::ImageIntention;
+use crate::part::prom::{Payload, PromStep};
+use crate::part_impl::prom_mock::MockPromRecord;
+use crate::part_impl::repo_mock::{Mock, MockTransactional};
+use crate::result::accept;
 use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;
 use crate::usecase::team::tests::team;
@@ -41,6 +49,42 @@ fn create_data(team_id: &str) -> WorksetCreateData {
         name: "new".into(),
         description: Some("desc".into()),
     }
+}
+
+fn comic_with_uploaded_cover(id: &str, workset_id: &str, cover_key: &str) -> crate::model::comic::ComicInfo {
+    let time = OffsetDateTime::now_utc();
+
+    crate::model::comic::ComicInfo {
+        id: id.into(),
+        workset_id: workset_id.into(),
+        index: 0,
+        title: "comic".into(),
+        author: "author".into(),
+        description: None,
+        is_completed: false,
+        cover_key: Some(cover_key.into()),
+        cover_uploaded: true,
+        cover_version: 1,
+        chapter_count: 0,
+        chapter_next_index: 0,
+        creator_id: "user-1".into(),
+        last_active_at: time,
+        created_at: time,
+        updated_at: time,
+    }
+}
+
+fn count_delete_records(records: &[MockPromRecord], object_key: &str) -> usize {
+    records
+        .iter()
+        .filter(|record| {
+            matches!(
+                &record.payload,
+                Payload::Image(ImageIntention::Delete { object_key: key })
+                    if key == object_key
+            )
+        })
+        .count()
 }
 
 #[tokio::test]
@@ -177,14 +221,28 @@ async fn update_info_propagates_missing_workset() {
 }
 
 #[tokio::test]
-async fn delete_removes_workset() {
+async fn delete_removes_workset_and_enqueues_child_cover_deletes() {
     let mock = Mock::new();
     mock.seed_workset(workset("workset-1", "team-1", 0));
+    mock.seed_comic(comic_with_uploaded_cover(
+        "comic-1",
+        "workset-1",
+        "cover-1.png",
+    ));
+    mock.seed_comic(comic_with_uploaded_cover(
+        "comic-2",
+        "workset-1",
+        "cover-2.png",
+    ));
 
-    let result = delete(&mock, &mock, "workset-1".into()).await;
+    let result = delete(&mock, &mock, &mock, "workset-1".into()).await;
     assert!(result.is_ok());
+    let snapshot = mock.snapshot();
 
-    assert!(mock.snapshot().worksets.is_empty());
+    assert!(snapshot.worksets.is_empty());
+    assert!(snapshot.comics.is_empty());
+    assert_eq!(count_delete_records(&snapshot.prom_records, "cover-1.png"), 1);
+    assert_eq!(count_delete_records(&snapshot.prom_records, "cover-2.png"), 1);
 }
 
 #[tokio::test]
@@ -192,9 +250,44 @@ async fn delete_rolls_back_missing_workset() {
     let mock = Mock::new();
     mock.seed_workset(workset("workset-1", "team-1", 0));
 
-    let err = delete(&mock, &mock, "missing".into()).await.err().unwrap();
+    let err = delete(&mock, &mock, &mock, "missing".into()).await.err().unwrap();
     let snapshot = mock.snapshot();
 
     assert_expected_variant(err, ExpectedVariant::Args);
     assert_eq!(snapshot.worksets.len(), 1);
+    assert!(snapshot.prom_records.is_empty());
+}
+
+#[tokio::test]
+async fn delete_does_not_create_prom_records_when_called_directly() {
+    let mock = Mock::new();
+    mock.seed_workset(workset("workset-1", "team-1", 0));
+
+    let result = Drive::with_context(&mock, async move |context| {
+        let txn = MockTransactional;
+
+        Advance::advance(&txn, context, &PromStep::append(
+            "prom-1",
+            "image",
+            Payload::Image(ImageIntention::Delete {
+                object_key: "existing.png".into(),
+            }),
+            &OffsetDateTime::now_utc(),
+        ))
+        .await?;
+
+        Advance::advance(&txn, context, &crate::part::repo::step::workset::WorksetStep::delete(
+            "workset-1",
+        ))
+        .await?;
+
+        accept(())
+    })
+    .await;
+    assert!(result.is_ok());
+
+    let snapshot = mock.snapshot();
+    assert_eq!(count_delete_records(&snapshot.prom_records, "existing.png"), 1);
+    assert_eq!(snapshot.prom_records.len(), 1);
+    assert!(snapshot.worksets.is_empty());
 }

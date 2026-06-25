@@ -43,7 +43,7 @@ pub(crate) mod tests;
 /// * `V: EffectDevelop` — Processes the activity event (only for self-reads).
 pub async fn get_info<C, R, I, V>(
     repo: &R,
-    image: &I,
+    image_pool: &I,
     develop: &V,
     token: UserToken,
     id: String,
@@ -65,7 +65,7 @@ where
         .await;
     }
 
-    UserInfoVal::from_model(image, user_info).await
+    UserInfoVal::from_model(image_pool, user_info).await
 }
 
 /// Updates a user's QQ ID and nickname.
@@ -107,7 +107,7 @@ where
 
     drive
         .with_context(async move |context| {
-            let repo = DeriveTransactional::transactional(repo).await;
+            let repo = repo.transactional().await;
 
             repo.advance(
                 context,
@@ -152,7 +152,7 @@ pub async fn reserve_avatar<D, C, R, P, I>(
     drive: &D,
     repo: &R,
     prom: &P,
-    image: &I,
+    image_pool: &I,
     token: UserToken,
     data: ReserveUserAvatarData,
 ) -> RootResult<ReserveUserAvatarVal>
@@ -168,10 +168,10 @@ where
 {
     let (object_key, avatar_version) = drive
         .with_context(async move |context| {
-            let repo = DeriveTransactional::transactional(repo).await;
-            let prom = DeriveTransactional::transactional(prom).await;
+            let repo = repo.transactional().await;
+            let prom = prom.transactional().await;
 
-            let reservation = repo
+            let avatar_reservation = repo
                 .advance(
                     context,
                     &UserStep::reserve_avatar(&token.user_id, &data.file_ext),
@@ -181,7 +181,7 @@ where
             let now = OffsetDateTime::now_utc();
 
             // If replacing an existing avatar, schedule deletion of the old object.
-            if let Some(previous_key) = &reservation.previous_object_key {
+            if let Some(previous_key) = &avatar_reservation.previous_object_key {
                 let delete_id = ImageComplex::gen_delete_id();
 
                 prom.advance(
@@ -209,20 +209,23 @@ where
                     Payload::Image(ImageIntention::CheckUploaded {
                         kind: ImageKind::UserAvatar,
                         resource_id: token.user_id.clone(),
-                        object_key: reservation.object_key.clone(),
-                        image_version: reservation.avatar_version,
+                        object_key: avatar_reservation.object_key.clone(),
+                        image_version: avatar_reservation.avatar_version,
                     }),
                     &check_visible_at,
                 ),
             )
             .await?;
 
-            accept((reservation.object_key, reservation.avatar_version))
+            accept((
+                avatar_reservation.object_key,
+                avatar_reservation.avatar_version,
+            ))
         })
         .await
         .map_err(map_drive_err)?;
 
-    let put_url = image.put_signed(&object_key).await?.to_string();
+    let put_url = image_pool.put_signed(&object_key).await?.to_string();
 
     Ok(ReserveUserAvatarVal {
         put_url,
@@ -264,7 +267,7 @@ where
 
     drive
         .with_context(async move |context| {
-            let repo = DeriveTransactional::transactional(repo).await;
+            let repo = repo.transactional().await;
 
             repo.advance(
                 context,
@@ -299,7 +302,7 @@ where
 {
     drive
         .with_context(async move |context| {
-            let repo = DeriveTransactional::transactional(repo).await;
+            let repo = repo.transactional().await;
 
             repo.advance(context, &UserStep::touch_last_active(&token.user_id))
                 .await?;
@@ -359,8 +362,8 @@ where
 
     drive
         .with_context(async move |context| {
-            let repo = DeriveTransactional::transactional(repo).await;
-            let prom = DeriveTransactional::transactional(prom).await;
+            let repo = repo.transactional().await;
+            let prom = prom.transactional().await;
 
             let user_info = repo
                 .advance(context, &UserStep::get_info_excluded(&id))

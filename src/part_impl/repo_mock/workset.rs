@@ -4,7 +4,7 @@ use poprako_transactional::advance::Advance;
 use crate::model::workset::WorksetInfo;
 use crate::part::repo::Execute;
 use crate::part::repo::step::workset::{
-    Create, DeleteCascade, GetInfoById, IncrementComicNextIndex, ListByTeamId,
+    Create, Delete, GetInfoById, GetInfoExcluded, IncrementComicNextIndex, ListByTeamId,
     ListByTeamIdExcluded, UpdateComicCount, UpdateInfo,
 };
 use crate::part::repo::workset::{WorksetRepo, WorksetRepoTransactional};
@@ -120,13 +120,32 @@ impl<'a> Advance<ListByTeamIdExcluded<'a>, MockContext> for MockTransactional {
 }
 
 #[async_trait]
-impl<'a> Advance<DeleteCascade<'a>, MockContext> for MockTransactional {
+impl<'a> Advance<GetInfoExcluded<'a>, MockContext> for MockTransactional {
     type Error = RootError;
 
     async fn advance(
         &self,
         context: &mut MockContext,
-        step: &DeleteCascade<'a>,
+        step: &GetInfoExcluded<'a>,
+    ) -> Result<WorksetInfo, Self::Error> {
+        context
+            .state
+            .worksets
+            .iter()
+            .find(|workset| workset.id == step.id)
+            .cloned()
+            .ok_or_else(|| expected("error-workset-not-found"))
+    }
+}
+
+#[async_trait]
+impl<'a> Advance<Delete<'a>, MockContext> for MockTransactional {
+    type Error = RootError;
+
+    async fn advance(
+        &self,
+        context: &mut MockContext,
+        step: &Delete<'a>,
     ) -> Result<(), Self::Error> {
         let pos = context
             .state
@@ -134,7 +153,13 @@ impl<'a> Advance<DeleteCascade<'a>, MockContext> for MockTransactional {
             .iter()
             .position(|workset| workset.id == step.id)
             .ok_or_else(|| expected("error-workset-not-found"))?;
+
+        let deleted_workset_id = context.state.worksets[pos].id.clone();
         context.state.worksets.remove(pos);
+        context
+            .state
+            .comics
+            .retain(|comic| comic.workset_id != deleted_workset_id);
         Ok(())
     }
 }

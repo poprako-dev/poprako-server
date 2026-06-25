@@ -49,12 +49,21 @@ impl<'a> Step for ListByTeamIdExcluded<'a> {
     type Output = Vec<WorksetInfo>;
 }
 
-/// Step that deletes a workset and all of its child data.
-pub struct DeleteCascade<'a> {
+/// Step that fetches a workset by ID with a pessimistic lock.
+pub struct GetInfoExcluded<'a> {
     pub id: &'a str,
 }
 
-impl<'a> Step for DeleteCascade<'a> {
+impl<'a> Step for GetInfoExcluded<'a> {
+    type Output = WorksetInfo;
+}
+
+/// Step that deletes a workset row.
+pub struct Delete<'a> {
+    pub id: &'a str,
+}
+
+impl<'a> Step for Delete<'a> {
     type Output = ();
 }
 
@@ -106,9 +115,14 @@ impl WorksetStep {
         ListByTeamIdExcluded { team_id }
     }
 
-    /// Constructs a step to cascade-delete a workset.
-    pub fn delete_cascade<'a>(id: &'a str) -> DeleteCascade<'a> {
-        DeleteCascade { id }
+    /// Constructs a step to fetch a workset with a pessimistic lock.
+    pub fn get_info_excluded<'a>(id: &'a str) -> GetInfoExcluded<'a> {
+        GetInfoExcluded { id }
+    }
+
+    /// Constructs a step to delete a workset.
+    pub fn delete<'a>(id: &'a str) -> Delete<'a> {
+        Delete { id }
     }
 
     /// Constructs a step to allocate a comic index.

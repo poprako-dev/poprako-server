@@ -16,9 +16,9 @@ use crate::model::team::TeamForm;
 use crate::part::image::ImagePool;
 use crate::part::prom::intention::{IMAGE_TOPIC, ImageIntention, ImageKind};
 use crate::part::prom::{Payload, Prom, PromStep, PromTransactional};
+use crate::part::repo::comic::{ComicRepo, ComicRepoTransactional};
 use crate::part::repo::map_drive_err;
 use crate::part::repo::step::team::TeamStep;
-use crate::part::repo::step::workset::WorksetStep;
 use crate::part::repo::team::{TeamRepo, TeamRepoTransactional};
 use crate::part::repo::workset::{WorksetRepo, WorksetRepoTransactional};
 use crate::result::{RootError, RootResult, accept};
@@ -37,7 +37,11 @@ pub(crate) mod tests;
 /// * `C` — Context anchor.
 /// * `R: TeamRepo<C>` — Team storage.
 /// * `I: ImagePool` — Resolves the avatar signed URL.
-pub async fn create<C, R, I>(repo: &R, image: &I, data: CreateTeamData) -> RootResult<TeamInfoVal>
+pub async fn create<C, R, I>(
+    repo: &R,
+    image_pool: &I,
+    data: CreateTeamData,
+) -> RootResult<TeamInfoVal>
 where
     R: TeamRepo<C>,
     <R as DeriveTransactional>::Transactional: TeamRepoTransactional<C>,
@@ -51,7 +55,7 @@ where
 
     let team_info = repo.execute(&TeamStep::create(&team_form)).await?;
 
-    TeamInfoVal::from_model(image, team_info).await
+    TeamInfoVal::from_model(image_pool, team_info).await
 }
 
 /// Fetches a team by ID with avatar URL resolution.
@@ -63,7 +67,7 @@ where
 /// * `C` — Context anchor.
 /// * `R: TeamRepo<C>` — Team storage.
 /// * `I: ImagePool` — Resolves the avatar signed URL.
-pub async fn get_info<C, R, I>(repo: &R, image: &I, id: String) -> RootResult<TeamInfoVal>
+pub async fn get_info<C, R, I>(repo: &R, image_pool: &I, id: String) -> RootResult<TeamInfoVal>
 where
     R: TeamRepo<C>,
     <R as DeriveTransactional>::Transactional: TeamRepoTransactional<C>,
@@ -71,7 +75,7 @@ where
 {
     let team_info = repo.execute(&TeamStep::get_info_by_id(&id)).await?;
 
-    TeamInfoVal::from_model(image, team_info).await
+    TeamInfoVal::from_model(image_pool, team_info).await
 }
 
 /// Lists teams with pagination.
@@ -83,7 +87,11 @@ where
 /// * `C` — Context anchor.
 /// * `R: TeamRepo<C>` — Team storage.
 /// * `I: ImagePool` — Resolves avatar signed URLs.
-pub async fn list_infos<C, R, I>(repo: &R, image: &I, page: Page) -> RootResult<Vec<TeamInfoVal>>
+pub async fn list_infos<C, R, I>(
+    repo: &R,
+    image_pool: &I,
+    page: Page,
+) -> RootResult<Vec<TeamInfoVal>>
 where
     R: TeamRepo<C>,
     <R as DeriveTransactional>::Transactional: TeamRepoTransactional<C>,
@@ -94,7 +102,7 @@ where
     // TODO: join all.
     let mut team_info_vals = Vec::with_capacity(team_infos.len());
     for team_info in team_infos {
-        team_info_vals.push(TeamInfoVal::from_model(image, team_info).await?);
+        team_info_vals.push(TeamInfoVal::from_model(image_pool, team_info).await?);
     }
 
     Ok(team_info_vals)
@@ -147,7 +155,7 @@ pub async fn reserve_avatar<D, C, R, P, I>(
     drive: &D,
     repo: &R,
     prom: &P,
-    image: &I,
+    image_pool: &I,
     id: String,
     data: ReserveTeamAvatarData,
 ) -> RootResult<ReserveTeamAvatarVal>
@@ -163,17 +171,17 @@ where
 {
     let (object_key, avatar_version) = drive
         .with_context(async move |context| {
-            let repo = DeriveTransactional::transactional(repo).await;
-            let prom = DeriveTransactional::transactional(prom).await;
+            let repo = repo.transactional().await;
+            let prom = prom.transactional().await;
 
-            let reservation = repo
+            let avatar_reservation = repo
                 .advance(context, &TeamStep::reserve_avatar(&id, &data.file_ext))
                 .await?;
 
             let now = OffsetDateTime::now_utc();
 
             // If replacing an existing avatar, schedule deletion of the old object.
-            if let Some(previous_key) = &reservation.previous_object_key {
+            if let Some(previous_key) = &avatar_reservation.previous_object_key {
                 let delete_id = ImageComplex::gen_delete_id();
 
                 prom.advance(
@@ -202,22 +210,25 @@ where
                     Payload::Image(ImageIntention::CheckUploaded {
                         kind: ImageKind::TeamAvatar,
                         resource_id: id.clone(),
-                        object_key: reservation.object_key.clone(),
-                        image_version: reservation.avatar_version,
+                        object_key: avatar_reservation.object_key.clone(),
+                        image_version: avatar_reservation.avatar_version,
                     }),
                     &check_visible_at,
                 ),
             )
             .await?;
 
-            accept((reservation.object_key, reservation.avatar_version))
+            accept((
+                avatar_reservation.object_key,
+                avatar_reservation.avatar_version,
+            ))
         })
         .await
         .map_err(map_drive_err)?;
 
     // Generate signed URL after commit — the PUT URL should only be issued
     // once the reservation is durable.
-    let put_url = image.put_signed(&object_key).await?.to_string();
+    let put_url = image_pool.put_signed(&object_key).await?.to_string();
 
     Ok(ReserveTeamAvatarVal {
         put_url,
@@ -255,71 +266,36 @@ where
 ///
 /// 1. Fetches the team info with a pessimistic lock.
 /// 2. Lists all worksets belonging to the team.
-/// 3. Cascade-deletes each workset.
-/// 4. Deletes the team itself.
-/// 5. If the team had an uploaded avatar, enqueues a prom record to delete
-///    the avatar object from storage.
-///
-/// Requires both [`TeamRepo`] and [`WorksetRepo`] on the repository bound.
+/// 3. Deletes descendant worksets and comics through their own delete paths.
+/// 4. Enqueues avatar deletion if the team had an uploaded avatar.
+/// 5. Deletes the team itself.
 ///
 /// # Type Parameters
 ///
 /// * `D: Drive<C>` — Transaction driver.
 /// * `C` — Context anchor.
-/// * `R: TeamRepo<C> + WorksetRepo<C>` — Team and workset storage.
+/// * `R: TeamRepo<C> + WorksetRepo<C> + ComicRepo<C>` — Team, workset, and comic storage.
 /// * `P: Prom<C>` — Prom enqueuer for deferred avatar deletion.
 pub async fn delete<D, C, R, P>(drive: &D, repo: &R, prom: &P, id: String) -> RootResult<()>
 where
     D: Drive<C>,
     D::Error: Into<RootError>,
     C: Send,
-    R: TeamRepo<C> + WorksetRepo<C> + Send + Sync,
-    <R as DeriveTransactional>::Transactional:
-        TeamRepoTransactional<C> + WorksetRepoTransactional<C> + Send + Sync,
+    R: TeamRepo<C> + WorksetRepo<C> + ComicRepo<C> + Send + Sync,
+    <R as DeriveTransactional>::Transactional: TeamRepoTransactional<C>
+        + WorksetRepoTransactional<C>
+        + ComicRepoTransactional<C>
+        + Send
+        + Sync,
     P: Prom<C> + Send + Sync,
     <P as DeriveTransactional>::Transactional: PromTransactional<C> + Send + Sync,
 {
     drive
         .with_context(async move |context| {
-            let repo = DeriveTransactional::transactional(repo).await;
-            let prom = DeriveTransactional::transactional(prom).await;
+            let repo = repo.transactional().await;
+            let prom = prom.transactional().await;
 
-            let team_info = repo
-                .advance(context, &TeamStep::get_info_excluded(&id))
-                .await?;
-
-            // Delete all worksets before deleting the team (foreign key ordering).
-            let workset_infos = repo
-                .advance(context, &WorksetStep::list_by_team_id_excluded(&id))
-                .await?;
-
-            for workset in &workset_infos {
-                repo.advance(context, &WorksetStep::delete_cascade(&workset.id))
-                    .await?;
-            }
-
-            repo.advance(context, &TeamStep::delete(&id)).await?;
-
-            // Enqueue avatar object deletion if one was uploaded.
-            if let Some(avatar_key) = &team_info.avatar_key
-                && team_info.avatar_uploaded
-            {
-                let now = OffsetDateTime::now_utc();
-                let delete_id = ImageComplex::gen_delete_id();
-
-                prom.advance(
-                    context,
-                    &PromStep::append(
-                        &delete_id,
-                        IMAGE_TOPIC,
-                        Payload::Image(ImageIntention::Delete {
-                            object_key: avatar_key.clone(),
-                        }),
-                        &now,
-                    ),
-                )
-                .await?;
-            }
+            TeamComplex::delete_cascade(&repo, &prom, context, &id).await?;
 
             accept(())
         })
