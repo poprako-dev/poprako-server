@@ -1,3 +1,5 @@
+//! Mock implementations of `ComicRepo` and `ComicRepoTransactional` for in-memory testing.
+
 use async_trait::async_trait;
 use poprako_transactional::advance::Advance;
 
@@ -16,6 +18,8 @@ impl ComicRepo<MockContext> for Mock {}
 
 impl ComicRepoTransactional<MockContext> for MockTransactional {}
 
+/// Updates a comic record to mark its cover as uploaded, verifying the cover version
+/// to detect stale uploads.
 fn mark_comic_cover_uploaded(
     state: &mut MockState,
     id: &str,

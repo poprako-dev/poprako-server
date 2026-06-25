@@ -1,3 +1,5 @@
+//! Mock implementations of `UserRepo` and `UserRepoTransactional` for in-memory testing.
+
 use async_trait::async_trait;
 use poprako_transactional::advance::Advance;
 
@@ -16,6 +18,7 @@ impl UserRepo<MockContext> for Mock {}
 
 impl UserRepoTransactional<MockContext> for MockTransactional {}
 
+/// Inserts a new user with associated credentials, rejecting duplicate ids or qids.
 fn create_user(state: &mut MockState, form: &UserForm) -> Result<UserInfo, RootError> {
     if state.users.iter().any(|user| user.id == form.id) {
         return Err(expected("error-already-exists"));

@@ -1,3 +1,5 @@
+//! Mock implementations of `TeamRepo` and `TeamRepoTransactional` for in-memory testing.
+
 use async_trait::async_trait;
 use poprako_transactional::advance::Advance;
 
@@ -5,7 +7,7 @@ use crate::complex::team::TeamComplex;
 use crate::model::team::{TeamAvatarReservation, TeamInfo};
 use crate::part::repo::Execute;
 use crate::part::repo::step::team::{
-    Create, Delete, GetInfoById, GetInfoExcluded, IncrementWorksetNextIndex, List,
+    Create, Delete, GetInfoById, GetInfoExcluded, IncrementWorksetNextIndex, ListInfos,
     MarkAvatarUploaded, ReserveAvatar, UpdateInfo,
 };
 use crate::part::repo::team::{TeamRepo, TeamRepoTransactional};
@@ -16,6 +18,8 @@ impl TeamRepo<MockContext> for Mock {}
 
 impl TeamRepoTransactional<MockContext> for MockTransactional {}
 
+/// Updates a team record to mark its avatar as uploaded, verifying the avatar version
+/// to detect stale uploads.
 fn mark_team_avatar_uploaded(
     state: &mut MockState,
     id: &str,
@@ -77,20 +81,36 @@ impl<'a> Execute<GetInfoById<'a>> for Mock {
 }
 
 #[async_trait]
-impl Execute<List> for Mock {
+impl<'a> Execute<ListInfos<'a>> for Mock {
     type Error = RootError;
 
-    async fn execute(&self, step: &List) -> Result<Vec<TeamInfo>, Self::Error> {
+    async fn execute(&self, step: &ListInfos<'a>) -> Result<Vec<TeamInfo>, Self::Error> {
         let state = self.state.lock().unwrap();
-        let mut teams = state.teams.clone();
+        let mut teams = match step.user_id {
+            Some(user_id) => state
+                .teams
+                .iter()
+                .filter(|team| {
+                    state
+                        .members
+                        .iter()
+                        .any(|member| member.user_id == user_id && member.team_id == team.id)
+                })
+                .cloned()
+                .collect(),
+            None => state.teams.clone(),
+        };
         teams.sort_by(|left, right| right.created_at.cmp(&left.created_at));
 
-        if step.page.offset >= teams.len() {
+        let offset = step.offset as usize;
+        let limit = step.limit as usize;
+
+        if offset >= teams.len() {
             return Ok(Vec::new());
         }
 
-        let end = std::cmp::min(step.page.offset + step.page.limit, teams.len());
-        Ok(teams[step.page.offset..end].to_vec())
+        let end = std::cmp::min(offset + limit, teams.len());
+        Ok(teams[offset..end].to_vec())
     }
 }
 

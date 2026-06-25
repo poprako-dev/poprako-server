@@ -68,11 +68,19 @@ impl<'a> Step for Delete<'a> {
 }
 
 /// Step that allocates one comic index from a workset-scoped sequence.
-pub struct IncrementComicNextIndex<'a> {
+///
+/// # Semantics (must be strictly observed)
+///
+/// - Acquire an exclusive row-level lock (`SELECT ... FOR UPDATE`) on the workset row;
+/// - Increment `comic_next_index` by 1;
+/// - Return the **post-increment** value (1-based, suitable for frontend display —
+///   never return 0-based);
+/// - All concurrent callers must serialize on this lock.
+pub struct IncrComicNextIndex<'a> {
     pub id: &'a str,
 }
 
-impl<'a> Step for IncrementComicNextIndex<'a> {
+impl<'a> Step for IncrComicNextIndex<'a> {
     type Output = i32;
 }
 
@@ -126,8 +134,8 @@ impl WorksetStep {
     }
 
     /// Constructs a step to allocate a comic index.
-    pub fn increment_comic_next_index<'a>(id: &'a str) -> IncrementComicNextIndex<'a> {
-        IncrementComicNextIndex { id }
+    pub fn incr_comic_next_index<'a>(id: &'a str) -> IncrComicNextIndex<'a> {
+        IncrComicNextIndex { id }
     }
 
     /// Constructs a step to adjust a workset's comic count.

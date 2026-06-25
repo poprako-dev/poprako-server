@@ -13,6 +13,7 @@
 // get_info(get_info)(negative): missing team should propagate an argument error.
 // list_infos(list_infos)(positive): list should return paged teams in repo order.
 // list_infos(list_infos)(negative): missing page contents should return an empty list.
+// list_infos(list_infos)(negative): listing all teams should require super-admin permission.
 // update_info(update_info)(positive): existing team should update name and description.
 // update_info(update_info)(negative): missing team should propagate an argument error.
 // reserve_avatar(reserve_avatar)(positive): first reservation should update avatar state, enqueue a check, and return a put URL.
@@ -28,20 +29,20 @@
 use super::*;
 
 use async_trait::async_trait;
-
-use poprako_transactional::advance::Advance;
-use poprako_util::page::Page;
-
 use time::OffsetDateTime;
 
+use poprako_transactional::advance::Advance;
+
 use crate::model::comic::ComicInfo;
+use crate::model::member::MemberInfo;
 use crate::model::team::TeamInfo;
+use crate::model::user::{UserCredential, UserInfo};
 use crate::model::workset::WorksetInfo;
 use crate::part::prom::Payload;
 use crate::part::prom::intention::{ImageIntention, ImageKind};
 use crate::part::repo::Execute;
 use crate::part::repo::step::team::{
-    Create, Delete, GetInfoById, GetInfoExcluded, IncrementWorksetNextIndex, List,
+    Create, Delete, GetInfoById, GetInfoExcluded, IncrementWorksetNextIndex, ListInfos,
     MarkAvatarUploaded, ReserveAvatar, UpdateInfo,
 };
 use crate::part::repo::team::{TeamRepo, TeamRepoTransactional};
@@ -124,6 +125,16 @@ pub(crate) fn workset(id: &str, team_id: &str) -> WorksetInfo {
     }
 }
 
+/// Builds a [`MemberInfo`] fixture.
+fn member(id: &str, user_id: &str, team_id: &str) -> MemberInfo {
+    MemberInfo {
+        id: id.into(),
+        user_id: user_id.into(),
+        user_nickname: user_id.into(),
+        team_id: team_id.into(),
+    }
+}
+
 /// Builds a [`ComicInfo`] fixture with an uploaded cover.
 fn comic_with_uploaded_cover(id: &str, workset_id: &str, cover_key: &str) -> ComicInfo {
     let time = OffsetDateTime::now_utc();
@@ -156,9 +167,46 @@ fn expected_error() -> RootError {
     }
 }
 
-/// Builds a [`Page`] with given offset and limit.
-fn page(offset: usize, limit: usize) -> Page {
-    Page { offset, limit }
+/// Builds a [`UserToken`] fixture.
+fn token(user_id: &str) -> UserToken {
+    UserToken {
+        user_id: user_id.into(),
+    }
+}
+
+/// Builds a [`UserCredential`] fixture.
+fn credential(user_id: &str) -> UserCredential {
+    UserCredential {
+        user_id: user_id.into(),
+        password_hash: "hash".into(),
+    }
+}
+
+/// Builds a [`UserInfo`] fixture.
+fn user(id: &str, is_sadmin: bool) -> UserInfo {
+    let time = OffsetDateTime::now_utc();
+
+    UserInfo {
+        id: id.into(),
+        qid: id.into(),
+        nickname: id.into(),
+        avatar_key: None,
+        avatar_uploaded: false,
+        avatar_version: 0,
+        is_sadmin,
+        last_active_at: time,
+        created_at: time,
+        updated_at: time,
+    }
+}
+
+/// Builds a [`ListTeamInfosData`] fixture.
+fn list_data(user_id: Option<&str>, offset: u64, limit: u64) -> ListTeamInfosData {
+    ListTeamInfosData {
+        user_id: user_id.map(Into::into),
+        offset,
+        limit,
+    }
 }
 
 /// Builds a [`ReserveTeamAvatarData`] fixture.
@@ -238,10 +286,10 @@ impl<'a> Execute<GetInfoById<'a>> for FailingCreateRepo {
 }
 
 #[async_trait]
-impl Execute<List> for FailingCreateRepo {
+impl<'a> Execute<ListInfos<'a>> for FailingCreateRepo {
     type Error = RootError;
 
-    async fn execute(&self, _step: &List) -> Result<Vec<TeamInfo>, Self::Error> {
+    async fn execute(&self, _step: &ListInfos<'a>) -> Result<Vec<TeamInfo>, Self::Error> {
         Err(expected_error())
     }
 }
@@ -409,12 +457,23 @@ async fn list_infos_returns_paged_teams() {
     let mock = Mock::new();
     mock.seed_team(team("team-1", "A", "Desc"));
     mock.seed_team(team("team-2", "B", "Desc"));
+    mock.seed_team(team("team-3", "C", "Desc"));
+    mock.seed_member(member("member-1", "user-1", "team-2"));
+    mock.seed_member(member("member-2", "user-1", "team-3"));
+    mock.seed_member(member("member-3", "user-2", "team-1"));
 
-    let result = list_infos(&mock, &mock, page(0, 1)).await;
+    let result = list_infos(
+        &mock,
+        &mock,
+        token("user-1"),
+        list_data(Some("user-1"), 0, 1),
+    )
+    .await;
     assert!(result.is_ok());
     let result = result.ok().unwrap();
 
     assert_eq!(result.len(), 1);
+    assert_ne!(result[0].id, "team-1");
 }
 
 #[tokio::test]
@@ -422,11 +481,30 @@ async fn list_infos_returns_empty_page_when_offset_exceeds_data() {
     let mock = Mock::new();
     mock.seed_team(team("team-1", "A", "Desc"));
 
-    let result = list_infos(&mock, &mock, page(10, 10)).await;
+    let result = list_infos(
+        &mock,
+        &mock,
+        token("user-1"),
+        list_data(Some("user-1"), 10, 10),
+    )
+    .await;
     assert!(result.is_ok());
     let result = result.ok().unwrap();
 
     assert!(result.is_empty());
+}
+
+#[tokio::test]
+async fn list_infos_all_teams_requires_sadmin() {
+    let mock = Mock::new();
+    mock.seed_user(user("user-1", false), credential("user-1"));
+
+    let err = list_infos(&mock, &mock, token("user-1"), list_data(None, 0, 10))
+        .await
+        .err()
+        .unwrap();
+
+    assert_expected_variant(err, ExpectedVariant::Perm);
 }
 
 #[tokio::test]
@@ -628,8 +706,14 @@ async fn delete_removes_team_worksets_descendant_comics_and_avatar() {
     assert!(snapshot.teams.is_empty());
     assert!(snapshot.worksets.is_empty());
     assert!(snapshot.comics.is_empty());
-    assert_eq!(count_delete_records(&snapshot.prom_records, "cover-1.png"), 1);
-    assert_eq!(count_delete_records(&snapshot.prom_records, "cover-2.png"), 1);
+    assert_eq!(
+        count_delete_records(&snapshot.prom_records, "cover-1.png"),
+        1
+    );
+    assert_eq!(
+        count_delete_records(&snapshot.prom_records, "cover-2.png"),
+        1
+    );
     assert_eq!(
         count_delete_records(&snapshot.prom_records, "avatar-key"),
         1

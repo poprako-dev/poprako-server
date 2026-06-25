@@ -11,7 +11,7 @@ use poprako_transactional::advance::Advance;
 
 use crate::part::repo::Execute;
 use crate::part::repo::step::team::{
-    Create, Delete, GetInfoById, GetInfoExcluded, IncrementWorksetNextIndex, List,
+    Create, Delete, GetInfoById, GetInfoExcluded, IncrementWorksetNextIndex, ListInfos,
     MarkAvatarUploaded, ReserveAvatar, UpdateInfo,
 };
 use crate::result::RootError;
@@ -29,7 +29,7 @@ pub trait TeamRepo<C>:
     DeriveTransactional
     + for<'a> Execute<Create<'a>, Error = RootError>
     + for<'a> Execute<GetInfoById<'a>, Error = RootError>
-    + Execute<List, Error = RootError>
+    + for<'a> Execute<ListInfos<'a>, Error = RootError>
     + for<'a> Execute<UpdateInfo<'a>, Error = RootError>
     + for<'a> Execute<MarkAvatarUploaded<'a>, Error = RootError>
 where

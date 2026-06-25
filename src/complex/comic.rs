@@ -1,3 +1,6 @@
+//! Complex-domain operations for comic entities: identity generation, cover-storage
+//! key management, and recursive deletion with related resource cleanup.
+
 use time::OffsetDateTime;
 use uuid::Uuid;
 
@@ -10,17 +13,22 @@ use crate::part::repo::step::workset::WorksetStep;
 use crate::part::repo::workset::WorksetRepoTransactional;
 use crate::result::RootResult;
 
+/// Domain operations for comic entities.
 pub struct ComicComplex;
 
 impl ComicComplex {
+    /// Generate a unique, time-ordered comic identifier (e.g. `comic-<uuid-v7>`).
     pub fn gen_id() -> String {
         format!("comic-{}", Uuid::now_v7())
     }
 
+    /// Generate the object-storage key for a comic cover image.
     pub fn gen_cover_key(id: &str, cover_version: i64, file_ext: &str) -> String {
         format!("comic_cover/{}-{}.{}", id, cover_version, file_ext)
     }
 
+    /// Recursively delete a comic and its attached resources: enqueues cover-image
+    /// deletion and decrements the parent workset's comic count.
     pub async fn delete_cascade<C, R, P>(
         repo: &R,
         prom: &P,

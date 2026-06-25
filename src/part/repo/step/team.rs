@@ -1,7 +1,7 @@
 //! Step types for team repository operations.
 
+use poprako_macro::Paginate;
 use poprako_transactional::step::Step;
-use poprako_util::page::Page;
 
 use crate::model::team::{TeamAvatarReservation, TeamForm, TeamInfo};
 
@@ -24,11 +24,12 @@ impl<'a> Step for GetInfoById<'a> {
 }
 
 /// Step that lists teams with pagination.
-pub struct List {
-    pub page: Page,
+#[Paginate]
+pub struct ListInfos<'a> {
+    pub user_id: Option<&'a str>,
 }
 
-impl Step for List {
+impl<'a> Step for ListInfos<'a> {
     type Output = Vec<TeamInfo>;
 }
 
@@ -104,9 +105,13 @@ impl TeamStep {
         GetInfoById { id }
     }
 
-    /// Constructs a step to list teams with pagination.
-    pub fn list(page: Page) -> List {
-        List { page }
+    /// Constructs a step to list teams with optional user scoping.
+    pub fn list_infos<'a>(user_id: Option<&'a str>, offset: u64, limit: u64) -> ListInfos<'a> {
+        ListInfos {
+            user_id,
+            offset,
+            limit,
+        }
     }
 
     /// Constructs a step to update a team's name and description.

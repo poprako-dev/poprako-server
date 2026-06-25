@@ -5,7 +5,7 @@ use poprako_transactional::drive::Drive;
 
 use crate::complex::workset::WorksetComplex;
 use crate::data::workset::{
-    WorksetCreateData, WorksetCreateVal, WorksetInfoUpdateData, WorksetInfoVal, WorksetListData,
+    CreateWorksetData, CreateWorksetVal, UpdateWorksetInfoData, WorksetInfoVal, ListWorksetInfosData,
 };
 use crate::model::workset::{WorksetForm, WorksetInfoUpdate};
 use crate::part::prom::{Prom, PromTransactional};
@@ -25,8 +25,8 @@ pub mod tests;
 pub async fn create<D, C, R>(
     drive: &D,
     repo: &R,
-    data: WorksetCreateData,
-) -> RootResult<WorksetCreateVal>
+    data: CreateWorksetData,
+) -> RootResult<CreateWorksetVal>
 where
     D: Drive<C>,
     D::Error: Into<RootError>,
@@ -59,7 +59,7 @@ where
         .await
         .map_err(map_drive_err)?;
 
-    Ok(WorksetCreateVal {
+    Ok(CreateWorksetVal {
         workset: workset_info.into(),
     })
 }
@@ -76,7 +76,7 @@ where
 }
 
 /// Lists worksets for a team.
-pub async fn list_infos<C, R>(repo: &R, data: WorksetListData) -> RootResult<Vec<WorksetInfoVal>>
+pub async fn list_infos<C, R>(repo: &R, data: ListWorksetInfosData) -> RootResult<Vec<WorksetInfoVal>>
 where
     R: WorksetRepo<C>,
     <R as DeriveTransactional>::Transactional: WorksetRepoTransactional<C>,
@@ -89,7 +89,7 @@ where
 }
 
 /// Updates a workset's name and description.
-pub async fn update_info<C, R>(repo: &R, data: WorksetInfoUpdateData) -> RootResult<()>
+pub async fn update_info<C, R>(repo: &R, data: UpdateWorksetInfoData) -> RootResult<()>
 where
     R: WorksetRepo<C>,
     <R as DeriveTransactional>::Transactional: WorksetRepoTransactional<C>,

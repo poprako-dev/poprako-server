@@ -34,25 +34,25 @@ impl From<WorksetInfoModel> for WorksetInfoVal {
 }
 
 /// Input parameters for creating a workset.
-pub struct WorksetCreateData {
+pub struct CreateWorksetData {
     pub team_id: String,
     pub name: String,
     pub description: Option<String>,
 }
 
 /// Return value from a successful workset creation.
-pub struct WorksetCreateVal {
+pub struct CreateWorksetVal {
     pub workset: WorksetInfoVal,
 }
 
 /// Input parameters for updating a workset's profile.
-pub struct WorksetInfoUpdateData {
+pub struct UpdateWorksetInfoData {
     pub id: String,
     pub name: String,
     pub description: Option<String>,
 }
 
 /// Input parameters for listing worksets.
-pub struct WorksetListData {
+pub struct ListWorksetInfosData {
     pub team_id: String,
 }

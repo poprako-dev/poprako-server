@@ -1,10 +1,12 @@
+//! Mock implementations of `WorksetRepo` and `WorksetRepoTransactional` for in-memory testing.
+
 use async_trait::async_trait;
 use poprako_transactional::advance::Advance;
 
 use crate::model::workset::WorksetInfo;
 use crate::part::repo::Execute;
 use crate::part::repo::step::workset::{
-    Create, Delete, GetInfoById, GetInfoExcluded, IncrementComicNextIndex, ListByTeamId,
+    Create, Delete, GetInfoById, GetInfoExcluded, IncrComicNextIndex, ListByTeamId,
     ListByTeamIdExcluded, UpdateComicCount, UpdateInfo,
 };
 use crate::part::repo::workset::{WorksetRepo, WorksetRepoTransactional};
@@ -165,13 +167,13 @@ impl<'a> Advance<Delete<'a>, MockContext> for MockTransactional {
 }
 
 #[async_trait]
-impl<'a> Advance<IncrementComicNextIndex<'a>, MockContext> for MockTransactional {
+impl<'a> Advance<IncrComicNextIndex<'a>, MockContext> for MockTransactional {
     type Error = RootError;
 
     async fn advance(
         &self,
         context: &mut MockContext,
-        step: &IncrementComicNextIndex<'a>,
+        step: &IncrComicNextIndex<'a>,
     ) -> Result<i32, Self::Error> {
         let workset = context
             .state
@@ -179,10 +181,11 @@ impl<'a> Advance<IncrementComicNextIndex<'a>, MockContext> for MockTransactional
             .iter_mut()
             .find(|workset| workset.id == step.id)
             .ok_or_else(|| expected("error-workset-not-found"))?;
-        let index = workset.comic_next_index;
+        // Must increment first, then return the new value: frontend expects 1-based index.
+        // Never return the pre-increment value.
         workset.comic_next_index += 1;
         workset.updated_at = now();
-        Ok(index)
+        Ok(workset.comic_next_index)
     }
 }
 

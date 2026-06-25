@@ -8,8 +8,8 @@ use poprako_transactional::drive::Drive;
 use crate::complex::comic::ComicComplex;
 use crate::complex::image::ImageComplex;
 use crate::data::comic::{
-    ComicCoverReserveData, ComicCoverReserveVal, ComicCoverUploadedData, ComicCreateData,
-    ComicCreateVal, ComicInfoUpdateData, ComicInfoVal, ComicListData,
+    ComicInfoVal, CreateComicData, CreateComicVal, ListComicInfosData, MarkComicCoverUploadedData,
+    ReserveComicCoverData, ReserveComicCoverVal, UpdateComicInfoData,
 };
 use crate::model::comic::{ComicForm, ComicInfoUpdate};
 use crate::part::image::ImagePool;
@@ -31,8 +31,8 @@ pub async fn create<D, C, R, I>(
     drive: &D,
     repo: &R,
     image_pool: &I,
-    data: ComicCreateData,
-) -> RootResult<ComicCreateVal>
+    data: CreateComicData,
+) -> RootResult<CreateComicVal>
 where
     D: Drive<C>,
     D::Error: Into<RootError>,
@@ -49,8 +49,9 @@ where
             let index = repo
                 .advance(
                     context,
-                    // FIXME: excluded?
-                    &WorksetStep::increment_comic_next_index(&data.workset_id),
+                    // Must exclusively lock the row → increment → return the post-increment
+                    // value (1-based for frontend display). No 0-based, no lock-free concurrency.
+                    &WorksetStep::incr_comic_next_index(&data.workset_id),
                 )
                 .await?;
 
@@ -79,7 +80,7 @@ where
         .await
         .map_err(map_drive_err)?;
 
-    Ok(ComicCreateVal {
+    Ok(CreateComicVal {
         comic: ComicInfoVal::from_model(image_pool, comic_info).await?,
     })
 }
@@ -100,7 +101,7 @@ where
 pub async fn list_infos<C, R, I>(
     repo: &R,
     image_pool: &I,
-    data: ComicListData,
+    data: ListComicInfosData,
 ) -> RootResult<Vec<ComicInfoVal>>
 where
     R: ComicRepo<C>,
@@ -121,7 +122,7 @@ where
 }
 
 /// Updates a comic's title, author, and description.
-pub async fn update_info<C, R>(repo: &R, data: ComicInfoUpdateData) -> RootResult<()>
+pub async fn update_info<C, R>(repo: &R, data: UpdateComicInfoData) -> RootResult<()>
 where
     R: ComicRepo<C>,
     <R as DeriveTransactional>::Transactional: ComicRepoTransactional<C>,
@@ -146,8 +147,8 @@ pub async fn reserve_cover<D, C, R, P, I>(
     prom: &P,
     image_pool: &I,
     id: String,
-    data: ComicCoverReserveData,
-) -> RootResult<ComicCoverReserveVal>
+    data: ReserveComicCoverData,
+) -> RootResult<ReserveComicCoverVal>
 where
     D: Drive<C>,
     D::Error: Into<RootError>,
@@ -215,7 +216,7 @@ where
 
     let put_url = image_pool.put_signed(&object_key).await?.to_string();
 
-    Ok(ComicCoverReserveVal {
+    Ok(ReserveComicCoverVal {
         put_url,
         cover_version,
     })
@@ -225,7 +226,7 @@ where
 pub async fn mark_cover_uploaded<C, R>(
     repo: &R,
     id: String,
-    data: ComicCoverUploadedData,
+    data: MarkComicCoverUploadedData,
 ) -> RootResult<()>
 where
     R: ComicRepo<C>,

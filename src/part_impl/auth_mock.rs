@@ -1,3 +1,5 @@
+//! Mock implementation of [TokenAuth] for testing token signing with deterministic output.
+
 use poprako_util::i18n::trl;
 
 use crate::model::user::UserTokenRef;
@@ -5,6 +7,10 @@ use crate::part::auth::TokenAuth;
 use crate::part_impl::repo_mock::Mock;
 use crate::result::{ExpectedVariant, RootError, RootResult};
 
+/// Mock implementation of [TokenAuth].
+///
+/// Returns a deterministic token (`"token:{user_id}"`) by default.
+/// Configure [Mock::with_token_failure] to test sign failures.
 impl TokenAuth for Mock {
     fn sign_token(&self, token: &UserTokenRef) -> RootResult<String> {
         if self.flags.lock().unwrap().token_failure {

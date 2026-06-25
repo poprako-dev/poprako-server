@@ -1,3 +1,5 @@
+//! Mock implementations of [Prom] and [PromTransactional] for testing deferred action recording.
+
 use async_trait::async_trait;
 use time::OffsetDateTime;
 
@@ -7,6 +9,7 @@ use crate::part::prom::{Append, Payload, Prom, PromTransactional};
 use crate::part_impl::repo_mock::{Mock, MockContext, MockTransactional};
 use crate::result::RootError;
 
+/// A recorded deferred action stored in the mock context during transactional testing.
 #[cfg_attr(test, derive(Clone))]
 pub struct MockPromRecord {
     pub id: String,
@@ -15,10 +18,13 @@ pub struct MockPromRecord {
     pub visible_at: OffsetDateTime,
 }
 
+/// Empty mock implementation of [Prom] — state is managed via the transactional impl.
 impl Prom<MockContext> for Mock {}
 
+/// Empty mock implementation of [PromTransactional] — actual advancement is handled by [Advance].
 impl PromTransactional<MockContext> for MockTransactional {}
 
+/// Appends a [MockPromRecord] to the mock context state when a prom append is advanced.
 #[async_trait]
 impl<'a> Advance<Append<'a>, MockContext> for MockTransactional {
     type Error = RootError;

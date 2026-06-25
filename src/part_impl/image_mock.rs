@@ -1,3 +1,5 @@
+//! Mock implementation of [ImagePool] for testing signed URL resolution with deterministic output.
+
 use async_trait::async_trait;
 use url::Url;
 
@@ -7,6 +9,12 @@ use crate::part::image::ImagePool;
 use crate::part_impl::repo_mock::Mock;
 use crate::result::{ExpectedVariant, RootError, RootResult};
 
+/// Mock implementation of [ImagePool].
+///
+/// Returns deterministic test URLs (`https://test.local/get/{key}` /
+/// `https://test.local/put/{key}`). Configure
+/// [Mock::with_image_get_failure] or [Mock::with_image_put_failure] to test
+/// error paths.
 #[async_trait]
 impl ImagePool for Mock {
     async fn get_signed(&self, key: &str) -> RootResult<Url> {
