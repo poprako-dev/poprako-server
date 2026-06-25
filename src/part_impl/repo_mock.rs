@@ -265,7 +265,7 @@ mod tests {
     #[tokio::test]
     async fn transaction_commits_repo_and_prom() {
         let mock = Mock::new();
-        let form = MemberForm {
+        let member_form = MemberForm {
             id: "member-1".into(),
             user_id: "user-1".into(),
             user_nickname: "nick".into(),
@@ -276,7 +276,7 @@ mod tests {
 
         let result = Drive::with_context(&mock, async move |context| {
             let txn = MockTransactional;
-            Advance::advance(&txn, context, &MemberStep::create(&form)).await?;
+            Advance::advance(&txn, context, &MemberStep::create(&member_form)).await?;
             Advance::advance(
                 &txn,
                 context,
@@ -306,7 +306,7 @@ mod tests {
     #[tokio::test]
     async fn transaction_rolls_back_repo_and_prom() {
         let mock = Mock::new();
-        let form = MemberForm {
+        let member_form = MemberForm {
             id: "member-1".into(),
             user_id: "user-1".into(),
             user_nickname: "nick".into(),
@@ -317,7 +317,7 @@ mod tests {
 
         let err = Drive::with_context(&mock, async move |context| {
             let txn = MockTransactional;
-            Advance::advance(&txn, context, &MemberStep::create(&form)).await?;
+            Advance::advance(&txn, context, &MemberStep::create(&member_form)).await?;
             Advance::advance(
                 &txn,
                 context,

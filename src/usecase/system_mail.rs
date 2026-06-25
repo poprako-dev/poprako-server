@@ -33,13 +33,16 @@ where
     R: SystemMailRepo<C>,
     <R as DeriveTransactional>::Transactional: SystemMailRepoTransactional<C>,
 {
-    let spec = SystemMailListSpec {
+    let mail_list_spec = SystemMailListSpec {
         read: data.read,
         page: data.page,
     };
 
     let mail_infos = repo
-        .execute(&SystemMailStep::list_by_receiver_id(&token.user_id, &spec))
+        .execute(&SystemMailStep::list_by_receiver_id(
+            &token.user_id,
+            &mail_list_spec,
+        ))
         .await?;
 
     let mail_vals = mail_infos

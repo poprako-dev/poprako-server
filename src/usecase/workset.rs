@@ -33,7 +33,7 @@ where
     <R as DeriveTransactional>::Transactional:
         TeamRepoTransactional<C> + WorksetRepoTransactional<C> + Send,
 {
-    let info = drive
+    let workset_info = drive
         .with_context(async move |context| {
             let repo = DeriveTransactional::transactional(repo).await;
             let index = repo
@@ -42,21 +42,23 @@ where
                     &TeamStep::increment_workset_next_index(&data.team_id),
                 )
                 .await?;
-            let form = WorksetForm {
+            let workset_form = WorksetForm {
                 id: WorksetComplex::gen_id(),
                 team_id: data.team_id,
                 index,
                 name: data.name,
                 description: data.description,
             };
-            let info = repo.advance(context, &WorksetStep::create(&form)).await?;
-            accept(info)
+            let workset_info = repo
+                .advance(context, &WorksetStep::create(&workset_form))
+                .await?;
+            accept(workset_info)
         })
         .await
         .map_err(map_drive_err)?;
 
     Ok(WorksetCreateVal {
-        workset: info.into(),
+        workset: workset_info.into(),
     })
 }
 
@@ -66,9 +68,9 @@ where
     R: WorksetRepo<C>,
     <R as DeriveTransactional>::Transactional: WorksetRepoTransactional<C>,
 {
-    let info = repo.execute(&WorksetStep::get_info_by_id(&id)).await?;
+    let workset_info = repo.execute(&WorksetStep::get_info_by_id(&id)).await?;
 
-    Ok(info.into())
+    Ok(workset_info.into())
 }
 
 /// Lists worksets for a team.
@@ -114,6 +116,7 @@ where
         .with_context(async move |context| {
             let repo = DeriveTransactional::transactional(repo).await;
 
+            // FIXME: workset complex::delete cascade
             repo.advance(context, &WorksetStep::delete_cascade(&id))
                 .await?;
 
