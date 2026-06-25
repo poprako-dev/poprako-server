@@ -4,8 +4,8 @@ use poprako_transactional::advance::Advance;
 
 use crate::part::repo::Execute;
 use crate::part::repo::step::comic::{
-    Create, Delete, GetInfoById, GetInfoExcluded, ListByWorksetId, MarkCompleted,
-    MarkCoverUploaded, ReserveCover, UpdateInfo,
+    Create, Delete, GetInfoById, GetInfoExcluded, ListByWorksetId, ListByWorksetIdExcluded,
+    MarkCompleted, MarkCoverUploaded, ReserveCover, UpdateInfo,
 };
 use crate::result::RootError;
 use crate::util::DeriveTransactional;
@@ -26,6 +26,7 @@ where
 pub trait ComicRepoTransactional<C>:
     for<'a> Advance<Create<'a>, C, Error = RootError>
     + for<'a> Advance<GetInfoExcluded<'a>, C, Error = RootError>
+    + for<'a> Advance<ListByWorksetIdExcluded<'a>, C, Error = RootError>
     + for<'a> Advance<ReserveCover<'a>, C, Error = RootError>
     + for<'a> Advance<MarkCoverUploaded<'a>, C, Error = RootError>
     + for<'a> Advance<Delete<'a>, C, Error = RootError>

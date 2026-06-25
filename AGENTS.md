@@ -73,6 +73,17 @@ corresponding source paths.
 - **English-only comments**: All comments (line `//`, block `/* */`, and doc `///` / `//!`) must be written in English. No other language is permitted in source code comments.
 - **No Go references in comments**: Source code comments must not reference Go counterparts (e.g., file paths, function names, or patterns from `references/poprako-s/`). Comments describe what the Rust code does, not how the Go version does it.
 - **Never modify user-authored changes**: The user may have already modified files or is in the process of modifying them. Never overwrite, revert, or undo changes that the user has made. If a change the user made conflicts with a convention or new requirement, flag it explicitly and ask before modifying. Never use `git checkout` or `git reset` on files that the user has edited in the working tree.
+- **Fully-qualified local variable names for models**: Every `let` binding that holds a typed domain value (model, DTO, form, update-payload, reservation, spec, etc.) MUST carry both the domain name and the type suffix. **Never** use bare short names.
+  - `let comic_info` not `info`; `let comic_form` not `form`; `let comic_info_vals` not `values`.
+  - `let workset_info` not `info`; `let workset_info_update` not `update`; `let workset_infos` not `infos`.
+  - `let team_info` not `info`; `let team_form` not `form`.
+  - `let system_mail_infos` not `mails` or `system_mails`; `let system_mail_info` not `system_mail`.
+  - `let cover_reservation` not `reservation`; `let avatar_reservation` not `reservation`.
+  - `let mail_list_spec` not `spec`.
+  - Shadowed variables in closures (`let repo = repo.transactional().await`) are exempt — they shadow a parameter of the same name for type-state purposes. Use method-call syntax (not UFCS) when the trait is in scope.
+- **No struct literals in Step call sites**: Steps must be constructed via their factory functions (`ComicStep::create(...)`, `TeamStep::update_info(...)`, etc.) at the `advance`/`execute` call site. Arguments passed to step factory functions must be **named variables** or individual scalar values — **never** inline struct literals (e.g., `&ComicInfoUpdate { ... }` is forbidden). Construct the data struct as a `let` binding first, then pass a reference to the step function.
+  - ✅ `let comic_info_update = ComicInfoUpdate { ... }; repo.execute(&ComicStep::update_info(&comic_info_update))`
+  - ❌ `repo.execute(&ComicStep::update_info(&ComicInfoUpdate { ... }))`
 
 ---
 

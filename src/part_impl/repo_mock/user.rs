@@ -231,6 +231,18 @@ impl<'a> Advance<Delete<'a>, MockContext> for MockTransactional {
             .state
             .credentials
             .retain(|credential| credential.user_id != step.id);
+        context
+            .state
+            .members
+            .retain(|member| member.user_id != step.id);
+        context
+            .state
+            .member_invitations
+            .retain(|member_invitation| member_invitation.invitor_id != step.id);
+        context
+            .state
+            .system_mails
+            .retain(|system_mail| system_mail.receiver_id != step.id);
         Ok(())
     }
 }

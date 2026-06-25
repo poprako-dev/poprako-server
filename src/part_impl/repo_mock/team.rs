@@ -199,7 +199,34 @@ impl<'a> Advance<Delete<'a>, MockContext> for MockTransactional {
             .iter()
             .position(|team| team.id == step.id)
             .ok_or_else(|| expected("error-team-not-found"))?;
+        let deleted_team_id = context.state.teams[pos].id.clone();
+
+        let deleted_workset_ids = context
+            .state
+            .worksets
+            .iter()
+            .filter(|workset| workset.team_id == deleted_team_id)
+            .map(|workset| workset.id.clone())
+            .collect::<Vec<_>>();
+
         context.state.teams.remove(pos);
+        context
+            .state
+            .worksets
+            .retain(|workset| workset.team_id != deleted_team_id);
+        context
+            .state
+            .members
+            .retain(|member| member.team_id != deleted_team_id);
+        context
+            .state
+            .member_invitations
+            .retain(|member_invitation| member_invitation.team_id != deleted_team_id);
+        context.state.comics.retain(|comic| {
+            !deleted_workset_ids
+                .iter()
+                .any(|workset_id| workset_id == &comic.workset_id)
+        });
         Ok(())
     }
 }

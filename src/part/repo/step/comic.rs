@@ -40,6 +40,15 @@ impl<'a> Step for ListByWorksetId<'a> {
     type Output = Vec<ComicInfo>;
 }
 
+/// Step that lists all comics for a workset with a pessimistic lock.
+pub struct ListByWorksetIdExcluded<'a> {
+    pub workset_id: &'a str,
+}
+
+impl<'a> Step for ListByWorksetIdExcluded<'a> {
+    type Output = Vec<ComicInfo>;
+}
+
 /// Step that updates a comic's profile fields.
 pub struct UpdateInfo<'a> {
     pub update: &'a ComicInfoUpdate,
@@ -110,6 +119,13 @@ impl ComicStep {
     /// Constructs a step to list a workset's comics.
     pub fn list_by_workset_id<'a>(workset_id: &'a str) -> ListByWorksetId<'a> {
         ListByWorksetId { workset_id }
+    }
+
+    /// Constructs a step to list a workset's comics with a pessimistic lock.
+    pub fn list_by_workset_id_excluded<'a>(
+        workset_id: &'a str,
+    ) -> ListByWorksetIdExcluded<'a> {
+        ListByWorksetIdExcluded { workset_id }
     }
 
     /// Constructs a step to update a comic's profile fields.

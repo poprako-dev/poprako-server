@@ -72,7 +72,7 @@ where
 {
     let (user_id, team_id, invitor_id, invitee_qid) = drive
         .with_context(async move |context| {
-            let repo = DeriveTransactional::transactional(repo).await;
+            let repo = repo.transactional().await;
 
             let invitation_info = repo
                 .advance(
@@ -98,7 +98,9 @@ where
                 password_hash,
             };
 
-            let user_info = repo.advance(context, &UserStep::create(&user_form)).await?;
+            let user_info = repo
+                .advance(context, &UserStep::create(&user_form))
+                .await?;
 
             let member_form = MemberForm {
                 id: MemberComplex::gen_id(),

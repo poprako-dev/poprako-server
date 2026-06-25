@@ -30,7 +30,7 @@ pub mod tests;
 pub async fn create<D, C, R, I>(
     drive: &D,
     repo: &R,
-    image: &I,
+    image_pool: &I,
     data: ComicCreateData,
 ) -> RootResult<ComicCreateVal>
 where
@@ -44,7 +44,7 @@ where
 {
     let comic_info = drive
         .with_context(async move |context| {
-            let repo = DeriveTransactional::transactional(repo).await;
+            let repo = repo.transactional().await;
 
             let index = repo
                 .advance(
@@ -80,12 +80,12 @@ where
         .map_err(map_drive_err)?;
 
     Ok(ComicCreateVal {
-        comic: ComicInfoVal::from_model(image, comic_info).await?,
+        comic: ComicInfoVal::from_model(image_pool, comic_info).await?,
     })
 }
 
 /// Fetches a comic by ID with cover URL resolution.
-pub async fn get_info<C, R, I>(repo: &R, image: &I, id: String) -> RootResult<ComicInfoVal>
+pub async fn get_info<C, R, I>(repo: &R, image_pool: &I, id: String) -> RootResult<ComicInfoVal>
 where
     R: ComicRepo<C>,
     <R as DeriveTransactional>::Transactional: ComicRepoTransactional<C>,
@@ -93,13 +93,13 @@ where
 {
     let comic_info = repo.execute(&ComicStep::get_info_by_id(&id)).await?;
 
-    ComicInfoVal::from_model(image, comic_info).await
+    ComicInfoVal::from_model(image_pool, comic_info).await
 }
 
 /// Lists comics for a workset.
 pub async fn list_infos<C, R, I>(
     repo: &R,
-    image: &I,
+    image_pool: &I,
     data: ComicListData,
 ) -> RootResult<Vec<ComicInfoVal>>
 where
@@ -111,13 +111,13 @@ where
         .execute(&ComicStep::list_by_workset_id(&data.workset_id))
         .await?;
 
-    let mut values = Vec::with_capacity(comic_infos.len());
+    let mut comic_info_vals = Vec::with_capacity(comic_infos.len());
     for comic_info in comic_infos {
         // FIXME: join
-        values.push(ComicInfoVal::from_model(image, comic_info).await?);
+        comic_info_vals.push(ComicInfoVal::from_model(image_pool, comic_info).await?);
     }
 
-    Ok(values)
+    Ok(comic_info_vals)
 }
 
 /// Updates a comic's title, author, and description.
@@ -126,14 +126,15 @@ where
     R: ComicRepo<C>,
     <R as DeriveTransactional>::Transactional: ComicRepoTransactional<C>,
 {
-    let update = ComicInfoUpdate {
+    let comic_info_update = ComicInfoUpdate {
         id: data.id,
         title: data.title,
         author: data.author,
         description: data.description,
     };
 
-    repo.execute(&ComicStep::update_info(&update)).await?;
+    repo.execute(&ComicStep::update_info(&comic_info_update))
+        .await?;
 
     Ok(())
 }
@@ -143,7 +144,7 @@ pub async fn reserve_cover<D, C, R, P, I>(
     drive: &D,
     repo: &R,
     prom: &P,
-    image: &I,
+    image_pool: &I,
     id: String,
     data: ComicCoverReserveData,
 ) -> RootResult<ComicCoverReserveVal>
@@ -159,16 +160,16 @@ where
 {
     let (object_key, cover_version) = drive
         .with_context(async move |context| {
-            let repo = DeriveTransactional::transactional(repo).await;
-            let prom = DeriveTransactional::transactional(prom).await;
+            let repo = repo.transactional().await;
+            let prom = prom.transactional().await;
 
-            let reservation = repo
+            let cover_reservation = repo
                 .advance(context, &ComicStep::reserve_cover(&id, &data.file_ext))
                 .await?;
 
             let now = OffsetDateTime::now_utc();
 
-            if let Some(previous_key) = &reservation.previous_object_key {
+            if let Some(previous_key) = &cover_reservation.previous_object_key {
                 let delete_id = ImageComplex::gen_delete_id();
 
                 prom.advance(
@@ -196,20 +197,23 @@ where
                     Payload::Image(ImageIntention::CheckUploaded {
                         kind: ImageKind::ComicCover,
                         resource_id: id.clone(),
-                        object_key: reservation.object_key.clone(),
-                        image_version: reservation.cover_version,
+                        object_key: cover_reservation.object_key.clone(),
+                        image_version: cover_reservation.cover_version,
                     }),
                     &check_visible_at,
                 ),
             )
             .await?;
 
-            accept((reservation.object_key, reservation.cover_version))
+            accept((
+                cover_reservation.object_key,
+                cover_reservation.cover_version,
+            ))
         })
         .await
         .map_err(map_drive_err)?;
 
-    let put_url = image.put_signed(&object_key).await?.to_string();
+    let put_url = image_pool.put_signed(&object_key).await?.to_string();
 
     Ok(ComicCoverReserveVal {
         put_url,
@@ -247,39 +251,10 @@ where
 {
     drive
         .with_context(async move |context| {
-            let repo = DeriveTransactional::transactional(repo).await;
-            let prom = DeriveTransactional::transactional(prom).await;
+            let repo = repo.transactional().await;
+            let prom = prom.transactional().await;
 
-            let comic = repo
-                .advance(context, &ComicStep::get_info_excluded(&id))
-                .await?;
-
-            // FIXME: ComicComplex::delete_cascade
-            repo.advance(context, &ComicStep::delete(&id)).await?;
-
-            repo.advance(
-                context,
-                &WorksetStep::update_comic_count(&comic.workset_id, -1),
-            )
-            .await?;
-
-            if let (true, Some(cover_key)) = (comic.cover_uploaded, &comic.cover_key) {
-                let now = OffsetDateTime::now_utc();
-                let delete_id = ImageComplex::gen_delete_id();
-
-                prom.advance(
-                    context,
-                    &PromStep::append(
-                        &delete_id,
-                        IMAGE_TOPIC,
-                        Payload::Image(ImageIntention::Delete {
-                            object_key: cover_key.clone(),
-                        }),
-                        &now,
-                    ),
-                )
-                .await?;
-            }
+            ComicComplex::delete_cascade(&repo, &prom, context, &id).await?;
 
             accept(())
         })
@@ -303,7 +278,7 @@ where
 {
     drive
         .with_context(async move |context| {
-            let repo = DeriveTransactional::transactional(repo).await;
+            let repo = repo.transactional().await;
 
             repo.advance(context, &ComicStep::mark_completed(&id, is_completed))
                 .await?;

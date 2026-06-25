@@ -8,7 +8,9 @@ use crate::data::workset::{
     WorksetCreateData, WorksetCreateVal, WorksetInfoUpdateData, WorksetInfoVal, WorksetListData,
 };
 use crate::model::workset::{WorksetForm, WorksetInfoUpdate};
+use crate::part::prom::{Prom, PromTransactional};
 use crate::part::repo::map_drive_err;
+use crate::part::repo::comic::{ComicRepo, ComicRepoTransactional};
 use crate::part::repo::step::team::TeamStep;
 use crate::part::repo::step::workset::WorksetStep;
 use crate::part::repo::team::{TeamRepo, TeamRepoTransactional};
@@ -35,7 +37,7 @@ where
 {
     let workset_info = drive
         .with_context(async move |context| {
-            let repo = DeriveTransactional::transactional(repo).await;
+            let repo = repo.transactional().await;
             let index = repo
                 .advance(
                     context,
@@ -79,11 +81,11 @@ where
     R: WorksetRepo<C>,
     <R as DeriveTransactional>::Transactional: WorksetRepoTransactional<C>,
 {
-    let infos = repo
+    let workset_infos = repo
         .execute(&WorksetStep::list_by_team_id(&data.team_id))
         .await?;
 
-    Ok(infos.into_iter().map(Into::into).collect())
+    Ok(workset_infos.into_iter().map(Into::into).collect())
 }
 
 /// Updates a workset's name and description.
@@ -92,33 +94,36 @@ where
     R: WorksetRepo<C>,
     <R as DeriveTransactional>::Transactional: WorksetRepoTransactional<C>,
 {
-    let update = WorksetInfoUpdate {
+    let workset_info_update = WorksetInfoUpdate {
         id: data.id,
         name: data.name,
         description: data.description,
     };
 
-    repo.execute(&WorksetStep::update_info(&update)).await?;
+    repo.execute(&WorksetStep::update_info(&workset_info_update))
+        .await?;
 
     Ok(())
 }
 
 /// Deletes a workset and its child data.
-pub async fn delete<D, C, R>(drive: &D, repo: &R, id: String) -> RootResult<()>
+pub async fn delete<D, C, R, P>(drive: &D, repo: &R, prom: &P, id: String) -> RootResult<()>
 where
     D: Drive<C>,
     D::Error: Into<RootError>,
     C: Send,
-    R: WorksetRepo<C> + Send + Sync,
-    <R as DeriveTransactional>::Transactional: WorksetRepoTransactional<C> + Send,
+    R: WorksetRepo<C> + ComicRepo<C> + Send + Sync,
+    <R as DeriveTransactional>::Transactional:
+        WorksetRepoTransactional<C> + ComicRepoTransactional<C> + Send + Sync,
+    P: Prom<C> + Send + Sync,
+    <P as DeriveTransactional>::Transactional: PromTransactional<C> + Send + Sync,
 {
     drive
         .with_context(async move |context| {
-            let repo = DeriveTransactional::transactional(repo).await;
+            let repo = repo.transactional().await;
+            let prom = prom.transactional().await;
 
-            // FIXME: workset complex::delete cascade
-            repo.advance(context, &WorksetStep::delete_cascade(&id))
-                .await?;
+            WorksetComplex::delete_cascade(&repo, &prom, context, &id).await?;
 
             accept(())
         })

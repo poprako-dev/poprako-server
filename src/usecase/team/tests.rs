@@ -21,7 +21,7 @@
 // reserve_avatar(reserve_avatar)(negative): put URL failure should propagate after transaction commit.
 // mark_avatar_uploaded(mark_avatar_uploaded)(positive): matching version should mark the team avatar uploaded.
 // mark_avatar_uploaded(mark_avatar_uploaded)(negative): stale version should leave avatar unuploaded.
-// delete(delete)(positive): delete should remove team and worksets, and enqueue uploaded avatar deletion.
+// delete(delete)(positive): delete should remove team, worksets, descendant comics, and enqueue uploaded avatar deletion.
 // delete(delete)(positive): deleting a team without uploaded avatar should not enqueue prom records.
 // delete(delete)(negative): missing team should rollback state.
 
@@ -34,6 +34,7 @@ use poprako_util::page::Page;
 
 use time::OffsetDateTime;
 
+use crate::model::comic::ComicInfo;
 use crate::model::team::TeamInfo;
 use crate::model::workset::WorksetInfo;
 use crate::part::prom::Payload;
@@ -118,6 +119,30 @@ pub(crate) fn workset(id: &str, team_id: &str) -> WorksetInfo {
         description: None,
         comic_count: 0,
         comic_next_index: 0,
+        created_at: time,
+        updated_at: time,
+    }
+}
+
+/// Builds a [`ComicInfo`] fixture with an uploaded cover.
+fn comic_with_uploaded_cover(id: &str, workset_id: &str, cover_key: &str) -> ComicInfo {
+    let time = OffsetDateTime::now_utc();
+
+    ComicInfo {
+        id: id.into(),
+        workset_id: workset_id.into(),
+        index: 0,
+        title: "comic".into(),
+        author: "author".into(),
+        description: None,
+        is_completed: false,
+        cover_key: Some(cover_key.into()),
+        cover_uploaded: true,
+        cover_version: 1,
+        chapter_count: 0,
+        chapter_next_index: 0,
+        creator_id: "user-1".into(),
+        last_active_at: time,
         created_at: time,
         updated_at: time,
     }
@@ -573,7 +598,7 @@ async fn mark_avatar_uploaded_rejects_stale_version() {
 }
 
 #[tokio::test]
-async fn delete_removes_team_worksets_and_enqueues_avatar_delete() {
+async fn delete_removes_team_worksets_descendant_comics_and_avatar() {
     let mock = Mock::new();
     mock.seed_team(team_with_avatar(
         "team-1",
@@ -585,6 +610,16 @@ async fn delete_removes_team_worksets_and_enqueues_avatar_delete() {
     ));
     mock.seed_workset(workset("workset-1", "team-1"));
     mock.seed_workset(workset("workset-2", "team-1"));
+    mock.seed_comic(comic_with_uploaded_cover(
+        "comic-1",
+        "workset-1",
+        "cover-1.png",
+    ));
+    mock.seed_comic(comic_with_uploaded_cover(
+        "comic-2",
+        "workset-2",
+        "cover-2.png",
+    ));
 
     let result = delete(&mock, &mock, &mock, "team-1".into()).await;
     assert!(result.is_ok());
@@ -592,6 +627,9 @@ async fn delete_removes_team_worksets_and_enqueues_avatar_delete() {
     let snapshot = mock.snapshot();
     assert!(snapshot.teams.is_empty());
     assert!(snapshot.worksets.is_empty());
+    assert!(snapshot.comics.is_empty());
+    assert_eq!(count_delete_records(&snapshot.prom_records, "cover-1.png"), 1);
+    assert_eq!(count_delete_records(&snapshot.prom_records, "cover-2.png"), 1);
     assert_eq!(
         count_delete_records(&snapshot.prom_records, "avatar-key"),
         1
@@ -627,4 +665,5 @@ async fn delete_rolls_back_missing_team() {
 
     assert_expected_variant(err, ExpectedVariant::Args);
     assert!(mock.snapshot().teams.is_empty());
+    assert!(mock.snapshot().prom_records.is_empty());
 }
