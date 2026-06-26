@@ -14,10 +14,14 @@ use crate::result::RootResult;
 /// the avatar has been uploaded.
 pub struct TeamInfoVal {
     pub id: String,
+
     pub name: String,
     pub description: String,
+
     pub avatar_url: Option<String>,
+
     pub workset_next_index: i32,
+
     pub created_at: i64,
     pub updated_at: i64,
 }
@@ -70,6 +74,7 @@ pub struct ListTeamInfosData {
 /// Input parameters for updating a team's profile.
 pub struct UpdateTeamInfoData {
     pub id: String,
+
     pub name: String,
     pub description: String,
 }

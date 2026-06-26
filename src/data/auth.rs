@@ -4,7 +4,9 @@
 pub struct RegisterData {
     pub qid: String,
     pub nickname: String,
+
     pub password: String,
+
     pub code: String,
 }
 

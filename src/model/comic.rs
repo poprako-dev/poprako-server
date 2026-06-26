@@ -6,19 +6,25 @@ use time::OffsetDateTime;
 #[cfg_attr(test, derive(Clone))]
 pub struct ComicInfo {
     pub id: String,
+
     pub workset_id: String,
     pub index: i32,
+
     pub title: String,
     pub author: String,
     pub description: Option<String>,
     pub is_completed: bool,
+
     pub cover_key: Option<String>,
     pub cover_uploaded: bool,
     pub cover_version: i64,
+
     pub chapter_count: i32,
     pub chapter_next_index: i32,
+
     pub creator_id: String,
     pub last_active_at: OffsetDateTime,
+
     pub created_at: OffsetDateTime,
     pub updated_at: OffsetDateTime,
 }
@@ -27,11 +33,14 @@ pub struct ComicInfo {
 #[cfg_attr(test, derive(Clone))]
 pub struct ComicForm {
     pub id: String,
+
     pub workset_id: String,
     pub index: i32,
+
     pub title: String,
     pub author: String,
     pub description: Option<String>,
+
     pub creator_id: String,
 }
 
@@ -39,6 +48,7 @@ pub struct ComicForm {
 #[cfg_attr(test, derive(Clone))]
 pub struct ComicInfoUpdate {
     pub id: String,
+
     pub title: String,
     pub author: String,
     pub description: Option<String>,

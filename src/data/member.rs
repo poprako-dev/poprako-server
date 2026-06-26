@@ -7,9 +7,12 @@ use crate::model::member::MemberInfo;
 /// Presentation-ready membership information.
 pub struct MemberInfoVal {
     pub id: String,
+
     pub user_id: String,
     pub user_nickname: String,
+
     pub team_id: String,
+
     pub role_mask: u32,
 }
 
@@ -29,6 +32,7 @@ impl From<MemberInfo> for MemberInfoVal {
 pub struct CreateMemberData {
     pub user_id: String,
     pub team_id: String,
+
     pub role_mask: u32,
 }
 
@@ -41,6 +45,7 @@ pub struct CreateMemberVal {
 #[Paginate]
 pub struct ListMemberInfosData {
     pub team_id: String,
+
     pub user_nickname_keyword: Option<String>,
     pub role_mask: Option<u32>,
 }
