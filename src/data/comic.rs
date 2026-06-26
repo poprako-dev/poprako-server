@@ -5,7 +5,7 @@ use poprako_util::time::ToUnixMilli;
 use crate::model::comic::ComicInfo;
 use crate::part::image::ImagePool;
 use crate::result::RootResult;
-use crate::value::comic::ComicExtraOpt;
+use crate::value::comic::ComicWithOpt;
 
 /// Presentation-ready comic information.
 pub struct ComicInfoVal {
@@ -80,6 +80,7 @@ pub struct CreateComicVal {
 /// Input parameters for updating a comic's profile.
 pub struct UpdateComicInfoData {
     pub id: String,
+
     pub title: String,
     pub author: String,
     pub description: Option<String>,
@@ -89,7 +90,7 @@ pub struct UpdateComicInfoData {
 pub struct ListComicInfosData {
     pub workset_id: String,
     // TODO:
-    pub extra_opt: Vec<ComicExtraOpt>,
+    pub with: Vec<ComicWithOpt>,
 }
 
 /// Input parameters for reserving a new cover upload slot.

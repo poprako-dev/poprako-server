@@ -2,7 +2,9 @@ use crate::model::member_invitation::MemberInvitationInfo;
 
 pub struct CreateMemberInvitationData {
     pub team_id: String,
+
     pub invitee_qid: String,
+
     pub role_mask: u32,
 }
 
@@ -13,18 +15,25 @@ pub struct CreateMemberInvitationVal {
 
 pub struct ListMemberInvitationInfosData {
     pub team_id: String,
+
     pub pending: Option<bool>,
+
     pub offset: u64,
     pub limit: u64,
 }
 
 pub struct MemberInvitationInfoVal {
     pub id: String,
+
     pub team_id: String,
+
     pub invitor_id: String,
+
     pub invitee_qid: String,
     pub code: String,
+
     pub pending: bool,
+
     pub role_mask: u32,
 }
 

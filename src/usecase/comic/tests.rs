@@ -170,7 +170,7 @@ async fn list_infos_filters_and_sorts_by_index() {
         token("user-1"),
         ListComicInfosData {
             workset_id: "workset-1".into(),
-            extra_opt: vec![],
+            with: vec![],
         },
     )
     .await;
@@ -194,7 +194,7 @@ async fn list_infos_returns_empty_for_workset_contents() {
         token("user-1"),
         ListComicInfosData {
             workset_id: "workset-1".into(),
-            extra_opt: vec![],
+            with: vec![],
         },
     )
     .await;

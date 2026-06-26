@@ -25,6 +25,9 @@ use crate::part::repo::user::{UserRepo, UserRepoTransactional};
 use crate::result::{ExpectedVariant, RootError, RootResult, accept};
 use crate::util::DeriveTransactional;
 
+#[cfg(test)]
+mod tests;
+
 /// Creates one member under a team.
 ///
 /// The caller must be a team admin. The target user and team are locked in

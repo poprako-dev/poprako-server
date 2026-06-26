@@ -33,6 +33,7 @@ pub struct CreateWorksetVal {
 /// Input parameters for updating a workset's profile.
 pub struct UpdateWorksetInfoData {
     pub id: String,
+
     pub name: String,
     pub description: Option<String>,
 }

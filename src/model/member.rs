@@ -11,9 +11,12 @@ use crate::model::role::RoleMask;
 #[cfg_attr(test, derive(Clone))]
 pub struct MemberInfo {
     pub id: String,
+
     pub user_id: String,
     pub user_nickname: String,
+
     pub team_id: String,
+
     pub role_mask: RoleMask,
 }
 
@@ -23,9 +26,12 @@ pub struct MemberInfo {
 #[cfg_attr(test, derive(Clone))]
 pub struct MemberForm {
     pub id: String,
+
     pub user_id: String,
     pub user_nickname: String,
+
     pub team_id: String,
+
     pub role_mask: RoleMask,
 }
 
@@ -39,6 +45,7 @@ pub struct MemberRoleUpdate {
 #[Paginate]
 pub struct MemberListSpec {
     pub team_id: String,
+
     pub user_nickname_keyword: Option<String>,
     pub role_mask: Option<RoleMask>,
 }

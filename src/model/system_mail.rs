@@ -12,10 +12,14 @@ use time::OffsetDateTime;
 #[cfg_attr(test, derive(Clone))]
 pub struct SystemMailInfo {
     pub id: String,
+
     pub receiver_id: String,
+
     pub read: bool,
+
     pub title: String,
     pub content: String,
+
     pub created_at: OffsetDateTime,
 }
 
@@ -23,7 +27,9 @@ pub struct SystemMailInfo {
 #[cfg_attr(test, derive(Clone))]
 pub struct SystemMailForm {
     pub id: String,
+
     pub receiver_id: String,
+
     pub title: String,
     pub content: String,
 }
