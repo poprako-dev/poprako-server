@@ -124,7 +124,9 @@ where
             accept(())
         })
         .await
-        .map_err(map_drive_err)
+        .map_err(map_drive_err)?;
+
+    accept(())
 }
 
 /// Reserves a new avatar upload slot for a user.
@@ -278,7 +280,9 @@ where
             accept(())
         })
         .await
-        .map_err(map_drive_err)
+        .map_err(map_drive_err)?;
+
+    accept(())
 }
 
 /// Updates the `last_active_at` timestamp on both the user record and all
@@ -313,7 +317,9 @@ where
             accept(())
         })
         .await
-        .map_err(map_drive_err)
+        .map_err(map_drive_err)?;
+
+    accept(())
 }
 
 /// Deletes a user account and all associated data.
@@ -404,5 +410,7 @@ where
             accept(())
         })
         .await
-        .map_err(map_drive_err)
+        .map_err(map_drive_err)?;
+
+    accept(())
 }

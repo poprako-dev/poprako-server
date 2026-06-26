@@ -8,7 +8,8 @@ use crate::model::member::{MemberForm, MemberInfo};
 use crate::part::repo::Execute;
 use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
 use crate::part::repo::step::member::{
-    Create, Delete, FindByUserTeamId, ListByUserIdExcluded, TouchLastActive, UpdateUserNickname,
+    Create, Delete, FindByUserTeamId, GetInfoExcluded, ListByUserIdExcluded, ListInfos,
+    TouchLastActive, UpdateRole, UpdateUserNickname,
 };
 use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactional, expected, now};
 use crate::result::RootError;
@@ -59,6 +60,15 @@ fn find_member_by_user_team_id(
         .iter()
         .find(|member| member.user_id == user_id && member.team_id == team_id)
         .cloned()
+}
+
+fn get_member_by_id(state: &MockState, id: &str) -> Result<MemberInfo, RootError> {
+    state
+        .members
+        .iter()
+        .find(|member| member.id == id)
+        .cloned()
+        .ok_or_else(|| expected("error-member-not-found"))
 }
 
 #[async_trait]
@@ -125,6 +135,46 @@ impl<'a> Advance<ListByUserIdExcluded<'a>, MockContext> for MockTransactional {
 }
 
 #[async_trait]
+impl<'a> Execute<ListInfos<'a>> for Mock {
+    type Error = RootError;
+
+    async fn execute(&self, step: &ListInfos<'a>) -> Result<Vec<MemberInfo>, Self::Error> {
+        let state = self.state.lock().unwrap();
+        let mut member_infos = state
+            .members
+            .iter()
+            .filter(|member_info| member_info.team_id == step.spec.team_id)
+            .filter(|member_info| {
+                step.spec
+                    .user_nickname_keyword
+                    .as_deref()
+                    .map(|keyword| member_info.user_nickname.contains(keyword))
+                    .unwrap_or(true)
+            })
+            .filter(|member_info| {
+                step.spec
+                    .role_mask
+                    .map(|role_mask| member_info.role_mask.0 & role_mask.0 != 0)
+                    .unwrap_or(true)
+            })
+            .cloned()
+            .collect::<Vec<_>>();
+
+        member_infos.sort_by(|left, right| left.id.cmp(&right.id));
+
+        let offset = step.spec.offset as usize;
+        let limit = step.spec.limit as usize;
+
+        if offset >= member_infos.len() {
+            return Ok(Vec::new());
+        }
+
+        let end = std::cmp::min(offset + limit, member_infos.len());
+        Ok(member_infos[offset..end].to_vec())
+    }
+}
+
+#[async_trait]
 impl<'a> Execute<FindByUserTeamId<'a>> for Mock {
     type Error = RootError;
 
@@ -155,6 +205,40 @@ impl<'a> Advance<FindByUserTeamId<'a>, MockContext> for MockTransactional {
             step.user_id,
             step.team_id,
         ))
+    }
+}
+
+#[async_trait]
+impl<'a> Advance<GetInfoExcluded<'a>, MockContext> for MockTransactional {
+    type Error = RootError;
+
+    async fn advance(
+        &self,
+        context: &mut MockContext,
+        step: &GetInfoExcluded<'a>,
+    ) -> Result<MemberInfo, Self::Error> {
+        get_member_by_id(&context.state, step.id)
+    }
+}
+
+#[async_trait]
+impl<'a> Advance<UpdateRole<'a>, MockContext> for MockTransactional {
+    type Error = RootError;
+
+    async fn advance(
+        &self,
+        context: &mut MockContext,
+        step: &UpdateRole<'a>,
+    ) -> Result<(), Self::Error> {
+        let member_info = context
+            .state
+            .members
+            .iter_mut()
+            .find(|member_info| member_info.id == step.member_role_update.id)
+            .ok_or_else(|| expected("error-member-not-found"))?;
+
+        member_info.role_mask = step.member_role_update.role_mask;
+        Ok(())
     }
 }
 

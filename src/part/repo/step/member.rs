@@ -2,7 +2,7 @@
 
 use poprako_transactional::step::Step;
 
-use crate::model::member::{MemberForm, MemberInfo};
+use crate::model::member::{MemberForm, MemberInfo, MemberListSpec, MemberRoleUpdate};
 
 /// Step that inserts a new membership row.
 pub struct Create<'a> {
@@ -41,6 +41,15 @@ impl<'a> Step for ListByUserIdExcluded<'a> {
     type Output = Vec<MemberInfo>;
 }
 
+/// Step that lists memberships under one team.
+pub struct ListInfos<'a> {
+    pub spec: &'a MemberListSpec,
+}
+
+impl<'a> Step for ListInfos<'a> {
+    type Output = Vec<MemberInfo>;
+}
+
 /// Step that finds one membership by user and team identifiers.
 pub struct FindByUserTeamId<'a> {
     pub user_id: &'a str,
@@ -49,6 +58,24 @@ pub struct FindByUserTeamId<'a> {
 
 impl<'a> Step for FindByUserTeamId<'a> {
     type Output = Option<MemberInfo>;
+}
+
+/// Step that fetches one membership by ID with a pessimistic lock.
+pub struct GetInfoExcluded<'a> {
+    pub id: &'a str,
+}
+
+impl<'a> Step for GetInfoExcluded<'a> {
+    type Output = MemberInfo;
+}
+
+/// Step that updates one membership's role mask.
+pub struct UpdateRole<'a> {
+    pub member_role_update: &'a MemberRoleUpdate,
+}
+
+impl<'a> Step for UpdateRole<'a> {
+    type Output = ();
 }
 
 /// Step that deletes a membership by its identifier.
@@ -90,9 +117,24 @@ impl MemberStep {
         ListByUserIdExcluded { user_id }
     }
 
+    /// Constructs a step to list team memberships.
+    pub fn list_infos<'a>(spec: &'a MemberListSpec) -> ListInfos<'a> {
+        ListInfos { spec }
+    }
+
     /// Constructs a step to find one membership by user and team.
     pub fn find_by_user_team_id<'a>(user_id: &'a str, team_id: &'a str) -> FindByUserTeamId<'a> {
         FindByUserTeamId { user_id, team_id }
+    }
+
+    /// Constructs a step to fetch one membership with a pessimistic lock.
+    pub fn get_info_excluded<'a>(id: &'a str) -> GetInfoExcluded<'a> {
+        GetInfoExcluded { id }
+    }
+
+    /// Constructs a step to update a member role mask.
+    pub fn update_role<'a>(member_role_update: &'a MemberRoleUpdate) -> UpdateRole<'a> {
+        UpdateRole { member_role_update }
     }
 
     /// Constructs a step to delete a membership.

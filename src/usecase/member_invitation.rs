@@ -47,11 +47,12 @@ where
 {
     let role_mask = RoleMask::try_from_bits(data.role_mask)?;
 
-    drive
+    let (member_invitation_id, member_invitation_code) = drive
         .with_context(async move |context| {
             let repo = repo.transactional().await;
 
             let mut proxy = ProxyTransactional::new(&repo, context);
+
             MemberInvitationPermComplex::can_user_create(&mut proxy, &token.user_id, &data.team_id)
                 .await?;
 
@@ -94,13 +95,15 @@ where
                 )
                 .await?;
 
-            accept(CreateMemberInvitationVal {
-                id: member_invitation_info.id,
-                code: member_invitation_info.code,
-            })
+            accept((member_invitation_info.id, member_invitation_info.code))
         })
         .await
-        .map_err(map_drive_err)
+        .map_err(map_drive_err)?;
+
+    accept(CreateMemberInvitationVal {
+        id: member_invitation_id,
+        code: member_invitation_code,
+    })
 }
 
 pub async fn list_infos<C, R>(
@@ -172,7 +175,9 @@ where
             accept(())
         })
         .await
-        .map_err(map_drive_err)
+        .map_err(map_drive_err)?;
+
+    accept(())
 }
 
 pub async fn delete<D, C, R>(drive: &D, repo: &R, token: UserToken, id: String) -> RootResult<()>
@@ -198,5 +203,7 @@ where
             accept(())
         })
         .await
-        .map_err(map_drive_err)
+        .map_err(map_drive_err)?;
+
+    accept(())
 }

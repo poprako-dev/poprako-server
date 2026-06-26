@@ -44,7 +44,7 @@ where
         + Send
         + Sync,
 {
-    let workset_info = drive
+    let workset_id = drive
         .with_context(async move |context| {
             let repo = repo.transactional().await;
 
@@ -71,14 +71,12 @@ where
                 .advance(context, &WorksetStep::create(&workset_form))
                 .await?;
 
-            accept(workset_info)
+            accept(workset_info.id)
         })
         .await
         .map_err(map_drive_err)?;
 
-    Ok(CreateWorksetVal {
-        id: workset_info.id,
-    })
+    Ok(CreateWorksetVal { id: workset_id })
 }
 
 /// Fetches a workset by ID.
@@ -210,5 +208,7 @@ where
             accept(())
         })
         .await
-        .map_err(map_drive_err)
+        .map_err(map_drive_err)?;
+
+    accept(())
 }

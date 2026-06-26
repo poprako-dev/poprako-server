@@ -84,6 +84,18 @@ corresponding source paths.
 - **No struct literals in Step call sites**: Steps must be constructed via their factory functions (`ComicStep::create(...)`, `TeamStep::update_info(...)`, etc.) at the `advance`/`execute` call site. Arguments passed to step factory functions must be **named variables** or individual scalar values — **never** inline struct literals (e.g., `&ComicInfoUpdate { ... }` is forbidden). Construct the data struct as a `let` binding first, then pass a reference to the step function.
   - ✅ `let comic_info_update = ComicInfoUpdate { ... }; repo.execute(&ComicStep::update_info(&comic_info_update))`
   - ❌ `repo.execute(&ComicStep::update_info(&ComicInfoUpdate { ... }))`
+- **No direct `Drive::with_context` tail returns**: Usecase functions must not
+  return `drive.with_context(...).await.map_err(...)` directly as the final
+  expression. Bind and destructure the transaction output first, then return
+  explicitly. Do not name transaction outputs with broad outcome words or
+  abbreviations. Use domain-specific value names (`member_val`,
+  `member_info_vals`, etc.). Unit output must not be bound or destructured;
+  execute the transaction with `?`, then return `accept(())`.
+- **Unused parameters**: If a function does not need a parameter and the
+  signature is under our control, delete the parameter. If a trait
+  implementation or framework-required signature forces an unused parameter to
+  remain, write only bare `_` for that parameter; do not use semantic names or
+  underscore-prefixed names.
 
 ---
 
