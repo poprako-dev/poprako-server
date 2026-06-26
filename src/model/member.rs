@@ -12,6 +12,7 @@ pub struct MemberInfo {
     pub user_id: String,
     pub user_nickname: String,
     pub team_id: String,
+    pub role_mask: RoleMask,
 }
 
 /// The data needed to insert a new membership row.

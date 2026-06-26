@@ -51,7 +51,7 @@ fn register_data(qid: &str, nickname: &str, code: &str) -> RegisterData {
         qid: qid.into(),
         nickname: nickname.into(),
         password: "password".into(),
-        invitation_code: code.into(),
+        code: code.into(),
     }
 }
 

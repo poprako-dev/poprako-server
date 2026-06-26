@@ -5,7 +5,7 @@ pub struct RegisterData {
     pub qid: String,
     pub nickname: String,
     pub password: String,
-    pub invitation_code: String,
+    pub code: String,
 }
 
 /// Return value from a successful registration.

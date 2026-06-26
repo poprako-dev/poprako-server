@@ -142,6 +142,25 @@ impl<'a> Advance<Create<'a>, MockContext> for MockTransactional {
 }
 
 #[async_trait]
+impl<'a> Advance<GetInfoById<'a>, MockContext> for MockTransactional {
+    type Error = RootError;
+
+    async fn advance(
+        &self,
+        context: &mut MockContext,
+        step: &GetInfoById<'a>,
+    ) -> Result<ComicInfo, Self::Error> {
+        context
+            .state
+            .comics
+            .iter()
+            .find(|comic| comic.id == step.id)
+            .cloned()
+            .ok_or_else(|| expected("error-comic-not-found"))
+    }
+}
+
+#[async_trait]
 impl<'a> Advance<GetInfoExcluded<'a>, MockContext> for MockTransactional {
     type Error = RootError;
 

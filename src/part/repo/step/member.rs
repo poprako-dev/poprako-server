@@ -41,6 +41,16 @@ impl<'a> Step for ListByUserIdExcluded<'a> {
     type Output = Vec<MemberInfo>;
 }
 
+/// Step that finds one membership by user and team identifiers.
+pub struct FindByUserTeamId<'a> {
+    pub user_id: &'a str,
+    pub team_id: &'a str,
+}
+
+impl<'a> Step for FindByUserTeamId<'a> {
+    type Output = Option<MemberInfo>;
+}
+
 /// Step that deletes a membership by its identifier.
 pub struct Delete<'a> {
     pub id: &'a str,
@@ -78,6 +88,14 @@ impl MemberStep {
     /// Constructs a step to list a user's memberships with a pessimistic lock.
     pub fn list_by_user_id_excluded<'a>(user_id: &'a str) -> ListByUserIdExcluded<'a> {
         ListByUserIdExcluded { user_id }
+    }
+
+    /// Constructs a step to find one membership by user and team.
+    pub fn find_by_user_team_id<'a>(
+        user_id: &'a str,
+        team_id: &'a str,
+    ) -> FindByUserTeamId<'a> {
+        FindByUserTeamId { user_id, team_id }
     }
 
     /// Constructs a step to delete a membership.

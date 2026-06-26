@@ -88,3 +88,94 @@ where
 {
     err.into()
 }
+
+pub mod proxy {
+    use async_trait::async_trait;
+
+    use poprako_transactional::advance::Advance;
+    use poprako_transactional::step::Step;
+
+    use crate::part::repo::Execute;
+
+    /// Executes a single [`Step`] against a repository via a mutable proxy
+    /// reference.
+    ///
+    /// Unlike [`Execute`] (which uses `&self`), this trait requires
+    /// `&mut self`, allowing proxy types to carry mutable context — a
+    /// transactional-handle + context pair — and dispatch to either
+    /// [`Execute`] or [`Advance`] depending on the proxy variant.
+    #[async_trait]
+    pub trait ProxyExecute<S>
+    where
+        S: Step,
+    {
+        type Error;
+
+        async fn execute(&mut self, step: &S) -> Result<S::Output, Self::Error>;
+    }
+
+    /// A non-transactional proxy that delegates to [`Execute`].
+    ///
+    /// Created locally at the usecase call-site; wraps a shared reference to
+    /// the repository and forwards every [`ProxyExecute::execute`] call to
+    /// [`Execute::execute`].
+    pub struct ProxyNonTransactional<'a, R> {
+        repo: &'a R,
+    }
+
+    impl<'a, R> ProxyNonTransactional<'a, R> {
+        /// Wraps a shared repository reference for permission-check
+        /// dispatching.
+        pub fn new(repo: &'a R) -> Self {
+            Self { repo }
+        }
+    }
+
+    #[async_trait]
+    impl<'a, R, S> ProxyExecute<S> for ProxyNonTransactional<'a, R>
+    where
+        R: Execute<S> + Sync,
+        S: Step + Sync,
+    {
+        type Error = R::Error;
+
+        async fn execute(&mut self, step: &S) -> Result<S::Output, Self::Error> {
+            Execute::execute(self.repo, step).await
+        }
+    }
+
+    /// A transactional proxy that delegates to [`Advance`].
+    ///
+    /// Created locally inside a [`Drive::with_context`] closure; wraps a
+    /// transactional-handle reference together with a mutable context
+    /// reference and forwards every [`ProxyExecute::execute`] call to
+    /// [`Advance::advance`].
+    ///
+    /// [`Drive::with_context`]: poprako_transactional::drive::Drive::with_context
+    pub struct ProxyTransactional<'a, R, C> {
+        repo: &'a R,
+        cx: &'a mut C,
+    }
+
+    impl<'a, R, C> ProxyTransactional<'a, R, C> {
+        /// Wraps a transactional-handle reference + mutable context reference
+        /// for permission-check dispatching.
+        pub fn new(repo: &'a R, cx: &'a mut C) -> Self {
+            Self { repo, cx }
+        }
+    }
+
+    #[async_trait]
+    impl<'a, R, C, S> ProxyExecute<S> for ProxyTransactional<'a, R, C>
+    where
+        R: Advance<S, C> + Sync,
+        C: Send,
+        S: Step + Sync,
+    {
+        type Error = R::Error;
+
+        async fn execute(&mut self, step: &S) -> Result<S::Output, Self::Error> {
+            Advance::advance(self.repo, self.cx, step).await
+        }
+    }
+}

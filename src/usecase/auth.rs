@@ -77,7 +77,7 @@ where
             let invitation_info = repo
                 .advance(
                     context,
-                    &MemberInvitationStep::get_info_by_code_excluded(&data.invitation_code),
+                    &MemberInvitationStep::get_info_by_code_excluded(&data.code),
                 )
                 .await?;
 
@@ -98,9 +98,7 @@ where
                 password_hash,
             };
 
-            let user_info = repo
-                .advance(context, &UserStep::create(&user_form))
-                .await?;
+            let user_info = repo.advance(context, &UserStep::create(&user_form)).await?;
 
             let member_form = MemberForm {
                 id: MemberComplex::gen_id(),

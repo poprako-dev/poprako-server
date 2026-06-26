@@ -1,6 +1,7 @@
 //! System mail use cases — list unread and mark as read for the current user.
 
 use poprako_util::i18n::trl;
+use poprako_util::time::ToUnixMilli;
 
 use crate::data::system_mail::{ListSystemMailData, SystemMailVal};
 use crate::model::system_mail::SystemMailListSpec;
@@ -35,7 +36,8 @@ where
 {
     let mail_list_spec = SystemMailListSpec {
         read: data.read,
-        page: data.page,
+        offset: data.offset,
+        limit: data.limit,
     };
 
     let system_mail_infos = repo
@@ -47,7 +49,13 @@ where
 
     let system_mail_vals = system_mail_infos
         .into_iter()
-        .map(SystemMailVal::from_model)
+        .map(|system_mail_info| SystemMailVal {
+            id: system_mail_info.id,
+            title: system_mail_info.title,
+            content: system_mail_info.content,
+            read: system_mail_info.read,
+            created_at: system_mail_info.created_at.to_unix_milli(),
+        })
         .collect();
 
     Ok(system_mail_vals)
@@ -68,8 +76,7 @@ where
     R: SystemMailRepo<C>,
     <R as DeriveTransactional>::Transactional: SystemMailRepoTransactional<C>,
 {
-    let system_mail_infos =
-        repo.execute(&SystemMailStep::list_by_ids(&ids)).await?;
+    let system_mail_infos = repo.execute(&SystemMailStep::list_by_ids(&ids)).await?;
 
     if system_mail_infos.len() != ids.len() {
         return Err(RootError::Expected {

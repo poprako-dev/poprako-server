@@ -1,0 +1,3 @@
+pub enum ComicExtraOpt {
+    PinnedChapter,
+}

@@ -3,7 +3,7 @@
 // get_info(get_info)(positive): existing comic should return uploaded cover URL.
 // get_info(get_info)(negative): missing comic should propagate an argument error.
 // list_infos(list_infos)(positive): list should return workset comics sorted by index.
-// list_infos(list_infos)(negative): missing workset contents should return an empty list.
+// list_infos(list_infos)(positive): empty workset contents should return an empty list after membership.
 // update_info(update_info)(positive): existing comic should update title, author, and description.
 // update_info(update_info)(negative): missing comic should propagate an argument error.
 // reserve_cover(reserve_cover)(positive): reservation should update cover state, enqueue check, and return put URL.
@@ -20,6 +20,9 @@ use super::*;
 use time::OffsetDateTime;
 
 use crate::model::comic::ComicInfo;
+use crate::model::member::MemberInfo;
+use crate::model::role::{RoleBit, RoleMask};
+use crate::model::user::UserToken;
 use crate::model::workset::WorksetInfo;
 use crate::part::prom::Payload;
 use crate::part::prom::intention::{ImageIntention, ImageKind};
@@ -66,7 +69,22 @@ fn create_data(workset_id: &str) -> CreateComicData {
         title: "new".into(),
         author: "author".into(),
         description: Some("desc".into()),
-        creator_id: "user-1".into(),
+    }
+}
+
+fn token(user_id: &str) -> UserToken {
+    UserToken {
+        user_id: user_id.into(),
+    }
+}
+
+fn admin_member(user_id: &str, team_id: &str) -> MemberInfo {
+    MemberInfo {
+        id: format!("member-{}-{}", user_id, team_id),
+        user_id: user_id.into(),
+        user_nickname: user_id.into(),
+        team_id: team_id.into(),
+        role_mask: RoleMask::from(RoleBit::ADMIN),
     }
 }
 
@@ -74,23 +92,26 @@ fn create_data(workset_id: &str) -> CreateComicData {
 async fn create_allocates_index_and_updates_count() {
     let mock = Mock::new();
     mock.seed_workset(workset("workset-1", "team-1"));
+    mock.seed_member(admin_member("user-1", "team-1"));
 
-    let created = create(&mock, &mock, &mock, create_data("workset-1")).await;
+    let created = create(&mock, &mock, &mock, token("user-1"), create_data("workset-1")).await;
     assert!(created.is_ok());
     let created = created.ok().unwrap();
     let snapshot = mock.snapshot();
 
-    assert_eq!(created.comic.index, 1);
+    assert_eq!(created.id, snapshot.comics[0].id);
+    assert_eq!(snapshot.comics[0].index, 1);
     assert_eq!(snapshot.worksets[0].comic_count, 1);
     assert_eq!(snapshot.worksets[0].comic_next_index, 1);
     assert_eq!(snapshot.comics.len(), 1);
+    assert_eq!(snapshot.comics[0].creator_id, "user-1");
 }
 
 #[tokio::test]
 async fn create_rolls_back_missing_workset() {
     let mock = Mock::new();
 
-    let err = create(&mock, &mock, &mock, create_data("missing"))
+    let err = create(&mock, &mock, &mock, token("user-1"), create_data("missing"))
         .await
         .err()
         .unwrap();
@@ -103,13 +124,15 @@ async fn create_rolls_back_missing_workset() {
 #[tokio::test]
 async fn get_info_returns_uploaded_cover_url() {
     let mock = Mock::new();
+    mock.seed_workset(workset("workset-1", "team-1"));
+    mock.seed_member(admin_member("user-1", "team-1"));
     mock.seed_comic(comic_with_uploaded_cover(
         "comic-1",
         "workset-1",
         "cover.png",
     ));
 
-    let found = get_info(&mock, &mock, "comic-1".into()).await;
+    let found = get_info(&mock, &mock, token("user-1"), "comic-1".into()).await;
     assert!(found.is_ok());
     let found = found.ok().unwrap();
 
@@ -124,7 +147,7 @@ async fn get_info_returns_uploaded_cover_url() {
 async fn get_info_propagates_missing_comic() {
     let mock = Mock::new();
 
-    let err = get_info(&mock, &mock, "missing".into())
+    let err = get_info(&mock, &mock, token("user-1"), "missing".into())
         .await
         .err()
         .unwrap();
@@ -135,6 +158,8 @@ async fn get_info_propagates_missing_comic() {
 #[tokio::test]
 async fn list_infos_filters_and_sorts_by_index() {
     let mock = Mock::new();
+    mock.seed_workset(workset("workset-1", "team-1"));
+    mock.seed_member(admin_member("user-1", "team-1"));
     mock.seed_comic(comic("comic-2", "workset-1", 2));
     mock.seed_comic(comic("comic-1", "workset-1", 1));
     mock.seed_comic(comic("comic-other", "workset-2", 0));
@@ -142,8 +167,10 @@ async fn list_infos_filters_and_sorts_by_index() {
     let list = list_infos(
         &mock,
         &mock,
+        token("user-1"),
         ListComicInfosData {
             workset_id: "workset-1".into(),
+            extra_opt: vec![],
         },
     )
     .await;
@@ -156,14 +183,18 @@ async fn list_infos_filters_and_sorts_by_index() {
 }
 
 #[tokio::test]
-async fn list_infos_returns_empty_for_missing_workset_contents() {
+async fn list_infos_returns_empty_for_workset_contents() {
     let mock = Mock::new();
+    mock.seed_workset(workset("workset-1", "team-1"));
+    mock.seed_member(admin_member("user-1", "team-1"));
 
     let list = list_infos(
         &mock,
         &mock,
+        token("user-1"),
         ListComicInfosData {
-            workset_id: "missing".into(),
+            workset_id: "workset-1".into(),
+            extra_opt: vec![],
         },
     )
     .await;
@@ -175,10 +206,13 @@ async fn list_infos_returns_empty_for_missing_workset_contents() {
 #[tokio::test]
 async fn update_info_updates_comic() {
     let mock = Mock::new();
+    mock.seed_workset(workset("workset-1", "team-1"));
+    mock.seed_member(admin_member("user-1", "team-1"));
     mock.seed_comic(comic("comic-1", "workset-1", 0));
 
     let result = update_info(
         &mock,
+        token("user-1"),
         UpdateComicInfoData {
             id: "comic-1".into(),
             title: "updated".into(),
@@ -201,6 +235,7 @@ async fn update_info_propagates_missing_comic() {
 
     let err = update_info(
         &mock,
+        token("user-1"),
         UpdateComicInfoData {
             id: "missing".into(),
             title: "updated".into(),
@@ -218,6 +253,8 @@ async fn update_info_propagates_missing_comic() {
 #[tokio::test]
 async fn reserve_cover_updates_state_enqueues_check_and_returns_put_url() {
     let mock = Mock::new();
+    mock.seed_workset(workset("workset-1", "team-1"));
+    mock.seed_member(admin_member("user-1", "team-1"));
     mock.seed_comic(comic("comic-1", "workset-1", 0));
 
     let reserved = reserve_cover(
@@ -225,6 +262,7 @@ async fn reserve_cover_updates_state_enqueues_check_and_returns_put_url() {
         &mock,
         &mock,
         &mock,
+        token("user-1"),
         "comic-1".into(),
         ReserveComicCoverData {
             file_ext: "png".into(),
@@ -261,6 +299,7 @@ async fn reserve_cover_rolls_back_missing_comic() {
         &mock,
         &mock,
         &mock,
+        token("user-1"),
         "missing".into(),
         ReserveComicCoverData {
             file_ext: "png".into(),
@@ -278,6 +317,8 @@ async fn reserve_cover_rolls_back_missing_comic() {
 #[tokio::test]
 async fn mark_cover_uploaded_marks_matching_version() {
     let mock = Mock::new();
+    mock.seed_workset(workset("workset-1", "team-1"));
+    mock.seed_member(admin_member("user-1", "team-1"));
     mock.seed_comic(ComicInfo {
         cover_key: Some("cover.png".into()),
         cover_version: 2,
@@ -286,6 +327,7 @@ async fn mark_cover_uploaded_marks_matching_version() {
 
     let result = mark_cover_uploaded(
         &mock,
+        token("user-1"),
         "comic-1".into(),
         MarkComicCoverUploadedData { cover_version: 2 },
     )
@@ -298,6 +340,8 @@ async fn mark_cover_uploaded_marks_matching_version() {
 #[tokio::test]
 async fn mark_cover_uploaded_rejects_stale_version() {
     let mock = Mock::new();
+    mock.seed_workset(workset("workset-1", "team-1"));
+    mock.seed_member(admin_member("user-1", "team-1"));
     mock.seed_comic(ComicInfo {
         cover_key: Some("cover.png".into()),
         cover_version: 2,
@@ -306,6 +350,7 @@ async fn mark_cover_uploaded_rejects_stale_version() {
 
     let err = mark_cover_uploaded(
         &mock,
+        token("user-1"),
         "comic-1".into(),
         MarkComicCoverUploadedData { cover_version: 1 },
     )
@@ -320,6 +365,7 @@ async fn mark_cover_uploaded_rejects_stale_version() {
 #[tokio::test]
 async fn delete_removes_comic_updates_count_and_enqueues_cover_delete() {
     let mock = Mock::new();
+    mock.seed_member(admin_member("user-1", "team-1"));
     mock.seed_workset(WorksetInfo {
         comic_count: 1,
         comic_next_index: 1,
@@ -331,7 +377,7 @@ async fn delete_removes_comic_updates_count_and_enqueues_cover_delete() {
         "cover.png",
     ));
 
-    let result = delete(&mock, &mock, &mock, "comic-1".into()).await;
+    let result = delete(&mock, &mock, &mock, token("user-1"), "comic-1".into()).await;
     assert!(result.is_ok());
     let snapshot = mock.snapshot();
 
@@ -348,8 +394,9 @@ async fn delete_removes_comic_updates_count_and_enqueues_cover_delete() {
 async fn delete_rolls_back_missing_comic() {
     let mock = Mock::new();
     mock.seed_workset(workset("workset-1", "team-1"));
+    mock.seed_member(admin_member("user-1", "team-1"));
 
-    let err = delete(&mock, &mock, &mock, "missing".into())
+    let err = delete(&mock, &mock, &mock, token("user-1"), "missing".into())
         .await
         .err()
         .unwrap();
@@ -363,9 +410,11 @@ async fn delete_rolls_back_missing_comic() {
 #[tokio::test]
 async fn mark_completed_updates_completion_state() {
     let mock = Mock::new();
+    mock.seed_workset(workset("workset-1", "team-1"));
+    mock.seed_member(admin_member("user-1", "team-1"));
     mock.seed_comic(comic("comic-1", "workset-1", 0));
 
-    let result = mark_completed(&mock, &mock, "comic-1".into(), true).await;
+    let result = mark_completed(&mock, &mock, token("user-1"), "comic-1".into(), true).await;
     assert!(result.is_ok());
 
     assert!(mock.snapshot().comics[0].is_completed);
@@ -376,7 +425,7 @@ async fn mark_completed_rolls_back_missing_comic() {
     let mock = Mock::new();
     mock.seed_comic(comic("comic-1", "workset-1", 0));
 
-    let err = mark_completed(&mock, &mock, "missing".into(), true)
+    let err = mark_completed(&mock, &mock, token("user-1"), "missing".into(), true)
         .await
         .err()
         .unwrap();

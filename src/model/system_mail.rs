@@ -1,6 +1,6 @@
 //! Domain models for system mail notifications.
 
-use poprako_util::page::Page;
+use poprako_macro::Paginate;
 use time::OffsetDateTime;
 
 /// A system mail record as stored in the database.
@@ -32,8 +32,7 @@ pub struct SystemMailForm {
 ///
 /// When `read` is [`Some`] the repo filters to matching status;
 /// [`None`] returns mails regardless of read status.
-#[cfg_attr(test, derive(Clone))]
+#[Paginate]
 pub struct SystemMailListSpec {
     pub read: Option<bool>,
-    pub page: Page,
 }

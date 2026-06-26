@@ -1,15 +1,11 @@
 //! Complex domain logic for [User] aggregates — password hashing, ID generation, and avatar storage key construction.
 
-use argon2::Argon2;
-use argon2::password_hash::PasswordHash;
-use argon2::password_hash::PasswordHasher as _;
-use argon2::password_hash::PasswordVerifier as _;
-use argon2::password_hash::SaltString;
 use argon2::password_hash::rand_core::OsRng;
+use argon2::password_hash::{PasswordHash, PasswordHasher as _, PasswordVerifier as _, SaltString};
+use argon2::Argon2;
 use uuid::Uuid;
 
-use crate::result::Error as RootError;
-use crate::result::RootResult;
+use crate::result::{Error as RootError, RootResult};
 
 /// Domain operations for [User] aggregates: password hashing and verification via Argon2id, ID generation, and avatar storage key computation.
 pub struct UserComplex;

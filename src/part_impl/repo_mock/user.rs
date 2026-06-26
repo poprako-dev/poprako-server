@@ -7,7 +7,7 @@ use crate::complex::user::UserComplex;
 use crate::model::user::{UserAvatarReservation, UserCredential, UserForm, UserInfo};
 use crate::part::repo::Execute;
 use crate::part::repo::step::user::{
-    Create, Delete, GetCredentialByQid, GetInfoById, GetInfoExcluded, MarkAvatarUploaded,
+    Create, Delete, FindInfoByQid, GetCredentialByQid, GetInfoById, GetInfoExcluded, MarkAvatarUploaded,
     ReserveAvatar, TouchLastActive, UpdateInfo,
 };
 use crate::part::repo::user::{UserRepo, UserRepoTransactional};
@@ -82,6 +82,34 @@ impl<'a> Execute<GetCredentialByQid<'a>> for Mock {
                 .cloned()
                 .ok_or_else(|| expected("error-user-not-found"))
         })
+    }
+}
+
+#[async_trait]
+impl<'a> Execute<FindInfoByQid<'a>> for Mock {
+    type Error = RootError;
+
+    async fn execute(&self, step: &FindInfoByQid<'a>) -> Result<Option<UserInfo>, Self::Error> {
+        let state = self.state.lock().unwrap();
+        Ok(state.users.iter().find(|user| user.qid == step.qid).cloned())
+    }
+}
+
+#[async_trait]
+impl<'a> Advance<FindInfoByQid<'a>, MockContext> for MockTransactional {
+    type Error = RootError;
+
+    async fn advance(
+        &self,
+        context: &mut MockContext,
+        step: &FindInfoByQid<'a>,
+    ) -> Result<Option<UserInfo>, Self::Error> {
+        Ok(context
+            .state
+            .users
+            .iter()
+            .find(|user| user.qid == step.qid)
+            .cloned())
     }
 }
 

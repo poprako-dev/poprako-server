@@ -14,7 +14,6 @@
 
 use super::*;
 
-use poprako_util::page::Page;
 use time::OffsetDateTime;
 
 use crate::data::system_mail::ListSystemMailData;
@@ -44,10 +43,11 @@ fn token(user_id: &str) -> UserToken {
 }
 
 /// Builds a [`ListSystemMailData`] for listing unread mails.
-fn list_unread_data(offset: usize, limit: usize) -> ListSystemMailData {
+fn list_unread_data(offset: u64, limit: u64) -> ListSystemMailData {
     ListSystemMailData {
         read: Some(false),
-        page: Page { offset, limit },
+        offset,
+        limit,
     }
 }
 
@@ -149,14 +149,10 @@ async fn mark_read_rejects_other_user_mail() {
     let time = OffsetDateTime::now_utc();
     mock.seed_system_mail(mail("sys_mail-1", "user-1", false, time));
 
-    let err = mark_read(
-        &mock,
-        token("user-2"),
-        vec!["sys_mail-1".into()],
-    )
-    .await
-    .err()
-    .unwrap();
+    let err = mark_read(&mock, token("user-2"), vec!["sys_mail-1".into()])
+        .await
+        .err()
+        .unwrap();
     assert_expected_variant(err, ExpectedVariant::Perm);
 
     let snapshot = mock.snapshot();

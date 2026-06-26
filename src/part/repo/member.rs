@@ -6,8 +6,9 @@
 
 use poprako_transactional::advance::Advance;
 
+use crate::part::repo::Execute;
 use crate::part::repo::step::member::{
-    Create, Delete, ListByUserIdExcluded, TouchLastActive, UpdateUserNickname,
+    Create, Delete, FindByUserTeamId, ListByUserIdExcluded, TouchLastActive, UpdateUserNickname,
 };
 use crate::result::RootError;
 use crate::util::DeriveTransactional;
@@ -17,7 +18,7 @@ use crate::util::DeriveTransactional;
 /// Has no standalone operations of its own — all member steps are
 /// transactional. The trait exists solely to link to
 /// [`MemberRepoTransactional`] via the `C` anchor.
-pub trait MemberRepo<C>: DeriveTransactional
+pub trait MemberRepo<C>: DeriveTransactional + for<'a> Execute<FindByUserTeamId<'a>, Error = RootError>
 where
     Self::Transactional: MemberRepoTransactional<C>,
 {
@@ -32,6 +33,7 @@ pub trait MemberRepoTransactional<C>:
     + for<'a> Advance<UpdateUserNickname<'a>, C, Error = RootError>
     + for<'a> Advance<TouchLastActive<'a>, C, Error = RootError>
     + for<'a> Advance<ListByUserIdExcluded<'a>, C, Error = RootError>
+    + for<'a> Advance<FindByUserTeamId<'a>, C, Error = RootError>
     + for<'a> Advance<Delete<'a>, C, Error = RootError>
     + Sized
 {
