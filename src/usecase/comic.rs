@@ -32,10 +32,9 @@ pub mod tests;
 // NOTE: touch_last_active API 不再保留（TODO：删除 note）
 
 /// Creates a new comic inside a workset.
-pub async fn create<D, C, R, I>(
+pub async fn create<D, C, R>(
     drive: &D,
     repo: &R,
-    _: &I,
     token: UserToken,
     data: CreateComicData,
 ) -> RootResult<CreateComicVal>
@@ -49,9 +48,8 @@ where
         + MemberRepoTransactional<C>
         + Send
         + Sync,
-    I: ImagePool,
 {
-    let comic_info = drive
+    let comic_id = drive
         .with_context(async move |context| {
             let repo = repo.transactional().await;
 
@@ -85,12 +83,12 @@ where
             )
             .await?;
 
-            accept(comic_info)
+            accept(comic_info.id)
         })
         .await
         .map_err(map_drive_err)?;
 
-    Ok(CreateComicVal { id: comic_info.id })
+    Ok(CreateComicVal { id: comic_id })
 }
 
 /// Fetches a comic by ID with cover URL resolution.
@@ -107,6 +105,7 @@ where
     I: ImagePool,
 {
     let mut proxy = ProxyNonTransactional::new(repo);
+
     ComicPermComplex::can_user_get_info(&mut proxy, &token.user_id, &id).await?;
 
     let comic_info = repo.execute(&ComicStep::get_info_by_id(&id)).await?;
@@ -128,6 +127,7 @@ where
     I: ImagePool,
 {
     let mut proxy = ProxyNonTransactional::new(repo);
+
     ComicPermComplex::can_user_list_infos(&mut proxy, &token.user_id, &data.workset_id).await?;
 
     let comic_infos = repo
@@ -155,6 +155,7 @@ where
         ComicRepoTransactional<C> + WorksetRepoTransactional<C> + MemberRepoTransactional<C>,
 {
     let mut proxy = ProxyNonTransactional::new(repo);
+
     ComicPermComplex::can_user_update_info(&mut proxy, &token.user_id, &data.id).await?;
 
     let comic_info_update = ComicInfoUpdate {
@@ -200,6 +201,7 @@ where
             let prom = prom.transactional().await;
 
             let mut proxy = ProxyTransactional::new(&repo, context);
+
             ComicPermComplex::can_user_reserve_cover(&mut proxy, &token.user_id, &id).await?;
 
             let cover_reservation = repo
@@ -273,6 +275,7 @@ where
         ComicRepoTransactional<C> + WorksetRepoTransactional<C> + MemberRepoTransactional<C>,
 {
     let mut proxy = ProxyNonTransactional::new(repo);
+
     ComicPermComplex::can_user_mark_cover_uploaded(&mut proxy, &token.user_id, &id).await?;
 
     repo.execute(&ComicStep::mark_cover_uploaded(&id, data.cover_version))
@@ -308,6 +311,7 @@ where
             let prom = prom.transactional().await;
 
             let mut proxy = ProxyTransactional::new(&repo, context);
+
             ComicPermComplex::can_user_delete(&mut proxy, &token.user_id, &id).await?;
 
             let comic_info = repo
@@ -318,7 +322,9 @@ where
             accept(())
         })
         .await
-        .map_err(map_drive_err)
+        .map_err(map_drive_err)?;
+
+    accept(())
 }
 
 /// Marks a comic completed or active.
@@ -345,6 +351,7 @@ where
             let repo = repo.transactional().await;
 
             let mut proxy = ProxyTransactional::new(&repo, context);
+
             ComicPermComplex::can_user_mark_completed(&mut proxy, &token.user_id, &id).await?;
 
             repo.advance(context, &ComicStep::mark_completed(&id, is_completed))
@@ -353,5 +360,7 @@ where
             accept(())
         })
         .await
-        .map_err(map_drive_err)
+        .map_err(map_drive_err)?;
+
+    accept(())
 }

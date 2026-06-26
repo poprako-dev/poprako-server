@@ -1,5 +1,7 @@
 //! Domain models for team membership.
 
+use poprako_macro::Paginate;
+
 use crate::model::role::RoleMask;
 
 /// A membership record linking a user to a team.
@@ -25,4 +27,18 @@ pub struct MemberForm {
     pub user_nickname: String,
     pub team_id: String,
     pub role_mask: RoleMask,
+}
+
+/// Mutable fields for a membership record.
+pub struct MemberRoleUpdate {
+    pub id: String,
+    pub role_mask: RoleMask,
+}
+
+/// Filtering and pagination parameters for listing team members.
+#[Paginate]
+pub struct MemberListSpec {
+    pub team_id: String,
+    pub user_nickname_keyword: Option<String>,
+    pub role_mask: Option<RoleMask>,
 }

@@ -9,6 +9,7 @@
 
 pub mod auth;
 pub mod comic;
+pub mod member;
 pub mod member_invitation;
 pub mod system_mail;
 pub mod team;

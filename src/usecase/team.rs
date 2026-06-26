@@ -357,5 +357,7 @@ where
             accept(())
         })
         .await
-        .map_err(map_drive_err)
+        .map_err(map_drive_err)?;
+
+    accept(())
 }

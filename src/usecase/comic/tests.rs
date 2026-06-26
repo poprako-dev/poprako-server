@@ -94,14 +94,7 @@ async fn create_allocates_index_and_updates_count() {
     mock.seed_workset(workset("workset-1", "team-1"));
     mock.seed_member(admin_member("user-1", "team-1"));
 
-    let created = create(
-        &mock,
-        &mock,
-        &mock,
-        token("user-1"),
-        create_data("workset-1"),
-    )
-    .await;
+    let created = create(&mock, &mock, token("user-1"), create_data("workset-1")).await;
     assert!(created.is_ok());
     let created = created.ok().unwrap();
     let snapshot = mock.snapshot();
@@ -118,7 +111,7 @@ async fn create_allocates_index_and_updates_count() {
 async fn create_rolls_back_missing_workset() {
     let mock = Mock::new();
 
-    let err = create(&mock, &mock, &mock, token("user-1"), create_data("missing"))
+    let err = create(&mock, &mock, token("user-1"), create_data("missing"))
         .await
         .err()
         .unwrap();
