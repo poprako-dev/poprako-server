@@ -91,10 +91,7 @@ impl MemberStep {
     }
 
     /// Constructs a step to find one membership by user and team.
-    pub fn find_by_user_team_id<'a>(
-        user_id: &'a str,
-        team_id: &'a str,
-    ) -> FindByUserTeamId<'a> {
+    pub fn find_by_user_team_id<'a>(user_id: &'a str, team_id: &'a str) -> FindByUserTeamId<'a> {
         FindByUserTeamId { user_id, team_id }
     }
 

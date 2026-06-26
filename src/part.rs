@@ -17,8 +17,8 @@
 //!
 //! [`part_impl`]: super::part_impl
 
+pub mod auth;
 pub mod effect;
 pub mod image;
 pub mod prom;
 pub mod repo;
-pub mod auth;

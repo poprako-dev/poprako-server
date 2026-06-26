@@ -122,9 +122,7 @@ impl ComicStep {
     }
 
     /// Constructs a step to list a workset's comics with a pessimistic lock.
-    pub fn list_by_workset_id_excluded<'a>(
-        workset_id: &'a str,
-    ) -> ListByWorksetIdExcluded<'a> {
+    pub fn list_by_workset_id_excluded<'a>(workset_id: &'a str) -> ListByWorksetIdExcluded<'a> {
         ListByWorksetIdExcluded { workset_id }
     }
 

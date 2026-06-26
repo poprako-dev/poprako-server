@@ -94,7 +94,14 @@ async fn create_allocates_index_and_updates_count() {
     mock.seed_workset(workset("workset-1", "team-1"));
     mock.seed_member(admin_member("user-1", "team-1"));
 
-    let created = create(&mock, &mock, &mock, token("user-1"), create_data("workset-1")).await;
+    let created = create(
+        &mock,
+        &mock,
+        &mock,
+        token("user-1"),
+        create_data("workset-1"),
+    )
+    .await;
     assert!(created.is_ok());
     let created = created.ok().unwrap();
     let snapshot = mock.snapshot();

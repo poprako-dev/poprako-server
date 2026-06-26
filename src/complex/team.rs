@@ -7,11 +7,13 @@ use uuid::Uuid;
 use poprako_util::i18n::trl;
 
 use crate::complex::image::ImageComplex;
+use crate::complex::util::{check_user_is_team_admin, check_user_is_team_member};
 use crate::complex::workset::WorksetComplex;
 use crate::part::prom::intention::{IMAGE_TOPIC, ImageIntention};
 use crate::part::prom::{Payload, PromStep, PromTransactional};
 use crate::part::repo::comic::ComicRepoTransactional;
 use crate::part::repo::proxy::ProxyExecute;
+use crate::part::repo::step::member::FindByUserTeamId;
 use crate::part::repo::step::team::TeamStep;
 use crate::part::repo::step::user::{GetInfoById, UserStep};
 use crate::part::repo::step::workset::WorksetStep;
@@ -94,6 +96,46 @@ pub struct TeamPermComplex;
 impl TeamPermComplex {
     /// Verify the user has super-admin privileges required to list all teams.
     /// Returns an `Expected::Perm` error if the user is not a super-admin.
+    pub async fn can_user_update_info<P>(
+        proxy: &mut P,
+        user_id: &str,
+        team_id: &str,
+    ) -> RootResult<()>
+    where
+        P: for<'a> ProxyExecute<FindByUserTeamId<'a>, Error = RootError>,
+    {
+        check_user_is_team_admin(proxy, user_id, team_id).await
+    }
+
+    pub async fn can_user_reserve_avatar<P>(
+        proxy: &mut P,
+        user_id: &str,
+        team_id: &str,
+    ) -> RootResult<()>
+    where
+        P: for<'a> ProxyExecute<FindByUserTeamId<'a>, Error = RootError>,
+    {
+        check_user_is_team_admin(proxy, user_id, team_id).await
+    }
+
+    pub async fn can_user_mark_avatar_uploaded<P>(
+        proxy: &mut P,
+        user_id: &str,
+        team_id: &str,
+    ) -> RootResult<()>
+    where
+        P: for<'a> ProxyExecute<FindByUserTeamId<'a>, Error = RootError>,
+    {
+        check_user_is_team_admin(proxy, user_id, team_id).await
+    }
+
+    pub async fn can_user_delete<P>(proxy: &mut P, user_id: &str, team_id: &str) -> RootResult<()>
+    where
+        P: for<'a> ProxyExecute<FindByUserTeamId<'a>, Error = RootError>,
+    {
+        check_user_is_team_admin(proxy, user_id, team_id).await
+    }
+
     pub async fn can_user_list_all<P>(proxy: &mut P, user_id: &str) -> RootResult<()>
     where
         P: for<'a> ProxyExecute<GetInfoById<'a>, Error = RootError>,

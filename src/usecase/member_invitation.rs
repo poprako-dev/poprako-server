@@ -4,7 +4,6 @@ use poprako_transactional::advance::Advance;
 use poprako_transactional::drive::Drive;
 use poprako_util::i18n::trl;
 
-use crate::complex::member::MemberPermComplex;
 use crate::complex::member_invitation::{MemberInvitationComplex, MemberInvitationPermComplex};
 use crate::data::member_invitation::{
     CreateMemberInvitationData, CreateMemberInvitationVal, ListMemberInvitationInfosData,
@@ -53,12 +52,8 @@ where
             let repo = repo.transactional().await;
 
             let mut proxy = ProxyTransactional::new(&repo, context);
-            MemberPermComplex::can_user_create_invitation(
-                &mut proxy,
-                &token.user_id,
-                &data.team_id,
-            )
-            .await?;
+            MemberInvitationPermComplex::can_user_create(&mut proxy, &token.user_id, &data.team_id)
+                .await?;
 
             let invitee_user_info = repo
                 .advance(context, &UserStep::find_info_by_qid(&data.invitee_qid))
@@ -120,12 +115,8 @@ where
 {
     let mut proxy = ProxyNonTransactional::new(repo);
 
-    MemberPermComplex::can_user_list_invitation_infos(
-        &mut proxy,
-        &token.user_id,
-        &data.team_id,
-    )
-    .await?;
+    MemberInvitationPermComplex::can_user_list_infos(&mut proxy, &token.user_id, &data.team_id)
+        .await?;
 
     let member_invitation_infos = repo
         .execute(&MemberInvitationStep::list_infos(
@@ -162,18 +153,10 @@ where
         .with_context(async move |context| {
             let repo = repo.transactional().await;
 
-            let member_invitation_info = repo
-                .advance(context, &MemberInvitationStep::get_info_by_id(&data.id))
-                .await?;
-
             let mut proxy = ProxyTransactional::new(&repo, context);
 
-            MemberInvitationPermComplex::can_user_update_info(
-                &mut proxy,
-                &token.user_id,
-                &member_invitation_info.team_id,
-            )
-            .await?;
+            MemberInvitationPermComplex::can_user_update_info(&mut proxy, &token.user_id, &data.id)
+                .await?;
 
             let member_invitation_update = MemberInvitationUpdate {
                 id: data.id,
@@ -205,18 +188,9 @@ where
         .with_context(async move |context| {
             let repo = repo.transactional().await;
 
-            let member_invitation_info = repo
-                .advance(context, &MemberInvitationStep::get_info_by_id(&id))
-                .await?;
-
             let mut proxy = ProxyTransactional::new(&repo, context);
 
-            MemberInvitationPermComplex::can_user_delete(
-                &mut proxy,
-                &token.user_id,
-                &member_invitation_info.team_id,
-            )
-            .await?;
+            MemberInvitationPermComplex::can_user_delete(&mut proxy, &token.user_id, &id).await?;
 
             repo.advance(context, &MemberInvitationStep::delete(&id))
                 .await?;

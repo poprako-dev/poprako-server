@@ -18,7 +18,8 @@ use crate::util::DeriveTransactional;
 /// Has no standalone operations of its own — all member steps are
 /// transactional. The trait exists solely to link to
 /// [`MemberRepoTransactional`] via the `C` anchor.
-pub trait MemberRepo<C>: DeriveTransactional + for<'a> Execute<FindByUserTeamId<'a>, Error = RootError>
+pub trait MemberRepo<C>:
+    DeriveTransactional + for<'a> Execute<FindByUserTeamId<'a>, Error = RootError>
 where
     Self::Transactional: MemberRepoTransactional<C>,
 {

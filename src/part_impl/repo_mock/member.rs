@@ -10,9 +10,7 @@ use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
 use crate::part::repo::step::member::{
     Create, Delete, FindByUserTeamId, ListByUserIdExcluded, TouchLastActive, UpdateUserNickname,
 };
-use crate::part_impl::repo_mock::{
-    Mock, MockContext, MockState, MockTransactional, expected, now,
-};
+use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactional, expected, now};
 use crate::result::RootError;
 
 impl MemberRepo<MockContext> for Mock {}
@@ -39,7 +37,7 @@ fn create_member(state: &mut MockState, form: &MemberForm) -> Result<MemberInfo,
         return Err(expected("error-already-exists"));
     }
 
-    let _assigned_at = role_time(form.role_mask);
+    let _ = role_time(form.role_mask);
     let member = MemberInfo {
         id: form.id.clone(),
         user_id: form.user_id.clone(),
@@ -100,8 +98,8 @@ impl<'a> Advance<TouchLastActive<'a>, MockContext> for MockTransactional {
 
     async fn advance(
         &self,
-        _context: &mut MockContext,
-        _step: &TouchLastActive<'a>,
+        _: &mut MockContext,
+        _: &TouchLastActive<'a>,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -130,7 +128,10 @@ impl<'a> Advance<ListByUserIdExcluded<'a>, MockContext> for MockTransactional {
 impl<'a> Execute<FindByUserTeamId<'a>> for Mock {
     type Error = RootError;
 
-    async fn execute(&self, step: &FindByUserTeamId<'a>) -> Result<Option<MemberInfo>, Self::Error> {
+    async fn execute(
+        &self,
+        step: &FindByUserTeamId<'a>,
+    ) -> Result<Option<MemberInfo>, Self::Error> {
         let state = self.state.lock().unwrap();
         Ok(find_member_by_user_team_id(
             &state,

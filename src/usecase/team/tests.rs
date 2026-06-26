@@ -282,7 +282,7 @@ fn count_team_check_records(
 impl<'a> Execute<Create<'a>> for FailingCreateRepo {
     type Error = RootError;
 
-    async fn execute(&self, _step: &Create<'a>) -> Result<TeamInfo, Self::Error> {
+    async fn execute(&self, _:  &Create<'a>) -> Result<TeamInfo, Self::Error> {
         Err(expected_error())
     }
 }
@@ -300,10 +300,7 @@ impl<'a> Execute<UserGetInfoById<'a>> for FailingCreateRepo {
 impl<'a> Execute<GetCredentialByQid<'a>> for FailingCreateRepo {
     type Error = RootError;
 
-    async fn execute(
-        &self,
-        _step: &GetCredentialByQid<'a>,
-    ) -> Result<UserCredential, Self::Error> {
+    async fn execute(&self, _:  &GetCredentialByQid<'a>) -> Result<UserCredential, Self::Error> {
         Err(expected_error())
     }
 }
@@ -312,7 +309,7 @@ impl<'a> Execute<GetCredentialByQid<'a>> for FailingCreateRepo {
 impl<'a> Execute<FindInfoByQid<'a>> for FailingCreateRepo {
     type Error = RootError;
 
-    async fn execute(&self, _step: &FindInfoByQid<'a>) -> Result<Option<UserInfo>, Self::Error> {
+    async fn execute(&self, _:  &FindInfoByQid<'a>) -> Result<Option<UserInfo>, Self::Error> {
         Ok(None)
     }
 }
@@ -323,8 +320,8 @@ impl<'a> Advance<UserCreate<'a>, MockContext> for FailingTeamTransactional {
 
     async fn advance(
         &self,
-        _context: &mut MockContext,
-        _step: &UserCreate<'a>,
+        _: &mut MockContext,
+        _:  &UserCreate<'a>,
     ) -> Result<UserInfo, Self::Error> {
         Err(expected_error())
     }
@@ -336,8 +333,8 @@ impl<'a> Advance<FindInfoByQid<'a>, MockContext> for FailingTeamTransactional {
 
     async fn advance(
         &self,
-        _context: &mut MockContext,
-        _step: &FindInfoByQid<'a>,
+        _: &mut MockContext,
+        _:  &FindInfoByQid<'a>,
     ) -> Result<Option<UserInfo>, Self::Error> {
         Ok(None)
     }
@@ -349,8 +346,8 @@ impl<'a> Advance<UserUpdateInfo<'a>, MockContext> for FailingTeamTransactional {
 
     async fn advance(
         &self,
-        _context: &mut MockContext,
-        _step: &UserUpdateInfo<'a>,
+        _: &mut MockContext,
+        _:  &UserUpdateInfo<'a>,
     ) -> Result<(), Self::Error> {
         Err(expected_error())
     }
@@ -362,8 +359,8 @@ impl<'a> Advance<UserReserveAvatar<'a>, MockContext> for FailingTeamTransactiona
 
     async fn advance(
         &self,
-        _context: &mut MockContext,
-        _step: &UserReserveAvatar<'a>,
+        _: &mut MockContext,
+        _:  &UserReserveAvatar<'a>,
     ) -> Result<crate::model::user::UserAvatarReservation, Self::Error> {
         Err(expected_error())
     }
@@ -375,8 +372,8 @@ impl<'a> Advance<UserMarkAvatarUploaded<'a>, MockContext> for FailingTeamTransac
 
     async fn advance(
         &self,
-        _context: &mut MockContext,
-        _step: &UserMarkAvatarUploaded<'a>,
+        _: &mut MockContext,
+        _:  &UserMarkAvatarUploaded<'a>,
     ) -> Result<(), Self::Error> {
         Err(expected_error())
     }
@@ -388,8 +385,8 @@ impl<'a> Advance<UserTouchLastActive<'a>, MockContext> for FailingTeamTransactio
 
     async fn advance(
         &self,
-        _context: &mut MockContext,
-        _step: &UserTouchLastActive<'a>,
+        _: &mut MockContext,
+        _:  &UserTouchLastActive<'a>,
     ) -> Result<(), Self::Error> {
         Err(expected_error())
     }
@@ -401,8 +398,8 @@ impl<'a> Advance<UserGetInfoExcluded<'a>, MockContext> for FailingTeamTransactio
 
     async fn advance(
         &self,
-        _context: &mut MockContext,
-        _step: &UserGetInfoExcluded<'a>,
+        _: &mut MockContext,
+        _:  &UserGetInfoExcluded<'a>,
     ) -> Result<UserInfo, Self::Error> {
         Err(expected_error())
     }
@@ -414,8 +411,8 @@ impl<'a> Advance<UserDelete<'a>, MockContext> for FailingTeamTransactional {
 
     async fn advance(
         &self,
-        _context: &mut MockContext,
-        _step: &UserDelete<'a>,
+        _: &mut MockContext,
+        _:  &UserDelete<'a>,
     ) -> Result<(), Self::Error> {
         Err(expected_error())
     }
@@ -425,7 +422,7 @@ impl<'a> Advance<UserDelete<'a>, MockContext> for FailingTeamTransactional {
 impl<'a> Execute<GetInfoById<'a>> for FailingCreateRepo {
     type Error = RootError;
 
-    async fn execute(&self, _step: &GetInfoById<'a>) -> Result<TeamInfo, Self::Error> {
+    async fn execute(&self, _:  &GetInfoById<'a>) -> Result<TeamInfo, Self::Error> {
         Err(expected_error())
     }
 }
@@ -434,7 +431,7 @@ impl<'a> Execute<GetInfoById<'a>> for FailingCreateRepo {
 impl<'a> Execute<ListInfos<'a>> for FailingCreateRepo {
     type Error = RootError;
 
-    async fn execute(&self, _step: &ListInfos<'a>) -> Result<Vec<TeamInfo>, Self::Error> {
+    async fn execute(&self, _:  &ListInfos<'a>) -> Result<Vec<TeamInfo>, Self::Error> {
         Err(expected_error())
     }
 }
@@ -443,7 +440,7 @@ impl<'a> Execute<ListInfos<'a>> for FailingCreateRepo {
 impl<'a> Execute<UpdateInfo<'a>> for FailingCreateRepo {
     type Error = RootError;
 
-    async fn execute(&self, _step: &UpdateInfo<'a>) -> Result<(), Self::Error> {
+    async fn execute(&self, _:  &UpdateInfo<'a>) -> Result<(), Self::Error> {
         Err(expected_error())
     }
 }
@@ -452,7 +449,7 @@ impl<'a> Execute<UpdateInfo<'a>> for FailingCreateRepo {
 impl<'a> Execute<MarkAvatarUploaded<'a>> for FailingCreateRepo {
     type Error = RootError;
 
-    async fn execute(&self, _step: &MarkAvatarUploaded<'a>) -> Result<(), Self::Error> {
+    async fn execute(&self, _:  &MarkAvatarUploaded<'a>) -> Result<(), Self::Error> {
         Err(expected_error())
     }
 }
@@ -463,8 +460,8 @@ impl<'a> Advance<ReserveAvatar<'a>, MockContext> for FailingTeamTransactional {
 
     async fn advance(
         &self,
-        _context: &mut MockContext,
-        _step: &ReserveAvatar<'a>,
+        _: &mut MockContext,
+        _:  &ReserveAvatar<'a>,
     ) -> Result<crate::model::team::TeamAvatarReservation, Self::Error> {
         Err(expected_error())
     }
@@ -476,8 +473,8 @@ impl<'a> Advance<MarkAvatarUploaded<'a>, MockContext> for FailingTeamTransaction
 
     async fn advance(
         &self,
-        _context: &mut MockContext,
-        _step: &MarkAvatarUploaded<'a>,
+        _: &mut MockContext,
+        _:  &MarkAvatarUploaded<'a>,
     ) -> Result<(), Self::Error> {
         Err(expected_error())
     }
@@ -489,8 +486,8 @@ impl<'a> Advance<GetInfoExcluded<'a>, MockContext> for FailingTeamTransactional 
 
     async fn advance(
         &self,
-        _context: &mut MockContext,
-        _step: &GetInfoExcluded<'a>,
+        _: &mut MockContext,
+        _:  &GetInfoExcluded<'a>,
     ) -> Result<TeamInfo, Self::Error> {
         Err(expected_error())
     }
@@ -502,8 +499,8 @@ impl<'a> Advance<Delete<'a>, MockContext> for FailingTeamTransactional {
 
     async fn advance(
         &self,
-        _context: &mut MockContext,
-        _step: &Delete<'a>,
+        _: &mut MockContext,
+        _:  &Delete<'a>,
     ) -> Result<(), Self::Error> {
         Err(expected_error())
     }
@@ -515,8 +512,8 @@ impl<'a> Advance<IncrementWorksetNextIndex<'a>, MockContext> for FailingTeamTran
 
     async fn advance(
         &self,
-        _context: &mut MockContext,
-        _step: &IncrementWorksetNextIndex<'a>,
+        _: &mut MockContext,
+        _:  &IncrementWorksetNextIndex<'a>,
     ) -> Result<i32, Self::Error> {
         Err(expected_error())
     }
@@ -662,7 +659,12 @@ async fn update_info_updates_team() {
     mock.seed_team(team("team-1", "Old", "Old Desc"));
     mock.seed_member(member("member-1", "user-1", "team-1"));
 
-    let result = update_info(&mock, token("user-1"), update_data("team-1", "New", "New Desc")).await;
+    let result = update_info(
+        &mock,
+        token("user-1"),
+        update_data("team-1", "New", "New Desc"),
+    )
+    .await;
     assert!(result.is_ok());
 
     let snapshot = mock.snapshot();
@@ -675,10 +677,14 @@ async fn update_info_propagates_missing_team() {
     let mock = Mock::new();
     mock.seed_member(member("member-1", "user-1", "team-1"));
 
-    let err = update_info(&mock, token("user-1"), update_data("team-1", "New", "New Desc"))
-        .await
-        .err()
-        .unwrap();
+    let err = update_info(
+        &mock,
+        token("user-1"),
+        update_data("team-1", "New", "New Desc"),
+    )
+    .await
+    .err()
+    .unwrap();
 
     assert_expected_variant(err, ExpectedVariant::Args);
 }
