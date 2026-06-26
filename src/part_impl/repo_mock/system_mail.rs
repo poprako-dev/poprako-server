@@ -204,9 +204,7 @@ mod tests {
         let mock = Mock::new();
         let system_mail_form = mail_form("sys_mail-1", "user-1");
 
-        let result = mock
-            .execute(&SystemMailStep::send(&system_mail_form))
-            .await;
+        let result = mock.execute(&SystemMailStep::send(&system_mail_form)).await;
         assert!(result.is_ok());
 
         let snapshot = mock.snapshot();

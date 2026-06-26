@@ -2,7 +2,9 @@
 
 use poprako_transactional::step::Step;
 
-use crate::model::member_invitation::{MemberInvitationForm, MemberInvitationInfo, MemberInvitationUpdate};
+use crate::model::member_invitation::{
+    MemberInvitationForm, MemberInvitationInfo, MemberInvitationUpdate,
+};
 
 /// Step that inserts a member invitation row.
 pub struct Create<'a> {

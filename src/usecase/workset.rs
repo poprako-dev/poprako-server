@@ -4,7 +4,6 @@ use poprako_transactional::advance::Advance;
 use poprako_transactional::drive::Drive;
 use poprako_util::time::ToUnixMilli;
 
-use crate::complex::member::MemberPermComplex;
 use crate::complex::workset::{WorksetComplex, WorksetPermComplex};
 use crate::data::workset::{
     CreateWorksetData, CreateWorksetVal, ListWorksetInfosData, UpdateWorksetInfoData,
@@ -51,8 +50,7 @@ where
 
             let mut proxy = ProxyTransactional::new(&repo, context);
 
-            MemberPermComplex::can_user_create(&mut proxy, &token.user_id, &data.team_id)
-                .await?;
+            WorksetPermComplex::can_user_create(&mut proxy, &token.user_id, &data.team_id).await?;
 
             let index = repo
                 .advance(
@@ -122,8 +120,7 @@ where
 {
     let mut proxy = ProxyNonTransactional::new(repo);
 
-    MemberPermComplex::can_user_list_infos(&mut proxy, &token.user_id, &data.team_id)
-        .await?;
+    WorksetPermComplex::can_user_list_infos(&mut proxy, &token.user_id, &data.team_id).await?;
 
     let workset_infos = repo
         .execute(&WorksetStep::list_infos_by_team_id(&data.team_id))

@@ -7,7 +7,6 @@ use poprako_transactional::drive::Drive;
 
 use crate::complex::comic::{ComicComplex, ComicPermComplex};
 use crate::complex::image::ImageComplex;
-use crate::complex::member::MemberPermComplex;
 use crate::data::comic::{
     ComicInfoVal, CreateComicData, CreateComicVal, ListComicInfosData, MarkComicCoverUploadedData,
     ReserveComicCoverData, ReserveComicCoverVal, UpdateComicInfoData,
@@ -36,7 +35,7 @@ pub mod tests;
 pub async fn create<D, C, R, I>(
     drive: &D,
     repo: &R,
-    _image_pool: &I,
+    _: &I,
     token: UserToken,
     data: CreateComicData,
 ) -> RootResult<CreateComicVal>
@@ -57,8 +56,7 @@ where
             let repo = repo.transactional().await;
 
             let mut proxy = ProxyTransactional::new(&repo, context);
-            ComicPermComplex::can_user_create(&mut proxy, &token.user_id, &data.workset_id)
-                .await?;
+            ComicPermComplex::can_user_create(&mut proxy, &token.user_id, &data.workset_id).await?;
 
             let index = repo
                 .advance(
@@ -130,8 +128,7 @@ where
     I: ImagePool,
 {
     let mut proxy = ProxyNonTransactional::new(repo);
-    ComicPermComplex::can_user_list_infos(&mut proxy, &token.user_id, &data.workset_id)
-        .await?;
+    ComicPermComplex::can_user_list_infos(&mut proxy, &token.user_id, &data.workset_id).await?;
 
     let comic_infos = repo
         .execute(&ComicStep::list_by_workset_id(&data.workset_id))
@@ -203,8 +200,7 @@ where
             let prom = prom.transactional().await;
 
             let mut proxy = ProxyTransactional::new(&repo, context);
-            ComicPermComplex::can_user_reserve_cover(&mut proxy, &token.user_id, &id)
-                .await?;
+            ComicPermComplex::can_user_reserve_cover(&mut proxy, &token.user_id, &id).await?;
 
             let cover_reservation = repo
                 .advance(context, &ComicStep::reserve_cover(&id, &data.file_ext))
@@ -349,8 +345,7 @@ where
             let repo = repo.transactional().await;
 
             let mut proxy = ProxyTransactional::new(&repo, context);
-            ComicPermComplex::can_user_mark_completed(&mut proxy, &token.user_id, &id)
-                .await?;
+            ComicPermComplex::can_user_mark_completed(&mut proxy, &token.user_id, &id).await?;
 
             repo.advance(context, &ComicStep::mark_completed(&id, is_completed))
                 .await?;

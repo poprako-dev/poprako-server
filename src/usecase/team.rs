@@ -6,7 +6,6 @@ use poprako_transactional::advance::Advance;
 use poprako_transactional::drive::Drive;
 
 use crate::complex::image::ImageComplex;
-use crate::complex::member::MemberPermComplex;
 use crate::complex::team::{TeamComplex, TeamPermComplex};
 use crate::data::team::{
     CreateTeamData, ListTeamInfosData, MarkTeamAvatarUploadedData, ReserveTeamAvatarData,
@@ -154,7 +153,7 @@ where
 {
     let mut proxy = ProxyNonTransactional::new(repo);
 
-    MemberPermComplex::can_user_update_info(&mut proxy, &token.user_id, &data.id).await?;
+    TeamPermComplex::can_user_update_info(&mut proxy, &token.user_id, &data.id).await?;
 
     repo.execute(&TeamStep::update_info(
         &data.id,
@@ -213,8 +212,7 @@ where
 
             let mut proxy = ProxyTransactional::new(&repo, context);
 
-            MemberPermComplex::can_user_reserve_avatar(&mut proxy, &token.user_id, &id)
-                .await?;
+            TeamPermComplex::can_user_reserve_avatar(&mut proxy, &token.user_id, &id).await?;
 
             let avatar_reservation = repo
                 .advance(context, &TeamStep::reserve_avatar(&id, &data.file_ext))
@@ -300,7 +298,7 @@ where
 {
     let mut proxy = ProxyNonTransactional::new(repo);
 
-    MemberPermComplex::can_user_mark_avatar_uploaded(&mut proxy, &token.user_id, &id).await?;
+    TeamPermComplex::can_user_mark_avatar_uploaded(&mut proxy, &token.user_id, &id).await?;
 
     repo.execute(&TeamStep::mark_avatar_uploaded(&id, data.avatar_version))
         .await?;
@@ -352,7 +350,7 @@ where
 
             let mut proxy = ProxyTransactional::new(&repo, context);
 
-            MemberPermComplex::can_user_delete(&mut proxy, &token.user_id, &id).await?;
+            TeamPermComplex::can_user_delete(&mut proxy, &token.user_id, &id).await?;
 
             TeamComplex::delete_cascade(&repo, &prom, context, &id).await?;
 

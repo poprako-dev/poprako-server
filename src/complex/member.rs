@@ -80,26 +80,4 @@ impl MemberPermComplex {
     {
         check_user_is_team_member(proxy, user_id, team_id).await
     }
-
-    pub async fn can_user_create_invitation<P>(
-        proxy: &mut P,
-        user_id: &str,
-        team_id: &str,
-    ) -> RootResult<()>
-    where
-        P: for<'a> ProxyExecute<FindByUserTeamId<'a>, Error = RootError>,
-    {
-        check_user_is_team_admin(proxy, user_id, team_id).await
-    }
-
-    pub async fn can_user_list_invitation_infos<P>(
-        proxy: &mut P,
-        user_id: &str,
-        team_id: &str,
-    ) -> RootResult<()>
-    where
-        P: for<'a> ProxyExecute<FindByUserTeamId<'a>, Error = RootError>,
-    {
-        check_user_is_team_member(proxy, user_id, team_id).await
-    }
 }

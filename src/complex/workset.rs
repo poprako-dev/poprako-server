@@ -58,6 +58,24 @@ impl WorksetComplex {
 pub struct WorksetPermComplex;
 
 impl WorksetPermComplex {
+    pub async fn can_user_create<P>(proxy: &mut P, user_id: &str, team_id: &str) -> RootResult<()>
+    where
+        P: for<'a> ProxyExecute<FindByUserTeamId<'a>, Error = RootError>,
+    {
+        check_user_is_team_admin(proxy, user_id, team_id).await
+    }
+
+    pub async fn can_user_list_infos<P>(
+        proxy: &mut P,
+        user_id: &str,
+        team_id: &str,
+    ) -> RootResult<()>
+    where
+        P: for<'a> ProxyExecute<FindByUserTeamId<'a>, Error = RootError>,
+    {
+        check_user_is_team_member(proxy, user_id, team_id).await
+    }
+
     pub async fn can_user_get_info<P>(
         proxy: &mut P,
         user_id: &str,

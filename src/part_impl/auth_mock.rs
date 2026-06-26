@@ -34,12 +34,7 @@ mod tests {
     fn sign_returns_stable_token() {
         let mock = Mock::new();
 
-        let signed = TokenAuth::sign_token(
-            &mock,
-            &UserTokenRef {
-                user_id: "user-1",
-            },
-        );
+        let signed = TokenAuth::sign_token(&mock, &UserTokenRef { user_id: "user-1" });
         assert!(signed.is_ok());
         let signed = signed.ok().unwrap();
 
@@ -50,14 +45,9 @@ mod tests {
     fn sign_failure_returns_expected_auth() {
         let mock = Mock::new().with_token_failure();
 
-        let err = TokenAuth::sign_token(
-            &mock,
-            &UserTokenRef {
-                user_id: "user-1",
-            },
-        )
-        .err()
-        .unwrap();
+        let err = TokenAuth::sign_token(&mock, &UserTokenRef { user_id: "user-1" })
+            .err()
+            .unwrap();
 
         assert!(matches!(
             err,

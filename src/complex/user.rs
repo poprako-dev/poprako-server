@@ -1,8 +1,8 @@
 //! Complex domain logic for [User] aggregates — password hashing, ID generation, and avatar storage key construction.
 
+use argon2::Argon2;
 use argon2::password_hash::rand_core::OsRng;
 use argon2::password_hash::{PasswordHash, PasswordHasher as _, PasswordVerifier as _, SaltString};
-use argon2::Argon2;
 use uuid::Uuid;
 
 use crate::result::{Error as RootError, RootResult};
@@ -49,5 +49,4 @@ impl UserComplex {
     pub fn gen_avatar_key(id: &str, avatar_version: i64, file_ext: &str) -> String {
         format!("user_avatar/{}-{}.{}", id, avatar_version, file_ext)
     }
-
 }

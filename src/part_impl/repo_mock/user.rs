@@ -7,8 +7,8 @@ use crate::complex::user::UserComplex;
 use crate::model::user::{UserAvatarReservation, UserCredential, UserForm, UserInfo};
 use crate::part::repo::Execute;
 use crate::part::repo::step::user::{
-    Create, Delete, FindInfoByQid, GetCredentialByQid, GetInfoById, GetInfoExcluded, MarkAvatarUploaded,
-    ReserveAvatar, TouchLastActive, UpdateInfo,
+    Create, Delete, FindInfoByQid, GetCredentialByQid, GetInfoById, GetInfoExcluded,
+    MarkAvatarUploaded, ReserveAvatar, TouchLastActive, UpdateInfo,
 };
 use crate::part::repo::user::{UserRepo, UserRepoTransactional};
 use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactional, expected, now};
@@ -91,7 +91,11 @@ impl<'a> Execute<FindInfoByQid<'a>> for Mock {
 
     async fn execute(&self, step: &FindInfoByQid<'a>) -> Result<Option<UserInfo>, Self::Error> {
         let state = self.state.lock().unwrap();
-        Ok(state.users.iter().find(|user| user.qid == step.qid).cloned())
+        Ok(state
+            .users
+            .iter()
+            .find(|user| user.qid == step.qid)
+            .cloned())
     }
 }
 

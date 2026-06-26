@@ -22,7 +22,10 @@ impl MemberInvitationRepoTransactional<MockContext> for MockTransactional {}
 impl<'a> Execute<ListInfos<'a>> for Mock {
     type Error = crate::result::RootError;
 
-    async fn execute(&self, step: &ListInfos<'a>) -> Result<Vec<MemberInvitationInfo>, Self::Error> {
+    async fn execute(
+        &self,
+        step: &ListInfos<'a>,
+    ) -> Result<Vec<MemberInvitationInfo>, Self::Error> {
         let state = self.state.lock().unwrap();
         let mut member_invitation_infos = state
             .member_invitations
@@ -80,11 +83,16 @@ impl<'a> Advance<Create<'a>, MockContext> for MockTransactional {
         {
             return Err(expected("error-already-exists"));
         }
-        if context.state.member_invitations.iter().any(|member_invitation_info| {
-            member_invitation_info.team_id == step.form.team_id
-                && member_invitation_info.invitee_qid == step.form.invitee_qid
-                && member_invitation_info.pending
-        }) {
+        if context
+            .state
+            .member_invitations
+            .iter()
+            .any(|member_invitation_info| {
+                member_invitation_info.team_id == step.form.team_id
+                    && member_invitation_info.invitee_qid == step.form.invitee_qid
+                    && member_invitation_info.pending
+            })
+        {
             return Err(expected("error-already-exists"));
         }
 
