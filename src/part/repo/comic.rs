@@ -25,6 +25,7 @@ where
 /// Transactional comic repository.
 pub trait ComicRepoTransactional<C>:
     for<'a> Advance<Create<'a>, C, Error = RootError>
+    + for<'a> Advance<GetInfoById<'a>, C, Error = RootError>
     + for<'a> Advance<GetInfoExcluded<'a>, C, Error = RootError>
     + for<'a> Advance<ListByWorksetIdExcluded<'a>, C, Error = RootError>
     + for<'a> Advance<ReserveCover<'a>, C, Error = RootError>

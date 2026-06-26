@@ -5,9 +5,10 @@ use poprako_transactional::advance::Advance;
 use time::OffsetDateTime;
 
 use crate::model::member::{MemberForm, MemberInfo};
+use crate::part::repo::Execute;
 use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
 use crate::part::repo::step::member::{
-    Create, Delete, ListByUserIdExcluded, TouchLastActive, UpdateUserNickname,
+    Create, Delete, FindByUserTeamId, ListByUserIdExcluded, TouchLastActive, UpdateUserNickname,
 };
 use crate::part_impl::repo_mock::{
     Mock, MockContext, MockState, MockTransactional, expected, now,
@@ -44,9 +45,22 @@ fn create_member(state: &mut MockState, form: &MemberForm) -> Result<MemberInfo,
         user_id: form.user_id.clone(),
         user_nickname: form.user_nickname.clone(),
         team_id: form.team_id.clone(),
+        role_mask: form.role_mask,
     };
     state.members.push(member.clone());
     Ok(member)
+}
+
+fn find_member_by_user_team_id(
+    state: &MockState,
+    user_id: &str,
+    team_id: &str,
+) -> Option<MemberInfo> {
+    state
+        .members
+        .iter()
+        .find(|member| member.user_id == user_id && member.team_id == team_id)
+        .cloned()
 }
 
 #[async_trait]
@@ -109,6 +123,37 @@ impl<'a> Advance<ListByUserIdExcluded<'a>, MockContext> for MockTransactional {
             .filter(|member| member.user_id == step.user_id)
             .cloned()
             .collect())
+    }
+}
+
+#[async_trait]
+impl<'a> Execute<FindByUserTeamId<'a>> for Mock {
+    type Error = RootError;
+
+    async fn execute(&self, step: &FindByUserTeamId<'a>) -> Result<Option<MemberInfo>, Self::Error> {
+        let state = self.state.lock().unwrap();
+        Ok(find_member_by_user_team_id(
+            &state,
+            step.user_id,
+            step.team_id,
+        ))
+    }
+}
+
+#[async_trait]
+impl<'a> Advance<FindByUserTeamId<'a>, MockContext> for MockTransactional {
+    type Error = RootError;
+
+    async fn advance(
+        &self,
+        context: &mut MockContext,
+        step: &FindByUserTeamId<'a>,
+    ) -> Result<Option<MemberInfo>, Self::Error> {
+        Ok(find_member_by_user_team_id(
+            &context.state,
+            step.user_id,
+            step.team_id,
+        ))
     }
 }
 

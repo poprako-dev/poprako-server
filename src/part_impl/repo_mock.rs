@@ -318,10 +318,10 @@ mod tests {
         let visible_at = now();
 
         let result = Drive::with_context(&mock, async move |context| {
-            let txn = MockTransactional;
-            Advance::advance(&txn, context, &MemberStep::create(&member_form)).await?;
+            let transactional = MockTransactional;
+            Advance::advance(&transactional, context, &MemberStep::create(&member_form)).await?;
             Advance::advance(
-                &txn,
+                &transactional,
                 context,
                 &PromStep::append(
                     "prom-1",
@@ -359,10 +359,10 @@ mod tests {
         let visible_at = now();
 
         let err = Drive::with_context(&mock, async move |context| {
-            let txn = MockTransactional;
-            Advance::advance(&txn, context, &MemberStep::create(&member_form)).await?;
+            let transactional = MockTransactional;
+            Advance::advance(&transactional, context, &MemberStep::create(&member_form)).await?;
             Advance::advance(
-                &txn,
+                &transactional,
                 context,
                 &PromStep::append(
                     "prom-1",

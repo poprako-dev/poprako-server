@@ -6,6 +6,7 @@ use poprako_transactional::advance::Advance;
 use poprako_transactional::drive::Drive;
 
 use crate::complex::image::ImageComplex;
+use crate::complex::member::MemberPermComplex;
 use crate::complex::team::{TeamComplex, TeamPermComplex};
 use crate::data::team::{
     CreateTeamData, ListTeamInfosData, MarkTeamAvatarUploadedData, ReserveTeamAvatarData,
@@ -18,6 +19,8 @@ use crate::part::prom::intention::{IMAGE_TOPIC, ImageIntention, ImageKind};
 use crate::part::prom::{Payload, Prom, PromStep, PromTransactional};
 use crate::part::repo::comic::{ComicRepo, ComicRepoTransactional};
 use crate::part::repo::map_drive_err;
+use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
+use crate::part::repo::proxy::{ProxyNonTransactional, ProxyTransactional};
 use crate::part::repo::step::team::TeamStep;
 use crate::part::repo::team::{TeamRepo, TeamRepoTransactional};
 use crate::part::repo::user::{UserRepo, UserRepoTransactional};
@@ -41,13 +44,18 @@ pub(crate) mod tests;
 pub async fn create<C, R, I>(
     repo: &R,
     image_pool: &I,
+    token: UserToken,
     data: CreateTeamData,
 ) -> RootResult<TeamInfoVal>
 where
-    R: TeamRepo<C>,
-    <R as DeriveTransactional>::Transactional: TeamRepoTransactional<C>,
+    R: TeamRepo<C> + UserRepo<C> + Sync,
+    <R as DeriveTransactional>::Transactional: TeamRepoTransactional<C> + UserRepoTransactional<C>,
     I: ImagePool,
 {
+    let mut proxy = ProxyNonTransactional::new(repo);
+
+    TeamPermComplex::can_user_list_all(&mut proxy, &token.user_id).await?;
+
     let team_form = TeamForm {
         id: TeamComplex::gen_id(),
         name: data.name,
@@ -95,12 +103,15 @@ pub async fn list_infos<C, R, I>(
     data: ListTeamInfosData,
 ) -> RootResult<Vec<TeamInfoVal>>
 where
-    R: TeamRepo<C> + UserRepo<C>,
+    R: TeamRepo<C> + UserRepo<C> + Sync,
     <R as DeriveTransactional>::Transactional: TeamRepoTransactional<C> + UserRepoTransactional<C>,
     I: ImagePool,
 {
     if data.user_id.is_none() {
-        TeamPermComplex::can_user_list_all_teams(repo, &token.user_id).await?;
+        // TODO: comment
+        let mut proxy = ProxyNonTransactional::new(repo);
+
+        TeamPermComplex::can_user_list_all(&mut proxy, &token.user_id).await?;
     }
 
     let team_infos = repo
@@ -131,11 +142,20 @@ where
 ///
 /// * `C` — Context anchor.
 /// * `R: TeamRepo<C>` — Team storage.
-pub async fn update_info<C, R>(repo: &R, data: UpdateTeamInfoData) -> RootResult<()>
+pub async fn update_info<C, R>(
+    repo: &R,
+    token: UserToken,
+    data: UpdateTeamInfoData,
+) -> RootResult<()>
 where
-    R: TeamRepo<C>,
-    <R as DeriveTransactional>::Transactional: TeamRepoTransactional<C>,
+    R: TeamRepo<C> + MemberRepo<C> + Sync,
+    <R as DeriveTransactional>::Transactional:
+        TeamRepoTransactional<C> + MemberRepoTransactional<C>,
 {
+    let mut proxy = ProxyNonTransactional::new(repo);
+
+    MemberPermComplex::can_user_update_info(&mut proxy, &token.user_id, &data.id).await?;
+
     repo.execute(&TeamStep::update_info(
         &data.id,
         &data.name,
@@ -171,6 +191,7 @@ pub async fn reserve_avatar<D, C, R, P, I>(
     repo: &R,
     prom: &P,
     image_pool: &I,
+    token: UserToken,
     id: String,
     data: ReserveTeamAvatarData,
 ) -> RootResult<ReserveTeamAvatarVal>
@@ -178,8 +199,9 @@ where
     D: Drive<C>,
     D::Error: Into<RootError>,
     C: Send,
-    R: TeamRepo<C> + Send + Sync,
-    <R as DeriveTransactional>::Transactional: TeamRepoTransactional<C> + Send,
+    R: TeamRepo<C> + MemberRepo<C> + Send + Sync,
+    <R as DeriveTransactional>::Transactional:
+        TeamRepoTransactional<C> + MemberRepoTransactional<C> + Send + Sync,
     P: Prom<C> + Send + Sync,
     <P as DeriveTransactional>::Transactional: PromTransactional<C> + Send + Sync,
     I: ImagePool,
@@ -188,6 +210,11 @@ where
         .with_context(async move |context| {
             let repo = repo.transactional().await;
             let prom = prom.transactional().await;
+
+            let mut proxy = ProxyTransactional::new(&repo, context);
+
+            MemberPermComplex::can_user_reserve_avatar(&mut proxy, &token.user_id, &id)
+                .await?;
 
             let avatar_reservation = repo
                 .advance(context, &TeamStep::reserve_avatar(&id, &data.file_ext))
@@ -262,13 +289,19 @@ where
 /// * `R: TeamRepo<C>` — Team storage.
 pub async fn mark_avatar_uploaded<C, R>(
     repo: &R,
+    token: UserToken,
     id: String,
     data: MarkTeamAvatarUploadedData,
 ) -> RootResult<()>
 where
-    R: TeamRepo<C>,
-    <R as DeriveTransactional>::Transactional: TeamRepoTransactional<C>,
+    R: TeamRepo<C> + MemberRepo<C> + Sync,
+    <R as DeriveTransactional>::Transactional:
+        TeamRepoTransactional<C> + MemberRepoTransactional<C>,
 {
+    let mut proxy = ProxyNonTransactional::new(repo);
+
+    MemberPermComplex::can_user_mark_avatar_uploaded(&mut proxy, &token.user_id, &id).await?;
+
     repo.execute(&TeamStep::mark_avatar_uploaded(&id, data.avatar_version))
         .await?;
 
@@ -291,15 +324,22 @@ where
 /// * `C` — Context anchor.
 /// * `R: TeamRepo<C> + WorksetRepo<C> + ComicRepo<C>` — Team, workset, and comic storage.
 /// * `P: Prom<C>` — Prom enqueuer for deferred avatar deletion.
-pub async fn delete<D, C, R, P>(drive: &D, repo: &R, prom: &P, id: String) -> RootResult<()>
+pub async fn delete<D, C, R, P>(
+    drive: &D,
+    repo: &R,
+    prom: &P,
+    token: UserToken,
+    id: String,
+) -> RootResult<()>
 where
     D: Drive<C>,
     D::Error: Into<RootError>,
     C: Send,
-    R: TeamRepo<C> + WorksetRepo<C> + ComicRepo<C> + Send + Sync,
+    R: TeamRepo<C> + WorksetRepo<C> + ComicRepo<C> + MemberRepo<C> + Send + Sync,
     <R as DeriveTransactional>::Transactional: TeamRepoTransactional<C>
         + WorksetRepoTransactional<C>
         + ComicRepoTransactional<C>
+        + MemberRepoTransactional<C>
         + Send
         + Sync,
     P: Prom<C> + Send + Sync,
@@ -309,6 +349,10 @@ where
         .with_context(async move |context| {
             let repo = repo.transactional().await;
             let prom = prom.transactional().await;
+
+            let mut proxy = ProxyTransactional::new(&repo, context);
+
+            MemberPermComplex::can_user_delete(&mut proxy, &token.user_id, &id).await?;
 
             TeamComplex::delete_cascade(&repo, &prom, context, &id).await?;
 

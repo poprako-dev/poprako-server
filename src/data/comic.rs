@@ -2,32 +2,39 @@
 
 use poprako_util::time::ToUnixMilli;
 
-use crate::model::comic::ComicInfo as ComicInfoModel;
+use crate::model::comic::ComicInfo;
 use crate::part::image::ImagePool;
 use crate::result::RootResult;
+use crate::value::comic::ComicExtraOpt;
 
 /// Presentation-ready comic information.
 pub struct ComicInfoVal {
     pub id: String,
+
     pub workset_id: String,
     pub index: i32,
+
     pub title: String,
     pub author: String,
     pub description: Option<String>,
     pub is_completed: bool,
+
     pub cover_url: Option<String>,
     pub cover_version: i64,
+
     pub chapter_count: i32,
     pub chapter_next_index: i32,
+
     pub creator_id: String,
     pub last_active_at: i64,
+
     pub created_at: i64,
     pub updated_at: i64,
 }
 
 impl ComicInfoVal {
-    /// Converts a [`ComicInfoModel`] into a presentation-ready value.
-    pub async fn from_model<P>(image_pool: &P, model: ComicInfoModel) -> RootResult<Self>
+    /// Converts a [`ComicInfo`] into a presentation-ready value.
+    pub async fn from_model<P>(image_pool: &P, model: ComicInfo) -> RootResult<Self>
     where
         P: ImagePool,
     {
@@ -59,15 +66,15 @@ impl ComicInfoVal {
 /// Input parameters for creating a comic.
 pub struct CreateComicData {
     pub workset_id: String,
+
     pub title: String,
     pub author: String,
     pub description: Option<String>,
-    pub creator_id: String,
 }
 
 /// Return value from a successful comic creation.
 pub struct CreateComicVal {
-    pub comic: ComicInfoVal,
+    pub id: String,
 }
 
 /// Input parameters for updating a comic's profile.
@@ -81,6 +88,8 @@ pub struct UpdateComicInfoData {
 /// Input parameters for listing comics.
 pub struct ListComicInfosData {
     pub workset_id: String,
+    // TODO:
+    pub extra_opt: Vec<ComicExtraOpt>,
 }
 
 /// Input parameters for reserving a new cover upload slot.

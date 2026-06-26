@@ -3,7 +3,7 @@
 use poprako_macro::Paginate;
 use poprako_util::time::ToUnixMilli;
 
-use crate::model::team::TeamInfo as TeamInfoModel;
+use crate::model::team::TeamInfo;
 use crate::part::image::ImagePool;
 use crate::result::RootResult;
 
@@ -30,7 +30,7 @@ impl TeamInfoVal {
     /// from [`OffsetDateTime`] to Unix milliseconds.
     ///
     /// [`OffsetDateTime`]: time::OffsetDateTime
-    pub async fn from_model<P>(image_pool: &P, model: TeamInfoModel) -> RootResult<Self>
+    pub async fn from_model<P>(image_pool: &P, model: TeamInfo) -> RootResult<Self>
     where
         P: ImagePool,
     {

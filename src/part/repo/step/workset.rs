@@ -23,11 +23,11 @@ impl<'a> Step for GetInfoById<'a> {
 }
 
 /// Step that lists all worksets for a team.
-pub struct ListByTeamId<'a> {
+pub struct ListInfosByTeamId<'a> {
     pub team_id: &'a str,
 }
 
-impl<'a> Step for ListByTeamId<'a> {
+impl<'a> Step for ListInfosByTeamId<'a> {
     type Output = Vec<WorksetInfo>;
 }
 
@@ -41,11 +41,11 @@ impl<'a> Step for UpdateInfo<'a> {
 }
 
 /// Step that lists all worksets for a team with a pessimistic lock.
-pub struct ListByTeamIdExcluded<'a> {
+pub struct ListInfosByTeamIdExcluded<'a> {
     pub team_id: &'a str,
 }
 
-impl<'a> Step for ListByTeamIdExcluded<'a> {
+impl<'a> Step for ListInfosByTeamIdExcluded<'a> {
     type Output = Vec<WorksetInfo>;
 }
 
@@ -109,8 +109,8 @@ impl WorksetStep {
     }
 
     /// Constructs a step to list a team's worksets.
-    pub fn list_by_team_id<'a>(team_id: &'a str) -> ListByTeamId<'a> {
-        ListByTeamId { team_id }
+    pub fn list_infos_by_team_id<'a>(team_id: &'a str) -> ListInfosByTeamId<'a> {
+        ListInfosByTeamId { team_id }
     }
 
     /// Constructs a step to update a workset's profile fields.
@@ -119,8 +119,8 @@ impl WorksetStep {
     }
 
     /// Constructs a step to list a team's worksets with a pessimistic lock.
-    pub fn list_by_team_id_excluded<'a>(team_id: &'a str) -> ListByTeamIdExcluded<'a> {
-        ListByTeamIdExcluded { team_id }
+    pub fn list_infos_by_team_id_excluded<'a>(team_id: &'a str) -> ListInfosByTeamIdExcluded<'a> {
+        ListInfosByTeamIdExcluded { team_id }
     }
 
     /// Constructs a step to fetch a workset with a pessimistic lock.

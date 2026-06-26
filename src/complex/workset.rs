@@ -4,12 +4,15 @@
 use uuid::Uuid;
 
 use crate::complex::comic::ComicComplex;
+use crate::complex::util::{check_user_is_team_admin, check_user_is_team_member};
 use crate::part::prom::PromTransactional;
 use crate::part::repo::comic::ComicRepoTransactional;
+use crate::part::repo::proxy::ProxyExecute;
 use crate::part::repo::step::comic::ComicStep;
-use crate::part::repo::step::workset::WorksetStep;
+use crate::part::repo::step::member::FindByUserTeamId;
+use crate::part::repo::step::workset::{GetInfoById as WorksetGetInfoById, WorksetStep};
 use crate::part::repo::workset::WorksetRepoTransactional;
-use crate::result::RootResult;
+use crate::result::{RootError, RootResult};
 
 /// Domain operations for workset entities.
 pub struct WorksetComplex;
@@ -33,7 +36,7 @@ impl WorksetComplex {
         R: WorksetRepoTransactional<C> + ComicRepoTransactional<C> + Send + Sync,
         P: PromTransactional<C> + Send + Sync,
     {
-        let _workset_info = repo
+        let _ = repo
             .advance(context, &WorksetStep::get_info_excluded(id))
             .await?;
 
@@ -48,5 +51,63 @@ impl WorksetComplex {
         repo.advance(context, &WorksetStep::delete(id)).await?;
 
         Ok(())
+    }
+}
+
+/// Permission-gate operations for workset entities — workset-scoped.
+pub struct WorksetPermComplex;
+
+impl WorksetPermComplex {
+    pub async fn can_user_get_info<P>(
+        proxy: &mut P,
+        user_id: &str,
+        workset_id: &str,
+    ) -> RootResult<()>
+    where
+        P: for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RootError>
+            + for<'a> ProxyExecute<FindByUserTeamId<'a>, Error = RootError>,
+    {
+        let team_id = Self::resolve_team_id(proxy, workset_id).await?;
+
+        check_user_is_team_member(proxy, user_id, &team_id).await
+    }
+
+    pub async fn can_user_update_info<P>(
+        proxy: &mut P,
+        user_id: &str,
+        workset_id: &str,
+    ) -> RootResult<()>
+    where
+        P: for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RootError>
+            + for<'a> ProxyExecute<FindByUserTeamId<'a>, Error = RootError>,
+    {
+        let team_id = Self::resolve_team_id(proxy, workset_id).await?;
+
+        check_user_is_team_admin(proxy, user_id, &team_id).await
+    }
+
+    pub async fn can_user_delete<P>(
+        proxy: &mut P,
+        user_id: &str,
+        workset_id: &str,
+    ) -> RootResult<()>
+    where
+        P: for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RootError>
+            + for<'a> ProxyExecute<FindByUserTeamId<'a>, Error = RootError>,
+    {
+        let team_id = Self::resolve_team_id(proxy, workset_id).await?;
+
+        check_user_is_team_admin(proxy, user_id, &team_id).await
+    }
+
+    async fn resolve_team_id<P>(proxy: &mut P, workset_id: &str) -> RootResult<String>
+    where
+        P: for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RootError>,
+    {
+        let workset_info = proxy
+            .execute(&WorksetStep::get_info_by_id(workset_id))
+            .await?;
+
+        Ok(workset_info.team_id)
     }
 }

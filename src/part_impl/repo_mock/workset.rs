@@ -6,8 +6,8 @@ use poprako_transactional::advance::Advance;
 use crate::model::workset::WorksetInfo;
 use crate::part::repo::Execute;
 use crate::part::repo::step::workset::{
-    Create, Delete, GetInfoById, GetInfoExcluded, IncrComicNextIndex, ListByTeamId,
-    ListByTeamIdExcluded, UpdateComicCount, UpdateInfo,
+    Create, Delete, GetInfoById, GetInfoExcluded, IncrComicNextIndex, ListInfosByTeamId,
+    ListInfosByTeamIdExcluded, UpdateComicCount, UpdateInfo,
 };
 use crate::part::repo::workset::{WorksetRepo, WorksetRepoTransactional};
 use crate::part_impl::repo_mock::{Mock, MockContext, MockTransactional, expected, now};
@@ -33,10 +33,10 @@ impl<'a> Execute<GetInfoById<'a>> for Mock {
 }
 
 #[async_trait]
-impl<'a> Execute<ListByTeamId<'a>> for Mock {
+impl<'a> Execute<ListInfosByTeamId<'a>> for Mock {
     type Error = RootError;
 
-    async fn execute(&self, step: &ListByTeamId<'a>) -> Result<Vec<WorksetInfo>, Self::Error> {
+    async fn execute(&self, step: &ListInfosByTeamId<'a>) -> Result<Vec<WorksetInfo>, Self::Error> {
         let state = self.state.lock().unwrap();
         let mut worksets = state
             .worksets
@@ -103,13 +103,13 @@ impl<'a> Advance<Create<'a>, MockContext> for MockTransactional {
 }
 
 #[async_trait]
-impl<'a> Advance<ListByTeamIdExcluded<'a>, MockContext> for MockTransactional {
+impl<'a> Advance<ListInfosByTeamIdExcluded<'a>, MockContext> for MockTransactional {
     type Error = RootError;
 
     async fn advance(
         &self,
         context: &mut MockContext,
-        step: &ListByTeamIdExcluded<'a>,
+        step: &ListInfosByTeamIdExcluded<'a>,
     ) -> Result<Vec<WorksetInfo>, Self::Error> {
         Ok(context
             .state
@@ -118,6 +118,25 @@ impl<'a> Advance<ListByTeamIdExcluded<'a>, MockContext> for MockTransactional {
             .filter(|workset| workset.team_id == step.team_id)
             .cloned()
             .collect())
+    }
+}
+
+#[async_trait]
+impl<'a> Advance<GetInfoById<'a>, MockContext> for MockTransactional {
+    type Error = RootError;
+
+    async fn advance(
+        &self,
+        context: &mut MockContext,
+        step: &GetInfoById<'a>,
+    ) -> Result<WorksetInfo, Self::Error> {
+        context
+            .state
+            .worksets
+            .iter()
+            .find(|workset| workset.id == step.id)
+            .cloned()
+            .ok_or_else(|| expected("error-workset-not-found"))
     }
 }
 

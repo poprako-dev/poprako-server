@@ -61,9 +61,9 @@ mod tests {
         let visible_at = OffsetDateTime::now_utc();
 
         let result = Drive::with_context(&mock, async move |context| {
-            let txn = MockTransactional;
+            let transactional = MockTransactional;
             Advance::advance(
-                &txn,
+                &transactional,
                 context,
                 &PromStep::append(
                     "prom-1",

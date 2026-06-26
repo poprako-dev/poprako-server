@@ -113,8 +113,8 @@ impl<'a> Execute<ListByReceiverId<'a>> for Mock {
 
         let result = mails
             .into_iter()
-            .skip(step.spec.page.offset)
-            .take(step.spec.page.limit)
+            .skip(step.spec.offset as usize)
+            .take(step.spec.limit as usize)
             .collect();
 
         Ok(result)
@@ -169,8 +169,6 @@ mod tests {
 
     use super::*;
 
-    use poprako_util::page::Page;
-
     use crate::model::system_mail::{SystemMailInfo, SystemMailListSpec};
     use crate::part::repo::step::system_mail::SystemMailStep;
     use crate::result::ExpectedVariant;
@@ -199,10 +197,6 @@ mod tests {
             title: "title".into(),
             content: "content".into(),
         }
-    }
-
-    fn page(offset: usize, limit: usize) -> Page {
-        Page { offset, limit }
     }
 
     #[tokio::test]
@@ -294,7 +288,8 @@ mod tests {
 
         let mail_list_spec = SystemMailListSpec {
             read: Some(false),
-            page: page(0, 10),
+            offset: 0,
+            limit: 10,
         };
 
         let result = mock

@@ -35,6 +35,7 @@ use poprako_transactional::advance::Advance;
 
 use crate::model::comic::ComicInfo;
 use crate::model::member::MemberInfo;
+use crate::model::role::{RoleBit, RoleMask};
 use crate::model::team::TeamInfo;
 use crate::model::user::{UserCredential, UserInfo};
 use crate::model::workset::WorksetInfo;
@@ -45,7 +46,14 @@ use crate::part::repo::step::team::{
     Create, Delete, GetInfoById, GetInfoExcluded, IncrementWorksetNextIndex, ListInfos,
     MarkAvatarUploaded, ReserveAvatar, UpdateInfo,
 };
+use crate::part::repo::step::user::{
+    Create as UserCreate, Delete as UserDelete, FindInfoByQid, GetCredentialByQid,
+    GetInfoById as UserGetInfoById, GetInfoExcluded as UserGetInfoExcluded,
+    MarkAvatarUploaded as UserMarkAvatarUploaded, ReserveAvatar as UserReserveAvatar,
+    TouchLastActive as UserTouchLastActive, UpdateInfo as UserUpdateInfo,
+};
 use crate::part::repo::team::{TeamRepo, TeamRepoTransactional};
+use crate::part::repo::user::{UserRepo, UserRepoTransactional};
 use crate::part_impl::prom_mock::MockPromRecord;
 use crate::part_impl::repo_mock::{Mock, MockContext};
 use crate::result::{ExpectedVariant, RootError};
@@ -69,10 +77,12 @@ impl DeriveTransactional for FailingCreateRepo {
 }
 
 impl TeamRepo<MockContext> for FailingCreateRepo {}
+impl UserRepo<MockContext> for FailingCreateRepo {}
 
 struct FailingTeamTransactional;
 
 impl TeamRepoTransactional<MockContext> for FailingTeamTransactional {}
+impl UserRepoTransactional<MockContext> for FailingTeamTransactional {}
 
 /// Builds a [`TeamInfo`] fixture with default timestamps and no avatar.
 pub(crate) fn team(id: &str, name: &str, description: &str) -> TeamInfo {
@@ -132,6 +142,7 @@ fn member(id: &str, user_id: &str, team_id: &str) -> MemberInfo {
         user_id: user_id.into(),
         user_nickname: user_id.into(),
         team_id: team_id.into(),
+        role_mask: RoleMask::from(RoleBit::ADMIN),
     }
 }
 
@@ -277,6 +288,140 @@ impl<'a> Execute<Create<'a>> for FailingCreateRepo {
 }
 
 #[async_trait]
+impl<'a> Execute<UserGetInfoById<'a>> for FailingCreateRepo {
+    type Error = RootError;
+
+    async fn execute(&self, step: &UserGetInfoById<'a>) -> Result<UserInfo, Self::Error> {
+        Ok(user(step.id, true))
+    }
+}
+
+#[async_trait]
+impl<'a> Execute<GetCredentialByQid<'a>> for FailingCreateRepo {
+    type Error = RootError;
+
+    async fn execute(
+        &self,
+        _step: &GetCredentialByQid<'a>,
+    ) -> Result<UserCredential, Self::Error> {
+        Err(expected_error())
+    }
+}
+
+#[async_trait]
+impl<'a> Execute<FindInfoByQid<'a>> for FailingCreateRepo {
+    type Error = RootError;
+
+    async fn execute(&self, _step: &FindInfoByQid<'a>) -> Result<Option<UserInfo>, Self::Error> {
+        Ok(None)
+    }
+}
+
+#[async_trait]
+impl<'a> Advance<UserCreate<'a>, MockContext> for FailingTeamTransactional {
+    type Error = RootError;
+
+    async fn advance(
+        &self,
+        _context: &mut MockContext,
+        _step: &UserCreate<'a>,
+    ) -> Result<UserInfo, Self::Error> {
+        Err(expected_error())
+    }
+}
+
+#[async_trait]
+impl<'a> Advance<FindInfoByQid<'a>, MockContext> for FailingTeamTransactional {
+    type Error = RootError;
+
+    async fn advance(
+        &self,
+        _context: &mut MockContext,
+        _step: &FindInfoByQid<'a>,
+    ) -> Result<Option<UserInfo>, Self::Error> {
+        Ok(None)
+    }
+}
+
+#[async_trait]
+impl<'a> Advance<UserUpdateInfo<'a>, MockContext> for FailingTeamTransactional {
+    type Error = RootError;
+
+    async fn advance(
+        &self,
+        _context: &mut MockContext,
+        _step: &UserUpdateInfo<'a>,
+    ) -> Result<(), Self::Error> {
+        Err(expected_error())
+    }
+}
+
+#[async_trait]
+impl<'a> Advance<UserReserveAvatar<'a>, MockContext> for FailingTeamTransactional {
+    type Error = RootError;
+
+    async fn advance(
+        &self,
+        _context: &mut MockContext,
+        _step: &UserReserveAvatar<'a>,
+    ) -> Result<crate::model::user::UserAvatarReservation, Self::Error> {
+        Err(expected_error())
+    }
+}
+
+#[async_trait]
+impl<'a> Advance<UserMarkAvatarUploaded<'a>, MockContext> for FailingTeamTransactional {
+    type Error = RootError;
+
+    async fn advance(
+        &self,
+        _context: &mut MockContext,
+        _step: &UserMarkAvatarUploaded<'a>,
+    ) -> Result<(), Self::Error> {
+        Err(expected_error())
+    }
+}
+
+#[async_trait]
+impl<'a> Advance<UserTouchLastActive<'a>, MockContext> for FailingTeamTransactional {
+    type Error = RootError;
+
+    async fn advance(
+        &self,
+        _context: &mut MockContext,
+        _step: &UserTouchLastActive<'a>,
+    ) -> Result<(), Self::Error> {
+        Err(expected_error())
+    }
+}
+
+#[async_trait]
+impl<'a> Advance<UserGetInfoExcluded<'a>, MockContext> for FailingTeamTransactional {
+    type Error = RootError;
+
+    async fn advance(
+        &self,
+        _context: &mut MockContext,
+        _step: &UserGetInfoExcluded<'a>,
+    ) -> Result<UserInfo, Self::Error> {
+        Err(expected_error())
+    }
+}
+
+#[async_trait]
+impl<'a> Advance<UserDelete<'a>, MockContext> for FailingTeamTransactional {
+    type Error = RootError;
+
+    async fn advance(
+        &self,
+        _context: &mut MockContext,
+        _step: &UserDelete<'a>,
+    ) -> Result<(), Self::Error> {
+        Err(expected_error())
+    }
+}
+
+#[async_trait]
 impl<'a> Execute<GetInfoById<'a>> for FailingCreateRepo {
     type Error = RootError;
 
@@ -380,10 +525,12 @@ impl<'a> Advance<IncrementWorksetNextIndex<'a>, MockContext> for FailingTeamTran
 #[tokio::test]
 async fn create_persists_team_and_returns_info() {
     let mock = Mock::new();
+    mock.seed_user(user("user-1", true), credential("user-1"));
 
     let result = create(
         &mock,
         &mock,
+        token("user-1"),
         CreateTeamData {
             name: "Team".into(),
             description: "Desc".into(),
@@ -408,6 +555,7 @@ async fn create_propagates_repo_failure() {
     let err = create(
         &repo,
         &image,
+        token("user-1"),
         CreateTeamData {
             name: "Team".into(),
             description: "Desc".into(),
@@ -497,6 +645,7 @@ async fn list_infos_returns_empty_page_when_offset_exceeds_data() {
 #[tokio::test]
 async fn list_infos_all_teams_requires_sadmin() {
     let mock = Mock::new();
+    mock.seed_team(team("team-1", "A", "Desc"));
     mock.seed_user(user("user-1", false), credential("user-1"));
 
     let err = list_infos(&mock, &mock, token("user-1"), list_data(None, 0, 10))
@@ -511,8 +660,9 @@ async fn list_infos_all_teams_requires_sadmin() {
 async fn update_info_updates_team() {
     let mock = Mock::new();
     mock.seed_team(team("team-1", "Old", "Old Desc"));
+    mock.seed_member(member("member-1", "user-1", "team-1"));
 
-    let result = update_info(&mock, update_data("team-1", "New", "New Desc")).await;
+    let result = update_info(&mock, token("user-1"), update_data("team-1", "New", "New Desc")).await;
     assert!(result.is_ok());
 
     let snapshot = mock.snapshot();
@@ -523,8 +673,9 @@ async fn update_info_updates_team() {
 #[tokio::test]
 async fn update_info_propagates_missing_team() {
     let mock = Mock::new();
+    mock.seed_member(member("member-1", "user-1", "team-1"));
 
-    let err = update_info(&mock, update_data("team-1", "New", "New Desc"))
+    let err = update_info(&mock, token("user-1"), update_data("team-1", "New", "New Desc"))
         .await
         .err()
         .unwrap();
@@ -536,12 +687,14 @@ async fn update_info_propagates_missing_team() {
 async fn reserve_avatar_updates_state_enqueues_check_and_returns_put_url() {
     let mock = Mock::new();
     mock.seed_team(team("team-1", "Team", "Desc"));
+    mock.seed_member(member("member-1", "user-1", "team-1"));
 
     let result = reserve_avatar(
         &mock,
         &mock,
         &mock,
         &mock,
+        token("user-1"),
         "team-1".into(),
         reserve_data("png"),
     )
@@ -577,12 +730,14 @@ async fn reserve_avatar_replacing_avatar_enqueues_delete_and_check() {
     mock.seed_team(team_with_avatar(
         "team-1", "Team", "Desc", "old-key", true, 1,
     ));
+    mock.seed_member(member("member-1", "user-1", "team-1"));
 
     let result = reserve_avatar(
         &mock,
         &mock,
         &mock,
         &mock,
+        token("user-1"),
         "team-1".into(),
         reserve_data("jpg"),
     )
@@ -605,12 +760,14 @@ async fn reserve_avatar_replacing_avatar_enqueues_delete_and_check() {
 #[tokio::test]
 async fn reserve_avatar_rolls_back_missing_team() {
     let mock = Mock::new();
+    mock.seed_member(member("member-1", "user-1", "team-1"));
 
     let err = reserve_avatar(
         &mock,
         &mock,
         &mock,
         &mock,
+        token("user-1"),
         "team-1".into(),
         reserve_data("png"),
     )
@@ -628,12 +785,14 @@ async fn reserve_avatar_rolls_back_missing_team() {
 async fn reserve_avatar_propagates_put_url_failure_after_commit() {
     let mock = Mock::new().with_image_put_failure();
     mock.seed_team(team("team-1", "Team", "Desc"));
+    mock.seed_member(member("member-1", "user-1", "team-1"));
 
     let err = reserve_avatar(
         &mock,
         &mock,
         &mock,
         &mock,
+        token("user-1"),
         "team-1".into(),
         reserve_data("png"),
     )
@@ -654,8 +813,9 @@ async fn reserve_avatar_propagates_put_url_failure_after_commit() {
 async fn mark_avatar_uploaded_marks_matching_version() {
     let mock = Mock::new();
     mock.seed_team(team_with_avatar("team-1", "Team", "Desc", "key", false, 2));
+    mock.seed_member(member("member-1", "user-1", "team-1"));
 
-    let result = mark_avatar_uploaded(&mock, "team-1".into(), mark_data(2)).await;
+    let result = mark_avatar_uploaded(&mock, token("user-1"), "team-1".into(), mark_data(2)).await;
     assert!(result.is_ok());
 
     assert!(mock.snapshot().teams[0].avatar_uploaded);
@@ -665,8 +825,9 @@ async fn mark_avatar_uploaded_marks_matching_version() {
 async fn mark_avatar_uploaded_rejects_stale_version() {
     let mock = Mock::new();
     mock.seed_team(team_with_avatar("team-1", "Team", "Desc", "key", false, 2));
+    mock.seed_member(member("member-1", "user-1", "team-1"));
 
-    let err = mark_avatar_uploaded(&mock, "team-1".into(), mark_data(1))
+    let err = mark_avatar_uploaded(&mock, token("user-1"), "team-1".into(), mark_data(1))
         .await
         .err()
         .unwrap();
@@ -686,6 +847,7 @@ async fn delete_removes_team_worksets_descendant_comics_and_avatar() {
         true,
         2,
     ));
+    mock.seed_member(member("member-1", "user-1", "team-1"));
     mock.seed_workset(workset("workset-1", "team-1"));
     mock.seed_workset(workset("workset-2", "team-1"));
     mock.seed_comic(comic_with_uploaded_cover(
@@ -699,7 +861,7 @@ async fn delete_removes_team_worksets_descendant_comics_and_avatar() {
         "cover-2.png",
     ));
 
-    let result = delete(&mock, &mock, &mock, "team-1".into()).await;
+    let result = delete(&mock, &mock, &mock, token("user-1"), "team-1".into()).await;
     assert!(result.is_ok());
 
     let snapshot = mock.snapshot();
@@ -731,8 +893,9 @@ async fn delete_without_uploaded_avatar_does_not_enqueue_prom() {
         false,
         2,
     ));
+    mock.seed_member(member("member-1", "user-1", "team-1"));
 
-    let result = delete(&mock, &mock, &mock, "team-1".into()).await;
+    let result = delete(&mock, &mock, &mock, token("user-1"), "team-1".into()).await;
     assert!(result.is_ok());
 
     assert!(mock.snapshot().prom_records.is_empty());
@@ -741,8 +904,9 @@ async fn delete_without_uploaded_avatar_does_not_enqueue_prom() {
 #[tokio::test]
 async fn delete_rolls_back_missing_team() {
     let mock = Mock::new();
+    mock.seed_member(member("member-1", "user-1", "team-1"));
 
-    let err = delete(&mock, &mock, &mock, "team-1".into())
+    let err = delete(&mock, &mock, &mock, token("user-1"), "team-1".into())
         .await
         .err()
         .unwrap();

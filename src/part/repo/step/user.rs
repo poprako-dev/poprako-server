@@ -22,6 +22,15 @@ impl<'a> Step for GetCredentialByQid<'a> {
     type Output = UserCredential;
 }
 
+/// Step that finds a user profile by QQ ID.
+pub struct FindInfoByQid<'a> {
+    pub qid: &'a str,
+}
+
+impl<'a> Step for FindInfoByQid<'a> {
+    type Output = Option<UserInfo>;
+}
+
 /// Step that inserts a new user row.
 pub struct Create<'a> {
     pub form: &'a UserForm,
@@ -109,6 +118,11 @@ impl UserStep {
     /// Constructs a step to fetch a user's credential by QQ ID.
     pub fn get_credential_by_qid<'a>(qid: &'a str) -> GetCredentialByQid<'a> {
         GetCredentialByQid { qid }
+    }
+
+    /// Constructs a step to find a user profile by QQ ID.
+    pub fn find_info_by_qid<'a>(qid: &'a str) -> FindInfoByQid<'a> {
+        FindInfoByQid { qid }
     }
 
     /// Constructs a step to insert a new user.

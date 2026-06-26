@@ -7,8 +7,8 @@ use poprako_transactional::advance::Advance;
 
 use crate::part::repo::Execute;
 use crate::part::repo::step::workset::{
-    Create, Delete, GetInfoById, GetInfoExcluded, IncrComicNextIndex, ListByTeamId,
-    ListByTeamIdExcluded, UpdateComicCount, UpdateInfo,
+    Create, Delete, GetInfoById, GetInfoExcluded, IncrComicNextIndex, ListInfosByTeamId,
+    ListInfosByTeamIdExcluded, UpdateComicCount, UpdateInfo,
 };
 use crate::result::RootError;
 use crate::util::DeriveTransactional;
@@ -20,7 +20,7 @@ use crate::util::DeriveTransactional;
 pub trait WorksetRepo<C>:
     DeriveTransactional
     + for<'a> Execute<GetInfoById<'a>, Error = RootError>
-    + for<'a> Execute<ListByTeamId<'a>, Error = RootError>
+    + for<'a> Execute<ListInfosByTeamId<'a>, Error = RootError>
     + for<'a> Execute<UpdateInfo<'a>, Error = RootError>
 where
     Self::Transactional: WorksetRepoTransactional<C>,
@@ -29,10 +29,13 @@ where
 
 /// Transactional workset repository.
 pub trait WorksetRepoTransactional<C>:
-    for<'a> Advance<ListByTeamIdExcluded<'a>, C, Error = RootError>
+    for<'a> Advance<ListInfosByTeamIdExcluded<'a>, C, Error = RootError>
     + for<'a> Advance<GetInfoExcluded<'a>, C, Error = RootError>
     + for<'a> Advance<Delete<'a>, C, Error = RootError>
+    + for<'a> Advance<GetInfoById<'a>, C, Error = RootError>
     + for<'a> Advance<Create<'a>, C, Error = RootError>
+    // NOTE: As the concurrency is expected not to be so high in production environment,
+    // excluded row lock is acceptable now.
     + for<'a> Advance<IncrComicNextIndex<'a>, C, Error = RootError>
     + for<'a> Advance<UpdateComicCount<'a>, C, Error = RootError>
 {
