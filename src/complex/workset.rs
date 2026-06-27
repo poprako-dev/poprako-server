@@ -57,6 +57,7 @@ impl WorksetComplex {
 pub struct WorksetPermComplex;
 
 impl WorksetPermComplex {
+    /// Verify the caller is a team admin.
     pub async fn can_user_create<P>(proxy: &mut P, user_id: &str, team_id: &str) -> RootResult<()>
     where
         P: for<'a> ProxyExecute<FindByUserTeamId<'a>, Error = RootError>,
@@ -64,6 +65,7 @@ impl WorksetPermComplex {
         check_user_is_team_admin(proxy, user_id, team_id).await
     }
 
+    /// Verify the caller is a team member.
     pub async fn can_user_list_infos<P>(
         proxy: &mut P,
         user_id: &str,
@@ -75,6 +77,7 @@ impl WorksetPermComplex {
         check_user_is_team_member(proxy, user_id, team_id).await
     }
 
+    /// Verify the caller is a team member of the workset's team.
     pub async fn can_user_get_info<P>(
         proxy: &mut P,
         user_id: &str,
@@ -89,6 +92,7 @@ impl WorksetPermComplex {
         check_user_is_team_member(proxy, user_id, &team_id).await
     }
 
+    /// Verify the caller is a team admin of the workset's team.
     pub async fn can_user_update_info<P>(
         proxy: &mut P,
         user_id: &str,
@@ -103,6 +107,7 @@ impl WorksetPermComplex {
         check_user_is_team_admin(proxy, user_id, &team_id).await
     }
 
+    /// Verify the caller is a team admin of the workset's team.
     pub async fn can_user_delete<P>(
         proxy: &mut P,
         user_id: &str,
@@ -117,6 +122,7 @@ impl WorksetPermComplex {
         check_user_is_team_admin(proxy, user_id, &team_id).await
     }
 
+    /// Resolve the owning team ID from a workset ID.
     async fn resolve_team_id<P>(proxy: &mut P, workset_id: &str) -> RootResult<String>
     where
         P: for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RootError>,

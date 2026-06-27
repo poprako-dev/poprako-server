@@ -287,10 +287,10 @@ async fn create_pins_chapter_and_creates_reviewer_assignment() {
 
     assert_eq!(snapshot.chapters.len(), 2);
     assert!(snapshot.chapters.iter().any(|chapter_info| {
-        chapter_info.id == created_id
-            && chapter_info.is_pinned
-            && chapter_info.subtitle == "第4话"
-            && chapter_info.index == 3
+            chapter_info.id == created_id
+                && chapter_info.is_pinned
+                && chapter_info.subtitle == "第 4 话"
+                && chapter_info.index == 3
     }));
     assert!(
         snapshot

@@ -16,18 +16,26 @@ use crate::part::repo::workset::WorksetRepoTransactional;
 use crate::result::{RootError, RootResult};
 use crate::util::next_snowflake_id;
 
-/// Domain operations for comic entities.
+/// Domain operations for comic entities: identity generation, cover-storage
+/// key management, and recursive deletion with related resource cleanup.
 pub struct ComicComplex;
 
 impl ComicComplex {
+    /// Generate a unique, time-ordered comic identifier backed by a snowflake value.
     pub fn gen_id() -> String {
         next_snowflake_id()
     }
 
+    /// Construct the object-storage key for a comic cover image.
+    ///
+    /// Format: `comic_cover/{id}-{version}.{ext}`.
     pub fn gen_cover_key(id: &str, cover_version: i64, file_ext: &str) -> String {
         format!("comic_cover/{}-{}.{}", id, cover_version, file_ext)
     }
 
+    /// Recursively delete a comic and all owned resources: enqueues cover-image
+    /// deletion if the cover was uploaded, removes the comic record, and
+    /// decrements the parent workset's comic-count counter.
     pub async fn delete_cascade<C, R, P>(
         repo: &R,
         prom: &P,
@@ -79,6 +87,7 @@ impl ComicComplex {
 pub struct ComicPermComplex;
 
 impl ComicPermComplex {
+    /// Verify the caller is a team admin of the owning workset's team.
     pub async fn can_user_create<P>(
         proxy: &mut P,
         user_id: &str,
@@ -93,6 +102,7 @@ impl ComicPermComplex {
         check_user_is_team_admin(proxy, user_id, &team_id).await
     }
 
+    /// Verify the caller is a team member of the owning workset's team.
     pub async fn can_user_list_infos<P>(
         proxy: &mut P,
         user_id: &str,
@@ -107,6 +117,7 @@ impl ComicPermComplex {
         check_user_is_team_member(proxy, user_id, &team_id).await
     }
 
+    /// Verify the caller is a team member of the comic's team.
     pub async fn can_user_get_info<P>(
         proxy: &mut P,
         user_id: &str,
@@ -122,6 +133,7 @@ impl ComicPermComplex {
         check_user_is_team_member(proxy, user_id, &team_id).await
     }
 
+    /// Verify the caller is a team admin of the comic's team.
     pub async fn can_user_update_info<P>(
         proxy: &mut P,
         user_id: &str,
@@ -137,6 +149,7 @@ impl ComicPermComplex {
         check_user_is_team_admin(proxy, user_id, &team_id).await
     }
 
+    /// Verify the caller is a team admin of the comic's team.
     pub async fn can_user_reserve_cover<P>(
         proxy: &mut P,
         user_id: &str,
@@ -152,6 +165,7 @@ impl ComicPermComplex {
         check_user_is_team_admin(proxy, user_id, &team_id).await
     }
 
+    /// Verify the caller is a team admin of the comic's team.
     pub async fn can_user_mark_cover_uploaded<P>(
         proxy: &mut P,
         user_id: &str,
@@ -167,6 +181,7 @@ impl ComicPermComplex {
         check_user_is_team_admin(proxy, user_id, &team_id).await
     }
 
+    /// Verify the caller is a team admin of the comic's team.
     pub async fn can_user_delete<P>(proxy: &mut P, user_id: &str, comic_id: &str) -> RootResult<()>
     where
         P: for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RootError>
@@ -178,6 +193,7 @@ impl ComicPermComplex {
         check_user_is_team_admin(proxy, user_id, &team_id).await
     }
 
+    /// Verify the caller is a team admin of the comic's team.
     pub async fn can_user_mark_completed<P>(
         proxy: &mut P,
         user_id: &str,
@@ -193,6 +209,7 @@ impl ComicPermComplex {
         check_user_is_team_admin(proxy, user_id, &team_id).await
     }
 
+    /// Resolve the owning team ID from a workset ID.
     async fn resolve_team_id_from_workset<P>(proxy: &mut P, workset_id: &str) -> RootResult<String>
     where
         P: for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RootError>,
@@ -204,6 +221,7 @@ impl ComicPermComplex {
         Ok(workset_info.team_id)
     }
 
+    /// Resolve the owning team ID from a comic ID (via its workset).
     async fn resolve_team_id_from_comic<P>(proxy: &mut P, comic_id: &str) -> RootResult<String>
     where
         P: for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RootError>

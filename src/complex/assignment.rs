@@ -6,14 +6,22 @@ use crate::model::assignment::{AssignmentInfo, AssignmentRoleUpdate};
 use crate::model::role::{RoleBit, RoleMask};
 use crate::util::next_snowflake_id;
 
-/// Domain operations for chapter assignments.
+/// Domain operations for chapter assignments: ID generation, role-timestamp
+/// derivation, and role-merge logic.
 pub struct AssignmentComplex;
 
 impl AssignmentComplex {
+    /// Generate a unique assignment identifier backed by a snowflake value.
     pub fn gen_id() -> String {
         next_snowflake_id()
     }
 
+    /// Derive per-role `assigned_at` timestamps from a [`RoleMask`].
+    ///
+    /// Each role bit present in the mask yields `Some(now)` for the
+    /// corresponding timestamp field; absent bits yield `None`.
+    /// Order follows: `RAW_PROVIDER`, `TRANSLATOR`, `PROOFREADER`,
+    /// `TYPESETTER`, `REDRAWER`, `REVIEWER`, `PUBLISHER`.
     pub fn timed_roles_from_mask(
         role_mask: RoleMask,
         now: OffsetDateTime,
@@ -45,6 +53,9 @@ impl AssignmentComplex {
         )
     }
 
+    /// Merge new roles into an existing assignment, preserving existing
+    /// `assigned_at` timestamps for roles already held and writing `now`
+    /// for newly granted roles.
     pub fn merge_timed_roles(
         assignment_info: &AssignmentInfo,
         role_mask: RoleMask,

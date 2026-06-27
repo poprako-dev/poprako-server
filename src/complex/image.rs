@@ -6,12 +6,12 @@ use crate::util::next_snowflake_id;
 pub struct ImageComplex;
 
 impl ImageComplex {
-    /// Generates a unique image deletion-task identifier backed by a snowflake value.
+    /// Generate a unique image deletion-task identifier backed by a snowflake value.
     pub fn gen_delete_id() -> String {
         next_snowflake_id()
     }
 
-    /// Generates a unique image integrity-check identifier backed by a snowflake value.
+    /// Generate a unique image integrity-check identifier backed by a snowflake value.
     pub fn gen_check_id() -> String {
         next_snowflake_id()
     }
