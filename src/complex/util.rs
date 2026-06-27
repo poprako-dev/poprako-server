@@ -7,6 +7,7 @@ use crate::part::repo::proxy::ProxyExecute;
 use crate::part::repo::step::member::{FindByUserTeamId, MemberStep};
 use crate::result::{ExpectedVariant, RootError, RootResult, accept};
 
+/// Verify the user is a member of the given team; returns `Perm` error if not.
 pub(super) async fn check_user_is_team_member<P>(
     proxy: &mut P,
     user_id: &str,
@@ -29,6 +30,7 @@ where
     accept(())
 }
 
+/// Verify the user is a team admin; returns `Perm` error if not.
 pub(super) async fn check_user_is_team_admin<P>(
     proxy: &mut P,
     user_id: &str,

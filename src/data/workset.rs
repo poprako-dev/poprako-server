@@ -1,6 +1,13 @@
-//! Data transfer objects for workset use cases.
+//! Data transfer objects for workset use cases — input parameters and
+//! presentation-ready values for the workset aggregate.
+//!
+//! Timestamps are converted to Unix milliseconds for JSON serialisation.
 
 /// Presentation-ready workset information.
+///
+/// Mirrors [`WorksetInfo`] with timestamps converted to Unix milliseconds.
+///
+/// [`WorksetInfo`]: crate::model::workset::WorksetInfo
 pub struct WorksetInfoVal {
     pub id: String,
     pub team_id: String,
@@ -17,7 +24,7 @@ pub struct WorksetInfoVal {
     pub updated_at: i64,
 }
 
-/// Input parameters for creating a workset.
+/// Input parameters for creating a new workset inside a team.
 pub struct CreateWorksetData {
     pub team_id: String,
 
@@ -30,7 +37,9 @@ pub struct CreateWorksetVal {
     pub id: String,
 }
 
-/// Input parameters for updating a workset's profile.
+/// Input parameters for updating a workset's name and description.
+///
+/// Cover and counter updates are handled internally by the repo layer.
 pub struct UpdateWorksetInfoData {
     pub id: String,
 
@@ -38,7 +47,7 @@ pub struct UpdateWorksetInfoData {
     pub description: Option<String>,
 }
 
-/// Input parameters for listing worksets.
+/// Input parameters for listing worksets within a team.
 pub struct ListWorksetInfosData {
     pub team_id: String,
 }

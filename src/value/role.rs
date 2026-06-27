@@ -15,14 +15,23 @@ mod tests;
 pub struct RoleBit(u32);
 
 impl RoleBit {
+    /// Raw provider (上传) role.
     pub const RAW_PROVIDER: Self = Self(1 << 0);
+    /// Translator (翻译) role.
     pub const TRANSLATOR: Self = Self(1 << 1);
+    /// Proofreader (校对) role.
     pub const PROOFREADER: Self = Self(1 << 2);
+    /// Typesetter (嵌字) role.
     pub const TYPESETTER: Self = Self(1 << 3);
+    /// Redrawer (美工) role.
     pub const REDRAWER: Self = Self(1 << 4);
+    /// Reviewer (监修) role.
     pub const REVIEWER: Self = Self(1 << 5);
+    /// Publisher (发布) role.
     pub const PUBLISHER: Self = Self(1 << 6);
+    /// Admin (管理) role.
     pub const ADMIN: Self = Self(1 << 7);
+    /// Bot (机器人) role.
     pub const BOT: Self = Self(1 << 8);
 
     const VALID_BITS: u32 = (1 << 9) - 1;
@@ -35,25 +44,30 @@ pub struct RoleMask(u32);
 impl RoleMask {
     const VALID_BITS: u32 = (1 << 8) - 1;
 
+    /// Check if the mask contains any of the given role bits.
     pub fn has_any_role(&self, bits: &[RoleBit]) -> bool {
         bits.iter()
             .any(|role_bit| u32::from(*self) & u32::from(*role_bit) != 0)
     }
 
+    /// Check if the mask contains all of the given role bits.
     pub fn has_every_role(&self, bits: &[RoleBit]) -> bool {
         bits.iter()
             .all(|role_bit| u32::from(*self) & u32::from(*role_bit) != 0)
     }
 
+    /// Check if the mask fully contains another mask (all bits set).
     pub fn contains_mask(&self, role_mask: RoleMask) -> bool {
         u32::from(*self) & u32::from(role_mask) == u32::from(role_mask)
     }
 
+    /// Return the union of two masks.
     pub fn union(&self, role_mask: RoleMask) -> RoleMask {
         RoleMask(u32::from(*self) | u32::from(role_mask))
     }
 }
 
+/// Convert a raw `u32` to a [`RoleBit`], validating it is a single valid bit.
 impl TryFrom<u32> for RoleBit {
     type Error = RootError;
 
@@ -69,12 +83,14 @@ impl TryFrom<u32> for RoleBit {
     }
 }
 
+/// Convert a [`RoleBit`] to its underlying `u32` representation.
 impl From<RoleBit> for u32 {
     fn from(value: RoleBit) -> Self {
         value.0
     }
 }
 
+/// Serialize a [`RoleBit`] as its raw `u32` value.
 impl Serialize for RoleBit {
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
@@ -84,6 +100,7 @@ impl Serialize for RoleBit {
     }
 }
 
+/// Deserialize a [`RoleBit`] from a raw `u32`.
 impl<'de> Deserialize<'de> for RoleBit {
     fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
     where
@@ -95,12 +112,14 @@ impl<'de> Deserialize<'de> for RoleBit {
     }
 }
 
+/// Convert a [`RoleBit`] to a single-bit [`RoleMask`].
 impl From<RoleBit> for RoleMask {
     fn from(value: RoleBit) -> Self {
         Self(u32::from(value))
     }
 }
 
+/// Convert a raw `u32` to a [`RoleMask`], validating it contains only valid bits.
 impl TryFrom<u32> for RoleMask {
     type Error = RootError;
 
@@ -116,12 +135,14 @@ impl TryFrom<u32> for RoleMask {
     }
 }
 
+/// Convert a [`RoleMask`] to its underlying `u32` representation.
 impl From<RoleMask> for u32 {
     fn from(value: RoleMask) -> Self {
         value.0
     }
 }
 
+/// Serialize a [`RoleMask`] as its raw `u32` value.
 impl Serialize for RoleMask {
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
@@ -131,6 +152,7 @@ impl Serialize for RoleMask {
     }
 }
 
+/// Deserialize a [`RoleMask`] from a raw `u32`.
 impl<'de> Deserialize<'de> for RoleMask {
     fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
     where

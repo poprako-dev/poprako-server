@@ -8,23 +8,35 @@ use crate::model::role::RoleMask;
 use crate::value::chapter::{StagePhase, WorkflowEvent, WorkflowStage};
 
 /// Presentation-ready chapter information.
+///
+/// Mirrors [`ChapterInfo`] but converts timestamps to Unix milliseconds
+/// and exposes the same grouped field layout as the API response.
+///
+/// Construct via [`From<ChapterInfo>`] — the conversion is infallible.
+///
+/// [`ChapterInfo`]: crate::model::chapter::ChapterInfo
 pub struct ChapterInfoVal {
     pub id: String,
     pub comic_id: String,
+
     pub is_pinned: bool,
     pub index: i32,
     pub subtitle: String,
+
     pub page_count: i32,
     pub total_unit_count: i32,
     pub translated_unit_count: i32,
     pub proofread_unit_count: i32,
+
     pub raw_provide_phase: StagePhase,
     pub translate_phase: StagePhase,
     pub proofread_phase: StagePhase,
     pub typeset_redraw_phase: StagePhase,
     pub review_phase: StagePhase,
     pub publish_phase: StagePhase,
+
     pub creator_id: String,
+
     pub created_at: i64,
     pub updated_at: i64,
 }
@@ -54,12 +66,18 @@ impl From<ChapterInfo> for ChapterInfoVal {
     }
 }
 
-/// Presentation-ready assignment information.
+/// Presentation-ready chapter assignment information.
+///
+/// Mirrors [`AssignmentInfo`] with timestamps converted to Unix milliseconds.
+///
+/// [`AssignmentInfo`]: crate::model::assignment::AssignmentInfo
 pub struct AssignmentInfoVal {
     pub id: String,
     pub chapter_id: String,
     pub user_id: String,
+
     pub role_mask: RoleMask,
+
     pub created_at: i64,
     pub updated_at: i64,
 }
@@ -77,40 +95,61 @@ impl From<AssignmentInfo> for AssignmentInfoVal {
     }
 }
 
-/// Input parameters for creating a chapter.
+/// Input parameters for creating a new chapter.
 pub struct CreateChapterData {
     pub comic_id: String,
+
+    /// Optional display subtitle; defaults to a generated value
+    /// if omitted (see [`default_subtitle`]).
+    ///
+    /// [`default_subtitle`]: crate::complex::chapter::default_subtitle
     pub subtitle: Option<String>,
 }
 
-/// Return value from successful chapter creation.
+/// Return value from a successful chapter creation.
 pub struct CreateChapterVal {
     pub id: String,
 }
 
-/// Input parameters for listing chapters.
+/// Input parameters for listing chapters within a comic.
 pub struct ListChapterInfosData {
     pub comic_id: String,
+
     pub offset: u64,
     pub limit: u64,
 }
 
-/// Input parameters for updating chapter metadata.
+/// Input parameters for updating a chapter's profile and optional workflow.
+///
+/// When `workflow` is provided, the chapter's stage is advanced as a
+/// side-effect of the same update transaction. This is the only endpoint
+/// through which workflow events are applied to a chapter.
 pub struct UpdateChapterInfoData {
     pub id: String,
+
     pub subtitle: Option<String>,
     pub is_pinned: Option<bool>,
+
     pub workflow: Option<ChapterWorkflowData>,
 }
 
-/// Input parameters for updating chapter workflow.
+/// Workflow transition parameters carried inside [`UpdateChapterInfoData`].
+///
+/// Encodes a single event on a specific stage, e.g. "start translating"
+/// on the `translate` stage. The use case layer validates that the
+/// transition is legal for the current stage phase before applying it.
 pub struct ChapterWorkflowData {
     pub stage: WorkflowStage,
     pub event: WorkflowEvent,
 }
 
-/// Input parameters for joining a chapter assignment.
+/// Input parameters for a user joining a chapter as a worker via role
+/// selection.
+///
+/// The `role_mask` must contain exactly one role bit that is valid for
+/// volunteer assignment; the use case layer validates this before applying.
 pub struct JoinChapterData {
     pub chapter_id: String,
+
     pub role_mask: RoleMask,
 }

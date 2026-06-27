@@ -107,6 +107,7 @@ impl TeamPermComplex {
         check_user_is_team_admin(proxy, user_id, team_id).await
     }
 
+    /// Verify the caller is a team admin.
     pub async fn can_user_reserve_avatar<P>(
         proxy: &mut P,
         user_id: &str,
@@ -118,6 +119,7 @@ impl TeamPermComplex {
         check_user_is_team_admin(proxy, user_id, team_id).await
     }
 
+    /// Verify the caller is a team admin.
     pub async fn can_user_mark_avatar_uploaded<P>(
         proxy: &mut P,
         user_id: &str,
@@ -129,6 +131,7 @@ impl TeamPermComplex {
         check_user_is_team_admin(proxy, user_id, team_id).await
     }
 
+    /// Verify the caller is a team admin.
     pub async fn can_user_delete<P>(proxy: &mut P, user_id: &str, team_id: &str) -> RootResult<()>
     where
         P: for<'a> ProxyExecute<FindByUserTeamId<'a>, Error = RootError>,
@@ -136,6 +139,7 @@ impl TeamPermComplex {
         check_user_is_team_admin(proxy, user_id, team_id).await
     }
 
+    /// Verify the user has super-admin privileges required to list all teams.
     pub async fn can_user_list_all<P>(proxy: &mut P, user_id: &str) -> RootResult<()>
     where
         P: for<'a> ProxyExecute<GetInfoById<'a>, Error = RootError>,
@@ -143,6 +147,7 @@ impl TeamPermComplex {
         Self::check_user_is_sadmin(proxy, user_id).await
     }
 
+    /// Check whether the user is a super-admin; returns `Perm` error if not.
     async fn check_user_is_sadmin<P>(proxy: &mut P, user_id: &str) -> RootResult<()>
     where
         P: for<'a> ProxyExecute<GetInfoById<'a>, Error = RootError>,

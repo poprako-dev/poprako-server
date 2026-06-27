@@ -3,7 +3,7 @@
 use crate::model::role::{RoleBit, RoleMask};
 use crate::value::member::MemberInclOpt;
 
-/// A membership record linking a user to a team.
+/// A membership（汉化组成员）record linking a user to a team.
 ///
 /// Lightweight projection — does not carry the full user or team record,
 /// only the identifiers and a cached nickname for display purposes.

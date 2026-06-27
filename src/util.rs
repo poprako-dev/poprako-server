@@ -9,16 +9,19 @@ use async_trait::async_trait;
 /// new transaction for each call.
 #[async_trait]
 pub trait DeriveTransactional {
-    // Transactional variant of Implementation type.
+    /// Transactional variant of the implementation type.
     type Transactional;
 
+    /// Obtain a transactional handle from a non-transactional reference.
     async fn transactional(&self) -> Self::Transactional;
 }
 
+/// Generate a unique time-ordered identifier in hex format.
 pub fn next_snowflake_id() -> String {
     format!("{:016x}", next_snowflake_u64())
 }
 
+/// Generate a unique time-ordered 64-bit value backed by a snowflake.
 pub fn next_snowflake_u64() -> u64 {
     // Make sure snowflake instance is initialized yet.
     ensure_snowflake_init();
@@ -27,6 +30,8 @@ pub fn next_snowflake_u64() -> u64 {
     k_snowflake::create_snowflake().to_decimal() as u64
 }
 
+/// Initialise the global snowflake instance once from the
+/// `POPRAKO_SNOWFLAKE_NODE_ID` env var (defaults to 0).
 fn ensure_snowflake_init() {
     // Only init snowflake instance once.
     static INIT_GURAD: OnceLock<()> = OnceLock::new();
@@ -34,6 +39,7 @@ fn ensure_snowflake_init() {
     INIT_GURAD.get_or_init(|| k_snowflake::set_instance(load_snowflake_node_id()));
 }
 
+/// Load the snowflake node ID from the `POPRAKO_SNOWFLAKE_NODE_ID` env var.
 fn load_snowflake_node_id() -> u16 {
     let value = match std::env::var("POPRAKO_SNOWFLAKE_NODE_ID") {
         Ok(value) => value,
@@ -51,27 +57,4 @@ fn load_snowflake_node_id() -> u16 {
 // }
 
 #[cfg(test)]
-mod tests {
-    // next_snowflake_u64(next_snowflake_u64)(positive): generated snowflake values should be monotonic and fit into u64.
-    // next_snowflake_id(next_snowflake_id)(positive): generated snowflake strings should be hexadecimal and parse back to u64.
-
-    use super::*;
-
-    #[test]
-    fn next_snowflake_u64_generates_monotonic_ids() {
-        let first_id = next_snowflake_u64();
-
-        let second_id = next_snowflake_u64();
-
-        assert!(second_id > first_id);
-    }
-
-    #[test]
-    fn next_snowflake_id_generates_hex_string() {
-        let snowflake_id = next_snowflake_id();
-
-        let parsed_snowflake_id = u64::from_str_radix(&snowflake_id, 16);
-
-        assert!(parsed_snowflake_id.is_ok());
-    }
-}
+mod tests;

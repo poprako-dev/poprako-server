@@ -6,6 +6,7 @@ use poprako_util::i18n::trl;
 
 use crate::result::{ExpectedVariant, RootError, RootResult, accept};
 
+/// Phase a workflow stage can be in.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum StagePhase {
@@ -14,17 +15,29 @@ pub enum StagePhase {
     Completed,
 }
 
+/// Stage in the chapter production pipeline.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum WorkflowStage {
+    /// 上传
     RawProvide,
+    /// 翻译
     Translate,
+    /// 校对
     Proofread,
+    /// 嵌字/修图
     TypesetRedraw,
+    /// 监修
     Review,
+    /// 发布
     Publish,
 }
 
+/// Validate that a [`StagePhase`] is legal for the given [`WorkflowStage`].
+///
+/// `RawProvide`, `Review`, and `Publish` cannot be `Active` (they are
+/// instantaneous stages). `Translate`, `Proofread`, and `TypesetRedraw`
+/// accept any phase.
 pub fn is_valid_stage_phase(stage: WorkflowStage, phase: StagePhase) -> bool {
     match stage {
         WorkflowStage::RawProvide | WorkflowStage::Review | WorkflowStage::Publish => {
@@ -34,13 +47,18 @@ pub fn is_valid_stage_phase(stage: WorkflowStage, phase: StagePhase) -> bool {
     }
 }
 
+/// Event that triggers a workflow stage transition.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum WorkflowEvent {
+    /// Advance to the next phase.
     Advance,
+    /// Revert to the previous phase.
     Revert,
 }
 
+/// Apply a [`WorkflowEvent`] to a stage and return the resulting [`StagePhase`],
+/// or error if the transition is illegal.
 pub fn try_modify_stage(
     current: (WorkflowStage, StagePhase),
     event: WorkflowEvent,

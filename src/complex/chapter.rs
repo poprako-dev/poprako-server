@@ -1,4 +1,12 @@
-//! Complex-domain operations for chapter entities.
+//! Complex-domain operations for chapter entities — identity generation, workflow
+//! stage transitions, pagination helpers, cascading deletion, and permission gates.
+//!
+//! ## Permission model
+//!
+//! Read-level access (list, get) requires the caller to be a team member of the
+//! owning workset's team. Write-level access (create, update info, delete) requires
+//! team admin. Workflow transitions additionally validate that the caller holds a
+//! role consistent with the target stage and event.
 
 use time::OffsetDateTime;
 
@@ -25,24 +33,31 @@ use crate::result::{ExpectedVariant, RootError, RootResult, accept};
 use crate::util::next_snowflake_id;
 use crate::value::chapter::{StagePhase, WorkflowEvent, WorkflowStage, try_modify_stage};
 
-/// Domain operations for chapter entities.
+/// Domain operations for chapter entities: ID generation, workflow-stage
+/// transition computation, page-image cleanup, and cascading deletion of
+/// all owned resources (pages, assignments, images).
 pub struct ChapterComplex;
 
 impl ChapterComplex {
+    /// Generate a unique, time-ordered chapter identifier backed by a snowflake value.
     pub fn gen_id() -> String {
         next_snowflake_id()
     }
 
-    fn default_subtitle(index: i32) -> String {
-        format!("第 {} 话", index + 1)
-    }
-
+    /// Returns the user-supplied subtitle if present and non-empty, or a
+    /// generated default in the format "第 N 话" (1-based).
     pub fn subtitle_or_default(subtitle: Option<String>, index: i32) -> String {
         subtitle
             .filter(|value| !value.trim().is_empty())
-            .unwrap_or_else(|| Self::default_subtitle(index))
+            .unwrap_or_else(|| default_subtitle(index))
     }
 
+    /// Compute the next [`ChapterStageUpdate`] by applying a [`WorkflowEvent`]
+    /// to the current [`WorkflowStage`] phase of a chapter.
+    ///
+    /// Delegates the transition legality check to [`try_modify_stage`] and
+    /// returns a `ChapterStageUpdate` with exactly one non-`None` phase field
+    /// (the one being advanced/reverted).
     pub fn build_stage_update(
         chapter_info: &ChapterInfo,
         stage: WorkflowStage,
@@ -75,6 +90,11 @@ impl ChapterComplex {
         accept(chapter_stage_update)
     }
 
+    /// Enqueue deletion of all uploaded page images for a chapter, then clear
+    /// the `image_key` / `image_uploaded` boolean on every page record.
+    ///
+    /// This is called both as part of cascading chapter deletion and
+    /// independently when a user wants to re-upload all pages.
     pub async fn clear_page_images<C, R, P>(
         repo: &R,
         prom: &P,
@@ -94,6 +114,10 @@ impl ChapterComplex {
         accept(())
     }
 
+    /// Recursively delete a chapter and all owned resources: enqueues page-image
+    /// deletions, deletes pages and assignments, removes the chapter record,
+    /// repins the latest remaining chapter if this one was pinned, and updates
+    /// the parent comic's chapter count and last-active timestamp.
     pub async fn delete_cascade<C, R, P>(
         repo: &R,
         prom: &P,
@@ -146,6 +170,13 @@ impl ChapterComplex {
     }
 }
 
+/// Generate a human-readable default subtitle for a chapter, e.g. "第 1 话".
+fn default_subtitle(index: i32) -> String {
+    format!("第 {} 话", index + 1)
+}
+
+/// Extract the current [`StagePhase`] for a given [`WorkflowStage`] from a
+/// [`ChapterInfo`] record.
 fn phase(chapter_info: &ChapterInfo, stage: WorkflowStage) -> StagePhase {
     match stage {
         WorkflowStage::RawProvide => chapter_info.raw_provide_phase,
@@ -157,6 +188,10 @@ fn phase(chapter_info: &ChapterInfo, stage: WorkflowStage) -> StagePhase {
     }
 }
 
+/// When deleting a chapter that was pinned, assign the pin to the latest
+/// remaining chapter (by insertion order) in the same comic.
+///
+/// No-op if the deleted chapter was not pinned or no other chapters remain.
 async fn repin_latest_chapter<C, R>(
     repo: &R,
     context: &mut C,
@@ -193,6 +228,10 @@ where
     accept(())
 }
 
+/// Enqueue a [`Delete`](ImageIntention::Delete) prom record for every uploaded
+/// page image belonging to the given chapter.
+///
+/// Skips pages where the image has not been uploaded or no key is set.
 async fn enqueue_page_image_deletes<C, R, P>(
     repo: &R,
     prom: &P,
@@ -242,10 +281,16 @@ where
     accept(())
 }
 
-/// Permission-gate operations for chapter entities.
+/// Permission-gate operations for chapter entities — resolves the owning
+/// team from the chapter or comic and delegates to shared team-permission
+/// helpers (`[`check_user_is_team_member`]` / `[`check_user_is_team_admin`]`).
+///
+/// [`check_user_is_team_member`]: crate::complex::util::check_user_is_team_member
+/// [`check_user_is_team_admin`]: crate::complex::util::check_user_is_team_admin
 pub struct ChapterPermComplex;
 
 impl ChapterPermComplex {
+    /// Verify the caller is a team member of the comic's owning workset.
     pub async fn can_user_list_infos<P>(
         proxy: &mut P,
         user_id: &str,
@@ -259,6 +304,7 @@ impl ChapterPermComplex {
         check_team_member_by_comic(proxy, user_id, comic_id).await
     }
 
+    /// Verify the caller is a team member of the chapter's owning workset.
     pub async fn can_user_get_info<P>(
         proxy: &mut P,
         user_id: &str,
@@ -273,6 +319,9 @@ impl ChapterPermComplex {
         check_team_member_by_chapter(proxy, user_id, chapter_id).await
     }
 
+    /// Verify the caller is a team member of the comic's owning workset
+    /// (same permission level as listing — pinned chapters are visible to
+    /// all team members).
     pub async fn can_user_get_pinned<P>(
         proxy: &mut P,
         user_id: &str,
@@ -286,6 +335,7 @@ impl ChapterPermComplex {
         check_team_member_by_comic(proxy, user_id, comic_id).await
     }
 
+    /// Verify the caller is a team admin of the comic's owning workset.
     pub async fn can_user_create<P>(proxy: &mut P, user_id: &str, comic_id: &str) -> RootResult<()>
     where
         P: for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RootError>
@@ -295,6 +345,12 @@ impl ChapterPermComplex {
         check_team_admin_by_comic(proxy, user_id, comic_id).await
     }
 
+    /// Verify the caller has permission to update a chapter.
+    ///
+    /// When `workflow` is provided, delegates to [`check_workflow_role`] which
+    /// verifies the caller holds a role consistent with the target
+    /// stage/event. Without `workflow`, falls back to [`check_reviewer`]
+    /// (the caller must be assigned as a reviewer).
     pub async fn can_user_update_info<P>(
         proxy: &mut P,
         user_id: &str,
@@ -311,6 +367,11 @@ impl ChapterPermComplex {
         check_reviewer(proxy, user_id, chapter_id).await
     }
 
+    /// Verify the caller may join a chapter with the given [`RoleMask`].
+    ///
+    /// The caller must be a team member whose own [`RoleMask`] (from their
+    /// membership) contains the requested role. Certain roles (e.g. `ADMIN`)
+    /// are excluded from the join flow entirely.
     pub async fn can_user_join<P>(
         proxy: &mut P,
         user_id: &str,
@@ -325,6 +386,7 @@ impl ChapterPermComplex {
         check_join_role(proxy, user_id, chapter_info, role_mask).await
     }
 
+    /// Verify the caller is a team admin of the chapter's owning workset.
     pub async fn can_user_delete<P>(
         proxy: &mut P,
         user_id: &str,
@@ -340,6 +402,7 @@ impl ChapterPermComplex {
     }
 }
 
+/// Resolve the owning team from a comic, then verify the user is a team member.
 async fn check_team_member_by_comic<P>(
     proxy: &mut P,
     user_id: &str,
@@ -354,6 +417,7 @@ where
     check_user_is_team_member(proxy, user_id, &team_id).await
 }
 
+/// Resolve the owning team from a chapter, then verify the user is a team member.
 async fn check_team_member_by_chapter<P>(
     proxy: &mut P,
     user_id: &str,
@@ -371,6 +435,7 @@ where
     check_team_member_by_comic(proxy, user_id, &chapter_info.comic_id).await
 }
 
+/// Resolve the owning team from a comic, then verify the user is a team admin.
 async fn check_team_admin_by_comic<P>(
     proxy: &mut P,
     user_id: &str,
@@ -385,6 +450,7 @@ where
     check_user_is_team_admin(proxy, user_id, &team_id).await
 }
 
+/// Resolve the owning team from a chapter, then verify the user is a team admin.
 async fn check_team_admin_by_chapter<P>(
     proxy: &mut P,
     user_id: &str,
@@ -402,6 +468,7 @@ where
     check_team_admin_by_comic(proxy, user_id, &chapter_info.comic_id).await
 }
 
+/// Verify the caller is assigned as a reviewer on this chapter.
 async fn check_reviewer<P>(proxy: &mut P, user_id: &str, chapter_id: &str) -> RootResult<()>
 where
     P: for<'a> ProxyExecute<GetByChapterUserId<'a>, Error = RootError>,
@@ -420,6 +487,18 @@ where
     accept(())
 }
 
+/// Verify the caller is permitted to perform the given workflow transition
+/// on the chapter. Reviewers bypass per-stage checks and are allowed any
+/// transition. Non-reviewer assignments are validated against a whitelist:
+///
+/// | Stage | Event | Required role |
+/// |---|---|---|
+/// | `RawProvide` | `Advance` | `RAW_PROVIDER` |
+/// | `Translate` | `Advance` | `TRANSLATOR` |
+/// | `Translate` | `Revert` | `PROOFREADER` |
+/// | `Proofread` | `Advance`/`Revert` | `PROOFREADER` |
+/// | `TypesetRedraw` | `Advance`/`Revert` | `TYPESETTER` or `REDRAWER` |
+/// | `Publish` | `Advance` | `PUBLISHER` |
 async fn check_workflow_role<P>(
     proxy: &mut P,
     user_id: &str,
@@ -472,6 +551,11 @@ where
     accept(())
 }
 
+/// Verify the caller may join a chapter with the given role mask.
+///
+/// Rejects `ADMIN` roles (not assignable through the join flow). The caller
+/// must be a team member whose membership [`RoleMask`] contains the requested
+/// role bits.
 async fn check_join_role<P>(
     proxy: &mut P,
     user_id: &str,
@@ -508,6 +592,7 @@ where
     accept(())
 }
 
+/// Resolve the owning team identifier by fetching a comic and its parent workset.
 async fn resolve_team_id_from_comic<P>(proxy: &mut P, comic_id: &str) -> RootResult<String>
 where
     P: for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RootError>
@@ -521,6 +606,7 @@ where
     accept(workset_info.team_id)
 }
 
+/// Construct a "chapter reviewer required" permission error.
 fn chapter_reviewer_error() -> RootError {
     RootError::Expected {
         variant: ExpectedVariant::Perm,
@@ -528,6 +614,7 @@ fn chapter_reviewer_error() -> RootError {
     }
 }
 
+/// Construct a "workflow role required for this transition" permission error.
 fn chapter_workflow_role_error() -> RootError {
     RootError::Expected {
         variant: ExpectedVariant::Perm,
@@ -535,6 +622,7 @@ fn chapter_workflow_role_error() -> RootError {
     }
 }
 
+/// Construct an "admin role not assignable through join" args error.
 fn chapter_role_not_assignable_args_error() -> RootError {
     RootError::Expected {
         variant: ExpectedVariant::Args,

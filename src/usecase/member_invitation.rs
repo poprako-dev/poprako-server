@@ -26,6 +26,7 @@ use crate::util::DeriveTransactional;
 #[cfg(test)]
 mod tests;
 
+/// Creates a pending invitation for a team（汉化组）.
 pub async fn create<D, C, R>(
     drive: &D,
     repo: &R,
@@ -108,6 +109,7 @@ where
     })
 }
 
+/// Lists invitations for a team（汉化组）.
 pub async fn list_infos<C, R>(
     repo: &R,
     token: UserToken,
@@ -142,6 +144,7 @@ where
         .collect())
 }
 
+/// Updates the role mask of an invitation.
 pub async fn update_info<D, C, R>(
     drive: &D,
     repo: &R,
@@ -190,6 +193,7 @@ where
     accept(())
 }
 
+/// Deletes an invitation.
 pub async fn delete<D, C, R>(drive: &D, repo: &R, token: UserToken, id: String) -> RootResult<()>
 where
     D: Drive<C>,

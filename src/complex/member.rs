@@ -69,6 +69,7 @@ impl MemberPermComplex {
         check_user_is_team_admin(proxy, user_id, team_id).await
     }
 
+    /// Verify the caller is a team（汉化组）member.
     pub async fn can_user_list_infos<P>(
         proxy: &mut P,
         user_id: &str,
