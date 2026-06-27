@@ -1,8 +1,14 @@
 //! Data transfer objects for member use cases.
 
-use poprako_macro::Paginate;
+use serde::Deserialize;
 
-use crate::model::member::MemberInfo;
+use poprako_macro::Paginate;
+use poprako_util::i18n::trl;
+
+use crate::model::member::{MemberInfo, MemberListSpec};
+use crate::model::role::{RoleBit, RoleMask};
+use crate::result::{ExpectedVariant, RootError, RootResult};
+use crate::value::member::MemberInclOpt;
 
 /// Presentation-ready membership information.
 pub struct MemberInfoVal {
@@ -13,7 +19,7 @@ pub struct MemberInfoVal {
 
     pub team_id: String,
 
-    pub role_mask: u32,
+    pub role_mask: RoleMask,
 }
 
 impl From<MemberInfo> for MemberInfoVal {
@@ -23,7 +29,7 @@ impl From<MemberInfo> for MemberInfoVal {
             user_id: value.user_id,
             user_nickname: value.user_nickname,
             team_id: value.team_id,
-            role_mask: value.role_mask.0,
+            role_mask: value.role_mask,
         }
     }
 }
@@ -33,7 +39,7 @@ pub struct CreateMemberData {
     pub user_id: String,
     pub team_id: String,
 
-    pub role_mask: u32,
+    pub role_mask: RoleMask,
 }
 
 /// Return value from creating a member.
@@ -43,19 +49,61 @@ pub struct CreateMemberVal {
 
 /// Input parameters for listing members by team.
 #[Paginate]
+#[derive(Deserialize)]
 pub struct ListMemberInfosData {
-    pub team_id: String,
+    pub owner_id: Option<String>,
+
+    pub team_id: Option<String>,
 
     pub user_nickname_keyword: Option<String>,
-    pub role_mask: Option<u32>,
+    pub role_bit: Option<RoleBit>,
+
+    #[serde(default)]
+    pub incl_opt: Vec<MemberInclOpt>,
 }
 
-/// Input parameters for listing memberships of the current user.
-#[Paginate]
-pub struct ListMineMemberInfosData {}
+impl TryInto<MemberListSpec> for ListMemberInfosData {
+    type Error = RootError;
+
+    fn try_into(self) -> RootResult<MemberListSpec> {
+        let gen_reject_err = || RootError::Expected {
+            variant: ExpectedVariant::Args,
+            message: trl("error-team-or-user-required"),
+        };
+
+        if self.owner_id.is_some() == self.team_id.is_some() {
+            return Err(gen_reject_err());
+        }
+
+        if self.user_nickname_keyword.is_some()
+            || self.owner_id.is_some() && self.role_bit.is_some()
+        {
+            return Err(gen_reject_err());
+        }
+
+        if let Some(owner_id) = self.owner_id {
+            return Ok(MemberListSpec::User {
+                owner_id,
+                incl_opt: self.incl_opt,
+                offset: self.offset,
+                limit: self.limit,
+            });
+        }
+
+        let team_id = self.team_id.ok_or_else(gen_reject_err)?;
+
+        Ok(MemberListSpec::Team {
+            team_id,
+            role_bit: self.role_bit,
+            incl_opt: self.incl_opt,
+            offset: self.offset,
+            limit: self.limit,
+        })
+    }
+}
 
 /// Input parameters for updating a member role mask.
 pub struct UpdateMemberRoleData {
     pub id: String,
-    pub role_mask: u32,
+    pub role_mask: RoleMask,
 }

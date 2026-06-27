@@ -1,17 +1,14 @@
 // create(create)(positive): team admin should create a member with target user nickname.
 // create(create)(negative): non-admin should be rejected without creating a member.
 // create(create)(negative): duplicate user and team membership should be rejected.
-// create(create)(negative): invalid role mask should be rejected before mutation.
 // list_infos(list_infos)(positive): team member should list team members.
-// list_infos(list_infos)(positive): keyword and role filters should narrow listed members.
+// list_infos(list_infos)(positive): role filter should narrow listed members.
 // list_infos(list_infos)(positive): pagination should be applied after filtering.
+// list_infos(list_infos)(positive): owner should list own memberships.
 // list_infos(list_infos)(negative): non-member should be rejected.
-// list_infos(list_infos)(negative): invalid role mask filter should be rejected.
-// list_mine_infos(list_mine_infos)(positive): current user memberships should be listed.
-// list_mine_infos(list_mine_infos)(positive): missing page should return an empty list.
+// list_infos(list_infos)(negative): invalid list parameter combination should be rejected.
 // update_role(update_role)(positive): team admin should update member role mask.
 // update_role(update_role)(negative): non-admin should be rejected without mutation.
-// update_role(update_role)(negative): invalid role mask should be rejected before mutation.
 // update_role(update_role)(negative): missing member should be rejected.
 // delete(delete)(positive): team admin should delete a member.
 // delete(delete)(negative): non-admin should be rejected without deletion.
@@ -19,7 +16,7 @@
 
 use super::*;
 
-use crate::model::member::MemberInfo;
+use crate::model::member::{MemberInfo, MemberListSpec};
 use crate::model::role::{RoleBit, RoleMask};
 use crate::model::team::TeamInfo;
 use crate::model::user::{UserCredential, UserInfo};
@@ -93,28 +90,26 @@ fn create_data(user_id: &str, team_id: &str) -> CreateMemberData {
     CreateMemberData {
         user_id: user_id.into(),
         team_id: team_id.into(),
-        role_mask: RoleBit::TRANSLATOR.0,
+        role_mask: RoleMask::from(RoleBit::TRANSLATOR),
     }
 }
 
 fn list_data(team_id: &str) -> ListMemberInfosData {
     ListMemberInfosData {
-        team_id: team_id.into(),
+        owner_id: None,
+        team_id: Some(team_id.into()),
         user_nickname_keyword: None,
-        role_mask: None,
+        role_bit: None,
+        incl_opt: Vec::new(),
         offset: 0,
         limit: 10,
     }
 }
 
-fn list_mine_data(offset: u64, limit: u64) -> ListMineMemberInfosData {
-    ListMineMemberInfosData { offset, limit }
-}
-
 fn update_role_data(id: &str) -> UpdateMemberRoleData {
     UpdateMemberRoleData {
         id: id.into(),
-        role_mask: RoleBit::REVIEWER.0,
+        role_mask: RoleMask::from(RoleBit::REVIEWER),
     }
 }
 
@@ -216,31 +211,6 @@ async fn create_duplicate_member_is_rejected() {
 }
 
 #[tokio::test]
-async fn create_invalid_role_mask_is_rejected() {
-    let mock = Mock::new();
-    seed_admin(&mock);
-    mock.seed_team(team("team-1"));
-    mock.seed_user(user("target-user", "Target"), credential("target-user"));
-
-    let err = create(
-        &mock,
-        &mock,
-        token("admin-user"),
-        CreateMemberData {
-            user_id: "target-user".into(),
-            team_id: "team-1".into(),
-            role_mask: 1 << 31,
-        },
-    )
-    .await
-    .err()
-    .unwrap();
-
-    assert_expected_variant(err, ExpectedVariant::Args);
-    assert_eq!(mock.snapshot().members.len(), 1);
-}
-
-#[tokio::test]
 async fn list_infos_member_lists_team_members() {
     let mock = Mock::new();
     seed_admin(&mock);
@@ -262,7 +232,7 @@ async fn list_infos_member_lists_team_members() {
 }
 
 #[tokio::test]
-async fn list_infos_filters_by_keyword_and_role() {
+async fn list_infos_filters_by_role() {
     let mock = Mock::new();
     seed_admin(&mock);
     mock.seed_member(member(
@@ -284,9 +254,11 @@ async fn list_infos_filters_by_keyword_and_role() {
         &mock,
         token("admin-user"),
         ListMemberInfosData {
-            team_id: "team-1".into(),
-            user_nickname_keyword: Some("Alice".into()),
-            role_mask: Some(RoleBit::REVIEWER.0),
+            owner_id: None,
+            team_id: Some("team-1".into()),
+            user_nickname_keyword: None,
+            role_bit: Some(RoleBit::REVIEWER),
+            incl_opt: Vec::new(),
             offset: 0,
             limit: 10,
         },
@@ -322,9 +294,11 @@ async fn list_infos_applies_pagination_after_filtering() {
         &mock,
         token("admin-user"),
         ListMemberInfosData {
-            team_id: "team-1".into(),
+            owner_id: None,
+            team_id: Some("team-1".into()),
             user_nickname_keyword: None,
-            role_mask: None,
+            role_bit: None,
+            incl_opt: Vec::new(),
             offset: 1,
             limit: 1,
         },
@@ -338,49 +312,7 @@ async fn list_infos_applies_pagination_after_filtering() {
 }
 
 #[tokio::test]
-async fn list_infos_non_member_is_rejected() {
-    let mock = Mock::new();
-    mock.seed_member(member(
-        "member-target",
-        "target-user",
-        "Target",
-        "team-1",
-        RoleMask::from(RoleBit::TRANSLATOR),
-    ));
-
-    let err = list_infos(&mock, token("stranger-user"), list_data("team-1"))
-        .await
-        .err()
-        .unwrap();
-
-    assert_expected_variant(err, ExpectedVariant::Perm);
-}
-
-#[tokio::test]
-async fn list_infos_invalid_role_mask_is_rejected() {
-    let mock = Mock::new();
-    seed_admin(&mock);
-
-    let err = list_infos(
-        &mock,
-        token("admin-user"),
-        ListMemberInfosData {
-            team_id: "team-1".into(),
-            user_nickname_keyword: None,
-            role_mask: Some(1 << 31),
-            offset: 0,
-            limit: 10,
-        },
-    )
-    .await
-    .err()
-    .unwrap();
-
-    assert_expected_variant(err, ExpectedVariant::Args);
-}
-
-#[tokio::test]
-async fn list_mine_infos_lists_current_user_memberships() {
+async fn list_infos_owner_lists_own_memberships() {
     let mock = Mock::new();
     mock.seed_member(member(
         "member-one",
@@ -404,8 +336,20 @@ async fn list_mine_infos_lists_current_user_memberships() {
         RoleMask::from(RoleBit::ADMIN),
     ));
 
-    let member_info_vals =
-        list_mine_infos(&mock, &mock, token("user-1"), list_mine_data(0, 10)).await;
+    let member_info_vals = list_infos(
+        &mock,
+        token("user-1"),
+        ListMemberInfosData {
+            owner_id: Some("user-1".into()),
+            team_id: None,
+            user_nickname_keyword: None,
+            role_bit: None,
+            incl_opt: Vec::new(),
+            offset: 0,
+            limit: 10,
+        },
+    )
+    .await;
     assert!(member_info_vals.is_ok());
     let member_info_vals = member_info_vals.ok().unwrap();
 
@@ -415,22 +359,69 @@ async fn list_mine_infos_lists_current_user_memberships() {
 }
 
 #[tokio::test]
-async fn list_mine_infos_returns_empty_for_missing_page() {
+async fn list_infos_non_member_is_rejected() {
     let mock = Mock::new();
     mock.seed_member(member(
-        "member-one",
-        "user-1",
-        "User",
+        "member-target",
+        "target-user",
+        "Target",
         "team-1",
         RoleMask::from(RoleBit::TRANSLATOR),
     ));
 
-    let member_info_vals =
-        list_mine_infos(&mock, &mock, token("user-1"), list_mine_data(10, 10)).await;
-    assert!(member_info_vals.is_ok());
-    let member_info_vals = member_info_vals.ok().unwrap();
+    let err = list_infos(&mock, token("stranger-user"), list_data("team-1"))
+        .await
+        .err()
+        .unwrap();
 
-    assert!(member_info_vals.is_empty());
+    assert_expected_variant(err, ExpectedVariant::Perm);
+}
+
+#[test]
+fn list_infos_rejects_invalid_combination() {
+    let result: Result<MemberListSpec, RootError> = ListMemberInfosData {
+        owner_id: Some("user-1".into()),
+        team_id: Some("team-1".into()),
+        user_nickname_keyword: None,
+        role_bit: None,
+        incl_opt: Vec::new(),
+        offset: 0,
+        limit: 10,
+    }
+    .try_into();
+    let err = result.err().unwrap();
+
+    assert_expected_variant(err, ExpectedVariant::Args);
+}
+
+#[test]
+fn list_infos_converts_owner_combination_to_mine_spec() {
+    let member_list_spec: MemberListSpec = ListMemberInfosData {
+        owner_id: Some("user-1".into()),
+        team_id: None,
+        user_nickname_keyword: None,
+        role_bit: None,
+        incl_opt: Vec::new(),
+        offset: 3,
+        limit: 5,
+    }
+    .try_into()
+    .ok()
+    .unwrap();
+
+    let MemberListSpec::User {
+        owner_id,
+        offset,
+        limit,
+        ..
+    } = member_list_spec
+    else {
+        panic!("expected mine list spec");
+    };
+
+    assert_eq!(owner_id, "user-1");
+    assert_eq!(offset, 3);
+    assert_eq!(limit, 5);
 }
 
 #[tokio::test]
@@ -501,44 +492,6 @@ async fn update_role_non_admin_is_rejected() {
         .unwrap();
 
     assert_expected_variant(err, ExpectedVariant::Perm);
-    assert_eq!(
-        target_member_info.role_mask,
-        RoleMask::from(RoleBit::TRANSLATOR)
-    );
-}
-
-#[tokio::test]
-async fn update_role_invalid_role_mask_is_rejected() {
-    let mock = Mock::new();
-    seed_admin(&mock);
-    mock.seed_member(member(
-        "member-target",
-        "target-user",
-        "Target",
-        "team-1",
-        RoleMask::from(RoleBit::TRANSLATOR),
-    ));
-
-    let err = update_role(
-        &mock,
-        &mock,
-        token("admin-user"),
-        UpdateMemberRoleData {
-            id: "member-target".into(),
-            role_mask: 1 << 31,
-        },
-    )
-    .await
-    .err()
-    .unwrap();
-    let snapshot = mock.snapshot();
-    let target_member_info = snapshot
-        .members
-        .iter()
-        .find(|member_info| member_info.id == "member-target")
-        .unwrap();
-
-    assert_expected_variant(err, ExpectedVariant::Args);
     assert_eq!(
         target_member_info.role_mask,
         RoleMask::from(RoleBit::TRANSLATOR)

@@ -1,10 +1,12 @@
 //! Mock implementations of `MemberRepo` and `MemberRepoTransactional` for in-memory testing.
 
 use async_trait::async_trait;
-use poprako_transactional::advance::Advance;
 use time::OffsetDateTime;
 
-use crate::model::member::{MemberForm, MemberInfo};
+use poprako_transactional::advance::Advance;
+
+use crate::model::member::{MemberForm, MemberInfo, MemberListSpec};
+use crate::model::role::RoleMask;
 use crate::part::repo::Execute;
 use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
 use crate::part::repo::step::member::{
@@ -20,9 +22,8 @@ impl MemberRepoTransactional<MockContext> for MockTransactional {}
 
 /// Returns [`Some(now)`] when the given role mask has any bits set, used to timestamp role
 /// assignments.
-fn role_time(mask: crate::model::role::RoleMask) -> Option<OffsetDateTime> {
-    let crate::model::role::RoleMask(bits) = mask;
-    (bits != 0).then_some(now())
+fn role_time(role_mask: RoleMask) -> Option<OffsetDateTime> {
+    (u32::from(role_mask) != 0).then_some(now())
 }
 
 /// Inserts a new member record, rejecting duplicates by id or by the same user+team pair.
@@ -140,30 +141,49 @@ impl<'a> Execute<ListInfos<'a>> for Mock {
 
     async fn execute(&self, step: &ListInfos<'a>) -> Result<Vec<MemberInfo>, Self::Error> {
         let state = self.state.lock().unwrap();
-        let mut member_infos = state
-            .members
-            .iter()
-            .filter(|member_info| member_info.team_id == step.spec.team_id)
-            .filter(|member_info| {
-                step.spec
-                    .user_nickname_keyword
-                    .as_deref()
-                    .map(|keyword| member_info.user_nickname.contains(keyword))
-                    .unwrap_or(true)
-            })
-            .filter(|member_info| {
-                step.spec
-                    .role_mask
-                    .map(|role_mask| member_info.role_mask.0 & role_mask.0 != 0)
-                    .unwrap_or(true)
-            })
-            .cloned()
-            .collect::<Vec<_>>();
+        let (offset, limit, mut member_infos) = match step.spec {
+            MemberListSpec::User {
+                owner_id,
+                offset,
+                limit,
+                ..
+            } => (
+                *offset,
+                *limit,
+                state
+                    .members
+                    .iter()
+                    .filter(|member_info| member_info.user_id == *owner_id)
+                    .cloned()
+                    .collect::<Vec<_>>(),
+            ),
+            MemberListSpec::Team {
+                team_id,
+                role_bit,
+                offset,
+                limit,
+                ..
+            } => (
+                *offset,
+                *limit,
+                state
+                    .members
+                    .iter()
+                    .filter(|member_info| member_info.team_id == *team_id)
+                    .filter(|member_info| {
+                        role_bit
+                            .map(|role_bit| member_info.role_mask.has_any_role(&[role_bit]))
+                            .unwrap_or(true)
+                    })
+                    .cloned()
+                    .collect::<Vec<_>>(),
+            ),
+        };
 
         member_infos.sort_by(|left, right| left.id.cmp(&right.id));
 
-        let offset = step.spec.offset as usize;
-        let limit = step.spec.limit as usize;
+        let offset = offset as usize;
+        let limit = limit as usize;
 
         if offset >= member_infos.len() {
             return Ok(Vec::new());

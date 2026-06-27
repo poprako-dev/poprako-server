@@ -15,7 +15,6 @@ use crate::part::prom::{Prom, PromTransactional};
 use crate::part::repo::comic::{ComicRepo, ComicRepoTransactional};
 use crate::part::repo::map_drive_err;
 use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
-use crate::part::repo::proxy::{ProxyNonTransactional, ProxyTransactional};
 use crate::part::repo::step::team::TeamStep;
 use crate::part::repo::step::workset::WorksetStep;
 use crate::part::repo::team::{TeamRepo, TeamRepoTransactional};
@@ -48,9 +47,14 @@ where
         .with_context(async move |context| {
             let repo = repo.transactional().await;
 
-            let mut proxy = ProxyTransactional::new(&repo, context);
+            use crate::part::repo::proxy::AsProxyTransactional as _;
 
-            WorksetPermComplex::can_user_create(&mut proxy, &token.user_id, &data.team_id).await?;
+            WorksetPermComplex::can_user_create(
+                &mut repo.as_proxy(context),
+                &token.user_id,
+                &data.team_id,
+            )
+            .await?;
 
             let index = repo
                 .advance(
@@ -86,9 +90,9 @@ where
     <R as DeriveTransactional>::Transactional:
         WorksetRepoTransactional<C> + MemberRepoTransactional<C>,
 {
-    let mut proxy = ProxyNonTransactional::new(repo);
+    use crate::part::repo::proxy::AsProxyNonTransactional as _;
 
-    WorksetPermComplex::can_user_get_info(&mut proxy, &token.user_id, &id).await?;
+    WorksetPermComplex::can_user_get_info(&mut repo.as_proxy(), &token.user_id, &id).await?;
 
     let workset_info = repo.execute(&WorksetStep::get_info_by_id(&id)).await?;
 
@@ -116,9 +120,10 @@ where
     <R as DeriveTransactional>::Transactional:
         WorksetRepoTransactional<C> + MemberRepoTransactional<C>,
 {
-    let mut proxy = ProxyNonTransactional::new(repo);
+    use crate::part::repo::proxy::AsProxyNonTransactional as _;
 
-    WorksetPermComplex::can_user_list_infos(&mut proxy, &token.user_id, &data.team_id).await?;
+    WorksetPermComplex::can_user_list_infos(&mut repo.as_proxy(), &token.user_id, &data.team_id)
+        .await?;
 
     let workset_infos = repo
         .execute(&WorksetStep::list_infos_by_team_id(&data.team_id))
@@ -153,9 +158,10 @@ where
     <R as DeriveTransactional>::Transactional:
         WorksetRepoTransactional<C> + MemberRepoTransactional<C>,
 {
-    let mut proxy = ProxyNonTransactional::new(repo);
+    use crate::part::repo::proxy::AsProxyNonTransactional as _;
 
-    WorksetPermComplex::can_user_update_info(&mut proxy, &token.user_id, &data.id).await?;
+    WorksetPermComplex::can_user_update_info(&mut repo.as_proxy(), &token.user_id, &data.id)
+        .await?;
 
     let workset_info_update = WorksetInfoUpdate {
         id: data.id,
@@ -195,9 +201,10 @@ where
             let repo = repo.transactional().await;
             let prom = prom.transactional().await;
 
-            let mut proxy = ProxyTransactional::new(&repo, context);
+            use crate::part::repo::proxy::AsProxyTransactional as _;
 
-            WorksetPermComplex::can_user_delete(&mut proxy, &token.user_id, &id).await?;
+            WorksetPermComplex::can_user_delete(&mut repo.as_proxy(context), &token.user_id, &id)
+                .await?;
 
             let workset_info = repo
                 .advance(context, &WorksetStep::get_info_excluded(&id))

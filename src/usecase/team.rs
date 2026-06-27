@@ -19,7 +19,6 @@ use crate::part::prom::{Payload, Prom, PromStep, PromTransactional};
 use crate::part::repo::comic::{ComicRepo, ComicRepoTransactional};
 use crate::part::repo::map_drive_err;
 use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
-use crate::part::repo::proxy::{ProxyNonTransactional, ProxyTransactional};
 use crate::part::repo::step::team::TeamStep;
 use crate::part::repo::team::{TeamRepo, TeamRepoTransactional};
 use crate::part::repo::user::{UserRepo, UserRepoTransactional};
@@ -51,9 +50,9 @@ where
     <R as DeriveTransactional>::Transactional: TeamRepoTransactional<C> + UserRepoTransactional<C>,
     I: ImagePool,
 {
-    let mut proxy = ProxyNonTransactional::new(repo);
+    use crate::part::repo::proxy::AsProxyNonTransactional as _;
 
-    TeamPermComplex::can_user_list_all(&mut proxy, &token.user_id).await?;
+    TeamPermComplex::can_user_list_all(&mut repo.as_proxy(), &token.user_id).await?;
 
     let team_form = TeamForm {
         id: TeamComplex::gen_id(),
@@ -108,9 +107,9 @@ where
 {
     if data.user_id.is_none() {
         // TODO: comment
-        let mut proxy = ProxyNonTransactional::new(repo);
+        use crate::part::repo::proxy::AsProxyNonTransactional as _;
 
-        TeamPermComplex::can_user_list_all(&mut proxy, &token.user_id).await?;
+        TeamPermComplex::can_user_list_all(&mut repo.as_proxy(), &token.user_id).await?;
     }
 
     let team_infos = repo
@@ -151,9 +150,9 @@ where
     <R as DeriveTransactional>::Transactional:
         TeamRepoTransactional<C> + MemberRepoTransactional<C>,
 {
-    let mut proxy = ProxyNonTransactional::new(repo);
+    use crate::part::repo::proxy::AsProxyNonTransactional as _;
 
-    TeamPermComplex::can_user_update_info(&mut proxy, &token.user_id, &data.id).await?;
+    TeamPermComplex::can_user_update_info(&mut repo.as_proxy(), &token.user_id, &data.id).await?;
 
     repo.execute(&TeamStep::update_info(
         &data.id,
@@ -210,9 +209,14 @@ where
             let repo = repo.transactional().await;
             let prom = prom.transactional().await;
 
-            let mut proxy = ProxyTransactional::new(&repo, context);
+            use crate::part::repo::proxy::AsProxyTransactional as _;
 
-            TeamPermComplex::can_user_reserve_avatar(&mut proxy, &token.user_id, &id).await?;
+            TeamPermComplex::can_user_reserve_avatar(
+                &mut repo.as_proxy(context),
+                &token.user_id,
+                &id,
+            )
+            .await?;
 
             let avatar_reservation = repo
                 .advance(context, &TeamStep::reserve_avatar(&id, &data.file_ext))
@@ -296,9 +300,10 @@ where
     <R as DeriveTransactional>::Transactional:
         TeamRepoTransactional<C> + MemberRepoTransactional<C>,
 {
-    let mut proxy = ProxyNonTransactional::new(repo);
+    use crate::part::repo::proxy::AsProxyNonTransactional as _;
 
-    TeamPermComplex::can_user_mark_avatar_uploaded(&mut proxy, &token.user_id, &id).await?;
+    TeamPermComplex::can_user_mark_avatar_uploaded(&mut repo.as_proxy(), &token.user_id, &id)
+        .await?;
 
     repo.execute(&TeamStep::mark_avatar_uploaded(&id, data.avatar_version))
         .await?;
@@ -348,9 +353,10 @@ where
             let repo = repo.transactional().await;
             let prom = prom.transactional().await;
 
-            let mut proxy = ProxyTransactional::new(&repo, context);
+            use crate::part::repo::proxy::AsProxyTransactional as _;
 
-            TeamPermComplex::can_user_delete(&mut proxy, &token.user_id, &id).await?;
+            TeamPermComplex::can_user_delete(&mut repo.as_proxy(context), &token.user_id, &id)
+                .await?;
 
             TeamComplex::delete_cascade(&repo, &prom, context, &id).await?;
 
