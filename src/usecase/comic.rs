@@ -54,7 +54,12 @@ where
 
             use crate::part::repo::proxy::AsProxyTransactional as _;
 
-            ComicPermComplex::can_user_create(&mut repo.as_proxy(context), &token.user_id, &data.workset_id).await?;
+            ComicPermComplex::can_user_create(
+                &mut repo.as_proxy(context),
+                &token.user_id,
+                &data.workset_id,
+            )
+            .await?;
 
             let index = repo
                 .advance(
@@ -128,7 +133,8 @@ where
 {
     use crate::part::repo::proxy::AsProxyNonTransactional as _;
 
-    ComicPermComplex::can_user_list_infos(&mut repo.as_proxy(), &token.user_id, &data.workset_id).await?;
+    ComicPermComplex::can_user_list_infos(&mut repo.as_proxy(), &token.user_id, &data.workset_id)
+        .await?;
 
     let comic_infos = repo
         .execute(&ComicStep::list_by_workset_id(&data.workset_id))
@@ -202,7 +208,12 @@ where
 
             use crate::part::repo::proxy::AsProxyTransactional as _;
 
-            ComicPermComplex::can_user_reserve_cover(&mut repo.as_proxy(context), &token.user_id, &id).await?;
+            ComicPermComplex::can_user_reserve_cover(
+                &mut repo.as_proxy(context),
+                &token.user_id,
+                &id,
+            )
+            .await?;
 
             let cover_reservation = repo
                 .advance(context, &ComicStep::reserve_cover(&id, &data.file_ext))
@@ -276,7 +287,8 @@ where
 {
     use crate::part::repo::proxy::AsProxyNonTransactional as _;
 
-    ComicPermComplex::can_user_mark_cover_uploaded(&mut repo.as_proxy(), &token.user_id, &id).await?;
+    ComicPermComplex::can_user_mark_cover_uploaded(&mut repo.as_proxy(), &token.user_id, &id)
+        .await?;
 
     repo.execute(&ComicStep::mark_cover_uploaded(&id, data.cover_version))
         .await?;
@@ -312,11 +324,13 @@ where
 
             use crate::part::repo::proxy::AsProxyTransactional as _;
 
-            ComicPermComplex::can_user_delete(&mut repo.as_proxy(context), &token.user_id, &id).await?;
+            ComicPermComplex::can_user_delete(&mut repo.as_proxy(context), &token.user_id, &id)
+                .await?;
 
             let comic_info = repo
                 .advance(context, &ComicStep::get_info_excluded(&id))
                 .await?;
+
             ComicComplex::delete_cascade(&repo, &prom, context, &comic_info.id).await?;
 
             accept(())
@@ -352,7 +366,12 @@ where
 
             use crate::part::repo::proxy::AsProxyTransactional as _;
 
-            ComicPermComplex::can_user_mark_completed(&mut repo.as_proxy(context), &token.user_id, &id).await?;
+            ComicPermComplex::can_user_mark_completed(
+                &mut repo.as_proxy(context),
+                &token.user_id,
+                &id,
+            )
+            .await?;
 
             repo.advance(context, &ComicStep::mark_completed(&id, is_completed))
                 .await?;

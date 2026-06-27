@@ -1,7 +1,5 @@
 //! Complex-domain operations for member invitations.
 
-use uuid::Uuid;
-
 use crate::complex::util::{check_user_is_team_admin, check_user_is_team_member};
 use crate::part::repo::proxy::ProxyExecute;
 use crate::part::repo::step::member::FindByUserTeamId;
@@ -9,6 +7,7 @@ use crate::part::repo::step::member_invitation::{
     GetInfoById as MemberInvitationGetInfoById, MemberInvitationStep,
 };
 use crate::result::{RootError, RootResult};
+use crate::util::next_snowflake_id;
 
 /// Domain operations for member invitations.
 pub struct MemberInvitationComplex;
@@ -16,12 +15,12 @@ pub struct MemberInvitationComplex;
 impl MemberInvitationComplex {
     /// Generate a unique member invitation identifier.
     pub fn gen_id() -> String {
-        format!("member_invitation-{}", Uuid::now_v7())
+        next_snowflake_id()
     }
 
     /// Generate a short invitation code from a unique invitation id.
     pub fn gen_code() -> String {
-        let full = Uuid::now_v7().to_string();
+        let full = next_snowflake_id();
         let len = full.len();
 
         full[len.saturating_sub(6)..].into()

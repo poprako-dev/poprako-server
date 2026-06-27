@@ -16,6 +16,7 @@ pub enum ImageKind {
     UserAvatar,
     TeamAvatar,
     ComicCover,
+    PageImage,
 }
 
 /// A deferred image operation to be executed after transaction commit.

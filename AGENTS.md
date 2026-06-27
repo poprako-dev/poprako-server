@@ -167,6 +167,15 @@ and `usecase`, then apply the project-wide style rules.
   English.
 - **No Go references in comments**: Comments describe Rust behavior, not the Go
   source that inspired it.
+- **No `if else` control flow**: Do not write `if ... else ...` branches in Rust
+  source. Use `match` or guard clauses instead. `let ... else` is allowed.
+- **Blank line between statements**: Keep a blank line between any two Rust
+  statements. Dense statement blocks are unacceptable.
+- **Rust file length limit**: Rust source files must stay under 600 lines. Split
+  modules or extract helpers before a file reaches that size.
+- **Cascade deletion belongs in Complex**: Recursive child cleanup and related
+  deletion side effects belong in `XxxComplex::delete_cascade`. Usecase delete
+  functions should check permission and delegate cascade work.
 - **Never modify user-authored changes**: The working tree may contain user
   edits. Do not revert, overwrite, or "clean up" unrelated changes. If a user
   change conflicts with the task, flag it before editing.

@@ -49,9 +49,12 @@ use poprako_transactional::step::Step;
 
 use crate::result::RootError;
 
+pub mod assignment;
+pub mod chapter;
 pub mod comic;
 pub mod member;
 pub mod member_invitation;
+pub mod page;
 pub mod step;
 pub mod system_mail;
 pub mod team;

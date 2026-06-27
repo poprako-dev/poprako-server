@@ -12,9 +12,12 @@ use poprako_transactional::drive::result::Error as DriveError;
 use poprako_transactional::util::AsyncFnMark;
 use poprako_util::i18n::trl;
 
+use crate::model::assignment::AssignmentInfo;
+use crate::model::chapter::ChapterInfo;
 use crate::model::comic::ComicInfo;
 use crate::model::member::MemberInfo;
 use crate::model::member_invitation::MemberInvitationInfo;
+use crate::model::page::PageInfo;
 use crate::model::system_mail::SystemMailInfo;
 use crate::model::team::TeamInfo;
 use crate::model::user::{UserCredential, UserInfo};
@@ -32,6 +35,9 @@ pub struct MockState {
     pub member_invitations: Vec<MemberInvitationInfo>,
     pub worksets: Vec<WorksetInfo>,
     pub comics: Vec<ComicInfo>,
+    pub chapters: Vec<ChapterInfo>,
+    pub assignments: Vec<AssignmentInfo>,
+    pub pages: Vec<PageInfo>,
     pub system_mails: Vec<SystemMailInfo>,
     pub prom_records: Vec<super::prom_mock::MockPromRecord>,
 }
@@ -46,6 +52,9 @@ pub struct MockSnapshot {
     pub member_invitations: Vec<MemberInvitationInfo>,
     pub worksets: Vec<WorksetInfo>,
     pub comics: Vec<ComicInfo>,
+    pub chapters: Vec<ChapterInfo>,
+    pub assignments: Vec<AssignmentInfo>,
+    pub pages: Vec<PageInfo>,
     pub system_mails: Vec<SystemMailInfo>,
     pub prom_records: Vec<super::prom_mock::MockPromRecord>,
 }
@@ -60,6 +69,9 @@ impl From<MockState> for MockSnapshot {
             member_invitations: state.member_invitations,
             worksets: state.worksets,
             comics: state.comics,
+            chapters: state.chapters,
+            assignments: state.assignments,
+            pages: state.pages,
             system_mails: state.system_mails,
             prom_records: state.prom_records,
         }
@@ -130,6 +142,21 @@ impl Mock {
     /// Seed a comic directly into the mock state.
     pub fn seed_comic(&self, comic: ComicInfo) {
         self.state.lock().unwrap().comics.push(comic);
+    }
+
+    /// Seed a chapter directly into the mock state.
+    pub fn seed_chapter(&self, chapter: ChapterInfo) {
+        self.state.lock().unwrap().chapters.push(chapter);
+    }
+
+    /// Seed an assignment directly into the mock state.
+    pub fn seed_assignment(&self, assignment: AssignmentInfo) {
+        self.state.lock().unwrap().assignments.push(assignment);
+    }
+
+    /// Seed a page directly into the mock state.
+    pub fn seed_page(&self, page: PageInfo) {
+        self.state.lock().unwrap().pages.push(page);
     }
 
     /// Seed a system mail directly into the mock state.
@@ -232,6 +259,8 @@ pub(super) fn now() -> OffsetDateTime {
 }
 
 /// Mock implementations for comic repository operations.
+pub mod assignment;
+pub mod chapter;
 pub mod comic;
 
 /// Mock implementations for member repository operations.
@@ -239,6 +268,9 @@ pub mod member;
 
 /// Mock implementations for member invitation repository operations.
 pub mod member_invitation;
+
+/// Mock implementations for page repository operations.
+pub mod page;
 
 /// Mock implementations for system mail repository operations.
 pub mod system_mail;

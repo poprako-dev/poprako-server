@@ -6,6 +6,8 @@ pub mod system_mail;
 pub mod team;
 pub mod user;
 
+pub mod assignment;
+pub mod chapter;
 pub mod comic;
 pub mod image;
 pub mod workset;

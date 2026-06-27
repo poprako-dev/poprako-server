@@ -1954,6 +1954,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "k-snowflake"
+version = "2.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8ec2f7c4c0db686a7a1a078cb313171e525dacab126a207030ffd277ba30f06f"
+dependencies = [
+ "once_cell",
+]
+
+[[package]]
 name = "lazy_static"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2314,6 +2323,7 @@ dependencies = [
  "futures",
  "futures-util",
  "jsonwebtoken",
+ "k-snowflake",
  "poprako-macro",
  "poprako-transactional",
  "poprako-util",
@@ -2329,7 +2339,6 @@ dependencies = [
  "url",
  "utoipa",
  "utoipa-swagger-ui",
- "uuid",
 ]
 
 [[package]]

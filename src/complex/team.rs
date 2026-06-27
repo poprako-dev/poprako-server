@@ -2,12 +2,11 @@
 //! generation, cascading deletion, and permission checks.
 
 use time::OffsetDateTime;
-use uuid::Uuid;
 
 use poprako_util::i18n::trl;
 
 use crate::complex::image::ImageComplex;
-use crate::complex::util::{check_user_is_team_admin, check_user_is_team_member};
+use crate::complex::util::check_user_is_team_admin;
 use crate::complex::workset::WorksetComplex;
 use crate::part::prom::intention::{IMAGE_TOPIC, ImageIntention};
 use crate::part::prom::{Payload, PromStep, PromTransactional};
@@ -20,14 +19,15 @@ use crate::part::repo::step::workset::WorksetStep;
 use crate::part::repo::team::TeamRepoTransactional;
 use crate::part::repo::workset::WorksetRepoTransactional;
 use crate::result::{ExpectedVariant, RootError, RootResult, accept};
+use crate::util::next_snowflake_id;
 
 /// Domain operations for team entities.
 pub struct TeamComplex;
 
 impl TeamComplex {
-    /// Generate a unique, time-ordered team identifier (e.g. `team-<uuid-v7>`).
+    /// Generate a unique, time-ordered team identifier backed by a snowflake value.
     pub fn gen_id() -> String {
-        format!("team-{}", Uuid::now_v7())
+        next_snowflake_id()
     }
 
     /// Generate the object-storage key for a team avatar image.

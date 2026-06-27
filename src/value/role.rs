@@ -39,6 +39,19 @@ impl RoleMask {
         bits.iter()
             .any(|role_bit| u32::from(*self) & u32::from(*role_bit) != 0)
     }
+
+    pub fn has_every_role(&self, bits: &[RoleBit]) -> bool {
+        bits.iter()
+            .all(|role_bit| u32::from(*self) & u32::from(*role_bit) != 0)
+    }
+
+    pub fn contains_mask(&self, role_mask: RoleMask) -> bool {
+        u32::from(*self) & u32::from(role_mask) == u32::from(role_mask)
+    }
+
+    pub fn union(&self, role_mask: RoleMask) -> RoleMask {
+        RoleMask(u32::from(*self) | u32::from(role_mask))
+    }
 }
 
 impl TryFrom<u32> for RoleBit {

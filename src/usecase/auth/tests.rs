@@ -18,8 +18,8 @@
 
 use super::*;
 
-use crate::part::effect::event::Event;
 use crate::model::role::{RoleBit, RoleMask};
+use crate::part::effect::event::Event;
 use crate::part_impl::repo_mock::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;
