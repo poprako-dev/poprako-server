@@ -8,8 +8,9 @@ use crate::model::comic::{ComicCoverReservation, ComicInfo};
 use crate::part::repo::Execute;
 use crate::part::repo::comic::{ComicRepo, ComicRepoTransactional};
 use crate::part::repo::step::comic::{
-    Create, Delete, GetInfoById, GetInfoExcluded, ListByWorksetId, ListByWorksetIdExcluded,
-    MarkCompleted, MarkCoverUploaded, ReserveCover, UpdateInfo,
+    Create, Delete, GetInfoById, GetInfoExcluded, IncrementChapterNextIndex, ListByWorksetId,
+    ListByWorksetIdExcluded, MarkCompleted, MarkCoverUploaded, ReserveCover, TouchLastActive,
+    UpdateChapterCount, UpdateInfo,
 };
 use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactional, expected, now};
 use crate::result::RootError;
@@ -279,6 +280,69 @@ impl<'a> Advance<MarkCompleted<'a>, MockContext> for MockTransactional {
             .find(|comic| comic.id == step.id)
             .ok_or_else(|| expected("error-comic-not-found"))?;
         comic.is_completed = step.is_completed;
+        comic.updated_at = now();
+        Ok(())
+    }
+}
+
+#[async_trait]
+impl<'a> Advance<IncrementChapterNextIndex<'a>, MockContext> for MockTransactional {
+    type Error = RootError;
+
+    async fn advance(
+        &self,
+        context: &mut MockContext,
+        step: &IncrementChapterNextIndex<'a>,
+    ) -> Result<i32, Self::Error> {
+        let comic = context
+            .state
+            .comics
+            .iter_mut()
+            .find(|comic| comic.id == step.id)
+            .ok_or_else(|| expected("error-comic-not-found"))?;
+        comic.chapter_next_index += 1;
+        comic.updated_at = now();
+        Ok(comic.chapter_next_index)
+    }
+}
+
+#[async_trait]
+impl<'a> Advance<UpdateChapterCount<'a>, MockContext> for MockTransactional {
+    type Error = RootError;
+
+    async fn advance(
+        &self,
+        context: &mut MockContext,
+        step: &UpdateChapterCount<'a>,
+    ) -> Result<(), Self::Error> {
+        let comic = context
+            .state
+            .comics
+            .iter_mut()
+            .find(|comic| comic.id == step.id)
+            .ok_or_else(|| expected("error-comic-not-found"))?;
+        comic.chapter_count += step.delta;
+        comic.updated_at = now();
+        Ok(())
+    }
+}
+
+#[async_trait]
+impl<'a> Advance<TouchLastActive<'a>, MockContext> for MockTransactional {
+    type Error = RootError;
+
+    async fn advance(
+        &self,
+        context: &mut MockContext,
+        step: &TouchLastActive<'a>,
+    ) -> Result<(), Self::Error> {
+        let comic = context
+            .state
+            .comics
+            .iter_mut()
+            .find(|comic| comic.id == step.id)
+            .ok_or_else(|| expected("error-comic-not-found"))?;
+        comic.last_active_at = now();
         comic.updated_at = now();
         Ok(())
     }

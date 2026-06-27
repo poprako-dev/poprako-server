@@ -1,19 +1,18 @@
 //! Complex domain logic for [Member] aggregates — ID generation and permission gates.
 
-use uuid::Uuid;
-
 use crate::complex::util::{check_user_is_team_admin, check_user_is_team_member};
 use crate::part::repo::proxy::ProxyExecute;
 use crate::part::repo::step::member::FindByUserTeamId;
 use crate::result::{RootError, RootResult};
+use crate::util::next_snowflake_id;
 
 /// Domain operations for [Member] aggregates: unique identifier generation.
 pub struct MemberComplex;
 
 impl MemberComplex {
-    /// Generates a unique member identifier with a `member-` prefix using UUID v7.
+    /// Generates a unique member identifier backed by a snowflake value.
     pub fn gen_id() -> String {
-        format!("member-{}", Uuid::now_v7())
+        next_snowflake_id()
     }
 }
 

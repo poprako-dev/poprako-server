@@ -3,17 +3,17 @@
 use argon2::Argon2;
 use argon2::password_hash::rand_core::OsRng;
 use argon2::password_hash::{PasswordHash, PasswordHasher as _, PasswordVerifier as _, SaltString};
-use uuid::Uuid;
 
 use crate::result::{Error as RootError, RootResult};
+use crate::util::next_snowflake_id;
 
 /// Domain operations for [User] aggregates: password hashing and verification via Argon2id, ID generation, and avatar storage key computation.
 pub struct UserComplex;
 
 impl UserComplex {
-    /// Generates a unique user identifier with a `user-` prefix using UUID v7.
+    /// Generates a unique user identifier backed by a snowflake value.
     pub fn gen_id() -> String {
-        format!("user-{}", Uuid::now_v7())
+        next_snowflake_id()
     }
 
     /// Hashes a plaintext password with Argon2id and a random salt, returning the encoded hash string.

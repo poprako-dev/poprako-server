@@ -97,6 +97,34 @@ impl<'a> Step for MarkCompleted<'a> {
     type Output = ();
 }
 
+/// Step that increments and returns a comic's next chapter index.
+pub struct IncrementChapterNextIndex<'a> {
+    pub id: &'a str,
+}
+
+impl<'a> Step for IncrementChapterNextIndex<'a> {
+    type Output = i32;
+}
+
+/// Step that changes a comic's chapter count by a delta.
+pub struct UpdateChapterCount<'a> {
+    pub id: &'a str,
+    pub delta: i32,
+}
+
+impl<'a> Step for UpdateChapterCount<'a> {
+    type Output = ();
+}
+
+/// Step that updates a comic's last-active timestamp.
+pub struct TouchLastActive<'a> {
+    pub id: &'a str,
+}
+
+impl<'a> Step for TouchLastActive<'a> {
+    type Output = ();
+}
+
 /// Factory for constructing comic repository [`Step`] values.
 pub struct ComicStep;
 
@@ -149,5 +177,20 @@ impl ComicStep {
     /// Constructs a step to mark completion state.
     pub fn mark_completed<'a>(id: &'a str, is_completed: bool) -> MarkCompleted<'a> {
         MarkCompleted { id, is_completed }
+    }
+
+    /// Constructs a step to increment and return chapter index.
+    pub fn increment_chapter_next_index<'a>(id: &'a str) -> IncrementChapterNextIndex<'a> {
+        IncrementChapterNextIndex { id }
+    }
+
+    /// Constructs a step to change chapter count.
+    pub fn update_chapter_count<'a>(id: &'a str, delta: i32) -> UpdateChapterCount<'a> {
+        UpdateChapterCount { id, delta }
+    }
+
+    /// Constructs a step to touch comic last-active time.
+    pub fn touch_last_active<'a>(id: &'a str) -> TouchLastActive<'a> {
+        TouchLastActive { id }
     }
 }

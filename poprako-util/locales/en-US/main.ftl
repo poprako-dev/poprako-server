@@ -23,6 +23,14 @@ error-wrong-credentials = User does not exist or password is incorrect
 error-invalid-offset = offset cannot be negative
 error-invalid-limit = limit must be between 1 and 200
 error-invalid-role = role must be a single role value
+error-chapter-not-found = Chapter not found
+error-assignment-not-found = Assignment not found
+error-page-not-found = Page not found
+error-invalid-workflow-transition = Invalid workflow transition
+error-invalid-stage-phase = Invalid workflow stage phase
+error-chapter-reviewer-required = Chapter reviewer role is required
+error-chapter-workflow-role-required = Required chapter workflow role is missing
+error-chapter-role-not-assignable = Chapter role is not assignable
 
 mail-invitation-used-title = Your Invitation Code Has Been Used
 mail-invitation-used-body = Your invitation code has been used. "{$invitee_qid}" has joined the team "{$team_name}"

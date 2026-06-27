@@ -2,7 +2,6 @@
 //! key management, and recursive deletion with related resource cleanup.
 
 use time::OffsetDateTime;
-use uuid::Uuid;
 
 use crate::complex::image::ImageComplex;
 use crate::complex::util::{check_user_is_team_admin, check_user_is_team_member};
@@ -15,13 +14,14 @@ use crate::part::repo::step::member::FindByUserTeamId;
 use crate::part::repo::step::workset::{GetInfoById as WorksetGetInfoById, WorksetStep};
 use crate::part::repo::workset::WorksetRepoTransactional;
 use crate::result::{RootError, RootResult};
+use crate::util::next_snowflake_id;
 
 /// Domain operations for comic entities.
 pub struct ComicComplex;
 
 impl ComicComplex {
     pub fn gen_id() -> String {
-        format!("comic-{}", Uuid::now_v7())
+        next_snowflake_id()
     }
 
     pub fn gen_cover_key(id: &str, cover_version: i64, file_ext: &str) -> String {

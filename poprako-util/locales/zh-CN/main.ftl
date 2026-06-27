@@ -23,6 +23,14 @@ error-wrong-credentials = 用户不存在或密码错误
 error-invalid-offset = offset 不能小于 0
 error-invalid-limit = limit 必须在 1 到 200 之间
 error-invalid-role = role 必须为单一角色值
+error-chapter-not-found = 章节不存在
+error-assignment-not-found = 章节分工不存在
+error-page-not-found = 页面不存在
+error-invalid-workflow-transition = 无效的工作流状态转换
+error-invalid-stage-phase = 无效的工作流阶段状态
+error-chapter-reviewer-required = 需要章节监修权限
+error-chapter-workflow-role-required = 缺少所需的章节工作流权限
+error-chapter-role-not-assignable = 章节角色不可领取
 
 mail-invitation-used-title = 你的邀请码已被使用
 mail-invitation-used-body = 你的邀请码已被使用，「{$invitee_qid}」已加入汉化组「{$team_name}」
