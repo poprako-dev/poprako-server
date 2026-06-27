@@ -10,14 +10,12 @@ use crate::data::member_invitation::{
     MemberInvitationInfoVal, UpdateMemberInvitationInfoData,
 };
 use crate::model::member_invitation::{MemberInvitationForm, MemberInvitationUpdate};
-use crate::model::role::RoleMask;
 use crate::model::user::UserToken;
 use crate::part::repo::map_drive_err;
 use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
 use crate::part::repo::member_invitation::{
     MemberInvitationRepo, MemberInvitationRepoTransactional,
 };
-use crate::part::repo::proxy::{ProxyNonTransactional, ProxyTransactional};
 use crate::part::repo::step::member::MemberStep;
 use crate::part::repo::step::member_invitation::MemberInvitationStep;
 use crate::part::repo::step::user::UserStep;
@@ -45,16 +43,20 @@ where
         + Send
         + Sync,
 {
-    let role_mask = RoleMask::try_from_bits(data.role_mask)?;
+    let role_mask = data.role_mask;
 
     let (member_invitation_id, member_invitation_code) = drive
         .with_context(async move |context| {
             let repo = repo.transactional().await;
 
-            let mut proxy = ProxyTransactional::new(&repo, context);
+            use crate::part::repo::proxy::AsProxyTransactional as _;
 
-            MemberInvitationPermComplex::can_user_create(&mut proxy, &token.user_id, &data.team_id)
-                .await?;
+            MemberInvitationPermComplex::can_user_create(
+                &mut repo.as_proxy(context),
+                &token.user_id,
+                &data.team_id,
+            )
+            .await?;
 
             let invitee_user_info = repo
                 .advance(context, &UserStep::find_info_by_qid(&data.invitee_qid))
@@ -116,10 +118,14 @@ where
     <R as DeriveTransactional>::Transactional:
         MemberInvitationRepoTransactional<C> + MemberRepoTransactional<C>,
 {
-    let mut proxy = ProxyNonTransactional::new(repo);
+    use crate::part::repo::proxy::AsProxyNonTransactional as _;
 
-    MemberInvitationPermComplex::can_user_list_infos(&mut proxy, &token.user_id, &data.team_id)
-        .await?;
+    MemberInvitationPermComplex::can_user_list_infos(
+        &mut repo.as_proxy(),
+        &token.user_id,
+        &data.team_id,
+    )
+    .await?;
 
     let member_invitation_infos = repo
         .execute(&MemberInvitationStep::list_infos(
@@ -150,16 +156,20 @@ where
     <R as DeriveTransactional>::Transactional:
         MemberInvitationRepoTransactional<C> + MemberRepoTransactional<C> + Send + Sync,
 {
-    let role_mask = RoleMask::try_from_bits(data.role_mask)?;
+    let role_mask = data.role_mask;
 
     drive
         .with_context(async move |context| {
             let repo = repo.transactional().await;
 
-            let mut proxy = ProxyTransactional::new(&repo, context);
+            use crate::part::repo::proxy::AsProxyTransactional as _;
 
-            MemberInvitationPermComplex::can_user_update_info(&mut proxy, &token.user_id, &data.id)
-                .await?;
+            MemberInvitationPermComplex::can_user_update_info(
+                &mut repo.as_proxy(context),
+                &token.user_id,
+                &data.id,
+            )
+            .await?;
 
             let member_invitation_update = MemberInvitationUpdate {
                 id: data.id,
@@ -193,9 +203,14 @@ where
         .with_context(async move |context| {
             let repo = repo.transactional().await;
 
-            let mut proxy = ProxyTransactional::new(&repo, context);
+            use crate::part::repo::proxy::AsProxyTransactional as _;
 
-            MemberInvitationPermComplex::can_user_delete(&mut proxy, &token.user_id, &id).await?;
+            MemberInvitationPermComplex::can_user_delete(
+                &mut repo.as_proxy(context),
+                &token.user_id,
+                &id,
+            )
+            .await?;
 
             repo.advance(context, &MemberInvitationStep::delete(&id))
                 .await?;

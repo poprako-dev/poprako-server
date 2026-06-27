@@ -1,8 +1,7 @@
 //! Domain models for team membership.
 
-use poprako_macro::Paginate;
-
-use crate::model::role::RoleMask;
+use crate::model::role::{RoleBit, RoleMask};
+use crate::value::member::MemberInclOpt;
 
 /// A membership record linking a user to a team.
 ///
@@ -41,11 +40,19 @@ pub struct MemberRoleUpdate {
     pub role_mask: RoleMask,
 }
 
-/// Filtering and pagination parameters for listing team members.
-#[Paginate]
-pub struct MemberListSpec {
-    pub team_id: String,
-
-    pub user_nickname_keyword: Option<String>,
-    pub role_mask: Option<RoleMask>,
+/// Filtering and pagination parameters for listing memberships.
+pub enum MemberListSpec {
+    User {
+        owner_id: String,
+        incl_opt: Vec<MemberInclOpt>,
+        offset: u64,
+        limit: u64,
+    },
+    Team {
+        team_id: String,
+        role_bit: Option<RoleBit>,
+        incl_opt: Vec<MemberInclOpt>,
+        offset: u64,
+        limit: u64,
+    },
 }

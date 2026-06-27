@@ -1,11 +1,12 @@
 use crate::model::member_invitation::MemberInvitationInfo;
+use crate::model::role::RoleMask;
 
 pub struct CreateMemberInvitationData {
     pub team_id: String,
 
     pub invitee_qid: String,
 
-    pub role_mask: u32,
+    pub role_mask: RoleMask,
 }
 
 pub struct CreateMemberInvitationVal {
@@ -34,7 +35,7 @@ pub struct MemberInvitationInfoVal {
 
     pub pending: bool,
 
-    pub role_mask: u32,
+    pub role_mask: RoleMask,
 }
 
 impl From<MemberInvitationInfo> for MemberInvitationInfoVal {
@@ -46,12 +47,12 @@ impl From<MemberInvitationInfo> for MemberInvitationInfoVal {
             invitee_qid: value.invitee_qid,
             code: value.code,
             pending: value.pending,
-            role_mask: value.role_mask.0,
+            role_mask: value.role_mask,
         }
     }
 }
 
 pub struct UpdateMemberInvitationInfoData {
     pub id: String,
-    pub role_mask: u32,
+    pub role_mask: RoleMask,
 }

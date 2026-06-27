@@ -111,8 +111,22 @@ pub mod proxy {
     {
         type Error;
 
+        /// Executes a step through the proxy.
         async fn execute(&mut self, step: &S) -> Result<S::Output, Self::Error>;
     }
+
+    /// Views a repository reference as a non-transactional proxy.
+    pub trait AsProxyNonTransactional {
+        /// Wraps this repository reference as a non-transactional proxy.
+        fn as_proxy(&self) -> ProxyNonTransactional<'_, Self>
+        where
+            Self: Sized,
+        {
+            ProxyNonTransactional::new(self)
+        }
+    }
+
+    impl<R> AsProxyNonTransactional for R {}
 
     /// A non-transactional proxy that delegates to [`Execute`].
     ///
@@ -154,14 +168,27 @@ pub mod proxy {
     /// [`Drive::with_context`]: poprako_transactional::drive::Drive::with_context
     pub struct ProxyTransactional<'a, R, C> {
         repo: &'a R,
-        cx: &'a mut C,
+        context: &'a mut C,
     }
+
+    /// Views a transactional handle reference as a transactional proxy.
+    pub trait AsProxyTransactional<C> {
+        /// Wraps this transactional handle and context as a transactional proxy.
+        fn as_proxy<'a>(&'a self, context: &'a mut C) -> ProxyTransactional<'a, Self, C>
+        where
+            Self: Sized,
+        {
+            ProxyTransactional::new(self, context)
+        }
+    }
+
+    impl<R, C> AsProxyTransactional<C> for R {}
 
     impl<'a, R, C> ProxyTransactional<'a, R, C> {
         /// Wraps a transactional-handle reference + mutable context reference
         /// for permission-check dispatching.
-        pub fn new(repo: &'a R, cx: &'a mut C) -> Self {
-            Self { repo, cx }
+        pub fn new(repo: &'a R, context: &'a mut C) -> Self {
+            Self { repo, context }
         }
     }
 
@@ -175,7 +202,7 @@ pub mod proxy {
         type Error = R::Error;
 
         async fn execute(&mut self, step: &S) -> Result<S::Output, Self::Error> {
-            Advance::advance(self.repo, self.cx, step).await
+            Advance::advance(self.repo, self.context, step).await
         }
     }
 }

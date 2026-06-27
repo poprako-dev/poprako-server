@@ -1,28 +1,13 @@
 use proc_macro::TokenStream;
 
 use proc_macro2::Span;
-use quote::ToTokens;
-use quote::quote;
-use syn::Data;
-use syn::DeriveInput;
-use syn::Error;
-use syn::Field;
-use syn::Fields;
-use syn::FieldsNamed;
-use syn::FnArg;
-use syn::Ident;
-use syn::ItemTrait;
-use syn::Pat;
-use syn::Path;
-use syn::PathArguments;
-use syn::Result;
-use syn::Token;
-use syn::TraitItem;
-use syn::TraitItemFn;
-use syn::Type;
+use quote::{ToTokens, quote};
 use syn::parse::Parse;
-use syn::parse_macro_input;
 use syn::punctuated::Punctuated;
+use syn::{
+    Data, DeriveInput, Error, Field, Fields, FieldsNamed, FnArg, Ident, ItemTrait, Pat, Path,
+    PathArguments, Result, Token, TraitItem, TraitItemFn, Type, parse_macro_input,
+};
 
 /// Generates a forwarding marker and blanket forwarding implementation for a trait.
 #[proc_macro_attribute]
@@ -402,12 +387,14 @@ fn expand_page(input: DeriveInput) -> Result<proc_macro2::TokenStream> {
     }
 
     let vis = &input.vis;
+    let attrs = &input.attrs;
     let struct_ident = &input.ident;
     let generics = &input.generics;
     let where_clause = &generics.where_clause;
     let fields = named.named.iter();
 
     Ok(quote! {
+        #(#attrs)*
         #vis struct #struct_ident #generics
         #where_clause
         {

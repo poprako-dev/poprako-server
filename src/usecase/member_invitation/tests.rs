@@ -75,7 +75,7 @@ fn create_data(team_id: &str, invitee_qid: &str) -> CreateMemberInvitationData {
     CreateMemberInvitationData {
         team_id: team_id.into(),
         invitee_qid: invitee_qid.into(),
-        role_mask: RoleBit::TRANSLATOR.0,
+        role_mask: RoleMask::from(RoleBit::TRANSLATOR),
     }
 }
 
@@ -91,7 +91,7 @@ fn list_data(team_id: &str) -> ListMemberInvitationInfosData {
 fn update_data(id: &str) -> UpdateMemberInvitationInfoData {
     UpdateMemberInvitationInfoData {
         id: id.into(),
-        role_mask: RoleBit::REVIEWER.0,
+        role_mask: RoleMask::from(RoleBit::REVIEWER),
     }
 }
 

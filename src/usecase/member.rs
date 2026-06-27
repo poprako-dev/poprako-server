@@ -8,15 +8,12 @@ use poprako_util::i18n::trl;
 
 use crate::complex::member::{MemberComplex, MemberPermComplex};
 use crate::data::member::{
-    CreateMemberData, CreateMemberVal, ListMemberInfosData, ListMineMemberInfosData, MemberInfoVal,
-    UpdateMemberRoleData,
+    CreateMemberData, CreateMemberVal, ListMemberInfosData, MemberInfoVal, UpdateMemberRoleData,
 };
 use crate::model::member::{MemberForm, MemberListSpec, MemberRoleUpdate};
-use crate::model::role::RoleMask;
 use crate::model::user::UserToken;
 use crate::part::repo::map_drive_err;
 use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
-use crate::part::repo::proxy::{ProxyNonTransactional, ProxyTransactional};
 use crate::part::repo::step::member::MemberStep;
 use crate::part::repo::step::team::TeamStep;
 use crate::part::repo::step::user::UserStep;
@@ -49,15 +46,20 @@ where
         + Send
         + Sync,
 {
-    let role_mask = RoleMask::try_from_bits(data.role_mask)?;
+    let role_mask = data.role_mask;
 
     let member_id = drive
         .with_context(async move |context| {
             let repo = repo.transactional().await;
 
-            let mut proxy = ProxyTransactional::new(&repo, context);
+            use crate::part::repo::proxy::AsProxyTransactional as _;
 
-            MemberPermComplex::can_user_create(&mut proxy, &token.user_id, &data.team_id).await?;
+            MemberPermComplex::can_user_create(
+                &mut repo.as_proxy(context),
+                &token.user_id,
+                &data.team_id,
+            )
+            .await?;
 
             let target_user_info = repo
                 .advance(context, &UserStep::get_info_excluded(&data.user_id))
@@ -112,69 +114,20 @@ where
     R: MemberRepo<C> + Sync,
     <R as DeriveTransactional>::Transactional: MemberRepoTransactional<C>,
 {
-    let role_mask = data.role_mask.map(RoleMask::try_from_bits).transpose()?;
+    let member_list_spec: MemberListSpec = data.try_into()?;
 
-    let member_list_spec = MemberListSpec {
-        team_id: data.team_id,
-        user_nickname_keyword: data.user_nickname_keyword,
-        role_mask,
-        offset: data.offset,
-        limit: data.limit,
-    };
+    if let MemberListSpec::Team { team_id, .. } = &member_list_spec {
+        use crate::part::repo::proxy::AsProxyNonTransactional as _;
 
-    let mut proxy = ProxyNonTransactional::new(repo);
-
-    MemberPermComplex::can_user_list_infos(&mut proxy, &token.user_id, &member_list_spec.team_id)
-        .await?;
+        MemberPermComplex::can_user_list_infos(&mut repo.as_proxy(), &token.user_id, team_id)
+            .await?;
+    }
 
     let member_infos = repo
         .execute(&MemberStep::list_infos(&member_list_spec))
         .await?;
 
     Ok(member_infos.into_iter().map(MemberInfoVal::from).collect())
-}
-
-/// Lists memberships of the current user.
-///
-/// Uses the transactional list step because the repository exposes the
-/// user-scoped member list through the locked path.
-pub async fn list_mine_infos<D, C, R>(
-    drive: &D,
-    repo: &R,
-    token: UserToken,
-    data: ListMineMemberInfosData,
-) -> RootResult<Vec<MemberInfoVal>>
-where
-    D: Drive<C>,
-    D::Error: Into<RootError>,
-    C: Send,
-    R: MemberRepo<C> + Send + Sync,
-    <R as DeriveTransactional>::Transactional: MemberRepoTransactional<C> + Send + Sync,
-{
-    let member_info_vals = drive
-        .with_context(async move |context| {
-            let repo = repo.transactional().await;
-
-            let member_infos = repo
-                .advance(
-                    context,
-                    &MemberStep::list_by_user_id_excluded(&token.user_id),
-                )
-                .await?;
-
-            let member_info_vals = member_infos
-                .into_iter()
-                .skip(data.offset as usize)
-                .take(data.limit as usize)
-                .map(MemberInfoVal::from)
-                .collect();
-
-            accept(member_info_vals)
-        })
-        .await
-        .map_err(map_drive_err)?;
-
-    accept(member_info_vals)
 }
 
 /// Updates one member's role mask.
@@ -193,7 +146,7 @@ where
     R: MemberRepo<C> + Send + Sync,
     <R as DeriveTransactional>::Transactional: MemberRepoTransactional<C> + Send + Sync,
 {
-    let role_mask = RoleMask::try_from_bits(data.role_mask)?;
+    let role_mask = data.role_mask;
 
     drive
         .with_context(async move |context| {
@@ -203,10 +156,10 @@ where
                 .advance(context, &MemberStep::get_info_excluded(&data.id))
                 .await?;
 
-            let mut proxy = ProxyTransactional::new(&repo, context);
+            use crate::part::repo::proxy::AsProxyTransactional as _;
 
             MemberPermComplex::can_user_update_info(
-                &mut proxy,
+                &mut repo.as_proxy(context),
                 &token.user_id,
                 &target_member_info.team_id,
             )
@@ -247,10 +200,10 @@ where
                 .advance(context, &MemberStep::get_info_excluded(&id))
                 .await?;
 
-            let mut proxy = ProxyTransactional::new(&repo, context);
+            use crate::part::repo::proxy::AsProxyTransactional as _;
 
             MemberPermComplex::can_user_delete(
-                &mut proxy,
+                &mut repo.as_proxy(context),
                 &token.user_id,
                 &target_member_info.team_id,
             )

@@ -19,6 +19,7 @@
 use super::*;
 
 use crate::part::effect::event::Event;
+use crate::model::role::{RoleBit, RoleMask};
 use crate::part_impl::repo_mock::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;
@@ -41,7 +42,7 @@ fn invitation(
         invitee_qid: invitee_qid.into(),
         code: code.into(),
         pending,
-        role_mask: crate::model::role::RoleMask(1),
+        role_mask: RoleMask::from(RoleBit::RAW_PROVIDER),
     }
 }
 
