@@ -24,21 +24,21 @@ impl<'a> Step for SendBatch<'a> {
 
 /// Step that lists system mails for a given receiver, ordered by
 /// creation time descending with pagination and optional read filter.
-pub struct ListByReceiverId<'a> {
+pub struct ListInfosByReceiverId<'a> {
     pub receiver_id: &'a str,
     pub spec: &'a SystemMailListSpec,
 }
 
-impl<'a> Step for ListByReceiverId<'a> {
+impl<'a> Step for ListInfosByReceiverId<'a> {
     type Output = Vec<SystemMailInfo>;
 }
 
 /// Step that fetches system mails by a batch of identifiers.
-pub struct ListByIds<'a> {
+pub struct ListInfosByIds<'a> {
     pub ids: &'a [String],
 }
 
-impl<'a> Step for ListByIds<'a> {
+impl<'a> Step for ListInfosByIds<'a> {
     type Output = Vec<SystemMailInfo>;
 }
 
@@ -66,16 +66,16 @@ impl SystemMailStep {
     }
 
     /// Constructs a step to list system mails for a receiver.
-    pub fn list_by_receiver_id<'a>(
+    pub fn list_infos_by_receiver_id<'a>(
         receiver_id: &'a str,
         spec: &'a SystemMailListSpec,
-    ) -> ListByReceiverId<'a> {
-        ListByReceiverId { receiver_id, spec }
+    ) -> ListInfosByReceiverId<'a> {
+        ListInfosByReceiverId { receiver_id, spec }
     }
 
     /// Constructs a step to fetch system mails by a batch of identifiers.
-    pub fn list_by_ids<'a>(ids: &'a [String]) -> ListByIds<'a> {
-        ListByIds { ids }
+    pub fn list_infos_by_ids<'a>(ids: &'a [String]) -> ListInfosByIds<'a> {
+        ListInfosByIds { ids }
     }
 
     /// Constructs a step to mark a system mail as read.

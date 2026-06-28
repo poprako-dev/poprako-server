@@ -6,11 +6,11 @@
 
 use poprako_transactional::advance::Advance;
 
-use crate::part::repo::Execute;
 use crate::part::repo::step::member::{
-    Create, Delete, FindByUserTeamId, GetInfoExcluded, ListByUserIdExcluded, ListInfos,
+    Create, Delete, FindInfoByUserTeamId, GetInfoExcluded, ListInfos, ListInfosByUserIdExcluded,
     TouchLastActive, UpdateRole, UpdateUserNickname,
 };
+use crate::part::shared::execute::Execute;
 use crate::result::RootError;
 use crate::util::DeriveTransactional;
 
@@ -21,7 +21,7 @@ use crate::util::DeriveTransactional;
 /// [`MemberRepoTransactional`] via the `C` anchor.
 pub trait MemberRepo<C>:
     DeriveTransactional
-    + for<'a> Execute<FindByUserTeamId<'a>, Error = RootError>
+    + for<'a> Execute<FindInfoByUserTeamId<'a>, Error = RootError>
     + for<'a> Execute<ListInfos<'a>, Error = RootError>
 where
     Self::Transactional: MemberRepoTransactional<C>,
@@ -36,8 +36,8 @@ pub trait MemberRepoTransactional<C>:
     for<'a> Advance<Create<'a>, C, Error = RootError>
     + for<'a> Advance<UpdateUserNickname<'a>, C, Error = RootError>
     + for<'a> Advance<TouchLastActive<'a>, C, Error = RootError>
-    + for<'a> Advance<ListByUserIdExcluded<'a>, C, Error = RootError>
-    + for<'a> Advance<FindByUserTeamId<'a>, C, Error = RootError>
+    + for<'a> Advance<ListInfosByUserIdExcluded<'a>, C, Error = RootError>
+    + for<'a> Advance<FindInfoByUserTeamId<'a>, C, Error = RootError>
     + for<'a> Advance<GetInfoExcluded<'a>, C, Error = RootError>
     + for<'a> Advance<UpdateRole<'a>, C, Error = RootError>
     + for<'a> Advance<Delete<'a>, C, Error = RootError>

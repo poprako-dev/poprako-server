@@ -2,12 +2,12 @@
 
 use poprako_transactional::advance::Advance;
 
-use crate::part::repo::Execute;
 use crate::part::repo::step::comic::{
-    Create, Delete, GetInfoById, GetInfoExcluded, IncrementChapterNextIndex, ListByWorksetId,
-    ListByWorksetIdExcluded, MarkCompleted, MarkCoverUploaded, ReserveCover, TouchLastActive,
+    Create, Delete, GetInfoById, GetInfoExcluded, IncrChapterNextIndex, ListInfosByWorksetId,
+    ListInfosByWorksetIdExcluded, MarkCompleted, MarkCoverUploaded, ReserveCover, TouchLastActive,
     UpdateChapterCount, UpdateInfo,
 };
+use crate::part::shared::execute::Execute;
 use crate::result::RootError;
 use crate::util::DeriveTransactional;
 
@@ -15,7 +15,7 @@ use crate::util::DeriveTransactional;
 pub trait ComicRepo<C>:
     DeriveTransactional
     + for<'a> Execute<GetInfoById<'a>, Error = RootError>
-    + for<'a> Execute<ListByWorksetId<'a>, Error = RootError>
+    + for<'a> Execute<ListInfosByWorksetId<'a>, Error = RootError>
     + for<'a> Execute<UpdateInfo<'a>, Error = RootError>
     + for<'a> Execute<MarkCoverUploaded<'a>, Error = RootError>
 where
@@ -28,12 +28,12 @@ pub trait ComicRepoTransactional<C>:
     for<'a> Advance<Create<'a>, C, Error = RootError>
     + for<'a> Advance<GetInfoById<'a>, C, Error = RootError>
     + for<'a> Advance<GetInfoExcluded<'a>, C, Error = RootError>
-    + for<'a> Advance<ListByWorksetIdExcluded<'a>, C, Error = RootError>
+    + for<'a> Advance<ListInfosByWorksetIdExcluded<'a>, C, Error = RootError>
     + for<'a> Advance<ReserveCover<'a>, C, Error = RootError>
     + for<'a> Advance<MarkCoverUploaded<'a>, C, Error = RootError>
     + for<'a> Advance<Delete<'a>, C, Error = RootError>
     + for<'a> Advance<MarkCompleted<'a>, C, Error = RootError>
-    + for<'a> Advance<IncrementChapterNextIndex<'a>, C, Error = RootError>
+    + for<'a> Advance<IncrChapterNextIndex<'a>, C, Error = RootError>
     + for<'a> Advance<UpdateChapterCount<'a>, C, Error = RootError>
     + for<'a> Advance<TouchLastActive<'a>, C, Error = RootError>
 {

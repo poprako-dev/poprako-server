@@ -5,13 +5,13 @@ use async_trait::async_trait;
 use poprako_transactional::advance::Advance;
 
 use crate::model::member_invitation::MemberInvitationInfo;
-use crate::part::repo::Execute;
 use crate::part::repo::member_invitation::{
     MemberInvitationRepo, MemberInvitationRepoTransactional,
 };
 use crate::part::repo::step::member_invitation::{
     Create, Delete, GetInfoByCodeExcluded, GetInfoById, ListInfos, MarkPendingAsUsed, UpdateInfo,
 };
+use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_mock::{Mock, MockContext, MockTransactional, expected};
 
 impl MemberInvitationRepo<MockContext> for Mock {}

@@ -41,7 +41,7 @@ where
     };
 
     let system_mail_infos = repo
-        .execute(&SystemMailStep::list_by_receiver_id(
+        .execute(&SystemMailStep::list_infos_by_receiver_id(
             &token.user_id,
             &mail_list_spec,
         ))
@@ -76,7 +76,9 @@ where
     R: SystemMailRepo<C>,
     <R as DeriveTransactional>::Transactional: SystemMailRepoTransactional<C>,
 {
-    let system_mail_infos = repo.execute(&SystemMailStep::list_by_ids(&ids)).await?;
+    let system_mail_infos = repo
+        .execute(&SystemMailStep::list_infos_by_ids(&ids))
+        .await?;
 
     if system_mail_infos.len() != ids.len() {
         return Err(RootError::Expected {

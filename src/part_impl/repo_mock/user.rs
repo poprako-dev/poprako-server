@@ -5,12 +5,12 @@ use poprako_transactional::advance::Advance;
 
 use crate::complex::user::UserComplex;
 use crate::model::user::{UserAvatarReservation, UserCredential, UserForm, UserInfo};
-use crate::part::repo::Execute;
 use crate::part::repo::step::user::{
     Create, Delete, FindInfoByQid, GetCredentialByQid, GetInfoById, GetInfoExcluded,
     MarkAvatarUploaded, ReserveAvatar, TouchLastActive, UpdateInfo,
 };
 use crate::part::repo::user::{UserRepo, UserRepoTransactional};
+use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactional, expected, now};
 use crate::result::RootError;
 

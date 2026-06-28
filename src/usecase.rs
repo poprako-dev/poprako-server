@@ -32,7 +32,7 @@
 //! | `V: EffectDevelop` | Side-effect processor for domain events |
 //! | `A: TokenAuth` | Authentication token signer |
 //!
-//! [`Execute::execute`]: crate::part::repo::Execute::execute
+//! [`Execute::execute`]: crate::part::shared::execute::Execute::execute
 //! [`Drive::with_context`]: poprako_transactional::drive::Drive::with_context
 //! [`Advance`]: poprako_transactional::advance::Advance
 

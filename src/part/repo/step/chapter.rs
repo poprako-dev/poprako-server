@@ -32,33 +32,42 @@ impl<'a> Step for GetInfoExcluded<'a> {
 }
 
 /// Step that lists chapters by comic.
-pub struct ListByComicId<'a> {
+pub struct ListInfosByComicId<'a> {
     pub comic_id: &'a str,
     pub offset: u64,
     pub limit: u64,
 }
 
-impl<'a> Step for ListByComicId<'a> {
+impl<'a> Step for ListInfosByComicId<'a> {
     type Output = Vec<ChapterInfo>;
 }
 
 /// Step that lists chapters by comic with a pessimistic lock.
-pub struct ListByComicIdExcluded<'a> {
+pub struct ListInfosByComicIdExcluded<'a> {
     pub comic_id: &'a str,
     pub offset: u64,
     pub limit: u64,
 }
 
-impl<'a> Step for ListByComicIdExcluded<'a> {
+impl<'a> Step for ListInfosByComicIdExcluded<'a> {
+    type Output = Vec<ChapterInfo>;
+}
+
+/// Step that lists all chapters by comic with a pessimistic lock.
+pub struct ListAllInfosByComicIdExcluded<'a> {
+    pub comic_id: &'a str,
+}
+
+impl<'a> Step for ListAllInfosByComicIdExcluded<'a> {
     type Output = Vec<ChapterInfo>;
 }
 
 /// Step that finds the pinned chapter under a comic.
-pub struct FindPinnedByComicId<'a> {
+pub struct FindPinnedInfoByComicId<'a> {
     pub comic_id: &'a str,
 }
 
-impl<'a> Step for FindPinnedByComicId<'a> {
+impl<'a> Step for FindPinnedInfoByComicId<'a> {
     type Output = Option<ChapterInfo>;
 }
 
@@ -119,8 +128,12 @@ impl ChapterStep {
     }
 
     /// Constructs a step to list chapters by comic.
-    pub fn list_by_comic_id<'a>(comic_id: &'a str, offset: u64, limit: u64) -> ListByComicId<'a> {
-        ListByComicId {
+    pub fn list_infos_by_comic_id<'a>(
+        comic_id: &'a str,
+        offset: u64,
+        limit: u64,
+    ) -> ListInfosByComicId<'a> {
+        ListInfosByComicId {
             comic_id,
             offset,
             limit,
@@ -128,21 +141,28 @@ impl ChapterStep {
     }
 
     /// Constructs a step to list chapters by comic with a pessimistic lock.
-    pub fn list_by_comic_id_excluded<'a>(
+    pub fn list_infos_by_comic_id_excluded<'a>(
         comic_id: &'a str,
         offset: u64,
         limit: u64,
-    ) -> ListByComicIdExcluded<'a> {
-        ListByComicIdExcluded {
+    ) -> ListInfosByComicIdExcluded<'a> {
+        ListInfosByComicIdExcluded {
             comic_id,
             offset,
             limit,
         }
     }
 
+    /// Constructs a step to list all chapters by comic with a pessimistic lock.
+    pub fn list_all_infos_by_comic_id_excluded<'a>(
+        comic_id: &'a str,
+    ) -> ListAllInfosByComicIdExcluded<'a> {
+        ListAllInfosByComicIdExcluded { comic_id }
+    }
+
     /// Constructs a step to find a pinned chapter by comic.
-    pub fn find_pinned_by_comic_id<'a>(comic_id: &'a str) -> FindPinnedByComicId<'a> {
-        FindPinnedByComicId { comic_id }
+    pub fn find_pinned_info_by_comic_id<'a>(comic_id: &'a str) -> FindPinnedInfoByComicId<'a> {
+        FindPinnedInfoByComicId { comic_id }
     }
 
     /// Constructs a step to update chapter metadata.

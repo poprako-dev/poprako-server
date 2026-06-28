@@ -5,12 +5,12 @@ use poprako_transactional::step::Step;
 use crate::model::assignment::{AssignmentForm, AssignmentInfo, AssignmentRoleUpdate};
 
 /// Step that finds one assignment by chapter and user.
-pub struct GetByChapterUserId<'a> {
+pub struct GetInfoByChapterUserId<'a> {
     pub chapter_id: &'a str,
     pub user_id: &'a str,
 }
 
-impl<'a> Step for GetByChapterUserId<'a> {
+impl<'a> Step for GetInfoByChapterUserId<'a> {
     type Output = Option<AssignmentInfo>;
 }
 
@@ -32,25 +32,16 @@ impl<'a> Step for PutRoles<'a> {
     type Output = AssignmentInfo;
 }
 
-/// Step that deletes assignments by chapter.
-pub struct DeleteByChapter<'a> {
-    pub chapter_id: &'a str,
-}
-
-impl<'a> Step for DeleteByChapter<'a> {
-    type Output = ();
-}
-
 /// Factory for constructing assignment repository [`Step`] values.
 pub struct AssignmentStep;
 
 impl AssignmentStep {
     /// Constructs a step to find one assignment by chapter and user.
-    pub fn get_by_chapter_user_id<'a>(
+    pub fn get_info_by_chapter_user_id<'a>(
         chapter_id: &'a str,
         user_id: &'a str,
-    ) -> GetByChapterUserId<'a> {
-        GetByChapterUserId {
+    ) -> GetInfoByChapterUserId<'a> {
+        GetInfoByChapterUserId {
             chapter_id,
             user_id,
         }
@@ -64,10 +55,5 @@ impl AssignmentStep {
     /// Constructs a step to update assignment roles.
     pub fn put_roles<'a>(update: &'a AssignmentRoleUpdate) -> PutRoles<'a> {
         PutRoles { update }
-    }
-
-    /// Constructs a step to delete assignments by chapter.
-    pub fn delete_by_chapter<'a>(chapter_id: &'a str) -> DeleteByChapter<'a> {
-        DeleteByChapter { chapter_id }
     }
 }

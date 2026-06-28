@@ -377,7 +377,7 @@ where
 
             // Delete all memberships before the user to satisfy FK constraints.
             let member_infos = repo
-                .advance(context, &MemberStep::list_by_user_id_excluded(&id))
+                .advance(context, &MemberStep::list_infos_by_user_id_excluded(&id))
                 .await?;
 
             for mi in &member_infos {

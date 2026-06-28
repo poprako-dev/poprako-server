@@ -9,11 +9,11 @@
 
 use poprako_transactional::advance::Advance;
 
-use crate::part::repo::Execute;
 use crate::part::repo::step::team::{
     Create, Delete, GetInfoById, GetInfoExcluded, IncrementWorksetNextIndex, ListInfos,
     MarkAvatarUploaded, ReserveAvatar, UpdateInfo,
 };
+use crate::part::shared::execute::Execute;
 use crate::result::RootError;
 use crate::util::DeriveTransactional;
 

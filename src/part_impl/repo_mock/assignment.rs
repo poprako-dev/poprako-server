@@ -4,16 +4,11 @@ use async_trait::async_trait;
 
 use poprako_transactional::advance::Advance;
 
-use crate::complex::assignment::AssignmentComplex;
 use crate::model::assignment::{AssignmentForm, AssignmentInfo};
-use crate::part::repo::Execute;
 use crate::part::repo::assignment::{AssignmentRepo, AssignmentRepoTransactional};
-use crate::part::repo::step::assignment::{
-    Create, DeleteByChapter, GetByChapterUserId, PutRoles,
-};
-use crate::part_impl::repo_mock::{
-    Mock, MockContext, MockState, MockTransactional, expected, now,
-};
+use crate::part::repo::step::assignment::{Create, GetInfoByChapterUserId, PutRoles};
+use crate::part::shared::execute::Execute;
+use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactional, expected, now};
 use crate::result::RootError;
 
 impl AssignmentRepo<MockContext> for Mock {}
@@ -61,12 +56,12 @@ fn create_assignment(
 }
 
 #[async_trait]
-impl<'a> Execute<GetByChapterUserId<'a>> for Mock {
+impl<'a> Execute<GetInfoByChapterUserId<'a>> for Mock {
     type Error = RootError;
 
     async fn execute(
         &self,
-        step: &GetByChapterUserId<'a>,
+        step: &GetInfoByChapterUserId<'a>,
     ) -> Result<Option<AssignmentInfo>, Self::Error> {
         let state = self.state.lock().unwrap();
         Ok(find_assignment(&state, step.chapter_id, step.user_id))
@@ -74,13 +69,13 @@ impl<'a> Execute<GetByChapterUserId<'a>> for Mock {
 }
 
 #[async_trait]
-impl<'a> Advance<GetByChapterUserId<'a>, MockContext> for MockTransactional {
+impl<'a> Advance<GetInfoByChapterUserId<'a>, MockContext> for MockTransactional {
     type Error = RootError;
 
     async fn advance(
         &self,
         context: &mut MockContext,
-        step: &GetByChapterUserId<'a>,
+        step: &GetInfoByChapterUserId<'a>,
     ) -> Result<Option<AssignmentInfo>, Self::Error> {
         Ok(find_assignment(
             &context.state,
@@ -122,22 +117,5 @@ impl<'a> Advance<PutRoles<'a>, MockContext> for MockTransactional {
         assignment_info.roles = step.update.roles;
         assignment_info.updated_at = now();
         Ok(assignment_info.clone())
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<DeleteByChapter<'a>, MockContext> for MockTransactional {
-    type Error = RootError;
-
-    async fn advance(
-        &self,
-        context: &mut MockContext,
-        step: &DeleteByChapter<'a>,
-    ) -> Result<(), Self::Error> {
-        context
-            .state
-            .assignments
-            .retain(|assignment_info| assignment_info.chapter_id != step.chapter_id);
-        Ok(())
     }
 }

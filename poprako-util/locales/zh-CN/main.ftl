@@ -29,6 +29,7 @@ error-page-not-found = 页面不存在
 error-invalid-workflow-transition = 无效的工作流状态转换
 error-invalid-stage = 无效的工作流阶段值
 error-invalid-stage-phase = 无效的工作流阶段状态
+error-chapter-admin-required = 需要章节管理权限
 error-chapter-reviewer-required = 需要章节监修权限
 error-chapter-workflow-role-required = 缺少所需的章节工作流权限
 error-chapter-role-not-assignable = 章节角色不可领取

@@ -33,11 +33,11 @@ impl<'a> Step for TouchLastActive<'a> {
 }
 
 /// Step that lists all memberships for a user with a pessimistic lock.
-pub struct ListByUserIdExcluded<'a> {
+pub struct ListInfosByUserIdExcluded<'a> {
     pub user_id: &'a str,
 }
 
-impl<'a> Step for ListByUserIdExcluded<'a> {
+impl<'a> Step for ListInfosByUserIdExcluded<'a> {
     type Output = Vec<MemberInfo>;
 }
 
@@ -51,12 +51,12 @@ impl<'a> Step for ListInfos<'a> {
 }
 
 /// Step that finds one membership by user and team identifiers.
-pub struct FindByUserTeamId<'a> {
+pub struct FindInfoByUserTeamId<'a> {
     pub user_id: &'a str,
     pub team_id: &'a str,
 }
 
-impl<'a> Step for FindByUserTeamId<'a> {
+impl<'a> Step for FindInfoByUserTeamId<'a> {
     type Output = Option<MemberInfo>;
 }
 
@@ -113,8 +113,8 @@ impl MemberStep {
     }
 
     /// Constructs a step to list a user's memberships with a pessimistic lock.
-    pub fn list_by_user_id_excluded<'a>(user_id: &'a str) -> ListByUserIdExcluded<'a> {
-        ListByUserIdExcluded { user_id }
+    pub fn list_infos_by_user_id_excluded<'a>(user_id: &'a str) -> ListInfosByUserIdExcluded<'a> {
+        ListInfosByUserIdExcluded { user_id }
     }
 
     /// Constructs a step to list team memberships.
@@ -123,8 +123,11 @@ impl MemberStep {
     }
 
     /// Constructs a step to find one membership by user and team.
-    pub fn find_by_user_team_id<'a>(user_id: &'a str, team_id: &'a str) -> FindByUserTeamId<'a> {
-        FindByUserTeamId { user_id, team_id }
+    pub fn find_info_by_user_team_id<'a>(
+        user_id: &'a str,
+        team_id: &'a str,
+    ) -> FindInfoByUserTeamId<'a> {
+        FindInfoByUserTeamId { user_id, team_id }
     }
 
     /// Constructs a step to fetch one membership with a pessimistic lock.

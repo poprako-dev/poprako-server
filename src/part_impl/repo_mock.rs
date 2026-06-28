@@ -298,9 +298,9 @@ mod tests {
     use crate::model::user::{UserCredential, UserInfo};
     use crate::part::prom::intention::{ImageIntention, ImageKind};
     use crate::part::prom::{Payload, PromStep};
-    use crate::part::repo::Execute;
     use crate::part::repo::step::member::MemberStep;
     use crate::part::repo::step::user::UserStep;
+    use crate::part::shared::execute::Execute;
     use crate::result::accept;
 
     fn user(id: &str) -> UserInfo {

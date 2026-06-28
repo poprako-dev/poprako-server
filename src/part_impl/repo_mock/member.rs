@@ -7,12 +7,12 @@ use poprako_transactional::advance::Advance;
 
 use crate::model::member::{MemberForm, MemberInfo, MemberListSpec};
 use crate::model::role::RoleMask;
-use crate::part::repo::Execute;
 use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
 use crate::part::repo::step::member::{
-    Create, Delete, FindByUserTeamId, GetInfoExcluded, ListByUserIdExcluded, ListInfos,
+    Create, Delete, FindInfoByUserTeamId, GetInfoExcluded, ListInfos, ListInfosByUserIdExcluded,
     TouchLastActive, UpdateRole, UpdateUserNickname,
 };
+use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactional, expected, now};
 use crate::result::RootError;
 
@@ -117,13 +117,13 @@ impl<'a> Advance<TouchLastActive<'a>, MockContext> for MockTransactional {
 }
 
 #[async_trait]
-impl<'a> Advance<ListByUserIdExcluded<'a>, MockContext> for MockTransactional {
+impl<'a> Advance<ListInfosByUserIdExcluded<'a>, MockContext> for MockTransactional {
     type Error = RootError;
 
     async fn advance(
         &self,
         context: &mut MockContext,
-        step: &ListByUserIdExcluded<'a>,
+        step: &ListInfosByUserIdExcluded<'a>,
     ) -> Result<Vec<MemberInfo>, Self::Error> {
         Ok(context
             .state
@@ -195,12 +195,12 @@ impl<'a> Execute<ListInfos<'a>> for Mock {
 }
 
 #[async_trait]
-impl<'a> Execute<FindByUserTeamId<'a>> for Mock {
+impl<'a> Execute<FindInfoByUserTeamId<'a>> for Mock {
     type Error = RootError;
 
     async fn execute(
         &self,
-        step: &FindByUserTeamId<'a>,
+        step: &FindInfoByUserTeamId<'a>,
     ) -> Result<Option<MemberInfo>, Self::Error> {
         let state = self.state.lock().unwrap();
         Ok(find_member_by_user_team_id(
@@ -212,13 +212,13 @@ impl<'a> Execute<FindByUserTeamId<'a>> for Mock {
 }
 
 #[async_trait]
-impl<'a> Advance<FindByUserTeamId<'a>, MockContext> for MockTransactional {
+impl<'a> Advance<FindInfoByUserTeamId<'a>, MockContext> for MockTransactional {
     type Error = RootError;
 
     async fn advance(
         &self,
         context: &mut MockContext,
-        step: &FindByUserTeamId<'a>,
+        step: &FindInfoByUserTeamId<'a>,
     ) -> Result<Option<MemberInfo>, Self::Error> {
         Ok(find_member_by_user_team_id(
             &context.state,
