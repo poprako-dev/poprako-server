@@ -8,8 +8,12 @@ use crate::complex::assignment::AssignmentComplex;
 use crate::model::assignment::{AssignmentForm, AssignmentInfo};
 use crate::part::repo::Execute;
 use crate::part::repo::assignment::{AssignmentRepo, AssignmentRepoTransactional};
-use crate::part::repo::step::assignment::{Create, DeleteByChapter, GetByChapterUserId, PutRoles};
-use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactional, expected, now};
+use crate::part::repo::step::assignment::{
+    Create, DeleteByChapter, GetByChapterUserId, PutRoles,
+};
+use crate::part_impl::repo_mock::{
+    Mock, MockContext, MockState, MockTransactional, expected, now,
+};
 use crate::result::RootError;
 
 impl AssignmentRepo<MockContext> for Mock {}
@@ -44,28 +48,11 @@ fn create_assignment(
     }
 
     let time = now();
-    let (
-        raw_provider_assigned_at,
-        translator_assigned_at,
-        proofreader_assigned_at,
-        typesetter_assigned_at,
-        redrawer_assigned_at,
-        reviewer_assigned_at,
-        publisher_assigned_at,
-    ) = AssignmentComplex::timed_roles_from_mask(form.role_mask, time);
-
     let assignment_info = AssignmentInfo {
         id: form.id.clone(),
         chapter_id: form.chapter_id.clone(),
         user_id: form.user_id.clone(),
-        role_mask: form.role_mask,
-        raw_provider_assigned_at,
-        translator_assigned_at,
-        proofreader_assigned_at,
-        typesetter_assigned_at,
-        redrawer_assigned_at,
-        reviewer_assigned_at,
-        publisher_assigned_at,
+        roles: form.roles,
         created_at: time,
         updated_at: time,
     };
@@ -132,14 +119,7 @@ impl<'a> Advance<PutRoles<'a>, MockContext> for MockTransactional {
             .find(|assignment_info| assignment_info.id == step.update.id)
             .ok_or_else(|| expected("error-assignment-not-found"))?;
 
-        assignment_info.role_mask = step.update.role_mask;
-        assignment_info.raw_provider_assigned_at = step.update.raw_provider_assigned_at;
-        assignment_info.translator_assigned_at = step.update.translator_assigned_at;
-        assignment_info.proofreader_assigned_at = step.update.proofreader_assigned_at;
-        assignment_info.typesetter_assigned_at = step.update.typesetter_assigned_at;
-        assignment_info.redrawer_assigned_at = step.update.redrawer_assigned_at;
-        assignment_info.reviewer_assigned_at = step.update.reviewer_assigned_at;
-        assignment_info.publisher_assigned_at = step.update.publisher_assigned_at;
+        assignment_info.roles = step.update.roles;
         assignment_info.updated_at = now();
         Ok(assignment_info.clone())
     }

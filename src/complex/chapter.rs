@@ -89,14 +89,7 @@ fn default_subtitle(index: i32) -> String {
 /// Extract the current [`StagePhase`] for a given [`WorkflowStage`] from a
 /// [`ChapterInfo`] record.
 fn get_phase(chapter_info: &ChapterInfo, stage: WorkflowStage) -> StagePhase {
-    match stage {
-        WorkflowStage::RawProvide => chapter_info.raw_provide_phase,
-        WorkflowStage::Translate => chapter_info.translate_phase,
-        WorkflowStage::Proofread => chapter_info.proofread_phase,
-        WorkflowStage::TypesetRedraw => chapter_info.typeset_redraw_phase,
-        WorkflowStage::Review => chapter_info.review_phase,
-        WorkflowStage::Publish => chapter_info.publish_phase,
-    }
+    chapter_info.stages.get_phase(stage)
 }
 
 /// Permission-gate operations for chapter entities — resolves the owning
@@ -302,10 +295,7 @@ where
     let Some(assignment_info) = assignment_info else {
         return Err(chapter_reviewer_error());
     };
-    if !assignment_info
-        .role_mask
-        .has_any_role(&[RoleField::REVIEWER])
-    {
+    if !assignment_info.roles.has_any_role(&[RoleField::REVIEWER]) {
         return Err(chapter_reviewer_error());
     }
 
@@ -342,7 +332,7 @@ where
         return Err(chapter_workflow_role_error());
     };
 
-    let role_mask = assignment_info.role_mask;
+    let role_mask = assignment_info.roles;
     if role_mask.has_any_role(&[RoleField::REVIEWER]) {
         return accept(());
     }
@@ -407,7 +397,7 @@ where
             message: trl("error-team-member-required"),
         });
     };
-    if !member_info.role_mask.contains_mask(role_mask) {
+    if !member_info.roles.contains_mask(role_mask) {
         return Err(RootError::Expected {
             variant: ExpectedVariant::Perm,
             message: trl("error-chapter-role-not-assignable"),

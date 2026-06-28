@@ -44,7 +44,7 @@ pub struct ChapterInfo {
     /// Denormalised number of units with a completed proofread.
     pub proofread_unit_count: i32,
 
-    pub stags: WorkflowStageMask,
+    pub stages: WorkflowStageMask,
 
     pub creator_id: String,
 

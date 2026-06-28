@@ -82,7 +82,7 @@ fn member(
         user_id: user_id.into(),
         user_nickname: user_nickname.into(),
         team_id: team_id.into(),
-        role_mask,
+        roles: role_mask,
     }
 }
 
@@ -109,7 +109,7 @@ fn list_data(team_id: &str) -> ListMemberInfosData {
 fn update_role_data(id: &str) -> UpdateMemberRoleData {
     UpdateMemberRoleData {
         id: id.into(),
-        role_mask: RoleMask::from(RoleField::REVIEWER),
+        roles: RoleMask::from(RoleField::REVIEWER),
     }
 }
 
@@ -150,7 +150,7 @@ async fn create_admin_creates_member_with_target_user_nickname() {
     assert_eq!(created_member_info.user_nickname, "Target");
     assert_eq!(created_member_info.team_id, "team-1");
     assert_eq!(
-        created_member_info.role_mask,
+        created_member_info.roles,
         RoleMask::from(RoleField::TRANSLATOR)
     );
 }
@@ -452,7 +452,7 @@ async fn update_role_admin_updates_member_role_mask() {
         .unwrap();
 
     assert_eq!(
-        target_member_info.role_mask,
+        target_member_info.roles,
         RoleMask::from(RoleField::REVIEWER)
     );
 }
@@ -493,7 +493,7 @@ async fn update_role_non_admin_is_rejected() {
 
     assert_expected_variant(err, ExpectedVariant::Perm);
     assert_eq!(
-        target_member_info.role_mask,
+        target_member_info.roles,
         RoleMask::from(RoleField::TRANSLATOR)
     );
 }

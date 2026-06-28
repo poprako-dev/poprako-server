@@ -13,7 +13,7 @@ use crate::part::repo::step::chapter::{
 };
 use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactional, expected, now};
 use crate::result::RootError;
-use crate::value::chapter::StagePhase;
+use crate::value::chapter::{WorkflowStage, WorkflowStageMask};
 
 impl ChapterRepo<MockContext> for Mock {}
 
@@ -67,12 +67,7 @@ fn create_chapter(state: &mut MockState, form: &ChapterForm) -> Result<ChapterIn
         total_unit_count: 0,
         translated_unit_count: 0,
         proofread_unit_count: 0,
-        raw_provide_phase: StagePhase::Pending,
-        translate_phase: StagePhase::Pending,
-        proofread_phase: StagePhase::Pending,
-        typeset_redraw_phase: StagePhase::Pending,
-        review_phase: StagePhase::Pending,
-        publish_phase: StagePhase::Pending,
+        stages: WorkflowStageMask::try_from(0u32).ok().unwrap(),
         creator_id: form.creator_id.clone(),
         created_at: time,
         updated_at: time,
@@ -242,23 +237,31 @@ impl<'a> Advance<UpdateStage<'a>, MockContext> for MockTransactional {
             .find(|chapter_info| chapter_info.id == step.update.id)
             .ok_or_else(|| expected("error-chapter-not-found"))?;
 
-        if let Some(raw_provide_phase) = step.update.raw_provide_phase {
-            chapter_info.raw_provide_phase = raw_provide_phase;
+        if let Some(phase) = step.update.raw_provide_phase {
+            chapter_info.stages = chapter_info
+                .stages
+                .set_phase(WorkflowStage::RawProvide, phase);
         }
-        if let Some(translate_phase) = step.update.translate_phase {
-            chapter_info.translate_phase = translate_phase;
+        if let Some(phase) = step.update.translate_phase {
+            chapter_info.stages = chapter_info
+                .stages
+                .set_phase(WorkflowStage::Translate, phase);
         }
-        if let Some(proofread_phase) = step.update.proofread_phase {
-            chapter_info.proofread_phase = proofread_phase;
+        if let Some(phase) = step.update.proofread_phase {
+            chapter_info.stages = chapter_info
+                .stages
+                .set_phase(WorkflowStage::Proofread, phase);
         }
-        if let Some(typeset_redraw_phase) = step.update.typeset_redraw_phase {
-            chapter_info.typeset_redraw_phase = typeset_redraw_phase;
+        if let Some(phase) = step.update.typeset_redraw_phase {
+            chapter_info.stages = chapter_info
+                .stages
+                .set_phase(WorkflowStage::TypesetRedraw, phase);
         }
-        if let Some(review_phase) = step.update.review_phase {
-            chapter_info.review_phase = review_phase;
+        if let Some(phase) = step.update.review_phase {
+            chapter_info.stages = chapter_info.stages.set_phase(WorkflowStage::Review, phase);
         }
-        if let Some(publish_phase) = step.update.publish_phase {
-            chapter_info.publish_phase = publish_phase;
+        if let Some(phase) = step.update.publish_phase {
+            chapter_info.stages = chapter_info.stages.set_phase(WorkflowStage::Publish, phase);
         }
         chapter_info.updated_at = now();
         Ok(())

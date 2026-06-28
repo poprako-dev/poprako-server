@@ -142,7 +142,7 @@ fn member(id: &str, user_id: &str, team_id: &str) -> MemberInfo {
         user_id: user_id.into(),
         user_nickname: user_id.into(),
         team_id: team_id.into(),
-        role_mask: RoleMask::from(RoleField::ADMIN),
+        roles: RoleMask::from(RoleField::ADMIN),
     }
 }
 
