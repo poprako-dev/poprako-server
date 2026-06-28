@@ -345,7 +345,7 @@ mod tests {
             user_id: "user-1".into(),
             user_nickname: "nick".into(),
             team_id: "team-1".into(),
-            role_mask: RoleMask::from(RoleField::RAW_PROVIDER),
+            roles: RoleMask::from(RoleField::RAW_PROVIDER),
         };
         let visible_at = now();
 
@@ -386,7 +386,7 @@ mod tests {
             user_id: "user-1".into(),
             user_nickname: "nick".into(),
             team_id: "team-1".into(),
-            role_mask: RoleMask::from(RoleField::RAW_PROVIDER),
+            roles: RoleMask::from(RoleField::RAW_PROVIDER),
         };
         let visible_at = now();
 

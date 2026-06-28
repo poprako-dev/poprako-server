@@ -16,7 +16,7 @@ pub struct MemberInfo {
 
     pub team_id: String,
 
-    pub role_mask: RoleMask,
+    pub roles: RoleMask,
 }
 
 /// The data needed to insert a new membership row.
@@ -31,13 +31,13 @@ pub struct MemberForm {
 
     pub team_id: String,
 
-    pub role_mask: RoleMask,
+    pub roles: RoleMask,
 }
 
 /// Mutable fields for a membership record.
 pub struct MemberRoleUpdate {
     pub id: String,
-    pub role_mask: RoleMask,
+    pub roles: RoleMask,
 }
 
 /// Filtering and pagination parameters for listing memberships.

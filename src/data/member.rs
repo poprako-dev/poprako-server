@@ -19,7 +19,7 @@ pub struct MemberInfoVal {
 
     pub team_id: String,
 
-    pub role_mask: RoleMask,
+    pub roles: RoleMask,
 }
 
 impl From<MemberInfo> for MemberInfoVal {
@@ -29,7 +29,7 @@ impl From<MemberInfo> for MemberInfoVal {
             user_id: value.user_id,
             user_nickname: value.user_nickname,
             team_id: value.team_id,
-            role_mask: value.role_mask,
+            roles: value.roles,
         }
     }
 }
@@ -103,5 +103,5 @@ impl TryInto<MemberListSpec> for ListMemberInfosData {
 /// Input parameters for updating a member role mask.
 pub struct UpdateMemberRoleData {
     pub id: String,
-    pub role_mask: RoleMask,
+    pub roles: RoleMask,
 }

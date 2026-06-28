@@ -87,7 +87,7 @@ where
                 user_id: data.user_id,
                 user_nickname: target_user_info.nickname,
                 team_id: data.team_id,
-                role_mask,
+                roles: role_mask,
             };
 
             let member_info = repo
@@ -146,7 +146,7 @@ where
     R: MemberRepo<C> + Send + Sync,
     <R as DeriveTransactional>::Transactional: MemberRepoTransactional<C> + Send + Sync,
 {
-    let role_mask = data.role_mask;
+    let role_mask = data.roles;
 
     drive
         .with_context(async move |context| {
@@ -167,7 +167,7 @@ where
 
             let member_role_update = MemberRoleUpdate {
                 id: data.id,
-                role_mask,
+                roles: role_mask,
             };
 
             repo.advance(context, &MemberStep::update_role(&member_role_update))

@@ -39,13 +39,13 @@ fn create_member(state: &mut MockState, form: &MemberForm) -> Result<MemberInfo,
         return Err(expected("error-already-exists"));
     }
 
-    let _ = role_time(form.role_mask);
+    let _ = role_time(form.roles);
     let member = MemberInfo {
         id: form.id.clone(),
         user_id: form.user_id.clone(),
         user_nickname: form.user_nickname.clone(),
         team_id: form.team_id.clone(),
-        role_mask: form.role_mask,
+        roles: form.roles,
     };
     state.members.push(member.clone());
     Ok(member)
@@ -172,7 +172,7 @@ impl<'a> Execute<ListInfos<'a>> for Mock {
                     .filter(|member_info| member_info.team_id == *team_id)
                     .filter(|member_info| {
                         role_bit
-                            .map(|role_bit| member_info.role_mask.has_any_role(&[role_bit]))
+                            .map(|role_bit| member_info.roles.has_any_role(&[role_bit]))
                             .unwrap_or(true)
                     })
                     .cloned()
@@ -257,7 +257,7 @@ impl<'a> Advance<UpdateRole<'a>, MockContext> for MockTransactional {
             .find(|member_info| member_info.id == step.member_role_update.id)
             .ok_or_else(|| expected("error-member-not-found"))?;
 
-        member_info.role_mask = step.member_role_update.role_mask;
+        member_info.roles = step.member_role_update.roles;
         Ok(())
     }
 }

@@ -33,6 +33,7 @@ use crate::part::prom::intention::ImageIntention;
 use crate::part_impl::repo_mock::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;
+use crate::value::chapter::{WorkflowStage, WorkflowStageMask};
 
 fn token(user_id: &str) -> UserToken {
     UserToken {
@@ -92,12 +93,7 @@ fn chapter(id: &str, comic_id: &str, index: i32, is_pinned: bool) -> ChapterInfo
         total_unit_count: 0,
         translated_unit_count: 0,
         proofread_unit_count: 0,
-        raw_provide_phase: StagePhase::Pending,
-        translate_phase: StagePhase::Pending,
-        proofread_phase: StagePhase::Pending,
-        typeset_redraw_phase: StagePhase::Pending,
-        review_phase: StagePhase::Pending,
-        publish_phase: StagePhase::Pending,
+        stages: WorkflowStageMask::try_from(0u32).ok().unwrap(),
         creator_id: "user-1".into(),
         created_at: time,
         updated_at: time,
@@ -110,34 +106,18 @@ fn member(user_id: &str, team_id: &str, role_mask: RoleMask) -> MemberInfo {
         user_id: user_id.into(),
         user_nickname: user_id.into(),
         team_id: team_id.into(),
-        role_mask,
+        roles: role_mask,
     }
 }
 
 fn assignment(chapter_id: &str, user_id: &str, role_mask: RoleMask) -> AssignmentInfo {
     let time = OffsetDateTime::now_utc();
-    let (
-        raw_provider_assigned_at,
-        translator_assigned_at,
-        proofreader_assigned_at,
-        typesetter_assigned_at,
-        redrawer_assigned_at,
-        reviewer_assigned_at,
-        publisher_assigned_at,
-    ) = AssignmentComplex::timed_roles_from_mask(role_mask, time);
 
     AssignmentInfo {
         id: format!("assignment-{}-{}", chapter_id, user_id),
         chapter_id: chapter_id.into(),
         user_id: user_id.into(),
-        role_mask,
-        raw_provider_assigned_at,
-        translator_assigned_at,
-        proofreader_assigned_at,
-        typesetter_assigned_at,
-        redrawer_assigned_at,
-        reviewer_assigned_at,
-        publisher_assigned_at,
+        roles: role_mask,
         created_at: time,
         updated_at: time,
     }
@@ -302,7 +282,7 @@ async fn create_pins_chapter_and_creates_reviewer_assignment() {
     assert_eq!(snapshot.comics[0].chapter_next_index, 3);
     assert!(
         snapshot.assignments[0]
-            .role_mask
+            .roles
             .has_any_role(&[RoleField::REVIEWER])
     );
 }
@@ -418,7 +398,9 @@ async fn update_info_workflow_role_advances_stage() {
     assert!(result.is_ok());
 
     assert_eq!(
-        mock.snapshot().chapters[0].translate_phase,
+        mock.snapshot().chapters[0]
+            .stages
+            .get_phase(WorkflowStage::Translate),
         StagePhase::Active
     );
 }
@@ -428,7 +410,9 @@ async fn update_info_rejects_invalid_transition() {
     let mock = Mock::new();
     seed_scope(&mock, "user-1", RoleMask::from(RoleField::PUBLISHER));
     let mut chapter_info = chapter("chapter-1", "comic-1", 1, false);
-    chapter_info.publish_phase = StagePhase::Completed;
+    chapter_info.stages = chapter_info
+        .stages
+        .set_phase(WorkflowStage::Publish, StagePhase::Completed);
     mock.seed_chapter(chapter_info);
     mock.seed_assignment(assignment(
         "chapter-1",
@@ -511,7 +495,7 @@ async fn join_creates_assignment() {
         token("user-1"),
         JoinChapterData {
             chapter_id: "chapter-1".into(),
-            role_mask: RoleMask::from(RoleField::TRANSLATOR),
+roles: RoleMask::from(RoleField::TRANSLATOR),
         },
     )
     .await;
@@ -534,7 +518,6 @@ async fn join_unions_existing_assignment_roles() {
         "user-1",
         RoleMask::from(RoleField::TRANSLATOR),
     ));
-    let original_translator_time = mock.snapshot().assignments[0].translator_assigned_at;
 
     let joined = join(
         &mock,
@@ -542,7 +525,7 @@ async fn join_unions_existing_assignment_roles() {
         token("user-1"),
         JoinChapterData {
             chapter_id: "chapter-1".into(),
-            role_mask: RoleMask::from(RoleField::PROOFREADER),
+roles: RoleMask::from(RoleField::PROOFREADER),
         },
     )
     .await;
@@ -551,14 +534,9 @@ async fn join_unions_existing_assignment_roles() {
 
     assert!(
         snapshot.assignments[0]
-            .role_mask
+            .roles
             .has_every_role(&[RoleField::TRANSLATOR, RoleField::PROOFREADER])
     );
-    assert_eq!(
-        snapshot.assignments[0].translator_assigned_at,
-        original_translator_time
-    );
-    assert!(snapshot.assignments[0].proofreader_assigned_at.is_some());
 }
 
 #[tokio::test]
@@ -573,7 +551,7 @@ async fn join_rejects_role_outside_member_mask() {
         token("user-1"),
         JoinChapterData {
             chapter_id: "chapter-1".into(),
-            role_mask: RoleMask::from(RoleField::PROOFREADER),
+roles: RoleMask::from(RoleField::PROOFREADER),
         },
     )
     .await

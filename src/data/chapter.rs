@@ -5,7 +5,7 @@ use poprako_util::time::ToUnixMilli;
 use crate::model::assignment::AssignmentInfo;
 use crate::model::chapter::ChapterInfo;
 use crate::model::role::RoleMask;
-use crate::value::chapter::{StagePhase, WorkflowEvent, WorkflowStage};
+use crate::value::chapter::{WorkflowEvent, WorkflowStage, WorkflowStageMask};
 
 /// Presentation-ready chapter information.
 ///
@@ -28,12 +28,7 @@ pub struct ChapterInfoVal {
     pub translated_unit_count: i32,
     pub proofread_unit_count: i32,
 
-    pub raw_provide_phase: StagePhase,
-    pub translate_phase: StagePhase,
-    pub proofread_phase: StagePhase,
-    pub typeset_redraw_phase: StagePhase,
-    pub review_phase: StagePhase,
-    pub publish_phase: StagePhase,
+    pub stages: WorkflowStageMask,
 
     pub creator_id: String,
 
@@ -53,12 +48,7 @@ impl From<ChapterInfo> for ChapterInfoVal {
             total_unit_count: model.total_unit_count,
             translated_unit_count: model.translated_unit_count,
             proofread_unit_count: model.proofread_unit_count,
-            raw_provide_phase: model.raw_provide_phase,
-            translate_phase: model.translate_phase,
-            proofread_phase: model.proofread_phase,
-            typeset_redraw_phase: model.typeset_redraw_phase,
-            review_phase: model.review_phase,
-            publish_phase: model.publish_phase,
+            stages: model.stages,
             creator_id: model.creator_id,
             created_at: model.created_at.to_unix_milli(),
             updated_at: model.updated_at.to_unix_milli(),
@@ -76,7 +66,7 @@ pub struct AssignmentInfoVal {
     pub chapter_id: String,
     pub user_id: String,
 
-    pub role_mask: RoleMask,
+    pub roles: RoleMask,
 
     pub created_at: i64,
     pub updated_at: i64,
@@ -88,7 +78,7 @@ impl From<AssignmentInfo> for AssignmentInfoVal {
             id: model.id,
             chapter_id: model.chapter_id,
             user_id: model.user_id,
-            role_mask: model.role_mask,
+            roles: model.roles,
             created_at: model.created_at.to_unix_milli(),
             updated_at: model.updated_at.to_unix_milli(),
         }
@@ -151,5 +141,5 @@ pub struct ChapterWorkflowData {
 pub struct JoinChapterData {
     pub chapter_id: String,
 
-    pub role_mask: RoleMask,
+    pub roles: RoleMask,
 }

@@ -1,7 +1,5 @@
 //! Chapter use cases — list, read, create, update, join, and deletion.
 
-use time::OffsetDateTime;
-
 use poprako_transactional::advance::Advance;
 use poprako_transactional::drive::Drive;
 
@@ -193,7 +191,7 @@ where
                 id: AssignmentComplex::gen_id(),
                 chapter_id: chapter_info.id.clone(),
                 user_id: token.user_id,
-                role_mask: RoleMask::from(RoleField::REVIEWER),
+                roles: RoleMask::from(RoleField::REVIEWER),
             };
 
             repo.advance(context, &AssignmentStep::create(&assignment_form))
@@ -282,7 +280,8 @@ where
             }
 
             if let Some(workflow_data) = data.workflow {
-                let was_published = chapter_info.publish_phase == StagePhase::Completed;
+                let was_published =
+                    chapter_info.stages.get_phase(WorkflowStage::Publish) == StagePhase::Completed;
 
                 let chapter_stage_update = ChapterComplex::build_stage_update(
                     &chapter_info,
@@ -357,7 +356,7 @@ where
                 &mut repo.as_proxy(context),
                 &token.user_id,
                 &chapter_info,
-                data.role_mask,
+                data.roles,
             )
             .await?;
 
@@ -370,10 +369,9 @@ where
 
             let assignment_info = match existing_assignment_info {
                 Some(existing_assignment_info) => {
-                    let assignment_role_update = AssignmentComplex::merge_timed_roles(
+                    let assignment_role_update = AssignmentComplex::merge_roles(
                         &existing_assignment_info,
-                        data.role_mask,
-                        OffsetDateTime::now_utc(),
+                        data.roles,
                     );
 
                     repo.advance(context, &AssignmentStep::put_roles(&assignment_role_update))
@@ -384,7 +382,7 @@ where
                         id: AssignmentComplex::gen_id(),
                         chapter_id: data.chapter_id,
                         user_id: token.user_id,
-                        role_mask: data.role_mask,
+                        roles: data.roles,
                     };
 
                     repo.advance(context, &AssignmentStep::create(&assignment_form))

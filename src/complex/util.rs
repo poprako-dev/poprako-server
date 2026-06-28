@@ -50,7 +50,7 @@ where
         });
     };
 
-    if !member_info.role_mask.has_any_role(&[RoleField::ADMIN]) {
+    if !member_info.roles.has_any_role(&[RoleField::ADMIN]) {
         return Err(RootError::Expected {
             variant: ExpectedVariant::Perm,
             message: trl("error-team-admin-required"),
