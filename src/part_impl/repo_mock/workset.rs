@@ -1,15 +1,16 @@
 //! Mock implementations of `WorksetRepo` and `WorksetRepoTransactional` for in-memory testing.
 
 use async_trait::async_trait;
+
 use poprako_transactional::advance::Advance;
 
 use crate::model::workset::WorksetInfo;
-use crate::part::repo::Execute;
 use crate::part::repo::step::workset::{
     Create, Delete, GetInfoById, GetInfoExcluded, IncrComicNextIndex, ListInfosByTeamId,
     ListInfosByTeamIdExcluded, UpdateComicCount, UpdateInfo,
 };
 use crate::part::repo::workset::{WorksetRepo, WorksetRepoTransactional};
+use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_mock::{Mock, MockContext, MockTransactional, expected, now};
 use crate::result::RootError;
 
@@ -176,11 +177,45 @@ impl<'a> Advance<Delete<'a>, MockContext> for MockTransactional {
             .ok_or_else(|| expected("error-workset-not-found"))?;
 
         let deleted_workset_id = context.state.worksets[pos].id.clone();
+        let deleted_comic_ids = context
+            .state
+            .comics
+            .iter()
+            .filter(|comic| comic.workset_id == deleted_workset_id)
+            .map(|comic| comic.id.clone())
+            .collect::<Vec<_>>();
+        let deleted_chapter_ids = context
+            .state
+            .chapters
+            .iter()
+            .filter(|chapter_info| {
+                deleted_comic_ids
+                    .iter()
+                    .any(|comic_id| comic_id == &chapter_info.comic_id)
+            })
+            .map(|chapter_info| chapter_info.id.clone())
+            .collect::<Vec<_>>();
+
         context.state.worksets.remove(pos);
         context
             .state
             .comics
             .retain(|comic| comic.workset_id != deleted_workset_id);
+        context.state.chapters.retain(|chapter_info| {
+            !deleted_comic_ids
+                .iter()
+                .any(|comic_id| comic_id == &chapter_info.comic_id)
+        });
+        context.state.pages.retain(|page_info| {
+            !deleted_chapter_ids
+                .iter()
+                .any(|chapter_id| chapter_id == &page_info.chapter_id)
+        });
+        context.state.assignments.retain(|assignment_info| {
+            !deleted_chapter_ids
+                .iter()
+                .any(|chapter_id| chapter_id == &assignment_info.chapter_id)
+        });
         Ok(())
     }
 }

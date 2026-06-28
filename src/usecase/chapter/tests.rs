@@ -4,13 +4,13 @@
 // get_info(get_info)(negative): missing chapter returns an argument error.
 // get_pinned(get_pinned)(positive): pinned chapter is returned and missing pinned chapter returns none.
 // get_pinned(get_pinned)(negative): non-member cannot read pinned chapter.
-// create(create)(positive): team admin creates pinned chapter, unpins previous chapter, updates comic, and creates reviewer assignment.
+// create(create)(positive): team admin creates pinned chapter, unpins previous chapter, updates comic, and creates admin assignment.
 // create(create)(negative): non-admin creation rolls back.
-// update_info(update_info)(positive): reviewer can update metadata and pin state.
-// update_info(update_info)(negative): non-reviewer cannot update metadata.
-// update_info(update_info)(positive): workflow role can advance an allowed stage.
-// update_info(update_info)(negative): invalid workflow transition is rejected.
-// update_info(update_info)(positive): publishing enqueues page image deletion and clears page image state.
+// update_info(update_info)(positive): chapter admin can update metadata and pin state.
+// update_info(update_info)(negative): non-admin cannot update metadata.
+// update_stage(update_stage)(positive): workflow role can advance an allowed stage.
+// update_stage(update_stage)(negative): invalid workflow transition is rejected.
+// update_stage(update_stage)(positive): publishing enqueues page image deletion.
 // join(join)(positive): user creates a new assignment when joining with assignable roles.
 // join(join)(positive): existing assignment role union preserves earlier role timestamps.
 // join(join)(negative): user cannot join with roles outside team membership.
@@ -21,7 +21,6 @@ use super::*;
 
 use time::OffsetDateTime;
 
-use crate::data::chapter::ChapterWorkflowData;
 use crate::model::assignment::AssignmentInfo;
 use crate::model::chapter::ChapterInfo;
 use crate::model::comic::ComicInfo;
@@ -246,7 +245,7 @@ async fn get_pinned_rejects_non_member() {
 }
 
 #[tokio::test]
-async fn create_pins_chapter_and_creates_reviewer_assignment() {
+async fn create_pins_chapter_and_creates_admin_assignment() {
     let mock = Mock::new();
     seed_scope(&mock, "user-1", RoleMask::from(RoleField::ADMIN));
     mock.seed_chapter(chapter("chapter-old", "comic-1", 2, true));
@@ -283,7 +282,7 @@ async fn create_pins_chapter_and_creates_reviewer_assignment() {
     assert!(
         snapshot.assignments[0]
             .roles
-            .has_any_role(&[RoleField::REVIEWER])
+            .has_any_role(&[RoleField::ADMIN])
     );
 }
 
@@ -313,18 +312,17 @@ async fn create_rolls_back_non_admin() {
 }
 
 #[tokio::test]
-async fn update_info_reviewer_updates_metadata() {
+async fn update_info_admin_updates_metadata() {
     let mock = Mock::new();
     seed_scope(&mock, "user-1", RoleMask::from(RoleField::TRANSLATOR));
     mock.seed_chapter(chapter("chapter-1", "comic-1", 1, false));
     mock.seed_assignment(assignment(
         "chapter-1",
         "user-1",
-        RoleMask::from(RoleField::REVIEWER),
+        RoleMask::from(RoleField::ADMIN),
     ));
 
     let result = update_info(
-        &mock,
         &mock,
         &mock,
         token("user-1"),
@@ -332,7 +330,6 @@ async fn update_info_reviewer_updates_metadata() {
             id: "chapter-1".into(),
             subtitle: Some("updated".into()),
             is_pinned: Some(true),
-            workflow: None,
         },
     )
     .await;
@@ -344,7 +341,7 @@ async fn update_info_reviewer_updates_metadata() {
 }
 
 #[tokio::test]
-async fn update_info_rejects_non_reviewer_metadata() {
+async fn update_info_rejects_non_admin_metadata() {
     let mock = Mock::new();
     seed_scope(&mock, "user-1", RoleMask::from(RoleField::TRANSLATOR));
     mock.seed_chapter(chapter("chapter-1", "comic-1", 1, false));
@@ -352,13 +349,11 @@ async fn update_info_rejects_non_reviewer_metadata() {
     let err = update_info(
         &mock,
         &mock,
-        &mock,
         token("user-1"),
         UpdateChapterInfoData {
             id: "chapter-1".into(),
             subtitle: Some("updated".into()),
             is_pinned: None,
-            workflow: None,
         },
     )
     .await
@@ -369,7 +364,7 @@ async fn update_info_rejects_non_reviewer_metadata() {
 }
 
 #[tokio::test]
-async fn update_info_workflow_role_advances_stage() {
+async fn update_stage_workflow_role_advances_stage() {
     let mock = Mock::new();
     seed_scope(&mock, "user-1", RoleMask::from(RoleField::TRANSLATOR));
     mock.seed_chapter(chapter("chapter-1", "comic-1", 1, false));
@@ -379,19 +374,15 @@ async fn update_info_workflow_role_advances_stage() {
         RoleMask::from(RoleField::TRANSLATOR),
     ));
 
-    let result = update_info(
+    let result = update_stage(
         &mock,
         &mock,
         &mock,
         token("user-1"),
-        UpdateChapterInfoData {
+        UpdateChapterStageData {
             id: "chapter-1".into(),
-            subtitle: None,
-            is_pinned: None,
-            workflow: Some(ChapterWorkflowData {
-                stage: WorkflowStage::Translate,
-                event: WorkflowEvent::Advance,
-            }),
+            stage: WorkflowStage::Translate,
+            event: WorkflowEvent::Advance,
         },
     )
     .await;
@@ -406,7 +397,7 @@ async fn update_info_workflow_role_advances_stage() {
 }
 
 #[tokio::test]
-async fn update_info_rejects_invalid_transition() {
+async fn update_stage_rejects_invalid_transition() {
     let mock = Mock::new();
     seed_scope(&mock, "user-1", RoleMask::from(RoleField::PUBLISHER));
     let mut chapter_info = chapter("chapter-1", "comic-1", 1, false);
@@ -420,19 +411,15 @@ async fn update_info_rejects_invalid_transition() {
         RoleMask::from(RoleField::PUBLISHER),
     ));
 
-    let err = update_info(
+    let err = update_stage(
         &mock,
         &mock,
         &mock,
         token("user-1"),
-        UpdateChapterInfoData {
+        UpdateChapterStageData {
             id: "chapter-1".into(),
-            subtitle: None,
-            is_pinned: None,
-            workflow: Some(ChapterWorkflowData {
-                stage: WorkflowStage::Publish,
-                event: WorkflowEvent::Advance,
-            }),
+            stage: WorkflowStage::Publish,
+            event: WorkflowEvent::Advance,
         },
     )
     .await
@@ -443,7 +430,7 @@ async fn update_info_rejects_invalid_transition() {
 }
 
 #[tokio::test]
-async fn update_info_publish_clears_page_images() {
+async fn update_stage_publish_enqueues_page_image_delete() {
     let mock = Mock::new();
     seed_scope(&mock, "user-1", RoleMask::from(RoleField::PUBLISHER));
     mock.seed_chapter(chapter("chapter-1", "comic-1", 1, false));
@@ -454,19 +441,15 @@ async fn update_info_publish_clears_page_images() {
     ));
     mock.seed_page(page("page-1", "chapter-1", Some("page-1.png")));
 
-    let result = update_info(
+    let result = update_stage(
         &mock,
         &mock,
         &mock,
         token("user-1"),
-        UpdateChapterInfoData {
+        UpdateChapterStageData {
             id: "chapter-1".into(),
-            subtitle: None,
-            is_pinned: None,
-            workflow: Some(ChapterWorkflowData {
-                stage: WorkflowStage::Publish,
-                event: WorkflowEvent::Advance,
-            }),
+            stage: WorkflowStage::Publish,
+            event: WorkflowEvent::Advance,
         },
     )
     .await;
@@ -479,8 +462,8 @@ async fn update_info_publish_clears_page_images() {
         panic!("expected image delete payload");
     };
     assert_eq!(object_key, "page-1.png");
-    assert!(snapshot.pages[0].image_key.is_none());
-    assert!(!snapshot.pages[0].image_uploaded);
+    assert_eq!(snapshot.pages[0].image_key.as_deref(), Some("page-1.png"));
+    assert!(snapshot.pages[0].image_uploaded);
 }
 
 #[tokio::test]
@@ -495,7 +478,7 @@ async fn join_creates_assignment() {
         token("user-1"),
         JoinChapterData {
             chapter_id: "chapter-1".into(),
-roles: RoleMask::from(RoleField::TRANSLATOR),
+            roles: RoleMask::from(RoleField::TRANSLATOR),
         },
     )
     .await;
@@ -525,7 +508,7 @@ async fn join_unions_existing_assignment_roles() {
         token("user-1"),
         JoinChapterData {
             chapter_id: "chapter-1".into(),
-roles: RoleMask::from(RoleField::PROOFREADER),
+            roles: RoleMask::from(RoleField::PROOFREADER),
         },
     )
     .await;
@@ -551,7 +534,7 @@ async fn join_rejects_role_outside_member_mask() {
         token("user-1"),
         JoinChapterData {
             chapter_id: "chapter-1".into(),
-roles: RoleMask::from(RoleField::PROOFREADER),
+            roles: RoleMask::from(RoleField::PROOFREADER),
         },
     )
     .await

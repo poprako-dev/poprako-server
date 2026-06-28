@@ -5,12 +5,13 @@ use async_trait::async_trait;
 use poprako_transactional::advance::Advance;
 
 use crate::model::chapter::{ChapterForm, ChapterInfo};
-use crate::part::repo::Execute;
 use crate::part::repo::chapter::{ChapterRepo, ChapterRepoTransactional};
 use crate::part::repo::step::chapter::{
-    Create, Delete, FindPinnedByComicId, GetInfoById, GetInfoExcluded, ListByComicId,
-    ListByComicIdExcluded, UnpinOthers, UpdateInfo, UpdateStage,
+    Create, Delete, FindPinnedInfoByComicId, GetInfoById, GetInfoExcluded,
+    ListAllInfosByComicIdExcluded, ListInfosByComicId, ListInfosByComicIdExcluded, UnpinOthers,
+    UpdateInfo, UpdateStage,
 };
+use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactional, expected, now};
 use crate::result::RootError;
 use crate::value::chapter::{WorkflowStage, WorkflowStageMask};
@@ -29,13 +30,7 @@ fn get_chapter_by_id(state: &MockState, id: &str) -> Result<ChapterInfo, RootErr
 }
 
 fn list_chapters(state: &MockState, comic_id: &str, offset: u64, limit: u64) -> Vec<ChapterInfo> {
-    let mut chapter_infos = state
-        .chapters
-        .iter()
-        .filter(|chapter_info| chapter_info.comic_id == comic_id)
-        .cloned()
-        .collect::<Vec<_>>();
-    chapter_infos.sort_by(|left, right| right.index.cmp(&left.index));
+    let chapter_infos = list_all_chapters(state, comic_id);
 
     let offset = offset as usize;
     let limit = limit as usize;
@@ -45,6 +40,18 @@ fn list_chapters(state: &MockState, comic_id: &str, offset: u64, limit: u64) -> 
 
     let end = std::cmp::min(offset + limit, chapter_infos.len());
     chapter_infos[offset..end].to_vec()
+}
+
+fn list_all_chapters(state: &MockState, comic_id: &str) -> Vec<ChapterInfo> {
+    let mut chapter_infos = state
+        .chapters
+        .iter()
+        .filter(|chapter_info| chapter_info.comic_id == comic_id)
+        .cloned()
+        .collect::<Vec<_>>();
+    chapter_infos.sort_by(|left, right| right.index.cmp(&left.index));
+
+    chapter_infos
 }
 
 fn create_chapter(state: &mut MockState, form: &ChapterForm) -> Result<ChapterInfo, RootError> {
@@ -88,10 +95,13 @@ impl<'a> Execute<GetInfoById<'a>> for Mock {
 }
 
 #[async_trait]
-impl<'a> Execute<ListByComicId<'a>> for Mock {
+impl<'a> Execute<ListInfosByComicId<'a>> for Mock {
     type Error = RootError;
 
-    async fn execute(&self, step: &ListByComicId<'a>) -> Result<Vec<ChapterInfo>, Self::Error> {
+    async fn execute(
+        &self,
+        step: &ListInfosByComicId<'a>,
+    ) -> Result<Vec<ChapterInfo>, Self::Error> {
         let state = self.state.lock().unwrap();
         Ok(list_chapters(
             &state,
@@ -103,12 +113,12 @@ impl<'a> Execute<ListByComicId<'a>> for Mock {
 }
 
 #[async_trait]
-impl<'a> Execute<FindPinnedByComicId<'a>> for Mock {
+impl<'a> Execute<FindPinnedInfoByComicId<'a>> for Mock {
     type Error = RootError;
 
     async fn execute(
         &self,
-        step: &FindPinnedByComicId<'a>,
+        step: &FindPinnedInfoByComicId<'a>,
     ) -> Result<Option<ChapterInfo>, Self::Error> {
         let state = self.state.lock().unwrap();
         Ok(state
@@ -159,13 +169,13 @@ impl<'a> Advance<GetInfoExcluded<'a>, MockContext> for MockTransactional {
 }
 
 #[async_trait]
-impl<'a> Advance<ListByComicIdExcluded<'a>, MockContext> for MockTransactional {
+impl<'a> Advance<ListInfosByComicIdExcluded<'a>, MockContext> for MockTransactional {
     type Error = RootError;
 
     async fn advance(
         &self,
         context: &mut MockContext,
-        step: &ListByComicIdExcluded<'a>,
+        step: &ListInfosByComicIdExcluded<'a>,
     ) -> Result<Vec<ChapterInfo>, Self::Error> {
         Ok(list_chapters(
             &context.state,
@@ -177,13 +187,26 @@ impl<'a> Advance<ListByComicIdExcluded<'a>, MockContext> for MockTransactional {
 }
 
 #[async_trait]
-impl<'a> Advance<FindPinnedByComicId<'a>, MockContext> for MockTransactional {
+impl<'a> Advance<ListAllInfosByComicIdExcluded<'a>, MockContext> for MockTransactional {
     type Error = RootError;
 
     async fn advance(
         &self,
         context: &mut MockContext,
-        step: &FindPinnedByComicId<'a>,
+        step: &ListAllInfosByComicIdExcluded<'a>,
+    ) -> Result<Vec<ChapterInfo>, Self::Error> {
+        Ok(list_all_chapters(&context.state, step.comic_id))
+    }
+}
+
+#[async_trait]
+impl<'a> Advance<FindPinnedInfoByComicId<'a>, MockContext> for MockTransactional {
+    type Error = RootError;
+
+    async fn advance(
+        &self,
+        context: &mut MockContext,
+        step: &FindPinnedInfoByComicId<'a>,
     ) -> Result<Option<ChapterInfo>, Self::Error> {
         Ok(context
             .state
@@ -303,6 +326,14 @@ impl<'a> Advance<Delete<'a>, MockContext> for MockTransactional {
             .position(|chapter_info| chapter_info.id == step.id)
             .ok_or_else(|| expected("error-chapter-not-found"))?;
         context.state.chapters.remove(position);
+        context
+            .state
+            .pages
+            .retain(|page_info| page_info.chapter_id != step.id);
+        context
+            .state
+            .assignments
+            .retain(|assignment_info| assignment_info.chapter_id != step.id);
         Ok(())
     }
 }

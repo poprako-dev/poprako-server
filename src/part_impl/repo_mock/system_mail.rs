@@ -5,11 +5,11 @@ use async_trait::async_trait;
 use time::OffsetDateTime;
 
 use crate::model::system_mail::{SystemMailForm, SystemMailInfo, SystemMailListSpec};
-use crate::part::repo::Execute;
 use crate::part::repo::step::system_mail::{
-    ListByIds, ListByReceiverId, MarkRead, Send, SendBatch,
+    ListInfosByIds, ListInfosByReceiverId, MarkRead, Send, SendBatch,
 };
 use crate::part::repo::system_mail::{SystemMailRepo, SystemMailRepoTransactional};
+use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_mock::{Mock, MockContext, MockTransactional, expected, now};
 use crate::result::RootError;
 
@@ -87,12 +87,12 @@ impl<'a> Execute<SendBatch<'a>> for Mock {
 }
 
 #[async_trait]
-impl<'a> Execute<ListByReceiverId<'a>> for Mock {
+impl<'a> Execute<ListInfosByReceiverId<'a>> for Mock {
     type Error = RootError;
 
     async fn execute(
         &self,
-        step: &ListByReceiverId<'a>,
+        step: &ListInfosByReceiverId<'a>,
     ) -> Result<Vec<SystemMailInfo>, Self::Error> {
         let state = self.state.lock().unwrap();
 
@@ -122,10 +122,10 @@ impl<'a> Execute<ListByReceiverId<'a>> for Mock {
 }
 
 #[async_trait]
-impl<'a> Execute<ListByIds<'a>> for Mock {
+impl<'a> Execute<ListInfosByIds<'a>> for Mock {
     type Error = RootError;
 
-    async fn execute(&self, step: &ListByIds<'a>) -> Result<Vec<SystemMailInfo>, Self::Error> {
+    async fn execute(&self, step: &ListInfosByIds<'a>) -> Result<Vec<SystemMailInfo>, Self::Error> {
         let state = self.state.lock().unwrap();
 
         Ok(state
@@ -162,8 +162,8 @@ mod tests {
     // send_rejects_duplicate_id_without_mutation(Send)(negative): sending a mail with an existing id should error without altering state.
     // send_batch_saves_all_mails(SendBatch)(positive): a batch should persist all mails atomically.
     // send_batch_rejects_duplicate_batch_without_partial_write(SendBatch)(negative): a batch with a duplicate batch-internal id should reject with no writes.
-    // list_by_receiver_id_filters_sorts_and_pages(ListByReceiverId)(positive): should filter by receiver+read, sort by created_at desc, and paginate.
-    // list_by_ids_returns_matching_mails(ListByIds)(positive): should return only mails with matching ids.
+    // list_infos_by_receiver_id_filters_sorts_and_pages(ListInfosByReceiverId)(positive): should filter by receiver+read, sort by created_at desc, and paginate.
+    // list_infos_by_ids_returns_matching_mails(ListInfosByIds)(positive): should return only mails with matching ids.
     // mark_read_marks_by_id(MarkRead)(positive): marking by id should set read=true.
     // mark_read_rejects_missing_id(MarkRead)(negative): a nonexistent id should return an argument error.
 
@@ -273,7 +273,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn list_by_receiver_id_filters_sorts_and_pages() {
+    async fn list_infos_by_receiver_id_filters_sorts_and_pages() {
         let mock = Mock::new();
         let t1 = now();
         let t2 = t1 + time::Duration::seconds(10);
@@ -291,7 +291,7 @@ mod tests {
         };
 
         let result = mock
-            .execute(&SystemMailStep::list_by_receiver_id(
+            .execute(&SystemMailStep::list_infos_by_receiver_id(
                 "user-1",
                 &mail_list_spec,
             ))
@@ -306,7 +306,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn list_by_ids_returns_matching_mails() {
+    async fn list_infos_by_ids_returns_matching_mails() {
         let mock = Mock::new();
         let time = now();
         mock.seed_system_mail(mail_info("sys_mail-1", "user-1", false, time));
@@ -315,7 +315,7 @@ mod tests {
 
         let ids = vec!["sys_mail-1".into(), "sys_mail-3".into()];
 
-        let result = mock.execute(&SystemMailStep::list_by_ids(&ids)).await;
+        let result = mock.execute(&SystemMailStep::list_infos_by_ids(&ids)).await;
         assert!(result.is_ok());
         let mails = result.ok().unwrap();
 

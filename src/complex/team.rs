@@ -1,5 +1,5 @@
 //! Complex-domain operations for team entities: identity and avatar-storage key
-//! generation, cascading deletion, and permission checks.
+//! generation, and permission checks.
 
 use time::OffsetDateTime;
 
@@ -10,14 +10,16 @@ use crate::complex::util::check_user_is_team_admin;
 use crate::complex::workset::WorksetComplex;
 use crate::part::prom::intention::{IMAGE_TOPIC, ImageIntention};
 use crate::part::prom::{Payload, PromStep, PromTransactional};
+use crate::part::repo::chapter::ChapterRepoTransactional;
 use crate::part::repo::comic::ComicRepoTransactional;
-use crate::part::repo::proxy::ProxyExecute;
-use crate::part::repo::step::member::FindByUserTeamId;
+use crate::part::repo::page::PageRepoTransactional;
+use crate::part::repo::step::member::FindInfoByUserTeamId;
 use crate::part::repo::step::team::TeamStep;
 use crate::part::repo::step::user::{GetInfoById, UserStep};
 use crate::part::repo::step::workset::WorksetStep;
 use crate::part::repo::team::TeamRepoTransactional;
 use crate::part::repo::workset::WorksetRepoTransactional;
+use crate::part::shared::proxy::ProxyExecute;
 use crate::result::{ExpectedVariant, RootError, RootResult, accept};
 use crate::util::next_snowflake_id;
 
@@ -35,8 +37,7 @@ impl TeamComplex {
         format!("team_avatar/{}-{}.{}", id, avatar_version, file_ext)
     }
 
-    /// Recursively delete a team and all owned resources: enqueues avatar-image
-    /// deletion, cascades into workset deletion, then deletes the team record.
+    /// Deletes a team subtree inside an existing transaction context.
     pub async fn delete_cascade<C, R, P>(
         repo: &R,
         prom: &P,
@@ -48,6 +49,8 @@ impl TeamComplex {
         R: TeamRepoTransactional<C>
             + WorksetRepoTransactional<C>
             + ComicRepoTransactional<C>
+            + ChapterRepoTransactional<C>
+            + PageRepoTransactional<C>
             + Send
             + Sync,
         P: PromTransactional<C> + Send + Sync,
@@ -57,7 +60,10 @@ impl TeamComplex {
             .await?;
 
         let workset_infos = repo
-            .advance(context, &WorksetStep::list_infos_by_team_id_excluded(id))
+            .advance(
+                context,
+                &WorksetStep::list_infos_by_team_id_excluded(&team_info.id),
+            )
             .await?;
 
         for workset_info in workset_infos {
@@ -84,9 +90,10 @@ impl TeamComplex {
             .await?;
         }
 
-        repo.advance(context, &TeamStep::delete(id)).await?;
+        repo.advance(context, &TeamStep::delete(&team_info.id))
+            .await?;
 
-        Ok(())
+        accept(())
     }
 }
 
@@ -102,7 +109,7 @@ impl TeamPermComplex {
         team_id: &str,
     ) -> RootResult<()>
     where
-        P: for<'a> ProxyExecute<FindByUserTeamId<'a>, Error = RootError>,
+        P: for<'a> ProxyExecute<FindInfoByUserTeamId<'a>, Error = RootError>,
     {
         check_user_is_team_admin(proxy, user_id, team_id).await
     }
@@ -114,7 +121,7 @@ impl TeamPermComplex {
         team_id: &str,
     ) -> RootResult<()>
     where
-        P: for<'a> ProxyExecute<FindByUserTeamId<'a>, Error = RootError>,
+        P: for<'a> ProxyExecute<FindInfoByUserTeamId<'a>, Error = RootError>,
     {
         check_user_is_team_admin(proxy, user_id, team_id).await
     }
@@ -126,7 +133,7 @@ impl TeamPermComplex {
         team_id: &str,
     ) -> RootResult<()>
     where
-        P: for<'a> ProxyExecute<FindByUserTeamId<'a>, Error = RootError>,
+        P: for<'a> ProxyExecute<FindInfoByUserTeamId<'a>, Error = RootError>,
     {
         check_user_is_team_admin(proxy, user_id, team_id).await
     }
@@ -134,7 +141,7 @@ impl TeamPermComplex {
     /// Verify the caller is a team admin.
     pub async fn can_user_delete<P>(proxy: &mut P, user_id: &str, team_id: &str) -> RootResult<()>
     where
-        P: for<'a> ProxyExecute<FindByUserTeamId<'a>, Error = RootError>,
+        P: for<'a> ProxyExecute<FindInfoByUserTeamId<'a>, Error = RootError>,
     {
         check_user_is_team_admin(proxy, user_id, team_id).await
     }

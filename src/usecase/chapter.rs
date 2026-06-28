@@ -7,7 +7,7 @@ use crate::complex::assignment::AssignmentComplex;
 use crate::complex::chapter::{ChapterComplex, ChapterPermComplex};
 use crate::data::chapter::{
     AssignmentInfoVal, ChapterInfoVal, CreateChapterData, CreateChapterVal, JoinChapterData,
-    ListChapterInfosData, UpdateChapterInfoData,
+    ListChapterInfosData, UpdateChapterInfoData, UpdateChapterStageData,
 };
 use crate::model::assignment::AssignmentForm;
 use crate::model::chapter::{ChapterForm, ChapterInfoUpdate};
@@ -29,7 +29,7 @@ use crate::util::DeriveTransactional;
 use crate::value::chapter::{StagePhase, WorkflowEvent, WorkflowStage};
 
 #[cfg(test)]
-pub mod tests;
+mod tests;
 
 /// Lists chapters under one comic.
 pub async fn list_infos<C, R>(
@@ -44,13 +44,13 @@ where
         + WorksetRepoTransactional<C>
         + MemberRepoTransactional<C>,
 {
-    use crate::part::repo::proxy::AsProxyNonTransactional as _;
+    use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
     ChapterPermComplex::can_user_list_infos(&mut repo.as_proxy(), &token.user_id, &data.comic_id)
         .await?;
 
     let chapter_infos = repo
-        .execute(&ChapterStep::list_by_comic_id(
+        .execute(&ChapterStep::list_infos_by_comic_id(
             &data.comic_id,
             data.offset,
             data.limit,
@@ -74,7 +74,7 @@ where
         + WorksetRepoTransactional<C>
         + MemberRepoTransactional<C>,
 {
-    use crate::part::repo::proxy::AsProxyNonTransactional as _;
+    use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
     ChapterPermComplex::can_user_get_info(&mut repo.as_proxy(), &token.user_id, &id).await?;
 
@@ -96,13 +96,13 @@ where
         + WorksetRepoTransactional<C>
         + MemberRepoTransactional<C>,
 {
-    use crate::part::repo::proxy::AsProxyNonTransactional as _;
+    use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
     ChapterPermComplex::can_user_get_pinned(&mut repo.as_proxy(), &token.user_id, &comic_id)
         .await?;
 
     let chapter_info = repo
-        .execute(&ChapterStep::find_pinned_by_comic_id(&comic_id))
+        .execute(&ChapterStep::find_pinned_info_by_comic_id(&comic_id))
         .await?;
 
     accept(chapter_info.map(ChapterInfoVal::from))
@@ -138,7 +138,7 @@ where
         .with_context(async move |context| {
             let repo = repo.transactional().await;
 
-            use crate::part::repo::proxy::AsProxyTransactional as _;
+            use crate::part::shared::proxy::AsProxyTransactional as _;
 
             ChapterPermComplex::can_user_create(
                 &mut repo.as_proxy(context),
@@ -148,10 +148,7 @@ where
             .await?;
 
             let index = repo
-                .advance(
-                    context,
-                    &ComicStep::increment_chapter_next_index(&data.comic_id),
-                )
+                .advance(context, &ComicStep::incr_chapter_next_index(&data.comic_id))
                 .await?;
 
             let subtitle = ChapterComplex::subtitle_or_default(data.subtitle, index);
@@ -191,7 +188,7 @@ where
                 id: AssignmentComplex::gen_id(),
                 chapter_id: chapter_info.id.clone(),
                 user_id: token.user_id,
-                roles: RoleMask::from(RoleField::REVIEWER),
+                roles: RoleMask::from(RoleField::ADMIN),
             };
 
             repo.advance(context, &AssignmentStep::create(&assignment_form))
@@ -205,11 +202,10 @@ where
     Ok(CreateChapterVal { id: chapter_id })
 }
 
-/// Updates chapter metadata and workflow state.
-pub async fn update_info<D, C, R, P>(
+/// Updates chapter metadata.
+pub async fn update_info<D, C, R>(
     drive: &D,
     repo: &R,
-    prom: &P,
     token: UserToken,
     data: UpdateChapterInfoData,
 ) -> RootResult<()>
@@ -217,46 +213,27 @@ where
     D: Drive<C>,
     D::Error: Into<RootError>,
     C: Send,
-    R: ChapterRepo<C>
-        + ComicRepo<C>
-        + WorksetRepo<C>
-        + MemberRepo<C>
-        + AssignmentRepo<C>
-        + PageRepo<C>
-        + Send
-        + Sync,
+    R: ChapterRepo<C> + ComicRepo<C> + AssignmentRepo<C> + Send + Sync,
     <R as DeriveTransactional>::Transactional: ChapterRepoTransactional<C>
         + ComicRepoTransactional<C>
-        + WorksetRepoTransactional<C>
-        + MemberRepoTransactional<C>
         + AssignmentRepoTransactional<C>
-        + PageRepoTransactional<C>
         + Send
         + Sync,
-    P: Prom<C> + Send + Sync,
-    <P as DeriveTransactional>::Transactional: PromTransactional<C> + Send + Sync,
 {
     drive
         .with_context(async move |context| {
             let repo = repo.transactional().await;
-            let prom = prom.transactional().await;
 
-            use crate::part::repo::proxy::AsProxyTransactional as _;
+            use crate::part::shared::proxy::AsProxyTransactional as _;
 
             let chapter_info = repo
                 .advance(context, &ChapterStep::get_info_excluded(&data.id))
                 .await?;
 
-            let workflow_permission = data
-                .workflow
-                .as_ref()
-                .map(|workflow_data| (workflow_data.stage, workflow_data.event));
-
             ChapterPermComplex::can_user_update_info(
                 &mut repo.as_proxy(context),
                 &token.user_id,
                 &data.id,
-                workflow_permission,
             )
             .await?;
 
@@ -279,27 +256,83 @@ where
                 }
             }
 
-            if let Some(workflow_data) = data.workflow {
-                let was_published =
-                    chapter_info.stages.get_phase(WorkflowStage::Publish) == StagePhase::Completed;
+            repo.advance(
+                context,
+                &ComicStep::touch_last_active(&chapter_info.comic_id),
+            )
+            .await?;
 
-                let chapter_stage_update = ChapterComplex::build_stage_update(
-                    &chapter_info,
-                    workflow_data.stage,
-                    workflow_data.event,
-                )?;
+            accept(())
+        })
+        .await
+        .map_err(map_drive_err)?;
 
-                repo.advance(context, &ChapterStep::update_stage(&chapter_stage_update))
-                    .await?;
+    accept(())
+}
 
-                if workflow_data.stage == WorkflowStage::Publish
-                    && workflow_data.event == WorkflowEvent::Advance
-                    && !was_published
-                    && chapter_stage_update.publish_phase == Some(StagePhase::Completed)
-                {
-                    ChapterComplex::clear_page_images(&repo, &prom, context, &chapter_info.id)
-                        .await?;
-                }
+/// Updates chapter workflow state.
+pub async fn update_stage<D, C, R, P>(
+    drive: &D,
+    repo: &R,
+    prom: &P,
+    token: UserToken,
+    data: UpdateChapterStageData,
+) -> RootResult<()>
+where
+    D: Drive<C>,
+    D::Error: Into<RootError>,
+    C: Send,
+    R: ChapterRepo<C> + ComicRepo<C> + AssignmentRepo<C> + PageRepo<C> + Send + Sync,
+    <R as DeriveTransactional>::Transactional: ChapterRepoTransactional<C>
+        + ComicRepoTransactional<C>
+        + AssignmentRepoTransactional<C>
+        + PageRepoTransactional<C>
+        + Send
+        + Sync,
+    P: Prom<C> + Send + Sync,
+    <P as DeriveTransactional>::Transactional: PromTransactional<C> + Send + Sync,
+{
+    drive
+        .with_context(async move |context| {
+            let repo = repo.transactional().await;
+            let prom = prom.transactional().await;
+
+            use crate::part::shared::proxy::AsProxyTransactional as _;
+
+            let chapter_info = repo
+                .advance(context, &ChapterStep::get_info_excluded(&data.id))
+                .await?;
+
+            ChapterPermComplex::can_user_update_stage(
+                &mut repo.as_proxy(context),
+                &token.user_id,
+                &data.id,
+                data.stage,
+                data.event,
+            )
+            .await?;
+
+            let was_published =
+                chapter_info.stages.get_phase(WorkflowStage::Publish) == StagePhase::Completed;
+
+            let chapter_stage_update =
+                ChapterComplex::build_stage_update(&chapter_info, data.stage, data.event)?;
+
+            repo.advance(context, &ChapterStep::update_stage(&chapter_stage_update))
+                .await?;
+
+            if data.stage == WorkflowStage::Publish
+                && data.event == WorkflowEvent::Advance
+                && !was_published
+                && chapter_stage_update.publish_phase == Some(StagePhase::Completed)
+            {
+                ChapterComplex::delete_uploaded_page_images_for_publish(
+                    &repo,
+                    &prom,
+                    context,
+                    &chapter_info.id,
+                )
+                .await?;
             }
 
             repo.advance(
@@ -346,7 +379,7 @@ where
         .with_context(async move |context| {
             let repo = repo.transactional().await;
 
-            use crate::part::repo::proxy::AsProxyTransactional as _;
+            use crate::part::shared::proxy::AsProxyTransactional as _;
 
             let chapter_info = repo
                 .advance(context, &ChapterStep::get_info_excluded(&data.chapter_id))
@@ -363,16 +396,14 @@ where
             let existing_assignment_info = repo
                 .advance(
                     context,
-                    &AssignmentStep::get_by_chapter_user_id(&data.chapter_id, &token.user_id),
+                    &AssignmentStep::get_info_by_chapter_user_id(&data.chapter_id, &token.user_id),
                 )
                 .await?;
 
             let assignment_info = match existing_assignment_info {
                 Some(existing_assignment_info) => {
-                    let assignment_role_update = AssignmentComplex::merge_roles(
-                        &existing_assignment_info,
-                        data.roles,
-                    );
+                    let assignment_role_update =
+                        AssignmentComplex::merge_roles(&existing_assignment_info, data.roles);
 
                     repo.advance(context, &AssignmentStep::put_roles(&assignment_role_update))
                         .await?
@@ -410,19 +441,11 @@ where
     D: Drive<C>,
     D::Error: Into<RootError>,
     C: Send,
-    R: ChapterRepo<C>
-        + ComicRepo<C>
-        + WorksetRepo<C>
-        + MemberRepo<C>
-        + AssignmentRepo<C>
-        + PageRepo<C>
-        + Send
-        + Sync,
+    R: ChapterRepo<C> + ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + PageRepo<C> + Send + Sync,
     <R as DeriveTransactional>::Transactional: ChapterRepoTransactional<C>
         + ComicRepoTransactional<C>
         + WorksetRepoTransactional<C>
         + MemberRepoTransactional<C>
-        + AssignmentRepoTransactional<C>
         + PageRepoTransactional<C>
         + Send
         + Sync,
@@ -434,7 +457,7 @@ where
             let repo = repo.transactional().await;
             let prom = prom.transactional().await;
 
-            use crate::part::repo::proxy::AsProxyTransactional as _;
+            use crate::part::shared::proxy::AsProxyTransactional as _;
 
             ChapterPermComplex::can_user_delete(&mut repo.as_proxy(context), &token.user_id, &id)
                 .await?;

@@ -50,7 +50,7 @@ where
         .with_context(async move |context| {
             let repo = repo.transactional().await;
 
-            use crate::part::repo::proxy::AsProxyTransactional as _;
+            use crate::part::shared::proxy::AsProxyTransactional as _;
 
             MemberInvitationPermComplex::can_user_create(
                 &mut repo.as_proxy(context),
@@ -67,7 +67,10 @@ where
                 let invitee_member_info = repo
                     .advance(
                         context,
-                        &MemberStep::find_by_user_team_id(&invitee_user_info.id, &data.team_id),
+                        &MemberStep::find_info_by_user_team_id(
+                            &invitee_user_info.id,
+                            &data.team_id,
+                        ),
                     )
                     .await?;
 
@@ -120,7 +123,7 @@ where
     <R as DeriveTransactional>::Transactional:
         MemberInvitationRepoTransactional<C> + MemberRepoTransactional<C>,
 {
-    use crate::part::repo::proxy::AsProxyNonTransactional as _;
+    use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
     MemberInvitationPermComplex::can_user_list_infos(
         &mut repo.as_proxy(),
@@ -165,7 +168,7 @@ where
         .with_context(async move |context| {
             let repo = repo.transactional().await;
 
-            use crate::part::repo::proxy::AsProxyTransactional as _;
+            use crate::part::shared::proxy::AsProxyTransactional as _;
 
             MemberInvitationPermComplex::can_user_update_info(
                 &mut repo.as_proxy(context),
@@ -207,7 +210,7 @@ where
         .with_context(async move |context| {
             let repo = repo.transactional().await;
 
-            use crate::part::repo::proxy::AsProxyTransactional as _;
+            use crate::part::shared::proxy::AsProxyTransactional as _;
 
             MemberInvitationPermComplex::can_user_delete(
                 &mut repo.as_proxy(context),

@@ -2,7 +2,7 @@
 
 use poprako_transactional::advance::Advance;
 
-use crate::part::repo::step::page::{ClearImagesByChapter, DeleteByChapterId, ListByChapter};
+use crate::part::repo::step::page::ListInfosByChapter;
 use crate::result::RootError;
 use crate::util::DeriveTransactional;
 
@@ -15,9 +15,6 @@ where
 
 /// Transactional page repository.
 pub trait PageRepoTransactional<C>:
-    for<'a> Advance<ListByChapter<'a>, C, Error = RootError>
-    // FIXME: wrong position.
-    + for<'a> Advance<ClearImagesByChapter<'a>, C, Error = RootError>
-    + for<'a> Advance<DeleteByChapterId<'a>, C, Error = RootError>
+    for<'a> Advance<ListInfosByChapter<'a>, C, Error = RootError>
 {
 }

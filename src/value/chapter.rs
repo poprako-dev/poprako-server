@@ -223,7 +223,9 @@ impl WorkflowStageMask {
 
     /// Check if any of the given stages has a non-`Pending` phase.
     pub fn has_any_stage(&self, stages: &[WorkflowStage]) -> bool {
-        stages.iter().any(|s| self.get_phase(*s) != StagePhase::Pending)
+        stages
+            .iter()
+            .any(|s| self.get_phase(*s) != StagePhase::Pending)
     }
 
     /// Check if all of the given stages have a non-`Pending` phase.

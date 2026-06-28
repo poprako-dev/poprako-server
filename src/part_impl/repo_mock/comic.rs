@@ -1,17 +1,18 @@
 //! Mock implementations of `ComicRepo` and `ComicRepoTransactional` for in-memory testing.
 
 use async_trait::async_trait;
+
 use poprako_transactional::advance::Advance;
 
 use crate::complex::comic::ComicComplex;
 use crate::model::comic::{ComicCoverReservation, ComicInfo};
-use crate::part::repo::Execute;
 use crate::part::repo::comic::{ComicRepo, ComicRepoTransactional};
 use crate::part::repo::step::comic::{
-    Create, Delete, GetInfoById, GetInfoExcluded, IncrementChapterNextIndex, ListByWorksetId,
-    ListByWorksetIdExcluded, MarkCompleted, MarkCoverUploaded, ReserveCover, TouchLastActive,
+    Create, Delete, GetInfoById, GetInfoExcluded, IncrChapterNextIndex, ListInfosByWorksetId,
+    ListInfosByWorksetIdExcluded, MarkCompleted, MarkCoverUploaded, ReserveCover, TouchLastActive,
     UpdateChapterCount, UpdateInfo,
 };
+use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactional, expected, now};
 use crate::result::RootError;
 
@@ -55,10 +56,13 @@ impl<'a> Execute<GetInfoById<'a>> for Mock {
 }
 
 #[async_trait]
-impl<'a> Execute<ListByWorksetId<'a>> for Mock {
+impl<'a> Execute<ListInfosByWorksetId<'a>> for Mock {
     type Error = RootError;
 
-    async fn execute(&self, step: &ListByWorksetId<'a>) -> Result<Vec<ComicInfo>, Self::Error> {
+    async fn execute(
+        &self,
+        step: &ListInfosByWorksetId<'a>,
+    ) -> Result<Vec<ComicInfo>, Self::Error> {
         let state = self.state.lock().unwrap();
         let mut comics = state
             .comics
@@ -181,13 +185,13 @@ impl<'a> Advance<GetInfoExcluded<'a>, MockContext> for MockTransactional {
 }
 
 #[async_trait]
-impl<'a> Advance<ListByWorksetIdExcluded<'a>, MockContext> for MockTransactional {
+impl<'a> Advance<ListInfosByWorksetIdExcluded<'a>, MockContext> for MockTransactional {
     type Error = RootError;
 
     async fn advance(
         &self,
         context: &mut MockContext,
-        step: &ListByWorksetIdExcluded<'a>,
+        step: &ListInfosByWorksetIdExcluded<'a>,
     ) -> Result<Vec<ComicInfo>, Self::Error> {
         let mut comics = context
             .state
@@ -259,7 +263,31 @@ impl<'a> Advance<Delete<'a>, MockContext> for MockTransactional {
             .iter()
             .position(|comic| comic.id == step.id)
             .ok_or_else(|| expected("error-comic-not-found"))?;
+
+        let deleted_comic_id = context.state.comics[pos].id.clone();
+        let deleted_chapter_ids = context
+            .state
+            .chapters
+            .iter()
+            .filter(|chapter_info| chapter_info.comic_id == deleted_comic_id)
+            .map(|chapter_info| chapter_info.id.clone())
+            .collect::<Vec<_>>();
+
         context.state.comics.remove(pos);
+        context
+            .state
+            .chapters
+            .retain(|chapter_info| chapter_info.comic_id != deleted_comic_id);
+        context.state.pages.retain(|page_info| {
+            !deleted_chapter_ids
+                .iter()
+                .any(|chapter_id| chapter_id == &page_info.chapter_id)
+        });
+        context.state.assignments.retain(|assignment_info| {
+            !deleted_chapter_ids
+                .iter()
+                .any(|chapter_id| chapter_id == &assignment_info.chapter_id)
+        });
         Ok(())
     }
 }
@@ -286,13 +314,13 @@ impl<'a> Advance<MarkCompleted<'a>, MockContext> for MockTransactional {
 }
 
 #[async_trait]
-impl<'a> Advance<IncrementChapterNextIndex<'a>, MockContext> for MockTransactional {
+impl<'a> Advance<IncrChapterNextIndex<'a>, MockContext> for MockTransactional {
     type Error = RootError;
 
     async fn advance(
         &self,
         context: &mut MockContext,
-        step: &IncrementChapterNextIndex<'a>,
+        step: &IncrChapterNextIndex<'a>,
     ) -> Result<i32, Self::Error> {
         let comic = context
             .state

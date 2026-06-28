@@ -8,17 +8,26 @@
 //! team admin. Workflow transitions additionally validate that the caller holds a
 //! role consistent with the target stage and event.
 
+use time::OffsetDateTime;
+
 use poprako_util::i18n::trl;
 
+use crate::complex::image::ImageComplex;
 use crate::complex::util::{check_user_is_team_admin, check_user_is_team_member};
-use crate::model::chapter::{ChapterInfo, ChapterStageUpdate};
+use crate::model::chapter::{ChapterInfo, ChapterInfoUpdate, ChapterStageUpdate};
 use crate::model::role::{RoleField, RoleMask};
-use crate::part::repo::proxy::ProxyExecute;
-use crate::part::repo::step::assignment::{AssignmentStep, GetByChapterUserId};
+use crate::part::prom::intention::{IMAGE_TOPIC, ImageIntention};
+use crate::part::prom::{Payload, PromStep, PromTransactional};
+use crate::part::repo::chapter::ChapterRepoTransactional;
+use crate::part::repo::comic::ComicRepoTransactional;
+use crate::part::repo::page::PageRepoTransactional;
+use crate::part::repo::step::assignment::{AssignmentStep, GetInfoByChapterUserId};
 use crate::part::repo::step::chapter::{ChapterStep, GetInfoById as ChapterGetInfoById};
 use crate::part::repo::step::comic::{ComicStep, GetInfoById as ComicGetInfoById};
-use crate::part::repo::step::member::{FindByUserTeamId, MemberStep};
+use crate::part::repo::step::member::{FindInfoByUserTeamId, MemberStep};
+use crate::part::repo::step::page::PageStep;
 use crate::part::repo::step::workset::{GetInfoById as WorksetGetInfoById, WorksetStep};
+use crate::part::shared::proxy::ProxyExecute;
 use crate::result::{ExpectedVariant, RootError, RootResult, accept};
 use crate::util::next_snowflake_id;
 use crate::value::chapter::{StagePhase, WorkflowEvent, WorkflowStage, try_modify_stage};
@@ -78,6 +87,65 @@ impl ChapterComplex {
 
         accept(chapter_stage_update)
     }
+
+    /// Appends page image deletes inside an existing transaction context.
+    pub async fn delete_uploaded_page_images_for_publish<C, R, P>(
+        repo: &R,
+        prom: &P,
+        context: &mut C,
+        chapter_id: &str,
+    ) -> RootResult<()>
+    where
+        C: Send,
+        R: PageRepoTransactional<C> + Send + Sync,
+        P: PromTransactional<C> + Send + Sync,
+    {
+        append_uploaded_page_image_deletes(repo, prom, context, chapter_id).await
+    }
+
+    /// Deletes a chapter subtree inside an existing transaction context.
+    pub async fn delete_cascade<C, R, P>(
+        repo: &R,
+        prom: &P,
+        context: &mut C,
+        id: &str,
+    ) -> RootResult<()>
+    where
+        C: Send,
+        R: ChapterRepoTransactional<C>
+            + ComicRepoTransactional<C>
+            + PageRepoTransactional<C>
+            + Send
+            + Sync,
+        P: PromTransactional<C> + Send + Sync,
+    {
+        let chapter_info = repo
+            .advance(context, &ChapterStep::get_info_excluded(id))
+            .await?;
+
+        append_uploaded_page_image_deletes(repo, prom, context, &chapter_info.id).await?;
+
+        repo.advance(context, &ChapterStep::delete(&chapter_info.id))
+            .await?;
+
+        if chapter_info.is_pinned {
+            repin_latest_chapter(repo, context, &chapter_info.comic_id).await?;
+        }
+
+        repo.advance(
+            context,
+            &ComicStep::update_chapter_count(&chapter_info.comic_id, -1),
+        )
+        .await?;
+
+        repo.advance(
+            context,
+            &ComicStep::touch_last_active(&chapter_info.comic_id),
+        )
+        .await?;
+
+        accept(())
+    }
 }
 
 /// Generate a human-readable default subtitle for a chapter, e.g. "第 1 话".
@@ -90,6 +158,81 @@ fn default_subtitle(index: i32) -> String {
 /// [`ChapterInfo`] record.
 fn get_phase(chapter_info: &ChapterInfo, stage: WorkflowStage) -> StagePhase {
     chapter_info.stages.get_phase(stage)
+}
+
+async fn append_uploaded_page_image_deletes<C, R, P>(
+    repo: &R,
+    prom: &P,
+    context: &mut C,
+    chapter_id: &str,
+) -> RootResult<()>
+where
+    C: Send,
+    R: PageRepoTransactional<C> + Send + Sync,
+    P: PromTransactional<C> + Send + Sync,
+{
+    let page_infos = repo
+        .advance(context, &PageStep::list_infos_by_chapter(chapter_id))
+        .await?;
+
+    let now = OffsetDateTime::now_utc();
+
+    for page_info in page_infos {
+        if let Some(image_key) = page_info.image_key
+            && page_info.image_uploaded
+        {
+            let delete_id = ImageComplex::gen_delete_id();
+
+            prom.advance(
+                context,
+                &PromStep::append(
+                    &delete_id,
+                    IMAGE_TOPIC,
+                    Payload::Image(ImageIntention::Delete {
+                        object_key: image_key,
+                    }),
+                    &now,
+                ),
+            )
+            .await?;
+        }
+    }
+
+    accept(())
+}
+
+async fn repin_latest_chapter<C, R>(repo: &R, context: &mut C, comic_id: &str) -> RootResult<()>
+where
+    C: Send,
+    R: ChapterRepoTransactional<C> + Send + Sync,
+{
+    let chapter_infos = repo
+        .advance(
+            context,
+            &ChapterStep::list_all_infos_by_comic_id_excluded(comic_id),
+        )
+        .await?;
+
+    let Some(chapter_info) = chapter_infos.first() else {
+        return accept(());
+    };
+
+    let chapter_info_update = ChapterInfoUpdate {
+        id: chapter_info.id.clone(),
+        subtitle: None,
+        is_pinned: Some(true),
+    };
+
+    repo.advance(context, &ChapterStep::update_info(&chapter_info_update))
+        .await?;
+
+    repo.advance(
+        context,
+        &ChapterStep::unpin_others(&chapter_info.comic_id, &chapter_info.id),
+    )
+    .await?;
+
+    accept(())
 }
 
 /// Permission-gate operations for chapter entities — resolves the owning
@@ -110,7 +253,7 @@ impl ChapterPermComplex {
     where
         P: for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RootError>
             + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RootError>
-            + for<'a> ProxyExecute<FindByUserTeamId<'a>, Error = RootError>,
+            + for<'a> ProxyExecute<FindInfoByUserTeamId<'a>, Error = RootError>,
     {
         check_team_member_by_comic(proxy, user_id, comic_id).await
     }
@@ -125,7 +268,7 @@ impl ChapterPermComplex {
         P: for<'a> ProxyExecute<ChapterGetInfoById<'a>, Error = RootError>
             + for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RootError>
             + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RootError>
-            + for<'a> ProxyExecute<FindByUserTeamId<'a>, Error = RootError>,
+            + for<'a> ProxyExecute<FindInfoByUserTeamId<'a>, Error = RootError>,
     {
         check_team_member_by_chapter(proxy, user_id, chapter_id).await
     }
@@ -141,7 +284,7 @@ impl ChapterPermComplex {
     where
         P: for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RootError>
             + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RootError>
-            + for<'a> ProxyExecute<FindByUserTeamId<'a>, Error = RootError>,
+            + for<'a> ProxyExecute<FindInfoByUserTeamId<'a>, Error = RootError>,
     {
         check_team_member_by_comic(proxy, user_id, comic_id).await
     }
@@ -151,31 +294,35 @@ impl ChapterPermComplex {
     where
         P: for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RootError>
             + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RootError>
-            + for<'a> ProxyExecute<FindByUserTeamId<'a>, Error = RootError>,
+            + for<'a> ProxyExecute<FindInfoByUserTeamId<'a>, Error = RootError>,
     {
         check_team_admin_by_comic(proxy, user_id, comic_id).await
     }
 
-    /// Verify the caller has permission to update a chapter.
-    ///
-    /// When `workflow` is provided, delegates to [`check_workflow_role`] which
-    /// verifies the caller holds a role consistent with the target
-    /// stage/event. Without `workflow`, falls back to [`check_reviewer`]
-    /// (the caller must be assigned as a reviewer).
+    /// Verify the caller is assigned as a chapter admin for metadata updates.
     pub async fn can_user_update_info<P>(
         proxy: &mut P,
         user_id: &str,
         chapter_id: &str,
-        workflow: Option<(WorkflowStage, WorkflowEvent)>,
     ) -> RootResult<()>
     where
-        P: for<'a> ProxyExecute<GetByChapterUserId<'a>, Error = RootError>,
+        P: for<'a> ProxyExecute<GetInfoByChapterUserId<'a>, Error = RootError>,
     {
-        if let Some((stage, event)) = workflow {
-            return check_workflow_role(proxy, user_id, chapter_id, stage, event).await;
-        }
+        check_admin(proxy, user_id, chapter_id).await
+    }
 
-        check_reviewer(proxy, user_id, chapter_id).await
+    /// Verify the caller has permission to apply a workflow event.
+    pub async fn can_user_update_stage<P>(
+        proxy: &mut P,
+        user_id: &str,
+        chapter_id: &str,
+        stage: WorkflowStage,
+        event: WorkflowEvent,
+    ) -> RootResult<()>
+    where
+        P: for<'a> ProxyExecute<GetInfoByChapterUserId<'a>, Error = RootError>,
+    {
+        check_workflow_role(proxy, user_id, chapter_id, stage, event).await
     }
 
     /// Verify the caller may join a chapter with the given [`RoleMask`].
@@ -192,7 +339,7 @@ impl ChapterPermComplex {
     where
         P: for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RootError>
             + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RootError>
-            + for<'a> ProxyExecute<FindByUserTeamId<'a>, Error = RootError>,
+            + for<'a> ProxyExecute<FindInfoByUserTeamId<'a>, Error = RootError>,
     {
         check_join_role(proxy, user_id, chapter_info, role_mask).await
     }
@@ -207,7 +354,7 @@ impl ChapterPermComplex {
         P: for<'a> ProxyExecute<ChapterGetInfoById<'a>, Error = RootError>
             + for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RootError>
             + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RootError>
-            + for<'a> ProxyExecute<FindByUserTeamId<'a>, Error = RootError>,
+            + for<'a> ProxyExecute<FindInfoByUserTeamId<'a>, Error = RootError>,
     {
         check_team_admin_by_chapter(proxy, user_id, chapter_id).await
     }
@@ -222,7 +369,7 @@ async fn check_team_member_by_comic<P>(
 where
     P: for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RootError>
         + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RootError>
-        + for<'a> ProxyExecute<FindByUserTeamId<'a>, Error = RootError>,
+        + for<'a> ProxyExecute<FindInfoByUserTeamId<'a>, Error = RootError>,
 {
     let team_id = resolve_team_id_from_comic(proxy, comic_id).await?;
 
@@ -239,7 +386,7 @@ where
     P: for<'a> ProxyExecute<ChapterGetInfoById<'a>, Error = RootError>
         + for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RootError>
         + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RootError>
-        + for<'a> ProxyExecute<FindByUserTeamId<'a>, Error = RootError>,
+        + for<'a> ProxyExecute<FindInfoByUserTeamId<'a>, Error = RootError>,
 {
     let chapter_info = proxy
         .execute(&ChapterStep::get_info_by_id(chapter_id))
@@ -257,7 +404,7 @@ async fn check_team_admin_by_comic<P>(
 where
     P: for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RootError>
         + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RootError>
-        + for<'a> ProxyExecute<FindByUserTeamId<'a>, Error = RootError>,
+        + for<'a> ProxyExecute<FindInfoByUserTeamId<'a>, Error = RootError>,
 {
     let team_id = resolve_team_id_from_comic(proxy, comic_id).await?;
 
@@ -274,7 +421,7 @@ where
     P: for<'a> ProxyExecute<ChapterGetInfoById<'a>, Error = RootError>
         + for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RootError>
         + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RootError>
-        + for<'a> ProxyExecute<FindByUserTeamId<'a>, Error = RootError>,
+        + for<'a> ProxyExecute<FindInfoByUserTeamId<'a>, Error = RootError>,
 {
     let chapter_info = proxy
         .execute(&ChapterStep::get_info_by_id(chapter_id))
@@ -283,20 +430,22 @@ where
     check_team_admin_by_comic(proxy, user_id, &chapter_info.comic_id).await
 }
 
-/// Verify the caller is assigned as a reviewer on this chapter.
-async fn check_reviewer<P>(proxy: &mut P, user_id: &str, chapter_id: &str) -> RootResult<()>
+/// Verify the caller is assigned as an admin on this chapter.
+async fn check_admin<P>(proxy: &mut P, user_id: &str, chapter_id: &str) -> RootResult<()>
 where
-    P: for<'a> ProxyExecute<GetByChapterUserId<'a>, Error = RootError>,
+    P: for<'a> ProxyExecute<GetInfoByChapterUserId<'a>, Error = RootError>,
 {
     let assignment_info = proxy
-        .execute(&AssignmentStep::get_by_chapter_user_id(chapter_id, user_id))
+        .execute(&AssignmentStep::get_info_by_chapter_user_id(
+            chapter_id, user_id,
+        ))
         .await?;
 
     let Some(assignment_info) = assignment_info else {
-        return Err(chapter_reviewer_error());
+        return Err(chapter_admin_error());
     };
-    if !assignment_info.roles.has_any_role(&[RoleField::REVIEWER]) {
-        return Err(chapter_reviewer_error());
+    if !assignment_info.roles.has_any_role(&[RoleField::ADMIN]) {
+        return Err(chapter_admin_error());
     }
 
     accept(())
@@ -322,10 +471,12 @@ async fn check_workflow_role<P>(
     event: WorkflowEvent,
 ) -> RootResult<()>
 where
-    P: for<'a> ProxyExecute<GetByChapterUserId<'a>, Error = RootError>,
+    P: for<'a> ProxyExecute<GetInfoByChapterUserId<'a>, Error = RootError>,
 {
     let assignment_info = proxy
-        .execute(&AssignmentStep::get_by_chapter_user_id(chapter_id, user_id))
+        .execute(&AssignmentStep::get_info_by_chapter_user_id(
+            chapter_id, user_id,
+        ))
         .await?;
 
     let Some(assignment_info) = assignment_info else {
@@ -380,7 +531,7 @@ async fn check_join_role<P>(
 where
     P: for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RootError>
         + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RootError>
-        + for<'a> ProxyExecute<FindByUserTeamId<'a>, Error = RootError>,
+        + for<'a> ProxyExecute<FindInfoByUserTeamId<'a>, Error = RootError>,
 {
     if role_mask.has_any_role(&[RoleField::ADMIN]) {
         return Err(chapter_role_not_assignable_args_error());
@@ -388,7 +539,7 @@ where
 
     let team_id = resolve_team_id_from_comic(proxy, &chapter_info.comic_id).await?;
     let member_info = proxy
-        .execute(&MemberStep::find_by_user_team_id(user_id, &team_id))
+        .execute(&MemberStep::find_info_by_user_team_id(user_id, &team_id))
         .await?;
 
     let Some(member_info) = member_info else {
@@ -422,11 +573,11 @@ where
     accept(workset_info.team_id)
 }
 
-/// Construct a "chapter reviewer required" permission error.
-fn chapter_reviewer_error() -> RootError {
+/// Construct a "chapter admin required" permission error.
+fn chapter_admin_error() -> RootError {
     RootError::Expected {
         variant: ExpectedVariant::Perm,
-        message: trl("error-chapter-reviewer-required"),
+        message: trl("error-chapter-admin-required"),
     }
 }
 

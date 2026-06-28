@@ -16,9 +16,11 @@ use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
 use crate::part::prom::intention::{IMAGE_TOPIC, ImageIntention, ImageKind};
 use crate::part::prom::{Payload, Prom, PromStep, PromTransactional};
+use crate::part::repo::chapter::{ChapterRepo, ChapterRepoTransactional};
 use crate::part::repo::comic::{ComicRepo, ComicRepoTransactional};
 use crate::part::repo::map_drive_err;
 use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
+use crate::part::repo::page::{PageRepo, PageRepoTransactional};
 use crate::part::repo::step::comic::ComicStep;
 use crate::part::repo::step::workset::WorksetStep;
 use crate::part::repo::workset::{WorksetRepo, WorksetRepoTransactional};
@@ -52,7 +54,7 @@ where
         .with_context(async move |context| {
             let repo = repo.transactional().await;
 
-            use crate::part::repo::proxy::AsProxyTransactional as _;
+            use crate::part::shared::proxy::AsProxyTransactional as _;
 
             ComicPermComplex::can_user_create(
                 &mut repo.as_proxy(context),
@@ -109,7 +111,7 @@ where
         ComicRepoTransactional<C> + WorksetRepoTransactional<C> + MemberRepoTransactional<C>,
     I: ImagePool,
 {
-    use crate::part::repo::proxy::AsProxyNonTransactional as _;
+    use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
     ComicPermComplex::can_user_get_info(&mut repo.as_proxy(), &token.user_id, &id).await?;
 
@@ -131,13 +133,13 @@ where
         ComicRepoTransactional<C> + WorksetRepoTransactional<C> + MemberRepoTransactional<C>,
     I: ImagePool,
 {
-    use crate::part::repo::proxy::AsProxyNonTransactional as _;
+    use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
     ComicPermComplex::can_user_list_infos(&mut repo.as_proxy(), &token.user_id, &data.workset_id)
         .await?;
 
     let comic_infos = repo
-        .execute(&ComicStep::list_by_workset_id(&data.workset_id))
+        .execute(&ComicStep::list_infos_by_workset_id(&data.workset_id))
         .await?;
 
     let mut comic_info_vals = Vec::with_capacity(comic_infos.len());
@@ -160,7 +162,7 @@ where
     <R as DeriveTransactional>::Transactional:
         ComicRepoTransactional<C> + WorksetRepoTransactional<C> + MemberRepoTransactional<C>,
 {
-    use crate::part::repo::proxy::AsProxyNonTransactional as _;
+    use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
     ComicPermComplex::can_user_update_info(&mut repo.as_proxy(), &token.user_id, &data.id).await?;
 
@@ -206,7 +208,7 @@ where
             let repo = repo.transactional().await;
             let prom = prom.transactional().await;
 
-            use crate::part::repo::proxy::AsProxyTransactional as _;
+            use crate::part::shared::proxy::AsProxyTransactional as _;
 
             ComicPermComplex::can_user_reserve_cover(
                 &mut repo.as_proxy(context),
@@ -285,7 +287,7 @@ where
     <R as DeriveTransactional>::Transactional:
         ComicRepoTransactional<C> + WorksetRepoTransactional<C> + MemberRepoTransactional<C>,
 {
-    use crate::part::repo::proxy::AsProxyNonTransactional as _;
+    use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
     ComicPermComplex::can_user_mark_cover_uploaded(&mut repo.as_proxy(), &token.user_id, &id)
         .await?;
@@ -308,10 +310,12 @@ where
     D: Drive<C>,
     D::Error: Into<RootError>,
     C: Send,
-    R: ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Send + Sync,
+    R: ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + ChapterRepo<C> + PageRepo<C> + Send + Sync,
     <R as DeriveTransactional>::Transactional: ComicRepoTransactional<C>
         + WorksetRepoTransactional<C>
         + MemberRepoTransactional<C>
+        + ChapterRepoTransactional<C>
+        + PageRepoTransactional<C>
         + Send
         + Sync,
     P: Prom<C> + Send + Sync,
@@ -322,7 +326,7 @@ where
             let repo = repo.transactional().await;
             let prom = prom.transactional().await;
 
-            use crate::part::repo::proxy::AsProxyTransactional as _;
+            use crate::part::shared::proxy::AsProxyTransactional as _;
 
             ComicPermComplex::can_user_delete(&mut repo.as_proxy(context), &token.user_id, &id)
                 .await?;
@@ -364,7 +368,7 @@ where
         .with_context(async move |context| {
             let repo = repo.transactional().await;
 
-            use crate::part::repo::proxy::AsProxyTransactional as _;
+            use crate::part::shared::proxy::AsProxyTransactional as _;
 
             ComicPermComplex::can_user_mark_completed(
                 &mut repo.as_proxy(context),

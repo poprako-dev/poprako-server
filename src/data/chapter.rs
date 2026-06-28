@@ -109,26 +109,22 @@ pub struct ListChapterInfosData {
     pub limit: u64,
 }
 
-/// Input parameters for updating a chapter's profile and optional workflow.
-///
-/// When `workflow` is provided, the chapter's stage is advanced as a
-/// side-effect of the same update transaction. This is the only endpoint
-/// through which workflow events are applied to a chapter.
+/// Input parameters for updating a chapter's profile.
 pub struct UpdateChapterInfoData {
     pub id: String,
 
     pub subtitle: Option<String>,
     pub is_pinned: Option<bool>,
-
-    pub workflow: Option<ChapterWorkflowData>,
 }
 
-/// Workflow transition parameters carried inside [`UpdateChapterInfoData`].
+/// Input parameters for updating a chapter's workflow stage.
 ///
 /// Encodes a single event on a specific stage, e.g. "start translating"
 /// on the `translate` stage. The use case layer validates that the
 /// transition is legal for the current stage phase before applying it.
-pub struct ChapterWorkflowData {
+pub struct UpdateChapterStageData {
+    pub id: String,
+
     pub stage: WorkflowStage,
     pub event: WorkflowEvent,
 }

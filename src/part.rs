@@ -22,3 +22,5 @@ pub mod effect;
 pub mod image;
 pub mod prom;
 pub mod repo;
+
+pub mod shared;

@@ -32,20 +32,20 @@ impl<'a> Step for GetInfoExcluded<'a> {
 }
 
 /// Step that lists all comics for a workset.
-pub struct ListByWorksetId<'a> {
+pub struct ListInfosByWorksetId<'a> {
     pub workset_id: &'a str,
 }
 
-impl<'a> Step for ListByWorksetId<'a> {
+impl<'a> Step for ListInfosByWorksetId<'a> {
     type Output = Vec<ComicInfo>;
 }
 
 /// Step that lists all comics for a workset with a pessimistic lock.
-pub struct ListByWorksetIdExcluded<'a> {
+pub struct ListInfosByWorksetIdExcluded<'a> {
     pub workset_id: &'a str,
 }
 
-impl<'a> Step for ListByWorksetIdExcluded<'a> {
+impl<'a> Step for ListInfosByWorksetIdExcluded<'a> {
     type Output = Vec<ComicInfo>;
 }
 
@@ -98,11 +98,11 @@ impl<'a> Step for MarkCompleted<'a> {
 }
 
 /// Step that increments and returns a comic's next chapter index.
-pub struct IncrementChapterNextIndex<'a> {
+pub struct IncrChapterNextIndex<'a> {
     pub id: &'a str,
 }
 
-impl<'a> Step for IncrementChapterNextIndex<'a> {
+impl<'a> Step for IncrChapterNextIndex<'a> {
     type Output = i32;
 }
 
@@ -145,13 +145,15 @@ impl ComicStep {
     }
 
     /// Constructs a step to list a workset's comics.
-    pub fn list_by_workset_id<'a>(workset_id: &'a str) -> ListByWorksetId<'a> {
-        ListByWorksetId { workset_id }
+    pub fn list_infos_by_workset_id<'a>(workset_id: &'a str) -> ListInfosByWorksetId<'a> {
+        ListInfosByWorksetId { workset_id }
     }
 
     /// Constructs a step to list a workset's comics with a pessimistic lock.
-    pub fn list_by_workset_id_excluded<'a>(workset_id: &'a str) -> ListByWorksetIdExcluded<'a> {
-        ListByWorksetIdExcluded { workset_id }
+    pub fn list_infos_by_workset_id_excluded<'a>(
+        workset_id: &'a str,
+    ) -> ListInfosByWorksetIdExcluded<'a> {
+        ListInfosByWorksetIdExcluded { workset_id }
     }
 
     /// Constructs a step to update a comic's profile fields.
@@ -180,8 +182,8 @@ impl ComicStep {
     }
 
     /// Constructs a step to increment and return chapter index.
-    pub fn increment_chapter_next_index<'a>(id: &'a str) -> IncrementChapterNextIndex<'a> {
-        IncrementChapterNextIndex { id }
+    pub fn incr_chapter_next_index<'a>(id: &'a str) -> IncrChapterNextIndex<'a> {
+        IncrChapterNextIndex { id }
     }
 
     /// Constructs a step to change chapter count.

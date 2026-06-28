@@ -1,23 +1,27 @@
-//! Complex-domain operations for comic entities: identity generation, cover-storage
-//! key management, and recursive deletion with related resource cleanup.
+//! Complex-domain operations for comic entities: identity generation,
+//! cover-storage key management, and permission gates.
 
 use time::OffsetDateTime;
 
+use crate::complex::chapter::ChapterComplex;
 use crate::complex::image::ImageComplex;
 use crate::complex::util::{check_user_is_team_admin, check_user_is_team_member};
 use crate::part::prom::intention::{IMAGE_TOPIC, ImageIntention};
 use crate::part::prom::{Payload, PromStep, PromTransactional};
+use crate::part::repo::chapter::ChapterRepoTransactional;
 use crate::part::repo::comic::ComicRepoTransactional;
-use crate::part::repo::proxy::ProxyExecute;
+use crate::part::repo::page::PageRepoTransactional;
+use crate::part::repo::step::chapter::ChapterStep;
 use crate::part::repo::step::comic::{ComicStep, GetInfoById as ComicGetInfoById};
-use crate::part::repo::step::member::FindByUserTeamId;
+use crate::part::repo::step::member::FindInfoByUserTeamId;
 use crate::part::repo::step::workset::{GetInfoById as WorksetGetInfoById, WorksetStep};
 use crate::part::repo::workset::WorksetRepoTransactional;
-use crate::result::{RootError, RootResult};
+use crate::part::shared::proxy::ProxyExecute;
+use crate::result::{RootError, RootResult, accept};
 use crate::util::next_snowflake_id;
 
-/// Domain operations for comic entities: identity generation, cover-storage
-/// key management, and recursive deletion with related resource cleanup.
+/// Domain operations for comic entities: identity generation and
+/// cover-storage key management.
 pub struct ComicComplex;
 
 impl ComicComplex {
@@ -33,9 +37,7 @@ impl ComicComplex {
         format!("comic_cover/{}-{}.{}", id, cover_version, file_ext)
     }
 
-    /// Recursively delete a comic and all owned resources: enqueues cover-image
-    /// deletion if the cover was uploaded, removes the comic record, and
-    /// decrements the parent workset's comic-count counter.
+    /// Deletes a comic subtree inside an existing transaction context.
     pub async fn delete_cascade<C, R, P>(
         repo: &R,
         prom: &P,
@@ -44,12 +46,28 @@ impl ComicComplex {
     ) -> RootResult<()>
     where
         C: Send,
-        R: ComicRepoTransactional<C> + WorksetRepoTransactional<C> + Send + Sync,
+        R: ComicRepoTransactional<C>
+            + WorksetRepoTransactional<C>
+            + ChapterRepoTransactional<C>
+            + PageRepoTransactional<C>
+            + Send
+            + Sync,
         P: PromTransactional<C> + Send + Sync,
     {
         let comic_info = repo
             .advance(context, &ComicStep::get_info_excluded(id))
             .await?;
+
+        let chapter_infos = repo
+            .advance(
+                context,
+                &ChapterStep::list_all_infos_by_comic_id_excluded(&comic_info.id),
+            )
+            .await?;
+
+        for chapter_info in chapter_infos {
+            ChapterComplex::delete_cascade(repo, prom, context, &chapter_info.id).await?;
+        }
 
         if let Some(cover_key) = &comic_info.cover_key
             && comic_info.cover_uploaded
@@ -71,7 +89,8 @@ impl ComicComplex {
             .await?;
         }
 
-        repo.advance(context, &ComicStep::delete(id)).await?;
+        repo.advance(context, &ComicStep::delete(&comic_info.id))
+            .await?;
 
         repo.advance(
             context,
@@ -79,7 +98,7 @@ impl ComicComplex {
         )
         .await?;
 
-        Ok(())
+        accept(())
     }
 }
 
@@ -95,7 +114,7 @@ impl ComicPermComplex {
     ) -> RootResult<()>
     where
         P: for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RootError>
-            + for<'a> ProxyExecute<FindByUserTeamId<'a>, Error = RootError>,
+            + for<'a> ProxyExecute<FindInfoByUserTeamId<'a>, Error = RootError>,
     {
         let team_id = Self::resolve_team_id_from_workset(proxy, workset_id).await?;
 
@@ -110,7 +129,7 @@ impl ComicPermComplex {
     ) -> RootResult<()>
     where
         P: for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RootError>
-            + for<'a> ProxyExecute<FindByUserTeamId<'a>, Error = RootError>,
+            + for<'a> ProxyExecute<FindInfoByUserTeamId<'a>, Error = RootError>,
     {
         let team_id = Self::resolve_team_id_from_workset(proxy, workset_id).await?;
 
@@ -126,7 +145,7 @@ impl ComicPermComplex {
     where
         P: for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RootError>
             + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RootError>
-            + for<'a> ProxyExecute<FindByUserTeamId<'a>, Error = RootError>,
+            + for<'a> ProxyExecute<FindInfoByUserTeamId<'a>, Error = RootError>,
     {
         let team_id = Self::resolve_team_id_from_comic(proxy, comic_id).await?;
 
@@ -142,7 +161,7 @@ impl ComicPermComplex {
     where
         P: for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RootError>
             + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RootError>
-            + for<'a> ProxyExecute<FindByUserTeamId<'a>, Error = RootError>,
+            + for<'a> ProxyExecute<FindInfoByUserTeamId<'a>, Error = RootError>,
     {
         let team_id = Self::resolve_team_id_from_comic(proxy, comic_id).await?;
 
@@ -158,7 +177,7 @@ impl ComicPermComplex {
     where
         P: for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RootError>
             + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RootError>
-            + for<'a> ProxyExecute<FindByUserTeamId<'a>, Error = RootError>,
+            + for<'a> ProxyExecute<FindInfoByUserTeamId<'a>, Error = RootError>,
     {
         let team_id = Self::resolve_team_id_from_comic(proxy, comic_id).await?;
 
@@ -174,7 +193,7 @@ impl ComicPermComplex {
     where
         P: for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RootError>
             + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RootError>
-            + for<'a> ProxyExecute<FindByUserTeamId<'a>, Error = RootError>,
+            + for<'a> ProxyExecute<FindInfoByUserTeamId<'a>, Error = RootError>,
     {
         let team_id = Self::resolve_team_id_from_comic(proxy, comic_id).await?;
 
@@ -186,7 +205,7 @@ impl ComicPermComplex {
     where
         P: for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RootError>
             + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RootError>
-            + for<'a> ProxyExecute<FindByUserTeamId<'a>, Error = RootError>,
+            + for<'a> ProxyExecute<FindInfoByUserTeamId<'a>, Error = RootError>,
     {
         let team_id = Self::resolve_team_id_from_comic(proxy, comic_id).await?;
 
@@ -202,7 +221,7 @@ impl ComicPermComplex {
     where
         P: for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RootError>
             + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RootError>
-            + for<'a> ProxyExecute<FindByUserTeamId<'a>, Error = RootError>,
+            + for<'a> ProxyExecute<FindInfoByUserTeamId<'a>, Error = RootError>,
     {
         let team_id = Self::resolve_team_id_from_comic(proxy, comic_id).await?;
 

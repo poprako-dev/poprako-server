@@ -41,7 +41,6 @@ use crate::model::user::{UserCredential, UserInfo};
 use crate::model::workset::WorksetInfo;
 use crate::part::prom::Payload;
 use crate::part::prom::intention::{ImageIntention, ImageKind};
-use crate::part::repo::Execute;
 use crate::part::repo::step::team::{
     Create, Delete, GetInfoById, GetInfoExcluded, IncrementWorksetNextIndex, ListInfos,
     MarkAvatarUploaded, ReserveAvatar, UpdateInfo,
@@ -54,6 +53,7 @@ use crate::part::repo::step::user::{
 };
 use crate::part::repo::team::{TeamRepo, TeamRepoTransactional};
 use crate::part::repo::user::{UserRepo, UserRepoTransactional};
+use crate::part::shared::execute::Execute;
 use crate::part_impl::prom_mock::MockPromRecord;
 use crate::part_impl::repo_mock::{Mock, MockContext};
 use crate::result::{ExpectedVariant, RootError};

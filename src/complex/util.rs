@@ -3,8 +3,8 @@
 use poprako_util::i18n::trl;
 
 use crate::model::role::RoleField;
-use crate::part::repo::proxy::ProxyExecute;
-use crate::part::repo::step::member::{FindByUserTeamId, MemberStep};
+use crate::part::repo::step::member::{FindInfoByUserTeamId, MemberStep};
+use crate::part::shared::proxy::ProxyExecute;
 use crate::result::{ExpectedVariant, RootError, RootResult, accept};
 
 /// Verify the user is a member of the given team; returns `Perm` error if not.
@@ -14,10 +14,10 @@ pub(super) async fn check_user_is_team_member<P>(
     team_id: &str,
 ) -> RootResult<()>
 where
-    P: for<'a> ProxyExecute<FindByUserTeamId<'a>, Error = RootError>,
+    P: for<'a> ProxyExecute<FindInfoByUserTeamId<'a>, Error = RootError>,
 {
     let member_info = proxy
-        .execute(&MemberStep::find_by_user_team_id(user_id, team_id))
+        .execute(&MemberStep::find_info_by_user_team_id(user_id, team_id))
         .await?;
 
     if member_info.is_none() {
@@ -37,10 +37,10 @@ pub(super) async fn check_user_is_team_admin<P>(
     team_id: &str,
 ) -> RootResult<()>
 where
-    P: for<'a> ProxyExecute<FindByUserTeamId<'a>, Error = RootError>,
+    P: for<'a> ProxyExecute<FindInfoByUserTeamId<'a>, Error = RootError>,
 {
     let member_info = proxy
-        .execute(&MemberStep::find_by_user_team_id(user_id, team_id))
+        .execute(&MemberStep::find_info_by_user_team_id(user_id, team_id))
         .await?;
 
     let Some(member_info) = member_info else {

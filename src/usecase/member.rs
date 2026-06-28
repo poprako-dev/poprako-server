@@ -52,7 +52,7 @@ where
         .with_context(async move |context| {
             let repo = repo.transactional().await;
 
-            use crate::part::repo::proxy::AsProxyTransactional as _;
+            use crate::part::shared::proxy::AsProxyTransactional as _;
 
             MemberPermComplex::can_user_create(
                 &mut repo.as_proxy(context),
@@ -71,7 +71,7 @@ where
             let existing_member_info = repo
                 .advance(
                     context,
-                    &MemberStep::find_by_user_team_id(&data.user_id, &data.team_id),
+                    &MemberStep::find_info_by_user_team_id(&data.user_id, &data.team_id),
                 )
                 .await?;
 
@@ -117,7 +117,7 @@ where
     let member_list_spec: MemberListSpec = data.try_into()?;
 
     if let MemberListSpec::Team { team_id, .. } = &member_list_spec {
-        use crate::part::repo::proxy::AsProxyNonTransactional as _;
+        use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
         MemberPermComplex::can_user_list_infos(&mut repo.as_proxy(), &token.user_id, team_id)
             .await?;
@@ -156,7 +156,7 @@ where
                 .advance(context, &MemberStep::get_info_excluded(&data.id))
                 .await?;
 
-            use crate::part::repo::proxy::AsProxyTransactional as _;
+            use crate::part::shared::proxy::AsProxyTransactional as _;
 
             MemberPermComplex::can_user_update_info(
                 &mut repo.as_proxy(context),
@@ -200,7 +200,7 @@ where
                 .advance(context, &MemberStep::get_info_excluded(&id))
                 .await?;
 
-            use crate::part::repo::proxy::AsProxyTransactional as _;
+            use crate::part::shared::proxy::AsProxyTransactional as _;
 
             MemberPermComplex::can_user_delete(
                 &mut repo.as_proxy(context),

@@ -1,11 +1,11 @@
 //! Complex-domain operations for member invitations.
 
 use crate::complex::util::{check_user_is_team_admin, check_user_is_team_member};
-use crate::part::repo::proxy::ProxyExecute;
-use crate::part::repo::step::member::FindByUserTeamId;
+use crate::part::repo::step::member::FindInfoByUserTeamId;
 use crate::part::repo::step::member_invitation::{
     GetInfoById as MemberInvitationGetInfoById, MemberInvitationStep,
 };
+use crate::part::shared::proxy::ProxyExecute;
 use crate::result::{RootError, RootResult};
 use crate::util::next_snowflake_id;
 
@@ -33,7 +33,7 @@ pub struct MemberInvitationPermComplex;
 impl MemberInvitationPermComplex {
     pub async fn can_user_create<P>(proxy: &mut P, user_id: &str, team_id: &str) -> RootResult<()>
     where
-        P: for<'a> ProxyExecute<FindByUserTeamId<'a>, Error = RootError>,
+        P: for<'a> ProxyExecute<FindInfoByUserTeamId<'a>, Error = RootError>,
     {
         check_user_is_team_admin(proxy, user_id, team_id).await
     }
@@ -44,7 +44,7 @@ impl MemberInvitationPermComplex {
         team_id: &str,
     ) -> RootResult<()>
     where
-        P: for<'a> ProxyExecute<FindByUserTeamId<'a>, Error = RootError>,
+        P: for<'a> ProxyExecute<FindInfoByUserTeamId<'a>, Error = RootError>,
     {
         check_user_is_team_member(proxy, user_id, team_id).await
     }
@@ -56,7 +56,7 @@ impl MemberInvitationPermComplex {
     ) -> RootResult<()>
     where
         P: for<'a> ProxyExecute<MemberInvitationGetInfoById<'a>, Error = RootError>
-            + for<'a> ProxyExecute<FindByUserTeamId<'a>, Error = RootError>,
+            + for<'a> ProxyExecute<FindInfoByUserTeamId<'a>, Error = RootError>,
     {
         let team_id = Self::resolve_team_id(proxy, invitation_id).await?;
         check_user_is_team_admin(proxy, user_id, &team_id).await
@@ -69,7 +69,7 @@ impl MemberInvitationPermComplex {
     ) -> RootResult<()>
     where
         P: for<'a> ProxyExecute<MemberInvitationGetInfoById<'a>, Error = RootError>
-            + for<'a> ProxyExecute<FindByUserTeamId<'a>, Error = RootError>,
+            + for<'a> ProxyExecute<FindInfoByUserTeamId<'a>, Error = RootError>,
     {
         let team_id = Self::resolve_team_id(proxy, invitation_id).await?;
         check_user_is_team_admin(proxy, user_id, &team_id).await

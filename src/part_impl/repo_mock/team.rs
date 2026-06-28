@@ -1,16 +1,17 @@
 //! Mock implementations of `TeamRepo` and `TeamRepoTransactional` for in-memory testing.
 
 use async_trait::async_trait;
+
 use poprako_transactional::advance::Advance;
 
 use crate::complex::team::TeamComplex;
 use crate::model::team::{TeamAvatarReservation, TeamInfo};
-use crate::part::repo::Execute;
 use crate::part::repo::step::team::{
     Create, Delete, GetInfoById, GetInfoExcluded, IncrementWorksetNextIndex, ListInfos,
     MarkAvatarUploaded, ReserveAvatar, UpdateInfo,
 };
 use crate::part::repo::team::{TeamRepo, TeamRepoTransactional};
+use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactional, expected, now};
 use crate::result::RootError;
 
@@ -228,6 +229,28 @@ impl<'a> Advance<Delete<'a>, MockContext> for MockTransactional {
             .filter(|workset| workset.team_id == deleted_team_id)
             .map(|workset| workset.id.clone())
             .collect::<Vec<_>>();
+        let deleted_comic_ids = context
+            .state
+            .comics
+            .iter()
+            .filter(|comic| {
+                deleted_workset_ids
+                    .iter()
+                    .any(|workset_id| workset_id == &comic.workset_id)
+            })
+            .map(|comic| comic.id.clone())
+            .collect::<Vec<_>>();
+        let deleted_chapter_ids = context
+            .state
+            .chapters
+            .iter()
+            .filter(|chapter_info| {
+                deleted_comic_ids
+                    .iter()
+                    .any(|comic_id| comic_id == &chapter_info.comic_id)
+            })
+            .map(|chapter_info| chapter_info.id.clone())
+            .collect::<Vec<_>>();
 
         context.state.teams.remove(pos);
         context
@@ -246,6 +269,21 @@ impl<'a> Advance<Delete<'a>, MockContext> for MockTransactional {
             !deleted_workset_ids
                 .iter()
                 .any(|workset_id| workset_id == &comic.workset_id)
+        });
+        context.state.chapters.retain(|chapter_info| {
+            !deleted_comic_ids
+                .iter()
+                .any(|comic_id| comic_id == &chapter_info.comic_id)
+        });
+        context.state.pages.retain(|page_info| {
+            !deleted_chapter_ids
+                .iter()
+                .any(|chapter_id| chapter_id == &page_info.chapter_id)
+        });
+        context.state.assignments.retain(|assignment_info| {
+            !deleted_chapter_ids
+                .iter()
+                .any(|chapter_id| chapter_id == &assignment_info.chapter_id)
         });
         Ok(())
     }
