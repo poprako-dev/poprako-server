@@ -10,7 +10,7 @@
 
 use time::OffsetDateTime;
 
-use crate::value::chapter::StagePhase;
+use crate::value::chapter::{StagePhase, WorkflowStageMask};
 
 /// A chapter（章节）record as stored in the database.
 ///
@@ -44,12 +44,7 @@ pub struct ChapterInfo {
     /// Denormalised number of units with a completed proofread.
     pub proofread_unit_count: i32,
 
-    pub raw_provide_phase: StagePhase,
-    pub translate_phase: StagePhase,
-    pub proofread_phase: StagePhase,
-    pub typeset_redraw_phase: StagePhase,
-    pub review_phase: StagePhase,
-    pub publish_phase: StagePhase,
+    pub stags: WorkflowStageMask,
 
     pub creator_id: String,
 
@@ -99,6 +94,7 @@ pub struct ChapterInfoUpdate {
 ///
 /// The production use case layer should validate transition legality
 /// before building this update struct.
+/// FIXME: update or patch
 #[cfg_attr(test, derive(Clone))]
 pub struct ChapterStageUpdate {
     pub id: String,

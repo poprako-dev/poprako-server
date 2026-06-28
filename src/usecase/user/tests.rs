@@ -104,7 +104,7 @@ pub(crate) fn member(id: &str, user_id: &str, user_nickname: &str, team_id: &str
         user_id: user_id.into(),
         user_nickname: user_nickname.into(),
         team_id: team_id.into(),
-        role_mask: crate::model::role::RoleMask::from(crate::model::role::RoleBit::ADMIN),
+        role_mask: crate::model::role::RoleMask::from(crate::model::role::RoleField::ADMIN),
     }
 }
 

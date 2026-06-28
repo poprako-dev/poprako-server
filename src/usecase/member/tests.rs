@@ -17,7 +17,7 @@
 use super::*;
 
 use crate::model::member::{MemberInfo, MemberListSpec};
-use crate::model::role::{RoleBit, RoleMask};
+use crate::model::role::{RoleField, RoleMask};
 use crate::model::team::TeamInfo;
 use crate::model::user::{UserCredential, UserInfo};
 use crate::part_impl::repo_mock::Mock;
@@ -90,7 +90,7 @@ fn create_data(user_id: &str, team_id: &str) -> CreateMemberData {
     CreateMemberData {
         user_id: user_id.into(),
         team_id: team_id.into(),
-        role_mask: RoleMask::from(RoleBit::TRANSLATOR),
+        role_mask: RoleMask::from(RoleField::TRANSLATOR),
     }
 }
 
@@ -109,7 +109,7 @@ fn list_data(team_id: &str) -> ListMemberInfosData {
 fn update_role_data(id: &str) -> UpdateMemberRoleData {
     UpdateMemberRoleData {
         id: id.into(),
-        role_mask: RoleMask::from(RoleBit::REVIEWER),
+        role_mask: RoleMask::from(RoleField::REVIEWER),
     }
 }
 
@@ -119,7 +119,7 @@ fn seed_admin(mock: &Mock) {
         "admin-user",
         "Admin",
         "team-1",
-        RoleMask::from(RoleBit::ADMIN),
+        RoleMask::from(RoleField::ADMIN),
     ));
 }
 
@@ -151,7 +151,7 @@ async fn create_admin_creates_member_with_target_user_nickname() {
     assert_eq!(created_member_info.team_id, "team-1");
     assert_eq!(
         created_member_info.role_mask,
-        RoleMask::from(RoleBit::TRANSLATOR)
+        RoleMask::from(RoleField::TRANSLATOR)
     );
 }
 
@@ -163,7 +163,7 @@ async fn create_non_admin_is_rejected() {
         "normal-user",
         "Normal",
         "team-1",
-        RoleMask::from(RoleBit::TRANSLATOR),
+        RoleMask::from(RoleField::TRANSLATOR),
     ));
     mock.seed_team(team("team-1"));
     mock.seed_user(user("target-user", "Target"), credential("target-user"));
@@ -193,7 +193,7 @@ async fn create_duplicate_member_is_rejected() {
         "target-user",
         "Target",
         "team-1",
-        RoleMask::from(RoleBit::TRANSLATOR),
+        RoleMask::from(RoleField::TRANSLATOR),
     ));
 
     let err = create(
@@ -219,7 +219,7 @@ async fn list_infos_member_lists_team_members() {
         "translator-user",
         "Translator",
         "team-1",
-        RoleMask::from(RoleBit::TRANSLATOR),
+        RoleMask::from(RoleField::TRANSLATOR),
     ));
 
     let member_info_vals = list_infos(&mock, token("admin-user"), list_data("team-1")).await;
@@ -240,14 +240,14 @@ async fn list_infos_filters_by_role() {
         "reviewer-user",
         "Alice Reviewer",
         "team-1",
-        RoleMask::from(RoleBit::REVIEWER),
+        RoleMask::from(RoleField::REVIEWER),
     ));
     mock.seed_member(member(
         "member-translator",
         "translator-user",
         "Alice Translator",
         "team-1",
-        RoleMask::from(RoleBit::TRANSLATOR),
+        RoleMask::from(RoleField::TRANSLATOR),
     ));
 
     let member_info_vals = list_infos(
@@ -257,7 +257,7 @@ async fn list_infos_filters_by_role() {
             owner_id: None,
             team_id: Some("team-1".into()),
             user_nickname_keyword: None,
-            role_bit: Some(RoleBit::REVIEWER),
+            role_bit: Some(RoleField::REVIEWER),
             incl_opt: Vec::new(),
             offset: 0,
             limit: 10,
@@ -280,14 +280,14 @@ async fn list_infos_applies_pagination_after_filtering() {
         "reviewer-user",
         "Reviewer",
         "team-1",
-        RoleMask::from(RoleBit::REVIEWER),
+        RoleMask::from(RoleField::REVIEWER),
     ));
     mock.seed_member(member(
         "member-translator",
         "translator-user",
         "Translator",
         "team-1",
-        RoleMask::from(RoleBit::TRANSLATOR),
+        RoleMask::from(RoleField::TRANSLATOR),
     ));
 
     let member_info_vals = list_infos(
@@ -319,21 +319,21 @@ async fn list_infos_owner_lists_own_memberships() {
         "user-1",
         "User",
         "team-1",
-        RoleMask::from(RoleBit::TRANSLATOR),
+        RoleMask::from(RoleField::TRANSLATOR),
     ));
     mock.seed_member(member(
         "member-two",
         "user-1",
         "User",
         "team-2",
-        RoleMask::from(RoleBit::REVIEWER),
+        RoleMask::from(RoleField::REVIEWER),
     ));
     mock.seed_member(member(
         "member-other",
         "user-2",
         "Other",
         "team-1",
-        RoleMask::from(RoleBit::ADMIN),
+        RoleMask::from(RoleField::ADMIN),
     ));
 
     let member_info_vals = list_infos(
@@ -366,7 +366,7 @@ async fn list_infos_non_member_is_rejected() {
         "target-user",
         "Target",
         "team-1",
-        RoleMask::from(RoleBit::TRANSLATOR),
+        RoleMask::from(RoleField::TRANSLATOR),
     ));
 
     let err = list_infos(&mock, token("stranger-user"), list_data("team-1"))
@@ -433,7 +433,7 @@ async fn update_role_admin_updates_member_role_mask() {
         "target-user",
         "Target",
         "team-1",
-        RoleMask::from(RoleBit::TRANSLATOR),
+        RoleMask::from(RoleField::TRANSLATOR),
     ));
 
     let update_member_role = update_role(
@@ -453,7 +453,7 @@ async fn update_role_admin_updates_member_role_mask() {
 
     assert_eq!(
         target_member_info.role_mask,
-        RoleMask::from(RoleBit::REVIEWER)
+        RoleMask::from(RoleField::REVIEWER)
     );
 }
 
@@ -465,14 +465,14 @@ async fn update_role_non_admin_is_rejected() {
         "normal-user",
         "Normal",
         "team-1",
-        RoleMask::from(RoleBit::TRANSLATOR),
+        RoleMask::from(RoleField::TRANSLATOR),
     ));
     mock.seed_member(member(
         "member-target",
         "target-user",
         "Target",
         "team-1",
-        RoleMask::from(RoleBit::TRANSLATOR),
+        RoleMask::from(RoleField::TRANSLATOR),
     ));
 
     let err = update_role(
@@ -494,7 +494,7 @@ async fn update_role_non_admin_is_rejected() {
     assert_expected_variant(err, ExpectedVariant::Perm);
     assert_eq!(
         target_member_info.role_mask,
-        RoleMask::from(RoleBit::TRANSLATOR)
+        RoleMask::from(RoleField::TRANSLATOR)
     );
 }
 
@@ -525,7 +525,7 @@ async fn delete_admin_deletes_member() {
         "target-user",
         "Target",
         "team-1",
-        RoleMask::from(RoleBit::TRANSLATOR),
+        RoleMask::from(RoleField::TRANSLATOR),
     ));
 
     let delete_member = delete(&mock, &mock, token("admin-user"), "member-target".into()).await;
@@ -548,14 +548,14 @@ async fn delete_non_admin_is_rejected() {
         "normal-user",
         "Normal",
         "team-1",
-        RoleMask::from(RoleBit::TRANSLATOR),
+        RoleMask::from(RoleField::TRANSLATOR),
     ));
     mock.seed_member(member(
         "member-target",
         "target-user",
         "Target",
         "team-1",
-        RoleMask::from(RoleBit::TRANSLATOR),
+        RoleMask::from(RoleField::TRANSLATOR),
     ));
 
     let err = delete(&mock, &mock, token("normal-user"), "member-target".into())

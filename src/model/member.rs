@@ -1,6 +1,6 @@
 //! Domain models for team membership.
 
-use crate::model::role::{RoleBit, RoleMask};
+use crate::model::role::{RoleField, RoleMask};
 use crate::value::member::MemberInclOpt;
 
 /// A membership（汉化组成员）record linking a user to a team.
@@ -50,7 +50,7 @@ pub enum MemberListSpec {
     },
     Team {
         team_id: String,
-        role_bit: Option<RoleBit>,
+        role_bit: Option<RoleField>,
         incl_opt: Vec<MemberInclOpt>,
         offset: u64,
         limit: u64,

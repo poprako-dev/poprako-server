@@ -1,6 +1,6 @@
 //! Chapter workflow stages, phases, and transition rules.
 
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Serializer};
 
 use poprako_util::i18n::trl;
 
@@ -112,140 +112,171 @@ pub fn try_modify_stage(
     accept(next_phase)
 }
 
-#[cfg(test)]
-mod tests {
-    // validates_one_shot_phases(is_valid_stage_phase)(positive): one-shot stages accept pending and completed phases.
-    // validates_three_phase_phases(is_valid_stage_phase)(positive): three-phase stages accept all phases.
-    // rejects_active_one_shot_phase(is_valid_stage_phase)(negative): one-shot stages reject active phase.
-    // advances_one_shot_stage(try_modify_stage)(positive): one-shot stages advance from pending to completed.
-    // advances_three_phase_stage(try_modify_stage)(positive): three-phase stages advance through active to completed.
-    // reverts_three_phase_stage(try_modify_stage)(positive): three-phase stages revert through active to pending.
-    // accepts_pending_revert_noop(try_modify_stage)(positive): pending revert remains pending.
-    // rejects_publish_revert(try_modify_stage)(negative): publish cannot be reverted.
-    // rejects_completed_advance(try_modify_stage)(negative): completed stages cannot advance further.
+/// A singular stage phase value (pending, active, completed, or ignore).
+///
+/// Unlike a bitmask, these values are mutually exclusive discriminants
+/// (not bit positions). `IGNORE` is a wildcard matching any phase.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct StagePhaseField(u8);
 
-    use super::*;
+impl StagePhaseField {
+    pub const PENDING: Self = Self(0);
+    pub const ACTIVE: Self = Self(1);
+    pub const COMPLETED: Self = Self(2);
+    pub const IGNORE: Self = Self(3);
 
-    #[test]
-    fn validates_one_shot_phases() {
-        assert!(is_valid_stage_phase(
-            WorkflowStage::RawProvide,
-            StagePhase::Pending
-        ));
-        assert!(is_valid_stage_phase(
-            WorkflowStage::Review,
-            StagePhase::Completed
-        ));
-        assert!(is_valid_stage_phase(
-            WorkflowStage::Publish,
-            StagePhase::Completed
-        ));
+    const VALID_VALUES: &'static [u8] = &[0, 1, 2, 3];
+}
+
+impl TryFrom<u8> for StagePhaseField {
+    type Error = RootError;
+
+    fn try_from(value: u8) -> RootResult<Self> {
+        if !Self::VALID_VALUES.contains(&value) {
+            return Err(RootError::Expected {
+                variant: ExpectedVariant::Args,
+                message: trl("error-invalid-stage-phase"),
+            });
+        }
+
+        accept(Self(value))
     }
+}
 
-    #[test]
-    fn validates_three_phase_phases() {
-        for stage in [
-            WorkflowStage::Translate,
-            WorkflowStage::Proofread,
-            WorkflowStage::TypesetRedraw,
-        ] {
-            assert!(is_valid_stage_phase(stage, StagePhase::Pending));
-            assert!(is_valid_stage_phase(stage, StagePhase::Active));
-            assert!(is_valid_stage_phase(stage, StagePhase::Completed));
+impl From<StagePhaseField> for u8 {
+    fn from(value: StagePhaseField) -> Self {
+        value.0
+    }
+}
+
+/// Convert a [`StagePhase`] (business enum) into its storage field.
+impl From<StagePhase> for StagePhaseField {
+    fn from(phase: StagePhase) -> Self {
+        match phase {
+            StagePhase::Pending => Self::PENDING,
+            StagePhase::Active => Self::ACTIVE,
+            StagePhase::Completed => Self::COMPLETED,
+        }
+    }
+}
+
+impl Serialize for StagePhaseField {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_u8(u8::from(*self))
+    }
+}
+
+/// A composite bitmask storing the phase of all 6 workflow stages.
+///
+/// Each stage occupies 2 bits (4 possible states matching
+/// [`StagePhaseField`]), ordered from low bits:
+///
+/// | Stage | Bits | Field |
+/// |---|---|---|
+/// | RawProvide | 0–1 | `StagePhaseField` |
+/// | Translate | 2–3 | `StagePhaseField` |
+/// | Proofread | 4–5 | `StagePhaseField` |
+/// | TypesetRedraw | 6–7 | `StagePhaseField` |
+/// | Review | 8–9 | `StagePhaseField` |
+/// | Publish | 10–11 | `StagePhaseField` |
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct WorkflowStageMask(u32);
+
+impl WorkflowStageMask {
+    const VALID_BITS: u32 = (1 << 12) - 1;
+
+    fn stage_shift(stage: WorkflowStage) -> u32 {
+        match stage {
+            WorkflowStage::RawProvide => 0,
+            WorkflowStage::Translate => 2,
+            WorkflowStage::Proofread => 4,
+            WorkflowStage::TypesetRedraw => 6,
+            WorkflowStage::Review => 8,
+            WorkflowStage::Publish => 10,
         }
     }
 
-    #[test]
-    fn rejects_active_one_shot_phase() {
-        assert!(!is_valid_stage_phase(
-            WorkflowStage::RawProvide,
-            StagePhase::Active
-        ));
-        assert!(!is_valid_stage_phase(
-            WorkflowStage::Review,
-            StagePhase::Active
-        ));
-        assert!(!is_valid_stage_phase(
-            WorkflowStage::Publish,
-            StagePhase::Active
-        ));
+    /// Extract the [`StagePhase`] for a specific stage.
+    pub fn get_phase(&self, stage: WorkflowStage) -> StagePhase {
+        match (self.0 >> Self::stage_shift(stage)) as u8 & 0b11 {
+            0 => StagePhase::Pending,
+            1 => StagePhase::Active,
+            2 => StagePhase::Completed,
+            _ => unreachable!("stored phase is always 0-2"),
+        }
     }
 
-    #[test]
-    fn advances_one_shot_stage() {
-        let phase = try_modify_stage(
-            (WorkflowStage::RawProvide, StagePhase::Pending),
-            WorkflowEvent::Advance,
-        )
-        .ok()
-        .unwrap();
+    /// Return a new mask with the given stage's phase set.
+    pub fn set_phase(&self, stage: WorkflowStage, phase: StagePhase) -> Self {
+        let shift = Self::stage_shift(stage);
 
-        assert_eq!(phase, StagePhase::Completed);
+        Self(self.0 & !(0b11 << shift) | ((u8::from(StagePhaseField::from(phase)) as u32) << shift))
     }
 
-    #[test]
-    fn advances_three_phase_stage() {
-        let phase = try_modify_stage(
-            (WorkflowStage::Translate, StagePhase::Pending),
-            WorkflowEvent::Advance,
-        )
-        .ok()
-        .unwrap();
-        assert_eq!(phase, StagePhase::Active);
-
-        let phase = try_modify_stage((WorkflowStage::Translate, phase), WorkflowEvent::Advance)
-            .ok()
-            .unwrap();
-        assert_eq!(phase, StagePhase::Completed);
+    /// Check if a specific stage has the given phase.
+    pub fn has_phase(&self, stage: WorkflowStage, phase: StagePhase) -> bool {
+        self.get_phase(stage) == phase
     }
 
-    #[test]
-    fn reverts_three_phase_stage() {
-        let phase = try_modify_stage(
-            (WorkflowStage::Proofread, StagePhase::Completed),
-            WorkflowEvent::Revert,
-        )
-        .ok()
-        .unwrap();
-        assert_eq!(phase, StagePhase::Active);
-
-        let phase = try_modify_stage((WorkflowStage::Proofread, phase), WorkflowEvent::Revert)
-            .ok()
-            .unwrap();
-        assert_eq!(phase, StagePhase::Pending);
+    /// Check if any of the given stages has a non-`Pending` phase.
+    pub fn has_any_stage(&self, stages: &[WorkflowStage]) -> bool {
+        stages.iter().any(|s| self.get_phase(*s) != StagePhase::Pending)
     }
 
-    #[test]
-    fn accepts_pending_revert_noop() {
-        let phase = try_modify_stage(
-            (WorkflowStage::TypesetRedraw, StagePhase::Pending),
-            WorkflowEvent::Revert,
-        )
-        .ok()
-        .unwrap();
-
-        assert_eq!(phase, StagePhase::Pending);
+    /// Check if all of the given stages have a non-`Pending` phase.
+    pub fn has_every_stage(&self, stages: &[WorkflowStage]) -> bool {
+        stages
+            .iter()
+            .all(|s| self.get_phase(*s) != StagePhase::Pending)
     }
 
-    #[test]
-    fn rejects_publish_revert() {
-        let err = try_modify_stage(
-            (WorkflowStage::Publish, StagePhase::Completed),
-            WorkflowEvent::Revert,
-        )
-        .err();
-
-        assert!(err.is_some());
+    /// Check if the mask fully contains another mask's phases.
+    ///
+    /// For each 2-bit slot, `self`'s bits must be a superset of `other`'s
+    /// bits (i.e. a `PENDING` slot in `other` is always contained; an
+    /// `IGNORE` slot in `self` contains any phase in `other`).
+    pub fn contains_mask(&self, other: WorkflowStageMask) -> bool {
+        self.0 & other.0 == other.0
     }
 
-    #[test]
-    fn rejects_completed_advance() {
-        let err = try_modify_stage(
-            (WorkflowStage::Translate, StagePhase::Completed),
-            WorkflowEvent::Advance,
-        )
-        .err();
-
-        assert!(err.is_some());
+    /// Return the union of two masks (bitwise OR per 2-bit slot).
+    pub fn union(&self, other: WorkflowStageMask) -> WorkflowStageMask {
+        Self(self.0 | other.0)
     }
 }
+
+impl TryFrom<u32> for WorkflowStageMask {
+    type Error = RootError;
+
+    fn try_from(value: u32) -> RootResult<Self> {
+        if value & !Self::VALID_BITS != 0 {
+            return Err(RootError::Expected {
+                variant: ExpectedVariant::Args,
+                message: trl("error-invalid-stage"),
+            });
+        }
+
+        accept(Self(value))
+    }
+}
+
+impl From<WorkflowStageMask> for u32 {
+    fn from(value: WorkflowStageMask) -> Self {
+        value.0
+    }
+}
+
+impl Serialize for WorkflowStageMask {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_u32(self.0)
+    }
+}
+
+#[cfg(test)]
+mod tests;

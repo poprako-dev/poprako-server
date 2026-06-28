@@ -6,7 +6,7 @@ use poprako_macro::Paginate;
 use poprako_util::i18n::trl;
 
 use crate::model::member::{MemberInfo, MemberListSpec};
-use crate::model::role::{RoleBit, RoleMask};
+use crate::model::role::{RoleField, RoleMask};
 use crate::result::{ExpectedVariant, RootError, RootResult};
 use crate::value::member::MemberInclOpt;
 
@@ -56,7 +56,7 @@ pub struct ListMemberInfosData {
     pub team_id: Option<String>,
 
     pub user_nickname_keyword: Option<String>,
-    pub role_bit: Option<RoleBit>,
+    pub role_bit: Option<RoleField>,
 
     #[serde(default)]
     pub incl_opt: Vec<MemberInclOpt>,
@@ -66,19 +66,19 @@ impl TryInto<MemberListSpec> for ListMemberInfosData {
     type Error = RootError;
 
     fn try_into(self) -> RootResult<MemberListSpec> {
-        let gen_reject_err = || RootError::Expected {
+        let invalid_args_err = || RootError::Expected {
             variant: ExpectedVariant::Args,
             message: trl("error-team-or-user-required"),
         };
 
         if self.owner_id.is_some() == self.team_id.is_some() {
-            return Err(gen_reject_err());
+            return Err(invalid_args_err());
         }
 
         if self.user_nickname_keyword.is_some()
             || self.owner_id.is_some() && self.role_bit.is_some()
         {
-            return Err(gen_reject_err());
+            return Err(invalid_args_err());
         }
 
         if let Some(owner_id) = self.owner_id {
@@ -90,10 +90,8 @@ impl TryInto<MemberListSpec> for ListMemberInfosData {
             });
         }
 
-        let team_id = self.team_id.ok_or_else(gen_reject_err)?;
-
         Ok(MemberListSpec::Team {
-            team_id,
+            team_id: self.team_id.ok_or_else(invalid_args_err)?,
             role_bit: self.role_bit,
             incl_opt: self.incl_opt,
             offset: self.offset,

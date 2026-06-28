@@ -3,7 +3,7 @@
 use time::OffsetDateTime;
 
 use crate::model::assignment::{AssignmentInfo, AssignmentRoleUpdate};
-use crate::model::role::{RoleBit, RoleMask};
+use crate::model::role::{RoleField, RoleMask};
 use crate::util::next_snowflake_id;
 
 /// Domain operations for chapter assignments: ID generation, role-timestamp
@@ -36,20 +36,26 @@ impl AssignmentComplex {
     ) {
         (
             role_mask
-                .has_any_role(&[RoleBit::RAW_PROVIDER])
+                .has_any_role(&[RoleField::RAW_PROVIDER])
                 .then_some(now),
             role_mask
-                .has_any_role(&[RoleBit::TRANSLATOR])
+                .has_any_role(&[RoleField::TRANSLATOR])
                 .then_some(now),
             role_mask
-                .has_any_role(&[RoleBit::PROOFREADER])
+                .has_any_role(&[RoleField::PROOFREADER])
                 .then_some(now),
             role_mask
-                .has_any_role(&[RoleBit::TYPESETTER])
+                .has_any_role(&[RoleField::TYPESETTER])
                 .then_some(now),
-            role_mask.has_any_role(&[RoleBit::REDRAWER]).then_some(now),
-            role_mask.has_any_role(&[RoleBit::REVIEWER]).then_some(now),
-            role_mask.has_any_role(&[RoleBit::PUBLISHER]).then_some(now),
+            role_mask
+                .has_any_role(&[RoleField::REDRAWER])
+                .then_some(now),
+            role_mask
+                .has_any_role(&[RoleField::REVIEWER])
+                .then_some(now),
+            role_mask
+                .has_any_role(&[RoleField::PUBLISHER])
+                .then_some(now),
         )
     }
 

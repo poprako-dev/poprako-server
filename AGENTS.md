@@ -173,9 +173,12 @@ and `usecase`, then apply the project-wide style rules.
   statements. Dense statement blocks are unacceptable.
 - **Rust file length limit**: Rust source files must stay under 600 lines. Split
   modules or extract helpers before a file reaches that size.
-- **Cascade deletion belongs in Complex**: Recursive child cleanup and related
-  deletion side effects belong in `XxxComplex::delete_cascade`. Usecase delete
-  functions should check permission and delegate cascade work.
+- **Complex must not own transaction execution**: `Complex` pure helpers must
+  not depend on repository transactional traits, `Advance`, or prom
+  transactional ports. Permission helpers belong in `XxxPermComplex` and expose
+  only `can_*` functions publicly; shared private checks use proxy execute.
+  Transactional cleanup and prom image deletion stay in usecase transaction
+  flows unless an existing reviewed module explicitly requires otherwise.
 - **Never modify user-authored changes**: The working tree may contain user
   edits. Do not revert, overwrite, or "clean up" unrelated changes. If a user
   change conflicts with the task, flag it before editing.

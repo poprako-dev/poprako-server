@@ -6,7 +6,7 @@ use poprako_transactional::advance::Advance;
 
 use crate::model::page::PageInfo;
 use crate::part::repo::page::{PageRepo, PageRepoTransactional};
-use crate::part::repo::step::page::{ClearImagesByChapter, DeleteByChapter, ListByChapter};
+use crate::part::repo::step::page::{ClearImagesByChapter, DeleteByChapterId, ListByChapter};
 use crate::part_impl::repo_mock::{Mock, MockContext, MockTransactional, now};
 use crate::result::RootError;
 
@@ -54,13 +54,13 @@ impl<'a> Advance<ClearImagesByChapter<'a>, MockContext> for MockTransactional {
 }
 
 #[async_trait]
-impl<'a> Advance<DeleteByChapter<'a>, MockContext> for MockTransactional {
+impl<'a> Advance<DeleteByChapterId<'a>, MockContext> for MockTransactional {
     type Error = RootError;
 
     async fn advance(
         &self,
         context: &mut MockContext,
-        step: &DeleteByChapter<'a>,
+        step: &DeleteByChapterId<'a>,
     ) -> Result<(), Self::Error> {
         context
             .state

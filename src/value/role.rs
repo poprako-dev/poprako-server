@@ -12,9 +12,9 @@ mod tests;
 
 /// A singular role permission flag represented as a bit position.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct RoleBit(u32);
+pub struct RoleField(u32);
 
-impl RoleBit {
+impl RoleField {
     /// Raw provider (上传) role.
     pub const RAW_PROVIDER: Self = Self(1 << 0);
     /// Translator (翻译) role.
@@ -34,7 +34,17 @@ impl RoleBit {
     /// Bot (机器人) role.
     pub const BOT: Self = Self(1 << 8);
 
-    const VALID_BITS: u32 = (1 << 9) - 1;
+    const VALID_VALUES: &'static [u32] = &[
+        1 << 0,
+        1 << 1,
+        1 << 2,
+        1 << 3,
+        1 << 4,
+        1 << 5,
+        1 << 6,
+        1 << 7,
+        1 << 8,
+    ];
 }
 
 /// A composite bitmask combining multiple [RoleBit] flags.
@@ -45,13 +55,13 @@ impl RoleMask {
     const VALID_BITS: u32 = (1 << 8) - 1;
 
     /// Check if the mask contains any of the given role bits.
-    pub fn has_any_role(&self, bits: &[RoleBit]) -> bool {
+    pub fn has_any_role(&self, bits: &[RoleField]) -> bool {
         bits.iter()
             .any(|role_bit| u32::from(*self) & u32::from(*role_bit) != 0)
     }
 
     /// Check if the mask contains all of the given role bits.
-    pub fn has_every_role(&self, bits: &[RoleBit]) -> bool {
+    pub fn has_every_role(&self, bits: &[RoleField]) -> bool {
         bits.iter()
             .all(|role_bit| u32::from(*self) & u32::from(*role_bit) != 0)
     }
@@ -68,11 +78,11 @@ impl RoleMask {
 }
 
 /// Convert a raw `u32` to a [`RoleBit`], validating it is a single valid bit.
-impl TryFrom<u32> for RoleBit {
+impl TryFrom<u32> for RoleField {
     type Error = RootError;
 
     fn try_from(value: u32) -> RootResult<Self> {
-        if value == 0 || value & !Self::VALID_BITS != 0 || value.count_ones() != 1 {
+        if value == 0 || !Self::VALID_VALUES.contains(&value) || value.count_ones() != 1 {
             return Err(RootError::Expected {
                 variant: ExpectedVariant::Args,
                 message: trl("error-invalid-role"),
@@ -84,14 +94,14 @@ impl TryFrom<u32> for RoleBit {
 }
 
 /// Convert a [`RoleBit`] to its underlying `u32` representation.
-impl From<RoleBit> for u32 {
-    fn from(value: RoleBit) -> Self {
+impl From<RoleField> for u32 {
+    fn from(value: RoleField) -> Self {
         value.0
     }
 }
 
 /// Serialize a [`RoleBit`] as its raw `u32` value.
-impl Serialize for RoleBit {
+impl Serialize for RoleField {
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -101,7 +111,7 @@ impl Serialize for RoleBit {
 }
 
 /// Deserialize a [`RoleBit`] from a raw `u32`.
-impl<'de> Deserialize<'de> for RoleBit {
+impl<'de> Deserialize<'de> for RoleField {
     fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
     where
         D: Deserializer<'de>,
@@ -113,8 +123,8 @@ impl<'de> Deserialize<'de> for RoleBit {
 }
 
 /// Convert a [`RoleBit`] to a single-bit [`RoleMask`].
-impl From<RoleBit> for RoleMask {
-    fn from(value: RoleBit) -> Self {
+impl From<RoleField> for RoleMask {
+    fn from(value: RoleField) -> Self {
         Self(u32::from(value))
     }
 }

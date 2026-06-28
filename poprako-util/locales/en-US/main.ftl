@@ -27,6 +27,7 @@ error-chapter-not-found = Chapter not found
 error-assignment-not-found = Assignment not found
 error-page-not-found = Page not found
 error-invalid-workflow-transition = Invalid workflow transition
+error-invalid-stage = Invalid workflow stage value
 error-invalid-stage-phase = Invalid workflow stage phase
 error-chapter-reviewer-required = Chapter reviewer role is required
 error-chapter-workflow-role-required = Required chapter workflow role is missing

@@ -27,6 +27,7 @@ error-chapter-not-found = 章节不存在
 error-assignment-not-found = 章节分工不存在
 error-page-not-found = 页面不存在
 error-invalid-workflow-transition = 无效的工作流状态转换
+error-invalid-stage = 无效的工作流阶段值
 error-invalid-stage-phase = 无效的工作流阶段状态
 error-chapter-reviewer-required = 需要章节监修权限
 error-chapter-workflow-role-required = 缺少所需的章节工作流权限
