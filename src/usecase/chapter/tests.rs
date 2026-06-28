@@ -168,7 +168,7 @@ fn seed_scope(mock: &Mock, user_id: &str, role_mask: RoleMask) {
 #[tokio::test]
 async fn list_infos_paginates_sorted_chapters() {
     let mock = Mock::new();
-    seed_scope(&mock, "user-1", RoleMask::from(RoleBit::TRANSLATOR));
+    seed_scope(&mock, "user-1", RoleMask::from(RoleField::TRANSLATOR));
     mock.seed_chapter(chapter("chapter-1", "comic-1", 1, false));
     mock.seed_chapter(chapter("chapter-3", "comic-1", 3, false));
     mock.seed_chapter(chapter("chapter-2", "comic-1", 2, false));
@@ -193,7 +193,7 @@ async fn list_infos_paginates_sorted_chapters() {
 #[tokio::test]
 async fn list_infos_rejects_non_member() {
     let mock = Mock::new();
-    seed_scope(&mock, "other", RoleMask::from(RoleBit::TRANSLATOR));
+    seed_scope(&mock, "other", RoleMask::from(RoleField::TRANSLATOR));
 
     let err = list_infos(
         &mock,
@@ -214,7 +214,7 @@ async fn list_infos_rejects_non_member() {
 #[tokio::test]
 async fn get_info_returns_chapter() {
     let mock = Mock::new();
-    seed_scope(&mock, "user-1", RoleMask::from(RoleBit::TRANSLATOR));
+    seed_scope(&mock, "user-1", RoleMask::from(RoleField::TRANSLATOR));
     mock.seed_chapter(chapter("chapter-1", "comic-1", 1, true));
 
     let found = get_info(&mock, token("user-1"), "chapter-1".into()).await;
@@ -238,7 +238,7 @@ async fn get_info_rejects_missing_chapter() {
 #[tokio::test]
 async fn get_pinned_returns_some_and_none() {
     let mock = Mock::new();
-    seed_scope(&mock, "user-1", RoleMask::from(RoleBit::TRANSLATOR));
+    seed_scope(&mock, "user-1", RoleMask::from(RoleField::TRANSLATOR));
     mock.seed_chapter(chapter("chapter-1", "comic-1", 1, true));
 
     let found = get_pinned(&mock, token("user-1"), "comic-1".into()).await;
@@ -246,7 +246,7 @@ async fn get_pinned_returns_some_and_none() {
     assert_eq!(found.ok().unwrap().unwrap().id, "chapter-1");
 
     let empty_mock = Mock::new();
-    seed_scope(&empty_mock, "user-1", RoleMask::from(RoleBit::TRANSLATOR));
+    seed_scope(&empty_mock, "user-1", RoleMask::from(RoleField::TRANSLATOR));
     let found = get_pinned(&empty_mock, token("user-1"), "comic-1".into()).await;
     assert!(found.is_ok());
     assert!(found.ok().unwrap().is_none());
@@ -255,7 +255,7 @@ async fn get_pinned_returns_some_and_none() {
 #[tokio::test]
 async fn get_pinned_rejects_non_member() {
     let mock = Mock::new();
-    seed_scope(&mock, "other", RoleMask::from(RoleBit::TRANSLATOR));
+    seed_scope(&mock, "other", RoleMask::from(RoleField::TRANSLATOR));
 
     let err = get_pinned(&mock, token("user-1"), "comic-1".into())
         .await
@@ -268,7 +268,7 @@ async fn get_pinned_rejects_non_member() {
 #[tokio::test]
 async fn create_pins_chapter_and_creates_reviewer_assignment() {
     let mock = Mock::new();
-    seed_scope(&mock, "user-1", RoleMask::from(RoleBit::ADMIN));
+    seed_scope(&mock, "user-1", RoleMask::from(RoleField::ADMIN));
     mock.seed_chapter(chapter("chapter-old", "comic-1", 2, true));
 
     let created = create(
@@ -287,10 +287,10 @@ async fn create_pins_chapter_and_creates_reviewer_assignment() {
 
     assert_eq!(snapshot.chapters.len(), 2);
     assert!(snapshot.chapters.iter().any(|chapter_info| {
-            chapter_info.id == created_id
-                && chapter_info.is_pinned
-                && chapter_info.subtitle == "第 4 话"
-                && chapter_info.index == 3
+        chapter_info.id == created_id
+            && chapter_info.is_pinned
+            && chapter_info.subtitle == "第 4 话"
+            && chapter_info.index == 3
     }));
     assert!(
         snapshot
@@ -303,14 +303,14 @@ async fn create_pins_chapter_and_creates_reviewer_assignment() {
     assert!(
         snapshot.assignments[0]
             .role_mask
-            .has_any_role(&[RoleBit::REVIEWER])
+            .has_any_role(&[RoleField::REVIEWER])
     );
 }
 
 #[tokio::test]
 async fn create_rolls_back_non_admin() {
     let mock = Mock::new();
-    seed_scope(&mock, "user-1", RoleMask::from(RoleBit::TRANSLATOR));
+    seed_scope(&mock, "user-1", RoleMask::from(RoleField::TRANSLATOR));
 
     let err = create(
         &mock,
@@ -335,12 +335,12 @@ async fn create_rolls_back_non_admin() {
 #[tokio::test]
 async fn update_info_reviewer_updates_metadata() {
     let mock = Mock::new();
-    seed_scope(&mock, "user-1", RoleMask::from(RoleBit::TRANSLATOR));
+    seed_scope(&mock, "user-1", RoleMask::from(RoleField::TRANSLATOR));
     mock.seed_chapter(chapter("chapter-1", "comic-1", 1, false));
     mock.seed_assignment(assignment(
         "chapter-1",
         "user-1",
-        RoleMask::from(RoleBit::REVIEWER),
+        RoleMask::from(RoleField::REVIEWER),
     ));
 
     let result = update_info(
@@ -366,7 +366,7 @@ async fn update_info_reviewer_updates_metadata() {
 #[tokio::test]
 async fn update_info_rejects_non_reviewer_metadata() {
     let mock = Mock::new();
-    seed_scope(&mock, "user-1", RoleMask::from(RoleBit::TRANSLATOR));
+    seed_scope(&mock, "user-1", RoleMask::from(RoleField::TRANSLATOR));
     mock.seed_chapter(chapter("chapter-1", "comic-1", 1, false));
 
     let err = update_info(
@@ -391,12 +391,12 @@ async fn update_info_rejects_non_reviewer_metadata() {
 #[tokio::test]
 async fn update_info_workflow_role_advances_stage() {
     let mock = Mock::new();
-    seed_scope(&mock, "user-1", RoleMask::from(RoleBit::TRANSLATOR));
+    seed_scope(&mock, "user-1", RoleMask::from(RoleField::TRANSLATOR));
     mock.seed_chapter(chapter("chapter-1", "comic-1", 1, false));
     mock.seed_assignment(assignment(
         "chapter-1",
         "user-1",
-        RoleMask::from(RoleBit::TRANSLATOR),
+        RoleMask::from(RoleField::TRANSLATOR),
     ));
 
     let result = update_info(
@@ -426,14 +426,14 @@ async fn update_info_workflow_role_advances_stage() {
 #[tokio::test]
 async fn update_info_rejects_invalid_transition() {
     let mock = Mock::new();
-    seed_scope(&mock, "user-1", RoleMask::from(RoleBit::PUBLISHER));
+    seed_scope(&mock, "user-1", RoleMask::from(RoleField::PUBLISHER));
     let mut chapter_info = chapter("chapter-1", "comic-1", 1, false);
     chapter_info.publish_phase = StagePhase::Completed;
     mock.seed_chapter(chapter_info);
     mock.seed_assignment(assignment(
         "chapter-1",
         "user-1",
-        RoleMask::from(RoleBit::PUBLISHER),
+        RoleMask::from(RoleField::PUBLISHER),
     ));
 
     let err = update_info(
@@ -461,12 +461,12 @@ async fn update_info_rejects_invalid_transition() {
 #[tokio::test]
 async fn update_info_publish_clears_page_images() {
     let mock = Mock::new();
-    seed_scope(&mock, "user-1", RoleMask::from(RoleBit::PUBLISHER));
+    seed_scope(&mock, "user-1", RoleMask::from(RoleField::PUBLISHER));
     mock.seed_chapter(chapter("chapter-1", "comic-1", 1, false));
     mock.seed_assignment(assignment(
         "chapter-1",
         "user-1",
-        RoleMask::from(RoleBit::PUBLISHER),
+        RoleMask::from(RoleField::PUBLISHER),
     ));
     mock.seed_page(page("page-1", "chapter-1", Some("page-1.png")));
 
@@ -502,7 +502,7 @@ async fn update_info_publish_clears_page_images() {
 #[tokio::test]
 async fn join_creates_assignment() {
     let mock = Mock::new();
-    seed_scope(&mock, "user-1", RoleMask::from(RoleBit::TRANSLATOR));
+    seed_scope(&mock, "user-1", RoleMask::from(RoleField::TRANSLATOR));
     mock.seed_chapter(chapter("chapter-1", "comic-1", 1, false));
 
     let joined = join(
@@ -511,7 +511,7 @@ async fn join_creates_assignment() {
         token("user-1"),
         JoinChapterData {
             chapter_id: "chapter-1".into(),
-            role_mask: RoleMask::from(RoleBit::TRANSLATOR),
+            role_mask: RoleMask::from(RoleField::TRANSLATOR),
         },
     )
     .await;
@@ -526,13 +526,13 @@ async fn join_creates_assignment() {
 async fn join_unions_existing_assignment_roles() {
     let mock = Mock::new();
     let member_role_mask =
-        RoleMask::from(RoleBit::TRANSLATOR).union(RoleMask::from(RoleBit::PROOFREADER));
+        RoleMask::from(RoleField::TRANSLATOR).union(RoleMask::from(RoleField::PROOFREADER));
     seed_scope(&mock, "user-1", member_role_mask);
     mock.seed_chapter(chapter("chapter-1", "comic-1", 1, false));
     mock.seed_assignment(assignment(
         "chapter-1",
         "user-1",
-        RoleMask::from(RoleBit::TRANSLATOR),
+        RoleMask::from(RoleField::TRANSLATOR),
     ));
     let original_translator_time = mock.snapshot().assignments[0].translator_assigned_at;
 
@@ -542,7 +542,7 @@ async fn join_unions_existing_assignment_roles() {
         token("user-1"),
         JoinChapterData {
             chapter_id: "chapter-1".into(),
-            role_mask: RoleMask::from(RoleBit::PROOFREADER),
+            role_mask: RoleMask::from(RoleField::PROOFREADER),
         },
     )
     .await;
@@ -552,7 +552,7 @@ async fn join_unions_existing_assignment_roles() {
     assert!(
         snapshot.assignments[0]
             .role_mask
-            .has_every_role(&[RoleBit::TRANSLATOR, RoleBit::PROOFREADER])
+            .has_every_role(&[RoleField::TRANSLATOR, RoleField::PROOFREADER])
     );
     assert_eq!(
         snapshot.assignments[0].translator_assigned_at,
@@ -564,7 +564,7 @@ async fn join_unions_existing_assignment_roles() {
 #[tokio::test]
 async fn join_rejects_role_outside_member_mask() {
     let mock = Mock::new();
-    seed_scope(&mock, "user-1", RoleMask::from(RoleBit::TRANSLATOR));
+    seed_scope(&mock, "user-1", RoleMask::from(RoleField::TRANSLATOR));
     mock.seed_chapter(chapter("chapter-1", "comic-1", 1, false));
 
     let err = join(
@@ -573,7 +573,7 @@ async fn join_rejects_role_outside_member_mask() {
         token("user-1"),
         JoinChapterData {
             chapter_id: "chapter-1".into(),
-            role_mask: RoleMask::from(RoleBit::PROOFREADER),
+            role_mask: RoleMask::from(RoleField::PROOFREADER),
         },
     )
     .await
@@ -586,13 +586,13 @@ async fn join_rejects_role_outside_member_mask() {
 #[tokio::test]
 async fn delete_removes_descendants_and_repins_latest_chapter() {
     let mock = Mock::new();
-    seed_scope(&mock, "user-1", RoleMask::from(RoleBit::ADMIN));
+    seed_scope(&mock, "user-1", RoleMask::from(RoleField::ADMIN));
     mock.seed_chapter(chapter("chapter-1", "comic-1", 1, true));
     mock.seed_chapter(chapter("chapter-2", "comic-1", 2, false));
     mock.seed_assignment(assignment(
         "chapter-1",
         "user-2",
-        RoleMask::from(RoleBit::TRANSLATOR),
+        RoleMask::from(RoleField::TRANSLATOR),
     ));
     mock.seed_page(page("page-1", "chapter-1", Some("page-1.png")));
 
@@ -612,7 +612,7 @@ async fn delete_removes_descendants_and_repins_latest_chapter() {
 #[tokio::test]
 async fn delete_rolls_back_non_admin() {
     let mock = Mock::new();
-    seed_scope(&mock, "user-1", RoleMask::from(RoleBit::TRANSLATOR));
+    seed_scope(&mock, "user-1", RoleMask::from(RoleField::TRANSLATOR));
     mock.seed_chapter(chapter("chapter-1", "comic-1", 1, true));
     mock.seed_page(page("page-1", "chapter-1", Some("page-1.png")));
 

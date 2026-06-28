@@ -23,11 +23,11 @@ impl<'a> Step for ClearImagesByChapter<'a> {
 }
 
 /// Step that deletes pages by chapter.
-pub struct DeleteByChapter<'a> {
+pub struct DeleteByChapterId<'a> {
     pub chapter_id: &'a str,
 }
 
-impl<'a> Step for DeleteByChapter<'a> {
+impl<'a> Step for DeleteByChapterId<'a> {
     type Output = ();
 }
 
@@ -46,7 +46,7 @@ impl PageStep {
     }
 
     /// Constructs a step to delete pages by chapter.
-    pub fn delete_by_chapter<'a>(chapter_id: &'a str) -> DeleteByChapter<'a> {
-        DeleteByChapter { chapter_id }
+    pub fn delete_by_chapter<'a>(chapter_id: &'a str) -> DeleteByChapterId<'a> {
+        DeleteByChapterId { chapter_id }
     }
 }

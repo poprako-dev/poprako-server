@@ -18,7 +18,7 @@ use poprako_transactional::drive::Drive;
 use time::OffsetDateTime;
 
 use crate::model::member::MemberInfo;
-use crate::model::role::{RoleBit, RoleMask};
+use crate::model::role::{RoleField, RoleMask};
 use crate::model::user::UserToken;
 use crate::model::workset::WorksetInfo;
 use crate::part::prom::intention::ImageIntention;
@@ -66,7 +66,7 @@ fn admin_member(user_id: &str, team_id: &str) -> MemberInfo {
         user_id: user_id.into(),
         user_nickname: user_id.into(),
         team_id: team_id.into(),
-        role_mask: RoleMask::from(RoleBit::ADMIN),
+        role_mask: RoleMask::from(RoleField::ADMIN),
     }
 }
 

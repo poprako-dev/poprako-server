@@ -294,7 +294,7 @@ mod tests {
     use poprako_transactional::advance::Advance;
 
     use crate::model::member::MemberForm;
-    use crate::model::role::{RoleBit, RoleMask};
+    use crate::model::role::{RoleField, RoleMask};
     use crate::model::user::{UserCredential, UserInfo};
     use crate::part::prom::intention::{ImageIntention, ImageKind};
     use crate::part::prom::{Payload, PromStep};
@@ -345,7 +345,7 @@ mod tests {
             user_id: "user-1".into(),
             user_nickname: "nick".into(),
             team_id: "team-1".into(),
-            role_mask: RoleMask::from(RoleBit::RAW_PROVIDER),
+            role_mask: RoleMask::from(RoleField::RAW_PROVIDER),
         };
         let visible_at = now();
 
@@ -386,7 +386,7 @@ mod tests {
             user_id: "user-1".into(),
             user_nickname: "nick".into(),
             team_id: "team-1".into(),
-            role_mask: RoleMask::from(RoleBit::RAW_PROVIDER),
+            role_mask: RoleMask::from(RoleField::RAW_PROVIDER),
         };
         let visible_at = now();
 

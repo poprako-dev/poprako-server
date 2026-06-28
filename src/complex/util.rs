@@ -2,7 +2,7 @@
 
 use poprako_util::i18n::trl;
 
-use crate::model::role::RoleBit;
+use crate::model::role::RoleField;
 use crate::part::repo::proxy::ProxyExecute;
 use crate::part::repo::step::member::{FindByUserTeamId, MemberStep};
 use crate::result::{ExpectedVariant, RootError, RootResult, accept};
@@ -50,7 +50,7 @@ where
         });
     };
 
-    if !member_info.role_mask.has_any_role(&[RoleBit::ADMIN]) {
+    if !member_info.role_mask.has_any_role(&[RoleField::ADMIN]) {
         return Err(RootError::Expected {
             variant: ExpectedVariant::Perm,
             message: trl("error-team-admin-required"),

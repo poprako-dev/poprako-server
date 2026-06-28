@@ -12,7 +12,7 @@ use super::*;
 
 use crate::model::member::MemberInfo;
 use crate::model::member_invitation::MemberInvitationInfo;
-use crate::model::role::{RoleBit, RoleMask};
+use crate::model::role::{RoleField, RoleMask};
 use crate::model::user::{UserCredential, UserInfo};
 use crate::part_impl::repo_mock::Mock;
 use crate::result::ExpectedVariant;
@@ -67,7 +67,7 @@ fn invitation(id: &str, team_id: &str, invitee_qid: &str) -> MemberInvitationInf
         invitee_qid: invitee_qid.into(),
         code: "ABC123".into(),
         pending: true,
-        role_mask: RoleMask::from(RoleBit::TRANSLATOR),
+        role_mask: RoleMask::from(RoleField::TRANSLATOR),
     }
 }
 
@@ -75,7 +75,7 @@ fn create_data(team_id: &str, invitee_qid: &str) -> CreateMemberInvitationData {
     CreateMemberInvitationData {
         team_id: team_id.into(),
         invitee_qid: invitee_qid.into(),
-        role_mask: RoleMask::from(RoleBit::TRANSLATOR),
+        role_mask: RoleMask::from(RoleField::TRANSLATOR),
     }
 }
 
@@ -91,7 +91,7 @@ fn list_data(team_id: &str) -> ListMemberInvitationInfosData {
 fn update_data(id: &str) -> UpdateMemberInvitationInfoData {
     UpdateMemberInvitationInfoData {
         id: id.into(),
-        role_mask: RoleMask::from(RoleBit::REVIEWER),
+        role_mask: RoleMask::from(RoleField::REVIEWER),
     }
 }
 
@@ -103,7 +103,7 @@ async fn create_admin_creates_pending_invitation() {
         "member-1",
         "admin-user",
         "team-1",
-        RoleMask::from(RoleBit::ADMIN),
+        RoleMask::from(RoleField::ADMIN),
     ));
     mock.seed_user(user("invitee-user", "qid-2"), credential("invitee-user"));
 
@@ -132,7 +132,7 @@ async fn create_non_admin_is_rejected() {
         "member-1",
         "normal-user",
         "team-1",
-        RoleMask::from(RoleBit::TRANSLATOR),
+        RoleMask::from(RoleField::TRANSLATOR),
     ));
 
     let err = create(
@@ -156,7 +156,7 @@ async fn list_infos_member_lists_invitations() {
         "member-1",
         "member-user",
         "team-1",
-        RoleMask::from(RoleBit::TRANSLATOR),
+        RoleMask::from(RoleField::TRANSLATOR),
     ));
     mock.seed_member_invitation(invitation("inv-1", "team-1", "qid-2"));
 
@@ -175,7 +175,7 @@ async fn list_infos_empty_returns_after_membership() {
         "member-1",
         "member-user",
         "team-1",
-        RoleMask::from(RoleBit::TRANSLATOR),
+        RoleMask::from(RoleField::TRANSLATOR),
     ));
 
     let result = list_infos(&mock, token("member-user"), list_data("team-1")).await;
@@ -205,7 +205,7 @@ async fn update_info_admin_updates_role_mask() {
         "member-1",
         "admin-user",
         "team-1",
-        RoleMask::from(RoleBit::ADMIN),
+        RoleMask::from(RoleField::ADMIN),
     ));
     mock.seed_member_invitation(invitation("inv-1", "team-1", "qid-2"));
 
@@ -214,7 +214,7 @@ async fn update_info_admin_updates_role_mask() {
 
     assert_eq!(
         mock.snapshot().member_invitations[0].role_mask,
-        RoleMask::from(RoleBit::REVIEWER)
+        RoleMask::from(RoleField::REVIEWER)
     );
 }
 
@@ -225,7 +225,7 @@ async fn update_info_non_admin_is_rejected() {
         "member-1",
         "normal-user",
         "team-1",
-        RoleMask::from(RoleBit::TRANSLATOR),
+        RoleMask::from(RoleField::TRANSLATOR),
     ));
     mock.seed_member_invitation(invitation("inv-1", "team-1", "qid-2"));
 
@@ -244,7 +244,7 @@ async fn delete_admin_deletes_invitation() {
         "member-1",
         "admin-user",
         "team-1",
-        RoleMask::from(RoleBit::ADMIN),
+        RoleMask::from(RoleField::ADMIN),
     ));
     mock.seed_member_invitation(invitation("inv-1", "team-1", "qid-2"));
 
@@ -261,7 +261,7 @@ async fn delete_non_admin_is_rejected() {
         "member-1",
         "normal-user",
         "team-1",
-        RoleMask::from(RoleBit::TRANSLATOR),
+        RoleMask::from(RoleField::TRANSLATOR),
     ));
     mock.seed_member_invitation(invitation("inv-1", "team-1", "qid-2"));
 

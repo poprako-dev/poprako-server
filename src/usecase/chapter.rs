@@ -13,7 +13,7 @@ use crate::data::chapter::{
 };
 use crate::model::assignment::AssignmentForm;
 use crate::model::chapter::{ChapterForm, ChapterInfoUpdate};
-use crate::model::role::{RoleBit, RoleMask};
+use crate::model::role::{RoleField, RoleMask};
 use crate::model::user::UserToken;
 use crate::part::prom::{Prom, PromTransactional};
 use crate::part::repo::assignment::{AssignmentRepo, AssignmentRepoTransactional};
@@ -193,7 +193,7 @@ where
                 id: AssignmentComplex::gen_id(),
                 chapter_id: chapter_info.id.clone(),
                 user_id: token.user_id,
-                role_mask: RoleMask::from(RoleBit::REVIEWER),
+                role_mask: RoleMask::from(RoleField::REVIEWER),
             };
 
             repo.advance(context, &AssignmentStep::create(&assignment_form))
