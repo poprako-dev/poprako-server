@@ -10,4 +10,5 @@ pub mod assignment;
 pub mod chapter;
 pub mod comic;
 pub mod image;
+pub mod page;
 pub mod workset;

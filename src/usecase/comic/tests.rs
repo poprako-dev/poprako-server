@@ -9,7 +9,9 @@
 // reserve_cover(reserve_cover)(positive): reservation should update cover state, enqueue check, and return put URL.
 // reserve_cover(reserve_cover)(negative): missing comic should rollback cover and prom state.
 // mark_cover_uploaded(mark_cover_uploaded)(positive): matching version should mark the comic cover uploaded.
+// mark_cover_uploaded(mark_cover_uploaded)(positive): repeated matching version confirmation should remain successful.
 // mark_cover_uploaded(mark_cover_uploaded)(negative): stale version should leave cover unuploaded.
+// mark_cover_uploaded(mark_cover_uploaded)(negative): old reservation replay should fail without marking current cover uploaded.
 // delete(delete)(positive): deleting a comic should remove it, decrement workset count, and enqueue cover deletion.
 // delete(delete)(negative): missing comic should rollback state.
 // mark_completed(mark_completed)(positive): marking completed should update completion state.
@@ -28,7 +30,9 @@ use crate::part::prom::Payload;
 use crate::part::prom::intention::{ImageIntention, ImageKind};
 use crate::part_impl::repo_mock::Mock;
 use crate::result::ExpectedVariant;
-use crate::test_util::assert_expected_variant;
+use crate::test_util::{
+    assert_expected_message, assert_expected_variant, assert_one_image_check_record,
+};
 use crate::usecase::team::tests::workset;
 
 fn comic(id: &str, workset_id: &str, index: i32) -> ComicInfo {
@@ -280,14 +284,13 @@ async fn reserve_cover_updates_state_enqueues_check_and_returns_put_url() {
     );
     assert_eq!(snapshot.comics[0].cover_version, 1);
     assert_eq!(snapshot.prom_records.len(), 1);
-    assert!(matches!(
-        &snapshot.prom_records[0].payload,
-        Payload::Image(ImageIntention::CheckUploaded {
-            kind: ImageKind::ComicCover,
-            resource_id,
-            ..
-        }) if resource_id == "comic-1"
-    ));
+    assert_one_image_check_record(
+        &snapshot.prom_records,
+        ImageKind::ComicCover,
+        "comic-1",
+        "comic_cover/comic-1-1.png",
+        1,
+    );
 }
 
 #[tokio::test]
@@ -338,6 +341,37 @@ async fn mark_cover_uploaded_marks_matching_version() {
 }
 
 #[tokio::test]
+async fn mark_cover_uploaded_accepts_repeated_matching_version() {
+    let mock = Mock::new();
+    mock.seed_workset(workset("workset-1", "team-1"));
+    mock.seed_member(admin_member("user-1", "team-1"));
+    mock.seed_comic(ComicInfo {
+        cover_key: Some("cover.png".into()),
+        cover_version: 2,
+        ..comic("comic-1", "workset-1", 0)
+    });
+
+    let first = mark_cover_uploaded(
+        &mock,
+        token("user-1"),
+        "comic-1".into(),
+        MarkComicCoverUploadedData { cover_version: 2 },
+    )
+    .await;
+    assert!(first.is_ok());
+    let second = mark_cover_uploaded(
+        &mock,
+        token("user-1"),
+        "comic-1".into(),
+        MarkComicCoverUploadedData { cover_version: 2 },
+    )
+    .await;
+    assert!(second.is_ok());
+
+    assert!(mock.snapshot().comics[0].cover_uploaded);
+}
+
+#[tokio::test]
 async fn mark_cover_uploaded_rejects_stale_version() {
     let mock = Mock::new();
     mock.seed_workset(workset("workset-1", "team-1"));
@@ -358,8 +392,52 @@ async fn mark_cover_uploaded_rejects_stale_version() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Args);
+    assert_expected_message(err, ExpectedVariant::Args, "error-stale-cover-upload");
     assert!(!mock.snapshot().comics[0].cover_uploaded);
+}
+
+#[tokio::test]
+async fn mark_cover_uploaded_rejects_old_reservation_replay() {
+    let mock = Mock::new();
+    mock.seed_workset(workset("workset-1", "team-1"));
+    mock.seed_member(admin_member("user-1", "team-1"));
+    mock.seed_comic(ComicInfo {
+        cover_key: Some("comic_cover/comic-1-1.png".into()),
+        cover_uploaded: true,
+        cover_version: 1,
+        ..comic("comic-1", "workset-1", 0)
+    });
+
+    let reserved = reserve_cover(
+        &mock,
+        &mock,
+        &mock,
+        &mock,
+        token("user-1"),
+        "comic-1".into(),
+        ReserveComicCoverData {
+            file_ext: "png".into(),
+        },
+    )
+    .await
+    .ok()
+    .unwrap();
+    assert_eq!(reserved.cover_version, 2);
+
+    let err = mark_cover_uploaded(
+        &mock,
+        token("user-1"),
+        "comic-1".into(),
+        MarkComicCoverUploadedData { cover_version: 1 },
+    )
+    .await
+    .err()
+    .unwrap();
+    let snapshot = mock.snapshot();
+
+    assert_expected_message(err, ExpectedVariant::Args, "error-stale-cover-upload");
+    assert!(!snapshot.comics[0].cover_uploaded);
+    assert_eq!(snapshot.comics[0].cover_version, 2);
 }
 
 #[tokio::test]

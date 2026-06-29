@@ -10,7 +10,7 @@
 
 use time::OffsetDateTime;
 
-use crate::value::chapter::{StagePhase, WorkflowStageMask};
+use crate::value::chapter::WorkflowStageMask;
 
 /// A chapter（章节）record as stored in the database.
 ///
@@ -83,26 +83,15 @@ pub struct ChapterInfoUpdate {
     pub id: String,
 
     pub subtitle: Option<String>,
-    pub is_pinned: Option<bool>,
+    pub pin: Option<bool>,
 }
 
-/// Mutable workflow phase fields for a chapter.
+/// Mutable workflow stage mask for a chapter.
 ///
-/// Each `Option<StagePhase>` field represents a possible phase transition.
-/// A `None` value leaves the current phase unchanged; a `Some` value
-/// advances (or regresses) that stage to the given [`StagePhase`].
-///
-/// The production use case layer should validate transition legality
-/// before building this update struct.
-/// FIXME: update or patch
+/// The use case layer validates transition legality before building this update.
 #[cfg_attr(test, derive(Clone))]
 pub struct ChapterStageUpdate {
     pub id: String,
 
-    pub raw_provide_phase: Option<StagePhase>,
-    pub translate_phase: Option<StagePhase>,
-    pub proofread_phase: Option<StagePhase>,
-    pub typeset_redraw_phase: Option<StagePhase>,
-    pub review_phase: Option<StagePhase>,
-    pub publish_phase: Option<StagePhase>,
+    pub stages: WorkflowStageMask,
 }

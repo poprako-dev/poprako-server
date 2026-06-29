@@ -21,6 +21,7 @@ use super::*;
 
 use time::OffsetDateTime;
 
+use crate::complex::chapter::ChapterComplex;
 use crate::model::assignment::AssignmentInfo;
 use crate::model::chapter::ChapterInfo;
 use crate::model::comic::ComicInfo;
@@ -128,8 +129,10 @@ fn page(id: &str, chapter_id: &str, image_key: Option<&str>) -> PageInfo {
     PageInfo {
         id: id.into(),
         chapter_id: chapter_id.into(),
+        index: 0,
         image_key: image_key.map(Into::into),
         image_uploaded: image_key.is_some(),
+        image_version: 1,
         total_unit_count: 0,
         translated_unit_count: 0,
         proofread_unit_count: 0,
@@ -265,10 +268,12 @@ async fn create_pins_chapter_and_creates_admin_assignment() {
     let created_id = created.ok().unwrap().id;
 
     assert_eq!(snapshot.chapters.len(), 2);
+    let default_subtitle = ChapterComplex::subtitle_or_default(None, 3);
+
     assert!(snapshot.chapters.iter().any(|chapter_info| {
         chapter_info.id == created_id
             && chapter_info.is_pinned
-            && chapter_info.subtitle == "第 4 话"
+            && chapter_info.subtitle == default_subtitle
             && chapter_info.index == 3
     }));
     assert!(
@@ -329,7 +334,7 @@ async fn update_info_admin_updates_metadata() {
         UpdateChapterInfoData {
             id: "chapter-1".into(),
             subtitle: Some("updated".into()),
-            is_pinned: Some(true),
+            pin: Some(true),
         },
     )
     .await;
@@ -353,7 +358,7 @@ async fn update_info_rejects_non_admin_metadata() {
         UpdateChapterInfoData {
             id: "chapter-1".into(),
             subtitle: Some("updated".into()),
-            is_pinned: None,
+            pin: None,
         },
     )
     .await

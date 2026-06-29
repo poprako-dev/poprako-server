@@ -237,17 +237,17 @@ where
             )
             .await?;
 
-            if data.subtitle.is_some() || data.is_pinned.is_some() {
+            if data.subtitle.is_some() || data.pin.is_some() {
                 let chapter_info_update = ChapterInfoUpdate {
                     id: data.id.clone(),
                     subtitle: data.subtitle,
-                    is_pinned: data.is_pinned,
+                    pin: data.pin,
                 };
 
                 repo.advance(context, &ChapterStep::update_info(&chapter_info_update))
                     .await?;
 
-                if chapter_info_update.is_pinned == Some(true) {
+                if chapter_info_update.pin == Some(true) {
                     repo.advance(
                         context,
                         &ChapterStep::unpin_others(&chapter_info.comic_id, &chapter_info.id),
@@ -324,15 +324,12 @@ where
             if data.stage == WorkflowStage::Publish
                 && data.event == WorkflowEvent::Advance
                 && !was_published
-                && chapter_stage_update.publish_phase == Some(StagePhase::Completed)
+                && chapter_stage_update
+                    .stages
+                    .has_phase(WorkflowStage::Publish, StagePhase::Completed)
             {
-                ChapterComplex::delete_uploaded_page_images_for_publish(
-                    &repo,
-                    &prom,
-                    context,
-                    &chapter_info.id,
-                )
-                .await?;
+                ChapterComplex::clean_uploaded_images(&repo, &prom, context, &chapter_info.id)
+                    .await?;
             }
 
             repo.advance(

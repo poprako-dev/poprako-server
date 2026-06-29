@@ -10,6 +10,8 @@ error-unauthorized = Invalid authorization info, please try logging in again
 error-forbidden = You do not have permission to perform this operation
 error-unsupported-file-type = Unsupported file type
 error-stale-avatar-upload = Avatar upload version is stale
+error-stale-cover-upload = Cover upload version is stale
+error-stale-page-image-upload = Page image upload version is stale
 error-team-not-found = Team not found
 error-team-or-user-required = Either team_id or user_id must be provided
 error-workset-not-found = Workset not found
@@ -33,6 +35,11 @@ error-chapter-admin-required = Chapter admin role is required
 error-chapter-reviewer-required = Chapter reviewer role is required
 error-chapter-workflow-role-required = Required chapter workflow role is missing
 error-chapter-role-not-assignable = Chapter role is not assignable
+error-invalid-page-count = Page count must be positive
+error-page-reserve-role-required = Raw provider or reviewer role is required to reserve pages
+error-page-upload-role-required = Raw provider role is required to confirm page uploads
+
+chapter-default-subtitle = Ch. { $number }
 
 mail-invitation-used-title = Your Invitation Code Has Been Used
 mail-invitation-used-body = Your invitation code has been used. "{$invitee_qid}" has joined the team "{$team_name}"

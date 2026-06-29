@@ -8,13 +8,13 @@ use crate::model::chapter::{ChapterForm, ChapterInfo};
 use crate::part::repo::chapter::{ChapterRepo, ChapterRepoTransactional};
 use crate::part::repo::step::chapter::{
     Create, Delete, FindPinnedInfoByComicId, GetInfoById, GetInfoExcluded,
-    ListAllInfosByComicIdExcluded, ListInfosByComicId, ListInfosByComicIdExcluded, UnpinOthers,
-    UpdateInfo, UpdateStage,
+    ListAllInfosByComicIdExcluded, ListInfosByComicId, ListInfosByComicIdExcluded, SetPageCounters,
+    UnpinOthers, UpdateInfo, UpdateStage,
 };
 use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactional, expected, now};
 use crate::result::RootError;
-use crate::value::chapter::{WorkflowStage, WorkflowStageMask};
+use crate::value::chapter::WorkflowStageMask;
 
 impl ChapterRepo<MockContext> for Mock {}
 
@@ -236,7 +236,7 @@ impl<'a> Advance<UpdateInfo<'a>, MockContext> for MockTransactional {
         if let Some(subtitle) = &step.update.subtitle {
             chapter_info.subtitle = subtitle.clone();
         }
-        if let Some(is_pinned) = step.update.is_pinned {
+        if let Some(is_pinned) = step.update.pin {
             chapter_info.is_pinned = is_pinned;
         }
         chapter_info.updated_at = now();
@@ -260,33 +260,35 @@ impl<'a> Advance<UpdateStage<'a>, MockContext> for MockTransactional {
             .find(|chapter_info| chapter_info.id == step.update.id)
             .ok_or_else(|| expected("error-chapter-not-found"))?;
 
-        if let Some(phase) = step.update.raw_provide_phase {
-            chapter_info.stages = chapter_info
-                .stages
-                .set_phase(WorkflowStage::RawProvide, phase);
-        }
-        if let Some(phase) = step.update.translate_phase {
-            chapter_info.stages = chapter_info
-                .stages
-                .set_phase(WorkflowStage::Translate, phase);
-        }
-        if let Some(phase) = step.update.proofread_phase {
-            chapter_info.stages = chapter_info
-                .stages
-                .set_phase(WorkflowStage::Proofread, phase);
-        }
-        if let Some(phase) = step.update.typeset_redraw_phase {
-            chapter_info.stages = chapter_info
-                .stages
-                .set_phase(WorkflowStage::TypesetRedraw, phase);
-        }
-        if let Some(phase) = step.update.review_phase {
-            chapter_info.stages = chapter_info.stages.set_phase(WorkflowStage::Review, phase);
-        }
-        if let Some(phase) = step.update.publish_phase {
-            chapter_info.stages = chapter_info.stages.set_phase(WorkflowStage::Publish, phase);
-        }
+        chapter_info.stages = step.update.stages;
+
         chapter_info.updated_at = now();
+        Ok(())
+    }
+}
+
+#[async_trait]
+impl<'a> Advance<SetPageCounters<'a>, MockContext> for MockTransactional {
+    type Error = RootError;
+
+    async fn advance(
+        &self,
+        context: &mut MockContext,
+        step: &SetPageCounters<'a>,
+    ) -> Result<(), Self::Error> {
+        let chapter_info = context
+            .state
+            .chapters
+            .iter_mut()
+            .find(|chapter_info| chapter_info.id == step.id)
+            .ok_or_else(|| expected("error-chapter-not-found"))?;
+
+        chapter_info.page_count = step.page_count;
+        chapter_info.total_unit_count = step.total_unit_count;
+        chapter_info.translated_unit_count = step.translated_unit_count;
+        chapter_info.proofread_unit_count = step.proofread_unit_count;
+        chapter_info.updated_at = now();
+
         Ok(())
     }
 }
