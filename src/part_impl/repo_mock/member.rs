@@ -9,8 +9,8 @@ use crate::model::member::{MemberForm, MemberInfo, MemberListSpec};
 use crate::model::role::RoleMask;
 use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
 use crate::part::repo::step::member::{
-    Create, Delete, FindInfoByUserTeamId, GetInfoExcluded, ListInfos, ListInfosByUserIdExcluded,
-    TouchLastActive, UpdateRole, UpdateUserNickname,
+    Create, Delete, FindInfoByUserTeamId, GetInfoById, GetInfoExcluded, ListInfos,
+    ListInfosByUserIdExcluded, TouchLastActive, UpdateRole, UpdateUserNickname,
 };
 use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactional, expected, now};
@@ -208,6 +208,16 @@ impl<'a> Execute<FindInfoByUserTeamId<'a>> for Mock {
             step.user_id,
             step.team_id,
         ))
+    }
+}
+
+#[async_trait]
+impl<'a> Execute<GetInfoById<'a>> for Mock {
+    type Error = RootError;
+
+    async fn execute(&self, step: &GetInfoById<'a>) -> Result<MemberInfo, Self::Error> {
+        let state = self.state.lock().unwrap();
+        get_member_by_id(&state, step.id)
     }
 }
 

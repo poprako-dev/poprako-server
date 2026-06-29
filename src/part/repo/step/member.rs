@@ -69,6 +69,15 @@ impl<'a> Step for GetInfoExcluded<'a> {
     type Output = MemberInfo;
 }
 
+/// Step that fetches one membership by ID.
+pub struct GetInfoById<'a> {
+    pub id: &'a str,
+}
+
+impl<'a> Step for GetInfoById<'a> {
+    type Output = MemberInfo;
+}
+
 /// Step that updates one membership's role mask.
 pub struct UpdateRole<'a> {
     pub member_role_update: &'a MemberRoleUpdate,
@@ -133,6 +142,11 @@ impl MemberStep {
     /// Constructs a step to fetch one membership with a pessimistic lock.
     pub fn get_info_excluded<'a>(id: &'a str) -> GetInfoExcluded<'a> {
         GetInfoExcluded { id }
+    }
+
+    /// Constructs a step to fetch one membership by ID.
+    pub fn get_info_by_id<'a>(id: &'a str) -> GetInfoById<'a> {
+        GetInfoById { id }
     }
 
     /// Constructs a step to update a member role mask.

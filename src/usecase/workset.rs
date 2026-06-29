@@ -45,18 +45,16 @@ where
         + Send
         + Sync,
 {
+    {
+        use crate::part::shared::proxy::AsProxyNonTransactional as _;
+
+        WorksetPermComplex::can_user_create(&mut repo.as_proxy(), &token.user_id, &data.team_id)
+            .await?;
+    }
+
     let workset_id = drive
         .with_context(async move |context| {
             let repo = repo.transactional().await;
-
-            use crate::part::shared::proxy::AsProxyTransactional as _;
-
-            WorksetPermComplex::can_user_create(
-                &mut repo.as_proxy(context),
-                &token.user_id,
-                &data.team_id,
-            )
-            .await?;
 
             let index = repo
                 .advance(
@@ -174,7 +172,7 @@ where
     repo.execute(&WorksetStep::update_info(&workset_info_update))
         .await?;
 
-    Ok(())
+    accept(())
 }
 
 /// Deletes a workset and its child data.
@@ -200,15 +198,16 @@ where
     P: Prom<C> + Send + Sync,
     <P as DeriveTransactional>::Transactional: PromTransactional<C> + Send + Sync,
 {
+    {
+        use crate::part::shared::proxy::AsProxyNonTransactional as _;
+
+        WorksetPermComplex::can_user_delete(&mut repo.as_proxy(), &token.user_id, &id).await?;
+    }
+
     drive
         .with_context(async move |context| {
             let repo = repo.transactional().await;
             let prom = prom.transactional().await;
-
-            use crate::part::shared::proxy::AsProxyTransactional as _;
-
-            WorksetPermComplex::can_user_delete(&mut repo.as_proxy(context), &token.user_id, &id)
-                .await?;
 
             let workset_info = repo
                 .advance(context, &WorksetStep::get_info_excluded(&id))

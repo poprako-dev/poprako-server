@@ -163,7 +163,7 @@ where
     ))
     .await?;
 
-    Ok(())
+    accept(())
 }
 
 /// Reserves a new avatar upload slot for a team.
@@ -206,19 +206,14 @@ where
     <P as DeriveTransactional>::Transactional: PromTransactional<C> + Send + Sync,
     I: ImagePool,
 {
+    use crate::part::shared::proxy::AsProxyNonTransactional as _;
+
+    TeamPermComplex::can_user_reserve_avatar(&mut repo.as_proxy(), &token.user_id, &id).await?;
+
     let (object_key, avatar_version) = drive
         .with_context(async move |context| {
             let repo = repo.transactional().await;
             let prom = prom.transactional().await;
-
-            use crate::part::shared::proxy::AsProxyTransactional as _;
-
-            TeamPermComplex::can_user_reserve_avatar(
-                &mut repo.as_proxy(context),
-                &token.user_id,
-                &id,
-            )
-            .await?;
 
             let avatar_reservation = repo
                 .advance(context, &TeamStep::reserve_avatar(&id, &data.file_ext))
@@ -310,7 +305,7 @@ where
     repo.execute(&TeamStep::mark_avatar_uploaded(&id, data.avatar_version))
         .await?;
 
-    Ok(())
+    accept(())
 }
 
 /// Deletes a team and all associated data.
@@ -359,15 +354,16 @@ where
     P: Prom<C> + Send + Sync,
     <P as DeriveTransactional>::Transactional: PromTransactional<C> + Send + Sync,
 {
+    {
+        use crate::part::shared::proxy::AsProxyNonTransactional as _;
+
+        TeamPermComplex::can_user_delete(&mut repo.as_proxy(), &token.user_id, &id).await?;
+    }
+
     drive
         .with_context(async move |context| {
             let repo = repo.transactional().await;
             let prom = prom.transactional().await;
-
-            use crate::part::shared::proxy::AsProxyTransactional as _;
-
-            TeamPermComplex::can_user_delete(&mut repo.as_proxy(context), &token.user_id, &id)
-                .await?;
 
             TeamComplex::delete_cascade(&repo, &prom, context, &id).await?;
 

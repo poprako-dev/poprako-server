@@ -48,18 +48,16 @@ where
 {
     let role_mask = data.role_mask;
 
+    {
+        use crate::part::shared::proxy::AsProxyNonTransactional as _;
+
+        MemberPermComplex::can_user_create(&mut repo.as_proxy(), &token.user_id, &data.team_id)
+            .await?;
+    }
+
     let member_id = drive
         .with_context(async move |context| {
             let repo = repo.transactional().await;
-
-            use crate::part::shared::proxy::AsProxyTransactional as _;
-
-            MemberPermComplex::can_user_create(
-                &mut repo.as_proxy(context),
-                &token.user_id,
-                &data.team_id,
-            )
-            .await?;
 
             let target_user_info = repo
                 .advance(context, &UserStep::get_info_excluded(&data.user_id))
@@ -146,28 +144,26 @@ where
     R: MemberRepo<C> + Send + Sync,
     <R as DeriveTransactional>::Transactional: MemberRepoTransactional<C> + Send + Sync,
 {
-    let role_mask = data.roles;
+    let target_member_info = repo.execute(&MemberStep::get_info_by_id(&data.id)).await?;
+
+    {
+        use crate::part::shared::proxy::AsProxyNonTransactional as _;
+
+        MemberPermComplex::can_user_update_info(
+            &mut repo.as_proxy(),
+            &token.user_id,
+            &target_member_info.team_id,
+        )
+        .await?;
+    }
 
     drive
         .with_context(async move |context| {
             let repo = repo.transactional().await;
 
-            let target_member_info = repo
-                .advance(context, &MemberStep::get_info_excluded(&data.id))
-                .await?;
-
-            use crate::part::shared::proxy::AsProxyTransactional as _;
-
-            MemberPermComplex::can_user_update_info(
-                &mut repo.as_proxy(context),
-                &token.user_id,
-                &target_member_info.team_id,
-            )
-            .await?;
-
             let member_role_update = MemberRoleUpdate {
                 id: data.id,
-                roles: role_mask,
+                roles: data.roles,
             };
 
             repo.advance(context, &MemberStep::update_role(&member_role_update))
@@ -192,22 +188,22 @@ where
     R: MemberRepo<C> + Send + Sync,
     <R as DeriveTransactional>::Transactional: MemberRepoTransactional<C> + Send + Sync,
 {
+    let target_member_info = repo.execute(&MemberStep::get_info_by_id(&id)).await?;
+
+    {
+        use crate::part::shared::proxy::AsProxyNonTransactional as _;
+
+        MemberPermComplex::can_user_delete(
+            &mut repo.as_proxy(),
+            &token.user_id,
+            &target_member_info.team_id,
+        )
+        .await?;
+    }
+
     drive
         .with_context(async move |context| {
             let repo = repo.transactional().await;
-
-            let target_member_info = repo
-                .advance(context, &MemberStep::get_info_excluded(&id))
-                .await?;
-
-            use crate::part::shared::proxy::AsProxyTransactional as _;
-
-            MemberPermComplex::can_user_delete(
-                &mut repo.as_proxy(context),
-                &token.user_id,
-                &target_member_info.team_id,
-            )
-            .await?;
 
             repo.advance(context, &MemberStep::delete(&id)).await?;
 

@@ -134,18 +134,16 @@ where
         + Send
         + Sync,
 {
+    {
+        use crate::part::shared::proxy::AsProxyNonTransactional as _;
+
+        ChapterPermComplex::can_user_create(&mut repo.as_proxy(), &token.user_id, &data.comic_id)
+            .await?;
+    }
+
     let chapter_id = drive
         .with_context(async move |context| {
             let repo = repo.transactional().await;
-
-            use crate::part::shared::proxy::AsProxyTransactional as _;
-
-            ChapterPermComplex::can_user_create(
-                &mut repo.as_proxy(context),
-                &token.user_id,
-                &data.comic_id,
-            )
-            .await?;
 
             let index = repo
                 .advance(context, &ComicStep::incr_chapter_next_index(&data.comic_id))
@@ -220,22 +218,20 @@ where
         + Send
         + Sync,
 {
+    {
+        use crate::part::shared::proxy::AsProxyNonTransactional as _;
+
+        ChapterPermComplex::can_user_update_info(&mut repo.as_proxy(), &token.user_id, &data.id)
+            .await?;
+    }
+
     drive
         .with_context(async move |context| {
             let repo = repo.transactional().await;
 
-            use crate::part::shared::proxy::AsProxyTransactional as _;
-
             let chapter_info = repo
                 .advance(context, &ChapterStep::get_info_excluded(&data.id))
                 .await?;
-
-            ChapterPermComplex::can_user_update_info(
-                &mut repo.as_proxy(context),
-                &token.user_id,
-                &data.id,
-            )
-            .await?;
 
             if data.subtitle.is_some() || data.pin.is_some() {
                 let chapter_info_update = ChapterInfoUpdate {
@@ -292,25 +288,27 @@ where
     P: Prom<C> + Send + Sync,
     <P as DeriveTransactional>::Transactional: PromTransactional<C> + Send + Sync,
 {
+    {
+        use crate::part::shared::proxy::AsProxyNonTransactional as _;
+
+        ChapterPermComplex::can_user_update_stage(
+            &mut repo.as_proxy(),
+            &token.user_id,
+            &data.id,
+            data.stage,
+            data.event,
+        )
+        .await?;
+    }
+
     drive
         .with_context(async move |context| {
             let repo = repo.transactional().await;
             let prom = prom.transactional().await;
 
-            use crate::part::shared::proxy::AsProxyTransactional as _;
-
             let chapter_info = repo
                 .advance(context, &ChapterStep::get_info_excluded(&data.id))
                 .await?;
-
-            ChapterPermComplex::can_user_update_stage(
-                &mut repo.as_proxy(context),
-                &token.user_id,
-                &data.id,
-                data.stage,
-                data.event,
-            )
-            .await?;
 
             let was_published =
                 chapter_info.stages.get_phase(WorkflowStage::Publish) == StagePhase::Completed;
@@ -372,23 +370,25 @@ where
         + Send
         + Sync,
 {
+    let chapter_info = repo
+        .execute(&ChapterStep::get_info_by_id(&data.chapter_id))
+        .await?;
+
+    {
+        use crate::part::shared::proxy::AsProxyNonTransactional as _;
+
+        ChapterPermComplex::can_user_join(
+            &mut repo.as_proxy(),
+            &token.user_id,
+            &chapter_info,
+            data.roles,
+        )
+        .await?;
+    }
+
     let assignment_info = drive
         .with_context(async move |context| {
             let repo = repo.transactional().await;
-
-            use crate::part::shared::proxy::AsProxyTransactional as _;
-
-            let chapter_info = repo
-                .advance(context, &ChapterStep::get_info_excluded(&data.chapter_id))
-                .await?;
-
-            ChapterPermComplex::can_user_join(
-                &mut repo.as_proxy(context),
-                &token.user_id,
-                &chapter_info,
-                data.roles,
-            )
-            .await?;
 
             let existing_assignment_info = repo
                 .advance(
@@ -449,15 +449,16 @@ where
     P: Prom<C> + Send + Sync,
     <P as DeriveTransactional>::Transactional: PromTransactional<C> + Send + Sync,
 {
+    {
+        use crate::part::shared::proxy::AsProxyNonTransactional as _;
+
+        ChapterPermComplex::can_user_delete(&mut repo.as_proxy(), &token.user_id, &id).await?;
+    }
+
     drive
         .with_context(async move |context| {
             let repo = repo.transactional().await;
             let prom = prom.transactional().await;
-
-            use crate::part::shared::proxy::AsProxyTransactional as _;
-
-            ChapterPermComplex::can_user_delete(&mut repo.as_proxy(context), &token.user_id, &id)
-                .await?;
 
             ChapterComplex::delete_cascade(&repo, &prom, context, &id).await?;
 

@@ -46,18 +46,20 @@ where
 {
     let role_mask = data.role_mask;
 
+    {
+        use crate::part::shared::proxy::AsProxyNonTransactional as _;
+
+        MemberInvitationPermComplex::can_user_create(
+            &mut repo.as_proxy(),
+            &token.user_id,
+            &data.team_id,
+        )
+        .await?;
+    }
+
     let (member_invitation_id, member_invitation_code) = drive
         .with_context(async move |context| {
             let repo = repo.transactional().await;
-
-            use crate::part::shared::proxy::AsProxyTransactional as _;
-
-            MemberInvitationPermComplex::can_user_create(
-                &mut repo.as_proxy(context),
-                &token.user_id,
-                &data.team_id,
-            )
-            .await?;
 
             let invitee_user_info = repo
                 .advance(context, &UserStep::find_info_by_qid(&data.invitee_qid))
@@ -162,24 +164,24 @@ where
     <R as DeriveTransactional>::Transactional:
         MemberInvitationRepoTransactional<C> + MemberRepoTransactional<C> + Send + Sync,
 {
-    let role_mask = data.role_mask;
+    {
+        use crate::part::shared::proxy::AsProxyNonTransactional as _;
+
+        MemberInvitationPermComplex::can_user_update_info(
+            &mut repo.as_proxy(),
+            &token.user_id,
+            &data.id,
+        )
+        .await?;
+    }
 
     drive
         .with_context(async move |context| {
             let repo = repo.transactional().await;
 
-            use crate::part::shared::proxy::AsProxyTransactional as _;
-
-            MemberInvitationPermComplex::can_user_update_info(
-                &mut repo.as_proxy(context),
-                &token.user_id,
-                &data.id,
-            )
-            .await?;
-
             let member_invitation_update = MemberInvitationUpdate {
                 id: data.id,
-                role_mask,
+                role_mask: data.role_mask,
             };
 
             repo.advance(
@@ -206,18 +208,16 @@ where
     <R as DeriveTransactional>::Transactional:
         MemberInvitationRepoTransactional<C> + MemberRepoTransactional<C> + Send + Sync,
 {
+    {
+        use crate::part::shared::proxy::AsProxyNonTransactional as _;
+
+        MemberInvitationPermComplex::can_user_delete(&mut repo.as_proxy(), &token.user_id, &id)
+            .await?;
+    }
+
     drive
         .with_context(async move |context| {
             let repo = repo.transactional().await;
-
-            use crate::part::shared::proxy::AsProxyTransactional as _;
-
-            MemberInvitationPermComplex::can_user_delete(
-                &mut repo.as_proxy(context),
-                &token.user_id,
-                &id,
-            )
-            .await?;
 
             repo.advance(context, &MemberInvitationStep::delete(&id))
                 .await?;

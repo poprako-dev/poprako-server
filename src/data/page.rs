@@ -9,13 +9,17 @@ use crate::result::RootResult;
 /// Presentation-ready page information.
 pub struct PageInfoVal {
     pub id: String,
+
     pub chapter_id: String,
     pub index: i32,
+
     pub image_url: Option<String>,
     pub image_uploaded: bool,
+
     pub total_unit_count: i32,
     pub translated_unit_count: i32,
     pub proofread_unit_count: i32,
+
     pub created_at: i64,
     pub updated_at: i64,
 }
@@ -64,8 +68,6 @@ pub struct PageCreationVal {
     pub put_url: String,
     pub image_version: i64,
 }
-
-/// TODO: reupload
 
 /// Input parameters for reserving one page image.
 pub struct ReservePageImageData {
