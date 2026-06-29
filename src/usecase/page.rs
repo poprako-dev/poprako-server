@@ -287,7 +287,7 @@ where
         .await?;
 
     let page_infos = repo
-        .execute(&PageStep::list_infos_by_chapter(
+        .execute(&PageStep::list_infos_by_chapter_id(
             &data.chapter_id,
             data.offset,
             data.limit,
@@ -409,7 +409,7 @@ where
             let page_infos = repo
                 .advance(
                     context,
-                    &PageStep::list_all_infos_by_chapter(&chapter_info.id),
+                    &PageStep::list_all_infos_by_chapter_id(&chapter_info.id),
                 )
                 .await?;
 

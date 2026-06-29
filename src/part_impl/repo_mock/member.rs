@@ -9,7 +9,7 @@ use crate::model::member::{MemberForm, MemberInfo, MemberListSpec};
 use crate::model::role::RoleMask;
 use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
 use crate::part::repo::step::member::{
-    Create, Delete, FindInfoByUserTeamId, GetInfoById, GetInfoExcluded, ListInfos,
+    Create, Delete, FindInfoByUserIdAndTeamId, GetInfoById, GetInfoExcluded, ListInfos,
     ListInfosByUserIdExcluded, TouchLastActive, UpdateRole, UpdateUserNickname,
 };
 use crate::part::shared::execute::Execute;
@@ -51,7 +51,7 @@ fn create_member(state: &mut MockState, form: &MemberForm) -> Result<MemberInfo,
     Ok(member)
 }
 
-fn find_member_by_user_team_id(
+fn find_member_by_user_id_and_team_id(
     state: &MockState,
     user_id: &str,
     team_id: &str,
@@ -195,15 +195,15 @@ impl<'a> Execute<ListInfos<'a>> for Mock {
 }
 
 #[async_trait]
-impl<'a> Execute<FindInfoByUserTeamId<'a>> for Mock {
+impl<'a> Execute<FindInfoByUserIdAndTeamId<'a>> for Mock {
     type Error = RootError;
 
     async fn execute(
         &self,
-        step: &FindInfoByUserTeamId<'a>,
+        step: &FindInfoByUserIdAndTeamId<'a>,
     ) -> Result<Option<MemberInfo>, Self::Error> {
         let state = self.state.lock().unwrap();
-        Ok(find_member_by_user_team_id(
+        Ok(find_member_by_user_id_and_team_id(
             &state,
             step.user_id,
             step.team_id,
@@ -222,15 +222,15 @@ impl<'a> Execute<GetInfoById<'a>> for Mock {
 }
 
 #[async_trait]
-impl<'a> Advance<FindInfoByUserTeamId<'a>, MockContext> for MockTransactional {
+impl<'a> Advance<FindInfoByUserIdAndTeamId<'a>, MockContext> for MockTransactional {
     type Error = RootError;
 
     async fn advance(
         &self,
         context: &mut MockContext,
-        step: &FindInfoByUserTeamId<'a>,
+        step: &FindInfoByUserIdAndTeamId<'a>,
     ) -> Result<Option<MemberInfo>, Self::Error> {
-        Ok(find_member_by_user_team_id(
+        Ok(find_member_by_user_id_and_team_id(
             &context.state,
             step.user_id,
             step.team_id,

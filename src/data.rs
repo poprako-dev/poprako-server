@@ -7,6 +7,7 @@
 //!
 //! [`ImagePool`]: crate::part::image::ImagePool
 
+pub mod assignment;
 pub mod auth;
 pub mod chapter;
 pub mod comic;

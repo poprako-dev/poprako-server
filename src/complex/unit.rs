@@ -9,10 +9,10 @@ use crate::model::role::RoleField;
 use crate::model::unit::{
     UnitApplyAck, UnitDiff, UnitIdMapper, UnitIndex, UnitIndexUpdate, UnitOper,
 };
-use crate::part::repo::step::assignment::{AssignmentStep, GetInfoByChapterUserId};
+use crate::part::repo::step::assignment::{AssignmentStep, GetInfoByChapterIdAndUserId};
 use crate::part::repo::step::chapter::{ChapterStep, GetInfoById as ChapterGetInfoById};
 use crate::part::repo::step::comic::{ComicStep, GetInfoById as ComicGetInfoById};
-use crate::part::repo::step::member::FindInfoByUserTeamId;
+use crate::part::repo::step::member::FindInfoByUserIdAndTeamId;
 use crate::part::repo::step::workset::{GetInfoById as WorksetGetInfoById, WorksetStep};
 use crate::part::shared::proxy::ProxyExecute;
 use crate::result::{ExpectedVariant, RootError, RootResult, accept};
@@ -251,8 +251,8 @@ impl UnitPermComplex {
         P: for<'a> ProxyExecute<ChapterGetInfoById<'a>, Error = RootError>
             + for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RootError>
             + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RootError>
-            + for<'a> ProxyExecute<FindInfoByUserTeamId<'a>, Error = RootError>
-            + for<'a> ProxyExecute<GetInfoByChapterUserId<'a>, Error = RootError>,
+            + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RootError>
+            + for<'a> ProxyExecute<GetInfoByChapterIdAndUserId<'a>, Error = RootError>,
     {
         let chapter_info = proxy
             .execute(&ChapterStep::get_info_by_id(chapter_id))
@@ -273,7 +273,7 @@ impl UnitPermComplex {
         }
 
         let assignment_info = proxy
-            .execute(&AssignmentStep::get_info_by_chapter_user_id(
+            .execute(&AssignmentStep::get_info_by_chapter_id_and_user_id(
                 chapter_id, user_id,
             ))
             .await?;
@@ -292,10 +292,10 @@ impl UnitPermComplex {
         chapter_id: &str,
     ) -> RootResult<()>
     where
-        P: for<'a> ProxyExecute<GetInfoByChapterUserId<'a>, Error = RootError>,
+        P: for<'a> ProxyExecute<GetInfoByChapterIdAndUserId<'a>, Error = RootError>,
     {
         let assignment_info = proxy
-            .execute(&AssignmentStep::get_info_by_chapter_user_id(
+            .execute(&AssignmentStep::get_info_by_chapter_id_and_user_id(
                 chapter_id, user_id,
             ))
             .await?;

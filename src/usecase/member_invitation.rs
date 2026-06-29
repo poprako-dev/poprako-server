@@ -69,7 +69,7 @@ where
                 let invitee_member_info = repo
                     .advance(
                         context,
-                        &MemberStep::find_info_by_user_team_id(
+                        &MemberStep::find_info_by_user_id_and_team_id(
                             &invitee_user_info.id,
                             &data.team_id,
                         ),

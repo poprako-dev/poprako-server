@@ -393,7 +393,10 @@ where
             let existing_assignment_info = repo
                 .advance(
                     context,
-                    &AssignmentStep::get_info_by_chapter_user_id(&data.chapter_id, &token.user_id),
+                    &AssignmentStep::get_info_by_chapter_id_and_user_id(
+                        &data.chapter_id,
+                        &token.user_id,
+                    ),
                 )
                 .await?;
 

@@ -5,7 +5,7 @@
 
 use super::*;
 
-use crate::model::unit::{UnitDiff, UnitIdMap, UnitIndex, UnitOper, UnitPayload};
+use crate::model::unit::{UnitDiff, UnitIdMapper, UnitIndex, UnitOper, UnitPayload};
 use crate::result::{ExpectedVariant, RootError};
 
 fn payload(text: &str, proofread: bool) -> UnitPayload {
@@ -72,21 +72,18 @@ fn prepare_diff_maps_create_ids_and_keeps_oper_order() {
     };
 
     assert_eq!(receipt.opers.len(), 4);
-    assert_eq!(receipt.local_id_maps.len(), 1);
-    assert_eq!(receipt.local_id_maps[0].local_id, "local-x");
-    assert!(!receipt.local_id_maps[0].unit_id.is_empty());
+    assert_eq!(receipt.local_id_map.len(), 1);
+    assert_eq!(receipt.local_id_map[0].local_id, "local-x");
+    assert!(!receipt.local_id_map[0].unit_id.is_empty());
     assert_eq!(receipt.candidate_order[0], "unit-a");
-    assert_eq!(
-        receipt.candidate_order[1],
-        receipt.local_id_maps[0].unit_id
-    );
+    assert_eq!(receipt.candidate_order[1], receipt.local_id_map[0].unit_id);
 
     match &receipt.opers[1] {
         UnitOper::Create { local_id, id, .. } => {
             assert_eq!(local_id, "local-x");
             assert_eq!(
                 id.as_deref(),
-                Some(receipt.local_id_maps[0].unit_id.as_str())
+                Some(receipt.local_id_map[0].unit_id.as_str())
             );
         }
         UnitOper::Save { .. } | UnitOper::Delete { .. } => {
@@ -186,7 +183,7 @@ fn build_index_updates_resolves_local_ids_and_preserves_unknown_units() {
         "stale-anchor".into(),
         "unit-a".into(),
     ];
-    let local_id_maps = vec![UnitIdMap {
+    let local_id_maps = vec![UnitIdMapper {
         local_id: "local-x".into(),
         unit_id: "unit-x".into(),
     }];

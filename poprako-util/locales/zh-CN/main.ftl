@@ -14,6 +14,7 @@ error-stale-cover-upload = 封面上传版本已过期
 error-stale-page-image-upload = 页面图片上传版本已过期
 error-team-not-found = 该汉化组不存在
 error-team-or-user-required = 必须提供 team_id 或 user_id
+error-chapter-or-user-required = 必须提供 chapter_id 或 owner_id
 error-workset-not-found = 该作品集不存在
 error-member-not-found = 该成员不存在
 error-team-member-required = 您不是该汉化组的成员

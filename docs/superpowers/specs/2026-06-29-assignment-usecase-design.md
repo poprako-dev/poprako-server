@@ -3,17 +3,18 @@
 ## Scope
 
 Implement the active Rust assignment use case as a current-architecture vertical slice.
-The feature covers the business behavior from the Go reference, but uses the Rust
+The feature covers the reference business behavior while using the Rust
 ports-and-transaction-steps style.
 
 Public use cases:
 
 - `list_infos`
 - `update_roles`
+- `delete`
 
-There is no public assignment `delete` use case. Deletion is represented as
-`update_roles` with an empty role mask. The use case dispatches that case to a
-repository delete step inside the same aggregate endpoint.
+`update_roles` requires a valid non-zero `RoleMask`. It does not accept a missing
+roles value and does not delete assignments. Deletion is only exposed through the
+public `delete` use case.
 
 ## Architecture
 
@@ -26,15 +27,17 @@ Assignment follows the same shape as `member::list_infos`:
 
 Role mutation follows one use case:
 
-- `UpdateAssignmentRoleData` carries `chapter_id`, `user_id`, and `roles`.
+- `UpdateAssignmentRoleData` carries `chapter_id`, `user_id`, and `roles: RoleMask`.
 - `assignment::update_roles` resolves authorization and target eligibility before
   mutation.
-- Non-empty roles create a missing assignment or overwrite the current role mask.
-- Empty roles delete the existing assignment if present, and are idempotent when no
-  assignment exists.
+- Roles create a missing assignment or overwrite the current role mask.
 
-The repository layer still has explicit delete support, but it is only used by
-`update_roles` and internal cascade flows.
+Public deletion:
+
+- `assignment::delete` loads the target by identifier.
+- Ownership permits deleting a caller's own assignment.
+- Deleting another user's assignment requires reviewer role in the chapter.
+- The actual delete runs inside a transaction.
 
 ## Data Model
 
@@ -48,7 +51,7 @@ Add assignment DTOs in `src/data/assignment.rs`:
 - `AssignmentInfoVal`, equivalent to the current chapter DTO assignment value.
 - `ListAssignmentInfosData`, using `#[Paginate]`, with exactly one of
   `chapter_id` or `owner_id`.
-- `UpdateAssignmentRoleData`, with `chapter_id`, `user_id`, and `roles`.
+- `UpdateAssignmentRoleData`, with `chapter_id`, `user_id`, and `roles: RoleMask`.
 
 The list data follows `member::list_infos`: invalid combinations are rejected during
 conversion into the list spec. `chapter_id` and `owner_id` are mutually exclusive.
@@ -70,11 +73,14 @@ Assignment permission helpers live in `AssignmentPermComplex`.
 - If the caller updates themself, reviewer permission allows any valid mutation.
 - A non-reviewer self-update may only remove existing roles or reduce the role mask.
   It must not add new role bits.
-- Non-empty target roles must not include `ADMIN`.
-- Non-empty target roles require the target user to be a member of the chapter's
-  owning team, and the target member role mask must contain the requested assignment
-  role mask.
-- Empty roles skip target membership eligibility and delete if an assignment exists.
+- Target roles must not include `ADMIN`.
+- Target roles require the target user to be a member of the chapter's owning team,
+  and the target member role mask must contain the requested assignment role mask.
+
+`delete`:
+
+- Deleting an owned assignment is allowed.
+- Deleting another user's assignment requires reviewer role in the chapter.
 
 ## Repository Steps
 
@@ -82,7 +88,6 @@ Extend assignment steps:
 
 - `ListInfos`
 - `GetInfoById`
-- `GetInfoByIdExcluded`
 - `Delete`
 
 Keep existing steps:
@@ -90,6 +95,9 @@ Keep existing steps:
 - `GetInfoByChapterUserId`
 - `Create`
 - `PutRoles`
+
+Keep repository traits limited to the steps used by production use cases. Traits
+must not be expanded for test-only convenience.
 
 `PutRoles` overwrites the assignment role mask. It does not merge; merge behavior is
 handled by callers such as `chapter::join`.
@@ -100,11 +108,9 @@ The assignment mock repository should:
 
 - List by chapter or owner.
 - Filter by role bit when provided.
-- Sort deterministically by creation order, matching the existing member mock style.
+- Sort deterministically by assignment id.
 - Apply offset and limit after filtering.
-- Return expected errors for missing `get` or `delete` targets.
-- Treat delete-by-chapter-user inside `update_roles` as idempotent at the use case
-  level, not as an idempotent raw repository delete.
+- Return expected errors for delete-by-id targets that are missing.
 
 ## Tests
 
@@ -123,12 +129,14 @@ Add focused use case tests for:
 - Non-reviewer updating another user is rejected.
 - Assigning `ADMIN` is rejected.
 - Assigning a role the target member cannot hold is rejected.
-- Empty role update deletes an existing assignment.
-- Empty role update is idempotent when missing.
+- Owner can delete their own assignment.
+- Reviewer can delete another user's assignment.
+- Non-reviewer cannot delete another user's assignment.
 
 ## Non-Goals
 
-- No public `delete` use case.
+- No deletion through `update_roles`.
+- Assignment role updates always carry `roles: RoleMask`.
 - No nested include graph or signed comic cover filling.
 - No Go-shaped service or event bus port.
 - No legacy HTTP or Diesel implementation work.

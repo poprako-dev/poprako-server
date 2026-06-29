@@ -8,8 +8,8 @@ use crate::complex::page::PageComplex;
 use crate::model::page::{PageForm, PageImageReservation, PageInfo};
 use crate::part::repo::page::{PageRepo, PageRepoTransactional};
 use crate::part::repo::step::page::{
-    CreateBatch, DeleteByChapterId, GetInfoById, GetInfoExcluded, ListAllInfosByChapter,
-    ListInfosByChapter, MarkImageUploaded, ReserveImage, SetUnitCounters,
+    CreateBatch, DeleteByChapterId, GetInfoById, GetInfoExcluded, ListAllInfosByChapterId,
+    ListInfosByChapterId, MarkImageUploaded, ReserveImage, SetUnitCounters,
 };
 use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactional, expected, now};
@@ -82,10 +82,10 @@ impl<'a> Execute<GetInfoById<'a>> for Mock {
 }
 
 #[async_trait]
-impl<'a> Execute<ListInfosByChapter<'a>> for Mock {
+impl<'a> Execute<ListInfosByChapterId<'a>> for Mock {
     type Error = RootError;
 
-    async fn execute(&self, step: &ListInfosByChapter<'a>) -> Result<Vec<PageInfo>, Self::Error> {
+    async fn execute(&self, step: &ListInfosByChapterId<'a>) -> Result<Vec<PageInfo>, Self::Error> {
         let state = self.state.lock().unwrap();
 
         Ok(list_pages(&state, step.chapter_id, step.offset, step.limit))
@@ -119,13 +119,13 @@ impl<'a> Advance<GetInfoExcluded<'a>, MockContext> for MockTransactional {
 }
 
 #[async_trait]
-impl<'a> Advance<ListInfosByChapter<'a>, MockContext> for MockTransactional {
+impl<'a> Advance<ListInfosByChapterId<'a>, MockContext> for MockTransactional {
     type Error = RootError;
 
     async fn advance(
         &self,
         context: &mut MockContext,
-        step: &ListInfosByChapter<'a>,
+        step: &ListInfosByChapterId<'a>,
     ) -> Result<Vec<PageInfo>, Self::Error> {
         Ok(list_pages(
             &context.state,
@@ -137,13 +137,13 @@ impl<'a> Advance<ListInfosByChapter<'a>, MockContext> for MockTransactional {
 }
 
 #[async_trait]
-impl<'a> Advance<ListAllInfosByChapter<'a>, MockContext> for MockTransactional {
+impl<'a> Advance<ListAllInfosByChapterId<'a>, MockContext> for MockTransactional {
     type Error = RootError;
 
     async fn advance(
         &self,
         context: &mut MockContext,
-        step: &ListAllInfosByChapter<'a>,
+        step: &ListAllInfosByChapterId<'a>,
     ) -> Result<Vec<PageInfo>, Self::Error> {
         Ok(list_all_pages(&context.state, step.chapter_id))
     }

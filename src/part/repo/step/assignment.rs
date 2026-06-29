@@ -2,16 +2,36 @@
 
 use poprako_transactional::step::Step;
 
-use crate::model::assignment::{AssignmentForm, AssignmentInfo, AssignmentRoleUpdate};
+use crate::model::assignment::{
+    AssignmentForm, AssignmentInfo, AssignmentListSpec, AssignmentRoleUpdate,
+};
 
-/// Step that finds one assignment by chapter and user.
-pub struct GetInfoByChapterUserId<'a> {
+/// Step that finds one assignment by chapter ID and user ID.
+pub struct GetInfoByChapterIdAndUserId<'a> {
     pub chapter_id: &'a str,
     pub user_id: &'a str,
 }
 
-impl<'a> Step for GetInfoByChapterUserId<'a> {
+impl<'a> Step for GetInfoByChapterIdAndUserId<'a> {
     type Output = Option<AssignmentInfo>;
+}
+
+/// Step that lists assignments by query specification.
+pub struct ListInfos<'a> {
+    pub spec: &'a AssignmentListSpec,
+}
+
+impl<'a> Step for ListInfos<'a> {
+    type Output = Vec<AssignmentInfo>;
+}
+
+/// Step that fetches one assignment by its identifier.
+pub struct GetInfoById<'a> {
+    pub id: &'a str,
+}
+
+impl<'a> Step for GetInfoById<'a> {
+    type Output = AssignmentInfo;
 }
 
 /// Step that inserts a new assignment row.
@@ -32,19 +52,38 @@ impl<'a> Step for PutRoles<'a> {
     type Output = AssignmentInfo;
 }
 
+/// Step that deletes one assignment by its identifier.
+pub struct Delete<'a> {
+    pub id: &'a str,
+}
+
+impl<'a> Step for Delete<'a> {
+    type Output = ();
+}
+
 /// Factory for constructing assignment repository [`Step`] values.
 pub struct AssignmentStep;
 
 impl AssignmentStep {
-    /// Constructs a step to find one assignment by chapter and user.
-    pub fn get_info_by_chapter_user_id<'a>(
+    /// Constructs a step to find one assignment by chapter ID and user ID.
+    pub fn get_info_by_chapter_id_and_user_id<'a>(
         chapter_id: &'a str,
         user_id: &'a str,
-    ) -> GetInfoByChapterUserId<'a> {
-        GetInfoByChapterUserId {
+    ) -> GetInfoByChapterIdAndUserId<'a> {
+        GetInfoByChapterIdAndUserId {
             chapter_id,
             user_id,
         }
+    }
+
+    /// Constructs a step to list assignments.
+    pub fn list_infos<'a>(spec: &'a AssignmentListSpec) -> ListInfos<'a> {
+        ListInfos { spec }
+    }
+
+    /// Constructs a step to fetch one assignment by ID.
+    pub fn get_info_by_id<'a>(id: &'a str) -> GetInfoById<'a> {
+        GetInfoById { id }
     }
 
     /// Constructs a step to insert a new assignment.
@@ -55,5 +94,10 @@ impl AssignmentStep {
     /// Constructs a step to update assignment roles.
     pub fn put_roles<'a>(update: &'a AssignmentRoleUpdate) -> PutRoles<'a> {
         PutRoles { update }
+    }
+
+    /// Constructs a step to delete one assignment.
+    pub fn delete<'a>(id: &'a str) -> Delete<'a> {
+        Delete { id }
     }
 }

@@ -7,8 +7,8 @@
 // mark_image_uploaded(mark_image_uploaded)(positive): raw provider confirms matching upload version and repeated confirmation is idempotent.
 // mark_image_uploaded(mark_image_uploaded)(negative): stale upload version cannot confirm or pollute current image state.
 // mark_image_uploaded(mark_image_uploaded)(negative): non-raw-provider cannot confirm upload.
-// delete_by_chapter_id(delete_by_chapter_id)(positive): team admin deletes pages, enqueues image deletes, clears counters, and touches comic.
-// delete_by_chapter_id(delete_by_chapter_id)(negative): non-admin delete rolls back.
+// delete_by_chapter(delete_by_chapter)(positive): team admin deletes pages, enqueues image deletes, clears counters, and touches comic.
+// delete_by_chapter(delete_by_chapter)(negative): non-admin delete rolls back.
 
 use super::*;
 
@@ -487,7 +487,7 @@ async fn mark_image_uploaded_rejects_non_raw_provider() {
 }
 
 #[tokio::test]
-async fn delete_by_chapter_id_deletes_pages_and_clears_counters() {
+async fn delete_by_chapter_deletes_pages_and_clears_counters() {
     let mock = Mock::new();
     seed_scope(&mock);
     mock.seed_member(member("user-1", RoleMask::from(RoleField::ADMIN)));
@@ -509,7 +509,7 @@ async fn delete_by_chapter_id_deletes_pages_and_clears_counters() {
 }
 
 #[tokio::test]
-async fn delete_by_chapter_id_rejects_non_admin_and_rolls_back() {
+async fn delete_by_chapter_rejects_non_admin_and_rolls_back() {
     let mock = Mock::new();
     seed_scope(&mock);
     mock.seed_member(member("user-1", RoleMask::from(RoleField::TRANSLATOR)));

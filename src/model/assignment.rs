@@ -11,7 +11,7 @@
 
 use time::OffsetDateTime;
 
-use crate::model::role::RoleMask;
+use crate::model::role::{RoleField, RoleMask};
 
 /// A chapter assignment record linking a user to a chapter with a set of
 /// workflow roles.
@@ -56,4 +56,20 @@ pub struct AssignmentRoleUpdate {
     pub id: String,
 
     pub roles: RoleMask,
+}
+
+/// Filtering and pagination parameters for listing chapter assignments.
+pub enum AssignmentListSpec {
+    Chapter {
+        chapter_id: String,
+        role_bit: Option<RoleField>,
+        offset: u64,
+        limit: u64,
+    },
+    User {
+        owner_id: String,
+        role_bit: Option<RoleField>,
+        offset: u64,
+        limit: u64,
+    },
 }

@@ -95,8 +95,7 @@ pub struct UnitIndexUpdate {
 }
 
 /// Unit count snapshot for a page or counter delta target.
-#[derive(Default)]
-#[cfg_attr(test, derive(Clone, Copy))]
+#[derive(Clone, Copy, Default)]
 pub struct UnitCounters {
     pub total_unit_count: i32,
     pub translated_unit_count: i32,

@@ -6,8 +6,8 @@ use poprako_transactional::advance::Advance;
 
 use crate::model::unit::{UnitCounters, UnitIndex, UnitInfo, UnitOper, UnitPayload};
 use crate::part::repo::step::unit::{
-    CountByPage, CreateInfo, DeleteByPageIdAndId, ListIndexesByPage, ListInfosByPage, SaveInfo,
-    UpdateIndexesByPage,
+    CountByPageId, CreateInfo, DeleteByIdInPage, ListIndexesByPageId, ListInfosByPageId, SaveInfo,
+    UpdateIndexesByPageId,
 };
 use crate::part::repo::unit::{UnitRepo, UnitRepoTransactional};
 use crate::part::shared::execute::Execute;
@@ -142,10 +142,10 @@ fn save_unit(
 }
 
 #[async_trait]
-impl<'a> Execute<ListInfosByPage<'a>> for Mock {
+impl<'a> Execute<ListInfosByPageId<'a>> for Mock {
     type Error = RootError;
 
-    async fn execute(&self, step: &ListInfosByPage<'a>) -> Result<Vec<UnitInfo>, Self::Error> {
+    async fn execute(&self, step: &ListInfosByPageId<'a>) -> Result<Vec<UnitInfo>, Self::Error> {
         let state = self.state.lock().unwrap();
 
         Ok(list_units(&state, step.page_id))
@@ -192,31 +192,31 @@ impl<'a> Advance<SaveInfo<'a>, MockContext> for MockTransactional {
 }
 
 #[async_trait]
-impl<'a> Advance<DeleteByPageIdAndId<'a>, MockContext> for MockTransactional {
+impl<'a> Advance<DeleteByIdInPage<'a>, MockContext> for MockTransactional {
     type Error = RootError;
 
     async fn advance(
         &self,
         context: &mut MockContext,
-        step: &DeleteByPageIdAndId<'a>,
+        step: &DeleteByIdInPage<'a>,
     ) -> Result<(), Self::Error> {
         context
             .state
             .units
-            .retain(|unit_info| unit_info.page_id != step.page_id || unit_info.id != step.id);
+            .retain(|unit_info| !(unit_info.page_id == step.page_id && unit_info.id == step.id));
 
         Ok(())
     }
 }
 
 #[async_trait]
-impl<'a> Advance<ListIndexesByPage<'a>, MockContext> for MockTransactional {
+impl<'a> Advance<ListIndexesByPageId<'a>, MockContext> for MockTransactional {
     type Error = RootError;
 
     async fn advance(
         &self,
         context: &mut MockContext,
-        step: &ListIndexesByPage<'a>,
+        step: &ListIndexesByPageId<'a>,
     ) -> Result<Vec<UnitIndex>, Self::Error> {
         Ok(context
             .state
@@ -232,13 +232,13 @@ impl<'a> Advance<ListIndexesByPage<'a>, MockContext> for MockTransactional {
 }
 
 #[async_trait]
-impl<'a> Advance<UpdateIndexesByPage<'a>, MockContext> for MockTransactional {
+impl<'a> Advance<UpdateIndexesByPageId<'a>, MockContext> for MockTransactional {
     type Error = RootError;
 
     async fn advance(
         &self,
         context: &mut MockContext,
-        step: &UpdateIndexesByPage<'a>,
+        step: &UpdateIndexesByPageId<'a>,
     ) -> Result<(), Self::Error> {
         for unit_index_update in step.updates {
             let unit_info = context
@@ -260,13 +260,13 @@ impl<'a> Advance<UpdateIndexesByPage<'a>, MockContext> for MockTransactional {
 }
 
 #[async_trait]
-impl<'a> Advance<CountByPage<'a>, MockContext> for MockTransactional {
+impl<'a> Advance<CountByPageId<'a>, MockContext> for MockTransactional {
     type Error = RootError;
 
     async fn advance(
         &self,
         context: &mut MockContext,
-        step: &CountByPage<'a>,
+        step: &CountByPageId<'a>,
     ) -> Result<UnitCounters, Self::Error> {
         Ok(count_units(&context.state, step.page_id))
     }

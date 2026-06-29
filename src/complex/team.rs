@@ -13,7 +13,7 @@ use crate::part::prom::{Payload, PromStep, PromTransactional};
 use crate::part::repo::chapter::ChapterRepoTransactional;
 use crate::part::repo::comic::ComicRepoTransactional;
 use crate::part::repo::page::PageRepoTransactional;
-use crate::part::repo::step::member::FindInfoByUserTeamId;
+use crate::part::repo::step::member::FindInfoByUserIdAndTeamId;
 use crate::part::repo::step::team::TeamStep;
 use crate::part::repo::step::user::{GetInfoById, UserStep};
 use crate::part::repo::step::workset::WorksetStep;
@@ -109,7 +109,7 @@ impl TeamPermComplex {
         team_id: &str,
     ) -> RootResult<()>
     where
-        P: for<'a> ProxyExecute<FindInfoByUserTeamId<'a>, Error = RootError>,
+        P: for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RootError>,
     {
         check_user_is_team_admin(proxy, user_id, team_id).await
     }
@@ -121,7 +121,7 @@ impl TeamPermComplex {
         team_id: &str,
     ) -> RootResult<()>
     where
-        P: for<'a> ProxyExecute<FindInfoByUserTeamId<'a>, Error = RootError>,
+        P: for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RootError>,
     {
         check_user_is_team_admin(proxy, user_id, team_id).await
     }
@@ -133,7 +133,7 @@ impl TeamPermComplex {
         team_id: &str,
     ) -> RootResult<()>
     where
-        P: for<'a> ProxyExecute<FindInfoByUserTeamId<'a>, Error = RootError>,
+        P: for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RootError>,
     {
         check_user_is_team_admin(proxy, user_id, team_id).await
     }
@@ -141,7 +141,7 @@ impl TeamPermComplex {
     /// Verify the caller is a team admin.
     pub async fn can_user_delete<P>(proxy: &mut P, user_id: &str, team_id: &str) -> RootResult<()>
     where
-        P: for<'a> ProxyExecute<FindInfoByUserTeamId<'a>, Error = RootError>,
+        P: for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RootError>,
     {
         check_user_is_team_admin(proxy, user_id, team_id).await
     }
