@@ -143,7 +143,7 @@ where
 
 /// Authenticates a user with QQ ID and password.
 ///
-/// This is a non-transactional read-only operation:
+/// This is a non-transactional read-only oper:
 ///
 /// 1. Fetches the stored credential by QQ ID.
 /// 2. Verifies the supplied password against the stored hash.

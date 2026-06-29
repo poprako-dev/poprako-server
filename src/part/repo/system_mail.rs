@@ -1,6 +1,6 @@
 //! Repository traits for the system mail domain.
 //!
-//! All system mail operations are non-transactional single-table writes
+//! All system mail opers are non-transactional single-table writes
 //! and reads — the transactional [`SystemMailRepoTransactional`] exists
 //! only as a type-system anchor to keep the repo trait pattern consistent.
 
@@ -13,7 +13,7 @@ use crate::util::DeriveTransactional;
 
 /// Non-transactional system mail repository.
 ///
-/// All system mail operations are simple single-table reads and writes
+/// All system mail opers are simple single-table reads and writes
 /// that do not require transactional atomicity.
 pub trait SystemMailRepo<C>:
     DeriveTransactional
@@ -29,7 +29,7 @@ where
 
 /// Transactional system mail repository.
 ///
-/// Currently empty — all system mail operations are non-transactional.
+/// Currently empty — all system mail opers are non-transactional.
 /// The trait exists solely as a type-level anchor for the
 /// [`SystemMailRepo`] trait pattern.
 pub trait SystemMailRepoTransactional<C>: Sized {}

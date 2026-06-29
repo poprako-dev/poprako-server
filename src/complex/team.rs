@@ -1,4 +1,4 @@
-//! Complex-domain operations for team entities: identity and avatar-storage key
+//! Complex-domain opers for team entities: identity and avatar-storage key
 //! generation, and permission checks.
 
 use time::OffsetDateTime;
@@ -23,7 +23,7 @@ use crate::part::shared::proxy::ProxyExecute;
 use crate::result::{ExpectedVariant, RootError, RootResult, accept};
 use crate::util::next_snowflake_id;
 
-/// Domain operations for team entities.
+/// Domain opers for team entities.
 pub struct TeamComplex;
 
 impl TeamComplex {
@@ -97,7 +97,7 @@ impl TeamComplex {
     }
 }
 
-/// Permission-gate operations for team entities.
+/// Permission-gate opers for team entities.
 pub struct TeamPermComplex;
 
 impl TeamPermComplex {

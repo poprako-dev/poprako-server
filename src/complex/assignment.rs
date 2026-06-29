@@ -1,10 +1,10 @@
-//! Complex-domain operations for chapter assignments.
+//! Complex-domain opers for chapter assignments.
 
 use crate::model::assignment::{AssignmentInfo, AssignmentRoleUpdate};
 use crate::model::role::RoleMask;
 use crate::util::next_snowflake_id;
 
-/// Domain operations for chapter assignments: ID generation and role-merge logic.
+/// Domain opers for chapter assignments: ID generation and role-merge logic.
 pub struct AssignmentComplex;
 
 impl AssignmentComplex {

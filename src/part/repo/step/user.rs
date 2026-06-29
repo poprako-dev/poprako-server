@@ -1,4 +1,4 @@
-//! Step types for user repository operations.
+//! Step types for user repository opers.
 
 use poprako_transactional::step::Step;
 

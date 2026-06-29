@@ -2,7 +2,7 @@
 
 use crate::util::next_snowflake_id;
 
-/// Domain operations for image lifecycle management: generates unique identifiers for scheduled image deletion and integrity check tasks.
+/// Domain opers for image lifecycle management: generates unique identifiers for scheduled image deletion and integrity check tasks.
 pub struct ImageComplex;
 
 impl ImageComplex {

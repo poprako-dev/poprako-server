@@ -1,4 +1,4 @@
-//! Complex-domain operations for comic entities: identity generation,
+//! Complex-domain opers for comic entities: identity generation,
 //! cover-storage key management, and permission gates.
 
 use time::OffsetDateTime;
@@ -20,7 +20,7 @@ use crate::part::shared::proxy::ProxyExecute;
 use crate::result::{RootError, RootResult, accept};
 use crate::util::next_snowflake_id;
 
-/// Domain operations for comic entities: identity generation and
+/// Domain opers for comic entities: identity generation and
 /// cover-storage key management.
 pub struct ComicComplex;
 
@@ -102,7 +102,7 @@ impl ComicComplex {
     }
 }
 
-/// Permission-gate operations for comic entities — comic-scoped.
+/// Permission-gate opers for comic entities — comic-scoped.
 pub struct ComicPermComplex;
 
 impl ComicPermComplex {

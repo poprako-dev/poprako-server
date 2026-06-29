@@ -44,44 +44,40 @@ impl<'a> Advance<Append<'a>, MockContext> for MockTransactional {
     }
 }
 
-mod tests {
-    // append_records_payload(PromTransactional::advance)(positive): prom append should store the record in transaction state.
+// append_records_payload(PromTransactional::advance)(positive): prom append should store the record in transaction state.
 
-    use super::*;
+use poprako_transactional::drive::Drive;
 
-    use poprako_transactional::drive::Drive;
+use crate::part::prom::PromStep;
+use crate::part::prom::intention::ImageIntention;
+use crate::result::accept;
 
-    use crate::part::prom::intention::ImageIntention;
-    use crate::part::prom::{Payload, PromStep};
-    use crate::result::accept;
+#[tokio::test]
+async fn append_records_payload() {
+    let mock = Mock::new();
+    let visible_at = OffsetDateTime::now_utc();
 
-    #[tokio::test]
-    async fn append_records_payload() {
-        let mock = Mock::new();
-        let visible_at = OffsetDateTime::now_utc();
+    let result = Drive::with_context(&mock, async move |context| {
+        let transactional = MockTransactional;
+        Advance::advance(
+            &transactional,
+            context,
+            &PromStep::append(
+                "prom-1",
+                "image",
+                Payload::Image(ImageIntention::Delete {
+                    object_key: "key".into(),
+                }),
+                &visible_at,
+            ),
+        )
+        .await?;
+        accept(())
+    })
+    .await;
+    assert!(result.is_ok());
 
-        let result = Drive::with_context(&mock, async move |context| {
-            let transactional = MockTransactional;
-            Advance::advance(
-                &transactional,
-                context,
-                &PromStep::append(
-                    "prom-1",
-                    "image",
-                    Payload::Image(ImageIntention::Delete {
-                        object_key: "key".into(),
-                    }),
-                    &visible_at,
-                ),
-            )
-            .await?;
-            accept(())
-        })
-        .await;
-        assert!(result.is_ok());
-
-        let snapshot = mock.snapshot();
-        assert_eq!(snapshot.prom_records.len(), 1);
-        assert_eq!(snapshot.prom_records[0].id, "prom-1");
-    }
+    let snapshot = mock.snapshot();
+    assert_eq!(snapshot.prom_records.len(), 1);
+    assert_eq!(snapshot.prom_records[0].id, "prom-1");
 }

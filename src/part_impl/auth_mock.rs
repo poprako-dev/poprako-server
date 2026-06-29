@@ -24,37 +24,33 @@ impl TokenAuth for Mock {
     }
 }
 
-mod tests {
-    // sign_returns_stable_token(TokenAuth::sign)(positive): token signing should return the deterministic mock token.
-    // sign_failure_returns_expected_auth(TokenAuth::sign)(negative): configured token failures should return an expected auth error.
+// sign_returns_stable_token(TokenAuth::sign)(positive): token signing should return the deterministic mock token.
+// sign_failure_returns_expected_auth(TokenAuth::sign)(negative): configured token failures should return an expected auth error.
 
-    use super::*;
+#[test]
+fn sign_returns_stable_token() {
+    let mock = Mock::new();
 
-    #[test]
-    fn sign_returns_stable_token() {
-        let mock = Mock::new();
+    let signed = TokenAuth::sign_token(&mock, &UserTokenRef { user_id: "user-1" });
+    assert!(signed.is_ok());
+    let signed = signed.ok().unwrap();
 
-        let signed = TokenAuth::sign_token(&mock, &UserTokenRef { user_id: "user-1" });
-        assert!(signed.is_ok());
-        let signed = signed.ok().unwrap();
+    assert_eq!(signed, "token:user-1");
+}
 
-        assert_eq!(signed, "token:user-1");
-    }
+#[test]
+fn sign_failure_returns_expected_auth() {
+    let mock = Mock::new().with_token_failure();
 
-    #[test]
-    fn sign_failure_returns_expected_auth() {
-        let mock = Mock::new().with_token_failure();
+    let err = TokenAuth::sign_token(&mock, &UserTokenRef { user_id: "user-1" })
+        .err()
+        .unwrap();
 
-        let err = TokenAuth::sign_token(&mock, &UserTokenRef { user_id: "user-1" })
-            .err()
-            .unwrap();
-
-        assert!(matches!(
-            err,
-            RootError::Expected {
-                variant: ExpectedVariant::Auth,
-                ..
-            }
-        ));
-    }
+    assert!(matches!(
+        err,
+        RootError::Expected {
+            variant: ExpectedVariant::Auth,
+            ..
+        }
+    ));
 }

@@ -1,4 +1,4 @@
-//! Complex-domain operations for member invitations.
+//! Complex-domain opers for member invitations.
 
 use crate::complex::util::{check_user_is_team_admin, check_user_is_team_member};
 use crate::part::repo::step::member::FindInfoByUserTeamId;
@@ -9,7 +9,7 @@ use crate::part::shared::proxy::ProxyExecute;
 use crate::result::{RootError, RootResult};
 use crate::util::next_snowflake_id;
 
-/// Domain operations for member invitations.
+/// Domain opers for member invitations.
 pub struct MemberInvitationComplex;
 
 impl MemberInvitationComplex {
@@ -27,7 +27,7 @@ impl MemberInvitationComplex {
     }
 }
 
-/// Permission-gate operations for member invitation entities — invitation-scoped.
+/// Permission-gate opers for member invitation entities — invitation-scoped.
 pub struct MemberInvitationPermComplex;
 
 impl MemberInvitationPermComplex {

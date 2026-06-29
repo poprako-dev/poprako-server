@@ -1,6 +1,6 @@
 //! Complex domain logic for [SystemMail] aggregates — ID generation for system-generated notification mails.
 
-/// Domain operations for [SystemMail] aggregates: unique identifier generation.
+/// Domain opers for [SystemMail] aggregates: unique identifier generation.
 pub struct SystemMailComplex;
 
 use crate::util::next_snowflake_id;

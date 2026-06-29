@@ -157,195 +157,188 @@ impl<'a> Execute<MarkRead<'a>> for Mock {
 }
 
 /// Unit tests for the system mail mock repository.
-mod tests {
-    // send_saves_unread_mail(Send)(positive): a sent mail should be persisted with read=false.
-    // send_rejects_duplicate_id_without_mutation(Send)(negative): sending a mail with an existing id should error without altering state.
-    // send_batch_saves_all_mails(SendBatch)(positive): a batch should persist all mails atomically.
-    // send_batch_rejects_duplicate_batch_without_partial_write(SendBatch)(negative): a batch with a duplicate batch-internal id should reject with no writes.
-    // list_infos_by_receiver_id_filters_sorts_and_pages(ListInfosByReceiverId)(positive): should filter by receiver+read, sort by created_at desc, and paginate.
-    // list_infos_by_ids_returns_matching_mails(ListInfosByIds)(positive): should return only mails with matching ids.
-    // mark_read_marks_by_id(MarkRead)(positive): marking by id should set read=true.
-    // mark_read_rejects_missing_id(MarkRead)(negative): a nonexistent id should return an argument error.
+// send_saves_unread_mail(Send)(positive): a sent mail should be persisted with read=false.
+// send_rejects_duplicate_id_without_mutation(Send)(negative): sending a mail with an existing id should error without altering state.
+// send_batch_saves_all_mails(SendBatch)(positive): a batch should persist all mails atomically.
+// send_batch_rejects_duplicate_batch_without_partial_write(SendBatch)(negative): a batch with a duplicate batch-internal id should reject with no writes.
+// list_infos_by_receiver_id_filters_sorts_and_pages(ListInfosByReceiverId)(positive): should filter by receiver+read, sort by created_at desc, and paginate.
+// list_infos_by_ids_returns_matching_mails(ListInfosByIds)(positive): should return only mails with matching ids.
+// mark_read_marks_by_id(MarkRead)(positive): marking by id should set read=true.
+// mark_read_rejects_missing_id(MarkRead)(negative): a nonexistent id should return an argument error.
+use crate::part::repo::step::system_mail::SystemMailStep;
+use crate::result::ExpectedVariant;
+use crate::test_util::assert_expected_variant;
 
-    use super::*;
-
-    use crate::model::system_mail::{SystemMailInfo, SystemMailListSpec};
-    use crate::part::repo::step::system_mail::SystemMailStep;
-    use crate::result::ExpectedVariant;
-    use crate::test_util::assert_expected_variant;
-
-    fn mail_info(
-        id: &str,
-        receiver_id: &str,
-        read: bool,
-        created_at: OffsetDateTime,
-    ) -> SystemMailInfo {
-        SystemMailInfo {
-            id: id.into(),
-            receiver_id: receiver_id.into(),
-            read,
-            title: "title".into(),
-            content: "content".into(),
-            created_at,
-        }
+fn mail_info(
+    id: &str,
+    receiver_id: &str,
+    read: bool,
+    created_at: OffsetDateTime,
+) -> SystemMailInfo {
+    SystemMailInfo {
+        id: id.into(),
+        receiver_id: receiver_id.into(),
+        read,
+        title: "title".into(),
+        content: "content".into(),
+        created_at,
     }
+}
 
-    fn mail_form(id: &str, receiver_id: &str) -> SystemMailForm {
-        SystemMailForm {
-            id: id.into(),
-            receiver_id: receiver_id.into(),
-            title: "title".into(),
-            content: "content".into(),
-        }
+fn mail_form(id: &str, receiver_id: &str) -> SystemMailForm {
+    SystemMailForm {
+        id: id.into(),
+        receiver_id: receiver_id.into(),
+        title: "title".into(),
+        content: "content".into(),
     }
+}
 
-    #[tokio::test]
-    async fn send_saves_unread_mail() {
-        let mock = Mock::new();
-        let system_mail_form = mail_form("sys_mail-1", "user-1");
+#[tokio::test]
+async fn send_saves_unread_mail() {
+    let mock = Mock::new();
+    let system_mail_form = mail_form("sys_mail-1", "user-1");
 
-        let result = mock.execute(&SystemMailStep::send(&system_mail_form)).await;
-        assert!(result.is_ok());
+    let result = mock.execute(&SystemMailStep::send(&system_mail_form)).await;
+    assert!(result.is_ok());
 
-        let snapshot = mock.snapshot();
-        assert_eq!(snapshot.system_mails.len(), 1);
-        assert_eq!(snapshot.system_mails[0].id, "sys_mail-1");
-        assert!(!snapshot.system_mails[0].read);
-    }
+    let snapshot = mock.snapshot();
+    assert_eq!(snapshot.system_mails.len(), 1);
+    assert_eq!(snapshot.system_mails[0].id, "sys_mail-1");
+    assert!(!snapshot.system_mails[0].read);
+}
 
-    #[tokio::test]
-    async fn send_rejects_duplicate_id_without_mutation() {
-        let mock = Mock::new();
-        let time = now();
-        mock.seed_system_mail(mail_info("sys_mail-1", "user-1", false, time));
+#[tokio::test]
+async fn send_rejects_duplicate_id_without_mutation() {
+    let mock = Mock::new();
+    let time = now();
+    mock.seed_system_mail(mail_info("sys_mail-1", "user-1", false, time));
 
-        let system_mail_form = mail_form("sys_mail-1", "user-2");
+    let system_mail_form = mail_form("sys_mail-1", "user-2");
 
-        let err = mock
-            .execute(&SystemMailStep::send(&system_mail_form))
-            .await
-            .err()
-            .unwrap();
-        assert_expected_variant(err, ExpectedVariant::Args);
+    let err = mock
+        .execute(&SystemMailStep::send(&system_mail_form))
+        .await
+        .err()
+        .unwrap();
+    assert_expected_variant(err, ExpectedVariant::Args);
 
-        let snapshot = mock.snapshot();
-        assert_eq!(snapshot.system_mails.len(), 1);
-        assert_eq!(snapshot.system_mails[0].receiver_id, "user-1");
-    }
+    let snapshot = mock.snapshot();
+    assert_eq!(snapshot.system_mails.len(), 1);
+    assert_eq!(snapshot.system_mails[0].receiver_id, "user-1");
+}
 
-    #[tokio::test]
-    async fn send_batch_saves_all_mails() {
-        let mock = Mock::new();
-        let system_mail_forms = vec![
-            mail_form("sys_mail-1", "user-1"),
-            mail_form("sys_mail-2", "user-1"),
-        ];
+#[tokio::test]
+async fn send_batch_saves_all_mails() {
+    let mock = Mock::new();
+    let system_mail_forms = vec![
+        mail_form("sys_mail-1", "user-1"),
+        mail_form("sys_mail-2", "user-1"),
+    ];
 
-        let result = mock
-            .execute(&SystemMailStep::send_batch(&system_mail_forms))
-            .await;
-        assert!(result.is_ok());
+    let result = mock
+        .execute(&SystemMailStep::send_batch(&system_mail_forms))
+        .await;
+    assert!(result.is_ok());
 
-        let snapshot = mock.snapshot();
-        assert_eq!(snapshot.system_mails.len(), 2);
-    }
+    let snapshot = mock.snapshot();
+    assert_eq!(snapshot.system_mails.len(), 2);
+}
 
-    #[tokio::test]
-    async fn send_batch_rejects_duplicate_batch_without_partial_write() {
-        let mock = Mock::new();
-        let time = now();
-        mock.seed_system_mail(mail_info("sys_mail-1", "user-1", false, time));
+#[tokio::test]
+async fn send_batch_rejects_duplicate_batch_without_partial_write() {
+    let mock = Mock::new();
+    let time = now();
+    mock.seed_system_mail(mail_info("sys_mail-1", "user-1", false, time));
 
-        let system_mail_forms = vec![
-            mail_form("sys_mail-2", "user-1"),
-            mail_form("sys_mail-1", "user-1"),
-        ];
+    let system_mail_forms = vec![
+        mail_form("sys_mail-2", "user-1"),
+        mail_form("sys_mail-1", "user-1"),
+    ];
 
-        let err = mock
-            .execute(&SystemMailStep::send_batch(&system_mail_forms))
-            .await
-            .err()
-            .unwrap();
-        assert_expected_variant(err, ExpectedVariant::Args);
+    let err = mock
+        .execute(&SystemMailStep::send_batch(&system_mail_forms))
+        .await
+        .err()
+        .unwrap();
+    assert_expected_variant(err, ExpectedVariant::Args);
 
-        let snapshot = mock.snapshot();
-        assert_eq!(snapshot.system_mails.len(), 1);
-    }
+    let snapshot = mock.snapshot();
+    assert_eq!(snapshot.system_mails.len(), 1);
+}
 
-    #[tokio::test]
-    async fn list_infos_by_receiver_id_filters_sorts_and_pages() {
-        let mock = Mock::new();
-        let t1 = now();
-        let t2 = t1 + time::Duration::seconds(10);
-        let t3 = t2 + time::Duration::seconds(10);
+#[tokio::test]
+async fn list_infos_by_receiver_id_filters_sorts_and_pages() {
+    let mock = Mock::new();
+    let t1 = now();
+    let t2 = t1 + time::Duration::seconds(10);
+    let t3 = t2 + time::Duration::seconds(10);
 
-        mock.seed_system_mail(mail_info("sys_mail-1", "user-1", false, t1));
-        mock.seed_system_mail(mail_info("sys_mail-2", "user-1", false, t3));
-        mock.seed_system_mail(mail_info("sys_mail-3", "user-1", true, t2)); // already read
-        mock.seed_system_mail(mail_info("sys_mail-4", "user-2", false, t2)); // other user
+    mock.seed_system_mail(mail_info("sys_mail-1", "user-1", false, t1));
+    mock.seed_system_mail(mail_info("sys_mail-2", "user-1", false, t3));
+    mock.seed_system_mail(mail_info("sys_mail-3", "user-1", true, t2));
+    mock.seed_system_mail(mail_info("sys_mail-4", "user-2", false, t2));
 
-        let mail_list_spec = SystemMailListSpec {
-            read: Some(false),
-            offset: 0,
-            limit: 10,
-        };
+    let mail_list_spec = SystemMailListSpec {
+        read: Some(false),
+        offset: 0,
+        limit: 10,
+    };
 
-        let result = mock
-            .execute(&SystemMailStep::list_infos_by_receiver_id(
-                "user-1",
-                &mail_list_spec,
-            ))
-            .await;
-        assert!(result.is_ok());
-        let mails = result.ok().unwrap();
+    let result = mock
+        .execute(&SystemMailStep::list_infos_by_receiver_id(
+            "user-1",
+            &mail_list_spec,
+        ))
+        .await;
+    assert!(result.is_ok());
+    let mails = result.ok().unwrap();
 
-        assert_eq!(mails.len(), 2);
-        // Should be sorted by created_at DESC.
-        assert_eq!(mails[0].id, "sys_mail-2");
-        assert_eq!(mails[1].id, "sys_mail-1");
-    }
+    assert_eq!(mails.len(), 2);
+    assert_eq!(mails[0].id, "sys_mail-2");
+    assert_eq!(mails[1].id, "sys_mail-1");
+}
 
-    #[tokio::test]
-    async fn list_infos_by_ids_returns_matching_mails() {
-        let mock = Mock::new();
-        let time = now();
-        mock.seed_system_mail(mail_info("sys_mail-1", "user-1", false, time));
-        mock.seed_system_mail(mail_info("sys_mail-2", "user-1", true, time));
-        mock.seed_system_mail(mail_info("sys_mail-3", "user-2", false, time));
+#[tokio::test]
+async fn list_infos_by_ids_returns_matching_mails() {
+    let mock = Mock::new();
+    let time = now();
+    mock.seed_system_mail(mail_info("sys_mail-1", "user-1", false, time));
+    mock.seed_system_mail(mail_info("sys_mail-2", "user-1", true, time));
+    mock.seed_system_mail(mail_info("sys_mail-3", "user-2", false, time));
 
-        let ids = vec!["sys_mail-1".into(), "sys_mail-3".into()];
+    let ids = vec!["sys_mail-1".into(), "sys_mail-3".into()];
 
-        let result = mock.execute(&SystemMailStep::list_infos_by_ids(&ids)).await;
-        assert!(result.is_ok());
-        let mails = result.ok().unwrap();
+    let result = mock.execute(&SystemMailStep::list_infos_by_ids(&ids)).await;
+    assert!(result.is_ok());
+    let mails = result.ok().unwrap();
 
-        assert_eq!(mails.len(), 2);
-        assert!(mails.iter().any(|m| m.id == "sys_mail-1"));
-        assert!(mails.iter().any(|m| m.id == "sys_mail-3"));
-    }
+    assert_eq!(mails.len(), 2);
+    assert!(mails.iter().any(|m| m.id == "sys_mail-1"));
+    assert!(mails.iter().any(|m| m.id == "sys_mail-3"));
+}
 
-    #[tokio::test]
-    async fn mark_read_marks_by_id() {
-        let mock = Mock::new();
-        let time = now();
-        mock.seed_system_mail(mail_info("sys_mail-1", "user-1", false, time));
+#[tokio::test]
+async fn mark_read_marks_by_id() {
+    let mock = Mock::new();
+    let time = now();
+    mock.seed_system_mail(mail_info("sys_mail-1", "user-1", false, time));
 
-        let result = mock.execute(&SystemMailStep::mark_read("sys_mail-1")).await;
-        assert!(result.is_ok());
+    let result = mock.execute(&SystemMailStep::mark_read("sys_mail-1")).await;
+    assert!(result.is_ok());
 
-        let snapshot = mock.snapshot();
-        assert!(snapshot.system_mails[0].read);
-    }
+    let snapshot = mock.snapshot();
+    assert!(snapshot.system_mails[0].read);
+}
 
-    #[tokio::test]
-    async fn mark_read_rejects_missing_id() {
-        let mock = Mock::new();
+#[tokio::test]
+async fn mark_read_rejects_missing_id() {
+    let mock = Mock::new();
 
-        let err = mock
-            .execute(&SystemMailStep::mark_read("sys_mail-nonexistent"))
-            .await
-            .err()
-            .unwrap();
-        assert_expected_variant(err, ExpectedVariant::Args);
-    }
+    let err = mock
+        .execute(&SystemMailStep::mark_read("sys_mail-nonexistent"))
+        .await
+        .err()
+        .unwrap();
+    assert_expected_variant(err, ExpectedVariant::Args);
 }

@@ -3,7 +3,7 @@
 use time::OffsetDateTime;
 
 /// A persisted page unit in final page order.
-#[derive(Clone)]
+#[cfg_attr(test, derive(Clone))]
 pub struct UnitInfo {
     pub id: String,
 
@@ -35,11 +35,9 @@ impl UnitInfo {
     }
 }
 
-/// Full server-side unit snapshot supplied by a write operation.
-#[derive(Clone)]
-pub struct UnitServerSnapshot {
-    pub id: String,
-
+/// Mutable payload supplied by create and save opers.
+#[cfg_attr(test, derive(Clone))]
+pub struct UnitPayload {
     pub is_bubble: bool,
     pub is_proofread: bool,
 
@@ -55,47 +53,50 @@ pub struct UnitServerSnapshot {
     pub last_proofreader_id: Option<String>,
 }
 
-/// Full local unit snapshot supplied by an insert operation.
-#[derive(Clone)]
-pub struct UnitLocalSnapshot {
-    pub local_id: String,
+/// One compact unit difference submitted by a client.
+#[cfg_attr(test, derive(Clone))]
+pub struct UnitDiff {
+    pub page_id: String,
 
-    pub is_bubble: bool,
-    pub is_proofread: bool,
+    pub opers: Vec<UnitOper>,
 
-    pub x_coord: f64,
-    pub y_coord: f64,
-
-    pub translated_text: Option<String>,
-    pub translator_comment: Option<String>,
-    pub last_translator_id: Option<String>,
-
-    pub proofread_text: Option<String>,
-    pub proofreader_comment: Option<String>,
-    pub last_proofreader_id: Option<String>,
+    pub candidate_order: Vec<String>,
 }
 
-/// One ordered unit operation submitted by a client.
+/// One ordered unit oper submitted by a client.
 #[cfg_attr(test, derive(Clone))]
 pub enum UnitOper {
-    Update {
-        unit: UnitServerSnapshot,
+    Create {
+        local_id: String,
+        id: Option<String>,
+        payload: UnitPayload,
     },
-    MoveBefore {
-        unit: UnitServerSnapshot,
-        before_id: Option<String>,
-    },
-    InsertBefore {
-        unit: UnitLocalSnapshot,
-        before_id: Option<String>,
+    Save {
+        id: String,
+        payload: UnitPayload,
     },
     Delete {
-        unit_id: String,
+        id: String,
     },
+}
+
+/// Persisted index for one surviving unit.
+#[cfg_attr(test, derive(Clone))]
+pub struct UnitIndex {
+    pub id: String,
+    pub index: i32,
+}
+
+/// Index update for one unit whose persisted order changed.
+#[cfg_attr(test, derive(Clone))]
+pub struct UnitIndexUpdate {
+    pub id: String,
+    pub index: i32,
 }
 
 /// Unit count snapshot for a page or counter delta target.
-#[derive(Clone, Copy, Default)]
+#[derive(Default)]
+#[cfg_attr(test, derive(Clone, Copy))]
 pub struct UnitCounters {
     pub total_unit_count: i32,
     pub translated_unit_count: i32,
@@ -103,7 +104,8 @@ pub struct UnitCounters {
 }
 
 /// Delta between two unit counter snapshots.
-#[derive(Clone, Copy, Default)]
+#[derive(Default)]
+#[cfg_attr(test, derive(Clone, Copy))]
 pub struct UnitCounterDelta {
     pub total_unit_count: i32,
     pub translated_unit_count: i32,
@@ -117,12 +119,14 @@ pub struct UnitIdMapper {
     pub unit_id: String,
 }
 
-/// Result of applying unit operations to a page snapshot.
+/// Result of applying unit opers to a page snapshot.
 #[cfg_attr(test, derive(Clone))]
 pub struct UnitApplyAck {
-    pub unit_infos: Vec<UnitInfo>,
-    pub id_mapper: Vec<UnitIdMapper>,
-    pub counters: UnitCounters,
+    pub opers: Vec<UnitOper>,
+
+    pub local_id_map: Vec<UnitIdMapper>,
+
+    pub candidate_order: Vec<String>,
 }
 
 fn has_text(text: &Option<String>) -> bool {

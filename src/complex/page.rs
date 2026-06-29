@@ -1,4 +1,4 @@
-//! Complex-domain operations for page entities.
+//! Complex-domain opers for page entities.
 
 use poprako_util::i18n::trl;
 
@@ -14,7 +14,7 @@ use crate::part::shared::proxy::ProxyExecute;
 use crate::result::{ExpectedVariant, RootError, RootResult, accept};
 use crate::util::next_snowflake_id;
 
-/// Domain operations for page entities.
+/// Domain opers for page entities.
 pub struct PageComplex;
 
 impl PageComplex {
@@ -37,7 +37,7 @@ impl PageComplex {
     }
 }
 
-/// Permission-gate operations for page entities.
+/// Permission-gate opers for page entities.
 pub struct PagePermComplex;
 
 impl PagePermComplex {

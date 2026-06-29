@@ -67,7 +67,7 @@ use crate::util::DeriveTransactional;
 /// A repository whose [`Execute`] and [`Advance`] impls always fail.
 ///
 /// Used in negative tests to verify error propagation from the repo layer.
-/// Implements all [`TeamRepo`] operations by delegating to
+/// Implements all [`TeamRepo`] opers by delegating to
 /// [`FailingTeamTransactional`].
 struct FailingCreateRepo;
 

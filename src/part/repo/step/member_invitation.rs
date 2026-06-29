@@ -1,4 +1,4 @@
-//! Step types for member invitation repository operations.
+//! Step types for member invitation repository opers.
 
 use poprako_transactional::step::Step;
 

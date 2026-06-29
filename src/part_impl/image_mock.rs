@@ -40,38 +40,34 @@ impl ImagePool for Mock {
     }
 }
 
-mod tests {
-    // put_signed_returns_stable_url(ImagePool::put_signed)(positive): put URLs should be deterministic for assertions.
-    // get_signed_failure_returns_expected_error(ImagePool::get_signed)(negative): configured get failures should return an expected error.
+// put_signed_returns_stable_url(ImagePool::put_signed)(positive): put URLs should be deterministic for assertions.
+// get_signed_failure_returns_expected_error(ImagePool::get_signed)(negative): configured get failures should return an expected error.
 
-    use super::*;
+#[tokio::test]
+async fn put_signed_returns_stable_url() {
+    let mock = Mock::new();
 
-    #[tokio::test]
-    async fn put_signed_returns_stable_url() {
-        let mock = Mock::new();
+    let url = ImagePool::put_signed(&mock, "avatar.png").await;
+    assert!(url.is_ok());
+    let url = url.ok().unwrap();
 
-        let url = ImagePool::put_signed(&mock, "avatar.png").await;
-        assert!(url.is_ok());
-        let url = url.ok().unwrap();
+    assert_eq!(url.as_str(), "https://test.local/put/avatar.png");
+}
 
-        assert_eq!(url.as_str(), "https://test.local/put/avatar.png");
-    }
+#[tokio::test]
+async fn get_signed_failure_returns_expected_error() {
+    let mock = Mock::new().with_image_get_failure();
 
-    #[tokio::test]
-    async fn get_signed_failure_returns_expected_error() {
-        let mock = Mock::new().with_image_get_failure();
+    let err = ImagePool::get_signed(&mock, "avatar.png")
+        .await
+        .err()
+        .unwrap();
 
-        let err = ImagePool::get_signed(&mock, "avatar.png")
-            .await
-            .err()
-            .unwrap();
-
-        assert!(matches!(
-            err,
-            RootError::Expected {
-                variant: ExpectedVariant::Args,
-                ..
-            }
-        ));
-    }
+    assert!(matches!(
+        err,
+        RootError::Expected {
+            variant: ExpectedVariant::Args,
+            ..
+        }
+    ));
 }

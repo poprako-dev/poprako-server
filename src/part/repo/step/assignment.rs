@@ -1,4 +1,4 @@
-//! Step types for assignment repository operations.
+//! Step types for assignment repository opers.
 
 use poprako_transactional::step::Step;
 

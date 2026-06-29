@@ -1,7 +1,7 @@
 //! Repository traits for the team domain.
 //!
 //! Mirrors the pattern in [`UserRepo`]: a non-transactional trait for
-//! standalone operations and a transactional trait for operations that
+//! standalone opers and a transactional trait for opers that
 //! must participate in a [`Drive::with_context`] closure.
 //!
 //! [`UserRepo`]: super::user::UserRepo
