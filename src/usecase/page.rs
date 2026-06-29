@@ -65,23 +65,21 @@ where
         image_version: i64,
     }
 
+    {
+        use crate::part::shared::proxy::AsProxyNonTransactional as _;
+
+        PagePermComplex::can_user_reserve(&mut repo.as_proxy(), &token.user_id, &data.chapter_id)
+            .await?;
+    }
+
     let reservations = drive
         .with_context(async move |context| {
             let repo = repo.transactional().await;
             let prom = prom.transactional().await;
 
-            use crate::part::shared::proxy::AsProxyTransactional as _;
-
             let chapter_info = repo
                 .advance(context, &ChapterStep::get_info_excluded(&data.chapter_id))
                 .await?;
-
-            PagePermComplex::can_user_reserve(
-                &mut repo.as_proxy(context),
-                &token.user_id,
-                &chapter_info.id,
-            )
-            .await?;
 
             if chapter_info.page_count != 0 {
                 return Err(RootError::Expected {
@@ -198,29 +196,26 @@ where
 {
     let page_id = id.clone();
 
+    let page_info = repo.execute(&PageStep::get_info_by_id(&id)).await?;
+
+    {
+        use crate::part::shared::proxy::AsProxyNonTransactional as _;
+
+        PagePermComplex::can_user_reserve(
+            &mut repo.as_proxy(),
+            &token.user_id,
+            &page_info.chapter_id,
+        )
+        .await?;
+    }
+
     let (object_key, image_version) = drive
         .with_context(async move |context| {
             let repo = repo.transactional().await;
             let prom = prom.transactional().await;
 
-            use crate::part::shared::proxy::AsProxyTransactional as _;
-
-            let page_info = repo
-                .advance(context, &PageStep::get_info_excluded(&id))
-                .await?;
-
-            PagePermComplex::can_user_reserve(
-                &mut repo.as_proxy(context),
-                &token.user_id,
-                &page_info.chapter_id,
-            )
-            .await?;
-
             let page_reservation = repo
-                .advance(
-                    context,
-                    &PageStep::reserve_image(&page_info.id, &data.file_ext),
-                )
+                .advance(context, &PageStep::reserve_image(&id, &data.file_ext))
                 .await?;
 
             let now = OffsetDateTime::now_utc();
@@ -236,7 +231,7 @@ where
             append_check_uploaded(
                 &prom,
                 context,
-                &page_info.id,
+                &id,
                 &page_reservation.object_key,
                 page_reservation.image_version,
                 &check_visible_at,
@@ -320,26 +315,26 @@ where
     <R as DeriveTransactional>::Transactional:
         PageRepoTransactional<C> + AssignmentRepoTransactional<C> + Send + Sync,
 {
+    let page_info = repo.execute(&PageStep::get_info_by_id(&id)).await?;
+
+    {
+        use crate::part::shared::proxy::AsProxyNonTransactional as _;
+
+        PagePermComplex::can_user_mark_image_uploaded(
+            &mut repo.as_proxy(),
+            &token.user_id,
+            &page_info.chapter_id,
+        )
+        .await?;
+    }
+
     drive
         .with_context(async move |context| {
             let repo = repo.transactional().await;
 
-            use crate::part::shared::proxy::AsProxyTransactional as _;
-
-            let page_info = repo
-                .advance(context, &PageStep::get_info_excluded(&id))
-                .await?;
-
-            PagePermComplex::can_user_mark_image_uploaded(
-                &mut repo.as_proxy(context),
-                &token.user_id,
-                &page_info.chapter_id,
-            )
-            .await?;
-
             repo.advance(
                 context,
-                &PageStep::mark_image_uploaded(&page_info.id, data.image_version),
+                &PageStep::mark_image_uploaded(&id, data.image_version),
             )
             .await?;
 
@@ -382,23 +377,25 @@ where
     P: Prom<C> + Send + Sync,
     <P as DeriveTransactional>::Transactional: PromTransactional<C> + Send + Sync,
 {
+    {
+        use crate::part::shared::proxy::AsProxyNonTransactional as _;
+
+        PagePermComplex::can_user_delete_by_chapter(
+            &mut repo.as_proxy(),
+            &token.user_id,
+            &chapter_id,
+        )
+        .await?;
+    }
+
     drive
         .with_context(async move |context| {
             let repo = repo.transactional().await;
             let prom = prom.transactional().await;
 
-            use crate::part::shared::proxy::AsProxyTransactional as _;
-
             let chapter_info = repo
                 .advance(context, &ChapterStep::get_info_excluded(&chapter_id))
                 .await?;
-
-            PagePermComplex::can_user_delete_by_chapter(
-                &mut repo.as_proxy(context),
-                &token.user_id,
-                &chapter_info.id,
-            )
-            .await?;
 
             let page_infos = repo
                 .advance(

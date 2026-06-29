@@ -3,6 +3,7 @@
 use poprako_transactional::step::Step;
 
 use crate::model::page::{PageForm, PageImageReservation, PageInfo};
+use crate::model::unit::UnitCounters;
 
 /// Step that fetches a page by its identifier.
 pub struct GetInfoById<'a> {
@@ -71,6 +72,16 @@ impl<'a> Step for MarkImageUploaded<'a> {
     type Output = ();
 }
 
+/// Step that overwrites unit counters for one page.
+pub struct SetUnitCounters<'a> {
+    pub id: &'a str,
+    pub counters: UnitCounters,
+}
+
+impl<'a> Step for SetUnitCounters<'a> {
+    type Output = ();
+}
+
 /// Step that deletes all pages under one chapter.
 pub struct DeleteByChapterId<'a> {
     pub chapter_id: &'a str,
@@ -125,6 +136,11 @@ impl PageStep {
     /// Constructs a step to mark a page image uploaded.
     pub fn mark_image_uploaded<'a>(id: &'a str, image_version: i64) -> MarkImageUploaded<'a> {
         MarkImageUploaded { id, image_version }
+    }
+
+    /// Constructs a step to overwrite unit counters for one page.
+    pub fn set_unit_counters<'a>(id: &'a str, counters: UnitCounters) -> SetUnitCounters<'a> {
+        SetUnitCounters { id, counters }
     }
 
     /// Constructs a step to delete all pages under one chapter.

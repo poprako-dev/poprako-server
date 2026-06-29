@@ -4,7 +4,7 @@ use poprako_transactional::advance::Advance;
 
 use crate::part::repo::step::page::{
     CreateBatch, DeleteByChapterId, GetInfoById, GetInfoExcluded, ListAllInfosByChapter,
-    ListInfosByChapter, MarkImageUploaded, ReserveImage,
+    ListInfosByChapter, MarkImageUploaded, ReserveImage, SetUnitCounters,
 };
 use crate::part::shared::execute::Execute;
 use crate::result::RootError;
@@ -29,6 +29,7 @@ pub trait PageRepoTransactional<C>:
     + for<'a> Advance<CreateBatch<'a>, C, Error = RootError>
     + for<'a> Advance<ReserveImage<'a>, C, Error = RootError>
     + for<'a> Advance<MarkImageUploaded<'a>, C, Error = RootError>
+    + for<'a> Advance<SetUnitCounters<'a>, C, Error = RootError>
     + for<'a> Advance<DeleteByChapterId<'a>, C, Error = RootError>
 {
 }

@@ -9,7 +9,7 @@ use crate::model::page::{PageForm, PageImageReservation, PageInfo};
 use crate::part::repo::page::{PageRepo, PageRepoTransactional};
 use crate::part::repo::step::page::{
     CreateBatch, DeleteByChapterId, GetInfoById, GetInfoExcluded, ListAllInfosByChapter,
-    ListInfosByChapter, MarkImageUploaded, ReserveImage,
+    ListInfosByChapter, MarkImageUploaded, ReserveImage, SetUnitCounters,
 };
 use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactional, expected, now};
@@ -241,6 +241,31 @@ impl<'a> Advance<MarkImageUploaded<'a>, MockContext> for MockTransactional {
 }
 
 #[async_trait]
+impl<'a> Advance<SetUnitCounters<'a>, MockContext> for MockTransactional {
+    type Error = RootError;
+
+    async fn advance(
+        &self,
+        context: &mut MockContext,
+        step: &SetUnitCounters<'a>,
+    ) -> Result<(), Self::Error> {
+        let page_info = context
+            .state
+            .pages
+            .iter_mut()
+            .find(|page_info| page_info.id == step.id)
+            .ok_or_else(|| expected("error-page-not-found"))?;
+
+        page_info.total_unit_count = step.counters.total_unit_count;
+        page_info.translated_unit_count = step.counters.translated_unit_count;
+        page_info.proofread_unit_count = step.counters.proofread_unit_count;
+        page_info.updated_at = now();
+
+        Ok(())
+    }
+}
+
+#[async_trait]
 impl<'a> Advance<DeleteByChapterId<'a>, MockContext> for MockTransactional {
     type Error = RootError;
 
@@ -253,6 +278,16 @@ impl<'a> Advance<DeleteByChapterId<'a>, MockContext> for MockTransactional {
             .state
             .pages
             .retain(|page_info| page_info.chapter_id != step.chapter_id);
+        let page_ids = context
+            .state
+            .pages
+            .iter()
+            .map(|page_info| page_info.id.clone())
+            .collect::<Vec<_>>();
+        context
+            .state
+            .units
+            .retain(|unit_info| page_ids.contains(&unit_info.page_id));
 
         Ok(())
     }

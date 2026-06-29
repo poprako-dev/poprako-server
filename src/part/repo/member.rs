@@ -7,8 +7,8 @@
 use poprako_transactional::advance::Advance;
 
 use crate::part::repo::step::member::{
-    Create, Delete, FindInfoByUserTeamId, GetInfoExcluded, ListInfos, ListInfosByUserIdExcluded,
-    TouchLastActive, UpdateRole, UpdateUserNickname,
+    Create, Delete, FindInfoByUserTeamId, GetInfoById, GetInfoExcluded, ListInfos,
+    ListInfosByUserIdExcluded, TouchLastActive, UpdateRole, UpdateUserNickname,
 };
 use crate::part::shared::execute::Execute;
 use crate::result::RootError;
@@ -23,6 +23,7 @@ pub trait MemberRepo<C>:
     DeriveTransactional
     + for<'a> Execute<FindInfoByUserTeamId<'a>, Error = RootError>
     + for<'a> Execute<ListInfos<'a>, Error = RootError>
+    + for<'a> Execute<GetInfoById<'a>, Error = RootError>
 where
     Self::Transactional: MemberRepoTransactional<C>,
 {

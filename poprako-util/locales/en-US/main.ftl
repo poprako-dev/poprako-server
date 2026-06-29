@@ -38,6 +38,11 @@ error-chapter-role-not-assignable = Chapter role is not assignable
 error-invalid-page-count = Page count must be positive
 error-page-reserve-role-required = Raw provider or reviewer role is required to reserve pages
 error-page-upload-role-required = Raw provider role is required to confirm page uploads
+error-invalid-unit-operation = Invalid unit operation
+error-unit-list-permission-required = Only team members or chapter assignees can view units
+error-unit-edit-permission-required = Translator or proofreader role is required to edit units
+error-unit-not-found = Unit not found
+error-unit-duplicate = Unit already exists
 
 chapter-default-subtitle = Ch. { $number }
 

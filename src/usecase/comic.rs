@@ -50,18 +50,16 @@ where
         + Send
         + Sync,
 {
+    {
+        use crate::part::shared::proxy::AsProxyNonTransactional as _;
+
+        ComicPermComplex::can_user_create(&mut repo.as_proxy(), &token.user_id, &data.workset_id)
+            .await?;
+    }
+
     let comic_id = drive
         .with_context(async move |context| {
             let repo = repo.transactional().await;
-
-            use crate::part::shared::proxy::AsProxyTransactional as _;
-
-            ComicPermComplex::can_user_create(
-                &mut repo.as_proxy(context),
-                &token.user_id,
-                &data.workset_id,
-            )
-            .await?;
 
             let index = repo
                 .advance(
@@ -179,7 +177,7 @@ where
     repo.execute(&ComicStep::update_info(&comic_info_update))
         .await?;
 
-    Ok(())
+    accept(())
 }
 
 /// Reserves a new comic cover upload slot.
@@ -206,19 +204,16 @@ where
     <P as DeriveTransactional>::Transactional: PromTransactional<C> + Send + Sync,
     I: ImagePool,
 {
+    {
+        use crate::part::shared::proxy::AsProxyNonTransactional as _;
+
+        ComicPermComplex::can_user_reserve_cover(&mut repo.as_proxy(), &token.user_id, &id).await?;
+    }
+
     let (object_key, cover_version) = drive
         .with_context(async move |context| {
             let repo = repo.transactional().await;
             let prom = prom.transactional().await;
-
-            use crate::part::shared::proxy::AsProxyTransactional as _;
-
-            ComicPermComplex::can_user_reserve_cover(
-                &mut repo.as_proxy(context),
-                &token.user_id,
-                &id,
-            )
-            .await?;
 
             let cover_reservation = repo
                 .advance(context, &ComicStep::reserve_cover(&id, &data.file_ext))
@@ -298,7 +293,7 @@ where
     repo.execute(&ComicStep::mark_cover_uploaded(&id, data.cover_version))
         .await?;
 
-    Ok(())
+    accept(())
 }
 
 /// Deletes a comic and updates the parent workset counter.
@@ -324,15 +319,16 @@ where
     P: Prom<C> + Send + Sync,
     <P as DeriveTransactional>::Transactional: PromTransactional<C> + Send + Sync,
 {
+    {
+        use crate::part::shared::proxy::AsProxyNonTransactional as _;
+
+        ComicPermComplex::can_user_delete(&mut repo.as_proxy(), &token.user_id, &id).await?;
+    }
+
     drive
         .with_context(async move |context| {
             let repo = repo.transactional().await;
             let prom = prom.transactional().await;
-
-            use crate::part::shared::proxy::AsProxyTransactional as _;
-
-            ComicPermComplex::can_user_delete(&mut repo.as_proxy(context), &token.user_id, &id)
-                .await?;
 
             let comic_info = repo
                 .advance(context, &ComicStep::get_info_excluded(&id))
@@ -367,18 +363,16 @@ where
         + Send
         + Sync,
 {
+    {
+        use crate::part::shared::proxy::AsProxyNonTransactional as _;
+
+        ComicPermComplex::can_user_mark_completed(&mut repo.as_proxy(), &token.user_id, &id)
+            .await?;
+    }
+
     drive
         .with_context(async move |context| {
             let repo = repo.transactional().await;
-
-            use crate::part::shared::proxy::AsProxyTransactional as _;
-
-            ComicPermComplex::can_user_mark_completed(
-                &mut repo.as_proxy(context),
-                &token.user_id,
-                &id,
-            )
-            .await?;
 
             repo.advance(context, &ComicStep::mark_completed(&id, is_completed))
                 .await?;

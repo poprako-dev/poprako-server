@@ -20,6 +20,7 @@ use crate::model::member_invitation::MemberInvitationInfo;
 use crate::model::page::PageInfo;
 use crate::model::system_mail::SystemMailInfo;
 use crate::model::team::TeamInfo;
+use crate::model::unit::UnitInfo;
 use crate::model::user::{UserCredential, UserInfo};
 use crate::model::workset::WorksetInfo;
 use crate::result::{ExpectedVariant, RootError};
@@ -38,6 +39,7 @@ pub struct MockState {
     pub chapters: Vec<ChapterInfo>,
     pub assignments: Vec<AssignmentInfo>,
     pub pages: Vec<PageInfo>,
+    pub units: Vec<UnitInfo>,
     pub system_mails: Vec<SystemMailInfo>,
     pub prom_records: Vec<super::prom_mock::MockPromRecord>,
 }
@@ -55,6 +57,7 @@ pub struct MockSnapshot {
     pub chapters: Vec<ChapterInfo>,
     pub assignments: Vec<AssignmentInfo>,
     pub pages: Vec<PageInfo>,
+    pub units: Vec<UnitInfo>,
     pub system_mails: Vec<SystemMailInfo>,
     pub prom_records: Vec<super::prom_mock::MockPromRecord>,
 }
@@ -72,6 +75,7 @@ impl From<MockState> for MockSnapshot {
             chapters: state.chapters,
             assignments: state.assignments,
             pages: state.pages,
+            units: state.units,
             system_mails: state.system_mails,
             prom_records: state.prom_records,
         }
@@ -157,6 +161,11 @@ impl Mock {
     /// Seed a page directly into the mock state.
     pub fn seed_page(&self, page: PageInfo) {
         self.state.lock().unwrap().pages.push(page);
+    }
+
+    /// Seed a unit directly into the mock state.
+    pub fn seed_unit(&self, unit: UnitInfo) {
+        self.state.lock().unwrap().units.push(unit);
     }
 
     /// Seed a system mail directly into the mock state.
@@ -277,6 +286,9 @@ pub mod system_mail;
 
 /// Mock implementations for team repository operations.
 pub mod team;
+
+/// Mock implementations for unit repository operations.
+pub mod unit;
 
 /// Mock implementations for user repository operations.
 pub mod user;

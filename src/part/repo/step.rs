@@ -19,5 +19,6 @@ pub mod member_invitation;
 pub mod page;
 pub mod system_mail;
 pub mod team;
+pub mod unit;
 pub mod user;
 pub mod workset;

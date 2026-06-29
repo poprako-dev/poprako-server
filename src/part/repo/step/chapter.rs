@@ -3,6 +3,7 @@
 use poprako_transactional::step::Step;
 
 use crate::model::chapter::{ChapterForm, ChapterInfo, ChapterInfoUpdate, ChapterStageUpdate};
+use crate::model::unit::UnitCounterDelta;
 
 /// Step that inserts a new chapter row.
 pub struct Create<'a> {
@@ -99,6 +100,16 @@ pub struct SetPageCounters<'a> {
 }
 
 impl<'a> Step for SetPageCounters<'a> {
+    type Output = ();
+}
+
+/// Step that adjusts unit counters for one chapter by delta.
+pub struct AdjustUnitCounters<'a> {
+    pub id: &'a str,
+    pub delta: UnitCounterDelta,
+}
+
+impl<'a> Step for AdjustUnitCounters<'a> {
     type Output = ();
 }
 
@@ -203,6 +214,14 @@ impl ChapterStep {
             translated_unit_count,
             proofread_unit_count,
         }
+    }
+
+    /// Constructs a step to adjust unit counters by delta.
+    pub fn adjust_unit_counters<'a>(
+        id: &'a str,
+        delta: UnitCounterDelta,
+    ) -> AdjustUnitCounters<'a> {
+        AdjustUnitCounters { id, delta }
     }
 
     /// Constructs a step to unpin other chapters in the same comic.

@@ -7,7 +7,7 @@ use poprako_transactional::advance::Advance;
 use crate::model::chapter::{ChapterForm, ChapterInfo};
 use crate::part::repo::chapter::{ChapterRepo, ChapterRepoTransactional};
 use crate::part::repo::step::chapter::{
-    Create, Delete, FindPinnedInfoByComicId, GetInfoById, GetInfoExcluded,
+    AdjustUnitCounters, Create, Delete, FindPinnedInfoByComicId, GetInfoById, GetInfoExcluded,
     ListAllInfosByComicIdExcluded, ListInfosByComicId, ListInfosByComicIdExcluded, SetPageCounters,
     UnpinOthers, UpdateInfo, UpdateStage,
 };
@@ -294,6 +294,31 @@ impl<'a> Advance<SetPageCounters<'a>, MockContext> for MockTransactional {
 }
 
 #[async_trait]
+impl<'a> Advance<AdjustUnitCounters<'a>, MockContext> for MockTransactional {
+    type Error = RootError;
+
+    async fn advance(
+        &self,
+        context: &mut MockContext,
+        step: &AdjustUnitCounters<'a>,
+    ) -> Result<(), Self::Error> {
+        let chapter_info = context
+            .state
+            .chapters
+            .iter_mut()
+            .find(|chapter_info| chapter_info.id == step.id)
+            .ok_or_else(|| expected("error-chapter-not-found"))?;
+
+        chapter_info.total_unit_count += step.delta.total_unit_count;
+        chapter_info.translated_unit_count += step.delta.translated_unit_count;
+        chapter_info.proofread_unit_count += step.delta.proofread_unit_count;
+        chapter_info.updated_at = now();
+
+        Ok(())
+    }
+}
+
+#[async_trait]
 impl<'a> Advance<UnpinOthers<'a>, MockContext> for MockTransactional {
     type Error = RootError;
 
@@ -332,6 +357,16 @@ impl<'a> Advance<Delete<'a>, MockContext> for MockTransactional {
             .state
             .pages
             .retain(|page_info| page_info.chapter_id != step.id);
+        let page_ids = context
+            .state
+            .pages
+            .iter()
+            .map(|page_info| page_info.id.clone())
+            .collect::<Vec<_>>();
+        context
+            .state
+            .units
+            .retain(|unit_info| page_ids.contains(&unit_info.page_id));
         context
             .state
             .assignments
