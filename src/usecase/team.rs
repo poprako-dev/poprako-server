@@ -184,7 +184,7 @@ where
 /// * `D: Drive<C>` — Transaction driver.
 /// * `C` — Context anchor.
 /// * `R: TeamRepo<C>` — Team storage.
-/// * `P: Prom<C>` — Prom enqueuer for deferred image operations.
+/// * `P: Prom<C>` — Prom enqueuer for deferred image opers.
 /// * `I: ImagePool` — Generates the signed upload URL.
 pub async fn reserve_avatar<D, C, R, P, I>(
     drive: &D,

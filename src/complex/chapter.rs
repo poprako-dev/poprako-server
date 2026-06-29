@@ -1,4 +1,4 @@
-//! Complex-domain operations for chapter entities — identity generation, workflow
+//! Complex-domain opers for chapter entities — identity generation, workflow
 //! stage transitions, pagination helpers, and permission gates.
 //!
 //! ## Permission model
@@ -36,7 +36,7 @@ use crate::result::{ExpectedVariant, RootError, RootResult, accept};
 use crate::util::next_snowflake_id;
 use crate::value::chapter::{StagePhase, WorkflowEvent, WorkflowStage, try_modify_stage};
 
-/// Domain operations for chapter entities: ID generation, workflow-stage
+/// Domain opers for chapter entities: ID generation, workflow-stage
 /// transition computation, and small pure helpers.
 pub struct ChapterComplex;
 
@@ -104,7 +104,7 @@ impl ChapterComplex {
         P: PromTransactional<C> + Send + Sync,
     {
         let chapter_info = repo
-            .advance(context, &ChapterStep::get_info_excluded(id))
+            .advance(context, &ChapterStep::get_info_by_id_excluded(id))
             .await?;
 
         prom_image_deletes(repo, prom, context, &chapter_info.id).await?;
@@ -221,7 +221,7 @@ where
     accept(())
 }
 
-/// Permission-gate operations for chapter entities — resolves the owning
+/// Permission-gate opers for chapter entities — resolves the owning
 /// team from the chapter or comic and delegates to shared team-permission
 /// helpers (`[`check_user_is_team_member`]` / `[`check_user_is_team_admin`]`).
 ///

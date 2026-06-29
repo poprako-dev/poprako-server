@@ -1,4 +1,4 @@
-//! Step types for workset repository operations.
+//! Step types for workset repository opers.
 
 use poprako_transactional::step::Step;
 

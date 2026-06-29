@@ -1,16 +1,13 @@
-//! Complex-domain operations for page units.
+//! Complex-domain opers for page units.
 
-use std::collections::HashSet;
-
-use time::OffsetDateTime;
+use std::collections::{HashMap, HashSet};
 
 use poprako_util::i18n::trl;
 
 use crate::complex::util::check_user_is_team_member;
 use crate::model::role::RoleField;
 use crate::model::unit::{
-    UnitApplyAck, UnitCounters, UnitIdMapper, UnitInfo, UnitLocalSnapshot, UnitOper,
-    UnitServerSnapshot,
+    UnitApplyAck, UnitDiff, UnitIdMapper, UnitIndex, UnitIndexUpdate, UnitOper,
 };
 use crate::part::repo::step::assignment::{AssignmentStep, GetInfoByChapterUserId};
 use crate::part::repo::step::chapter::{ChapterStep, GetInfoById as ChapterGetInfoById};
@@ -21,7 +18,7 @@ use crate::part::shared::proxy::ProxyExecute;
 use crate::result::{ExpectedVariant, RootError, RootResult, accept};
 use crate::util::next_snowflake_id;
 
-/// Domain operations for page units.
+/// Domain opers for page units.
 pub struct UnitComplex;
 
 impl UnitComplex {
@@ -30,75 +27,217 @@ impl UnitComplex {
         next_snowflake_id()
     }
 
-    /// Applies ordered unit operations to a current page unit sequence.
-    pub fn apply_opers(
-        page_id: &str,
-        current_unit_infos: Vec<UnitInfo>,
-        unit_operations: Vec<UnitOper>,
-        now: OffsetDateTime,
-    ) -> RootResult<UnitApplyAck> {
-        let mut unit_infos = current_unit_infos;
-        let mut local_id_mappings = Vec::new();
+    /// Validates one compact difference and resolves local create ids.
+    pub fn prepare_diff(diff: UnitDiff) -> RootResult<UnitApplyAck> {
+        validate_page_id(&diff.page_id)?;
+
+        let mut candidate_ids = HashSet::new();
+
+        for id in &diff.candidate_order {
+            validate_id(id)?;
+
+            if !candidate_ids.insert(id.clone()) {
+                return Err(unit_invalid_oper_error());
+            }
+        }
+
+        let mut required_ids = HashSet::new();
+        let mut deleted_ids = HashSet::new();
         let mut local_ids = HashSet::new();
+        let mut local_id_map = Vec::new();
+        let mut opers = Vec::with_capacity(diff.opers.len());
 
-        for unit_operation in unit_operations {
-            match unit_operation {
-                UnitOper::Update { unit } => {
-                    validate_server_snapshot(&unit)?;
+        for unit_oper in diff.opers {
+            match unit_oper {
+                UnitOper::Create {
+                    local_id,
+                    id: _,
+                    payload,
+                } => {
+                    validate_id(&local_id)?;
 
-                    upsert_tail(&mut unit_infos, page_id, unit, now);
-                }
-                UnitOper::MoveBefore { unit, before_id } => {
-                    validate_server_snapshot(&unit)?;
-
-                    validate_before_id(&before_id)?;
-
-                    move_before(&mut unit_infos, page_id, unit, before_id, now);
-                }
-                UnitOper::InsertBefore { unit, before_id } => {
-                    validate_local_snapshot(&unit)?;
-                    validate_before_id(&before_id)?;
-
-                    if !local_ids.insert(unit.local_id.clone()) {
-                        return Err(unit_invalid_operation_error());
+                    if !local_ids.insert(local_id.clone()) {
+                        return Err(unit_invalid_oper_error());
                     }
+
+                    required_ids.insert(local_id.clone());
 
                     let unit_id = Self::gen_id();
 
-                    insert_before(
-                        &mut unit_infos,
-                        page_id,
-                        unit_id.clone(),
-                        unit.clone(),
-                        before_id,
-                        now,
-                    );
+                    local_id_map.push(UnitIdMapper {
+                        local_id: local_id.clone(),
+                        unit_id: unit_id.clone(),
+                    });
 
-                    local_id_mappings.push(UnitIdMapper {
-                        local_id: unit.local_id,
-                        unit_id,
+                    opers.push(UnitOper::Create {
+                        local_id,
+                        id: Some(unit_id),
+                        payload,
                     });
                 }
-                UnitOper::Delete { unit_id } => {
-                    validate_id(&unit_id)?;
-                    unit_infos.retain(|unit_info| unit_info.id != unit_id);
+                UnitOper::Save { id, payload } => {
+                    validate_id(&id)?;
+
+                    required_ids.insert(id.clone());
+
+                    opers.push(UnitOper::Save { id, payload });
+                }
+                UnitOper::Delete { id } => {
+                    validate_id(&id)?;
+
+                    deleted_ids.insert(id.clone());
+
+                    opers.push(UnitOper::Delete { id });
                 }
             }
         }
 
-        refresh_indices(&mut unit_infos);
+        for id in &deleted_ids {
+            if required_ids.contains(id) {
+                return Err(unit_invalid_oper_error());
+            }
 
-        let counters = count_units(&unit_infos);
+            if candidate_ids.contains(id) {
+                return Err(unit_invalid_oper_error());
+            }
+        }
+
+        for id in &required_ids {
+            if !candidate_ids.contains(id) {
+                return Err(unit_invalid_oper_error());
+            }
+        }
+
+        let candidate_order = resolve_candidate_order(diff.candidate_order, &local_id_map);
 
         accept(UnitApplyAck {
-            unit_infos,
-            id_mapper: local_id_mappings,
-            counters,
+            opers,
+            local_id_map,
+            candidate_order,
         })
+    }
+
+    /// Builds compact index updates from resolved candidate order and current indexes.
+    pub fn build_index_updates(
+        candidate_order: &[String],
+        local_id_maps: &[UnitIdMapper],
+        current_indexes: Vec<UnitIndex>,
+    ) -> Vec<UnitIndexUpdate> {
+        let mut sorted_indexes = current_indexes;
+
+        sorted_indexes.sort_by(|left, right| {
+            left.index
+                .cmp(&right.index)
+                .then_with(|| left.id.cmp(&right.id))
+        });
+
+        let all_count = sorted_indexes.len();
+
+        if all_count == 0 {
+            return Vec::new();
+        }
+
+        let local_to_server = local_id_maps
+            .iter()
+            .map(|unit_id_mapper| {
+                (
+                    unit_id_mapper.local_id.as_str(),
+                    unit_id_mapper.unit_id.as_str(),
+                )
+            })
+            .collect::<HashMap<_, _>>();
+
+        let all_ids = sorted_indexes
+            .iter()
+            .map(|unit_index| unit_index.id.as_str())
+            .collect::<HashSet<_>>();
+
+        let mut anchor_ids = HashSet::new();
+        let mut resolved_ids = Vec::new();
+
+        for id in candidate_order {
+            let resolved_id = local_to_server
+                .get(id.as_str())
+                .copied()
+                .unwrap_or(id.as_str());
+
+            if !all_ids.contains(resolved_id) {
+                continue;
+            }
+
+            if !anchor_ids.insert(resolved_id) {
+                continue;
+            }
+
+            resolved_ids.push(resolved_id);
+        }
+
+        let anchor_count = resolved_ids.len();
+        let mut slot_extras = HashMap::<usize, Vec<&str>>::new();
+
+        for (rank, unit_index) in sorted_indexes.iter().enumerate() {
+            if anchor_ids.contains(unit_index.id.as_str()) {
+                continue;
+            }
+
+            let mut slot = 0;
+
+            if anchor_count > 0 {
+                slot = rank * anchor_count / all_count;
+
+                if slot >= anchor_count {
+                    slot = anchor_count - 1;
+                }
+            }
+
+            slot_extras
+                .entry(slot)
+                .or_default()
+                .push(unit_index.id.as_str());
+        }
+
+        let mut final_ids = Vec::with_capacity(all_count);
+
+        for (position, id) in resolved_ids.into_iter().enumerate() {
+            final_ids.push(id);
+
+            if let Some(extra_ids) = slot_extras.remove(&position) {
+                final_ids.extend(extra_ids);
+            }
+        }
+
+        if anchor_count == 0 {
+            for unit_index in &sorted_indexes {
+                final_ids.push(unit_index.id.as_str());
+            }
+        }
+
+        let old_indexes = sorted_indexes
+            .iter()
+            .map(|unit_index| (unit_index.id.as_str(), unit_index.index))
+            .collect::<HashMap<_, _>>();
+
+        final_ids
+            .into_iter()
+            .enumerate()
+            .filter_map(|(index, id)| {
+                let index = index as i32;
+                let old_index = old_indexes.get(id)?;
+
+                if *old_index == index {
+                    return None;
+                }
+
+                Some(UnitIndexUpdate {
+                    id: id.into(),
+                    index,
+                })
+            })
+            .collect()
     }
 }
 
-/// Permission-gate operations for page units.
+/// Permission-gate opers for page units.
 pub struct UnitPermComplex;
 
 impl UnitPermComplex {
@@ -128,6 +267,7 @@ impl UnitPermComplex {
             .await?;
 
         let member_result = check_user_is_team_member(proxy, user_id, &workset_info.team_id).await;
+
         if member_result.is_ok() {
             return accept(());
         }
@@ -175,175 +315,43 @@ impl UnitPermComplex {
     }
 }
 
-fn validate_server_snapshot(unit: &UnitServerSnapshot) -> RootResult<()> {
-    validate_id(&unit.id)
-}
-
-fn validate_local_snapshot(unit: &UnitLocalSnapshot) -> RootResult<()> {
-    validate_id(&unit.local_id)
+fn validate_page_id(page_id: &str) -> RootResult<()> {
+    validate_id(page_id)
 }
 
 fn validate_id(id: &str) -> RootResult<()> {
     if id.is_empty() {
-        return Err(unit_invalid_operation_error());
+        return Err(unit_invalid_oper_error());
     }
 
     accept(())
 }
 
-fn validate_before_id(before_id: &Option<String>) -> RootResult<()> {
-    if before_id
-        .as_ref()
-        .map(|value| value.is_empty())
-        .unwrap_or(false)
-    {
-        return Err(unit_invalid_operation_error());
-    }
+fn resolve_candidate_order(
+    candidate_order: Vec<String>,
+    local_id_maps: &[UnitIdMapper],
+) -> Vec<String> {
+    let local_to_server = local_id_maps
+        .iter()
+        .map(|unit_id_map| (unit_id_map.local_id.as_str(), unit_id_map.unit_id.as_str()))
+        .collect::<HashMap<_, _>>();
 
-    accept(())
+    candidate_order
+        .into_iter()
+        .map(|id| {
+            local_to_server
+                .get(id.as_str())
+                .copied()
+                .unwrap_or(&id)
+                .into()
+        })
+        .collect()
 }
 
-fn upsert_tail(
-    unit_infos: &mut Vec<UnitInfo>,
-    page_id: &str,
-    unit: UnitServerSnapshot,
-    now: OffsetDateTime,
-) {
-    match position_by_id(unit_infos, &unit.id) {
-        Some(position) => write_existing(&mut unit_infos[position], unit, now),
-        None => unit_infos.push(info_from_server(page_id, unit, now)),
-    }
-}
-
-fn move_before(
-    unit_infos: &mut Vec<UnitInfo>,
-    page_id: &str,
-    unit: UnitServerSnapshot,
-    before_id: Option<String>,
-    now: OffsetDateTime,
-) {
-    let mut unit_info = match position_by_id(unit_infos, &unit.id) {
-        Some(position) => unit_infos.remove(position),
-        None => info_from_server(page_id, unit.clone(), now),
-    };
-    write_existing(&mut unit_info, unit, now);
-
-    insert_existing_before(unit_infos, unit_info, before_id);
-}
-
-fn insert_before(
-    unit_infos: &mut Vec<UnitInfo>,
-    page_id: &str,
-    unit_id: String,
-    unit: UnitLocalSnapshot,
-    before_id: Option<String>,
-    now: OffsetDateTime,
-) {
-    let unit_info = info_from_local(page_id, unit_id, unit, now);
-
-    insert_existing_before(unit_infos, unit_info, before_id);
-}
-
-fn insert_existing_before(
-    unit_infos: &mut Vec<UnitInfo>,
-    unit_info: UnitInfo,
-    before_id: Option<String>,
-) {
-    let position = before_id
-        .filter(|value| value != &unit_info.id)
-        .and_then(|value| position_by_id(unit_infos, &value))
-        .unwrap_or(unit_infos.len());
-
-    unit_infos.insert(position, unit_info);
-}
-
-fn position_by_id(unit_infos: &[UnitInfo], id: &str) -> Option<usize> {
-    unit_infos.iter().position(|unit_info| unit_info.id == id)
-}
-
-fn write_existing(unit_info: &mut UnitInfo, unit: UnitServerSnapshot, now: OffsetDateTime) {
-    unit_info.is_bubble = unit.is_bubble;
-    unit_info.is_proofread = unit.is_proofread;
-    unit_info.x_coord = unit.x_coord;
-    unit_info.y_coord = unit.y_coord;
-    unit_info.translated_text = unit.translated_text;
-    unit_info.translator_comment = unit.translator_comment;
-    unit_info.last_translator_id = unit.last_translator_id;
-    unit_info.proofread_text = unit.proofread_text;
-    unit_info.proofreader_comment = unit.proofreader_comment;
-    unit_info.last_proofreader_id = unit.last_proofreader_id;
-    unit_info.updated_at = now;
-}
-
-fn info_from_server(page_id: &str, unit: UnitServerSnapshot, now: OffsetDateTime) -> UnitInfo {
-    UnitInfo {
-        id: unit.id,
-        page_id: page_id.into(),
-        index: 0,
-        is_bubble: unit.is_bubble,
-        is_proofread: unit.is_proofread,
-        x_coord: unit.x_coord,
-        y_coord: unit.y_coord,
-        translated_text: unit.translated_text,
-        translator_comment: unit.translator_comment,
-        last_translator_id: unit.last_translator_id,
-        proofread_text: unit.proofread_text,
-        proofreader_comment: unit.proofreader_comment,
-        last_proofreader_id: unit.last_proofreader_id,
-        created_at: now,
-        updated_at: now,
-    }
-}
-
-fn info_from_local(
-    page_id: &str,
-    unit_id: String,
-    unit: UnitLocalSnapshot,
-    now: OffsetDateTime,
-) -> UnitInfo {
-    UnitInfo {
-        id: unit_id,
-        page_id: page_id.into(),
-        index: 0,
-        is_bubble: unit.is_bubble,
-        is_proofread: unit.is_proofread,
-        x_coord: unit.x_coord,
-        y_coord: unit.y_coord,
-        translated_text: unit.translated_text,
-        translator_comment: unit.translator_comment,
-        last_translator_id: unit.last_translator_id,
-        proofread_text: unit.proofread_text,
-        proofreader_comment: unit.proofreader_comment,
-        last_proofreader_id: unit.last_proofreader_id,
-        created_at: now,
-        updated_at: now,
-    }
-}
-
-fn refresh_indices(unit_infos: &mut [UnitInfo]) {
-    for (index, unit_info) in unit_infos.iter_mut().enumerate() {
-        unit_info.index = index as i32;
-    }
-}
-
-fn count_units(unit_infos: &[UnitInfo]) -> UnitCounters {
-    UnitCounters {
-        total_unit_count: unit_infos.len() as i32,
-        translated_unit_count: unit_infos
-            .iter()
-            .filter(|unit_info| unit_info.is_translated())
-            .count() as i32,
-        proofread_unit_count: unit_infos
-            .iter()
-            .filter(|unit_info| unit_info.is_proofread)
-            .count() as i32,
-    }
-}
-
-fn unit_invalid_operation_error() -> RootError {
+fn unit_invalid_oper_error() -> RootError {
     RootError::Expected {
         variant: ExpectedVariant::Args,
-        message: trl("error-invalid-unit-operation"),
+        message: trl("error-invalid-unit-oper"),
     }
 }
 

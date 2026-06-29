@@ -78,7 +78,10 @@ where
             let prom = prom.transactional().await;
 
             let chapter_info = repo
-                .advance(context, &ChapterStep::get_info_excluded(&data.chapter_id))
+                .advance(
+                    context,
+                    &ChapterStep::get_info_by_id_excluded(&data.chapter_id),
+                )
                 .await?;
 
             if chapter_info.page_count != 0 {
@@ -209,13 +212,16 @@ where
         .await?;
     }
 
+    let closure_id = id;
+    let file_ext = data.file_ext;
+
     let (object_key, image_version) = drive
         .with_context(async move |context| {
             let repo = repo.transactional().await;
             let prom = prom.transactional().await;
 
             let page_reservation = repo
-                .advance(context, &PageStep::reserve_image(&id, &data.file_ext))
+                .advance(context, &PageStep::reserve_image(&closure_id, &file_ext))
                 .await?;
 
             let now = OffsetDateTime::now_utc();
@@ -231,7 +237,7 @@ where
             append_check_uploaded(
                 &prom,
                 context,
-                &id,
+                &page_info.id,
                 &page_reservation.object_key,
                 page_reservation.image_version,
                 &check_visible_at,
@@ -328,13 +334,16 @@ where
         .await?;
     }
 
+    let closure_id = id;
+    let closure_image_version = data.image_version;
+
     drive
         .with_context(async move |context| {
             let repo = repo.transactional().await;
 
             repo.advance(
                 context,
-                &PageStep::mark_image_uploaded(&id, data.image_version),
+                &PageStep::mark_image_uploaded(&closure_id, closure_image_version),
             )
             .await?;
 
@@ -394,7 +403,7 @@ where
             let prom = prom.transactional().await;
 
             let chapter_info = repo
-                .advance(context, &ChapterStep::get_info_excluded(&chapter_id))
+                .advance(context, &ChapterStep::get_info_by_id_excluded(&chapter_id))
                 .await?;
 
             let page_infos = repo

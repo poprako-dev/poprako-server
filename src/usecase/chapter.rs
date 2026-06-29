@@ -230,7 +230,7 @@ where
             let repo = repo.transactional().await;
 
             let chapter_info = repo
-                .advance(context, &ChapterStep::get_info_excluded(&data.id))
+                .advance(context, &ChapterStep::get_info_by_id_excluded(&data.id))
                 .await?;
 
             if data.subtitle.is_some() || data.pin.is_some() {
@@ -307,7 +307,7 @@ where
             let prom = prom.transactional().await;
 
             let chapter_info = repo
-                .advance(context, &ChapterStep::get_info_excluded(&data.id))
+                .advance(context, &ChapterStep::get_info_by_id_excluded(&data.id))
                 .await?;
 
             let was_published =

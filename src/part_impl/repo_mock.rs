@@ -88,7 +88,7 @@ pub struct MockContext {
     pub state: MockState,
 }
 
-/// Flag toggles that inject controlled failure modes into mock operations.
+/// Flag toggles that inject controlled failure modes into mock opers.
 #[cfg_attr(test, derive(Clone, Default))]
 pub struct MockFlags {
     pub token_failure: bool,
@@ -178,19 +178,19 @@ impl Mock {
         self.state.lock().unwrap().clone().into()
     }
 
-    /// Enable token authentication failures for subsequent operations.
+    /// Enable token authentication failures for subsequent opers.
     pub fn with_token_failure(self) -> Self {
         self.flags.lock().unwrap().token_failure = true;
         self
     }
 
-    /// Enable image retrieval failures for subsequent operations.
+    /// Enable image retrieval failures for subsequent opers.
     pub fn with_image_get_failure(self) -> Self {
         self.flags.lock().unwrap().image_get_failure = true;
         self
     }
 
-    /// Enable image storage failures for subsequent operations.
+    /// Enable image storage failures for subsequent opers.
     pub fn with_image_put_failure(self) -> Self {
         self.flags.lock().unwrap().image_put_failure = true;
         self
@@ -267,169 +267,164 @@ pub(super) fn now() -> OffsetDateTime {
     OffsetDateTime::now_utc()
 }
 
-/// Mock implementations for comic repository operations.
+/// Mock implementations for comic repository opers.
 pub mod assignment;
 pub mod chapter;
 pub mod comic;
 
-/// Mock implementations for member repository operations.
+/// Mock implementations for member repository opers.
 pub mod member;
 
-/// Mock implementations for member invitation repository operations.
+/// Mock implementations for member invitation repository opers.
 pub mod member_invitation;
 
-/// Mock implementations for page repository operations.
+/// Mock implementations for page repository opers.
 pub mod page;
 
-/// Mock implementations for system mail repository operations.
+/// Mock implementations for system mail repository opers.
 pub mod system_mail;
 
-/// Mock implementations for team repository operations.
+/// Mock implementations for team repository opers.
 pub mod team;
 
-/// Mock implementations for unit repository operations.
+/// Mock implementations for unit repository opers.
 pub mod unit;
 
-/// Mock implementations for user repository operations.
+/// Mock implementations for user repository opers.
 pub mod user;
 
-/// Mock implementations for workset repository operations.
+/// Mock implementations for workset repository opers.
 pub mod workset;
 
-mod tests {
-    // execute_reads_seeded_user(Execute<UserStep::get_info_by_id>)(positive): a seeded user should be readable outside a transaction.
-    // transaction_commits_repo_and_prom(Drive::with_context)(positive): successful transactions should commit repo and prom state together.
-    // transaction_rolls_back_repo_and_prom(Drive::with_context)(negative): failed transactions should discard repo and prom state together.
+// execute_reads_seeded_user(Execute<UserStep::get_info_by_id>)(positive): a seeded user should be readable outside a transaction.
+// transaction_commits_repo_and_prom(Drive::with_context)(positive): successful transactions should commit repo and prom state together.
+// transaction_rolls_back_repo_and_prom(Drive::with_context)(negative): failed transactions should discard repo and prom state together.
 
-    use super::*;
+use poprako_transactional::advance::Advance;
 
-    use poprako_transactional::advance::Advance;
+use crate::model::member::MemberForm;
+use crate::model::role::{RoleField, RoleMask};
+use crate::part::prom::intention::{ImageIntention, ImageKind};
+use crate::part::prom::{Payload, PromStep};
+use crate::part::repo::step::member::MemberStep;
+use crate::part::repo::step::user::UserStep;
+use crate::part::shared::execute::Execute;
+use crate::result::accept;
 
-    use crate::model::member::MemberForm;
-    use crate::model::role::{RoleField, RoleMask};
-    use crate::model::user::{UserCredential, UserInfo};
-    use crate::part::prom::intention::{ImageIntention, ImageKind};
-    use crate::part::prom::{Payload, PromStep};
-    use crate::part::repo::step::member::MemberStep;
-    use crate::part::repo::step::user::UserStep;
-    use crate::part::shared::execute::Execute;
-    use crate::result::accept;
-
-    fn user(id: &str) -> UserInfo {
-        let time = now();
-        UserInfo {
-            id: id.into(),
-            qid: "qid".into(),
-            nickname: "nick".into(),
-            avatar_key: None,
-            avatar_uploaded: false,
-            avatar_version: 0,
-            is_sadmin: false,
-            last_active_at: time,
-            created_at: time,
-            updated_at: time,
-        }
+fn user(id: &str) -> UserInfo {
+    let time = now();
+    UserInfo {
+        id: id.into(),
+        qid: "qid".into(),
+        nickname: "nick".into(),
+        avatar_key: None,
+        avatar_uploaded: false,
+        avatar_version: 0,
+        is_sadmin: false,
+        last_active_at: time,
+        created_at: time,
+        updated_at: time,
     }
+}
 
-    #[tokio::test]
-    async fn execute_reads_seeded_user() {
-        let mock = Mock::new();
-        mock.seed_user(
-            user("user-1"),
-            UserCredential {
-                user_id: "user-1".into(),
-                password_hash: "hash".into(),
-            },
-        );
-
-        let found = Execute::execute(&mock, &UserStep::get_info_by_id("user-1")).await;
-        assert!(found.is_ok());
-        let found = found.ok().unwrap();
-
-        assert_eq!(found.id, "user-1");
-    }
-
-    #[tokio::test]
-    async fn transaction_commits_repo_and_prom() {
-        let mock = Mock::new();
-        let member_form = MemberForm {
-            id: "member-1".into(),
+#[tokio::test]
+async fn execute_reads_seeded_user() {
+    let mock = Mock::new();
+    mock.seed_user(
+        user("user-1"),
+        UserCredential {
             user_id: "user-1".into(),
-            user_nickname: "nick".into(),
-            team_id: "team-1".into(),
-            roles: RoleMask::from(RoleField::RAW_PROVIDER),
-        };
-        let visible_at = now();
+            password_hash: "hash".into(),
+        },
+    );
 
-        let result = Drive::with_context(&mock, async move |context| {
-            let transactional = MockTransactional;
-            Advance::advance(&transactional, context, &MemberStep::create(&member_form)).await?;
-            Advance::advance(
-                &transactional,
-                context,
-                &PromStep::append(
-                    "prom-1",
-                    "image",
-                    Payload::Image(ImageIntention::CheckUploaded {
-                        kind: ImageKind::UserAvatar,
-                        resource_id: "user-1".into(),
-                        object_key: "key".into(),
-                        image_version: 1,
-                    }),
-                    &visible_at,
-                ),
-            )
-            .await?;
-            accept(())
-        })
-        .await;
-        assert!(result.is_ok());
+    let found = Execute::execute(&mock, &UserStep::get_info_by_id("user-1")).await;
+    assert!(found.is_ok());
+    let found = found.ok().unwrap();
 
-        let snapshot = mock.snapshot();
-        assert_eq!(snapshot.members.len(), 1);
-        assert_eq!(snapshot.prom_records.len(), 1);
-    }
+    assert_eq!(found.id, "user-1");
+}
 
-    #[tokio::test]
-    async fn transaction_rolls_back_repo_and_prom() {
-        let mock = Mock::new();
-        let member_form = MemberForm {
-            id: "member-1".into(),
-            user_id: "user-1".into(),
-            user_nickname: "nick".into(),
-            team_id: "team-1".into(),
-            roles: RoleMask::from(RoleField::RAW_PROVIDER),
-        };
-        let visible_at = now();
+#[tokio::test]
+async fn transaction_commits_repo_and_prom() {
+    let mock = Mock::new();
+    let member_form = MemberForm {
+        id: "member-1".into(),
+        user_id: "user-1".into(),
+        user_nickname: "nick".into(),
+        team_id: "team-1".into(),
+        roles: RoleMask::from(RoleField::RAW_PROVIDER),
+    };
+    let visible_at = now();
 
-        let err = Drive::with_context(&mock, async move |context| {
-            let transactional = MockTransactional;
-            Advance::advance(&transactional, context, &MemberStep::create(&member_form)).await?;
-            Advance::advance(
-                &transactional,
-                context,
-                &PromStep::append(
-                    "prom-1",
-                    "image",
-                    Payload::Image(ImageIntention::Delete {
-                        object_key: "key".into(),
-                    }),
-                    &visible_at,
-                ),
-            )
-            .await?;
-            Err::<(), RootError>(unrecoverable("[transaction_rolls_back_repo_and_prom] fail"))
-        })
-        .await
-        .err()
-        .unwrap();
+    let result = Drive::with_context(&mock, async move |context| {
+        let transactional = MockTransactional;
+        Advance::advance(&transactional, context, &MemberStep::create(&member_form)).await?;
+        Advance::advance(
+            &transactional,
+            context,
+            &PromStep::append(
+                "prom-1",
+                "image",
+                Payload::Image(ImageIntention::CheckUploaded {
+                    kind: ImageKind::UserAvatar,
+                    resource_id: "user-1".into(),
+                    object_key: "key".into(),
+                    image_version: 1,
+                }),
+                &visible_at,
+            ),
+        )
+        .await?;
+        accept(())
+    })
+    .await;
+    assert!(result.is_ok());
 
-        assert!(matches!(
-            err,
-            DriveError::Advance(RootError::Unrecoverable { .. })
-        ));
-        let snapshot = mock.snapshot();
-        assert!(snapshot.members.is_empty());
-        assert!(snapshot.prom_records.is_empty());
-    }
+    let snapshot = mock.snapshot();
+    assert_eq!(snapshot.members.len(), 1);
+    assert_eq!(snapshot.prom_records.len(), 1);
+}
+
+#[tokio::test]
+async fn transaction_rolls_back_repo_and_prom() {
+    let mock = Mock::new();
+    let member_form = MemberForm {
+        id: "member-1".into(),
+        user_id: "user-1".into(),
+        user_nickname: "nick".into(),
+        team_id: "team-1".into(),
+        roles: RoleMask::from(RoleField::RAW_PROVIDER),
+    };
+    let visible_at = now();
+
+    let err = Drive::with_context(&mock, async move |context| {
+        let transactional = MockTransactional;
+        Advance::advance(&transactional, context, &MemberStep::create(&member_form)).await?;
+        Advance::advance(
+            &transactional,
+            context,
+            &PromStep::append(
+                "prom-1",
+                "image",
+                Payload::Image(ImageIntention::Delete {
+                    object_key: "key".into(),
+                }),
+                &visible_at,
+            ),
+        )
+        .await?;
+        Err::<(), RootError>(unrecoverable("[transaction_rolls_back_repo_and_prom] fail"))
+    })
+    .await
+    .err()
+    .unwrap();
+
+    assert!(matches!(
+        err,
+        DriveError::Advance(RootError::Unrecoverable { .. })
+    ));
+    let snapshot = mock.snapshot();
+    assert!(snapshot.members.is_empty());
+    assert!(snapshot.prom_records.is_empty());
 }

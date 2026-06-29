@@ -3,7 +3,7 @@
 use poprako_transactional::advance::Advance;
 
 use crate::part::repo::step::chapter::{
-    AdjustUnitCounters, Create, Delete, FindPinnedInfoByComicId, GetInfoById, GetInfoExcluded,
+    AdjustUnitCounters, Create, Delete, FindPinnedInfoByComicId, GetInfoById, GetInfoByIdExcluded,
     ListAllInfosByComicIdExcluded, ListInfosByComicId, ListInfosByComicIdExcluded, SetPageCounters,
     UnpinOthers, UpdateInfo, UpdateStage,
 };
@@ -26,7 +26,7 @@ where
 pub trait ChapterRepoTransactional<C>:
     for<'a> Advance<Create<'a>, C, Error = RootError>
     + for<'a> Advance<GetInfoById<'a>, C, Error = RootError>
-    + for<'a> Advance<GetInfoExcluded<'a>, C, Error = RootError>
+    + for<'a> Advance<GetInfoByIdExcluded<'a>, C, Error = RootError>
     + for<'a> Advance<ListInfosByComicIdExcluded<'a>, C, Error = RootError>
     + for<'a> Advance<ListAllInfosByComicIdExcluded<'a>, C, Error = RootError>
     + for<'a> Advance<FindPinnedInfoByComicId<'a>, C, Error = RootError>

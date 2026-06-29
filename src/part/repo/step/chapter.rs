@@ -1,4 +1,4 @@
-//! Step types for chapter repository operations.
+//! Step types for chapter repository opers.
 
 use poprako_transactional::step::Step;
 
@@ -24,11 +24,11 @@ impl<'a> Step for GetInfoById<'a> {
 }
 
 /// Step that fetches a chapter by ID with a pessimistic lock.
-pub struct GetInfoExcluded<'a> {
+pub struct GetInfoByIdExcluded<'a> {
     pub id: &'a str,
 }
 
-impl<'a> Step for GetInfoExcluded<'a> {
+impl<'a> Step for GetInfoByIdExcluded<'a> {
     type Output = ChapterInfo;
 }
 
@@ -147,8 +147,8 @@ impl ChapterStep {
     }
 
     /// Constructs a step to fetch a chapter with a pessimistic lock.
-    pub fn get_info_excluded<'a>(id: &'a str) -> GetInfoExcluded<'a> {
-        GetInfoExcluded { id }
+    pub fn get_info_by_id_excluded<'a>(id: &'a str) -> GetInfoByIdExcluded<'a> {
+        GetInfoByIdExcluded { id }
     }
 
     /// Constructs a step to list chapters by comic.

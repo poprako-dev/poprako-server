@@ -1,4 +1,4 @@
-//! Step types for team repository operations.
+//! Step types for team repository opers.
 
 use poprako_macro::Paginate;
 use poprako_transactional::step::Step;

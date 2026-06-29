@@ -1,6 +1,6 @@
 //! Repository traits for the membership domain.
 //!
-//! All member operations are transactional — the non-transactional
+//! All member opers are transactional — the non-transactional
 //! [`MemberRepo`] carries only the [`DeriveTransactional`] bound and
 //! delegates entirely to [`MemberRepoTransactional`].
 
@@ -16,7 +16,7 @@ use crate::util::DeriveTransactional;
 
 /// Non-transactional member repository.
 ///
-/// Has no standalone operations of its own — all member steps are
+/// Has no standalone opers of its own — all member steps are
 /// transactional. The trait exists solely to link to
 /// [`MemberRepoTransactional`] via the `C` anchor.
 pub trait MemberRepo<C>:
@@ -31,8 +31,8 @@ where
 
 /// Transactional member repository.
 ///
-/// All member operations require a transaction context because they
-/// are typically composed with user or team operations.
+/// All member opers require a transaction context because they
+/// are typically composed with user or team opers.
 pub trait MemberRepoTransactional<C>:
     for<'a> Advance<Create<'a>, C, Error = RootError>
     + for<'a> Advance<UpdateUserNickname<'a>, C, Error = RootError>

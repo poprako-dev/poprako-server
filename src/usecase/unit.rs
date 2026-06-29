@@ -1,15 +1,14 @@
 //! Unit use cases — list and save page unit sequences.
 
-use time::OffsetDateTime;
-
 use poprako_transactional::advance::Advance;
 use poprako_transactional::drive::Drive;
+use poprako_util::i18n::trl;
 
 use crate::complex::unit::{UnitComplex, UnitPermComplex};
 use crate::data::unit::{
     ListPageUnitInfosData, ListPageUnitInfosVal, SavePageUnitsData, SavePageUnitsVal, UnitInfoVal,
 };
-use crate::model::unit::{UnitCounterDelta, UnitCounters};
+use crate::model::unit::{UnitApplyAck, UnitCounterDelta, UnitCounters, UnitIdMap, UnitOper};
 use crate::model::user::UserToken;
 use crate::part::repo::assignment::{AssignmentRepo, AssignmentRepoTransactional};
 use crate::part::repo::chapter::{ChapterRepo, ChapterRepoTransactional};
@@ -23,7 +22,7 @@ use crate::part::repo::step::page::PageStep;
 use crate::part::repo::step::unit::UnitStep;
 use crate::part::repo::unit::{UnitRepo, UnitRepoTransactional};
 use crate::part::repo::workset::{WorksetRepo, WorksetRepoTransactional};
-use crate::result::{RootError, RootResult, accept};
+use crate::result::{ExpectedVariant, RootError, RootResult, accept};
 use crate::util::DeriveTransactional;
 
 #[cfg(test)]
@@ -72,14 +71,14 @@ where
         .await?;
 
     accept(ListPageUnitInfosVal {
-        units: unit_infos.into_iter().map(UnitInfoVal::from).collect(),
+        unit_infos: unit_infos.into_iter().map(UnitInfoVal::from).collect(),
         total_unit_count: page_info.total_unit_count,
         translated_unit_count: page_info.translated_unit_count,
         proofread_unit_count: page_info.proofread_unit_count,
     })
 }
 
-/// Saves ordered unit operations under one page.
+/// Saves ordered unit opers under one page.
 pub async fn save_infos<D, C, R>(
     drive: &D,
     repo: &R,
@@ -99,15 +98,32 @@ where
         + Send
         + Sync,
 {
-    let opers = data.opers;
+    let SavePageUnitsData {
+        page_id,
+        diff,
+    } = data;
+
+    if diff.page_id != page_id {
+        return Err(unit_invalid_oper_error());
+    }
+
+    let unit_diff = diff
+        .into_model()
+        .ok_or_else(unit_invalid_oper_error)?;
+
+    let UnitApplyParts {
+        opers,
+        local_id_maps,
+        candidate_order,
+    } = UnitApplyParts::from(UnitComplex::prepare_diff(unit_diff)?);
 
     let save_result = drive
         .with_context(async move |context| {
             let repo = repo.transactional().await;
 
-            // FIXME: Add page-scoped SubmissionId deduplication before operation replay.
+            // FIXME: Add page-scoped SubmissionId deduplication before oper replay.
             let page_info = repo
-                .advance(context, &PageStep::get_info_excluded(&data.page_id))
+                .advance(context, &PageStep::get_info_excluded(&page_id))
                 .await?;
 
             {
@@ -125,21 +141,43 @@ where
                 .advance(context, &ChapterStep::get_info_by_id(&page_info.chapter_id))
                 .await?;
 
-            let current_unit_infos = repo
-                .advance(context, &UnitStep::list_infos_by_page(&page_info.id))
+            for oper in &opers {
+                match oper {
+                    UnitOper::Create { .. } => {
+                        repo.advance(context, &UnitStep::create_info(&page_info.id, oper))
+                            .await?;
+                    }
+                    UnitOper::Save { .. } => {
+                        repo.advance(context, &UnitStep::save_info(&page_info.id, oper))
+                            .await?;
+                    }
+                    UnitOper::Delete { id } => {
+                        repo.advance(
+                            context,
+                            &UnitStep::delete_by_page_id_and_id(&page_info.id, id),
+                        )
+                        .await?;
+                    }
+                }
+            }
+
+            let current_indexes = repo
+                .advance(context, &UnitStep::list_indexes_by_page(&page_info.id))
                 .await?;
 
-            let unit_opers = opers.into_iter().map(Into::into).collect::<Vec<_>>();
-            let now = OffsetDateTime::now_utc();
+            let index_updates = UnitComplex::build_index_updates(
+                &candidate_order,
+                &local_id_maps,
+                current_indexes,
+            );
 
-            let applied =
-                UnitComplex::apply_opers(&page_info.id, current_unit_infos, unit_opers, now)?;
-
-            repo.advance(
-                context,
-                &UnitStep::replace_infos_by_page(&page_info.id, &applied.unit_infos),
-            )
-            .await?;
+            if !index_updates.is_empty() {
+                repo.advance(
+                    context,
+                    &UnitStep::update_indexes_by_page(&page_info.id, &index_updates),
+                )
+                .await?;
+            }
 
             let counters = repo
                 .advance(context, &UnitStep::count_by_page(&page_info.id))
@@ -171,16 +209,28 @@ where
             )
             .await?;
 
-            accept(SavePageUnitsVal::from_parts(
-                applied.unit_infos,
-                applied.id_mapper,
-                counters,
-            ))
+            accept(SavePageUnitsVal::from_parts(local_id_maps, counters))
         })
         .await
         .map_err(map_drive_err)?;
 
     accept(save_result)
+}
+
+struct UnitApplyParts {
+    opers: Vec<UnitOper>,
+    local_id_maps: Vec<UnitIdMap>,
+    candidate_order: Vec<String>,
+}
+
+impl From<UnitApplyAck> for UnitApplyParts {
+    fn from(receipt: UnitApplyAck) -> Self {
+        Self {
+            opers: receipt.opers,
+            local_id_maps: receipt.local_id_maps,
+            candidate_order: receipt.candidate_order,
+        }
+    }
 }
 
 fn counter_delta(old_counters: UnitCounters, new_counters: UnitCounters) -> UnitCounterDelta {
@@ -189,5 +239,12 @@ fn counter_delta(old_counters: UnitCounters, new_counters: UnitCounters) -> Unit
         translated_unit_count: new_counters.translated_unit_count
             - old_counters.translated_unit_count,
         proofread_unit_count: new_counters.proofread_unit_count - old_counters.proofread_unit_count,
+    }
+}
+
+fn unit_invalid_oper_error() -> RootError {
+    RootError::Expected {
+        variant: ExpectedVariant::Args,
+        message: trl("error-invalid-unit-oper"),
     }
 }

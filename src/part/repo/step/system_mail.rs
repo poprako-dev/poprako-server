@@ -1,4 +1,4 @@
-//! Step types for system mail repository operations.
+//! Step types for system mail repository opers.
 
 use poprako_transactional::step::Step;
 

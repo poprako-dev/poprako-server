@@ -6,7 +6,7 @@ use crate::part::shared::proxy::ProxyExecute;
 use crate::result::{RootError, RootResult};
 use crate::util::next_snowflake_id;
 
-/// Domain operations for [Member] aggregates: unique identifier generation.
+/// Domain opers for [Member] aggregates: unique identifier generation.
 pub struct MemberComplex;
 
 impl MemberComplex {
@@ -16,7 +16,7 @@ impl MemberComplex {
     }
 }
 
-/// Permission-gate operations for team membership — team-scoped.
+/// Permission-gate opers for team membership — team-scoped.
 pub struct MemberPermComplex;
 
 impl MemberPermComplex {

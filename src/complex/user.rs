@@ -7,7 +7,7 @@ use argon2::password_hash::{PasswordHash, PasswordHasher as _, PasswordVerifier 
 use crate::result::{Error as RootError, RootResult};
 use crate::util::next_snowflake_id;
 
-/// Domain operations for [User] aggregates: password hashing and verification via Argon2id, ID generation, and avatar storage key computation.
+/// Domain opers for [User] aggregates: password hashing and verification via Argon2id, ID generation, and avatar storage key computation.
 pub struct UserComplex;
 
 impl UserComplex {

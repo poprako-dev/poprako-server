@@ -2,9 +2,7 @@
 
 use poprako_util::time::ToUnixMilli;
 
-use crate::model::unit::{
-    UnitCounters, UnitIdMapper, UnitInfo, UnitLocalSnapshot, UnitOper, UnitServerSnapshot,
-};
+use crate::model::unit::{UnitCounters, UnitDiff, UnitIdMapper, UnitInfo, UnitOper, UnitPayload};
 
 /// Presentation-ready unit information.
 pub struct UnitInfoVal {
@@ -60,67 +58,113 @@ pub struct ListPageUnitInfosData {
 
 /// Return value for listing units under one page.
 pub struct ListPageUnitInfosVal {
-    pub units: Vec<UnitInfoVal>,
+    pub unit_infos: Vec<UnitInfoVal>,
+
     pub total_unit_count: i32,
     pub translated_unit_count: i32,
     pub proofread_unit_count: i32,
 }
 
-/// Input parameters for saving unit operations under one page.
+/// Input parameters for saving unit opers under one page.
 pub struct SavePageUnitsData {
     pub page_id: String,
-    pub opers: Vec<UnitOperationData>,
+    pub diff: UnitDiffData,
 }
 
-/// Return value for saving unit operations under one page.
+/// Return value for saving unit opers under one page.
 pub struct SavePageUnitsVal {
-    pub units: Vec<UnitInfoVal>,
-    pub local_id_mappings: Vec<UnitLocalIdMappingVal>,
+    pub local_id_mappers: Vec<UnitIdMapperVal>,
+
     pub total_unit_count: i32,
     pub translated_unit_count: i32,
     pub proofread_unit_count: i32,
 }
 
-/// Transport-facing unit operation.
-pub enum UnitOperationData {
-    Update {
-        unit: UnitServerSnapshot,
-    },
-    MoveBefore {
-        unit: UnitServerSnapshot,
-        before_id: Option<String>,
-    },
-    InsertBefore {
-        unit: UnitLocalSnapshot,
-        before_id: Option<String>,
-    },
-    Delete {
-        unit_id: String,
-    },
+/// Transport-facing unit oper.
+pub struct UnitDiffData {
+    pub page_id: String,
+
+    pub opers: Vec<UnitOperData>,
+
+    pub candidate_order: Vec<String>,
 }
 
-impl From<UnitOperationData> for UnitOper {
-    fn from(value: UnitOperationData) -> Self {
-        match value {
-            UnitOperationData::Update { unit } => Self::Update { unit },
-            UnitOperationData::MoveBefore { unit, before_id } => {
-                Self::MoveBefore { unit, before_id }
-            }
-            UnitOperationData::InsertBefore { unit, before_id } => {
-                Self::InsertBefore { unit, before_id }
-            }
-            UnitOperationData::Delete { unit_id } => Self::Delete { unit_id },
+/// Transport-facing compact unit oper.
+pub struct UnitOperData {
+    pub id: Option<String>,
+    pub local_id: Option<String>,
+    pub is_bubble: Option<bool>,
+    pub is_proofread: Option<bool>,
+    pub x_coord: Option<f64>,
+    pub y_coord: Option<f64>,
+    pub translated_text: Option<String>,
+    pub translator_comment: Option<String>,
+    pub last_translator_id: Option<String>,
+    pub proofread_text: Option<String>,
+    pub proofreader_comment: Option<String>,
+    pub last_proofreader_id: Option<String>,
+}
+
+impl UnitDiffData {
+    /// Converts transport-safe data into domain opers.
+    pub fn into_model(self) -> Option<UnitDiff> {
+        let mut opers = Vec::with_capacity(self.opers.len());
+
+        for unit_oper_data in self.opers {
+            let unit_oper = unit_oper_data.into_model()?;
+
+            opers.push(unit_oper);
         }
+
+        Some(UnitDiff {
+            page_id: self.page_id,
+            opers,
+            candidate_order: self.candidate_order,
+        })
+    }
+}
+
+impl UnitOperData {
+    fn into_model(self) -> Option<UnitOper> {
+        let payload = self.payload();
+        let id = self.id;
+        let local_id = self.local_id;
+
+        match (id, local_id, payload) {
+            (None, Some(local_id), Some(payload)) => Some(UnitOper::Create {
+                local_id,
+                id: None,
+                payload,
+            }),
+            (Some(id), None, Some(payload)) => Some(UnitOper::Save { id, payload }),
+            (Some(id), None, None) => Some(UnitOper::Delete { id }),
+            _ => None,
+        }
+    }
+
+    fn payload(&self) -> Option<UnitPayload> {
+        Some(UnitPayload {
+            is_bubble: self.is_bubble?,
+            is_proofread: self.is_proofread?,
+            x_coord: self.x_coord?,
+            y_coord: self.y_coord?,
+            translated_text: self.translated_text.clone(),
+            translator_comment: self.translator_comment.clone(),
+            last_translator_id: self.last_translator_id.clone(),
+            proofread_text: self.proofread_text.clone(),
+            proofreader_comment: self.proofreader_comment.clone(),
+            last_proofreader_id: self.last_proofreader_id.clone(),
+        })
     }
 }
 
 /// Presentation-ready local-to-server id mapping.
-pub struct UnitLocalIdMappingVal {
+pub struct UnitIdMapperVal {
     pub local_id: String,
     pub unit_id: String,
 }
 
-impl From<UnitIdMapper> for UnitLocalIdMappingVal {
+impl From<UnitIdMapper> for UnitIdMapperVal {
     fn from(model: UnitIdMapper) -> Self {
         Self {
             local_id: model.local_id,
@@ -130,17 +174,12 @@ impl From<UnitIdMapper> for UnitLocalIdMappingVal {
 }
 
 impl SavePageUnitsVal {
-    /// Builds a save response from final units, mappings, and counters.
-    pub fn from_parts(
-        units: Vec<UnitInfo>,
-        local_id_mappings: Vec<UnitIdMapper>,
-        counters: UnitCounters,
-    ) -> Self {
+    /// Builds a compact save response from mappings and counters.
+    pub fn from_parts(local_id_mappers: Vec<UnitIdMapper>, counters: UnitCounters) -> Self {
         Self {
-            units: units.into_iter().map(UnitInfoVal::from).collect(),
-            local_id_mappings: local_id_mappings
+            local_id_mappers: local_id_mappers
                 .into_iter()
-                .map(UnitLocalIdMappingVal::from)
+                .map(UnitIdMapperVal::from)
                 .collect(),
             total_unit_count: counters.total_unit_count,
             translated_unit_count: counters.translated_unit_count,

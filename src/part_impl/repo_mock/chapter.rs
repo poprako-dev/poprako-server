@@ -7,7 +7,7 @@ use poprako_transactional::advance::Advance;
 use crate::model::chapter::{ChapterForm, ChapterInfo};
 use crate::part::repo::chapter::{ChapterRepo, ChapterRepoTransactional};
 use crate::part::repo::step::chapter::{
-    AdjustUnitCounters, Create, Delete, FindPinnedInfoByComicId, GetInfoById, GetInfoExcluded,
+    AdjustUnitCounters, Create, Delete, FindPinnedInfoByComicId, GetInfoById, GetInfoByIdExcluded,
     ListAllInfosByComicIdExcluded, ListInfosByComicId, ListInfosByComicIdExcluded, SetPageCounters,
     UnpinOthers, UpdateInfo, UpdateStage,
 };
@@ -156,13 +156,13 @@ impl<'a> Advance<GetInfoById<'a>, MockContext> for MockTransactional {
 }
 
 #[async_trait]
-impl<'a> Advance<GetInfoExcluded<'a>, MockContext> for MockTransactional {
+impl<'a> Advance<GetInfoByIdExcluded<'a>, MockContext> for MockTransactional {
     type Error = RootError;
 
     async fn advance(
         &self,
         context: &mut MockContext,
-        step: &GetInfoExcluded<'a>,
+        step: &GetInfoByIdExcluded<'a>,
     ) -> Result<ChapterInfo, Self::Error> {
         get_chapter_by_id(&context.state, step.id)
     }

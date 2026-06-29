@@ -1,4 +1,4 @@
-//! Deferred image operation types used by the prom system.
+//! Deferred image oper types used by the prom system.
 
 use serde::{Deserialize, Serialize};
 
@@ -19,7 +19,7 @@ pub enum ImageKind {
     PageImage,
 }
 
-/// A deferred image operation to be executed after transaction commit.
+/// A deferred image oper to be executed after transaction commit.
 ///
 /// These intentions are serialized into [`Payload::Image`] prom records.
 /// The prom worker deserializes and executes them once their `visible_at`

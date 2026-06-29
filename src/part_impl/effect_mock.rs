@@ -19,29 +19,25 @@ impl EffectDevelop for Mock {
     }
 }
 
-mod tests {
-    // develop_collects_events(Develop::develop)(positive): emitted events should be stored for later draining.
+// develop_collects_events(Develop::develop)(positive): emitted events should be stored for later draining.
 
-    use super::*;
+use crate::part::effect::event::Event;
+use crate::part::effect::event::user::UserActivePayload;
 
-    use crate::part::effect::event::Event;
-    use crate::part::effect::event::user::UserActivePayload;
+#[tokio::test]
+async fn develop_collects_events() {
+    let mock = Mock::new();
 
-    #[tokio::test]
-    async fn develop_collects_events() {
-        let mock = Mock::new();
+    EffectDevelop::develop(
+        &mock,
+        Event::UserActive(UserActivePayload {
+            user_id: "user-1".into(),
+        }),
+    )
+    .await;
 
-        EffectDevelop::develop(
-            &mock,
-            Event::UserActive(UserActivePayload {
-                user_id: "user-1".into(),
-            }),
-        )
-        .await;
-
-        assert_eq!(mock.event_count(), 1);
-        let events = mock.drain_events();
-        assert_eq!(events.len(), 1);
-        assert_eq!(mock.event_count(), 0);
-    }
+    assert_eq!(mock.event_count(), 1);
+    let events = mock.drain_events();
+    assert_eq!(events.len(), 1);
+    assert_eq!(mock.event_count(), 0);
 }

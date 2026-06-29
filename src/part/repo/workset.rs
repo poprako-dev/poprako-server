@@ -1,7 +1,7 @@
 //! Repository traits for the workset domain.
 //!
-//! Workset operations are always transactional — listing with a lock and
-//! cascade-deleting are composed with team operations.
+//! Workset opers are always transactional — listing with a lock and
+//! cascade-deleting are composed with team opers.
 
 use poprako_transactional::advance::Advance;
 
@@ -15,7 +15,7 @@ use crate::util::DeriveTransactional;
 
 /// Non-transactional workset repository.
 ///
-/// Has no standalone operations — delegates entirely to
+/// Has no standalone opers — delegates entirely to
 /// [`WorksetRepoTransactional`].
 pub trait WorksetRepo<C>:
     DeriveTransactional

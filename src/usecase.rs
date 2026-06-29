@@ -13,7 +13,7 @@
 //!   [`repo.execute(...)`](Execute::execute) directly. Each call uses its own
 //!   database connection and commits independently.
 //!
-//! - **Transactional** — multi-step operations wrapped in
+//! - **Transactional** — multi-step opers wrapped in
 //!   [`drive.with_context(...)`](Drive::with_context). All [`Advance`] calls
 //!   within the closure share a transaction and commit or rollback atomically.
 //!   Side-effects (events, prom records) are deferred until after commit.
@@ -25,7 +25,7 @@
 //! | Parameter | Role |
 //! |-----------|------|
 //! | `D: Drive<C>` | Transaction lifecycle driver |
-//! | `C` | Context anchor linking transactional operations |
+//! | `C` | Context anchor linking transactional opers |
 //! | `R: XxxRepo<C>` | Repository bundle for data access |
 //! | `P: Prom<C>` | Deferred-action enqueuer |
 //! | `I: ImagePool` | Object-storage signed URL provider |

@@ -5,7 +5,7 @@ use poprako_transactional::step::Step;
 /// It is designed to keep consistency with `Advance`.
 ///
 /// Each `execute` call uses its own database connection and commits
-/// independently. For operations that must be atomic with other steps,
+/// independently. For opers that must be atomic with other steps,
 /// use the transactional [`Advance`] path instead.
 ///
 /// [`Advance`]: poprako_transactional::advance::Advance

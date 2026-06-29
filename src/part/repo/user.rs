@@ -1,8 +1,8 @@
 //! Repository traits for the user domain.
 //!
 //! Follows the two-trait pattern described in the [repo module](super):
-//! [`UserRepo`] provides non-transactional operations on pool connections,
-//! while [`UserRepoTransactional`] provides operations that run inside a
+//! [`UserRepo`] provides non-transactional opers on pool connections,
+//! while [`UserRepoTransactional`] provides opers that run inside a
 //! [`Drive::with_context`] transaction.
 //!
 //! [`Drive::with_context`]: poprako_transactional::drive::Drive::with_context
@@ -19,7 +19,7 @@ use crate::util::DeriveTransactional;
 
 /// Non-transactional user repository.
 ///
-/// Provides standalone read and write operations that each use their own
+/// Provides standalone read and write opers that each use their own
 /// database connection. These are suitable for simple queries and updates
 /// that do not need to be atomic with other steps.
 ///
@@ -41,7 +41,7 @@ where
 /// closure. They share the transaction's mutable context `C` and are
 /// committed or rolled back atomically.
 ///
-/// # Included operations
+/// # Included opers
 ///
 /// | Step | Purpose |
 /// |------|---------|

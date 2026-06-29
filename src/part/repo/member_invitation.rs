@@ -1,6 +1,6 @@
 //! Repository traits for the member invitation domain.
 //!
-//! Invitation operations are always transactional — fetching an invitation
+//! Invitation opers are always transactional — fetching an invitation
 //! with a lock and marking it as consumed must happen atomically during
 //! registration.
 
@@ -15,7 +15,7 @@ use crate::util::DeriveTransactional;
 
 /// Non-transactional member invitation repository.
 ///
-/// Has no standalone operations — delegates entirely to
+/// Has no standalone opers — delegates entirely to
 /// [`MemberInvitationRepoTransactional`].
 pub trait MemberInvitationRepo<C>:
     DeriveTransactional

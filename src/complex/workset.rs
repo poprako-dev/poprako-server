@@ -1,4 +1,4 @@
-//! Complex-domain operations for workset entities: identity generation and
+//! Complex-domain opers for workset entities: identity generation and
 //! permission gates.
 
 use crate::complex::comic::ComicComplex;
@@ -15,7 +15,7 @@ use crate::part::shared::proxy::ProxyExecute;
 use crate::result::{RootError, RootResult, accept};
 use crate::util::next_snowflake_id;
 
-/// Domain operations for workset entities.
+/// Domain opers for workset entities.
 pub struct WorksetComplex;
 
 impl WorksetComplex {
@@ -63,7 +63,7 @@ impl WorksetComplex {
     }
 }
 
-/// Permission-gate operations for workset entities — workset-scoped.
+/// Permission-gate opers for workset entities — workset-scoped.
 pub struct WorksetPermComplex;
 
 impl WorksetPermComplex {

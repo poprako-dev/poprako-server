@@ -1,4 +1,4 @@
-//! Step types for comic repository operations.
+//! Step types for comic repository opers.
 
 use poprako_transactional::step::Step;
 
