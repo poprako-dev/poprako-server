@@ -69,7 +69,7 @@ where
             let existing_member_info = repo
                 .advance(
                     context,
-                    &MemberStep::find_info_by_user_team_id(&data.user_id, &data.team_id),
+                    &MemberStep::find_info_by_user_id_and_team_id(&data.user_id, &data.team_id),
                 )
                 .await?;
 

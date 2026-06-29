@@ -14,6 +14,7 @@ error-stale-cover-upload = Cover upload version is stale
 error-stale-page-image-upload = Page image upload version is stale
 error-team-not-found = Team not found
 error-team-or-user-required = Either team_id or user_id must be provided
+error-chapter-or-user-required = Either chapter_id or owner_id must be provided
 error-workset-not-found = Workset not found
 error-member-not-found = Member not found
 error-team-member-required = You are not a member of this team

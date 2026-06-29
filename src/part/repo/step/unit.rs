@@ -4,12 +4,12 @@ use poprako_transactional::step::Step;
 
 use crate::model::unit::{UnitCounters, UnitIndex, UnitIndexUpdate, UnitInfo, UnitOper};
 
-/// Step that lists units by page.
-pub struct ListInfosByPage<'a> {
+/// Step that lists units by page ID.
+pub struct ListInfosByPageId<'a> {
     pub page_id: &'a str,
 }
 
-impl<'a> Step for ListInfosByPage<'a> {
+impl<'a> Step for ListInfosByPageId<'a> {
     type Output = Vec<UnitInfo>;
 }
 
@@ -33,41 +33,41 @@ impl<'a> Step for SaveInfo<'a> {
     type Output = ();
 }
 
-/// Step that deletes one unit by page and unit id.
-pub struct DeleteByPageIdAndId<'a> {
+/// Step that deletes one unit by ID, scoped to a page.
+pub struct DeleteByIdInPage<'a> {
     pub page_id: &'a str,
     pub id: &'a str,
 }
 
-impl<'a> Step for DeleteByPageIdAndId<'a> {
+impl<'a> Step for DeleteByIdInPage<'a> {
     type Output = ();
 }
 
-/// Step that lists persisted unit indexes by page.
-pub struct ListIndexesByPage<'a> {
+/// Step that lists persisted unit indexes by page ID.
+pub struct ListIndexesByPageId<'a> {
     pub page_id: &'a str,
 }
 
-impl<'a> Step for ListIndexesByPage<'a> {
+impl<'a> Step for ListIndexesByPageId<'a> {
     type Output = Vec<UnitIndex>;
 }
 
-/// Step that updates changed indexes for one page.
-pub struct UpdateIndexesByPage<'a> {
+/// Step that updates changed indexes for one page ID.
+pub struct UpdateIndexesByPageId<'a> {
     pub page_id: &'a str,
     pub updates: &'a [UnitIndexUpdate],
 }
 
-impl<'a> Step for UpdateIndexesByPage<'a> {
+impl<'a> Step for UpdateIndexesByPageId<'a> {
     type Output = ();
 }
 
-/// Step that counts units by page.
-pub struct CountByPage<'a> {
+/// Step that counts units by page ID.
+pub struct CountByPageId<'a> {
     pub page_id: &'a str,
 }
 
-impl<'a> Step for CountByPage<'a> {
+impl<'a> Step for CountByPageId<'a> {
     type Output = UnitCounters;
 }
 
@@ -75,9 +75,9 @@ impl<'a> Step for CountByPage<'a> {
 pub struct UnitStep;
 
 impl UnitStep {
-    /// Constructs a step to list units by page.
-    pub fn list_infos_by_page<'a>(page_id: &'a str) -> ListInfosByPage<'a> {
-        ListInfosByPage { page_id }
+    /// Constructs a step to list units by page ID.
+    pub fn list_infos_by_page_id<'a>(page_id: &'a str) -> ListInfosByPageId<'a> {
+        ListInfosByPageId { page_id }
     }
 
     /// Constructs a step to create one unit row.
@@ -90,26 +90,26 @@ impl UnitStep {
         SaveInfo { page_id, oper }
     }
 
-    /// Constructs a step to delete one unit by page and unit id.
-    pub fn delete_by_page_id_and_id<'a>(page_id: &'a str, id: &'a str) -> DeleteByPageIdAndId<'a> {
-        DeleteByPageIdAndId { page_id, id }
+    /// Constructs a step to delete one unit by ID, scoped to a page.
+    pub fn delete_by_id_in_page<'a>(page_id: &'a str, id: &'a str) -> DeleteByIdInPage<'a> {
+        DeleteByIdInPage { page_id, id }
     }
 
-    /// Constructs a step to list indexes by page.
-    pub fn list_indexes_by_page<'a>(page_id: &'a str) -> ListIndexesByPage<'a> {
-        ListIndexesByPage { page_id }
+    /// Constructs a step to list indexes by page ID.
+    pub fn list_indexes_by_page_id<'a>(page_id: &'a str) -> ListIndexesByPageId<'a> {
+        ListIndexesByPageId { page_id }
     }
 
-    /// Constructs a step to update changed indexes by page.
-    pub fn update_indexes_by_page<'a>(
+    /// Constructs a step to update changed indexes by page ID.
+    pub fn update_indexes_by_page_id<'a>(
         page_id: &'a str,
         updates: &'a [UnitIndexUpdate],
-    ) -> UpdateIndexesByPage<'a> {
-        UpdateIndexesByPage { page_id, updates }
+    ) -> UpdateIndexesByPageId<'a> {
+        UpdateIndexesByPageId { page_id, updates }
     }
 
-    /// Constructs a step to count units under one page.
-    pub fn count_by_page<'a>(page_id: &'a str) -> CountByPage<'a> {
-        CountByPage { page_id }
+    /// Constructs a step to count units under one page ID.
+    pub fn count_by_page_id<'a>(page_id: &'a str) -> CountByPageId<'a> {
+        CountByPageId { page_id }
     }
 }

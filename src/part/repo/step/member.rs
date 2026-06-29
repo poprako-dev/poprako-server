@@ -50,13 +50,13 @@ impl<'a> Step for ListInfos<'a> {
     type Output = Vec<MemberInfo>;
 }
 
-/// Step that finds one membership by user and team identifiers.
-pub struct FindInfoByUserTeamId<'a> {
+/// Step that finds one membership by user ID and team ID.
+pub struct FindInfoByUserIdAndTeamId<'a> {
     pub user_id: &'a str,
     pub team_id: &'a str,
 }
 
-impl<'a> Step for FindInfoByUserTeamId<'a> {
+impl<'a> Step for FindInfoByUserIdAndTeamId<'a> {
     type Output = Option<MemberInfo>;
 }
 
@@ -131,12 +131,12 @@ impl MemberStep {
         ListInfos { spec }
     }
 
-    /// Constructs a step to find one membership by user and team.
-    pub fn find_info_by_user_team_id<'a>(
+    /// Constructs a step to find one membership by user ID and team ID.
+    pub fn find_info_by_user_id_and_team_id<'a>(
         user_id: &'a str,
         team_id: &'a str,
-    ) -> FindInfoByUserTeamId<'a> {
-        FindInfoByUserTeamId { user_id, team_id }
+    ) -> FindInfoByUserIdAndTeamId<'a> {
+        FindInfoByUserIdAndTeamId { user_id, team_id }
     }
 
     /// Constructs a step to fetch one membership with a pessimistic lock.

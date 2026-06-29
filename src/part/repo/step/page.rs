@@ -23,23 +23,23 @@ impl<'a> Step for GetInfoExcluded<'a> {
     type Output = PageInfo;
 }
 
-/// Step that lists pages by chapter.
-pub struct ListInfosByChapter<'a> {
+/// Step that lists pages by chapter ID.
+pub struct ListInfosByChapterId<'a> {
     pub chapter_id: &'a str,
     pub offset: u64,
     pub limit: u64,
 }
 
-impl<'a> Step for ListInfosByChapter<'a> {
+impl<'a> Step for ListInfosByChapterId<'a> {
     type Output = Vec<PageInfo>;
 }
 
-/// Step that lists all pages by chapter.
-pub struct ListAllInfosByChapter<'a> {
+/// Step that lists all pages by chapter ID.
+pub struct ListAllInfosByChapterId<'a> {
     pub chapter_id: &'a str,
 }
 
-impl<'a> Step for ListAllInfosByChapter<'a> {
+impl<'a> Step for ListAllInfosByChapterId<'a> {
     type Output = Vec<PageInfo>;
 }
 
@@ -105,22 +105,22 @@ impl PageStep {
         GetInfoExcluded { id }
     }
 
-    /// Constructs a step to list pages by chapter.
-    pub fn list_infos_by_chapter<'a>(
+    /// Constructs a step to list pages by chapter ID.
+    pub fn list_infos_by_chapter_id<'a>(
         chapter_id: &'a str,
         offset: u64,
         limit: u64,
-    ) -> ListInfosByChapter<'a> {
-        ListInfosByChapter {
+    ) -> ListInfosByChapterId<'a> {
+        ListInfosByChapterId {
             chapter_id,
             offset,
             limit,
         }
     }
 
-    /// Constructs a step to list all pages by chapter.
-    pub fn list_all_infos_by_chapter<'a>(chapter_id: &'a str) -> ListAllInfosByChapter<'a> {
-        ListAllInfosByChapter { chapter_id }
+    /// Constructs a step to list all pages by chapter ID.
+    pub fn list_all_infos_by_chapter_id<'a>(chapter_id: &'a str) -> ListAllInfosByChapterId<'a> {
+        ListAllInfosByChapterId { chapter_id }
     }
 
     /// Constructs a step to insert multiple pages.

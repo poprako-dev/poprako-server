@@ -8,7 +8,7 @@ use crate::complex::unit::{UnitComplex, UnitPermComplex};
 use crate::data::unit::{
     ListPageUnitInfosData, ListPageUnitInfosVal, SavePageUnitsData, SavePageUnitsVal, UnitInfoVal,
 };
-use crate::model::unit::{UnitApplyAck, UnitCounterDelta, UnitCounters, UnitIdMap, UnitOper};
+use crate::model::unit::{UnitApplyAck, UnitCounterDelta, UnitCounters, UnitIdMapper, UnitOper};
 use crate::model::user::UserToken;
 use crate::part::repo::assignment::{AssignmentRepo, AssignmentRepoTransactional};
 use crate::part::repo::chapter::{ChapterRepo, ChapterRepoTransactional};
@@ -67,7 +67,7 @@ where
     }
 
     let unit_infos = repo
-        .execute(&UnitStep::list_infos_by_page(&page_info.id))
+        .execute(&UnitStep::list_infos_by_page_id(&page_info.id))
         .await?;
 
     accept(ListPageUnitInfosVal {
@@ -98,18 +98,13 @@ where
         + Send
         + Sync,
 {
-    let SavePageUnitsData {
-        page_id,
-        diff,
-    } = data;
+    let SavePageUnitsData { page_id, diff } = data;
 
     if diff.page_id != page_id {
         return Err(unit_invalid_oper_error());
     }
 
-    let unit_diff = diff
-        .into_model()
-        .ok_or_else(unit_invalid_oper_error)?;
+    let unit_diff = diff.into_model().ok_or_else(unit_invalid_oper_error)?;
 
     let UnitApplyParts {
         opers,
@@ -117,7 +112,7 @@ where
         candidate_order,
     } = UnitApplyParts::from(UnitComplex::prepare_diff(unit_diff)?);
 
-    let save_result = drive
+    let save_units = drive
         .with_context(async move |context| {
             let repo = repo.transactional().await;
 
@@ -154,7 +149,7 @@ where
                     UnitOper::Delete { id } => {
                         repo.advance(
                             context,
-                            &UnitStep::delete_by_page_id_and_id(&page_info.id, id),
+                            &UnitStep::delete_by_id_in_page(&page_info.id, id),
                         )
                         .await?;
                     }
@@ -162,25 +157,22 @@ where
             }
 
             let current_indexes = repo
-                .advance(context, &UnitStep::list_indexes_by_page(&page_info.id))
+                .advance(context, &UnitStep::list_indexes_by_page_id(&page_info.id))
                 .await?;
 
-            let index_updates = UnitComplex::build_index_updates(
-                &candidate_order,
-                &local_id_maps,
-                current_indexes,
-            );
+            let index_updates =
+                UnitComplex::build_index_updates(&candidate_order, &local_id_maps, current_indexes);
 
             if !index_updates.is_empty() {
                 repo.advance(
                     context,
-                    &UnitStep::update_indexes_by_page(&page_info.id, &index_updates),
+                    &UnitStep::update_indexes_by_page_id(&page_info.id, &index_updates),
                 )
                 .await?;
             }
 
             let counters = repo
-                .advance(context, &UnitStep::count_by_page(&page_info.id))
+                .advance(context, &UnitStep::count_by_page_id(&page_info.id))
                 .await?;
 
             repo.advance(
@@ -214,12 +206,12 @@ where
         .await
         .map_err(map_drive_err)?;
 
-    accept(save_result)
+    accept(save_units)
 }
 
 struct UnitApplyParts {
     opers: Vec<UnitOper>,
-    local_id_maps: Vec<UnitIdMap>,
+    local_id_maps: Vec<UnitIdMapper>,
     candidate_order: Vec<String>,
 }
 
@@ -227,7 +219,7 @@ impl From<UnitApplyAck> for UnitApplyParts {
     fn from(receipt: UnitApplyAck) -> Self {
         Self {
             opers: receipt.opers,
-            local_id_maps: receipt.local_id_maps,
+            local_id_maps: receipt.local_id_map,
             candidate_order: receipt.candidate_order,
         }
     }

@@ -13,7 +13,7 @@ use crate::part::repo::comic::ComicRepoTransactional;
 use crate::part::repo::page::PageRepoTransactional;
 use crate::part::repo::step::chapter::ChapterStep;
 use crate::part::repo::step::comic::{ComicStep, GetInfoById as ComicGetInfoById};
-use crate::part::repo::step::member::FindInfoByUserTeamId;
+use crate::part::repo::step::member::FindInfoByUserIdAndTeamId;
 use crate::part::repo::step::workset::{GetInfoById as WorksetGetInfoById, WorksetStep};
 use crate::part::repo::workset::WorksetRepoTransactional;
 use crate::part::shared::proxy::ProxyExecute;
@@ -114,7 +114,7 @@ impl ComicPermComplex {
     ) -> RootResult<()>
     where
         P: for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RootError>
-            + for<'a> ProxyExecute<FindInfoByUserTeamId<'a>, Error = RootError>,
+            + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RootError>,
     {
         let team_id = Self::resolve_team_id_from_workset(proxy, workset_id).await?;
 
@@ -129,7 +129,7 @@ impl ComicPermComplex {
     ) -> RootResult<()>
     where
         P: for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RootError>
-            + for<'a> ProxyExecute<FindInfoByUserTeamId<'a>, Error = RootError>,
+            + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RootError>,
     {
         let team_id = Self::resolve_team_id_from_workset(proxy, workset_id).await?;
 
@@ -145,7 +145,7 @@ impl ComicPermComplex {
     where
         P: for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RootError>
             + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RootError>
-            + for<'a> ProxyExecute<FindInfoByUserTeamId<'a>, Error = RootError>,
+            + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RootError>,
     {
         let team_id = Self::resolve_team_id_from_comic(proxy, comic_id).await?;
 
@@ -161,7 +161,7 @@ impl ComicPermComplex {
     where
         P: for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RootError>
             + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RootError>
-            + for<'a> ProxyExecute<FindInfoByUserTeamId<'a>, Error = RootError>,
+            + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RootError>,
     {
         let team_id = Self::resolve_team_id_from_comic(proxy, comic_id).await?;
 
@@ -177,7 +177,7 @@ impl ComicPermComplex {
     where
         P: for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RootError>
             + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RootError>
-            + for<'a> ProxyExecute<FindInfoByUserTeamId<'a>, Error = RootError>,
+            + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RootError>,
     {
         let team_id = Self::resolve_team_id_from_comic(proxy, comic_id).await?;
 
@@ -193,7 +193,7 @@ impl ComicPermComplex {
     where
         P: for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RootError>
             + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RootError>
-            + for<'a> ProxyExecute<FindInfoByUserTeamId<'a>, Error = RootError>,
+            + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RootError>,
     {
         let team_id = Self::resolve_team_id_from_comic(proxy, comic_id).await?;
 
@@ -205,7 +205,7 @@ impl ComicPermComplex {
     where
         P: for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RootError>
             + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RootError>
-            + for<'a> ProxyExecute<FindInfoByUserTeamId<'a>, Error = RootError>,
+            + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RootError>,
     {
         let team_id = Self::resolve_team_id_from_comic(proxy, comic_id).await?;
 
@@ -221,7 +221,7 @@ impl ComicPermComplex {
     where
         P: for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RootError>
             + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RootError>
-            + for<'a> ProxyExecute<FindInfoByUserTeamId<'a>, Error = RootError>,
+            + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RootError>,
     {
         let team_id = Self::resolve_team_id_from_comic(proxy, comic_id).await?;
 

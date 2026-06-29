@@ -8,7 +8,7 @@ use crate::part::repo::chapter::ChapterRepoTransactional;
 use crate::part::repo::comic::ComicRepoTransactional;
 use crate::part::repo::page::PageRepoTransactional;
 use crate::part::repo::step::comic::ComicStep;
-use crate::part::repo::step::member::FindInfoByUserTeamId;
+use crate::part::repo::step::member::FindInfoByUserIdAndTeamId;
 use crate::part::repo::step::workset::{GetInfoById as WorksetGetInfoById, WorksetStep};
 use crate::part::repo::workset::WorksetRepoTransactional;
 use crate::part::shared::proxy::ProxyExecute;
@@ -70,7 +70,7 @@ impl WorksetPermComplex {
     /// Verify the caller is a team admin.
     pub async fn can_user_create<P>(proxy: &mut P, user_id: &str, team_id: &str) -> RootResult<()>
     where
-        P: for<'a> ProxyExecute<FindInfoByUserTeamId<'a>, Error = RootError>,
+        P: for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RootError>,
     {
         check_user_is_team_admin(proxy, user_id, team_id).await
     }
@@ -82,7 +82,7 @@ impl WorksetPermComplex {
         team_id: &str,
     ) -> RootResult<()>
     where
-        P: for<'a> ProxyExecute<FindInfoByUserTeamId<'a>, Error = RootError>,
+        P: for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RootError>,
     {
         check_user_is_team_member(proxy, user_id, team_id).await
     }
@@ -95,7 +95,7 @@ impl WorksetPermComplex {
     ) -> RootResult<()>
     where
         P: for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RootError>
-            + for<'a> ProxyExecute<FindInfoByUserTeamId<'a>, Error = RootError>,
+            + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RootError>,
     {
         let team_id = Self::resolve_team_id(proxy, workset_id).await?;
 
@@ -110,7 +110,7 @@ impl WorksetPermComplex {
     ) -> RootResult<()>
     where
         P: for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RootError>
-            + for<'a> ProxyExecute<FindInfoByUserTeamId<'a>, Error = RootError>,
+            + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RootError>,
     {
         let team_id = Self::resolve_team_id(proxy, workset_id).await?;
 
@@ -125,7 +125,7 @@ impl WorksetPermComplex {
     ) -> RootResult<()>
     where
         P: for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RootError>
-            + for<'a> ProxyExecute<FindInfoByUserTeamId<'a>, Error = RootError>,
+            + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RootError>,
     {
         let team_id = Self::resolve_team_id(proxy, workset_id).await?;
 
