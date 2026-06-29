@@ -21,7 +21,9 @@
 // reserve_avatar(reserve_avatar)(negative): missing team should rollback avatar and prom state.
 // reserve_avatar(reserve_avatar)(negative): put URL failure should propagate after transaction commit.
 // mark_avatar_uploaded(mark_avatar_uploaded)(positive): matching version should mark the team avatar uploaded.
+// mark_avatar_uploaded(mark_avatar_uploaded)(positive): repeated matching version confirmation should remain successful.
 // mark_avatar_uploaded(mark_avatar_uploaded)(negative): stale version should leave avatar unuploaded.
+// mark_avatar_uploaded(mark_avatar_uploaded)(negative): old reservation replay should fail without marking current avatar uploaded.
 // delete(delete)(positive): delete should remove team, worksets, descendant comics, and enqueue uploaded avatar deletion.
 // delete(delete)(positive): deleting a team without uploaded avatar should not enqueue prom records.
 // delete(delete)(negative): missing team should rollback state.
@@ -36,8 +38,8 @@ use poprako_transactional::advance::Advance;
 use crate::model::comic::ComicInfo;
 use crate::model::member::MemberInfo;
 use crate::model::role::{RoleField, RoleMask};
-use crate::model::team::TeamInfo;
-use crate::model::user::{UserCredential, UserInfo};
+use crate::model::team::{TeamAvatarReservation, TeamInfo};
+use crate::model::user::{UserAvatarReservation, UserCredential, UserInfo};
 use crate::model::workset::WorksetInfo;
 use crate::part::prom::Payload;
 use crate::part::prom::intention::{ImageIntention, ImageKind};
@@ -57,7 +59,9 @@ use crate::part::shared::execute::Execute;
 use crate::part_impl::prom_mock::MockPromRecord;
 use crate::part_impl::repo_mock::{Mock, MockContext};
 use crate::result::{ExpectedVariant, RootError};
-use crate::test_util::assert_expected_variant;
+use crate::test_util::{
+    assert_expected_message, assert_expected_variant, assert_one_image_check_record,
+};
 use crate::util::DeriveTransactional;
 
 /// A repository whose [`Execute`] and [`Advance`] impls always fail.
@@ -255,29 +259,6 @@ fn count_delete_records(records: &[MockPromRecord], object_key: &str) -> usize {
         .count()
 }
 
-/// Counts [`CheckUploaded`](ImageIntention::CheckUploaded) prom records for team avatars.
-fn count_team_check_records(
-    records: &[MockPromRecord],
-    resource_id: &str,
-    object_key: &str,
-    image_version: i64,
-) -> usize {
-    records
-        .iter()
-        .filter(|record| {
-            matches!(
-                &record.payload,
-                Payload::Image(ImageIntention::CheckUploaded {
-                    kind: ImageKind::TeamAvatar,
-                    resource_id: id,
-                    object_key: key,
-                    image_version: version,
-                }) if id == resource_id && key == object_key && *version == image_version
-            )
-        })
-        .count()
-}
-
 #[async_trait]
 impl<'a> Execute<Create<'a>> for FailingCreateRepo {
     type Error = RootError;
@@ -361,7 +342,7 @@ impl<'a> Advance<UserReserveAvatar<'a>, MockContext> for FailingTeamTransactiona
         &self,
         _: &mut MockContext,
         _: &UserReserveAvatar<'a>,
-    ) -> Result<crate::model::user::UserAvatarReservation, Self::Error> {
+    ) -> Result<UserAvatarReservation, Self::Error> {
         Err(expected_error())
     }
 }
@@ -458,7 +439,7 @@ impl<'a> Advance<ReserveAvatar<'a>, MockContext> for FailingTeamTransactional {
         &self,
         _: &mut MockContext,
         _: &ReserveAvatar<'a>,
-    ) -> Result<crate::model::team::TeamAvatarReservation, Self::Error> {
+    ) -> Result<TeamAvatarReservation, Self::Error> {
         Err(expected_error())
     }
 }
@@ -711,14 +692,12 @@ async fn reserve_avatar_updates_state_enqueues_check_and_returns_put_url() {
         snapshot.teams[0].avatar_key.as_deref(),
         Some("team_avatar/team-1-1.png")
     );
-    assert_eq!(
-        count_team_check_records(
-            &snapshot.prom_records,
-            "team-1",
-            "team_avatar/team-1-1.png",
-            1
-        ),
-        1
+    assert_one_image_check_record(
+        &snapshot.prom_records,
+        ImageKind::TeamAvatar,
+        "team-1",
+        "team_avatar/team-1-1.png",
+        1,
     );
 }
 
@@ -744,14 +723,12 @@ async fn reserve_avatar_replacing_avatar_enqueues_delete_and_check() {
 
     let snapshot = mock.snapshot();
     assert_eq!(count_delete_records(&snapshot.prom_records, "old-key"), 1);
-    assert_eq!(
-        count_team_check_records(
-            &snapshot.prom_records,
-            "team-1",
-            "team_avatar/team-1-2.jpg",
-            2
-        ),
-        1
+    assert_one_image_check_record(
+        &snapshot.prom_records,
+        ImageKind::TeamAvatar,
+        "team-1",
+        "team_avatar/team-1-2.jpg",
+        2,
     );
 }
 
@@ -820,6 +797,20 @@ async fn mark_avatar_uploaded_marks_matching_version() {
 }
 
 #[tokio::test]
+async fn mark_avatar_uploaded_accepts_repeated_matching_version() {
+    let mock = Mock::new();
+    mock.seed_team(team_with_avatar("team-1", "Team", "Desc", "key", false, 2));
+    mock.seed_member(member("member-1", "user-1", "team-1"));
+
+    let first = mark_avatar_uploaded(&mock, token("user-1"), "team-1".into(), mark_data(2)).await;
+    assert!(first.is_ok());
+    let second = mark_avatar_uploaded(&mock, token("user-1"), "team-1".into(), mark_data(2)).await;
+    assert!(second.is_ok());
+
+    assert!(mock.snapshot().teams[0].avatar_uploaded);
+}
+
+#[tokio::test]
 async fn mark_avatar_uploaded_rejects_stale_version() {
     let mock = Mock::new();
     mock.seed_team(team_with_avatar("team-1", "Team", "Desc", "key", false, 2));
@@ -830,8 +821,41 @@ async fn mark_avatar_uploaded_rejects_stale_version() {
         .err()
         .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Args);
+    assert_expected_message(err, ExpectedVariant::Args, "error-stale-avatar-upload");
     assert!(!mock.snapshot().teams[0].avatar_uploaded);
+}
+
+#[tokio::test]
+async fn mark_avatar_uploaded_rejects_old_reservation_replay() {
+    let mock = Mock::new();
+    mock.seed_team(team_with_avatar(
+        "team-1", "Team", "Desc", "old-key", true, 1,
+    ));
+    mock.seed_member(member("member-1", "user-1", "team-1"));
+
+    let reserved = reserve_avatar(
+        &mock,
+        &mock,
+        &mock,
+        &mock,
+        token("user-1"),
+        "team-1".into(),
+        reserve_data("png"),
+    )
+    .await
+    .ok()
+    .unwrap();
+    assert_eq!(reserved.avatar_version, 2);
+
+    let err = mark_avatar_uploaded(&mock, token("user-1"), "team-1".into(), mark_data(1))
+        .await
+        .err()
+        .unwrap();
+    let snapshot = mock.snapshot();
+
+    assert_expected_message(err, ExpectedVariant::Args, "error-stale-avatar-upload");
+    assert!(!snapshot.teams[0].avatar_uploaded);
+    assert_eq!(snapshot.teams[0].avatar_version, 2);
 }
 
 #[tokio::test]

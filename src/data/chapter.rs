@@ -114,7 +114,7 @@ pub struct UpdateChapterInfoData {
     pub id: String,
 
     pub subtitle: Option<String>,
-    pub is_pinned: Option<bool>,
+    pub pin: Option<bool>,
 }
 
 /// Input parameters for updating a chapter's workflow stage.

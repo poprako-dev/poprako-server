@@ -89,6 +89,19 @@ impl<'a> Step for UpdateStage<'a> {
     type Output = ();
 }
 
+/// Step that overwrites page and unit counters for one chapter.
+pub struct SetPageCounters<'a> {
+    pub id: &'a str,
+    pub page_count: i32,
+    pub total_unit_count: i32,
+    pub translated_unit_count: i32,
+    pub proofread_unit_count: i32,
+}
+
+impl<'a> Step for SetPageCounters<'a> {
+    type Output = ();
+}
+
 /// Step that unpins all other chapters under a comic.
 pub struct UnpinOthers<'a> {
     pub comic_id: &'a str,
@@ -173,6 +186,23 @@ impl ChapterStep {
     /// Constructs a step to update chapter workflow phases.
     pub fn update_stage<'a>(update: &'a ChapterStageUpdate) -> UpdateStage<'a> {
         UpdateStage { update }
+    }
+
+    /// Constructs a step to overwrite page and unit counters.
+    pub fn set_page_counters<'a>(
+        id: &'a str,
+        page_count: i32,
+        total_unit_count: i32,
+        translated_unit_count: i32,
+        proofread_unit_count: i32,
+    ) -> SetPageCounters<'a> {
+        SetPageCounters {
+            id,
+            page_count,
+            total_unit_count,
+            translated_unit_count,
+            proofread_unit_count,
+        }
     }
 
     /// Constructs a step to unpin other chapters in the same comic.

@@ -10,7 +10,11 @@
 
 use time::OffsetDateTime;
 
-use poprako_util::i18n::trl;
+use poprako_util::i18n::{trl, trl_kv};
+
+use fluent_templates::fluent_bundle::FluentValue;
+use std::borrow::Cow;
+use std::collections::HashMap;
 
 use crate::complex::image::ImageComplex;
 use crate::complex::util::{check_user_is_team_admin, check_user_is_team_member};
@@ -52,10 +56,6 @@ impl ChapterComplex {
 
     /// Compute the next [`ChapterStageUpdate`] by applying a [`WorkflowEvent`]
     /// to the current [`WorkflowStage`] phase of a chapter.
-    ///
-    /// Delegates the transition legality check to [`try_modify_stage`] and
-    /// returns a `ChapterStageUpdate` with exactly one non-`None` phase field
-    /// (the one being advanced/reverted).
     pub fn build_stage_update(
         chapter_info: &ChapterInfo,
         stage: WorkflowStage,
@@ -64,32 +64,16 @@ impl ChapterComplex {
         let current_phase = get_phase(chapter_info, stage);
         let next_phase = try_modify_stage((stage, current_phase), event)?;
 
-        let mut chapter_stage_update = ChapterStageUpdate {
+        let chapter_stage_update = ChapterStageUpdate {
             id: chapter_info.id.clone(),
-            raw_provide_phase: None,
-            translate_phase: None,
-            proofread_phase: None,
-            typeset_redraw_phase: None,
-            review_phase: None,
-            publish_phase: None,
+            stages: chapter_info.stages.set_phase(stage, next_phase),
         };
-
-        match stage {
-            WorkflowStage::RawProvide => chapter_stage_update.raw_provide_phase = Some(next_phase),
-            WorkflowStage::Translate => chapter_stage_update.translate_phase = Some(next_phase),
-            WorkflowStage::Proofread => chapter_stage_update.proofread_phase = Some(next_phase),
-            WorkflowStage::TypesetRedraw => {
-                chapter_stage_update.typeset_redraw_phase = Some(next_phase);
-            }
-            WorkflowStage::Review => chapter_stage_update.review_phase = Some(next_phase),
-            WorkflowStage::Publish => chapter_stage_update.publish_phase = Some(next_phase),
-        }
 
         accept(chapter_stage_update)
     }
 
     /// Appends page image deletes inside an existing transaction context.
-    pub async fn delete_uploaded_page_images_for_publish<C, R, P>(
+    pub async fn clean_uploaded_images<C, R, P>(
         repo: &R,
         prom: &P,
         context: &mut C,
@@ -100,7 +84,7 @@ impl ChapterComplex {
         R: PageRepoTransactional<C> + Send + Sync,
         P: PromTransactional<C> + Send + Sync,
     {
-        append_uploaded_page_image_deletes(repo, prom, context, chapter_id).await
+        prom_image_deletes(repo, prom, context, chapter_id).await
     }
 
     /// Deletes a chapter subtree inside an existing transaction context.
@@ -123,7 +107,7 @@ impl ChapterComplex {
             .advance(context, &ChapterStep::get_info_excluded(id))
             .await?;
 
-        append_uploaded_page_image_deletes(repo, prom, context, &chapter_info.id).await?;
+        prom_image_deletes(repo, prom, context, &chapter_info.id).await?;
 
         repo.advance(context, &ChapterStep::delete(&chapter_info.id))
             .await?;
@@ -148,10 +132,12 @@ impl ChapterComplex {
     }
 }
 
-/// Generate a human-readable default subtitle for a chapter, e.g. "第 1 话".
+/// Generate a human-readable default subtitle for a chapter, e.g. "Ch. 1".
 fn default_subtitle(index: i32) -> String {
-    // FIXME: trl_kv
-    format!("第 {} 话", index + 1)
+    let mut args = HashMap::new();
+    args.insert(Cow::Borrowed("number"), FluentValue::from(index + 1));
+
+    trl_kv("chapter-default-subtitle", &args)
 }
 
 /// Extract the current [`StagePhase`] for a given [`WorkflowStage`] from a
@@ -160,7 +146,7 @@ fn get_phase(chapter_info: &ChapterInfo, stage: WorkflowStage) -> StagePhase {
     chapter_info.stages.get_phase(stage)
 }
 
-async fn append_uploaded_page_image_deletes<C, R, P>(
+async fn prom_image_deletes<C, R, P>(
     repo: &R,
     prom: &P,
     context: &mut C,
@@ -172,7 +158,7 @@ where
     P: PromTransactional<C> + Send + Sync,
 {
     let page_infos = repo
-        .advance(context, &PageStep::list_infos_by_chapter(chapter_id))
+        .advance(context, &PageStep::list_all_infos_by_chapter(chapter_id))
         .await?;
 
     let now = OffsetDateTime::now_utc();
@@ -220,7 +206,7 @@ where
     let chapter_info_update = ChapterInfoUpdate {
         id: chapter_info.id.clone(),
         subtitle: None,
-        is_pinned: Some(true),
+        pin: Some(true),
     };
 
     repo.advance(context, &ChapterStep::update_info(&chapter_info_update))

@@ -142,11 +142,14 @@ where
         .execute(&ComicStep::list_infos_by_workset_id(&data.workset_id))
         .await?;
 
-    let mut comic_info_vals = Vec::with_capacity(comic_infos.len());
-    for comic_info in comic_infos {
-        // FIXME: join
-        comic_info_vals.push(ComicInfoVal::from_model(image_pool, comic_info).await?);
-    }
+    let comic_info_vals = futures_util::future::join_all(
+        comic_infos
+            .into_iter()
+            .map(|comic_info| ComicInfoVal::from_model(image_pool, comic_info)),
+    )
+    .await
+    .into_iter()
+    .collect::<RootResult<Vec<_>>>()?;
 
     Ok(comic_info_vals)
 }

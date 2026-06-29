@@ -10,6 +10,8 @@ error-unauthorized = 无效的授权信息，请尝试重新登录
 error-forbidden = 您没有权限执行此操作
 error-unsupported-file-type = 不支持的文件类型
 error-stale-avatar-upload = 头像上传版本已过期
+error-stale-cover-upload = 封面上传版本已过期
+error-stale-page-image-upload = 页面图片上传版本已过期
 error-team-not-found = 该汉化组不存在
 error-team-or-user-required = 必须提供 team_id 或 user_id
 error-workset-not-found = 该作品集不存在
@@ -33,6 +35,11 @@ error-chapter-admin-required = 需要章节管理权限
 error-chapter-reviewer-required = 需要章节监修权限
 error-chapter-workflow-role-required = 缺少所需的章节工作流权限
 error-chapter-role-not-assignable = 章节角色不可领取
+error-invalid-page-count = 页面数量必须大于 0
+error-page-reserve-role-required = 需要图源或监修权限才能预留页面
+error-page-upload-role-required = 需要图源权限才能确认页面上传
+
+chapter-default-subtitle = 第{ $number }话
 
 mail-invitation-used-title = 你的邀请码已被使用
 mail-invitation-used-body = 你的邀请码已被使用，「{$invitee_qid}」已加入汉化组「{$team_name}」

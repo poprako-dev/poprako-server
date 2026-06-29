@@ -175,7 +175,7 @@ impl Serialize for StagePhaseField {
 /// [`StagePhaseField`]), ordered from low bits:
 ///
 /// | Stage | Bits | Field |
-/// |---|---|---|
+/// |:---:|:---:|:---:|
 /// | RawProvide | 0–1 | `StagePhaseField` |
 /// | Translate | 2–3 | `StagePhaseField` |
 /// | Proofread | 4–5 | `StagePhaseField` |
