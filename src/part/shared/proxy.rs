@@ -68,7 +68,7 @@ where
 
 /// A transactional proxy that delegates to [`Advance`].
 ///
-/// Created locally inside a [`Drive::with_context`] closure; wraps a
+/// Created locally inside a [`Drive::with_context`] block; wraps a
 /// transactional-handle reference together with a mutable context
 /// reference and forwards every [`ProxyExecute::execute`] call to
 /// [`Advance::advance`].

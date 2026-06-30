@@ -98,7 +98,7 @@ Repository operations are expressed as `Step` values.
 - Non-transactional operations use `part::repo::Execute<S>`. Each call owns its
   connection/session and commits independently.
 - Transactional operations use `poprako_transactional::advance::Advance<S, C>`
-  inside `Drive::with_context(...)`. All steps in the closure share context `C`
+  inside `Drive::with_context(...)`. All steps in the block share context `C`
   and commit or rollback atomically.
 - Each repository domain has a non-transactional trait and a transactional trait:
   `XxxRepo<C>` and `XxxRepoTransactional<C>`.

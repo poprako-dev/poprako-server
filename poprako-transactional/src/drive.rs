@@ -10,7 +10,7 @@ use async_trait::async_trait;
 use crate::drive::result::Error as DriveError;
 use crate::util::AsyncFnMark;
 
-/// A transactional scope that executes a fallible closure within a managed
+/// A transactional scope that executes a fallible function within a managed
 /// [`C`]ontext, mapping step and backend errors into a unified [`DriveError`].
 #[async_trait]
 pub trait Drive<C> {

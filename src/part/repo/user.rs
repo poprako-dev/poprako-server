@@ -38,7 +38,7 @@ where
 /// Transactional user repository.
 ///
 /// Operations in this trait must run inside a [`Drive::with_context`]
-/// closure. They share the transaction's mutable context `C` and are
+/// block. They share the transaction's mutable context `C` and are
 /// committed or rolled back atomically.
 ///
 /// # Included opers

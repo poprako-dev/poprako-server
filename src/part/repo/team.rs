@@ -2,7 +2,7 @@
 //!
 //! Mirrors the pattern in [`UserRepo`]: a non-transactional trait for
 //! standalone opers and a transactional trait for opers that
-//! must participate in a [`Drive::with_context`] closure.
+//! must participate in a [`Drive::with_context`] block.
 //!
 //! [`UserRepo`]: super::user::UserRepo
 //! [`Drive::with_context`]: poprako_transactional::drive::Drive::with_context
@@ -39,7 +39,7 @@ where
 
 /// Transactional team repository.
 ///
-/// Operations that must run inside a [`Drive::with_context`] closure.
+/// Operations that must run inside a [`Drive::with_context`] block.
 ///
 /// [`Drive::with_context`]: poprako_transactional::drive::Drive::with_context
 pub trait TeamRepoTransactional<C>:

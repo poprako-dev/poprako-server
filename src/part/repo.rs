@@ -22,8 +22,8 @@
 //!
 //! Operations implemented via [`Advance`] (grouped in `XxxRepoTransactional<C>`
 //! traits) are **transactional**: they run inside a [`Drive::with_context`]
-//! closure, sharing a mutable context `C`. All advances within the same
-//! closure are atomic — they commit or rollback together.
+//! block, sharing a mutable context `C`. All advances within the same
+//! block are atomic — they commit or rollback together.
 //!
 //! # Repository trait pattern
 //!

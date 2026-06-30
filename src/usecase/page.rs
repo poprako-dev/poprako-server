@@ -208,7 +208,6 @@ where
     )
     .await?;
 
-    let closure_id = id;
     let file_ext = data.file_ext;
 
     let (object_key, image_version) = drive
@@ -217,7 +216,7 @@ where
             let prom = prom.transactional().await;
 
             let page_reservation = repo
-                .advance(context, &PageStep::reserve_image(&closure_id, &file_ext))
+                .advance(context, &PageStep::reserve_image(&id, &file_ext))
                 .await?;
 
             let now = OffsetDateTime::now_utc();
@@ -328,16 +327,13 @@ where
     )
     .await?;
 
-    let closure_id = id;
-    let closure_image_version = data.image_version;
-
     drive
         .with_context(async move |context| {
             let repo = repo.transactional().await;
 
             repo.advance(
                 context,
-                &PageStep::mark_image_uploaded(&closure_id, closure_image_version),
+                &PageStep::mark_image_uploaded(&id, data.image_version),
             )
             .await?;
 
