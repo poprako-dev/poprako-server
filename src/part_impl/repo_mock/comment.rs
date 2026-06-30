@@ -229,14 +229,15 @@ async fn create_persists_comment() {
     let comment_form = form("comment-1");
     let repo = mock.transactional().await;
 
-    let result = mock
-        .with_context(async move |context| {
-            repo.advance(context, &CommentStep::create(&comment_form))
-                .await
-        })
-        .await;
-
-    assert!(result.is_ok());
+    assert!(
+        mock
+            .with_context(async move |context| {
+                repo.advance(context, &CommentStep::create(&comment_form))
+                    .await
+            })
+            .await
+            .is_ok()
+    );
     assert_eq!(mock.snapshot().comments.len(), 1);
 }
 

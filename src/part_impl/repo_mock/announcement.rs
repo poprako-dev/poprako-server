@@ -244,14 +244,15 @@ async fn create_persists_announcement() {
     let announcement_form = form("announcement-1");
     let repo = mock.transactional().await;
 
-    let result = mock
-        .with_context(async move |context| {
-            repo.advance(context, &AnnouncementStep::create(&announcement_form))
-                .await
-        })
-        .await;
-
-    assert!(result.is_ok());
+    assert!(
+        mock
+            .with_context(async move |context| {
+                repo.advance(context, &AnnouncementStep::create(&announcement_form))
+                    .await
+            })
+            .await
+            .is_ok()
+    );
     assert_eq!(mock.snapshot().announcements.len(), 1);
 }
 

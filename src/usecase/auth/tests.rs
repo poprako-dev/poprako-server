@@ -77,24 +77,24 @@ async fn register_creates_user_member_consumes_invitation_and_emits_signup() {
         true,
     ));
 
-    let result = register(
+    let val = register(
         &mock,
         &mock,
         &mock,
         &mock,
         register_data("qid-1", "Nick", "code-1"),
     )
-    .await;
-    assert!(result.is_ok());
-    let result = result.ok().unwrap();
+    .await
+    .ok()
+    .unwrap();
 
-    assert_eq!(result.token, format!("token:{}", result.user_id));
+    assert_eq!(val.token, format!("token:{}", val.user_id));
 
     let snapshot = mock.snapshot();
     assert_eq!(snapshot.users.len(), 1);
-    assert_eq!(snapshot.users[0].id, result.user_id);
+    assert_eq!(snapshot.users[0].id, val.user_id);
     assert_eq!(snapshot.members.len(), 1);
-    assert_eq!(snapshot.members[0].user_id, result.user_id);
+    assert_eq!(snapshot.members[0].user_id, val.user_id);
     assert!(!snapshot.member_invitations[0].pending);
 
     let events = mock.drain_events();
@@ -177,12 +177,13 @@ async fn login_returns_signed_token_for_matching_credentials() {
         credential("user-1", "password"),
     );
 
-    let result = login(&mock, &mock, login_data("qid-1", "password")).await;
-    assert!(result.is_ok());
-    let result = result.ok().unwrap();
+    let val = login(&mock, &mock, login_data("qid-1", "password"))
+        .await
+        .ok()
+        .unwrap();
 
-    assert_eq!(result.user_id, "user-1");
-    assert_eq!(result.token, "token:user-1");
+    assert_eq!(val.user_id, "user-1");
+    assert_eq!(val.token, "token:user-1");
 }
 
 #[tokio::test]

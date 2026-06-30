@@ -92,9 +92,9 @@ where
         .execute(&WorksetStep::get_info_by_id(&comic_info.workset_id))
         .await?;
 
-    let member_result = check_user_is_team_member(proxy, user_id, &workset_info.team_id).await;
+    let member_check = check_user_is_team_member(proxy, user_id, &workset_info.team_id).await;
 
-    member_result
+    member_check
 }
 
 /// Verify the user has an assignment on the chapter.

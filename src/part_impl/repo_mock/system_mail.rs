@@ -111,13 +111,11 @@ impl<'a> Execute<ListInfosByReceiverId<'a>> for Mock {
 
         mails.sort_by(|a, b| b.created_at.cmp(&a.created_at));
 
-        let result = mails
+        Ok(mails
             .into_iter()
             .skip(step.spec.offset as usize)
             .take(step.spec.limit as usize)
-            .collect();
-
-        Ok(result)
+            .collect())
     }
 }
 
@@ -199,8 +197,11 @@ async fn send_saves_unread_mail() {
     let mock = Mock::new();
     let system_mail_form = mail_form("sys_mail-1", "user-1");
 
-    let result = mock.execute(&SystemMailStep::send(&system_mail_form)).await;
-    assert!(result.is_ok());
+    assert!(
+        mock.execute(&SystemMailStep::send(&system_mail_form))
+            .await
+            .is_ok()
+    );
 
     let snapshot = mock.snapshot();
     assert_eq!(snapshot.system_mails.len(), 1);
@@ -236,10 +237,12 @@ async fn send_batch_saves_all_mails() {
         mail_form("sys_mail-2", "user-1"),
     ];
 
-    let result = mock
-        .execute(&SystemMailStep::send_batch(&system_mail_forms))
-        .await;
-    assert!(result.is_ok());
+    assert!(
+        mock
+            .execute(&SystemMailStep::send_batch(&system_mail_forms))
+            .await
+            .is_ok()
+    );
 
     let snapshot = mock.snapshot();
     assert_eq!(snapshot.system_mails.len(), 2);
@@ -285,14 +288,15 @@ async fn list_infos_by_receiver_id_filters_sorts_and_pages() {
         limit: 10,
     };
 
-    let result = mock
+    let mails = mock
         .execute(&SystemMailStep::list_infos_by_receiver_id(
             "user-1",
             &mail_list_spec,
         ))
         .await;
-    assert!(result.is_ok());
-    let mails = result.ok().unwrap();
+    let Ok(mails) = mails else {
+        panic!("expected Ok");
+    };
 
     assert_eq!(mails.len(), 2);
     assert_eq!(mails[0].id, "sys_mail-2");
@@ -309,9 +313,12 @@ async fn list_infos_by_ids_returns_matching_mails() {
 
     let ids = vec!["sys_mail-1".into(), "sys_mail-3".into()];
 
-    let result = mock.execute(&SystemMailStep::list_infos_by_ids(&ids)).await;
-    assert!(result.is_ok());
-    let mails = result.ok().unwrap();
+    let mails = mock
+        .execute(&SystemMailStep::list_infos_by_ids(&ids))
+        .await;
+    let Ok(mails) = mails else {
+        panic!("expected Ok");
+    };
 
     assert_eq!(mails.len(), 2);
     assert!(mails.iter().any(|m| m.id == "sys_mail-1"));
@@ -324,8 +331,11 @@ async fn mark_read_marks_by_id() {
     let time = now();
     mock.seed_system_mail(mail_info("sys_mail-1", "user-1", false, time));
 
-    let result = mock.execute(&SystemMailStep::mark_read("sys_mail-1")).await;
-    assert!(result.is_ok());
+    assert!(
+        mock.execute(&SystemMailStep::mark_read("sys_mail-1"))
+            .await
+            .is_ok()
+    );
 
     let snapshot = mock.snapshot();
     assert!(snapshot.system_mails[0].read);

@@ -451,15 +451,15 @@ async fn mark_image_uploaded_rejects_stale_replay_then_accepts_current_version()
     assert!(!snapshot.pages[0].image_uploaded);
     assert_eq!(snapshot.pages[0].image_version, 2);
 
-    let result = mark_image_uploaded(
+    mark_image_uploaded(
         &mock,
         &mock,
         token("user-1"),
         "page-1".into(),
         MarkPageImageUploadedData { image_version: 2 },
     )
-    .await;
-    assert!(result.is_ok());
+    .await
+    .unwrap();
     assert!(mock.snapshot().pages[0].image_uploaded);
 }
 

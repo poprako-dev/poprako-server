@@ -163,12 +163,10 @@ async fn get_info_emits_active_for_self() {
         credential("user-1", "password"),
     );
 
-    let result = get_info(&mock, &mock, &mock, token("user-1"), "user-1".into()).await;
-    assert!(result.is_ok());
-    let result = result.ok().unwrap();
+    let val = get_info(&mock, &mock, &mock, token("user-1"), "user-1".into()).await.unwrap();
 
-    assert_eq!(result.id, "user-1");
-    assert_eq!(result.nickname, "Nick");
+    assert_eq!(val.id, "user-1");
+    assert_eq!(val.nickname, "Nick");
     let events = mock.drain_events();
     assert_eq!(events.len(), 1);
     let Event::UserActive(payload) = &events[0] else {
@@ -185,8 +183,7 @@ async fn get_info_does_not_emit_active_for_other_user() {
         credential("user-2", "password"),
     );
 
-    let result = get_info(&mock, &mock, &mock, token("user-1"), "user-2".into()).await;
-    assert!(result.is_ok());
+    get_info(&mock, &mock, &mock, token("user-1"), "user-2".into()).await.unwrap();
 
     assert_eq!(mock.event_count(), 0);
 }
@@ -212,14 +209,14 @@ async fn update_info_updates_user_and_member_nickname() {
     );
     mock.seed_member(member("member-1", "user-1", "Old", "team-1"));
 
-    let result = update_info(
+    update_info(
         &mock,
         &mock,
         token("user-1"),
         update_data("user-1", "qid-new", "New"),
     )
-    .await;
-    assert!(result.is_ok());
+    .await
+    .unwrap();
 
     let snapshot = mock.snapshot();
     assert_eq!(snapshot.users[0].qid, "qid-new");
@@ -277,7 +274,7 @@ async fn reserve_avatar_updates_state_enqueues_check_and_returns_put_url() {
         credential("user-1", "password"),
     );
 
-    let result = reserve_avatar(
+    let val = reserve_avatar(
         &mock,
         &mock,
         &mock,
@@ -285,13 +282,12 @@ async fn reserve_avatar_updates_state_enqueues_check_and_returns_put_url() {
         token("user-1"),
         reserve_data("png"),
     )
-    .await;
-    assert!(result.is_ok());
-    let result = result.ok().unwrap();
+    .await
+    .unwrap();
 
-    assert_eq!(result.avatar_version, 1);
+    assert_eq!(val.avatar_version, 1);
     assert_eq!(
-        result.put_url,
+        val.put_url,
         "https://test.local/put/user_avatar/user-1-1.png"
     );
 
@@ -318,7 +314,7 @@ async fn reserve_avatar_replacing_avatar_enqueues_delete_and_check() {
         credential("user-1", "password"),
     );
 
-    let result = reserve_avatar(
+    reserve_avatar(
         &mock,
         &mock,
         &mock,
@@ -326,8 +322,8 @@ async fn reserve_avatar_replacing_avatar_enqueues_delete_and_check() {
         token("user-1"),
         reserve_data("jpg"),
     )
-    .await;
-    assert!(result.is_ok());
+    .await
+    .unwrap();
 
     let snapshot = mock.snapshot();
     assert_eq!(count_delete_records(&snapshot.prom_records, "old-key"), 1);
@@ -399,9 +395,9 @@ async fn mark_avatar_uploaded_marks_matching_version() {
         credential("user-1", "password"),
     );
 
-    let result =
-        mark_avatar_uploaded(&mock, &mock, token("user-1"), "user-1".into(), mark_data(2)).await;
-    assert!(result.is_ok());
+    mark_avatar_uploaded(&mock, &mock, token("user-1"), "user-1".into(), mark_data(2))
+        .await
+        .unwrap();
 
     assert!(mock.snapshot().users[0].avatar_uploaded);
 }
@@ -506,9 +502,9 @@ async fn touch_last_active_succeeds_for_existing_user() {
         credential("user-1", "password"),
     );
 
-    let result = touch_last_active(&mock, &mock, token("user-1")).await;
-
-    assert!(result.is_ok());
+    touch_last_active(&mock, &mock, token("user-1"))
+        .await
+        .unwrap();
 }
 
 #[tokio::test]
@@ -534,8 +530,9 @@ async fn delete_removes_user_credentials_members_and_enqueues_avatar_delete() {
     mock.seed_member(member("member-1", "user-1", "Nick", "team-1"));
     mock.seed_member(member("member-2", "user-1", "Nick", "team-2"));
 
-    let result = delete(&mock, &mock, &mock, token("user-1"), "user-1".into()).await;
-    assert!(result.is_ok());
+    delete(&mock, &mock, &mock, token("user-1"), "user-1".into())
+        .await
+        .unwrap();
 
     let snapshot = mock.snapshot();
     assert!(snapshot.users.is_empty());
@@ -555,8 +552,9 @@ async fn delete_without_uploaded_avatar_does_not_enqueue_prom() {
         credential("user-1", "password"),
     );
 
-    let result = delete(&mock, &mock, &mock, token("user-1"), "user-1".into()).await;
-    assert!(result.is_ok());
+    delete(&mock, &mock, &mock, token("user-1"), "user-1".into())
+        .await
+        .unwrap();
 
     assert!(mock.snapshot().prom_records.is_empty());
 }

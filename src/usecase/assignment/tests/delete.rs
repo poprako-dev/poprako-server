@@ -17,15 +17,15 @@ async fn delete_owner_deletes_own_assignment() {
         role(RoleField::TRANSLATOR),
     ));
 
-    let result = delete(
+    delete(
         &mock,
         &mock,
         token("worker-user"),
         "assignment-chapter-1-worker-user".into(),
     )
-    .await;
+    .await
+    .unwrap();
 
-    assert!(result.is_ok());
     assert!(mock.snapshot().assignments.is_empty());
 }
 
@@ -44,15 +44,14 @@ async fn delete_reviewer_deletes_another_user_assignment() {
         role(RoleField::TRANSLATOR),
     ));
 
-    let result = delete(
+    delete(
         &mock,
         &mock,
         token("reviewer-user"),
         "assignment-chapter-1-target-user".into(),
     )
-    .await;
-
-    assert!(result.is_ok());
+    .await
+    .unwrap();
     assert_eq!(mock.snapshot().assignments.len(), 1);
 }
 

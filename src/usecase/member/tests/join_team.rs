@@ -30,8 +30,9 @@ async fn join_team_invited_user_creates_member_and_consumes_invitation() {
     mock.seed_user(user("target-user", "Target"), credential("target-user"));
     mock.seed_member_invitation(invitation("invitation-1", "target-user"));
 
-    let result = super::join_team(&mock, &mock, token("target-user"), join_team_data()).await;
-    assert!(result.is_ok());
+    super::join_team(&mock, &mock, token("target-user"), join_team_data())
+        .await
+        .unwrap();
 
     let snapshot = mock.snapshot();
     assert_eq!(snapshot.members.len(), 1);

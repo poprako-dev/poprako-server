@@ -324,7 +324,7 @@ async fn update_info_admin_updates_metadata() {
         RoleMask::from(RoleField::ADMIN),
     ));
 
-    let result = update_info(
+    update_info(
         &mock,
         &mock,
         token("user-1"),
@@ -334,8 +334,9 @@ async fn update_info_admin_updates_metadata() {
             pin: Some(true),
         },
     )
-    .await;
-    assert!(result.is_ok());
+    .await
+    .ok()
+    .unwrap();
     let snapshot = mock.snapshot();
 
     assert_eq!(snapshot.chapters[0].subtitle, "updated");
@@ -376,7 +377,7 @@ async fn update_stage_workflow_role_advances_stage() {
         RoleMask::from(RoleField::TRANSLATOR),
     ));
 
-    let result = update_stage(
+    update_stage(
         &mock,
         &mock,
         &mock,
@@ -387,8 +388,9 @@ async fn update_stage_workflow_role_advances_stage() {
             event: WorkflowEvent::Advance,
         },
     )
-    .await;
-    assert!(result.is_ok());
+    .await
+    .ok()
+    .unwrap();
 
     assert_eq!(
         mock.snapshot().chapters[0]
@@ -443,7 +445,7 @@ async fn update_stage_publish_enqueues_page_image_delete() {
     ));
     mock.seed_page(page("page-1", "chapter-1", Some("page-1.png")));
 
-    let result = update_stage(
+    update_stage(
         &mock,
         &mock,
         &mock,
@@ -454,8 +456,9 @@ async fn update_stage_publish_enqueues_page_image_delete() {
             event: WorkflowEvent::Advance,
         },
     )
-    .await;
-    assert!(result.is_ok());
+    .await
+    .ok()
+    .unwrap();
     let snapshot = mock.snapshot();
 
     assert_eq!(snapshot.prom_records.len(), 1);
@@ -481,8 +484,10 @@ async fn delete_removes_descendants_and_repins_latest_chapter() {
     ));
     mock.seed_page(page("page-1", "chapter-1", Some("page-1.png")));
 
-    let result = delete(&mock, &mock, &mock, token("user-1"), "chapter-1".into()).await;
-    assert!(result.is_ok());
+    delete(&mock, &mock, &mock, token("user-1"), "chapter-1".into())
+        .await
+        .ok()
+        .unwrap();
     let snapshot = mock.snapshot();
 
     assert_eq!(snapshot.chapters.len(), 1);

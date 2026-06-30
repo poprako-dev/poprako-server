@@ -326,7 +326,7 @@ async fn list_infos_rejects_unrelated_user() {
 
     seed_scope(&mock, 0, 0, 0);
 
-    let error = list_infos(
+    let e = list_infos(
         &mock,
         token("user-2"),
         ListPageUnitInfosData {
@@ -337,7 +337,7 @@ async fn list_infos_rejects_unrelated_user() {
     .err()
     .unwrap();
 
-    assert_perm_error(error);
+    assert_perm_error(e);
 }
 
 #[tokio::test]
@@ -480,7 +480,7 @@ async fn save_infos_rolls_back_without_edit_role() {
 
     mock.seed_unit(unit("unit-a", "page-1", 0, "alpha", None, false));
 
-    let error = save_infos(
+    let e = save_infos(
         &mock,
         &mock,
         token("user-1"),
@@ -499,7 +499,7 @@ async fn save_infos_rolls_back_without_edit_role() {
 
     let snapshot = mock.snapshot();
 
-    assert_perm_error(error);
+    assert_perm_error(e);
 
     assert_eq!(snapshot.units.len(), 1);
 
@@ -524,7 +524,7 @@ async fn save_infos_rolls_back_invalid_diff() {
 
     let before_snapshot = mock.snapshot();
 
-    let error = save_infos(
+    let e = save_infos(
         &mock,
         &mock,
         token("user-1"),
@@ -543,7 +543,7 @@ async fn save_infos_rolls_back_invalid_diff() {
 
     let snapshot = mock.snapshot();
 
-    match error {
+    match e {
         RootError::Expected { variant, .. } => {
             assert!(matches!(variant, ExpectedVariant::ArgsInvalid));
         }

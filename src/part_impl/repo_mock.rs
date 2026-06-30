@@ -267,9 +267,9 @@ impl Drive<MockContext> for Mock {
             state: self.state.lock().unwrap().clone(),
         };
 
-        let result = f(&mut context).await;
+        let res = f(&mut context).await;
 
-        match result {
+        match res {
             Ok(value) => {
                 *self.state.lock().unwrap() = context.state;
                 Ok(value)
@@ -400,29 +400,31 @@ async fn transaction_commits_repo_and_prom() {
     };
     let visible_at = now();
 
-    let result = Drive::with_context(&mock, async move |context| {
-        let transactional = MockTransactional;
-        Advance::advance(&transactional, context, &MemberStep::create(&member_form)).await?;
-        Advance::advance(
-            &transactional,
-            context,
-            &PromStep::append(
-                "prom-1",
-                "image",
-                Payload::Image(ImageIntention::CheckUploaded {
-                    kind: ImageKind::UserAvatar,
-                    resource_id: "user-1".into(),
-                    object_key: "key".into(),
-                    image_version: 1,
-                }),
-                &visible_at,
-            ),
-        )
-        .await?;
-        accept(())
-    })
-    .await;
-    assert!(result.is_ok());
+    assert!(
+        Drive::with_context(&mock, async move |context| {
+            let transactional = MockTransactional;
+            Advance::advance(&transactional, context, &MemberStep::create(&member_form)).await?;
+            Advance::advance(
+                &transactional,
+                context,
+                &PromStep::append(
+                    "prom-1",
+                    "image",
+                    Payload::Image(ImageIntention::CheckUploaded {
+                        kind: ImageKind::UserAvatar,
+                        resource_id: "user-1".into(),
+                        object_key: "key".into(),
+                        image_version: 1,
+                    }),
+                    &visible_at,
+                ),
+            )
+            .await?;
+            accept(())
+        })
+        .await
+        .is_ok()
+    );
 
     let snapshot = mock.snapshot();
     assert_eq!(snapshot.members.len(), 1);

@@ -221,9 +221,7 @@ async fn list_infos_reviewer_lists_chapter_invitations() {
         role(RoleField::TRANSLATOR),
     ));
 
-    let result = list_infos(&mock, token("reviewer-user"), list_data()).await;
-    assert!(result.is_ok());
-    let result = result.ok().unwrap();
+    let val = list_infos(&mock, token("reviewer-user"), list_data()).await.unwrap();
 
     assert_eq!(result.len(), 1);
     assert_eq!(result[0].id, "invitation-1");
@@ -257,15 +255,14 @@ async fn create_reviewer_creates_pending_invitation() {
         credential("target-user"),
     );
 
-    let result = create(
+    let val = create(
         &mock,
         &mock,
         token("reviewer-user"),
         create_data("target-qid"),
     )
-    .await;
-    assert!(result.is_ok());
-    let result = result.ok().unwrap();
+    .await
+    .unwrap();
 
     let snapshot = mock.snapshot();
     assert_eq!(snapshot.assignment_invitations.len(), 1);
@@ -320,8 +317,9 @@ async fn delete_reviewer_deletes_invitation() {
         role(RoleField::TRANSLATOR),
     ));
 
-    let result = delete(&mock, &mock, token("reviewer-user"), "invitation-1".into()).await;
-    assert!(result.is_ok());
+    delete(&mock, &mock, token("reviewer-user"), "invitation-1".into())
+        .await
+        .unwrap();
 
     assert!(mock.snapshot().assignment_invitations.is_empty());
 }
@@ -360,8 +358,9 @@ async fn join_invited_user_creates_assignment_and_consumes_invitation() {
         role(RoleField::TRANSLATOR),
     ));
 
-    let result = join(&mock, &mock, token("target-user"), join_data()).await;
-    assert!(result.is_ok());
+    join(&mock, &mock, token("target-user"), join_data())
+        .await
+        .unwrap();
 
     let snapshot = mock.snapshot();
     assert_eq!(snapshot.assignments.len(), 1);
@@ -394,8 +393,9 @@ async fn join_existing_assignment_merges_roles() {
         role(RoleField::PROOFREADER),
     ));
 
-    let result = join(&mock, &mock, token("target-user"), join_data()).await;
-    assert!(result.is_ok());
+    join(&mock, &mock, token("target-user"), join_data())
+        .await
+        .unwrap();
 
     let snapshot = mock.snapshot();
     assert_eq!(snapshot.assignments.len(), 1);

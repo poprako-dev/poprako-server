@@ -3,6 +3,7 @@
 use poprako_transactional::drive::result::Error as DriveError;
 
 /// Categorizes an expected application error by its origin domain.
+#[derive(Debug)]
 pub enum ExpectedVariant {
     ArgsInvalid,
     AuthFail,
@@ -14,6 +15,7 @@ pub enum ExpectedVariant {
 /// A domain error that is either an expected application condition
 /// (invalid arguments, authentication failure, missing permissions) or
 /// an unrecoverable system-level failure.
+#[derive(Debug)]
 pub enum Error {
     Expected {
         variant: ExpectedVariant,

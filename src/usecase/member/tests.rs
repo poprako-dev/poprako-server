@@ -384,7 +384,7 @@ async fn list_infos_non_member_is_rejected() {
 
 #[test]
 fn list_infos_rejects_invalid_combination() {
-    let result: Result<MemberListSpec, RootError> = ListMemberInfosData {
+    let err = ListMemberInfosData {
         owner_id: Some("user-1".into()),
         team_id: Some("team-1".into()),
         user_nickname_keyword: None,
@@ -393,8 +393,9 @@ fn list_infos_rejects_invalid_combination() {
         offset: 0,
         limit: 10,
     }
-    .try_into();
-    let err = result.err().unwrap();
+    .try_into()
+    .err()
+    .unwrap();
 
     assert_expected_variant(err, ExpectedVariant::ArgsInvalid);
 }

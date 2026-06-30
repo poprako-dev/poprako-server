@@ -171,11 +171,11 @@ async fn create_team_member_creates_comment() {
     let mock = Mock::new();
     seed_member(&mock, "viewer-user", "team-1");
 
-    let create_comment_result =
-        create(&mock, &mock, token("viewer-user"), create_data("team-1")).await;
-
-    assert!(create_comment_result.is_ok());
-    let created_comment = create_comment_result.ok().unwrap();
+    let created_comment =
+        create(&mock, &mock, token("viewer-user"), create_data("team-1"))
+            .await
+            .ok()
+            .unwrap();
     let snapshot = mock.snapshot();
 
     assert_eq!(snapshot.comments.len(), 1);

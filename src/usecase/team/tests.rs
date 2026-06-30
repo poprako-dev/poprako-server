@@ -497,7 +497,7 @@ async fn create_persists_team_and_returns_info() {
     let mock = Mock::new();
     mock.seed_user(user("user-1", true), credential("user-1"));
 
-    let result = create(
+    let val = create(
         &mock,
         &mock,
         token("user-1"),
@@ -506,12 +506,11 @@ async fn create_persists_team_and_returns_info() {
             description: "Desc".into(),
         },
     )
-    .await;
-    assert!(result.is_ok());
-    let result = result.ok().unwrap();
+    .await
+    .unwrap();
 
-    assert_eq!(result.name, "Team");
-    assert_eq!(result.description, "Desc");
+    assert_eq!(val.name, "Team");
+    assert_eq!(val.description, "Desc");
     let snapshot = mock.snapshot();
     assert_eq!(snapshot.teams.len(), 1);
     assert_eq!(snapshot.teams[0].id, result.id);
@@ -550,11 +549,9 @@ async fn get_info_returns_uploaded_avatar_url() {
         2,
     ));
 
-    let result = get_info(&mock, &mock, "team-1".into()).await;
-    assert!(result.is_ok());
-    let result = result.ok().unwrap();
+    let val = get_info(&mock, &mock, "team-1".into()).await.unwrap();
 
-    assert_eq!(result.id, "team-1");
+    assert_eq!(val.id, "team-1");
     assert_eq!(
         result.avatar_url.as_deref(),
         Some("https://test.local/get/avatar-key")
@@ -580,18 +577,17 @@ async fn list_infos_returns_paged_teams() {
     mock.seed_member(member("member-2", "user-1", "team-3"));
     mock.seed_member(member("member-3", "user-2", "team-1"));
 
-    let result = list_infos(
+    let val = list_infos(
         &mock,
         &mock,
         token("user-1"),
         list_data(Some("user-1"), 0, 1),
     )
-    .await;
-    assert!(result.is_ok());
-    let result = result.ok().unwrap();
+    .await
+    .unwrap();
 
-    assert_eq!(result.len(), 1);
-    assert_ne!(result[0].id, "team-1");
+    assert_eq!(val.len(), 1);
+    assert_ne!(val[0].id, "team-1");
 }
 
 #[tokio::test]
@@ -599,17 +595,16 @@ async fn list_infos_returns_empty_page_when_offset_exceeds_data() {
     let mock = Mock::new();
     mock.seed_team(team("team-1", "A", "Desc"));
 
-    let result = list_infos(
+    let val = list_infos(
         &mock,
         &mock,
         token("user-1"),
         list_data(Some("user-1"), 10, 10),
     )
-    .await;
-    assert!(result.is_ok());
-    let result = result.ok().unwrap();
+    .await
+    .unwrap();
 
-    assert!(result.is_empty());
+    assert!(val.is_empty());
 }
 
 #[tokio::test]
@@ -632,13 +627,13 @@ async fn update_info_updates_team() {
     mock.seed_team(team("team-1", "Old", "Old Desc"));
     mock.seed_member(member("member-1", "user-1", "team-1"));
 
-    let result = update_info(
+    update_info(
         &mock,
         token("user-1"),
         update_data("team-1", "New", "New Desc"),
     )
-    .await;
-    assert!(result.is_ok());
+    .await
+    .unwrap();
 
     let snapshot = mock.snapshot();
     assert_eq!(snapshot.teams[0].name, "New");
@@ -668,7 +663,7 @@ async fn reserve_avatar_updates_state_enqueues_check_and_returns_put_url() {
     mock.seed_team(team("team-1", "Team", "Desc"));
     mock.seed_member(member("member-1", "user-1", "team-1"));
 
-    let result = reserve_avatar(
+    let val = reserve_avatar(
         &mock,
         &mock,
         &mock,
@@ -677,13 +672,12 @@ async fn reserve_avatar_updates_state_enqueues_check_and_returns_put_url() {
         "team-1".into(),
         reserve_data("png"),
     )
-    .await;
-    assert!(result.is_ok());
-    let result = result.ok().unwrap();
+    .await
+    .unwrap();
 
-    assert_eq!(result.avatar_version, 1);
+    assert_eq!(val.avatar_version, 1);
     assert_eq!(
-        result.put_url,
+        val.put_url,
         "https://test.local/put/team_avatar/team-1-1.png"
     );
 
@@ -709,7 +703,7 @@ async fn reserve_avatar_replacing_avatar_enqueues_delete_and_check() {
     ));
     mock.seed_member(member("member-1", "user-1", "team-1"));
 
-    let result = reserve_avatar(
+    reserve_avatar(
         &mock,
         &mock,
         &mock,
@@ -718,8 +712,8 @@ async fn reserve_avatar_replacing_avatar_enqueues_delete_and_check() {
         "team-1".into(),
         reserve_data("jpg"),
     )
-    .await;
-    assert!(result.is_ok());
+    .await
+    .unwrap();
 
     let snapshot = mock.snapshot();
     assert_eq!(count_delete_records(&snapshot.prom_records, "old-key"), 1);
@@ -790,8 +784,9 @@ async fn mark_avatar_uploaded_marks_matching_version() {
     mock.seed_team(team_with_avatar("team-1", "Team", "Desc", "key", false, 2));
     mock.seed_member(member("member-1", "user-1", "team-1"));
 
-    let result = mark_avatar_uploaded(&mock, token("user-1"), "team-1".into(), mark_data(2)).await;
-    assert!(result.is_ok());
+    mark_avatar_uploaded(&mock, token("user-1"), "team-1".into(), mark_data(2))
+        .await
+        .unwrap();
 
     assert!(mock.snapshot().teams[0].avatar_uploaded);
 }
@@ -891,8 +886,9 @@ async fn delete_removes_team_worksets_descendant_comics_and_avatar() {
         "cover-2.png",
     ));
 
-    let result = delete(&mock, &mock, &mock, token("user-1"), "team-1".into()).await;
-    assert!(result.is_ok());
+    delete(&mock, &mock, &mock, token("user-1"), "team-1".into())
+        .await
+        .unwrap();
 
     let snapshot = mock.snapshot();
     assert!(snapshot.teams.is_empty());
@@ -925,8 +921,9 @@ async fn delete_without_uploaded_avatar_does_not_enqueue_prom() {
     ));
     mock.seed_member(member("member-1", "user-1", "team-1"));
 
-    let result = delete(&mock, &mock, &mock, token("user-1"), "team-1".into()).await;
-    assert!(result.is_ok());
+    delete(&mock, &mock, &mock, token("user-1"), "team-1".into())
+        .await
+        .unwrap();
 
     assert!(mock.snapshot().prom_records.is_empty());
 }
