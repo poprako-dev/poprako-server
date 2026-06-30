@@ -5,16 +5,17 @@ use async_trait::async_trait;
 use poprako_transactional::advance::Advance;
 
 use crate::model::chapter::{ChapterForm, ChapterInfo};
+use crate::model::user::UserInfo;
 use crate::part::repo::chapter::{ChapterRepo, ChapterRepoTransactional};
 use crate::part::repo::step::chapter::{
     AdjustUnitCounters, Create, Delete, FindPinnedInfoByComicId, GetInfoById, GetInfoByIdExcluded,
-    ListAllInfosByComicIdExcluded, ListInfosByComicId, ListInfosByComicIdExcluded, SetPageCounters,
-    UnpinOthers, UpdateInfo, UpdateStage,
+    ListAllInfosByComicIdExcluded, ListInfos, ListInfosByComicId, ListInfosByComicIdExcluded,
+    SetPageCounters, UnpinOthers, UpdateInfo, UpdateStage,
 };
 use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactional, expected, now};
 use crate::result::RootError;
-use crate::value::chapter::WorkflowStageMask;
+use crate::value::chapter::{ChapterInclOpt, WorkflowStageMask};
 
 impl ChapterRepo<MockContext> for Mock {}
 
@@ -76,12 +77,62 @@ fn create_chapter(state: &mut MockState, form: &ChapterForm) -> Result<ChapterIn
         proofread_unit_count: 0,
         stages: WorkflowStageMask::try_from(0u32).ok().unwrap(),
         creator_id: form.creator_id.clone(),
+        creator: None,
         created_at: time,
         updated_at: time,
     };
 
     state.chapters.push(chapter_info.clone());
     Ok(chapter_info)
+}
+
+fn find_user(state: &MockState, user_id: &str) -> Option<UserInfo> {
+    state
+        .users
+        .iter()
+        .find(|user_info| user_info.id == user_id)
+        .cloned()
+}
+
+fn apply_creator_incl(
+    state: &MockState,
+    chapter_info: &mut ChapterInfo,
+    include_creator: bool,
+) {
+    chapter_info.creator = None;
+
+    if include_creator {
+        chapter_info.creator = find_user(state, &chapter_info.creator_id);
+    }
+}
+
+#[async_trait]
+impl<'a> Execute<ListInfos<'a>> for Mock {
+    type Error = RootError;
+
+    async fn execute(
+        &self,
+        step: &ListInfos<'a>,
+    ) -> Result<Vec<ChapterInfo>, Self::Error> {
+        let state = self.state.lock().unwrap();
+        let mut chapters = list_all_chapters(&state, &step.spec.comic_id);
+
+        let include_creator = step.spec.incl_opt.contains(&ChapterInclOpt::Creator);
+
+        for chapter in &mut chapters {
+            apply_creator_incl(&state, chapter, include_creator);
+        }
+
+        let offset = step.spec.offset as usize;
+        let limit = step.spec.limit as usize;
+
+        if offset >= chapters.len() {
+            return Ok(Vec::new());
+        }
+
+        let end = std::cmp::min(offset + limit, chapters.len());
+        Ok(chapters[offset..end].to_vec())
+    }
 }
 
 #[async_trait]

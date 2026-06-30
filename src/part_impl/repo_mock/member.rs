@@ -7,6 +7,8 @@ use poprako_transactional::advance::Advance;
 
 use crate::model::member::{MemberForm, MemberInfo, MemberListSpec};
 use crate::model::role::RoleMask;
+use crate::model::team::TeamInfo;
+use crate::model::user::UserInfo;
 use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
 use crate::part::repo::step::member::{
     Create, Delete, FindInfoByUserIdAndTeamId, GetInfoById, GetInfoExcluded, ListInfos,
@@ -15,10 +17,43 @@ use crate::part::repo::step::member::{
 use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactional, expected, now};
 use crate::result::RootError;
+use crate::value::member::MemberInclOpt;
 
 impl MemberRepo<MockContext> for Mock {}
 
 impl MemberRepoTransactional<MockContext> for MockTransactional {}
+
+fn find_user(state: &MockState, user_id: &str) -> Option<UserInfo> {
+    state
+        .users
+        .iter()
+        .find(|user_info| user_info.id == user_id)
+        .cloned()
+}
+
+fn find_team(state: &MockState, team_id: &str) -> Option<TeamInfo> {
+    state
+        .teams
+        .iter()
+        .find(|team_info| team_info.id == team_id)
+        .cloned()
+}
+
+fn apply_user_incl(state: &MockState, member_info: &mut MemberInfo, include_user: bool) {
+    member_info.user = None;
+
+    if include_user {
+        member_info.user = find_user(state, &member_info.user_id);
+    }
+}
+
+fn apply_team_incl(state: &MockState, member_info: &mut MemberInfo, include_team: bool) {
+    member_info.team = None;
+
+    if include_team {
+        member_info.team = find_team(state, &member_info.team_id);
+    }
+}
 
 /// Returns [`Some(now)`] when the given role mask has any bits set, used to timestamp role
 /// assignments.
@@ -45,6 +80,8 @@ fn create_member(state: &mut MockState, form: &MemberForm) -> Result<MemberInfo,
         user_id: form.user_id.clone(),
         user_nickname: form.user_nickname.clone(),
         team_id: form.team_id.clone(),
+        user: None,
+        team: None,
         roles: form.roles,
     };
     state.members.push(member.clone());
@@ -141,15 +178,16 @@ impl<'a> Execute<ListInfos<'a>> for Mock {
 
     async fn execute(&self, step: &ListInfos<'a>) -> Result<Vec<MemberInfo>, Self::Error> {
         let state = self.state.lock().unwrap();
-        let (offset, limit, mut member_infos) = match step.spec {
+        let (offset, limit, incl_opt, mut member_infos) = match step.spec {
             MemberListSpec::User {
                 owner_id,
+                incl_opt,
                 offset,
                 limit,
-                ..
             } => (
                 *offset,
                 *limit,
+                incl_opt,
                 state
                     .members
                     .iter()
@@ -161,12 +199,13 @@ impl<'a> Execute<ListInfos<'a>> for Mock {
                 team_id,
                 fuzzy_nickname,
                 role,
+                incl_opt,
                 offset,
                 limit,
-                ..
             } => (
                 *offset,
                 *limit,
+                incl_opt,
                 state
                     .members
                     .iter()
@@ -185,6 +224,14 @@ impl<'a> Execute<ListInfos<'a>> for Mock {
                     .collect::<Vec<_>>(),
             ),
         };
+
+        let include_user = incl_opt.contains(&MemberInclOpt::User);
+        let include_team = incl_opt.contains(&MemberInclOpt::Team);
+
+        for member_info in &mut member_infos {
+            apply_user_incl(&state, member_info, include_user);
+            apply_team_incl(&state, member_info, include_team);
+        }
 
         member_infos.sort_by(|left, right| left.id.cmp(&right.id));
 

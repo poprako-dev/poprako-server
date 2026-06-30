@@ -8,6 +8,7 @@ use crate::complex::chapter::ChapterPermComplex;
 use crate::data::assignment::{
     AssignmentInfoVal, JoinChapterData, ListAssignmentInfosData, UpdateAssignmentRoleData,
 };
+use crate::part::image::ImagePool;
 use crate::model::assignment::{AssignmentForm, AssignmentListSpec, AssignmentRoleUpdate};
 use crate::model::user::UserToken;
 use crate::part::repo::assignment::{AssignmentRepo, AssignmentRepoTransactional};
@@ -26,8 +27,9 @@ use crate::util::DeriveTransactional;
 mod tests;
 
 /// Lists assignments by chapter or owner user.
-pub async fn list_infos<C, R>(
+pub async fn list_infos<C, R, I>(
     repo: &R,
+    image_pool: &I,
     token: UserToken,
     data: ListAssignmentInfosData,
 ) -> RootResult<Vec<AssignmentInfoVal>>
@@ -45,6 +47,7 @@ where
         + WorksetRepoTransactional<C>
         + MemberRepoTransactional<C>
         + UserRepoTransactional<C>,
+    I: ImagePool,
 {
     let assignment_list_spec: AssignmentListSpec = data.try_into()?;
 
@@ -61,12 +64,14 @@ where
         .execute(&AssignmentStep::list_infos(&assignment_list_spec))
         .await?;
 
-    accept(
-        assignment_infos
-            .into_iter()
-            .map(AssignmentInfoVal::from)
-            .collect(),
-    )
+    let mut assignment_info_vals = Vec::with_capacity(assignment_infos.len());
+
+    for assignment_info in assignment_infos {
+        assignment_info_vals
+            .push(AssignmentInfoVal::from_model(image_pool, assignment_info).await?);
+    }
+
+    accept(assignment_info_vals)
 }
 
 /// Joins a chapter assignment with requested roles.

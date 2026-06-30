@@ -280,5 +280,11 @@ impl Serialize for WorkflowStageMask {
     }
 }
 
+/// Include options for chapter info queries.
+#[derive(Deserialize, Clone, Copy, PartialEq, Eq)]
+pub enum ChapterInclOpt {
+    Creator,
+}
+
 #[cfg(test)]
 mod tests;

@@ -4,8 +4,19 @@ use poprako_macro::Paginate;
 use poprako_transactional::step::Step;
 use poprako_util::page::Page;
 
-use crate::model::chapter::{ChapterForm, ChapterInfo, ChapterInfoUpdate, ChapterStageUpdate};
+use crate::model::chapter::{
+    ChapterForm, ChapterInfo, ChapterInfoUpdate, ChapterListSpec, ChapterStageUpdate,
+};
 use crate::model::unit::UnitCounterDelta;
+
+/// Step that lists chapters with include options and pagination.
+pub struct ListInfos<'a> {
+    pub spec: &'a ChapterListSpec,
+}
+
+impl<'a> Step for ListInfos<'a> {
+    type Output = Vec<ChapterInfo>;
+}
 
 /// Step that inserts a new chapter row.
 pub struct Create<'a> {
@@ -136,6 +147,11 @@ impl<'a> Step for Delete<'a> {
 pub struct ChapterStep;
 
 impl ChapterStep {
+    /// Constructs a step to list chapters with include options and pagination.
+    pub fn list_infos<'a>(spec: &'a ChapterListSpec) -> ListInfos<'a> {
+        ListInfos { spec }
+    }
+
     /// Constructs a step to insert a new chapter.
     pub fn create<'a>(form: &'a ChapterForm) -> Create<'a> {
         Create { form }

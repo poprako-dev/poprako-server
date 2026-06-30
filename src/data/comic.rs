@@ -11,9 +11,13 @@ use serde::Deserialize;
 use poprako_macro::Paginate;
 use poprako_util::time::ToUnixMilli;
 
+use crate::data::team::TeamInfoVal;
+use crate::data::user::UserInfoVal;
+use crate::data::workset::WorksetInfoVal;
 use crate::model::comic::{ComicInfo, ComicListSpec};
 use crate::part::image::ImagePool;
 use crate::result::RootResult;
+use crate::value::comic::ComicInclOpt;
 
 /// Presentation-ready comic information.
 ///
@@ -45,6 +49,11 @@ pub struct ComicInfoVal {
     pub chapter_next_index: i32,
 
     pub creator_id: String,
+
+    pub workset: Option<WorksetInfoVal>,
+    pub team: Option<TeamInfoVal>,
+    pub creator: Option<UserInfoVal>,
+
     pub last_active_at: i64,
 
     pub created_at: i64,
@@ -68,6 +77,19 @@ impl ComicInfoVal {
             _ => None,
         };
 
+        let workset = match model.workset {
+            Some(workset_info) => Some(WorksetInfoVal::from(workset_info)),
+            None => None,
+        };
+        let team = match model.team {
+            Some(team_info) => Some(TeamInfoVal::from_model(image_pool, team_info).await?),
+            None => None,
+        };
+        let creator = match model.creator {
+            Some(user_info) => Some(UserInfoVal::from_model(image_pool, user_info).await?),
+            None => None,
+        };
+
         Ok(Self {
             id: model.id,
             workset_id: model.workset_id,
@@ -81,6 +103,9 @@ impl ComicInfoVal {
             chapter_count: model.chapter_count,
             chapter_next_index: model.chapter_next_index,
             creator_id: model.creator_id,
+            workset,
+            team,
+            creator,
             last_active_at: model.last_active_at.to_unix_milli(),
             created_at: model.created_at.to_unix_milli(),
             updated_at: model.updated_at.to_unix_milli(),
@@ -135,6 +160,9 @@ pub struct ListComicInfosData {
 
     pub fuzzy_title: Option<String>,
     pub is_completed: Option<bool>,
+
+    #[serde(default)]
+    pub incl_opt: Vec<ComicInclOpt>,
 }
 
 impl From<ListComicInfosData> for ComicListSpec {
@@ -143,6 +171,7 @@ impl From<ListComicInfosData> for ComicListSpec {
             workset_id: data.workset_id,
             fuzzy_title: data.fuzzy_title,
             is_completed: data.is_completed,
+            incl_opt: data.incl_opt,
             offset: data.offset,
             limit: data.limit,
         }

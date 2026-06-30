@@ -1,6 +1,8 @@
 //! Domain models for team membership.
 
 use crate::model::role::{RoleField, RoleMask};
+use crate::model::team::TeamInfo;
+use crate::model::user::UserInfo;
 use crate::value::member::MemberInclOpt;
 
 /// A membership（汉化组成员）record linking a user to a team.
@@ -15,6 +17,9 @@ pub struct MemberInfo {
     pub user_nickname: String,
 
     pub team_id: String,
+
+    pub user: Option<UserInfo>,
+    pub team: Option<TeamInfo>,
 
     pub roles: RoleMask,
 }

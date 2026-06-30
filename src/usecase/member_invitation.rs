@@ -3,14 +3,15 @@
 use poprako_transactional::advance::Advance;
 use poprako_transactional::drive::Drive;
 use poprako_util::i18n::trl;
-use poprako_util::page::Page;
-
 use crate::complex::member_invitation::{MemberInvitationComplex, MemberInvitationPermComplex};
 use crate::data::member_invitation::{
     CreateMemberInvitationData, CreateMemberInvitationVal, ListMemberInvitationInfosData,
     MemberInvitationInfoVal, UpdateMemberInvitationInfoData,
 };
-use crate::model::member_invitation::{MemberInvitationForm, MemberInvitationUpdate};
+use crate::model::member_invitation::{
+    MemberInvitationForm, MemberInvitationListSpec, MemberInvitationUpdate,
+};
+use crate::part::image::ImagePool;
 use crate::model::user::UserToken;
 use crate::part::repo::map_drive_err;
 use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
@@ -116,8 +117,9 @@ where
 }
 
 /// Lists invitations for a team（汉化组）.
-pub async fn list_infos<C, R>(
+pub async fn list_infos<C, R, I>(
     repo: &R,
+    image_pool: &I,
     token: UserToken,
     data: ListMemberInvitationInfosData,
 ) -> RootResult<Vec<MemberInvitationInfoVal>>
@@ -125,6 +127,7 @@ where
     R: MemberInvitationRepo<C> + MemberRepo<C> + Sync,
     <R as DeriveTransactional>::Transactional:
         MemberInvitationRepoTransactional<C> + MemberRepoTransactional<C>,
+    I: ImagePool,
 {
     use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
@@ -135,21 +138,23 @@ where
     )
     .await?;
 
-    let member_invitation_infos = repo
-        .execute(&MemberInvitationStep::list_infos(
-            &data.team_id,
-            data.pending,
-            Page {
-                offset: data.offset,
-                limit: data.limit,
-            },
-        ))
-        .await?;
+    let spec = MemberInvitationListSpec {
+        team_id: data.team_id,
+        pending: data.pending,
+        incl_opt: data.incl_opt,
+        offset: data.offset,
+        limit: data.limit,
+    };
 
-    Ok(member_invitation_infos
-        .into_iter()
-        .map(MemberInvitationInfoVal::from)
-        .collect())
+    let infos = repo.execute(&MemberInvitationStep::list_infos(&spec)).await?;
+
+    let mut vals = Vec::with_capacity(infos.len());
+
+    for info in infos {
+        vals.push(MemberInvitationInfoVal::from_model(image_pool, info).await?);
+    }
+
+    Ok(vals)
 }
 
 /// Updates the role mask of an invitation.

@@ -5,8 +5,11 @@ use serde::Deserialize;
 use poprako_macro::Paginate;
 use poprako_util::i18n::trl;
 
+use crate::data::team::TeamInfoVal;
+use crate::data::user::UserInfoVal;
 use crate::model::member::{MemberInfo, MemberListSpec};
 use crate::model::role::{RoleField, RoleMask};
+use crate::part::image::ImagePool;
 use crate::result::{ExpectedVariant, RootError, RootResult};
 use crate::value::member::MemberInclOpt;
 
@@ -19,6 +22,9 @@ pub struct MemberInfoVal {
 
     pub team_id: String,
 
+    pub user: Option<UserInfoVal>,
+    pub team: Option<TeamInfoVal>,
+
     pub roles: RoleMask,
 }
 
@@ -29,8 +35,38 @@ impl From<MemberInfo> for MemberInfoVal {
             user_id: value.user_id,
             nickname: value.user_nickname,
             team_id: value.team_id,
+            user: None,
+            team: None,
             roles: value.roles,
         }
+    }
+}
+
+impl MemberInfoVal {
+    /// Converts a member model into a presentation-ready value,
+    /// resolving included user/team data when present.
+    pub async fn from_model<P>(image_pool: &P, model: MemberInfo) -> RootResult<Self>
+    where
+        P: ImagePool,
+    {
+        let user = match model.user {
+            Some(user_info) => Some(UserInfoVal::from_model(image_pool, user_info).await?),
+            None => None,
+        };
+        let team = match model.team {
+            Some(team_info) => Some(TeamInfoVal::from_model(image_pool, team_info).await?),
+            None => None,
+        };
+
+        Ok(Self {
+            id: model.id,
+            user_id: model.user_id,
+            nickname: model.user_nickname,
+            team_id: model.team_id,
+            user,
+            team,
+            roles: model.roles,
+        })
     }
 }
 

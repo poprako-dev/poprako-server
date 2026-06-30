@@ -55,6 +55,8 @@ fn member(id: &str, user_id: &str, team_id: &str, role_mask: RoleMask) -> Member
         user_id: user_id.into(),
         user_nickname: user_id.into(),
         team_id: team_id.into(),
+        user: None,
+        team: None,
         roles: role_mask,
     }
 }

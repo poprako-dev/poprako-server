@@ -66,6 +66,8 @@ fn admin_member(user_id: &str, team_id: &str) -> MemberInfo {
         user_id: user_id.into(),
         user_nickname: user_id.into(),
         team_id: team_id.into(),
+        user: None,
+        team: None,
         roles: RoleMask::from(RoleField::ADMIN),
     }
 }
@@ -91,6 +93,9 @@ fn comic_with_uploaded_cover(
         chapter_count: 0,
         chapter_next_index: 0,
         creator_id: "user-1".into(),
+        workset: None,
+        team: None,
+        creator: None,
         last_active_at: time,
         created_at: time,
         updated_at: time,

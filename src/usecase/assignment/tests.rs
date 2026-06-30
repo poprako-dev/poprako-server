@@ -104,6 +104,9 @@ fn comic(id: &str, workset_id: &str) -> ComicInfo {
         chapter_count: 1,
         chapter_next_index: 1,
         creator_id: "creator-user".into(),
+        workset: None,
+        team: None,
+        creator: None,
         last_active_at: time,
         created_at: time,
         updated_at: time,
@@ -125,6 +128,7 @@ fn chapter(id: &str, comic_id: &str) -> ChapterInfo {
         proofread_unit_count: 0,
         stages: WorkflowStageMask::try_from(0u32).ok().unwrap(),
         creator_id: "creator-user".into(),
+        creator: None,
         created_at: time,
         updated_at: time,
     }
@@ -136,6 +140,8 @@ fn member(user_id: &str, role_mask: RoleMask) -> MemberInfo {
         user_id: user_id.into(),
         user_nickname: user_id.into(),
         team_id: "team-1".into(),
+        user: None,
+        team: None,
         roles: role_mask,
     }
 }
@@ -147,6 +153,7 @@ fn assignment(chapter_id: &str, user_id: &str, role_mask: RoleMask) -> Assignmen
         id: format!("assignment-{}-{}", chapter_id, user_id),
         chapter_id: chapter_id.into(),
         user_id: user_id.into(),
+        user: None,
         roles: role_mask,
         created_at: time,
         updated_at: time,
@@ -155,6 +162,7 @@ fn assignment(chapter_id: &str, user_id: &str, role_mask: RoleMask) -> Assignmen
 
 fn list_by_chapter_data(chapter_id: &str) -> ListAssignmentInfosData {
     ListAssignmentInfosData {
+        incl_opt: Vec::new(),
         chapter_id: Some(chapter_id.into()),
         owner_id: None,
         role: None,
@@ -165,6 +173,7 @@ fn list_by_chapter_data(chapter_id: &str) -> ListAssignmentInfosData {
 
 fn list_by_user_data(owner_id: &str) -> ListAssignmentInfosData {
     ListAssignmentInfosData {
+        incl_opt: Vec::new(),
         chapter_id: None,
         owner_id: Some(owner_id.into()),
         role: None,
