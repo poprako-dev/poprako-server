@@ -89,17 +89,27 @@ impl ComicInfoVal {
 }
 
 /// Input parameters for creating a new comic inside a workset.
+///
+/// The first chapter is created atomically with the comic. Its subtitle
+/// can be customised via `first_chapter_subtitle`; when absent, a
+/// locale-aware default (e.g. "Ch. 1") is generated.
 pub struct CreateComicData {
     pub workset_id: String,
 
     pub title: String,
     pub author: String,
     pub description: Option<String>,
+
+    /// Optional subtitle for the first chapter created alongside the comic.
+    pub first_chapter_subtitle: Option<String>,
 }
 
 /// Return value from a successful comic creation.
+///
+/// Includes the IDs of both the new comic and its auto-created first chapter.
 pub struct CreateComicVal {
     pub id: String,
+    pub chapter_id: String,
 }
 
 /// Input parameters for updating a comic's title, author, and description.

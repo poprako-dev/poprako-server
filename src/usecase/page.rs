@@ -5,6 +5,7 @@ use time::{Duration, OffsetDateTime};
 use poprako_transactional::advance::Advance;
 use poprako_transactional::drive::Drive;
 use poprako_util::i18n::trl;
+use poprako_util::page::Page;
 
 use crate::complex::image::ImageComplex;
 use crate::complex::page::{PageComplex, PagePermComplex};
@@ -280,8 +281,10 @@ where
     let page_infos = repo
         .execute(&PageStep::list_infos_by_chapter_id(
             &data.chapter_id,
-            data.offset,
-            data.limit,
+            Page {
+                offset: data.offset,
+                limit: data.limit,
+            },
         ))
         .await?;
 

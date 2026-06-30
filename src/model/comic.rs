@@ -10,6 +10,7 @@
 //!
 //! [`ComicInfoVal`]: crate::data::comic::ComicInfoVal
 
+use poprako_macro::Paginate;
 use time::OffsetDateTime;
 
 /// A comic（漫画）record as stored in the database.
@@ -80,14 +81,12 @@ pub struct ComicInfoUpdate {
 }
 
 /// Filtering and pagination parameters for listing comics within a workset.
+#[Paginate]
 pub struct ComicListSpec {
     pub workset_id: String,
 
     pub fuzzy_title: Option<String>,
     pub is_completed: Option<bool>,
-
-    pub offset: u64,
-    pub limit: u64,
 }
 
 /// The result of reserving a new comic cover upload slot.

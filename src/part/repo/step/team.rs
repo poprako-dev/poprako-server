@@ -2,6 +2,7 @@
 
 use poprako_macro::Paginate;
 use poprako_transactional::step::Step;
+use poprako_util::page::Page;
 
 use crate::model::team::{TeamAvatarReservation, TeamForm, TeamInfo};
 
@@ -111,11 +112,11 @@ impl TeamStep {
     }
 
     /// Constructs a step to list teams with optional user scoping.
-    pub fn list_infos<'a>(user_id: Option<&'a str>, offset: u64, limit: u64) -> ListInfos<'a> {
+    pub fn list_infos<'a>(user_id: Option<&'a str>, page: Page) -> ListInfos<'a> {
         ListInfos {
             user_id,
-            offset,
-            limit,
+            offset: page.offset,
+            limit: page.limit,
         }
     }
 

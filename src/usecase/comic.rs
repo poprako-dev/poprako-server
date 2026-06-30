@@ -5,22 +5,30 @@ use time::{Duration, OffsetDateTime};
 use poprako_transactional::advance::Advance;
 use poprako_transactional::drive::Drive;
 
+use crate::complex::assignment::AssignmentComplex;
+use crate::complex::chapter::ChapterComplex;
 use crate::complex::comic::{ComicComplex, ComicPermComplex};
 use crate::complex::image::ImageComplex;
 use crate::data::comic::{
     ComicInfoVal, CreateComicData, CreateComicVal, ListComicInfosData, MarkComicCoverUploadedData,
     ReserveComicCoverData, ReserveComicCoverVal, UpdateComicInfoData,
 };
+use crate::model::assignment::AssignmentForm;
+use crate::model::chapter::ChapterForm;
 use crate::model::comic::{ComicForm, ComicInfoUpdate, ComicListSpec};
+use crate::model::role::{RoleField, RoleMask};
 use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
 use crate::part::prom::intention::{IMAGE_TOPIC, ImageIntention, ImageKind};
 use crate::part::prom::{Payload, Prom, PromStep, PromTransactional};
+use crate::part::repo::assignment::{AssignmentRepo, AssignmentRepoTransactional};
 use crate::part::repo::chapter::{ChapterRepo, ChapterRepoTransactional};
 use crate::part::repo::comic::{ComicRepo, ComicRepoTransactional};
 use crate::part::repo::map_drive_err;
 use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
 use crate::part::repo::page::{PageRepo, PageRepoTransactional};
+use crate::part::repo::step::assignment::AssignmentStep;
+use crate::part::repo::step::chapter::ChapterStep;
 use crate::part::repo::step::comic::ComicStep;
 use crate::part::repo::step::workset::WorksetStep;
 use crate::part::repo::workset::{WorksetRepo, WorksetRepoTransactional};
@@ -30,9 +38,17 @@ use crate::util::DeriveTransactional;
 #[cfg(test)]
 pub mod tests;
 
-// NOTE: touch_last_active API 不再保留（TODO：删除 note）
-
-/// Creates a new comic inside a workset.
+/// Creates a new comic inside a workset together with its first
+/// chapter and a creator admin assignment.
+///
+/// Inside a single transaction this:
+/// 1. Allocates a workset-scoped comic index.
+/// 2. Inserts the comic row.
+/// 3. Bumps the workset comic count.
+/// 4. Allocates a chapter index and inserts the first (pinned) chapter.
+/// 5. Updates the comic's denormalised chapter counter and last-activity
+///    timestamp.
+/// 6. Creates an ADMIN assignment on the new chapter for the caller.
 pub async fn create<D, C, R>(
     drive: &D,
     repo: &R,
@@ -43,10 +59,18 @@ where
     D: Drive<C>,
     D::Error: Into<RootError>,
     C: Send,
-    R: ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Send + Sync,
+    R: ComicRepo<C>
+        + WorksetRepo<C>
+        + MemberRepo<C>
+        + ChapterRepo<C>
+        + AssignmentRepo<C>
+        + Send
+        + Sync,
     <R as DeriveTransactional>::Transactional: ComicRepoTransactional<C>
         + WorksetRepoTransactional<C>
         + MemberRepoTransactional<C>
+        + ChapterRepoTransactional<C>
+        + AssignmentRepoTransactional<C>
         + Send
         + Sync,
 {
@@ -55,7 +79,7 @@ where
     ComicPermComplex::can_user_create(&mut repo.as_proxy(), &token.user_id, &data.workset_id)
         .await?;
 
-    let comic_id = drive
+    let (comic_id, chapter_id) = drive
         .with_context(async move |context| {
             let repo = repo.transactional().await;
 
@@ -73,7 +97,7 @@ where
                 title: data.title,
                 author: data.author,
                 description: data.description,
-                creator_id: token.user_id,
+                creator_id: token.user_id.clone(),
             };
 
             let comic_info = repo
@@ -86,12 +110,66 @@ where
             )
             .await?;
 
-            accept(comic_info.id)
+            let chapter_index = repo
+                .advance(
+                    context,
+                    &ComicStep::incr_chapter_next_index(&comic_info.id),
+                )
+                .await?;
+
+            let subtitle =
+                ChapterComplex::subtitle_or_default(data.first_chapter_subtitle, chapter_index);
+
+            let chapter_form = ChapterForm {
+                id: ChapterComplex::gen_id(),
+                comic_id: comic_info.id.clone(),
+                is_pinned: true,
+                index: chapter_index,
+                subtitle,
+                creator_id: token.user_id.clone(),
+            };
+
+            let chapter_info = repo
+                .advance(context, &ChapterStep::create(&chapter_form))
+                .await?;
+
+            repo.advance(
+                context,
+                &ChapterStep::unpin_others(&chapter_info.comic_id, &chapter_info.id),
+            )
+            .await?;
+
+            repo.advance(
+                context,
+                &ComicStep::update_chapter_count(&chapter_info.comic_id, 1),
+            )
+            .await?;
+
+            repo.advance(
+                context,
+                &ComicStep::touch_last_active(&chapter_info.comic_id),
+            )
+            .await?;
+
+            let assignment_form = AssignmentForm {
+                id: AssignmentComplex::gen_id(),
+                chapter_id: chapter_info.id.clone(),
+                user_id: token.user_id,
+                roles: RoleMask::from(RoleField::ADMIN),
+            };
+
+            repo.advance(context, &AssignmentStep::create(&assignment_form))
+                .await?;
+
+            accept((comic_info.id, chapter_info.id))
         })
         .await
         .map_err(map_drive_err)?;
 
-    Ok(CreateComicVal { id: comic_id })
+    Ok(CreateComicVal {
+        id: comic_id,
+        chapter_id,
+    })
 }
 
 /// Fetches a comic by ID with cover URL resolution.

@@ -2,6 +2,7 @@
 
 use poprako_transactional::advance::Advance;
 use poprako_transactional::drive::Drive;
+use poprako_util::page::Page;
 
 use crate::complex::assignment::AssignmentComplex;
 use crate::complex::chapter::{ChapterComplex, ChapterPermComplex};
@@ -52,8 +53,10 @@ where
     let chapter_infos = repo
         .execute(&ChapterStep::list_infos_by_comic_id(
             &data.comic_id,
-            data.offset,
-            data.limit,
+            Page {
+                offset: data.offset,
+                limit: data.limit,
+            },
         ))
         .await?;
 

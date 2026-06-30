@@ -3,6 +3,8 @@ mod tests;
 
 use std::collections::HashMap;
 
+use poprako_util::page::Page;
+
 use crate::complex::chapter_port::{ChapterExportComplex, ChapterPortPermComplex};
 use crate::data::chapter_port::ChapterTranslationExportVal;
 use crate::data::page_port::PageTranslationExportVal;
@@ -66,8 +68,10 @@ where
     let page_infos = repo
         .execute(&PageStep::list_infos_by_chapter_id(
             &chapter_info.id,
-            0,
-            u64::MAX,
+            Page {
+                offset: 0,
+                limit: u64::MAX,
+            },
         ))
         .await?;
 
@@ -141,8 +145,10 @@ where
     let page_infos = repo
         .execute(&PageStep::list_infos_by_chapter_id(
             &chapter_id,
-            0,
-            u64::MAX,
+            Page {
+                offset: 0,
+                limit: u64::MAX,
+            },
         ))
         .await?;
 

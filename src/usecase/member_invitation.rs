@@ -3,6 +3,7 @@
 use poprako_transactional::advance::Advance;
 use poprako_transactional::drive::Drive;
 use poprako_util::i18n::trl;
+use poprako_util::page::Page;
 
 use crate::complex::member_invitation::{MemberInvitationComplex, MemberInvitationPermComplex};
 use crate::data::member_invitation::{
@@ -138,8 +139,10 @@ where
         .execute(&MemberInvitationStep::list_infos(
             &data.team_id,
             data.pending,
-            data.offset,
-            data.limit,
+            Page {
+                offset: data.offset,
+                limit: data.limit,
+            },
         ))
         .await?;
 

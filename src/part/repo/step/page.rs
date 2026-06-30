@@ -1,6 +1,8 @@
 //! Step types for page repository opers.
 
+use poprako_macro::Paginate;
 use poprako_transactional::step::Step;
+use poprako_util::page::Page;
 
 use crate::model::page::{PageForm, PageImageReservation, PageInfo};
 use crate::model::unit::UnitCounters;
@@ -24,10 +26,9 @@ impl<'a> Step for GetInfoExcluded<'a> {
 }
 
 /// Step that lists pages by chapter ID.
+#[Paginate]
 pub struct ListInfosByChapterId<'a> {
     pub chapter_id: &'a str,
-    pub offset: u64,
-    pub limit: u64,
 }
 
 impl<'a> Step for ListInfosByChapterId<'a> {
@@ -108,13 +109,12 @@ impl PageStep {
     /// Constructs a step to list pages by chapter ID.
     pub fn list_infos_by_chapter_id<'a>(
         chapter_id: &'a str,
-        offset: u64,
-        limit: u64,
+        page: Page,
     ) -> ListInfosByChapterId<'a> {
         ListInfosByChapterId {
             chapter_id,
-            offset,
-            limit,
+            offset: page.offset,
+            limit: page.limit,
         }
     }
 

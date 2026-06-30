@@ -1,5 +1,6 @@
 //! Data transfer objects for chapter use cases.
 
+use poprako_macro::Paginate;
 use poprako_util::time::ToUnixMilli;
 
 use crate::model::chapter::ChapterInfo;
@@ -71,11 +72,9 @@ pub struct CreateChapterVal {
 }
 
 /// Input parameters for listing chapters within a comic.
+#[Paginate]
 pub struct ListChapterInfosData {
     pub comic_id: String,
-
-    pub offset: u64,
-    pub limit: u64,
 }
 
 /// Input parameters for updating a chapter's profile.

@@ -1,6 +1,8 @@
 //! Data transfer objects for member invitation use cases — input parameters
 //! and presentation-ready invitation values.
 
+use poprako_macro::Paginate;
+
 use crate::model::member_invitation::MemberInvitationInfo;
 use crate::model::role::RoleMask;
 
@@ -31,15 +33,13 @@ pub struct CreateMemberInvitationVal {
 
 /// Input parameters for listing invitations within a team, with optional
 /// pending-status filtering and standard offset/limit pagination.
+#[Paginate]
 pub struct ListMemberInvitationInfosData {
     pub team_id: String,
 
     /// When `Some(true)`, returns only unconsumed invitations;
     /// `Some(false)` returns only consumed ones; `None` returns all.
     pub pending: Option<bool>,
-
-    pub offset: u64,
-    pub limit: u64,
 }
 
 /// Presentation-ready member invitation information.
