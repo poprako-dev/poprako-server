@@ -15,7 +15,7 @@
 //!
 //! - **Transactional** — multi-step opers wrapped in
 //!   [`drive.with_context(...)`](Drive::with_context). All [`Advance`] calls
-//!   within the closure share a transaction and commit or rollback atomically.
+//!   within the block share a transaction and commit or rollback atomically.
 //!   Side-effects (events, prom records) are deferred until after commit.
 //!
 //! # Type parameters

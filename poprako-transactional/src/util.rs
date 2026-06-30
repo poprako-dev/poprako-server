@@ -3,7 +3,7 @@
 //! trait.
 
 /// A marker trait extending [`AsyncFnOnce`] with the equivalent [`FnOnce`]
-/// bound, enabling higher-ranked async closures in trait bounds.
+/// bound, enabling higher-ranked async functions in trait bounds.
 ///
 /// This is a workaround for Rust's current inability to express
 /// `for<'a> AsyncFnOnce(&'a mut C) -> Result<T, E>` directly in trait

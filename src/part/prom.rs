@@ -8,7 +8,7 @@
 //!
 //! # Pattern
 //!
-//! 1. During a [`Drive::with_context`] closure, use [`PromStep::append`]
+//! 1. During a [`Drive::with_context`] block, use [`PromStep::append`]
 //!    to enqueue an [`Append`] step with a [`Payload`] and a `visible_at`
 //!    time.
 //! 2. After the transaction commits, a background worker processes the

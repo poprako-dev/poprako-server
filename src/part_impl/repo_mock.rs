@@ -91,7 +91,7 @@ impl From<MockState> for MockSnapshot {
     }
 }
 
-/// The transactional context passed to [Drive::with_context] closures,
+/// The transactional context passed to [Drive::with_context] calls,
 /// providing mutable access to the mock state during a simulated transaction.
 pub struct MockContext {
     pub state: MockState,
