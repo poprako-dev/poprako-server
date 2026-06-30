@@ -80,9 +80,7 @@ impl TryInto<MemberListSpec> for ListMemberInfosData {
             return Err(invalid_args_err());
         }
 
-        if self.user_nickname_keyword.is_some()
-            || self.owner_id.is_some() && self.role.is_some()
-        {
+        if self.user_nickname_keyword.is_some() || self.owner_id.is_some() && self.role.is_some() {
             return Err(invalid_args_err());
         }
 

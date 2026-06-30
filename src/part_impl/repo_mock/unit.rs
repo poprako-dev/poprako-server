@@ -153,6 +153,19 @@ impl<'a> Execute<ListInfosByPageId<'a>> for Mock {
 }
 
 #[async_trait]
+impl<'a> Advance<ListInfosByPageId<'a>, MockContext> for MockTransactional {
+    type Error = RootError;
+
+    async fn advance(
+        &self,
+        context: &mut MockContext,
+        step: &ListInfosByPageId<'a>,
+    ) -> Result<Vec<UnitInfo>, Self::Error> {
+        Ok(list_units(&context.state, step.page_id))
+    }
+}
+
+#[async_trait]
 impl<'a> Advance<CreateInfo<'a>, MockContext> for MockTransactional {
     type Error = RootError;
 

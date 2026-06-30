@@ -1,0 +1,112 @@
+use std::collections::HashMap;
+use std::fmt::Write as _;
+
+use crate::model::page::PageInfo;
+use crate::model::unit::UnitInfo;
+
+/// Chapter export formatting rules.
+pub struct ChapterExportComplex;
+
+impl ChapterExportComplex {
+    /// Converts pages and units into LabelPlus text.
+    pub fn make_label_plus(
+        pages: &[PageInfo],
+        units_by_page_id: &HashMap<String, Vec<UnitInfo>>,
+    ) -> String {
+        let mut output = String::new();
+
+        output.push_str("1,0\n");
+        output.push_str("-\n");
+        output.push_str("框内\n");
+        output.push_str("框外\n");
+        output.push_str("-\n");
+        output.push_str("Exported by PopRaKo Web\n");
+
+        for page_info in pages {
+            let image_name = label_plus_image_name(page_info);
+
+            let _ = write!(output, "\n\n>>>>>>>>[{}]<<<<<<<<\n", image_name);
+
+            let units = units_by_page_id
+                .get(&page_info.id)
+                .map(Vec::as_slice)
+                .unwrap_or(&[]);
+
+            for (index, unit_info) in units.iter().enumerate() {
+                let group = match unit_info.is_bubble {
+                    true => 1,
+                    false => 2,
+                };
+
+                let _ = writeln!(
+                    output,
+                    "----------------[{}]----------------[{:.4},{:.4},{}]",
+                    index + 1,
+                    unit_info.x_coord,
+                    unit_info.y_coord,
+                    group
+                );
+
+                if let Some(main_text) = select_main_text(unit_info) {
+                    output.push_str(main_text);
+                    output.push('\n');
+                }
+
+                if let Some(comment) = format_label_plus_comment(unit_info) {
+                    output.push_str("\n#[翻校注释]：");
+                    output.push_str(&comment);
+                    output.push('\n');
+                }
+
+                output.push('\n');
+            }
+        }
+
+        output
+    }
+}
+
+fn label_plus_image_name(page_info: &PageInfo) -> String {
+    let extension = page_info
+        .image_key
+        .as_deref()
+        .and_then(|image_key| image_key.rsplit_once('.').map(|(_, extension)| extension))
+        .filter(|extension| !extension.is_empty())
+        .unwrap_or("jpg");
+
+    format!("{:03}.{}", page_info.index, extension)
+}
+
+fn select_main_text(unit_info: &UnitInfo) -> Option<&str> {
+    unit_info
+        .proofread_text
+        .as_deref()
+        .filter(|text| !text.is_empty())
+        .or_else(|| {
+            unit_info
+                .translated_text
+                .as_deref()
+                .filter(|text| !text.is_empty())
+        })
+}
+
+fn format_label_plus_comment(unit_info: &UnitInfo) -> Option<String> {
+    let mut parts = Vec::new();
+
+    if let Some(translator_comment) = non_empty_ref(&unit_info.translator_comment) {
+        parts.push(format!("【翻译】{}", translator_comment));
+    }
+
+    if let Some(proofreader_comment) = non_empty_ref(&unit_info.proofreader_comment) {
+        parts.push(format!("【校对】{}", proofreader_comment));
+    }
+
+    match parts.is_empty() {
+        true => None,
+        false => Some(parts.join("\n")),
+    }
+}
+
+fn non_empty_ref(value: &Option<String>) -> Option<&str> {
+    value.as_deref().filter(|text| !text.is_empty())
+}
