@@ -71,11 +71,14 @@ impl<'a> Step for Delete<'a> {
 ///
 /// # Semantics (must be strictly observed)
 ///
-/// - Acquire an exclusive row-level lock (`SELECT ... FOR UPDATE`) on the workset row;
-/// - Increment `comic_next_index` by 1;
-/// - Return the **post-increment** value (1-based, suitable for frontend display —
-///   never return 0-based);
-/// - All concurrent callers must serialize on this lock.
+/// - Return the current `comic_next_index` value;
+/// - Increment `comic_next_index` by 1 in the same transactional write;
+/// - Concurrent callers for the same workset must serialize on the parent row.
+///
+/// NOTE: A storage implementation can satisfy this with one atomic
+/// `UPDATE ... SET comic_next_index = comic_next_index + 1 RETURNING
+/// comic_next_index - 1`; do not split allocation into a read followed by an
+/// update unless the read locks the parent row.
 pub struct IncrComicNextIndex<'a> {
     pub id: &'a str,
 }

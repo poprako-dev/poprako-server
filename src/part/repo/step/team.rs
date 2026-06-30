@@ -83,6 +83,11 @@ impl<'a> Step for Delete<'a> {
 }
 
 /// Step that allocates one workset index from a team-scoped sequence.
+///
+/// NOTE: Return the current `workset_next_index` value, then increment it in
+/// the same transactional write. A storage implementation can satisfy this
+/// with one atomic `UPDATE ... SET workset_next_index = workset_next_index + 1
+/// RETURNING workset_next_index - 1`.
 pub struct IncrementWorksetNextIndex<'a> {
     pub id: &'a str,
 }

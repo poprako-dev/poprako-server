@@ -1,4 +1,4 @@
-//! Chapter use cases — list, read, create, update, join, and deletion.
+//! Chapter use cases — list, read, create, update, and deletion.
 
 use poprako_transactional::advance::Advance;
 use poprako_transactional::drive::Drive;
@@ -6,8 +6,8 @@ use poprako_transactional::drive::Drive;
 use crate::complex::assignment::AssignmentComplex;
 use crate::complex::chapter::{ChapterComplex, ChapterPermComplex};
 use crate::data::chapter::{
-    AssignmentInfoVal, ChapterInfoVal, CreateChapterData, CreateChapterVal, JoinChapterData,
-    ListChapterInfosData, UpdateChapterInfoData, UpdateChapterStageData,
+    ChapterInfoVal, CreateChapterData, CreateChapterVal, ListChapterInfosData,
+    UpdateChapterInfoData, UpdateChapterStageData,
 };
 use crate::model::assignment::AssignmentForm;
 use crate::model::chapter::{ChapterForm, ChapterInfoUpdate};
@@ -342,91 +342,6 @@ where
         .map_err(map_drive_err)?;
 
     accept(())
-}
-
-/// Joins a chapter assignment with requested roles.
-pub async fn join<D, C, R>(
-    drive: &D,
-    repo: &R,
-    token: UserToken,
-    data: JoinChapterData,
-) -> RootResult<AssignmentInfoVal>
-where
-    D: Drive<C>,
-    D::Error: Into<RootError>,
-    C: Send,
-    R: ChapterRepo<C>
-        + ComicRepo<C>
-        + WorksetRepo<C>
-        + MemberRepo<C>
-        + AssignmentRepo<C>
-        + Send
-        + Sync,
-    <R as DeriveTransactional>::Transactional: ChapterRepoTransactional<C>
-        + ComicRepoTransactional<C>
-        + WorksetRepoTransactional<C>
-        + MemberRepoTransactional<C>
-        + AssignmentRepoTransactional<C>
-        + Send
-        + Sync,
-{
-    let chapter_info = repo
-        .execute(&ChapterStep::get_info_by_id(&data.chapter_id))
-        .await?;
-
-    {
-        use crate::part::shared::proxy::AsProxyNonTransactional as _;
-
-        ChapterPermComplex::can_user_join(
-            &mut repo.as_proxy(),
-            &token.user_id,
-            &chapter_info,
-            data.roles,
-        )
-        .await?;
-    }
-
-    let assignment_info = drive
-        .with_context(async move |context| {
-            let repo = repo.transactional().await;
-
-            let existing_assignment_info = repo
-                .advance(
-                    context,
-                    &AssignmentStep::get_info_by_chapter_id_and_user_id(
-                        &data.chapter_id,
-                        &token.user_id,
-                    ),
-                )
-                .await?;
-
-            let assignment_info = match existing_assignment_info {
-                Some(existing_assignment_info) => {
-                    let assignment_role_update =
-                        AssignmentComplex::merge_roles(&existing_assignment_info, data.roles);
-
-                    repo.advance(context, &AssignmentStep::put_roles(&assignment_role_update))
-                        .await?
-                }
-                None => {
-                    let assignment_form = AssignmentForm {
-                        id: AssignmentComplex::gen_id(),
-                        chapter_id: data.chapter_id,
-                        user_id: token.user_id,
-                        roles: data.roles,
-                    };
-
-                    repo.advance(context, &AssignmentStep::create(&assignment_form))
-                        .await?
-                }
-            };
-
-            accept(assignment_info)
-        })
-        .await
-        .map_err(map_drive_err)?;
-
-    accept(AssignmentInfoVal::from(assignment_info))
 }
 
 /// Deletes one chapter and its descendant core records.

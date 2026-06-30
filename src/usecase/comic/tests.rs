@@ -104,7 +104,7 @@ async fn create_allocates_index_and_updates_count() {
     let snapshot = mock.snapshot();
 
     assert_eq!(created.id, snapshot.comics[0].id);
-    assert_eq!(snapshot.comics[0].index, 1);
+    assert_eq!(snapshot.comics[0].index, 0);
     assert_eq!(snapshot.worksets[0].comic_count, 1);
     assert_eq!(snapshot.worksets[0].comic_next_index, 1);
     assert_eq!(snapshot.comics.len(), 1);

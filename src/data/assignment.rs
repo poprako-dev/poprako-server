@@ -84,3 +84,14 @@ pub struct UpdateAssignmentRoleData {
 
     pub roles: RoleMask,
 }
+
+/// Input parameters for a user joining a chapter as a worker via role
+/// selection.
+///
+/// The role mask must contain role bits that are valid for volunteer
+/// assignment; the use case layer validates this before applying.
+pub struct JoinChapterData {
+    pub chapter_id: String,
+
+    pub roles: RoleMask,
+}
