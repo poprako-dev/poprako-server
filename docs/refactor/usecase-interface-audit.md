@@ -166,32 +166,6 @@ Go references:
 - `references/poprako-s/internal/app/impl/member.go`
 - `references/poprako-s/internal/domain/svc/member_inv.go`
 
-### Member Get By User And Team
-
-Go capability:
-
-- `MemberApp.GetByUserTeamId` returns one membership selected by `user_id` and
-  `team_id`.
-
-Current Rust state:
-
-- Repo-level lookup exists as `MemberStep::find_info_by_user_id_and_team_id`.
-- No public active usecase exposes this capability.
-
-Required implementation:
-
-- Add usecase data for `user_id`, `team_id`, and include options if include
-  support is implemented in the same slice.
-- Add public usecase that checks the current user is a member of the target
-  team, then returns the selected member.
-- Add missing tests for existing member, missing member, and non-member access.
-
-Go references:
-
-- `references/poprako-s/internal/app/member.go`
-- `references/poprako-s/internal/app/val/member.go`
-- `references/poprako-s/internal/app/impl/member.go`
-
 ## P1 Missing List Filtering And Pagination Capabilities
 
 ### Comic List Filters

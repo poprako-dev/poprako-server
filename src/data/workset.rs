@@ -3,6 +3,8 @@
 //!
 //! Timestamps are converted to Unix milliseconds for JSON serialisation.
 
+use poprako_macro::Paginate;
+
 /// Presentation-ready workset information.
 ///
 /// Mirrors [`WorksetInfo`] with timestamps converted to Unix milliseconds.
@@ -48,6 +50,7 @@ pub struct UpdateWorksetInfoData {
 }
 
 /// Input parameters for listing worksets within a team.
+#[Paginate]
 pub struct ListWorksetInfosData {
     pub team_id: String,
 }

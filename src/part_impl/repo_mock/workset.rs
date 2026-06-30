@@ -46,7 +46,14 @@ impl<'a> Execute<ListInfosByTeamId<'a>> for Mock {
             .cloned()
             .collect::<Vec<_>>();
         worksets.sort_by(|left, right| left.index.cmp(&right.index));
-        Ok(worksets)
+
+        let offset = step.offset as usize;
+        let limit = step.limit as usize;
+        if offset >= worksets.len() {
+            return Ok(Vec::new());
+        }
+        let end = std::cmp::min(offset + limit, worksets.len());
+        Ok(worksets[offset..end].to_vec())
     }
 }
 

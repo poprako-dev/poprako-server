@@ -124,7 +124,11 @@ where
         .await?;
 
     let workset_infos = repo
-        .execute(&WorksetStep::list_infos_by_team_id(&data.team_id))
+        .execute(&WorksetStep::list_infos_by_team_id(
+            &data.team_id,
+            data.offset,
+            data.limit,
+        ))
         .await?;
 
     let workset_info_vals = workset_infos
