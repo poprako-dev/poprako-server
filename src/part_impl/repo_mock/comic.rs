@@ -8,8 +8,8 @@ use crate::complex::comic::ComicComplex;
 use crate::model::comic::{ComicCoverReservation, ComicInfo};
 use crate::part::repo::comic::{ComicRepo, ComicRepoTransactional};
 use crate::part::repo::step::comic::{
-    Create, Delete, GetInfoById, GetInfoExcluded, IncrChapterNextIndex, ListInfosByWorksetId,
-    ListInfosByWorksetIdExcluded, MarkCompleted, MarkCoverUploaded, ReserveCover, TouchLastActive,
+    Create, Delete, GetInfoById, GetInfoExcluded, IncrChapterNextIndex, ListInfos,
+    ListInfosExcluded, MarkCompleted, MarkCoverUploaded, ReserveCover, TouchLastActive,
     UpdateChapterCount, UpdateInfo,
 };
 use crate::part::shared::execute::Execute;
@@ -56,22 +56,44 @@ impl<'a> Execute<GetInfoById<'a>> for Mock {
 }
 
 #[async_trait]
-impl<'a> Execute<ListInfosByWorksetId<'a>> for Mock {
+impl<'a> Execute<ListInfos<'a>> for Mock {
     type Error = RootError;
 
     async fn execute(
         &self,
-        step: &ListInfosByWorksetId<'a>,
+        step: &ListInfos<'a>,
     ) -> Result<Vec<ComicInfo>, Self::Error> {
         let state = self.state.lock().unwrap();
         let mut comics = state
             .comics
             .iter()
-            .filter(|comic| comic.workset_id == step.workset_id)
+            .filter(|comic| comic.workset_id == step.spec.workset_id)
+            .filter(|comic| {
+                step.spec
+                    .fuzzy_title
+                    .as_ref()
+                    .map(|kw| ComicComplex::composed_title(comic).contains(kw.as_str()))
+                    .unwrap_or(true)
+            })
+            .filter(|comic| {
+                step.spec
+                    .is_completed
+                    .map(|completed| comic.is_completed == completed)
+                    .unwrap_or(true)
+            })
             .cloned()
             .collect::<Vec<_>>();
         comics.sort_by(|left, right| left.index.cmp(&right.index));
-        Ok(comics)
+
+        let offset = step.spec.offset as usize;
+        let limit = step.spec.limit as usize;
+
+        if offset >= comics.len() {
+            return Ok(Vec::new());
+        }
+
+        let end = std::cmp::min(offset + limit, comics.len());
+        Ok(comics[offset..end].to_vec())
     }
 }
 
@@ -185,23 +207,45 @@ impl<'a> Advance<GetInfoExcluded<'a>, MockContext> for MockTransactional {
 }
 
 #[async_trait]
-impl<'a> Advance<ListInfosByWorksetIdExcluded<'a>, MockContext> for MockTransactional {
+impl<'a> Advance<ListInfosExcluded<'a>, MockContext> for MockTransactional {
     type Error = RootError;
 
     async fn advance(
         &self,
         context: &mut MockContext,
-        step: &ListInfosByWorksetIdExcluded<'a>,
+        step: &ListInfosExcluded<'a>,
     ) -> Result<Vec<ComicInfo>, Self::Error> {
         let mut comics = context
             .state
             .comics
             .iter()
-            .filter(|comic| comic.workset_id == step.workset_id)
+            .filter(|comic| comic.workset_id == step.spec.workset_id)
+            .filter(|comic| {
+                step.spec
+                    .fuzzy_title
+                    .as_ref()
+                    .map(|kw| ComicComplex::composed_title(comic).contains(kw.as_str()))
+                    .unwrap_or(true)
+            })
+            .filter(|comic| {
+                step.spec
+                    .is_completed
+                    .map(|completed| comic.is_completed == completed)
+                    .unwrap_or(true)
+            })
             .cloned()
             .collect::<Vec<_>>();
         comics.sort_by(|left, right| left.index.cmp(&right.index));
-        Ok(comics)
+
+        let offset = step.spec.offset as usize;
+        let limit = step.spec.limit as usize;
+
+        if offset >= comics.len() {
+            return Ok(Vec::new());
+        }
+
+        let end = std::cmp::min(offset + limit, comics.len());
+        Ok(comics[offset..end].to_vec())
     }
 }
 

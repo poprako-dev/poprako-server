@@ -79,6 +79,17 @@ pub struct ComicInfoUpdate {
     pub description: Option<String>,
 }
 
+/// Filtering and pagination parameters for listing comics within a workset.
+pub struct ComicListSpec {
+    pub workset_id: String,
+
+    pub fuzzy_title: Option<String>,
+    pub is_completed: Option<bool>,
+
+    pub offset: u64,
+    pub limit: u64,
+}
+
 /// The result of reserving a new comic cover upload slot.
 ///
 /// Mirrors [`TeamAvatarReservation`] for the comic domain. Contains the

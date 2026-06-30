@@ -159,6 +159,7 @@ impl<'a> Execute<ListInfos<'a>> for Mock {
             ),
             MemberListSpec::Team {
                 team_id,
+                fuzzy_nickname,
                 role,
                 offset,
                 limit,
@@ -170,6 +171,12 @@ impl<'a> Execute<ListInfos<'a>> for Mock {
                     .members
                     .iter()
                     .filter(|member_info| member_info.team_id == *team_id)
+                    .filter(|member_info| {
+                        fuzzy_nickname
+                            .as_ref()
+                            .map(|kw| member_info.user_nickname.contains(kw.as_str()))
+                            .unwrap_or(true)
+                    })
                     .filter(|member_info| {
                         role.map(|role| member_info.roles.has_any_role(&[role]))
                             .unwrap_or(true)

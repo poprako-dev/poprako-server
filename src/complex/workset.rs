@@ -3,6 +3,7 @@
 
 use crate::complex::comic::ComicComplex;
 use crate::complex::util::{check_user_is_team_admin, check_user_is_team_member};
+use crate::model::comic::ComicListSpec;
 use crate::part::prom::PromTransactional;
 use crate::part::repo::chapter::ChapterRepoTransactional;
 use crate::part::repo::comic::ComicRepoTransactional;
@@ -45,11 +46,16 @@ impl WorksetComplex {
             .advance(context, &WorksetStep::get_info_excluded(id))
             .await?;
 
+        let list_spec = ComicListSpec {
+            workset_id: workset_info.id.clone(),
+            fuzzy_title: None,
+            is_completed: None,
+            offset: 0,
+            limit: u64::MAX,
+        };
+
         let comic_infos = repo
-            .advance(
-                context,
-                &ComicStep::list_infos_by_workset_id_excluded(&workset_info.id),
-            )
+            .advance(context, &ComicStep::list_infos_excluded(&list_spec))
             .await?;
 
         for comic_info in comic_infos {

@@ -2,7 +2,7 @@
 
 use poprako_transactional::step::Step;
 
-use crate::model::comic::{ComicCoverReservation, ComicForm, ComicInfo, ComicInfoUpdate};
+use crate::model::comic::{ComicCoverReservation, ComicForm, ComicInfo, ComicInfoUpdate, ComicListSpec};
 
 /// Step that inserts a new comic row.
 pub struct Create<'a> {
@@ -31,21 +31,21 @@ impl<'a> Step for GetInfoExcluded<'a> {
     type Output = ComicInfo;
 }
 
-/// Step that lists all comics for a workset.
-pub struct ListInfosByWorksetId<'a> {
-    pub workset_id: &'a str,
+/// Step that lists comics for a workset with filters and pagination.
+pub struct ListInfos<'a> {
+    pub spec: &'a ComicListSpec,
 }
 
-impl<'a> Step for ListInfosByWorksetId<'a> {
+impl<'a> Step for ListInfos<'a> {
     type Output = Vec<ComicInfo>;
 }
 
-/// Step that lists all comics for a workset with a pessimistic lock.
-pub struct ListInfosByWorksetIdExcluded<'a> {
-    pub workset_id: &'a str,
+/// Step that lists comics for a workset with a pessimistic lock.
+pub struct ListInfosExcluded<'a> {
+    pub spec: &'a ComicListSpec,
 }
 
-impl<'a> Step for ListInfosByWorksetIdExcluded<'a> {
+impl<'a> Step for ListInfosExcluded<'a> {
     type Output = Vec<ComicInfo>;
 }
 
@@ -149,16 +149,14 @@ impl ComicStep {
         GetInfoExcluded { id }
     }
 
-    /// Constructs a step to list a workset's comics.
-    pub fn list_infos_by_workset_id<'a>(workset_id: &'a str) -> ListInfosByWorksetId<'a> {
-        ListInfosByWorksetId { workset_id }
+    /// Constructs a step to list comics with filters and pagination.
+    pub fn list_infos<'a>(spec: &'a ComicListSpec) -> ListInfos<'a> {
+        ListInfos { spec }
     }
 
-    /// Constructs a step to list a workset's comics with a pessimistic lock.
-    pub fn list_infos_by_workset_id_excluded<'a>(
-        workset_id: &'a str,
-    ) -> ListInfosByWorksetIdExcluded<'a> {
-        ListInfosByWorksetIdExcluded { workset_id }
+    /// Constructs a step to list comics with a pessimistic lock.
+    pub fn list_infos_excluded<'a>(spec: &'a ComicListSpec) -> ListInfosExcluded<'a> {
+        ListInfosExcluded { spec }
     }
 
     /// Constructs a step to update a comic's profile fields.

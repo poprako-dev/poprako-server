@@ -15,7 +15,7 @@ pub struct MemberInfoVal {
     pub id: String,
 
     pub user_id: String,
-    pub user_nickname: String,
+    pub nickname: String,
 
     pub team_id: String,
 
@@ -27,7 +27,7 @@ impl From<MemberInfo> for MemberInfoVal {
         Self {
             id: value.id,
             user_id: value.user_id,
-            user_nickname: value.user_nickname,
+            nickname: value.user_nickname,
             team_id: value.team_id,
             roles: value.roles,
         }
@@ -60,7 +60,7 @@ pub struct ListMemberInfosData {
 
     pub team_id: Option<String>,
 
-    pub user_nickname_keyword: Option<String>,
+    pub fuzzy_nickname: Option<String>,
     pub role: Option<RoleField>,
 
     #[serde(default)]
@@ -80,7 +80,7 @@ impl TryInto<MemberListSpec> for ListMemberInfosData {
             return Err(invalid_args_err());
         }
 
-        if self.user_nickname_keyword.is_some() || self.owner_id.is_some() && self.role.is_some() {
+        if self.owner_id.is_some() && self.role.is_some() {
             return Err(invalid_args_err());
         }
 
@@ -95,6 +95,7 @@ impl TryInto<MemberListSpec> for ListMemberInfosData {
 
         Ok(MemberListSpec::Team {
             team_id: self.team_id.ok_or_else(invalid_args_err)?,
+            fuzzy_nickname: self.fuzzy_nickname,
             role: self.role,
             incl_opt: self.incl_opt,
             offset: self.offset,

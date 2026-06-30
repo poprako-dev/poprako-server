@@ -11,7 +11,7 @@ use crate::data::comic::{
     ComicInfoVal, CreateComicData, CreateComicVal, ListComicInfosData, MarkComicCoverUploadedData,
     ReserveComicCoverData, ReserveComicCoverVal, UpdateComicInfoData,
 };
-use crate::model::comic::{ComicForm, ComicInfoUpdate};
+use crate::model::comic::{ComicForm, ComicInfoUpdate, ComicListSpec};
 use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
 use crate::part::prom::intention::{IMAGE_TOPIC, ImageIntention, ImageKind};
@@ -116,7 +116,7 @@ where
     ComicInfoVal::from_model(image_pool, comic_info).await
 }
 
-/// Lists comics for a workset.
+/// Lists comics for a workset with optional title filter, completion filter, and pagination.
 pub async fn list_infos<C, R, I>(
     repo: &R,
     image_pool: &I,
@@ -134,9 +134,9 @@ where
     ComicPermComplex::can_user_list_infos(&mut repo.as_proxy(), &token.user_id, &data.workset_id)
         .await?;
 
-    let comic_infos = repo
-        .execute(&ComicStep::list_infos_by_workset_id(&data.workset_id))
-        .await?;
+    let spec: ComicListSpec = data.into();
+
+    let comic_infos = repo.execute(&ComicStep::list_infos(&spec)).await?;
 
     let comic_info_vals = futures_util::future::join_all(
         comic_infos

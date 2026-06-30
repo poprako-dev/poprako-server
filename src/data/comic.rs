@@ -6,12 +6,14 @@
 //!
 //! [`ImagePool`]: crate::part::image::ImagePool
 
+use serde::Deserialize;
+
+use poprako_macro::Paginate;
 use poprako_util::time::ToUnixMilli;
 
-use crate::model::comic::ComicInfo;
+use crate::model::comic::{ComicInfo, ComicListSpec};
 use crate::part::image::ImagePool;
 use crate::result::RootResult;
-use crate::value::comic::ComicWithOpt;
 
 /// Presentation-ready comic information.
 ///
@@ -116,13 +118,25 @@ pub struct UpdateComicInfoData {
 }
 
 /// Input parameters for listing comics within a workset.
-///
-/// The `with` field specifies which related entities to include in the
-/// response (e.g. the pinned chapter or parent workset metadata).
+#[Paginate]
+#[derive(Deserialize)]
 pub struct ListComicInfosData {
     pub workset_id: String,
-    // TODO:
-    pub with: Vec<ComicWithOpt>,
+
+    pub fuzzy_title: Option<String>,
+    pub is_completed: Option<bool>,
+}
+
+impl From<ListComicInfosData> for ComicListSpec {
+    fn from(data: ListComicInfosData) -> Self {
+        Self {
+            workset_id: data.workset_id,
+            fuzzy_title: data.fuzzy_title,
+            is_completed: data.is_completed,
+            offset: data.offset,
+            limit: data.limit,
+        }
+    }
 }
 
 /// Input parameters for reserving a new comic cover upload slot.
