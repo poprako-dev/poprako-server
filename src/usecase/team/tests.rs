@@ -513,7 +513,7 @@ async fn create_persists_team_and_returns_info() {
     assert_eq!(val.description, "Desc");
     let snapshot = mock.snapshot();
     assert_eq!(snapshot.teams.len(), 1);
-    assert_eq!(snapshot.teams[0].id, result.id);
+    assert_eq!(snapshot.teams[0].id, val.id);
 }
 
 #[tokio::test]
@@ -553,7 +553,7 @@ async fn get_info_returns_uploaded_avatar_url() {
 
     assert_eq!(val.id, "team-1");
     assert_eq!(
-        result.avatar_url.as_deref(),
+        val.avatar_url.as_deref(),
         Some("https://test.local/get/avatar-key")
     );
 }

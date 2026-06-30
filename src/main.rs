@@ -1,3 +1,12 @@
+#![deny(unsafe_code)]
+#![deny(clippy::todo)]
+#![deny(clippy::unimplemented)]
+#![warn(clippy::all)]
+#![warn(clippy::pedantic)]
+// #![deny(clippy::unwrap_used)]
+// #![deny(clippy::expect_used)]
+// #![deny(clippy::panic)]
+
 // LEGACY DISABLED: Do not use. This file is intentionally commented out.
 // use std::net::{SocketAddr, ToSocketAddrs};
 //
