@@ -4,9 +4,11 @@ use poprako_transactional::drive::result::Error as DriveError;
 
 /// Categorizes an expected application error by its origin domain.
 pub enum ExpectedVariant {
-    Args,
-    Auth,
-    Perm,
+    ArgsInvalid,
+    AuthFail,
+    PermDeny,
+    // TODO:
+    Conflict,
 }
 
 /// A domain error that is either an expected application condition

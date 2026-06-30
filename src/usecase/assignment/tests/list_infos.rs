@@ -125,7 +125,7 @@ async fn list_infos_unrelated_user_is_rejected_from_chapter_assignments() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Perm);
+    assert_expected_variant(err, ExpectedVariant::PermDeny);
 }
 
 #[tokio::test]
@@ -143,7 +143,7 @@ async fn list_infos_non_owner_non_admin_is_rejected_from_user_assignments() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Perm);
+    assert_expected_variant(err, ExpectedVariant::PermDeny);
 }
 
 #[tokio::test]
@@ -166,5 +166,5 @@ async fn list_infos_invalid_owner_combination_is_rejected() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Args);
+    assert_expected_variant(err, ExpectedVariant::ArgsInvalid);
 }

@@ -221,7 +221,7 @@ async fn send_rejects_duplicate_id_without_mutation() {
         .await
         .err()
         .unwrap();
-    assert_expected_variant(err, ExpectedVariant::Args);
+    assert_expected_variant(err, ExpectedVariant::ArgsInvalid);
 
     let snapshot = mock.snapshot();
     assert_eq!(snapshot.system_mails.len(), 1);
@@ -261,7 +261,7 @@ async fn send_batch_rejects_duplicate_batch_without_partial_write() {
         .await
         .err()
         .unwrap();
-    assert_expected_variant(err, ExpectedVariant::Args);
+    assert_expected_variant(err, ExpectedVariant::ArgsInvalid);
 
     let snapshot = mock.snapshot();
     assert_eq!(snapshot.system_mails.len(), 1);
@@ -340,5 +340,5 @@ async fn mark_read_rejects_missing_id() {
         .await
         .err()
         .unwrap();
-    assert_expected_variant(err, ExpectedVariant::Args);
+    assert_expected_variant(err, ExpectedVariant::ArgsInvalid);
 }

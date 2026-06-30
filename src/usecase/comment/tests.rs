@@ -163,7 +163,7 @@ async fn list_infos_non_member_is_rejected() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Perm);
+    assert_expected_variant(err, ExpectedVariant::PermDeny);
 }
 
 #[tokio::test]
@@ -193,6 +193,6 @@ async fn create_non_member_is_rejected_without_mutation() {
         .err()
         .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Perm);
+    assert_expected_variant(err, ExpectedVariant::PermDeny);
     assert!(mock.snapshot().comments.is_empty());
 }

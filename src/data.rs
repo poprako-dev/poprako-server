@@ -7,10 +7,13 @@
 //!
 //! [`ImagePool`]: crate::part::image::ImagePool
 
+// FIXME: grouping
 pub mod announcement;
 pub mod assignment;
+pub mod assignment_invitation;
 pub mod auth;
 pub mod chapter;
+pub mod chapter_port;
 pub mod comic;
 pub mod comment;
 pub mod member;

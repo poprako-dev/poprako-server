@@ -47,6 +47,11 @@ pub struct CreateMemberVal {
     pub id: String,
 }
 
+/// Input parameters for joining a team through a member invitation.
+pub struct JoinTeamData {
+    pub code: String,
+}
+
 /// Input parameters for listing members by team.
 #[Paginate]
 #[derive(Deserialize)]
@@ -67,7 +72,7 @@ impl TryInto<MemberListSpec> for ListMemberInfosData {
 
     fn try_into(self) -> RootResult<MemberListSpec> {
         let invalid_args_err = || RootError::Expected {
-            variant: ExpectedVariant::Args,
+            variant: ExpectedVariant::ArgsInvalid,
             message: trl("error-team-or-user-required"),
         };
 

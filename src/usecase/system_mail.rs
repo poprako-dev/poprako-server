@@ -82,7 +82,7 @@ where
 
     if system_mail_infos.len() != ids.len() {
         return Err(RootError::Expected {
-            variant: ExpectedVariant::Args,
+            variant: ExpectedVariant::ArgsInvalid,
             message: trl("error-system-mail-not-found"),
         });
     }
@@ -92,7 +92,7 @@ where
         .any(|system_mail_info| system_mail_info.receiver_id != token.user_id)
     {
         return Err(RootError::Expected {
-            variant: ExpectedVariant::Perm,
+            variant: ExpectedVariant::PermDeny,
             message: trl("error-forbidden"),
         });
     }

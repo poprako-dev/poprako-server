@@ -240,7 +240,7 @@ fn sorted_unit_ids(units: &[UnitInfo]) -> Vec<String> {
 fn assert_perm_error(error: RootError) {
     match error {
         RootError::Expected { variant, .. } => {
-            assert!(matches!(variant, ExpectedVariant::Perm));
+            assert!(matches!(variant, ExpectedVariant::PermDeny));
         }
         RootError::Unrecoverable { .. } => {
             panic!("expected permission error");
@@ -545,7 +545,7 @@ async fn save_infos_rolls_back_invalid_diff() {
 
     match error {
         RootError::Expected { variant, .. } => {
-            assert!(matches!(variant, ExpectedVariant::Args));
+            assert!(matches!(variant, ExpectedVariant::ArgsInvalid));
         }
         RootError::Unrecoverable { .. } => {
             panic!("expected argument error");

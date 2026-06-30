@@ -103,6 +103,34 @@ impl AssignmentPermComplex {
 
         check_reviewer(proxy, current_user_id, &assignment_info.chapter_id).await
     }
+
+    /// Verify the caller is a reviewer for the target chapter.
+    pub async fn can_user_review<P>(
+        proxy: &mut P,
+        current_user_id: &str,
+        chapter_id: &str,
+    ) -> RootResult<()>
+    where
+        P: for<'a> ProxyExecute<GetInfoByChapterIdAndUserId<'a>, Error = RootError>,
+    {
+        check_reviewer(proxy, current_user_id, chapter_id).await
+    }
+
+    /// Verify the target user may take the requested chapter assignment roles.
+    pub async fn can_user_take_roles<P>(
+        proxy: &mut P,
+        user_id: &str,
+        chapter_id: &str,
+        role_mask: RoleMask,
+    ) -> RootResult<()>
+    where
+        P: for<'a> ProxyExecute<ChapterGetInfoById<'a>, Error = RootError>
+            + for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RootError>
+            + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RootError>
+            + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RootError>,
+    {
+        check_target_roles(proxy, user_id, chapter_id, role_mask).await
+    }
 }
 
 async fn check_list_by_chapter<P>(proxy: &mut P, user_id: &str, chapter_id: &str) -> RootResult<()>
@@ -264,35 +292,35 @@ where
 
 fn assignment_list_permission_error() -> RootError {
     RootError::Expected {
-        variant: ExpectedVariant::Perm,
+        variant: ExpectedVariant::PermDeny,
         message: trl("error-forbidden"),
     }
 }
 
 fn chapter_reviewer_error() -> RootError {
     RootError::Expected {
-        variant: ExpectedVariant::Perm,
+        variant: ExpectedVariant::PermDeny,
         message: trl("error-chapter-reviewer-required"),
     }
 }
 
 fn assignment_self_reduce_error() -> RootError {
     RootError::Expected {
-        variant: ExpectedVariant::Perm,
+        variant: ExpectedVariant::PermDeny,
         message: trl("error-forbidden"),
     }
 }
 
 fn assignment_role_not_assignable_args_error() -> RootError {
     RootError::Expected {
-        variant: ExpectedVariant::Args,
+        variant: ExpectedVariant::ArgsInvalid,
         message: trl("error-chapter-role-not-assignable"),
     }
 }
 
 fn assignment_role_not_assignable_perm_error() -> RootError {
     RootError::Expected {
-        variant: ExpectedVariant::Perm,
+        variant: ExpectedVariant::PermDeny,
         message: trl("error-chapter-role-not-assignable"),
     }
 }

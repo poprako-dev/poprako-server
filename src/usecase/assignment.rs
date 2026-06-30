@@ -241,12 +241,8 @@ where
 
     use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
-    AssignmentPermComplex::can_user_delete(
-        &mut repo.as_proxy(),
-        &token.user_id,
-        &assignment_info,
-    )
-    .await?;
+    AssignmentPermComplex::can_user_delete(&mut repo.as_proxy(), &token.user_id, &assignment_info)
+        .await?;
 
     drive
         .with_context(async move |context| {

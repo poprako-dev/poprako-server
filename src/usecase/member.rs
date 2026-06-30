@@ -1,6 +1,4 @@
-//! Member use cases — create, list, role update, and deletion.
-
-// NOTE: get_by_code API 去除（TODO：删除 note）
+//! Member use cases: create, join, list, role update, and deletion.
 
 use poprako_transactional::advance::Advance;
 use poprako_transactional::drive::Drive;
@@ -8,13 +6,18 @@ use poprako_util::i18n::trl;
 
 use crate::complex::member::{MemberComplex, MemberPermComplex};
 use crate::data::member::{
-    CreateMemberData, CreateMemberVal, ListMemberInfosData, MemberInfoVal, UpdateMemberRoleData,
+    CreateMemberData, CreateMemberVal, JoinTeamData, ListMemberInfosData, MemberInfoVal,
+    UpdateMemberRoleData,
 };
 use crate::model::member::{MemberForm, MemberListSpec, MemberRoleUpdate};
 use crate::model::user::UserToken;
 use crate::part::repo::map_drive_err;
 use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
+use crate::part::repo::member_invitation::{
+    MemberInvitationRepo, MemberInvitationRepoTransactional,
+};
 use crate::part::repo::step::member::MemberStep;
+use crate::part::repo::step::member_invitation::MemberInvitationStep;
 use crate::part::repo::step::team::TeamStep;
 use crate::part::repo::step::user::UserStep;
 use crate::part::repo::team::{TeamRepo, TeamRepoTransactional};
@@ -50,8 +53,7 @@ where
 
     use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
-    MemberPermComplex::can_user_create(&mut repo.as_proxy(), &token.user_id, &data.team_id)
-        .await?;
+    MemberPermComplex::can_user_create(&mut repo.as_proxy(), &token.user_id, &data.team_id).await?;
 
     let member_id = drive
         .with_context(async move |context| {
@@ -73,7 +75,7 @@ where
 
             if existing_member_info.is_some() {
                 return Err(RootError::Expected {
-                    variant: ExpectedVariant::Args,
+                    variant: ExpectedVariant::ArgsInvalid,
                     message: trl("error-already-team-member"),
                 });
             }
@@ -96,6 +98,84 @@ where
         .map_err(map_drive_err)?;
 
     accept(CreateMemberVal { id: member_id })
+}
+
+/// Joins the current user to a team with a pending invitation code.
+pub async fn join_team<D, C, R>(
+    drive: &D,
+    repo: &R,
+    token: UserToken,
+    data: JoinTeamData,
+) -> RootResult<()>
+where
+    D: Drive<C>,
+    D::Error: Into<RootError>,
+    C: Send,
+    R: MemberRepo<C> + MemberInvitationRepo<C> + UserRepo<C> + Send + Sync,
+    <R as DeriveTransactional>::Transactional: MemberRepoTransactional<C>
+        + MemberInvitationRepoTransactional<C>
+        + UserRepoTransactional<C>
+        + Send
+        + Sync,
+{
+    let current_user_id = token.user_id;
+
+    drive
+        .with_context(async move |context| {
+            let repo = repo.transactional().await;
+
+            let current_user_info = repo
+                .advance(context, &UserStep::get_info_excluded(&current_user_id))
+                .await?;
+
+            let member_invitation_info = repo
+                .advance(
+                    context,
+                    &MemberInvitationStep::get_info_by_code_excluded(&data.code),
+                )
+                .await?;
+
+            if member_invitation_info.invitee_qid != current_user_info.qid {
+                return Err(invalid_invitation_error());
+            }
+
+            let existing_member_info = repo
+                .advance(
+                    context,
+                    &MemberStep::find_info_by_user_id_and_team_id(
+                        &current_user_id,
+                        &member_invitation_info.team_id,
+                    ),
+                )
+                .await?;
+
+            if existing_member_info.is_some() {
+                return Err(already_team_member_error());
+            }
+
+            let member_form = MemberForm {
+                id: MemberComplex::gen_id(),
+                user_id: current_user_id,
+                user_nickname: current_user_info.nickname,
+                team_id: member_invitation_info.team_id.clone(),
+                roles: member_invitation_info.role_mask,
+            };
+
+            repo.advance(context, &MemberStep::create(&member_form))
+                .await?;
+
+            repo.advance(
+                context,
+                &MemberInvitationStep::mark_pending_as_used(&member_invitation_info.id),
+            )
+            .await?;
+
+            accept(())
+        })
+        .await
+        .map_err(map_drive_err)?;
+
+    accept(())
 }
 
 /// Lists members under one team.
@@ -207,4 +287,18 @@ where
         .map_err(map_drive_err)?;
 
     accept(())
+}
+
+fn invalid_invitation_error() -> RootError {
+    RootError::Expected {
+        variant: ExpectedVariant::ArgsInvalid,
+        message: trl("error-no-pending-invitation"),
+    }
+}
+
+fn already_team_member_error() -> RootError {
+    RootError::Expected {
+        variant: ExpectedVariant::ArgsInvalid,
+        message: trl("error-already-team-member"),
+    }
 }

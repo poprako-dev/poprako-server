@@ -20,7 +20,7 @@ impl ImagePool for Mock {
     async fn get_signed(&self, key: &str) -> RootResult<Url> {
         if self.flags.lock().unwrap().image_get_failure {
             return Err(RootError::Expected {
-                variant: ExpectedVariant::Args,
+                variant: ExpectedVariant::ArgsInvalid,
                 message: trl("error-image-get-failed"),
             });
         }
@@ -31,7 +31,7 @@ impl ImagePool for Mock {
     async fn put_signed(&self, key: &str) -> RootResult<Url> {
         if self.flags.lock().unwrap().image_put_failure {
             return Err(RootError::Expected {
-                variant: ExpectedVariant::Args,
+                variant: ExpectedVariant::ArgsInvalid,
                 message: trl("error-image-put-failed"),
             });
         }
@@ -66,7 +66,7 @@ async fn get_signed_failure_returns_expected_error() {
     assert!(matches!(
         err,
         RootError::Expected {
-            variant: ExpectedVariant::Args,
+            variant: ExpectedVariant::ArgsInvalid,
             ..
         }
     ));

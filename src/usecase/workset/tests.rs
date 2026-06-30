@@ -139,7 +139,7 @@ async fn create_rolls_back_missing_team() {
         .unwrap();
     let snapshot = mock.snapshot();
 
-    assert_expected_variant(err, ExpectedVariant::Args);
+    assert_expected_variant(err, ExpectedVariant::ArgsInvalid);
     assert!(snapshot.worksets.is_empty());
 }
 
@@ -166,7 +166,7 @@ async fn get_info_propagates_missing_workset() {
         .err()
         .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Args);
+    assert_expected_variant(err, ExpectedVariant::ArgsInvalid);
 }
 
 #[tokio::test]
@@ -254,7 +254,7 @@ async fn update_info_propagates_missing_workset() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Args);
+    assert_expected_variant(err, ExpectedVariant::ArgsInvalid);
 }
 
 #[tokio::test]
@@ -301,7 +301,7 @@ async fn delete_rolls_back_missing_workset() {
         .unwrap();
     let snapshot = mock.snapshot();
 
-    assert_expected_variant(err, ExpectedVariant::Args);
+    assert_expected_variant(err, ExpectedVariant::ArgsInvalid);
     assert_eq!(snapshot.worksets.len(), 1);
     assert!(snapshot.prom_records.is_empty());
 }

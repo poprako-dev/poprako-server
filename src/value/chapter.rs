@@ -67,7 +67,7 @@ pub fn try_modify_stage(
 
     if !is_valid_stage_phase(stage, phase) {
         return Err(RootError::Expected {
-            variant: ExpectedVariant::Args,
+            variant: ExpectedVariant::ArgsInvalid,
             message: trl("error-invalid-stage-phase"),
         });
     }
@@ -75,7 +75,7 @@ pub fn try_modify_stage(
     let next_phase = match (stage, phase, event) {
         (WorkflowStage::Publish, _, WorkflowEvent::Revert) => {
             return Err(RootError::Expected {
-                variant: ExpectedVariant::Args,
+                variant: ExpectedVariant::ArgsInvalid,
                 message: trl("error-invalid-workflow-transition"),
             });
         }
@@ -93,7 +93,7 @@ pub fn try_modify_stage(
         (_, StagePhase::Active, WorkflowEvent::Advance) => StagePhase::Completed,
         (_, StagePhase::Completed, WorkflowEvent::Advance) => {
             return Err(RootError::Expected {
-                variant: ExpectedVariant::Args,
+                variant: ExpectedVariant::ArgsInvalid,
                 message: trl("error-invalid-workflow-transition"),
             });
         }
@@ -104,7 +104,7 @@ pub fn try_modify_stage(
 
     if !is_valid_stage_phase(stage, next_phase) {
         return Err(RootError::Expected {
-            variant: ExpectedVariant::Args,
+            variant: ExpectedVariant::ArgsInvalid,
             message: trl("error-invalid-stage-phase"),
         });
     }
@@ -134,7 +134,7 @@ impl TryFrom<u8> for StagePhaseField {
     fn try_from(value: u8) -> RootResult<Self> {
         if !Self::VALID_VALUES.contains(&value) {
             return Err(RootError::Expected {
-                variant: ExpectedVariant::Args,
+                variant: ExpectedVariant::ArgsInvalid,
                 message: trl("error-invalid-stage-phase"),
             });
         }
@@ -256,7 +256,7 @@ impl TryFrom<u32> for WorkflowStageMask {
     fn try_from(value: u32) -> RootResult<Self> {
         if value & !Self::VALID_BITS != 0 {
             return Err(RootError::Expected {
-                variant: ExpectedVariant::Args,
+                variant: ExpectedVariant::ArgsInvalid,
                 message: trl("error-invalid-stage"),
             });
         }

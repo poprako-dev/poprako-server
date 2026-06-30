@@ -14,6 +14,7 @@ use poprako_util::i18n::trl;
 
 use crate::model::announcement::AnnouncementInfo;
 use crate::model::assignment::AssignmentInfo;
+use crate::model::assignment_invitation::AssignmentInvitationInfo;
 use crate::model::chapter::ChapterInfo;
 use crate::model::comic::ComicInfo;
 use crate::model::comment::CommentInfo;
@@ -43,6 +44,7 @@ pub struct MockState {
     pub comics: Vec<ComicInfo>,
     pub chapters: Vec<ChapterInfo>,
     pub assignments: Vec<AssignmentInfo>,
+    pub assignment_invitations: Vec<AssignmentInvitationInfo>,
     pub pages: Vec<PageInfo>,
     pub units: Vec<UnitInfo>,
     pub system_mails: Vec<SystemMailInfo>,
@@ -63,6 +65,7 @@ pub struct MockSnapshot {
     pub comics: Vec<ComicInfo>,
     pub chapters: Vec<ChapterInfo>,
     pub assignments: Vec<AssignmentInfo>,
+    pub assignment_invitations: Vec<AssignmentInvitationInfo>,
     pub pages: Vec<PageInfo>,
     pub units: Vec<UnitInfo>,
     pub system_mails: Vec<SystemMailInfo>,
@@ -83,6 +86,7 @@ impl From<MockState> for MockSnapshot {
             comics: state.comics,
             chapters: state.chapters,
             assignments: state.assignments,
+            assignment_invitations: state.assignment_invitations,
             pages: state.pages,
             units: state.units,
             system_mails: state.system_mails,
@@ -177,6 +181,15 @@ impl Mock {
         self.state.lock().unwrap().assignments.push(assignment);
     }
 
+    /// Seed an assignment invitation directly into the mock state.
+    pub fn seed_assignment_invitation(&self, assignment_invitation: AssignmentInvitationInfo) {
+        self.state
+            .lock()
+            .unwrap()
+            .assignment_invitations
+            .push(assignment_invitation);
+    }
+
     /// Seed a page directly into the mock state.
     pub fn seed_page(&self, page: PageInfo) {
         self.state.lock().unwrap().pages.push(page);
@@ -269,7 +282,7 @@ impl Drive<MockContext> for Mock {
 /// Build an expected-args [RootError] with a translated message.
 pub(super) fn expected(message: &str) -> RootError {
     RootError::Expected {
-        variant: ExpectedVariant::Args,
+        variant: ExpectedVariant::ArgsInvalid,
         message: trl(message),
     }
 }
@@ -291,6 +304,10 @@ pub mod announcement;
 
 /// Mock implementations for assignment repository opers.
 pub mod assignment;
+
+/// Mock implementations for assignment invitation repository opers.
+pub mod assignment_invitation;
+
 pub mod chapter;
 
 /// Mock implementations for comment repository opers.

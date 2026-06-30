@@ -24,7 +24,7 @@ where
 
     if member_info.is_none() {
         return Err(RootError::Expected {
-            variant: ExpectedVariant::Perm,
+            variant: ExpectedVariant::PermDeny,
             message: trl("error-team-member-required"),
         });
     }
@@ -49,14 +49,14 @@ where
 
     let Some(member_info) = member_info else {
         return Err(RootError::Expected {
-            variant: ExpectedVariant::Perm,
+            variant: ExpectedVariant::PermDeny,
             message: trl("error-team-admin-required"),
         });
     };
 
     if !member_info.roles.has_any_role(&[RoleField::ADMIN]) {
         return Err(RootError::Expected {
-            variant: ExpectedVariant::Perm,
+            variant: ExpectedVariant::PermDeny,
             message: trl("error-team-admin-required"),
         });
     }
