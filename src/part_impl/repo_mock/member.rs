@@ -171,8 +171,7 @@ impl<'a> Execute<ListInfos<'a>> for Mock {
                     .iter()
                     .filter(|member_info| member_info.team_id == *team_id)
                     .filter(|member_info| {
-                        role
-                            .map(|role| member_info.roles.has_any_role(&[role]))
+                        role.map(|role| member_info.roles.has_any_role(&[role]))
                             .unwrap_or(true)
                     })
                     .cloned()

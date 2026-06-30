@@ -51,8 +51,7 @@ fn list_assignments(state: &MockState, spec: &AssignmentListSpec) -> Vec<Assignm
                 .iter()
                 .filter(|assignment_info| assignment_info.chapter_id == *chapter_id)
                 .filter(|assignment_info| {
-                    role
-                        .map(|role| assignment_info.roles.has_any_role(&[role]))
+                    role.map(|role| assignment_info.roles.has_any_role(&[role]))
                         .unwrap_or(true)
                 })
                 .cloned()
@@ -71,8 +70,7 @@ fn list_assignments(state: &MockState, spec: &AssignmentListSpec) -> Vec<Assignm
                 .iter()
                 .filter(|assignment_info| assignment_info.user_id == *owner_id)
                 .filter(|assignment_info| {
-                    role
-                        .map(|role| assignment_info.roles.has_any_role(&[role]))
+                    role.map(|role| assignment_info.roles.has_any_role(&[role]))
                         .unwrap_or(true)
                 })
                 .cloned()

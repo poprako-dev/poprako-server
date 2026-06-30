@@ -20,7 +20,8 @@ where
 
 /// Transactional unit repository.
 pub trait UnitRepoTransactional<C>:
-    for<'a> Advance<CreateInfo<'a>, C, Error = RootError>
+    for<'a> Advance<ListInfosByPageId<'a>, C, Error = RootError>
+    + for<'a> Advance<CreateInfo<'a>, C, Error = RootError>
     + for<'a> Advance<SaveInfo<'a>, C, Error = RootError>
     + for<'a> Advance<DeleteByIdInPage<'a>, C, Error = RootError>
     + for<'a> Advance<ListIndexesByPageId<'a>, C, Error = RootError>
