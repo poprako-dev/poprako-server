@@ -147,11 +147,8 @@ where
                             .await?;
                     }
                     UnitOper::Delete { id } => {
-                        repo.advance(
-                            context,
-                            &UnitStep::delete_by_id_in_page(&page_info.id, id),
-                        )
-                        .await?;
+                        repo.advance(context, &UnitStep::delete_by_id_in_page(&page_info.id, id))
+                            .await?;
                     }
                 }
             }

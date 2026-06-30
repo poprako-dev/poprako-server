@@ -11,9 +11,6 @@
 // update_stage(update_stage)(positive): workflow role can advance an allowed stage.
 // update_stage(update_stage)(negative): invalid workflow transition is rejected.
 // update_stage(update_stage)(positive): publishing enqueues page image deletion.
-// join(join)(positive): user creates a new assignment when joining with assignable roles.
-// join(join)(positive): existing assignment role union preserves earlier role timestamps.
-// join(join)(negative): user cannot join with roles outside team membership.
 // delete(delete)(positive): admin deletes chapter descendants, enqueues page image deletion, repins latest remaining chapter, and decrements comic.
 // delete(delete)(negative): non-admin delete rolls back.
 
@@ -268,13 +265,13 @@ async fn create_pins_chapter_and_creates_admin_assignment() {
     let created_id = created.ok().unwrap().id;
 
     assert_eq!(snapshot.chapters.len(), 2);
-    let default_subtitle = ChapterComplex::subtitle_or_default(None, 3);
+    let default_subtitle = ChapterComplex::subtitle_or_default(None, 2);
 
     assert!(snapshot.chapters.iter().any(|chapter_info| {
         chapter_info.id == created_id
             && chapter_info.is_pinned
             && chapter_info.subtitle == default_subtitle
-            && chapter_info.index == 3
+            && chapter_info.index == 2
     }));
     assert!(
         snapshot
@@ -469,84 +466,6 @@ async fn update_stage_publish_enqueues_page_image_delete() {
     assert_eq!(object_key, "page-1.png");
     assert_eq!(snapshot.pages[0].image_key.as_deref(), Some("page-1.png"));
     assert!(snapshot.pages[0].image_uploaded);
-}
-
-#[tokio::test]
-async fn join_creates_assignment() {
-    let mock = Mock::new();
-    seed_scope(&mock, "user-1", RoleMask::from(RoleField::TRANSLATOR));
-    mock.seed_chapter(chapter("chapter-1", "comic-1", 1, false));
-
-    let joined = join(
-        &mock,
-        &mock,
-        token("user-1"),
-        JoinChapterData {
-            chapter_id: "chapter-1".into(),
-            roles: RoleMask::from(RoleField::TRANSLATOR),
-        },
-    )
-    .await;
-    assert!(joined.is_ok());
-    let joined = joined.ok().unwrap();
-
-    assert_eq!(joined.chapter_id, "chapter-1");
-    assert_eq!(mock.snapshot().assignments.len(), 1);
-}
-
-#[tokio::test]
-async fn join_unions_existing_assignment_roles() {
-    let mock = Mock::new();
-    let member_role_mask =
-        RoleMask::from(RoleField::TRANSLATOR).union(RoleMask::from(RoleField::PROOFREADER));
-    seed_scope(&mock, "user-1", member_role_mask);
-    mock.seed_chapter(chapter("chapter-1", "comic-1", 1, false));
-    mock.seed_assignment(assignment(
-        "chapter-1",
-        "user-1",
-        RoleMask::from(RoleField::TRANSLATOR),
-    ));
-
-    let joined = join(
-        &mock,
-        &mock,
-        token("user-1"),
-        JoinChapterData {
-            chapter_id: "chapter-1".into(),
-            roles: RoleMask::from(RoleField::PROOFREADER),
-        },
-    )
-    .await;
-    assert!(joined.is_ok());
-    let snapshot = mock.snapshot();
-
-    assert!(
-        snapshot.assignments[0]
-            .roles
-            .has_every_role(&[RoleField::TRANSLATOR, RoleField::PROOFREADER])
-    );
-}
-
-#[tokio::test]
-async fn join_rejects_role_outside_member_mask() {
-    let mock = Mock::new();
-    seed_scope(&mock, "user-1", RoleMask::from(RoleField::TRANSLATOR));
-    mock.seed_chapter(chapter("chapter-1", "comic-1", 1, false));
-
-    let err = join(
-        &mock,
-        &mock,
-        token("user-1"),
-        JoinChapterData {
-            chapter_id: "chapter-1".into(),
-            roles: RoleMask::from(RoleField::PROOFREADER),
-        },
-    )
-    .await
-    .err()
-    .unwrap();
-
-    assert_expected_variant(err, ExpectedVariant::Perm);
 }
 
 #[tokio::test]

@@ -2,9 +2,7 @@
 
 use poprako_util::time::ToUnixMilli;
 
-use crate::model::assignment::AssignmentInfo;
 use crate::model::chapter::ChapterInfo;
-use crate::model::role::RoleMask;
 use crate::value::chapter::{WorkflowEvent, WorkflowStage, WorkflowStageMask};
 
 /// Presentation-ready chapter information.
@@ -56,35 +54,6 @@ impl From<ChapterInfo> for ChapterInfoVal {
     }
 }
 
-/// Presentation-ready chapter assignment information.
-///
-/// Mirrors [`AssignmentInfo`] with timestamps converted to Unix milliseconds.
-///
-/// [`AssignmentInfo`]: crate::model::assignment::AssignmentInfo
-pub struct AssignmentInfoVal {
-    pub id: String,
-    pub chapter_id: String,
-    pub user_id: String,
-
-    pub roles: RoleMask,
-
-    pub created_at: i64,
-    pub updated_at: i64,
-}
-
-impl From<AssignmentInfo> for AssignmentInfoVal {
-    fn from(model: AssignmentInfo) -> Self {
-        Self {
-            id: model.id,
-            chapter_id: model.chapter_id,
-            user_id: model.user_id,
-            roles: model.roles,
-            created_at: model.created_at.to_unix_milli(),
-            updated_at: model.updated_at.to_unix_milli(),
-        }
-    }
-}
-
 /// Input parameters for creating a new chapter.
 pub struct CreateChapterData {
     pub comic_id: String,
@@ -127,15 +96,4 @@ pub struct UpdateChapterStageData {
 
     pub stage: WorkflowStage,
     pub event: WorkflowEvent,
-}
-
-/// Input parameters for a user joining a chapter as a worker via role
-/// selection.
-///
-/// The `role_mask` must contain exactly one role bit that is valid for
-/// volunteer assignment; the use case layer validates this before applying.
-pub struct JoinChapterData {
-    pub chapter_id: String,
-
-    pub roles: RoleMask,
 }

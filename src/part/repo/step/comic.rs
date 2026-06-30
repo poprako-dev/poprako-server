@@ -97,7 +97,12 @@ impl<'a> Step for MarkCompleted<'a> {
     type Output = ();
 }
 
-/// Step that increments and returns a comic's next chapter index.
+/// Step that allocates one chapter index from a comic-scoped sequence.
+///
+/// NOTE: Return the current `chapter_next_index` value, then increment it in
+/// the same transactional write. A storage implementation can satisfy this
+/// with one atomic `UPDATE ... SET chapter_next_index = chapter_next_index + 1
+/// RETURNING chapter_next_index - 1`.
 pub struct IncrChapterNextIndex<'a> {
     pub id: &'a str,
 }

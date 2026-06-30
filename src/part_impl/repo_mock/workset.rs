@@ -235,11 +235,12 @@ impl<'a> Advance<IncrComicNextIndex<'a>, MockContext> for MockTransactional {
             .iter_mut()
             .find(|workset| workset.id == step.id)
             .ok_or_else(|| expected("error-workset-not-found"))?;
-        // Must increment first, then return the new value: frontend expects 1-based index.
-        // Never return the pre-increment value.
+        let index = workset.comic_next_index;
+
         workset.comic_next_index += 1;
         workset.updated_at = now();
-        Ok(workset.comic_next_index)
+
+        Ok(index)
     }
 }
 

@@ -13,6 +13,7 @@ use crate::test_util::now;
 use crate::value::chapter::WorkflowStageMask;
 
 mod delete;
+mod join;
 mod list_infos;
 mod update_roles;
 

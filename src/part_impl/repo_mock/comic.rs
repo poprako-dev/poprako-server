@@ -328,9 +328,12 @@ impl<'a> Advance<IncrChapterNextIndex<'a>, MockContext> for MockTransactional {
             .iter_mut()
             .find(|comic| comic.id == step.id)
             .ok_or_else(|| expected("error-comic-not-found"))?;
+        let index = comic.chapter_next_index;
+
         comic.chapter_next_index += 1;
         comic.updated_at = now();
-        Ok(comic.chapter_next_index)
+
+        Ok(index)
     }
 }
 
