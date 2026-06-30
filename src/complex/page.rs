@@ -114,7 +114,7 @@ impl PagePermComplex {
     }
 
     /// Verify the caller may delete all pages under the chapter.
-    pub async fn can_user_delete_by_chapter<P>(
+    pub async fn can_user_delete<P>(
         proxy: &mut P,
         user_id: &str,
         chapter_id: &str,

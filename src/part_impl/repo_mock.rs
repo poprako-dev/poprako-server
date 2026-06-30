@@ -12,9 +12,11 @@ use poprako_transactional::drive::result::Error as DriveError;
 use poprako_transactional::util::AsyncFnMark;
 use poprako_util::i18n::trl;
 
+use crate::model::announcement::AnnouncementInfo;
 use crate::model::assignment::AssignmentInfo;
 use crate::model::chapter::ChapterInfo;
 use crate::model::comic::ComicInfo;
+use crate::model::comment::CommentInfo;
 use crate::model::member::MemberInfo;
 use crate::model::member_invitation::MemberInvitationInfo;
 use crate::model::page::PageInfo;
@@ -23,6 +25,7 @@ use crate::model::team::TeamInfo;
 use crate::model::unit::UnitInfo;
 use crate::model::user::{UserCredential, UserInfo};
 use crate::model::workset::WorksetInfo;
+use crate::part::effect::event::Event;
 use crate::result::{ExpectedVariant, RootError};
 use crate::util::DeriveTransactional;
 
@@ -31,6 +34,8 @@ use crate::util::DeriveTransactional;
 pub struct MockState {
     pub users: Vec<UserInfo>,
     pub credentials: Vec<UserCredential>,
+    pub announcements: Vec<AnnouncementInfo>,
+    pub comments: Vec<CommentInfo>,
     pub teams: Vec<TeamInfo>,
     pub members: Vec<MemberInfo>,
     pub member_invitations: Vec<MemberInvitationInfo>,
@@ -49,6 +54,8 @@ pub struct MockState {
 pub struct MockSnapshot {
     pub users: Vec<UserInfo>,
     pub credentials: Vec<UserCredential>,
+    pub announcements: Vec<AnnouncementInfo>,
+    pub comments: Vec<CommentInfo>,
     pub teams: Vec<TeamInfo>,
     pub members: Vec<MemberInfo>,
     pub member_invitations: Vec<MemberInvitationInfo>,
@@ -67,6 +74,8 @@ impl From<MockState> for MockSnapshot {
         Self {
             users: state.users,
             credentials: state.credentials,
+            announcements: state.announcements,
+            comments: state.comments,
             teams: state.teams,
             members: state.members,
             member_invitations: state.member_invitations,
@@ -103,7 +112,7 @@ pub struct MockFlags {
 pub struct Mock {
     pub state: Arc<Mutex<MockState>>,
     pub flags: Arc<Mutex<MockFlags>>,
-    pub events: Arc<Mutex<Vec<crate::part::effect::event::Event>>>,
+    pub events: Arc<Mutex<Vec<Event>>>,
 }
 
 impl Mock {
@@ -117,6 +126,16 @@ impl Mock {
         let mut state = self.state.lock().unwrap();
         state.users.push(user);
         state.credentials.push(credential);
+    }
+
+    /// Seed an announcement directly into the mock state.
+    pub fn seed_announcement(&self, announcement: AnnouncementInfo) {
+        self.state.lock().unwrap().announcements.push(announcement);
+    }
+
+    /// Seed a comment directly into the mock state.
+    pub fn seed_comment(&self, comment: CommentInfo) {
+        self.state.lock().unwrap().comments.push(comment);
     }
 
     /// Seed a team directly into the mock state.
@@ -202,7 +221,7 @@ impl Mock {
     }
 
     /// Drain and return all accumulated events, clearing the buffer.
-    pub fn drain_events(&self) -> Vec<crate::part::effect::event::Event> {
+    pub fn drain_events(&self) -> Vec<Event> {
         std::mem::take(&mut *self.events.lock().unwrap())
     }
 }
@@ -267,9 +286,16 @@ pub(super) fn now() -> OffsetDateTime {
     OffsetDateTime::now_utc()
 }
 
-/// Mock implementations for comic repository opers.
+/// Mock implementations for announcement repository opers.
+pub mod announcement;
+
+/// Mock implementations for assignment repository opers.
 pub mod assignment;
 pub mod chapter;
+
+/// Mock implementations for comment repository opers.
+pub mod comment;
+
 pub mod comic;
 
 /// Mock implementations for member repository opers.

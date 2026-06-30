@@ -350,7 +350,7 @@ where
 }
 
 /// Deletes all pages under one chapter.
-pub async fn delete_by_chapter<D, C, R, P>(
+pub async fn delete<D, C, R, P>(
     drive: &D,
     repo: &R,
     prom: &P,
@@ -382,7 +382,7 @@ where
 {
     use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
-    PagePermComplex::can_user_delete_by_chapter(
+    PagePermComplex::can_user_delete(
         &mut repo.as_proxy(),
         &token.user_id,
         &chapter_id,

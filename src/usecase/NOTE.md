@@ -16,3 +16,20 @@ delete cascade 专门用于处理在资源依赖树上，父资源回收自己�
 所以，这类可以直接对应一套 (id, resource) （比如 (comic_id, comic_info)）的，附带查询机制被称之为 incl。
 
 而有一些父资源，可以唯一地确定一类特殊的子资源（注意，不是代表子资源只有一个，而是特殊条件下只有一个）。比如 comic 的 pinned chapter 是唯一的。而这种附带查询被称之为 with。
+
+## usecase 层命名准则
+
+必须只有标准命名。比如：
+
+get*<typ>
+list<typ>
+update*<typ>
+delete
+delete_batch
+
+所有的条件必须由参数表现，以保证扩展性。
+
+在函数名称当中写条件的是绝对错误的实现方式，比如：
+
+list_infos_by_team
+delete_by_chapter

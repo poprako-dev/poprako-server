@@ -7,10 +7,12 @@
 //!
 //! [`ImagePool`]: crate::part::image::ImagePool
 
+pub mod announcement;
 pub mod assignment;
 pub mod auth;
 pub mod chapter;
 pub mod comic;
+pub mod comment;
 pub mod member;
 pub mod member_invitation;
 pub mod page;

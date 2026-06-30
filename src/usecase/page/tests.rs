@@ -7,8 +7,8 @@
 // mark_image_uploaded(mark_image_uploaded)(positive): raw provider confirms matching upload version and repeated confirmation is idempotent.
 // mark_image_uploaded(mark_image_uploaded)(negative): stale upload version cannot confirm or pollute current image state.
 // mark_image_uploaded(mark_image_uploaded)(negative): non-raw-provider cannot confirm upload.
-// delete_by_chapter(delete_by_chapter)(positive): team admin deletes pages, enqueues image deletes, clears counters, and touches comic.
-// delete_by_chapter(delete_by_chapter)(negative): non-admin delete rolls back.
+// delete(delete)(positive): team admin deletes pages, enqueues image deletes, clears counters, and touches comic.
+// delete(delete)(negative): non-admin delete rolls back.
 
 use super::*;
 
@@ -494,7 +494,7 @@ async fn delete_by_chapter_deletes_pages_and_clears_counters() {
     mock.seed_page(page("page-1", 0, Some("one.png"), true, 1));
     mock.seed_page(page("page-2", 1, None, false, 0));
 
-    let deleted = delete_by_chapter(&mock, &mock, &mock, token("user-1"), "chapter-1".into()).await;
+    let deleted = delete(&mock, &mock, &mock, token("user-1"), "chapter-1".into()).await;
     assert!(deleted.is_ok());
     let snapshot = mock.snapshot();
 
@@ -515,7 +515,7 @@ async fn delete_by_chapter_rejects_non_admin_and_rolls_back() {
     mock.seed_member(member("user-1", RoleMask::from(RoleField::TRANSLATOR)));
     mock.seed_page(page("page-1", 0, Some("one.png"), true, 1));
 
-    let err = delete_by_chapter(&mock, &mock, &mock, token("user-1"), "chapter-1".into())
+    let err = delete(&mock, &mock, &mock, token("user-1"), "chapter-1".into())
         .await
         .err()
         .unwrap();
