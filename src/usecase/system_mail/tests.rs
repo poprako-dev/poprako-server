@@ -60,9 +60,7 @@ async fn list_returns_current_user_unread_mails() {
     mock.seed_system_mail(mail("sys_mail-2", "user-1", true, time)); // already read
     mock.seed_system_mail(mail("sys_mail-3", "user-2", false, time)); // other user
 
-    let result = list_infos(&mock, token("user-1"), list_unread_data(0, 10)).await;
-    assert!(result.is_ok());
-    let mails = result.ok().unwrap();
+    let mails = list_infos(&mock, token("user-1"), list_unread_data(0, 10)).await.unwrap();
 
     assert_eq!(mails.len(), 1);
     assert_eq!(mails[0].id, "sys_mail-1");
@@ -79,9 +77,7 @@ async fn list_applies_pagination_after_desc_sort() {
     mock.seed_system_mail(mail("sys_mail-2", "user-1", false, t3));
     mock.seed_system_mail(mail("sys_mail-3", "user-1", false, t2));
 
-    let result = list_infos(&mock, token("user-1"), list_unread_data(0, 2)).await;
-    assert!(result.is_ok());
-    let mails = result.ok().unwrap();
+    let mails = list_infos(&mock, token("user-1"), list_unread_data(0, 2)).await.unwrap();
 
     assert_eq!(mails.len(), 2);
     // Should be sorted by created_at DESC.
@@ -95,9 +91,7 @@ async fn list_returns_empty_for_missing_page() {
     let time = OffsetDateTime::now_utc();
     mock.seed_system_mail(mail("sys_mail-1", "user-1", false, time));
 
-    let result = list_infos(&mock, token("user-1"), list_unread_data(10, 10)).await;
-    assert!(result.is_ok());
-    let mails = result.ok().unwrap();
+    let mails = list_infos(&mock, token("user-1"), list_unread_data(10, 10)).await.unwrap();
 
     assert!(mails.is_empty());
 }
@@ -109,13 +103,13 @@ async fn mark_read_marks_batch_of_mails() {
     mock.seed_system_mail(mail("sys_mail-1", "user-1", false, time));
     mock.seed_system_mail(mail("sys_mail-2", "user-1", false, time));
 
-    let result = mark_read(
+    mark_read(
         &mock,
         token("user-1"),
         vec!["sys_mail-1".into(), "sys_mail-2".into()],
     )
-    .await;
-    assert!(result.is_ok());
+    .await
+    .unwrap();
 
     let snapshot = mock.snapshot();
     assert!(snapshot.system_mails[0].read);

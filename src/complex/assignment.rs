@@ -76,9 +76,9 @@ impl AssignmentPermComplex {
             + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RootError>
             + for<'a> ProxyExecute<GetInfoByChapterIdAndUserId<'a>, Error = RootError>,
     {
-        let reviewer_result = check_reviewer(proxy, current_user_id, &data.chapter_id).await;
+        let reviewer_check = check_reviewer(proxy, current_user_id, &data.chapter_id).await;
 
-        if reviewer_result.is_err() {
+        if reviewer_check.is_err() {
             check_self_reduce(proxy, current_user_id, data).await?;
         }
 
@@ -139,9 +139,9 @@ where
         + for<'a> ProxyExecute<GetInfoByChapterIdAndUserId<'a>, Error = RootError>,
 {
     let team_id = resolve_team_id(proxy, chapter_id).await?;
-    let member_result = check_user_is_team_member(proxy, user_id, &team_id).await;
+    let member_check = check_user_is_team_member(proxy, user_id, &team_id).await;
 
-    if member_result.is_ok() {
+    if member_check.is_ok() {
         return accept(());
     }
 

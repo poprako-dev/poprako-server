@@ -116,9 +116,7 @@ async fn create_allocates_index_and_persists() {
     mock.seed_team(team("team-1", "Team", "Desc"));
     mock.seed_member(admin_member("user-1", "team-1"));
 
-    let created = create(&mock, &mock, token("user-1"), create_data("team-1")).await;
-    assert!(created.is_ok());
-    let created = created.ok().unwrap();
+    let created = create(&mock, &mock, token("user-1"), create_data("team-1")).await.unwrap();
     let snapshot = mock.snapshot();
 
     assert_eq!(created.id, snapshot.worksets[0].id);
@@ -149,9 +147,7 @@ async fn get_info_returns_existing_workset() {
     mock.seed_workset(workset("workset-1", "team-1", 2));
     mock.seed_member(admin_member("user-1", "team-1"));
 
-    let found = get_info(&mock, token("user-1"), "workset-1".into()).await;
-    assert!(found.is_ok());
-    let found = found.ok().unwrap();
+    let found = get_info(&mock, token("user-1"), "workset-1".into()).await.unwrap();
 
     assert_eq!(found.id, "workset-1");
     assert_eq!(found.index, 2);
@@ -184,9 +180,8 @@ async fn list_infos_filters_and_sorts_by_index() {
             team_id: "team-1".into(),
         },
     )
-    .await;
-    assert!(list.is_ok());
-    let list = list.ok().unwrap();
+    .await
+    .unwrap();
 
     assert_eq!(list.len(), 2);
     assert_eq!(list[0].id, "workset-1");
@@ -205,10 +200,9 @@ async fn list_infos_returns_empty_for_missing_team_contents() {
             team_id: "missing".into(),
         },
     )
-    .await;
-    assert!(list.is_ok());
-
-    assert!(list.ok().unwrap().is_empty());
+    .await
+    .unwrap();
+    assert!(list.is_empty());
 }
 
 #[tokio::test]
@@ -217,7 +211,7 @@ async fn update_info_updates_workset() {
     mock.seed_workset(workset("workset-1", "team-1", 0));
     mock.seed_member(admin_member("user-1", "team-1"));
 
-    let result = update_info(
+    update_info(
         &mock,
         token("user-1"),
         UpdateWorksetInfoData {
@@ -226,8 +220,8 @@ async fn update_info_updates_workset() {
             description: Some("updated-desc".into()),
         },
     )
-    .await;
-    assert!(result.is_ok());
+    .await
+    .unwrap();
     let snapshot = mock.snapshot();
 
     assert_eq!(snapshot.worksets[0].name, "updated");
@@ -273,8 +267,7 @@ async fn delete_removes_workset_and_enqueues_child_cover_deletes() {
         "cover-2.png",
     ));
 
-    let result = delete(&mock, &mock, &mock, token("user-1"), "workset-1".into()).await;
-    assert!(result.is_ok());
+    delete(&mock, &mock, &mock, token("user-1"), "workset-1".into()).await.unwrap();
     let snapshot = mock.snapshot();
 
     assert!(snapshot.worksets.is_empty());
@@ -311,7 +304,7 @@ async fn delete_does_not_create_prom_records_when_called_directly() {
     let mock = Mock::new();
     mock.seed_workset(workset("workset-1", "team-1", 0));
 
-    let result = Drive::with_context(&mock, async move |context| {
+    Drive::with_context(&mock, async move |context| {
         let transactional = MockTransactional;
 
         Advance::advance(
@@ -337,8 +330,8 @@ async fn delete_does_not_create_prom_records_when_called_directly() {
 
         accept(())
     })
-    .await;
-    assert!(result.is_ok());
+    .await
+    .unwrap();
 
     let snapshot = mock.snapshot();
     assert_eq!(

@@ -29,9 +29,9 @@ impl ChapterPortPermComplex {
             + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RootError>
             + for<'a> ProxyExecute<GetInfoByChapterIdAndUserId<'a>, Error = RootError>,
     {
-        let member_result = check_user_is_team_member_by_chapter(proxy, user_id, chapter_id).await;
+        let member_check = check_user_is_team_member_by_chapter(proxy, user_id, chapter_id).await;
 
-        if member_result.is_ok() {
+        if member_check.is_ok() {
             return Ok(());
         }
 

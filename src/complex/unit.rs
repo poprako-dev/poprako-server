@@ -256,9 +256,9 @@ impl UnitPermComplex {
             + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RootError>
             + for<'a> ProxyExecute<GetInfoByChapterIdAndUserId<'a>, Error = RootError>,
     {
-        let member_result = check_user_is_team_member_by_chapter(proxy, user_id, chapter_id).await;
+        let member_check = check_user_is_team_member_by_chapter(proxy, user_id, chapter_id).await;
 
-        if member_result.is_ok() {
+        if member_check.is_ok() {
             return Ok(());
         }
 
@@ -268,7 +268,7 @@ impl UnitPermComplex {
                 variant: ExpectedVariant::PermDeny,
                 ..
             }) => Err(unit_list_permission_error()),
-            Err(error) => Err(error),
+            Err(e) => Err(e),
         }
     }
 
@@ -287,7 +287,7 @@ impl UnitPermComplex {
                 variant: ExpectedVariant::PermDeny,
                 ..
             }) => Err(unit_edit_permission_error()),
-            Err(error) => Err(error),
+            Err(e) => Err(e),
         }
     }
 }

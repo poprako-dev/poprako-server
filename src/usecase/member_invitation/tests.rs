@@ -107,19 +107,18 @@ async fn create_admin_creates_pending_invitation() {
     ));
     mock.seed_user(user("invitee-user", "qid-2"), credential("invitee-user"));
 
-    let result = create(
+    let created = create(
         &mock,
         &mock,
         token("admin-user"),
         create_data("team-1", "qid-2"),
     )
-    .await;
-    assert!(result.is_ok());
-    let result = result.ok().unwrap();
+    .await
+    .unwrap();
 
     let snapshot = mock.snapshot();
     assert_eq!(snapshot.member_invitations.len(), 1);
-    assert_eq!(snapshot.member_invitations[0].id, result.id);
+    assert_eq!(snapshot.member_invitations[0].id, created.id);
     assert_eq!(snapshot.member_invitations[0].invitor_id, "admin-user");
     assert_eq!(snapshot.member_invitations[0].invitee_qid, "qid-2");
     assert!(snapshot.member_invitations[0].pending);
@@ -160,12 +159,10 @@ async fn list_infos_member_lists_invitations() {
     ));
     mock.seed_member_invitation(invitation("inv-1", "team-1", "qid-2"));
 
-    let result = list_infos(&mock, token("member-user"), list_data("team-1")).await;
-    assert!(result.is_ok());
-    let result = result.ok().unwrap();
+    let listed = list_infos(&mock, token("member-user"), list_data("team-1")).await.unwrap();
 
-    assert_eq!(result.len(), 1);
-    assert_eq!(result[0].id, "inv-1");
+    assert_eq!(listed.len(), 1);
+    assert_eq!(listed[0].id, "inv-1");
 }
 
 #[tokio::test]
@@ -178,11 +175,9 @@ async fn list_infos_empty_returns_after_membership() {
         RoleMask::from(RoleField::TRANSLATOR),
     ));
 
-    let result = list_infos(&mock, token("member-user"), list_data("team-1")).await;
-    assert!(result.is_ok());
-    let result = result.ok().unwrap();
+    let listed = list_infos(&mock, token("member-user"), list_data("team-1")).await.unwrap();
 
-    assert!(result.is_empty());
+    assert!(listed.is_empty());
 }
 
 #[tokio::test]
@@ -209,8 +204,7 @@ async fn update_info_admin_updates_role_mask() {
     ));
     mock.seed_member_invitation(invitation("inv-1", "team-1", "qid-2"));
 
-    let result = update_info(&mock, &mock, token("admin-user"), update_data("inv-1")).await;
-    assert!(result.is_ok());
+    update_info(&mock, &mock, token("admin-user"), update_data("inv-1")).await.unwrap();
 
     assert_eq!(
         mock.snapshot().member_invitations[0].roles,
@@ -248,8 +242,7 @@ async fn delete_admin_deletes_invitation() {
     ));
     mock.seed_member_invitation(invitation("inv-1", "team-1", "qid-2"));
 
-    let result = delete(&mock, &mock, token("admin-user"), "inv-1".into()).await;
-    assert!(result.is_ok());
+    delete(&mock, &mock, token("admin-user"), "inv-1".into()).await.unwrap();
 
     assert!(mock.snapshot().member_invitations.is_empty());
 }

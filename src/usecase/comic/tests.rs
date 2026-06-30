@@ -214,7 +214,7 @@ async fn update_info_updates_comic() {
     mock.seed_member(admin_member("user-1", "team-1"));
     mock.seed_comic(comic("comic-1", "workset-1", 0));
 
-    let result = update_info(
+    update_info(
         &mock,
         token("user-1"),
         UpdateComicInfoData {
@@ -224,8 +224,9 @@ async fn update_info_updates_comic() {
             description: Some("updated-desc".into()),
         },
     )
-    .await;
-    assert!(result.is_ok());
+    .await
+    .ok()
+    .unwrap();
     let snapshot = mock.snapshot();
 
     assert_eq!(snapshot.comics[0].title, "updated");
@@ -328,14 +329,15 @@ async fn mark_cover_uploaded_marks_matching_version() {
         ..comic("comic-1", "workset-1", 0)
     });
 
-    let result = mark_cover_uploaded(
+    mark_cover_uploaded(
         &mock,
         token("user-1"),
         "comic-1".into(),
         MarkComicCoverUploadedData { cover_version: 2 },
     )
-    .await;
-    assert!(result.is_ok());
+    .await
+    .ok()
+    .unwrap();
 
     assert!(mock.snapshot().comics[0].cover_uploaded);
 }
@@ -463,8 +465,10 @@ async fn delete_removes_comic_updates_count_and_enqueues_cover_delete() {
         "cover.png",
     ));
 
-    let result = delete(&mock, &mock, &mock, token("user-1"), "comic-1".into()).await;
-    assert!(result.is_ok());
+    delete(&mock, &mock, &mock, token("user-1"), "comic-1".into())
+        .await
+        .ok()
+        .unwrap();
     let snapshot = mock.snapshot();
 
     assert!(snapshot.comics.is_empty());
@@ -500,8 +504,10 @@ async fn mark_completed_updates_completion_state() {
     mock.seed_member(admin_member("user-1", "team-1"));
     mock.seed_comic(comic("comic-1", "workset-1", 0));
 
-    let result = mark_completed(&mock, &mock, token("user-1"), "comic-1".into(), true).await;
-    assert!(result.is_ok());
+    mark_completed(&mock, &mock, token("user-1"), "comic-1".into(), true)
+        .await
+        .ok()
+        .unwrap();
 
     assert!(mock.snapshot().comics[0].is_completed);
 }

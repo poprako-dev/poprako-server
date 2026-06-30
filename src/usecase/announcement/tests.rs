@@ -126,10 +126,8 @@ async fn list_infos_team_member_lists_team_announcements() {
         token("viewer-user"),
         list_data("team-1", Vec::new()),
     )
-    .await;
-
-    assert!(announcement_info_vals.is_ok());
-    let announcement_info_vals = announcement_info_vals.ok().unwrap();
+    .await
+    .unwrap();
 
     assert_eq!(announcement_info_vals.len(), 1);
     assert_eq!(announcement_info_vals[0].id, "announcement-1");
@@ -159,9 +157,9 @@ async fn list_infos_user_include_follows_request() {
         token("viewer-user"),
         list_data("team-1", Vec::new()),
     )
-    .await;
-    assert!(without_user.is_ok());
-    assert!(without_user.ok().unwrap()[0].user.is_none());
+    .await
+    .unwrap();
+    assert!(without_user[0].user.is_none());
 
     let with_user = list_infos(
         &mock,
@@ -169,9 +167,8 @@ async fn list_infos_user_include_follows_request() {
         token("viewer-user"),
         list_data("team-1", vec![AnnouncementInclOpt::User]),
     )
-    .await;
-    assert!(with_user.is_ok());
-    let with_user = with_user.ok().unwrap();
+    .await
+    .unwrap();
 
     assert_eq!(with_user[0].user.as_ref().unwrap().id, "author-user");
 }
@@ -209,11 +206,8 @@ async fn create_team_admin_creates_announcement() {
         RoleMask::from(RoleField::ADMIN),
     );
 
-    let create_announcement_result =
-        create(&mock, &mock, token("admin-user"), create_data("team-1")).await;
-
-    assert!(create_announcement_result.is_ok());
-    let created_announcement = create_announcement_result.ok().unwrap();
+    let created_announcement =
+        create(&mock, &mock, token("admin-user"), create_data("team-1")).await.unwrap();
     let snapshot = mock.snapshot();
 
     assert_eq!(snapshot.announcements.len(), 1);

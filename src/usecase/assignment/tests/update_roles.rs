@@ -23,15 +23,14 @@ async fn update_roles_reviewer_creates_missing_assignment() {
     ));
     mock.seed_member(member("target-user", role(RoleField::TRANSLATOR)));
 
-    let result = update_roles(
+    update_roles(
         &mock,
         &mock,
         token("reviewer-user"),
         update_roles_data("chapter-1", "target-user", role(RoleField::TRANSLATOR)),
     )
-    .await;
-
-    assert!(result.is_ok());
+    .await
+    .unwrap();
     assert!(
         mock.snapshot()
             .assignments
@@ -56,15 +55,14 @@ async fn update_roles_reviewer_overwrites_existing_assignment_roles() {
     ));
     mock.seed_member(member("target-user", role(RoleField::PROOFREADER)));
 
-    let result = update_roles(
+    update_roles(
         &mock,
         &mock,
         token("reviewer-user"),
         update_roles_data("chapter-1", "target-user", role(RoleField::PROOFREADER)),
     )
-    .await;
-
-    assert!(result.is_ok());
+    .await
+    .unwrap();
     let snapshot = mock.snapshot();
     let assignment_info = snapshot
         .assignments
@@ -89,15 +87,14 @@ async fn update_roles_self_role_reduction_updates_assignment() {
         roles(RoleField::TRANSLATOR, RoleField::PROOFREADER),
     ));
 
-    let result = update_roles(
+    update_roles(
         &mock,
         &mock,
         token("worker-user"),
         update_roles_data("chapter-1", "worker-user", role(RoleField::TRANSLATOR)),
     )
-    .await;
-
-    assert!(result.is_ok());
+    .await
+    .unwrap();
     assert_eq!(
         mock.snapshot().assignments[0].roles,
         role(RoleField::TRANSLATOR)
