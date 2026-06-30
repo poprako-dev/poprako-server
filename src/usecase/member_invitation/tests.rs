@@ -67,7 +67,7 @@ fn invitation(id: &str, team_id: &str, invitee_qid: &str) -> MemberInvitationInf
         invitee_qid: invitee_qid.into(),
         code: "ABC123".into(),
         pending: true,
-        role_mask: RoleMask::from(RoleField::TRANSLATOR),
+        roles: RoleMask::from(RoleField::TRANSLATOR),
     }
 }
 
@@ -75,7 +75,7 @@ fn create_data(team_id: &str, invitee_qid: &str) -> CreateMemberInvitationData {
     CreateMemberInvitationData {
         team_id: team_id.into(),
         invitee_qid: invitee_qid.into(),
-        role_mask: RoleMask::from(RoleField::TRANSLATOR),
+        roles: RoleMask::from(RoleField::TRANSLATOR),
     }
 }
 
@@ -91,7 +91,7 @@ fn list_data(team_id: &str) -> ListMemberInvitationInfosData {
 fn update_data(id: &str) -> UpdateMemberInvitationInfoData {
     UpdateMemberInvitationInfoData {
         id: id.into(),
-        role_mask: RoleMask::from(RoleField::REVIEWER),
+        roles: RoleMask::from(RoleField::REVIEWER),
     }
 }
 
@@ -213,7 +213,7 @@ async fn update_info_admin_updates_role_mask() {
     assert!(result.is_ok());
 
     assert_eq!(
-        mock.snapshot().member_invitations[0].role_mask,
+        mock.snapshot().member_invitations[0].roles,
         RoleMask::from(RoleField::REVIEWER)
     );
 }

@@ -320,14 +320,14 @@ impl ChapterPermComplex {
         proxy: &mut P,
         user_id: &str,
         chapter_info: &ChapterInfo,
-        role_mask: RoleMask,
+        roles: RoleMask,
     ) -> RootResult<()>
     where
         P: for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RootError>
             + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RootError>
             + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RootError>,
     {
-        check_join_role(proxy, user_id, chapter_info, role_mask).await
+        check_join_role(proxy, user_id, chapter_info, roles).await
     }
 
     /// Verify the caller is a team admin of the chapter's owning workset.
@@ -469,29 +469,29 @@ where
         return Err(chapter_workflow_role_error());
     };
 
-    let role_mask = assignment_info.roles;
-    if role_mask.has_any_role(&[RoleField::REVIEWER]) {
+    let roles = assignment_info.roles;
+    if roles.has_any_role(&[RoleField::REVIEWER]) {
         return accept(());
     }
 
     let allowed = match (stage, event) {
         (WorkflowStage::RawProvide, WorkflowEvent::Advance) => {
-            role_mask.has_any_role(&[RoleField::RAW_PROVIDER])
+            roles.has_any_role(&[RoleField::RAW_PROVIDER])
         }
         (WorkflowStage::Translate, WorkflowEvent::Advance) => {
-            role_mask.has_any_role(&[RoleField::TRANSLATOR])
+            roles.has_any_role(&[RoleField::TRANSLATOR])
         }
         (WorkflowStage::Translate, WorkflowEvent::Revert) => {
-            role_mask.has_any_role(&[RoleField::PROOFREADER])
+            roles.has_any_role(&[RoleField::PROOFREADER])
         }
         (WorkflowStage::Proofread, WorkflowEvent::Advance | WorkflowEvent::Revert) => {
-            role_mask.has_any_role(&[RoleField::PROOFREADER])
+            roles.has_any_role(&[RoleField::PROOFREADER])
         }
         (WorkflowStage::TypesetRedraw, WorkflowEvent::Advance | WorkflowEvent::Revert) => {
-            role_mask.has_any_role(&[RoleField::TYPESETTER, RoleField::REDRAWER])
+            roles.has_any_role(&[RoleField::TYPESETTER, RoleField::REDRAWER])
         }
         (WorkflowStage::Publish, WorkflowEvent::Advance) => {
-            role_mask.has_any_role(&[RoleField::PUBLISHER])
+            roles.has_any_role(&[RoleField::PUBLISHER])
         }
         _ => false,
     };
@@ -512,14 +512,14 @@ async fn check_join_role<P>(
     proxy: &mut P,
     user_id: &str,
     chapter_info: &ChapterInfo,
-    role_mask: RoleMask,
+    roles: RoleMask,
 ) -> RootResult<()>
 where
     P: for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RootError>
         + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RootError>
         + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RootError>,
 {
-    if role_mask.has_any_role(&[RoleField::ADMIN]) {
+    if roles.has_any_role(&[RoleField::ADMIN]) {
         return Err(chapter_role_not_assignable_args_error());
     }
 
@@ -536,7 +536,7 @@ where
             message: trl("error-team-member-required"),
         });
     };
-    if !member_info.roles.contains_mask(role_mask) {
+    if !member_info.roles.contains_mask(roles) {
         return Err(RootError::Expected {
             variant: ExpectedVariant::PermDeny,
             message: trl("error-chapter-role-not-assignable"),

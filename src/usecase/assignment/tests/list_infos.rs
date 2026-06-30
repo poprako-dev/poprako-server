@@ -157,7 +157,7 @@ async fn list_infos_invalid_owner_combination_is_rejected() {
         ListAssignmentInfosData {
             chapter_id: Some("chapter-1".into()),
             owner_id: Some("owner-user".into()),
-            role_bit: None,
+            role: None,
             offset: 0,
             limit: 10,
         },

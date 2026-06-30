@@ -78,7 +78,7 @@ impl<'a> Step for GetInfoById<'a> {
     type Output = MemberInfo;
 }
 
-/// Step that updates one membership's role mask.
+/// Step that updates one membership's roles.
 pub struct UpdateRole<'a> {
     pub member_role_update: &'a MemberRoleUpdate,
 }
@@ -149,7 +149,7 @@ impl MemberStep {
         GetInfoById { id }
     }
 
-    /// Constructs a step to update a member role mask.
+    /// Constructs a step to update a member's roles.
     pub fn update_role<'a>(member_role_update: &'a MemberRoleUpdate) -> UpdateRole<'a> {
         UpdateRole { member_role_update }
     }

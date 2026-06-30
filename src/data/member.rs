@@ -39,7 +39,7 @@ pub struct CreateMemberData {
     pub user_id: String,
     pub team_id: String,
 
-    pub role_mask: RoleMask,
+    pub roles: RoleMask,
 }
 
 /// Return value from creating a member.
@@ -61,7 +61,7 @@ pub struct ListMemberInfosData {
     pub team_id: Option<String>,
 
     pub user_nickname_keyword: Option<String>,
-    pub role_bit: Option<RoleField>,
+    pub role: Option<RoleField>,
 
     #[serde(default)]
     pub incl_opt: Vec<MemberInclOpt>,
@@ -81,7 +81,7 @@ impl TryInto<MemberListSpec> for ListMemberInfosData {
         }
 
         if self.user_nickname_keyword.is_some()
-            || self.owner_id.is_some() && self.role_bit.is_some()
+            || self.owner_id.is_some() && self.role.is_some()
         {
             return Err(invalid_args_err());
         }
@@ -97,7 +97,7 @@ impl TryInto<MemberListSpec> for ListMemberInfosData {
 
         Ok(MemberListSpec::Team {
             team_id: self.team_id.ok_or_else(invalid_args_err)?,
-            role_bit: self.role_bit,
+            role: self.role,
             incl_opt: self.incl_opt,
             offset: self.offset,
             limit: self.limit,

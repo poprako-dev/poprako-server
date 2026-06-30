@@ -20,7 +20,7 @@ pub struct MemberInvitationInfo {
 
     pub pending: bool,
 
-    pub role_mask: RoleMask,
+    pub roles: RoleMask,
 }
 
 /// The data needed to insert a member invitation row.
@@ -34,11 +34,11 @@ pub struct MemberInvitationForm {
 
     pub code: String,
 
-    pub role_mask: RoleMask,
+    pub roles: RoleMask,
 }
 
 /// Mutable fields for a member invitation.
 pub struct MemberInvitationUpdate {
     pub id: String,
-    pub role_mask: RoleMask,
+    pub roles: RoleMask,
 }

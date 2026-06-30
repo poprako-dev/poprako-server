@@ -105,7 +105,7 @@ where
                 user_id: user_info.id.clone(),
                 user_nickname: user_info.nickname.clone(),
                 team_id: invitation_info.team_id.clone(),
-                roles: invitation_info.role_mask,
+                roles: invitation_info.roles,
             };
 
             repo.advance(context, &MemberStep::create(&member_form))

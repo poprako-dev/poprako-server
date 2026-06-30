@@ -29,11 +29,11 @@ impl AssignmentComplex {
     /// and writing new ones.
     pub fn merge_roles(
         assignment_info: &AssignmentInfo,
-        role_mask: RoleMask,
+        roles: RoleMask,
     ) -> AssignmentRoleUpdate {
         AssignmentRoleUpdate {
             id: assignment_info.id.clone(),
-            roles: assignment_info.roles.union(role_mask),
+            roles: assignment_info.roles.union(roles),
         }
     }
 }
@@ -121,7 +121,7 @@ impl AssignmentPermComplex {
         proxy: &mut P,
         user_id: &str,
         chapter_id: &str,
-        role_mask: RoleMask,
+        roles: RoleMask,
     ) -> RootResult<()>
     where
         P: for<'a> ProxyExecute<ChapterGetInfoById<'a>, Error = RootError>
@@ -129,7 +129,7 @@ impl AssignmentPermComplex {
             + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RootError>
             + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RootError>,
     {
-        check_target_roles(proxy, user_id, chapter_id, role_mask).await
+        check_target_roles(proxy, user_id, chapter_id, roles).await
     }
 }
 
@@ -239,7 +239,7 @@ async fn check_target_roles<P>(
     proxy: &mut P,
     user_id: &str,
     chapter_id: &str,
-    role_mask: RoleMask,
+    roles: RoleMask,
 ) -> RootResult<()>
 where
     P: for<'a> ProxyExecute<ChapterGetInfoById<'a>, Error = RootError>
@@ -247,7 +247,7 @@ where
         + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RootError>
         + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RootError>,
 {
-    if role_mask.has_any_role(&[RoleField::ADMIN]) {
+    if roles.has_any_role(&[RoleField::ADMIN]) {
         return Err(assignment_role_not_assignable_args_error());
     }
 
@@ -262,7 +262,7 @@ where
         return Err(assignment_role_not_assignable_perm_error());
     };
 
-    if !member_info.roles.contains_mask(role_mask) {
+    if !member_info.roles.contains_mask(roles) {
         return Err(assignment_role_not_assignable_perm_error());
     }
 

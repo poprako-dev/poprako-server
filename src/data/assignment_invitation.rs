@@ -18,7 +18,7 @@ pub struct AssignmentInvitationInfoVal {
 
     pub pending: bool,
 
-    pub role_mask: RoleMask,
+    pub roles: RoleMask,
 
     pub created_at: i64,
     pub updated_at: i64,
@@ -33,7 +33,7 @@ impl From<AssignmentInvitationInfo> for AssignmentInvitationInfoVal {
             invitee_qid: value.invitee_qid,
             code: value.code,
             pending: value.pending,
-            role_mask: value.role_mask,
+            roles: value.roles,
             created_at: value.created_at.to_unix_milli(),
             updated_at: value.updated_at.to_unix_milli(),
         }
@@ -52,7 +52,7 @@ pub struct ListAssignmentInvitationInfosData {
 pub struct CreateAssignmentInvitationData {
     pub chapter_id: String,
     pub invitee_qid: String,
-    pub role_mask: RoleMask,
+    pub roles: RoleMask,
 }
 
 /// Return value from creating an assignment invitation.

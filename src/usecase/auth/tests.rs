@@ -42,7 +42,7 @@ fn invitation(
         invitee_qid: invitee_qid.into(),
         code: code.into(),
         pending,
-        role_mask: RoleMask::from(RoleField::RAW_PROVIDER),
+        roles: RoleMask::from(RoleField::RAW_PROVIDER),
     }
 }
 
