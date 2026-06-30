@@ -103,7 +103,7 @@ fn list_data(team_id: &str) -> ListMemberInfosData {
     ListMemberInfosData {
         owner_id: None,
         team_id: Some(team_id.into()),
-        user_nickname_keyword: None,
+        fuzzy_nickname: None,
         role: None,
         incl_opt: Vec::new(),
         offset: 0,
@@ -261,7 +261,7 @@ async fn list_infos_filters_by_role() {
         ListMemberInfosData {
             owner_id: None,
             team_id: Some("team-1".into()),
-            user_nickname_keyword: None,
+            fuzzy_nickname: None,
             role: Some(RoleField::REVIEWER),
             incl_opt: Vec::new(),
             offset: 0,
@@ -301,7 +301,7 @@ async fn list_infos_applies_pagination_after_filtering() {
         ListMemberInfosData {
             owner_id: None,
             team_id: Some("team-1".into()),
-            user_nickname_keyword: None,
+            fuzzy_nickname: None,
             role: None,
             incl_opt: Vec::new(),
             offset: 1,
@@ -347,7 +347,7 @@ async fn list_infos_owner_lists_own_memberships() {
         ListMemberInfosData {
             owner_id: Some("user-1".into()),
             team_id: None,
-            user_nickname_keyword: None,
+            fuzzy_nickname: None,
             role: None,
             incl_opt: Vec::new(),
             offset: 0,
@@ -387,7 +387,7 @@ fn list_infos_rejects_invalid_combination() {
     let err = TryInto::<MemberListSpec>::try_into(ListMemberInfosData {
         owner_id: Some("user-1".into()),
         team_id: Some("team-1".into()),
-        user_nickname_keyword: None,
+        fuzzy_nickname: None,
         role: None,
         incl_opt: Vec::new(),
         offset: 0,
@@ -404,7 +404,7 @@ fn list_infos_converts_owner_combination_to_mine_spec() {
     let member_list_spec: MemberListSpec = ListMemberInfosData {
         owner_id: Some("user-1".into()),
         team_id: None,
-        user_nickname_keyword: None,
+        fuzzy_nickname: None,
         role: None,
         incl_opt: Vec::new(),
         offset: 3,

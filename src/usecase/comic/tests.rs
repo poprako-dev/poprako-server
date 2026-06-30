@@ -4,6 +4,9 @@
 // get_info(get_info)(negative): missing comic should propagate an argument error.
 // list_infos(list_infos)(positive): list should return workset comics sorted by index.
 // list_infos(list_infos)(positive): empty workset contents should return an empty list after membership.
+// list_infos(list_infos)(positive): fuzzy title should narrow results by title substring.
+// list_infos(list_infos)(positive): is_completed filter should narrow results by completion state.
+// list_infos(list_infos)(positive): pagination should be applied after filtering and sorting.
 // update_info(update_info)(positive): existing comic should update title, author, and description.
 // update_info(update_info)(negative): missing comic should propagate an argument error.
 // reserve_cover(reserve_cover)(positive): reservation should update cover state, enqueue check, and return put URL.
@@ -174,7 +177,10 @@ async fn list_infos_filters_and_sorts_by_index() {
         token("user-1"),
         ListComicInfosData {
             workset_id: "workset-1".into(),
-            with: vec![],
+            fuzzy_title: None,
+            is_completed: None,
+            offset: 0,
+            limit: 10,
         },
     )
     .await;
@@ -198,13 +204,158 @@ async fn list_infos_returns_empty_for_workset_contents() {
         token("user-1"),
         ListComicInfosData {
             workset_id: "workset-1".into(),
-            with: vec![],
+            fuzzy_title: None,
+            is_completed: None,
+            offset: 0,
+            limit: 10,
         },
     )
     .await;
     assert!(list.is_ok());
 
     assert!(list.ok().unwrap().is_empty());
+}
+
+#[tokio::test]
+async fn list_infos_filters_by_fuzzy_title() {
+    let mock = Mock::new();
+    mock.seed_workset(workset("workset-1", "team-1"));
+    mock.seed_member(admin_member("user-1", "team-1"));
+    mock.seed_comic(ComicInfo {
+        title: "Alpha Adventure".into(),
+        author: "Alice".into(),
+        ..comic("comic-alpha", "workset-1", 0)
+    });
+    mock.seed_comic(ComicInfo {
+        title: "Beta Journey".into(),
+        author: "Bob".into(),
+        ..comic("comic-beta", "workset-1", 1)
+    });
+    mock.seed_comic(ComicInfo {
+        title: "Gamma Quest".into(),
+        author: "Carol".into(),
+        ..comic("comic-gamma", "workset-1", 2)
+    });
+
+    // Match by title substring
+    let list = list_infos(
+        &mock,
+        &mock,
+        token("user-1"),
+        ListComicInfosData {
+            workset_id: "workset-1".into(),
+            fuzzy_title: Some("Beta".into()),
+            is_completed: None,
+            offset: 0,
+            limit: 10,
+        },
+    )
+    .await;
+    assert!(list.is_ok());
+    let list = list.ok().unwrap();
+    assert_eq!(list.len(), 1);
+    assert_eq!(list[0].id, "comic-beta");
+
+    // Match by author substring
+    let list = list_infos(
+        &mock,
+        &mock,
+        token("user-1"),
+        ListComicInfosData {
+            workset_id: "workset-1".into(),
+            fuzzy_title: Some("Carol".into()),
+            is_completed: None,
+            offset: 0,
+            limit: 10,
+        },
+    )
+    .await;
+    assert!(list.is_ok());
+    let list = list.ok().unwrap();
+    assert_eq!(list.len(), 1);
+    assert_eq!(list[0].id, "comic-gamma");
+
+    // Match by index
+    let list = list_infos(
+        &mock,
+        &mock,
+        token("user-1"),
+        ListComicInfosData {
+            workset_id: "workset-1".into(),
+            fuzzy_title: Some("1".into()),
+            is_completed: None,
+            offset: 0,
+            limit: 10,
+        },
+    )
+    .await;
+    assert!(list.is_ok());
+    let list = list.ok().unwrap();
+    assert_eq!(list.len(), 1);
+    assert_eq!(list[0].id, "comic-beta");
+}
+
+#[tokio::test]
+async fn list_infos_filters_by_is_completed() {
+    let mock = Mock::new();
+    mock.seed_workset(workset("workset-1", "team-1"));
+    mock.seed_member(admin_member("user-1", "team-1"));
+    mock.seed_comic(ComicInfo {
+        is_completed: true,
+        ..comic("comic-done", "workset-1", 0)
+    });
+    mock.seed_comic(ComicInfo {
+        is_completed: false,
+        ..comic("comic-ongoing", "workset-1", 1)
+    });
+
+    let list = list_infos(
+        &mock,
+        &mock,
+        token("user-1"),
+        ListComicInfosData {
+            workset_id: "workset-1".into(),
+            fuzzy_title: None,
+            is_completed: Some(true),
+            offset: 0,
+            limit: 10,
+        },
+    )
+    .await;
+    assert!(list.is_ok());
+    let list = list.ok().unwrap();
+
+    assert_eq!(list.len(), 1);
+    assert_eq!(list[0].id, "comic-done");
+}
+
+#[tokio::test]
+async fn list_infos_applies_pagination() {
+    let mock = Mock::new();
+    mock.seed_workset(workset("workset-1", "team-1"));
+    mock.seed_member(admin_member("user-1", "team-1"));
+    mock.seed_comic(comic("comic-0", "workset-1", 0));
+    mock.seed_comic(comic("comic-1", "workset-1", 1));
+    mock.seed_comic(comic("comic-2", "workset-1", 2));
+
+    let list = list_infos(
+        &mock,
+        &mock,
+        token("user-1"),
+        ListComicInfosData {
+            workset_id: "workset-1".into(),
+            fuzzy_title: None,
+            is_completed: None,
+            offset: 1,
+            limit: 1,
+        },
+    )
+    .await;
+    assert!(list.is_ok());
+    let list = list.ok().unwrap();
+
+    assert_eq!(list.len(), 1);
+    assert_eq!(list[0].id, "comic-1");
 }
 
 #[tokio::test]

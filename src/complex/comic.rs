@@ -6,6 +6,7 @@ use time::OffsetDateTime;
 use crate::complex::chapter::ChapterComplex;
 use crate::complex::image::ImageComplex;
 use crate::complex::util::{check_user_is_team_admin, check_user_is_team_member};
+use crate::model::comic::ComicInfo;
 use crate::part::prom::intention::{IMAGE_TOPIC, ImageIntention};
 use crate::part::prom::{Payload, PromStep, PromTransactional};
 use crate::part::repo::chapter::ChapterRepoTransactional;
@@ -35,6 +36,13 @@ impl ComicComplex {
     /// Format: `comic_cover/{id}-{version}.{ext}`.
     pub fn gen_cover_key(id: &str, cover_version: i64, file_ext: &str) -> String {
         format!("comic_cover/{}-{}.{}", id, cover_version, file_ext)
+    }
+
+    /// Compose a display title for fuzzy search, joining index, author, and title.
+    ///
+    /// Format: `"{index} {author} {title}"` — a single keyword can match any of the three fields.
+    pub fn composed_title(info: &ComicInfo) -> String {
+        format!("{} {} {}", info.index, info.author, info.title)
     }
 
     /// Deletes a comic subtree inside an existing transaction context.
