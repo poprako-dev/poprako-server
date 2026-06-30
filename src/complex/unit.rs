@@ -4,16 +4,18 @@ use std::collections::{HashMap, HashSet};
 
 use poprako_util::i18n::trl;
 
-use crate::complex::util::check_user_is_team_member;
-use crate::model::role::RoleField;
+use crate::complex::util::{
+    check_user_is_chapter_assignee, check_user_is_chapter_translator_or_proofreader,
+    check_user_is_team_member_by_chapter,
+};
 use crate::model::unit::{
     UnitApplyAck, UnitDiff, UnitIdMapper, UnitIndex, UnitIndexUpdate, UnitOper,
 };
-use crate::part::repo::step::assignment::{AssignmentStep, GetInfoByChapterIdAndUserId};
-use crate::part::repo::step::chapter::{ChapterStep, GetInfoById as ChapterGetInfoById};
-use crate::part::repo::step::comic::{ComicStep, GetInfoById as ComicGetInfoById};
+use crate::part::repo::step::assignment::GetInfoByChapterIdAndUserId;
+use crate::part::repo::step::chapter::GetInfoById as ChapterGetInfoById;
+use crate::part::repo::step::comic::GetInfoById as ComicGetInfoById;
 use crate::part::repo::step::member::FindInfoByUserIdAndTeamId;
-use crate::part::repo::step::workset::{GetInfoById as WorksetGetInfoById, WorksetStep};
+use crate::part::repo::step::workset::GetInfoById as WorksetGetInfoById;
 use crate::part::shared::proxy::ProxyExecute;
 use crate::result::{ExpectedVariant, RootError, RootResult, accept};
 use crate::util::next_snowflake_id;
@@ -254,35 +256,20 @@ impl UnitPermComplex {
             + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RootError>
             + for<'a> ProxyExecute<GetInfoByChapterIdAndUserId<'a>, Error = RootError>,
     {
-        let chapter_info = proxy
-            .execute(&ChapterStep::get_info_by_id(chapter_id))
-            .await?;
-
-        let comic_info = proxy
-            .execute(&ComicStep::get_info_by_id(&chapter_info.comic_id))
-            .await?;
-
-        let workset_info = proxy
-            .execute(&WorksetStep::get_info_by_id(&comic_info.workset_id))
-            .await?;
-
-        let member_result = check_user_is_team_member(proxy, user_id, &workset_info.team_id).await;
+        let member_result = check_user_is_team_member_by_chapter(proxy, user_id, chapter_id).await;
 
         if member_result.is_ok() {
-            return accept(());
+            return Ok(());
         }
 
-        let assignment_info = proxy
-            .execute(&AssignmentStep::get_info_by_chapter_id_and_user_id(
-                chapter_id, user_id,
-            ))
-            .await?;
-
-        if assignment_info.is_none() {
-            return Err(unit_list_permission_error());
+        match check_user_is_chapter_assignee(proxy, user_id, chapter_id).await {
+            Ok(()) => Ok(()),
+            Err(RootError::Expected {
+                variant: ExpectedVariant::PermDeny,
+                ..
+            }) => Err(unit_list_permission_error()),
+            Err(error) => Err(error),
         }
-
-        accept(())
     }
 
     /// Verify the caller may edit units on a chapter page.
@@ -294,24 +281,14 @@ impl UnitPermComplex {
     where
         P: for<'a> ProxyExecute<GetInfoByChapterIdAndUserId<'a>, Error = RootError>,
     {
-        let assignment_info = proxy
-            .execute(&AssignmentStep::get_info_by_chapter_id_and_user_id(
-                chapter_id, user_id,
-            ))
-            .await?;
-
-        let Some(assignment_info) = assignment_info else {
-            return Err(unit_edit_permission_error());
-        };
-
-        if !assignment_info
-            .roles
-            .has_any_role(&[RoleField::TRANSLATOR, RoleField::PROOFREADER])
-        {
-            return Err(unit_edit_permission_error());
+        match check_user_is_chapter_translator_or_proofreader(proxy, user_id, chapter_id).await {
+            Ok(()) => Ok(()),
+            Err(RootError::Expected {
+                variant: ExpectedVariant::PermDeny,
+                ..
+            }) => Err(unit_edit_permission_error()),
+            Err(error) => Err(error),
         }
-
-        accept(())
     }
 }
 
