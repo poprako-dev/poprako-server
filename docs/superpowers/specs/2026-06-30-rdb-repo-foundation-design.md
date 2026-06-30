@@ -13,6 +13,7 @@ already have local migrations and previous Diesel query/entity references:
 This design covers:
 
 - `RdbRepo`, `RdbRepoTransactional`, and the RDB transaction context.
+- `RdbDrive`, the separate RDB transaction driver.
 - Diesel entity modules for the first-scope tables.
 - `Execute<S>` and `Advance<S, C>` implementations for first-scope repo steps.
 - `Prom<C>` / `PromTransactional<C>` backed by the local-message table.
@@ -52,9 +53,15 @@ their own shape and convert at the repository boundary.
 It must remain a thin adapter around Diesel entities and query functions. It
 must not introduce business rules that belong in `complex` or `usecase`.
 
+`part_impl::rdb_drive` is the production transaction driver. It is a separate
+type from `RdbRepo` because application wiring keeps the drive and repo as
+separate fields. `RdbDrive` and `RdbRepo` must share the same Diesel pool, but
+neither type should own or wrap the other.
+
 Recommended module layout:
 
 ```text
+src/part_impl/rdb_drive.rs
 src/part_impl/rdb_repo.rs
 src/part_impl/rdb_repo/error.rs
 src/part_impl/rdb_repo/entity.rs
@@ -76,13 +83,21 @@ src/part_impl/rdb_repo/local_message.rs
 src/part_impl/rdb_repo/comic.rs
 ```
 
-The root module is responsible only for module declarations, pool construction,
-transaction driving, and shared connection helpers. Per-domain files own their
-own step implementations. Entity files own row structs and conversions.
+The `rdb_drive` module is responsible for transaction driving. The `rdb_repo`
+root module is responsible only for module declarations, pool construction, and
+shared connection helpers for non-transactional execution. Per-domain files own
+their own step implementations. Entity files own row structs and conversions.
 
 ## Transaction Model
 
-`RdbRepo` holds a Diesel async PostgreSQL pool.
+`RdbRepo` holds a Diesel async PostgreSQL pool for non-transactional repository
+and prom execution.
+
+`RdbDrive` holds the same Diesel async PostgreSQL pool for transaction driving.
+It should be constructed from the same pool clone as `RdbRepo`, or both should
+be produced by a small factory that clones one pool into the two fields. The
+important invariant is that production wiring can inject them as separate
+values while they still target the same database.
 
 `RdbRepoTransactional` should stay a small stateless handle, matching the
 current mock implementation shape. It implements `Advance<S, RdbContext>` for
@@ -97,12 +112,13 @@ from the pool directly. This keeps the generic `C` anchor meaningful:
 - `impl Advance<GetInfoById<'_>, RdbContext> for RdbRepoTransactional`
 - `impl Prom<RdbContext> for RdbRepo`
 - `impl PromTransactional<RdbContext> for RdbRepoTransactional`
+- `impl Drive<RdbContext> for RdbDrive`
 
 Non-transactional `Execute<S>` implementations allocate one pooled connection
 for one step. Transactional `Advance<S, RdbContext>` implementations must not
 allocate a new connection.
 
-`Drive<RdbContext> for RdbRepo` must begin a database transaction before calling
+`Drive<RdbContext> for RdbDrive` must begin a database transaction before calling
 the closure, commit after `Ok`, and roll back after `Err`. Backend begin,
 commit, and rollback errors map to the `DriveError::Backend` path.
 
@@ -239,6 +255,7 @@ for RDB behavior.
 The RDB code must be structured so later local PostgreSQL integration tests can:
 
 - Build a `RdbRepo` from a database URL.
+- Build a `RdbDrive` from the same database URL or shared pool.
 - Run migrations with `just mgr-run`.
 - Reset or isolate test data.
 - Exercise non-transactional `Execute<S>` steps.
@@ -258,7 +275,7 @@ schema, and repository modules; parallel editing would create conflicts.
 
 Recommended sequential subagent slices:
 
-1. Foundation and transaction bridge.
+1. Foundation and separate transaction driver bridge.
 2. Existing-table schema audit and migration batch.
 3. Entity modules for `user`, `team`, and `member`.
 4. RDB repo implementations for `user`, `team`, and `member`.
@@ -277,8 +294,9 @@ first, then code quality.
 
 The first slice is complete when:
 
-- `RdbRepo` implements the first-scope repository and prom traits using
-  `RdbContext`.
+- `RdbDrive` implements `Drive<RdbContext>`.
+- `RdbRepo` implements the first-scope repository and prom traits.
+- `RdbDrive` and `RdbRepo` can be constructed from the same shared pool.
 - First-scope Diesel entities use precise `Entry`, `Row`, `Aspect`, and `Save`
   types as needed.
 - Writes that return rows use `RETURNING` instead of redundant follow-up
