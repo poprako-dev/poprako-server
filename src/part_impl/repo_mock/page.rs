@@ -199,7 +199,7 @@ impl<'a> Advance<ReserveImage<'a>, MockContext> for MockTransactional {
             image_version,
             step.file_ext,
         );
-        let previous_object_key = page_info.image_key.clone();
+        let prev_object_key = page_info.image_key.clone();
         page_info.image_key = Some(object_key.clone());
         page_info.image_uploaded = false;
         page_info.image_version = image_version;
@@ -207,7 +207,7 @@ impl<'a> Advance<ReserveImage<'a>, MockContext> for MockTransactional {
 
         Ok(PageImageReservation {
             object_key,
-            previous_object_key,
+            prev_object_key,
             image_version,
         })
     }

@@ -222,7 +222,7 @@ where
             let now = OffsetDateTime::now_utc();
 
             // If replacing an existing avatar, schedule deletion of the old object.
-            if let Some(previous_key) = &avatar_reservation.previous_object_key {
+            if let Some(prev_key) = &avatar_reservation.prev_object_key {
                 let delete_id = ImageComplex::gen_delete_id();
 
                 prom.advance(
@@ -231,7 +231,7 @@ where
                         &delete_id,
                         IMAGE_TOPIC,
                         Payload::Image(ImageIntention::Delete {
-                            object_key: previous_key.clone(),
+                            object_key: prev_key.clone(),
                         }),
                         &now,
                     ),
@@ -354,11 +354,9 @@ where
     P: Prom<C> + Send + Sync,
     <P as DeriveTransactional>::Transactional: PromTransactional<C> + Send + Sync,
 {
-    {
-        use crate::part::shared::proxy::AsProxyNonTransactional as _;
+    use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
-        TeamPermComplex::can_user_delete(&mut repo.as_proxy(), &token.user_id, &id).await?;
-    }
+    TeamPermComplex::can_user_delete(&mut repo.as_proxy(), &token.user_id, &id).await?;
 
     drive
         .with_context(async move |context| {

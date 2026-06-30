@@ -48,12 +48,10 @@ where
 {
     let role_mask = data.role_mask;
 
-    {
-        use crate::part::shared::proxy::AsProxyNonTransactional as _;
+    use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
-        MemberPermComplex::can_user_create(&mut repo.as_proxy(), &token.user_id, &data.team_id)
-            .await?;
-    }
+    MemberPermComplex::can_user_create(&mut repo.as_proxy(), &token.user_id, &data.team_id)
+        .await?;
 
     let member_id = drive
         .with_context(async move |context| {
@@ -146,16 +144,14 @@ where
 {
     let target_member_info = repo.execute(&MemberStep::get_info_by_id(&data.id)).await?;
 
-    {
-        use crate::part::shared::proxy::AsProxyNonTransactional as _;
+    use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
-        MemberPermComplex::can_user_update_info(
-            &mut repo.as_proxy(),
-            &token.user_id,
-            &target_member_info.team_id,
-        )
-        .await?;
-    }
+    MemberPermComplex::can_user_update_info(
+        &mut repo.as_proxy(),
+        &token.user_id,
+        &target_member_info.team_id,
+    )
+    .await?;
 
     drive
         .with_context(async move |context| {
@@ -190,16 +186,14 @@ where
 {
     let target_member_info = repo.execute(&MemberStep::get_info_by_id(&id)).await?;
 
-    {
-        use crate::part::shared::proxy::AsProxyNonTransactional as _;
+    use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
-        MemberPermComplex::can_user_delete(
-            &mut repo.as_proxy(),
-            &token.user_id,
-            &target_member_info.team_id,
-        )
-        .await?;
-    }
+    MemberPermComplex::can_user_delete(
+        &mut repo.as_proxy(),
+        &token.user_id,
+        &target_member_info.team_id,
+    )
+    .await?;
 
     drive
         .with_context(async move |context| {

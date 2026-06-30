@@ -134,12 +134,10 @@ where
         + Send
         + Sync,
 {
-    {
-        use crate::part::shared::proxy::AsProxyNonTransactional as _;
+    use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
-        ChapterPermComplex::can_user_create(&mut repo.as_proxy(), &token.user_id, &data.comic_id)
-            .await?;
-    }
+    ChapterPermComplex::can_user_create(&mut repo.as_proxy(), &token.user_id, &data.comic_id)
+        .await?;
 
     let chapter_id = drive
         .with_context(async move |context| {
@@ -218,12 +216,10 @@ where
         + Send
         + Sync,
 {
-    {
-        use crate::part::shared::proxy::AsProxyNonTransactional as _;
+    use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
-        ChapterPermComplex::can_user_update_info(&mut repo.as_proxy(), &token.user_id, &data.id)
-            .await?;
-    }
+    ChapterPermComplex::can_user_update_info(&mut repo.as_proxy(), &token.user_id, &data.id)
+        .await?;
 
     drive
         .with_context(async move |context| {
@@ -288,18 +284,16 @@ where
     P: Prom<C> + Send + Sync,
     <P as DeriveTransactional>::Transactional: PromTransactional<C> + Send + Sync,
 {
-    {
-        use crate::part::shared::proxy::AsProxyNonTransactional as _;
+    use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
-        ChapterPermComplex::can_user_update_stage(
-            &mut repo.as_proxy(),
-            &token.user_id,
-            &data.id,
-            data.stage,
-            data.event,
-        )
-        .await?;
-    }
+    ChapterPermComplex::can_user_update_stage(
+        &mut repo.as_proxy(),
+        &token.user_id,
+        &data.id,
+        data.stage,
+        data.event,
+    )
+    .await?;
 
     drive
         .with_context(async move |context| {
@@ -367,11 +361,9 @@ where
     P: Prom<C> + Send + Sync,
     <P as DeriveTransactional>::Transactional: PromTransactional<C> + Send + Sync,
 {
-    {
-        use crate::part::shared::proxy::AsProxyNonTransactional as _;
+    use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
-        ChapterPermComplex::can_user_delete(&mut repo.as_proxy(), &token.user_id, &id).await?;
-    }
+    ChapterPermComplex::can_user_delete(&mut repo.as_proxy(), &token.user_id, &id).await?;
 
     drive
         .with_context(async move |context| {

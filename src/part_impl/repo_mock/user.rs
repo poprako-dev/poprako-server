@@ -169,14 +169,14 @@ impl<'a> Advance<ReserveAvatar<'a>, MockContext> for MockTransactional {
             .ok_or_else(|| expected("error-user-not-found"))?;
         let avatar_version = user.avatar_version + 1;
         let object_key = UserComplex::gen_avatar_key(step.id, avatar_version, step.file_ext);
-        let previous_object_key = user.avatar_key.clone();
+        let prev_object_key = user.avatar_key.clone();
         user.avatar_key = Some(object_key.clone());
         user.avatar_uploaded = false;
         user.avatar_version = avatar_version;
         user.updated_at = now();
         Ok(UserAvatarReservation {
             object_key,
-            previous_object_key,
+            prev_object_key,
             avatar_version,
         })
     }

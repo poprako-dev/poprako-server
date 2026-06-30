@@ -160,14 +160,14 @@ impl<'a> Advance<ReserveAvatar<'a>, MockContext> for MockTransactional {
             .ok_or_else(|| expected("error-team-not-found"))?;
         let avatar_version = team.avatar_version + 1;
         let object_key = TeamComplex::gen_avatar_key(step.id, avatar_version, step.file_extension);
-        let previous_object_key = team.avatar_key.clone();
+        let prev_object_key = team.avatar_key.clone();
         team.avatar_key = Some(object_key.clone());
         team.avatar_uploaded = false;
         team.avatar_version = avatar_version;
         team.updated_at = now();
         Ok(TeamAvatarReservation {
             object_key,
-            previous_object_key,
+            prev_object_key,
             avatar_version,
         })
     }
