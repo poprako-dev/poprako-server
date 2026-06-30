@@ -178,6 +178,8 @@ async fn list_infos_filters_and_sorts_by_index() {
         token("user-1"),
         ListWorksetInfosData {
             team_id: "team-1".into(),
+            offset: 0,
+            limit: 10,
         },
     )
     .await
@@ -198,6 +200,8 @@ async fn list_infos_returns_empty_for_missing_team_contents() {
         token("user-1"),
         ListWorksetInfosData {
             team_id: "missing".into(),
+            offset: 0,
+            limit: 10,
         },
     )
     .await

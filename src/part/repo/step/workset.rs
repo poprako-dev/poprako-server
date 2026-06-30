@@ -1,5 +1,6 @@
 //! Step types for workset repository opers.
 
+use poprako_macro::Paginate;
 use poprako_transactional::step::Step;
 
 use crate::model::workset::{WorksetForm, WorksetInfo, WorksetInfoUpdate};
@@ -22,7 +23,8 @@ impl<'a> Step for GetInfoById<'a> {
     type Output = WorksetInfo;
 }
 
-/// Step that lists all worksets for a team.
+/// Step that lists all worksets for a team with pagination.
+#[Paginate]
 pub struct ListInfosByTeamId<'a> {
     pub team_id: &'a str,
 }
@@ -112,8 +114,16 @@ impl WorksetStep {
     }
 
     /// Constructs a step to list a team's worksets.
-    pub fn list_infos_by_team_id<'a>(team_id: &'a str) -> ListInfosByTeamId<'a> {
-        ListInfosByTeamId { team_id }
+    pub fn list_infos_by_team_id<'a>(
+        team_id: &'a str,
+        offset: u64,
+        limit: u64,
+    ) -> ListInfosByTeamId<'a> {
+        ListInfosByTeamId {
+            team_id,
+            offset,
+            limit,
+        }
     }
 
     /// Constructs a step to update a workset's profile fields.
