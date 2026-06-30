@@ -2,6 +2,7 @@
 
 use poprako_transactional::advance::Advance;
 use poprako_transactional::drive::Drive;
+use poprako_util::page::Page;
 use poprako_util::time::ToUnixMilli;
 
 use crate::complex::workset::{WorksetComplex, WorksetPermComplex};
@@ -126,8 +127,10 @@ where
     let workset_infos = repo
         .execute(&WorksetStep::list_infos_by_team_id(
             &data.team_id,
-            data.offset,
-            data.limit,
+            Page {
+                offset: data.offset,
+                limit: data.limit,
+            },
         ))
         .await?;
 

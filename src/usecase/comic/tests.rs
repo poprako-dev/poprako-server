@@ -76,6 +76,7 @@ fn create_data(workset_id: &str) -> CreateComicData {
         title: "new".into(),
         author: "author".into(),
         description: Some("desc".into()),
+        first_chapter_subtitle: None,
     }
 }
 
@@ -106,12 +107,35 @@ async fn create_allocates_index_and_updates_count() {
     let created = created.ok().unwrap();
     let snapshot = mock.snapshot();
 
+    // Comic
     assert_eq!(created.id, snapshot.comics[0].id);
     assert_eq!(snapshot.comics[0].index, 0);
+    assert_eq!(snapshot.comics[0].creator_id, "user-1");
+    assert_eq!(snapshot.comics.len(), 1);
+
+    // Workset
     assert_eq!(snapshot.worksets[0].comic_count, 1);
     assert_eq!(snapshot.worksets[0].comic_next_index, 1);
-    assert_eq!(snapshot.comics.len(), 1);
-    assert_eq!(snapshot.comics[0].creator_id, "user-1");
+
+    // First chapter
+    assert_eq!(snapshot.chapters.len(), 1);
+    assert_eq!(snapshot.chapters[0].id, created.chapter_id);
+    assert_eq!(snapshot.chapters[0].comic_id, created.id);
+    assert!(snapshot.chapters[0].is_pinned);
+    assert_eq!(snapshot.chapters[0].index, 0);
+
+    // Denormalised chapter counters
+    assert_eq!(snapshot.comics[0].chapter_count, 1);
+    assert_eq!(snapshot.comics[0].chapter_next_index, 1);
+
+    // last_active_at should be set (not epoch)
+    assert!(snapshot.comics[0].last_active_at.unix_timestamp() > 0);
+
+    // Creator admin assignment
+    assert_eq!(snapshot.assignments.len(), 1);
+    assert_eq!(snapshot.assignments[0].chapter_id, created.chapter_id);
+    assert_eq!(snapshot.assignments[0].user_id, "user-1");
+    assert!(snapshot.assignments[0].roles.has_any_role(&[RoleField::ADMIN]));
 }
 
 #[tokio::test]

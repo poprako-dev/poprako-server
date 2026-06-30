@@ -4,6 +4,7 @@ use time::{Duration, OffsetDateTime};
 
 use poprako_transactional::advance::Advance;
 use poprako_transactional::drive::Drive;
+use poprako_util::page::Page;
 
 use crate::complex::image::ImageComplex;
 use crate::complex::team::{TeamComplex, TeamPermComplex};
@@ -117,8 +118,10 @@ where
     let team_infos = repo
         .execute(&TeamStep::list_infos(
             data.user_id.as_deref(),
-            data.offset,
-            data.limit,
+            Page {
+                offset: data.offset,
+                limit: data.limit,
+            },
         ))
         .await?;
 

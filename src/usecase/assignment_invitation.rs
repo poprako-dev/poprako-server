@@ -3,6 +3,7 @@
 use poprako_transactional::advance::Advance;
 use poprako_transactional::drive::Drive;
 use poprako_util::i18n::trl;
+use poprako_util::page::Page;
 
 use crate::complex::assignment::{AssignmentComplex, AssignmentPermComplex};
 use crate::data::assignment_invitation::{
@@ -58,8 +59,10 @@ where
         .execute(&AssignmentInvitationStep::list_infos(
             &data.chapter_id,
             data.pending,
-            data.offset,
-            data.limit,
+            Page {
+                offset: data.offset,
+                limit: data.limit,
+            },
         ))
         .await?;
 

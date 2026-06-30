@@ -1,6 +1,8 @@
 //! Step types for chapter repository opers.
 
+use poprako_macro::Paginate;
 use poprako_transactional::step::Step;
+use poprako_util::page::Page;
 
 use crate::model::chapter::{ChapterForm, ChapterInfo, ChapterInfoUpdate, ChapterStageUpdate};
 use crate::model::unit::UnitCounterDelta;
@@ -33,10 +35,9 @@ impl<'a> Step for GetInfoByIdExcluded<'a> {
 }
 
 /// Step that lists chapters by comic.
+#[Paginate]
 pub struct ListInfosByComicId<'a> {
     pub comic_id: &'a str,
-    pub offset: u64,
-    pub limit: u64,
 }
 
 impl<'a> Step for ListInfosByComicId<'a> {
@@ -44,10 +45,9 @@ impl<'a> Step for ListInfosByComicId<'a> {
 }
 
 /// Step that lists chapters by comic with a pessimistic lock.
+#[Paginate]
 pub struct ListInfosByComicIdExcluded<'a> {
     pub comic_id: &'a str,
-    pub offset: u64,
-    pub limit: u64,
 }
 
 impl<'a> Step for ListInfosByComicIdExcluded<'a> {
@@ -154,26 +154,24 @@ impl ChapterStep {
     /// Constructs a step to list chapters by comic.
     pub fn list_infos_by_comic_id<'a>(
         comic_id: &'a str,
-        offset: u64,
-        limit: u64,
+        page: Page,
     ) -> ListInfosByComicId<'a> {
         ListInfosByComicId {
             comic_id,
-            offset,
-            limit,
+            offset: page.offset,
+            limit: page.limit,
         }
     }
 
     /// Constructs a step to list chapters by comic with a pessimistic lock.
     pub fn list_infos_by_comic_id_excluded<'a>(
         comic_id: &'a str,
-        offset: u64,
-        limit: u64,
+        page: Page,
     ) -> ListInfosByComicIdExcluded<'a> {
         ListInfosByComicIdExcluded {
             comic_id,
-            offset,
-            limit,
+            offset: page.offset,
+            limit: page.limit,
         }
     }
 

@@ -1,6 +1,8 @@
 //! Step types for member invitation repository opers.
 
+use poprako_macro::Paginate;
 use poprako_transactional::step::Step;
+use poprako_util::page::Page;
 
 use crate::model::member_invitation::{
     MemberInvitationForm, MemberInvitationInfo, MemberInvitationUpdate,
@@ -16,11 +18,10 @@ impl<'a> Step for Create<'a> {
 }
 
 /// Step that lists member invitations for a team.
+#[Paginate]
 pub struct ListInfos<'a> {
     pub team_id: &'a str,
     pub pending: Option<bool>,
-    pub offset: u64,
-    pub limit: u64,
 }
 
 impl<'a> Step for ListInfos<'a> {
@@ -85,14 +86,13 @@ impl MemberInvitationStep {
     pub fn list_infos<'a>(
         team_id: &'a str,
         pending: Option<bool>,
-        offset: u64,
-        limit: u64,
+        page: Page,
     ) -> ListInfos<'a> {
         ListInfos {
             team_id,
             pending,
-            offset,
-            limit,
+            offset: page.offset,
+            limit: page.limit,
         }
     }
 

@@ -1,5 +1,6 @@
 //! Data transfer objects for page use cases.
 
+use poprako_macro::Paginate;
 use poprako_util::time::ToUnixMilli;
 
 use crate::model::page::PageInfo;
@@ -87,8 +88,7 @@ pub struct MarkPageImageUploadedData {
 }
 
 /// Input parameters for listing pages under one chapter.
+#[Paginate]
 pub struct ListPageInfosData {
     pub chapter_id: String,
-    pub offset: u64,
-    pub limit: u64,
 }

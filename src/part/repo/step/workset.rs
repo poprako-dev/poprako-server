@@ -2,6 +2,7 @@
 
 use poprako_macro::Paginate;
 use poprako_transactional::step::Step;
+use poprako_util::page::Page;
 
 use crate::model::workset::{WorksetForm, WorksetInfo, WorksetInfoUpdate};
 
@@ -116,13 +117,12 @@ impl WorksetStep {
     /// Constructs a step to list a team's worksets.
     pub fn list_infos_by_team_id<'a>(
         team_id: &'a str,
-        offset: u64,
-        limit: u64,
+        page: Page,
     ) -> ListInfosByTeamId<'a> {
         ListInfosByTeamId {
             team_id,
-            offset,
-            limit,
+            offset: page.offset,
+            limit: page.limit,
         }
     }
 

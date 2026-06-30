@@ -2,6 +2,8 @@
 
 use time::OffsetDateTime;
 
+use poprako_macro::Paginate;
+
 use crate::model::user::UserInfo;
 use crate::value::comment::CommentInclOpt;
 
@@ -31,9 +33,8 @@ pub struct CommentForm {
 }
 
 /// Filtering, pagination, and include parameters for listing comments.
+#[Paginate]
 pub struct CommentListSpec {
     pub team_id: String,
     pub incl_opt: Vec<CommentInclOpt>,
-    pub offset: u64,
-    pub limit: u64,
 }

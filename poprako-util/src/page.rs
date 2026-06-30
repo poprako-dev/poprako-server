@@ -3,6 +3,6 @@
 /// Offset and limit parameters for paginated database queries.
 #[derive(Debug, Clone, Copy)]
 pub struct Page {
-    pub offset: usize,
-    pub limit: usize,
+    pub offset: u64,
+    pub limit: u64,
 }

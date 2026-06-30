@@ -1,5 +1,6 @@
 //! Data transfer objects for assignment invitation use cases.
 
+use poprako_macro::Paginate;
 use poprako_util::time::ToUnixMilli;
 
 use crate::model::assignment_invitation::AssignmentInvitationInfo;
@@ -41,11 +42,10 @@ impl From<AssignmentInvitationInfo> for AssignmentInvitationInfoVal {
 }
 
 /// Input parameters for listing invitations under one chapter.
+#[Paginate]
 pub struct ListAssignmentInvitationInfosData {
     pub chapter_id: String,
     pub pending: Option<bool>,
-    pub offset: u64,
-    pub limit: u64,
 }
 
 /// Input parameters for creating an assignment invitation.
