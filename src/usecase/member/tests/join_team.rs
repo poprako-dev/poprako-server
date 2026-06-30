@@ -10,6 +10,7 @@ fn invitation(id: &str, invitee_qid: &str) -> MemberInvitationInfo {
     MemberInvitationInfo {
         id: id.into(),
         team_id: "team-1".into(),
+        invitor: None,
         invitor_id: "admin-user".into(),
         invitee_qid: invitee_qid.into(),
         code: "INV123".into(),

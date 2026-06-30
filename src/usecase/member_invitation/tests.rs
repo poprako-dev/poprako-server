@@ -55,6 +55,8 @@ fn member(id: &str, user_id: &str, team_id: &str, role_mask: RoleMask) -> Member
         user_id: user_id.into(),
         user_nickname: user_id.into(),
         team_id: team_id.into(),
+        user: None,
+        team: None,
         roles: role_mask,
     }
 }
@@ -63,6 +65,7 @@ fn invitation(id: &str, team_id: &str, invitee_qid: &str) -> MemberInvitationInf
     MemberInvitationInfo {
         id: id.into(),
         team_id: team_id.into(),
+        invitor: None,
         invitor_id: "admin-user".into(),
         invitee_qid: invitee_qid.into(),
         code: "ABC123".into(),
@@ -81,6 +84,7 @@ fn create_data(team_id: &str, invitee_qid: &str) -> CreateMemberInvitationData {
 
 fn list_data(team_id: &str) -> ListMemberInvitationInfosData {
     ListMemberInvitationInfosData {
+        incl_opt: Vec::new(),
         team_id: team_id.into(),
         pending: Some(true),
         offset: 0,
@@ -159,7 +163,7 @@ async fn list_infos_member_lists_invitations() {
     ));
     mock.seed_member_invitation(invitation("inv-1", "team-1", "qid-2"));
 
-    let listed = list_infos(&mock, token("member-user"), list_data("team-1")).await.unwrap();
+    let listed = list_infos(&mock, &mock, token("member-user"), list_data("team-1")).await.unwrap();
 
     assert_eq!(listed.len(), 1);
     assert_eq!(listed[0].id, "inv-1");
@@ -175,7 +179,7 @@ async fn list_infos_empty_returns_after_membership() {
         RoleMask::from(RoleField::TRANSLATOR),
     ));
 
-    let listed = list_infos(&mock, token("member-user"), list_data("team-1")).await.unwrap();
+    let listed = list_infos(&mock, &mock, token("member-user"), list_data("team-1")).await.unwrap();
 
     assert!(listed.is_empty());
 }
@@ -185,7 +189,7 @@ async fn list_infos_non_member_is_rejected() {
     let mock = Mock::new();
     mock.seed_member_invitation(invitation("inv-1", "team-1", "qid-2"));
 
-    let err = list_infos(&mock, token("stranger"), list_data("team-1"))
+    let err = list_infos(&mock, &mock, token("stranger"), list_data("team-1"))
         .await
         .err()
         .unwrap();

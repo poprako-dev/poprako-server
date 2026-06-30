@@ -13,6 +13,11 @@
 use poprako_macro::Paginate;
 use time::OffsetDateTime;
 
+use crate::model::team::TeamInfo;
+use crate::model::user::UserInfo;
+use crate::model::workset::WorksetInfo;
+use crate::value::comic::ComicInclOpt;
+
 /// A comic（漫画）record as stored in the database.
 ///
 /// Each comic belongs to exactly one workset. The `is_completed` flag
@@ -43,6 +48,11 @@ pub struct ComicInfo {
     pub chapter_next_index: i32,
 
     pub creator_id: String,
+
+    pub workset: Option<WorksetInfo>,
+    pub team: Option<TeamInfo>,
+    pub creator: Option<UserInfo>,
+
     pub last_active_at: OffsetDateTime,
 
     pub created_at: OffsetDateTime,
@@ -87,6 +97,8 @@ pub struct ComicListSpec {
 
     pub fuzzy_title: Option<String>,
     pub is_completed: Option<bool>,
+
+    pub incl_opt: Vec<ComicInclOpt>,
 }
 
 /// The result of reserving a new comic cover upload slot.

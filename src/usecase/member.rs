@@ -11,6 +11,7 @@ use crate::data::member::{
 };
 use crate::model::member::{MemberForm, MemberListSpec, MemberRoleUpdate};
 use crate::model::user::UserToken;
+use crate::part::image::ImagePool;
 use crate::part::repo::map_drive_err;
 use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
 use crate::part::repo::member_invitation::{
@@ -181,14 +182,16 @@ where
 /// Lists members under one team.
 ///
 /// The caller must already be a member of the target team.
-pub async fn list_infos<C, R>(
+pub async fn list_infos<C, R, I>(
     repo: &R,
+    image_pool: &I,
     token: UserToken,
     data: ListMemberInfosData,
 ) -> RootResult<Vec<MemberInfoVal>>
 where
     R: MemberRepo<C> + Sync,
     <R as DeriveTransactional>::Transactional: MemberRepoTransactional<C>,
+    I: ImagePool,
 {
     let member_list_spec: MemberListSpec = data.try_into()?;
 
@@ -203,7 +206,13 @@ where
         .execute(&MemberStep::list_infos(&member_list_spec))
         .await?;
 
-    Ok(member_infos.into_iter().map(MemberInfoVal::from).collect())
+    let mut member_info_vals = Vec::with_capacity(member_infos.len());
+
+    for member_info in member_infos {
+        member_info_vals.push(MemberInfoVal::from_model(image_pool, member_info).await?);
+    }
+
+    accept(member_info_vals)
 }
 
 /// Updates one member's role mask.

@@ -1,10 +1,16 @@
 //! Data transfer objects for member invitation use cases — input parameters
 //! and presentation-ready invitation values.
 
+use serde::Deserialize;
+
 use poprako_macro::Paginate;
 
-use crate::model::member_invitation::MemberInvitationInfo;
+use crate::data::user::UserInfoVal;
+use crate::model::member_invitation::{MemberInvitationInfo, MemberInvitationListSpec};
 use crate::model::role::RoleMask;
+use crate::part::image::ImagePool;
+use crate::result::RootResult;
+use crate::value::member_invitation::MemberInvitationInclOpt;
 
 /// Input parameters for creating a new team invitation.
 ///
@@ -34,12 +40,16 @@ pub struct CreateMemberInvitationVal {
 /// Input parameters for listing invitations within a team, with optional
 /// pending-status filtering and standard offset/limit pagination.
 #[Paginate]
+#[derive(Deserialize)]
 pub struct ListMemberInvitationInfosData {
     pub team_id: String,
 
     /// When `Some(true)`, returns only unconsumed invitations;
     /// `Some(false)` returns only consumed ones; `None` returns all.
     pub pending: Option<bool>,
+
+    #[serde(default)]
+    pub incl_opt: Vec<MemberInvitationInclOpt>,
 }
 
 /// Presentation-ready member invitation information.
@@ -54,6 +64,7 @@ pub struct MemberInvitationInfoVal {
     pub team_id: String,
 
     pub invitor_id: String,
+    pub invitor: Option<UserInfoVal>,
 
     pub invitee_qid: String,
     pub code: String,
@@ -69,11 +80,37 @@ impl From<MemberInvitationInfo> for MemberInvitationInfoVal {
             id: value.id,
             team_id: value.team_id,
             invitor_id: value.invitor_id,
+            invitor: None,
             invitee_qid: value.invitee_qid,
             code: value.code,
             pending: value.pending,
             roles: value.roles,
         }
+    }
+}
+
+impl MemberInvitationInfoVal {
+    /// Converts an invitation model into a presentation-ready value,
+    /// resolving included invitor avatar when present.
+    pub async fn from_model<P>(image_pool: &P, model: MemberInvitationInfo) -> RootResult<Self>
+    where
+        P: ImagePool,
+    {
+        let invitor = match model.invitor {
+            Some(user_info) => Some(UserInfoVal::from_model(image_pool, user_info).await?),
+            None => None,
+        };
+
+        Ok(Self {
+            id: model.id,
+            team_id: model.team_id,
+            invitor_id: model.invitor_id,
+            invitor,
+            invitee_qid: model.invitee_qid,
+            code: model.code,
+            pending: model.pending,
+            roles: model.roles,
+        })
     }
 }
 

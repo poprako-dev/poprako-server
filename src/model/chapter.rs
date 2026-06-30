@@ -8,9 +8,11 @@
 //! [`ChapterInfoVal`]: crate::data::chapter::ChapterInfoVal
 //! [`StagePhase`]: crate::value::chapter::StagePhase
 
+use poprako_macro::Paginate;
 use time::OffsetDateTime;
 
-use crate::value::chapter::WorkflowStageMask;
+use crate::model::user::UserInfo;
+use crate::value::chapter::{ChapterInclOpt, WorkflowStageMask};
 
 /// A chapter（章节）record as stored in the database.
 ///
@@ -47,6 +49,8 @@ pub struct ChapterInfo {
     pub stages: WorkflowStageMask,
 
     pub creator_id: String,
+
+    pub creator: Option<UserInfo>,
 
     pub created_at: OffsetDateTime,
     pub updated_at: OffsetDateTime,
@@ -94,4 +98,11 @@ pub struct ChapterStageUpdate {
     pub id: String,
 
     pub stages: WorkflowStageMask,
+}
+
+/// Filtering, pagination, and include parameters for listing chapters.
+#[Paginate]
+pub struct ChapterListSpec {
+    pub comic_id: String,
+    pub incl_opt: Vec<ChapterInclOpt>,
 }

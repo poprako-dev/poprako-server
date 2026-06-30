@@ -55,6 +55,9 @@ fn comic(id: &str, workset_id: &str, index: i32) -> ComicInfo {
         chapter_count: 0,
         chapter_next_index: 0,
         creator_id: "user-1".into(),
+        workset: None,
+        team: None,
+        creator: None,
         last_active_at: time,
         created_at: time,
         updated_at: time,
@@ -92,6 +95,8 @@ fn admin_member(user_id: &str, team_id: &str) -> MemberInfo {
         user_id: user_id.into(),
         user_nickname: user_id.into(),
         team_id: team_id.into(),
+        user: None,
+        team: None,
         roles: RoleMask::from(RoleField::ADMIN),
     }
 }
@@ -200,6 +205,7 @@ async fn list_infos_filters_and_sorts_by_index() {
         &mock,
         token("user-1"),
         ListComicInfosData {
+            incl_opt: Vec::new(),
             workset_id: "workset-1".into(),
             fuzzy_title: None,
             is_completed: None,
@@ -227,6 +233,7 @@ async fn list_infos_returns_empty_for_workset_contents() {
         &mock,
         token("user-1"),
         ListComicInfosData {
+            incl_opt: Vec::new(),
             workset_id: "workset-1".into(),
             fuzzy_title: None,
             is_completed: None,
@@ -267,6 +274,7 @@ async fn list_infos_filters_by_fuzzy_title() {
         &mock,
         token("user-1"),
         ListComicInfosData {
+            incl_opt: Vec::new(),
             workset_id: "workset-1".into(),
             fuzzy_title: Some("Beta".into()),
             is_completed: None,
@@ -286,6 +294,7 @@ async fn list_infos_filters_by_fuzzy_title() {
         &mock,
         token("user-1"),
         ListComicInfosData {
+            incl_opt: Vec::new(),
             workset_id: "workset-1".into(),
             fuzzy_title: Some("Carol".into()),
             is_completed: None,
@@ -305,6 +314,7 @@ async fn list_infos_filters_by_fuzzy_title() {
         &mock,
         token("user-1"),
         ListComicInfosData {
+            incl_opt: Vec::new(),
             workset_id: "workset-1".into(),
             fuzzy_title: Some("1".into()),
             is_completed: None,
@@ -338,6 +348,7 @@ async fn list_infos_filters_by_is_completed() {
         &mock,
         token("user-1"),
         ListComicInfosData {
+            incl_opt: Vec::new(),
             workset_id: "workset-1".into(),
             fuzzy_title: None,
             is_completed: Some(true),
@@ -367,6 +378,7 @@ async fn list_infos_applies_pagination() {
         &mock,
         token("user-1"),
         ListComicInfosData {
+            incl_opt: Vec::new(),
             workset_id: "workset-1".into(),
             fuzzy_title: None,
             is_completed: None,

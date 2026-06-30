@@ -1,11 +1,9 @@
 //! Step types for member invitation repository opers.
 
-use poprako_macro::Paginate;
 use poprako_transactional::step::Step;
-use poprako_util::page::Page;
 
 use crate::model::member_invitation::{
-    MemberInvitationForm, MemberInvitationInfo, MemberInvitationUpdate,
+    MemberInvitationForm, MemberInvitationInfo, MemberInvitationListSpec, MemberInvitationUpdate,
 };
 
 /// Step that inserts a member invitation row.
@@ -17,11 +15,9 @@ impl<'a> Step for Create<'a> {
     type Output = MemberInvitationInfo;
 }
 
-/// Step that lists member invitations for a team.
-#[Paginate]
+/// Step that lists member invitations for a team with include options and pagination.
 pub struct ListInfos<'a> {
-    pub team_id: &'a str,
-    pub pending: Option<bool>,
+    pub spec: &'a MemberInvitationListSpec,
 }
 
 impl<'a> Step for ListInfos<'a> {
@@ -83,17 +79,8 @@ impl MemberInvitationStep {
     }
 
     /// Constructs a step to list member invitations for a team.
-    pub fn list_infos<'a>(
-        team_id: &'a str,
-        pending: Option<bool>,
-        page: Page,
-    ) -> ListInfos<'a> {
-        ListInfos {
-            team_id,
-            pending,
-            offset: page.offset,
-            limit: page.limit,
-        }
+    pub fn list_infos<'a>(spec: &'a MemberInvitationListSpec) -> ListInfos<'a> {
+        ListInfos { spec }
     }
 
     /// Constructs a step to fetch an invitation by id.

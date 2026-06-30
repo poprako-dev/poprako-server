@@ -4,6 +4,9 @@
 //! Timestamps are converted to Unix milliseconds for JSON serialisation.
 
 use poprako_macro::Paginate;
+use poprako_util::time::ToUnixMilli;
+
+use crate::model::workset::WorksetInfo;
 
 /// Presentation-ready workset information.
 ///
@@ -24,6 +27,22 @@ pub struct WorksetInfoVal {
 
     pub created_at: i64,
     pub updated_at: i64,
+}
+
+impl From<WorksetInfo> for WorksetInfoVal {
+    fn from(model: WorksetInfo) -> Self {
+        Self {
+            id: model.id,
+            team_id: model.team_id,
+            index: model.index,
+            name: model.name,
+            description: model.description,
+            comic_count: model.comic_count,
+            comic_next_index: model.comic_next_index,
+            created_at: model.created_at.to_unix_milli(),
+            updated_at: model.updated_at.to_unix_milli(),
+        }
+    }
 }
 
 /// Input parameters for creating a new workset inside a team.

@@ -5,6 +5,7 @@ use async_trait::async_trait;
 use poprako_transactional::advance::Advance;
 
 use crate::model::member_invitation::MemberInvitationInfo;
+use crate::model::user::UserInfo;
 use crate::part::repo::member_invitation::{
     MemberInvitationRepo, MemberInvitationRepoTransactional,
 };
@@ -12,11 +13,32 @@ use crate::part::repo::step::member_invitation::{
     Create, Delete, GetInfoByCodeExcluded, GetInfoById, ListInfos, MarkPendingAsUsed, UpdateInfo,
 };
 use crate::part::shared::execute::Execute;
-use crate::part_impl::repo_mock::{Mock, MockContext, MockTransactional, expected};
+use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactional, expected};
+use crate::value::member_invitation::MemberInvitationInclOpt;
 
 impl MemberInvitationRepo<MockContext> for Mock {}
 
 impl MemberInvitationRepoTransactional<MockContext> for MockTransactional {}
+
+fn find_user(state: &MockState, user_id: &str) -> Option<UserInfo> {
+    state
+        .users
+        .iter()
+        .find(|user_info| user_info.id == user_id)
+        .cloned()
+}
+
+fn apply_invitor_incl(
+    state: &MockState,
+    info: &mut MemberInvitationInfo,
+    include_invitor: bool,
+) {
+    info.invitor = None;
+
+    if include_invitor {
+        info.invitor = find_user(state, &info.invitor_id);
+    }
+}
 
 #[async_trait]
 impl<'a> Execute<ListInfos<'a>> for Mock {
@@ -31,8 +53,9 @@ impl<'a> Execute<ListInfos<'a>> for Mock {
             .member_invitations
             .iter()
             .filter(|member_invitation_info| {
-                member_invitation_info.team_id == step.team_id
+                member_invitation_info.team_id == step.spec.team_id
                     && step
+                        .spec
                         .pending
                         .is_none_or(|pending| member_invitation_info.pending == pending)
             })
@@ -40,8 +63,17 @@ impl<'a> Execute<ListInfos<'a>> for Mock {
             .collect::<Vec<_>>();
         member_invitation_infos.sort_by(|left, right| left.id.cmp(&right.id));
 
-        let offset = step.offset as usize;
-        let limit = step.limit as usize;
+        let include_invitor = step
+            .spec
+            .incl_opt
+            .contains(&MemberInvitationInclOpt::Invitor);
+
+        for info in &mut member_invitation_infos {
+            apply_invitor_incl(&state, info, include_invitor);
+        }
+
+        let offset = step.spec.offset as usize;
+        let limit = step.spec.limit as usize;
         if offset >= member_invitation_infos.len() {
             return Ok(Vec::new());
         }
@@ -99,6 +131,7 @@ impl<'a> Advance<Create<'a>, MockContext> for MockTransactional {
         let member_invitation_info = MemberInvitationInfo {
             id: step.form.id.clone(),
             team_id: step.form.team_id.clone(),
+            invitor: None,
             invitor_id: step.form.invitor_id.clone(),
             invitee_qid: step.form.invitee_qid.clone(),
             code: step.form.code.clone(),

@@ -50,6 +50,7 @@ impl WorksetComplex {
             workset_id: workset_info.id.clone(),
             fuzzy_title: None,
             is_completed: None,
+            incl_opt: Vec::new(),
             offset: 0,
             limit: u64::MAX,
         };

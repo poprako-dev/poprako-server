@@ -216,16 +216,13 @@ where
 
     let comic_infos = repo.execute(&ComicStep::list_infos(&spec)).await?;
 
-    let comic_info_vals = futures_util::future::join_all(
-        comic_infos
-            .into_iter()
-            .map(|comic_info| ComicInfoVal::from_model(image_pool, comic_info)),
-    )
-    .await
-    .into_iter()
-    .collect::<RootResult<Vec<_>>>()?;
+    let mut comic_info_vals = Vec::with_capacity(comic_infos.len());
 
-    Ok(comic_info_vals)
+    for comic_info in comic_infos {
+        comic_info_vals.push(ComicInfoVal::from_model(image_pool, comic_info).await?);
+    }
+
+    accept(comic_info_vals)
 }
 
 /// Updates a comic's title, author, and description.

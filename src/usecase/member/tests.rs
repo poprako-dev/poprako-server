@@ -87,6 +87,8 @@ fn member(
         user_id: user_id.into(),
         user_nickname: user_nickname.into(),
         team_id: team_id.into(),
+        user: None,
+        team: None,
         roles: role_mask,
     }
 }
@@ -227,7 +229,7 @@ async fn list_infos_member_lists_team_members() {
         RoleMask::from(RoleField::TRANSLATOR),
     ));
 
-    let member_info_vals = list_infos(&mock, token("admin-user"), list_data("team-1")).await;
+    let member_info_vals = list_infos(&mock, &mock, token("admin-user"), list_data("team-1")).await;
     assert!(member_info_vals.is_ok());
     let member_info_vals = member_info_vals.ok().unwrap();
 
@@ -256,6 +258,7 @@ async fn list_infos_filters_by_role() {
     ));
 
     let member_info_vals = list_infos(
+        &mock,
         &mock,
         token("admin-user"),
         ListMemberInfosData {
@@ -296,6 +299,7 @@ async fn list_infos_applies_pagination_after_filtering() {
     ));
 
     let member_info_vals = list_infos(
+        &mock,
         &mock,
         token("admin-user"),
         ListMemberInfosData {
@@ -343,6 +347,7 @@ async fn list_infos_owner_lists_own_memberships() {
 
     let member_info_vals = list_infos(
         &mock,
+        &mock,
         token("user-1"),
         ListMemberInfosData {
             owner_id: Some("user-1".into()),
@@ -374,7 +379,7 @@ async fn list_infos_non_member_is_rejected() {
         RoleMask::from(RoleField::TRANSLATOR),
     ));
 
-    let err = list_infos(&mock, token("stranger-user"), list_data("team-1"))
+    let err = list_infos(&mock, &mock, token("stranger-user"), list_data("team-1"))
         .await
         .err()
         .unwrap();

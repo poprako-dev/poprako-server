@@ -1,6 +1,10 @@
 //! Domain models for member invitations.
 
+use poprako_macro::Paginate;
+
 use crate::model::role::RoleMask;
+use crate::model::user::UserInfo;
+use crate::value::member_invitation::MemberInvitationInclOpt;
 
 /// An invitation record for joining a team.
 ///
@@ -12,6 +16,8 @@ pub struct MemberInvitationInfo {
     pub id: String,
 
     pub team_id: String,
+
+    pub invitor: Option<UserInfo>,
 
     pub invitor_id: String,
     pub invitee_qid: String,
@@ -41,4 +47,12 @@ pub struct MemberInvitationForm {
 pub struct MemberInvitationUpdate {
     pub id: String,
     pub roles: RoleMask,
+}
+
+/// Filtering, pagination, and include parameters for listing invitations.
+#[Paginate]
+pub struct MemberInvitationListSpec {
+    pub team_id: String,
+    pub pending: Option<bool>,
+    pub incl_opt: Vec<MemberInvitationInclOpt>,
 }

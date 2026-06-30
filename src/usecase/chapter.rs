@@ -2,8 +2,6 @@
 
 use poprako_transactional::advance::Advance;
 use poprako_transactional::drive::Drive;
-use poprako_util::page::Page;
-
 use crate::complex::assignment::AssignmentComplex;
 use crate::complex::chapter::{ChapterComplex, ChapterPermComplex};
 use crate::data::chapter::{
@@ -11,7 +9,8 @@ use crate::data::chapter::{
     UpdateChapterInfoData, UpdateChapterStageData,
 };
 use crate::model::assignment::AssignmentForm;
-use crate::model::chapter::{ChapterForm, ChapterInfoUpdate};
+use crate::model::chapter::{ChapterForm, ChapterInfoUpdate, ChapterListSpec};
+use crate::part::image::ImagePool;
 use crate::model::role::{RoleField, RoleMask};
 use crate::model::user::UserToken;
 use crate::part::prom::{Prom, PromTransactional};
@@ -33,8 +32,9 @@ use crate::value::chapter::{StagePhase, WorkflowEvent, WorkflowStage};
 mod tests;
 
 /// Lists chapters under one comic.
-pub async fn list_infos<C, R>(
+pub async fn list_infos<C, R, I>(
     repo: &R,
+    image_pool: &I,
     token: UserToken,
     data: ListChapterInfosData,
 ) -> RootResult<Vec<ChapterInfoVal>>
@@ -44,28 +44,29 @@ where
         + ComicRepoTransactional<C>
         + WorksetRepoTransactional<C>
         + MemberRepoTransactional<C>,
+    I: ImagePool,
 {
     use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
     ChapterPermComplex::can_user_list_infos(&mut repo.as_proxy(), &token.user_id, &data.comic_id)
         .await?;
 
-    let chapter_infos = repo
-        .execute(&ChapterStep::list_infos_by_comic_id(
-            &data.comic_id,
-            Page {
-                offset: data.offset,
-                limit: data.limit,
-            },
-        ))
-        .await?;
+    let spec = ChapterListSpec {
+        comic_id: data.comic_id,
+        incl_opt: data.incl_opt,
+        offset: data.offset,
+        limit: data.limit,
+    };
 
-    accept(
-        chapter_infos
-            .into_iter()
-            .map(ChapterInfoVal::from)
-            .collect(),
-    )
+    let chapter_infos = repo.execute(&ChapterStep::list_infos(&spec)).await?;
+
+    let mut chapter_info_vals = Vec::with_capacity(chapter_infos.len());
+
+    for chapter_info in chapter_infos {
+        chapter_info_vals.push(ChapterInfoVal::from_model(image_pool, chapter_info).await?);
+    }
+
+    accept(chapter_info_vals)
 }
 
 /// Fetches a chapter by ID.

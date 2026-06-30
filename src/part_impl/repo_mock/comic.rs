@@ -6,6 +6,9 @@ use poprako_transactional::advance::Advance;
 
 use crate::complex::comic::ComicComplex;
 use crate::model::comic::{ComicCoverReservation, ComicInfo};
+use crate::model::team::TeamInfo;
+use crate::model::user::UserInfo;
+use crate::model::workset::WorksetInfo;
 use crate::part::repo::comic::{ComicRepo, ComicRepoTransactional};
 use crate::part::repo::step::comic::{
     Create, Delete, GetInfoById, GetInfoExcluded, IncrChapterNextIndex, ListInfos,
@@ -15,10 +18,61 @@ use crate::part::repo::step::comic::{
 use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactional, expected, now};
 use crate::result::RootError;
+use crate::value::comic::ComicInclOpt;
 
 impl ComicRepo<MockContext> for Mock {}
 
 impl ComicRepoTransactional<MockContext> for MockTransactional {}
+
+fn find_workset(state: &MockState, workset_id: &str) -> Option<WorksetInfo> {
+    state
+        .worksets
+        .iter()
+        .find(|workset_info| workset_info.id == workset_id)
+        .cloned()
+}
+
+fn find_team_for_workset(state: &MockState, workset: &WorksetInfo) -> Option<TeamInfo> {
+    state
+        .teams
+        .iter()
+        .find(|team_info| team_info.id == workset.team_id)
+        .cloned()
+}
+
+fn find_user(state: &MockState, user_id: &str) -> Option<UserInfo> {
+    state
+        .users
+        .iter()
+        .find(|user_info| user_info.id == user_id)
+        .cloned()
+}
+
+fn apply_workset_incl(state: &MockState, comic_info: &mut ComicInfo, include_workset: bool) {
+    comic_info.workset = None;
+
+    if include_workset {
+        comic_info.workset = find_workset(state, &comic_info.workset_id);
+    }
+}
+
+fn apply_team_incl(state: &MockState, comic_info: &mut ComicInfo, include_team: bool) {
+    comic_info.team = None;
+
+    if include_team {
+        if let Some(ref workset_info) = comic_info.workset {
+            comic_info.team = find_team_for_workset(state, workset_info);
+        }
+    }
+}
+
+fn apply_creator_incl(state: &MockState, comic_info: &mut ComicInfo, include_creator: bool) {
+    comic_info.creator = None;
+
+    if include_creator {
+        comic_info.creator = find_user(state, &comic_info.creator_id);
+    }
+}
 
 /// Updates a comic record to mark its cover as uploaded, verifying the cover version
 /// to detect stale uploads.
@@ -84,6 +138,16 @@ impl<'a> Execute<ListInfos<'a>> for Mock {
             .cloned()
             .collect::<Vec<_>>();
         comics.sort_by(|left, right| left.index.cmp(&right.index));
+
+        let include_workset = step.spec.incl_opt.contains(&ComicInclOpt::Workset);
+        let include_team = step.spec.incl_opt.contains(&ComicInclOpt::Team);
+        let include_creator = step.spec.incl_opt.contains(&ComicInclOpt::Creator);
+
+        for comic in &mut comics {
+            apply_workset_incl(&state, comic, include_workset);
+            apply_team_incl(&state, comic, include_team);
+            apply_creator_incl(&state, comic, include_creator);
+        }
 
         let offset = step.spec.offset as usize;
         let limit = step.spec.limit as usize;
@@ -159,6 +223,9 @@ impl<'a> Advance<Create<'a>, MockContext> for MockTransactional {
             chapter_count: 0,
             chapter_next_index: 0,
             creator_id: step.form.creator_id.clone(),
+            workset: None,
+            team: None,
+            creator: None,
             last_active_at: time,
             created_at: time,
             updated_at: time,
@@ -236,6 +303,16 @@ impl<'a> Advance<ListInfosExcluded<'a>, MockContext> for MockTransactional {
             .cloned()
             .collect::<Vec<_>>();
         comics.sort_by(|left, right| left.index.cmp(&right.index));
+
+        let include_workset = step.spec.incl_opt.contains(&ComicInclOpt::Workset);
+        let include_team = step.spec.incl_opt.contains(&ComicInclOpt::Team);
+        let include_creator = step.spec.incl_opt.contains(&ComicInclOpt::Creator);
+
+        for comic in &mut comics {
+            apply_workset_incl(&context.state, comic, include_workset);
+            apply_team_incl(&context.state, comic, include_team);
+            apply_creator_incl(&context.state, comic, include_creator);
+        }
 
         let offset = step.spec.offset as usize;
         let limit = step.spec.limit as usize;

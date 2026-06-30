@@ -3,7 +3,7 @@
 use serde::Deserialize;
 
 /// Include options for member info queries.
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone, Copy, PartialEq, Eq)]
 pub enum MemberInclOpt {
     User,
     Team,

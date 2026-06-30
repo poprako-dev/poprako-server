@@ -5,6 +5,7 @@ use async_trait::async_trait;
 use poprako_transactional::advance::Advance;
 
 use crate::model::assignment::{AssignmentForm, AssignmentInfo, AssignmentListSpec};
+use crate::model::user::UserInfo;
 use crate::part::repo::assignment::{AssignmentRepo, AssignmentRepoTransactional};
 use crate::part::repo::step::assignment::{
     Create, Delete, GetInfoByChapterIdAndUserId, GetInfoById, ListInfos, PutRoles,
@@ -12,10 +13,31 @@ use crate::part::repo::step::assignment::{
 use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactional, expected, now};
 use crate::result::RootError;
+use crate::value::assignment::AssignmentInclOpt;
 
 impl AssignmentRepo<MockContext> for Mock {}
 
 impl AssignmentRepoTransactional<MockContext> for MockTransactional {}
+
+fn find_user(state: &MockState, user_id: &str) -> Option<UserInfo> {
+    state
+        .users
+        .iter()
+        .find(|user_info| user_info.id == user_id)
+        .cloned()
+}
+
+fn apply_user_incl(
+    state: &MockState,
+    assignment_info: &mut AssignmentInfo,
+    include_user: bool,
+) {
+    assignment_info.user = None;
+
+    if include_user {
+        assignment_info.user = find_user(state, &assignment_info.user_id);
+    }
+}
 
 fn find_assignment(state: &MockState, chapter_id: &str, user_id: &str) -> Option<AssignmentInfo> {
     state
@@ -37,15 +59,17 @@ fn get_assignment(state: &MockState, id: &str) -> Result<AssignmentInfo, RootErr
 }
 
 fn list_assignments(state: &MockState, spec: &AssignmentListSpec) -> Vec<AssignmentInfo> {
-    let (offset, limit, mut assignment_infos) = match spec {
+    let (offset, limit, incl_opt, mut assignment_infos) = match spec {
         AssignmentListSpec::Chapter {
             chapter_id,
             role,
+            incl_opt,
             offset,
             limit,
         } => (
             *offset,
             *limit,
+            incl_opt,
             state
                 .assignments
                 .iter()
@@ -60,11 +84,13 @@ fn list_assignments(state: &MockState, spec: &AssignmentListSpec) -> Vec<Assignm
         AssignmentListSpec::User {
             owner_id,
             role,
+            incl_opt,
             offset,
             limit,
         } => (
             *offset,
             *limit,
+            incl_opt,
             state
                 .assignments
                 .iter()
@@ -77,6 +103,12 @@ fn list_assignments(state: &MockState, spec: &AssignmentListSpec) -> Vec<Assignm
                 .collect::<Vec<_>>(),
         ),
     };
+
+    let include_user = incl_opt.contains(&AssignmentInclOpt::User);
+
+    for assignment_info in &mut assignment_infos {
+        apply_user_incl(state, assignment_info, include_user);
+    }
 
     assignment_infos.sort_by(|left, right| left.id.cmp(&right.id));
 
@@ -113,6 +145,7 @@ fn create_assignment(
         id: form.id.clone(),
         chapter_id: form.chapter_id.clone(),
         user_id: form.user_id.clone(),
+        user: None,
         roles: form.roles,
         created_at: time,
         updated_at: time,

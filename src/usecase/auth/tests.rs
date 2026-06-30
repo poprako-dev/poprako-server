@@ -38,6 +38,7 @@ fn invitation(
     crate::model::member_invitation::MemberInvitationInfo {
         id: id.into(),
         team_id: team_id.into(),
+        invitor: None,
         invitor_id: invitor_id.into(),
         invitee_qid: invitee_qid.into(),
         code: code.into(),

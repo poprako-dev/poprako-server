@@ -30,6 +30,7 @@ async fn list_infos_team_member_lists_chapter_assignments() {
 
     let assignment_info_vals = list_infos(
         &mock,
+        &mock,
         token("member-user"),
         list_by_chapter_data("chapter-1"),
     )
@@ -53,6 +54,7 @@ async fn list_infos_assignment_fallback_lists_chapter_assignments() {
     ));
 
     let assignment_info_vals = list_infos(
+        &mock,
         &mock,
         token("assigned-user"),
         list_by_chapter_data("chapter-1"),
@@ -79,7 +81,7 @@ async fn list_infos_owner_lists_own_assignments() {
     ));
 
     let assignment_info_vals =
-        list_infos(&mock, token("owner-user"), list_by_user_data("owner-user")).await;
+        list_infos(&mock, &mock, token("owner-user"), list_by_user_data("owner-user")).await;
 
     assert!(assignment_info_vals.is_ok());
     let assignment_info_vals = assignment_info_vals.ok().unwrap();
@@ -101,6 +103,7 @@ async fn list_infos_super_admin_lists_other_user_assignments() {
 
     let assignment_info_vals = list_infos(
         &mock,
+        &mock,
         token("sadmin-user"),
         list_by_user_data("target-user"),
     )
@@ -117,6 +120,7 @@ async fn list_infos_unrelated_user_is_rejected_from_chapter_assignments() {
     seed_user(&mock, "outsider-user", false);
 
     let err = list_infos(
+        &mock,
         &mock,
         token("outsider-user"),
         list_by_chapter_data("chapter-1"),
@@ -136,6 +140,7 @@ async fn list_infos_non_owner_non_admin_is_rejected_from_user_assignments() {
 
     let err = list_infos(
         &mock,
+        &mock,
         token("viewer-user"),
         list_by_user_data("target-user"),
     )
@@ -153,8 +158,10 @@ async fn list_infos_invalid_owner_combination_is_rejected() {
 
     let err = list_infos(
         &mock,
+        &mock,
         token("viewer-user"),
         ListAssignmentInfosData {
+            incl_opt: Vec::new(),
             chapter_id: Some("chapter-1".into()),
             owner_id: Some("owner-user".into()),
             role: None,
