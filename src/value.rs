@@ -1,3 +1,5 @@
+pub mod announcement;
+pub mod comment;
 pub mod role;
 
 pub mod chapter;
