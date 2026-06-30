@@ -55,16 +55,14 @@ where
         .execute(&PageStep::get_info_by_id(&data.page_id))
         .await?;
 
-    {
-        use crate::part::shared::proxy::AsProxyNonTransactional as _;
+    use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
-        UnitPermComplex::can_user_list_infos(
-            &mut repo.as_proxy(),
-            &token.user_id,
-            &page_info.chapter_id,
-        )
-        .await?;
-    }
+    UnitPermComplex::can_user_list_infos(
+        &mut repo.as_proxy(),
+        &token.user_id,
+        &page_info.chapter_id,
+    )
+    .await?;
 
     let unit_infos = repo
         .execute(&UnitStep::list_infos_by_page_id(&page_info.id))

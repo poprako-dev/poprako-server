@@ -48,16 +48,14 @@ where
 {
     let assignment_list_spec: AssignmentListSpec = data.try_into()?;
 
-    {
-        use crate::part::shared::proxy::AsProxyNonTransactional as _;
+    use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
-        AssignmentPermComplex::can_user_list_infos(
-            &mut repo.as_proxy(),
-            &token.user_id,
-            &assignment_list_spec,
-        )
-        .await?;
-    }
+    AssignmentPermComplex::can_user_list_infos(
+        &mut repo.as_proxy(),
+        &token.user_id,
+        &assignment_list_spec,
+    )
+    .await?;
 
     let assignment_infos = repo
         .execute(&AssignmentStep::list_infos(&assignment_list_spec))
@@ -101,17 +99,15 @@ where
         .execute(&ChapterStep::get_info_by_id(&data.chapter_id))
         .await?;
 
-    {
-        use crate::part::shared::proxy::AsProxyNonTransactional as _;
+    use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
-        ChapterPermComplex::can_user_join(
-            &mut repo.as_proxy(),
-            &token.user_id,
-            &chapter_info,
-            data.roles,
-        )
-        .await?;
-    }
+    ChapterPermComplex::can_user_join(
+        &mut repo.as_proxy(),
+        &token.user_id,
+        &chapter_info,
+        data.roles,
+    )
+    .await?;
 
     let assignment_info = drive
         .with_context(async move |context| {
@@ -182,12 +178,10 @@ where
         + Send
         + Sync,
 {
-    {
-        use crate::part::shared::proxy::AsProxyNonTransactional as _;
+    use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
-        AssignmentPermComplex::can_user_update_roles(&mut repo.as_proxy(), &token.user_id, &data)
-            .await?;
-    }
+    AssignmentPermComplex::can_user_update_roles(&mut repo.as_proxy(), &token.user_id, &data)
+        .await?;
 
     drive
         .with_context(async move |context| {
@@ -245,16 +239,14 @@ where
 {
     let assignment_info = repo.execute(&AssignmentStep::get_info_by_id(&id)).await?;
 
-    {
-        use crate::part::shared::proxy::AsProxyNonTransactional as _;
+    use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
-        AssignmentPermComplex::can_user_delete(
-            &mut repo.as_proxy(),
-            &token.user_id,
-            &assignment_info,
-        )
-        .await?;
-    }
+    AssignmentPermComplex::can_user_delete(
+        &mut repo.as_proxy(),
+        &token.user_id,
+        &assignment_info,
+    )
+    .await?;
 
     drive
         .with_context(async move |context| {

@@ -90,6 +90,6 @@ pub struct ComicInfoUpdate {
 #[cfg_attr(test, derive(Clone))]
 pub struct ComicCoverReservation {
     pub object_key: String,
-    pub previous_object_key: Option<String>,
+    pub prev_object_key: Option<String>,
     pub cover_version: i64,
 }

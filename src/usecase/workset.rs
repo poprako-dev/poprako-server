@@ -45,12 +45,10 @@ where
         + Send
         + Sync,
 {
-    {
-        use crate::part::shared::proxy::AsProxyNonTransactional as _;
+    use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
-        WorksetPermComplex::can_user_create(&mut repo.as_proxy(), &token.user_id, &data.team_id)
-            .await?;
-    }
+    WorksetPermComplex::can_user_create(&mut repo.as_proxy(), &token.user_id, &data.team_id)
+        .await?;
 
     let workset_id = drive
         .with_context(async move |context| {
@@ -198,11 +196,9 @@ where
     P: Prom<C> + Send + Sync,
     <P as DeriveTransactional>::Transactional: PromTransactional<C> + Send + Sync,
 {
-    {
-        use crate::part::shared::proxy::AsProxyNonTransactional as _;
+    use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
-        WorksetPermComplex::can_user_delete(&mut repo.as_proxy(), &token.user_id, &id).await?;
-    }
+    WorksetPermComplex::can_user_delete(&mut repo.as_proxy(), &token.user_id, &id).await?;
 
     drive
         .with_context(async move |context| {

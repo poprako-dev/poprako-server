@@ -222,14 +222,14 @@ impl<'a> Advance<ReserveCover<'a>, MockContext> for MockTransactional {
             .ok_or_else(|| expected("error-comic-not-found"))?;
         let cover_version = comic.cover_version + 1;
         let object_key = ComicComplex::gen_cover_key(step.id, cover_version, step.file_extension);
-        let previous_object_key = comic.cover_key.clone();
+        let prev_object_key = comic.cover_key.clone();
         comic.cover_key = Some(object_key.clone());
         comic.cover_uploaded = false;
         comic.cover_version = cover_version;
         comic.updated_at = now();
         Ok(ComicCoverReservation {
             object_key,
-            previous_object_key,
+            prev_object_key,
             cover_version,
         })
     }

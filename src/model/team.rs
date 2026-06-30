@@ -45,6 +45,6 @@ pub struct TeamForm {
 #[cfg_attr(test, derive(Clone))]
 pub struct TeamAvatarReservation {
     pub object_key: String,
-    pub previous_object_key: Option<String>,
+    pub prev_object_key: Option<String>,
     pub avatar_version: i64,
 }

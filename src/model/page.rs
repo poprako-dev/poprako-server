@@ -56,6 +56,6 @@ pub struct PageForm {
 #[cfg_attr(test, derive(Clone))]
 pub struct PageImageReservation {
     pub object_key: String,
-    pub previous_object_key: Option<String>,
+    pub prev_object_key: Option<String>,
     pub image_version: i64,
 }

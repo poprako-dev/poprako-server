@@ -65,12 +65,10 @@ where
         image_version: i64,
     }
 
-    {
-        use crate::part::shared::proxy::AsProxyNonTransactional as _;
+    use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
-        PagePermComplex::can_user_reserve(&mut repo.as_proxy(), &token.user_id, &data.chapter_id)
-            .await?;
-    }
+    PagePermComplex::can_user_reserve(&mut repo.as_proxy(), &token.user_id, &data.chapter_id)
+        .await?;
 
     let reservations = drive
         .with_context(async move |context| {
@@ -201,16 +199,14 @@ where
 
     let page_info = repo.execute(&PageStep::get_info_by_id(&id)).await?;
 
-    {
-        use crate::part::shared::proxy::AsProxyNonTransactional as _;
+    use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
-        PagePermComplex::can_user_reserve(
-            &mut repo.as_proxy(),
-            &token.user_id,
-            &page_info.chapter_id,
-        )
-        .await?;
-    }
+    PagePermComplex::can_user_reserve(
+        &mut repo.as_proxy(),
+        &token.user_id,
+        &page_info.chapter_id,
+    )
+    .await?;
 
     let closure_id = id;
     let file_ext = data.file_ext;
@@ -226,10 +222,10 @@ where
 
             let now = OffsetDateTime::now_utc();
 
-            if let Some(previous_object_key) = &page_reservation.previous_object_key
-                && previous_object_key != &page_reservation.object_key
+            if let Some(prev_object_key) = &page_reservation.prev_object_key
+                && prev_object_key != &page_reservation.object_key
             {
-                append_delete(&prom, context, previous_object_key, &now).await?;
+                append_delete(&prom, context, prev_object_key, &now).await?;
             }
 
             let check_visible_at = now + Duration::minutes(15);
@@ -323,16 +319,14 @@ where
 {
     let page_info = repo.execute(&PageStep::get_info_by_id(&id)).await?;
 
-    {
-        use crate::part::shared::proxy::AsProxyNonTransactional as _;
+    use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
-        PagePermComplex::can_user_mark_image_uploaded(
-            &mut repo.as_proxy(),
-            &token.user_id,
-            &page_info.chapter_id,
-        )
-        .await?;
-    }
+    PagePermComplex::can_user_mark_image_uploaded(
+        &mut repo.as_proxy(),
+        &token.user_id,
+        &page_info.chapter_id,
+    )
+    .await?;
 
     let closure_id = id;
     let closure_image_version = data.image_version;
@@ -386,16 +380,14 @@ where
     P: Prom<C> + Send + Sync,
     <P as DeriveTransactional>::Transactional: PromTransactional<C> + Send + Sync,
 {
-    {
-        use crate::part::shared::proxy::AsProxyNonTransactional as _;
+    use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
-        PagePermComplex::can_user_delete_by_chapter(
-            &mut repo.as_proxy(),
-            &token.user_id,
-            &chapter_id,
-        )
-        .await?;
-    }
+    PagePermComplex::can_user_delete_by_chapter(
+        &mut repo.as_proxy(),
+        &token.user_id,
+        &chapter_id,
+    )
+    .await?;
 
     drive
         .with_context(async move |context| {

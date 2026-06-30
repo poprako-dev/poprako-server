@@ -50,12 +50,10 @@ where
         + Send
         + Sync,
 {
-    {
-        use crate::part::shared::proxy::AsProxyNonTransactional as _;
+    use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
-        ComicPermComplex::can_user_create(&mut repo.as_proxy(), &token.user_id, &data.workset_id)
-            .await?;
-    }
+    ComicPermComplex::can_user_create(&mut repo.as_proxy(), &token.user_id, &data.workset_id)
+        .await?;
 
     let comic_id = drive
         .with_context(async move |context| {
@@ -204,11 +202,9 @@ where
     <P as DeriveTransactional>::Transactional: PromTransactional<C> + Send + Sync,
     I: ImagePool,
 {
-    {
-        use crate::part::shared::proxy::AsProxyNonTransactional as _;
+    use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
-        ComicPermComplex::can_user_reserve_cover(&mut repo.as_proxy(), &token.user_id, &id).await?;
-    }
+    ComicPermComplex::can_user_reserve_cover(&mut repo.as_proxy(), &token.user_id, &id).await?;
 
     let (object_key, cover_version) = drive
         .with_context(async move |context| {
@@ -221,7 +217,7 @@ where
 
             let now = OffsetDateTime::now_utc();
 
-            if let Some(previous_key) = &cover_reservation.previous_object_key {
+            if let Some(prev_key) = &cover_reservation.prev_object_key {
                 let delete_id = ImageComplex::gen_delete_id();
 
                 prom.advance(
@@ -230,7 +226,7 @@ where
                         &delete_id,
                         IMAGE_TOPIC,
                         Payload::Image(ImageIntention::Delete {
-                            object_key: previous_key.clone(),
+                            object_key: prev_key.clone(),
                         }),
                         &now,
                     ),
@@ -319,11 +315,9 @@ where
     P: Prom<C> + Send + Sync,
     <P as DeriveTransactional>::Transactional: PromTransactional<C> + Send + Sync,
 {
-    {
-        use crate::part::shared::proxy::AsProxyNonTransactional as _;
+    use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
-        ComicPermComplex::can_user_delete(&mut repo.as_proxy(), &token.user_id, &id).await?;
-    }
+    ComicPermComplex::can_user_delete(&mut repo.as_proxy(), &token.user_id, &id).await?;
 
     drive
         .with_context(async move |context| {
@@ -363,12 +357,10 @@ where
         + Send
         + Sync,
 {
-    {
-        use crate::part::shared::proxy::AsProxyNonTransactional as _;
+    use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
-        ComicPermComplex::can_user_mark_completed(&mut repo.as_proxy(), &token.user_id, &id)
-            .await?;
-    }
+    ComicPermComplex::can_user_mark_completed(&mut repo.as_proxy(), &token.user_id, &id)
+        .await?;
 
     drive
         .with_context(async move |context| {
