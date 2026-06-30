@@ -15,7 +15,7 @@ impl TokenAuth for Mock {
     fn sign_token(&self, token: &UserTokenRef) -> RootResult<String> {
         if self.flags.lock().unwrap().token_failure {
             return Err(RootError::Expected {
-                variant: ExpectedVariant::Auth,
+                variant: ExpectedVariant::AuthFail,
                 message: trl("error-token-sign-failed"),
             });
         }
@@ -49,7 +49,7 @@ fn sign_failure_returns_expected_auth() {
     assert!(matches!(
         err,
         RootError::Expected {
-            variant: ExpectedVariant::Auth,
+            variant: ExpectedVariant::AuthFail,
             ..
         }
     ));

@@ -231,7 +231,7 @@ fn counter_delta(old_counters: UnitCounters, new_counters: UnitCounters) -> Unit
 
 fn unit_invalid_oper_error() -> RootError {
     RootError::Expected {
-        variant: ExpectedVariant::Args,
+        variant: ExpectedVariant::ArgsInvalid,
         message: trl("error-invalid-unit-oper"),
     }
 }

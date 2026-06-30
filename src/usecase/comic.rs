@@ -359,8 +359,7 @@ where
 {
     use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
-    ComicPermComplex::can_user_mark_completed(&mut repo.as_proxy(), &token.user_id, &id)
-        .await?;
+    ComicPermComplex::can_user_mark_completed(&mut repo.as_proxy(), &token.user_id, &id).await?;
 
     drive
         .with_context(async move |context| {

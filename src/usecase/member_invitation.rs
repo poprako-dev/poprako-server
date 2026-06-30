@@ -26,6 +26,8 @@ use crate::util::DeriveTransactional;
 #[cfg(test)]
 mod tests;
 
+// FIXME: invitations should be fired out after a period of time.
+
 /// Creates a pending invitation for a team（汉化组）.
 pub async fn create<D, C, R>(
     drive: &D,
@@ -76,7 +78,7 @@ where
 
                 if invitee_member_info.is_some() {
                     return Err(RootError::Expected {
-                        variant: ExpectedVariant::Args,
+                        variant: ExpectedVariant::ArgsInvalid,
                         message: trl("error-already-team-member"),
                     });
                 }
@@ -206,8 +208,7 @@ where
 {
     use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
-    MemberInvitationPermComplex::can_user_delete(&mut repo.as_proxy(), &token.user_id, &id)
-        .await?;
+    MemberInvitationPermComplex::can_user_delete(&mut repo.as_proxy(), &token.user_id, &id).await?;
 
     drive
         .with_context(async move |context| {

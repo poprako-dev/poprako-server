@@ -128,7 +128,7 @@ async fn update_roles_self_role_expansion_is_rejected() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Perm);
+    assert_expected_variant(err, ExpectedVariant::PermDeny);
 }
 
 #[tokio::test]
@@ -152,7 +152,7 @@ async fn update_roles_self_role_reduction_requires_member_role() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Perm);
+    assert_expected_variant(err, ExpectedVariant::PermDeny);
 }
 
 #[tokio::test]
@@ -176,7 +176,7 @@ async fn update_roles_non_reviewer_does_not_update_another_user() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Perm);
+    assert_expected_variant(err, ExpectedVariant::PermDeny);
 }
 
 #[tokio::test]
@@ -200,7 +200,7 @@ async fn update_roles_admin_role_is_rejected() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Args);
+    assert_expected_variant(err, ExpectedVariant::ArgsInvalid);
 }
 
 #[tokio::test]
@@ -224,5 +224,5 @@ async fn update_roles_target_member_role_mismatch_is_rejected() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Perm);
+    assert_expected_variant(err, ExpectedVariant::PermDeny);
 }

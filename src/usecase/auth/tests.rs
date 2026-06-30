@@ -130,7 +130,7 @@ async fn register_rolls_back_when_invitee_qid_mismatches() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Args);
+    assert_expected_variant(err, ExpectedVariant::ArgsInvalid);
     let snapshot = mock.snapshot();
     assert!(snapshot.users.is_empty());
     assert!(snapshot.members.is_empty());
@@ -161,7 +161,7 @@ async fn register_propagates_token_failure_after_commit_and_event() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Auth);
+    assert_expected_variant(err, ExpectedVariant::AuthFail);
     let snapshot = mock.snapshot();
     assert_eq!(snapshot.users.len(), 1);
     assert_eq!(snapshot.members.len(), 1);
@@ -194,7 +194,7 @@ async fn login_propagates_missing_user() {
         .err()
         .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Args);
+    assert_expected_variant(err, ExpectedVariant::ArgsInvalid);
 }
 
 #[tokio::test]
@@ -210,7 +210,7 @@ async fn login_rejects_wrong_password() {
         .err()
         .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Auth);
+    assert_expected_variant(err, ExpectedVariant::AuthFail);
 }
 
 #[tokio::test]
@@ -226,5 +226,5 @@ async fn login_propagates_token_failure() {
         .err()
         .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Auth);
+    assert_expected_variant(err, ExpectedVariant::AuthFail);
 }

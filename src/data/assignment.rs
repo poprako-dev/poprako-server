@@ -51,7 +51,7 @@ impl TryInto<AssignmentListSpec> for ListAssignmentInfosData {
 
     fn try_into(self) -> RootResult<AssignmentListSpec> {
         let invalid_args_err = || RootError::Expected {
-            variant: ExpectedVariant::Args,
+            variant: ExpectedVariant::ArgsInvalid,
             message: trl("error-chapter-or-user-required"),
         };
 

@@ -13,6 +13,7 @@
 
 pub mod announcement;
 pub mod assignment;
+pub mod assignment_invitation;
 pub mod chapter;
 pub mod comic;
 pub mod comment;

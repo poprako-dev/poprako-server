@@ -84,7 +84,7 @@ where
 
             if chapter_info.page_count != 0 {
                 return Err(RootError::Expected {
-                    variant: ExpectedVariant::Args,
+                    variant: ExpectedVariant::ArgsInvalid,
                     message: trl("error-invalid-page-count"),
                 });
             }
@@ -201,12 +201,8 @@ where
 
     use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
-    PagePermComplex::can_user_reserve(
-        &mut repo.as_proxy(),
-        &token.user_id,
-        &page_info.chapter_id,
-    )
-    .await?;
+    PagePermComplex::can_user_reserve(&mut repo.as_proxy(), &token.user_id, &page_info.chapter_id)
+        .await?;
 
     let file_ext = data.file_ext;
 
@@ -378,12 +374,7 @@ where
 {
     use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
-    PagePermComplex::can_user_delete(
-        &mut repo.as_proxy(),
-        &token.user_id,
-        &chapter_id,
-    )
-    .await?;
+    PagePermComplex::can_user_delete(&mut repo.as_proxy(), &token.user_id, &chapter_id).await?;
 
     drive
         .with_context(async move |context| {
@@ -435,7 +426,7 @@ where
 fn validate_page_count(page_count: i32) -> RootResult<()> {
     if page_count <= 0 {
         return Err(RootError::Expected {
-            variant: ExpectedVariant::Args,
+            variant: ExpectedVariant::ArgsInvalid,
             message: trl("error-invalid-page-count"),
         });
     }

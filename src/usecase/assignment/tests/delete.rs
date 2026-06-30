@@ -81,6 +81,6 @@ async fn delete_non_reviewer_does_not_delete_another_user_assignment() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Perm);
+    assert_expected_variant(err, ExpectedVariant::PermDeny);
     assert_eq!(mock.snapshot().assignments.len(), 2);
 }

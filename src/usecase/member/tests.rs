@@ -13,6 +13,9 @@
 // delete(delete)(positive): team admin should delete a member.
 // delete(delete)(negative): non-admin should be rejected without deletion.
 // delete(delete)(negative): missing member should be rejected.
+// join_team(join_team)(positive): invited user should join team and consume invitation.
+// join_team(join_team)(negative): mismatched invitee qid should be rejected without consuming invitation.
+// join_team(join_team)(negative): duplicate membership should be rejected without consuming invitation.
 
 use super::*;
 
@@ -23,6 +26,8 @@ use crate::model::user::{UserCredential, UserInfo};
 use crate::part_impl::repo_mock::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;
+
+mod join_team;
 
 fn token(user_id: &str) -> UserToken {
     UserToken {
@@ -178,7 +183,7 @@ async fn create_non_admin_is_rejected() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Perm);
+    assert_expected_variant(err, ExpectedVariant::PermDeny);
     assert_eq!(mock.snapshot().members.len(), 1);
 }
 
@@ -206,7 +211,7 @@ async fn create_duplicate_member_is_rejected() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Args);
+    assert_expected_variant(err, ExpectedVariant::ArgsInvalid);
     assert_eq!(mock.snapshot().members.len(), 2);
 }
 
@@ -374,7 +379,7 @@ async fn list_infos_non_member_is_rejected() {
         .err()
         .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Perm);
+    assert_expected_variant(err, ExpectedVariant::PermDeny);
 }
 
 #[test]
@@ -391,7 +396,7 @@ fn list_infos_rejects_invalid_combination() {
     .try_into();
     let err = result.err().unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Args);
+    assert_expected_variant(err, ExpectedVariant::ArgsInvalid);
 }
 
 #[test]
@@ -491,7 +496,7 @@ async fn update_role_non_admin_is_rejected() {
         .find(|member_info| member_info.id == "member-target")
         .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Perm);
+    assert_expected_variant(err, ExpectedVariant::PermDeny);
     assert_eq!(
         target_member_info.roles,
         RoleMask::from(RoleField::TRANSLATOR)
@@ -513,7 +518,7 @@ async fn update_role_missing_member_is_rejected() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Args);
+    assert_expected_variant(err, ExpectedVariant::ArgsInvalid);
 }
 
 #[tokio::test]
@@ -563,7 +568,7 @@ async fn delete_non_admin_is_rejected() {
         .err()
         .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Perm);
+    assert_expected_variant(err, ExpectedVariant::PermDeny);
     assert!(
         mock.snapshot()
             .members
@@ -582,6 +587,6 @@ async fn delete_missing_member_is_rejected() {
         .err()
         .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Args);
+    assert_expected_variant(err, ExpectedVariant::ArgsInvalid);
     assert_eq!(mock.snapshot().members.len(), 1);
 }

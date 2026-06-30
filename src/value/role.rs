@@ -84,7 +84,7 @@ impl TryFrom<u32> for RoleField {
     fn try_from(value: u32) -> RootResult<Self> {
         if value == 0 || !Self::VALID_VALUES.contains(&value) || value.count_ones() != 1 {
             return Err(RootError::Expected {
-                variant: ExpectedVariant::Args,
+                variant: ExpectedVariant::ArgsInvalid,
                 message: trl("error-invalid-role"),
             });
         }
@@ -136,7 +136,7 @@ impl TryFrom<u32> for RoleMask {
     fn try_from(value: u32) -> RootResult<Self> {
         if value == 0 || value & !Self::VALID_BITS != 0 {
             return Err(RootError::Expected {
-                variant: ExpectedVariant::Args,
+                variant: ExpectedVariant::ArgsInvalid,
                 message: trl("error-invalid-role"),
             });
         }

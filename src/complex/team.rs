@@ -163,7 +163,7 @@ impl TeamPermComplex {
 
         if !user_info.is_sadmin {
             return Err(RootError::Expected {
-                variant: ExpectedVariant::Perm,
+                variant: ExpectedVariant::PermDeny,
                 message: trl("error-sadmin-required"),
             });
         }

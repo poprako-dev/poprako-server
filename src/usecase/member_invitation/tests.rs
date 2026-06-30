@@ -145,7 +145,7 @@ async fn create_non_admin_is_rejected() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Perm);
+    assert_expected_variant(err, ExpectedVariant::PermDeny);
     assert!(mock.snapshot().member_invitations.is_empty());
 }
 
@@ -195,7 +195,7 @@ async fn list_infos_non_member_is_rejected() {
         .err()
         .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Perm);
+    assert_expected_variant(err, ExpectedVariant::PermDeny);
 }
 
 #[tokio::test]
@@ -234,7 +234,7 @@ async fn update_info_non_admin_is_rejected() {
         .err()
         .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Perm);
+    assert_expected_variant(err, ExpectedVariant::PermDeny);
 }
 
 #[tokio::test]
@@ -270,6 +270,6 @@ async fn delete_non_admin_is_rejected() {
         .err()
         .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::Perm);
+    assert_expected_variant(err, ExpectedVariant::PermDeny);
     assert_eq!(mock.snapshot().member_invitations.len(), 1);
 }

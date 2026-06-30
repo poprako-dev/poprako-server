@@ -350,21 +350,21 @@ fn resolve_candidate_order(
 
 fn unit_invalid_oper_error() -> RootError {
     RootError::Expected {
-        variant: ExpectedVariant::Args,
+        variant: ExpectedVariant::ArgsInvalid,
         message: trl("error-invalid-unit-oper"),
     }
 }
 
 fn unit_list_permission_error() -> RootError {
     RootError::Expected {
-        variant: ExpectedVariant::Perm,
+        variant: ExpectedVariant::PermDeny,
         message: trl("error-unit-list-permission-required"),
     }
 }
 
 fn unit_edit_permission_error() -> RootError {
     RootError::Expected {
-        variant: ExpectedVariant::Perm,
+        variant: ExpectedVariant::PermDeny,
         message: trl("error-unit-edit-permission-required"),
     }
 }
