@@ -197,11 +197,9 @@ async fn send_saves_unread_mail() {
     let mock = Mock::new();
     let system_mail_form = mail_form("sys_mail-1", "user-1");
 
-    assert!(
-        mock.execute(&SystemMailStep::send(&system_mail_form))
-            .await
-            .is_ok()
-    );
+    mock.execute(&SystemMailStep::send(&system_mail_form))
+        .await
+        .unwrap();
 
     let snapshot = mock.snapshot();
     assert_eq!(snapshot.system_mails.len(), 1);
@@ -237,12 +235,9 @@ async fn send_batch_saves_all_mails() {
         mail_form("sys_mail-2", "user-1"),
     ];
 
-    assert!(
-        mock
-            .execute(&SystemMailStep::send_batch(&system_mail_forms))
-            .await
-            .is_ok()
-    );
+    mock.execute(&SystemMailStep::send_batch(&system_mail_forms))
+        .await
+        .unwrap();
 
     let snapshot = mock.snapshot();
     assert_eq!(snapshot.system_mails.len(), 2);
@@ -293,10 +288,8 @@ async fn list_infos_by_receiver_id_filters_sorts_and_pages() {
             "user-1",
             &mail_list_spec,
         ))
-        .await;
-    let Ok(mails) = mails else {
-        panic!("expected Ok");
-    };
+        .await
+        .unwrap();
 
     assert_eq!(mails.len(), 2);
     assert_eq!(mails[0].id, "sys_mail-2");
@@ -315,10 +308,8 @@ async fn list_infos_by_ids_returns_matching_mails() {
 
     let mails = mock
         .execute(&SystemMailStep::list_infos_by_ids(&ids))
-        .await;
-    let Ok(mails) = mails else {
-        panic!("expected Ok");
-    };
+        .await
+        .unwrap();
 
     assert_eq!(mails.len(), 2);
     assert!(mails.iter().any(|m| m.id == "sys_mail-1"));
@@ -331,11 +322,9 @@ async fn mark_read_marks_by_id() {
     let time = now();
     mock.seed_system_mail(mail_info("sys_mail-1", "user-1", false, time));
 
-    assert!(
-        mock.execute(&SystemMailStep::mark_read("sys_mail-1"))
-            .await
-            .is_ok()
-    );
+    mock.execute(&SystemMailStep::mark_read("sys_mail-1"))
+        .await
+        .unwrap();
 
     let snapshot = mock.snapshot();
     assert!(snapshot.system_mails[0].read);

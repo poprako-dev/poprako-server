@@ -223,8 +223,8 @@ async fn list_infos_reviewer_lists_chapter_invitations() {
 
     let val = list_infos(&mock, token("reviewer-user"), list_data()).await.unwrap();
 
-    assert_eq!(result.len(), 1);
-    assert_eq!(result[0].id, "invitation-1");
+    assert_eq!(val.len(), 1);
+    assert_eq!(val[0].id, "invitation-1");
 }
 
 #[tokio::test]
@@ -266,8 +266,8 @@ async fn create_reviewer_creates_pending_invitation() {
 
     let snapshot = mock.snapshot();
     assert_eq!(snapshot.assignment_invitations.len(), 1);
-    assert_eq!(snapshot.assignment_invitations[0].id, result.id);
-    assert_eq!(snapshot.assignment_invitations[0].code, result.code);
+    assert_eq!(snapshot.assignment_invitations[0].id, val.id);
+    assert_eq!(snapshot.assignment_invitations[0].code, val.code);
     assert_eq!(snapshot.assignment_invitations[0].chapter_id, "chapter-1");
     assert_eq!(
         snapshot.assignment_invitations[0].inviter_id,

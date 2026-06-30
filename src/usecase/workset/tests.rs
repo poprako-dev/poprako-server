@@ -331,6 +331,7 @@ async fn delete_does_not_create_prom_records_when_called_directly() {
         accept(())
     })
     .await
+    .ok()
     .unwrap();
 
     let snapshot = mock.snapshot();

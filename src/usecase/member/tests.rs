@@ -384,7 +384,7 @@ async fn list_infos_non_member_is_rejected() {
 
 #[test]
 fn list_infos_rejects_invalid_combination() {
-    let err = ListMemberInfosData {
+    let err = TryInto::<MemberListSpec>::try_into(ListMemberInfosData {
         owner_id: Some("user-1".into()),
         team_id: Some("team-1".into()),
         user_nickname_keyword: None,
@@ -392,8 +392,7 @@ fn list_infos_rejects_invalid_combination() {
         incl_opt: Vec::new(),
         offset: 0,
         limit: 10,
-    }
-    .try_into()
+    })
     .err()
     .unwrap();
 
