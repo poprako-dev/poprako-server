@@ -18,7 +18,7 @@ pub struct AssignmentInvitationInfo {
 
     pub pending: bool,
 
-    pub role_mask: RoleMask,
+    pub roles: RoleMask,
 
     pub created_at: OffsetDateTime,
     pub updated_at: OffsetDateTime,
@@ -35,5 +35,5 @@ pub struct AssignmentInvitationForm {
 
     pub code: String,
 
-    pub role_mask: RoleMask,
+    pub roles: RoleMask,
 }

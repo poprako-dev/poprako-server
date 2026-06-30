@@ -17,7 +17,7 @@ pub struct CreateMemberInvitationData {
 
     /// The role mask that will be assigned when the invitee registers
     /// and accepts the invitation.
-    pub role_mask: RoleMask,
+    pub roles: RoleMask,
 }
 
 /// Return value from a successful invitation creation.
@@ -60,7 +60,7 @@ pub struct MemberInvitationInfoVal {
 
     pub pending: bool,
 
-    pub role_mask: RoleMask,
+    pub roles: RoleMask,
 }
 
 impl From<MemberInvitationInfo> for MemberInvitationInfoVal {
@@ -72,13 +72,13 @@ impl From<MemberInvitationInfo> for MemberInvitationInfoVal {
             invitee_qid: value.invitee_qid,
             code: value.code,
             pending: value.pending,
-            role_mask: value.role_mask,
+            roles: value.roles,
         }
     }
 }
 
-/// Input parameters for updating a pending invitation's role mask.
+/// Input parameters for updating a pending invitation's roles.
 pub struct UpdateMemberInvitationInfoData {
     pub id: String,
-    pub role_mask: RoleMask,
+    pub roles: RoleMask,
 }

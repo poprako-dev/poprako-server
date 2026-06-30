@@ -62,13 +62,13 @@ pub struct AssignmentRoleUpdate {
 pub enum AssignmentListSpec {
     Chapter {
         chapter_id: String,
-        role_bit: Option<RoleField>,
+        role: Option<RoleField>,
         offset: u64,
         limit: u64,
     },
     User {
         owner_id: String,
-        role_bit: Option<RoleField>,
+        role: Option<RoleField>,
         offset: u64,
         limit: u64,
     },

@@ -43,7 +43,7 @@ pub struct ListAssignmentInfosData {
     pub chapter_id: Option<String>,
     pub owner_id: Option<String>,
 
-    pub role_bit: Option<RoleField>,
+    pub role: Option<RoleField>,
 }
 
 impl TryInto<AssignmentListSpec> for ListAssignmentInfosData {
@@ -62,7 +62,7 @@ impl TryInto<AssignmentListSpec> for ListAssignmentInfosData {
         if let Some(chapter_id) = self.chapter_id {
             return Ok(AssignmentListSpec::Chapter {
                 chapter_id,
-                role_bit: self.role_bit,
+                role: self.role,
                 offset: self.offset,
                 limit: self.limit,
             });
@@ -70,7 +70,7 @@ impl TryInto<AssignmentListSpec> for ListAssignmentInfosData {
 
         Ok(AssignmentListSpec::User {
             owner_id: self.owner_id.ok_or_else(invalid_args_err)?,
-            role_bit: self.role_bit,
+            role: self.role,
             offset: self.offset,
             limit: self.limit,
         })

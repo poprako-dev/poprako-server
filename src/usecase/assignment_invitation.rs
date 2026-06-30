@@ -89,7 +89,7 @@ where
         + Send
         + Sync,
 {
-    validate_role_mask(data.role_mask)?;
+    validate_roles(data.roles)?;
 
     use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
@@ -129,7 +129,7 @@ where
                 inviter_id: token.user_id,
                 invitee_qid: data.invitee_qid,
                 code: assignment_invitation_code,
-                role_mask: data.role_mask,
+                roles: data.roles,
             };
 
             let assignment_invitation_info = repo
@@ -242,7 +242,7 @@ where
                 return Err(invalid_invitation_error());
             }
 
-            validate_role_mask(assignment_invitation_info.role_mask)?;
+            validate_roles(assignment_invitation_info.roles)?;
 
             let chapter_info = repo
                 .advance(
@@ -278,7 +278,7 @@ where
 
             if !member_info
                 .roles
-                .contains_mask(assignment_invitation_info.role_mask)
+                .contains_mask(assignment_invitation_info.roles)
             {
                 return Err(assignment_role_not_assignable_perm_error());
             }
@@ -297,7 +297,7 @@ where
                 Some(existing_assignment_info) => {
                     let assignment_role_update = AssignmentComplex::merge_roles(
                         &existing_assignment_info,
-                        assignment_invitation_info.role_mask,
+                        assignment_invitation_info.roles,
                     );
 
                     repo.advance(context, &AssignmentStep::put_roles(&assignment_role_update))
@@ -308,7 +308,7 @@ where
                         id: AssignmentComplex::gen_id(),
                         chapter_id: assignment_invitation_info.chapter_id.clone(),
                         user_id: current_user_id,
-                        roles: assignment_invitation_info.role_mask,
+                        roles: assignment_invitation_info.roles,
                     };
 
                     repo.advance(context, &AssignmentStep::create(&assignment_form))
@@ -345,8 +345,8 @@ fn gen_assignment_invitation_code() -> String {
     id[len - 6..].to_string()
 }
 
-fn validate_role_mask(role_mask: RoleMask) -> RootResult<()> {
-    if u32::from(role_mask) == 0 || role_mask.has_any_role(&[RoleField::ADMIN]) {
+fn validate_roles(roles: RoleMask) -> RootResult<()> {
+    if u32::from(roles) == 0 || roles.has_any_role(&[RoleField::ADMIN]) {
         return Err(assignment_role_not_assignable_args_error());
     }
 

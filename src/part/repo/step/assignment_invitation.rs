@@ -36,7 +36,7 @@ impl<'a> Step for GetInfoById<'a> {
 
 /// Step that fetches a pending invitation by code with a pessimistic lock.
 pub struct GetInfoByCodeExcluded<'a> {
-    pub invitation_code: &'a str,
+    pub code: &'a str,
 }
 
 impl<'a> Step for GetInfoByCodeExcluded<'a> {
@@ -92,7 +92,7 @@ impl AssignmentInvitationStep {
 
     /// Constructs a step to fetch a pending invitation by code with a lock.
     pub fn get_info_by_code_excluded<'a>(invitation_code: &'a str) -> GetInfoByCodeExcluded<'a> {
-        GetInfoByCodeExcluded { invitation_code }
+        GetInfoByCodeExcluded { code: invitation_code }
     }
 
     /// Constructs a step to mark a pending invitation as used.

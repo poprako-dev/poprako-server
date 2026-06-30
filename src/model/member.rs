@@ -50,7 +50,7 @@ pub enum MemberListSpec {
     },
     Team {
         team_id: String,
-        role_bit: Option<RoleField>,
+        role: Option<RoleField>,
         incl_opt: Vec<MemberInclOpt>,
         offset: u64,
         limit: u64,

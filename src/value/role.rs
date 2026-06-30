@@ -57,23 +57,23 @@ impl RoleMask {
     /// Check if the mask contains any of the given role bits.
     pub fn has_any_role(&self, bits: &[RoleField]) -> bool {
         bits.iter()
-            .any(|role_bit| u32::from(*self) & u32::from(*role_bit) != 0)
+            .any(|role| u32::from(*self) & u32::from(*role) != 0)
     }
 
     /// Check if the mask contains all of the given role bits.
     pub fn has_every_role(&self, bits: &[RoleField]) -> bool {
         bits.iter()
-            .all(|role_bit| u32::from(*self) & u32::from(*role_bit) != 0)
+            .all(|role| u32::from(*self) & u32::from(*role) != 0)
     }
 
     /// Check if the mask fully contains another mask (all bits set).
-    pub fn contains_mask(&self, role_mask: RoleMask) -> bool {
-        u32::from(*self) & u32::from(role_mask) == u32::from(role_mask)
+    pub fn contains_mask(&self, other: RoleMask) -> bool {
+        u32::from(*self) & u32::from(other) == u32::from(other)
     }
 
     /// Return the union of two masks.
-    pub fn union(&self, role_mask: RoleMask) -> RoleMask {
-        RoleMask(u32::from(*self) | u32::from(role_mask))
+    pub fn union(&self, other: RoleMask) -> RoleMask {
+        RoleMask(u32::from(*self) | u32::from(other))
     }
 }
 

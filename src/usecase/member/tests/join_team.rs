@@ -14,7 +14,7 @@ fn invitation(id: &str, invitee_qid: &str) -> MemberInvitationInfo {
         invitee_qid: invitee_qid.into(),
         code: "INV123".into(),
         pending: true,
-        role_mask: RoleMask::from(RoleField::TRANSLATOR),
+        roles: RoleMask::from(RoleField::TRANSLATOR),
     }
 }
 

@@ -103,7 +103,7 @@ impl<'a> Advance<Create<'a>, MockContext> for MockTransactional {
             invitee_qid: step.form.invitee_qid.clone(),
             code: step.form.code.clone(),
             pending: true,
-            role_mask: step.form.role_mask,
+            roles: step.form.roles,
         };
         context
             .state
@@ -126,7 +126,7 @@ impl<'a> Advance<GetInfoByCodeExcluded<'a>, MockContext> for MockTransactional {
             .state
             .member_invitations
             .iter()
-            .find(|invitation| invitation.code == step.invitation_code && invitation.pending)
+            .find(|invitation| invitation.code == step.code && invitation.pending)
             .cloned()
             .ok_or_else(|| expected("error-no-pending-invitation"))
     }
@@ -186,7 +186,7 @@ impl<'a> Advance<UpdateInfo<'a>, MockContext> for MockTransactional {
             .iter_mut()
             .find(|member_invitation_info| member_invitation_info.id == step.update.id)
             .ok_or_else(|| expected("error-invitation-not-found"))?;
-        member_invitation_info.role_mask = step.update.role_mask;
+        member_invitation_info.roles = step.update.roles;
         Ok(())
     }
 }

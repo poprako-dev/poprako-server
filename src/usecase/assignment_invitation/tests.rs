@@ -162,7 +162,7 @@ fn invitation(id: &str, invitee_qid: &str, role_mask: RoleMask) -> AssignmentInv
         invitee_qid: invitee_qid.into(),
         code: "AINV123".into(),
         pending: true,
-        role_mask,
+        roles: role_mask,
         created_at: time,
         updated_at: time,
     }
@@ -185,7 +185,7 @@ fn create_data(invitee_qid: &str) -> CreateAssignmentInvitationData {
     CreateAssignmentInvitationData {
         chapter_id: "chapter-1".into(),
         invitee_qid: invitee_qid.into(),
-        role_mask: role(RoleField::TRANSLATOR),
+        roles: role(RoleField::TRANSLATOR),
     }
 }
 

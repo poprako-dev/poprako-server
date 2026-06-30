@@ -46,7 +46,7 @@ where
         + Send
         + Sync,
 {
-    let role_mask = data.role_mask;
+    let roles = data.roles;
 
     use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
@@ -93,7 +93,7 @@ where
                 invitor_id: token.user_id,
                 invitee_qid: data.invitee_qid,
                 code: member_invitation_code,
-                role_mask,
+                roles,
             };
 
             let member_invitation_info = repo
@@ -179,7 +179,7 @@ where
 
             let member_invitation_update = MemberInvitationUpdate {
                 id: data.id,
-                role_mask: data.role_mask,
+                roles: data.roles,
             };
 
             repo.advance(

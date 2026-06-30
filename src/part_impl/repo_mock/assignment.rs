@@ -40,7 +40,7 @@ fn list_assignments(state: &MockState, spec: &AssignmentListSpec) -> Vec<Assignm
     let (offset, limit, mut assignment_infos) = match spec {
         AssignmentListSpec::Chapter {
             chapter_id,
-            role_bit,
+            role,
             offset,
             limit,
         } => (
@@ -51,8 +51,8 @@ fn list_assignments(state: &MockState, spec: &AssignmentListSpec) -> Vec<Assignm
                 .iter()
                 .filter(|assignment_info| assignment_info.chapter_id == *chapter_id)
                 .filter(|assignment_info| {
-                    role_bit
-                        .map(|role_bit| assignment_info.roles.has_any_role(&[role_bit]))
+                    role
+                        .map(|role| assignment_info.roles.has_any_role(&[role]))
                         .unwrap_or(true)
                 })
                 .cloned()
@@ -60,7 +60,7 @@ fn list_assignments(state: &MockState, spec: &AssignmentListSpec) -> Vec<Assignm
         ),
         AssignmentListSpec::User {
             owner_id,
-            role_bit,
+            role,
             offset,
             limit,
         } => (
@@ -71,8 +71,8 @@ fn list_assignments(state: &MockState, spec: &AssignmentListSpec) -> Vec<Assignm
                 .iter()
                 .filter(|assignment_info| assignment_info.user_id == *owner_id)
                 .filter(|assignment_info| {
-                    role_bit
-                        .map(|role_bit| assignment_info.roles.has_any_role(&[role_bit]))
+                    role
+                        .map(|role| assignment_info.roles.has_any_role(&[role]))
                         .unwrap_or(true)
                 })
                 .cloned()

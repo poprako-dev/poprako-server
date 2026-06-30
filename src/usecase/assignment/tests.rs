@@ -157,7 +157,7 @@ fn list_by_chapter_data(chapter_id: &str) -> ListAssignmentInfosData {
     ListAssignmentInfosData {
         chapter_id: Some(chapter_id.into()),
         owner_id: None,
-        role_bit: None,
+        role: None,
         offset: 0,
         limit: 10,
     }
@@ -167,7 +167,7 @@ fn list_by_user_data(owner_id: &str) -> ListAssignmentInfosData {
     ListAssignmentInfosData {
         chapter_id: None,
         owner_id: Some(owner_id.into()),
-        role_bit: None,
+        role: None,
         offset: 0,
         limit: 10,
     }

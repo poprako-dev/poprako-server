@@ -49,7 +49,7 @@ where
         + Send
         + Sync,
 {
-    let role_mask = data.role_mask;
+    let roles = data.roles;
 
     use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
@@ -85,7 +85,7 @@ where
                 user_id: data.user_id,
                 user_nickname: target_user_info.nickname,
                 team_id: data.team_id,
-                roles: role_mask,
+                roles: roles,
             };
 
             let member_info = repo
@@ -158,7 +158,7 @@ where
                 user_id: current_user_id,
                 user_nickname: current_user_info.nickname,
                 team_id: member_invitation_info.team_id.clone(),
-                roles: member_invitation_info.role_mask,
+                roles: member_invitation_info.roles,
             };
 
             repo.advance(context, &MemberStep::create(&member_form))

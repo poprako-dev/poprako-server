@@ -22,8 +22,8 @@ impl MemberRepoTransactional<MockContext> for MockTransactional {}
 
 /// Returns [`Some(now)`] when the given role mask has any bits set, used to timestamp role
 /// assignments.
-fn role_time(role_mask: RoleMask) -> Option<OffsetDateTime> {
-    (u32::from(role_mask) != 0).then_some(now())
+fn role_time(roles: RoleMask) -> Option<OffsetDateTime> {
+    (u32::from(roles) != 0).then_some(now())
 }
 
 /// Inserts a new member record, rejecting duplicates by id or by the same user+team pair.
@@ -159,7 +159,7 @@ impl<'a> Execute<ListInfos<'a>> for Mock {
             ),
             MemberListSpec::Team {
                 team_id,
-                role_bit,
+                role,
                 offset,
                 limit,
                 ..
@@ -171,8 +171,8 @@ impl<'a> Execute<ListInfos<'a>> for Mock {
                     .iter()
                     .filter(|member_info| member_info.team_id == *team_id)
                     .filter(|member_info| {
-                        role_bit
-                            .map(|role_bit| member_info.roles.has_any_role(&[role_bit]))
+                        role
+                            .map(|role| member_info.roles.has_any_role(&[role]))
                             .unwrap_or(true)
                     })
                     .cloned()
