@@ -62,13 +62,15 @@ Global constraints:
 Create or modify these files:
 
 - Modify: `src/part_impl.rs`
-  - Declare production modules `rdb_drive` and `rdb_repo`.
+  - Declare production modules only. Do not put RDB construction logic here.
 - Create or replace: `src/part_impl/rdb_drive.rs`
   - Own `RdbDrive` and `Drive<RdbContext>`.
 - Modify: `src/part_impl/rdb_repo.rs`
-  - Own `RdbRepo`, `RdbRepoTransactional`, `RdbContext`, pool construction helpers, shared non-transactional connection helpers, and module declarations.
+  - Own `RdbRepo`, `RdbRepoTransactional`, shared-backed non-transactional `conn` helper, and module declarations.
   - Import generated Diesel schema with `#[path = "../infra/repo/schema.rs"] pub mod schema;`.
-- Create: `src/part_impl/rdb_repo/error.rs`
+- Create: `src/part_impl/rdb_shared.rs`
+  - Own `RdbShared`, `RdbContext`, `RdbConn`, private pool aliases, pool construction, and shared `conn` acquisition.
+- Create: `src/part_impl/rdb_shared/error.rs`
   - Convert Diesel, pool, serde, and invalid stored values into `RootError`.
 - Create: `src/part_impl/rdb_repo/entity.rs`
   - Provide the entity module root. Submodules are declared by the tasks that
@@ -111,7 +113,8 @@ generated schema, and RDB modules.
 - Modify: `src/part_impl.rs`
 - Modify: `src/part_impl/rdb_repo.rs`
 - Create: `src/part_impl/rdb_drive.rs`
-- Create: `src/part_impl/rdb_repo/error.rs`
+- Create: `src/part_impl/rdb_shared.rs`
+- Create: `src/part_impl/rdb_shared/error.rs`
 - Create: `src/part_impl/rdb_repo/entity.rs`
 
 - [ ] **Step 1: Preserve existing untracked RDB draft**
@@ -136,6 +139,7 @@ test mocks remain `#[cfg(test)]`:
 ```rust
 pub mod rdb_drive;
 pub mod rdb_repo;
+pub mod rdb_shared;
 
 #[cfg(test)]
 pub mod auth_mock;
@@ -149,71 +153,219 @@ pub mod prom_mock;
 pub mod repo_mock;
 ```
 
-- [ ] **Step 3: Create the RDB repo root**
+- [ ] **Step 3: Create shared RDB internals**
+
+Write `src/part_impl/rdb_shared.rs` with this shape:
+
+```rust
+//! Shared Diesel-backed repository internals.
+
+use std::sync::Arc;
+
+use diesel::result::Error as DieselError;
+use diesel_async::AsyncPgConnection;
+use diesel_async::pooled_connection::AsyncDieselConnectionManager;
+use diesel_async::pooled_connection::deadpool::PoolError;
+use diesel_async::pooled_connection::deadpool::{Object, Pool};
+use serde_json::Error as SerdeJsonError;
+
+use crate::result::RootError;
+
+pub(super) mod error;
+
+type RdbPool = Pool<AsyncPgConnection>;
+type RdbPooledConn = Object<AsyncPgConnection>;
+
+#[derive(Clone)]
+pub struct RdbShared {
+    pool: Arc<RdbPool>,
+}
+
+impl RdbShared {
+    pub fn from_database_url(database_url: &str) -> Result<Self, RootError> {
+        let manager = AsyncDieselConnectionManager::<AsyncPgConnection>::new(database_url);
+
+        let pool = Pool::builder(manager)
+            .build()
+            .map_err(|err| error::pool_build("RdbShared::from_database_url", err))?;
+
+        Ok(Self {
+            pool: Arc::new(pool),
+        })
+    }
+
+    pub(super) async fn conn(&self, location: &'static str) -> Result<RdbConn, RootError> {
+        let conn = self.pool.get().await.map_err(|err| pool_get(location, err))?;
+
+        Ok(RdbConn::new(conn))
+    }
+}
+
+pub(super) struct RdbConn {
+    conn: RdbPooledConn,
+}
+
+impl RdbConn {
+    pub(super) fn new(conn: RdbPooledConn) -> Self {
+        Self { conn }
+    }
+
+    pub(super) fn conn(&mut self) -> &mut AsyncPgConnection {
+        &mut self.conn
+    }
+}
+
+pub struct RdbContext {
+    rdb_conn: RdbConn,
+}
+
+impl RdbContext {
+    pub(super) fn new(rdb_conn: RdbConn) -> Self {
+        Self { rdb_conn }
+    }
+
+    pub(super) fn conn(&mut self) -> &mut AsyncPgConnection {
+        self.rdb_conn.conn()
+    }
+}
+
+pub(super) fn pool_get(location: &'static str, err: PoolError) -> RootError {
+    error::pool_get(location, err)
+}
+
+pub(super) fn diesel(location: &'static str, err: DieselError) -> RootError {
+    error::diesel(location, err)
+}
+
+pub(super) fn serde(location: &'static str, err: SerdeJsonError) -> RootError {
+    error::serde(location, err)
+}
+
+pub(super) fn expected(message: &str) -> RootError {
+    error::expected(message)
+}
+
+pub(super) fn invalid_stored_value(
+    location: &'static str,
+    value: impl std::fmt::Display,
+) -> RootError {
+    error::invalid_stored_value(location, value)
+}
+```
+
+Rules:
+
+- `RdbShared` and `RdbContext` are public because external wiring and usecase
+  generic inference must be able to name them.
+- Pool aliases and pooled conn carriers are private.
+- Shared helpers exposed to sibling RDB modules use `pub(super)`.
+- Use `conn` for database conn identifiers.
+
+- [ ] **Step 4: Create RDB error helpers**
+
+Write `src/part_impl/rdb_shared/error.rs`:
+
+```rust
+//! Error conversion helpers for the Diesel-backed repository.
+
+use diesel::result::{DatabaseErrorKind, Error as DieselError};
+use diesel_async::pooled_connection::deadpool::{BuildError, PoolError};
+use serde_json::Error as SerdeJsonError;
+
+use poprako_util::i18n::trl;
+
+use crate::result::{ExpectedVariant, RootError};
+
+pub(super) fn pool_build(location: &'static str, err: BuildError) -> RootError {
+    RootError::Unrecoverable {
+        message: format!("[{}] failed to build pool: {}", location, err),
+    }
+}
+
+pub(super) fn pool_get(location: &'static str, err: PoolError) -> RootError {
+    RootError::Unrecoverable {
+        message: format!("[{}] failed to get conn: {}", location, err),
+    }
+}
+
+pub(super) fn diesel(location: &'static str, err: DieselError) -> RootError {
+    match err {
+        DieselError::DatabaseError(DatabaseErrorKind::UniqueViolation, _) => RootError::Expected {
+            variant: ExpectedVariant::Conflict,
+            message: trl("error-already-exists"),
+        },
+        DieselError::NotFound => RootError::Unrecoverable {
+            message: format!(
+                "[{}] unexpected Diesel NotFound; use optional() and map None at call site",
+                location,
+            ),
+        },
+        err => RootError::Unrecoverable {
+            message: format!("[{}] diesel error: {}", location, err),
+        },
+    }
+}
+
+pub(super) fn serde(location: &'static str, err: SerdeJsonError) -> RootError {
+    RootError::Unrecoverable {
+        message: format!("[{}] serde error: {}", location, err),
+    }
+}
+
+pub(super) fn expected(message: &str) -> RootError {
+    RootError::Expected {
+        variant: ExpectedVariant::ArgsInvalid,
+        message: trl(message),
+    }
+}
+
+pub(super) fn invalid_stored_value(
+    location: &'static str,
+    value: impl std::fmt::Display,
+) -> RootError {
+    RootError::Unrecoverable {
+        message: format!("[{}] invalid stored value: {}", location, value),
+    }
+}
+```
+
+- [ ] **Step 4.5: Create the RDB repo root**
 
 Write `src/part_impl/rdb_repo.rs` with this structure:
 
 ```rust
-//! Diesel-backed repository and prom adapter.
+//! Diesel-backed repository adapter.
 
 use async_trait::async_trait;
-use diesel_async::AsyncPgConnection;
-use diesel_async::pooled_connection::AsyncDieselConnectionManager;
-use diesel_async::pooled_connection::deadpool::{Object, Pool};
 
-use crate::result::RootError;
 use crate::util::DeriveTransactional;
 
+use super::rdb_shared;
+use super::rdb_shared::RdbShared;
+
 pub mod entity;
-pub mod error;
 
 #[path = "../infra/repo/schema.rs"]
 pub mod schema;
 
-pub type RdbPool = Pool<AsyncPgConnection>;
-pub type RdbPooledConnection = Object<AsyncDieselConnectionManager<AsyncPgConnection>>;
-
 pub struct RdbRepo {
-    pool: RdbPool,
+    shared: RdbShared,
 }
 
 impl RdbRepo {
-    pub fn new(pool: RdbPool) -> Self {
-        Self { pool }
+    pub fn new(shared: RdbShared) -> Self {
+        Self { shared }
     }
 
-    pub fn pool(&self) -> RdbPool {
-        self.pool.clone()
-    }
-
-    pub fn from_database_url(database_url: &str) -> Result<Self, RootError> {
-        let manager = AsyncDieselConnectionManager::<AsyncPgConnection>::new(database_url);
-
-        let pool = Pool::builder(manager).build().map_err(error::pool_build)?;
-
-        Ok(Self::new(pool))
-    }
-
-    pub async fn connection(&self, location: &'static str) -> Result<RdbPooledConnection, RootError> {
-        self.pool.get().await.map_err(|err| error::pool_get(location, err))
+    pub(super) async fn conn(
+        &self,
+        location: &'static str,
+    ) -> Result<rdb_shared::RdbConn, crate::result::RootError> {
+        self.shared.conn(location).await
     }
 }
 
 pub struct RdbRepoTransactional;
-
-pub struct RdbContext {
-    connection: RdbPooledConnection,
-}
-
-impl RdbContext {
-    pub fn new(connection: RdbPooledConnection) -> Self {
-        Self { connection }
-    }
-
-    pub fn connection(&mut self) -> &mut AsyncPgConnection {
-        &mut self.connection
-    }
-}
 
 #[async_trait]
 impl DeriveTransactional for RdbRepo {
@@ -225,69 +377,14 @@ impl DeriveTransactional for RdbRepo {
 }
 ```
 
-After writing this code, run `cargo fmt` before checking. If the compiler reports
-the deadpool `Object` type parameters differ for the installed Diesel version,
-adjust only the alias and preserve the public `RdbRepo`, `RdbPool`, and
-`RdbContext` shape.
-
-- [ ] **Step 4: Create RDB error helpers**
-
-Write `src/part_impl/rdb_repo/error.rs`:
+Do not put pool construction in `src/part_impl.rs`. `part_impl.rs` only organizes
+modules. Construct a shared pair from callers as:
 
 ```rust
-//! Error conversion helpers for the Diesel-backed repository.
-
-use diesel::result::{DatabaseErrorKind, Error as DieselError};
-use diesel_async::pooled_connection::PoolError;
-use diesel_async::pooled_connection::deadpool::BuildError;
-use poprako_util::i18n::trl;
-
-use crate::result::{ExpectedVariant, RootError};
-
-pub fn pool_build(err: BuildError) -> RootError {
-    RootError::Unrecoverable {
-        message: format!("[RdbRepo::from_database_url] failed to build pool: {}", err),
-    }
-}
-
-pub fn pool_get(location: &'static str, err: PoolError) -> RootError {
-    RootError::Unrecoverable {
-        message: format!("[{}] failed to get connection: {}", location, err),
-    }
-}
-
-pub fn diesel(err: DieselError) -> RootError {
-    match err {
-        DieselError::DatabaseError(DatabaseErrorKind::UniqueViolation, _) => RootError::Expected {
-            variant: ExpectedVariant::Conflict,
-            message: trl("error-already-exists"),
-        },
-        DieselError::NotFound => RootError::Unrecoverable {
-            message: "[RdbRepo] unexpected Diesel NotFound; use optional() and map None at call site".into(),
-        },
-        err => RootError::Unrecoverable {
-            message: format!("[RdbRepo] diesel error: {}", err),
-        },
-    }
-}
-
-pub fn expected(message: &str) -> RootError {
-    RootError::Expected {
-        variant: ExpectedVariant::ArgsInvalid,
-        message: trl(message),
-    }
-}
-
-pub fn invalid_stored_value(location: &'static str, value: impl std::fmt::Display) -> RootError {
-    RootError::Unrecoverable {
-        message: format!("[{}] invalid stored value: {}", location, value),
-    }
-}
+let rdb_shared = RdbShared::from_database_url(database_url)?;
+let repo = RdbRepo::new(rdb_shared.clone());
+let drive = RdbDrive::new(rdb_shared);
 ```
-
-If `BuildError` or `PoolError` imports differ for the installed version, inspect
-`diesel_async::pooled_connection` docs in the local cargo registry and update
-the imports only.
 
 - [ ] **Step 5: Create entity module root**
 
@@ -310,17 +407,17 @@ use poprako_transactional::drive::Drive;
 use poprako_transactional::drive::result::Error as DriveError;
 use poprako_transactional::util::AsyncFnMark;
 
-use crate::part_impl::rdb_repo::{RdbContext, RdbPool};
-use crate::part_impl::rdb_repo::error;
 use crate::result::RootError;
 
+use super::rdb_shared::{self, RdbContext, RdbShared};
+
 pub struct RdbDrive {
-    pool: RdbPool,
+    shared: RdbShared,
 }
 
 impl RdbDrive {
-    pub fn new(pool: RdbPool) -> Self {
-        Self { pool }
+    pub fn new(shared: RdbShared) -> Self {
+        Self { shared }
     }
 }
 
@@ -336,38 +433,43 @@ impl Drive<RdbContext> for RdbDrive {
             + AsyncFnMark<&'c mut RdbContext, Result<T, E>, Fut: Send>
             + Send,
     {
-        let connection = self
-            .pool
-            .get()
+        let conn = self
+            .shared
+            .conn("RdbDrive::with_context")
             .await
-            .map_err(|err| DriveError::Backend(error::pool_get("RdbDrive::with_context", err)))?;
+            .map_err(DriveError::Backend)?;
 
-        let mut context = RdbContext::new(connection);
+        let mut rdb_context = RdbContext::new(conn);
 
         <AsyncPgConnection as AsyncConnection>::TransactionManager::begin_transaction(
-            context.connection(),
+            rdb_context.conn(),
         )
         .await
-        .map_err(|err| DriveError::Backend(error::diesel(err)))?;
+        .map_err(|err| DriveError::Backend(rdb_shared::diesel("RdbDrive::with_context begin", err)))?;
 
-        let result = f(&mut context).await;
+        let result = f(&mut rdb_context).await;
 
         match result {
             Ok(value) => {
                 <AsyncPgConnection as AsyncConnection>::TransactionManager::commit_transaction(
-                    context.connection(),
+                    rdb_context.conn(),
                 )
                 .await
-                .map_err(|err| DriveError::Backend(error::diesel(err)))?;
+                .map_err(|err| DriveError::Backend(rdb_shared::diesel("RdbDrive::with_context commit", err)))?;
 
                 Ok(value)
             }
             Err(err) => {
                 <AsyncPgConnection as AsyncConnection>::TransactionManager::rollback_transaction(
-                    context.connection(),
+                    rdb_context.conn(),
                 )
                 .await
-                .map_err(|rollback_err| DriveError::Backend(error::diesel(rollback_err)))?;
+                .map_err(|rollback_err| {
+                    DriveError::Backend(rdb_shared::diesel(
+                        "RdbDrive::with_context rollback after advance error",
+                        rollback_err,
+                    ))
+                })?;
 
                 Err(DriveError::Advance(err))
             }
@@ -376,8 +478,8 @@ impl Drive<RdbContext> for RdbDrive {
 }
 ```
 
-This code keeps `RdbContext` owning the pooled connection and manually drives the
-transaction on that connection. Do not replace this with `impl Drive<RdbContext>
+This code keeps `RdbContext` owning the pooled conn and manually drives the
+transaction on that conn. Do not replace this with `impl Drive<RdbContext>
 for RdbRepo`; the drive/repo separation is required by application wiring.
 
 - [ ] **Step 7: Compile and resolve lifetime shape**
@@ -388,16 +490,6 @@ Run:
 cargo check
 ```
 
-Expected first result: the foundation compiles, or compiler errors identify
-imports/types for the installed Diesel async version. Fix only imports, type
-aliases, and method qualification while preserving:
-
-```rust
-pub struct RdbContext {
-    connection: RdbPooledConnection,
-}
-```
-
 Keep `RdbDrive` as the only type implementing `Drive`.
 
 - [ ] **Step 8: Commit Task 1**
@@ -405,7 +497,7 @@ Keep `RdbDrive` as the only type implementing `Drive`.
 Run:
 
 ```bash
-git add src/part_impl.rs src/part_impl/rdb_drive.rs src/part_impl/rdb_repo.rs src/part_impl/rdb_repo/error.rs src/part_impl/rdb_repo/entity.rs
+git add src/part_impl.rs src/part_impl/rdb_drive.rs src/part_impl/rdb_repo.rs src/part_impl/rdb_repo/entity.rs src/part_impl/rdb_shared.rs src/part_impl/rdb_shared/error.rs
 git commit -m "feat: add rdb repo and drive foundation"
 ```
 

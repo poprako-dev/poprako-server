@@ -1,69 +1,35 @@
-//! Diesel-backed repository and prom adapter.
+//! Diesel-backed repository adapter.
 
 use async_trait::async_trait;
-use diesel_async::AsyncPgConnection;
-use diesel_async::pooled_connection::AsyncDieselConnectionManager;
-use diesel_async::pooled_connection::deadpool::{Object, Pool};
 
-use crate::result::RootError;
 use crate::util::DeriveTransactional;
 
+use super::rdb_shared;
+use super::rdb_shared::RdbShared;
+
 pub mod entity;
-pub mod error;
 
 #[path = "../infra/repo/schema.rs"]
 pub mod schema;
 
-pub type RdbPool = Pool<AsyncPgConnection>;
-pub type RdbPooledConnection = Object<AsyncPgConnection>;
-
 pub struct RdbRepo {
-    pool: RdbPool,
+    shared: RdbShared,
 }
 
 impl RdbRepo {
-    pub fn new(pool: RdbPool) -> Self {
-        Self { pool }
+    pub fn new(shared: RdbShared) -> Self {
+        Self { shared }
     }
 
-    pub fn pool(&self) -> RdbPool {
-        self.pool.clone()
-    }
-
-    pub fn from_database_url(database_url: &str) -> Result<Self, RootError> {
-        let manager = AsyncDieselConnectionManager::<AsyncPgConnection>::new(database_url);
-
-        let pool = Pool::builder(manager).build().map_err(error::pool_build)?;
-
-        Ok(Self::new(pool))
-    }
-
-    pub async fn connection(
+    pub(super) async fn conn(
         &self,
         location: &'static str,
-    ) -> Result<RdbPooledConnection, RootError> {
-        self.pool
-            .get()
-            .await
-            .map_err(|err| error::pool_get(location, err))
+    ) -> Result<rdb_shared::RdbConn, crate::result::RootError> {
+        self.shared.conn(location).await
     }
 }
 
 pub struct RdbRepoTransactional;
-
-pub struct RdbContext {
-    connection: RdbPooledConnection,
-}
-
-impl RdbContext {
-    pub fn new(connection: RdbPooledConnection) -> Self {
-        Self { connection }
-    }
-
-    pub fn connection(&mut self) -> &mut AsyncPgConnection {
-        &mut self.connection
-    }
-}
 
 #[async_trait]
 impl DeriveTransactional for RdbRepo {
