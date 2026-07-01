@@ -1,6 +1,6 @@
-pub mod rdb_drive;
-pub mod rdb_repo;
-pub mod rdb_shared;
+pub mod drive_rdb;
+pub mod repo_rdb;
+pub mod repo_rdb_shared;
 
 #[cfg(test)]
 pub mod auth_mock;

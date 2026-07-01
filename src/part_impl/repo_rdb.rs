@@ -4,8 +4,8 @@ use async_trait::async_trait;
 
 use crate::util::DeriveTransactional;
 
-use super::rdb_shared;
-use super::rdb_shared::RdbShared;
+use super::repo_rdb_shared;
+use super::repo_rdb_shared::RdbShared;
 
 pub mod entity;
 
@@ -24,7 +24,7 @@ impl RdbRepo {
     pub(super) async fn conn(
         &self,
         location: &'static str,
-    ) -> Result<rdb_shared::RdbConn, crate::result::RootError> {
+    ) -> Result<repo_rdb_shared::RdbConn, crate::result::RootError> {
         self.shared.conn(location).await
     }
 }
