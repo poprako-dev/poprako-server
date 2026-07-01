@@ -2,7 +2,7 @@
 
 use async_trait::async_trait;
 use diesel::prelude::*;
-use diesel_async::{AsyncPgConnection, RunQueryDsl};
+use diesel_async::RunQueryDsl;
 use time::OffsetDateTime;
 
 use poprako_transactional::advance::Advance;
@@ -18,13 +18,14 @@ use crate::part_impl::repo_rdb::entity::user::{UserAspect, UserCredentialRow, Us
 use crate::part_impl::repo_rdb::{RdbRepo, RdbRepoTransactional, schema};
 use crate::part_impl::shared_rdb::RdbContext;
 use crate::part_impl::shared_rdb::result::{diesel, expected};
+use crate::part_impl::shared_rdb::RdbConn;
 use crate::result::{RegularError, RegularResult};
 
 use schema::t_user::dsl::*;
 
 // ── Free functions ──────────────────────────────────────────────────────────
 
-async fn get_info_by_id(conn: &mut AsyncPgConnection, id: &str) -> RegularResult<UserInfo> {
+async fn get_info_by_id(conn: &mut RdbConn, id: &str) -> RegularResult<UserInfo> {
     let row: UserRow = t_user
         .filter(f_id.eq(id))
         .select(UserRow::as_select())
@@ -38,7 +39,7 @@ async fn get_info_by_id(conn: &mut AsyncPgConnection, id: &str) -> RegularResult
 }
 
 async fn get_credential_by_qid(
-    conn: &mut AsyncPgConnection,
+    conn: &mut RdbConn,
     qid: &str,
 ) -> RegularResult<UserCredential> {
     let row: UserCredentialRow = t_user
@@ -54,7 +55,7 @@ async fn get_credential_by_qid(
 }
 
 async fn find_info_by_qid(
-    conn: &mut AsyncPgConnection,
+    conn: &mut RdbConn,
     qid: &str,
 ) -> RegularResult<Option<UserInfo>> {
     let row: Option<UserRow> = t_user
@@ -68,7 +69,7 @@ async fn find_info_by_qid(
     Ok(row.map(Into::into))
 }
 
-async fn create_user(conn: &mut AsyncPgConnection, form: &UserForm) -> RegularResult<UserInfo> {
+async fn create_user(conn: &mut RdbConn, form: &UserForm) -> RegularResult<UserInfo> {
     let now = OffsetDateTime::now_utc();
 
     let entry = UserEntry {
@@ -92,7 +93,7 @@ async fn create_user(conn: &mut AsyncPgConnection, form: &UserForm) -> RegularRe
 }
 
 async fn find_info_by_qid_tx(
-    conn: &mut AsyncPgConnection,
+    conn: &mut RdbConn,
     qid: &str,
 ) -> RegularResult<Option<UserInfo>> {
     let row: Option<UserRow> = t_user
@@ -107,7 +108,7 @@ async fn find_info_by_qid_tx(
 }
 
 async fn update_user(
-    conn: &mut AsyncPgConnection,
+    conn: &mut RdbConn,
     id: &str,
     qid: &str,
     nickname: &str,
@@ -126,7 +127,7 @@ async fn update_user(
 }
 
 async fn reserve_avatar(
-    conn: &mut AsyncPgConnection,
+    conn: &mut RdbConn,
     id: &str,
     file_ext: &str,
 ) -> RegularResult<UserAvatarReservation> {
@@ -154,7 +155,7 @@ async fn reserve_avatar(
 }
 
 async fn mark_avatar_uploaded(
-    conn: &mut AsyncPgConnection,
+    conn: &mut RdbConn,
     id: &str,
     version: i64,
 ) -> RegularResult<()> {
@@ -177,7 +178,7 @@ async fn mark_avatar_uploaded(
     Ok(())
 }
 
-async fn touch_last_active(conn: &mut AsyncPgConnection, id: &str) -> RegularResult<()> {
+async fn touch_last_active(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
     let now = OffsetDateTime::now_utc();
 
     let aspect = UserAspect::new(now).last_active_at(now);
@@ -192,7 +193,7 @@ async fn touch_last_active(conn: &mut AsyncPgConnection, id: &str) -> RegularRes
 }
 
 async fn get_info_by_id_excluded(
-    conn: &mut AsyncPgConnection,
+    conn: &mut RdbConn,
     id: &str,
 ) -> RegularResult<UserInfo> {
     let row: UserRow = t_user
@@ -208,7 +209,7 @@ async fn get_info_by_id_excluded(
     Ok(row.into())
 }
 
-async fn delete_user(conn: &mut AsyncPgConnection, id: &str) -> RegularResult<()> {
+async fn delete_user(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
     diesel::delete(t_user.filter(f_id.eq(id)))
         .execute(conn)
         .await

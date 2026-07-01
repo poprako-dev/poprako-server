@@ -2,7 +2,7 @@
 
 use async_trait::async_trait;
 use diesel::prelude::*;
-use diesel_async::{AsyncPgConnection, RunQueryDsl};
+use diesel_async::RunQueryDsl;
 use time::OffsetDateTime;
 
 use poprako_transactional::advance::Advance;
@@ -21,13 +21,14 @@ use crate::part_impl::repo_rdb::entity::comic::{ComicAspect, ComicEntry, ComicRo
 use crate::part_impl::repo_rdb::{RdbRepo, RdbRepoTransactional, schema};
 use crate::part_impl::shared_rdb::RdbContext;
 use crate::part_impl::shared_rdb::result::{diesel, expected};
+use crate::part_impl::shared_rdb::RdbConn;
 use crate::result::{RegularError, RegularResult};
 
 use schema::t_comic::dsl::*;
 
 // ── Free functions ──────────────────────────────────────────────────────────
 
-async fn get_comic_by_id(conn: &mut AsyncPgConnection, id: &str) -> RegularResult<ComicInfo> {
+async fn get_comic_by_id(conn: &mut RdbConn, id: &str) -> RegularResult<ComicInfo> {
     let row: ComicRow = t_comic
         .filter(f_id.eq(id))
         .select(ComicRow::as_select())
@@ -41,7 +42,7 @@ async fn get_comic_by_id(conn: &mut AsyncPgConnection, id: &str) -> RegularResul
 }
 
 async fn list_comics(
-    conn: &mut AsyncPgConnection,
+    conn: &mut RdbConn,
     spec: &ComicListSpec,
 ) -> RegularResult<Vec<ComicInfo>> {
     let mut query = t_comic
@@ -49,8 +50,8 @@ async fn list_comics(
         .select(ComicRow::as_select())
         .into_boxed();
 
-    if let Some(ft) = &spec.fuzzy_title {
-        query = query.filter(f_title.ilike(format!("%{}%", ft)));
+    if let Some(fuzzy_title) = &spec.fuzzy_title {
+        query = query.filter(f_title.ilike(format!("%{}%", fuzzy_title)));
     }
 
     if let Some(completed) = spec.is_completed {
@@ -68,7 +69,7 @@ async fn list_comics(
     Ok(rows.into_iter().map(Into::into).collect())
 }
 
-async fn update_comic(conn: &mut AsyncPgConnection, update: &ComicInfoUpdate) -> RegularResult<()> {
+async fn update_comic(conn: &mut RdbConn, update: &ComicInfoUpdate) -> RegularResult<()> {
     let now = OffsetDateTime::now_utc();
 
     let aspect = ComicAspect::new(now)
@@ -86,7 +87,7 @@ async fn update_comic(conn: &mut AsyncPgConnection, update: &ComicInfoUpdate) ->
 }
 
 async fn mark_comic_cover_uploaded(
-    conn: &mut AsyncPgConnection,
+    conn: &mut RdbConn,
     id: &str,
     version: i64,
 ) -> RegularResult<()> {
@@ -109,7 +110,7 @@ async fn mark_comic_cover_uploaded(
     Ok(())
 }
 
-async fn create_comic(conn: &mut AsyncPgConnection, form: &ComicForm) -> RegularResult<ComicInfo> {
+async fn create_comic(conn: &mut RdbConn, form: &ComicForm) -> RegularResult<ComicInfo> {
     let entry = ComicEntry::from(form);
 
     let row: ComicRow = diesel::insert_into(t_comic)
@@ -122,12 +123,12 @@ async fn create_comic(conn: &mut AsyncPgConnection, form: &ComicForm) -> Regular
     Ok(row.into())
 }
 
-async fn get_comic_by_id_tx(conn: &mut AsyncPgConnection, id: &str) -> RegularResult<ComicInfo> {
+async fn get_comic_by_id_tx(conn: &mut RdbConn, id: &str) -> RegularResult<ComicInfo> {
     get_comic_by_id(conn, id).await
 }
 
 async fn get_comic_by_id_excluded(
-    conn: &mut AsyncPgConnection,
+    conn: &mut RdbConn,
     id: &str,
 ) -> RegularResult<ComicInfo> {
     let row: ComicRow = t_comic
@@ -144,7 +145,7 @@ async fn get_comic_by_id_excluded(
 }
 
 async fn list_comics_excluded(
-    conn: &mut AsyncPgConnection,
+    conn: &mut RdbConn,
     spec: &ComicListSpec,
 ) -> RegularResult<Vec<ComicInfo>> {
     let rows: Vec<ComicRow> = t_comic
@@ -159,7 +160,7 @@ async fn list_comics_excluded(
 }
 
 async fn reserve_comic_cover(
-    conn: &mut AsyncPgConnection,
+    conn: &mut RdbConn,
     id: &str,
     file_ext: &str,
 ) -> RegularResult<ComicCoverReservation> {
@@ -188,14 +189,14 @@ async fn reserve_comic_cover(
 }
 
 async fn mark_comic_cover_uploaded_tx(
-    conn: &mut AsyncPgConnection,
+    conn: &mut RdbConn,
     id: &str,
     version: i64,
 ) -> RegularResult<()> {
     mark_comic_cover_uploaded(conn, id, version).await
 }
 
-async fn delete_comic(conn: &mut AsyncPgConnection, id: &str) -> RegularResult<()> {
+async fn delete_comic(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
     diesel::delete(t_comic.filter(f_id.eq(id)))
         .execute(conn)
         .await
@@ -205,7 +206,7 @@ async fn delete_comic(conn: &mut AsyncPgConnection, id: &str) -> RegularResult<(
 }
 
 async fn mark_comic_completed(
-    conn: &mut AsyncPgConnection,
+    conn: &mut RdbConn,
     id: &str,
     is_completed: bool,
 ) -> RegularResult<()> {
@@ -222,7 +223,7 @@ async fn mark_comic_completed(
     Ok(())
 }
 
-async fn incr_chapter_next_index(conn: &mut AsyncPgConnection, id: &str) -> RegularResult<i32> {
+async fn incr_chapter_next_index(conn: &mut RdbConn, id: &str) -> RegularResult<i32> {
     let prev: i32 = diesel::update(t_comic.filter(f_id.eq(id)))
         .set(f_chapter_next_index.eq(f_chapter_next_index + 1))
         .returning(f_chapter_next_index - 1)
@@ -234,7 +235,7 @@ async fn incr_chapter_next_index(conn: &mut AsyncPgConnection, id: &str) -> Regu
 }
 
 async fn update_chapter_count(
-    conn: &mut AsyncPgConnection,
+    conn: &mut RdbConn,
     id: &str,
     delta: i32,
 ) -> RegularResult<()> {
@@ -247,7 +248,7 @@ async fn update_chapter_count(
     Ok(())
 }
 
-async fn touch_comic_last_active(conn: &mut AsyncPgConnection, id: &str) -> RegularResult<()> {
+async fn touch_comic_last_active(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
     let now = OffsetDateTime::now_utc();
 
     let aspect = ComicAspect::new(now).last_active_at(now);
@@ -267,8 +268,8 @@ async fn touch_comic_last_active(conn: &mut AsyncPgConnection, id: &str) -> Regu
 impl<'a> Execute<GetInfoById<'a>> for RdbRepo {
     type Error = RegularError;
 
-    async fn execute(&self, s: &GetInfoById<'a>) -> RegularResult<ComicInfo> {
-        submit_query!(self.shared, get_comic_by_id, s.id)
+    async fn execute(&self, step: &GetInfoById<'a>) -> RegularResult<ComicInfo> {
+        submit_query!(self.shared, get_comic_by_id, step.id)
     }
 }
 
@@ -276,8 +277,8 @@ impl<'a> Execute<GetInfoById<'a>> for RdbRepo {
 impl<'a> Execute<ListInfos<'a>> for RdbRepo {
     type Error = RegularError;
 
-    async fn execute(&self, s: &ListInfos<'a>) -> RegularResult<Vec<ComicInfo>> {
-        submit_query!(self.shared, list_comics, s.spec)
+    async fn execute(&self, step: &ListInfos<'a>) -> RegularResult<Vec<ComicInfo>> {
+        submit_query!(self.shared, list_comics, step.spec)
     }
 }
 
@@ -285,8 +286,8 @@ impl<'a> Execute<ListInfos<'a>> for RdbRepo {
 impl<'a> Execute<UpdateInfo<'a>> for RdbRepo {
     type Error = RegularError;
 
-    async fn execute(&self, s: &UpdateInfo<'a>) -> RegularResult<()> {
-        submit_query!(self.shared, update_comic, s.update)
+    async fn execute(&self, step: &UpdateInfo<'a>) -> RegularResult<()> {
+        submit_query!(self.shared, update_comic, step.update)
     }
 }
 
@@ -294,12 +295,12 @@ impl<'a> Execute<UpdateInfo<'a>> for RdbRepo {
 impl<'a> Execute<MarkCoverUploaded<'a>> for RdbRepo {
     type Error = RegularError;
 
-    async fn execute(&self, s: &MarkCoverUploaded<'a>) -> RegularResult<()> {
+    async fn execute(&self, step: &MarkCoverUploaded<'a>) -> RegularResult<()> {
         submit_query!(
             self.shared,
             mark_comic_cover_uploaded,
-            s.id,
-            s.cover_version
+            step.id,
+            step.cover_version
         )
     }
 }
@@ -310,8 +311,8 @@ impl<'a> Execute<MarkCoverUploaded<'a>> for RdbRepo {
 impl<'a> Advance<Create<'a>, RdbContext> for RdbRepoTransactional {
     type Error = RegularError;
 
-    async fn advance(&self, c: &mut RdbContext, s: &Create<'a>) -> RegularResult<ComicInfo> {
-        create_comic(c.conn(), s.form).await
+    async fn advance(&self, context: &mut RdbContext, step: &Create<'a>) -> RegularResult<ComicInfo> {
+        create_comic(context.conn(), step.form).await
     }
 }
 
@@ -319,8 +320,12 @@ impl<'a> Advance<Create<'a>, RdbContext> for RdbRepoTransactional {
 impl<'a> Advance<GetInfoById<'a>, RdbContext> for RdbRepoTransactional {
     type Error = RegularError;
 
-    async fn advance(&self, c: &mut RdbContext, s: &GetInfoById<'a>) -> RegularResult<ComicInfo> {
-        get_comic_by_id_tx(c.conn(), s.id).await
+    async fn advance(
+        &self,
+        context: &mut RdbContext,
+        step: &GetInfoById<'a>,
+    ) -> RegularResult<ComicInfo> {
+        get_comic_by_id_tx(context.conn(), step.id).await
     }
 }
 
@@ -330,10 +335,10 @@ impl<'a> Advance<GetInfoExcluded<'a>, RdbContext> for RdbRepoTransactional {
 
     async fn advance(
         &self,
-        c: &mut RdbContext,
-        s: &GetInfoExcluded<'a>,
+        context: &mut RdbContext,
+        step: &GetInfoExcluded<'a>,
     ) -> RegularResult<ComicInfo> {
-        get_comic_by_id_excluded(c.conn(), s.id).await
+        get_comic_by_id_excluded(context.conn(), step.id).await
     }
 }
 
@@ -343,10 +348,10 @@ impl<'a> Advance<ListInfosExcluded<'a>, RdbContext> for RdbRepoTransactional {
 
     async fn advance(
         &self,
-        c: &mut RdbContext,
-        s: &ListInfosExcluded<'a>,
+        context: &mut RdbContext,
+        step: &ListInfosExcluded<'a>,
     ) -> RegularResult<Vec<ComicInfo>> {
-        list_comics_excluded(c.conn(), s.spec).await
+        list_comics_excluded(context.conn(), step.spec).await
     }
 }
 
@@ -356,10 +361,10 @@ impl<'a> Advance<ReserveCover<'a>, RdbContext> for RdbRepoTransactional {
 
     async fn advance(
         &self,
-        c: &mut RdbContext,
-        s: &ReserveCover<'a>,
+        context: &mut RdbContext,
+        step: &ReserveCover<'a>,
     ) -> RegularResult<ComicCoverReservation> {
-        reserve_comic_cover(c.conn(), s.id, s.file_extension).await
+        reserve_comic_cover(context.conn(), step.id, step.file_extension).await
     }
 }
 
@@ -367,8 +372,12 @@ impl<'a> Advance<ReserveCover<'a>, RdbContext> for RdbRepoTransactional {
 impl<'a> Advance<MarkCoverUploaded<'a>, RdbContext> for RdbRepoTransactional {
     type Error = RegularError;
 
-    async fn advance(&self, c: &mut RdbContext, s: &MarkCoverUploaded<'a>) -> RegularResult<()> {
-        mark_comic_cover_uploaded_tx(c.conn(), s.id, s.cover_version).await
+    async fn advance(
+        &self,
+        context: &mut RdbContext,
+        step: &MarkCoverUploaded<'a>,
+    ) -> RegularResult<()> {
+        mark_comic_cover_uploaded_tx(context.conn(), step.id, step.cover_version).await
     }
 }
 
@@ -376,8 +385,8 @@ impl<'a> Advance<MarkCoverUploaded<'a>, RdbContext> for RdbRepoTransactional {
 impl<'a> Advance<Delete<'a>, RdbContext> for RdbRepoTransactional {
     type Error = RegularError;
 
-    async fn advance(&self, c: &mut RdbContext, s: &Delete<'a>) -> RegularResult<()> {
-        delete_comic(c.conn(), s.id).await
+    async fn advance(&self, context: &mut RdbContext, step: &Delete<'a>) -> RegularResult<()> {
+        delete_comic(context.conn(), step.id).await
     }
 }
 
@@ -385,8 +394,12 @@ impl<'a> Advance<Delete<'a>, RdbContext> for RdbRepoTransactional {
 impl<'a> Advance<MarkCompleted<'a>, RdbContext> for RdbRepoTransactional {
     type Error = RegularError;
 
-    async fn advance(&self, c: &mut RdbContext, s: &MarkCompleted<'a>) -> RegularResult<()> {
-        mark_comic_completed(c.conn(), s.id, s.is_completed).await
+    async fn advance(
+        &self,
+        context: &mut RdbContext,
+        step: &MarkCompleted<'a>,
+    ) -> RegularResult<()> {
+        mark_comic_completed(context.conn(), step.id, step.is_completed).await
     }
 }
 
@@ -396,10 +409,10 @@ impl<'a> Advance<IncrChapterNextIndex<'a>, RdbContext> for RdbRepoTransactional 
 
     async fn advance(
         &self,
-        c: &mut RdbContext,
-        s: &IncrChapterNextIndex<'a>,
+        context: &mut RdbContext,
+        step: &IncrChapterNextIndex<'a>,
     ) -> RegularResult<i32> {
-        incr_chapter_next_index(c.conn(), s.id).await
+        incr_chapter_next_index(context.conn(), step.id).await
     }
 }
 
@@ -407,8 +420,12 @@ impl<'a> Advance<IncrChapterNextIndex<'a>, RdbContext> for RdbRepoTransactional 
 impl<'a> Advance<UpdateChapterCount<'a>, RdbContext> for RdbRepoTransactional {
     type Error = RegularError;
 
-    async fn advance(&self, c: &mut RdbContext, s: &UpdateChapterCount<'a>) -> RegularResult<()> {
-        update_chapter_count(c.conn(), s.id, s.delta).await
+    async fn advance(
+        &self,
+        context: &mut RdbContext,
+        step: &UpdateChapterCount<'a>,
+    ) -> RegularResult<()> {
+        update_chapter_count(context.conn(), step.id, step.delta).await
     }
 }
 
@@ -416,7 +433,11 @@ impl<'a> Advance<UpdateChapterCount<'a>, RdbContext> for RdbRepoTransactional {
 impl<'a> Advance<TouchLastActive<'a>, RdbContext> for RdbRepoTransactional {
     type Error = RegularError;
 
-    async fn advance(&self, c: &mut RdbContext, s: &TouchLastActive<'a>) -> RegularResult<()> {
-        touch_comic_last_active(c.conn(), s.id).await
+    async fn advance(
+        &self,
+        context: &mut RdbContext,
+        step: &TouchLastActive<'a>,
+    ) -> RegularResult<()> {
+        touch_comic_last_active(context.conn(), step.id).await
     }
 }

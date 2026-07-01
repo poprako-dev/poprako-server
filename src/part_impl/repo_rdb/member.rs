@@ -2,7 +2,7 @@
 
 use async_trait::async_trait;
 use diesel::prelude::*;
-use diesel_async::{AsyncPgConnection, RunQueryDsl};
+use diesel_async::RunQueryDsl;
 use time::OffsetDateTime;
 
 use poprako_transactional::advance::Advance;
@@ -17,6 +17,7 @@ use crate::part_impl::repo_rdb::entity::member::{MemberAspect, MemberEntry, Memb
 use crate::part_impl::repo_rdb::{RdbRepo, RdbRepoTransactional, schema};
 use crate::part_impl::shared_rdb::RdbContext;
 use crate::part_impl::shared_rdb::result::{diesel, expected};
+use crate::part_impl::shared_rdb::RdbConn;
 use crate::result::{RegularError, RegularResult};
 use crate::value::role::{RoleField, RoleMask};
 
@@ -36,7 +37,7 @@ type RoleTimestamps = (
 );
 
 fn role_timestamps_from_mask(roles: RoleMask, now: OffsetDateTime) -> RoleTimestamps {
-    let ts = |field: RoleField| -> Option<OffsetDateTime> {
+    let timestamp_fn = |field: RoleField| -> Option<OffsetDateTime> {
         // FIXME: no if else but function style.
         if roles.has_any_role(&[field]) {
             Some(now)
@@ -46,14 +47,14 @@ fn role_timestamps_from_mask(roles: RoleMask, now: OffsetDateTime) -> RoleTimest
     };
 
     (
-        ts(RoleField::RAW_PROVIDER),
-        ts(RoleField::TRANSLATOR),
-        ts(RoleField::PROOFREADER),
-        ts(RoleField::TYPESETTER),
-        ts(RoleField::REDRAWER),
-        ts(RoleField::REVIEWER),
-        ts(RoleField::PUBLISHER),
-        ts(RoleField::ADMIN),
+        timestamp_fn(RoleField::RAW_PROVIDER),
+        timestamp_fn(RoleField::TRANSLATOR),
+        timestamp_fn(RoleField::PROOFREADER),
+        timestamp_fn(RoleField::TYPESETTER),
+        timestamp_fn(RoleField::REDRAWER),
+        timestamp_fn(RoleField::REVIEWER),
+        timestamp_fn(RoleField::PUBLISHER),
+        timestamp_fn(RoleField::ADMIN),
         None,
     )
 }
@@ -123,7 +124,7 @@ fn aspect_from_role_update(update: &MemberRoleUpdate, now: OffsetDateTime) -> Me
 // ── Free functions ──────────────────────────────────────────────────────────
 
 async fn find_member_by_user_team(
-    conn: &mut AsyncPgConnection,
+    conn: &mut RdbConn,
     user_id: &str,
     team_id: &str,
 ) -> RegularResult<Option<MemberInfo>> {
@@ -140,7 +141,7 @@ async fn find_member_by_user_team(
 }
 
 async fn list_members(
-    conn: &mut AsyncPgConnection,
+    conn: &mut RdbConn,
     spec: &MemberListSpec,
 ) -> RegularResult<Vec<MemberInfo>> {
     let rows: Vec<MemberRow> = match spec {
@@ -157,8 +158,8 @@ async fn list_members(
                 .select(MemberRow::as_select())
                 .into_boxed();
 
-            if let Some(nick) = fuzzy_nickname {
-                query = query.filter(f_user_nickname.ilike(format!("%{}%", nick)));
+            if let Some(nickname) = fuzzy_nickname {
+                query = query.filter(f_user_nickname.ilike(format!("%{}%", nickname)));
             }
 
             query
@@ -188,7 +189,7 @@ async fn list_members(
     Ok(rows.into_iter().map(Into::into).collect())
 }
 
-async fn get_member_by_id(conn: &mut AsyncPgConnection, id: &str) -> RegularResult<MemberInfo> {
+async fn get_member_by_id(conn: &mut RdbConn, id: &str) -> RegularResult<MemberInfo> {
     let row: MemberRow = t_member
         .filter(f_id.eq(id))
         .select(MemberRow::as_select())
@@ -202,7 +203,7 @@ async fn get_member_by_id(conn: &mut AsyncPgConnection, id: &str) -> RegularResu
 }
 
 async fn create_member(
-    conn: &mut AsyncPgConnection,
+    conn: &mut RdbConn,
     form: &MemberForm,
 ) -> RegularResult<MemberInfo> {
     let now = OffsetDateTime::now_utc();
@@ -220,7 +221,7 @@ async fn create_member(
 }
 
 async fn update_member_user_nickname(
-    conn: &mut AsyncPgConnection,
+    conn: &mut RdbConn,
     user_id: &str,
     nickname: &str,
 ) -> RegularResult<()> {
@@ -238,7 +239,7 @@ async fn update_member_user_nickname(
 }
 
 async fn touch_member_last_active(
-    conn: &mut AsyncPgConnection,
+    conn: &mut RdbConn,
     user_id: &str,
 ) -> RegularResult<()> {
     let now = OffsetDateTime::now_utc();
@@ -255,7 +256,7 @@ async fn touch_member_last_active(
 }
 
 async fn list_members_by_user_excluded(
-    conn: &mut AsyncPgConnection,
+    conn: &mut RdbConn,
     user_id: &str,
 ) -> RegularResult<Vec<MemberInfo>> {
     let rows: Vec<MemberRow> = t_member
@@ -270,7 +271,7 @@ async fn list_members_by_user_excluded(
 }
 
 async fn find_member_by_user_team_tx(
-    conn: &mut AsyncPgConnection,
+    conn: &mut RdbConn,
     user_id: &str,
     team_id: &str,
 ) -> RegularResult<Option<MemberInfo>> {
@@ -278,7 +279,7 @@ async fn find_member_by_user_team_tx(
 }
 
 async fn get_member_by_id_excluded(
-    conn: &mut AsyncPgConnection,
+    conn: &mut RdbConn,
     id: &str,
 ) -> RegularResult<MemberInfo> {
     let row: MemberRow = t_member
@@ -295,7 +296,7 @@ async fn get_member_by_id_excluded(
 }
 
 async fn update_member_role(
-    conn: &mut AsyncPgConnection,
+    conn: &mut RdbConn,
     update: &MemberRoleUpdate,
 ) -> RegularResult<()> {
     let now = OffsetDateTime::now_utc();
@@ -311,7 +312,7 @@ async fn update_member_role(
     Ok(())
 }
 
-async fn delete_member(conn: &mut AsyncPgConnection, id: &str) -> RegularResult<()> {
+async fn delete_member(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
     diesel::delete(t_member.filter(f_id.eq(id)))
         .execute(conn)
         .await
