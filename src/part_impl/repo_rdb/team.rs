@@ -2,7 +2,7 @@
 
 use async_trait::async_trait;
 use diesel::prelude::*;
-use diesel_async::{AsyncPgConnection, RunQueryDsl};
+use diesel_async::RunQueryDsl;
 use time::OffsetDateTime;
 
 use poprako_transactional::advance::Advance;
@@ -18,6 +18,7 @@ use crate::part_impl::repo_rdb::entity::team::{TeamAspect, TeamEntry, TeamRow};
 use crate::part_impl::repo_rdb::{RdbRepo, RdbRepoTransactional, schema};
 use crate::part_impl::shared_rdb::RdbContext;
 use crate::part_impl::shared_rdb::result::{diesel, expected};
+use crate::part_impl::shared_rdb::RdbConn;
 use crate::result::{RegularError, RegularResult};
 
 use schema::t_member;
@@ -25,7 +26,7 @@ use schema::t_team::dsl::*;
 
 // ── Free functions ──────────────────────────────────────────────────────────
 
-async fn create_team(conn: &mut AsyncPgConnection, form: &TeamForm) -> RegularResult<TeamInfo> {
+async fn create_team(conn: &mut RdbConn, form: &TeamForm) -> RegularResult<TeamInfo> {
     let now = OffsetDateTime::now_utc();
 
     let entry = TeamEntry {
@@ -47,7 +48,7 @@ async fn create_team(conn: &mut AsyncPgConnection, form: &TeamForm) -> RegularRe
     Ok(row.into())
 }
 
-async fn get_team_by_id(conn: &mut AsyncPgConnection, target_id: &str) -> RegularResult<TeamInfo> {
+async fn get_team_by_id(conn: &mut RdbConn, target_id: &str) -> RegularResult<TeamInfo> {
     let row: TeamRow = t_team
         .filter(f_id.eq(target_id))
         .select(TeamRow::as_select())
@@ -61,16 +62,16 @@ async fn get_team_by_id(conn: &mut AsyncPgConnection, target_id: &str) -> Regula
 }
 
 async fn list_teams(
-    conn: &mut AsyncPgConnection,
+    conn: &mut RdbConn,
     user_id: Option<&str>,
     offset: u64,
     limit: u64,
 ) -> RegularResult<Vec<TeamInfo>> {
     let mut query = t_team.into_boxed();
 
-    if let Some(uid) = user_id {
+    if let Some(user_id) = user_id {
         let member_team_ids = t_member::table
-            .filter(t_member::f_user_id.eq(uid))
+            .filter(t_member::f_user_id.eq(user_id))
             .select(t_member::f_team_id);
         query = query.filter(f_id.eq_any(member_team_ids));
     }
@@ -88,7 +89,7 @@ async fn list_teams(
 }
 
 async fn update_team(
-    conn: &mut AsyncPgConnection,
+    conn: &mut RdbConn,
     target_id: &str,
     name: &str,
     description: &str,
@@ -107,7 +108,7 @@ async fn update_team(
 }
 
 async fn mark_team_avatar_uploaded(
-    conn: &mut AsyncPgConnection,
+    conn: &mut RdbConn,
     target_id: &str,
     version: i64,
 ) -> RegularResult<()> {
@@ -131,7 +132,7 @@ async fn mark_team_avatar_uploaded(
 }
 
 async fn reserve_team_avatar(
-    conn: &mut AsyncPgConnection,
+    conn: &mut RdbConn,
     target_id: &str,
     file_ext: &str,
 ) -> RegularResult<TeamAvatarReservation> {
@@ -160,7 +161,7 @@ async fn reserve_team_avatar(
 }
 
 async fn mark_team_avatar_uploaded_tx(
-    conn: &mut AsyncPgConnection,
+    conn: &mut RdbConn,
     target_id: &str,
     version: i64,
 ) -> RegularResult<()> {
@@ -168,7 +169,7 @@ async fn mark_team_avatar_uploaded_tx(
 }
 
 async fn get_team_by_id_excluded(
-    conn: &mut AsyncPgConnection,
+    conn: &mut RdbConn,
     target_id: &str,
 ) -> RegularResult<TeamInfo> {
     let row: TeamRow = t_team
@@ -184,7 +185,7 @@ async fn get_team_by_id_excluded(
     Ok(row.into())
 }
 
-async fn delete_team(conn: &mut AsyncPgConnection, target_id: &str) -> RegularResult<()> {
+async fn delete_team(conn: &mut RdbConn, target_id: &str) -> RegularResult<()> {
     diesel::delete(t_team.filter(f_id.eq(target_id)))
         .execute(conn)
         .await
@@ -194,7 +195,7 @@ async fn delete_team(conn: &mut AsyncPgConnection, target_id: &str) -> RegularRe
 }
 
 async fn increment_workset_next_index(
-    conn: &mut AsyncPgConnection,
+    conn: &mut RdbConn,
     target_id: &str,
 ) -> RegularResult<i32> {
     let prev: i32 = diesel::update(t_team.filter(f_id.eq(target_id)))

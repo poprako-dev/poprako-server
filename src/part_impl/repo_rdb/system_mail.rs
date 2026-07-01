@@ -2,7 +2,7 @@
 
 use async_trait::async_trait;
 use diesel::prelude::*;
-use diesel_async::{AsyncPgConnection, RunQueryDsl};
+use diesel_async::RunQueryDsl;
 
 use crate::model::system_mail::{SystemMailForm, SystemMailInfo};
 use crate::part::repo::step::system_mail::{
@@ -12,13 +12,14 @@ use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_rdb::entity::system_mail::{SystemMailEntry, SystemMailRow};
 use crate::part_impl::repo_rdb::{RdbRepo, schema};
 use crate::part_impl::shared_rdb::result::diesel;
+use crate::part_impl::shared_rdb::RdbConn;
 use crate::result::{RegularError, RegularResult};
 
 use schema::t_system_mail::dsl::*;
 
 // ── Free functions ──────────────────────────────────────────────────────────
 
-async fn send_mail(conn: &mut AsyncPgConnection, form: &SystemMailForm) -> RegularResult<()> {
+async fn send_mail(conn: &mut RdbConn, form: &SystemMailForm) -> RegularResult<()> {
     let entry = SystemMailEntry::from(form);
 
     diesel::insert_into(t_system_mail)
@@ -31,7 +32,7 @@ async fn send_mail(conn: &mut AsyncPgConnection, form: &SystemMailForm) -> Regul
 }
 
 async fn send_batch_mail(
-    conn: &mut AsyncPgConnection,
+    conn: &mut RdbConn,
     forms: &[SystemMailForm],
 ) -> RegularResult<()> {
     let entries: Vec<SystemMailEntry<'_>> = forms.iter().map(SystemMailEntry::from).collect();
@@ -46,7 +47,7 @@ async fn send_batch_mail(
 }
 
 async fn list_by_receiver(
-    conn: &mut AsyncPgConnection,
+    conn: &mut RdbConn,
     receiver_id: &str,
     read: Option<bool>,
     offset: u64,
@@ -57,8 +58,8 @@ async fn list_by_receiver(
         .select(SystemMailRow::as_select())
         .into_boxed();
 
-    if let Some(r) = read {
-        query = query.filter(f_read.eq(r));
+    if let Some(read) = read {
+        query = query.filter(f_read.eq(read));
     }
 
     let rows: Vec<SystemMailRow> = query
@@ -73,7 +74,7 @@ async fn list_by_receiver(
 }
 
 async fn list_by_ids(
-    conn: &mut AsyncPgConnection,
+    conn: &mut RdbConn,
     ids: &[String],
 ) -> RegularResult<Vec<SystemMailInfo>> {
     let rows: Vec<SystemMailRow> = t_system_mail
@@ -86,7 +87,7 @@ async fn list_by_ids(
     Ok(rows.into_iter().map(Into::into).collect())
 }
 
-async fn mark_read(conn: &mut AsyncPgConnection, id: &str) -> RegularResult<()> {
+async fn mark_read(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
     diesel::update(t_system_mail.filter(f_id.eq(id)))
         .set(f_read.eq(true))
         .execute(conn)

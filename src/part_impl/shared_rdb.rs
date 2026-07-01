@@ -16,6 +16,12 @@ type RdbPool = Pool<AsyncPgConnection>;
 
 pub type RdbPooledConn = Object<AsyncPgConnection>;
 
+/// Alias for the underlying Diesel async connection type.
+///
+/// Used as the parameter type in all free query functions so the concrete
+/// connection type is centralized in one place.
+pub type RdbConn = AsyncPgConnection;
+
 #[derive(Clone)]
 pub struct RdbShared {
     pool: Arc<RdbPool>,
@@ -32,7 +38,7 @@ impl RdbShared {
         })
     }
 
-    pub(super) async fn get(&self) -> RegularResult<RdbPooledConn> {
+    pub async fn get(&self) -> RegularResult<RdbPooledConn> {
         self.pool.get().await.map_err(pool_get)
     }
 }

@@ -2,7 +2,7 @@
 
 use async_trait::async_trait;
 use diesel::prelude::*;
-use diesel_async::{AsyncPgConnection, RunQueryDsl};
+use diesel_async::RunQueryDsl;
 use time::OffsetDateTime;
 
 use poprako_transactional::advance::Advance;
@@ -18,6 +18,7 @@ use crate::part_impl::repo_rdb::entity::member_invitation::{
 use crate::part_impl::repo_rdb::{RdbRepo, RdbRepoTransactional, schema};
 use crate::part_impl::shared_rdb::RdbContext;
 use crate::part_impl::shared_rdb::result::{diesel, expected};
+use crate::part_impl::shared_rdb::RdbConn;
 use crate::result::{RegularError, RegularResult};
 use crate::value::role::RoleMask;
 
@@ -26,7 +27,7 @@ use schema::t_member_invitation::dsl::*;
 // ── Free functions ──────────────────────────────────────────────────────────
 
 async fn list_invitations(
-    conn: &mut AsyncPgConnection,
+    conn: &mut RdbConn,
     team_id: &str,
     pending: Option<bool>,
     offset: u64,
@@ -37,8 +38,8 @@ async fn list_invitations(
         .select(MemberInvitationRow::as_select())
         .into_boxed();
 
-    if let Some(p) = pending {
-        query = query.filter(f_pending.eq(p));
+    if let Some(is_pending) = pending {
+        query = query.filter(f_pending.eq(is_pending));
     }
 
     let rows: Vec<MemberInvitationRow> = query
@@ -59,7 +60,7 @@ async fn list_invitations(
 }
 
 async fn get_invitation_by_id(
-    conn: &mut AsyncPgConnection,
+    conn: &mut RdbConn,
     target_id: &str,
 ) -> RegularResult<MemberInvitationInfo> {
     let row: MemberInvitationRow = t_member_invitation
@@ -75,7 +76,7 @@ async fn get_invitation_by_id(
 }
 
 async fn create_invitation(
-    conn: &mut AsyncPgConnection,
+    conn: &mut RdbConn,
     form: &MemberInvitationForm,
 ) -> RegularResult<MemberInvitationInfo> {
     let entry = MemberInvitationEntry::from(form);
@@ -91,7 +92,7 @@ async fn create_invitation(
 }
 
 async fn get_invitation_by_code_excluded(
-    conn: &mut AsyncPgConnection,
+    conn: &mut RdbConn,
     code: &str,
 ) -> RegularResult<MemberInvitationInfo> {
     let row: MemberInvitationRow = t_member_invitation
@@ -108,7 +109,7 @@ async fn get_invitation_by_code_excluded(
     row.try_into()
 }
 
-async fn mark_pending_as_used(conn: &mut AsyncPgConnection, target_id: &str) -> RegularResult<()> {
+async fn mark_pending_as_used(conn: &mut RdbConn, target_id: &str) -> RegularResult<()> {
     let now = OffsetDateTime::now_utc();
 
     let aspect = MemberInvitationAspect::new(now).pending(false);
@@ -123,14 +124,14 @@ async fn mark_pending_as_used(conn: &mut AsyncPgConnection, target_id: &str) -> 
 }
 
 async fn get_invitation_by_id_tx(
-    conn: &mut AsyncPgConnection,
+    conn: &mut RdbConn,
     target_id: &str,
 ) -> RegularResult<MemberInvitationInfo> {
     get_invitation_by_id(conn, target_id).await
 }
 
 async fn update_invitation(
-    conn: &mut AsyncPgConnection,
+    conn: &mut RdbConn,
     id: &str,
     roles: RoleMask,
 ) -> RegularResult<()> {
@@ -147,7 +148,7 @@ async fn update_invitation(
     Ok(())
 }
 
-async fn delete_invitation(conn: &mut AsyncPgConnection, target_id: &str) -> RegularResult<()> {
+async fn delete_invitation(conn: &mut RdbConn, target_id: &str) -> RegularResult<()> {
     diesel::delete(t_member_invitation.filter(f_id.eq(target_id)))
         .execute(conn)
         .await
