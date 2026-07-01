@@ -7,7 +7,7 @@ use crate::complex::chapter::ChapterComplex;
 use crate::complex::image::ImageComplex;
 use crate::complex::util::{check_user_is_team_admin, check_user_is_team_member};
 use crate::model::comic::ComicInfo;
-use crate::part::prom::intention::{IMAGE_TOPIC, ImageIntention};
+use crate::part::prom::task::{IMAGE_TOPIC, ImageTask};
 use crate::part::prom::{Payload, PromStep, PromTransactional};
 use crate::part::repo::chapter::ChapterRepoTransactional;
 use crate::part::repo::comic::ComicRepoTransactional;
@@ -88,8 +88,8 @@ impl ComicComplex {
                 &PromStep::append(
                     &delete_id,
                     IMAGE_TOPIC,
-                    Payload::Image(ImageIntention::Delete {
-                        object_key: cover_key.clone(),
+                    Payload::Image(ImageTask::Delete {
+                        object_key: cover_key.as_str(),
                     }),
                     &now,
                 ),

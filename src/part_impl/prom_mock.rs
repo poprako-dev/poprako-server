@@ -14,8 +14,25 @@ use crate::result::RegularError;
 pub struct MockPromRecord {
     pub id: String,
     pub topic: String,
-    pub payload: Payload,
+
+    /// Serialized JSON of the [`Payload`].
+    ///
+    /// Call [`payload`](MockPromRecord::payload) to deserialize on-the-fly
+    /// for assertions.
+    payload_json: String,
+
     pub visible_at: OffsetDateTime,
+}
+
+impl MockPromRecord {
+    /// Deserializes the stored JSON back into a [`Payload`].
+    ///
+    /// The returned `Payload` borrows from `self`, so it's valid for
+    /// the duration of the borrow.
+    pub fn payload(&self) -> Payload<'_> {
+        serde_json::from_str(&self.payload_json)
+            .expect("stored prom payload should deserialize successfully")
+    }
 }
 
 /// Empty mock implementation of [PromTransactional] — actual advancement is handled by [Advance].
@@ -35,10 +52,15 @@ impl<'a> Advance<Append<'a>, MockContext> for MockTransactional {
         context: &mut MockContext,
         step: &Append<'a>,
     ) -> Result<(), Self::Error> {
+        let payload_json =
+            serde_json::to_string(&step.payload).map_err(|e| RegularError::Unrecoverable {
+                message: format!("failed to serialize prom payload: {}", e),
+            })?;
+
         context.state.prom_records.push(MockPromRecord {
             id: step.id.to_string(),
             topic: step.topic.to_string(),
-            payload: step.payload.clone(),
+            payload_json,
             visible_at: *step.visible_at,
         });
         Ok(())
@@ -55,10 +77,15 @@ impl<'a> Advance<Append<'a>, MockContext> for Mock {
         context: &mut MockContext,
         step: &Append<'a>,
     ) -> Result<(), Self::Error> {
+        let payload_json =
+            serde_json::to_string(&step.payload).map_err(|e| RegularError::Unrecoverable {
+                message: format!("failed to serialize prom payload: {}", e),
+            })?;
+
         context.state.prom_records.push(MockPromRecord {
             id: step.id.to_string(),
             topic: step.topic.to_string(),
-            payload: step.payload.clone(),
+            payload_json,
             visible_at: *step.visible_at,
         });
         Ok(())
@@ -70,7 +97,7 @@ impl<'a> Advance<Append<'a>, MockContext> for Mock {
 use poprako_transactional::drive::Drive;
 
 use crate::part::prom::PromStep;
-use crate::part::prom::intention::ImageIntention;
+use crate::part::prom::task::ImageTask;
 use crate::result::accept;
 
 #[tokio::test]
@@ -87,9 +114,7 @@ async fn append_records_payload() {
                 &PromStep::append(
                     "prom-1",
                     "image",
-                    Payload::Image(ImageIntention::Delete {
-                        object_key: "key".into(),
-                    }),
+                    Payload::Image(ImageTask::Delete { object_key: "key" }),
                     &visible_at,
                 ),
             )

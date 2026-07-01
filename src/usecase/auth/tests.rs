@@ -23,7 +23,7 @@ use crate::part::effect::event::Event;
 use crate::part_impl::repo_mock::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;
-use crate::usecase::team::tests::{team, workset};
+use crate::usecase::team::tests::team;
 use crate::usecase::user::tests::{credential, invalid_credential, user};
 use crate::value::role::{RoleField, RoleMask};
 

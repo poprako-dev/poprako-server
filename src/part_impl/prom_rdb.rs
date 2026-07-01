@@ -13,19 +13,21 @@ use time::OffsetDateTime;
 use poprako_transactional::advance::Advance;
 
 use crate::part::prom::{Append, PromTransactional};
-use crate::part_impl::repo_rdb::schema;
-use crate::part_impl::shared_rdb::result::diesel;
+use crate::part_impl::repo_rdb::schema::{self, t_local_message};
 use crate::part_impl::shared_rdb::RdbContext;
-use crate::result::RegularError;
+use crate::part_impl::shared_rdb::result::diesel;
+use crate::result::{RegularError, RegularResult};
 
 // ── Entity ─────────────────────────────────────────────────────────────────
 
+pub enum LocalMessageStatus {}
+
 #[derive(Insertable)]
 #[diesel(table_name = schema::t_local_message)]
-struct LocalMessageEntry {
-    f_id: String,
-    f_topic: String,
-    f_status: String,
+struct LocalMessageEntry<'a> {
+    f_id: &'a str,
+    f_topic: &'a str,
+    f_status: &'a str,
 
     f_payload: Value,
 
@@ -35,17 +37,17 @@ struct LocalMessageEntry {
     f_updated_at: OffsetDateTime,
 }
 
-impl LocalMessageEntry {
-    fn from_append(step: &Append<'_>, now: OffsetDateTime) -> Result<Self, RegularError> {
+impl<'a> LocalMessageEntry<'a> {
+    fn from_append(step: &'a Append<'_>, now: OffsetDateTime) -> RegularResult<Self> {
         let f_payload =
             serde_json::to_value(&step.payload).map_err(|e| RegularError::Unrecoverable {
                 message: format!("failed to serialize prom payload: {}", e),
             })?;
 
         Ok(Self {
-            f_id: step.id.to_owned(),
-            f_topic: step.topic.to_owned(),
-            f_status: "pending".to_owned(),
+            f_id: step.id,
+            f_topic: step.topic,
+            f_status: "pending",
             f_payload,
             f_visible_at: *step.visible_at,
             f_created_at: now,
@@ -64,11 +66,11 @@ pub struct RdbPromTransactional;
 impl<'a> Advance<Append<'a>, RdbContext> for RdbPromTransactional {
     type Error = RegularError;
 
-    async fn advance(&self, context: &mut RdbContext, step: &Append<'a>) -> Result<(), RegularError> {
+    async fn advance(&self, context: &mut RdbContext, step: &Append<'a>) -> RegularResult<()> {
         let now = OffsetDateTime::now_utc();
         let entry = LocalMessageEntry::from_append(step, now)?;
 
-        diesel::insert_into(schema::t_local_message::table)
+        diesel::insert_into(t_local_message::table)
             .values(&entry)
             .execute(context.conn())
             .await

@@ -26,7 +26,7 @@ use crate::model::member::MemberInfo;
 use crate::model::page::PageInfo;
 use crate::model::workset::WorksetInfo;
 use crate::part::prom::Payload;
-use crate::part::prom::intention::ImageIntention;
+use crate::part::prom::task::ImageTask;
 use crate::part_impl::repo_mock::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;
@@ -473,7 +473,7 @@ async fn update_stage_publish_enqueues_page_image_delete() {
     let snapshot = mock.snapshot();
 
     assert_eq!(snapshot.prom_records.len(), 1);
-    let Payload::Image(ImageIntention::Delete { object_key }) = &snapshot.prom_records[0].payload
+    let Payload::Image(ImageTask::Delete { object_key }) = snapshot.prom_records[0].payload()
     else {
         panic!("expected image delete payload");
     };

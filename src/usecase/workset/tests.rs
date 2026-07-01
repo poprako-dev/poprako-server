@@ -22,7 +22,7 @@ use crate::model::comic::ComicInfo;
 use crate::model::member::MemberInfo;
 use crate::model::user::UserToken;
 use crate::model::workset::WorksetInfo;
-use crate::part::prom::intention::ImageIntention;
+use crate::part::prom::task::ImageTask;
 use crate::part::prom::{Payload, PromStep};
 use crate::part_impl::prom_mock::MockPromRecord;
 use crate::part_impl::repo_mock::{Mock, MockTransactional};
@@ -105,8 +105,8 @@ fn count_delete_records(records: &[MockPromRecord], object_key: &str) -> usize {
         .iter()
         .filter(|record| {
             matches!(
-                &record.payload,
-                Payload::Image(ImageIntention::Delete { object_key: key })
+                record.payload(),
+                Payload::Image(ImageTask::Delete { object_key: key })
                     if key == object_key
             )
         })
@@ -326,8 +326,8 @@ async fn delete_does_not_create_prom_records_when_called_directly() {
             &PromStep::append(
                 "prom-1",
                 "image",
-                Payload::Image(ImageIntention::Delete {
-                    object_key: "existing.png".into(),
+                Payload::Image(ImageTask::Delete {
+                    object_key: "existing.png",
                 }),
                 &OffsetDateTime::now_utc(),
             ),

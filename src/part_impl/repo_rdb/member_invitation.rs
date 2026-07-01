@@ -1,13 +1,13 @@
-//! RDB-backed member invitation repository — [`Execute`] and [`Advance`]
-//! implementations.
+//! RDB-backed member-invitation repository — free query functions and thin trait impls.
 
 use async_trait::async_trait;
 use diesel::prelude::*;
-use diesel_async::RunQueryDsl;
+use diesel_async::{AsyncPgConnection, RunQueryDsl};
 use time::OffsetDateTime;
 
 use poprako_transactional::advance::Advance;
 
+use crate::model::member_invitation::{MemberInvitationForm, MemberInvitationInfo};
 use crate::part::repo::step::member_invitation::{
     Create, Delete, GetInfoByCodeExcluded, GetInfoById, ListInfos, MarkPendingAsUsed, UpdateInfo,
 };
@@ -18,212 +18,215 @@ use crate::part_impl::repo_rdb::entity::member_invitation::{
 use crate::part_impl::repo_rdb::{RdbRepo, RdbRepoTransactional, schema};
 use crate::part_impl::shared_rdb::RdbContext;
 use crate::part_impl::shared_rdb::result::{diesel, expected};
-use crate::result::RegularError;
+use crate::result::{RegularError, RegularResult};
+use crate::value::role::RoleMask;
 
-// ── Non-transactional ──────────────────────────────────────────────────────
+use schema::t_member_invitation::dsl::*;
+
+// ── Free functions ──────────────────────────────────────────────────────────
+
+async fn list_invitations(
+    conn: &mut AsyncPgConnection,
+    team_id: &str,
+    pending: Option<bool>,
+    offset: u64,
+    limit: u64,
+) -> RegularResult<Vec<MemberInvitationInfo>> {
+    let mut query = t_member_invitation
+        .filter(f_team_id.eq(team_id))
+        .select(MemberInvitationRow::as_select())
+        .into_boxed();
+    if let Some(p) = pending {
+        query = query.filter(f_pending.eq(p));
+    }
+    let rows: Vec<MemberInvitationRow> = query
+        .order_by(f_created_at.desc())
+        .offset(offset as i64)
+        .limit(limit as i64)
+        .load(conn)
+        .await
+        .map_err(diesel)?;
+    let mut infos = Vec::with_capacity(rows.len());
+    for row in rows {
+        infos.push(row.try_into()?);
+    }
+    Ok(infos)
+}
+
+async fn get_invitation_by_id(
+    conn: &mut AsyncPgConnection,
+    target_id: &str,
+) -> RegularResult<MemberInvitationInfo> {
+    let row: MemberInvitationRow = t_member_invitation
+        .filter(f_id.eq(target_id))
+        .select(MemberInvitationRow::as_select())
+        .get_result(conn)
+        .await
+        .optional()
+        .map_err(diesel)?
+        .ok_or_else(|| expected("error-invitation-not-found"))?;
+    row.try_into()
+}
+
+async fn create_invitation(
+    conn: &mut AsyncPgConnection,
+    form: &MemberInvitationForm,
+) -> RegularResult<MemberInvitationInfo> {
+    let entry = MemberInvitationEntry::from(form);
+    let row: MemberInvitationRow = diesel::insert_into(t_member_invitation)
+        .values(&entry)
+        .returning(MemberInvitationRow::as_returning())
+        .get_result(conn)
+        .await
+        .map_err(diesel)?;
+    row.try_into()
+}
+
+async fn get_invitation_by_code_excluded(
+    conn: &mut AsyncPgConnection,
+    code: &str,
+) -> RegularResult<MemberInvitationInfo> {
+    let row: MemberInvitationRow = t_member_invitation
+        .filter(f_invitation_code.eq(code))
+        .filter(f_pending.eq(true))
+        .select(MemberInvitationRow::as_select())
+        .for_update()
+        .get_result(conn)
+        .await
+        .optional()
+        .map_err(diesel)?
+        .ok_or_else(|| expected("error-invitation-not-found"))?;
+    row.try_into()
+}
+
+async fn mark_pending_as_used(conn: &mut AsyncPgConnection, target_id: &str) -> RegularResult<()> {
+    let now = OffsetDateTime::now_utc();
+    let aspect = MemberInvitationAspect::new(now).pending(false);
+    diesel::update(t_member_invitation.filter(f_id.eq(target_id)))
+        .set(&aspect)
+        .execute(conn)
+        .await
+        .map_err(diesel)?;
+    Ok(())
+}
+
+async fn get_invitation_by_id_tx(
+    conn: &mut AsyncPgConnection,
+    target_id: &str,
+) -> RegularResult<MemberInvitationInfo> {
+    get_invitation_by_id(conn, target_id).await
+}
+
+async fn update_invitation(
+    conn: &mut AsyncPgConnection,
+    id: &str,
+    roles: RoleMask,
+) -> RegularResult<()> {
+    let now = OffsetDateTime::now_utc();
+    let aspect = MemberInvitationAspect::new(now).role_mask(i64::from(u32::from(roles)));
+    diesel::update(t_member_invitation.filter(f_id.eq(id)))
+        .set(&aspect)
+        .execute(conn)
+        .await
+        .map_err(diesel)?;
+    Ok(())
+}
+
+async fn delete_invitation(conn: &mut AsyncPgConnection, target_id: &str) -> RegularResult<()> {
+    diesel::delete(t_member_invitation.filter(f_id.eq(target_id)))
+        .execute(conn)
+        .await
+        .map_err(diesel)?;
+    Ok(())
+}
+
+// ── Non-transactional: Execute impls ─────────────────────────────────────────
 
 #[async_trait]
 impl<'a> Execute<ListInfos<'a>> for RdbRepo {
     type Error = RegularError;
-
-    async fn execute(
-        &self,
-        step: &ListInfos<'a>,
-    ) -> Result<<ListInfos<'_> as poprako_transactional::step::Step>::Output, Self::Error> {
-        let mut conn = self.conn().await?;
-
-        let mut query = schema::t_member_invitation::table
-            .filter(schema::t_member_invitation::f_team_id.eq(step.spec.team_id.as_str()))
-            .select(MemberInvitationRow::as_select())
-            .into_boxed();
-
-        match step.spec.pending {
-            Some(pending) => {
-                query = query.filter(schema::t_member_invitation::f_pending.eq(pending));
-            }
-            None => {}
-        }
-
-        let rows: Vec<MemberInvitationRow> = query
-            .order_by(schema::t_member_invitation::f_created_at.desc())
-            .offset(step.spec.offset as i64)
-            .limit(step.spec.limit as i64)
-            .load(conn.conn())
-            .await
-            .map_err(diesel)?;
-
-        let mut infos = Vec::with_capacity(rows.len());
-        for row in rows {
-            infos.push(row.try_into()?);
-        }
-
-        Ok(infos)
+    async fn execute(&self, step: &ListInfos<'a>) -> RegularResult<Vec<MemberInvitationInfo>> {
+        submit_query!(
+            self.shared,
+            list_invitations,
+            step.spec.team_id.as_str(),
+            step.spec.pending,
+            step.spec.offset,
+            step.spec.limit
+        )
     }
 }
 
 #[async_trait]
 impl<'a> Execute<GetInfoById<'a>> for RdbRepo {
     type Error = RegularError;
-
-    async fn execute(
-        &self,
-        step: &GetInfoById<'a>,
-    ) -> Result<<GetInfoById<'_> as poprako_transactional::step::Step>::Output, Self::Error> {
-        let mut conn = self.conn().await?;
-
-        let row = schema::t_member_invitation::table
-            .filter(schema::t_member_invitation::f_id.eq(step.id))
-            .select(MemberInvitationRow::as_select())
-            .get_result(conn.conn())
-            .await
-            .optional()
-            .map_err(diesel)?
-            .ok_or_else(|| expected("error-invitation-not-found"))?;
-
-        Ok(row.try_into()?)
+    async fn execute(&self, step: &GetInfoById<'a>) -> RegularResult<MemberInvitationInfo> {
+        submit_query!(self.shared, get_invitation_by_id, step.id)
     }
 }
 
-// ── Transactional ──────────────────────────────────────────────────────────
+// ── Transactional: Advance impls ─────────────────────────────────────────────
 
 #[async_trait]
 impl<'a> Advance<Create<'a>, RdbContext> for RdbRepoTransactional {
     type Error = RegularError;
-
     async fn advance(
         &self,
         context: &mut RdbContext,
         step: &Create<'a>,
-    ) -> Result<<Create<'a> as poprako_transactional::step::Step>::Output, Self::Error> {
-        let entry = MemberInvitationEntry::from(step.form);
-
-        let row = diesel::insert_into(schema::t_member_invitation::table)
-            .values(&entry)
-            .returning(MemberInvitationRow::as_returning())
-            .get_result(context.conn())
-            .await
-            .map_err(diesel)?;
-
-        Ok(row.try_into()?)
+    ) -> RegularResult<MemberInvitationInfo> {
+        create_invitation(context.conn(), step.form).await
     }
 }
 
 #[async_trait]
 impl<'a> Advance<GetInfoByCodeExcluded<'a>, RdbContext> for RdbRepoTransactional {
     type Error = RegularError;
-
     async fn advance(
         &self,
         context: &mut RdbContext,
         step: &GetInfoByCodeExcluded<'a>,
-    ) -> Result<<GetInfoByCodeExcluded<'a> as poprako_transactional::step::Step>::Output, Self::Error>
-    {
-        let row = schema::t_member_invitation::table
-            .filter(schema::t_member_invitation::f_invitation_code.eq(step.code))
-            .filter(schema::t_member_invitation::f_pending.eq(true))
-            .select(MemberInvitationRow::as_select())
-            .for_update()
-            .get_result(context.conn())
-            .await
-            .optional()
-            .map_err(diesel)?
-            .ok_or_else(|| expected("error-invitation-not-found"))?;
-
-        Ok(row.try_into()?)
+    ) -> RegularResult<MemberInvitationInfo> {
+        get_invitation_by_code_excluded(context.conn(), step.code).await
     }
 }
 
 #[async_trait]
 impl<'a> Advance<MarkPendingAsUsed<'a>, RdbContext> for RdbRepoTransactional {
     type Error = RegularError;
-
     async fn advance(
         &self,
         context: &mut RdbContext,
         step: &MarkPendingAsUsed<'a>,
-    ) -> Result<(), RegularError> {
-        let now = OffsetDateTime::now_utc();
-        let aspect = MemberInvitationAspect::new(now).pending(false);
-
-        diesel::update(
-            schema::t_member_invitation::table
-                .filter(schema::t_member_invitation::f_id.eq(step.id)),
-        )
-        .set(&aspect)
-        .execute(context.conn())
-        .await
-        .map_err(diesel)?;
-
-        Ok(())
+    ) -> RegularResult<()> {
+        mark_pending_as_used(context.conn(), step.id).await
     }
 }
 
 #[async_trait]
 impl<'a> Advance<GetInfoById<'a>, RdbContext> for RdbRepoTransactional {
     type Error = RegularError;
-
     async fn advance(
         &self,
         context: &mut RdbContext,
         step: &GetInfoById<'a>,
-    ) -> Result<<GetInfoById<'a> as poprako_transactional::step::Step>::Output, Self::Error> {
-        let row = schema::t_member_invitation::table
-            .filter(schema::t_member_invitation::f_id.eq(step.id))
-            .select(MemberInvitationRow::as_select())
-            .get_result(context.conn())
-            .await
-            .optional()
-            .map_err(diesel)?
-            .ok_or_else(|| expected("error-invitation-not-found"))?;
-
-        Ok(row.try_into()?)
+    ) -> RegularResult<MemberInvitationInfo> {
+        get_invitation_by_id_tx(context.conn(), step.id).await
     }
 }
 
 #[async_trait]
 impl<'a> Advance<UpdateInfo<'a>, RdbContext> for RdbRepoTransactional {
     type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut RdbContext,
-        step: &UpdateInfo<'a>,
-    ) -> Result<(), RegularError> {
-        let now = OffsetDateTime::now_utc();
-        let role_mask_val = i64::from(u32::from(step.update.roles));
-
-        let aspect = MemberInvitationAspect::new(now).role_mask(role_mask_val);
-
-        diesel::update(
-            schema::t_member_invitation::table
-                .filter(schema::t_member_invitation::f_id.eq(step.update.id.as_str())),
-        )
-        .set(&aspect)
-        .execute(context.conn())
-        .await
-        .map_err(diesel)?;
-
-        Ok(())
+    async fn advance(&self, context: &mut RdbContext, step: &UpdateInfo<'a>) -> RegularResult<()> {
+        update_invitation(context.conn(), step.update.id.as_str(), step.update.roles).await
     }
 }
 
 #[async_trait]
 impl<'a> Advance<Delete<'a>, RdbContext> for RdbRepoTransactional {
     type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut RdbContext,
-        step: &Delete<'a>,
-    ) -> Result<(), RegularError> {
-        diesel::delete(
-            schema::t_member_invitation::table
-                .filter(schema::t_member_invitation::f_id.eq(step.id)),
-        )
-        .execute(context.conn())
-        .await
-        .map_err(diesel)?;
-
-        Ok(())
+    async fn advance(&self, context: &mut RdbContext, step: &Delete<'a>) -> RegularResult<()> {
+        delete_invitation(context.conn(), step.id).await
     }
 }

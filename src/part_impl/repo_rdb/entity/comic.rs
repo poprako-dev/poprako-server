@@ -111,7 +111,7 @@ impl<'a> ComicAspect<'a> {
         self
     }
 
-    pub fn is_completed(mut self, val: bool) -> Self {
+    pub fn completed(mut self, val: bool) -> Self {
         self.f_is_completed = Some(val);
         self
     }

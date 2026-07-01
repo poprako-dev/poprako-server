@@ -1,9 +1,10 @@
-//! RDB-backed system mail repository — [`Execute`] implementations.
+//! RDB-backed system mail repository — free query functions and thin trait impls.
 
 use async_trait::async_trait;
 use diesel::prelude::*;
-use diesel_async::RunQueryDsl;
+use diesel_async::{AsyncPgConnection, RunQueryDsl};
 
+use crate::model::system_mail::{SystemMailForm, SystemMailInfo};
 use crate::part::repo::step::system_mail::{
     ListInfosByIds, ListInfosByReceiverId, MarkRead, Send, SendBatch,
 };
@@ -11,119 +12,129 @@ use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_rdb::entity::system_mail::{SystemMailEntry, SystemMailRow};
 use crate::part_impl::repo_rdb::{RdbRepo, schema};
 use crate::part_impl::shared_rdb::result::diesel;
-use crate::result::RegularError;
+use crate::result::{RegularError, RegularResult};
+
+use schema::t_system_mail::dsl::*;
+
+// ── Free functions ──────────────────────────────────────────────────────────
+
+async fn send_mail(conn: &mut AsyncPgConnection, form: &SystemMailForm) -> RegularResult<()> {
+    let entry = SystemMailEntry::from(form);
+    diesel::insert_into(t_system_mail)
+        .values(&entry)
+        .execute(conn)
+        .await
+        .map_err(diesel)?;
+    Ok(())
+}
+
+async fn send_batch_mail(
+    conn: &mut AsyncPgConnection,
+    forms: &[SystemMailForm],
+) -> RegularResult<()> {
+    let entries: Vec<SystemMailEntry<'_>> = forms.iter().map(SystemMailEntry::from).collect();
+    diesel::insert_into(t_system_mail)
+        .values(&entries)
+        .execute(conn)
+        .await
+        .map_err(diesel)?;
+    Ok(())
+}
+
+async fn list_by_receiver(
+    conn: &mut AsyncPgConnection,
+    receiver_id: &str,
+    read: Option<bool>,
+    offset: u64,
+    limit: u64,
+) -> RegularResult<Vec<SystemMailInfo>> {
+    let mut query = t_system_mail
+        .filter(f_receiver_id.eq(receiver_id))
+        .select(SystemMailRow::as_select())
+        .into_boxed();
+    if let Some(r) = read {
+        query = query.filter(f_read.eq(r));
+    }
+    let rows: Vec<SystemMailRow> = query
+        .order_by(f_created_at.desc())
+        .offset(offset as i64)
+        .limit(limit as i64)
+        .load(conn)
+        .await
+        .map_err(diesel)?;
+    Ok(rows.into_iter().map(Into::into).collect())
+}
+
+async fn list_by_ids(
+    conn: &mut AsyncPgConnection,
+    ids: &[String],
+) -> RegularResult<Vec<SystemMailInfo>> {
+    let rows: Vec<SystemMailRow> = t_system_mail
+        .filter(f_id.eq_any(ids))
+        .select(SystemMailRow::as_select())
+        .load(conn)
+        .await
+        .map_err(diesel)?;
+    Ok(rows.into_iter().map(Into::into).collect())
+}
+
+async fn mark_read(conn: &mut AsyncPgConnection, id: &str) -> RegularResult<()> {
+    diesel::update(t_system_mail.filter(f_id.eq(id)))
+        .set(f_read.eq(true))
+        .execute(conn)
+        .await
+        .map_err(diesel)?;
+    Ok(())
+}
+
+// ── Non-transactional: Execute impls ─────────────────────────────────────────
 
 #[async_trait]
 impl<'a> Execute<Send<'a>> for RdbRepo {
     type Error = RegularError;
-
-    async fn execute(&self, step: &Send<'a>) -> Result<(), RegularError> {
-        let mut conn = self.conn().await?;
-
-        let entry = SystemMailEntry::from(step.form);
-
-        diesel::insert_into(schema::t_system_mail::table)
-            .values(&entry)
-            .execute(conn.conn())
-            .await
-            .map_err(diesel)?;
-
-        Ok(())
+    async fn execute(&self, step: &Send<'a>) -> RegularResult<()> {
+        submit_query!(self.shared, send_mail, step.form)
     }
 }
 
 #[async_trait]
 impl<'a> Execute<SendBatch<'a>> for RdbRepo {
     type Error = RegularError;
-
-    async fn execute(&self, step: &SendBatch<'a>) -> Result<(), RegularError> {
-        let mut conn = self.conn().await?;
-
-        let entries: Vec<SystemMailEntry<'_>> =
-            step.forms.iter().map(SystemMailEntry::from).collect();
-
-        diesel::insert_into(schema::t_system_mail::table)
-            .values(&entries)
-            .execute(conn.conn())
-            .await
-            .map_err(diesel)?;
-
-        Ok(())
+    async fn execute(&self, step: &SendBatch<'a>) -> RegularResult<()> {
+        submit_query!(self.shared, send_batch_mail, step.forms)
     }
 }
 
 #[async_trait]
 impl<'a> Execute<ListInfosByReceiverId<'a>> for RdbRepo {
     type Error = RegularError;
-
     async fn execute(
         &self,
         step: &ListInfosByReceiverId<'a>,
-    ) -> Result<<ListInfosByReceiverId<'_> as poprako_transactional::step::Step>::Output, Self::Error>
-    {
-        let mut conn = self.conn().await?;
-
-        let mut query = schema::t_system_mail::table
-            .filter(schema::t_system_mail::f_receiver_id.eq(step.receiver_id))
-            .select(SystemMailRow::as_select())
-            .into_boxed();
-
-        match step.spec.read {
-            Some(read) => {
-                query = query.filter(schema::t_system_mail::f_read.eq(read));
-            }
-            None => {}
-        }
-
-        let rows: Vec<SystemMailRow> = query
-            .order_by(schema::t_system_mail::f_created_at.desc())
-            .offset(step.spec.offset as i64)
-            .limit(step.spec.limit as i64)
-            .load(conn.conn())
-            .await
-            .map_err(diesel)?;
-
-        Ok(rows.into_iter().map(Into::into).collect())
+    ) -> RegularResult<Vec<SystemMailInfo>> {
+        submit_query!(
+            self.shared,
+            list_by_receiver,
+            step.receiver_id,
+            step.spec.read,
+            step.spec.offset,
+            step.spec.limit
+        )
     }
 }
 
 #[async_trait]
 impl<'a> Execute<ListInfosByIds<'a>> for RdbRepo {
     type Error = RegularError;
-
-    async fn execute(
-        &self,
-        step: &ListInfosByIds<'a>,
-    ) -> Result<<ListInfosByIds<'_> as poprako_transactional::step::Step>::Output, Self::Error>
-    {
-        let mut conn = self.conn().await?;
-
-        let rows: Vec<SystemMailRow> = schema::t_system_mail::table
-            .filter(schema::t_system_mail::f_id.eq_any(step.ids))
-            .select(SystemMailRow::as_select())
-            .load(conn.conn())
-            .await
-            .map_err(diesel)?;
-
-        Ok(rows.into_iter().map(Into::into).collect())
+    async fn execute(&self, step: &ListInfosByIds<'a>) -> RegularResult<Vec<SystemMailInfo>> {
+        submit_query!(self.shared, list_by_ids, step.ids)
     }
 }
 
 #[async_trait]
 impl<'a> Execute<MarkRead<'a>> for RdbRepo {
     type Error = RegularError;
-
-    async fn execute(&self, step: &MarkRead<'a>) -> Result<(), RegularError> {
-        let mut conn = self.conn().await?;
-
-        diesel::update(
-            schema::t_system_mail::table.filter(schema::t_system_mail::f_id.eq(step.id)),
-        )
-        .set(schema::t_system_mail::f_read.eq(true))
-        .execute(conn.conn())
-        .await
-        .map_err(diesel)?;
-
-        Ok(())
+    async fn execute(&self, step: &MarkRead<'a>) -> RegularResult<()> {
+        submit_query!(self.shared, mark_read, step.id)
     }
 }

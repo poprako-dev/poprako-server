@@ -86,7 +86,7 @@ where
                 user_id: data.user_id,
                 user_nickname: target_user_info.nickname,
                 team_id: data.team_id,
-                roles: roles,
+                roles,
             };
 
             let member_info = repo

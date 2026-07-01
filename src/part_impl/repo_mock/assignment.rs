@@ -12,7 +12,7 @@ use crate::part::repo::step::assignment::{
 };
 use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactional, expected, now};
-use crate::result::RegularError;
+use crate::result::{RegularError, RegularResult};
 use crate::value::assignment::AssignmentInclOpt;
 
 impl AssignmentRepo<MockContext> for Mock {}
@@ -45,7 +45,7 @@ fn find_assignment(state: &MockState, chapter_id: &str, user_id: &str) -> Option
         .cloned()
 }
 
-fn get_assignment(state: &MockState, id: &str) -> Result<AssignmentInfo, RegularError> {
+fn get_assignment(state: &MockState, id: &str) -> RegularResult<AssignmentInfo> {
     state
         .assignments
         .iter()
@@ -122,7 +122,7 @@ fn list_assignments(state: &MockState, spec: &AssignmentListSpec) -> Vec<Assignm
 fn create_assignment(
     state: &mut MockState,
     form: &AssignmentForm,
-) -> Result<AssignmentInfo, RegularError> {
+) -> RegularResult<AssignmentInfo> {
     if state
         .assignments
         .iter()
@@ -150,7 +150,7 @@ fn create_assignment(
     Ok(assignment_info)
 }
 
-fn delete_assignment_by_id(state: &mut MockState, id: &str) -> Result<(), RegularError> {
+fn delete_assignment_by_id(state: &mut MockState, id: &str) -> RegularResult<()> {
     let index = state
         .assignments
         .iter()

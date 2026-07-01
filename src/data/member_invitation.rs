@@ -6,7 +6,7 @@ use serde::Deserialize;
 use poprako_macro::Paginate;
 
 use crate::data::user::UserInfoVal;
-use crate::model::member_invitation::{MemberInvitationInfo, MemberInvitationListSpec};
+use crate::model::member_invitation::MemberInvitationInfo;
 use crate::part::image::ImagePool;
 use crate::result::RegularResult;
 use crate::value::member_invitation::MemberInvitationInclOpt;

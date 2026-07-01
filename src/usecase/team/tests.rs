@@ -41,7 +41,7 @@ use crate::model::team::{TeamAvatarReservation, TeamInfo};
 use crate::model::user::{UserAvatarReservation, UserCredential, UserInfo};
 use crate::model::workset::WorksetInfo;
 use crate::part::prom::Payload;
-use crate::part::prom::intention::{ImageIntention, ImageKind};
+use crate::part::prom::task::{ImageKind, ImageTask};
 use crate::part::repo::step::team::{
     Create, Delete, GetInfoById, GetInfoExcluded, IncrementWorksetNextIndex, ListInfos,
     MarkAvatarUploaded, ReserveAvatar, UpdateInfo,
@@ -250,14 +250,14 @@ fn update_data(id: &str, name: &str, description: &str) -> UpdateTeamInfoData {
     }
 }
 
-/// Counts [`Delete`](ImageIntention::Delete) prom records matching the given object key.
+/// Counts [`Delete`](ImageTask::Delete) prom records matching the given object key.
 fn count_delete_records(records: &[MockPromRecord], object_key: &str) -> usize {
     records
         .iter()
         .filter(|record| {
             matches!(
-                &record.payload,
-                Payload::Image(ImageIntention::Delete { object_key: key })
+                record.payload(),
+                Payload::Image(ImageTask::Delete { object_key: key })
                     if key == object_key
             )
         })

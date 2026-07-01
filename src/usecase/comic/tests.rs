@@ -29,7 +29,7 @@ use crate::model::member::MemberInfo;
 use crate::model::user::UserToken;
 use crate::model::workset::WorksetInfo;
 use crate::part::prom::Payload;
-use crate::part::prom::intention::{ImageIntention, ImageKind};
+use crate::part::prom::task::{ImageKind, ImageTask};
 use crate::part_impl::repo_mock::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::{
@@ -666,8 +666,8 @@ async fn delete_removes_comic_updates_count_and_enqueues_cover_delete() {
     assert_eq!(snapshot.worksets[0].comic_count, 0);
     assert_eq!(snapshot.prom_records.len(), 1);
     assert!(matches!(
-        &snapshot.prom_records[0].payload,
-        Payload::Image(ImageIntention::Delete { object_key }) if object_key == "cover.png"
+        snapshot.prom_records[0].payload(),
+        Payload::Image(ImageTask::Delete { object_key }) if object_key == "cover.png"
     ));
 }
 

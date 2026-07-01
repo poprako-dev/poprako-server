@@ -37,7 +37,7 @@ use crate::model::member::MemberInfo;
 use crate::model::user::{UserCredential, UserInfo};
 use crate::part::effect::event::Event;
 use crate::part::prom::Payload;
-use crate::part::prom::intention::{ImageIntention, ImageKind};
+use crate::part::prom::task::{ImageKind, ImageTask};
 use crate::part_impl::prom_mock::MockPromRecord;
 use crate::part_impl::repo_mock::Mock;
 use crate::result::ExpectedVariant;
@@ -143,14 +143,14 @@ fn mark_data(avatar_version: i64) -> MarkUserAvatarUploadedData {
     MarkUserAvatarUploadedData { avatar_version }
 }
 
-/// Counts [`Delete`](ImageIntention::Delete) prom records matching the given object key.
+/// Counts [`Delete`](ImageTask::Delete) prom records matching the given object key.
 fn count_delete_records(records: &[MockPromRecord], object_key: &str) -> usize {
     records
         .iter()
         .filter(|record| {
             matches!(
-                &record.payload,
-                Payload::Image(ImageIntention::Delete { object_key: key })
+                record.payload(),
+                Payload::Image(ImageTask::Delete { object_key: key })
                     if key == object_key
             )
         })

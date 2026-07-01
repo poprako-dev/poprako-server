@@ -16,7 +16,7 @@ use crate::part::effect::event::Event;
 use crate::part::effect::event::user::UserActivePayload;
 use crate::part::effect::{EffectDevelop, EffectEmit as _};
 use crate::part::image::ImagePool;
-use crate::part::prom::intention::{IMAGE_TOPIC, ImageIntention, ImageKind};
+use crate::part::prom::task::{IMAGE_TOPIC, ImageKind, ImageTask};
 use crate::part::prom::{Payload, PromStep, PromTransactional};
 use crate::part::repo::map_drive_err;
 use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
@@ -135,8 +135,8 @@ where
 ///
 /// 1. Calls [`UserStep::reserve_avatar`] — generates an object key, increments
 ///    the version, and returns any previous avatar key.
-/// 2. If replacing, enqueues a [`Delete`](ImageIntention::Delete) prom record.
-/// 3. Enqueues a [`CheckUploaded`](ImageIntention::CheckUploaded) prom record
+/// 2. If replacing, enqueues a [`Delete`](ImageTask::Delete) prom record.
+/// 3. Enqueues a [`CheckUploaded`](ImageTask::CheckUploaded) prom record
 ///    (visible after 15 minutes).
 ///
 /// After commit, generates a signed PUT URL.
@@ -189,8 +189,8 @@ where
                     &PromStep::append(
                         &delete_id,
                         IMAGE_TOPIC,
-                        Payload::Image(ImageIntention::Delete {
-                            object_key: prev_key.clone(),
+                        Payload::Image(ImageTask::Delete {
+                            object_key: prev_key.as_str(),
                         }),
                         &now,
                     ),
@@ -206,10 +206,10 @@ where
                 &PromStep::append(
                     &check_id,
                     IMAGE_TOPIC,
-                    Payload::Image(ImageIntention::CheckUploaded {
+                    Payload::Image(ImageTask::CheckUploaded {
                         kind: ImageKind::UserAvatar,
-                        resource_id: token.user_id.clone(),
-                        object_key: avatar_reservation.object_key.clone(),
+                        resource_id: &token.user_id,
+                        object_key: &avatar_reservation.object_key,
                         image_version: avatar_reservation.avatar_version,
                     }),
                     &check_visible_at,
@@ -394,8 +394,8 @@ where
                     &PromStep::append(
                         &delete_id,
                         IMAGE_TOPIC,
-                        Payload::Image(ImageIntention::Delete {
-                            object_key: avatar_key.clone(),
+                        Payload::Image(ImageTask::Delete {
+                            object_key: avatar_key.as_str(),
                         }),
                         &now,
                     ),

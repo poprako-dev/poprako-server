@@ -21,7 +21,7 @@ use crate::model::member::MemberInfo;
 use crate::model::page::PageInfo;
 use crate::model::workset::WorksetInfo;
 use crate::part::prom::Payload;
-use crate::part::prom::intention::{ImageIntention, ImageKind};
+use crate::part::prom::task::{ImageKind, ImageTask};
 use crate::part_impl::repo_mock::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::{
@@ -284,8 +284,8 @@ async fn reserve_image_replaces_key_and_enqueues_prom() {
     assert_eq!(snapshot.pages[0].image_version, 2);
     assert_eq!(snapshot.prom_records.len(), 2);
     assert!(matches!(
-        &snapshot.prom_records[0].payload,
-        Payload::Image(ImageIntention::Delete { object_key }) if object_key == "old.png"
+        snapshot.prom_records[0].payload(),
+        Payload::Image(ImageTask::Delete { object_key }) if object_key == "old.png"
     ));
     assert_one_image_check_record(
         &snapshot.prom_records,
@@ -514,8 +514,8 @@ async fn delete_by_chapter_deletes_pages_and_clears_counters() {
     assert_eq!(snapshot.chapters[0].total_unit_count, 0);
     assert_eq!(snapshot.prom_records.len(), 1);
     assert!(matches!(
-        &snapshot.prom_records[0].payload,
-        Payload::Image(ImageIntention::Delete { object_key }) if object_key == "one.png"
+        snapshot.prom_records[0].payload(),
+        Payload::Image(ImageTask::Delete { object_key }) if object_key == "one.png"
     ));
 }
 

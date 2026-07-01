@@ -34,7 +34,7 @@ impl Drive<RdbContext> for RdbDrive {
             + AsyncFnMark<&'c mut RdbContext, Result<T, E>, Fut: Send>
             + Send,
     {
-        let conn = self.shared.conn().await.map_err(DriveError::Backend)?;
+        let conn = self.shared.get().await.map_err(DriveError::Backend)?;
 
         let mut rdb_context = RdbContext::new(conn);
 

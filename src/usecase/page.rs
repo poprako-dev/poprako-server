@@ -16,7 +16,7 @@ use crate::data::page::{
 use crate::model::page::PageForm;
 use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
-use crate::part::prom::intention::{IMAGE_TOPIC, ImageIntention, ImageKind};
+use crate::part::prom::task::{IMAGE_TOPIC, ImageKind, ImageTask};
 use crate::part::prom::{Payload, PromStep, PromTransactional};
 use crate::part::repo::assignment::{AssignmentRepo, AssignmentRepoTransactional};
 use crate::part::repo::chapter::{ChapterRepo, ChapterRepoTransactional};
@@ -452,10 +452,10 @@ where
         &PromStep::append(
             &check_id,
             IMAGE_TOPIC,
-            Payload::Image(ImageIntention::CheckUploaded {
+            Payload::Image(ImageTask::CheckUploaded {
                 kind: ImageKind::PageImage,
-                resource_id: page_id.into(),
-                object_key: object_key.into(),
+                resource_id: page_id,
+                object_key,
                 image_version,
             }),
             visible_at,
@@ -481,9 +481,7 @@ where
         &PromStep::append(
             &delete_id,
             IMAGE_TOPIC,
-            Payload::Image(ImageIntention::Delete {
-                object_key: object_key.into(),
-            }),
+            Payload::Image(ImageTask::Delete { object_key }),
             visible_at,
         ),
     )

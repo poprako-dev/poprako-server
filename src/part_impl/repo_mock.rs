@@ -346,7 +346,7 @@ pub mod workset;
 use poprako_transactional::advance::Advance;
 
 use crate::model::member::MemberForm;
-use crate::part::prom::intention::{ImageIntention, ImageKind};
+use crate::part::prom::task::{ImageKind, ImageTask};
 use crate::part::prom::{Payload, PromStep};
 use crate::part::repo::step::member::MemberStep;
 use crate::part::repo::step::user::UserStep;
@@ -410,10 +410,10 @@ async fn transaction_commits_repo_and_prom() {
                 &PromStep::append(
                     "prom-1",
                     "image",
-                    Payload::Image(ImageIntention::CheckUploaded {
+                    Payload::Image(ImageTask::CheckUploaded {
                         kind: ImageKind::UserAvatar,
-                        resource_id: "user-1".into(),
-                        object_key: "key".into(),
+                        resource_id: "user-1",
+                        object_key: "key",
                         image_version: 1,
                     }),
                     &visible_at,
@@ -452,14 +452,12 @@ async fn transaction_rolls_back_repo_and_prom() {
             &PromStep::append(
                 "prom-1",
                 "image",
-                Payload::Image(ImageIntention::Delete {
-                    object_key: "key".into(),
-                }),
+                Payload::Image(ImageTask::Delete { object_key: "key" }),
                 &visible_at,
             ),
         )
         .await?;
-        Err::<(), RegularError>(unrecoverable("[transaction_rolls_back_repo_and_prom] fail"))
+        Err::<(), _>(unrecoverable("[transaction_rolls_back_repo_and_prom] fail"))
     })
     .await
     .err()

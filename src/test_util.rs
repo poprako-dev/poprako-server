@@ -5,7 +5,7 @@ use time::OffsetDateTime;
 use poprako_util::i18n::trl;
 
 use crate::part::prom::Payload;
-use crate::part::prom::intention::{ImageIntention, ImageKind};
+use crate::part::prom::task::{ImageKind, ImageTask};
 use crate::part_impl::prom_mock::MockPromRecord;
 use crate::result::{ExpectedVariant, RegularError};
 
@@ -57,16 +57,16 @@ pub fn count_image_check_records(
         .iter()
         .filter(|record| {
             matches!(
-                &record.payload,
-                Payload::Image(ImageIntention::CheckUploaded {
+                record.payload(),
+                Payload::Image(ImageTask::CheckUploaded {
                     kind: actual_kind,
                     resource_id: actual_resource_id,
                     object_key: actual_object_key,
                     image_version: actual_image_version,
-                }) if *actual_kind == kind
+                }) if actual_kind == kind
                     && actual_resource_id == resource_id
                     && actual_object_key == object_key
-                    && *actual_image_version == image_version
+                    && actual_image_version == image_version
             )
         })
         .count()

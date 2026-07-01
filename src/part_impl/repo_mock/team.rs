@@ -13,7 +13,7 @@ use crate::part::repo::step::team::{
 use crate::part::repo::team::{TeamRepo, TeamRepoTransactional};
 use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactional, expected, now};
-use crate::result::RegularError;
+use crate::result::{RegularError, RegularResult};
 
 impl TeamRepo<MockContext> for Mock {}
 
@@ -25,7 +25,7 @@ fn mark_team_avatar_uploaded(
     state: &mut MockState,
     id: &str,
     avatar_version: i64,
-) -> Result<(), RegularError> {
+) -> RegularResult<()> {
     let team = state
         .teams
         .iter_mut()

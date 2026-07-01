@@ -15,7 +15,7 @@ use crate::data::team::{
 use crate::model::team::TeamForm;
 use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
-use crate::part::prom::intention::{IMAGE_TOPIC, ImageIntention, ImageKind};
+use crate::part::prom::task::{IMAGE_TOPIC, ImageKind, ImageTask};
 use crate::part::prom::{Payload, PromStep, PromTransactional};
 use crate::part::repo::chapter::{ChapterRepo, ChapterRepoTransactional};
 use crate::part::repo::comic::{ComicRepo, ComicRepoTransactional};
@@ -175,9 +175,9 @@ where
 ///
 /// 1. Calls [`TeamStep::reserve_avatar`] — updates the avatar key, increments
 ///    the version, and returns any previous avatar key for cleanup.
-/// 2. If replacing an existing avatar, enqueues a [`Delete`](ImageIntention::Delete)
+/// 2. If replacing an existing avatar, enqueues a [`Delete`](ImageTask::Delete)
 ///    prom record (visible immediately) to remove the old object.
-/// 3. Enqueues a [`CheckUploaded`](ImageIntention::CheckUploaded) prom record
+/// 3. Enqueues a [`CheckUploaded`](ImageTask::CheckUploaded) prom record
 ///    (visible after 15 minutes) to verify the client completed the upload.
 ///
 /// After commit, generates a signed PUT URL for the client to upload to.
@@ -231,8 +231,8 @@ where
                     &PromStep::append(
                         &delete_id,
                         IMAGE_TOPIC,
-                        Payload::Image(ImageIntention::Delete {
-                            object_key: prev_key.clone(),
+                        Payload::Image(ImageTask::Delete {
+                            object_key: prev_key.as_str(),
                         }),
                         &now,
                     ),
@@ -249,10 +249,10 @@ where
                 &PromStep::append(
                     &check_id,
                     IMAGE_TOPIC,
-                    Payload::Image(ImageIntention::CheckUploaded {
+                    Payload::Image(ImageTask::CheckUploaded {
                         kind: ImageKind::TeamAvatar,
-                        resource_id: id.clone(),
-                        object_key: avatar_reservation.object_key.clone(),
+                        resource_id: &id,
+                        object_key: &avatar_reservation.object_key,
                         image_version: avatar_reservation.avatar_version,
                     }),
                     &check_visible_at,
