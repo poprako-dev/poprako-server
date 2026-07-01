@@ -12,7 +12,7 @@ use crate::part::repo::step::member::{FindInfoByUserIdAndTeamId, MemberStep};
 use crate::part::repo::step::user::{GetInfoById as UserGetInfoById, UserStep};
 use crate::part::repo::step::workset::{GetInfoById as WorksetGetInfoById, WorksetStep};
 use crate::part::shared::proxy::ProxyExecute;
-use crate::result::{ExpectedVariant, RootError, RootResult, accept};
+use crate::result::{ExpectedVariant, RegularError, RegularResult, accept};
 use crate::util::next_snowflake_id;
 use crate::value::role::{RoleField, RoleMask};
 
@@ -44,14 +44,14 @@ impl AssignmentPermComplex {
         proxy: &mut P,
         user_id: &str,
         assignment_list_spec: &AssignmentListSpec,
-    ) -> RootResult<()>
+    ) -> RegularResult<()>
     where
-        P: for<'a> ProxyExecute<ChapterGetInfoById<'a>, Error = RootError>
-            + for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RootError>
-            + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RootError>
-            + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RootError>
-            + for<'a> ProxyExecute<GetInfoByChapterIdAndUserId<'a>, Error = RootError>
-            + for<'a> ProxyExecute<UserGetInfoById<'a>, Error = RootError>,
+        P: for<'a> ProxyExecute<ChapterGetInfoById<'a>, Error = RegularError>
+            + for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RegularError>
+            + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RegularError>
+            + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RegularError>
+            + for<'a> ProxyExecute<GetInfoByChapterIdAndUserId<'a>, Error = RegularError>
+            + for<'a> ProxyExecute<UserGetInfoById<'a>, Error = RegularError>,
     {
         match assignment_list_spec {
             AssignmentListSpec::Chapter { chapter_id, .. } => {
@@ -68,13 +68,13 @@ impl AssignmentPermComplex {
         proxy: &mut P,
         current_user_id: &str,
         data: &UpdateAssignmentRoleData,
-    ) -> RootResult<()>
+    ) -> RegularResult<()>
     where
-        P: for<'a> ProxyExecute<ChapterGetInfoById<'a>, Error = RootError>
-            + for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RootError>
-            + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RootError>
-            + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RootError>
-            + for<'a> ProxyExecute<GetInfoByChapterIdAndUserId<'a>, Error = RootError>,
+        P: for<'a> ProxyExecute<ChapterGetInfoById<'a>, Error = RegularError>
+            + for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RegularError>
+            + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RegularError>
+            + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RegularError>
+            + for<'a> ProxyExecute<GetInfoByChapterIdAndUserId<'a>, Error = RegularError>,
     {
         let reviewer_check = check_reviewer(proxy, current_user_id, &data.chapter_id).await;
 
@@ -90,9 +90,9 @@ impl AssignmentPermComplex {
         proxy: &mut P,
         current_user_id: &str,
         assignment_info: &AssignmentInfo,
-    ) -> RootResult<()>
+    ) -> RegularResult<()>
     where
-        P: for<'a> ProxyExecute<GetInfoByChapterIdAndUserId<'a>, Error = RootError>,
+        P: for<'a> ProxyExecute<GetInfoByChapterIdAndUserId<'a>, Error = RegularError>,
     {
         if current_user_id == assignment_info.user_id {
             return accept(());
@@ -106,9 +106,9 @@ impl AssignmentPermComplex {
         proxy: &mut P,
         current_user_id: &str,
         chapter_id: &str,
-    ) -> RootResult<()>
+    ) -> RegularResult<()>
     where
-        P: for<'a> ProxyExecute<GetInfoByChapterIdAndUserId<'a>, Error = RootError>,
+        P: for<'a> ProxyExecute<GetInfoByChapterIdAndUserId<'a>, Error = RegularError>,
     {
         check_reviewer(proxy, current_user_id, chapter_id).await
     }
@@ -119,24 +119,28 @@ impl AssignmentPermComplex {
         user_id: &str,
         chapter_id: &str,
         roles: RoleMask,
-    ) -> RootResult<()>
+    ) -> RegularResult<()>
     where
-        P: for<'a> ProxyExecute<ChapterGetInfoById<'a>, Error = RootError>
-            + for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RootError>
-            + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RootError>
-            + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RootError>,
+        P: for<'a> ProxyExecute<ChapterGetInfoById<'a>, Error = RegularError>
+            + for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RegularError>
+            + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RegularError>
+            + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RegularError>,
     {
         check_target_roles(proxy, user_id, chapter_id, roles).await
     }
 }
 
-async fn check_list_by_chapter<P>(proxy: &mut P, user_id: &str, chapter_id: &str) -> RootResult<()>
+async fn check_list_by_chapter<P>(
+    proxy: &mut P,
+    user_id: &str,
+    chapter_id: &str,
+) -> RegularResult<()>
 where
-    P: for<'a> ProxyExecute<ChapterGetInfoById<'a>, Error = RootError>
-        + for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RootError>
-        + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RootError>
-        + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RootError>
-        + for<'a> ProxyExecute<GetInfoByChapterIdAndUserId<'a>, Error = RootError>,
+    P: for<'a> ProxyExecute<ChapterGetInfoById<'a>, Error = RegularError>
+        + for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RegularError>
+        + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RegularError>
+        + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RegularError>
+        + for<'a> ProxyExecute<GetInfoByChapterIdAndUserId<'a>, Error = RegularError>,
 {
     let team_id = resolve_team_id(proxy, chapter_id).await?;
     let member_check = check_user_is_team_member(proxy, user_id, &team_id).await;
@@ -162,9 +166,9 @@ async fn check_list_by_user<P>(
     proxy: &mut P,
     current_user_id: &str,
     owner_id: &str,
-) -> RootResult<()>
+) -> RegularResult<()>
 where
-    P: for<'a> ProxyExecute<UserGetInfoById<'a>, Error = RootError>,
+    P: for<'a> ProxyExecute<UserGetInfoById<'a>, Error = RegularError>,
 {
     if current_user_id == owner_id {
         return accept(());
@@ -181,9 +185,9 @@ where
     accept(())
 }
 
-async fn check_reviewer<P>(proxy: &mut P, user_id: &str, chapter_id: &str) -> RootResult<()>
+async fn check_reviewer<P>(proxy: &mut P, user_id: &str, chapter_id: &str) -> RegularResult<()>
 where
-    P: for<'a> ProxyExecute<GetInfoByChapterIdAndUserId<'a>, Error = RootError>,
+    P: for<'a> ProxyExecute<GetInfoByChapterIdAndUserId<'a>, Error = RegularError>,
 {
     let assignment_info = proxy
         .execute(&AssignmentStep::get_info_by_chapter_id_and_user_id(
@@ -206,9 +210,9 @@ async fn check_self_reduce<P>(
     proxy: &mut P,
     current_user_id: &str,
     data: &UpdateAssignmentRoleData,
-) -> RootResult<()>
+) -> RegularResult<()>
 where
-    P: for<'a> ProxyExecute<GetInfoByChapterIdAndUserId<'a>, Error = RootError>,
+    P: for<'a> ProxyExecute<GetInfoByChapterIdAndUserId<'a>, Error = RegularError>,
 {
     if current_user_id != data.user_id {
         return Err(assignment_self_reduce_error());
@@ -237,12 +241,12 @@ async fn check_target_roles<P>(
     user_id: &str,
     chapter_id: &str,
     roles: RoleMask,
-) -> RootResult<()>
+) -> RegularResult<()>
 where
-    P: for<'a> ProxyExecute<ChapterGetInfoById<'a>, Error = RootError>
-        + for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RootError>
-        + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RootError>
-        + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RootError>,
+    P: for<'a> ProxyExecute<ChapterGetInfoById<'a>, Error = RegularError>
+        + for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RegularError>
+        + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RegularError>
+        + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RegularError>,
 {
     if roles.has_any_role(&[RoleField::ADMIN]) {
         return Err(assignment_role_not_assignable_args_error());
@@ -266,11 +270,11 @@ where
     accept(())
 }
 
-async fn resolve_team_id<P>(proxy: &mut P, chapter_id: &str) -> RootResult<String>
+async fn resolve_team_id<P>(proxy: &mut P, chapter_id: &str) -> RegularResult<String>
 where
-    P: for<'a> ProxyExecute<ChapterGetInfoById<'a>, Error = RootError>
-        + for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RootError>
-        + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RootError>,
+    P: for<'a> ProxyExecute<ChapterGetInfoById<'a>, Error = RegularError>
+        + for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RegularError>
+        + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RegularError>,
 {
     let chapter_info = proxy
         .execute(&ChapterStep::get_info_by_id(chapter_id))
@@ -287,36 +291,36 @@ where
     accept(workset_info.team_id)
 }
 
-fn assignment_list_permission_error() -> RootError {
-    RootError::Expected {
+fn assignment_list_permission_error() -> RegularError {
+    RegularError::Expected {
         variant: ExpectedVariant::PermDeny,
         message: trl("error-forbidden"),
     }
 }
 
-fn chapter_reviewer_error() -> RootError {
-    RootError::Expected {
+fn chapter_reviewer_error() -> RegularError {
+    RegularError::Expected {
         variant: ExpectedVariant::PermDeny,
         message: trl("error-chapter-reviewer-required"),
     }
 }
 
-fn assignment_self_reduce_error() -> RootError {
-    RootError::Expected {
+fn assignment_self_reduce_error() -> RegularError {
+    RegularError::Expected {
         variant: ExpectedVariant::PermDeny,
         message: trl("error-forbidden"),
     }
 }
 
-fn assignment_role_not_assignable_args_error() -> RootError {
-    RootError::Expected {
+fn assignment_role_not_assignable_args_error() -> RegularError {
+    RegularError::Expected {
         variant: ExpectedVariant::ArgsInvalid,
         message: trl("error-chapter-role-not-assignable"),
     }
 }
 
-fn assignment_role_not_assignable_perm_error() -> RootError {
-    RootError::Expected {
+fn assignment_role_not_assignable_perm_error() -> RegularError {
+    RegularError::Expected {
         variant: ExpectedVariant::PermDeny,
         message: trl("error-chapter-role-not-assignable"),
     }

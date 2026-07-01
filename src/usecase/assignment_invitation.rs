@@ -30,7 +30,7 @@ use crate::part::repo::step::user::UserStep;
 use crate::part::repo::step::workset::WorksetStep;
 use crate::part::repo::user::{UserRepo, UserRepoTransactional};
 use crate::part::repo::workset::{WorksetRepo, WorksetRepoTransactional};
-use crate::result::{ExpectedVariant, RootError, RootResult, accept};
+use crate::result::{ExpectedVariant, RegularError, RegularResult, accept};
 use crate::util::{DeriveTransactional, next_snowflake_id};
 use crate::value::role::{RoleField, RoleMask};
 
@@ -44,7 +44,7 @@ pub async fn list_infos<C, R>(
     repo: &R,
     token: UserToken,
     data: ListAssignmentInvitationInfosData,
-) -> RootResult<Vec<AssignmentInvitationInfoVal>>
+) -> RegularResult<Vec<AssignmentInvitationInfoVal>>
 where
     R: AssignmentInvitationRepo<C> + AssignmentRepo<C> + Sync,
     <R as DeriveTransactional>::Transactional:
@@ -80,10 +80,10 @@ pub async fn create<D, C, R>(
     repo: &R,
     token: UserToken,
     data: CreateAssignmentInvitationData,
-) -> RootResult<CreateAssignmentInvitationVal>
+) -> RegularResult<CreateAssignmentInvitationVal>
 where
     D: Drive<C>,
-    D::Error: Into<RootError>,
+    D::Error: Into<RegularError>,
     C: Send,
     R: AssignmentInvitationRepo<C> + AssignmentRepo<C> + UserRepo<C> + Send + Sync,
     <R as DeriveTransactional>::Transactional: AssignmentInvitationRepoTransactional<C>
@@ -157,10 +157,10 @@ where
 }
 
 /// Deletes an assignment invitation.
-pub async fn delete<D, C, R>(drive: &D, repo: &R, token: UserToken, id: String) -> RootResult<()>
+pub async fn delete<D, C, R>(drive: &D, repo: &R, token: UserToken, id: String) -> RegularResult<()>
 where
     D: Drive<C>,
-    D::Error: Into<RootError>,
+    D::Error: Into<RegularError>,
     C: Send,
     R: AssignmentInvitationRepo<C> + AssignmentRepo<C> + Send + Sync,
     <R as DeriveTransactional>::Transactional:
@@ -200,10 +200,10 @@ pub async fn join<D, C, R>(
     repo: &R,
     token: UserToken,
     data: JoinAssignmentInvitationData,
-) -> RootResult<()>
+) -> RegularResult<()>
 where
     D: Drive<C>,
-    D::Error: Into<RootError>,
+    D::Error: Into<RegularError>,
     C: Send,
     R: AssignmentInvitationRepo<C>
         + AssignmentRepo<C>
@@ -348,7 +348,7 @@ fn gen_assignment_invitation_code() -> String {
     id[len - 6..].to_string()
 }
 
-fn validate_roles(roles: RoleMask) -> RootResult<()> {
+fn validate_roles(roles: RoleMask) -> RegularResult<()> {
     if u32::from(roles) == 0 || roles.has_any_role(&[RoleField::ADMIN]) {
         return Err(assignment_role_not_assignable_args_error());
     }
@@ -356,29 +356,29 @@ fn validate_roles(roles: RoleMask) -> RootResult<()> {
     accept(())
 }
 
-fn invalid_invitation_error() -> RootError {
-    RootError::Expected {
+fn invalid_invitation_error() -> RegularError {
+    RegularError::Expected {
         variant: ExpectedVariant::ArgsInvalid,
         message: trl("error-no-pending-invitation"),
     }
 }
 
-fn invitee_assigned_error() -> RootError {
-    RootError::Expected {
+fn invitee_assigned_error() -> RegularError {
+    RegularError::Expected {
         variant: ExpectedVariant::ArgsInvalid,
         message: trl("error-assignment-already-exists"),
     }
 }
 
-fn assignment_role_not_assignable_args_error() -> RootError {
-    RootError::Expected {
+fn assignment_role_not_assignable_args_error() -> RegularError {
+    RegularError::Expected {
         variant: ExpectedVariant::ArgsInvalid,
         message: trl("error-chapter-role-not-assignable"),
     }
 }
 
-fn assignment_role_not_assignable_perm_error() -> RootError {
-    RootError::Expected {
+fn assignment_role_not_assignable_perm_error() -> RegularError {
+    RegularError::Expected {
         variant: ExpectedVariant::PermDeny,
         message: trl("error-chapter-role-not-assignable"),
     }

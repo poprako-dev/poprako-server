@@ -57,7 +57,7 @@ use crate::part::repo::user::{UserRepo, UserRepoTransactional};
 use crate::part::shared::execute::Execute;
 use crate::part_impl::prom_mock::MockPromRecord;
 use crate::part_impl::repo_mock::{Mock, MockContext};
-use crate::result::{ExpectedVariant, RootError};
+use crate::result::{ExpectedVariant, RegularError};
 use crate::test_util::{
     assert_expected_message, assert_expected_variant, assert_one_image_check_record,
 };
@@ -180,8 +180,8 @@ fn comic_with_uploaded_cover(id: &str, workset_id: &str, cover_key: &str) -> Com
 }
 
 /// Builds a standard error for negative test cases.
-fn expected_error() -> RootError {
-    RootError::Expected {
+fn expected_error() -> RegularError {
+    RegularError::Expected {
         variant: ExpectedVariant::ArgsInvalid,
         message: "failed".into(),
     }
@@ -266,7 +266,7 @@ fn count_delete_records(records: &[MockPromRecord], object_key: &str) -> usize {
 
 #[async_trait]
 impl<'a> Execute<Create<'a>> for FailingCreateRepo {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn execute(&self, _: &Create<'a>) -> Result<TeamInfo, Self::Error> {
         Err(expected_error())
@@ -275,7 +275,7 @@ impl<'a> Execute<Create<'a>> for FailingCreateRepo {
 
 #[async_trait]
 impl<'a> Execute<UserGetInfoById<'a>> for FailingCreateRepo {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn execute(&self, step: &UserGetInfoById<'a>) -> Result<UserInfo, Self::Error> {
         Ok(user(step.id, true))
@@ -284,7 +284,7 @@ impl<'a> Execute<UserGetInfoById<'a>> for FailingCreateRepo {
 
 #[async_trait]
 impl<'a> Execute<GetCredentialByQid<'a>> for FailingCreateRepo {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn execute(&self, _: &GetCredentialByQid<'a>) -> Result<UserCredential, Self::Error> {
         Err(expected_error())
@@ -293,7 +293,7 @@ impl<'a> Execute<GetCredentialByQid<'a>> for FailingCreateRepo {
 
 #[async_trait]
 impl<'a> Execute<FindInfoByQid<'a>> for FailingCreateRepo {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn execute(&self, _: &FindInfoByQid<'a>) -> Result<Option<UserInfo>, Self::Error> {
         Ok(None)
@@ -302,7 +302,7 @@ impl<'a> Execute<FindInfoByQid<'a>> for FailingCreateRepo {
 
 #[async_trait]
 impl<'a> Advance<UserCreate<'a>, MockContext> for FailingTeamTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,
@@ -315,7 +315,7 @@ impl<'a> Advance<UserCreate<'a>, MockContext> for FailingTeamTransactional {
 
 #[async_trait]
 impl<'a> Advance<FindInfoByQid<'a>, MockContext> for FailingTeamTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,
@@ -328,7 +328,7 @@ impl<'a> Advance<FindInfoByQid<'a>, MockContext> for FailingTeamTransactional {
 
 #[async_trait]
 impl<'a> Advance<UserUpdateInfo<'a>, MockContext> for FailingTeamTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,
@@ -341,7 +341,7 @@ impl<'a> Advance<UserUpdateInfo<'a>, MockContext> for FailingTeamTransactional {
 
 #[async_trait]
 impl<'a> Advance<UserReserveAvatar<'a>, MockContext> for FailingTeamTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,
@@ -354,7 +354,7 @@ impl<'a> Advance<UserReserveAvatar<'a>, MockContext> for FailingTeamTransactiona
 
 #[async_trait]
 impl<'a> Advance<UserMarkAvatarUploaded<'a>, MockContext> for FailingTeamTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,
@@ -367,7 +367,7 @@ impl<'a> Advance<UserMarkAvatarUploaded<'a>, MockContext> for FailingTeamTransac
 
 #[async_trait]
 impl<'a> Advance<UserTouchLastActive<'a>, MockContext> for FailingTeamTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,
@@ -380,7 +380,7 @@ impl<'a> Advance<UserTouchLastActive<'a>, MockContext> for FailingTeamTransactio
 
 #[async_trait]
 impl<'a> Advance<UserGetInfoExcluded<'a>, MockContext> for FailingTeamTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,
@@ -393,7 +393,7 @@ impl<'a> Advance<UserGetInfoExcluded<'a>, MockContext> for FailingTeamTransactio
 
 #[async_trait]
 impl<'a> Advance<UserDelete<'a>, MockContext> for FailingTeamTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(&self, _: &mut MockContext, _: &UserDelete<'a>) -> Result<(), Self::Error> {
         Err(expected_error())
@@ -402,7 +402,7 @@ impl<'a> Advance<UserDelete<'a>, MockContext> for FailingTeamTransactional {
 
 #[async_trait]
 impl<'a> Execute<GetInfoById<'a>> for FailingCreateRepo {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn execute(&self, _: &GetInfoById<'a>) -> Result<TeamInfo, Self::Error> {
         Err(expected_error())
@@ -411,7 +411,7 @@ impl<'a> Execute<GetInfoById<'a>> for FailingCreateRepo {
 
 #[async_trait]
 impl<'a> Execute<ListInfos<'a>> for FailingCreateRepo {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn execute(&self, _: &ListInfos<'a>) -> Result<Vec<TeamInfo>, Self::Error> {
         Err(expected_error())
@@ -420,7 +420,7 @@ impl<'a> Execute<ListInfos<'a>> for FailingCreateRepo {
 
 #[async_trait]
 impl<'a> Execute<UpdateInfo<'a>> for FailingCreateRepo {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn execute(&self, _: &UpdateInfo<'a>) -> Result<(), Self::Error> {
         Err(expected_error())
@@ -429,7 +429,7 @@ impl<'a> Execute<UpdateInfo<'a>> for FailingCreateRepo {
 
 #[async_trait]
 impl<'a> Execute<MarkAvatarUploaded<'a>> for FailingCreateRepo {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn execute(&self, _: &MarkAvatarUploaded<'a>) -> Result<(), Self::Error> {
         Err(expected_error())
@@ -438,7 +438,7 @@ impl<'a> Execute<MarkAvatarUploaded<'a>> for FailingCreateRepo {
 
 #[async_trait]
 impl<'a> Advance<ReserveAvatar<'a>, MockContext> for FailingTeamTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,
@@ -451,7 +451,7 @@ impl<'a> Advance<ReserveAvatar<'a>, MockContext> for FailingTeamTransactional {
 
 #[async_trait]
 impl<'a> Advance<MarkAvatarUploaded<'a>, MockContext> for FailingTeamTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,
@@ -464,7 +464,7 @@ impl<'a> Advance<MarkAvatarUploaded<'a>, MockContext> for FailingTeamTransaction
 
 #[async_trait]
 impl<'a> Advance<GetInfoExcluded<'a>, MockContext> for FailingTeamTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,
@@ -477,7 +477,7 @@ impl<'a> Advance<GetInfoExcluded<'a>, MockContext> for FailingTeamTransactional 
 
 #[async_trait]
 impl<'a> Advance<Delete<'a>, MockContext> for FailingTeamTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(&self, _: &mut MockContext, _: &Delete<'a>) -> Result<(), Self::Error> {
         Err(expected_error())
@@ -486,7 +486,7 @@ impl<'a> Advance<Delete<'a>, MockContext> for FailingTeamTransactional {
 
 #[async_trait]
 impl<'a> Advance<IncrementWorksetNextIndex<'a>, MockContext> for FailingTeamTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,

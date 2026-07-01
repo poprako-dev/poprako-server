@@ -7,12 +7,12 @@ use poprako_util::i18n::trl;
 use crate::part::prom::Payload;
 use crate::part::prom::intention::{ImageIntention, ImageKind};
 use crate::part_impl::prom_mock::MockPromRecord;
-use crate::result::{ExpectedVariant, RootError};
+use crate::result::{ExpectedVariant, RegularError};
 
 /// Asserts that `err` is a [`RootError::Expected`] whose variant matches `expected`.
 /// Panics with a descriptive message on mismatch.
-pub fn assert_expected_variant(err: RootError, expected: ExpectedVariant) {
-    let RootError::Expected { variant, .. } = err else {
+pub fn assert_expected_variant(err: RegularError, expected: ExpectedVariant) {
+    let RegularError::Expected { variant, .. } = err else {
         panic!("expected RootError::Expected");
     };
 
@@ -25,8 +25,8 @@ pub fn assert_expected_variant(err: RootError, expected: ExpectedVariant) {
 }
 
 /// Asserts that `err` is an expected error with the exact variant and i18n key.
-pub fn assert_expected_message(err: RootError, expected: ExpectedVariant, trl_key: &str) {
-    let RootError::Expected {
+pub fn assert_expected_message(err: RegularError, expected: ExpectedVariant, trl_key: &str) {
+    let RegularError::Expected {
         variant,
         message: actual,
     } = err
@@ -35,7 +35,7 @@ pub fn assert_expected_message(err: RootError, expected: ExpectedVariant, trl_ke
     };
 
     assert_expected_variant(
-        RootError::Expected {
+        RegularError::Expected {
             variant,
             message: actual.clone(),
         },

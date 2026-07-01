@@ -6,7 +6,7 @@ use diesel_async::AsyncPgConnection;
 use diesel_async::pooled_connection::AsyncDieselConnectionManager;
 use diesel_async::pooled_connection::deadpool::{Object, Pool};
 
-use crate::result::RootError;
+use crate::result::RegularError;
 
 pub mod result;
 
@@ -21,7 +21,7 @@ pub struct RdbShared {
 }
 
 impl RdbShared {
-    pub fn from_database_url(database_url: &str) -> Result<Self, RootError> {
+    pub fn from_database_url(database_url: &str) -> Result<Self, RegularError> {
         let manager = AsyncDieselConnectionManager::<AsyncPgConnection>::new(database_url);
 
         let pool = Pool::builder(manager).build().map_err(pool_build)?;
@@ -31,7 +31,7 @@ impl RdbShared {
         })
     }
 
-    pub async fn conn(&self) -> Result<RdbConn, RootError> {
+    pub async fn conn(&self) -> Result<RdbConn, RegularError> {
         let conn = self.pool.get().await.map_err(pool_get)?;
 
         Ok(RdbConn::new(conn))

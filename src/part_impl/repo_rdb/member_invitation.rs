@@ -18,13 +18,13 @@ use crate::part_impl::repo_rdb::entity::member_invitation::{
 use crate::part_impl::repo_rdb::{RdbRepo, RdbRepoTransactional, schema};
 use crate::part_impl::shared_rdb::RdbContext;
 use crate::part_impl::shared_rdb::result::{diesel, expected};
-use crate::result::RootError;
+use crate::result::RegularError;
 
 // ── Non-transactional ──────────────────────────────────────────────────────
 
 #[async_trait]
 impl<'a> Execute<ListInfos<'a>> for RdbRepo {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn execute(
         &self,
@@ -63,7 +63,7 @@ impl<'a> Execute<ListInfos<'a>> for RdbRepo {
 
 #[async_trait]
 impl<'a> Execute<GetInfoById<'a>> for RdbRepo {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn execute(
         &self,
@@ -88,7 +88,7 @@ impl<'a> Execute<GetInfoById<'a>> for RdbRepo {
 
 #[async_trait]
 impl<'a> Advance<Create<'a>, RdbContext> for RdbRepoTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,
@@ -110,7 +110,7 @@ impl<'a> Advance<Create<'a>, RdbContext> for RdbRepoTransactional {
 
 #[async_trait]
 impl<'a> Advance<GetInfoByCodeExcluded<'a>, RdbContext> for RdbRepoTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,
@@ -135,13 +135,13 @@ impl<'a> Advance<GetInfoByCodeExcluded<'a>, RdbContext> for RdbRepoTransactional
 
 #[async_trait]
 impl<'a> Advance<MarkPendingAsUsed<'a>, RdbContext> for RdbRepoTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,
         context: &mut RdbContext,
         step: &MarkPendingAsUsed<'a>,
-    ) -> Result<(), RootError> {
+    ) -> Result<(), RegularError> {
         let now = OffsetDateTime::now_utc();
         let aspect = MemberInvitationAspect::new(now).pending(false);
 
@@ -160,7 +160,7 @@ impl<'a> Advance<MarkPendingAsUsed<'a>, RdbContext> for RdbRepoTransactional {
 
 #[async_trait]
 impl<'a> Advance<GetInfoById<'a>, RdbContext> for RdbRepoTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,
@@ -182,13 +182,13 @@ impl<'a> Advance<GetInfoById<'a>, RdbContext> for RdbRepoTransactional {
 
 #[async_trait]
 impl<'a> Advance<UpdateInfo<'a>, RdbContext> for RdbRepoTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,
         context: &mut RdbContext,
         step: &UpdateInfo<'a>,
-    ) -> Result<(), RootError> {
+    ) -> Result<(), RegularError> {
         let now = OffsetDateTime::now_utc();
         let role_mask_val = i64::from(u32::from(step.update.roles));
 
@@ -209,9 +209,13 @@ impl<'a> Advance<UpdateInfo<'a>, RdbContext> for RdbRepoTransactional {
 
 #[async_trait]
 impl<'a> Advance<Delete<'a>, RdbContext> for RdbRepoTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
-    async fn advance(&self, context: &mut RdbContext, step: &Delete<'a>) -> Result<(), RootError> {
+    async fn advance(
+        &self,
+        context: &mut RdbContext,
+        step: &Delete<'a>,
+    ) -> Result<(), RegularError> {
         diesel::delete(
             schema::t_member_invitation::table
                 .filter(schema::t_member_invitation::f_id.eq(step.id)),

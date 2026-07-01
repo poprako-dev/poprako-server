@@ -19,7 +19,7 @@ use crate::part::repo::step::member::MemberStep;
 use crate::part::repo::step::member_invitation::MemberInvitationStep;
 use crate::part::repo::step::user::UserStep;
 use crate::part::repo::user::{UserRepo, UserRepoTransactional};
-use crate::result::{ExpectedVariant, RootError, RootResult, accept};
+use crate::result::{ExpectedVariant, RegularError, RegularResult, accept};
 use crate::util::DeriveTransactional;
 use poprako_transactional::advance::Advance;
 use poprako_transactional::drive::Drive;
@@ -36,10 +36,10 @@ pub async fn create<D, C, R>(
     repo: &R,
     token: UserToken,
     data: CreateMemberInvitationData,
-) -> RootResult<CreateMemberInvitationVal>
+) -> RegularResult<CreateMemberInvitationVal>
 where
     D: Drive<C>,
-    D::Error: Into<RootError>,
+    D::Error: Into<RegularError>,
     C: Send,
     R: MemberInvitationRepo<C> + MemberRepo<C> + UserRepo<C> + Send + Sync,
     <R as DeriveTransactional>::Transactional: MemberInvitationRepoTransactional<C>
@@ -79,7 +79,7 @@ where
                     .await?;
 
                 if invitee_member_info.is_some() {
-                    return Err(RootError::Expected {
+                    return Err(RegularError::Expected {
                         variant: ExpectedVariant::ArgsInvalid,
                         message: trl("error-already-team-member"),
                     });
@@ -122,7 +122,7 @@ pub async fn list_infos<C, R, I>(
     image_pool: &I,
     token: UserToken,
     data: ListMemberInvitationInfosData,
-) -> RootResult<Vec<MemberInvitationInfoVal>>
+) -> RegularResult<Vec<MemberInvitationInfoVal>>
 where
     R: MemberInvitationRepo<C> + MemberRepo<C> + Sync,
     <R as DeriveTransactional>::Transactional:
@@ -165,10 +165,10 @@ pub async fn update_info<D, C, R>(
     repo: &R,
     token: UserToken,
     data: UpdateMemberInvitationInfoData,
-) -> RootResult<()>
+) -> RegularResult<()>
 where
     D: Drive<C>,
-    D::Error: Into<RootError>,
+    D::Error: Into<RegularError>,
     C: Send,
     R: MemberInvitationRepo<C> + MemberRepo<C> + Send + Sync,
     <R as DeriveTransactional>::Transactional:
@@ -207,10 +207,10 @@ where
 }
 
 /// Deletes an invitation.
-pub async fn delete<D, C, R>(drive: &D, repo: &R, token: UserToken, id: String) -> RootResult<()>
+pub async fn delete<D, C, R>(drive: &D, repo: &R, token: UserToken, id: String) -> RegularResult<()>
 where
     D: Drive<C>,
-    D::Error: Into<RootError>,
+    D::Error: Into<RegularError>,
     C: Send,
     R: MemberInvitationRepo<C> + MemberRepo<C> + Send + Sync,
     <R as DeriveTransactional>::Transactional:

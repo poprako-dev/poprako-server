@@ -24,7 +24,7 @@ use poprako_transactional::advance::Advance;
 use poprako_transactional::step::Step;
 
 use crate::part::prom::intention::ImageIntention;
-use crate::result::RootError;
+use crate::result::RegularError;
 
 pub mod intention;
 
@@ -79,4 +79,4 @@ impl PromStep {
 ///
 /// This is the trait that the transactional handle must implement to
 /// support enqueuing deferred actions within a transaction.
-pub trait PromTransactional<C>: for<'a> Advance<Append<'a>, C, Error = RootError> {}
+pub trait PromTransactional<C>: for<'a> Advance<Append<'a>, C, Error = RegularError> {}

@@ -21,7 +21,7 @@ use crate::part::repo::step::assignment::AssignmentStep;
 use crate::part::repo::step::chapter::ChapterStep;
 use crate::part::repo::step::comic::ComicStep;
 use crate::part::repo::workset::{WorksetRepo, WorksetRepoTransactional};
-use crate::result::{RootError, RootResult, accept};
+use crate::result::{RegularError, RegularResult, accept};
 use crate::util::DeriveTransactional;
 use crate::value::chapter::{StagePhase, WorkflowEvent, WorkflowStage};
 use crate::value::role::{RoleField, RoleMask};
@@ -37,7 +37,7 @@ pub async fn list_infos<C, R, I>(
     image_pool: &I,
     token: UserToken,
     data: ListChapterInfosData,
-) -> RootResult<Vec<ChapterInfoVal>>
+) -> RegularResult<Vec<ChapterInfoVal>>
 where
     R: ChapterRepo<C> + ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Sync,
     <R as DeriveTransactional>::Transactional: ChapterRepoTransactional<C>
@@ -70,7 +70,7 @@ where
 }
 
 /// Fetches a chapter by ID.
-pub async fn get_info<C, R>(repo: &R, token: UserToken, id: String) -> RootResult<ChapterInfoVal>
+pub async fn get_info<C, R>(repo: &R, token: UserToken, id: String) -> RegularResult<ChapterInfoVal>
 where
     R: ChapterRepo<C> + ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Sync,
     <R as DeriveTransactional>::Transactional: ChapterRepoTransactional<C>
@@ -92,7 +92,7 @@ pub async fn get_pinned<C, R>(
     repo: &R,
     token: UserToken,
     comic_id: String,
-) -> RootResult<Option<ChapterInfoVal>>
+) -> RegularResult<Option<ChapterInfoVal>>
 where
     R: ChapterRepo<C> + ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Sync,
     <R as DeriveTransactional>::Transactional: ChapterRepoTransactional<C>
@@ -118,10 +118,10 @@ pub async fn create<D, C, R>(
     repo: &R,
     token: UserToken,
     data: CreateChapterData,
-) -> RootResult<CreateChapterVal>
+) -> RegularResult<CreateChapterVal>
 where
     D: Drive<C>,
-    D::Error: Into<RootError>,
+    D::Error: Into<RegularError>,
     C: Send,
     R: ChapterRepo<C>
         + ComicRepo<C>
@@ -208,10 +208,10 @@ pub async fn update_info<D, C, R>(
     repo: &R,
     token: UserToken,
     data: UpdateChapterInfoData,
-) -> RootResult<()>
+) -> RegularResult<()>
 where
     D: Drive<C>,
-    D::Error: Into<RootError>,
+    D::Error: Into<RegularError>,
     C: Send,
     R: ChapterRepo<C> + ComicRepo<C> + AssignmentRepo<C> + Send + Sync,
     <R as DeriveTransactional>::Transactional: ChapterRepoTransactional<C>
@@ -273,10 +273,10 @@ pub async fn update_stage<D, C, R, P>(
     prom: &P,
     token: UserToken,
     data: UpdateChapterStageData,
-) -> RootResult<()>
+) -> RegularResult<()>
 where
     D: Drive<C>,
-    D::Error: Into<RootError>,
+    D::Error: Into<RegularError>,
     C: Send,
     R: ChapterRepo<C> + ComicRepo<C> + AssignmentRepo<C> + PageRepo<C> + Send + Sync,
     <R as DeriveTransactional>::Transactional: ChapterRepoTransactional<C>
@@ -347,10 +347,10 @@ pub async fn delete<D, C, R, P>(
     prom: &P,
     token: UserToken,
     id: String,
-) -> RootResult<()>
+) -> RegularResult<()>
 where
     D: Drive<C>,
-    D::Error: Into<RootError>,
+    D::Error: Into<RegularError>,
     C: Send,
     R: ChapterRepo<C> + ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + PageRepo<C> + Send + Sync,
     <R as DeriveTransactional>::Transactional: ChapterRepoTransactional<C>

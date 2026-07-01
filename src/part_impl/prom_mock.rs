@@ -7,7 +7,7 @@ use poprako_transactional::advance::Advance;
 
 use crate::part::prom::{Append, Payload, PromTransactional};
 use crate::part_impl::repo_mock::{Mock, MockContext, MockTransactional};
-use crate::result::RootError;
+use crate::result::RegularError;
 
 /// A recorded deferred action stored in the mock context during transactional testing.
 #[cfg_attr(test, derive(Clone))]
@@ -28,7 +28,7 @@ impl PromTransactional<MockContext> for Mock {}
 /// Appends a [MockPromRecord] to the mock context state when a prom append is advanced.
 #[async_trait]
 impl<'a> Advance<Append<'a>, MockContext> for MockTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,
@@ -48,7 +48,7 @@ impl<'a> Advance<Append<'a>, MockContext> for MockTransactional {
 /// Prom append on [`Mock`] delegates to the same mock state `prom_records`.
 #[async_trait]
 impl<'a> Advance<Append<'a>, MockContext> for Mock {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,

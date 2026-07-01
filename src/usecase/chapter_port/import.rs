@@ -26,7 +26,7 @@ use crate::part::repo::step::comic::ComicStep;
 use crate::part::repo::step::page::PageStep;
 use crate::part::repo::step::unit::UnitStep;
 use crate::part::repo::unit::{UnitRepo, UnitRepoTransactional};
-use crate::result::{ExpectedVariant, RootError, RootResult, accept};
+use crate::result::{ExpectedVariant, RegularError, RegularResult, accept};
 use crate::util::DeriveTransactional;
 use crate::value::chapter_port::TranslationFormat;
 use crate::value::role::RoleField;
@@ -38,10 +38,10 @@ pub async fn import<D, C, R>(
     token: UserToken,
     data: ChapterTranslationImportData,
     chapter_id: String,
-) -> RootResult<ChapterTranslationImportVal>
+) -> RegularResult<ChapterTranslationImportVal>
 where
     D: Drive<C>,
-    D::Error: Into<RootError>,
+    D::Error: Into<RegularError>,
     C: Send,
     R: AssignmentRepo<C> + ChapterRepo<C> + ComicRepo<C> + PageRepo<C> + UnitRepo<C> + Send + Sync,
     <R as DeriveTransactional>::Transactional: AssignmentRepoTransactional<C>
@@ -232,8 +232,8 @@ fn counter_delta(old_counters: UnitCounters, new_counters: UnitCounters) -> Unit
     }
 }
 
-fn unit_edit_permission_error() -> RootError {
-    RootError::Expected {
+fn unit_edit_permission_error() -> RegularError {
+    RegularError::Expected {
         variant: ExpectedVariant::PermDeny,
         message: trl("error-unit-edit-permission-required"),
     }

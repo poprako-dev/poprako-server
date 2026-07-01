@@ -12,7 +12,7 @@ use crate::part::repo::comment::{CommentRepo, CommentRepoTransactional};
 use crate::part::repo::step::comment::{Create, ListInfos};
 use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactional, expected, now};
-use crate::result::RootError;
+use crate::result::RegularError;
 use crate::util::DeriveTransactional;
 use crate::value::comment::CommentInclOpt;
 
@@ -62,7 +62,7 @@ fn list_comments(state: &MockState, spec: &CommentListSpec) -> Vec<CommentInfo> 
     comment_infos[offset..end].to_vec()
 }
 
-fn create_comment(state: &mut MockState, form: &CommentForm) -> Result<CommentInfo, RootError> {
+fn create_comment(state: &mut MockState, form: &CommentForm) -> Result<CommentInfo, RegularError> {
     if state
         .comments
         .iter()
@@ -87,7 +87,7 @@ fn create_comment(state: &mut MockState, form: &CommentForm) -> Result<CommentIn
 
 #[async_trait]
 impl<'a> Execute<ListInfos<'a>> for Mock {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn execute(&self, step: &ListInfos<'a>) -> Result<Vec<CommentInfo>, Self::Error> {
         let state = self.state.lock().unwrap();
@@ -98,7 +98,7 @@ impl<'a> Execute<ListInfos<'a>> for Mock {
 
 #[async_trait]
 impl<'a> Advance<Create<'a>, MockContext> for MockTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,

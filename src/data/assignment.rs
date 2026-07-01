@@ -9,7 +9,7 @@ use poprako_util::time::ToUnixMilli;
 use crate::data::user::UserInfoVal;
 use crate::model::assignment::{AssignmentInfo, AssignmentListSpec};
 use crate::part::image::ImagePool;
-use crate::result::{ExpectedVariant, RootError, RootResult};
+use crate::result::{ExpectedVariant, RegularError, RegularResult};
 use crate::value::assignment::AssignmentInclOpt;
 use crate::value::role::{RoleField, RoleMask};
 
@@ -45,7 +45,7 @@ impl From<AssignmentInfo> for AssignmentInfoVal {
 impl AssignmentInfoVal {
     /// Converts an assignment model into a presentation-ready value,
     /// resolving included user avatar when present.
-    pub async fn from_model<P>(image_pool: &P, model: AssignmentInfo) -> RootResult<Self>
+    pub async fn from_model<P>(image_pool: &P, model: AssignmentInfo) -> RegularResult<Self>
     where
         P: ImagePool,
     {
@@ -80,10 +80,10 @@ pub struct ListAssignmentInfosData {
 }
 
 impl TryInto<AssignmentListSpec> for ListAssignmentInfosData {
-    type Error = RootError;
+    type Error = RegularError;
 
-    fn try_into(self) -> RootResult<AssignmentListSpec> {
-        let invalid_args_err = || RootError::Expected {
+    fn try_into(self) -> RegularResult<AssignmentListSpec> {
+        let invalid_args_err = || RegularError::Expected {
             variant: ExpectedVariant::ArgsInvalid,
             message: trl("error-chapter-or-user-required"),
         };

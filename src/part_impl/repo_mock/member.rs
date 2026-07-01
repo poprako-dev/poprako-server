@@ -15,7 +15,7 @@ use crate::part::repo::step::member::{
 };
 use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactional, expected, now};
-use crate::result::RootError;
+use crate::result::RegularError;
 use crate::value::member::MemberInclOpt;
 use crate::value::role::RoleMask;
 
@@ -62,7 +62,7 @@ fn role_time(roles: RoleMask) -> Option<OffsetDateTime> {
 }
 
 /// Inserts a new member record, rejecting duplicates by id or by the same user+team pair.
-fn create_member(state: &mut MockState, form: &MemberForm) -> Result<MemberInfo, RootError> {
+fn create_member(state: &mut MockState, form: &MemberForm) -> Result<MemberInfo, RegularError> {
     if state.members.iter().any(|member| member.id == form.id) {
         return Err(expected("error-already-exists"));
     }
@@ -100,7 +100,7 @@ fn find_member_by_user_id_and_team_id(
         .cloned()
 }
 
-fn get_member_by_id(state: &MockState, id: &str) -> Result<MemberInfo, RootError> {
+fn get_member_by_id(state: &MockState, id: &str) -> Result<MemberInfo, RegularError> {
     state
         .members
         .iter()
@@ -111,7 +111,7 @@ fn get_member_by_id(state: &MockState, id: &str) -> Result<MemberInfo, RootError
 
 #[async_trait]
 impl<'a> Advance<Create<'a>, MockContext> for MockTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,
@@ -124,7 +124,7 @@ impl<'a> Advance<Create<'a>, MockContext> for MockTransactional {
 
 #[async_trait]
 impl<'a> Advance<UpdateUserNickname<'a>, MockContext> for MockTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,
@@ -142,7 +142,7 @@ impl<'a> Advance<UpdateUserNickname<'a>, MockContext> for MockTransactional {
 
 #[async_trait]
 impl<'a> Advance<TouchLastActive<'a>, MockContext> for MockTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,
@@ -155,7 +155,7 @@ impl<'a> Advance<TouchLastActive<'a>, MockContext> for MockTransactional {
 
 #[async_trait]
 impl<'a> Advance<ListInfosByUserIdExcluded<'a>, MockContext> for MockTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,
@@ -174,7 +174,7 @@ impl<'a> Advance<ListInfosByUserIdExcluded<'a>, MockContext> for MockTransaction
 
 #[async_trait]
 impl<'a> Execute<ListInfos<'a>> for Mock {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn execute(&self, step: &ListInfos<'a>) -> Result<Vec<MemberInfo>, Self::Error> {
         let state = self.state.lock().unwrap();
@@ -249,7 +249,7 @@ impl<'a> Execute<ListInfos<'a>> for Mock {
 
 #[async_trait]
 impl<'a> Execute<FindInfoByUserIdAndTeamId<'a>> for Mock {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn execute(
         &self,
@@ -266,7 +266,7 @@ impl<'a> Execute<FindInfoByUserIdAndTeamId<'a>> for Mock {
 
 #[async_trait]
 impl<'a> Execute<GetInfoById<'a>> for Mock {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn execute(&self, step: &GetInfoById<'a>) -> Result<MemberInfo, Self::Error> {
         let state = self.state.lock().unwrap();
@@ -276,7 +276,7 @@ impl<'a> Execute<GetInfoById<'a>> for Mock {
 
 #[async_trait]
 impl<'a> Advance<FindInfoByUserIdAndTeamId<'a>, MockContext> for MockTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,
@@ -293,7 +293,7 @@ impl<'a> Advance<FindInfoByUserIdAndTeamId<'a>, MockContext> for MockTransaction
 
 #[async_trait]
 impl<'a> Advance<GetInfoExcluded<'a>, MockContext> for MockTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,
@@ -306,7 +306,7 @@ impl<'a> Advance<GetInfoExcluded<'a>, MockContext> for MockTransactional {
 
 #[async_trait]
 impl<'a> Advance<UpdateRole<'a>, MockContext> for MockTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,
@@ -327,7 +327,7 @@ impl<'a> Advance<UpdateRole<'a>, MockContext> for MockTransactional {
 
 #[async_trait]
 impl<'a> Advance<Delete<'a>, MockContext> for MockTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,

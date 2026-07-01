@@ -22,7 +22,7 @@ use crate::part::repo::step::member::MemberStep;
 use crate::part::repo::step::member_invitation::MemberInvitationStep;
 use crate::part::repo::step::user::UserStep;
 use crate::part::repo::user::{UserRepo, UserRepoTransactional};
-use crate::result::{ExpectedVariant, RootError, RootResult, accept};
+use crate::result::{ExpectedVariant, RegularError, RegularResult, accept};
 use crate::util::DeriveTransactional;
 
 #[cfg(test)]
@@ -57,10 +57,10 @@ pub async fn register<D, C, R, A, V>(
     auth: &A,
     develop: &V,
     data: RegisterData,
-) -> RootResult<RegisterVal>
+) -> RegularResult<RegisterVal>
 where
     D: Drive<C>,
-    D::Error: Into<RootError>,
+    D::Error: Into<RegularError>,
     C: Send,
     R: UserRepo<C> + MemberRepo<C> + MemberInvitationRepo<C> + Send + Sync,
     <R as DeriveTransactional>::Transactional: UserRepoTransactional<C>
@@ -83,7 +83,7 @@ where
 
             // Verify the invitation was issued for this QQ ID.
             if invitation_info.invitee_qid != data.qid {
-                return Err(RootError::Expected {
+                return Err(RegularError::Expected {
                     variant: ExpectedVariant::ArgsInvalid,
                     message: trl("error-invalid-invitation-code"),
                 });
@@ -154,7 +154,7 @@ where
 /// * `C` — Context anchor.
 /// * `R: UserRepo<C>` — Provides credential lookup.
 /// * `A: TokenAuth` — Signs the session token.
-pub async fn login<C, R, A>(repo: &R, auth: &A, data: LoginData) -> RootResult<LoginVal>
+pub async fn login<C, R, A>(repo: &R, auth: &A, data: LoginData) -> RegularResult<LoginVal>
 where
     R: UserRepo<C>,
     <R as DeriveTransactional>::Transactional: UserRepoTransactional<C>,
@@ -165,7 +165,7 @@ where
         .await?;
 
     if !UserComplex::verify_password(&data.password, &user_credential.password_hash) {
-        return Err(RootError::Expected {
+        return Err(RegularError::Expected {
             variant: ExpectedVariant::AuthFail,
             message: trl("error-wrong-credentials"),
         });

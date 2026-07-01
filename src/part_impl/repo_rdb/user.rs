@@ -16,13 +16,13 @@ use crate::part_impl::repo_rdb::entity::user::{UserAspect, UserCredentialRow, Us
 use crate::part_impl::repo_rdb::{RdbRepo, RdbRepoTransactional, schema};
 use crate::part_impl::shared_rdb::RdbContext;
 use crate::part_impl::shared_rdb::result::{diesel, expected};
-use crate::result::RootError;
+use crate::result::RegularError;
 
 // ── Non-transactional ──────────────────────────────────────────────────────
 
 #[async_trait]
 impl<'a> Execute<GetInfoById<'a>> for RdbRepo {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn execute(
         &self,
@@ -45,7 +45,7 @@ impl<'a> Execute<GetInfoById<'a>> for RdbRepo {
 
 #[async_trait]
 impl<'a> Execute<GetCredentialByQid<'a>> for RdbRepo {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn execute(
         &self,
@@ -69,7 +69,7 @@ impl<'a> Execute<GetCredentialByQid<'a>> for RdbRepo {
 
 #[async_trait]
 impl<'a> Execute<FindInfoByQid<'a>> for RdbRepo {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn execute(
         &self,
@@ -93,7 +93,7 @@ impl<'a> Execute<FindInfoByQid<'a>> for RdbRepo {
 
 #[async_trait]
 impl<'a> Advance<Create<'a>, RdbContext> for RdbRepoTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,
@@ -125,7 +125,7 @@ impl<'a> Advance<Create<'a>, RdbContext> for RdbRepoTransactional {
 
 #[async_trait]
 impl<'a> Advance<FindInfoByQid<'a>, RdbContext> for RdbRepoTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,
@@ -146,13 +146,13 @@ impl<'a> Advance<FindInfoByQid<'a>, RdbContext> for RdbRepoTransactional {
 
 #[async_trait]
 impl<'a> Advance<UpdateInfo<'a>, RdbContext> for RdbRepoTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,
         context: &mut RdbContext,
         step: &UpdateInfo<'a>,
-    ) -> Result<(), RootError> {
+    ) -> Result<(), RegularError> {
         let now = OffsetDateTime::now_utc();
 
         let aspect = UserAspect::new(now).nickname(step.nickname).qid(step.qid);
@@ -169,7 +169,7 @@ impl<'a> Advance<UpdateInfo<'a>, RdbContext> for RdbRepoTransactional {
 
 #[async_trait]
 impl<'a> Advance<ReserveAvatar<'a>, RdbContext> for RdbRepoTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,
@@ -209,13 +209,13 @@ impl<'a> Advance<ReserveAvatar<'a>, RdbContext> for RdbRepoTransactional {
 
 #[async_trait]
 impl<'a> Advance<MarkAvatarUploaded<'a>, RdbContext> for RdbRepoTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,
         context: &mut RdbContext,
         step: &MarkAvatarUploaded<'a>,
-    ) -> Result<(), RootError> {
+    ) -> Result<(), RegularError> {
         let now = OffsetDateTime::now_utc();
 
         let affected = diesel::update(
@@ -241,13 +241,13 @@ impl<'a> Advance<MarkAvatarUploaded<'a>, RdbContext> for RdbRepoTransactional {
 
 #[async_trait]
 impl<'a> Advance<TouchLastActive<'a>, RdbContext> for RdbRepoTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,
         context: &mut RdbContext,
         step: &TouchLastActive<'a>,
-    ) -> Result<(), RootError> {
+    ) -> Result<(), RegularError> {
         let now = OffsetDateTime::now_utc();
 
         let aspect = UserAspect::new(now).last_active_at(now);
@@ -264,7 +264,7 @@ impl<'a> Advance<TouchLastActive<'a>, RdbContext> for RdbRepoTransactional {
 
 #[async_trait]
 impl<'a> Advance<GetInfoExcluded<'a>, RdbContext> for RdbRepoTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,
@@ -288,9 +288,13 @@ impl<'a> Advance<GetInfoExcluded<'a>, RdbContext> for RdbRepoTransactional {
 
 #[async_trait]
 impl<'a> Advance<Delete<'a>, RdbContext> for RdbRepoTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
-    async fn advance(&self, context: &mut RdbContext, step: &Delete<'a>) -> Result<(), RootError> {
+    async fn advance(
+        &self,
+        context: &mut RdbContext,
+        step: &Delete<'a>,
+    ) -> Result<(), RegularError> {
         diesel::delete(schema::t_user::table.filter(schema::t_user::f_id.eq(step.id)))
             .execute(context.conn())
             .await

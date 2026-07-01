@@ -27,7 +27,7 @@ use crate::model::unit::UnitInfo;
 use crate::model::user::{UserCredential, UserInfo};
 use crate::model::workset::WorksetInfo;
 use crate::part::effect::event::Event;
-use crate::result::{ExpectedVariant, RootError};
+use crate::result::{ExpectedVariant, RegularError};
 use crate::util::DeriveTransactional;
 
 /// In-memory state holding all mock repository records.
@@ -253,7 +253,7 @@ impl DeriveTransactional for Mock {
 
 #[async_trait]
 impl Drive<MockContext> for Mock {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn with_context<T, E, F>(&self, f: F) -> Result<T, DriveError<E, Self::Error>>
     where
@@ -280,16 +280,16 @@ impl Drive<MockContext> for Mock {
 }
 
 /// Build an expected-args [RootError] with a translated message.
-pub fn expected(message: &str) -> RootError {
-    RootError::Expected {
+pub fn expected(message: &str) -> RegularError {
+    RegularError::Expected {
         variant: ExpectedVariant::ArgsInvalid,
         message: trl(message),
     }
 }
 
 /// Build an unrecoverable [RootError] with the given message.
-pub fn unrecoverable(message: &str) -> RootError {
-    RootError::Unrecoverable {
+pub fn unrecoverable(message: &str) -> RegularError {
+    RegularError::Unrecoverable {
         message: message.into(),
     }
 }
@@ -459,7 +459,7 @@ async fn transaction_rolls_back_repo_and_prom() {
             ),
         )
         .await?;
-        Err::<(), RootError>(unrecoverable("[transaction_rolls_back_repo_and_prom] fail"))
+        Err::<(), RegularError>(unrecoverable("[transaction_rolls_back_repo_and_prom] fail"))
     })
     .await
     .err()
@@ -467,7 +467,7 @@ async fn transaction_rolls_back_repo_and_prom() {
 
     assert!(matches!(
         err,
-        DriveError::Advance(RootError::Unrecoverable { .. })
+        DriveError::Advance(RegularError::Unrecoverable { .. })
     ));
     let snapshot = mock.snapshot();
     assert!(snapshot.members.is_empty());

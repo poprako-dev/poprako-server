@@ -8,7 +8,7 @@ use crate::part::repo::step::comic::{ComicStep, GetInfoById as ComicGetInfoById}
 use crate::part::repo::step::member::{FindInfoByUserIdAndTeamId, MemberStep};
 use crate::part::repo::step::workset::{GetInfoById as WorksetGetInfoById, WorksetStep};
 use crate::part::shared::proxy::ProxyExecute;
-use crate::result::{ExpectedVariant, RootError, RootResult, accept};
+use crate::result::{ExpectedVariant, RegularError, RegularResult, accept};
 use crate::value::role::RoleField;
 
 /// Verify the user is a member of the given team; returns `Perm` error if not.
@@ -16,9 +16,9 @@ pub async fn check_user_is_team_member<P>(
     proxy: &mut P,
     user_id: &str,
     team_id: &str,
-) -> RootResult<()>
+) -> RegularResult<()>
 where
-    P: for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RootError>,
+    P: for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RegularError>,
 {
     let member_info = proxy
         .execute(&MemberStep::find_info_by_user_id_and_team_id(
@@ -27,7 +27,7 @@ where
         .await?;
 
     if member_info.is_none() {
-        return Err(RootError::Expected {
+        return Err(RegularError::Expected {
             variant: ExpectedVariant::PermDeny,
             message: trl("error-team-member-required"),
         });
@@ -41,9 +41,9 @@ pub async fn check_user_is_team_admin<P>(
     proxy: &mut P,
     user_id: &str,
     team_id: &str,
-) -> RootResult<()>
+) -> RegularResult<()>
 where
-    P: for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RootError>,
+    P: for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RegularError>,
 {
     let member_info = proxy
         .execute(&MemberStep::find_info_by_user_id_and_team_id(
@@ -52,14 +52,14 @@ where
         .await?;
 
     let Some(member_info) = member_info else {
-        return Err(RootError::Expected {
+        return Err(RegularError::Expected {
             variant: ExpectedVariant::PermDeny,
             message: trl("error-team-admin-required"),
         });
     };
 
     if !member_info.roles.has_any_role(&[RoleField::ADMIN]) {
-        return Err(RootError::Expected {
+        return Err(RegularError::Expected {
             variant: ExpectedVariant::PermDeny,
             message: trl("error-team-admin-required"),
         });
@@ -73,12 +73,12 @@ pub async fn check_user_is_team_member_by_chapter<P>(
     proxy: &mut P,
     user_id: &str,
     chapter_id: &str,
-) -> RootResult<()>
+) -> RegularResult<()>
 where
-    P: for<'a> ProxyExecute<ChapterGetInfoById<'a>, Error = RootError>
-        + for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RootError>
-        + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RootError>
-        + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RootError>,
+    P: for<'a> ProxyExecute<ChapterGetInfoById<'a>, Error = RegularError>
+        + for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RegularError>
+        + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RegularError>
+        + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RegularError>,
 {
     let chapter_info = proxy
         .execute(&ChapterStep::get_info_by_id(chapter_id))
@@ -102,9 +102,9 @@ pub async fn check_user_is_chapter_assignee<P>(
     proxy: &mut P,
     user_id: &str,
     chapter_id: &str,
-) -> RootResult<()>
+) -> RegularResult<()>
 where
-    P: for<'a> ProxyExecute<GetInfoByChapterIdAndUserId<'a>, Error = RootError>,
+    P: for<'a> ProxyExecute<GetInfoByChapterIdAndUserId<'a>, Error = RegularError>,
 {
     let assignment_info = proxy
         .execute(&AssignmentStep::get_info_by_chapter_id_and_user_id(
@@ -124,9 +124,9 @@ pub async fn check_user_is_chapter_translator_or_proofreader<P>(
     proxy: &mut P,
     user_id: &str,
     chapter_id: &str,
-) -> RootResult<()>
+) -> RegularResult<()>
 where
-    P: for<'a> ProxyExecute<GetInfoByChapterIdAndUserId<'a>, Error = RootError>,
+    P: for<'a> ProxyExecute<GetInfoByChapterIdAndUserId<'a>, Error = RegularError>,
 {
     let assignment_info = proxy
         .execute(&AssignmentStep::get_info_by_chapter_id_and_user_id(
@@ -148,15 +148,15 @@ where
     accept(())
 }
 
-fn chapter_assignee_required_error() -> RootError {
-    RootError::Expected {
+fn chapter_assignee_required_error() -> RegularError {
+    RegularError::Expected {
         variant: ExpectedVariant::PermDeny,
         message: trl("error-chapter-assignee-required"),
     }
 }
 
-fn chapter_translator_or_proofreader_required_error() -> RootError {
-    RootError::Expected {
+fn chapter_translator_or_proofreader_required_error() -> RegularError {
+    RegularError::Expected {
         variant: ExpectedVariant::PermDeny,
         message: trl("error-chapter-translator-or-proofreader-required"),
     }

@@ -12,14 +12,14 @@ use crate::part::repo::step::user::{
 use crate::part::repo::user::{UserRepo, UserRepoTransactional};
 use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactional, expected, now};
-use crate::result::RootError;
+use crate::result::RegularError;
 
 impl UserRepo<MockContext> for Mock {}
 
 impl UserRepoTransactional<MockContext> for MockTransactional {}
 
 /// Inserts a new user with associated credentials, rejecting duplicate ids or qids.
-fn create_user(state: &mut MockState, form: &UserForm) -> Result<UserInfo, RootError> {
+fn create_user(state: &mut MockState, form: &UserForm) -> Result<UserInfo, RegularError> {
     if state.users.iter().any(|user| user.id == form.id) {
         return Err(expected("error-already-exists"));
     }
@@ -50,7 +50,7 @@ fn create_user(state: &mut MockState, form: &UserForm) -> Result<UserInfo, RootE
 
 #[async_trait]
 impl<'a> Execute<GetInfoById<'a>> for Mock {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn execute(&self, step: &GetInfoById<'a>) -> Result<UserInfo, Self::Error> {
         let state = self.state.lock().unwrap();
@@ -65,7 +65,7 @@ impl<'a> Execute<GetInfoById<'a>> for Mock {
 
 #[async_trait]
 impl<'a> Execute<GetCredentialByQid<'a>> for Mock {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn execute(&self, step: &GetCredentialByQid<'a>) -> Result<UserCredential, Self::Error> {
         let state = self.state.lock().unwrap();
@@ -87,7 +87,7 @@ impl<'a> Execute<GetCredentialByQid<'a>> for Mock {
 
 #[async_trait]
 impl<'a> Execute<FindInfoByQid<'a>> for Mock {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn execute(&self, step: &FindInfoByQid<'a>) -> Result<Option<UserInfo>, Self::Error> {
         let state = self.state.lock().unwrap();
@@ -101,7 +101,7 @@ impl<'a> Execute<FindInfoByQid<'a>> for Mock {
 
 #[async_trait]
 impl<'a> Advance<FindInfoByQid<'a>, MockContext> for MockTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,
@@ -119,7 +119,7 @@ impl<'a> Advance<FindInfoByQid<'a>, MockContext> for MockTransactional {
 
 #[async_trait]
 impl<'a> Advance<Create<'a>, MockContext> for MockTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,
@@ -132,7 +132,7 @@ impl<'a> Advance<Create<'a>, MockContext> for MockTransactional {
 
 #[async_trait]
 impl<'a> Advance<UpdateInfo<'a>, MockContext> for MockTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,
@@ -154,7 +154,7 @@ impl<'a> Advance<UpdateInfo<'a>, MockContext> for MockTransactional {
 
 #[async_trait]
 impl<'a> Advance<ReserveAvatar<'a>, MockContext> for MockTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,
@@ -184,7 +184,7 @@ impl<'a> Advance<ReserveAvatar<'a>, MockContext> for MockTransactional {
 
 #[async_trait]
 impl<'a> Advance<MarkAvatarUploaded<'a>, MockContext> for MockTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,
@@ -208,7 +208,7 @@ impl<'a> Advance<MarkAvatarUploaded<'a>, MockContext> for MockTransactional {
 
 #[async_trait]
 impl<'a> Advance<TouchLastActive<'a>, MockContext> for MockTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,
@@ -229,7 +229,7 @@ impl<'a> Advance<TouchLastActive<'a>, MockContext> for MockTransactional {
 
 #[async_trait]
 impl<'a> Advance<GetInfoExcluded<'a>, MockContext> for MockTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,
@@ -248,7 +248,7 @@ impl<'a> Advance<GetInfoExcluded<'a>, MockContext> for MockTransactional {
 
 #[async_trait]
 impl<'a> Advance<Delete<'a>, MockContext> for MockTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,

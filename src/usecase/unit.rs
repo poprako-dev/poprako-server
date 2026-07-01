@@ -22,7 +22,7 @@ use crate::part::repo::step::page::PageStep;
 use crate::part::repo::step::unit::UnitStep;
 use crate::part::repo::unit::{UnitRepo, UnitRepoTransactional};
 use crate::part::repo::workset::{WorksetRepo, WorksetRepoTransactional};
-use crate::result::{ExpectedVariant, RootError, RootResult, accept};
+use crate::result::{ExpectedVariant, RegularError, RegularResult, accept};
 use crate::util::DeriveTransactional;
 
 #[cfg(test)]
@@ -33,7 +33,7 @@ pub async fn list_infos<C, R>(
     repo: &R,
     token: UserToken,
     data: ListPageUnitInfosData,
-) -> RootResult<ListPageUnitInfosVal>
+) -> RegularResult<ListPageUnitInfosVal>
 where
     R: PageRepo<C>
         + UnitRepo<C>
@@ -82,10 +82,10 @@ pub async fn save_infos<D, C, R>(
     repo: &R,
     token: UserToken,
     data: SavePageUnitsData,
-) -> RootResult<SavePageUnitsVal>
+) -> RegularResult<SavePageUnitsVal>
 where
     D: Drive<C>,
-    D::Error: Into<RootError>,
+    D::Error: Into<RegularError>,
     C: Send,
     R: PageRepo<C> + UnitRepo<C> + ChapterRepo<C> + ComicRepo<C> + AssignmentRepo<C> + Send + Sync,
     <R as DeriveTransactional>::Transactional: PageRepoTransactional<C>
@@ -229,8 +229,8 @@ fn counter_delta(old_counters: UnitCounters, new_counters: UnitCounters) -> Unit
     }
 }
 
-fn unit_invalid_oper_error() -> RootError {
-    RootError::Expected {
+fn unit_invalid_oper_error() -> RegularError {
+    RegularError::Expected {
         variant: ExpectedVariant::ArgsInvalid,
         message: trl("error-invalid-unit-oper"),
     }

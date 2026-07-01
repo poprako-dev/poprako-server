@@ -44,7 +44,7 @@
 
 use poprako_transactional::drive::result::Error as DriveError;
 
-use crate::result::RootError;
+use crate::result::RegularError;
 
 pub mod announcement;
 pub mod assignment;
@@ -67,10 +67,10 @@ pub mod workset;
 /// This utility maps transaction-driver errors (which carry both an
 /// oper error `E` and a finalizer/commit error `BE`) into the
 /// application's unified error type.
-pub fn map_drive_err<E, BE>(err: DriveError<E, BE>) -> RootError
+pub fn map_drive_err<E, BE>(err: DriveError<E, BE>) -> RegularError
 where
-    E: Into<RootError>,
-    BE: Into<RootError>,
+    E: Into<RegularError>,
+    BE: Into<RegularError>,
 {
     err.into()
 }

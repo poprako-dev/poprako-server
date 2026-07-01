@@ -20,7 +20,7 @@ use crate::part::repo::step::assignment::AssignmentStep;
 use crate::part::repo::step::chapter::ChapterStep;
 use crate::part::repo::user::{UserRepo, UserRepoTransactional};
 use crate::part::repo::workset::{WorksetRepo, WorksetRepoTransactional};
-use crate::result::{RootError, RootResult, accept};
+use crate::result::{RegularError, RegularResult, accept};
 use crate::util::DeriveTransactional;
 
 #[cfg(test)]
@@ -32,7 +32,7 @@ pub async fn list_infos<C, R, I>(
     image_pool: &I,
     token: UserToken,
     data: ListAssignmentInfosData,
-) -> RootResult<Vec<AssignmentInfoVal>>
+) -> RegularResult<Vec<AssignmentInfoVal>>
 where
     R: AssignmentRepo<C>
         + ChapterRepo<C>
@@ -80,10 +80,10 @@ pub async fn join<D, C, R>(
     repo: &R,
     token: UserToken,
     data: JoinChapterData,
-) -> RootResult<AssignmentInfoVal>
+) -> RegularResult<AssignmentInfoVal>
 where
     D: Drive<C>,
-    D::Error: Into<RootError>,
+    D::Error: Into<RegularError>,
     C: Send,
     R: ChapterRepo<C>
         + ComicRepo<C>
@@ -163,10 +163,10 @@ pub async fn update_roles<D, C, R>(
     repo: &R,
     token: UserToken,
     data: UpdateAssignmentRoleData,
-) -> RootResult<()>
+) -> RegularResult<()>
 where
     D: Drive<C>,
-    D::Error: Into<RootError>,
+    D::Error: Into<RegularError>,
     C: Send,
     R: AssignmentRepo<C>
         + ChapterRepo<C>
@@ -234,10 +234,10 @@ where
 }
 
 /// Deletes one assignment by identifier.
-pub async fn delete<D, C, R>(drive: &D, repo: &R, token: UserToken, id: String) -> RootResult<()>
+pub async fn delete<D, C, R>(drive: &D, repo: &R, token: UserToken, id: String) -> RegularResult<()>
 where
     D: Drive<C>,
-    D::Error: Into<RootError>,
+    D::Error: Into<RegularError>,
     C: Send,
     R: AssignmentRepo<C> + Send + Sync,
     <R as DeriveTransactional>::Transactional: AssignmentRepoTransactional<C> + Send + Sync,

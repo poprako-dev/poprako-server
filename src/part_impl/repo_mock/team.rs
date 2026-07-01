@@ -13,7 +13,7 @@ use crate::part::repo::step::team::{
 use crate::part::repo::team::{TeamRepo, TeamRepoTransactional};
 use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactional, expected, now};
-use crate::result::RootError;
+use crate::result::RegularError;
 
 impl TeamRepo<MockContext> for Mock {}
 
@@ -25,7 +25,7 @@ fn mark_team_avatar_uploaded(
     state: &mut MockState,
     id: &str,
     avatar_version: i64,
-) -> Result<(), RootError> {
+) -> Result<(), RegularError> {
     let team = state
         .teams
         .iter_mut()
@@ -41,7 +41,7 @@ fn mark_team_avatar_uploaded(
 
 #[async_trait]
 impl<'a> Execute<Create<'a>> for Mock {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn execute(&self, step: &Create<'a>) -> Result<TeamInfo, Self::Error> {
         let mut state = self.state.lock().unwrap();
@@ -68,7 +68,7 @@ impl<'a> Execute<Create<'a>> for Mock {
 
 #[async_trait]
 impl<'a> Execute<GetInfoById<'a>> for Mock {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn execute(&self, step: &GetInfoById<'a>) -> Result<TeamInfo, Self::Error> {
         let state = self.state.lock().unwrap();
@@ -83,7 +83,7 @@ impl<'a> Execute<GetInfoById<'a>> for Mock {
 
 #[async_trait]
 impl<'a> Execute<ListInfos<'a>> for Mock {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn execute(&self, step: &ListInfos<'a>) -> Result<Vec<TeamInfo>, Self::Error> {
         let state = self.state.lock().unwrap();
@@ -117,7 +117,7 @@ impl<'a> Execute<ListInfos<'a>> for Mock {
 
 #[async_trait]
 impl<'a> Execute<UpdateInfo<'a>> for Mock {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn execute(&self, step: &UpdateInfo<'a>) -> Result<(), Self::Error> {
         let mut state = self.state.lock().unwrap();
@@ -135,7 +135,7 @@ impl<'a> Execute<UpdateInfo<'a>> for Mock {
 
 #[async_trait]
 impl<'a> Execute<MarkAvatarUploaded<'a>> for Mock {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn execute(&self, step: &MarkAvatarUploaded<'a>) -> Result<(), Self::Error> {
         let mut state = self.state.lock().unwrap();
@@ -145,7 +145,7 @@ impl<'a> Execute<MarkAvatarUploaded<'a>> for Mock {
 
 #[async_trait]
 impl<'a> Advance<ReserveAvatar<'a>, MockContext> for MockTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,
@@ -175,7 +175,7 @@ impl<'a> Advance<ReserveAvatar<'a>, MockContext> for MockTransactional {
 
 #[async_trait]
 impl<'a> Advance<MarkAvatarUploaded<'a>, MockContext> for MockTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,
@@ -188,7 +188,7 @@ impl<'a> Advance<MarkAvatarUploaded<'a>, MockContext> for MockTransactional {
 
 #[async_trait]
 impl<'a> Advance<GetInfoExcluded<'a>, MockContext> for MockTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,
@@ -207,7 +207,7 @@ impl<'a> Advance<GetInfoExcluded<'a>, MockContext> for MockTransactional {
 
 #[async_trait]
 impl<'a> Advance<Delete<'a>, MockContext> for MockTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,
@@ -291,7 +291,7 @@ impl<'a> Advance<Delete<'a>, MockContext> for MockTransactional {
 
 #[async_trait]
 impl<'a> Advance<IncrementWorksetNextIndex<'a>, MockContext> for MockTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,

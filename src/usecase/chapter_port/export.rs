@@ -24,7 +24,7 @@ use crate::part::repo::step::page::PageStep;
 use crate::part::repo::step::unit::UnitStep;
 use crate::part::repo::unit::{UnitRepo, UnitRepoTransactional};
 use crate::part::repo::workset::{WorksetRepo, WorksetRepoTransactional};
-use crate::result::{RootResult, accept};
+use crate::result::{RegularResult, accept};
 use crate::util::DeriveTransactional;
 
 /// Exports one chapter as a JSON-safe translation payload.
@@ -33,7 +33,7 @@ pub async fn export<C, R, I>(
     image_pool: &I,
     token: UserToken,
     chapter_id: String,
-) -> RootResult<ChapterTranslationExportVal>
+) -> RegularResult<ChapterTranslationExportVal>
 where
     R: ChapterRepo<C>
         + ComicRepo<C>
@@ -116,7 +116,7 @@ pub async fn export_label_plus<C, R>(
     repo: &R,
     token: UserToken,
     chapter_id: String,
-) -> RootResult<String>
+) -> RegularResult<String>
 where
     R: ChapterRepo<C>
         + ComicRepo<C>

@@ -9,14 +9,14 @@ use crate::model::chapter_port::PoprakoProjectImport;
 use crate::model::page_port::{PageTranslationImport, PoprakoPageImport};
 use crate::model::unit::{UnitInfo, UnitPayload};
 use crate::model::unit_port::UnitTranslationImport;
-use crate::result::{ExpectedVariant, RootError, RootResult, accept};
+use crate::result::{ExpectedVariant, RegularError, RegularResult, accept};
 
 /// Chapter import parsing and payload merge rules.
 pub struct ChapterImportComplex;
 
 impl ChapterImportComplex {
     /// Parses LabelPlus text into chapter import pages.
-    pub fn parse_label_plus(content: &str) -> RootResult<Vec<PageTranslationImport>> {
+    pub fn parse_label_plus(content: &str) -> RegularResult<Vec<PageTranslationImport>> {
         let mut lines = content.lines();
 
         validate_label_plus_header(&mut lines)?;
@@ -91,7 +91,7 @@ impl ChapterImportComplex {
     }
 
     /// Parses PopRaKo JSON text into chapter import pages.
-    pub fn parse_poprako(content: &str) -> RootResult<Vec<PageTranslationImport>> {
+    pub fn parse_poprako(content: &str) -> RegularResult<Vec<PageTranslationImport>> {
         let project: PoprakoProjectImport = serde_json::from_str(content)
             .map_err(|_| args_error("error-invalid-chapter-import-content"))?;
 
@@ -107,7 +107,7 @@ impl ChapterImportComplex {
             .pages
             .into_iter()
             .map(parse_poprako_page)
-            .collect::<RootResult<Vec<_>>>()?;
+            .collect::<RegularResult<Vec<_>>>()?;
 
         accept(pages)
     }
@@ -116,7 +116,7 @@ impl ChapterImportComplex {
     pub fn validate_page_count(
         imported_page_count: usize,
         existing_page_count: usize,
-    ) -> RootResult<()> {
+    ) -> RegularResult<()> {
         if imported_page_count != existing_page_count {
             return Err(args_error("error-chapter-import-page-count-mismatch"));
         }
@@ -164,7 +164,7 @@ struct LabelPlusUnit {
     is_bubble: bool,
 }
 
-fn validate_label_plus_header<'a, I>(lines: &mut I) -> RootResult<()>
+fn validate_label_plus_header<'a, I>(lines: &mut I) -> RegularResult<()>
 where
     I: Iterator<Item = &'a str>,
 {
@@ -211,7 +211,7 @@ fn is_label_plus_page_header(line: &str) -> bool {
     line.starts_with(">>>>>>>>[") && line.ends_with("]<<<<<<<<")
 }
 
-fn parse_label_plus_unit_header(line: &str) -> RootResult<Option<LabelPlusUnit>> {
+fn parse_label_plus_unit_header(line: &str) -> RegularResult<Option<LabelPlusUnit>> {
     let Some(rest) = line.strip_prefix("----------------[") else {
         return accept(None);
     };
@@ -261,7 +261,7 @@ fn flush_label_plus_unit(
     current_unit: &mut Option<LabelPlusUnit>,
     main_text_lines: &mut Vec<String>,
     comment_lines: &mut Vec<String>,
-) -> RootResult<()> {
+) -> RegularResult<()> {
     let Some(label_plus_unit) = current_unit.take() else {
         return accept(());
     };
@@ -295,7 +295,7 @@ fn flush_label_plus_unit(
     accept(())
 }
 
-fn parse_poprako_page(page: PoprakoPageImport) -> RootResult<PageTranslationImport> {
+fn parse_poprako_page(page: PoprakoPageImport) -> RegularResult<PageTranslationImport> {
     if page.image_filename.trim().is_empty() {
         return Err(args_error("error-invalid-chapter-import-content"));
     }
@@ -480,8 +480,8 @@ fn apply_poprako_text(
     }
 }
 
-fn args_error(key: &str) -> RootError {
-    RootError::Expected {
+fn args_error(key: &str) -> RegularError {
+    RegularError::Expected {
         variant: ExpectedVariant::ArgsInvalid,
         message: trl(key),
     }

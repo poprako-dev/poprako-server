@@ -3,7 +3,7 @@
 use async_trait::async_trait;
 use url::Url;
 
-use crate::result::RootResult;
+use crate::result::RegularResult;
 
 /// Abstraction over an image pool.
 ///
@@ -12,8 +12,8 @@ use crate::result::RootResult;
 #[async_trait]
 pub trait ImagePool {
     /// Returns a signed download URL for the object at `key`.
-    async fn get_signed(&self, key: &str) -> RootResult<Url>;
+    async fn get_signed(&self, key: &str) -> RegularResult<Url>;
 
     /// Returns a signed upload URL for writing an object at `key`.
-    async fn put_signed(&self, key: &str) -> RootResult<Url>;
+    async fn put_signed(&self, key: &str) -> RegularResult<Url>;
 }

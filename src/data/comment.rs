@@ -8,7 +8,7 @@ use poprako_util::time::ToUnixMilli;
 use crate::data::user::UserInfoVal;
 use crate::model::comment::{CommentInfo, CommentListSpec};
 use crate::part::image::ImagePool;
-use crate::result::RootResult;
+use crate::result::RegularResult;
 use crate::value::comment::CommentInclOpt;
 
 /// Presentation-ready team board comment information.
@@ -26,7 +26,7 @@ pub struct CommentInfoVal {
 
 impl CommentInfoVal {
     /// Converts a comment model into a presentation value.
-    pub async fn from_model<P>(image_pool: &P, model: CommentInfo) -> RootResult<Self>
+    pub async fn from_model<P>(image_pool: &P, model: CommentInfo) -> RegularResult<Self>
     where
         P: ImagePool,
     {

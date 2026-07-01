@@ -6,7 +6,7 @@
 use super::*;
 
 use crate::model::unit::{UnitDiff, UnitIdMapper, UnitIndex, UnitOper, UnitPayload};
-use crate::result::{ExpectedVariant, RootError};
+use crate::result::{ExpectedVariant, RegularError};
 
 fn payload(text: &str, proofread: bool) -> UnitPayload {
     UnitPayload {
@@ -31,12 +31,12 @@ fn diff(opers: Vec<UnitOper>, candidate_order: Vec<&str>) -> UnitDiff {
     }
 }
 
-fn assert_args_error(error: RootError) {
+fn assert_args_error(error: RegularError) {
     match error {
-        RootError::Expected { variant, .. } => {
+        RegularError::Expected { variant, .. } => {
             assert!(matches!(variant, ExpectedVariant::ArgsInvalid));
         }
-        RootError::Unrecoverable { .. } => {
+        RegularError::Unrecoverable { .. } => {
             panic!("expected argument error");
         }
     }

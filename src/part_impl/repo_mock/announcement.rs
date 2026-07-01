@@ -12,7 +12,7 @@ use crate::part::repo::announcement::{AnnouncementRepo, AnnouncementRepoTransact
 use crate::part::repo::step::announcement::{Create, ListInfos};
 use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactional, expected, now};
-use crate::result::RootError;
+use crate::result::RegularError;
 use crate::util::DeriveTransactional;
 use crate::value::announcement::AnnouncementInclOpt;
 
@@ -69,7 +69,7 @@ fn list_announcements(state: &MockState, spec: &AnnouncementListSpec) -> Vec<Ann
 fn create_announcement(
     state: &mut MockState,
     form: &AnnouncementForm,
-) -> Result<AnnouncementInfo, RootError> {
+) -> Result<AnnouncementInfo, RegularError> {
     if state
         .announcements
         .iter()
@@ -95,7 +95,7 @@ fn create_announcement(
 
 #[async_trait]
 impl<'a> Execute<ListInfos<'a>> for Mock {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn execute(&self, step: &ListInfos<'a>) -> Result<Vec<AnnouncementInfo>, Self::Error> {
         let state = self.state.lock().unwrap();
@@ -106,7 +106,7 @@ impl<'a> Execute<ListInfos<'a>> for Mock {
 
 #[async_trait]
 impl<'a> Advance<Create<'a>, MockContext> for MockTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,

@@ -20,7 +20,7 @@ use crate::part::repo::step::workset::WorksetStep;
 use crate::part::repo::team::TeamRepoTransactional;
 use crate::part::repo::workset::WorksetRepoTransactional;
 use crate::part::shared::proxy::ProxyExecute;
-use crate::result::{ExpectedVariant, RootError, RootResult, accept};
+use crate::result::{ExpectedVariant, RegularError, RegularResult, accept};
 use crate::util::next_snowflake_id;
 
 /// Domain opers for team entities.
@@ -43,7 +43,7 @@ impl TeamComplex {
         prom: &P,
         context: &mut C,
         id: &str,
-    ) -> RootResult<()>
+    ) -> RegularResult<()>
     where
         C: Send,
         R: TeamRepoTransactional<C>
@@ -107,9 +107,9 @@ impl TeamPermComplex {
         proxy: &mut P,
         user_id: &str,
         team_id: &str,
-    ) -> RootResult<()>
+    ) -> RegularResult<()>
     where
-        P: for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RootError>,
+        P: for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RegularError>,
     {
         check_user_is_team_admin(proxy, user_id, team_id).await
     }
@@ -119,9 +119,9 @@ impl TeamPermComplex {
         proxy: &mut P,
         user_id: &str,
         team_id: &str,
-    ) -> RootResult<()>
+    ) -> RegularResult<()>
     where
-        P: for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RootError>,
+        P: for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RegularError>,
     {
         check_user_is_team_admin(proxy, user_id, team_id).await
     }
@@ -131,38 +131,42 @@ impl TeamPermComplex {
         proxy: &mut P,
         user_id: &str,
         team_id: &str,
-    ) -> RootResult<()>
+    ) -> RegularResult<()>
     where
-        P: for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RootError>,
+        P: for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RegularError>,
     {
         check_user_is_team_admin(proxy, user_id, team_id).await
     }
 
     /// Verify the caller is a team admin.
-    pub async fn can_user_delete<P>(proxy: &mut P, user_id: &str, team_id: &str) -> RootResult<()>
+    pub async fn can_user_delete<P>(
+        proxy: &mut P,
+        user_id: &str,
+        team_id: &str,
+    ) -> RegularResult<()>
     where
-        P: for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RootError>,
+        P: for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RegularError>,
     {
         check_user_is_team_admin(proxy, user_id, team_id).await
     }
 
     /// Verify the user has super-admin privileges required to list all teams.
-    pub async fn can_user_list_all<P>(proxy: &mut P, user_id: &str) -> RootResult<()>
+    pub async fn can_user_list_all<P>(proxy: &mut P, user_id: &str) -> RegularResult<()>
     where
-        P: for<'a> ProxyExecute<GetInfoById<'a>, Error = RootError>,
+        P: for<'a> ProxyExecute<GetInfoById<'a>, Error = RegularError>,
     {
         Self::check_user_is_sadmin(proxy, user_id).await
     }
 
     /// Check whether the user is a super-admin; returns `Perm` error if not.
-    async fn check_user_is_sadmin<P>(proxy: &mut P, user_id: &str) -> RootResult<()>
+    async fn check_user_is_sadmin<P>(proxy: &mut P, user_id: &str) -> RegularResult<()>
     where
-        P: for<'a> ProxyExecute<GetInfoById<'a>, Error = RootError>,
+        P: for<'a> ProxyExecute<GetInfoById<'a>, Error = RegularError>,
     {
         let user_info = proxy.execute(&UserStep::get_info_by_id(user_id)).await?;
 
         if !user_info.is_sadmin {
-            return Err(RootError::Expected {
+            return Err(RegularError::Expected {
                 variant: ExpectedVariant::PermDeny,
                 message: trl("error-sadmin-required"),
             });

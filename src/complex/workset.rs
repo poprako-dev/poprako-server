@@ -13,7 +13,7 @@ use crate::part::repo::step::member::FindInfoByUserIdAndTeamId;
 use crate::part::repo::step::workset::{GetInfoById as WorksetGetInfoById, WorksetStep};
 use crate::part::repo::workset::WorksetRepoTransactional;
 use crate::part::shared::proxy::ProxyExecute;
-use crate::result::{RootError, RootResult, accept};
+use crate::result::{RegularError, RegularResult, accept};
 use crate::util::next_snowflake_id;
 
 /// Domain opers for workset entities.
@@ -31,7 +31,7 @@ impl WorksetComplex {
         prom: &P,
         context: &mut C,
         id: &str,
-    ) -> RootResult<()>
+    ) -> RegularResult<()>
     where
         C: Send,
         R: WorksetRepoTransactional<C>
@@ -75,9 +75,13 @@ pub struct WorksetPermComplex;
 
 impl WorksetPermComplex {
     /// Verify the caller is a team admin.
-    pub async fn can_user_create<P>(proxy: &mut P, user_id: &str, team_id: &str) -> RootResult<()>
+    pub async fn can_user_create<P>(
+        proxy: &mut P,
+        user_id: &str,
+        team_id: &str,
+    ) -> RegularResult<()>
     where
-        P: for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RootError>,
+        P: for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RegularError>,
     {
         check_user_is_team_admin(proxy, user_id, team_id).await
     }
@@ -87,9 +91,9 @@ impl WorksetPermComplex {
         proxy: &mut P,
         user_id: &str,
         team_id: &str,
-    ) -> RootResult<()>
+    ) -> RegularResult<()>
     where
-        P: for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RootError>,
+        P: for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RegularError>,
     {
         check_user_is_team_member(proxy, user_id, team_id).await
     }
@@ -99,10 +103,10 @@ impl WorksetPermComplex {
         proxy: &mut P,
         user_id: &str,
         workset_id: &str,
-    ) -> RootResult<()>
+    ) -> RegularResult<()>
     where
-        P: for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RootError>
-            + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RootError>,
+        P: for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RegularError>
+            + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RegularError>,
     {
         let team_id = Self::resolve_team_id(proxy, workset_id).await?;
 
@@ -114,10 +118,10 @@ impl WorksetPermComplex {
         proxy: &mut P,
         user_id: &str,
         workset_id: &str,
-    ) -> RootResult<()>
+    ) -> RegularResult<()>
     where
-        P: for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RootError>
-            + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RootError>,
+        P: for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RegularError>
+            + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RegularError>,
     {
         let team_id = Self::resolve_team_id(proxy, workset_id).await?;
 
@@ -129,10 +133,10 @@ impl WorksetPermComplex {
         proxy: &mut P,
         user_id: &str,
         workset_id: &str,
-    ) -> RootResult<()>
+    ) -> RegularResult<()>
     where
-        P: for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RootError>
-            + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RootError>,
+        P: for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RegularError>
+            + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RegularError>,
     {
         let team_id = Self::resolve_team_id(proxy, workset_id).await?;
 
@@ -140,9 +144,9 @@ impl WorksetPermComplex {
     }
 
     /// Resolve the owning team ID from a workset ID.
-    async fn resolve_team_id<P>(proxy: &mut P, workset_id: &str) -> RootResult<String>
+    async fn resolve_team_id<P>(proxy: &mut P, workset_id: &str) -> RegularResult<String>
     where
-        P: for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RootError>,
+        P: for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RegularError>,
     {
         let workset_info = proxy
             .execute(&WorksetStep::get_info_by_id(workset_id))

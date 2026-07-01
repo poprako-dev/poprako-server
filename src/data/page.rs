@@ -5,7 +5,7 @@ use poprako_util::time::ToUnixMilli;
 
 use crate::model::page::PageInfo;
 use crate::part::image::ImagePool;
-use crate::result::RootResult;
+use crate::result::RegularResult;
 
 /// Presentation-ready page information.
 pub struct PageInfoVal {
@@ -27,7 +27,7 @@ pub struct PageInfoVal {
 
 impl PageInfoVal {
     /// Converts a [`PageInfo`] into a presentation-ready value.
-    pub async fn from_model<P>(image_pool: &P, model: PageInfo) -> RootResult<Self>
+    pub async fn from_model<P>(image_pool: &P, model: PageInfo) -> RegularResult<Self>
     where
         P: ImagePool,
     {

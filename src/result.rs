@@ -35,10 +35,10 @@ pub fn accept<T>(v: T) -> Result<T> {
 }
 
 /// Alias for [`Error`] used at module boundary layers.
-pub type RootError = Error;
+pub type RegularError = Error;
 
 /// Alias for [`Result`] used at module boundary layers.
-pub type RootResult<T> = Result<T>;
+pub type RegularResult<T> = Result<T>;
 
 impl<E, BE> From<DriveError<E, BE>> for Error
 where

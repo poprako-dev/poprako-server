@@ -23,7 +23,7 @@ use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
 use crate::part::repo::step::member::MemberStep;
 use crate::part::repo::step::user::UserStep;
 use crate::part::repo::user::{UserRepo, UserRepoTransactional};
-use crate::result::{ExpectedVariant, RootError, RootResult, accept};
+use crate::result::{ExpectedVariant, RegularError, RegularResult, accept};
 use crate::util::DeriveTransactional;
 
 #[cfg(test)]
@@ -47,7 +47,7 @@ pub async fn get_info<C, R, I, V>(
     develop: &V,
     token: UserToken,
     id: String,
-) -> RootResult<UserInfoVal>
+) -> RegularResult<UserInfoVal>
 where
     R: UserRepo<C>,
     <R as DeriveTransactional>::Transactional: UserRepoTransactional<C>,
@@ -88,10 +88,10 @@ pub async fn update_info<D, C, R>(
     repo: &R,
     token: UserToken,
     data: UpdateUserInfoData,
-) -> RootResult<()>
+) -> RegularResult<()>
 where
     D: Drive<C>,
-    D::Error: Into<RootError>,
+    D::Error: Into<RegularError>,
     C: Send,
     R: UserRepo<C> + MemberRepo<C> + Send + Sync,
     <R as DeriveTransactional>::Transactional:
@@ -99,7 +99,7 @@ where
 {
     // Only the user themselves can update their own profile.
     if token.user_id != data.id {
-        return Err(RootError::Expected {
+        return Err(RegularError::Expected {
             variant: ExpectedVariant::PermDeny,
             message: trl("error-forbidden"),
         });
@@ -157,10 +157,10 @@ pub async fn reserve_avatar<D, C, R, P, I>(
     image_pool: &I,
     token: UserToken,
     data: ReserveUserAvatarData,
-) -> RootResult<ReserveUserAvatarVal>
+) -> RegularResult<ReserveUserAvatarVal>
 where
     D: Drive<C>,
-    D::Error: Into<RootError>,
+    D::Error: Into<RegularError>,
     C: Send,
     R: UserRepo<C> + Send + Sync,
     <R as DeriveTransactional>::Transactional: UserRepoTransactional<C> + Send,
@@ -250,16 +250,16 @@ pub async fn mark_avatar_uploaded<D, C, R>(
     token: UserToken,
     id: String,
     data: MarkUserAvatarUploadedData,
-) -> RootResult<()>
+) -> RegularResult<()>
 where
     D: Drive<C>,
-    D::Error: Into<RootError>,
+    D::Error: Into<RegularError>,
     C: Send,
     R: UserRepo<C> + Send + Sync,
     <R as DeriveTransactional>::Transactional: UserRepoTransactional<C> + Send,
 {
     if token.user_id != id {
-        return Err(RootError::Expected {
+        return Err(RegularError::Expected {
             variant: ExpectedVariant::PermDeny,
             message: trl("error-forbidden"),
         });
@@ -293,10 +293,10 @@ where
 /// * `D: Drive<C>` — Transaction driver.
 /// * `C` — Context anchor.
 /// * `R: UserRepo<C> + MemberRepo<C>` — User and member storage.
-pub async fn touch_last_active<D, C, R>(drive: &D, repo: &R, token: UserToken) -> RootResult<()>
+pub async fn touch_last_active<D, C, R>(drive: &D, repo: &R, token: UserToken) -> RegularResult<()>
 where
     D: Drive<C>,
-    D::Error: Into<RootError>,
+    D::Error: Into<RegularError>,
     C: Send,
     R: UserRepo<C> + MemberRepo<C> + Send + Sync,
     <R as DeriveTransactional>::Transactional:
@@ -345,10 +345,10 @@ pub async fn delete<D, C, R, P>(
     prom: &P,
     token: UserToken,
     id: String,
-) -> RootResult<()>
+) -> RegularResult<()>
 where
     D: Drive<C>,
-    D::Error: Into<RootError>,
+    D::Error: Into<RegularError>,
     C: Send,
     R: UserRepo<C> + MemberRepo<C> + Send + Sync,
     <R as DeriveTransactional>::Transactional:
@@ -357,7 +357,7 @@ where
 {
     if token.user_id != id {
         // TODO: perm check.
-        return Err(RootError::Expected {
+        return Err(RegularError::Expected {
             variant: ExpectedVariant::PermDeny,
             message: trl("error-forbidden"),
         });

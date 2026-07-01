@@ -13,13 +13,13 @@ use crate::part::repo::step::page::{
 };
 use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactional, expected, now};
-use crate::result::RootError;
+use crate::result::RegularError;
 
 impl PageRepo<MockContext> for Mock {}
 
 impl PageRepoTransactional<MockContext> for MockTransactional {}
 
-fn get_page_by_id(state: &MockState, id: &str) -> Result<PageInfo, RootError> {
+fn get_page_by_id(state: &MockState, id: &str) -> Result<PageInfo, RegularError> {
     state
         .pages
         .iter()
@@ -73,7 +73,7 @@ fn page_from_form(form: &PageForm) -> PageInfo {
 
 #[async_trait]
 impl<'a> Execute<GetInfoById<'a>> for Mock {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn execute(&self, step: &GetInfoById<'a>) -> Result<PageInfo, Self::Error> {
         let state = self.state.lock().unwrap();
@@ -83,7 +83,7 @@ impl<'a> Execute<GetInfoById<'a>> for Mock {
 
 #[async_trait]
 impl<'a> Execute<ListInfosByChapterId<'a>> for Mock {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn execute(&self, step: &ListInfosByChapterId<'a>) -> Result<Vec<PageInfo>, Self::Error> {
         let state = self.state.lock().unwrap();
@@ -94,7 +94,7 @@ impl<'a> Execute<ListInfosByChapterId<'a>> for Mock {
 
 #[async_trait]
 impl<'a> Advance<GetInfoById<'a>, MockContext> for MockTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,
@@ -107,7 +107,7 @@ impl<'a> Advance<GetInfoById<'a>, MockContext> for MockTransactional {
 
 #[async_trait]
 impl<'a> Advance<GetInfoExcluded<'a>, MockContext> for MockTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,
@@ -120,7 +120,7 @@ impl<'a> Advance<GetInfoExcluded<'a>, MockContext> for MockTransactional {
 
 #[async_trait]
 impl<'a> Advance<ListInfosByChapterId<'a>, MockContext> for MockTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,
@@ -138,7 +138,7 @@ impl<'a> Advance<ListInfosByChapterId<'a>, MockContext> for MockTransactional {
 
 #[async_trait]
 impl<'a> Advance<ListAllInfosByChapterId<'a>, MockContext> for MockTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,
@@ -151,7 +151,7 @@ impl<'a> Advance<ListAllInfosByChapterId<'a>, MockContext> for MockTransactional
 
 #[async_trait]
 impl<'a> Advance<CreateBatch<'a>, MockContext> for MockTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,
@@ -178,7 +178,7 @@ impl<'a> Advance<CreateBatch<'a>, MockContext> for MockTransactional {
 
 #[async_trait]
 impl<'a> Advance<ReserveImage<'a>, MockContext> for MockTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,
@@ -215,7 +215,7 @@ impl<'a> Advance<ReserveImage<'a>, MockContext> for MockTransactional {
 
 #[async_trait]
 impl<'a> Advance<MarkImageUploaded<'a>, MockContext> for MockTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,
@@ -242,7 +242,7 @@ impl<'a> Advance<MarkImageUploaded<'a>, MockContext> for MockTransactional {
 
 #[async_trait]
 impl<'a> Advance<SetUnitCounters<'a>, MockContext> for MockTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,
@@ -267,7 +267,7 @@ impl<'a> Advance<SetUnitCounters<'a>, MockContext> for MockTransactional {
 
 #[async_trait]
 impl<'a> Advance<DeleteByChapterId<'a>, MockContext> for MockTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,

@@ -28,7 +28,7 @@ use crate::part::repo::step::chapter::ChapterStep;
 use crate::part::repo::step::comic::ComicStep;
 use crate::part::repo::step::page::PageStep;
 use crate::part::repo::workset::{WorksetRepo, WorksetRepoTransactional};
-use crate::result::{ExpectedVariant, RootError, RootResult, accept};
+use crate::result::{ExpectedVariant, RegularError, RegularResult, accept};
 use crate::util::DeriveTransactional;
 
 #[cfg(test)]
@@ -42,10 +42,10 @@ pub async fn reserve_chapter_pages<D, C, R, P, I>(
     image_pool: &I,
     token: UserToken,
     data: ReserveChapterPagesData,
-) -> RootResult<ReserveChapterPagesVal>
+) -> RegularResult<ReserveChapterPagesVal>
 where
     D: Drive<C>,
-    D::Error: Into<RootError>,
+    D::Error: Into<RegularError>,
     C: Send,
     R: ChapterRepo<C> + ComicRepo<C> + AssignmentRepo<C> + PageRepo<C> + Send + Sync,
     <R as DeriveTransactional>::Transactional: ChapterRepoTransactional<C>
@@ -82,7 +82,7 @@ where
                 .await?;
 
             if chapter_info.page_count != 0 {
-                return Err(RootError::Expected {
+                return Err(RegularError::Expected {
                     variant: ExpectedVariant::ArgsInvalid,
                     message: trl("error-invalid-page-count"),
                 });
@@ -168,7 +168,7 @@ where
         }))
         .await
         .into_iter()
-        .collect::<RootResult<Vec<_>>>()?;
+        .collect::<RegularResult<Vec<_>>>()?;
 
     Ok(ReserveChapterPagesVal { creations })
 }
@@ -182,10 +182,10 @@ pub async fn reserve_image<D, C, R, P, I>(
     token: UserToken,
     id: String,
     data: ReservePageImageData,
-) -> RootResult<ReservePageImageVal>
+) -> RegularResult<ReservePageImageVal>
 where
     D: Drive<C>,
-    D::Error: Into<RootError>,
+    D::Error: Into<RegularError>,
     C: Send,
     R: PageRepo<C> + AssignmentRepo<C> + Send + Sync,
     <R as DeriveTransactional>::Transactional:
@@ -252,7 +252,7 @@ pub async fn list_infos<C, R, I>(
     image_pool: &I,
     token: UserToken,
     data: ListPageInfosData,
-) -> RootResult<Vec<PageInfoVal>>
+) -> RegularResult<Vec<PageInfoVal>>
 where
     R: PageRepo<C>
         + ChapterRepo<C>
@@ -302,10 +302,10 @@ pub async fn mark_image_uploaded<D, C, R>(
     token: UserToken,
     id: String,
     data: MarkPageImageUploadedData,
-) -> RootResult<()>
+) -> RegularResult<()>
 where
     D: Drive<C>,
-    D::Error: Into<RootError>,
+    D::Error: Into<RegularError>,
     C: Send,
     R: PageRepo<C> + AssignmentRepo<C> + Send + Sync,
     <R as DeriveTransactional>::Transactional:
@@ -347,10 +347,10 @@ pub async fn delete<D, C, R, P>(
     prom: &P,
     token: UserToken,
     chapter_id: String,
-) -> RootResult<()>
+) -> RegularResult<()>
 where
     D: Drive<C>,
-    D::Error: Into<RootError>,
+    D::Error: Into<RegularError>,
     C: Send,
     R: PageRepo<C>
         + ChapterRepo<C>
@@ -420,9 +420,9 @@ where
     accept(())
 }
 
-fn validate_page_count(page_count: i32) -> RootResult<()> {
+fn validate_page_count(page_count: i32) -> RegularResult<()> {
     if page_count <= 0 {
-        return Err(RootError::Expected {
+        return Err(RegularError::Expected {
             variant: ExpectedVariant::ArgsInvalid,
             message: trl("error-invalid-page-count"),
         });
@@ -440,7 +440,7 @@ async fn append_check_uploaded<C, P>(
     object_key: &str,
     image_version: i64,
     visible_at: &OffsetDateTime,
-) -> RootResult<()>
+) -> RegularResult<()>
 where
     C: Send,
     P: PromTransactional<C> + Send + Sync,
@@ -469,7 +469,7 @@ async fn append_delete<C, P>(
     context: &mut C,
     object_key: &str,
     visible_at: &OffsetDateTime,
-) -> RootResult<()>
+) -> RegularResult<()>
 where
     C: Send,
     P: PromTransactional<C> + Send + Sync,

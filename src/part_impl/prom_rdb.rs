@@ -16,7 +16,7 @@ use crate::part::prom::{Append, PromTransactional};
 use crate::part_impl::repo_rdb::schema;
 use crate::part_impl::shared_rdb::result::diesel;
 use crate::part_impl::shared_rdb::RdbContext;
-use crate::result::RootError;
+use crate::result::RegularError;
 
 // ── Entity ─────────────────────────────────────────────────────────────────
 
@@ -36,9 +36,9 @@ struct LocalMessageEntry {
 }
 
 impl LocalMessageEntry {
-    fn from_append(step: &Append<'_>, now: OffsetDateTime) -> Result<Self, RootError> {
+    fn from_append(step: &Append<'_>, now: OffsetDateTime) -> Result<Self, RegularError> {
         let f_payload =
-            serde_json::to_value(&step.payload).map_err(|e| RootError::Unrecoverable {
+            serde_json::to_value(&step.payload).map_err(|e| RegularError::Unrecoverable {
                 message: format!("failed to serialize prom payload: {}", e),
             })?;
 
@@ -62,9 +62,9 @@ pub struct RdbPromTransactional;
 
 #[async_trait]
 impl<'a> Advance<Append<'a>, RdbContext> for RdbPromTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
-    async fn advance(&self, context: &mut RdbContext, step: &Append<'a>) -> Result<(), RootError> {
+    async fn advance(&self, context: &mut RdbContext, step: &Append<'a>) -> Result<(), RegularError> {
         let now = OffsetDateTime::now_utc();
         let entry = LocalMessageEntry::from_append(step, now)?;
 
