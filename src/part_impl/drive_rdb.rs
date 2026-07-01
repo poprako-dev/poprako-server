@@ -38,6 +38,7 @@ impl Drive<RdbContext> for RdbDrive {
 
         let mut rdb_context = RdbContext::new(conn);
 
+        // FIXME: use run_transaction.
         AnsiTransactionManager::begin_transaction(rdb_context.conn())
             .await
             .map_err(|e| DriveError::Backend(diesel(e)))?;

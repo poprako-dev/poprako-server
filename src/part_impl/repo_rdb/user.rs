@@ -16,9 +16,9 @@ use crate::part::repo::step::user::{
 use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_rdb::entity::user::{UserAspect, UserCredentialRow, UserEntry, UserRow};
 use crate::part_impl::repo_rdb::{RdbRepo, RdbRepoTransactional, schema};
+use crate::part_impl::shared_rdb::RdbConn;
 use crate::part_impl::shared_rdb::RdbContext;
 use crate::part_impl::shared_rdb::result::{diesel, expected};
-use crate::part_impl::shared_rdb::RdbConn;
 use crate::result::{RegularError, RegularResult};
 
 use schema::t_user::dsl::*;
@@ -38,10 +38,7 @@ async fn get_info_by_id(conn: &mut RdbConn, id: &str) -> RegularResult<UserInfo>
     Ok(row.into())
 }
 
-async fn get_credential_by_qid(
-    conn: &mut RdbConn,
-    qid: &str,
-) -> RegularResult<UserCredential> {
+async fn get_credential_by_qid(conn: &mut RdbConn, qid: &str) -> RegularResult<UserCredential> {
     let row: UserCredentialRow = t_user
         .filter(f_qid.eq(qid))
         .select(UserCredentialRow::as_select())
@@ -54,10 +51,7 @@ async fn get_credential_by_qid(
     Ok(row.into())
 }
 
-async fn find_info_by_qid(
-    conn: &mut RdbConn,
-    qid: &str,
-) -> RegularResult<Option<UserInfo>> {
+async fn find_info_by_qid(conn: &mut RdbConn, qid: &str) -> RegularResult<Option<UserInfo>> {
     let row: Option<UserRow> = t_user
         .filter(f_qid.eq(qid))
         .select(UserRow::as_select())
@@ -69,7 +63,7 @@ async fn find_info_by_qid(
     Ok(row.map(Into::into))
 }
 
-async fn create_user(conn: &mut RdbConn, form: &UserForm) -> RegularResult<UserInfo> {
+async fn create(conn: &mut RdbConn, form: &UserForm) -> RegularResult<UserInfo> {
     let now = OffsetDateTime::now_utc();
 
     let entry = UserEntry {
@@ -92,27 +86,7 @@ async fn create_user(conn: &mut RdbConn, form: &UserForm) -> RegularResult<UserI
     Ok(row.into())
 }
 
-async fn find_info_by_qid_tx(
-    conn: &mut RdbConn,
-    qid: &str,
-) -> RegularResult<Option<UserInfo>> {
-    let row: Option<UserRow> = t_user
-        .filter(f_qid.eq(qid))
-        .select(UserRow::as_select())
-        .get_result(conn)
-        .await
-        .optional()
-        .map_err(diesel)?;
-
-    Ok(row.map(Into::into))
-}
-
-async fn update_user(
-    conn: &mut RdbConn,
-    id: &str,
-    qid: &str,
-    nickname: &str,
-) -> RegularResult<()> {
+async fn update_info(conn: &mut RdbConn, id: &str, qid: &str, nickname: &str) -> RegularResult<()> {
     let now = OffsetDateTime::now_utc();
 
     let aspect = UserAspect::new(now).nickname(nickname).qid(qid);
@@ -154,11 +128,7 @@ async fn reserve_avatar(
     })
 }
 
-async fn mark_avatar_uploaded(
-    conn: &mut RdbConn,
-    id: &str,
-    version: i64,
-) -> RegularResult<()> {
+async fn mark_avatar_uploaded(conn: &mut RdbConn, id: &str, version: i64) -> RegularResult<()> {
     let now = OffsetDateTime::now_utc();
 
     let affected = diesel::update(
@@ -192,10 +162,7 @@ async fn touch_last_active(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
     Ok(())
 }
 
-async fn get_info_by_id_excluded(
-    conn: &mut RdbConn,
-    id: &str,
-) -> RegularResult<UserInfo> {
+async fn get_info_by_id_excluded(conn: &mut RdbConn, id: &str) -> RegularResult<UserInfo> {
     let row: UserRow = t_user
         .filter(f_id.eq(id))
         .select(UserRow::as_select())
@@ -209,7 +176,7 @@ async fn get_info_by_id_excluded(
     Ok(row.into())
 }
 
-async fn delete_user(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
+async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
     diesel::delete(t_user.filter(f_id.eq(id)))
         .execute(conn)
         .await
@@ -258,7 +225,7 @@ impl<'a> Advance<Create<'a>, RdbContext> for RdbRepoTransactional {
         context: &mut RdbContext,
         step: &Create<'a>,
     ) -> RegularResult<UserInfo> {
-        create_user(context.conn(), step.form).await
+        create(context.conn(), step.form).await
     }
 }
 
@@ -271,7 +238,7 @@ impl<'a> Advance<FindInfoByQid<'a>, RdbContext> for RdbRepoTransactional {
         context: &mut RdbContext,
         step: &FindInfoByQid<'a>,
     ) -> RegularResult<Option<UserInfo>> {
-        find_info_by_qid_tx(context.conn(), step.qid).await
+        find_info_by_qid(context.conn(), step.qid).await
     }
 }
 
@@ -280,7 +247,7 @@ impl<'a> Advance<UpdateInfo<'a>, RdbContext> for RdbRepoTransactional {
     type Error = RegularError;
 
     async fn advance(&self, context: &mut RdbContext, step: &UpdateInfo<'a>) -> RegularResult<()> {
-        update_user(context.conn(), step.id, step.qid, step.nickname).await
+        update_info(context.conn(), step.id, step.qid, step.nickname).await
     }
 }
 
@@ -341,6 +308,6 @@ impl<'a> Advance<Delete<'a>, RdbContext> for RdbRepoTransactional {
     type Error = RegularError;
 
     async fn advance(&self, context: &mut RdbContext, step: &Delete<'a>) -> RegularResult<()> {
-        delete_user(context.conn(), step.id).await
+        delete(context.conn(), step.id).await
     }
 }

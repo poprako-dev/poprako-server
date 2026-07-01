@@ -1,5 +1,7 @@
 # poprako-r - Agent Context
 
+NO FUCKING WRITING schema.rs DIRECTLY!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 `poprako-r` is a Rust rewrite of `poprako-s`, an event-driven backend service
 for manga translation project management. It covers users, teams, members,
 member invitations, worksets, comics, chapters, pages, units, assignments,
@@ -270,16 +272,16 @@ src/infra/repo/schema.rs
 
 Available `just` commands:
 
-| Command          | Description                                        |
-| ---------------- | -------------------------------------------------- |
-| `mgr-run`        | `diesel migration run`                             |
-| `mgr-rev`        | `diesel migration revert`                          |
-| `mgr-reset`      | `diesel migration revert -a`                       |
-| `mgr-add <name>` | `diesel migration generate <name>`                 |
-| `mgr-setup`      | `diesel database setup`                            |
-| `mgr-list`       | `diesel migration list`                            |
-| `mgr-schema`     | `diesel print-schema > src/infra/repo/schema.rs`   |
-| `style`          | Run all project style checks through Bun scripts   |
+| Command          | Description                                      |
+| ---------------- | ------------------------------------------------ |
+| `mgr-run`        | `diesel migration run`                           |
+| `mgr-rev`        | `diesel migration revert`                        |
+| `mgr-reset`      | `diesel migration revert -a`                     |
+| `mgr-add <name>` | `diesel migration generate <name>`               |
+| `mgr-setup`      | `diesel database setup`                          |
+| `mgr-list`       | `diesel migration list`                          |
+| `mgr-schema`     | `diesel print-schema > src/infra/repo/schema.rs` |
+| `style`          | Run all project style checks through Bun scripts |
 
 ---
 

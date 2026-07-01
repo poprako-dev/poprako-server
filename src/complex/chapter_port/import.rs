@@ -46,8 +46,7 @@ impl ChapterImportComplex {
             }
 
             if let Some(unit) = parse_label_plus_unit_header(line)? {
-                // FIXME: is_none()
-                let Some(_) = current_page else {
+                if current_page.is_none() {
                     return Err(args_error("error-invalid-chapter-import-content"));
                 };
 
