@@ -246,7 +246,7 @@ pub struct MockTransactional;
 impl DeriveTransactional for Mock {
     type Transactional = MockTransactional;
 
-    async fn transactional(&self) -> Self::Transactional {
+    async fn derive_transactional(&self) -> Self::Transactional {
         MockTransactional
     }
 }

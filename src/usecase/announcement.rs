@@ -80,7 +80,7 @@ where
 
     let announcement_info = drive
         .with_context(async move |context| {
-            let repo = repo.transactional().await;
+            let repo = repo.derive_transactional().await;
 
             let announcement_form = AnnouncementForm {
                 id: AnnouncementComplex::gen_id(),

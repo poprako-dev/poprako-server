@@ -112,7 +112,7 @@ where
 
     let save_units = drive
         .with_context(async move |context| {
-            let repo = repo.transactional().await;
+            let repo = repo.derive_transactional().await;
 
             // FIXME: Add page-scoped SubmissionId deduplication before oper replay.
             let page_info = repo

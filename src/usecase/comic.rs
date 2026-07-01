@@ -19,7 +19,7 @@ use crate::model::comic::{ComicForm, ComicInfoUpdate, ComicListSpec};
 use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
 use crate::part::prom::intention::{IMAGE_TOPIC, ImageIntention, ImageKind};
-use crate::part::prom::{Payload, Prom, PromStep, PromTransactional};
+use crate::part::prom::{Payload, PromStep, PromTransactional};
 use crate::part::repo::assignment::{AssignmentRepo, AssignmentRepoTransactional};
 use crate::part::repo::chapter::{ChapterRepo, ChapterRepoTransactional};
 use crate::part::repo::comic::{ComicRepo, ComicRepoTransactional};
@@ -81,7 +81,7 @@ where
 
     let (comic_id, chapter_id) = drive
         .with_context(async move |context| {
-            let repo = repo.transactional().await;
+            let repo = repo.derive_transactional().await;
 
             let index = repo
                 .advance(
@@ -270,8 +270,7 @@ where
         + MemberRepoTransactional<C>
         + Send
         + Sync,
-    P: Prom<C> + Send + Sync,
-    <P as DeriveTransactional>::Transactional: PromTransactional<C> + Send + Sync,
+    P: PromTransactional<C> + Send + Sync,
     I: ImagePool,
 {
     use crate::part::shared::proxy::AsProxyNonTransactional as _;
@@ -280,8 +279,7 @@ where
 
     let (object_key, cover_version) = drive
         .with_context(async move |context| {
-            let repo = repo.transactional().await;
-            let prom = prom.transactional().await;
+            let repo = repo.derive_transactional().await;
 
             let cover_reservation = repo
                 .advance(context, &ComicStep::reserve_cover(&id, &data.file_ext))
@@ -384,8 +382,7 @@ where
         + PageRepoTransactional<C>
         + Send
         + Sync,
-    P: Prom<C> + Send + Sync,
-    <P as DeriveTransactional>::Transactional: PromTransactional<C> + Send + Sync,
+    P: PromTransactional<C> + Send + Sync,
 {
     use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
@@ -393,14 +390,13 @@ where
 
     drive
         .with_context(async move |context| {
-            let repo = repo.transactional().await;
-            let prom = prom.transactional().await;
+            let repo = repo.derive_transactional().await;
 
             let comic_info = repo
                 .advance(context, &ComicStep::get_info_excluded(&id))
                 .await?;
 
-            ComicComplex::delete_cascade(&repo, &prom, context, &comic_info.id).await?;
+            ComicComplex::delete_cascade(&repo, prom, context, &comic_info.id).await?;
 
             accept(())
         })
@@ -435,7 +431,7 @@ where
 
     drive
         .with_context(async move |context| {
-            let repo = repo.transactional().await;
+            let repo = repo.derive_transactional().await;
 
             repo.advance(context, &ComicStep::mark_completed(&id, is_completed))
                 .await?;

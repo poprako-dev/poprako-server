@@ -1,4 +1,5 @@
 pub mod drive_rdb;
+pub mod prom_rdb;
 pub mod repo_rdb;
 pub mod shared_rdb;
 

@@ -10,7 +10,7 @@ use crate::model::assignment::AssignmentForm;
 use crate::model::chapter::{ChapterForm, ChapterInfoUpdate, ChapterListSpec};
 use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
-use crate::part::prom::{Prom, PromTransactional};
+use crate::part::prom::PromTransactional;
 use crate::part::repo::assignment::{AssignmentRepo, AssignmentRepoTransactional};
 use crate::part::repo::chapter::{ChapterRepo, ChapterRepoTransactional};
 use crate::part::repo::comic::{ComicRepo, ComicRepoTransactional};
@@ -145,7 +145,7 @@ where
 
     let chapter_id = drive
         .with_context(async move |context| {
-            let repo = repo.transactional().await;
+            let repo = repo.derive_transactional().await;
 
             let index = repo
                 .advance(context, &ComicStep::incr_chapter_next_index(&data.comic_id))
@@ -227,7 +227,7 @@ where
 
     drive
         .with_context(async move |context| {
-            let repo = repo.transactional().await;
+            let repo = repo.derive_transactional().await;
 
             let chapter_info = repo
                 .advance(context, &ChapterStep::get_info_by_id_excluded(&data.id))
@@ -285,8 +285,7 @@ where
         + PageRepoTransactional<C>
         + Send
         + Sync,
-    P: Prom<C> + Send + Sync,
-    <P as DeriveTransactional>::Transactional: PromTransactional<C> + Send + Sync,
+    P: PromTransactional<C> + Send + Sync,
 {
     use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
@@ -301,8 +300,7 @@ where
 
     drive
         .with_context(async move |context| {
-            let repo = repo.transactional().await;
-            let prom = prom.transactional().await;
+            let repo = repo.derive_transactional().await;
 
             let chapter_info = repo
                 .advance(context, &ChapterStep::get_info_by_id_excluded(&data.id))
@@ -324,7 +322,7 @@ where
                     .stages
                     .has_phase(WorkflowStage::Publish, StagePhase::Completed)
             {
-                ChapterComplex::clean_uploaded_images(&repo, &prom, context, &chapter_info.id)
+                ChapterComplex::clean_uploaded_images(&repo, prom, context, &chapter_info.id)
                     .await?;
             }
 
@@ -362,8 +360,7 @@ where
         + PageRepoTransactional<C>
         + Send
         + Sync,
-    P: Prom<C> + Send + Sync,
-    <P as DeriveTransactional>::Transactional: PromTransactional<C> + Send + Sync,
+    P: PromTransactional<C> + Send + Sync,
 {
     use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
@@ -371,10 +368,9 @@ where
 
     drive
         .with_context(async move |context| {
-            let repo = repo.transactional().await;
-            let prom = prom.transactional().await;
+            let repo = repo.derive_transactional().await;
 
-            ChapterComplex::delete_cascade(&repo, &prom, context, &id).await?;
+            ChapterComplex::delete_cascade(&repo, prom, context, &id).await?;
 
             accept(())
         })
