@@ -8,20 +8,76 @@ use time::OffsetDateTime;
 use poprako_transactional::advance::Advance;
 
 use crate::model::member::{MemberForm, MemberInfo, MemberListSpec, MemberRoleUpdate};
+use crate::model::team::TeamInfo;
+use crate::model::user::UserInfo;
 use crate::part::repo::step::member::{
     Create, Delete, FindInfoByUserIdAndTeamId, GetInfoById, GetInfoExcluded, ListInfos,
     ListInfosByUserIdExcluded, TouchLastActive, UpdateRole, UpdateUserNickname,
 };
 use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_rdb::entity::member::{MemberAspect, MemberEntry, MemberRow};
+use crate::part_impl::repo_rdb::incl::{self, Incl, TeamByIds, UserByIds};
 use crate::part_impl::repo_rdb::{RdbRepo, RdbRepoTransactional, schema};
 use crate::part_impl::shared_rdb::RdbConn;
 use crate::part_impl::shared_rdb::RdbContext;
 use crate::part_impl::shared_rdb::result::{diesel, expected};
 use crate::result::{RegularError, RegularResult};
+use crate::value::member::MemberInclOpt;
 use crate::value::role::{RoleField, RoleMask};
 
 use schema::t_member::dsl::*;
+
+// ── Incl implementations ────────────────────────────────────────────────────
+
+struct MemberUserIncl;
+
+#[async_trait]
+impl Incl for MemberUserIncl {
+    type Owner = MemberInfo;
+    type Related = UserInfo;
+    type Query = UserByIds;
+
+    fn resolve_key(o: &MemberInfo) -> Option<&str> {
+        Some(&o.user_id)
+    }
+
+    fn set(o: &mut MemberInfo, r: Option<UserInfo>) {
+        o.user = r;
+    }
+}
+
+struct MemberTeamIncl;
+
+#[async_trait]
+impl Incl for MemberTeamIncl {
+    type Owner = MemberInfo;
+    type Related = TeamInfo;
+    type Query = TeamByIds;
+
+    fn resolve_key(o: &MemberInfo) -> Option<&str> {
+        Some(&o.team_id)
+    }
+
+    fn set(o: &mut MemberInfo, r: Option<TeamInfo>) {
+        o.team = r;
+    }
+}
+
+async fn populate_member_incls(
+    conn: &mut RdbConn,
+    infos: &mut [MemberInfo],
+    incl_opt: &[MemberInclOpt],
+) -> RegularResult<()> {
+    if incl_opt.contains(&MemberInclOpt::User) {
+        incl::populate::<MemberUserIncl>(conn, infos).await?;
+    }
+
+    if incl_opt.contains(&MemberInclOpt::Team) {
+        incl::populate::<MemberTeamIncl>(conn, infos).await?;
+    }
+
+    Ok(())
+}
 
 struct RoleTimestamps {
     raw_provider: Option<OffsetDateTime>,
@@ -95,6 +151,26 @@ fn aspect_from_role_update(update: &MemberRoleUpdate, now: OffsetDateTime) -> Me
     aspect
 }
 
+/// Escape PostgreSQL `ILIKE` wildcard characters in a user-supplied search term.
+///
+/// The characters `%`, `_`, and `\` have special meaning in `LIKE`/`ILIKE`
+/// patterns and must be escaped to prevent accidental (or malicious) wildcard
+/// injection when the term is embedded in a pattern like `"%{}%"`.
+fn escape_ilike_pattern(input: &str) -> String {
+    let mut escaped = String::with_capacity(input.len());
+
+    for ch in input.chars() {
+        match ch {
+            '\\' => escaped.push_str("\\\\"),
+            '%' => escaped.push_str("\\%"),
+            '_' => escaped.push_str("\\_"),
+            _ => escaped.push(ch),
+        }
+    }
+
+    escaped
+}
+
 // ── Free functions ──────────────────────────────────────────────────────────
 
 async fn find_info_by_user_id_and_team_id(
@@ -130,7 +206,9 @@ async fn list_infos(conn: &mut RdbConn, spec: &MemberListSpec) -> RegularResult<
                 .into_boxed();
 
             if let Some(nickname) = fuzzy_nickname {
-                query = query.filter(f_user_nickname.ilike(format!("%{}%", nickname)));
+                let escaped = escape_ilike_pattern(nickname);
+
+                query = query.filter(f_user_nickname.ilike(format!("%{}%", escaped)));
             }
 
             query
@@ -157,10 +235,18 @@ async fn list_infos(conn: &mut RdbConn, spec: &MemberListSpec) -> RegularResult<
             .map_err(diesel)?,
     };
 
-    Ok(rows.into_iter().map(Into::into).collect())
+    let mut infos: Vec<MemberInfo> = rows.into_iter().map(Into::into).collect();
+
+    populate_member_incls(conn, &mut infos, spec.incl_opt()).await?;
+
+    Ok(infos)
 }
 
-async fn get_info_by_id(conn: &mut RdbConn, id: &str) -> RegularResult<MemberInfo> {
+async fn get_info_by_id(
+    conn: &mut RdbConn,
+    id: &str,
+    incl_opt: &[MemberInclOpt],
+) -> RegularResult<MemberInfo> {
     let row: MemberRow = t_member
         .filter(f_id.eq(id))
         .select(MemberRow::as_select())
@@ -170,7 +256,11 @@ async fn get_info_by_id(conn: &mut RdbConn, id: &str) -> RegularResult<MemberInf
         .map_err(diesel)?
         .ok_or_else(|| expected("error-member-not-found"))?;
 
-    Ok(row.into())
+    let mut info: MemberInfo = row.into();
+
+    populate_member_incls(conn, std::slice::from_mut(&mut info), incl_opt).await?;
+
+    Ok(info)
 }
 
 async fn create(conn: &mut RdbConn, form: &MemberForm) -> RegularResult<MemberInfo> {
@@ -235,7 +325,11 @@ async fn list_infos_by_user_id_excluded(
     Ok(rows.into_iter().map(Into::into).collect())
 }
 
-async fn get_info_excluded(conn: &mut RdbConn, id: &str) -> RegularResult<MemberInfo> {
+async fn get_info_excluded(
+    conn: &mut RdbConn,
+    id: &str,
+    incl_opt: &[MemberInclOpt],
+) -> RegularResult<MemberInfo> {
     let row: MemberRow = t_member
         .filter(f_id.eq(id))
         .select(MemberRow::as_select())
@@ -246,7 +340,11 @@ async fn get_info_excluded(conn: &mut RdbConn, id: &str) -> RegularResult<Member
         .map_err(diesel)?
         .ok_or_else(|| expected("error-member-not-found"))?;
 
-    Ok(row.into())
+    let mut info: MemberInfo = row.into();
+
+    populate_member_incls(conn, std::slice::from_mut(&mut info), incl_opt).await?;
+
+    Ok(info)
 }
 
 async fn update_role(conn: &mut RdbConn, update: &MemberRoleUpdate) -> RegularResult<()> {
@@ -305,7 +403,7 @@ impl<'a> Execute<GetInfoById<'a>> for RdbRepo {
     type Error = RegularError;
 
     async fn execute(&self, step: &GetInfoById<'a>) -> RegularResult<MemberInfo> {
-        submit_query!(self.shared, get_info_by_id, step.id)
+        submit_query!(self.shared, get_info_by_id, step.id, step.incl_opt)
     }
 }
 
@@ -385,7 +483,7 @@ impl<'a> Advance<GetInfoExcluded<'a>, RdbContext> for RdbRepoTransactional {
         context: &mut RdbContext,
         step: &GetInfoExcluded<'a>,
     ) -> RegularResult<MemberInfo> {
-        get_info_excluded(context.conn(), step.id).await
+        get_info_excluded(context.conn(), step.id, step.incl_opt).await
     }
 }
 

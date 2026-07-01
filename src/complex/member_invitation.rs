@@ -84,7 +84,7 @@ impl MemberInvitationPermComplex {
         P: for<'a> ProxyExecute<MemberInvitationGetInfoById<'a>, Error = RegularError>,
     {
         let member_invitation_info = proxy
-            .execute(&MemberInvitationStep::get_info_by_id(invitation_id))
+            .execute(&MemberInvitationStep::get_info_by_id(invitation_id, &[]))
             .await?;
         Ok(member_invitation_info.team_id)
     }

@@ -62,3 +62,12 @@ pub enum MemberListSpec {
         limit: u64,
     },
 }
+
+impl MemberListSpec {
+    pub fn incl_opt(&self) -> &[MemberInclOpt] {
+        match self {
+            MemberListSpec::User { incl_opt, .. } => incl_opt,
+            MemberListSpec::Team { incl_opt, .. } => incl_opt,
+        }
+    }
+}

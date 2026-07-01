@@ -19,6 +19,7 @@ macro_rules! submit_query {
 
 pub mod comic;
 pub mod entity;
+pub mod incl;
 pub mod member;
 pub mod member_invitation;
 pub mod schema;

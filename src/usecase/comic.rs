@@ -186,7 +186,7 @@ where
 
     ComicPermComplex::can_user_get_info(&mut repo.as_proxy(), &token.user_id, &id).await?;
 
-    let comic_info = repo.execute(&ComicStep::get_info_by_id(&id)).await?;
+    let comic_info = repo.execute(&ComicStep::get_info_by_id(&id, &[])).await?;
 
     ComicInfoVal::from_model(image_pool, comic_info).await
 }
@@ -393,7 +393,7 @@ where
             let repo = repo.derive_transactional().await;
 
             let comic_info = repo
-                .advance(context, &ComicStep::get_info_excluded(&id))
+                .advance(context, &ComicStep::get_info_excluded(&id, &[]))
                 .await?;
 
             ComicComplex::delete_cascade(&repo, prom, context, &comic_info.id).await?;

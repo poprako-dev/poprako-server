@@ -62,7 +62,7 @@ where
         .await?;
 
     let comic_info = repo
-        .execute(&ComicStep::get_info_by_id(&chapter_info.comic_id))
+        .execute(&ComicStep::get_info_by_id(&chapter_info.comic_id, &[]))
         .await?;
 
     let page_infos = repo

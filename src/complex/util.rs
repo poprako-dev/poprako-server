@@ -85,7 +85,7 @@ where
         .await?;
 
     let comic_info = proxy
-        .execute(&ComicStep::get_info_by_id(&chapter_info.comic_id))
+        .execute(&ComicStep::get_info_by_id(&chapter_info.comic_id, &[]))
         .await?;
 
     let workset_info = proxy

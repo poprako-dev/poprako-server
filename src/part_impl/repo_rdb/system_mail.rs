@@ -70,7 +70,10 @@ async fn list_infos_by_receiver_id(
     Ok(rows.into_iter().map(Into::into).collect())
 }
 
-async fn list_infos_by_ids(conn: &mut RdbConn, ids: &[String]) -> RegularResult<Vec<SystemMailInfo>> {
+async fn list_infos_by_ids(
+    conn: &mut RdbConn,
+    ids: &[String],
+) -> RegularResult<Vec<SystemMailInfo>> {
     let rows: Vec<SystemMailRow> = t_system_mail
         .filter(f_id.eq_any(ids))
         .select(SystemMailRow::as_select())

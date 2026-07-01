@@ -5,6 +5,7 @@ use poprako_transactional::step::Step;
 use crate::model::member_invitation::{
     MemberInvitationForm, MemberInvitationInfo, MemberInvitationListSpec, MemberInvitationUpdate,
 };
+use crate::value::member_invitation::MemberInvitationInclOpt;
 
 /// Step that inserts a member invitation row.
 pub struct Create<'a> {
@@ -27,6 +28,7 @@ impl<'a> Step for ListInfos<'a> {
 /// Step that fetches an invitation by id.
 pub struct GetInfoById<'a> {
     pub id: &'a str,
+    pub incl_opt: &'a [MemberInvitationInclOpt],
 }
 
 impl<'a> Step for GetInfoById<'a> {
@@ -84,8 +86,11 @@ impl MemberInvitationStep {
     }
 
     /// Constructs a step to fetch an invitation by id.
-    pub fn get_info_by_id<'a>(id: &'a str) -> GetInfoById<'a> {
-        GetInfoById { id }
+    pub fn get_info_by_id<'a>(
+        id: &'a str,
+        incl_opt: &'a [MemberInvitationInclOpt],
+    ) -> GetInfoById<'a> {
+        GetInfoById { id, incl_opt }
     }
 
     /// Constructs a step to fetch a pending invitation by code with a lock.

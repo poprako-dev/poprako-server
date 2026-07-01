@@ -5,6 +5,7 @@ use poprako_transactional::step::Step;
 use crate::model::comic::{
     ComicCoverReservation, ComicForm, ComicInfo, ComicInfoUpdate, ComicListSpec,
 };
+use crate::value::comic::ComicInclOpt;
 
 /// Step that inserts a new comic row.
 pub struct Create<'a> {
@@ -18,6 +19,7 @@ impl<'a> Step for Create<'a> {
 /// Step that fetches a comic by its identifier.
 pub struct GetInfoById<'a> {
     pub id: &'a str,
+    pub incl_opt: &'a [ComicInclOpt],
 }
 
 impl<'a> Step for GetInfoById<'a> {
@@ -27,6 +29,7 @@ impl<'a> Step for GetInfoById<'a> {
 /// Step that fetches a comic by ID with a pessimistic lock.
 pub struct GetInfoExcluded<'a> {
     pub id: &'a str,
+    pub incl_opt: &'a [ComicInclOpt],
 }
 
 impl<'a> Step for GetInfoExcluded<'a> {
@@ -142,13 +145,13 @@ impl ComicStep {
     }
 
     /// Constructs a step to fetch a comic by ID.
-    pub fn get_info_by_id<'a>(id: &'a str) -> GetInfoById<'a> {
-        GetInfoById { id }
+    pub fn get_info_by_id<'a>(id: &'a str, incl_opt: &'a [ComicInclOpt]) -> GetInfoById<'a> {
+        GetInfoById { id, incl_opt }
     }
 
     /// Constructs a step to fetch a comic with a pessimistic lock.
-    pub fn get_info_excluded<'a>(id: &'a str) -> GetInfoExcluded<'a> {
-        GetInfoExcluded { id }
+    pub fn get_info_excluded<'a>(id: &'a str, incl_opt: &'a [ComicInclOpt]) -> GetInfoExcluded<'a> {
+        GetInfoExcluded { id, incl_opt }
     }
 
     /// Constructs a step to list comics with filters and pagination.

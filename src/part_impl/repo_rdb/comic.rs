@@ -11,6 +11,9 @@ use crate::complex::comic::ComicComplex;
 use crate::model::comic::{
     ComicCoverReservation, ComicForm, ComicInfo, ComicInfoUpdate, ComicListSpec,
 };
+use crate::model::team::TeamInfo;
+use crate::model::user::UserInfo;
+use crate::model::workset::WorksetInfo;
 use crate::part::repo::step::comic::{
     Create, Delete, GetInfoById, GetInfoExcluded, IncrChapterNextIndex, ListInfos,
     ListInfosExcluded, MarkCompleted, MarkCoverUploaded, ReserveCover, TouchLastActive,
@@ -18,17 +21,96 @@ use crate::part::repo::step::comic::{
 };
 use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_rdb::entity::comic::{ComicAspect, ComicEntry, ComicRow};
+use crate::part_impl::repo_rdb::incl::{self, Incl, TeamByIds, UserByIds, WorksetByIds};
 use crate::part_impl::repo_rdb::{RdbRepo, RdbRepoTransactional, schema};
 use crate::part_impl::shared_rdb::RdbConn;
 use crate::part_impl::shared_rdb::RdbContext;
 use crate::part_impl::shared_rdb::result::{diesel, expected};
 use crate::result::{RegularError, RegularResult};
+use crate::value::comic::ComicInclOpt;
 
 use schema::t_comic::dsl::*;
 
+// ── Incl implementations ────────────────────────────────────────────────────
+
+struct ComicWorksetIncl;
+
+#[async_trait]
+impl Incl for ComicWorksetIncl {
+    type Owner = ComicInfo;
+    type Related = WorksetInfo;
+    type Query = WorksetByIds;
+
+    fn resolve_key(o: &ComicInfo) -> Option<&str> {
+        Some(&o.workset_id)
+    }
+
+    fn set(o: &mut ComicInfo, r: Option<WorksetInfo>) {
+        o.workset = r;
+    }
+}
+
+struct ComicTeamIncl;
+
+#[async_trait]
+impl Incl for ComicTeamIncl {
+    type Owner = ComicInfo;
+    type Related = TeamInfo;
+    type Query = TeamByIds;
+
+    fn resolve_key(o: &ComicInfo) -> Option<&str> {
+        o.workset.as_ref().map(|w| w.team_id.as_str())
+    }
+
+    fn set(o: &mut ComicInfo, r: Option<TeamInfo>) {
+        o.team = r;
+    }
+}
+
+struct ComicCreatorIncl;
+
+#[async_trait]
+impl Incl for ComicCreatorIncl {
+    type Owner = ComicInfo;
+    type Related = UserInfo;
+    type Query = UserByIds;
+
+    fn resolve_key(o: &ComicInfo) -> Option<&str> {
+        Some(&o.creator_id)
+    }
+
+    fn set(o: &mut ComicInfo, r: Option<UserInfo>) {
+        o.creator = r;
+    }
+}
+
+async fn populate_comic_incls(
+    conn: &mut RdbConn,
+    infos: &mut [ComicInfo],
+    incl_opt: &[ComicInclOpt],
+) -> RegularResult<()> {
+    if incl_opt.contains(&ComicInclOpt::Workset) {
+        incl::populate::<ComicWorksetIncl>(conn, infos).await?;
+    }
+
+    if incl_opt.contains(&ComicInclOpt::Team) {
+        incl::populate::<ComicTeamIncl>(conn, infos).await?;
+    }
+
+    if incl_opt.contains(&ComicInclOpt::Creator) {
+        incl::populate::<ComicCreatorIncl>(conn, infos).await?;
+    }
+
+    Ok(())
+}
+
 // ── Free functions ──────────────────────────────────────────────────────────
 
-async fn get_info_by_id(conn: &mut RdbConn, id: &str) -> RegularResult<ComicInfo> {
+async fn get_info_by_id(
+    conn: &mut RdbConn,
+    id: &str,
+    incl_opt: &[ComicInclOpt],
+) -> RegularResult<ComicInfo> {
     let row: ComicRow = t_comic
         .filter(f_id.eq(id))
         .select(ComicRow::as_select())
@@ -38,7 +120,11 @@ async fn get_info_by_id(conn: &mut RdbConn, id: &str) -> RegularResult<ComicInfo
         .map_err(diesel)?
         .ok_or_else(|| expected("error-comic-not-found"))?;
 
-    Ok(row.into())
+    let mut info: ComicInfo = row.into();
+
+    populate_comic_incls(conn, std::slice::from_mut(&mut info), incl_opt).await?;
+
+    Ok(info)
 }
 
 async fn list_infos(conn: &mut RdbConn, spec: &ComicListSpec) -> RegularResult<Vec<ComicInfo>> {
@@ -63,7 +149,11 @@ async fn list_infos(conn: &mut RdbConn, spec: &ComicListSpec) -> RegularResult<V
         .await
         .map_err(diesel)?;
 
-    Ok(rows.into_iter().map(Into::into).collect())
+    let mut infos: Vec<ComicInfo> = rows.into_iter().map(Into::into).collect();
+
+    populate_comic_incls(conn, &mut infos, &spec.incl_opt).await?;
+
+    Ok(infos)
 }
 
 async fn update_info(conn: &mut RdbConn, update: &ComicInfoUpdate) -> RegularResult<()> {
@@ -83,11 +173,7 @@ async fn update_info(conn: &mut RdbConn, update: &ComicInfoUpdate) -> RegularRes
     Ok(())
 }
 
-async fn mark_cover_uploaded(
-    conn: &mut RdbConn,
-    id: &str,
-    version: i64,
-) -> RegularResult<()> {
+async fn mark_cover_uploaded(conn: &mut RdbConn, id: &str, version: i64) -> RegularResult<()> {
     let now = OffsetDateTime::now_utc();
 
     let affected = diesel::update(
@@ -120,7 +206,11 @@ async fn create(conn: &mut RdbConn, form: &ComicForm) -> RegularResult<ComicInfo
     Ok(row.into())
 }
 
-async fn get_info_excluded(conn: &mut RdbConn, id: &str) -> RegularResult<ComicInfo> {
+async fn get_info_excluded(
+    conn: &mut RdbConn,
+    id: &str,
+    incl_opt: &[ComicInclOpt],
+) -> RegularResult<ComicInfo> {
     let row: ComicRow = t_comic
         .filter(f_id.eq(id))
         .select(ComicRow::as_select())
@@ -131,7 +221,11 @@ async fn get_info_excluded(conn: &mut RdbConn, id: &str) -> RegularResult<ComicI
         .map_err(diesel)?
         .ok_or_else(|| expected("error-comic-not-found"))?;
 
-    Ok(row.into())
+    let mut info: ComicInfo = row.into();
+
+    populate_comic_incls(conn, std::slice::from_mut(&mut info), incl_opt).await?;
+
+    Ok(info)
 }
 
 async fn list_infos_excluded(
@@ -146,7 +240,11 @@ async fn list_infos_excluded(
         .await
         .map_err(diesel)?;
 
-    Ok(rows.into_iter().map(Into::into).collect())
+    let mut infos: Vec<ComicInfo> = rows.into_iter().map(Into::into).collect();
+
+    populate_comic_incls(conn, &mut infos, &spec.incl_opt).await?;
+
+    Ok(infos)
 }
 
 async fn reserve_cover(
@@ -187,11 +285,7 @@ async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
     Ok(())
 }
 
-async fn mark_completed(
-    conn: &mut RdbConn,
-    id: &str,
-    is_completed: bool,
-) -> RegularResult<()> {
+async fn mark_completed(conn: &mut RdbConn, id: &str, is_completed: bool) -> RegularResult<()> {
     let now = OffsetDateTime::now_utc();
 
     let aspect = ComicAspect::new(now).completed(is_completed);
@@ -247,7 +341,7 @@ impl<'a> Execute<GetInfoById<'a>> for RdbRepo {
     type Error = RegularError;
 
     async fn execute(&self, step: &GetInfoById<'a>) -> RegularResult<ComicInfo> {
-        submit_query!(self.shared, get_info_by_id, step.id)
+        submit_query!(self.shared, get_info_by_id, step.id, step.incl_opt)
     }
 }
 
@@ -307,7 +401,7 @@ impl<'a> Advance<GetInfoById<'a>, RdbContext> for RdbRepoTransactional {
         context: &mut RdbContext,
         step: &GetInfoById<'a>,
     ) -> RegularResult<ComicInfo> {
-        get_info_by_id(context.conn(), step.id).await
+        get_info_by_id(context.conn(), step.id, step.incl_opt).await
     }
 }
 
@@ -320,7 +414,7 @@ impl<'a> Advance<GetInfoExcluded<'a>, RdbContext> for RdbRepoTransactional {
         context: &mut RdbContext,
         step: &GetInfoExcluded<'a>,
     ) -> RegularResult<ComicInfo> {
-        get_info_excluded(context.conn(), step.id).await
+        get_info_excluded(context.conn(), step.id, step.incl_opt).await
     }
 }
 

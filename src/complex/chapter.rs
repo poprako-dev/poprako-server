@@ -556,7 +556,9 @@ where
     P: for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RegularError>
         + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RegularError>,
 {
-    let comic_info = proxy.execute(&ComicStep::get_info_by_id(comic_id)).await?;
+    let comic_info = proxy
+        .execute(&ComicStep::get_info_by_id(comic_id, &[]))
+        .await?;
 
     let workset_info = proxy
         .execute(&WorksetStep::get_info_by_id(&comic_info.workset_id))

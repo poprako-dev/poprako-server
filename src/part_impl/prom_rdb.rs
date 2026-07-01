@@ -5,9 +5,14 @@
 //! Prom lives in its own module, separate from the repository adapter.
 
 use async_trait::async_trait;
+use diesel::AsExpression;
+use diesel::pg::Pg;
 use diesel::prelude::*;
+use diesel::serialize::{Output, ToSql};
+use diesel::sql_types::Text;
 use diesel_async::RunQueryDsl;
 use serde_json::Value;
+use std::io::Write as _;
 use time::OffsetDateTime;
 
 use poprako_transactional::advance::Advance;
@@ -20,14 +25,46 @@ use crate::result::{RegularError, RegularResult};
 
 // ── Entity ─────────────────────────────────────────────────────────────────
 
-pub enum LocalMessageStatus {}
+#[derive(Debug, Clone, Copy, PartialEq, Eq, AsExpression)]
+#[diesel(sql_type = Text)]
+pub enum LocalMessageStatus {
+    Pending,
+
+    Processing,
+
+    Completed,
+
+    Dead,
+}
+
+impl LocalMessageStatus {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Pending => "local_message_status:pending",
+
+            Self::Processing => "local_message_status:processing",
+
+            Self::Completed => "local_message_status:completed",
+
+            Self::Dead => "local_message_status:dead",
+        }
+    }
+}
+
+impl ToSql<Text, Pg> for LocalMessageStatus {
+    fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Pg>) -> diesel::serialize::Result {
+        out.write_all(self.as_str().as_bytes())?;
+
+        Ok(diesel::serialize::IsNull::No)
+    }
+}
 
 #[derive(Insertable)]
 #[diesel(table_name = schema::t_local_message)]
 struct LocalMessageEntry<'a> {
     f_id: &'a str,
     f_topic: &'a str,
-    f_status: &'a str,
+    f_status: LocalMessageStatus,
 
     f_payload: Value,
 
@@ -47,7 +84,7 @@ impl<'a> LocalMessageEntry<'a> {
         Ok(Self {
             f_id: step.id,
             f_topic: step.topic,
-            f_status: "pending",
+            f_status: LocalMessageStatus::Pending,
             f_payload,
             f_visible_at: *step.visible_at,
             f_created_at: now,
