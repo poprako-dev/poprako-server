@@ -49,55 +49,57 @@ their own shape and convert at the repository boundary.
 
 ## Architecture
 
-`part_impl::rdb_repo` is the production adapter for `part::repo` and `part::prom`.
+`part_impl::repo_rdb` is the production adapter for `part::repo` and `part::prom`.
 It must remain a thin adapter around Diesel entities and query functions. It
 must not introduce business rules that belong in `complex` or `usecase`.
 
-`part_impl::rdb_drive` is the production transaction driver. It is a separate
+`part_impl::drive_rdb` is the production transaction driver. It is a separate
 type from `RdbRepo` because application wiring keeps the drive and repo as
-separate fields. `RdbDrive` and `RdbRepo` must share the same Diesel pool, but
-neither type should own or wrap the other.
+separate fields. `RdbDrive` and `RdbRepo` must share one `RdbShared` handle,
+but neither type should own or wrap the other.
 
 Recommended module layout:
 
 ```text
-src/part_impl/rdb_drive.rs
-src/part_impl/rdb_repo.rs
-src/part_impl/rdb_repo/error.rs
-src/part_impl/rdb_repo/entity.rs
-src/part_impl/rdb_repo/entity/user.rs
-src/part_impl/rdb_repo/entity/team.rs
-src/part_impl/rdb_repo/entity/member.rs
-src/part_impl/rdb_repo/entity/member_invitation.rs
-src/part_impl/rdb_repo/entity/system_mail.rs
-src/part_impl/rdb_repo/entity/workset.rs
-src/part_impl/rdb_repo/entity/local_message.rs
-src/part_impl/rdb_repo/entity/comic.rs
-src/part_impl/rdb_repo/user.rs
-src/part_impl/rdb_repo/team.rs
-src/part_impl/rdb_repo/member.rs
-src/part_impl/rdb_repo/member_invitation.rs
-src/part_impl/rdb_repo/system_mail.rs
-src/part_impl/rdb_repo/workset.rs
-src/part_impl/rdb_repo/local_message.rs
-src/part_impl/rdb_repo/comic.rs
+src/part_impl/drive_rdb.rs
+src/part_impl/repo_rdb.rs
+src/part_impl/repo_rdb_shared.rs
+src/part_impl/repo_rdb_shared/error.rs
+src/part_impl/repo_rdb/entity.rs
+src/part_impl/repo_rdb/entity/user.rs
+src/part_impl/repo_rdb/entity/team.rs
+src/part_impl/repo_rdb/entity/member.rs
+src/part_impl/repo_rdb/entity/member_invitation.rs
+src/part_impl/repo_rdb/entity/system_mail.rs
+src/part_impl/repo_rdb/entity/workset.rs
+src/part_impl/repo_rdb/entity/local_message.rs
+src/part_impl/repo_rdb/entity/comic.rs
+src/part_impl/repo_rdb/user.rs
+src/part_impl/repo_rdb/team.rs
+src/part_impl/repo_rdb/member.rs
+src/part_impl/repo_rdb/member_invitation.rs
+src/part_impl/repo_rdb/system_mail.rs
+src/part_impl/repo_rdb/workset.rs
+src/part_impl/repo_rdb/local_message.rs
+src/part_impl/repo_rdb/comic.rs
 ```
 
-The `rdb_drive` module is responsible for transaction driving. The `rdb_repo`
-root module is responsible only for module declarations, pool construction, and
-shared connection helpers for non-transactional execution. Per-domain files own
-their own step implementations. Entity files own row structs and conversions.
+The `drive_rdb` module is responsible for transaction driving. The `repo_rdb`
+root module is responsible only for module declarations and non-transactional
+repo entry points. The `repo_rdb_shared` module is the only same-layer shared
+dependency and owns pool construction, context, conn wrappers, and error
+mapping. Per-domain files own their own step implementations. Entity files own
+row structs and conversions.
 
 ## Transaction Model
 
-`RdbRepo` holds a Diesel async PostgreSQL pool for non-transactional repository
-and prom execution.
+`RdbShared` holds a Diesel async PostgreSQL pool. `RdbRepo` and `RdbDrive` each
+hold a clone of the same `RdbShared`.
 
-`RdbDrive` holds the same Diesel async PostgreSQL pool for transaction driving.
-It should be constructed from the same pool clone as `RdbRepo`, or both should
-be produced by a small factory that clones one pool into the two fields. The
-important invariant is that production wiring can inject them as separate
-values while they still target the same database.
+Production wiring should construct one `RdbShared`, then pass a clone to
+`RdbRepo` and the original to `RdbDrive`. The important invariant is that
+production wiring can inject them as separate values while they still target
+the same database.
 
 `RdbRepoTransactional` should stay a small stateless handle, matching the
 current mock implementation shape. It implements `Advance<S, RdbContext>` for

@@ -9,7 +9,7 @@ use poprako_transactional::util::AsyncFnMark;
 
 use crate::result::RootError;
 
-use super::rdb_shared::{self, RdbContext, RdbShared};
+use super::repo_rdb_shared::{self, RdbContext, RdbShared};
 
 pub struct RdbDrive {
     shared: RdbShared,
@@ -44,7 +44,10 @@ impl Drive<RdbContext> for RdbDrive {
         AnsiTransactionManager::begin_transaction(rdb_context.conn())
             .await
             .map_err(|err| {
-                DriveError::Backend(rdb_shared::diesel("RdbDrive::with_context begin", err))
+                DriveError::Backend(repo_rdb_shared::diesel(
+                    "RdbDrive::with_context begin",
+                    err,
+                ))
             })?;
 
         let result = f(&mut rdb_context).await;
@@ -54,7 +57,7 @@ impl Drive<RdbContext> for RdbDrive {
                 AnsiTransactionManager::commit_transaction(rdb_context.conn())
                     .await
                     .map_err(|err| {
-                        DriveError::Backend(rdb_shared::diesel(
+                        DriveError::Backend(repo_rdb_shared::diesel(
                             "RdbDrive::with_context commit",
                             err,
                         ))
@@ -66,7 +69,7 @@ impl Drive<RdbContext> for RdbDrive {
                 AnsiTransactionManager::rollback_transaction(rdb_context.conn())
                     .await
                     .map_err(|rollback_err| {
-                        DriveError::Backend(rdb_shared::diesel(
+                        DriveError::Backend(repo_rdb_shared::diesel(
                             "RdbDrive::with_context rollback after advance error",
                             rollback_err,
                         ))

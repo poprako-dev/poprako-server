@@ -45,7 +45,7 @@ Mandatory source-of-truth references:
 
 Existing user work:
 
-- `src/part_impl/rdb_repo.rs` is currently untracked. Treat it as user-authored state. Read it before editing and preserve intent; do not delete it without an explicit task requirement.
+- `src/part_impl/repo_rdb.rs` is currently untracked. Treat it as user-authored state. Read it before editing and preserve intent; do not delete it without an explicit task requirement.
 
 Global constraints:
 
@@ -63,34 +63,34 @@ Create or modify these files:
 
 - Modify: `src/part_impl.rs`
   - Declare production modules only. Do not put RDB construction logic here.
-- Create or replace: `src/part_impl/rdb_drive.rs`
+- Create or replace: `src/part_impl/drive_rdb.rs`
   - Own `RdbDrive` and `Drive<RdbContext>`.
-- Modify: `src/part_impl/rdb_repo.rs`
+- Modify: `src/part_impl/repo_rdb.rs`
   - Own `RdbRepo`, `RdbRepoTransactional`, shared-backed non-transactional `conn` helper, and module declarations.
   - Import generated Diesel schema with `#[path = "../infra/repo/schema.rs"] pub mod schema;`.
-- Create: `src/part_impl/rdb_shared.rs`
+- Create: `src/part_impl/repo_rdb_shared.rs`
   - Own `RdbShared`, `RdbContext`, `RdbConn`, private pool aliases, pool construction, and shared `conn` acquisition.
-- Create: `src/part_impl/rdb_shared/error.rs`
+- Create: `src/part_impl/repo_rdb_shared/error.rs`
   - Convert Diesel, pool, serde, and invalid stored values into `RootError`.
-- Create: `src/part_impl/rdb_repo/entity.rs`
+- Create: `src/part_impl/repo_rdb/entity.rs`
   - Provide the entity module root. Submodules are declared by the tasks that
     create those files.
-- Create: `src/part_impl/rdb_repo/entity/user.rs`
-- Create: `src/part_impl/rdb_repo/entity/team.rs`
-- Create: `src/part_impl/rdb_repo/entity/member.rs`
-- Create: `src/part_impl/rdb_repo/entity/member_invitation.rs`
-- Create: `src/part_impl/rdb_repo/entity/system_mail.rs`
-- Create: `src/part_impl/rdb_repo/entity/workset.rs`
-- Create: `src/part_impl/rdb_repo/entity/local_message.rs`
-- Create: `src/part_impl/rdb_repo/entity/comic.rs`
-- Create: `src/part_impl/rdb_repo/user.rs`
-- Create: `src/part_impl/rdb_repo/team.rs`
-- Create: `src/part_impl/rdb_repo/member.rs`
-- Create: `src/part_impl/rdb_repo/member_invitation.rs`
-- Create: `src/part_impl/rdb_repo/system_mail.rs`
-- Create: `src/part_impl/rdb_repo/workset.rs`
-- Create: `src/part_impl/rdb_repo/local_message.rs`
-- Create: `src/part_impl/rdb_repo/comic.rs`
+- Create: `src/part_impl/repo_rdb/entity/user.rs`
+- Create: `src/part_impl/repo_rdb/entity/team.rs`
+- Create: `src/part_impl/repo_rdb/entity/member.rs`
+- Create: `src/part_impl/repo_rdb/entity/member_invitation.rs`
+- Create: `src/part_impl/repo_rdb/entity/system_mail.rs`
+- Create: `src/part_impl/repo_rdb/entity/workset.rs`
+- Create: `src/part_impl/repo_rdb/entity/local_message.rs`
+- Create: `src/part_impl/repo_rdb/entity/comic.rs`
+- Create: `src/part_impl/repo_rdb/user.rs`
+- Create: `src/part_impl/repo_rdb/team.rs`
+- Create: `src/part_impl/repo_rdb/member.rs`
+- Create: `src/part_impl/repo_rdb/member_invitation.rs`
+- Create: `src/part_impl/repo_rdb/system_mail.rs`
+- Create: `src/part_impl/repo_rdb/workset.rs`
+- Create: `src/part_impl/repo_rdb/local_message.rs`
+- Create: `src/part_impl/repo_rdb/comic.rs`
 - Modify only through `just mgr-schema`: `src/infra/repo/schema.rs`
 - Modify migration files only when Task 2 finds first-scope schema mismatches.
 
@@ -111,18 +111,18 @@ generated schema, and RDB modules.
 
 **Files:**
 - Modify: `src/part_impl.rs`
-- Modify: `src/part_impl/rdb_repo.rs`
-- Create: `src/part_impl/rdb_drive.rs`
-- Create: `src/part_impl/rdb_shared.rs`
-- Create: `src/part_impl/rdb_shared/error.rs`
-- Create: `src/part_impl/rdb_repo/entity.rs`
+- Modify: `src/part_impl/repo_rdb.rs`
+- Create: `src/part_impl/drive_rdb.rs`
+- Create: `src/part_impl/repo_rdb_shared.rs`
+- Create: `src/part_impl/repo_rdb_shared/error.rs`
+- Create: `src/part_impl/repo_rdb/entity.rs`
 
 - [ ] **Step 1: Preserve existing untracked RDB draft**
 
 Read:
 
 ```bash
-sed -n '1,220p' src/part_impl/rdb_repo.rs
+sed -n '1,220p' src/part_impl/repo_rdb.rs
 ```
 
 Expected current shape before this task: the existing small draft declares
@@ -137,9 +137,9 @@ Modify `src/part_impl.rs` so production RDB modules are always available, while
 test mocks remain `#[cfg(test)]`:
 
 ```rust
-pub mod rdb_drive;
-pub mod rdb_repo;
-pub mod rdb_shared;
+pub mod drive_rdb;
+pub mod repo_rdb;
+pub mod repo_rdb_shared;
 
 #[cfg(test)]
 pub mod auth_mock;
@@ -155,7 +155,7 @@ pub mod repo_mock;
 
 - [ ] **Step 3: Create shared RDB internals**
 
-Write `src/part_impl/rdb_shared.rs` with this shape:
+Write `src/part_impl/repo_rdb_shared.rs` with this shape:
 
 ```rust
 //! Shared Diesel-backed repository internals.
@@ -263,7 +263,7 @@ Rules:
 
 - [ ] **Step 4: Create RDB error helpers**
 
-Write `src/part_impl/rdb_shared/error.rs`:
+Write `src/part_impl/repo_rdb_shared/error.rs`:
 
 ```rust
 //! Error conversion helpers for the Diesel-backed repository.
@@ -331,7 +331,7 @@ pub(super) fn invalid_stored_value(
 
 - [ ] **Step 4.5: Create the RDB repo root**
 
-Write `src/part_impl/rdb_repo.rs` with this structure:
+Write `src/part_impl/repo_rdb.rs` with this structure:
 
 ```rust
 //! Diesel-backed repository adapter.
@@ -340,8 +340,8 @@ use async_trait::async_trait;
 
 use crate::util::DeriveTransactional;
 
-use super::rdb_shared;
-use super::rdb_shared::RdbShared;
+use super::repo_rdb_shared;
+use super::repo_rdb_shared::RdbShared;
 
 pub mod entity;
 
@@ -360,7 +360,7 @@ impl RdbRepo {
     pub(super) async fn conn(
         &self,
         location: &'static str,
-    ) -> Result<rdb_shared::RdbConn, crate::result::RootError> {
+    ) -> Result<repo_rdb_shared::RdbConn, crate::result::RootError> {
         self.shared.conn(location).await
     }
 }
@@ -381,14 +381,14 @@ Do not put pool construction in `src/part_impl.rs`. `part_impl.rs` only organize
 modules. Construct a shared pair from callers as:
 
 ```rust
-let rdb_shared = RdbShared::from_database_url(database_url)?;
-let repo = RdbRepo::new(rdb_shared.clone());
-let drive = RdbDrive::new(rdb_shared);
+let repo_rdb_shared = RdbShared::from_database_url(database_url)?;
+let repo = RdbRepo::new(repo_rdb_shared.clone());
+let drive = RdbDrive::new(repo_rdb_shared);
 ```
 
 - [ ] **Step 5: Create entity module root**
 
-Write `src/part_impl/rdb_repo/entity.rs`:
+Write `src/part_impl/repo_rdb/entity.rs`:
 
 ```rust
 //! Diesel entity types for the RDB repository.
@@ -396,7 +396,7 @@ Write `src/part_impl/rdb_repo/entity.rs`:
 
 - [ ] **Step 6: Create separate RDB drive**
 
-Write `src/part_impl/rdb_drive.rs`:
+Write `src/part_impl/drive_rdb.rs`:
 
 ```rust
 //! Diesel-backed transaction driver.
@@ -409,7 +409,7 @@ use poprako_transactional::util::AsyncFnMark;
 
 use crate::result::RootError;
 
-use super::rdb_shared::{self, RdbContext, RdbShared};
+use super::repo_rdb_shared::{self, RdbContext, RdbShared};
 
 pub struct RdbDrive {
     shared: RdbShared,
@@ -445,7 +445,7 @@ impl Drive<RdbContext> for RdbDrive {
             rdb_context.conn(),
         )
         .await
-        .map_err(|err| DriveError::Backend(rdb_shared::diesel("RdbDrive::with_context begin", err)))?;
+        .map_err(|err| DriveError::Backend(repo_rdb_shared::diesel("RdbDrive::with_context begin", err)))?;
 
         let result = f(&mut rdb_context).await;
 
@@ -455,7 +455,7 @@ impl Drive<RdbContext> for RdbDrive {
                     rdb_context.conn(),
                 )
                 .await
-                .map_err(|err| DriveError::Backend(rdb_shared::diesel("RdbDrive::with_context commit", err)))?;
+                .map_err(|err| DriveError::Backend(repo_rdb_shared::diesel("RdbDrive::with_context commit", err)))?;
 
                 Ok(value)
             }
@@ -465,7 +465,7 @@ impl Drive<RdbContext> for RdbDrive {
                 )
                 .await
                 .map_err(|rollback_err| {
-                    DriveError::Backend(rdb_shared::diesel(
+                    DriveError::Backend(repo_rdb_shared::diesel(
                         "RdbDrive::with_context rollback after advance error",
                         rollback_err,
                     ))
@@ -497,7 +497,7 @@ Keep `RdbDrive` as the only type implementing `Drive`.
 Run:
 
 ```bash
-git add src/part_impl.rs src/part_impl/rdb_drive.rs src/part_impl/rdb_repo.rs src/part_impl/rdb_repo/entity.rs src/part_impl/rdb_shared.rs src/part_impl/rdb_shared/error.rs
+git add src/part_impl.rs src/part_impl/drive_rdb.rs src/part_impl/repo_rdb.rs src/part_impl/repo_rdb/entity.rs src/part_impl/repo_rdb_shared.rs src/part_impl/repo_rdb_shared/error.rs
 git commit -m "feat: add rdb repo and drive foundation"
 ```
 
@@ -655,9 +655,9 @@ When there are no migration or schema changes, commit only the audit note.
 ### Task 3: Entity Modules For User, Team, And Member
 
 **Files:**
-- Create: `src/part_impl/rdb_repo/entity/user.rs`
-- Create: `src/part_impl/rdb_repo/entity/team.rs`
-- Create: `src/part_impl/rdb_repo/entity/member.rs`
+- Create: `src/part_impl/repo_rdb/entity/user.rs`
+- Create: `src/part_impl/repo_rdb/entity/team.rs`
+- Create: `src/part_impl/repo_rdb/entity/member.rs`
 - Read: `src/model/user.rs`
 - Read: `src/model/team.rs`
 - Read: `src/model/member.rs`
@@ -672,7 +672,7 @@ use diesel::prelude::*;
 use time::OffsetDateTime;
 
 use crate::model::user::{UserCredential, UserInfo};
-use crate::part_impl::rdb_repo::schema;
+use crate::part_impl::repo_rdb::schema;
 
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = schema::t_user)]
@@ -794,7 +794,7 @@ impl From<UserCredentialRow> for UserCredential {
 When generated schema requires a field not listed here, add it only to the exact
 entity that selects or writes that field.
 
-Also add these module declarations to `src/part_impl/rdb_repo/entity.rs`:
+Also add these module declarations to `src/part_impl/repo_rdb/entity.rs`:
 
 ```rust
 pub mod user;
@@ -824,7 +824,7 @@ role updates by checking each `RoleField`.
 
 - [ ] **Step 3.5: Declare core repo modules**
 
-Add these module declarations to `src/part_impl/rdb_repo.rs`:
+Add these module declarations to `src/part_impl/repo_rdb.rs`:
 
 ```rust
 pub mod user;
@@ -848,19 +848,19 @@ empty. Fix entity field names and Diesel derives until entity modules compile.
 Run:
 
 ```bash
-git add src/part_impl/rdb_repo/entity/user.rs src/part_impl/rdb_repo/entity/team.rs src/part_impl/rdb_repo/entity/member.rs
+git add src/part_impl/repo_rdb/entity/user.rs src/part_impl/repo_rdb/entity/team.rs src/part_impl/repo_rdb/entity/member.rs
 git commit -m "feat: add core rdb entity types"
 ```
 
 ### Task 4: RDB Repo Implementations For User, Team, And Member
 
 **Files:**
-- Create: `src/part_impl/rdb_repo/user.rs`
-- Create: `src/part_impl/rdb_repo/team.rs`
-- Create: `src/part_impl/rdb_repo/member.rs`
-- Modify if needed: `src/part_impl/rdb_repo/entity/user.rs`
-- Modify if needed: `src/part_impl/rdb_repo/entity/team.rs`
-- Modify if needed: `src/part_impl/rdb_repo/entity/member.rs`
+- Create: `src/part_impl/repo_rdb/user.rs`
+- Create: `src/part_impl/repo_rdb/team.rs`
+- Create: `src/part_impl/repo_rdb/member.rs`
+- Modify if needed: `src/part_impl/repo_rdb/entity/user.rs`
+- Modify if needed: `src/part_impl/repo_rdb/entity/team.rs`
+- Modify if needed: `src/part_impl/repo_rdb/entity/member.rs`
 
 - [ ] **Step 1: Implement trait markers**
 
@@ -956,16 +956,16 @@ implemented. Fix module declaration ordering if empty modules break compilation.
 Run:
 
 ```bash
-git add src/part_impl/rdb_repo/user.rs src/part_impl/rdb_repo/team.rs src/part_impl/rdb_repo/member.rs src/part_impl/rdb_repo/entity/user.rs src/part_impl/rdb_repo/entity/team.rs src/part_impl/rdb_repo/entity/member.rs
+git add src/part_impl/repo_rdb/user.rs src/part_impl/repo_rdb/team.rs src/part_impl/repo_rdb/member.rs src/part_impl/repo_rdb/entity/user.rs src/part_impl/repo_rdb/entity/team.rs src/part_impl/repo_rdb/entity/member.rs
 git commit -m "feat: implement core rdb repo steps"
 ```
 
 ### Task 5: Entity Modules For Member Invitation, System Mail, And Workset
 
 **Files:**
-- Create: `src/part_impl/rdb_repo/entity/member_invitation.rs`
-- Create: `src/part_impl/rdb_repo/entity/system_mail.rs`
-- Create: `src/part_impl/rdb_repo/entity/workset.rs`
+- Create: `src/part_impl/repo_rdb/entity/member_invitation.rs`
+- Create: `src/part_impl/repo_rdb/entity/system_mail.rs`
+- Create: `src/part_impl/repo_rdb/entity/workset.rs`
 
 - [ ] **Step 1: Build member invitation entities**
 
@@ -1001,7 +1001,7 @@ Create exact entities:
 Do not create `WorksetSave` in this first slice because the current active
 `WorksetStep::UpdateInfo` is patch-shaped for the RDB layer.
 
-Add these module declarations to `src/part_impl/rdb_repo/entity.rs`:
+Add these module declarations to `src/part_impl/repo_rdb/entity.rs`:
 
 ```rust
 pub mod member_invitation;
@@ -1009,7 +1009,7 @@ pub mod system_mail;
 pub mod workset;
 ```
 
-Add these module declarations to `src/part_impl/rdb_repo.rs`:
+Add these module declarations to `src/part_impl/repo_rdb.rs`:
 
 ```rust
 pub mod member_invitation;
@@ -1032,16 +1032,16 @@ Expected: entity module compile failures are resolved before repo step code.
 Run:
 
 ```bash
-git add src/part_impl/rdb_repo/entity/member_invitation.rs src/part_impl/rdb_repo/entity/system_mail.rs src/part_impl/rdb_repo/entity/workset.rs
+git add src/part_impl/repo_rdb/entity/member_invitation.rs src/part_impl/repo_rdb/entity/system_mail.rs src/part_impl/repo_rdb/entity/workset.rs
 git commit -m "feat: add invitation mail and workset rdb entities"
 ```
 
 ### Task 6: RDB Repo Implementations For Member Invitation, System Mail, And Workset
 
 **Files:**
-- Create: `src/part_impl/rdb_repo/member_invitation.rs`
-- Create: `src/part_impl/rdb_repo/system_mail.rs`
-- Create: `src/part_impl/rdb_repo/workset.rs`
+- Create: `src/part_impl/repo_rdb/member_invitation.rs`
+- Create: `src/part_impl/repo_rdb/system_mail.rs`
+- Create: `src/part_impl/repo_rdb/workset.rs`
 
 - [ ] **Step 1: Implement member invitation steps**
 
@@ -1116,15 +1116,15 @@ from local-message or comic modules only.
 Run:
 
 ```bash
-git add src/part_impl/rdb_repo/member_invitation.rs src/part_impl/rdb_repo/system_mail.rs src/part_impl/rdb_repo/workset.rs
+git add src/part_impl/repo_rdb/member_invitation.rs src/part_impl/repo_rdb/system_mail.rs src/part_impl/repo_rdb/workset.rs
 git commit -m "feat: implement invitation mail and workset rdb steps"
 ```
 
 ### Task 7: Prom Local Message Entity And Implementation
 
 **Files:**
-- Create: `src/part_impl/rdb_repo/entity/local_message.rs`
-- Create: `src/part_impl/rdb_repo/local_message.rs`
+- Create: `src/part_impl/repo_rdb/entity/local_message.rs`
+- Create: `src/part_impl/repo_rdb/local_message.rs`
 
 - [ ] **Step 1: Build local-message entity**
 
@@ -1136,13 +1136,13 @@ Create:
 
 For `PromStep::append`, only `LocalMessageEntry` is required.
 
-Add this module declaration to `src/part_impl/rdb_repo/entity.rs`:
+Add this module declaration to `src/part_impl/repo_rdb/entity.rs`:
 
 ```rust
 pub mod local_message;
 ```
 
-Add this module declaration to `src/part_impl/rdb_repo.rs`:
+Add this module declaration to `src/part_impl/repo_rdb.rs`:
 
 ```rust
 pub mod local_message;
@@ -1185,15 +1185,15 @@ Expected: prom implementation compiles. Remaining failures must be comic-only.
 Run:
 
 ```bash
-git add src/part_impl/rdb_repo/entity/local_message.rs src/part_impl/rdb_repo/local_message.rs
+git add src/part_impl/repo_rdb/entity/local_message.rs src/part_impl/repo_rdb/local_message.rs
 git commit -m "feat: store prom records in rdb"
 ```
 
 ### Task 8: Comic Entity And Implementation
 
 **Files:**
-- Create: `src/part_impl/rdb_repo/entity/comic.rs`
-- Create: `src/part_impl/rdb_repo/comic.rs`
+- Create: `src/part_impl/repo_rdb/entity/comic.rs`
+- Create: `src/part_impl/repo_rdb/comic.rs`
 
 - [ ] **Step 1: Build comic entities**
 
@@ -1209,13 +1209,13 @@ Create:
 Keep include rows precise. Do not use a full `UserInfoRow`, `TeamInfoRow`, or
 `WorksetInfoRow` for include paths unless every selected column is used.
 
-Add this module declaration to `src/part_impl/rdb_repo/entity.rs`:
+Add this module declaration to `src/part_impl/repo_rdb/entity.rs`:
 
 ```rust
 pub mod comic;
 ```
 
-Add this module declaration to `src/part_impl/rdb_repo.rs`:
+Add this module declaration to `src/part_impl/repo_rdb.rs`:
 
 ```rust
 pub mod comic;
@@ -1287,7 +1287,7 @@ Expected: first-scope RDB modules compile.
 Run:
 
 ```bash
-git add src/part_impl/rdb_repo/entity/comic.rs src/part_impl/rdb_repo/comic.rs
+git add src/part_impl/repo_rdb/entity/comic.rs src/part_impl/repo_rdb/comic.rs
 git commit -m "feat: implement comic rdb steps"
 ```
 
@@ -1359,7 +1359,7 @@ exist.
 Run:
 
 ```bash
-rg -n 'insert_into|returning|first\\(|get_result|load\\(|eq_any|for_update' src/part_impl/rdb_repo
+rg -n 'insert_into|returning|first\\(|get_result|load\\(|eq_any|for_update' src/part_impl/repo_rdb
 ```
 
 Review manually:
@@ -1374,12 +1374,12 @@ Review manually:
 Run:
 
 ```bash
-rg -n 'impl Drive<RdbContext>|struct RdbDrive|struct RdbRepo|pool\\(' src/part_impl/rdb_drive.rs src/part_impl/rdb_repo.rs
+rg -n 'impl Drive<RdbContext>|struct RdbDrive|struct RdbRepo|pool\\(' src/part_impl/drive_rdb.rs src/part_impl/repo_rdb.rs
 ```
 
 Expected:
 
-- `impl Drive<RdbContext> for RdbDrive` appears in `src/part_impl/rdb_drive.rs`.
+- `impl Drive<RdbContext> for RdbDrive` appears in `src/part_impl/drive_rdb.rs`.
 - `RdbRepo` does not implement `Drive`.
 - `RdbDrive` and `RdbRepo` can both be constructed from a shared pool clone.
 
