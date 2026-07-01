@@ -1,14 +1,12 @@
 //! System mail use cases — list unread and mark as read for the current user.
 
-use poprako_util::i18n::trl;
 use poprako_util::time::ToUnixMilli;
 
 use crate::data::system_mail::{ListSystemMailData, SystemMailVal};
-use crate::model::system_mail::SystemMailListSpec;
 use crate::model::user::UserToken;
 use crate::part::repo::step::system_mail::SystemMailStep;
 use crate::part::repo::system_mail::{SystemMailRepo, SystemMailRepoTransactional};
-use crate::result::{ExpectedVariant, RegularError, RegularResult, accept};
+use crate::result::{RegularResult, accept};
 use crate::util::DeriveTransactional;
 
 #[cfg(test)]
@@ -34,16 +32,12 @@ where
     R: SystemMailRepo<C>,
     <R as DeriveTransactional>::Transactional: SystemMailRepoTransactional<C>,
 {
-    let mail_list_spec = SystemMailListSpec {
-        read: data.read,
-        offset: data.offset,
-        limit: data.limit,
-    };
-
     let system_mail_infos = repo
-        .execute(&SystemMailStep::list_infos_by_receiver_id(
+        .execute(&SystemMailStep::list_infos(
             &token.user_id,
-            &mail_list_spec,
+            data.read,
+            data.offset,
+            data.limit,
         ))
         .await?;
 
@@ -76,29 +70,9 @@ where
     R: SystemMailRepo<C>,
     <R as DeriveTransactional>::Transactional: SystemMailRepoTransactional<C>,
 {
-    let system_mail_infos = repo
-        .execute(&SystemMailStep::list_infos_by_ids(&ids))
-        .await?;
-
-    if system_mail_infos.len() != ids.len() {
-        return Err(RegularError::Expected {
-            variant: ExpectedVariant::ArgsInvalid,
-            message: trl("error-system-mail-not-found"),
-        });
-    }
-
-    if system_mail_infos
-        .iter()
-        .any(|system_mail_info| system_mail_info.receiver_id != token.user_id)
-    {
-        return Err(RegularError::Expected {
-            variant: ExpectedVariant::PermDeny,
-            message: trl("error-forbidden"),
-        });
-    }
-
     for id in &ids {
-        repo.execute(&SystemMailStep::mark_read(id)).await?;
+        repo.execute(&SystemMailStep::mark_read(id, &token.user_id))
+            .await?;
     }
 
     accept(())

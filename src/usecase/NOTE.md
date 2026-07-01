@@ -33,3 +33,9 @@ delete_batch
 
 list_infos_by_team
 delete_by_chapter
+
+## repo 层命名准则
+
+由于 repo 的 Step 本质上是函数变换过来的，所以遵循函数的命名规则。
+
+需要注意的是，不像 usecase 层， step 的命名是可以携带细节的（比如 ByReceiverId）。这主要是因为 repo 层如果需要统一，会导致需要在 spec 中配置极多的参数（比如 excluded 锁、shared 锁等等）。
