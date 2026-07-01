@@ -22,6 +22,7 @@ use crate::value::role::{RoleField, RoleMask};
 
 use schema::t_member::dsl::*;
 
+// FIXME: no tuple in anywhere. Must use field-named structs.
 type RoleTimestamps = (
     Option<OffsetDateTime>,
     Option<OffsetDateTime>,
@@ -36,12 +37,14 @@ type RoleTimestamps = (
 
 fn role_timestamps_from_mask(roles: RoleMask, now: OffsetDateTime) -> RoleTimestamps {
     let ts = |field: RoleField| -> Option<OffsetDateTime> {
+        // FIXME: no if else but function style.
         if roles.has_any_role(&[field]) {
             Some(now)
         } else {
             None
         }
     };
+
     (
         ts(RoleField::RAW_PROVIDER),
         ts(RoleField::TRANSLATOR),
@@ -67,6 +70,7 @@ fn entry_from_form<'a>(form: &'a MemberForm, now: OffsetDateTime) -> MemberEntry
         admin,
         assistant,
     ) = role_timestamps_from_mask(form.roles, now);
+
     MemberEntry {
         f_id: &form.id,
         f_user_id: &form.user_id,
@@ -99,7 +103,9 @@ fn aspect_from_role_update(update: &MemberRoleUpdate, now: OffsetDateTime) -> Me
         admin,
         assistant,
     ) = role_timestamps_from_mask(update.roles, now);
+
     let mut aspect = MemberAspect::new(now);
+
     aspect = aspect
         .assigned_raw_provider_at(raw_provider)
         .assigned_translator_at(translator)
@@ -110,6 +116,7 @@ fn aspect_from_role_update(update: &MemberRoleUpdate, now: OffsetDateTime) -> Me
         .assigned_publisher_at(publisher)
         .assigned_admin_at(admin)
         .assigned_assistant_at(assistant);
+
     aspect
 }
 
@@ -128,6 +135,7 @@ async fn find_member_by_user_team(
         .await
         .optional()
         .map_err(diesel)?;
+
     Ok(row.map(Into::into))
 }
 
@@ -148,9 +156,11 @@ async fn list_members(
                 .filter(f_team_id.eq(team_id.as_str()))
                 .select(MemberRow::as_select())
                 .into_boxed();
+
             if let Some(nick) = fuzzy_nickname {
                 query = query.filter(f_user_nickname.ilike(format!("%{}%", nick)));
             }
+
             query
                 .order_by(f_user_last_active_at.desc())
                 .offset((*offset) as i64)
@@ -174,6 +184,7 @@ async fn list_members(
             .await
             .map_err(diesel)?,
     };
+
     Ok(rows.into_iter().map(Into::into).collect())
 }
 
@@ -186,6 +197,7 @@ async fn get_member_by_id(conn: &mut AsyncPgConnection, id: &str) -> RegularResu
         .optional()
         .map_err(diesel)?
         .ok_or_else(|| expected("error-member-not-found"))?;
+
     Ok(row.into())
 }
 
@@ -194,13 +206,16 @@ async fn create_member(
     form: &MemberForm,
 ) -> RegularResult<MemberInfo> {
     let now = OffsetDateTime::now_utc();
+
     let entry = entry_from_form(form, now);
+
     let row: MemberRow = diesel::insert_into(t_member)
         .values(&entry)
         .returning(MemberRow::as_returning())
         .get_result(conn)
         .await
         .map_err(diesel)?;
+
     Ok(row.into())
 }
 
@@ -210,12 +225,15 @@ async fn update_member_user_nickname(
     nickname: &str,
 ) -> RegularResult<()> {
     let now = OffsetDateTime::now_utc();
+
     let aspect = MemberAspect::new(now).user_nickname(nickname);
+
     diesel::update(t_member.filter(f_user_id.eq(user_id)))
         .set(&aspect)
         .execute(conn)
         .await
         .map_err(diesel)?;
+
     Ok(())
 }
 
@@ -224,12 +242,15 @@ async fn touch_member_last_active(
     user_id: &str,
 ) -> RegularResult<()> {
     let now = OffsetDateTime::now_utc();
+
     let aspect = MemberAspect::new(now).user_last_active_at(now);
+
     diesel::update(t_member.filter(f_user_id.eq(user_id)))
         .set(&aspect)
         .execute(conn)
         .await
         .map_err(diesel)?;
+
     Ok(())
 }
 
@@ -244,6 +265,7 @@ async fn list_members_by_user_excluded(
         .load(conn)
         .await
         .map_err(diesel)?;
+
     Ok(rows.into_iter().map(Into::into).collect())
 }
 
@@ -268,6 +290,7 @@ async fn get_member_by_id_excluded(
         .optional()
         .map_err(diesel)?
         .ok_or_else(|| expected("error-member-not-found"))?;
+
     Ok(row.into())
 }
 
@@ -276,12 +299,15 @@ async fn update_member_role(
     update: &MemberRoleUpdate,
 ) -> RegularResult<()> {
     let now = OffsetDateTime::now_utc();
+
     let aspect = aspect_from_role_update(update, now);
+
     diesel::update(t_member.filter(f_id.eq(update.id.as_str())))
         .set(&aspect)
         .execute(conn)
         .await
         .map_err(diesel)?;
+
     Ok(())
 }
 
@@ -290,6 +316,7 @@ async fn delete_member(conn: &mut AsyncPgConnection, id: &str) -> RegularResult<
         .execute(conn)
         .await
         .map_err(diesel)?;
+
     Ok(())
 }
 
@@ -298,6 +325,7 @@ async fn delete_member(conn: &mut AsyncPgConnection, id: &str) -> RegularResult<
 #[async_trait]
 impl<'a> Execute<FindInfoByUserIdAndTeamId<'a>> for RdbRepo {
     type Error = RegularError;
+
     async fn execute(
         &self,
         step: &FindInfoByUserIdAndTeamId<'a>,
@@ -314,6 +342,7 @@ impl<'a> Execute<FindInfoByUserIdAndTeamId<'a>> for RdbRepo {
 #[async_trait]
 impl<'a> Execute<ListInfos<'a>> for RdbRepo {
     type Error = RegularError;
+
     async fn execute(&self, step: &ListInfos<'a>) -> RegularResult<Vec<MemberInfo>> {
         submit_query!(self.shared, list_members, step.spec)
     }
@@ -322,6 +351,7 @@ impl<'a> Execute<ListInfos<'a>> for RdbRepo {
 #[async_trait]
 impl<'a> Execute<GetInfoById<'a>> for RdbRepo {
     type Error = RegularError;
+
     async fn execute(&self, step: &GetInfoById<'a>) -> RegularResult<MemberInfo> {
         submit_query!(self.shared, get_member_by_id, step.id)
     }
@@ -332,6 +362,7 @@ impl<'a> Execute<GetInfoById<'a>> for RdbRepo {
 #[async_trait]
 impl<'a> Advance<Create<'a>, RdbContext> for RdbRepoTransactional {
     type Error = RegularError;
+
     async fn advance(
         &self,
         context: &mut RdbContext,
@@ -344,6 +375,7 @@ impl<'a> Advance<Create<'a>, RdbContext> for RdbRepoTransactional {
 #[async_trait]
 impl<'a> Advance<UpdateUserNickname<'a>, RdbContext> for RdbRepoTransactional {
     type Error = RegularError;
+
     async fn advance(
         &self,
         context: &mut RdbContext,
@@ -356,6 +388,7 @@ impl<'a> Advance<UpdateUserNickname<'a>, RdbContext> for RdbRepoTransactional {
 #[async_trait]
 impl<'a> Advance<TouchLastActive<'a>, RdbContext> for RdbRepoTransactional {
     type Error = RegularError;
+
     async fn advance(
         &self,
         context: &mut RdbContext,
@@ -368,6 +401,7 @@ impl<'a> Advance<TouchLastActive<'a>, RdbContext> for RdbRepoTransactional {
 #[async_trait]
 impl<'a> Advance<ListInfosByUserIdExcluded<'a>, RdbContext> for RdbRepoTransactional {
     type Error = RegularError;
+
     async fn advance(
         &self,
         context: &mut RdbContext,
@@ -380,6 +414,7 @@ impl<'a> Advance<ListInfosByUserIdExcluded<'a>, RdbContext> for RdbRepoTransacti
 #[async_trait]
 impl<'a> Advance<FindInfoByUserIdAndTeamId<'a>, RdbContext> for RdbRepoTransactional {
     type Error = RegularError;
+
     async fn advance(
         &self,
         context: &mut RdbContext,
@@ -392,6 +427,7 @@ impl<'a> Advance<FindInfoByUserIdAndTeamId<'a>, RdbContext> for RdbRepoTransacti
 #[async_trait]
 impl<'a> Advance<GetInfoExcluded<'a>, RdbContext> for RdbRepoTransactional {
     type Error = RegularError;
+
     async fn advance(
         &self,
         context: &mut RdbContext,
@@ -404,6 +440,7 @@ impl<'a> Advance<GetInfoExcluded<'a>, RdbContext> for RdbRepoTransactional {
 #[async_trait]
 impl<'a> Advance<UpdateRole<'a>, RdbContext> for RdbRepoTransactional {
     type Error = RegularError;
+
     async fn advance(&self, context: &mut RdbContext, step: &UpdateRole<'a>) -> RegularResult<()> {
         update_member_role(context.conn(), step.member_role_update).await
     }
@@ -412,6 +449,7 @@ impl<'a> Advance<UpdateRole<'a>, RdbContext> for RdbRepoTransactional {
 #[async_trait]
 impl<'a> Advance<Delete<'a>, RdbContext> for RdbRepoTransactional {
     type Error = RegularError;
+
     async fn advance(&self, context: &mut RdbContext, step: &Delete<'a>) -> RegularResult<()> {
         delete_member(context.conn(), step.id).await
     }
