@@ -14,7 +14,7 @@ use crate::part::repo::announcement::{AnnouncementRepo, AnnouncementRepoTransact
 use crate::part::repo::map_drive_err;
 use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
 use crate::part::repo::step::announcement::AnnouncementStep;
-use crate::result::{RootError, RootResult, accept};
+use crate::result::{RegularError, RegularResult, accept};
 use crate::util::DeriveTransactional;
 
 #[cfg(test)]
@@ -26,7 +26,7 @@ pub async fn list_infos<C, R, I>(
     image_pool: &I,
     token: UserToken,
     data: ListAnnouncementInfosData,
-) -> RootResult<Vec<AnnouncementInfoVal>>
+) -> RegularResult<Vec<AnnouncementInfoVal>>
 where
     R: AnnouncementRepo<C> + MemberRepo<C> + Sync,
     <R as DeriveTransactional>::Transactional:
@@ -64,10 +64,10 @@ pub async fn create<D, C, R>(
     repo: &R,
     token: UserToken,
     data: CreateAnnouncementData,
-) -> RootResult<CreateAnnouncementVal>
+) -> RegularResult<CreateAnnouncementVal>
 where
     D: Drive<C>,
-    D::Error: Into<RootError>,
+    D::Error: Into<RegularError>,
     C: Send,
     R: AnnouncementRepo<C> + MemberRepo<C> + Send + Sync,
     <R as DeriveTransactional>::Transactional:

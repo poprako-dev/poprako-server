@@ -18,15 +18,15 @@ use crate::part_impl::repo_rdb::entity::comic::{ComicAspect, ComicEntry, ComicRo
 use crate::part_impl::repo_rdb::{RdbRepo, RdbRepoTransactional, schema};
 use crate::part_impl::shared_rdb::RdbContext;
 use crate::part_impl::shared_rdb::result::{diesel, expected};
-use crate::result::RootError;
+use crate::result::RegularError;
 
 // ── Non-transactional ──────────────────────────────────────────────────────
 
 #[async_trait]
 impl<'a> Execute<GetInfoById<'a>> for RdbRepo {
-    type Error = RootError;
+    type Error = RegularError;
 
-    async fn execute(&self, step: &GetInfoById<'a>) -> Result<ComicInfo, RootError> {
+    async fn execute(&self, step: &GetInfoById<'a>) -> Result<ComicInfo, RegularError> {
         let mut conn = self.conn().await?;
 
         let row = schema::t_comic::table
@@ -44,9 +44,9 @@ impl<'a> Execute<GetInfoById<'a>> for RdbRepo {
 
 #[async_trait]
 impl<'a> Execute<ListInfos<'a>> for RdbRepo {
-    type Error = RootError;
+    type Error = RegularError;
 
-    async fn execute(&self, step: &ListInfos<'a>) -> Result<Vec<ComicInfo>, RootError> {
+    async fn execute(&self, step: &ListInfos<'a>) -> Result<Vec<ComicInfo>, RegularError> {
         let mut conn = self.conn().await?;
 
         let mut query = schema::t_comic::table
@@ -82,9 +82,9 @@ impl<'a> Execute<ListInfos<'a>> for RdbRepo {
 
 #[async_trait]
 impl<'a> Execute<UpdateInfo<'a>> for RdbRepo {
-    type Error = RootError;
+    type Error = RegularError;
 
-    async fn execute(&self, step: &UpdateInfo<'a>) -> Result<(), RootError> {
+    async fn execute(&self, step: &UpdateInfo<'a>) -> Result<(), RegularError> {
         let mut conn = self.conn().await?;
         let now = OffsetDateTime::now_utc();
 
@@ -107,9 +107,9 @@ impl<'a> Execute<UpdateInfo<'a>> for RdbRepo {
 
 #[async_trait]
 impl<'a> Execute<MarkCoverUploaded<'a>> for RdbRepo {
-    type Error = RootError;
+    type Error = RegularError;
 
-    async fn execute(&self, step: &MarkCoverUploaded<'a>) -> Result<(), RootError> {
+    async fn execute(&self, step: &MarkCoverUploaded<'a>) -> Result<(), RegularError> {
         let mut conn = self.conn().await?;
         let now = OffsetDateTime::now_utc();
 
@@ -138,13 +138,13 @@ impl<'a> Execute<MarkCoverUploaded<'a>> for RdbRepo {
 
 #[async_trait]
 impl<'a> Advance<Create<'a>, RdbContext> for RdbRepoTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,
         context: &mut RdbContext,
         step: &Create<'a>,
-    ) -> Result<ComicInfo, RootError> {
+    ) -> Result<ComicInfo, RegularError> {
         let entry = ComicEntry::from(step.form);
 
         let row = diesel::insert_into(schema::t_comic::table)
@@ -160,13 +160,13 @@ impl<'a> Advance<Create<'a>, RdbContext> for RdbRepoTransactional {
 
 #[async_trait]
 impl<'a> Advance<GetInfoById<'a>, RdbContext> for RdbRepoTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,
         context: &mut RdbContext,
         step: &GetInfoById<'a>,
-    ) -> Result<ComicInfo, RootError> {
+    ) -> Result<ComicInfo, RegularError> {
         let row = schema::t_comic::table
             .filter(schema::t_comic::f_id.eq(step.id))
             .select(ComicRow::as_select())
@@ -182,13 +182,13 @@ impl<'a> Advance<GetInfoById<'a>, RdbContext> for RdbRepoTransactional {
 
 #[async_trait]
 impl<'a> Advance<GetInfoExcluded<'a>, RdbContext> for RdbRepoTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,
         context: &mut RdbContext,
         step: &GetInfoExcluded<'a>,
-    ) -> Result<ComicInfo, RootError> {
+    ) -> Result<ComicInfo, RegularError> {
         let row = schema::t_comic::table
             .filter(schema::t_comic::f_id.eq(step.id))
             .select(ComicRow::as_select())
@@ -205,13 +205,13 @@ impl<'a> Advance<GetInfoExcluded<'a>, RdbContext> for RdbRepoTransactional {
 
 #[async_trait]
 impl<'a> Advance<ListInfosExcluded<'a>, RdbContext> for RdbRepoTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,
         context: &mut RdbContext,
         step: &ListInfosExcluded<'a>,
-    ) -> Result<Vec<ComicInfo>, RootError> {
+    ) -> Result<Vec<ComicInfo>, RegularError> {
         let rows: Vec<ComicRow> = schema::t_comic::table
             .filter(schema::t_comic::f_workset_id.eq(step.spec.workset_id.as_str()))
             .select(ComicRow::as_select())
@@ -226,13 +226,13 @@ impl<'a> Advance<ListInfosExcluded<'a>, RdbContext> for RdbRepoTransactional {
 
 #[async_trait]
 impl<'a> Advance<ReserveCover<'a>, RdbContext> for RdbRepoTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,
         context: &mut RdbContext,
         step: &ReserveCover<'a>,
-    ) -> Result<ComicCoverReservation, RootError> {
+    ) -> Result<ComicCoverReservation, RegularError> {
         let now = OffsetDateTime::now_utc();
 
         let (prev_key, new_version): (Option<String>, i64) =
@@ -267,13 +267,13 @@ impl<'a> Advance<ReserveCover<'a>, RdbContext> for RdbRepoTransactional {
 
 #[async_trait]
 impl<'a> Advance<MarkCoverUploaded<'a>, RdbContext> for RdbRepoTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,
         context: &mut RdbContext,
         step: &MarkCoverUploaded<'a>,
-    ) -> Result<(), RootError> {
+    ) -> Result<(), RegularError> {
         let now = OffsetDateTime::now_utc();
 
         let affected = diesel::update(
@@ -299,9 +299,13 @@ impl<'a> Advance<MarkCoverUploaded<'a>, RdbContext> for RdbRepoTransactional {
 
 #[async_trait]
 impl<'a> Advance<Delete<'a>, RdbContext> for RdbRepoTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
-    async fn advance(&self, context: &mut RdbContext, step: &Delete<'a>) -> Result<(), RootError> {
+    async fn advance(
+        &self,
+        context: &mut RdbContext,
+        step: &Delete<'a>,
+    ) -> Result<(), RegularError> {
         diesel::delete(schema::t_comic::table.filter(schema::t_comic::f_id.eq(step.id)))
             .execute(context.conn())
             .await
@@ -313,13 +317,13 @@ impl<'a> Advance<Delete<'a>, RdbContext> for RdbRepoTransactional {
 
 #[async_trait]
 impl<'a> Advance<MarkCompleted<'a>, RdbContext> for RdbRepoTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,
         context: &mut RdbContext,
         step: &MarkCompleted<'a>,
-    ) -> Result<(), RootError> {
+    ) -> Result<(), RegularError> {
         let now = OffsetDateTime::now_utc();
 
         let aspect = ComicAspect::new(now).is_completed(step.is_completed);
@@ -336,13 +340,13 @@ impl<'a> Advance<MarkCompleted<'a>, RdbContext> for RdbRepoTransactional {
 
 #[async_trait]
 impl<'a> Advance<IncrChapterNextIndex<'a>, RdbContext> for RdbRepoTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,
         context: &mut RdbContext,
         step: &IncrChapterNextIndex<'a>,
-    ) -> Result<i32, RootError> {
+    ) -> Result<i32, RegularError> {
         let prev: i32 =
             diesel::update(schema::t_comic::table.filter(schema::t_comic::f_id.eq(step.id)))
                 .set(
@@ -360,13 +364,13 @@ impl<'a> Advance<IncrChapterNextIndex<'a>, RdbContext> for RdbRepoTransactional 
 
 #[async_trait]
 impl<'a> Advance<UpdateChapterCount<'a>, RdbContext> for RdbRepoTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,
         context: &mut RdbContext,
         step: &UpdateChapterCount<'a>,
-    ) -> Result<(), RootError> {
+    ) -> Result<(), RegularError> {
         diesel::update(schema::t_comic::table.filter(schema::t_comic::f_id.eq(step.id)))
             .set(schema::t_comic::f_chapter_count.eq(schema::t_comic::f_chapter_count + step.delta))
             .execute(context.conn())
@@ -379,13 +383,13 @@ impl<'a> Advance<UpdateChapterCount<'a>, RdbContext> for RdbRepoTransactional {
 
 #[async_trait]
 impl<'a> Advance<TouchLastActive<'a>, RdbContext> for RdbRepoTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,
         context: &mut RdbContext,
         step: &TouchLastActive<'a>,
-    ) -> Result<(), RootError> {
+    ) -> Result<(), RegularError> {
         let now = OffsetDateTime::now_utc();
 
         let aspect = ComicAspect::new(now).last_active_at(now);

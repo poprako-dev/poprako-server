@@ -79,7 +79,7 @@ impl MemberInvitationAspect {
 // ── Conversions ────────────────────────────────────────────────────────────
 
 impl TryFrom<MemberInvitationRow> for MemberInvitationInfo {
-    type Error = crate::result::RootError;
+    type Error = crate::result::RegularError;
 
     fn try_from(v: MemberInvitationRow) -> Result<Self, Self::Error> {
         let roles = RoleMask::try_from(v.f_role_mask as u32)?;

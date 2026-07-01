@@ -10,7 +10,7 @@ use crate::part::repo::step::comic::GetInfoById as ComicGetInfoById;
 use crate::part::repo::step::member::FindInfoByUserIdAndTeamId;
 use crate::part::repo::step::workset::GetInfoById as WorksetGetInfoById;
 use crate::part::shared::proxy::ProxyExecute;
-use crate::result::{ExpectedVariant, RootError, RootResult};
+use crate::result::{ExpectedVariant, RegularError, RegularResult};
 
 /// Chapter import and export permission rules.
 pub struct ChapterPortPermComplex;
@@ -21,13 +21,13 @@ impl ChapterPortPermComplex {
         proxy: &mut P,
         user_id: &str,
         chapter_id: &str,
-    ) -> RootResult<()>
+    ) -> RegularResult<()>
     where
-        P: for<'a> ProxyExecute<ChapterGetInfoById<'a>, Error = RootError>
-            + for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RootError>
-            + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RootError>
-            + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RootError>
-            + for<'a> ProxyExecute<GetInfoByChapterIdAndUserId<'a>, Error = RootError>,
+        P: for<'a> ProxyExecute<ChapterGetInfoById<'a>, Error = RegularError>
+            + for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RegularError>
+            + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RegularError>
+            + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RegularError>
+            + for<'a> ProxyExecute<GetInfoByChapterIdAndUserId<'a>, Error = RegularError>,
     {
         let member_check = check_user_is_team_member_by_chapter(proxy, user_id, chapter_id).await;
 
@@ -37,7 +37,7 @@ impl ChapterPortPermComplex {
 
         match check_user_is_chapter_assignee(proxy, user_id, chapter_id).await {
             Ok(()) => Ok(()),
-            Err(RootError::Expected {
+            Err(RegularError::Expected {
                 variant: ExpectedVariant::PermDeny,
                 ..
             }) => Err(chapter_port_export_permission_error()),
@@ -50,13 +50,13 @@ impl ChapterPortPermComplex {
         proxy: &mut P,
         user_id: &str,
         chapter_id: &str,
-    ) -> RootResult<()>
+    ) -> RegularResult<()>
     where
-        P: for<'a> ProxyExecute<GetInfoByChapterIdAndUserId<'a>, Error = RootError>,
+        P: for<'a> ProxyExecute<GetInfoByChapterIdAndUserId<'a>, Error = RegularError>,
     {
         match check_user_is_chapter_translator_or_proofreader(proxy, user_id, chapter_id).await {
             Ok(()) => Ok(()),
-            Err(RootError::Expected {
+            Err(RegularError::Expected {
                 variant: ExpectedVariant::PermDeny,
                 ..
             }) => Err(chapter_port_import_permission_error()),
@@ -65,15 +65,15 @@ impl ChapterPortPermComplex {
     }
 }
 
-fn chapter_port_export_permission_error() -> RootError {
-    RootError::Expected {
+fn chapter_port_export_permission_error() -> RegularError {
+    RegularError::Expected {
         variant: ExpectedVariant::PermDeny,
         message: trl("error-chapter-port-export-permission-required"),
     }
 }
 
-fn chapter_port_import_permission_error() -> RootError {
-    RootError::Expected {
+fn chapter_port_import_permission_error() -> RegularError {
+    RegularError::Expected {
         variant: ExpectedVariant::PermDeny,
         message: trl("error-chapter-port-import-permission-required"),
     }

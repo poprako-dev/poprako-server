@@ -6,52 +6,54 @@ use serde_json::Error as SerdeJsonError;
 
 use poprako_util::i18n::trl;
 
-use crate::result::{ExpectedVariant, RootError};
+use crate::result::{ExpectedVariant, RegularError};
 
-pub fn pool_build(err: BuildError) -> RootError {
-    RootError::Unrecoverable {
+pub fn pool_build(err: BuildError) -> RegularError {
+    RegularError::Unrecoverable {
         message: format!("failed to build pool: {}", err),
     }
 }
 
-pub fn pool_get(err: PoolError) -> RootError {
-    RootError::Unrecoverable {
+pub fn pool_get(err: PoolError) -> RegularError {
+    RegularError::Unrecoverable {
         message: format!("failed to get conn: {}", err),
     }
 }
 
-pub fn diesel(err: DieselError) -> RootError {
+pub fn diesel(err: DieselError) -> RegularError {
     match err {
-        DieselError::DatabaseError(DatabaseErrorKind::UniqueViolation, _) => RootError::Expected {
-            variant: ExpectedVariant::Conflict,
-            message: trl("error-already-exists"),
-        },
-        DieselError::NotFound => RootError::Unrecoverable {
+        DieselError::DatabaseError(DatabaseErrorKind::UniqueViolation, _) => {
+            RegularError::Expected {
+                variant: ExpectedVariant::Conflict,
+                message: trl("error-already-exists"),
+            }
+        }
+        DieselError::NotFound => RegularError::Unrecoverable {
             message: format!(
                 "unexpected Diesel NotFound; use optional() and map None at call site",
             ),
         },
-        err => RootError::Unrecoverable {
+        err => RegularError::Unrecoverable {
             message: format!("diesel error: {}", err),
         },
     }
 }
 
-pub fn serde(err: SerdeJsonError) -> RootError {
-    RootError::Unrecoverable {
+pub fn serde(err: SerdeJsonError) -> RegularError {
+    RegularError::Unrecoverable {
         message: format!("serde error: {}", err),
     }
 }
 
-pub fn expected(message: &str) -> RootError {
-    RootError::Expected {
+pub fn expected(message: &str) -> RegularError {
+    RegularError::Expected {
         variant: ExpectedVariant::ArgsInvalid,
         message: trl(message),
     }
 }
 
-pub fn invalid_stored_value(value: impl std::fmt::Display) -> RootError {
-    RootError::Unrecoverable {
+pub fn invalid_stored_value(value: impl std::fmt::Display) -> RegularError {
+    RegularError::Unrecoverable {
         message: format!("invalid stored value: {}", value),
     }
 }

@@ -20,7 +20,7 @@ use crate::model::unit::UnitInfo;
 use crate::model::user::UserToken;
 use crate::model::workset::WorksetInfo;
 use crate::part_impl::repo_mock::Mock;
-use crate::result::{ExpectedVariant, RootError};
+use crate::result::{ExpectedVariant, RegularError};
 use crate::value::chapter::WorkflowStageMask;
 use crate::value::role::{RoleField, RoleMask};
 
@@ -244,12 +244,12 @@ fn sorted_unit_ids(units: &[UnitInfo]) -> Vec<String> {
         .collect()
 }
 
-fn assert_perm_error(error: RootError) {
+fn assert_perm_error(error: RegularError) {
     match error {
-        RootError::Expected { variant, .. } => {
+        RegularError::Expected { variant, .. } => {
             assert!(matches!(variant, ExpectedVariant::PermDeny));
         }
-        RootError::Unrecoverable { .. } => {
+        RegularError::Unrecoverable { .. } => {
             panic!("expected permission error");
         }
     }
@@ -551,10 +551,10 @@ async fn save_infos_rolls_back_invalid_diff() {
     let snapshot = mock.snapshot();
 
     match e {
-        RootError::Expected { variant, .. } => {
+        RegularError::Expected { variant, .. } => {
             assert!(matches!(variant, ExpectedVariant::ArgsInvalid));
         }
-        RootError::Unrecoverable { .. } => {
+        RegularError::Unrecoverable { .. } => {
             panic!("expected argument error");
         }
     }

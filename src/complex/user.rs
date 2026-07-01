@@ -4,7 +4,7 @@ use argon2::Argon2;
 use argon2::password_hash::rand_core::OsRng;
 use argon2::password_hash::{PasswordHash, PasswordHasher as _, PasswordVerifier as _, SaltString};
 
-use crate::result::{Error as RootError, RootResult};
+use crate::result::{Error as RootError, RegularResult};
 use crate::util::next_snowflake_id;
 
 /// Domain opers for [User] aggregates: password hashing and verification via Argon2id, ID generation, and avatar storage key computation.
@@ -17,7 +17,7 @@ impl UserComplex {
     }
 
     /// Hashes a plaintext password with Argon2id and a random salt, returning the encoded hash string.
-    pub fn hash_password(password: &str) -> RootResult<String> {
+    pub fn hash_password(password: &str) -> RegularResult<String> {
         let salt = SaltString::generate(OsRng);
 
         Argon2::default()

@@ -113,8 +113,8 @@ fn deserialize_rejects_invalid_bits_with_message() {
     assert!(err.to_string().contains(&trl("error-invalid-role")));
 }
 
-fn assert_expected_role_error(err: RootError) {
-    let RootError::Expected { message, .. } = err else {
+fn assert_expected_role_error(err: RegularError) {
+    let RegularError::Expected { message, .. } = err else {
         panic!("expected role error");
     };
 

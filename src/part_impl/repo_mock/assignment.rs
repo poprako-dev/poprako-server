@@ -12,7 +12,7 @@ use crate::part::repo::step::assignment::{
 };
 use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactional, expected, now};
-use crate::result::RootError;
+use crate::result::RegularError;
 use crate::value::assignment::AssignmentInclOpt;
 
 impl AssignmentRepo<MockContext> for Mock {}
@@ -45,7 +45,7 @@ fn find_assignment(state: &MockState, chapter_id: &str, user_id: &str) -> Option
         .cloned()
 }
 
-fn get_assignment(state: &MockState, id: &str) -> Result<AssignmentInfo, RootError> {
+fn get_assignment(state: &MockState, id: &str) -> Result<AssignmentInfo, RegularError> {
     state
         .assignments
         .iter()
@@ -122,7 +122,7 @@ fn list_assignments(state: &MockState, spec: &AssignmentListSpec) -> Vec<Assignm
 fn create_assignment(
     state: &mut MockState,
     form: &AssignmentForm,
-) -> Result<AssignmentInfo, RootError> {
+) -> Result<AssignmentInfo, RegularError> {
     if state
         .assignments
         .iter()
@@ -150,7 +150,7 @@ fn create_assignment(
     Ok(assignment_info)
 }
 
-fn delete_assignment_by_id(state: &mut MockState, id: &str) -> Result<(), RootError> {
+fn delete_assignment_by_id(state: &mut MockState, id: &str) -> Result<(), RegularError> {
     let index = state
         .assignments
         .iter()
@@ -163,7 +163,7 @@ fn delete_assignment_by_id(state: &mut MockState, id: &str) -> Result<(), RootEr
 
 #[async_trait]
 impl<'a> Execute<GetInfoByChapterIdAndUserId<'a>> for Mock {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn execute(
         &self,
@@ -176,7 +176,7 @@ impl<'a> Execute<GetInfoByChapterIdAndUserId<'a>> for Mock {
 
 #[async_trait]
 impl<'a> Execute<ListInfos<'a>> for Mock {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn execute(&self, step: &ListInfos<'a>) -> Result<Vec<AssignmentInfo>, Self::Error> {
         let state = self.state.lock().unwrap();
@@ -186,7 +186,7 @@ impl<'a> Execute<ListInfos<'a>> for Mock {
 
 #[async_trait]
 impl<'a> Execute<GetInfoById<'a>> for Mock {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn execute(&self, step: &GetInfoById<'a>) -> Result<AssignmentInfo, Self::Error> {
         let state = self.state.lock().unwrap();
@@ -196,7 +196,7 @@ impl<'a> Execute<GetInfoById<'a>> for Mock {
 
 #[async_trait]
 impl<'a> Advance<GetInfoByChapterIdAndUserId<'a>, MockContext> for MockTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,
@@ -213,7 +213,7 @@ impl<'a> Advance<GetInfoByChapterIdAndUserId<'a>, MockContext> for MockTransacti
 
 #[async_trait]
 impl<'a> Advance<Create<'a>, MockContext> for MockTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,
@@ -226,7 +226,7 @@ impl<'a> Advance<Create<'a>, MockContext> for MockTransactional {
 
 #[async_trait]
 impl<'a> Advance<PutRoles<'a>, MockContext> for MockTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,
@@ -248,7 +248,7 @@ impl<'a> Advance<PutRoles<'a>, MockContext> for MockTransactional {
 
 #[async_trait]
 impl<'a> Advance<Delete<'a>, MockContext> for MockTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,

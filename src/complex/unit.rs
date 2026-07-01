@@ -17,7 +17,7 @@ use crate::part::repo::step::comic::GetInfoById as ComicGetInfoById;
 use crate::part::repo::step::member::FindInfoByUserIdAndTeamId;
 use crate::part::repo::step::workset::GetInfoById as WorksetGetInfoById;
 use crate::part::shared::proxy::ProxyExecute;
-use crate::result::{ExpectedVariant, RootError, RootResult, accept};
+use crate::result::{ExpectedVariant, RegularError, RegularResult, accept};
 use crate::util::next_snowflake_id;
 
 /// Domain opers for page units.
@@ -30,7 +30,7 @@ impl UnitComplex {
     }
 
     /// Validates one compact difference and resolves local create ids.
-    pub fn prepare_diff(diff: UnitDiff) -> RootResult<UnitApplyAck> {
+    pub fn prepare_diff(diff: UnitDiff) -> RegularResult<UnitApplyAck> {
         validate_page_id(&diff.page_id)?;
 
         let mut candidate_ids = HashSet::new();
@@ -248,13 +248,13 @@ impl UnitPermComplex {
         proxy: &mut P,
         user_id: &str,
         chapter_id: &str,
-    ) -> RootResult<()>
+    ) -> RegularResult<()>
     where
-        P: for<'a> ProxyExecute<ChapterGetInfoById<'a>, Error = RootError>
-            + for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RootError>
-            + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RootError>
-            + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RootError>
-            + for<'a> ProxyExecute<GetInfoByChapterIdAndUserId<'a>, Error = RootError>,
+        P: for<'a> ProxyExecute<ChapterGetInfoById<'a>, Error = RegularError>
+            + for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RegularError>
+            + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RegularError>
+            + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RegularError>
+            + for<'a> ProxyExecute<GetInfoByChapterIdAndUserId<'a>, Error = RegularError>,
     {
         let member_check = check_user_is_team_member_by_chapter(proxy, user_id, chapter_id).await;
 
@@ -264,7 +264,7 @@ impl UnitPermComplex {
 
         match check_user_is_chapter_assignee(proxy, user_id, chapter_id).await {
             Ok(()) => Ok(()),
-            Err(RootError::Expected {
+            Err(RegularError::Expected {
                 variant: ExpectedVariant::PermDeny,
                 ..
             }) => Err(unit_list_permission_error()),
@@ -277,13 +277,13 @@ impl UnitPermComplex {
         proxy: &mut P,
         user_id: &str,
         chapter_id: &str,
-    ) -> RootResult<()>
+    ) -> RegularResult<()>
     where
-        P: for<'a> ProxyExecute<GetInfoByChapterIdAndUserId<'a>, Error = RootError>,
+        P: for<'a> ProxyExecute<GetInfoByChapterIdAndUserId<'a>, Error = RegularError>,
     {
         match check_user_is_chapter_translator_or_proofreader(proxy, user_id, chapter_id).await {
             Ok(()) => Ok(()),
-            Err(RootError::Expected {
+            Err(RegularError::Expected {
                 variant: ExpectedVariant::PermDeny,
                 ..
             }) => Err(unit_edit_permission_error()),
@@ -292,11 +292,11 @@ impl UnitPermComplex {
     }
 }
 
-fn validate_page_id(page_id: &str) -> RootResult<()> {
+fn validate_page_id(page_id: &str) -> RegularResult<()> {
     validate_id(page_id)
 }
 
-fn validate_id(id: &str) -> RootResult<()> {
+fn validate_id(id: &str) -> RegularResult<()> {
     if id.is_empty() {
         return Err(unit_invalid_oper_error());
     }
@@ -325,22 +325,22 @@ fn resolve_candidate_order(
         .collect()
 }
 
-fn unit_invalid_oper_error() -> RootError {
-    RootError::Expected {
+fn unit_invalid_oper_error() -> RegularError {
+    RegularError::Expected {
         variant: ExpectedVariant::ArgsInvalid,
         message: trl("error-invalid-unit-oper"),
     }
 }
 
-fn unit_list_permission_error() -> RootError {
-    RootError::Expected {
+fn unit_list_permission_error() -> RegularError {
+    RegularError::Expected {
         variant: ExpectedVariant::PermDeny,
         message: trl("error-unit-list-permission-required"),
     }
 }
 
-fn unit_edit_permission_error() -> RootError {
-    RootError::Expected {
+fn unit_edit_permission_error() -> RegularError {
+    RegularError::Expected {
         variant: ExpectedVariant::PermDeny,
         message: trl("error-unit-edit-permission-required"),
     }

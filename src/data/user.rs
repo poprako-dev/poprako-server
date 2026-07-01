@@ -4,7 +4,7 @@ use poprako_util::time::ToUnixMilli;
 
 use crate::model::user::UserInfo;
 use crate::part::image::ImagePool;
-use crate::result::RootResult;
+use crate::result::RegularResult;
 
 /// Presentation-ready user profile information.
 ///
@@ -33,7 +33,7 @@ impl UserInfoVal {
     /// from [`OffsetDateTime`] to Unix milliseconds.
     ///
     /// [`OffsetDateTime`]: time::OffsetDateTime
-    pub async fn from_model<P>(image_pool: &P, model: UserInfo) -> RootResult<Self>
+    pub async fn from_model<P>(image_pool: &P, model: UserInfo) -> RegularResult<Self>
     where
         P: ImagePool,
     {

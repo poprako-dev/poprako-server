@@ -9,7 +9,7 @@ use crate::data::team::TeamInfoVal;
 use crate::data::user::UserInfoVal;
 use crate::model::member::{MemberInfo, MemberListSpec};
 use crate::part::image::ImagePool;
-use crate::result::{ExpectedVariant, RootError, RootResult};
+use crate::result::{ExpectedVariant, RegularError, RegularResult};
 use crate::value::member::MemberInclOpt;
 use crate::value::role::{RoleField, RoleMask};
 
@@ -45,7 +45,7 @@ impl From<MemberInfo> for MemberInfoVal {
 impl MemberInfoVal {
     /// Converts a member model into a presentation-ready value,
     /// resolving included user/team data when present.
-    pub async fn from_model<P>(image_pool: &P, model: MemberInfo) -> RootResult<Self>
+    pub async fn from_model<P>(image_pool: &P, model: MemberInfo) -> RegularResult<Self>
     where
         P: ImagePool,
     {
@@ -104,10 +104,10 @@ pub struct ListMemberInfosData {
 }
 
 impl TryInto<MemberListSpec> for ListMemberInfosData {
-    type Error = RootError;
+    type Error = RegularError;
 
-    fn try_into(self) -> RootResult<MemberListSpec> {
-        let invalid_args_err = || RootError::Expected {
+    fn try_into(self) -> RegularResult<MemberListSpec> {
+        let invalid_args_err = || RegularError::Expected {
             variant: ExpectedVariant::ArgsInvalid,
             message: trl("error-team-or-user-required"),
         };

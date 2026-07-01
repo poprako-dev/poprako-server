@@ -1,7 +1,7 @@
 //! Authentication token port.
 
 use crate::model::user::UserTokenRef;
-use crate::result::RootResult;
+use crate::result::RegularResult;
 
 /// Signs and verifies authentication tokens for user sessions.
 ///
@@ -9,5 +9,5 @@ use crate::result::RootResult;
 /// and produces a signed token string suitable for use as a bearer token.
 pub trait TokenAuth {
     /// Signs a authorized token with states embedded.
-    fn sign_token(&self, token: &UserTokenRef) -> RootResult<String>;
+    fn sign_token(&self, token: &UserTokenRef) -> RegularResult<String>;
 }

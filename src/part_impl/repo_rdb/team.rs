@@ -17,13 +17,13 @@ use crate::part_impl::repo_rdb::entity::team::{TeamAspect, TeamEntry, TeamRow};
 use crate::part_impl::repo_rdb::{RdbRepo, RdbRepoTransactional, schema};
 use crate::part_impl::shared_rdb::RdbContext;
 use crate::part_impl::shared_rdb::result::{diesel, expected};
-use crate::result::RootError;
+use crate::result::RegularError;
 
 // ── Non-transactional ──────────────────────────────────────────────────────
 
 #[async_trait]
 impl<'a> Execute<Create<'a>> for RdbRepo {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn execute(
         &self,
@@ -54,7 +54,7 @@ impl<'a> Execute<Create<'a>> for RdbRepo {
 
 #[async_trait]
 impl<'a> Execute<GetInfoById<'a>> for RdbRepo {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn execute(
         &self,
@@ -77,7 +77,7 @@ impl<'a> Execute<GetInfoById<'a>> for RdbRepo {
 
 #[async_trait]
 impl<'a> Execute<ListInfos<'a>> for RdbRepo {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn execute(
         &self,
@@ -112,9 +112,9 @@ impl<'a> Execute<ListInfos<'a>> for RdbRepo {
 
 #[async_trait]
 impl<'a> Execute<UpdateInfo<'a>> for RdbRepo {
-    type Error = RootError;
+    type Error = RegularError;
 
-    async fn execute(&self, step: &UpdateInfo<'a>) -> Result<(), RootError> {
+    async fn execute(&self, step: &UpdateInfo<'a>) -> Result<(), RegularError> {
         let mut conn = self.conn().await?;
         let now = OffsetDateTime::now_utc();
 
@@ -134,9 +134,9 @@ impl<'a> Execute<UpdateInfo<'a>> for RdbRepo {
 
 #[async_trait]
 impl<'a> Execute<MarkAvatarUploaded<'a>> for RdbRepo {
-    type Error = RootError;
+    type Error = RegularError;
 
-    async fn execute(&self, step: &MarkAvatarUploaded<'a>) -> Result<(), RootError> {
+    async fn execute(&self, step: &MarkAvatarUploaded<'a>) -> Result<(), RegularError> {
         let mut conn = self.conn().await?;
         let now = OffsetDateTime::now_utc();
 
@@ -165,7 +165,7 @@ impl<'a> Execute<MarkAvatarUploaded<'a>> for RdbRepo {
 
 #[async_trait]
 impl<'a> Advance<ReserveAvatar<'a>, RdbContext> for RdbRepoTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,
@@ -206,13 +206,13 @@ impl<'a> Advance<ReserveAvatar<'a>, RdbContext> for RdbRepoTransactional {
 
 #[async_trait]
 impl<'a> Advance<MarkAvatarUploaded<'a>, RdbContext> for RdbRepoTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,
         context: &mut RdbContext,
         step: &MarkAvatarUploaded<'a>,
-    ) -> Result<(), RootError> {
+    ) -> Result<(), RegularError> {
         let now = OffsetDateTime::now_utc();
 
         let affected = diesel::update(
@@ -238,7 +238,7 @@ impl<'a> Advance<MarkAvatarUploaded<'a>, RdbContext> for RdbRepoTransactional {
 
 #[async_trait]
 impl<'a> Advance<GetInfoExcluded<'a>, RdbContext> for RdbRepoTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,
@@ -262,9 +262,9 @@ impl<'a> Advance<GetInfoExcluded<'a>, RdbContext> for RdbRepoTransactional {
 
 #[async_trait]
 impl<'a> Advance<Delete<'a>, RdbContext> for RdbRepoTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
-    async fn advance(&self, context: &mut RdbContext, step: &Delete<'a>) -> Result<(), RootError> {
+    async fn advance(&self, context: &mut RdbContext, step: &Delete<'a>) -> Result<(), RegularError> {
         diesel::delete(schema::t_team::table.filter(schema::t_team::f_id.eq(step.id)))
             .execute(context.conn())
             .await
@@ -276,7 +276,7 @@ impl<'a> Advance<Delete<'a>, RdbContext> for RdbRepoTransactional {
 
 #[async_trait]
 impl<'a> Advance<IncrementWorksetNextIndex<'a>, RdbContext> for RdbRepoTransactional {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn advance(
         &self,

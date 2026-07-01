@@ -8,16 +8,16 @@ use crate::part::repo::step::comic::{
     UpdateChapterCount, UpdateInfo,
 };
 use crate::part::shared::execute::Execute;
-use crate::result::RootError;
+use crate::result::RegularError;
 use crate::util::DeriveTransactional;
 
 /// Non-transactional comic repository.
 pub trait ComicRepo<C>:
     DeriveTransactional
-    + for<'a> Execute<GetInfoById<'a>, Error = RootError>
-    + for<'a> Execute<ListInfos<'a>, Error = RootError>
-    + for<'a> Execute<UpdateInfo<'a>, Error = RootError>
-    + for<'a> Execute<MarkCoverUploaded<'a>, Error = RootError>
+    + for<'a> Execute<GetInfoById<'a>, Error = RegularError>
+    + for<'a> Execute<ListInfos<'a>, Error = RegularError>
+    + for<'a> Execute<UpdateInfo<'a>, Error = RegularError>
+    + for<'a> Execute<MarkCoverUploaded<'a>, Error = RegularError>
 where
     Self::Transactional: ComicRepoTransactional<C>,
 {
@@ -25,16 +25,16 @@ where
 
 /// Transactional comic repository.
 pub trait ComicRepoTransactional<C>:
-    for<'a> Advance<Create<'a>, C, Error = RootError>
-    + for<'a> Advance<GetInfoById<'a>, C, Error = RootError>
-    + for<'a> Advance<GetInfoExcluded<'a>, C, Error = RootError>
-    + for<'a> Advance<ListInfosExcluded<'a>, C, Error = RootError>
-    + for<'a> Advance<ReserveCover<'a>, C, Error = RootError>
-    + for<'a> Advance<MarkCoverUploaded<'a>, C, Error = RootError>
-    + for<'a> Advance<Delete<'a>, C, Error = RootError>
-    + for<'a> Advance<MarkCompleted<'a>, C, Error = RootError>
-    + for<'a> Advance<IncrChapterNextIndex<'a>, C, Error = RootError>
-    + for<'a> Advance<UpdateChapterCount<'a>, C, Error = RootError>
-    + for<'a> Advance<TouchLastActive<'a>, C, Error = RootError>
+    for<'a> Advance<Create<'a>, C, Error = RegularError>
+    + for<'a> Advance<GetInfoById<'a>, C, Error = RegularError>
+    + for<'a> Advance<GetInfoExcluded<'a>, C, Error = RegularError>
+    + for<'a> Advance<ListInfosExcluded<'a>, C, Error = RegularError>
+    + for<'a> Advance<ReserveCover<'a>, C, Error = RegularError>
+    + for<'a> Advance<MarkCoverUploaded<'a>, C, Error = RegularError>
+    + for<'a> Advance<Delete<'a>, C, Error = RegularError>
+    + for<'a> Advance<MarkCompleted<'a>, C, Error = RegularError>
+    + for<'a> Advance<IncrChapterNextIndex<'a>, C, Error = RegularError>
+    + for<'a> Advance<UpdateChapterCount<'a>, C, Error = RegularError>
+    + for<'a> Advance<TouchLastActive<'a>, C, Error = RegularError>
 {
 }

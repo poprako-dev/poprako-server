@@ -22,7 +22,7 @@ use crate::part::repo::step::team::TeamStep;
 use crate::part::repo::step::workset::WorksetStep;
 use crate::part::repo::team::{TeamRepo, TeamRepoTransactional};
 use crate::part::repo::workset::{WorksetRepo, WorksetRepoTransactional};
-use crate::result::{RootError, RootResult, accept};
+use crate::result::{RegularError, RegularResult, accept};
 use crate::util::DeriveTransactional;
 
 #[cfg(test)]
@@ -34,10 +34,10 @@ pub async fn create<D, C, R>(
     repo: &R,
     token: UserToken,
     data: CreateWorksetData,
-) -> RootResult<CreateWorksetVal>
+) -> RegularResult<CreateWorksetVal>
 where
     D: Drive<C>,
-    D::Error: Into<RootError>,
+    D::Error: Into<RegularError>,
     C: Send,
     R: TeamRepo<C> + WorksetRepo<C> + MemberRepo<C> + Send + Sync,
     <R as DeriveTransactional>::Transactional: TeamRepoTransactional<C>
@@ -83,7 +83,7 @@ where
 }
 
 /// Fetches a workset by ID.
-pub async fn get_info<C, R>(repo: &R, token: UserToken, id: String) -> RootResult<WorksetInfoVal>
+pub async fn get_info<C, R>(repo: &R, token: UserToken, id: String) -> RegularResult<WorksetInfoVal>
 where
     R: WorksetRepo<C> + MemberRepo<C> + Sync,
     <R as DeriveTransactional>::Transactional:
@@ -113,7 +113,7 @@ pub async fn list_infos<C, R>(
     repo: &R,
     token: UserToken,
     data: ListWorksetInfosData,
-) -> RootResult<Vec<WorksetInfoVal>>
+) -> RegularResult<Vec<WorksetInfoVal>>
 where
     R: WorksetRepo<C> + MemberRepo<C> + Sync,
     <R as DeriveTransactional>::Transactional:
@@ -157,7 +157,7 @@ pub async fn update_info<C, R>(
     repo: &R,
     token: UserToken,
     data: UpdateWorksetInfoData,
-) -> RootResult<()>
+) -> RegularResult<()>
 where
     R: WorksetRepo<C> + MemberRepo<C> + Sync,
     <R as DeriveTransactional>::Transactional:
@@ -187,10 +187,10 @@ pub async fn delete<D, C, R, P>(
     prom: &P,
     token: UserToken,
     id: String,
-) -> RootResult<()>
+) -> RegularResult<()>
 where
     D: Drive<C>,
-    D::Error: Into<RootError>,
+    D::Error: Into<RegularError>,
     C: Send,
     R: WorksetRepo<C> + ComicRepo<C> + MemberRepo<C> + ChapterRepo<C> + PageRepo<C> + Send + Sync,
     <R as DeriveTransactional>::Transactional: WorksetRepoTransactional<C>

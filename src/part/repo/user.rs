@@ -14,7 +14,7 @@ use crate::part::repo::step::user::{
     MarkAvatarUploaded, ReserveAvatar, TouchLastActive, UpdateInfo,
 };
 use crate::part::shared::execute::Execute;
-use crate::result::RootError;
+use crate::result::RegularError;
 use crate::util::DeriveTransactional;
 
 /// Non-transactional user repository.
@@ -27,9 +27,9 @@ use crate::util::DeriveTransactional;
 /// the [repo module](super) for details.
 pub trait UserRepo<C>:
     DeriveTransactional
-    + for<'a> Execute<GetInfoById<'a>, Error = RootError>
-    + for<'a> Execute<GetCredentialByQid<'a>, Error = RootError>
-    + for<'a> Execute<FindInfoByQid<'a>, Error = RootError>
+    + for<'a> Execute<GetInfoById<'a>, Error = RegularError>
+    + for<'a> Execute<GetCredentialByQid<'a>, Error = RegularError>
+    + for<'a> Execute<FindInfoByQid<'a>, Error = RegularError>
 where
     Self::Transactional: UserRepoTransactional<C>,
 {
@@ -55,13 +55,13 @@ where
 ///
 /// [`Drive::with_context`]: poprako_transactional::drive::Drive::with_context
 pub trait UserRepoTransactional<C>:
-    for<'a> Advance<Create<'a>, C, Error = RootError>
-    + for<'a> Advance<FindInfoByQid<'a>, C, Error = RootError>
-    + for<'a> Advance<UpdateInfo<'a>, C, Error = RootError>
-    + for<'a> Advance<ReserveAvatar<'a>, C, Error = RootError>
-    + for<'a> Advance<MarkAvatarUploaded<'a>, C, Error = RootError>
-    + for<'a> Advance<TouchLastActive<'a>, C, Error = RootError>
-    + for<'a> Advance<GetInfoExcluded<'a>, C, Error = RootError>
-    + for<'a> Advance<Delete<'a>, C, Error = RootError>
+    for<'a> Advance<Create<'a>, C, Error = RegularError>
+    + for<'a> Advance<FindInfoByQid<'a>, C, Error = RegularError>
+    + for<'a> Advance<UpdateInfo<'a>, C, Error = RegularError>
+    + for<'a> Advance<ReserveAvatar<'a>, C, Error = RegularError>
+    + for<'a> Advance<MarkAvatarUploaded<'a>, C, Error = RegularError>
+    + for<'a> Advance<TouchLastActive<'a>, C, Error = RegularError>
+    + for<'a> Advance<GetInfoExcluded<'a>, C, Error = RegularError>
+    + for<'a> Advance<Delete<'a>, C, Error = RegularError>
 {
 }

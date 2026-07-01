@@ -6,15 +6,15 @@ use crate::part::repo::step::assignment::{
     Create, Delete, GetInfoByChapterIdAndUserId, GetInfoById, ListInfos, PutRoles,
 };
 use crate::part::shared::execute::Execute;
-use crate::result::RootError;
+use crate::result::RegularError;
 use crate::util::DeriveTransactional;
 
 /// Non-transactional assignment repository.
 pub trait AssignmentRepo<C>:
     DeriveTransactional
-    + for<'a> Execute<GetInfoByChapterIdAndUserId<'a>, Error = RootError>
-    + for<'a> Execute<ListInfos<'a>, Error = RootError>
-    + for<'a> Execute<GetInfoById<'a>, Error = RootError>
+    + for<'a> Execute<GetInfoByChapterIdAndUserId<'a>, Error = RegularError>
+    + for<'a> Execute<ListInfos<'a>, Error = RegularError>
+    + for<'a> Execute<GetInfoById<'a>, Error = RegularError>
 where
     Self::Transactional: AssignmentRepoTransactional<C>,
 {
@@ -22,9 +22,9 @@ where
 
 /// Transactional assignment repository.
 pub trait AssignmentRepoTransactional<C>:
-    for<'a> Advance<GetInfoByChapterIdAndUserId<'a>, C, Error = RootError>
-    + for<'a> Advance<Create<'a>, C, Error = RootError>
-    + for<'a> Advance<PutRoles<'a>, C, Error = RootError>
-    + for<'a> Advance<Delete<'a>, C, Error = RootError>
+    for<'a> Advance<GetInfoByChapterIdAndUserId<'a>, C, Error = RegularError>
+    + for<'a> Advance<Create<'a>, C, Error = RegularError>
+    + for<'a> Advance<PutRoles<'a>, C, Error = RegularError>
+    + for<'a> Advance<Delete<'a>, C, Error = RegularError>
 {
 }

@@ -7,7 +7,7 @@ use poprako_transactional::drive::Drive;
 use poprako_transactional::drive::result::Error as DriveError;
 use poprako_transactional::util::AsyncFnMark;
 
-use crate::result::RootError;
+use crate::result::RegularError;
 
 use super::shared_rdb::result::diesel;
 use super::shared_rdb::{RdbContext, RdbShared};
@@ -24,7 +24,7 @@ impl RdbDrive {
 
 #[async_trait]
 impl Drive<RdbContext> for RdbDrive {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn with_context<T, E, F>(&self, f: F) -> Result<T, DriveError<E, Self::Error>>
     where

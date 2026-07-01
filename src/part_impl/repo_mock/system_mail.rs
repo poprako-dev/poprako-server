@@ -11,7 +11,7 @@ use crate::part::repo::step::system_mail::{
 use crate::part::repo::system_mail::{SystemMailRepo, SystemMailRepoTransactional};
 use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactional, expected, now};
-use crate::result::RootError;
+use crate::result::RegularError;
 
 impl SystemMailRepo<MockContext> for Mock {}
 
@@ -31,7 +31,7 @@ fn insert_mail(state: &mut MockState, form: &SystemMailForm) {
 
 #[async_trait]
 impl<'a> Execute<Send<'a>> for Mock {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn execute(&self, step: &Send<'a>) -> Result<(), Self::Error> {
         let mut state = self.state.lock().unwrap();
@@ -52,7 +52,7 @@ impl<'a> Execute<Send<'a>> for Mock {
 
 #[async_trait]
 impl<'a> Execute<SendBatch<'a>> for Mock {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn execute(&self, step: &SendBatch<'a>) -> Result<(), Self::Error> {
         let mut state = self.state.lock().unwrap();
@@ -88,7 +88,7 @@ impl<'a> Execute<SendBatch<'a>> for Mock {
 
 #[async_trait]
 impl<'a> Execute<ListInfosByReceiverId<'a>> for Mock {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn execute(
         &self,
@@ -121,7 +121,7 @@ impl<'a> Execute<ListInfosByReceiverId<'a>> for Mock {
 
 #[async_trait]
 impl<'a> Execute<ListInfosByIds<'a>> for Mock {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn execute(&self, step: &ListInfosByIds<'a>) -> Result<Vec<SystemMailInfo>, Self::Error> {
         let state = self.state.lock().unwrap();
@@ -137,7 +137,7 @@ impl<'a> Execute<ListInfosByIds<'a>> for Mock {
 
 #[async_trait]
 impl<'a> Execute<MarkRead<'a>> for Mock {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn execute(&self, step: &MarkRead<'a>) -> Result<(), Self::Error> {
         let mut state = self.state.lock().unwrap();

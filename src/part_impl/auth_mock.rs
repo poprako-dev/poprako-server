@@ -5,16 +5,16 @@ use poprako_util::i18n::trl;
 use crate::model::user::UserTokenRef;
 use crate::part::auth::TokenAuth;
 use crate::part_impl::repo_mock::Mock;
-use crate::result::{ExpectedVariant, RootError, RootResult};
+use crate::result::{ExpectedVariant, RegularError, RegularResult};
 
 /// Mock implementation of [TokenAuth].
 ///
 /// Returns a deterministic token (`"token:{user_id}"`) by default.
 /// Configure [Mock::with_token_failure] to test sign failures.
 impl TokenAuth for Mock {
-    fn sign_token(&self, token: &UserTokenRef) -> RootResult<String> {
+    fn sign_token(&self, token: &UserTokenRef) -> RegularResult<String> {
         if self.flags.lock().unwrap().token_failure {
-            return Err(RootError::Expected {
+            return Err(RegularError::Expected {
                 variant: ExpectedVariant::AuthFail,
                 message: trl("error-token-sign-failed"),
             });
@@ -48,7 +48,7 @@ fn sign_failure_returns_expected_auth() {
 
     assert!(matches!(
         err,
-        RootError::Expected {
+        RegularError::Expected {
             variant: ExpectedVariant::AuthFail,
             ..
         }

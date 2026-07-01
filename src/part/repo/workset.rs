@@ -10,7 +10,7 @@ use crate::part::repo::step::workset::{
     ListInfosByTeamIdExcluded, UpdateComicCount, UpdateInfo,
 };
 use crate::part::shared::execute::Execute;
-use crate::result::RootError;
+use crate::result::RegularError;
 use crate::util::DeriveTransactional;
 
 /// Non-transactional workset repository.
@@ -19,9 +19,9 @@ use crate::util::DeriveTransactional;
 /// [`WorksetRepoTransactional`].
 pub trait WorksetRepo<C>:
     DeriveTransactional
-    + for<'a> Execute<GetInfoById<'a>, Error = RootError>
-    + for<'a> Execute<ListInfosByTeamId<'a>, Error = RootError>
-    + for<'a> Execute<UpdateInfo<'a>, Error = RootError>
+    + for<'a> Execute<GetInfoById<'a>, Error = RegularError>
+    + for<'a> Execute<ListInfosByTeamId<'a>, Error = RegularError>
+    + for<'a> Execute<UpdateInfo<'a>, Error = RegularError>
 where
     Self::Transactional: WorksetRepoTransactional<C>,
 {
@@ -29,14 +29,14 @@ where
 
 /// Transactional workset repository.
 pub trait WorksetRepoTransactional<C>:
-    for<'a> Advance<ListInfosByTeamIdExcluded<'a>, C, Error = RootError>
-    + for<'a> Advance<GetInfoExcluded<'a>, C, Error = RootError>
-    + for<'a> Advance<Delete<'a>, C, Error = RootError>
-    + for<'a> Advance<GetInfoById<'a>, C, Error = RootError>
-    + for<'a> Advance<Create<'a>, C, Error = RootError>
+    for<'a> Advance<ListInfosByTeamIdExcluded<'a>, C, Error = RegularError>
+    + for<'a> Advance<GetInfoExcluded<'a>, C, Error = RegularError>
+    + for<'a> Advance<Delete<'a>, C, Error = RegularError>
+    + for<'a> Advance<GetInfoById<'a>, C, Error = RegularError>
+    + for<'a> Advance<Create<'a>, C, Error = RegularError>
     // NOTE: As the concurrency is expected not to be so high in production environment,
     // excluded row lock is acceptable now.
-    + for<'a> Advance<IncrComicNextIndex<'a>, C, Error = RootError>
-    + for<'a> Advance<UpdateComicCount<'a>, C, Error = RootError>
+    + for<'a> Advance<IncrComicNextIndex<'a>, C, Error = RegularError>
+    + for<'a> Advance<UpdateComicCount<'a>, C, Error = RegularError>
 {
 }

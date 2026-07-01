@@ -8,7 +8,7 @@ use crate::part::repo::step::system_mail::{
     ListInfosByIds, ListInfosByReceiverId, MarkRead, Send, SendBatch,
 };
 use crate::part::shared::execute::Execute;
-use crate::result::RootError;
+use crate::result::RegularError;
 use crate::util::DeriveTransactional;
 
 /// Non-transactional system mail repository.
@@ -17,11 +17,11 @@ use crate::util::DeriveTransactional;
 /// that do not require transactional atomicity.
 pub trait SystemMailRepo<C>:
     DeriveTransactional
-    + for<'a> Execute<Send<'a>, Error = RootError>
-    + for<'a> Execute<SendBatch<'a>, Error = RootError>
-    + for<'a> Execute<ListInfosByReceiverId<'a>, Error = RootError>
-    + for<'a> Execute<ListInfosByIds<'a>, Error = RootError>
-    + for<'a> Execute<MarkRead<'a>, Error = RootError>
+    + for<'a> Execute<Send<'a>, Error = RegularError>
+    + for<'a> Execute<SendBatch<'a>, Error = RegularError>
+    + for<'a> Execute<ListInfosByReceiverId<'a>, Error = RegularError>
+    + for<'a> Execute<ListInfosByIds<'a>, Error = RegularError>
+    + for<'a> Execute<MarkRead<'a>, Error = RegularError>
 where
     Self::Transactional: SystemMailRepoTransactional<C>,
 {

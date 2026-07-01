@@ -4,12 +4,12 @@ use poprako_transactional::advance::Advance;
 
 use crate::part::repo::step::comment::{Create, ListInfos};
 use crate::part::shared::execute::Execute;
-use crate::result::RootError;
+use crate::result::RegularError;
 use crate::util::DeriveTransactional;
 
 /// Non-transactional comment repository.
 pub trait CommentRepo<C>:
-    DeriveTransactional + for<'a> Execute<ListInfos<'a>, Error = RootError>
+    DeriveTransactional + for<'a> Execute<ListInfos<'a>, Error = RegularError>
 where
     Self::Transactional: CommentRepoTransactional<C>,
 {
@@ -17,6 +17,6 @@ where
 
 /// Transactional comment repository.
 pub trait CommentRepoTransactional<C>:
-    for<'a> Advance<Create<'a>, C, Error = RootError> + Sized
+    for<'a> Advance<Create<'a>, C, Error = RegularError> + Sized
 {
 }

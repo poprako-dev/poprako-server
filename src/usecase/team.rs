@@ -26,7 +26,7 @@ use crate::part::repo::step::team::TeamStep;
 use crate::part::repo::team::{TeamRepo, TeamRepoTransactional};
 use crate::part::repo::user::{UserRepo, UserRepoTransactional};
 use crate::part::repo::workset::{WorksetRepo, WorksetRepoTransactional};
-use crate::result::{RootError, RootResult, accept};
+use crate::result::{RegularError, RegularResult, accept};
 use crate::util::DeriveTransactional;
 
 #[cfg(test)]
@@ -47,7 +47,7 @@ pub async fn create<C, R, I>(
     image_pool: &I,
     token: UserToken,
     data: CreateTeamData,
-) -> RootResult<TeamInfoVal>
+) -> RegularResult<TeamInfoVal>
 where
     R: TeamRepo<C> + UserRepo<C> + Sync,
     <R as DeriveTransactional>::Transactional: TeamRepoTransactional<C> + UserRepoTransactional<C>,
@@ -77,7 +77,7 @@ where
 /// * `C` — Context anchor.
 /// * `R: TeamRepo<C>` — Team storage.
 /// * `I: ImagePool` — Resolves the avatar signed URL.
-pub async fn get_info<C, R, I>(repo: &R, image_pool: &I, id: String) -> RootResult<TeamInfoVal>
+pub async fn get_info<C, R, I>(repo: &R, image_pool: &I, id: String) -> RegularResult<TeamInfoVal>
 where
     R: TeamRepo<C>,
     <R as DeriveTransactional>::Transactional: TeamRepoTransactional<C>,
@@ -102,7 +102,7 @@ pub async fn list_infos<C, R, I>(
     image_pool: &I,
     token: UserToken,
     data: ListTeamInfosData,
-) -> RootResult<Vec<TeamInfoVal>>
+) -> RegularResult<Vec<TeamInfoVal>>
 where
     R: TeamRepo<C> + UserRepo<C> + Sync,
     <R as DeriveTransactional>::Transactional: TeamRepoTransactional<C> + UserRepoTransactional<C>,
@@ -132,7 +132,7 @@ where
     )
     .await
     .into_iter()
-    .collect::<RootResult<Vec<_>>>()?;
+    .collect::<RegularResult<Vec<_>>>()?;
 
     Ok(team_info_vals)
 }
@@ -149,7 +149,7 @@ pub async fn update_info<C, R>(
     repo: &R,
     token: UserToken,
     data: UpdateTeamInfoData,
-) -> RootResult<()>
+) -> RegularResult<()>
 where
     R: TeamRepo<C> + MemberRepo<C> + Sync,
     <R as DeriveTransactional>::Transactional:
@@ -197,10 +197,10 @@ pub async fn reserve_avatar<D, C, R, P, I>(
     token: UserToken,
     id: String,
     data: ReserveTeamAvatarData,
-) -> RootResult<ReserveTeamAvatarVal>
+) -> RegularResult<ReserveTeamAvatarVal>
 where
     D: Drive<C>,
-    D::Error: Into<RootError>,
+    D::Error: Into<RegularError>,
     C: Send,
     R: TeamRepo<C> + MemberRepo<C> + Send + Sync,
     <R as DeriveTransactional>::Transactional:
@@ -292,7 +292,7 @@ pub async fn mark_avatar_uploaded<C, R>(
     token: UserToken,
     id: String,
     data: MarkTeamAvatarUploadedData,
-) -> RootResult<()>
+) -> RegularResult<()>
 where
     R: TeamRepo<C> + MemberRepo<C> + Sync,
     <R as DeriveTransactional>::Transactional:
@@ -331,10 +331,10 @@ pub async fn delete<D, C, R, P>(
     prom: &P,
     token: UserToken,
     id: String,
-) -> RootResult<()>
+) -> RegularResult<()>
 where
     D: Drive<C>,
-    D::Error: Into<RootError>,
+    D::Error: Into<RegularError>,
     C: Send,
     R: TeamRepo<C>
         + WorksetRepo<C>

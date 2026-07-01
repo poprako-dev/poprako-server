@@ -6,7 +6,7 @@ use crate::part::repo::step::member_invitation::{
     GetInfoById as MemberInvitationGetInfoById, MemberInvitationStep,
 };
 use crate::part::shared::proxy::ProxyExecute;
-use crate::result::{RootError, RootResult};
+use crate::result::{RegularError, RegularResult};
 use crate::util::next_snowflake_id;
 
 /// Domain opers for member invitations.
@@ -31,9 +31,13 @@ impl MemberInvitationComplex {
 pub struct MemberInvitationPermComplex;
 
 impl MemberInvitationPermComplex {
-    pub async fn can_user_create<P>(proxy: &mut P, user_id: &str, team_id: &str) -> RootResult<()>
+    pub async fn can_user_create<P>(
+        proxy: &mut P,
+        user_id: &str,
+        team_id: &str,
+    ) -> RegularResult<()>
     where
-        P: for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RootError>,
+        P: for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RegularError>,
     {
         check_user_is_team_admin(proxy, user_id, team_id).await
     }
@@ -42,9 +46,9 @@ impl MemberInvitationPermComplex {
         proxy: &mut P,
         user_id: &str,
         team_id: &str,
-    ) -> RootResult<()>
+    ) -> RegularResult<()>
     where
-        P: for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RootError>,
+        P: for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RegularError>,
     {
         check_user_is_team_member(proxy, user_id, team_id).await
     }
@@ -53,10 +57,10 @@ impl MemberInvitationPermComplex {
         proxy: &mut P,
         user_id: &str,
         invitation_id: &str,
-    ) -> RootResult<()>
+    ) -> RegularResult<()>
     where
-        P: for<'a> ProxyExecute<MemberInvitationGetInfoById<'a>, Error = RootError>
-            + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RootError>,
+        P: for<'a> ProxyExecute<MemberInvitationGetInfoById<'a>, Error = RegularError>
+            + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RegularError>,
     {
         let team_id = Self::resolve_team_id(proxy, invitation_id).await?;
         check_user_is_team_admin(proxy, user_id, &team_id).await
@@ -66,18 +70,18 @@ impl MemberInvitationPermComplex {
         proxy: &mut P,
         user_id: &str,
         invitation_id: &str,
-    ) -> RootResult<()>
+    ) -> RegularResult<()>
     where
-        P: for<'a> ProxyExecute<MemberInvitationGetInfoById<'a>, Error = RootError>
-            + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RootError>,
+        P: for<'a> ProxyExecute<MemberInvitationGetInfoById<'a>, Error = RegularError>
+            + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RegularError>,
     {
         let team_id = Self::resolve_team_id(proxy, invitation_id).await?;
         check_user_is_team_admin(proxy, user_id, &team_id).await
     }
 
-    async fn resolve_team_id<P>(proxy: &mut P, invitation_id: &str) -> RootResult<String>
+    async fn resolve_team_id<P>(proxy: &mut P, invitation_id: &str) -> RegularResult<String>
     where
-        P: for<'a> ProxyExecute<MemberInvitationGetInfoById<'a>, Error = RootError>,
+        P: for<'a> ProxyExecute<MemberInvitationGetInfoById<'a>, Error = RegularError>,
     {
         let member_invitation_info = proxy
             .execute(&MemberInvitationStep::get_info_by_id(invitation_id))

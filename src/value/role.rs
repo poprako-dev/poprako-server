@@ -5,7 +5,7 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use poprako_util::i18n::trl;
 
-use crate::result::{ExpectedVariant, RootError, RootResult, accept};
+use crate::result::{ExpectedVariant, RegularError, RegularResult, accept};
 
 #[cfg(test)]
 mod tests;
@@ -79,11 +79,11 @@ impl RoleMask {
 
 /// Convert a raw `u32` to a [`RoleBit`], validating it is a single valid bit.
 impl TryFrom<u32> for RoleField {
-    type Error = RootError;
+    type Error = RegularError;
 
-    fn try_from(value: u32) -> RootResult<Self> {
+    fn try_from(value: u32) -> RegularResult<Self> {
         if value == 0 || !Self::VALID_VALUES.contains(&value) || value.count_ones() != 1 {
-            return Err(RootError::Expected {
+            return Err(RegularError::Expected {
                 variant: ExpectedVariant::ArgsInvalid,
                 message: trl("error-invalid-role"),
             });
@@ -131,11 +131,11 @@ impl From<RoleField> for RoleMask {
 
 /// Convert a raw `u32` to a [`RoleMask`], validating it contains only valid bits.
 impl TryFrom<u32> for RoleMask {
-    type Error = RootError;
+    type Error = RegularError;
 
-    fn try_from(value: u32) -> RootResult<Self> {
+    fn try_from(value: u32) -> RegularResult<Self> {
         if value == 0 || value & !Self::VALID_BITS != 0 {
-            return Err(RootError::Expected {
+            return Err(RegularError::Expected {
                 variant: ExpectedVariant::ArgsInvalid,
                 message: trl("error-invalid-role"),
             });

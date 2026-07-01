@@ -8,7 +8,7 @@ use poprako_util::time::ToUnixMilli;
 use crate::data::user::UserInfoVal;
 use crate::model::announcement::{AnnouncementInfo, AnnouncementListSpec};
 use crate::part::image::ImagePool;
-use crate::result::RootResult;
+use crate::result::RegularResult;
 use crate::value::announcement::AnnouncementInclOpt;
 
 /// Presentation-ready team announcement information.
@@ -27,7 +27,7 @@ pub struct AnnouncementInfoVal {
 
 impl AnnouncementInfoVal {
     /// Converts an announcement model into a presentation value.
-    pub async fn from_model<P>(image_pool: &P, model: AnnouncementInfo) -> RootResult<Self>
+    pub async fn from_model<P>(image_pool: &P, model: AnnouncementInfo) -> RegularResult<Self>
     where
         P: ImagePool,
     {

@@ -14,7 +14,7 @@ use crate::part::repo::step::team::{
     MarkAvatarUploaded, ReserveAvatar, UpdateInfo,
 };
 use crate::part::shared::execute::Execute;
-use crate::result::RootError;
+use crate::result::RegularError;
 use crate::util::DeriveTransactional;
 
 /// Non-transactional team repository.
@@ -27,11 +27,11 @@ use crate::util::DeriveTransactional;
 /// the [repo module](super) for details.
 pub trait TeamRepo<C>:
     DeriveTransactional
-    + for<'a> Execute<Create<'a>, Error = RootError>
-    + for<'a> Execute<GetInfoById<'a>, Error = RootError>
-    + for<'a> Execute<ListInfos<'a>, Error = RootError>
-    + for<'a> Execute<UpdateInfo<'a>, Error = RootError>
-    + for<'a> Execute<MarkAvatarUploaded<'a>, Error = RootError>
+    + for<'a> Execute<Create<'a>, Error = RegularError>
+    + for<'a> Execute<GetInfoById<'a>, Error = RegularError>
+    + for<'a> Execute<ListInfos<'a>, Error = RegularError>
+    + for<'a> Execute<UpdateInfo<'a>, Error = RegularError>
+    + for<'a> Execute<MarkAvatarUploaded<'a>, Error = RegularError>
 where
     Self::Transactional: TeamRepoTransactional<C>,
 {
@@ -43,10 +43,10 @@ where
 ///
 /// [`Drive::with_context`]: poprako_transactional::drive::Drive::with_context
 pub trait TeamRepoTransactional<C>:
-    for<'a> Advance<ReserveAvatar<'a>, C, Error = RootError>
-    + for<'a> Advance<MarkAvatarUploaded<'a>, C, Error = RootError>
-    + for<'a> Advance<GetInfoExcluded<'a>, C, Error = RootError>
-    + for<'a> Advance<Delete<'a>, C, Error = RootError>
-    + for<'a> Advance<IncrementWorksetNextIndex<'a>, C, Error = RootError>
+    for<'a> Advance<ReserveAvatar<'a>, C, Error = RegularError>
+    + for<'a> Advance<MarkAvatarUploaded<'a>, C, Error = RegularError>
+    + for<'a> Advance<GetInfoExcluded<'a>, C, Error = RegularError>
+    + for<'a> Advance<Delete<'a>, C, Error = RegularError>
+    + for<'a> Advance<IncrementWorksetNextIndex<'a>, C, Error = RegularError>
 {
 }

@@ -16,7 +16,7 @@ use crate::data::user::UserInfoVal;
 use crate::data::workset::WorksetInfoVal;
 use crate::model::comic::{ComicInfo, ComicListSpec};
 use crate::part::image::ImagePool;
-use crate::result::RootResult;
+use crate::result::RegularResult;
 use crate::value::comic::ComicInclOpt;
 
 /// Presentation-ready comic information.
@@ -68,7 +68,7 @@ impl ComicInfoVal {
     /// to Unix milliseconds.
     ///
     /// [`OffsetDateTime`]: time::OffsetDateTime
-    pub async fn from_model<P>(image_pool: &P, model: ComicInfo) -> RootResult<Self>
+    pub async fn from_model<P>(image_pool: &P, model: ComicInfo) -> RegularResult<Self>
     where
         P: ImagePool,
     {

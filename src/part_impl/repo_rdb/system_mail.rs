@@ -11,13 +11,13 @@ use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_rdb::entity::system_mail::{SystemMailEntry, SystemMailRow};
 use crate::part_impl::repo_rdb::{RdbRepo, schema};
 use crate::part_impl::shared_rdb::result::diesel;
-use crate::result::RootError;
+use crate::result::RegularError;
 
 #[async_trait]
 impl<'a> Execute<Send<'a>> for RdbRepo {
-    type Error = RootError;
+    type Error = RegularError;
 
-    async fn execute(&self, step: &Send<'a>) -> Result<(), RootError> {
+    async fn execute(&self, step: &Send<'a>) -> Result<(), RegularError> {
         let mut conn = self.conn().await?;
 
         let entry = SystemMailEntry::from(step.form);
@@ -34,9 +34,9 @@ impl<'a> Execute<Send<'a>> for RdbRepo {
 
 #[async_trait]
 impl<'a> Execute<SendBatch<'a>> for RdbRepo {
-    type Error = RootError;
+    type Error = RegularError;
 
-    async fn execute(&self, step: &SendBatch<'a>) -> Result<(), RootError> {
+    async fn execute(&self, step: &SendBatch<'a>) -> Result<(), RegularError> {
         let mut conn = self.conn().await?;
 
         let entries: Vec<SystemMailEntry<'_>> =
@@ -54,7 +54,7 @@ impl<'a> Execute<SendBatch<'a>> for RdbRepo {
 
 #[async_trait]
 impl<'a> Execute<ListInfosByReceiverId<'a>> for RdbRepo {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn execute(
         &self,
@@ -89,7 +89,7 @@ impl<'a> Execute<ListInfosByReceiverId<'a>> for RdbRepo {
 
 #[async_trait]
 impl<'a> Execute<ListInfosByIds<'a>> for RdbRepo {
-    type Error = RootError;
+    type Error = RegularError;
 
     async fn execute(
         &self,
@@ -111,9 +111,9 @@ impl<'a> Execute<ListInfosByIds<'a>> for RdbRepo {
 
 #[async_trait]
 impl<'a> Execute<MarkRead<'a>> for RdbRepo {
-    type Error = RootError;
+    type Error = RegularError;
 
-    async fn execute(&self, step: &MarkRead<'a>) -> Result<(), RootError> {
+    async fn execute(&self, step: &MarkRead<'a>) -> Result<(), RegularError> {
         let mut conn = self.conn().await?;
 
         diesel::update(

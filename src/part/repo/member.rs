@@ -11,7 +11,7 @@ use crate::part::repo::step::member::{
     ListInfosByUserIdExcluded, TouchLastActive, UpdateRole, UpdateUserNickname,
 };
 use crate::part::shared::execute::Execute;
-use crate::result::RootError;
+use crate::result::RegularError;
 use crate::util::DeriveTransactional;
 
 /// Non-transactional member repository.
@@ -21,9 +21,9 @@ use crate::util::DeriveTransactional;
 /// [`MemberRepoTransactional`] via the `C` anchor.
 pub trait MemberRepo<C>:
     DeriveTransactional
-    + for<'a> Execute<FindInfoByUserIdAndTeamId<'a>, Error = RootError>
-    + for<'a> Execute<ListInfos<'a>, Error = RootError>
-    + for<'a> Execute<GetInfoById<'a>, Error = RootError>
+    + for<'a> Execute<FindInfoByUserIdAndTeamId<'a>, Error = RegularError>
+    + for<'a> Execute<ListInfos<'a>, Error = RegularError>
+    + for<'a> Execute<GetInfoById<'a>, Error = RegularError>
 where
     Self::Transactional: MemberRepoTransactional<C>,
 {
@@ -34,14 +34,14 @@ where
 /// All member opers require a transaction context because they
 /// are typically composed with user or team opers.
 pub trait MemberRepoTransactional<C>:
-    for<'a> Advance<Create<'a>, C, Error = RootError>
-    + for<'a> Advance<UpdateUserNickname<'a>, C, Error = RootError>
-    + for<'a> Advance<TouchLastActive<'a>, C, Error = RootError>
-    + for<'a> Advance<ListInfosByUserIdExcluded<'a>, C, Error = RootError>
-    + for<'a> Advance<FindInfoByUserIdAndTeamId<'a>, C, Error = RootError>
-    + for<'a> Advance<GetInfoExcluded<'a>, C, Error = RootError>
-    + for<'a> Advance<UpdateRole<'a>, C, Error = RootError>
-    + for<'a> Advance<Delete<'a>, C, Error = RootError>
+    for<'a> Advance<Create<'a>, C, Error = RegularError>
+    + for<'a> Advance<UpdateUserNickname<'a>, C, Error = RegularError>
+    + for<'a> Advance<TouchLastActive<'a>, C, Error = RegularError>
+    + for<'a> Advance<ListInfosByUserIdExcluded<'a>, C, Error = RegularError>
+    + for<'a> Advance<FindInfoByUserIdAndTeamId<'a>, C, Error = RegularError>
+    + for<'a> Advance<GetInfoExcluded<'a>, C, Error = RegularError>
+    + for<'a> Advance<UpdateRole<'a>, C, Error = RegularError>
+    + for<'a> Advance<Delete<'a>, C, Error = RegularError>
     + Sized
 {
 }

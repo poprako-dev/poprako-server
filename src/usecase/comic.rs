@@ -31,7 +31,7 @@ use crate::part::repo::step::chapter::ChapterStep;
 use crate::part::repo::step::comic::ComicStep;
 use crate::part::repo::step::workset::WorksetStep;
 use crate::part::repo::workset::{WorksetRepo, WorksetRepoTransactional};
-use crate::result::{RootError, RootResult, accept};
+use crate::result::{RegularError, RegularResult, accept};
 use crate::util::DeriveTransactional;
 use crate::value::role::{RoleField, RoleMask};
 
@@ -54,10 +54,10 @@ pub async fn create<D, C, R>(
     repo: &R,
     token: UserToken,
     data: CreateComicData,
-) -> RootResult<CreateComicVal>
+) -> RegularResult<CreateComicVal>
 where
     D: Drive<C>,
-    D::Error: Into<RootError>,
+    D::Error: Into<RegularError>,
     C: Send,
     R: ComicRepo<C>
         + WorksetRepo<C>
@@ -175,7 +175,7 @@ pub async fn get_info<C, R, I>(
     image_pool: &I,
     token: UserToken,
     id: String,
-) -> RootResult<ComicInfoVal>
+) -> RegularResult<ComicInfoVal>
 where
     R: ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Sync,
     <R as DeriveTransactional>::Transactional:
@@ -197,7 +197,7 @@ pub async fn list_infos<C, R, I>(
     image_pool: &I,
     token: UserToken,
     data: ListComicInfosData,
-) -> RootResult<Vec<ComicInfoVal>>
+) -> RegularResult<Vec<ComicInfoVal>>
 where
     R: ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Sync,
     <R as DeriveTransactional>::Transactional:
@@ -227,7 +227,7 @@ pub async fn update_info<C, R>(
     repo: &R,
     token: UserToken,
     data: UpdateComicInfoData,
-) -> RootResult<()>
+) -> RegularResult<()>
 where
     R: ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Sync,
     <R as DeriveTransactional>::Transactional:
@@ -259,10 +259,10 @@ pub async fn reserve_cover<D, C, R, P, I>(
     token: UserToken,
     id: String,
     data: ReserveComicCoverData,
-) -> RootResult<ReserveComicCoverVal>
+) -> RegularResult<ReserveComicCoverVal>
 where
     D: Drive<C>,
-    D::Error: Into<RootError>,
+    D::Error: Into<RegularError>,
     C: Send,
     R: ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Send + Sync,
     <R as DeriveTransactional>::Transactional: ComicRepoTransactional<C>
@@ -345,7 +345,7 @@ pub async fn mark_cover_uploaded<C, R>(
     token: UserToken,
     id: String,
     data: MarkComicCoverUploadedData,
-) -> RootResult<()>
+) -> RegularResult<()>
 where
     R: ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Sync,
     <R as DeriveTransactional>::Transactional:
@@ -369,10 +369,10 @@ pub async fn delete<D, C, R, P>(
     prom: &P,
     token: UserToken,
     id: String,
-) -> RootResult<()>
+) -> RegularResult<()>
 where
     D: Drive<C>,
-    D::Error: Into<RootError>,
+    D::Error: Into<RegularError>,
     C: Send,
     R: ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + ChapterRepo<C> + PageRepo<C> + Send + Sync,
     <R as DeriveTransactional>::Transactional: ComicRepoTransactional<C>
@@ -413,10 +413,10 @@ pub async fn mark_completed<D, C, R>(
     token: UserToken,
     id: String,
     is_completed: bool,
-) -> RootResult<()>
+) -> RegularResult<()>
 where
     D: Drive<C>,
-    D::Error: Into<RootError>,
+    D::Error: Into<RegularError>,
     C: Send,
     R: ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Send + Sync,
     <R as DeriveTransactional>::Transactional: ComicRepoTransactional<C>

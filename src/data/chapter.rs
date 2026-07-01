@@ -8,7 +8,7 @@ use poprako_util::time::ToUnixMilli;
 use crate::data::user::UserInfoVal;
 use crate::model::chapter::{ChapterInfo, ChapterListSpec};
 use crate::part::image::ImagePool;
-use crate::result::RootResult;
+use crate::result::RegularResult;
 use crate::value::chapter::{ChapterInclOpt, WorkflowEvent, WorkflowStage, WorkflowStageMask};
 
 /// Presentation-ready chapter information.
@@ -66,7 +66,7 @@ impl From<ChapterInfo> for ChapterInfoVal {
 impl ChapterInfoVal {
     /// Converts a chapter model into a presentation-ready value,
     /// resolving included creator avatar when present.
-    pub async fn from_model<P>(image_pool: &P, model: ChapterInfo) -> RootResult<Self>
+    pub async fn from_model<P>(image_pool: &P, model: ChapterInfo) -> RegularResult<Self>
     where
         P: ImagePool,
     {

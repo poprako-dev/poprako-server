@@ -23,7 +23,7 @@ use crate::part::repo::step::team::TeamStep;
 use crate::part::repo::step::user::UserStep;
 use crate::part::repo::team::{TeamRepo, TeamRepoTransactional};
 use crate::part::repo::user::{UserRepo, UserRepoTransactional};
-use crate::result::{ExpectedVariant, RootError, RootResult, accept};
+use crate::result::{ExpectedVariant, RegularError, RegularResult, accept};
 use crate::util::DeriveTransactional;
 
 #[cfg(test)]
@@ -38,10 +38,10 @@ pub async fn create<D, C, R>(
     repo: &R,
     token: UserToken,
     data: CreateMemberData,
-) -> RootResult<CreateMemberVal>
+) -> RegularResult<CreateMemberVal>
 where
     D: Drive<C>,
-    D::Error: Into<RootError>,
+    D::Error: Into<RegularError>,
     C: Send,
     R: MemberRepo<C> + TeamRepo<C> + UserRepo<C> + Send + Sync,
     <R as DeriveTransactional>::Transactional: MemberRepoTransactional<C>
@@ -75,7 +75,7 @@ where
                 .await?;
 
             if existing_member_info.is_some() {
-                return Err(RootError::Expected {
+                return Err(RegularError::Expected {
                     variant: ExpectedVariant::ArgsInvalid,
                     message: trl("error-already-team-member"),
                 });
@@ -107,10 +107,10 @@ pub async fn join_team<D, C, R>(
     repo: &R,
     token: UserToken,
     data: JoinTeamData,
-) -> RootResult<()>
+) -> RegularResult<()>
 where
     D: Drive<C>,
-    D::Error: Into<RootError>,
+    D::Error: Into<RegularError>,
     C: Send,
     R: MemberRepo<C> + MemberInvitationRepo<C> + UserRepo<C> + Send + Sync,
     <R as DeriveTransactional>::Transactional: MemberRepoTransactional<C>
@@ -187,7 +187,7 @@ pub async fn list_infos<C, R, I>(
     image_pool: &I,
     token: UserToken,
     data: ListMemberInfosData,
-) -> RootResult<Vec<MemberInfoVal>>
+) -> RegularResult<Vec<MemberInfoVal>>
 where
     R: MemberRepo<C> + Sync,
     <R as DeriveTransactional>::Transactional: MemberRepoTransactional<C>,
@@ -223,10 +223,10 @@ pub async fn update_role<D, C, R>(
     repo: &R,
     token: UserToken,
     data: UpdateMemberRoleData,
-) -> RootResult<()>
+) -> RegularResult<()>
 where
     D: Drive<C>,
-    D::Error: Into<RootError>,
+    D::Error: Into<RegularError>,
     C: Send,
     R: MemberRepo<C> + Send + Sync,
     <R as DeriveTransactional>::Transactional: MemberRepoTransactional<C> + Send + Sync,
@@ -265,10 +265,10 @@ where
 /// Deletes one member.
 ///
 /// The caller must be a team admin of the target member's team.
-pub async fn delete<D, C, R>(drive: &D, repo: &R, token: UserToken, id: String) -> RootResult<()>
+pub async fn delete<D, C, R>(drive: &D, repo: &R, token: UserToken, id: String) -> RegularResult<()>
 where
     D: Drive<C>,
-    D::Error: Into<RootError>,
+    D::Error: Into<RegularError>,
     C: Send,
     R: MemberRepo<C> + Send + Sync,
     <R as DeriveTransactional>::Transactional: MemberRepoTransactional<C> + Send + Sync,
@@ -298,15 +298,15 @@ where
     accept(())
 }
 
-fn invalid_invitation_error() -> RootError {
-    RootError::Expected {
+fn invalid_invitation_error() -> RegularError {
+    RegularError::Expected {
         variant: ExpectedVariant::ArgsInvalid,
         message: trl("error-no-pending-invitation"),
     }
 }
 
-fn already_team_member_error() -> RootError {
-    RootError::Expected {
+fn already_team_member_error() -> RegularError {
+    RegularError::Expected {
         variant: ExpectedVariant::ArgsInvalid,
         message: trl("error-already-team-member"),
     }

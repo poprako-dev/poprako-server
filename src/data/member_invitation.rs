@@ -8,7 +8,7 @@ use poprako_macro::Paginate;
 use crate::data::user::UserInfoVal;
 use crate::model::member_invitation::{MemberInvitationInfo, MemberInvitationListSpec};
 use crate::part::image::ImagePool;
-use crate::result::RootResult;
+use crate::result::RegularResult;
 use crate::value::member_invitation::MemberInvitationInclOpt;
 use crate::value::role::RoleMask;
 
@@ -92,7 +92,7 @@ impl From<MemberInvitationInfo> for MemberInvitationInfoVal {
 impl MemberInvitationInfoVal {
     /// Converts an invitation model into a presentation-ready value,
     /// resolving included invitor avatar when present.
-    pub async fn from_model<P>(image_pool: &P, model: MemberInvitationInfo) -> RootResult<Self>
+    pub async fn from_model<P>(image_pool: &P, model: MemberInvitationInfo) -> RegularResult<Self>
     where
         P: ImagePool,
     {

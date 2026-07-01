@@ -10,7 +10,7 @@ use crate::part::repo::step::member_invitation::{
     Create, Delete, GetInfoByCodeExcluded, GetInfoById, ListInfos, MarkPendingAsUsed, UpdateInfo,
 };
 use crate::part::shared::execute::Execute;
-use crate::result::RootError;
+use crate::result::RegularError;
 use crate::util::DeriveTransactional;
 
 /// Non-transactional member invitation repository.
@@ -19,8 +19,8 @@ use crate::util::DeriveTransactional;
 /// [`MemberInvitationRepoTransactional`].
 pub trait MemberInvitationRepo<C>:
     DeriveTransactional
-    + for<'a> Execute<ListInfos<'a>, Error = RootError>
-    + for<'a> Execute<GetInfoById<'a>, Error = RootError>
+    + for<'a> Execute<ListInfos<'a>, Error = RegularError>
+    + for<'a> Execute<GetInfoById<'a>, Error = RegularError>
 where
     Self::Transactional: MemberInvitationRepoTransactional<C>,
 {
@@ -28,11 +28,11 @@ where
 
 /// Transactional member invitation repository.
 pub trait MemberInvitationRepoTransactional<C>:
-    for<'a> Advance<Create<'a>, C, Error = RootError>
-    + for<'a> Advance<GetInfoByCodeExcluded<'a>, C, Error = RootError>
-    + for<'a> Advance<MarkPendingAsUsed<'a>, C, Error = RootError>
-    + for<'a> Advance<GetInfoById<'a>, C, Error = RootError>
-    + for<'a> Advance<UpdateInfo<'a>, C, Error = RootError>
-    + for<'a> Advance<Delete<'a>, C, Error = RootError>
+    for<'a> Advance<Create<'a>, C, Error = RegularError>
+    + for<'a> Advance<GetInfoByCodeExcluded<'a>, C, Error = RegularError>
+    + for<'a> Advance<MarkPendingAsUsed<'a>, C, Error = RegularError>
+    + for<'a> Advance<GetInfoById<'a>, C, Error = RegularError>
+    + for<'a> Advance<UpdateInfo<'a>, C, Error = RegularError>
+    + for<'a> Advance<Delete<'a>, C, Error = RegularError>
 {
 }
