@@ -9,7 +9,7 @@ use time::OffsetDateTime;
 /// counter used to assign indices to new worksets within this team.
 ///
 /// [`TeamInfoVal`]: crate::data::team::TeamInfoVal
-#[cfg_attr(test, derive(Clone))]
+#[derive(Clone)]
 pub struct TeamInfo {
     pub id: String,
 

@@ -7,7 +7,10 @@ use time::OffsetDateTime;
 
 use poprako_transactional::advance::Advance;
 
-use crate::model::member_invitation::{MemberInvitationForm, MemberInvitationInfo};
+use crate::model::member_invitation::{
+    MemberInvitationForm, MemberInvitationInfo, MemberInvitationListSpec,
+};
+use crate::model::user::UserInfo;
 use crate::part::repo::step::member_invitation::{
     Create, Delete, GetInfoByCodeExcluded, GetInfoById, ListInfos, MarkPendingAsUsed, UpdateInfo,
 };
@@ -15,35 +18,53 @@ use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_rdb::entity::member_invitation::{
     MemberInvitationAspect, MemberInvitationEntry, MemberInvitationRow,
 };
-use crate::part_impl::repo_rdb::{RdbRepo, RdbRepoTransactional};
+use crate::part_impl::repo_rdb::incl::{self, Incl, UserByIds};
 use crate::part_impl::repo_rdb::schema::t_member_invitation::dsl::*;
-use crate::part_impl::shared_rdb::{RdbConn, RdbContext};
+use crate::part_impl::repo_rdb::{RdbRepo, RdbRepoTransactional};
 use crate::part_impl::shared_rdb::result::{diesel, expected};
+use crate::part_impl::shared_rdb::{RdbConn, RdbContext};
 use crate::result::{RegularError, RegularResult};
+use crate::value::member_invitation::MemberInvitationInclOpt;
 use crate::value::role::RoleMask;
+
+// ── Incl implementations ────────────────────────────────────────────────────
+
+struct MemberInvitationInvitorIncl;
+
+#[async_trait]
+impl Incl for MemberInvitationInvitorIncl {
+    type Owner = MemberInvitationInfo;
+    type Related = UserInfo;
+    type Query = UserByIds;
+
+    fn resolve_key(o: &MemberInvitationInfo) -> Option<&str> {
+        Some(&o.invitor_id)
+    }
+
+    fn set(o: &mut MemberInvitationInfo, r: Option<UserInfo>) {
+        o.invitor = r;
+    }
+}
 
 // ── Free functions ──────────────────────────────────────────────────────────
 
 async fn list_infos(
     conn: &mut RdbConn,
-    team_id: &str,
-    pending: Option<bool>,
-    offset: u64,
-    limit: u64,
+    spec: &MemberInvitationListSpec,
 ) -> RegularResult<Vec<MemberInvitationInfo>> {
     let mut query = t_member_invitation
-        .filter(f_team_id.eq(team_id))
+        .filter(f_team_id.eq(spec.team_id.as_str()))
         .select(MemberInvitationRow::as_select())
         .into_boxed();
 
-    if let Some(is_pending) = pending {
+    if let Some(is_pending) = spec.pending {
         query = query.filter(f_pending.eq(is_pending));
     }
 
     let rows: Vec<MemberInvitationRow> = query
         .order_by(f_created_at.desc())
-        .offset(offset as i64)
-        .limit(limit as i64)
+        .offset(spec.offset as i64)
+        .limit(spec.limit as i64)
         .load(conn)
         .await
         .map_err(diesel)?;
@@ -54,12 +75,17 @@ async fn list_infos(
         infos.push(row.try_into()?);
     }
 
+    if spec.incl_opt.contains(&MemberInvitationInclOpt::Invitor) {
+        incl::populate::<MemberInvitationInvitorIncl>(conn, &mut infos).await?;
+    }
+
     Ok(infos)
 }
 
 async fn get_info_by_id(
     conn: &mut RdbConn,
     id: &str,
+    incl_opt: &[MemberInvitationInclOpt],
 ) -> RegularResult<MemberInvitationInfo> {
     let row: MemberInvitationRow = t_member_invitation
         .filter(f_id.eq(id))
@@ -70,7 +96,14 @@ async fn get_info_by_id(
         .map_err(diesel)?
         .ok_or_else(|| expected("error-invitation-not-found"))?;
 
-    row.try_into()
+    let mut info: MemberInvitationInfo = row.try_into()?;
+
+    if incl_opt.contains(&MemberInvitationInclOpt::Invitor) {
+        incl::populate::<MemberInvitationInvitorIncl>(conn, std::slice::from_mut(&mut info))
+            .await?;
+    }
+
+    Ok(info)
 }
 
 async fn create(
@@ -151,14 +184,7 @@ impl<'a> Execute<ListInfos<'a>> for RdbRepo {
     type Error = RegularError;
 
     async fn execute(&self, step: &ListInfos<'a>) -> RegularResult<Vec<MemberInvitationInfo>> {
-        submit_query!(
-            self.shared,
-            list_infos,
-            step.spec.team_id.as_str(),
-            step.spec.pending,
-            step.spec.offset,
-            step.spec.limit
-        )
+        submit_query!(self.shared, list_infos, step.spec)
     }
 }
 
@@ -167,7 +193,7 @@ impl<'a> Execute<GetInfoById<'a>> for RdbRepo {
     type Error = RegularError;
 
     async fn execute(&self, step: &GetInfoById<'a>) -> RegularResult<MemberInvitationInfo> {
-        submit_query!(self.shared, get_info_by_id, step.id)
+        submit_query!(self.shared, get_info_by_id, step.id, step.incl_opt)
     }
 }
 
@@ -221,7 +247,7 @@ impl<'a> Advance<GetInfoById<'a>, RdbContext> for RdbRepoTransactional {
         context: &mut RdbContext,
         step: &GetInfoById<'a>,
     ) -> RegularResult<MemberInvitationInfo> {
-        get_info_by_id(context.conn(), step.id).await
+        get_info_by_id(context.conn(), step.id, step.incl_opt).await
     }
 }
 

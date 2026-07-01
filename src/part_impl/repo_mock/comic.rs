@@ -100,12 +100,23 @@ impl<'a> Execute<GetInfoById<'a>> for Mock {
 
     async fn execute(&self, step: &GetInfoById<'a>) -> Result<ComicInfo, Self::Error> {
         let state = self.state.lock().unwrap();
-        state
+
+        let mut info = state
             .comics
             .iter()
             .find(|comic| comic.id == step.id)
             .cloned()
-            .ok_or_else(|| expected("error-comic-not-found"))
+            .ok_or_else(|| expected("error-comic-not-found"))?;
+
+        let include_workset = step.incl_opt.contains(&ComicInclOpt::Workset);
+        let include_team = step.incl_opt.contains(&ComicInclOpt::Team);
+        let include_creator = step.incl_opt.contains(&ComicInclOpt::Creator);
+
+        apply_workset_incl(&state, &mut info, include_workset);
+        apply_team_incl(&state, &mut info, include_team);
+        apply_creator_incl(&state, &mut info, include_creator);
+
+        Ok(info)
     }
 }
 
@@ -241,13 +252,23 @@ impl<'a> Advance<GetInfoById<'a>, MockContext> for MockTransactional {
         context: &mut MockContext,
         step: &GetInfoById<'a>,
     ) -> Result<ComicInfo, Self::Error> {
-        context
+        let mut info = context
             .state
             .comics
             .iter()
             .find(|comic| comic.id == step.id)
             .cloned()
-            .ok_or_else(|| expected("error-comic-not-found"))
+            .ok_or_else(|| expected("error-comic-not-found"))?;
+
+        let include_workset = step.incl_opt.contains(&ComicInclOpt::Workset);
+        let include_team = step.incl_opt.contains(&ComicInclOpt::Team);
+        let include_creator = step.incl_opt.contains(&ComicInclOpt::Creator);
+
+        apply_workset_incl(&context.state, &mut info, include_workset);
+        apply_team_incl(&context.state, &mut info, include_team);
+        apply_creator_incl(&context.state, &mut info, include_creator);
+
+        Ok(info)
     }
 }
 
@@ -260,13 +281,23 @@ impl<'a> Advance<GetInfoExcluded<'a>, MockContext> for MockTransactional {
         context: &mut MockContext,
         step: &GetInfoExcluded<'a>,
     ) -> Result<ComicInfo, Self::Error> {
-        context
+        let mut info = context
             .state
             .comics
             .iter()
             .find(|comic| comic.id == step.id)
             .cloned()
-            .ok_or_else(|| expected("error-comic-not-found"))
+            .ok_or_else(|| expected("error-comic-not-found"))?;
+
+        let include_workset = step.incl_opt.contains(&ComicInclOpt::Workset);
+        let include_team = step.incl_opt.contains(&ComicInclOpt::Team);
+        let include_creator = step.incl_opt.contains(&ComicInclOpt::Creator);
+
+        apply_workset_incl(&context.state, &mut info, include_workset);
+        apply_team_incl(&context.state, &mut info, include_team);
+        apply_creator_incl(&context.state, &mut info, include_creator);
+
+        Ok(info)
     }
 }
 

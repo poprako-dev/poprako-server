@@ -3,6 +3,7 @@
 use poprako_transactional::step::Step;
 
 use crate::model::member::{MemberForm, MemberInfo, MemberListSpec, MemberRoleUpdate};
+use crate::value::member::MemberInclOpt;
 
 /// Step that inserts a new membership row.
 pub struct Create<'a> {
@@ -63,6 +64,7 @@ impl<'a> Step for FindInfoByUserIdAndTeamId<'a> {
 /// Step that fetches one membership by ID with a pessimistic lock.
 pub struct GetInfoExcluded<'a> {
     pub id: &'a str,
+    pub incl_opt: &'a [MemberInclOpt],
 }
 
 impl<'a> Step for GetInfoExcluded<'a> {
@@ -72,6 +74,7 @@ impl<'a> Step for GetInfoExcluded<'a> {
 /// Step that fetches one membership by ID.
 pub struct GetInfoById<'a> {
     pub id: &'a str,
+    pub incl_opt: &'a [MemberInclOpt],
 }
 
 impl<'a> Step for GetInfoById<'a> {
@@ -140,13 +143,16 @@ impl MemberStep {
     }
 
     /// Constructs a step to fetch one membership with a pessimistic lock.
-    pub fn get_info_excluded<'a>(id: &'a str) -> GetInfoExcluded<'a> {
-        GetInfoExcluded { id }
+    pub fn get_info_excluded<'a>(
+        id: &'a str,
+        incl_opt: &'a [MemberInclOpt],
+    ) -> GetInfoExcluded<'a> {
+        GetInfoExcluded { id, incl_opt }
     }
 
     /// Constructs a step to fetch one membership by ID.
-    pub fn get_info_by_id<'a>(id: &'a str) -> GetInfoById<'a> {
-        GetInfoById { id }
+    pub fn get_info_by_id<'a>(id: &'a str, incl_opt: &'a [MemberInclOpt]) -> GetInfoById<'a> {
+        GetInfoById { id, incl_opt }
     }
 
     /// Constructs a step to update a member's roles.

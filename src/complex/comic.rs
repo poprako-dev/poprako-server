@@ -63,7 +63,7 @@ impl ComicComplex {
         P: PromTransactional<C> + Send + Sync,
     {
         let comic_info = repo
-            .advance(context, &ComicStep::get_info_excluded(id))
+            .advance(context, &ComicStep::get_info_excluded(id, &[]))
             .await?;
 
         let chapter_infos = repo
@@ -261,7 +261,9 @@ impl ComicPermComplex {
         P: for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RegularError>
             + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RegularError>,
     {
-        let comic_info = proxy.execute(&ComicStep::get_info_by_id(comic_id)).await?;
+        let comic_info = proxy
+            .execute(&ComicStep::get_info_by_id(comic_id, &[]))
+            .await?;
 
         let workset_info = proxy
             .execute(&WorksetStep::get_info_by_id(&comic_info.workset_id))

@@ -21,7 +21,7 @@ pub struct UserTokenRef<'a> {
 /// reserved, the client uploads to that key, then the upload is marked complete.
 ///
 /// [`UserInfoVal`]: crate::data::user::UserInfoVal
-#[cfg_attr(test, derive(Clone))]
+#[derive(Clone)]
 pub struct UserInfo {
     pub id: String,
 

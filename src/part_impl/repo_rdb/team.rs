@@ -15,11 +15,11 @@ use crate::part::repo::step::team::{
 };
 use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_rdb::entity::team::{TeamAspect, TeamEntry, TeamRow};
-use crate::part_impl::repo_rdb::{RdbRepo, RdbRepoTransactional};
 use crate::part_impl::repo_rdb::schema::t_member;
 use crate::part_impl::repo_rdb::schema::t_team::dsl::*;
-use crate::part_impl::shared_rdb::{RdbConn, RdbContext};
+use crate::part_impl::repo_rdb::{RdbRepo, RdbRepoTransactional};
 use crate::part_impl::shared_rdb::result::{diesel, expected};
+use crate::part_impl::shared_rdb::{RdbConn, RdbContext};
 use crate::result::{RegularError, RegularResult};
 
 // ── Free functions ──────────────────────────────────────────────────────────

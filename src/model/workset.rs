@@ -6,7 +6,7 @@ use time::OffsetDateTime;
 ///
 /// Worksets are scoped to a team and keep denormalized comic counters for
 /// list views and comic index allocation.
-#[cfg_attr(test, derive(Clone))]
+#[derive(Clone)]
 pub struct WorksetInfo {
     pub id: String,
 

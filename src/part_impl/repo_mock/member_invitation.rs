@@ -86,12 +86,21 @@ impl<'a> Execute<GetInfoById<'a>> for Mock {
 
     async fn execute(&self, step: &GetInfoById<'a>) -> Result<MemberInvitationInfo, Self::Error> {
         let state = self.state.lock().unwrap();
-        state
+
+        let mut info = state
             .member_invitations
             .iter()
-            .find(|member_invitation_info| member_invitation_info.id == step.id)
+            .find(|i| i.id == step.id)
             .cloned()
-            .ok_or_else(|| expected("error-invitation-not-found"))
+            .ok_or_else(|| expected("error-invitation-not-found"))?;
+
+        let include_invitor = step
+            .incl_opt
+            .contains(&MemberInvitationInclOpt::Invitor);
+
+        apply_invitor_incl(&state, &mut info, include_invitor);
+
+        Ok(info)
     }
 }
 
@@ -171,13 +180,21 @@ impl<'a> Advance<GetInfoById<'a>, MockContext> for MockTransactional {
         context: &mut MockContext,
         step: &GetInfoById<'a>,
     ) -> Result<MemberInvitationInfo, Self::Error> {
-        context
+        let mut info = context
             .state
             .member_invitations
             .iter()
-            .find(|member_invitation_info| member_invitation_info.id == step.id)
+            .find(|i| i.id == step.id)
             .cloned()
-            .ok_or_else(|| expected("error-invitation-not-found"))
+            .ok_or_else(|| expected("error-invitation-not-found"))?;
+
+        let include_invitor = step
+            .incl_opt
+            .contains(&MemberInvitationInclOpt::Invitor);
+
+        apply_invitor_incl(&context.state, &mut info, include_invitor);
+
+        Ok(info)
     }
 }
 

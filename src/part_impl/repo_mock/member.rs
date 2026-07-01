@@ -270,7 +270,16 @@ impl<'a> Execute<GetInfoById<'a>> for Mock {
 
     async fn execute(&self, step: &GetInfoById<'a>) -> Result<MemberInfo, Self::Error> {
         let state = self.state.lock().unwrap();
-        get_member_by_id(&state, step.id)
+
+        let mut info = get_member_by_id(&state, step.id)?;
+
+        let include_user = step.incl_opt.contains(&MemberInclOpt::User);
+        let include_team = step.incl_opt.contains(&MemberInclOpt::Team);
+
+        apply_user_incl(&state, &mut info, include_user);
+        apply_team_incl(&state, &mut info, include_team);
+
+        Ok(info)
     }
 }
 
@@ -300,7 +309,15 @@ impl<'a> Advance<GetInfoExcluded<'a>, MockContext> for MockTransactional {
         context: &mut MockContext,
         step: &GetInfoExcluded<'a>,
     ) -> Result<MemberInfo, Self::Error> {
-        get_member_by_id(&context.state, step.id)
+        let mut info = get_member_by_id(&context.state, step.id)?;
+
+        let include_user = step.incl_opt.contains(&MemberInclOpt::User);
+        let include_team = step.incl_opt.contains(&MemberInclOpt::Team);
+
+        apply_user_incl(&context.state, &mut info, include_user);
+        apply_team_incl(&context.state, &mut info, include_team);
+
+        Ok(info)
     }
 }
 

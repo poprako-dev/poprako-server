@@ -461,10 +461,7 @@ async fn update_role_admin_updates_member_role_mask() {
         .find(|m| m.id == "member-target")
         .unwrap();
 
-    assert_eq!(
-        member_info.roles,
-        RoleMask::from(RoleField::REVIEWER)
-    );
+    assert_eq!(member_info.roles, RoleMask::from(RoleField::REVIEWER));
 }
 
 #[tokio::test]
@@ -502,10 +499,7 @@ async fn update_role_non_admin_is_rejected() {
         .unwrap();
 
     assert_expected_variant(err, ExpectedVariant::PermDeny);
-    assert_eq!(
-        member_info.roles,
-        RoleMask::from(RoleField::TRANSLATOR)
-    );
+    assert_eq!(member_info.roles, RoleMask::from(RoleField::TRANSLATOR));
 }
 
 #[tokio::test]

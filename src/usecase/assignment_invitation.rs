@@ -255,7 +255,10 @@ where
                 .await?;
 
             let comic_info = repo
-                .advance(context, &ComicStep::get_info_by_id(&chapter_info.comic_id))
+                .advance(
+                    context,
+                    &ComicStep::get_info_by_id(&chapter_info.comic_id, &[]),
+                )
                 .await?;
 
             let workset_info = repo
