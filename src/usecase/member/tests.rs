@@ -19,14 +19,12 @@
 
 use super::*;
 
-use crate::test_util;
-
 use crate::model::member::{MemberInfo, MemberListSpec};
 use crate::model::team::TeamInfo;
 use crate::model::user::{UserCredential, UserInfo};
 use crate::part_impl::repo_mock::Mock;
 use crate::result::ExpectedVariant;
-use crate::test_util::assert_expected_variant;
+use crate::test_util::{self, assert_expected_variant};
 use crate::value::role::{RoleField, RoleMask};
 
 mod join_team;
@@ -457,14 +455,14 @@ async fn update_role_admin_updates_member_role_mask() {
     .await;
     assert!(update_member_role.is_ok());
     let snapshot = mock.snapshot();
-    let target_member_info = snapshot
+    let member_info = snapshot
         .members
         .iter()
-        .find(|member_info| member_info.id == "member-target")
+        .find(|m| m.id == "member-target")
         .unwrap();
 
     assert_eq!(
-        target_member_info.roles,
+        member_info.roles,
         RoleMask::from(RoleField::REVIEWER)
     );
 }
@@ -497,15 +495,15 @@ async fn update_role_non_admin_is_rejected() {
     .err()
     .unwrap();
     let snapshot = mock.snapshot();
-    let target_member_info = snapshot
+    let member_info = snapshot
         .members
         .iter()
-        .find(|member_info| member_info.id == "member-target")
+        .find(|m| m.id == "member-target")
         .unwrap();
 
     assert_expected_variant(err, ExpectedVariant::PermDeny);
     assert_eq!(
-        target_member_info.roles,
+        member_info.roles,
         RoleMask::from(RoleField::TRANSLATOR)
     );
 }
