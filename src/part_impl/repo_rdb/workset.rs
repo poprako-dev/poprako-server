@@ -30,6 +30,7 @@ async fn get_workset_by_id(conn: &mut AsyncPgConnection, id: &str) -> RegularRes
         .optional()
         .map_err(diesel)?
         .ok_or_else(|| expected("error-workset-not-found"))?;
+
     Ok(row.into())
 }
 
@@ -48,6 +49,7 @@ async fn list_worksets_by_team(
         .load(conn)
         .await
         .map_err(diesel)?;
+
     Ok(rows.into_iter().map(Into::into).collect())
 }
 
@@ -58,12 +60,15 @@ async fn update_workset(
     description: Option<&str>,
 ) -> RegularResult<()> {
     let now = OffsetDateTime::now_utc();
+
     let aspect = WorksetAspect::new(now).name(name).description(description);
+
     diesel::update(t_workset.filter(f_id.eq(id)))
         .set(&aspect)
         .execute(conn)
         .await
         .map_err(diesel)?;
+
     Ok(())
 }
 
@@ -78,6 +83,7 @@ async fn list_worksets_by_team_excluded(
         .load(conn)
         .await
         .map_err(diesel)?;
+
     Ok(rows.into_iter().map(Into::into).collect())
 }
 
@@ -94,6 +100,7 @@ async fn get_workset_by_id_excluded(
         .optional()
         .map_err(diesel)?
         .ok_or_else(|| expected("error-workset-not-found"))?;
+
     Ok(row.into())
 }
 
@@ -102,6 +109,7 @@ async fn delete_workset(conn: &mut AsyncPgConnection, id: &str) -> RegularResult
         .execute(conn)
         .await
         .map_err(diesel)?;
+
     Ok(())
 }
 
@@ -117,12 +125,14 @@ async fn create_workset(
     form: &WorksetForm,
 ) -> RegularResult<WorksetInfo> {
     let entry = WorksetEntry::from(form);
+
     let row: WorksetRow = diesel::insert_into(t_workset)
         .values(&entry)
         .returning(WorksetRow::as_returning())
         .get_result(conn)
         .await
         .map_err(diesel)?;
+
     Ok(row.into())
 }
 
@@ -133,6 +143,7 @@ async fn incr_comic_next_index(conn: &mut AsyncPgConnection, id: &str) -> Regula
         .get_result(conn)
         .await
         .map_err(diesel)?;
+
     Ok(prev)
 }
 
@@ -146,6 +157,7 @@ async fn update_comic_count(
         .execute(conn)
         .await
         .map_err(diesel)?;
+
     Ok(())
 }
 
@@ -154,13 +166,16 @@ async fn update_comic_count(
 #[async_trait]
 impl<'a> Execute<GetInfoById<'a>> for RdbRepo {
     type Error = RegularError;
+
     async fn execute(&self, s: &GetInfoById<'a>) -> RegularResult<WorksetInfo> {
         submit_query!(self.shared, get_workset_by_id, s.id)
     }
 }
+
 #[async_trait]
 impl<'a> Execute<ListInfosByTeamId<'a>> for RdbRepo {
     type Error = RegularError;
+
     async fn execute(&self, s: &ListInfosByTeamId<'a>) -> RegularResult<Vec<WorksetInfo>> {
         submit_query!(
             self.shared,
@@ -171,9 +186,11 @@ impl<'a> Execute<ListInfosByTeamId<'a>> for RdbRepo {
         )
     }
 }
+
 #[async_trait]
 impl<'a> Execute<UpdateInfo<'a>> for RdbRepo {
     type Error = RegularError;
+
     async fn execute(&self, s: &UpdateInfo<'a>) -> RegularResult<()> {
         submit_query!(
             self.shared,
@@ -190,6 +207,7 @@ impl<'a> Execute<UpdateInfo<'a>> for RdbRepo {
 #[async_trait]
 impl<'a> Advance<ListInfosByTeamIdExcluded<'a>, RdbContext> for RdbRepoTransactional {
     type Error = RegularError;
+
     async fn advance(
         &self,
         c: &mut RdbContext,
@@ -198,9 +216,11 @@ impl<'a> Advance<ListInfosByTeamIdExcluded<'a>, RdbContext> for RdbRepoTransacti
         list_worksets_by_team_excluded(c.conn(), s.team_id).await
     }
 }
+
 #[async_trait]
 impl<'a> Advance<GetInfoExcluded<'a>, RdbContext> for RdbRepoTransactional {
     type Error = RegularError;
+
     async fn advance(
         &self,
         c: &mut RdbContext,
@@ -209,37 +229,47 @@ impl<'a> Advance<GetInfoExcluded<'a>, RdbContext> for RdbRepoTransactional {
         get_workset_by_id_excluded(c.conn(), s.id).await
     }
 }
+
 #[async_trait]
 impl<'a> Advance<Delete<'a>, RdbContext> for RdbRepoTransactional {
     type Error = RegularError;
+
     async fn advance(&self, c: &mut RdbContext, s: &Delete<'a>) -> RegularResult<()> {
         delete_workset(c.conn(), s.id).await
     }
 }
+
 #[async_trait]
 impl<'a> Advance<GetInfoById<'a>, RdbContext> for RdbRepoTransactional {
     type Error = RegularError;
+
     async fn advance(&self, c: &mut RdbContext, s: &GetInfoById<'a>) -> RegularResult<WorksetInfo> {
         get_workset_by_id_tx(c.conn(), s.id).await
     }
 }
+
 #[async_trait]
 impl<'a> Advance<Create<'a>, RdbContext> for RdbRepoTransactional {
     type Error = RegularError;
+
     async fn advance(&self, c: &mut RdbContext, s: &Create<'a>) -> RegularResult<WorksetInfo> {
         create_workset(c.conn(), s.form).await
     }
 }
+
 #[async_trait]
 impl<'a> Advance<IncrComicNextIndex<'a>, RdbContext> for RdbRepoTransactional {
     type Error = RegularError;
+
     async fn advance(&self, c: &mut RdbContext, s: &IncrComicNextIndex<'a>) -> RegularResult<i32> {
         incr_comic_next_index(c.conn(), s.id).await
     }
 }
+
 #[async_trait]
 impl<'a> Advance<UpdateComicCount<'a>, RdbContext> for RdbRepoTransactional {
     type Error = RegularError;
+
     async fn advance(&self, c: &mut RdbContext, s: &UpdateComicCount<'a>) -> RegularResult<()> {
         update_comic_count(c.conn(), s.id, s.delta).await
     }
