@@ -7,9 +7,15 @@ use crate::util::DeriveTransactional;
 use super::shared_rdb::{RdbConn, RdbShared};
 use crate::result::RootError;
 
+pub mod comic;
 pub mod entity;
-
-mod schema;
+pub mod member;
+pub mod member_invitation;
+pub mod schema;
+pub mod system_mail;
+pub mod team;
+pub mod user;
+pub mod workset;
 
 pub struct RdbRepo {
     shared: RdbShared,
@@ -31,7 +37,7 @@ pub struct RdbRepoTransactional;
 impl DeriveTransactional for RdbRepo {
     type Transactional = RdbRepoTransactional;
 
-    async fn transactional(&self) -> Self::Transactional {
+    async fn derive_transactional(&self) -> Self::Transactional {
         RdbRepoTransactional
     }
 }

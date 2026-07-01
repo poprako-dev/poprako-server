@@ -58,7 +58,7 @@ where
 
     let member_id = drive
         .with_context(async move |context| {
-            let repo = repo.transactional().await;
+            let repo = repo.derive_transactional().await;
 
             let target_user_info = repo
                 .advance(context, &UserStep::get_info_excluded(&data.user_id))
@@ -123,7 +123,7 @@ where
 
     drive
         .with_context(async move |context| {
-            let repo = repo.transactional().await;
+            let repo = repo.derive_transactional().await;
 
             let current_user_info = repo
                 .advance(context, &UserStep::get_info_excluded(&current_user_id))
@@ -244,7 +244,7 @@ where
 
     drive
         .with_context(async move |context| {
-            let repo = repo.transactional().await;
+            let repo = repo.derive_transactional().await;
 
             let member_role_update = MemberRoleUpdate {
                 id: data.id,
@@ -286,7 +286,7 @@ where
 
     drive
         .with_context(async move |context| {
-            let repo = repo.transactional().await;
+            let repo = repo.derive_transactional().await;
 
             repo.advance(context, &MemberStep::delete(&id)).await?;
 

@@ -242,7 +242,7 @@ async fn list_infos_omits_user_without_include() {
 async fn create_persists_announcement() {
     let mock = Mock::new();
     let announcement_form = form("announcement-1");
-    let repo = mock.transactional().await;
+    let repo = mock.derive_transactional().await;
 
     assert!(
         mock.with_context(async move |context| {
@@ -260,7 +260,7 @@ async fn create_rejects_duplicate_id() {
     let mock = Mock::new();
     mock.seed_announcement(announcement("announcement-1", "team-1", "user-1", now()));
     let announcement_form = form("announcement-1");
-    let repo = mock.transactional().await;
+    let repo = mock.derive_transactional().await;
 
     let err = mock
         .with_context(async move |context| {

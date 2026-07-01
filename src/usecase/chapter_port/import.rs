@@ -74,7 +74,7 @@ where
 
     let imported = drive
         .with_context(async move |context| {
-            let repo = repo.transactional().await;
+            let repo = repo.derive_transactional().await;
 
             let chapter_info = repo
                 .advance(context, &ChapterStep::get_info_by_id(&chapter_id))

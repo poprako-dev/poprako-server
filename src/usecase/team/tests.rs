@@ -75,7 +75,7 @@ struct FailingCreateRepo;
 impl DeriveTransactional for FailingCreateRepo {
     type Transactional = FailingTeamTransactional;
 
-    async fn transactional(&self) -> Self::Transactional {
+    async fn derive_transactional(&self) -> Self::Transactional {
         FailingTeamTransactional
     }
 }

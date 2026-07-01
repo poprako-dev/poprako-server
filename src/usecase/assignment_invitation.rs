@@ -101,7 +101,7 @@ where
 
     let (assignment_invitation_id, assignment_invitation_code) = drive
         .with_context(async move |context| {
-            let repo = repo.transactional().await;
+            let repo = repo.derive_transactional().await;
 
             let invitee_user_info = repo
                 .advance(context, &UserStep::find_info_by_qid(&data.invitee_qid))
@@ -181,7 +181,7 @@ where
 
     drive
         .with_context(async move |context| {
-            let repo = repo.transactional().await;
+            let repo = repo.derive_transactional().await;
 
             repo.advance(context, &AssignmentInvitationStep::delete(&id))
                 .await?;
@@ -228,7 +228,7 @@ where
 
     drive
         .with_context(async move |context| {
-            let repo = repo.transactional().await;
+            let repo = repo.derive_transactional().await;
 
             let current_user_info = repo
                 .advance(context, &UserStep::get_info_excluded(&current_user_id))

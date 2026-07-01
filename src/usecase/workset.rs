@@ -12,7 +12,7 @@ use crate::data::workset::{
 };
 use crate::model::user::UserToken;
 use crate::model::workset::{WorksetForm, WorksetInfoUpdate};
-use crate::part::prom::{Prom, PromTransactional};
+use crate::part::prom::PromTransactional;
 use crate::part::repo::chapter::{ChapterRepo, ChapterRepoTransactional};
 use crate::part::repo::comic::{ComicRepo, ComicRepoTransactional};
 use crate::part::repo::map_drive_err;
@@ -53,7 +53,7 @@ where
 
     let workset_id = drive
         .with_context(async move |context| {
-            let repo = repo.transactional().await;
+            let repo = repo.derive_transactional().await;
 
             let index = repo
                 .advance(
@@ -200,8 +200,7 @@ where
         + PageRepoTransactional<C>
         + Send
         + Sync,
-    P: Prom<C> + Send + Sync,
-    <P as DeriveTransactional>::Transactional: PromTransactional<C> + Send + Sync,
+    P: PromTransactional<C> + Send + Sync,
 {
     use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
@@ -209,14 +208,13 @@ where
 
     drive
         .with_context(async move |context| {
-            let repo = repo.transactional().await;
-            let prom = prom.transactional().await;
+            let repo = repo.derive_transactional().await;
 
             let workset_info = repo
                 .advance(context, &WorksetStep::get_info_excluded(&id))
                 .await?;
 
-            WorksetComplex::delete_cascade(&repo, &prom, context, &workset_info.id).await?;
+            WorksetComplex::delete_cascade(&repo, prom, context, &workset_info.id).await?;
 
             accept(())
         })

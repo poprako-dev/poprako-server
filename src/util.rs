@@ -13,7 +13,7 @@ pub trait DeriveTransactional {
     type Transactional;
 
     /// Obtain a transactional handle from a non-transactional reference.
-    async fn transactional(&self) -> Self::Transactional;
+    async fn derive_transactional(&self) -> Self::Transactional;
 }
 
 /// Generate a unique time-ordered identifier in base62 format.

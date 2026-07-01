@@ -17,7 +17,7 @@ use crate::part::effect::event::user::UserActivePayload;
 use crate::part::effect::{EffectDevelop, EffectEmit as _};
 use crate::part::image::ImagePool;
 use crate::part::prom::intention::{IMAGE_TOPIC, ImageIntention, ImageKind};
-use crate::part::prom::{Payload, Prom, PromStep, PromTransactional};
+use crate::part::prom::{Payload, PromStep, PromTransactional};
 use crate::part::repo::map_drive_err;
 use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
 use crate::part::repo::step::member::MemberStep;
@@ -107,7 +107,7 @@ where
 
     drive
         .with_context(async move |context| {
-            let repo = repo.transactional().await;
+            let repo = repo.derive_transactional().await;
 
             repo.advance(
                 context,
@@ -146,7 +146,7 @@ where
 /// * `D: Drive<C>` — Transaction driver.
 /// * `C` — Context anchor.
 /// * `R: UserRepo<C>` — User storage.
-/// * `P: Prom<C>` — Prom enqueuer.
+/// * `P: PromTransactional<C>` — Prom enqueuer.
 /// * `I: ImagePool` — Generates the signed upload URL.
 ///
 /// [`team::reserve_avatar`]: super::team::reserve_avatar
@@ -164,14 +164,12 @@ where
     C: Send,
     R: UserRepo<C> + Send + Sync,
     <R as DeriveTransactional>::Transactional: UserRepoTransactional<C> + Send,
-    P: Prom<C> + Send + Sync,
-    <P as DeriveTransactional>::Transactional: PromTransactional<C> + Send + Sync,
+    P: PromTransactional<C> + Send + Sync,
     I: ImagePool,
 {
     let (object_key, avatar_version) = drive
         .with_context(async move |context| {
-            let repo = repo.transactional().await;
-            let prom = prom.transactional().await;
+            let repo = repo.derive_transactional().await;
 
             let avatar_reservation = repo
                 .advance(
@@ -269,7 +267,7 @@ where
 
     drive
         .with_context(async move |context| {
-            let repo = repo.transactional().await;
+            let repo = repo.derive_transactional().await;
 
             repo.advance(
                 context,
@@ -306,7 +304,7 @@ where
 {
     drive
         .with_context(async move |context| {
-            let repo = repo.transactional().await;
+            let repo = repo.derive_transactional().await;
 
             repo.advance(context, &UserStep::touch_last_active(&token.user_id))
                 .await?;
@@ -340,7 +338,7 @@ where
 /// * `D: Drive<C>` — Transaction driver.
 /// * `C` — Context anchor.
 /// * `R: UserRepo<C> + MemberRepo<C>` — User and member storage.
-/// * `P: Prom<C>` — Prom enqueuer for deferred avatar deletion.
+/// * `P: PromTransactional<C>` — Prom enqueuer for deferred avatar deletion.
 pub async fn delete<D, C, R, P>(
     drive: &D,
     repo: &R,
@@ -355,8 +353,7 @@ where
     R: UserRepo<C> + MemberRepo<C> + Send + Sync,
     <R as DeriveTransactional>::Transactional:
         UserRepoTransactional<C> + MemberRepoTransactional<C> + Send + Sync,
-    P: Prom<C> + Send + Sync,
-    <P as DeriveTransactional>::Transactional: PromTransactional<C> + Send + Sync,
+    P: PromTransactional<C> + Send + Sync,
 {
     if token.user_id != id {
         // TODO: perm check.
@@ -368,8 +365,7 @@ where
 
     drive
         .with_context(async move |context| {
-            let repo = repo.transactional().await;
-            let prom = prom.transactional().await;
+            let repo = repo.derive_transactional().await;
 
             let user_info = repo
                 .advance(context, &UserStep::get_info_excluded(&id))

@@ -16,7 +16,7 @@ use crate::model::team::TeamForm;
 use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
 use crate::part::prom::intention::{IMAGE_TOPIC, ImageIntention, ImageKind};
-use crate::part::prom::{Payload, Prom, PromStep, PromTransactional};
+use crate::part::prom::{Payload, PromStep, PromTransactional};
 use crate::part::repo::chapter::{ChapterRepo, ChapterRepoTransactional};
 use crate::part::repo::comic::{ComicRepo, ComicRepoTransactional};
 use crate::part::repo::map_drive_err;
@@ -187,7 +187,7 @@ where
 /// * `D: Drive<C>` — Transaction driver.
 /// * `C` — Context anchor.
 /// * `R: TeamRepo<C>` — Team storage.
-/// * `P: Prom<C>` — Prom enqueuer for deferred image opers.
+/// * `P: PromTransactional<C>` — Prom enqueuer for deferred image opers.
 /// * `I: ImagePool` — Generates the signed upload URL.
 pub async fn reserve_avatar<D, C, R, P, I>(
     drive: &D,
@@ -205,8 +205,7 @@ where
     R: TeamRepo<C> + MemberRepo<C> + Send + Sync,
     <R as DeriveTransactional>::Transactional:
         TeamRepoTransactional<C> + MemberRepoTransactional<C> + Send + Sync,
-    P: Prom<C> + Send + Sync,
-    <P as DeriveTransactional>::Transactional: PromTransactional<C> + Send + Sync,
+    P: PromTransactional<C> + Send + Sync,
     I: ImagePool,
 {
     use crate::part::shared::proxy::AsProxyNonTransactional as _;
@@ -215,8 +214,7 @@ where
 
     let (object_key, avatar_version) = drive
         .with_context(async move |context| {
-            let repo = repo.transactional().await;
-            let prom = prom.transactional().await;
+            let repo = repo.derive_transactional().await;
 
             let avatar_reservation = repo
                 .advance(context, &TeamStep::reserve_avatar(&id, &data.file_ext))
@@ -326,7 +324,7 @@ where
 /// * `D: Drive<C>` — Transaction driver.
 /// * `C` — Context anchor.
 /// * `R: TeamRepo<C> + WorksetRepo<C> + ComicRepo<C>` — Team, workset, and comic storage.
-/// * `P: Prom<C>` — Prom enqueuer for deferred avatar deletion.
+/// * `P: PromTransactional<C>` — Prom enqueuer for deferred avatar deletion.
 pub async fn delete<D, C, R, P>(
     drive: &D,
     repo: &R,
@@ -354,8 +352,7 @@ where
         + PageRepoTransactional<C>
         + Send
         + Sync,
-    P: Prom<C> + Send + Sync,
-    <P as DeriveTransactional>::Transactional: PromTransactional<C> + Send + Sync,
+    P: PromTransactional<C> + Send + Sync,
 {
     use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
@@ -363,10 +360,9 @@ where
 
     drive
         .with_context(async move |context| {
-            let repo = repo.transactional().await;
-            let prom = prom.transactional().await;
+            let repo = repo.derive_transactional().await;
 
-            TeamComplex::delete_cascade(&repo, &prom, context, &id).await?;
+            TeamComplex::delete_cascade(&repo, prom, context, &id).await?;
 
             accept(())
         })

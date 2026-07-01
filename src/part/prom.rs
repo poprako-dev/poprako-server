@@ -25,7 +25,6 @@ use poprako_transactional::step::Step;
 
 use crate::part::prom::intention::ImageIntention;
 use crate::result::RootError;
-use crate::util::DeriveTransactional;
 
 pub mod intention;
 
@@ -74,16 +73,6 @@ impl PromStep {
             visible_at,
         }
     }
-}
-
-/// Non-transactional prom trait.
-///
-/// Requires [`DeriveTransactional`] so a transactional handle can be
-/// obtained, and constrains that handle to implement [`PromTransactional<C>`].
-pub trait Prom<C>: DeriveTransactional
-where
-    Self::Transactional: PromTransactional<C>,
-{
 }
 
 /// Transactional prom trait — can [`Advance`] an [`Append`] step.

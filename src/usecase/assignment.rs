@@ -116,7 +116,7 @@ where
 
     let assignment_info = drive
         .with_context(async move |context| {
-            let repo = repo.transactional().await;
+            let repo = repo.derive_transactional().await;
 
             let existing_assignment_info = repo
                 .advance(
@@ -190,7 +190,7 @@ where
 
     drive
         .with_context(async move |context| {
-            let repo = repo.transactional().await;
+            let repo = repo.derive_transactional().await;
 
             let existing_assignment_info = repo
                 .advance(
@@ -251,7 +251,7 @@ where
 
     drive
         .with_context(async move |context| {
-            let repo = repo.transactional().await;
+            let repo = repo.derive_transactional().await;
 
             repo.advance(context, &AssignmentStep::delete(&id)).await?;
 

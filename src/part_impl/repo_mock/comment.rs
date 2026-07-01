@@ -227,7 +227,7 @@ async fn list_infos_omits_user_without_include() {
 async fn create_persists_comment() {
     let mock = Mock::new();
     let comment_form = form("comment-1");
-    let repo = mock.transactional().await;
+    let repo = mock.derive_transactional().await;
 
     assert!(
         mock.with_context(async move |context| {
@@ -245,7 +245,7 @@ async fn create_rejects_duplicate_id() {
     let mock = Mock::new();
     mock.seed_comment(comment("comment-1", "team-1", "user-1", now()));
     let comment_form = form("comment-1");
-    let repo = mock.transactional().await;
+    let repo = mock.derive_transactional().await;
 
     let err = mock
         .with_context(async move |context| {

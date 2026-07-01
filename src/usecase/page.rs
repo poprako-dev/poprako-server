@@ -17,7 +17,7 @@ use crate::model::page::PageForm;
 use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
 use crate::part::prom::intention::{IMAGE_TOPIC, ImageIntention, ImageKind};
-use crate::part::prom::{Payload, Prom, PromStep, PromTransactional};
+use crate::part::prom::{Payload, PromStep, PromTransactional};
 use crate::part::repo::assignment::{AssignmentRepo, AssignmentRepoTransactional};
 use crate::part::repo::chapter::{ChapterRepo, ChapterRepoTransactional};
 use crate::part::repo::comic::{ComicRepo, ComicRepoTransactional};
@@ -54,8 +54,7 @@ where
         + PageRepoTransactional<C>
         + Send
         + Sync,
-    P: Prom<C> + Send + Sync,
-    <P as DeriveTransactional>::Transactional: PromTransactional<C> + Send + Sync,
+    P: PromTransactional<C> + Send + Sync,
     I: ImagePool,
 {
     validate_page_count(data.page_count)?;
@@ -73,8 +72,7 @@ where
 
     let reservations = drive
         .with_context(async move |context| {
-            let repo = repo.transactional().await;
-            let prom = prom.transactional().await;
+            let repo = repo.derive_transactional().await;
 
             let chapter_info = repo
                 .advance(
@@ -128,7 +126,7 @@ where
 
             for reservation in &reservations {
                 append_check_uploaded(
-                    &prom,
+                    prom,
                     context,
                     &reservation.page_id,
                     &reservation.object_key,
@@ -192,8 +190,7 @@ where
     R: PageRepo<C> + AssignmentRepo<C> + Send + Sync,
     <R as DeriveTransactional>::Transactional:
         PageRepoTransactional<C> + AssignmentRepoTransactional<C> + Send + Sync,
-    P: Prom<C> + Send + Sync,
-    <P as DeriveTransactional>::Transactional: PromTransactional<C> + Send + Sync,
+    P: PromTransactional<C> + Send + Sync,
     I: ImagePool,
 {
     let page_id = id.clone();
@@ -209,8 +206,7 @@ where
 
     let (object_key, image_version) = drive
         .with_context(async move |context| {
-            let repo = repo.transactional().await;
-            let prom = prom.transactional().await;
+            let repo = repo.derive_transactional().await;
 
             let page_reservation = repo
                 .advance(context, &PageStep::reserve_image(&id, &file_ext))
@@ -221,13 +217,13 @@ where
             if let Some(prev_object_key) = &page_reservation.prev_object_key
                 && prev_object_key != &page_reservation.object_key
             {
-                append_delete(&prom, context, prev_object_key, &now).await?;
+                append_delete(prom, context, prev_object_key, &now).await?;
             }
 
             let check_visible_at = now + Duration::minutes(15);
 
             append_check_uploaded(
-                &prom,
+                prom,
                 context,
                 &page_info.id,
                 &page_reservation.object_key,
@@ -328,7 +324,7 @@ where
 
     drive
         .with_context(async move |context| {
-            let repo = repo.transactional().await;
+            let repo = repo.derive_transactional().await;
 
             repo.advance(
                 context,
@@ -372,8 +368,7 @@ where
         + AssignmentRepoTransactional<C>
         + Send
         + Sync,
-    P: Prom<C> + Send + Sync,
-    <P as DeriveTransactional>::Transactional: PromTransactional<C> + Send + Sync,
+    P: PromTransactional<C> + Send + Sync,
 {
     use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
@@ -381,8 +376,7 @@ where
 
     drive
         .with_context(async move |context| {
-            let repo = repo.transactional().await;
-            let prom = prom.transactional().await;
+            let repo = repo.derive_transactional().await;
 
             let chapter_info = repo
                 .advance(context, &ChapterStep::get_info_by_id_excluded(&chapter_id))
@@ -399,7 +393,7 @@ where
 
             for page_info in page_infos {
                 if let Some(object_key) = page_info.image_key {
-                    append_delete(&prom, context, &object_key, &now).await?;
+                    append_delete(prom, context, &object_key, &now).await?;
                 }
             }
 
