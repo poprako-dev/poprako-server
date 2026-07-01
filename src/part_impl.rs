@@ -1,3 +1,6 @@
+pub mod rdb_drive;
+pub mod rdb_repo;
+
 #[cfg(test)]
 pub mod auth_mock;
 #[cfg(test)]
