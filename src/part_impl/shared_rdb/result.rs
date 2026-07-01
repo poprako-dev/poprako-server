@@ -29,9 +29,8 @@ pub fn diesel(err: DieselError) -> RegularError {
             }
         }
         DieselError::NotFound => RegularError::Unrecoverable {
-            message: format!(
-                "unexpected Diesel NotFound; use optional() and map None at call site",
-            ),
+            message: "unexpected Diesel NotFound; use optional() and map None at call site"
+                .to_string(),
         },
         err => RegularError::Unrecoverable {
             message: format!("diesel error: {}", err),

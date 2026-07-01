@@ -12,7 +12,7 @@ use crate::part::repo::comment::{CommentRepo, CommentRepoTransactional};
 use crate::part::repo::step::comment::{Create, ListInfos};
 use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactional, expected, now};
-use crate::result::RegularError;
+use crate::result::{RegularError, RegularResult};
 use crate::util::DeriveTransactional;
 use crate::value::comment::CommentInclOpt;
 
@@ -62,7 +62,7 @@ fn list_comments(state: &MockState, spec: &CommentListSpec) -> Vec<CommentInfo> 
     comment_infos[offset..end].to_vec()
 }
 
-fn create_comment(state: &mut MockState, form: &CommentForm) -> Result<CommentInfo, RegularError> {
+fn create_comment(state: &mut MockState, form: &CommentForm) -> RegularResult<CommentInfo> {
     if state
         .comments
         .iter()

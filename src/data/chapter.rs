@@ -6,7 +6,7 @@ use poprako_macro::Paginate;
 use poprako_util::time::ToUnixMilli;
 
 use crate::data::user::UserInfoVal;
-use crate::model::chapter::{ChapterInfo, ChapterListSpec};
+use crate::model::chapter::ChapterInfo;
 use crate::part::image::ImagePool;
 use crate::result::RegularResult;
 use crate::value::chapter::{ChapterInclOpt, WorkflowEvent, WorkflowStage, WorkflowStageMask};

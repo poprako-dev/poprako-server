@@ -19,7 +19,7 @@ use poprako_util::i18n::{trl, trl_kv};
 use crate::complex::image::ImageComplex;
 use crate::complex::util::{check_user_is_team_admin, check_user_is_team_member};
 use crate::model::chapter::{ChapterInfo, ChapterInfoUpdate, ChapterStageUpdate};
-use crate::part::prom::intention::{IMAGE_TOPIC, ImageIntention};
+use crate::part::prom::task::{IMAGE_TOPIC, ImageTask};
 use crate::part::prom::{Payload, PromStep, PromTransactional};
 use crate::part::repo::chapter::ChapterRepoTransactional;
 use crate::part::repo::comic::ComicRepoTransactional;
@@ -174,8 +174,8 @@ where
                 &PromStep::append(
                     &delete_id,
                     IMAGE_TOPIC,
-                    Payload::Image(ImageIntention::Delete {
-                        object_key: image_key,
+                    Payload::Image(ImageTask::Delete {
+                        object_key: &image_key,
                     }),
                     &now,
                 ),

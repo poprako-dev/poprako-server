@@ -8,7 +8,7 @@ use poprako_util::i18n::trl;
 use crate::complex::image::ImageComplex;
 use crate::complex::util::check_user_is_team_admin;
 use crate::complex::workset::WorksetComplex;
-use crate::part::prom::intention::{IMAGE_TOPIC, ImageIntention};
+use crate::part::prom::task::{IMAGE_TOPIC, ImageTask};
 use crate::part::prom::{Payload, PromStep, PromTransactional};
 use crate::part::repo::chapter::ChapterRepoTransactional;
 use crate::part::repo::comic::ComicRepoTransactional;
@@ -81,8 +81,8 @@ impl TeamComplex {
                 &PromStep::append(
                     &delete_id,
                     IMAGE_TOPIC,
-                    Payload::Image(ImageIntention::Delete {
-                        object_key: avatar_key.clone(),
+                    Payload::Image(ImageTask::Delete {
+                        object_key: avatar_key.as_str(),
                     }),
                     &now,
                 ),

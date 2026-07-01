@@ -17,7 +17,7 @@ use crate::part::repo::step::comic::{
 };
 use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactional, expected, now};
-use crate::result::RegularError;
+use crate::result::{RegularError, RegularResult};
 use crate::value::comic::ComicInclOpt;
 
 impl ComicRepo<MockContext> for Mock {}
@@ -80,7 +80,7 @@ fn mark_comic_cover_uploaded(
     state: &mut MockState,
     id: &str,
     cover_version: i64,
-) -> Result<(), RegularError> {
+) -> RegularResult<()> {
     let comic = state
         .comics
         .iter_mut()

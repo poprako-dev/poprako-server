@@ -4,8 +4,18 @@ use async_trait::async_trait;
 
 use crate::util::DeriveTransactional;
 
-use super::shared_rdb::{RdbConn, RdbShared};
-use crate::result::RegularError;
+use super::shared_rdb::RdbShared;
+
+/// Allocates a connection and calls a free query function.
+///
+/// The function must accept `(&mut AsyncPgConnection, args...)` and return
+/// a `Future<Output = Result<T, crate::result::Error>>`.
+macro_rules! submit_query {
+    ($shared:expr, $fn:path $(, $arg:expr)* $(,)?) => {{
+        let mut conn = $shared.get().await?;
+        $fn(&mut *conn, $($arg),*).await
+    }};
+}
 
 pub mod comic;
 pub mod entity;
@@ -24,10 +34,6 @@ pub struct RdbRepo {
 impl RdbRepo {
     pub fn new(shared: RdbShared) -> Self {
         Self { shared }
-    }
-
-    pub async fn conn(&self) -> Result<RdbConn, RegularError> {
-        self.shared.conn().await
     }
 }
 

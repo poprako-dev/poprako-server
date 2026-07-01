@@ -1,6 +1,7 @@
 #![deny(unsafe_code)]
 #![deny(clippy::todo)]
 #![deny(clippy::unimplemented)]
+#![deny(clippy::mod_module_files)]
 #![warn(clippy::all)]
 #![warn(clippy::pedantic)]
 // #![deny(clippy::unwrap_used)]

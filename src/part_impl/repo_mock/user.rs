@@ -12,14 +12,14 @@ use crate::part::repo::step::user::{
 use crate::part::repo::user::{UserRepo, UserRepoTransactional};
 use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactional, expected, now};
-use crate::result::RegularError;
+use crate::result::{RegularError, RegularResult};
 
 impl UserRepo<MockContext> for Mock {}
 
 impl UserRepoTransactional<MockContext> for MockTransactional {}
 
 /// Inserts a new user with associated credentials, rejecting duplicate ids or qids.
-fn create_user(state: &mut MockState, form: &UserForm) -> Result<UserInfo, RegularError> {
+fn create_user(state: &mut MockState, form: &UserForm) -> RegularResult<UserInfo> {
     if state.users.iter().any(|user| user.id == form.id) {
         return Err(expected("error-already-exists"));
     }

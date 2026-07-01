@@ -23,19 +23,22 @@ use time::OffsetDateTime;
 use poprako_transactional::advance::Advance;
 use poprako_transactional::step::Step;
 
-use crate::part::prom::intention::ImageIntention;
+use crate::part::prom::task::ImageTask;
 use crate::result::RegularError;
 
-pub mod intention;
+pub mod task;
 
 /// A serializable deferred-action payload.
 ///
-/// Currently only carries [`ImageIntention`] variants. Additional intention
+/// Currently only carries [`ImageTask`] variants. Additional intention
 /// types can be added as new enum variants.
+///
+/// All data is borrowed — no heap allocation on the append path.
 #[cfg_attr(test, derive(Debug, Clone, PartialEq, Eq))]
 #[derive(Serialize, Deserialize)]
-pub enum Payload {
-    Image(ImageIntention),
+pub enum Payload<'a> {
+    #[serde(borrow)]
+    Image(ImageTask<'a>),
 }
 
 /// A [`Step`] that appends a deferred-action record.
@@ -46,7 +49,7 @@ pub struct Append<'a> {
     pub id: &'a str,
 
     pub topic: &'a str,
-    pub payload: Payload,
+    pub payload: Payload<'a>,
 
     pub visible_at: &'a OffsetDateTime,
 }
@@ -63,7 +66,7 @@ impl PromStep {
     pub fn append<'a>(
         id: &'a str,
         topic: &'a str,
-        payload: Payload,
+        payload: Payload<'a>,
         visible_at: &'a OffsetDateTime,
     ) -> Append<'a> {
         Append {

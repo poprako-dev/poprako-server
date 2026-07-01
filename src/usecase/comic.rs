@@ -18,7 +18,7 @@ use crate::model::chapter::ChapterForm;
 use crate::model::comic::{ComicForm, ComicInfoUpdate, ComicListSpec};
 use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
-use crate::part::prom::intention::{IMAGE_TOPIC, ImageIntention, ImageKind};
+use crate::part::prom::task::{IMAGE_TOPIC, ImageKind, ImageTask};
 use crate::part::prom::{Payload, PromStep, PromTransactional};
 use crate::part::repo::assignment::{AssignmentRepo, AssignmentRepoTransactional};
 use crate::part::repo::chapter::{ChapterRepo, ChapterRepoTransactional};
@@ -295,8 +295,8 @@ where
                     &PromStep::append(
                         &delete_id,
                         IMAGE_TOPIC,
-                        Payload::Image(ImageIntention::Delete {
-                            object_key: prev_key.clone(),
+                        Payload::Image(ImageTask::Delete {
+                            object_key: prev_key.as_str(),
                         }),
                         &now,
                     ),
@@ -312,10 +312,10 @@ where
                 &PromStep::append(
                     &check_id,
                     IMAGE_TOPIC,
-                    Payload::Image(ImageIntention::CheckUploaded {
+                    Payload::Image(ImageTask::CheckUploaded {
                         kind: ImageKind::ComicCover,
-                        resource_id: id.clone(),
-                        object_key: cover_reservation.object_key.clone(),
+                        resource_id: &id,
+                        object_key: &cover_reservation.object_key,
                         image_version: cover_reservation.cover_version,
                     }),
                     &check_visible_at,

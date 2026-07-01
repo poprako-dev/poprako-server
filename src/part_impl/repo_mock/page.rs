@@ -13,13 +13,13 @@ use crate::part::repo::step::page::{
 };
 use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactional, expected, now};
-use crate::result::RegularError;
+use crate::result::{RegularError, RegularResult};
 
 impl PageRepo<MockContext> for Mock {}
 
 impl PageRepoTransactional<MockContext> for MockTransactional {}
 
-fn get_page_by_id(state: &MockState, id: &str) -> Result<PageInfo, RegularError> {
+fn get_page_by_id(state: &MockState, id: &str) -> RegularResult<PageInfo> {
     state
         .pages
         .iter()

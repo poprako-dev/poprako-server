@@ -12,7 +12,7 @@ use crate::part::repo::announcement::{AnnouncementRepo, AnnouncementRepoTransact
 use crate::part::repo::step::announcement::{Create, ListInfos};
 use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactional, expected, now};
-use crate::result::RegularError;
+use crate::result::{RegularError, RegularResult};
 use crate::util::DeriveTransactional;
 use crate::value::announcement::AnnouncementInclOpt;
 
@@ -69,7 +69,7 @@ fn list_announcements(state: &MockState, spec: &AnnouncementListSpec) -> Vec<Ann
 fn create_announcement(
     state: &mut MockState,
     form: &AnnouncementForm,
-) -> Result<AnnouncementInfo, RegularError> {
+) -> RegularResult<AnnouncementInfo> {
     if state
         .announcements
         .iter()

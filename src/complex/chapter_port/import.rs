@@ -339,7 +339,7 @@ fn parse_poprako_page(page: PoprakoPageImport) -> RegularResult<PageTranslationI
         });
     }
 
-    units.sort_by(|left, right| left.index.cmp(&right.index));
+    units.sort_by_key(|left| left.index);
 
     accept(PageTranslationImport { units })
 }

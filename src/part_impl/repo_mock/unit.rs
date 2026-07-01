@@ -12,7 +12,7 @@ use crate::part::repo::step::unit::{
 use crate::part::repo::unit::{UnitRepo, UnitRepoTransactional};
 use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactional, expected, now};
-use crate::result::RegularError;
+use crate::result::{RegularError, RegularResult};
 
 impl UnitRepo<MockContext> for Mock {}
 
@@ -107,7 +107,7 @@ fn create_unit(
     page_id: &str,
     id: &str,
     payload: &UnitPayload,
-) -> Result<(), RegularError> {
+) -> RegularResult<()> {
     if state.units.iter().any(|unit_info| unit_info.id == id) {
         return Err(expected("error-unit-duplicate"));
     }
@@ -125,7 +125,7 @@ fn save_unit(
     page_id: &str,
     id: &str,
     payload: &UnitPayload,
-) -> Result<(), RegularError> {
+) -> RegularResult<()> {
     let existing_position = state.units.iter().position(|unit_info| unit_info.id == id);
 
     let Some(existing_position) = existing_position else {

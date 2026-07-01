@@ -15,7 +15,7 @@ use crate::part::repo::step::member::{
 };
 use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactional, expected, now};
-use crate::result::RegularError;
+use crate::result::{RegularError, RegularResult};
 use crate::value::member::MemberInclOpt;
 use crate::value::role::RoleMask;
 
@@ -62,7 +62,7 @@ fn role_time(roles: RoleMask) -> Option<OffsetDateTime> {
 }
 
 /// Inserts a new member record, rejecting duplicates by id or by the same user+team pair.
-fn create_member(state: &mut MockState, form: &MemberForm) -> Result<MemberInfo, RegularError> {
+fn create_member(state: &mut MockState, form: &MemberForm) -> RegularResult<MemberInfo> {
     if state.members.iter().any(|member| member.id == form.id) {
         return Err(expected("error-already-exists"));
     }
@@ -100,7 +100,7 @@ fn find_member_by_user_id_and_team_id(
         .cloned()
 }
 
-fn get_member_by_id(state: &MockState, id: &str) -> Result<MemberInfo, RegularError> {
+fn get_member_by_id(state: &MockState, id: &str) -> RegularResult<MemberInfo> {
     state
         .members
         .iter()

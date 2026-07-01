@@ -5,6 +5,7 @@ use time::OffsetDateTime;
 
 use crate::model::member_invitation::{MemberInvitationForm, MemberInvitationInfo};
 use crate::part_impl::repo_rdb::schema;
+use crate::result::RegularError;
 use crate::value::role::RoleMask;
 
 // ── Queryable / Selectable ─────────────────────────────────────────────────
@@ -79,7 +80,7 @@ impl MemberInvitationAspect {
 // ── Conversions ────────────────────────────────────────────────────────────
 
 impl TryFrom<MemberInvitationRow> for MemberInvitationInfo {
-    type Error = crate::result::RegularError;
+    type Error = RegularError;
 
     fn try_from(v: MemberInvitationRow) -> Result<Self, Self::Error> {
         let roles = RoleMask::try_from(v.f_role_mask as u32)?;

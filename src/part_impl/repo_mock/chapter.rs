@@ -14,14 +14,14 @@ use crate::part::repo::step::chapter::{
 };
 use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactional, expected, now};
-use crate::result::RegularError;
+use crate::result::{RegularError, RegularResult};
 use crate::value::chapter::{ChapterInclOpt, WorkflowStageMask};
 
 impl ChapterRepo<MockContext> for Mock {}
 
 impl ChapterRepoTransactional<MockContext> for MockTransactional {}
 
-fn get_chapter_by_id(state: &MockState, id: &str) -> Result<ChapterInfo, RegularError> {
+fn get_chapter_by_id(state: &MockState, id: &str) -> RegularResult<ChapterInfo> {
     state
         .chapters
         .iter()
@@ -55,7 +55,7 @@ fn list_all_chapters(state: &MockState, comic_id: &str) -> Vec<ChapterInfo> {
     chapter_infos
 }
 
-fn create_chapter(state: &mut MockState, form: &ChapterForm) -> Result<ChapterInfo, RegularError> {
+fn create_chapter(state: &mut MockState, form: &ChapterForm) -> RegularResult<ChapterInfo> {
     if state
         .chapters
         .iter()

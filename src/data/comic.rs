@@ -77,10 +77,7 @@ impl ComicInfoVal {
             _ => None,
         };
 
-        let workset = match model.workset {
-            Some(workset_info) => Some(WorksetInfoVal::from(workset_info)),
-            None => None,
-        };
+        let workset = model.workset.map(WorksetInfoVal::from);
         let team = match model.team {
             Some(team_info) => Some(TeamInfoVal::from_model(image_pool, team_info).await?),
             None => None,
