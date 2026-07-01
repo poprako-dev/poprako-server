@@ -15,14 +15,12 @@ use crate::part::repo::step::team::{
 };
 use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_rdb::entity::team::{TeamAspect, TeamEntry, TeamRow};
-use crate::part_impl::repo_rdb::{RdbRepo, RdbRepoTransactional, schema};
-use crate::part_impl::shared_rdb::RdbConn;
-use crate::part_impl::shared_rdb::RdbContext;
+use crate::part_impl::repo_rdb::{RdbRepo, RdbRepoTransactional};
+use crate::part_impl::repo_rdb::schema::t_member;
+use crate::part_impl::repo_rdb::schema::t_team::dsl::*;
+use crate::part_impl::shared_rdb::{RdbConn, RdbContext};
 use crate::part_impl::shared_rdb::result::{diesel, expected};
 use crate::result::{RegularError, RegularResult};
-
-use schema::t_member;
-use schema::t_team::dsl::*;
 
 // ── Free functions ──────────────────────────────────────────────────────────
 
@@ -48,9 +46,9 @@ async fn create(conn: &mut RdbConn, form: &TeamForm) -> RegularResult<TeamInfo> 
     Ok(row.into())
 }
 
-async fn get_info_by_id(conn: &mut RdbConn, target_id: &str) -> RegularResult<TeamInfo> {
+async fn get_info_by_id(conn: &mut RdbConn, id: &str) -> RegularResult<TeamInfo> {
     let row: TeamRow = t_team
-        .filter(f_id.eq(target_id))
+        .filter(f_id.eq(id))
         .select(TeamRow::as_select())
         .get_result(conn)
         .await
@@ -90,7 +88,7 @@ async fn list_infos(
 
 async fn update_info(
     conn: &mut RdbConn,
-    target_id: &str,
+    id: &str,
     name: &str,
     description: &str,
 ) -> RegularResult<()> {
@@ -98,7 +96,7 @@ async fn update_info(
 
     let aspect = TeamAspect::new(now).name(name).description(description);
 
-    diesel::update(t_team.filter(f_id.eq(target_id)))
+    diesel::update(t_team.filter(f_id.eq(id)))
         .set(&aspect)
         .execute(conn)
         .await
@@ -107,16 +105,12 @@ async fn update_info(
     Ok(())
 }
 
-async fn mark_avatar_uploaded(
-    conn: &mut RdbConn,
-    target_id: &str,
-    version: i64,
-) -> RegularResult<()> {
+async fn mark_avatar_uploaded(conn: &mut RdbConn, id: &str, version: i64) -> RegularResult<()> {
     let now = OffsetDateTime::now_utc();
 
     let affected = diesel::update(
         t_team
-            .filter(f_id.eq(target_id))
+            .filter(f_id.eq(id))
             .filter(f_avatar_version.eq(version)),
     )
     .set((f_avatar_uploaded.eq(true), f_updated_at.eq(now)))
@@ -133,25 +127,24 @@ async fn mark_avatar_uploaded(
 
 async fn reserve_avatar(
     conn: &mut RdbConn,
-    target_id: &str,
+    id: &str,
     file_ext: &str,
 ) -> RegularResult<TeamAvatarReservation> {
     let now = OffsetDateTime::now_utc();
 
-    let (prev_key, new_version): (Option<String>, i64) =
-        diesel::update(t_team.filter(f_id.eq(target_id)))
-            .set((
-                f_avatar_key.eq::<Option<&str>>(None),
-                f_avatar_uploaded.eq(false),
-                f_avatar_version.eq(f_avatar_version + 1),
-                f_updated_at.eq(now),
-            ))
-            .returning((f_avatar_key, f_avatar_version))
-            .get_result::<(Option<String>, i64)>(conn)
-            .await
-            .map_err(diesel)?;
+    let (prev_key, new_version): (Option<String>, i64) = diesel::update(t_team.filter(f_id.eq(id)))
+        .set((
+            f_avatar_key.eq::<Option<&str>>(None),
+            f_avatar_uploaded.eq(false),
+            f_avatar_version.eq(f_avatar_version + 1),
+            f_updated_at.eq(now),
+        ))
+        .returning((f_avatar_key, f_avatar_version))
+        .get_result(conn)
+        .await
+        .map_err(diesel)?;
 
-    let object_key = TeamComplex::gen_avatar_key(target_id, new_version, file_ext);
+    let object_key = TeamComplex::gen_avatar_key(id, new_version, file_ext);
 
     Ok(TeamAvatarReservation {
         object_key,
@@ -160,9 +153,9 @@ async fn reserve_avatar(
     })
 }
 
-async fn get_info_excluded(conn: &mut RdbConn, target_id: &str) -> RegularResult<TeamInfo> {
+async fn get_info_excluded(conn: &mut RdbConn, id: &str) -> RegularResult<TeamInfo> {
     let row: TeamRow = t_team
-        .filter(f_id.eq(target_id))
+        .filter(f_id.eq(id))
         .select(TeamRow::as_select())
         .for_update()
         .get_result(conn)
@@ -174,8 +167,8 @@ async fn get_info_excluded(conn: &mut RdbConn, target_id: &str) -> RegularResult
     Ok(row.into())
 }
 
-async fn delete(conn: &mut RdbConn, target_id: &str) -> RegularResult<()> {
-    diesel::delete(t_team.filter(f_id.eq(target_id)))
+async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
+    diesel::delete(t_team.filter(f_id.eq(id)))
         .execute(conn)
         .await
         .map_err(diesel)?;
@@ -183,8 +176,8 @@ async fn delete(conn: &mut RdbConn, target_id: &str) -> RegularResult<()> {
     Ok(())
 }
 
-async fn increment_workset_next_index(conn: &mut RdbConn, target_id: &str) -> RegularResult<i32> {
-    let prev: i32 = diesel::update(t_team.filter(f_id.eq(target_id)))
+async fn increment_workset_next_index(conn: &mut RdbConn, id: &str) -> RegularResult<i32> {
+    let prev: i32 = diesel::update(t_team.filter(f_id.eq(id)))
         .set(f_workset_next_index.eq(f_workset_next_index + 1))
         .returning(f_workset_next_index - 1)
         .get_result(conn)

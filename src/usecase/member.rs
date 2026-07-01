@@ -60,7 +60,7 @@ where
         .with_context(async move |context| {
             let repo = repo.derive_transactional().await;
 
-            let target_user_info = repo
+            let user_info = repo
                 .advance(context, &UserStep::get_info_excluded(&data.user_id))
                 .await?;
 
@@ -84,7 +84,7 @@ where
             let member_form = MemberForm {
                 id: MemberComplex::gen_id(),
                 user_id: data.user_id,
-                user_nickname: target_user_info.nickname,
+                user_nickname: user_info.nickname,
                 team_id: data.team_id,
                 roles,
             };
@@ -231,14 +231,14 @@ where
     R: MemberRepo<C> + Send + Sync,
     <R as DeriveTransactional>::Transactional: MemberRepoTransactional<C> + Send + Sync,
 {
-    let target_member_info = repo.execute(&MemberStep::get_info_by_id(&data.id)).await?;
+    let member_info = repo.execute(&MemberStep::get_info_by_id(&data.id)).await?;
 
     use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
     MemberPermComplex::can_user_update_info(
         &mut repo.as_proxy(),
         &token.user_id,
-        &target_member_info.team_id,
+        &member_info.team_id,
     )
     .await?;
 
@@ -273,14 +273,14 @@ where
     R: MemberRepo<C> + Send + Sync,
     <R as DeriveTransactional>::Transactional: MemberRepoTransactional<C> + Send + Sync,
 {
-    let target_member_info = repo.execute(&MemberStep::get_info_by_id(&id)).await?;
+    let member_info = repo.execute(&MemberStep::get_info_by_id(&id)).await?;
 
     use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
     MemberPermComplex::can_user_delete(
         &mut repo.as_proxy(),
         &token.user_id,
-        &target_member_info.team_id,
+        &member_info.team_id,
     )
     .await?;
 

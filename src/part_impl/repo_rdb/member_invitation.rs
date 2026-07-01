@@ -15,14 +15,12 @@ use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_rdb::entity::member_invitation::{
     MemberInvitationAspect, MemberInvitationEntry, MemberInvitationRow,
 };
-use crate::part_impl::repo_rdb::{RdbRepo, RdbRepoTransactional, schema};
-use crate::part_impl::shared_rdb::RdbConn;
-use crate::part_impl::shared_rdb::RdbContext;
+use crate::part_impl::repo_rdb::{RdbRepo, RdbRepoTransactional};
+use crate::part_impl::repo_rdb::schema::t_member_invitation::dsl::*;
+use crate::part_impl::shared_rdb::{RdbConn, RdbContext};
 use crate::part_impl::shared_rdb::result::{diesel, expected};
 use crate::result::{RegularError, RegularResult};
 use crate::value::role::RoleMask;
-
-use schema::t_member_invitation::dsl::*;
 
 // ── Free functions ──────────────────────────────────────────────────────────
 
@@ -61,10 +59,10 @@ async fn list_infos(
 
 async fn get_info_by_id(
     conn: &mut RdbConn,
-    target_id: &str,
+    id: &str,
 ) -> RegularResult<MemberInvitationInfo> {
     let row: MemberInvitationRow = t_member_invitation
-        .filter(f_id.eq(target_id))
+        .filter(f_id.eq(id))
         .select(MemberInvitationRow::as_select())
         .get_result(conn)
         .await
@@ -109,12 +107,12 @@ async fn get_info_by_code_excluded(
     row.try_into()
 }
 
-async fn mark_pending_as_used(conn: &mut RdbConn, target_id: &str) -> RegularResult<()> {
+async fn mark_pending_as_used(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
     let now = OffsetDateTime::now_utc();
 
     let aspect = MemberInvitationAspect::new(now).pending(false);
 
-    diesel::update(t_member_invitation.filter(f_id.eq(target_id)))
+    diesel::update(t_member_invitation.filter(f_id.eq(id)))
         .set(&aspect)
         .execute(conn)
         .await
@@ -137,8 +135,8 @@ async fn update_info(conn: &mut RdbConn, id: &str, roles: RoleMask) -> RegularRe
     Ok(())
 }
 
-async fn delete(conn: &mut RdbConn, target_id: &str) -> RegularResult<()> {
-    diesel::delete(t_member_invitation.filter(f_id.eq(target_id)))
+async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
+    diesel::delete(t_member_invitation.filter(f_id.eq(id)))
         .execute(conn)
         .await
         .map_err(diesel)?;
