@@ -5,15 +5,13 @@ use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 
 use crate::model::system_mail::{SystemMailForm, SystemMailInfo};
-use crate::part::repo::step::system_mail::{
-    ListInfosByIds, ListInfosByReceiverId, MarkRead, Send, SendBatch,
-};
+use crate::part::repo::step::system_mail::{ListInfosByReceiverId, MarkRead, Send, SendBatch};
 use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_rdb::entity::system_mail::{SystemMailEntry, SystemMailRow};
 use crate::part_impl::repo_rdb::{RdbRepo, schema};
 use crate::part_impl::shared_rdb::RdbConn;
-use crate::part_impl::shared_rdb::result::diesel;
-use crate::result::{RegularError, RegularResult};
+use crate::part_impl::shared_rdb::result::{diesel, expected};
+use crate::result::{ExpectedVariant, RegularError, RegularResult};
 
 use schema::t_system_mail::dsl::*;
 
@@ -43,7 +41,9 @@ async fn send_batch(conn: &mut RdbConn, forms: &[SystemMailForm]) -> RegularResu
     Ok(())
 }
 
-async fn list_infos_by_receiver_id(
+// FIXME: list should have ONLY ONE ENTRY!!!!
+
+async fn list_infos(
     conn: &mut RdbConn,
     receiver_id: &str,
     read: Option<bool>,
@@ -70,21 +70,24 @@ async fn list_infos_by_receiver_id(
     Ok(rows.into_iter().map(Into::into).collect())
 }
 
-async fn list_infos_by_ids(
-    conn: &mut RdbConn,
-    ids: &[String],
-) -> RegularResult<Vec<SystemMailInfo>> {
-    let rows: Vec<SystemMailRow> = t_system_mail
-        .filter(f_id.eq_any(ids))
+async fn mark_read(conn: &mut RdbConn, id: &str, user_id: &str) -> RegularResult<()> {
+    let row: Option<SystemMailRow> = t_system_mail
+        .filter(f_id.eq(id))
         .select(SystemMailRow::as_select())
-        .load(conn)
+        .get_result(conn)
         .await
+        .optional()
         .map_err(diesel)?;
 
-    Ok(rows.into_iter().map(Into::into).collect())
-}
+    let mail = row.ok_or_else(|| expected("error-system-mail-not-found"))?;
 
-async fn mark_read(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
+    if mail.f_receiver_id != user_id {
+        return Err(RegularError::Expected {
+            variant: ExpectedVariant::PermDeny,
+            message: "error-forbidden".into(),
+        });
+    }
+
     diesel::update(t_system_mail.filter(f_id.eq(id)))
         .set(f_read.eq(true))
         .execute(conn)
@@ -124,21 +127,12 @@ impl<'a> Execute<ListInfosByReceiverId<'a>> for RdbRepo {
     ) -> RegularResult<Vec<SystemMailInfo>> {
         submit_query!(
             self.shared,
-            list_infos_by_receiver_id,
+            list_infos,
             step.receiver_id,
-            step.spec.read,
-            step.spec.offset,
-            step.spec.limit
+            step.read,
+            step.offset,
+            step.limit
         )
-    }
-}
-
-#[async_trait]
-impl<'a> Execute<ListInfosByIds<'a>> for RdbRepo {
-    type Error = RegularError;
-
-    async fn execute(&self, step: &ListInfosByIds<'a>) -> RegularResult<Vec<SystemMailInfo>> {
-        submit_query!(self.shared, list_infos_by_ids, step.ids)
     }
 }
 
@@ -147,6 +141,6 @@ impl<'a> Execute<MarkRead<'a>> for RdbRepo {
     type Error = RegularError;
 
     async fn execute(&self, step: &MarkRead<'a>) -> RegularResult<()> {
-        submit_query!(self.shared, mark_read, step.id)
+        submit_query!(self.shared, mark_read, step.id, step.user_id)
     }
 }

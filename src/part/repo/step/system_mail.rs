@@ -2,7 +2,7 @@
 
 use poprako_transactional::step::Step;
 
-use crate::model::system_mail::{SystemMailForm, SystemMailInfo, SystemMailListSpec};
+use crate::model::system_mail::{SystemMailForm, SystemMailInfo};
 
 /// Step that inserts a single system mail row.
 pub struct Send<'a> {
@@ -22,29 +22,25 @@ impl<'a> Step for SendBatch<'a> {
     type Output = ();
 }
 
-/// Step that lists system mails for a given receiver, ordered by
-/// creation time descending with pagination and optional read filter.
+/// Step that lists system mails with filters and pagination.
 pub struct ListInfosByReceiverId<'a> {
     pub receiver_id: &'a str,
-    pub spec: &'a SystemMailListSpec,
+
+    pub read: Option<bool>,
+
+    pub offset: u64,
+    pub limit: u64,
 }
 
 impl<'a> Step for ListInfosByReceiverId<'a> {
     type Output = Vec<SystemMailInfo>;
 }
 
-/// Step that fetches system mails by a batch of identifiers.
-pub struct ListInfosByIds<'a> {
-    pub ids: &'a [String],
-}
-
-impl<'a> Step for ListInfosByIds<'a> {
-    type Output = Vec<SystemMailInfo>;
-}
-
-/// Step that marks a system mail as read by its identifier.
+/// Step that marks a system mail as read, verifying receiver ownership.
 pub struct MarkRead<'a> {
     pub id: &'a str,
+
+    pub user_id: &'a str,
 }
 
 impl<'a> Step for MarkRead<'a> {
@@ -65,21 +61,23 @@ impl SystemMailStep {
         SendBatch { forms }
     }
 
-    /// Constructs a step to list system mails for a receiver.
-    pub fn list_infos_by_receiver_id<'a>(
+    /// Constructs a step to list system mails.
+    pub fn list_infos<'a>(
         receiver_id: &'a str,
-        spec: &'a SystemMailListSpec,
+        read: Option<bool>,
+        offset: u64,
+        limit: u64,
     ) -> ListInfosByReceiverId<'a> {
-        ListInfosByReceiverId { receiver_id, spec }
-    }
-
-    /// Constructs a step to fetch system mails by a batch of identifiers.
-    pub fn list_infos_by_ids<'a>(ids: &'a [String]) -> ListInfosByIds<'a> {
-        ListInfosByIds { ids }
+        ListInfosByReceiverId {
+            receiver_id,
+            read,
+            offset,
+            limit,
+        }
     }
 
     /// Constructs a step to mark a system mail as read.
-    pub fn mark_read<'a>(id: &'a str) -> MarkRead<'a> {
-        MarkRead { id }
+    pub fn mark_read<'a>(id: &'a str, user_id: &'a str) -> MarkRead<'a> {
+        MarkRead { id, user_id }
     }
 }

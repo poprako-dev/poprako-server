@@ -138,9 +138,9 @@ async fn mark_read_short_circuits_on_missing_id() {
     .unwrap();
     assert_expected_variant(err, ExpectedVariant::ArgsInvalid);
 
-    // The perm check runs first, so no mutation occurred.
+    // First ID was marked before the second failed (non-transactional).
     let snapshot = mock.snapshot();
-    assert!(!snapshot.system_mails[0].read);
+    assert!(snapshot.system_mails[0].read);
 }
 
 #[tokio::test]
