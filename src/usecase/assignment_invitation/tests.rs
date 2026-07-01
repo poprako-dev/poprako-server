@@ -15,7 +15,6 @@ use crate::model::assignment_invitation::AssignmentInvitationInfo;
 use crate::model::chapter::ChapterInfo;
 use crate::model::comic::ComicInfo;
 use crate::model::member::MemberInfo;
-use crate::model::role::{RoleField, RoleMask};
 use crate::model::team::TeamInfo;
 use crate::model::user::{UserCredential, UserInfo};
 use crate::model::workset::WorksetInfo;
@@ -23,6 +22,7 @@ use crate::part_impl::repo_mock::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::{assert_expected_variant, now};
 use crate::value::chapter::WorkflowStageMask;
+use crate::value::role::{RoleField, RoleMask};
 
 fn token(user_id: &str) -> UserToken {
     UserToken {
@@ -228,7 +228,9 @@ async fn list_infos_reviewer_lists_chapter_invitations() {
         role(RoleField::TRANSLATOR),
     ));
 
-    let val = list_infos(&mock, token("reviewer-user"), list_data()).await.unwrap();
+    let val = list_infos(&mock, token("reviewer-user"), list_data())
+        .await
+        .unwrap();
 
     assert_eq!(val.len(), 1);
     assert_eq!(val[0].id, "invitation-1");

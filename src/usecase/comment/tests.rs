@@ -11,12 +11,12 @@ use time::OffsetDateTime;
 use crate::data::comment::{CreateCommentData, ListCommentInfosData};
 use crate::model::comment::CommentInfo;
 use crate::model::member::MemberInfo;
-use crate::model::role::{RoleField, RoleMask};
 use crate::model::user::{UserCredential, UserInfo};
 use crate::part_impl::repo_mock::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::{assert_expected_variant, now};
 use crate::value::comment::CommentInclOpt;
+use crate::value::role::{RoleField, RoleMask};
 
 fn token(user_id: &str) -> UserToken {
     UserToken {
@@ -173,11 +173,10 @@ async fn create_team_member_creates_comment() {
     let mock = Mock::new();
     seed_member(&mock, "viewer-user", "team-1");
 
-    let created_comment =
-        create(&mock, &mock, token("viewer-user"), create_data("team-1"))
-            .await
-            .ok()
-            .unwrap();
+    let created_comment = create(&mock, &mock, token("viewer-user"), create_data("team-1"))
+        .await
+        .ok()
+        .unwrap();
     let snapshot = mock.snapshot();
 
     assert_eq!(snapshot.comments.len(), 1);

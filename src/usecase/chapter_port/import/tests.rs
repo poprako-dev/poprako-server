@@ -10,7 +10,6 @@ use crate::model::assignment::AssignmentInfo;
 use crate::model::chapter::ChapterInfo;
 use crate::model::comic::ComicInfo;
 use crate::model::page::PageInfo;
-use crate::model::role::{RoleField, RoleMask};
 use crate::model::unit::UnitInfo;
 use crate::model::user::UserToken;
 use crate::model::workset::WorksetInfo;
@@ -19,6 +18,7 @@ use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;
 use crate::value::chapter::WorkflowStageMask;
 use crate::value::chapter_port::TranslationFormat;
+use crate::value::role::{RoleField, RoleMask};
 
 const LABEL_PLUS_MATERIAL: &str = include_str!("../../../../tests/materials/translations.lp.txt");
 

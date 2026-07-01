@@ -16,13 +16,13 @@ use crate::model::chapter::ChapterInfo;
 use crate::model::comic::ComicInfo;
 use crate::model::member::MemberInfo;
 use crate::model::page::PageInfo;
-use crate::model::role::{RoleField, RoleMask};
 use crate::model::unit::UnitInfo;
 use crate::model::user::UserToken;
 use crate::model::workset::WorksetInfo;
 use crate::part_impl::repo_mock::Mock;
 use crate::result::{ExpectedVariant, RootError};
 use crate::value::chapter::WorkflowStageMask;
+use crate::value::role::{RoleField, RoleMask};
 
 fn token(user_id: &str) -> UserToken {
     UserToken {

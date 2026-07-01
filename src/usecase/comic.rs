@@ -16,7 +16,6 @@ use crate::data::comic::{
 use crate::model::assignment::AssignmentForm;
 use crate::model::chapter::ChapterForm;
 use crate::model::comic::{ComicForm, ComicInfoUpdate, ComicListSpec};
-use crate::model::role::{RoleField, RoleMask};
 use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
 use crate::part::prom::intention::{IMAGE_TOPIC, ImageIntention, ImageKind};
@@ -34,6 +33,7 @@ use crate::part::repo::step::workset::WorksetStep;
 use crate::part::repo::workset::{WorksetRepo, WorksetRepoTransactional};
 use crate::result::{RootError, RootResult, accept};
 use crate::util::DeriveTransactional;
+use crate::value::role::{RoleField, RoleMask};
 
 #[cfg(test)]
 pub mod tests;
@@ -111,10 +111,7 @@ where
             .await?;
 
             let chapter_index = repo
-                .advance(
-                    context,
-                    &ComicStep::incr_chapter_next_index(&comic_info.id),
-                )
+                .advance(context, &ComicStep::incr_chapter_next_index(&comic_info.id))
                 .await?;
 
             let subtitle =

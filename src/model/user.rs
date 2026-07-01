@@ -14,7 +14,7 @@ pub struct UserTokenRef<'a> {
     pub user_id: &'a str,
 }
 
-/// A user（用户）profile record as stored in the database.
+/// A userprofile record as stored in the database.
 ///
 /// Carries raw [`OffsetDateTime`] timestamps; convert to [`UserInfoVal`] for
 /// presentation. Avatar fields track a multi-step upload flow: a key is

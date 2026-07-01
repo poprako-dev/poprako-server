@@ -115,10 +115,7 @@ impl WorksetStep {
     }
 
     /// Constructs a step to list a team's worksets.
-    pub fn list_infos_by_team_id<'a>(
-        team_id: &'a str,
-        page: Page,
-    ) -> ListInfosByTeamId<'a> {
+    pub fn list_infos_by_team_id<'a>(team_id: &'a str, page: Page) -> ListInfosByTeamId<'a> {
         ListInfosByTeamId {
             team_id,
             offset: page.offset,

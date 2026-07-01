@@ -10,7 +10,7 @@ use crate::part::repo::step::system_mail::{
 };
 use crate::part::repo::system_mail::{SystemMailRepo, SystemMailRepoTransactional};
 use crate::part::shared::execute::Execute;
-use crate::part_impl::repo_mock::{Mock, MockContext, MockTransactional, expected, now};
+use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactional, expected, now};
 use crate::result::RootError;
 
 impl SystemMailRepo<MockContext> for Mock {}
@@ -18,7 +18,7 @@ impl SystemMailRepo<MockContext> for Mock {}
 impl SystemMailRepoTransactional<MockContext> for MockTransactional {}
 
 /// Appends a new system mail as unread to the in-memory store.
-fn insert_mail(state: &mut crate::part_impl::repo_mock::MockState, form: &SystemMailForm) {
+fn insert_mail(state: &mut MockState, form: &SystemMailForm) {
     state.system_mails.push(SystemMailInfo {
         id: form.id.clone(),
         receiver_id: form.receiver_id.clone(),

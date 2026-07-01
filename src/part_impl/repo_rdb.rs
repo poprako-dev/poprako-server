@@ -4,13 +4,12 @@ use async_trait::async_trait;
 
 use crate::util::DeriveTransactional;
 
-use super::repo_rdb_shared;
-use super::repo_rdb_shared::RdbShared;
+use super::shared_rdb::{RdbConn, RdbShared};
+use crate::result::RootError;
 
 pub mod entity;
 
-#[path = "../infra/repo/schema.rs"]
-pub mod schema;
+mod schema;
 
 pub struct RdbRepo {
     shared: RdbShared,
@@ -21,11 +20,8 @@ impl RdbRepo {
         Self { shared }
     }
 
-    pub(super) async fn conn(
-        &self,
-        location: &'static str,
-    ) -> Result<repo_rdb_shared::RdbConn, crate::result::RootError> {
-        self.shared.conn(location).await
+    pub async fn conn(&self) -> Result<RdbConn, RootError> {
+        self.shared.conn().await
     }
 }
 

@@ -10,7 +10,7 @@
 
 use time::OffsetDateTime;
 
-/// A page（页面）record as stored in the database.
+/// A pagerecord as stored in the database.
 ///
 /// Progress is tracked via three denormalised counters (`total_unit_count`,
 /// `translated_unit_count`, `proofread_unit_count`) that roll up to the

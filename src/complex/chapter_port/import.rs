@@ -230,16 +230,16 @@ fn parse_label_plus_unit_header(line: &str) -> RootResult<Option<LabelPlusUnit>>
         return Err(args_error("error-invalid-chapter-import-content"));
     }
 
-    let index = index_text
-        .parse::<i32>()
+    let index: i32 = index_text
+        .parse()
         .map_err(|_| args_error("error-invalid-chapter-import-content"))?;
 
-    let x_coord = parts[0]
-        .parse::<f64>()
+    let x_coord: f64 = parts[0]
+        .parse()
         .map_err(|_| args_error("error-invalid-chapter-import-content"))?;
 
-    let y_coord = parts[1]
-        .parse::<f64>()
+    let y_coord: f64 = parts[1]
+        .parse()
         .map_err(|_| args_error("error-invalid-chapter-import-content"))?;
 
     let is_bubble = match parts[2] {

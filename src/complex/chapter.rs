@@ -19,7 +19,6 @@ use poprako_util::i18n::{trl, trl_kv};
 use crate::complex::image::ImageComplex;
 use crate::complex::util::{check_user_is_team_admin, check_user_is_team_member};
 use crate::model::chapter::{ChapterInfo, ChapterInfoUpdate, ChapterStageUpdate};
-use crate::model::role::{RoleField, RoleMask};
 use crate::part::prom::intention::{IMAGE_TOPIC, ImageIntention};
 use crate::part::prom::{Payload, PromStep, PromTransactional};
 use crate::part::repo::chapter::ChapterRepoTransactional;
@@ -35,6 +34,7 @@ use crate::part::shared::proxy::ProxyExecute;
 use crate::result::{ExpectedVariant, RootError, RootResult, accept};
 use crate::util::next_snowflake_id;
 use crate::value::chapter::{StagePhase, WorkflowEvent, WorkflowStage, try_modify_stage};
+use crate::value::role::{RoleField, RoleMask};
 
 /// Domain opers for chapter entities: ID generation, workflow-stage
 /// transition computation, and small pure helpers.
@@ -47,7 +47,7 @@ impl ChapterComplex {
     }
 
     /// Returns the user-supplied subtitle if present and non-empty, or a
-    /// generated default in the format "第 N 话" (1-based).
+    /// generated default in the format "Ch. N" (1-based).
     pub fn subtitle_or_default(subtitle: Option<String>, index: i32) -> String {
         subtitle
             .filter(|value| !value.trim().is_empty())

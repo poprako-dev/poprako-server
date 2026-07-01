@@ -2,7 +2,9 @@
 
 use poprako_transactional::step::Step;
 
-use crate::model::comic::{ComicCoverReservation, ComicForm, ComicInfo, ComicInfoUpdate, ComicListSpec};
+use crate::model::comic::{
+    ComicCoverReservation, ComicForm, ComicInfo, ComicInfoUpdate, ComicListSpec,
+};
 
 /// Step that inserts a new comic row.
 pub struct Create<'a> {

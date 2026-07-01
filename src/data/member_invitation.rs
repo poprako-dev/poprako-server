@@ -7,10 +7,10 @@ use poprako_macro::Paginate;
 
 use crate::data::user::UserInfoVal;
 use crate::model::member_invitation::{MemberInvitationInfo, MemberInvitationListSpec};
-use crate::model::role::RoleMask;
 use crate::part::image::ImagePool;
 use crate::result::RootResult;
 use crate::value::member_invitation::MemberInvitationInclOpt;
+use crate::value::role::RoleMask;
 
 /// Input parameters for creating a new team invitation.
 ///

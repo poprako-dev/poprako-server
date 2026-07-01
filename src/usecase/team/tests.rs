@@ -37,7 +37,6 @@ use poprako_transactional::advance::Advance;
 
 use crate::model::comic::ComicInfo;
 use crate::model::member::MemberInfo;
-use crate::model::role::{RoleField, RoleMask};
 use crate::model::team::{TeamAvatarReservation, TeamInfo};
 use crate::model::user::{UserAvatarReservation, UserCredential, UserInfo};
 use crate::model::workset::WorksetInfo;
@@ -63,6 +62,7 @@ use crate::test_util::{
     assert_expected_message, assert_expected_variant, assert_one_image_check_record,
 };
 use crate::util::DeriveTransactional;
+use crate::value::role::{RoleField, RoleMask};
 
 /// A repository whose [`Execute`] and [`Advance`] impls always fail.
 ///
@@ -89,7 +89,7 @@ impl TeamRepoTransactional<MockContext> for FailingTeamTransactional {}
 impl UserRepoTransactional<MockContext> for FailingTeamTransactional {}
 
 /// Builds a [`TeamInfo`] fixture with default timestamps and no avatar.
-pub(crate) fn team(id: &str, name: &str, description: &str) -> TeamInfo {
+pub fn team(id: &str, name: &str, description: &str) -> TeamInfo {
     let time = OffsetDateTime::now_utc();
 
     TeamInfo {
@@ -106,7 +106,7 @@ pub(crate) fn team(id: &str, name: &str, description: &str) -> TeamInfo {
 }
 
 /// Builds a [`TeamInfo`] fixture with avatar fields set.
-pub(crate) fn team_with_avatar(
+pub fn team_with_avatar(
     id: &str,
     name: &str,
     description: &str,
@@ -123,7 +123,7 @@ pub(crate) fn team_with_avatar(
 }
 
 /// Builds a [`WorksetInfo`] fixture.
-pub(crate) fn workset(id: &str, team_id: &str) -> WorksetInfo {
+pub fn workset(id: &str, team_id: &str) -> WorksetInfo {
     let time = OffsetDateTime::now_utc();
 
     WorksetInfo {

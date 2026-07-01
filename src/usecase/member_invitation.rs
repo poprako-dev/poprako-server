@@ -1,8 +1,5 @@
 //! Member invitation use cases.
 
-use poprako_transactional::advance::Advance;
-use poprako_transactional::drive::Drive;
-use poprako_util::i18n::trl;
 use crate::complex::member_invitation::{MemberInvitationComplex, MemberInvitationPermComplex};
 use crate::data::member_invitation::{
     CreateMemberInvitationData, CreateMemberInvitationVal, ListMemberInvitationInfosData,
@@ -11,8 +8,8 @@ use crate::data::member_invitation::{
 use crate::model::member_invitation::{
     MemberInvitationForm, MemberInvitationListSpec, MemberInvitationUpdate,
 };
-use crate::part::image::ImagePool;
 use crate::model::user::UserToken;
+use crate::part::image::ImagePool;
 use crate::part::repo::map_drive_err;
 use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
 use crate::part::repo::member_invitation::{
@@ -24,13 +21,16 @@ use crate::part::repo::step::user::UserStep;
 use crate::part::repo::user::{UserRepo, UserRepoTransactional};
 use crate::result::{ExpectedVariant, RootError, RootResult, accept};
 use crate::util::DeriveTransactional;
+use poprako_transactional::advance::Advance;
+use poprako_transactional::drive::Drive;
+use poprako_util::i18n::trl;
 
 #[cfg(test)]
 mod tests;
 
 // FIXME: invitations should be fired out after a period of time.
 
-/// Creates a pending invitation for a team（汉化组）.
+/// Creates a pending invitation for a team.
 pub async fn create<D, C, R>(
     drive: &D,
     repo: &R,
@@ -116,7 +116,7 @@ where
     })
 }
 
-/// Lists invitations for a team（汉化组）.
+/// Lists invitations for a team.
 pub async fn list_infos<C, R, I>(
     repo: &R,
     image_pool: &I,
@@ -146,7 +146,9 @@ where
         limit: data.limit,
     };
 
-    let infos = repo.execute(&MemberInvitationStep::list_infos(&spec)).await?;
+    let infos = repo
+        .execute(&MemberInvitationStep::list_infos(&spec))
+        .await?;
 
     let mut vals = Vec::with_capacity(infos.len());
 

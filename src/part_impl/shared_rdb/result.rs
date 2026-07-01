@@ -8,19 +8,19 @@ use poprako_util::i18n::trl;
 
 use crate::result::{ExpectedVariant, RootError};
 
-pub(super) fn pool_build(location: &'static str, err: BuildError) -> RootError {
+pub fn pool_build(err: BuildError) -> RootError {
     RootError::Unrecoverable {
-        message: format!("[{}] failed to build pool: {}", location, err),
+        message: format!("failed to build pool: {}", err),
     }
 }
 
-pub(super) fn pool_get(location: &'static str, err: PoolError) -> RootError {
+pub fn pool_get(err: PoolError) -> RootError {
     RootError::Unrecoverable {
-        message: format!("[{}] failed to get conn: {}", location, err),
+        message: format!("failed to get conn: {}", err),
     }
 }
 
-pub(super) fn diesel(location: &'static str, err: DieselError) -> RootError {
+pub fn diesel(err: DieselError) -> RootError {
     match err {
         DieselError::DatabaseError(DatabaseErrorKind::UniqueViolation, _) => RootError::Expected {
             variant: ExpectedVariant::Conflict,
@@ -28,34 +28,30 @@ pub(super) fn diesel(location: &'static str, err: DieselError) -> RootError {
         },
         DieselError::NotFound => RootError::Unrecoverable {
             message: format!(
-                "[{}] unexpected Diesel NotFound; use optional() and map None at call site",
-                location,
+                "unexpected Diesel NotFound; use optional() and map None at call site",
             ),
         },
         err => RootError::Unrecoverable {
-            message: format!("[{}] diesel error: {}", location, err),
+            message: format!("diesel error: {}", err),
         },
     }
 }
 
-pub(super) fn serde(location: &'static str, err: SerdeJsonError) -> RootError {
+pub fn serde(err: SerdeJsonError) -> RootError {
     RootError::Unrecoverable {
-        message: format!("[{}] serde error: {}", location, err),
+        message: format!("serde error: {}", err),
     }
 }
 
-pub(super) fn expected(message: &str) -> RootError {
+pub fn expected(message: &str) -> RootError {
     RootError::Expected {
         variant: ExpectedVariant::ArgsInvalid,
         message: trl(message),
     }
 }
 
-pub(super) fn invalid_stored_value(
-    location: &'static str,
-    value: impl std::fmt::Display,
-) -> RootError {
+pub fn invalid_stored_value(value: impl std::fmt::Display) -> RootError {
     RootError::Unrecoverable {
-        message: format!("[{}] invalid stored value: {}", location, value),
+        message: format!("invalid stored value: {}", value),
     }
 }

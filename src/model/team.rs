@@ -2,7 +2,7 @@
 
 use time::OffsetDateTime;
 
-/// A team（汉化组）record as stored in the database.
+/// A teamrecord as stored in the database.
 ///
 /// Carries raw [`OffsetDateTime`] timestamps; convert to [`TeamInfoVal`] for
 /// presentation. The `workset_next_index` field is a monotonically increasing

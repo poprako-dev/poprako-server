@@ -8,10 +8,10 @@ use poprako_util::time::ToUnixMilli;
 
 use crate::data::user::UserInfoVal;
 use crate::model::assignment::{AssignmentInfo, AssignmentListSpec};
-use crate::model::role::{RoleField, RoleMask};
 use crate::part::image::ImagePool;
 use crate::result::{ExpectedVariant, RootError, RootResult};
 use crate::value::assignment::AssignmentInclOpt;
+use crate::value::role::{RoleField, RoleMask};
 
 /// Presentation-ready chapter assignment information.
 pub struct AssignmentInfoVal {

@@ -168,10 +168,7 @@ impl ChapterStep {
     }
 
     /// Constructs a step to list chapters by comic.
-    pub fn list_infos_by_comic_id<'a>(
-        comic_id: &'a str,
-        page: Page,
-    ) -> ListInfosByComicId<'a> {
+    pub fn list_infos_by_comic_id<'a>(comic_id: &'a str, page: Page) -> ListInfosByComicId<'a> {
         ListInfosByComicId {
             comic_id,
             offset: page.offset,

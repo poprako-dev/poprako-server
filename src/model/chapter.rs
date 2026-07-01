@@ -14,7 +14,7 @@ use time::OffsetDateTime;
 use crate::model::user::UserInfo;
 use crate::value::chapter::{ChapterInclOpt, WorkflowStageMask};
 
-/// A chapter（章节）record as stored in the database.
+/// A chapterrecord as stored in the database.
 ///
 /// Each chapter belongs to exactly one comic and carries a full snapshot
 /// of its workflow progress. The four `unit_count` fields are denormalised

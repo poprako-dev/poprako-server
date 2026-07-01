@@ -2,9 +2,9 @@
 
 use poprako_macro::Paginate;
 
-use crate::model::role::RoleMask;
 use crate::model::user::UserInfo;
 use crate::value::member_invitation::MemberInvitationInclOpt;
+use crate::value::role::RoleMask;
 
 /// An invitation record for joining a team.
 ///

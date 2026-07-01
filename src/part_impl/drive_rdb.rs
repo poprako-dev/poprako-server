@@ -9,7 +9,8 @@ use poprako_transactional::util::AsyncFnMark;
 
 use crate::result::RootError;
 
-use super::repo_rdb_shared::{self, RdbContext, RdbShared};
+use super::shared_rdb::result::diesel;
+use super::shared_rdb::{RdbContext, RdbShared};
 
 pub struct RdbDrive {
     shared: RdbShared,
@@ -33,47 +34,26 @@ impl Drive<RdbContext> for RdbDrive {
             + AsyncFnMark<&'c mut RdbContext, Result<T, E>, Fut: Send>
             + Send,
     {
-        let conn = self
-            .shared
-            .conn("RdbDrive::with_context")
-            .await
-            .map_err(DriveError::Backend)?;
+        let conn = self.shared.conn().await.map_err(DriveError::Backend)?;
 
         let mut rdb_context = RdbContext::new(conn);
 
         AnsiTransactionManager::begin_transaction(rdb_context.conn())
             .await
-            .map_err(|err| {
-                DriveError::Backend(repo_rdb_shared::diesel(
-                    "RdbDrive::with_context begin",
-                    err,
-                ))
-            })?;
+            .map_err(|e| DriveError::Backend(diesel(e)))?;
 
-        let result = f(&mut rdb_context).await;
-
-        match result {
+        match f(&mut rdb_context).await {
             Ok(value) => {
                 AnsiTransactionManager::commit_transaction(rdb_context.conn())
                     .await
-                    .map_err(|err| {
-                        DriveError::Backend(repo_rdb_shared::diesel(
-                            "RdbDrive::with_context commit",
-                            err,
-                        ))
-                    })?;
+                    .map_err(|e| DriveError::Backend(diesel(e)))?;
 
                 Ok(value)
             }
             Err(err) => {
                 AnsiTransactionManager::rollback_transaction(rdb_context.conn())
                     .await
-                    .map_err(|rollback_err| {
-                        DriveError::Backend(repo_rdb_shared::diesel(
-                            "RdbDrive::with_context rollback after advance error",
-                            rollback_err,
-                        ))
-                    })?;
+                    .map_err(|e| DriveError::Backend(diesel(e)))?;
 
                 Err(DriveError::Advance(err))
             }

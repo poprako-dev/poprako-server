@@ -12,13 +12,14 @@
 
 use super::*;
 
+use crate::part::repo::step::workset;
 use poprako_transactional::advance::Advance;
 use poprako_transactional::drive::Drive;
 
 use time::OffsetDateTime;
 
+use crate::model::comic::ComicInfo;
 use crate::model::member::MemberInfo;
-use crate::model::role::{RoleField, RoleMask};
 use crate::model::user::UserToken;
 use crate::model::workset::WorksetInfo;
 use crate::part::prom::intention::ImageIntention;
@@ -29,6 +30,7 @@ use crate::result::ExpectedVariant;
 use crate::result::accept;
 use crate::test_util::assert_expected_variant;
 use crate::usecase::team::tests::team;
+use crate::value::role::{RoleField, RoleMask};
 
 fn workset(id: &str, team_id: &str, index: i32) -> WorksetInfo {
     let time = OffsetDateTime::now_utc();
@@ -72,14 +74,10 @@ fn admin_member(user_id: &str, team_id: &str) -> MemberInfo {
     }
 }
 
-fn comic_with_uploaded_cover(
-    id: &str,
-    workset_id: &str,
-    cover_key: &str,
-) -> crate::model::comic::ComicInfo {
+fn comic_with_uploaded_cover(id: &str, workset_id: &str, cover_key: &str) -> ComicInfo {
     let time = OffsetDateTime::now_utc();
 
-    crate::model::comic::ComicInfo {
+    ComicInfo {
         id: id.into(),
         workset_id: workset_id.into(),
         index: 0,
@@ -121,7 +119,9 @@ async fn create_allocates_index_and_persists() {
     mock.seed_team(team("team-1", "Team", "Desc"));
     mock.seed_member(admin_member("user-1", "team-1"));
 
-    let created = create(&mock, &mock, token("user-1"), create_data("team-1")).await.unwrap();
+    let created = create(&mock, &mock, token("user-1"), create_data("team-1"))
+        .await
+        .unwrap();
     let snapshot = mock.snapshot();
 
     assert_eq!(created.id, snapshot.worksets[0].id);
@@ -152,7 +152,9 @@ async fn get_info_returns_existing_workset() {
     mock.seed_workset(workset("workset-1", "team-1", 2));
     mock.seed_member(admin_member("user-1", "team-1"));
 
-    let found = get_info(&mock, token("user-1"), "workset-1".into()).await.unwrap();
+    let found = get_info(&mock, token("user-1"), "workset-1".into())
+        .await
+        .unwrap();
 
     assert_eq!(found.id, "workset-1");
     assert_eq!(found.index, 2);
@@ -276,7 +278,9 @@ async fn delete_removes_workset_and_enqueues_child_cover_deletes() {
         "cover-2.png",
     ));
 
-    delete(&mock, &mock, &mock, token("user-1"), "workset-1".into()).await.unwrap();
+    delete(&mock, &mock, &mock, token("user-1"), "workset-1".into())
+        .await
+        .unwrap();
     let snapshot = mock.snapshot();
 
     assert!(snapshot.worksets.is_empty());
@@ -333,7 +337,7 @@ async fn delete_does_not_create_prom_records_when_called_directly() {
         Advance::advance(
             &transactional,
             context,
-            &crate::part::repo::step::workset::WorksetStep::delete("workset-1"),
+            &workset::WorksetStep::delete("workset-1"),
         )
         .await?;
 

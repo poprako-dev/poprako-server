@@ -12,12 +12,12 @@ use time::OffsetDateTime;
 use crate::data::announcement::{CreateAnnouncementData, ListAnnouncementInfosData};
 use crate::model::announcement::AnnouncementInfo;
 use crate::model::member::MemberInfo;
-use crate::model::role::{RoleField, RoleMask};
 use crate::model::user::{UserCredential, UserInfo};
 use crate::part_impl::repo_mock::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::{assert_expected_variant, now};
 use crate::value::announcement::AnnouncementInclOpt;
+use crate::value::role::{RoleField, RoleMask};
 
 fn token(user_id: &str) -> UserToken {
     UserToken {
@@ -208,8 +208,9 @@ async fn create_team_admin_creates_announcement() {
         RoleMask::from(RoleField::ADMIN),
     );
 
-    let created_announcement =
-        create(&mock, &mock, token("admin-user"), create_data("team-1")).await.unwrap();
+    let created_announcement = create(&mock, &mock, token("admin-user"), create_data("team-1"))
+        .await
+        .unwrap();
     let snapshot = mock.snapshot();
 
     assert_eq!(snapshot.announcements.len(), 1);
