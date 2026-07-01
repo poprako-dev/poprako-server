@@ -7,16 +7,17 @@ use poprako_transactional::drive::Drive;
 use poprako_transactional::drive::result::Error as DriveError;
 use poprako_transactional::util::AsyncFnMark;
 
-use crate::part_impl::rdb_repo::{RdbContext, RdbPool, error};
 use crate::result::RootError;
 
+use super::rdb_shared::{self, RdbContext, RdbShared};
+
 pub struct RdbDrive {
-    pool: RdbPool,
+    shared: RdbShared,
 }
 
 impl RdbDrive {
-    pub fn new(pool: RdbPool) -> Self {
-        Self { pool }
+    pub fn new(shared: RdbShared) -> Self {
+        Self { shared }
     }
 }
 
@@ -32,31 +33,44 @@ impl Drive<RdbContext> for RdbDrive {
             + AsyncFnMark<&'c mut RdbContext, Result<T, E>, Fut: Send>
             + Send,
     {
-        let connection =
-            self.pool.get().await.map_err(|err| {
-                DriveError::Backend(error::pool_get("RdbDrive::with_context", err))
-            })?;
-
-        let mut rdb_context = RdbContext::new(connection);
-
-        AnsiTransactionManager::begin_transaction(rdb_context.connection())
+        let conn = self
+            .shared
+            .conn("RdbDrive::with_context")
             .await
-            .map_err(|err| DriveError::Backend(error::diesel(err)))?;
+            .map_err(DriveError::Backend)?;
+
+        let mut rdb_context = RdbContext::new(conn);
+
+        AnsiTransactionManager::begin_transaction(rdb_context.conn())
+            .await
+            .map_err(|err| {
+                DriveError::Backend(rdb_shared::diesel("RdbDrive::with_context begin", err))
+            })?;
 
         let result = f(&mut rdb_context).await;
 
         match result {
             Ok(value) => {
-                AnsiTransactionManager::commit_transaction(rdb_context.connection())
+                AnsiTransactionManager::commit_transaction(rdb_context.conn())
                     .await
-                    .map_err(|err| DriveError::Backend(error::diesel(err)))?;
+                    .map_err(|err| {
+                        DriveError::Backend(rdb_shared::diesel(
+                            "RdbDrive::with_context commit",
+                            err,
+                        ))
+                    })?;
 
                 Ok(value)
             }
             Err(err) => {
-                AnsiTransactionManager::rollback_transaction(rdb_context.connection())
+                AnsiTransactionManager::rollback_transaction(rdb_context.conn())
                     .await
-                    .map_err(|rollback_err| DriveError::Backend(error::diesel(rollback_err)))?;
+                    .map_err(|rollback_err| {
+                        DriveError::Backend(rdb_shared::diesel(
+                            "RdbDrive::with_context rollback after advance error",
+                            rollback_err,
+                        ))
+                    })?;
 
                 Err(DriveError::Advance(err))
             }
