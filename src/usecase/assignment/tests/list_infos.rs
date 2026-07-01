@@ -80,8 +80,13 @@ async fn list_infos_owner_lists_own_assignments() {
         role(RoleField::REVIEWER),
     ));
 
-    let assignment_info_vals =
-        list_infos(&mock, &mock, token("owner-user"), list_by_user_data("owner-user")).await;
+    let assignment_info_vals = list_infos(
+        &mock,
+        &mock,
+        token("owner-user"),
+        list_by_user_data("owner-user"),
+    )
+    .await;
 
     assert!(assignment_info_vals.is_ok());
     let assignment_info_vals = assignment_info_vals.ok().unwrap();

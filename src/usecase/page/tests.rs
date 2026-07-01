@@ -19,7 +19,6 @@ use crate::model::chapter::ChapterInfo;
 use crate::model::comic::ComicInfo;
 use crate::model::member::MemberInfo;
 use crate::model::page::PageInfo;
-use crate::model::role::{RoleField, RoleMask};
 use crate::model::workset::WorksetInfo;
 use crate::part::prom::Payload;
 use crate::part::prom::intention::{ImageIntention, ImageKind};
@@ -29,6 +28,7 @@ use crate::test_util::{
     assert_expected_message, assert_expected_variant, assert_one_image_check_record,
 };
 use crate::value::chapter::WorkflowStageMask;
+use crate::value::role::{RoleField, RoleMask};
 
 fn token(user_id: &str) -> UserToken {
     UserToken {

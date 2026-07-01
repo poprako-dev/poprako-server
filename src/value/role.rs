@@ -15,23 +15,23 @@ mod tests;
 pub struct RoleField(u32);
 
 impl RoleField {
-    /// Raw provider (上传) role.
+    /// Raw provider role.
     pub const RAW_PROVIDER: Self = Self(1 << 0);
-    /// Translator (翻译) role.
+    /// Translator role.
     pub const TRANSLATOR: Self = Self(1 << 1);
-    /// Proofreader (校对) role.
+    /// Proofreader role.
     pub const PROOFREADER: Self = Self(1 << 2);
-    /// Typesetter (嵌字) role.
+    /// Typesetter role.
     pub const TYPESETTER: Self = Self(1 << 3);
-    /// Redrawer (美工) role.
+    /// Redrawer role.
     pub const REDRAWER: Self = Self(1 << 4);
-    /// Reviewer (监修) role.
+    /// Reviewer role.
     pub const REVIEWER: Self = Self(1 << 5);
-    /// Publisher (发布) role.
+    /// Publisher role.
     pub const PUBLISHER: Self = Self(1 << 6);
-    /// Admin (管理) role.
+    /// Admin role.
     pub const ADMIN: Self = Self(1 << 7);
-    /// Bot (机器人) role.
+    /// Bot role.
     pub const BOT: Self = Self(1 << 8);
 
     const VALID_VALUES: &'static [u32] = &[

@@ -19,13 +19,15 @@
 
 use super::*;
 
+use crate::test_util;
+
 use crate::model::member::{MemberInfo, MemberListSpec};
-use crate::model::role::{RoleField, RoleMask};
 use crate::model::team::TeamInfo;
 use crate::model::user::{UserCredential, UserInfo};
 use crate::part_impl::repo_mock::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;
+use crate::value::role::{RoleField, RoleMask};
 
 mod join_team;
 
@@ -43,7 +45,7 @@ fn credential(user_id: &str) -> UserCredential {
 }
 
 fn user(id: &str, nickname: &str) -> UserInfo {
-    let time = crate::test_util::now();
+    let time = test_util::now();
 
     UserInfo {
         id: id.into(),
@@ -60,7 +62,7 @@ fn user(id: &str, nickname: &str) -> UserInfo {
 }
 
 fn team(id: &str) -> TeamInfo {
-    let time = crate::test_util::now();
+    let time = test_util::now();
 
     TeamInfo {
         id: id.into(),
@@ -137,20 +139,20 @@ async fn create_admin_creates_member_with_target_user_nickname() {
     mock.seed_team(team("team-1"));
     mock.seed_user(user("target-user", "Target"), credential("target-user"));
 
-    let create_member_val = create(
+    let create_outcome = create(
         &mock,
         &mock,
         token("admin-user"),
         create_data("target-user", "team-1"),
     )
     .await;
-    assert!(create_member_val.is_ok());
-    let create_member_val = create_member_val.ok().unwrap();
+    assert!(create_outcome.is_ok());
+    let created = create_outcome.ok().unwrap();
     let snapshot = mock.snapshot();
     let created_member_info = snapshot
         .members
         .iter()
-        .find(|member_info| member_info.id == create_member_val.id)
+        .find(|member_info| member_info.id == created.id)
         .unwrap();
 
     assert_eq!(created_member_info.user_id, "target-user");

@@ -18,13 +18,14 @@
 
 use super::*;
 
-use crate::model::role::{RoleField, RoleMask};
+use crate::model::member_invitation::MemberInvitationInfo;
 use crate::part::effect::event::Event;
 use crate::part_impl::repo_mock::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;
 use crate::usecase::team::tests::{team, workset};
 use crate::usecase::user::tests::{credential, invalid_credential, user};
+use crate::value::role::{RoleField, RoleMask};
 
 /// Builds a pending [`MemberInvitationInfo`] fixture.
 fn invitation(
@@ -34,8 +35,8 @@ fn invitation(
     invitee_qid: &str,
     code: &str,
     pending: bool,
-) -> crate::model::member_invitation::MemberInvitationInfo {
-    crate::model::member_invitation::MemberInvitationInfo {
+) -> MemberInvitationInfo {
+    MemberInvitationInfo {
         id: id.into(),
         team_id: team_id.into(),
         invitor: None,

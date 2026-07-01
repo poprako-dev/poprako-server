@@ -12,7 +12,6 @@ use crate::complex::unit::UnitComplex;
 use crate::data::chapter_port::{ChapterTranslationImportData, ChapterTranslationImportVal};
 use crate::model::assignment::AssignmentInfo;
 use crate::model::page::PageInfo;
-use crate::model::role::RoleField;
 use crate::model::unit::{UnitCounterDelta, UnitCounters, UnitInfo, UnitOper};
 use crate::model::unit_port::UnitTranslationImport;
 use crate::model::user::UserToken;
@@ -30,6 +29,7 @@ use crate::part::repo::unit::{UnitRepo, UnitRepoTransactional};
 use crate::result::{ExpectedVariant, RootError, RootResult, accept};
 use crate::util::DeriveTransactional;
 use crate::value::chapter_port::TranslationFormat;
+use crate::value::role::RoleField;
 
 /// Imports chapter translation text into existing pages.
 pub async fn import<D, C, R>(
@@ -72,7 +72,7 @@ where
         TranslationFormat::PopRaKo => ChapterImportComplex::parse_poprako(&data.content)?,
     };
 
-    let import_val = drive
+    let imported = drive
         .with_context(async move |context| {
             let repo = repo.transactional().await;
 
@@ -187,7 +187,7 @@ where
         .await
         .map_err(map_drive_err)?;
 
-    accept(import_val)
+    accept(imported)
 }
 
 fn page_counters(page_info: &PageInfo) -> UnitCounters {

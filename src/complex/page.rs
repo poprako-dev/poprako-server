@@ -3,7 +3,6 @@
 use poprako_util::i18n::trl;
 
 use crate::complex::util::{check_user_is_team_admin, check_user_is_team_member};
-use crate::model::role::RoleField;
 use crate::part::repo::step::assignment::{AssignmentStep, GetInfoByChapterIdAndUserId};
 use crate::part::repo::step::chapter::{ChapterStep, GetInfoById as ChapterGetInfoById};
 use crate::part::repo::step::comic::{ComicStep, GetInfoById as ComicGetInfoById};
@@ -13,6 +12,7 @@ use crate::part::repo::step::workset::{GetInfoById as WorksetGetInfoById, Workse
 use crate::part::shared::proxy::ProxyExecute;
 use crate::result::{ExpectedVariant, RootError, RootResult, accept};
 use crate::util::next_snowflake_id;
+use crate::value::role::RoleField;
 
 /// Domain opers for page entities.
 pub struct PageComplex;

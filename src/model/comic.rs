@@ -18,7 +18,7 @@ use crate::model::user::UserInfo;
 use crate::model::workset::WorksetInfo;
 use crate::value::comic::ComicInclOpt;
 
-/// A comic（漫画）record as stored in the database.
+/// A comicrecord as stored in the database.
 ///
 /// Each comic belongs to exactly one workset. The `is_completed` flag
 /// toggles whether the comic is treated as finished in list views.

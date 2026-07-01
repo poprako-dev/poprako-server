@@ -113,10 +113,7 @@ impl<'a> Execute<GetInfoById<'a>> for Mock {
 impl<'a> Execute<ListInfos<'a>> for Mock {
     type Error = RootError;
 
-    async fn execute(
-        &self,
-        step: &ListInfos<'a>,
-    ) -> Result<Vec<ComicInfo>, Self::Error> {
+    async fn execute(&self, step: &ListInfos<'a>) -> Result<Vec<ComicInfo>, Self::Error> {
         let state = self.state.lock().unwrap();
         let mut comics = state
             .comics

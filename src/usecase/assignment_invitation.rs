@@ -12,7 +12,6 @@ use crate::data::assignment_invitation::{
 };
 use crate::model::assignment::AssignmentForm;
 use crate::model::assignment_invitation::AssignmentInvitationForm;
-use crate::model::role::{RoleField, RoleMask};
 use crate::model::user::UserToken;
 use crate::part::repo::assignment::{AssignmentRepo, AssignmentRepoTransactional};
 use crate::part::repo::assignment_invitation::{
@@ -33,6 +32,7 @@ use crate::part::repo::user::{UserRepo, UserRepoTransactional};
 use crate::part::repo::workset::{WorksetRepo, WorksetRepoTransactional};
 use crate::result::{ExpectedVariant, RootError, RootResult, accept};
 use crate::util::{DeriveTransactional, next_snowflake_id};
+use crate::value::role::{RoleField, RoleMask};
 
 #[cfg(test)]
 mod tests;

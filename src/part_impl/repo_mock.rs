@@ -280,7 +280,7 @@ impl Drive<MockContext> for Mock {
 }
 
 /// Build an expected-args [RootError] with a translated message.
-pub(super) fn expected(message: &str) -> RootError {
+pub fn expected(message: &str) -> RootError {
     RootError::Expected {
         variant: ExpectedVariant::ArgsInvalid,
         message: trl(message),
@@ -288,14 +288,14 @@ pub(super) fn expected(message: &str) -> RootError {
 }
 
 /// Build an unrecoverable [RootError] with the given message.
-pub(super) fn unrecoverable(message: &str) -> RootError {
+pub fn unrecoverable(message: &str) -> RootError {
     RootError::Unrecoverable {
         message: message.into(),
     }
 }
 
 /// Return the current UTC timestamp.
-pub(super) fn now() -> OffsetDateTime {
+pub fn now() -> OffsetDateTime {
     OffsetDateTime::now_utc()
 }
 
@@ -346,13 +346,13 @@ pub mod workset;
 use poprako_transactional::advance::Advance;
 
 use crate::model::member::MemberForm;
-use crate::model::role::{RoleField, RoleMask};
 use crate::part::prom::intention::{ImageIntention, ImageKind};
 use crate::part::prom::{Payload, PromStep};
 use crate::part::repo::step::member::MemberStep;
 use crate::part::repo::step::user::UserStep;
 use crate::part::shared::execute::Execute;
 use crate::result::accept;
+use crate::value::role::{RoleField, RoleMask};
 
 fn user(id: &str) -> UserInfo {
     let time = now();

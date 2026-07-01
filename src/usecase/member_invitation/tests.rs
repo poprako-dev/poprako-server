@@ -12,12 +12,13 @@ use super::*;
 
 use crate::model::member::MemberInfo;
 use crate::model::member_invitation::MemberInvitationInfo;
-use crate::model::role::{RoleField, RoleMask};
 use crate::model::user::{UserCredential, UserInfo};
 use crate::part_impl::repo_mock::Mock;
 use crate::result::ExpectedVariant;
+use crate::test_util;
 use crate::test_util::assert_expected_variant;
 use crate::usecase::team::tests::team;
+use crate::value::role::{RoleField, RoleMask};
 
 fn token(user_id: &str) -> UserToken {
     UserToken {
@@ -33,7 +34,7 @@ fn credential(user_id: &str) -> UserCredential {
 }
 
 fn user(id: &str, qid: &str) -> UserInfo {
-    let time = crate::test_util::now();
+    let time = test_util::now();
 
     UserInfo {
         id: id.into(),
@@ -163,7 +164,9 @@ async fn list_infos_member_lists_invitations() {
     ));
     mock.seed_member_invitation(invitation("inv-1", "team-1", "qid-2"));
 
-    let listed = list_infos(&mock, &mock, token("member-user"), list_data("team-1")).await.unwrap();
+    let listed = list_infos(&mock, &mock, token("member-user"), list_data("team-1"))
+        .await
+        .unwrap();
 
     assert_eq!(listed.len(), 1);
     assert_eq!(listed[0].id, "inv-1");
@@ -179,7 +182,9 @@ async fn list_infos_empty_returns_after_membership() {
         RoleMask::from(RoleField::TRANSLATOR),
     ));
 
-    let listed = list_infos(&mock, &mock, token("member-user"), list_data("team-1")).await.unwrap();
+    let listed = list_infos(&mock, &mock, token("member-user"), list_data("team-1"))
+        .await
+        .unwrap();
 
     assert!(listed.is_empty());
 }
@@ -208,7 +213,9 @@ async fn update_info_admin_updates_role_mask() {
     ));
     mock.seed_member_invitation(invitation("inv-1", "team-1", "qid-2"));
 
-    update_info(&mock, &mock, token("admin-user"), update_data("inv-1")).await.unwrap();
+    update_info(&mock, &mock, token("admin-user"), update_data("inv-1"))
+        .await
+        .unwrap();
 
     assert_eq!(
         mock.snapshot().member_invitations[0].roles,
@@ -246,7 +253,9 @@ async fn delete_admin_deletes_invitation() {
     ));
     mock.seed_member_invitation(invitation("inv-1", "team-1", "qid-2"));
 
-    delete(&mock, &mock, token("admin-user"), "inv-1".into()).await.unwrap();
+    delete(&mock, &mock, token("admin-user"), "inv-1".into())
+        .await
+        .unwrap();
 
     assert!(mock.snapshot().member_invitations.is_empty());
 }

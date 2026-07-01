@@ -2,7 +2,7 @@
 
 use time::OffsetDateTime;
 
-/// A minimal workset（作品集）record.
+/// A minimal worksetrecord.
 ///
 /// Worksets are scoped to a team and keep denormalized comic counters for
 /// list views and comic index allocation.

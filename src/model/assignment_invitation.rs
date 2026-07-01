@@ -2,7 +2,7 @@
 
 use time::OffsetDateTime;
 
-use crate::model::role::RoleMask;
+use crate::value::role::RoleMask;
 
 /// An invitation record for joining a chapter assignment.
 #[cfg_attr(test, derive(Clone))]

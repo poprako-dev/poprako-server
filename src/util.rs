@@ -48,7 +48,8 @@ fn load_snowflake_node_id() -> u16 {
         Err(_) => return 0,
     };
 
-    match value.parse::<u16>() {
+    let parsed: Result<u16, _> = value.parse();
+    match parsed {
         Ok(instance) if instance <= 1023 => instance,
         _ => unreachable!(),
     }

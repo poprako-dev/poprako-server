@@ -8,10 +8,10 @@ use poprako_util::i18n::trl;
 use crate::data::team::TeamInfoVal;
 use crate::data::user::UserInfoVal;
 use crate::model::member::{MemberInfo, MemberListSpec};
-use crate::model::role::{RoleField, RoleMask};
 use crate::part::image::ImagePool;
 use crate::result::{ExpectedVariant, RootError, RootResult};
 use crate::value::member::MemberInclOpt;
+use crate::value::role::{RoleField, RoleMask};
 
 /// Presentation-ready membership information.
 pub struct MemberInfoVal {

@@ -89,7 +89,7 @@ where
 
         let unit_vals = unit_infos
             .into_iter()
-            .map(|unit_info| unit_export_val(&page_info, unit_info))
+            .map(|unit_info| make_unit_export(&page_info, unit_info))
             .collect();
 
         page_vals.push(PageTranslationExportVal {
@@ -168,7 +168,7 @@ where
     ))
 }
 
-fn unit_export_val(page_info: &PageInfo, unit_info: UnitInfo) -> UnitTranslationExportVal {
+fn make_unit_export(page_info: &PageInfo, unit_info: UnitInfo) -> UnitTranslationExportVal {
     UnitTranslationExportVal {
         unit_id: unit_info.id,
         unit_index: unit_info.index,

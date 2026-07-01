@@ -27,11 +27,7 @@ fn find_user(state: &MockState, user_id: &str) -> Option<UserInfo> {
         .cloned()
 }
 
-fn apply_user_incl(
-    state: &MockState,
-    assignment_info: &mut AssignmentInfo,
-    include_user: bool,
-) {
+fn apply_user_incl(state: &MockState, assignment_info: &mut AssignmentInfo, include_user: bool) {
     assignment_info.user = None;
 
     if include_user {

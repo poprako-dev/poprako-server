@@ -72,11 +72,7 @@ impl AssignmentInvitationStep {
     }
 
     /// Constructs a step to list assignment invitations under one chapter.
-    pub fn list_infos<'a>(
-        chapter_id: &'a str,
-        pending: Option<bool>,
-        page: Page,
-    ) -> ListInfos<'a> {
+    pub fn list_infos<'a>(chapter_id: &'a str, pending: Option<bool>, page: Page) -> ListInfos<'a> {
         ListInfos {
             chapter_id,
             pending,

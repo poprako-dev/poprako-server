@@ -11,9 +11,9 @@
 
 use time::OffsetDateTime;
 
-use crate::model::role::{RoleField, RoleMask};
 use crate::model::user::UserInfo;
 use crate::value::assignment::AssignmentInclOpt;
+use crate::value::role::{RoleField, RoleMask};
 
 /// A chapter assignment record linking a user to a chapter with a set of
 /// workflow roles.

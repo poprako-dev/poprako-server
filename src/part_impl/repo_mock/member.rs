@@ -6,7 +6,6 @@ use time::OffsetDateTime;
 use poprako_transactional::advance::Advance;
 
 use crate::model::member::{MemberForm, MemberInfo, MemberListSpec};
-use crate::model::role::RoleMask;
 use crate::model::team::TeamInfo;
 use crate::model::user::UserInfo;
 use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
@@ -18,6 +17,7 @@ use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactional, expected, now};
 use crate::result::RootError;
 use crate::value::member::MemberInclOpt;
+use crate::value::role::RoleMask;
 
 impl MemberRepo<MockContext> for Mock {}
 

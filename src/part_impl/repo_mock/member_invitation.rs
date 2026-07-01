@@ -14,6 +14,7 @@ use crate::part::repo::step::member_invitation::{
 };
 use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactional, expected};
+use crate::result::RootError;
 use crate::value::member_invitation::MemberInvitationInclOpt;
 
 impl MemberInvitationRepo<MockContext> for Mock {}
@@ -28,11 +29,7 @@ fn find_user(state: &MockState, user_id: &str) -> Option<UserInfo> {
         .cloned()
 }
 
-fn apply_invitor_incl(
-    state: &MockState,
-    info: &mut MemberInvitationInfo,
-    include_invitor: bool,
-) {
+fn apply_invitor_incl(state: &MockState, info: &mut MemberInvitationInfo, include_invitor: bool) {
     info.invitor = None;
 
     if include_invitor {
@@ -42,7 +39,7 @@ fn apply_invitor_incl(
 
 #[async_trait]
 impl<'a> Execute<ListInfos<'a>> for Mock {
-    type Error = crate::result::RootError;
+    type Error = RootError;
 
     async fn execute(
         &self,
@@ -85,7 +82,7 @@ impl<'a> Execute<ListInfos<'a>> for Mock {
 
 #[async_trait]
 impl<'a> Execute<GetInfoById<'a>> for Mock {
-    type Error = crate::result::RootError;
+    type Error = RootError;
 
     async fn execute(&self, step: &GetInfoById<'a>) -> Result<MemberInvitationInfo, Self::Error> {
         let state = self.state.lock().unwrap();
@@ -100,7 +97,7 @@ impl<'a> Execute<GetInfoById<'a>> for Mock {
 
 #[async_trait]
 impl<'a> Advance<Create<'a>, MockContext> for MockTransactional {
-    type Error = crate::result::RootError;
+    type Error = RootError;
 
     async fn advance(
         &self,
@@ -148,7 +145,7 @@ impl<'a> Advance<Create<'a>, MockContext> for MockTransactional {
 
 #[async_trait]
 impl<'a> Advance<GetInfoByCodeExcluded<'a>, MockContext> for MockTransactional {
-    type Error = crate::result::RootError;
+    type Error = RootError;
 
     async fn advance(
         &self,
@@ -167,7 +164,7 @@ impl<'a> Advance<GetInfoByCodeExcluded<'a>, MockContext> for MockTransactional {
 
 #[async_trait]
 impl<'a> Advance<GetInfoById<'a>, MockContext> for MockTransactional {
-    type Error = crate::result::RootError;
+    type Error = RootError;
 
     async fn advance(
         &self,
@@ -186,7 +183,7 @@ impl<'a> Advance<GetInfoById<'a>, MockContext> for MockTransactional {
 
 #[async_trait]
 impl<'a> Advance<MarkPendingAsUsed<'a>, MockContext> for MockTransactional {
-    type Error = crate::result::RootError;
+    type Error = RootError;
 
     async fn advance(
         &self,
@@ -206,7 +203,7 @@ impl<'a> Advance<MarkPendingAsUsed<'a>, MockContext> for MockTransactional {
 
 #[async_trait]
 impl<'a> Advance<UpdateInfo<'a>, MockContext> for MockTransactional {
-    type Error = crate::result::RootError;
+    type Error = RootError;
 
     async fn advance(
         &self,
@@ -226,7 +223,7 @@ impl<'a> Advance<UpdateInfo<'a>, MockContext> for MockTransactional {
 
 #[async_trait]
 impl<'a> Advance<Delete<'a>, MockContext> for MockTransactional {
-    type Error = crate::result::RootError;
+    type Error = RootError;
 
     async fn advance(
         &self,

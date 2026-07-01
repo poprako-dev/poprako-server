@@ -2,18 +2,23 @@ error-internal = Internal server error
 
 error-already-exists = Resource already exists
 
+error-assignment-already-exists = Assignment already exists
+
 error-user-not-found = User not found
 error-no-pending-invitation = No pending invitation
 error-invitation-not-found = Invitation record not found
 error-invalid-invitation-code = Invalid invitation code
 error-unauthorized = Invalid authorization info, please try logging in again
 error-forbidden = You do not have permission to perform this operation
+error-image-get-failed = Failed to get image
+error-image-put-failed = Failed to upload image
 error-unsupported-file-type = Unsupported file type
 error-stale-avatar-upload = Avatar upload version is stale
 error-stale-cover-upload = Cover upload version is stale
 error-stale-page-image-upload = Page image upload version is stale
 error-team-not-found = Team not found
 error-team-or-user-required = Either team_id or user_id must be provided
+error-token-sign-failed = Failed to sign token
 error-chapter-or-user-required = Either chapter_id or owner_id must be provided
 error-workset-not-found = Workset not found
 error-member-not-found = Member not found

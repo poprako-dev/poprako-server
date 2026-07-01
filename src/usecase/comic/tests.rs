@@ -26,7 +26,6 @@ use time::OffsetDateTime;
 
 use crate::model::comic::ComicInfo;
 use crate::model::member::MemberInfo;
-use crate::model::role::{RoleField, RoleMask};
 use crate::model::user::UserToken;
 use crate::model::workset::WorksetInfo;
 use crate::part::prom::Payload;
@@ -37,6 +36,7 @@ use crate::test_util::{
     assert_expected_message, assert_expected_variant, assert_one_image_check_record,
 };
 use crate::usecase::team::tests::workset;
+use crate::value::role::{RoleField, RoleMask};
 
 fn comic(id: &str, workset_id: &str, index: i32) -> ComicInfo {
     let time = OffsetDateTime::now_utc();
@@ -140,7 +140,11 @@ async fn create_allocates_index_and_updates_count() {
     assert_eq!(snapshot.assignments.len(), 1);
     assert_eq!(snapshot.assignments[0].chapter_id, created.chapter_id);
     assert_eq!(snapshot.assignments[0].user_id, "user-1");
-    assert!(snapshot.assignments[0].roles.has_any_role(&[RoleField::ADMIN]));
+    assert!(
+        snapshot.assignments[0]
+            .roles
+            .has_any_role(&[RoleField::ADMIN])
+    );
 }
 
 #[tokio::test]

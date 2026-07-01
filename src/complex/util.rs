@@ -2,7 +2,6 @@
 
 use poprako_util::i18n::trl;
 
-use crate::model::role::RoleField;
 use crate::part::repo::step::assignment::{AssignmentStep, GetInfoByChapterIdAndUserId};
 use crate::part::repo::step::chapter::{ChapterStep, GetInfoById as ChapterGetInfoById};
 use crate::part::repo::step::comic::{ComicStep, GetInfoById as ComicGetInfoById};
@@ -10,9 +9,10 @@ use crate::part::repo::step::member::{FindInfoByUserIdAndTeamId, MemberStep};
 use crate::part::repo::step::workset::{GetInfoById as WorksetGetInfoById, WorksetStep};
 use crate::part::shared::proxy::ProxyExecute;
 use crate::result::{ExpectedVariant, RootError, RootResult, accept};
+use crate::value::role::RoleField;
 
 /// Verify the user is a member of the given team; returns `Perm` error if not.
-pub(super) async fn check_user_is_team_member<P>(
+pub async fn check_user_is_team_member<P>(
     proxy: &mut P,
     user_id: &str,
     team_id: &str,
@@ -37,7 +37,7 @@ where
 }
 
 /// Verify the user is a team admin; returns `Perm` error if not.
-pub(super) async fn check_user_is_team_admin<P>(
+pub async fn check_user_is_team_admin<P>(
     proxy: &mut P,
     user_id: &str,
     team_id: &str,
@@ -69,7 +69,7 @@ where
 }
 
 /// Verify the user is a team member for the chapter's owning team.
-pub(super) async fn check_user_is_team_member_by_chapter<P>(
+pub async fn check_user_is_team_member_by_chapter<P>(
     proxy: &mut P,
     user_id: &str,
     chapter_id: &str,
@@ -98,7 +98,7 @@ where
 }
 
 /// Verify the user has an assignment on the chapter.
-pub(super) async fn check_user_is_chapter_assignee<P>(
+pub async fn check_user_is_chapter_assignee<P>(
     proxy: &mut P,
     user_id: &str,
     chapter_id: &str,
@@ -120,7 +120,7 @@ where
 }
 
 /// Verify the user is assigned as translator or proofreader on the chapter.
-pub(super) async fn check_user_is_chapter_translator_or_proofreader<P>(
+pub async fn check_user_is_chapter_translator_or_proofreader<P>(
     proxy: &mut P,
     user_id: &str,
     chapter_id: &str,

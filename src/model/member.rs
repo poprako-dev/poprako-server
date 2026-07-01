@@ -1,11 +1,11 @@
 //! Domain models for team membership.
 
-use crate::model::role::{RoleField, RoleMask};
 use crate::model::team::TeamInfo;
 use crate::model::user::UserInfo;
 use crate::value::member::MemberInclOpt;
+use crate::value::role::{RoleField, RoleMask};
 
-/// A membership（汉化组成员）record linking a user to a team.
+/// A membershiprecord linking a user to a team.
 ///
 /// Lightweight projection — does not carry the full user or team record,
 /// only the identifiers and a cached nickname for display purposes.

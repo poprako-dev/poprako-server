@@ -1,7 +1,5 @@
 //! Chapter use cases — list, read, create, update, and deletion.
 
-use poprako_transactional::advance::Advance;
-use poprako_transactional::drive::Drive;
 use crate::complex::assignment::AssignmentComplex;
 use crate::complex::chapter::{ChapterComplex, ChapterPermComplex};
 use crate::data::chapter::{
@@ -10,9 +8,8 @@ use crate::data::chapter::{
 };
 use crate::model::assignment::AssignmentForm;
 use crate::model::chapter::{ChapterForm, ChapterInfoUpdate, ChapterListSpec};
-use crate::part::image::ImagePool;
-use crate::model::role::{RoleField, RoleMask};
 use crate::model::user::UserToken;
+use crate::part::image::ImagePool;
 use crate::part::prom::{Prom, PromTransactional};
 use crate::part::repo::assignment::{AssignmentRepo, AssignmentRepoTransactional};
 use crate::part::repo::chapter::{ChapterRepo, ChapterRepoTransactional};
@@ -27,6 +24,9 @@ use crate::part::repo::workset::{WorksetRepo, WorksetRepoTransactional};
 use crate::result::{RootError, RootResult, accept};
 use crate::util::DeriveTransactional;
 use crate::value::chapter::{StagePhase, WorkflowEvent, WorkflowStage};
+use crate::value::role::{RoleField, RoleMask};
+use poprako_transactional::advance::Advance;
+use poprako_transactional::drive::Drive;
 
 #[cfg(test)]
 mod tests;

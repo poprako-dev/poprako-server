@@ -4,13 +4,13 @@ use crate::model::assignment::AssignmentInfo;
 use crate::model::chapter::ChapterInfo;
 use crate::model::comic::ComicInfo;
 use crate::model::member::MemberInfo;
-use crate::model::role::{RoleField, RoleMask};
 use crate::model::team::TeamInfo;
 use crate::model::user::{UserCredential, UserInfo};
 use crate::model::workset::WorksetInfo;
 use crate::part_impl::repo_mock::Mock;
 use crate::test_util::now;
 use crate::value::chapter::WorkflowStageMask;
+use crate::value::role::{RoleField, RoleMask};
 
 mod delete;
 mod join;

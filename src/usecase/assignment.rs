@@ -8,9 +8,9 @@ use crate::complex::chapter::ChapterPermComplex;
 use crate::data::assignment::{
     AssignmentInfoVal, JoinChapterData, ListAssignmentInfosData, UpdateAssignmentRoleData,
 };
-use crate::part::image::ImagePool;
 use crate::model::assignment::{AssignmentForm, AssignmentListSpec, AssignmentRoleUpdate};
 use crate::model::user::UserToken;
+use crate::part::image::ImagePool;
 use crate::part::repo::assignment::{AssignmentRepo, AssignmentRepoTransactional};
 use crate::part::repo::chapter::{ChapterRepo, ChapterRepoTransactional};
 use crate::part::repo::comic::{ComicRepo, ComicRepoTransactional};

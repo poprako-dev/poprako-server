@@ -19,17 +19,17 @@ pub enum StagePhase {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum WorkflowStage {
-    /// 上传
+    /// Raw provide phase.
     RawProvide,
-    /// 翻译
+    /// Translate phase.
     Translate,
-    /// 校对
+    /// Proofread phase.
     Proofread,
-    /// 嵌字/修图
+    /// Typeset and redraw phase.
     TypesetRedraw,
-    /// 监修
+    /// Review phase.
     Review,
-    /// 发布
+    /// Publish phase.
     Publish,
 }
 

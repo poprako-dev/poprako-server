@@ -94,11 +94,7 @@ fn find_user(state: &MockState, user_id: &str) -> Option<UserInfo> {
         .cloned()
 }
 
-fn apply_creator_incl(
-    state: &MockState,
-    chapter_info: &mut ChapterInfo,
-    include_creator: bool,
-) {
+fn apply_creator_incl(state: &MockState, chapter_info: &mut ChapterInfo, include_creator: bool) {
     chapter_info.creator = None;
 
     if include_creator {
@@ -110,10 +106,7 @@ fn apply_creator_incl(
 impl<'a> Execute<ListInfos<'a>> for Mock {
     type Error = RootError;
 
-    async fn execute(
-        &self,
-        step: &ListInfos<'a>,
-    ) -> Result<Vec<ChapterInfo>, Self::Error> {
+    async fn execute(&self, step: &ListInfos<'a>) -> Result<Vec<ChapterInfo>, Self::Error> {
         let state = self.state.lock().unwrap();
         let mut chapters = list_all_chapters(&state, &step.spec.comic_id);
 

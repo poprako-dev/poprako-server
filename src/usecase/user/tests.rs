@@ -34,7 +34,6 @@ use time::OffsetDateTime;
 
 use crate::complex::user::UserComplex;
 use crate::model::member::MemberInfo;
-use crate::model::role::{RoleField, RoleMask};
 use crate::model::user::{UserCredential, UserInfo};
 use crate::part::effect::event::Event;
 use crate::part::prom::Payload;
@@ -45,9 +44,10 @@ use crate::result::ExpectedVariant;
 use crate::test_util::{
     assert_expected_message, assert_expected_variant, assert_one_image_check_record,
 };
+use crate::value::role::{RoleField, RoleMask};
 
 /// Builds a [`UserInfo`] fixture with default timestamps and no avatar.
-pub(crate) fn user(id: &str, qid: &str, nickname: &str) -> UserInfo {
+pub fn user(id: &str, qid: &str, nickname: &str) -> UserInfo {
     let time = OffsetDateTime::now_utc();
 
     UserInfo {
@@ -65,7 +65,7 @@ pub(crate) fn user(id: &str, qid: &str, nickname: &str) -> UserInfo {
 }
 
 /// Builds a [`UserInfo`] fixture with avatar fields set.
-pub(crate) fn user_with_avatar(
+pub fn user_with_avatar(
     id: &str,
     qid: &str,
     nickname: &str,
@@ -82,7 +82,7 @@ pub(crate) fn user_with_avatar(
 }
 
 /// Builds a [`UserCredential`] with a properly hashed password.
-pub(crate) fn credential(user_id: &str, password: &str) -> UserCredential {
+pub fn credential(user_id: &str, password: &str) -> UserCredential {
     let password_hash = match UserComplex::hash_password(password) {
         Ok(password_hash) => password_hash,
         Err(_) => panic!("failed to hash password"),
@@ -95,7 +95,7 @@ pub(crate) fn credential(user_id: &str, password: &str) -> UserCredential {
 }
 
 /// Builds a [`UserCredential`] that will never match any real password.
-pub(crate) fn invalid_credential(user_id: &str) -> UserCredential {
+pub fn invalid_credential(user_id: &str) -> UserCredential {
     UserCredential {
         user_id: user_id.into(),
         password_hash: "invalid-password-hash".into(),
@@ -103,7 +103,7 @@ pub(crate) fn invalid_credential(user_id: &str) -> UserCredential {
 }
 
 /// Builds a [`MemberInfo`] fixture.
-pub(crate) fn member(id: &str, user_id: &str, user_nickname: &str, team_id: &str) -> MemberInfo {
+pub fn member(id: &str, user_id: &str, user_nickname: &str, team_id: &str) -> MemberInfo {
     MemberInfo {
         id: id.into(),
         user_id: user_id.into(),
@@ -165,7 +165,9 @@ async fn get_info_emits_active_for_self() {
         credential("user-1", "password"),
     );
 
-    let val = get_info(&mock, &mock, &mock, token("user-1"), "user-1".into()).await.unwrap();
+    let val = get_info(&mock, &mock, &mock, token("user-1"), "user-1".into())
+        .await
+        .unwrap();
 
     assert_eq!(val.id, "user-1");
     assert_eq!(val.nickname, "Nick");
@@ -185,7 +187,9 @@ async fn get_info_does_not_emit_active_for_other_user() {
         credential("user-2", "password"),
     );
 
-    get_info(&mock, &mock, &mock, token("user-1"), "user-2".into()).await.unwrap();
+    get_info(&mock, &mock, &mock, token("user-1"), "user-2".into())
+        .await
+        .unwrap();
 
     assert_eq!(mock.event_count(), 0);
 }
