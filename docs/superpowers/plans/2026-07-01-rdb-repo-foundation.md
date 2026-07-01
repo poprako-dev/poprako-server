@@ -67,10 +67,12 @@ Create or modify these files:
   - Own `RdbDrive` and `Drive<RdbContext>`.
 - Modify: `src/part_impl/rdb_repo.rs`
   - Own `RdbRepo`, `RdbRepoTransactional`, `RdbContext`, pool construction helpers, shared non-transactional connection helpers, and module declarations.
+  - Import generated Diesel schema with `#[path = "../infra/repo/schema.rs"] pub mod schema;`.
 - Create: `src/part_impl/rdb_repo/error.rs`
   - Convert Diesel, pool, serde, and invalid stored values into `RootError`.
 - Create: `src/part_impl/rdb_repo/entity.rs`
-  - Declare entity submodules.
+  - Provide the entity module root. Submodules are declared by the tasks that
+    create those files.
 - Create: `src/part_impl/rdb_repo/entity/user.rs`
 - Create: `src/part_impl/rdb_repo/entity/team.rs`
 - Create: `src/part_impl/rdb_repo/entity/member.rs`
@@ -164,14 +166,9 @@ use crate::util::DeriveTransactional;
 
 pub mod entity;
 pub mod error;
-pub mod user;
-pub mod team;
-pub mod member;
-pub mod member_invitation;
-pub mod system_mail;
-pub mod workset;
-pub mod local_message;
-pub mod comic;
+
+#[path = "../infra/repo/schema.rs"]
+pub mod schema;
 
 pub type RdbPool = Pool<AsyncPgConnection>;
 pub type RdbPooledConnection = Object<AsyncDieselConnectionManager<AsyncPgConnection>>;
@@ -298,15 +295,6 @@ Write `src/part_impl/rdb_repo/entity.rs`:
 
 ```rust
 //! Diesel entity types for the RDB repository.
-
-pub mod user;
-pub mod team;
-pub mod member;
-pub mod member_invitation;
-pub mod system_mail;
-pub mod workset;
-pub mod local_message;
-pub mod comic;
 ```
 
 - [ ] **Step 6: Create separate RDB drive**
@@ -591,8 +579,8 @@ Create exact SQL carriers in `entity/user.rs`:
 use diesel::prelude::*;
 use time::OffsetDateTime;
 
-use crate::infra::repo::schema;
 use crate::model::user::{UserCredential, UserInfo};
+use crate::part_impl::rdb_repo::schema;
 
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = schema::t_user)]
@@ -714,6 +702,14 @@ impl From<UserCredentialRow> for UserCredential {
 When generated schema requires a field not listed here, add it only to the exact
 entity that selects or writes that field.
 
+Also add these module declarations to `src/part_impl/rdb_repo/entity.rs`:
+
+```rust
+pub mod user;
+pub mod team;
+pub mod member;
+```
+
 - [ ] **Step 2: Build team entities**
 
 Create `entity/team.rs` with `TeamInfoRow`, `TeamEntry`, `TeamAspect`, and
@@ -733,6 +729,16 @@ Create `entity/member.rs` with:
 Convert role timestamp columns into `RoleMask` by checking which timestamp
 columns are non-null. Convert `RoleMask` into timestamp columns for inserts and
 role updates by checking each `RoleField`.
+
+- [ ] **Step 3.5: Declare core repo modules**
+
+Add these module declarations to `src/part_impl/rdb_repo.rs`:
+
+```rust
+pub mod user;
+pub mod team;
+pub mod member;
+```
 
 - [ ] **Step 4: Check entities compile**
 
@@ -903,6 +909,22 @@ Create exact entities:
 Do not create `WorksetSave` in this first slice because the current active
 `WorksetStep::UpdateInfo` is patch-shaped for the RDB layer.
 
+Add these module declarations to `src/part_impl/rdb_repo/entity.rs`:
+
+```rust
+pub mod member_invitation;
+pub mod system_mail;
+pub mod workset;
+```
+
+Add these module declarations to `src/part_impl/rdb_repo.rs`:
+
+```rust
+pub mod member_invitation;
+pub mod system_mail;
+pub mod workset;
+```
+
 - [ ] **Step 4: Compile entity modules**
 
 Run:
@@ -1022,6 +1044,18 @@ Create:
 
 For `PromStep::append`, only `LocalMessageEntry` is required.
 
+Add this module declaration to `src/part_impl/rdb_repo/entity.rs`:
+
+```rust
+pub mod local_message;
+```
+
+Add this module declaration to `src/part_impl/rdb_repo.rs`:
+
+```rust
+pub mod local_message;
+```
+
 - [ ] **Step 2: Implement prom traits**
 
 In `local_message.rs`, implement:
@@ -1082,6 +1116,18 @@ Create:
 
 Keep include rows precise. Do not use a full `UserInfoRow`, `TeamInfoRow`, or
 `WorksetInfoRow` for include paths unless every selected column is used.
+
+Add this module declaration to `src/part_impl/rdb_repo/entity.rs`:
+
+```rust
+pub mod comic;
+```
+
+Add this module declaration to `src/part_impl/rdb_repo.rs`:
+
+```rust
+pub mod comic;
+```
 
 - [ ] **Step 2: Implement comic trait markers**
 
