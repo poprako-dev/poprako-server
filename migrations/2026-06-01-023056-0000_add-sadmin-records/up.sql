@@ -25,7 +25,7 @@ INSERT INTO "t_member" (
     "f_assigned_reviewer_at",
     "f_assigned_publisher_at",
     "f_assigned_admin_at",
-    "f_assigned_assistant_at"
+    "f_assigned_bot_at"
 ) VALUES (
     'member-00000000-0000-0000-0000-000000000001',
     'user-00000000-0000-0000-0000-000000000001',

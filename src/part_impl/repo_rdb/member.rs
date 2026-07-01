@@ -15,77 +15,61 @@ use crate::part::repo::step::member::{
 use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_rdb::entity::member::{MemberAspect, MemberEntry, MemberRow};
 use crate::part_impl::repo_rdb::{RdbRepo, RdbRepoTransactional, schema};
+use crate::part_impl::shared_rdb::RdbConn;
 use crate::part_impl::shared_rdb::RdbContext;
 use crate::part_impl::shared_rdb::result::{diesel, expected};
-use crate::part_impl::shared_rdb::RdbConn;
 use crate::result::{RegularError, RegularResult};
 use crate::value::role::{RoleField, RoleMask};
 
 use schema::t_member::dsl::*;
 
-// FIXME: no tuple in anywhere. Must use field-named structs.
-type RoleTimestamps = (
-    Option<OffsetDateTime>,
-    Option<OffsetDateTime>,
-    Option<OffsetDateTime>,
-    Option<OffsetDateTime>,
-    Option<OffsetDateTime>,
-    Option<OffsetDateTime>,
-    Option<OffsetDateTime>,
-    Option<OffsetDateTime>,
-    Option<OffsetDateTime>,
-);
+struct RoleTimestamps {
+    raw_provider: Option<OffsetDateTime>,
+    translator: Option<OffsetDateTime>,
+    proofreader: Option<OffsetDateTime>,
+    typesetter: Option<OffsetDateTime>,
+    redrawer: Option<OffsetDateTime>,
+    reviewer: Option<OffsetDateTime>,
+    publisher: Option<OffsetDateTime>,
+    admin: Option<OffsetDateTime>,
+    bot: Option<OffsetDateTime>,
+}
 
 fn role_timestamps_from_mask(roles: RoleMask, now: OffsetDateTime) -> RoleTimestamps {
     let timestamp_fn = |field: RoleField| -> Option<OffsetDateTime> {
-        // FIXME: no if else but function style.
-        if roles.has_any_role(&[field]) {
-            Some(now)
-        } else {
-            None
-        }
+        roles.has_any_role(&[field]).then_some(now)
     };
 
-    (
-        timestamp_fn(RoleField::RAW_PROVIDER),
-        timestamp_fn(RoleField::TRANSLATOR),
-        timestamp_fn(RoleField::PROOFREADER),
-        timestamp_fn(RoleField::TYPESETTER),
-        timestamp_fn(RoleField::REDRAWER),
-        timestamp_fn(RoleField::REVIEWER),
-        timestamp_fn(RoleField::PUBLISHER),
-        timestamp_fn(RoleField::ADMIN),
-        None,
-    )
+    RoleTimestamps {
+        raw_provider: timestamp_fn(RoleField::RAW_PROVIDER),
+        translator: timestamp_fn(RoleField::TRANSLATOR),
+        proofreader: timestamp_fn(RoleField::PROOFREADER),
+        typesetter: timestamp_fn(RoleField::TYPESETTER),
+        redrawer: timestamp_fn(RoleField::REDRAWER),
+        reviewer: timestamp_fn(RoleField::REVIEWER),
+        publisher: timestamp_fn(RoleField::PUBLISHER),
+        admin: timestamp_fn(RoleField::ADMIN),
+        bot: None,
+    }
 }
 
 fn entry_from_form<'a>(form: &'a MemberForm, now: OffsetDateTime) -> MemberEntry<'a> {
-    let (
-        raw_provider,
-        translator,
-        proofreader,
-        typesetter,
-        redrawer,
-        reviewer,
-        publisher,
-        admin,
-        assistant,
-    ) = role_timestamps_from_mask(form.roles, now);
+    let timestamps = role_timestamps_from_mask(form.roles, now);
 
     MemberEntry {
         f_id: &form.id,
         f_user_id: &form.user_id,
         f_user_nickname: &form.user_nickname,
         f_team_id: &form.team_id,
-        f_assigned_raw_provider_at: raw_provider,
-        f_assigned_translator_at: translator,
-        f_assigned_proofreader_at: proofreader,
-        f_assigned_typesetter_at: typesetter,
-        f_assigned_redrawer_at: redrawer,
-        f_assigned_reviewer_at: reviewer,
-        f_assigned_publisher_at: publisher,
-        f_assigned_admin_at: admin,
-        f_assigned_assistant_at: assistant,
+        f_assigned_raw_provider_at: timestamps.raw_provider,
+        f_assigned_translator_at: timestamps.translator,
+        f_assigned_proofreader_at: timestamps.proofreader,
+        f_assigned_typesetter_at: timestamps.typesetter,
+        f_assigned_redrawer_at: timestamps.redrawer,
+        f_assigned_reviewer_at: timestamps.reviewer,
+        f_assigned_publisher_at: timestamps.publisher,
+        f_assigned_admin_at: timestamps.admin,
+        f_assigned_bot_at: timestamps.bot,
         f_user_last_active_at: now,
         f_created_at: now,
         f_updated_at: now,
@@ -93,37 +77,27 @@ fn entry_from_form<'a>(form: &'a MemberForm, now: OffsetDateTime) -> MemberEntry
 }
 
 fn aspect_from_role_update(update: &MemberRoleUpdate, now: OffsetDateTime) -> MemberAspect<'_> {
-    let (
-        raw_provider,
-        translator,
-        proofreader,
-        typesetter,
-        redrawer,
-        reviewer,
-        publisher,
-        admin,
-        assistant,
-    ) = role_timestamps_from_mask(update.roles, now);
+    let timestamps = role_timestamps_from_mask(update.roles, now);
 
     let mut aspect = MemberAspect::new(now);
 
     aspect = aspect
-        .assigned_raw_provider_at(raw_provider)
-        .assigned_translator_at(translator)
-        .assigned_proofreader_at(proofreader)
-        .assigned_typesetter_at(typesetter)
-        .assigned_redrawer_at(redrawer)
-        .assigned_reviewer_at(reviewer)
-        .assigned_publisher_at(publisher)
-        .assigned_admin_at(admin)
-        .assigned_assistant_at(assistant);
+        .assigned_raw_provider_at(timestamps.raw_provider)
+        .assigned_translator_at(timestamps.translator)
+        .assigned_proofreader_at(timestamps.proofreader)
+        .assigned_typesetter_at(timestamps.typesetter)
+        .assigned_redrawer_at(timestamps.redrawer)
+        .assigned_reviewer_at(timestamps.reviewer)
+        .assigned_publisher_at(timestamps.publisher)
+        .assigned_admin_at(timestamps.admin)
+        .assigned_bot_at(timestamps.bot);
 
     aspect
 }
 
 // ── Free functions ──────────────────────────────────────────────────────────
 
-async fn find_member_by_user_team(
+async fn find_info_by_user_id_and_team_id(
     conn: &mut RdbConn,
     user_id: &str,
     team_id: &str,
@@ -140,10 +114,7 @@ async fn find_member_by_user_team(
     Ok(row.map(Into::into))
 }
 
-async fn list_members(
-    conn: &mut RdbConn,
-    spec: &MemberListSpec,
-) -> RegularResult<Vec<MemberInfo>> {
+async fn list_infos(conn: &mut RdbConn, spec: &MemberListSpec) -> RegularResult<Vec<MemberInfo>> {
     let rows: Vec<MemberRow> = match spec {
         MemberListSpec::Team {
             team_id,
@@ -189,7 +160,7 @@ async fn list_members(
     Ok(rows.into_iter().map(Into::into).collect())
 }
 
-async fn get_member_by_id(conn: &mut RdbConn, id: &str) -> RegularResult<MemberInfo> {
+async fn get_info_by_id(conn: &mut RdbConn, id: &str) -> RegularResult<MemberInfo> {
     let row: MemberRow = t_member
         .filter(f_id.eq(id))
         .select(MemberRow::as_select())
@@ -202,10 +173,7 @@ async fn get_member_by_id(conn: &mut RdbConn, id: &str) -> RegularResult<MemberI
     Ok(row.into())
 }
 
-async fn create_member(
-    conn: &mut RdbConn,
-    form: &MemberForm,
-) -> RegularResult<MemberInfo> {
+async fn create(conn: &mut RdbConn, form: &MemberForm) -> RegularResult<MemberInfo> {
     let now = OffsetDateTime::now_utc();
 
     let entry = entry_from_form(form, now);
@@ -220,7 +188,7 @@ async fn create_member(
     Ok(row.into())
 }
 
-async fn update_member_user_nickname(
+async fn update_user_nickname(
     conn: &mut RdbConn,
     user_id: &str,
     nickname: &str,
@@ -238,10 +206,7 @@ async fn update_member_user_nickname(
     Ok(())
 }
 
-async fn touch_member_last_active(
-    conn: &mut RdbConn,
-    user_id: &str,
-) -> RegularResult<()> {
+async fn touch_last_active(conn: &mut RdbConn, user_id: &str) -> RegularResult<()> {
     let now = OffsetDateTime::now_utc();
 
     let aspect = MemberAspect::new(now).user_last_active_at(now);
@@ -255,7 +220,7 @@ async fn touch_member_last_active(
     Ok(())
 }
 
-async fn list_members_by_user_excluded(
+async fn list_infos_by_user_id_excluded(
     conn: &mut RdbConn,
     user_id: &str,
 ) -> RegularResult<Vec<MemberInfo>> {
@@ -270,18 +235,7 @@ async fn list_members_by_user_excluded(
     Ok(rows.into_iter().map(Into::into).collect())
 }
 
-async fn find_member_by_user_team_tx(
-    conn: &mut RdbConn,
-    user_id: &str,
-    team_id: &str,
-) -> RegularResult<Option<MemberInfo>> {
-    find_member_by_user_team(conn, user_id, team_id).await
-}
-
-async fn get_member_by_id_excluded(
-    conn: &mut RdbConn,
-    id: &str,
-) -> RegularResult<MemberInfo> {
+async fn get_info_excluded(conn: &mut RdbConn, id: &str) -> RegularResult<MemberInfo> {
     let row: MemberRow = t_member
         .filter(f_id.eq(id))
         .select(MemberRow::as_select())
@@ -295,10 +249,7 @@ async fn get_member_by_id_excluded(
     Ok(row.into())
 }
 
-async fn update_member_role(
-    conn: &mut RdbConn,
-    update: &MemberRoleUpdate,
-) -> RegularResult<()> {
+async fn update_role(conn: &mut RdbConn, update: &MemberRoleUpdate) -> RegularResult<()> {
     let now = OffsetDateTime::now_utc();
 
     let aspect = aspect_from_role_update(update, now);
@@ -312,7 +263,7 @@ async fn update_member_role(
     Ok(())
 }
 
-async fn delete_member(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
+async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
     diesel::delete(t_member.filter(f_id.eq(id)))
         .execute(conn)
         .await
@@ -333,7 +284,7 @@ impl<'a> Execute<FindInfoByUserIdAndTeamId<'a>> for RdbRepo {
     ) -> RegularResult<Option<MemberInfo>> {
         submit_query!(
             self.shared,
-            find_member_by_user_team,
+            find_info_by_user_id_and_team_id,
             step.user_id,
             step.team_id
         )
@@ -345,7 +296,7 @@ impl<'a> Execute<ListInfos<'a>> for RdbRepo {
     type Error = RegularError;
 
     async fn execute(&self, step: &ListInfos<'a>) -> RegularResult<Vec<MemberInfo>> {
-        submit_query!(self.shared, list_members, step.spec)
+        submit_query!(self.shared, list_infos, step.spec)
     }
 }
 
@@ -354,7 +305,7 @@ impl<'a> Execute<GetInfoById<'a>> for RdbRepo {
     type Error = RegularError;
 
     async fn execute(&self, step: &GetInfoById<'a>) -> RegularResult<MemberInfo> {
-        submit_query!(self.shared, get_member_by_id, step.id)
+        submit_query!(self.shared, get_info_by_id, step.id)
     }
 }
 
@@ -369,7 +320,7 @@ impl<'a> Advance<Create<'a>, RdbContext> for RdbRepoTransactional {
         context: &mut RdbContext,
         step: &Create<'a>,
     ) -> RegularResult<MemberInfo> {
-        create_member(context.conn(), step.form).await
+        create(context.conn(), step.form).await
     }
 }
 
@@ -382,7 +333,7 @@ impl<'a> Advance<UpdateUserNickname<'a>, RdbContext> for RdbRepoTransactional {
         context: &mut RdbContext,
         step: &UpdateUserNickname<'a>,
     ) -> RegularResult<()> {
-        update_member_user_nickname(context.conn(), step.user_id, step.user_nickname).await
+        update_user_nickname(context.conn(), step.user_id, step.user_nickname).await
     }
 }
 
@@ -395,7 +346,7 @@ impl<'a> Advance<TouchLastActive<'a>, RdbContext> for RdbRepoTransactional {
         context: &mut RdbContext,
         step: &TouchLastActive<'a>,
     ) -> RegularResult<()> {
-        touch_member_last_active(context.conn(), step.user_id).await
+        touch_last_active(context.conn(), step.user_id).await
     }
 }
 
@@ -408,7 +359,7 @@ impl<'a> Advance<ListInfosByUserIdExcluded<'a>, RdbContext> for RdbRepoTransacti
         context: &mut RdbContext,
         step: &ListInfosByUserIdExcluded<'a>,
     ) -> RegularResult<Vec<MemberInfo>> {
-        list_members_by_user_excluded(context.conn(), step.user_id).await
+        list_infos_by_user_id_excluded(context.conn(), step.user_id).await
     }
 }
 
@@ -421,7 +372,7 @@ impl<'a> Advance<FindInfoByUserIdAndTeamId<'a>, RdbContext> for RdbRepoTransacti
         context: &mut RdbContext,
         step: &FindInfoByUserIdAndTeamId<'a>,
     ) -> RegularResult<Option<MemberInfo>> {
-        find_member_by_user_team_tx(context.conn(), step.user_id, step.team_id).await
+        find_info_by_user_id_and_team_id(context.conn(), step.user_id, step.team_id).await
     }
 }
 
@@ -434,7 +385,7 @@ impl<'a> Advance<GetInfoExcluded<'a>, RdbContext> for RdbRepoTransactional {
         context: &mut RdbContext,
         step: &GetInfoExcluded<'a>,
     ) -> RegularResult<MemberInfo> {
-        get_member_by_id_excluded(context.conn(), step.id).await
+        get_info_excluded(context.conn(), step.id).await
     }
 }
 
@@ -443,7 +394,7 @@ impl<'a> Advance<UpdateRole<'a>, RdbContext> for RdbRepoTransactional {
     type Error = RegularError;
 
     async fn advance(&self, context: &mut RdbContext, step: &UpdateRole<'a>) -> RegularResult<()> {
-        update_member_role(context.conn(), step.member_role_update).await
+        update_role(context.conn(), step.member_role_update).await
     }
 }
 
@@ -452,6 +403,6 @@ impl<'a> Advance<Delete<'a>, RdbContext> for RdbRepoTransactional {
     type Error = RegularError;
 
     async fn advance(&self, context: &mut RdbContext, step: &Delete<'a>) -> RegularResult<()> {
-        delete_member(context.conn(), step.id).await
+        delete(context.conn(), step.id).await
     }
 }

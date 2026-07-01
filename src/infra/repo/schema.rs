@@ -50,7 +50,7 @@ diesel::table! {
         f_assigned_reviewer_at -> Nullable<Timestamptz>,
         f_assigned_publisher_at -> Nullable<Timestamptz>,
         f_assigned_admin_at -> Nullable<Timestamptz>,
-        f_assigned_assistant_at -> Nullable<Timestamptz>,
+        f_assigned_bot_at -> Nullable<Timestamptz>,
         f_user_last_active_at -> Timestamptz,
         f_created_at -> Timestamptz,
         f_updated_at -> Timestamptz,

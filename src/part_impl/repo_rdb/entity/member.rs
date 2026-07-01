@@ -25,7 +25,7 @@ pub struct MemberRow {
     pub f_assigned_reviewer_at: Option<OffsetDateTime>,
     pub f_assigned_publisher_at: Option<OffsetDateTime>,
     pub f_assigned_admin_at: Option<OffsetDateTime>,
-    pub f_assigned_assistant_at: Option<OffsetDateTime>,
+    pub f_assigned_bot_at: Option<OffsetDateTime>,
 
     pub f_user_last_active_at: OffsetDateTime,
 
@@ -51,7 +51,7 @@ pub struct MemberEntry<'a> {
     pub f_assigned_reviewer_at: Option<OffsetDateTime>,
     pub f_assigned_publisher_at: Option<OffsetDateTime>,
     pub f_assigned_admin_at: Option<OffsetDateTime>,
-    pub f_assigned_assistant_at: Option<OffsetDateTime>,
+    pub f_assigned_bot_at: Option<OffsetDateTime>,
 
     pub f_user_last_active_at: OffsetDateTime,
 
@@ -76,7 +76,7 @@ pub struct MemberAspect<'a> {
     pub f_assigned_reviewer_at: Option<Option<OffsetDateTime>>,
     pub f_assigned_publisher_at: Option<Option<OffsetDateTime>>,
     pub f_assigned_admin_at: Option<Option<OffsetDateTime>>,
-    pub f_assigned_assistant_at: Option<Option<OffsetDateTime>>,
+    pub f_assigned_bot_at: Option<Option<OffsetDateTime>>,
 
     pub f_updated_at: OffsetDateTime,
 }
@@ -94,7 +94,7 @@ impl<'a> MemberAspect<'a> {
             f_assigned_reviewer_at: None,
             f_assigned_publisher_at: None,
             f_assigned_admin_at: None,
-            f_assigned_assistant_at: None,
+            f_assigned_bot_at: None,
             f_updated_at: updated_at,
         }
     }
@@ -149,8 +149,8 @@ impl<'a> MemberAspect<'a> {
         self
     }
 
-    pub fn assigned_assistant_at(mut self, val: Option<OffsetDateTime>) -> Self {
-        self.f_assigned_assistant_at = Some(val);
+    pub fn assigned_bot_at(mut self, val: Option<OffsetDateTime>) -> Self {
+        self.f_assigned_bot_at = Some(val);
         self
     }
 }

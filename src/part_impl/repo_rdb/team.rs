@@ -16,9 +16,9 @@ use crate::part::repo::step::team::{
 use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_rdb::entity::team::{TeamAspect, TeamEntry, TeamRow};
 use crate::part_impl::repo_rdb::{RdbRepo, RdbRepoTransactional, schema};
+use crate::part_impl::shared_rdb::RdbConn;
 use crate::part_impl::shared_rdb::RdbContext;
 use crate::part_impl::shared_rdb::result::{diesel, expected};
-use crate::part_impl::shared_rdb::RdbConn;
 use crate::result::{RegularError, RegularResult};
 
 use schema::t_member;
@@ -26,7 +26,7 @@ use schema::t_team::dsl::*;
 
 // ── Free functions ──────────────────────────────────────────────────────────
 
-async fn create_team(conn: &mut RdbConn, form: &TeamForm) -> RegularResult<TeamInfo> {
+async fn create(conn: &mut RdbConn, form: &TeamForm) -> RegularResult<TeamInfo> {
     let now = OffsetDateTime::now_utc();
 
     let entry = TeamEntry {
@@ -48,7 +48,7 @@ async fn create_team(conn: &mut RdbConn, form: &TeamForm) -> RegularResult<TeamI
     Ok(row.into())
 }
 
-async fn get_team_by_id(conn: &mut RdbConn, target_id: &str) -> RegularResult<TeamInfo> {
+async fn get_info_by_id(conn: &mut RdbConn, target_id: &str) -> RegularResult<TeamInfo> {
     let row: TeamRow = t_team
         .filter(f_id.eq(target_id))
         .select(TeamRow::as_select())
@@ -61,7 +61,7 @@ async fn get_team_by_id(conn: &mut RdbConn, target_id: &str) -> RegularResult<Te
     Ok(row.into())
 }
 
-async fn list_teams(
+async fn list_infos(
     conn: &mut RdbConn,
     user_id: Option<&str>,
     offset: u64,
@@ -88,7 +88,7 @@ async fn list_teams(
     Ok(rows.into_iter().map(Into::into).collect())
 }
 
-async fn update_team(
+async fn update_info(
     conn: &mut RdbConn,
     target_id: &str,
     name: &str,
@@ -107,7 +107,7 @@ async fn update_team(
     Ok(())
 }
 
-async fn mark_team_avatar_uploaded(
+async fn mark_avatar_uploaded(
     conn: &mut RdbConn,
     target_id: &str,
     version: i64,
@@ -131,7 +131,7 @@ async fn mark_team_avatar_uploaded(
     Ok(())
 }
 
-async fn reserve_team_avatar(
+async fn reserve_avatar(
     conn: &mut RdbConn,
     target_id: &str,
     file_ext: &str,
@@ -160,18 +160,7 @@ async fn reserve_team_avatar(
     })
 }
 
-async fn mark_team_avatar_uploaded_tx(
-    conn: &mut RdbConn,
-    target_id: &str,
-    version: i64,
-) -> RegularResult<()> {
-    mark_team_avatar_uploaded(conn, target_id, version).await
-}
-
-async fn get_team_by_id_excluded(
-    conn: &mut RdbConn,
-    target_id: &str,
-) -> RegularResult<TeamInfo> {
+async fn get_info_excluded(conn: &mut RdbConn, target_id: &str) -> RegularResult<TeamInfo> {
     let row: TeamRow = t_team
         .filter(f_id.eq(target_id))
         .select(TeamRow::as_select())
@@ -185,7 +174,7 @@ async fn get_team_by_id_excluded(
     Ok(row.into())
 }
 
-async fn delete_team(conn: &mut RdbConn, target_id: &str) -> RegularResult<()> {
+async fn delete(conn: &mut RdbConn, target_id: &str) -> RegularResult<()> {
     diesel::delete(t_team.filter(f_id.eq(target_id)))
         .execute(conn)
         .await
@@ -194,10 +183,7 @@ async fn delete_team(conn: &mut RdbConn, target_id: &str) -> RegularResult<()> {
     Ok(())
 }
 
-async fn increment_workset_next_index(
-    conn: &mut RdbConn,
-    target_id: &str,
-) -> RegularResult<i32> {
+async fn increment_workset_next_index(conn: &mut RdbConn, target_id: &str) -> RegularResult<i32> {
     let prev: i32 = diesel::update(t_team.filter(f_id.eq(target_id)))
         .set(f_workset_next_index.eq(f_workset_next_index + 1))
         .returning(f_workset_next_index - 1)
@@ -214,7 +200,7 @@ async fn increment_workset_next_index(
 impl<'a> Execute<Create<'a>> for RdbRepo {
     type Error = RegularError;
     async fn execute(&self, step: &Create<'a>) -> Result<TeamInfo, Self::Error> {
-        submit_query!(self.shared, create_team, step.form)
+        submit_query!(self.shared, create, step.form)
     }
 }
 
@@ -222,7 +208,7 @@ impl<'a> Execute<Create<'a>> for RdbRepo {
 impl<'a> Execute<GetInfoById<'a>> for RdbRepo {
     type Error = RegularError;
     async fn execute(&self, step: &GetInfoById<'a>) -> Result<TeamInfo, Self::Error> {
-        submit_query!(self.shared, get_team_by_id, step.id)
+        submit_query!(self.shared, get_info_by_id, step.id)
     }
 }
 
@@ -232,7 +218,7 @@ impl<'a> Execute<ListInfos<'a>> for RdbRepo {
     async fn execute(&self, step: &ListInfos<'a>) -> Result<Vec<TeamInfo>, Self::Error> {
         submit_query!(
             self.shared,
-            list_teams,
+            list_infos,
             step.user_id,
             step.offset,
             step.limit
@@ -246,7 +232,7 @@ impl<'a> Execute<UpdateInfo<'a>> for RdbRepo {
     async fn execute(&self, step: &UpdateInfo<'a>) -> RegularResult<()> {
         submit_query!(
             self.shared,
-            update_team,
+            update_info,
             step.id,
             step.name,
             step.description
@@ -260,7 +246,7 @@ impl<'a> Execute<MarkAvatarUploaded<'a>> for RdbRepo {
     async fn execute(&self, step: &MarkAvatarUploaded<'a>) -> RegularResult<()> {
         submit_query!(
             self.shared,
-            mark_team_avatar_uploaded,
+            mark_avatar_uploaded,
             step.id,
             step.avatar_version
         )
@@ -277,7 +263,7 @@ impl<'a> Advance<ReserveAvatar<'a>, RdbContext> for RdbRepoTransactional {
         context: &mut RdbContext,
         step: &ReserveAvatar<'a>,
     ) -> RegularResult<TeamAvatarReservation> {
-        reserve_team_avatar(context.conn(), step.id, step.file_extension).await
+        reserve_avatar(context.conn(), step.id, step.file_extension).await
     }
 }
 
@@ -289,7 +275,7 @@ impl<'a> Advance<MarkAvatarUploaded<'a>, RdbContext> for RdbRepoTransactional {
         context: &mut RdbContext,
         step: &MarkAvatarUploaded<'a>,
     ) -> RegularResult<()> {
-        mark_team_avatar_uploaded_tx(context.conn(), step.id, step.avatar_version).await
+        mark_avatar_uploaded(context.conn(), step.id, step.avatar_version).await
     }
 }
 
@@ -301,7 +287,7 @@ impl<'a> Advance<GetInfoExcluded<'a>, RdbContext> for RdbRepoTransactional {
         context: &mut RdbContext,
         step: &GetInfoExcluded<'a>,
     ) -> RegularResult<TeamInfo> {
-        get_team_by_id_excluded(context.conn(), step.id).await
+        get_info_excluded(context.conn(), step.id).await
     }
 }
 
@@ -309,7 +295,7 @@ impl<'a> Advance<GetInfoExcluded<'a>, RdbContext> for RdbRepoTransactional {
 impl<'a> Advance<Delete<'a>, RdbContext> for RdbRepoTransactional {
     type Error = RegularError;
     async fn advance(&self, context: &mut RdbContext, step: &Delete<'a>) -> RegularResult<()> {
-        delete_team(context.conn(), step.id).await
+        delete(context.conn(), step.id).await
     }
 }
 

@@ -15,14 +15,14 @@ use crate::part::repo::step::workset::{
 use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_rdb::entity::workset::{WorksetAspect, WorksetEntry, WorksetRow};
 use crate::part_impl::repo_rdb::{RdbRepo, RdbRepoTransactional, schema};
+use crate::part_impl::shared_rdb::RdbConn;
 use crate::part_impl::shared_rdb::RdbContext;
 use crate::part_impl::shared_rdb::result::{diesel, expected};
-use crate::part_impl::shared_rdb::RdbConn;
 use crate::result::{RegularError, RegularResult};
 
 use schema::t_workset::dsl::*;
 
-async fn get_workset_by_id(conn: &mut RdbConn, id: &str) -> RegularResult<WorksetInfo> {
+async fn get_info_by_id(conn: &mut RdbConn, id: &str) -> RegularResult<WorksetInfo> {
     let row: WorksetRow = t_workset
         .filter(f_id.eq(id))
         .select(WorksetRow::as_select())
@@ -35,7 +35,7 @@ async fn get_workset_by_id(conn: &mut RdbConn, id: &str) -> RegularResult<Workse
     Ok(row.into())
 }
 
-async fn list_worksets_by_team(
+async fn list_infos_by_team_id(
     conn: &mut RdbConn,
     team_id: &str,
     offset: u64,
@@ -54,7 +54,7 @@ async fn list_worksets_by_team(
     Ok(rows.into_iter().map(Into::into).collect())
 }
 
-async fn update_workset(
+async fn update_info(
     conn: &mut RdbConn,
     id: &str,
     name: &str,
@@ -73,7 +73,7 @@ async fn update_workset(
     Ok(())
 }
 
-async fn list_worksets_by_team_excluded(
+async fn list_infos_by_team_id_excluded(
     conn: &mut RdbConn,
     team_id: &str,
 ) -> RegularResult<Vec<WorksetInfo>> {
@@ -88,10 +88,7 @@ async fn list_worksets_by_team_excluded(
     Ok(rows.into_iter().map(Into::into).collect())
 }
 
-async fn get_workset_by_id_excluded(
-    conn: &mut RdbConn,
-    id: &str,
-) -> RegularResult<WorksetInfo> {
+async fn get_info_excluded(conn: &mut RdbConn, id: &str) -> RegularResult<WorksetInfo> {
     let row: WorksetRow = t_workset
         .filter(f_id.eq(id))
         .select(WorksetRow::as_select())
@@ -105,7 +102,7 @@ async fn get_workset_by_id_excluded(
     Ok(row.into())
 }
 
-async fn delete_workset(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
+async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
     diesel::delete(t_workset.filter(f_id.eq(id)))
         .execute(conn)
         .await
@@ -114,17 +111,7 @@ async fn delete_workset(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
     Ok(())
 }
 
-async fn get_workset_by_id_tx(
-    conn: &mut RdbConn,
-    id: &str,
-) -> RegularResult<WorksetInfo> {
-    get_workset_by_id(conn, id).await
-}
-
-async fn create_workset(
-    conn: &mut RdbConn,
-    form: &WorksetForm,
-) -> RegularResult<WorksetInfo> {
+async fn create(conn: &mut RdbConn, form: &WorksetForm) -> RegularResult<WorksetInfo> {
     let entry = WorksetEntry::from(form);
 
     let row: WorksetRow = diesel::insert_into(t_workset)
@@ -148,11 +135,7 @@ async fn incr_comic_next_index(conn: &mut RdbConn, id: &str) -> RegularResult<i3
     Ok(prev)
 }
 
-async fn update_comic_count(
-    conn: &mut RdbConn,
-    id: &str,
-    delta: i32,
-) -> RegularResult<()> {
+async fn update_comic_count(conn: &mut RdbConn, id: &str, delta: i32) -> RegularResult<()> {
     diesel::update(t_workset.filter(f_id.eq(id)))
         .set(f_comic_count.eq(f_comic_count + delta))
         .execute(conn)
@@ -169,7 +152,7 @@ impl<'a> Execute<GetInfoById<'a>> for RdbRepo {
     type Error = RegularError;
 
     async fn execute(&self, step: &GetInfoById<'a>) -> RegularResult<WorksetInfo> {
-        submit_query!(self.shared, get_workset_by_id, step.id)
+        submit_query!(self.shared, get_info_by_id, step.id)
     }
 }
 
@@ -180,7 +163,7 @@ impl<'a> Execute<ListInfosByTeamId<'a>> for RdbRepo {
     async fn execute(&self, step: &ListInfosByTeamId<'a>) -> RegularResult<Vec<WorksetInfo>> {
         submit_query!(
             self.shared,
-            list_worksets_by_team,
+            list_infos_by_team_id,
             step.team_id,
             step.offset,
             step.limit
@@ -195,7 +178,7 @@ impl<'a> Execute<UpdateInfo<'a>> for RdbRepo {
     async fn execute(&self, step: &UpdateInfo<'a>) -> RegularResult<()> {
         submit_query!(
             self.shared,
-            update_workset,
+            update_info,
             step.update.id.as_str(),
             &step.update.name,
             step.update.description.as_deref()
@@ -214,7 +197,7 @@ impl<'a> Advance<ListInfosByTeamIdExcluded<'a>, RdbContext> for RdbRepoTransacti
         context: &mut RdbContext,
         step: &ListInfosByTeamIdExcluded<'a>,
     ) -> RegularResult<Vec<WorksetInfo>> {
-        list_worksets_by_team_excluded(context.conn(), step.team_id).await
+        list_infos_by_team_id_excluded(context.conn(), step.team_id).await
     }
 }
 
@@ -227,7 +210,7 @@ impl<'a> Advance<GetInfoExcluded<'a>, RdbContext> for RdbRepoTransactional {
         context: &mut RdbContext,
         step: &GetInfoExcluded<'a>,
     ) -> RegularResult<WorksetInfo> {
-        get_workset_by_id_excluded(context.conn(), step.id).await
+        get_info_excluded(context.conn(), step.id).await
     }
 }
 
@@ -235,12 +218,8 @@ impl<'a> Advance<GetInfoExcluded<'a>, RdbContext> for RdbRepoTransactional {
 impl<'a> Advance<Delete<'a>, RdbContext> for RdbRepoTransactional {
     type Error = RegularError;
 
-    async fn advance(
-        &self,
-        context: &mut RdbContext,
-        step: &Delete<'a>,
-    ) -> RegularResult<()> {
-        delete_workset(context.conn(), step.id).await
+    async fn advance(&self, context: &mut RdbContext, step: &Delete<'a>) -> RegularResult<()> {
+        delete(context.conn(), step.id).await
     }
 }
 
@@ -253,7 +232,7 @@ impl<'a> Advance<GetInfoById<'a>, RdbContext> for RdbRepoTransactional {
         context: &mut RdbContext,
         step: &GetInfoById<'a>,
     ) -> RegularResult<WorksetInfo> {
-        get_workset_by_id_tx(context.conn(), step.id).await
+        get_info_by_id(context.conn(), step.id).await
     }
 }
 
@@ -266,7 +245,7 @@ impl<'a> Advance<Create<'a>, RdbContext> for RdbRepoTransactional {
         context: &mut RdbContext,
         step: &Create<'a>,
     ) -> RegularResult<WorksetInfo> {
-        create_workset(context.conn(), step.form).await
+        create(context.conn(), step.form).await
     }
 }
 
