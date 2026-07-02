@@ -81,7 +81,7 @@ where
         + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RegularError>,
 {
     let chapter_info = proxy
-        .execute(&ChapterStep::get_info_by_id(chapter_id))
+        .execute(&ChapterStep::get_info_by_id(chapter_id, &[]))
         .await?;
 
     let comic_info = proxy

@@ -6,14 +6,23 @@ use diesel_async::RunQueryDsl;
 
 use crate::model::system_mail::{SystemMailForm, SystemMailInfo};
 use crate::part::repo::step::system_mail::{ListInfosByReceiverId, MarkRead, Send, SendBatch};
+use crate::part::repo::system_mail::{SystemMailRepo, SystemMailRepoTransactional};
 use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_rdb::entity::system_mail::{SystemMailEntry, SystemMailRow};
-use crate::part_impl::repo_rdb::{RdbRepo, schema};
+use crate::part_impl::repo_rdb::{RdbRepo, RdbRepoTransactional};
+use crate::part_impl::repo_rdb::dsl;
 use crate::part_impl::shared_rdb::RdbConn;
+use crate::part_impl::shared_rdb::RdbContext;
 use crate::part_impl::shared_rdb::result::{diesel, expected};
 use crate::result::{ExpectedVariant, RegularError, RegularResult};
 
-use schema::t_system_mail::dsl::*;
+// NOTE: use dsl::* is the Diesel impl layer exception to rust-use-style
+use dsl::*;
+use dsl::t_system_mail::*;
+
+impl SystemMailRepo<RdbContext> for RdbRepo {}
+
+impl SystemMailRepoTransactional<RdbContext> for RdbRepoTransactional {}
 
 // ── Free functions ──────────────────────────────────────────────────────────
 
@@ -144,3 +153,5 @@ impl<'a> Execute<MarkRead<'a>> for RdbRepo {
         submit_query!(self.shared, mark_read, step.id, step.user_id)
     }
 }
+#[cfg(all(test, feature = "repo"))]
+mod tests;

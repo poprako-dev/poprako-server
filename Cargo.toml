@@ -7,6 +7,9 @@ name = "poprako-r"
 version = "0.1.0"
 edition = "2024"
 
+[features]
+repo = []
+
 [dependencies]
 anyhow = "1.0.102"
 async-trait = "0.1.89"

@@ -22,9 +22,13 @@ use async_trait::async_trait;
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 
+use crate::model::chapter::ChapterInfo;
+use crate::model::comic::ComicInfo;
 use crate::model::team::TeamInfo;
 use crate::model::user::UserInfo;
 use crate::model::workset::WorksetInfo;
+use crate::part_impl::repo_rdb::entity::chapter::ChapterRow;
+use crate::part_impl::repo_rdb::entity::comic::ComicRow;
 use crate::part_impl::repo_rdb::entity::team::TeamRow;
 use crate::part_impl::repo_rdb::entity::user::UserRow;
 use crate::part_impl::repo_rdb::entity::workset::WorksetRow;
@@ -32,6 +36,14 @@ use crate::part_impl::repo_rdb::schema;
 use crate::part_impl::shared_rdb::RdbConn;
 use crate::part_impl::shared_rdb::result::diesel;
 use crate::result::RegularResult;
+
+pub mod announcement;
+pub mod assignment;
+pub mod chapter;
+pub mod comic;
+pub mod comment;
+pub mod member;
+pub mod member_invitation;
 
 // ── BatchByIds trait ────────────────────────────────────────────────────────
 
@@ -50,7 +62,7 @@ pub trait BatchByIds {
     async fn load(conn: &mut RdbConn, ids: Vec<&str>) -> RegularResult<Vec<Self::Row>>;
 
     /// Convert a row into its id key and domain info.
-    fn into_entry(row: Self::Row) -> (String, Self::Info);
+    fn into_entry(row: Self::Row) -> RegularResult<(String, Self::Info)>;
 }
 
 // ── Incl trait ──────────────────────────────────────────────────────────────
@@ -76,52 +88,70 @@ pub trait Incl {
     fn resolve_key(owner: &Self::Owner) -> Option<&str>;
 
     /// Set the loaded related entity on the owner.
-    fn set(owner: &mut Self::Owner, related: Option<Self::Related>);
+    fn inject(owner: &mut Self::Owner, related: Option<Self::Related>);
 }
 
 // ── Generic engine ──────────────────────────────────────────────────────────
 
-/// Batch-load related entities and populate every owner info in `infos`.
+/// Batch-load related entities and populate every owner in `infos`.
 ///
 /// This is the only include-driving function. Call it once per requested include
 /// variant. Works on slices (list) or single items (via `from_mut`).
 pub async fn populate<I: Incl>(conn: &mut RdbConn, infos: &mut [I::Owner]) -> RegularResult<()> {
-    if infos.is_empty() {
+    let mut key_counts = HashMap::new();
+
+    for owner in infos.iter() {
+        let Some(key) = I::resolve_key(owner) else {
+            continue;
+        };
+
+        *key_counts.entry(key.to_owned()).or_insert(0) += 1;
+    }
+
+    if key_counts.is_empty() {
         return Ok(());
     }
 
-    let ids: Vec<String> = infos
-        .iter()
-        .filter_map(|o| I::resolve_key(o).map(|s| s.to_string()))
-        .collect();
+    let id_refs = key_counts.keys().map(String::as_str).collect::<Vec<_>>();
 
-    if ids.is_empty() {
-        return Ok(());
-    }
-
-    let id_refs: Vec<&str> = ids.iter().map(|s| s.as_str()).collect();
-
-    let map = batch_load::<I::Query>(conn, id_refs).await?;
-
+    let mut map = batch_load::<I::Query>(conn, id_refs).await?;
     for owner in infos.iter_mut() {
-        let val = I::resolve_key(owner).and_then(|key| map.get(key).cloned());
-        I::set(owner, val);
+        let related = I::resolve_key(owner)
+            .and_then(|key| take_loaded_related(&mut map, &mut key_counts, key));
+
+        I::inject(owner, related);
     }
 
     Ok(())
 }
 
+fn take_loaded_related<Related: Clone>(
+    map: &mut HashMap<String, Related>,
+    key_counts: &mut HashMap<String, usize>,
+    key: &str,
+) -> Option<Related> {
+    let count = key_counts.get_mut(key)?;
+
+    if *count <= 1 {
+        key_counts.remove(key);
+        return map.remove(key);
+    }
+
+    *count -= 1;
+
+    map.get(key).cloned()
+}
+
 /// Execute a batch `SELECT … WHERE f_id IN (…)` via a [`BatchByIds`] impl.
-pub async fn batch_load<B: BatchByIds>(
+async fn batch_load<B: BatchByIds>(
     conn: &mut RdbConn,
     ids: Vec<&str>,
 ) -> RegularResult<HashMap<String, B::Info>> {
     let rows = B::load(conn, ids).await?;
 
     let mut map = HashMap::new();
-
     for row in rows {
-        let (id, info) = B::into_entry(row);
+        let (id, info) = B::into_entry(row)?;
         map.insert(id, info);
     }
 
@@ -146,9 +176,10 @@ impl BatchByIds for UserByIds {
             .map_err(diesel)
     }
 
-    fn into_entry(row: UserRow) -> (String, UserInfo) {
+    fn into_entry(row: UserRow) -> RegularResult<(String, UserInfo)> {
         let id = row.f_id.clone();
-        (id, UserInfo::from(row))
+
+        Ok((id, UserInfo::from(row)))
     }
 }
 
@@ -168,10 +199,10 @@ impl BatchByIds for TeamByIds {
             .map_err(diesel)
     }
 
-    fn into_entry(row: TeamRow) -> (String, TeamInfo) {
+    fn into_entry(row: TeamRow) -> RegularResult<(String, TeamInfo)> {
         let id = row.f_id.clone();
 
-        (id, TeamInfo::from(row))
+        Ok((id, TeamInfo::from(row)))
     }
 }
 
@@ -191,9 +222,57 @@ impl BatchByIds for WorksetByIds {
             .map_err(diesel)
     }
 
-    fn into_entry(row: WorksetRow) -> (String, WorksetInfo) {
+    fn into_entry(row: WorksetRow) -> RegularResult<(String, WorksetInfo)> {
         let id = row.f_id.clone();
 
-        (id, WorksetInfo::from(row))
+        Ok((id, WorksetInfo::from(row)))
+    }
+}
+
+pub struct ComicByIds;
+
+#[async_trait]
+impl BatchByIds for ComicByIds {
+    type Row = ComicRow;
+    type Info = ComicInfo;
+
+    async fn load(conn: &mut RdbConn, ids: Vec<&str>) -> RegularResult<Vec<ComicRow>> {
+        schema::t_comic::table
+            .filter(schema::t_comic::f_id.eq_any(ids))
+            .select(ComicRow::as_select())
+            .load(conn)
+            .await
+            .map_err(diesel)
+    }
+
+    fn into_entry(row: ComicRow) -> RegularResult<(String, ComicInfo)> {
+        let id = row.f_id.clone();
+
+        Ok((id, ComicInfo::from(row)))
+    }
+}
+
+pub struct ChapterByIds;
+
+#[async_trait]
+impl BatchByIds for ChapterByIds {
+    type Row = ChapterRow;
+    type Info = ChapterInfo;
+
+    async fn load(conn: &mut RdbConn, ids: Vec<&str>) -> RegularResult<Vec<ChapterRow>> {
+        schema::t_chapter::table
+            .filter(schema::t_chapter::f_id.eq_any(ids))
+            .select(ChapterRow::as_select())
+            .load(conn)
+            .await
+            .map_err(diesel)
+    }
+
+    fn into_entry(row: ChapterRow) -> RegularResult<(String, ChapterInfo)> {
+        let id = row.f_id.clone();
+
+        let chapter_info = ChapterInfo::try_from(row)?;
+
+        Ok((id, chapter_info))
     }
 }

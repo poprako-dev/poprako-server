@@ -119,6 +119,7 @@ fn chapter(id: &str, comic_id: &str) -> ChapterInfo {
     ChapterInfo {
         id: id.into(),
         comic_id: comic_id.into(),
+        comic: None,
         is_pinned: true,
         index: 0,
         subtitle: "subtitle".into(),
@@ -154,6 +155,7 @@ fn assignment(chapter_id: &str, user_id: &str, role_mask: RoleMask) -> Assignmen
         chapter_id: chapter_id.into(),
         user_id: user_id.into(),
         user: None,
+        chapter: None,
         roles: role_mask,
         created_at: time,
         updated_at: time,

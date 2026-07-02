@@ -101,7 +101,7 @@ where
         + Sync,
 {
     let chapter_info = repo
-        .execute(&ChapterStep::get_info_by_id(&data.chapter_id))
+        .execute(&ChapterStep::get_info_by_id(&data.chapter_id, &[]))
         .await?;
 
     use crate::part::shared::proxy::AsProxyNonTransactional as _;
@@ -242,7 +242,9 @@ where
     R: AssignmentRepo<C> + Send + Sync,
     <R as DeriveTransactional>::Transactional: AssignmentRepoTransactional<C> + Send + Sync,
 {
-    let assignment_info = repo.execute(&AssignmentStep::get_info_by_id(&id)).await?;
+    let assignment_info = repo
+        .execute(&AssignmentStep::get_info_by_id(&id, &[]))
+        .await?;
 
     use crate::part::shared::proxy::AsProxyNonTransactional as _;
 

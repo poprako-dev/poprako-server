@@ -4,10 +4,13 @@ use poprako_macro::Paginate;
 use poprako_transactional::step::Step;
 use poprako_util::page::Page;
 
+use std::collections::HashMap;
+
 use crate::model::chapter::{
     ChapterForm, ChapterInfo, ChapterInfoUpdate, ChapterListSpec, ChapterStageUpdate,
 };
 use crate::model::unit::UnitCounterDelta;
+use crate::value::chapter::ChapterInclOpt;
 
 /// Step that lists chapters with include options and pagination.
 pub struct ListInfos<'a> {
@@ -30,6 +33,7 @@ impl<'a> Step for Create<'a> {
 /// Step that fetches a chapter by its identifier.
 pub struct GetInfoById<'a> {
     pub id: &'a str,
+    pub incl_opt: &'a [ChapterInclOpt],
 }
 
 impl<'a> Step for GetInfoById<'a> {
@@ -39,6 +43,7 @@ impl<'a> Step for GetInfoById<'a> {
 /// Step that fetches a chapter by ID with a pessimistic lock.
 pub struct GetInfoByIdExcluded<'a> {
     pub id: &'a str,
+    pub incl_opt: &'a [ChapterInclOpt],
 }
 
 impl<'a> Step for GetInfoByIdExcluded<'a> {
@@ -77,10 +82,20 @@ impl<'a> Step for ListAllInfosByComicIdExcluded<'a> {
 /// Step that finds the pinned chapter under a comic.
 pub struct FindPinnedInfoByComicId<'a> {
     pub comic_id: &'a str,
+    pub incl_opt: &'a [ChapterInclOpt],
 }
 
 impl<'a> Step for FindPinnedInfoByComicId<'a> {
     type Output = Option<ChapterInfo>;
+}
+
+/// Step that batch-queries pinned chapters by comic IDs.
+pub struct ListPinnedInfosByComicIds<'a> {
+    pub comic_ids: &'a [String],
+}
+
+impl<'a> Step for ListPinnedInfosByComicIds<'a> {
+    type Output = HashMap<String, ChapterInfo>;
 }
 
 /// Step that updates chapter metadata fields.
@@ -158,13 +173,16 @@ impl ChapterStep {
     }
 
     /// Constructs a step to fetch a chapter by ID.
-    pub fn get_info_by_id<'a>(id: &'a str) -> GetInfoById<'a> {
-        GetInfoById { id }
+    pub fn get_info_by_id<'a>(id: &'a str, incl_opt: &'a [ChapterInclOpt]) -> GetInfoById<'a> {
+        GetInfoById { id, incl_opt }
     }
 
     /// Constructs a step to fetch a chapter with a pessimistic lock.
-    pub fn get_info_by_id_excluded<'a>(id: &'a str) -> GetInfoByIdExcluded<'a> {
-        GetInfoByIdExcluded { id }
+    pub fn get_info_by_id_excluded<'a>(
+        id: &'a str,
+        incl_opt: &'a [ChapterInclOpt],
+    ) -> GetInfoByIdExcluded<'a> {
+        GetInfoByIdExcluded { id, incl_opt }
     }
 
     /// Constructs a step to list chapters by comic.
@@ -196,8 +214,18 @@ impl ChapterStep {
     }
 
     /// Constructs a step to find a pinned chapter by comic.
-    pub fn find_pinned_info_by_comic_id<'a>(comic_id: &'a str) -> FindPinnedInfoByComicId<'a> {
-        FindPinnedInfoByComicId { comic_id }
+    pub fn find_pinned_info_by_comic_id<'a>(
+        comic_id: &'a str,
+        incl_opt: &'a [ChapterInclOpt],
+    ) -> FindPinnedInfoByComicId<'a> {
+        FindPinnedInfoByComicId { comic_id, incl_opt }
+    }
+
+    /// Constructs a step to batch-query pinned chapters by comic IDs.
+    pub fn list_pinned_infos_by_comic_ids<'a>(
+        comic_ids: &'a [String],
+    ) -> ListPinnedInfosByComicIds<'a> {
+        ListPinnedInfosByComicIds { comic_ids }
     }
 
     /// Constructs a step to update chapter metadata.

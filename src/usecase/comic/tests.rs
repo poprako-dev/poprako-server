@@ -210,6 +210,7 @@ async fn list_infos_filters_and_sorts_by_index() {
         token("user-1"),
         ListComicInfosData {
             incl_opt: Vec::new(),
+            with_opt: vec![],
             workset_id: "workset-1".into(),
             fuzzy_title: None,
             is_completed: None,
@@ -238,6 +239,7 @@ async fn list_infos_returns_empty_for_workset_contents() {
         token("user-1"),
         ListComicInfosData {
             incl_opt: Vec::new(),
+            with_opt: vec![],
             workset_id: "workset-1".into(),
             fuzzy_title: None,
             is_completed: None,
@@ -279,6 +281,7 @@ async fn list_infos_filters_by_fuzzy_title() {
         token("user-1"),
         ListComicInfosData {
             incl_opt: Vec::new(),
+            with_opt: vec![],
             workset_id: "workset-1".into(),
             fuzzy_title: Some("Beta".into()),
             is_completed: None,
@@ -299,6 +302,7 @@ async fn list_infos_filters_by_fuzzy_title() {
         token("user-1"),
         ListComicInfosData {
             incl_opt: Vec::new(),
+            with_opt: vec![],
             workset_id: "workset-1".into(),
             fuzzy_title: Some("Carol".into()),
             is_completed: None,
@@ -319,6 +323,7 @@ async fn list_infos_filters_by_fuzzy_title() {
         token("user-1"),
         ListComicInfosData {
             incl_opt: Vec::new(),
+            with_opt: vec![],
             workset_id: "workset-1".into(),
             fuzzy_title: Some("1".into()),
             is_completed: None,
@@ -353,6 +358,7 @@ async fn list_infos_filters_by_is_completed() {
         token("user-1"),
         ListComicInfosData {
             incl_opt: Vec::new(),
+            with_opt: vec![],
             workset_id: "workset-1".into(),
             fuzzy_title: None,
             is_completed: Some(true),
@@ -383,6 +389,7 @@ async fn list_infos_applies_pagination() {
         token("user-1"),
         ListComicInfosData {
             incl_opt: Vec::new(),
+            with_opt: vec![],
             workset_id: "workset-1".into(),
             fuzzy_title: None,
             is_completed: None,

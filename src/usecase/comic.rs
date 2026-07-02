@@ -1,5 +1,7 @@
 //! Comic use cases — create, read, update, cover management, and deletion.
 
+use std::collections::HashMap;
+
 use time::{Duration, OffsetDateTime};
 
 use poprako_transactional::advance::Advance;
@@ -9,6 +11,7 @@ use crate::complex::assignment::AssignmentComplex;
 use crate::complex::chapter::ChapterComplex;
 use crate::complex::comic::{ComicComplex, ComicPermComplex};
 use crate::complex::image::ImageComplex;
+use crate::data::chapter::ChapterInfoVal;
 use crate::data::comic::{
     ComicInfoVal, CreateComicData, CreateComicVal, ListComicInfosData, MarkComicCoverUploadedData,
     ReserveComicCoverData, ReserveComicCoverVal, UpdateComicInfoData,
@@ -33,6 +36,7 @@ use crate::part::repo::step::workset::WorksetStep;
 use crate::part::repo::workset::{WorksetRepo, WorksetRepoTransactional};
 use crate::result::{RegularError, RegularResult, accept};
 use crate::util::DeriveTransactional;
+use crate::value::comic::ComicWithOpt;
 use crate::value::role::{RoleField, RoleMask};
 
 #[cfg(test)]
@@ -188,7 +192,7 @@ where
 
     let comic_info = repo.execute(&ComicStep::get_info_by_id(&id, &[])).await?;
 
-    ComicInfoVal::from_model(image_pool, comic_info).await
+    ComicInfoVal::from_model(image_pool, comic_info, None).await
 }
 
 /// Lists comics for a workset with optional title filter, completion filter, and pagination.
@@ -199,9 +203,11 @@ pub async fn list_infos<C, R, I>(
     data: ListComicInfosData,
 ) -> RegularResult<Vec<ComicInfoVal>>
 where
-    R: ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Sync,
-    <R as DeriveTransactional>::Transactional:
-        ComicRepoTransactional<C> + WorksetRepoTransactional<C> + MemberRepoTransactional<C>,
+    R: ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + ChapterRepo<C> + Sync,
+    <R as DeriveTransactional>::Transactional: ComicRepoTransactional<C>
+        + WorksetRepoTransactional<C>
+        + MemberRepoTransactional<C>
+        + ChapterRepoTransactional<C>,
     I: ImagePool,
 {
     use crate::part::shared::proxy::AsProxyNonTransactional as _;
@@ -209,14 +215,31 @@ where
     ComicPermComplex::can_user_list_infos(&mut repo.as_proxy(), &token.user_id, &data.workset_id)
         .await?;
 
+    let with_pinned_chapter = data.with_opt.contains(&ComicWithOpt::PinnedChapter);
+
     let spec: ComicListSpec = data.into();
 
     let comic_infos = repo.execute(&ComicStep::list_infos(&spec)).await?;
 
+    let mut pinned_chapters = if with_pinned_chapter {
+        let comic_ids: Vec<String> = comic_infos.iter().map(|info| info.id.clone()).collect();
+
+        repo.execute(&ChapterStep::list_pinned_infos_by_comic_ids(&comic_ids))
+            .await?
+    } else {
+        HashMap::new()
+    };
+
     let mut comic_info_vals = Vec::with_capacity(comic_infos.len());
 
     for comic_info in comic_infos {
-        comic_info_vals.push(ComicInfoVal::from_model(image_pool, comic_info).await?);
+        let pinned_chapter_val = match pinned_chapters.remove(&comic_info.id) {
+            Some(chapter_info) => Some(ChapterInfoVal::from_model(image_pool, chapter_info).await?),
+            None => None,
+        };
+
+        comic_info_vals
+            .push(ComicInfoVal::from_model(image_pool, comic_info, pinned_chapter_val).await?);
     }
 
     accept(comic_info_vals)

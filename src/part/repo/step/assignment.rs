@@ -5,6 +5,7 @@ use poprako_transactional::step::Step;
 use crate::model::assignment::{
     AssignmentForm, AssignmentInfo, AssignmentListSpec, AssignmentRoleUpdate,
 };
+use crate::value::assignment::AssignmentInclOpt;
 
 /// Step that finds one assignment by chapter ID and user ID.
 pub struct GetInfoByChapterIdAndUserId<'a> {
@@ -28,6 +29,7 @@ impl<'a> Step for ListInfos<'a> {
 /// Step that fetches one assignment by its identifier.
 pub struct GetInfoById<'a> {
     pub id: &'a str,
+    pub incl_opt: &'a [AssignmentInclOpt],
 }
 
 impl<'a> Step for GetInfoById<'a> {
@@ -82,8 +84,8 @@ impl AssignmentStep {
     }
 
     /// Constructs a step to fetch one assignment by ID.
-    pub fn get_info_by_id<'a>(id: &'a str) -> GetInfoById<'a> {
-        GetInfoById { id }
+    pub fn get_info_by_id<'a>(id: &'a str, incl_opt: &'a [AssignmentInclOpt]) -> GetInfoById<'a> {
+        GetInfoById { id, incl_opt }
     }
 
     /// Constructs a step to insert a new assignment.

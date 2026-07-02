@@ -17,16 +17,27 @@ macro_rules! submit_query {
     }};
 }
 
+pub mod announcement;
+pub mod assignment;
+pub mod assignment_invitation;
+pub mod chapter;
 pub mod comic;
+pub mod comment;
+pub mod dsl;
 pub mod entity;
 pub mod incl;
 pub mod member;
 pub mod member_invitation;
+pub mod page;
 pub mod schema;
 pub mod system_mail;
 pub mod team;
+pub mod unit;
 pub mod user;
 pub mod workset;
+
+#[cfg(all(test, feature = "repo"))]
+mod test_shared;
 
 pub struct RdbRepo {
     shared: RdbShared,

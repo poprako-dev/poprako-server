@@ -11,6 +11,7 @@
 use poprako_macro::Paginate;
 use time::OffsetDateTime;
 
+use crate::model::comic::ComicInfo;
 use crate::model::user::UserInfo;
 use crate::value::chapter::{ChapterInclOpt, WorkflowStageMask};
 
@@ -28,10 +29,12 @@ use crate::value::chapter::{ChapterInclOpt, WorkflowStageMask};
 /// Workflow stages are ordered: raw_provide → translate → proofread →
 /// typeset_redraw → review → publish. Each phase transitions through
 /// [`StagePhase`] values independently.
-#[cfg_attr(test, derive(Clone))]
+#[derive(Clone)]
 pub struct ChapterInfo {
     pub id: String,
     pub comic_id: String,
+
+    pub comic: Option<ComicInfo>,
 
     pub is_pinned: bool,
     pub index: i32,

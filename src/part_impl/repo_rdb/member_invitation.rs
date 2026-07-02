@@ -10,7 +10,9 @@ use poprako_transactional::advance::Advance;
 use crate::model::member_invitation::{
     MemberInvitationForm, MemberInvitationInfo, MemberInvitationListSpec,
 };
-use crate::model::user::UserInfo;
+use crate::part::repo::member_invitation::{
+    MemberInvitationRepo, MemberInvitationRepoTransactional,
+};
 use crate::part::repo::step::member_invitation::{
     Create, Delete, GetInfoByCodeExcluded, GetInfoById, ListInfos, MarkPendingAsUsed, UpdateInfo,
 };
@@ -18,7 +20,7 @@ use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_rdb::entity::member_invitation::{
     MemberInvitationAspect, MemberInvitationEntry, MemberInvitationRow,
 };
-use crate::part_impl::repo_rdb::incl::{self, Incl, UserByIds};
+use crate::part_impl::repo_rdb::incl;
 use crate::part_impl::repo_rdb::schema::t_member_invitation::dsl::*;
 use crate::part_impl::repo_rdb::{RdbRepo, RdbRepoTransactional};
 use crate::part_impl::shared_rdb::result::{diesel, expected};
@@ -27,24 +29,9 @@ use crate::result::{RegularError, RegularResult};
 use crate::value::member_invitation::MemberInvitationInclOpt;
 use crate::value::role::RoleMask;
 
-// ── Incl implementations ────────────────────────────────────────────────────
+impl MemberInvitationRepo<RdbContext> for RdbRepo {}
 
-struct MemberInvitationInvitorIncl;
-
-#[async_trait]
-impl Incl for MemberInvitationInvitorIncl {
-    type Owner = MemberInvitationInfo;
-    type Related = UserInfo;
-    type Query = UserByIds;
-
-    fn resolve_key(o: &MemberInvitationInfo) -> Option<&str> {
-        Some(&o.invitor_id)
-    }
-
-    fn set(o: &mut MemberInvitationInfo, r: Option<UserInfo>) {
-        o.invitor = r;
-    }
-}
+impl MemberInvitationRepoTransactional<RdbContext> for RdbRepoTransactional {}
 
 // ── Free functions ──────────────────────────────────────────────────────────
 
@@ -75,9 +62,8 @@ async fn list_infos(
         infos.push(row.try_into()?);
     }
 
-    if spec.incl_opt.contains(&MemberInvitationInclOpt::Invitor) {
-        incl::populate::<MemberInvitationInvitorIncl>(conn, &mut infos).await?;
-    }
+    incl::member_invitation::populate_member_invitation_incls(conn, &mut infos, &spec.incl_opt)
+        .await?;
 
     Ok(infos)
 }
@@ -98,10 +84,12 @@ async fn get_info_by_id(
 
     let mut info: MemberInvitationInfo = row.try_into()?;
 
-    if incl_opt.contains(&MemberInvitationInclOpt::Invitor) {
-        incl::populate::<MemberInvitationInvitorIncl>(conn, std::slice::from_mut(&mut info))
-            .await?;
-    }
+    incl::member_invitation::populate_member_invitation_incls(
+        conn,
+        std::slice::from_mut(&mut info),
+        incl_opt,
+    )
+    .await?;
 
     Ok(info)
 }
@@ -268,3 +256,5 @@ impl<'a> Advance<Delete<'a>, RdbContext> for RdbRepoTransactional {
         delete(context.conn(), step.id).await
     }
 }
+#[cfg(all(test, feature = "repo"))]
+mod tests;

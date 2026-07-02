@@ -94,9 +94,7 @@ impl<'a> Execute<GetInfoById<'a>> for Mock {
             .cloned()
             .ok_or_else(|| expected("error-invitation-not-found"))?;
 
-        let include_invitor = step
-            .incl_opt
-            .contains(&MemberInvitationInclOpt::Invitor);
+        let include_invitor = step.incl_opt.contains(&MemberInvitationInclOpt::Invitor);
 
         apply_invitor_incl(&state, &mut info, include_invitor);
 
@@ -188,9 +186,7 @@ impl<'a> Advance<GetInfoById<'a>, MockContext> for MockTransactional {
             .cloned()
             .ok_or_else(|| expected("error-invitation-not-found"))?;
 
-        let include_invitor = step
-            .incl_opt
-            .contains(&MemberInvitationInclOpt::Invitor);
+        let include_invitor = step.incl_opt.contains(&MemberInvitationInclOpt::Invitor);
 
         apply_invitor_incl(&context.state, &mut info, include_invitor);
 

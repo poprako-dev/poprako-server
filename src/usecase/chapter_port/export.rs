@@ -58,7 +58,7 @@ where
         .await?;
 
     let chapter_info = repo
-        .execute(&ChapterStep::get_info_by_id(&chapter_id))
+        .execute(&ChapterStep::get_info_by_id(&chapter_id, &[]))
         .await?;
 
     let comic_info = repo
@@ -139,7 +139,7 @@ where
     ChapterPortPermComplex::can_user_export(&mut repo.as_proxy(), &token.user_id, &chapter_id)
         .await?;
 
-    repo.execute(&ChapterStep::get_info_by_id(&chapter_id))
+    repo.execute(&ChapterStep::get_info_by_id(&chapter_id, &[]))
         .await?;
 
     let page_infos = repo

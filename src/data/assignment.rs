@@ -6,6 +6,7 @@ use poprako_macro::Paginate;
 use poprako_util::i18n::trl;
 use poprako_util::time::ToUnixMilli;
 
+use crate::data::chapter::ChapterInfoVal;
 use crate::data::user::UserInfoVal;
 use crate::model::assignment::{AssignmentInfo, AssignmentListSpec};
 use crate::part::image::ImagePool;
@@ -21,6 +22,7 @@ pub struct AssignmentInfoVal {
     pub user_id: String,
 
     pub user: Option<UserInfoVal>,
+    pub chapter: Option<ChapterInfoVal>,
 
     pub roles: RoleMask,
 
@@ -35,6 +37,7 @@ impl From<AssignmentInfo> for AssignmentInfoVal {
             chapter_id: model.chapter_id,
             user_id: model.user_id,
             user: None,
+            chapter: None,
             roles: model.roles,
             created_at: model.created_at.to_unix_milli(),
             updated_at: model.updated_at.to_unix_milli(),
@@ -54,11 +57,17 @@ impl AssignmentInfoVal {
             None => None,
         };
 
+        let chapter = match model.chapter {
+            Some(chapter_info) => Some(ChapterInfoVal::from_model(image_pool, chapter_info).await?),
+            None => None,
+        };
+
         Ok(Self {
             id: model.id,
             chapter_id: model.chapter_id,
             user_id: model.user_id,
             user,
+            chapter,
             roles: model.roles,
             created_at: model.created_at.to_unix_milli(),
             updated_at: model.updated_at.to_unix_milli(),
