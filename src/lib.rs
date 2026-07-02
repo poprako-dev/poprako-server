@@ -12,11 +12,11 @@ pub use forward_ref::ForwardRef;
 
 mod complex;
 mod data;
-mod harn;
+pub mod harn;
 mod model;
 mod part;
-mod part_impl;
-mod result;
+pub mod part_impl;
+pub mod result;
 mod usecase;
 mod value;
 

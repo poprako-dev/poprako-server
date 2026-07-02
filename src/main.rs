@@ -7,10 +7,46 @@
 // #![deny(clippy::expect_used)]
 // #![deny(clippy::panic)]
 
+use std::env;
+use std::sync::Arc;
+
+use anyhow::Context as _;
+
+use poprako_r::harn::Harn;
+use poprako_r::part_impl::RdbShared;
+use poprako_r::part_impl::auth_jwt::JwtAuth;
+use poprako_r::part_impl::drive_rdb::RdbDrive;
+use poprako_r::part_impl::effect_async::AsyncEffectDevelop;
+use poprako_r::part_impl::image_r2::R2ImagePool;
+use poprako_r::part_impl::prom_rdb::RdbProm;
+use poprako_r::part_impl::repo_rdb::RdbRepo;
+
 #[tokio::main]
-async fn main() {
-    // Load all env vars for services.
-    dotenvy::dotenv().expect("failed to load env vars");
+async fn main() -> anyhow::Result<()> {
+    dotenvy::dotenv().expect(".env file should be valid");
+
+    let database_url = env::var("DATABASE_URL").context("DATABASE_URL is not set")?;
+
+    let shared = RdbShared::from_database_url(&database_url).expect("Database connection failed");
+
+    let drive = RdbDrive::new(shared.clone());
+
+    let repo = RdbRepo::new(shared.clone());
+
+    let repo_effect = Arc::new(RdbRepo::new(shared));
+
+    let prom = RdbProm;
+
+    let auth = JwtAuth::from_env()?;
+
+    let image_pool = R2ImagePool::from_env()?;
+
+    let develop = AsyncEffectDevelop::new(repo_effect, 1024);
+
+    // TODO:
+    let harn = Harn::new(drive, repo, prom, auth, image_pool, develop);
+
+    Ok(())
 }
 
 // LEGACY DISABLED: Do not use. This file is intentionally commented out.
