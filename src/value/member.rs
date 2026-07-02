@@ -2,7 +2,7 @@
 
 use serde::Deserialize;
 
-/// Include options for member info queries.
+/// Incl opts for member info queries.
 #[derive(Deserialize, Clone, Copy, PartialEq, Eq)]
 pub enum MemberInclOpt {
     User,

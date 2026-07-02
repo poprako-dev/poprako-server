@@ -82,7 +82,7 @@ where
 
     ChapterPermComplex::can_user_get_info(&mut repo.as_proxy(), &token.user_id, &id).await?;
 
-    let chapter_info = repo.execute(&ChapterStep::get_info_by_id(&id)).await?;
+    let chapter_info = repo.execute(&ChapterStep::get_info_by_id(&id, &[])).await?;
 
     accept(ChapterInfoVal::from(chapter_info))
 }
@@ -106,7 +106,7 @@ where
         .await?;
 
     let chapter_info = repo
-        .execute(&ChapterStep::find_pinned_info_by_comic_id(&comic_id))
+        .execute(&ChapterStep::find_pinned_info_by_comic_id(&comic_id, &[]))
         .await?;
 
     accept(chapter_info.map(ChapterInfoVal::from))
@@ -230,7 +230,10 @@ where
             let repo = repo.derive_transactional().await;
 
             let chapter_info = repo
-                .advance(context, &ChapterStep::get_info_by_id_excluded(&data.id))
+                .advance(
+                    context,
+                    &ChapterStep::get_info_by_id_excluded(&data.id, &[]),
+                )
                 .await?;
 
             if data.subtitle.is_some() || data.pin.is_some() {
@@ -303,7 +306,10 @@ where
             let repo = repo.derive_transactional().await;
 
             let chapter_info = repo
-                .advance(context, &ChapterStep::get_info_by_id_excluded(&data.id))
+                .advance(
+                    context,
+                    &ChapterStep::get_info_by_id_excluded(&data.id, &[]),
+                )
                 .await?;
 
             let was_published =

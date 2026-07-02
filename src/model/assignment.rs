@@ -11,6 +11,7 @@
 
 use time::OffsetDateTime;
 
+use crate::model::chapter::ChapterInfo;
 use crate::model::user::UserInfo;
 use crate::value::assignment::AssignmentInclOpt;
 use crate::value::role::{RoleField, RoleMask};
@@ -28,6 +29,7 @@ pub struct AssignmentInfo {
     pub user_id: String,
 
     pub user: Option<UserInfo>,
+    pub chapter: Option<ChapterInfo>,
 
     pub roles: RoleMask,
 

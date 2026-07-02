@@ -5,7 +5,7 @@ use poprako_transactional::advance::Advance;
 use crate::part::repo::step::chapter::{
     AdjustUnitCounters, Create, Delete, FindPinnedInfoByComicId, GetInfoById, GetInfoByIdExcluded,
     ListAllInfosByComicIdExcluded, ListInfos, ListInfosByComicId, ListInfosByComicIdExcluded,
-    SetPageCounters, UnpinOthers, UpdateInfo, UpdateStage,
+    ListPinnedInfosByComicIds, SetPageCounters, UnpinOthers, UpdateInfo, UpdateStage,
 };
 use crate::part::shared::execute::Execute;
 use crate::result::RegularError;
@@ -18,6 +18,7 @@ pub trait ChapterRepo<C>:
     + for<'a> Execute<ListInfos<'a>, Error = RegularError>
     + for<'a> Execute<ListInfosByComicId<'a>, Error = RegularError>
     + for<'a> Execute<FindPinnedInfoByComicId<'a>, Error = RegularError>
+    + for<'a> Execute<ListPinnedInfosByComicIds<'a>, Error = RegularError>
 where
     Self::Transactional: ChapterRepoTransactional<C>,
 {

@@ -13,6 +13,7 @@ use crate::part::repo::step::team::{
     Create, Delete, GetInfoById, GetInfoExcluded, IncrementWorksetNextIndex, ListInfos,
     MarkAvatarUploaded, ReserveAvatar, UpdateInfo,
 };
+use crate::part::repo::team::{TeamRepo, TeamRepoTransactional};
 use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_rdb::entity::team::{TeamAspect, TeamEntry, TeamRow};
 use crate::part_impl::repo_rdb::schema::t_member;
@@ -21,6 +22,10 @@ use crate::part_impl::repo_rdb::{RdbRepo, RdbRepoTransactional};
 use crate::part_impl::shared_rdb::result::{diesel, expected};
 use crate::part_impl::shared_rdb::{RdbConn, RdbContext};
 use crate::result::{RegularError, RegularResult};
+
+impl TeamRepo<RdbContext> for RdbRepo {}
+
+impl TeamRepoTransactional<RdbContext> for RdbRepoTransactional {}
 
 // ── Free functions ──────────────────────────────────────────────────────────
 
@@ -303,3 +308,5 @@ impl<'a> Advance<IncrementWorksetNextIndex<'a>, RdbContext> for RdbRepoTransacti
         increment_workset_next_index(context.conn(), step.id).await
     }
 }
+#[cfg(all(test, feature = "repo"))]
+mod tests;

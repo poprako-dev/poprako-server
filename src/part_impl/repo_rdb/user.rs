@@ -13,15 +13,23 @@ use crate::part::repo::step::user::{
     Create, Delete, FindInfoByQid, GetCredentialByQid, GetInfoById, GetInfoExcluded,
     MarkAvatarUploaded, ReserveAvatar, TouchLastActive, UpdateInfo,
 };
+use crate::part::repo::user::{UserRepo, UserRepoTransactional};
 use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_rdb::entity::user::{UserAspect, UserCredentialRow, UserEntry, UserRow};
-use crate::part_impl::repo_rdb::{RdbRepo, RdbRepoTransactional, schema};
+use crate::part_impl::repo_rdb::{RdbRepo, RdbRepoTransactional};
+use crate::part_impl::repo_rdb::dsl;
 use crate::part_impl::shared_rdb::RdbConn;
 use crate::part_impl::shared_rdb::RdbContext;
 use crate::part_impl::shared_rdb::result::{diesel, expected};
 use crate::result::{RegularError, RegularResult};
 
-use schema::t_user::dsl::*;
+// NOTE: use dsl::* is the Diesel impl layer exception to rust-use-style
+use dsl::*;
+use dsl::t_user::*;
+
+impl UserRepo<RdbContext> for RdbRepo {}
+
+impl UserRepoTransactional<RdbContext> for RdbRepoTransactional {}
 
 // ── Free functions ──────────────────────────────────────────────────────────
 
@@ -311,3 +319,5 @@ impl<'a> Advance<Delete<'a>, RdbContext> for RdbRepoTransactional {
         delete(context.conn(), step.id).await
     }
 }
+#[cfg(all(test, feature = "repo"))]
+mod tests;

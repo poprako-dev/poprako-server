@@ -250,7 +250,7 @@ where
             let chapter_info = repo
                 .advance(
                     context,
-                    &ChapterStep::get_info_by_id(&assignment_invitation_info.chapter_id),
+                    &ChapterStep::get_info_by_id(&assignment_invitation_info.chapter_id, &[]),
                 )
                 .await?;
 

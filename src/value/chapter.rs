@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize, Serializer};
 use poprako_util::i18n::trl;
 
 use crate::result::{ExpectedVariant, RegularError, RegularResult, accept};
+use crate::value::incl::InclOpt;
 
 /// Phase a workflow stage can be in.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -280,10 +281,35 @@ impl Serialize for WorkflowStageMask {
     }
 }
 
-/// Include options for chapter info queries.
+/// Incl opts for chapter info queries.
 #[derive(Deserialize, Clone, Copy, PartialEq, Eq)]
 pub enum ChapterInclOpt {
+    #[serde(rename = "comic")]
+    Comic,
+
+    #[serde(rename = "comic.workset")]
+    ComicWorkset,
+
+    #[serde(rename = "comic.workset.team")]
+    ComicWorksetTeam,
+
+    #[serde(rename = "comic.creator")]
+    ComicCreator,
+
+    #[serde(rename = "creator")]
     Creator,
+}
+
+impl InclOpt for ChapterInclOpt {
+    fn path(self) -> &'static [Self] {
+        match self {
+            Self::Comic => &[Self::Comic],
+            Self::ComicWorkset => &[Self::Comic, Self::ComicWorkset],
+            Self::ComicWorksetTeam => &[Self::Comic, Self::ComicWorkset, Self::ComicWorksetTeam],
+            Self::ComicCreator => &[Self::Comic, Self::ComicCreator],
+            Self::Creator => &[Self::Creator],
+        }
+    }
 }
 
 #[cfg(test)]

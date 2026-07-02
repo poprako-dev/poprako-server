@@ -12,15 +12,23 @@ use crate::part::repo::step::workset::{
     Create, Delete, GetInfoById, GetInfoExcluded, IncrComicNextIndex, ListInfosByTeamId,
     ListInfosByTeamIdExcluded, UpdateComicCount, UpdateInfo,
 };
+use crate::part::repo::workset::{WorksetRepo, WorksetRepoTransactional};
 use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_rdb::entity::workset::{WorksetAspect, WorksetEntry, WorksetRow};
-use crate::part_impl::repo_rdb::{RdbRepo, RdbRepoTransactional, schema};
+use crate::part_impl::repo_rdb::{RdbRepo, RdbRepoTransactional};
+use crate::part_impl::repo_rdb::dsl;
 use crate::part_impl::shared_rdb::RdbConn;
 use crate::part_impl::shared_rdb::RdbContext;
 use crate::part_impl::shared_rdb::result::{diesel, expected};
 use crate::result::{RegularError, RegularResult};
 
-use schema::t_workset::dsl::*;
+// NOTE: use dsl::* is the Diesel impl layer exception to rust-use-style
+use dsl::*;
+use dsl::t_workset::*;
+
+impl WorksetRepo<RdbContext> for RdbRepo {}
+
+impl WorksetRepoTransactional<RdbContext> for RdbRepoTransactional {}
 
 async fn get_info_by_id(conn: &mut RdbConn, id: &str) -> RegularResult<WorksetInfo> {
     let row: WorksetRow = t_workset
@@ -274,3 +282,5 @@ impl<'a> Advance<UpdateComicCount<'a>, RdbContext> for RdbRepoTransactional {
         update_comic_count(context.conn(), step.id, step.delta).await
     }
 }
+#[cfg(all(test, feature = "repo"))]
+mod tests;

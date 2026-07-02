@@ -19,6 +19,7 @@ use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactional, expected, now};
 use crate::result::{RegularError, RegularResult};
 use crate::value::comic::ComicInclOpt;
+use crate::value::incl::expand_incl_opts;
 
 impl ComicRepo<MockContext> for Mock {}
 
@@ -59,11 +60,15 @@ fn apply_workset_incl(state: &MockState, comic_info: &mut ComicInfo, include_wor
 fn apply_team_incl(state: &MockState, comic_info: &mut ComicInfo, include_team: bool) {
     comic_info.team = None;
 
-    if include_team {
-        if let Some(ref workset_info) = comic_info.workset {
-            comic_info.team = find_team_for_workset(state, workset_info);
-        }
+    if !include_team {
+        return;
     }
+
+    let Some(workset_info) = &comic_info.workset else {
+        return;
+    };
+
+    comic_info.team = find_team_for_workset(state, workset_info);
 }
 
 fn apply_creator_incl(state: &MockState, comic_info: &mut ComicInfo, include_creator: bool) {
@@ -71,6 +76,20 @@ fn apply_creator_incl(state: &MockState, comic_info: &mut ComicInfo, include_cre
 
     if include_creator {
         comic_info.creator = find_user(state, &comic_info.creator_id);
+    }
+}
+
+fn apply_comic_incls(state: &MockState, comic_info: &mut ComicInfo, incl_opt: &[ComicInclOpt]) {
+    comic_info.workset = None;
+    comic_info.team = None;
+    comic_info.creator = None;
+
+    for incl_opt in expand_incl_opts(incl_opt) {
+        match incl_opt {
+            ComicInclOpt::Workset => apply_workset_incl(state, comic_info, true),
+            ComicInclOpt::WorksetTeam => apply_team_incl(state, comic_info, true),
+            ComicInclOpt::Creator => apply_creator_incl(state, comic_info, true),
+        }
     }
 }
 
@@ -108,13 +127,7 @@ impl<'a> Execute<GetInfoById<'a>> for Mock {
             .cloned()
             .ok_or_else(|| expected("error-comic-not-found"))?;
 
-        let include_workset = step.incl_opt.contains(&ComicInclOpt::Workset);
-        let include_team = step.incl_opt.contains(&ComicInclOpt::Team);
-        let include_creator = step.incl_opt.contains(&ComicInclOpt::Creator);
-
-        apply_workset_incl(&state, &mut info, include_workset);
-        apply_team_incl(&state, &mut info, include_team);
-        apply_creator_incl(&state, &mut info, include_creator);
+        apply_comic_incls(&state, &mut info, step.incl_opt);
 
         Ok(info)
     }
@@ -147,14 +160,8 @@ impl<'a> Execute<ListInfos<'a>> for Mock {
             .collect::<Vec<_>>();
         comics.sort_by(|left, right| left.index.cmp(&right.index));
 
-        let include_workset = step.spec.incl_opt.contains(&ComicInclOpt::Workset);
-        let include_team = step.spec.incl_opt.contains(&ComicInclOpt::Team);
-        let include_creator = step.spec.incl_opt.contains(&ComicInclOpt::Creator);
-
         for comic in &mut comics {
-            apply_workset_incl(&state, comic, include_workset);
-            apply_team_incl(&state, comic, include_team);
-            apply_creator_incl(&state, comic, include_creator);
+            apply_comic_incls(&state, comic, &step.spec.incl_opt);
         }
 
         let offset = step.spec.offset as usize;
@@ -260,13 +267,7 @@ impl<'a> Advance<GetInfoById<'a>, MockContext> for MockTransactional {
             .cloned()
             .ok_or_else(|| expected("error-comic-not-found"))?;
 
-        let include_workset = step.incl_opt.contains(&ComicInclOpt::Workset);
-        let include_team = step.incl_opt.contains(&ComicInclOpt::Team);
-        let include_creator = step.incl_opt.contains(&ComicInclOpt::Creator);
-
-        apply_workset_incl(&context.state, &mut info, include_workset);
-        apply_team_incl(&context.state, &mut info, include_team);
-        apply_creator_incl(&context.state, &mut info, include_creator);
+        apply_comic_incls(&context.state, &mut info, step.incl_opt);
 
         Ok(info)
     }
@@ -289,13 +290,7 @@ impl<'a> Advance<GetInfoExcluded<'a>, MockContext> for MockTransactional {
             .cloned()
             .ok_or_else(|| expected("error-comic-not-found"))?;
 
-        let include_workset = step.incl_opt.contains(&ComicInclOpt::Workset);
-        let include_team = step.incl_opt.contains(&ComicInclOpt::Team);
-        let include_creator = step.incl_opt.contains(&ComicInclOpt::Creator);
-
-        apply_workset_incl(&context.state, &mut info, include_workset);
-        apply_team_incl(&context.state, &mut info, include_team);
-        apply_creator_incl(&context.state, &mut info, include_creator);
+        apply_comic_incls(&context.state, &mut info, step.incl_opt);
 
         Ok(info)
     }
@@ -332,14 +327,8 @@ impl<'a> Advance<ListInfosExcluded<'a>, MockContext> for MockTransactional {
             .collect::<Vec<_>>();
         comics.sort_by(|left, right| left.index.cmp(&right.index));
 
-        let include_workset = step.spec.incl_opt.contains(&ComicInclOpt::Workset);
-        let include_team = step.spec.incl_opt.contains(&ComicInclOpt::Team);
-        let include_creator = step.spec.incl_opt.contains(&ComicInclOpt::Creator);
-
         for comic in &mut comics {
-            apply_workset_incl(&context.state, comic, include_workset);
-            apply_team_incl(&context.state, comic, include_team);
-            apply_creator_incl(&context.state, comic, include_creator);
+            apply_comic_incls(&context.state, comic, &step.spec.incl_opt);
         }
 
         let offset = step.spec.offset as usize;

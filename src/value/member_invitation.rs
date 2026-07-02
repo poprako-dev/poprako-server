@@ -2,7 +2,7 @@
 
 use serde::Deserialize;
 
-/// Include options for member invitation info queries.
+/// Incl opts for member invitation info queries.
 #[derive(Deserialize, Clone, Copy, PartialEq, Eq)]
 pub enum MemberInvitationInclOpt {
     Invitor,

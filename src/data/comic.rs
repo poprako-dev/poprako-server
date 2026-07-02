@@ -11,13 +11,14 @@ use serde::Deserialize;
 use poprako_macro::Paginate;
 use poprako_util::time::ToUnixMilli;
 
+use crate::data::chapter::ChapterInfoVal;
 use crate::data::team::TeamInfoVal;
 use crate::data::user::UserInfoVal;
 use crate::data::workset::WorksetInfoVal;
 use crate::model::comic::{ComicInfo, ComicListSpec};
 use crate::part::image::ImagePool;
 use crate::result::RegularResult;
-use crate::value::comic::ComicInclOpt;
+use crate::value::comic::{ComicInclOpt, ComicWithOpt};
 
 /// Presentation-ready comic information.
 ///
@@ -54,6 +55,8 @@ pub struct ComicInfoVal {
     pub team: Option<TeamInfoVal>,
     pub creator: Option<UserInfoVal>,
 
+    pub pinned_chapter: Option<ChapterInfoVal>,
+
     pub last_active_at: i64,
 
     pub created_at: i64,
@@ -68,7 +71,11 @@ impl ComicInfoVal {
     /// to Unix milliseconds.
     ///
     /// [`OffsetDateTime`]: time::OffsetDateTime
-    pub async fn from_model<P>(image_pool: &P, model: ComicInfo) -> RegularResult<Self>
+    pub async fn from_model<P>(
+        image_pool: &P,
+        model: ComicInfo,
+        pinned_chapter: Option<ChapterInfoVal>,
+    ) -> RegularResult<Self>
     where
         P: ImagePool,
     {
@@ -103,6 +110,7 @@ impl ComicInfoVal {
             workset,
             team,
             creator,
+            pinned_chapter,
             last_active_at: model.last_active_at.to_unix_milli(),
             created_at: model.created_at.to_unix_milli(),
             updated_at: model.updated_at.to_unix_milli(),
@@ -160,6 +168,9 @@ pub struct ListComicInfosData {
 
     #[serde(default)]
     pub incl_opt: Vec<ComicInclOpt>,
+
+    #[serde(default)]
+    pub with_opt: Vec<ComicWithOpt>,
 }
 
 impl From<ListComicInfosData> for ComicListSpec {

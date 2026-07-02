@@ -104,7 +104,7 @@ impl ChapterComplex {
         P: PromTransactional<C> + Send + Sync,
     {
         let chapter_info = repo
-            .advance(context, &ChapterStep::get_info_by_id_excluded(id))
+            .advance(context, &ChapterStep::get_info_by_id_excluded(id, &[]))
             .await?;
 
         prom_image_deletes(repo, prom, context, &chapter_info.id).await?;
@@ -379,7 +379,7 @@ where
         + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RegularError>,
 {
     let chapter_info = proxy
-        .execute(&ChapterStep::get_info_by_id(chapter_id))
+        .execute(&ChapterStep::get_info_by_id(chapter_id, &[]))
         .await?;
 
     check_team_member_by_comic(proxy, user_id, &chapter_info.comic_id).await
@@ -414,7 +414,7 @@ where
         + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RegularError>,
 {
     let chapter_info = proxy
-        .execute(&ChapterStep::get_info_by_id(chapter_id))
+        .execute(&ChapterStep::get_info_by_id(chapter_id, &[]))
         .await?;
 
     check_team_admin_by_comic(proxy, user_id, &chapter_info.comic_id).await

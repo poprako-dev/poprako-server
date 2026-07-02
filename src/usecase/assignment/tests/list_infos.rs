@@ -10,6 +10,7 @@ use super::*;
 
 use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;
+use crate::value::assignment::AssignmentInclOpt;
 
 #[tokio::test]
 async fn list_infos_team_member_lists_chapter_assignments() {
@@ -40,6 +41,37 @@ async fn list_infos_team_member_lists_chapter_assignments() {
     let assignment_info_vals = assignment_info_vals.ok().unwrap();
 
     assert_eq!(assignment_info_vals.len(), 2);
+}
+
+#[tokio::test]
+async fn list_infos_deep_chapter_comic_workset_team_incl_fills_full_chain() {
+    let mock = Mock::new();
+    seed_scope(&mock);
+    seed_user(&mock, "member-user", false);
+    mock.seed_member(member("member-user", role(RoleField::TRANSLATOR)));
+    mock.seed_assignment(assignment(
+        "chapter-1",
+        "member-user",
+        role(RoleField::TRANSLATOR),
+    ));
+
+    let mut list_data = list_by_chapter_data("chapter-1");
+
+    list_data.incl_opt = vec![AssignmentInclOpt::ChapterComicWorksetTeam];
+
+    let assignment_info_vals = list_infos(&mock, &mock, token("member-user"), list_data)
+        .await
+        .ok()
+        .unwrap();
+
+    let chapter_info_val = assignment_info_vals[0].chapter.as_ref().unwrap();
+
+    let comic_info_val = chapter_info_val.comic.as_ref().unwrap();
+
+    assert_eq!(chapter_info_val.id, "chapter-1");
+    assert_eq!(comic_info_val.id, "comic-1");
+    assert_eq!(comic_info_val.workset.as_ref().unwrap().id, "workset-1");
+    assert_eq!(comic_info_val.team.as_ref().unwrap().id, "team-1");
 }
 
 #[tokio::test]

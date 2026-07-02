@@ -8,16 +8,16 @@ use time::OffsetDateTime;
 use poprako_transactional::advance::Advance;
 
 use crate::model::member::{MemberForm, MemberInfo, MemberListSpec, MemberRoleUpdate};
-use crate::model::team::TeamInfo;
-use crate::model::user::UserInfo;
+use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
 use crate::part::repo::step::member::{
     Create, Delete, FindInfoByUserIdAndTeamId, GetInfoById, GetInfoExcluded, ListInfos,
     ListInfosByUserIdExcluded, TouchLastActive, UpdateRole, UpdateUserNickname,
 };
 use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_rdb::entity::member::{MemberAspect, MemberEntry, MemberRow};
-use crate::part_impl::repo_rdb::incl::{self, Incl, TeamByIds, UserByIds};
-use crate::part_impl::repo_rdb::{RdbRepo, RdbRepoTransactional, schema};
+use crate::part_impl::repo_rdb::incl;
+use crate::part_impl::repo_rdb::{RdbRepo, RdbRepoTransactional};
+use crate::part_impl::repo_rdb::dsl;
 use crate::part_impl::shared_rdb::RdbConn;
 use crate::part_impl::shared_rdb::RdbContext;
 use crate::part_impl::shared_rdb::result::{diesel, expected};
@@ -25,59 +25,13 @@ use crate::result::{RegularError, RegularResult};
 use crate::value::member::MemberInclOpt;
 use crate::value::role::{RoleField, RoleMask};
 
-use schema::t_member::dsl::*;
+// NOTE: use dsl::* is the Diesel impl layer exception to rust-use-style
+use dsl::*;
+use dsl::t_member::*;
 
-// ── Incl implementations ────────────────────────────────────────────────────
+impl MemberRepo<RdbContext> for RdbRepo {}
 
-struct MemberUserIncl;
-
-#[async_trait]
-impl Incl for MemberUserIncl {
-    type Owner = MemberInfo;
-    type Related = UserInfo;
-    type Query = UserByIds;
-
-    fn resolve_key(o: &MemberInfo) -> Option<&str> {
-        Some(&o.user_id)
-    }
-
-    fn set(o: &mut MemberInfo, r: Option<UserInfo>) {
-        o.user = r;
-    }
-}
-
-struct MemberTeamIncl;
-
-#[async_trait]
-impl Incl for MemberTeamIncl {
-    type Owner = MemberInfo;
-    type Related = TeamInfo;
-    type Query = TeamByIds;
-
-    fn resolve_key(o: &MemberInfo) -> Option<&str> {
-        Some(&o.team_id)
-    }
-
-    fn set(o: &mut MemberInfo, r: Option<TeamInfo>) {
-        o.team = r;
-    }
-}
-
-async fn populate_member_incls(
-    conn: &mut RdbConn,
-    infos: &mut [MemberInfo],
-    incl_opt: &[MemberInclOpt],
-) -> RegularResult<()> {
-    if incl_opt.contains(&MemberInclOpt::User) {
-        incl::populate::<MemberUserIncl>(conn, infos).await?;
-    }
-
-    if incl_opt.contains(&MemberInclOpt::Team) {
-        incl::populate::<MemberTeamIncl>(conn, infos).await?;
-    }
-
-    Ok(())
-}
+impl MemberRepoTransactional<RdbContext> for RdbRepoTransactional {}
 
 struct RoleTimestamps {
     raw_provider: Option<OffsetDateTime>,
@@ -237,7 +191,7 @@ async fn list_infos(conn: &mut RdbConn, spec: &MemberListSpec) -> RegularResult<
 
     let mut infos: Vec<MemberInfo> = rows.into_iter().map(Into::into).collect();
 
-    populate_member_incls(conn, &mut infos, spec.incl_opt()).await?;
+    incl::member::populate_member_incls(conn, &mut infos, spec.incl_opt()).await?;
 
     Ok(infos)
 }
@@ -258,7 +212,7 @@ async fn get_info_by_id(
 
     let mut info: MemberInfo = row.into();
 
-    populate_member_incls(conn, std::slice::from_mut(&mut info), incl_opt).await?;
+    incl::member::populate_member_incls(conn, std::slice::from_mut(&mut info), incl_opt).await?;
 
     Ok(info)
 }
@@ -342,7 +296,7 @@ async fn get_info_excluded(
 
     let mut info: MemberInfo = row.into();
 
-    populate_member_incls(conn, std::slice::from_mut(&mut info), incl_opt).await?;
+    incl::member::populate_member_incls(conn, std::slice::from_mut(&mut info), incl_opt).await?;
 
     Ok(info)
 }
@@ -504,3 +458,5 @@ impl<'a> Advance<Delete<'a>, RdbContext> for RdbRepoTransactional {
         delete(context.conn(), step.id).await
     }
 }
+#[cfg(all(test, feature = "repo"))]
+mod tests;

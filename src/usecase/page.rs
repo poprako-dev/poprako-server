@@ -77,7 +77,7 @@ where
             let chapter_info = repo
                 .advance(
                     context,
-                    &ChapterStep::get_info_by_id_excluded(&data.chapter_id),
+                    &ChapterStep::get_info_by_id_excluded(&data.chapter_id, &[]),
                 )
                 .await?;
 
@@ -379,7 +379,10 @@ where
             let repo = repo.derive_transactional().await;
 
             let chapter_info = repo
-                .advance(context, &ChapterStep::get_info_by_id_excluded(&chapter_id))
+                .advance(
+                    context,
+                    &ChapterStep::get_info_by_id_excluded(&chapter_id, &[]),
+                )
                 .await?;
 
             let page_infos = repo

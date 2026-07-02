@@ -5,6 +5,7 @@ use serde::Deserialize;
 use poprako_macro::Paginate;
 use poprako_util::time::ToUnixMilli;
 
+use crate::data::comic::ComicInfoVal;
 use crate::data::user::UserInfoVal;
 use crate::model::chapter::ChapterInfo;
 use crate::part::image::ImagePool;
@@ -22,6 +23,8 @@ use crate::value::chapter::{ChapterInclOpt, WorkflowEvent, WorkflowStage, Workfl
 pub struct ChapterInfoVal {
     pub id: String,
     pub comic_id: String,
+
+    pub comic: Option<Box<ComicInfoVal>>,
 
     pub is_pinned: bool,
     pub index: i32,
@@ -47,6 +50,7 @@ impl From<ChapterInfo> for ChapterInfoVal {
         Self {
             id: model.id,
             comic_id: model.comic_id,
+            comic: None,
             is_pinned: model.is_pinned,
             index: model.index,
             subtitle: model.subtitle,
@@ -75,9 +79,19 @@ impl ChapterInfoVal {
             None => None,
         };
 
+        let comic = match model.comic {
+            Some(comic_info) => {
+                let comic_info_val = ComicInfoVal::from_model(image_pool, comic_info, None).await?;
+
+                Some(Box::new(comic_info_val))
+            }
+            None => None,
+        };
+
         Ok(Self {
             id: model.id,
             comic_id: model.comic_id,
+            comic,
             is_pinned: model.is_pinned,
             index: model.index,
             subtitle: model.subtitle,

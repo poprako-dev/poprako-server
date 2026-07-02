@@ -131,7 +131,10 @@ where
             }
 
             let chapter_info = repo
-                .advance(context, &ChapterStep::get_info_by_id(&page_info.chapter_id))
+                .advance(
+                    context,
+                    &ChapterStep::get_info_by_id(&page_info.chapter_id, &[]),
+                )
                 .await?;
 
             for oper in &opers {

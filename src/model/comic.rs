@@ -28,7 +28,7 @@ use crate::value::comic::ComicInclOpt;
 ///
 /// [`ComicStep::reserve_cover`]: crate::part::repo::step::comic::ComicStep::reserve_cover
 /// [`ComicStep::mark_cover_uploaded`]: crate::part::repo::step::comic::ComicStep::mark_cover_uploaded
-#[cfg_attr(test, derive(Clone))]
+#[derive(Clone)]
 pub struct ComicInfo {
     pub id: String,
 
