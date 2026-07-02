@@ -48,8 +48,7 @@ fn parse_poprako_preserves_one_based_indexes() {
                             "is_inbox": true,
                             "translated_text": "translated",
                             "prooved_text": null,
-                            "is_prooved": false,
-                            "comment": null
+                            "is_prooved": false
                         }
                     ]
                 }

@@ -131,10 +131,8 @@ fn unit(id: &str, page_id: &str, index: i32, text: &str, proofread_text: Option<
         x_coord: 0.25,
         y_coord: 0.75,
         translated_text: Some(text.into()),
-        translator_comment: Some("translator note".into()),
         last_translator_id: Some("translator-1".into()),
         proofread_text: proofread_text.map(Into::into),
-        proofreader_comment: Some("proofreader note".into()),
         last_proofreader_id: Some("proofreader-1".into()),
         created_at: time,
         updated_at: time,
@@ -225,8 +223,4 @@ async fn export_label_plus_returns_text_payload() {
     assert!(exported.contains("----------------[1]----------------[0.2500,0.7500,1]"));
 
     assert!(exported.contains("alpha proof"));
-
-    assert!(exported.contains("【翻译】translator note"));
-
-    assert!(exported.contains("【校对】proofreader note"));
 }

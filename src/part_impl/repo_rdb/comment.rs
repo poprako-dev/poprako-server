@@ -10,17 +10,16 @@ use crate::model::comment::{CommentForm, CommentInfo, CommentListSpec};
 use crate::part::repo::comment::{CommentRepo, CommentRepoTransactional};
 use crate::part::repo::step::comment::{Create, ListInfos};
 use crate::part::shared::execute::Execute;
+use crate::part_impl::repo_rdb::dsl;
 use crate::part_impl::repo_rdb::entity::comment::{CommentEntry, CommentRow};
 use crate::part_impl::repo_rdb::incl;
 use crate::part_impl::repo_rdb::{RdbRepo, RdbRepoTransactional};
-use crate::part_impl::repo_rdb::dsl;
 use crate::part_impl::shared_rdb::RdbConn;
 use crate::part_impl::shared_rdb::RdbContext;
 use crate::part_impl::shared_rdb::result::diesel;
 use crate::result::{RegularError, RegularResult};
 
 // NOTE: use dsl::* is the Diesel impl layer exception to rust-use-style
-use dsl::*;
 use dsl::t_comment::*;
 
 impl CommentRepo<RdbContext> for RdbRepo {}

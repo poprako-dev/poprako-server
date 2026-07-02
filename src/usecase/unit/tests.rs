@@ -158,10 +158,8 @@ fn unit(
         x_coord: 1.0,
         y_coord: 2.0,
         translated_text: Some(text.into()),
-        translator_comment: None,
         last_translator_id: None,
         proofread_text: proofread_text.map(Into::into),
-        proofreader_comment: None,
         last_proofreader_id: None,
         created_at: time,
         updated_at: time,
@@ -177,10 +175,8 @@ fn create_oper(local_id: &str, text: &str, proofread: bool) -> UnitOperData {
         x_coord: Some(3.0),
         y_coord: Some(4.0),
         translated_text: Some(text.into()),
-        translator_comment: None,
         last_translator_id: None,
         proofread_text: None,
-        proofreader_comment: None,
         last_proofreader_id: None,
     }
 }
@@ -194,10 +190,8 @@ fn save_oper(id: &str, text: &str, proofread: bool) -> UnitOperData {
         x_coord: Some(5.0),
         y_coord: Some(6.0),
         translated_text: Some(text.into()),
-        translator_comment: None,
         last_translator_id: None,
         proofread_text: None,
-        proofreader_comment: None,
         last_proofreader_id: None,
     }
 }
@@ -211,10 +205,8 @@ fn delete_oper(id: &str) -> UnitOperData {
         x_coord: None,
         y_coord: None,
         translated_text: None,
-        translator_comment: None,
         last_translator_id: None,
         proofread_text: None,
-        proofreader_comment: None,
         last_proofreader_id: None,
     }
 }

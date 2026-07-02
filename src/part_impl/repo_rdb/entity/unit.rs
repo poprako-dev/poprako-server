@@ -21,11 +21,9 @@ pub struct UnitRow {
     pub f_y_coord: f64,
 
     pub f_translated_text: Option<String>,
-    pub f_translator_comment: Option<String>,
     pub f_last_translator_id: Option<String>,
 
     pub f_proofread_text: Option<String>,
-    pub f_proofreader_comment: Option<String>,
     pub f_last_proofreader_id: Option<String>,
 
     pub f_created_at: OffsetDateTime,
@@ -47,11 +45,9 @@ pub struct UnitEntry<'a> {
     pub f_y_coord: f64,
 
     pub f_translated_text: Option<&'a str>,
-    pub f_translator_comment: Option<&'a str>,
     pub f_last_translator_id: Option<&'a str>,
 
     pub f_proofread_text: Option<&'a str>,
-    pub f_proofreader_comment: Option<&'a str>,
     pub f_last_proofreader_id: Option<&'a str>,
 
     pub f_created_at: OffsetDateTime,
@@ -70,11 +66,9 @@ pub struct UnitAspect<'a> {
     pub f_y_coord: Option<f64>,
 
     pub f_translated_text: Option<Option<&'a str>>,
-    pub f_translator_comment: Option<Option<&'a str>>,
     pub f_last_translator_id: Option<Option<&'a str>>,
 
     pub f_proofread_text: Option<Option<&'a str>>,
-    pub f_proofreader_comment: Option<Option<&'a str>>,
     pub f_last_proofreader_id: Option<Option<&'a str>>,
 
     pub f_updated_at: OffsetDateTime,
@@ -89,10 +83,8 @@ impl<'a> UnitAspect<'a> {
             f_x_coord: None,
             f_y_coord: None,
             f_translated_text: None,
-            f_translator_comment: None,
             f_last_translator_id: None,
             f_proofread_text: None,
-            f_proofreader_comment: None,
             f_last_proofreader_id: None,
             f_updated_at: updated_at,
         }
@@ -109,10 +101,8 @@ impl<'a> UnitAspect<'a> {
         self.f_x_coord = Some(payload.x_coord);
         self.f_y_coord = Some(payload.y_coord);
         self.f_translated_text = Some(payload.translated_text.as_deref());
-        self.f_translator_comment = Some(payload.translator_comment.as_deref());
         self.f_last_translator_id = Some(payload.last_translator_id.as_deref());
         self.f_proofread_text = Some(payload.proofread_text.as_deref());
-        self.f_proofreader_comment = Some(payload.proofreader_comment.as_deref());
         self.f_last_proofreader_id = Some(payload.last_proofreader_id.as_deref());
         self
     }
@@ -129,10 +119,8 @@ impl From<UnitRow> for UnitInfo {
             x_coord: row.f_x_coord,
             y_coord: row.f_y_coord,
             translated_text: row.f_translated_text,
-            translator_comment: row.f_translator_comment,
             last_translator_id: row.f_last_translator_id,
             proofread_text: row.f_proofread_text,
-            proofreader_comment: row.f_proofreader_comment,
             last_proofreader_id: row.f_last_proofreader_id,
             created_at: row.f_created_at,
             updated_at: row.f_updated_at,
@@ -153,10 +141,8 @@ impl<'a> UnitEntry<'a> {
             f_x_coord: payload.x_coord,
             f_y_coord: payload.y_coord,
             f_translated_text: payload.translated_text.as_deref(),
-            f_translator_comment: payload.translator_comment.as_deref(),
             f_last_translator_id: payload.last_translator_id.as_deref(),
             f_proofread_text: payload.proofread_text.as_deref(),
-            f_proofreader_comment: payload.proofreader_comment.as_deref(),
             f_last_proofreader_id: payload.last_proofreader_id.as_deref(),
             f_created_at: now,
             f_updated_at: now,

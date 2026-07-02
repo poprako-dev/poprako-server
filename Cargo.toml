@@ -24,6 +24,7 @@ cookie = "0.18"
 crossfire = { version = "3.1.16", features = ["tokio"] }
 diesel = { version = "2.3.7", features = ["postgres", "serde_json", "time"] }
 diesel-async = { version = "0.9.0", features = ["deadpool", "postgres"] }
+diesel_migrations = "2.3.0"
 dotenvy = "0.15.7"
 fluent-templates = "0.14.0"
 futures-util = "0.3.32"

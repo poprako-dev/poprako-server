@@ -179,11 +179,9 @@ fn make_unit_export(page_info: &PageInfo, unit_info: UnitInfo) -> UnitTranslatio
         is_bubble: unit_info.is_bubble,
         translated_text: unit_info.translated_text,
         translator_id: unit_info.last_translator_id,
-        translator_comment: unit_info.translator_comment,
         is_proofread: unit_info.is_proofread,
         proofread_text: unit_info.proofread_text,
         proofreader_id: unit_info.last_proofreader_id,
-        proofreader_comment: unit_info.proofreader_comment,
     }
 }
 

@@ -17,11 +17,9 @@ pub struct UnitInfo {
     pub y_coord: f64,
 
     pub translated_text: Option<String>,
-    pub translator_comment: Option<String>,
     pub last_translator_id: Option<String>,
 
     pub proofread_text: Option<String>,
-    pub proofreader_comment: Option<String>,
     pub last_proofreader_id: Option<String>,
 
     pub created_at: OffsetDateTime,
@@ -45,11 +43,9 @@ pub struct UnitPayload {
     pub y_coord: f64,
 
     pub translated_text: Option<String>,
-    pub translator_comment: Option<String>,
     pub last_translator_id: Option<String>,
 
     pub proofread_text: Option<String>,
-    pub proofreader_comment: Option<String>,
     pub last_proofreader_id: Option<String>,
 }
 

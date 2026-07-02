@@ -81,8 +81,6 @@ impl<'a> Execute<SendBatch<'a>> for Mock {
     }
 }
 
-// FIXME: list should have ONLY ONE ENTRY!!!!
-
 #[async_trait]
 impl<'a> Execute<ListInfosByReceiverId<'a>> for Mock {
     type Error = RegularError;

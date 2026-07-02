@@ -1,7 +1,13 @@
 use std::env;
+use std::sync::OnceLock;
 
+use diesel::Connection;
+use diesel::PgConnection;
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
+use diesel_migrations::EmbeddedMigrations;
+use diesel_migrations::MigrationHarness;
+use diesel_migrations::embed_migrations;
 
 use poprako_transactional::advance::Advance;
 use poprako_transactional::drive::Drive;
@@ -65,13 +71,27 @@ pub struct PageFixture {
     pub page_form: PageForm,
 }
 
+const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations");
+
+static TEST_SCHEMA_READY: OnceLock<()> = OnceLock::new();
+
 pub async fn shared() -> RdbShared {
     dotenvy::dotenv().ok();
 
     let database_url =
         env::var("TEST_DATABASE_URL").expect("TEST_DATABASE_URL must be set to run repo RDB tests");
 
+    TEST_SCHEMA_READY.get_or_init(|| reset_test_schema(&database_url));
+
     RdbShared::from_database_url(&database_url).unwrap()
+}
+
+fn reset_test_schema(database_url: &str) {
+    let mut conn = PgConnection::establish(database_url).unwrap();
+
+    MigrationHarness::revert_all_migrations(&mut conn, MIGRATIONS).unwrap();
+
+    MigrationHarness::run_pending_migrations(&mut conn, MIGRATIONS).unwrap();
 }
 
 pub async fn reset(shared: &RdbShared, prefix: &str) {

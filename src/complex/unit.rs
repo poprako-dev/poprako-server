@@ -98,7 +98,6 @@ impl UnitComplex {
             if required_ids.contains(id) {
                 return Err(unit_invalid_oper_error());
             }
-
             if candidate_ids.contains(id) {
                 return Err(unit_invalid_oper_error());
             }

@@ -72,10 +72,8 @@ fn write_payload(unit_info: &mut UnitInfo, payload: &UnitPayload) {
     unit_info.x_coord = payload.x_coord;
     unit_info.y_coord = payload.y_coord;
     unit_info.translated_text = payload.translated_text.clone();
-    unit_info.translator_comment = payload.translator_comment.clone();
     unit_info.last_translator_id = payload.last_translator_id.clone();
     unit_info.proofread_text = payload.proofread_text.clone();
-    unit_info.proofreader_comment = payload.proofreader_comment.clone();
     unit_info.last_proofreader_id = payload.last_proofreader_id.clone();
     unit_info.updated_at = now();
 }
@@ -92,10 +90,8 @@ fn unit_from_payload(page_id: &str, id: &str, index: i32, payload: &UnitPayload)
         x_coord: payload.x_coord,
         y_coord: payload.y_coord,
         translated_text: payload.translated_text.clone(),
-        translator_comment: payload.translator_comment.clone(),
         last_translator_id: payload.last_translator_id.clone(),
         proofread_text: payload.proofread_text.clone(),
-        proofreader_comment: payload.proofreader_comment.clone(),
         last_proofreader_id: payload.last_proofreader_id.clone(),
         created_at: time,
         updated_at: time,

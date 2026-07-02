@@ -14,9 +14,6 @@ pub struct UnitTranslationImport {
     pub translated_text: Option<String>,
     pub proofread_text: Option<String>,
     pub is_proofread: bool,
-
-    pub translator_comment: Option<String>,
-    pub proofreader_comment: Option<String>,
 }
 
 /// PopRaKo JSON import unit.
@@ -32,6 +29,4 @@ pub struct PoprakoUnitImport {
     pub translated_text: Option<String>,
     pub prooved_text: Option<String>,
     pub is_prooved: bool,
-
-    pub comment: Option<String>,
 }
