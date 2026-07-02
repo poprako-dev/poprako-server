@@ -4,12 +4,12 @@ use diesel::prelude::*;
 use time::OffsetDateTime;
 
 use crate::model::system_mail::{SystemMailForm, SystemMailInfo};
-use crate::part_impl::repo_rdb::schema;
+use crate::part_impl::repo_rdb::schema::t_system_mail;
 
 // ── Queryable / Selectable ─────────────────────────────────────────────────
 
 #[derive(Queryable, Selectable)]
-#[diesel(table_name = schema::t_system_mail)]
+#[diesel(table_name = t_system_mail)]
 pub struct SystemMailRow {
     pub f_id: String,
     pub f_receiver_id: String,
@@ -25,7 +25,7 @@ pub struct SystemMailRow {
 // ── Insertable ─────────────────────────────────────────────────────────────
 
 #[derive(Insertable)]
-#[diesel(table_name = schema::t_system_mail)]
+#[diesel(table_name = t_system_mail)]
 pub struct SystemMailEntry<'a> {
     pub f_id: &'a str,
     pub f_receiver_id: &'a str,

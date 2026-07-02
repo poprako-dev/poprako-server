@@ -93,13 +93,17 @@ pub struct UnitDiffData {
 pub struct UnitOperData {
     pub id: Option<String>,
     pub local_id: Option<String>,
+
     pub is_bubble: Option<bool>,
     pub is_proofread: Option<bool>,
+
     pub x_coord: Option<f64>,
     pub y_coord: Option<f64>,
+
     pub translated_text: Option<String>,
     pub translator_comment: Option<String>,
     pub last_translator_id: Option<String>,
+
     pub proofread_text: Option<String>,
     pub proofreader_comment: Option<String>,
     pub last_proofreader_id: Option<String>,

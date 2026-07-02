@@ -4,12 +4,12 @@ use diesel::prelude::*;
 use time::OffsetDateTime;
 
 use crate::model::comic::{ComicForm, ComicInfo};
-use crate::part_impl::repo_rdb::schema;
+use crate::part_impl::repo_rdb::schema::t_comic;
 
 // ── Queryable / Selectable ─────────────────────────────────────────────────
 
 #[derive(Queryable, Selectable)]
-#[diesel(table_name = schema::t_comic)]
+#[diesel(table_name = t_comic)]
 pub struct ComicRow {
     pub f_id: String,
     pub f_workset_id: String,
@@ -38,7 +38,7 @@ pub struct ComicRow {
 // ── Insertable ─────────────────────────────────────────────────────────────
 
 #[derive(Insertable)]
-#[diesel(table_name = schema::t_comic)]
+#[diesel(table_name = t_comic)]
 pub struct ComicEntry<'a> {
     pub f_id: &'a str,
     pub f_workset_id: &'a str,
@@ -59,7 +59,7 @@ pub struct ComicEntry<'a> {
 // ── Changeset (AsChangeset) ────────────────────────────────────────────────
 
 #[derive(AsChangeset)]
-#[diesel(table_name = schema::t_comic)]
+#[diesel(table_name = t_comic)]
 pub struct ComicAspect<'a> {
     pub f_title: Option<&'a str>,
     pub f_author: Option<&'a str>,

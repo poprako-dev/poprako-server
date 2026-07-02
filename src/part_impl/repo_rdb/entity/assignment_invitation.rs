@@ -4,40 +4,50 @@ use diesel::prelude::*;
 use time::OffsetDateTime;
 
 use crate::model::assignment_invitation::{AssignmentInvitationForm, AssignmentInvitationInfo};
-use crate::part_impl::repo_rdb::schema;
+use crate::part_impl::repo_rdb::schema::t_assignment_invitation;
 use crate::result::RegularError;
 use crate::value::role::RoleMask;
 
 #[derive(Queryable, Selectable)]
-#[diesel(table_name = schema::t_assignment_invitation)]
+#[diesel(table_name = t_assignment_invitation)]
 pub struct AssignmentInvitationRow {
     pub f_id: String,
+
     pub f_chapter_id: String,
+
     pub f_inviter_id: String,
     pub f_invitee_qid: String,
+
     pub f_invitation_code: String,
+
     pub f_pending: bool,
     pub f_role_mask: i64,
+
     pub f_created_at: OffsetDateTime,
     pub f_updated_at: OffsetDateTime,
 }
 
 #[derive(Insertable)]
-#[diesel(table_name = schema::t_assignment_invitation)]
+#[diesel(table_name = t_assignment_invitation)]
 pub struct AssignmentInvitationEntry<'a> {
     pub f_id: &'a str,
+
     pub f_chapter_id: &'a str,
+
     pub f_inviter_id: &'a str,
     pub f_invitee_qid: &'a str,
+
     pub f_invitation_code: &'a str,
+
     pub f_pending: bool,
     pub f_role_mask: i64,
+
     pub f_created_at: OffsetDateTime,
     pub f_updated_at: OffsetDateTime,
 }
 
 #[derive(AsChangeset)]
-#[diesel(table_name = schema::t_assignment_invitation)]
+#[diesel(table_name = t_assignment_invitation)]
 pub struct AssignmentInvitationAspect {
     pub f_pending: Option<bool>,
     pub f_updated_at: OffsetDateTime,

@@ -4,13 +4,13 @@ use diesel::prelude::*;
 use time::OffsetDateTime;
 
 use crate::model::member::MemberInfo;
-use crate::part_impl::repo_rdb::schema;
+use crate::part_impl::repo_rdb::schema::t_member;
 use crate::value::role::{RoleField, RoleMask};
 
 // ── Queryable / Selectable ─────────────────────────────────────────────────
 
 #[derive(Queryable, Selectable)]
-#[diesel(table_name = schema::t_member)]
+#[diesel(table_name = t_member)]
 pub struct MemberRow {
     pub f_id: String,
     pub f_user_id: String,
@@ -36,7 +36,7 @@ pub struct MemberRow {
 // ── Insertable ─────────────────────────────────────────────────────────────
 
 #[derive(Insertable)]
-#[diesel(table_name = schema::t_member)]
+#[diesel(table_name = t_member)]
 pub struct MemberEntry<'a> {
     pub f_id: &'a str,
     pub f_user_id: &'a str,
@@ -62,7 +62,7 @@ pub struct MemberEntry<'a> {
 // ── Changeset (AsChangeset) ────────────────────────────────────────────────
 
 #[derive(AsChangeset)]
-#[diesel(table_name = schema::t_member)]
+#[diesel(table_name = t_member)]
 pub struct MemberAspect<'a> {
     pub f_user_nickname: Option<&'a str>,
 

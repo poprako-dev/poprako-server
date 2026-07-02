@@ -4,14 +4,14 @@ use diesel::prelude::*;
 use time::OffsetDateTime;
 
 use crate::model::member_invitation::{MemberInvitationForm, MemberInvitationInfo};
-use crate::part_impl::repo_rdb::schema;
+use crate::part_impl::repo_rdb::schema::t_member_invitation;
 use crate::result::RegularError;
 use crate::value::role::RoleMask;
 
 // ── Queryable / Selectable ─────────────────────────────────────────────────
 
 #[derive(Queryable, Selectable)]
-#[diesel(table_name = schema::t_member_invitation)]
+#[diesel(table_name = t_member_invitation)]
 pub struct MemberInvitationRow {
     pub f_id: String,
     pub f_inviter_id: String,
@@ -30,7 +30,7 @@ pub struct MemberInvitationRow {
 // ── Insertable ─────────────────────────────────────────────────────────────
 
 #[derive(Insertable)]
-#[diesel(table_name = schema::t_member_invitation)]
+#[diesel(table_name = t_member_invitation)]
 pub struct MemberInvitationEntry<'a> {
     pub f_id: &'a str,
     pub f_inviter_id: &'a str,
@@ -49,7 +49,7 @@ pub struct MemberInvitationEntry<'a> {
 // ── Changeset (AsChangeset) ────────────────────────────────────────────────
 
 #[derive(AsChangeset)]
-#[diesel(table_name = schema::t_member_invitation)]
+#[diesel(table_name = t_member_invitation)]
 pub struct MemberInvitationAspect {
     pub f_pending: Option<bool>,
     pub f_role_mask: Option<i64>,
