@@ -7,6 +7,8 @@ pub mod repo_rdb;
 
 mod shared_rdb;
 
+pub use shared_rdb::{RdbContext, RdbShared};
+
 #[cfg(test)]
 pub mod auth_mock;
 #[cfg(test)]

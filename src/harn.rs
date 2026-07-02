@@ -1,6 +1,8 @@
 use std::marker::PhantomData;
 use std::sync::Arc;
 
+use poprako_transactional::drive::Drive;
+
 use crate::part::auth::TokenAuth;
 use crate::part::effect::EffectDevelop;
 use crate::part::image::ImagePool;
@@ -23,25 +25,29 @@ use crate::part::repo::team::{TeamRepo, TeamRepoTransactional};
 use crate::part::repo::unit::{UnitRepo, UnitRepoTransactional};
 use crate::part::repo::user::{UserRepo, UserRepoTransactional};
 use crate::part::repo::workset::{WorksetRepo, WorksetRepoTransactional};
+use crate::result::RegularError;
 use crate::util::DeriveTransactional;
 
 #[derive(Clone)]
-pub struct Harn<C, R, P, A, I, D> {
-    inner: Arc<HarnInner<C, R, P, A, I, D>>,
+pub struct Harn<C, D, R, P, A, I, V> {
+    inner: Arc<HarnInner<C, D, R, P, A, I, V>>,
 }
 
-struct HarnInner<C, R, P, A, I, D> {
+struct HarnInner<C, D, R, P, A, I, V> {
+    drive: D,
     repo: R,
     prom: P,
     auth: A,
     image_pool: I,
-    develop: D,
+    develop: V,
 
     _p: PhantomData<C>,
 }
 
-impl<C, R, P, A, I, D> Harn<C, R, P, A, I, D>
+impl<C, D, R, P, A, I, V> Harn<C, D, R, P, A, I, V>
 where
+    D: Drive<C>,
+    D::Error: Into<RegularError>,
     R: DeriveTransactional
         + AnnouncementRepo<C>
         + AssignmentRepo<C>
@@ -74,11 +80,12 @@ where
     P: Prom<C>,
     A: TokenAuth,
     I: ImagePool,
-    D: EffectDevelop,
+    V: EffectDevelop,
 {
-    pub fn new(repo: R, prom: P, auth: A, image_pool: I, develop: D) -> Self {
+    pub fn new(drive: D, repo: R, prom: P, auth: A, image_pool: I, develop: V) -> Self {
         Self {
             inner: Arc::new(HarnInner {
+                drive,
                 repo,
                 prom,
                 auth,
@@ -87,6 +94,10 @@ where
                 _p: PhantomData,
             }),
         }
+    }
+
+    pub fn drive(&self) -> &D {
+        &self.inner.drive
     }
 
     pub fn repo(&self) -> &R {
@@ -105,7 +116,7 @@ where
         &self.inner.image_pool
     }
 
-    pub fn develop(&self) -> &D {
+    pub fn develop(&self) -> &V {
         &self.inner.develop
     }
 }
