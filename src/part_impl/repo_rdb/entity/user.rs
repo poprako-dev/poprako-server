@@ -4,12 +4,12 @@ use diesel::prelude::*;
 use time::OffsetDateTime;
 
 use crate::model::user::{UserCredential, UserInfo};
-use crate::part_impl::repo_rdb::schema;
+use crate::part_impl::repo_rdb::schema::t_user;
 
 // ── Queryable / Selectable ─────────────────────────────────────────────────
 
 #[derive(Queryable, Selectable)]
-#[diesel(table_name = schema::t_user)]
+#[diesel(table_name = t_user)]
 pub struct UserRow {
     pub f_id: String,
     pub f_nickname: String,
@@ -28,7 +28,7 @@ pub struct UserRow {
 }
 
 #[derive(Queryable, Selectable)]
-#[diesel(table_name = schema::t_user)]
+#[diesel(table_name = t_user)]
 pub struct UserCredentialRow {
     pub f_id: String,
 
@@ -38,7 +38,7 @@ pub struct UserCredentialRow {
 // ── Insertable ─────────────────────────────────────────────────────────────
 
 #[derive(Insertable)]
-#[diesel(table_name = schema::t_user)]
+#[diesel(table_name = t_user)]
 pub struct UserEntry<'a> {
     pub f_id: &'a str,
     pub f_nickname: &'a str,
@@ -55,7 +55,7 @@ pub struct UserEntry<'a> {
 // ── Changeset (AsChangeset) ────────────────────────────────────────────────
 
 #[derive(AsChangeset)]
-#[diesel(table_name = schema::t_user)]
+#[diesel(table_name = t_user)]
 pub struct UserAspect<'a> {
     pub f_nickname: Option<&'a str>,
     pub f_qid: Option<&'a str>,

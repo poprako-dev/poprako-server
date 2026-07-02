@@ -4,12 +4,12 @@ use diesel::prelude::*;
 use time::OffsetDateTime;
 
 use crate::model::team::TeamInfo;
-use crate::part_impl::repo_rdb::schema;
+use crate::part_impl::repo_rdb::schema::t_team;
 
 // ── Queryable / Selectable ─────────────────────────────────────────────────
 
 #[derive(Queryable, Selectable)]
-#[diesel(table_name = schema::t_team)]
+#[diesel(table_name = t_team)]
 pub struct TeamRow {
     pub f_id: String,
     pub f_name: String,
@@ -28,7 +28,7 @@ pub struct TeamRow {
 // ── Insertable ─────────────────────────────────────────────────────────────
 
 #[derive(Insertable)]
-#[diesel(table_name = schema::t_team)]
+#[diesel(table_name = t_team)]
 pub struct TeamEntry<'a> {
     pub f_id: &'a str,
     pub f_name: &'a str,
@@ -43,7 +43,7 @@ pub struct TeamEntry<'a> {
 // ── Changeset (AsChangeset) ────────────────────────────────────────────────
 
 #[derive(AsChangeset)]
-#[diesel(table_name = schema::t_team)]
+#[diesel(table_name = t_team)]
 pub struct TeamAspect<'a> {
     pub f_name: Option<&'a str>,
     pub f_description: Option<&'a str>,

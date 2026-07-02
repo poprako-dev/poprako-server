@@ -4,25 +4,31 @@ use diesel::prelude::*;
 use time::OffsetDateTime;
 
 use crate::model::comment::{CommentForm, CommentInfo};
-use crate::part_impl::repo_rdb::schema;
+use crate::part_impl::repo_rdb::schema::t_comment;
 
 #[derive(Queryable, Selectable)]
-#[diesel(table_name = schema::t_comment)]
+#[diesel(table_name = t_comment)]
 pub struct CommentRow {
     pub f_id: String,
+
     pub f_team_id: String,
     pub f_user_id: String,
+
     pub f_content: String,
+
     pub f_created_at: OffsetDateTime,
 }
 
 #[derive(Insertable)]
-#[diesel(table_name = schema::t_comment)]
+#[diesel(table_name = t_comment)]
 pub struct CommentEntry<'a> {
     pub f_id: &'a str,
+
     pub f_team_id: &'a str,
     pub f_user_id: &'a str,
+
     pub f_content: &'a str,
+
     pub f_created_at: OffsetDateTime,
 }
 

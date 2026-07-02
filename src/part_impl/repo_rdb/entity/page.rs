@@ -4,45 +4,54 @@ use diesel::prelude::*;
 use time::OffsetDateTime;
 
 use crate::model::page::{PageForm, PageInfo};
-use crate::part_impl::repo_rdb::schema;
+use crate::part_impl::repo_rdb::schema::t_page;
 
 #[derive(Queryable, Selectable)]
-#[diesel(table_name = schema::t_page)]
+#[diesel(table_name = t_page)]
 pub struct PageRow {
     pub f_id: String,
+
     pub f_chapter_id: String,
     pub f_index: i32,
+
     pub f_image_key: Option<String>,
     pub f_image_uploaded: bool,
     pub f_image_version: i64,
+
     pub f_total_unit_count: i32,
     pub f_translated_unit_count: i32,
     pub f_proofread_unit_count: i32,
+
     pub f_created_at: OffsetDateTime,
     pub f_updated_at: OffsetDateTime,
 }
 
 #[derive(Insertable)]
-#[diesel(table_name = schema::t_page)]
+#[diesel(table_name = t_page)]
 pub struct PageEntry<'a> {
     pub f_id: &'a str,
+
     pub f_chapter_id: &'a str,
     pub f_index: i32,
+
     pub f_image_key: Option<&'a str>,
     pub f_image_version: i64,
+
     pub f_created_at: OffsetDateTime,
     pub f_updated_at: OffsetDateTime,
 }
 
 #[derive(AsChangeset)]
-#[diesel(table_name = schema::t_page)]
+#[diesel(table_name = t_page)]
 pub struct PageAspect<'a> {
     pub f_image_key: Option<Option<&'a str>>,
     pub f_image_uploaded: Option<bool>,
     pub f_image_version: Option<i64>,
+
     pub f_total_unit_count: Option<i32>,
     pub f_translated_unit_count: Option<i32>,
     pub f_proofread_unit_count: Option<i32>,
+
     pub f_updated_at: OffsetDateTime,
 }
 

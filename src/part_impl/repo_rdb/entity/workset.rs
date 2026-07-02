@@ -4,12 +4,12 @@ use diesel::prelude::*;
 use time::OffsetDateTime;
 
 use crate::model::workset::{WorksetForm, WorksetInfo};
-use crate::part_impl::repo_rdb::schema;
+use crate::part_impl::repo_rdb::schema::t_workset;
 
 // ── Queryable / Selectable ─────────────────────────────────────────────────
 
 #[derive(Queryable, Selectable)]
-#[diesel(table_name = schema::t_workset)]
+#[diesel(table_name = t_workset)]
 pub struct WorksetRow {
     pub f_id: String,
     pub f_team_id: String,
@@ -28,7 +28,7 @@ pub struct WorksetRow {
 // ── Insertable ─────────────────────────────────────────────────────────────
 
 #[derive(Insertable)]
-#[diesel(table_name = schema::t_workset)]
+#[diesel(table_name = t_workset)]
 pub struct WorksetEntry<'a> {
     pub f_id: &'a str,
     pub f_team_id: &'a str,
@@ -44,7 +44,7 @@ pub struct WorksetEntry<'a> {
 // ── Changeset (AsChangeset) ────────────────────────────────────────────────
 
 #[derive(AsChangeset)]
-#[diesel(table_name = schema::t_workset)]
+#[diesel(table_name = t_workset)]
 pub struct WorksetAspect<'a> {
     pub f_name: Option<&'a str>,
     pub f_description: Option<Option<&'a str>>,

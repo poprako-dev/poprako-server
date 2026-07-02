@@ -4,52 +4,65 @@ use diesel::prelude::*;
 use time::OffsetDateTime;
 
 use crate::model::chapter::{ChapterForm, ChapterInfo};
-use crate::part_impl::repo_rdb::schema;
+use crate::part_impl::repo_rdb::schema::t_chapter;
 use crate::result::RegularError;
 use crate::value::chapter::WorkflowStageMask;
 
 #[derive(Queryable, Selectable)]
-#[diesel(table_name = schema::t_chapter)]
+#[diesel(table_name = t_chapter)]
 pub struct ChapterRow {
     pub f_id: String,
+
     pub f_comic_id: String,
+
     pub f_is_pinned: bool,
     pub f_index: i32,
     pub f_subtitle: String,
+
     pub f_page_count: i32,
     pub f_total_unit_count: i32,
     pub f_translated_unit_count: i32,
     pub f_proofread_unit_count: i32,
+
     pub f_stages: i32,
+
     pub f_creator_id: String,
+
     pub f_created_at: OffsetDateTime,
     pub f_updated_at: OffsetDateTime,
 }
 
 #[derive(Insertable)]
-#[diesel(table_name = schema::t_chapter)]
+#[diesel(table_name = t_chapter)]
 pub struct ChapterEntry<'a> {
     pub f_id: &'a str,
+
     pub f_comic_id: &'a str,
+
     pub f_is_pinned: bool,
     pub f_index: i32,
     pub f_subtitle: &'a str,
+
     pub f_stages: i32,
+
     pub f_creator_id: &'a str,
+
     pub f_created_at: OffsetDateTime,
     pub f_updated_at: OffsetDateTime,
 }
 
 #[derive(AsChangeset)]
-#[diesel(table_name = schema::t_chapter)]
+#[diesel(table_name = t_chapter)]
 pub struct ChapterAspect<'a> {
     pub f_is_pinned: Option<bool>,
     pub f_subtitle: Option<&'a str>,
     pub f_stages: Option<i32>,
+
     pub f_page_count: Option<i32>,
     pub f_total_unit_count: Option<i32>,
     pub f_translated_unit_count: Option<i32>,
     pub f_proofread_unit_count: Option<i32>,
+
     pub f_updated_at: OffsetDateTime,
 }
 

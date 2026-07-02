@@ -4,12 +4,12 @@ use diesel::prelude::*;
 use time::OffsetDateTime;
 
 use crate::model::assignment::{AssignmentForm, AssignmentInfo};
-use crate::part_impl::repo_rdb::schema;
+use crate::part_impl::repo_rdb::schema::t_assignment;
 use crate::result::RegularError;
 use crate::value::role::{RoleField, RoleMask};
 
 #[derive(Queryable, Selectable)]
-#[diesel(table_name = schema::t_assignment)]
+#[diesel(table_name = t_assignment)]
 pub struct AssignmentRow {
     pub f_id: String,
     pub f_chapter_id: String,
@@ -28,7 +28,7 @@ pub struct AssignmentRow {
 }
 
 #[derive(Insertable)]
-#[diesel(table_name = schema::t_assignment)]
+#[diesel(table_name = t_assignment)]
 pub struct AssignmentEntry<'a> {
     pub f_id: &'a str,
     pub f_chapter_id: &'a str,
@@ -47,7 +47,7 @@ pub struct AssignmentEntry<'a> {
 }
 
 #[derive(AsChangeset)]
-#[diesel(table_name = schema::t_assignment)]
+#[diesel(table_name = t_assignment)]
 pub struct AssignmentAspect {
     pub f_assigned_raw_provider_at: Option<Option<OffsetDateTime>>,
     pub f_assigned_translator_at: Option<Option<OffsetDateTime>>,
@@ -56,6 +56,7 @@ pub struct AssignmentAspect {
     pub f_assigned_redrawer_at: Option<Option<OffsetDateTime>>,
     pub f_assigned_reviewer_at: Option<Option<OffsetDateTime>>,
     pub f_assigned_publisher_at: Option<Option<OffsetDateTime>>,
+
     pub f_updated_at: OffsetDateTime,
 }
 

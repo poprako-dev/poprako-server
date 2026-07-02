@@ -4,27 +4,33 @@ use diesel::prelude::*;
 use time::OffsetDateTime;
 
 use crate::model::announcement::{AnnouncementForm, AnnouncementInfo};
-use crate::part_impl::repo_rdb::schema;
+use crate::part_impl::repo_rdb::schema::t_announcement;
 
 #[derive(Queryable, Selectable)]
-#[diesel(table_name = schema::t_announcement)]
+#[diesel(table_name = t_announcement)]
 pub struct AnnouncementRow {
     pub f_id: String,
+
     pub f_team_id: String,
     pub f_user_id: String,
+
     pub f_title: String,
     pub f_content: String,
+
     pub f_created_at: OffsetDateTime,
 }
 
 #[derive(Insertable)]
-#[diesel(table_name = schema::t_announcement)]
+#[diesel(table_name = t_announcement)]
 pub struct AnnouncementEntry<'a> {
     pub f_id: &'a str,
+
     pub f_team_id: &'a str,
     pub f_user_id: &'a str,
+
     pub f_title: &'a str,
     pub f_content: &'a str,
+
     pub f_created_at: OffsetDateTime,
 }
 

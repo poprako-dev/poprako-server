@@ -4,62 +4,79 @@ use diesel::prelude::*;
 use time::OffsetDateTime;
 
 use crate::model::unit::{UnitInfo, UnitPayload};
-use crate::part_impl::repo_rdb::schema;
+use crate::part_impl::repo_rdb::schema::t_unit;
 
 #[derive(Queryable, Selectable)]
-#[diesel(table_name = schema::t_unit)]
+#[diesel(table_name = t_unit)]
 pub struct UnitRow {
     pub f_id: String,
+
     pub f_page_id: String,
     pub f_index: i32,
+
     pub f_is_bubble: bool,
     pub f_is_proofread: bool,
+
     pub f_x_coord: f64,
     pub f_y_coord: f64,
+
     pub f_translated_text: Option<String>,
     pub f_translator_comment: Option<String>,
     pub f_last_translator_id: Option<String>,
+
     pub f_proofread_text: Option<String>,
     pub f_proofreader_comment: Option<String>,
     pub f_last_proofreader_id: Option<String>,
+
     pub f_created_at: OffsetDateTime,
     pub f_updated_at: OffsetDateTime,
 }
 
 #[derive(Insertable)]
-#[diesel(table_name = schema::t_unit)]
+#[diesel(table_name = t_unit)]
 pub struct UnitEntry<'a> {
     pub f_id: &'a str,
+
     pub f_page_id: &'a str,
     pub f_index: i32,
+
     pub f_is_bubble: bool,
     pub f_is_proofread: bool,
+
     pub f_x_coord: f64,
     pub f_y_coord: f64,
+
     pub f_translated_text: Option<&'a str>,
     pub f_translator_comment: Option<&'a str>,
     pub f_last_translator_id: Option<&'a str>,
+
     pub f_proofread_text: Option<&'a str>,
     pub f_proofreader_comment: Option<&'a str>,
     pub f_last_proofreader_id: Option<&'a str>,
+
     pub f_created_at: OffsetDateTime,
     pub f_updated_at: OffsetDateTime,
 }
 
 #[derive(AsChangeset)]
-#[diesel(table_name = schema::t_unit)]
+#[diesel(table_name = t_unit)]
 pub struct UnitAspect<'a> {
     pub f_index: Option<i32>,
+
     pub f_is_bubble: Option<bool>,
     pub f_is_proofread: Option<bool>,
+
     pub f_x_coord: Option<f64>,
     pub f_y_coord: Option<f64>,
+
     pub f_translated_text: Option<Option<&'a str>>,
     pub f_translator_comment: Option<Option<&'a str>>,
     pub f_last_translator_id: Option<Option<&'a str>>,
+
     pub f_proofread_text: Option<Option<&'a str>>,
     pub f_proofreader_comment: Option<Option<&'a str>>,
     pub f_last_proofreader_id: Option<Option<&'a str>>,
+
     pub f_updated_at: OffsetDateTime,
 }
 
