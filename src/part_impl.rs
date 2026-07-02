@@ -1,5 +1,6 @@
 pub mod auth_jwt;
 pub mod drive_rdb;
+pub mod image_r2;
 pub mod prom_rdb;
 pub mod repo_rdb;
 
