@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS "t_member_invitation" (
     "f_team_id" TEXT NOT NULL REFERENCES "t_team" ("f_id") ON DELETE CASCADE,
 
     "f_invitee_qid" TEXT NOT NULL,
-    "f_invitation_code" TEXT NOT NULL,
+    "f_code" TEXT NOT NULL,
 
     "f_pending" BOOLEAN NOT NULL DEFAULT TRUE,
 

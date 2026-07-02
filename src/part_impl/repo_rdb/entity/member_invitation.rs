@@ -18,7 +18,7 @@ pub struct MemberInvitationRow {
     pub f_team_id: String,
     pub f_invitee_qid: String,
 
-    pub f_invitation_code: String,
+    pub f_code: String,
 
     pub f_pending: bool,
     pub f_role_mask: i64,
@@ -37,7 +37,7 @@ pub struct MemberInvitationEntry<'a> {
     pub f_team_id: &'a str,
     pub f_invitee_qid: &'a str,
 
-    pub f_invitation_code: &'a str,
+    pub f_code: &'a str,
 
     pub f_pending: bool,
     pub f_role_mask: i64,
@@ -91,7 +91,7 @@ impl TryFrom<MemberInvitationRow> for MemberInvitationInfo {
             invitor: None,
             invitor_id: v.f_inviter_id,
             invitee_qid: v.f_invitee_qid,
-            code: v.f_invitation_code,
+            code: v.f_code,
             pending: v.f_pending,
             roles,
         })
@@ -105,7 +105,7 @@ impl<'a> From<&'a MemberInvitationForm> for MemberInvitationEntry<'a> {
             f_inviter_id: &form.invitor_id,
             f_team_id: &form.team_id,
             f_invitee_qid: &form.invitee_qid,
-            f_invitation_code: &form.code,
+            f_code: &form.code,
             f_pending: true,
             f_role_mask: i64::from(u32::from(form.roles)),
             f_created_at: OffsetDateTime::now_utc(),

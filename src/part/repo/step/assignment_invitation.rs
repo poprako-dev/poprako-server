@@ -87,10 +87,8 @@ impl AssignmentInvitationStep {
     }
 
     /// Constructs a step to fetch a pending invitation by code with a lock.
-    pub fn get_info_by_code_excluded<'a>(invitation_code: &'a str) -> GetInfoByCodeExcluded<'a> {
-        GetInfoByCodeExcluded {
-            code: invitation_code,
-        }
+    pub fn get_info_by_code_excluded<'a>(code: &'a str) -> GetInfoByCodeExcluded<'a> {
+        GetInfoByCodeExcluded { code }
     }
 
     /// Constructs a step to mark a pending invitation as used.

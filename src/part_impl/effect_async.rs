@@ -248,7 +248,7 @@ mod tests {
     // develop_dispatches_user_signup(AsyncEffectDevelop::develop)(positive): signup events should create one system mail for the invitor.
     // close_is_idempotent(AsyncEffectDevelop::close)(negative): repeated close calls should return without blocking.
 
-    use super::*;
+    use crate::part_impl::effect_async::*;
 
     use crate::model::team::TeamInfo;
     use crate::part::effect::event::user::UserSignedUpPayload;

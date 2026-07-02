@@ -4,7 +4,7 @@
 use crate::complex::comic::ComicComplex;
 use crate::complex::util::{check_user_is_team_admin, check_user_is_team_member};
 use crate::model::comic::ComicListSpec;
-use crate::part::prom::PromTransactional;
+use crate::part::prom::Prom;
 use crate::part::repo::chapter::ChapterRepoTransactional;
 use crate::part::repo::comic::ComicRepoTransactional;
 use crate::part::repo::page::PageRepoTransactional;
@@ -40,7 +40,7 @@ impl WorksetComplex {
             + PageRepoTransactional<C>
             + Send
             + Sync,
-        P: PromTransactional<C> + Send + Sync,
+        P: Prom<C> + Send + Sync,
     {
         let workset_info = repo
             .advance(context, &WorksetStep::get_info_excluded(id))

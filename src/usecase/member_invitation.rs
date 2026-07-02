@@ -1,5 +1,9 @@
 //! Member invitation use cases.
 
+use poprako_transactional::advance::Advance;
+use poprako_transactional::drive::Drive;
+use poprako_util::i18n::trl;
+
 use crate::complex::member_invitation::{MemberInvitationComplex, MemberInvitationPermComplex};
 use crate::data::member_invitation::{
     CreateMemberInvitationData, CreateMemberInvitationVal, ListMemberInvitationInfosData,
@@ -21,9 +25,6 @@ use crate::part::repo::step::user::UserStep;
 use crate::part::repo::user::{UserRepo, UserRepoTransactional};
 use crate::result::{ExpectedVariant, RegularError, RegularResult, accept};
 use crate::util::DeriveTransactional;
-use poprako_transactional::advance::Advance;
-use poprako_transactional::drive::Drive;
-use poprako_util::i18n::trl;
 
 #[cfg(test)]
 mod tests;
@@ -59,7 +60,7 @@ where
     )
     .await?;
 
-    let (member_invitation_id, member_invitation_code) = drive
+    let (member_invitation_id, code) = drive
         .with_context(async move |context| {
             let repo = repo.derive_transactional().await;
 
@@ -87,14 +88,14 @@ where
             }
 
             let member_invitation_id = MemberInvitationComplex::gen_id();
-            let member_invitation_code = MemberInvitationComplex::gen_code();
+            let code = MemberInvitationComplex::gen_code();
 
             let member_invitation_form = MemberInvitationForm {
                 id: member_invitation_id,
                 team_id: data.team_id,
                 invitor_id: token.user_id,
                 invitee_qid: data.invitee_qid,
-                code: member_invitation_code,
+                code,
                 roles,
             };
 
@@ -112,7 +113,7 @@ where
 
     accept(CreateMemberInvitationVal {
         id: member_invitation_id,
-        code: member_invitation_code,
+        code,
     })
 }
 

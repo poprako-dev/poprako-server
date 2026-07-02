@@ -9,7 +9,7 @@ use crate::complex::image::ImageComplex;
 use crate::complex::util::check_user_is_team_admin;
 use crate::complex::workset::WorksetComplex;
 use crate::part::prom::task::{IMAGE_TOPIC, ImageTask};
-use crate::part::prom::{Payload, PromStep, PromTransactional};
+use crate::part::prom::{Payload, Prom, PromStep};
 use crate::part::repo::chapter::ChapterRepoTransactional;
 use crate::part::repo::comic::ComicRepoTransactional;
 use crate::part::repo::page::PageRepoTransactional;
@@ -53,7 +53,7 @@ impl TeamComplex {
             + PageRepoTransactional<C>
             + Send
             + Sync,
-        P: PromTransactional<C> + Send + Sync,
+        P: Prom<C> + Send + Sync,
     {
         let team_info = repo
             .advance(context, &TeamStep::get_info_excluded(id))

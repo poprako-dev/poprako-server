@@ -20,7 +20,7 @@ use crate::complex::image::ImageComplex;
 use crate::complex::util::{check_user_is_team_admin, check_user_is_team_member};
 use crate::model::chapter::{ChapterInfo, ChapterInfoUpdate, ChapterStageUpdate};
 use crate::part::prom::task::{IMAGE_TOPIC, ImageTask};
-use crate::part::prom::{Payload, PromStep, PromTransactional};
+use crate::part::prom::{Payload, Prom, PromStep};
 use crate::part::repo::chapter::ChapterRepoTransactional;
 use crate::part::repo::comic::ComicRepoTransactional;
 use crate::part::repo::page::PageRepoTransactional;
@@ -82,7 +82,7 @@ impl ChapterComplex {
     where
         C: Send,
         R: PageRepoTransactional<C> + Send + Sync,
-        P: PromTransactional<C> + Send + Sync,
+        P: Prom<C> + Send + Sync,
     {
         prom_image_deletes(repo, prom, context, chapter_id).await
     }
@@ -101,7 +101,7 @@ impl ChapterComplex {
             + PageRepoTransactional<C>
             + Send
             + Sync,
-        P: PromTransactional<C> + Send + Sync,
+        P: Prom<C> + Send + Sync,
     {
         let chapter_info = repo
             .advance(context, &ChapterStep::get_info_by_id_excluded(id, &[]))
@@ -155,7 +155,7 @@ async fn prom_image_deletes<C, R, P>(
 where
     C: Send,
     R: PageRepoTransactional<C> + Send + Sync,
-    P: PromTransactional<C> + Send + Sync,
+    P: Prom<C> + Send + Sync,
 {
     let page_infos = repo
         .advance(context, &PageStep::list_all_infos_by_chapter_id(chapter_id))

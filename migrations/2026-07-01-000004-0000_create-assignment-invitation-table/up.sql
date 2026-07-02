@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS "t_assignment_invitation" (
     "f_inviter_id"                 TEXT        NOT NULL REFERENCES "t_user" ("f_id") ON DELETE CASCADE,
 
     "f_invitee_qid"                TEXT        NOT NULL,
-    "f_invitation_code"            TEXT        NOT NULL,
+    "f_code"                       TEXT        NOT NULL,
 
     "f_pending"                    BOOLEAN     NOT NULL DEFAULT TRUE,
     "f_role_mask"                  BIGINT      NOT NULL,
@@ -21,7 +21,7 @@ CREATE INDEX IF NOT EXISTS "idx_assignment_invitation_invitee_qid_pending"
     ON "t_assignment_invitation" ("f_invitee_qid", "f_pending", "f_created_at" DESC);
 
 CREATE UNIQUE INDEX IF NOT EXISTS "uidx_assignment_invitation_pending_code"
-    ON "t_assignment_invitation" ("f_invitation_code")
+    ON "t_assignment_invitation" ("f_code")
     WHERE "f_pending" = TRUE;
 
 CREATE UNIQUE INDEX IF NOT EXISTS "uidx_assignment_invitation_pending_chapter_invitee"

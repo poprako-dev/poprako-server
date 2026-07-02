@@ -20,7 +20,6 @@ use crate::part::repo::step::chapter::{
     ListPinnedInfosByComicIds, SetPageCounters, UnpinOthers, UpdateInfo, UpdateStage,
 };
 use crate::part::shared::execute::Execute;
-use crate::part_impl::repo_rdb::dsl;
 use crate::part_impl::repo_rdb::entity::chapter::{ChapterAspect, ChapterEntry, ChapterRow};
 use crate::part_impl::repo_rdb::incl;
 use crate::part_impl::repo_rdb::{RdbRepo, RdbRepoTransactional};
@@ -30,8 +29,7 @@ use crate::part_impl::shared_rdb::result::{diesel, expected};
 use crate::result::{RegularError, RegularResult};
 use crate::value::chapter::ChapterInclOpt;
 
-// NOTE: use dsl::* is the Diesel impl layer exception to rust-use-style
-use dsl::t_chapter::*;
+use crate::part_impl::repo_rdb::schema::t_chapter::dsl::*;
 
 impl ChapterRepo<RdbContext> for RdbRepo {}
 

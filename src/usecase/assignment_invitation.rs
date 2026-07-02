@@ -99,7 +99,7 @@ where
     AssignmentPermComplex::can_user_review(&mut repo.as_proxy(), &token.user_id, &data.chapter_id)
         .await?;
 
-    let (assignment_invitation_id, assignment_invitation_code) = drive
+    let (assignment_invitation_id, code) = drive
         .with_context(async move |context| {
             let repo = repo.derive_transactional().await;
 
@@ -124,14 +124,14 @@ where
             }
 
             let assignment_invitation_id = gen_assignment_invitation_id();
-            let assignment_invitation_code = gen_assignment_invitation_code();
+            let code = gen_code();
 
             let assignment_invitation_form = AssignmentInvitationForm {
                 id: assignment_invitation_id,
                 chapter_id: data.chapter_id,
                 inviter_id: token.user_id,
                 invitee_qid: data.invitee_qid,
-                code: assignment_invitation_code,
+                code,
                 roles: data.roles,
             };
 
@@ -152,7 +152,7 @@ where
 
     accept(CreateAssignmentInvitationVal {
         id: assignment_invitation_id,
-        code: assignment_invitation_code,
+        code,
     })
 }
 
@@ -340,7 +340,7 @@ fn gen_assignment_invitation_id() -> String {
     next_snowflake_id()
 }
 
-fn gen_assignment_invitation_code() -> String {
+fn gen_code() -> String {
     let id = next_snowflake_id();
     let len = id.len();
 
