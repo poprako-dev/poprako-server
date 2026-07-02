@@ -28,7 +28,7 @@ diesel_migrations = "2.3.0"
 dotenvy = "0.15.7"
 fluent-templates = "0.14.0"
 futures-util = "0.3.32"
-jsonwebtoken = "10.4.0"
+jsonwebtoken = { version = "10.4.0", features = ["rust_crypto"] }
 base62 = "2.2.4"
 k-snowflake = "2.1.1"
 poprako-macro = { path = "poprako-macro" }
