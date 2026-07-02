@@ -9,8 +9,8 @@ use poprako_transactional::util::AsyncFnMark;
 
 use crate::result::RegularError;
 
-use super::shared_rdb::result::diesel;
-use super::shared_rdb::{RdbContext, RdbShared};
+use crate::part_impl::shared_rdb::result::diesel;
+use crate::part_impl::shared_rdb::{RdbContext, RdbShared};
 
 pub struct RdbDrive {
     shared: RdbShared,

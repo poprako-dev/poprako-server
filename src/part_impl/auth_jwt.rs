@@ -97,7 +97,7 @@ mod tests {
     // sign_token(JwtAuth::sign_token)(positive): signed JWT should contain the requested user id.
     // new_rejects_non_positive_expiration(JwtAuth::new)(negative): non-positive lifetimes should fail during construction.
 
-    use super::*;
+    use crate::part_impl::auth_jwt::*;
 
     use jsonwebtoken::{DecodingKey, Validation, decode};
     use serde::Deserialize;

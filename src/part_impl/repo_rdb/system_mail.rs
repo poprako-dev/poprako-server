@@ -8,7 +8,6 @@ use crate::model::system_mail::{SystemMailForm, SystemMailInfo};
 use crate::part::repo::step::system_mail::{ListInfosByReceiverId, MarkRead, Send, SendBatch};
 use crate::part::repo::system_mail::{SystemMailRepo, SystemMailRepoTransactional};
 use crate::part::shared::execute::Execute;
-use crate::part_impl::repo_rdb::dsl;
 use crate::part_impl::repo_rdb::entity::system_mail::{SystemMailEntry, SystemMailRow};
 use crate::part_impl::repo_rdb::{RdbRepo, RdbRepoTransactional};
 use crate::part_impl::shared_rdb::RdbConn;
@@ -16,8 +15,7 @@ use crate::part_impl::shared_rdb::RdbContext;
 use crate::part_impl::shared_rdb::result::{diesel, expected};
 use crate::result::{ExpectedVariant, RegularError, RegularResult};
 
-// NOTE: use dsl::* is the Diesel impl layer exception to rust-use-style
-use dsl::t_system_mail::*;
+use crate::part_impl::repo_rdb::schema::t_system_mail::dsl::*;
 
 impl SystemMailRepo<RdbContext> for RdbRepo {}
 

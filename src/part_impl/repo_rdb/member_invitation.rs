@@ -20,9 +20,8 @@ use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_rdb::entity::member_invitation::{
     MemberInvitationAspect, MemberInvitationEntry, MemberInvitationRow,
 };
-use crate::part_impl::repo_rdb::incl;
 use crate::part_impl::repo_rdb::schema::t_member_invitation::dsl::*;
-use crate::part_impl::repo_rdb::{RdbRepo, RdbRepoTransactional};
+use crate::part_impl::repo_rdb::{RdbRepo, RdbRepoTransactional, incl};
 use crate::part_impl::shared_rdb::result::{diesel, expected};
 use crate::part_impl::shared_rdb::{RdbConn, RdbContext};
 use crate::result::{RegularError, RegularResult};
@@ -115,7 +114,7 @@ async fn get_info_by_code_excluded(
     code: &str,
 ) -> RegularResult<MemberInvitationInfo> {
     let row: MemberInvitationRow = t_member_invitation
-        .filter(f_invitation_code.eq(code))
+        .filter(f_code.eq(code))
         .filter(f_pending.eq(true))
         .select(MemberInvitationRow::as_select())
         .for_update()

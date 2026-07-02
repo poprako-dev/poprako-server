@@ -5,7 +5,7 @@ use time::OffsetDateTime;
 
 use poprako_transactional::advance::Advance;
 
-use crate::part::prom::{Append, Payload, PromTransactional};
+use crate::part::prom::{Append, Payload, Prom};
 use crate::part_impl::repo_mock::{Mock, MockContext, MockTransactional};
 use crate::result::RegularError;
 
@@ -36,11 +36,11 @@ impl MockPromRecord {
 }
 
 /// Empty mock implementation of [PromTransactional] — actual advancement is handled by [Advance].
-impl PromTransactional<MockContext> for MockTransactional {}
+impl Prom<MockContext> for MockTransactional {}
 
 /// Empty mock implementation of [PromTransactional] on [`Mock`] so tests can pass
 /// `&mock` directly as both repo and prom argument.
-impl PromTransactional<MockContext> for Mock {}
+impl Prom<MockContext> for Mock {}
 
 /// Appends a [MockPromRecord] to the mock context state when a prom append is advanced.
 #[async_trait]

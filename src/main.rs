@@ -7,6 +7,12 @@
 // #![deny(clippy::expect_used)]
 // #![deny(clippy::panic)]
 
+#[tokio::main]
+async fn main() {
+    // Load all env vars for services.
+    dotenvy::dotenv().expect("failed to load env vars");
+}
+
 // LEGACY DISABLED: Do not use. This file is intentionally commented out.
 // use std::net::{SocketAddr, ToSocketAddrs};
 //
@@ -80,4 +86,3 @@
 //         .await
 //         .expect("Failed to start HTTP server");
 // }
-fn main() {}

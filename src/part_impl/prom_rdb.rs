@@ -17,7 +17,7 @@ use time::OffsetDateTime;
 
 use poprako_transactional::advance::Advance;
 
-use crate::part::prom::{Append, PromTransactional};
+use crate::part::prom::{Append, Prom};
 use crate::part_impl::repo_rdb::schema::{self, t_local_message};
 use crate::part_impl::shared_rdb::RdbContext;
 use crate::part_impl::shared_rdb::result::diesel;
@@ -29,11 +29,8 @@ use crate::result::{RegularError, RegularResult};
 #[diesel(sql_type = Text)]
 pub enum LocalMessageStatus {
     Pending,
-
     Processing,
-
     Completed,
-
     Dead,
 }
 
@@ -41,11 +38,8 @@ impl LocalMessageStatus {
     pub fn as_str(self) -> &'static str {
         match self {
             Self::Pending => "local_message_status:pending",
-
             Self::Processing => "local_message_status:processing",
-
             Self::Completed => "local_message_status:completed",
-
             Self::Dead => "local_message_status:dead",
         }
     }
@@ -54,7 +48,6 @@ impl LocalMessageStatus {
 impl ToSql<Text, Pg> for LocalMessageStatus {
     fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Pg>) -> diesel::serialize::Result {
         out.write_all(self.as_str().as_bytes())?;
-
         Ok(diesel::serialize::IsNull::No)
     }
 }
@@ -95,12 +88,12 @@ impl<'a> LocalMessageEntry<'a> {
 
 // ── Handle type ────────────────────────────────────────────────────────────
 
-pub struct RdbPromTransactional;
+pub struct RdbProm;
 
 // ── PromTransactional impl ──────────────────────────────────────────────────
 
 #[async_trait]
-impl<'a> Advance<Append<'a>, RdbContext> for RdbPromTransactional {
+impl<'a> Advance<Append<'a>, RdbContext> for RdbProm {
     type Error = RegularError;
 
     async fn advance(&self, context: &mut RdbContext, step: &Append<'a>) -> RegularResult<()> {
@@ -117,4 +110,4 @@ impl<'a> Advance<Append<'a>, RdbContext> for RdbPromTransactional {
     }
 }
 
-impl PromTransactional<RdbContext> for RdbPromTransactional {}
+impl Prom<RdbContext> for RdbProm {}

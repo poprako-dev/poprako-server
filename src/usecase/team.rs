@@ -16,7 +16,7 @@ use crate::model::team::TeamForm;
 use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
 use crate::part::prom::task::{IMAGE_TOPIC, ImageKind, ImageTask};
-use crate::part::prom::{Payload, PromStep, PromTransactional};
+use crate::part::prom::{Payload, Prom, PromStep};
 use crate::part::repo::chapter::{ChapterRepo, ChapterRepoTransactional};
 use crate::part::repo::comic::{ComicRepo, ComicRepoTransactional};
 use crate::part::repo::map_drive_err;
@@ -205,7 +205,7 @@ where
     R: TeamRepo<C> + MemberRepo<C> + Send + Sync,
     <R as DeriveTransactional>::Transactional:
         TeamRepoTransactional<C> + MemberRepoTransactional<C> + Send + Sync,
-    P: PromTransactional<C> + Send + Sync,
+    P: Prom<C> + Send + Sync,
     I: ImagePool,
 {
     use crate::part::shared::proxy::AsProxyNonTransactional as _;
@@ -352,7 +352,7 @@ where
         + PageRepoTransactional<C>
         + Send
         + Sync,
-    P: PromTransactional<C> + Send + Sync,
+    P: Prom<C> + Send + Sync,
 {
     use crate::part::shared::proxy::AsProxyNonTransactional as _;
 

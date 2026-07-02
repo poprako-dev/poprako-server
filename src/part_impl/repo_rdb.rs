@@ -4,7 +4,7 @@ use async_trait::async_trait;
 
 use crate::util::DeriveTransactional;
 
-use super::shared_rdb::RdbShared;
+use crate::part_impl::shared_rdb::RdbShared;
 
 /// Allocates a connection and calls a free query function.
 ///
@@ -23,7 +23,7 @@ pub mod assignment_invitation;
 pub mod chapter;
 pub mod comic;
 pub mod comment;
-pub mod dsl;
+
 pub mod entity;
 pub mod incl;
 pub mod member;

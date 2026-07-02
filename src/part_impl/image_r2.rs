@@ -153,7 +153,7 @@ mod tests {
     // detect_content_type_rejects_unknown_extension(detect_content_type)(negative): unsupported extensions should be rejected.
     // get_signed_uses_custom_domain(ImagePool::get_signed)(positive): download URLs should be built from the configured public domain.
 
-    use super::*;
+    use crate::part_impl::image_r2::*;
 
     fn image_pool() -> R2ImagePool {
         let credentials = Credentials::new("access-key", "secret-key", None, None, "test");

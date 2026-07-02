@@ -17,7 +17,7 @@ use crate::model::page::PageForm;
 use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
 use crate::part::prom::task::{IMAGE_TOPIC, ImageKind, ImageTask};
-use crate::part::prom::{Payload, PromStep, PromTransactional};
+use crate::part::prom::{Payload, Prom, PromStep};
 use crate::part::repo::assignment::{AssignmentRepo, AssignmentRepoTransactional};
 use crate::part::repo::chapter::{ChapterRepo, ChapterRepoTransactional};
 use crate::part::repo::comic::{ComicRepo, ComicRepoTransactional};
@@ -54,7 +54,7 @@ where
         + PageRepoTransactional<C>
         + Send
         + Sync,
-    P: PromTransactional<C> + Send + Sync,
+    P: Prom<C> + Send + Sync,
     I: ImagePool,
 {
     validate_page_count(data.page_count)?;
@@ -190,7 +190,7 @@ where
     R: PageRepo<C> + AssignmentRepo<C> + Send + Sync,
     <R as DeriveTransactional>::Transactional:
         PageRepoTransactional<C> + AssignmentRepoTransactional<C> + Send + Sync,
-    P: PromTransactional<C> + Send + Sync,
+    P: Prom<C> + Send + Sync,
     I: ImagePool,
 {
     let page_id = id.clone();
@@ -368,7 +368,7 @@ where
         + AssignmentRepoTransactional<C>
         + Send
         + Sync,
-    P: PromTransactional<C> + Send + Sync,
+    P: Prom<C> + Send + Sync,
 {
     use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
@@ -446,7 +446,7 @@ async fn append_check_uploaded<C, P>(
 ) -> RegularResult<()>
 where
     C: Send,
-    P: PromTransactional<C> + Send + Sync,
+    P: Prom<C> + Send + Sync,
 {
     let check_id = ImageComplex::gen_check_id();
 
@@ -475,7 +475,7 @@ async fn append_delete<C, P>(
 ) -> RegularResult<()>
 where
     C: Send,
-    P: PromTransactional<C> + Send + Sync,
+    P: Prom<C> + Send + Sync,
 {
     let delete_id = ImageComplex::gen_delete_id();
 

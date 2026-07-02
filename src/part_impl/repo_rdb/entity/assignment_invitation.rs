@@ -18,7 +18,7 @@ pub struct AssignmentInvitationRow {
     pub f_inviter_id: String,
     pub f_invitee_qid: String,
 
-    pub f_invitation_code: String,
+    pub f_code: String,
 
     pub f_pending: bool,
     pub f_role_mask: i64,
@@ -37,7 +37,7 @@ pub struct AssignmentInvitationEntry<'a> {
     pub f_inviter_id: &'a str,
     pub f_invitee_qid: &'a str,
 
-    pub f_invitation_code: &'a str,
+    pub f_code: &'a str,
 
     pub f_pending: bool,
     pub f_role_mask: i64,
@@ -78,7 +78,7 @@ impl TryFrom<AssignmentInvitationRow> for AssignmentInvitationInfo {
             chapter_id: row.f_chapter_id,
             inviter_id: row.f_inviter_id,
             invitee_qid: row.f_invitee_qid,
-            code: row.f_invitation_code,
+            code: row.f_code,
             pending: row.f_pending,
             roles,
             created_at: row.f_created_at,
@@ -96,7 +96,7 @@ impl<'a> From<&'a AssignmentInvitationForm> for AssignmentInvitationEntry<'a> {
             f_chapter_id: &form.chapter_id,
             f_inviter_id: &form.inviter_id,
             f_invitee_qid: &form.invitee_qid,
-            f_invitation_code: &form.code,
+            f_code: &form.code,
             f_pending: true,
             f_role_mask: i64::from(u32::from(form.roles)),
             f_created_at: now,

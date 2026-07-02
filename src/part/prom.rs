@@ -82,4 +82,4 @@ impl PromStep {
 ///
 /// This is the trait that the transactional handle must implement to
 /// support enqueuing deferred actions within a transaction.
-pub trait PromTransactional<C>: for<'a> Advance<Append<'a>, C, Error = RegularError> {}
+pub trait Prom<C>: for<'a> Advance<Append<'a>, C, Error = RegularError> {}

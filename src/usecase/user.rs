@@ -17,7 +17,7 @@ use crate::part::effect::event::user::UserActivePayload;
 use crate::part::effect::{EffectDevelop, EffectEmit as _};
 use crate::part::image::ImagePool;
 use crate::part::prom::task::{IMAGE_TOPIC, ImageKind, ImageTask};
-use crate::part::prom::{Payload, PromStep, PromTransactional};
+use crate::part::prom::{Payload, Prom, PromStep};
 use crate::part::repo::map_drive_err;
 use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
 use crate::part::repo::step::member::MemberStep;
@@ -164,7 +164,7 @@ where
     C: Send,
     R: UserRepo<C> + Send + Sync,
     <R as DeriveTransactional>::Transactional: UserRepoTransactional<C> + Send,
-    P: PromTransactional<C> + Send + Sync,
+    P: Prom<C> + Send + Sync,
     I: ImagePool,
 {
     let (object_key, avatar_version) = drive
@@ -353,7 +353,7 @@ where
     R: UserRepo<C> + MemberRepo<C> + Send + Sync,
     <R as DeriveTransactional>::Transactional:
         UserRepoTransactional<C> + MemberRepoTransactional<C> + Send + Sync,
-    P: PromTransactional<C> + Send + Sync,
+    P: Prom<C> + Send + Sync,
 {
     if token.user_id != id {
         // TODO: perm check.

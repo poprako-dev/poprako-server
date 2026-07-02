@@ -12,7 +12,7 @@ use crate::data::workset::{
 };
 use crate::model::user::UserToken;
 use crate::model::workset::{WorksetForm, WorksetInfoUpdate};
-use crate::part::prom::PromTransactional;
+use crate::part::prom::Prom;
 use crate::part::repo::chapter::{ChapterRepo, ChapterRepoTransactional};
 use crate::part::repo::comic::{ComicRepo, ComicRepoTransactional};
 use crate::part::repo::map_drive_err;
@@ -200,7 +200,7 @@ where
         + PageRepoTransactional<C>
         + Send
         + Sync,
-    P: PromTransactional<C> + Send + Sync,
+    P: Prom<C> + Send + Sync,
 {
     use crate::part::shared::proxy::AsProxyNonTransactional as _;
 

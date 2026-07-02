@@ -15,7 +15,6 @@ use crate::part::repo::step::assignment::{
     Create, Delete, GetInfoByChapterIdAndUserId, GetInfoById, ListInfos, PutRoles,
 };
 use crate::part::shared::execute::Execute;
-use crate::part_impl::repo_rdb::dsl;
 use crate::part_impl::repo_rdb::entity::assignment::{
     AssignmentAspect, AssignmentEntry, AssignmentRoleTimestamps, AssignmentRow,
 };
@@ -28,8 +27,7 @@ use crate::result::{RegularError, RegularResult};
 use crate::value::assignment::AssignmentInclOpt;
 use crate::value::role::RoleField;
 
-// NOTE: use dsl::* is the Diesel impl layer exception to rust-use-style
-use dsl::t_assignment::*;
+use crate::part_impl::repo_rdb::schema::t_assignment::dsl::*;
 
 // FIXME: simplify: For T
 impl AssignmentRepo<RdbContext> for RdbRepo {}

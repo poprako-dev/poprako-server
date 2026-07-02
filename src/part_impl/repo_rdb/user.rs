@@ -15,7 +15,6 @@ use crate::part::repo::step::user::{
 };
 use crate::part::repo::user::{UserRepo, UserRepoTransactional};
 use crate::part::shared::execute::Execute;
-use crate::part_impl::repo_rdb::dsl;
 use crate::part_impl::repo_rdb::entity::user::{UserAspect, UserCredentialRow, UserEntry, UserRow};
 use crate::part_impl::repo_rdb::{RdbRepo, RdbRepoTransactional};
 use crate::part_impl::shared_rdb::RdbConn;
@@ -23,8 +22,7 @@ use crate::part_impl::shared_rdb::RdbContext;
 use crate::part_impl::shared_rdb::result::{diesel, expected};
 use crate::result::{RegularError, RegularResult};
 
-// NOTE: use dsl::* is the Diesel impl layer exception to rust-use-style
-use dsl::t_user::*;
+use crate::part_impl::repo_rdb::schema::t_user::dsl::*;
 
 impl UserRepo<RdbContext> for RdbRepo {}
 
