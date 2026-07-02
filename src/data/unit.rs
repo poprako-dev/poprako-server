@@ -18,11 +18,9 @@ pub struct UnitInfoVal {
     pub y_coord: f64,
 
     pub translated_text: Option<String>,
-    pub translator_comment: Option<String>,
     pub last_translator_id: Option<String>,
 
     pub proofread_text: Option<String>,
-    pub proofreader_comment: Option<String>,
     pub last_proofreader_id: Option<String>,
 
     pub created_at: i64,
@@ -40,10 +38,8 @@ impl From<UnitInfo> for UnitInfoVal {
             x_coord: model.x_coord,
             y_coord: model.y_coord,
             translated_text: model.translated_text,
-            translator_comment: model.translator_comment,
             last_translator_id: model.last_translator_id,
             proofread_text: model.proofread_text,
-            proofreader_comment: model.proofreader_comment,
             last_proofreader_id: model.last_proofreader_id,
             created_at: model.created_at.to_unix_milli(),
             updated_at: model.updated_at.to_unix_milli(),
@@ -101,11 +97,9 @@ pub struct UnitOperData {
     pub y_coord: Option<f64>,
 
     pub translated_text: Option<String>,
-    pub translator_comment: Option<String>,
     pub last_translator_id: Option<String>,
 
     pub proofread_text: Option<String>,
-    pub proofreader_comment: Option<String>,
     pub last_proofreader_id: Option<String>,
 }
 
@@ -153,10 +147,8 @@ impl UnitOperData {
             x_coord: self.x_coord?,
             y_coord: self.y_coord?,
             translated_text: self.translated_text.clone(),
-            translator_comment: self.translator_comment.clone(),
             last_translator_id: self.last_translator_id.clone(),
             proofread_text: self.proofread_text.clone(),
-            proofreader_comment: self.proofreader_comment.clone(),
             last_proofreader_id: self.last_proofreader_id.clone(),
         })
     }

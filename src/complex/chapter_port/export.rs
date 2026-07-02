@@ -52,12 +52,6 @@ impl ChapterExportComplex {
                     output.push('\n');
                 }
 
-                if let Some(comment) = format_label_plus_comment(unit_info) {
-                    output.push_str("\n#[翻校注释]：");
-                    output.push_str(&comment);
-                    output.push('\n');
-                }
-
                 output.push('\n');
             }
         }
@@ -88,25 +82,4 @@ fn select_main_text(unit_info: &UnitInfo) -> Option<&str> {
                 .as_deref()
                 .filter(|text| !text.is_empty())
         })
-}
-
-fn format_label_plus_comment(unit_info: &UnitInfo) -> Option<String> {
-    let mut parts = Vec::new();
-
-    if let Some(translator_comment) = non_empty_ref(&unit_info.translator_comment) {
-        parts.push(format!("【翻译】{}", translator_comment));
-    }
-
-    if let Some(proofreader_comment) = non_empty_ref(&unit_info.proofreader_comment) {
-        parts.push(format!("【校对】{}", proofreader_comment));
-    }
-
-    match parts.is_empty() {
-        true => None,
-        false => Some(parts.join("\n")),
-    }
-}
-
-fn non_empty_ref(value: &Option<String>) -> Option<&str> {
-    value.as_deref().filter(|text| !text.is_empty())
 }

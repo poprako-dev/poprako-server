@@ -23,7 +23,7 @@ mgr-list:
     diesel migration list
 
 mgr-schema:
-    diesel print-schema > src/infra/repo/schema.rs
+    diesel print-schema > src/part_impl/repo_rdb/schema.rs
 
 connect:
     psql ${DATABASE_URL}

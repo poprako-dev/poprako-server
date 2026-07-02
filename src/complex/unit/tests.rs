@@ -15,10 +15,8 @@ fn payload(text: &str, proofread: bool) -> UnitPayload {
         x_coord: 1.0,
         y_coord: 2.0,
         translated_text: Some(text.into()),
-        translator_comment: None,
         last_translator_id: None,
         proofread_text: None,
-        proofreader_comment: None,
         last_proofreader_id: None,
     }
 }

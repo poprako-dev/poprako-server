@@ -14,10 +14,10 @@ use crate::part::repo::step::member::{
     ListInfosByUserIdExcluded, TouchLastActive, UpdateRole, UpdateUserNickname,
 };
 use crate::part::shared::execute::Execute;
+use crate::part_impl::repo_rdb::dsl;
 use crate::part_impl::repo_rdb::entity::member::{MemberAspect, MemberEntry, MemberRow};
 use crate::part_impl::repo_rdb::incl;
 use crate::part_impl::repo_rdb::{RdbRepo, RdbRepoTransactional};
-use crate::part_impl::repo_rdb::dsl;
 use crate::part_impl::shared_rdb::RdbConn;
 use crate::part_impl::shared_rdb::RdbContext;
 use crate::part_impl::shared_rdb::result::{diesel, expected};
@@ -26,7 +26,6 @@ use crate::value::member::MemberInclOpt;
 use crate::value::role::{RoleField, RoleMask};
 
 // NOTE: use dsl::* is the Diesel impl layer exception to rust-use-style
-use dsl::*;
 use dsl::t_member::*;
 
 impl MemberRepo<RdbContext> for RdbRepo {}

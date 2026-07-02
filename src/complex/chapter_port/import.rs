@@ -25,16 +25,10 @@ impl ChapterImportComplex {
         let mut current_page: Option<Vec<UnitTranslationImport>> = None;
         let mut current_unit: Option<LabelPlusUnit> = None;
         let mut main_text_lines = Vec::new();
-        let mut comment_lines = Vec::new();
 
         for line in lines {
             if is_label_plus_page_header(line) {
-                flush_label_plus_unit(
-                    &mut current_page,
-                    &mut current_unit,
-                    &mut main_text_lines,
-                    &mut comment_lines,
-                )?;
+                flush_label_plus_unit(&mut current_page, &mut current_unit, &mut main_text_lines)?;
 
                 if let Some(units) = current_page.take() {
                     pages.push(PageTranslationImport { units });
@@ -50,37 +44,19 @@ impl ChapterImportComplex {
                     return Err(args_error("error-invalid-chapter-import-content"));
                 };
 
-                flush_label_plus_unit(
-                    &mut current_page,
-                    &mut current_unit,
-                    &mut main_text_lines,
-                    &mut comment_lines,
-                )?;
+                flush_label_plus_unit(&mut current_page, &mut current_unit, &mut main_text_lines)?;
 
                 current_unit = Some(unit);
 
                 continue;
             }
 
-            if let Some(comment) = line.strip_prefix("#[翻校注释]：") {
-                comment_lines.push(comment.to_string());
-                continue;
-            }
-
             if current_unit.is_some() && !line.is_empty() {
-                match comment_lines.is_empty() {
-                    true => main_text_lines.push(line.to_string()),
-                    false => comment_lines.push(line.to_string()),
-                }
+                main_text_lines.push(line.to_string());
             }
         }
 
-        flush_label_plus_unit(
-            &mut current_page,
-            &mut current_unit,
-            &mut main_text_lines,
-            &mut comment_lines,
-        )?;
+        flush_label_plus_unit(&mut current_page, &mut current_unit, &mut main_text_lines)?;
 
         if let Some(units) = current_page.take() {
             pages.push(PageTranslationImport { units });
@@ -138,14 +114,6 @@ impl ChapterImportComplex {
         unit_payload.is_bubble = parsed_unit.is_bubble;
         unit_payload.x_coord = parsed_unit.x_coord;
         unit_payload.y_coord = parsed_unit.y_coord;
-
-        if let Some(translator_comment) = &parsed_unit.translator_comment {
-            unit_payload.translator_comment = Some(translator_comment.clone());
-        }
-
-        if let Some(proofreader_comment) = &parsed_unit.proofreader_comment {
-            unit_payload.proofreader_comment = Some(proofreader_comment.clone());
-        }
 
         match label_plus {
             true => apply_label_plus_text(&mut unit_payload, parsed_unit, user_id, proofreader),
@@ -259,7 +227,6 @@ fn flush_label_plus_unit(
     current_page: &mut Option<Vec<UnitTranslationImport>>,
     current_unit: &mut Option<LabelPlusUnit>,
     main_text_lines: &mut Vec<String>,
-    comment_lines: &mut Vec<String>,
 ) -> RegularResult<()> {
     let Some(label_plus_unit) = current_unit.take() else {
         return accept(());
@@ -271,8 +238,6 @@ fn flush_label_plus_unit(
 
     let main_text = normalize_string(main_text_lines.join("\n"));
 
-    let (translator_comment, proofreader_comment) = split_comment(&comment_lines.join("\n"));
-
     page_units.push(UnitTranslationImport {
         id: None,
         index: label_plus_unit.index,
@@ -283,13 +248,9 @@ fn flush_label_plus_unit(
         translated_text: None,
         proofread_text: None,
         is_proofread: false,
-        translator_comment,
-        proofreader_comment,
     });
 
     main_text_lines.clear();
-
-    comment_lines.clear();
 
     accept(())
 }
@@ -320,9 +281,6 @@ fn parse_poprako_page(page: PoprakoPageImport) -> RegularResult<PageTranslationI
             return Err(args_error("error-invalid-chapter-import-content"));
         }
 
-        let (translator_comment, proofreader_comment) =
-            split_comment(&unit.comment.unwrap_or_default());
-
         units.push(UnitTranslationImport {
             id: Some(unit.id),
             index: unit.index_in_page,
@@ -333,58 +291,12 @@ fn parse_poprako_page(page: PoprakoPageImport) -> RegularResult<PageTranslationI
             translated_text: normalize_option(unit.translated_text),
             proofread_text: normalize_option(unit.prooved_text),
             is_proofread: unit.is_prooved,
-            translator_comment,
-            proofreader_comment,
         });
     }
 
     units.sort_by_key(|left| left.index);
 
     accept(PageTranslationImport { units })
-}
-
-fn split_comment(comment: &str) -> (Option<String>, Option<String>) {
-    if comment.trim().is_empty() {
-        return (None, None);
-    }
-
-    let mut translator_lines = Vec::new();
-    let mut proofreader_lines = Vec::new();
-    let mut target = CommentTarget::Translator;
-
-    for line in comment.split('\n') {
-        match (
-            line.strip_prefix("【翻译】"),
-            line.strip_prefix("【校对】"),
-            target,
-        ) {
-            (Some(text), _, _) => {
-                translator_lines.push(text.to_string());
-                target = CommentTarget::Translator;
-            }
-            (_, Some(text), _) => {
-                proofreader_lines.push(text.to_string());
-                target = CommentTarget::Proofreader;
-            }
-            (None, None, CommentTarget::Translator) => {
-                translator_lines.push(line.to_string());
-            }
-            (None, None, CommentTarget::Proofreader) => {
-                proofreader_lines.push(line.to_string());
-            }
-        }
-    }
-
-    (
-        normalize_string(translator_lines.join("\n")),
-        normalize_string(proofreader_lines.join("\n")),
-    )
-}
-
-#[derive(Clone, Copy)]
-enum CommentTarget {
-    Translator,
-    Proofreader,
 }
 
 fn normalize_option(text: Option<String>) -> Option<String> {
@@ -406,10 +318,8 @@ fn payload_from_unit(unit_info: &UnitInfo) -> UnitPayload {
         x_coord: unit_info.x_coord,
         y_coord: unit_info.y_coord,
         translated_text: unit_info.translated_text.clone(),
-        translator_comment: unit_info.translator_comment.clone(),
         last_translator_id: unit_info.last_translator_id.clone(),
         proofread_text: unit_info.proofread_text.clone(),
-        proofreader_comment: unit_info.proofreader_comment.clone(),
         last_proofreader_id: unit_info.last_proofreader_id.clone(),
     }
 }
@@ -421,10 +331,8 @@ fn payload_from_import(parsed_unit: &UnitTranslationImport) -> UnitPayload {
         x_coord: parsed_unit.x_coord,
         y_coord: parsed_unit.y_coord,
         translated_text: None,
-        translator_comment: parsed_unit.translator_comment.clone(),
         last_translator_id: None,
         proofread_text: None,
-        proofreader_comment: parsed_unit.proofreader_comment.clone(),
         last_proofreader_id: None,
     }
 }

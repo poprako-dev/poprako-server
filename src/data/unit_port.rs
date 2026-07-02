@@ -15,11 +15,9 @@ pub struct UnitTranslationExportVal {
 
     pub translated_text: Option<String>,
     pub translator_id: Option<String>,
-    pub translator_comment: Option<String>,
 
     pub is_proofread: bool,
 
     pub proofread_text: Option<String>,
     pub proofreader_id: Option<String>,
-    pub proofreader_comment: Option<String>,
 }

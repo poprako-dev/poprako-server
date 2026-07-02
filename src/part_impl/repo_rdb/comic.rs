@@ -18,10 +18,10 @@ use crate::part::repo::step::comic::{
     UpdateChapterCount, UpdateInfo,
 };
 use crate::part::shared::execute::Execute;
+use crate::part_impl::repo_rdb::dsl;
 use crate::part_impl::repo_rdb::entity::comic::{ComicAspect, ComicEntry, ComicRow};
 use crate::part_impl::repo_rdb::incl;
 use crate::part_impl::repo_rdb::{RdbRepo, RdbRepoTransactional};
-use crate::part_impl::repo_rdb::dsl;
 use crate::part_impl::shared_rdb::RdbConn;
 use crate::part_impl::shared_rdb::RdbContext;
 use crate::part_impl::shared_rdb::result::{diesel, expected};
@@ -29,7 +29,6 @@ use crate::result::{RegularError, RegularResult};
 use crate::value::comic::ComicInclOpt;
 
 // NOTE: use dsl::* is the Diesel impl layer exception to rust-use-style
-use dsl::*;
 use dsl::t_comic::*;
 
 impl ComicRepo<RdbContext> for RdbRepo {}
