@@ -17,7 +17,7 @@ use crate::api::http::handler::util::ensure_path_matches_body_id;
 use crate::api::http::result::Accept as _;
 use crate::api::http::result::HttpNoContent;
 use crate::api::http::result::HttpResult;
-use crate::api::http::result::NoContent;
+use crate::api::http::result::no_content;
 use crate::api::http::state::AppHarn;
 use crate::data::chapter::{
     ChapterInfoVal, CreateChapterData, CreateChapterVal, ListChapterInfosData,
@@ -162,7 +162,7 @@ pub async fn update_info(
 
     usecase::chapter::update_info(harn.drive(), harn.repo(), user_token, data).await?;
 
-    Ok(NoContent)
+    no_content()
 }
 
 /// `POST /api/v1/chapters/{chapter_id}/stage/advance` — advance a workflow stage.
@@ -191,7 +191,7 @@ pub async fn advance_stage(
     usecase::chapter::update_stage(harn.drive(), harn.repo(), harn.prom(), user_token, data)
         .await?;
 
-    Ok(NoContent)
+    no_content()
 }
 
 /// `DELETE /api/v1/chapters/{chapter_id}` — delete a chapter and descendants.
@@ -221,5 +221,5 @@ pub async fn delete(
     )
     .await?;
 
-    Ok(NoContent)
+    no_content()
 }

@@ -220,7 +220,6 @@ where
     }
 }
 
-pub fn no_content() -> HttpNoContent {
-    // FIXME:
+pub fn no_content() -> StdResult<NoContent, HttpError> {
     Ok(NoContent)
 }

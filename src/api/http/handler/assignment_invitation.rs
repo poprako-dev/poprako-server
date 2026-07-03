@@ -16,7 +16,7 @@ use utoipa::IntoParams;
 use crate::api::http::result::Accept as _;
 use crate::api::http::result::HttpNoContent;
 use crate::api::http::result::HttpResult;
-use crate::api::http::result::NoContent;
+use crate::api::http::result::no_content;
 use crate::api::http::state::AppHarn;
 use crate::data::assignment::AssignmentInfoVal;
 use crate::data::assignment_invitation::{
@@ -116,7 +116,7 @@ pub async fn delete(
     )
     .await?;
 
-    Ok(NoContent)
+    no_content()
 }
 
 /// `POST /api/v1/assignment-invitations/join` — join via invitation code.
