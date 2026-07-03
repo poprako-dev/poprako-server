@@ -2,6 +2,7 @@
 
 use async_trait::async_trait;
 use diesel::prelude::*;
+use diesel::sql_types::Bool;
 use diesel_async::RunQueryDsl;
 use time::OffsetDateTime;
 
@@ -9,7 +10,7 @@ use poprako_transactional::advance::Advance;
 
 use crate::complex::comic::ComicComplex;
 use crate::model::comic::{
-    ComicCoverReservation, ComicForm, ComicInfo, ComicInfoUpdate, ComicListSpec,
+    ComicCoverReservation, ComicForm, ComicInfo, ComicInfoUpdate, ComicListKind, ComicListSpec,
 };
 use crate::part::repo::comic::{ComicRepo, ComicRepoTransactional};
 use crate::part::repo::step::comic::{
@@ -25,7 +26,9 @@ use crate::part_impl::shared_rdb::RdbConn;
 use crate::part_impl::shared_rdb::RdbContext;
 use crate::part_impl::shared_rdb::result::{diesel, expected};
 use crate::result::{RegularError, RegularResult};
+use crate::value::chapter::{StagePhase, WorkflowStage, WorkflowStageMask};
 use crate::value::comic::ComicInclOpt;
+use crate::value::index::user_index_to_stored_index;
 
 use crate::part_impl::repo_rdb::schema::t_comic::dsl::*;
 
@@ -34,6 +37,85 @@ impl ComicRepo<RdbContext> for RdbRepo {}
 impl ComicRepoTransactional<RdbContext> for RdbRepoTransactional {}
 
 // ── Free functions ──────────────────────────────────────────────────────────
+
+fn one_shot_predicate(column: &str, phase: StagePhase) -> &'static str {
+    match (column, phase) {
+        ("f_uploaded_at", StagePhase::Pending) => "pinned_chapter.f_uploaded_at IS NULL",
+        ("f_uploaded_at", StagePhase::Completed) => "pinned_chapter.f_uploaded_at IS NOT NULL",
+        ("f_reviewed_at", StagePhase::Pending) => "pinned_chapter.f_reviewed_at IS NULL",
+        ("f_reviewed_at", StagePhase::Completed) => "pinned_chapter.f_reviewed_at IS NOT NULL",
+        ("f_published_at", StagePhase::Pending) => "pinned_chapter.f_published_at IS NULL",
+        ("f_published_at", StagePhase::Completed) => "pinned_chapter.f_published_at IS NOT NULL",
+        (_, StagePhase::Active) => "FALSE",
+        _ => "FALSE",
+    }
+}
+
+fn two_step_predicate(started_column: &str, completed_column: &str, phase: StagePhase) -> String {
+    match phase {
+        StagePhase::Pending => format!(
+            "pinned_chapter.{} IS NULL AND pinned_chapter.{} IS NULL",
+            started_column, completed_column,
+        ),
+        StagePhase::Active => format!(
+            "pinned_chapter.{} IS NOT NULL AND pinned_chapter.{} IS NULL",
+            started_column, completed_column,
+        ),
+        StagePhase::Completed => format!("pinned_chapter.{} IS NOT NULL", completed_column),
+    }
+}
+
+fn stage_predicate(stage: WorkflowStage, phase: StagePhase) -> String {
+    match stage {
+        WorkflowStage::RawProvide => one_shot_predicate("f_uploaded_at", phase).into(),
+        WorkflowStage::Translate => {
+            two_step_predicate("f_translating_at", "f_translated_at", phase)
+        }
+        WorkflowStage::Proofread => {
+            two_step_predicate("f_proofreading_at", "f_proofread_at", phase)
+        }
+        WorkflowStage::TypesetRedraw => {
+            two_step_predicate("f_typesetting_at", "f_typeset_at", phase)
+        }
+        WorkflowStage::Review => one_shot_predicate("f_reviewed_at", phase).into(),
+        WorkflowStage::Publish => one_shot_predicate("f_published_at", phase).into(),
+    }
+}
+
+fn workflow_filter_sql(stage_mask: WorkflowStageMask) -> Option<String> {
+    let predicates = WorkflowStageMask::stages()
+        .iter()
+        .filter(|stage| !stage_mask.ignores_stage(**stage))
+        .map(|stage| stage_predicate(*stage, stage_mask.get_phase(*stage)))
+        .collect::<Vec<_>>();
+
+    if predicates.is_empty() {
+        return None;
+    }
+
+    let mut sql = String::from(
+        "EXISTS (SELECT 1 FROM t_chapter AS pinned_chapter \
+         WHERE pinned_chapter.f_comic_id = t_comic.f_id \
+         AND pinned_chapter.f_is_pinned = TRUE",
+    );
+
+    for predicate in predicates {
+        sql.push_str(" AND ");
+
+        sql.push_str(&predicate);
+    }
+
+    sql.push(')');
+
+    Some(sql)
+}
+
+fn stored_index_from_numeric_fuzzy(fuzzy_title_value: &str) -> Option<i32> {
+    match fuzzy_title_value.trim().parse() {
+        Ok(index) => user_index_to_stored_index(index),
+        Err(_) => None,
+    }
+}
 
 async fn get_info_by_id(
     conn: &mut RdbConn,
@@ -63,15 +145,35 @@ async fn list_infos(conn: &mut RdbConn, spec: &ComicListSpec) -> RegularResult<V
         .into_boxed();
 
     if let Some(fuzzy_title) = &spec.fuzzy_title {
-        query = query.filter(f_title.ilike(format!("%{}%", fuzzy_title)));
+        let pattern = format!("%{}%", fuzzy_title);
+
+        query = match stored_index_from_numeric_fuzzy(fuzzy_title) {
+            Some(index) => query.filter(f_composed_title.ilike(pattern).or(f_index.eq(index))),
+            None => query.filter(f_composed_title.ilike(pattern)),
+        };
     }
 
-    if let Some(completed) = spec.is_completed {
-        query = query.filter(f_is_completed.eq(completed));
+    match &spec.kind {
+        ComicListKind::All => {}
+        ComicListKind::Active { stages: _ } => {
+            query = query.filter(f_is_completed.eq(false));
+        }
+        ComicListKind::Completed => {
+            query = query.filter(f_is_completed.eq(true));
+        }
+    }
+
+    if let ComicListKind::Active {
+        stages: Some(stage_mask),
+    } = &spec.kind
+    {
+        if let Some(sql) = workflow_filter_sql(*stage_mask) {
+            query = query.filter(diesel::dsl::sql::<Bool>(&sql));
+        }
     }
 
     let rows: Vec<ComicRow> = query
-        .order_by(f_index.asc())
+        .order_by((f_last_active_at.desc(), f_index.asc()))
         .offset(spec.offset as i64)
         .limit(spec.limit as i64)
         .load(conn)
@@ -88,10 +190,16 @@ async fn list_infos(conn: &mut RdbConn, spec: &ComicListSpec) -> RegularResult<V
 async fn update_info(conn: &mut RdbConn, update: &ComicInfoUpdate) -> RegularResult<()> {
     let now = OffsetDateTime::now_utc();
 
+    let comic_info = get_info_by_id(conn, &update.id, &[]).await?;
+
+    let composed_title =
+        ComicComplex::composed_title_parts(comic_info.index, &update.author, &update.title);
+
     let aspect = ComicAspect::new(now)
         .title(&update.title)
         .author(&update.author)
-        .description(update.description.as_deref());
+        .description(update.description.as_deref())
+        .composed_title(composed_title);
 
     diesel::update(t_comic.filter(f_id.eq(update.id.as_str())))
         .set(&aspect)
@@ -161,17 +269,20 @@ async fn list_infos_excluded(
     conn: &mut RdbConn,
     spec: &ComicListSpec,
 ) -> RegularResult<Vec<ComicInfo>> {
-    let rows: Vec<ComicRow> = t_comic
-        .filter(f_workset_id.eq(spec.workset_id.as_str()))
+    let infos = list_infos(conn, spec).await?;
+
+    let ids = infos
+        .iter()
+        .map(|comic_info| comic_info.id.as_str())
+        .collect::<Vec<_>>();
+
+    let _: Vec<ComicRow> = t_comic
+        .filter(f_id.eq_any(ids))
         .select(ComicRow::as_select())
         .for_update()
         .load(conn)
         .await
         .map_err(diesel)?;
-
-    let mut infos: Vec<ComicInfo> = rows.into_iter().map(Into::into).collect();
-
-    incl::comic::populate_comic_incls(conn, &mut infos, &spec.incl_opt).await?;
 
     Ok(infos)
 }
@@ -183,18 +294,17 @@ async fn reserve_cover(
 ) -> RegularResult<ComicCoverReservation> {
     let now = OffsetDateTime::now_utc();
 
-    let (prev_key, new_version): (Option<String>, i64) =
-        diesel::update(t_comic.filter(f_id.eq(id)))
-            .set((
-                f_cover_key.eq::<Option<&str>>(None),
-                f_cover_uploaded.eq(false),
-                f_cover_version.eq(f_cover_version + 1),
-                f_updated_at.eq(now),
-            ))
-            .returning((f_cover_key, f_cover_version))
-            .get_result::<(Option<String>, i64)>(conn)
-            .await
-            .map_err(diesel)?;
+    let (prev_key, new_version) = diesel::update(t_comic.filter(f_id.eq(id)))
+        .set((
+            f_cover_key.eq::<Option<&str>>(None),
+            f_cover_uploaded.eq(false),
+            f_cover_version.eq(f_cover_version + 1),
+            f_updated_at.eq(now),
+        ))
+        .returning((f_cover_key, f_cover_version))
+        .get_result(conn)
+        .await
+        .map_err(diesel)?;
 
     let object_key = ComicComplex::gen_cover_key(id, new_version, file_ext);
 

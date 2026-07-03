@@ -217,7 +217,7 @@ where
 
     let with_pinned_chapter = data.with_opt.contains(&ComicWithOpt::PinnedChapter);
 
-    let spec: ComicListSpec = data.into();
+    let spec: ComicListSpec = data.try_into()?;
 
     let comic_infos = repo.execute(&ComicStep::list_infos(&spec)).await?;
 

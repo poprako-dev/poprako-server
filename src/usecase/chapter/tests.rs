@@ -420,7 +420,9 @@ async fn update_stage_rejects_invalid_transition() {
     let mut chapter_info = chapter("chapter-1", "comic-1", 1, false);
     chapter_info.stages = chapter_info
         .stages
-        .set_phase(WorkflowStage::Publish, StagePhase::Completed);
+        .try_set_phase(WorkflowStage::Publish, StagePhase::Completed)
+        .ok()
+        .unwrap();
     mock.seed_chapter(chapter_info);
     mock.seed_assignment(assignment(
         "chapter-1",

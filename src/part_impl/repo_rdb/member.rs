@@ -146,7 +146,7 @@ async fn list_infos(conn: &mut RdbConn, spec: &MemberListSpec) -> RegularResult<
         MemberListSpec::Team {
             team_id,
             fuzzy_nickname,
-            role: _,
+            role,
             offset,
             limit,
             ..
@@ -160,6 +160,23 @@ async fn list_infos(conn: &mut RdbConn, spec: &MemberListSpec) -> RegularResult<
                 let escaped = escape_ilike_pattern(nickname);
 
                 query = query.filter(f_user_nickname.ilike(format!("%{}%", escaped)));
+            }
+
+            if let Some(role) = role {
+                query = match *role {
+                    RoleField::RAW_PROVIDER => {
+                        query.filter(f_assigned_raw_provider_at.is_not_null())
+                    }
+                    RoleField::TRANSLATOR => query.filter(f_assigned_translator_at.is_not_null()),
+                    RoleField::PROOFREADER => query.filter(f_assigned_proofreader_at.is_not_null()),
+                    RoleField::TYPESETTER => query.filter(f_assigned_typesetter_at.is_not_null()),
+                    RoleField::REDRAWER => query.filter(f_assigned_redrawer_at.is_not_null()),
+                    RoleField::REVIEWER => query.filter(f_assigned_reviewer_at.is_not_null()),
+                    RoleField::PUBLISHER => query.filter(f_assigned_publisher_at.is_not_null()),
+                    RoleField::ADMIN => query.filter(f_assigned_admin_at.is_not_null()),
+                    RoleField::BOT => query.filter(f_assigned_bot_at.is_not_null()),
+                    _ => query,
+                };
             }
 
             query

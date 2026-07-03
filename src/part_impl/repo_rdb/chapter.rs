@@ -249,7 +249,7 @@ async fn update_info(conn: &mut RdbConn, update: &ChapterInfoUpdate) -> RegularR
 async fn update_stage(conn: &mut RdbConn, update: &ChapterStageUpdate) -> RegularResult<()> {
     let now = OffsetDateTime::now_utc();
 
-    let aspect = ChapterAspect::new(now).stages(update.stages);
+    let aspect = ChapterAspect::new(now).stages(update.stages, now);
 
     diesel::update(t_chapter.filter(f_id.eq(update.id.as_str())))
         .set(&aspect)

@@ -1,6 +1,6 @@
-// comic_roundtrip_reads_test_database_url(ComicStep)(positive): comic repo persists, lists, and updates a comic in the local test database.
+// comic_roundtrip_reads_test_database_url(ComicStep)(positive): comic repo persists, lists by one-based display index, and refreshes composed search after update.
 
-use crate::model::comic::{ComicInfoUpdate, ComicListSpec};
+use crate::model::comic::{ComicInfoUpdate, ComicListKind, ComicListSpec};
 use crate::part::repo::step::comic::ComicStep;
 use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_rdb::{RdbRepo, test_shared};
@@ -21,7 +21,7 @@ async fn comic_roundtrip_reads_test_database_url() {
     let comic_list_spec = ComicListSpec {
         workset_id: comic_fixture.workset_form.id.clone(),
         fuzzy_title: Some("Comic".into()),
-        is_completed: Some(false),
+        kind: ComicListKind::Active { stages: None },
         incl_opt: vec![ComicInclOpt::WorksetTeam],
         offset: 0,
         limit: 10,
@@ -63,6 +63,40 @@ async fn comic_roundtrip_reads_test_database_url() {
     .unwrap();
 
     assert_eq!(comic_info.title, "RDB Comic Updated");
+
+    let comic_list_spec = ComicListSpec {
+        workset_id: comic_fixture.workset_form.id.clone(),
+        fuzzy_title: Some("RDB Author Updated".into()),
+        kind: ComicListKind::All,
+        incl_opt: Vec::new(),
+        offset: 0,
+        limit: 10,
+    };
+
+    let comic_infos = Execute::execute(&repo, &ComicStep::list_infos(&comic_list_spec))
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(comic_infos.len(), 1);
+    assert_eq!(comic_infos[0].id, comic_fixture.comic_form.id);
+
+    let comic_list_spec = ComicListSpec {
+        workset_id: comic_fixture.workset_form.id.clone(),
+        fuzzy_title: Some("1".into()),
+        kind: ComicListKind::All,
+        incl_opt: Vec::new(),
+        offset: 0,
+        limit: 10,
+    };
+
+    let comic_infos = Execute::execute(&repo, &ComicStep::list_infos(&comic_list_spec))
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(comic_infos.len(), 1);
+    assert_eq!(comic_infos[0].index, 0);
 
     test_shared::cleanup(&shared, PREFIX).await.ok().unwrap();
 

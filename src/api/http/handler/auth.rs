@@ -3,8 +3,8 @@
 use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
-use cookie::{Cookie, SameSite};
 use cookie::time::Duration;
+use cookie::{Cookie, SameSite};
 
 use tracing::instrument;
 

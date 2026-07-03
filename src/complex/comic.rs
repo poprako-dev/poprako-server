@@ -20,6 +20,7 @@ use crate::part::repo::workset::WorksetRepoTransactional;
 use crate::part::shared::proxy::ProxyExecute;
 use crate::result::{RegularError, RegularResult, accept};
 use crate::util::next_snowflake_id;
+use crate::value::index::stored_index_to_user_index;
 
 /// Domain opers for comic entities: identity generation and
 /// cover-storage key management.
@@ -42,7 +43,12 @@ impl ComicComplex {
     ///
     /// Format: `"{index} {author} {title}"` — a single keyword can match any of the three fields.
     pub fn composed_title(info: &ComicInfo) -> String {
-        format!("{} {} {}", info.index, info.author, info.title)
+        Self::composed_title_parts(info.index, &info.author, &info.title)
+    }
+
+    /// Compose a display title from raw fields for search materialization.
+    pub fn composed_title_parts(index: i32, author: &str, title: &str) -> String {
+        format!("{} {} {}", stored_index_to_user_index(index), author, title)
     }
 
     /// Deletes a comic subtree inside an existing transaction context.

@@ -33,6 +33,7 @@ use crate::value::comic::{ComicInclOpt, ComicWithOpt};
 pub struct ComicListQuery {
     pub fuzzy_title: Option<String>,
     pub is_completed: Option<bool>,
+    pub stages: Option<u32>,
 
     #[serde(default, rename = "incl")]
     pub incl_opt: Vec<ComicInclOpt>,
@@ -89,6 +90,7 @@ pub async fn list_infos(
         workset_id,
         fuzzy_title: query.fuzzy_title,
         is_completed: query.is_completed,
+        stages: query.stages,
         incl_opt: query.incl_opt,
         with_opt: query.with_opt,
         offset: query.offset,

@@ -3,7 +3,7 @@
 
 use crate::complex::comic::ComicComplex;
 use crate::complex::util::{check_user_is_team_admin, check_user_is_team_member};
-use crate::model::comic::ComicListSpec;
+use crate::model::comic::{ComicListKind, ComicListSpec};
 use crate::part::prom::Prom;
 use crate::part::repo::chapter::ChapterRepoTransactional;
 use crate::part::repo::comic::ComicRepoTransactional;
@@ -49,7 +49,7 @@ impl WorksetComplex {
         let list_spec = ComicListSpec {
             workset_id: workset_info.id.clone(),
             fuzzy_title: None,
-            is_completed: None,
+            kind: ComicListKind::All,
             incl_opt: Vec::new(),
             offset: 0,
             limit: u64::MAX,

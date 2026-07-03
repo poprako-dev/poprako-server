@@ -295,7 +295,12 @@ fn list_assignments(state: &MockState, spec: &AssignmentListSpec) -> Vec<Assignm
         apply_assignment_incls(state, assignment_info, incl_opt);
     }
 
-    assignment_infos.sort_by(|left, right| left.id.cmp(&right.id));
+    assignment_infos.sort_by(|left, right| {
+        right
+            .created_at
+            .cmp(&left.created_at)
+            .then_with(|| left.id.cmp(&right.id))
+    });
 
     let offset = offset as usize;
     let limit = limit as usize;

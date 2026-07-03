@@ -2,6 +2,7 @@
 
 use poprako_transactional::advance::Advance;
 use poprako_transactional::drive::Drive;
+use poprako_util::page::Page;
 
 use crate::model::unit::{UnitIndexUpdate, UnitOper, UnitPayload};
 use crate::part::repo::step::unit::UnitStep;
@@ -92,7 +93,13 @@ async fn unit_roundtrip_reads_test_database_url() {
 
     let unit_infos = Execute::execute(
         &repo,
-        &UnitStep::list_infos_by_page_id(&page_fixture.page_form.id),
+        &UnitStep::list_infos_by_page_id(
+            &page_fixture.page_form.id,
+            Page {
+                offset: 0,
+                limit: 10,
+            },
+        ),
     )
     .await
     .ok()

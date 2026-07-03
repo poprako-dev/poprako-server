@@ -3,6 +3,7 @@
 use diesel::prelude::*;
 use time::OffsetDateTime;
 
+use crate::complex::comic::ComicComplex;
 use crate::model::comic::{ComicForm, ComicInfo};
 use crate::part_impl::repo_rdb::schema::t_comic;
 
@@ -18,6 +19,7 @@ pub struct ComicRow {
     pub f_title: String,
     pub f_author: String,
     pub f_description: Option<String>,
+    pub f_composed_title: String,
     pub f_is_completed: bool,
 
     pub f_cover_key: Option<String>,
@@ -47,6 +49,7 @@ pub struct ComicEntry<'a> {
     pub f_title: &'a str,
     pub f_author: &'a str,
     pub f_description: Option<&'a str>,
+    pub f_composed_title: String,
 
     pub f_creator_id: &'a str,
 
@@ -64,6 +67,7 @@ pub struct ComicAspect<'a> {
     pub f_title: Option<&'a str>,
     pub f_author: Option<&'a str>,
     pub f_description: Option<Option<&'a str>>,
+    pub f_composed_title: Option<String>,
 
     pub f_is_completed: Option<bool>,
 
@@ -85,6 +89,7 @@ impl<'a> ComicAspect<'a> {
             f_title: None,
             f_author: None,
             f_description: None,
+            f_composed_title: None,
             f_is_completed: None,
             f_cover_key: None,
             f_cover_uploaded: None,
@@ -108,6 +113,11 @@ impl<'a> ComicAspect<'a> {
 
     pub fn description(mut self, val: Option<&'a str>) -> Self {
         self.f_description = Some(val);
+        self
+    }
+
+    pub fn composed_title(mut self, val: String) -> Self {
+        self.f_composed_title = Some(val);
         self
     }
 
@@ -184,6 +194,11 @@ impl<'a> From<&'a ComicForm> for ComicEntry<'a> {
             f_title: &form.title,
             f_author: &form.author,
             f_description: form.description.as_deref(),
+            f_composed_title: ComicComplex::composed_title_parts(
+                form.index,
+                &form.author,
+                &form.title,
+            ),
             f_creator_id: &form.creator_id,
             f_last_active_at: OffsetDateTime::now_utc(),
             f_created_at: OffsetDateTime::now_utc(),
