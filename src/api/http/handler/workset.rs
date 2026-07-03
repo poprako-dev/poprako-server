@@ -14,7 +14,7 @@ use crate::api::http::handler::util::ensure_path_matches_body_id;
 use crate::api::http::result::Accept as _;
 use crate::api::http::result::HttpNoContent;
 use crate::api::http::result::HttpResult;
-use crate::api::http::result::NoContent;
+use crate::api::http::result::no_content;
 use crate::api::http::state::AppHarn;
 use crate::data::workset::{
     CreateWorksetData, CreateWorksetVal, ListWorksetInfosData, UpdateWorksetInfoData,
@@ -126,7 +126,7 @@ pub async fn update_info(
 
     usecase::workset::update_info(harn.repo(), user_token, data).await?;
 
-    Ok(NoContent)
+    no_content()
 }
 
 /// `DELETE /api/v1/worksets/{workset_id}` — delete a workset and descendants.
@@ -156,5 +156,5 @@ pub async fn delete(
     )
     .await?;
 
-    Ok(NoContent)
+    no_content()
 }

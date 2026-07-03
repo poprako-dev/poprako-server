@@ -17,7 +17,7 @@ use crate::api::http::handler::util::ensure_path_matches_body_id;
 use crate::api::http::result::Accept as _;
 use crate::api::http::result::HttpNoContent;
 use crate::api::http::result::HttpResult;
-use crate::api::http::result::NoContent;
+use crate::api::http::result::no_content;
 use crate::api::http::state::AppHarn;
 use crate::data::member_invitation::{
     CreateMemberInvitationData, CreateMemberInvitationVal, ListMemberInvitationInfosData,
@@ -122,7 +122,7 @@ pub async fn update_info(
 
     usecase::member_invitation::update_info(harn.drive(), harn.repo(), user_token, data).await?;
 
-    Ok(NoContent)
+    no_content()
 }
 
 /// `DELETE /api/v1/member-invitations/{member_invitation_id}` — delete an invitation.
@@ -146,5 +146,5 @@ pub async fn delete(
     usecase::member_invitation::delete(harn.drive(), harn.repo(), user_token, member_invitation_id)
         .await?;
 
-    Ok(NoContent)
+    no_content()
 }

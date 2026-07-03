@@ -13,7 +13,7 @@ use crate::api::http::handler::util::ensure_path_matches_body_id;
 use crate::api::http::result::Accept as _;
 use crate::api::http::result::HttpNoContent;
 use crate::api::http::result::HttpResult;
-use crate::api::http::result::NoContent;
+use crate::api::http::result::no_content;
 use crate::api::http::state::AppHarn;
 use crate::data::user::{
     MarkUserAvatarUploadedData, ReserveUserAvatarData, ReserveUserAvatarVal, UpdateUserInfoData,
@@ -106,7 +106,7 @@ pub async fn update_info(
 
     usecase::user::update_info(harn.drive(), harn.repo(), user_token, data).await?;
 
-    Ok(NoContent)
+    no_content()
 }
 
 /// `DELETE /api/v1/users/{user_id}` — delete a user account.
@@ -129,7 +129,7 @@ pub async fn delete(
 ) -> HttpNoContent {
     usecase::user::delete(harn.drive(), harn.repo(), harn.prom(), user_token, user_id).await?;
 
-    Ok(NoContent)
+    no_content()
 }
 
 /// `POST /api/v1/users/{user_id}/avatar/reserve` — reserve an avatar upload slot.
@@ -188,5 +188,5 @@ pub async fn mark_avatar_uploaded(
     usecase::user::mark_avatar_uploaded(harn.drive(), harn.repo(), user_token, user_id, data)
         .await?;
 
-    Ok(NoContent)
+    no_content()
 }

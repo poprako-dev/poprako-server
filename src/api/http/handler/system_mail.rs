@@ -11,7 +11,7 @@ use tracing::instrument;
 use crate::api::http::result::Accept as _;
 use crate::api::http::result::HttpNoContent;
 use crate::api::http::result::HttpResult;
-use crate::api::http::result::NoContent;
+use crate::api::http::result::no_content;
 use crate::api::http::state::AppHarn;
 use crate::data::system_mail::{ListSystemMailData, MarkSystemMailsReadData, SystemMailVal};
 use crate::model::user::UserToken;
@@ -58,5 +58,5 @@ pub async fn mark_read(
 ) -> HttpNoContent {
     usecase::system_mail::mark_read(harn.repo(), user_token, data.ids).await?;
 
-    Ok(NoContent)
+    no_content()
 }

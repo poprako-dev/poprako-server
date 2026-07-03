@@ -14,7 +14,7 @@ use crate::api::http::handler::util::ensure_path_matches_body_id;
 use crate::api::http::result::Accept as _;
 use crate::api::http::result::HttpNoContent;
 use crate::api::http::result::HttpResult;
-use crate::api::http::result::NoContent;
+use crate::api::http::result::no_content;
 use crate::api::http::state::AppHarn;
 use crate::data::page::{
     ListPageInfosData, MarkPageImageUploadedData, PageInfoVal, ReserveChapterPagesData,
@@ -78,7 +78,7 @@ pub async fn delete(
     )
     .await?;
 
-    Ok(NoContent)
+    no_content()
 }
 
 /// `POST /api/v1/chapters/{chapter_id}/pages/reserve` — reserve all page images.
@@ -174,5 +174,5 @@ pub async fn mark_image_uploaded(
     usecase::page::mark_image_uploaded(harn.drive(), harn.repo(), user_token, page_id, data)
         .await?;
 
-    Ok(NoContent)
+    no_content()
 }

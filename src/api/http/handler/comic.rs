@@ -17,7 +17,7 @@ use crate::api::http::handler::util::ensure_path_matches_body_id;
 use crate::api::http::result::Accept as _;
 use crate::api::http::result::HttpNoContent;
 use crate::api::http::result::HttpResult;
-use crate::api::http::result::NoContent;
+use crate::api::http::result::no_content;
 use crate::api::http::state::AppHarn;
 use crate::data::comic::{
     ComicInfoVal, CreateComicData, CreateComicVal, ListComicInfosData, MarkComicCompletedData,
@@ -150,7 +150,7 @@ pub async fn update_info(
 
     usecase::comic::update_info(harn.repo(), user_token, data).await?;
 
-    Ok(NoContent)
+    no_content()
 }
 
 /// `POST /api/v1/comics/{comic_id}/cover/reserve` — reserve a cover upload slot.
@@ -209,7 +209,7 @@ pub async fn mark_cover_uploaded(
 ) -> HttpNoContent {
     usecase::comic::mark_cover_uploaded(harn.repo(), user_token, comic_id, data).await?;
 
-    Ok(NoContent)
+    no_content()
 }
 
 /// `POST /api/v1/comics/{comic_id}/mark-completed` — toggle comic completion.
@@ -241,7 +241,7 @@ pub async fn mark_completed(
     )
     .await?;
 
-    Ok(NoContent)
+    no_content()
 }
 
 /// `DELETE /api/v1/comics/{comic_id}` — delete a comic and descendants.
@@ -264,5 +264,5 @@ pub async fn delete(
 ) -> HttpNoContent {
     usecase::comic::delete(harn.drive(), harn.repo(), harn.prom(), user_token, comic_id).await?;
 
-    Ok(NoContent)
+    no_content()
 }

@@ -17,7 +17,7 @@ use crate::api::http::handler::util::ensure_path_matches_body_id;
 use crate::api::http::result::Accept as _;
 use crate::api::http::result::HttpNoContent;
 use crate::api::http::result::HttpResult;
-use crate::api::http::result::NoContent;
+use crate::api::http::result::no_content;
 use crate::api::http::state::AppHarn;
 use crate::data::member::{
     CreateMemberData, CreateMemberVal, JoinTeamData, ListMemberInfosData, MemberInfoVal,
@@ -144,7 +144,7 @@ pub async fn update_role(
 
     usecase::member::update_role(harn.drive(), harn.repo(), user_token, data).await?;
 
-    Ok(NoContent)
+    no_content()
 }
 
 /// `DELETE /api/v1/members/{member_id}` — delete a member.
@@ -167,7 +167,7 @@ pub async fn delete(
 ) -> HttpNoContent {
     usecase::member::delete(harn.drive(), harn.repo(), user_token, member_id).await?;
 
-    Ok(NoContent)
+    no_content()
 }
 
 /// `POST /api/v1/members/join` — join a team via invitation code.
