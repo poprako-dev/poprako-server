@@ -521,12 +521,20 @@ async fn list_infos_rejects_completed_with_stages_filter() {
 
 #[tokio::test]
 async fn list_infos_applies_pagination() {
+    let fixed_time = OffsetDateTime::now_utc();
+    let mut comic_0_info = comic("comic-0", "workset-1", 0);
+    comic_0_info.last_active_at = fixed_time;
+    let mut comic_1_info = comic("comic-1", "workset-1", 1);
+    comic_1_info.last_active_at = fixed_time;
+    let mut comic_2_info = comic("comic-2", "workset-1", 2);
+    comic_2_info.last_active_at = fixed_time;
+
     let mock = Mock::new();
     mock.seed_workset(workset("workset-1", "team-1"));
     mock.seed_member(admin_member("user-1", "team-1"));
-    mock.seed_comic(comic("comic-0", "workset-1", 0));
-    mock.seed_comic(comic("comic-1", "workset-1", 1));
-    mock.seed_comic(comic("comic-2", "workset-1", 2));
+    mock.seed_comic(comic_0_info);
+    mock.seed_comic(comic_1_info);
+    mock.seed_comic(comic_2_info);
 
     let list = list_infos(
         &mock,
