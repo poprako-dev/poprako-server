@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use poprako_transactional::advance::Advance;
 
 use crate::complex::comic::ComicComplex;
-use crate::model::comic::{ComicCoverReservation, ComicInfo};
+use crate::model::comic::{ComicCoverReservation, ComicInfo, ComicListKind};
 use crate::model::team::TeamInfo;
 use crate::model::user::UserInfo;
 use crate::model::workset::WorksetInfo;
@@ -20,6 +20,7 @@ use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactiona
 use crate::result::{RegularError, RegularResult};
 use crate::value::comic::ComicInclOpt;
 use crate::value::incl::expand_incl_opts;
+use crate::value::index::user_index_to_stored_index;
 
 impl ComicRepo<MockContext> for Mock {}
 
@@ -93,6 +94,48 @@ fn apply_comic_incls(state: &MockState, comic_info: &mut ComicInfo, incl_opt: &[
     }
 }
 
+fn comic_matches_kind(state: &MockState, comic_info: &ComicInfo, kind: &ComicListKind) -> bool {
+    match kind {
+        ComicListKind::All => true,
+        ComicListKind::Completed => comic_info.is_completed,
+        ComicListKind::Active { stages } => {
+            if comic_info.is_completed {
+                return false;
+            }
+
+            let Some(stage_mask) = stages else {
+                return true;
+            };
+
+            state
+                .chapters
+                .iter()
+                .find(|chapter_info| {
+                    chapter_info.comic_id == comic_info.id && chapter_info.is_pinned
+                })
+                .map(|chapter_info| chapter_info.stages.matches_filter(*stage_mask))
+                .unwrap_or(false)
+        }
+    }
+}
+
+fn comic_matches_fuzzy(comic_info: &ComicInfo, fuzzy_title: &str) -> bool {
+    let composed_title = ComicComplex::composed_title(comic_info).to_lowercase();
+
+    let fuzzy_title = fuzzy_title.to_lowercase();
+
+    if composed_title.contains(fuzzy_title.as_str()) {
+        return true;
+    }
+
+    match fuzzy_title.trim().parse() {
+        Ok(index) => user_index_to_stored_index(index)
+            .map(|index| comic_info.index == index)
+            .unwrap_or(false),
+        Err(_) => false,
+    }
+}
+
 /// Updates a comic record to mark its cover as uploaded, verifying the cover version
 /// to detect stale uploads.
 fn mark_comic_cover_uploaded(
@@ -147,18 +190,18 @@ impl<'a> Execute<ListInfos<'a>> for Mock {
                 step.spec
                     .fuzzy_title
                     .as_ref()
-                    .map(|kw| ComicComplex::composed_title(comic).contains(kw.as_str()))
+                    .map(|kw| comic_matches_fuzzy(comic, kw))
                     .unwrap_or(true)
             })
-            .filter(|comic| {
-                step.spec
-                    .is_completed
-                    .map(|completed| comic.is_completed == completed)
-                    .unwrap_or(true)
-            })
+            .filter(|comic| comic_matches_kind(&state, comic, &step.spec.kind))
             .cloned()
             .collect::<Vec<_>>();
-        comics.sort_by(|left, right| left.index.cmp(&right.index));
+        comics.sort_by(|left, right| {
+            right
+                .last_active_at
+                .cmp(&left.last_active_at)
+                .then_with(|| left.index.cmp(&right.index))
+        });
 
         for comic in &mut comics {
             apply_comic_incls(&state, comic, &step.spec.incl_opt);
@@ -314,18 +357,18 @@ impl<'a> Advance<ListInfosExcluded<'a>, MockContext> for MockTransactional {
                 step.spec
                     .fuzzy_title
                     .as_ref()
-                    .map(|kw| ComicComplex::composed_title(comic).contains(kw.as_str()))
+                    .map(|kw| comic_matches_fuzzy(comic, kw))
                     .unwrap_or(true)
             })
-            .filter(|comic| {
-                step.spec
-                    .is_completed
-                    .map(|completed| comic.is_completed == completed)
-                    .unwrap_or(true)
-            })
+            .filter(|comic| comic_matches_kind(&context.state, comic, &step.spec.kind))
             .cloned()
             .collect::<Vec<_>>();
-        comics.sort_by(|left, right| left.index.cmp(&right.index));
+        comics.sort_by(|left, right| {
+            right
+                .last_active_at
+                .cmp(&left.last_active_at)
+                .then_with(|| left.index.cmp(&right.index))
+        });
 
         for comic in &mut comics {
             apply_comic_incls(&context.state, comic, &step.spec.incl_opt);

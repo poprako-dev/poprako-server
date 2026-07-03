@@ -11,15 +11,17 @@ use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
 
 use poprako_macro::Paginate;
+use poprako_util::i18n::trl;
 use poprako_util::time::ToUnixMilli;
 
 use crate::data::chapter::ChapterInfoVal;
 use crate::data::team::TeamInfoVal;
 use crate::data::user::UserInfoVal;
 use crate::data::workset::WorksetInfoVal;
-use crate::model::comic::{ComicInfo, ComicListSpec};
+use crate::model::comic::{ComicInfo, ComicListKind, ComicListSpec};
 use crate::part::image::ImagePool;
-use crate::result::RegularResult;
+use crate::result::{ExpectedVariant, RegularError, RegularResult, accept};
+use crate::value::chapter::WorkflowStageMask;
 use crate::value::comic::{ComicInclOpt, ComicWithOpt};
 
 /// Presentation-ready comic information.
@@ -173,6 +175,7 @@ pub struct ListComicInfosData {
 
     pub fuzzy_title: Option<String>,
     pub is_completed: Option<bool>,
+    pub stages: Option<u32>,
 
     #[serde(default, rename = "incl")]
     pub incl_opt: Vec<ComicInclOpt>,
@@ -181,16 +184,38 @@ pub struct ListComicInfosData {
     pub with_opt: Vec<ComicWithOpt>,
 }
 
-impl From<ListComicInfosData> for ComicListSpec {
-    fn from(data: ListComicInfosData) -> Self {
-        Self {
+impl TryFrom<ListComicInfosData> for ComicListSpec {
+    type Error = RegularError;
+
+    fn try_from(data: ListComicInfosData) -> RegularResult<Self> {
+        let stages = data
+            .stages
+            .map(WorkflowStageMask::try_filter_from)
+            .transpose()?;
+
+        let kind = match (data.is_completed, stages) {
+            (Some(true), Some(_)) => {
+                return Err(RegularError::Expected {
+                    variant: ExpectedVariant::Args,
+                    message: trl("error-invalid-stage-phase"),
+                });
+            }
+            (Some(true), None) => ComicListKind::Completed,
+            (Some(false), stages) => ComicListKind::Active { stages },
+            (None, Some(stages)) => ComicListKind::Active {
+                stages: Some(stages),
+            },
+            (None, None) => ComicListKind::All,
+        };
+
+        accept(Self {
             workset_id: data.workset_id,
             fuzzy_title: data.fuzzy_title,
-            is_completed: data.is_completed,
+            kind,
             incl_opt: data.incl_opt,
             offset: data.offset,
             limit: data.limit,
-        }
+        })
     }
 }
 

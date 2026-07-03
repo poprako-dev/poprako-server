@@ -53,10 +53,18 @@ diesel::table! {
         f_total_unit_count -> Int4,
         f_translated_unit_count -> Int4,
         f_proofread_unit_count -> Int4,
-        f_stages -> Int4,
         f_creator_id -> Text,
         f_created_at -> Timestamptz,
         f_updated_at -> Timestamptz,
+        f_uploaded_at -> Nullable<Timestamptz>,
+        f_translating_at -> Nullable<Timestamptz>,
+        f_translated_at -> Nullable<Timestamptz>,
+        f_proofreading_at -> Nullable<Timestamptz>,
+        f_proofread_at -> Nullable<Timestamptz>,
+        f_typesetting_at -> Nullable<Timestamptz>,
+        f_typeset_at -> Nullable<Timestamptz>,
+        f_reviewed_at -> Nullable<Timestamptz>,
+        f_published_at -> Nullable<Timestamptz>,
     }
 }
 
@@ -78,6 +86,7 @@ diesel::table! {
         f_last_active_at -> Timestamptz,
         f_created_at -> Timestamptz,
         f_updated_at -> Timestamptz,
+        f_composed_title -> Text,
     }
 }
 

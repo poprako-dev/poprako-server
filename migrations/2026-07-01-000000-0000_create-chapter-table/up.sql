@@ -12,7 +12,15 @@ CREATE TABLE IF NOT EXISTS "t_chapter" (
     "f_translated_unit_count"      INTEGER     NOT NULL DEFAULT 0,
     "f_proofread_unit_count"       INTEGER     NOT NULL DEFAULT 0,
 
-    "f_stages"                     INTEGER     NOT NULL DEFAULT 0,
+    "f_uploaded_at"                TIMESTAMPTZ,
+    "f_translating_at"             TIMESTAMPTZ,
+    "f_translated_at"              TIMESTAMPTZ,
+    "f_proofreading_at"            TIMESTAMPTZ,
+    "f_proofread_at"               TIMESTAMPTZ,
+    "f_typesetting_at"             TIMESTAMPTZ,
+    "f_typeset_at"                 TIMESTAMPTZ,
+    "f_reviewed_at"                TIMESTAMPTZ,
+    "f_published_at"               TIMESTAMPTZ,
 
     "f_creator_id"                 TEXT        NOT NULL REFERENCES "t_user" ("f_id") ON DELETE RESTRICT,
 

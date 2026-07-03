@@ -133,7 +133,7 @@ async fn list_infos(
 
     let rows: Vec<AssignmentRow> = query
         .select(AssignmentRow::as_select())
-        .order_by(f_id.asc())
+        .order_by((f_created_at.desc(), f_id.asc()))
         .offset(*offset as i64)
         .limit(*limit as i64)
         .load(conn)

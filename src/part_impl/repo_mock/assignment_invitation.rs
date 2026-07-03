@@ -40,7 +40,12 @@ impl<'a> Execute<ListInfos<'a>> for Mock {
             .cloned()
             .collect::<Vec<_>>();
 
-        assignment_invitation_infos.sort_by(|left, right| left.id.cmp(&right.id));
+        assignment_invitation_infos.sort_by(|left, right| {
+            right
+                .created_at
+                .cmp(&left.created_at)
+                .then_with(|| left.id.cmp(&right.id))
+        });
 
         let offset = step.offset as usize;
         let limit = step.limit as usize;

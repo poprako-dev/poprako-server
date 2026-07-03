@@ -16,6 +16,7 @@ use time::OffsetDateTime;
 use crate::model::team::TeamInfo;
 use crate::model::user::UserInfo;
 use crate::model::workset::WorksetInfo;
+use crate::value::chapter::WorkflowStageMask;
 use crate::value::comic::ComicInclOpt;
 
 /// A comicrecord as stored in the database.
@@ -96,9 +97,16 @@ pub struct ComicListSpec {
     pub workset_id: String,
 
     pub fuzzy_title: Option<String>,
-    pub is_completed: Option<bool>,
+    pub kind: ComicListKind,
 
     pub incl_opt: Vec<ComicInclOpt>,
+}
+
+/// Completion/stage filtering mode for listing comics.
+pub enum ComicListKind {
+    All,
+    Active { stages: Option<WorkflowStageMask> },
+    Completed,
 }
 
 /// The result of reserving a new comic cover upload slot.

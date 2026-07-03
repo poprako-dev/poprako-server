@@ -2,11 +2,14 @@
 // create(create)(negative): missing workset should rollback without creating a comic.
 // get_info(get_info)(positive): existing comic should return uploaded cover URL.
 // get_info(get_info)(negative): missing comic should propagate an argument error.
-// list_infos(list_infos)(positive): list should return workset comics sorted by index.
+// list_infos(list_infos)(positive): list should return workset comics sorted by last activity.
 // list_infos(list_infos)(positive): empty workset contents should return an empty list after membership.
-// list_infos(list_infos)(positive): fuzzy title should narrow results by title substring.
+// list_infos(list_infos)(positive): fuzzy title should narrow results by display index, title, or author substring.
 // list_infos(list_infos)(positive): is_completed filter should narrow results by completion state.
+// list_infos(list_infos)(positive): stages filter should narrow by pinned chapter workflow state.
 // list_infos(list_infos)(positive): pagination should be applied after filtering and sorting.
+// list_infos(list_infos)(negative): invalid stages filter should return an argument error.
+// list_infos(list_infos)(negative): completed filter cannot be combined with stages filter.
 // update_info(update_info)(positive): existing comic should update title, author, and description.
 // update_info(update_info)(negative): missing comic should propagate an argument error.
 // reserve_cover(reserve_cover)(positive): reservation should update cover state, enqueue check, and return put URL.
@@ -24,6 +27,7 @@ use super::*;
 
 use time::OffsetDateTime;
 
+use crate::model::chapter::ChapterInfo;
 use crate::model::comic::ComicInfo;
 use crate::model::member::MemberInfo;
 use crate::model::user::UserToken;
@@ -36,6 +40,7 @@ use crate::test_util::{
     assert_expected_message, assert_expected_variant, assert_one_image_check_record,
 };
 use crate::usecase::team::tests::workset;
+use crate::value::chapter::{StagePhase, WorkflowStage, WorkflowStageMask};
 use crate::value::role::{RoleField, RoleMask};
 
 fn comic(id: &str, workset_id: &str, index: i32) -> ComicInfo {
@@ -70,6 +75,28 @@ fn comic_with_uploaded_cover(id: &str, workset_id: &str, cover_key: &str) -> Com
         cover_uploaded: true,
         cover_version: 1,
         ..comic(id, workset_id, 0)
+    }
+}
+
+fn chapter(id: &str, comic_id: &str, stage_mask: WorkflowStageMask) -> ChapterInfo {
+    let time = OffsetDateTime::now_utc();
+
+    ChapterInfo {
+        id: id.into(),
+        comic_id: comic_id.into(),
+        comic: None,
+        is_pinned: true,
+        index: 0,
+        subtitle: "chapter".into(),
+        page_count: 0,
+        total_unit_count: 0,
+        translated_unit_count: 0,
+        proofread_unit_count: 0,
+        stages: stage_mask,
+        creator_id: "user-1".into(),
+        creator: None,
+        created_at: time,
+        updated_at: time,
     }
 }
 
@@ -196,7 +223,7 @@ async fn get_info_propagates_missing_comic() {
 }
 
 #[tokio::test]
-async fn list_infos_filters_and_sorts_by_index() {
+async fn list_infos_filters_and_sorts_by_last_activity() {
     let mock = Mock::new();
     mock.seed_workset(workset("workset-1", "team-1"));
     mock.seed_member(admin_member("user-1", "team-1"));
@@ -214,6 +241,7 @@ async fn list_infos_filters_and_sorts_by_index() {
             workset_id: "workset-1".into(),
             fuzzy_title: None,
             is_completed: None,
+            stages: None,
             offset: 0,
             limit: 10,
         },
@@ -243,6 +271,7 @@ async fn list_infos_returns_empty_for_workset_contents() {
             workset_id: "workset-1".into(),
             fuzzy_title: None,
             is_completed: None,
+            stages: None,
             offset: 0,
             limit: 10,
         },
@@ -285,6 +314,7 @@ async fn list_infos_filters_by_fuzzy_title() {
             workset_id: "workset-1".into(),
             fuzzy_title: Some("Beta".into()),
             is_completed: None,
+            stages: None,
             offset: 0,
             limit: 10,
         },
@@ -306,6 +336,7 @@ async fn list_infos_filters_by_fuzzy_title() {
             workset_id: "workset-1".into(),
             fuzzy_title: Some("Carol".into()),
             is_completed: None,
+            stages: None,
             offset: 0,
             limit: 10,
         },
@@ -316,7 +347,7 @@ async fn list_infos_filters_by_fuzzy_title() {
     assert_eq!(list.len(), 1);
     assert_eq!(list[0].id, "comic-gamma");
 
-    // Match by index
+    // Match by display index
     let list = list_infos(
         &mock,
         &mock,
@@ -327,6 +358,7 @@ async fn list_infos_filters_by_fuzzy_title() {
             workset_id: "workset-1".into(),
             fuzzy_title: Some("1".into()),
             is_completed: None,
+            stages: None,
             offset: 0,
             limit: 10,
         },
@@ -335,7 +367,7 @@ async fn list_infos_filters_by_fuzzy_title() {
     assert!(list.is_ok());
     let list = list.ok().unwrap();
     assert_eq!(list.len(), 1);
-    assert_eq!(list[0].id, "comic-beta");
+    assert_eq!(list[0].id, "comic-alpha");
 }
 
 #[tokio::test]
@@ -362,6 +394,7 @@ async fn list_infos_filters_by_is_completed() {
             workset_id: "workset-1".into(),
             fuzzy_title: None,
             is_completed: Some(true),
+            stages: None,
             offset: 0,
             limit: 10,
         },
@@ -372,6 +405,118 @@ async fn list_infos_filters_by_is_completed() {
 
     assert_eq!(list.len(), 1);
     assert_eq!(list[0].id, "comic-done");
+}
+
+#[tokio::test]
+async fn list_infos_filters_by_pinned_chapter_stages() {
+    let mock = Mock::new();
+    mock.seed_workset(workset("workset-1", "team-1"));
+    mock.seed_member(admin_member("user-1", "team-1"));
+    mock.seed_comic(comic("comic-active", "workset-1", 0));
+    mock.seed_comic(comic("comic-pending", "workset-1", 1));
+
+    let completed_translate_mask = WorkflowStageMask::try_from(0u32)
+        .ok()
+        .unwrap()
+        .try_set_phase(WorkflowStage::Translate, StagePhase::Completed)
+        .ok()
+        .unwrap();
+
+    mock.seed_chapter(chapter(
+        "chapter-active",
+        "comic-active",
+        completed_translate_mask,
+    ));
+    mock.seed_chapter(chapter(
+        "chapter-pending",
+        "comic-pending",
+        WorkflowStageMask::try_from(0u32).ok().unwrap(),
+    ));
+
+    let filter_mask = WorkflowStageMask::try_filter_from(0u32)
+        .ok()
+        .unwrap()
+        .try_set_phase(WorkflowStage::Translate, StagePhase::Completed)
+        .ok()
+        .unwrap();
+
+    let list = list_infos(
+        &mock,
+        &mock,
+        token("user-1"),
+        ListComicInfosData {
+            incl_opt: Vec::new(),
+            with_opt: vec![],
+            workset_id: "workset-1".into(),
+            fuzzy_title: None,
+            is_completed: Some(false),
+            stages: Some(filter_mask.into()),
+            offset: 0,
+            limit: 10,
+        },
+    )
+    .await;
+    assert!(list.is_ok());
+    let list = list.ok().unwrap();
+
+    assert_eq!(list.len(), 1);
+    assert_eq!(list[0].id, "comic-active");
+}
+
+#[tokio::test]
+async fn list_infos_rejects_invalid_stages_filter() {
+    let mock = Mock::new();
+    mock.seed_workset(workset("workset-1", "team-1"));
+    mock.seed_member(admin_member("user-1", "team-1"));
+
+    let err = list_infos(
+        &mock,
+        &mock,
+        token("user-1"),
+        ListComicInfosData {
+            incl_opt: Vec::new(),
+            with_opt: vec![],
+            workset_id: "workset-1".into(),
+            fuzzy_title: None,
+            is_completed: Some(false),
+            stages: Some(0b01 << 8),
+            offset: 0,
+            limit: 10,
+        },
+    )
+    .await
+    .err()
+    .unwrap();
+
+    assert_expected_variant(err, ExpectedVariant::Args);
+}
+
+#[tokio::test]
+async fn list_infos_rejects_completed_with_stages_filter() {
+    let mock = Mock::new();
+    mock.seed_workset(workset("workset-1", "team-1"));
+    mock.seed_member(admin_member("user-1", "team-1"));
+
+    let err = list_infos(
+        &mock,
+        &mock,
+        token("user-1"),
+        ListComicInfosData {
+            incl_opt: Vec::new(),
+            with_opt: vec![],
+            workset_id: "workset-1".into(),
+            fuzzy_title: None,
+            is_completed: Some(true),
+            stages: Some(0),
+            offset: 0,
+            limit: 10,
+        },
+    )
+    .await
+    .err()
+    .unwrap();
+
+    assert_expected_variant(err, ExpectedVariant::Args);
 }
 
 #[tokio::test]
@@ -393,6 +538,7 @@ async fn list_infos_applies_pagination() {
             workset_id: "workset-1".into(),
             fuzzy_title: None,
             is_completed: None,
+            stages: None,
             offset: 1,
             limit: 1,
         },

@@ -7,6 +7,11 @@
 // accepts_pending_revert_noop(try_modify_stage)(positive): pending revert remains pending.
 // rejects_publish_revert(try_modify_stage)(negative): publish cannot be reverted.
 // rejects_completed_advance(try_modify_stage)(negative): completed stages cannot advance further.
+// rejects_active_one_shot_mask(WorkflowStageMask::try_from)(negative): regular masks reject active one-shot stages.
+// rejects_ignore_regular_mask(WorkflowStageMask::try_from)(negative): regular masks reject ignore fields.
+// accepts_ignore_filter_mask(WorkflowStageMask::try_filter_from)(positive): filter masks accept ignore fields.
+// rejects_active_one_shot_filter_mask(WorkflowStageMask::try_filter_from)(negative): filter masks reject active one-shot stages.
+// rejects_invalid_set_phase(WorkflowStageMask::try_set_phase)(negative): setting an active one-shot phase is rejected.
 
 use super::*;
 
@@ -129,6 +134,55 @@ fn rejects_completed_advance() {
         WorkflowEvent::Advance,
     )
     .err();
+
+    assert!(err.is_some());
+}
+
+#[test]
+fn rejects_active_one_shot_mask() {
+    let active_raw_provide_mask = 0b01;
+
+    let err = WorkflowStageMask::try_from(active_raw_provide_mask).err();
+
+    assert!(err.is_some());
+}
+
+#[test]
+fn rejects_ignore_regular_mask() {
+    let ignore_translate_mask = 0b11 << 2;
+
+    let err = WorkflowStageMask::try_from(ignore_translate_mask).err();
+
+    assert!(err.is_some());
+}
+
+#[test]
+fn accepts_ignore_filter_mask() {
+    let ignore_translate_mask = 0b11 << 2;
+
+    let mask = WorkflowStageMask::try_filter_from(ignore_translate_mask)
+        .ok()
+        .unwrap();
+
+    assert!(mask.ignores_stage(WorkflowStage::Translate));
+}
+
+#[test]
+fn rejects_active_one_shot_filter_mask() {
+    let active_review_mask = 0b01 << 8;
+
+    let err = WorkflowStageMask::try_filter_from(active_review_mask).err();
+
+    assert!(err.is_some());
+}
+
+#[test]
+fn rejects_invalid_set_phase() {
+    let mask = WorkflowStageMask::try_from(0u32).ok().unwrap();
+
+    let err = mask
+        .try_set_phase(WorkflowStage::Publish, StagePhase::Active)
+        .err();
 
     assert!(err.is_some());
 }

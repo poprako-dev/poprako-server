@@ -34,6 +34,7 @@ use crate::part::shared::proxy::ProxyExecute;
 use crate::result::{ExpectedVariant, RegularError, RegularResult, accept};
 use crate::util::next_snowflake_id;
 use crate::value::chapter::{StagePhase, WorkflowEvent, WorkflowStage, try_modify_stage};
+use crate::value::index::stored_index_to_user_index;
 use crate::value::role::{RoleField, RoleMask};
 
 /// Domain opers for chapter entities: ID generation, workflow-stage
@@ -66,7 +67,7 @@ impl ChapterComplex {
 
         let chapter_stage_update = ChapterStageUpdate {
             id: chapter_info.id.clone(),
-            stages: chapter_info.stages.set_phase(stage, next_phase),
+            stages: chapter_info.stages.try_set_phase(stage, next_phase)?,
         };
 
         accept(chapter_stage_update)
@@ -135,7 +136,10 @@ impl ChapterComplex {
 /// Generate a human-readable default subtitle for a chapter, e.g. "Ch. 1".
 fn default_subtitle(index: i32) -> String {
     let mut args = HashMap::new();
-    args.insert(Cow::Borrowed("number"), FluentValue::from(index + 1));
+    args.insert(
+        Cow::Borrowed("number"),
+        FluentValue::from(stored_index_to_user_index(index)),
+    );
 
     trl_kv("chapter-default-subtitle", &args)
 }

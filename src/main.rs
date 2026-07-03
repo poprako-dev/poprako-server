@@ -40,12 +40,12 @@ async fn main() -> anyhow::Result<()> {
 
     let database_url = env::var("DATABASE_URL").context("DATABASE_URL is not set")?;
 
+    // FIXME: from_env
     let shared = RdbShared::from_database_url(&database_url).expect("Database connection failed");
 
     let drive = RdbDrive::new(shared.clone());
 
     let repo = RdbRepo::new(shared.clone());
-
     let repo_effect = Arc::new(RdbRepo::new(shared));
 
     let prom = RdbProm;

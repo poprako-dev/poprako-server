@@ -32,8 +32,8 @@ pub struct AsyncEffectDevelop<C, R> {
     send: Sender<Event>,
     shutdown: Mutex<Option<OneshotSender<()>>>,
     done: Mutex<Option<OneshotReceiver<()>>>,
-    _context: PhantomData<C>,
-    _repo: PhantomData<R>,
+
+    _p: PhantomData<(C, R)>,
 }
 
 struct BackgroundHandler<C, R> {
@@ -42,7 +42,8 @@ struct BackgroundHandler<C, R> {
     shutdown_recv: OneshotReceiver<()>,
     done_send: OneshotSender<()>,
     accepting: Arc<AtomicBool>,
-    _context: PhantomData<C>,
+
+    _p: PhantomData<C>,
 }
 
 impl<C, R> AsyncEffectDevelop<C, R>
@@ -68,7 +69,7 @@ where
             shutdown_recv,
             done_send,
             accepting: Arc::clone(&accepting),
-            _context: PhantomData,
+            _p: PhantomData,
         };
 
         tokio::spawn(async move {
@@ -80,8 +81,7 @@ where
             send,
             shutdown: Mutex::new(Some(shutdown_send)),
             done: Mutex::new(Some(done_recv)),
-            _context: PhantomData,
-            _repo: PhantomData,
+            _p: PhantomData,
         }
     }
 
