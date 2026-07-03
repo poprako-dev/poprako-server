@@ -18,9 +18,9 @@ use time::OffsetDateTime;
 use poprako_transactional::advance::Advance;
 
 use crate::part::prom::{Append, Prom};
+use crate::part_impl::rdb_core::RdbContext;
+use crate::part_impl::rdb_core::result::diesel;
 use crate::part_impl::repo_rdb::schema::{self, t_local_message};
-use crate::part_impl::shared_rdb::RdbContext;
-use crate::part_impl::shared_rdb::result::diesel;
 use crate::result::{RegularError, RegularResult};
 
 // ── Entity ─────────────────────────────────────────────────────────────────

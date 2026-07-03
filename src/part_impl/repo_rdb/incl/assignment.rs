@@ -6,10 +6,10 @@ use crate::model::comic::ComicInfo;
 use crate::model::team::TeamInfo;
 use crate::model::user::UserInfo;
 use crate::model::workset::WorksetInfo;
+use crate::part_impl::rdb_core::RdbConn;
 use crate::part_impl::repo_rdb::incl::{
     self, ChapterByIds, ComicByIds, Incl, TeamByIds, UserByIds, WorksetByIds,
 };
-use crate::part_impl::shared_rdb::RdbConn;
 use crate::result::RegularResult;
 use crate::value::assignment::AssignmentInclOpt;
 use crate::value::incl::expand_incl_opts;

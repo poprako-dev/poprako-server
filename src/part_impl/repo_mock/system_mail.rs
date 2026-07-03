@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use time::OffsetDateTime;
 
 use crate::model::system_mail::{SystemMailForm, SystemMailInfo};
-use crate::part::repo::step::system_mail::{ListInfosByReceiverId, MarkRead, Send, SendBatch};
+use crate::part::repo::step::system_mail::{ListInfosByReceiverId, MarkRead, Send};
 use crate::part::repo::system_mail::{SystemMailRepo, SystemMailRepoTransactional};
 use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactional, expected, now};
@@ -48,38 +48,12 @@ impl<'a> Execute<Send<'a>> for Mock {
     }
 }
 
-#[async_trait]
-impl<'a> Execute<SendBatch<'a>> for Mock {
-    type Error = RegularError;
-
-    async fn execute(&self, step: &SendBatch<'a>) -> Result<(), Self::Error> {
-        let mut state = self.state.lock().unwrap();
-
-        for i in 0..step.forms.len() {
-            for j in (i + 1)..step.forms.len() {
-                if step.forms[i].id == step.forms[j].id {
-                    return Err(expected("error-already-exists"));
-                }
-            }
-        }
-
-        for system_mail_form in step.forms {
-            if state
-                .system_mails
-                .iter()
-                .any(|mail| mail.id == system_mail_form.id)
-            {
-                return Err(expected("error-already-exists"));
-            }
-        }
-
-        for system_mail_form in step.forms {
-            insert_mail(&mut state, system_mail_form);
-        }
-
-        Ok(())
-    }
-}
+// #[async_trait]
+// impl<'a> Execute<SendBatch<'a>> for Mock {
+//     type Error = RegularError;
+//
+//     ...
+// }
 
 #[async_trait]
 impl<'a> Execute<ListInfosByReceiverId<'a>> for Mock {
@@ -104,7 +78,7 @@ impl<'a> Execute<ListInfosByReceiverId<'a>> for Mock {
             .cloned()
             .collect();
 
-        mails.sort_by(|a, b| b.created_at.cmp(&a.created_at));
+        mails.sort_by_key(|b| std::cmp::Reverse(b.created_at));
 
         Ok(mails
             .into_iter()
@@ -212,43 +186,15 @@ async fn send_rejects_duplicate_id_without_mutation() {
     assert_eq!(snapshot.system_mails[0].receiver_id, "user-1");
 }
 
-#[tokio::test]
-async fn send_batch_saves_all_mails() {
-    let mock = Mock::new();
-    let system_mail_forms = vec![
-        mail_form("sys_mail-1", "user-1"),
-        mail_form("sys_mail-2", "user-1"),
-    ];
-
-    mock.execute(&SystemMailStep::send_batch(&system_mail_forms))
-        .await
-        .unwrap();
-
-    let snapshot = mock.snapshot();
-    assert_eq!(snapshot.system_mails.len(), 2);
-}
-
-#[tokio::test]
-async fn send_batch_rejects_duplicate_batch_without_partial_write() {
-    let mock = Mock::new();
-    let time = now();
-    mock.seed_system_mail(mail_info("sys_mail-1", "user-1", false, time));
-
-    let system_mail_forms = vec![
-        mail_form("sys_mail-2", "user-1"),
-        mail_form("sys_mail-1", "user-1"),
-    ];
-
-    let err = mock
-        .execute(&SystemMailStep::send_batch(&system_mail_forms))
-        .await
-        .err()
-        .unwrap();
-    assert_expected_variant(err, ExpectedVariant::Args);
-
-    let snapshot = mock.snapshot();
-    assert_eq!(snapshot.system_mails.len(), 1);
-}
+// #[tokio::test]
+// async fn send_batch_saves_all_mails() {
+//     ...
+// }
+//
+// #[tokio::test]
+// async fn send_batch_rejects_duplicate_batch_without_partial_write() {
+//     ...
+// }
 
 #[tokio::test]
 async fn list_infos_by_receiver_id_filters_sorts_and_pages() {

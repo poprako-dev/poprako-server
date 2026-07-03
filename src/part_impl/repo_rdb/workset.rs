@@ -14,11 +14,11 @@ use crate::part::repo::step::workset::{
 };
 use crate::part::repo::workset::{WorksetRepo, WorksetRepoTransactional};
 use crate::part::shared::execute::Execute;
+use crate::part_impl::rdb_core::RdbConn;
+use crate::part_impl::rdb_core::RdbContext;
+use crate::part_impl::rdb_core::result::{diesel, expected};
 use crate::part_impl::repo_rdb::entity::workset::{WorksetAspect, WorksetEntry, WorksetRow};
 use crate::part_impl::repo_rdb::{RdbRepo, RdbRepoTransactional};
-use crate::part_impl::shared_rdb::RdbConn;
-use crate::part_impl::shared_rdb::RdbContext;
-use crate::part_impl::shared_rdb::result::{diesel, expected};
 use crate::result::{RegularError, RegularResult};
 
 use crate::part_impl::repo_rdb::schema::t_workset::dsl::*;
@@ -157,7 +157,7 @@ impl<'a> Execute<GetInfoById<'a>> for RdbRepo {
     type Error = RegularError;
 
     async fn execute(&self, step: &GetInfoById<'a>) -> RegularResult<WorksetInfo> {
-        submit_query!(self.shared, get_info_by_id, step.id)
+        submit_query!(self.core, get_info_by_id, step.id)
     }
 }
 
@@ -167,7 +167,7 @@ impl<'a> Execute<ListInfosByTeamId<'a>> for RdbRepo {
 
     async fn execute(&self, step: &ListInfosByTeamId<'a>) -> RegularResult<Vec<WorksetInfo>> {
         submit_query!(
-            self.shared,
+            self.core,
             list_infos_by_team_id,
             step.team_id,
             step.offset,
@@ -182,7 +182,7 @@ impl<'a> Execute<UpdateInfo<'a>> for RdbRepo {
 
     async fn execute(&self, step: &UpdateInfo<'a>) -> RegularResult<()> {
         submit_query!(
-            self.shared,
+            self.core,
             update_info,
             step.update.id.as_str(),
             &step.update.name,

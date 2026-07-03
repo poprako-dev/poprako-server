@@ -9,16 +9,16 @@ use poprako_transactional::util::AsyncFnMark;
 
 use crate::result::RegularError;
 
-use crate::part_impl::shared_rdb::result::diesel;
-use crate::part_impl::shared_rdb::{RdbContext, RdbShared};
+use crate::part_impl::rdb_core::result::diesel;
+use crate::part_impl::rdb_core::{RdbContext, RdbCore};
 
 pub struct RdbDrive {
-    shared: RdbShared,
+    core: RdbCore,
 }
 
 impl RdbDrive {
-    pub fn new(shared: RdbShared) -> Self {
-        Self { shared }
+    pub fn new(core: RdbCore) -> Self {
+        Self { core }
     }
 }
 
@@ -34,7 +34,7 @@ impl Drive<RdbContext> for RdbDrive {
             + AsyncFnMark<&'c mut RdbContext, Result<T, E>, Fut: Send>
             + Send,
     {
-        let conn = self.shared.get().await.map_err(DriveError::Backend)?;
+        let conn = self.core.get().await.map_err(DriveError::Backend)?;
 
         let mut rdb_context = RdbContext::new(conn);
 

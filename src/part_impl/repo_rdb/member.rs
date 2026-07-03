@@ -10,16 +10,16 @@ use poprako_transactional::advance::Advance;
 use crate::model::member::{MemberForm, MemberInfo, MemberListSpec, MemberRoleUpdate};
 use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
 use crate::part::repo::step::member::{
-    Create, Delete, FindInfoByUserIdAndTeamId, GetInfoById, GetInfoExcluded, ListInfos,
-    ListInfosByUserIdExcluded, TouchLastActive, UpdateRole, UpdateUserNickname,
+    Create, Delete, FindInfoByUserIdAndTeamId, GetInfoById, ListInfos, ListInfosByUserIdExcluded,
+    TouchLastActive, UpdateRole, UpdateUserNickname,
 };
 use crate::part::shared::execute::Execute;
+use crate::part_impl::rdb_core::RdbConn;
+use crate::part_impl::rdb_core::RdbContext;
+use crate::part_impl::rdb_core::result::{diesel, expected};
 use crate::part_impl::repo_rdb::entity::member::{MemberAspect, MemberEntry, MemberRow};
 use crate::part_impl::repo_rdb::incl;
 use crate::part_impl::repo_rdb::{RdbRepo, RdbRepoTransactional};
-use crate::part_impl::shared_rdb::RdbConn;
-use crate::part_impl::shared_rdb::RdbContext;
-use crate::part_impl::shared_rdb::result::{diesel, expected};
 use crate::result::{RegularError, RegularResult};
 use crate::value::member::MemberInclOpt;
 use crate::value::role::{RoleField, RoleMask};
@@ -293,28 +293,6 @@ async fn list_infos_by_user_id_excluded(
     Ok(rows.into_iter().map(Into::into).collect())
 }
 
-async fn get_info_excluded(
-    conn: &mut RdbConn,
-    id: &str,
-    incl_opt: &[MemberInclOpt],
-) -> RegularResult<MemberInfo> {
-    let row: MemberRow = t_member
-        .filter(f_id.eq(id))
-        .select(MemberRow::as_select())
-        .for_update()
-        .get_result(conn)
-        .await
-        .optional()
-        .map_err(diesel)?
-        .ok_or_else(|| expected("error-member-not-found"))?;
-
-    let mut info: MemberInfo = row.into();
-
-    incl::member::populate_member_incls(conn, std::slice::from_mut(&mut info), incl_opt).await?;
-
-    Ok(info)
-}
-
 async fn update_role(conn: &mut RdbConn, update: &MemberRoleUpdate) -> RegularResult<()> {
     let now = OffsetDateTime::now_utc();
 
@@ -349,7 +327,7 @@ impl<'a> Execute<FindInfoByUserIdAndTeamId<'a>> for RdbRepo {
         step: &FindInfoByUserIdAndTeamId<'a>,
     ) -> RegularResult<Option<MemberInfo>> {
         submit_query!(
-            self.shared,
+            self.core,
             find_info_by_user_id_and_team_id,
             step.user_id,
             step.team_id
@@ -362,7 +340,7 @@ impl<'a> Execute<ListInfos<'a>> for RdbRepo {
     type Error = RegularError;
 
     async fn execute(&self, step: &ListInfos<'a>) -> RegularResult<Vec<MemberInfo>> {
-        submit_query!(self.shared, list_infos, step.spec)
+        submit_query!(self.core, list_infos, step.spec)
     }
 }
 
@@ -371,7 +349,7 @@ impl<'a> Execute<GetInfoById<'a>> for RdbRepo {
     type Error = RegularError;
 
     async fn execute(&self, step: &GetInfoById<'a>) -> RegularResult<MemberInfo> {
-        submit_query!(self.shared, get_info_by_id, step.id, step.incl_opt)
+        submit_query!(self.core, get_info_by_id, step.id, step.incl_opt)
     }
 }
 
@@ -439,19 +417,6 @@ impl<'a> Advance<FindInfoByUserIdAndTeamId<'a>, RdbContext> for RdbRepoTransacti
         step: &FindInfoByUserIdAndTeamId<'a>,
     ) -> RegularResult<Option<MemberInfo>> {
         find_info_by_user_id_and_team_id(context.conn(), step.user_id, step.team_id).await
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<GetInfoExcluded<'a>, RdbContext> for RdbRepoTransactional {
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut RdbContext,
-        step: &GetInfoExcluded<'a>,
-    ) -> RegularResult<MemberInfo> {
-        get_info_excluded(context.conn(), step.id, step.incl_opt).await
     }
 }
 

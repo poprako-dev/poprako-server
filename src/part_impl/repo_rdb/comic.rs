@@ -19,12 +19,12 @@ use crate::part::repo::step::comic::{
     UpdateChapterCount, UpdateInfo,
 };
 use crate::part::shared::execute::Execute;
+use crate::part_impl::rdb_core::RdbConn;
+use crate::part_impl::rdb_core::RdbContext;
+use crate::part_impl::rdb_core::result::{diesel, expected};
 use crate::part_impl::repo_rdb::entity::comic::{ComicAspect, ComicEntry, ComicRow};
 use crate::part_impl::repo_rdb::incl;
 use crate::part_impl::repo_rdb::{RdbRepo, RdbRepoTransactional};
-use crate::part_impl::shared_rdb::RdbConn;
-use crate::part_impl::shared_rdb::RdbContext;
-use crate::part_impl::shared_rdb::result::{diesel, expected};
 use crate::result::{RegularError, RegularResult};
 use crate::value::chapter::{StagePhase, WorkflowStage, WorkflowStageMask};
 use crate::value::comic::ComicInclOpt;
@@ -166,10 +166,9 @@ async fn list_infos(conn: &mut RdbConn, spec: &ComicListSpec) -> RegularResult<V
     if let ComicListKind::Active {
         stages: Some(stage_mask),
     } = &spec.kind
+        && let Some(sql) = workflow_filter_sql(*stage_mask)
     {
-        if let Some(sql) = workflow_filter_sql(*stage_mask) {
-            query = query.filter(diesel::dsl::sql::<Bool>(&sql));
-        }
+        query = query.filter(diesel::dsl::sql::<Bool>(&sql));
     }
 
     let rows: Vec<ComicRow> = query
@@ -193,7 +192,7 @@ async fn update_info(conn: &mut RdbConn, update: &ComicInfoUpdate) -> RegularRes
     let comic_info = get_info_by_id(conn, &update.id, &[]).await?;
 
     let composed_title =
-        ComicComplex::composed_title_parts(comic_info.index, &update.author, &update.title);
+        ComicComplex::compose_title(comic_info.index, &update.author, &update.title);
 
     let aspect = ComicAspect::new(now)
         .title(&update.title)
@@ -380,7 +379,7 @@ impl<'a> Execute<GetInfoById<'a>> for RdbRepo {
     type Error = RegularError;
 
     async fn execute(&self, step: &GetInfoById<'a>) -> RegularResult<ComicInfo> {
-        submit_query!(self.shared, get_info_by_id, step.id, step.incl_opt)
+        submit_query!(self.core, get_info_by_id, step.id, step.incl_opt)
     }
 }
 
@@ -389,7 +388,7 @@ impl<'a> Execute<ListInfos<'a>> for RdbRepo {
     type Error = RegularError;
 
     async fn execute(&self, step: &ListInfos<'a>) -> RegularResult<Vec<ComicInfo>> {
-        submit_query!(self.shared, list_infos, step.spec)
+        submit_query!(self.core, list_infos, step.spec)
     }
 }
 
@@ -398,7 +397,7 @@ impl<'a> Execute<UpdateInfo<'a>> for RdbRepo {
     type Error = RegularError;
 
     async fn execute(&self, step: &UpdateInfo<'a>) -> RegularResult<()> {
-        submit_query!(self.shared, update_info, step.update)
+        submit_query!(self.core, update_info, step.update)
     }
 }
 
@@ -408,7 +407,7 @@ impl<'a> Execute<MarkCoverUploaded<'a>> for RdbRepo {
 
     async fn execute(&self, step: &MarkCoverUploaded<'a>) -> RegularResult<()> {
         submit_query!(
-            self.shared,
+            self.core,
             mark_cover_uploaded,
             step.id,
             step.cover_version

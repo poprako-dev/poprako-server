@@ -16,11 +16,11 @@ use crate::part::repo::step::page::{
     ListInfosByChapterId, MarkImageUploaded, ReserveImage, SetUnitCounters,
 };
 use crate::part::shared::execute::Execute;
+use crate::part_impl::rdb_core::RdbConn;
+use crate::part_impl::rdb_core::RdbContext;
+use crate::part_impl::rdb_core::result::{diesel, expected};
 use crate::part_impl::repo_rdb::entity::page::{PageAspect, PageEntry, PageRow};
 use crate::part_impl::repo_rdb::{RdbRepo, RdbRepoTransactional};
-use crate::part_impl::shared_rdb::RdbConn;
-use crate::part_impl::shared_rdb::RdbContext;
-use crate::part_impl::shared_rdb::result::{diesel, expected};
 use crate::result::{RegularError, RegularResult};
 
 use crate::part_impl::repo_rdb::schema::t_page::dsl::*;
@@ -199,7 +199,7 @@ impl<'a> Execute<GetInfoById<'a>> for RdbRepo {
     type Error = RegularError;
 
     async fn execute(&self, step: &GetInfoById<'a>) -> RegularResult<PageInfo> {
-        submit_query!(self.shared, get_info_by_id, step.id)
+        submit_query!(self.core, get_info_by_id, step.id)
     }
 }
 
@@ -209,7 +209,7 @@ impl<'a> Execute<ListInfosByChapterId<'a>> for RdbRepo {
 
     async fn execute(&self, step: &ListInfosByChapterId<'a>) -> RegularResult<Vec<PageInfo>> {
         submit_query!(
-            self.shared,
+            self.core,
             list_infos_by_chapter_id,
             step.chapter_id,
             step.offset,

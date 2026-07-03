@@ -1,8 +1,6 @@
 //! Step types for chapter repository opers.
 
-use poprako_macro::Paginate;
 use poprako_transactional::step::Step;
-use poprako_util::page::Page;
 
 use std::collections::HashMap;
 
@@ -50,25 +48,25 @@ impl<'a> Step for GetInfoByIdExcluded<'a> {
     type Output = ChapterInfo;
 }
 
-/// Step that lists chapters by comic.
-#[Paginate]
-pub struct ListInfosByComicId<'a> {
-    pub comic_id: &'a str,
-}
-
-impl<'a> Step for ListInfosByComicId<'a> {
-    type Output = Vec<ChapterInfo>;
-}
-
-/// Step that lists chapters by comic with a pessimistic lock.
-#[Paginate]
-pub struct ListInfosByComicIdExcluded<'a> {
-    pub comic_id: &'a str,
-}
-
-impl<'a> Step for ListInfosByComicIdExcluded<'a> {
-    type Output = Vec<ChapterInfo>;
-}
+// /// Step that lists chapters by comic.
+// #[Paginate]
+// pub struct ListInfosByComicId<'a> {
+//     pub comic_id: &'a str,
+// }
+//
+// impl<'a> Step for ListInfosByComicId<'a> {
+//     type Output = Vec<ChapterInfo>;
+// }
+//
+// /// Step that lists chapters by comic with a pessimistic lock.
+// #[Paginate]
+// pub struct ListInfosByComicIdExcluded<'a> {
+//     pub comic_id: &'a str,
+// }
+//
+// impl<'a> Step for ListInfosByComicIdExcluded<'a> {
+//     type Output = Vec<ChapterInfo>;
+// }
 
 /// Step that lists all chapters by comic with a pessimistic lock.
 pub struct ListAllInfosByComicIdExcluded<'a> {
@@ -185,26 +183,26 @@ impl ChapterStep {
         GetInfoByIdExcluded { id, incl_opt }
     }
 
-    /// Constructs a step to list chapters by comic.
-    pub fn list_infos_by_comic_id<'a>(comic_id: &'a str, page: Page) -> ListInfosByComicId<'a> {
-        ListInfosByComicId {
-            comic_id,
-            offset: page.offset,
-            limit: page.limit,
-        }
-    }
+    // /// Constructs a step to list chapters by comic.
+    // pub fn list_infos_by_comic_id<'a>(comic_id: &'a str, page: Page) -> ListInfosByComicId<'a> {
+    //     ListInfosByComicId {
+    //         comic_id,
+    //         offset: page.offset,
+    //         limit: page.limit,
+    //     }
+    // }
 
-    /// Constructs a step to list chapters by comic with a pessimistic lock.
-    pub fn list_infos_by_comic_id_excluded<'a>(
-        comic_id: &'a str,
-        page: Page,
-    ) -> ListInfosByComicIdExcluded<'a> {
-        ListInfosByComicIdExcluded {
-            comic_id,
-            offset: page.offset,
-            limit: page.limit,
-        }
-    }
+    // /// Constructs a step to list chapters by comic with a pessimistic lock.
+    // pub fn list_infos_by_comic_id_excluded<'a>(
+    //     comic_id: &'a str,
+    //     page: Page,
+    // ) -> ListInfosByComicIdExcluded<'a> {
+    //     ListInfosByComicIdExcluded {
+    //         comic_id,
+    //         offset: page.offset,
+    //         limit: page.limit,
+    //     }
+    // }
 
     /// Constructs a step to list all chapters by comic with a pessimistic lock.
     pub fn list_all_infos_by_comic_id_excluded<'a>(

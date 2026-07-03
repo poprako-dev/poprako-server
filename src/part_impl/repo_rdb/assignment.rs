@@ -15,14 +15,14 @@ use crate::part::repo::step::assignment::{
     Create, Delete, GetInfoByChapterIdAndUserId, GetInfoById, ListInfos, PutRoles,
 };
 use crate::part::shared::execute::Execute;
+use crate::part_impl::rdb_core::RdbConn;
+use crate::part_impl::rdb_core::RdbContext;
+use crate::part_impl::rdb_core::result::{diesel, expected};
 use crate::part_impl::repo_rdb::entity::assignment::{
     AssignmentAspect, AssignmentEntry, AssignmentRoleTimestamps, AssignmentRow,
 };
 use crate::part_impl::repo_rdb::incl;
 use crate::part_impl::repo_rdb::{RdbRepo, RdbRepoTransactional};
-use crate::part_impl::shared_rdb::RdbConn;
-use crate::part_impl::shared_rdb::RdbContext;
-use crate::part_impl::shared_rdb::result::{diesel, expected};
 use crate::result::{RegularError, RegularResult};
 use crate::value::assignment::AssignmentInclOpt;
 use crate::value::role::RoleField;
@@ -202,7 +202,7 @@ impl<'a> Execute<GetInfoByChapterIdAndUserId<'a>> for RdbRepo {
         step: &GetInfoByChapterIdAndUserId<'a>,
     ) -> RegularResult<Option<AssignmentInfo>> {
         submit_query!(
-            self.shared,
+            self.core,
             get_info_by_chapter_id_and_user_id,
             step.chapter_id,
             step.user_id
@@ -215,7 +215,7 @@ impl<'a> Execute<ListInfos<'a>> for RdbRepo {
     type Error = RegularError;
 
     async fn execute(&self, step: &ListInfos<'a>) -> RegularResult<Vec<AssignmentInfo>> {
-        submit_query!(self.shared, list_infos, step.spec)
+        submit_query!(self.core, list_infos, step.spec)
     }
 }
 
@@ -224,7 +224,7 @@ impl<'a> Execute<GetInfoById<'a>> for RdbRepo {
     type Error = RegularError;
 
     async fn execute(&self, step: &GetInfoById<'a>) -> RegularResult<AssignmentInfo> {
-        submit_query!(self.shared, get_info_by_id, step.id, step.incl_opt)
+        submit_query!(self.core, get_info_by_id, step.id, step.incl_opt)
     }
 }
 

@@ -6,6 +6,12 @@ resolver = "3"
 name = "poprako-r"
 version = "0.1.0"
 edition = "2024"
+description = "Event-driven backend service for manga translation project management"
+license = "MIT"
+repository = "https://github.com/anomalyco/poprako-r"
+keywords = ["manga", "translation", "backend", "axum", "diesel"]
+categories = ["web-programming", "asynchronous"]
+publish = false
 
 [features]
 repo = []

@@ -4,8 +4,8 @@ use poprako_transactional::advance::Advance;
 
 use crate::part::repo::step::chapter::{
     AdjustUnitCounters, Create, Delete, FindPinnedInfoByComicId, GetInfoById, GetInfoByIdExcluded,
-    ListAllInfosByComicIdExcluded, ListInfos, ListInfosByComicId, ListInfosByComicIdExcluded,
-    ListPinnedInfosByComicIds, SetPageCounters, UnpinOthers, UpdateInfo, UpdateStage,
+    ListAllInfosByComicIdExcluded, ListInfos, ListPinnedInfosByComicIds, SetPageCounters,
+    UnpinOthers, UpdateInfo, UpdateStage,
 };
 use crate::part::shared::execute::Execute;
 use crate::result::RegularError;
@@ -16,7 +16,7 @@ pub trait ChapterRepo<C>:
     DeriveTransactional
     + for<'a> Execute<GetInfoById<'a>, Error = RegularError>
     + for<'a> Execute<ListInfos<'a>, Error = RegularError>
-    + for<'a> Execute<ListInfosByComicId<'a>, Error = RegularError>
+    // + for<'a> Execute<ListInfosByComicId<'a>, Error = RegularError>
     + for<'a> Execute<FindPinnedInfoByComicId<'a>, Error = RegularError>
     + for<'a> Execute<ListPinnedInfosByComicIds<'a>, Error = RegularError>
 where
@@ -29,7 +29,7 @@ pub trait ChapterRepoTransactional<C>:
     for<'a> Advance<Create<'a>, C, Error = RegularError>
     + for<'a> Advance<GetInfoById<'a>, C, Error = RegularError>
     + for<'a> Advance<GetInfoByIdExcluded<'a>, C, Error = RegularError>
-    + for<'a> Advance<ListInfosByComicIdExcluded<'a>, C, Error = RegularError>
+    // + for<'a> Advance<ListInfosByComicIdExcluded<'a>, C, Error = RegularError>
     + for<'a> Advance<ListAllInfosByComicIdExcluded<'a>, C, Error = RegularError>
     + for<'a> Advance<FindPinnedInfoByComicId<'a>, C, Error = RegularError>
     + for<'a> Advance<UpdateInfo<'a>, C, Error = RegularError>

@@ -27,14 +27,14 @@ use crate::model::comic::ComicInfo;
 use crate::model::team::TeamInfo;
 use crate::model::user::UserInfo;
 use crate::model::workset::WorksetInfo;
+use crate::part_impl::rdb_core::RdbConn;
+use crate::part_impl::rdb_core::result::diesel;
 use crate::part_impl::repo_rdb::entity::chapter::ChapterRow;
 use crate::part_impl::repo_rdb::entity::comic::ComicRow;
 use crate::part_impl::repo_rdb::entity::team::TeamRow;
 use crate::part_impl::repo_rdb::entity::user::UserRow;
 use crate::part_impl::repo_rdb::entity::workset::WorksetRow;
 use crate::part_impl::repo_rdb::schema;
-use crate::part_impl::shared_rdb::RdbConn;
-use crate::part_impl::shared_rdb::result::diesel;
 use crate::result::RegularResult;
 
 pub mod announcement;

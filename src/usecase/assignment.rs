@@ -114,6 +114,14 @@ where
     )
     .await?;
 
+    AssignmentPermComplex::can_user_take_roles(
+        &mut repo.as_proxy(),
+        &token.user_id,
+        &data.chapter_id,
+        data.roles,
+    )
+    .await?;
+
     let assignment_info = drive
         .with_context(async move |context| {
             let repo = repo.derive_transactional().await;
@@ -187,6 +195,14 @@ where
 
     AssignmentPermComplex::can_user_update_roles(&mut repo.as_proxy(), &token.user_id, &data)
         .await?;
+
+    AssignmentPermComplex::can_user_take_roles(
+        &mut repo.as_proxy(),
+        &data.user_id,
+        &data.chapter_id,
+        data.roles,
+    )
+    .await?;
 
     drive
         .with_context(async move |context| {

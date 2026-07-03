@@ -7,7 +7,6 @@ use crate::part::repo::step::assignment::{AssignmentStep, GetInfoByChapterIdAndU
 use crate::part::repo::step::chapter::{ChapterStep, GetInfoById as ChapterGetInfoById};
 use crate::part::repo::step::comic::{ComicStep, GetInfoById as ComicGetInfoById};
 use crate::part::repo::step::member::FindInfoByUserIdAndTeamId;
-use crate::part::repo::step::page::{GetInfoById as PageGetInfoById, PageStep};
 use crate::part::repo::step::workset::{GetInfoById as WorksetGetInfoById, WorksetStep};
 use crate::part::shared::proxy::ProxyExecute;
 use crate::result::{ExpectedVariant, RegularError, RegularResult, accept};
@@ -51,21 +50,6 @@ impl PagePermComplex {
         P: for<'a> ProxyExecute<GetInfoByChapterIdAndUserId<'a>, Error = RegularError>,
     {
         check_reserve_role(proxy, user_id, chapter_id).await
-    }
-
-    /// Verify the caller may reserve a replacement image for one page.
-    pub async fn can_user_reserve_image<P>(
-        proxy: &mut P,
-        user_id: &str,
-        page_id: &str,
-    ) -> RegularResult<()>
-    where
-        P: for<'a> ProxyExecute<PageGetInfoById<'a>, Error = RegularError>
-            + for<'a> ProxyExecute<GetInfoByChapterIdAndUserId<'a>, Error = RegularError>,
-    {
-        let page_info = proxy.execute(&PageStep::get_info_by_id(page_id)).await?;
-
-        check_reserve_role(proxy, user_id, &page_info.chapter_id).await
     }
 
     /// Verify the caller may list pages under a chapter.

@@ -15,13 +15,13 @@ use crate::part::repo::step::assignment_invitation::{
     Create, Delete, GetInfoByCodeExcluded, GetInfoById, ListInfos, MarkPendingAsUsed,
 };
 use crate::part::shared::execute::Execute;
+use crate::part_impl::rdb_core::result::{diesel, expected};
+use crate::part_impl::rdb_core::{RdbConn, RdbContext};
 use crate::part_impl::repo_rdb::entity::assignment_invitation::{
     AssignmentInvitationAspect, AssignmentInvitationEntry, AssignmentInvitationRow,
 };
 use crate::part_impl::repo_rdb::schema::t_assignment_invitation::dsl::*;
 use crate::part_impl::repo_rdb::{RdbRepo, RdbRepoTransactional};
-use crate::part_impl::shared_rdb::result::{diesel, expected};
-use crate::part_impl::shared_rdb::{RdbConn, RdbContext};
 use crate::result::{RegularError, RegularResult};
 
 impl AssignmentInvitationRepo<RdbContext> for RdbRepo {}
@@ -149,7 +149,7 @@ impl<'a> Execute<ListInfos<'a>> for RdbRepo {
 
     async fn execute(&self, step: &ListInfos<'a>) -> RegularResult<Vec<AssignmentInvitationInfo>> {
         submit_query!(
-            self.shared,
+            self.core,
             list_infos,
             step.chapter_id,
             step.pending,
@@ -164,7 +164,7 @@ impl<'a> Execute<GetInfoById<'a>> for RdbRepo {
     type Error = RegularError;
 
     async fn execute(&self, step: &GetInfoById<'a>) -> RegularResult<AssignmentInvitationInfo> {
-        submit_query!(self.shared, get_info_by_id, step.id)
+        submit_query!(self.core, get_info_by_id, step.id)
     }
 }
 

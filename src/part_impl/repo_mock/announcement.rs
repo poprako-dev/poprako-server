@@ -49,7 +49,7 @@ fn list_announcements(state: &MockState, spec: &AnnouncementListSpec) -> Vec<Ann
         .cloned()
         .collect::<Vec<_>>();
 
-    announcement_infos.sort_by(|left, right| right.created_at.cmp(&left.created_at));
+    announcement_infos.sort_by_key(|right| std::cmp::Reverse(right.created_at));
 
     for announcement_info in &mut announcement_infos {
         apply_user_incl(state, announcement_info, include_user);

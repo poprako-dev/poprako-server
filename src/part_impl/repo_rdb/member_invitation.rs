@@ -17,13 +17,13 @@ use crate::part::repo::step::member_invitation::{
     Create, Delete, GetInfoByCodeExcluded, GetInfoById, ListInfos, MarkPendingAsUsed, UpdateInfo,
 };
 use crate::part::shared::execute::Execute;
+use crate::part_impl::rdb_core::result::{diesel, expected};
+use crate::part_impl::rdb_core::{RdbConn, RdbContext};
 use crate::part_impl::repo_rdb::entity::member_invitation::{
     MemberInvitationAspect, MemberInvitationEntry, MemberInvitationRow,
 };
 use crate::part_impl::repo_rdb::schema::t_member_invitation::dsl::*;
 use crate::part_impl::repo_rdb::{RdbRepo, RdbRepoTransactional, incl};
-use crate::part_impl::shared_rdb::result::{diesel, expected};
-use crate::part_impl::shared_rdb::{RdbConn, RdbContext};
 use crate::result::{RegularError, RegularResult};
 use crate::value::member_invitation::MemberInvitationInclOpt;
 use crate::value::role::RoleMask;
@@ -171,7 +171,7 @@ impl<'a> Execute<ListInfos<'a>> for RdbRepo {
     type Error = RegularError;
 
     async fn execute(&self, step: &ListInfos<'a>) -> RegularResult<Vec<MemberInvitationInfo>> {
-        submit_query!(self.shared, list_infos, step.spec)
+        submit_query!(self.core, list_infos, step.spec)
     }
 }
 
@@ -180,7 +180,7 @@ impl<'a> Execute<GetInfoById<'a>> for RdbRepo {
     type Error = RegularError;
 
     async fn execute(&self, step: &GetInfoById<'a>) -> RegularResult<MemberInvitationInfo> {
-        submit_query!(self.shared, get_info_by_id, step.id, step.incl_opt)
+        submit_query!(self.core, get_info_by_id, step.id, step.incl_opt)
     }
 }
 

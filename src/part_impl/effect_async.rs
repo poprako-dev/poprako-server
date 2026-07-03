@@ -94,7 +94,12 @@ where
         let shutdown_send = self.shutdown.lock().unwrap().take();
 
         if let Some(shutdown_send) = shutdown_send {
-            let _ = shutdown_send.send(());
+            shutdown_send.send(()).unwrap_or_else(|error| {
+                tracing::error!(
+                    error = ?error,
+                    "[AsyncEffectDevelop::close] background task already terminated",
+                );
+            });
         }
 
         let done_recv = self.done.lock().unwrap().take();
@@ -103,7 +108,12 @@ where
             return;
         };
 
-        let _ = done_recv.await;
+        done_recv.await.unwrap_or_else(|error| {
+            tracing::error!(
+                error = %error,
+                "[AsyncEffectDevelop::close] background task did not signal completion",
+            );
+        });
     }
 }
 
@@ -135,7 +145,12 @@ where
             dispatch::<C, R>(&self.repo, event).await;
         }
 
-        let _ = self.done_send.send(());
+        self.done_send.send(()).unwrap_or_else(|error| {
+            tracing::error!(
+                error = ?error,
+                "[BackgroundHandler::run] completion receiver already dropped",
+            );
+        });
     }
 }
 
@@ -207,12 +222,10 @@ where
     };
 
     let mut args = HashMap::new();
-
     args.insert(
         Cow::Borrowed("invitee_qid"),
         FluentValue::from(payload.invitee_qid.as_str()),
     );
-
     args.insert(
         Cow::Borrowed("team_name"),
         FluentValue::from(team_info.name.as_str()),

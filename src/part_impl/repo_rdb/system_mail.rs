@@ -5,14 +5,14 @@ use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 
 use crate::model::system_mail::{SystemMailForm, SystemMailInfo};
-use crate::part::repo::step::system_mail::{ListInfosByReceiverId, MarkRead, Send, SendBatch};
+use crate::part::repo::step::system_mail::{ListInfosByReceiverId, MarkRead, Send};
 use crate::part::repo::system_mail::{SystemMailRepo, SystemMailRepoTransactional};
 use crate::part::shared::execute::Execute;
+use crate::part_impl::rdb_core::RdbConn;
+use crate::part_impl::rdb_core::RdbContext;
+use crate::part_impl::rdb_core::result::{diesel, expected};
 use crate::part_impl::repo_rdb::entity::system_mail::{SystemMailEntry, SystemMailRow};
 use crate::part_impl::repo_rdb::{RdbRepo, RdbRepoTransactional};
-use crate::part_impl::shared_rdb::RdbConn;
-use crate::part_impl::shared_rdb::RdbContext;
-use crate::part_impl::shared_rdb::result::{diesel, expected};
 use crate::result::{ExpectedVariant, RegularError, RegularResult};
 
 use crate::part_impl::repo_rdb::schema::t_system_mail::dsl::*;
@@ -35,17 +35,17 @@ async fn send(conn: &mut RdbConn, form: &SystemMailForm) -> RegularResult<()> {
     Ok(())
 }
 
-async fn send_batch(conn: &mut RdbConn, forms: &[SystemMailForm]) -> RegularResult<()> {
-    let entries: Vec<SystemMailEntry<'_>> = forms.iter().map(SystemMailEntry::from).collect();
-
-    diesel::insert_into(t_system_mail)
-        .values(&entries)
-        .execute(conn)
-        .await
-        .map_err(diesel)?;
-
-    Ok(())
-}
+// async fn send_batch(conn: &mut RdbConn, forms: &[SystemMailForm]) -> RegularResult<()> {
+//     let entries: Vec<SystemMailEntry<'_>> = forms.iter().map(SystemMailEntry::from).collect();
+//
+//     diesel::insert_into(t_system_mail)
+//         .values(&entries)
+//         .execute(conn)
+//         .await
+//         .map_err(diesel)?;
+//
+//     Ok(())
+// }
 
 // FIXME: list should have ONLY ONE ENTRY!!!!
 
@@ -110,18 +110,18 @@ impl<'a> Execute<Send<'a>> for RdbRepo {
     type Error = RegularError;
 
     async fn execute(&self, step: &Send<'a>) -> RegularResult<()> {
-        submit_query!(self.shared, send, step.form)
+        submit_query!(self.core, send, step.form)
     }
 }
 
-#[async_trait]
-impl<'a> Execute<SendBatch<'a>> for RdbRepo {
-    type Error = RegularError;
-
-    async fn execute(&self, step: &SendBatch<'a>) -> RegularResult<()> {
-        submit_query!(self.shared, send_batch, step.forms)
-    }
-}
+// #[async_trait]
+// impl<'a> Execute<SendBatch<'a>> for RdbRepo {
+//     type Error = RegularError;
+//
+//     async fn execute(&self, step: &SendBatch<'a>) -> RegularResult<()> {
+//         submit_query!(self.core, send_batch, step.forms)
+//     }
+// }
 
 #[async_trait]
 impl<'a> Execute<ListInfosByReceiverId<'a>> for RdbRepo {
@@ -132,7 +132,7 @@ impl<'a> Execute<ListInfosByReceiverId<'a>> for RdbRepo {
         step: &ListInfosByReceiverId<'a>,
     ) -> RegularResult<Vec<SystemMailInfo>> {
         submit_query!(
-            self.shared,
+            self.core,
             list_infos,
             step.receiver_id,
             step.read,
@@ -147,7 +147,7 @@ impl<'a> Execute<MarkRead<'a>> for RdbRepo {
     type Error = RegularError;
 
     async fn execute(&self, step: &MarkRead<'a>) -> RegularResult<()> {
-        submit_query!(self.shared, mark_read, step.id, step.user_id)
+        submit_query!(self.core, mark_read, step.id, step.user_id)
     }
 }
 #[cfg(all(test, feature = "repo"))]

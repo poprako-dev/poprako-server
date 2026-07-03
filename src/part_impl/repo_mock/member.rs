@@ -10,8 +10,8 @@ use crate::model::team::TeamInfo;
 use crate::model::user::UserInfo;
 use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
 use crate::part::repo::step::member::{
-    Create, Delete, FindInfoByUserIdAndTeamId, GetInfoById, GetInfoExcluded, ListInfos,
-    ListInfosByUserIdExcluded, TouchLastActive, UpdateRole, UpdateUserNickname,
+    Create, Delete, FindInfoByUserIdAndTeamId, GetInfoById, ListInfos, ListInfosByUserIdExcluded,
+    TouchLastActive, UpdateRole, UpdateUserNickname,
 };
 use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactional, expected, now};
@@ -297,27 +297,6 @@ impl<'a> Advance<FindInfoByUserIdAndTeamId<'a>, MockContext> for MockTransaction
             step.user_id,
             step.team_id,
         ))
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<GetInfoExcluded<'a>, MockContext> for MockTransactional {
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut MockContext,
-        step: &GetInfoExcluded<'a>,
-    ) -> Result<MemberInfo, Self::Error> {
-        let mut info = get_member_by_id(&context.state, step.id)?;
-
-        let include_user = step.incl_opt.contains(&MemberInclOpt::User);
-        let include_team = step.incl_opt.contains(&MemberInclOpt::Team);
-
-        apply_user_incl(&context.state, &mut info, include_user);
-        apply_team_incl(&context.state, &mut info, include_team);
-
-        Ok(info)
     }
 }
 

@@ -6,7 +6,6 @@ use time::OffsetDateTime;
 use crate::complex::chapter::ChapterComplex;
 use crate::complex::image::ImageComplex;
 use crate::complex::util::{check_user_is_team_admin, check_user_is_team_member};
-use crate::model::comic::ComicInfo;
 use crate::part::prom::task::{IMAGE_TOPIC, ImageTask};
 use crate::part::prom::{Payload, Prom, PromStep};
 use crate::part::repo::chapter::ChapterRepoTransactional;
@@ -39,15 +38,8 @@ impl ComicComplex {
         format!("comic_cover/{}-{}.{}", id, cover_version, file_ext)
     }
 
-    /// Compose a display title for fuzzy search, joining index, author, and title.
-    ///
-    /// Format: `"{index} {author} {title}"` — a single keyword can match any of the three fields.
-    pub fn composed_title(info: &ComicInfo) -> String {
-        Self::composed_title_parts(info.index, &info.author, &info.title)
-    }
-
     /// Compose a display title from raw fields for search materialization.
-    pub fn composed_title_parts(index: i32, author: &str, title: &str) -> String {
+    pub fn compose_title(index: i32, author: &str, title: &str) -> String {
         format!("{} {} {}", stored_index_to_user_index(index), author, title)
     }
 

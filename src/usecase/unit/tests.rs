@@ -230,7 +230,7 @@ fn seed_scope(mock: &Mock, total: i32, translated: i32, proofread: i32) {
 fn sorted_unit_ids(units: &[UnitInfo]) -> Vec<String> {
     let mut unit_infos = units.to_vec();
 
-    unit_infos.sort_by(|left, right| left.index.cmp(&right.index));
+    unit_infos.sort_by_key(|left| left.index);
 
     unit_infos
         .into_iter()

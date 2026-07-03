@@ -26,9 +26,9 @@ use crate::part::repo::step::user::UserStep;
 use crate::part::repo::step::workset::WorksetStep;
 use crate::part::shared::execute::Execute;
 use crate::part_impl::drive_rdb::RdbDrive;
+use crate::part_impl::rdb_core::RdbCore;
+use crate::part_impl::rdb_core::result::diesel as diesel_error;
 use crate::part_impl::repo_rdb::{RdbRepo, schema};
-use crate::part_impl::shared_rdb::RdbShared;
-use crate::part_impl::shared_rdb::result::diesel as diesel_error;
 use crate::result::{RegularError, RegularResult};
 use crate::util::DeriveTransactional as _;
 
@@ -42,7 +42,6 @@ pub struct TeamFixture {
 }
 
 pub struct WorksetFixture {
-    pub user_form: UserForm,
     pub team_form: TeamForm,
     pub workset_form: WorksetForm,
 }
@@ -63,10 +62,6 @@ pub struct ChapterFixture {
 }
 
 pub struct PageFixture {
-    pub creator_form: UserForm,
-    pub team_form: TeamForm,
-    pub workset_form: WorksetForm,
-    pub comic_form: ComicForm,
     pub chapter_form: ChapterForm,
     pub page_form: PageForm,
 }
@@ -75,7 +70,7 @@ const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations");
 
 static TEST_SCHEMA_READY: OnceLock<()> = OnceLock::new();
 
-pub async fn shared() -> RdbShared {
+pub async fn shared() -> RdbCore {
     dotenvy::dotenv().ok();
 
     let database_url =
@@ -83,7 +78,7 @@ pub async fn shared() -> RdbShared {
 
     TEST_SCHEMA_READY.get_or_init(|| reset_test_schema(&database_url));
 
-    RdbShared::from_database_url(&database_url).unwrap()
+    RdbCore::from_database_url(&database_url).unwrap()
 }
 
 fn reset_test_schema(database_url: &str) {
@@ -94,13 +89,13 @@ fn reset_test_schema(database_url: &str) {
     MigrationHarness::run_pending_migrations(&mut conn, MIGRATIONS).unwrap();
 }
 
-pub async fn reset(shared: &RdbShared, prefix: &str) {
+pub async fn reset(shared: &RdbCore, prefix: &str) {
     cleanup(shared, prefix).await.unwrap();
 
     assert_no_leftovers(shared, prefix).await.unwrap();
 }
 
-pub async fn cleanup(shared: &RdbShared, prefix: &str) -> RegularResult<()> {
+pub async fn cleanup(shared: &RdbCore, prefix: &str) -> RegularResult<()> {
     let mut conn = shared.get().await?;
 
     let id_pattern = format!("{}%", prefix);
@@ -197,7 +192,7 @@ pub async fn cleanup(shared: &RdbShared, prefix: &str) -> RegularResult<()> {
     Ok(())
 }
 
-pub async fn assert_no_leftovers(shared: &RdbShared, prefix: &str) -> RegularResult<()> {
+pub async fn assert_no_leftovers(shared: &RdbCore, prefix: &str) -> RegularResult<()> {
     let mut conn = shared.get().await?;
 
     let id_pattern = format!("{}%", prefix);
@@ -386,7 +381,7 @@ pub fn page_form(prefix: &str, chapter_form: &ChapterForm) -> PageForm {
     }
 }
 
-pub async fn create_user(shared: &RdbShared, user_form: &UserForm) {
+pub async fn create_user(shared: &RdbCore, user_form: &UserForm) {
     let repo = RdbRepo::new(shared.clone());
 
     let drive = RdbDrive::new(shared.clone());
@@ -404,7 +399,7 @@ pub async fn create_user(shared: &RdbShared, user_form: &UserForm) {
         .unwrap();
 }
 
-pub async fn seed_user(shared: &RdbShared, prefix: &str) -> UserFixture {
+pub async fn seed_user(shared: &RdbCore, prefix: &str) -> UserFixture {
     reset(shared, prefix).await;
 
     let user_form = user_form(prefix, "owner");
@@ -414,7 +409,7 @@ pub async fn seed_user(shared: &RdbShared, prefix: &str) -> UserFixture {
     UserFixture { user_form }
 }
 
-pub async fn seed_user_and_team(shared: &RdbShared, prefix: &str) -> TeamFixture {
+pub async fn seed_user_and_team(shared: &RdbCore, prefix: &str) -> TeamFixture {
     reset(shared, prefix).await;
 
     let repo = RdbRepo::new(shared.clone());
@@ -436,7 +431,7 @@ pub async fn seed_user_and_team(shared: &RdbShared, prefix: &str) -> TeamFixture
     }
 }
 
-pub async fn seed_workset(shared: &RdbShared, prefix: &str) -> WorksetFixture {
+pub async fn seed_workset(shared: &RdbCore, prefix: &str) -> WorksetFixture {
     let team_fixture = seed_user_and_team(shared, prefix).await;
 
     let repo = RdbRepo::new(shared.clone());
@@ -463,13 +458,12 @@ pub async fn seed_workset(shared: &RdbShared, prefix: &str) -> WorksetFixture {
         .unwrap();
 
     WorksetFixture {
-        user_form: team_fixture.user_form,
         team_form: team_fixture.team_form,
         workset_form,
     }
 }
 
-pub async fn seed_comic(shared: &RdbShared, prefix: &str) -> ComicFixture {
+pub async fn seed_comic(shared: &RdbCore, prefix: &str) -> ComicFixture {
     reset(shared, prefix).await;
 
     let repo = RdbRepo::new(shared.clone());
@@ -523,7 +517,7 @@ pub async fn seed_comic(shared: &RdbShared, prefix: &str) -> ComicFixture {
     }
 }
 
-pub async fn seed_chapter(shared: &RdbShared, prefix: &str) -> ChapterFixture {
+pub async fn seed_chapter(shared: &RdbCore, prefix: &str) -> ChapterFixture {
     let comic_fixture = seed_comic(shared, prefix).await;
 
     let repo = RdbRepo::new(shared.clone());
@@ -562,7 +556,7 @@ pub async fn seed_chapter(shared: &RdbShared, prefix: &str) -> ChapterFixture {
     }
 }
 
-pub async fn seed_page(shared: &RdbShared, prefix: &str) -> PageFixture {
+pub async fn seed_page(shared: &RdbCore, prefix: &str) -> PageFixture {
     let chapter_fixture = seed_chapter(shared, prefix).await;
 
     let repo = RdbRepo::new(shared.clone());
@@ -589,10 +583,6 @@ pub async fn seed_page(shared: &RdbShared, prefix: &str) -> PageFixture {
         .unwrap();
 
     PageFixture {
-        creator_form: chapter_fixture.creator_form,
-        team_form: chapter_fixture.team_form,
-        workset_form: chapter_fixture.workset_form,
-        comic_form: chapter_fixture.comic_form,
         chapter_form: chapter_fixture.chapter_form,
         page_form,
     }

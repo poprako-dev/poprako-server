@@ -2,8 +2,8 @@ use async_trait::async_trait;
 
 use crate::model::member_invitation::MemberInvitationInfo;
 use crate::model::user::UserInfo;
+use crate::part_impl::rdb_core::RdbConn;
 use crate::part_impl::repo_rdb::incl::{self, Incl, UserByIds};
-use crate::part_impl::shared_rdb::RdbConn;
 use crate::result::RegularResult;
 use crate::value::member_invitation::MemberInvitationInclOpt;
 

@@ -1,13 +1,27 @@
 #![deny(unsafe_code)]
-// #![deny(clippy::todo)]
-// #![deny(clippy::unimplemented)]
-#![warn(clippy::all)]
-#![warn(clippy::pedantic)]
-// #![deny(clippy::unwrap_used)]
+#![deny(clippy::correctness)]
+#![deny(clippy::suspicious)]
+#![deny(clippy::complexity)]
+#![deny(clippy::perf)]
+#![deny(clippy::unwrap_used)]
 // #![deny(clippy::expect_used)]
-// #![deny(clippy::panic)]
+#![deny(clippy::panic)]
+#![deny(clippy::todo)]
+#![deny(clippy::unimplemented)]
+#![deny(clippy::dbg_macro)]
+#![deny(clippy::print_stdout)]
+#![deny(clippy::print_stderr)]
+#![deny(clippy::exit)]
+#![deny(clippy::indexing_slicing)]
+#![warn(clippy::style)]
+#![warn(clippy::pedantic)]
+#![warn(clippy::nursery)]
+#![warn(clippy::cargo)]
+#![allow(clippy::module_name_repetitions)]
+#![allow(clippy::missing_errors_doc)]
+#![allow(clippy::missing_panics_doc)]
+#![allow(clippy::multiple_crate_versions)]
 
-use std::env;
 use std::net::SocketAddr;
 use std::net::ToSocketAddrs;
 use std::sync::Arc;
@@ -18,7 +32,7 @@ use poprako_r::api::http::server::serve;
 use poprako_r::api::http::state::AppHarn;
 use poprako_r::config::AppConfig;
 use poprako_r::harn::Harn;
-use poprako_r::part_impl::RdbShared;
+use poprako_r::part_impl::RdbCore;
 use poprako_r::part_impl::auth_jwt::JwtAuth;
 use poprako_r::part_impl::drive_rdb::RdbDrive;
 use poprako_r::part_impl::effect_async::AsyncEffectDevelop;
@@ -38,15 +52,12 @@ async fn main() -> anyhow::Result<()> {
         .await
         .context("failed to load application configuration")?;
 
-    let database_url = env::var("DATABASE_URL").context("DATABASE_URL is not set")?;
+    let core = RdbCore::from_env()?;
 
-    // FIXME: from_env
-    let shared = RdbShared::from_database_url(&database_url).expect("Database connection failed");
+    let drive = RdbDrive::new(core.clone());
 
-    let drive = RdbDrive::new(shared.clone());
-
-    let repo = RdbRepo::new(shared.clone());
-    let repo_effect = Arc::new(RdbRepo::new(shared));
+    let repo = RdbRepo::new(core.clone());
+    let repo_effect = Arc::new(RdbRepo::new(core));
 
     let prom = RdbProm;
 
@@ -59,7 +70,7 @@ async fn main() -> anyhow::Result<()> {
     let harn: AppHarn = Harn::new(drive, repo, prom, auth, image_pool, develop);
 
     let http_addr: SocketAddr =
-        ToSocketAddrs::to_socket_addrs(&format!("{}:{}", config.http_host, config.http_port,))
+        ToSocketAddrs::to_socket_addrs(&format!("{}:{}", config.http_host, config.http_port))
             .context("failed to resolve HTTP listen address")?
             .next()
             .context("no address resolved for HTTP listen address")?;

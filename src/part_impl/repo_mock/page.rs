@@ -35,7 +35,7 @@ fn list_all_pages(state: &MockState, chapter_id: &str) -> Vec<PageInfo> {
         .filter(|page_info| page_info.chapter_id == chapter_id)
         .cloned()
         .collect::<Vec<_>>();
-    page_infos.sort_by(|left, right| left.index.cmp(&right.index));
+    page_infos.sort_by_key(|left| left.index);
 
     page_infos
 }

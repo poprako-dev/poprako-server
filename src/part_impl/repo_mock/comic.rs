@@ -120,7 +120,9 @@ fn comic_matches_kind(state: &MockState, comic_info: &ComicInfo, kind: &ComicLis
 }
 
 fn comic_matches_fuzzy(comic_info: &ComicInfo, fuzzy_title: &str) -> bool {
-    let composed_title = ComicComplex::composed_title(comic_info).to_lowercase();
+    let composed_title =
+        ComicComplex::compose_title(comic_info.index, &comic_info.author, &comic_info.title)
+            .to_lowercase();
 
     let fuzzy_title = fuzzy_title.to_lowercase();
 
