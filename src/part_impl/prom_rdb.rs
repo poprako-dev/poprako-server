@@ -73,7 +73,6 @@ impl<'a> LocalMessageEntry<'a> {
             serde_json::to_value(&step.payload).map_err(|e| RegularError::Unrecoverable {
                 message: format!("failed to serialize prom payload: {}", e),
             })?;
-
         Ok(Self {
             f_id: step.id,
             f_topic: step.topic,

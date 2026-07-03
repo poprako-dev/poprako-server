@@ -136,11 +136,11 @@ impl ChapterComplex {
 /// Generate a human-readable default subtitle for a chapter, e.g. "Ch. 1".
 fn default_subtitle(index: i32) -> String {
     let mut args = HashMap::new();
+
     args.insert(
         Cow::Borrowed("number"),
         FluentValue::from(stored_index_to_user_index(index)),
     );
-
     trl_kv("chapter-default-subtitle", &args)
 }
 
@@ -366,7 +366,6 @@ where
         + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RegularError>,
 {
     let team_id = resolve_team_id_from_comic(proxy, comic_id).await?;
-
     check_user_is_team_member(proxy, user_id, &team_id).await
 }
 
@@ -401,7 +400,6 @@ where
         + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RegularError>,
 {
     let team_id = resolve_team_id_from_comic(proxy, comic_id).await?;
-
     check_user_is_team_admin(proxy, user_id, &team_id).await
 }
 

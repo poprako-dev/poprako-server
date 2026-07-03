@@ -141,7 +141,6 @@ fn find_team_for_workset(state: &MockState, workset_info: &WorksetInfo) -> Optio
 
 fn apply_creator_incl(state: &MockState, chapter_info: &mut ChapterInfo, include_creator: bool) {
     chapter_info.creator = None;
-
     if include_creator {
         chapter_info.creator = find_user(state, &chapter_info.creator_id);
     }
@@ -149,7 +148,6 @@ fn apply_creator_incl(state: &MockState, chapter_info: &mut ChapterInfo, include
 
 fn apply_comic_incl(state: &MockState, chapter_info: &mut ChapterInfo, include_comic: bool) {
     chapter_info.comic = None;
-
     if include_comic {
         chapter_info.comic = find_comic(state, &chapter_info.comic_id);
     }

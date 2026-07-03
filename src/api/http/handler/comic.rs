@@ -64,7 +64,6 @@ pub async fn create(
     Json(data): Json<CreateComicData>,
 ) -> HttpResult<CreateComicVal> {
     let reply = usecase::comic::create(harn.drive(), harn.repo(), user_token, data).await?;
-
     reply.accept(StatusCode::CREATED)
 }
 
@@ -185,7 +184,6 @@ pub async fn reserve_cover(
         data,
     )
     .await?;
-
     reply.accept(StatusCode::OK)
 }
 
@@ -210,7 +208,6 @@ pub async fn mark_cover_uploaded(
     Json(data): Json<MarkComicCoverUploadedData>,
 ) -> HttpNoContent {
     usecase::comic::mark_cover_uploaded(harn.repo(), user_token, comic_id, data).await?;
-
     no_content()
 }
 
@@ -242,7 +239,6 @@ pub async fn mark_completed(
         data.is_completed,
     )
     .await?;
-
     no_content()
 }
 
@@ -265,6 +261,5 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     usecase::comic::delete(harn.drive(), harn.repo(), harn.prom(), user_token, comic_id).await?;
-
     no_content()
 }

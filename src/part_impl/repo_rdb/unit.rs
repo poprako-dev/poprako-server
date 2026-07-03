@@ -124,7 +124,6 @@ async fn create_info(conn: &mut RdbConn, page_id: &str, oper: &UnitOper) -> Regu
     else {
         return Err(expected("error-invalid-unit-oper"));
     };
-
     create_unit(conn, page_id, id, payload).await
 }
 
@@ -132,7 +131,6 @@ async fn save_info(conn: &mut RdbConn, page_id: &str, oper: &UnitOper) -> Regula
     let UnitOper::Save { id, payload } = oper else {
         return Err(expected("error-invalid-unit-oper"));
     };
-
     save_unit(conn, page_id, id, payload).await
 }
 
@@ -186,7 +184,6 @@ async fn update_indexes_by_page_id(
             return Err(expected("error-unit-not-found"));
         }
     }
-
     Ok(())
 }
 

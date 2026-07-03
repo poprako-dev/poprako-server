@@ -41,7 +41,6 @@ fn find_team(state: &MockState, team_id: &str) -> Option<TeamInfo> {
 
 fn apply_user_incl(state: &MockState, member_info: &mut MemberInfo, include_user: bool) {
     member_info.user = None;
-
     if include_user {
         member_info.user = find_user(state, &member_info.user_id);
     }
@@ -49,7 +48,6 @@ fn apply_user_incl(state: &MockState, member_info: &mut MemberInfo, include_user
 
 fn apply_team_incl(state: &MockState, member_info: &mut MemberInfo, include_team: bool) {
     member_info.team = None;
-
     if include_team {
         member_info.team = find_team(state, &member_info.team_id);
     }

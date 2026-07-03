@@ -19,7 +19,6 @@ impl TokenAuth for Mock {
                 message: trl("error-token-sign-failed"),
             });
         }
-
         Ok(format!("token:{}", token.user_id))
     }
 

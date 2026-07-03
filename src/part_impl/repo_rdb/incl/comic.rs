@@ -78,6 +78,5 @@ pub async fn populate_comic_incls(
             ComicInclOpt::Creator => incl::populate::<ComicCreatorIncl>(conn, infos).await?,
         }
     }
-
     Ok(())
 }

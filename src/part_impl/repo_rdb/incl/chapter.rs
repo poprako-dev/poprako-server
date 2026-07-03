@@ -49,7 +49,6 @@ impl Incl for ChapterComicWorksetIncl {
         let Some(comic_info) = &mut chapter_info.comic else {
             return;
         };
-
         comic_info.workset = workset_info;
     }
 }
@@ -74,7 +73,6 @@ impl Incl for ChapterComicWorksetTeamIncl {
         let Some(comic_info) = &mut chapter_info.comic else {
             return;
         };
-
         comic_info.team = team_info;
     }
 }
@@ -98,7 +96,6 @@ impl Incl for ChapterComicCreatorIncl {
         let Some(comic_info) = &mut chapter_info.comic else {
             return;
         };
-
         comic_info.creator = user_info;
     }
 }
@@ -140,6 +137,5 @@ pub async fn populate_chapter_incls(
             ChapterInclOpt::Creator => incl::populate::<ChapterCreatorIncl>(conn, infos).await?,
         }
     }
-
     Ok(())
 }

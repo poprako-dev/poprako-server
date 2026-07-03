@@ -31,7 +31,6 @@ fn find_user(state: &MockState, user_id: &str) -> Option<UserInfo> {
 
 fn apply_invitor_incl(state: &MockState, info: &mut MemberInvitationInfo, include_invitor: bool) {
     info.invitor = None;
-
     if include_invitor {
         info.invitor = find_user(state, &info.invitor_id);
     }

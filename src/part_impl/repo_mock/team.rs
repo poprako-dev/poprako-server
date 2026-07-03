@@ -31,6 +31,7 @@ fn mark_team_avatar_uploaded(
         .iter_mut()
         .find(|team| team.id == id)
         .ok_or_else(|| expected("error-team-not-found"))?;
+
     if team.avatar_version != avatar_version {
         return Err(expected("error-stale-avatar-upload"));
     }

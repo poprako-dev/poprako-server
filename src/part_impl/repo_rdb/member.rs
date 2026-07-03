@@ -46,7 +46,6 @@ fn role_timestamps_from_mask(roles: RoleMask, now: OffsetDateTime) -> RoleTimest
     let timestamp_fn = |field: RoleField| -> Option<OffsetDateTime> {
         roles.has_any_role(&[field]).then_some(now)
     };
-
     RoleTimestamps {
         raw_provider: timestamp_fn(RoleField::RAW_PROVIDER),
         translator: timestamp_fn(RoleField::TRANSLATOR),
@@ -158,7 +157,6 @@ async fn list_infos(conn: &mut RdbConn, spec: &MemberListSpec) -> RegularResult<
 
             if let Some(nickname) = fuzzy_nickname {
                 let escaped = escape_ilike_pattern(nickname);
-
                 query = query.filter(f_user_nickname.ilike(format!("%{}%", escaped)));
             }
 

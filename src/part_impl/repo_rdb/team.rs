@@ -76,6 +76,7 @@ async fn list_infos(
         let member_team_ids = t_member::table
             .filter(t_member::f_user_id.eq(user_id))
             .select(t_member::f_team_id);
+
         query = query.filter(f_id.eq_any(member_team_ids));
     }
 
@@ -197,6 +198,7 @@ async fn increment_workset_next_index(conn: &mut RdbConn, id: &str) -> RegularRe
 #[async_trait]
 impl<'a> Execute<Create<'a>> for RdbRepo {
     type Error = RegularError;
+
     async fn execute(&self, step: &Create<'a>) -> Result<TeamInfo, Self::Error> {
         submit_query!(self.core, create, step.form)
     }
@@ -205,6 +207,7 @@ impl<'a> Execute<Create<'a>> for RdbRepo {
 #[async_trait]
 impl<'a> Execute<GetInfoById<'a>> for RdbRepo {
     type Error = RegularError;
+
     async fn execute(&self, step: &GetInfoById<'a>) -> Result<TeamInfo, Self::Error> {
         submit_query!(self.core, get_info_by_id, step.id)
     }
@@ -213,34 +216,25 @@ impl<'a> Execute<GetInfoById<'a>> for RdbRepo {
 #[async_trait]
 impl<'a> Execute<ListInfos<'a>> for RdbRepo {
     type Error = RegularError;
+
     async fn execute(&self, step: &ListInfos<'a>) -> Result<Vec<TeamInfo>, Self::Error> {
-        submit_query!(
-            self.core,
-            list_infos,
-            step.user_id,
-            step.offset,
-            step.limit
-        )
+        submit_query!(self.core, list_infos, step.user_id, step.offset, step.limit)
     }
 }
 
 #[async_trait]
 impl<'a> Execute<UpdateInfo<'a>> for RdbRepo {
     type Error = RegularError;
+
     async fn execute(&self, step: &UpdateInfo<'a>) -> RegularResult<()> {
-        submit_query!(
-            self.core,
-            update_info,
-            step.id,
-            step.name,
-            step.description
-        )
+        submit_query!(self.core, update_info, step.id, step.name, step.description)
     }
 }
 
 #[async_trait]
 impl<'a> Execute<MarkAvatarUploaded<'a>> for RdbRepo {
     type Error = RegularError;
+
     async fn execute(&self, step: &MarkAvatarUploaded<'a>) -> RegularResult<()> {
         submit_query!(
             self.core,
@@ -256,6 +250,7 @@ impl<'a> Execute<MarkAvatarUploaded<'a>> for RdbRepo {
 #[async_trait]
 impl<'a> Advance<ReserveAvatar<'a>, RdbContext> for RdbRepoTransactional {
     type Error = RegularError;
+
     async fn advance(
         &self,
         context: &mut RdbContext,
@@ -268,6 +263,7 @@ impl<'a> Advance<ReserveAvatar<'a>, RdbContext> for RdbRepoTransactional {
 #[async_trait]
 impl<'a> Advance<MarkAvatarUploaded<'a>, RdbContext> for RdbRepoTransactional {
     type Error = RegularError;
+
     async fn advance(
         &self,
         context: &mut RdbContext,
@@ -280,6 +276,7 @@ impl<'a> Advance<MarkAvatarUploaded<'a>, RdbContext> for RdbRepoTransactional {
 #[async_trait]
 impl<'a> Advance<GetInfoExcluded<'a>, RdbContext> for RdbRepoTransactional {
     type Error = RegularError;
+
     async fn advance(
         &self,
         context: &mut RdbContext,
@@ -292,6 +289,7 @@ impl<'a> Advance<GetInfoExcluded<'a>, RdbContext> for RdbRepoTransactional {
 #[async_trait]
 impl<'a> Advance<Delete<'a>, RdbContext> for RdbRepoTransactional {
     type Error = RegularError;
+
     async fn advance(&self, context: &mut RdbContext, step: &Delete<'a>) -> RegularResult<()> {
         delete(context.conn(), step.id).await
     }
@@ -300,6 +298,7 @@ impl<'a> Advance<Delete<'a>, RdbContext> for RdbRepoTransactional {
 #[async_trait]
 impl<'a> Advance<IncrementWorksetNextIndex<'a>, RdbContext> for RdbRepoTransactional {
     type Error = RegularError;
+
     async fn advance(
         &self,
         context: &mut RdbContext,

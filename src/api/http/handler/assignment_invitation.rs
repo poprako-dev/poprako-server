@@ -115,7 +115,6 @@ pub async fn delete(
         assignment_invitation_id,
     )
     .await?;
-
     no_content()
 }
 
@@ -146,6 +145,5 @@ pub async fn join(
         data,
     )
     .await?;
-
     reply.accept(StatusCode::CREATED)
 }

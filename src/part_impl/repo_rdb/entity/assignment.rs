@@ -101,7 +101,6 @@ impl AssignmentRoleTimestamps {
         let timestamp_fn = |field: RoleField| -> Option<OffsetDateTime> {
             roles.has_any_role(&[field]).then_some(now)
         };
-
         Self {
             f_raw_provider: timestamp_fn(RoleField::RAW_PROVIDER),
             f_translator: timestamp_fn(RoleField::TRANSLATOR),

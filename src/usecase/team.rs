@@ -84,7 +84,6 @@ where
     I: ImagePool,
 {
     let team_info = repo.execute(&TeamStep::get_info_by_id(&id)).await?;
-
     TeamInfoVal::from_model(image_pool, team_info).await
 }
 

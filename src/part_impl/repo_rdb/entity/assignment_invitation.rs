@@ -72,7 +72,6 @@ impl TryFrom<AssignmentInvitationRow> for AssignmentInvitationInfo {
 
     fn try_from(row: AssignmentInvitationRow) -> Result<Self, Self::Error> {
         let roles = RoleMask::try_from(row.f_role_mask as u32)?;
-
         Ok(Self {
             id: row.f_id,
             chapter_id: row.f_chapter_id,

@@ -35,7 +35,6 @@ pub async fn list_infos(
     Query(data): Query<ListSystemMailData>,
 ) -> HttpResult<Vec<SystemMailVal>> {
     let infos = usecase::system_mail::list_infos(harn.repo(), user_token, data).await?;
-
     infos.accept(StatusCode::OK)
 }
 
@@ -57,6 +56,5 @@ pub async fn mark_read(
     Json(data): Json<MarkSystemMailsReadData>,
 ) -> HttpNoContent {
     usecase::system_mail::mark_read(harn.repo(), user_token, data.ids).await?;
-
     no_content()
 }

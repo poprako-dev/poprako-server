@@ -52,7 +52,6 @@ fn find_user(state: &MockState, user_id: &str) -> Option<UserInfo> {
 
 fn apply_workset_incl(state: &MockState, comic_info: &mut ComicInfo, include_workset: bool) {
     comic_info.workset = None;
-
     if include_workset {
         comic_info.workset = find_workset(state, &comic_info.workset_id);
     }
@@ -74,7 +73,6 @@ fn apply_team_incl(state: &MockState, comic_info: &mut ComicInfo, include_team: 
 
 fn apply_creator_incl(state: &MockState, comic_info: &mut ComicInfo, include_creator: bool) {
     comic_info.creator = None;
-
     if include_creator {
         comic_info.creator = find_user(state, &comic_info.creator_id);
     }
@@ -150,6 +148,7 @@ fn mark_comic_cover_uploaded(
         .iter_mut()
         .find(|comic| comic.id == id)
         .ok_or_else(|| expected("error-comic-not-found"))?;
+
     if comic.cover_version != cover_version {
         return Err(expected("error-stale-cover-upload"));
     }

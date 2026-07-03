@@ -32,6 +32,5 @@ pub async fn populate_announcement_incls(
     if incl_opt.contains(&AnnouncementInclOpt::User) {
         incl::populate::<AnnouncementUserIncl>(conn, infos).await?;
     }
-
     Ok(())
 }

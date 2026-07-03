@@ -57,7 +57,6 @@ pub async fn create(
     Json(data): Json<CreateChapterData>,
 ) -> HttpResult<CreateChapterVal> {
     let reply = usecase::chapter::create(harn.drive(), harn.repo(), user_token, data).await?;
-
     reply.accept(StatusCode::CREATED)
 }
 
@@ -110,7 +109,6 @@ pub async fn get_pinned(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpResult<Option<ChapterInfoVal>> {
     let pinned = usecase::chapter::get_pinned(harn.repo(), user_token, comic_id).await?;
-
     pinned.accept(StatusCode::OK)
 }
 
@@ -133,7 +131,6 @@ pub async fn get_info(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpResult<ChapterInfoVal> {
     let info = usecase::chapter::get_info(harn.repo(), user_token, chapter_id).await?;
-
     info.accept(StatusCode::OK)
 }
 
@@ -220,6 +217,5 @@ pub async fn delete(
         chapter_id,
     )
     .await?;
-
     no_content()
 }

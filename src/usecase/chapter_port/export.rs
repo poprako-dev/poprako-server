@@ -170,7 +170,6 @@ where
                 },
             ))
             .await?;
-
         units_by_page_id.insert(page_info.id.clone(), unit_infos);
     }
 
@@ -201,6 +200,5 @@ fn non_empty(text: String) -> Option<String> {
     if text.trim().is_empty() {
         return None;
     }
-
     Some(text)
 }

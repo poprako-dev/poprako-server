@@ -109,7 +109,6 @@ impl WorksetPermComplex {
             + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RegularError>,
     {
         let team_id = Self::resolve_team_id(proxy, workset_id).await?;
-
         check_user_is_team_member(proxy, user_id, &team_id).await
     }
 
@@ -124,7 +123,6 @@ impl WorksetPermComplex {
             + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RegularError>,
     {
         let team_id = Self::resolve_team_id(proxy, workset_id).await?;
-
         check_user_is_team_admin(proxy, user_id, &team_id).await
     }
 
@@ -139,7 +137,6 @@ impl WorksetPermComplex {
             + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RegularError>,
     {
         let team_id = Self::resolve_team_id(proxy, workset_id).await?;
-
         check_user_is_team_admin(proxy, user_id, &team_id).await
     }
 

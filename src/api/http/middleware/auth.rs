@@ -22,7 +22,6 @@ pub async fn authorize(State(harn): State<AppHarn>, mut request: Request, next: 
 
     let user_token = match harn.auth().verify_token(&raw_token) {
         Ok(token) => token,
-
         Err(err) => return HttpError::from(err).into_response(),
     };
 

@@ -32,6 +32,5 @@ pub async fn populate_member_invitation_incls(
     if incl_opt.contains(&MemberInvitationInclOpt::Invitor) {
         incl::populate::<MemberInvitationInvitorIncl>(conn, infos).await?;
     }
-
     Ok(())
 }

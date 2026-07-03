@@ -50,7 +50,6 @@ impl Incl for AssignmentChapterComicIncl {
         let Some(chapter_info) = &mut assignment_info.chapter else {
             return;
         };
-
         chapter_info.comic = comic_info;
     }
 }
@@ -133,7 +132,6 @@ impl Incl for AssignmentChapterCreatorIncl {
         let Some(chapter_info) = &mut assignment_info.chapter else {
             return;
         };
-
         chapter_info.creator = user_info;
     }
 }
@@ -212,6 +210,5 @@ pub async fn populate_assignment_incls(
             }
         }
     }
-
     Ok(())
 }

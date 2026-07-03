@@ -37,7 +37,6 @@ impl UnitComplex {
 
         for id in &diff.candidate_order {
             validate_id(id)?;
-
             if !candidate_ids.insert(id.clone()) {
                 return Err(unit_invalid_oper_error());
             }
@@ -185,7 +184,6 @@ impl UnitComplex {
 
             if anchor_count > 0 {
                 slot = rank * anchor_count / all_count;
-
                 if slot >= anchor_count {
                     slot = anchor_count - 1;
                 }
@@ -201,7 +199,6 @@ impl UnitComplex {
 
         for (position, id) in resolved_ids.into_iter().enumerate() {
             final_ids.push(id);
-
             if let Some(extra_ids) = slot_extras.remove(&position) {
                 final_ids.extend(extra_ids);
             }
@@ -299,7 +296,6 @@ fn validate_id(id: &str) -> RegularResult<()> {
     if id.is_empty() {
         return Err(unit_invalid_oper_error());
     }
-
     accept(())
 }
 

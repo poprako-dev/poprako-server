@@ -169,7 +169,6 @@ where
         if !self.accepting.load(Ordering::Acquire) {
             return;
         }
-
         for event in iter.into_iter() {
             match self.send.try_send(event) {
                 Ok(()) => {}
@@ -184,7 +183,6 @@ where
                         event = event_name(&event),
                         "[AsyncEffectDevelop::develop] event queue is closed, dropping event",
                     );
-
                     break;
                 }
             }

@@ -84,7 +84,6 @@ impl TryFrom<MemberInvitationRow> for MemberInvitationInfo {
 
     fn try_from(v: MemberInvitationRow) -> Result<Self, Self::Error> {
         let roles = RoleMask::try_from(v.f_role_mask as u32)?;
-
         Ok(MemberInvitationInfo {
             id: v.f_id,
             team_id: v.f_team_id,

@@ -204,7 +204,6 @@ async fn list_pinned_infos_by_comic_ids(
 
     for row in rows {
         let info = row_into_info(row)?;
-
         map.insert(info.comic_id.clone(), info);
     }
 

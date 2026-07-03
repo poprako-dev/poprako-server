@@ -30,7 +30,6 @@ fn find_user(state: &MockState, user_id: &str) -> Option<UserInfo> {
 
 fn apply_user_incl(state: &MockState, comment_info: &mut CommentInfo, include_user: bool) {
     comment_info.user = None;
-
     if include_user {
         comment_info.user = find_user(state, &comment_info.user_id);
     }
@@ -123,7 +122,6 @@ use crate::test_util::assert_expected_variant;
 
 fn user(id: &str) -> UserInfo {
     let time = now();
-
     UserInfo {
         id: id.into(),
         qid: id.into(),

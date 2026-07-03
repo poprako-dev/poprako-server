@@ -98,7 +98,6 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     usecase::assignment::delete(harn.drive(), harn.repo(), user_token, assignment_id).await?;
-
     no_content()
 }
 
@@ -121,6 +120,5 @@ pub async fn join(
     Json(data): Json<JoinChapterData>,
 ) -> HttpResult<AssignmentInfoVal> {
     let reply = usecase::assignment::join(harn.drive(), harn.repo(), user_token, data).await?;
-
     reply.accept(StatusCode::CREATED)
 }

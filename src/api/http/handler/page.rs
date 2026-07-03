@@ -77,7 +77,6 @@ pub async fn delete(
         chapter_id,
     )
     .await?;
-
     no_content()
 }
 
@@ -147,7 +146,6 @@ pub async fn reserve_image(
         data,
     )
     .await?;
-
     reply.accept(StatusCode::OK)
 }
 
