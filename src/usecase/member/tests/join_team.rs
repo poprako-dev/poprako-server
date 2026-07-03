@@ -31,7 +31,7 @@ async fn join_team_invited_user_creates_member_and_consumes_invitation() {
     mock.seed_user(user("target-user", "Target"), credential("target-user"));
     mock.seed_member_invitation(invitation("invitation-1", "target-user"));
 
-    super::join_team(&mock, &mock, token("target-user"), join_team_data())
+    super::join_team(&mock, &mock, &mock, token("target-user"), join_team_data())
         .await
         .unwrap();
 
@@ -53,12 +53,12 @@ async fn join_team_mismatched_qid_is_rejected() {
     mock.seed_user(user("target-user", "Target"), credential("target-user"));
     mock.seed_member_invitation(invitation("invitation-1", "other-qid"));
 
-    let err = super::join_team(&mock, &mock, token("target-user"), join_team_data())
+    let err = super::join_team(&mock, &mock, &mock, token("target-user"), join_team_data())
         .await
         .err()
         .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::ArgsInvalid);
+    assert_expected_variant(err, ExpectedVariant::Args);
     let snapshot = mock.snapshot();
     assert!(snapshot.members.is_empty());
     assert!(snapshot.member_invitations[0].pending);
@@ -77,12 +77,12 @@ async fn join_team_duplicate_membership_is_rejected() {
     ));
     mock.seed_member_invitation(invitation("invitation-1", "target-user"));
 
-    let err = super::join_team(&mock, &mock, token("target-user"), join_team_data())
+    let err = super::join_team(&mock, &mock, &mock, token("target-user"), join_team_data())
         .await
         .err()
         .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::ArgsInvalid);
+    assert_expected_variant(err, ExpectedVariant::Args);
     let snapshot = mock.snapshot();
     assert_eq!(snapshot.members.len(), 1);
     assert!(snapshot.member_invitations[0].pending);

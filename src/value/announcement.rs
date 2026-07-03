@@ -2,8 +2,11 @@
 
 use serde::Deserialize;
 
+use utoipa::ToSchema;
+
 /// Incl opts for announcement info queries.
-#[derive(Deserialize, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Deserialize, Clone, Copy, PartialEq, Eq, ToSchema)]
+#[serde(rename_all = "snake_case")]
 pub enum AnnouncementInclOpt {
     User,
 }

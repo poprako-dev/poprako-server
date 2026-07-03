@@ -83,7 +83,7 @@ where
 
             if chapter_info.page_count != 0 {
                 return Err(RegularError::Expected {
-                    variant: ExpectedVariant::ArgsInvalid,
+                    variant: ExpectedVariant::Args,
                     message: trl("error-invalid-page-count"),
                 });
             }
@@ -426,7 +426,7 @@ where
 fn validate_page_count(page_count: i32) -> RegularResult<()> {
     if page_count <= 0 {
         return Err(RegularError::Expected {
-            variant: ExpectedVariant::ArgsInvalid,
+            variant: ExpectedVariant::Args,
             message: trl("error-invalid-page-count"),
         });
     }

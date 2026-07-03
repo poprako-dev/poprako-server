@@ -2,13 +2,15 @@
 
 use serde::{Deserialize, Serialize, Serializer};
 
+use utoipa::ToSchema;
+
 use poprako_util::i18n::trl;
 
 use crate::result::{ExpectedVariant, RegularError, RegularResult, accept};
 use crate::value::incl::InclOpt;
 
 /// Phase a workflow stage can be in.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "kebab-case")]
 pub enum StagePhase {
     Pending,
@@ -17,7 +19,7 @@ pub enum StagePhase {
 }
 
 /// Stage in the chapter production pipeline.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "kebab-case")]
 pub enum WorkflowStage {
     /// Raw provide phase.
@@ -49,7 +51,7 @@ pub fn is_valid_stage_phase(stage: WorkflowStage, phase: StagePhase) -> bool {
 }
 
 /// Event that triggers a workflow stage transition.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "kebab-case")]
 pub enum WorkflowEvent {
     /// Advance to the next phase.
@@ -68,7 +70,7 @@ pub fn try_modify_stage(
 
     if !is_valid_stage_phase(stage, phase) {
         return Err(RegularError::Expected {
-            variant: ExpectedVariant::ArgsInvalid,
+            variant: ExpectedVariant::Args,
             message: trl("error-invalid-stage-phase"),
         });
     }
@@ -76,7 +78,7 @@ pub fn try_modify_stage(
     let next_phase = match (stage, phase, event) {
         (WorkflowStage::Publish, _, WorkflowEvent::Revert) => {
             return Err(RegularError::Expected {
-                variant: ExpectedVariant::ArgsInvalid,
+                variant: ExpectedVariant::Args,
                 message: trl("error-invalid-workflow-transition"),
             });
         }
@@ -94,7 +96,7 @@ pub fn try_modify_stage(
         (_, StagePhase::Active, WorkflowEvent::Advance) => StagePhase::Completed,
         (_, StagePhase::Completed, WorkflowEvent::Advance) => {
             return Err(RegularError::Expected {
-                variant: ExpectedVariant::ArgsInvalid,
+                variant: ExpectedVariant::Args,
                 message: trl("error-invalid-workflow-transition"),
             });
         }
@@ -105,7 +107,7 @@ pub fn try_modify_stage(
 
     if !is_valid_stage_phase(stage, next_phase) {
         return Err(RegularError::Expected {
-            variant: ExpectedVariant::ArgsInvalid,
+            variant: ExpectedVariant::Args,
             message: trl("error-invalid-stage-phase"),
         });
     }
@@ -135,7 +137,7 @@ impl TryFrom<u8> for StagePhaseField {
     fn try_from(value: u8) -> RegularResult<Self> {
         if !Self::VALID_VALUES.contains(&value) {
             return Err(RegularError::Expected {
-                variant: ExpectedVariant::ArgsInvalid,
+                variant: ExpectedVariant::Args,
                 message: trl("error-invalid-stage-phase"),
             });
         }
@@ -183,7 +185,7 @@ impl Serialize for StagePhaseField {
 /// | TypesetRedraw | 6–7 | `StagePhaseField` |
 /// | Review | 8–9 | `StagePhaseField` |
 /// | Publish | 10–11 | `StagePhaseField` |
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ToSchema)]
 pub struct WorkflowStageMask(u32);
 
 impl WorkflowStageMask {
@@ -257,7 +259,7 @@ impl TryFrom<u32> for WorkflowStageMask {
     fn try_from(value: u32) -> RegularResult<Self> {
         if value & !Self::VALID_BITS != 0 {
             return Err(RegularError::Expected {
-                variant: ExpectedVariant::ArgsInvalid,
+                variant: ExpectedVariant::Args,
                 message: trl("error-invalid-stage"),
             });
         }
@@ -282,7 +284,7 @@ impl Serialize for WorkflowStageMask {
 }
 
 /// Incl opts for chapter info queries.
-#[derive(Deserialize, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Deserialize, Clone, Copy, PartialEq, Eq, ToSchema)]
 pub enum ChapterInclOpt {
     #[serde(rename = "comic")]
     Comic,

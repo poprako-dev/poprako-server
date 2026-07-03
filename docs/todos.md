@@ -4,3 +4,4 @@
 - [ ] style checker: code structure, clone, qualify
 - [ ] rename(sql): invitation_code -> code
 - [ ] rename: V: Develop -> D: ...
+- [ ] rename: join -> join-{team}

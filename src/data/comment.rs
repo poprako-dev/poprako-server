@@ -1,6 +1,8 @@
 //! Data transfer objects for comment use cases.
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
+
+use utoipa::{IntoParams, ToSchema};
 
 use poprako_macro::Paginate;
 use poprako_util::time::ToUnixMilli;
@@ -12,6 +14,7 @@ use crate::result::RegularResult;
 use crate::value::comment::CommentInclOpt;
 
 /// Presentation-ready team board comment information.
+#[derive(Debug, Serialize, ToSchema)]
 pub struct CommentInfoVal {
     pub id: String,
 
@@ -48,11 +51,12 @@ impl CommentInfoVal {
 
 /// Input parameters for listing comments.
 #[Paginate]
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize, IntoParams)]
+#[into_params(parameter_in = Query)]
 pub struct ListCommentInfosData {
     pub team_id: String,
 
-    #[serde(default)]
+    #[serde(default, rename = "incl")]
     pub incl_opt: Vec<CommentInclOpt>,
 }
 
@@ -68,12 +72,14 @@ impl From<ListCommentInfosData> for CommentListSpec {
 }
 
 /// Input parameters for creating a comment.
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct CreateCommentData {
     pub team_id: String,
     pub content: String,
 }
 
 /// Return value from creating a comment.
+#[derive(Debug, Serialize, ToSchema)]
 pub struct CreateCommentVal {
     pub id: String,
 }

@@ -203,7 +203,7 @@ async fn get_info_propagates_missing_user() {
         .err()
         .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::ArgsInvalid);
+    assert_expected_variant(err, ExpectedVariant::Args);
 }
 
 #[tokio::test]
@@ -248,7 +248,7 @@ async fn update_info_rejects_non_owner_without_mutation() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::PermDeny);
+    assert_expected_variant(err, ExpectedVariant::Perm);
     let snapshot = mock.snapshot();
     assert_eq!(snapshot.users[0].qid, "qid-1");
     assert_eq!(snapshot.users[0].nickname, "Old");
@@ -268,7 +268,7 @@ async fn update_info_rolls_back_missing_user() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::ArgsInvalid);
+    assert_expected_variant(err, ExpectedVariant::Args);
     assert!(mock.snapshot().users.is_empty());
 }
 
@@ -358,7 +358,7 @@ async fn reserve_avatar_rolls_back_missing_user() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::ArgsInvalid);
+    assert_expected_variant(err, ExpectedVariant::Args);
     let snapshot = mock.snapshot();
     assert!(snapshot.users.is_empty());
     assert!(snapshot.prom_records.is_empty());
@@ -384,7 +384,7 @@ async fn reserve_avatar_propagates_put_url_failure_after_commit() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::ArgsInvalid);
+    assert_expected_variant(err, ExpectedVariant::Args);
     let snapshot = mock.snapshot();
     assert_eq!(
         snapshot.users[0].avatar_key.as_deref(),
@@ -439,7 +439,7 @@ async fn mark_avatar_uploaded_rejects_non_owner() {
         .err()
         .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::PermDeny);
+    assert_expected_variant(err, ExpectedVariant::Perm);
     assert!(!mock.snapshot().users[0].avatar_uploaded);
 }
 
@@ -456,11 +456,7 @@ async fn mark_avatar_uploaded_rolls_back_stale_version() {
         .err()
         .unwrap();
 
-    assert_expected_message(
-        err,
-        ExpectedVariant::ArgsInvalid,
-        "error-stale-avatar-upload",
-    );
+    assert_expected_message(err, ExpectedVariant::Args, "error-stale-avatar-upload");
     assert!(!mock.snapshot().users[0].avatar_uploaded);
 }
 
@@ -491,11 +487,7 @@ async fn mark_avatar_uploaded_rejects_old_reservation_replay() {
         .unwrap();
     let snapshot = mock.snapshot();
 
-    assert_expected_message(
-        err,
-        ExpectedVariant::ArgsInvalid,
-        "error-stale-avatar-upload",
-    );
+    assert_expected_message(err, ExpectedVariant::Args, "error-stale-avatar-upload");
     assert!(!snapshot.users[0].avatar_uploaded);
     assert_eq!(snapshot.users[0].avatar_version, 2);
 }
@@ -522,7 +514,7 @@ async fn touch_last_active_rolls_back_missing_user() {
         .err()
         .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::ArgsInvalid);
+    assert_expected_variant(err, ExpectedVariant::Args);
     assert!(mock.snapshot().users.is_empty());
 }
 
@@ -578,7 +570,7 @@ async fn delete_rejects_non_owner_without_mutation() {
         .err()
         .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::PermDeny);
+    assert_expected_variant(err, ExpectedVariant::Perm);
     let snapshot = mock.snapshot();
     assert_eq!(snapshot.users.len(), 1);
     assert_eq!(snapshot.credentials.len(), 1);
@@ -593,6 +585,6 @@ async fn delete_rolls_back_missing_user() {
         .err()
         .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::ArgsInvalid);
+    assert_expected_variant(err, ExpectedVariant::Args);
     assert!(mock.snapshot().users.is_empty());
 }

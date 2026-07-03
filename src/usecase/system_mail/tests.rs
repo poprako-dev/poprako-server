@@ -136,7 +136,7 @@ async fn mark_read_short_circuits_on_missing_id() {
     .await
     .err()
     .unwrap();
-    assert_expected_variant(err, ExpectedVariant::ArgsInvalid);
+    assert_expected_variant(err, ExpectedVariant::Args);
 
     // First ID was marked before the second failed (non-transactional).
     let snapshot = mock.snapshot();
@@ -153,7 +153,7 @@ async fn mark_read_rejects_other_user_mail() {
         .await
         .err()
         .unwrap();
-    assert_expected_variant(err, ExpectedVariant::PermDeny);
+    assert_expected_variant(err, ExpectedVariant::Perm);
 
     let snapshot = mock.snapshot();
     assert!(!snapshot.system_mails[0].read);

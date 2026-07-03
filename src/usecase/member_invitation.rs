@@ -81,7 +81,7 @@ where
 
                 if invitee_member_info.is_some() {
                     return Err(RegularError::Expected {
-                        variant: ExpectedVariant::ArgsInvalid,
+                        variant: ExpectedVariant::Args,
                         message: trl("error-already-team-member"),
                     });
                 }

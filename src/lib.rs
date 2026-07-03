@@ -22,5 +22,7 @@ mod value;
 
 mod util;
 
+pub mod api;
+
 #[cfg(test)]
 mod test_util;

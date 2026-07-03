@@ -83,5 +83,5 @@ async fn join_rejects_role_outside_member_mask() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::PermDeny);
+    assert_expected_variant(err, ExpectedVariant::Perm);
 }

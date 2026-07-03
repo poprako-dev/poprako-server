@@ -17,9 +17,9 @@ pub fn assert_expected_variant(err: RegularError, expected: ExpectedVariant) {
     };
 
     match (variant, expected) {
-        (ExpectedVariant::ArgsInvalid, ExpectedVariant::ArgsInvalid)
-        | (ExpectedVariant::AuthFail, ExpectedVariant::AuthFail)
-        | (ExpectedVariant::PermDeny, ExpectedVariant::PermDeny) => {}
+        (ExpectedVariant::Args, ExpectedVariant::Args)
+        | (ExpectedVariant::Auth, ExpectedVariant::Auth)
+        | (ExpectedVariant::Perm, ExpectedVariant::Perm) => {}
         _ => panic!("unexpected ExpectedVariant"),
     }
 }

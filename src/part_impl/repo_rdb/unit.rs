@@ -24,17 +24,25 @@ use crate::part_impl::shared_rdb::RdbContext;
 use crate::part_impl::shared_rdb::result::{diesel, expected};
 use crate::result::{RegularError, RegularResult};
 
+use poprako_util::page::Page;
+
 use crate::part_impl::repo_rdb::schema::t_unit::dsl::*;
 
 impl UnitRepo<RdbContext> for RdbRepo {}
 
 impl UnitRepoTransactional<RdbContext> for RdbRepoTransactional {}
 
-async fn list_infos_by_page_id(conn: &mut RdbConn, page_id: &str) -> RegularResult<Vec<UnitInfo>> {
+async fn list_infos_by_page_id(
+    conn: &mut RdbConn,
+    page_id: &str,
+    page: Page,
+) -> RegularResult<Vec<UnitInfo>> {
     let rows: Vec<UnitRow> = t_unit
         .filter(f_page_id.eq(page_id))
         .select(UnitRow::as_select())
         .order_by((f_index.asc(), f_id.asc()))
+        .limit(page.limit as i64)
+        .offset(page.offset as i64)
         .load(conn)
         .await
         .map_err(diesel)?;
@@ -183,7 +191,15 @@ async fn update_indexes_by_page_id(
 }
 
 async fn count_by_page_id(conn: &mut RdbConn, page_id: &str) -> RegularResult<UnitCounters> {
-    let infos = list_infos_by_page_id(conn, page_id).await?;
+    let infos = list_infos_by_page_id(
+        conn,
+        page_id,
+        Page {
+            offset: 0,
+            limit: i32::MAX as u64,
+        },
+    )
+    .await?;
 
     let counters = infos
         .iter()
@@ -209,7 +225,7 @@ impl<'a> Execute<ListInfosByPageId<'a>> for RdbRepo {
     type Error = RegularError;
 
     async fn execute(&self, step: &ListInfosByPageId<'a>) -> RegularResult<Vec<UnitInfo>> {
-        submit_query!(self.shared, list_infos_by_page_id, step.page_id)
+        submit_query!(self.shared, list_infos_by_page_id, step.page_id, step.page)
     }
 }
 
@@ -222,7 +238,7 @@ impl<'a> Advance<ListInfosByPageId<'a>, RdbContext> for RdbRepoTransactional {
         context: &mut RdbContext,
         step: &ListInfosByPageId<'a>,
     ) -> RegularResult<Vec<UnitInfo>> {
-        list_infos_by_page_id(context.conn(), step.page_id).await
+        list_infos_by_page_id(context.conn(), step.page_id, step.page).await
     }
 }
 

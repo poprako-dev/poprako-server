@@ -3,7 +3,7 @@
 use time::OffsetDateTime;
 
 /// A deserialized authentication token identifying a user session.
-#[cfg_attr(test, derive(Clone))]
+#[derive(Clone, Debug)]
 pub struct UserToken {
     pub user_id: String,
 }

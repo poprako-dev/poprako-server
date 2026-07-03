@@ -185,7 +185,7 @@ async fn create_non_admin_is_rejected() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::PermDeny);
+    assert_expected_variant(err, ExpectedVariant::Perm);
     assert_eq!(mock.snapshot().members.len(), 1);
 }
 
@@ -213,7 +213,7 @@ async fn create_duplicate_member_is_rejected() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::ArgsInvalid);
+    assert_expected_variant(err, ExpectedVariant::Args);
     assert_eq!(mock.snapshot().members.len(), 2);
 }
 
@@ -384,7 +384,7 @@ async fn list_infos_non_member_is_rejected() {
         .err()
         .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::PermDeny);
+    assert_expected_variant(err, ExpectedVariant::Perm);
 }
 
 #[test]
@@ -401,7 +401,7 @@ fn list_infos_rejects_invalid_combination() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::ArgsInvalid);
+    assert_expected_variant(err, ExpectedVariant::Args);
 }
 
 #[test]
@@ -498,7 +498,7 @@ async fn update_role_non_admin_is_rejected() {
         .find(|m| m.id == "member-target")
         .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::PermDeny);
+    assert_expected_variant(err, ExpectedVariant::Perm);
     assert_eq!(member_info.roles, RoleMask::from(RoleField::TRANSLATOR));
 }
 
@@ -517,7 +517,7 @@ async fn update_role_missing_member_is_rejected() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::ArgsInvalid);
+    assert_expected_variant(err, ExpectedVariant::Args);
 }
 
 #[tokio::test]
@@ -567,7 +567,7 @@ async fn delete_non_admin_is_rejected() {
         .err()
         .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::PermDeny);
+    assert_expected_variant(err, ExpectedVariant::Perm);
     assert!(
         mock.snapshot()
             .members
@@ -586,6 +586,6 @@ async fn delete_missing_member_is_rejected() {
         .err()
         .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::ArgsInvalid);
+    assert_expected_variant(err, ExpectedVariant::Args);
     assert_eq!(mock.snapshot().members.len(), 1);
 }

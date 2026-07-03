@@ -282,7 +282,7 @@ impl Drive<MockContext> for Mock {
 /// Build an expected-args [RootError] with a translated message.
 pub fn expected(message: &str) -> RegularError {
     RegularError::Expected {
-        variant: ExpectedVariant::ArgsInvalid,
+        variant: ExpectedVariant::Args,
         message: trl(message),
     }
 }

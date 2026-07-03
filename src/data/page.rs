@@ -1,5 +1,9 @@
 //! Data transfer objects for page use cases.
 
+use serde::{Deserialize, Serialize};
+
+use utoipa::ToSchema;
+
 use poprako_macro::Paginate;
 use poprako_util::time::ToUnixMilli;
 
@@ -8,6 +12,7 @@ use crate::part::image::ImagePool;
 use crate::result::RegularResult;
 
 /// Presentation-ready page information.
+#[derive(Debug, Serialize, ToSchema)]
 pub struct PageInfoVal {
     pub id: String,
 
@@ -52,6 +57,7 @@ impl PageInfoVal {
 }
 
 /// Input parameters for reserving all page images of a chapter.
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct ReserveChapterPagesData {
     pub chapter_id: String,
     pub page_count: i32,
@@ -59,11 +65,13 @@ pub struct ReserveChapterPagesData {
 }
 
 /// Return value from successful chapter page reservations.
+#[derive(Debug, Serialize, ToSchema)]
 pub struct ReserveChapterPagesVal {
     pub creations: Vec<PageCreationVal>,
 }
 
 /// One reserved page upload target.
+#[derive(Debug, Serialize, ToSchema)]
 pub struct PageCreationVal {
     pub page_id: String,
     pub put_url: String,
@@ -71,11 +79,13 @@ pub struct PageCreationVal {
 }
 
 /// Input parameters for reserving one page image.
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct ReservePageImageData {
     pub file_ext: String,
 }
 
 /// Return value from a successful single-page image reservation.
+#[derive(Debug, Serialize, ToSchema)]
 pub struct ReservePageImageVal {
     pub page_id: String,
     pub put_url: String,
@@ -83,6 +93,7 @@ pub struct ReservePageImageVal {
 }
 
 /// Input parameters for confirming a page image upload completed.
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct MarkPageImageUploadedData {
     pub image_version: i64,
 }

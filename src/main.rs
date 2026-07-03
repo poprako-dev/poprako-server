@@ -8,10 +8,15 @@
 // #![deny(clippy::panic)]
 
 use std::env;
+use std::net::SocketAddr;
+use std::net::ToSocketAddrs;
 use std::sync::Arc;
 
 use anyhow::Context as _;
 
+use poprako_r::api::http::server::serve;
+use poprako_r::api::http::state::AppHarn;
+use poprako_r::config::AppConfig;
 use poprako_r::harn::Harn;
 use poprako_r::part_impl::RdbShared;
 use poprako_r::part_impl::auth_jwt::JwtAuth;
@@ -24,6 +29,14 @@ use poprako_r::part_impl::repo_rdb::RdbRepo;
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     dotenvy::dotenv().expect(".env file should be valid");
+
+    tracing_subscriber::fmt()
+        .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
+        .init();
+
+    let config = AppConfig::from_default_file()
+        .await
+        .context("failed to load application configuration")?;
 
     let database_url = env::var("DATABASE_URL").context("DATABASE_URL is not set")?;
 
@@ -43,10 +56,15 @@ async fn main() -> anyhow::Result<()> {
 
     let develop = AsyncEffectDevelop::new(repo_effect, 1024);
 
-    // TODO:
-    let harn = Harn::new(drive, repo, prom, auth, image_pool, develop);
+    let harn: AppHarn = Harn::new(drive, repo, prom, auth, image_pool, develop);
 
-    Ok(())
+    let http_addr: SocketAddr =
+        ToSocketAddrs::to_socket_addrs(&format!("{}:{}", config.http_host, config.http_port,))
+            .context("failed to resolve HTTP listen address")?
+            .next()
+            .context("no address resolved for HTTP listen address")?;
+
+    serve(harn, http_addr).await
 }
 
 // LEGACY DISABLED: Do not use. This file is intentionally commented out.

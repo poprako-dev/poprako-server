@@ -253,7 +253,7 @@ async fn list_infos_non_reviewer_is_rejected() {
         .err()
         .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::PermDeny);
+    assert_expected_variant(err, ExpectedVariant::Perm);
 }
 
 #[tokio::test]
@@ -313,7 +313,7 @@ async fn create_existing_assignment_is_rejected() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::ArgsInvalid);
+    assert_expected_variant(err, ExpectedVariant::Args);
     assert!(mock.snapshot().assignment_invitations.is_empty());
 }
 
@@ -350,7 +350,7 @@ async fn delete_non_reviewer_is_rejected() {
         .err()
         .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::PermDeny);
+    assert_expected_variant(err, ExpectedVariant::Perm);
     assert_eq!(mock.snapshot().assignment_invitations.len(), 1);
 }
 
@@ -369,7 +369,7 @@ async fn join_invited_user_creates_assignment_and_consumes_invitation() {
         role(RoleField::TRANSLATOR),
     ));
 
-    join(&mock, &mock, token("target-user"), join_data())
+    join(&mock, &mock, &mock, token("target-user"), join_data())
         .await
         .unwrap();
 
@@ -404,7 +404,7 @@ async fn join_existing_assignment_merges_roles() {
         role(RoleField::PROOFREADER),
     ));
 
-    join(&mock, &mock, token("target-user"), join_data())
+    join(&mock, &mock, &mock, token("target-user"), join_data())
         .await
         .unwrap();
 
@@ -433,12 +433,12 @@ async fn join_mismatched_qid_is_rejected() {
         role(RoleField::TRANSLATOR),
     ));
 
-    let err = join(&mock, &mock, token("target-user"), join_data())
+    let err = join(&mock, &mock, &mock, token("target-user"), join_data())
         .await
         .err()
         .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::ArgsInvalid);
+    assert_expected_variant(err, ExpectedVariant::Args);
     let snapshot = mock.snapshot();
     assert!(snapshot.assignments.is_empty());
     assert!(snapshot.assignment_invitations[0].pending);

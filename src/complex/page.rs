@@ -205,7 +205,7 @@ where
 
     if assignment_info.is_none() {
         return Err(RegularError::Expected {
-            variant: ExpectedVariant::PermDeny,
+            variant: ExpectedVariant::Perm,
             message: trl("error-team-member-required"),
         });
     }
@@ -215,14 +215,14 @@ where
 
 fn page_reserve_role_error() -> RegularError {
     RegularError::Expected {
-        variant: ExpectedVariant::PermDeny,
+        variant: ExpectedVariant::Perm,
         message: trl("error-page-reserve-role-required"),
     }
 }
 
 fn page_upload_role_error() -> RegularError {
     RegularError::Expected {
-        variant: ExpectedVariant::PermDeny,
+        variant: ExpectedVariant::Perm,
         message: trl("error-page-upload-role-required"),
     }
 }

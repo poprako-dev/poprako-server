@@ -1,0 +1,126 @@
+//! Assignment handlers: list, join, role update, and deletion.
+
+use axum::Json;
+use axum::extract::Extension;
+use axum::extract::Path;
+use axum::extract::Query;
+use axum::extract::State;
+use axum::http::StatusCode;
+
+use tracing::instrument;
+
+use crate::api::http::handler::util::ensure_path_matches_body_id;
+use crate::api::http::result::Accept as _;
+use crate::api::http::result::HttpNoContent;
+use crate::api::http::result::HttpResult;
+use crate::api::http::result::NoContent;
+use crate::api::http::state::AppHarn;
+use crate::data::assignment::{
+    AssignmentInfoVal, JoinChapterData, ListAssignmentInfosData, UpdateAssignmentRoleData,
+};
+use crate::model::user::UserToken;
+use crate::usecase;
+
+/// `GET /api/v1/assignments` — list assignments by chapter or owner.
+#[utoipa::path(
+    get,
+    path = "/api/v1/assignments",
+    tag = "assignments",
+    params(ListAssignmentInfosData),
+    responses(
+        (status = 200, description = "Assignments listed", body = Vec<AssignmentInfoVal>),
+        (status = 400, description = "Exactly one of chapter_id or owner_id is required"),
+        (status = 403, description = "No permission to list these assignments"),
+    ),
+)]
+#[instrument(err, skip(harn))]
+pub async fn list_infos(
+    State(harn): State<AppHarn>,
+    Extension(user_token): Extension<UserToken>,
+    Query(data): Query<ListAssignmentInfosData>,
+) -> HttpResult<Vec<AssignmentInfoVal>> {
+    let infos =
+        usecase::assignment::list_infos(harn.repo(), harn.image_pool(), user_token, data).await?;
+
+    infos.accept(StatusCode::OK)
+}
+
+/// `PUT /api/v1/chapters/{chapter_id}/assignments/{user_id}/role` — update roles.
+#[utoipa::path(
+    put,
+    path = "/api/v1/chapters/{chapter_id}/assignments/{user_id}/role",
+    tag = "assignments",
+    params(
+        ("chapter_id" = String, Path, description = "Chapter ID"),
+        ("user_id" = String, Path, description = "Assignee user ID"),
+    ),
+    request_body = UpdateAssignmentRoleData,
+    responses(
+        (status = 204, description = "Assignment roles updated"),
+        (status = 422, description = "Path ids do not match body ids"),
+        (status = 403, description = "No permission to update this assignment"),
+        (status = 404, description = "Assignment not found"),
+    ),
+)]
+#[instrument(err, skip(harn, data))]
+pub async fn update_roles(
+    State(harn): State<AppHarn>,
+    Path((chapter_id, user_id)): Path<(String, String)>,
+    Extension(user_token): Extension<UserToken>,
+    Json(data): Json<UpdateAssignmentRoleData>,
+) -> HttpNoContent {
+    ensure_path_matches_body_id(&chapter_id, &data.chapter_id)?;
+
+    ensure_path_matches_body_id(&user_id, &data.user_id)?;
+
+    usecase::assignment::update_roles(harn.drive(), harn.repo(), user_token, data).await?;
+
+    // FIXME: use no_content()
+    Ok(NoContent)
+}
+
+/// `DELETE /api/v1/assignments/{assignment_id}` — delete an assignment.
+#[utoipa::path(
+    delete,
+    path = "/api/v1/assignments/{assignment_id}",
+    tag = "assignments",
+    params(("assignment_id" = String, Path, description = "Assignment ID")),
+    responses(
+        (status = 204, description = "Assignment deleted"),
+        (status = 403, description = "No permission to delete this assignment"),
+        (status = 404, description = "Assignment not found"),
+    ),
+)]
+#[instrument(err, skip(harn))]
+pub async fn delete(
+    State(harn): State<AppHarn>,
+    Path(assignment_id): Path<String>,
+    Extension(user_token): Extension<UserToken>,
+) -> HttpNoContent {
+    usecase::assignment::delete(harn.drive(), harn.repo(), user_token, assignment_id).await?;
+
+    Ok(NoContent)
+}
+
+/// `POST /api/v1/assignments/join` — join a chapter assignment with roles.
+#[utoipa::path(
+    post,
+    path = "/api/v1/assignments/join",
+    tag = "assignments",
+    request_body = JoinChapterData,
+    responses(
+        (status = 201, description = "Joined assignment", body = AssignmentInfoVal),
+        (status = 403, description = "Role not assignable or no permission"),
+        (status = 404, description = "Chapter not found"),
+    ),
+)]
+#[instrument(err, skip(harn, data))]
+pub async fn join(
+    State(harn): State<AppHarn>,
+    Extension(user_token): Extension<UserToken>,
+    Json(data): Json<JoinChapterData>,
+) -> HttpResult<AssignmentInfoVal> {
+    let reply = usecase::assignment::join(harn.drive(), harn.repo(), user_token, data).await?;
+
+    reply.accept(StatusCode::CREATED)
+}

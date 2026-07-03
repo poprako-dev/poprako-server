@@ -1,7 +1,9 @@
 //! Data transfer objects for member invitation use cases — input parameters
 //! and presentation-ready invitation values.
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
+
+use utoipa::{IntoParams, ToSchema};
 
 use poprako_macro::Paginate;
 
@@ -17,6 +19,7 @@ use crate::value::role::RoleMask;
 /// The invitation binds a specific QQ ID (`invitee_qid`) to a [`RoleMask`]
 /// that will be granted upon acceptance. The actual in-app user lookup
 /// happens during the registration flow.
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct CreateMemberInvitationData {
     pub team_id: String,
 
@@ -32,6 +35,7 @@ pub struct CreateMemberInvitationData {
 ///
 /// The `code` is a short opaque token the invitee presents during
 /// registration to claim the invitation.
+#[derive(Debug, Serialize, ToSchema)]
 pub struct CreateMemberInvitationVal {
     pub id: String,
     pub code: String,
@@ -40,7 +44,8 @@ pub struct CreateMemberInvitationVal {
 /// Input parameters for listing invitations within a team, with optional
 /// pending-status filtering and standard offset/limit pagination.
 #[Paginate]
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize, IntoParams)]
+#[into_params(parameter_in = Query)]
 pub struct ListMemberInvitationInfosData {
     pub team_id: String,
 
@@ -48,7 +53,7 @@ pub struct ListMemberInvitationInfosData {
     /// `Some(false)` returns only consumed ones; `None` returns all.
     pub pending: Option<bool>,
 
-    #[serde(default)]
+    #[serde(default, rename = "incl")]
     pub incl_opt: Vec<MemberInvitationInclOpt>,
 }
 
@@ -58,6 +63,7 @@ pub struct ListMemberInvitationInfosData {
 /// model carries no timestamps).
 ///
 /// [`MemberInvitationInfo`]: crate::model::member_invitation::MemberInvitationInfo
+#[derive(Debug, Serialize, ToSchema)]
 pub struct MemberInvitationInfoVal {
     pub id: String,
 
@@ -115,6 +121,7 @@ impl MemberInvitationInfoVal {
 }
 
 /// Input parameters for updating a pending invitation's roles.
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct UpdateMemberInvitationInfoData {
     pub id: String,
     pub roles: RoleMask,

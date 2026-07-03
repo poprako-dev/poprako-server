@@ -11,7 +11,7 @@ use crate::result::{ExpectedVariant, RegularError, RegularResult, accept};
 mod tests;
 
 /// A singular role permission flag represented as a bit position.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, utoipa::ToSchema)]
 pub struct RoleField(u32);
 
 impl RoleField {
@@ -48,7 +48,7 @@ impl RoleField {
 }
 
 /// A composite bitmask combining multiple [RoleBit] flags.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, utoipa::ToSchema)]
 pub struct RoleMask(u32);
 
 impl RoleMask {
@@ -84,7 +84,7 @@ impl TryFrom<u32> for RoleField {
     fn try_from(value: u32) -> RegularResult<Self> {
         if value == 0 || !Self::VALID_VALUES.contains(&value) || value.count_ones() != 1 {
             return Err(RegularError::Expected {
-                variant: ExpectedVariant::ArgsInvalid,
+                variant: ExpectedVariant::Args,
                 message: trl("error-invalid-role"),
             });
         }
@@ -136,7 +136,7 @@ impl TryFrom<u32> for RoleMask {
     fn try_from(value: u32) -> RegularResult<Self> {
         if value == 0 || value & !Self::VALID_BITS != 0 {
             return Err(RegularError::Expected {
-                variant: ExpectedVariant::ArgsInvalid,
+                variant: ExpectedVariant::Args,
                 message: trl("error-invalid-role"),
             });
         }

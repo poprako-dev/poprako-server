@@ -65,7 +65,13 @@ where
     .await?;
 
     let unit_infos = repo
-        .execute(&UnitStep::list_infos_by_page_id(&page_info.id))
+        .execute(&UnitStep::list_infos_by_page_id(
+            &page_info.id,
+            poprako_util::page::Page {
+                offset: data.offset,
+                limit: data.limit,
+            },
+        ))
         .await?;
 
     accept(ListPageUnitInfosVal {
@@ -234,7 +240,7 @@ fn counter_delta(old_counters: UnitCounters, new_counters: UnitCounters) -> Unit
 
 fn unit_invalid_oper_error() -> RegularError {
     RegularError::Expected {
-        variant: ExpectedVariant::ArgsInvalid,
+        variant: ExpectedVariant::Args,
         message: trl("error-invalid-unit-oper"),
     }
 }

@@ -264,7 +264,7 @@ impl UnitPermComplex {
         match check_user_is_chapter_assignee(proxy, user_id, chapter_id).await {
             Ok(()) => Ok(()),
             Err(RegularError::Expected {
-                variant: ExpectedVariant::PermDeny,
+                variant: ExpectedVariant::Perm,
                 ..
             }) => Err(unit_list_permission_error()),
             Err(e) => Err(e),
@@ -283,7 +283,7 @@ impl UnitPermComplex {
         match check_user_is_chapter_translator_or_proofreader(proxy, user_id, chapter_id).await {
             Ok(()) => Ok(()),
             Err(RegularError::Expected {
-                variant: ExpectedVariant::PermDeny,
+                variant: ExpectedVariant::Perm,
                 ..
             }) => Err(unit_edit_permission_error()),
             Err(e) => Err(e),
@@ -326,21 +326,21 @@ fn resolve_candidate_order(
 
 fn unit_invalid_oper_error() -> RegularError {
     RegularError::Expected {
-        variant: ExpectedVariant::ArgsInvalid,
+        variant: ExpectedVariant::Args,
         message: trl("error-invalid-unit-oper"),
     }
 }
 
 fn unit_list_permission_error() -> RegularError {
     RegularError::Expected {
-        variant: ExpectedVariant::PermDeny,
+        variant: ExpectedVariant::Perm,
         message: trl("error-unit-list-permission-required"),
     }
 }
 
 fn unit_edit_permission_error() -> RegularError {
     RegularError::Expected {
-        variant: ExpectedVariant::PermDeny,
+        variant: ExpectedVariant::Perm,
         message: trl("error-unit-edit-permission-required"),
     }
 }

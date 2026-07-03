@@ -76,7 +76,7 @@ where
 
             if existing_member_info.is_some() {
                 return Err(RegularError::Expected {
-                    variant: ExpectedVariant::ArgsInvalid,
+                    variant: ExpectedVariant::Args,
                     message: trl("error-already-team-member"),
                 });
             }
@@ -102,12 +102,13 @@ where
 }
 
 /// Joins the current user to a team with a pending invitation code.
-pub async fn join_team<D, C, R>(
+pub async fn join_team<D, C, R, I>(
     drive: &D,
     repo: &R,
+    image_pool: &I,
     token: UserToken,
     data: JoinTeamData,
-) -> RegularResult<()>
+) -> RegularResult<MemberInfoVal>
 where
     D: Drive<C>,
     D::Error: Into<RegularError>,
@@ -118,10 +119,11 @@ where
         + UserRepoTransactional<C>
         + Send
         + Sync,
+    I: ImagePool,
 {
     let current_user_id = token.user_id;
 
-    drive
+    let member_info = drive
         .with_context(async move |context| {
             let repo = repo.derive_transactional().await;
 
@@ -162,7 +164,8 @@ where
                 roles: member_invitation_info.roles,
             };
 
-            repo.advance(context, &MemberStep::create(&member_form))
+            let member_info = repo
+                .advance(context, &MemberStep::create(&member_form))
                 .await?;
 
             repo.advance(
@@ -171,12 +174,12 @@ where
             )
             .await?;
 
-            accept(())
+            accept(member_info)
         })
         .await
         .map_err(map_drive_err)?;
 
-    accept(())
+    MemberInfoVal::from_model(image_pool, member_info).await
 }
 
 /// Lists members under one team.
@@ -298,14 +301,14 @@ where
 
 fn invalid_invitation_error() -> RegularError {
     RegularError::Expected {
-        variant: ExpectedVariant::ArgsInvalid,
+        variant: ExpectedVariant::Args,
         message: trl("error-no-pending-invitation"),
     }
 }
 
 fn already_team_member_error() -> RegularError {
     RegularError::Expected {
-        variant: ExpectedVariant::ArgsInvalid,
+        variant: ExpectedVariant::Args,
         message: trl("error-already-team-member"),
     }
 }

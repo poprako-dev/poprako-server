@@ -3,6 +3,10 @@
 //!
 //! Timestamps are converted to Unix milliseconds for JSON serialisation.
 
+use serde::{Deserialize, Serialize};
+
+use utoipa::{IntoParams, ToSchema};
+
 use poprako_macro::Paginate;
 use poprako_util::time::ToUnixMilli;
 
@@ -13,6 +17,7 @@ use crate::model::workset::WorksetInfo;
 /// Mirrors [`WorksetInfo`] with timestamps converted to Unix milliseconds.
 ///
 /// [`WorksetInfo`]: crate::model::workset::WorksetInfo
+#[derive(Debug, Serialize, ToSchema)]
 pub struct WorksetInfoVal {
     pub id: String,
     pub team_id: String,
@@ -46,6 +51,7 @@ impl From<WorksetInfo> for WorksetInfoVal {
 }
 
 /// Input parameters for creating a new workset inside a team.
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct CreateWorksetData {
     pub team_id: String,
 
@@ -54,6 +60,7 @@ pub struct CreateWorksetData {
 }
 
 /// Return value from a successful workset creation.
+#[derive(Debug, Serialize, ToSchema)]
 pub struct CreateWorksetVal {
     pub id: String,
 }
@@ -61,6 +68,7 @@ pub struct CreateWorksetVal {
 /// Input parameters for updating a workset's name and description.
 ///
 /// Cover and counter updates are handled internally by the repo layer.
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct UpdateWorksetInfoData {
     pub id: String,
 
@@ -70,6 +78,8 @@ pub struct UpdateWorksetInfoData {
 
 /// Input parameters for listing worksets within a team.
 #[Paginate]
+#[derive(Debug, Deserialize, IntoParams)]
+#[into_params(parameter_in = Query)]
 pub struct ListWorksetInfosData {
     pub team_id: String,
 }

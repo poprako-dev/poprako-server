@@ -2,10 +2,12 @@
 
 use serde::Deserialize;
 
+use utoipa::ToSchema;
+
 use crate::value::incl::InclOpt;
 
 /// Incl opts for comic info queries.
-#[derive(Deserialize, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Deserialize, Clone, Copy, PartialEq, Eq, ToSchema)]
 pub enum ComicInclOpt {
     #[serde(rename = "workset")]
     Workset,
@@ -28,7 +30,8 @@ impl InclOpt for ComicInclOpt {
 }
 
 /// Extra data options for comic info queries.
-#[derive(Deserialize, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Deserialize, Clone, Copy, PartialEq, Eq, ToSchema)]
+#[serde(rename_all = "snake_case")]
 pub enum ComicWithOpt {
     PinnedChapter,
 }

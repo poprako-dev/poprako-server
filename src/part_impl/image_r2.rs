@@ -93,7 +93,7 @@ impl ImagePool for R2ImagePool {
     #[instrument(err(Debug), skip(self), level = Level::DEBUG)]
     async fn put_signed(&self, key: &str) -> RegularResult<Url> {
         let content_type = detect_content_type(key).ok_or_else(|| RegularError::Expected {
-            variant: ExpectedVariant::ArgsInvalid,
+            variant: ExpectedVariant::Args,
             message: trl("error-unsupported-file-type"),
         })?;
 

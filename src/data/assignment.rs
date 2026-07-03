@@ -1,6 +1,8 @@
 //! Data transfer objects for assignment use cases.
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
+
+use utoipa::{IntoParams, ToSchema};
 
 use poprako_macro::Paginate;
 use poprako_util::i18n::trl;
@@ -15,6 +17,7 @@ use crate::value::assignment::AssignmentInclOpt;
 use crate::value::role::{RoleField, RoleMask};
 
 /// Presentation-ready chapter assignment information.
+#[derive(Debug, Serialize, ToSchema)]
 pub struct AssignmentInfoVal {
     pub id: String,
 
@@ -77,14 +80,15 @@ impl AssignmentInfoVal {
 
 /// Input parameters for listing assignments by chapter or owner user.
 #[Paginate]
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize, IntoParams)]
+#[into_params(parameter_in = Query)]
 pub struct ListAssignmentInfosData {
     pub chapter_id: Option<String>,
     pub owner_id: Option<String>,
 
     pub role: Option<RoleField>,
 
-    #[serde(default)]
+    #[serde(default, rename = "incl")]
     pub incl_opt: Vec<AssignmentInclOpt>,
 }
 
@@ -93,7 +97,7 @@ impl TryInto<AssignmentListSpec> for ListAssignmentInfosData {
 
     fn try_into(self) -> RegularResult<AssignmentListSpec> {
         let invalid_args_err = || RegularError::Expected {
-            variant: ExpectedVariant::ArgsInvalid,
+            variant: ExpectedVariant::Args,
             message: trl("error-chapter-or-user-required"),
         };
 
@@ -122,6 +126,7 @@ impl TryInto<AssignmentListSpec> for ListAssignmentInfosData {
 }
 
 /// Input parameters for updating assignment roles.
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct UpdateAssignmentRoleData {
     pub chapter_id: String,
     pub user_id: String,
@@ -134,6 +139,7 @@ pub struct UpdateAssignmentRoleData {
 ///
 /// The role mask must contain role bits that are valid for volunteer
 /// assignment; the use case layer validates this before applying.
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct JoinChapterData {
     pub chapter_id: String,
 

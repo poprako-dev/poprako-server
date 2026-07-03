@@ -182,7 +182,7 @@ fn comic_with_uploaded_cover(id: &str, workset_id: &str, cover_key: &str) -> Com
 /// Builds a standard error for negative test cases.
 fn expected_error() -> RegularError {
     RegularError::Expected {
-        variant: ExpectedVariant::ArgsInvalid,
+        variant: ExpectedVariant::Args,
         message: "failed".into(),
     }
 }
@@ -539,7 +539,7 @@ async fn create_propagates_repo_failure() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::ArgsInvalid);
+    assert_expected_variant(err, ExpectedVariant::Args);
 }
 
 #[tokio::test]
@@ -569,7 +569,7 @@ async fn get_info_propagates_missing_team() {
 
     let err = get_info(&mock, &mock, "team-1".into()).await.err().unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::ArgsInvalid);
+    assert_expected_variant(err, ExpectedVariant::Args);
 }
 
 #[tokio::test]
@@ -623,7 +623,7 @@ async fn list_infos_all_teams_requires_sadmin() {
         .err()
         .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::PermDeny);
+    assert_expected_variant(err, ExpectedVariant::Perm);
 }
 
 #[tokio::test]
@@ -659,7 +659,7 @@ async fn update_info_propagates_missing_team() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::ArgsInvalid);
+    assert_expected_variant(err, ExpectedVariant::Args);
 }
 
 #[tokio::test]
@@ -749,7 +749,7 @@ async fn reserve_avatar_rolls_back_missing_team() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::ArgsInvalid);
+    assert_expected_variant(err, ExpectedVariant::Args);
     let snapshot = mock.snapshot();
     assert!(snapshot.teams.is_empty());
     assert!(snapshot.prom_records.is_empty());
@@ -774,7 +774,7 @@ async fn reserve_avatar_propagates_put_url_failure_after_commit() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::ArgsInvalid);
+    assert_expected_variant(err, ExpectedVariant::Args);
     let snapshot = mock.snapshot();
     assert_eq!(
         snapshot.teams[0].avatar_key.as_deref(),
@@ -821,11 +821,7 @@ async fn mark_avatar_uploaded_rejects_stale_version() {
         .err()
         .unwrap();
 
-    assert_expected_message(
-        err,
-        ExpectedVariant::ArgsInvalid,
-        "error-stale-avatar-upload",
-    );
+    assert_expected_message(err, ExpectedVariant::Args, "error-stale-avatar-upload");
     assert!(!mock.snapshot().teams[0].avatar_uploaded);
 }
 
@@ -857,11 +853,7 @@ async fn mark_avatar_uploaded_rejects_old_reservation_replay() {
         .unwrap();
     let snapshot = mock.snapshot();
 
-    assert_expected_message(
-        err,
-        ExpectedVariant::ArgsInvalid,
-        "error-stale-avatar-upload",
-    );
+    assert_expected_message(err, ExpectedVariant::Args, "error-stale-avatar-upload");
     assert!(!snapshot.teams[0].avatar_uploaded);
     assert_eq!(snapshot.teams[0].avatar_version, 2);
 }
@@ -943,7 +935,7 @@ async fn delete_rolls_back_missing_team() {
         .err()
         .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::ArgsInvalid);
+    assert_expected_variant(err, ExpectedVariant::Args);
     assert!(mock.snapshot().teams.is_empty());
     assert!(mock.snapshot().prom_records.is_empty());
 }

@@ -6,6 +6,7 @@ use poprako_util::i18n::trl;
 use poprako_util::page::Page;
 
 use crate::complex::assignment::{AssignmentComplex, AssignmentPermComplex};
+use crate::data::assignment::AssignmentInfoVal;
 use crate::data::assignment_invitation::{
     AssignmentInvitationInfoVal, CreateAssignmentInvitationData, CreateAssignmentInvitationVal,
     JoinAssignmentInvitationData, ListAssignmentInvitationInfosData,
@@ -13,6 +14,7 @@ use crate::data::assignment_invitation::{
 use crate::model::assignment::AssignmentForm;
 use crate::model::assignment_invitation::AssignmentInvitationForm;
 use crate::model::user::UserToken;
+use crate::part::image::ImagePool;
 use crate::part::repo::assignment::{AssignmentRepo, AssignmentRepoTransactional};
 use crate::part::repo::assignment_invitation::{
     AssignmentInvitationRepo, AssignmentInvitationRepoTransactional,
@@ -195,12 +197,13 @@ where
 }
 
 /// Joins a chapter assignment with a pending invitation code.
-pub async fn join<D, C, R>(
+pub async fn join<D, C, R, I>(
     drive: &D,
     repo: &R,
+    image_pool: &I,
     token: UserToken,
     data: JoinAssignmentInvitationData,
-) -> RegularResult<()>
+) -> RegularResult<AssignmentInfoVal>
 where
     D: Drive<C>,
     D::Error: Into<RegularError>,
@@ -223,10 +226,11 @@ where
         + WorksetRepoTransactional<C>
         + Send
         + Sync,
+    I: ImagePool,
 {
     let current_user_id = token.user_id;
 
-    drive
+    let assignment_info = drive
         .with_context(async move |context| {
             let repo = repo.derive_transactional().await;
 
@@ -299,7 +303,7 @@ where
                 )
                 .await?;
 
-            match existing_assignment_info {
+            let assignment_info = match existing_assignment_info {
                 Some(existing_assignment_info) => {
                     let assignment_role_update = AssignmentComplex::merge_roles(
                         &existing_assignment_info,
@@ -307,7 +311,7 @@ where
                     );
 
                     repo.advance(context, &AssignmentStep::put_roles(&assignment_role_update))
-                        .await?;
+                        .await?
                 }
                 None => {
                     let assignment_form = AssignmentForm {
@@ -318,9 +322,9 @@ where
                     };
 
                     repo.advance(context, &AssignmentStep::create(&assignment_form))
-                        .await?;
+                        .await?
                 }
-            }
+            };
 
             repo.advance(
                 context,
@@ -328,12 +332,12 @@ where
             )
             .await?;
 
-            accept(())
+            accept(assignment_info)
         })
         .await
         .map_err(map_drive_err)?;
 
-    accept(())
+    AssignmentInfoVal::from_model(image_pool, assignment_info).await
 }
 
 fn gen_assignment_invitation_id() -> String {
@@ -361,28 +365,28 @@ fn validate_roles(roles: RoleMask) -> RegularResult<()> {
 
 fn invalid_invitation_error() -> RegularError {
     RegularError::Expected {
-        variant: ExpectedVariant::ArgsInvalid,
+        variant: ExpectedVariant::Args,
         message: trl("error-no-pending-invitation"),
     }
 }
 
 fn invitee_assigned_error() -> RegularError {
     RegularError::Expected {
-        variant: ExpectedVariant::ArgsInvalid,
+        variant: ExpectedVariant::Args,
         message: trl("error-assignment-already-exists"),
     }
 }
 
 fn assignment_role_not_assignable_args_error() -> RegularError {
     RegularError::Expected {
-        variant: ExpectedVariant::ArgsInvalid,
+        variant: ExpectedVariant::Args,
         message: trl("error-chapter-role-not-assignable"),
     }
 }
 
 fn assignment_role_not_assignable_perm_error() -> RegularError {
     RegularError::Expected {
-        variant: ExpectedVariant::PermDeny,
+        variant: ExpectedVariant::Perm,
         message: trl("error-chapter-role-not-assignable"),
     }
 }
