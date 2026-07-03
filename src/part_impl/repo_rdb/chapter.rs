@@ -16,16 +16,16 @@ use crate::model::unit::UnitCounterDelta;
 use crate::part::repo::chapter::{ChapterRepo, ChapterRepoTransactional};
 use crate::part::repo::step::chapter::{
     AdjustUnitCounters, Create, Delete, FindPinnedInfoByComicId, GetInfoById, GetInfoByIdExcluded,
-    ListAllInfosByComicIdExcluded, ListInfos, ListInfosByComicId, ListInfosByComicIdExcluded,
-    ListPinnedInfosByComicIds, SetPageCounters, UnpinOthers, UpdateInfo, UpdateStage,
+    ListAllInfosByComicIdExcluded, ListInfos, ListPinnedInfosByComicIds, SetPageCounters,
+    UnpinOthers, UpdateInfo, UpdateStage,
 };
 use crate::part::shared::execute::Execute;
+use crate::part_impl::rdb_core::RdbConn;
+use crate::part_impl::rdb_core::RdbContext;
+use crate::part_impl::rdb_core::result::{diesel, expected};
 use crate::part_impl::repo_rdb::entity::chapter::{ChapterAspect, ChapterEntry, ChapterRow};
 use crate::part_impl::repo_rdb::incl;
 use crate::part_impl::repo_rdb::{RdbRepo, RdbRepoTransactional};
-use crate::part_impl::shared_rdb::RdbConn;
-use crate::part_impl::shared_rdb::RdbContext;
-use crate::part_impl::shared_rdb::result::{diesel, expected};
 use crate::result::{RegularError, RegularResult};
 use crate::value::chapter::ChapterInclOpt;
 
@@ -104,44 +104,44 @@ async fn list_infos(conn: &mut RdbConn, spec: &ChapterListSpec) -> RegularResult
     Ok(infos)
 }
 
-async fn list_infos_by_comic_id(
-    conn: &mut RdbConn,
-    comic_id: &str,
-    offset: u64,
-    limit: u64,
-) -> RegularResult<Vec<ChapterInfo>> {
-    let rows: Vec<ChapterRow> = t_chapter
-        .filter(f_comic_id.eq(comic_id))
-        .select(ChapterRow::as_select())
-        .order_by(f_index.desc())
-        .offset(offset as i64)
-        .limit(limit as i64)
-        .load(conn)
-        .await
-        .map_err(diesel)?;
-
-    rows_into_infos(rows)
-}
-
-async fn list_infos_by_comic_id_excluded(
-    conn: &mut RdbConn,
-    comic_id: &str,
-    offset: u64,
-    limit: u64,
-) -> RegularResult<Vec<ChapterInfo>> {
-    let rows: Vec<ChapterRow> = t_chapter
-        .filter(f_comic_id.eq(comic_id))
-        .select(ChapterRow::as_select())
-        .order_by(f_index.desc())
-        .offset(offset as i64)
-        .limit(limit as i64)
-        .for_update()
-        .load(conn)
-        .await
-        .map_err(diesel)?;
-
-    rows_into_infos(rows)
-}
+// async fn list_infos_by_comic_id(
+//     conn: &mut RdbConn,
+//     comic_id: &str,
+//     offset: u64,
+//     limit: u64,
+// ) -> RegularResult<Vec<ChapterInfo>> {
+//     let rows: Vec<ChapterRow> = t_chapter
+//         .filter(f_comic_id.eq(comic_id))
+//         .select(ChapterRow::as_select())
+//         .order_by(f_index.desc())
+//         .offset(offset as i64)
+//         .limit(limit as i64)
+//         .load(conn)
+//         .await
+//         .map_err(diesel)?;
+//
+//     rows_into_infos(rows)
+// }
+//
+// async fn list_infos_by_comic_id_excluded(
+//     conn: &mut RdbConn,
+//     comic_id: &str,
+//     offset: u64,
+//     limit: u64,
+// ) -> RegularResult<Vec<ChapterInfo>> {
+//     let rows: Vec<ChapterRow> = t_chapter
+//         .filter(f_comic_id.eq(comic_id))
+//         .select(ChapterRow::as_select())
+//         .order_by(f_index.desc())
+//         .offset(offset as i64)
+//         .limit(limit as i64)
+//         .for_update()
+//         .load(conn)
+//         .await
+//         .map_err(diesel)?;
+//
+//     rows_into_infos(rows)
+// }
 
 async fn list_all_infos_by_comic_id_excluded(
     conn: &mut RdbConn,
@@ -336,7 +336,7 @@ impl<'a> Execute<GetInfoById<'a>> for RdbRepo {
     type Error = RegularError;
 
     async fn execute(&self, step: &GetInfoById<'a>) -> RegularResult<ChapterInfo> {
-        submit_query!(self.shared, get_info_by_id, step.id, step.incl_opt)
+        submit_query!(self.core, get_info_by_id, step.id, step.incl_opt)
     }
 }
 
@@ -345,24 +345,14 @@ impl<'a> Execute<ListInfos<'a>> for RdbRepo {
     type Error = RegularError;
 
     async fn execute(&self, step: &ListInfos<'a>) -> RegularResult<Vec<ChapterInfo>> {
-        submit_query!(self.shared, list_infos, step.spec)
+        submit_query!(self.core, list_infos, step.spec)
     }
 }
 
-#[async_trait]
-impl<'a> Execute<ListInfosByComicId<'a>> for RdbRepo {
-    type Error = RegularError;
-
-    async fn execute(&self, step: &ListInfosByComicId<'a>) -> RegularResult<Vec<ChapterInfo>> {
-        submit_query!(
-            self.shared,
-            list_infos_by_comic_id,
-            step.comic_id,
-            step.offset,
-            step.limit
-        )
-    }
-}
+// #[async_trait]
+// impl<'a> Execute<ListInfosByComicId<'a>> for RdbRepo {
+//     ...
+// }
 
 #[async_trait]
 impl<'a> Execute<FindPinnedInfoByComicId<'a>> for RdbRepo {
@@ -373,7 +363,7 @@ impl<'a> Execute<FindPinnedInfoByComicId<'a>> for RdbRepo {
         step: &FindPinnedInfoByComicId<'a>,
     ) -> RegularResult<Option<ChapterInfo>> {
         submit_query!(
-            self.shared,
+            self.core,
             find_pinned_info_by_comic_id,
             step.comic_id,
             step.incl_opt
@@ -389,7 +379,7 @@ impl<'a> Execute<ListPinnedInfosByComicIds<'a>> for RdbRepo {
         &self,
         step: &ListPinnedInfosByComicIds<'a>,
     ) -> RegularResult<HashMap<String, ChapterInfo>> {
-        submit_query!(self.shared, list_pinned_infos_by_comic_ids, step.comic_ids)
+        submit_query!(self.core, list_pinned_infos_by_comic_ids, step.comic_ids)
     }
 }
 
@@ -432,19 +422,10 @@ impl<'a> Advance<GetInfoByIdExcluded<'a>, RdbContext> for RdbRepoTransactional {
     }
 }
 
-#[async_trait]
-impl<'a> Advance<ListInfosByComicIdExcluded<'a>, RdbContext> for RdbRepoTransactional {
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut RdbContext,
-        step: &ListInfosByComicIdExcluded<'a>,
-    ) -> RegularResult<Vec<ChapterInfo>> {
-        list_infos_by_comic_id_excluded(context.conn(), step.comic_id, step.offset, step.limit)
-            .await
-    }
-}
+// #[async_trait]
+// impl<'a> Advance<ListInfosByComicIdExcluded<'a>, RdbContext> for RdbRepoTransactional {
+//     ...
+// }
 
 #[async_trait]
 impl<'a> Advance<ListAllInfosByComicIdExcluded<'a>, RdbContext> for RdbRepoTransactional {

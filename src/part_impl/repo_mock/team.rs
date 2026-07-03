@@ -101,7 +101,7 @@ impl<'a> Execute<ListInfos<'a>> for Mock {
                 .collect(),
             None => state.teams.clone(),
         };
-        teams.sort_by(|left, right| right.created_at.cmp(&left.created_at));
+        teams.sort_by_key(|right| std::cmp::Reverse(right.created_at));
 
         let offset = step.offset as usize;
         let limit = step.limit as usize;

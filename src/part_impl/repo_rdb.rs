@@ -4,15 +4,15 @@ use async_trait::async_trait;
 
 use crate::util::DeriveTransactional;
 
-use crate::part_impl::shared_rdb::RdbShared;
+use crate::part_impl::rdb_core::RdbCore;
 
 /// Allocates a connection and calls a free query function.
 ///
 /// The function must accept `(&mut AsyncPgConnection, args...)` and return
 /// a `Future<Output = Result<T, crate::result::Error>>`.
 macro_rules! submit_query {
-    ($shared:expr, $fn:path $(, $arg:expr)* $(,)?) => {{
-        let mut conn = $shared.get().await?;
+    ($core:expr, $fn:path $(, $arg:expr)* $(,)?) => {{
+        let mut conn = $core.get().await?;
         $fn(&mut *conn, $($arg),*).await
     }};
 }
@@ -40,12 +40,12 @@ pub mod workset;
 mod test_shared;
 
 pub struct RdbRepo {
-    shared: RdbShared,
+    core: RdbCore,
 }
 
 impl RdbRepo {
-    pub fn new(shared: RdbShared) -> Self {
-        Self { shared }
+    pub fn new(core: RdbCore) -> Self {
+        Self { core }
     }
 }
 

@@ -236,8 +236,7 @@ pub fn new(harn: AppHarn) -> Router<AppHarn> {
 
         use utoipa_swagger_ui::SwaggerUi;
 
-        return router
-            .merge(SwaggerUi::new("/api/swagger-ui").url("/api/openapi.json", ApiDoc::openapi()));
+        router.merge(SwaggerUi::new("/api/swagger-ui").url("/api/openapi.json", ApiDoc::openapi()))
     }
 
     #[cfg(not(debug_assertions))]

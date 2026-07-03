@@ -15,12 +15,12 @@ use crate::part::repo::step::team::{
 };
 use crate::part::repo::team::{TeamRepo, TeamRepoTransactional};
 use crate::part::shared::execute::Execute;
+use crate::part_impl::rdb_core::result::{diesel, expected};
+use crate::part_impl::rdb_core::{RdbConn, RdbContext};
 use crate::part_impl::repo_rdb::entity::team::{TeamAspect, TeamEntry, TeamRow};
 use crate::part_impl::repo_rdb::schema::t_member;
 use crate::part_impl::repo_rdb::schema::t_team::dsl::*;
 use crate::part_impl::repo_rdb::{RdbRepo, RdbRepoTransactional};
-use crate::part_impl::shared_rdb::result::{diesel, expected};
-use crate::part_impl::shared_rdb::{RdbConn, RdbContext};
 use crate::result::{RegularError, RegularResult};
 
 impl TeamRepo<RdbContext> for RdbRepo {}
@@ -198,7 +198,7 @@ async fn increment_workset_next_index(conn: &mut RdbConn, id: &str) -> RegularRe
 impl<'a> Execute<Create<'a>> for RdbRepo {
     type Error = RegularError;
     async fn execute(&self, step: &Create<'a>) -> Result<TeamInfo, Self::Error> {
-        submit_query!(self.shared, create, step.form)
+        submit_query!(self.core, create, step.form)
     }
 }
 
@@ -206,7 +206,7 @@ impl<'a> Execute<Create<'a>> for RdbRepo {
 impl<'a> Execute<GetInfoById<'a>> for RdbRepo {
     type Error = RegularError;
     async fn execute(&self, step: &GetInfoById<'a>) -> Result<TeamInfo, Self::Error> {
-        submit_query!(self.shared, get_info_by_id, step.id)
+        submit_query!(self.core, get_info_by_id, step.id)
     }
 }
 
@@ -215,7 +215,7 @@ impl<'a> Execute<ListInfos<'a>> for RdbRepo {
     type Error = RegularError;
     async fn execute(&self, step: &ListInfos<'a>) -> Result<Vec<TeamInfo>, Self::Error> {
         submit_query!(
-            self.shared,
+            self.core,
             list_infos,
             step.user_id,
             step.offset,
@@ -229,7 +229,7 @@ impl<'a> Execute<UpdateInfo<'a>> for RdbRepo {
     type Error = RegularError;
     async fn execute(&self, step: &UpdateInfo<'a>) -> RegularResult<()> {
         submit_query!(
-            self.shared,
+            self.core,
             update_info,
             step.id,
             step.name,
@@ -243,7 +243,7 @@ impl<'a> Execute<MarkAvatarUploaded<'a>> for RdbRepo {
     type Error = RegularError;
     async fn execute(&self, step: &MarkAvatarUploaded<'a>) -> RegularResult<()> {
         submit_query!(
-            self.shared,
+            self.core,
             mark_avatar_uploaded,
             step.id,
             step.avatar_version

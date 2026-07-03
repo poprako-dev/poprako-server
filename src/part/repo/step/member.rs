@@ -61,16 +61,6 @@ impl<'a> Step for FindInfoByUserIdAndTeamId<'a> {
     type Output = Option<MemberInfo>;
 }
 
-/// Step that fetches one membership by ID with a pessimistic lock.
-pub struct GetInfoExcluded<'a> {
-    pub id: &'a str,
-    pub incl_opt: &'a [MemberInclOpt],
-}
-
-impl<'a> Step for GetInfoExcluded<'a> {
-    type Output = MemberInfo;
-}
-
 /// Step that fetches one membership by ID.
 pub struct GetInfoById<'a> {
     pub id: &'a str,
@@ -140,14 +130,6 @@ impl MemberStep {
         team_id: &'a str,
     ) -> FindInfoByUserIdAndTeamId<'a> {
         FindInfoByUserIdAndTeamId { user_id, team_id }
-    }
-
-    /// Constructs a step to fetch one membership with a pessimistic lock.
-    pub fn get_info_excluded<'a>(
-        id: &'a str,
-        incl_opt: &'a [MemberInclOpt],
-    ) -> GetInfoExcluded<'a> {
-        GetInfoExcluded { id, incl_opt }
     }
 
     /// Constructs a step to fetch one membership by ID.

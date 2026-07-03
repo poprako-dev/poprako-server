@@ -2,6 +2,13 @@
 name = "poprako-macro"
 version = "0.1.0"
 edition = "2024"
+description = "Project-local proc macros for poprako-r"
+license = "MIT"
+repository = "https://github.com/anomalyco/poprako-r"
+keywords = ["manga", "translation", "proc-macro"]
+categories = ["development-tools::procedural-macro-helpers"]
+readme = false
+publish = false
 
 [lib]
 proc-macro = true

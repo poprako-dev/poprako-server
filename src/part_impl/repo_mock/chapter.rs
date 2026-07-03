@@ -14,8 +14,8 @@ use crate::model::workset::WorksetInfo;
 use crate::part::repo::chapter::{ChapterRepo, ChapterRepoTransactional};
 use crate::part::repo::step::chapter::{
     AdjustUnitCounters, Create, Delete, FindPinnedInfoByComicId, GetInfoById, GetInfoByIdExcluded,
-    ListAllInfosByComicIdExcluded, ListInfos, ListInfosByComicId, ListInfosByComicIdExcluded,
-    ListPinnedInfosByComicIds, SetPageCounters, UnpinOthers, UpdateInfo, UpdateStage,
+    ListAllInfosByComicIdExcluded, ListInfos, ListPinnedInfosByComicIds, SetPageCounters,
+    UnpinOthers, UpdateInfo, UpdateStage,
 };
 use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactional, expected, now};
@@ -44,18 +44,18 @@ fn get_chapter_by_id(
     Ok(chapter_info)
 }
 
-fn list_chapters(state: &MockState, comic_id: &str, offset: u64, limit: u64) -> Vec<ChapterInfo> {
-    let chapter_infos = list_all_chapters(state, comic_id);
-
-    let offset = offset as usize;
-    let limit = limit as usize;
-    if offset >= chapter_infos.len() {
-        return Vec::new();
-    }
-
-    let end = std::cmp::min(offset + limit, chapter_infos.len());
-    chapter_infos[offset..end].to_vec()
-}
+// fn list_chapters(state: &MockState, comic_id: &str, offset: u64, limit: u64) -> Vec<ChapterInfo> {
+//     let chapter_infos = list_all_chapters(state, comic_id);
+//
+//     let offset = offset as usize;
+//     let limit = limit as usize;
+//     if offset >= chapter_infos.len() {
+//         return Vec::new();
+//     }
+//
+//     let end = std::cmp::min(offset + limit, chapter_infos.len());
+//     chapter_infos[offset..end].to_vec()
+// }
 
 fn list_all_chapters(state: &MockState, comic_id: &str) -> Vec<ChapterInfo> {
     let mut chapter_infos = state
@@ -64,7 +64,7 @@ fn list_all_chapters(state: &MockState, comic_id: &str) -> Vec<ChapterInfo> {
         .filter(|chapter_info| chapter_info.comic_id == comic_id)
         .cloned()
         .collect::<Vec<_>>();
-    chapter_infos.sort_by(|left, right| right.index.cmp(&left.index));
+    chapter_infos.sort_by_key(|right| std::cmp::Reverse(right.index));
 
     chapter_infos
 }
@@ -263,23 +263,10 @@ impl<'a> Execute<GetInfoById<'a>> for Mock {
     }
 }
 
-#[async_trait]
-impl<'a> Execute<ListInfosByComicId<'a>> for Mock {
-    type Error = RegularError;
-
-    async fn execute(
-        &self,
-        step: &ListInfosByComicId<'a>,
-    ) -> Result<Vec<ChapterInfo>, Self::Error> {
-        let state = self.state.lock().unwrap();
-        Ok(list_chapters(
-            &state,
-            step.comic_id,
-            step.offset,
-            step.limit,
-        ))
-    }
-}
+// #[async_trait]
+// impl<'a> Execute<ListInfosByComicId<'a>> for Mock {
+//     ...
+// }
 
 #[async_trait]
 impl<'a> Execute<FindPinnedInfoByComicId<'a>> for Mock {
@@ -373,23 +360,10 @@ impl<'a> Advance<GetInfoByIdExcluded<'a>, MockContext> for MockTransactional {
     }
 }
 
-#[async_trait]
-impl<'a> Advance<ListInfosByComicIdExcluded<'a>, MockContext> for MockTransactional {
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut MockContext,
-        step: &ListInfosByComicIdExcluded<'a>,
-    ) -> Result<Vec<ChapterInfo>, Self::Error> {
-        Ok(list_chapters(
-            &context.state,
-            step.comic_id,
-            step.offset,
-            step.limit,
-        ))
-    }
-}
+// #[async_trait]
+// impl<'a> Advance<ListInfosByComicIdExcluded<'a>, MockContext> for MockTransactional {
+//     ...
+// }
 
 #[async_trait]
 impl<'a> Advance<ListAllInfosByComicIdExcluded<'a>, MockContext> for MockTransactional {

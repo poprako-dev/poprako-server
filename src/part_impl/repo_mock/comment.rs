@@ -45,7 +45,7 @@ fn list_comments(state: &MockState, spec: &CommentListSpec) -> Vec<CommentInfo> 
         .cloned()
         .collect::<Vec<_>>();
 
-    comment_infos.sort_by(|left, right| right.created_at.cmp(&left.created_at));
+    comment_infos.sort_by_key(|right| std::cmp::Reverse(right.created_at));
 
     for comment_info in &mut comment_infos {
         apply_user_incl(state, comment_info, include_user);

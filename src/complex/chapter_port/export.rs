@@ -25,7 +25,12 @@ impl ChapterExportComplex {
         for page_info in pages {
             let image_name = label_plus_image_name(page_info);
 
-            let _ = write!(output, "\n\n>>>>>>>>[{}]<<<<<<<<\n", image_name);
+            write!(output, "\n\n>>>>>>>>[{}]<<<<<<<<\n", image_name).unwrap_or_else(|error| {
+                tracing::error!(
+                    error = %error,
+                    "[ChapterExportComplex::make_label_plus] failed to write page header",
+                );
+            });
 
             let units = units_by_page_id
                 .get(&page_info.id)
@@ -38,14 +43,20 @@ impl ChapterExportComplex {
                     false => 2,
                 };
 
-                let _ = writeln!(
+                writeln!(
                     output,
                     "----------------[{}]----------------[{:.4},{:.4},{}]",
                     index + 1,
                     unit_info.x_coord,
                     unit_info.y_coord,
                     group
-                );
+                )
+                .unwrap_or_else(|error| {
+                    tracing::error!(
+                        error = %error,
+                        "[ChapterExportComplex::make_label_plus] failed to write unit line",
+                    );
+                });
 
                 if let Some(main_text) = select_main_text(unit_info) {
                     output.push_str(main_text);

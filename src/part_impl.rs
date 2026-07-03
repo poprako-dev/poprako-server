@@ -5,9 +5,9 @@ pub mod image_r2;
 pub mod prom_rdb;
 pub mod repo_rdb;
 
-mod shared_rdb;
+mod rdb_core;
 
-pub use shared_rdb::{RdbContext, RdbShared};
+pub use rdb_core::{RdbContext, RdbCore};
 
 #[cfg(test)]
 pub mod auth_mock;

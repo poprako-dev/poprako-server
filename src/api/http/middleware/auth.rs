@@ -14,6 +14,7 @@ use crate::api::http::auth_token::{AUTH_BEARER_PREFIX, AUTH_COOKIE_NAME};
 use crate::api::http::result::HttpError;
 use crate::api::http::state::AppHarn;
 use crate::part::auth::TokenAuth as _;
+use crate::usecase;
 
 /// `from_fn` authorization handler applied to protected routes.
 pub async fn authorize(State(harn): State<AppHarn>, mut request: Request, next: Next) -> Response {
@@ -24,6 +25,12 @@ pub async fn authorize(State(harn): State<AppHarn>, mut request: Request, next: 
 
         Err(err) => return HttpError::from(err).into_response(),
     };
+
+    if let Err(e) =
+        usecase::user::touch_last_active(harn.drive(), harn.repo(), user_token.clone()).await
+    {
+        tracing::warn!(error = ?e, "failed to touch last_active");
+    }
 
     request.extensions_mut().insert(user_token);
 

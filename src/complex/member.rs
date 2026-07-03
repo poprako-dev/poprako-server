@@ -33,28 +33,6 @@ impl MemberPermComplex {
         check_user_is_team_admin(proxy, user_id, team_id).await
     }
 
-    pub async fn can_user_reserve_avatar<P>(
-        proxy: &mut P,
-        user_id: &str,
-        team_id: &str,
-    ) -> RegularResult<()>
-    where
-        P: for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RegularError>,
-    {
-        check_user_is_team_admin(proxy, user_id, team_id).await
-    }
-
-    pub async fn can_user_mark_avatar_uploaded<P>(
-        proxy: &mut P,
-        user_id: &str,
-        team_id: &str,
-    ) -> RegularResult<()>
-    where
-        P: for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RegularError>,
-    {
-        check_user_is_team_admin(proxy, user_id, team_id).await
-    }
-
     pub async fn can_user_delete<P>(
         proxy: &mut P,
         user_id: &str,

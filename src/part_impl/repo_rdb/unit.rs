@@ -17,11 +17,11 @@ use crate::part::repo::step::unit::{
 };
 use crate::part::repo::unit::{UnitRepo, UnitRepoTransactional};
 use crate::part::shared::execute::Execute;
+use crate::part_impl::rdb_core::RdbConn;
+use crate::part_impl::rdb_core::RdbContext;
+use crate::part_impl::rdb_core::result::{diesel, expected};
 use crate::part_impl::repo_rdb::entity::unit::{UnitAspect, UnitEntry, UnitRow};
 use crate::part_impl::repo_rdb::{RdbRepo, RdbRepoTransactional};
-use crate::part_impl::shared_rdb::RdbConn;
-use crate::part_impl::shared_rdb::RdbContext;
-use crate::part_impl::shared_rdb::result::{diesel, expected};
 use crate::result::{RegularError, RegularResult};
 
 use poprako_util::page::Page;
@@ -225,7 +225,7 @@ impl<'a> Execute<ListInfosByPageId<'a>> for RdbRepo {
     type Error = RegularError;
 
     async fn execute(&self, step: &ListInfosByPageId<'a>) -> RegularResult<Vec<UnitInfo>> {
-        submit_query!(self.shared, list_infos_by_page_id, step.page_id, step.page)
+        submit_query!(self.core, list_infos_by_page_id, step.page_id, step.page)
     }
 }
 

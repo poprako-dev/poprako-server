@@ -2,7 +2,6 @@
 
 use diesel::result::{DatabaseErrorKind, Error as DieselError};
 use diesel_async::pooled_connection::deadpool::{BuildError, PoolError};
-use serde_json::Error as SerdeJsonError;
 
 use poprako_util::i18n::trl;
 
@@ -38,21 +37,9 @@ pub fn diesel(err: DieselError) -> RegularError {
     }
 }
 
-pub fn serde(err: SerdeJsonError) -> RegularError {
-    RegularError::Unrecoverable {
-        message: format!("serde error: {}", err),
-    }
-}
-
 pub fn expected(message: &str) -> RegularError {
     RegularError::Expected {
         variant: ExpectedVariant::Args,
         message: trl(message),
-    }
-}
-
-pub fn invalid_stored_value(value: impl std::fmt::Display) -> RegularError {
-    RegularError::Unrecoverable {
-        message: format!("invalid stored value: {}", value),
     }
 }

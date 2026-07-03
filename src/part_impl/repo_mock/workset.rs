@@ -45,7 +45,7 @@ impl<'a> Execute<ListInfosByTeamId<'a>> for Mock {
             .filter(|workset| workset.team_id == step.team_id)
             .cloned()
             .collect::<Vec<_>>();
-        worksets.sort_by(|left, right| left.index.cmp(&right.index));
+        worksets.sort_by_key(|left| left.index);
 
         let offset = step.offset as usize;
         let limit = step.limit as usize;
