@@ -24,7 +24,6 @@ impl ImagePool for Mock {
                 message: trl("error-image-get-failed"),
             });
         }
-
         Ok(Url::parse(&format!("https://test.local/get/{}", key)).unwrap())
     }
 
@@ -35,7 +34,6 @@ impl ImagePool for Mock {
                 message: trl("error-image-put-failed"),
             });
         }
-
         Ok(Url::parse(&format!("https://test.local/put/{}", key)).unwrap())
     }
 }

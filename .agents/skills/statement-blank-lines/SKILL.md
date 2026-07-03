@@ -1,35 +1,46 @@
 ---
 name: statement-blank-lines
-description: "Enforces blank-line separation between every statement in Rust function bodies — `let` bindings, function calls, `if let`/`if` conditionals, final `Ok(…)`/return expressions, and between adjacent `#[async_trait] impl` blocks. Detects and fixes missing blank-line spacing across the entire Rust codebase."
+description: "Enforces Rust statement spacing after cargo fmt: exactly two one-line statements in one block stay adjacent; multi-line statement pairs and longer statement sequences use blank-line spacing."
 ---
 
 # Statement Blank-Line Spacing
 
-Every **Rust function body** across the entire codebase must have a blank line
-between **every two statements**. This rule also applies between consecutive
-`#[async_trait] impl` blocks.
+Rust statement spacing is based on the formatted physical line shape:
+
+- If a block has exactly two statements and those statements occupy exactly two
+  formatted lines total, keep them adjacent with no blank line.
+- If a block has exactly two statements but either statement spans multiple
+  formatted lines, insert a blank line between them.
+- If a block has three or more statements, separate statement paragraphs with
+  blank lines.
+- This rule also applies between consecutive `#[async_trait] impl` blocks.
 
 ## Motivation
 
-Without blank lines, consecutive statements blur together — `let now = …; let
-aspect = …; db.update(…); Ok(())` is unreadable when all contiguous. A blank
-line between each statement makes the function structure explicit: each step
-(setup → build → execute → return) is its own paragraph.
+Short two-line blocks should stay compact. Multi-line statements and longer
+statement sequences need spacing so each step remains visually distinct after
+`cargo fmt`.
 
 ## Rules
 
-1. **Every statement gets its own paragraph.** A `let` binding, a function call
-   ending in `?` or `;`, an `if`/`if let` conditional — each is followed by a
-   blank line before the next statement.
-2. **The final `Ok(…)` / return expression** always has a blank line before it,
-   even if it is the only statement following a `let` chain.
-3. **Multi-line method chains** (e.g. `db.update(…).set(…).execute(…).await
+1. **Exactly two one-line statements stay adjacent.** Do not put a blank line
+   between them.
+2. **Exactly two statements need spacing when formatted length exceeds two
+   lines.** If either statement spans multiple lines after `cargo fmt`, put a
+   blank line between the two statements.
+3. **Three or more statements get paragraph spacing.** A `let` binding, a
+   function call ending in `?` or `;`, an `if`/`if let` conditional — each
+   statement paragraph is separated from the next by a blank line.
+4. **The final `Ok(…)` / return expression** has a blank line before it when it
+   follows a multi-line statement or when the block contains three or more
+   statements.
+5. **Multi-line method chains** (e.g. `db.update(…).set(…).execute(…).await
    .map_err(diesel)?;`) count as one statement — the blank line goes after the
    semicolon, not between chain links.
-4. **Consecutive `#[async_trait] impl` blocks** — each block is separated by a
+6. **Consecutive `#[async_trait] impl` blocks** — each block is separated by a
    blank line from the next.
-5. **Exception: a function with exactly one statement** needs no blank line
-   (there is nothing to separate). This covers thin delegation wrappers like
+7. **A function with exactly one statement** needs no blank line. This covers
+   thin delegation wrappers like
    `get_by_id_tx(conn, id).await` or `submit_query!(…)` in impl blocks.
 
 ## ✅ Correct examples
@@ -51,6 +62,13 @@ fn calculate_offset(page: u32, size: u32) -> u64 {
     let offset = ((page - 1) * size) as u64;
 
     offset
+}
+```
+
+```rust
+fn resolve_team_id(workset_info: &WorksetInfo) -> RegularResult<String> {
+    let team_id = workset_info.team_id.clone();
+    accept(team_id)
 }
 ```
 
@@ -94,7 +112,7 @@ impl<'a> Execute<ListInfos<'a>> for RdbRepo {
 ## ❌ Common mistakes
 
 ```rust
-// WRONG — statements jammed together
+// WRONG — three statements jammed together
 fn update_comic(update: &ComicInfoUpdate) -> RegularResult<()> {
     let now = OffsetDateTime::now_utc();
     let aspect = ComicAspect::new(now).title(&update.title);
@@ -104,6 +122,25 @@ fn update_comic(update: &ComicInfoUpdate) -> RegularResult<()> {
         .await
         .map_err(diesel)?;
     Ok(())
+}
+```
+
+```rust
+// WRONG — two one-line statements split by a blank line
+fn resolve_team_id(workset_info: &WorksetInfo) -> RegularResult<String> {
+    let team_id = workset_info.team_id.clone();
+
+    accept(team_id)
+}
+```
+
+```rust
+// WRONG — formatted block has more than two statement lines and needs spacing
+async fn get_info(repo: &Repo, id: &str) -> RegularResult<Info> {
+    let info = repo
+        .execute(&Step::get_info_by_id(id))
+        .await?;
+    Ok(info)
 }
 ```
 
@@ -129,7 +166,10 @@ impl<'a> Execute<GetInfoById<'a>> for RdbRepo {
 
 - When writing, reviewing, or linting any `.rs` file in the project.
 - When the user says "missing blank lines", "add blank lines between statements",
-  "code is clumped together", "every two statements must have a blank line",
-  "readability is bad", or similar.
-- Any time a Rust function body has two or more consecutive statements without
-  a blank line between them.
+  "code is clumped together", "readability is bad", or similar.
+- Any time a formatted block has exactly two one-line statements separated by a
+  blank line.
+- Any time a formatted block has exactly two statements spanning more than two
+  total lines without a blank line between them.
+- Any time a Rust function body has three or more consecutive statements
+  without blank-line spacing.

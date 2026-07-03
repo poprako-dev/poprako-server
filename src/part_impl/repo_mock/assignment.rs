@@ -351,7 +351,6 @@ fn delete_assignment_by_id(state: &mut MockState, id: &str) -> RegularResult<()>
         .iter()
         .position(|assignment_info| assignment_info.id == id)
         .ok_or_else(|| expected("error-assignment-not-found"))?;
-
     state.assignments.remove(index);
     Ok(())
 }

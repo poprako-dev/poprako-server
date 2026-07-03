@@ -53,7 +53,6 @@ pub async fn create(
     Json(data): Json<CreateAnnouncementData>,
 ) -> HttpResult<CreateAnnouncementVal> {
     let reply = usecase::announcement::create(harn.drive(), harn.repo(), user_token, data).await?;
-
     reply.accept(StatusCode::CREATED)
 }
 

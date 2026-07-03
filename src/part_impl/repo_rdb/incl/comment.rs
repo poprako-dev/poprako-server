@@ -32,6 +32,5 @@ pub async fn populate_comment_incls(
     if incl_opt.contains(&CommentInclOpt::User) {
         incl::populate::<CommentUserIncl>(conn, infos).await?;
     }
-
     Ok(())
 }

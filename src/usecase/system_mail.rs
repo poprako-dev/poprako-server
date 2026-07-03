@@ -74,6 +74,5 @@ where
         repo.execute(&SystemMailStep::mark_read(id, &token.user_id))
             .await?;
     }
-
     accept(())
 }

@@ -316,7 +316,6 @@ where
         })
         .await
         .map_err(map_drive_err)?;
-
     accept(())
 }
 

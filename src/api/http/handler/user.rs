@@ -77,7 +77,6 @@ pub async fn get_info(
         user_id,
     )
     .await?;
-
     info.accept(StatusCode::OK)
 }
 
@@ -128,7 +127,6 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     usecase::user::delete(harn.drive(), harn.repo(), harn.prom(), user_token, user_id).await?;
-
     no_content()
 }
 

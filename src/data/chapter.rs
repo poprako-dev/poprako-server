@@ -86,7 +86,6 @@ impl ChapterInfoVal {
         let comic = match model.comic {
             Some(comic_info) => {
                 let comic = ComicInfoVal::from_model(image_pool, comic_info, None).await?;
-
                 Some(Box::new(comic))
             }
             None => None,

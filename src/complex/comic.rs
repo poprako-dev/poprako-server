@@ -123,7 +123,6 @@ impl ComicPermComplex {
             + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RegularError>,
     {
         let team_id = Self::resolve_team_id_from_workset(proxy, workset_id).await?;
-
         check_user_is_team_admin(proxy, user_id, &team_id).await
     }
 
@@ -138,7 +137,6 @@ impl ComicPermComplex {
             + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RegularError>,
     {
         let team_id = Self::resolve_team_id_from_workset(proxy, workset_id).await?;
-
         check_user_is_team_member(proxy, user_id, &team_id).await
     }
 
@@ -154,7 +152,6 @@ impl ComicPermComplex {
             + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RegularError>,
     {
         let team_id = Self::resolve_team_id_from_comic(proxy, comic_id).await?;
-
         check_user_is_team_member(proxy, user_id, &team_id).await
     }
 
@@ -170,7 +167,6 @@ impl ComicPermComplex {
             + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RegularError>,
     {
         let team_id = Self::resolve_team_id_from_comic(proxy, comic_id).await?;
-
         check_user_is_team_admin(proxy, user_id, &team_id).await
     }
 
@@ -186,7 +182,6 @@ impl ComicPermComplex {
             + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RegularError>,
     {
         let team_id = Self::resolve_team_id_from_comic(proxy, comic_id).await?;
-
         check_user_is_team_admin(proxy, user_id, &team_id).await
     }
 
@@ -202,7 +197,6 @@ impl ComicPermComplex {
             + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RegularError>,
     {
         let team_id = Self::resolve_team_id_from_comic(proxy, comic_id).await?;
-
         check_user_is_team_admin(proxy, user_id, &team_id).await
     }
 
@@ -218,7 +212,6 @@ impl ComicPermComplex {
             + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RegularError>,
     {
         let team_id = Self::resolve_team_id_from_comic(proxy, comic_id).await?;
-
         check_user_is_team_admin(proxy, user_id, &team_id).await
     }
 
@@ -234,7 +227,6 @@ impl ComicPermComplex {
             + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RegularError>,
     {
         let team_id = Self::resolve_team_id_from_comic(proxy, comic_id).await?;
-
         check_user_is_team_admin(proxy, user_id, &team_id).await
     }
 

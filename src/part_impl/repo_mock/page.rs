@@ -55,7 +55,6 @@ fn list_pages(state: &MockState, chapter_id: &str, offset: u64, limit: u64) -> V
 
 fn page_from_form(form: &PageForm) -> PageInfo {
     let time = now();
-
     PageInfo {
         id: form.id.clone(),
         chapter_id: form.chapter_id.clone(),
@@ -87,7 +86,6 @@ impl<'a> Execute<ListInfosByChapterId<'a>> for Mock {
 
     async fn execute(&self, step: &ListInfosByChapterId<'a>) -> Result<Vec<PageInfo>, Self::Error> {
         let state = self.state.lock().unwrap();
-
         Ok(list_pages(&state, step.chapter_id, step.offset, step.limit))
     }
 }

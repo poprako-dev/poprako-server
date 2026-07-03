@@ -34,7 +34,6 @@ fn apply_user_incl(
     include_user: bool,
 ) {
     announcement_info.user = None;
-
     if include_user {
         announcement_info.user = find_user(state, &announcement_info.user_id);
     }
@@ -131,7 +130,6 @@ use crate::test_util::assert_expected_variant;
 
 fn user(id: &str) -> UserInfo {
     let time = now();
-
     UserInfo {
         id: id.into(),
         qid: id.into(),

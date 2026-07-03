@@ -227,7 +227,6 @@ fn workflow_stage_mask_from_row(row: &ChapterRow) -> Result<WorkflowStageMask, R
             WorkflowStage::Publish,
             phase_from_one_shot(row.f_published_at),
         )?;
-
     Ok(stages)
 }
 
@@ -236,7 +235,6 @@ impl TryFrom<ChapterRow> for ChapterInfo {
 
     fn try_from(row: ChapterRow) -> Result<Self, Self::Error> {
         let stages = workflow_stage_mask_from_row(&row)?;
-
         Ok(Self {
             id: row.f_id,
             comic_id: row.f_comic_id,

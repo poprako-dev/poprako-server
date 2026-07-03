@@ -58,7 +58,6 @@ pub async fn create(
     Json(data): Json<CreateMemberData>,
 ) -> HttpResult<CreateMemberVal> {
     let reply = usecase::member::create(harn.drive(), harn.repo(), user_token, data).await?;
-
     reply.accept(StatusCode::CREATED)
 }
 
@@ -166,7 +165,6 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     usecase::member::delete(harn.drive(), harn.repo(), user_token, member_id).await?;
-
     no_content()
 }
 
@@ -196,6 +194,5 @@ pub async fn join(
         data,
     )
     .await?;
-
     reply.accept(StatusCode::CREATED)
 }

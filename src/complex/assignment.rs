@@ -97,7 +97,6 @@ impl AssignmentPermComplex {
         if current_user_id == assignment_info.user_id {
             return accept(());
         }
-
         check_reviewer(proxy, current_user_id, &assignment_info.chapter_id).await
     }
 

@@ -84,7 +84,6 @@ pub async fn export(
     Query(query): Query<TranslationExportQuery>,
 ) -> Result<Response, HttpError> {
     let filename = format!("chapter_{}", chapter_id);
-
     match query.format {
         TranslationFormat::PopRaKo => {
             let val = usecase::chapter_port::export(
@@ -97,7 +96,6 @@ pub async fn export(
 
             let body = serde_json::to_vec(&val).map_err(|err| {
                 tracing::warn!("[chapter_port::export] serialization failed: {}", err);
-
                 HttpError::internal()
             })?;
 
@@ -107,7 +105,6 @@ pub async fn export(
                 Bytes::from(body),
             )
         }
-
         TranslationFormat::LabelPlus => {
             let content =
                 usecase::chapter_port::export_label_plus(harn.repo(), user_token, chapter_id)
@@ -135,7 +132,6 @@ fn file_response(content_type: &str, filename: &str, body: Bytes) -> Result<Resp
         .body(Body::from(body))
         .map_err(|err| {
             tracing::warn!("[chapter_port::file_response] build failed: {}", err);
-
             HttpError::internal()
         })
 }

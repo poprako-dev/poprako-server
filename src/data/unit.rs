@@ -123,7 +123,6 @@ impl UnitDiffData {
 
         for unit_oper_data in self.opers {
             let unit_oper = unit_oper_data.into_model()?;
-
             opers.push(unit_oper);
         }
 

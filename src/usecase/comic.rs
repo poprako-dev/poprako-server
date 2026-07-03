@@ -237,7 +237,6 @@ where
             Some(chapter_info) => Some(ChapterInfoVal::from_model(image_pool, chapter_info).await?),
             None => None,
         };
-
         comic_info_vals
             .push(ComicInfoVal::from_model(image_pool, comic_info, pinned_chapter_val).await?);
     }

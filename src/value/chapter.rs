@@ -238,7 +238,6 @@ impl WorkflowStageMask {
             if allow_ignore {
                 return accept(());
             }
-
             return Err(RegularError::Expected {
                 variant: ExpectedVariant::Args,
                 message: trl("error-invalid-stage-phase"),
@@ -272,7 +271,6 @@ impl WorkflowStageMask {
 
         for stage in Self::STAGES {
             let field = Self::field_for_stage_value(value, *stage)?;
-
             Self::validate_stage_field(*stage, field, allow_ignore)?;
         }
 
@@ -285,7 +283,6 @@ impl WorkflowStageMask {
     /// reject stage-phase combinations that are impossible for real workflow.
     pub fn try_filter_from(value: u32) -> RegularResult<Self> {
         Self::validate_mask_value(value, true)?;
-
         accept(Self(value))
     }
 
@@ -369,7 +366,6 @@ impl TryFrom<u32> for WorkflowStageMask {
 
     fn try_from(value: u32) -> RegularResult<Self> {
         Self::validate_mask_value(value, false)?;
-
         accept(Self(value))
     }
 }

@@ -36,6 +36,5 @@ where
     if expanded_incl_opts.contains(&incl_opt) {
         return;
     }
-
     expanded_incl_opts.push(incl_opt);
 }

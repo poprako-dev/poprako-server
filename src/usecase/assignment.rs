@@ -151,7 +151,6 @@ where
                         user_id: token.user_id,
                         roles: data.roles,
                     };
-
                     repo.advance(context, &AssignmentStep::create(&assignment_form))
                         .await?
                 }
@@ -224,7 +223,6 @@ where
                         id: assignment_info.id,
                         roles: data.roles,
                     };
-
                     repo.advance(context, &AssignmentStep::put_roles(&assignment_role_update))
                         .await?;
                 }
@@ -235,7 +233,6 @@ where
                         user_id: data.user_id,
                         roles: data.roles,
                     };
-
                     repo.advance(context, &AssignmentStep::create(&assignment_form))
                         .await?;
                 }

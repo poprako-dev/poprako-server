@@ -430,7 +430,6 @@ fn validate_page_count(page_count: i32) -> RegularResult<()> {
             message: trl("error-invalid-page-count"),
         });
     }
-
     accept(())
 }
 

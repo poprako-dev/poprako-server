@@ -140,7 +140,6 @@ impl TryFrom<u32> for RoleMask {
                 message: trl("error-invalid-role"),
             });
         }
-
         accept(Self(value))
     }
 }

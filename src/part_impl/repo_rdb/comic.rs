@@ -406,12 +406,7 @@ impl<'a> Execute<MarkCoverUploaded<'a>> for RdbRepo {
     type Error = RegularError;
 
     async fn execute(&self, step: &MarkCoverUploaded<'a>) -> RegularResult<()> {
-        submit_query!(
-            self.core,
-            mark_cover_uploaded,
-            step.id,
-            step.cover_version
-        )
+        submit_query!(self.core, mark_cover_uploaded, step.id, step.cover_version)
     }
 }
 

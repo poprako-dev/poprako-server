@@ -3,3 +3,4 @@
 
 pub mod auth;
 pub mod latency;
+pub mod rate_limit;

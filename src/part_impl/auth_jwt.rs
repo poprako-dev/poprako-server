@@ -109,13 +109,11 @@ impl TokenAuth for JwtAuth {
             decode::<TokenClaims>(raw, &self.decoding_key, &Validation::new(Algorithm::HS256))
                 .map_err(|err| {
                     tracing::debug!("[JwtAuth::verify_token] decode failed: {}", err);
-
                     RegularError::Expected {
                         variant: ExpectedVariant::Auth,
                         message: trl("error-unauthorized"),
                     }
                 })?;
-
         Ok(UserToken {
             user_id: token_data.claims.user_id,
         })

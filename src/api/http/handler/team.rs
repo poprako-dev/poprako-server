@@ -41,7 +41,6 @@ pub async fn create(
     Json(data): Json<CreateTeamData>,
 ) -> HttpResult<TeamInfoVal> {
     let info = usecase::team::create(harn.repo(), harn.image_pool(), user_token, data).await?;
-
     info.accept(StatusCode::CREATED)
 }
 
@@ -64,7 +63,6 @@ pub async fn list_infos(
     Query(data): Query<ListTeamInfosData>,
 ) -> HttpResult<Vec<TeamInfoVal>> {
     let infos = usecase::team::list_infos(harn.repo(), harn.image_pool(), user_token, data).await?;
-
     infos.accept(StatusCode::OK)
 }
 
@@ -86,7 +84,6 @@ pub async fn get_info(
     Path(team_id): Path<String>,
 ) -> HttpResult<TeamInfoVal> {
     let info = usecase::team::get_info(harn.repo(), harn.image_pool(), team_id).await?;
-
     info.accept(StatusCode::OK)
 }
 
@@ -148,7 +145,6 @@ pub async fn reserve_avatar(
         data,
     )
     .await?;
-
     reply.accept(StatusCode::OK)
 }
 
@@ -173,7 +169,6 @@ pub async fn mark_avatar_uploaded(
     Json(data): Json<MarkTeamAvatarUploadedData>,
 ) -> HttpNoContent {
     usecase::team::mark_avatar_uploaded(harn.repo(), user_token, team_id, data).await?;
-
     no_content()
 }
 
@@ -196,6 +191,5 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     usecase::team::delete(harn.drive(), harn.repo(), harn.prom(), user_token, team_id).await?;
-
     no_content()
 }

@@ -119,7 +119,6 @@ where
                         ),
                     )
                     .await?;
-
                 if existing_assignment_info.is_some() {
                     return Err(invitee_assigned_error());
                 }
@@ -309,7 +308,6 @@ where
                         &existing_assignment_info,
                         assignment_invitation_info.roles,
                     );
-
                     repo.advance(context, &AssignmentStep::put_roles(&assignment_role_update))
                         .await?
                 }
@@ -320,7 +318,6 @@ where
                         user_id: current_user_id,
                         roles: assignment_invitation_info.roles,
                     };
-
                     repo.advance(context, &AssignmentStep::create(&assignment_form))
                         .await?
                 }
@@ -359,7 +356,6 @@ fn validate_roles(roles: RoleMask) -> RegularResult<()> {
     if u32::from(roles) == 0 || roles.has_any_role(&[RoleField::ADMIN]) {
         return Err(assignment_role_not_assignable_args_error());
     }
-
     accept(())
 }
 

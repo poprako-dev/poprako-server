@@ -104,7 +104,6 @@ pub async fn populate<I: Incl>(conn: &mut RdbConn, infos: &mut [I::Owner]) -> Re
         let Some(key) = I::resolve_key(owner) else {
             continue;
         };
-
         *key_counts.entry(key.to_owned()).or_insert(0) += 1;
     }
 
@@ -178,7 +177,6 @@ impl BatchByIds for UserByIds {
 
     fn into_entry(row: UserRow) -> RegularResult<(String, UserInfo)> {
         let id = row.f_id.clone();
-
         Ok((id, UserInfo::from(row)))
     }
 }
@@ -201,7 +199,6 @@ impl BatchByIds for TeamByIds {
 
     fn into_entry(row: TeamRow) -> RegularResult<(String, TeamInfo)> {
         let id = row.f_id.clone();
-
         Ok((id, TeamInfo::from(row)))
     }
 }
@@ -224,7 +221,6 @@ impl BatchByIds for WorksetByIds {
 
     fn into_entry(row: WorksetRow) -> RegularResult<(String, WorksetInfo)> {
         let id = row.f_id.clone();
-
         Ok((id, WorksetInfo::from(row)))
     }
 }
@@ -247,7 +243,6 @@ impl BatchByIds for ComicByIds {
 
     fn into_entry(row: ComicRow) -> RegularResult<(String, ComicInfo)> {
         let id = row.f_id.clone();
-
         Ok((id, ComicInfo::from(row)))
     }
 }

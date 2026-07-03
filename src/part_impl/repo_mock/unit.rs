@@ -80,7 +80,6 @@ fn write_payload(unit_info: &mut UnitInfo, payload: &UnitPayload) {
 
 fn unit_from_payload(page_id: &str, id: &str, index: i32, payload: &UnitPayload) -> UnitInfo {
     let time = now();
-
     UnitInfo {
         id: id.into(),
         page_id: page_id.into(),

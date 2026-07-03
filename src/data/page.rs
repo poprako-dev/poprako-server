@@ -40,7 +40,6 @@ impl PageInfoVal {
             (true, Some(key)) => image_pool.get_signed(key).await.ok(),
             _ => None,
         };
-
         Ok(Self {
             id: model.id,
             chapter_id: model.chapter_id,

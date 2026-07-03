@@ -106,7 +106,6 @@ impl MemberInvitationInfoVal {
             Some(user_info) => Some(UserInfoVal::from_model(image_pool, user_info).await?),
             None => None,
         };
-
         Ok(Self {
             id: model.id,
             team_id: model.team_id,

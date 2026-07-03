@@ -95,7 +95,6 @@ impl ChapterImportComplex {
         if imported_page_count != existing_page_count {
             return Err(args_error("error-chapter-import-page-count-mismatch"));
         }
-
         accept(())
     }
 
@@ -158,7 +157,6 @@ where
     for line in lines.by_ref() {
         if line == "-" {
             found_separator = true;
-
             break;
         }
     }
@@ -307,7 +305,6 @@ fn normalize_string(text: String) -> Option<String> {
     if text.trim().is_empty() {
         return None;
     }
-
     Some(text)
 }
 
@@ -346,7 +343,6 @@ fn apply_label_plus_text(
     match proofreader {
         true => {
             unit_payload.proofread_text = parsed_unit.main_text.clone();
-
             if parsed_unit.main_text.is_some() {
                 unit_payload.is_proofread = true;
                 unit_payload.last_proofreader_id = Some(user_id.into());
@@ -354,7 +350,6 @@ fn apply_label_plus_text(
         }
         false => {
             unit_payload.translated_text = parsed_unit.main_text.clone();
-
             if parsed_unit.main_text.is_some() {
                 unit_payload.last_translator_id = Some(user_id.into());
             }
@@ -372,14 +367,12 @@ fn apply_poprako_text(
         unit_payload.translated_text = Some(translated_text.clone());
         unit_payload.last_translator_id = Some(user_id.into());
     }
-
     if proofreader {
         if let Some(proofread_text) = &parsed_unit.proofread_text {
             unit_payload.proofread_text = Some(proofread_text.clone());
             unit_payload.is_proofread = true;
             unit_payload.last_proofreader_id = Some(user_id.into());
         }
-
         if parsed_unit.proofread_text.is_none() && parsed_unit.is_proofread {
             unit_payload.is_proofread = true;
             unit_payload.last_proofreader_id = Some(user_id.into());

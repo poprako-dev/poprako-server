@@ -19,7 +19,6 @@ impl AppConfig {
             .with_context(
                 || "[ApplicationConfig::from_default_file] Failed to read application_config.json",
             )?;
-
         serde_json::from_str(&content).with_context(
             || "[ApplicationConfig::from_default_file] Failed to parse application_config.json",
         )

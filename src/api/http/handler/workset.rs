@@ -43,7 +43,6 @@ pub async fn create(
     Json(data): Json<CreateWorksetData>,
 ) -> HttpResult<CreateWorksetVal> {
     let reply = usecase::workset::create(harn.drive(), harn.repo(), user_token, data).await?;
-
     reply.accept(StatusCode::CREATED)
 }
 
@@ -97,7 +96,6 @@ pub async fn get_info(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpResult<WorksetInfoVal> {
     let info = usecase::workset::get_info(harn.repo(), user_token, workset_id).await?;
-
     info.accept(StatusCode::OK)
 }
 
@@ -155,6 +153,5 @@ pub async fn delete(
         workset_id,
     )
     .await?;
-
     no_content()
 }

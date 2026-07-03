@@ -53,7 +53,6 @@ pub async fn create(
     Json(data): Json<CreateCommentData>,
 ) -> HttpResult<CreateCommentVal> {
     let reply = usecase::comment::create(harn.drive(), harn.repo(), user_token, data).await?;
-
     reply.accept(StatusCode::CREATED)
 }
 

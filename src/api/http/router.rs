@@ -21,6 +21,7 @@ use crate::api::http::handler::{
 };
 use crate::api::http::middleware::auth::authorize;
 use crate::api::http::middleware::latency::log_latency;
+use crate::api::http::middleware::rate_limit::rate_limit;
 use crate::api::http::openapi::ApiDoc;
 use crate::api::http::state::AppHarn;
 
@@ -228,19 +229,15 @@ pub fn new(harn: AppHarn) -> Router<AppHarn> {
         .route("/api/health", get(health::check_health))
         .nest("/api/v1", v1_public.merge(v1_protected))
         .layer(from_fn(log_latency))
+        .layer(from_fn(rate_limit))
         .layer(TraceLayer::new_for_http());
 
-    #[cfg(debug_assertions)]
-    {
+    if cfg!(debug_assertions) {
         use utoipa::OpenApi as _;
-
         use utoipa_swagger_ui::SwaggerUi;
 
         router.merge(SwaggerUi::new("/api/swagger-ui").url("/api/openapi.json", ApiDoc::openapi()))
-    }
-
-    #[cfg(not(debug_assertions))]
-    {
+    } else {
         router
     }
 }

@@ -33,7 +33,6 @@ impl UserComplex {
         let Ok(parsed) = PasswordHash::new(password_hash) else {
             return false;
         };
-
         Argon2::default()
             .verify_password(password.as_bytes(), &parsed)
             .inspect_err(|e| {
