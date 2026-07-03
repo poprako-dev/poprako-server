@@ -147,9 +147,9 @@ impl TryInto<MemberListSpec> for ListMemberInfosData {
     }
 }
 
-/// Input parameters for updating a member role mask.
+/// Input parameters for updating a member's roles.
 #[derive(Debug, Deserialize, ToSchema)]
-pub struct UpdateMemberRoleData {
+pub struct UpdateMemberRolesData {
     pub id: String,
     pub roles: RoleMask,
 }

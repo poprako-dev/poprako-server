@@ -7,9 +7,9 @@
 // list_infos(list_infos)(positive): owner should list own memberships.
 // list_infos(list_infos)(negative): non-member should be rejected.
 // list_infos(list_infos)(negative): invalid list parameter combination should be rejected.
-// update_role(update_role)(positive): team admin should update member role mask.
-// update_role(update_role)(negative): non-admin should be rejected without mutation.
-// update_role(update_role)(negative): missing member should be rejected.
+// update_roles(update_roles)(positive): team admin should update member role mask.
+// update_roles(update_roles)(negative): non-admin should be rejected without mutation.
+// update_roles(update_roles)(negative): missing member should be rejected.
 // delete(delete)(positive): team admin should delete a member.
 // delete(delete)(negative): non-admin should be rejected without deletion.
 // delete(delete)(negative): missing member should be rejected.
@@ -113,8 +113,8 @@ fn list_data(team_id: &str) -> ListMemberInfosData {
     }
 }
 
-fn update_role_data(id: &str) -> UpdateMemberRoleData {
-    UpdateMemberRoleData {
+fn update_role_data(id: &str) -> UpdateMemberRolesData {
+    UpdateMemberRolesData {
         id: id.into(),
         roles: RoleMask::from(RoleField::REVIEWER),
     }
@@ -435,7 +435,7 @@ fn list_infos_converts_owner_combination_to_mine_spec() {
 }
 
 #[tokio::test]
-async fn update_role_admin_updates_member_role_mask() {
+async fn update_roles_admin_updates_member_role_mask() {
     let mock = Mock::new();
     seed_admin(&mock);
     mock.seed_member(member(
@@ -446,7 +446,7 @@ async fn update_role_admin_updates_member_role_mask() {
         RoleMask::from(RoleField::TRANSLATOR),
     ));
 
-    let update_member_role = update_role(
+    let update_member_role = update_roles(
         &mock,
         &mock,
         token("admin-user"),
@@ -465,7 +465,7 @@ async fn update_role_admin_updates_member_role_mask() {
 }
 
 #[tokio::test]
-async fn update_role_non_admin_is_rejected() {
+async fn update_roles_non_admin_is_rejected() {
     let mock = Mock::new();
     mock.seed_member(member(
         "member-normal",
@@ -482,7 +482,7 @@ async fn update_role_non_admin_is_rejected() {
         RoleMask::from(RoleField::TRANSLATOR),
     ));
 
-    let err = update_role(
+    let err = update_roles(
         &mock,
         &mock,
         token("normal-user"),
@@ -503,11 +503,11 @@ async fn update_role_non_admin_is_rejected() {
 }
 
 #[tokio::test]
-async fn update_role_missing_member_is_rejected() {
+async fn update_roles_missing_member_is_rejected() {
     let mock = Mock::new();
     seed_admin(&mock);
 
-    let err = update_role(
+    let err = update_roles(
         &mock,
         &mock,
         token("admin-user"),

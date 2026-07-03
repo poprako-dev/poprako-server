@@ -179,11 +179,44 @@ where
 }
 
 /// Empty success marker emitted as `204 No Content` with no body.
-pub struct NoContent;
+///
+/// Carries optional headers (e.g. `Set-Cookie`) that are merged into the
+/// final response.
+pub struct NoContent {
+    headers: HeaderMap,
+}
+
+impl NoContent {
+    /// Creates an empty `204 No Content` response with no extra headers.
+    pub fn new() -> Self {
+        Self {
+            headers: HeaderMap::new(),
+        }
+    }
+
+    /// Appends a `Set-Cookie` header to the response.
+    pub fn with_cookie(mut self, cookie: &Cookie) -> Self {
+        if let Ok(value) = HeaderValue::from_str(&cookie.to_string()) {
+            self.headers.insert(SET_COOKIE, value);
+        }
+
+        self
+    }
+}
+
+impl Default for NoContent {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl IntoResponse for NoContent {
     fn into_response(self) -> Response {
-        StatusCode::NO_CONTENT.into_response()
+        let mut response = StatusCode::NO_CONTENT.into_response();
+
+        response.headers_mut().extend(self.headers);
+
+        response
     }
 }
 
@@ -221,5 +254,5 @@ where
 }
 
 pub fn no_content() -> StdResult<NoContent, HttpError> {
-    Ok(NoContent)
+    Ok(NoContent::new())
 }

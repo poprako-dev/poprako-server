@@ -188,8 +188,8 @@ fn update_roles_data(
     chapter_id: &str,
     user_id: &str,
     role_mask: RoleMask,
-) -> UpdateAssignmentRoleData {
-    UpdateAssignmentRoleData {
+) -> UpdateAssignmentRolesData {
+    UpdateAssignmentRolesData {
         chapter_id: chapter_id.into(),
         user_id: user_id.into(),
         roles: role_mask,

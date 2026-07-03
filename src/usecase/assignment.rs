@@ -6,7 +6,7 @@ use poprako_transactional::drive::Drive;
 use crate::complex::assignment::{AssignmentComplex, AssignmentPermComplex};
 use crate::complex::chapter::ChapterPermComplex;
 use crate::data::assignment::{
-    AssignmentInfoVal, JoinChapterData, ListAssignmentInfosData, UpdateAssignmentRoleData,
+    AssignmentInfoVal, JoinChapterData, ListAssignmentInfosData, UpdateAssignmentRolesData,
 };
 use crate::model::assignment::{AssignmentForm, AssignmentListSpec, AssignmentRoleUpdate};
 use crate::model::user::UserToken;
@@ -162,7 +162,7 @@ pub async fn update_roles<D, C, R>(
     drive: &D,
     repo: &R,
     token: UserToken,
-    data: UpdateAssignmentRoleData,
+    data: UpdateAssignmentRolesData,
 ) -> RegularResult<()>
 where
     D: Drive<C>,

@@ -21,7 +21,7 @@ use crate::api::http::result::no_content;
 use crate::api::http::state::AppHarn;
 use crate::data::member_invitation::{
     CreateMemberInvitationData, CreateMemberInvitationVal, ListMemberInvitationInfosData,
-    MemberInvitationInfoVal, UpdateMemberInvitationInfoData,
+    MemberInvitationInfoVal, UpdateMemberInvitationRolesData,
 };
 use crate::model::user::UserToken;
 use crate::usecase;
@@ -97,13 +97,13 @@ pub async fn list_infos(
     infos.accept(StatusCode::OK)
 }
 
-/// `PUT /api/v1/member-invitations/{member_invitation_id}/role` — update invitation roles.
+/// `PUT /api/v1/member-invitations/{member_invitation_id}/roles` — update invitation roles.
 #[utoipa::path(
     put,
-    path = "/api/v1/member-invitations/{member_invitation_id}/role",
+    path = "/api/v1/member-invitations/{member_invitation_id}/roles",
     tag = "member-invitations",
     params(("member_invitation_id" = String, Path, description = "Invitation ID")),
-    request_body = UpdateMemberInvitationInfoData,
+    request_body = UpdateMemberInvitationRolesData,
     responses(
         (status = 204, description = "Invitation roles updated"),
         (status = 422, description = "Path id does not match body id"),
@@ -112,15 +112,15 @@ pub async fn list_infos(
     ),
 )]
 #[instrument(err, skip(harn, data))]
-pub async fn update_info(
+pub async fn update_roles(
     State(harn): State<AppHarn>,
     Path(member_invitation_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Json(data): Json<UpdateMemberInvitationInfoData>,
+    Json(data): Json<UpdateMemberInvitationRolesData>,
 ) -> HttpNoContent {
     ensure_path_matches_body_id(&member_invitation_id, &data.id)?;
 
-    usecase::member_invitation::update_info(harn.drive(), harn.repo(), user_token, data).await?;
+    usecase::member_invitation::update_roles(harn.drive(), harn.repo(), user_token, data).await?;
 
     no_content()
 }

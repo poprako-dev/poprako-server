@@ -1,8 +1,9 @@
 //! Application router assembly.
 //!
 //! Health lives at `/api/health`. Public auth routes (`/auth/register`,
-//! `/auth/login`) and all protected business routes live under `/api/v1`.
-//! Protected routes are wrapped by the authorization middleware.
+//! `/auth/login`, `/auth/logout`) and all protected business routes live
+//! under `/api/v1`. Protected routes are wrapped by the authorization
+//! middleware.
 
 use axum::Router;
 use axum::middleware::from_fn;
@@ -25,9 +26,12 @@ use crate::api::http::state::AppHarn;
 
 /// Builds the application router from the production harness.
 pub fn new(harn: AppHarn) -> Router<AppHarn> {
-    let v1_public = Router::new()
+    let v1_auth = Router::new()
         .route("/auth/register", post(auth::register))
-        .route("/auth/login", post(auth::login));
+        .route("/auth/login", post(auth::login))
+        .route("/auth/logout", post(auth::logout));
+
+    let v1_public = v1_auth;
 
     let v1_user = Router::new()
         .route("/users/me", get(user::get_my_info))
@@ -72,14 +76,14 @@ pub fn new(harn: AppHarn) -> Router<AppHarn> {
         .route("/members", get(member::list_infos).post(member::create))
         .route("/members/me", get(member::list_my_infos))
         .route("/members/join", post(member::join))
-        .route("/members/{member_id}/role", put(member::update_role))
+        .route("/members/{member_id}/roles", put(member::update_roles))
         .route("/members/{member_id}", delete(member::delete));
 
     let v1_member_invitation = Router::new()
         .route("/member-invitations", post(member_invitation::create))
         .route(
-            "/member-invitations/{member_invitation_id}/role",
-            put(member_invitation::update_info),
+            "/member-invitations/{member_invitation_id}/roles",
+            put(member_invitation::update_roles),
         )
         .route(
             "/member-invitations/{member_invitation_id}",
@@ -166,7 +170,7 @@ pub fn new(harn: AppHarn) -> Router<AppHarn> {
         .route("/assignments", get(assignment::list_infos))
         .route("/assignments/join", post(assignment::join))
         .route(
-            "/chapters/{chapter_id}/assignments/{user_id}/role",
+            "/chapters/{chapter_id}/assignments/{user_id}/roles",
             put(assignment::update_roles),
         )
         .route("/assignments/{assignment_id}", delete(assignment::delete));

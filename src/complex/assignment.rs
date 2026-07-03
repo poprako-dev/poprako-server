@@ -3,7 +3,7 @@
 use poprako_util::i18n::trl;
 
 use crate::complex::util::check_user_is_team_member;
-use crate::data::assignment::UpdateAssignmentRoleData;
+use crate::data::assignment::UpdateAssignmentRolesData;
 use crate::model::assignment::{AssignmentInfo, AssignmentListSpec, AssignmentRoleUpdate};
 use crate::part::repo::step::assignment::{AssignmentStep, GetInfoByChapterIdAndUserId};
 use crate::part::repo::step::chapter::{ChapterStep, GetInfoById as ChapterGetInfoById};
@@ -67,7 +67,7 @@ impl AssignmentPermComplex {
     pub async fn can_user_update_roles<P>(
         proxy: &mut P,
         current_user_id: &str,
-        data: &UpdateAssignmentRoleData,
+        data: &UpdateAssignmentRolesData,
     ) -> RegularResult<()>
     where
         P: for<'a> ProxyExecute<ChapterGetInfoById<'a>, Error = RegularError>
@@ -209,7 +209,7 @@ where
 async fn check_self_reduce<P>(
     proxy: &mut P,
     current_user_id: &str,
-    data: &UpdateAssignmentRoleData,
+    data: &UpdateAssignmentRolesData,
 ) -> RegularResult<()>
 where
     P: for<'a> ProxyExecute<GetInfoByChapterIdAndUserId<'a>, Error = RegularError>,

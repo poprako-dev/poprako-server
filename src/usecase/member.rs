@@ -7,7 +7,7 @@ use poprako_util::i18n::trl;
 use crate::complex::member::{MemberComplex, MemberPermComplex};
 use crate::data::member::{
     CreateMemberData, CreateMemberVal, JoinTeamData, ListMemberInfosData, MemberInfoVal,
-    UpdateMemberRoleData,
+    UpdateMemberRolesData,
 };
 use crate::model::member::{MemberForm, MemberListSpec, MemberRoleUpdate};
 use crate::model::user::UserToken;
@@ -218,14 +218,14 @@ where
     accept(member_info_vals)
 }
 
-/// Updates one member's role mask.
+/// Updates one member's roles.
 ///
 /// The caller must be a team admin of the target member's team.
-pub async fn update_role<D, C, R>(
+pub async fn update_roles<D, C, R>(
     drive: &D,
     repo: &R,
     token: UserToken,
-    data: UpdateMemberRoleData,
+    data: UpdateMemberRolesData,
 ) -> RegularResult<()>
 where
     D: Drive<C>,

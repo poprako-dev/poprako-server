@@ -1,15 +1,18 @@
-//! Authentication handlers: register and login.
+//! Authentication handlers: register, login, and logout.
 
 use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
 use cookie::{Cookie, SameSite};
+use cookie::time::Duration;
 
 use tracing::instrument;
 
 use crate::api::http::auth_token::AUTH_COOKIE_NAME;
 use crate::api::http::result::Accept as _;
+use crate::api::http::result::HttpNoContent;
 use crate::api::http::result::HttpResult;
+use crate::api::http::result::no_content;
 use crate::api::http::state::AppHarn;
 use crate::data::auth::{LoginData, LoginVal, RegisterData, RegisterVal};
 use crate::usecase;
@@ -80,4 +83,28 @@ pub async fn login(
     reply
         .accept(StatusCode::OK)
         .map(|body| body.with_cookie(&cookie))
+}
+
+/// `POST /api/v1/auth/logout` — clears the authorization cookie.
+///
+/// Public route. Logs the client out by clearing the `authorization-token`
+/// cookie. The client will no longer send the token on subsequent requests.
+#[utoipa::path(
+    post,
+    path = "/api/v1/auth/logout",
+    tag = "auth",
+    responses(
+        (status = 204, description = "Logged out successfully, auth cookie cleared"),
+    ),
+)]
+#[instrument(err)]
+pub async fn logout() -> HttpNoContent {
+    let cookie = Cookie::build((AUTH_COOKIE_NAME, ""))
+        .path("/")
+        .http_only(true)
+        .same_site(SameSite::Lax)
+        .max_age(Duration::ZERO)
+        .build();
+
+    no_content().map(|body| body.with_cookie(&cookie))
 }
