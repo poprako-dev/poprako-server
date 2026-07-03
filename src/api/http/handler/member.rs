@@ -21,7 +21,7 @@ use crate::api::http::result::no_content;
 use crate::api::http::state::AppHarn;
 use crate::data::member::{
     CreateMemberData, CreateMemberVal, JoinTeamData, ListMemberInfosData, MemberInfoVal,
-    UpdateMemberRoleData,
+    UpdateMemberRolesData,
 };
 use crate::model::user::UserToken;
 use crate::usecase;
@@ -119,30 +119,30 @@ pub async fn list_my_infos(
     infos.accept(StatusCode::OK)
 }
 
-/// `PUT /api/v1/members/{member_id}/role` — update a member's role mask.
+/// `PUT /api/v1/members/{member_id}/roles` — update a member's roles.
 #[utoipa::path(
     put,
-    path = "/api/v1/members/{member_id}/role",
+    path = "/api/v1/members/{member_id}/roles",
     tag = "members",
     params(("member_id" = String, Path, description = "Member ID")),
-    request_body = UpdateMemberRoleData,
+    request_body = UpdateMemberRolesData,
     responses(
-        (status = 204, description = "Member role updated"),
+        (status = 204, description = "Member roles updated"),
         (status = 422, description = "Path id does not match body id"),
         (status = 403, description = "No permission to update this member"),
         (status = 404, description = "Member not found"),
     ),
 )]
 #[instrument(err, skip(harn, data))]
-pub async fn update_role(
+pub async fn update_roles(
     State(harn): State<AppHarn>,
     Path(member_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Json(data): Json<UpdateMemberRoleData>,
+    Json(data): Json<UpdateMemberRolesData>,
 ) -> HttpNoContent {
     ensure_path_matches_body_id(&member_id, &data.id)?;
 
-    usecase::member::update_role(harn.drive(), harn.repo(), user_token, data).await?;
+    usecase::member::update_roles(harn.drive(), harn.repo(), user_token, data).await?;
 
     no_content()
 }

@@ -7,7 +7,7 @@ use poprako_util::i18n::trl;
 use crate::complex::member_invitation::{MemberInvitationComplex, MemberInvitationPermComplex};
 use crate::data::member_invitation::{
     CreateMemberInvitationData, CreateMemberInvitationVal, ListMemberInvitationInfosData,
-    MemberInvitationInfoVal, UpdateMemberInvitationInfoData,
+    MemberInvitationInfoVal, UpdateMemberInvitationRolesData,
 };
 use crate::model::member_invitation::{
     MemberInvitationForm, MemberInvitationListSpec, MemberInvitationUpdate,
@@ -160,12 +160,12 @@ where
     Ok(vals)
 }
 
-/// Updates the role mask of an invitation.
-pub async fn update_info<D, C, R>(
+/// Updates the roles of an invitation.
+pub async fn update_roles<D, C, R>(
     drive: &D,
     repo: &R,
     token: UserToken,
-    data: UpdateMemberInvitationInfoData,
+    data: UpdateMemberInvitationRolesData,
 ) -> RegularResult<()>
 where
     D: Drive<C>,

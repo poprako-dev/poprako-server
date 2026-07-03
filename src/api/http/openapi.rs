@@ -11,7 +11,7 @@ use crate::api::http::result::HttpError;
 use crate::data::announcement::{
     AnnouncementInfoVal, CreateAnnouncementData, CreateAnnouncementVal,
 };
-use crate::data::assignment::{AssignmentInfoVal, JoinChapterData, UpdateAssignmentRoleData};
+use crate::data::assignment::{AssignmentInfoVal, JoinChapterData, UpdateAssignmentRolesData};
 use crate::data::assignment_invitation::{
     AssignmentInvitationInfoVal, CreateAssignmentInvitationData, CreateAssignmentInvitationVal,
     JoinAssignmentInvitationData,
@@ -28,11 +28,11 @@ use crate::data::comic::{
 };
 use crate::data::comment::{CommentInfoVal, CreateCommentData, CreateCommentVal};
 use crate::data::member::{
-    CreateMemberData, CreateMemberVal, JoinTeamData, MemberInfoVal, UpdateMemberRoleData,
+    CreateMemberData, CreateMemberVal, JoinTeamData, MemberInfoVal, UpdateMemberRolesData,
 };
 use crate::data::member_invitation::{
     CreateMemberInvitationData, CreateMemberInvitationVal, MemberInvitationInfoVal,
-    UpdateMemberInvitationInfoData,
+    UpdateMemberInvitationRolesData,
 };
 use crate::data::page::{
     MarkPageImageUploadedData, PageCreationVal, PageInfoVal, ReserveChapterPagesData,
@@ -62,6 +62,7 @@ use crate::data::workset::{
         handler::health::check_health,
         handler::auth::register,
         handler::auth::login,
+        handler::auth::logout,
         handler::user::get_my_info,
         handler::user::get_info,
         handler::user::update_info,
@@ -121,12 +122,12 @@ use crate::data::workset::{
         handler::member::create,
         handler::member::list_infos,
         handler::member::list_my_infos,
-        handler::member::update_role,
+        handler::member::update_roles,
         handler::member::delete,
         handler::member::join,
         handler::member_invitation::create,
         handler::member_invitation::list_infos,
-        handler::member_invitation::update_info,
+        handler::member_invitation::update_roles,
         handler::member_invitation::delete,
     ),
     components(schemas(
@@ -180,7 +181,7 @@ use crate::data::workset::{
         UnitOperData,
         AssignmentInfoVal,
         JoinChapterData,
-        UpdateAssignmentRoleData,
+        UpdateAssignmentRolesData,
         AssignmentInvitationInfoVal,
         CreateAssignmentInvitationData,
         CreateAssignmentInvitationVal,
@@ -197,11 +198,11 @@ use crate::data::workset::{
         CreateMemberData,
         CreateMemberVal,
         JoinTeamData,
-        UpdateMemberRoleData,
+        UpdateMemberRolesData,
         MemberInvitationInfoVal,
         CreateMemberInvitationData,
         CreateMemberInvitationVal,
-        UpdateMemberInvitationInfoData,
+        UpdateMemberInvitationRolesData,
     )),
     tags(
         (name = "health", description = "Health-check endpoints"),

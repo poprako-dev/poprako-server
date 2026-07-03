@@ -16,7 +16,7 @@ use crate::api::http::result::HttpResult;
 use crate::api::http::result::no_content;
 use crate::api::http::state::AppHarn;
 use crate::data::assignment::{
-    AssignmentInfoVal, JoinChapterData, ListAssignmentInfosData, UpdateAssignmentRoleData,
+    AssignmentInfoVal, JoinChapterData, ListAssignmentInfosData, UpdateAssignmentRolesData,
 };
 use crate::model::user::UserToken;
 use crate::usecase;
@@ -45,16 +45,16 @@ pub async fn list_infos(
     infos.accept(StatusCode::OK)
 }
 
-/// `PUT /api/v1/chapters/{chapter_id}/assignments/{user_id}/role` — update roles.
+/// `PUT /api/v1/chapters/{chapter_id}/assignments/{user_id}/roles` — update roles.
 #[utoipa::path(
     put,
-    path = "/api/v1/chapters/{chapter_id}/assignments/{user_id}/role",
+    path = "/api/v1/chapters/{chapter_id}/assignments/{user_id}/roles",
     tag = "assignments",
     params(
         ("chapter_id" = String, Path, description = "Chapter ID"),
         ("user_id" = String, Path, description = "Assignee user ID"),
     ),
-    request_body = UpdateAssignmentRoleData,
+    request_body = UpdateAssignmentRolesData,
     responses(
         (status = 204, description = "Assignment roles updated"),
         (status = 422, description = "Path ids do not match body ids"),
@@ -67,7 +67,7 @@ pub async fn update_roles(
     State(harn): State<AppHarn>,
     Path((chapter_id, user_id)): Path<(String, String)>,
     Extension(user_token): Extension<UserToken>,
-    Json(data): Json<UpdateAssignmentRoleData>,
+    Json(data): Json<UpdateAssignmentRolesData>,
 ) -> HttpNoContent {
     ensure_path_matches_body_id(&chapter_id, &data.chapter_id)?;
 

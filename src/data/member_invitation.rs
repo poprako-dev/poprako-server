@@ -122,7 +122,7 @@ impl MemberInvitationInfoVal {
 
 /// Input parameters for updating a pending invitation's roles.
 #[derive(Debug, Deserialize, ToSchema)]
-pub struct UpdateMemberInvitationInfoData {
+pub struct UpdateMemberInvitationRolesData {
     pub id: String,
     pub roles: RoleMask,
 }

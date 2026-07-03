@@ -3,8 +3,8 @@
 // list_infos(list_infos)(positive): team member should list team invitations.
 // list_infos(list_infos)(positive): empty contents should return an empty list after membership.
 // list_infos(list_infos)(negative): non-member should be rejected.
-// update_info(update_info)(positive): team admin should update invitation roles.
-// update_info(update_info)(negative): non-admin should be rejected.
+// update_roles(update_roles)(positive): team admin should update invitation roles.
+// update_roles(update_roles)(negative): non-admin should be rejected.
 // delete(delete)(positive): team admin should delete an invitation.
 // delete(delete)(negative): non-admin should be rejected.
 
@@ -93,8 +93,8 @@ fn list_data(team_id: &str) -> ListMemberInvitationInfosData {
     }
 }
 
-fn update_data(id: &str) -> UpdateMemberInvitationInfoData {
-    UpdateMemberInvitationInfoData {
+fn update_data(id: &str) -> UpdateMemberInvitationRolesData {
+    UpdateMemberInvitationRolesData {
         id: id.into(),
         roles: RoleMask::from(RoleField::REVIEWER),
     }
@@ -203,7 +203,7 @@ async fn list_infos_non_member_is_rejected() {
 }
 
 #[tokio::test]
-async fn update_info_admin_updates_role_mask() {
+async fn update_roles_admin_updates_role_mask() {
     let mock = Mock::new();
     mock.seed_member(member(
         "member-1",
@@ -213,7 +213,7 @@ async fn update_info_admin_updates_role_mask() {
     ));
     mock.seed_member_invitation(invitation("inv-1", "team-1", "qid-2"));
 
-    update_info(&mock, &mock, token("admin-user"), update_data("inv-1"))
+    update_roles(&mock, &mock, token("admin-user"), update_data("inv-1"))
         .await
         .unwrap();
 
@@ -224,7 +224,7 @@ async fn update_info_admin_updates_role_mask() {
 }
 
 #[tokio::test]
-async fn update_info_non_admin_is_rejected() {
+async fn update_roles_non_admin_is_rejected() {
     let mock = Mock::new();
     mock.seed_member(member(
         "member-1",
@@ -234,7 +234,7 @@ async fn update_info_non_admin_is_rejected() {
     ));
     mock.seed_member_invitation(invitation("inv-1", "team-1", "qid-2"));
 
-    let err = update_info(&mock, &mock, token("normal-user"), update_data("inv-1"))
+    let err = update_roles(&mock, &mock, token("normal-user"), update_data("inv-1"))
         .await
         .err()
         .unwrap();

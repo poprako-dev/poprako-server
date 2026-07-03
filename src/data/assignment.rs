@@ -127,7 +127,7 @@ impl TryInto<AssignmentListSpec> for ListAssignmentInfosData {
 
 /// Input parameters for updating assignment roles.
 #[derive(Debug, Deserialize, ToSchema)]
-pub struct UpdateAssignmentRoleData {
+pub struct UpdateAssignmentRolesData {
     pub chapter_id: String,
     pub user_id: String,
 
