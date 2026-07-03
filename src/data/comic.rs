@@ -6,7 +6,9 @@
 //!
 //! [`ImagePool`]: crate::part::image::ImagePool
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
+
+use utoipa::{IntoParams, ToSchema};
 
 use poprako_macro::Paginate;
 use poprako_util::time::ToUnixMilli;
@@ -30,6 +32,7 @@ use crate::value::comic::{ComicInclOpt, ComicWithOpt};
 /// an [`ImagePool`] instance for URL signing.
 ///
 /// [`ComicInfo`]: crate::model::comic::ComicInfo
+#[derive(Debug, Serialize, ToSchema)]
 pub struct ComicInfoVal {
     pub id: String,
 
@@ -55,6 +58,7 @@ pub struct ComicInfoVal {
     pub team: Option<TeamInfoVal>,
     pub creator: Option<UserInfoVal>,
 
+    #[schema(no_recursion)]
     pub pinned_chapter: Option<ChapterInfoVal>,
 
     pub last_active_at: i64,
@@ -123,6 +127,7 @@ impl ComicInfoVal {
 /// The first chapter is created atomically with the comic. Its subtitle
 /// can be customised via `first_chapter_subtitle`; when absent, a
 /// locale-aware default (e.g. "Ch. 1") is generated.
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct CreateComicData {
     pub workset_id: String,
 
@@ -137,6 +142,7 @@ pub struct CreateComicData {
 /// Return value from a successful comic creation.
 ///
 /// Includes the IDs of both the new comic and its auto-created first chapter.
+#[derive(Debug, Serialize, ToSchema)]
 pub struct CreateComicVal {
     pub id: String,
     pub chapter_id: String,
@@ -149,6 +155,7 @@ pub struct CreateComicVal {
 ///
 /// [`reserve_cover`]: crate::usecase::comic::reserve_cover
 /// [`mark_completed`]: crate::usecase::comic::mark_completed
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct UpdateComicInfoData {
     pub id: String,
 
@@ -159,17 +166,18 @@ pub struct UpdateComicInfoData {
 
 /// Input parameters for listing comics within a workset.
 #[Paginate]
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize, IntoParams)]
+#[into_params(parameter_in = Query)]
 pub struct ListComicInfosData {
     pub workset_id: String,
 
     pub fuzzy_title: Option<String>,
     pub is_completed: Option<bool>,
 
-    #[serde(default)]
+    #[serde(default, rename = "incl")]
     pub incl_opt: Vec<ComicInclOpt>,
 
-    #[serde(default)]
+    #[serde(default, rename = "with")]
     pub with_opt: Vec<ComicWithOpt>,
 }
 
@@ -190,6 +198,7 @@ impl From<ListComicInfosData> for ComicListSpec {
 ///
 /// The file extension determines the object-storage key suffix. After
 /// reservation the client uploads directly to the returned PUT URL.
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct ReserveComicCoverData {
     pub file_ext: String,
 }
@@ -198,6 +207,7 @@ pub struct ReserveComicCoverData {
 ///
 /// The client uses `put_url` to upload the cover image directly to object
 /// storage. `cover_version` must be echoed back when confirming the upload.
+#[derive(Debug, Serialize, ToSchema)]
 pub struct ReserveComicCoverVal {
     pub put_url: String,
     pub cover_version: i64,
@@ -206,6 +216,13 @@ pub struct ReserveComicCoverVal {
 /// Input parameters for confirming a comic cover upload completed.
 ///
 /// `cover_version` must match the version returned by the reservation step.
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct MarkComicCoverUploadedData {
     pub cover_version: i64,
+}
+
+/// Input parameters for marking a comic completed or active.
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct MarkComicCompletedData {
+    pub is_completed: bool,
 }

@@ -241,7 +241,7 @@ fn sorted_unit_ids(units: &[UnitInfo]) -> Vec<String> {
 fn assert_perm_error(error: RegularError) {
     match error {
         RegularError::Expected { variant, .. } => {
-            assert!(matches!(variant, ExpectedVariant::PermDeny));
+            assert!(matches!(variant, ExpectedVariant::Perm));
         }
         RegularError::Unrecoverable { .. } => {
             panic!("expected permission error");
@@ -266,6 +266,8 @@ async fn list_infos_returns_units_for_team_member() {
         token("user-1"),
         ListPageUnitInfosData {
             page_id: "page-1".into(),
+            offset: 0,
+            limit: i32::MAX as u64,
         },
     )
     .await;
@@ -307,6 +309,8 @@ async fn list_infos_returns_units_for_assignment_fallback() {
         token("user-2"),
         ListPageUnitInfosData {
             page_id: "page-1".into(),
+            offset: 0,
+            limit: i32::MAX as u64,
         },
     )
     .await;
@@ -332,6 +336,8 @@ async fn list_infos_rejects_unrelated_user() {
         token("user-2"),
         ListPageUnitInfosData {
             page_id: "page-1".into(),
+            offset: 0,
+            limit: i32::MAX as u64,
         },
     )
     .await
@@ -546,7 +552,7 @@ async fn save_infos_rolls_back_invalid_diff() {
 
     match e {
         RegularError::Expected { variant, .. } => {
-            assert!(matches!(variant, ExpectedVariant::ArgsInvalid));
+            assert!(matches!(variant, ExpectedVariant::Args));
         }
         RegularError::Unrecoverable { .. } => {
             panic!("expected argument error");

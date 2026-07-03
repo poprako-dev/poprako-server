@@ -258,7 +258,7 @@ async fn import_rejects_page_count_mismatch_without_mutation() {
 
     let snapshot = mock.snapshot();
 
-    assert_expected_variant(err, ExpectedVariant::ArgsInvalid);
+    assert_expected_variant(err, ExpectedVariant::Args);
 
     assert_eq!(snapshot.units.len(), 1);
 

@@ -157,7 +157,7 @@ async fn create_rolls_back_missing_workset() {
         .unwrap();
     let snapshot = mock.snapshot();
 
-    assert_expected_variant(err, ExpectedVariant::ArgsInvalid);
+    assert_expected_variant(err, ExpectedVariant::Args);
     assert!(snapshot.comics.is_empty());
 }
 
@@ -192,7 +192,7 @@ async fn get_info_propagates_missing_comic() {
         .err()
         .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::ArgsInvalid);
+    assert_expected_variant(err, ExpectedVariant::Args);
 }
 
 #[tokio::test]
@@ -450,7 +450,7 @@ async fn update_info_propagates_missing_comic() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::ArgsInvalid);
+    assert_expected_variant(err, ExpectedVariant::Args);
 }
 
 #[tokio::test]
@@ -512,7 +512,7 @@ async fn reserve_cover_rolls_back_missing_comic() {
     .unwrap();
     let snapshot = mock.snapshot();
 
-    assert_expected_variant(err, ExpectedVariant::ArgsInvalid);
+    assert_expected_variant(err, ExpectedVariant::Args);
     assert!(snapshot.prom_records.is_empty());
 }
 
@@ -592,11 +592,7 @@ async fn mark_cover_uploaded_rejects_stale_version() {
     .err()
     .unwrap();
 
-    assert_expected_message(
-        err,
-        ExpectedVariant::ArgsInvalid,
-        "error-stale-cover-upload",
-    );
+    assert_expected_message(err, ExpectedVariant::Args, "error-stale-cover-upload");
     assert!(!mock.snapshot().comics[0].cover_uploaded);
 }
 
@@ -639,11 +635,7 @@ async fn mark_cover_uploaded_rejects_old_reservation_replay() {
     .unwrap();
     let snapshot = mock.snapshot();
 
-    assert_expected_message(
-        err,
-        ExpectedVariant::ArgsInvalid,
-        "error-stale-cover-upload",
-    );
+    assert_expected_message(err, ExpectedVariant::Args, "error-stale-cover-upload");
     assert!(!snapshot.comics[0].cover_uploaded);
     assert_eq!(snapshot.comics[0].cover_version, 2);
 }
@@ -690,7 +682,7 @@ async fn delete_rolls_back_missing_comic() {
         .unwrap();
     let snapshot = mock.snapshot();
 
-    assert_expected_variant(err, ExpectedVariant::ArgsInvalid);
+    assert_expected_variant(err, ExpectedVariant::Args);
     assert_eq!(snapshot.worksets.len(), 1);
     assert!(snapshot.prom_records.is_empty());
 }
@@ -721,6 +713,6 @@ async fn mark_completed_rolls_back_missing_comic() {
         .unwrap();
     let snapshot = mock.snapshot();
 
-    assert_expected_variant(err, ExpectedVariant::ArgsInvalid);
+    assert_expected_variant(err, ExpectedVariant::Args);
     assert!(!snapshot.comics[0].is_completed);
 }

@@ -28,7 +28,7 @@ where
 
     if member_info.is_none() {
         return Err(RegularError::Expected {
-            variant: ExpectedVariant::PermDeny,
+            variant: ExpectedVariant::Perm,
             message: trl("error-team-member-required"),
         });
     }
@@ -53,14 +53,14 @@ where
 
     let Some(member_info) = member_info else {
         return Err(RegularError::Expected {
-            variant: ExpectedVariant::PermDeny,
+            variant: ExpectedVariant::Perm,
             message: trl("error-team-admin-required"),
         });
     };
 
     if !member_info.roles.has_any_role(&[RoleField::ADMIN]) {
         return Err(RegularError::Expected {
-            variant: ExpectedVariant::PermDeny,
+            variant: ExpectedVariant::Perm,
             message: trl("error-team-admin-required"),
         });
     }
@@ -148,14 +148,14 @@ where
 
 fn chapter_assignee_required_error() -> RegularError {
     RegularError::Expected {
-        variant: ExpectedVariant::PermDeny,
+        variant: ExpectedVariant::Perm,
         message: trl("error-chapter-assignee-required"),
     }
 }
 
 fn chapter_translator_or_proofreader_required_error() -> RegularError {
     RegularError::Expected {
-        variant: ExpectedVariant::PermDeny,
+        variant: ExpectedVariant::Perm,
         message: trl("error-chapter-translator-or-proofreader-required"),
     }
 }

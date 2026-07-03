@@ -1,6 +1,8 @@
 //! Data transfer objects for member use cases.
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
+
+use utoipa::{IntoParams, ToSchema};
 
 use poprako_macro::Paginate;
 use poprako_util::i18n::trl;
@@ -14,6 +16,7 @@ use crate::value::member::MemberInclOpt;
 use crate::value::role::{RoleField, RoleMask};
 
 /// Presentation-ready membership information.
+#[derive(Debug, Serialize, ToSchema)]
 pub struct MemberInfoVal {
     pub id: String,
 
@@ -71,6 +74,7 @@ impl MemberInfoVal {
 }
 
 /// Input parameters for creating a member.
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct CreateMemberData {
     pub user_id: String,
     pub team_id: String,
@@ -79,18 +83,21 @@ pub struct CreateMemberData {
 }
 
 /// Return value from creating a member.
+#[derive(Debug, Serialize, ToSchema)]
 pub struct CreateMemberVal {
     pub id: String,
 }
 
 /// Input parameters for joining a team through a member invitation.
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct JoinTeamData {
     pub code: String,
 }
 
 /// Input parameters for listing members by team.
 #[Paginate]
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize, IntoParams)]
+#[into_params(parameter_in = Query)]
 pub struct ListMemberInfosData {
     pub owner_id: Option<String>,
 
@@ -99,7 +106,7 @@ pub struct ListMemberInfosData {
     pub fuzzy_nickname: Option<String>,
     pub role: Option<RoleField>,
 
-    #[serde(default)]
+    #[serde(default, rename = "incl")]
     pub incl_opt: Vec<MemberInclOpt>,
 }
 
@@ -108,7 +115,7 @@ impl TryInto<MemberListSpec> for ListMemberInfosData {
 
     fn try_into(self) -> RegularResult<MemberListSpec> {
         let invalid_args_err = || RegularError::Expected {
-            variant: ExpectedVariant::ArgsInvalid,
+            variant: ExpectedVariant::Args,
             message: trl("error-team-or-user-required"),
         };
 
@@ -141,6 +148,7 @@ impl TryInto<MemberListSpec> for ListMemberInfosData {
 }
 
 /// Input parameters for updating a member role mask.
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct UpdateMemberRoleData {
     pub id: String,
     pub roles: RoleMask,

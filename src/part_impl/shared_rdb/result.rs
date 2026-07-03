@@ -24,7 +24,7 @@ pub fn diesel(err: DieselError) -> RegularError {
     match err {
         DieselError::DatabaseError(DatabaseErrorKind::UniqueViolation, _) => {
             RegularError::Expected {
-                variant: ExpectedVariant::Conflict,
+                variant: ExpectedVariant::Args,
                 message: trl("error-already-exists"),
             }
         }
@@ -46,7 +46,7 @@ pub fn serde(err: SerdeJsonError) -> RegularError {
 
 pub fn expected(message: &str) -> RegularError {
     RegularError::Expected {
-        variant: ExpectedVariant::ArgsInvalid,
+        variant: ExpectedVariant::Args,
         message: trl(message),
     }
 }

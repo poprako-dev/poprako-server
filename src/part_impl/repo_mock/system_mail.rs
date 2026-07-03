@@ -129,7 +129,7 @@ impl<'a> Execute<MarkRead<'a>> for Mock {
 
         if mail.receiver_id != step.user_id {
             return Err(RegularError::Expected {
-                variant: ExpectedVariant::PermDeny,
+                variant: ExpectedVariant::Perm,
                 message: "error-forbidden".into(),
             });
         }
@@ -205,7 +205,7 @@ async fn send_rejects_duplicate_id_without_mutation() {
         .await
         .err()
         .unwrap();
-    assert_expected_variant(err, ExpectedVariant::ArgsInvalid);
+    assert_expected_variant(err, ExpectedVariant::Args);
 
     let snapshot = mock.snapshot();
     assert_eq!(snapshot.system_mails.len(), 1);
@@ -244,7 +244,7 @@ async fn send_batch_rejects_duplicate_batch_without_partial_write() {
         .await
         .err()
         .unwrap();
-    assert_expected_variant(err, ExpectedVariant::ArgsInvalid);
+    assert_expected_variant(err, ExpectedVariant::Args);
 
     let snapshot = mock.snapshot();
     assert_eq!(snapshot.system_mails.len(), 1);
@@ -295,5 +295,5 @@ async fn mark_read_rejects_missing_id() {
         .await
         .err()
         .unwrap();
-    assert_expected_variant(err, ExpectedVariant::ArgsInvalid);
+    assert_expected_variant(err, ExpectedVariant::Args);
 }

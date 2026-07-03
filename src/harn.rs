@@ -28,9 +28,16 @@ use crate::part::repo::workset::{WorksetRepo, WorksetRepoTransactional};
 use crate::result::RegularError;
 use crate::util::DeriveTransactional;
 
-#[derive(Clone)]
 pub struct Harn<C, D, R, P, A, I, V> {
     inner: Arc<HarnInner<C, D, R, P, A, I, V>>,
+}
+
+impl<C, D, R, P, A, I, V> Clone for Harn<C, D, R, P, A, I, V> {
+    fn clone(&self) -> Self {
+        Self {
+            inner: Arc::clone(&self.inner),
+        }
+    }
 }
 
 struct HarnInner<C, D, R, P, A, I, V> {

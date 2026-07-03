@@ -95,7 +95,16 @@ where
                 let old_counters = page_counters(page_info);
 
                 let existing_unit_infos = repo
-                    .advance(context, &UnitStep::list_infos_by_page_id(&page_info.id))
+                    .advance(
+                        context,
+                        &UnitStep::list_infos_by_page_id(
+                            &page_info.id,
+                            poprako_util::page::Page {
+                                offset: 0,
+                                limit: i32::MAX as u64,
+                            },
+                        ),
+                    )
                     .await?;
 
                 let existing_by_id = existing_unit_infos
@@ -234,7 +243,7 @@ fn counter_delta(old_counters: UnitCounters, new_counters: UnitCounters) -> Unit
 
 fn unit_edit_permission_error() -> RegularError {
     RegularError::Expected {
-        variant: ExpectedVariant::PermDeny,
+        variant: ExpectedVariant::Perm,
         message: trl("error-unit-edit-permission-required"),
     }
 }

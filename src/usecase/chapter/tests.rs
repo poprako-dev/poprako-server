@@ -200,7 +200,7 @@ async fn list_infos_rejects_non_member() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::PermDeny);
+    assert_expected_variant(err, ExpectedVariant::Perm);
 }
 
 #[tokio::test]
@@ -224,7 +224,7 @@ async fn get_info_rejects_missing_chapter() {
         .err()
         .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::ArgsInvalid);
+    assert_expected_variant(err, ExpectedVariant::Args);
 }
 
 #[tokio::test]
@@ -254,7 +254,7 @@ async fn get_pinned_rejects_non_member() {
         .err()
         .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::PermDeny);
+    assert_expected_variant(err, ExpectedVariant::Perm);
 }
 
 #[tokio::test]
@@ -320,7 +320,7 @@ async fn create_rolls_back_non_admin() {
     .unwrap();
     let snapshot = mock.snapshot();
 
-    assert_expected_variant(err, ExpectedVariant::PermDeny);
+    assert_expected_variant(err, ExpectedVariant::Perm);
     assert!(snapshot.chapters.is_empty());
     assert!(snapshot.assignments.is_empty());
     assert_eq!(snapshot.comics[0].chapter_count, 2);
@@ -341,7 +341,7 @@ async fn update_info_admin_updates_metadata() {
         &mock,
         &mock,
         token("user-1"),
-        UpdateChapterInfoData {
+        PatchChapterInfoData {
             id: "chapter-1".into(),
             subtitle: Some("updated".into()),
             pin: Some(true),
@@ -366,7 +366,7 @@ async fn update_info_rejects_non_admin_metadata() {
         &mock,
         &mock,
         token("user-1"),
-        UpdateChapterInfoData {
+        PatchChapterInfoData {
             id: "chapter-1".into(),
             subtitle: Some("updated".into()),
             pin: None,
@@ -376,7 +376,7 @@ async fn update_info_rejects_non_admin_metadata() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::PermDeny);
+    assert_expected_variant(err, ExpectedVariant::Perm);
 }
 
 #[tokio::test]
@@ -443,7 +443,7 @@ async fn update_stage_rejects_invalid_transition() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::ArgsInvalid);
+    assert_expected_variant(err, ExpectedVariant::Args);
 }
 
 #[tokio::test]
@@ -525,7 +525,7 @@ async fn delete_rolls_back_non_admin() {
         .unwrap();
     let snapshot = mock.snapshot();
 
-    assert_expected_variant(err, ExpectedVariant::PermDeny);
+    assert_expected_variant(err, ExpectedVariant::Perm);
     assert_eq!(snapshot.chapters.len(), 1);
     assert_eq!(snapshot.pages.len(), 1);
     assert!(snapshot.prom_records.is_empty());

@@ -1,10 +1,16 @@
 //! Data transfer objects for page unit use cases.
 
+use serde::{Deserialize, Serialize};
+
+use utoipa::ToSchema;
+
+use poprako_macro::Paginate;
 use poprako_util::time::ToUnixMilli;
 
 use crate::model::unit::{UnitCounters, UnitDiff, UnitIdMapper, UnitInfo, UnitOper, UnitPayload};
 
 /// Presentation-ready unit information.
+#[derive(Debug, Serialize, ToSchema)]
 pub struct UnitInfoVal {
     pub id: String,
 
@@ -48,11 +54,14 @@ impl From<UnitInfo> for UnitInfoVal {
 }
 
 /// Input parameters for listing units under one page.
+#[Paginate]
+#[derive(Debug, Deserialize)]
 pub struct ListPageUnitInfosData {
     pub page_id: String,
 }
 
 /// Return value for listing units under one page.
+#[derive(Debug, Serialize, ToSchema)]
 pub struct ListPageUnitInfosVal {
     pub unit_infos: Vec<UnitInfoVal>,
 
@@ -62,12 +71,14 @@ pub struct ListPageUnitInfosVal {
 }
 
 /// Input parameters for saving unit opers under one page.
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct SavePageUnitsData {
     pub page_id: String,
     pub diff: UnitDiffData,
 }
 
 /// Return value for saving unit opers under one page.
+#[derive(Debug, Serialize, ToSchema)]
 pub struct SavePageUnitsVal {
     pub local_id_mappers: Vec<UnitIdMapperVal>,
 
@@ -77,6 +88,7 @@ pub struct SavePageUnitsVal {
 }
 
 /// Transport-facing unit oper.
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct UnitDiffData {
     pub page_id: String,
 
@@ -86,6 +98,7 @@ pub struct UnitDiffData {
 }
 
 /// Transport-facing compact unit oper.
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct UnitOperData {
     pub id: Option<String>,
     pub local_id: Option<String>,
@@ -155,6 +168,7 @@ impl UnitOperData {
 }
 
 /// Presentation-ready local-to-server id mapping.
+#[derive(Debug, Serialize, ToSchema)]
 pub struct UnitIdMapperVal {
     pub local_id: String,
     pub unit_id: String,

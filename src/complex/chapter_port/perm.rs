@@ -38,7 +38,7 @@ impl ChapterPortPermComplex {
         match check_user_is_chapter_assignee(proxy, user_id, chapter_id).await {
             Ok(()) => Ok(()),
             Err(RegularError::Expected {
-                variant: ExpectedVariant::PermDeny,
+                variant: ExpectedVariant::Perm,
                 ..
             }) => Err(chapter_port_export_permission_error()),
             Err(e) => Err(e),
@@ -57,7 +57,7 @@ impl ChapterPortPermComplex {
         match check_user_is_chapter_translator_or_proofreader(proxy, user_id, chapter_id).await {
             Ok(()) => Ok(()),
             Err(RegularError::Expected {
-                variant: ExpectedVariant::PermDeny,
+                variant: ExpectedVariant::Perm,
                 ..
             }) => Err(chapter_port_import_permission_error()),
             Err(e) => Err(e),
@@ -67,14 +67,14 @@ impl ChapterPortPermComplex {
 
 fn chapter_port_export_permission_error() -> RegularError {
     RegularError::Expected {
-        variant: ExpectedVariant::PermDeny,
+        variant: ExpectedVariant::Perm,
         message: trl("error-chapter-port-export-permission-required"),
     }
 }
 
 fn chapter_port_import_permission_error() -> RegularError {
     RegularError::Expected {
-        variant: ExpectedVariant::PermDeny,
+        variant: ExpectedVariant::Perm,
         message: trl("error-chapter-port-import-permission-required"),
     }
 }

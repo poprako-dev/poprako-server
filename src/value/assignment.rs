@@ -2,10 +2,12 @@
 
 use serde::Deserialize;
 
+use utoipa::ToSchema;
+
 use crate::value::incl::InclOpt;
 
 /// Incl opts for assignment info queries.
-#[derive(Deserialize, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Deserialize, Clone, Copy, PartialEq, Eq, ToSchema)]
 pub enum AssignmentInclOpt {
     #[serde(rename = "user")]
     User,

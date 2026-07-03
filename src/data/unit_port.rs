@@ -1,6 +1,11 @@
 //! Data transfer objects for unit import/export port use cases.
 
+use serde::Serialize;
+
+use utoipa::ToSchema;
+
 /// JSON-safe export object for one page unit.
+#[derive(Debug, Serialize, ToSchema)]
 pub struct UnitTranslationExportVal {
     pub unit_id: String,
     pub unit_index: i32,

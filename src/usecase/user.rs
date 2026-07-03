@@ -100,7 +100,7 @@ where
     // Only the user themselves can update their own profile.
     if token.user_id != data.id {
         return Err(RegularError::Expected {
-            variant: ExpectedVariant::PermDeny,
+            variant: ExpectedVariant::Perm,
             message: trl("error-forbidden"),
         });
     }
@@ -260,7 +260,7 @@ where
 {
     if token.user_id != id {
         return Err(RegularError::Expected {
-            variant: ExpectedVariant::PermDeny,
+            variant: ExpectedVariant::Perm,
             message: trl("error-forbidden"),
         });
     }
@@ -358,7 +358,7 @@ where
     if token.user_id != id {
         // TODO: perm check.
         return Err(RegularError::Expected {
-            variant: ExpectedVariant::PermDeny,
+            variant: ExpectedVariant::Perm,
             message: trl("error-forbidden"),
         });
     }

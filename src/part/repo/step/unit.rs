@@ -1,12 +1,15 @@
 //! Step types for unit repository opers.
 
 use poprako_transactional::step::Step;
+use poprako_util::page::Page;
 
 use crate::model::unit::{UnitCounters, UnitIndex, UnitIndexUpdate, UnitInfo, UnitOper};
 
 /// Step that lists units by page ID.
 pub struct ListInfosByPageId<'a> {
     pub page_id: &'a str,
+
+    pub page: Page,
 }
 
 impl<'a> Step for ListInfosByPageId<'a> {
@@ -76,8 +79,8 @@ pub struct UnitStep;
 
 impl UnitStep {
     /// Constructs a step to list units by page ID.
-    pub fn list_infos_by_page_id<'a>(page_id: &'a str) -> ListInfosByPageId<'a> {
-        ListInfosByPageId { page_id }
+    pub fn list_infos_by_page_id<'a>(page_id: &'a str, page: Page) -> ListInfosByPageId<'a> {
+        ListInfosByPageId { page_id, page }
     }
 
     /// Constructs a step to create one unit row.

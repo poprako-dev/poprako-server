@@ -260,6 +260,6 @@ async fn create_rejects_duplicate_id() {
         panic!("expected advance error");
     };
 
-    assert_expected_variant(err, ExpectedVariant::ArgsInvalid);
+    assert_expected_variant(err, ExpectedVariant::Args);
     assert_eq!(mock.snapshot().comments.len(), 1);
 }

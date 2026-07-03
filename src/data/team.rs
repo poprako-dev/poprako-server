@@ -1,5 +1,9 @@
 //! Data transfer objects for team profile use cases.
 
+use serde::{Deserialize, Serialize};
+
+use utoipa::{IntoParams, ToSchema};
+
 use poprako_macro::Paginate;
 use poprako_util::time::ToUnixMilli;
 
@@ -12,6 +16,7 @@ use crate::result::RegularResult;
 /// Converts the raw [`TeamInfoModel`] timestamps to Unix milliseconds and
 /// resolves the avatar key to a signed download URL via [`ImagePool`] when
 /// the avatar has been uploaded.
+#[derive(Debug, Serialize, ToSchema)]
 pub struct TeamInfoVal {
     pub id: String,
 
@@ -56,6 +61,7 @@ impl TeamInfoVal {
 }
 
 /// Input parameters for creating a new team.
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct CreateTeamData {
     pub name: String,
     pub description: String,
@@ -67,11 +73,14 @@ pub struct CreateTeamData {
 /// by a super-admin. When `user_id` is [`Some`], the request lists teams joined
 /// by that user.
 #[Paginate]
+#[derive(Debug, Deserialize, IntoParams)]
+#[into_params(parameter_in = Query)]
 pub struct ListTeamInfosData {
     pub user_id: Option<String>,
 }
 
 /// Input parameters for updating a team's profile.
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct UpdateTeamInfoData {
     pub id: String,
 
@@ -80,17 +89,20 @@ pub struct UpdateTeamInfoData {
 }
 
 /// Input parameters for reserving a new team avatar upload slot.
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct ReserveTeamAvatarData {
     pub file_ext: String,
 }
 
 /// Return value from a successful team avatar reservation.
+#[derive(Debug, Serialize, ToSchema)]
 pub struct ReserveTeamAvatarVal {
     pub put_url: String,
     pub avatar_version: i64,
 }
 
 /// Input parameters for confirming a team avatar upload completed.
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct MarkTeamAvatarUploadedData {
     pub avatar_version: i64,
 }

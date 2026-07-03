@@ -293,35 +293,35 @@ where
 
 fn assignment_list_permission_error() -> RegularError {
     RegularError::Expected {
-        variant: ExpectedVariant::PermDeny,
+        variant: ExpectedVariant::Perm,
         message: trl("error-forbidden"),
     }
 }
 
 fn chapter_reviewer_error() -> RegularError {
     RegularError::Expected {
-        variant: ExpectedVariant::PermDeny,
+        variant: ExpectedVariant::Perm,
         message: trl("error-chapter-reviewer-required"),
     }
 }
 
 fn assignment_self_reduce_error() -> RegularError {
     RegularError::Expected {
-        variant: ExpectedVariant::PermDeny,
+        variant: ExpectedVariant::Perm,
         message: trl("error-forbidden"),
     }
 }
 
 fn assignment_role_not_assignable_args_error() -> RegularError {
     RegularError::Expected {
-        variant: ExpectedVariant::ArgsInvalid,
+        variant: ExpectedVariant::Args,
         message: trl("error-chapter-role-not-assignable"),
     }
 }
 
 fn assignment_role_not_assignable_perm_error() -> RegularError {
     RegularError::Expected {
-        variant: ExpectedVariant::PermDeny,
+        variant: ExpectedVariant::Perm,
         message: trl("error-chapter-role-not-assignable"),
     }
 }

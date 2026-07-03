@@ -1,20 +1,24 @@
 //! JWT-backed authentication token signer.
 
 use anyhow::Context as _;
-use jsonwebtoken::{Algorithm, EncodingKey, Header, encode};
-use serde::Serialize;
+use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, Validation, decode, encode};
+use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 use tracing::{Level, instrument};
 
-use crate::model::user::UserTokenRef;
+use poprako_util::i18n::trl;
+
+use crate::model::user::{UserToken, UserTokenRef};
 use crate::part::auth::TokenAuth;
-use crate::result::{RegularError, RegularResult};
+use crate::result::{ExpectedVariant, RegularError, RegularResult};
 
 /// JWT issuer for user session tokens.
 pub struct JwtAuth {
     expiration_seconds: i64,
 
     encoding_key: EncodingKey,
+
+    decoding_key: DecodingKey,
 }
 
 #[derive(Debug, Serialize)]
@@ -27,6 +31,11 @@ struct SignClaims<'a> {
     exp: usize,
 
     iss: &'static str,
+}
+
+#[derive(Debug, Deserialize)]
+struct TokenClaims {
+    user_id: String,
 }
 
 impl JwtAuth {
@@ -42,9 +51,12 @@ impl JwtAuth {
 
         let encoding_key = EncodingKey::from_secret(secret.as_bytes());
 
+        let decoding_key = DecodingKey::from_secret(secret.as_bytes());
+
         Ok(Self {
             expiration_seconds,
             encoding_key,
+            decoding_key,
         })
     }
 
@@ -88,6 +100,24 @@ impl TokenAuth for JwtAuth {
 
         encode(&header, &claims, &self.encoding_key).map_err(|err| RegularError::Unrecoverable {
             message: format!("[JwtAuth::sign_token] error when encoding: {}", err),
+        })
+    }
+
+    #[instrument(err(Debug), skip(self), level = Level::DEBUG)]
+    fn verify_token(&self, raw: &str) -> RegularResult<UserToken> {
+        let token_data =
+            decode::<TokenClaims>(raw, &self.decoding_key, &Validation::new(Algorithm::HS256))
+                .map_err(|err| {
+                    tracing::debug!("[JwtAuth::verify_token] decode failed: {}", err);
+
+                    RegularError::Expected {
+                        variant: ExpectedVariant::Auth,
+                        message: trl("error-unauthorized"),
+                    }
+                })?;
+
+        Ok(UserToken {
+            user_id: token_data.claims.user_id,
         })
     }
 }

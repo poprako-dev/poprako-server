@@ -4,7 +4,7 @@ use crate::complex::assignment::AssignmentComplex;
 use crate::complex::chapter::{ChapterComplex, ChapterPermComplex};
 use crate::data::chapter::{
     ChapterInfoVal, CreateChapterData, CreateChapterVal, ListChapterInfosData,
-    UpdateChapterInfoData, UpdateChapterStageData,
+    PatchChapterInfoData, UpdateChapterStageData,
 };
 use crate::model::assignment::AssignmentForm;
 use crate::model::chapter::{ChapterForm, ChapterInfoUpdate, ChapterListSpec};
@@ -207,7 +207,7 @@ pub async fn update_info<D, C, R>(
     drive: &D,
     repo: &R,
     token: UserToken,
-    data: UpdateChapterInfoData,
+    data: PatchChapterInfoData,
 ) -> RegularResult<()>
 where
     D: Drive<C>,

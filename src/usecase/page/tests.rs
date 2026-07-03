@@ -240,7 +240,7 @@ async fn reserve_chapter_pages_rejects_invalid_count() {
     .unwrap();
     let snapshot = mock.snapshot();
 
-    assert_expected_variant(err, ExpectedVariant::ArgsInvalid);
+    assert_expected_variant(err, ExpectedVariant::Args);
     assert!(snapshot.pages.is_empty());
     assert!(snapshot.prom_records.is_empty());
 }
@@ -317,7 +317,7 @@ async fn reserve_image_rejects_missing_page() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::ArgsInvalid);
+    assert_expected_variant(err, ExpectedVariant::Args);
 }
 
 #[tokio::test]
@@ -370,7 +370,7 @@ async fn list_infos_rejects_non_member_without_assignment() {
     .err()
     .unwrap();
 
-    assert_expected_variant(err, ExpectedVariant::PermDeny);
+    assert_expected_variant(err, ExpectedVariant::Perm);
 }
 
 #[tokio::test]
@@ -452,11 +452,7 @@ async fn mark_image_uploaded_rejects_stale_replay_then_accepts_current_version()
     .unwrap();
     let snapshot = mock.snapshot();
 
-    assert_expected_message(
-        err,
-        ExpectedVariant::ArgsInvalid,
-        "error-stale-page-image-upload",
-    );
+    assert_expected_message(err, ExpectedVariant::Args, "error-stale-page-image-upload");
     assert!(!snapshot.pages[0].image_uploaded);
     assert_eq!(snapshot.pages[0].image_version, 2);
 
@@ -495,7 +491,7 @@ async fn mark_image_uploaded_rejects_non_raw_provider() {
     .unwrap();
     let snapshot = mock.snapshot();
 
-    assert_expected_variant(err, ExpectedVariant::PermDeny);
+    assert_expected_variant(err, ExpectedVariant::Perm);
     assert!(!snapshot.pages[0].image_uploaded);
 }
 
@@ -534,7 +530,7 @@ async fn delete_by_chapter_rejects_non_admin_and_rolls_back() {
         .unwrap();
     let snapshot = mock.snapshot();
 
-    assert_expected_variant(err, ExpectedVariant::PermDeny);
+    assert_expected_variant(err, ExpectedVariant::Perm);
     assert_eq!(snapshot.pages.len(), 1);
     assert_eq!(snapshot.chapters[0].page_count, 0);
     assert!(snapshot.prom_records.is_empty());

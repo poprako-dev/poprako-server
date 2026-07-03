@@ -1,6 +1,8 @@
 //! Data transfer objects for announcement use cases.
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
+
+use utoipa::{IntoParams, ToSchema};
 
 use poprako_macro::Paginate;
 use poprako_util::time::ToUnixMilli;
@@ -12,6 +14,7 @@ use crate::result::RegularResult;
 use crate::value::announcement::AnnouncementInclOpt;
 
 /// Presentation-ready team announcement information.
+#[derive(Debug, Serialize, ToSchema)]
 pub struct AnnouncementInfoVal {
     pub id: String,
 
@@ -50,11 +53,12 @@ impl AnnouncementInfoVal {
 
 /// Input parameters for listing announcements.
 #[Paginate]
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize, IntoParams)]
+#[into_params(parameter_in = Query)]
 pub struct ListAnnouncementInfosData {
     pub team_id: String,
 
-    #[serde(default)]
+    #[serde(default, rename = "incl")]
     pub incl_opt: Vec<AnnouncementInclOpt>,
 }
 
@@ -70,6 +74,7 @@ impl From<ListAnnouncementInfosData> for AnnouncementListSpec {
 }
 
 /// Input parameters for creating an announcement.
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct CreateAnnouncementData {
     pub team_id: String,
 
@@ -78,6 +83,7 @@ pub struct CreateAnnouncementData {
 }
 
 /// Return value from creating an announcement.
+#[derive(Debug, Serialize, ToSchema)]
 pub struct CreateAnnouncementVal {
     pub id: String,
 }

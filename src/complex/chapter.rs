@@ -536,13 +536,13 @@ where
 
     let Some(member_info) = member_info else {
         return Err(RegularError::Expected {
-            variant: ExpectedVariant::PermDeny,
+            variant: ExpectedVariant::Perm,
             message: trl("error-team-member-required"),
         });
     };
     if !member_info.roles.contains_mask(roles) {
         return Err(RegularError::Expected {
-            variant: ExpectedVariant::PermDeny,
+            variant: ExpectedVariant::Perm,
             message: trl("error-chapter-role-not-assignable"),
         });
     }
@@ -570,7 +570,7 @@ where
 /// Construct a "chapter admin required" permission error.
 fn chapter_admin_error() -> RegularError {
     RegularError::Expected {
-        variant: ExpectedVariant::PermDeny,
+        variant: ExpectedVariant::Perm,
         message: trl("error-chapter-admin-required"),
     }
 }
@@ -578,7 +578,7 @@ fn chapter_admin_error() -> RegularError {
 /// Construct a "workflow role required for this transition" permission error.
 fn chapter_workflow_role_error() -> RegularError {
     RegularError::Expected {
-        variant: ExpectedVariant::PermDeny,
+        variant: ExpectedVariant::Perm,
         message: trl("error-chapter-workflow-role-required"),
     }
 }
@@ -586,7 +586,7 @@ fn chapter_workflow_role_error() -> RegularError {
 /// Construct an "admin role not assignable through join" args error.
 fn chapter_role_not_assignable_args_error() -> RegularError {
     RegularError::Expected {
-        variant: ExpectedVariant::ArgsInvalid,
+        variant: ExpectedVariant::Args,
         message: trl("error-chapter-role-not-assignable"),
     }
 }

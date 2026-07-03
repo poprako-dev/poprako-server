@@ -84,7 +84,7 @@ where
             // Verify the invitation was issued for this QQ ID.
             if invitation_info.invitee_qid != data.qid {
                 return Err(RegularError::Expected {
-                    variant: ExpectedVariant::ArgsInvalid,
+                    variant: ExpectedVariant::Args,
                     message: trl("error-invalid-invitation-code"),
                 });
             }
@@ -166,7 +166,7 @@ where
 
     if !UserComplex::verify_password(&data.password, &user_credential.password_hash) {
         return Err(RegularError::Expected {
-            variant: ExpectedVariant::AuthFail,
+            variant: ExpectedVariant::Auth,
             message: trl("error-wrong-credentials"),
         });
     }

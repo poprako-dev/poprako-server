@@ -1,6 +1,8 @@
 //! Data transfer objects for chapter use cases.
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
+
+use utoipa::{IntoParams, ToSchema};
 
 use poprako_macro::Paginate;
 use poprako_util::time::ToUnixMilli;
@@ -20,10 +22,12 @@ use crate::value::chapter::{ChapterInclOpt, WorkflowEvent, WorkflowStage, Workfl
 /// Construct via [`From<ChapterInfo>`] — the conversion is infallible.
 ///
 /// [`ChapterInfo`]: crate::model::chapter::ChapterInfo
+#[derive(Debug, Serialize, ToSchema)]
 pub struct ChapterInfoVal {
     pub id: String,
     pub comic_id: String,
 
+    #[schema(no_recursion)]
     pub comic: Option<Box<ComicInfoVal>>,
 
     pub is_pinned: bool,
@@ -81,9 +85,9 @@ impl ChapterInfoVal {
 
         let comic = match model.comic {
             Some(comic_info) => {
-                let comic_info_val = ComicInfoVal::from_model(image_pool, comic_info, None).await?;
+                let comic = ComicInfoVal::from_model(image_pool, comic_info, None).await?;
 
-                Some(Box::new(comic_info_val))
+                Some(Box::new(comic))
             }
             None => None,
         };
@@ -109,6 +113,7 @@ impl ChapterInfoVal {
 }
 
 /// Input parameters for creating a new chapter.
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct CreateChapterData {
     pub comic_id: String,
 
@@ -120,22 +125,25 @@ pub struct CreateChapterData {
 }
 
 /// Return value from a successful chapter creation.
+#[derive(Debug, Serialize, ToSchema)]
 pub struct CreateChapterVal {
     pub id: String,
 }
 
 /// Input parameters for listing chapters within a comic.
 #[Paginate]
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize, IntoParams)]
+#[into_params(parameter_in = Query)]
 pub struct ListChapterInfosData {
     pub comic_id: String,
 
-    #[serde(default)]
+    #[serde(default, rename = "incl")]
     pub incl_opt: Vec<ChapterInclOpt>,
 }
 
-/// Input parameters for updating a chapter's profile.
-pub struct UpdateChapterInfoData {
+/// Input parameters for partially updating a chapter's profile.
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct PatchChapterInfoData {
     pub id: String,
 
     pub subtitle: Option<String>,
@@ -147,6 +155,7 @@ pub struct UpdateChapterInfoData {
 /// Encodes a single event on a specific stage, e.g. "start translating"
 /// on the `translate` stage. The use case layer validates that the
 /// transition is legal for the current stage phase before applying it.
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct UpdateChapterStageData {
     pub id: String,
 

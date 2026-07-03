@@ -89,7 +89,7 @@ async fn mark_read(conn: &mut RdbConn, id: &str, user_id: &str) -> RegularResult
 
     if mail.f_receiver_id != user_id {
         return Err(RegularError::Expected {
-            variant: ExpectedVariant::PermDeny,
+            variant: ExpectedVariant::Perm,
             message: "error-forbidden".into(),
         });
     }

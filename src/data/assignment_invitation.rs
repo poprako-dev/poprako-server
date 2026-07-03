@@ -1,5 +1,9 @@
 //! Data transfer objects for assignment invitation use cases.
 
+use serde::{Deserialize, Serialize};
+
+use utoipa::{IntoParams, ToSchema};
+
 use poprako_macro::Paginate;
 use poprako_util::time::ToUnixMilli;
 
@@ -7,6 +11,7 @@ use crate::model::assignment_invitation::AssignmentInvitationInfo;
 use crate::value::role::RoleMask;
 
 /// Presentation-ready assignment invitation information.
+#[derive(Debug, Serialize, ToSchema)]
 pub struct AssignmentInvitationInfoVal {
     pub id: String,
 
@@ -43,12 +48,15 @@ impl From<AssignmentInvitationInfo> for AssignmentInvitationInfoVal {
 
 /// Input parameters for listing invitations under one chapter.
 #[Paginate]
+#[derive(Debug, Deserialize, IntoParams)]
+#[into_params(parameter_in = Query)]
 pub struct ListAssignmentInvitationInfosData {
     pub chapter_id: String,
     pub pending: Option<bool>,
 }
 
 /// Input parameters for creating an assignment invitation.
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct CreateAssignmentInvitationData {
     pub chapter_id: String,
     pub invitee_qid: String,
@@ -56,12 +64,14 @@ pub struct CreateAssignmentInvitationData {
 }
 
 /// Return value from creating an assignment invitation.
+#[derive(Debug, Serialize, ToSchema)]
 pub struct CreateAssignmentInvitationVal {
     pub id: String,
     pub code: String,
 }
 
 /// Input parameters for joining an assignment through an invitation code.
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct JoinAssignmentInvitationData {
     pub code: String,
 }

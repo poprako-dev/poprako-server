@@ -389,7 +389,7 @@ fn apply_poprako_text(
 
 fn args_error(key: &str) -> RegularError {
     RegularError::Expected {
-        variant: ExpectedVariant::ArgsInvalid,
+        variant: ExpectedVariant::Args,
         message: trl(key),
     }
 }

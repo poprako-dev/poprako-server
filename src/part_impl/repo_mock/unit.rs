@@ -144,7 +144,11 @@ impl<'a> Execute<ListInfosByPageId<'a>> for Mock {
     async fn execute(&self, step: &ListInfosByPageId<'a>) -> Result<Vec<UnitInfo>, Self::Error> {
         let state = self.state.lock().unwrap();
 
-        Ok(list_units(&state, step.page_id))
+        Ok(list_units(&state, step.page_id)
+            .into_iter()
+            .skip(step.page.offset as usize)
+            .take(step.page.limit as usize)
+            .collect())
     }
 }
 
@@ -157,7 +161,11 @@ impl<'a> Advance<ListInfosByPageId<'a>, MockContext> for MockTransactional {
         context: &mut MockContext,
         step: &ListInfosByPageId<'a>,
     ) -> Result<Vec<UnitInfo>, Self::Error> {
-        Ok(list_units(&context.state, step.page_id))
+        Ok(list_units(&context.state, step.page_id)
+            .into_iter()
+            .skip(step.page.offset as usize)
+            .take(step.page.limit as usize)
+            .collect())
     }
 }
 

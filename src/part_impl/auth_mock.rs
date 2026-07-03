@@ -2,7 +2,7 @@
 
 use poprako_util::i18n::trl;
 
-use crate::model::user::UserTokenRef;
+use crate::model::user::{UserToken, UserTokenRef};
 use crate::part::auth::TokenAuth;
 use crate::part_impl::repo_mock::Mock;
 use crate::result::{ExpectedVariant, RegularError, RegularResult};
@@ -15,12 +15,25 @@ impl TokenAuth for Mock {
     fn sign_token(&self, token: &UserTokenRef) -> RegularResult<String> {
         if self.flags.lock().unwrap().token_failure {
             return Err(RegularError::Expected {
-                variant: ExpectedVariant::AuthFail,
+                variant: ExpectedVariant::Auth,
                 message: trl("error-token-sign-failed"),
             });
         }
 
         Ok(format!("token:{}", token.user_id))
+    }
+
+    fn verify_token(&self, raw: &str) -> RegularResult<UserToken> {
+        if self.flags.lock().unwrap().token_failure {
+            return Err(RegularError::Expected {
+                variant: ExpectedVariant::Auth,
+                message: trl("error-unauthorized"),
+            });
+        }
+
+        let user_id = raw.strip_prefix("token:").unwrap_or(raw).to_string();
+
+        Ok(UserToken { user_id })
     }
 }
 
@@ -49,7 +62,7 @@ fn sign_failure_returns_expected_auth() {
     assert!(matches!(
         err,
         RegularError::Expected {
-            variant: ExpectedVariant::AuthFail,
+            variant: ExpectedVariant::Auth,
             ..
         }
     ));
