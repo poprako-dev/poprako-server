@@ -1,4 +1,4 @@
-//! Chapter translation port handlers: import and file-download export.
+//! Chapter translation port handlers: import, body export, and download export.
 
 use axum::Json;
 use axum::body::Body;
@@ -20,7 +20,9 @@ use crate::api::http::result::Accept as _;
 use crate::api::http::result::HttpError;
 use crate::api::http::result::HttpResult;
 use crate::api::http::state::AppHarn;
-use crate::data::chapter_port::{ChapterTranslationImportData, ChapterTranslationImportVal};
+use crate::data::chapter_port::{
+    ChapterTranslationExportVal, ChapterTranslationImportData, ChapterTranslationImportVal,
+};
 use crate::model::user::UserToken;
 use crate::usecase;
 use crate::value::chapter_port::TranslationFormat;
@@ -58,14 +60,43 @@ pub async fn import(
     reply.accept(StatusCode::OK)
 }
 
-/// `GET /api/v1/chapters/{chapter_id}/translations/export` — export as file download.
+/// `GET /api/v1/chapters/{chapter_id}/translations/export` — export response body.
 ///
 /// `format=poprako` returns a JSON document (`application/json`); `format=label-plus`
-/// returns a LabelPlus text document (`text/plain`). Both use
-/// `Content-Disposition: attachment` with a generated filename.
+/// returns a LabelPlus text document (`text/plain`).
 #[utoipa::path(
     get,
     path = "/api/v1/chapters/{chapter_id}/translations/export",
+    tag = "chapter-port",
+    params(
+        ("chapter_id" = String, Path, description = "Chapter ID"),
+        ("format" = TranslationFormat, Query, description = "Export format: poprako or label-plus"),
+    ),
+    responses(
+        (status = 200, description = "PopRaKo translation export", body = ChapterTranslationExportVal, content_type = "application/json"),
+        (status = 200, description = "LabelPlus translation export", content_type = "text/plain"),
+        (status = 403, description = "No permission to export this chapter"),
+    ),
+)]
+#[instrument(err, skip(harn))]
+pub async fn export(
+    State(harn): State<AppHarn>,
+    Path(chapter_id): Path<String>,
+    Extension(user_token): Extension<UserToken>,
+    Query(query): Query<TranslationExportQuery>,
+) -> Result<Response, HttpError> {
+    let payload = export_payload(&harn, user_token, chapter_id, query.format).await?;
+
+    body_response(payload)
+}
+
+/// `GET /api/v1/chapters/{chapter_id}/translations/export/download` — export as file download.
+///
+/// `format=poprako` downloads a JSON document (`application/json`);
+/// `format=label-plus` downloads a LabelPlus text document (`text/plain`).
+#[utoipa::path(
+    get,
+    path = "/api/v1/chapters/{chapter_id}/translations/export/download",
     tag = "chapter-port",
     params(
         ("chapter_id" = String, Path, description = "Chapter ID"),
@@ -77,14 +108,31 @@ pub async fn import(
     ),
 )]
 #[instrument(err, skip(harn))]
-pub async fn export(
+pub async fn export_download(
     State(harn): State<AppHarn>,
     Path(chapter_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
     Query(query): Query<TranslationExportQuery>,
 ) -> Result<Response, HttpError> {
     let filename = format!("chapter_{}", chapter_id);
-    match query.format {
+    let payload = export_payload(&harn, user_token, chapter_id, query.format).await?;
+
+    download_response(&filename, payload)
+}
+
+struct TranslationExportPayload {
+    content_type: &'static str,
+    extension: &'static str,
+    body: Bytes,
+}
+
+async fn export_payload(
+    harn: &AppHarn,
+    user_token: UserToken,
+    chapter_id: String,
+    format: TranslationFormat,
+) -> Result<TranslationExportPayload, HttpError> {
+    match format {
         TranslationFormat::PopRaKo => {
             let val = usecase::chapter_port::export(
                 harn.repo(),
@@ -95,43 +143,69 @@ pub async fn export(
             .await?;
 
             let body = serde_json::to_vec(&val).map_err(|err| {
-                tracing::warn!("[chapter_port::export] serialization failed: {}", err);
+                tracing::warn!(
+                    error = %err,
+                    "[chapter_port::export_payload] serialization failed",
+                );
                 HttpError::internal()
             })?;
 
-            file_response(
-                "application/json",
-                &format!("{}.json", filename),
-                Bytes::from(body),
-            )
+            Ok(TranslationExportPayload {
+                content_type: "application/json",
+                extension: "json",
+                body: Bytes::from(body),
+            })
         }
         TranslationFormat::LabelPlus => {
             let content =
                 usecase::chapter_port::export_label_plus(harn.repo(), user_token, chapter_id)
                     .await?;
 
-            file_response(
-                "text/plain; charset=utf-8",
-                &format!("{}.txt", filename),
-                Bytes::from(content),
-            )
+            Ok(TranslationExportPayload {
+                content_type: "text/plain; charset=utf-8",
+                extension: "txt",
+                body: Bytes::from(content),
+            })
         }
     }
 }
 
-/// Builds a `200 OK` file-download response with the given content type and
-/// `Content-Disposition: attachment; filename="<filename>"`.
-fn file_response(content_type: &str, filename: &str, body: Bytes) -> Result<Response, HttpError> {
+/// Builds a `200 OK` export response with the given content type.
+fn body_response(payload: TranslationExportPayload) -> Result<Response, HttpError> {
     Response::builder()
         .status(StatusCode::OK)
-        .header(CONTENT_TYPE, content_type)
+        .header(CONTENT_TYPE, payload.content_type)
+        .body(Body::from(payload.body))
+        .map_err(|err| {
+            tracing::warn!(
+                error = %err,
+                "[chapter_port::body_response] build failed",
+            );
+            HttpError::internal()
+        })
+}
+
+/// Builds a `200 OK` file-download response with the given content type and
+/// `Content-Disposition: attachment; filename="<filename>"`.
+fn download_response(
+    filename_base: &str,
+    payload: TranslationExportPayload,
+) -> Result<Response, HttpError> {
+    let filename = format!("{}.{}", filename_base, payload.extension);
+
+    Response::builder()
+        .status(StatusCode::OK)
+        .header(CONTENT_TYPE, payload.content_type)
         .header(
             CONTENT_DISPOSITION,
             format!("attachment; filename=\"{}\"", filename),
         )
-        .body(Body::from(body))
+        .body(Body::from(payload.body))
         .map_err(|err| {
-            tracing::warn!("[chapter_port::file_response] build failed: {}", err);
+            tracing::warn!(
+                error = %err,
+                "[chapter_port::download_response] build failed",
+            );
             HttpError::internal()
         })
 }

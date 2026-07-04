@@ -21,7 +21,9 @@ use crate::data::chapter::{
     ChapterInfoVal, CreateChapterData, CreateChapterVal, PatchChapterInfoData,
     UpdateChapterStageData,
 };
-use crate::data::chapter_port::{ChapterTranslationImportData, ChapterTranslationImportVal};
+use crate::data::chapter_port::{
+    ChapterTranslationExportVal, ChapterTranslationImportData, ChapterTranslationImportVal,
+};
 use crate::data::comic::{
     ComicInfoVal, CreateComicData, CreateComicVal, MarkComicCompletedData,
     MarkComicCoverUploadedData, ReserveComicCoverData, ReserveComicCoverVal, UpdateComicInfoData,
@@ -98,6 +100,7 @@ use crate::data::workset::{
         handler::chapter::delete,
         handler::chapter_port::import,
         handler::chapter_port::export,
+        handler::chapter_port::export_download,
         handler::page::list_infos,
         handler::page::delete,
         handler::page::reserve_chapter_pages,
@@ -164,6 +167,7 @@ use crate::data::workset::{
         CreateChapterVal,
         PatchChapterInfoData,
         UpdateChapterStageData,
+        ChapterTranslationExportVal,
         ChapterTranslationImportData,
         ChapterTranslationImportVal,
         PageInfoVal,
