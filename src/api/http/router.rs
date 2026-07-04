@@ -146,6 +146,10 @@ pub fn new(harn: AppHarn) -> Router<AppHarn> {
         .route(
             "/chapters/{chapter_id}/translations/export",
             get(chapter_port::export),
+        )
+        .route(
+            "/chapters/{chapter_id}/translations/export/download",
+            get(chapter_port::export_download),
         );
 
     let v1_page = Router::new()
