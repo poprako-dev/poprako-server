@@ -28,13 +28,21 @@ use crate::usecase;
 use crate::value::member::MemberInclOpt;
 
 /// Query for the current-user memberships list endpoint (`/members/me`).
+///
+/// `incl` embeds related rows into each item.
+///
+/// Example: `?incl=user&incl=team&offset=0&limit=20`.
 #[derive(Debug, Deserialize, IntoParams)]
 #[into_params(parameter_in = Query)]
 pub struct MemberMeListQuery {
+    /// Related rows to embed. Repeatable. Values: `user`, `team`.
     #[serde(default, rename = "incl")]
     pub incl_opt: Vec<MemberInclOpt>,
 
+    /// Pagination offset (0-based).
     pub offset: u64,
+
+    /// Maximum number of items to return.
     pub limit: u64,
 }
 
@@ -66,10 +74,11 @@ pub async fn create(
     get,
     path = "/api/v1/members",
     tag = "members",
+    description = "Lists members. Exactly one of `owner_id` or `team_id` is required. In `owner_id` mode, `role` and `fuzzy_nickname` must be omitted. In `team_id` mode, `fuzzy_nickname` and `role` are optional. `incl` embeds related rows. Examples: `/api/v1/members?team_id=t_1&fuzzy_nickname=al&role=1&incl=user`, `/api/v1/members?owner_id=u_1&incl=team`.",
     params(ListMemberInfosData),
     responses(
         (status = 200, description = "Members listed", body = Vec<MemberInfoVal>),
-        (status = 400, description = "Exactly one of owner_id or team_id is required"),
+        (status = 400, description = "Exactly one of owner_id or team_id is required, or owner_id combined with role/fuzzy_nickname"),
         (status = 403, description = "No permission to list members in this team"),
     ),
 )]

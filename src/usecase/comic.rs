@@ -455,6 +455,7 @@ where
         .with_context(async move |context| {
             let repo = repo.derive_transactional().await;
 
+            // TODO: add prom to archive comic.
             repo.advance(context, &ComicStep::mark_completed(&id, is_completed))
                 .await?;
 

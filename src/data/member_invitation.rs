@@ -43,16 +43,22 @@ pub struct CreateMemberInvitationVal {
 
 /// Input parameters for listing invitations within a team, with optional
 /// pending-status filtering and standard offset/limit pagination.
+///
+/// `incl` embeds related rows into each item.
+///
+/// Example: `/api/v1/teams/{team_id}/member-invitations?pending=true&incl=invitor&offset=0&limit=20`.
 #[Paginate]
 #[derive(Debug, Deserialize, IntoParams)]
 #[into_params(parameter_in = Query)]
 pub struct ListMemberInvitationInfosData {
+    /// Parent team whose invitations to list.
     pub team_id: String,
 
     /// When `Some(true)`, returns only unconsumed invitations;
     /// `Some(false)` returns only consumed ones; `None` returns all.
     pub pending: Option<bool>,
 
+    /// Related rows to embed. Repeatable. Values: `invitor`.
     #[serde(default, rename = "incl")]
     pub incl_opt: Vec<MemberInvitationInclOpt>,
 }

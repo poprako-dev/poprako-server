@@ -26,6 +26,7 @@ use crate::usecase;
     get,
     path = "/api/v1/assignments",
     tag = "assignments",
+    description = "Lists assignments. Exactly one of `chapter_id` or `owner_id` is required; `role` optionally narrows by a single role bit. `incl` embeds related rows; dotted values imply their parent segments. Examples: `/api/v1/assignments?chapter_id=c_1&role=1&incl=chapter.comic.workset.team`, `/api/v1/assignments?owner_id=u_1&incl=user`.",
     params(ListAssignmentInfosData),
     responses(
         (status = 200, description = "Assignments listed", body = Vec<AssignmentInfoVal>),

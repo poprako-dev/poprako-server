@@ -28,15 +28,25 @@ use crate::usecase;
 use crate::value::member_invitation::MemberInvitationInclOpt;
 
 /// Query for listing invitations within a team.
+///
+/// `incl` embeds related rows into each item.
+///
+/// Example: `?pending=true&incl=invitor&offset=0&limit=20`.
 #[derive(Debug, Deserialize, IntoParams)]
 #[into_params(parameter_in = Query)]
 pub struct MemberInvitationListQuery {
+    /// When `Some(true)`, returns only unconsumed invitations;
+    /// `Some(false)` returns only consumed ones; `None` returns all.
     pub pending: Option<bool>,
 
+    /// Related rows to embed. Repeatable. Values: `invitor`.
     #[serde(default, rename = "incl")]
     pub incl_opt: Vec<MemberInvitationInclOpt>,
 
+    /// Pagination offset (0-based).
     pub offset: u64,
+
+    /// Maximum number of items to return.
     pub limit: u64,
 }
 
@@ -69,6 +79,7 @@ pub async fn create(
     get,
     path = "/api/v1/teams/{team_id}/member-invitations",
     tag = "member-invitations",
+    description = "Lists a team's member invitations. `pending` filters by consumption state; `incl` embeds related rows. Example: `/api/v1/teams/{team_id}/member-invitations?pending=true&incl=invitor&offset=0&limit=20`.",
     params(("team_id" = String, Path, description = "Team ID"), MemberInvitationListQuery),
     responses(
         (status = 200, description = "Invitations listed", body = Vec<MemberInvitationInfoVal>),

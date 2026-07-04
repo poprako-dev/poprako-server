@@ -386,20 +386,31 @@ impl Serialize for WorkflowStageMask {
 }
 
 /// Incl opts for chapter info queries.
+///
+/// Each opt embeds additional related data into the returned
+/// `ChapterInfoVal`. Dotted opts implicitly pull in the segments before the
+/// dot (e.g. `comic.workset.team` also embeds `comic` and `comic.workset`).
 #[derive(Debug, Deserialize, Clone, Copy, PartialEq, Eq, ToSchema)]
 pub enum ChapterInclOpt {
+    /// Embed the parent comic (`comic`).
     #[serde(rename = "comic")]
     Comic,
 
+    /// Embed the comic and its workset (`comic.workset`; implies `comic`).
     #[serde(rename = "comic.workset")]
     ComicWorkset,
 
+    /// Embed the comic, its workset, and the workset's team
+    /// (`comic.workset.team`; implies `comic` and `comic.workset`).
     #[serde(rename = "comic.workset.team")]
     ComicWorksetTeam,
 
+    /// Embed the comic and the comic's creating user
+    /// (`comic.creator`; implies `comic`).
     #[serde(rename = "comic.creator")]
     ComicCreator,
 
+    /// Embed the chapter's creating user (`creator`).
     #[serde(rename = "creator")]
     Creator,
 }

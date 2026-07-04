@@ -28,13 +28,24 @@ use crate::usecase;
 use crate::value::chapter::ChapterInclOpt;
 
 /// Query for listing chapters within a comic.
+///
+/// `incl` embeds related rows into each item; dotted values implicitly pull
+/// in their parent segments.
+///
+/// Example: `?incl=comic.workset.team&incl=creator&offset=0&limit=20`.
 #[derive(Debug, Deserialize, IntoParams)]
 #[into_params(parameter_in = Query)]
 pub struct ChapterListQuery {
+    /// Related rows to embed. Repeatable. Values: `comic`, `comic.workset`,
+    /// `comic.workset.team`, `comic.creator`, `creator`. Dotted values imply
+    /// their parent segments.
     #[serde(default, rename = "incl")]
     pub incl_opt: Vec<ChapterInclOpt>,
 
+    /// Pagination offset (0-based).
     pub offset: u64,
+
+    /// Maximum number of items to return.
     pub limit: u64,
 }
 
@@ -65,6 +76,7 @@ pub async fn create(
     get,
     path = "/api/v1/comics/{comic_id}/chapters",
     tag = "chapters",
+    description = "Lists chapters of a comic. `incl` embeds related rows; dotted values imply their parent segments. Example: `/api/v1/comics/{comic_id}/chapters?incl=comic.workset.team&incl=creator&offset=0&limit=20`.",
     params(("comic_id" = String, Path, description = "Comic ID"), ChapterListQuery),
     responses(
         (status = 200, description = "Chapters listed", body = Vec<ChapterInfoVal>),

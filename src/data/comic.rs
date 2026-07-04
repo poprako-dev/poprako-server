@@ -49,7 +49,6 @@ pub struct ComicInfoVal {
     /// Resolved signed download URL for the cover image, or [`None`] if
     /// no cover has been uploaded.
     pub cover_url: Option<String>,
-    pub cover_version: i64,
 
     pub chapter_count: i32,
     pub chapter_next_index: i32,
@@ -109,7 +108,6 @@ impl ComicInfoVal {
             description: model.description,
             is_completed: model.is_completed,
             cover_url: cover_url.map(Into::into),
-            cover_version: model.cover_version,
             chapter_count: model.chapter_count,
             chapter_next_index: model.chapter_next_index,
             creator_id: model.creator_id,

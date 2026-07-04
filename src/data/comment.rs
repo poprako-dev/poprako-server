@@ -49,12 +49,18 @@ impl CommentInfoVal {
 }
 
 /// Input parameters for listing comments.
+///
+/// `incl` embeds related rows into each item.
+///
+/// Example: `/api/v1/teams/{team_id}/comments?incl=user&offset=0&limit=20`.
 #[Paginate]
 #[derive(Debug, Deserialize, IntoParams)]
 #[into_params(parameter_in = Query)]
 pub struct ListCommentInfosData {
+    /// Parent team whose comments to list.
     pub team_id: String,
 
+    /// Related rows to embed. Repeatable. Values: `user`.
     #[serde(default, rename = "incl")]
     pub incl_opt: Vec<CommentInclOpt>,
 }

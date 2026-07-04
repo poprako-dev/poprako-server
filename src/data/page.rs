@@ -20,7 +20,6 @@ pub struct PageInfoVal {
     pub index: i32,
 
     pub image_url: Option<String>,
-    pub image_uploaded: bool,
 
     pub total_unit_count: i32,
     pub translated_unit_count: i32,
@@ -40,12 +39,12 @@ impl PageInfoVal {
             (true, Some(key)) => image_pool.get_signed(key).await.ok(),
             _ => None,
         };
+
         Ok(Self {
             id: model.id,
             chapter_id: model.chapter_id,
             index: model.index,
             image_url: image_url.map(Into::into),
-            image_uploaded: model.image_uploaded,
             total_unit_count: model.total_unit_count,
             translated_unit_count: model.translated_unit_count,
             proofread_unit_count: model.proofread_unit_count,

@@ -102,7 +102,6 @@ where
             page_id: page_info.id,
             page_index: page_info.index,
             image_url: image_url.map(Into::into),
-            is_uploaded: page_info.image_uploaded,
             units: unit_vals,
         });
     }

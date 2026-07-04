@@ -68,13 +68,18 @@ pub struct CreateTeamData {
 
 /// Input parameters for listing teams.
 ///
-/// When `user_id` is [`None`], the request lists all teams and must be made
-/// by a super-admin. When `user_id` is [`Some`], the request lists teams joined
-/// by that user.
+/// Exactly one listing mode applies based on `user_id`:
+/// - `user_id` omitted: list all teams (requires super-admin, otherwise
+///   `403`);
+/// - `user_id` present: list teams the given user has joined.
+///
+/// Example: `/api/v1/teams?user_id=u_123&offset=0&limit=20`.
 #[Paginate]
 #[derive(Debug, Deserialize, IntoParams)]
 #[into_params(parameter_in = Query)]
 pub struct ListTeamInfosData {
+    /// Filter to teams joined by this user. Omit to list all teams
+    /// (super-admin only).
     pub user_id: Option<String>,
 }
 

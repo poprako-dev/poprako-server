@@ -5,3 +5,4 @@
 - [ ] rename(sql): invitation_code -> code
 - [ ] rename: V: Develop -> D: ...
 - [ ] rename: join -> join-{team}
+- [ ] add archive prom in comic complete.

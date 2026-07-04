@@ -79,15 +79,35 @@ impl AssignmentInfoVal {
 }
 
 /// Input parameters for listing assignments by chapter or owner user.
+///
+/// Exactly one of `chapter_id` or `owner_id` is required:
+/// - `chapter_id`: list assignments on that chapter;
+/// - `owner_id`: list assignments owned by that user.
+///
+/// `role` optionally narrows by a single role bit in either mode. `incl`
+/// embeds related rows; dotted values imply their parent segments.
+///
+/// Example: `/api/v1/assignments?chapter_id=c_1&role=1&incl=chapter.comic.workset.team&offset=0&limit=20`.
 #[Paginate]
 #[derive(Debug, Deserialize, IntoParams)]
 #[into_params(parameter_in = Query)]
 pub struct ListAssignmentInfosData {
+    /// Chapter mode: list assignments on this chapter. Mutually exclusive with
+    /// `owner_id`.
     pub chapter_id: Option<String>,
+
+    /// Owner-user mode: list assignments owned by this user. Mutually exclusive
+    /// with `chapter_id`.
     pub owner_id: Option<String>,
 
+    /// Single role-bit filter. Must be a singular valid role bit; composite
+    /// values are rejected.
     pub role: Option<RoleField>,
 
+    /// Related rows to embed. Repeatable. Values: `user`, `chapter`,
+    /// `chapter.comic`, `chapter.comic.workset`, `chapter.comic.workset.team`,
+    /// `chapter.creator`, `chapter.comic.creator`. Dotted values imply their
+    /// parent segments.
     #[serde(default, rename = "incl")]
     pub incl_opt: Vec<AssignmentInclOpt>,
 }
