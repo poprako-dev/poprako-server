@@ -49,6 +49,7 @@ pub async fn create(
     get,
     path = "/api/v1/teams",
     tag = "teams",
+    description = "Lists teams. Omit `user_id` to list all teams (super-admin only, otherwise `403`); supply `user_id` to list teams that user has joined. Examples: `/api/v1/teams?user_id=u_1&offset=0&limit=20`, `/api/v1/teams?offset=0&limit=20` (super-admin).",
     params(ListTeamInfosData),
     responses(
         (status = 200, description = "Teams listed", body = Vec<TeamInfoVal>),

@@ -94,17 +94,37 @@ pub struct JoinTeamData {
 }
 
 /// Input parameters for listing members by team.
+///
+/// Exactly one of `owner_id` or `team_id` is required:
+/// - `owner_id`: list teams/memberships owned by that user; `role` and
+///   `fuzzy_nickname` must be omitted in this mode;
+/// - `team_id`: list members of that team, optionally narrowed by
+///   `fuzzy_nickname` and/or `role`.
+///
+/// `incl` embeds related rows (`user`, `team`).
+///
+/// Example: `/api/v1/members?team_id=t_1&fuzzy_nickname=al&role=1&incl=user&offset=0&limit=20`.
 #[Paginate]
 #[derive(Debug, Deserialize, IntoParams)]
 #[into_params(parameter_in = Query)]
 pub struct ListMemberInfosData {
+    /// Owner-user mode: list teams/memberships owned by this user. Mutually
+    /// exclusive with `team_id`; when set, `role` and `fuzzy_nickname` must be
+    /// omitted.
     pub owner_id: Option<String>,
 
+    /// Team mode: list members of this team. Mutually exclusive with
+    /// `owner_id`.
     pub team_id: Option<String>,
 
+    /// Substring filter on member nickname (team mode only).
     pub fuzzy_nickname: Option<String>,
+
+    /// Single role-bit filter (team mode only). Must be a singular valid role
+    /// bit; composite values are rejected.
     pub role: Option<RoleField>,
 
+    /// Related rows to embed. Repeatable. Values: `user`, `team`.
     #[serde(default, rename = "incl")]
     pub incl_opt: Vec<MemberInclOpt>,
 }

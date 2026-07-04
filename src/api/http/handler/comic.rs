@@ -28,20 +28,46 @@ use crate::usecase;
 use crate::value::comic::{ComicInclOpt, ComicWithOpt};
 
 /// Query for listing comics within a workset.
+///
+/// Filtering modes are selected by `is_completed` and `stages` together:
+/// - omit both: list all comics in the workset;
+/// - `is_completed=true`: list completed comics only (`stages` must be
+///   omitted — combining them is rejected with `422`);
+/// - `is_completed=false`: list active comics, optionally narrowed by
+///   `stages`;
+/// - omit `is_completed` but pass `stages`: list active comics in those
+///   stages.
+///
+/// `incl` embeds related rows into each item; `with` attaches derived rows.
+/// Dotted `incl` values implicitly pull in their parent segments.
 #[derive(Debug, Deserialize, IntoParams)]
 #[into_params(parameter_in = Query)]
 pub struct ComicListQuery {
+    /// Fuzzy title substring filter (case-insensitive).
     pub fuzzy_title: Option<String>,
+
+    /// Completion filter. `Some(true)` selects completed comics, `Some(false)`
+    /// selects active comics, `None` leaves completion unconstrained. Must not
+    /// be `Some(true)` together with `stages`.
     pub is_completed: Option<bool>,
+
+    /// Workflow stage bitmask filter for active comics. Only meaningful when
+    /// `is_completed` is not `Some(true)`; rejected otherwise.
     pub stages: Option<u32>,
 
+    /// Related rows to embed. Repeatable. Values: `workset`, `workset.team`,
+    /// `creator`. Dotted values imply their parent segments.
     #[serde(default, rename = "incl")]
     pub incl_opt: Vec<ComicInclOpt>,
 
+    /// Derived rows to attach. Repeatable. Values: `pinned_chapter`.
     #[serde(default, rename = "with")]
     pub with_opt: Vec<ComicWithOpt>,
 
+    /// Pagination offset (0-based).
     pub offset: u64,
+
+    /// Maximum number of items to return.
     pub limit: u64,
 }
 
@@ -72,10 +98,12 @@ pub async fn create(
     get,
     path = "/api/v1/worksets/{workset_id}/comics",
     tag = "comics",
+    description = "Lists comics in a workset with optional title, completion, and stage filters. `is_completed=true` must not be combined with `stages`; `is_completed=false` or omitting `is_completed` allows `stages`. `incl` embeds related rows, `with` attaches derived rows. Example: `/api/v1/worksets/{workset_id}/comics?is_completed=false&stages=6&incl=workset.team&incl=creator&with=pinned_chapter&offset=0&limit=20`.",
     params(("workset_id" = String, Path, description = "Workset ID"), ComicListQuery),
     responses(
         (status = 200, description = "Comics listed", body = Vec<ComicInfoVal>),
         (status = 403, description = "No permission to list comics in this workset"),
+        (status = 422, description = "Invalid argument combination (e.g. is_completed=true with stages)"),
     ),
 )]
 #[instrument(err, skip(harn))]

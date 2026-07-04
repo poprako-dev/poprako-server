@@ -47,11 +47,17 @@ impl From<AssignmentInvitationInfo> for AssignmentInvitationInfoVal {
 }
 
 /// Input parameters for listing invitations under one chapter.
+///
+/// Example: `/api/v1/assignment-invitations?chapter_id=c_1&pending=true&offset=0&limit=20`.
 #[Paginate]
 #[derive(Debug, Deserialize, IntoParams)]
 #[into_params(parameter_in = Query)]
 pub struct ListAssignmentInvitationInfosData {
+    /// Parent chapter whose assignment invitations to list.
     pub chapter_id: String,
+
+    /// When `Some(true)`, returns only unconsumed invitations;
+    /// `Some(false)` returns only consumed ones; `None` returns all.
     pub pending: Option<bool>,
 }
 

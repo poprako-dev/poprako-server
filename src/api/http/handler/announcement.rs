@@ -24,13 +24,21 @@ use crate::usecase;
 use crate::value::announcement::AnnouncementInclOpt;
 
 /// Query for listing announcements within a team.
+///
+/// `incl` embeds related rows into each item.
+///
+/// Example: `?incl=user&offset=0&limit=20`.
 #[derive(Debug, Deserialize, IntoParams)]
 #[into_params(parameter_in = Query)]
 pub struct AnnouncementListQuery {
+    /// Related rows to embed. Repeatable. Values: `user`.
     #[serde(default, rename = "incl")]
     pub incl_opt: Vec<AnnouncementInclOpt>,
 
+    /// Pagination offset (0-based).
     pub offset: u64,
+
+    /// Maximum number of items to return.
     pub limit: u64,
 }
 
@@ -61,6 +69,7 @@ pub async fn create(
     get,
     path = "/api/v1/teams/{team_id}/announcements",
     tag = "announcements",
+    description = "Lists a team's announcements. `incl` embeds related rows. Example: `/api/v1/teams/{team_id}/announcements?incl=user&offset=0&limit=20`.",
     params(("team_id" = String, Path, description = "Team ID"), AnnouncementListQuery),
     responses(
         (status = 200, description = "Announcements listed", body = Vec<AnnouncementInfoVal>),

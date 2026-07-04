@@ -130,12 +130,21 @@ pub struct CreateChapterVal {
 }
 
 /// Input parameters for listing chapters within a comic.
+///
+/// `incl` embeds related rows into each item; dotted values implicitly pull
+/// in their parent segments.
+///
+/// Example: `/api/v1/comics/{comic_id}/chapters?incl=comic.workset.team&incl=creator&offset=0&limit=20`.
 #[Paginate]
 #[derive(Debug, Deserialize, IntoParams)]
 #[into_params(parameter_in = Query)]
 pub struct ListChapterInfosData {
+    /// Parent comic whose chapters to list.
     pub comic_id: String,
 
+    /// Related rows to embed. Repeatable. Values: `comic`, `comic.workset`,
+    /// `comic.workset.team`, `comic.creator`, `creator`. Dotted values imply
+    /// their parent segments.
     #[serde(default, rename = "incl")]
     pub incl_opt: Vec<ChapterInclOpt>,
 }

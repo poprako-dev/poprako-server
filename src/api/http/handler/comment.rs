@@ -24,13 +24,21 @@ use crate::usecase;
 use crate::value::comment::CommentInclOpt;
 
 /// Query for listing comments within a team.
+///
+/// `incl` embeds related rows into each item.
+///
+/// Example: `?incl=user&offset=0&limit=20`.
 #[derive(Debug, Deserialize, IntoParams)]
 #[into_params(parameter_in = Query)]
 pub struct CommentListQuery {
+    /// Related rows to embed. Repeatable. Values: `user`.
     #[serde(default, rename = "incl")]
     pub incl_opt: Vec<CommentInclOpt>,
 
+    /// Pagination offset (0-based).
     pub offset: u64,
+
+    /// Maximum number of items to return.
     pub limit: u64,
 }
 
@@ -61,6 +69,7 @@ pub async fn create(
     get,
     path = "/api/v1/teams/{team_id}/comments",
     tag = "comments",
+    description = "Lists a team's board comments. `incl` embeds related rows. Example: `/api/v1/teams/{team_id}/comments?incl=user&offset=0&limit=20`.",
     params(("team_id" = String, Path, description = "Team ID"), CommentListQuery),
     responses(
         (status = 200, description = "Comments listed", body = Vec<CommentInfoVal>),

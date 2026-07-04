@@ -13,7 +13,6 @@ pub struct PageTranslationExportVal {
     pub page_index: i32,
 
     pub image_url: Option<String>,
-    pub is_uploaded: bool,
 
     pub units: Vec<UnitTranslationExportVal>,
 }

@@ -56,6 +56,13 @@ use crate::data::user::{
 use crate::data::workset::{
     CreateWorksetData, CreateWorksetVal, UpdateWorksetInfoData, WorksetInfoVal,
 };
+use crate::value::announcement::AnnouncementInclOpt;
+use crate::value::assignment::AssignmentInclOpt;
+use crate::value::chapter::ChapterInclOpt;
+use crate::value::comic::{ComicInclOpt, ComicWithOpt};
+use crate::value::comment::CommentInclOpt;
+use crate::value::member::MemberInclOpt;
+use crate::value::member_invitation::MemberInvitationInclOpt;
 
 /// Top-level OpenAPI document for the PopRaKo HTTP API.
 #[derive(OpenApi)]
@@ -207,6 +214,14 @@ use crate::data::workset::{
         CreateMemberInvitationData,
         CreateMemberInvitationVal,
         UpdateMemberInvitationRolesData,
+        ComicInclOpt,
+        ComicWithOpt,
+        ChapterInclOpt,
+        MemberInclOpt,
+        MemberInvitationInclOpt,
+        AssignmentInclOpt,
+        AnnouncementInclOpt,
+        CommentInclOpt,
     )),
     tags(
         (name = "health", description = "Health-check endpoints"),
