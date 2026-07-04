@@ -22,7 +22,7 @@ use crate::part::repo::step::system_mail::SystemMailStep;
 use crate::part::repo::system_mail::{SystemMailRepo, SystemMailRepoTransactional};
 use crate::part::shared::execute::Execute;
 use crate::util::DeriveTransactional;
-use crate::value::chapter::{ChapterInclOpt, WorkflowStage};
+use crate::value::chapter::{ChapterInclOpt, Stage};
 use crate::value::role::RoleField;
 
 const CHAPTER_INCL_OPT: &[ChapterInclOpt] = &[ChapterInclOpt::ComicWorksetTeam];
@@ -223,25 +223,25 @@ where
     }
 }
 
-fn next_phase_config(stage: WorkflowStage) -> Option<(RoleField, String)> {
+fn next_phase_config(stage: Stage) -> Option<(RoleField, String)> {
     match stage {
-        WorkflowStage::RawProvide => Some((RoleField::TRANSLATOR, trl("mail-workflow-upload"))),
-        WorkflowStage::Translate => Some((RoleField::PROOFREADER, trl("mail-workflow-translate"))),
-        WorkflowStage::Proofread => Some((RoleField::TYPESETTER, trl("mail-workflow-proofread"))),
-        WorkflowStage::TypesetRedraw => Some((RoleField::REVIEWER, trl("mail-workflow-typeset"))),
-        WorkflowStage::Review => Some((RoleField::PUBLISHER, trl("mail-workflow-review"))),
-        WorkflowStage::Publish => None,
+        Stage::RawProvide => Some((RoleField::TRANSLATOR, trl("mail-workflow-upload"))),
+        Stage::Translate => Some((RoleField::PROOFREADER, trl("mail-workflow-translate"))),
+        Stage::Proofread => Some((RoleField::TYPESETTER, trl("mail-workflow-proofread"))),
+        Stage::TypesetRedraw => Some((RoleField::REVIEWER, trl("mail-workflow-typeset"))),
+        Stage::Review => Some((RoleField::PUBLISHER, trl("mail-workflow-review"))),
+        Stage::Publish => None,
     }
 }
 
-fn reviewer_progress_label(stage: WorkflowStage) -> Option<String> {
+fn reviewer_progress_label(stage: Stage) -> Option<String> {
     match stage {
-        WorkflowStage::RawProvide => Some(trl("mail-workflow-upload")),
-        WorkflowStage::Translate => Some(trl("mail-workflow-translate")),
-        WorkflowStage::Proofread => Some(trl("mail-workflow-proofread")),
-        WorkflowStage::TypesetRedraw => None,
-        WorkflowStage::Review => Some(trl("mail-workflow-review")),
-        WorkflowStage::Publish => None,
+        Stage::RawProvide => Some(trl("mail-workflow-upload")),
+        Stage::Translate => Some(trl("mail-workflow-translate")),
+        Stage::Proofread => Some(trl("mail-workflow-proofread")),
+        Stage::TypesetRedraw => None,
+        Stage::Review => Some(trl("mail-workflow-review")),
+        Stage::Publish => None,
     }
 }
 

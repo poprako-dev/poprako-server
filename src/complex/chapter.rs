@@ -33,7 +33,7 @@ use crate::part::repo::step::workset::{GetInfoById as WorksetGetInfoById, Workse
 use crate::part::shared::proxy::ProxyExecute;
 use crate::result::{ExpectedVariant, RegularError, RegularResult, accept};
 use crate::util::next_snowflake_id;
-use crate::value::chapter::{StagePhase, WorkflowEvent, WorkflowStage, try_modify_stage};
+use crate::value::chapter::{Stage, StagePhase, StageOper, try_modify_stage};
 use crate::value::index::stored_index_to_user_index;
 use crate::value::role::{RoleField, RoleMask};
 
@@ -55,15 +55,15 @@ impl ChapterComplex {
             .unwrap_or_else(|| default_subtitle(index))
     }
 
-    /// Compute the next [`ChapterStageUpdate`] by applying a [`WorkflowEvent`]
+    /// Compute the next [`ChapterStageUpdate`] by applying a [`StageOper`]
     /// to the current [`WorkflowStage`] phase of a chapter.
     pub fn build_stage_update(
         chapter_info: &ChapterInfo,
-        stage: WorkflowStage,
-        event: WorkflowEvent,
+        stage: Stage,
+        oper: StageOper,
     ) -> RegularResult<ChapterStageUpdate> {
         let current_phase = get_phase(chapter_info, stage);
-        let next_phase = try_modify_stage((stage, current_phase), event)?;
+        let next_phase = try_modify_stage((stage, current_phase), oper)?;
 
         let chapter_stage_update = ChapterStageUpdate {
             id: chapter_info.id.clone(),
@@ -146,7 +146,7 @@ fn default_subtitle(index: i32) -> String {
 
 /// Extract the current [`StagePhase`] for a given [`WorkflowStage`] from a
 /// [`ChapterInfo`] record.
-fn get_phase(chapter_info: &ChapterInfo, stage: WorkflowStage) -> StagePhase {
+fn get_phase(chapter_info: &ChapterInfo, stage: Stage) -> StagePhase {
     chapter_info.stages.get_phase(stage)
 }
 
@@ -305,18 +305,18 @@ impl ChapterPermComplex {
         check_admin(proxy, user_id, chapter_id).await
     }
 
-    /// Verify the caller has permission to apply a workflow event.
+    /// Verify the caller has permission to apply a workflow operation.
     pub async fn can_user_update_stage<P>(
         proxy: &mut P,
         user_id: &str,
         chapter_id: &str,
-        stage: WorkflowStage,
-        event: WorkflowEvent,
+        stage: Stage,
+        oper: StageOper,
     ) -> RegularResult<()>
     where
         P: for<'a> ProxyExecute<GetInfoByChapterIdAndUserId<'a>, Error = RegularError>,
     {
-        check_workflow_role(proxy, user_id, chapter_id, stage, event).await
+        check_workflow_role(proxy, user_id, chapter_id, stage, oper).await
     }
 
     /// Verify the caller may join a chapter with the given [`RoleMask`].
@@ -459,8 +459,8 @@ async fn check_workflow_role<P>(
     proxy: &mut P,
     user_id: &str,
     chapter_id: &str,
-    stage: WorkflowStage,
-    event: WorkflowEvent,
+    stage: Stage,
+    oper: StageOper,
 ) -> RegularResult<()>
 where
     P: for<'a> ProxyExecute<GetInfoByChapterIdAndUserId<'a>, Error = RegularError>,
@@ -480,25 +480,19 @@ where
         return accept(());
     }
 
-    let allowed = match (stage, event) {
-        (WorkflowStage::RawProvide, WorkflowEvent::Advance) => {
+    let allowed = match (stage, oper) {
+        (Stage::RawProvide, StageOper::Advance) => {
             roles.has_any_role(&[RoleField::RAW_PROVIDER])
         }
-        (WorkflowStage::Translate, WorkflowEvent::Advance) => {
-            roles.has_any_role(&[RoleField::TRANSLATOR])
-        }
-        (WorkflowStage::Translate, WorkflowEvent::Revert) => {
+        (Stage::Translate, StageOper::Advance) => roles.has_any_role(&[RoleField::TRANSLATOR]),
+        (Stage::Translate, StageOper::Revert) => roles.has_any_role(&[RoleField::PROOFREADER]),
+        (Stage::Proofread, StageOper::Advance | StageOper::Revert) => {
             roles.has_any_role(&[RoleField::PROOFREADER])
         }
-        (WorkflowStage::Proofread, WorkflowEvent::Advance | WorkflowEvent::Revert) => {
-            roles.has_any_role(&[RoleField::PROOFREADER])
-        }
-        (WorkflowStage::TypesetRedraw, WorkflowEvent::Advance | WorkflowEvent::Revert) => {
+        (Stage::TypesetRedraw, StageOper::Advance | StageOper::Revert) => {
             roles.has_any_role(&[RoleField::TYPESETTER, RoleField::REDRAWER])
         }
-        (WorkflowStage::Publish, WorkflowEvent::Advance) => {
-            roles.has_any_role(&[RoleField::PUBLISHER])
-        }
+        (Stage::Publish, StageOper::Advance) => roles.has_any_role(&[RoleField::PUBLISHER]),
         _ => false,
     };
 

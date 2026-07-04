@@ -12,7 +12,7 @@ use crate::data::user::UserInfoVal;
 use crate::model::chapter::ChapterInfo;
 use crate::part::image::ImagePool;
 use crate::result::RegularResult;
-use crate::value::chapter::{ChapterInclOpt, WorkflowEvent, WorkflowStage, WorkflowStageMask};
+use crate::value::chapter::{ChapterInclOpt, Stage, StageMask, StageOper};
 
 /// Presentation-ready chapter information.
 ///
@@ -39,7 +39,7 @@ pub struct ChapterInfoVal {
     pub translated_unit_count: i32,
     pub proofread_unit_count: i32,
 
-    pub stages: WorkflowStageMask,
+    pub stages: StageMask,
 
     pub creator_id: String,
 
@@ -160,13 +160,13 @@ pub struct PatchChapterInfoData {
 
 /// Input parameters for updating a chapter's workflow stage.
 ///
-/// Encodes a single event on a specific stage, e.g. "start translating"
+/// Encodes a single operation on a specific stage, e.g. "start translating"
 /// on the `translate` stage. The use case layer validates that the
 /// transition is legal for the current stage phase before applying it.
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct UpdateChapterStageData {
     pub id: String,
 
-    pub stage: WorkflowStage,
-    pub event: WorkflowEvent,
+    pub stage: Stage,
+    pub oper: StageOper,
 }

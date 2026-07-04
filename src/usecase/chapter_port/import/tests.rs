@@ -16,7 +16,7 @@ use crate::model::workset::WorksetInfo;
 use crate::part_impl::repo_mock::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;
-use crate::value::chapter::WorkflowStageMask;
+use crate::value::chapter::StageMask;
 use crate::value::chapter_port::TranslationFormat;
 use crate::value::role::{RoleField, RoleMask};
 
@@ -83,7 +83,7 @@ fn chapter(page_count: i32, total_unit_count: i32, proofread_unit_count: i32) ->
         total_unit_count,
         translated_unit_count: total_unit_count,
         proofread_unit_count,
-        stages: WorkflowStageMask::try_from(0u32).ok().unwrap(),
+        stages: StageMask::try_from(0u32).ok().unwrap(),
         creator_id: "user-1".into(),
         comic: None,
         creator: None,

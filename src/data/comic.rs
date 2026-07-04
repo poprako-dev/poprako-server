@@ -21,7 +21,7 @@ use crate::data::workset::WorksetInfoVal;
 use crate::model::comic::{ComicInfo, ComicListKind, ComicListSpec};
 use crate::part::image::ImagePool;
 use crate::result::{ExpectedVariant, RegularError, RegularResult, accept};
-use crate::value::chapter::WorkflowStageMask;
+use crate::value::chapter::StageMask;
 use crate::value::comic::{ComicInclOpt, ComicWithOpt};
 
 /// Presentation-ready comic information.
@@ -186,10 +186,7 @@ impl TryFrom<ListComicInfosData> for ComicListSpec {
     type Error = RegularError;
 
     fn try_from(data: ListComicInfosData) -> RegularResult<Self> {
-        let stages = data
-            .stages
-            .map(WorkflowStageMask::try_filter_from)
-            .transpose()?;
+        let stages = data.stages.map(StageMask::try_filter_from).transpose()?;
 
         let kind = match (data.is_completed, stages) {
             (Some(true), Some(_)) => {

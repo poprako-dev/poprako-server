@@ -13,7 +13,7 @@ use crate::model::unit::UnitInfo;
 use crate::model::user::UserToken;
 use crate::model::workset::WorksetInfo;
 use crate::part_impl::repo_mock::Mock;
-use crate::value::chapter::WorkflowStageMask;
+use crate::value::chapter::StageMask;
 use crate::value::role::{RoleField, RoleMask};
 
 fn token(user_id: &str) -> UserToken {
@@ -77,7 +77,7 @@ fn chapter(id: &str) -> ChapterInfo {
         total_unit_count: 2,
         translated_unit_count: 2,
         proofread_unit_count: 1,
-        stages: WorkflowStageMask::try_from(0u32).ok().unwrap(),
+        stages: StageMask::try_from(0u32).ok().unwrap(),
         creator_id: "user-1".into(),
         comic: None,
         creator: None,

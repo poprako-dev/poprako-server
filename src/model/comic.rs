@@ -16,7 +16,7 @@ use time::OffsetDateTime;
 use crate::model::team::TeamInfo;
 use crate::model::user::UserInfo;
 use crate::model::workset::WorksetInfo;
-use crate::value::chapter::WorkflowStageMask;
+use crate::value::chapter::StageMask;
 use crate::value::comic::ComicInclOpt;
 
 /// A comicrecord as stored in the database.
@@ -105,7 +105,7 @@ pub struct ComicListSpec {
 /// Completion/stage filtering mode for listing comics.
 pub enum ComicListKind {
     All,
-    Active { stages: Option<WorkflowStageMask> },
+    Active { stages: Option<StageMask> },
     Completed,
 }
 

@@ -15,7 +15,7 @@ use crate::part::effect::event::chapter::{
 };
 use crate::part::effect::event::user::UserSignedUpPayload;
 use crate::part_impl::repo_mock::{Mock, MockContext};
-use crate::value::chapter::{WorkflowStage, WorkflowStageMask};
+use crate::value::chapter::{Stage, StageMask};
 use crate::value::role::{RoleField, RoleMask};
 use time::OffsetDateTime;
 
@@ -91,7 +91,7 @@ fn chapter_info() -> ChapterInfo {
         total_unit_count: 1,
         translated_unit_count: 0,
         proofread_unit_count: 0,
-        stages: WorkflowStageMask::try_from(0).ok().unwrap(),
+        stages: StageMask::try_from(0).ok().unwrap(),
         creator_id: "creator-user".to_string(),
         creator: None,
         created_at: time,
@@ -170,7 +170,7 @@ async fn develop_dispatches_chapter_workflow_completed() {
         &develop,
         Event::ChapterWorkflowCompleted(ChapterWorkflowCompletedPayload {
             chapter_id: "chapter-1".to_string(),
-            completed_stage: WorkflowStage::Translate,
+            completed_stage: Stage::Translate,
         }),
     )
     .await;

@@ -20,7 +20,7 @@ use crate::part::repo::step::chapter::{
 use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactional, expected, now};
 use crate::result::{RegularError, RegularResult};
-use crate::value::chapter::{ChapterInclOpt, WorkflowStageMask};
+use crate::value::chapter::{ChapterInclOpt, StageMask};
 use crate::value::incl::expand_incl_opts;
 
 impl ChapterRepo<MockContext> for Mock {}
@@ -90,7 +90,7 @@ fn create_chapter(state: &mut MockState, form: &ChapterForm) -> RegularResult<Ch
         total_unit_count: 0,
         translated_unit_count: 0,
         proofread_unit_count: 0,
-        stages: WorkflowStageMask::try_from(0u32).ok().unwrap(),
+        stages: StageMask::try_from(0u32).ok().unwrap(),
         creator_id: form.creator_id.clone(),
         creator: None,
         created_at: time,

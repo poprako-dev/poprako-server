@@ -26,7 +26,7 @@ use crate::part_impl::repo_rdb::entity::comic::{ComicAspect, ComicEntry, ComicRo
 use crate::part_impl::repo_rdb::incl;
 use crate::part_impl::repo_rdb::{RdbRepo, RdbRepoTransactional};
 use crate::result::{RegularError, RegularResult};
-use crate::value::chapter::{StagePhase, WorkflowStage, WorkflowStageMask};
+use crate::value::chapter::{Stage, StageMask, StagePhase};
 use crate::value::comic::ComicInclOpt;
 use crate::value::index::user_index_to_stored_index;
 
@@ -65,25 +65,19 @@ fn two_step_predicate(started_column: &str, completed_column: &str, phase: Stage
     }
 }
 
-fn stage_predicate(stage: WorkflowStage, phase: StagePhase) -> String {
+fn stage_predicate(stage: Stage, phase: StagePhase) -> String {
     match stage {
-        WorkflowStage::RawProvide => one_shot_predicate("f_uploaded_at", phase).into(),
-        WorkflowStage::Translate => {
-            two_step_predicate("f_translating_at", "f_translated_at", phase)
-        }
-        WorkflowStage::Proofread => {
-            two_step_predicate("f_proofreading_at", "f_proofread_at", phase)
-        }
-        WorkflowStage::TypesetRedraw => {
-            two_step_predicate("f_typesetting_at", "f_typeset_at", phase)
-        }
-        WorkflowStage::Review => one_shot_predicate("f_reviewed_at", phase).into(),
-        WorkflowStage::Publish => one_shot_predicate("f_published_at", phase).into(),
+        Stage::RawProvide => one_shot_predicate("f_uploaded_at", phase).into(),
+        Stage::Translate => two_step_predicate("f_translating_at", "f_translated_at", phase),
+        Stage::Proofread => two_step_predicate("f_proofreading_at", "f_proofread_at", phase),
+        Stage::TypesetRedraw => two_step_predicate("f_typesetting_at", "f_typeset_at", phase),
+        Stage::Review => one_shot_predicate("f_reviewed_at", phase).into(),
+        Stage::Publish => one_shot_predicate("f_published_at", phase).into(),
     }
 }
 
-fn workflow_filter_sql(stage_mask: WorkflowStageMask) -> Option<String> {
-    let predicates = WorkflowStageMask::stages()
+fn workflow_filter_sql(stage_mask: StageMask) -> Option<String> {
+    let predicates = StageMask::stages()
         .iter()
         .filter(|stage| !stage_mask.ignores_stage(**stage))
         .map(|stage| stage_predicate(*stage, stage_mask.get_phase(*stage)))

@@ -27,7 +27,7 @@ use crate::result::ExpectedVariant;
 use crate::test_util::{
     assert_expected_message, assert_expected_variant, assert_one_image_check_record,
 };
-use crate::value::chapter::WorkflowStageMask;
+use crate::value::chapter::StageMask;
 use crate::value::role::{RoleField, RoleMask};
 
 fn token(user_id: &str) -> UserToken {
@@ -92,7 +92,7 @@ fn chapter(id: &str, comic_id: &str, page_count: i32) -> ChapterInfo {
         total_unit_count: 7,
         translated_unit_count: 5,
         proofread_unit_count: 3,
-        stages: WorkflowStageMask::try_from(0u32).ok().unwrap(),
+        stages: StageMask::try_from(0u32).ok().unwrap(),
         creator_id: "user-1".into(),
         creator: None,
         created_at: time,
