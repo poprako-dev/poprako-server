@@ -88,8 +88,8 @@ description: All 70 formatting/naming/structural rules across every poprako-r la
 
 ## J. i18n (2 rules)
 
-35. **Keys in kebab-case with `error-` prefix**: `error-user-not-found`.
-36. **Every `trl("error-xxx")` key must exist in both** `locales/en-US/main.ftl` and `locales/zh-CN/main.ftl`.
+35. **Literal i18n keys in kebab-case**. Expected error messages use `error-`; non-error messages keep their domain prefix, such as `mail-`.
+36. **Every literal `trl(...)` / `trl_kv(...)` key must exist in both** `locales/en-US/main.ftl` and `locales/zh-CN/main.ftl`.
 
 ---
 

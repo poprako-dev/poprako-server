@@ -5,7 +5,7 @@ use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 
 use crate::model::system_mail::{SystemMailForm, SystemMailInfo};
-use crate::part::repo::step::system_mail::{ListInfosByReceiverId, MarkRead, Send};
+use crate::part::repo::step::system_mail::{ListInfosByReceiverId, MarkRead, Send, SendBatch};
 use crate::part::repo::system_mail::{SystemMailRepo, SystemMailRepoTransactional};
 use crate::part::shared::execute::Execute;
 use crate::part_impl::rdb_core::RdbConn;
@@ -35,19 +35,17 @@ async fn send(conn: &mut RdbConn, form: &SystemMailForm) -> RegularResult<()> {
     Ok(())
 }
 
-// async fn send_batch(conn: &mut RdbConn, forms: &[SystemMailForm]) -> RegularResult<()> {
-//     let entries: Vec<SystemMailEntry<'_>> = forms.iter().map(SystemMailEntry::from).collect();
-//
-//     diesel::insert_into(t_system_mail)
-//         .values(&entries)
-//         .execute(conn)
-//         .await
-//         .map_err(diesel)?;
-//
-//     Ok(())
-// }
+async fn send_batch(conn: &mut RdbConn, forms: &[SystemMailForm]) -> RegularResult<()> {
+    let entries: Vec<SystemMailEntry<'_>> = forms.iter().map(SystemMailEntry::from).collect();
 
-// FIXME: list should have ONLY ONE ENTRY!!!!
+    diesel::insert_into(t_system_mail)
+        .values(&entries)
+        .execute(conn)
+        .await
+        .map_err(diesel)?;
+
+    Ok(())
+}
 
 async fn list_infos(
     conn: &mut RdbConn,
@@ -114,14 +112,14 @@ impl<'a> Execute<Send<'a>> for RdbRepo {
     }
 }
 
-// #[async_trait]
-// impl<'a> Execute<SendBatch<'a>> for RdbRepo {
-//     type Error = RegularError;
-//
-//     async fn execute(&self, step: &SendBatch<'a>) -> RegularResult<()> {
-//         submit_query!(self.core, send_batch, step.forms)
-//     }
-// }
+#[async_trait]
+impl<'a> Execute<SendBatch<'a>> for RdbRepo {
+    type Error = RegularError;
+
+    async fn execute(&self, step: &SendBatch<'a>) -> RegularResult<()> {
+        submit_query!(self.core, send_batch, step.forms)
+    }
+}
 
 #[async_trait]
 impl<'a> Execute<ListInfosByReceiverId<'a>> for RdbRepo {

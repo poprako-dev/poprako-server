@@ -9,6 +9,11 @@ use crate::data::chapter::{
 use crate::model::assignment::AssignmentForm;
 use crate::model::chapter::{ChapterForm, ChapterInfoUpdate, ChapterListSpec};
 use crate::model::user::UserToken;
+use crate::part::effect::event::Event;
+use crate::part::effect::event::chapter::{
+    ChapterPublishedPayload, ChapterWorkflowCompletedPayload, ChapterWorkflowRevertedPayload,
+};
+use crate::part::effect::{EffectDevelop, EffectEmit as _};
 use crate::part::image::ImagePool;
 use crate::part::prom::Prom;
 use crate::part::repo::assignment::{AssignmentRepo, AssignmentRepoTransactional};
@@ -270,10 +275,11 @@ where
 }
 
 /// Updates chapter workflow state.
-pub async fn update_stage<D, C, R, P>(
+pub async fn update_stage<D, C, R, P, V>(
     drive: &D,
     repo: &R,
     prom: &P,
+    develop: &V,
     token: UserToken,
     data: UpdateChapterStageData,
 ) -> RegularResult<()>
@@ -289,6 +295,7 @@ where
         + Send
         + Sync,
     P: Prom<C> + Send + Sync,
+    V: EffectDevelop + Send + Sync,
 {
     use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
@@ -301,7 +308,7 @@ where
     )
     .await?;
 
-    drive
+    let events = drive
         .with_context(async move |context| {
             let repo = repo.derive_transactional().await;
 
@@ -315,11 +322,29 @@ where
             let was_published =
                 chapter_info.stages.get_phase(WorkflowStage::Publish) == StagePhase::Completed;
 
+            let previous_phase = chapter_info.stages.get_phase(data.stage);
+
             let chapter_stage_update =
                 ChapterComplex::build_stage_update(&chapter_info, data.stage, data.event)?;
 
+            let next_phase = chapter_stage_update.stages.get_phase(data.stage);
+
             repo.advance(context, &ChapterStep::update_stage(&chapter_stage_update))
                 .await?;
+
+            let mut events = Vec::new();
+
+            if data.event == WorkflowEvent::Advance
+                && previous_phase != StagePhase::Completed
+                && next_phase == StagePhase::Completed
+            {
+                events.push(Event::ChapterWorkflowCompleted(
+                    ChapterWorkflowCompletedPayload {
+                        chapter_id: chapter_info.id.clone(),
+                        completed_stage: data.stage,
+                    },
+                ));
+            }
 
             if data.stage == WorkflowStage::Publish
                 && data.event == WorkflowEvent::Advance
@@ -330,6 +355,19 @@ where
             {
                 ChapterComplex::clean_uploaded_images(&repo, prom, context, &chapter_info.id)
                     .await?;
+
+                events.push(Event::ChapterPublished(ChapterPublishedPayload {
+                    chapter_id: chapter_info.id.clone(),
+                }));
+            }
+
+            if data.event == WorkflowEvent::Revert && previous_phase != next_phase {
+                events.push(Event::ChapterWorkflowReverted(
+                    ChapterWorkflowRevertedPayload {
+                        chapter_id: chapter_info.id.clone(),
+                        reverted_stage: data.stage,
+                    },
+                ));
             }
 
             repo.advance(
@@ -338,10 +376,12 @@ where
             )
             .await?;
 
-            accept(())
+            accept(events)
         })
         .await
         .map_err(map_drive_err)?;
+
+    events.emit(develop).await;
 
     accept(())
 }

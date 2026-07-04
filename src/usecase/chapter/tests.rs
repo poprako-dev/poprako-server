@@ -394,6 +394,7 @@ async fn update_stage_workflow_role_advances_stage() {
         &mock,
         &mock,
         &mock,
+        &mock,
         token("user-1"),
         UpdateChapterStageData {
             id: "chapter-1".into(),
@@ -434,6 +435,7 @@ async fn update_stage_rejects_invalid_transition() {
         &mock,
         &mock,
         &mock,
+        &mock,
         token("user-1"),
         UpdateChapterStageData {
             id: "chapter-1".into(),
@@ -464,6 +466,7 @@ async fn update_stage_publish_enqueues_page_image_delete() {
         &mock,
         &mock,
         &mock,
+        &mock,
         token("user-1"),
         UpdateChapterStageData {
             id: "chapter-1".into(),
@@ -484,6 +487,14 @@ async fn update_stage_publish_enqueues_page_image_delete() {
     assert_eq!(object_key, "page-1.png");
     assert_eq!(snapshot.pages[0].image_key.as_deref(), Some("page-1.png"));
     assert!(snapshot.pages[0].image_uploaded);
+
+    let events = mock.drain_events();
+
+    assert_eq!(events.len(), 2);
+
+    assert!(matches!(events[0], Event::ChapterWorkflowCompleted(_)));
+
+    assert!(matches!(events[1], Event::ChapterPublished(_)));
 }
 
 #[tokio::test]

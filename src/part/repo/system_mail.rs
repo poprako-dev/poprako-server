@@ -4,7 +4,7 @@
 //! and reads — the transactional [`SystemMailRepoTransactional`] exists
 //! only as a type-system anchor to keep the repo trait pattern consistent.
 
-use crate::part::repo::step::system_mail::{ListInfosByReceiverId, MarkRead, Send};
+use crate::part::repo::step::system_mail::{ListInfosByReceiverId, MarkRead, Send, SendBatch};
 use crate::part::shared::execute::Execute;
 use crate::result::RegularError;
 use crate::util::DeriveTransactional;
@@ -16,7 +16,7 @@ use crate::util::DeriveTransactional;
 pub trait SystemMailRepo<C>:
     DeriveTransactional
     + for<'a> Execute<Send<'a>, Error = RegularError>
-    // + for<'a> Execute<SendBatch<'a>, Error = RegularError>
+    + for<'a> Execute<SendBatch<'a>, Error = RegularError>
     + for<'a> Execute<ListInfosByReceiverId<'a>, Error = RegularError>
     + for<'a> Execute<MarkRead<'a>, Error = RegularError>
 where

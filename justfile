@@ -33,6 +33,18 @@ check-fix:
         && cargo check \
         && cargo clippy --fix --lib -p poprako-r --allow-dirty -- --no-deps
 
+prod-build:
+    scripts/docker-build-prod.sh
+
+prod-run:
+    scripts/local-run-release.sh
+
+prod-stop:
+    scripts/local-stop-release.sh
+
+prod-ci-build:
+    scripts/ci-build-prod.sh
+
 # ── Code Style Checks ──
 
 # Run all 20 code style checks
