@@ -1,9 +1,10 @@
-//! HTTP boundary result types: success body wrapper, error envelope, and the
+//! HTTP boundary result types: success envelope, error envelope, and the
 //! `Accept` trait that turns a usecase value into a valued response.
 //!
-//! Valued success responses serialize the usecase value directly as the body
-//! (`HttpBody<T>`). Empty success responses use [`NoContent`] to emit a
-//! `204 No Content` with no body. Errors are propagated as [`HttpError`].
+//! Valued success responses serialize as [`HttpBody<T>`], the standard JSON
+//! envelope containing `code` and `data`. Empty success responses use
+//! [`NoContent`] to emit a `204 No Content` with no body. Errors are propagated
+//! as [`HttpError`].
 
 use std::num::NonZeroU16;
 
@@ -118,13 +119,21 @@ impl IntoResponse for HttpError {
 
 /// Success response body wrapping a usecase value.
 ///
-/// Serializes the inner value directly (no envelope); carries HTTP metadata
-/// such as status code, extra headers, and `Set-Cookie` values that are not
-/// part of the JSON body.
+/// Serializes as the standard JSON success envelope. HTTP metadata such as
+/// status code, extra headers, and `Set-Cookie` values are not part of the JSON
+/// body.
+#[derive(Debug, Serialize, ToSchema)]
 pub struct HttpBody<T> {
+    #[serde(skip)]
+    #[schema(ignore)]
     status: StatusCode,
 
+    #[serde(skip)]
+    #[schema(ignore)]
     headers: HeaderMap,
+
+    #[schema(value_type = u16, example = 0)]
+    code: u16,
 
     data: T,
 }
@@ -135,6 +144,7 @@ impl<T> HttpBody<T> {
         Self {
             status,
             headers: HeaderMap::new(),
+            code: 0,
             data,
         }
     }
@@ -168,9 +178,9 @@ where
     fn into_response(self) -> Response {
         let status = self.status;
 
-        let headers = self.headers;
+        let headers = self.headers.clone();
 
-        let mut response = (status, Json(self.data)).into_response();
+        let mut response = (status, Json(self)).into_response();
 
         response.headers_mut().extend(headers);
 
@@ -255,4 +265,30 @@ where
 
 pub fn no_content() -> StdResult<NoContent, HttpError> {
     Ok(NoContent::new())
+}
+
+#[cfg(test)]
+mod tests {
+    // http_body_serializes_success_envelope(HttpBody)(positive): emits code zero and data.
+
+    use super::*;
+
+    use serde_json::json;
+
+    #[test]
+    fn http_body_serializes_success_envelope() {
+        let http_body = HttpBody::new(StatusCode::CREATED, json!({ "id": "comic_1" }));
+
+        let serialized = serde_json::to_value(http_body).expect("http body serializes");
+
+        assert_eq!(
+            serialized,
+            json!({
+                "code": 0,
+                "data": {
+                    "id": "comic_1",
+                },
+            }),
+        );
+    }
 }

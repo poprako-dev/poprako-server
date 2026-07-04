@@ -17,6 +17,7 @@ use serde::Deserialize;
 use tracing::instrument;
 
 use crate::api::http::result::Accept as _;
+use crate::api::http::result::HttpBody;
 use crate::api::http::result::HttpError;
 use crate::api::http::result::HttpResult;
 use crate::api::http::state::AppHarn;
@@ -41,7 +42,7 @@ pub struct TranslationExportQuery {
     params(("chapter_id" = String, Path, description = "Chapter ID")),
     request_body = ChapterTranslationImportData,
     responses(
-        (status = 200, description = "Translations imported", body = ChapterTranslationImportVal),
+        (status = 200, description = "Translations imported", body = HttpBody<ChapterTranslationImportVal>),
         (status = 403, description = "No permission to import into this chapter"),
         (status = 400, description = "Invalid import content for the selected format"),
     ),
@@ -73,7 +74,7 @@ pub async fn import(
         ("format" = TranslationFormat, Query, description = "Export format: poprako or label-plus"),
     ),
     responses(
-        (status = 200, description = "PopRaKo translation export", body = ChapterTranslationExportVal, content_type = "application/json"),
+        (status = 200, description = "PopRaKo translation export", body = HttpBody<ChapterTranslationExportVal>, content_type = "application/json"),
         (status = 200, description = "LabelPlus translation export", content_type = "text/plain"),
         (status = 403, description = "No permission to export this chapter"),
     ),

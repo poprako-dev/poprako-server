@@ -12,6 +12,7 @@ use tracing::instrument;
 use crate::api::http::handler::util::Pagination;
 use crate::api::http::handler::util::ensure_path_matches_body_id;
 use crate::api::http::result::Accept as _;
+use crate::api::http::result::HttpBody;
 use crate::api::http::result::HttpNoContent;
 use crate::api::http::result::HttpResult;
 use crate::api::http::result::no_content;
@@ -30,7 +31,7 @@ use crate::usecase;
     tag = "pages",
     params(("chapter_id" = String, Path, description = "Chapter ID"), Pagination),
     responses(
-        (status = 200, description = "Pages listed", body = Vec<PageInfoVal>),
+        (status = 200, description = "Pages listed", body = HttpBody<Vec<PageInfoVal>>),
         (status = 403, description = "No permission to list pages in this chapter"),
     ),
 )]
@@ -88,7 +89,7 @@ pub async fn delete(
     params(("chapter_id" = String, Path, description = "Chapter ID")),
     request_body = ReserveChapterPagesData,
     responses(
-        (status = 200, description = "Page upload slots reserved", body = ReserveChapterPagesVal),
+        (status = 200, description = "Page upload slots reserved", body = HttpBody<ReserveChapterPagesVal>),
         (status = 422, description = "Path id does not match body chapter id"),
         (status = 403, description = "No permission to reserve pages in this chapter"),
         (status = 400, description = "Chapter already has pages or invalid page count"),
@@ -124,7 +125,7 @@ pub async fn reserve_chapter_pages(
     params(("page_id" = String, Path, description = "Page ID")),
     request_body = ReservePageImageData,
     responses(
-        (status = 200, description = "Page image upload URL reserved", body = ReservePageImageVal),
+        (status = 200, description = "Page image upload URL reserved", body = HttpBody<ReservePageImageVal>),
         (status = 403, description = "No permission to modify this page's image"),
         (status = 404, description = "Page not found"),
     ),

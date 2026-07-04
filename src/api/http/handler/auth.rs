@@ -10,6 +10,7 @@ use tracing::instrument;
 
 use crate::api::http::auth_token::AUTH_COOKIE_NAME;
 use crate::api::http::result::Accept as _;
+use crate::api::http::result::HttpBody;
 use crate::api::http::result::HttpNoContent;
 use crate::api::http::result::HttpResult;
 use crate::api::http::result::no_content;
@@ -36,7 +37,7 @@ fn auth_cookie(token: &str) -> Cookie<'static> {
     tag = "auth",
     request_body = RegisterData,
     responses(
-        (status = 201, description = "Registration successful, sets auth cookie", body = RegisterVal),
+        (status = 201, description = "Registration successful, sets auth cookie", body = HttpBody<RegisterVal>),
         (status = 400, description = "Invalid request parameters"),
         (status = 401, description = "Invalid invitation code"),
     ),
@@ -67,7 +68,7 @@ pub async fn register(
     tag = "auth",
     request_body = LoginData,
     responses(
-        (status = 200, description = "Login successful, sets auth cookie", body = LoginVal),
+        (status = 200, description = "Login successful, sets auth cookie", body = HttpBody<LoginVal>),
         (status = 401, description = "Invalid credentials"),
     ),
 )]

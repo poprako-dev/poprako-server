@@ -12,6 +12,7 @@ use tracing::instrument;
 use crate::api::http::handler::util::Pagination;
 use crate::api::http::handler::util::ensure_path_matches_body_id;
 use crate::api::http::result::Accept as _;
+use crate::api::http::result::HttpBody;
 use crate::api::http::result::HttpResult;
 use crate::api::http::state::AppHarn;
 use crate::data::unit::{
@@ -27,7 +28,7 @@ use crate::usecase;
     tag = "units",
     params(("page_id" = String, Path, description = "Page ID"), Pagination),
     responses(
-        (status = 200, description = "Units listed", body = ListPageUnitInfosVal),
+        (status = 200, description = "Units listed", body = HttpBody<ListPageUnitInfosVal>),
         (status = 403, description = "No permission to list units in this page"),
         (status = 404, description = "Page not found"),
     ),
@@ -58,7 +59,7 @@ pub async fn list_infos(
     params(("page_id" = String, Path, description = "Page ID")),
     request_body = SavePageUnitsData,
     responses(
-        (status = 200, description = "Units saved", body = SavePageUnitsVal),
+        (status = 200, description = "Units saved", body = HttpBody<SavePageUnitsVal>),
         (status = 422, description = "Path id does not match body page id or diff page id"),
         (status = 403, description = "No permission to save units in this page"),
         (status = 400, description = "Invalid unit oper"),

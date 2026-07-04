@@ -9,6 +9,7 @@ use axum::http::StatusCode;
 use tracing::instrument;
 
 use crate::api::http::result::Accept as _;
+use crate::api::http::result::HttpBody;
 use crate::api::http::result::HttpNoContent;
 use crate::api::http::result::HttpResult;
 use crate::api::http::result::no_content;
@@ -24,7 +25,7 @@ use crate::usecase;
     tag = "system-mails",
     params(ListSystemMailData),
     responses(
-        (status = 200, description = "System mails listed", body = Vec<SystemMailVal>),
+        (status = 200, description = "System mails listed", body = HttpBody<Vec<SystemMailVal>>),
         (status = 401, description = "Authentication required"),
     ),
 )]

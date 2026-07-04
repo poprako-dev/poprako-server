@@ -11,6 +11,7 @@ use tracing::instrument;
 use crate::api::http::handler::util::ensure_current_user;
 use crate::api::http::handler::util::ensure_path_matches_body_id;
 use crate::api::http::result::Accept as _;
+use crate::api::http::result::HttpBody;
 use crate::api::http::result::HttpNoContent;
 use crate::api::http::result::HttpResult;
 use crate::api::http::result::no_content;
@@ -28,7 +29,7 @@ use crate::usecase;
     path = "/api/v1/users/me",
     tag = "users",
     responses(
-        (status = 200, description = "Current user profile", body = UserInfoVal),
+        (status = 200, description = "Current user profile", body = HttpBody<UserInfoVal>),
         (status = 401, description = "Authentication required"),
     ),
 )]
@@ -58,7 +59,7 @@ pub async fn get_my_info(
     tag = "users",
     params(("user_id" = String, Path, description = "Target user ID")),
     responses(
-        (status = 200, description = "User profile retrieved", body = UserInfoVal),
+        (status = 200, description = "User profile retrieved", body = HttpBody<UserInfoVal>),
         (status = 401, description = "Authentication required"),
         (status = 404, description = "User not found"),
     ),
@@ -138,7 +139,7 @@ pub async fn delete(
     params(("user_id" = String, Path, description = "Target user ID (must match authenticated user)")),
     request_body = ReserveUserAvatarData,
     responses(
-        (status = 200, description = "Avatar upload URL reserved", body = ReserveUserAvatarVal),
+        (status = 200, description = "Avatar upload URL reserved", body = HttpBody<ReserveUserAvatarVal>),
         (status = 403, description = "Cannot modify another user's avatar"),
     ),
 )]

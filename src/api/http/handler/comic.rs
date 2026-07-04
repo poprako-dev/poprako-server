@@ -15,6 +15,7 @@ use utoipa::IntoParams;
 
 use crate::api::http::handler::util::ensure_path_matches_body_id;
 use crate::api::http::result::Accept as _;
+use crate::api::http::result::HttpBody;
 use crate::api::http::result::HttpNoContent;
 use crate::api::http::result::HttpResult;
 use crate::api::http::result::no_content;
@@ -78,7 +79,7 @@ pub struct ComicListQuery {
     tag = "comics",
     request_body = CreateComicData,
     responses(
-        (status = 201, description = "Comic created", body = CreateComicVal),
+        (status = 201, description = "Comic created", body = HttpBody<CreateComicVal>),
         (status = 403, description = "No permission to create comics in this workset"),
         (status = 404, description = "Workset not found"),
     ),
@@ -101,7 +102,7 @@ pub async fn create(
     description = "Lists comics in a workset with optional title, completion, and stage filters. `is_completed=true` must not be combined with `stages`; `is_completed=false` or omitting `is_completed` allows `stages`. `incl` embeds related rows, `with` attaches derived rows. Example: `/api/v1/worksets/{workset_id}/comics?is_completed=false&stages=6&incl=workset.team&incl=creator&with=pinned_chapter&offset=0&limit=20`.",
     params(("workset_id" = String, Path, description = "Workset ID"), ComicListQuery),
     responses(
-        (status = 200, description = "Comics listed", body = Vec<ComicInfoVal>),
+        (status = 200, description = "Comics listed", body = HttpBody<Vec<ComicInfoVal>>),
         (status = 403, description = "No permission to list comics in this workset"),
         (status = 422, description = "Invalid argument combination (e.g. is_completed=true with stages)"),
     ),
@@ -137,7 +138,7 @@ pub async fn list_infos(
     tag = "comics",
     params(("comic_id" = String, Path, description = "Comic ID")),
     responses(
-        (status = 200, description = "Comic info retrieved", body = ComicInfoVal),
+        (status = 200, description = "Comic info retrieved", body = HttpBody<ComicInfoVal>),
         (status = 403, description = "No permission to view this comic"),
         (status = 404, description = "Comic not found"),
     ),
@@ -190,7 +191,7 @@ pub async fn update_info(
     params(("comic_id" = String, Path, description = "Comic ID")),
     request_body = ReserveComicCoverData,
     responses(
-        (status = 200, description = "Cover upload URL reserved", body = ReserveComicCoverVal),
+        (status = 200, description = "Cover upload URL reserved", body = HttpBody<ReserveComicCoverVal>),
         (status = 403, description = "No permission to modify this comic's cover"),
         (status = 404, description = "Comic not found"),
     ),
