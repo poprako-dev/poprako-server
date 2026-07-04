@@ -25,6 +25,7 @@ pub fn ensure_path_matches_body_id(path_id: &str, body_id: &str) -> Result<(), H
     if path_id != body_id {
         return Err(HttpError::unprocessable("path id does not match body id"));
     }
+
     Ok(())
 }
 
@@ -38,5 +39,6 @@ pub fn ensure_current_user(path_user_id: &str, token: &UserToken) -> Result<(), 
             &trl("error-forbidden"),
         ));
     }
+
     Ok(())
 }

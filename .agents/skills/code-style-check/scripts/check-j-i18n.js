@@ -1,8 +1,8 @@
 #!/usr/bin/env bun
 // check-j-i18n.js — Rules 35-36: i18n checks
 //
-//   Rule 35: Keys in kebab-case with error- prefix: "error-user-not-found".
-//   Rule 36: Every trl("error-xxx") key must exist in BOTH locales/en-US/main.ftl and locales/zh-CN/main.ftl.
+//   Rule 35: Literal i18n keys must be kebab-case.
+//   Rule 36: Every literal trl/trl_kv key must exist in BOTH locales/en-US/main.ftl and locales/zh-CN/main.ftl.
 
 import { readFileSync, existsSync } from "node:fs";
 import { globSync } from "node:fs";
@@ -15,8 +15,8 @@ const ZH_FTL = resolve(ROOT, "poprako-util/locales/zh-CN/main.ftl");
 
 let violations = 0;
 
-// Extract trl("...") keys
-const TRL_KEY_RE = /trl\s*\(\s*"([^"]+)"/g;
+// Extract literal trl("...") and trl_kv("...") keys.
+const TRL_KEY_RE = /trl(?:_kv)?\s*\(\s*"([^"]+)"/g;
 
 function extractTrlKeys(filePath) {
   const content = readFileSync(filePath, "utf-8");
@@ -52,13 +52,13 @@ for (const f of files) {
   for (const k of keys) allKeys.add(k);
 }
 
-// ---- Rule 35: kebab-case with error- prefix ----
+// ---- Rule 35: kebab-case literal keys ----
 for (const key of allKeys) {
   // Skip keys that are clearly format patterns (may contain {})
   if (key.includes("{")) continue;
 
-  if (!/^error-[a-z0-9]+(-[a-z0-9]+)*$/.test(key)) {
-    console.log(`Rule 35: key "${key}" is not in kebab-case with error- prefix`);
+  if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(key)) {
+    console.log(`Rule 35: key "${key}" is not kebab-case`);
     violations++;
   }
 }

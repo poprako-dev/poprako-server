@@ -197,8 +197,15 @@ pub async fn advance_stage(
 ) -> HttpNoContent {
     ensure_path_matches_body_id(&chapter_id, &data.id)?;
 
-    usecase::chapter::update_stage(harn.drive(), harn.repo(), harn.prom(), user_token, data)
-        .await?;
+    usecase::chapter::update_stage(
+        harn.drive(),
+        harn.repo(),
+        harn.prom(),
+        harn.develop(),
+        user_token,
+        data,
+    )
+    .await?;
 
     no_content()
 }

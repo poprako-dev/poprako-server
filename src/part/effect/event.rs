@@ -1,10 +1,14 @@
 //! Domain event types emitted during use case execution.
 
-// use std::vec::IntoIter;
-
-// use crate::part::effect::EventIter;
+use crate::part::effect::event::assignment::{AssignmentCreatedPayload, AssignmentRemovedPayload};
+use crate::part::effect::event::chapter::{
+    ChapterPublishedPayload, ChapterRemovedPayload, ChapterWorkflowCompletedPayload,
+    ChapterWorkflowRevertedPayload,
+};
 use crate::part::effect::event::user::{UserActivePayload, UserSignedUpPayload};
 
+pub mod assignment;
+pub mod chapter;
 pub mod user;
 
 /// Domain events produced by use cases and dispatched through [`EffectDevelop`].
@@ -17,32 +21,16 @@ pub enum Event {
     UserActive(UserActivePayload),
     /// Emitted when a new user signs up via an invitation.
     UserSignedUp(UserSignedUpPayload),
+    /// Emitted when an assignment is created.
+    AssignmentCreated(AssignmentCreatedPayload),
+    /// Emitted when an assignment is removed.
+    AssignmentRemoved(AssignmentRemovedPayload),
+    /// Emitted when a chapter reaches publish completion.
+    ChapterPublished(ChapterPublishedPayload),
+    /// Emitted when one chapter workflow stage reaches completion.
+    ChapterWorkflowCompleted(ChapterWorkflowCompletedPayload),
+    /// Emitted when one chapter workflow stage is reverted.
+    ChapterWorkflowReverted(ChapterWorkflowRevertedPayload),
+    /// Emitted when a chapter is removed.
+    ChapterRemoved(ChapterRemovedPayload),
 }
-
-// /// Collects [`Event`] values during a use case and flushes them in batch.
-// ///
-// /// Events are pushed into the buffer as the use case executes. After the
-// /// transaction commits, the buffer is drained into [`EffectDevelop::develop`]
-// /// via the [`EffectEmit::emit`] blanket implementation.
-// ///
-// /// [`EffectDevelop::develop`]: crate::part::effect::EffectDevelop::develop
-// /// [`EffectEmit::emit`]: crate::part::effect::EffectEmit::emit
-// #[derive(Default)]
-// pub struct EventBuffer {
-//     events: Vec<Event>,
-// }
-//
-// impl EventBuffer {
-//     /// Appends an event to the buffer.
-//     pub fn push(&mut self, event: Event) {
-//         self.events.push(event);
-//     }
-// }
-//
-// impl EventIter for EventBuffer {
-//     type Iter = IntoIter<Event>;
-//
-//     fn into_iter(self) -> Self::Iter {
-//         <Vec<Event> as IntoIterator>::into_iter(self.events)
-//     }
-// }

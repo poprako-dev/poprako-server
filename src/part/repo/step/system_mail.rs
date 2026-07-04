@@ -13,14 +13,14 @@ impl<'a> Step for Send<'a> {
     type Output = ();
 }
 
-// /// Step that inserts multiple system mail rows atomically.
-// pub struct SendBatch<'a> {
-//     pub forms: &'a [SystemMailForm],
-// }
-//
-// impl<'a> Step for SendBatch<'a> {
-//     type Output = ();
-// }
+/// Step that inserts multiple system mail rows atomically.
+pub struct SendBatch<'a> {
+    pub forms: &'a [SystemMailForm],
+}
+
+impl<'a> Step for SendBatch<'a> {
+    type Output = ();
+}
 
 /// Step that lists system mails with filters and pagination.
 pub struct ListInfosByReceiverId<'a> {
@@ -56,10 +56,10 @@ impl SystemMailStep {
         Send { form }
     }
 
-    // /// Constructs a step to insert multiple system mails atomically.
-    // pub fn send_batch<'a>(forms: &'a [SystemMailForm]) -> SendBatch<'a> {
-    //     SendBatch { forms }
-    // }
+    /// Constructs a step to insert multiple system mails atomically.
+    pub fn send_batch<'a>(forms: &'a [SystemMailForm]) -> SendBatch<'a> {
+        SendBatch { forms }
+    }
 
     /// Constructs a step to list system mails.
     pub fn list_infos<'a>(

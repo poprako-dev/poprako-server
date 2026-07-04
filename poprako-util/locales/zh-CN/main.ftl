@@ -65,5 +65,11 @@ chapter-default-subtitle = 第{ $number }话
 mail-invitation-used-title = 你的邀请码已被使用
 mail-invitation-used-body = 你的邀请码已被使用，「{$invitee_qid}」已加入汉化组「{$team_name}」
 
-error-invitation-used-title = 你的邀请码已被使用
-error-invitation-used-body = { $invitee_qid } 已接受您的邀请，加入 { $team_name }。
+mail-workflow-upload = 上传
+mail-workflow-translate = 翻译
+mail-workflow-proofread = 校对
+mail-workflow-typeset = 嵌字
+mail-workflow-review = 监修
+mail-workflow-publish = 发布
+mail-chapter-progress-title = 你参加的漫画『{ $comic_title }』#{ $chapter_index } 章节有进度更新
+mail-chapter-progress-body = 「{ $team_name }」-「{ $workset_name }」漫画 #{ $comic_index }『{ $comic_title }』章节 #{ $chapter_index }「{ $workflow }」已完成。

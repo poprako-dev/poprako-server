@@ -63,5 +63,11 @@ chapter-default-subtitle = Ch. { $number }
 mail-invitation-used-title = Your Invitation Code Has Been Used
 mail-invitation-used-body = Your invitation code has been used. "{$invitee_qid}" has joined the team "{$team_name}"
 
-error-invitation-used-title = Your invitation code has been used
-error-invitation-used-body = { $invitee_qid } has accepted your invitation to join { $team_name }.
+mail-workflow-upload = upload
+mail-workflow-translate = translation
+mail-workflow-proofread = proofread
+mail-workflow-typeset = typesetting
+mail-workflow-review = review
+mail-workflow-publish = publish
+mail-chapter-progress-title = Your assigned comic "{ $comic_title }" chapter #{ $chapter_index } has a progress update
+mail-chapter-progress-body = "{ $team_name }" - "{ $workset_name }" comic #{ $comic_index } "{ $comic_title }" chapter #{ $chapter_index } "{ $workflow }" is complete.
