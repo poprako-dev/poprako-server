@@ -17,27 +17,14 @@ use super::*;
 
 #[test]
 fn validates_one_shot_phases() {
-    assert!(is_valid_stage_phase(
-        WorkflowStage::RawProvide,
-        StagePhase::Pending
-    ));
-    assert!(is_valid_stage_phase(
-        WorkflowStage::Review,
-        StagePhase::Completed
-    ));
-    assert!(is_valid_stage_phase(
-        WorkflowStage::Publish,
-        StagePhase::Completed
-    ));
+    assert!(is_valid_stage_phase(Stage::RawProvide, StagePhase::Pending));
+    assert!(is_valid_stage_phase(Stage::Review, StagePhase::Completed));
+    assert!(is_valid_stage_phase(Stage::Publish, StagePhase::Completed));
 }
 
 #[test]
 fn validates_three_phase_phases() {
-    for stage in [
-        WorkflowStage::Translate,
-        WorkflowStage::Proofread,
-        WorkflowStage::TypesetRedraw,
-    ] {
+    for stage in [Stage::Translate, Stage::Proofread, Stage::TypesetRedraw] {
         assert!(is_valid_stage_phase(stage, StagePhase::Pending));
         assert!(is_valid_stage_phase(stage, StagePhase::Active));
         assert!(is_valid_stage_phase(stage, StagePhase::Completed));
@@ -46,25 +33,16 @@ fn validates_three_phase_phases() {
 
 #[test]
 fn rejects_active_one_shot_phase() {
-    assert!(!is_valid_stage_phase(
-        WorkflowStage::RawProvide,
-        StagePhase::Active
-    ));
-    assert!(!is_valid_stage_phase(
-        WorkflowStage::Review,
-        StagePhase::Active
-    ));
-    assert!(!is_valid_stage_phase(
-        WorkflowStage::Publish,
-        StagePhase::Active
-    ));
+    assert!(!is_valid_stage_phase(Stage::RawProvide, StagePhase::Active));
+    assert!(!is_valid_stage_phase(Stage::Review, StagePhase::Active));
+    assert!(!is_valid_stage_phase(Stage::Publish, StagePhase::Active));
 }
 
 #[test]
 fn advances_one_shot_stage() {
     let phase = try_modify_stage(
-        (WorkflowStage::RawProvide, StagePhase::Pending),
-        WorkflowEvent::Advance,
+        (Stage::RawProvide, StagePhase::Pending),
+        StageOper::Advance,
     )
     .ok()
     .unwrap();
@@ -75,14 +53,14 @@ fn advances_one_shot_stage() {
 #[test]
 fn advances_three_phase_stage() {
     let phase = try_modify_stage(
-        (WorkflowStage::Translate, StagePhase::Pending),
-        WorkflowEvent::Advance,
+        (Stage::Translate, StagePhase::Pending),
+        StageOper::Advance,
     )
     .ok()
     .unwrap();
     assert_eq!(phase, StagePhase::Active);
 
-    let phase = try_modify_stage((WorkflowStage::Translate, phase), WorkflowEvent::Advance)
+    let phase = try_modify_stage((Stage::Translate, phase), StageOper::Advance)
         .ok()
         .unwrap();
     assert_eq!(phase, StagePhase::Completed);
@@ -91,14 +69,14 @@ fn advances_three_phase_stage() {
 #[test]
 fn reverts_three_phase_stage() {
     let phase = try_modify_stage(
-        (WorkflowStage::Proofread, StagePhase::Completed),
-        WorkflowEvent::Revert,
+        (Stage::Proofread, StagePhase::Completed),
+        StageOper::Revert,
     )
     .ok()
     .unwrap();
     assert_eq!(phase, StagePhase::Active);
 
-    let phase = try_modify_stage((WorkflowStage::Proofread, phase), WorkflowEvent::Revert)
+    let phase = try_modify_stage((Stage::Proofread, phase), StageOper::Revert)
         .ok()
         .unwrap();
     assert_eq!(phase, StagePhase::Pending);
@@ -107,8 +85,8 @@ fn reverts_three_phase_stage() {
 #[test]
 fn accepts_pending_revert_noop() {
     let phase = try_modify_stage(
-        (WorkflowStage::TypesetRedraw, StagePhase::Pending),
-        WorkflowEvent::Revert,
+        (Stage::TypesetRedraw, StagePhase::Pending),
+        StageOper::Revert,
     )
     .ok()
     .unwrap();
@@ -119,8 +97,8 @@ fn accepts_pending_revert_noop() {
 #[test]
 fn rejects_publish_revert() {
     let err = try_modify_stage(
-        (WorkflowStage::Publish, StagePhase::Completed),
-        WorkflowEvent::Revert,
+        (Stage::Publish, StagePhase::Completed),
+        StageOper::Revert,
     )
     .err();
 
@@ -130,8 +108,8 @@ fn rejects_publish_revert() {
 #[test]
 fn rejects_completed_advance() {
     let err = try_modify_stage(
-        (WorkflowStage::Translate, StagePhase::Completed),
-        WorkflowEvent::Advance,
+        (Stage::Translate, StagePhase::Completed),
+        StageOper::Advance,
     )
     .err();
 
@@ -142,7 +120,7 @@ fn rejects_completed_advance() {
 fn rejects_active_one_shot_mask() {
     let active_raw_provide_mask = 0b01;
 
-    let err = WorkflowStageMask::try_from(active_raw_provide_mask).err();
+    let err = StageMask::try_from(active_raw_provide_mask).err();
 
     assert!(err.is_some());
 }
@@ -151,7 +129,7 @@ fn rejects_active_one_shot_mask() {
 fn rejects_ignore_regular_mask() {
     let ignore_translate_mask = 0b11 << 2;
 
-    let err = WorkflowStageMask::try_from(ignore_translate_mask).err();
+    let err = StageMask::try_from(ignore_translate_mask).err();
 
     assert!(err.is_some());
 }
@@ -160,29 +138,27 @@ fn rejects_ignore_regular_mask() {
 fn accepts_ignore_filter_mask() {
     let ignore_translate_mask = 0b11 << 2;
 
-    let mask = WorkflowStageMask::try_filter_from(ignore_translate_mask)
+    let mask = StageMask::try_filter_from(ignore_translate_mask)
         .ok()
         .unwrap();
 
-    assert!(mask.ignores_stage(WorkflowStage::Translate));
+    assert!(mask.ignores_stage(Stage::Translate));
 }
 
 #[test]
 fn rejects_active_one_shot_filter_mask() {
     let active_review_mask = 0b01 << 8;
 
-    let err = WorkflowStageMask::try_filter_from(active_review_mask).err();
+    let err = StageMask::try_filter_from(active_review_mask).err();
 
     assert!(err.is_some());
 }
 
 #[test]
 fn rejects_invalid_set_phase() {
-    let mask = WorkflowStageMask::try_from(0u32).ok().unwrap();
+    let mask = StageMask::try_from(0u32).ok().unwrap();
 
-    let err = mask
-        .try_set_phase(WorkflowStage::Publish, StagePhase::Active)
-        .err();
+    let err = mask.try_set_phase(Stage::Publish, StagePhase::Active).err();
 
     assert!(err.is_some());
 }

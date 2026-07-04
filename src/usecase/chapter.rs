@@ -28,7 +28,7 @@ use crate::part::repo::step::comic::ComicStep;
 use crate::part::repo::workset::{WorksetRepo, WorksetRepoTransactional};
 use crate::result::{RegularError, RegularResult, accept};
 use crate::util::DeriveTransactional;
-use crate::value::chapter::{StagePhase, WorkflowEvent, WorkflowStage};
+use crate::value::chapter::{Stage, StagePhase, StageOper};
 use crate::value::role::{RoleField, RoleMask};
 use poprako_transactional::advance::Advance;
 use poprako_transactional::drive::Drive;
@@ -304,7 +304,7 @@ where
         &token.user_id,
         &data.id,
         data.stage,
-        data.event,
+        data.oper,
     )
     .await?;
 
@@ -320,12 +320,12 @@ where
                 .await?;
 
             let was_published =
-                chapter_info.stages.get_phase(WorkflowStage::Publish) == StagePhase::Completed;
+                chapter_info.stages.get_phase(Stage::Publish) == StagePhase::Completed;
 
             let previous_phase = chapter_info.stages.get_phase(data.stage);
 
             let chapter_stage_update =
-                ChapterComplex::build_stage_update(&chapter_info, data.stage, data.event)?;
+                ChapterComplex::build_stage_update(&chapter_info, data.stage, data.oper)?;
 
             let next_phase = chapter_stage_update.stages.get_phase(data.stage);
 
@@ -334,7 +334,7 @@ where
 
             let mut events = Vec::new();
 
-            if data.event == WorkflowEvent::Advance
+            if data.oper == StageOper::Advance
                 && previous_phase != StagePhase::Completed
                 && next_phase == StagePhase::Completed
             {
@@ -346,12 +346,12 @@ where
                 ));
             }
 
-            if data.stage == WorkflowStage::Publish
-                && data.event == WorkflowEvent::Advance
+            if data.stage == Stage::Publish
+                && data.oper == StageOper::Advance
                 && !was_published
                 && chapter_stage_update
                     .stages
-                    .has_phase(WorkflowStage::Publish, StagePhase::Completed)
+                    .has_phase(Stage::Publish, StagePhase::Completed)
             {
                 ChapterComplex::clean_uploaded_images(&repo, prom, context, &chapter_info.id)
                     .await?;
@@ -361,7 +361,7 @@ where
                 }));
             }
 
-            if data.event == WorkflowEvent::Revert && previous_phase != next_phase {
+            if data.oper == StageOper::Revert && previous_phase != next_phase {
                 events.push(Event::ChapterWorkflowReverted(
                     ChapterWorkflowRevertedPayload {
                         chapter_id: chapter_info.id.clone(),

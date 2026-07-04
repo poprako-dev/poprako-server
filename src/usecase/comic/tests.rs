@@ -40,7 +40,7 @@ use crate::test_util::{
     assert_expected_message, assert_expected_variant, assert_one_image_check_record,
 };
 use crate::usecase::team::tests::workset;
-use crate::value::chapter::{StagePhase, WorkflowStage, WorkflowStageMask};
+use crate::value::chapter::{Stage, StageMask, StagePhase};
 use crate::value::role::{RoleField, RoleMask};
 
 fn comic(id: &str, workset_id: &str, index: i32) -> ComicInfo {
@@ -78,7 +78,7 @@ fn comic_with_uploaded_cover(id: &str, workset_id: &str, cover_key: &str) -> Com
     }
 }
 
-fn chapter(id: &str, comic_id: &str, stage_mask: WorkflowStageMask) -> ChapterInfo {
+fn chapter(id: &str, comic_id: &str, stage_mask: StageMask) -> ChapterInfo {
     let time = OffsetDateTime::now_utc();
 
     ChapterInfo {
@@ -415,10 +415,10 @@ async fn list_infos_filters_by_pinned_chapter_stages() {
     mock.seed_comic(comic("comic-active", "workset-1", 0));
     mock.seed_comic(comic("comic-pending", "workset-1", 1));
 
-    let completed_translate_mask = WorkflowStageMask::try_from(0u32)
+    let completed_translate_mask = StageMask::try_from(0u32)
         .ok()
         .unwrap()
-        .try_set_phase(WorkflowStage::Translate, StagePhase::Completed)
+        .try_set_phase(Stage::Translate, StagePhase::Completed)
         .ok()
         .unwrap();
 
@@ -430,13 +430,13 @@ async fn list_infos_filters_by_pinned_chapter_stages() {
     mock.seed_chapter(chapter(
         "chapter-pending",
         "comic-pending",
-        WorkflowStageMask::try_from(0u32).ok().unwrap(),
+        StageMask::try_from(0u32).ok().unwrap(),
     ));
 
-    let filter_mask = WorkflowStageMask::try_filter_from(0u32)
+    let filter_mask = StageMask::try_filter_from(0u32)
         .ok()
         .unwrap()
-        .try_set_phase(WorkflowStage::Translate, StagePhase::Completed)
+        .try_set_phase(Stage::Translate, StagePhase::Completed)
         .ok()
         .unwrap();
 

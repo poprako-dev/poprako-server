@@ -13,7 +13,7 @@ use time::OffsetDateTime;
 
 use crate::model::comic::ComicInfo;
 use crate::model::user::UserInfo;
-use crate::value::chapter::{ChapterInclOpt, WorkflowStageMask};
+use crate::value::chapter::{ChapterInclOpt, StageMask};
 
 /// A chapterrecord as stored in the database.
 ///
@@ -49,7 +49,7 @@ pub struct ChapterInfo {
     /// Denormalised number of units with a completed proofread.
     pub proofread_unit_count: i32,
 
-    pub stages: WorkflowStageMask,
+    pub stages: StageMask,
 
     pub creator_id: String,
 
@@ -100,7 +100,7 @@ pub struct ChapterInfoUpdate {
 pub struct ChapterStageUpdate {
     pub id: String,
 
-    pub stages: WorkflowStageMask,
+    pub stages: StageMask,
 }
 
 /// Filtering, pagination, and include parameters for listing chapters.

@@ -1,6 +1,6 @@
 //! Payload types for chapter domain events.
 
-use crate::value::chapter::WorkflowStage;
+use crate::value::chapter::Stage;
 
 /// Payload for the [`ChapterPublished`] event.
 ///
@@ -14,7 +14,7 @@ pub struct ChapterPublishedPayload {
 /// [`ChapterWorkflowCompleted`]: crate::part::effect::event::Event::ChapterWorkflowCompleted
 pub struct ChapterWorkflowCompletedPayload {
     pub chapter_id: String,
-    pub completed_stage: WorkflowStage,
+    pub completed_stage: Stage,
 }
 
 /// Payload for the [`ChapterWorkflowReverted`] event.
@@ -22,7 +22,7 @@ pub struct ChapterWorkflowCompletedPayload {
 /// [`ChapterWorkflowReverted`]: crate::part::effect::event::Event::ChapterWorkflowReverted
 pub struct ChapterWorkflowRevertedPayload {
     pub chapter_id: String,
-    pub reverted_stage: WorkflowStage,
+    pub reverted_stage: Stage,
 }
 
 /// Payload for the [`ChapterRemoved`] event.

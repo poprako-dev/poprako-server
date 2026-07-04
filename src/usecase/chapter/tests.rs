@@ -30,7 +30,7 @@ use crate::part::prom::task::ImageTask;
 use crate::part_impl::repo_mock::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;
-use crate::value::chapter::{WorkflowStage, WorkflowStageMask};
+use crate::value::chapter::{Stage, StageMask};
 
 fn token(user_id: &str) -> UserToken {
     UserToken {
@@ -94,7 +94,7 @@ fn chapter(id: &str, comic_id: &str, index: i32, is_pinned: bool) -> ChapterInfo
         total_unit_count: 0,
         translated_unit_count: 0,
         proofread_unit_count: 0,
-        stages: WorkflowStageMask::try_from(0u32).ok().unwrap(),
+        stages: StageMask::try_from(0u32).ok().unwrap(),
         creator_id: "user-1".into(),
         creator: None,
         created_at: time,
@@ -398,8 +398,8 @@ async fn update_stage_workflow_role_advances_stage() {
         token("user-1"),
         UpdateChapterStageData {
             id: "chapter-1".into(),
-            stage: WorkflowStage::Translate,
-            event: WorkflowEvent::Advance,
+            stage: Stage::Translate,
+            oper: StageOper::Advance,
         },
     )
     .await
@@ -409,7 +409,7 @@ async fn update_stage_workflow_role_advances_stage() {
     assert_eq!(
         mock.snapshot().chapters[0]
             .stages
-            .get_phase(WorkflowStage::Translate),
+            .get_phase(Stage::Translate),
         StagePhase::Active
     );
 }
@@ -421,7 +421,7 @@ async fn update_stage_rejects_invalid_transition() {
     let mut chapter_info = chapter("chapter-1", "comic-1", 1, false);
     chapter_info.stages = chapter_info
         .stages
-        .try_set_phase(WorkflowStage::Publish, StagePhase::Completed)
+        .try_set_phase(Stage::Publish, StagePhase::Completed)
         .ok()
         .unwrap();
     mock.seed_chapter(chapter_info);
@@ -439,8 +439,8 @@ async fn update_stage_rejects_invalid_transition() {
         token("user-1"),
         UpdateChapterStageData {
             id: "chapter-1".into(),
-            stage: WorkflowStage::Publish,
-            event: WorkflowEvent::Advance,
+            stage: Stage::Publish,
+            oper: StageOper::Advance,
         },
     )
     .await
@@ -470,8 +470,8 @@ async fn update_stage_publish_enqueues_page_image_delete() {
         token("user-1"),
         UpdateChapterStageData {
             id: "chapter-1".into(),
-            stage: WorkflowStage::Publish,
-            event: WorkflowEvent::Advance,
+            stage: Stage::Publish,
+            oper: StageOper::Advance,
         },
     )
     .await

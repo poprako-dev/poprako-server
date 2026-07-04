@@ -21,7 +21,7 @@ use crate::model::workset::WorksetInfo;
 use crate::part_impl::repo_mock::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::{assert_expected_variant, now};
-use crate::value::chapter::WorkflowStageMask;
+use crate::value::chapter::StageMask;
 use crate::value::role::{RoleField, RoleMask};
 
 fn token(user_id: &str) -> UserToken {
@@ -126,7 +126,7 @@ fn chapter(id: &str, comic_id: &str) -> ChapterInfo {
         total_unit_count: 0,
         translated_unit_count: 0,
         proofread_unit_count: 0,
-        stages: WorkflowStageMask::try_from(0u32).ok().unwrap(),
+        stages: StageMask::try_from(0u32).ok().unwrap(),
         creator_id: "creator-user".into(),
         creator: None,
         created_at: time,

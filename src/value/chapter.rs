@@ -21,7 +21,7 @@ pub enum StagePhase {
 /// Stage in the chapter production pipeline.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "kebab-case")]
-pub enum WorkflowStage {
+pub enum Stage {
     /// Raw provide phase.
     RawProvide,
     /// Translate phase.
@@ -41,30 +41,30 @@ pub enum WorkflowStage {
 /// `RawProvide`, `Review`, and `Publish` cannot be `Active` (they are
 /// instantaneous stages). `Translate`, `Proofread`, and `TypesetRedraw`
 /// accept any phase.
-pub fn is_valid_stage_phase(stage: WorkflowStage, phase: StagePhase) -> bool {
+pub fn is_valid_stage_phase(stage: Stage, phase: StagePhase) -> bool {
     match stage {
-        WorkflowStage::RawProvide | WorkflowStage::Review | WorkflowStage::Publish => {
+        Stage::RawProvide | Stage::Review | Stage::Publish => {
             matches!(phase, StagePhase::Pending | StagePhase::Completed)
         }
-        WorkflowStage::Translate | WorkflowStage::Proofread | WorkflowStage::TypesetRedraw => true,
+        Stage::Translate | Stage::Proofread | Stage::TypesetRedraw => true,
     }
 }
 
-/// Event that triggers a workflow stage transition.
+/// Operation applied to a workflow stage.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "kebab-case")]
-pub enum WorkflowEvent {
+pub enum StageOper {
     /// Advance to the next phase.
     Advance,
     /// Revert to the previous phase.
     Revert,
 }
 
-/// Apply a [`WorkflowEvent`] to a stage and return the resulting [`StagePhase`],
+/// Apply a [`StageOper`] to a stage and return the resulting [`StagePhase`],
 /// or error if the transition is illegal.
 pub fn try_modify_stage(
-    current: (WorkflowStage, StagePhase),
-    event: WorkflowEvent,
+    current: (Stage, StagePhase),
+    oper: StageOper,
 ) -> RegularResult<StagePhase> {
     let (stage, phase) = current;
 
@@ -75,34 +75,32 @@ pub fn try_modify_stage(
         });
     }
 
-    let next_phase = match (stage, phase, event) {
-        (WorkflowStage::Publish, _, WorkflowEvent::Revert) => {
+    let next_phase = match (stage, phase, oper) {
+        (Stage::Publish, _, StageOper::Revert) => {
             return Err(RegularError::Expected {
                 variant: ExpectedVariant::Args,
                 message: trl("error-invalid-workflow-transition"),
             });
         }
         (
-            WorkflowStage::RawProvide | WorkflowStage::Review | WorkflowStage::Publish,
+            Stage::RawProvide | Stage::Review | Stage::Publish,
             StagePhase::Pending,
-            WorkflowEvent::Advance,
+            StageOper::Advance,
         ) => StagePhase::Completed,
-        (
-            WorkflowStage::RawProvide | WorkflowStage::Review,
-            StagePhase::Completed,
-            WorkflowEvent::Revert,
-        ) => StagePhase::Pending,
-        (_, StagePhase::Pending, WorkflowEvent::Advance) => StagePhase::Active,
-        (_, StagePhase::Active, WorkflowEvent::Advance) => StagePhase::Completed,
-        (_, StagePhase::Completed, WorkflowEvent::Advance) => {
+        (Stage::RawProvide | Stage::Review, StagePhase::Completed, StageOper::Revert) => {
+            StagePhase::Pending
+        }
+        (_, StagePhase::Pending, StageOper::Advance) => StagePhase::Active,
+        (_, StagePhase::Active, StageOper::Advance) => StagePhase::Completed,
+        (_, StagePhase::Completed, StageOper::Advance) => {
             return Err(RegularError::Expected {
                 variant: ExpectedVariant::Args,
                 message: trl("error-invalid-workflow-transition"),
             });
         }
-        (_, StagePhase::Completed, WorkflowEvent::Revert) => StagePhase::Active,
-        (_, StagePhase::Active, WorkflowEvent::Revert) => StagePhase::Pending,
-        (_, StagePhase::Pending, WorkflowEvent::Revert) => StagePhase::Pending,
+        (_, StagePhase::Completed, StageOper::Revert) => StagePhase::Active,
+        (_, StagePhase::Active, StageOper::Revert) => StagePhase::Pending,
+        (_, StagePhase::Pending, StageOper::Revert) => StagePhase::Pending,
     };
 
     if !is_valid_stage_phase(stage, next_phase) {
@@ -196,41 +194,41 @@ impl Serialize for StagePhaseField {
 /// | Review | 8–9 | `StagePhaseField` |
 /// | Publish | 10–11 | `StagePhaseField` |
 #[derive(Debug, Clone, Copy, PartialEq, Eq, ToSchema)]
-pub struct WorkflowStageMask(u32);
+pub struct StageMask(u32);
 
-impl WorkflowStageMask {
+impl StageMask {
     const VALID_BITS: u32 = (1 << 12) - 1;
 
-    const STAGES: &'static [WorkflowStage] = &[
-        WorkflowStage::RawProvide,
-        WorkflowStage::Translate,
-        WorkflowStage::Proofread,
-        WorkflowStage::TypesetRedraw,
-        WorkflowStage::Review,
-        WorkflowStage::Publish,
+    const STAGES: &'static [Stage] = &[
+        Stage::RawProvide,
+        Stage::Translate,
+        Stage::Proofread,
+        Stage::TypesetRedraw,
+        Stage::Review,
+        Stage::Publish,
     ];
 
-    fn stage_shift(stage: WorkflowStage) -> u32 {
+    fn stage_shift(stage: Stage) -> u32 {
         match stage {
-            WorkflowStage::RawProvide => 0,
-            WorkflowStage::Translate => 2,
-            WorkflowStage::Proofread => 4,
-            WorkflowStage::TypesetRedraw => 6,
-            WorkflowStage::Review => 8,
-            WorkflowStage::Publish => 10,
+            Stage::RawProvide => 0,
+            Stage::Translate => 2,
+            Stage::Proofread => 4,
+            Stage::TypesetRedraw => 6,
+            Stage::Review => 8,
+            Stage::Publish => 10,
         }
     }
 
-    fn field_for_stage_value(value: u32, stage: WorkflowStage) -> RegularResult<StagePhaseField> {
+    fn field_for_stage_value(value: u32, stage: Stage) -> RegularResult<StagePhaseField> {
         StagePhaseField::try_from(((value >> Self::stage_shift(stage)) & 0b11) as u8)
     }
 
-    fn field_for_stage(&self, stage: WorkflowStage) -> StagePhaseField {
+    fn field_for_stage(&self, stage: Stage) -> StagePhaseField {
         Self::field_for_stage_value(self.0, stage).ok().unwrap()
     }
 
     fn validate_stage_field(
-        stage: WorkflowStage,
+        stage: Stage,
         field: StagePhaseField,
         allow_ignore: bool,
     ) -> RegularResult<()> {
@@ -287,19 +285,19 @@ impl WorkflowStageMask {
     }
 
     /// Return workflow stages in mask bit order.
-    pub fn stages() -> &'static [WorkflowStage] {
+    pub fn stages() -> &'static [Stage] {
         Self::STAGES
     }
 
     /// Extract the [`StagePhase`] for a specific stage.
-    pub fn get_phase(&self, stage: WorkflowStage) -> StagePhase {
+    pub fn get_phase(&self, stage: Stage) -> StagePhase {
         self.field_for_stage(stage)
             .as_phase()
             .expect("regular workflow masks never contain ignore fields")
     }
 
     /// Return a new mask with the given stage's phase set.
-    pub fn try_set_phase(&self, stage: WorkflowStage, phase: StagePhase) -> RegularResult<Self> {
+    pub fn try_set_phase(&self, stage: Stage, phase: StagePhase) -> RegularResult<Self> {
         if !is_valid_stage_phase(stage, phase) {
             return Err(RegularError::Expected {
                 variant: ExpectedVariant::Args,
@@ -315,12 +313,12 @@ impl WorkflowStageMask {
     }
 
     /// Check if a filter mask ignores a specific stage.
-    pub fn ignores_stage(&self, stage: WorkflowStage) -> bool {
+    pub fn ignores_stage(&self, stage: Stage) -> bool {
         self.field_for_stage(stage) == StagePhaseField::IGNORE
     }
 
     /// Check if this regular mask satisfies a filter mask.
-    pub fn matches_filter(&self, filter: WorkflowStageMask) -> bool {
+    pub fn matches_filter(&self, filter: StageMask) -> bool {
         Self::STAGES.iter().all(|stage| {
             filter.ignores_stage(*stage)
                 || self.field_for_stage(*stage) == filter.field_for_stage(*stage)
@@ -328,19 +326,19 @@ impl WorkflowStageMask {
     }
 
     /// Check if a specific stage has the given phase.
-    pub fn has_phase(&self, stage: WorkflowStage, phase: StagePhase) -> bool {
+    pub fn has_phase(&self, stage: Stage, phase: StagePhase) -> bool {
         self.get_phase(stage) == phase
     }
 
     /// Check if any of the given stages has a non-`Pending` phase.
-    pub fn has_any_stage(&self, stages: &[WorkflowStage]) -> bool {
+    pub fn has_any_stage(&self, stages: &[Stage]) -> bool {
         stages
             .iter()
             .any(|s| self.get_phase(*s) != StagePhase::Pending)
     }
 
     /// Check if all of the given stages have a non-`Pending` phase.
-    pub fn has_every_stage(&self, stages: &[WorkflowStage]) -> bool {
+    pub fn has_every_stage(&self, stages: &[Stage]) -> bool {
         stages
             .iter()
             .all(|s| self.get_phase(*s) != StagePhase::Pending)
@@ -351,17 +349,17 @@ impl WorkflowStageMask {
     /// For each 2-bit slot, `self`'s bits must be a superset of `other`'s
     /// bits (i.e. a `PENDING` slot in `other` is always contained; an
     /// `IGNORE` slot in `self` contains any phase in `other`).
-    pub fn contains_mask(&self, other: WorkflowStageMask) -> bool {
+    pub fn contains_mask(&self, other: StageMask) -> bool {
         self.0 & other.0 == other.0
     }
 
     /// Return the union of two masks (bitwise OR per 2-bit slot).
-    pub fn union(&self, other: WorkflowStageMask) -> WorkflowStageMask {
+    pub fn union(&self, other: StageMask) -> StageMask {
         Self(self.0 | other.0)
     }
 }
 
-impl TryFrom<u32> for WorkflowStageMask {
+impl TryFrom<u32> for StageMask {
     type Error = RegularError;
 
     fn try_from(value: u32) -> RegularResult<Self> {
@@ -370,13 +368,13 @@ impl TryFrom<u32> for WorkflowStageMask {
     }
 }
 
-impl From<WorkflowStageMask> for u32 {
-    fn from(value: WorkflowStageMask) -> Self {
+impl From<StageMask> for u32 {
+    fn from(value: StageMask) -> Self {
         value.0
     }
 }
 
-impl Serialize for WorkflowStageMask {
+impl Serialize for StageMask {
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
         S: Serializer,

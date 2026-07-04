@@ -6,7 +6,7 @@ use time::OffsetDateTime;
 use crate::model::chapter::{ChapterForm, ChapterInfo};
 use crate::part_impl::repo_rdb::schema::t_chapter;
 use crate::result::RegularError;
-use crate::value::chapter::{StagePhase, WorkflowStage, WorkflowStageMask};
+use crate::value::chapter::{Stage, StageMask, StagePhase};
 
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_chapter)]
@@ -112,25 +112,21 @@ impl<'a> ChapterAspect<'a> {
         self
     }
 
-    pub fn stages(mut self, val: WorkflowStageMask, updated_at: OffsetDateTime) -> Self {
-        self.f_uploaded_at = Some(one_shot_timestamp(
-            val,
-            WorkflowStage::RawProvide,
-            updated_at,
-        ));
+    pub fn stages(mut self, val: StageMask, updated_at: OffsetDateTime) -> Self {
+        self.f_uploaded_at = Some(one_shot_timestamp(val, Stage::RawProvide, updated_at));
 
         (self.f_translating_at, self.f_translated_at) =
-            two_step_timestamps(val, WorkflowStage::Translate, updated_at);
+            two_step_timestamps(val, Stage::Translate, updated_at);
 
         (self.f_proofreading_at, self.f_proofread_at) =
-            two_step_timestamps(val, WorkflowStage::Proofread, updated_at);
+            two_step_timestamps(val, Stage::Proofread, updated_at);
 
         (self.f_typesetting_at, self.f_typeset_at) =
-            two_step_timestamps(val, WorkflowStage::TypesetRedraw, updated_at);
+            two_step_timestamps(val, Stage::TypesetRedraw, updated_at);
 
-        self.f_reviewed_at = Some(one_shot_timestamp(val, WorkflowStage::Review, updated_at));
+        self.f_reviewed_at = Some(one_shot_timestamp(val, Stage::Review, updated_at));
 
-        self.f_published_at = Some(one_shot_timestamp(val, WorkflowStage::Publish, updated_at));
+        self.f_published_at = Some(one_shot_timestamp(val, Stage::Publish, updated_at));
 
         self
     }
@@ -157,8 +153,8 @@ impl<'a> ChapterAspect<'a> {
 }
 
 fn one_shot_timestamp(
-    stages: WorkflowStageMask,
-    stage: WorkflowStage,
+    stages: StageMask,
+    stage: Stage,
     updated_at: OffsetDateTime,
 ) -> Option<OffsetDateTime> {
     match stages.get_phase(stage) {
@@ -169,8 +165,8 @@ fn one_shot_timestamp(
 }
 
 fn two_step_timestamps(
-    stages: WorkflowStageMask,
-    stage: WorkflowStage,
+    stages: StageMask,
+    stage: Stage,
     updated_at: OffsetDateTime,
 ) -> (
     Option<Option<OffsetDateTime>>,
@@ -201,32 +197,23 @@ fn phase_from_two_step(
     }
 }
 
-fn workflow_stage_mask_from_row(row: &ChapterRow) -> Result<WorkflowStageMask, RegularError> {
-    let stages = WorkflowStageMask::try_from(0u32)?
+fn workflow_stage_mask_from_row(row: &ChapterRow) -> Result<StageMask, RegularError> {
+    let stages = StageMask::try_from(0u32)?
+        .try_set_phase(Stage::RawProvide, phase_from_one_shot(row.f_uploaded_at))?
         .try_set_phase(
-            WorkflowStage::RawProvide,
-            phase_from_one_shot(row.f_uploaded_at),
-        )?
-        .try_set_phase(
-            WorkflowStage::Translate,
+            Stage::Translate,
             phase_from_two_step(row.f_translating_at, row.f_translated_at),
         )?
         .try_set_phase(
-            WorkflowStage::Proofread,
+            Stage::Proofread,
             phase_from_two_step(row.f_proofreading_at, row.f_proofread_at),
         )?
         .try_set_phase(
-            WorkflowStage::TypesetRedraw,
+            Stage::TypesetRedraw,
             phase_from_two_step(row.f_typesetting_at, row.f_typeset_at),
         )?
-        .try_set_phase(
-            WorkflowStage::Review,
-            phase_from_one_shot(row.f_reviewed_at),
-        )?
-        .try_set_phase(
-            WorkflowStage::Publish,
-            phase_from_one_shot(row.f_published_at),
-        )?;
+        .try_set_phase(Stage::Review, phase_from_one_shot(row.f_reviewed_at))?
+        .try_set_phase(Stage::Publish, phase_from_one_shot(row.f_published_at))?;
     Ok(stages)
 }
 

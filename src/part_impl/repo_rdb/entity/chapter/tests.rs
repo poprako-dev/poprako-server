@@ -35,32 +35,32 @@ fn derives_workflow_mask_from_timestamps() {
     let chapter_info = ChapterInfo::try_from(row()).ok().unwrap();
 
     assert_eq!(
-        chapter_info.stages.get_phase(WorkflowStage::RawProvide),
+        chapter_info.stages.get_phase(Stage::RawProvide),
         StagePhase::Completed
     );
 
     assert_eq!(
-        chapter_info.stages.get_phase(WorkflowStage::Translate),
+        chapter_info.stages.get_phase(Stage::Translate),
         StagePhase::Completed
     );
 
     assert_eq!(
-        chapter_info.stages.get_phase(WorkflowStage::Proofread),
+        chapter_info.stages.get_phase(Stage::Proofread),
         StagePhase::Active
     );
 
     assert_eq!(
-        chapter_info.stages.get_phase(WorkflowStage::TypesetRedraw),
+        chapter_info.stages.get_phase(Stage::TypesetRedraw),
         StagePhase::Pending
     );
 
     assert_eq!(
-        chapter_info.stages.get_phase(WorkflowStage::Review),
+        chapter_info.stages.get_phase(Stage::Review),
         StagePhase::Completed
     );
 
     assert_eq!(
-        chapter_info.stages.get_phase(WorkflowStage::Publish),
+        chapter_info.stages.get_phase(Stage::Publish),
         StagePhase::Pending
     );
 }
