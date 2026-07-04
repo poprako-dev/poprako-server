@@ -15,6 +15,7 @@ use utoipa::IntoParams;
 
 use crate::api::http::handler::util::ensure_path_matches_body_id;
 use crate::api::http::result::Accept as _;
+use crate::api::http::result::HttpBody;
 use crate::api::http::result::HttpNoContent;
 use crate::api::http::result::HttpResult;
 use crate::api::http::result::no_content;
@@ -53,7 +54,7 @@ pub struct MemberMeListQuery {
     tag = "members",
     request_body = CreateMemberData,
     responses(
-        (status = 201, description = "Member created", body = CreateMemberVal),
+        (status = 201, description = "Member created", body = HttpBody<CreateMemberVal>),
         (status = 403, description = "No permission to create members in this team"),
         (status = 404, description = "User or team not found"),
         (status = 409, description = "User is already a member"),
@@ -77,7 +78,7 @@ pub async fn create(
     description = "Lists members. Exactly one of `owner_id` or `team_id` is required. In `owner_id` mode, `role` and `fuzzy_nickname` must be omitted. In `team_id` mode, `fuzzy_nickname` and `role` are optional. `incl` embeds related rows. Examples: `/api/v1/members?team_id=t_1&fuzzy_nickname=al&role=1&incl=user`, `/api/v1/members?owner_id=u_1&incl=team`.",
     params(ListMemberInfosData),
     responses(
-        (status = 200, description = "Members listed", body = Vec<MemberInfoVal>),
+        (status = 200, description = "Members listed", body = HttpBody<Vec<MemberInfoVal>>),
         (status = 400, description = "Exactly one of owner_id or team_id is required, or owner_id combined with role/fuzzy_nickname"),
         (status = 403, description = "No permission to list members in this team"),
     ),
@@ -101,7 +102,7 @@ pub async fn list_infos(
     tag = "members",
     params(MemberMeListQuery),
     responses(
-        (status = 200, description = "Current user memberships", body = Vec<MemberInfoVal>),
+        (status = 200, description = "Current user memberships", body = HttpBody<Vec<MemberInfoVal>>),
         (status = 401, description = "Authentication required"),
     ),
 )]
@@ -184,7 +185,7 @@ pub async fn delete(
     tag = "members",
     request_body = JoinTeamData,
     responses(
-        (status = 201, description = "Joined team", body = MemberInfoVal),
+        (status = 201, description = "Joined team", body = HttpBody<MemberInfoVal>),
         (status = 400, description = "Invitation does not target this user or already a member"),
         (status = 404, description = "Invitation code not found"),
     ),

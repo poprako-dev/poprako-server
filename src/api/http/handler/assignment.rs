@@ -11,6 +11,7 @@ use tracing::instrument;
 
 use crate::api::http::handler::util::ensure_path_matches_body_id;
 use crate::api::http::result::Accept as _;
+use crate::api::http::result::HttpBody;
 use crate::api::http::result::HttpNoContent;
 use crate::api::http::result::HttpResult;
 use crate::api::http::result::no_content;
@@ -29,7 +30,7 @@ use crate::usecase;
     description = "Lists assignments. Exactly one of `chapter_id` or `owner_id` is required; `role` optionally narrows by a single role bit. `incl` embeds related rows; dotted values imply their parent segments. Examples: `/api/v1/assignments?chapter_id=c_1&role=1&incl=chapter.comic.workset.team`, `/api/v1/assignments?owner_id=u_1&incl=user`.",
     params(ListAssignmentInfosData),
     responses(
-        (status = 200, description = "Assignments listed", body = Vec<AssignmentInfoVal>),
+        (status = 200, description = "Assignments listed", body = HttpBody<Vec<AssignmentInfoVal>>),
         (status = 400, description = "Exactly one of chapter_id or owner_id is required"),
         (status = 403, description = "No permission to list these assignments"),
     ),
@@ -109,7 +110,7 @@ pub async fn delete(
     tag = "assignments",
     request_body = JoinChapterData,
     responses(
-        (status = 201, description = "Joined assignment", body = AssignmentInfoVal),
+        (status = 201, description = "Joined assignment", body = HttpBody<AssignmentInfoVal>),
         (status = 403, description = "Role not assignable or no permission"),
         (status = 404, description = "Chapter not found"),
     ),

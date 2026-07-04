@@ -15,6 +15,7 @@ use utoipa::IntoParams;
 
 use crate::api::http::handler::util::ensure_path_matches_body_id;
 use crate::api::http::result::Accept as _;
+use crate::api::http::result::HttpBody;
 use crate::api::http::result::HttpNoContent;
 use crate::api::http::result::HttpResult;
 use crate::api::http::result::no_content;
@@ -56,7 +57,7 @@ pub struct ChapterListQuery {
     tag = "chapters",
     request_body = CreateChapterData,
     responses(
-        (status = 201, description = "Chapter created", body = CreateChapterVal),
+        (status = 201, description = "Chapter created", body = HttpBody<CreateChapterVal>),
         (status = 403, description = "No permission to create chapters in this comic"),
         (status = 404, description = "Comic not found"),
     ),
@@ -79,7 +80,7 @@ pub async fn create(
     description = "Lists chapters of a comic. `incl` embeds related rows; dotted values imply their parent segments. Example: `/api/v1/comics/{comic_id}/chapters?incl=comic.workset.team&incl=creator&offset=0&limit=20`.",
     params(("comic_id" = String, Path, description = "Comic ID"), ChapterListQuery),
     responses(
-        (status = 200, description = "Chapters listed", body = Vec<ChapterInfoVal>),
+        (status = 200, description = "Chapters listed", body = HttpBody<Vec<ChapterInfoVal>>),
         (status = 403, description = "No permission to list chapters in this comic"),
     ),
 )]
@@ -110,7 +111,7 @@ pub async fn list_infos(
     tag = "chapters",
     params(("comic_id" = String, Path, description = "Comic ID")),
     responses(
-        (status = 200, description = "Pinned chapter (or null)", body = Option<ChapterInfoVal>),
+        (status = 200, description = "Pinned chapter (or null)", body = HttpBody<Option<ChapterInfoVal>>),
         (status = 403, description = "No permission to view this comic's pinned chapter"),
     ),
 )]
@@ -131,7 +132,7 @@ pub async fn get_pinned(
     tag = "chapters",
     params(("chapter_id" = String, Path, description = "Chapter ID")),
     responses(
-        (status = 200, description = "Chapter info retrieved", body = ChapterInfoVal),
+        (status = 200, description = "Chapter info retrieved", body = HttpBody<ChapterInfoVal>),
         (status = 403, description = "No permission to view this chapter"),
         (status = 404, description = "Chapter not found"),
     ),

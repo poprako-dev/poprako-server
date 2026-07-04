@@ -11,6 +11,7 @@ use tracing::instrument;
 
 use crate::api::http::handler::util::ensure_path_matches_body_id;
 use crate::api::http::result::Accept as _;
+use crate::api::http::result::HttpBody;
 use crate::api::http::result::HttpNoContent;
 use crate::api::http::result::HttpResult;
 use crate::api::http::result::no_content;
@@ -29,7 +30,7 @@ use crate::usecase;
     tag = "teams",
     request_body = CreateTeamData,
     responses(
-        (status = 201, description = "Team created", body = TeamInfoVal),
+        (status = 201, description = "Team created", body = HttpBody<TeamInfoVal>),
         (status = 401, description = "Authentication required"),
         (status = 403, description = "Only super-admins can create teams"),
     ),
@@ -52,7 +53,7 @@ pub async fn create(
     description = "Lists teams. Omit `user_id` to list all teams (super-admin only, otherwise `403`); supply `user_id` to list teams that user has joined. Examples: `/api/v1/teams?user_id=u_1&offset=0&limit=20`, `/api/v1/teams?offset=0&limit=20` (super-admin).",
     params(ListTeamInfosData),
     responses(
-        (status = 200, description = "Teams listed", body = Vec<TeamInfoVal>),
+        (status = 200, description = "Teams listed", body = HttpBody<Vec<TeamInfoVal>>),
         (status = 401, description = "Authentication required"),
         (status = 403, description = "Listing all teams requires super-admin"),
     ),
@@ -74,7 +75,7 @@ pub async fn list_infos(
     tag = "teams",
     params(("team_id" = String, Path, description = "Team ID")),
     responses(
-        (status = 200, description = "Team info retrieved", body = TeamInfoVal),
+        (status = 200, description = "Team info retrieved", body = HttpBody<TeamInfoVal>),
         (status = 401, description = "Authentication required"),
         (status = 404, description = "Team not found"),
     ),
@@ -124,7 +125,7 @@ pub async fn update_info(
     params(("team_id" = String, Path, description = "Team ID")),
     request_body = ReserveTeamAvatarData,
     responses(
-        (status = 200, description = "Avatar upload URL reserved", body = ReserveTeamAvatarVal),
+        (status = 200, description = "Avatar upload URL reserved", body = HttpBody<ReserveTeamAvatarVal>),
         (status = 403, description = "No permission to modify this team's avatar"),
         (status = 404, description = "Team not found"),
     ),

@@ -12,6 +12,7 @@ use tracing::instrument;
 use crate::api::http::handler::util::Pagination;
 use crate::api::http::handler::util::ensure_path_matches_body_id;
 use crate::api::http::result::Accept as _;
+use crate::api::http::result::HttpBody;
 use crate::api::http::result::HttpNoContent;
 use crate::api::http::result::HttpResult;
 use crate::api::http::result::no_content;
@@ -30,7 +31,7 @@ use crate::usecase;
     tag = "worksets",
     request_body = CreateWorksetData,
     responses(
-        (status = 201, description = "Workset created", body = CreateWorksetVal),
+        (status = 201, description = "Workset created", body = HttpBody<CreateWorksetVal>),
         (status = 401, description = "Authentication required"),
         (status = 403, description = "No permission to create worksets in this team"),
         (status = 404, description = "Team not found"),
@@ -53,7 +54,7 @@ pub async fn create(
     tag = "worksets",
     params(("team_id" = String, Path, description = "Team ID"), Pagination),
     responses(
-        (status = 200, description = "Worksets listed", body = Vec<WorksetInfoVal>),
+        (status = 200, description = "Worksets listed", body = HttpBody<Vec<WorksetInfoVal>>),
         (status = 401, description = "Authentication required"),
         (status = 403, description = "No permission to list worksets in this team"),
     ),
@@ -83,7 +84,7 @@ pub async fn list_infos(
     tag = "worksets",
     params(("workset_id" = String, Path, description = "Workset ID")),
     responses(
-        (status = 200, description = "Workset info retrieved", body = WorksetInfoVal),
+        (status = 200, description = "Workset info retrieved", body = HttpBody<WorksetInfoVal>),
         (status = 401, description = "Authentication required"),
         (status = 403, description = "No permission to view this workset"),
         (status = 404, description = "Workset not found"),

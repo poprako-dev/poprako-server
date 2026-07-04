@@ -15,6 +15,7 @@ use utoipa::IntoParams;
 
 use crate::api::http::handler::util::ensure_path_matches_body_id;
 use crate::api::http::result::Accept as _;
+use crate::api::http::result::HttpBody;
 use crate::api::http::result::HttpNoContent;
 use crate::api::http::result::HttpResult;
 use crate::api::http::result::no_content;
@@ -57,7 +58,7 @@ pub struct MemberInvitationListQuery {
     tag = "member-invitations",
     request_body = CreateMemberInvitationData,
     responses(
-        (status = 201, description = "Invitation created", body = CreateMemberInvitationVal),
+        (status = 201, description = "Invitation created", body = HttpBody<CreateMemberInvitationVal>),
         (status = 403, description = "No permission to create invitations in this team"),
         (status = 409, description = "Invitee is already a member"),
     ),
@@ -82,7 +83,7 @@ pub async fn create(
     description = "Lists a team's member invitations. `pending` filters by consumption state; `incl` embeds related rows. Example: `/api/v1/teams/{team_id}/member-invitations?pending=true&incl=invitor&offset=0&limit=20`.",
     params(("team_id" = String, Path, description = "Team ID"), MemberInvitationListQuery),
     responses(
-        (status = 200, description = "Invitations listed", body = Vec<MemberInvitationInfoVal>),
+        (status = 200, description = "Invitations listed", body = HttpBody<Vec<MemberInvitationInfoVal>>),
         (status = 403, description = "No permission to list invitations in this team"),
     ),
 )]
