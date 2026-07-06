@@ -40,24 +40,18 @@ fn rejects_active_one_shot_phase() {
 
 #[test]
 fn advances_one_shot_stage() {
-    let phase = try_modify_stage(
-        (Stage::RawProvide, StagePhase::Pending),
-        StageOper::Advance,
-    )
-    .ok()
-    .unwrap();
+    let phase = try_modify_stage((Stage::RawProvide, StagePhase::Pending), StageOper::Advance)
+        .ok()
+        .unwrap();
 
     assert_eq!(phase, StagePhase::Completed);
 }
 
 #[test]
 fn advances_three_phase_stage() {
-    let phase = try_modify_stage(
-        (Stage::Translate, StagePhase::Pending),
-        StageOper::Advance,
-    )
-    .ok()
-    .unwrap();
+    let phase = try_modify_stage((Stage::Translate, StagePhase::Pending), StageOper::Advance)
+        .ok()
+        .unwrap();
     assert_eq!(phase, StagePhase::Active);
 
     let phase = try_modify_stage((Stage::Translate, phase), StageOper::Advance)
@@ -68,12 +62,9 @@ fn advances_three_phase_stage() {
 
 #[test]
 fn reverts_three_phase_stage() {
-    let phase = try_modify_stage(
-        (Stage::Proofread, StagePhase::Completed),
-        StageOper::Revert,
-    )
-    .ok()
-    .unwrap();
+    let phase = try_modify_stage((Stage::Proofread, StagePhase::Completed), StageOper::Revert)
+        .ok()
+        .unwrap();
     assert_eq!(phase, StagePhase::Active);
 
     let phase = try_modify_stage((Stage::Proofread, phase), StageOper::Revert)
@@ -96,11 +87,7 @@ fn accepts_pending_revert_noop() {
 
 #[test]
 fn rejects_publish_revert() {
-    let err = try_modify_stage(
-        (Stage::Publish, StagePhase::Completed),
-        StageOper::Revert,
-    )
-    .err();
+    let err = try_modify_stage((Stage::Publish, StagePhase::Completed), StageOper::Revert).err();
 
     assert!(err.is_some());
 }

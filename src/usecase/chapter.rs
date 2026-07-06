@@ -28,7 +28,7 @@ use crate::part::repo::step::comic::ComicStep;
 use crate::part::repo::workset::{WorksetRepo, WorksetRepoTransactional};
 use crate::result::{RegularError, RegularResult, accept};
 use crate::util::DeriveTransactional;
-use crate::value::chapter::{Stage, StagePhase, StageOper};
+use crate::value::chapter::{Stage, StageOper, StagePhase};
 use crate::value::role::{RoleField, RoleMask};
 use poprako_transactional::advance::Advance;
 use poprako_transactional::drive::Drive;

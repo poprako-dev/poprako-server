@@ -1,6 +1,6 @@
 //! Complex-domain opers for page units.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 
 use poprako_util::i18n::trl;
 
@@ -33,96 +33,127 @@ impl UnitComplex {
     pub fn prepare_diff(diff: UnitDiff) -> RegularResult<UnitApplyAck> {
         validate_page_id(&diff.page_id)?;
 
-        let mut candidate_ids = HashSet::new();
-
-        for id in &diff.candidate_order {
-            validate_id(id)?;
-            if !candidate_ids.insert(id.clone()) {
-                return Err(unit_invalid_oper_error());
-            }
-        }
-
-        let mut required_ids = HashSet::new();
-        let mut deleted_ids = HashSet::new();
         let mut local_ids = HashSet::new();
+
         let mut local_id_map = Vec::new();
+
         let mut opers = Vec::with_capacity(diff.opers.len());
 
         for unit_oper in diff.opers {
             match unit_oper {
-                UnitOper::Create {
+                UnitOper::Save {
                     local_id,
-                    id: _,
+                    id,
                     payload,
+                    before_id,
                 } => {
-                    validate_id(&local_id)?;
+                    validate_optional_id(&before_id)?;
 
-                    if !local_ids.insert(local_id.clone()) {
-                        return Err(unit_invalid_oper_error());
-                    }
+                    let resolved_id = match (local_id, id) {
+                        (Some(local_id), None) => {
+                            validate_id(&local_id)?;
 
-                    required_ids.insert(local_id.clone());
+                            if !local_ids.insert(local_id.clone()) {
+                                return Err(unit_invalid_oper_error());
+                            }
 
-                    let unit_id = Self::gen_id();
+                            let unit_id = Self::gen_id();
 
-                    local_id_map.push(UnitIdMapper {
-                        local_id: local_id.clone(),
-                        unit_id: unit_id.clone(),
-                    });
+                            local_id_map.push(UnitIdMapper {
+                                local_id: local_id.clone(),
+                                unit_id: unit_id.clone(),
+                            });
 
-                    opers.push(UnitOper::Create {
-                        local_id,
-                        id: Some(unit_id),
+                            unit_id
+                        }
+                        (None, Some(id)) => {
+                            validate_id(&id)?;
+
+                            id
+                        }
+                        _ => return Err(unit_invalid_oper_error()),
+                    };
+
+                    opers.push(UnitOper::Save {
+                        local_id: None,
+                        id: Some(resolved_id),
                         payload,
+                        before_id,
                     });
-                }
-                UnitOper::Save { id, payload } => {
-                    validate_id(&id)?;
-
-                    required_ids.insert(id.clone());
-
-                    opers.push(UnitOper::Save { id, payload });
                 }
                 UnitOper::Delete { id } => {
                     validate_id(&id)?;
-
-                    deleted_ids.insert(id.clone());
 
                     opers.push(UnitOper::Delete { id });
                 }
             }
         }
 
-        for id in &deleted_ids {
-            if required_ids.contains(id) {
-                return Err(unit_invalid_oper_error());
-            }
-            if candidate_ids.contains(id) {
-                return Err(unit_invalid_oper_error());
-            }
-        }
-
-        for id in &required_ids {
-            if !candidate_ids.contains(id) {
-                return Err(unit_invalid_oper_error());
-            }
-        }
-
-        let candidate_order = resolve_candidate_order(diff.candidate_order, &local_id_map);
-
         accept(UnitApplyAck {
             opers,
             local_id_map,
-            candidate_order,
         })
     }
 
-    /// Builds compact index updates from resolved candidate order and current indexes.
-    pub fn build_index_updates(
-        candidate_order: &[String],
-        local_id_maps: &[UnitIdMapper],
-        current_indexes: Vec<UnitIndex>,
+    /// Applies the ordered opers to the surviving server order in memory and
+    /// returns the final id sequence.
+    ///
+    /// Each save places its unit before `before_id`; `None` or a `before_id`
+    /// absent from the surviving order appends the unit to the tail. Delete
+    /// removes the unit. Units untouched by the diff keep their relative order.
+    pub fn apply_opers_to_order(opers: &[UnitOper], mut current_order: Vec<String>) -> Vec<String> {
+        for oper in opers {
+            match oper {
+                UnitOper::Save {
+                    id: Some(id),
+                    before_id,
+                    ..
+                } => {
+                    current_order.retain(|surviving_id| surviving_id != id);
+
+                    insert_before(&mut current_order, id, before_id);
+                }
+                UnitOper::Save { id: None, .. } => {}
+                UnitOper::Delete { id } => {
+                    current_order.retain(|surviving_id| surviving_id != id);
+                }
+            }
+        }
+
+        current_order
+    }
+
+    /// Builds compact index updates from a final id order and the current
+    /// persisted indexes.
+    pub fn build_index_updates_from_order(
+        final_order: &[String],
+        current_indexes: &[UnitIndex],
     ) -> Vec<UnitIndexUpdate> {
+        let current_map: std::collections::HashMap<&String, i32> = current_indexes
+            .iter()
+            .map(|unit_index| (&unit_index.id, unit_index.index))
+            .collect();
+
+        final_order
+            .iter()
+            .enumerate()
+            .filter_map(|(index, id)| {
+                let index = index as i32;
+
+                if current_map.get(id).copied() == Some(index) {
+                    return None;
+                }
+
+                Some(UnitIndexUpdate {
+                    id: id.clone(),
+                    index,
+                })
+            })
+            .collect()
+    }
+
+    /// Builds compact index updates by compacting the current server order.
+    pub fn build_index_updates(current_indexes: Vec<UnitIndex>) -> Vec<UnitIndexUpdate> {
         let mut sorted_indexes = current_indexes;
 
         sorted_indexes.sort_by(|left, right| {
@@ -131,107 +162,7 @@ impl UnitComplex {
                 .then_with(|| left.id.cmp(&right.id))
         });
 
-        let all_count = sorted_indexes.len();
-
-        if all_count == 0 {
-            return Vec::new();
-        }
-
-        let local_to_server = local_id_maps
-            .iter()
-            .map(|unit_id_mapper| {
-                (
-                    unit_id_mapper.local_id.as_str(),
-                    unit_id_mapper.unit_id.as_str(),
-                )
-            })
-            .collect::<HashMap<_, _>>();
-
-        let all_ids = sorted_indexes
-            .iter()
-            .map(|unit_index| unit_index.id.as_str())
-            .collect::<HashSet<_>>();
-
-        let mut anchor_ids = HashSet::new();
-        let mut resolved_ids = Vec::new();
-
-        for id in candidate_order {
-            let resolved_id = local_to_server
-                .get(id.as_str())
-                .copied()
-                .unwrap_or(id.as_str());
-
-            if !all_ids.contains(resolved_id) {
-                continue;
-            }
-
-            if !anchor_ids.insert(resolved_id) {
-                continue;
-            }
-
-            resolved_ids.push(resolved_id);
-        }
-
-        let anchor_count = resolved_ids.len();
-        let mut slot_extras = HashMap::<usize, Vec<&str>>::new();
-
-        for (rank, unit_index) in sorted_indexes.iter().enumerate() {
-            if anchor_ids.contains(unit_index.id.as_str()) {
-                continue;
-            }
-
-            let mut slot = 0;
-
-            if anchor_count > 0 {
-                slot = rank * anchor_count / all_count;
-                if slot >= anchor_count {
-                    slot = anchor_count - 1;
-                }
-            }
-
-            slot_extras
-                .entry(slot)
-                .or_default()
-                .push(unit_index.id.as_str());
-        }
-
-        let mut final_ids = Vec::with_capacity(all_count);
-
-        for (position, id) in resolved_ids.into_iter().enumerate() {
-            final_ids.push(id);
-            if let Some(extra_ids) = slot_extras.remove(&position) {
-                final_ids.extend(extra_ids);
-            }
-        }
-
-        if anchor_count == 0 {
-            for unit_index in &sorted_indexes {
-                final_ids.push(unit_index.id.as_str());
-            }
-        }
-
-        let old_indexes = sorted_indexes
-            .iter()
-            .map(|unit_index| (unit_index.id.as_str(), unit_index.index))
-            .collect::<HashMap<_, _>>();
-
-        final_ids
-            .into_iter()
-            .enumerate()
-            .filter_map(|(index, id)| {
-                let index = index as i32;
-                let old_index = old_indexes.get(id)?;
-
-                if *old_index == index {
-                    return None;
-                }
-
-                Some(UnitIndexUpdate {
-                    id: id.into(),
-                    index,
-                })
-            })
-            .collect()
+        compact_index_updates_from_order(sorted_indexes)
     }
 }
 
@@ -296,26 +227,58 @@ fn validate_id(id: &str) -> RegularResult<()> {
     if id.is_empty() {
         return Err(unit_invalid_oper_error());
     }
+
     accept(())
 }
 
-fn resolve_candidate_order(
-    candidate_order: Vec<String>,
-    local_id_maps: &[UnitIdMapper],
-) -> Vec<String> {
-    let local_to_server = local_id_maps
-        .iter()
-        .map(|unit_id_map| (unit_id_map.local_id.as_str(), unit_id_map.unit_id.as_str()))
-        .collect::<HashMap<_, _>>();
+fn validate_optional_id(id: &Option<String>) -> RegularResult<()> {
+    if id.as_ref().map(|id| id.is_empty()).unwrap_or(false) {
+        return Err(unit_invalid_oper_error());
+    }
 
-    candidate_order
+    accept(())
+}
+
+fn insert_before(order: &mut Vec<String>, id: &str, before_id: &Option<String>) {
+    let Some(before_id) = before_id else {
+        order.push(id.to_string());
+
+        return;
+    };
+
+    if before_id == id {
+        order.push(id.to_string());
+
+        return;
+    }
+
+    let Some(position) = order
+        .iter()
+        .position(|surviving_id| surviving_id == before_id)
+    else {
+        order.push(id.to_string());
+
+        return;
+    };
+
+    order.insert(position, id.to_string());
+}
+
+fn compact_index_updates_from_order(unit_indexes: Vec<UnitIndex>) -> Vec<UnitIndexUpdate> {
+    unit_indexes
         .into_iter()
-        .map(|id| {
-            local_to_server
-                .get(id.as_str())
-                .copied()
-                .unwrap_or(&id)
-                .into()
+        .enumerate()
+        .filter_map(|(index, unit_index)| {
+            let index = index as i32;
+
+            if unit_index.index == index {
+                return None;
+            }
+
+            Some(UnitIndexUpdate {
+                id: unit_index.id,
+                index,
+            })
         })
         .collect()
 }

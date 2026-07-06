@@ -15,7 +15,6 @@ pub struct UnitInfoVal {
     pub id: String,
 
     pub page_id: String,
-    pub index: i32,
 
     pub is_bubble: bool,
     pub is_proofread: bool,
@@ -38,7 +37,6 @@ impl From<UnitInfo> for UnitInfoVal {
         Self {
             id: model.id,
             page_id: model.page_id,
-            index: model.index,
             is_bubble: model.is_bubble,
             is_proofread: model.is_proofread,
             x_coord: model.x_coord,
@@ -88,26 +86,43 @@ pub struct SavePageUnitsVal {
 }
 
 /// Transport-facing unit oper.
-#[derive(Debug, Deserialize, ToSchema)]
+#[derive(Debug, Clone, Deserialize, ToSchema)]
 pub struct UnitDiffData {
     pub page_id: String,
 
     pub opers: Vec<UnitOperData>,
-
-    pub candidate_order: Vec<String>,
 }
 
-/// Transport-facing compact unit oper.
-#[derive(Debug, Deserialize, ToSchema)]
-pub struct UnitOperData {
-    pub id: Option<String>,
-    pub local_id: Option<String>,
+/// Transport-facing unit oper event.
+#[derive(Debug, Clone, Deserialize, ToSchema)]
+#[serde(tag = "oper", rename_all = "snake_case")]
+pub enum UnitOperData {
+    Save {
+        #[serde(default)]
+        local_id: Option<String>,
 
-    pub is_bubble: Option<bool>,
-    pub is_proofread: Option<bool>,
+        #[serde(default)]
+        id: Option<String>,
 
-    pub x_coord: Option<f64>,
-    pub y_coord: Option<f64>,
+        #[serde(default)]
+        before_id: Option<String>,
+
+        #[serde(flatten)]
+        payload: UnitPayloadData,
+    },
+    Delete {
+        id: String,
+    },
+}
+
+/// Transport-facing complete unit payload.
+#[derive(Debug, Clone, Deserialize, ToSchema)]
+pub struct UnitPayloadData {
+    pub is_bubble: bool,
+    pub is_proofread: bool,
+
+    pub x_coord: f64,
+    pub y_coord: f64,
 
     pub translated_text: Option<String>,
     pub last_translator_id: Option<String>,
@@ -122,47 +137,48 @@ impl UnitDiffData {
         let mut opers = Vec::with_capacity(self.opers.len());
 
         for unit_oper_data in self.opers {
-            let unit_oper = unit_oper_data.into_model()?;
+            let unit_oper = unit_oper_data.into_model();
             opers.push(unit_oper);
         }
 
         Some(UnitDiff {
             page_id: self.page_id,
             opers,
-            candidate_order: self.candidate_order,
         })
     }
 }
 
 impl UnitOperData {
-    fn into_model(self) -> Option<UnitOper> {
-        let payload = self.payload();
-        let id = self.id;
-        let local_id = self.local_id;
-
-        match (id, local_id, payload) {
-            (None, Some(local_id), Some(payload)) => Some(UnitOper::Create {
+    fn into_model(self) -> UnitOper {
+        match self {
+            UnitOperData::Save {
                 local_id,
-                id: None,
+                id,
+                before_id,
                 payload,
-            }),
-            (Some(id), None, Some(payload)) => Some(UnitOper::Save { id, payload }),
-            (Some(id), None, None) => Some(UnitOper::Delete { id }),
-            _ => None,
+            } => UnitOper::Save {
+                local_id,
+                id,
+                payload: payload.into_model(),
+                before_id,
+            },
+            UnitOperData::Delete { id } => UnitOper::Delete { id },
         }
     }
+}
 
-    fn payload(&self) -> Option<UnitPayload> {
-        Some(UnitPayload {
-            is_bubble: self.is_bubble?,
-            is_proofread: self.is_proofread?,
-            x_coord: self.x_coord?,
-            y_coord: self.y_coord?,
-            translated_text: self.translated_text.clone(),
-            last_translator_id: self.last_translator_id.clone(),
-            proofread_text: self.proofread_text.clone(),
-            last_proofreader_id: self.last_proofreader_id.clone(),
-        })
+impl UnitPayloadData {
+    fn into_model(self) -> UnitPayload {
+        UnitPayload {
+            is_bubble: self.is_bubble,
+            is_proofread: self.is_proofread,
+            x_coord: self.x_coord,
+            y_coord: self.y_coord,
+            translated_text: self.translated_text,
+            last_translator_id: self.last_translator_id,
+            proofread_text: self.proofread_text,
+            last_proofreader_id: self.last_proofreader_id,
+        }
     }
 }
 

@@ -12,8 +12,8 @@ use crate::result::RegularError;
 /// A recorded deferred action stored in the mock context during transactional testing.
 #[cfg_attr(test, derive(Clone))]
 pub struct MockPromRecord {
-    pub id: String,
-    pub topic: String,
+    id: String,
+    topic: String,
 
     /// Serialized JSON of the [`Payload`].
     ///
@@ -21,10 +21,25 @@ pub struct MockPromRecord {
     /// for assertions.
     payload_json: String,
 
-    pub visible_at: OffsetDateTime,
+    visible_at: OffsetDateTime,
 }
 
 impl MockPromRecord {
+    /// Returns the prom message id.
+    pub fn id(&self) -> &str {
+        &self.id
+    }
+
+    /// Returns the prom topic.
+    pub fn topic(&self) -> &str {
+        &self.topic
+    }
+
+    /// Returns the deferred visibility time.
+    pub fn visible_at(&self) -> OffsetDateTime {
+        self.visible_at
+    }
+
     /// Deserializes the stored JSON back into a [`Payload`].
     ///
     /// The returned `Payload` borrows from `self`, so it's valid for
@@ -127,5 +142,7 @@ async fn append_records_payload() {
 
     let snapshot = mock.snapshot();
     assert_eq!(snapshot.prom_records.len(), 1);
-    assert_eq!(snapshot.prom_records[0].id, "prom-1");
+    assert_eq!(snapshot.prom_records[0].id(), "prom-1");
+    assert_eq!(snapshot.prom_records[0].topic(), "image");
+    assert_eq!(snapshot.prom_records[0].visible_at(), visible_at);
 }

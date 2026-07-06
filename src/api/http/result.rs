@@ -10,7 +10,7 @@ use std::num::NonZeroU16;
 
 use axum::Json;
 use axum::http::StatusCode;
-use axum::http::header::{HeaderMap, HeaderName, HeaderValue, SET_COOKIE};
+use axum::http::header::{HeaderMap, HeaderValue, SET_COOKIE};
 use axum::response::{IntoResponse, Response};
 use cookie::Cookie;
 use serde::Serialize;
@@ -59,15 +59,6 @@ impl HttpError {
             status,
             code: NonZeroU16::new(code).expect("non-zero error code"),
             message: Some(message.to_string()),
-        }
-    }
-
-    /// `404 Not Found` error with no message.
-    pub fn not_found() -> Self {
-        Self {
-            status: StatusCode::NOT_FOUND,
-            code: NonZeroU16::new(6).expect("non-zero error code"),
-            message: None,
         }
     }
 
@@ -147,18 +138,6 @@ impl<T> HttpBody<T> {
             code: 0,
             data,
         }
-    }
-
-    /// Appends a header to the response.
-    pub fn with_header(mut self, name: &str, value: &str) -> Self {
-        if let (Ok(name), Ok(value)) = (
-            HeaderName::from_bytes(name.as_bytes()),
-            HeaderValue::from_str(value),
-        ) {
-            self.headers.insert(name, value);
-        }
-
-        self
     }
 
     /// Appends a `Set-Cookie` header.

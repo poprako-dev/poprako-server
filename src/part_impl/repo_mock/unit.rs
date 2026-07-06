@@ -6,7 +6,7 @@ use poprako_transactional::advance::Advance;
 
 use crate::model::unit::{UnitCounters, UnitIndex, UnitInfo, UnitOper, UnitPayload};
 use crate::part::repo::step::unit::{
-    CountByPageId, CreateInfo, DeleteByIdInPage, ListIndexesByPageId, ListInfosByPageId, SaveInfo,
+    CountByPageId, DeleteByIdInPage, ListIndexesByPageId, ListInfosByPageId, SaveInfo,
     UpdateIndexesByPageId,
 };
 use crate::part::repo::unit::{UnitRepo, UnitRepoTransactional};
@@ -169,28 +169,6 @@ impl<'a> Advance<ListInfosByPageId<'a>, MockContext> for MockTransactional {
 }
 
 #[async_trait]
-impl<'a> Advance<CreateInfo<'a>, MockContext> for MockTransactional {
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut MockContext,
-        step: &CreateInfo<'a>,
-    ) -> Result<(), Self::Error> {
-        let UnitOper::Create {
-            id: Some(id),
-            payload,
-            ..
-        } = step.oper
-        else {
-            return Err(expected("error-invalid-unit-oper"));
-        };
-
-        create_unit(&mut context.state, step.page_id, id, payload)
-    }
-}
-
-#[async_trait]
 impl<'a> Advance<SaveInfo<'a>, MockContext> for MockTransactional {
     type Error = RegularError;
 
@@ -199,8 +177,13 @@ impl<'a> Advance<SaveInfo<'a>, MockContext> for MockTransactional {
         context: &mut MockContext,
         step: &SaveInfo<'a>,
     ) -> Result<(), Self::Error> {
-        let UnitOper::Save { id, payload } = step.oper else {
-            return Err(expected("error-invalid-unit-oper"));
+        let (id, payload) = match step.oper {
+            UnitOper::Save {
+                id: Some(id),
+                payload,
+                ..
+            } => (id, payload),
+            _ => return Err(expected("error-invalid-unit-oper")),
         };
 
         save_unit(&mut context.state, step.page_id, id, payload)

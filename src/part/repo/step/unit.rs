@@ -16,16 +16,6 @@ impl<'a> Step for ListInfosByPageId<'a> {
     type Output = Vec<UnitInfo>;
 }
 
-/// Step that creates one unit row.
-pub struct CreateInfo<'a> {
-    pub page_id: &'a str,
-    pub oper: &'a UnitOper,
-}
-
-impl<'a> Step for CreateInfo<'a> {
-    type Output = ();
-}
-
 /// Step that saves one unit row by upsert.
 pub struct SaveInfo<'a> {
     pub page_id: &'a str,
@@ -81,11 +71,6 @@ impl UnitStep {
     /// Constructs a step to list units by page ID.
     pub fn list_infos_by_page_id<'a>(page_id: &'a str, page: Page) -> ListInfosByPageId<'a> {
         ListInfosByPageId { page_id, page }
-    }
-
-    /// Constructs a step to create one unit row.
-    pub fn create_info<'a>(page_id: &'a str, oper: &'a UnitOper) -> CreateInfo<'a> {
-        CreateInfo { page_id, oper }
     }
 
     /// Constructs a step to save one unit row by upsert.

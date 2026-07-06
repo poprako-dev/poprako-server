@@ -12,7 +12,7 @@ use crate::model::unit::{
     UnitCounters, UnitIndex, UnitIndexUpdate, UnitInfo, UnitOper, UnitPayload,
 };
 use crate::part::repo::step::unit::{
-    CountByPageId, CreateInfo, DeleteByIdInPage, ListIndexesByPageId, ListInfosByPageId, SaveInfo,
+    CountByPageId, DeleteByIdInPage, ListIndexesByPageId, ListInfosByPageId, SaveInfo,
     UpdateIndexesByPageId,
 };
 use crate::part::repo::unit::{UnitRepo, UnitRepoTransactional};
@@ -115,22 +115,16 @@ async fn save_unit(
     Ok(())
 }
 
-async fn create_info(conn: &mut RdbConn, page_id: &str, oper: &UnitOper) -> RegularResult<()> {
-    let UnitOper::Create {
-        id: Some(id),
-        payload,
-        ..
-    } = oper
-    else {
-        return Err(expected("error-invalid-unit-oper"));
-    };
-    create_unit(conn, page_id, id, payload).await
-}
-
 async fn save_info(conn: &mut RdbConn, page_id: &str, oper: &UnitOper) -> RegularResult<()> {
-    let UnitOper::Save { id, payload } = oper else {
-        return Err(expected("error-invalid-unit-oper"));
+    let (id, payload) = match oper {
+        UnitOper::Save {
+            id: Some(id),
+            payload,
+            ..
+        } => (id, payload),
+        _ => return Err(expected("error-invalid-unit-oper")),
     };
+
     save_unit(conn, page_id, id, payload).await
 }
 
@@ -236,15 +230,6 @@ impl<'a> Advance<ListInfosByPageId<'a>, RdbContext> for RdbRepoTransactional {
         step: &ListInfosByPageId<'a>,
     ) -> RegularResult<Vec<UnitInfo>> {
         list_infos_by_page_id(context.conn(), step.page_id, step.page).await
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<CreateInfo<'a>, RdbContext> for RdbRepoTransactional {
-    type Error = RegularError;
-
-    async fn advance(&self, context: &mut RdbContext, step: &CreateInfo<'a>) -> RegularResult<()> {
-        create_info(context.conn(), step.page_id, step.oper).await
     }
 }
 

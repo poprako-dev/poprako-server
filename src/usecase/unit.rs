@@ -82,7 +82,7 @@ where
     })
 }
 
-/// Saves ordered unit opers under one page.
+/// Saves unit opers under one page.
 pub async fn save_infos<D, C, R>(
     drive: &D,
     repo: &R,
@@ -113,14 +113,12 @@ where
     let UnitApplyParts {
         opers,
         local_id_maps,
-        candidate_order,
     } = UnitApplyParts::from(UnitComplex::prepare_diff(unit_diff)?);
 
     let save_units = drive
         .with_context(async move |context| {
             let repo = repo.derive_transactional().await;
 
-            // FIXME: Add page-scoped SubmissionId deduplication before oper replay.
             let page_info = repo
                 .advance(context, &PageStep::get_info_excluded(&page_id))
                 .await?;
@@ -143,12 +141,25 @@ where
                 )
                 .await?;
 
+            let current_indexes = repo
+                .advance(context, &UnitStep::list_indexes_by_page_id(&page_info.id))
+                .await?;
+
+            let mut sorted_indexes = current_indexes.clone();
+
+            sorted_indexes.sort_by(|left, right| {
+                left.index
+                    .cmp(&right.index)
+                    .then_with(|| left.id.cmp(&right.id))
+            });
+
+            let mut current_order: Vec<String> = sorted_indexes
+                .into_iter()
+                .map(|unit_index| unit_index.id)
+                .collect();
+
             for oper in &opers {
                 match oper {
-                    UnitOper::Create { .. } => {
-                        repo.advance(context, &UnitStep::create_info(&page_info.id, oper))
-                            .await?;
-                    }
                     UnitOper::Save { .. } => {
                         repo.advance(context, &UnitStep::save_info(&page_info.id, oper))
                             .await?;
@@ -160,12 +171,10 @@ where
                 }
             }
 
-            let current_indexes = repo
-                .advance(context, &UnitStep::list_indexes_by_page_id(&page_info.id))
-                .await?;
+            current_order = UnitComplex::apply_opers_to_order(&opers, current_order);
 
             let index_updates =
-                UnitComplex::build_index_updates(&candidate_order, &local_id_maps, current_indexes);
+                UnitComplex::build_index_updates_from_order(&current_order, &current_indexes);
 
             if !index_updates.is_empty() {
                 repo.advance(
@@ -216,7 +225,6 @@ where
 struct UnitApplyParts {
     opers: Vec<UnitOper>,
     local_id_maps: Vec<UnitIdMapper>,
-    candidate_order: Vec<String>,
 }
 
 impl From<UnitApplyAck> for UnitApplyParts {
@@ -224,7 +232,6 @@ impl From<UnitApplyAck> for UnitApplyParts {
         Self {
             opers: receipt.opers,
             local_id_maps: receipt.local_id_map,
-            candidate_order: receipt.candidate_order,
         }
     }
 }

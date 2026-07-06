@@ -139,6 +139,7 @@ fn member(user_id: &str, role_mask: RoleMask) -> MemberInfo {
         id: format!("member-{}", user_id),
         user_id: user_id.into(),
         user_nickname: user_id.into(),
+        user_last_active_at: now(),
         team_id: "team-1".into(),
         user: None,
         team: None,

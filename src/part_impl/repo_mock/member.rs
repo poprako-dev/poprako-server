@@ -1,8 +1,6 @@
 //! Mock implementations of `MemberRepo` and `MemberRepoTransactional` for in-memory testing.
 
 use async_trait::async_trait;
-use time::OffsetDateTime;
-
 use poprako_transactional::advance::Advance;
 
 use crate::model::member::{MemberForm, MemberInfo, MemberListSpec};
@@ -17,7 +15,6 @@ use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactional, expected, now};
 use crate::result::{RegularError, RegularResult};
 use crate::value::member::MemberInclOpt;
-use crate::value::role::RoleMask;
 
 impl MemberRepo<MockContext> for Mock {}
 
@@ -53,12 +50,6 @@ fn apply_team_incl(state: &MockState, member_info: &mut MemberInfo, include_team
     }
 }
 
-/// Returns [`Some(now)`] when the given role mask has any bits set, used to timestamp role
-/// assignments.
-fn role_time(roles: RoleMask) -> Option<OffsetDateTime> {
-    (u32::from(roles) != 0).then_some(now())
-}
-
 /// Inserts a new member record, rejecting duplicates by id or by the same user+team pair.
 fn create_member(state: &mut MockState, form: &MemberForm) -> RegularResult<MemberInfo> {
     if state.members.iter().any(|member| member.id == form.id) {
@@ -72,11 +63,11 @@ fn create_member(state: &mut MockState, form: &MemberForm) -> RegularResult<Memb
         return Err(expected("error-already-exists"));
     }
 
-    let _ = role_time(form.roles);
     let member = MemberInfo {
         id: form.id.clone(),
         user_id: form.user_id.clone(),
         user_nickname: form.user_nickname.clone(),
+        user_last_active_at: now(),
         team_id: form.team_id.clone(),
         user: None,
         team: None,
@@ -144,9 +135,17 @@ impl<'a> Advance<TouchLastActive<'a>, MockContext> for MockTransactional {
 
     async fn advance(
         &self,
-        _: &mut MockContext,
-        _: &TouchLastActive<'a>,
+        context: &mut MockContext,
+        step: &TouchLastActive<'a>,
     ) -> Result<(), Self::Error> {
+        let time = now();
+
+        for member_info in &mut context.state.members {
+            if member_info.user_id == step.user_id {
+                member_info.user_last_active_at = time;
+            }
+        }
+
         Ok(())
     }
 }

@@ -117,8 +117,6 @@ where
                     .map(|unit_info| (unit_info.index, unit_info))
                     .collect::<HashMap<_, _>>();
 
-                let mut candidate_order = Vec::with_capacity(imported_page.units.len());
-
                 for imported_unit in &imported_page.units {
                     let unit_id = resolve_unit_id(imported_unit, &existing_by_index);
 
@@ -136,22 +134,21 @@ where
                     );
 
                     let unit_oper = UnitOper::Save {
-                        id: unit_id.clone(),
+                        local_id: None,
+                        id: Some(unit_id.clone()),
                         payload: unit_payload,
+                        before_id: None,
                     };
 
                     repo.advance(context, &UnitStep::save_info(&page_info.id, &unit_oper))
                         .await?;
-
-                    candidate_order.push(unit_id);
                 }
 
                 let current_indexes = repo
                     .advance(context, &UnitStep::list_indexes_by_page_id(&page_info.id))
                     .await?;
 
-                let index_updates =
-                    UnitComplex::build_index_updates(&candidate_order, &[], current_indexes);
+                let index_updates = UnitComplex::build_index_updates(current_indexes);
 
                 if !index_updates.is_empty() {
                     repo.advance(

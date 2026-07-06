@@ -33,7 +33,7 @@ use crate::part::repo::step::workset::{GetInfoById as WorksetGetInfoById, Workse
 use crate::part::shared::proxy::ProxyExecute;
 use crate::result::{ExpectedVariant, RegularError, RegularResult, accept};
 use crate::util::next_snowflake_id;
-use crate::value::chapter::{Stage, StagePhase, StageOper, try_modify_stage};
+use crate::value::chapter::{Stage, StageOper, StagePhase, try_modify_stage};
 use crate::value::index::stored_index_to_user_index;
 use crate::value::role::{RoleField, RoleMask};
 
@@ -481,9 +481,7 @@ where
     }
 
     let allowed = match (stage, oper) {
-        (Stage::RawProvide, StageOper::Advance) => {
-            roles.has_any_role(&[RoleField::RAW_PROVIDER])
-        }
+        (Stage::RawProvide, StageOper::Advance) => roles.has_any_role(&[RoleField::RAW_PROVIDER]),
         (Stage::Translate, StageOper::Advance) => roles.has_any_role(&[RoleField::TRANSLATOR]),
         (Stage::Translate, StageOper::Revert) => roles.has_any_role(&[RoleField::PROOFREADER]),
         (Stage::Proofread, StageOper::Advance | StageOper::Revert) => {

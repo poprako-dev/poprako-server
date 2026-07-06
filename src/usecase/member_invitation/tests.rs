@@ -55,6 +55,7 @@ fn member(id: &str, user_id: &str, team_id: &str, role_mask: RoleMask) -> Member
         id: id.into(),
         user_id: user_id.into(),
         user_nickname: user_id.into(),
+        user_last_active_at: test_util::now(),
         team_id: team_id.into(),
         user: None,
         team: None,

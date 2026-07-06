@@ -43,15 +43,18 @@ async fn unit_roundtrip_reads_test_database_url() {
 
     let unit_id = format!("{}unit", PREFIX);
 
-    let create_unit_oper = UnitOper::Create {
-        local_id: "local-1".into(),
+    let create_unit_oper = UnitOper::Save {
+        local_id: Some("local-1".into()),
         id: Some(unit_id.clone()),
         payload: unit_payload(Some("translated"), false),
+        before_id: None,
     };
 
     let save_unit_oper = UnitOper::Save {
-        id: unit_id.clone(),
+        local_id: None,
+        id: Some(unit_id.clone()),
         payload: unit_payload(Some("translated"), true),
+        before_id: None,
     };
 
     let unit_index_updates = [UnitIndexUpdate {
@@ -64,7 +67,7 @@ async fn unit_roundtrip_reads_test_database_url() {
             Advance::advance(
                 &transactional_repo,
                 context,
-                &UnitStep::create_info(&page_fixture.page_form.id, &create_unit_oper),
+                &UnitStep::save_info(&page_fixture.page_form.id, &create_unit_oper),
             )
             .await?;
 

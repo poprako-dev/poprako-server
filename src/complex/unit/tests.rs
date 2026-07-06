@@ -1,11 +1,15 @@
-// prepare_difference(UnitComplex::prepare_difference)(positive): create, save, and delete opers are preserved while create ids are mapped.
-// prepare_difference(UnitComplex::prepare_difference)(negative): invalid ids, duplicate local ids, duplicate candidate ids, deleted candidate ids, and missing candidate ids are rejected.
-// build_index_updates(UnitComplex::build_index_updates)(positive): candidate order resolves local ids, skips stale anchors, preserves unknown units, and emits changed indexes only.
-// build_index_updates(UnitComplex::build_index_updates)(positive): order-only differences produce compact index updates without unit mutations.
+// prepare_diff(UnitComplex::prepare_diff)(positive): create, save, and delete opers are preserved while create ids are mapped.
+// prepare_diff(UnitComplex::prepare_diff)(positive): delete and later save on the same id remain ordered replay opers.
+// prepare_diff(UnitComplex::prepare_diff)(negative): invalid ids and duplicate local ids are rejected.
+// apply_opers_to_order(UnitComplex::apply_opers_to_order)(positive): create and save place units before the anchor or at the tail.
+// apply_opers_to_order(UnitComplex::apply_opers_to_order)(positive): delete removes a unit and preserves the remaining order.
+// apply_opers_to_order(UnitComplex::apply_opers_to_order)(positive): save upsert restores a missing unit at the tail.
+// build_index_updates(UnitComplex::build_index_updates)(positive): persisted server order is compacted without client-provided order.
+// build_index_updates(UnitComplex::build_index_updates)(positive): already compact server order emits no index updates.
 
 use super::*;
 
-use crate::model::unit::{UnitDiff, UnitIdMapper, UnitIndex, UnitOper, UnitPayload};
+use crate::model::unit::{UnitDiff, UnitIndex, UnitOper, UnitPayload};
 use crate::result::{ExpectedVariant, RegularError};
 
 fn payload(text: &str, proofread: bool) -> UnitPayload {
@@ -21,11 +25,10 @@ fn payload(text: &str, proofread: bool) -> UnitPayload {
     }
 }
 
-fn diff(opers: Vec<UnitOper>, candidate_order: Vec<&str>) -> UnitDiff {
+fn diff(opers: Vec<UnitOper>) -> UnitDiff {
     UnitDiff {
         page_id: "page-1".into(),
         opers,
-        candidate_order: candidate_order.into_iter().map(Into::into).collect(),
     }
 }
 
@@ -42,27 +45,29 @@ fn assert_args_error(error: RegularError) {
 
 #[test]
 fn prepare_diff_maps_create_ids_and_keeps_oper_order() {
-    let unit_diff = diff(
-        vec![
-            UnitOper::Save {
-                id: "unit-a".into(),
-                payload: payload("alpha", false),
-            },
-            UnitOper::Create {
-                local_id: "local-x".into(),
-                id: None,
-                payload: payload("inserted", true),
-            },
-            UnitOper::Delete {
-                id: "unit-b".into(),
-            },
-            UnitOper::Save {
-                id: "unit-a".into(),
-                payload: payload("alpha-later", false),
-            },
-        ],
-        vec!["unit-a", "local-x"],
-    );
+    let unit_diff = diff(vec![
+        UnitOper::Save {
+            local_id: None,
+            id: Some("unit-a".into()),
+            payload: payload("alpha", false),
+            before_id: None,
+        },
+        UnitOper::Save {
+            local_id: Some("local-x".into()),
+            id: None,
+            payload: payload("inserted", true),
+            before_id: Some("unit-a".into()),
+        },
+        UnitOper::Delete {
+            id: "unit-b".into(),
+        },
+        UnitOper::Save {
+            local_id: None,
+            id: Some("unit-a".into()),
+            payload: payload("alpha-later", false),
+            before_id: None,
+        },
+    ]);
 
     let receipt = match UnitComplex::prepare_diff(unit_diff) {
         Ok(receipt) => receipt,
@@ -73,118 +78,135 @@ fn prepare_diff_maps_create_ids_and_keeps_oper_order() {
     assert_eq!(receipt.local_id_map.len(), 1);
     assert_eq!(receipt.local_id_map[0].local_id, "local-x");
     assert!(!receipt.local_id_map[0].unit_id.is_empty());
-    assert_eq!(receipt.candidate_order[0], "unit-a");
-    assert_eq!(receipt.candidate_order[1], receipt.local_id_map[0].unit_id);
 
     match &receipt.opers[1] {
-        UnitOper::Create { local_id, id, .. } => {
-            assert_eq!(local_id, "local-x");
+        UnitOper::Save { id, local_id, .. } => {
+            assert!(local_id.is_none());
             assert_eq!(
                 id.as_deref(),
                 Some(receipt.local_id_map[0].unit_id.as_str())
             );
         }
-        UnitOper::Save { .. } | UnitOper::Delete { .. } => {
-            panic!("expected create oper");
+        UnitOper::Delete { .. } => {
+            panic!("expected save oper");
         }
     }
 }
 
 #[test]
 fn prepare_diff_rejects_invalid_compact_diff() {
-    let empty_id_error = UnitComplex::prepare_diff(diff(
-        vec![UnitOper::Save {
-            id: String::new(),
-            payload: payload("alpha", false),
-        }],
-        vec!["unit-a"],
-    ))
+    let empty_id_error = UnitComplex::prepare_diff(diff(vec![UnitOper::Save {
+        local_id: None,
+        id: Some(String::new()),
+        payload: payload("alpha", false),
+        before_id: None,
+    }]))
     .err()
     .unwrap();
 
     assert_args_error(empty_id_error);
 
-    let duplicate_local_id_error = UnitComplex::prepare_diff(diff(
-        vec![
-            UnitOper::Create {
-                local_id: "local-x".into(),
-                id: None,
-                payload: payload("one", false),
-            },
-            UnitOper::Create {
-                local_id: "local-x".into(),
-                id: None,
-                payload: payload("two", false),
-            },
-        ],
-        vec!["local-x"],
-    ))
+    let duplicate_local_id_error = UnitComplex::prepare_diff(diff(vec![
+        UnitOper::Save {
+            local_id: Some("local-x".into()),
+            id: None,
+            payload: payload("one", false),
+            before_id: None,
+        },
+        UnitOper::Save {
+            local_id: Some("local-x".into()),
+            id: None,
+            payload: payload("two", false),
+            before_id: None,
+        },
+    ]))
     .err()
     .unwrap();
 
     assert_args_error(duplicate_local_id_error);
-
-    let duplicate_candidate_error =
-        UnitComplex::prepare_diff(diff(Vec::new(), vec!["unit-a", "unit-a"]))
-            .err()
-            .unwrap();
-
-    assert_args_error(duplicate_candidate_error);
-
-    let deleted_candidate_error = UnitComplex::prepare_diff(diff(
-        vec![UnitOper::Delete {
-            id: "unit-a".into(),
-        }],
-        vec!["unit-a"],
-    ))
-    .err()
-    .unwrap();
-
-    assert_args_error(deleted_candidate_error);
-
-    let missing_candidate_error = UnitComplex::prepare_diff(diff(
-        vec![UnitOper::Create {
-            local_id: "local-x".into(),
-            id: None,
-            payload: payload("one", false),
-        }],
-        Vec::new(),
-    ))
-    .err()
-    .unwrap();
-
-    assert_args_error(missing_candidate_error);
-
-    let save_delete_error = UnitComplex::prepare_diff(diff(
-        vec![
-            UnitOper::Save {
-                id: "unit-a".into(),
-                payload: payload("alpha", false),
-            },
-            UnitOper::Delete {
-                id: "unit-a".into(),
-            },
-        ],
-        vec!["unit-a"],
-    ))
-    .err()
-    .unwrap();
-
-    assert_args_error(save_delete_error);
 }
 
 #[test]
-fn build_index_updates_resolves_local_ids_and_preserves_unknown_units() {
-    let candidate_order = vec![
-        "unit-c".into(),
-        "local-x".into(),
-        "stale-anchor".into(),
-        "unit-a".into(),
+fn prepare_diff_keeps_delete_and_later_save_for_ordered_replay() {
+    let receipt = match UnitComplex::prepare_diff(diff(vec![
+        UnitOper::Delete {
+            id: "unit-a".into(),
+        },
+        UnitOper::Save {
+            local_id: None,
+            id: Some("unit-a".into()),
+            payload: payload("alpha", false),
+            before_id: None,
+        },
+    ])) {
+        Ok(receipt) => receipt,
+        Err(_) => panic!("expected delete and later save to be valid"),
+    };
+
+    assert_eq!(receipt.opers.len(), 2);
+}
+
+#[test]
+fn apply_opers_to_order_places_create_and_save_before_anchor_or_tail() {
+    let opers = vec![
+        UnitOper::Save {
+            local_id: None,
+            id: Some("unit-x".into()),
+            payload: payload("x", false),
+            before_id: Some("unit-b".into()),
+        },
+        UnitOper::Save {
+            local_id: None,
+            id: Some("unit-a".into()),
+            payload: payload("a", false),
+            before_id: None,
+        },
+        UnitOper::Save {
+            local_id: None,
+            id: Some("unit-c".into()),
+            payload: payload("c", false),
+            before_id: Some("unit-missing".into()),
+        },
     ];
-    let local_id_maps = vec![UnitIdMapper {
-        local_id: "local-x".into(),
-        unit_id: "unit-x".into(),
+
+    let current_order = vec!["unit-a".into(), "unit-b".into()];
+
+    let final_order = UnitComplex::apply_opers_to_order(&opers, current_order);
+
+    assert_eq!(final_order, vec!["unit-x", "unit-b", "unit-a", "unit-c"]);
+}
+
+#[test]
+fn apply_opers_to_order_removes_deleted_unit_and_keeps_remaining_order() {
+    let opers = vec![UnitOper::Delete {
+        id: "unit-b".into(),
     }];
+
+    let current_order = vec!["unit-a".into(), "unit-b".into(), "unit-c".into()];
+
+    let final_order = UnitComplex::apply_opers_to_order(&opers, current_order);
+
+    assert_eq!(final_order, vec!["unit-a", "unit-c"]);
+}
+
+#[test]
+fn apply_opers_to_order_save_upsert_restores_missing_unit_at_tail() {
+    let opers = vec![UnitOper::Save {
+        local_id: None,
+        id: Some("unit-z".into()),
+        payload: payload("z", false),
+        before_id: None,
+    }];
+
+    let current_order = vec!["unit-a".into(), "unit-b".into()];
+
+    let final_order = UnitComplex::apply_opers_to_order(&opers, current_order);
+
+    assert_eq!(final_order, vec!["unit-a", "unit-b", "unit-z"]);
+}
+
+#[test]
+fn build_index_updates_compacts_server_order() {
     let current_indexes = vec![
         UnitIndex {
             id: "unit-a".into(),
@@ -192,24 +214,23 @@ fn build_index_updates_resolves_local_ids_and_preserves_unknown_units() {
         },
         UnitIndex {
             id: "unit-b".into(),
-            index: 1,
-        },
-        UnitIndex {
-            id: "unit-c".into(),
-            index: 2,
-        },
-        UnitIndex {
-            id: "unit-x".into(),
             index: 3,
         },
         UnitIndex {
+            id: "unit-c".into(),
+            index: 1,
+        },
+        UnitIndex {
+            id: "unit-x".into(),
+            index: 7,
+        },
+        UnitIndex {
             id: "unit-z".into(),
-            index: 4,
+            index: 7,
         },
     ];
 
-    let unit_index_updates =
-        UnitComplex::build_index_updates(&candidate_order, &local_id_maps, current_indexes);
+    let unit_index_updates = UnitComplex::build_index_updates(current_indexes);
 
     let ordered_pairs = unit_index_updates
         .iter()
@@ -218,12 +239,12 @@ fn build_index_updates_resolves_local_ids_and_preserves_unknown_units() {
 
     assert_eq!(
         ordered_pairs,
-        vec![("unit-c", 0), ("unit-x", 2), ("unit-a", 3),]
+        vec![("unit-b", 2), ("unit-x", 3), ("unit-z", 4),]
     );
 }
 
 #[test]
-fn build_index_updates_supports_order_only_diffs() {
+fn build_index_updates_skips_compact_server_order() {
     let current_indexes = vec![
         UnitIndex {
             id: "unit-a".into(),
@@ -239,16 +260,7 @@ fn build_index_updates_supports_order_only_diffs() {
         },
     ];
 
-    let unit_index_updates = UnitComplex::build_index_updates(
-        &["unit-c".into(), "unit-b".into(), "unit-a".into()],
-        &[],
-        current_indexes,
-    );
+    let unit_index_updates = UnitComplex::build_index_updates(current_indexes);
 
-    let ordered_pairs = unit_index_updates
-        .iter()
-        .map(|unit_index_update| (unit_index_update.id.as_str(), unit_index_update.index))
-        .collect::<Vec<_>>();
-
-    assert_eq!(ordered_pairs, vec![("unit-c", 0), ("unit-a", 2)]);
+    assert!(unit_index_updates.is_empty());
 }

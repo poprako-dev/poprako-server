@@ -6,6 +6,7 @@ use utoipa::{IntoParams, ToSchema};
 
 use poprako_macro::Paginate;
 use poprako_util::i18n::trl;
+use poprako_util::time::ToUnixMilli;
 
 use crate::data::team::TeamInfoVal;
 use crate::data::user::UserInfoVal;
@@ -22,6 +23,7 @@ pub struct MemberInfoVal {
 
     pub user_id: String,
     pub nickname: String,
+    pub last_active_at: i64,
 
     pub team_id: String,
 
@@ -37,6 +39,7 @@ impl From<MemberInfo> for MemberInfoVal {
             id: value.id,
             user_id: value.user_id,
             nickname: value.user_nickname,
+            last_active_at: value.user_last_active_at.to_unix_milli(),
             team_id: value.team_id,
             user: None,
             team: None,
@@ -64,6 +67,7 @@ impl MemberInfoVal {
             id: model.id,
             user_id: model.user_id,
             nickname: model.user_nickname,
+            last_active_at: model.user_last_active_at.to_unix_milli(),
             team_id: model.team_id,
             user,
             team,

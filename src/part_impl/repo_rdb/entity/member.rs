@@ -193,6 +193,7 @@ impl From<MemberRow> for MemberInfo {
             id: v.f_id,
             user_id: v.f_user_id,
             user_nickname: v.f_user_nickname,
+            user_last_active_at: v.f_user_last_active_at,
             team_id: v.f_team_id,
             user: None,
             team: None,
