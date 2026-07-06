@@ -51,7 +51,7 @@ pub async fn list_infos(
     reply.accept(StatusCode::OK)
 }
 
-/// `POST /api/v1/pages/{page_id}/units/save` — save ordered unit opers.
+/// `POST /api/v1/pages/{page_id}/units/save` — save unit opers.
 #[utoipa::path(
     post,
     path = "/api/v1/pages/{page_id}/units/save",

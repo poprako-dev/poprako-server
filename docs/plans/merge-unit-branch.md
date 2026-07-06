@@ -5,7 +5,7 @@
 - 稳定身份；
 - `coord`；
 - `text`；
-- 在页面中的顺序位置。
+- 在页面数组中的顺序位置。
 
 多个 Translator 可以基于不同页面版本并发编辑。例如：
 
@@ -45,17 +45,18 @@ struct Unit {
 }
 ```
 
-`order` 不作为可信的独立标量参与合并，而由 Unit 在 `units` 序列中的位置决定。
+顺序不作为可信的独立标量参与合并，而由 Unit 在 `units` 序列中的位置决定。
 
-对外仍然可以给每个 Unit 返回严格递增的 `order`：
+对外不返回 `index`、`order`、`cand_order` 或任何等价的顺序标量。
 
-`order = index + 1`
+`index` 只属于 DB 层，用于持久化 Unit ID 的先后关系。
 
-因此始终满足：
+前端看到的顺序只有一种表达：
 
-`unit[0].order < unit[1].order < ... < unit[n].order`
+> `list units` 返回的数组顺序就是页面 Unit 顺序。
 
-客户端不能通过直接提交整数 `order` 来决定最终顺序，只能提交相对位置操作。
+客户端不能通过提交整数 `index`、整数 `order`、`candidate_order`、`cand_order`
+或独立 ID 排列来决定最终顺序；需要改变顺序时，只能提交相对位置操作。
 
 ---
 
@@ -141,6 +142,17 @@ struct LocalUnitSnapshot {
 任何会写入 Unit 的操作都必须携带完整 Unit 内容，而不是字段 patch。
 
 也就是说，`Update` 和 `MoveBefore` 都携带完整的 `coord` 与 `text`。后执行的写操作可以完整恢复或覆盖这个 Unit。
+
+当前 save API 的传输层是 tagged event enum；详细请求/响应格式见
+`docs/unit-save-api.md`。语义必须一一映射到上面的操作：
+
+- `oper=create + local_id + 完整 unit payload`：新建 Unit，缺省插入尾部；
+- `oper=create + local_id + 完整 unit payload + move_before`：新建 Unit，并插入到目标 Unit 前；
+- `oper=save + id + 完整 unit payload`：保存/恢复已有 Unit 内容，位置不变；若当前已被删除，则按完整快照恢复到尾部；
+- `oper=move_before + id + 完整 unit payload + move_before`：保存/恢复已有 Unit 内容，并移动到目标 Unit 前；`move_before: null` 表示尾部；
+- `oper=delete + id`：删除 Unit；
+
+不存在无 payload 的 move。移动属于 save 语义，因为并发重放时 subject Unit 可能已经被删除，必须靠完整 Unit 快照恢复。
 
 `base_revision` 表示客户端编辑时所基于的页面版本，但它不是乐观锁条件。即使：
 
@@ -402,7 +414,9 @@ Delete 不需要携带完整 Unit，因为它不会写入 Unit 内容。
 
 > 按服务器串行顺序依次执行。
 
-不会发生 order 重复，因为 order 最终由整个序列重新派生。
+不会发生对外顺序字段重复，因为系统没有对外顺序字段。
+
+DB `index` 由最终序列重新派生，只用于之后的列表读取排序。
 
 ---
 
@@ -431,7 +445,7 @@ Delete 不需要携带完整 Unit，因为它不会写入 Unit 内容。
 7. 为本地新建 Unit 分配服务器 ID；
 8. 将所有缺失定位点解析为尾节点；
 9. 得到新的 Unit 有序序列；
-10. 根据序列位置重新生成严格递增的 order；
+10. 根据序列位置重新生成 DB 内部 `index`；
 11. 推进页面 revision；
 12. 提交结果；
 13. 缓存 Submission 的处理结果；
@@ -455,7 +469,7 @@ Delete 不需要携带完整 Unit，因为它不会写入 Unit 内容。
 
 页面是一个具有 revision 的 Unit 有序序列。
 
-`order` 是序列位置的派生结果，不是独立冲突字段。
+DB `index` 是序列位置的内部持久化结果，不是 API 字段，也不是独立冲突字段。
 
 ## Submission
 
@@ -487,7 +501,8 @@ Submission 即使基于旧版本，也允许应用到当前页面。
 - 移动冲突始终可以裁决；
 - 定位点消失不会导致失败；
 - 并发插入始终产生确定结果；
-- 最终 order 不重复、不缺乏全序；
+- 最终页面数组不缺乏全序；
+- DB 内部 `index` 可重新压紧且不向前端暴露；
 - 不需要冲突返回或人工合并。
 
 它不保证：

@@ -108,6 +108,7 @@ pub fn member(id: &str, user_id: &str, user_nickname: &str, team_id: &str) -> Me
         id: id.into(),
         user_id: user_id.into(),
         user_nickname: user_nickname.into(),
+        user_last_active_at: OffsetDateTime::now_utc(),
         team_id: team_id.into(),
         user: None,
         team: None,

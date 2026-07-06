@@ -50,26 +50,30 @@ pub struct UnitPayload {
 }
 
 /// One compact unit difference submitted by a client.
+///
+/// `opers` are applied in order. Each create and save carries a `before_id`
+/// that places it relative to the surviving server order; `None` (or a
+/// `before_id` the server cannot find) appends the unit to the tail.
 #[cfg_attr(test, derive(Clone))]
 pub struct UnitDiff {
     pub page_id: String,
 
     pub opers: Vec<UnitOper>,
-
-    pub candidate_order: Vec<String>,
 }
 
 /// One ordered unit oper submitted by a client.
+///
+/// `Save` is an upsert: a `local_id` (and no `id`) creates a new unit with a
+/// server-generated id; an `id` (and no `local_id`) updates or restores an
+/// existing unit. `before_id` places the unit relative to the surviving order;
+/// `None` or an absent anchor appends it to the tail.
 #[cfg_attr(test, derive(Clone))]
 pub enum UnitOper {
-    Create {
-        local_id: String,
+    Save {
+        local_id: Option<String>,
         id: Option<String>,
         payload: UnitPayload,
-    },
-    Save {
-        id: String,
-        payload: UnitPayload,
+        before_id: Option<String>,
     },
     Delete {
         id: String,
@@ -77,7 +81,7 @@ pub enum UnitOper {
 }
 
 /// Persisted index for one surviving unit.
-#[cfg_attr(test, derive(Clone))]
+#[derive(Clone)]
 pub struct UnitIndex {
     pub id: String,
     pub index: i32,
@@ -120,8 +124,6 @@ pub struct UnitApplyAck {
     pub opers: Vec<UnitOper>,
 
     pub local_id_map: Vec<UnitIdMapper>,
-
-    pub candidate_order: Vec<String>,
 }
 
 fn has_text(text: &Option<String>) -> bool {

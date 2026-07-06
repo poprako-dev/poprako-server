@@ -28,17 +28,10 @@ use std::sync::Arc;
 
 use anyhow::Context as _;
 
-use poprako_r::api::http::server::serve;
-use poprako_r::api::http::state::AppHarn;
-use poprako_r::config::AppConfig;
-use poprako_r::harn::Harn;
-use poprako_r::part_impl::RdbCore;
-use poprako_r::part_impl::auth_jwt::JwtAuth;
-use poprako_r::part_impl::drive_rdb::RdbDrive;
-use poprako_r::part_impl::effect_async::AsyncEffectDevelop;
-use poprako_r::part_impl::image_r2::R2ImagePool;
-use poprako_r::part_impl::prom_rdb::RdbProm;
-use poprako_r::part_impl::repo_rdb::RdbRepo;
+use poprako_r::{
+    AppConfig, AppHarn, AsyncEffectDevelop, Harn, JwtAuth, R2ImagePool, RdbCore, RdbDrive, RdbProm,
+    RdbRepo, serve,
+};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

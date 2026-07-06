@@ -15,6 +15,7 @@ pub struct MemberInfo {
 
     pub user_id: String,
     pub user_nickname: String,
+    pub user_last_active_at: time::OffsetDateTime,
 
     pub team_id: String,
 

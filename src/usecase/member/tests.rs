@@ -2,6 +2,7 @@
 // create(create)(negative): non-admin should be rejected without creating a member.
 // create(create)(negative): duplicate user and team membership should be rejected.
 // list_infos(list_infos)(positive): team member should list team members.
+// list_infos(list_infos)(positive): member list should expose user last active timestamp.
 // list_infos(list_infos)(positive): role filter should narrow listed members.
 // list_infos(list_infos)(positive): pagination should be applied after filtering.
 // list_infos(list_infos)(positive): owner should list own memberships.
@@ -18,6 +19,8 @@
 // join_team(join_team)(negative): duplicate membership should be rejected without consuming invitation.
 
 use super::*;
+
+use poprako_util::time::ToUnixMilli;
 
 use crate::model::member::{MemberInfo, MemberListSpec};
 use crate::model::team::TeamInfo;
@@ -86,6 +89,7 @@ fn member(
         id: id.into(),
         user_id: user_id.into(),
         user_nickname: user_nickname.into(),
+        user_last_active_at: test_util::now(),
         team_id: team_id.into(),
         user: None,
         team: None,
@@ -221,13 +225,17 @@ async fn create_duplicate_member_is_rejected() {
 async fn list_infos_member_lists_team_members() {
     let mock = Mock::new();
     seed_admin(&mock);
-    mock.seed_member(member(
+    let mut translator_member_info = member(
         "member-translator",
         "translator-user",
         "Translator",
         "team-1",
         RoleMask::from(RoleField::TRANSLATOR),
-    ));
+    );
+    let translator_last_active_at = test_util::now();
+
+    translator_member_info.user_last_active_at = translator_last_active_at;
+    mock.seed_member(translator_member_info);
 
     let member_info_vals = list_infos(&mock, &mock, token("admin-user"), list_data("team-1")).await;
     assert!(member_info_vals.is_ok());
@@ -236,6 +244,10 @@ async fn list_infos_member_lists_team_members() {
     assert_eq!(member_info_vals.len(), 2);
     assert_eq!(member_info_vals[0].id, "member-admin");
     assert_eq!(member_info_vals[1].id, "member-translator");
+    assert_eq!(
+        member_info_vals[1].last_active_at,
+        translator_last_active_at.to_unix_milli()
+    );
 }
 
 #[tokio::test]
