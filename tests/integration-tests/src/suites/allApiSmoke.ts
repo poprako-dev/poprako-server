@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 
 import { seedIds } from "../db/seed.js";
-import type { ApiResponse, ErrorBody, SuccessBody } from "../http/apiClient.js";
+import type { ErrorBody, SuccessBody } from "../http/apiClient.js";
 import { expectError, expectStatus, expectSuccessData } from "../http/assertions.js";
 import type { TestContext } from "../state/context.js";
 
@@ -55,13 +55,15 @@ export async function runAllApiSmokeSuite(context: TestContext): Promise<void> {
 }
 
 async function smokeAuthRoutes(context: TestContext): Promise<void> {
-  expectNonServerError(
-    await context.api.post("/api/v1/auth/register", {
+  expectError(
+    await context.api.post<ErrorBody>("/api/v1/auth/register", {
       code: "missing-code",
       nickname: "Smoke Register",
       password: "password",
       qid: "smoke-register-qid",
     }),
+    422,
+    2,
   );
 
   expectStatus(await context.api.post<null>("/api/v1/auth/logout"), 204);
@@ -83,19 +85,23 @@ async function smokeUserRoutes(context: TestContext): Promise<void> {
     204,
   );
 
-  expectNonServerError(
-    await context.api.post(`/api/v1/users/not-${userId}/avatar/reserve`, {
+  expectError(
+    await context.api.post<ErrorBody>(`/api/v1/users/not-${userId}/avatar/reserve`, {
       file_ext: "png",
     }),
+    403,
+    4,
   );
 
-  expectNonServerError(
-    await context.api.post(`/api/v1/users/not-${userId}/avatar/mark-uploaded`, {
+  expectError(
+    await context.api.post<ErrorBody>(`/api/v1/users/not-${userId}/avatar/mark-uploaded`, {
       avatar_version: 1,
     }),
+    403,
+    4,
   );
 
-  expectNonServerError(await context.api.delete(`/api/v1/users/not-${userId}`));
+  expectError(await context.api.delete<ErrorBody>(`/api/v1/users/not-${userId}`), 403, 4);
 }
 
 async function smokeTeamRoutes(context: TestContext): Promise<void> {
@@ -121,16 +127,18 @@ async function smokeTeamRoutes(context: TestContext): Promise<void> {
     204,
   );
 
-  expectNonServerError(
-    await context.api.post(`/api/v1/teams/${team.id}/avatar/reserve`, {
+  expectSuccessData(
+    await context.api.post<SuccessBody<ReserveVersionVal>>(`/api/v1/teams/${team.id}/avatar/reserve`, {
       file_ext: "png",
     }),
+    200,
   );
 
-  expectNonServerError(
-    await context.api.post(`/api/v1/teams/${team.id}/avatar/mark-uploaded`, {
+  expectStatus(
+    await context.api.post<null>(`/api/v1/teams/${team.id}/avatar/mark-uploaded`, {
       avatar_version: 1,
     }),
+    204,
   );
 
   expectStatus(await context.api.delete<null>(`/api/v1/teams/${team.id}`), 204);
@@ -149,12 +157,14 @@ async function smokeMemberRoutes(context: TestContext): Promise<void> {
 
   expectSuccessData(await context.api.get("/api/v1/members/me?offset=0&limit=20"), 200);
 
-  expectNonServerError(
-    await context.api.post("/api/v1/members", {
+  expectError(
+    await context.api.post<ErrorBody>("/api/v1/members", {
       roles: 128,
       team_id: teamId,
       user_id: userId,
     }),
+    422,
+    2,
   );
 
   expectStatus(
@@ -165,8 +175,8 @@ async function smokeMemberRoutes(context: TestContext): Promise<void> {
     204,
   );
 
-  expectNonServerError(await context.api.post("/api/v1/members/join", { code: "missing-code" }));
-  expectNonServerError(await context.api.delete("/api/v1/members/missing-member"));
+  expectError(await context.api.post<ErrorBody>("/api/v1/members/join", { code: "missing-code" }), 422, 2);
+  expectError(await context.api.delete<ErrorBody>("/api/v1/members/missing-member"), 422, 2);
 }
 
 async function smokeMemberInvitationRoutes(context: TestContext): Promise<void> {
@@ -216,7 +226,7 @@ async function smokeWorksetRoutes(context: TestContext): Promise<void> {
     204,
   );
 
-  expectNonServerError(await context.api.delete("/api/v1/worksets/missing-workset"));
+  expectError(await context.api.delete<ErrorBody>("/api/v1/worksets/missing-workset"), 422, 2);
 }
 
 async function smokeComicRoutes(context: TestContext): Promise<void> {
@@ -239,16 +249,18 @@ async function smokeComicRoutes(context: TestContext): Promise<void> {
     204,
   );
 
-  expectNonServerError(
-    await context.api.post(`/api/v1/comics/${comicId}/cover/reserve`, {
+  expectSuccessData(
+    await context.api.post<SuccessBody<ReserveVersionVal>>(`/api/v1/comics/${comicId}/cover/reserve`, {
       file_ext: "png",
     }),
+    200,
   );
 
-  expectNonServerError(
-    await context.api.post(`/api/v1/comics/${comicId}/cover/mark-uploaded`, {
+  expectStatus(
+    await context.api.post<null>(`/api/v1/comics/${comicId}/cover/mark-uploaded`, {
       cover_version: 1,
     }),
+    204,
   );
 
   expectStatus(
@@ -258,7 +270,7 @@ async function smokeComicRoutes(context: TestContext): Promise<void> {
     204,
   );
 
-  expectNonServerError(await context.api.delete("/api/v1/comics/missing-comic"));
+  expectError(await context.api.delete<ErrorBody>("/api/v1/comics/missing-comic"), 422, 2);
 }
 
 async function smokeChapterRoutes(context: TestContext): Promise<void> {
@@ -288,24 +300,31 @@ async function smokeChapterRoutes(context: TestContext): Promise<void> {
     204,
   );
 
-  expectNonServerError(
-    await context.api.post(`/api/v1/chapters/${chapterId}/stage/advance`, {
+  expectStatus(
+    await context.api.post<null>(`/api/v1/chapters/${chapterId}/stage/advance`, {
       id: chapterId,
-      oper: "start",
+      oper: "advance",
       stage: "translate",
     }),
+    204,
   );
 
-  expectNonServerError(
-    await context.api.post(`/api/v1/chapters/${chapterId}/translations/import`, {
+  expectError(
+    await context.api.post<ErrorBody>(`/api/v1/chapters/${chapterId}/translations/import`, {
       content: "invalid-import-content",
       format: "label-plus",
     }),
+    422,
+    2,
   );
 
-  expectNonServerError(await context.api.get(`/api/v1/chapters/${chapterId}/translations/export?format=poprako`));
-  expectNonServerError(
+  expectStatus(
+    await context.api.get(`/api/v1/chapters/${chapterId}/translations/export?format=poprako`),
+    200,
+  );
+  expectStatus(
     await context.api.get(`/api/v1/chapters/${chapterId}/translations/export/download?format=label-plus`),
+    200,
   );
 
   expectStatus(await context.api.delete<null>(`/api/v1/chapters/${extraChapter.id}`), 204);
@@ -320,27 +339,36 @@ async function smokePageRoutes(context: TestContext): Promise<void> {
 
   expectSuccessData(await context.api.get(`/api/v1/chapters/${chapterId}/pages?offset=0&limit=20`), 200);
 
-  expectNonServerError(
-    await context.api.post(`/api/v1/chapters/${chapterId}/pages/reserve`, {
+  expectError(
+    await context.api.post<ErrorBody>(`/api/v1/chapters/${chapterId}/pages/reserve`, {
       chapter_id: chapterId,
       file_ext: "jpg",
       page_count: 1,
     }),
+    422,
+    2,
   );
 
-  expectNonServerError(
+  expectSuccessData(
     await context.api.post<SuccessBody<ReserveVersionVal>>(`/api/v1/pages/${pageId}/image/reserve`, {
       file_ext: "jpg",
     }),
+    200,
   );
 
-  expectNonServerError(
-    await context.api.post(`/api/v1/pages/${pageId}/image/mark-uploaded`, {
+  expectError(
+    await context.api.post<ErrorBody>(`/api/v1/pages/${pageId}/image/mark-uploaded`, {
       image_version: 1,
     }),
+    422,
+    2,
   );
 
-  expectNonServerError(await context.api.delete("/api/v1/chapters/missing-chapter/pages"));
+  expectError(
+    await context.api.delete<ErrorBody>("/api/v1/chapters/missing-chapter/pages"),
+    422,
+    2,
+  );
 }
 
 async function smokeUnitRoutes(context: TestContext): Promise<void> {
@@ -350,14 +378,16 @@ async function smokeUnitRoutes(context: TestContext): Promise<void> {
 
   expectSuccessData(await context.api.get(`/api/v1/pages/${pageId}/units?offset=0&limit=20`), 200);
 
-  expectNonServerError(
-    await context.api.post(`/api/v1/pages/${pageId}/units/save`, {
+  expectError(
+    await context.api.post<ErrorBody>(`/api/v1/pages/${pageId}/units/save`, {
       diff: {
         opers: [],
         page_id: "wrong-page",
       },
       page_id: pageId,
     }),
+    422,
+    7,
   );
 }
 
@@ -375,11 +405,13 @@ async function smokeAssignmentRoutes(context: TestContext): Promise<void> {
 
   assert.ok(assignments.length >= 1);
 
-  expectNonServerError(
-    await context.api.post("/api/v1/assignments/join", {
+  expectError(
+    await context.api.post<ErrorBody>("/api/v1/assignments/join", {
       chapter_id: chapterId,
       roles: 2,
     }),
+    403,
+    4,
   );
 
   expectError(
@@ -392,7 +424,7 @@ async function smokeAssignmentRoutes(context: TestContext): Promise<void> {
     4,
   );
 
-  expectNonServerError(await context.api.delete("/api/v1/assignments/missing-assignment"));
+  expectError(await context.api.delete<ErrorBody>("/api/v1/assignments/missing-assignment"), 422, 2);
 }
 
 async function smokeAssignmentInvitationRoutes(context: TestContext): Promise<void> {
@@ -416,10 +448,12 @@ async function smokeAssignmentInvitationRoutes(context: TestContext): Promise<vo
     200,
   );
 
-  expectNonServerError(
-    await context.api.post("/api/v1/assignment-invitations/join", {
+  expectError(
+    await context.api.post<ErrorBody>("/api/v1/assignment-invitations/join", {
       code: invitation.code,
     }),
+    422,
+    2,
   );
 
   expectStatus(await context.api.delete<null>(`/api/v1/assignment-invitations/${invitation.id}`), 204);
@@ -443,25 +477,14 @@ async function smokeAnnouncementRoutes(context: TestContext): Promise<void> {
     title: "Smoke announcement",
   });
 
-  assert.ok(expectSuccessData(announcementResponse, 201).id);
+  const announcement = expectSuccessData(announcementResponse, 201);
+
+  assert.ok(announcement.id);
+  context.ids.announcementId = announcement.id;
 
   expectSuccessData(await context.api.get(`/api/v1/teams/${context.ids.teamId}/announcements?offset=0&limit=20`), 200);
 }
 
 async function smokeCommentRoutes(context: TestContext): Promise<void> {
   expectSuccessData(await context.api.get(`/api/v1/teams/${context.ids.teamId}/comments?offset=0&limit=20`), 200);
-}
-
-function expectNonServerError(response: ApiResponse<unknown>): void {
-  assert.ok(
-    response.status < 500,
-    JSON.stringify(
-      {
-        body: response.body,
-        status: response.status,
-      },
-      null,
-      2,
-    ),
-  );
 }

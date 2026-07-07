@@ -131,7 +131,7 @@ where
         role: Some(receiver_role),
         incl_opt: Vec::new(),
         offset: 0,
-        limit: u64::MAX,
+        limit: i32::MAX as u64,
     };
 
     let assignment_infos =

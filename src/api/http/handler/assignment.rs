@@ -31,7 +31,7 @@ use crate::usecase;
     params(ListAssignmentInfosData),
     responses(
         (status = 200, description = "Assignments listed", body = HttpBody<Vec<AssignmentInfoVal>>),
-        (status = 400, description = "Exactly one of chapter_id or owner_id is required"),
+        (status = 422, description = "Exactly one of chapter_id or owner_id is required"),
         (status = 403, description = "No permission to list these assignments"),
     ),
 )]

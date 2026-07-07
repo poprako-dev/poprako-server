@@ -123,6 +123,8 @@ export async function assertDatabaseIsSeedOnly(): Promise<void> {
       ["t_user", "1"],
     ]);
 
+    const mismatches: string[] = [];
+
     for (const row of tableResult.rows) {
       const countResult = await client.query<{ row_count: string }>(
         `SELECT COUNT(*)::text AS row_count FROM "${row.tablename}"`,
@@ -131,10 +133,16 @@ export async function assertDatabaseIsSeedOnly(): Promise<void> {
       const expectedCount = expectedCounts.get(row.tablename) ?? "0";
 
       if (rowCount !== expectedCount) {
-        throw new Error(
-          `database cleanup left ${rowCount} rows in ${row.tablename}, expected ${expectedCount}`,
+        mismatches.push(
+          `${row.tablename}: ${rowCount} rows, expected ${expectedCount}`,
         );
       }
+    }
+
+    if (mismatches.length > 0) {
+      throw new Error(
+        `database is not seed-only after suite:\n  - ${mismatches.join("\n  - ")}`,
+      );
     }
   });
 }
@@ -153,6 +161,42 @@ export async function grantChapterWorkerRoles(chapterId: string, userId: string)
       `,
       [chapterId, userId],
     );
+  });
+}
+
+export interface LeftoverIds {
+  commentId?: string;
+  announcementId?: string;
+}
+
+/// Removes suite-created rows that have no HTTP delete endpoint (comments and
+/// announcements), and clears the `t_local_message` outbox populated by prom
+/// for every image reservation. Business entities reachable via the API
+/// (workset -> comic -> chapter -> page -> unit -> assignment) are deleted
+/// through `DELETE /api/v1/worksets/{id}` by the caller, which cascades by FK.
+export async function cleanupLeftoverRows(ids: LeftoverIds): Promise<void> {
+  await withClient(async (client) => {
+    await client.query("BEGIN");
+
+    try {
+      if (ids.commentId) {
+        await client.query(`DELETE FROM "t_comment" WHERE "f_id" = $1`, [ids.commentId]);
+      }
+
+      if (ids.announcementId) {
+        await client.query(`DELETE FROM "t_announcement" WHERE "f_id" = $1`, [
+          ids.announcementId,
+        ]);
+      }
+
+      await client.query(`TRUNCATE TABLE "t_local_message" RESTART IDENTITY`);
+
+      await client.query("COMMIT");
+    } catch (error) {
+      await client.query("ROLLBACK");
+
+      throw error;
+    }
   });
 }
 

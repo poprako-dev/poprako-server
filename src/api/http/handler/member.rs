@@ -83,7 +83,7 @@ pub async fn create(
     params(ListMemberInfosData),
     responses(
         (status = 200, description = "Members listed", body = HttpBody<Vec<MemberInfoVal>>),
-        (status = 400, description = "Exactly one of owner_id or team_id is required, or owner_id combined with role/fuzzy_nickname"),
+        (status = 422, description = "Exactly one of owner_id or team_id is required, or owner_id combined with role/fuzzy_nickname"),
         (status = 403, description = "No permission to list members in this team"),
     ),
 )]
@@ -190,7 +190,7 @@ pub async fn delete(
     request_body = JoinTeamData,
     responses(
         (status = 201, description = "Joined team", body = HttpBody<MemberInfoVal>),
-        (status = 400, description = "Invitation does not target this user or already a member"),
+        (status = 422, description = "Invitation does not target this user or already a member"),
         (status = 404, description = "Invitation code not found"),
     ),
 )]

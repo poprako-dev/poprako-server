@@ -52,7 +52,7 @@ impl WorksetComplex {
             kind: ComicListKind::All,
             incl_opt: Vec::new(),
             offset: 0,
-            limit: u64::MAX,
+            limit: i32::MAX as u64,
         };
 
         let comic_infos = repo

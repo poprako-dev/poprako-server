@@ -59,6 +59,11 @@ error-unit-list-permission-required = 只有汉化组成员或章节参与者可
 error-unit-edit-permission-required = 需要翻译或校对权限才能编辑 unit
 error-unit-not-found = Unit 不存在
 error-unit-duplicate = Unit 已存在
+error-not-found = 记录不存在
+error-comic-not-found = 该漫画不存在
+error-avatar-version-mismatch = 头像图片版本不匹配
+error-cover-version-mismatch = 封面图片版本不匹配
+error-chapter-pages-already-reserved = 该章节已预留页面
 
 chapter-default-subtitle = 第{ $number }话
 

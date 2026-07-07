@@ -13,5 +13,7 @@ export interface TestContext {
     chapterId?: string;
     pageId?: string;
     unitId?: string;
+    commentId?: string;
+    announcementId?: string;
   };
 }

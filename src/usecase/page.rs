@@ -84,7 +84,7 @@ where
             if chapter_info.page_count != 0 {
                 return Err(RegularError::Expected {
                     variant: ExpectedVariant::Args,
-                    message: trl("error-invalid-page-count"),
+                    message: trl("error-chapter-pages-already-reserved"),
                 });
             }
 

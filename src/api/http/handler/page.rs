@@ -92,7 +92,7 @@ pub async fn delete(
         (status = 200, description = "Page upload slots reserved", body = HttpBody<ReserveChapterPagesVal>),
         (status = 422, description = "Path id does not match body chapter id"),
         (status = 403, description = "No permission to reserve pages in this chapter"),
-        (status = 400, description = "Chapter already has pages or invalid page count"),
+        (status = 422, description = "Chapter already has pages or invalid page count"),
     ),
 )]
 #[instrument(err, skip(harn, data))]
