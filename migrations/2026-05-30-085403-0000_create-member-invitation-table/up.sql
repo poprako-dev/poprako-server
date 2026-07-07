@@ -1,8 +1,8 @@
 CREATE TABLE IF NOT EXISTS "t_member_invitation" (
     "f_id" TEXT PRIMARY KEY,
 
-    "f_inviter_id" TEXT NOT NULL REFERENCES "t_user" ("f_id") ON DELETE CASCADE,
-    "f_team_id" TEXT NOT NULL REFERENCES "t_team" ("f_id") ON DELETE CASCADE,
+    "f_inviter_id" TEXT NOT NULL REFERENCES "t_user" ("f_id") ON DELETE RESTRICT,
+    "f_team_id" TEXT NOT NULL REFERENCES "t_team" ("f_id") ON DELETE RESTRICT,
 
     "f_invitee_qid" TEXT NOT NULL,
     "f_code" TEXT NOT NULL,

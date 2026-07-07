@@ -6,8 +6,8 @@ use poprako_transactional::advance::Advance;
 
 use crate::model::unit::{UnitCounters, UnitIndex, UnitInfo, UnitOper, UnitPayload};
 use crate::part::repo::step::unit::{
-    CountByPageId, DeleteByIdInPage, ListIndexesByPageId, ListInfosByPageId, SaveInfo,
-    UpdateIndexesByPageId,
+    CountByPageId, DeleteByIdInPage, ListAllInfosByPageId, ListIndexesByPageId, ListInfosByPageId,
+    SaveInfo, UpdateIndexesByPageId,
 };
 use crate::part::repo::unit::{UnitRepo, UnitRepoTransactional};
 use crate::part::shared::execute::Execute;
@@ -148,6 +148,33 @@ impl<'a> Execute<ListInfosByPageId<'a>> for Mock {
             .skip(step.page.offset as usize)
             .take(step.page.limit as usize)
             .collect())
+    }
+}
+
+#[async_trait]
+impl<'a> Execute<ListAllInfosByPageId<'a>> for Mock {
+    type Error = RegularError;
+
+    async fn execute(
+        &self,
+        step: &ListAllInfosByPageId<'a>,
+    ) -> Result<Vec<UnitInfo>, Self::Error> {
+        let state = self.state.lock().unwrap();
+
+        Ok(list_units(&state, step.page_id))
+    }
+}
+
+#[async_trait]
+impl<'a> Advance<ListAllInfosByPageId<'a>, MockContext> for MockTransactional {
+    type Error = RegularError;
+
+    async fn advance(
+        &self,
+        context: &mut MockContext,
+        step: &ListAllInfosByPageId<'a>,
+    ) -> Result<Vec<UnitInfo>, Self::Error> {
+        Ok(list_units(&context.state, step.page_id))
     }
 }
 

@@ -10,7 +10,7 @@ use poprako_transactional::advance::Advance;
 use crate::model::workset::{WorksetForm, WorksetInfo};
 use crate::part::repo::step::workset::{
     Create, Delete, GetInfoById, GetInfoExcluded, IncrComicNextIndex, ListInfosByTeamId,
-    ListInfosByTeamIdExcluded, UpdateComicCount, UpdateInfo,
+    ListAllInfosByTeamIdExcluded, UpdateComicCount, UpdateInfo,
 };
 use crate::part::repo::workset::{WorksetRepo, WorksetRepoTransactional};
 use crate::part::shared::execute::Execute;
@@ -78,7 +78,7 @@ async fn update_info(
     Ok(())
 }
 
-async fn list_infos_by_team_id_excluded(
+async fn list_all_infos_by_team_id_excluded(
     conn: &mut RdbConn,
     team_id: &str,
 ) -> RegularResult<Vec<WorksetInfo>> {
@@ -194,15 +194,15 @@ impl<'a> Execute<UpdateInfo<'a>> for RdbRepo {
 // ── Transactional: Advance impls ───────────────────────────────────
 
 #[async_trait]
-impl<'a> Advance<ListInfosByTeamIdExcluded<'a>, RdbContext> for RdbRepoTransactional {
+impl<'a> Advance<ListAllInfosByTeamIdExcluded<'a>, RdbContext> for RdbRepoTransactional {
     type Error = RegularError;
 
     async fn advance(
         &self,
         context: &mut RdbContext,
-        step: &ListInfosByTeamIdExcluded<'a>,
+        step: &ListAllInfosByTeamIdExcluded<'a>,
     ) -> RegularResult<Vec<WorksetInfo>> {
-        list_infos_by_team_id_excluded(context.conn(), step.team_id).await
+        list_all_infos_by_team_id_excluded(context.conn(), step.team_id).await
     }
 }
 

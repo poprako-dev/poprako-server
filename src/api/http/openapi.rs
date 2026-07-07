@@ -63,6 +63,7 @@ use crate::value::comic::{ComicInclOpt, ComicWithOpt};
 use crate::value::comment::CommentInclOpt;
 use crate::value::member::MemberInclOpt;
 use crate::value::member_invitation::MemberInvitationInclOpt;
+use crate::value::role::RoleField;
 
 /// Top-level OpenAPI document for the PopRaKo HTTP API.
 #[derive(OpenApi)]
@@ -222,6 +223,7 @@ use crate::value::member_invitation::MemberInvitationInclOpt;
         AssignmentInclOpt,
         AnnouncementInclOpt,
         CommentInclOpt,
+        RoleField,
     )),
     tags(
         (name = "health", description = "Health-check endpoints"),

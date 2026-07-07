@@ -2,10 +2,10 @@ import test from "node:test";
 
 import { testEnv } from "./config/env.js";
 import {
-  assertDatabaseIsSeedOnly,
-  cleanupLeftoverRows,
-  resetDatabase,
-  seedIds,
+    assertDatabaseIsSeedOnly,
+    cleanupLeftoverRows,
+    resetDatabase,
+    seedIds,
 } from "./db/seed.js";
 import { ApiClient } from "./http/apiClient.js";
 import { runAllApiSmokeSuite } from "./suites/allApiSmoke.js";
@@ -49,11 +49,7 @@ await test("poprako HTTP API integration", async (t) => {
   } finally {
     await runCleanup(context);
 
-    try {
-      await assertDatabaseIsSeedOnly();
-    } finally {
-      await resetDatabase();
-    }
+    await assertDatabaseIsSeedOnly();
   }
 });
 

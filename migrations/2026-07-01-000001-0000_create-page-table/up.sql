@@ -1,7 +1,7 @@
 CREATE TABLE IF NOT EXISTS "t_page" (
     "f_id"                         TEXT        PRIMARY KEY,
 
-    "f_chapter_id"                 TEXT        NOT NULL REFERENCES "t_chapter" ("f_id") ON DELETE CASCADE,
+    "f_chapter_id"                 TEXT        NOT NULL REFERENCES "t_chapter" ("f_id") ON DELETE RESTRICT,
     "f_index"                      INTEGER     NOT NULL,
 
     "f_image_key"                  TEXT,

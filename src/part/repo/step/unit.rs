@@ -16,6 +16,15 @@ impl<'a> Step for ListInfosByPageId<'a> {
     type Output = Vec<UnitInfo>;
 }
 
+/// Step that lists all units by page ID (no pagination).
+pub struct ListAllInfosByPageId<'a> {
+    pub page_id: &'a str,
+}
+
+impl<'a> Step for ListAllInfosByPageId<'a> {
+    type Output = Vec<UnitInfo>;
+}
+
 /// Step that saves one unit row by upsert.
 pub struct SaveInfo<'a> {
     pub page_id: &'a str,
@@ -71,6 +80,11 @@ impl UnitStep {
     /// Constructs a step to list units by page ID.
     pub fn list_infos_by_page_id<'a>(page_id: &'a str, page: Page) -> ListInfosByPageId<'a> {
         ListInfosByPageId { page_id, page }
+    }
+
+    /// Constructs a step to list all units by page ID (no pagination).
+    pub fn list_all_infos_by_page_id<'a>(page_id: &'a str) -> ListAllInfosByPageId<'a> {
+        ListAllInfosByPageId { page_id }
     }
 
     /// Constructs a step to save one unit row by upsert.

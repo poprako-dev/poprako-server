@@ -42,25 +42,41 @@ impl WorksetComplex {
             + Sync,
         P: Prom<C> + Send + Sync,
     {
+        // SAFETY: Lock the root workset row (FOR UPDATE) to serialize with
+        // concurrent comic creations (IncrComicNextIndex also locks this row),
+        // preventing resource leaks from comics inserted between the last
+        // paginated page and the workset delete.
         let workset_info = repo
             .advance(context, &WorksetStep::get_info_excluded(id))
             .await?;
 
-        let list_spec = ComicListSpec {
-            workset_id: workset_info.id.clone(),
-            fuzzy_title: None,
-            kind: ComicListKind::All,
-            incl_opt: Vec::new(),
-            offset: 0,
-            limit: i32::MAX as u64,
-        };
+        const PAGE_SIZE: u64 = 50;
 
-        let comic_infos = repo
-            .advance(context, &ComicStep::list_infos_excluded(&list_spec))
-            .await?;
+        let mut offset: u64 = 0;
 
-        for comic_info in comic_infos {
-            ComicComplex::delete_cascade(repo, prom, context, &comic_info.id).await?;
+        loop {
+            let list_spec = ComicListSpec {
+                workset_id: workset_info.id.clone(),
+                fuzzy_title: None,
+                kind: ComicListKind::All,
+                incl_opt: Vec::new(),
+                offset,
+                limit: PAGE_SIZE,
+            };
+
+            let comic_infos = repo
+                .advance(context, &ComicStep::list_infos_excluded(&list_spec))
+                .await?;
+
+            if comic_infos.is_empty() {
+                break;
+            }
+
+            for comic_info in comic_infos {
+                ComicComplex::delete_cascade(repo, prom, context, &comic_info.id).await?;
+            }
+
+            offset += PAGE_SIZE;
         }
 
         repo.advance(context, &WorksetStep::delete(&workset_info.id))

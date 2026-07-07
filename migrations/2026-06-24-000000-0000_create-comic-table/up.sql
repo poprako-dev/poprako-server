@@ -1,7 +1,7 @@
 CREATE TABLE IF NOT EXISTS "t_comic" (
     "f_id"                  TEXT        PRIMARY KEY,
 
-    "f_workset_id"          TEXT        NOT NULL REFERENCES "t_workset" ("f_id") ON DELETE CASCADE,
+    "f_workset_id"          TEXT        NOT NULL REFERENCES "t_workset" ("f_id") ON DELETE RESTRICT,
     "f_index"               INTEGER     NOT NULL,
 
     "f_title"               TEXT        NOT NULL,

@@ -1,7 +1,7 @@
 CREATE TABLE IF NOT EXISTS "t_workset" (
     "f_id"              TEXT        PRIMARY KEY,
 
-    "f_team_id"         TEXT        NOT NULL REFERENCES "t_team" ("f_id") ON DELETE CASCADE,
+    "f_team_id"         TEXT        NOT NULL REFERENCES "t_team" ("f_id") ON DELETE RESTRICT,
     "f_index"           INTEGER     NOT NULL,
 
     "f_name"            TEXT        NOT NULL,

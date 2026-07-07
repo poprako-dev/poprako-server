@@ -8,7 +8,6 @@ use fluent_templates::fluent_bundle::FluentValue;
 use poprako_util::i18n::{trl, trl_kv};
 
 use crate::complex::system_mail::SystemMailComplex;
-use crate::model::assignment::AssignmentListSpec;
 use crate::model::chapter::ChapterInfo;
 use crate::model::system_mail::SystemMailForm;
 use crate::part::effect::event::chapter::{
@@ -126,16 +125,15 @@ where
     R: AssignmentRepo<C>,
     <R as DeriveTransactional>::Transactional: AssignmentRepoTransactional<C>,
 {
-    let assignment_list_spec = AssignmentListSpec::Chapter {
-        chapter_id: chapter_info.id.clone(),
-        role: Some(receiver_role),
-        incl_opt: Vec::new(),
-        offset: 0,
-        limit: i32::MAX as u64,
-    };
-
-    let assignment_infos =
-        Execute::execute(repo, &AssignmentStep::list_infos(&assignment_list_spec)).await;
+    let assignment_infos = Execute::execute(
+        repo,
+        &AssignmentStep::list_all_infos_by_chapter(
+            &chapter_info.id,
+            Some(receiver_role),
+            &[],
+        ),
+    )
+    .await;
 
     let Ok(assignment_infos) = assignment_infos else {
         tracing::warn!(

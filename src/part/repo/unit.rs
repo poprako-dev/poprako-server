@@ -3,8 +3,8 @@
 use poprako_transactional::advance::Advance;
 
 use crate::part::repo::step::unit::{
-    CountByPageId, DeleteByIdInPage, ListIndexesByPageId, ListInfosByPageId, SaveInfo,
-    UpdateIndexesByPageId,
+    CountByPageId, DeleteByIdInPage, ListAllInfosByPageId, ListIndexesByPageId, ListInfosByPageId,
+    SaveInfo, UpdateIndexesByPageId,
 };
 use crate::part::shared::execute::Execute;
 use crate::result::RegularError;
@@ -12,7 +12,9 @@ use crate::util::DeriveTransactional;
 
 /// Non-transactional unit repository.
 pub trait UnitRepo<C>:
-    DeriveTransactional + for<'a> Execute<ListInfosByPageId<'a>, Error = RegularError>
+    DeriveTransactional
+    + for<'a> Execute<ListInfosByPageId<'a>, Error = RegularError>
+    + for<'a> Execute<ListAllInfosByPageId<'a>, Error = RegularError>
 where
     Self::Transactional: UnitRepoTransactional<C>,
 {
@@ -21,6 +23,7 @@ where
 /// Transactional unit repository.
 pub trait UnitRepoTransactional<C>:
     for<'a> Advance<ListInfosByPageId<'a>, C, Error = RegularError>
+    + for<'a> Advance<ListAllInfosByPageId<'a>, C, Error = RegularError>
     + for<'a> Advance<SaveInfo<'a>, C, Error = RegularError>
     + for<'a> Advance<DeleteByIdInPage<'a>, C, Error = RegularError>
     + for<'a> Advance<ListIndexesByPageId<'a>, C, Error = RegularError>

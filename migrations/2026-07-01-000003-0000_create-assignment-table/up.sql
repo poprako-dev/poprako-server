@@ -1,8 +1,8 @@
 CREATE TABLE IF NOT EXISTS "t_assignment" (
     "f_id"                         TEXT        PRIMARY KEY,
 
-    "f_chapter_id"                 TEXT        NOT NULL REFERENCES "t_chapter" ("f_id") ON DELETE CASCADE,
-    "f_user_id"                    TEXT        NOT NULL REFERENCES "t_user" ("f_id") ON DELETE CASCADE,
+    "f_chapter_id"                 TEXT        NOT NULL REFERENCES "t_chapter" ("f_id") ON DELETE RESTRICT,
+    "f_user_id"                    TEXT        NOT NULL REFERENCES "t_user" ("f_id") ON DELETE RESTRICT,
 
     "f_assigned_raw_provider_at"   TIMESTAMPTZ,
     "f_assigned_translator_at"     TIMESTAMPTZ,
