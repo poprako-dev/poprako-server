@@ -57,6 +57,11 @@ error-unit-list-permission-required = Only team members or chapter assignees can
 error-unit-edit-permission-required = Translator or proofreader role is required to edit units
 error-unit-not-found = Unit not found
 error-unit-duplicate = Unit already exists
+error-not-found = Record not found
+error-comic-not-found = Comic not found
+error-avatar-version-mismatch = Avatar image version does not match
+error-cover-version-mismatch = Cover image version does not match
+error-chapter-pages-already-reserved = Chapter pages have already been reserved
 
 chapter-default-subtitle = Ch. { $number }
 

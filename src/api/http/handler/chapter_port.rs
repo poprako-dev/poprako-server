@@ -44,7 +44,7 @@ pub struct TranslationExportQuery {
     responses(
         (status = 200, description = "Translations imported", body = HttpBody<ChapterTranslationImportVal>),
         (status = 403, description = "No permission to import into this chapter"),
-        (status = 400, description = "Invalid import content for the selected format"),
+        (status = 422, description = "Invalid import content for the selected format"),
     ),
 )]
 #[instrument(err, skip(harn, data))]

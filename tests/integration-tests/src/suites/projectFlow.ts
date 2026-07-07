@@ -139,4 +139,5 @@ export async function runProjectFlowSuite(context: TestContext): Promise<void> {
   const comment = expectSuccessData(commentResponse, 201);
 
   assert.ok(comment.id);
+  context.ids.commentId = comment.id;
 }

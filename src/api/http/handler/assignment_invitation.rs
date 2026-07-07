@@ -135,7 +135,7 @@ pub async fn delete(
     request_body = JoinAssignmentInvitationData,
     responses(
         (status = 201, description = "Joined assignment", body = HttpBody<AssignmentInfoVal>),
-        (status = 400, description = "Invitation does not target this user"),
+        (status = 422, description = "Invitation does not target this user"),
         (status = 403, description = "Role not assignable or no permission"),
         (status = 404, description = "Invitation code not found"),
     ),

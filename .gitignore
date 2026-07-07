@@ -1,8 +1,10 @@
 /target
 /tests/node_modules
+/tests/integration-tests/node_modules
 /.pnpm-store
 
 .DS_Store
+.obsidian/
 
 .env
 

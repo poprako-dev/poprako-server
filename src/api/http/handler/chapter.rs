@@ -190,7 +190,7 @@ pub async fn update_info(
         (status = 204, description = "Stage advanced"),
         (status = 422, description = "Path id does not match body id"),
         (status = 403, description = "No permission to update this chapter's stage"),
-        (status = 400, description = "Illegal workflow transition"),
+        (status = 422, description = "Illegal workflow transition"),
     ),
 )]
 #[instrument(err, skip(harn, data))]

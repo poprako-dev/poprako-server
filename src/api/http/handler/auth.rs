@@ -38,7 +38,7 @@ fn auth_cookie(token: &str) -> Cookie<'static> {
     request_body = RegisterData,
     responses(
         (status = 201, description = "Registration successful, sets auth cookie", body = HttpBody<RegisterVal>),
-        (status = 400, description = "Invalid request parameters"),
+        (status = 422, description = "Invalid request parameters"),
         (status = 401, description = "Invalid invitation code"),
     ),
 )]

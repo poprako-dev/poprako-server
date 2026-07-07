@@ -1,7 +1,12 @@
 import test from "node:test";
 
 import { testEnv } from "./config/env.js";
-import { assertDatabaseIsSeedOnly, resetDatabase, seedIds } from "./db/seed.js";
+import {
+  assertDatabaseIsSeedOnly,
+  cleanupLeftoverRows,
+  resetDatabase,
+  seedIds,
+} from "./db/seed.js";
 import { ApiClient } from "./http/apiClient.js";
 import { runAllApiSmokeSuite } from "./suites/allApiSmoke.js";
 import { runAuthSuite } from "./suites/auth.js";
@@ -42,7 +47,23 @@ await test("poprako HTTP API integration", async (t) => {
       await runErrorCaseSuite(context);
     });
   } finally {
-    await resetDatabase();
-    await assertDatabaseIsSeedOnly();
+    await runCleanup(context);
+
+    try {
+      await assertDatabaseIsSeedOnly();
+    } finally {
+      await resetDatabase();
+    }
   }
 });
+
+async function runCleanup(context: TestContext): Promise<void> {
+  if (context.ids.worksetId) {
+    await context.api.delete(`/api/v1/worksets/${context.ids.worksetId}`);
+  }
+
+  await cleanupLeftoverRows({
+    commentId: context.ids.commentId,
+    announcementId: context.ids.announcementId,
+  });
+}

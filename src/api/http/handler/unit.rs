@@ -62,7 +62,7 @@ pub async fn list_infos(
         (status = 200, description = "Units saved", body = HttpBody<SavePageUnitsVal>),
         (status = 422, description = "Path id does not match body page id or diff page id"),
         (status = 403, description = "No permission to save units in this page"),
-        (status = 400, description = "Invalid unit oper"),
+        (status = 422, description = "Invalid unit oper"),
     ),
 )]
 #[instrument(err, skip(harn, data))]
