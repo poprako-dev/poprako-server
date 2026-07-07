@@ -97,13 +97,7 @@ where
                 let existing_unit_infos = repo
                     .advance(
                         context,
-                        &UnitStep::list_infos_by_page_id(
-                            &page_info.id,
-                            poprako_util::page::Page {
-                                offset: 0,
-                                limit: i32::MAX as u64,
-                            },
-                        ),
+                        &UnitStep::list_all_infos_by_page_id(&page_info.id),
                     )
                     .await?;
 

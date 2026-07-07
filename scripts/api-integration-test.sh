@@ -15,21 +15,37 @@ if [ -f "$env_file" ]; then
     set +a
 fi
 
-DATABASE_URL="${DATABASE_URL:-}"
+integration_database_url="${INTEGRATION_DATABASE_URL:-}"
 
-if [ -z "$DATABASE_URL" ]; then
-    echo "DATABASE_URL must be set" >&2
+if [ -z "$integration_database_url" ]; then
+    echo "INTEGRATION_DATABASE_URL must be set" >&2
     exit 1
 fi
 
+# Override DATABASE_URL so diesel and the API server both target the
+# integration database instead of the dev database.
+export DATABASE_URL="$integration_database_url"
 export API_BASE_URL="$api_base_url"
-export DATABASE_URL
+
+# Derive the maintenance connection (postgres database on the same server)
+# and the integration database name from INTEGRATION_DATABASE_URL, so we can
+# DROP the integration database after the run.
+db_name="${integration_database_url##*/}"
+maintenance_url="${integration_database_url%/*}/postgres"
+
+drop_integration_db() {
+    psql "$maintenance_url" \
+        -c "DROP DATABASE IF EXISTS \"$db_name\" WITH (FORCE)" \
+        >/dev/null 2>&1
+}
 
 cleanup() {
     if [ -n "$server_pid" ]; then
         kill "$server_pid" >/dev/null 2>&1 || true
         wait "$server_pid" >/dev/null 2>&1 || true
     fi
+
+    drop_integration_db || true
 }
 
 trap cleanup EXIT INT TERM
@@ -37,7 +53,10 @@ trap cleanup EXIT INT TERM
 cd "$project_root"
 
 if [ "$run_migrations" = "1" ]; then
-    just mgr-run
+    # `diesel database setup` creates the integration database if it does not
+    # exist yet, then runs pending migrations. It is idempotent on subsequent
+    # runs.
+    diesel database setup
 fi
 
 if [ "$start_api_server" = "1" ]; then
@@ -78,7 +97,7 @@ if [ "$start_api_server" = "1" ]; then
     fi
 fi
 
-cd "$project_root/tests"
+cd "$project_root/tests/integration-tests"
 
 if [ ! -d node_modules ]; then
     pnpm install

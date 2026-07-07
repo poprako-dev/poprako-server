@@ -27,6 +27,7 @@ use std::net::ToSocketAddrs;
 use std::sync::Arc;
 
 use anyhow::Context as _;
+use utoipa::OpenApi as _;
 
 use poprako_r::{
     AppConfig, AppHarn, AsyncEffectDevelop, Harn, JwtAuth, R2ImagePool, RdbCore, RdbDrive, RdbProm,
@@ -35,6 +36,17 @@ use poprako_r::{
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    // CLI: --swagger to print swagger.json.
+    if std::env::args().any(|a| a == "--swagger") {
+        #[allow(clippy::print_stdout)]
+        {
+            let doc = poprako_r::ApiDoc::openapi();
+            println!("{}", serde_json::to_string_pretty(&doc)?);
+        }
+
+        return Ok(());
+    }
+
     dotenvy::dotenv().expect(".env file should be valid");
 
     tracing_subscriber::fmt()

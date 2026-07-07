@@ -4,6 +4,7 @@
 /// Application configuration parsing and access.
 mod config;
 
+pub use api::http::openapi::ApiDoc;
 pub use api::http::server::serve;
 pub use api::http::state::AppHarn;
 pub use config::AppConfig;

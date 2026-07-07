@@ -7,7 +7,7 @@ use poprako_transactional::advance::Advance;
 
 use crate::part::repo::step::workset::{
     Create, Delete, GetInfoById, GetInfoExcluded, IncrComicNextIndex, ListInfosByTeamId,
-    ListInfosByTeamIdExcluded, UpdateComicCount, UpdateInfo,
+    ListAllInfosByTeamIdExcluded, UpdateComicCount, UpdateInfo,
 };
 use crate::part::shared::execute::Execute;
 use crate::result::RegularError;
@@ -29,7 +29,7 @@ where
 
 /// Transactional workset repository.
 pub trait WorksetRepoTransactional<C>:
-    for<'a> Advance<ListInfosByTeamIdExcluded<'a>, C, Error = RegularError>
+    for<'a> Advance<ListAllInfosByTeamIdExcluded<'a>, C, Error = RegularError>
     + for<'a> Advance<GetInfoExcluded<'a>, C, Error = RegularError>
     + for<'a> Advance<Delete<'a>, C, Error = RegularError>
     + for<'a> Advance<GetInfoById<'a>, C, Error = RegularError>

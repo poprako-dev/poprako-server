@@ -21,6 +21,7 @@ let violations = 0;
 const WILDCARD_OK_PREFIXES = [
   "use super::*",
   "use crate::infra::query::schema",
+  "use crate::part_impl::repo_rdb::schema",
   "use diesel::prelude::*",
   "use serde::*",
 ];
@@ -99,7 +100,8 @@ function grepRules(filePath, content, rel) {
         trimmed.startsWith("//") ||
         trimmed.startsWith("/*") ||
         trimmed.startsWith("#[") ||
-        trimmed.startsWith("*")
+        trimmed.startsWith("*") ||
+        trimmed.includes('deserialize_with = "crate::')
       )
         continue;
       if (/crate::/.test(line) && !/\$crate::/.test(line)) {

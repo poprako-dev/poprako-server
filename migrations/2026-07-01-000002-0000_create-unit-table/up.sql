@@ -1,7 +1,7 @@
 CREATE TABLE IF NOT EXISTS "t_unit" (
     "f_id"                         TEXT        PRIMARY KEY,
 
-    "f_page_id"                    TEXT        NOT NULL REFERENCES "t_page" ("f_id") ON DELETE CASCADE,
+    "f_page_id"                    TEXT        NOT NULL REFERENCES "t_page" ("f_id") ON DELETE RESTRICT,
     "f_index"                      INTEGER     NOT NULL,
 
     "f_is_bubble"                  BOOLEAN     NOT NULL DEFAULT FALSE,

@@ -288,7 +288,7 @@ async fn list_infos_returns_units_for_team_member() {
         ListPageUnitInfosData {
             page_id: "page-1".into(),
             offset: 0,
-            limit: i32::MAX as u64,
+            limit: 100,
         },
     )
     .await;
@@ -331,7 +331,7 @@ async fn list_infos_returns_units_for_assignment_fallback() {
         ListPageUnitInfosData {
             page_id: "page-1".into(),
             offset: 0,
-            limit: i32::MAX as u64,
+            limit: 100,
         },
     )
     .await;
@@ -358,7 +358,7 @@ async fn list_infos_rejects_unrelated_user() {
         ListPageUnitInfosData {
             page_id: "page-1".into(),
             offset: 0,
-            limit: i32::MAX as u64,
+            limit: 100,
         },
     )
     .await

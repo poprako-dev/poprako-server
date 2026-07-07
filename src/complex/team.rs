@@ -55,6 +55,10 @@ impl TeamComplex {
             + Sync,
         P: Prom<C> + Send + Sync,
     {
+        // SAFETY: Lock the root team row (FOR UPDATE) to serialize with
+        // concurrent workset creations, preventing resource leaks from
+        // worksets (and their subtrees) inserted between the listing and
+        // the team delete.
         let team_info = repo
             .advance(context, &TeamStep::get_info_excluded(id))
             .await?;
@@ -62,7 +66,7 @@ impl TeamComplex {
         let workset_infos = repo
             .advance(
                 context,
-                &WorksetStep::list_infos_by_team_id_excluded(&team_info.id),
+                &WorksetStep::list_all_infos_by_team_id_excluded(&team_info.id),
             )
             .await?;
 

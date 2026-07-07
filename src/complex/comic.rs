@@ -60,6 +60,10 @@ impl ComicComplex {
             + Sync,
         P: Prom<C> + Send + Sync,
     {
+        // SAFETY: Lock the root comic row (FOR UPDATE) to serialize with
+        // concurrent chapter creations and cover uploads, preventing resource
+        // leaks from chapters (and their page images) inserted between the
+        // listing and the comic delete.
         let comic_info = repo
             .advance(context, &ComicStep::get_info_excluded(id, &[]))
             .await?;

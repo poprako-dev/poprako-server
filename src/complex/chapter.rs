@@ -104,6 +104,10 @@ impl ChapterComplex {
             + Sync,
         P: Prom<C> + Send + Sync,
     {
+        // SAFETY: Lock the root chapter row (FOR UPDATE) to serialize with
+        // concurrent page/unit insertions, preventing resource leaks from
+        // pages (and their uploaded images) inserted between the listing
+        // and the chapter delete.
         let chapter_info = repo
             .advance(context, &ChapterStep::get_info_by_id_excluded(id, &[]))
             .await?;

@@ -44,11 +44,11 @@ impl<'a> Step for UpdateInfo<'a> {
 }
 
 /// Step that lists all worksets for a team with a pessimistic lock.
-pub struct ListInfosByTeamIdExcluded<'a> {
+pub struct ListAllInfosByTeamIdExcluded<'a> {
     pub team_id: &'a str,
 }
 
-impl<'a> Step for ListInfosByTeamIdExcluded<'a> {
+impl<'a> Step for ListAllInfosByTeamIdExcluded<'a> {
     type Output = Vec<WorksetInfo>;
 }
 
@@ -129,8 +129,8 @@ impl WorksetStep {
     }
 
     /// Constructs a step to list a team's worksets with a pessimistic lock.
-    pub fn list_infos_by_team_id_excluded<'a>(team_id: &'a str) -> ListInfosByTeamIdExcluded<'a> {
-        ListInfosByTeamIdExcluded { team_id }
+    pub fn list_all_infos_by_team_id_excluded<'a>(team_id: &'a str) -> ListAllInfosByTeamIdExcluded<'a> {
+        ListAllInfosByTeamIdExcluded { team_id }
     }
 
     /// Constructs a step to fetch a workset with a pessimistic lock.

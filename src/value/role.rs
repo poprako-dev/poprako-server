@@ -2,6 +2,7 @@
 
 use serde::de::Error as _;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use utoipa::ToSchema;
 
 use poprako_util::i18n::trl;
 
@@ -11,7 +12,24 @@ use crate::result::{ExpectedVariant, RegularError, RegularResult, accept};
 mod tests;
 
 /// A singular role permission flag represented as a bit position.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, utoipa::ToSchema)]
+///
+/// Each role is a single bit value:
+///
+/// | Value | Name          | Description             |
+/// |-------|---------------|-------------------------|
+/// | 1     | `RAW_PROVIDER` | Raw provider            |
+/// | 2     | `TRANSLATOR`   | Translator              |
+/// | 4     | `PROOFREADER`  | Proofreader             |
+/// | 8     | `TYPESETTER`   | Typesetter              |
+/// | 16    | `REDRAWER`     | Redrawer                |
+/// | 32    | `REVIEWER`     | Reviewer                |
+/// | 64    | `PUBLISHER`    | Publisher               |
+/// | 128   | `ADMIN`        | Admin                   |
+/// | 256   | `BOT`          | Bot                     |
+///
+/// Only a **single** valid bit is accepted; composite values are rejected.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ToSchema)]
+#[schema(example = 2)]
 pub struct RoleField(u32);
 
 impl RoleField {
@@ -47,8 +65,25 @@ impl RoleField {
     ];
 }
 
-/// A composite bitmask combining multiple [RoleBit] flags.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, utoipa::ToSchema)]
+/// A composite bitmask combining multiple role permission flags.
+///
+/// Bits are OR-ed together from the following role values:
+///
+/// | Value | Name          | Description             |
+/// |-------|---------------|-------------------------|
+/// | 1     | `RAW_PROVIDER` | Raw provider            |
+/// | 2     | `TRANSLATOR`   | Translator              |
+/// | 4     | `PROOFREADER`  | Proofreader             |
+/// | 8     | `TYPESETTER`   | Typesetter              |
+/// | 16    | `REDRAWER`     | Redrawer                |
+/// | 32    | `REVIEWER`     | Reviewer                |
+/// | 64    | `PUBLISHER`    | Publisher               |
+/// | 128   | `ADMIN`        | Admin                   |
+/// | 256   | `BOT`          | Bot                     |
+///
+/// **Examples:** `1` = RAW_PROVIDER, `6` = TRANSLATOR | PROOFREADER, `255` = all roles except BOT.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ToSchema)]
+#[schema(example = 34)]
 pub struct RoleMask(u32);
 
 impl RoleMask {

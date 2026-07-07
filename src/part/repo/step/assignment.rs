@@ -6,6 +6,7 @@ use crate::model::assignment::{
     AssignmentForm, AssignmentInfo, AssignmentListSpec, AssignmentRoleUpdate,
 };
 use crate::value::assignment::AssignmentInclOpt;
+use crate::value::role::RoleField;
 
 /// Step that finds one assignment by chapter ID and user ID.
 pub struct GetInfoByChapterIdAndUserId<'a> {
@@ -23,6 +24,17 @@ pub struct ListInfos<'a> {
 }
 
 impl<'a> Step for ListInfos<'a> {
+    type Output = Vec<AssignmentInfo>;
+}
+
+/// Step that lists all assignments by chapter (no pagination).
+pub struct ListAllInfosByChapter<'a> {
+    pub chapter_id: &'a str,
+    pub role: Option<RoleField>,
+    pub incl_opt: &'a [AssignmentInclOpt],
+}
+
+impl<'a> Step for ListAllInfosByChapter<'a> {
     type Output = Vec<AssignmentInfo>;
 }
 
@@ -90,6 +102,19 @@ impl AssignmentStep {
     /// Constructs a step to list assignments.
     pub fn list_infos<'a>(spec: &'a AssignmentListSpec) -> ListInfos<'a> {
         ListInfos { spec }
+    }
+
+    /// Constructs a step to list all assignments by chapter (no pagination).
+    pub fn list_all_infos_by_chapter<'a>(
+        chapter_id: &'a str,
+        role: Option<RoleField>,
+        incl_opt: &'a [AssignmentInclOpt],
+    ) -> ListAllInfosByChapter<'a> {
+        ListAllInfosByChapter {
+            chapter_id,
+            role,
+            incl_opt,
+        }
     }
 
     /// Constructs a step to fetch one assignment by ID.

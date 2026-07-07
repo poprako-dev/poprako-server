@@ -12,7 +12,7 @@ use crate::model::user::UserInfo;
 use crate::model::workset::WorksetInfo;
 use crate::part::repo::assignment::{AssignmentRepo, AssignmentRepoTransactional};
 use crate::part::repo::step::assignment::{
-    Create, Delete, GetInfoByChapterIdAndUserId, GetInfoById, ListInfos,
+    Create, Delete, GetInfoByChapterIdAndUserId, GetInfoById, ListAllInfosByChapter, ListInfos,
     ListInfosByChapterIdExcluded, PutRoles,
 };
 use crate::part::shared::execute::Execute;
@@ -20,6 +20,7 @@ use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactiona
 use crate::result::{RegularError, RegularResult};
 use crate::value::assignment::AssignmentInclOpt;
 use crate::value::incl::expand_incl_opts;
+use crate::value::role::RoleField;
 
 impl AssignmentRepo<MockContext> for Mock {}
 
@@ -326,6 +327,37 @@ fn list_assignments_by_chapter_id_excluded(
         .collect()
 }
 
+fn list_all_assignments_by_chapter(
+    state: &MockState,
+    chapter_id: &str,
+    role: Option<RoleField>,
+    incl_opt: &[AssignmentInclOpt],
+) -> Vec<AssignmentInfo> {
+    let mut assignment_infos = state
+        .assignments
+        .iter()
+        .filter(|assignment_info| assignment_info.chapter_id == chapter_id)
+        .filter(|assignment_info| {
+            role.map(|role| assignment_info.roles.has_any_role(&[role]))
+                .unwrap_or(true)
+        })
+        .cloned()
+        .collect::<Vec<_>>();
+
+    for assignment_info in &mut assignment_infos {
+        apply_assignment_incls(state, assignment_info, incl_opt);
+    }
+
+    assignment_infos.sort_by(|left, right| {
+        right
+            .created_at
+            .cmp(&left.created_at)
+            .then_with(|| left.id.cmp(&right.id))
+    });
+
+    assignment_infos
+}
+
 fn create_assignment(
     state: &mut MockState,
     form: &AssignmentForm,
@@ -392,6 +424,24 @@ impl<'a> Execute<ListInfos<'a>> for Mock {
 }
 
 #[async_trait]
+impl<'a> Execute<ListAllInfosByChapter<'a>> for Mock {
+    type Error = RegularError;
+
+    async fn execute(
+        &self,
+        step: &ListAllInfosByChapter<'a>,
+    ) -> Result<Vec<AssignmentInfo>, Self::Error> {
+        let state = self.state.lock().unwrap();
+        Ok(list_all_assignments_by_chapter(
+            &state,
+            step.chapter_id,
+            step.role,
+            step.incl_opt,
+        ))
+    }
+}
+
+#[async_trait]
 impl<'a> Execute<GetInfoById<'a>> for Mock {
     type Error = RegularError;
 
@@ -431,6 +481,24 @@ impl<'a> Advance<ListInfosByChapterIdExcluded<'a>, MockContext> for MockTransact
         Ok(list_assignments_by_chapter_id_excluded(
             &context.state,
             step.chapter_id,
+        ))
+    }
+}
+
+#[async_trait]
+impl<'a> Advance<ListAllInfosByChapter<'a>, MockContext> for MockTransactional {
+    type Error = RegularError;
+
+    async fn advance(
+        &self,
+        context: &mut MockContext,
+        step: &ListAllInfosByChapter<'a>,
+    ) -> Result<Vec<AssignmentInfo>, Self::Error> {
+        Ok(list_all_assignments_by_chapter(
+            &context.state,
+            step.chapter_id,
+            step.role,
+            step.incl_opt,
         ))
     }
 }

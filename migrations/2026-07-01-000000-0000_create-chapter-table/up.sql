@@ -1,7 +1,7 @@
 CREATE TABLE IF NOT EXISTS "t_chapter" (
     "f_id"                         TEXT        PRIMARY KEY,
 
-    "f_comic_id"                   TEXT        NOT NULL REFERENCES "t_comic" ("f_id") ON DELETE CASCADE,
+    "f_comic_id"                   TEXT        NOT NULL REFERENCES "t_comic" ("f_id") ON DELETE RESTRICT,
     "f_is_pinned"                  BOOLEAN     NOT NULL DEFAULT FALSE,
 
     "f_index"                      INTEGER     NOT NULL,

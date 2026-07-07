@@ -7,7 +7,7 @@ use poprako_transactional::advance::Advance;
 use crate::model::workset::WorksetInfo;
 use crate::part::repo::step::workset::{
     Create, Delete, GetInfoById, GetInfoExcluded, IncrComicNextIndex, ListInfosByTeamId,
-    ListInfosByTeamIdExcluded, UpdateComicCount, UpdateInfo,
+    ListAllInfosByTeamIdExcluded, UpdateComicCount, UpdateInfo,
 };
 use crate::part::repo::workset::{WorksetRepo, WorksetRepoTransactional};
 use crate::part::shared::execute::Execute;
@@ -111,13 +111,13 @@ impl<'a> Advance<Create<'a>, MockContext> for MockTransactional {
 }
 
 #[async_trait]
-impl<'a> Advance<ListInfosByTeamIdExcluded<'a>, MockContext> for MockTransactional {
+impl<'a> Advance<ListAllInfosByTeamIdExcluded<'a>, MockContext> for MockTransactional {
     type Error = RegularError;
 
     async fn advance(
         &self,
         context: &mut MockContext,
-        step: &ListInfosByTeamIdExcluded<'a>,
+        step: &ListAllInfosByTeamIdExcluded<'a>,
     ) -> Result<Vec<WorksetInfo>, Self::Error> {
         Ok(context
             .state
