@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS "t_assignment" (
     "f_assigned_redrawer_at"       TIMESTAMPTZ,
     "f_assigned_reviewer_at"       TIMESTAMPTZ,
     "f_assigned_publisher_at"      TIMESTAMPTZ,
+    "f_assigned_admin_at"          TIMESTAMPTZ,
 
     "f_created_at"                 TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     "f_updated_at"                 TIMESTAMPTZ NOT NULL DEFAULT NOW()

@@ -40,7 +40,11 @@ pub struct ChapterListQuery {
     /// Related rows to embed. Repeatable. Values: `comic`, `comic.workset`,
     /// `comic.workset.team`, `comic.creator`, `creator`. Dotted values imply
     /// their parent segments.
-    #[serde(default, rename = "incl")]
+    #[serde(
+        default,
+        rename = "incl",
+        deserialize_with = "crate::value::query::deserialize_vec"
+    )]
     pub incl_opt: Vec<ChapterInclOpt>,
 
     /// Pagination offset (0-based).

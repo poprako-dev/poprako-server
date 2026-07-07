@@ -36,6 +36,15 @@ impl<'a> Step for GetInfoById<'a> {
     type Output = AssignmentInfo;
 }
 
+/// Step that locks all assignment rows under one chapter.
+pub struct ListInfosByChapterIdExcluded<'a> {
+    pub chapter_id: &'a str,
+}
+
+impl<'a> Step for ListInfosByChapterIdExcluded<'a> {
+    type Output = Vec<AssignmentInfo>;
+}
+
 /// Step that inserts a new assignment row.
 pub struct Create<'a> {
     pub form: &'a AssignmentForm,
@@ -86,6 +95,13 @@ impl AssignmentStep {
     /// Constructs a step to fetch one assignment by ID.
     pub fn get_info_by_id<'a>(id: &'a str, incl_opt: &'a [AssignmentInclOpt]) -> GetInfoById<'a> {
         GetInfoById { id, incl_opt }
+    }
+
+    /// Constructs a step to lock all assignments under one chapter.
+    pub fn list_infos_by_chapter_id_excluded<'a>(
+        chapter_id: &'a str,
+    ) -> ListInfosByChapterIdExcluded<'a> {
+        ListInfosByChapterIdExcluded { chapter_id }
     }
 
     /// Constructs a step to insert a new assignment.

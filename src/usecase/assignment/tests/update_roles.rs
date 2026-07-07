@@ -6,6 +6,7 @@
 // update_roles(update_roles)(negative): non-reviewer should not update another user.
 // update_roles(update_roles)(negative): admin role should be rejected.
 // update_roles(update_roles)(negative): target member role mismatch should be rejected.
+// update_roles(update_roles)(negative): only chapter admin should not remove own admin role.
 
 use super::*;
 
@@ -19,7 +20,7 @@ async fn update_roles_reviewer_creates_missing_assignment() {
     mock.seed_assignment(assignment(
         "chapter-1",
         "reviewer-user",
-        role(RoleField::REVIEWER),
+        roles(RoleField::ADMIN, RoleField::REVIEWER),
     ));
     mock.seed_member(member("target-user", role(RoleField::TRANSLATOR)));
 
@@ -46,7 +47,7 @@ async fn update_roles_reviewer_overwrites_existing_assignment_roles() {
     mock.seed_assignment(assignment(
         "chapter-1",
         "reviewer-user",
-        role(RoleField::REVIEWER),
+        roles(RoleField::ADMIN, RoleField::REVIEWER),
     ));
     mock.seed_assignment(assignment(
         "chapter-1",
@@ -81,6 +82,11 @@ async fn update_roles_self_role_reduction_updates_assignment() {
         "chapter-1",
         "worker-user",
         roles(RoleField::TRANSLATOR, RoleField::PROOFREADER),
+    ));
+    mock.seed_assignment(assignment(
+        "chapter-1",
+        "admin-user",
+        role(RoleField::ADMIN),
     ));
     mock.seed_member(member(
         "worker-user",
@@ -182,15 +188,15 @@ async fn update_roles_admin_role_is_rejected() {
     seed_scope(&mock);
     mock.seed_assignment(assignment(
         "chapter-1",
-        "reviewer-user",
-        role(RoleField::REVIEWER),
+        "admin-user",
+        role(RoleField::ADMIN),
     ));
     mock.seed_member(member("target-user", role(RoleField::ADMIN)));
 
     let err = update_roles(
         &mock,
         &mock,
-        token("reviewer-user"),
+        token("admin-user"),
         update_roles_data("chapter-1", "target-user", role(RoleField::ADMIN)),
     )
     .await
@@ -206,16 +212,43 @@ async fn update_roles_target_member_role_mismatch_is_rejected() {
     seed_scope(&mock);
     mock.seed_assignment(assignment(
         "chapter-1",
-        "reviewer-user",
-        role(RoleField::REVIEWER),
+        "admin-user",
+        role(RoleField::ADMIN),
     ));
     mock.seed_member(member("target-user", role(RoleField::TRANSLATOR)));
 
     let err = update_roles(
         &mock,
         &mock,
-        token("reviewer-user"),
+        token("admin-user"),
         update_roles_data("chapter-1", "target-user", role(RoleField::PROOFREADER)),
+    )
+    .await
+    .err()
+    .unwrap();
+
+    assert_expected_variant(err, ExpectedVariant::Perm);
+}
+
+#[tokio::test]
+async fn update_roles_only_chapter_admin_does_not_remove_own_admin_role() {
+    let mock = Mock::new();
+    seed_scope(&mock);
+    mock.seed_assignment(assignment(
+        "chapter-1",
+        "admin-user",
+        roles(RoleField::ADMIN, RoleField::TRANSLATOR),
+    ));
+    mock.seed_member(member(
+        "admin-user",
+        roles(RoleField::ADMIN, RoleField::TRANSLATOR),
+    ));
+
+    let err = update_roles(
+        &mock,
+        &mock,
+        token("admin-user"),
+        update_roles_data("chapter-1", "admin-user", role(RoleField::TRANSLATOR)),
     )
     .await
     .err()

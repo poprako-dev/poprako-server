@@ -11,3 +11,5 @@ pub mod member;
 pub mod member_invitation;
 
 pub mod chapter_port;
+
+pub mod query;

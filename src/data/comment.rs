@@ -61,7 +61,11 @@ pub struct ListCommentInfosData {
     pub team_id: String,
 
     /// Related rows to embed. Repeatable. Values: `user`.
-    #[serde(default, rename = "incl")]
+    #[serde(
+        default,
+        rename = "incl",
+        deserialize_with = "crate::value::query::deserialize_vec"
+    )]
     pub incl_opt: Vec<CommentInclOpt>,
 }
 

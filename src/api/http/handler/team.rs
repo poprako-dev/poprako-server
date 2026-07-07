@@ -41,7 +41,14 @@ pub async fn create(
     Extension(user_token): Extension<UserToken>,
     Json(data): Json<CreateTeamData>,
 ) -> HttpResult<TeamInfoVal> {
-    let info = usecase::team::create(harn.repo(), harn.image_pool(), user_token, data).await?;
+    let info = usecase::team::create(
+        harn.drive(),
+        harn.repo(),
+        harn.image_pool(),
+        user_token,
+        data,
+    )
+    .await?;
     info.accept(StatusCode::CREATED)
 }
 

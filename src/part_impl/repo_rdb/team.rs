@@ -248,6 +248,19 @@ impl<'a> Execute<MarkAvatarUploaded<'a>> for RdbRepo {
 // ── Transactional: Advance impls ─────────────────────────────────────────────
 
 #[async_trait]
+impl<'a> Advance<Create<'a>, RdbContext> for RdbRepoTransactional {
+    type Error = RegularError;
+
+    async fn advance(
+        &self,
+        context: &mut RdbContext,
+        step: &Create<'a>,
+    ) -> RegularResult<TeamInfo> {
+        create(context.conn(), step.form).await
+    }
+}
+
+#[async_trait]
 impl<'a> Advance<ReserveAvatar<'a>, RdbContext> for RdbRepoTransactional {
     type Error = RegularError;
 

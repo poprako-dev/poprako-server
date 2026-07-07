@@ -33,6 +33,31 @@ impl AssignmentComplex {
             roles: assignment_info.roles.union(roles),
         }
     }
+
+    /// Checks whether a role update would remove the caller's own admin role.
+    pub fn is_self_admin_role_removal(
+        current_user_id: &str,
+        assignment_info: &AssignmentInfo,
+        roles: RoleMask,
+    ) -> bool {
+        current_user_id == assignment_info.user_id
+            && assignment_info.roles.has_any_role(&[RoleField::ADMIN])
+            && !roles.has_any_role(&[RoleField::ADMIN])
+    }
+
+    /// Checks whether a chapter still has at least one admin after a role update.
+    pub fn chapter_has_admin_after_role_update(
+        assignment_infos: &[AssignmentInfo],
+        user_id: &str,
+        roles: RoleMask,
+    ) -> bool {
+        assignment_infos
+            .iter()
+            .any(|assignment_info| match assignment_info.user_id == user_id {
+                true => roles.has_any_role(&[RoleField::ADMIN]),
+                false => assignment_info.roles.has_any_role(&[RoleField::ADMIN]),
+            })
+    }
 }
 
 /// Permission-gate opers for chapter assignments.
@@ -76,9 +101,9 @@ impl AssignmentPermComplex {
             + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RegularError>
             + for<'a> ProxyExecute<GetInfoByChapterIdAndUserId<'a>, Error = RegularError>,
     {
-        let reviewer_check = check_reviewer(proxy, current_user_id, &data.chapter_id).await;
+        let admin_check = check_admin(proxy, current_user_id, &data.chapter_id).await;
 
-        if reviewer_check.is_err() {
+        if admin_check.is_err() {
             check_self_reduce(proxy, current_user_id, data).await?;
         }
 
@@ -97,11 +122,12 @@ impl AssignmentPermComplex {
         if current_user_id == assignment_info.user_id {
             return accept(());
         }
-        check_reviewer(proxy, current_user_id, &assignment_info.chapter_id).await
+
+        check_admin(proxy, current_user_id, &assignment_info.chapter_id).await
     }
 
-    /// Verify the caller is a reviewer for the target chapter.
-    pub async fn can_user_review<P>(
+    /// Verify the caller is an admin for the target chapter.
+    pub async fn can_user_admin<P>(
         proxy: &mut P,
         current_user_id: &str,
         chapter_id: &str,
@@ -109,7 +135,7 @@ impl AssignmentPermComplex {
     where
         P: for<'a> ProxyExecute<GetInfoByChapterIdAndUserId<'a>, Error = RegularError>,
     {
-        check_reviewer(proxy, current_user_id, chapter_id).await
+        check_admin(proxy, current_user_id, chapter_id).await
     }
 
     /// Verify the target user may take the requested chapter assignment roles.
@@ -184,7 +210,7 @@ where
     accept(())
 }
 
-async fn check_reviewer<P>(proxy: &mut P, user_id: &str, chapter_id: &str) -> RegularResult<()>
+async fn check_admin<P>(proxy: &mut P, user_id: &str, chapter_id: &str) -> RegularResult<()>
 where
     P: for<'a> ProxyExecute<GetInfoByChapterIdAndUserId<'a>, Error = RegularError>,
 {
@@ -195,11 +221,11 @@ where
         .await?;
 
     let Some(assignment_info) = assignment_info else {
-        return Err(chapter_reviewer_error());
+        return Err(chapter_admin_error());
     };
 
-    if !assignment_info.roles.has_any_role(&[RoleField::REVIEWER]) {
-        return Err(chapter_reviewer_error());
+    if !assignment_info.roles.has_any_role(&[RoleField::ADMIN]) {
+        return Err(chapter_admin_error());
     }
 
     accept(())
@@ -297,10 +323,10 @@ fn assignment_list_permission_error() -> RegularError {
     }
 }
 
-fn chapter_reviewer_error() -> RegularError {
+fn chapter_admin_error() -> RegularError {
     RegularError::Expected {
         variant: ExpectedVariant::Perm,
-        message: trl("error-chapter-reviewer-required"),
+        message: trl("error-chapter-admin-required"),
     }
 }
 

@@ -54,7 +54,7 @@ where
 {
     use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
-    AssignmentPermComplex::can_user_review(&mut repo.as_proxy(), &token.user_id, &data.chapter_id)
+    AssignmentPermComplex::can_user_admin(&mut repo.as_proxy(), &token.user_id, &data.chapter_id)
         .await?;
 
     let assignment_invitation_infos = repo
@@ -98,7 +98,7 @@ where
 
     use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
-    AssignmentPermComplex::can_user_review(&mut repo.as_proxy(), &token.user_id, &data.chapter_id)
+    AssignmentPermComplex::can_user_admin(&mut repo.as_proxy(), &token.user_id, &data.chapter_id)
         .await?;
 
     let (assignment_invitation_id, code) = drive
@@ -173,7 +173,7 @@ where
 
     use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
-    AssignmentPermComplex::can_user_review(
+    AssignmentPermComplex::can_user_admin(
         &mut repo.as_proxy(),
         &token.user_id,
         &assignment_invitation_info.chapter_id,

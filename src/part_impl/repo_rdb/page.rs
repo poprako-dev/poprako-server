@@ -219,6 +219,15 @@ impl<'a> Execute<ListInfosByChapterId<'a>> for RdbRepo {
 }
 
 #[async_trait]
+impl<'a> Execute<ListAllInfosByChapterId<'a>> for RdbRepo {
+    type Error = RegularError;
+
+    async fn execute(&self, step: &ListAllInfosByChapterId<'a>) -> RegularResult<Vec<PageInfo>> {
+        submit_query!(self.core, list_all_infos_by_chapter_id, step.chapter_id)
+    }
+}
+
+#[async_trait]
 impl<'a> Advance<GetInfoById<'a>, RdbContext> for RdbRepoTransactional {
     type Error = RegularError;
 

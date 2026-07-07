@@ -35,8 +35,8 @@ async fn delete_reviewer_deletes_another_user_assignment() {
     seed_scope(&mock);
     mock.seed_assignment(assignment(
         "chapter-1",
-        "reviewer-user",
-        role(RoleField::REVIEWER),
+        "admin-user",
+        role(RoleField::ADMIN),
     ));
     mock.seed_assignment(assignment(
         "chapter-1",
@@ -47,7 +47,7 @@ async fn delete_reviewer_deletes_another_user_assignment() {
     delete(
         &mock,
         &mock,
-        token("reviewer-user"),
+        token("admin-user"),
         "assignment-chapter-1-target-user".into(),
     )
     .await

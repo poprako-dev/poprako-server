@@ -175,10 +175,18 @@ pub struct ListComicInfosData {
     pub is_completed: Option<bool>,
     pub stages: Option<u32>,
 
-    #[serde(default, rename = "incl")]
+    #[serde(
+        default,
+        rename = "incl",
+        deserialize_with = "crate::value::query::deserialize_vec"
+    )]
     pub incl_opt: Vec<ComicInclOpt>,
 
-    #[serde(default, rename = "with")]
+    #[serde(
+        default,
+        rename = "with",
+        deserialize_with = "crate::value::query::deserialize_vec"
+    )]
     pub with_opt: Vec<ComicWithOpt>,
 }
 

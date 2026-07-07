@@ -23,6 +23,7 @@ diesel::table! {
         f_assigned_redrawer_at -> Nullable<Timestamptz>,
         f_assigned_reviewer_at -> Nullable<Timestamptz>,
         f_assigned_publisher_at -> Nullable<Timestamptz>,
+        f_assigned_admin_at -> Nullable<Timestamptz>,
         f_created_at -> Timestamptz,
         f_updated_at -> Timestamptz,
     }
@@ -53,9 +54,6 @@ diesel::table! {
         f_total_unit_count -> Int4,
         f_translated_unit_count -> Int4,
         f_proofread_unit_count -> Int4,
-        f_creator_id -> Text,
-        f_created_at -> Timestamptz,
-        f_updated_at -> Timestamptz,
         f_uploaded_at -> Nullable<Timestamptz>,
         f_translating_at -> Nullable<Timestamptz>,
         f_translated_at -> Nullable<Timestamptz>,
@@ -65,6 +63,9 @@ diesel::table! {
         f_typeset_at -> Nullable<Timestamptz>,
         f_reviewed_at -> Nullable<Timestamptz>,
         f_published_at -> Nullable<Timestamptz>,
+        f_creator_id -> Text,
+        f_created_at -> Timestamptz,
+        f_updated_at -> Timestamptz,
     }
 }
 

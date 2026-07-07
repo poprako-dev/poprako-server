@@ -12,7 +12,8 @@ use crate::model::user::UserInfo;
 use crate::model::workset::WorksetInfo;
 use crate::part::repo::assignment::{AssignmentRepo, AssignmentRepoTransactional};
 use crate::part::repo::step::assignment::{
-    Create, Delete, GetInfoByChapterIdAndUserId, GetInfoById, ListInfos, PutRoles,
+    Create, Delete, GetInfoByChapterIdAndUserId, GetInfoById, ListInfos,
+    ListInfosByChapterIdExcluded, PutRoles,
 };
 use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactional, expected, now};
@@ -313,6 +314,18 @@ fn list_assignments(state: &MockState, spec: &AssignmentListSpec) -> Vec<Assignm
     assignment_infos[offset..end].to_vec()
 }
 
+fn list_assignments_by_chapter_id_excluded(
+    state: &MockState,
+    chapter_id: &str,
+) -> Vec<AssignmentInfo> {
+    state
+        .assignments
+        .iter()
+        .filter(|assignment_info| assignment_info.chapter_id == chapter_id)
+        .cloned()
+        .collect()
+}
+
 fn create_assignment(
     state: &mut MockState,
     form: &AssignmentForm,
@@ -402,6 +415,22 @@ impl<'a> Advance<GetInfoByChapterIdAndUserId<'a>, MockContext> for MockTransacti
             &context.state,
             step.chapter_id,
             step.user_id,
+        ))
+    }
+}
+
+#[async_trait]
+impl<'a> Advance<ListInfosByChapterIdExcluded<'a>, MockContext> for MockTransactional {
+    type Error = RegularError;
+
+    async fn advance(
+        &self,
+        context: &mut MockContext,
+        step: &ListInfosByChapterIdExcluded<'a>,
+    ) -> Result<Vec<AssignmentInfo>, Self::Error> {
+        Ok(list_assignments_by_chapter_id_excluded(
+            &context.state,
+            step.chapter_id,
         ))
     }
 }

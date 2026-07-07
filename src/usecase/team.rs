@@ -7,12 +7,14 @@ use poprako_transactional::drive::Drive;
 use poprako_util::page::Page;
 
 use crate::complex::image::ImageComplex;
+use crate::complex::member::MemberComplex;
 use crate::complex::team::{TeamComplex, TeamPermComplex};
 use crate::data::team::{
     CreateTeamData, ListTeamInfosData, MarkTeamAvatarUploadedData, ReserveTeamAvatarData,
     ReserveTeamAvatarVal, TeamInfoVal, UpdateTeamInfoData,
 };
-use crate::model::team::TeamForm;
+use crate::model::member::MemberForm;
+use crate::model::team::{TeamForm, TeamInfo};
 use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
 use crate::part::prom::task::{IMAGE_TOPIC, ImageKind, ImageTask};
@@ -22,35 +24,45 @@ use crate::part::repo::comic::{ComicRepo, ComicRepoTransactional};
 use crate::part::repo::map_drive_err;
 use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
 use crate::part::repo::page::{PageRepo, PageRepoTransactional};
+use crate::part::repo::step::member::MemberStep;
 use crate::part::repo::step::team::TeamStep;
+use crate::part::repo::step::user::UserStep;
 use crate::part::repo::team::{TeamRepo, TeamRepoTransactional};
 use crate::part::repo::user::{UserRepo, UserRepoTransactional};
 use crate::part::repo::workset::{WorksetRepo, WorksetRepoTransactional};
 use crate::result::{RegularError, RegularResult, accept};
 use crate::util::DeriveTransactional;
+use crate::value::role::{RoleField, RoleMask};
 
 #[cfg(test)]
 pub(crate) mod tests;
 
 /// Creates a new team.
 ///
-/// Non-transactional — generates an ID via [`TeamComplex::gen_id`], inserts
-/// the row, and returns presentation-ready team info with a resolved avatar URL.
+/// Transactional — inserts the team and makes the creator an admin member.
 ///
 /// # Type Parameters
 ///
 /// * `C` — Context anchor.
 /// * `R: TeamRepo<C>` — Team storage.
 /// * `I: ImagePool` — Resolves the avatar signed URL.
-pub async fn create<C, R, I>(
+pub async fn create<D, C, R, I>(
+    drive: &D,
     repo: &R,
     image_pool: &I,
     token: UserToken,
     data: CreateTeamData,
 ) -> RegularResult<TeamInfoVal>
 where
-    R: TeamRepo<C> + UserRepo<C> + Sync,
-    <R as DeriveTransactional>::Transactional: TeamRepoTransactional<C> + UserRepoTransactional<C>,
+    D: Drive<C>,
+    D::Error: Into<RegularError>,
+    C: Send,
+    R: TeamRepo<C> + UserRepo<C> + MemberRepo<C> + Send + Sync,
+    <R as DeriveTransactional>::Transactional: TeamRepoTransactional<C>
+        + UserRepoTransactional<C>
+        + MemberRepoTransactional<C>
+        + Send
+        + Sync,
     I: ImagePool,
 {
     use crate::part::shared::proxy::AsProxyNonTransactional as _;
@@ -63,7 +75,31 @@ where
         description: data.description,
     };
 
-    let team_info = repo.execute(&TeamStep::create(&team_form)).await?;
+    let team_info: TeamInfo = drive
+        .with_context(async move |context| {
+            let repo = repo.derive_transactional().await;
+
+            let user_info = repo
+                .advance(context, &UserStep::get_info_excluded(&token.user_id))
+                .await?;
+
+            let team_info = repo.advance(context, &TeamStep::create(&team_form)).await?;
+
+            let member_form = MemberForm {
+                id: MemberComplex::gen_id(),
+                user_id: token.user_id,
+                user_nickname: user_info.nickname,
+                team_id: team_info.id.clone(),
+                roles: RoleMask::from(RoleField::ADMIN),
+            };
+
+            repo.advance(context, &MemberStep::create(&member_form))
+                .await?;
+
+            accept(team_info)
+        })
+        .await
+        .map_err(map_drive_err)?;
 
     TeamInfoVal::from_model(image_pool, team_info).await
 }

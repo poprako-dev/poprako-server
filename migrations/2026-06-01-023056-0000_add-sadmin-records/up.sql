@@ -9,7 +9,7 @@ INSERT INTO "t_user" (
     'SuperAdmin-OvO',
     '123456',
     TRUE,
-    '$2a$10$eEEkAsc7h3jdkOyjahdH6OX20w/dHKdGVaH7MNREkh54O57v.E2y2' -- 123456
+    '$argon2id$v=19$m=65536,t=3,p=4$UrCPl9xY0hk3LpfQWl+ZVA$4d+zkTiD9ghoc6XtJJSHpcvfzUpAK1IiZ5MAQezLgrE' -- 123456
 );
 
 INSERT INTO "t_member" (

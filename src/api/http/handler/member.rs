@@ -37,7 +37,11 @@ use crate::value::member::MemberInclOpt;
 #[into_params(parameter_in = Query)]
 pub struct MemberMeListQuery {
     /// Related rows to embed. Repeatable. Values: `user`, `team`.
-    #[serde(default, rename = "incl")]
+    #[serde(
+        default,
+        rename = "incl",
+        deserialize_with = "crate::value::query::deserialize_vec"
+    )]
     pub incl_opt: Vec<MemberInclOpt>,
 
     /// Pagination offset (0-based).

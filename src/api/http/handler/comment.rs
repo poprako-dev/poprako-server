@@ -33,7 +33,11 @@ use crate::value::comment::CommentInclOpt;
 #[into_params(parameter_in = Query)]
 pub struct CommentListQuery {
     /// Related rows to embed. Repeatable. Values: `user`.
-    #[serde(default, rename = "incl")]
+    #[serde(
+        default,
+        rename = "incl",
+        deserialize_with = "crate::value::query::deserialize_vec"
+    )]
     pub incl_opt: Vec<CommentInclOpt>,
 
     /// Pagination offset (0-based).
