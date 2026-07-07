@@ -6,3 +6,4 @@
 - [ ] rename: V: Develop -> D: ...
 - [ ] rename: join -> join-{team}
 - [ ] add archive prom in comic complete.
+- [ ] check: raw text response body.

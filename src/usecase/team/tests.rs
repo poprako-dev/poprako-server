@@ -8,6 +8,7 @@
 //! [`Mock`]: crate::part_impl::repo_mock::Mock
 
 // create(create)(positive): creating a team should persist it and return team info.
+// create(create)(positive): creating a team should make creator an admin member.
 // create(create)(negative): create repo failure should propagate.
 // get_info(get_info)(positive): existing team should return info with avatar URL when uploaded.
 // get_info(get_info)(negative): missing team should propagate an argument error.
@@ -42,6 +43,12 @@ use crate::model::user::{UserAvatarReservation, UserCredential, UserInfo};
 use crate::model::workset::WorksetInfo;
 use crate::part::prom::Payload;
 use crate::part::prom::task::{ImageKind, ImageTask};
+use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
+use crate::part::repo::step::member::{
+    Create as MemberCreate, Delete as MemberDelete, FindInfoByUserIdAndTeamId,
+    GetInfoById as MemberGetInfoById, ListInfos as MemberListInfos, ListInfosByUserIdExcluded,
+    TouchLastActive, UpdateRole, UpdateUserNickname,
+};
 use crate::part::repo::step::team::{
     Create, Delete, GetInfoById, GetInfoExcluded, IncrementWorksetNextIndex, ListInfos,
     MarkAvatarUploaded, ReserveAvatar, UpdateInfo,
@@ -82,11 +89,13 @@ impl DeriveTransactional for FailingCreateRepo {
 
 impl TeamRepo<MockContext> for FailingCreateRepo {}
 impl UserRepo<MockContext> for FailingCreateRepo {}
+impl MemberRepo<MockContext> for FailingCreateRepo {}
 
 struct FailingTeamTransactional;
 
 impl TeamRepoTransactional<MockContext> for FailingTeamTransactional {}
 impl UserRepoTransactional<MockContext> for FailingTeamTransactional {}
+impl MemberRepoTransactional<MockContext> for FailingTeamTransactional {}
 
 /// Builds a [`TeamInfo`] fixture with default timestamps and no avatar.
 pub fn team(id: &str, name: &str, description: &str) -> TeamInfo {
@@ -275,6 +284,15 @@ impl<'a> Execute<Create<'a>> for FailingCreateRepo {
 }
 
 #[async_trait]
+impl<'a> Advance<Create<'a>, MockContext> for FailingTeamTransactional {
+    type Error = RegularError;
+
+    async fn advance(&self, _: &mut MockContext, _: &Create<'a>) -> Result<TeamInfo, Self::Error> {
+        Err(expected_error())
+    }
+}
+
+#[async_trait]
 impl<'a> Execute<UserGetInfoById<'a>> for FailingCreateRepo {
     type Error = RegularError;
 
@@ -386,9 +404,9 @@ impl<'a> Advance<UserGetInfoExcluded<'a>, MockContext> for FailingTeamTransactio
     async fn advance(
         &self,
         _: &mut MockContext,
-        _: &UserGetInfoExcluded<'a>,
+        step: &UserGetInfoExcluded<'a>,
     ) -> Result<UserInfo, Self::Error> {
-        Err(expected_error())
+        Ok(user(step.id, true))
     }
 }
 
@@ -498,12 +516,126 @@ impl<'a> Advance<IncrementWorksetNextIndex<'a>, MockContext> for FailingTeamTran
     }
 }
 
+#[async_trait]
+impl<'a> Execute<FindInfoByUserIdAndTeamId<'a>> for FailingCreateRepo {
+    type Error = RegularError;
+
+    async fn execute(
+        &self,
+        _: &FindInfoByUserIdAndTeamId<'a>,
+    ) -> Result<Option<MemberInfo>, Self::Error> {
+        Ok(None)
+    }
+}
+
+#[async_trait]
+impl<'a> Execute<MemberListInfos<'a>> for FailingCreateRepo {
+    type Error = RegularError;
+
+    async fn execute(&self, _: &MemberListInfos<'a>) -> Result<Vec<MemberInfo>, Self::Error> {
+        Ok(Vec::new())
+    }
+}
+
+#[async_trait]
+impl<'a> Execute<MemberGetInfoById<'a>> for FailingCreateRepo {
+    type Error = RegularError;
+
+    async fn execute(&self, _: &MemberGetInfoById<'a>) -> Result<MemberInfo, Self::Error> {
+        Err(expected_error())
+    }
+}
+
+#[async_trait]
+impl<'a> Advance<MemberCreate<'a>, MockContext> for FailingTeamTransactional {
+    type Error = RegularError;
+
+    async fn advance(
+        &self,
+        _: &mut MockContext,
+        _: &MemberCreate<'a>,
+    ) -> Result<MemberInfo, Self::Error> {
+        Err(expected_error())
+    }
+}
+
+#[async_trait]
+impl<'a> Advance<UpdateUserNickname<'a>, MockContext> for FailingTeamTransactional {
+    type Error = RegularError;
+
+    async fn advance(
+        &self,
+        _: &mut MockContext,
+        _: &UpdateUserNickname<'a>,
+    ) -> Result<(), Self::Error> {
+        Err(expected_error())
+    }
+}
+
+#[async_trait]
+impl<'a> Advance<TouchLastActive<'a>, MockContext> for FailingTeamTransactional {
+    type Error = RegularError;
+
+    async fn advance(
+        &self,
+        _: &mut MockContext,
+        _: &TouchLastActive<'a>,
+    ) -> Result<(), Self::Error> {
+        Err(expected_error())
+    }
+}
+
+#[async_trait]
+impl<'a> Advance<ListInfosByUserIdExcluded<'a>, MockContext> for FailingTeamTransactional {
+    type Error = RegularError;
+
+    async fn advance(
+        &self,
+        _: &mut MockContext,
+        _: &ListInfosByUserIdExcluded<'a>,
+    ) -> Result<Vec<MemberInfo>, Self::Error> {
+        Err(expected_error())
+    }
+}
+
+#[async_trait]
+impl<'a> Advance<FindInfoByUserIdAndTeamId<'a>, MockContext> for FailingTeamTransactional {
+    type Error = RegularError;
+
+    async fn advance(
+        &self,
+        _: &mut MockContext,
+        _: &FindInfoByUserIdAndTeamId<'a>,
+    ) -> Result<Option<MemberInfo>, Self::Error> {
+        Err(expected_error())
+    }
+}
+
+#[async_trait]
+impl<'a> Advance<UpdateRole<'a>, MockContext> for FailingTeamTransactional {
+    type Error = RegularError;
+
+    async fn advance(&self, _: &mut MockContext, _: &UpdateRole<'a>) -> Result<(), Self::Error> {
+        Err(expected_error())
+    }
+}
+
+#[async_trait]
+impl<'a> Advance<MemberDelete<'a>, MockContext> for FailingTeamTransactional {
+    type Error = RegularError;
+
+    async fn advance(&self, _: &mut MockContext, _: &MemberDelete<'a>) -> Result<(), Self::Error> {
+        Err(expected_error())
+    }
+}
+
 #[tokio::test]
 async fn create_persists_team_and_returns_info() {
     let mock = Mock::new();
     mock.seed_user(user("user-1", true), credential("user-1"));
 
     let val = create(
+        &mock,
         &mock,
         &mock,
         token("user-1"),
@@ -523,11 +655,42 @@ async fn create_persists_team_and_returns_info() {
 }
 
 #[tokio::test]
+async fn create_makes_creator_admin_member() {
+    let mock = Mock::new();
+    mock.seed_user(user("user-1", true), credential("user-1"));
+
+    let val = create(
+        &mock,
+        &mock,
+        &mock,
+        token("user-1"),
+        CreateTeamData {
+            name: "Team".into(),
+            description: "Desc".into(),
+        },
+    )
+    .await
+    .unwrap();
+
+    let snapshot = mock.snapshot();
+    let member_info = snapshot
+        .members
+        .iter()
+        .find(|member_info| member_info.team_id == val.id)
+        .unwrap();
+
+    assert_eq!(member_info.user_id, "user-1");
+    assert!(member_info.roles.has_any_role(&[RoleField::ADMIN]));
+}
+
+#[tokio::test]
 async fn create_propagates_repo_failure() {
     let repo = FailingCreateRepo;
+    let drive = Mock::new();
     let image = Mock::new();
 
     let err = create(
+        &drive,
         &repo,
         &image,
         token("user-1"),

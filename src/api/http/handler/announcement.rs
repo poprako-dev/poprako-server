@@ -33,7 +33,11 @@ use crate::value::announcement::AnnouncementInclOpt;
 #[into_params(parameter_in = Query)]
 pub struct AnnouncementListQuery {
     /// Related rows to embed. Repeatable. Values: `user`.
-    #[serde(default, rename = "incl")]
+    #[serde(
+        default,
+        rename = "incl",
+        deserialize_with = "crate::value::query::deserialize_vec"
+    )]
     pub incl_opt: Vec<AnnouncementInclOpt>,
 
     /// Pagination offset (0-based).

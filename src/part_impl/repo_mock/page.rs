@@ -91,6 +91,20 @@ impl<'a> Execute<ListInfosByChapterId<'a>> for Mock {
 }
 
 #[async_trait]
+impl<'a> Execute<ListAllInfosByChapterId<'a>> for Mock {
+    type Error = RegularError;
+
+    async fn execute(
+        &self,
+        step: &ListAllInfosByChapterId<'a>,
+    ) -> Result<Vec<PageInfo>, Self::Error> {
+        let state = self.state.lock().unwrap();
+
+        Ok(list_all_pages(&state, step.chapter_id))
+    }
+}
+
+#[async_trait]
 impl<'a> Advance<GetInfoById<'a>, MockContext> for MockTransactional {
     type Error = RegularError;
 

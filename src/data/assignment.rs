@@ -108,7 +108,11 @@ pub struct ListAssignmentInfosData {
     /// `chapter.comic`, `chapter.comic.workset`, `chapter.comic.workset.team`,
     /// `chapter.creator`, `chapter.comic.creator`. Dotted values imply their
     /// parent segments.
-    #[serde(default, rename = "incl")]
+    #[serde(
+        default,
+        rename = "incl",
+        deserialize_with = "crate::value::query::deserialize_vec"
+    )]
     pub incl_opt: Vec<AssignmentInclOpt>,
 }
 

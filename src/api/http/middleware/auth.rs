@@ -48,7 +48,11 @@ pub fn extract_token(request: &Request) -> String {
             if let Some((name, value)) = part.trim().split_once('=')
                 && name.trim() == AUTH_COOKIE_NAME
             {
-                return value.trim().to_string();
+                return value
+                    .trim()
+                    .strip_prefix(AUTH_BEARER_PREFIX)
+                    .unwrap_or(value.trim())
+                    .to_string();
             }
         }
     }

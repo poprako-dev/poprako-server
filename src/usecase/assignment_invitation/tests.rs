@@ -168,7 +168,7 @@ fn invitation(id: &str, invitee_qid: &str, role_mask: RoleMask) -> AssignmentInv
     AssignmentInvitationInfo {
         id: id.into(),
         chapter_id: "chapter-1".into(),
-        inviter_id: "reviewer-user".into(),
+        inviter_id: "admin-user".into(),
         invitee_qid: invitee_qid.into(),
         code: "AINV123".into(),
         pending: true,
@@ -212,11 +212,11 @@ fn seed_scope(mock: &Mock) {
     mock.seed_chapter(chapter("chapter-1", "comic-1"));
 }
 
-fn seed_reviewer(mock: &Mock) {
+fn seed_admin(mock: &Mock) {
     mock.seed_assignment(assignment(
         "chapter-1",
-        "reviewer-user",
-        role(RoleField::REVIEWER),
+        "admin-user",
+        role(RoleField::ADMIN),
     ));
 }
 
@@ -224,14 +224,14 @@ fn seed_reviewer(mock: &Mock) {
 async fn list_infos_reviewer_lists_chapter_invitations() {
     let mock = Mock::new();
     seed_scope(&mock);
-    seed_reviewer(&mock);
+    seed_admin(&mock);
     mock.seed_assignment_invitation(invitation(
         "invitation-1",
         "target-qid",
         role(RoleField::TRANSLATOR),
     ));
 
-    let val = list_infos(&mock, token("reviewer-user"), list_data())
+    let val = list_infos(&mock, token("admin-user"), list_data())
         .await
         .unwrap();
 
@@ -261,7 +261,7 @@ async fn list_infos_non_reviewer_is_rejected() {
 async fn create_reviewer_creates_pending_invitation() {
     let mock = Mock::new();
     seed_scope(&mock);
-    seed_reviewer(&mock);
+    seed_admin(&mock);
     mock.seed_user(
         user("target-user", "target-qid", "Target"),
         credential("target-user"),
@@ -270,7 +270,7 @@ async fn create_reviewer_creates_pending_invitation() {
     let val = create(
         &mock,
         &mock,
-        token("reviewer-user"),
+        token("admin-user"),
         create_data("target-qid"),
     )
     .await
@@ -283,7 +283,7 @@ async fn create_reviewer_creates_pending_invitation() {
     assert_eq!(snapshot.assignment_invitations[0].chapter_id, "chapter-1");
     assert_eq!(
         snapshot.assignment_invitations[0].inviter_id,
-        "reviewer-user"
+        "admin-user"
     );
     assert_eq!(snapshot.assignment_invitations[0].invitee_qid, "target-qid");
     assert!(snapshot.assignment_invitations[0].pending);
@@ -293,7 +293,7 @@ async fn create_reviewer_creates_pending_invitation() {
 async fn create_existing_assignment_is_rejected() {
     let mock = Mock::new();
     seed_scope(&mock);
-    seed_reviewer(&mock);
+    seed_admin(&mock);
     mock.seed_user(
         user("target-user", "target-qid", "Target"),
         credential("target-user"),
@@ -307,7 +307,7 @@ async fn create_existing_assignment_is_rejected() {
     let err = create(
         &mock,
         &mock,
-        token("reviewer-user"),
+        token("admin-user"),
         create_data("target-qid"),
     )
     .await
@@ -322,14 +322,14 @@ async fn create_existing_assignment_is_rejected() {
 async fn delete_reviewer_deletes_invitation() {
     let mock = Mock::new();
     seed_scope(&mock);
-    seed_reviewer(&mock);
+    seed_admin(&mock);
     mock.seed_assignment_invitation(invitation(
         "invitation-1",
         "target-qid",
         role(RoleField::TRANSLATOR),
     ));
 
-    delete(&mock, &mock, token("reviewer-user"), "invitation-1".into())
+    delete(&mock, &mock, token("admin-user"), "invitation-1".into())
         .await
         .unwrap();
 

@@ -43,7 +43,8 @@ where
 ///
 /// [`Drive::with_context`]: poprako_transactional::drive::Drive::with_context
 pub trait TeamRepoTransactional<C>:
-    for<'a> Advance<ReserveAvatar<'a>, C, Error = RegularError>
+    for<'a> Advance<Create<'a>, C, Error = RegularError>
+    + for<'a> Advance<ReserveAvatar<'a>, C, Error = RegularError>
     + for<'a> Advance<MarkAvatarUploaded<'a>, C, Error = RegularError>
     + for<'a> Advance<GetInfoExcluded<'a>, C, Error = RegularError>
     + for<'a> Advance<Delete<'a>, C, Error = RegularError>

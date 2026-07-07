@@ -19,6 +19,28 @@ impl TeamRepo<MockContext> for Mock {}
 
 impl TeamRepoTransactional<MockContext> for MockTransactional {}
 
+fn create_team(state: &mut MockState, step: &Create<'_>) -> RegularResult<TeamInfo> {
+    if state.teams.iter().any(|team| team.id == step.form.id) {
+        return Err(expected("error-already-exists"));
+    }
+
+    let time = now();
+    let team = TeamInfo {
+        id: step.form.id.clone(),
+        name: step.form.name.clone(),
+        description: step.form.description.clone(),
+        avatar_key: None,
+        avatar_uploaded: false,
+        avatar_version: 0,
+        workset_next_index: 0,
+        created_at: time,
+        updated_at: time,
+    };
+
+    state.teams.push(team.clone());
+    Ok(team)
+}
+
 /// Updates a team record to mark its avatar as uploaded, verifying the avatar version
 /// to detect stale uploads.
 fn mark_team_avatar_uploaded(
@@ -46,24 +68,7 @@ impl<'a> Execute<Create<'a>> for Mock {
 
     async fn execute(&self, step: &Create<'a>) -> Result<TeamInfo, Self::Error> {
         let mut state = self.state.lock().unwrap();
-        if state.teams.iter().any(|team| team.id == step.form.id) {
-            Err(expected("error-already-exists"))
-        } else {
-            let time = now();
-            let team = TeamInfo {
-                id: step.form.id.clone(),
-                name: step.form.name.clone(),
-                description: step.form.description.clone(),
-                avatar_key: None,
-                avatar_uploaded: false,
-                avatar_version: 0,
-                workset_next_index: 0,
-                created_at: time,
-                updated_at: time,
-            };
-            state.teams.push(team.clone());
-            Ok(team)
-        }
+        create_team(&mut state, step)
     }
 }
 
@@ -171,6 +176,19 @@ impl<'a> Advance<ReserveAvatar<'a>, MockContext> for MockTransactional {
             prev_object_key,
             avatar_version,
         })
+    }
+}
+
+#[async_trait]
+impl<'a> Advance<Create<'a>, MockContext> for MockTransactional {
+    type Error = RegularError;
+
+    async fn advance(
+        &self,
+        context: &mut MockContext,
+        step: &Create<'a>,
+    ) -> Result<TeamInfo, Self::Error> {
+        create_team(&mut context.state, step)
     }
 }
 

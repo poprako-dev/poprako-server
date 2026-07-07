@@ -3,8 +3,6 @@ mod tests;
 
 use std::collections::HashMap;
 
-use poprako_util::page::Page;
-
 use crate::complex::chapter_port::{ChapterExportComplex, ChapterPortPermComplex};
 use crate::data::chapter_port::ChapterTranslationExportVal;
 use crate::data::page_port::PageTranslationExportVal;
@@ -66,13 +64,7 @@ where
         .await?;
 
     let page_infos = repo
-        .execute(&PageStep::list_infos_by_chapter_id(
-            &chapter_info.id,
-            Page {
-                offset: 0,
-                limit: u64::MAX,
-            },
-        ))
+        .execute(&PageStep::list_all_infos_by_chapter_id(&chapter_info.id))
         .await?;
 
     let mut page_vals = Vec::with_capacity(page_infos.len());
@@ -148,13 +140,7 @@ where
         .await?;
 
     let page_infos = repo
-        .execute(&PageStep::list_infos_by_chapter_id(
-            &chapter_id,
-            Page {
-                offset: 0,
-                limit: u64::MAX,
-            },
-        ))
+        .execute(&PageStep::list_all_infos_by_chapter_id(&chapter_id))
         .await?;
 
     let mut units_by_page_id = HashMap::new();

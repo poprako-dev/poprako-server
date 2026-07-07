@@ -2,6 +2,7 @@
 
 use poprako_transactional::advance::Advance;
 use poprako_transactional::drive::Drive;
+use poprako_util::i18n::trl;
 
 use crate::complex::assignment::{AssignmentComplex, AssignmentPermComplex};
 use crate::complex::chapter::ChapterPermComplex;
@@ -20,7 +21,7 @@ use crate::part::repo::step::assignment::AssignmentStep;
 use crate::part::repo::step::chapter::ChapterStep;
 use crate::part::repo::user::{UserRepo, UserRepoTransactional};
 use crate::part::repo::workset::{WorksetRepo, WorksetRepoTransactional};
-use crate::result::{RegularError, RegularResult, accept};
+use crate::result::{ExpectedVariant, RegularError, RegularResult, accept};
 use crate::util::DeriveTransactional;
 
 #[cfg(test)]
@@ -207,26 +208,51 @@ where
         .with_context(async move |context| {
             let repo = repo.derive_transactional().await;
 
-            let existing_assignment_info = repo
+            let locked_assignment_infos = repo
                 .advance(
                     context,
-                    &AssignmentStep::get_info_by_chapter_id_and_user_id(
-                        &data.chapter_id,
-                        &data.user_id,
-                    ),
+                    &AssignmentStep::list_infos_by_chapter_id_excluded(&data.chapter_id),
                 )
                 .await?;
 
+            let existing_assignment_info = locked_assignment_infos
+                .iter()
+                .find(|assignment_info| assignment_info.user_id == data.user_id);
+
             match existing_assignment_info {
                 Some(assignment_info) => {
+                    if AssignmentComplex::is_self_admin_role_removal(
+                        &token.user_id,
+                        &assignment_info,
+                        data.roles,
+                    ) {
+                        return Err(assignment_admin_required_error());
+                    }
+
+                    if !AssignmentComplex::chapter_has_admin_after_role_update(
+                        &locked_assignment_infos,
+                        &data.user_id,
+                        data.roles,
+                    ) {
+                        return Err(assignment_admin_required_error());
+                    }
+
                     let assignment_role_update = AssignmentRoleUpdate {
-                        id: assignment_info.id,
+                        id: assignment_info.id.clone(),
                         roles: data.roles,
                     };
                     repo.advance(context, &AssignmentStep::put_roles(&assignment_role_update))
                         .await?;
                 }
                 None => {
+                    if !AssignmentComplex::chapter_has_admin_after_role_update(
+                        &locked_assignment_infos,
+                        &data.user_id,
+                        data.roles,
+                    ) {
+                        return Err(assignment_admin_required_error());
+                    }
+
                     let assignment_form = AssignmentForm {
                         id: AssignmentComplex::gen_id(),
                         chapter_id: data.chapter_id,
@@ -244,6 +270,13 @@ where
         .map_err(map_drive_err)?;
 
     accept(())
+}
+
+fn assignment_admin_required_error() -> RegularError {
+    RegularError::Expected {
+        variant: ExpectedVariant::Perm,
+        message: trl("error-forbidden"),
+    }
 }
 
 /// Deletes one assignment by identifier.

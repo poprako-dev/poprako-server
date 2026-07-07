@@ -15,6 +15,7 @@ pub trait PageRepo<C>:
     DeriveTransactional
     + for<'a> Execute<GetInfoById<'a>, Error = RegularError>
     + for<'a> Execute<ListInfosByChapterId<'a>, Error = RegularError>
+    + for<'a> Execute<ListAllInfosByChapterId<'a>, Error = RegularError>
 where
     Self::Transactional: PageRepoTransactional<C>,
 {

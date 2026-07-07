@@ -152,14 +152,27 @@ where
         .with_context(async move |context| {
             let repo = repo.derive_transactional().await;
 
+            repo.advance(
+                context,
+                &ChapterStep::list_all_infos_by_comic_id_excluded(&data.comic_id),
+            )
+            .await?;
+
             let index = repo
                 .advance(context, &ComicStep::incr_chapter_next_index(&data.comic_id))
                 .await?;
 
             let subtitle = ChapterComplex::subtitle_or_default(data.subtitle, index);
+            let chapter_id = ChapterComplex::gen_id();
+
+            repo.advance(
+                context,
+                &ChapterStep::unpin_others(&data.comic_id, &chapter_id),
+            )
+            .await?;
 
             let chapter_form = ChapterForm {
-                id: ChapterComplex::gen_id(),
+                id: chapter_id,
                 comic_id: data.comic_id,
                 is_pinned: true,
                 index,
@@ -170,12 +183,6 @@ where
             let chapter_info = repo
                 .advance(context, &ChapterStep::create(&chapter_form))
                 .await?;
-
-            repo.advance(
-                context,
-                &ChapterStep::unpin_others(&chapter_info.comic_id, &chapter_info.id),
-            )
-            .await?;
 
             repo.advance(
                 context,
@@ -248,16 +255,22 @@ where
                     pin: data.pin,
                 };
 
-                repo.advance(context, &ChapterStep::update_info(&chapter_info_update))
+                if chapter_info_update.pin == Some(true) {
+                    repo.advance(
+                        context,
+                        &ChapterStep::list_all_infos_by_comic_id_excluded(&chapter_info.comic_id),
+                    )
                     .await?;
 
-                if chapter_info_update.pin == Some(true) {
                     repo.advance(
                         context,
                         &ChapterStep::unpin_others(&chapter_info.comic_id, &chapter_info.id),
                     )
                     .await?;
                 }
+
+                repo.advance(context, &ChapterStep::update_info(&chapter_info_update))
+                    .await?;
             }
 
             repo.advance(

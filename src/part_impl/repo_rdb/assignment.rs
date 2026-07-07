@@ -12,7 +12,8 @@ use crate::model::assignment::{
 };
 use crate::part::repo::assignment::{AssignmentRepo, AssignmentRepoTransactional};
 use crate::part::repo::step::assignment::{
-    Create, Delete, GetInfoByChapterIdAndUserId, GetInfoById, ListInfos, PutRoles,
+    Create, Delete, GetInfoByChapterIdAndUserId, GetInfoById, ListInfos,
+    ListInfosByChapterIdExcluded, PutRoles,
 };
 use crate::part::shared::execute::Execute;
 use crate::part_impl::rdb_core::RdbConn;
@@ -127,6 +128,7 @@ async fn list_infos(
             RoleField::REDRAWER => query.filter(f_assigned_redrawer_at.is_not_null()),
             RoleField::REVIEWER => query.filter(f_assigned_reviewer_at.is_not_null()),
             RoleField::PUBLISHER => query.filter(f_assigned_publisher_at.is_not_null()),
+            RoleField::ADMIN => query.filter(f_assigned_admin_at.is_not_null()),
             _ => query,
         };
     }
@@ -145,6 +147,22 @@ async fn list_infos(
     incl::assignment::populate_assignment_incls(conn, &mut infos, incl_opt).await?;
 
     Ok(infos)
+}
+
+async fn list_infos_by_chapter_id_excluded(
+    conn: &mut RdbConn,
+    chapter_id: &str,
+) -> RegularResult<Vec<AssignmentInfo>> {
+    let rows: Vec<AssignmentRow> = t_assignment
+        .filter(f_chapter_id.eq(chapter_id))
+        .select(AssignmentRow::as_select())
+        .order_by((f_created_at.desc(), f_id.asc()))
+        .for_update()
+        .load(conn)
+        .await
+        .map_err(diesel)?;
+
+    rows_into_infos(rows)
 }
 
 async fn create(conn: &mut RdbConn, form: &AssignmentForm) -> RegularResult<AssignmentInfo> {
@@ -238,6 +256,19 @@ impl<'a> Advance<GetInfoByChapterIdAndUserId<'a>, RdbContext> for RdbRepoTransac
         step: &GetInfoByChapterIdAndUserId<'a>,
     ) -> RegularResult<Option<AssignmentInfo>> {
         get_info_by_chapter_id_and_user_id(context.conn(), step.chapter_id, step.user_id).await
+    }
+}
+
+#[async_trait]
+impl<'a> Advance<ListInfosByChapterIdExcluded<'a>, RdbContext> for RdbRepoTransactional {
+    type Error = RegularError;
+
+    async fn advance(
+        &self,
+        context: &mut RdbContext,
+        step: &ListInfosByChapterIdExcluded<'a>,
+    ) -> RegularResult<Vec<AssignmentInfo>> {
+        list_infos_by_chapter_id_excluded(context.conn(), step.chapter_id).await
     }
 }
 

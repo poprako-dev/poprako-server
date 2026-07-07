@@ -58,11 +58,19 @@ pub struct ComicListQuery {
 
     /// Related rows to embed. Repeatable. Values: `workset`, `workset.team`,
     /// `creator`. Dotted values imply their parent segments.
-    #[serde(default, rename = "incl")]
+    #[serde(
+        default,
+        rename = "incl",
+        deserialize_with = "crate::value::query::deserialize_vec"
+    )]
     pub incl_opt: Vec<ComicInclOpt>,
 
     /// Derived rows to attach. Repeatable. Values: `pinned_chapter`.
-    #[serde(default, rename = "with")]
+    #[serde(
+        default,
+        rename = "with",
+        deserialize_with = "crate::value::query::deserialize_vec"
+    )]
     pub with_opt: Vec<ComicWithOpt>,
 
     /// Pagination offset (0-based).
