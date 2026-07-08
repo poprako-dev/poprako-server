@@ -67,13 +67,13 @@ pub async fn get_my_info(
 pub async fn get_info(
     State(harn): State<AppHarn>,
     Path(user_id): Path<String>,
-    Extension(user_token): Extension<UserToken>,
+    Extension(token): Extension<UserToken>,
 ) -> HttpResult<UserInfoVal> {
     usecase::user::get_info(
         harn.repo(),
         harn.image_pool(),
         harn.develop(),
-        user_token,
+        token,
         user_id,
     )
     .await?

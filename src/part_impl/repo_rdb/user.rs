@@ -225,6 +225,15 @@ impl<'a> Execute<FindInfoByQid<'a>> for RdbRepo {
     }
 }
 
+#[async_trait]
+impl<'a> Execute<TouchLastActive<'a>> for RdbRepo {
+    type Error = RegularError;
+
+    async fn execute(&self, step: &TouchLastActive<'a>) -> RegularResult<()> {
+        submit_query!(self.core, touch_last_active, step.id)
+    }
+}
+
 // ── Transactional: Advance impls ─────────────────────────────────────────────
 
 #[async_trait]

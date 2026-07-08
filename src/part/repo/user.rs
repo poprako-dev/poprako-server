@@ -30,6 +30,7 @@ pub trait UserRepo<C>:
     + for<'a> Execute<GetInfoById<'a>, Error = RegularError>
     + for<'a> Execute<GetCredentialByQid<'a>, Error = RegularError>
     + for<'a> Execute<FindInfoByQid<'a>, Error = RegularError>
+    + for<'a> Execute<TouchLastActive<'a>, Error = RegularError>
 where
     Self::Transactional: UserRepoTransactional<C>,
 {

@@ -16,6 +16,7 @@ use crate::part::repo::assignment::{AssignmentRepo, AssignmentRepoTransactional}
 use crate::part::repo::chapter::{ChapterRepo, ChapterRepoTransactional};
 use crate::part::repo::system_mail::{SystemMailRepo, SystemMailRepoTransactional};
 use crate::part::repo::team::{TeamRepo, TeamRepoTransactional};
+use crate::part::repo::user::{UserRepo, UserRepoTransactional};
 use crate::part_impl::effect_async::dispatch::dispatch;
 use crate::util::DeriveTransactional;
 
@@ -46,11 +47,19 @@ struct BackgroundHandler<C, R> {
 impl<C, R> AsyncEffectDevelop<C, R>
 where
     C: Send + 'static,
-    R: AssignmentRepo<C> + ChapterRepo<C> + TeamRepo<C> + SystemMailRepo<C> + Send + Sync + 'static,
+    R: AssignmentRepo<C>
+        + ChapterRepo<C>
+        + TeamRepo<C>
+        + SystemMailRepo<C>
+        + UserRepo<C>
+        + Send
+        + Sync
+        + 'static,
     <R as DeriveTransactional>::Transactional: AssignmentRepoTransactional<C>
         + ChapterRepoTransactional<C>
         + TeamRepoTransactional<C>
-        + SystemMailRepoTransactional<C>,
+        + SystemMailRepoTransactional<C>
+        + UserRepoTransactional<C>,
 {
     /// Creates a dispatcher and starts its background task.
     pub fn new(repo: Arc<R>, buffer_size: usize) -> Self {
@@ -119,11 +128,18 @@ where
 impl<C, R> BackgroundHandler<C, R>
 where
     C: Send,
-    R: AssignmentRepo<C> + ChapterRepo<C> + TeamRepo<C> + SystemMailRepo<C> + Send + Sync,
+    R: AssignmentRepo<C>
+        + ChapterRepo<C>
+        + TeamRepo<C>
+        + SystemMailRepo<C>
+        + UserRepo<C>
+        + Send
+        + Sync,
     <R as DeriveTransactional>::Transactional: AssignmentRepoTransactional<C>
         + ChapterRepoTransactional<C>
         + TeamRepoTransactional<C>
-        + SystemMailRepoTransactional<C>,
+        + SystemMailRepoTransactional<C>
+        + UserRepoTransactional<C>,
 {
     #[instrument(skip_all, level = Level::DEBUG)]
     async fn run(mut self) {
@@ -159,11 +175,19 @@ where
 impl<C, R> EffectDevelop for AsyncEffectDevelop<C, R>
 where
     C: Send + Sync + 'static,
-    R: AssignmentRepo<C> + ChapterRepo<C> + TeamRepo<C> + SystemMailRepo<C> + Send + Sync + 'static,
+    R: AssignmentRepo<C>
+        + ChapterRepo<C>
+        + TeamRepo<C>
+        + SystemMailRepo<C>
+        + UserRepo<C>
+        + Send
+        + Sync
+        + 'static,
     <R as DeriveTransactional>::Transactional: AssignmentRepoTransactional<C>
         + ChapterRepoTransactional<C>
         + TeamRepoTransactional<C>
-        + SystemMailRepoTransactional<C>,
+        + SystemMailRepoTransactional<C>
+        + UserRepoTransactional<C>,
 {
     async fn develop<I>(&self, iter: I)
     where
@@ -198,12 +222,8 @@ fn event_name(event: &Event) -> &'static str {
     match event {
         Event::UserActive(_) => "user_active",
         Event::UserSignedUp(_) => "user_signed_up",
-        Event::AssignmentCreated(_) => "assignment_created",
-        Event::AssignmentRemoved(_) => "assignment_removed",
         Event::ChapterPublished(_) => "chapter_published",
         Event::ChapterWorkflowCompleted(_) => "chapter_workflow_completed",
-        Event::ChapterWorkflowReverted(_) => "chapter_workflow_reverted",
-        Event::ChapterRemoved(_) => "chapter_removed",
     }
 }
 

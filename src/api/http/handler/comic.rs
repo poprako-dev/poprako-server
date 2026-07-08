@@ -73,6 +73,7 @@ pub struct ComicListQuery {
     )]
     pub with_opt: Vec<ComicWithOpt>,
 
+    /// FIXME: Paginate
     /// Pagination offset (0-based).
     pub offset: u64,
 

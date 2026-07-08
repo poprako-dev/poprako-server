@@ -100,6 +100,23 @@ impl<'a> Execute<FindInfoByQid<'a>> for Mock {
 }
 
 #[async_trait]
+impl<'a> Execute<TouchLastActive<'a>> for Mock {
+    type Error = RegularError;
+
+    async fn execute(&self, step: &TouchLastActive<'a>) -> RegularResult<()> {
+        let mut state = self.state.lock().unwrap();
+        let user = state
+            .users
+            .iter_mut()
+            .find(|user| user.id == step.id)
+            .ok_or_else(|| expected("error-user-not-found"))?;
+        user.last_active_at = now();
+        user.updated_at = now();
+        Ok(())
+    }
+}
+
+#[async_trait]
 impl<'a> Advance<FindInfoByQid<'a>, MockContext> for MockTransactional {
     type Error = RegularError;
 

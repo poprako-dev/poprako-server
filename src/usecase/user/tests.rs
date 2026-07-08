@@ -21,8 +21,6 @@
 // mark_avatar_uploaded(mark_avatar_uploaded)(negative): non-owner mark should return a permission error.
 // mark_avatar_uploaded(mark_avatar_uploaded)(negative): stale version should rollback uploaded state.
 // mark_avatar_uploaded(mark_avatar_uploaded)(negative): old reservation replay should fail without marking current avatar uploaded.
-// touch_last_active(touch_last_active)(positive): existing user should be touched successfully.
-// touch_last_active(touch_last_active)(negative): missing user should rollback the transaction.
 // delete(delete)(positive): owner delete should remove user, credentials, and memberships, and enqueue uploaded avatar deletion.
 // delete(delete)(positive): deleting a user without an uploaded avatar should not enqueue prom records.
 // delete(delete)(negative): non-owner delete should return a permission error without mutation.
@@ -491,32 +489,6 @@ async fn mark_avatar_uploaded_rejects_old_reservation_replay() {
     assert_expected_message(err, ExpectedVariant::Args, "error-stale-avatar-upload");
     assert!(!snapshot.users[0].avatar_uploaded);
     assert_eq!(snapshot.users[0].avatar_version, 2);
-}
-
-#[tokio::test]
-async fn touch_last_active_succeeds_for_existing_user() {
-    let mock = Mock::new();
-    mock.seed_user(
-        user("user-1", "qid-1", "Nick"),
-        credential("user-1", "password"),
-    );
-
-    touch_last_active(&mock, &mock, token("user-1"))
-        .await
-        .unwrap();
-}
-
-#[tokio::test]
-async fn touch_last_active_rolls_back_missing_user() {
-    let mock = Mock::new();
-
-    let err = touch_last_active(&mock, &mock, token("user-1"))
-        .await
-        .err()
-        .unwrap();
-
-    assert_expected_variant(err, ExpectedVariant::Args);
-    assert!(mock.snapshot().users.is_empty());
 }
 
 #[tokio::test]

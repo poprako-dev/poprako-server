@@ -9,7 +9,7 @@ use crate::model::user::UserInfo;
 use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
 use crate::part::repo::step::member::{
     Create, Delete, FindInfoByUserIdAndTeamId, GetInfoById, ListInfos, ListInfosByUserIdExcluded,
-    TouchLastActive, UpdateRole, UpdateUserNickname,
+    UpdateRole, UpdateUserNickname,
 };
 use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactional, expected, now};
@@ -125,27 +125,6 @@ impl<'a> Advance<UpdateUserNickname<'a>, MockContext> for MockTransactional {
                 member.user_nickname = step.user_nickname.to_string();
             }
         }
-        Ok(())
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<TouchLastActive<'a>, MockContext> for MockTransactional {
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut MockContext,
-        step: &TouchLastActive<'a>,
-    ) -> Result<(), Self::Error> {
-        let time = now();
-
-        for member_info in &mut context.state.members {
-            if member_info.user_id == step.user_id {
-                member_info.user_last_active_at = time;
-            }
-        }
-
         Ok(())
     }
 }

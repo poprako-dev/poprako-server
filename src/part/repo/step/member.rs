@@ -24,15 +24,6 @@ impl<'a> Step for UpdateUserNickname<'a> {
     type Output = ();
 }
 
-/// Step that updates the last-active timestamp on a user's memberships.
-pub struct TouchLastActive<'a> {
-    pub user_id: &'a str,
-}
-
-impl<'a> Step for TouchLastActive<'a> {
-    type Output = ();
-}
-
 /// Step that lists all memberships for a user with a pessimistic lock.
 pub struct ListInfosByUserIdExcluded<'a> {
     pub user_id: &'a str,
@@ -107,11 +98,6 @@ impl MemberStep {
             user_id,
             user_nickname,
         }
-    }
-
-    /// Constructs a step to update last-active timestamps on memberships.
-    pub fn touch_last_active<'a>(user_id: &'a str) -> TouchLastActive<'a> {
-        TouchLastActive { user_id }
     }
 
     /// Constructs a step to list a user's memberships with a pessimistic lock.

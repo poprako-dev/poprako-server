@@ -9,13 +9,31 @@ use poprako_util::i18n::{trl, trl_kv};
 
 use crate::complex::system_mail::SystemMailComplex;
 use crate::model::system_mail::SystemMailForm;
-use crate::part::effect::event::user::UserSignedUpPayload;
+use crate::part::effect::event::user::{UserActivePayload, UserSignedUpPayload};
 use crate::part::repo::step::system_mail::SystemMailStep;
 use crate::part::repo::step::team::TeamStep;
+use crate::part::repo::step::user::UserStep;
 use crate::part::repo::system_mail::{SystemMailRepo, SystemMailRepoTransactional};
 use crate::part::repo::team::{TeamRepo, TeamRepoTransactional};
+use crate::part::repo::user::{UserRepo, UserRepoTransactional};
 use crate::part::shared::execute::Execute;
 use crate::util::DeriveTransactional;
+
+/// Updates the user's last-active timestamp in response to activity.
+pub async fn touch_last_active<C, R>(repo: &R, payload: UserActivePayload)
+where
+    R: UserRepo<C>,
+    <R as DeriveTransactional>::Transactional: UserRepoTransactional<C>,
+{
+    let result = Execute::execute(repo, &UserStep::touch_last_active(&payload.user_id)).await;
+
+    if result.is_err() {
+        tracing::warn!(
+            user_id = %payload.user_id,
+            "[AsyncEffectDevelop::touch_last_active] failed to update last-active timestamp",
+        );
+    }
+}
 
 /// Notifies an invitor when a user signs up through their invitation.
 pub async fn notify_invitor<C, R>(repo: &R, payload: UserSignedUpPayload)

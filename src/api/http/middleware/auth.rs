@@ -1,8 +1,9 @@
-//! Authorization middleware.
+//! Authentication middleware — token extraction and verification only.
 //!
 //! Reads the bearer token from the `authorization-token` cookie first, then
 //! falls back to the `Authorization: Bearer <token>` header. On success the
 //! decoded [`UserToken`] is inserted into request extensions for handlers.
+//! This middleware performs no database side-effects.
 
 use axum::extract::Request;
 use axum::extract::State;
@@ -14,9 +15,12 @@ use crate::api::http::auth_token::{AUTH_BEARER_PREFIX, AUTH_COOKIE_NAME};
 use crate::api::http::result::HttpError;
 use crate::api::http::state::AppHarn;
 use crate::part::auth::TokenAuth as _;
-use crate::usecase;
 
 /// `from_fn` authorization handler applied to protected routes.
+///
+/// Extracts the bearer token, verifies it, and inserts the decoded
+/// [`UserToken`] into request extensions. Does not perform any
+/// side-effects — it only concerns itself with authentication.
 pub async fn authorize(State(harn): State<AppHarn>, mut request: Request, next: Next) -> Response {
     let raw_token = extract_token(&request);
 
@@ -24,12 +28,6 @@ pub async fn authorize(State(harn): State<AppHarn>, mut request: Request, next: 
         Ok(token) => token,
         Err(err) => return HttpError::from(err).into_response(),
     };
-
-    if let Err(e) =
-        usecase::user::touch_last_active(harn.drive(), harn.repo(), user_token.clone()).await
-    {
-        tracing::warn!(error = ?e, "failed to touch last_active");
-    }
 
     request.extensions_mut().insert(user_token);
 

@@ -11,7 +11,7 @@ use crate::model::chapter::{ChapterForm, ChapterInfoUpdate, ChapterListSpec};
 use crate::model::user::UserToken;
 use crate::part::effect::event::Event;
 use crate::part::effect::event::chapter::{
-    ChapterPublishedPayload, ChapterWorkflowCompletedPayload, ChapterWorkflowRevertedPayload,
+    ChapterPublishedPayload, ChapterWorkflowCompletedPayload,
 };
 use crate::part::effect::{EffectDevelop, EffectEmit as _};
 use crate::part::image::ImagePool;
@@ -376,15 +376,6 @@ where
                 events.push(Event::ChapterPublished(ChapterPublishedPayload {
                     chapter_id: chapter_info.id.clone(),
                 }));
-            }
-
-            if data.oper == StageOper::Revert && previous_phase != next_phase {
-                events.push(Event::ChapterWorkflowReverted(
-                    ChapterWorkflowRevertedPayload {
-                        chapter_id: chapter_info.id.clone(),
-                        reverted_stage: data.stage,
-                    },
-                ));
             }
 
             repo.advance(

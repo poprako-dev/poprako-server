@@ -6,7 +6,7 @@ use poprako_transactional::advance::Advance;
 
 use crate::model::unit::{UnitCounters, UnitIndex, UnitInfo, UnitOper, UnitPayload};
 use crate::part::repo::step::unit::{
-    CountByPageId, DeleteByIdInPage, DeleteByPageId, ListAllInfosByPageId, ListIndexesByPageId,
+    CountByPageId, DeleteByIdInPage, ListAllInfosByPageId, ListIndexesByPageId,
     ListInfosByPageId, SaveInfo, UpdateIndexesByPageId,
 };
 use crate::part::repo::unit::{UnitRepo, UnitRepoTransactional};
@@ -226,23 +226,6 @@ impl<'a> Advance<DeleteByIdInPage<'a>, MockContext> for MockTransactional {
             .state
             .units
             .retain(|unit_info| !(unit_info.page_id == step.page_id && unit_info.id == step.id));
-
-        Ok(())
-    }
-}
-
-impl<'a> Advance<DeleteByPageId<'a>, MockContext> for MockTransactional {
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut MockContext,
-        step: &DeleteByPageId<'a>,
-    ) -> Result<(), Self::Error> {
-        context
-            .state
-            .units
-            .retain(|unit_info| unit_info.page_id != step.page_id);
 
         Ok(())
     }

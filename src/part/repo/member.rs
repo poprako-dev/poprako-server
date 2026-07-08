@@ -8,7 +8,7 @@ use poprako_transactional::advance::Advance;
 
 use crate::part::repo::step::member::{
     Create, Delete, FindInfoByUserIdAndTeamId, GetInfoById, ListInfos, ListInfosByUserIdExcluded,
-    TouchLastActive, UpdateRole, UpdateUserNickname,
+    UpdateRole, UpdateUserNickname,
 };
 use crate::part::shared::execute::Execute;
 use crate::result::RegularError;
@@ -36,7 +36,6 @@ where
 pub trait MemberRepoTransactional<C>:
     for<'a> Advance<Create<'a>, C, Error = RegularError>
     + for<'a> Advance<UpdateUserNickname<'a>, C, Error = RegularError>
-    + for<'a> Advance<TouchLastActive<'a>, C, Error = RegularError>
     + for<'a> Advance<ListInfosByUserIdExcluded<'a>, C, Error = RegularError>
     + for<'a> Advance<FindInfoByUserIdAndTeamId<'a>, C, Error = RegularError>
     + for<'a> Advance<UpdateRole<'a>, C, Error = RegularError>
