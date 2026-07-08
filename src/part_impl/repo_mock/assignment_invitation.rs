@@ -9,7 +9,8 @@ use crate::part::repo::assignment_invitation::{
     AssignmentInvitationRepo, AssignmentInvitationRepoTransactional,
 };
 use crate::part::repo::step::assignment_invitation::{
-    Create, Delete, GetInfoByCodeExcluded, GetInfoById, ListInfos, MarkPendingAsUsed,
+    Create, Delete, DeleteByChapterId, GetInfoByCodeExcluded, GetInfoById, ListInfos,
+    MarkPendingAsUsed,
 };
 use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_mock::{Mock, MockContext, MockTransactional, expected, now};
@@ -210,6 +211,24 @@ impl<'a> Advance<Delete<'a>, MockContext> for MockTransactional {
             .ok_or_else(|| expected("error-invitation-not-found"))?;
 
         context.state.assignment_invitations.remove(pos);
+
+        Ok(())
+    }
+}
+
+#[async_trait]
+impl<'a> Advance<DeleteByChapterId<'a>, MockContext> for MockTransactional {
+    type Error = RegularError;
+
+    async fn advance(
+        &self,
+        context: &mut MockContext,
+        step: &DeleteByChapterId<'a>,
+    ) -> Result<(), Self::Error> {
+        context
+            .state
+            .assignment_invitations
+            .retain(|inv| inv.chapter_id != step.chapter_id);
 
         Ok(())
     }

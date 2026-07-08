@@ -3,8 +3,8 @@
 use poprako_transactional::advance::Advance;
 
 use crate::part::repo::step::assignment::{
-    Create, Delete, GetInfoByChapterIdAndUserId, GetInfoById, ListAllInfosByChapter, ListInfos,
-    ListInfosByChapterIdExcluded, PutRoles,
+    Create, Delete, DeleteByChapterId, GetInfoByChapterIdAndUserId, GetInfoById,
+    ListAllInfosByChapter, ListInfos, ListInfosByChapterIdExcluded, PutRoles,
 };
 use crate::part::shared::execute::Execute;
 use crate::result::RegularError;
@@ -30,5 +30,6 @@ pub trait AssignmentRepoTransactional<C>:
     + for<'a> Advance<Create<'a>, C, Error = RegularError>
     + for<'a> Advance<PutRoles<'a>, C, Error = RegularError>
     + for<'a> Advance<Delete<'a>, C, Error = RegularError>
+    + for<'a> Advance<DeleteByChapterId<'a>, C, Error = RegularError>
 {
 }

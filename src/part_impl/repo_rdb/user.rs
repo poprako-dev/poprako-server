@@ -126,6 +126,12 @@ async fn reserve_avatar(
 
     let object_key = UserComplex::gen_avatar_key(id, new_version, file_ext);
 
+    diesel::update(t_user.filter(f_id.eq(id)))
+        .set((f_avatar_key.eq(Some(&object_key)), f_updated_at.eq(now)))
+        .execute(conn)
+        .await
+        .map_err(diesel)?;
+
     Ok(UserAvatarReservation {
         object_key,
         prev_object_key: prev_key,

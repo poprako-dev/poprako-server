@@ -200,6 +200,61 @@ export async function cleanupLeftoverRows(ids: LeftoverIds): Promise<void> {
   });
 }
 
+/// Robust self-cleanup that restores the database to the seed-only state
+/// (1 team, 1 user, 1 member) regardless of how many progressive modules ran.
+///
+/// Used by `main.ts` in the `finally` block, BEFORE `assertDatabaseIsSeedOnly`,
+/// so the assert verifies the suite actually self-cleans rather than verifying
+/// that `resetDatabase` works.
+///
+/// All schema FKs are `ON DELETE RESTRICT` (except `last_translator_id` /
+/// `last_proofreader_id` which are `ON DELETE SET NULL`), so this deletes
+/// leaf-first in dependency order. This is deterministic and works for partial
+/// runs (e.g. when only `it_00` and `it_01` have been implemented and the rest
+/// are skipped stubs).
+///
+/// The cascade-delete *endpoint* itself is exercised by `it_10` against a
+/// dedicated subtree; this function is the safety net that gets the whole DB
+/// back to seed state no matter what.
+export async function cleanupToSeed(): Promise<void> {
+  await withClient(async (client) => {
+    await client.query("BEGIN");
+
+    try {
+      // 1. Outbox / mails / social posts (no business-entity dependents).
+      await client.query(`TRUNCATE TABLE "t_local_message" RESTART IDENTITY`);
+      await client.query(`DELETE FROM "t_system_mail"`);
+      await client.query(`DELETE FROM "t_comment"`);
+      await client.query(`DELETE FROM "t_announcement"`);
+
+      // 2. Assignment invitations, assignments.
+      await client.query(`DELETE FROM "t_assignment_invitation"`);
+      await client.query(`DELETE FROM "t_assignment"`);
+
+      // 3. Units, pages, chapters, comics, worksets (leaf -> root).
+      await client.query(`DELETE FROM "t_unit"`);
+      await client.query(`DELETE FROM "t_page"`);
+      await client.query(`DELETE FROM "t_chapter"`);
+      await client.query(`DELETE FROM "t_comic"`);
+      await client.query(`DELETE FROM "t_workset"`);
+
+      // 4. Memberships and invitations (depend on team + user).
+      await client.query(`DELETE FROM "t_member" WHERE "f_id" != $1`, [DEFAULT_MEMBER_ID]);
+      await client.query(`DELETE FROM "t_member_invitation"`);
+
+      // 5. Finally, non-seed users and teams.
+      await client.query(`DELETE FROM "t_user" WHERE "f_id" != $1`, [DEFAULT_USER_ID]);
+      await client.query(`DELETE FROM "t_team" WHERE "f_id" != $1`, [DEFAULT_TEAM_ID]);
+
+      await client.query("COMMIT");
+    } catch (error) {
+      await client.query("ROLLBACK");
+
+      throw error;
+    }
+  });
+}
+
 export const seedIds = {
   defaultMemberId: DEFAULT_MEMBER_ID,
   defaultTeamId: DEFAULT_TEAM_ID,

@@ -80,7 +80,17 @@ impl ImagePool for R2ImagePool {
             });
         }
 
-        let url_string = format!("{}/{}", self.domain.trim_end_matches('/'), key);
+        let domain = self.domain.trim_end_matches('/');
+
+        // Tolerate a custom domain configured with or without an explicit
+        // `http://` / `https://` scheme. `Url::parse` rejects a bare host like
+        // `img.example.com/path` as a relative URL without a base, so prepend
+        // `https://` when no scheme is present.
+        let url_string = if domain.starts_with("http://") || domain.starts_with("https://") {
+            format!("{}/{}", domain, key)
+        } else {
+            format!("https://{}/{}", domain, key)
+        };
 
         Url::parse(&url_string).map_err(|err| RegularError::Unrecoverable {
             message: format!(

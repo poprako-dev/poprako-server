@@ -21,15 +21,19 @@ use crate::complex::util::{check_user_is_team_admin, check_user_is_team_member};
 use crate::model::chapter::{ChapterInfo, ChapterInfoUpdate, ChapterStageUpdate};
 use crate::part::prom::task::{IMAGE_TOPIC, ImageTask};
 use crate::part::prom::{Payload, Prom, PromStep};
+use crate::part::repo::assignment::AssignmentRepoTransactional;
+use crate::part::repo::assignment_invitation::AssignmentInvitationRepoTransactional;
 use crate::part::repo::chapter::ChapterRepoTransactional;
 use crate::part::repo::comic::ComicRepoTransactional;
 use crate::part::repo::page::PageRepoTransactional;
 use crate::part::repo::step::assignment::{AssignmentStep, GetInfoByChapterIdAndUserId};
+use crate::part::repo::step::assignment_invitation::AssignmentInvitationStep;
 use crate::part::repo::step::chapter::{ChapterStep, GetInfoById as ChapterGetInfoById};
 use crate::part::repo::step::comic::{ComicStep, GetInfoById as ComicGetInfoById};
 use crate::part::repo::step::member::{FindInfoByUserIdAndTeamId, MemberStep};
 use crate::part::repo::step::page::PageStep;
 use crate::part::repo::step::workset::{GetInfoById as WorksetGetInfoById, WorksetStep};
+use crate::part::repo::unit::UnitRepoTransactional;
 use crate::part::shared::proxy::ProxyExecute;
 use crate::result::{ExpectedVariant, RegularError, RegularResult, accept};
 use crate::util::next_snowflake_id;
@@ -100,6 +104,9 @@ impl ChapterComplex {
         R: ChapterRepoTransactional<C>
             + ComicRepoTransactional<C>
             + PageRepoTransactional<C>
+            + AssignmentInvitationRepoTransactional<C>
+            + AssignmentRepoTransactional<C>
+            + UnitRepoTransactional<C>
             + Send
             + Sync,
         P: Prom<C> + Send + Sync,
@@ -113,6 +120,23 @@ impl ChapterComplex {
             .await?;
 
         prom_image_deletes(repo, prom, context, &chapter_info.id).await?;
+
+        // Delete leaf FKs first to satisfy ON DELETE RESTRICT constraints.
+        repo.advance(
+            context,
+            &AssignmentInvitationStep::delete_by_chapter_id(&chapter_info.id),
+        )
+        .await?;
+
+        repo.advance(
+            context,
+            &AssignmentStep::delete_by_chapter_id(&chapter_info.id),
+        )
+        .await?;
+
+        // PageStep::delete_by_chapter_id deletes units then pages internally.
+        repo.advance(context, &PageStep::delete_by_chapter_id(&chapter_info.id))
+            .await?;
 
         repo.advance(context, &ChapterStep::delete(&chapter_info.id))
             .await?;

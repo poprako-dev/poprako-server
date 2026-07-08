@@ -10,9 +10,12 @@ use crate::complex::util::check_user_is_team_admin;
 use crate::complex::workset::WorksetComplex;
 use crate::part::prom::task::{IMAGE_TOPIC, ImageTask};
 use crate::part::prom::{Payload, Prom, PromStep};
+use crate::part::repo::assignment::AssignmentRepoTransactional;
+use crate::part::repo::assignment_invitation::AssignmentInvitationRepoTransactional;
 use crate::part::repo::chapter::ChapterRepoTransactional;
 use crate::part::repo::comic::ComicRepoTransactional;
 use crate::part::repo::page::PageRepoTransactional;
+use crate::part::repo::unit::UnitRepoTransactional;
 use crate::part::repo::step::member::FindInfoByUserIdAndTeamId;
 use crate::part::repo::step::team::TeamStep;
 use crate::part::repo::step::user::{GetInfoById, UserStep};
@@ -51,6 +54,9 @@ impl TeamComplex {
             + ComicRepoTransactional<C>
             + ChapterRepoTransactional<C>
             + PageRepoTransactional<C>
+            + AssignmentInvitationRepoTransactional<C>
+            + AssignmentRepoTransactional<C>
+            + UnitRepoTransactional<C>
             + Send
             + Sync,
         P: Prom<C> + Send + Sync,

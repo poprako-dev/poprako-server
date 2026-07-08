@@ -84,6 +84,15 @@ impl<'a> Step for Delete<'a> {
     type Output = ();
 }
 
+/// Step that deletes all assignments under one chapter.
+pub struct DeleteByChapterId<'a> {
+    pub chapter_id: &'a str,
+}
+
+impl<'a> Step for DeleteByChapterId<'a> {
+    type Output = ();
+}
+
 /// Factory for constructing assignment repository [`Step`] values.
 pub struct AssignmentStep;
 
@@ -142,5 +151,10 @@ impl AssignmentStep {
     /// Constructs a step to delete one assignment.
     pub fn delete<'a>(id: &'a str) -> Delete<'a> {
         Delete { id }
+    }
+
+    /// Constructs a step to delete all assignments under one chapter.
+    pub fn delete_by_chapter_id<'a>(chapter_id: &'a str) -> DeleteByChapterId<'a> {
+        DeleteByChapterId { chapter_id }
     }
 }
