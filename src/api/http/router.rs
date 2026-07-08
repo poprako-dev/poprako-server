@@ -230,7 +230,6 @@ pub fn new(harn: AppHarn) -> Router<AppHarn> {
         .layer(from_fn_with_state(harn.clone(), authorize));
 
     let router = Router::new()
-        .route("/api/health", get(health::check_health))
         .nest("/api/v1", v1_public.merge(v1_protected))
         .layer(from_fn(log_latency))
         .layer(from_fn(rate_limit))
@@ -240,7 +239,9 @@ pub fn new(harn: AppHarn) -> Router<AppHarn> {
         use utoipa::OpenApi as _;
         use utoipa_swagger_ui::SwaggerUi;
 
-        router.merge(SwaggerUi::new("/api/swagger-ui").url("/api/openapi.json", ApiDoc::openapi()))
+        router
+            .route("/api/health", get(health::check_health))
+            .merge(SwaggerUi::new("/api/swagger-ui").url("/api/openapi.json", ApiDoc::openapi()))
     } else {
         router
     }

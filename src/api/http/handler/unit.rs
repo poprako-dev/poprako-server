@@ -46,9 +46,9 @@ pub async fn list_infos(
         limit: pagination.limit,
     };
 
-    let reply = usecase::unit::list_infos(harn.repo(), user_token, data).await?;
-
-    reply.accept(StatusCode::OK)
+    usecase::unit::list_infos(harn.repo(), user_token, data)
+        .await?
+        .accept(StatusCode::OK)
 }
 
 /// `POST /api/v1/pages/{page_id}/units/save` — save unit opers.
@@ -76,7 +76,7 @@ pub async fn save_infos(
 
     ensure_path_matches_body_id(&page_id, &data.diff.page_id)?;
 
-    let reply = usecase::unit::save_infos(harn.drive(), harn.repo(), user_token, data).await?;
-
-    reply.accept(StatusCode::OK)
+    usecase::unit::save_infos(harn.drive(), harn.repo(), user_token, data)
+        .await?
+        .accept(StatusCode::OK)
 }

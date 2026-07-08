@@ -65,8 +65,9 @@ pub async fn create(
     Extension(user_token): Extension<UserToken>,
     Json(data): Json<CreateAnnouncementData>,
 ) -> HttpResult<CreateAnnouncementVal> {
-    let reply = usecase::announcement::create(harn.drive(), harn.repo(), user_token, data).await?;
-    reply.accept(StatusCode::CREATED)
+    usecase::announcement::create(harn.drive(), harn.repo(), user_token, data)
+        .await?
+        .accept(StatusCode::CREATED)
 }
 
 /// `GET /api/v1/teams/{team_id}/announcements` — list a team's announcements.
@@ -95,8 +96,7 @@ pub async fn list_infos(
         limit: query.limit,
     };
 
-    let infos =
-        usecase::announcement::list_infos(harn.repo(), harn.image_pool(), user_token, data).await?;
-
-    infos.accept(StatusCode::OK)
+    usecase::announcement::list_infos(harn.repo(), harn.image_pool(), user_token, data)
+        .await?
+        .accept(StatusCode::OK)
 }

@@ -24,8 +24,8 @@ use crate::part_impl::repo_rdb::{RdbRepo, RdbRepoTransactional};
 use crate::result::{RegularError, RegularResult};
 
 use crate::part_impl::repo_rdb::schema::t_page::dsl::*;
-use crate::part_impl::repo_rdb::schema::t_unit::dsl::t_unit;
 use crate::part_impl::repo_rdb::schema::t_unit::dsl::f_page_id as unit_f_page_id;
+use crate::part_impl::repo_rdb::schema::t_unit::dsl::t_unit;
 
 impl PageRepo<RdbContext> for RdbRepo {}
 

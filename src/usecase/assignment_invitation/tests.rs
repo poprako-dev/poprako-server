@@ -267,24 +267,16 @@ async fn create_reviewer_creates_pending_invitation() {
         credential("target-user"),
     );
 
-    let val = create(
-        &mock,
-        &mock,
-        token("admin-user"),
-        create_data("target-qid"),
-    )
-    .await
-    .unwrap();
+    let val = create(&mock, &mock, token("admin-user"), create_data("target-qid"))
+        .await
+        .unwrap();
 
     let snapshot = mock.snapshot();
     assert_eq!(snapshot.assignment_invitations.len(), 1);
     assert_eq!(snapshot.assignment_invitations[0].id, val.id);
     assert_eq!(snapshot.assignment_invitations[0].code, val.code);
     assert_eq!(snapshot.assignment_invitations[0].chapter_id, "chapter-1");
-    assert_eq!(
-        snapshot.assignment_invitations[0].inviter_id,
-        "admin-user"
-    );
+    assert_eq!(snapshot.assignment_invitations[0].inviter_id, "admin-user");
     assert_eq!(snapshot.assignment_invitations[0].invitee_qid, "target-qid");
     assert!(snapshot.assignment_invitations[0].pending);
 }
@@ -304,15 +296,10 @@ async fn create_existing_assignment_is_rejected() {
         role(RoleField::TRANSLATOR),
     ));
 
-    let err = create(
-        &mock,
-        &mock,
-        token("admin-user"),
-        create_data("target-qid"),
-    )
-    .await
-    .err()
-    .unwrap();
+    let err = create(&mock, &mock, token("admin-user"), create_data("target-qid"))
+        .await
+        .err()
+        .unwrap();
 
     assert_expected_variant(err, ExpectedVariant::Args);
     assert!(mock.snapshot().assignment_invitations.is_empty());

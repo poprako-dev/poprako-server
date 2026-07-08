@@ -54,11 +54,9 @@ pub async fn import(
     Extension(user_token): Extension<UserToken>,
     Json(data): Json<ChapterTranslationImportData>,
 ) -> HttpResult<ChapterTranslationImportVal> {
-    let reply =
-        usecase::chapter_port::import(harn.drive(), harn.repo(), user_token, data, chapter_id)
-            .await?;
-
-    reply.accept(StatusCode::OK)
+    usecase::chapter_port::import(harn.drive(), harn.repo(), user_token, data, chapter_id)
+        .await?
+        .accept(StatusCode::OK)
 }
 
 /// `GET /api/v1/chapters/{chapter_id}/translations/export` — export response body.

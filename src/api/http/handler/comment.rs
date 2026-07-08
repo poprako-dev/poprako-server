@@ -65,8 +65,9 @@ pub async fn create(
     Extension(user_token): Extension<UserToken>,
     Json(data): Json<CreateCommentData>,
 ) -> HttpResult<CreateCommentVal> {
-    let reply = usecase::comment::create(harn.drive(), harn.repo(), user_token, data).await?;
-    reply.accept(StatusCode::CREATED)
+    usecase::comment::create(harn.drive(), harn.repo(), user_token, data)
+        .await?
+        .accept(StatusCode::CREATED)
 }
 
 /// `GET /api/v1/teams/{team_id}/comments` — list a team's comments.
@@ -95,8 +96,7 @@ pub async fn list_infos(
         limit: query.limit,
     };
 
-    let infos =
-        usecase::comment::list_infos(harn.repo(), harn.image_pool(), user_token, data).await?;
-
-    infos.accept(StatusCode::OK)
+    usecase::comment::list_infos(harn.repo(), harn.image_pool(), user_token, data)
+        .await?
+        .accept(StatusCode::OK)
 }

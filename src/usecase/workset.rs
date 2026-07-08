@@ -14,16 +14,18 @@ use crate::model::user::UserToken;
 use crate::model::workset::{WorksetForm, WorksetInfoUpdate};
 use crate::part::prom::Prom;
 use crate::part::repo::assignment::{AssignmentRepo, AssignmentRepoTransactional};
-use crate::part::repo::assignment_invitation::{AssignmentInvitationRepo, AssignmentInvitationRepoTransactional};
+use crate::part::repo::assignment_invitation::{
+    AssignmentInvitationRepo, AssignmentInvitationRepoTransactional,
+};
 use crate::part::repo::chapter::{ChapterRepo, ChapterRepoTransactional};
 use crate::part::repo::comic::{ComicRepo, ComicRepoTransactional};
 use crate::part::repo::map_drive_err;
 use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
 use crate::part::repo::page::{PageRepo, PageRepoTransactional};
-use crate::part::repo::unit::{UnitRepo, UnitRepoTransactional};
 use crate::part::repo::step::team::TeamStep;
 use crate::part::repo::step::workset::WorksetStep;
 use crate::part::repo::team::{TeamRepo, TeamRepoTransactional};
+use crate::part::repo::unit::{UnitRepo, UnitRepoTransactional};
 use crate::part::repo::workset::{WorksetRepo, WorksetRepoTransactional};
 use crate::result::{RegularError, RegularResult, accept};
 use crate::util::DeriveTransactional;
@@ -195,7 +197,16 @@ where
     D: Drive<C>,
     D::Error: Into<RegularError>,
     C: Send,
-    R: WorksetRepo<C> + ComicRepo<C> + MemberRepo<C> + ChapterRepo<C> + PageRepo<C> + AssignmentInvitationRepo<C> + AssignmentRepo<C> + UnitRepo<C> + Send + Sync,
+    R: WorksetRepo<C>
+        + ComicRepo<C>
+        + MemberRepo<C>
+        + ChapterRepo<C>
+        + PageRepo<C>
+        + AssignmentInvitationRepo<C>
+        + AssignmentRepo<C>
+        + UnitRepo<C>
+        + Send
+        + Sync,
     <R as DeriveTransactional>::Transactional: WorksetRepoTransactional<C>
         + ComicRepoTransactional<C>
         + MemberRepoTransactional<C>

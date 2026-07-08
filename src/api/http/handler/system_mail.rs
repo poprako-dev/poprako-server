@@ -35,8 +35,9 @@ pub async fn list_infos(
     Extension(user_token): Extension<UserToken>,
     Query(data): Query<ListSystemMailData>,
 ) -> HttpResult<Vec<SystemMailVal>> {
-    let infos = usecase::system_mail::list_infos(harn.repo(), user_token, data).await?;
-    infos.accept(StatusCode::OK)
+    usecase::system_mail::list_infos(harn.repo(), user_token, data)
+        .await?
+        .accept(StatusCode::OK)
 }
 
 /// `POST /api/v1/system-mails/mark-read` — mark a batch of mails as read.

@@ -41,15 +41,15 @@ pub async fn create(
     Extension(user_token): Extension<UserToken>,
     Json(data): Json<CreateTeamData>,
 ) -> HttpResult<TeamInfoVal> {
-    let info = usecase::team::create(
+    usecase::team::create(
         harn.drive(),
         harn.repo(),
         harn.image_pool(),
         user_token,
         data,
     )
-    .await?;
-    info.accept(StatusCode::CREATED)
+    .await?
+    .accept(StatusCode::CREATED)
 }
 
 /// `GET /api/v1/teams` — list teams with pagination.
@@ -71,8 +71,9 @@ pub async fn list_infos(
     Extension(user_token): Extension<UserToken>,
     Query(data): Query<ListTeamInfosData>,
 ) -> HttpResult<Vec<TeamInfoVal>> {
-    let infos = usecase::team::list_infos(harn.repo(), harn.image_pool(), user_token, data).await?;
-    infos.accept(StatusCode::OK)
+    usecase::team::list_infos(harn.repo(), harn.image_pool(), user_token, data)
+        .await?
+        .accept(StatusCode::OK)
 }
 
 /// `GET /api/v1/teams/{team_id}` — fetch a team by id.
@@ -92,8 +93,9 @@ pub async fn get_info(
     State(harn): State<AppHarn>,
     Path(team_id): Path<String>,
 ) -> HttpResult<TeamInfoVal> {
-    let info = usecase::team::get_info(harn.repo(), harn.image_pool(), team_id).await?;
-    info.accept(StatusCode::OK)
+    usecase::team::get_info(harn.repo(), harn.image_pool(), team_id)
+        .await?
+        .accept(StatusCode::OK)
 }
 
 /// `PUT /api/v1/teams/{team_id}` — update a team's profile.
@@ -144,7 +146,7 @@ pub async fn reserve_avatar(
     Extension(user_token): Extension<UserToken>,
     Json(data): Json<ReserveTeamAvatarData>,
 ) -> HttpResult<ReserveTeamAvatarVal> {
-    let reply = usecase::team::reserve_avatar(
+    usecase::team::reserve_avatar(
         harn.drive(),
         harn.repo(),
         harn.prom(),
@@ -153,8 +155,8 @@ pub async fn reserve_avatar(
         team_id,
         data,
     )
-    .await?;
-    reply.accept(StatusCode::OK)
+    .await?
+    .accept(StatusCode::OK)
 }
 
 /// `POST /api/v1/teams/{team_id}/avatar/mark-uploaded` — confirm a team avatar upload.

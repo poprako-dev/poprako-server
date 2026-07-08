@@ -127,11 +127,7 @@ where
 {
     let assignment_infos = Execute::execute(
         repo,
-        &AssignmentStep::list_all_infos_by_chapter(
-            &chapter_info.id,
-            Some(receiver_role),
-            &[],
-        ),
+        &AssignmentStep::list_all_infos_by_chapter(&chapter_info.id, Some(receiver_role), &[]),
     )
     .await;
 
