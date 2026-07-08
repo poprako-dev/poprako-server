@@ -17,16 +17,18 @@ use crate::part::effect::{EffectDevelop, EffectEmit as _};
 use crate::part::image::ImagePool;
 use crate::part::prom::Prom;
 use crate::part::repo::assignment::{AssignmentRepo, AssignmentRepoTransactional};
-use crate::part::repo::assignment_invitation::{AssignmentInvitationRepo, AssignmentInvitationRepoTransactional};
+use crate::part::repo::assignment_invitation::{
+    AssignmentInvitationRepo, AssignmentInvitationRepoTransactional,
+};
 use crate::part::repo::chapter::{ChapterRepo, ChapterRepoTransactional};
 use crate::part::repo::comic::{ComicRepo, ComicRepoTransactional};
 use crate::part::repo::map_drive_err;
 use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
 use crate::part::repo::page::{PageRepo, PageRepoTransactional};
-use crate::part::repo::unit::{UnitRepo, UnitRepoTransactional};
 use crate::part::repo::step::assignment::AssignmentStep;
 use crate::part::repo::step::chapter::ChapterStep;
 use crate::part::repo::step::comic::ComicStep;
+use crate::part::repo::unit::{UnitRepo, UnitRepoTransactional};
 use crate::part::repo::workset::{WorksetRepo, WorksetRepoTransactional};
 use crate::result::{RegularError, RegularResult, accept};
 use crate::util::DeriveTransactional;
@@ -413,7 +415,16 @@ where
     D: Drive<C>,
     D::Error: Into<RegularError>,
     C: Send,
-    R: ChapterRepo<C> + ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + PageRepo<C> + AssignmentInvitationRepo<C> + AssignmentRepo<C> + UnitRepo<C> + Send + Sync,
+    R: ChapterRepo<C>
+        + ComicRepo<C>
+        + WorksetRepo<C>
+        + MemberRepo<C>
+        + PageRepo<C>
+        + AssignmentInvitationRepo<C>
+        + AssignmentRepo<C>
+        + UnitRepo<C>
+        + Send
+        + Sync,
     <R as DeriveTransactional>::Transactional: ChapterRepoTransactional<C>
         + ComicRepoTransactional<C>
         + WorksetRepoTransactional<C>

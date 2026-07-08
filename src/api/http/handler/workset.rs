@@ -43,8 +43,9 @@ pub async fn create(
     Extension(user_token): Extension<UserToken>,
     Json(data): Json<CreateWorksetData>,
 ) -> HttpResult<CreateWorksetVal> {
-    let reply = usecase::workset::create(harn.drive(), harn.repo(), user_token, data).await?;
-    reply.accept(StatusCode::CREATED)
+    usecase::workset::create(harn.drive(), harn.repo(), user_token, data)
+        .await?
+        .accept(StatusCode::CREATED)
 }
 
 /// `GET /api/v1/teams/{team_id}/worksets` — list worksets in a team.
@@ -72,9 +73,9 @@ pub async fn list_infos(
         limit: pagination.limit,
     };
 
-    let infos = usecase::workset::list_infos(harn.repo(), user_token, data).await?;
-
-    infos.accept(StatusCode::OK)
+    usecase::workset::list_infos(harn.repo(), user_token, data)
+        .await?
+        .accept(StatusCode::OK)
 }
 
 /// `GET /api/v1/worksets/{workset_id}` — fetch a workset by id.
@@ -96,8 +97,9 @@ pub async fn get_info(
     Path(workset_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
 ) -> HttpResult<WorksetInfoVal> {
-    let info = usecase::workset::get_info(harn.repo(), user_token, workset_id).await?;
-    info.accept(StatusCode::OK)
+    usecase::workset::get_info(harn.repo(), user_token, workset_id)
+        .await?
+        .accept(StatusCode::OK)
 }
 
 /// `PUT /api/v1/worksets/{workset_id}` — update a workset's profile.

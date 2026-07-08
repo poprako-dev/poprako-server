@@ -72,8 +72,9 @@ pub async fn create(
     Extension(user_token): Extension<UserToken>,
     Json(data): Json<CreateChapterData>,
 ) -> HttpResult<CreateChapterVal> {
-    let reply = usecase::chapter::create(harn.drive(), harn.repo(), user_token, data).await?;
-    reply.accept(StatusCode::CREATED)
+    usecase::chapter::create(harn.drive(), harn.repo(), user_token, data)
+        .await?
+        .accept(StatusCode::CREATED)
 }
 
 /// `GET /api/v1/comics/{comic_id}/chapters` — list chapters in a comic.
@@ -102,10 +103,9 @@ pub async fn list_infos(
         limit: query.limit,
     };
 
-    let infos =
-        usecase::chapter::list_infos(harn.repo(), harn.image_pool(), user_token, data).await?;
-
-    infos.accept(StatusCode::OK)
+    usecase::chapter::list_infos(harn.repo(), harn.image_pool(), user_token, data)
+        .await?
+        .accept(StatusCode::OK)
 }
 
 /// `GET /api/v1/comics/{comic_id}/chapters/pinned` — fetch the pinned chapter.
@@ -125,8 +125,9 @@ pub async fn get_pinned(
     Path(comic_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
 ) -> HttpResult<Option<ChapterInfoVal>> {
-    let pinned = usecase::chapter::get_pinned(harn.repo(), user_token, comic_id).await?;
-    pinned.accept(StatusCode::OK)
+    usecase::chapter::get_pinned(harn.repo(), user_token, comic_id)
+        .await?
+        .accept(StatusCode::OK)
 }
 
 /// `GET /api/v1/chapters/{chapter_id}` — fetch a chapter by id.
@@ -147,8 +148,9 @@ pub async fn get_info(
     Path(chapter_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
 ) -> HttpResult<ChapterInfoVal> {
-    let info = usecase::chapter::get_info(harn.repo(), user_token, chapter_id).await?;
-    info.accept(StatusCode::OK)
+    usecase::chapter::get_info(harn.repo(), user_token, chapter_id)
+        .await?
+        .accept(StatusCode::OK)
 }
 
 /// `PATCH /api/v1/chapters/{chapter_id}` — partially update a chapter's profile.

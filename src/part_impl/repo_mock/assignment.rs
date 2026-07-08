@@ -400,10 +400,7 @@ fn delete_assignment_by_id(state: &mut MockState, id: &str) -> RegularResult<()>
     Ok(())
 }
 
-fn delete_assignments_by_chapter_id(
-    state: &mut MockState,
-    chapter_id: &str,
-) -> RegularResult<()> {
+fn delete_assignments_by_chapter_id(state: &mut MockState, chapter_id: &str) -> RegularResult<()> {
     state.assignments.retain(|a| a.chapter_id != chapter_id);
     Ok(())
 }
@@ -455,7 +452,6 @@ impl<'a> Execute<GetInfoById<'a>> for Mock {
 
     async fn execute(&self, step: &GetInfoById<'a>) -> Result<AssignmentInfo, Self::Error> {
         let state = self.state.lock().unwrap();
-
         get_assignment(&state, step.id, step.incl_opt)
     }
 }

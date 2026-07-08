@@ -62,10 +62,9 @@ pub async fn create(
     Extension(user_token): Extension<UserToken>,
     Json(data): Json<CreateAssignmentInvitationData>,
 ) -> HttpResult<CreateAssignmentInvitationVal> {
-    let reply =
-        usecase::assignment_invitation::create(harn.drive(), harn.repo(), user_token, data).await?;
-
-    reply.accept(StatusCode::CREATED)
+    usecase::assignment_invitation::create(harn.drive(), harn.repo(), user_token, data)
+        .await?
+        .accept(StatusCode::CREATED)
 }
 
 /// `GET /api/v1/chapters/{chapter_id}/assignment-invitations` — list invitations.
@@ -94,9 +93,9 @@ pub async fn list_infos(
         limit: query.limit,
     };
 
-    let infos = usecase::assignment_invitation::list_infos(harn.repo(), user_token, data).await?;
-
-    infos.accept(StatusCode::OK)
+    usecase::assignment_invitation::list_infos(harn.repo(), user_token, data)
+        .await?
+        .accept(StatusCode::OK)
 }
 
 /// `DELETE /api/v1/assignment-invitations/{assignment_invitation_id}` — delete.
@@ -146,13 +145,13 @@ pub async fn join(
     Extension(user_token): Extension<UserToken>,
     Json(data): Json<JoinAssignmentInvitationData>,
 ) -> HttpResult<AssignmentInfoVal> {
-    let reply = usecase::assignment_invitation::join(
+    usecase::assignment_invitation::join(
         harn.drive(),
         harn.repo(),
         harn.image_pool(),
         user_token,
         data,
     )
-    .await?;
-    reply.accept(StatusCode::CREATED)
+    .await?
+    .accept(StatusCode::CREATED)
 }

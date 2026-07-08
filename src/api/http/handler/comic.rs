@@ -98,8 +98,9 @@ pub async fn create(
     Extension(user_token): Extension<UserToken>,
     Json(data): Json<CreateComicData>,
 ) -> HttpResult<CreateComicVal> {
-    let reply = usecase::comic::create(harn.drive(), harn.repo(), user_token, data).await?;
-    reply.accept(StatusCode::CREATED)
+    usecase::comic::create(harn.drive(), harn.repo(), user_token, data)
+        .await?
+        .accept(StatusCode::CREATED)
 }
 
 /// `GET /api/v1/worksets/{workset_id}/comics` — list comics in a workset.
@@ -133,10 +134,9 @@ pub async fn list_infos(
         limit: query.limit,
     };
 
-    let infos =
-        usecase::comic::list_infos(harn.repo(), harn.image_pool(), user_token, data).await?;
-
-    infos.accept(StatusCode::OK)
+    usecase::comic::list_infos(harn.repo(), harn.image_pool(), user_token, data)
+        .await?
+        .accept(StatusCode::OK)
 }
 
 /// `GET /api/v1/comics/{comic_id}` — fetch a comic by id.
@@ -157,10 +157,9 @@ pub async fn get_info(
     Path(comic_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
 ) -> HttpResult<ComicInfoVal> {
-    let info =
-        usecase::comic::get_info(harn.repo(), harn.image_pool(), user_token, comic_id).await?;
-
-    info.accept(StatusCode::OK)
+    usecase::comic::get_info(harn.repo(), harn.image_pool(), user_token, comic_id)
+        .await?
+        .accept(StatusCode::OK)
 }
 
 /// `PUT /api/v1/comics/{comic_id}` — update a comic's profile.
@@ -211,7 +210,7 @@ pub async fn reserve_cover(
     Extension(user_token): Extension<UserToken>,
     Json(data): Json<ReserveComicCoverData>,
 ) -> HttpResult<ReserveComicCoverVal> {
-    let reply = usecase::comic::reserve_cover(
+    usecase::comic::reserve_cover(
         harn.drive(),
         harn.repo(),
         harn.prom(),
@@ -220,8 +219,8 @@ pub async fn reserve_cover(
         comic_id,
         data,
     )
-    .await?;
-    reply.accept(StatusCode::OK)
+    .await?
+    .accept(StatusCode::OK)
 }
 
 /// `POST /api/v1/comics/{comic_id}/cover/mark-uploaded` — confirm a cover upload.

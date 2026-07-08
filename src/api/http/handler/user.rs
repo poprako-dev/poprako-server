@@ -40,16 +40,15 @@ pub async fn get_my_info(
 ) -> HttpResult<UserInfoVal> {
     let id = user_token.user_id.clone();
 
-    let info = usecase::user::get_info(
+    usecase::user::get_info(
         harn.repo(),
         harn.image_pool(),
         harn.develop(),
         user_token,
         id,
     )
-    .await?;
-
-    info.accept(StatusCode::OK)
+    .await?
+    .accept(StatusCode::OK)
 }
 
 /// `GET /api/v1/users/{user_id}` — a user's profile by id.
@@ -70,15 +69,15 @@ pub async fn get_info(
     Path(user_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
 ) -> HttpResult<UserInfoVal> {
-    let info = usecase::user::get_info(
+    usecase::user::get_info(
         harn.repo(),
         harn.image_pool(),
         harn.develop(),
         user_token,
         user_id,
     )
-    .await?;
-    info.accept(StatusCode::OK)
+    .await?
+    .accept(StatusCode::OK)
 }
 
 /// `PUT /api/v1/users/{user_id}` — update a user's profile.
@@ -152,7 +151,7 @@ pub async fn reserve_avatar(
 ) -> HttpResult<ReserveUserAvatarVal> {
     ensure_current_user(&user_id, &user_token)?;
 
-    let reply = usecase::user::reserve_avatar(
+    usecase::user::reserve_avatar(
         harn.drive(),
         harn.repo(),
         harn.prom(),
@@ -160,9 +159,8 @@ pub async fn reserve_avatar(
         user_token,
         data,
     )
-    .await?;
-
-    reply.accept(StatusCode::OK)
+    .await?
+    .accept(StatusCode::OK)
 }
 
 /// `POST /api/v1/users/{user_id}/avatar/mark-uploaded` — confirm an avatar upload.

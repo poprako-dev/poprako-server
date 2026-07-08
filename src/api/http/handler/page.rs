@@ -48,9 +48,9 @@ pub async fn list_infos(
         limit: pagination.limit,
     };
 
-    let infos = usecase::page::list_infos(harn.repo(), harn.image_pool(), user_token, data).await?;
-
-    infos.accept(StatusCode::OK)
+    usecase::page::list_infos(harn.repo(), harn.image_pool(), user_token, data)
+        .await?
+        .accept(StatusCode::OK)
 }
 
 /// `DELETE /api/v1/chapters/{chapter_id}/pages` — delete all pages in a chapter.
@@ -104,7 +104,7 @@ pub async fn reserve_chapter_pages(
 ) -> HttpResult<ReserveChapterPagesVal> {
     ensure_path_matches_body_id(&chapter_id, &data.chapter_id)?;
 
-    let reply = usecase::page::reserve_chapter_pages(
+    usecase::page::reserve_chapter_pages(
         harn.drive(),
         harn.repo(),
         harn.prom(),
@@ -112,9 +112,8 @@ pub async fn reserve_chapter_pages(
         user_token,
         data,
     )
-    .await?;
-
-    reply.accept(StatusCode::OK)
+    .await?
+    .accept(StatusCode::OK)
 }
 
 /// `POST /api/v1/pages/{page_id}/image/reserve` — reserve a replacement page image.
@@ -137,7 +136,7 @@ pub async fn reserve_image(
     Extension(user_token): Extension<UserToken>,
     Json(data): Json<ReservePageImageData>,
 ) -> HttpResult<ReservePageImageVal> {
-    let reply = usecase::page::reserve_image(
+    usecase::page::reserve_image(
         harn.drive(),
         harn.repo(),
         harn.prom(),
@@ -146,8 +145,8 @@ pub async fn reserve_image(
         page_id,
         data,
     )
-    .await?;
-    reply.accept(StatusCode::OK)
+    .await?
+    .accept(StatusCode::OK)
 }
 
 /// `POST /api/v1/pages/{page_id}/image/mark-uploaded` — confirm a page image upload.

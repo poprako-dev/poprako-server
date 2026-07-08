@@ -41,10 +41,9 @@ pub async fn list_infos(
     Extension(user_token): Extension<UserToken>,
     Query(data): Query<ListAssignmentInfosData>,
 ) -> HttpResult<Vec<AssignmentInfoVal>> {
-    let infos =
-        usecase::assignment::list_infos(harn.repo(), harn.image_pool(), user_token, data).await?;
-
-    infos.accept(StatusCode::OK)
+    usecase::assignment::list_infos(harn.repo(), harn.image_pool(), user_token, data)
+        .await?
+        .accept(StatusCode::OK)
 }
 
 /// `PUT /api/v1/chapters/{chapter_id}/assignments/{user_id}/roles` — update roles.
@@ -121,6 +120,7 @@ pub async fn join(
     Extension(user_token): Extension<UserToken>,
     Json(data): Json<JoinChapterData>,
 ) -> HttpResult<AssignmentInfoVal> {
-    let reply = usecase::assignment::join(harn.drive(), harn.repo(), user_token, data).await?;
-    reply.accept(StatusCode::CREATED)
+    usecase::assignment::join(harn.drive(), harn.repo(), user_token, data)
+        .await?
+        .accept(StatusCode::CREATED)
 }

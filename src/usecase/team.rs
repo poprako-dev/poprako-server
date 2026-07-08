@@ -20,17 +20,19 @@ use crate::part::image::ImagePool;
 use crate::part::prom::task::{IMAGE_TOPIC, ImageKind, ImageTask};
 use crate::part::prom::{Payload, Prom, PromStep};
 use crate::part::repo::assignment::{AssignmentRepo, AssignmentRepoTransactional};
-use crate::part::repo::assignment_invitation::{AssignmentInvitationRepo, AssignmentInvitationRepoTransactional};
+use crate::part::repo::assignment_invitation::{
+    AssignmentInvitationRepo, AssignmentInvitationRepoTransactional,
+};
 use crate::part::repo::chapter::{ChapterRepo, ChapterRepoTransactional};
 use crate::part::repo::comic::{ComicRepo, ComicRepoTransactional};
 use crate::part::repo::map_drive_err;
 use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
 use crate::part::repo::page::{PageRepo, PageRepoTransactional};
-use crate::part::repo::unit::{UnitRepo, UnitRepoTransactional};
 use crate::part::repo::step::member::MemberStep;
 use crate::part::repo::step::team::TeamStep;
 use crate::part::repo::step::user::UserStep;
 use crate::part::repo::team::{TeamRepo, TeamRepoTransactional};
+use crate::part::repo::unit::{UnitRepo, UnitRepoTransactional};
 use crate::part::repo::user::{UserRepo, UserRepoTransactional};
 use crate::part::repo::workset::{WorksetRepo, WorksetRepoTransactional};
 use crate::result::{RegularError, RegularResult, accept};
@@ -149,7 +151,6 @@ where
     if data.user_id.is_none() {
         // TODO: comment
         use crate::part::shared::proxy::AsProxyNonTransactional as _;
-
         TeamPermComplex::can_user_list_all(&mut repo.as_proxy(), &token.user_id).await?;
     }
 

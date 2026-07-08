@@ -155,12 +155,8 @@ impl<'a> Execute<ListInfosByPageId<'a>> for Mock {
 impl<'a> Execute<ListAllInfosByPageId<'a>> for Mock {
     type Error = RegularError;
 
-    async fn execute(
-        &self,
-        step: &ListAllInfosByPageId<'a>,
-    ) -> Result<Vec<UnitInfo>, Self::Error> {
+    async fn execute(&self, step: &ListAllInfosByPageId<'a>) -> Result<Vec<UnitInfo>, Self::Error> {
         let state = self.state.lock().unwrap();
-
         Ok(list_units(&state, step.page_id))
     }
 }

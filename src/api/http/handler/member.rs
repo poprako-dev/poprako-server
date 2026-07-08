@@ -70,8 +70,9 @@ pub async fn create(
     Extension(user_token): Extension<UserToken>,
     Json(data): Json<CreateMemberData>,
 ) -> HttpResult<CreateMemberVal> {
-    let reply = usecase::member::create(harn.drive(), harn.repo(), user_token, data).await?;
-    reply.accept(StatusCode::CREATED)
+    usecase::member::create(harn.drive(), harn.repo(), user_token, data)
+        .await?
+        .accept(StatusCode::CREATED)
 }
 
 /// `GET /api/v1/members` — list members by team or owner.
@@ -93,10 +94,9 @@ pub async fn list_infos(
     Extension(user_token): Extension<UserToken>,
     Query(data): Query<ListMemberInfosData>,
 ) -> HttpResult<Vec<MemberInfoVal>> {
-    let infos =
-        usecase::member::list_infos(harn.repo(), harn.image_pool(), user_token, data).await?;
-
-    infos.accept(StatusCode::OK)
+    usecase::member::list_infos(harn.repo(), harn.image_pool(), user_token, data)
+        .await?
+        .accept(StatusCode::OK)
 }
 
 /// `GET /api/v1/members/me` — list the current user's memberships.
@@ -126,10 +126,9 @@ pub async fn list_my_infos(
         limit: query.limit,
     };
 
-    let infos =
-        usecase::member::list_infos(harn.repo(), harn.image_pool(), user_token, data).await?;
-
-    infos.accept(StatusCode::OK)
+    usecase::member::list_infos(harn.repo(), harn.image_pool(), user_token, data)
+        .await?
+        .accept(StatusCode::OK)
 }
 
 /// `PUT /api/v1/members/{member_id}/roles` — update a member's roles.
@@ -200,13 +199,13 @@ pub async fn join(
     Extension(user_token): Extension<UserToken>,
     Json(data): Json<JoinTeamData>,
 ) -> HttpResult<MemberInfoVal> {
-    let reply = usecase::member::join_team(
+    usecase::member::join_team(
         harn.drive(),
         harn.repo(),
         harn.image_pool(),
         user_token,
         data,
     )
-    .await?;
-    reply.accept(StatusCode::CREATED)
+    .await?
+    .accept(StatusCode::CREATED)
 }

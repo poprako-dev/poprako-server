@@ -95,10 +95,7 @@ where
                 let old_counters = page_counters(page_info);
 
                 let existing_unit_infos = repo
-                    .advance(
-                        context,
-                        &UnitStep::list_all_infos_by_page_id(&page_info.id),
-                    )
+                    .advance(context, &UnitStep::list_all_infos_by_page_id(&page_info.id))
                     .await?;
 
                 let existing_by_id = existing_unit_infos

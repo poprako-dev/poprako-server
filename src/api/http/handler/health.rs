@@ -24,5 +24,6 @@ pub async fn check_health(
     if !addr.ip().is_loopback() {
         return Err(StatusCode::NOT_FOUND);
     }
+
     Ok(StatusCode::NO_CONTENT)
 }

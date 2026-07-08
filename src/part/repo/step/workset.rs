@@ -129,7 +129,9 @@ impl WorksetStep {
     }
 
     /// Constructs a step to list a team's worksets with a pessimistic lock.
-    pub fn list_all_infos_by_team_id_excluded<'a>(team_id: &'a str) -> ListAllInfosByTeamIdExcluded<'a> {
+    pub fn list_all_infos_by_team_id_excluded<'a>(
+        team_id: &'a str,
+    ) -> ListAllInfosByTeamIdExcluded<'a> {
         ListAllInfosByTeamIdExcluded { team_id }
     }
 
