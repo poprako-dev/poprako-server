@@ -5,9 +5,12 @@ use crate::complex::comic::ComicComplex;
 use crate::complex::util::{check_user_is_team_admin, check_user_is_team_member};
 use crate::model::comic::{ComicListKind, ComicListSpec};
 use crate::part::prom::Prom;
+use crate::part::repo::assignment::AssignmentRepoTransactional;
+use crate::part::repo::assignment_invitation::AssignmentInvitationRepoTransactional;
 use crate::part::repo::chapter::ChapterRepoTransactional;
 use crate::part::repo::comic::ComicRepoTransactional;
 use crate::part::repo::page::PageRepoTransactional;
+use crate::part::repo::unit::UnitRepoTransactional;
 use crate::part::repo::step::comic::ComicStep;
 use crate::part::repo::step::member::FindInfoByUserIdAndTeamId;
 use crate::part::repo::step::workset::{GetInfoById as WorksetGetInfoById, WorksetStep};
@@ -38,6 +41,9 @@ impl WorksetComplex {
             + ComicRepoTransactional<C>
             + ChapterRepoTransactional<C>
             + PageRepoTransactional<C>
+            + AssignmentInvitationRepoTransactional<C>
+            + AssignmentRepoTransactional<C>
+            + UnitRepoTransactional<C>
             + Send
             + Sync,
         P: Prom<C> + Send + Sync,

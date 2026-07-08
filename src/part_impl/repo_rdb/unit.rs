@@ -12,8 +12,8 @@ use crate::model::unit::{
     UnitCounters, UnitIndex, UnitIndexUpdate, UnitInfo, UnitOper, UnitPayload,
 };
 use crate::part::repo::step::unit::{
-    CountByPageId, DeleteByIdInPage, ListAllInfosByPageId, ListIndexesByPageId, ListInfosByPageId,
-    SaveInfo, UpdateIndexesByPageId,
+    CountByPageId, DeleteByIdInPage, DeleteByPageId, ListAllInfosByPageId, ListIndexesByPageId,
+    ListInfosByPageId, SaveInfo, UpdateIndexesByPageId,
 };
 use crate::part::repo::unit::{UnitRepo, UnitRepoTransactional};
 use crate::part::shared::execute::Execute;
@@ -152,6 +152,15 @@ async fn delete_by_id_in_page(conn: &mut RdbConn, page_id: &str, id: &str) -> Re
     Ok(())
 }
 
+async fn delete_by_page_id(conn: &mut RdbConn, page_id: &str) -> RegularResult<()> {
+    diesel::delete(t_unit.filter(f_page_id.eq(page_id)))
+        .execute(conn)
+        .await
+        .map_err(diesel)?;
+
+    Ok(())
+}
+
 async fn list_indexes_by_page_id(
     conn: &mut RdbConn,
     page_id: &str,
@@ -174,12 +183,42 @@ async fn update_indexes_by_page_id(
     page_id: &str,
     updates: &[UnitIndexUpdate],
 ) -> RegularResult<()> {
+    if updates.is_empty() {
+        return Ok(());
+    }
+
+    // Index shifts can create a cyclic dependency where no sequential
+    // ordering avoids a temporary duplicate (page_id, index).  Two-phase:
+    //  1. Bump every affected row to index + OFFSET (safe temporary range
+    //     with no overlapping values).
+    //  2. Set each row to its target index via sequential UPDATEs (now
+    //     conflict-free because all rows are in the non-overlapping range).
+    const OFFSET: i32 = 100_000;
+
+    let mut id_filters: Vec<&str> = Vec::with_capacity(updates.len());
+
+    for update in updates {
+        id_filters.push(update.id.as_str());
+    }
+
+    // Phase 1: shift all affected units up by OFFSET in a single UPDATE.
+    diesel::update(
+        t_unit
+            .filter(f_page_id.eq(page_id))
+            .filter(f_id.eq_any(&id_filters)),
+    )
+    .set(f_index.eq(f_index + OFFSET))
+    .execute(conn)
+    .await
+    .map_err(diesel)?;
+
+    // Phase 2: set each unit to its target index, now conflict-free.
     for unit_index_update in updates {
         let now = OffsetDateTime::now_utc();
 
         let aspect = UnitAspect::new(now).index(unit_index_update.index);
 
-        let affected = diesel::update(
+        diesel::update(
             t_unit
                 .filter(f_page_id.eq(page_id))
                 .filter(f_id.eq(unit_index_update.id.as_str())),
@@ -188,11 +227,8 @@ async fn update_indexes_by_page_id(
         .execute(conn)
         .await
         .map_err(diesel)?;
-
-        if affected == 0 {
-            return Err(expected("error-unit-not-found"));
-        }
     }
+
     Ok(())
 }
 
@@ -281,6 +317,19 @@ impl<'a> Advance<DeleteByIdInPage<'a>, RdbContext> for RdbRepoTransactional {
         step: &DeleteByIdInPage<'a>,
     ) -> RegularResult<()> {
         delete_by_id_in_page(context.conn(), step.page_id, step.id).await
+    }
+}
+
+#[async_trait]
+impl<'a> Advance<DeleteByPageId<'a>, RdbContext> for RdbRepoTransactional {
+    type Error = RegularError;
+
+    async fn advance(
+        &self,
+        context: &mut RdbContext,
+        step: &DeleteByPageId<'a>,
+    ) -> RegularResult<()> {
+        delete_by_page_id(context.conn(), step.page_id).await
     }
 }
 

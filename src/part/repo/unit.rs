@@ -3,8 +3,8 @@
 use poprako_transactional::advance::Advance;
 
 use crate::part::repo::step::unit::{
-    CountByPageId, DeleteByIdInPage, ListAllInfosByPageId, ListIndexesByPageId, ListInfosByPageId,
-    SaveInfo, UpdateIndexesByPageId,
+    CountByPageId, DeleteByIdInPage, DeleteByPageId, ListAllInfosByPageId, ListIndexesByPageId,
+    ListInfosByPageId, SaveInfo, UpdateIndexesByPageId,
 };
 use crate::part::shared::execute::Execute;
 use crate::result::RegularError;
@@ -26,6 +26,7 @@ pub trait UnitRepoTransactional<C>:
     + for<'a> Advance<ListAllInfosByPageId<'a>, C, Error = RegularError>
     + for<'a> Advance<SaveInfo<'a>, C, Error = RegularError>
     + for<'a> Advance<DeleteByIdInPage<'a>, C, Error = RegularError>
+    + for<'a> Advance<DeleteByPageId<'a>, C, Error = RegularError>
     + for<'a> Advance<ListIndexesByPageId<'a>, C, Error = RegularError>
     + for<'a> Advance<UpdateIndexesByPageId<'a>, C, Error = RegularError>
     + for<'a> Advance<CountByPageId<'a>, C, Error = RegularError>

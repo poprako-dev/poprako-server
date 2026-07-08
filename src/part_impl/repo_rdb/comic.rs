@@ -301,6 +301,12 @@ async fn reserve_cover(
 
     let object_key = ComicComplex::gen_cover_key(id, new_version, file_ext);
 
+    diesel::update(t_comic.filter(f_id.eq(id)))
+        .set((f_cover_key.eq(Some(&object_key)), f_updated_at.eq(now)))
+        .execute(conn)
+        .await
+        .map_err(diesel)?;
+
     Ok(ComicCoverReservation {
         object_key,
         prev_object_key: prev_key,

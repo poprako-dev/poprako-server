@@ -152,6 +152,12 @@ async fn reserve_avatar(
 
     let object_key = TeamComplex::gen_avatar_key(id, new_version, file_ext);
 
+    diesel::update(t_team.filter(f_id.eq(id)))
+        .set((f_avatar_key.eq(Some(&object_key)), f_updated_at.eq(now)))
+        .execute(conn)
+        .await
+        .map_err(diesel)?;
+
     Ok(TeamAvatarReservation {
         object_key,
         prev_object_key: prev_key,

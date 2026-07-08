@@ -12,8 +12,8 @@ use crate::model::user::UserInfo;
 use crate::model::workset::WorksetInfo;
 use crate::part::repo::assignment::{AssignmentRepo, AssignmentRepoTransactional};
 use crate::part::repo::step::assignment::{
-    Create, Delete, GetInfoByChapterIdAndUserId, GetInfoById, ListAllInfosByChapter, ListInfos,
-    ListInfosByChapterIdExcluded, PutRoles,
+    Create, Delete, DeleteByChapterId, GetInfoByChapterIdAndUserId, GetInfoById,
+    ListAllInfosByChapter, ListInfos, ListInfosByChapterIdExcluded, PutRoles,
 };
 use crate::part::shared::execute::Execute;
 use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactional, expected, now};
@@ -400,6 +400,14 @@ fn delete_assignment_by_id(state: &mut MockState, id: &str) -> RegularResult<()>
     Ok(())
 }
 
+fn delete_assignments_by_chapter_id(
+    state: &mut MockState,
+    chapter_id: &str,
+) -> RegularResult<()> {
+    state.assignments.retain(|a| a.chapter_id != chapter_id);
+    Ok(())
+}
+
 #[async_trait]
 impl<'a> Execute<GetInfoByChapterIdAndUserId<'a>> for Mock {
     type Error = RegularError;
@@ -548,5 +556,18 @@ impl<'a> Advance<Delete<'a>, MockContext> for MockTransactional {
         step: &Delete<'a>,
     ) -> Result<(), Self::Error> {
         delete_assignment_by_id(&mut context.state, step.id)
+    }
+}
+
+#[async_trait]
+impl<'a> Advance<DeleteByChapterId<'a>, MockContext> for MockTransactional {
+    type Error = RegularError;
+
+    async fn advance(
+        &self,
+        context: &mut MockContext,
+        step: &DeleteByChapterId<'a>,
+    ) -> Result<(), Self::Error> {
+        delete_assignments_by_chapter_id(&mut context.state, step.chapter_id)
     }
 }

@@ -83,7 +83,6 @@ impl UnitComplex {
                 }
                 UnitOper::Delete { id } => {
                     validate_id(&id)?;
-
                     opers.push(UnitOper::Delete { id });
                 }
             }
@@ -110,7 +109,6 @@ impl UnitComplex {
                     ..
                 } => {
                     current_order.retain(|surviving_id| surviving_id != id);
-
                     insert_before(&mut current_order, id, before_id);
                 }
                 UnitOper::Save { id: None, .. } => {}

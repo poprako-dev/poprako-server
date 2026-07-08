@@ -12,8 +12,8 @@ use crate::model::assignment::{
 };
 use crate::part::repo::assignment::{AssignmentRepo, AssignmentRepoTransactional};
 use crate::part::repo::step::assignment::{
-    Create, Delete, GetInfoByChapterIdAndUserId, GetInfoById, ListAllInfosByChapter, ListInfos,
-    ListInfosByChapterIdExcluded, PutRoles,
+    Create, Delete, DeleteByChapterId, GetInfoByChapterIdAndUserId, GetInfoById,
+    ListAllInfosByChapter, ListInfos, ListInfosByChapterIdExcluded, PutRoles,
 };
 use crate::part::shared::execute::Execute;
 use crate::part_impl::rdb_core::RdbConn;
@@ -249,6 +249,15 @@ async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
     Ok(())
 }
 
+async fn delete_by_chapter_id(conn: &mut RdbConn, chapter_id: &str) -> RegularResult<()> {
+    diesel::delete(t_assignment.filter(f_chapter_id.eq(chapter_id)))
+        .execute(conn)
+        .await
+        .map_err(diesel)?;
+
+    Ok(())
+}
+
 #[async_trait]
 impl<'a> Execute<GetInfoByChapterIdAndUserId<'a>> for RdbRepo {
     type Error = RegularError;
@@ -373,6 +382,19 @@ impl<'a> Advance<Delete<'a>, RdbContext> for RdbRepoTransactional {
 
     async fn advance(&self, context: &mut RdbContext, step: &Delete<'a>) -> RegularResult<()> {
         delete(context.conn(), step.id).await
+    }
+}
+
+#[async_trait]
+impl<'a> Advance<DeleteByChapterId<'a>, RdbContext> for RdbRepoTransactional {
+    type Error = RegularError;
+
+    async fn advance(
+        &self,
+        context: &mut RdbContext,
+        step: &DeleteByChapterId<'a>,
+    ) -> RegularResult<()> {
+        delete_by_chapter_id(context.conn(), step.chapter_id).await
     }
 }
 #[cfg(all(test, feature = "repo"))]

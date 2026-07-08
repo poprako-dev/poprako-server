@@ -3,7 +3,8 @@
 use poprako_transactional::advance::Advance;
 
 use crate::part::repo::step::assignment_invitation::{
-    Create, Delete, GetInfoByCodeExcluded, GetInfoById, ListInfos, MarkPendingAsUsed,
+    Create, Delete, DeleteByChapterId, GetInfoByCodeExcluded, GetInfoById, ListInfos,
+    MarkPendingAsUsed,
 };
 use crate::part::shared::execute::Execute;
 use crate::result::RegularError;
@@ -26,5 +27,6 @@ pub trait AssignmentInvitationRepoTransactional<C>:
     + for<'a> Advance<GetInfoByCodeExcluded<'a>, C, Error = RegularError>
     + for<'a> Advance<MarkPendingAsUsed<'a>, C, Error = RegularError>
     + for<'a> Advance<Delete<'a>, C, Error = RegularError>
+    + for<'a> Advance<DeleteByChapterId<'a>, C, Error = RegularError>
 {
 }

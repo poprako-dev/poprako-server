@@ -45,6 +45,15 @@ impl<'a> Step for DeleteByIdInPage<'a> {
     type Output = ();
 }
 
+/// Step that deletes all units under one page.
+pub struct DeleteByPageId<'a> {
+    pub page_id: &'a str,
+}
+
+impl<'a> Step for DeleteByPageId<'a> {
+    type Output = ();
+}
+
 /// Step that lists persisted unit indexes by page ID.
 pub struct ListIndexesByPageId<'a> {
     pub page_id: &'a str,
@@ -95,6 +104,11 @@ impl UnitStep {
     /// Constructs a step to delete one unit by ID, scoped to a page.
     pub fn delete_by_id_in_page<'a>(page_id: &'a str, id: &'a str) -> DeleteByIdInPage<'a> {
         DeleteByIdInPage { page_id, id }
+    }
+
+    /// Constructs a step to delete all units under one page.
+    pub fn delete_by_page_id<'a>(page_id: &'a str) -> DeleteByPageId<'a> {
+        DeleteByPageId { page_id }
     }
 
     /// Constructs a step to list indexes by page ID.

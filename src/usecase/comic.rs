@@ -24,11 +24,13 @@ use crate::part::image::ImagePool;
 use crate::part::prom::task::{IMAGE_TOPIC, ImageKind, ImageTask};
 use crate::part::prom::{Payload, Prom, PromStep};
 use crate::part::repo::assignment::{AssignmentRepo, AssignmentRepoTransactional};
+use crate::part::repo::assignment_invitation::{AssignmentInvitationRepo, AssignmentInvitationRepoTransactional};
 use crate::part::repo::chapter::{ChapterRepo, ChapterRepoTransactional};
 use crate::part::repo::comic::{ComicRepo, ComicRepoTransactional};
 use crate::part::repo::map_drive_err;
 use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
 use crate::part::repo::page::{PageRepo, PageRepoTransactional};
+use crate::part::repo::unit::{UnitRepo, UnitRepoTransactional};
 use crate::part::repo::step::assignment::AssignmentStep;
 use crate::part::repo::step::chapter::ChapterStep;
 use crate::part::repo::step::comic::ComicStep;
@@ -396,12 +398,15 @@ where
     D: Drive<C>,
     D::Error: Into<RegularError>,
     C: Send,
-    R: ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + ChapterRepo<C> + PageRepo<C> + Send + Sync,
+    R: ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + ChapterRepo<C> + PageRepo<C> + AssignmentInvitationRepo<C> + AssignmentRepo<C> + UnitRepo<C> + Send + Sync,
     <R as DeriveTransactional>::Transactional: ComicRepoTransactional<C>
         + WorksetRepoTransactional<C>
         + MemberRepoTransactional<C>
         + ChapterRepoTransactional<C>
         + PageRepoTransactional<C>
+        + AssignmentInvitationRepoTransactional<C>
+        + AssignmentRepoTransactional<C>
+        + UnitRepoTransactional<C>
         + Send
         + Sync,
     P: Prom<C> + Send + Sync,

@@ -19,11 +19,14 @@ use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
 use crate::part::prom::task::{IMAGE_TOPIC, ImageKind, ImageTask};
 use crate::part::prom::{Payload, Prom, PromStep};
+use crate::part::repo::assignment::{AssignmentRepo, AssignmentRepoTransactional};
+use crate::part::repo::assignment_invitation::{AssignmentInvitationRepo, AssignmentInvitationRepoTransactional};
 use crate::part::repo::chapter::{ChapterRepo, ChapterRepoTransactional};
 use crate::part::repo::comic::{ComicRepo, ComicRepoTransactional};
 use crate::part::repo::map_drive_err;
 use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
 use crate::part::repo::page::{PageRepo, PageRepoTransactional};
+use crate::part::repo::unit::{UnitRepo, UnitRepoTransactional};
 use crate::part::repo::step::member::MemberStep;
 use crate::part::repo::step::team::TeamStep;
 use crate::part::repo::step::user::UserStep;
@@ -377,6 +380,9 @@ where
         + MemberRepo<C>
         + ChapterRepo<C>
         + PageRepo<C>
+        + AssignmentInvitationRepo<C>
+        + AssignmentRepo<C>
+        + UnitRepo<C>
         + Send
         + Sync,
     <R as DeriveTransactional>::Transactional: TeamRepoTransactional<C>
@@ -385,6 +391,9 @@ where
         + MemberRepoTransactional<C>
         + ChapterRepoTransactional<C>
         + PageRepoTransactional<C>
+        + AssignmentInvitationRepoTransactional<C>
+        + AssignmentRepoTransactional<C>
+        + UnitRepoTransactional<C>
         + Send
         + Sync,
     P: Prom<C> + Send + Sync,

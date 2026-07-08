@@ -24,6 +24,8 @@ use crate::part_impl::repo_rdb::{RdbRepo, RdbRepoTransactional};
 use crate::result::{RegularError, RegularResult};
 
 use crate::part_impl::repo_rdb::schema::t_page::dsl::*;
+use crate::part_impl::repo_rdb::schema::t_unit::dsl::t_unit;
+use crate::part_impl::repo_rdb::schema::t_unit::dsl::f_page_id as unit_f_page_id;
 
 impl PageRepo<RdbContext> for RdbRepo {}
 
@@ -186,6 +188,20 @@ async fn set_unit_counters(
 }
 
 async fn delete_by_chapter_id(conn: &mut RdbConn, chapter_id: &str) -> RegularResult<()> {
+    let page_ids: Vec<String> = t_page
+        .filter(f_chapter_id.eq(chapter_id))
+        .select(f_id)
+        .load(conn)
+        .await
+        .map_err(diesel)?;
+
+    if !page_ids.is_empty() {
+        diesel::delete(t_unit.filter(unit_f_page_id.eq_any(&page_ids)))
+            .execute(conn)
+            .await
+            .map_err(diesel)?;
+    }
+
     diesel::delete(t_page.filter(f_chapter_id.eq(chapter_id)))
         .execute(conn)
         .await
