@@ -11,7 +11,7 @@ use crate::model::member::{MemberForm, MemberInfo, MemberListSpec, MemberRoleUpd
 use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
 use crate::part::repo::step::member::{
     Create, Delete, FindInfoByUserIdAndTeamId, GetInfoById, ListInfos, ListInfosByUserIdExcluded,
-    TouchLastActive, UpdateRole, UpdateUserNickname,
+    UpdateRole, UpdateUserNickname,
 };
 use crate::part::shared::execute::Execute;
 use crate::part_impl::rdb_core::RdbConn;
@@ -262,20 +262,6 @@ async fn update_user_nickname(
     Ok(())
 }
 
-async fn touch_last_active(conn: &mut RdbConn, user_id: &str) -> RegularResult<()> {
-    let now = OffsetDateTime::now_utc();
-
-    let aspect = MemberAspect::new(now).user_last_active_at(now);
-
-    diesel::update(t_member.filter(f_user_id.eq(user_id)))
-        .set(&aspect)
-        .execute(conn)
-        .await
-        .map_err(diesel)?;
-
-    Ok(())
-}
-
 async fn list_infos_by_user_id_excluded(
     conn: &mut RdbConn,
     user_id: &str,
@@ -376,19 +362,6 @@ impl<'a> Advance<UpdateUserNickname<'a>, RdbContext> for RdbRepoTransactional {
         step: &UpdateUserNickname<'a>,
     ) -> RegularResult<()> {
         update_user_nickname(context.conn(), step.user_id, step.user_nickname).await
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<TouchLastActive<'a>, RdbContext> for RdbRepoTransactional {
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut RdbContext,
-        step: &TouchLastActive<'a>,
-    ) -> RegularResult<()> {
-        touch_last_active(context.conn(), step.user_id).await
     }
 }
 

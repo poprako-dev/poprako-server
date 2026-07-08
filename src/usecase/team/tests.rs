@@ -47,7 +47,7 @@ use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
 use crate::part::repo::step::member::{
     Create as MemberCreate, Delete as MemberDelete, FindInfoByUserIdAndTeamId,
     GetInfoById as MemberGetInfoById, ListInfos as MemberListInfos, ListInfosByUserIdExcluded,
-    TouchLastActive, UpdateRole, UpdateUserNickname,
+    UpdateRole, UpdateUserNickname,
 };
 use crate::part::repo::step::team::{
     Create, Delete, GetInfoById, GetInfoExcluded, IncrementWorksetNextIndex, ListInfos,
@@ -456,6 +456,15 @@ impl<'a> Execute<MarkAvatarUploaded<'a>> for FailingCreateRepo {
 }
 
 #[async_trait]
+impl<'a> Execute<UserTouchLastActive<'a>> for FailingCreateRepo {
+    type Error = RegularError;
+
+    async fn execute(&self, _: &UserTouchLastActive<'a>) -> Result<(), Self::Error> {
+        Err(expected_error())
+    }
+}
+
+#[async_trait]
 impl<'a> Advance<ReserveAvatar<'a>, MockContext> for FailingTeamTransactional {
     type Error = RegularError;
 
@@ -567,19 +576,6 @@ impl<'a> Advance<UpdateUserNickname<'a>, MockContext> for FailingTeamTransaction
         &self,
         _: &mut MockContext,
         _: &UpdateUserNickname<'a>,
-    ) -> Result<(), Self::Error> {
-        Err(expected_error())
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<TouchLastActive<'a>, MockContext> for FailingTeamTransactional {
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        _: &mut MockContext,
-        _: &TouchLastActive<'a>,
     ) -> Result<(), Self::Error> {
         Err(expected_error())
     }

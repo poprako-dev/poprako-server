@@ -283,42 +283,6 @@ where
     accept(())
 }
 
-/// Updates the `last_active_at` timestamp on both the user record and all
-/// associated memberships.
-///
-/// Transactional — the user and member updates are atomic.
-///
-/// # Type Parameters
-///
-/// * `D: Drive<C>` — Transaction driver.
-/// * `C` — Context anchor.
-/// * `R: UserRepo<C> + MemberRepo<C>` — User and member storage.
-pub async fn touch_last_active<D, C, R>(drive: &D, repo: &R, token: UserToken) -> RegularResult<()>
-where
-    D: Drive<C>,
-    D::Error: Into<RegularError>,
-    C: Send,
-    R: UserRepo<C> + MemberRepo<C> + Send + Sync,
-    <R as DeriveTransactional>::Transactional:
-        UserRepoTransactional<C> + MemberRepoTransactional<C> + Send,
-{
-    drive
-        .with_context(async move |context| {
-            let repo = repo.derive_transactional().await;
-
-            repo.advance(context, &UserStep::touch_last_active(&token.user_id))
-                .await?;
-
-            repo.advance(context, &MemberStep::touch_last_active(&token.user_id))
-                .await?;
-
-            accept(())
-        })
-        .await
-        .map_err(map_drive_err)?;
-    accept(())
-}
-
 /// Deletes a user account and all associated data.
 ///
 /// Transactional cascade:

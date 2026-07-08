@@ -12,7 +12,7 @@ use crate::model::unit::{
     UnitCounters, UnitIndex, UnitIndexUpdate, UnitInfo, UnitOper, UnitPayload,
 };
 use crate::part::repo::step::unit::{
-    CountByPageId, DeleteByIdInPage, DeleteByPageId, ListAllInfosByPageId, ListIndexesByPageId,
+    CountByPageId, DeleteByIdInPage, ListAllInfosByPageId, ListIndexesByPageId,
     ListInfosByPageId, SaveInfo, UpdateIndexesByPageId,
 };
 use crate::part::repo::unit::{UnitRepo, UnitRepoTransactional};
@@ -145,15 +145,6 @@ async fn save_info(conn: &mut RdbConn, page_id: &str, oper: &UnitOper) -> Regula
 
 async fn delete_by_id_in_page(conn: &mut RdbConn, page_id: &str, id: &str) -> RegularResult<()> {
     diesel::delete(t_unit.filter(f_page_id.eq(page_id)).filter(f_id.eq(id)))
-        .execute(conn)
-        .await
-        .map_err(diesel)?;
-
-    Ok(())
-}
-
-async fn delete_by_page_id(conn: &mut RdbConn, page_id: &str) -> RegularResult<()> {
-    diesel::delete(t_unit.filter(f_page_id.eq(page_id)))
         .execute(conn)
         .await
         .map_err(diesel)?;
@@ -317,19 +308,6 @@ impl<'a> Advance<DeleteByIdInPage<'a>, RdbContext> for RdbRepoTransactional {
         step: &DeleteByIdInPage<'a>,
     ) -> RegularResult<()> {
         delete_by_id_in_page(context.conn(), step.page_id, step.id).await
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<DeleteByPageId<'a>, RdbContext> for RdbRepoTransactional {
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut RdbContext,
-        step: &DeleteByPageId<'a>,
-    ) -> RegularResult<()> {
-        delete_by_page_id(context.conn(), step.page_id).await
     }
 }
 

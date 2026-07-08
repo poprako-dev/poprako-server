@@ -27,6 +27,7 @@ use std::net::ToSocketAddrs;
 use std::sync::Arc;
 
 use anyhow::Context as _;
+use tracing_subscriber::fmt::format::FmtSpan;
 use utoipa::OpenApi as _;
 
 use poprako_r::{
@@ -49,9 +50,17 @@ async fn main() -> anyhow::Result<()> {
 
     dotenvy::dotenv().expect(".env file should be valid");
 
-    tracing_subscriber::fmt()
-        .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
-        .init();
+    if cfg!(debug_assertions) {
+        tracing_subscriber::fmt()
+            .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
+            .with_span_events(FmtSpan::CLOSE)
+            .init();
+    } else {
+        // FIXME: rotating.
+        tracing_subscriber::fmt()
+            .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
+            .init();
+    }
 
     let config = AppConfig::from_default_file()
         .await
