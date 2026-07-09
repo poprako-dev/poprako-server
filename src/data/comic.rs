@@ -91,11 +91,15 @@ impl ComicInfoVal {
 
         let workset = model.workset.map(WorksetInfoVal::from);
         let team = match model.team {
-            Some(team_info) => Some(TeamInfoVal::from_model(image_pool, team_info).await?),
+            Some(team_info) => {
+                Some(TeamInfoVal::from_model(image_pool, team_info).await?)
+            }
             None => None,
         };
         let creator = match model.creator {
-            Some(user_info) => Some(UserInfoVal::from_model(image_pool, user_info).await?),
+            Some(user_info) => {
+                Some(UserInfoVal::from_model(image_pool, user_info).await?)
+            }
             None => None,
         };
 

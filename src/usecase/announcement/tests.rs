@@ -9,7 +9,9 @@ use super::*;
 
 use time::OffsetDateTime;
 
-use crate::data::announcement::{CreateAnnouncementData, ListAnnouncementInfosData};
+use crate::data::announcement::{
+    CreateAnnouncementData, ListAnnouncementInfosData,
+};
 use crate::model::announcement::AnnouncementInfo;
 use crate::model::member::MemberInfo;
 use crate::model::user::{UserCredential, UserInfo};
@@ -49,7 +51,12 @@ fn user(id: &str, nickname: &str) -> UserInfo {
     }
 }
 
-fn member(id: &str, user_id: &str, team_id: &str, role_mask: RoleMask) -> MemberInfo {
+fn member(
+    id: &str,
+    user_id: &str,
+    team_id: &str,
+    role_mask: RoleMask,
+) -> MemberInfo {
     MemberInfo {
         id: id.into(),
         user_id: user_id.into(),
@@ -79,7 +86,10 @@ fn announcement(
     }
 }
 
-fn list_data(team_id: &str, incl_opt: Vec<AnnouncementInclOpt>) -> ListAnnouncementInfosData {
+fn list_data(
+    team_id: &str,
+    incl_opt: Vec<AnnouncementInclOpt>,
+) -> ListAnnouncementInfosData {
     ListAnnouncementInfosData {
         team_id: team_id.into(),
         incl_opt,
@@ -209,9 +219,10 @@ async fn create_team_admin_creates_announcement() {
         RoleMask::from(RoleField::ADMIN),
     );
 
-    let created_announcement = create(&mock, &mock, token("admin-user"), create_data("team-1"))
-        .await
-        .unwrap();
+    let created_announcement =
+        create(&mock, &mock, token("admin-user"), create_data("team-1"))
+            .await
+            .unwrap();
     let snapshot = mock.snapshot();
 
     assert_eq!(snapshot.announcements.len(), 1);
@@ -243,10 +254,11 @@ async fn create_non_admin_member_is_rejected_without_mutation() {
 async fn create_non_member_is_rejected_without_mutation() {
     let mock = Mock::new();
 
-    let err = create(&mock, &mock, token("outsider-user"), create_data("team-1"))
-        .await
-        .err()
-        .unwrap();
+    let err =
+        create(&mock, &mock, token("outsider-user"), create_data("team-1"))
+            .await
+            .err()
+            .unwrap();
 
     assert_expected_variant(err, ExpectedVariant::Perm);
     assert!(mock.snapshot().announcements.is_empty());

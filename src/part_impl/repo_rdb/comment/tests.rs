@@ -57,10 +57,11 @@ async fn comment_roundtrip_reads_test_database_url() {
         limit: 10,
     };
 
-    let comment_infos = Execute::execute(&repo, &CommentStep::list_infos(&comment_list_spec))
-        .await
-        .ok()
-        .unwrap();
+    let comment_infos =
+        Execute::execute(&repo, &CommentStep::list_infos(&comment_list_spec))
+            .await
+            .ok()
+            .unwrap();
 
     assert_eq!(comment_infos.len(), 1);
     assert_eq!(

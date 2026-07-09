@@ -25,7 +25,8 @@ use crate::part::prom::task::{ImageKind, ImageTask};
 use crate::part_impl::repo_mock::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::{
-    assert_expected_message, assert_expected_variant, assert_one_image_check_record,
+    assert_expected_message, assert_expected_variant,
+    assert_one_image_check_record,
 };
 use crate::value::chapter::StageMask;
 use crate::value::role::{RoleField, RoleMask};
@@ -113,7 +114,11 @@ fn member(user_id: &str, role_mask: RoleMask) -> MemberInfo {
     }
 }
 
-fn assignment(chapter_id: &str, user_id: &str, role_mask: RoleMask) -> AssignmentInfo {
+fn assignment(
+    chapter_id: &str,
+    user_id: &str,
+    role_mask: RoleMask,
+) -> AssignmentInfo {
     let time = OffsetDateTime::now_utc();
 
     AssignmentInfo {
@@ -409,7 +414,8 @@ async fn mark_image_uploaded_marks_once_and_idempotent() {
 }
 
 #[tokio::test]
-async fn mark_image_uploaded_rejects_stale_replay_then_accepts_current_version() {
+async fn mark_image_uploaded_rejects_stale_replay_then_accepts_current_version()
+{
     let mock = Mock::new();
     seed_scope(&mock);
     mock.seed_page(page(
@@ -453,7 +459,11 @@ async fn mark_image_uploaded_rejects_stale_replay_then_accepts_current_version()
     .unwrap();
     let snapshot = mock.snapshot();
 
-    assert_expected_message(err, ExpectedVariant::Args, "error-stale-page-image-upload");
+    assert_expected_message(
+        err,
+        ExpectedVariant::Args,
+        "error-stale-page-image-upload",
+    );
     assert!(!snapshot.pages[0].image_uploaded);
     assert_eq!(snapshot.pages[0].image_version, 2);
 
@@ -504,7 +514,8 @@ async fn delete_by_chapter_deletes_pages_and_clears_counters() {
     mock.seed_page(page("page-1", 0, Some("one.png"), true, 1));
     mock.seed_page(page("page-2", 1, None, false, 0));
 
-    let deleted = delete(&mock, &mock, &mock, token("user-1"), "chapter-1".into()).await;
+    let deleted =
+        delete(&mock, &mock, &mock, token("user-1"), "chapter-1".into()).await;
     assert!(deleted.is_ok());
     let snapshot = mock.snapshot();
 

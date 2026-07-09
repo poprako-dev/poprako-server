@@ -46,7 +46,10 @@ impl LocalMessageStatus {
 }
 
 impl ToSql<Text, Pg> for LocalMessageStatus {
-    fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Pg>) -> diesel::serialize::Result {
+    fn to_sql<'b>(
+        &'b self,
+        out: &mut Output<'b, '_, Pg>,
+    ) -> diesel::serialize::Result {
         out.write_all(self.as_str().as_bytes())?;
         Ok(diesel::serialize::IsNull::No)
     }
@@ -68,11 +71,15 @@ struct LocalMessageEntry<'a> {
 }
 
 impl<'a> LocalMessageEntry<'a> {
-    fn from_append(step: &'a Append<'_>, now: OffsetDateTime) -> RegularResult<Self> {
-        let f_payload =
-            serde_json::to_value(&step.payload).map_err(|e| RegularError::Unrecoverable {
+    fn from_append(
+        step: &'a Append<'_>,
+        now: OffsetDateTime,
+    ) -> RegularResult<Self> {
+        let f_payload = serde_json::to_value(&step.payload).map_err(|e| {
+            RegularError::Unrecoverable {
                 message: format!("failed to serialize prom payload: {}", e),
-            })?;
+            }
+        })?;
         Ok(Self {
             f_id: step.id,
             f_topic: step.topic,
@@ -95,7 +102,11 @@ pub struct RdbProm;
 impl<'a> Advance<Append<'a>, RdbContext> for RdbProm {
     type Error = RegularError;
 
-    async fn advance(&self, context: &mut RdbContext, step: &Append<'a>) -> RegularResult<()> {
+    async fn advance(
+        &self,
+        context: &mut RdbContext,
+        step: &Append<'a>,
+    ) -> RegularResult<()> {
         let now = OffsetDateTime::now_utc();
         let entry = LocalMessageEntry::from_append(step, now)?;
 

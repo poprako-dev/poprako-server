@@ -6,8 +6,8 @@ use poprako_util::i18n::trl;
 
 use crate::complex::member::{MemberComplex, MemberPermComplex};
 use crate::data::member::{
-    CreateMemberData, CreateMemberVal, JoinTeamData, ListMemberInfosData, MemberInfoVal,
-    UpdateMemberRolesData,
+    CreateMemberData, CreateMemberVal, JoinTeamData, ListMemberInfosData,
+    MemberInfoVal, UpdateMemberRolesData,
 };
 use crate::model::member::{MemberForm, MemberListSpec, MemberRoleUpdate};
 use crate::model::user::UserToken;
@@ -54,7 +54,12 @@ where
 
     use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
-    MemberPermComplex::can_user_create(&mut repo.as_proxy(), &token.user_id, &data.team_id).await?;
+    MemberPermComplex::can_user_create(
+        &mut repo.as_proxy(),
+        &token.user_id,
+        &data.team_id,
+    )
+    .await?;
 
     let member_id = drive
         .with_context(async move |context| {
@@ -70,7 +75,10 @@ where
             let existing_member_info = repo
                 .advance(
                     context,
-                    &MemberStep::find_info_by_user_id_and_team_id(&data.user_id, &data.team_id),
+                    &MemberStep::find_info_by_user_id_and_team_id(
+                        &data.user_id,
+                        &data.team_id,
+                    ),
                 )
                 .await?;
 
@@ -114,11 +122,12 @@ where
     D::Error: Into<RegularError>,
     C: Send,
     R: MemberRepo<C> + MemberInvitationRepo<C> + UserRepo<C> + Send + Sync,
-    <R as DeriveTransactional>::Transactional: MemberRepoTransactional<C>
-        + MemberInvitationRepoTransactional<C>
-        + UserRepoTransactional<C>
-        + Send
-        + Sync,
+    <R as DeriveTransactional>::Transactional:
+        MemberRepoTransactional<C>
+            + MemberInvitationRepoTransactional<C>
+            + UserRepoTransactional<C>
+            + Send
+            + Sync,
     I: ImagePool,
 {
     let current_user_id = token.user_id;
@@ -128,13 +137,18 @@ where
             let repo = repo.derive_transactional().await;
 
             let current_user_info = repo
-                .advance(context, &UserStep::get_info_excluded(&current_user_id))
+                .advance(
+                    context,
+                    &UserStep::get_info_excluded(&current_user_id),
+                )
                 .await?;
 
             let member_invitation_info = repo
                 .advance(
                     context,
-                    &MemberInvitationStep::get_info_by_code_excluded(&data.code),
+                    &MemberInvitationStep::get_info_by_code_excluded(
+                        &data.code,
+                    ),
                 )
                 .await?;
 
@@ -170,7 +184,9 @@ where
 
             repo.advance(
                 context,
-                &MemberInvitationStep::mark_pending_as_used(&member_invitation_info.id),
+                &MemberInvitationStep::mark_pending_as_used(
+                    &member_invitation_info.id,
+                ),
             )
             .await?;
 
@@ -201,8 +217,12 @@ where
     if let MemberListSpec::Team { team_id, .. } = &member_list_spec {
         use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
-        MemberPermComplex::can_user_list_infos(&mut repo.as_proxy(), &token.user_id, team_id)
-            .await?;
+        MemberPermComplex::can_user_list_infos(
+            &mut repo.as_proxy(),
+            &token.user_id,
+            team_id,
+        )
+        .await?;
     }
 
     let member_infos = repo
@@ -212,7 +232,8 @@ where
     let mut member_info_vals = Vec::with_capacity(member_infos.len());
 
     for member_info in member_infos {
-        member_info_vals.push(MemberInfoVal::from_model(image_pool, member_info).await?);
+        member_info_vals
+            .push(MemberInfoVal::from_model(image_pool, member_info).await?);
     }
 
     accept(member_info_vals)
@@ -232,7 +253,8 @@ where
     D::Error: Into<RegularError>,
     C: Send,
     R: MemberRepo<C> + Send + Sync,
-    <R as DeriveTransactional>::Transactional: MemberRepoTransactional<C> + Send + Sync,
+    <R as DeriveTransactional>::Transactional:
+        MemberRepoTransactional<C> + Send + Sync,
 {
     let member_info = repo
         .execute(&MemberStep::get_info_by_id(&data.id, &[]))
@@ -256,8 +278,11 @@ where
                 roles: data.roles,
             };
 
-            repo.advance(context, &MemberStep::update_role(&member_role_update))
-                .await?;
+            repo.advance(
+                context,
+                &MemberStep::update_role(&member_role_update),
+            )
+            .await?;
 
             accept(())
         })
@@ -270,20 +295,31 @@ where
 /// Deletes one member.
 ///
 /// The caller must be a team admin of the target member's team.
-pub async fn delete<D, C, R>(drive: &D, repo: &R, token: UserToken, id: String) -> RegularResult<()>
+pub async fn delete<D, C, R>(
+    drive: &D,
+    repo: &R,
+    token: UserToken,
+    id: String,
+) -> RegularResult<()>
 where
     D: Drive<C>,
     D::Error: Into<RegularError>,
     C: Send,
     R: MemberRepo<C> + Send + Sync,
-    <R as DeriveTransactional>::Transactional: MemberRepoTransactional<C> + Send + Sync,
+    <R as DeriveTransactional>::Transactional:
+        MemberRepoTransactional<C> + Send + Sync,
 {
-    let member_info = repo.execute(&MemberStep::get_info_by_id(&id, &[])).await?;
+    let member_info =
+        repo.execute(&MemberStep::get_info_by_id(&id, &[])).await?;
 
     use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
-    MemberPermComplex::can_user_delete(&mut repo.as_proxy(), &token.user_id, &member_info.team_id)
-        .await?;
+    MemberPermComplex::can_user_delete(
+        &mut repo.as_proxy(),
+        &token.user_id,
+        &member_info.team_id,
+    )
+    .await?;
 
     drive
         .with_context(async move |context| {

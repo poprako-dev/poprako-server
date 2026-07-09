@@ -5,7 +5,9 @@ use crate::model::team::TeamInfo;
 use crate::model::user::UserInfo;
 use crate::model::workset::WorksetInfo;
 use crate::part_impl::rdb_core::RdbConn;
-use crate::part_impl::repo_rdb::incl::{self, Incl, TeamByIds, UserByIds, WorksetByIds};
+use crate::part_impl::repo_rdb::incl::{
+    self, Incl, TeamByIds, UserByIds, WorksetByIds,
+};
 use crate::result::RegularResult;
 use crate::value::comic::ComicInclOpt;
 use crate::value::incl::expand_incl_opts;
@@ -71,11 +73,15 @@ pub async fn populate_comic_incls(
 ) -> RegularResult<()> {
     for incl_opt in expand_incl_opts(incl_opt) {
         match incl_opt {
-            ComicInclOpt::Workset => incl::populate::<ComicWorksetIncl>(conn, infos).await?,
+            ComicInclOpt::Workset => {
+                incl::populate::<ComicWorksetIncl>(conn, infos).await?
+            }
             ComicInclOpt::WorksetTeam => {
                 incl::populate::<ComicWorksetTeamIncl>(conn, infos).await?
             }
-            ComicInclOpt::Creator => incl::populate::<ComicCreatorIncl>(conn, infos).await?,
+            ComicInclOpt::Creator => {
+                incl::populate::<ComicCreatorIncl>(conn, infos).await?
+            }
         }
     }
     Ok(())

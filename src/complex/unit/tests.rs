@@ -95,14 +95,15 @@ fn prepare_diff_maps_create_ids_and_keeps_oper_order() {
 
 #[test]
 fn prepare_diff_rejects_invalid_compact_diff() {
-    let empty_id_error = UnitComplex::prepare_diff(diff(vec![UnitOper::Save {
-        local_id: None,
-        id: Some(String::new()),
-        payload: payload("alpha", false),
-        before_id: None,
-    }]))
-    .err()
-    .unwrap();
+    let empty_id_error =
+        UnitComplex::prepare_diff(diff(vec![UnitOper::Save {
+            local_id: None,
+            id: Some(String::new()),
+            payload: payload("alpha", false),
+            before_id: None,
+        }]))
+        .err()
+        .unwrap();
 
     assert_args_error(empty_id_error);
 
@@ -234,7 +235,9 @@ fn build_index_updates_compacts_server_order() {
 
     let ordered_pairs = unit_index_updates
         .iter()
-        .map(|unit_index_update| (unit_index_update.id.as_str(), unit_index_update.index))
+        .map(|unit_index_update| {
+            (unit_index_update.id.as_str(), unit_index_update.index)
+        })
         .collect::<Vec<_>>();
 
     assert_eq!(

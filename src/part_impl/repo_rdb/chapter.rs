@@ -10,20 +10,24 @@ use time::OffsetDateTime;
 use poprako_transactional::advance::Advance;
 
 use crate::model::chapter::{
-    ChapterForm, ChapterInfo, ChapterInfoUpdate, ChapterListSpec, ChapterStageUpdate,
+    ChapterForm, ChapterInfo, ChapterInfoUpdate, ChapterListSpec,
+    ChapterStageUpdate,
 };
 use crate::model::unit::UnitCounterDelta;
 use crate::part::repo::chapter::{ChapterRepo, ChapterRepoTransactional};
 use crate::part::repo::step::chapter::{
-    AdjustUnitCounters, Create, Delete, FindPinnedInfoByComicId, GetInfoById, GetInfoByIdExcluded,
-    ListAllInfosByComicIdExcluded, ListInfos, ListPinnedInfosByComicIds, SetPageCounters,
-    UnpinOthers, UpdateInfo, UpdateStage,
+    AdjustUnitCounters, Create, Delete, FindPinnedInfoByComicId, GetInfoById,
+    GetInfoByIdExcluded, ListAllInfosByComicIdExcluded, ListInfos,
+    ListPinnedInfosByComicIds, SetPageCounters, UnpinOthers, UpdateInfo,
+    UpdateStage,
 };
 use crate::part::shared::execute::Execute;
 use crate::part_impl::rdb_core::RdbConn;
 use crate::part_impl::rdb_core::RdbContext;
 use crate::part_impl::rdb_core::result::{diesel, expected};
-use crate::part_impl::repo_rdb::entity::chapter::{ChapterAspect, ChapterEntry, ChapterRow};
+use crate::part_impl::repo_rdb::entity::chapter::{
+    ChapterAspect, ChapterEntry, ChapterRow,
+};
 use crate::part_impl::repo_rdb::incl;
 use crate::part_impl::repo_rdb::{RdbRepo, RdbRepoTransactional};
 use crate::result::{RegularError, RegularResult};
@@ -59,7 +63,12 @@ async fn get_info_by_id(
 
     let mut info = row_into_info(row)?;
 
-    incl::chapter::populate_chapter_incls(conn, std::slice::from_mut(&mut info), incl_opt).await?;
+    incl::chapter::populate_chapter_incls(
+        conn,
+        std::slice::from_mut(&mut info),
+        incl_opt,
+    )
+    .await?;
 
     Ok(info)
 }
@@ -81,12 +90,20 @@ async fn get_info_by_id_excluded(
 
     let mut info = row_into_info(row)?;
 
-    incl::chapter::populate_chapter_incls(conn, std::slice::from_mut(&mut info), incl_opt).await?;
+    incl::chapter::populate_chapter_incls(
+        conn,
+        std::slice::from_mut(&mut info),
+        incl_opt,
+    )
+    .await?;
 
     Ok(info)
 }
 
-async fn list_infos(conn: &mut RdbConn, spec: &ChapterListSpec) -> RegularResult<Vec<ChapterInfo>> {
+async fn list_infos(
+    conn: &mut RdbConn,
+    spec: &ChapterListSpec,
+) -> RegularResult<Vec<ChapterInfo>> {
     let rows: Vec<ChapterRow> = t_chapter
         .filter(f_comic_id.eq(spec.comic_id.as_str()))
         .select(ChapterRow::as_select())
@@ -99,7 +116,8 @@ async fn list_infos(conn: &mut RdbConn, spec: &ChapterListSpec) -> RegularResult
 
     let mut infos = rows_into_infos(rows)?;
 
-    incl::chapter::populate_chapter_incls(conn, &mut infos, &spec.incl_opt).await?;
+    incl::chapter::populate_chapter_incls(conn, &mut infos, &spec.incl_opt)
+        .await?;
 
     Ok(infos)
 }
@@ -179,7 +197,12 @@ async fn find_pinned_info_by_comic_id(
 
     let mut info = row_into_info(row)?;
 
-    incl::chapter::populate_chapter_incls(conn, std::slice::from_mut(&mut info), incl_opt).await?;
+    incl::chapter::populate_chapter_incls(
+        conn,
+        std::slice::from_mut(&mut info),
+        incl_opt,
+    )
+    .await?;
 
     Ok(Some(info))
 }
@@ -210,7 +233,10 @@ async fn list_pinned_infos_by_comic_ids(
     Ok(map)
 }
 
-async fn create(conn: &mut RdbConn, form: &ChapterForm) -> RegularResult<ChapterInfo> {
+async fn create(
+    conn: &mut RdbConn,
+    form: &ChapterForm,
+) -> RegularResult<ChapterInfo> {
     let entry = ChapterEntry::from(form);
 
     let row: ChapterRow = diesel::insert_into(t_chapter)
@@ -223,7 +249,10 @@ async fn create(conn: &mut RdbConn, form: &ChapterForm) -> RegularResult<Chapter
     row_into_info(row)
 }
 
-async fn update_info(conn: &mut RdbConn, update: &ChapterInfoUpdate) -> RegularResult<()> {
+async fn update_info(
+    conn: &mut RdbConn,
+    update: &ChapterInfoUpdate,
+) -> RegularResult<()> {
     let now = OffsetDateTime::now_utc();
 
     let mut aspect = ChapterAspect::new(now);
@@ -245,7 +274,10 @@ async fn update_info(conn: &mut RdbConn, update: &ChapterInfoUpdate) -> RegularR
     Ok(())
 }
 
-async fn update_stage(conn: &mut RdbConn, update: &ChapterStageUpdate) -> RegularResult<()> {
+async fn update_stage(
+    conn: &mut RdbConn,
+    update: &ChapterStageUpdate,
+) -> RegularResult<()> {
     let now = OffsetDateTime::now_utc();
 
     let aspect = ChapterAspect::new(now).stages(update.stages, now);
@@ -294,8 +326,10 @@ async fn adjust_unit_counters(
     diesel::update(t_chapter.filter(f_id.eq(id)))
         .set((
             f_total_unit_count.eq(f_total_unit_count + delta.total_unit_count),
-            f_translated_unit_count.eq(f_translated_unit_count + delta.translated_unit_count),
-            f_proofread_unit_count.eq(f_proofread_unit_count + delta.proofread_unit_count),
+            f_translated_unit_count
+                .eq(f_translated_unit_count + delta.translated_unit_count),
+            f_proofread_unit_count
+                .eq(f_proofread_unit_count + delta.proofread_unit_count),
             f_updated_at.eq(now),
         ))
         .execute(conn)
@@ -305,7 +339,11 @@ async fn adjust_unit_counters(
     Ok(())
 }
 
-async fn unpin_others(conn: &mut RdbConn, comic_id: &str, excluded_id: &str) -> RegularResult<()> {
+async fn unpin_others(
+    conn: &mut RdbConn,
+    comic_id: &str,
+    excluded_id: &str,
+) -> RegularResult<()> {
     let now = OffsetDateTime::now_utc();
 
     diesel::update(
@@ -334,7 +372,10 @@ async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
 impl<'a> Execute<GetInfoById<'a>> for RdbRepo {
     type Error = RegularError;
 
-    async fn execute(&self, step: &GetInfoById<'a>) -> RegularResult<ChapterInfo> {
+    async fn execute(
+        &self,
+        step: &GetInfoById<'a>,
+    ) -> RegularResult<ChapterInfo> {
         submit_query!(self.core, get_info_by_id, step.id, step.incl_opt)
     }
 }
@@ -343,7 +384,10 @@ impl<'a> Execute<GetInfoById<'a>> for RdbRepo {
 impl<'a> Execute<ListInfos<'a>> for RdbRepo {
     type Error = RegularError;
 
-    async fn execute(&self, step: &ListInfos<'a>) -> RegularResult<Vec<ChapterInfo>> {
+    async fn execute(
+        &self,
+        step: &ListInfos<'a>,
+    ) -> RegularResult<Vec<ChapterInfo>> {
         submit_query!(self.core, list_infos, step.spec)
     }
 }
@@ -427,7 +471,9 @@ impl<'a> Advance<GetInfoByIdExcluded<'a>, RdbContext> for RdbRepoTransactional {
 // }
 
 #[async_trait]
-impl<'a> Advance<ListAllInfosByComicIdExcluded<'a>, RdbContext> for RdbRepoTransactional {
+impl<'a> Advance<ListAllInfosByComicIdExcluded<'a>, RdbContext>
+    for RdbRepoTransactional
+{
     type Error = RegularError;
 
     async fn advance(
@@ -440,7 +486,9 @@ impl<'a> Advance<ListAllInfosByComicIdExcluded<'a>, RdbContext> for RdbRepoTrans
 }
 
 #[async_trait]
-impl<'a> Advance<FindPinnedInfoByComicId<'a>, RdbContext> for RdbRepoTransactional {
+impl<'a> Advance<FindPinnedInfoByComicId<'a>, RdbContext>
+    for RdbRepoTransactional
+{
     type Error = RegularError;
 
     async fn advance(
@@ -448,7 +496,12 @@ impl<'a> Advance<FindPinnedInfoByComicId<'a>, RdbContext> for RdbRepoTransaction
         context: &mut RdbContext,
         step: &FindPinnedInfoByComicId<'a>,
     ) -> RegularResult<Option<ChapterInfo>> {
-        find_pinned_info_by_comic_id(context.conn(), step.comic_id, step.incl_opt).await
+        find_pinned_info_by_comic_id(
+            context.conn(),
+            step.comic_id,
+            step.incl_opt,
+        )
+        .await
     }
 }
 
@@ -456,7 +509,11 @@ impl<'a> Advance<FindPinnedInfoByComicId<'a>, RdbContext> for RdbRepoTransaction
 impl<'a> Advance<UpdateInfo<'a>, RdbContext> for RdbRepoTransactional {
     type Error = RegularError;
 
-    async fn advance(&self, context: &mut RdbContext, step: &UpdateInfo<'a>) -> RegularResult<()> {
+    async fn advance(
+        &self,
+        context: &mut RdbContext,
+        step: &UpdateInfo<'a>,
+    ) -> RegularResult<()> {
         update_info(context.conn(), step.update).await
     }
 }
@@ -465,7 +522,11 @@ impl<'a> Advance<UpdateInfo<'a>, RdbContext> for RdbRepoTransactional {
 impl<'a> Advance<UpdateStage<'a>, RdbContext> for RdbRepoTransactional {
     type Error = RegularError;
 
-    async fn advance(&self, context: &mut RdbContext, step: &UpdateStage<'a>) -> RegularResult<()> {
+    async fn advance(
+        &self,
+        context: &mut RdbContext,
+        step: &UpdateStage<'a>,
+    ) -> RegularResult<()> {
         update_stage(context.conn(), step.update).await
     }
 }
@@ -508,7 +569,11 @@ impl<'a> Advance<AdjustUnitCounters<'a>, RdbContext> for RdbRepoTransactional {
 impl<'a> Advance<UnpinOthers<'a>, RdbContext> for RdbRepoTransactional {
     type Error = RegularError;
 
-    async fn advance(&self, context: &mut RdbContext, step: &UnpinOthers<'a>) -> RegularResult<()> {
+    async fn advance(
+        &self,
+        context: &mut RdbContext,
+        step: &UnpinOthers<'a>,
+    ) -> RegularResult<()> {
         unpin_others(context.conn(), step.comic_id, step.excluded_id).await
     }
 }
@@ -517,7 +582,11 @@ impl<'a> Advance<UnpinOthers<'a>, RdbContext> for RdbRepoTransactional {
 impl<'a> Advance<Delete<'a>, RdbContext> for RdbRepoTransactional {
     type Error = RegularError;
 
-    async fn advance(&self, context: &mut RdbContext, step: &Delete<'a>) -> RegularResult<()> {
+    async fn advance(
+        &self,
+        context: &mut RdbContext,
+        step: &Delete<'a>,
+    ) -> RegularResult<()> {
         delete(context.conn(), step.id).await
     }
 }

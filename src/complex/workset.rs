@@ -2,7 +2,9 @@
 //! permission gates.
 
 use crate::complex::comic::ComicComplex;
-use crate::complex::util::{check_user_is_team_admin, check_user_is_team_member};
+use crate::complex::util::{
+    check_user_is_team_admin, check_user_is_team_member,
+};
 use crate::model::comic::{ComicListKind, ComicListSpec};
 use crate::part::prom::Prom;
 use crate::part::repo::assignment::AssignmentRepoTransactional;
@@ -12,7 +14,9 @@ use crate::part::repo::comic::ComicRepoTransactional;
 use crate::part::repo::page::PageRepoTransactional;
 use crate::part::repo::step::comic::ComicStep;
 use crate::part::repo::step::member::FindInfoByUserIdAndTeamId;
-use crate::part::repo::step::workset::{GetInfoById as WorksetGetInfoById, WorksetStep};
+use crate::part::repo::step::workset::{
+    GetInfoById as WorksetGetInfoById, WorksetStep,
+};
 use crate::part::repo::unit::UnitRepoTransactional;
 use crate::part::repo::workset::WorksetRepoTransactional;
 use crate::part::shared::proxy::ProxyExecute;
@@ -79,7 +83,13 @@ impl WorksetComplex {
             }
 
             for comic_info in comic_infos {
-                ComicComplex::delete_cascade(repo, prom, context, &comic_info.id).await?;
+                ComicComplex::delete_cascade(
+                    repo,
+                    prom,
+                    context,
+                    &comic_info.id,
+                )
+                .await?;
             }
 
             offset += PAGE_SIZE;
@@ -103,7 +113,10 @@ impl WorksetPermComplex {
         team_id: &str,
     ) -> RegularResult<()>
     where
-        P: for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RegularError>,
+        P: for<'a> ProxyExecute<
+                FindInfoByUserIdAndTeamId<'a>,
+                Error = RegularError,
+            >,
     {
         check_user_is_team_admin(proxy, user_id, team_id).await
     }
@@ -115,7 +128,10 @@ impl WorksetPermComplex {
         team_id: &str,
     ) -> RegularResult<()>
     where
-        P: for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RegularError>,
+        P: for<'a> ProxyExecute<
+                FindInfoByUserIdAndTeamId<'a>,
+                Error = RegularError,
+            >,
     {
         check_user_is_team_member(proxy, user_id, team_id).await
     }
@@ -128,7 +144,10 @@ impl WorksetPermComplex {
     ) -> RegularResult<()>
     where
         P: for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RegularError>
-            + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RegularError>,
+            + for<'a> ProxyExecute<
+                FindInfoByUserIdAndTeamId<'a>,
+                Error = RegularError,
+            >,
     {
         let team_id = Self::resolve_team_id(proxy, workset_id).await?;
         check_user_is_team_member(proxy, user_id, &team_id).await
@@ -142,7 +161,10 @@ impl WorksetPermComplex {
     ) -> RegularResult<()>
     where
         P: for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RegularError>
-            + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RegularError>,
+            + for<'a> ProxyExecute<
+                FindInfoByUserIdAndTeamId<'a>,
+                Error = RegularError,
+            >,
     {
         let team_id = Self::resolve_team_id(proxy, workset_id).await?;
         check_user_is_team_admin(proxy, user_id, &team_id).await
@@ -156,14 +178,20 @@ impl WorksetPermComplex {
     ) -> RegularResult<()>
     where
         P: for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RegularError>
-            + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RegularError>,
+            + for<'a> ProxyExecute<
+                FindInfoByUserIdAndTeamId<'a>,
+                Error = RegularError,
+            >,
     {
         let team_id = Self::resolve_team_id(proxy, workset_id).await?;
         check_user_is_team_admin(proxy, user_id, &team_id).await
     }
 
     /// Resolve the owning team ID from a workset ID.
-    async fn resolve_team_id<P>(proxy: &mut P, workset_id: &str) -> RegularResult<String>
+    async fn resolve_team_id<P>(
+        proxy: &mut P,
+        workset_id: &str,
+    ) -> RegularResult<String>
     where
         P: for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RegularError>,
     {

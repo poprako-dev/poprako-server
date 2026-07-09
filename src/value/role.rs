@@ -117,7 +117,10 @@ impl TryFrom<u32> for RoleField {
     type Error = RegularError;
 
     fn try_from(value: u32) -> RegularResult<Self> {
-        if value == 0 || !Self::VALID_VALUES.contains(&value) || value.count_ones() != 1 {
+        if value == 0
+            || !Self::VALID_VALUES.contains(&value)
+            || value.count_ones() != 1
+        {
             return Err(RegularError::Expected {
                 variant: ExpectedVariant::Args,
                 message: trl("error-invalid-role"),
@@ -137,7 +140,10 @@ impl From<RoleField> for u32 {
 
 /// Serialize a [`RoleBit`] as its raw `u32` value.
 impl Serialize for RoleField {
-    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    fn serialize<S>(
+        &self,
+        serializer: S,
+    ) -> std::result::Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
@@ -153,7 +159,8 @@ impl<'de> Deserialize<'de> for RoleField {
     {
         let bits = u32::deserialize(deserializer)?;
 
-        Self::try_from(bits).map_err(|_| D::Error::custom(trl("error-invalid-role")))
+        Self::try_from(bits)
+            .map_err(|_| D::Error::custom(trl("error-invalid-role")))
     }
 }
 
@@ -188,7 +195,10 @@ impl From<RoleMask> for u32 {
 
 /// Serialize a [`RoleMask`] as its raw `u32` value.
 impl Serialize for RoleMask {
-    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    fn serialize<S>(
+        &self,
+        serializer: S,
+    ) -> std::result::Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
@@ -204,6 +214,7 @@ impl<'de> Deserialize<'de> for RoleMask {
     {
         let bits = u32::deserialize(deserializer)?;
 
-        Self::try_from(bits).map_err(|_| D::Error::custom(trl("error-invalid-role")))
+        Self::try_from(bits)
+            .map_err(|_| D::Error::custom(trl("error-invalid-role")))
     }
 }

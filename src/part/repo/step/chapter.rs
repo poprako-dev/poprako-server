@@ -5,7 +5,8 @@ use poprako_transactional::step::Step;
 use std::collections::HashMap;
 
 use crate::model::chapter::{
-    ChapterForm, ChapterInfo, ChapterInfoUpdate, ChapterListSpec, ChapterStageUpdate,
+    ChapterForm, ChapterInfo, ChapterInfoUpdate, ChapterListSpec,
+    ChapterStageUpdate,
 };
 use crate::model::unit::UnitCounterDelta;
 use crate::value::chapter::ChapterInclOpt;
@@ -171,7 +172,10 @@ impl ChapterStep {
     }
 
     /// Constructs a step to fetch a chapter by ID.
-    pub fn get_info_by_id<'a>(id: &'a str, incl_opt: &'a [ChapterInclOpt]) -> GetInfoById<'a> {
+    pub fn get_info_by_id<'a>(
+        id: &'a str,
+        incl_opt: &'a [ChapterInclOpt],
+    ) -> GetInfoById<'a> {
         GetInfoById { id, incl_opt }
     }
 
@@ -262,7 +266,10 @@ impl ChapterStep {
     }
 
     /// Constructs a step to unpin other chapters in the same comic.
-    pub fn unpin_others<'a>(comic_id: &'a str, excluded_id: &'a str) -> UnpinOthers<'a> {
+    pub fn unpin_others<'a>(
+        comic_id: &'a str,
+        excluded_id: &'a str,
+    ) -> UnpinOthers<'a> {
         UnpinOthers {
             comic_id,
             excluded_id,

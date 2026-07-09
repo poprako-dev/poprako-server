@@ -112,8 +112,13 @@ impl<'a> ChapterAspect<'a> {
         self
     }
 
-    pub fn stages(mut self, val: StageMask, updated_at: OffsetDateTime) -> Self {
-        self.f_uploaded_at = Some(one_shot_timestamp(val, Stage::RawProvide, updated_at));
+    pub fn stages(
+        mut self,
+        val: StageMask,
+        updated_at: OffsetDateTime,
+    ) -> Self {
+        self.f_uploaded_at =
+            Some(one_shot_timestamp(val, Stage::RawProvide, updated_at));
 
         (self.f_translating_at, self.f_translated_at) =
             two_step_timestamps(val, Stage::Translate, updated_at);
@@ -124,9 +129,11 @@ impl<'a> ChapterAspect<'a> {
         (self.f_typesetting_at, self.f_typeset_at) =
             two_step_timestamps(val, Stage::TypesetRedraw, updated_at);
 
-        self.f_reviewed_at = Some(one_shot_timestamp(val, Stage::Review, updated_at));
+        self.f_reviewed_at =
+            Some(one_shot_timestamp(val, Stage::Review, updated_at));
 
-        self.f_published_at = Some(one_shot_timestamp(val, Stage::Publish, updated_at));
+        self.f_published_at =
+            Some(one_shot_timestamp(val, Stage::Publish, updated_at));
 
         self
     }
@@ -175,7 +182,9 @@ fn two_step_timestamps(
     match stages.get_phase(stage) {
         StagePhase::Pending => (Some(None), Some(None)),
         StagePhase::Active => (Some(Some(updated_at)), Some(None)),
-        StagePhase::Completed => (Some(Some(updated_at)), Some(Some(updated_at))),
+        StagePhase::Completed => {
+            (Some(Some(updated_at)), Some(Some(updated_at)))
+        }
     }
 }
 
@@ -197,9 +206,14 @@ fn phase_from_two_step(
     }
 }
 
-fn workflow_stage_mask_from_row(row: &ChapterRow) -> Result<StageMask, RegularError> {
+fn workflow_stage_mask_from_row(
+    row: &ChapterRow,
+) -> Result<StageMask, RegularError> {
     let stages = StageMask::try_from(0u32)?
-        .try_set_phase(Stage::RawProvide, phase_from_one_shot(row.f_uploaded_at))?
+        .try_set_phase(
+            Stage::RawProvide,
+            phase_from_one_shot(row.f_uploaded_at),
+        )?
         .try_set_phase(
             Stage::Translate,
             phase_from_two_step(row.f_translating_at, row.f_translated_at),
@@ -213,7 +227,10 @@ fn workflow_stage_mask_from_row(row: &ChapterRow) -> Result<StageMask, RegularEr
             phase_from_two_step(row.f_typesetting_at, row.f_typeset_at),
         )?
         .try_set_phase(Stage::Review, phase_from_one_shot(row.f_reviewed_at))?
-        .try_set_phase(Stage::Publish, phase_from_one_shot(row.f_published_at))?;
+        .try_set_phase(
+            Stage::Publish,
+            phase_from_one_shot(row.f_published_at),
+        )?;
     Ok(stages)
 }
 

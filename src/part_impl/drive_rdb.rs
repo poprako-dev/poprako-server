@@ -26,7 +26,10 @@ impl RdbDrive {
 impl Drive<RdbContext> for RdbDrive {
     type Error = RegularError;
 
-    async fn with_context<T, E, F>(&self, f: F) -> Result<T, DriveError<E, Self::Error>>
+    async fn with_context<T, E, F>(
+        &self,
+        f: F,
+    ) -> Result<T, DriveError<E, Self::Error>>
     where
         T: Send,
         E: Send,
@@ -52,9 +55,11 @@ impl Drive<RdbContext> for RdbDrive {
                 Ok(value)
             }
             Err(err) => {
-                AnsiTransactionManager::rollback_transaction(rdb_context.conn())
-                    .await
-                    .map_err(|e| DriveError::Backend(diesel(e)))?;
+                AnsiTransactionManager::rollback_transaction(
+                    rdb_context.conn(),
+                )
+                .await
+                .map_err(|e| DriveError::Backend(diesel(e)))?;
 
                 Err(DriveError::Advance(err))
             }

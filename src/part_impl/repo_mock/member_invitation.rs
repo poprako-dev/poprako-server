@@ -10,10 +10,13 @@ use crate::part::repo::member_invitation::{
     MemberInvitationRepo, MemberInvitationRepoTransactional,
 };
 use crate::part::repo::step::member_invitation::{
-    Create, Delete, GetInfoByCodeExcluded, GetInfoById, ListInfos, MarkPendingAsUsed, UpdateInfo,
+    Create, Delete, GetInfoByCodeExcluded, GetInfoById, ListInfos,
+    MarkPendingAsUsed, UpdateInfo,
 };
 use crate::part::shared::execute::Execute;
-use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactional, expected};
+use crate::part_impl::repo_mock::{
+    Mock, MockContext, MockState, MockTransactional, expected,
+};
 use crate::result::RegularError;
 use crate::value::member_invitation::MemberInvitationInclOpt;
 
@@ -29,7 +32,11 @@ fn find_user(state: &MockState, user_id: &str) -> Option<UserInfo> {
         .cloned()
 }
 
-fn apply_invitor_incl(state: &MockState, info: &mut MemberInvitationInfo, include_invitor: bool) {
+fn apply_invitor_incl(
+    state: &MockState,
+    info: &mut MemberInvitationInfo,
+    include_invitor: bool,
+) {
     info.invitor = None;
     if include_invitor {
         info.invitor = find_user(state, &info.invitor_id);
@@ -50,10 +57,9 @@ impl<'a> Execute<ListInfos<'a>> for Mock {
             .iter()
             .filter(|member_invitation_info| {
                 member_invitation_info.team_id == step.spec.team_id
-                    && step
-                        .spec
-                        .pending
-                        .is_none_or(|pending| member_invitation_info.pending == pending)
+                    && step.spec.pending.is_none_or(|pending| {
+                        member_invitation_info.pending == pending
+                    })
             })
             .cloned()
             .collect::<Vec<_>>();
@@ -83,7 +89,10 @@ impl<'a> Execute<ListInfos<'a>> for Mock {
 impl<'a> Execute<GetInfoById<'a>> for Mock {
     type Error = RegularError;
 
-    async fn execute(&self, step: &GetInfoById<'a>) -> Result<MemberInvitationInfo, Self::Error> {
+    async fn execute(
+        &self,
+        step: &GetInfoById<'a>,
+    ) -> Result<MemberInvitationInfo, Self::Error> {
         let state = self.state.lock().unwrap();
 
         let mut info = state
@@ -93,7 +102,8 @@ impl<'a> Execute<GetInfoById<'a>> for Mock {
             .cloned()
             .ok_or_else(|| expected("error-invitation-not-found"))?;
 
-        let include_invitor = step.incl_opt.contains(&MemberInvitationInclOpt::Invitor);
+        let include_invitor =
+            step.incl_opt.contains(&MemberInvitationInclOpt::Invitor);
 
         apply_invitor_incl(&state, &mut info, include_invitor);
 
@@ -110,24 +120,19 @@ impl<'a> Advance<Create<'a>, MockContext> for MockTransactional {
         context: &mut MockContext,
         step: &Create<'a>,
     ) -> Result<MemberInvitationInfo, Self::Error> {
-        if context
-            .state
-            .member_invitations
-            .iter()
-            .any(|member_invitation_info| member_invitation_info.id == step.form.id)
-        {
+        if context.state.member_invitations.iter().any(
+            |member_invitation_info| member_invitation_info.id == step.form.id,
+        ) {
             return Err(expected("error-already-exists"));
         }
-        if context
-            .state
-            .member_invitations
-            .iter()
-            .any(|member_invitation_info| {
+        if context.state.member_invitations.iter().any(
+            |member_invitation_info| {
                 member_invitation_info.team_id == step.form.team_id
-                    && member_invitation_info.invitee_qid == step.form.invitee_qid
+                    && member_invitation_info.invitee_qid
+                        == step.form.invitee_qid
                     && member_invitation_info.pending
-            })
-        {
+            },
+        ) {
             return Err(expected("error-already-exists"));
         }
 
@@ -162,7 +167,9 @@ impl<'a> Advance<GetInfoByCodeExcluded<'a>, MockContext> for MockTransactional {
             .state
             .member_invitations
             .iter()
-            .find(|invitation| invitation.code == step.code && invitation.pending)
+            .find(|invitation| {
+                invitation.code == step.code && invitation.pending
+            })
             .cloned()
             .ok_or_else(|| expected("error-no-pending-invitation"))
     }
@@ -185,7 +192,8 @@ impl<'a> Advance<GetInfoById<'a>, MockContext> for MockTransactional {
             .cloned()
             .ok_or_else(|| expected("error-invitation-not-found"))?;
 
-        let include_invitor = step.incl_opt.contains(&MemberInvitationInclOpt::Invitor);
+        let include_invitor =
+            step.incl_opt.contains(&MemberInvitationInclOpt::Invitor);
 
         apply_invitor_incl(&context.state, &mut info, include_invitor);
 
@@ -226,7 +234,9 @@ impl<'a> Advance<UpdateInfo<'a>, MockContext> for MockTransactional {
             .state
             .member_invitations
             .iter_mut()
-            .find(|member_invitation_info| member_invitation_info.id == step.update.id)
+            .find(|member_invitation_info| {
+                member_invitation_info.id == step.update.id
+            })
             .ok_or_else(|| expected("error-invitation-not-found"))?;
         member_invitation_info.roles = step.update.roles;
         Ok(())
@@ -246,7 +256,9 @@ impl<'a> Advance<Delete<'a>, MockContext> for MockTransactional {
             .state
             .member_invitations
             .iter()
-            .position(|member_invitation_info| member_invitation_info.id == step.id)
+            .position(|member_invitation_info| {
+                member_invitation_info.id == step.id
+            })
             .ok_or_else(|| expected("error-invitation-not-found"))?;
         context.state.member_invitations.remove(pos);
         Ok(())

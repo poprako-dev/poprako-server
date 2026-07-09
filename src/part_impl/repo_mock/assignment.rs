@@ -4,19 +4,26 @@ use async_trait::async_trait;
 
 use poprako_transactional::advance::Advance;
 
-use crate::model::assignment::{AssignmentForm, AssignmentInfo, AssignmentListSpec};
+use crate::model::assignment::{
+    AssignmentForm, AssignmentInfo, AssignmentListSpec,
+};
 use crate::model::chapter::ChapterInfo;
 use crate::model::comic::ComicInfo;
 use crate::model::team::TeamInfo;
 use crate::model::user::UserInfo;
 use crate::model::workset::WorksetInfo;
-use crate::part::repo::assignment::{AssignmentRepo, AssignmentRepoTransactional};
+use crate::part::repo::assignment::{
+    AssignmentRepo, AssignmentRepoTransactional,
+};
 use crate::part::repo::step::assignment::{
-    Create, Delete, DeleteByChapterId, GetInfoByChapterIdAndUserId, GetInfoById,
-    ListAllInfosByChapter, ListInfos, ListInfosByChapterIdExcluded, PutRoles,
+    Create, Delete, DeleteByChapterId, GetInfoByChapterIdAndUserId,
+    GetInfoById, ListAllInfosByChapter, ListInfos,
+    ListInfosByChapterIdExcluded, PutRoles,
 };
 use crate::part::shared::execute::Execute;
-use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactional, expected, now};
+use crate::part_impl::repo_mock::{
+    Mock, MockContext, MockState, MockTransactional, expected, now,
+};
 use crate::result::{RegularError, RegularResult};
 use crate::value::assignment::AssignmentInclOpt;
 use crate::value::incl::expand_incl_opts;
@@ -69,7 +76,10 @@ fn find_workset(state: &MockState, workset_id: &str) -> Option<WorksetInfo> {
         .cloned()
 }
 
-fn find_team_for_workset(state: &MockState, workset_info: &WorksetInfo) -> Option<TeamInfo> {
+fn find_team_for_workset(
+    state: &MockState,
+    workset_info: &WorksetInfo,
+) -> Option<TeamInfo> {
     state
         .teams
         .iter()
@@ -77,7 +87,11 @@ fn find_team_for_workset(state: &MockState, workset_info: &WorksetInfo) -> Optio
         .cloned()
 }
 
-fn apply_user_incl(state: &MockState, assignment_info: &mut AssignmentInfo, include_user: bool) {
+fn apply_user_incl(
+    state: &MockState,
+    assignment_info: &mut AssignmentInfo,
+    include_user: bool,
+) {
     if include_user {
         assignment_info.user = find_user(state, &assignment_info.user_id);
     }
@@ -89,7 +103,8 @@ fn apply_chapter_incl(
     include_chapter: bool,
 ) {
     if include_chapter {
-        assignment_info.chapter = find_chapter(state, &assignment_info.chapter_id);
+        assignment_info.chapter =
+            find_chapter(state, &assignment_info.chapter_id);
     }
 }
 
@@ -199,8 +214,12 @@ fn apply_assignment_incls(
 
     for incl_opt in expand_incl_opts(incl_opt) {
         match incl_opt {
-            AssignmentInclOpt::User => apply_user_incl(state, assignment_info, true),
-            AssignmentInclOpt::Chapter => apply_chapter_incl(state, assignment_info, true),
+            AssignmentInclOpt::User => {
+                apply_user_incl(state, assignment_info, true)
+            }
+            AssignmentInclOpt::Chapter => {
+                apply_chapter_incl(state, assignment_info, true)
+            }
             AssignmentInclOpt::ChapterComic => {
                 apply_chapter_comic_incl(state, assignment_info, true)
             }
@@ -208,7 +227,11 @@ fn apply_assignment_incls(
                 apply_chapter_comic_workset_incl(state, assignment_info, true)
             }
             AssignmentInclOpt::ChapterComicWorksetTeam => {
-                apply_chapter_comic_workset_team_incl(state, assignment_info, true)
+                apply_chapter_comic_workset_team_incl(
+                    state,
+                    assignment_info,
+                    true,
+                )
             }
             AssignmentInclOpt::ChapterCreator => {
                 apply_chapter_creator_incl(state, assignment_info, true)
@@ -220,12 +243,17 @@ fn apply_assignment_incls(
     }
 }
 
-fn find_assignment(state: &MockState, chapter_id: &str, user_id: &str) -> Option<AssignmentInfo> {
+fn find_assignment(
+    state: &MockState,
+    chapter_id: &str,
+    user_id: &str,
+) -> Option<AssignmentInfo> {
     state
         .assignments
         .iter()
         .find(|assignment_info| {
-            assignment_info.chapter_id == chapter_id && assignment_info.user_id == user_id
+            assignment_info.chapter_id == chapter_id
+                && assignment_info.user_id == user_id
         })
         .cloned()
 }
@@ -247,7 +275,10 @@ fn get_assignment(
     Ok(assignment_info)
 }
 
-fn list_assignments(state: &MockState, spec: &AssignmentListSpec) -> Vec<AssignmentInfo> {
+fn list_assignments(
+    state: &MockState,
+    spec: &AssignmentListSpec,
+) -> Vec<AssignmentInfo> {
     let (offset, limit, incl_opt, mut assignment_infos) = match spec {
         AssignmentListSpec::Chapter {
             chapter_id,
@@ -262,7 +293,9 @@ fn list_assignments(state: &MockState, spec: &AssignmentListSpec) -> Vec<Assignm
             state
                 .assignments
                 .iter()
-                .filter(|assignment_info| assignment_info.chapter_id == *chapter_id)
+                .filter(|assignment_info| {
+                    assignment_info.chapter_id == *chapter_id
+                })
                 .filter(|assignment_info| {
                     role.map(|role| assignment_info.roles.has_any_role(&[role]))
                         .unwrap_or(true)
@@ -370,7 +403,8 @@ fn create_assignment(
         return Err(expected("error-already-exists"));
     }
     if state.assignments.iter().any(|assignment_info| {
-        assignment_info.chapter_id == form.chapter_id && assignment_info.user_id == form.user_id
+        assignment_info.chapter_id == form.chapter_id
+            && assignment_info.user_id == form.user_id
     }) {
         return Err(expected("error-already-exists"));
     }
@@ -390,7 +424,10 @@ fn create_assignment(
     Ok(assignment_info)
 }
 
-fn delete_assignment_by_id(state: &mut MockState, id: &str) -> RegularResult<()> {
+fn delete_assignment_by_id(
+    state: &mut MockState,
+    id: &str,
+) -> RegularResult<()> {
     let index = state
         .assignments
         .iter()
@@ -400,7 +437,10 @@ fn delete_assignment_by_id(state: &mut MockState, id: &str) -> RegularResult<()>
     Ok(())
 }
 
-fn delete_assignments_by_chapter_id(state: &mut MockState, chapter_id: &str) -> RegularResult<()> {
+fn delete_assignments_by_chapter_id(
+    state: &mut MockState,
+    chapter_id: &str,
+) -> RegularResult<()> {
     state.assignments.retain(|a| a.chapter_id != chapter_id);
     Ok(())
 }
@@ -422,7 +462,10 @@ impl<'a> Execute<GetInfoByChapterIdAndUserId<'a>> for Mock {
 impl<'a> Execute<ListInfos<'a>> for Mock {
     type Error = RegularError;
 
-    async fn execute(&self, step: &ListInfos<'a>) -> Result<Vec<AssignmentInfo>, Self::Error> {
+    async fn execute(
+        &self,
+        step: &ListInfos<'a>,
+    ) -> Result<Vec<AssignmentInfo>, Self::Error> {
         let state = self.state.lock().unwrap();
         Ok(list_assignments(&state, step.spec))
     }
@@ -450,14 +493,19 @@ impl<'a> Execute<ListAllInfosByChapter<'a>> for Mock {
 impl<'a> Execute<GetInfoById<'a>> for Mock {
     type Error = RegularError;
 
-    async fn execute(&self, step: &GetInfoById<'a>) -> Result<AssignmentInfo, Self::Error> {
+    async fn execute(
+        &self,
+        step: &GetInfoById<'a>,
+    ) -> Result<AssignmentInfo, Self::Error> {
         let state = self.state.lock().unwrap();
         get_assignment(&state, step.id, step.incl_opt)
     }
 }
 
 #[async_trait]
-impl<'a> Advance<GetInfoByChapterIdAndUserId<'a>, MockContext> for MockTransactional {
+impl<'a> Advance<GetInfoByChapterIdAndUserId<'a>, MockContext>
+    for MockTransactional
+{
     type Error = RegularError;
 
     async fn advance(
@@ -474,7 +522,9 @@ impl<'a> Advance<GetInfoByChapterIdAndUserId<'a>, MockContext> for MockTransacti
 }
 
 #[async_trait]
-impl<'a> Advance<ListInfosByChapterIdExcluded<'a>, MockContext> for MockTransactional {
+impl<'a> Advance<ListInfosByChapterIdExcluded<'a>, MockContext>
+    for MockTransactional
+{
     type Error = RegularError;
 
     async fn advance(

@@ -2,7 +2,9 @@
 
 use poprako_transactional::step::Step;
 
-use crate::model::announcement::{AnnouncementForm, AnnouncementInfo, AnnouncementListSpec};
+use crate::model::announcement::{
+    AnnouncementForm, AnnouncementInfo, AnnouncementListSpec,
+};
 
 /// Step that lists announcements by query specification.
 pub struct ListInfos<'a> {

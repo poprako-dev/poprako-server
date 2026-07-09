@@ -10,19 +10,22 @@ use poprako_transactional::advance::Advance;
 
 use crate::complex::comic::ComicComplex;
 use crate::model::comic::{
-    ComicCoverReservation, ComicForm, ComicInfo, ComicInfoUpdate, ComicListKind, ComicListSpec,
+    ComicCoverReservation, ComicForm, ComicInfo, ComicInfoUpdate,
+    ComicListKind, ComicListSpec,
 };
 use crate::part::repo::comic::{ComicRepo, ComicRepoTransactional};
 use crate::part::repo::step::comic::{
-    Create, Delete, GetInfoById, GetInfoExcluded, IncrChapterNextIndex, ListInfos,
-    ListInfosExcluded, MarkCompleted, MarkCoverUploaded, ReserveCover, TouchLastActive,
-    UpdateChapterCount, UpdateInfo,
+    Create, Delete, GetInfoById, GetInfoExcluded, IncrChapterNextIndex,
+    ListInfos, ListInfosExcluded, MarkCompleted, MarkCoverUploaded,
+    ReserveCover, TouchLastActive, UpdateChapterCount, UpdateInfo,
 };
 use crate::part::shared::execute::Execute;
 use crate::part_impl::rdb_core::RdbConn;
 use crate::part_impl::rdb_core::RdbContext;
 use crate::part_impl::rdb_core::result::{diesel, expected};
-use crate::part_impl::repo_rdb::entity::comic::{ComicAspect, ComicEntry, ComicRow};
+use crate::part_impl::repo_rdb::entity::comic::{
+    ComicAspect, ComicEntry, ComicRow,
+};
 use crate::part_impl::repo_rdb::incl;
 use crate::part_impl::repo_rdb::{RdbRepo, RdbRepoTransactional};
 use crate::result::{RegularError, RegularResult};
@@ -40,18 +43,34 @@ impl ComicRepoTransactional<RdbContext> for RdbRepoTransactional {}
 
 fn one_shot_predicate(column: &str, phase: StagePhase) -> &'static str {
     match (column, phase) {
-        ("f_uploaded_at", StagePhase::Pending) => "pinned_chapter.f_uploaded_at IS NULL",
-        ("f_uploaded_at", StagePhase::Completed) => "pinned_chapter.f_uploaded_at IS NOT NULL",
-        ("f_reviewed_at", StagePhase::Pending) => "pinned_chapter.f_reviewed_at IS NULL",
-        ("f_reviewed_at", StagePhase::Completed) => "pinned_chapter.f_reviewed_at IS NOT NULL",
-        ("f_published_at", StagePhase::Pending) => "pinned_chapter.f_published_at IS NULL",
-        ("f_published_at", StagePhase::Completed) => "pinned_chapter.f_published_at IS NOT NULL",
+        ("f_uploaded_at", StagePhase::Pending) => {
+            "pinned_chapter.f_uploaded_at IS NULL"
+        }
+        ("f_uploaded_at", StagePhase::Completed) => {
+            "pinned_chapter.f_uploaded_at IS NOT NULL"
+        }
+        ("f_reviewed_at", StagePhase::Pending) => {
+            "pinned_chapter.f_reviewed_at IS NULL"
+        }
+        ("f_reviewed_at", StagePhase::Completed) => {
+            "pinned_chapter.f_reviewed_at IS NOT NULL"
+        }
+        ("f_published_at", StagePhase::Pending) => {
+            "pinned_chapter.f_published_at IS NULL"
+        }
+        ("f_published_at", StagePhase::Completed) => {
+            "pinned_chapter.f_published_at IS NOT NULL"
+        }
         (_, StagePhase::Active) => "FALSE",
         _ => "FALSE",
     }
 }
 
-fn two_step_predicate(started_column: &str, completed_column: &str, phase: StagePhase) -> String {
+fn two_step_predicate(
+    started_column: &str,
+    completed_column: &str,
+    phase: StagePhase,
+) -> String {
     match phase {
         StagePhase::Pending => format!(
             "pinned_chapter.{} IS NULL AND pinned_chapter.{} IS NULL",
@@ -61,16 +80,24 @@ fn two_step_predicate(started_column: &str, completed_column: &str, phase: Stage
             "pinned_chapter.{} IS NOT NULL AND pinned_chapter.{} IS NULL",
             started_column, completed_column,
         ),
-        StagePhase::Completed => format!("pinned_chapter.{} IS NOT NULL", completed_column),
+        StagePhase::Completed => {
+            format!("pinned_chapter.{} IS NOT NULL", completed_column)
+        }
     }
 }
 
 fn stage_predicate(stage: Stage, phase: StagePhase) -> String {
     match stage {
         Stage::RawProvide => one_shot_predicate("f_uploaded_at", phase).into(),
-        Stage::Translate => two_step_predicate("f_translating_at", "f_translated_at", phase),
-        Stage::Proofread => two_step_predicate("f_proofreading_at", "f_proofread_at", phase),
-        Stage::TypesetRedraw => two_step_predicate("f_typesetting_at", "f_typeset_at", phase),
+        Stage::Translate => {
+            two_step_predicate("f_translating_at", "f_translated_at", phase)
+        }
+        Stage::Proofread => {
+            two_step_predicate("f_proofreading_at", "f_proofread_at", phase)
+        }
+        Stage::TypesetRedraw => {
+            two_step_predicate("f_typesetting_at", "f_typeset_at", phase)
+        }
         Stage::Review => one_shot_predicate("f_reviewed_at", phase).into(),
         Stage::Publish => one_shot_predicate("f_published_at", phase).into(),
     }
@@ -127,12 +154,20 @@ async fn get_info_by_id(
 
     let mut info: ComicInfo = row.into();
 
-    incl::comic::populate_comic_incls(conn, std::slice::from_mut(&mut info), incl_opt).await?;
+    incl::comic::populate_comic_incls(
+        conn,
+        std::slice::from_mut(&mut info),
+        incl_opt,
+    )
+    .await?;
 
     Ok(info)
 }
 
-async fn list_infos(conn: &mut RdbConn, spec: &ComicListSpec) -> RegularResult<Vec<ComicInfo>> {
+async fn list_infos(
+    conn: &mut RdbConn,
+    spec: &ComicListSpec,
+) -> RegularResult<Vec<ComicInfo>> {
     let mut query = t_comic
         .filter(f_workset_id.eq(spec.workset_id.as_str()))
         .select(ComicRow::as_select())
@@ -142,7 +177,8 @@ async fn list_infos(conn: &mut RdbConn, spec: &ComicListSpec) -> RegularResult<V
         let pattern = format!("%{}%", fuzzy_title);
 
         query = match stored_index_from_numeric_fuzzy(fuzzy_title) {
-            Some(index) => query.filter(f_composed_title.ilike(pattern).or(f_index.eq(index))),
+            Some(index) => query
+                .filter(f_composed_title.ilike(pattern).or(f_index.eq(index))),
             None => query.filter(f_composed_title.ilike(pattern)),
         };
     }
@@ -180,13 +216,19 @@ async fn list_infos(conn: &mut RdbConn, spec: &ComicListSpec) -> RegularResult<V
     Ok(infos)
 }
 
-async fn update_info(conn: &mut RdbConn, update: &ComicInfoUpdate) -> RegularResult<()> {
+async fn update_info(
+    conn: &mut RdbConn,
+    update: &ComicInfoUpdate,
+) -> RegularResult<()> {
     let now = OffsetDateTime::now_utc();
 
     let comic_info = get_info_by_id(conn, &update.id, &[]).await?;
 
-    let composed_title =
-        ComicComplex::compose_title(comic_info.index, &update.author, &update.title);
+    let composed_title = ComicComplex::compose_title(
+        comic_info.index,
+        &update.author,
+        &update.title,
+    );
 
     let aspect = ComicAspect::new(now)
         .title(&update.title)
@@ -203,7 +245,11 @@ async fn update_info(conn: &mut RdbConn, update: &ComicInfoUpdate) -> RegularRes
     Ok(())
 }
 
-async fn mark_cover_uploaded(conn: &mut RdbConn, id: &str, version: i64) -> RegularResult<()> {
+async fn mark_cover_uploaded(
+    conn: &mut RdbConn,
+    id: &str,
+    version: i64,
+) -> RegularResult<()> {
     let now = OffsetDateTime::now_utc();
 
     let affected = diesel::update(
@@ -223,7 +269,10 @@ async fn mark_cover_uploaded(conn: &mut RdbConn, id: &str, version: i64) -> Regu
     Ok(())
 }
 
-async fn create(conn: &mut RdbConn, form: &ComicForm) -> RegularResult<ComicInfo> {
+async fn create(
+    conn: &mut RdbConn,
+    form: &ComicForm,
+) -> RegularResult<ComicInfo> {
     let entry = ComicEntry::from(form);
 
     let row: ComicRow = diesel::insert_into(t_comic)
@@ -253,7 +302,12 @@ async fn get_info_excluded(
 
     let mut info: ComicInfo = row.into();
 
-    incl::comic::populate_comic_incls(conn, std::slice::from_mut(&mut info), incl_opt).await?;
+    incl::comic::populate_comic_incls(
+        conn,
+        std::slice::from_mut(&mut info),
+        incl_opt,
+    )
+    .await?;
 
     Ok(info)
 }
@@ -323,7 +377,11 @@ async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
     Ok(())
 }
 
-async fn mark_completed(conn: &mut RdbConn, id: &str, is_completed: bool) -> RegularResult<()> {
+async fn mark_completed(
+    conn: &mut RdbConn,
+    id: &str,
+    is_completed: bool,
+) -> RegularResult<()> {
     let now = OffsetDateTime::now_utc();
 
     let aspect = ComicAspect::new(now).completed(is_completed);
@@ -337,7 +395,10 @@ async fn mark_completed(conn: &mut RdbConn, id: &str, is_completed: bool) -> Reg
     Ok(())
 }
 
-async fn incr_chapter_next_index(conn: &mut RdbConn, id: &str) -> RegularResult<i32> {
+async fn incr_chapter_next_index(
+    conn: &mut RdbConn,
+    id: &str,
+) -> RegularResult<i32> {
     let prev: i32 = diesel::update(t_comic.filter(f_id.eq(id)))
         .set(f_chapter_next_index.eq(f_chapter_next_index + 1))
         .returning(f_chapter_next_index - 1)
@@ -348,7 +409,11 @@ async fn incr_chapter_next_index(conn: &mut RdbConn, id: &str) -> RegularResult<
     Ok(prev)
 }
 
-async fn update_chapter_count(conn: &mut RdbConn, id: &str, delta: i32) -> RegularResult<()> {
+async fn update_chapter_count(
+    conn: &mut RdbConn,
+    id: &str,
+    delta: i32,
+) -> RegularResult<()> {
     diesel::update(t_comic.filter(f_id.eq(id)))
         .set(f_chapter_count.eq(f_chapter_count + delta))
         .execute(conn)
@@ -378,7 +443,10 @@ async fn touch_last_active(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
 impl<'a> Execute<GetInfoById<'a>> for RdbRepo {
     type Error = RegularError;
 
-    async fn execute(&self, step: &GetInfoById<'a>) -> RegularResult<ComicInfo> {
+    async fn execute(
+        &self,
+        step: &GetInfoById<'a>,
+    ) -> RegularResult<ComicInfo> {
         submit_query!(self.core, get_info_by_id, step.id, step.incl_opt)
     }
 }
@@ -387,7 +455,10 @@ impl<'a> Execute<GetInfoById<'a>> for RdbRepo {
 impl<'a> Execute<ListInfos<'a>> for RdbRepo {
     type Error = RegularError;
 
-    async fn execute(&self, step: &ListInfos<'a>) -> RegularResult<Vec<ComicInfo>> {
+    async fn execute(
+        &self,
+        step: &ListInfos<'a>,
+    ) -> RegularResult<Vec<ComicInfo>> {
         submit_query!(self.core, list_infos, step.spec)
     }
 }
@@ -406,7 +477,12 @@ impl<'a> Execute<MarkCoverUploaded<'a>> for RdbRepo {
     type Error = RegularError;
 
     async fn execute(&self, step: &MarkCoverUploaded<'a>) -> RegularResult<()> {
-        submit_query!(self.core, mark_cover_uploaded, step.id, step.cover_version)
+        submit_query!(
+            self.core,
+            mark_cover_uploaded,
+            step.id,
+            step.cover_version
+        )
     }
 }
 
@@ -494,7 +570,11 @@ impl<'a> Advance<MarkCoverUploaded<'a>, RdbContext> for RdbRepoTransactional {
 impl<'a> Advance<Delete<'a>, RdbContext> for RdbRepoTransactional {
     type Error = RegularError;
 
-    async fn advance(&self, context: &mut RdbContext, step: &Delete<'a>) -> RegularResult<()> {
+    async fn advance(
+        &self,
+        context: &mut RdbContext,
+        step: &Delete<'a>,
+    ) -> RegularResult<()> {
         delete(context.conn(), step.id).await
     }
 }
@@ -513,7 +593,9 @@ impl<'a> Advance<MarkCompleted<'a>, RdbContext> for RdbRepoTransactional {
 }
 
 #[async_trait]
-impl<'a> Advance<IncrChapterNextIndex<'a>, RdbContext> for RdbRepoTransactional {
+impl<'a> Advance<IncrChapterNextIndex<'a>, RdbContext>
+    for RdbRepoTransactional
+{
     type Error = RegularError;
 
     async fn advance(

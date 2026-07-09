@@ -3,7 +3,9 @@ mod tests;
 
 use std::collections::HashMap;
 
-use crate::complex::chapter_port::{ChapterExportComplex, ChapterPortPermComplex};
+use crate::complex::chapter_port::{
+    ChapterExportComplex, ChapterPortPermComplex,
+};
 use crate::data::chapter_port::ChapterTranslationExportVal;
 use crate::data::page_port::PageTranslationExportVal;
 use crate::data::unit_port::UnitTranslationExportVal;
@@ -11,7 +13,9 @@ use crate::model::page::PageInfo;
 use crate::model::unit::UnitInfo;
 use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
-use crate::part::repo::assignment::{AssignmentRepo, AssignmentRepoTransactional};
+use crate::part::repo::assignment::{
+    AssignmentRepo, AssignmentRepoTransactional,
+};
 use crate::part::repo::chapter::{ChapterRepo, ChapterRepoTransactional};
 use crate::part::repo::comic::{ComicRepo, ComicRepoTransactional};
 use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
@@ -52,8 +56,12 @@ where
 {
     use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
-    ChapterPortPermComplex::can_user_export(&mut repo.as_proxy(), &token.user_id, &chapter_id)
-        .await?;
+    ChapterPortPermComplex::can_user_export(
+        &mut repo.as_proxy(),
+        &token.user_id,
+        &chapter_id,
+    )
+    .await?;
 
     let chapter_info = repo
         .execute(&ChapterStep::get_info_by_id(&chapter_id, &[]))
@@ -75,7 +83,9 @@ where
             .await?;
 
         let image_url = match (page_info.image_uploaded, &page_info.image_key) {
-            (true, Some(image_key)) => image_pool.get_signed(image_key).await.ok(),
+            (true, Some(image_key)) => {
+                image_pool.get_signed(image_key).await.ok()
+            }
             _ => None,
         };
 
@@ -127,8 +137,12 @@ where
 {
     use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
-    ChapterPortPermComplex::can_user_export(&mut repo.as_proxy(), &token.user_id, &chapter_id)
-        .await?;
+    ChapterPortPermComplex::can_user_export(
+        &mut repo.as_proxy(),
+        &token.user_id,
+        &chapter_id,
+    )
+    .await?;
 
     repo.execute(&ChapterStep::get_info_by_id(&chapter_id, &[]))
         .await?;
@@ -152,7 +166,10 @@ where
     ))
 }
 
-fn make_unit_export(page_info: &PageInfo, unit_info: UnitInfo) -> UnitTranslationExportVal {
+fn make_unit_export(
+    page_info: &PageInfo,
+    unit_info: UnitInfo,
+) -> UnitTranslationExportVal {
     UnitTranslationExportVal {
         unit_id: unit_info.id,
         unit_index: unit_info.index,

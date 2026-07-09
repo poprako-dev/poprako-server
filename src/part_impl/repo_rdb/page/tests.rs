@@ -40,7 +40,10 @@ async fn page_roundtrip_reads_test_database_url() {
             Advance::advance(
                 &transactional_repo,
                 context,
-                &PageStep::set_unit_counters(&page_fixture.page_form.id, unit_counters),
+                &PageStep::set_unit_counters(
+                    &page_fixture.page_form.id,
+                    unit_counters,
+                ),
             )
             .await?;
 
@@ -57,7 +60,10 @@ async fn page_roundtrip_reads_test_database_url() {
 
     let page_infos = Execute::execute(
         &repo,
-        &PageStep::list_infos_by_chapter_id(&page_fixture.chapter_form.id, page),
+        &PageStep::list_infos_by_chapter_id(
+            &page_fixture.chapter_form.id,
+            page,
+        ),
     )
     .await
     .ok()

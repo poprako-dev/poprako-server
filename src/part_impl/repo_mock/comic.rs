@@ -11,12 +11,14 @@ use crate::model::user::UserInfo;
 use crate::model::workset::WorksetInfo;
 use crate::part::repo::comic::{ComicRepo, ComicRepoTransactional};
 use crate::part::repo::step::comic::{
-    Create, Delete, GetInfoById, GetInfoExcluded, IncrChapterNextIndex, ListInfos,
-    ListInfosExcluded, MarkCompleted, MarkCoverUploaded, ReserveCover, TouchLastActive,
-    UpdateChapterCount, UpdateInfo,
+    Create, Delete, GetInfoById, GetInfoExcluded, IncrChapterNextIndex,
+    ListInfos, ListInfosExcluded, MarkCompleted, MarkCoverUploaded,
+    ReserveCover, TouchLastActive, UpdateChapterCount, UpdateInfo,
 };
 use crate::part::shared::execute::Execute;
-use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactional, expected, now};
+use crate::part_impl::repo_mock::{
+    Mock, MockContext, MockState, MockTransactional, expected, now,
+};
 use crate::result::{RegularError, RegularResult};
 use crate::value::comic::ComicInclOpt;
 use crate::value::incl::expand_incl_opts;
@@ -34,7 +36,10 @@ fn find_workset(state: &MockState, workset_id: &str) -> Option<WorksetInfo> {
         .cloned()
 }
 
-fn find_team_for_workset(state: &MockState, workset: &WorksetInfo) -> Option<TeamInfo> {
+fn find_team_for_workset(
+    state: &MockState,
+    workset: &WorksetInfo,
+) -> Option<TeamInfo> {
     state
         .teams
         .iter()
@@ -50,14 +55,22 @@ fn find_user(state: &MockState, user_id: &str) -> Option<UserInfo> {
         .cloned()
 }
 
-fn apply_workset_incl(state: &MockState, comic_info: &mut ComicInfo, include_workset: bool) {
+fn apply_workset_incl(
+    state: &MockState,
+    comic_info: &mut ComicInfo,
+    include_workset: bool,
+) {
     comic_info.workset = None;
     if include_workset {
         comic_info.workset = find_workset(state, &comic_info.workset_id);
     }
 }
 
-fn apply_team_incl(state: &MockState, comic_info: &mut ComicInfo, include_team: bool) {
+fn apply_team_incl(
+    state: &MockState,
+    comic_info: &mut ComicInfo,
+    include_team: bool,
+) {
     comic_info.team = None;
 
     if !include_team {
@@ -71,28 +84,46 @@ fn apply_team_incl(state: &MockState, comic_info: &mut ComicInfo, include_team: 
     comic_info.team = find_team_for_workset(state, workset_info);
 }
 
-fn apply_creator_incl(state: &MockState, comic_info: &mut ComicInfo, include_creator: bool) {
+fn apply_creator_incl(
+    state: &MockState,
+    comic_info: &mut ComicInfo,
+    include_creator: bool,
+) {
     comic_info.creator = None;
     if include_creator {
         comic_info.creator = find_user(state, &comic_info.creator_id);
     }
 }
 
-fn apply_comic_incls(state: &MockState, comic_info: &mut ComicInfo, incl_opt: &[ComicInclOpt]) {
+fn apply_comic_incls(
+    state: &MockState,
+    comic_info: &mut ComicInfo,
+    incl_opt: &[ComicInclOpt],
+) {
     comic_info.workset = None;
     comic_info.team = None;
     comic_info.creator = None;
 
     for incl_opt in expand_incl_opts(incl_opt) {
         match incl_opt {
-            ComicInclOpt::Workset => apply_workset_incl(state, comic_info, true),
-            ComicInclOpt::WorksetTeam => apply_team_incl(state, comic_info, true),
-            ComicInclOpt::Creator => apply_creator_incl(state, comic_info, true),
+            ComicInclOpt::Workset => {
+                apply_workset_incl(state, comic_info, true)
+            }
+            ComicInclOpt::WorksetTeam => {
+                apply_team_incl(state, comic_info, true)
+            }
+            ComicInclOpt::Creator => {
+                apply_creator_incl(state, comic_info, true)
+            }
         }
     }
 }
 
-fn comic_matches_kind(state: &MockState, comic_info: &ComicInfo, kind: &ComicListKind) -> bool {
+fn comic_matches_kind(
+    state: &MockState,
+    comic_info: &ComicInfo,
+    kind: &ComicListKind,
+) -> bool {
     match kind {
         ComicListKind::All => true,
         ComicListKind::Completed => comic_info.is_completed,
@@ -109,18 +140,24 @@ fn comic_matches_kind(state: &MockState, comic_info: &ComicInfo, kind: &ComicLis
                 .chapters
                 .iter()
                 .find(|chapter_info| {
-                    chapter_info.comic_id == comic_info.id && chapter_info.is_pinned
+                    chapter_info.comic_id == comic_info.id
+                        && chapter_info.is_pinned
                 })
-                .map(|chapter_info| chapter_info.stages.matches_filter(*stage_mask))
+                .map(|chapter_info| {
+                    chapter_info.stages.matches_filter(*stage_mask)
+                })
                 .unwrap_or(false)
         }
     }
 }
 
 fn comic_matches_fuzzy(comic_info: &ComicInfo, fuzzy_title: &str) -> bool {
-    let composed_title =
-        ComicComplex::compose_title(comic_info.index, &comic_info.author, &comic_info.title)
-            .to_lowercase();
+    let composed_title = ComicComplex::compose_title(
+        comic_info.index,
+        &comic_info.author,
+        &comic_info.title,
+    )
+    .to_lowercase();
 
     let fuzzy_title = fuzzy_title.to_lowercase();
 
@@ -161,7 +198,10 @@ fn mark_comic_cover_uploaded(
 impl<'a> Execute<GetInfoById<'a>> for Mock {
     type Error = RegularError;
 
-    async fn execute(&self, step: &GetInfoById<'a>) -> Result<ComicInfo, Self::Error> {
+    async fn execute(
+        &self,
+        step: &GetInfoById<'a>,
+    ) -> Result<ComicInfo, Self::Error> {
         let state = self.state.lock().unwrap();
 
         let mut info = state
@@ -181,7 +221,10 @@ impl<'a> Execute<GetInfoById<'a>> for Mock {
 impl<'a> Execute<ListInfos<'a>> for Mock {
     type Error = RegularError;
 
-    async fn execute(&self, step: &ListInfos<'a>) -> Result<Vec<ComicInfo>, Self::Error> {
+    async fn execute(
+        &self,
+        step: &ListInfos<'a>,
+    ) -> Result<Vec<ComicInfo>, Self::Error> {
         let state = self.state.lock().unwrap();
         let mut comics = state
             .comics
@@ -243,7 +286,10 @@ impl<'a> Execute<UpdateInfo<'a>> for Mock {
 impl<'a> Execute<MarkCoverUploaded<'a>> for Mock {
     type Error = RegularError;
 
-    async fn execute(&self, step: &MarkCoverUploaded<'a>) -> Result<(), Self::Error> {
+    async fn execute(
+        &self,
+        step: &MarkCoverUploaded<'a>,
+    ) -> Result<(), Self::Error> {
         let mut state = self.state.lock().unwrap();
         mark_comic_cover_uploaded(&mut state, step.id, step.cover_version)
     }
@@ -361,7 +407,9 @@ impl<'a> Advance<ListInfosExcluded<'a>, MockContext> for MockTransactional {
                     .map(|kw| comic_matches_fuzzy(comic, kw))
                     .unwrap_or(true)
             })
-            .filter(|comic| comic_matches_kind(&context.state, comic, &step.spec.kind))
+            .filter(|comic| {
+                comic_matches_kind(&context.state, comic, &step.spec.kind)
+            })
             .cloned()
             .collect::<Vec<_>>();
         comics.sort_by(|left, right| {
@@ -403,7 +451,11 @@ impl<'a> Advance<ReserveCover<'a>, MockContext> for MockTransactional {
             .find(|comic| comic.id == step.id)
             .ok_or_else(|| expected("error-comic-not-found"))?;
         let cover_version = comic.cover_version + 1;
-        let object_key = ComicComplex::gen_cover_key(step.id, cover_version, step.file_extension);
+        let object_key = ComicComplex::gen_cover_key(
+            step.id,
+            cover_version,
+            step.file_extension,
+        );
         let prev_object_key = comic.cover_key.clone();
         comic.cover_key = Some(object_key.clone());
         comic.cover_uploaded = false;
@@ -426,7 +478,11 @@ impl<'a> Advance<MarkCoverUploaded<'a>, MockContext> for MockTransactional {
         context: &mut MockContext,
         step: &MarkCoverUploaded<'a>,
     ) -> Result<(), Self::Error> {
-        mark_comic_cover_uploaded(&mut context.state, step.id, step.cover_version)
+        mark_comic_cover_uploaded(
+            &mut context.state,
+            step.id,
+            step.cover_version,
+        )
     }
 }
 

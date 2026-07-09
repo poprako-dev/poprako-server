@@ -31,7 +31,10 @@ pub struct PageInfoVal {
 
 impl PageInfoVal {
     /// Converts a [`PageInfo`] into a presentation-ready value.
-    pub async fn from_model<P>(image_pool: &P, model: PageInfo) -> RegularResult<Self>
+    pub async fn from_model<P>(
+        image_pool: &P,
+        model: PageInfo,
+    ) -> RegularResult<Self>
     where
         P: ImagePool,
     {

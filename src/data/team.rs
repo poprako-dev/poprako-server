@@ -39,7 +39,10 @@ impl TeamInfoVal {
     /// from [`OffsetDateTime`] to Unix milliseconds.
     ///
     /// [`OffsetDateTime`]: time::OffsetDateTime
-    pub async fn from_model<P>(image_pool: &P, model: TeamInfo) -> RegularResult<Self>
+    pub async fn from_model<P>(
+        image_pool: &P,
+        model: TeamInfo,
+    ) -> RegularResult<Self>
     where
         P: ImagePool,
     {

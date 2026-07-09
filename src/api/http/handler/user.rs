@@ -17,8 +17,8 @@ use crate::api::http::result::HttpResult;
 use crate::api::http::result::no_content;
 use crate::api::http::state::AppHarn;
 use crate::data::user::{
-    MarkUserAvatarUploadedData, ReserveUserAvatarData, ReserveUserAvatarVal, UpdateUserInfoData,
-    UserInfoVal,
+    MarkUserAvatarUploadedData, ReserveUserAvatarData, ReserveUserAvatarVal,
+    UpdateUserInfoData, UserInfoVal,
 };
 use crate::model::user::UserToken;
 use crate::usecase;
@@ -103,7 +103,8 @@ pub async fn update_info(
 ) -> HttpNoContent {
     ensure_path_matches_body_id(&user_id, &data.id)?;
 
-    usecase::user::update_info(harn.drive(), harn.repo(), user_token, data).await?;
+    usecase::user::update_info(harn.drive(), harn.repo(), user_token, data)
+        .await?;
 
     no_content()
 }
@@ -126,7 +127,14 @@ pub async fn delete(
     Path(user_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
-    usecase::user::delete(harn.drive(), harn.repo(), harn.prom(), user_token, user_id).await?;
+    usecase::user::delete(
+        harn.drive(),
+        harn.repo(),
+        harn.prom(),
+        user_token,
+        user_id,
+    )
+    .await?;
     no_content()
 }
 
@@ -182,8 +190,14 @@ pub async fn mark_avatar_uploaded(
     Extension(user_token): Extension<UserToken>,
     Json(data): Json<MarkUserAvatarUploadedData>,
 ) -> HttpNoContent {
-    usecase::user::mark_avatar_uploaded(harn.drive(), harn.repo(), user_token, user_id, data)
-        .await?;
+    usecase::user::mark_avatar_uploaded(
+        harn.drive(),
+        harn.repo(),
+        user_token,
+        user_id,
+        data,
+    )
+    .await?;
 
     no_content()
 }

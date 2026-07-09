@@ -38,7 +38,8 @@ fn ensure_snowflake_init() {
     // Only init snowflake instance once.
     static INIT_GURAD: OnceLock<()> = OnceLock::new();
 
-    INIT_GURAD.get_or_init(|| k_snowflake::set_instance(load_snowflake_node_id()));
+    INIT_GURAD
+        .get_or_init(|| k_snowflake::set_instance(load_snowflake_node_id()));
 }
 
 /// Load the snowflake node ID from the `POPRAKO_SNOWFLAKE_NODE_ID` env var.

@@ -3,7 +3,9 @@
 use poprako_transactional::advance::Advance;
 use poprako_transactional::drive::Drive;
 
-use crate::model::member_invitation::{MemberInvitationForm, MemberInvitationListSpec};
+use crate::model::member_invitation::{
+    MemberInvitationForm, MemberInvitationListSpec,
+};
 use crate::part::repo::step::member_invitation::MemberInvitationStep;
 use crate::part::shared::execute::Execute;
 use crate::part_impl::drive_rdb::RdbDrive;
@@ -50,7 +52,9 @@ async fn member_invitation_roundtrip_reads_test_database_url() {
             Advance::advance(
                 &transactional_repo,
                 context,
-                &MemberInvitationStep::mark_pending_as_used(&member_invitation_form.id),
+                &MemberInvitationStep::mark_pending_as_used(
+                    &member_invitation_form.id,
+                ),
             )
             .await?;
 

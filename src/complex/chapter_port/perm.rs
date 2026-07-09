@@ -1,7 +1,8 @@
 use poprako_util::i18n::trl;
 
 use crate::complex::util::{
-    check_user_is_chapter_assignee, check_user_is_chapter_translator_or_proofreader,
+    check_user_is_chapter_assignee,
+    check_user_is_chapter_translator_or_proofreader,
     check_user_is_team_member_by_chapter,
 };
 use crate::part::repo::step::assignment::GetInfoByChapterIdAndUserId;
@@ -26,10 +27,17 @@ impl ChapterPortPermComplex {
         P: for<'a> ProxyExecute<ChapterGetInfoById<'a>, Error = RegularError>
             + for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RegularError>
             + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RegularError>
-            + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RegularError>
-            + for<'a> ProxyExecute<GetInfoByChapterIdAndUserId<'a>, Error = RegularError>,
+            + for<'a> ProxyExecute<
+                FindInfoByUserIdAndTeamId<'a>,
+                Error = RegularError,
+            > + for<'a> ProxyExecute<
+                GetInfoByChapterIdAndUserId<'a>,
+                Error = RegularError,
+            >,
     {
-        let member_check = check_user_is_team_member_by_chapter(proxy, user_id, chapter_id).await;
+        let member_check =
+            check_user_is_team_member_by_chapter(proxy, user_id, chapter_id)
+                .await;
 
         if member_check.is_ok() {
             return Ok(());
@@ -52,9 +60,16 @@ impl ChapterPortPermComplex {
         chapter_id: &str,
     ) -> RegularResult<()>
     where
-        P: for<'a> ProxyExecute<GetInfoByChapterIdAndUserId<'a>, Error = RegularError>,
+        P: for<'a> ProxyExecute<
+                GetInfoByChapterIdAndUserId<'a>,
+                Error = RegularError,
+            >,
     {
-        match check_user_is_chapter_translator_or_proofreader(proxy, user_id, chapter_id).await {
+        match check_user_is_chapter_translator_or_proofreader(
+            proxy, user_id, chapter_id,
+        )
+        .await
+        {
             Ok(()) => Ok(()),
             Err(RegularError::Expected {
                 variant: ExpectedVariant::Perm,

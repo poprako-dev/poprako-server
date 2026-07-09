@@ -127,7 +127,8 @@ async fn develop_dispatches_user_signup() {
 
     mock.seed_team(team_info());
 
-    let develop = AsyncEffectDevelop::<MockContext, Mock>::new(Arc::clone(&mock), 8);
+    let develop =
+        AsyncEffectDevelop::<MockContext, Mock>::new(Arc::clone(&mock), 8);
 
     EffectDevelop::develop(
         &develop,
@@ -164,7 +165,8 @@ async fn develop_dispatches_chapter_workflow_completed() {
         RoleMask::from(RoleField::REVIEWER),
     ));
 
-    let develop = AsyncEffectDevelop::<MockContext, Mock>::new(Arc::clone(&mock), 8);
+    let develop =
+        AsyncEffectDevelop::<MockContext, Mock>::new(Arc::clone(&mock), 8);
 
     EffectDevelop::develop(
         &develop,
@@ -200,7 +202,8 @@ async fn develop_dispatches_chapter_published() {
         RoleMask::from(RoleField::REVIEWER),
     ));
 
-    let develop = AsyncEffectDevelop::<MockContext, Mock>::new(Arc::clone(&mock), 8);
+    let develop =
+        AsyncEffectDevelop::<MockContext, Mock>::new(Arc::clone(&mock), 8);
 
     EffectDevelop::develop(
         &develop,

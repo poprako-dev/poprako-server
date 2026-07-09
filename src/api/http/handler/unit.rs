@@ -16,7 +16,8 @@ use crate::api::http::result::HttpBody;
 use crate::api::http::result::HttpResult;
 use crate::api::http::state::AppHarn;
 use crate::data::unit::{
-    ListPageUnitInfosData, ListPageUnitInfosVal, SavePageUnitsData, SavePageUnitsVal,
+    ListPageUnitInfosData, ListPageUnitInfosVal, SavePageUnitsData,
+    SavePageUnitsVal,
 };
 use crate::model::user::UserToken;
 use crate::usecase;

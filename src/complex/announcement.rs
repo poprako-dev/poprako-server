@@ -1,6 +1,8 @@
 //! Complex-domain opers for team announcements.
 
-use crate::complex::util::{check_user_is_team_admin, check_user_is_team_member};
+use crate::complex::util::{
+    check_user_is_team_admin, check_user_is_team_member,
+};
 use crate::part::repo::step::member::FindInfoByUserIdAndTeamId;
 use crate::part::shared::proxy::ProxyExecute;
 use crate::result::{RegularError, RegularResult};
@@ -27,7 +29,10 @@ impl AnnouncementPermComplex {
         team_id: &str,
     ) -> RegularResult<()>
     where
-        P: for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RegularError>,
+        P: for<'a> ProxyExecute<
+                FindInfoByUserIdAndTeamId<'a>,
+                Error = RegularError,
+            >,
     {
         check_user_is_team_member(proxy, user_id, team_id).await
     }
@@ -39,7 +44,10 @@ impl AnnouncementPermComplex {
         team_id: &str,
     ) -> RegularResult<()>
     where
-        P: for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RegularError>,
+        P: for<'a> ProxyExecute<
+                FindInfoByUserIdAndTeamId<'a>,
+                Error = RegularError,
+            >,
     {
         check_user_is_team_admin(proxy, user_id, team_id).await
     }

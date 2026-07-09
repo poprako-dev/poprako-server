@@ -119,7 +119,9 @@ impl PageStep {
     }
 
     /// Constructs a step to list all pages by chapter ID.
-    pub fn list_all_infos_by_chapter_id<'a>(chapter_id: &'a str) -> ListAllInfosByChapterId<'a> {
+    pub fn list_all_infos_by_chapter_id<'a>(
+        chapter_id: &'a str,
+    ) -> ListAllInfosByChapterId<'a> {
         ListAllInfosByChapterId { chapter_id }
     }
 
@@ -129,22 +131,33 @@ impl PageStep {
     }
 
     /// Constructs a step to reserve one page image.
-    pub fn reserve_image<'a>(id: &'a str, file_ext: &'a str) -> ReserveImage<'a> {
+    pub fn reserve_image<'a>(
+        id: &'a str,
+        file_ext: &'a str,
+    ) -> ReserveImage<'a> {
         ReserveImage { id, file_ext }
     }
 
     /// Constructs a step to mark a page image uploaded.
-    pub fn mark_image_uploaded<'a>(id: &'a str, image_version: i64) -> MarkImageUploaded<'a> {
+    pub fn mark_image_uploaded<'a>(
+        id: &'a str,
+        image_version: i64,
+    ) -> MarkImageUploaded<'a> {
         MarkImageUploaded { id, image_version }
     }
 
     /// Constructs a step to overwrite unit counters for one page.
-    pub fn set_unit_counters<'a>(id: &'a str, counters: UnitCounters) -> SetUnitCounters<'a> {
+    pub fn set_unit_counters<'a>(
+        id: &'a str,
+        counters: UnitCounters,
+    ) -> SetUnitCounters<'a> {
         SetUnitCounters { id, counters }
     }
 
     /// Constructs a step to delete all pages under one chapter.
-    pub fn delete_by_chapter_id<'a>(chapter_id: &'a str) -> DeleteByChapterId<'a> {
+    pub fn delete_by_chapter_id<'a>(
+        chapter_id: &'a str,
+    ) -> DeleteByChapterId<'a> {
         DeleteByChapterId { chapter_id }
     }
 }

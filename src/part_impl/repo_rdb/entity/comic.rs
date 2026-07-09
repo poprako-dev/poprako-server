@@ -194,7 +194,11 @@ impl<'a> From<&'a ComicForm> for ComicEntry<'a> {
             f_title: &form.title,
             f_author: &form.author,
             f_description: form.description.as_deref(),
-            f_composed_title: ComicComplex::compose_title(form.index, &form.author, &form.title),
+            f_composed_title: ComicComplex::compose_title(
+                form.index,
+                &form.author,
+                &form.title,
+            ),
             f_creator_id: &form.creator_id,
             f_last_active_at: OffsetDateTime::now_utc(),
             f_created_at: OffsetDateTime::now_utc(),

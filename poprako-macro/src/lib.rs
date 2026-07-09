@@ -1,6 +1,8 @@
 use proc_macro::TokenStream;
 
-use syn::{Data, DeriveInput, Error, Fields, FieldsNamed, Result, parse_macro_input};
+use syn::{
+    Data, DeriveInput, Error, Fields, FieldsNamed, Result, parse_macro_input,
+};
 
 /// Appends `pub offset: u64` and `pub limit: u64` fields to a struct.
 ///

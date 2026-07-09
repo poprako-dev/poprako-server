@@ -6,14 +6,20 @@ use diesel_async::RunQueryDsl;
 
 use poprako_transactional::advance::Advance;
 
-use crate::model::announcement::{AnnouncementForm, AnnouncementInfo, AnnouncementListSpec};
-use crate::part::repo::announcement::{AnnouncementRepo, AnnouncementRepoTransactional};
+use crate::model::announcement::{
+    AnnouncementForm, AnnouncementInfo, AnnouncementListSpec,
+};
+use crate::part::repo::announcement::{
+    AnnouncementRepo, AnnouncementRepoTransactional,
+};
 use crate::part::repo::step::announcement::{Create, ListInfos};
 use crate::part::shared::execute::Execute;
 use crate::part_impl::rdb_core::RdbConn;
 use crate::part_impl::rdb_core::RdbContext;
 use crate::part_impl::rdb_core::result::diesel;
-use crate::part_impl::repo_rdb::entity::announcement::{AnnouncementEntry, AnnouncementRow};
+use crate::part_impl::repo_rdb::entity::announcement::{
+    AnnouncementEntry, AnnouncementRow,
+};
 use crate::part_impl::repo_rdb::incl;
 use crate::part_impl::repo_rdb::{RdbRepo, RdbRepoTransactional};
 use crate::result::{RegularError, RegularResult};
@@ -38,14 +44,23 @@ async fn list_infos(
         .await
         .map_err(diesel)?;
 
-    let mut infos: Vec<AnnouncementInfo> = rows.into_iter().map(Into::into).collect();
+    let mut infos: Vec<AnnouncementInfo> =
+        rows.into_iter().map(Into::into).collect();
 
-    incl::announcement::populate_announcement_incls(conn, &mut infos, &spec.incl_opt).await?;
+    incl::announcement::populate_announcement_incls(
+        conn,
+        &mut infos,
+        &spec.incl_opt,
+    )
+    .await?;
 
     Ok(infos)
 }
 
-async fn create(conn: &mut RdbConn, form: &AnnouncementForm) -> RegularResult<AnnouncementInfo> {
+async fn create(
+    conn: &mut RdbConn,
+    form: &AnnouncementForm,
+) -> RegularResult<AnnouncementInfo> {
     let entry = AnnouncementEntry::from(form);
 
     let row: AnnouncementRow = diesel::insert_into(t_announcement)
@@ -62,7 +77,10 @@ async fn create(conn: &mut RdbConn, form: &AnnouncementForm) -> RegularResult<An
 impl<'a> Execute<ListInfos<'a>> for RdbRepo {
     type Error = RegularError;
 
-    async fn execute(&self, step: &ListInfos<'a>) -> RegularResult<Vec<AnnouncementInfo>> {
+    async fn execute(
+        &self,
+        step: &ListInfos<'a>,
+    ) -> RegularResult<Vec<AnnouncementInfo>> {
         submit_query!(self.core, list_infos, step.spec)
     }
 }

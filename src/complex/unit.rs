@@ -5,7 +5,8 @@ use std::collections::HashSet;
 use poprako_util::i18n::trl;
 
 use crate::complex::util::{
-    check_user_is_chapter_assignee, check_user_is_chapter_translator_or_proofreader,
+    check_user_is_chapter_assignee,
+    check_user_is_chapter_translator_or_proofreader,
     check_user_is_team_member_by_chapter,
 };
 use crate::model::unit::{
@@ -100,7 +101,10 @@ impl UnitComplex {
     /// Each save places its unit before `before_id`; `None` or a `before_id`
     /// absent from the surviving order appends the unit to the tail. Delete
     /// removes the unit. Units untouched by the diff keep their relative order.
-    pub fn apply_opers_to_order(opers: &[UnitOper], mut current_order: Vec<String>) -> Vec<String> {
+    pub fn apply_opers_to_order(
+        opers: &[UnitOper],
+        mut current_order: Vec<String>,
+    ) -> Vec<String> {
         for oper in opers {
             match oper {
                 UnitOper::Save {
@@ -127,10 +131,11 @@ impl UnitComplex {
         final_order: &[String],
         current_indexes: &[UnitIndex],
     ) -> Vec<UnitIndexUpdate> {
-        let current_map: std::collections::HashMap<&String, i32> = current_indexes
-            .iter()
-            .map(|unit_index| (&unit_index.id, unit_index.index))
-            .collect();
+        let current_map: std::collections::HashMap<&String, i32> =
+            current_indexes
+                .iter()
+                .map(|unit_index| (&unit_index.id, unit_index.index))
+                .collect();
 
         final_order
             .iter()
@@ -151,7 +156,9 @@ impl UnitComplex {
     }
 
     /// Builds compact index updates by compacting the current server order.
-    pub fn build_index_updates(current_indexes: Vec<UnitIndex>) -> Vec<UnitIndexUpdate> {
+    pub fn build_index_updates(
+        current_indexes: Vec<UnitIndex>,
+    ) -> Vec<UnitIndexUpdate> {
         let mut sorted_indexes = current_indexes;
 
         sorted_indexes.sort_by(|left, right| {
@@ -178,10 +185,17 @@ impl UnitPermComplex {
         P: for<'a> ProxyExecute<ChapterGetInfoById<'a>, Error = RegularError>
             + for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RegularError>
             + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RegularError>
-            + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RegularError>
-            + for<'a> ProxyExecute<GetInfoByChapterIdAndUserId<'a>, Error = RegularError>,
+            + for<'a> ProxyExecute<
+                FindInfoByUserIdAndTeamId<'a>,
+                Error = RegularError,
+            > + for<'a> ProxyExecute<
+                GetInfoByChapterIdAndUserId<'a>,
+                Error = RegularError,
+            >,
     {
-        let member_check = check_user_is_team_member_by_chapter(proxy, user_id, chapter_id).await;
+        let member_check =
+            check_user_is_team_member_by_chapter(proxy, user_id, chapter_id)
+                .await;
 
         if member_check.is_ok() {
             return Ok(());
@@ -204,9 +218,16 @@ impl UnitPermComplex {
         chapter_id: &str,
     ) -> RegularResult<()>
     where
-        P: for<'a> ProxyExecute<GetInfoByChapterIdAndUserId<'a>, Error = RegularError>,
+        P: for<'a> ProxyExecute<
+                GetInfoByChapterIdAndUserId<'a>,
+                Error = RegularError,
+            >,
     {
-        match check_user_is_chapter_translator_or_proofreader(proxy, user_id, chapter_id).await {
+        match check_user_is_chapter_translator_or_proofreader(
+            proxy, user_id, chapter_id,
+        )
+        .await
+        {
             Ok(()) => Ok(()),
             Err(RegularError::Expected {
                 variant: ExpectedVariant::Perm,
@@ -237,7 +258,11 @@ fn validate_optional_id(id: &Option<String>) -> RegularResult<()> {
     accept(())
 }
 
-fn insert_before(order: &mut Vec<String>, id: &str, before_id: &Option<String>) {
+fn insert_before(
+    order: &mut Vec<String>,
+    id: &str,
+    before_id: &Option<String>,
+) {
     let Some(before_id) = before_id else {
         order.push(id.to_string());
 
@@ -262,7 +287,9 @@ fn insert_before(order: &mut Vec<String>, id: &str, before_id: &Option<String>) 
     order.insert(position, id.to_string());
 }
 
-fn compact_index_updates_from_order(unit_indexes: Vec<UnitIndex>) -> Vec<UnitIndexUpdate> {
+fn compact_index_updates_from_order(
+    unit_indexes: Vec<UnitIndex>,
+) -> Vec<UnitIndexUpdate> {
     unit_indexes
         .into_iter()
         .enumerate()

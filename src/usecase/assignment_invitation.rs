@@ -8,14 +8,17 @@ use poprako_util::page::Page;
 use crate::complex::assignment::{AssignmentComplex, AssignmentPermComplex};
 use crate::data::assignment::AssignmentInfoVal;
 use crate::data::assignment_invitation::{
-    AssignmentInvitationInfoVal, CreateAssignmentInvitationData, CreateAssignmentInvitationVal,
-    JoinAssignmentInvitationData, ListAssignmentInvitationInfosData,
+    AssignmentInvitationInfoVal, CreateAssignmentInvitationData,
+    CreateAssignmentInvitationVal, JoinAssignmentInvitationData,
+    ListAssignmentInvitationInfosData,
 };
 use crate::model::assignment::AssignmentForm;
 use crate::model::assignment_invitation::AssignmentInvitationForm;
 use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
-use crate::part::repo::assignment::{AssignmentRepo, AssignmentRepoTransactional};
+use crate::part::repo::assignment::{
+    AssignmentRepo, AssignmentRepoTransactional,
+};
 use crate::part::repo::assignment_invitation::{
     AssignmentInvitationRepo, AssignmentInvitationRepoTransactional,
 };
@@ -50,12 +53,17 @@ pub async fn list_infos<C, R>(
 where
     R: AssignmentInvitationRepo<C> + AssignmentRepo<C> + Sync,
     <R as DeriveTransactional>::Transactional:
-        AssignmentInvitationRepoTransactional<C> + AssignmentRepoTransactional<C>,
+        AssignmentInvitationRepoTransactional<C>
+            + AssignmentRepoTransactional<C>,
 {
     use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
-    AssignmentPermComplex::can_user_admin(&mut repo.as_proxy(), &token.user_id, &data.chapter_id)
-        .await?;
+    AssignmentPermComplex::can_user_admin(
+        &mut repo.as_proxy(),
+        &token.user_id,
+        &data.chapter_id,
+    )
+    .await?;
 
     let assignment_invitation_infos = repo
         .execute(&AssignmentInvitationStep::list_infos(
@@ -87,26 +95,38 @@ where
     D: Drive<C>,
     D::Error: Into<RegularError>,
     C: Send,
-    R: AssignmentInvitationRepo<C> + AssignmentRepo<C> + UserRepo<C> + Send + Sync,
-    <R as DeriveTransactional>::Transactional: AssignmentInvitationRepoTransactional<C>
-        + AssignmentRepoTransactional<C>
-        + UserRepoTransactional<C>
+    R: AssignmentInvitationRepo<C>
+        + AssignmentRepo<C>
+        + UserRepo<C>
         + Send
         + Sync,
+    <R as DeriveTransactional>::Transactional:
+        AssignmentInvitationRepoTransactional<C>
+            + AssignmentRepoTransactional<C>
+            + UserRepoTransactional<C>
+            + Send
+            + Sync,
 {
     validate_roles(data.roles)?;
 
     use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
-    AssignmentPermComplex::can_user_admin(&mut repo.as_proxy(), &token.user_id, &data.chapter_id)
-        .await?;
+    AssignmentPermComplex::can_user_admin(
+        &mut repo.as_proxy(),
+        &token.user_id,
+        &data.chapter_id,
+    )
+    .await?;
 
     let (assignment_invitation_id, code) = drive
         .with_context(async move |context| {
             let repo = repo.derive_transactional().await;
 
             let invitee_user_info = repo
-                .advance(context, &UserStep::find_info_by_qid(&data.invitee_qid))
+                .advance(
+                    context,
+                    &UserStep::find_info_by_qid(&data.invitee_qid),
+                )
                 .await?;
 
             if let Some(invitee_user_info) = invitee_user_info {
@@ -139,7 +159,9 @@ where
             let assignment_invitation_info = repo
                 .advance(
                     context,
-                    &AssignmentInvitationStep::create(&assignment_invitation_form),
+                    &AssignmentInvitationStep::create(
+                        &assignment_invitation_form,
+                    ),
                 )
                 .await?;
 
@@ -158,14 +180,22 @@ where
 }
 
 /// Deletes an assignment invitation.
-pub async fn delete<D, C, R>(drive: &D, repo: &R, token: UserToken, id: String) -> RegularResult<()>
+pub async fn delete<D, C, R>(
+    drive: &D,
+    repo: &R,
+    token: UserToken,
+    id: String,
+) -> RegularResult<()>
 where
     D: Drive<C>,
     D::Error: Into<RegularError>,
     C: Send,
     R: AssignmentInvitationRepo<C> + AssignmentRepo<C> + Send + Sync,
     <R as DeriveTransactional>::Transactional:
-        AssignmentInvitationRepoTransactional<C> + AssignmentRepoTransactional<C> + Send + Sync,
+        AssignmentInvitationRepoTransactional<C>
+            + AssignmentRepoTransactional<C>
+            + Send
+            + Sync,
 {
     let assignment_invitation_info = repo
         .execute(&AssignmentInvitationStep::get_info_by_id(&id))
@@ -216,15 +246,16 @@ where
         + WorksetRepo<C>
         + Send
         + Sync,
-    <R as DeriveTransactional>::Transactional: AssignmentInvitationRepoTransactional<C>
-        + AssignmentRepoTransactional<C>
-        + UserRepoTransactional<C>
-        + MemberRepoTransactional<C>
-        + ChapterRepoTransactional<C>
-        + ComicRepoTransactional<C>
-        + WorksetRepoTransactional<C>
-        + Send
-        + Sync,
+    <R as DeriveTransactional>::Transactional:
+        AssignmentInvitationRepoTransactional<C>
+            + AssignmentRepoTransactional<C>
+            + UserRepoTransactional<C>
+            + MemberRepoTransactional<C>
+            + ChapterRepoTransactional<C>
+            + ComicRepoTransactional<C>
+            + WorksetRepoTransactional<C>
+            + Send
+            + Sync,
     I: ImagePool,
 {
     let current_user_id = token.user_id;
@@ -234,13 +265,18 @@ where
             let repo = repo.derive_transactional().await;
 
             let current_user_info = repo
-                .advance(context, &UserStep::get_info_excluded(&current_user_id))
+                .advance(
+                    context,
+                    &UserStep::get_info_excluded(&current_user_id),
+                )
                 .await?;
 
             let assignment_invitation_info = repo
                 .advance(
                     context,
-                    &AssignmentInvitationStep::get_info_by_code_excluded(&data.code),
+                    &AssignmentInvitationStep::get_info_by_code_excluded(
+                        &data.code,
+                    ),
                 )
                 .await?;
 
@@ -253,7 +289,10 @@ where
             let chapter_info = repo
                 .advance(
                     context,
-                    &ChapterStep::get_info_by_id(&assignment_invitation_info.chapter_id, &[]),
+                    &ChapterStep::get_info_by_id(
+                        &assignment_invitation_info.chapter_id,
+                        &[],
+                    ),
                 )
                 .await?;
 
@@ -308,24 +347,34 @@ where
                         &existing_assignment_info,
                         assignment_invitation_info.roles,
                     );
-                    repo.advance(context, &AssignmentStep::put_roles(&assignment_role_update))
-                        .await?
+                    repo.advance(
+                        context,
+                        &AssignmentStep::put_roles(&assignment_role_update),
+                    )
+                    .await?
                 }
                 None => {
                     let assignment_form = AssignmentForm {
                         id: AssignmentComplex::gen_id(),
-                        chapter_id: assignment_invitation_info.chapter_id.clone(),
+                        chapter_id: assignment_invitation_info
+                            .chapter_id
+                            .clone(),
                         user_id: current_user_id,
                         roles: assignment_invitation_info.roles,
                     };
-                    repo.advance(context, &AssignmentStep::create(&assignment_form))
-                        .await?
+                    repo.advance(
+                        context,
+                        &AssignmentStep::create(&assignment_form),
+                    )
+                    .await?
                 }
             };
 
             repo.advance(
                 context,
-                &AssignmentInvitationStep::mark_pending_as_used(&assignment_invitation_info.id),
+                &AssignmentInvitationStep::mark_pending_as_used(
+                    &assignment_invitation_info.id,
+                ),
             )
             .await?;
 

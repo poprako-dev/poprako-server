@@ -127,7 +127,10 @@ impl AssignmentStep {
     }
 
     /// Constructs a step to fetch one assignment by ID.
-    pub fn get_info_by_id<'a>(id: &'a str, incl_opt: &'a [AssignmentInclOpt]) -> GetInfoById<'a> {
+    pub fn get_info_by_id<'a>(
+        id: &'a str,
+        incl_opt: &'a [AssignmentInclOpt],
+    ) -> GetInfoById<'a> {
         GetInfoById { id, incl_opt }
     }
 
@@ -154,7 +157,9 @@ impl AssignmentStep {
     }
 
     /// Constructs a step to delete all assignments under one chapter.
-    pub fn delete_by_chapter_id<'a>(chapter_id: &'a str) -> DeleteByChapterId<'a> {
+    pub fn delete_by_chapter_id<'a>(
+        chapter_id: &'a str,
+    ) -> DeleteByChapterId<'a> {
         DeleteByChapterId { chapter_id }
     }
 }

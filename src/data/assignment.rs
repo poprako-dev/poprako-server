@@ -51,17 +51,24 @@ impl From<AssignmentInfo> for AssignmentInfoVal {
 impl AssignmentInfoVal {
     /// Converts an assignment model into a presentation-ready value,
     /// resolving included user avatar when present.
-    pub async fn from_model<P>(image_pool: &P, model: AssignmentInfo) -> RegularResult<Self>
+    pub async fn from_model<P>(
+        image_pool: &P,
+        model: AssignmentInfo,
+    ) -> RegularResult<Self>
     where
         P: ImagePool,
     {
         let user = match model.user {
-            Some(user_info) => Some(UserInfoVal::from_model(image_pool, user_info).await?),
+            Some(user_info) => {
+                Some(UserInfoVal::from_model(image_pool, user_info).await?)
+            }
             None => None,
         };
 
         let chapter = match model.chapter {
-            Some(chapter_info) => Some(ChapterInfoVal::from_model(image_pool, chapter_info).await?),
+            Some(chapter_info) => Some(
+                ChapterInfoVal::from_model(image_pool, chapter_info).await?,
+            ),
             None => None,
         };
 

@@ -4,10 +4,13 @@ use poprako_transactional::advance::Advance;
 use poprako_transactional::drive::Drive;
 use poprako_util::i18n::trl;
 
-use crate::complex::member_invitation::{MemberInvitationComplex, MemberInvitationPermComplex};
+use crate::complex::member_invitation::{
+    MemberInvitationComplex, MemberInvitationPermComplex,
+};
 use crate::data::member_invitation::{
-    CreateMemberInvitationData, CreateMemberInvitationVal, ListMemberInvitationInfosData,
-    MemberInvitationInfoVal, UpdateMemberInvitationRolesData,
+    CreateMemberInvitationData, CreateMemberInvitationVal,
+    ListMemberInvitationInfosData, MemberInvitationInfoVal,
+    UpdateMemberInvitationRolesData,
 };
 use crate::model::member_invitation::{
     MemberInvitationForm, MemberInvitationListSpec, MemberInvitationUpdate,
@@ -43,11 +46,12 @@ where
     D::Error: Into<RegularError>,
     C: Send,
     R: MemberInvitationRepo<C> + MemberRepo<C> + UserRepo<C> + Send + Sync,
-    <R as DeriveTransactional>::Transactional: MemberInvitationRepoTransactional<C>
-        + MemberRepoTransactional<C>
-        + UserRepoTransactional<C>
-        + Send
-        + Sync,
+    <R as DeriveTransactional>::Transactional:
+        MemberInvitationRepoTransactional<C>
+            + MemberRepoTransactional<C>
+            + UserRepoTransactional<C>
+            + Send
+            + Sync,
 {
     let roles = data.roles;
 
@@ -65,7 +69,10 @@ where
             let repo = repo.derive_transactional().await;
 
             let invitee_user_info = repo
-                .advance(context, &UserStep::find_info_by_qid(&data.invitee_qid))
+                .advance(
+                    context,
+                    &UserStep::find_info_by_qid(&data.invitee_qid),
+                )
                 .await?;
 
             if let Some(invitee_user_info) = invitee_user_info {
@@ -173,7 +180,10 @@ where
     C: Send,
     R: MemberInvitationRepo<C> + MemberRepo<C> + Send + Sync,
     <R as DeriveTransactional>::Transactional:
-        MemberInvitationRepoTransactional<C> + MemberRepoTransactional<C> + Send + Sync,
+        MemberInvitationRepoTransactional<C>
+            + MemberRepoTransactional<C>
+            + Send
+            + Sync,
 {
     use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
@@ -208,18 +218,31 @@ where
 }
 
 /// Deletes an invitation.
-pub async fn delete<D, C, R>(drive: &D, repo: &R, token: UserToken, id: String) -> RegularResult<()>
+pub async fn delete<D, C, R>(
+    drive: &D,
+    repo: &R,
+    token: UserToken,
+    id: String,
+) -> RegularResult<()>
 where
     D: Drive<C>,
     D::Error: Into<RegularError>,
     C: Send,
     R: MemberInvitationRepo<C> + MemberRepo<C> + Send + Sync,
     <R as DeriveTransactional>::Transactional:
-        MemberInvitationRepoTransactional<C> + MemberRepoTransactional<C> + Send + Sync,
+        MemberInvitationRepoTransactional<C>
+            + MemberRepoTransactional<C>
+            + Send
+            + Sync,
 {
     use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
-    MemberInvitationPermComplex::can_user_delete(&mut repo.as_proxy(), &token.user_id, &id).await?;
+    MemberInvitationPermComplex::can_user_delete(
+        &mut repo.as_proxy(),
+        &token.user_id,
+        &id,
+    )
+    .await?;
 
     drive
         .with_context(async move |context| {

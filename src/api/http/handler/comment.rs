@@ -96,7 +96,12 @@ pub async fn list_infos(
         limit: query.limit,
     };
 
-    usecase::comment::list_infos(harn.repo(), harn.image_pool(), user_token, data)
-        .await?
-        .accept(StatusCode::OK)
+    usecase::comment::list_infos(
+        harn.repo(),
+        harn.image_pool(),
+        user_token,
+        data,
+    )
+    .await?
+    .accept(StatusCode::OK)
 }

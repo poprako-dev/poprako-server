@@ -3,7 +3,8 @@
 use poprako_transactional::step::Step;
 
 use crate::model::member_invitation::{
-    MemberInvitationForm, MemberInvitationInfo, MemberInvitationListSpec, MemberInvitationUpdate,
+    MemberInvitationForm, MemberInvitationInfo, MemberInvitationListSpec,
+    MemberInvitationUpdate,
 };
 use crate::value::member_invitation::MemberInvitationInclOpt;
 
@@ -94,7 +95,9 @@ impl MemberInvitationStep {
     }
 
     /// Constructs a step to fetch a pending invitation by code with a lock.
-    pub fn get_info_by_code_excluded<'a>(code: &'a str) -> GetInfoByCodeExcluded<'a> {
+    pub fn get_info_by_code_excluded<'a>(
+        code: &'a str,
+    ) -> GetInfoByCodeExcluded<'a> {
         GetInfoByCodeExcluded { code }
     }
 
@@ -104,7 +107,9 @@ impl MemberInvitationStep {
     }
 
     /// Constructs a step to update invitation info.
-    pub fn update_info<'a>(update: &'a MemberInvitationUpdate) -> UpdateInfo<'a> {
+    pub fn update_info<'a>(
+        update: &'a MemberInvitationUpdate,
+    ) -> UpdateInfo<'a> {
         UpdateInfo { update }
     }
 

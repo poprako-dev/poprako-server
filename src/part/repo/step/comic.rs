@@ -145,12 +145,18 @@ impl ComicStep {
     }
 
     /// Constructs a step to fetch a comic by ID.
-    pub fn get_info_by_id<'a>(id: &'a str, incl_opt: &'a [ComicInclOpt]) -> GetInfoById<'a> {
+    pub fn get_info_by_id<'a>(
+        id: &'a str,
+        incl_opt: &'a [ComicInclOpt],
+    ) -> GetInfoById<'a> {
         GetInfoById { id, incl_opt }
     }
 
     /// Constructs a step to fetch a comic with a pessimistic lock.
-    pub fn get_info_excluded<'a>(id: &'a str, incl_opt: &'a [ComicInclOpt]) -> GetInfoExcluded<'a> {
+    pub fn get_info_excluded<'a>(
+        id: &'a str,
+        incl_opt: &'a [ComicInclOpt],
+    ) -> GetInfoExcluded<'a> {
         GetInfoExcluded { id, incl_opt }
     }
 
@@ -160,7 +166,9 @@ impl ComicStep {
     }
 
     /// Constructs a step to list comics with a pessimistic lock.
-    pub fn list_infos_excluded<'a>(spec: &'a ComicListSpec) -> ListInfosExcluded<'a> {
+    pub fn list_infos_excluded<'a>(
+        spec: &'a ComicListSpec,
+    ) -> ListInfosExcluded<'a> {
         ListInfosExcluded { spec }
     }
 
@@ -170,12 +178,18 @@ impl ComicStep {
     }
 
     /// Constructs a step to reserve a new comic cover upload slot.
-    pub fn reserve_cover<'a>(id: &'a str, file_extension: &'a str) -> ReserveCover<'a> {
+    pub fn reserve_cover<'a>(
+        id: &'a str,
+        file_extension: &'a str,
+    ) -> ReserveCover<'a> {
         ReserveCover { id, file_extension }
     }
 
     /// Constructs a step to confirm a comic cover upload completed.
-    pub fn mark_cover_uploaded<'a>(id: &'a str, cover_version: i64) -> MarkCoverUploaded<'a> {
+    pub fn mark_cover_uploaded<'a>(
+        id: &'a str,
+        cover_version: i64,
+    ) -> MarkCoverUploaded<'a> {
         MarkCoverUploaded { id, cover_version }
     }
 
@@ -185,17 +199,25 @@ impl ComicStep {
     }
 
     /// Constructs a step to mark completion state.
-    pub fn mark_completed<'a>(id: &'a str, is_completed: bool) -> MarkCompleted<'a> {
+    pub fn mark_completed<'a>(
+        id: &'a str,
+        is_completed: bool,
+    ) -> MarkCompleted<'a> {
         MarkCompleted { id, is_completed }
     }
 
     /// Constructs a step to increment and return chapter index.
-    pub fn incr_chapter_next_index<'a>(id: &'a str) -> IncrChapterNextIndex<'a> {
+    pub fn incr_chapter_next_index<'a>(
+        id: &'a str,
+    ) -> IncrChapterNextIndex<'a> {
         IncrChapterNextIndex { id }
     }
 
     /// Constructs a step to change chapter count.
-    pub fn update_chapter_count<'a>(id: &'a str, delta: i32) -> UpdateChapterCount<'a> {
+    pub fn update_chapter_count<'a>(
+        id: &'a str,
+        delta: i32,
+    ) -> UpdateChapterCount<'a> {
         UpdateChapterCount { id, delta }
     }
 

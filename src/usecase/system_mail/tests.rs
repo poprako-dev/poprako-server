@@ -24,7 +24,12 @@ use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;
 
 /// Builds a [`SystemMailInfo`] fixture.
-fn mail(id: &str, receiver_id: &str, read: bool, created_at: OffsetDateTime) -> SystemMailInfo {
+fn mail(
+    id: &str,
+    receiver_id: &str,
+    read: bool,
+    created_at: OffsetDateTime,
+) -> SystemMailInfo {
     SystemMailInfo {
         id: id.into(),
         receiver_id: receiver_id.into(),

@@ -46,18 +46,20 @@ use crate::part::prom::task::{ImageKind, ImageTask};
 use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
 use crate::part::repo::step::member::{
     Create as MemberCreate, Delete as MemberDelete, FindInfoByUserIdAndTeamId,
-    GetInfoById as MemberGetInfoById, ListInfos as MemberListInfos, ListInfosByUserIdExcluded,
-    UpdateRole, UpdateUserNickname,
+    GetInfoById as MemberGetInfoById, ListInfos as MemberListInfos,
+    ListInfosByUserIdExcluded, UpdateRole, UpdateUserNickname,
 };
 use crate::part::repo::step::team::{
-    Create, Delete, GetInfoById, GetInfoExcluded, IncrementWorksetNextIndex, ListInfos,
-    MarkAvatarUploaded, ReserveAvatar, UpdateInfo,
+    Create, Delete, GetInfoById, GetInfoExcluded, IncrementWorksetNextIndex,
+    ListInfos, MarkAvatarUploaded, ReserveAvatar, UpdateInfo,
 };
 use crate::part::repo::step::user::{
-    Create as UserCreate, Delete as UserDelete, FindInfoByQid, GetCredentialByQid,
-    GetInfoById as UserGetInfoById, GetInfoExcluded as UserGetInfoExcluded,
-    MarkAvatarUploaded as UserMarkAvatarUploaded, ReserveAvatar as UserReserveAvatar,
-    TouchLastActive as UserTouchLastActive, UpdateInfo as UserUpdateInfo,
+    Create as UserCreate, Delete as UserDelete, FindInfoByQid,
+    GetCredentialByQid, GetInfoById as UserGetInfoById,
+    GetInfoExcluded as UserGetInfoExcluded,
+    MarkAvatarUploaded as UserMarkAvatarUploaded,
+    ReserveAvatar as UserReserveAvatar, TouchLastActive as UserTouchLastActive,
+    UpdateInfo as UserUpdateInfo,
 };
 use crate::part::repo::team::{TeamRepo, TeamRepoTransactional};
 use crate::part::repo::user::{UserRepo, UserRepoTransactional};
@@ -66,7 +68,8 @@ use crate::part_impl::prom_mock::MockPromRecord;
 use crate::part_impl::repo_mock::{Mock, MockContext};
 use crate::result::{ExpectedVariant, RegularError};
 use crate::test_util::{
-    assert_expected_message, assert_expected_variant, assert_one_image_check_record,
+    assert_expected_message, assert_expected_variant,
+    assert_one_image_check_record,
 };
 use crate::util::DeriveTransactional;
 use crate::value::role::{RoleField, RoleMask};
@@ -163,7 +166,11 @@ fn member(id: &str, user_id: &str, team_id: &str) -> MemberInfo {
 }
 
 /// Builds a [`ComicInfo`] fixture with an uploaded cover.
-fn comic_with_uploaded_cover(id: &str, workset_id: &str, cover_key: &str) -> ComicInfo {
+fn comic_with_uploaded_cover(
+    id: &str,
+    workset_id: &str,
+    cover_key: &str,
+) -> ComicInfo {
     let time = OffsetDateTime::now_utc();
 
     ComicInfo {
@@ -231,7 +238,11 @@ fn user(id: &str, is_sadmin: bool) -> UserInfo {
 }
 
 /// Builds a [`ListTeamInfosData`] fixture.
-fn list_data(user_id: Option<&str>, offset: u64, limit: u64) -> ListTeamInfosData {
+fn list_data(
+    user_id: Option<&str>,
+    offset: u64,
+    limit: u64,
+) -> ListTeamInfosData {
     ListTeamInfosData {
         user_id: user_id.map(Into::into),
         offset,
@@ -287,7 +298,11 @@ impl<'a> Execute<Create<'a>> for FailingCreateRepo {
 impl<'a> Advance<Create<'a>, MockContext> for FailingTeamTransactional {
     type Error = RegularError;
 
-    async fn advance(&self, _: &mut MockContext, _: &Create<'a>) -> Result<TeamInfo, Self::Error> {
+    async fn advance(
+        &self,
+        _: &mut MockContext,
+        _: &Create<'a>,
+    ) -> Result<TeamInfo, Self::Error> {
         Err(expected_error())
     }
 }
@@ -296,7 +311,10 @@ impl<'a> Advance<Create<'a>, MockContext> for FailingTeamTransactional {
 impl<'a> Execute<UserGetInfoById<'a>> for FailingCreateRepo {
     type Error = RegularError;
 
-    async fn execute(&self, step: &UserGetInfoById<'a>) -> Result<UserInfo, Self::Error> {
+    async fn execute(
+        &self,
+        step: &UserGetInfoById<'a>,
+    ) -> Result<UserInfo, Self::Error> {
         Ok(user(step.id, true))
     }
 }
@@ -305,7 +323,10 @@ impl<'a> Execute<UserGetInfoById<'a>> for FailingCreateRepo {
 impl<'a> Execute<GetCredentialByQid<'a>> for FailingCreateRepo {
     type Error = RegularError;
 
-    async fn execute(&self, _: &GetCredentialByQid<'a>) -> Result<UserCredential, Self::Error> {
+    async fn execute(
+        &self,
+        _: &GetCredentialByQid<'a>,
+    ) -> Result<UserCredential, Self::Error> {
         Err(expected_error())
     }
 }
@@ -314,7 +335,10 @@ impl<'a> Execute<GetCredentialByQid<'a>> for FailingCreateRepo {
 impl<'a> Execute<FindInfoByQid<'a>> for FailingCreateRepo {
     type Error = RegularError;
 
-    async fn execute(&self, _: &FindInfoByQid<'a>) -> Result<Option<UserInfo>, Self::Error> {
+    async fn execute(
+        &self,
+        _: &FindInfoByQid<'a>,
+    ) -> Result<Option<UserInfo>, Self::Error> {
         Ok(None)
     }
 }
@@ -359,7 +383,9 @@ impl<'a> Advance<UserUpdateInfo<'a>, MockContext> for FailingTeamTransactional {
 }
 
 #[async_trait]
-impl<'a> Advance<UserReserveAvatar<'a>, MockContext> for FailingTeamTransactional {
+impl<'a> Advance<UserReserveAvatar<'a>, MockContext>
+    for FailingTeamTransactional
+{
     type Error = RegularError;
 
     async fn advance(
@@ -372,7 +398,9 @@ impl<'a> Advance<UserReserveAvatar<'a>, MockContext> for FailingTeamTransactiona
 }
 
 #[async_trait]
-impl<'a> Advance<UserMarkAvatarUploaded<'a>, MockContext> for FailingTeamTransactional {
+impl<'a> Advance<UserMarkAvatarUploaded<'a>, MockContext>
+    for FailingTeamTransactional
+{
     type Error = RegularError;
 
     async fn advance(
@@ -385,7 +413,9 @@ impl<'a> Advance<UserMarkAvatarUploaded<'a>, MockContext> for FailingTeamTransac
 }
 
 #[async_trait]
-impl<'a> Advance<UserTouchLastActive<'a>, MockContext> for FailingTeamTransactional {
+impl<'a> Advance<UserTouchLastActive<'a>, MockContext>
+    for FailingTeamTransactional
+{
     type Error = RegularError;
 
     async fn advance(
@@ -398,7 +428,9 @@ impl<'a> Advance<UserTouchLastActive<'a>, MockContext> for FailingTeamTransactio
 }
 
 #[async_trait]
-impl<'a> Advance<UserGetInfoExcluded<'a>, MockContext> for FailingTeamTransactional {
+impl<'a> Advance<UserGetInfoExcluded<'a>, MockContext>
+    for FailingTeamTransactional
+{
     type Error = RegularError;
 
     async fn advance(
@@ -414,7 +446,11 @@ impl<'a> Advance<UserGetInfoExcluded<'a>, MockContext> for FailingTeamTransactio
 impl<'a> Advance<UserDelete<'a>, MockContext> for FailingTeamTransactional {
     type Error = RegularError;
 
-    async fn advance(&self, _: &mut MockContext, _: &UserDelete<'a>) -> Result<(), Self::Error> {
+    async fn advance(
+        &self,
+        _: &mut MockContext,
+        _: &UserDelete<'a>,
+    ) -> Result<(), Self::Error> {
         Err(expected_error())
     }
 }
@@ -423,7 +459,10 @@ impl<'a> Advance<UserDelete<'a>, MockContext> for FailingTeamTransactional {
 impl<'a> Execute<GetInfoById<'a>> for FailingCreateRepo {
     type Error = RegularError;
 
-    async fn execute(&self, _: &GetInfoById<'a>) -> Result<TeamInfo, Self::Error> {
+    async fn execute(
+        &self,
+        _: &GetInfoById<'a>,
+    ) -> Result<TeamInfo, Self::Error> {
         Err(expected_error())
     }
 }
@@ -432,7 +471,10 @@ impl<'a> Execute<GetInfoById<'a>> for FailingCreateRepo {
 impl<'a> Execute<ListInfos<'a>> for FailingCreateRepo {
     type Error = RegularError;
 
-    async fn execute(&self, _: &ListInfos<'a>) -> Result<Vec<TeamInfo>, Self::Error> {
+    async fn execute(
+        &self,
+        _: &ListInfos<'a>,
+    ) -> Result<Vec<TeamInfo>, Self::Error> {
         Err(expected_error())
     }
 }
@@ -450,7 +492,10 @@ impl<'a> Execute<UpdateInfo<'a>> for FailingCreateRepo {
 impl<'a> Execute<MarkAvatarUploaded<'a>> for FailingCreateRepo {
     type Error = RegularError;
 
-    async fn execute(&self, _: &MarkAvatarUploaded<'a>) -> Result<(), Self::Error> {
+    async fn execute(
+        &self,
+        _: &MarkAvatarUploaded<'a>,
+    ) -> Result<(), Self::Error> {
         Err(expected_error())
     }
 }
@@ -459,7 +504,10 @@ impl<'a> Execute<MarkAvatarUploaded<'a>> for FailingCreateRepo {
 impl<'a> Execute<UserTouchLastActive<'a>> for FailingCreateRepo {
     type Error = RegularError;
 
-    async fn execute(&self, _: &UserTouchLastActive<'a>) -> Result<(), Self::Error> {
+    async fn execute(
+        &self,
+        _: &UserTouchLastActive<'a>,
+    ) -> Result<(), Self::Error> {
         Err(expected_error())
     }
 }
@@ -478,7 +526,9 @@ impl<'a> Advance<ReserveAvatar<'a>, MockContext> for FailingTeamTransactional {
 }
 
 #[async_trait]
-impl<'a> Advance<MarkAvatarUploaded<'a>, MockContext> for FailingTeamTransactional {
+impl<'a> Advance<MarkAvatarUploaded<'a>, MockContext>
+    for FailingTeamTransactional
+{
     type Error = RegularError;
 
     async fn advance(
@@ -491,7 +541,9 @@ impl<'a> Advance<MarkAvatarUploaded<'a>, MockContext> for FailingTeamTransaction
 }
 
 #[async_trait]
-impl<'a> Advance<GetInfoExcluded<'a>, MockContext> for FailingTeamTransactional {
+impl<'a> Advance<GetInfoExcluded<'a>, MockContext>
+    for FailingTeamTransactional
+{
     type Error = RegularError;
 
     async fn advance(
@@ -507,13 +559,19 @@ impl<'a> Advance<GetInfoExcluded<'a>, MockContext> for FailingTeamTransactional 
 impl<'a> Advance<Delete<'a>, MockContext> for FailingTeamTransactional {
     type Error = RegularError;
 
-    async fn advance(&self, _: &mut MockContext, _: &Delete<'a>) -> Result<(), Self::Error> {
+    async fn advance(
+        &self,
+        _: &mut MockContext,
+        _: &Delete<'a>,
+    ) -> Result<(), Self::Error> {
         Err(expected_error())
     }
 }
 
 #[async_trait]
-impl<'a> Advance<IncrementWorksetNextIndex<'a>, MockContext> for FailingTeamTransactional {
+impl<'a> Advance<IncrementWorksetNextIndex<'a>, MockContext>
+    for FailingTeamTransactional
+{
     type Error = RegularError;
 
     async fn advance(
@@ -541,7 +599,10 @@ impl<'a> Execute<FindInfoByUserIdAndTeamId<'a>> for FailingCreateRepo {
 impl<'a> Execute<MemberListInfos<'a>> for FailingCreateRepo {
     type Error = RegularError;
 
-    async fn execute(&self, _: &MemberListInfos<'a>) -> Result<Vec<MemberInfo>, Self::Error> {
+    async fn execute(
+        &self,
+        _: &MemberListInfos<'a>,
+    ) -> Result<Vec<MemberInfo>, Self::Error> {
         Ok(Vec::new())
     }
 }
@@ -550,7 +611,10 @@ impl<'a> Execute<MemberListInfos<'a>> for FailingCreateRepo {
 impl<'a> Execute<MemberGetInfoById<'a>> for FailingCreateRepo {
     type Error = RegularError;
 
-    async fn execute(&self, _: &MemberGetInfoById<'a>) -> Result<MemberInfo, Self::Error> {
+    async fn execute(
+        &self,
+        _: &MemberGetInfoById<'a>,
+    ) -> Result<MemberInfo, Self::Error> {
         Err(expected_error())
     }
 }
@@ -569,7 +633,9 @@ impl<'a> Advance<MemberCreate<'a>, MockContext> for FailingTeamTransactional {
 }
 
 #[async_trait]
-impl<'a> Advance<UpdateUserNickname<'a>, MockContext> for FailingTeamTransactional {
+impl<'a> Advance<UpdateUserNickname<'a>, MockContext>
+    for FailingTeamTransactional
+{
     type Error = RegularError;
 
     async fn advance(
@@ -582,7 +648,9 @@ impl<'a> Advance<UpdateUserNickname<'a>, MockContext> for FailingTeamTransaction
 }
 
 #[async_trait]
-impl<'a> Advance<ListInfosByUserIdExcluded<'a>, MockContext> for FailingTeamTransactional {
+impl<'a> Advance<ListInfosByUserIdExcluded<'a>, MockContext>
+    for FailingTeamTransactional
+{
     type Error = RegularError;
 
     async fn advance(
@@ -595,7 +663,9 @@ impl<'a> Advance<ListInfosByUserIdExcluded<'a>, MockContext> for FailingTeamTran
 }
 
 #[async_trait]
-impl<'a> Advance<FindInfoByUserIdAndTeamId<'a>, MockContext> for FailingTeamTransactional {
+impl<'a> Advance<FindInfoByUserIdAndTeamId<'a>, MockContext>
+    for FailingTeamTransactional
+{
     type Error = RegularError;
 
     async fn advance(
@@ -611,7 +681,11 @@ impl<'a> Advance<FindInfoByUserIdAndTeamId<'a>, MockContext> for FailingTeamTran
 impl<'a> Advance<UpdateRole<'a>, MockContext> for FailingTeamTransactional {
     type Error = RegularError;
 
-    async fn advance(&self, _: &mut MockContext, _: &UpdateRole<'a>) -> Result<(), Self::Error> {
+    async fn advance(
+        &self,
+        _: &mut MockContext,
+        _: &UpdateRole<'a>,
+    ) -> Result<(), Self::Error> {
         Err(expected_error())
     }
 }
@@ -620,7 +694,11 @@ impl<'a> Advance<UpdateRole<'a>, MockContext> for FailingTeamTransactional {
 impl<'a> Advance<MemberDelete<'a>, MockContext> for FailingTeamTransactional {
     type Error = RegularError;
 
-    async fn advance(&self, _: &mut MockContext, _: &MemberDelete<'a>) -> Result<(), Self::Error> {
+    async fn advance(
+        &self,
+        _: &mut MockContext,
+        _: &MemberDelete<'a>,
+    ) -> Result<(), Self::Error> {
         Err(expected_error())
     }
 }
@@ -962,9 +1040,21 @@ async fn mark_avatar_uploaded_accepts_repeated_matching_version() {
     mock.seed_team(team_with_avatar("team-1", "Team", "Desc", "key", false, 2));
     mock.seed_member(member("member-1", "user-1", "team-1"));
 
-    let first = mark_avatar_uploaded(&mock, token("user-1"), "team-1".into(), mark_data(2)).await;
+    let first = mark_avatar_uploaded(
+        &mock,
+        token("user-1"),
+        "team-1".into(),
+        mark_data(2),
+    )
+    .await;
     assert!(first.is_ok());
-    let second = mark_avatar_uploaded(&mock, token("user-1"), "team-1".into(), mark_data(2)).await;
+    let second = mark_avatar_uploaded(
+        &mock,
+        token("user-1"),
+        "team-1".into(),
+        mark_data(2),
+    )
+    .await;
     assert!(second.is_ok());
 
     assert!(mock.snapshot().teams[0].avatar_uploaded);
@@ -976,12 +1066,21 @@ async fn mark_avatar_uploaded_rejects_stale_version() {
     mock.seed_team(team_with_avatar("team-1", "Team", "Desc", "key", false, 2));
     mock.seed_member(member("member-1", "user-1", "team-1"));
 
-    let err = mark_avatar_uploaded(&mock, token("user-1"), "team-1".into(), mark_data(1))
-        .await
-        .err()
-        .unwrap();
+    let err = mark_avatar_uploaded(
+        &mock,
+        token("user-1"),
+        "team-1".into(),
+        mark_data(1),
+    )
+    .await
+    .err()
+    .unwrap();
 
-    assert_expected_message(err, ExpectedVariant::Args, "error-stale-avatar-upload");
+    assert_expected_message(
+        err,
+        ExpectedVariant::Args,
+        "error-stale-avatar-upload",
+    );
     assert!(!mock.snapshot().teams[0].avatar_uploaded);
 }
 
@@ -1007,13 +1106,22 @@ async fn mark_avatar_uploaded_rejects_old_reservation_replay() {
     .unwrap();
     assert_eq!(reserved.avatar_version, 2);
 
-    let err = mark_avatar_uploaded(&mock, token("user-1"), "team-1".into(), mark_data(1))
-        .await
-        .err()
-        .unwrap();
+    let err = mark_avatar_uploaded(
+        &mock,
+        token("user-1"),
+        "team-1".into(),
+        mark_data(1),
+    )
+    .await
+    .err()
+    .unwrap();
     let snapshot = mock.snapshot();
 
-    assert_expected_message(err, ExpectedVariant::Args, "error-stale-avatar-upload");
+    assert_expected_message(
+        err,
+        ExpectedVariant::Args,
+        "error-stale-avatar-upload",
+    );
     assert!(!snapshot.teams[0].avatar_uploaded);
     assert_eq!(snapshot.teams[0].avatar_version, 2);
 }

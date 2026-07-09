@@ -4,14 +4,18 @@ use async_trait::async_trait;
 
 use poprako_transactional::advance::Advance;
 
-use crate::model::unit::{UnitCounters, UnitIndex, UnitInfo, UnitOper, UnitPayload};
+use crate::model::unit::{
+    UnitCounters, UnitIndex, UnitInfo, UnitOper, UnitPayload,
+};
 use crate::part::repo::step::unit::{
     CountByPageId, DeleteByIdInPage, ListAllInfosByPageId, ListIndexesByPageId,
     ListInfosByPageId, SaveInfo, UpdateIndexesByPageId,
 };
 use crate::part::repo::unit::{UnitRepo, UnitRepoTransactional};
 use crate::part::shared::execute::Execute;
-use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactional, expected, now};
+use crate::part_impl::repo_mock::{
+    Mock, MockContext, MockState, MockTransactional, expected, now,
+};
 use crate::result::{RegularError, RegularResult};
 
 impl UnitRepo<MockContext> for Mock {}
@@ -78,7 +82,12 @@ fn write_payload(unit_info: &mut UnitInfo, payload: &UnitPayload) {
     unit_info.updated_at = now();
 }
 
-fn unit_from_payload(page_id: &str, id: &str, index: i32, payload: &UnitPayload) -> UnitInfo {
+fn unit_from_payload(
+    page_id: &str,
+    id: &str,
+    index: i32,
+    payload: &UnitPayload,
+) -> UnitInfo {
     let time = now();
     UnitInfo {
         id: id.into(),
@@ -121,7 +130,8 @@ fn save_unit(
     id: &str,
     payload: &UnitPayload,
 ) -> RegularResult<()> {
-    let existing_position = state.units.iter().position(|unit_info| unit_info.id == id);
+    let existing_position =
+        state.units.iter().position(|unit_info| unit_info.id == id);
 
     let Some(existing_position) = existing_position else {
         return create_unit(state, page_id, id, payload);
@@ -140,7 +150,10 @@ fn save_unit(
 impl<'a> Execute<ListInfosByPageId<'a>> for Mock {
     type Error = RegularError;
 
-    async fn execute(&self, step: &ListInfosByPageId<'a>) -> Result<Vec<UnitInfo>, Self::Error> {
+    async fn execute(
+        &self,
+        step: &ListInfosByPageId<'a>,
+    ) -> Result<Vec<UnitInfo>, Self::Error> {
         let state = self.state.lock().unwrap();
 
         Ok(list_units(&state, step.page_id)
@@ -155,7 +168,10 @@ impl<'a> Execute<ListInfosByPageId<'a>> for Mock {
 impl<'a> Execute<ListAllInfosByPageId<'a>> for Mock {
     type Error = RegularError;
 
-    async fn execute(&self, step: &ListAllInfosByPageId<'a>) -> Result<Vec<UnitInfo>, Self::Error> {
+    async fn execute(
+        &self,
+        step: &ListAllInfosByPageId<'a>,
+    ) -> Result<Vec<UnitInfo>, Self::Error> {
         let state = self.state.lock().unwrap();
         Ok(list_units(&state, step.page_id))
     }
@@ -222,10 +238,9 @@ impl<'a> Advance<DeleteByIdInPage<'a>, MockContext> for MockTransactional {
         context: &mut MockContext,
         step: &DeleteByIdInPage<'a>,
     ) -> Result<(), Self::Error> {
-        context
-            .state
-            .units
-            .retain(|unit_info| !(unit_info.page_id == step.page_id && unit_info.id == step.id));
+        context.state.units.retain(|unit_info| {
+            !(unit_info.page_id == step.page_id && unit_info.id == step.id)
+        });
 
         Ok(())
     }
@@ -268,7 +283,8 @@ impl<'a> Advance<UpdateIndexesByPageId<'a>, MockContext> for MockTransactional {
                 .units
                 .iter_mut()
                 .find(|unit_info| {
-                    unit_info.page_id == step.page_id && unit_info.id == unit_index_update.id
+                    unit_info.page_id == step.page_id
+                        && unit_info.id == unit_index_update.id
                 })
                 .ok_or_else(|| expected("error-unit-not-found"))?;
 

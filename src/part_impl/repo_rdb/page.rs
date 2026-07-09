@@ -12,14 +12,17 @@ use crate::model::page::{PageForm, PageImageReservation, PageInfo};
 use crate::model::unit::UnitCounters;
 use crate::part::repo::page::{PageRepo, PageRepoTransactional};
 use crate::part::repo::step::page::{
-    CreateBatch, DeleteByChapterId, GetInfoById, GetInfoExcluded, ListAllInfosByChapterId,
-    ListInfosByChapterId, MarkImageUploaded, ReserveImage, SetUnitCounters,
+    CreateBatch, DeleteByChapterId, GetInfoById, GetInfoExcluded,
+    ListAllInfosByChapterId, ListInfosByChapterId, MarkImageUploaded,
+    ReserveImage, SetUnitCounters,
 };
 use crate::part::shared::execute::Execute;
 use crate::part_impl::rdb_core::RdbConn;
 use crate::part_impl::rdb_core::RdbContext;
 use crate::part_impl::rdb_core::result::{diesel, expected};
-use crate::part_impl::repo_rdb::entity::page::{PageAspect, PageEntry, PageRow};
+use crate::part_impl::repo_rdb::entity::page::{
+    PageAspect, PageEntry, PageRow,
+};
 use crate::part_impl::repo_rdb::{RdbRepo, RdbRepoTransactional};
 use crate::result::{RegularError, RegularResult};
 
@@ -31,7 +34,10 @@ impl PageRepo<RdbContext> for RdbRepo {}
 
 impl PageRepoTransactional<RdbContext> for RdbRepoTransactional {}
 
-async fn get_info_by_id(conn: &mut RdbConn, id: &str) -> RegularResult<PageInfo> {
+async fn get_info_by_id(
+    conn: &mut RdbConn,
+    id: &str,
+) -> RegularResult<PageInfo> {
     let row: PageRow = t_page
         .filter(f_id.eq(id))
         .select(PageRow::as_select())
@@ -44,7 +50,10 @@ async fn get_info_by_id(conn: &mut RdbConn, id: &str) -> RegularResult<PageInfo>
     Ok(row.into())
 }
 
-async fn get_info_excluded(conn: &mut RdbConn, id: &str) -> RegularResult<PageInfo> {
+async fn get_info_excluded(
+    conn: &mut RdbConn,
+    id: &str,
+) -> RegularResult<PageInfo> {
     let row: PageRow = t_page
         .filter(f_id.eq(id))
         .select(PageRow::as_select())
@@ -92,7 +101,10 @@ async fn list_all_infos_by_chapter_id(
     Ok(rows.into_iter().map(Into::into).collect())
 }
 
-async fn create_batch(conn: &mut RdbConn, forms: &[PageForm]) -> RegularResult<Vec<PageInfo>> {
+async fn create_batch(
+    conn: &mut RdbConn,
+    forms: &[PageForm],
+) -> RegularResult<Vec<PageInfo>> {
     let entries: Vec<PageEntry> = forms.iter().map(PageEntry::from).collect();
 
     let rows: Vec<PageRow> = diesel::insert_into(t_page)
@@ -125,7 +137,8 @@ async fn reserve_image(
             .await
             .map_err(diesel)?;
 
-    let object_key = PageComplex::gen_image_key(&chapter_id, id, new_version, file_ext);
+    let object_key =
+        PageComplex::gen_image_key(&chapter_id, id, new_version, file_ext);
 
     let aspect = PageAspect::new(now).image_key(Some(&object_key));
 
@@ -187,7 +200,10 @@ async fn set_unit_counters(
     Ok(())
 }
 
-async fn delete_by_chapter_id(conn: &mut RdbConn, chapter_id: &str) -> RegularResult<()> {
+async fn delete_by_chapter_id(
+    conn: &mut RdbConn,
+    chapter_id: &str,
+) -> RegularResult<()> {
     let page_ids: Vec<String> = t_page
         .filter(f_chapter_id.eq(chapter_id))
         .select(f_id)
@@ -223,7 +239,10 @@ impl<'a> Execute<GetInfoById<'a>> for RdbRepo {
 impl<'a> Execute<ListInfosByChapterId<'a>> for RdbRepo {
     type Error = RegularError;
 
-    async fn execute(&self, step: &ListInfosByChapterId<'a>) -> RegularResult<Vec<PageInfo>> {
+    async fn execute(
+        &self,
+        step: &ListInfosByChapterId<'a>,
+    ) -> RegularResult<Vec<PageInfo>> {
         submit_query!(
             self.core,
             list_infos_by_chapter_id,
@@ -238,7 +257,10 @@ impl<'a> Execute<ListInfosByChapterId<'a>> for RdbRepo {
 impl<'a> Execute<ListAllInfosByChapterId<'a>> for RdbRepo {
     type Error = RegularError;
 
-    async fn execute(&self, step: &ListAllInfosByChapterId<'a>) -> RegularResult<Vec<PageInfo>> {
+    async fn execute(
+        &self,
+        step: &ListAllInfosByChapterId<'a>,
+    ) -> RegularResult<Vec<PageInfo>> {
         submit_query!(self.core, list_all_infos_by_chapter_id, step.chapter_id)
     }
 }
@@ -270,7 +292,9 @@ impl<'a> Advance<GetInfoExcluded<'a>, RdbContext> for RdbRepoTransactional {
 }
 
 #[async_trait]
-impl<'a> Advance<ListInfosByChapterId<'a>, RdbContext> for RdbRepoTransactional {
+impl<'a> Advance<ListInfosByChapterId<'a>, RdbContext>
+    for RdbRepoTransactional
+{
     type Error = RegularError;
 
     async fn advance(
@@ -278,12 +302,20 @@ impl<'a> Advance<ListInfosByChapterId<'a>, RdbContext> for RdbRepoTransactional 
         context: &mut RdbContext,
         step: &ListInfosByChapterId<'a>,
     ) -> RegularResult<Vec<PageInfo>> {
-        list_infos_by_chapter_id(context.conn(), step.chapter_id, step.offset, step.limit).await
+        list_infos_by_chapter_id(
+            context.conn(),
+            step.chapter_id,
+            step.offset,
+            step.limit,
+        )
+        .await
     }
 }
 
 #[async_trait]
-impl<'a> Advance<ListAllInfosByChapterId<'a>, RdbContext> for RdbRepoTransactional {
+impl<'a> Advance<ListAllInfosByChapterId<'a>, RdbContext>
+    for RdbRepoTransactional
+{
     type Error = RegularError;
 
     async fn advance(

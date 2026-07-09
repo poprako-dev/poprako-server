@@ -86,7 +86,11 @@ fn chapter(id: &str) -> ChapterInfo {
     }
 }
 
-fn assignment(chapter_id: &str, user_id: &str, role_mask: RoleMask) -> AssignmentInfo {
+fn assignment(
+    chapter_id: &str,
+    user_id: &str,
+    role_mask: RoleMask,
+) -> AssignmentInfo {
     let time = OffsetDateTime::now_utc();
 
     AssignmentInfo {
@@ -101,7 +105,12 @@ fn assignment(chapter_id: &str, user_id: &str, role_mask: RoleMask) -> Assignmen
     }
 }
 
-fn page(id: &str, index: i32, image_key: Option<&str>, image_uploaded: bool) -> PageInfo {
+fn page(
+    id: &str,
+    index: i32,
+    image_key: Option<&str>,
+    image_uploaded: bool,
+) -> PageInfo {
     let time = OffsetDateTime::now_utc();
 
     PageInfo {
@@ -119,7 +128,13 @@ fn page(id: &str, index: i32, image_key: Option<&str>, image_uploaded: bool) -> 
     }
 }
 
-fn unit(id: &str, page_id: &str, index: i32, text: &str, proofread_text: Option<&str>) -> UnitInfo {
+fn unit(
+    id: &str,
+    page_id: &str,
+    index: i32,
+    text: &str,
+    proofread_text: Option<&str>,
+) -> UnitInfo {
     let time = OffsetDateTime::now_utc();
 
     UnitInfo {
@@ -167,7 +182,8 @@ async fn export_returns_chapter_pages_and_units() {
 
     mock.seed_unit(unit("unit-a", "page-1", 0, "alpha", Some("alpha proof")));
 
-    let exported = export(&mock, &mock, token("user-1"), "chapter-1".into()).await;
+    let exported =
+        export(&mock, &mock, token("user-1"), "chapter-1".into()).await;
 
     let exported = match exported {
         Ok(exported) => exported,
@@ -209,7 +225,8 @@ async fn export_label_plus_returns_text_payload() {
 
     mock.seed_unit(unit("unit-a", "page-1", 0, "alpha", Some("alpha proof")));
 
-    let exported = export_label_plus(&mock, token("user-1"), "chapter-1".into()).await;
+    let exported =
+        export_label_plus(&mock, token("user-1"), "chapter-1".into()).await;
 
     let exported = match exported {
         Ok(exported) => exported,
@@ -220,7 +237,10 @@ async fn export_label_plus_returns_text_payload() {
 
     assert!(exported.contains(">>>>>>>>[000.png]<<<<<<<<"));
 
-    assert!(exported.contains("----------------[1]----------------[0.2500,0.7500,1]"));
+    assert!(
+        exported
+            .contains("----------------[1]----------------[0.2500,0.7500,1]")
+    );
 
     assert!(exported.contains("alpha proof"));
 }

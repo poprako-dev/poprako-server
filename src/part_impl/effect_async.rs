@@ -7,14 +7,20 @@ use std::sync::{Arc, Mutex};
 use async_trait::async_trait;
 use tokio::sync::mpsc::error::TrySendError;
 use tokio::sync::mpsc::{Receiver, Sender};
-use tokio::sync::oneshot::{Receiver as OneshotReceiver, Sender as OneshotSender};
+use tokio::sync::oneshot::{
+    Receiver as OneshotReceiver, Sender as OneshotSender,
+};
 use tracing::{Level, instrument};
 
 use crate::part::effect::event::Event;
 use crate::part::effect::{EffectDevelop, EventIter};
-use crate::part::repo::assignment::{AssignmentRepo, AssignmentRepoTransactional};
+use crate::part::repo::assignment::{
+    AssignmentRepo, AssignmentRepoTransactional,
+};
 use crate::part::repo::chapter::{ChapterRepo, ChapterRepoTransactional};
-use crate::part::repo::system_mail::{SystemMailRepo, SystemMailRepoTransactional};
+use crate::part::repo::system_mail::{
+    SystemMailRepo, SystemMailRepoTransactional,
+};
 use crate::part::repo::team::{TeamRepo, TeamRepoTransactional};
 use crate::part::repo::user::{UserRepo, UserRepoTransactional};
 use crate::part_impl::effect_async::dispatch::dispatch;

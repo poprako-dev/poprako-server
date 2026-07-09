@@ -68,8 +68,10 @@ impl<'a> Advance<Append<'a>, MockContext> for MockTransactional {
         step: &Append<'a>,
     ) -> Result<(), Self::Error> {
         let payload_json =
-            serde_json::to_string(&step.payload).map_err(|e| RegularError::Unrecoverable {
-                message: format!("failed to serialize prom payload: {}", e),
+            serde_json::to_string(&step.payload).map_err(|e| {
+                RegularError::Unrecoverable {
+                    message: format!("failed to serialize prom payload: {}", e),
+                }
             })?;
 
         context.state.prom_records.push(MockPromRecord {
@@ -93,8 +95,10 @@ impl<'a> Advance<Append<'a>, MockContext> for Mock {
         step: &Append<'a>,
     ) -> Result<(), Self::Error> {
         let payload_json =
-            serde_json::to_string(&step.payload).map_err(|e| RegularError::Unrecoverable {
-                message: format!("failed to serialize prom payload: {}", e),
+            serde_json::to_string(&step.payload).map_err(|e| {
+                RegularError::Unrecoverable {
+                    message: format!("failed to serialize prom payload: {}", e),
+                }
             })?;
 
         context.state.prom_records.push(MockPromRecord {

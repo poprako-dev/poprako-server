@@ -48,7 +48,12 @@ fn user(id: &str, nickname: &str) -> UserInfo {
     }
 }
 
-fn member(id: &str, user_id: &str, team_id: &str, role_mask: RoleMask) -> MemberInfo {
+fn member(
+    id: &str,
+    user_id: &str,
+    team_id: &str,
+    role_mask: RoleMask,
+) -> MemberInfo {
     MemberInfo {
         id: id.into(),
         user_id: user_id.into(),
@@ -61,7 +66,12 @@ fn member(id: &str, user_id: &str, team_id: &str, role_mask: RoleMask) -> Member
     }
 }
 
-fn comment(id: &str, team_id: &str, user_id: &str, created_at: OffsetDateTime) -> CommentInfo {
+fn comment(
+    id: &str,
+    team_id: &str,
+    user_id: &str,
+    created_at: OffsetDateTime,
+) -> CommentInfo {
     CommentInfo {
         id: id.into(),
         team_id: team_id.into(),
@@ -72,7 +82,10 @@ fn comment(id: &str, team_id: &str, user_id: &str, created_at: OffsetDateTime) -
     }
 }
 
-fn list_data(team_id: &str, incl_opt: Vec<CommentInclOpt>) -> ListCommentInfosData {
+fn list_data(
+    team_id: &str,
+    incl_opt: Vec<CommentInclOpt>,
+) -> ListCommentInfosData {
     ListCommentInfosData {
         team_id: team_id.into(),
         incl_opt,
@@ -174,10 +187,11 @@ async fn create_team_member_creates_comment() {
     let mock = Mock::new();
     seed_member(&mock, "viewer-user", "team-1");
 
-    let created_comment = create(&mock, &mock, token("viewer-user"), create_data("team-1"))
-        .await
-        .ok()
-        .unwrap();
+    let created_comment =
+        create(&mock, &mock, token("viewer-user"), create_data("team-1"))
+            .await
+            .ok()
+            .unwrap();
     let snapshot = mock.snapshot();
 
     assert_eq!(snapshot.comments.len(), 1);
@@ -190,10 +204,11 @@ async fn create_team_member_creates_comment() {
 async fn create_non_member_is_rejected_without_mutation() {
     let mock = Mock::new();
 
-    let err = create(&mock, &mock, token("outsider-user"), create_data("team-1"))
-        .await
-        .err()
-        .unwrap();
+    let err =
+        create(&mock, &mock, token("outsider-user"), create_data("team-1"))
+            .await
+            .err()
+            .unwrap();
 
     assert_expected_variant(err, ExpectedVariant::Perm);
     assert!(mock.snapshot().comments.is_empty());

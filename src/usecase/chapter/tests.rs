@@ -80,7 +80,12 @@ fn comic(id: &str, workset_id: &str) -> ComicInfo {
     }
 }
 
-fn chapter(id: &str, comic_id: &str, index: i32, is_pinned: bool) -> ChapterInfo {
+fn chapter(
+    id: &str,
+    comic_id: &str,
+    index: i32,
+    is_pinned: bool,
+) -> ChapterInfo {
     let time = OffsetDateTime::now_utc();
 
     ChapterInfo {
@@ -115,7 +120,11 @@ fn member(user_id: &str, team_id: &str, role_mask: RoleMask) -> MemberInfo {
     }
 }
 
-fn assignment(chapter_id: &str, user_id: &str, role_mask: RoleMask) -> AssignmentInfo {
+fn assignment(
+    chapter_id: &str,
+    user_id: &str,
+    role_mask: RoleMask,
+) -> AssignmentInfo {
     let time = OffsetDateTime::now_utc();
 
     AssignmentInfo {
@@ -240,7 +249,8 @@ async fn get_pinned_returns_some_and_none() {
 
     let empty_mock = Mock::new();
     seed_scope(&empty_mock, "user-1", RoleMask::from(RoleField::TRANSLATOR));
-    let found = get_pinned(&empty_mock, token("user-1"), "comic-1".into()).await;
+    let found =
+        get_pinned(&empty_mock, token("user-1"), "comic-1".into()).await;
     assert!(found.is_ok());
     assert!(found.ok().unwrap().is_none());
 }
@@ -291,7 +301,8 @@ async fn create_pins_chapter_and_creates_admin_assignment() {
         snapshot
             .chapters
             .iter()
-            .any(|chapter_info| chapter_info.id == "chapter-old" && !chapter_info.is_pinned)
+            .any(|chapter_info| chapter_info.id == "chapter-old"
+                && !chapter_info.is_pinned)
     );
     assert_eq!(snapshot.comics[0].chapter_count, 3);
     assert_eq!(snapshot.comics[0].chapter_next_index, 3);
@@ -481,7 +492,8 @@ async fn update_stage_publish_enqueues_page_image_delete() {
     let snapshot = mock.snapshot();
 
     assert_eq!(snapshot.prom_records.len(), 1);
-    let Payload::Image(ImageTask::Delete { object_key }) = snapshot.prom_records[0].payload()
+    let Payload::Image(ImageTask::Delete { object_key }) =
+        snapshot.prom_records[0].payload()
     else {
         panic!("expected image delete payload");
     };

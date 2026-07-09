@@ -7,15 +7,21 @@ use poprako_transactional::advance::Advance;
 use poprako_transactional::drive::Drive;
 use poprako_util::i18n::trl;
 
-use crate::complex::chapter_port::{ChapterImportComplex, ChapterPortPermComplex};
+use crate::complex::chapter_port::{
+    ChapterImportComplex, ChapterPortPermComplex,
+};
 use crate::complex::unit::UnitComplex;
-use crate::data::chapter_port::{ChapterTranslationImportData, ChapterTranslationImportVal};
+use crate::data::chapter_port::{
+    ChapterTranslationImportData, ChapterTranslationImportVal,
+};
 use crate::model::assignment::AssignmentInfo;
 use crate::model::page::PageInfo;
 use crate::model::unit::{UnitCounterDelta, UnitCounters, UnitInfo, UnitOper};
 use crate::model::unit_port::UnitTranslationImport;
 use crate::model::user::UserToken;
-use crate::part::repo::assignment::{AssignmentRepo, AssignmentRepoTransactional};
+use crate::part::repo::assignment::{
+    AssignmentRepo, AssignmentRepoTransactional,
+};
 use crate::part::repo::chapter::{ChapterRepo, ChapterRepoTransactional};
 use crate::part::repo::comic::{ComicRepo, ComicRepoTransactional};
 use crate::part::repo::map_drive_err;
@@ -43,7 +49,13 @@ where
     D: Drive<C>,
     D::Error: Into<RegularError>,
     C: Send,
-    R: AssignmentRepo<C> + ChapterRepo<C> + ComicRepo<C> + PageRepo<C> + UnitRepo<C> + Send + Sync,
+    R: AssignmentRepo<C>
+        + ChapterRepo<C>
+        + ComicRepo<C>
+        + PageRepo<C>
+        + UnitRepo<C>
+        + Send
+        + Sync,
     <R as DeriveTransactional>::Transactional: AssignmentRepoTransactional<C>
         + ChapterRepoTransactional<C>
         + ComicRepoTransactional<C>
@@ -54,8 +66,12 @@ where
 {
     use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
-    ChapterPortPermComplex::can_user_import(&mut repo.as_proxy(), &token.user_id, &chapter_id)
-        .await?;
+    ChapterPortPermComplex::can_user_import(
+        &mut repo.as_proxy(),
+        &token.user_id,
+        &chapter_id,
+    )
+    .await?;
 
     let assignment_info = repo
         .execute(&AssignmentStep::get_info_by_chapter_id_and_user_id(
@@ -68,8 +84,12 @@ where
     let label_plus = matches!(data.format, TranslationFormat::LabelPlus);
 
     let imported_pages = match data.format {
-        TranslationFormat::LabelPlus => ChapterImportComplex::parse_label_plus(&data.content)?,
-        TranslationFormat::PopRaKo => ChapterImportComplex::parse_poprako(&data.content)?,
+        TranslationFormat::LabelPlus => {
+            ChapterImportComplex::parse_label_plus(&data.content)?
+        }
+        TranslationFormat::PopRaKo => {
+            ChapterImportComplex::parse_poprako(&data.content)?
+        }
     };
 
     let imported = drive
@@ -77,7 +97,10 @@ where
             let repo = repo.derive_transactional().await;
 
             let chapter_info = repo
-                .advance(context, &ChapterStep::get_info_by_id(&chapter_id, &[]))
+                .advance(
+                    context,
+                    &ChapterStep::get_info_by_id(&chapter_id, &[]),
+                )
                 .await?;
 
             let page_infos = repo
@@ -87,15 +110,23 @@ where
                 )
                 .await?;
 
-            ChapterImportComplex::validate_page_count(imported_pages.len(), page_infos.len())?;
+            ChapterImportComplex::validate_page_count(
+                imported_pages.len(),
+                page_infos.len(),
+            )?;
 
             let mut imported_unit_count = 0;
 
-            for (page_info, imported_page) in page_infos.iter().zip(imported_pages.iter()) {
+            for (page_info, imported_page) in
+                page_infos.iter().zip(imported_pages.iter())
+            {
                 let old_counters = page_counters(page_info);
 
                 let existing_unit_infos = repo
-                    .advance(context, &UnitStep::list_all_infos_by_page_id(&page_info.id))
+                    .advance(
+                        context,
+                        &UnitStep::list_all_infos_by_page_id(&page_info.id),
+                    )
                     .await?;
 
                 let existing_by_id = existing_unit_infos
@@ -109,12 +140,15 @@ where
                     .collect::<HashMap<_, _>>();
 
                 for imported_unit in &imported_page.units {
-                    let unit_id = resolve_unit_id(imported_unit, &existing_by_index);
+                    let unit_id =
+                        resolve_unit_id(imported_unit, &existing_by_index);
 
                     let existing_unit = existing_by_id
                         .get(unit_id.as_str())
                         .copied()
-                        .or_else(|| existing_by_index.get(&imported_unit.index).copied());
+                        .or_else(|| {
+                            existing_by_index.get(&imported_unit.index).copied()
+                        });
 
                     let unit_payload = ChapterImportComplex::build_unit_payload(
                         imported_unit,
@@ -131,26 +165,39 @@ where
                         before_id: None,
                     };
 
-                    repo.advance(context, &UnitStep::save_info(&page_info.id, &unit_oper))
-                        .await?;
+                    repo.advance(
+                        context,
+                        &UnitStep::save_info(&page_info.id, &unit_oper),
+                    )
+                    .await?;
                 }
 
                 let current_indexes = repo
-                    .advance(context, &UnitStep::list_indexes_by_page_id(&page_info.id))
+                    .advance(
+                        context,
+                        &UnitStep::list_indexes_by_page_id(&page_info.id),
+                    )
                     .await?;
 
-                let index_updates = UnitComplex::build_index_updates(current_indexes);
+                let index_updates =
+                    UnitComplex::build_index_updates(current_indexes);
 
                 if !index_updates.is_empty() {
                     repo.advance(
                         context,
-                        &UnitStep::update_indexes_by_page_id(&page_info.id, &index_updates),
+                        &UnitStep::update_indexes_by_page_id(
+                            &page_info.id,
+                            &index_updates,
+                        ),
                     )
                     .await?;
                 }
 
                 let counters = repo
-                    .advance(context, &UnitStep::count_by_page_id(&page_info.id))
+                    .advance(
+                        context,
+                        &UnitStep::count_by_page_id(&page_info.id),
+                    )
                     .await?;
 
                 repo.advance(
@@ -163,7 +210,10 @@ where
 
                 repo.advance(
                     context,
-                    &ChapterStep::adjust_unit_counters(&page_info.chapter_id, delta),
+                    &ChapterStep::adjust_unit_counters(
+                        &page_info.chapter_id,
+                        delta,
+                    ),
                 )
                 .await?;
 
@@ -220,12 +270,17 @@ fn has_proofreader_role(assignment_info: &AssignmentInfo) -> bool {
         .has_any_role(&[RoleField::PROOFREADER])
 }
 
-fn counter_delta(old_counters: UnitCounters, new_counters: UnitCounters) -> UnitCounterDelta {
+fn counter_delta(
+    old_counters: UnitCounters,
+    new_counters: UnitCounters,
+) -> UnitCounterDelta {
     UnitCounterDelta {
-        total_unit_count: new_counters.total_unit_count - old_counters.total_unit_count,
+        total_unit_count: new_counters.total_unit_count
+            - old_counters.total_unit_count,
         translated_unit_count: new_counters.translated_unit_count
             - old_counters.translated_unit_count,
-        proofread_unit_count: new_counters.proofread_unit_count - old_counters.proofread_unit_count,
+        proofread_unit_count: new_counters.proofread_unit_count
+            - old_counters.proofread_unit_count,
     }
 }
 

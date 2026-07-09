@@ -14,7 +14,8 @@ use crate::part::repo::member_invitation::{
     MemberInvitationRepo, MemberInvitationRepoTransactional,
 };
 use crate::part::repo::step::member_invitation::{
-    Create, Delete, GetInfoByCodeExcluded, GetInfoById, ListInfos, MarkPendingAsUsed, UpdateInfo,
+    Create, Delete, GetInfoByCodeExcluded, GetInfoById, ListInfos,
+    MarkPendingAsUsed, UpdateInfo,
 };
 use crate::part::shared::execute::Execute;
 use crate::part_impl::rdb_core::result::{diesel, expected};
@@ -61,8 +62,12 @@ async fn list_infos(
         infos.push(row.try_into()?);
     }
 
-    incl::member_invitation::populate_member_invitation_incls(conn, &mut infos, &spec.incl_opt)
-        .await?;
+    incl::member_invitation::populate_member_invitation_incls(
+        conn,
+        &mut infos,
+        &spec.incl_opt,
+    )
+    .await?;
 
     Ok(infos)
 }
@@ -127,7 +132,10 @@ async fn get_info_by_code_excluded(
     row.try_into()
 }
 
-async fn mark_pending_as_used(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
+async fn mark_pending_as_used(
+    conn: &mut RdbConn,
+    id: &str,
+) -> RegularResult<()> {
     let now = OffsetDateTime::now_utc();
 
     let aspect = MemberInvitationAspect::new(now).pending(false);
@@ -141,10 +149,15 @@ async fn mark_pending_as_used(conn: &mut RdbConn, id: &str) -> RegularResult<()>
     Ok(())
 }
 
-async fn update_info(conn: &mut RdbConn, id: &str, roles: RoleMask) -> RegularResult<()> {
+async fn update_info(
+    conn: &mut RdbConn,
+    id: &str,
+    roles: RoleMask,
+) -> RegularResult<()> {
     let now = OffsetDateTime::now_utc();
 
-    let aspect = MemberInvitationAspect::new(now).role_mask(i64::from(u32::from(roles)));
+    let aspect =
+        MemberInvitationAspect::new(now).role_mask(i64::from(u32::from(roles)));
 
     diesel::update(t_member_invitation.filter(f_id.eq(id)))
         .set(&aspect)
@@ -170,7 +183,10 @@ async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
 impl<'a> Execute<ListInfos<'a>> for RdbRepo {
     type Error = RegularError;
 
-    async fn execute(&self, step: &ListInfos<'a>) -> RegularResult<Vec<MemberInvitationInfo>> {
+    async fn execute(
+        &self,
+        step: &ListInfos<'a>,
+    ) -> RegularResult<Vec<MemberInvitationInfo>> {
         submit_query!(self.core, list_infos, step.spec)
     }
 }
@@ -179,7 +195,10 @@ impl<'a> Execute<ListInfos<'a>> for RdbRepo {
 impl<'a> Execute<GetInfoById<'a>> for RdbRepo {
     type Error = RegularError;
 
-    async fn execute(&self, step: &GetInfoById<'a>) -> RegularResult<MemberInvitationInfo> {
+    async fn execute(
+        &self,
+        step: &GetInfoById<'a>,
+    ) -> RegularResult<MemberInvitationInfo> {
         submit_query!(self.core, get_info_by_id, step.id, step.incl_opt)
     }
 }
@@ -200,7 +219,9 @@ impl<'a> Advance<Create<'a>, RdbContext> for RdbRepoTransactional {
 }
 
 #[async_trait]
-impl<'a> Advance<GetInfoByCodeExcluded<'a>, RdbContext> for RdbRepoTransactional {
+impl<'a> Advance<GetInfoByCodeExcluded<'a>, RdbContext>
+    for RdbRepoTransactional
+{
     type Error = RegularError;
 
     async fn advance(
@@ -242,8 +263,13 @@ impl<'a> Advance<GetInfoById<'a>, RdbContext> for RdbRepoTransactional {
 impl<'a> Advance<UpdateInfo<'a>, RdbContext> for RdbRepoTransactional {
     type Error = RegularError;
 
-    async fn advance(&self, context: &mut RdbContext, step: &UpdateInfo<'a>) -> RegularResult<()> {
-        update_info(context.conn(), step.update.id.as_str(), step.update.roles).await
+    async fn advance(
+        &self,
+        context: &mut RdbContext,
+        step: &UpdateInfo<'a>,
+    ) -> RegularResult<()> {
+        update_info(context.conn(), step.update.id.as_str(), step.update.roles)
+            .await
     }
 }
 
@@ -251,7 +277,11 @@ impl<'a> Advance<UpdateInfo<'a>, RdbContext> for RdbRepoTransactional {
 impl<'a> Advance<Delete<'a>, RdbContext> for RdbRepoTransactional {
     type Error = RegularError;
 
-    async fn advance(&self, context: &mut RdbContext, step: &Delete<'a>) -> RegularResult<()> {
+    async fn advance(
+        &self,
+        context: &mut RdbContext,
+        step: &Delete<'a>,
+    ) -> RegularResult<()> {
         delete(context.conn(), step.id).await
     }
 }

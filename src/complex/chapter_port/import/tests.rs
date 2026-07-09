@@ -3,7 +3,8 @@
 
 use super::*;
 
-const LABEL_PLUS_MATERIAL: &str = include_str!("../../../../tests/materials/translations.lp.txt");
+const LABEL_PLUS_MATERIAL: &str =
+    include_str!("../../../../tests/materials/translations.lp.txt");
 
 #[test]
 fn parse_label_plus_parses_real_material() {

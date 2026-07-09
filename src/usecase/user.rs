@@ -8,8 +8,8 @@ use poprako_util::i18n::trl;
 
 use crate::complex::image::ImageComplex;
 use crate::data::user::{
-    MarkUserAvatarUploadedData, ReserveUserAvatarData, ReserveUserAvatarVal, UpdateUserInfoData,
-    UserInfoVal,
+    MarkUserAvatarUploadedData, ReserveUserAvatarData, ReserveUserAvatarVal,
+    UpdateUserInfoData, UserInfoVal,
 };
 use crate::model::user::UserToken;
 use crate::part::effect::event::Event;
@@ -111,13 +111,20 @@ where
 
             repo.advance(
                 context,
-                &UserStep::update_info(&token.user_id, &data.qid, &data.nickname),
+                &UserStep::update_info(
+                    &token.user_id,
+                    &data.qid,
+                    &data.nickname,
+                ),
             )
             .await?;
 
             repo.advance(
                 context,
-                &MemberStep::update_user_nickname(&token.user_id, &data.nickname),
+                &MemberStep::update_user_nickname(
+                    &token.user_id,
+                    &data.nickname,
+                ),
             )
             .await?;
 
@@ -336,7 +343,10 @@ where
 
             // Delete all memberships before the user to satisfy FK constraints.
             let member_infos = repo
-                .advance(context, &MemberStep::list_infos_by_user_id_excluded(&id))
+                .advance(
+                    context,
+                    &MemberStep::list_infos_by_user_id_excluded(&id),
+                )
                 .await?;
 
             for mi in &member_infos {

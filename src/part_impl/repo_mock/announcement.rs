@@ -6,12 +6,18 @@ use poprako_transactional::advance::Advance;
 use poprako_transactional::drive::Drive;
 use poprako_transactional::drive::result::Error as DriveError;
 
-use crate::model::announcement::{AnnouncementForm, AnnouncementInfo, AnnouncementListSpec};
+use crate::model::announcement::{
+    AnnouncementForm, AnnouncementInfo, AnnouncementListSpec,
+};
 use crate::model::user::UserInfo;
-use crate::part::repo::announcement::{AnnouncementRepo, AnnouncementRepoTransactional};
+use crate::part::repo::announcement::{
+    AnnouncementRepo, AnnouncementRepoTransactional,
+};
 use crate::part::repo::step::announcement::{Create, ListInfos};
 use crate::part::shared::execute::Execute;
-use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactional, expected, now};
+use crate::part_impl::repo_mock::{
+    Mock, MockContext, MockState, MockTransactional, expected, now,
+};
 use crate::result::{RegularError, RegularResult};
 use crate::util::DeriveTransactional;
 use crate::value::announcement::AnnouncementInclOpt;
@@ -39,7 +45,10 @@ fn apply_user_incl(
     }
 }
 
-fn list_announcements(state: &MockState, spec: &AnnouncementListSpec) -> Vec<AnnouncementInfo> {
+fn list_announcements(
+    state: &MockState,
+    spec: &AnnouncementListSpec,
+) -> Vec<AnnouncementInfo> {
     let include_user = spec.incl_opt.contains(&AnnouncementInclOpt::User);
     let mut announcement_infos = state
         .announcements
@@ -96,7 +105,10 @@ fn create_announcement(
 impl<'a> Execute<ListInfos<'a>> for Mock {
     type Error = RegularError;
 
-    async fn execute(&self, step: &ListInfos<'a>) -> Result<Vec<AnnouncementInfo>, Self::Error> {
+    async fn execute(
+        &self,
+        step: &ListInfos<'a>,
+    ) -> Result<Vec<AnnouncementInfo>, Self::Error> {
         let state = self.state.lock().unwrap();
 
         Ok(list_announcements(&state, step.spec))
@@ -178,7 +190,11 @@ fn form(id: &str) -> AnnouncementForm {
     }
 }
 
-fn spec(incl_opt: Vec<AnnouncementInclOpt>, offset: u64, limit: u64) -> AnnouncementListSpec {
+fn spec(
+    incl_opt: Vec<AnnouncementInclOpt>,
+    offset: u64,
+    limit: u64,
+) -> AnnouncementListSpec {
     AnnouncementListSpec {
         team_id: "team-1".into(),
         incl_opt,
@@ -192,7 +208,12 @@ async fn list_infos_filters_sorts_pages_and_includes_user() {
     let mock = Mock::new();
     let time = now();
     mock.seed_user(user("user-1"), credential("user-1"));
-    mock.seed_announcement(announcement("announcement-old", "team-1", "user-1", time));
+    mock.seed_announcement(announcement(
+        "announcement-old",
+        "team-1",
+        "user-1",
+        time,
+    ));
     mock.seed_announcement(announcement(
         "announcement-new",
         "team-1",
@@ -225,7 +246,12 @@ async fn list_infos_filters_sorts_pages_and_includes_user() {
 async fn list_infos_omits_user_without_include() {
     let mock = Mock::new();
     mock.seed_user(user("user-1"), credential("user-1"));
-    mock.seed_announcement(announcement("announcement-1", "team-1", "user-1", now()));
+    mock.seed_announcement(announcement(
+        "announcement-1",
+        "team-1",
+        "user-1",
+        now(),
+    ));
 
     let announcement_infos = mock
         .execute(&AnnouncementStep::list_infos(&spec(Vec::new(), 0, 10)))
@@ -256,7 +282,12 @@ async fn create_persists_announcement() {
 #[tokio::test]
 async fn create_rejects_duplicate_id() {
     let mock = Mock::new();
-    mock.seed_announcement(announcement("announcement-1", "team-1", "user-1", now()));
+    mock.seed_announcement(announcement(
+        "announcement-1",
+        "team-1",
+        "user-1",
+        now(),
+    ));
     let announcement_form = form("announcement-1");
     let repo = mock.derive_transactional().await;
 

@@ -10,10 +10,13 @@ use poprako_transactional::advance::Advance;
 use crate::model::assignment::{
     AssignmentForm, AssignmentInfo, AssignmentListSpec, AssignmentRoleUpdate,
 };
-use crate::part::repo::assignment::{AssignmentRepo, AssignmentRepoTransactional};
+use crate::part::repo::assignment::{
+    AssignmentRepo, AssignmentRepoTransactional,
+};
 use crate::part::repo::step::assignment::{
-    Create, Delete, DeleteByChapterId, GetInfoByChapterIdAndUserId, GetInfoById,
-    ListAllInfosByChapter, ListInfos, ListInfosByChapterIdExcluded, PutRoles,
+    Create, Delete, DeleteByChapterId, GetInfoByChapterIdAndUserId,
+    GetInfoById, ListAllInfosByChapter, ListInfos,
+    ListInfosByChapterIdExcluded, PutRoles,
 };
 use crate::part::shared::execute::Execute;
 use crate::part_impl::rdb_core::RdbConn;
@@ -39,7 +42,9 @@ fn row_into_info(row: AssignmentRow) -> RegularResult<AssignmentInfo> {
     row.try_into()
 }
 
-fn rows_into_infos(rows: Vec<AssignmentRow>) -> RegularResult<Vec<AssignmentInfo>> {
+fn rows_into_infos(
+    rows: Vec<AssignmentRow>,
+) -> RegularResult<Vec<AssignmentInfo>> {
     rows.into_iter().map(row_into_info).collect()
 }
 
@@ -76,8 +81,12 @@ async fn get_info_by_id(
 
     let mut info = row_into_info(row)?;
 
-    incl::assignment::populate_assignment_incls(conn, std::slice::from_mut(&mut info), incl_opt)
-        .await?;
+    incl::assignment::populate_assignment_incls(
+        conn,
+        std::slice::from_mut(&mut info),
+        incl_opt,
+    )
+    .await?;
 
     Ok(info)
 }
@@ -121,13 +130,27 @@ async fn list_infos(
 
     if let Some(role) = role {
         query = match *role {
-            RoleField::RAW_PROVIDER => query.filter(f_assigned_raw_provider_at.is_not_null()),
-            RoleField::TRANSLATOR => query.filter(f_assigned_translator_at.is_not_null()),
-            RoleField::PROOFREADER => query.filter(f_assigned_proofreader_at.is_not_null()),
-            RoleField::TYPESETTER => query.filter(f_assigned_typesetter_at.is_not_null()),
-            RoleField::REDRAWER => query.filter(f_assigned_redrawer_at.is_not_null()),
-            RoleField::REVIEWER => query.filter(f_assigned_reviewer_at.is_not_null()),
-            RoleField::PUBLISHER => query.filter(f_assigned_publisher_at.is_not_null()),
+            RoleField::RAW_PROVIDER => {
+                query.filter(f_assigned_raw_provider_at.is_not_null())
+            }
+            RoleField::TRANSLATOR => {
+                query.filter(f_assigned_translator_at.is_not_null())
+            }
+            RoleField::PROOFREADER => {
+                query.filter(f_assigned_proofreader_at.is_not_null())
+            }
+            RoleField::TYPESETTER => {
+                query.filter(f_assigned_typesetter_at.is_not_null())
+            }
+            RoleField::REDRAWER => {
+                query.filter(f_assigned_redrawer_at.is_not_null())
+            }
+            RoleField::REVIEWER => {
+                query.filter(f_assigned_reviewer_at.is_not_null())
+            }
+            RoleField::PUBLISHER => {
+                query.filter(f_assigned_publisher_at.is_not_null())
+            }
             RoleField::ADMIN => query.filter(f_assigned_admin_at.is_not_null()),
             _ => query,
         };
@@ -144,7 +167,8 @@ async fn list_infos(
 
     let mut infos = rows_into_infos(rows)?;
 
-    incl::assignment::populate_assignment_incls(conn, &mut infos, incl_opt).await?;
+    incl::assignment::populate_assignment_incls(conn, &mut infos, incl_opt)
+        .await?;
 
     Ok(infos)
 }
@@ -161,13 +185,27 @@ async fn list_all_infos_by_chapter(
 
     if let Some(role) = role {
         query = match role {
-            RoleField::RAW_PROVIDER => query.filter(f_assigned_raw_provider_at.is_not_null()),
-            RoleField::TRANSLATOR => query.filter(f_assigned_translator_at.is_not_null()),
-            RoleField::PROOFREADER => query.filter(f_assigned_proofreader_at.is_not_null()),
-            RoleField::TYPESETTER => query.filter(f_assigned_typesetter_at.is_not_null()),
-            RoleField::REDRAWER => query.filter(f_assigned_redrawer_at.is_not_null()),
-            RoleField::REVIEWER => query.filter(f_assigned_reviewer_at.is_not_null()),
-            RoleField::PUBLISHER => query.filter(f_assigned_publisher_at.is_not_null()),
+            RoleField::RAW_PROVIDER => {
+                query.filter(f_assigned_raw_provider_at.is_not_null())
+            }
+            RoleField::TRANSLATOR => {
+                query.filter(f_assigned_translator_at.is_not_null())
+            }
+            RoleField::PROOFREADER => {
+                query.filter(f_assigned_proofreader_at.is_not_null())
+            }
+            RoleField::TYPESETTER => {
+                query.filter(f_assigned_typesetter_at.is_not_null())
+            }
+            RoleField::REDRAWER => {
+                query.filter(f_assigned_redrawer_at.is_not_null())
+            }
+            RoleField::REVIEWER => {
+                query.filter(f_assigned_reviewer_at.is_not_null())
+            }
+            RoleField::PUBLISHER => {
+                query.filter(f_assigned_publisher_at.is_not_null())
+            }
             RoleField::ADMIN => query.filter(f_assigned_admin_at.is_not_null()),
             _ => query,
         };
@@ -182,7 +220,8 @@ async fn list_all_infos_by_chapter(
 
     let mut infos = rows_into_infos(rows)?;
 
-    incl::assignment::populate_assignment_incls(conn, &mut infos, incl_opt).await?;
+    incl::assignment::populate_assignment_incls(conn, &mut infos, incl_opt)
+        .await?;
 
     Ok(infos)
 }
@@ -203,7 +242,10 @@ async fn list_infos_by_chapter_id_excluded(
     rows_into_infos(rows)
 }
 
-async fn create(conn: &mut RdbConn, form: &AssignmentForm) -> RegularResult<AssignmentInfo> {
+async fn create(
+    conn: &mut RdbConn,
+    form: &AssignmentForm,
+) -> RegularResult<AssignmentInfo> {
     let now = OffsetDateTime::now_utc();
 
     let entry = AssignmentEntry::from_form(form, now);
@@ -228,14 +270,15 @@ async fn put_roles(
 
     let aspect = AssignmentAspect::new(now).roles(timestamps);
 
-    let row: AssignmentRow = diesel::update(t_assignment.filter(f_id.eq(update.id.as_str())))
-        .set(&aspect)
-        .returning(AssignmentRow::as_returning())
-        .get_result(conn)
-        .await
-        .optional()
-        .map_err(diesel)?
-        .ok_or_else(|| expected("error-assignment-not-found"))?;
+    let row: AssignmentRow =
+        diesel::update(t_assignment.filter(f_id.eq(update.id.as_str())))
+            .set(&aspect)
+            .returning(AssignmentRow::as_returning())
+            .get_result(conn)
+            .await
+            .optional()
+            .map_err(diesel)?
+            .ok_or_else(|| expected("error-assignment-not-found"))?;
 
     row_into_info(row)
 }
@@ -249,7 +292,10 @@ async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
     Ok(())
 }
 
-async fn delete_by_chapter_id(conn: &mut RdbConn, chapter_id: &str) -> RegularResult<()> {
+async fn delete_by_chapter_id(
+    conn: &mut RdbConn,
+    chapter_id: &str,
+) -> RegularResult<()> {
     diesel::delete(t_assignment.filter(f_chapter_id.eq(chapter_id)))
         .execute(conn)
         .await
@@ -279,7 +325,10 @@ impl<'a> Execute<GetInfoByChapterIdAndUserId<'a>> for RdbRepo {
 impl<'a> Execute<ListInfos<'a>> for RdbRepo {
     type Error = RegularError;
 
-    async fn execute(&self, step: &ListInfos<'a>) -> RegularResult<Vec<AssignmentInfo>> {
+    async fn execute(
+        &self,
+        step: &ListInfos<'a>,
+    ) -> RegularResult<Vec<AssignmentInfo>> {
         submit_query!(self.core, list_infos, step.spec)
     }
 }
@@ -288,7 +337,10 @@ impl<'a> Execute<ListInfos<'a>> for RdbRepo {
 impl<'a> Execute<GetInfoById<'a>> for RdbRepo {
     type Error = RegularError;
 
-    async fn execute(&self, step: &GetInfoById<'a>) -> RegularResult<AssignmentInfo> {
+    async fn execute(
+        &self,
+        step: &GetInfoById<'a>,
+    ) -> RegularResult<AssignmentInfo> {
         submit_query!(self.core, get_info_by_id, step.id, step.incl_opt)
     }
 }
@@ -312,7 +364,9 @@ impl<'a> Execute<ListAllInfosByChapter<'a>> for RdbRepo {
 }
 
 #[async_trait]
-impl<'a> Advance<ListAllInfosByChapter<'a>, RdbContext> for RdbRepoTransactional {
+impl<'a> Advance<ListAllInfosByChapter<'a>, RdbContext>
+    for RdbRepoTransactional
+{
     type Error = RegularError;
 
     async fn advance(
@@ -320,12 +374,20 @@ impl<'a> Advance<ListAllInfosByChapter<'a>, RdbContext> for RdbRepoTransactional
         context: &mut RdbContext,
         step: &ListAllInfosByChapter<'a>,
     ) -> RegularResult<Vec<AssignmentInfo>> {
-        list_all_infos_by_chapter(context.conn(), step.chapter_id, step.role, step.incl_opt).await
+        list_all_infos_by_chapter(
+            context.conn(),
+            step.chapter_id,
+            step.role,
+            step.incl_opt,
+        )
+        .await
     }
 }
 
 #[async_trait]
-impl<'a> Advance<GetInfoByChapterIdAndUserId<'a>, RdbContext> for RdbRepoTransactional {
+impl<'a> Advance<GetInfoByChapterIdAndUserId<'a>, RdbContext>
+    for RdbRepoTransactional
+{
     type Error = RegularError;
 
     async fn advance(
@@ -333,12 +395,19 @@ impl<'a> Advance<GetInfoByChapterIdAndUserId<'a>, RdbContext> for RdbRepoTransac
         context: &mut RdbContext,
         step: &GetInfoByChapterIdAndUserId<'a>,
     ) -> RegularResult<Option<AssignmentInfo>> {
-        get_info_by_chapter_id_and_user_id(context.conn(), step.chapter_id, step.user_id).await
+        get_info_by_chapter_id_and_user_id(
+            context.conn(),
+            step.chapter_id,
+            step.user_id,
+        )
+        .await
     }
 }
 
 #[async_trait]
-impl<'a> Advance<ListInfosByChapterIdExcluded<'a>, RdbContext> for RdbRepoTransactional {
+impl<'a> Advance<ListInfosByChapterIdExcluded<'a>, RdbContext>
+    for RdbRepoTransactional
+{
     type Error = RegularError;
 
     async fn advance(
@@ -380,7 +449,11 @@ impl<'a> Advance<PutRoles<'a>, RdbContext> for RdbRepoTransactional {
 impl<'a> Advance<Delete<'a>, RdbContext> for RdbRepoTransactional {
     type Error = RegularError;
 
-    async fn advance(&self, context: &mut RdbContext, step: &Delete<'a>) -> RegularResult<()> {
+    async fn advance(
+        &self,
+        context: &mut RdbContext,
+        step: &Delete<'a>,
+    ) -> RegularResult<()> {
         delete(context.conn(), step.id).await
     }
 }

@@ -5,10 +5,16 @@ use async_trait::async_trait;
 use time::OffsetDateTime;
 
 use crate::model::system_mail::{SystemMailForm, SystemMailInfo};
-use crate::part::repo::step::system_mail::{ListInfosByReceiverId, MarkRead, Send, SendBatch};
-use crate::part::repo::system_mail::{SystemMailRepo, SystemMailRepoTransactional};
+use crate::part::repo::step::system_mail::{
+    ListInfosByReceiverId, MarkRead, Send, SendBatch,
+};
+use crate::part::repo::system_mail::{
+    SystemMailRepo, SystemMailRepoTransactional,
+};
 use crate::part::shared::execute::Execute;
-use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactional, expected, now};
+use crate::part_impl::repo_mock::{
+    Mock, MockContext, MockState, MockTransactional, expected, now,
+};
 use crate::result::{ExpectedVariant, RegularError};
 
 impl SystemMailRepo<MockContext> for Mock {}

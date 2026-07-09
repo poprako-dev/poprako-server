@@ -3,7 +3,9 @@
 use poprako_transactional::step::Step;
 use poprako_util::page::Page;
 
-use crate::model::unit::{UnitCounters, UnitIndex, UnitIndexUpdate, UnitInfo, UnitOper};
+use crate::model::unit::{
+    UnitCounters, UnitIndex, UnitIndexUpdate, UnitInfo, UnitOper,
+};
 
 /// Step that lists units by page ID.
 pub struct ListInfosByPageId<'a> {
@@ -78,12 +80,17 @@ pub struct UnitStep;
 
 impl UnitStep {
     /// Constructs a step to list units by page ID.
-    pub fn list_infos_by_page_id<'a>(page_id: &'a str, page: Page) -> ListInfosByPageId<'a> {
+    pub fn list_infos_by_page_id<'a>(
+        page_id: &'a str,
+        page: Page,
+    ) -> ListInfosByPageId<'a> {
         ListInfosByPageId { page_id, page }
     }
 
     /// Constructs a step to list all units by page ID (no pagination).
-    pub fn list_all_infos_by_page_id<'a>(page_id: &'a str) -> ListAllInfosByPageId<'a> {
+    pub fn list_all_infos_by_page_id<'a>(
+        page_id: &'a str,
+    ) -> ListAllInfosByPageId<'a> {
         ListAllInfosByPageId { page_id }
     }
 
@@ -93,12 +100,17 @@ impl UnitStep {
     }
 
     /// Constructs a step to delete one unit by ID, scoped to a page.
-    pub fn delete_by_id_in_page<'a>(page_id: &'a str, id: &'a str) -> DeleteByIdInPage<'a> {
+    pub fn delete_by_id_in_page<'a>(
+        page_id: &'a str,
+        id: &'a str,
+    ) -> DeleteByIdInPage<'a> {
         DeleteByIdInPage { page_id, id }
     }
 
     /// Constructs a step to list indexes by page ID.
-    pub fn list_indexes_by_page_id<'a>(page_id: &'a str) -> ListIndexesByPageId<'a> {
+    pub fn list_indexes_by_page_id<'a>(
+        page_id: &'a str,
+    ) -> ListIndexesByPageId<'a> {
         ListIndexesByPageId { page_id }
     }
 

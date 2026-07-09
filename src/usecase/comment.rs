@@ -51,7 +51,8 @@ where
     let mut comment_info_vals = Vec::with_capacity(comment_infos.len());
 
     for comment_info in comment_infos {
-        comment_info_vals.push(CommentInfoVal::from_model(image_pool, comment_info).await?);
+        comment_info_vals
+            .push(CommentInfoVal::from_model(image_pool, comment_info).await?);
     }
 
     accept(comment_info_vals)
@@ -74,8 +75,12 @@ where
 {
     use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
-    CommentPermComplex::can_user_create(&mut repo.as_proxy(), &token.user_id, &data.team_id)
-        .await?;
+    CommentPermComplex::can_user_create(
+        &mut repo.as_proxy(),
+        &token.user_id,
+        &data.team_id,
+    )
+    .await?;
 
     let comment_info = drive
         .with_context(async move |context| {

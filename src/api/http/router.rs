@@ -16,8 +16,9 @@ use axum::routing::put;
 use tower_http::trace::TraceLayer;
 
 use crate::api::http::handler::{
-    announcement, assignment, assignment_invitation, auth, chapter, chapter_port, comic, comment,
-    health, member, member_invitation, page, system_mail, team, unit, user, workset,
+    announcement, assignment, assignment_invitation, auth, chapter,
+    chapter_port, comic, comment, health, member, member_invitation, page,
+    system_mail, team, unit, user, workset,
 };
 use crate::api::http::middleware::auth::authorize;
 use crate::api::http::middleware::latency::log_latency;
@@ -241,7 +242,10 @@ pub fn new(harn: AppHarn) -> Router<AppHarn> {
 
         router
             .route("/api/health", get(health::check_health))
-            .merge(SwaggerUi::new("/api/swagger-ui").url("/api/openapi.json", ApiDoc::openapi()))
+            .merge(
+                SwaggerUi::new("/api/swagger-ui")
+                    .url("/api/openapi.json", ApiDoc::openapi()),
+            )
     } else {
         router
     }

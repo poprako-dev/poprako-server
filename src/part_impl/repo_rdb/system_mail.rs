@@ -5,13 +5,19 @@ use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 
 use crate::model::system_mail::{SystemMailForm, SystemMailInfo};
-use crate::part::repo::step::system_mail::{ListInfosByReceiverId, MarkRead, Send, SendBatch};
-use crate::part::repo::system_mail::{SystemMailRepo, SystemMailRepoTransactional};
+use crate::part::repo::step::system_mail::{
+    ListInfosByReceiverId, MarkRead, Send, SendBatch,
+};
+use crate::part::repo::system_mail::{
+    SystemMailRepo, SystemMailRepoTransactional,
+};
 use crate::part::shared::execute::Execute;
 use crate::part_impl::rdb_core::RdbConn;
 use crate::part_impl::rdb_core::RdbContext;
 use crate::part_impl::rdb_core::result::{diesel, expected};
-use crate::part_impl::repo_rdb::entity::system_mail::{SystemMailEntry, SystemMailRow};
+use crate::part_impl::repo_rdb::entity::system_mail::{
+    SystemMailEntry, SystemMailRow,
+};
 use crate::part_impl::repo_rdb::{RdbRepo, RdbRepoTransactional};
 use crate::result::{ExpectedVariant, RegularError, RegularResult};
 
@@ -35,8 +41,12 @@ async fn send(conn: &mut RdbConn, form: &SystemMailForm) -> RegularResult<()> {
     Ok(())
 }
 
-async fn send_batch(conn: &mut RdbConn, forms: &[SystemMailForm]) -> RegularResult<()> {
-    let entries: Vec<SystemMailEntry<'_>> = forms.iter().map(SystemMailEntry::from).collect();
+async fn send_batch(
+    conn: &mut RdbConn,
+    forms: &[SystemMailForm],
+) -> RegularResult<()> {
+    let entries: Vec<SystemMailEntry<'_>> =
+        forms.iter().map(SystemMailEntry::from).collect();
 
     diesel::insert_into(t_system_mail)
         .values(&entries)
@@ -74,7 +84,11 @@ async fn list_infos(
     Ok(rows.into_iter().map(Into::into).collect())
 }
 
-async fn mark_read(conn: &mut RdbConn, id: &str, user_id: &str) -> RegularResult<()> {
+async fn mark_read(
+    conn: &mut RdbConn,
+    id: &str,
+    user_id: &str,
+) -> RegularResult<()> {
     let row: Option<SystemMailRow> = t_system_mail
         .filter(f_id.eq(id))
         .select(SystemMailRow::as_select())

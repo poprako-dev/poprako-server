@@ -14,7 +14,8 @@ static_loader! {
 }
 
 static LANGUAGE: LazyLock<LanguageIdentifier> = LazyLock::new(|| {
-    let lang = std::env::var("LANGUAGE").unwrap_or_else(|_| "zh-CN".to_string());
+    let lang =
+        std::env::var("LANGUAGE").unwrap_or_else(|_| "zh-CN".to_string());
     lang.parse().unwrap_or_else(|_| langid!("zh-CN"))
 });
 
@@ -27,6 +28,9 @@ pub fn trl(key: &str) -> String {
 /// `args` maps Fluent variable names (without the `$` prefix) to their
 /// [`FluentValue`] replacements. Variables in the `.ftl` file must use the
 /// `{$name}` syntax.
-pub fn trl_kv(key: &str, args: &HashMap<Cow<'static, str>, FluentValue>) -> String {
+pub fn trl_kv(
+    key: &str,
+    args: &HashMap<Cow<'static, str>, FluentValue>,
+) -> String {
     LOCALES.lookup_with_args(&LANGUAGE, key, args)
 }

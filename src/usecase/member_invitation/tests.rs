@@ -50,7 +50,12 @@ fn user(id: &str, qid: &str) -> UserInfo {
     }
 }
 
-fn member(id: &str, user_id: &str, team_id: &str, role_mask: RoleMask) -> MemberInfo {
+fn member(
+    id: &str,
+    user_id: &str,
+    team_id: &str,
+    role_mask: RoleMask,
+) -> MemberInfo {
     MemberInfo {
         id: id.into(),
         user_id: user_id.into(),
@@ -63,7 +68,11 @@ fn member(id: &str, user_id: &str, team_id: &str, role_mask: RoleMask) -> Member
     }
 }
 
-fn invitation(id: &str, team_id: &str, invitee_qid: &str) -> MemberInvitationInfo {
+fn invitation(
+    id: &str,
+    team_id: &str,
+    invitee_qid: &str,
+) -> MemberInvitationInfo {
     MemberInvitationInfo {
         id: id.into(),
         team_id: team_id.into(),
@@ -165,9 +174,10 @@ async fn list_infos_member_lists_invitations() {
     ));
     mock.seed_member_invitation(invitation("inv-1", "team-1", "qid-2"));
 
-    let listed = list_infos(&mock, &mock, token("member-user"), list_data("team-1"))
-        .await
-        .unwrap();
+    let listed =
+        list_infos(&mock, &mock, token("member-user"), list_data("team-1"))
+            .await
+            .unwrap();
 
     assert_eq!(listed.len(), 1);
     assert_eq!(listed[0].id, "inv-1");
@@ -183,9 +193,10 @@ async fn list_infos_empty_returns_after_membership() {
         RoleMask::from(RoleField::TRANSLATOR),
     ));
 
-    let listed = list_infos(&mock, &mock, token("member-user"), list_data("team-1"))
-        .await
-        .unwrap();
+    let listed =
+        list_infos(&mock, &mock, token("member-user"), list_data("team-1"))
+            .await
+            .unwrap();
 
     assert!(listed.is_empty());
 }
@@ -235,10 +246,11 @@ async fn update_roles_non_admin_is_rejected() {
     ));
     mock.seed_member_invitation(invitation("inv-1", "team-1", "qid-2"));
 
-    let err = update_roles(&mock, &mock, token("normal-user"), update_data("inv-1"))
-        .await
-        .err()
-        .unwrap();
+    let err =
+        update_roles(&mock, &mock, token("normal-user"), update_data("inv-1"))
+            .await
+            .err()
+            .unwrap();
 
     assert_expected_variant(err, ExpectedVariant::Perm);
 }

@@ -7,19 +7,24 @@ use poprako_transactional::advance::Advance;
 use crate::complex::team::TeamComplex;
 use crate::model::team::{TeamAvatarReservation, TeamInfo};
 use crate::part::repo::step::team::{
-    Create, Delete, GetInfoById, GetInfoExcluded, IncrementWorksetNextIndex, ListInfos,
-    MarkAvatarUploaded, ReserveAvatar, UpdateInfo,
+    Create, Delete, GetInfoById, GetInfoExcluded, IncrementWorksetNextIndex,
+    ListInfos, MarkAvatarUploaded, ReserveAvatar, UpdateInfo,
 };
 use crate::part::repo::team::{TeamRepo, TeamRepoTransactional};
 use crate::part::shared::execute::Execute;
-use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactional, expected, now};
+use crate::part_impl::repo_mock::{
+    Mock, MockContext, MockState, MockTransactional, expected, now,
+};
 use crate::result::{RegularError, RegularResult};
 
 impl TeamRepo<MockContext> for Mock {}
 
 impl TeamRepoTransactional<MockContext> for MockTransactional {}
 
-fn create_team(state: &mut MockState, step: &Create<'_>) -> RegularResult<TeamInfo> {
+fn create_team(
+    state: &mut MockState,
+    step: &Create<'_>,
+) -> RegularResult<TeamInfo> {
     if state.teams.iter().any(|team| team.id == step.form.id) {
         return Err(expected("error-already-exists"));
     }
@@ -66,7 +71,10 @@ fn mark_team_avatar_uploaded(
 impl<'a> Execute<Create<'a>> for Mock {
     type Error = RegularError;
 
-    async fn execute(&self, step: &Create<'a>) -> Result<TeamInfo, Self::Error> {
+    async fn execute(
+        &self,
+        step: &Create<'a>,
+    ) -> Result<TeamInfo, Self::Error> {
         let mut state = self.state.lock().unwrap();
         create_team(&mut state, step)
     }
@@ -76,7 +84,10 @@ impl<'a> Execute<Create<'a>> for Mock {
 impl<'a> Execute<GetInfoById<'a>> for Mock {
     type Error = RegularError;
 
-    async fn execute(&self, step: &GetInfoById<'a>) -> Result<TeamInfo, Self::Error> {
+    async fn execute(
+        &self,
+        step: &GetInfoById<'a>,
+    ) -> Result<TeamInfo, Self::Error> {
         let state = self.state.lock().unwrap();
         state
             .teams
@@ -91,17 +102,19 @@ impl<'a> Execute<GetInfoById<'a>> for Mock {
 impl<'a> Execute<ListInfos<'a>> for Mock {
     type Error = RegularError;
 
-    async fn execute(&self, step: &ListInfos<'a>) -> Result<Vec<TeamInfo>, Self::Error> {
+    async fn execute(
+        &self,
+        step: &ListInfos<'a>,
+    ) -> Result<Vec<TeamInfo>, Self::Error> {
         let state = self.state.lock().unwrap();
         let mut teams = match step.user_id {
             Some(user_id) => state
                 .teams
                 .iter()
                 .filter(|team| {
-                    state
-                        .members
-                        .iter()
-                        .any(|member| member.user_id == user_id && member.team_id == team.id)
+                    state.members.iter().any(|member| {
+                        member.user_id == user_id && member.team_id == team.id
+                    })
                 })
                 .cloned()
                 .collect(),
@@ -143,7 +156,10 @@ impl<'a> Execute<UpdateInfo<'a>> for Mock {
 impl<'a> Execute<MarkAvatarUploaded<'a>> for Mock {
     type Error = RegularError;
 
-    async fn execute(&self, step: &MarkAvatarUploaded<'a>) -> Result<(), Self::Error> {
+    async fn execute(
+        &self,
+        step: &MarkAvatarUploaded<'a>,
+    ) -> Result<(), Self::Error> {
         let mut state = self.state.lock().unwrap();
         mark_team_avatar_uploaded(&mut state, step.id, step.avatar_version)
     }
@@ -165,7 +181,11 @@ impl<'a> Advance<ReserveAvatar<'a>, MockContext> for MockTransactional {
             .find(|team| team.id == step.id)
             .ok_or_else(|| expected("error-team-not-found"))?;
         let avatar_version = team.avatar_version + 1;
-        let object_key = TeamComplex::gen_avatar_key(step.id, avatar_version, step.file_extension);
+        let object_key = TeamComplex::gen_avatar_key(
+            step.id,
+            avatar_version,
+            step.file_extension,
+        );
         let prev_object_key = team.avatar_key.clone();
         team.avatar_key = Some(object_key.clone());
         team.avatar_uploaded = false;
@@ -201,7 +221,11 @@ impl<'a> Advance<MarkAvatarUploaded<'a>, MockContext> for MockTransactional {
         context: &mut MockContext,
         step: &MarkAvatarUploaded<'a>,
     ) -> Result<(), Self::Error> {
-        mark_team_avatar_uploaded(&mut context.state, step.id, step.avatar_version)
+        mark_team_avatar_uploaded(
+            &mut context.state,
+            step.id,
+            step.avatar_version,
+        )
     }
 }
 
@@ -283,7 +307,9 @@ impl<'a> Advance<Delete<'a>, MockContext> for MockTransactional {
         context
             .state
             .member_invitations
-            .retain(|member_invitation| member_invitation.team_id != deleted_team_id);
+            .retain(|member_invitation| {
+                member_invitation.team_id != deleted_team_id
+            });
         context.state.comics.retain(|comic| {
             !deleted_workset_ids
                 .iter()
@@ -309,7 +335,9 @@ impl<'a> Advance<Delete<'a>, MockContext> for MockTransactional {
 }
 
 #[async_trait]
-impl<'a> Advance<IncrementWorksetNextIndex<'a>, MockContext> for MockTransactional {
+impl<'a> Advance<IncrementWorksetNextIndex<'a>, MockContext>
+    for MockTransactional
+{
     type Error = RegularError;
 
     async fn advance(

@@ -3,8 +3,9 @@
 use poprako_transactional::advance::Advance;
 
 use crate::part::repo::step::assignment::{
-    Create, Delete, DeleteByChapterId, GetInfoByChapterIdAndUserId, GetInfoById,
-    ListAllInfosByChapter, ListInfos, ListInfosByChapterIdExcluded, PutRoles,
+    Create, Delete, DeleteByChapterId, GetInfoByChapterIdAndUserId,
+    GetInfoById, ListAllInfosByChapter, ListInfos,
+    ListInfosByChapterIdExcluded, PutRoles,
 };
 use crate::part::shared::execute::Execute;
 use crate::result::RegularError;

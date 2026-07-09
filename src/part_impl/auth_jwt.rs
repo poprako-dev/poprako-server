@@ -1,7 +1,9 @@
 //! JWT-backed authentication token signer.
 
 use anyhow::Context as _;
-use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, Validation, decode, encode};
+use jsonwebtoken::{
+    Algorithm, DecodingKey, EncodingKey, Header, Validation, decode, encode,
+};
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 use tracing::{Level, instrument};
@@ -43,7 +45,8 @@ impl JwtAuth {
     pub fn new(secret: &str, expiration_hours: i64) -> RegularResult<Self> {
         if expiration_hours <= 0 {
             return Err(RegularError::Unrecoverable {
-                message: "[JwtAuth::new] JWT_EXPIRATION_HOURS must be positive".to_string(),
+                message: "[JwtAuth::new] JWT_EXPIRATION_HOURS must be positive"
+                    .to_string(),
             });
         }
 
@@ -68,10 +71,13 @@ impl JwtAuth {
         let expiration_hours = std::env::var("JWT_EXPIRATION_HOURS")
             .with_context(|| "[JwtAuth::from_env] JWT_EXPIRATION_HOURS is not set")?
             .parse()
-            .with_context(|| "[JwtAuth::from_env] JWT_EXPIRATION_HOURS must be an integer")?;
+            .with_context(
+                || "[JwtAuth::from_env] JWT_EXPIRATION_HOURS must be an integer",
+            )?;
 
         Self::new(&secret, expiration_hours).map_err(|err| match err {
-            RegularError::Expected { message, .. } | RegularError::Unrecoverable { message } => {
+            RegularError::Expected { message, .. }
+            | RegularError::Unrecoverable { message } => {
                 anyhow::anyhow!("{}", message)
             }
         })
@@ -85,7 +91,8 @@ impl TokenAuth for JwtAuth {
 
         let issued_at = now.unix_timestamp() as usize;
 
-        let expiration = (now.unix_timestamp() + self.expiration_seconds) as usize;
+        let expiration =
+            (now.unix_timestamp() + self.expiration_seconds) as usize;
 
         let claims = SignClaims {
             sub: token.user_id,
@@ -98,22 +105,30 @@ impl TokenAuth for JwtAuth {
 
         let header = Header::new(Algorithm::HS256);
 
-        encode(&header, &claims, &self.encoding_key).map_err(|err| RegularError::Unrecoverable {
-            message: format!("[JwtAuth::sign_token] error when encoding: {}", err),
+        encode(&header, &claims, &self.encoding_key).map_err(|err| {
+            RegularError::Unrecoverable {
+                message: format!(
+                    "[JwtAuth::sign_token] error when encoding: {}",
+                    err
+                ),
+            }
         })
     }
 
     #[instrument(err(Debug), skip(self), level = Level::DEBUG)]
     fn verify_token(&self, raw: &str) -> RegularResult<UserToken> {
-        let token_data =
-            decode::<TokenClaims>(raw, &self.decoding_key, &Validation::new(Algorithm::HS256))
-                .map_err(|err| {
-                    tracing::debug!("[JwtAuth::verify_token] decode failed: {}", err);
-                    RegularError::Expected {
-                        variant: ExpectedVariant::Auth,
-                        message: trl("error-unauthorized"),
-                    }
-                })?;
+        let token_data = decode::<TokenClaims>(
+            raw,
+            &self.decoding_key,
+            &Validation::new(Algorithm::HS256),
+        )
+        .map_err(|err| {
+            tracing::debug!("[JwtAuth::verify_token] decode failed: {}", err);
+            RegularError::Expected {
+                variant: ExpectedVariant::Auth,
+                message: trl("error-unauthorized"),
+            }
+        })?;
         Ok(UserToken {
             user_id: token_data.claims.user_id,
         })

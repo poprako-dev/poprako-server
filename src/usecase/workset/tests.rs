@@ -75,7 +75,11 @@ fn admin_member(user_id: &str, team_id: &str) -> MemberInfo {
     }
 }
 
-fn comic_with_uploaded_cover(id: &str, workset_id: &str, cover_key: &str) -> ComicInfo {
+fn comic_with_uploaded_cover(
+    id: &str,
+    workset_id: &str,
+    cover_key: &str,
+) -> ComicInfo {
     let time = OffsetDateTime::now_utc();
 
     ComicInfo {

@@ -51,16 +51,23 @@ impl From<MemberInfo> for MemberInfoVal {
 impl MemberInfoVal {
     /// Converts a member model into a presentation-ready value,
     /// resolving included user/team data when present.
-    pub async fn from_model<P>(image_pool: &P, model: MemberInfo) -> RegularResult<Self>
+    pub async fn from_model<P>(
+        image_pool: &P,
+        model: MemberInfo,
+    ) -> RegularResult<Self>
     where
         P: ImagePool,
     {
         let user = match model.user {
-            Some(user_info) => Some(UserInfoVal::from_model(image_pool, user_info).await?),
+            Some(user_info) => {
+                Some(UserInfoVal::from_model(image_pool, user_info).await?)
+            }
             None => None,
         };
         let team = match model.team {
-            Some(team_info) => Some(TeamInfoVal::from_model(image_pool, team_info).await?),
+            Some(team_info) => {
+                Some(TeamInfoVal::from_model(image_pool, team_info).await?)
+            }
             None => None,
         };
         Ok(Self {

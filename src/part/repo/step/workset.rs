@@ -115,7 +115,10 @@ impl WorksetStep {
     }
 
     /// Constructs a step to list a team's worksets.
-    pub fn list_infos_by_team_id<'a>(team_id: &'a str, page: Page) -> ListInfosByTeamId<'a> {
+    pub fn list_infos_by_team_id<'a>(
+        team_id: &'a str,
+        page: Page,
+    ) -> ListInfosByTeamId<'a> {
         ListInfosByTeamId {
             team_id,
             offset: page.offset,
@@ -151,7 +154,10 @@ impl WorksetStep {
     }
 
     /// Constructs a step to adjust a workset's comic count.
-    pub fn update_comic_count<'a>(id: &'a str, delta: i32) -> UpdateComicCount<'a> {
+    pub fn update_comic_count<'a>(
+        id: &'a str,
+        delta: i32,
+    ) -> UpdateComicCount<'a> {
         UpdateComicCount { id, delta }
     }
 }

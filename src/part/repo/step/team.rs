@@ -112,7 +112,10 @@ impl TeamStep {
     }
 
     /// Constructs a step to list teams with optional user scoping.
-    pub fn list_infos<'a>(user_id: Option<&'a str>, page: Page) -> ListInfos<'a> {
+    pub fn list_infos<'a>(
+        user_id: Option<&'a str>,
+        page: Page,
+    ) -> ListInfos<'a> {
         ListInfos {
             user_id,
             offset: page.offset,
@@ -121,7 +124,11 @@ impl TeamStep {
     }
 
     /// Constructs a step to update a team's name and description.
-    pub fn update_info<'a>(id: &'a str, name: &'a str, description: &'a str) -> UpdateInfo<'a> {
+    pub fn update_info<'a>(
+        id: &'a str,
+        name: &'a str,
+        description: &'a str,
+    ) -> UpdateInfo<'a> {
         UpdateInfo {
             id,
             name,
@@ -130,12 +137,18 @@ impl TeamStep {
     }
 
     /// Constructs a step to reserve a new team avatar upload slot.
-    pub fn reserve_avatar<'a>(id: &'a str, file_extension: &'a str) -> ReserveAvatar<'a> {
+    pub fn reserve_avatar<'a>(
+        id: &'a str,
+        file_extension: &'a str,
+    ) -> ReserveAvatar<'a> {
         ReserveAvatar { id, file_extension }
     }
 
     /// Constructs a step to confirm a team avatar upload completed.
-    pub fn mark_avatar_uploaded<'a>(id: &'a str, avatar_version: i64) -> MarkAvatarUploaded<'a> {
+    pub fn mark_avatar_uploaded<'a>(
+        id: &'a str,
+        avatar_version: i64,
+    ) -> MarkAvatarUploaded<'a> {
         MarkAvatarUploaded { id, avatar_version }
     }
 
@@ -150,7 +163,9 @@ impl TeamStep {
     }
 
     /// Constructs a step to allocate a workset index.
-    pub fn increment_workset_next_index<'a>(id: &'a str) -> IncrementWorksetNextIndex<'a> {
+    pub fn increment_workset_next_index<'a>(
+        id: &'a str,
+    ) -> IncrementWorksetNextIndex<'a> {
         IncrementWorksetNextIndex { id }
     }
 }

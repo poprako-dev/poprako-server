@@ -21,8 +21,9 @@ use crate::api::http::result::no_content;
 use crate::api::http::state::AppHarn;
 use crate::data::assignment::AssignmentInfoVal;
 use crate::data::assignment_invitation::{
-    AssignmentInvitationInfoVal, CreateAssignmentInvitationData, CreateAssignmentInvitationVal,
-    JoinAssignmentInvitationData, ListAssignmentInvitationInfosData,
+    AssignmentInvitationInfoVal, CreateAssignmentInvitationData,
+    CreateAssignmentInvitationVal, JoinAssignmentInvitationData,
+    ListAssignmentInvitationInfosData,
 };
 use crate::model::user::UserToken;
 use crate::usecase;
@@ -62,9 +63,14 @@ pub async fn create(
     Extension(user_token): Extension<UserToken>,
     Json(data): Json<CreateAssignmentInvitationData>,
 ) -> HttpResult<CreateAssignmentInvitationVal> {
-    usecase::assignment_invitation::create(harn.drive(), harn.repo(), user_token, data)
-        .await?
-        .accept(StatusCode::CREATED)
+    usecase::assignment_invitation::create(
+        harn.drive(),
+        harn.repo(),
+        user_token,
+        data,
+    )
+    .await?
+    .accept(StatusCode::CREATED)
 }
 
 /// `GET /api/v1/chapters/{chapter_id}/assignment-invitations` — list invitations.

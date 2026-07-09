@@ -7,19 +7,22 @@ use time::OffsetDateTime;
 
 use poprako_transactional::advance::Advance;
 
-use crate::model::assignment_invitation::{AssignmentInvitationForm, AssignmentInvitationInfo};
+use crate::model::assignment_invitation::{
+    AssignmentInvitationForm, AssignmentInvitationInfo,
+};
 use crate::part::repo::assignment_invitation::{
     AssignmentInvitationRepo, AssignmentInvitationRepoTransactional,
 };
 use crate::part::repo::step::assignment_invitation::{
-    Create, Delete, DeleteByChapterId, GetInfoByCodeExcluded, GetInfoById, ListInfos,
-    MarkPendingAsUsed,
+    Create, Delete, DeleteByChapterId, GetInfoByCodeExcluded, GetInfoById,
+    ListInfos, MarkPendingAsUsed,
 };
 use crate::part::shared::execute::Execute;
 use crate::part_impl::rdb_core::result::{diesel, expected};
 use crate::part_impl::rdb_core::{RdbConn, RdbContext};
 use crate::part_impl::repo_rdb::entity::assignment_invitation::{
-    AssignmentInvitationAspect, AssignmentInvitationEntry, AssignmentInvitationRow,
+    AssignmentInvitationAspect, AssignmentInvitationEntry,
+    AssignmentInvitationRow,
 };
 use crate::part_impl::repo_rdb::schema::t_assignment_invitation::dsl::*;
 use crate::part_impl::repo_rdb::{RdbRepo, RdbRepoTransactional};
@@ -27,9 +30,14 @@ use crate::result::{RegularError, RegularResult};
 
 impl AssignmentInvitationRepo<RdbContext> for RdbRepo {}
 
-impl AssignmentInvitationRepoTransactional<RdbContext> for RdbRepoTransactional {}
+impl AssignmentInvitationRepoTransactional<RdbContext>
+    for RdbRepoTransactional
+{
+}
 
-fn row_into_info(row: AssignmentInvitationRow) -> RegularResult<AssignmentInvitationInfo> {
+fn row_into_info(
+    row: AssignmentInvitationRow,
+) -> RegularResult<AssignmentInvitationInfo> {
     row.try_into()
 }
 
@@ -66,7 +74,10 @@ async fn list_infos(
     rows_into_infos(rows)
 }
 
-async fn get_info_by_id(conn: &mut RdbConn, id: &str) -> RegularResult<AssignmentInvitationInfo> {
+async fn get_info_by_id(
+    conn: &mut RdbConn,
+    id: &str,
+) -> RegularResult<AssignmentInvitationInfo> {
     let row: AssignmentInvitationRow = t_assignment_invitation
         .filter(f_id.eq(id))
         .select(AssignmentInvitationRow::as_select())
@@ -103,17 +114,21 @@ async fn create(
 ) -> RegularResult<AssignmentInvitationInfo> {
     let entry = AssignmentInvitationEntry::from(form);
 
-    let row: AssignmentInvitationRow = diesel::insert_into(t_assignment_invitation)
-        .values(&entry)
-        .returning(AssignmentInvitationRow::as_returning())
-        .get_result(conn)
-        .await
-        .map_err(diesel)?;
+    let row: AssignmentInvitationRow =
+        diesel::insert_into(t_assignment_invitation)
+            .values(&entry)
+            .returning(AssignmentInvitationRow::as_returning())
+            .get_result(conn)
+            .await
+            .map_err(diesel)?;
 
     row_into_info(row)
 }
 
-async fn mark_pending_as_used(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
+async fn mark_pending_as_used(
+    conn: &mut RdbConn,
+    id: &str,
+) -> RegularResult<()> {
     let now = OffsetDateTime::now_utc();
 
     let aspect = AssignmentInvitationAspect::new(now).pending(false);
@@ -144,7 +159,10 @@ async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
     Ok(())
 }
 
-async fn delete_by_chapter_id(conn: &mut RdbConn, chapter_id: &str) -> RegularResult<()> {
+async fn delete_by_chapter_id(
+    conn: &mut RdbConn,
+    chapter_id: &str,
+) -> RegularResult<()> {
     diesel::delete(t_assignment_invitation.filter(f_chapter_id.eq(chapter_id)))
         .execute(conn)
         .await
@@ -157,7 +175,10 @@ async fn delete_by_chapter_id(conn: &mut RdbConn, chapter_id: &str) -> RegularRe
 impl<'a> Execute<ListInfos<'a>> for RdbRepo {
     type Error = RegularError;
 
-    async fn execute(&self, step: &ListInfos<'a>) -> RegularResult<Vec<AssignmentInvitationInfo>> {
+    async fn execute(
+        &self,
+        step: &ListInfos<'a>,
+    ) -> RegularResult<Vec<AssignmentInvitationInfo>> {
         submit_query!(
             self.core,
             list_infos,
@@ -173,7 +194,10 @@ impl<'a> Execute<ListInfos<'a>> for RdbRepo {
 impl<'a> Execute<GetInfoById<'a>> for RdbRepo {
     type Error = RegularError;
 
-    async fn execute(&self, step: &GetInfoById<'a>) -> RegularResult<AssignmentInvitationInfo> {
+    async fn execute(
+        &self,
+        step: &GetInfoById<'a>,
+    ) -> RegularResult<AssignmentInvitationInfo> {
         submit_query!(self.core, get_info_by_id, step.id)
     }
 }
@@ -205,7 +229,9 @@ impl<'a> Advance<GetInfoById<'a>, RdbContext> for RdbRepoTransactional {
 }
 
 #[async_trait]
-impl<'a> Advance<GetInfoByCodeExcluded<'a>, RdbContext> for RdbRepoTransactional {
+impl<'a> Advance<GetInfoByCodeExcluded<'a>, RdbContext>
+    for RdbRepoTransactional
+{
     type Error = RegularError;
 
     async fn advance(
@@ -234,7 +260,11 @@ impl<'a> Advance<MarkPendingAsUsed<'a>, RdbContext> for RdbRepoTransactional {
 impl<'a> Advance<Delete<'a>, RdbContext> for RdbRepoTransactional {
     type Error = RegularError;
 
-    async fn advance(&self, context: &mut RdbContext, step: &Delete<'a>) -> RegularResult<()> {
+    async fn advance(
+        &self,
+        context: &mut RdbContext,
+        step: &Delete<'a>,
+    ) -> RegularResult<()> {
         delete(context.conn(), step.id).await
     }
 }

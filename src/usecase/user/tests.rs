@@ -40,7 +40,8 @@ use crate::part_impl::prom_mock::MockPromRecord;
 use crate::part_impl::repo_mock::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::{
-    assert_expected_message, assert_expected_variant, assert_one_image_check_record,
+    assert_expected_message, assert_expected_variant,
+    assert_one_image_check_record,
 };
 use crate::value::role::{RoleField, RoleMask};
 
@@ -101,7 +102,12 @@ pub fn invalid_credential(user_id: &str) -> UserCredential {
 }
 
 /// Builds a [`MemberInfo`] fixture.
-pub fn member(id: &str, user_id: &str, user_nickname: &str, team_id: &str) -> MemberInfo {
+pub fn member(
+    id: &str,
+    user_id: &str,
+    user_nickname: &str,
+    team_id: &str,
+) -> MemberInfo {
     MemberInfo {
         id: id.into(),
         user_id: user_id.into(),
@@ -400,9 +406,15 @@ async fn mark_avatar_uploaded_marks_matching_version() {
         credential("user-1", "password"),
     );
 
-    mark_avatar_uploaded(&mock, &mock, token("user-1"), "user-1".into(), mark_data(2))
-        .await
-        .unwrap();
+    mark_avatar_uploaded(
+        &mock,
+        &mock,
+        token("user-1"),
+        "user-1".into(),
+        mark_data(2),
+    )
+    .await
+    .unwrap();
 
     assert!(mock.snapshot().users[0].avatar_uploaded);
 }
@@ -415,11 +427,23 @@ async fn mark_avatar_uploaded_accepts_repeated_matching_version() {
         credential("user-1", "password"),
     );
 
-    let first =
-        mark_avatar_uploaded(&mock, &mock, token("user-1"), "user-1".into(), mark_data(2)).await;
+    let first = mark_avatar_uploaded(
+        &mock,
+        &mock,
+        token("user-1"),
+        "user-1".into(),
+        mark_data(2),
+    )
+    .await;
     assert!(first.is_ok());
-    let second =
-        mark_avatar_uploaded(&mock, &mock, token("user-1"), "user-1".into(), mark_data(2)).await;
+    let second = mark_avatar_uploaded(
+        &mock,
+        &mock,
+        token("user-1"),
+        "user-1".into(),
+        mark_data(2),
+    )
+    .await;
     assert!(second.is_ok());
 
     assert!(mock.snapshot().users[0].avatar_uploaded);
@@ -433,10 +457,16 @@ async fn mark_avatar_uploaded_rejects_non_owner() {
         credential("user-1", "password"),
     );
 
-    let err = mark_avatar_uploaded(&mock, &mock, token("user-2"), "user-1".into(), mark_data(2))
-        .await
-        .err()
-        .unwrap();
+    let err = mark_avatar_uploaded(
+        &mock,
+        &mock,
+        token("user-2"),
+        "user-1".into(),
+        mark_data(2),
+    )
+    .await
+    .err()
+    .unwrap();
 
     assert_expected_variant(err, ExpectedVariant::Perm);
     assert!(!mock.snapshot().users[0].avatar_uploaded);
@@ -450,12 +480,22 @@ async fn mark_avatar_uploaded_rolls_back_stale_version() {
         credential("user-1", "password"),
     );
 
-    let err = mark_avatar_uploaded(&mock, &mock, token("user-1"), "user-1".into(), mark_data(1))
-        .await
-        .err()
-        .unwrap();
+    let err = mark_avatar_uploaded(
+        &mock,
+        &mock,
+        token("user-1"),
+        "user-1".into(),
+        mark_data(1),
+    )
+    .await
+    .err()
+    .unwrap();
 
-    assert_expected_message(err, ExpectedVariant::Args, "error-stale-avatar-upload");
+    assert_expected_message(
+        err,
+        ExpectedVariant::Args,
+        "error-stale-avatar-upload",
+    );
     assert!(!mock.snapshot().users[0].avatar_uploaded);
 }
 
@@ -480,13 +520,23 @@ async fn mark_avatar_uploaded_rejects_old_reservation_replay() {
     .unwrap();
     assert_eq!(reserved.avatar_version, 2);
 
-    let err = mark_avatar_uploaded(&mock, &mock, token("user-1"), "user-1".into(), mark_data(1))
-        .await
-        .err()
-        .unwrap();
+    let err = mark_avatar_uploaded(
+        &mock,
+        &mock,
+        token("user-1"),
+        "user-1".into(),
+        mark_data(1),
+    )
+    .await
+    .err()
+    .unwrap();
     let snapshot = mock.snapshot();
 
-    assert_expected_message(err, ExpectedVariant::Args, "error-stale-avatar-upload");
+    assert_expected_message(
+        err,
+        ExpectedVariant::Args,
+        "error-stale-avatar-upload",
+    );
     assert!(!snapshot.users[0].avatar_uploaded);
     assert_eq!(snapshot.users[0].avatar_version, 2);
 }

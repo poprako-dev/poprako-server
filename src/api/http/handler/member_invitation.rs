@@ -21,8 +21,9 @@ use crate::api::http::result::HttpResult;
 use crate::api::http::result::no_content;
 use crate::api::http::state::AppHarn;
 use crate::data::member_invitation::{
-    CreateMemberInvitationData, CreateMemberInvitationVal, ListMemberInvitationInfosData,
-    MemberInvitationInfoVal, UpdateMemberInvitationRolesData,
+    CreateMemberInvitationData, CreateMemberInvitationVal,
+    ListMemberInvitationInfosData, MemberInvitationInfoVal,
+    UpdateMemberInvitationRolesData,
 };
 use crate::model::user::UserToken;
 use crate::usecase;
@@ -73,9 +74,14 @@ pub async fn create(
     Extension(user_token): Extension<UserToken>,
     Json(data): Json<CreateMemberInvitationData>,
 ) -> HttpResult<CreateMemberInvitationVal> {
-    usecase::member_invitation::create(harn.drive(), harn.repo(), user_token, data)
-        .await?
-        .accept(StatusCode::CREATED)
+    usecase::member_invitation::create(
+        harn.drive(),
+        harn.repo(),
+        user_token,
+        data,
+    )
+    .await?
+    .accept(StatusCode::CREATED)
 }
 
 /// `GET /api/v1/teams/{team_id}/member-invitations` — list a team's invitations.
@@ -105,9 +111,14 @@ pub async fn list_infos(
         limit: query.limit,
     };
 
-    usecase::member_invitation::list_infos(harn.repo(), harn.image_pool(), user_token, data)
-        .await?
-        .accept(StatusCode::OK)
+    usecase::member_invitation::list_infos(
+        harn.repo(),
+        harn.image_pool(),
+        user_token,
+        data,
+    )
+    .await?
+    .accept(StatusCode::OK)
 }
 
 /// `PUT /api/v1/member-invitations/{member_invitation_id}/roles` — update invitation roles.
@@ -133,7 +144,13 @@ pub async fn update_roles(
 ) -> HttpNoContent {
     ensure_path_matches_body_id(&member_invitation_id, &data.id)?;
 
-    usecase::member_invitation::update_roles(harn.drive(), harn.repo(), user_token, data).await?;
+    usecase::member_invitation::update_roles(
+        harn.drive(),
+        harn.repo(),
+        user_token,
+        data,
+    )
+    .await?;
 
     no_content()
 }
@@ -156,8 +173,13 @@ pub async fn delete(
     Path(member_invitation_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
-    usecase::member_invitation::delete(harn.drive(), harn.repo(), user_token, member_invitation_id)
-        .await?;
+    usecase::member_invitation::delete(
+        harn.drive(),
+        harn.repo(),
+        user_token,
+        member_invitation_id,
+    )
+    .await?;
 
     no_content()
 }

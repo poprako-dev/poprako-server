@@ -103,9 +103,14 @@ pub async fn list_infos(
         limit: query.limit,
     };
 
-    usecase::chapter::list_infos(harn.repo(), harn.image_pool(), user_token, data)
-        .await?
-        .accept(StatusCode::OK)
+    usecase::chapter::list_infos(
+        harn.repo(),
+        harn.image_pool(),
+        user_token,
+        data,
+    )
+    .await?
+    .accept(StatusCode::OK)
 }
 
 /// `GET /api/v1/comics/{comic_id}/chapters/pinned` — fetch the pinned chapter.
@@ -176,7 +181,8 @@ pub async fn update_info(
 ) -> HttpNoContent {
     ensure_path_matches_body_id(&chapter_id, &data.id)?;
 
-    usecase::chapter::update_info(harn.drive(), harn.repo(), user_token, data).await?;
+    usecase::chapter::update_info(harn.drive(), harn.repo(), user_token, data)
+        .await?;
 
     no_content()
 }

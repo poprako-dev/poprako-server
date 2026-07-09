@@ -26,7 +26,10 @@ impl Incl for AssignmentChapterIncl {
         Some(&assignment_info.chapter_id)
     }
 
-    fn inject(assignment_info: &mut AssignmentInfo, chapter_info: Option<ChapterInfo>) {
+    fn inject(
+        assignment_info: &mut AssignmentInfo,
+        chapter_info: Option<ChapterInfo>,
+    ) {
         assignment_info.chapter = chapter_info;
     }
 }
@@ -46,7 +49,10 @@ impl Incl for AssignmentChapterComicIncl {
             .map(|chapter_info| chapter_info.comic_id.as_str())
     }
 
-    fn inject(assignment_info: &mut AssignmentInfo, comic_info: Option<ComicInfo>) {
+    fn inject(
+        assignment_info: &mut AssignmentInfo,
+        comic_info: Option<ComicInfo>,
+    ) {
         let Some(chapter_info) = &mut assignment_info.chapter else {
             return;
         };
@@ -70,7 +76,10 @@ impl Incl for AssignmentChapterComicWorksetIncl {
             .map(|comic_info| comic_info.workset_id.as_str())
     }
 
-    fn inject(assignment_info: &mut AssignmentInfo, workset_info: Option<WorksetInfo>) {
+    fn inject(
+        assignment_info: &mut AssignmentInfo,
+        workset_info: Option<WorksetInfo>,
+    ) {
         let Some(chapter_info) = &mut assignment_info.chapter else {
             return;
         };
@@ -100,7 +109,10 @@ impl Incl for AssignmentChapterComicWorksetTeamIncl {
             .map(|workset_info| workset_info.team_id.as_str())
     }
 
-    fn inject(assignment_info: &mut AssignmentInfo, team_info: Option<TeamInfo>) {
+    fn inject(
+        assignment_info: &mut AssignmentInfo,
+        team_info: Option<TeamInfo>,
+    ) {
         let Some(chapter_info) = &mut assignment_info.chapter else {
             return;
         };
@@ -128,7 +140,10 @@ impl Incl for AssignmentChapterCreatorIncl {
             .map(|chapter_info| chapter_info.creator_id.as_str())
     }
 
-    fn inject(assignment_info: &mut AssignmentInfo, user_info: Option<UserInfo>) {
+    fn inject(
+        assignment_info: &mut AssignmentInfo,
+        user_info: Option<UserInfo>,
+    ) {
         let Some(chapter_info) = &mut assignment_info.chapter else {
             return;
         };
@@ -152,7 +167,10 @@ impl Incl for AssignmentChapterComicCreatorIncl {
             .map(|comic_info| comic_info.creator_id.as_str())
     }
 
-    fn inject(assignment_info: &mut AssignmentInfo, user_info: Option<UserInfo>) {
+    fn inject(
+        assignment_info: &mut AssignmentInfo,
+        user_info: Option<UserInfo>,
+    ) {
         let Some(chapter_info) = &mut assignment_info.chapter else {
             return;
         };
@@ -177,7 +195,10 @@ impl Incl for AssignmentUserIncl {
         Some(&assignment_info.user_id)
     }
 
-    fn inject(assignment_info: &mut AssignmentInfo, user_info: Option<UserInfo>) {
+    fn inject(
+        assignment_info: &mut AssignmentInfo,
+        user_info: Option<UserInfo>,
+    ) {
         assignment_info.user = user_info;
     }
 }
@@ -189,24 +210,33 @@ pub async fn populate_assignment_incls(
 ) -> RegularResult<()> {
     for incl_opt in expand_incl_opts(incl_opt) {
         match incl_opt {
-            AssignmentInclOpt::User => incl::populate::<AssignmentUserIncl>(conn, infos).await?,
+            AssignmentInclOpt::User => {
+                incl::populate::<AssignmentUserIncl>(conn, infos).await?
+            }
             AssignmentInclOpt::Chapter => {
                 incl::populate::<AssignmentChapterIncl>(conn, infos).await?
             }
             AssignmentInclOpt::ChapterComic => {
-                incl::populate::<AssignmentChapterComicIncl>(conn, infos).await?
+                incl::populate::<AssignmentChapterComicIncl>(conn, infos)
+                    .await?
             }
             AssignmentInclOpt::ChapterComicWorkset => {
-                incl::populate::<AssignmentChapterComicWorksetIncl>(conn, infos).await?
+                incl::populate::<AssignmentChapterComicWorksetIncl>(conn, infos)
+                    .await?
             }
             AssignmentInclOpt::ChapterComicWorksetTeam => {
-                incl::populate::<AssignmentChapterComicWorksetTeamIncl>(conn, infos).await?
+                incl::populate::<AssignmentChapterComicWorksetTeamIncl>(
+                    conn, infos,
+                )
+                .await?
             }
             AssignmentInclOpt::ChapterCreator => {
-                incl::populate::<AssignmentChapterCreatorIncl>(conn, infos).await?
+                incl::populate::<AssignmentChapterCreatorIncl>(conn, infos)
+                    .await?
             }
             AssignmentInclOpt::ChapterComicCreator => {
-                incl::populate::<AssignmentChapterComicCreatorIncl>(conn, infos).await?
+                incl::populate::<AssignmentChapterComicCreatorIncl>(conn, infos)
+                    .await?
             }
         }
     }

@@ -8,11 +8,13 @@ use crate::model::team::TeamInfo;
 use crate::model::user::UserInfo;
 use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
 use crate::part::repo::step::member::{
-    Create, Delete, FindInfoByUserIdAndTeamId, GetInfoById, ListInfos, ListInfosByUserIdExcluded,
-    UpdateRole, UpdateUserNickname,
+    Create, Delete, FindInfoByUserIdAndTeamId, GetInfoById, ListInfos,
+    ListInfosByUserIdExcluded, UpdateRole, UpdateUserNickname,
 };
 use crate::part::shared::execute::Execute;
-use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactional, expected, now};
+use crate::part_impl::repo_mock::{
+    Mock, MockContext, MockState, MockTransactional, expected, now,
+};
 use crate::result::{RegularError, RegularResult};
 use crate::value::member::MemberInclOpt;
 
@@ -36,14 +38,22 @@ fn find_team(state: &MockState, team_id: &str) -> Option<TeamInfo> {
         .cloned()
 }
 
-fn apply_user_incl(state: &MockState, member_info: &mut MemberInfo, include_user: bool) {
+fn apply_user_incl(
+    state: &MockState,
+    member_info: &mut MemberInfo,
+    include_user: bool,
+) {
     member_info.user = None;
     if include_user {
         member_info.user = find_user(state, &member_info.user_id);
     }
 }
 
-fn apply_team_incl(state: &MockState, member_info: &mut MemberInfo, include_team: bool) {
+fn apply_team_incl(
+    state: &MockState,
+    member_info: &mut MemberInfo,
+    include_team: bool,
+) {
     member_info.team = None;
     if include_team {
         member_info.team = find_team(state, &member_info.team_id);
@@ -51,15 +61,16 @@ fn apply_team_incl(state: &MockState, member_info: &mut MemberInfo, include_team
 }
 
 /// Inserts a new member record, rejecting duplicates by id or by the same user+team pair.
-fn create_member(state: &mut MockState, form: &MemberForm) -> RegularResult<MemberInfo> {
+fn create_member(
+    state: &mut MockState,
+    form: &MemberForm,
+) -> RegularResult<MemberInfo> {
     if state.members.iter().any(|member| member.id == form.id) {
         return Err(expected("error-already-exists"));
     }
-    if state
-        .members
-        .iter()
-        .any(|member| member.user_id == form.user_id && member.team_id == form.team_id)
-    {
+    if state.members.iter().any(|member| {
+        member.user_id == form.user_id && member.team_id == form.team_id
+    }) {
         return Err(expected("error-already-exists"));
     }
 
@@ -130,7 +141,9 @@ impl<'a> Advance<UpdateUserNickname<'a>, MockContext> for MockTransactional {
 }
 
 #[async_trait]
-impl<'a> Advance<ListInfosByUserIdExcluded<'a>, MockContext> for MockTransactional {
+impl<'a> Advance<ListInfosByUserIdExcluded<'a>, MockContext>
+    for MockTransactional
+{
     type Error = RegularError;
 
     async fn advance(
@@ -152,7 +165,10 @@ impl<'a> Advance<ListInfosByUserIdExcluded<'a>, MockContext> for MockTransaction
 impl<'a> Execute<ListInfos<'a>> for Mock {
     type Error = RegularError;
 
-    async fn execute(&self, step: &ListInfos<'a>) -> Result<Vec<MemberInfo>, Self::Error> {
+    async fn execute(
+        &self,
+        step: &ListInfos<'a>,
+    ) -> Result<Vec<MemberInfo>, Self::Error> {
         let state = self.state.lock().unwrap();
         let (offset, limit, incl_opt, mut member_infos) = match step.spec {
             MemberListSpec::User {
@@ -189,7 +205,9 @@ impl<'a> Execute<ListInfos<'a>> for Mock {
                     .filter(|member_info| {
                         fuzzy_nickname
                             .as_ref()
-                            .map(|kw| member_info.user_nickname.contains(kw.as_str()))
+                            .map(|kw| {
+                                member_info.user_nickname.contains(kw.as_str())
+                            })
                             .unwrap_or(true)
                     })
                     .filter(|member_info| {
@@ -244,7 +262,10 @@ impl<'a> Execute<FindInfoByUserIdAndTeamId<'a>> for Mock {
 impl<'a> Execute<GetInfoById<'a>> for Mock {
     type Error = RegularError;
 
-    async fn execute(&self, step: &GetInfoById<'a>) -> Result<MemberInfo, Self::Error> {
+    async fn execute(
+        &self,
+        step: &GetInfoById<'a>,
+    ) -> Result<MemberInfo, Self::Error> {
         let state = self.state.lock().unwrap();
 
         let mut info = get_member_by_id(&state, step.id)?;
@@ -260,7 +281,9 @@ impl<'a> Execute<GetInfoById<'a>> for Mock {
 }
 
 #[async_trait]
-impl<'a> Advance<FindInfoByUserIdAndTeamId<'a>, MockContext> for MockTransactional {
+impl<'a> Advance<FindInfoByUserIdAndTeamId<'a>, MockContext>
+    for MockTransactional
+{
     type Error = RegularError;
 
     async fn advance(

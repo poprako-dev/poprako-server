@@ -16,7 +16,9 @@ pub struct ChapterImportComplex;
 
 impl ChapterImportComplex {
     /// Parses LabelPlus text into chapter import pages.
-    pub fn parse_label_plus(content: &str) -> RegularResult<Vec<PageTranslationImport>> {
+    pub fn parse_label_plus(
+        content: &str,
+    ) -> RegularResult<Vec<PageTranslationImport>> {
         let mut lines = content.lines();
 
         validate_label_plus_header(&mut lines)?;
@@ -28,7 +30,11 @@ impl ChapterImportComplex {
 
         for line in lines {
             if is_label_plus_page_header(line) {
-                flush_label_plus_unit(&mut current_page, &mut current_unit, &mut main_text_lines)?;
+                flush_label_plus_unit(
+                    &mut current_page,
+                    &mut current_unit,
+                    &mut main_text_lines,
+                )?;
 
                 if let Some(units) = current_page.take() {
                     pages.push(PageTranslationImport { units });
@@ -41,10 +47,16 @@ impl ChapterImportComplex {
 
             if let Some(unit) = parse_label_plus_unit_header(line)? {
                 if current_page.is_none() {
-                    return Err(args_error("error-invalid-chapter-import-content"));
+                    return Err(args_error(
+                        "error-invalid-chapter-import-content",
+                    ));
                 };
 
-                flush_label_plus_unit(&mut current_page, &mut current_unit, &mut main_text_lines)?;
+                flush_label_plus_unit(
+                    &mut current_page,
+                    &mut current_unit,
+                    &mut main_text_lines,
+                )?;
 
                 current_unit = Some(unit);
 
@@ -56,7 +68,11 @@ impl ChapterImportComplex {
             }
         }
 
-        flush_label_plus_unit(&mut current_page, &mut current_unit, &mut main_text_lines)?;
+        flush_label_plus_unit(
+            &mut current_page,
+            &mut current_unit,
+            &mut main_text_lines,
+        )?;
 
         if let Some(units) = current_page.take() {
             pages.push(PageTranslationImport { units });
@@ -66,7 +82,9 @@ impl ChapterImportComplex {
     }
 
     /// Parses PopRaKo JSON text into chapter import pages.
-    pub fn parse_poprako(content: &str) -> RegularResult<Vec<PageTranslationImport>> {
+    pub fn parse_poprako(
+        content: &str,
+    ) -> RegularResult<Vec<PageTranslationImport>> {
         let project: PoprakoProjectImport = serde_json::from_str(content)
             .map_err(|_| args_error("error-invalid-chapter-import-content"))?;
 
@@ -115,8 +133,18 @@ impl ChapterImportComplex {
         unit_payload.y_coord = parsed_unit.y_coord;
 
         match label_plus {
-            true => apply_label_plus_text(&mut unit_payload, parsed_unit, user_id, proofreader),
-            false => apply_poprako_text(&mut unit_payload, parsed_unit, user_id, proofreader),
+            true => apply_label_plus_text(
+                &mut unit_payload,
+                parsed_unit,
+                user_id,
+                proofreader,
+            ),
+            false => apply_poprako_text(
+                &mut unit_payload,
+                parsed_unit,
+                user_id,
+                proofreader,
+            ),
         }
 
         unit_payload
@@ -176,7 +204,9 @@ fn is_label_plus_page_header(line: &str) -> bool {
     line.starts_with(">>>>>>>>[") && line.ends_with("]<<<<<<<<")
 }
 
-fn parse_label_plus_unit_header(line: &str) -> RegularResult<Option<LabelPlusUnit>> {
+fn parse_label_plus_unit_header(
+    line: &str,
+) -> RegularResult<Option<LabelPlusUnit>> {
     let Some(rest) = line.strip_prefix("----------------[") else {
         return accept(None);
     };
@@ -253,7 +283,9 @@ fn flush_label_plus_unit(
     accept(())
 }
 
-fn parse_poprako_page(page: PoprakoPageImport) -> RegularResult<PageTranslationImport> {
+fn parse_poprako_page(
+    page: PoprakoPageImport,
+) -> RegularResult<PageTranslationImport> {
     if page.image_filename.trim().is_empty() {
         return Err(args_error("error-invalid-chapter-import-content"));
     }

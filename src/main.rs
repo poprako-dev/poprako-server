@@ -31,8 +31,8 @@ use tracing_subscriber::fmt::format::FmtSpan;
 use utoipa::OpenApi as _;
 
 use poprako_r::{
-    AppConfig, AppHarn, AsyncEffectDevelop, Harn, JwtAuth, R2ImagePool, RdbCore, RdbDrive, RdbProm,
-    RdbRepo, serve,
+    AppConfig, AppHarn, AsyncEffectDevelop, Harn, JwtAuth, R2ImagePool,
+    RdbCore, RdbDrive, RdbProm, RdbRepo, serve,
 };
 
 #[tokio::main]
@@ -83,11 +83,13 @@ async fn main() -> anyhow::Result<()> {
 
     let harn: AppHarn = Harn::new(drive, repo, prom, auth, image_pool, develop);
 
-    let http_addr: SocketAddr =
-        ToSocketAddrs::to_socket_addrs(&format!("{}:{}", config.http_host, config.http_port))
-            .context("failed to resolve HTTP listen address")?
-            .next()
-            .context("no address resolved for HTTP listen address")?;
+    let http_addr: SocketAddr = ToSocketAddrs::to_socket_addrs(&format!(
+        "{}:{}",
+        config.http_host, config.http_port
+    ))
+    .context("failed to resolve HTTP listen address")?
+    .next()
+    .context("no address resolved for HTTP listen address")?;
 
     serve(harn, http_addr).await
 }

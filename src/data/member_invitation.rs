@@ -108,12 +108,17 @@ impl From<MemberInvitationInfo> for MemberInvitationInfoVal {
 impl MemberInvitationInfoVal {
     /// Converts an invitation model into a presentation-ready value,
     /// resolving included invitor avatar when present.
-    pub async fn from_model<P>(image_pool: &P, model: MemberInvitationInfo) -> RegularResult<Self>
+    pub async fn from_model<P>(
+        image_pool: &P,
+        model: MemberInvitationInfo,
+    ) -> RegularResult<Self>
     where
         P: ImagePool,
     {
         let invitor = match model.invitor {
-            Some(user_info) => Some(UserInfoVal::from_model(image_pool, user_info).await?),
+            Some(user_info) => {
+                Some(UserInfoVal::from_model(image_pool, user_info).await?)
+            }
             None => None,
         };
         Ok(Self {

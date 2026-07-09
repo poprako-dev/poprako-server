@@ -2,7 +2,9 @@
 
 use poprako_transactional::step::Step;
 
-use crate::model::user::{UserAvatarReservation, UserCredential, UserForm, UserInfo};
+use crate::model::user::{
+    UserAvatarReservation, UserCredential, UserForm, UserInfo,
+};
 
 /// Step that fetches a user by their identifier.
 pub struct GetInfoById<'a> {
@@ -131,17 +133,27 @@ impl UserStep {
     }
 
     /// Constructs a step to update a user's QQ ID and nickname.
-    pub fn update_info<'a>(id: &'a str, qid: &'a str, nickname: &'a str) -> UpdateInfo<'a> {
+    pub fn update_info<'a>(
+        id: &'a str,
+        qid: &'a str,
+        nickname: &'a str,
+    ) -> UpdateInfo<'a> {
         UpdateInfo { id, qid, nickname }
     }
 
     /// Constructs a step to reserve a new avatar upload slot.
-    pub fn reserve_avatar<'a>(id: &'a str, file_ext: &'a str) -> ReserveAvatar<'a> {
+    pub fn reserve_avatar<'a>(
+        id: &'a str,
+        file_ext: &'a str,
+    ) -> ReserveAvatar<'a> {
         ReserveAvatar { id, file_ext }
     }
 
     /// Constructs a step to confirm an avatar upload completed.
-    pub fn mark_avatar_uploaded<'a>(id: &'a str, avatar_version: i64) -> MarkAvatarUploaded<'a> {
+    pub fn mark_avatar_uploaded<'a>(
+        id: &'a str,
+        avatar_version: i64,
+    ) -> MarkAvatarUploaded<'a> {
         MarkAvatarUploaded { id, avatar_version }
     }
 

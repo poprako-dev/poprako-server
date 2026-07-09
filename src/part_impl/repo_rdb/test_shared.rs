@@ -73,8 +73,8 @@ static TEST_SCHEMA_READY: OnceLock<()> = OnceLock::new();
 pub async fn shared() -> RdbCore {
     dotenvy::dotenv().ok();
 
-    let database_url =
-        env::var("TEST_DATABASE_URL").expect("TEST_DATABASE_URL must be set to run repo RDB tests");
+    let database_url = env::var("TEST_DATABASE_URL")
+        .expect("TEST_DATABASE_URL must be set to run repo RDB tests");
 
     TEST_SCHEMA_READY.get_or_init(|| reset_test_schema(&database_url));
 
@@ -100,13 +100,17 @@ pub async fn cleanup(shared: &RdbCore, prefix: &str) -> RegularResult<()> {
 
     let id_pattern = format!("{}%", prefix);
 
-    diesel::delete(schema::t_comment::table.filter(schema::t_comment::f_id.like(&id_pattern)))
-        .execute(&mut conn)
-        .await
-        .map_err(diesel_error)?;
+    diesel::delete(
+        schema::t_comment::table
+            .filter(schema::t_comment::f_id.like(&id_pattern)),
+    )
+    .execute(&mut conn)
+    .await
+    .map_err(diesel_error)?;
 
     diesel::delete(
-        schema::t_announcement::table.filter(schema::t_announcement::f_id.like(&id_pattern)),
+        schema::t_announcement::table
+            .filter(schema::t_announcement::f_id.like(&id_pattern)),
     )
     .execute(&mut conn)
     .await
@@ -121,36 +125,49 @@ pub async fn cleanup(shared: &RdbCore, prefix: &str) -> RegularResult<()> {
     .map_err(diesel_error)?;
 
     diesel::delete(
-        schema::t_assignment::table.filter(schema::t_assignment::f_id.like(&id_pattern)),
+        schema::t_assignment::table
+            .filter(schema::t_assignment::f_id.like(&id_pattern)),
     )
     .execute(&mut conn)
     .await
     .map_err(diesel_error)?;
 
-    diesel::delete(schema::t_unit::table.filter(schema::t_unit::f_id.like(&id_pattern)))
-        .execute(&mut conn)
-        .await
-        .map_err(diesel_error)?;
+    diesel::delete(
+        schema::t_unit::table.filter(schema::t_unit::f_id.like(&id_pattern)),
+    )
+    .execute(&mut conn)
+    .await
+    .map_err(diesel_error)?;
 
-    diesel::delete(schema::t_page::table.filter(schema::t_page::f_id.like(&id_pattern)))
-        .execute(&mut conn)
-        .await
-        .map_err(diesel_error)?;
+    diesel::delete(
+        schema::t_page::table.filter(schema::t_page::f_id.like(&id_pattern)),
+    )
+    .execute(&mut conn)
+    .await
+    .map_err(diesel_error)?;
 
-    diesel::delete(schema::t_chapter::table.filter(schema::t_chapter::f_id.like(&id_pattern)))
-        .execute(&mut conn)
-        .await
-        .map_err(diesel_error)?;
+    diesel::delete(
+        schema::t_chapter::table
+            .filter(schema::t_chapter::f_id.like(&id_pattern)),
+    )
+    .execute(&mut conn)
+    .await
+    .map_err(diesel_error)?;
 
-    diesel::delete(schema::t_comic::table.filter(schema::t_comic::f_id.like(&id_pattern)))
-        .execute(&mut conn)
-        .await
-        .map_err(diesel_error)?;
+    diesel::delete(
+        schema::t_comic::table.filter(schema::t_comic::f_id.like(&id_pattern)),
+    )
+    .execute(&mut conn)
+    .await
+    .map_err(diesel_error)?;
 
-    diesel::delete(schema::t_workset::table.filter(schema::t_workset::f_id.like(&id_pattern)))
-        .execute(&mut conn)
-        .await
-        .map_err(diesel_error)?;
+    diesel::delete(
+        schema::t_workset::table
+            .filter(schema::t_workset::f_id.like(&id_pattern)),
+    )
+    .execute(&mut conn)
+    .await
+    .map_err(diesel_error)?;
 
     diesel::delete(
         schema::t_member_invitation::table
@@ -160,39 +177,51 @@ pub async fn cleanup(shared: &RdbCore, prefix: &str) -> RegularResult<()> {
     .await
     .map_err(diesel_error)?;
 
-    diesel::delete(schema::t_member::table.filter(schema::t_member::f_id.like(&id_pattern)))
-        .execute(&mut conn)
-        .await
-        .map_err(diesel_error)?;
-
     diesel::delete(
-        schema::t_system_mail::table.filter(schema::t_system_mail::f_id.like(&id_pattern)),
+        schema::t_member::table
+            .filter(schema::t_member::f_id.like(&id_pattern)),
     )
     .execute(&mut conn)
     .await
     .map_err(diesel_error)?;
 
     diesel::delete(
-        schema::t_local_message::table.filter(schema::t_local_message::f_id.like(&id_pattern)),
+        schema::t_system_mail::table
+            .filter(schema::t_system_mail::f_id.like(&id_pattern)),
     )
     .execute(&mut conn)
     .await
     .map_err(diesel_error)?;
 
-    diesel::delete(schema::t_team::table.filter(schema::t_team::f_id.like(&id_pattern)))
-        .execute(&mut conn)
-        .await
-        .map_err(diesel_error)?;
+    diesel::delete(
+        schema::t_local_message::table
+            .filter(schema::t_local_message::f_id.like(&id_pattern)),
+    )
+    .execute(&mut conn)
+    .await
+    .map_err(diesel_error)?;
 
-    diesel::delete(schema::t_user::table.filter(schema::t_user::f_id.like(&id_pattern)))
-        .execute(&mut conn)
-        .await
-        .map_err(diesel_error)?;
+    diesel::delete(
+        schema::t_team::table.filter(schema::t_team::f_id.like(&id_pattern)),
+    )
+    .execute(&mut conn)
+    .await
+    .map_err(diesel_error)?;
+
+    diesel::delete(
+        schema::t_user::table.filter(schema::t_user::f_id.like(&id_pattern)),
+    )
+    .execute(&mut conn)
+    .await
+    .map_err(diesel_error)?;
 
     Ok(())
 }
 
-pub async fn assert_no_leftovers(shared: &RdbCore, prefix: &str) -> RegularResult<()> {
+pub async fn assert_no_leftovers(
+    shared: &RdbCore,
+    prefix: &str,
+) -> RegularResult<()> {
     let mut conn = shared.get().await?;
 
     let id_pattern = format!("{}%", prefix);
@@ -211,12 +240,13 @@ pub async fn assert_no_leftovers(shared: &RdbCore, prefix: &str) -> RegularResul
         .await
         .map_err(diesel_error)?;
 
-    let assignment_invitation_count: i64 = schema::t_assignment_invitation::table
-        .filter(schema::t_assignment_invitation::f_id.like(&id_pattern))
-        .count()
-        .get_result(&mut conn)
-        .await
-        .map_err(diesel_error)?;
+    let assignment_invitation_count: i64 =
+        schema::t_assignment_invitation::table
+            .filter(schema::t_assignment_invitation::f_id.like(&id_pattern))
+            .count()
+            .get_result(&mut conn)
+            .await
+            .map_err(diesel_error)?;
 
     let chapter_count: i64 = schema::t_chapter::table
         .filter(schema::t_chapter::f_id.like(&id_pattern))
@@ -348,7 +378,11 @@ pub fn workset_form(prefix: &str, team_form: &TeamForm) -> WorksetForm {
     }
 }
 
-pub fn comic_form(prefix: &str, workset_form: &WorksetForm, creator_form: &UserForm) -> ComicForm {
+pub fn comic_form(
+    prefix: &str,
+    workset_form: &WorksetForm,
+    creator_form: &UserForm,
+) -> ComicForm {
     ComicForm {
         id: format!("{}comic", prefix),
         workset_id: workset_form.id.clone(),
@@ -360,7 +394,11 @@ pub fn comic_form(prefix: &str, workset_form: &WorksetForm, creator_form: &UserF
     }
 }
 
-pub fn chapter_form(prefix: &str, comic_form: &ComicForm, creator_form: &UserForm) -> ChapterForm {
+pub fn chapter_form(
+    prefix: &str,
+    comic_form: &ComicForm,
+    creator_form: &UserForm,
+) -> ChapterForm {
     ChapterForm {
         id: format!("{}chapter", prefix),
         comic_id: comic_form.id.clone(),
@@ -390,7 +428,12 @@ pub async fn create_user(shared: &RdbCore, user_form: &UserForm) {
 
     drive
         .with_context(async |context| {
-            Advance::advance(&transactional_repo, context, &UserStep::create(user_form)).await?;
+            Advance::advance(
+                &transactional_repo,
+                context,
+                &UserStep::create(user_form),
+            )
+            .await?;
 
             Ok::<(), RegularError>(())
         })

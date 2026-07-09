@@ -65,10 +65,11 @@ async fn member_roundtrip_reads_test_database_url() {
         limit: 10,
     };
 
-    let member_infos = Execute::execute(&repo, &MemberStep::list_infos(&member_list_spec))
-        .await
-        .ok()
-        .unwrap();
+    let member_infos =
+        Execute::execute(&repo, &MemberStep::list_infos(&member_list_spec))
+            .await
+            .ok()
+            .unwrap();
 
     assert_eq!(member_infos.len(), 1);
     assert_eq!(

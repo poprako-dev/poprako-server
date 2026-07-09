@@ -237,7 +237,9 @@ async fn list_infos_member_lists_team_members() {
     translator_member_info.user_last_active_at = translator_last_active_at;
     mock.seed_member(translator_member_info);
 
-    let member_info_vals = list_infos(&mock, &mock, token("admin-user"), list_data("team-1")).await;
+    let member_info_vals =
+        list_infos(&mock, &mock, token("admin-user"), list_data("team-1"))
+            .await;
     assert!(member_info_vals.is_ok());
     let member_info_vals = member_info_vals.ok().unwrap();
 
@@ -391,10 +393,11 @@ async fn list_infos_non_member_is_rejected() {
         RoleMask::from(RoleField::TRANSLATOR),
     ));
 
-    let err = list_infos(&mock, &mock, token("stranger-user"), list_data("team-1"))
-        .await
-        .err()
-        .unwrap();
+    let err =
+        list_infos(&mock, &mock, token("stranger-user"), list_data("team-1"))
+            .await
+            .err()
+            .unwrap();
 
     assert_expected_variant(err, ExpectedVariant::Perm);
 }
@@ -544,7 +547,8 @@ async fn delete_admin_deletes_member() {
         RoleMask::from(RoleField::TRANSLATOR),
     ));
 
-    let delete_member = delete(&mock, &mock, token("admin-user"), "member-target".into()).await;
+    let delete_member =
+        delete(&mock, &mock, token("admin-user"), "member-target".into()).await;
     assert!(delete_member.is_ok());
 
     assert!(
@@ -574,10 +578,11 @@ async fn delete_non_admin_is_rejected() {
         RoleMask::from(RoleField::TRANSLATOR),
     ));
 
-    let err = delete(&mock, &mock, token("normal-user"), "member-target".into())
-        .await
-        .err()
-        .unwrap();
+    let err =
+        delete(&mock, &mock, token("normal-user"), "member-target".into())
+            .await
+            .err()
+            .unwrap();
 
     assert_expected_variant(err, ExpectedVariant::Perm);
     assert!(
@@ -593,10 +598,11 @@ async fn delete_missing_member_is_rejected() {
     let mock = Mock::new();
     seed_admin(&mock);
 
-    let err = delete(&mock, &mock, token("admin-user"), "member-missing".into())
-        .await
-        .err()
-        .unwrap();
+    let err =
+        delete(&mock, &mock, token("admin-user"), "member-missing".into())
+            .await
+            .err()
+            .unwrap();
 
     assert_expected_variant(err, ExpectedVariant::Args);
     assert_eq!(mock.snapshot().members.len(), 1);

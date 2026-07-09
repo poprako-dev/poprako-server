@@ -7,7 +7,9 @@ use utoipa::ToSchema;
 use poprako_macro::Paginate;
 use poprako_util::time::ToUnixMilli;
 
-use crate::model::unit::{UnitCounters, UnitDiff, UnitIdMapper, UnitInfo, UnitOper, UnitPayload};
+use crate::model::unit::{
+    UnitCounters, UnitDiff, UnitIdMapper, UnitInfo, UnitOper, UnitPayload,
+};
 
 /// Presentation-ready unit information.
 #[derive(Debug, Serialize, ToSchema)]
@@ -200,7 +202,10 @@ impl From<UnitIdMapper> for UnitIdMapperVal {
 
 impl SavePageUnitsVal {
     /// Builds a compact save response from mappings and counters.
-    pub fn from_parts(local_id_mappers: Vec<UnitIdMapper>, counters: UnitCounters) -> Self {
+    pub fn from_parts(
+        local_id_mappers: Vec<UnitIdMapper>,
+        counters: UnitCounters,
+    ) -> Self {
         Self {
             local_id_mappers: local_id_mappers
                 .into_iter()

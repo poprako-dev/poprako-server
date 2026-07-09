@@ -153,7 +153,10 @@ impl Mock {
     }
 
     /// Seed a member invitation directly into the mock state.
-    pub fn seed_member_invitation(&self, member_invitation: MemberInvitationInfo) {
+    pub fn seed_member_invitation(
+        &self,
+        member_invitation: MemberInvitationInfo,
+    ) {
         self.state
             .lock()
             .unwrap()
@@ -182,7 +185,10 @@ impl Mock {
     }
 
     /// Seed an assignment invitation directly into the mock state.
-    pub fn seed_assignment_invitation(&self, assignment_invitation: AssignmentInvitationInfo) {
+    pub fn seed_assignment_invitation(
+        &self,
+        assignment_invitation: AssignmentInvitationInfo,
+    ) {
         self.state
             .lock()
             .unwrap()
@@ -255,7 +261,10 @@ impl DeriveTransactional for Mock {
 impl Drive<MockContext> for Mock {
     type Error = RegularError;
 
-    async fn with_context<T, E, F>(&self, f: F) -> Result<T, DriveError<E, Self::Error>>
+    async fn with_context<T, E, F>(
+        &self,
+        f: F,
+    ) -> Result<T, DriveError<E, Self::Error>>
     where
         T: Send,
         E: Send,
@@ -381,7 +390,8 @@ async fn execute_reads_seeded_user() {
         },
     );
 
-    let found = Execute::execute(&mock, &UserStep::get_info_by_id("user-1")).await;
+    let found =
+        Execute::execute(&mock, &UserStep::get_info_by_id("user-1")).await;
     assert!(found.is_ok());
     let found = found.ok().unwrap();
 
@@ -403,7 +413,12 @@ async fn transaction_commits_repo_and_prom() {
     assert!(
         Drive::with_context(&mock, async move |context| {
             let transactional = MockTransactional;
-            Advance::advance(&transactional, context, &MemberStep::create(&member_form)).await?;
+            Advance::advance(
+                &transactional,
+                context,
+                &MemberStep::create(&member_form),
+            )
+            .await?;
             Advance::advance(
                 &transactional,
                 context,
@@ -445,7 +460,12 @@ async fn transaction_rolls_back_repo_and_prom() {
 
     let err = Drive::with_context(&mock, async move |context| {
         let transactional = MockTransactional;
-        Advance::advance(&transactional, context, &MemberStep::create(&member_form)).await?;
+        Advance::advance(
+            &transactional,
+            context,
+            &MemberStep::create(&member_form),
+        )
+        .await?;
         Advance::advance(
             &transactional,
             context,
@@ -457,7 +477,9 @@ async fn transaction_rolls_back_repo_and_prom() {
             ),
         )
         .await?;
-        Err::<(), _>(unrecoverable("[transaction_rolls_back_repo_and_prom] fail"))
+        Err::<(), _>(unrecoverable(
+            "[transaction_rolls_back_repo_and_prom] fail",
+        ))
     })
     .await
     .err()
