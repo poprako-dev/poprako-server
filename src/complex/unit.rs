@@ -1,6 +1,6 @@
 //! Complex-domain opers for page units.
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use poprako_util::i18n::trl;
 
@@ -144,7 +144,7 @@ impl UnitComplex {
         current_indexes: &[UnitIndex],
     ) -> Vec<UnitIndexUpdate> {
         //
-        let current_map: std::collections::HashMap<&String, i32> =
+        let current_map: HashMap<&String, i32> =
             current_indexes
                 .iter()
                 .map(|unit_index| (&unit_index.id, unit_index.index))

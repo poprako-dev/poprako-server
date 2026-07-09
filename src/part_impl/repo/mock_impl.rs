@@ -28,6 +28,7 @@ use crate::model::user::{UserCredential, UserInfo};
 use crate::model::workset::WorksetInfo;
 use crate::part::effect::event::Event;
 use crate::result::{ExpectedVariant, RegularError};
+use crate::part_impl::prom::mock_impl::MockPromRecord;
 use crate::util::DeriveTransactional;
 
 /// In-memory state holding all mock repository records.
@@ -48,7 +49,7 @@ pub struct MockState {
     pub pages: Vec<PageInfo>,
     pub units: Vec<UnitInfo>,
     pub system_mails: Vec<SystemMailInfo>,
-    pub prom_records: Vec<crate::part_impl::prom::mock_impl::MockPromRecord>,
+    pub prom_records: Vec<MockPromRecord>,
 }
 
 /// A point-in-time copy of [MockState] for assertions after a transaction.
@@ -69,7 +70,7 @@ pub struct MockSnapshot {
     pub pages: Vec<PageInfo>,
     pub units: Vec<UnitInfo>,
     pub system_mails: Vec<SystemMailInfo>,
-    pub prom_records: Vec<crate::part_impl::prom::mock_impl::MockPromRecord>,
+    pub prom_records: Vec<MockPromRecord>,
 }
 
 impl From<MockState> for MockSnapshot {

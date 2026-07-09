@@ -1,8 +1,8 @@
 //! Step types for chapter repository opers.
 
-use poprako_transactional::step::Step;
-
 use std::collections::HashMap;
+
+use poprako_transactional::step::Step;
 
 use crate::model::chapter::{
     ChapterForm, ChapterInfo, ChapterInfoUpdate, ChapterListSpec,

@@ -1,5 +1,7 @@
 //! Application-level error and result types used throughout the domain layer.
 
+use std::result::Result as StdResult;
+
 use poprako_transactional::drive::result::Error as DriveError;
 
 /// Categorizes an expected application error by its origin domain.
@@ -43,7 +45,7 @@ impl Error {
 }
 
 /// Convenience alias for [`std::result::Result`] with the application's [`Error`] type.
-pub type Result<T> = std::result::Result<T, Error>;
+pub type Result<T> = StdResult<T, Error>;
 
 /// Alias for [`Error`] used at module boundary layers.
 pub type RegularError = Error;

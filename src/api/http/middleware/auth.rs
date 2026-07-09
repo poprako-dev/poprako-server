@@ -5,8 +5,7 @@
 //! decoded [`UserToken`] is inserted into request extensions for handlers.
 //! This middleware performs no database side-effects.
 
-use axum::extract::Request;
-use axum::extract::State;
+use axum::extract::{Request, State};
 use axum::http::header;
 use axum::middleware::Next;
 use axum::response::{IntoResponse, Response};

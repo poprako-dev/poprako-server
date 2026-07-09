@@ -17,8 +17,7 @@ use crate::part::repo::step::page::{
     ReserveImage, SetUnitCounters,
 };
 use crate::part::shared::execute::Execute;
-use crate::part_impl::shared::RdbConn;
-use crate::part_impl::shared::RdbContext;
+use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::part_impl::shared::result::{diesel, expected};
 use crate::part_impl::repo::rdb_impl::entity::page::{
     PageAspect, PageEntry, PageRow,
@@ -27,8 +26,7 @@ use crate::part_impl::repo::rdb_impl::{RdbRepo, RdbRepoTransactional};
 use crate::result::{RegularError, RegularResult};
 
 use crate::part_impl::repo::rdb_impl::schema::t_page::dsl::*;
-use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::f_page_id as unit_f_page_id;
-use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::t_unit;
+use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::{f_page_id as unit_f_page_id, t_unit};
 
 impl PageRepo<RdbContext> for RdbRepo {}
 

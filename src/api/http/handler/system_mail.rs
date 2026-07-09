@@ -1,18 +1,12 @@
 //! System mail handlers: list and mark-read.
 
 use axum::Json;
-use axum::extract::Extension;
-use axum::extract::Query;
-use axum::extract::State;
+use axum::extract::{Extension, Query, State};
 use axum::http::StatusCode;
 
 use tracing::instrument;
 
-use crate::api::http::result::Accept as _;
-use crate::api::http::result::HttpBody;
-use crate::api::http::result::HttpNoContent;
-use crate::api::http::result::HttpResult;
-use crate::api::http::result::no_content;
+use crate::api::http::result::{Accept as _, HttpBody, HttpNoContent, HttpResult, no_content};
 use crate::api::http::state::AppHarn;
 use crate::data::system_mail::{
     ListSystemMailData, MarkSystemMailsReadData, SystemMailVal,

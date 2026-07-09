@@ -12,8 +12,7 @@ use crate::part::repo::system_mail::{
     SystemMailRepo, SystemMailRepoTransactional,
 };
 use crate::part::shared::execute::Execute;
-use crate::part_impl::shared::RdbConn;
-use crate::part_impl::shared::RdbContext;
+use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::part_impl::shared::result::{diesel, expected};
 use crate::part_impl::repo::rdb_impl::entity::system_mail::{
     SystemMailEntry, SystemMailRow,

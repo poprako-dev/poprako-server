@@ -5,11 +5,11 @@
 //! occurrence (`?incl=team`) for `Vec<T>` fields.  The helpers in this module
 //! accept both shapes so that callers don't have to repeat query params.
 
-use serde::Deserialize;
-use serde::de::{self, DeserializeOwned, Deserializer, SeqAccess, Visitor};
-
 use std::fmt;
 use std::marker::PhantomData;
+
+use serde::Deserialize as _;
+use serde::de::{self, DeserializeOwned, Deserializer, SeqAccess, Visitor};
 
 /// Deserialise `Vec<T>` from a query-string value that may be a **single
 /// string** or a **repeated key** (sequence).

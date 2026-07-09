@@ -1,6 +1,7 @@
 //! Mock implementations of `MemberRepo` and `MemberRepoTransactional` for in-memory testing.
 
 use async_trait::async_trait;
+
 use poprako_transactional::advance::Advance;
 
 use crate::model::member::{MemberForm, MemberInfo, MemberListSpec};

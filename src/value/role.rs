@@ -1,5 +1,7 @@
 //! Newtype wrappers for role-based permission bitmasks.
 
+use std::result::Result;
+
 use serde::de::Error as _;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use utoipa::ToSchema;
@@ -144,7 +146,7 @@ impl Serialize for RoleField {
     fn serialize<S>(
         &self,
         serializer: S,
-    ) -> std::result::Result<S::Ok, S::Error>
+    ) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
@@ -154,7 +156,7 @@ impl Serialize for RoleField {
 
 /// Deserialize a [`RoleBit`] from a raw `u32`.
 impl<'de> Deserialize<'de> for RoleField {
-    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
     {
@@ -201,7 +203,7 @@ impl Serialize for RoleMask {
     fn serialize<S>(
         &self,
         serializer: S,
-    ) -> std::result::Result<S::Ok, S::Error>
+    ) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
@@ -211,7 +213,7 @@ impl Serialize for RoleMask {
 
 /// Deserialize a [`RoleMask`] from a raw `u32`.
 impl<'de> Deserialize<'de> for RoleMask {
-    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
     {

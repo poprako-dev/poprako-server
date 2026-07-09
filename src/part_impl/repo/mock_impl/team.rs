@@ -1,5 +1,7 @@
 //! Mock implementations of `TeamRepo` and `TeamRepoTransactional` for in-memory testing.
 
+use std::cmp::Reverse;
+
 use async_trait::async_trait;
 
 use poprako_transactional::advance::Advance;
@@ -127,7 +129,7 @@ impl<'a> Execute<ListInfos<'a>> for Mock {
                 .collect(),
             None => state.teams.clone(),
         };
-        teams.sort_by_key(|right| std::cmp::Reverse(right.created_at));
+        teams.sort_by_key(|right| Reverse(right.created_at));
 
         let offset = step.offset as usize;
         let limit = step.limit as usize;

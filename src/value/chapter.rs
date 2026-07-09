@@ -1,5 +1,7 @@
 //! Chapter workflow stages, phases, and transition rules.
 
+use std::result::Result;
+
 use serde::{Deserialize, Serialize, Serializer};
 
 use utoipa::ToSchema;
@@ -184,7 +186,7 @@ impl Serialize for StagePhaseField {
     fn serialize<S>(
         &self,
         serializer: S,
-    ) -> std::result::Result<S::Ok, S::Error>
+    ) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
@@ -415,7 +417,7 @@ impl Serialize for StageMask {
     fn serialize<S>(
         &self,
         serializer: S,
-    ) -> std::result::Result<S::Ok, S::Error>
+    ) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {

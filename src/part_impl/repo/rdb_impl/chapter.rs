@@ -22,14 +22,12 @@ use crate::part::repo::step::chapter::{
     UpdateStage,
 };
 use crate::part::shared::execute::Execute;
-use crate::part_impl::shared::RdbConn;
-use crate::part_impl::shared::RdbContext;
+use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::part_impl::shared::result::{diesel, expected};
 use crate::part_impl::repo::rdb_impl::entity::chapter::{
     ChapterAspect, ChapterEntry, ChapterRow,
 };
-use crate::part_impl::repo::rdb_impl::incl;
-use crate::part_impl::repo::rdb_impl::{RdbRepo, RdbRepoTransactional};
+use crate::part_impl::repo::rdb_impl::{incl, RdbRepo, RdbRepoTransactional};
 use crate::result::{RegularError, RegularResult};
 use crate::value::chapter::ChapterInclOpt;
 

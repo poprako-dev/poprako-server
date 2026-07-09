@@ -9,11 +9,7 @@ use cookie::{Cookie, SameSite};
 use tracing::instrument;
 
 use crate::api::http::auth::AUTH_COOKIE_NAME;
-use crate::api::http::result::Accept as _;
-use crate::api::http::result::HttpBody;
-use crate::api::http::result::HttpNoContent;
-use crate::api::http::result::HttpResult;
-use crate::api::http::result::no_content;
+use crate::api::http::result::{Accept as _, HttpBody, HttpNoContent, HttpResult, no_content};
 use crate::api::http::state::AppHarn;
 use crate::data::auth::{LoginData, LoginVal, RegisterData, RegisterVal};
 use crate::usecase;

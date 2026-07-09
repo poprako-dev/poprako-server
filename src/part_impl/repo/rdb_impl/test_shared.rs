@@ -1,13 +1,10 @@
 use std::env;
 use std::sync::OnceLock;
 
-use diesel::Connection;
-use diesel::PgConnection;
+use diesel::{Connection, PgConnection};
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
-use diesel_migrations::EmbeddedMigrations;
-use diesel_migrations::MigrationHarness;
-use diesel_migrations::embed_migrations;
+use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 
 use poprako_transactional::advance::Advance;
 use poprako_transactional::drive::Drive;

@@ -1,5 +1,6 @@
 //! Mock implementations of `ChapterRepo` and `ChapterRepoTransactional`.
 
+use std::cmp::Reverse;
 use std::collections::HashMap;
 
 use async_trait::async_trait;
@@ -70,7 +71,7 @@ fn list_all_chapters(state: &MockState, comic_id: &str) -> Vec<ChapterInfo> {
         .cloned()
         .collect::<Vec<_>>();
 
-    chapter_infos.sort_by_key(|right| std::cmp::Reverse(right.index));
+    chapter_infos.sort_by_key(|right| Reverse(right.index));
 
     chapter_infos
 }

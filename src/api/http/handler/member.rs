@@ -1,10 +1,7 @@
 //! Member handlers: create, join, list, role update, and deletion.
 
 use axum::Json;
-use axum::extract::Extension;
-use axum::extract::Path;
-use axum::extract::Query;
-use axum::extract::State;
+use axum::extract::{Extension, Path, Query, State};
 use axum::http::StatusCode;
 
 use serde::Deserialize;
@@ -14,11 +11,7 @@ use tracing::instrument;
 use utoipa::IntoParams;
 
 use crate::api::http::handler::util::ensure_path_matches_body_id;
-use crate::api::http::result::Accept as _;
-use crate::api::http::result::HttpBody;
-use crate::api::http::result::HttpNoContent;
-use crate::api::http::result::HttpResult;
-use crate::api::http::result::no_content;
+use crate::api::http::result::{Accept as _, HttpBody, HttpNoContent, HttpResult, no_content};
 use crate::api::http::state::AppHarn;
 use crate::data::member::{
     CreateMemberData, CreateMemberVal, JoinTeamData, ListMemberInfosData,

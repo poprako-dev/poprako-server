@@ -27,7 +27,6 @@ use std::net::{SocketAddr, ToSocketAddrs};
 use std::sync::Arc;
 
 use anyhow::Context as _;
-use tracing_subscriber::fmt::format::FmtSpan;
 use utoipa::OpenApi as _;
 
 use poprako_r::{
@@ -53,7 +52,7 @@ async fn main() -> anyhow::Result<()> {
     if cfg!(debug_assertions) {
         tracing_subscriber::fmt()
             .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
-            .with_span_events(FmtSpan::CLOSE)
+            .with_span_events(tracing_subscriber::fmt::format::FmtSpan::CLOSE)
             .init();
     } else {
         // FIXME: rotating.

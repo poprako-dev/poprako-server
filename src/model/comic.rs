@@ -10,8 +10,9 @@
 //!
 //! [`ComicInfoVal`]: crate::data::comic::ComicInfoVal
 
-use poprako_macro::Paginate;
 use time::OffsetDateTime;
+
+use poprako_macro::Paginate;
 
 use crate::model::team::TeamInfo;
 use crate::model::user::UserInfo;

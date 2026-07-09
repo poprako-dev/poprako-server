@@ -1,19 +1,13 @@
 //! Unit handlers: list and save page unit sequences.
 
 use axum::Json;
-use axum::extract::Extension;
-use axum::extract::Path;
-use axum::extract::Query;
-use axum::extract::State;
+use axum::extract::{Extension, Path, Query, State};
 use axum::http::StatusCode;
 
 use tracing::instrument;
 
-use crate::api::http::handler::util::Pagination;
-use crate::api::http::handler::util::ensure_path_matches_body_id;
-use crate::api::http::result::Accept as _;
-use crate::api::http::result::HttpBody;
-use crate::api::http::result::HttpResult;
+use crate::api::http::handler::util::{ensure_path_matches_body_id, Pagination};
+use crate::api::http::result::{Accept as _, HttpBody, HttpResult};
 use crate::api::http::state::AppHarn;
 use crate::data::unit::{
     ListPageUnitInfosData, ListPageUnitInfosVal, SavePageUnitsData,
