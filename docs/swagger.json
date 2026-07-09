@@ -1324,13 +1324,13 @@
         }
       }
     },
-    "/api/v1/comics/{comic_id}/mark-completed": {
+    "/api/v1/comics/{comic_id}/mark-archived": {
       "post": {
         "tags": [
           "comics"
         ],
-        "summary": "`POST /api/v1/comics/{comic_id}/mark-completed` — toggle comic completion.",
-        "operationId": "mark_completed",
+        "summary": "`POST /api/v1/comics/{comic_id}/mark-archived` — mark a comic archived.",
+        "operationId": "mark_archived",
         "parameters": [
           {
             "name": "comic_id",
@@ -1346,7 +1346,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/MarkComicCompletedData"
+                "$ref": "#/components/schemas/MarkComicArchivedData"
               }
             }
           },
@@ -1354,7 +1354,7 @@
         },
         "responses": {
           "204": {
-            "description": "Comic completion toggled"
+            "description": "Comic marked archived"
           },
           "403": {
             "description": "No permission to modify this comic"
@@ -6279,17 +6279,9 @@
           }
         }
       },
-      "MarkComicCompletedData": {
+      "MarkComicArchivedData": {
         "type": "object",
-        "description": "Input parameters for marking a comic completed or active.",
-        "required": [
-          "is_completed"
-        ],
-        "properties": {
-          "is_completed": {
-            "type": "boolean"
-          }
-        }
+        "description": "Input parameters for marking a comic archived."
       },
       "MarkComicCoverUploadedData": {
         "type": "object",
@@ -7288,7 +7280,7 @@
       },
       "UpdateComicInfoData": {
         "type": "object",
-        "description": "Input parameters for updating a comic's title, author, and description.\n\nCover and workflow updates are handled by dedicated endpoints\n([`reserve_cover`], [`mark_completed`]).\n\n[`reserve_cover`]: crate::usecase::comic::reserve_cover\n[`mark_completed`]: crate::usecase::comic::mark_completed",
+        "description": "Input parameters for updating a comic's title, author, and description.\n\nCover and workflow updates are handled by dedicated endpoints\n([`reserve_cover`], [`mark_archived`]).\n\n[`reserve_cover`]: crate::usecase::comic::reserve_cover\n[`mark_archived`]: crate::usecase::comic::mark_archived",
         "required": [
           "id",
           "title",

@@ -273,7 +273,7 @@ impl ComicPermComplex {
     }
 
     /// Verify the caller is a team admin of the comic's team.
-    pub async fn can_user_mark_completed<P>(
+    pub async fn can_user_mark_archived<P>(
         proxy: &mut P,
         user_id: &str,
         comic_id: &str,

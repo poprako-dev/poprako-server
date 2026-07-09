@@ -1258,7 +1258,7 @@ Implement:
 - `Advance<ReserveCover>`
 - `Advance<MarkCoverUploaded>`
 - `Advance<Delete>`
-- `Advance<MarkCompleted>`
+- `Advance<MarkArchived>`
 - `Advance<IncrChapterNextIndex>`
 - `Advance<UpdateChapterCount>`
 - `Advance<TouchLastActive>`

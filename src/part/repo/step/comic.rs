@@ -92,13 +92,12 @@ impl<'a> Step for Delete<'a> {
     type Output = ();
 }
 
-/// Step that marks a comic completed or active.
-pub struct MarkCompleted<'a> {
+/// Step that marks a comic archived.
+pub struct MarkArchived<'a> {
     pub id: &'a str,
-    pub is_completed: bool,
 }
 
-impl<'a> Step for MarkCompleted<'a> {
+impl<'a> Step for MarkArchived<'a> {
     type Output = ();
 }
 
@@ -198,12 +197,9 @@ impl ComicStep {
         Delete { id }
     }
 
-    /// Constructs a step to mark completion state.
-    pub fn mark_completed<'a>(
-        id: &'a str,
-        is_completed: bool,
-    ) -> MarkCompleted<'a> {
-        MarkCompleted { id, is_completed }
+    /// Constructs a step to mark archived state.
+    pub fn mark_archived<'a>(id: &'a str) -> MarkArchived<'a> {
+        MarkArchived { id }
     }
 
     /// Constructs a step to increment and return chapter index.

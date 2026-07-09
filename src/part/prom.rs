@@ -23,7 +23,7 @@ use time::OffsetDateTime;
 use poprako_transactional::advance::Advance;
 use poprako_transactional::step::Step;
 
-use crate::part::prom::task::{ComicTask, ImageTask};
+use crate::part::prom::task::ImageTask;
 use crate::result::RegularError;
 
 /// Prom task type definitions.
@@ -31,8 +31,8 @@ pub mod task;
 
 /// A serializable deferred-action payload.
 ///
-/// Currently only carries [`ImageTask`] and [`ComicArchiveTask`] variants.
-/// Additional intention types can be added as new enum variants.
+/// Currently only carries [`ImageTask`] variants. Additional intention types
+/// can be added as new enum variants.
 ///
 /// All data is borrowed — no heap allocation on the append path.
 #[cfg_attr(test, derive(Debug, Clone, PartialEq, Eq))]
@@ -40,8 +40,6 @@ pub mod task;
 pub enum Payload<'a> {
     #[serde(borrow)]
     Image(ImageTask<'a>),
-    #[serde(borrow)]
-    Comic(ComicTask<'a>),
 }
 
 /// A [`Step`] that appends a deferred-action record.

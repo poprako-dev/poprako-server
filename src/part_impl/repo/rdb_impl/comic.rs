@@ -16,7 +16,7 @@ use crate::model::comic::{
 use crate::part::repo::comic::{ComicRepo, ComicRepoTransactional};
 use crate::part::repo::step::comic::{
     Create, Delete, GetInfoById, GetInfoExcluded, IncrChapterNextIndex,
-    ListInfos, ListInfosExcluded, MarkCompleted, MarkCoverUploaded,
+    ListInfos, ListInfosExcluded, MarkArchived, MarkCoverUploaded,
     ReserveCover, TouchLastActive, UpdateChapterCount, UpdateInfo,
 };
 use crate::part::shared::execute::Execute;
@@ -424,15 +424,13 @@ async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
 }
 
 /// Sets the completion flag on a comic row.
-async fn mark_completed(
-    conn: &mut RdbConn,
-    id: &str,
-    is_completed: bool,
-) -> RegularResult<()> {
+async fn mark_archived(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
     //
     let now = OffsetDateTime::now_utc();
 
-    let aspect = ComicAspect::new(now).completed(is_completed);
+    // TODO: Replace `f_is_completed` with a real archive state once archive
+    // semantics are designed. For now, archived is represented as completed.
+    let aspect = ComicAspect::new(now).completed(true);
 
     diesel::update(t_comic.filter(f_id.eq(id)))
         .set(&aspect)
@@ -634,15 +632,15 @@ impl<'a> Advance<Delete<'a>, RdbContext> for RdbRepoTransactional {
 }
 
 #[async_trait]
-impl<'a> Advance<MarkCompleted<'a>, RdbContext> for RdbRepoTransactional {
+impl<'a> Advance<MarkArchived<'a>, RdbContext> for RdbRepoTransactional {
     type Error = RegularError;
 
     async fn advance(
         &self,
         context: &mut RdbContext,
-        step: &MarkCompleted<'a>,
+        step: &MarkArchived<'a>,
     ) -> RegularResult<()> {
-        mark_completed(context.conn(), step.id, step.is_completed).await
+        mark_archived(context.conn(), step.id).await
     }
 }
 

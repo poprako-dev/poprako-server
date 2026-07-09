@@ -28,7 +28,7 @@ use crate::data::chapter_port::{
     ChapterTranslationImportVal,
 };
 use crate::data::comic::{
-    ComicInfoVal, CreateComicData, CreateComicVal, MarkComicCompletedData,
+    ComicInfoVal, CreateComicData, CreateComicVal, MarkComicArchivedData,
     MarkComicCoverUploadedData, ReserveComicCoverData, ReserveComicCoverVal,
     UpdateComicInfoData,
 };
@@ -105,7 +105,7 @@ use crate::value::role::RoleField;
         handler::comic::update_info,
         handler::comic::reserve_cover,
         handler::comic::mark_cover_uploaded,
-        handler::comic::mark_completed,
+        handler::comic::mark_archived,
         handler::comic::delete,
         handler::chapter::create,
         handler::chapter::list_infos,
@@ -177,7 +177,7 @@ use crate::value::role::RoleField;
         ReserveComicCoverData,
         ReserveComicCoverVal,
         MarkComicCoverUploadedData,
-        MarkComicCompletedData,
+        MarkComicArchivedData,
         ChapterInfoVal,
         CreateChapterData,
         CreateChapterVal,

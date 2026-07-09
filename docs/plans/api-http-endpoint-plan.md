@@ -70,7 +70,7 @@ These changes must happen before or during the handler implementation slice.
 - Change `member::join_team` to return `MemberInfoVal`.
 - Change `assignment_invitation::join` to return `AssignmentInfoVal`.
 - Add request DTOs where current usecases accept loose values:
-  - `MarkComicCompletedData { is_completed }`
+  - `MarkComicArchivedData {}`
   - `MarkSystemMailsReadData { ids }`
 - Decide final download headers for translation export:
   - `Content-Type`
@@ -159,7 +159,7 @@ These changes must happen before or during the handler implementation slice.
 | DELETE | `/api/v1/comics/{comic_id}` | `204` | `comic::delete` | path id target |
 | POST | `/api/v1/comics/{comic_id}/cover/reserve` | `200 HttpBody<ReserveComicCoverVal>` | `comic::reserve_cover` | RPC |
 | POST | `/api/v1/comics/{comic_id}/cover/mark-uploaded` | `204` | `comic::mark_cover_uploaded` | RPC |
-| POST | `/api/v1/comics/{comic_id}/mark-completed` | `204` | `comic::mark_completed` | RPC; body carries `is_completed` |
+| POST | `/api/v1/comics/{comic_id}/mark-archived` | `204` | `comic::mark_archived` | RPC |
 
 ### Chapters
 

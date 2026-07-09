@@ -17,7 +17,7 @@ use crate::api::http::result::{
 use crate::api::http::state::AppHarn;
 use crate::data::comic::{
     ComicInfoVal, CreateComicData, CreateComicVal, ListComicInfosData,
-    MarkComicCompletedData, MarkComicCoverUploadedData, ReserveComicCoverData,
+    MarkComicArchivedData, MarkComicCoverUploadedData, ReserveComicCoverData,
     ReserveComicCoverVal, UpdateComicInfoData,
 };
 use crate::model::user::UserToken;
@@ -255,33 +255,34 @@ pub async fn mark_cover_uploaded(
     no_content()
 }
 
-/// `POST /api/v1/comics/{comic_id}/mark-completed` — mark a comic completed
-/// and enqueue an archive task.
+/// `POST /api/v1/comics/{comic_id}/mark-archived` — mark a comic archived.
 #[utoipa::path(
     post,
-    path = "/api/v1/comics/{comic_id}/mark-completed",
+    path = "/api/v1/comics/{comic_id}/mark-archived",
     tag = "comics",
     params(("comic_id" = String, Path, description = "Comic ID")),
-    request_body = MarkComicCompletedData,
+    request_body = MarkComicArchivedData,
     responses(
-        (status = 204, description = "Comic marked completed"),
+        (status = 204, description = "Comic marked archived"),
+        (status = 422, description = "Path id does not match body id"),
         (status = 403, description = "No permission to modify this comic"),
         (status = 404, description = "Comic not found"),
     ),
 )]
-#[instrument(err, skip(harn))]
-pub async fn mark_completed(
+#[instrument(err, skip(harn, data))]
+pub async fn mark_archived(
     State(harn): State<AppHarn>,
     Path(comic_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Json(_data): Json<MarkComicCompletedData>,
+    Json(data): Json<MarkComicArchivedData>,
 ) -> HttpNoContent {
-    usecase::comic::mark_completed(
+    ensure_path_matches_body_id(&comic_id, &data.comic_id)?;
+
+    usecase::comic::mark_archived(
         harn.drive(),
         harn.repo(),
-        harn.prom(),
         user_token,
-        comic_id,
+        data.comic_id,
     )
     .await?;
     no_content()

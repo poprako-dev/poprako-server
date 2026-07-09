@@ -12,7 +12,7 @@ use crate::model::workset::WorksetInfo;
 use crate::part::repo::comic::{ComicRepo, ComicRepoTransactional};
 use crate::part::repo::step::comic::{
     Create, Delete, GetInfoById, GetInfoExcluded, IncrChapterNextIndex,
-    ListInfos, ListInfosExcluded, MarkCompleted, MarkCoverUploaded,
+    ListInfos, ListInfosExcluded, MarkArchived, MarkCoverUploaded,
     ReserveCover, TouchLastActive, UpdateChapterCount, UpdateInfo,
 };
 use crate::part::shared::execute::Execute;
@@ -553,13 +553,13 @@ impl<'a> Advance<Delete<'a>, MockContext> for MockTransactional {
 }
 
 #[async_trait]
-impl<'a> Advance<MarkCompleted<'a>, MockContext> for MockTransactional {
+impl<'a> Advance<MarkArchived<'a>, MockContext> for MockTransactional {
     type Error = RegularError;
 
     async fn advance(
         &self,
         context: &mut MockContext,
-        step: &MarkCompleted<'a>,
+        step: &MarkArchived<'a>,
     ) -> Result<(), Self::Error> {
         let comic = context
             .state
@@ -567,7 +567,9 @@ impl<'a> Advance<MarkCompleted<'a>, MockContext> for MockTransactional {
             .iter_mut()
             .find(|comic| comic.id == step.id)
             .ok_or_else(|| expected("error-comic-not-found"))?;
-        comic.is_completed = step.is_completed;
+        // TODO: Replace `is_completed` with a real archive state once archive
+        // semantics are designed. For now, archived is represented as completed.
+        comic.is_completed = true;
         comic.updated_at = now();
         Ok(())
     }
