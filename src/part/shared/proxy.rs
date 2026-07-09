@@ -62,7 +62,7 @@ where
     type Error = R::Error;
 
     async fn execute(&mut self, step: &S) -> Result<S::Output, Self::Error> {
-        Execute::execute(self.repo, step).await
+        self.repo.execute(step).await
     }
 }
 
@@ -113,6 +113,6 @@ where
     type Error = R::Error;
 
     async fn execute(&mut self, step: &S) -> Result<S::Output, Self::Error> {
-        Advance::advance(self.repo, self.context, step).await
+        self.repo.advance(self.context, step).await
     }
 }

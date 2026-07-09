@@ -927,10 +927,7 @@ async fn process_pending_archive_executes_cascade_delete() {
         }),
     );
 
-    process_pending(&mock)
-        .await
-        .ok()
-        .unwrap();
+    process_pending(&mock).await.ok().unwrap();
 
     let snapshot = mock.snapshot();
     assert!(

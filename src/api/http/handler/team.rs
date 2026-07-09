@@ -7,7 +7,9 @@ use axum::http::StatusCode;
 use tracing::instrument;
 
 use crate::api::http::handler::util::ensure_path_matches_body_id;
-use crate::api::http::result::{Accept as _, HttpBody, HttpNoContent, HttpResult, no_content};
+use crate::api::http::result::{
+    Accept as _, HttpBody, HttpNoContent, HttpResult, no_content,
+};
 use crate::api::http::state::AppHarn;
 use crate::data::team::{
     CreateTeamData, ListTeamInfosData, MarkTeamAvatarUploadedData,

@@ -10,7 +10,9 @@ use tracing::instrument;
 
 use utoipa::IntoParams;
 
-use crate::api::http::result::{Accept as _, HttpBody, HttpNoContent, HttpResult, no_content};
+use crate::api::http::result::{
+    Accept as _, HttpBody, HttpNoContent, HttpResult, no_content,
+};
 use crate::api::http::state::AppHarn;
 use crate::data::assignment::AssignmentInfoVal;
 use crate::data::assignment_invitation::{

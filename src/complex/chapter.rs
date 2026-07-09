@@ -178,7 +178,7 @@ impl ChapterComplex {
     }
 }
 
-/// Generate a human-readable default subtitle for a chapter, e.g. "Ch. 1".
+/// Generate a human-readable default subtitle for a chapter, e.g. `"Ch. 1"`.
 fn default_subtitle(index: i32) -> String {
     //
     let mut args = HashMap::new();
@@ -191,12 +191,14 @@ fn default_subtitle(index: i32) -> String {
     trl_kv("chapter-default-subtitle", &args)
 }
 
-/// Extract the current [`StagePhase`] for a given [`WorkflowStage`] from a
+/// Extract the current [`StagePhase`] for a given [`Stage`] from a
 /// [`ChapterInfo`] record.
 fn get_phase(chapter_info: &ChapterInfo, stage: Stage) -> StagePhase {
     chapter_info.stages.get_phase(stage)
 }
 
+/// Schedule image deletion tasks for all uploaded page images belonging
+/// to the given chapter.
 async fn prom_image_deletes<C, R, P>(
     repo: &R,
     prom: &P,
@@ -238,6 +240,8 @@ where
     Ok(())
 }
 
+/// After deleting a pinned chapter, repin the most recent remaining chapter
+/// (by list order) for the same comic.
 async fn repin_latest_chapter<C, R>(
     repo: &R,
     context: &mut C,
@@ -429,7 +433,8 @@ impl ChapterPermComplex {
     }
 }
 
-/// Resolve the owning team from a comic, then verify the user is a team member.
+/// Resolve the owning team from a comic ID, then verify the user is a team
+/// member of that team.
 async fn check_team_member_by_comic<P>(
     proxy: &mut P,
     user_id: &str,
@@ -511,7 +516,7 @@ where
     check_team_admin_by_comic(proxy, user_id, &chapter_info.comic_id).await
 }
 
-/// Verify the caller is assigned as an admin on this chapter.
+/// Verify the caller is assigned as a chapter admin on this chapter.
 async fn check_admin<P>(
     proxy: &mut P,
     user_id: &str,

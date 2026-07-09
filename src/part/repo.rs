@@ -42,18 +42,33 @@
 //! [`Advance`]: poprako_transactional::advance::Advance
 //! [`Drive::with_context`]: poprako_transactional::drive::Drive::with_context
 
+/// Announcement repository port.
 pub mod announcement;
+/// Assignment repository port.
 pub mod assignment;
+/// Assignment invitation repository port.
 pub mod assignment_invitation;
+/// Chapter repository port.
 pub mod chapter;
+/// Comic repository port.
 pub mod comic;
+/// Comment repository port.
 pub mod comment;
+/// Member repository port.
 pub mod member;
+/// Member invitation repository port.
 pub mod member_invitation;
+/// Page repository port.
 pub mod page;
+/// Repository step descriptors.
 pub mod step;
+/// System mail repository port.
 pub mod system_mail;
+/// Team repository port.
 pub mod team;
+/// Unit repository port.
 pub mod unit;
+/// User repository port.
 pub mod user;
+/// Workset repository port.
 pub mod workset;

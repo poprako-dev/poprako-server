@@ -6,13 +6,13 @@
 //! adapters at the handler call sites.
 
 use crate::harn::Harn;
-use crate::part_impl::shared::RdbContext;
 use crate::part_impl::auth::jwt_impl::JwtAuth;
 use crate::part_impl::drive::rdb_impl::RdbDrive;
 use crate::part_impl::effect::async_impl::AsyncEffectDevelop;
 use crate::part_impl::image::r2_impl::R2ImagePool;
 use crate::part_impl::prom::rdb_impl::RdbProm;
 use crate::part_impl::repo::rdb_impl::RdbRepo;
+use crate::part_impl::shared::RdbContext;
 
 /// Production harness type backing the HTTP server state.
 pub type AppHarn = Harn<

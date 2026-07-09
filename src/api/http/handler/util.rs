@@ -16,7 +16,9 @@ use crate::result::ExpectedVariant;
 #[derive(Debug, Deserialize, IntoParams)]
 #[into_params(parameter_in = Query)]
 pub struct Pagination {
+    /// Zero-based offset for paginated results.
     pub offset: u64,
+    /// Maximum number of items to return.
     pub limit: u64,
 }
 

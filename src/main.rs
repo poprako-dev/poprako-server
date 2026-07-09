@@ -34,6 +34,13 @@ use poprako_r::{
     RdbCore, RdbDrive, RdbProm, RdbRepo, serve,
 };
 
+/// Application entry point.
+///
+/// Parses CLI flags, loads configuration, initializes runtime dependencies
+/// (database pool, authentication, image pool, effect dispatcher, Prometheus
+/// collector), wires them into an application harness, and starts the HTTP
+/// server. Pass `--swagger` to print the OpenAPI spec to stdout instead of
+/// starting the server.
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     // CLI: --swagger to print swagger.json.

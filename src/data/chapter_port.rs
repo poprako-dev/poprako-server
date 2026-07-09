@@ -1,3 +1,5 @@
+//! Data transfer objects for chapter import/export port use cases.
+
 use serde::{Deserialize, Serialize};
 
 use utoipa::ToSchema;

@@ -92,150 +92,156 @@ where
     };
 
     let imported = drive
-        .with_context(async move |context| -> RegularResult<ChapterTranslationImportVal> {
-            //
-            let repo = repo.derive_transactional().await;
+        .with_context(
+            async move |context| -> RegularResult<ChapterTranslationImportVal> {
+                //
+                let repo = repo.derive_transactional().await;
 
-            let chapter_info = repo
-                .advance(
-                    context,
-                    &ChapterStep::get_info_by_id(&chapter_id, &[]),
-                )
-                .await?;
-
-            let page_infos = repo
-                .advance(
-                    context,
-                    &PageStep::list_all_infos_by_chapter_id(&chapter_id),
-                )
-                .await?;
-
-            ChapterImportComplex::validate_page_count(
-                imported_pages.len(),
-                page_infos.len(),
-            )?;
-
-            let mut imported_unit_count = 0;
-
-            for (page_info, imported_page) in
-                page_infos.iter().zip(imported_pages.iter())
-            {
-                let old_counters = page_counters(page_info);
-
-                let existing_unit_infos = repo
+                let chapter_info = repo
                     .advance(
                         context,
-                        &UnitStep::list_all_infos_by_page_id(&page_info.id),
+                        &ChapterStep::get_info_by_id(&chapter_id, &[]),
                     )
                     .await?;
 
-                let existing_by_id = existing_unit_infos
-                    .iter()
-                    .map(|unit_info| (unit_info.id.as_str(), unit_info))
-                    .collect::<HashMap<_, _>>();
+                let page_infos = repo
+                    .advance(
+                        context,
+                        &PageStep::list_all_infos_by_chapter_id(&chapter_id),
+                    )
+                    .await?;
 
-                let existing_by_index = existing_unit_infos
-                    .iter()
-                    .map(|unit_info| (unit_info.index, unit_info))
-                    .collect::<HashMap<_, _>>();
+                ChapterImportComplex::validate_page_count(
+                    imported_pages.len(),
+                    page_infos.len(),
+                )?;
 
-                for imported_unit in &imported_page.units {
-                    //
-                    let unit_id =
-                        resolve_unit_id(imported_unit, &existing_by_index);
+                let mut imported_unit_count = 0;
 
-                    let existing_unit = existing_by_id
-                        .get(unit_id.as_str())
-                        .copied()
-                        .or_else(|| {
-                            existing_by_index.get(&imported_unit.index).copied()
-                        });
+                for (page_info, imported_page) in
+                    page_infos.iter().zip(imported_pages.iter())
+                {
+                    let old_counters = page_counters(page_info);
 
-                    let unit_payload = ChapterImportComplex::build_unit_payload(
-                        imported_unit,
-                        existing_unit,
-                        &token.user_id,
-                        has_proofreader_role(&assignment_info),
-                        label_plus,
-                    );
+                    let existing_unit_infos = repo
+                        .advance(
+                            context,
+                            &UnitStep::list_all_infos_by_page_id(&page_info.id),
+                        )
+                        .await?;
 
-                    let unit_oper = UnitOper::Save {
-                        local_id: None,
-                        id: Some(unit_id.clone()),
-                        payload: unit_payload,
-                        before_id: None,
-                    };
+                    let existing_by_id = existing_unit_infos
+                        .iter()
+                        .map(|unit_info| (unit_info.id.as_str(), unit_info))
+                        .collect::<HashMap<_, _>>();
+
+                    let existing_by_index = existing_unit_infos
+                        .iter()
+                        .map(|unit_info| (unit_info.index, unit_info))
+                        .collect::<HashMap<_, _>>();
+
+                    for imported_unit in &imported_page.units {
+                        //
+                        let unit_id =
+                            resolve_unit_id(imported_unit, &existing_by_index);
+
+                        let existing_unit = existing_by_id
+                            .get(unit_id.as_str())
+                            .copied()
+                            .or_else(|| {
+                                existing_by_index
+                                    .get(&imported_unit.index)
+                                    .copied()
+                            });
+
+                        let unit_payload =
+                            ChapterImportComplex::build_unit_payload(
+                                imported_unit,
+                                existing_unit,
+                                &token.user_id,
+                                has_proofreader_role(&assignment_info),
+                                label_plus,
+                            );
+
+                        let unit_oper = UnitOper::Save {
+                            local_id: None,
+                            id: Some(unit_id.clone()),
+                            payload: unit_payload,
+                            before_id: None,
+                        };
+
+                        repo.advance(
+                            context,
+                            &UnitStep::save_info(&page_info.id, &unit_oper),
+                        )
+                        .await?;
+                    }
+
+                    let current_indexes = repo
+                        .advance(
+                            context,
+                            &UnitStep::list_indexes_by_page_id(&page_info.id),
+                        )
+                        .await?;
+
+                    let index_updates =
+                        UnitComplex::build_index_updates(current_indexes);
+
+                    if !index_updates.is_empty() {
+                        repo.advance(
+                            context,
+                            &UnitStep::update_indexes_by_page_id(
+                                &page_info.id,
+                                &index_updates,
+                            ),
+                        )
+                        .await?;
+                    }
+
+                    let counters = repo
+                        .advance(
+                            context,
+                            &UnitStep::count_by_page_id(&page_info.id),
+                        )
+                        .await?;
 
                     repo.advance(
                         context,
-                        &UnitStep::save_info(&page_info.id, &unit_oper),
-                    )
-                    .await?;
-                }
-
-                let current_indexes = repo
-                    .advance(
-                        context,
-                        &UnitStep::list_indexes_by_page_id(&page_info.id),
+                        &PageStep::set_unit_counters(&page_info.id, counters),
                     )
                     .await?;
 
-                let index_updates =
-                    UnitComplex::build_index_updates(current_indexes);
+                    let delta = counter_delta(old_counters, counters);
 
-                if !index_updates.is_empty() {
                     repo.advance(
                         context,
-                        &UnitStep::update_indexes_by_page_id(
-                            &page_info.id,
-                            &index_updates,
+                        &ChapterStep::adjust_unit_counters(
+                            &page_info.chapter_id,
+                            delta,
                         ),
                     )
                     .await?;
+
+                    imported_unit_count += imported_page.units.len() as i32;
                 }
 
-                let counters = repo
-                    .advance(
-                        context,
-                        &UnitStep::count_by_page_id(&page_info.id),
-                    )
-                    .await?;
-
                 repo.advance(
                     context,
-                    &PageStep::set_unit_counters(&page_info.id, counters),
+                    &ComicStep::touch_last_active(&chapter_info.comic_id),
                 )
                 .await?;
 
-                let delta = counter_delta(old_counters, counters);
-
-                repo.advance(
-                    context,
-                    &ChapterStep::adjust_unit_counters(
-                        &page_info.chapter_id,
-                        delta,
-                    ),
-                )
-                .await?;
-
-                imported_unit_count += imported_page.units.len() as i32;
-            }
-
-            repo.advance(
-                context,
-                &ComicStep::touch_last_active(&chapter_info.comic_id),
-            )
-            .await?;
-
-            Ok(ChapterTranslationImportVal {
-                imported_page_count: page_infos.len() as i32,
-                imported_unit_count,
-            })
-        })
+                Ok(ChapterTranslationImportVal {
+                    imported_page_count: page_infos.len() as i32,
+                    imported_unit_count,
+                })
+            },
+        )
         .await?;
     Ok(imported)
 }
 
+/// Extracts unit counters from a [`PageInfo`].
 fn page_counters(page_info: &PageInfo) -> UnitCounters {
     UnitCounters {
         total_unit_count: page_info.total_unit_count,
@@ -244,6 +250,8 @@ fn page_counters(page_info: &PageInfo) -> UnitCounters {
     }
 }
 
+/// Resolves the unit ID from an import — uses the provided ID, falls back to
+/// an existing unit with the same index, or generates a new one.
 fn resolve_unit_id(
     imported_unit: &UnitTranslationImport,
     existing_by_index: &HashMap<i32, &UnitInfo>,
@@ -264,12 +272,14 @@ fn resolve_unit_id(
     UnitComplex::gen_id()
 }
 
+/// Returns true if the assignment grants a PROOFREADER role.
 fn has_proofreader_role(assignment_info: &AssignmentInfo) -> bool {
     assignment_info
         .roles
         .has_any_role(&[RoleField::PROOFREADER])
 }
 
+/// Computes the per-counter delta between old and new unit counters.
 fn counter_delta(
     old_counters: UnitCounters,
     new_counters: UnitCounters,
@@ -284,6 +294,7 @@ fn counter_delta(
     }
 }
 
+/// Constructs a permission error for missing unit edit access.
 fn unit_edit_permission_error() -> RegularError {
     RegularError::Expected {
         variant: ExpectedVariant::Perm,

@@ -17,10 +17,16 @@
 //!
 //! [`part_impl`]: super::part_impl
 
+/// Authentication port — token signing and verification.
 pub mod auth;
+/// Side-effect dispatch port.
 pub mod effect;
+/// Object-storage image port — signed URL generation.
 pub mod image;
+/// Deferred-action port — actions executed after transaction commit.
 pub mod prom;
+/// Repository port — persistent storage abstractions with transactional support.
 pub mod repo;
 
+/// Shared port helper traits (drive execution, proxy execution).
 pub mod shared;

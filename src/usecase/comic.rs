@@ -410,6 +410,7 @@ where
                 cover_reservation.cover_version,
             ))
         })
+        // FIXME: spacing
         .await?;
     let put_url = image_pool.put_signed(&object_key).await?.to_string();
 

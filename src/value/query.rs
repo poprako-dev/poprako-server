@@ -67,6 +67,12 @@ where
 
 /// Deserialise `T` from a string slice via `serde_json::Value`, which owns its
 /// data and therefore implements `Deserializer<'de>` for every `'de`.
+/// Deserialize `T` from a string slice via a serde_json value round-trip.
+///
+/// This bypasses lifetime restrictions: `serde_json::Value::String` owns its
+/// data, so it implements `Deserializer<'de>` for every `'de`, allowing
+/// deserialization of owned types that cannot borrow from the original
+/// query-string slice.
 fn deserialize_from_str<T, E>(s: &str) -> Result<T, E>
 where
     T: DeserializeOwned,

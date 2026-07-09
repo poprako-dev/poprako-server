@@ -36,27 +36,43 @@
 //! [`Drive::with_context`]: poprako_transactional::drive::Drive::with_context
 //! [`Advance`]: poprako_transactional::advance::Advance
 
+/// Authentication use cases (register, login, logout).
 pub mod auth;
+/// User management use cases.
 pub mod user;
 
 // TODO: check effects.
+/// System mail use cases.
 pub mod system_mail;
 
+/// Member management use cases.
 pub mod member;
+/// Member invitation use cases.
 pub mod member_invitation;
+/// Team management use cases.
 pub mod team;
 
+/// Chapter lifecycle use cases.
 pub mod chapter;
+/// Comic lifecycle use cases.
 pub mod comic;
+/// Workset lifecycle use cases.
 pub mod workset;
 
+/// Assignment management use cases.
 pub mod assignment;
+/// Assignment invitation use cases.
 pub mod assignment_invitation;
 
+/// Page management use cases.
 pub mod page;
+/// Unit ordering use cases.
 pub mod unit;
 
+/// Announcement use cases.
 pub mod announcement;
+/// Comment use cases.
 pub mod comment;
 
+/// Chapter port import/export use cases.
 pub mod chapter_port;

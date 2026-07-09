@@ -6,7 +6,9 @@ use axum::http::StatusCode;
 
 use tracing::instrument;
 
-use crate::api::http::handler::util::{ensure_path_matches_body_id, Pagination};
+use crate::api::http::handler::util::{
+    Pagination, ensure_path_matches_body_id,
+};
 use crate::api::http::result::{Accept as _, HttpBody, HttpResult};
 use crate::api::http::state::AppHarn;
 use crate::data::unit::{

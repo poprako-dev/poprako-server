@@ -245,6 +245,7 @@ where
     }
 }
 
+/// Returns a `204 No Content` result with an empty body.
 pub fn no_content() -> StdResult<NoContent, HttpError> {
     Ok(NoContent::new())
 }

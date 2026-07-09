@@ -80,6 +80,7 @@ impl ChapterPortPermComplex {
     }
 }
 
+/// Construct a "chapter port export permission required" permission error.
 fn chapter_port_export_permission_error() -> RegularError {
     RegularError::Expected {
         variant: ExpectedVariant::Perm,
@@ -87,6 +88,7 @@ fn chapter_port_export_permission_error() -> RegularError {
     }
 }
 
+/// Construct a "chapter port import permission required" permission error.
 fn chapter_port_import_permission_error() -> RegularError {
     RegularError::Expected {
         variant: ExpectedVariant::Perm,

@@ -34,6 +34,10 @@ use crate::part::repo::workset::{WorksetRepo, WorksetRepoTransactional};
 use crate::result::RegularError;
 use crate::util::DeriveTransactional;
 
+/// Central application harness that wires together all port implementations.
+///
+/// Provides accessors to each subsystem (drive, repo, prom, auth, image_pool,
+/// develop) and is designed to be cheaply cloned via `Arc<HarnInner>`.
 pub struct Harn<C, D, R, P, A, I, V> {
     inner: Arc<HarnInner<C, D, R, P, A, I, V>>,
 }
@@ -46,6 +50,7 @@ impl<C, D, R, P, A, I, V> Clone for Harn<C, D, R, P, A, I, V> {
     }
 }
 
+/// Inner, non-cloneable state shared across all `Harn` clones via `Arc`.
 struct HarnInner<C, D, R, P, A, I, V> {
     drive: D,
     repo: R,

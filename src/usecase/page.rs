@@ -66,6 +66,7 @@ where
 {
     validate_page_count(data.page_count)?;
 
+    /// Holds the ID, storage key, and version for one reserved page upload.
     struct PageReservation {
         page_id: String,
         object_key: String,
@@ -82,100 +83,104 @@ where
     .await?;
 
     let reservations = drive
-        .with_context(async move |context| -> RegularResult<Vec<PageReservation>> {
-            //
-            let repo = repo.derive_transactional().await;
+        .with_context(
+            async move |context| -> RegularResult<Vec<PageReservation>> {
+                //
+                let repo = repo.derive_transactional().await;
 
-            let chapter_info = repo
-                .advance(
+                let chapter_info = repo
+                    .advance(
+                        context,
+                        &ChapterStep::get_info_by_id_excluded(
+                            &data.chapter_id,
+                            &[],
+                        ),
+                    )
+                    .await?;
+
+                if chapter_info.page_count != 0 {
+                    return Err(RegularError::Expected {
+                        variant: ExpectedVariant::Args,
+                        message: trl("error-chapter-pages-already-reserved"),
+                    });
+                }
+
+                let mut page_forms =
+                    Vec::with_capacity(data.page_count as usize);
+
+                let mut reservations =
+                    Vec::with_capacity(data.page_count as usize);
+
+                for index in 0..data.page_count {
+                    //
+                    let page_id = PageComplex::gen_id();
+
+                    let image_version = 1;
+
+                    let object_key = PageComplex::gen_image_key(
+                        &chapter_info.id,
+                        &page_id,
+                        image_version,
+                        &data.file_ext,
+                    );
+
+                    let page_form = PageForm {
+                        id: page_id.clone(),
+                        chapter_id: chapter_info.id.clone(),
+                        index,
+                        image_key: Some(object_key.clone()),
+                        image_version,
+                    };
+
+                    page_forms.push(page_form);
+
+                    reservations.push(PageReservation {
+                        page_id,
+                        object_key,
+                        image_version,
+                    });
+                }
+
+                repo.advance(context, &PageStep::create_batch(&page_forms))
+                    .await?;
+
+                let now = OffsetDateTime::now_utc();
+
+                let check_visible_at = now + Duration::minutes(15);
+
+                for reservation in &reservations {
+                    append_check_uploaded(
+                        prom,
+                        context,
+                        &reservation.page_id,
+                        &reservation.object_key,
+                        reservation.image_version,
+                        &check_visible_at,
+                    )
+                    .await?;
+                }
+
+                repo.advance(
                     context,
-                    &ChapterStep::get_info_by_id_excluded(
-                        &data.chapter_id,
-                        &[],
+                    &ChapterStep::set_page_counters(
+                        &chapter_info.id,
+                        data.page_count,
+                        0,
+                        0,
+                        0,
                     ),
                 )
                 .await?;
 
-            if chapter_info.page_count != 0 {
-                return Err(RegularError::Expected {
-                    variant: ExpectedVariant::Args,
-                    message: trl("error-chapter-pages-already-reserved"),
-                });
-            }
-
-            let mut page_forms = Vec::with_capacity(data.page_count as usize);
-
-            let mut reservations = Vec::with_capacity(data.page_count as usize);
-
-            for index in 0..data.page_count {
-                //
-                let page_id = PageComplex::gen_id();
-
-                let image_version = 1;
-
-                let object_key = PageComplex::gen_image_key(
-                    &chapter_info.id,
-                    &page_id,
-                    image_version,
-                    &data.file_ext,
-                );
-
-                let page_form = PageForm {
-                    id: page_id.clone(),
-                    chapter_id: chapter_info.id.clone(),
-                    index,
-                    image_key: Some(object_key.clone()),
-                    image_version,
-                };
-
-                page_forms.push(page_form);
-
-                reservations.push(PageReservation {
-                    page_id,
-                    object_key,
-                    image_version,
-                });
-            }
-
-            repo.advance(context, &PageStep::create_batch(&page_forms))
-                .await?;
-
-            let now = OffsetDateTime::now_utc();
-
-            let check_visible_at = now + Duration::minutes(15);
-
-            for reservation in &reservations {
-                append_check_uploaded(
-                    prom,
+                repo.advance(
                     context,
-                    &reservation.page_id,
-                    &reservation.object_key,
-                    reservation.image_version,
-                    &check_visible_at,
+                    &ComicStep::touch_last_active(&chapter_info.comic_id),
                 )
                 .await?;
-            }
 
-            repo.advance(
-                context,
-                &ChapterStep::set_page_counters(
-                    &chapter_info.id,
-                    data.page_count,
-                    0,
-                    0,
-                    0,
-                ),
-            )
-            .await?;
-
-            repo.advance(
-                context,
-                &ComicStep::touch_last_active(&chapter_info.comic_id),
-            )
-            .await?;
-
-            Ok(reservations)
-        })
+                Ok(reservations)
+            },
+        )
         .await?;
     let creations = futures_util::future::join_all(
         reservations.into_iter().map(|reservation| async move {
@@ -193,7 +198,8 @@ where
         }),
     )
     .await
-    .into_iter()    .collect::<RegularResult<Vec<_>>>()?;
+    .into_iter()
+    .collect::<RegularResult<Vec<_>>>()?;
 
     Ok(ReserveChapterPagesVal { creations })
 }
@@ -262,10 +268,7 @@ where
             )
             .await?;
 
-            Ok((
-                page_reservation.object_key,
-                page_reservation.image_version,
-            ))
+            Ok((page_reservation.object_key, page_reservation.image_version))
         })
         .await?;
     let put_url = image_pool.put_signed(&object_key).await?.to_string();
@@ -325,7 +328,8 @@ where
             .map(|page_info| PageInfoVal::from_model(image_pool, page_info)),
     )
     .await
-    .into_iter()    .collect()
+    .into_iter()
+    .collect()
 }
 
 /// Marks one page image as uploaded.
@@ -463,6 +467,7 @@ where
     Ok(())
 }
 
+/// Validates that the page count is positive.
 fn validate_page_count(page_count: i32) -> RegularResult<()> {
     //
     if page_count <= 0 {
@@ -477,6 +482,7 @@ fn validate_page_count(page_count: i32) -> RegularResult<()> {
 
 // TODO: batch
 
+/// Appends a `CheckUploaded` prom task for the given page image.
 async fn append_check_uploaded<C, P>(
     prom: &P,
     context: &mut C,
@@ -507,6 +513,7 @@ where
     )
     .await
 }
+/// Appends a `Delete` prom task for the given object key.
 async fn append_delete<C, P>(
     prom: &P,
     context: &mut C,

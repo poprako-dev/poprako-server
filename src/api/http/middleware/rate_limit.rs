@@ -12,6 +12,7 @@ use axum::middleware::Next;
 use axum::response::{IntoResponse, Response};
 use governor::{DefaultDirectRateLimiter, Quota, RateLimiter};
 
+/// Returns the global singleton rate limiter, initialised on first call.
 fn limiter() -> &'static DefaultDirectRateLimiter {
     //
     static LIMITER: OnceLock<DefaultDirectRateLimiter> = OnceLock::new();

@@ -334,6 +334,7 @@ where
     Ok(())
 }
 
+/// Constructs an args error for an invalid invitation code.
 fn invalid_invitation_error() -> RegularError {
     RegularError::Expected {
         variant: ExpectedVariant::Args,
@@ -341,6 +342,7 @@ fn invalid_invitation_error() -> RegularError {
     }
 }
 
+/// Constructs an args error for a user already in the team.
 fn already_team_member_error() -> RegularError {
     RegularError::Expected {
         variant: ExpectedVariant::Args,

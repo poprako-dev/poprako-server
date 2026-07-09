@@ -28,7 +28,7 @@ use crate::part::repo::step::page::PageStep;
 use crate::part::repo::step::unit::UnitStep;
 use crate::part::repo::unit::{UnitRepo, UnitRepoTransactional};
 use crate::part::repo::workset::{WorksetRepo, WorksetRepoTransactional};
-use crate::result::{RegularResult};
+use crate::result::RegularResult;
 use crate::util::DeriveTransactional;
 
 /// Exports one chapter as a JSON-safe translation payload.
@@ -171,6 +171,7 @@ where
     ))
 }
 
+/// Builds a [`UnitTranslationExportVal`] from page and unit info.
 fn make_unit_export(
     page_info: &PageInfo,
     unit_info: UnitInfo,
@@ -191,6 +192,7 @@ fn make_unit_export(
     }
 }
 
+/// Returns [`Some`] with the text if non-empty, [`None`] otherwise.
 fn non_empty(text: String) -> Option<String> {
     //
     if text.trim().is_empty() {

@@ -185,7 +185,8 @@ where
             .map(|team_info| TeamInfoVal::from_model(image_pool, team_info)),
     )
     .await
-    .into_iter()    .collect::<RegularResult<Vec<_>>>()?;
+    .into_iter()
+    .collect::<RegularResult<Vec<_>>>()?;
 
     Ok(team_info_vals)
 }

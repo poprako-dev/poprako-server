@@ -22,8 +22,7 @@ impl MemberComplex {
 pub struct MemberPermComplex;
 
 impl MemberPermComplex {
-    // ── public ───────────────────────────────────────────────────────
-
+    /// Verify the caller is a team admin of the given team.
     pub async fn can_user_update_info<P>(
         proxy: &mut P,
         user_id: &str,
@@ -38,6 +37,7 @@ impl MemberPermComplex {
         check_user_is_team_admin(proxy, user_id, team_id).await
     }
 
+    /// Verify the caller is a team admin of the given team.
     pub async fn can_user_delete<P>(
         proxy: &mut P,
         user_id: &str,
@@ -52,6 +52,7 @@ impl MemberPermComplex {
         check_user_is_team_admin(proxy, user_id, team_id).await
     }
 
+    /// Verify the caller is a team admin of the given team.
     pub async fn can_user_create<P>(
         proxy: &mut P,
         user_id: &str,

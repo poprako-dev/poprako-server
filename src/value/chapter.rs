@@ -183,10 +183,7 @@ impl From<StagePhase> for StagePhaseField {
 }
 
 impl Serialize for StagePhaseField {
-    fn serialize<S>(
-        &self,
-        serializer: S,
-    ) -> Result<S::Ok, S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
@@ -414,10 +411,7 @@ impl From<StageMask> for u32 {
 }
 
 impl Serialize for StageMask {
-    fn serialize<S>(
-        &self,
-        serializer: S,
-    ) -> Result<S::Ok, S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {

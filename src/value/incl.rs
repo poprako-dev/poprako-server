@@ -20,6 +20,8 @@ where
     expanded_incl_opts
 }
 
+/// Append the full dependency path for a single incl opt, expanding
+/// dependencies in order and deduplicating as we go.
 fn push_path<I>(expanded_incl_opts: &mut Vec<I>, path: &[I])
 where
     I: InclOpt,
@@ -29,6 +31,8 @@ where
     }
 }
 
+/// Append a single incl opt to the expanded list if it is not already present,
+/// preserving insertion order.
 fn push_unique<I>(expanded_incl_opts: &mut Vec<I>, incl_opt: I)
 where
     I: InclOpt,

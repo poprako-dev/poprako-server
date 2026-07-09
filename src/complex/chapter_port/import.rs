@@ -164,6 +164,8 @@ impl ChapterImportComplex {
     }
 }
 
+/// Internal representation of a parsed LabelPlus unit header containing
+/// the unit's page-relative index, coordinates, and bubble flag.
 struct LabelPlusUnit {
     index: i32,
     x_coord: f64,
@@ -171,6 +173,9 @@ struct LabelPlusUnit {
     is_bubble: bool,
 }
 
+/// Validate the LabelPlus header: version line starting with a digit,
+/// a `-` separator line, content lines ending with a `-` separator,
+/// and at least one trailing line.
 fn validate_label_plus_header<'a, I>(lines: &mut I) -> RegularResult<()>
 where
     I: Iterator<Item = &'a str>,
@@ -213,10 +218,14 @@ where
     Ok(())
 }
 
+/// Check whether a text line matches the LabelPlus page header format
+/// (`>>>>>>>>[...]<<<<<<<<`).
 fn is_label_plus_page_header(line: &str) -> bool {
     line.starts_with(">>>>>>>>[") && line.ends_with("]<<<<<<<<")
 }
 
+/// Parse a LabelPlus unit header line into its index, coordinates, and
+/// bubble flag (`1` = bubble, `2` = non-bubble).
 fn parse_label_plus_unit_header(
     line: &str,
 ) -> RegularResult<Option<LabelPlusUnit>> {
@@ -264,6 +273,9 @@ fn parse_label_plus_unit_header(
     }))
 }
 
+/// Flush the buffered LabelPlus unit into the current page's unit list,
+/// building a [`UnitTranslationImport`] from the parsed header and
+/// accumulated main text lines.
 fn flush_label_plus_unit(
     current_page: &mut Option<Vec<UnitTranslationImport>>,
     current_unit: &mut Option<LabelPlusUnit>,
@@ -296,6 +308,8 @@ fn flush_label_plus_unit(
     Ok(())
 }
 
+/// Parse a single PopRaKo JSON page import into a [`PageTranslationImport`],
+/// validating required fields, unique indexes, and finite coordinates.
 fn parse_poprako_page(
     page: PoprakoPageImport,
 ) -> RegularResult<PageTranslationImport> {
@@ -342,10 +356,14 @@ fn parse_poprako_page(
     Ok(PageTranslationImport { units })
 }
 
+/// Normalize an optional string, returning `None` for empty/whitespace-only
+/// values.
 fn normalize_option(text: Option<String>) -> Option<String> {
     text.and_then(normalize_string)
 }
 
+/// Normalize a string, returning `None` when the trimmed result is empty
+/// or whitespace-only.
 fn normalize_string(text: String) -> Option<String> {
     if text.trim().is_empty() {
         return None;
@@ -353,6 +371,8 @@ fn normalize_string(text: String) -> Option<String> {
     Some(text)
 }
 
+/// Build a [`UnitPayload`] from an existing persisted [`UnitInfo`],
+/// preserving all stored text and metadata fields.
 fn payload_from_unit(unit_info: &UnitInfo) -> UnitPayload {
     UnitPayload {
         is_bubble: unit_info.is_bubble,
@@ -366,6 +386,8 @@ fn payload_from_unit(unit_info: &UnitInfo) -> UnitPayload {
     }
 }
 
+/// Build a fresh [`UnitPayload`] from imported unit data with no existing
+/// text or metadata.
 fn payload_from_import(parsed_unit: &UnitTranslationImport) -> UnitPayload {
     UnitPayload {
         is_bubble: parsed_unit.is_bubble,
@@ -379,6 +401,8 @@ fn payload_from_import(parsed_unit: &UnitTranslationImport) -> UnitPayload {
     }
 }
 
+/// Apply LabelPlus main text to the unit payload, assigning it as
+/// proofread or translated text based on the caller's role.
 fn apply_label_plus_text(
     unit_payload: &mut UnitPayload,
     parsed_unit: &UnitTranslationImport,
@@ -402,6 +426,8 @@ fn apply_label_plus_text(
     }
 }
 
+/// Apply PopRaKo JSON text fields to the unit payload, writing translated
+/// and proofread text according to the caller's role.
 fn apply_poprako_text(
     unit_payload: &mut UnitPayload,
     parsed_unit: &UnitTranslationImport,
@@ -425,6 +451,7 @@ fn apply_poprako_text(
     }
 }
 
+/// Construct an `Expected::Args` error with the given i18n message key.
 fn args_error(key: &str) -> RegularError {
     RegularError::Expected {
         variant: ExpectedVariant::Args,
