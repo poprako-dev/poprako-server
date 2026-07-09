@@ -35,6 +35,7 @@ async fn create(
     conn: &mut RdbConn,
     form: &TeamForm,
 ) -> RegularResult<TeamInfo> {
+    //
     let now = OffsetDateTime::now_utc();
 
     let entry = TeamEntry {
@@ -60,6 +61,7 @@ async fn get_info_by_id(
     conn: &mut RdbConn,
     id: &str,
 ) -> RegularResult<TeamInfo> {
+    //
     let row: TeamRow = t_team
         .filter(f_id.eq(id))
         .select(TeamRow::as_select())
@@ -78,9 +80,11 @@ async fn list_infos(
     offset: u64,
     limit: u64,
 ) -> RegularResult<Vec<TeamInfo>> {
+    //
     let mut query = t_team.into_boxed();
 
     if let Some(user_id) = user_id {
+        //
         let member_team_ids = t_member::table
             .filter(t_member::f_user_id.eq(user_id))
             .select(t_member::f_team_id);
@@ -106,6 +110,7 @@ async fn update_info(
     name: &str,
     description: &str,
 ) -> RegularResult<()> {
+    //
     let now = OffsetDateTime::now_utc();
 
     let aspect = TeamAspect::new(now).name(name).description(description);
@@ -124,6 +129,7 @@ async fn mark_avatar_uploaded(
     id: &str,
     version: i64,
 ) -> RegularResult<()> {
+    //
     let now = OffsetDateTime::now_utc();
 
     let affected = diesel::update(
@@ -148,6 +154,7 @@ async fn reserve_avatar(
     id: &str,
     file_ext: &str,
 ) -> RegularResult<TeamAvatarReservation> {
+    //
     let now = OffsetDateTime::now_utc();
 
     let (prev_key, new_version): (Option<String>, i64) =
@@ -182,6 +189,7 @@ async fn get_info_excluded(
     conn: &mut RdbConn,
     id: &str,
 ) -> RegularResult<TeamInfo> {
+    //
     let row: TeamRow = t_team
         .filter(f_id.eq(id))
         .select(TeamRow::as_select())
@@ -196,6 +204,7 @@ async fn get_info_excluded(
 }
 
 async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
+    //
     diesel::delete(t_team.filter(f_id.eq(id)))
         .execute(conn)
         .await
@@ -208,6 +217,7 @@ async fn increment_workset_next_index(
     conn: &mut RdbConn,
     id: &str,
 ) -> RegularResult<i32> {
+    //
     let prev: i32 = diesel::update(t_team.filter(f_id.eq(id)))
         .set(f_workset_next_index.eq(f_workset_next_index + 1))
         .returning(f_workset_next_index - 1)

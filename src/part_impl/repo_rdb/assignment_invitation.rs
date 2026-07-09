@@ -54,6 +54,7 @@ async fn list_infos(
     offset: u64,
     limit: u64,
 ) -> RegularResult<Vec<AssignmentInvitationInfo>> {
+    //
     let mut query = t_assignment_invitation
         .filter(f_chapter_id.eq(chapter_id))
         .into_boxed();
@@ -78,6 +79,7 @@ async fn get_info_by_id(
     conn: &mut RdbConn,
     id: &str,
 ) -> RegularResult<AssignmentInvitationInfo> {
+    //
     let row: AssignmentInvitationRow = t_assignment_invitation
         .filter(f_id.eq(id))
         .select(AssignmentInvitationRow::as_select())
@@ -94,6 +96,7 @@ async fn get_info_by_code_excluded(
     conn: &mut RdbConn,
     code: &str,
 ) -> RegularResult<AssignmentInvitationInfo> {
+    //
     let row: AssignmentInvitationRow = t_assignment_invitation
         .filter(f_code.eq(code))
         .filter(f_pending.eq(true))
@@ -112,6 +115,7 @@ async fn create(
     conn: &mut RdbConn,
     form: &AssignmentInvitationForm,
 ) -> RegularResult<AssignmentInvitationInfo> {
+    //
     let entry = AssignmentInvitationEntry::from(form);
 
     let row: AssignmentInvitationRow =
@@ -129,6 +133,7 @@ async fn mark_pending_as_used(
     conn: &mut RdbConn,
     id: &str,
 ) -> RegularResult<()> {
+    //
     let now = OffsetDateTime::now_utc();
 
     let aspect = AssignmentInvitationAspect::new(now).pending(false);
@@ -151,6 +156,7 @@ async fn mark_pending_as_used(
 }
 
 async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
+    //
     diesel::delete(t_assignment_invitation.filter(f_id.eq(id)))
         .execute(conn)
         .await
@@ -163,6 +169,7 @@ async fn delete_by_chapter_id(
     conn: &mut RdbConn,
     chapter_id: &str,
 ) -> RegularResult<()> {
+    //
     diesel::delete(t_assignment_invitation.filter(f_chapter_id.eq(chapter_id)))
         .execute(conn)
         .await

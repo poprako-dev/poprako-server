@@ -38,6 +38,7 @@ async fn get_info_by_id(
     conn: &mut RdbConn,
     id: &str,
 ) -> RegularResult<PageInfo> {
+    //
     let row: PageRow = t_page
         .filter(f_id.eq(id))
         .select(PageRow::as_select())
@@ -54,6 +55,7 @@ async fn get_info_excluded(
     conn: &mut RdbConn,
     id: &str,
 ) -> RegularResult<PageInfo> {
+    //
     let row: PageRow = t_page
         .filter(f_id.eq(id))
         .select(PageRow::as_select())
@@ -73,6 +75,7 @@ async fn list_infos_by_chapter_id(
     offset: u64,
     limit: u64,
 ) -> RegularResult<Vec<PageInfo>> {
+    //
     let rows: Vec<PageRow> = t_page
         .filter(f_chapter_id.eq(chapter_id))
         .select(PageRow::as_select())
@@ -90,6 +93,7 @@ async fn list_all_infos_by_chapter_id(
     conn: &mut RdbConn,
     chapter_id: &str,
 ) -> RegularResult<Vec<PageInfo>> {
+    //
     let rows: Vec<PageRow> = t_page
         .filter(f_chapter_id.eq(chapter_id))
         .select(PageRow::as_select())
@@ -105,6 +109,7 @@ async fn create_batch(
     conn: &mut RdbConn,
     forms: &[PageForm],
 ) -> RegularResult<Vec<PageInfo>> {
+    //
     let entries: Vec<PageEntry> = forms.iter().map(PageEntry::from).collect();
 
     let rows: Vec<PageRow> = diesel::insert_into(t_page)
@@ -122,6 +127,7 @@ async fn reserve_image(
     id: &str,
     file_ext: &str,
 ) -> RegularResult<PageImageReservation> {
+    //
     let now = OffsetDateTime::now_utc();
 
     let (chapter_id, prev_key, new_version): (String, Option<String>, i64) =
@@ -160,6 +166,7 @@ async fn mark_image_uploaded(
     id: &str,
     image_version: i64,
 ) -> RegularResult<()> {
+    //
     let now = OffsetDateTime::now_utc();
 
     let affected = diesel::update(
@@ -184,6 +191,7 @@ async fn set_unit_counters(
     id: &str,
     counters: UnitCounters,
 ) -> RegularResult<()> {
+    //
     let now = OffsetDateTime::now_utc();
 
     let aspect = PageAspect::new(now)
@@ -204,6 +212,7 @@ async fn delete_by_chapter_id(
     conn: &mut RdbConn,
     chapter_id: &str,
 ) -> RegularResult<()> {
+    //
     let page_ids: Vec<String> = t_page
         .filter(f_chapter_id.eq(chapter_id))
         .select(f_id)

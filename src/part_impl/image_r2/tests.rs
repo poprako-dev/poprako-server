@@ -5,6 +5,7 @@
 use super::*;
 
 fn image_pool() -> R2ImagePool {
+    //
     let credentials =
         Credentials::new("access-key", "secret-key", None, None, "test");
 

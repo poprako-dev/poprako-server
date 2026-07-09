@@ -21,6 +21,7 @@ pub fn pool_get(err: PoolError) -> RegularError {
 
 pub fn diesel(err: DieselError) -> RegularError {
     match err {
+        //
         DieselError::DatabaseError(DatabaseErrorKind::UniqueViolation, _) => {
             RegularError::Expected {
                 variant: ExpectedVariant::Args,
@@ -29,6 +30,7 @@ pub fn diesel(err: DieselError) -> RegularError {
         }
 
         DieselError::NotFound => {
+            //
             tracing::warn!(
                 "[rdb_core::diesel] unexpected Diesel NotFound; use optional() and map None at call site"
             );

@@ -132,6 +132,7 @@ where
     .await;
 
     let Ok(chapter_info) = chapter_info else {
+        //
         tracing::warn!(
             chapter_id = %chapter_id,
             "[AsyncEffectDevelop::load_chapter] failed to look up chapter for notification",
@@ -164,6 +165,7 @@ where
     .await;
 
     let Ok(assignment_infos) = assignment_infos else {
+        //
         tracing::warn!(
             chapter_id = %chapter_info.id,
             "[AsyncEffectDevelop::build_assignment_mails] failed to list chapter assignments",
@@ -173,6 +175,7 @@ where
     };
 
     let Some(args) = chapter_mail_args(chapter_info, workflow_label) else {
+        //
         tracing::warn!(
             chapter_id = %chapter_info.id,
             "[AsyncEffectDevelop::build_assignment_mails] missing chapter include chain",
@@ -182,6 +185,7 @@ where
     };
 
     let title = trl_kv("mail-chapter-progress-title", &args);
+
     let content = trl_kv("mail-chapter-progress-body", &args);
 
     assignment_infos
@@ -199,6 +203,7 @@ fn chapter_mail_args(
     chapter_info: &ChapterInfo,
     workflow_label: String,
 ) -> Option<HashMap<Cow<'static, str>, FluentValue<'static>>> {
+    //
     let comic_info = chapter_info.comic.as_ref()?;
 
     let workset_info = comic_info.workset.as_ref()?;
@@ -208,23 +213,29 @@ fn chapter_mail_args(
     let short_title = truncate_title(&comic_info.title, TITLE_LIMIT);
 
     let mut args = HashMap::new();
+
     args.insert(
         Cow::Borrowed("team_name"),
         FluentValue::from(team_info.name.clone()),
     );
+
     args.insert(
         Cow::Borrowed("workset_name"),
         FluentValue::from(workset_info.name.clone()),
     );
+
     args.insert(
         Cow::Borrowed("comic_index"),
         FluentValue::from(i64::from(comic_info.index + 1)),
     );
+
     args.insert(Cow::Borrowed("comic_title"), FluentValue::from(short_title));
+
     args.insert(
         Cow::Borrowed("chapter_index"),
         FluentValue::from(i64::from(chapter_info.index + 1)),
     );
+
     args.insert(Cow::Borrowed("workflow"), FluentValue::from(workflow_label));
 
     Some(args)
@@ -256,21 +267,27 @@ async fn send_batch<C, R>(
 
 fn next_phase_config(stage: Stage) -> Option<(RoleField, String)> {
     match stage {
+        //
         Stage::RawProvide => {
             Some((RoleField::TRANSLATOR, trl("mail-workflow-upload")))
         }
+
         Stage::Translate => {
             Some((RoleField::PROOFREADER, trl("mail-workflow-translate")))
         }
+
         Stage::Proofread => {
             Some((RoleField::TYPESETTER, trl("mail-workflow-proofread")))
         }
+
         Stage::TypesetRedraw => {
             Some((RoleField::REVIEWER, trl("mail-workflow-typeset")))
         }
+
         Stage::Review => {
             Some((RoleField::PUBLISHER, trl("mail-workflow-review")))
         }
+
         Stage::Publish => None,
     }
 }
@@ -287,6 +304,7 @@ fn reviewer_progress_label(stage: Stage) -> Option<String> {
 }
 
 fn truncate_title(title: &str, max_chars: usize) -> String {
+    //
     let mut chars = title.chars();
 
     let short_title: String = chars.by_ref().take(max_chars).collect();

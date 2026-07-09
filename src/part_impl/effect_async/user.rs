@@ -53,6 +53,7 @@ where
             .await;
 
     let Ok(team_info) = team_info else {
+        //
         tracing::warn!(
             team_id = %payload.team_id,
             "[AsyncEffectDevelop::notify_invitor] failed to look up team for signup notification",

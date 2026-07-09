@@ -13,16 +13,23 @@ impl ChapterExportComplex {
         pages: &[PageInfo],
         units_by_page_id: &HashMap<String, Vec<UnitInfo>>,
     ) -> String {
+        //
         let mut output = String::new();
 
         output.push_str("1,0\n");
+
         output.push_str("-\n");
+
         output.push_str("框内\n");
+
         output.push_str("框外\n");
+
         output.push_str("-\n");
+
         output.push_str("Exported by PopRaKo Web\n");
 
         for page_info in pages {
+            //
             let image_name = label_plus_image_name(page_info);
 
             write!(output, "\n\n>>>>>>>>[{}]<<<<<<<<\n", image_name).unwrap_or_else(|error| {
@@ -38,6 +45,7 @@ impl ChapterExportComplex {
                 .unwrap_or(&[]);
 
             for (index, unit_info) in units.iter().enumerate() {
+                //
                 let group = match unit_info.is_bubble {
                     true => 1,
                     false => 2,
@@ -59,7 +67,9 @@ impl ChapterExportComplex {
                 });
 
                 if let Some(main_text) = select_main_text(unit_info) {
+                    //
                     output.push_str(main_text);
+
                     output.push('\n');
                 }
 
@@ -72,6 +82,7 @@ impl ChapterExportComplex {
 }
 
 fn label_plus_image_name(page_info: &PageInfo) -> String {
+    //
     let extension = page_info
         .image_key
         .as_deref()

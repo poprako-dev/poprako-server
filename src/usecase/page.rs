@@ -84,6 +84,7 @@ where
 
     let reservations = drive
         .with_context(async move |context| {
+            //
             let repo = repo.derive_transactional().await;
 
             let chapter_info = repo
@@ -104,11 +105,15 @@ where
             }
 
             let mut page_forms = Vec::with_capacity(data.page_count as usize);
+
             let mut reservations = Vec::with_capacity(data.page_count as usize);
 
             for index in 0..data.page_count {
+                //
                 let page_id = PageComplex::gen_id();
+
                 let image_version = 1;
+
                 let object_key = PageComplex::gen_image_key(
                     &chapter_info.id,
                     &page_id,
@@ -137,6 +142,7 @@ where
                 .await?;
 
             let now = OffsetDateTime::now_utc();
+
             let check_visible_at = now + Duration::minutes(15);
 
             for reservation in &reservations {
@@ -176,6 +182,7 @@ where
 
     let creations = futures_util::future::join_all(
         reservations.into_iter().map(|reservation| async move {
+            //
             let put_url = image_pool
                 .put_signed(&reservation.object_key)
                 .await?
@@ -233,6 +240,7 @@ where
 
     let (object_key, image_version) = drive
         .with_context(async move |context| {
+            //
             let repo = repo.derive_transactional().await;
 
             let page_reservation = repo
@@ -358,6 +366,7 @@ where
 
     drive
         .with_context(async move |context| {
+            //
             let repo = repo.derive_transactional().await;
 
             repo.advance(
@@ -415,6 +424,7 @@ where
 
     drive
         .with_context(async move |context| {
+            //
             let repo = repo.derive_transactional().await;
 
             let chapter_info = repo
@@ -466,12 +476,14 @@ where
 }
 
 fn validate_page_count(page_count: i32) -> RegularResult<()> {
+    //
     if page_count <= 0 {
         return Err(RegularError::Expected {
             variant: ExpectedVariant::Args,
             message: trl("error-invalid-page-count"),
         });
     }
+
     accept(())
 }
 

@@ -28,14 +28,17 @@ fn create_user(
     state: &mut MockState,
     form: &UserForm,
 ) -> RegularResult<UserInfo> {
+    //
     if state.users.iter().any(|user| user.id == form.id) {
         return Err(expected("error-already-exists"));
     }
+
     if state.users.iter().any(|user| user.qid == form.qid) {
         return Err(expected("error-already-exists"));
     }
 
     let time = now();
+
     let user = UserInfo {
         id: form.id.clone(),
         qid: form.qid.clone(),
@@ -48,11 +51,14 @@ fn create_user(
         created_at: time,
         updated_at: time,
     };
+
     state.users.push(user.clone());
+
     state.credentials.push(UserCredential {
         user_id: form.id.clone(),
         password_hash: form.password_hash.clone(),
     });
+
     Ok(user)
 }
 

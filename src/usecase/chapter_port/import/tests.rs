@@ -30,6 +30,7 @@ fn token(user_id: &str) -> UserToken {
 }
 
 fn comic(id: &str) -> ComicInfo {
+    //
     let time = OffsetDateTime::now_utc();
 
     ComicInfo {
@@ -56,6 +57,7 @@ fn comic(id: &str) -> ComicInfo {
 }
 
 fn workset(id: &str) -> WorksetInfo {
+    //
     let time = OffsetDateTime::now_utc();
 
     WorksetInfo {
@@ -76,6 +78,7 @@ fn chapter(
     total_unit_count: i32,
     proofread_unit_count: i32,
 ) -> ChapterInfo {
+    //
     let time = OffsetDateTime::now_utc();
 
     ChapterInfo {
@@ -102,6 +105,7 @@ fn assignment(
     user_id: &str,
     role_mask: RoleMask,
 ) -> AssignmentInfo {
+    //
     let time = OffsetDateTime::now_utc();
 
     AssignmentInfo {
@@ -122,6 +126,7 @@ fn page(
     total_unit_count: i32,
     proofread_unit_count: i32,
 ) -> PageInfo {
+    //
     let time = OffsetDateTime::now_utc();
 
     PageInfo {
@@ -140,6 +145,7 @@ fn page(
 }
 
 fn unit(id: &str, page_id: &str, index: i32, text: &str) -> UnitInfo {
+    //
     let time = OffsetDateTime::now_utc();
 
     UnitInfo {
@@ -165,6 +171,7 @@ fn seed_base(
     total_unit_count: i32,
     proofread_unit_count: i32,
 ) {
+    //
     mock.seed_workset(workset("workset-1"));
 
     mock.seed_comic(comic("comic-1"));

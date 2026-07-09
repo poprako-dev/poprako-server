@@ -387,7 +387,9 @@ use crate::result::accept;
 use crate::value::role::{RoleField, RoleMask};
 
 fn user(id: &str) -> UserInfo {
+    //
     let time = now();
+
     UserInfo {
         id: id.into(),
         qid: "qid".into(),

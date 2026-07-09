@@ -13,6 +13,7 @@ use axum::response::{IntoResponse, Response};
 use governor::{DefaultDirectRateLimiter, Quota, RateLimiter};
 
 fn limiter() -> &'static DefaultDirectRateLimiter {
+    //
     static LIMITER: OnceLock<DefaultDirectRateLimiter> = OnceLock::new();
 
     LIMITER.get_or_init(|| {
@@ -25,8 +26,11 @@ fn limiter() -> &'static DefaultDirectRateLimiter {
 
 /// `from_fn` handler that enforces a global rate limit.
 pub async fn rate_limit(request: Request, next: Next) -> Response {
+    //
     if limiter().check().is_err() {
+        //
         tracing::warn!(uri = %request.uri(), "rate limit exceeded");
+
         return StatusCode::TOO_MANY_REQUESTS.into_response();
     }
 

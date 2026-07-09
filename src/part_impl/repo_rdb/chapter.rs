@@ -52,6 +52,7 @@ async fn get_info_by_id(
     id: &str,
     incl_opt: &[ChapterInclOpt],
 ) -> RegularResult<ChapterInfo> {
+    //
     let row: ChapterRow = t_chapter
         .filter(f_id.eq(id))
         .select(ChapterRow::as_select())
@@ -78,6 +79,7 @@ async fn get_info_by_id_excluded(
     id: &str,
     incl_opt: &[ChapterInclOpt],
 ) -> RegularResult<ChapterInfo> {
+    //
     let row: ChapterRow = t_chapter
         .filter(f_id.eq(id))
         .select(ChapterRow::as_select())
@@ -104,6 +106,7 @@ async fn list_infos(
     conn: &mut RdbConn,
     spec: &ChapterListSpec,
 ) -> RegularResult<Vec<ChapterInfo>> {
+    //
     let rows: Vec<ChapterRow> = t_chapter
         .filter(f_comic_id.eq(spec.comic_id.as_str()))
         .select(ChapterRow::as_select())
@@ -165,6 +168,7 @@ async fn list_all_infos_by_comic_id_excluded(
     conn: &mut RdbConn,
     comic_id: &str,
 ) -> RegularResult<Vec<ChapterInfo>> {
+    //
     let rows: Vec<ChapterRow> = t_chapter
         .filter(f_comic_id.eq(comic_id))
         .select(ChapterRow::as_select())
@@ -182,6 +186,7 @@ async fn find_pinned_info_by_comic_id(
     comic_id: &str,
     incl_opt: &[ChapterInclOpt],
 ) -> RegularResult<Option<ChapterInfo>> {
+    //
     let row: Option<ChapterRow> = t_chapter
         .filter(f_comic_id.eq(comic_id))
         .filter(f_is_pinned.eq(true))
@@ -211,6 +216,7 @@ async fn list_pinned_infos_by_comic_ids(
     conn: &mut RdbConn,
     comic_ids: &[String],
 ) -> RegularResult<HashMap<String, ChapterInfo>> {
+    //
     if comic_ids.is_empty() {
         return Ok(HashMap::new());
     }
@@ -226,7 +232,9 @@ async fn list_pinned_infos_by_comic_ids(
     let mut map = HashMap::with_capacity(rows.len());
 
     for row in rows {
+        //
         let info = row_into_info(row)?;
+
         map.insert(info.comic_id.clone(), info);
     }
 
@@ -237,6 +245,7 @@ async fn create(
     conn: &mut RdbConn,
     form: &ChapterForm,
 ) -> RegularResult<ChapterInfo> {
+    //
     let entry = ChapterEntry::from(form);
 
     let row: ChapterRow = diesel::insert_into(t_chapter)
@@ -253,6 +262,7 @@ async fn update_info(
     conn: &mut RdbConn,
     update: &ChapterInfoUpdate,
 ) -> RegularResult<()> {
+    //
     let now = OffsetDateTime::now_utc();
 
     let mut aspect = ChapterAspect::new(now);
@@ -278,6 +288,7 @@ async fn update_stage(
     conn: &mut RdbConn,
     update: &ChapterStageUpdate,
 ) -> RegularResult<()> {
+    //
     let now = OffsetDateTime::now_utc();
 
     let aspect = ChapterAspect::new(now).stages(update.stages, now);
@@ -299,6 +310,7 @@ async fn set_page_counters(
     translated_unit_count: i32,
     proofread_unit_count: i32,
 ) -> RegularResult<()> {
+    //
     let now = OffsetDateTime::now_utc();
 
     let aspect = ChapterAspect::new(now)
@@ -321,6 +333,7 @@ async fn adjust_unit_counters(
     id: &str,
     delta: &UnitCounterDelta,
 ) -> RegularResult<()> {
+    //
     let now = OffsetDateTime::now_utc();
 
     diesel::update(t_chapter.filter(f_id.eq(id)))
@@ -344,6 +357,7 @@ async fn unpin_others(
     comic_id: &str,
     excluded_id: &str,
 ) -> RegularResult<()> {
+    //
     let now = OffsetDateTime::now_utc();
 
     diesel::update(
@@ -360,6 +374,7 @@ async fn unpin_others(
 }
 
 async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
+    //
     diesel::delete(t_chapter.filter(f_id.eq(id)))
         .execute(conn)
         .await

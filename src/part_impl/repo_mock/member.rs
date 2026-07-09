@@ -43,7 +43,9 @@ fn apply_user_incl(
     member_info: &mut MemberInfo,
     include_user: bool,
 ) {
+    //
     member_info.user = None;
+
     if include_user {
         member_info.user = find_user(state, &member_info.user_id);
     }
@@ -54,7 +56,9 @@ fn apply_team_incl(
     member_info: &mut MemberInfo,
     include_team: bool,
 ) {
+    //
     member_info.team = None;
+
     if include_team {
         member_info.team = find_team(state, &member_info.team_id);
     }
@@ -65,9 +69,11 @@ fn create_member(
     state: &mut MockState,
     form: &MemberForm,
 ) -> RegularResult<MemberInfo> {
+    //
     if state.members.iter().any(|member| member.id == form.id) {
         return Err(expected("error-already-exists"));
     }
+
     if state.members.iter().any(|member| {
         member.user_id == form.user_id && member.team_id == form.team_id
     }) {
@@ -84,7 +90,9 @@ fn create_member(
         team: None,
         roles: form.roles,
     };
+
     state.members.push(member.clone());
+
     Ok(member)
 }
 

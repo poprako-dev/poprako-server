@@ -43,6 +43,7 @@ impl ComicRepoTransactional<RdbContext> for RdbRepoTransactional {}
 
 fn one_shot_predicate(column: &str, phase: StagePhase) -> &'static str {
     match (column, phase) {
+        //
         ("f_uploaded_at", StagePhase::Pending) => {
             "pinned_chapter.f_uploaded_at IS NULL"
         }
@@ -94,6 +95,7 @@ fn two_step_predicate(
 
 fn stage_predicate(stage: Stage, phase: StagePhase) -> String {
     match stage {
+        //
         Stage::RawProvide => one_shot_predicate("f_uploaded_at", phase).into(),
         Stage::Translate => {
             two_step_predicate("f_translating_at", "f_translated_at", phase)
@@ -113,6 +115,7 @@ fn stage_predicate(stage: Stage, phase: StagePhase) -> String {
 }
 
 fn workflow_filter_sql(stage_mask: StageMask) -> Option<String> {
+    //
     let predicates = StageMask::stages()
         .iter()
         .filter(|stage| !stage_mask.ignores_stage(**stage))
@@ -130,7 +133,9 @@ fn workflow_filter_sql(stage_mask: StageMask) -> Option<String> {
     );
 
     for predicate in predicates {
+        //
         sql.push_str(" AND ");
+
         sql.push_str(&predicate);
     }
 
@@ -151,6 +156,7 @@ async fn get_info_by_id(
     id: &str,
     incl_opt: &[ComicInclOpt],
 ) -> RegularResult<ComicInfo> {
+    //
     let row: ComicRow = t_comic
         .filter(f_id.eq(id))
         .select(ComicRow::as_select())
@@ -176,12 +182,14 @@ async fn list_infos(
     conn: &mut RdbConn,
     spec: &ComicListSpec,
 ) -> RegularResult<Vec<ComicInfo>> {
+    //
     let mut query = t_comic
         .filter(f_workset_id.eq(spec.workset_id.as_str()))
         .select(ComicRow::as_select())
         .into_boxed();
 
     if let Some(fuzzy_title) = &spec.fuzzy_title {
+        //
         let pattern = format!("%{}%", fuzzy_title);
 
         query = match stored_index_from_numeric_fuzzy(fuzzy_title) {
@@ -192,10 +200,13 @@ async fn list_infos(
     }
 
     match &spec.kind {
+        //
         ComicListKind::All => {}
+
         ComicListKind::Active { stages: _ } => {
             query = query.filter(f_is_completed.eq(false));
         }
+
         ComicListKind::Completed => {
             query = query.filter(f_is_completed.eq(true));
         }
@@ -228,6 +239,7 @@ async fn update_info(
     conn: &mut RdbConn,
     update: &ComicInfoUpdate,
 ) -> RegularResult<()> {
+    //
     let now = OffsetDateTime::now_utc();
 
     let comic_info = get_info_by_id(conn, &update.id, &[]).await?;
@@ -258,6 +270,7 @@ async fn mark_cover_uploaded(
     id: &str,
     version: i64,
 ) -> RegularResult<()> {
+    //
     let now = OffsetDateTime::now_utc();
 
     let affected = diesel::update(
@@ -281,6 +294,7 @@ async fn create(
     conn: &mut RdbConn,
     form: &ComicForm,
 ) -> RegularResult<ComicInfo> {
+    //
     let entry = ComicEntry::from(form);
 
     let row: ComicRow = diesel::insert_into(t_comic)
@@ -298,6 +312,7 @@ async fn get_info_excluded(
     id: &str,
     incl_opt: &[ComicInclOpt],
 ) -> RegularResult<ComicInfo> {
+    //
     let row: ComicRow = t_comic
         .filter(f_id.eq(id))
         .select(ComicRow::as_select())
@@ -324,6 +339,7 @@ async fn list_infos_excluded(
     conn: &mut RdbConn,
     spec: &ComicListSpec,
 ) -> RegularResult<Vec<ComicInfo>> {
+    //
     let infos = list_infos(conn, spec).await?;
 
     let ids = infos
@@ -347,6 +363,7 @@ async fn reserve_cover(
     id: &str,
     file_ext: &str,
 ) -> RegularResult<ComicCoverReservation> {
+    //
     let now = OffsetDateTime::now_utc();
 
     let (prev_key, new_version) = diesel::update(t_comic.filter(f_id.eq(id)))
@@ -377,6 +394,7 @@ async fn reserve_cover(
 }
 
 async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
+    //
     diesel::delete(t_comic.filter(f_id.eq(id)))
         .execute(conn)
         .await
@@ -390,6 +408,7 @@ async fn mark_completed(
     id: &str,
     is_completed: bool,
 ) -> RegularResult<()> {
+    //
     let now = OffsetDateTime::now_utc();
 
     let aspect = ComicAspect::new(now).completed(is_completed);
@@ -407,6 +426,7 @@ async fn incr_chapter_next_index(
     conn: &mut RdbConn,
     id: &str,
 ) -> RegularResult<i32> {
+    //
     let prev: i32 = diesel::update(t_comic.filter(f_id.eq(id)))
         .set(f_chapter_next_index.eq(f_chapter_next_index + 1))
         .returning(f_chapter_next_index - 1)
@@ -422,6 +442,7 @@ async fn update_chapter_count(
     id: &str,
     delta: i32,
 ) -> RegularResult<()> {
+    //
     diesel::update(t_comic.filter(f_id.eq(id)))
         .set(f_chapter_count.eq(f_chapter_count + delta))
         .execute(conn)
@@ -432,6 +453,7 @@ async fn update_chapter_count(
 }
 
 async fn touch_last_active(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
+    //
     let now = OffsetDateTime::now_utc();
 
     let aspect = ComicAspect::new(now).last_active_at(now);

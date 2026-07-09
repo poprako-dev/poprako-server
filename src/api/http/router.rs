@@ -28,6 +28,7 @@ use crate::api::http::state::AppHarn;
 
 /// Builds the application router from the production harness.
 pub fn new(harn: AppHarn) -> Router<AppHarn> {
+    //
     let v1_auth = Router::new()
         .route("/auth/register", post(auth::register))
         .route("/auth/login", post(auth::login))
@@ -237,7 +238,9 @@ pub fn new(harn: AppHarn) -> Router<AppHarn> {
         .layer(TraceLayer::new_for_http());
 
     if cfg!(debug_assertions) {
+        //
         use utoipa::OpenApi as _;
+
         use utoipa_swagger_ui::SwaggerUi;
 
         router

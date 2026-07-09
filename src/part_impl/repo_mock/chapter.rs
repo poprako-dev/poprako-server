@@ -35,6 +35,7 @@ fn get_chapter_by_id(
     id: &str,
     incl_opt: &[ChapterInclOpt],
 ) -> RegularResult<ChapterInfo> {
+    //
     let mut chapter_info = state
         .chapters
         .iter()
@@ -61,12 +62,14 @@ fn get_chapter_by_id(
 // }
 
 fn list_all_chapters(state: &MockState, comic_id: &str) -> Vec<ChapterInfo> {
+    //
     let mut chapter_infos = state
         .chapters
         .iter()
         .filter(|chapter_info| chapter_info.comic_id == comic_id)
         .cloned()
         .collect::<Vec<_>>();
+
     chapter_infos.sort_by_key(|right| std::cmp::Reverse(right.index));
 
     chapter_infos
@@ -76,6 +79,7 @@ fn create_chapter(
     state: &mut MockState,
     form: &ChapterForm,
 ) -> RegularResult<ChapterInfo> {
+    //
     if state
         .chapters
         .iter()
@@ -85,6 +89,7 @@ fn create_chapter(
     }
 
     let time = now();
+
     let chapter_info = ChapterInfo {
         id: form.id.clone(),
         comic_id: form.comic_id.clone(),
@@ -104,6 +109,7 @@ fn create_chapter(
     };
 
     state.chapters.push(chapter_info.clone());
+
     Ok(chapter_info)
 }
 
@@ -116,6 +122,7 @@ fn find_user(state: &MockState, user_id: &str) -> Option<UserInfo> {
 }
 
 fn find_comic(state: &MockState, comic_id: &str) -> Option<ComicInfo> {
+    //
     let mut comic_info = state
         .comics
         .iter()
@@ -123,7 +130,9 @@ fn find_comic(state: &MockState, comic_id: &str) -> Option<ComicInfo> {
         .cloned()?;
 
     comic_info.workset = None;
+
     comic_info.team = None;
+
     comic_info.creator = None;
 
     Some(comic_info)
@@ -153,7 +162,9 @@ fn apply_creator_incl(
     chapter_info: &mut ChapterInfo,
     include_creator: bool,
 ) {
+    //
     chapter_info.creator = None;
+
     if include_creator {
         chapter_info.creator = find_user(state, &chapter_info.creator_id);
     }
@@ -164,7 +175,9 @@ fn apply_comic_incl(
     chapter_info: &mut ChapterInfo,
     include_comic: bool,
 ) {
+    //
     chapter_info.comic = None;
+
     if include_comic {
         chapter_info.comic = find_comic(state, &chapter_info.comic_id);
     }
@@ -175,6 +188,7 @@ fn apply_comic_workset_incl(
     chapter_info: &mut ChapterInfo,
     include_workset: bool,
 ) {
+    //
     if !include_workset {
         return;
     }
@@ -191,6 +205,7 @@ fn apply_comic_workset_team_incl(
     chapter_info: &mut ChapterInfo,
     include_team: bool,
 ) {
+    //
     if !include_team {
         return;
     }
@@ -211,6 +226,7 @@ fn apply_comic_creator_incl(
     chapter_info: &mut ChapterInfo,
     include_creator: bool,
 ) {
+    //
     if !include_creator {
         return;
     }
@@ -227,11 +243,14 @@ fn apply_chapter_incls(
     chapter_info: &mut ChapterInfo,
     incl_opt: &[ChapterInclOpt],
 ) {
+    //
     chapter_info.comic = None;
+
     chapter_info.creator = None;
 
     for incl_opt in expand_incl_opts(incl_opt) {
         match incl_opt {
+            //
             ChapterInclOpt::Comic => {
                 apply_comic_incl(state, chapter_info, true)
             }

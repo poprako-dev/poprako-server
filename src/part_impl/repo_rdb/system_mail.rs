@@ -30,6 +30,7 @@ impl SystemMailRepoTransactional<RdbContext> for RdbRepoTransactional {}
 // ── Free functions ──────────────────────────────────────────────────────────
 
 async fn send(conn: &mut RdbConn, form: &SystemMailForm) -> RegularResult<()> {
+    //
     let entry = SystemMailEntry::from(form);
 
     diesel::insert_into(t_system_mail)
@@ -45,6 +46,7 @@ async fn send_batch(
     conn: &mut RdbConn,
     forms: &[SystemMailForm],
 ) -> RegularResult<()> {
+    //
     let entries: Vec<SystemMailEntry<'_>> =
         forms.iter().map(SystemMailEntry::from).collect();
 
@@ -64,6 +66,7 @@ async fn list_infos(
     offset: u64,
     limit: u64,
 ) -> RegularResult<Vec<SystemMailInfo>> {
+    //
     let mut query = t_system_mail
         .filter(f_receiver_id.eq(receiver_id))
         .select(SystemMailRow::as_select())
@@ -89,6 +92,7 @@ async fn mark_read(
     id: &str,
     user_id: &str,
 ) -> RegularResult<()> {
+    //
     let row: Option<SystemMailRow> = t_system_mail
         .filter(f_id.eq(id))
         .select(SystemMailRow::as_select())

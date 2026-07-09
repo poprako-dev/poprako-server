@@ -102,6 +102,7 @@ impl MemberRepoTransactional<MockContext> for FailingTeamTransactional {}
 
 /// Builds a [`TeamInfo`] fixture with default timestamps and no avatar.
 pub fn team(id: &str, name: &str, description: &str) -> TeamInfo {
+    //
     let time = OffsetDateTime::now_utc();
 
     TeamInfo {
@@ -136,6 +137,7 @@ pub fn team_with_avatar(
 
 /// Builds a [`WorksetInfo`] fixture.
 pub fn workset(id: &str, team_id: &str) -> WorksetInfo {
+    //
     let time = OffsetDateTime::now_utc();
 
     WorksetInfo {
@@ -171,6 +173,7 @@ fn comic_with_uploaded_cover(
     workset_id: &str,
     cover_key: &str,
 ) -> ComicInfo {
+    //
     let time = OffsetDateTime::now_utc();
 
     ComicInfo {
@@ -221,6 +224,7 @@ fn credential(user_id: &str) -> UserCredential {
 
 /// Builds a [`UserInfo`] fixture.
 fn user(id: &str, is_sadmin: bool) -> UserInfo {
+    //
     let time = OffsetDateTime::now_utc();
 
     UserInfo {

@@ -38,6 +38,7 @@ fn token(user_id: &str) -> UserToken {
 }
 
 fn workset(id: &str, team_id: &str) -> WorksetInfo {
+    //
     let time = OffsetDateTime::now_utc();
 
     WorksetInfo {
@@ -54,6 +55,7 @@ fn workset(id: &str, team_id: &str) -> WorksetInfo {
 }
 
 fn comic(id: &str, workset_id: &str) -> ComicInfo {
+    //
     let time = OffsetDateTime::now_utc();
 
     ComicInfo {
@@ -80,6 +82,7 @@ fn comic(id: &str, workset_id: &str) -> ComicInfo {
 }
 
 fn chapter(id: &str, comic_id: &str, page_count: i32) -> ChapterInfo {
+    //
     let time = OffsetDateTime::now_utc();
 
     ChapterInfo {
@@ -119,6 +122,7 @@ fn assignment(
     user_id: &str,
     role_mask: RoleMask,
 ) -> AssignmentInfo {
+    //
     let time = OffsetDateTime::now_utc();
 
     AssignmentInfo {
@@ -140,6 +144,7 @@ fn page(
     image_uploaded: bool,
     image_version: i64,
 ) -> PageInfo {
+    //
     let time = OffsetDateTime::now_utc();
 
     PageInfo {
@@ -158,8 +163,11 @@ fn page(
 }
 
 fn seed_scope(mock: &Mock) {
+    //
     mock.seed_workset(workset("workset-1", "team-1"));
+
     mock.seed_comic(comic("comic-1", "workset-1"));
+
     mock.seed_chapter(chapter("chapter-1", "comic-1", 0));
 }
 

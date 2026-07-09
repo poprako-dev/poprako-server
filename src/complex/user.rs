@@ -20,6 +20,7 @@ impl UserComplex {
 
     /// Hashes a plaintext password with Argon2id and a random salt, returning the encoded hash string.
     pub fn hash_password(password: &str) -> RegularResult<String> {
+        //
         let salt = SaltString::generate(OsRng);
 
         Argon2::default()
@@ -35,9 +36,11 @@ impl UserComplex {
 
     /// Verifies a plaintext password against an Argon2id-encoded hash. Returns `false` on parse or verification failure.
     pub fn verify_password(password: &str, password_hash: &str) -> bool {
+        //
         let Ok(parsed) = PasswordHash::new(password_hash) else {
             return false;
         };
+
         Argon2::default()
             .verify_password(password.as_bytes(), &parsed)
             .inspect_err(|e| {

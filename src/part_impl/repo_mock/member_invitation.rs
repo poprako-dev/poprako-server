@@ -37,7 +37,9 @@ fn apply_invitor_incl(
     info: &mut MemberInvitationInfo,
     include_invitor: bool,
 ) {
+    //
     info.invitor = None;
+
     if include_invitor {
         info.invitor = find_user(state, &info.invitor_id);
     }

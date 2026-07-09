@@ -46,6 +46,7 @@ fn credential(user_id: &str) -> UserCredential {
 }
 
 fn user(id: &str, nickname: &str) -> UserInfo {
+    //
     let time = test_util::now();
 
     UserInfo {
@@ -63,6 +64,7 @@ fn user(id: &str, nickname: &str) -> UserInfo {
 }
 
 fn team(id: &str) -> TeamInfo {
+    //
     let time = test_util::now();
 
     TeamInfo {

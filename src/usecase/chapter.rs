@@ -179,6 +179,7 @@ where
 
     let chapter_id = drive
         .with_context(async move |context| {
+            //
             let repo = repo.derive_transactional().await;
 
             repo.advance(
@@ -198,6 +199,7 @@ where
 
             let subtitle =
                 ChapterComplex::subtitle_or_default(data.subtitle, index);
+
             let chapter_id = ChapterComplex::gen_id();
 
             repo.advance(
@@ -278,6 +280,7 @@ where
 
     drive
         .with_context(async move |context| {
+            //
             let repo = repo.derive_transactional().await;
 
             let chapter_info = repo
@@ -288,6 +291,7 @@ where
                 .await?;
 
             if data.subtitle.is_some() || data.pin.is_some() {
+                //
                 let chapter_info_update = ChapterInfoUpdate {
                     id: data.id.clone(),
                     subtitle: data.subtitle,
@@ -295,6 +299,7 @@ where
                 };
 
                 if chapter_info_update.pin == Some(true) {
+                    //
                     repo.advance(
                         context,
                         &ChapterStep::list_all_infos_by_comic_id_excluded(
@@ -375,6 +380,7 @@ where
 
     let events = drive
         .with_context(async move |context| {
+            //
             let repo = repo.derive_transactional().await;
 
             let chapter_info = repo
@@ -501,6 +507,7 @@ where
 
     drive
         .with_context(async move |context| {
+            //
             let repo = repo.derive_transactional().await;
 
             ChapterComplex::delete_cascade(&repo, prom, context, &id).await?;

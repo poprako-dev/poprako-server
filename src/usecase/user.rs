@@ -107,6 +107,7 @@ where
 
     drive
         .with_context(async move |context| {
+            //
             let repo = repo.derive_transactional().await;
 
             repo.advance(
@@ -176,6 +177,7 @@ where
 {
     let (object_key, avatar_version) = drive
         .with_context(async move |context| {
+            //
             let repo = repo.derive_transactional().await;
 
             let avatar_reservation = repo
@@ -189,6 +191,7 @@ where
 
             // If replacing an existing avatar, schedule deletion of the old object.
             if let Some(prev_key) = &avatar_reservation.prev_object_key {
+                //
                 let delete_id = ImageComplex::gen_delete_id();
 
                 prom.advance(
@@ -206,6 +209,7 @@ where
             }
 
             let check_id = ImageComplex::gen_check_id();
+
             let check_visible_at = now + Duration::minutes(15);
 
             prom.advance(
@@ -274,6 +278,7 @@ where
 
     drive
         .with_context(async move |context| {
+            //
             let repo = repo.derive_transactional().await;
 
             repo.advance(
@@ -335,6 +340,7 @@ where
 
     drive
         .with_context(async move |context| {
+            //
             let repo = repo.derive_transactional().await;
 
             let user_info = repo
@@ -360,6 +366,7 @@ where
                 && user_info.avatar_uploaded
             {
                 let now = OffsetDateTime::now_utc();
+
                 let delete_id = ImageComplex::gen_delete_id();
 
                 prom.advance(

@@ -34,9 +34,11 @@ fn diff(opers: Vec<UnitOper>) -> UnitDiff {
 
 fn assert_args_error(error: RegularError) {
     match error {
+        //
         RegularError::Expected { variant, .. } => {
             assert!(matches!(variant, ExpectedVariant::Args));
         }
+
         RegularError::Unrecoverable { .. } => {
             panic!("expected argument error");
         }

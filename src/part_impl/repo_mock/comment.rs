@@ -35,7 +35,9 @@ fn apply_user_incl(
     comment_info: &mut CommentInfo,
     include_user: bool,
 ) {
+    //
     comment_info.user = None;
+
     if include_user {
         comment_info.user = find_user(state, &comment_info.user_id);
     }
@@ -45,7 +47,9 @@ fn list_comments(
     state: &MockState,
     spec: &CommentListSpec,
 ) -> Vec<CommentInfo> {
+    //
     let include_user = spec.incl_opt.contains(&CommentInclOpt::User);
+
     let mut comment_infos = state
         .comments
         .iter()
@@ -60,6 +64,7 @@ fn list_comments(
     }
 
     let offset = spec.offset as usize;
+
     let limit = spec.limit as usize;
 
     if offset >= comment_infos.len() {
@@ -67,6 +72,7 @@ fn list_comments(
     }
 
     let end = std::cmp::min(offset + limit, comment_infos.len());
+
     comment_infos[offset..end].to_vec()
 }
 
@@ -74,6 +80,7 @@ fn create_comment(
     state: &mut MockState,
     form: &CommentForm,
 ) -> RegularResult<CommentInfo> {
+    //
     if state
         .comments
         .iter()
@@ -136,7 +143,9 @@ use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;
 
 fn user(id: &str) -> UserInfo {
+    //
     let time = now();
+
     UserInfo {
         id: id.into(),
         qid: id.into(),

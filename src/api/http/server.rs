@@ -14,6 +14,7 @@ use crate::api::http::state::AppHarn;
 
 /// Installs Ctrl+C and (on unix) SIGTERM handlers that stop the server.
 async fn shutdown_signal() {
+    //
     let ctrl_c = async {
         signal::ctrl_c()
             .await

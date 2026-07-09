@@ -32,6 +32,7 @@ impl UnitComplex {
 
     /// Validates one compact difference and resolves local create ids.
     pub fn prepare_diff(diff: UnitDiff) -> RegularResult<UnitApplyAck> {
+        //
         validate_page_id(&diff.page_id)?;
 
         let mut local_ids = HashSet::new();
@@ -42,12 +43,14 @@ impl UnitComplex {
 
         for unit_oper in diff.opers {
             match unit_oper {
+                //
                 UnitOper::Save {
                     local_id,
                     id,
                     payload,
                     before_id,
                 } => {
+                    //
                     validate_optional_id(&before_id)?;
 
                     let resolved_id = match (local_id, id) {
@@ -84,7 +87,9 @@ impl UnitComplex {
                 }
 
                 UnitOper::Delete { id } => {
+                    //
                     validate_id(&id)?;
+
                     opers.push(UnitOper::Delete { id });
                 }
             }
@@ -106,14 +111,18 @@ impl UnitComplex {
         opers: &[UnitOper],
         mut current_order: Vec<String>,
     ) -> Vec<String> {
+        //
         for oper in opers {
             match oper {
+                //
                 UnitOper::Save {
                     id: Some(id),
                     before_id,
                     ..
                 } => {
+                    //
                     current_order.retain(|surviving_id| surviving_id != id);
+
                     insert_before(&mut current_order, id, before_id);
                 }
 
@@ -134,6 +143,7 @@ impl UnitComplex {
         final_order: &[String],
         current_indexes: &[UnitIndex],
     ) -> Vec<UnitIndexUpdate> {
+        //
         let current_map: std::collections::HashMap<&String, i32> =
             current_indexes
                 .iter()
@@ -144,6 +154,7 @@ impl UnitComplex {
             .iter()
             .enumerate()
             .filter_map(|(index, id)| {
+                //
                 let index = index as i32;
 
                 if current_map.get(id).copied() == Some(index) {
@@ -162,6 +173,7 @@ impl UnitComplex {
     pub fn build_index_updates(
         current_indexes: Vec<UnitIndex>,
     ) -> Vec<UnitIndexUpdate> {
+        //
         let mut sorted_indexes = current_indexes;
 
         sorted_indexes.sort_by(|left, right| {
@@ -246,6 +258,7 @@ fn validate_page_id(page_id: &str) -> RegularResult<()> {
 }
 
 fn validate_id(id: &str) -> RegularResult<()> {
+    //
     if id.is_empty() {
         return Err(unit_invalid_oper_error());
     }
@@ -254,6 +267,7 @@ fn validate_id(id: &str) -> RegularResult<()> {
 }
 
 fn validate_optional_id(id: &Option<String>) -> RegularResult<()> {
+    //
     if id.as_ref().map(|id| id.is_empty()).unwrap_or(false) {
         return Err(unit_invalid_oper_error());
     }
@@ -266,13 +280,18 @@ fn insert_before(
     id: &str,
     before_id: &Option<String>,
 ) {
+    //
     let Some(before_id) = before_id else {
+        //
         order.push(id.to_string());
+
         return;
     };
 
     if before_id == id {
+        //
         order.push(id.to_string());
+
         return;
     }
 
@@ -280,7 +299,9 @@ fn insert_before(
         .iter()
         .position(|surviving_id| surviving_id == before_id)
     else {
+        //
         order.push(id.to_string());
+
         return;
     };
 
@@ -294,6 +315,7 @@ fn compact_index_updates_from_order(
         .into_iter()
         .enumerate()
         .filter_map(|(index, unit_index)| {
+            //
             let index = index as i32;
 
             if unit_index.index == index {

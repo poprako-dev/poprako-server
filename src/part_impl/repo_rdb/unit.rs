@@ -39,6 +39,7 @@ async fn list_infos_by_page_id(
     page_id: &str,
     page: Page,
 ) -> RegularResult<Vec<UnitInfo>> {
+    //
     let rows: Vec<UnitRow> = t_unit
         .filter(f_page_id.eq(page_id))
         .select(UnitRow::as_select())
@@ -56,6 +57,7 @@ async fn list_all_infos_by_page_id(
     conn: &mut RdbConn,
     page_id: &str,
 ) -> RegularResult<Vec<UnitInfo>> {
+    //
     let rows: Vec<UnitRow> = t_unit
         .filter(f_page_id.eq(page_id))
         .select(UnitRow::as_select())
@@ -68,6 +70,7 @@ async fn list_all_infos_by_page_id(
 }
 
 async fn next_index(conn: &mut RdbConn, page_id: &str) -> RegularResult<i32> {
+    //
     let current: Option<i32> = t_unit
         .filter(f_page_id.eq(page_id))
         .select(max(f_index))
@@ -84,6 +87,7 @@ async fn create_unit(
     id: &str,
     payload: &UnitPayload,
 ) -> RegularResult<()> {
+    //
     let index = next_index(conn, page_id).await?;
 
     let entry = UnitEntry::new(id, page_id, index, payload);
@@ -103,6 +107,7 @@ async fn save_unit(
     id: &str,
     payload: &UnitPayload,
 ) -> RegularResult<()> {
+    //
     let existing_page_id: Option<String> = t_unit
         .filter(f_id.eq(id))
         .select(f_page_id)
@@ -137,6 +142,7 @@ async fn save_info(
     page_id: &str,
     oper: &UnitOper,
 ) -> RegularResult<()> {
+    //
     let (id, payload) = match oper {
         UnitOper::Save {
             id: Some(id),
@@ -154,6 +160,7 @@ async fn delete_by_id_in_page(
     page_id: &str,
     id: &str,
 ) -> RegularResult<()> {
+    //
     diesel::delete(t_unit.filter(f_page_id.eq(page_id)).filter(f_id.eq(id)))
         .execute(conn)
         .await
@@ -166,6 +173,7 @@ async fn list_indexes_by_page_id(
     conn: &mut RdbConn,
     page_id: &str,
 ) -> RegularResult<Vec<UnitIndex>> {
+    //
     let indexes: Vec<(String, i32)> = t_unit
         .filter(f_page_id.eq(page_id))
         .select((f_id, f_index))
@@ -184,6 +192,7 @@ async fn update_indexes_by_page_id(
     page_id: &str,
     updates: &[UnitIndexUpdate],
 ) -> RegularResult<()> {
+    //
     if updates.is_empty() {
         return Ok(());
     }
@@ -215,6 +224,7 @@ async fn update_indexes_by_page_id(
 
     // Phase 2: set each unit to its target index, now conflict-free.
     for unit_index_update in updates {
+        //
         let now = OffsetDateTime::now_utc();
 
         let aspect = UnitAspect::new(now).index(unit_index_update.index);
@@ -237,11 +247,13 @@ async fn count_by_page_id(
     conn: &mut RdbConn,
     page_id: &str,
 ) -> RegularResult<UnitCounters> {
+    //
     let infos = list_all_infos_by_page_id(conn, page_id).await?;
 
     let counters = infos.iter().fold(
         UnitCounters::default(),
         |mut counters, unit_info| {
+            //
             counters.total_unit_count += 1;
 
             if unit_info.is_translated() {

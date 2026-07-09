@@ -53,6 +53,7 @@ async fn get_info_by_chapter_id_and_user_id(
     chapter_id: &str,
     user_id: &str,
 ) -> RegularResult<Option<AssignmentInfo>> {
+    //
     let row: Option<AssignmentRow> = t_assignment
         .filter(f_chapter_id.eq(chapter_id))
         .filter(f_user_id.eq(user_id))
@@ -70,6 +71,7 @@ async fn get_info_by_id(
     id: &str,
     incl_opt: &[AssignmentInclOpt],
 ) -> RegularResult<AssignmentInfo> {
+    //
     let row: AssignmentRow = t_assignment
         .filter(f_id.eq(id))
         .select(AssignmentRow::as_select())
@@ -95,6 +97,7 @@ async fn list_infos(
     conn: &mut RdbConn,
     spec: &AssignmentListSpec,
 ) -> RegularResult<Vec<AssignmentInfo>> {
+    //
     let (role, incl_opt, offset, limit, mut query) = match spec {
         AssignmentListSpec::Chapter {
             chapter_id,
@@ -179,6 +182,7 @@ async fn list_all_infos_by_chapter(
     role: Option<RoleField>,
     incl_opt: &[AssignmentInclOpt],
 ) -> RegularResult<Vec<AssignmentInfo>> {
+    //
     let mut query = t_assignment
         .filter(f_chapter_id.eq(chapter_id))
         .into_boxed();
@@ -230,6 +234,7 @@ async fn list_infos_by_chapter_id_excluded(
     conn: &mut RdbConn,
     chapter_id: &str,
 ) -> RegularResult<Vec<AssignmentInfo>> {
+    //
     let rows: Vec<AssignmentRow> = t_assignment
         .filter(f_chapter_id.eq(chapter_id))
         .select(AssignmentRow::as_select())
@@ -246,6 +251,7 @@ async fn create(
     conn: &mut RdbConn,
     form: &AssignmentForm,
 ) -> RegularResult<AssignmentInfo> {
+    //
     let now = OffsetDateTime::now_utc();
 
     let entry = AssignmentEntry::from_form(form, now);
@@ -264,6 +270,7 @@ async fn put_roles(
     conn: &mut RdbConn,
     update: &AssignmentRoleUpdate,
 ) -> RegularResult<AssignmentInfo> {
+    //
     let now = OffsetDateTime::now_utc();
 
     let timestamps = AssignmentRoleTimestamps::from_mask(update.roles, now);
@@ -284,6 +291,7 @@ async fn put_roles(
 }
 
 async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
+    //
     diesel::delete(t_assignment.filter(f_id.eq(id)))
         .execute(conn)
         .await
@@ -296,6 +304,7 @@ async fn delete_by_chapter_id(
     conn: &mut RdbConn,
     chapter_id: &str,
 ) -> RegularResult<()> {
+    //
     diesel::delete(t_assignment.filter(f_chapter_id.eq(chapter_id)))
         .execute(conn)
         .await

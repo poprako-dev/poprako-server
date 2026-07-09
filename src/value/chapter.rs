@@ -151,6 +151,7 @@ impl TryFrom<u8> for StagePhaseField {
     type Error = RegularError;
 
     fn try_from(value: u8) -> RegularResult<Self> {
+        //
         if !Self::VALID_VALUES.contains(&value) {
             return Err(RegularError::Expected {
                 variant: ExpectedVariant::Args,
@@ -248,7 +249,9 @@ impl StageMask {
         field: StagePhaseField,
         allow_ignore: bool,
     ) -> RegularResult<()> {
+        //
         if field == StagePhaseField::IGNORE {
+            //
             if allow_ignore {
                 return accept(());
             }
@@ -280,6 +283,7 @@ impl StageMask {
         value: u32,
         allow_ignore: bool,
     ) -> RegularResult<()> {
+        //
         if value & !Self::VALID_BITS != 0 {
             return Err(RegularError::Expected {
                 variant: ExpectedVariant::Args,
@@ -288,7 +292,9 @@ impl StageMask {
         }
 
         for stage in Self::STAGES {
+            //
             let field = Self::field_for_stage_value(value, *stage)?;
+
             Self::validate_stage_field(*stage, field, allow_ignore)?;
         }
 
@@ -300,7 +306,9 @@ impl StageMask {
     /// Filter masks may use `IGNORE` fields as wildcards, but they still
     /// reject stage-phase combinations that are impossible for real workflow.
     pub fn try_filter_from(value: u32) -> RegularResult<Self> {
+        //
         Self::validate_mask_value(value, true)?;
+
         accept(Self(value))
     }
 
@@ -322,6 +330,7 @@ impl StageMask {
         stage: Stage,
         phase: StagePhase,
     ) -> RegularResult<Self> {
+        //
         if !is_valid_stage_phase(stage, phase) {
             return Err(RegularError::Expected {
                 variant: ExpectedVariant::Args,
@@ -330,6 +339,7 @@ impl StageMask {
         }
 
         let shift = Self::stage_shift(stage);
+
         let value = self.0 & !(0b11 << shift)
             | ((u8::from(StagePhaseField::from(phase)) as u32) << shift);
 
@@ -388,7 +398,9 @@ impl TryFrom<u32> for StageMask {
     type Error = RegularError;
 
     fn try_from(value: u32) -> RegularResult<Self> {
+        //
         Self::validate_mask_value(value, false)?;
+
         accept(Self(value))
     }
 }

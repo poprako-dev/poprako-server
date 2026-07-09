@@ -32,6 +32,7 @@ fn credential(user_id: &str) -> UserCredential {
 }
 
 fn user(id: &str, nickname: &str) -> UserInfo {
+    //
     let time = now();
 
     UserInfo {
