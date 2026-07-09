@@ -118,6 +118,7 @@ where
             Ok((member_invitation_info.id, member_invitation_info.code))
         })
         .await?;
+
     Ok(CreateMemberInvitationVal {
         id: member_invitation_id,
         code,
@@ -213,6 +214,7 @@ where
             Ok(())
         })
         .await?;
+
     Ok(())
 }
 
@@ -254,5 +256,6 @@ where
             Ok(())
         })
         .await?;
+
     Ok(())
 }

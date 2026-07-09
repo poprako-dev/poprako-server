@@ -246,6 +246,7 @@ where
             Ok(chapter_info.id)
         })
         .await?;
+
     Ok(CreateChapterVal { id: chapter_id })
 }
 
@@ -332,6 +333,7 @@ where
             Ok(())
         })
         .await?;
+
     Ok(())
 }
 
@@ -450,6 +452,7 @@ where
             Ok(events)
         })
         .await?;
+
     events.emit(develop).await;
 
     Ok(())
@@ -509,5 +512,6 @@ where
             Ok(())
         })
         .await?;
+
     Ok(())
 }

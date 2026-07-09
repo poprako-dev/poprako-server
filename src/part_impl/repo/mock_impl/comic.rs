@@ -136,8 +136,11 @@ fn comic_matches_kind(
     kind: &ComicListKind,
 ) -> bool {
     match kind {
+        //
         ComicListKind::All => true,
+
         ComicListKind::Completed => comic_info.is_completed,
+
         ComicListKind::Active { stages } => {
             //
             if comic_info.is_completed {
@@ -179,9 +182,11 @@ fn comic_matches_fuzzy(comic_info: &ComicInfo, fuzzy_title: &str) -> bool {
     }
 
     match fuzzy_title.trim().parse() {
+        //
         Ok(index) => user_index_to_stored_index(index)
             .map(|index| comic_info.index == index)
             .unwrap_or(false),
+
         Err(_) => false,
     }
 }

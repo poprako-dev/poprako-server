@@ -109,6 +109,7 @@ where
             Ok(team_info)
         })
         .await?;
+
     TeamInfoVal::from_model(image_pool, team_info).await
 }
 
@@ -338,6 +339,7 @@ where
         .await?;
     // Generate signed URL after commit — the PUT URL should only be issued
     // once the reservation is durable.
+
     let put_url = image_pool.put_signed(&object_key).await?.to_string();
 
     Ok(ReserveTeamAvatarVal {
@@ -448,5 +450,6 @@ where
             Ok(())
         })
         .await?;
+
     Ok(())
 }

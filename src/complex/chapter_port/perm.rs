@@ -44,11 +44,14 @@ impl ChapterPortPermComplex {
         }
 
         match check_user_is_chapter_assignee(proxy, user_id, chapter_id).await {
+            //
             Ok(()) => Ok(()),
+
             Err(RegularError::Expected {
                 variant: ExpectedVariant::Perm,
                 ..
             }) => Err(chapter_port_export_permission_error()),
+
             Err(e) => Err(e),
         }
     }
@@ -71,10 +74,12 @@ impl ChapterPortPermComplex {
         .await
         {
             Ok(()) => Ok(()),
+
             Err(RegularError::Expected {
                 variant: ExpectedVariant::Perm,
                 ..
             }) => Err(chapter_port_import_permission_error()),
+
             Err(e) => Err(e),
         }
     }

@@ -140,10 +140,15 @@ impl StagePhaseField {
 
     fn as_phase(self) -> Option<StagePhase> {
         match self {
+            //
             Self::PENDING => Some(StagePhase::Pending),
+
             Self::ACTIVE => Some(StagePhase::Active),
+
             Self::COMPLETED => Some(StagePhase::Completed),
+
             Self::IGNORE => None,
+
             _ => unreachable!("stage phase field is validated at construction"),
         }
     }
@@ -175,8 +180,11 @@ impl From<StagePhaseField> for u8 {
 impl From<StagePhase> for StagePhaseField {
     fn from(phase: StagePhase) -> Self {
         match phase {
+            //
             StagePhase::Pending => Self::PENDING,
+
             StagePhase::Active => Self::ACTIVE,
+
             StagePhase::Completed => Self::COMPLETED,
         }
     }
@@ -221,11 +229,17 @@ impl StageMask {
 
     fn stage_shift(stage: Stage) -> u32 {
         match stage {
+            //
             Stage::RawProvide => 0,
+
             Stage::Translate => 2,
+
             Stage::Proofread => 4,
+
             Stage::TypesetRedraw => 6,
+
             Stage::Review => 8,
+
             Stage::Publish => 10,
         }
     }

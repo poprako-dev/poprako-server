@@ -106,6 +106,7 @@ where
             Ok(member_info.id)
         })
         .await?;
+
     Ok(CreateMemberVal { id: member_id })
 }
 
@@ -194,6 +195,7 @@ where
             Ok(member_info)
         })
         .await?;
+
     MemberInfoVal::from_model(image_pool, member_info).await
 }
 
@@ -289,6 +291,7 @@ where
             Ok(())
         })
         .await?;
+
     Ok(())
 }
 
@@ -331,6 +334,7 @@ where
             Ok(())
         })
         .await?;
+
     Ok(())
 }
 

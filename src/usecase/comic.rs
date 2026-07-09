@@ -186,6 +186,7 @@ where
             Ok((comic_info.id, chapter_info.id))
         })
         .await?;
+
     Ok(CreateComicVal {
         id: comic_id,
         chapter_id,
@@ -412,6 +413,7 @@ where
         })
         // FIXME: spacing
         .await?;
+
     let put_url = image_pool.put_signed(&object_key).await?.to_string();
 
     Ok(ReserveComicCoverVal {
@@ -507,6 +509,7 @@ where
             Ok(())
         })
         .await?;
+
     Ok(())
 }
 
@@ -565,5 +568,6 @@ where
             Ok(())
         })
         .await?;
+
     Ok(())
 }

@@ -172,6 +172,7 @@ where
             ))
         })
         .await?;
+
     Ok(CreateAssignmentInvitationVal {
         id: assignment_invitation_id,
         code,
@@ -220,6 +221,7 @@ where
             Ok(())
         })
         .await?;
+
     Ok(())
 }
 
@@ -380,6 +382,7 @@ where
             Ok(assignment_info)
         })
         .await?;
+
     AssignmentInfoVal::from_model(image_pool, assignment_info).await
 }
 

@@ -66,7 +66,9 @@ impl AssignmentComplex {
     ) -> bool {
         assignment_infos.iter().any(|assignment_info| {
             match assignment_info.user_id == user_id {
+                //
                 true => roles.has_any_role(&[RoleField::ADMIN]),
+
                 false => {
                     assignment_info.roles.has_any_role(&[RoleField::ADMIN])
                 }

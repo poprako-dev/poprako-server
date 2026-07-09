@@ -175,6 +175,7 @@ where
             Ok(assignment_info)
         })
         .await?;
+
     Ok(AssignmentInfoVal::from(assignment_info))
 }
 
@@ -300,6 +301,7 @@ where
             Ok(())
         })
         .await?;
+
     Ok(())
 }
 
@@ -349,5 +351,6 @@ where
             Ok(())
         })
         .await?;
+
     Ok(())
 }

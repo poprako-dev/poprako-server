@@ -182,6 +182,7 @@ where
             },
         )
         .await?;
+
     let creations = futures_util::future::join_all(
         reservations.into_iter().map(|reservation| async move {
             //
@@ -271,6 +272,7 @@ where
             Ok((page_reservation.object_key, page_reservation.image_version))
         })
         .await?;
+
     let put_url = image_pool.put_signed(&object_key).await?.to_string();
 
     Ok(ReservePageImageVal {
@@ -374,6 +376,7 @@ where
             Ok(())
         })
         .await?;
+
     Ok(())
 }
 
@@ -464,6 +467,7 @@ where
             Ok(())
         })
         .await?;
+
     Ok(())
 }
 
@@ -514,6 +518,7 @@ where
     .await
 }
 /// Appends a `Delete` prom task for the given object key.
+
 async fn append_delete<C, P>(
     prom: &P,
     context: &mut C,

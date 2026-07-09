@@ -68,6 +68,7 @@ fn one_shot_predicate(column: &str, phase: StagePhase) -> &'static str {
         }
 
         (_, StagePhase::Active) => "FALSE",
+
         _ => "FALSE",
     }
 }
@@ -79,14 +80,17 @@ fn two_step_predicate(
     phase: StagePhase,
 ) -> String {
     match phase {
+        //
         StagePhase::Pending => format!(
             "pinned_chapter.{} IS NULL AND pinned_chapter.{} IS NULL",
             started_column, completed_column,
         ),
+
         StagePhase::Active => format!(
             "pinned_chapter.{} IS NOT NULL AND pinned_chapter.{} IS NULL",
             started_column, completed_column,
         ),
+
         StagePhase::Completed => {
             format!("pinned_chapter.{} IS NOT NULL", completed_column)
         }
@@ -98,6 +102,7 @@ fn stage_predicate(stage: Stage, phase: StagePhase) -> String {
     match stage {
         //
         Stage::RawProvide => one_shot_predicate("f_uploaded_at", phase).into(),
+
         Stage::Translate => {
             two_step_predicate("f_translating_at", "f_translated_at", phase)
         }
@@ -111,6 +116,7 @@ fn stage_predicate(stage: Stage, phase: StagePhase) -> String {
         }
 
         Stage::Review => one_shot_predicate("f_reviewed_at", phase).into(),
+
         Stage::Publish => one_shot_predicate("f_published_at", phase).into(),
     }
 }
@@ -149,7 +155,9 @@ fn workflow_filter_sql(stage_mask: StageMask) -> Option<String> {
 /// Parses a fuzzy title value as an integer and converts to a stored index.
 fn stored_index_from_numeric_fuzzy(fuzzy_title_value: &str) -> Option<i32> {
     match fuzzy_title_value.trim().parse() {
+        //
         Ok(index) => user_index_to_stored_index(index),
+
         Err(_) => None,
     }
 }

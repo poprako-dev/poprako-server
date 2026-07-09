@@ -113,6 +113,7 @@ where
             Ok(announcement_info)
         })
         .await?;
+
     Ok(CreateAnnouncementVal {
         id: announcement_info.id,
     })

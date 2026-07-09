@@ -216,11 +216,14 @@ impl UnitPermComplex {
         }
 
         match check_user_is_chapter_assignee(proxy, user_id, chapter_id).await {
+            //
             Ok(()) => Ok(()),
+
             Err(RegularError::Expected {
                 variant: ExpectedVariant::Perm,
                 ..
             }) => Err(unit_list_permission_error()),
+
             Err(e) => Err(e),
         }
     }
@@ -243,10 +246,12 @@ impl UnitPermComplex {
         .await
         {
             Ok(()) => Ok(()),
+
             Err(RegularError::Expected {
                 variant: ExpectedVariant::Perm,
                 ..
             }) => Err(unit_edit_permission_error()),
+
             Err(e) => Err(e),
         }
     }
