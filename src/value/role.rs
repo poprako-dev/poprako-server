@@ -143,10 +143,7 @@ impl From<RoleField> for u32 {
 
 /// Serialize a [`RoleBit`] as its raw `u32` value.
 impl Serialize for RoleField {
-    fn serialize<S>(
-        &self,
-        serializer: S,
-    ) -> Result<S::Ok, S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
@@ -200,10 +197,7 @@ impl From<RoleMask> for u32 {
 
 /// Serialize a [`RoleMask`] as its raw `u32` value.
 impl Serialize for RoleMask {
-    fn serialize<S>(
-        &self,
-        serializer: S,
-    ) -> Result<S::Ok, S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {

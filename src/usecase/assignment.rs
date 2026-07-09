@@ -303,6 +303,7 @@ where
     Ok(())
 }
 
+/// Constructs a permission error for admin-role removal.
 fn assignment_admin_required_error() -> RegularError {
     RegularError::Expected {
         variant: ExpectedVariant::Perm,

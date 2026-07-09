@@ -252,6 +252,7 @@ where
     Ok(save_units)
 }
 
+/// Carries the prepared opers and local ID maps produced by applying a diff.
 struct UnitApplyParts {
     opers: Vec<UnitOper>,
     local_id_maps: Vec<UnitIdMapper>,
@@ -266,6 +267,7 @@ impl From<UnitApplyAck> for UnitApplyParts {
     }
 }
 
+/// Computes the per-counter delta between old and new unit counters.
 fn counter_delta(
     old_counters: UnitCounters,
     new_counters: UnitCounters,
@@ -280,6 +282,7 @@ fn counter_delta(
     }
 }
 
+/// Constructs an args error for an invalid unit operation.
 fn unit_invalid_oper_error() -> RegularError {
     RegularError::Expected {
         variant: ExpectedVariant::Args,

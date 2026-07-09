@@ -100,6 +100,8 @@ pub struct MarkPageImageUploadedData {
 }
 
 /// Input parameters for listing pages under one chapter.
+///
+/// Example: `/api/v1/chapters/{chapter_id}/pages?offset=0&limit=20`.
 #[Paginate]
 pub struct ListPageInfosData {
     pub chapter_id: String,

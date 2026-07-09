@@ -152,6 +152,8 @@ impl PagePermComplex {
     }
 }
 
+/// Verify the caller is assigned as `RAW_PROVIDER` or `REVIEWER` on the
+/// chapter, which is required for page image reservation.
 async fn check_reserve_role<P>(
     proxy: &mut P,
     user_id: &str,
@@ -183,6 +185,8 @@ where
     Ok(())
 }
 
+/// Verify the caller is assigned as `RAW_PROVIDER` on the chapter, which
+/// is required for page image upload confirmation.
 async fn check_upload_role<P>(
     proxy: &mut P,
     user_id: &str,
@@ -214,6 +218,7 @@ where
     Ok(())
 }
 
+/// Verify the caller has any assignment on the chapter (any role qualifies).
 async fn check_any_assignment<P>(
     proxy: &mut P,
     user_id: &str,
@@ -241,6 +246,7 @@ where
     Ok(())
 }
 
+/// Construct a "page reserve role required" permission error.
 fn page_reserve_role_error() -> RegularError {
     RegularError::Expected {
         variant: ExpectedVariant::Perm,
@@ -248,6 +254,7 @@ fn page_reserve_role_error() -> RegularError {
     }
 }
 
+/// Construct a "page upload role required" permission error.
 fn page_upload_role_error() -> RegularError {
     RegularError::Expected {
         variant: ExpectedVariant::Perm,

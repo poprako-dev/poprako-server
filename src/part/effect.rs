@@ -20,6 +20,7 @@ use async_trait::async_trait;
 
 use crate::part::effect::event::Event;
 
+/// Domain event types.
 pub mod event;
 
 /// Trait for types that can yield an iterator of [`Event`] values.

@@ -192,6 +192,8 @@ impl AssignmentPermComplex {
     }
 }
 
+/// Verify the caller may list assignments for a chapter — either as a team
+/// member of the owning team, or as a chapter assignee.
 async fn check_list_by_chapter<P>(
     proxy: &mut P,
     user_id: &str,
@@ -231,6 +233,8 @@ where
     Ok(())
 }
 
+/// Verify the caller may list assignments for a user — either as the owner
+/// or as a super-admin.
 async fn check_list_by_user<P>(
     proxy: &mut P,
     current_user_id: &str,
@@ -254,6 +258,7 @@ where
     Ok(())
 }
 
+/// Verify the caller is assigned as a chapter admin on this chapter.
 async fn check_admin<P>(
     proxy: &mut P,
     user_id: &str,
@@ -282,6 +287,9 @@ where
     Ok(())
 }
 
+/// Verify the caller is reducing their own admin role assignment — the
+/// caller must be the target user and must currently hold the roles they
+/// are removing.
 async fn check_self_reduce<P>(
     proxy: &mut P,
     current_user_id: &str,
@@ -315,6 +323,8 @@ where
     Ok(())
 }
 
+/// Verify the target user's team membership permits the requested role bits.
+/// Also rejects `ADMIN` roles (not assignable through the update flow).
 async fn check_target_roles<P>(
     proxy: &mut P,
     user_id: &str,
@@ -353,6 +363,7 @@ where
     Ok(())
 }
 
+/// Resolve the owning team ID from a chapter ID via its comic and workset.
 async fn resolve_team_id<P>(
     proxy: &mut P,
     chapter_id: &str,
@@ -377,6 +388,7 @@ where
     Ok(workset_info.team_id)
 }
 
+/// Construct a generic "assignment list forbidden" permission error.
 fn assignment_list_permission_error() -> RegularError {
     RegularError::Expected {
         variant: ExpectedVariant::Perm,
@@ -384,6 +396,7 @@ fn assignment_list_permission_error() -> RegularError {
     }
 }
 
+/// Construct a "chapter admin required" permission error.
 fn chapter_admin_error() -> RegularError {
     RegularError::Expected {
         variant: ExpectedVariant::Perm,
@@ -391,6 +404,7 @@ fn chapter_admin_error() -> RegularError {
     }
 }
 
+/// Construct a "assignment self-reduce forbidden" permission error.
 fn assignment_self_reduce_error() -> RegularError {
     RegularError::Expected {
         variant: ExpectedVariant::Perm,
@@ -398,6 +412,7 @@ fn assignment_self_reduce_error() -> RegularError {
     }
 }
 
+/// Construct an "admin role cannot be assigned through this flow" args error.
 fn assignment_role_not_assignable_args_error() -> RegularError {
     RegularError::Expected {
         variant: ExpectedVariant::Args,
@@ -405,6 +420,7 @@ fn assignment_role_not_assignable_args_error() -> RegularError {
     }
 }
 
+/// Construct a "role not assignable because member lacks permission" error.
 fn assignment_role_not_assignable_perm_error() -> RegularError {
     RegularError::Expected {
         variant: ExpectedVariant::Perm,

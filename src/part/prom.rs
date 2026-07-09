@@ -26,6 +26,7 @@ use poprako_transactional::step::Step;
 use crate::part::prom::task::{ComicTask, ImageTask};
 use crate::result::RegularError;
 
+/// Prom task type definitions.
 pub mod task;
 
 /// A serializable deferred-action payload.

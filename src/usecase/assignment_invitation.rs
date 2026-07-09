@@ -75,12 +75,10 @@ where
         ))
         .await?;
 
-    Ok(
-        assignment_invitation_infos
-            .into_iter()
-            .map(AssignmentInvitationInfoVal::from)
-            .collect(),
-    )
+    Ok(assignment_invitation_infos
+        .into_iter()
+        .map(AssignmentInvitationInfoVal::from)
+        .collect())
 }
 
 /// Creates a pending assignment invitation.
@@ -385,10 +383,12 @@ where
     AssignmentInfoVal::from_model(image_pool, assignment_info).await
 }
 
+/// Generates a snowflake ID for a new invitation.
 fn gen_assignment_invitation_id() -> String {
     next_snowflake_id()
 }
 
+/// Generates a short numeric code from a snowflake ID.
 fn gen_code() -> String {
     //
     let id = next_snowflake_id();
@@ -402,6 +402,7 @@ fn gen_code() -> String {
     id[len - 6..].to_string()
 }
 
+/// Validates that the roles mask is non-empty and does not contain ADMIN.
 fn validate_roles(roles: RoleMask) -> RegularResult<()> {
     //
     if u32::from(roles) == 0 || roles.has_any_role(&[RoleField::ADMIN]) {
@@ -411,6 +412,7 @@ fn validate_roles(roles: RoleMask) -> RegularResult<()> {
     Ok(())
 }
 
+/// Constructs an args error for an invalid invitation code.
 fn invalid_invitation_error() -> RegularError {
     RegularError::Expected {
         variant: ExpectedVariant::Args,
@@ -418,6 +420,7 @@ fn invalid_invitation_error() -> RegularError {
     }
 }
 
+/// Constructs an args error for an already assigned invitee.
 fn invitee_assigned_error() -> RegularError {
     RegularError::Expected {
         variant: ExpectedVariant::Args,
@@ -425,6 +428,7 @@ fn invitee_assigned_error() -> RegularError {
     }
 }
 
+/// Constructs an args error for unassignable chapter roles.
 fn assignment_role_not_assignable_args_error() -> RegularError {
     RegularError::Expected {
         variant: ExpectedVariant::Args,
@@ -432,6 +436,7 @@ fn assignment_role_not_assignable_args_error() -> RegularError {
     }
 }
 
+/// Constructs a permission error for unassignable chapter roles.
 fn assignment_role_not_assignable_perm_error() -> RegularError {
     RegularError::Expected {
         variant: ExpectedVariant::Perm,

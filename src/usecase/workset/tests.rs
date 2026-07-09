@@ -26,7 +26,7 @@ use crate::part::prom::{Payload, PromStep};
 use crate::part::repo::step::workset;
 use crate::part_impl::prom::mock_impl::MockPromRecord;
 use crate::part_impl::repo::mock_impl::{Mock, MockTransactional};
-use crate::result::ExpectedVariant;
+use crate::result::{ExpectedVariant, RegularError};
 use crate::test_util::assert_expected_variant;
 use crate::usecase::team::tests::team;
 use crate::value::role::{RoleField, RoleMask};
@@ -347,7 +347,7 @@ async fn delete_does_not_create_prom_records_when_called_directly() {
         )
         .await?;
 
-        Ok(())
+        Ok::<(), RegularError>(())
     })
     .await
     .ok()

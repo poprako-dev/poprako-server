@@ -27,18 +27,22 @@ pub enum Error {
 }
 
 impl Error {
+    /// Constructs an `Error::Expected` with an `Args` variant.
     pub fn expected_args(_msg: String) -> Self {
         todo!()
     }
 
+    /// Constructs an `Error::Expected` with an `Auth` variant.
     pub fn expected_auth(_msg: String) -> Self {
         todo!()
     }
 
+    /// Constructs an `Error::Expected` with a `Perm` variant.
     pub fn expected_perm(_msg: String) -> Self {
         todo!()
     }
 
+    /// Constructs an `Error::Unrecoverable` with the given message.
     pub fn unrecoverable(_msg: String) -> Self {
         todo!()
     }

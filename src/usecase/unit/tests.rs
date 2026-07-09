@@ -572,21 +572,25 @@ async fn save_infos_concurrent_merge_reaches_consistent_final_state() {
 
     let c_then_b_mock = build_seeded_mock(&initial_units);
 
-    let b_then_c_result = apply_save_to_mock(&b_then_c_mock, &b_opers).await;
+    assert!(
+        apply_save_to_mock(&b_then_c_mock, &b_opers).await.is_ok(),
+        "b-then-c first save failed",
+    );
 
-    let c_then_b_result = apply_save_to_mock(&c_then_b_mock, &c_opers).await;
+    assert!(
+        apply_save_to_mock(&c_then_b_mock, &c_opers).await.is_ok(),
+        "c-then-b first save failed",
+    );
 
-    let b_then_c_second = apply_save_to_mock(&b_then_c_mock, &c_opers).await;
+    assert!(
+        apply_save_to_mock(&b_then_c_mock, &c_opers).await.is_ok(),
+        "b-then-c second save failed",
+    );
 
-    let c_then_b_second = apply_save_to_mock(&c_then_b_mock, &b_opers).await;
-
-    assert!(b_then_c_result.is_ok(), "b-then-c first save failed");
-
-    assert!(c_then_b_result.is_ok(), "c-then-b first save failed");
-
-    assert!(b_then_c_second.is_ok(), "b-then-c second save failed");
-
-    assert!(c_then_b_second.is_ok(), "c-then-b second save failed");
+    assert!(
+        apply_save_to_mock(&c_then_b_mock, &b_opers).await.is_ok(),
+        "c-then-b second save failed",
+    );
 
     let b_then_c_snapshot = b_then_c_mock.snapshot();
 

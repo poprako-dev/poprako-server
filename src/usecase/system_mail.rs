@@ -8,7 +8,7 @@ use crate::part::repo::step::system_mail::SystemMailStep;
 use crate::part::repo::system_mail::{
     SystemMailRepo, SystemMailRepoTransactional,
 };
-use crate::result::{RegularResult};
+use crate::result::RegularResult;
 use crate::util::DeriveTransactional;
 
 #[cfg(test)]

@@ -126,6 +126,7 @@ pub struct UnitApplyAck {
     pub local_id_map: Vec<UnitIdMapper>,
 }
 
+/// Returns `true` if the optional string is present and non-empty.
 fn has_text(text: &Option<String>) -> bool {
     text.as_ref()
         .map(|value| !value.is_empty())

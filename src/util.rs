@@ -34,6 +34,8 @@ pub fn next_snowflake_u64() -> u64 {
 
 /// Initialise the global snowflake instance once from the
 /// `POPRAKO_SNOWFLAKE_NODE_ID` env var (defaults to 0).
+/// Initialise the global snowflake instance once from the
+/// `POPRAKO_SNOWFLAKE_NODE_ID` env var (defaults to 0).
 fn ensure_snowflake_init() {
     // Only init snowflake instance once.
     static INIT_GURAD: OnceLock<()> = OnceLock::new();
@@ -42,6 +44,7 @@ fn ensure_snowflake_init() {
         .get_or_init(|| k_snowflake::set_instance(load_snowflake_node_id()));
 }
 
+/// Load the snowflake node ID from the `POPRAKO_SNOWFLAKE_NODE_ID` env var.
 /// Load the snowflake node ID from the `POPRAKO_SNOWFLAKE_NODE_ID` env var.
 fn load_snowflake_node_id() -> u16 {
     let value = match std::env::var("POPRAKO_SNOWFLAKE_NODE_ID") {

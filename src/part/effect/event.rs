@@ -7,7 +7,9 @@ use crate::part::effect::event::user::{
     UserActivePayload, UserSignedUpPayload,
 };
 
+/// Chapter-related event payload types.
 pub mod chapter;
+/// User-related event payload types.
 pub mod user;
 
 /// Domain events produced by use cases and dispatched through [`EffectDevelop`].

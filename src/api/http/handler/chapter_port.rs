@@ -24,6 +24,7 @@ use crate::value::chapter_port::TranslationFormat;
 /// Query selecting the export format.
 #[derive(Debug, Deserialize)]
 pub struct TranslationExportQuery {
+    /// Export format: `poprako` or `label-plus`.
     pub format: TranslationFormat,
 }
 
@@ -120,12 +121,18 @@ pub async fn export_download(
     download_response(&filename, payload)
 }
 
+/// Internal payload carrying the serialised export content and its metadata.
 struct TranslationExportPayload {
+    /// MIME type of the response body.
     content_type: &'static str,
+    /// File extension for download filenames.
     extension: &'static str,
+    /// Raw bytes of the serialised export.
     body: Bytes,
 }
 
+/// Loads the export content from the usecase and builds the payload for the
+/// selected format.
 async fn export_payload(
     harn: &AppHarn,
     user_token: UserToken,

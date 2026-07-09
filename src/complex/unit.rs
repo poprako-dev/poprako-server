@@ -144,11 +144,10 @@ impl UnitComplex {
         current_indexes: &[UnitIndex],
     ) -> Vec<UnitIndexUpdate> {
         //
-        let current_map: HashMap<&String, i32> =
-            current_indexes
-                .iter()
-                .map(|unit_index| (&unit_index.id, unit_index.index))
-                .collect();
+        let current_map: HashMap<&String, i32> = current_indexes
+            .iter()
+            .map(|unit_index| (&unit_index.id, unit_index.index))
+            .collect();
 
         final_order
             .iter()
@@ -253,10 +252,12 @@ impl UnitPermComplex {
     }
 }
 
+/// Validate a page ID string (delegates to [`validate_id`]).
 fn validate_page_id(page_id: &str) -> RegularResult<()> {
     validate_id(page_id)
 }
 
+/// Validate a non-empty identifier, returning an args error for empty strings.
 fn validate_id(id: &str) -> RegularResult<()> {
     //
     if id.is_empty() {
@@ -266,6 +267,7 @@ fn validate_id(id: &str) -> RegularResult<()> {
     Ok(())
 }
 
+/// Validate an optional identifier — rejects `Some("")` but allows `None`.
 fn validate_optional_id(id: &Option<String>) -> RegularResult<()> {
     //
     if id.as_ref().map(|id| id.is_empty()).unwrap_or(false) {
@@ -275,6 +277,8 @@ fn validate_optional_id(id: &Option<String>) -> RegularResult<()> {
     Ok(())
 }
 
+/// Insert `id` before `before_id` in the order vector. Appends to the end
+/// when `before_id` is `None`, equals `id`, or is not found.
 fn insert_before(
     order: &mut Vec<String>,
     id: &str,
@@ -308,6 +312,8 @@ fn insert_before(
     order.insert(position, id.to_string());
 }
 
+/// Build index updates by enumerating sorted unit indexes and emitting
+/// updates only for positions that differ from the stored index.
 fn compact_index_updates_from_order(
     unit_indexes: Vec<UnitIndex>,
 ) -> Vec<UnitIndexUpdate> {
@@ -330,6 +336,7 @@ fn compact_index_updates_from_order(
         .collect()
 }
 
+/// Construct an "invalid unit operation" args error.
 fn unit_invalid_oper_error() -> RegularError {
     RegularError::Expected {
         variant: ExpectedVariant::Args,
@@ -337,6 +344,7 @@ fn unit_invalid_oper_error() -> RegularError {
     }
 }
 
+/// Construct a "unit list permission required" error.
 fn unit_list_permission_error() -> RegularError {
     RegularError::Expected {
         variant: ExpectedVariant::Perm,
@@ -344,6 +352,7 @@ fn unit_list_permission_error() -> RegularError {
     }
 }
 
+/// Construct a "unit edit permission required" error.
 fn unit_edit_permission_error() -> RegularError {
     RegularError::Expected {
         variant: ExpectedVariant::Perm,

@@ -4,4 +4,5 @@
 //! `/api/health`. Swagger UI and OpenAPI JSON are exposed in debug builds only
 //! at `/api/swagger-ui` and `/api/openapi.json`.
 
+/// HTTP server, handlers, middleware, router, and OpenAPI documentation.
 pub mod http;

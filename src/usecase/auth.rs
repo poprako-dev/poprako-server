@@ -70,67 +70,77 @@ where
     A: TokenAuth,
     V: EffectDevelop + Send + Sync,
 {
-    let (user_id, team_id, invitor_id, invitee_qid) = drive
-        .with_context(async move |context| -> RegularResult<(String, String, String, String)> {
-            //
-            let repo = repo.derive_transactional().await;
+    let (user_id, team_id, invitor_id, invitee_qid) =
+        drive
+            .with_context(
+                async move |context| -> RegularResult<(
+                    String,
+                    String,
+                    String,
+                    String,
+                )> {
+                    //
+                    let repo = repo.derive_transactional().await;
 
-            let invitation_info = repo
-                .advance(
-                    context,
-                    &MemberInvitationStep::get_info_by_code_excluded(
-                        &data.code,
-                    ),
-                )
-                .await?;
+                    let invitation_info = repo
+                        .advance(
+                            context,
+                            &MemberInvitationStep::get_info_by_code_excluded(
+                                &data.code,
+                            ),
+                        )
+                        .await?;
 
-            // Verify the invitation was issued for this QQ ID.
-            if invitation_info.invitee_qid != data.qid {
-                return Err(RegularError::Expected {
-                    variant: ExpectedVariant::Args,
-                    message: trl("error-invalid-invitation-code"),
-                });
-            }
+                    // Verify the invitation was issued for this QQ ID.
+                    if invitation_info.invitee_qid != data.qid {
+                        return Err(RegularError::Expected {
+                            variant: ExpectedVariant::Args,
+                            message: trl("error-invalid-invitation-code"),
+                        });
+                    }
 
-            let password_hash = UserComplex::hash_password(&data.password)?;
+                    let password_hash =
+                        UserComplex::hash_password(&data.password)?;
 
-            let user_form = UserForm {
-                id: UserComplex::gen_id(),
-                qid: data.qid.clone(),
-                nickname: data.nickname.clone(),
-                password_hash,
-            };
+                    let user_form = UserForm {
+                        id: UserComplex::gen_id(),
+                        qid: data.qid.clone(),
+                        nickname: data.nickname.clone(),
+                        password_hash,
+                    };
 
-            let user_info =
-                repo.advance(context, &UserStep::create(&user_form)).await?;
+                    let user_info = repo
+                        .advance(context, &UserStep::create(&user_form))
+                        .await?;
 
-            let member_form = MemberForm {
-                id: MemberComplex::gen_id(),
-                user_id: user_info.id.clone(),
-                user_nickname: user_info.nickname.clone(),
-                team_id: invitation_info.team_id.clone(),
-                roles: invitation_info.roles,
-            };
+                    let member_form = MemberForm {
+                        id: MemberComplex::gen_id(),
+                        user_id: user_info.id.clone(),
+                        user_nickname: user_info.nickname.clone(),
+                        team_id: invitation_info.team_id.clone(),
+                        roles: invitation_info.roles,
+                    };
 
-            repo.advance(context, &MemberStep::create(&member_form))
-                .await?;
+                    repo.advance(context, &MemberStep::create(&member_form))
+                        .await?;
 
-            repo.advance(
-                context,
-                &MemberInvitationStep::mark_pending_as_used(
-                    &invitation_info.id,
-                ),
+                    repo.advance(
+                        context,
+                        &MemberInvitationStep::mark_pending_as_used(
+                            &invitation_info.id,
+                        ),
+                    )
+                    .await?;
+
+                    Ok((
+                        user_info.id,
+                        invitation_info.team_id,
+                        invitation_info.invitor_id,
+                        invitation_info.invitee_qid,
+                    ))
+                },
             )
             .await?;
-
-            Ok((
-                user_info.id,
-                invitation_info.team_id,
-                invitation_info.invitor_id,
-                invitation_info.invitee_qid,
-            ))
-        })
-        .await?;
 
     // Emit event after successful commit so side-effects don't run inside the transaction.
     Event::UserSignedUp(UserSignedUpPayload {

@@ -35,6 +35,7 @@ impl MemberInvitationComplex {
 pub struct MemberInvitationPermComplex;
 
 impl MemberInvitationPermComplex {
+    /// Verify the caller is a team admin and may create invitations for the team.
     pub async fn can_user_create<P>(
         proxy: &mut P,
         user_id: &str,
@@ -49,6 +50,7 @@ impl MemberInvitationPermComplex {
         check_user_is_team_admin(proxy, user_id, team_id).await
     }
 
+    /// Verify the caller is a team member and may list invitations for the team.
     pub async fn can_user_list_infos<P>(
         proxy: &mut P,
         user_id: &str,
@@ -63,6 +65,7 @@ impl MemberInvitationPermComplex {
         check_user_is_team_member(proxy, user_id, team_id).await
     }
 
+    /// Verify the caller is a team admin of the invitation's owning team.
     pub async fn can_user_update_info<P>(
         proxy: &mut P,
         user_id: &str,
@@ -82,6 +85,7 @@ impl MemberInvitationPermComplex {
         check_user_is_team_admin(proxy, user_id, &team_id).await
     }
 
+    /// Verify the caller is a team admin and may delete the invitation.
     pub async fn can_user_delete<P>(
         proxy: &mut P,
         user_id: &str,
@@ -101,6 +105,7 @@ impl MemberInvitationPermComplex {
         check_user_is_team_admin(proxy, user_id, &team_id).await
     }
 
+    /// Resolve the owning team ID from an invitation ID.
     async fn resolve_team_id<P>(
         proxy: &mut P,
         invitation_id: &str,
