@@ -13,12 +13,16 @@ use crate::model::system_mail::SystemMailForm;
 use crate::part::effect::event::chapter::{
     ChapterPublishedPayload, ChapterWorkflowCompletedPayload,
 };
-use crate::part::repo::assignment::{AssignmentRepo, AssignmentRepoTransactional};
+use crate::part::repo::assignment::{
+    AssignmentRepo, AssignmentRepoTransactional,
+};
 use crate::part::repo::chapter::{ChapterRepo, ChapterRepoTransactional};
 use crate::part::repo::step::assignment::AssignmentStep;
 use crate::part::repo::step::chapter::ChapterStep;
 use crate::part::repo::step::system_mail::SystemMailStep;
-use crate::part::repo::system_mail::{SystemMailRepo, SystemMailRepoTransactional};
+use crate::part::repo::system_mail::{
+    SystemMailRepo, SystemMailRepoTransactional,
+};
 use crate::part::shared::execute::Execute;
 use crate::util::DeriveTransactional;
 use crate::value::chapter::{ChapterInclOpt, Stage};
@@ -28,36 +32,49 @@ const CHAPTER_INCL_OPT: &[ChapterInclOpt] = &[ChapterInclOpt::ComicWorksetTeam];
 const TITLE_LIMIT: usize = 15;
 
 /// Notifies next-phase assignees after one workflow stage completes.
-pub async fn notify_next_phase<C, R>(repo: &R, payload: &ChapterWorkflowCompletedPayload)
-where
+pub async fn notify_next_phase<C, R>(
+    repo: &R,
+    payload: &ChapterWorkflowCompletedPayload,
+) where
     R: AssignmentRepo<C> + ChapterRepo<C> + SystemMailRepo<C>,
     <R as DeriveTransactional>::Transactional: AssignmentRepoTransactional<C>
         + ChapterRepoTransactional<C>
         + SystemMailRepoTransactional<C>,
 {
-    let Some((receiver_role, workflow_label)) = next_phase_config(payload.completed_stage) else {
+    let Some((receiver_role, workflow_label)) =
+        next_phase_config(payload.completed_stage)
+    else {
         return;
     };
 
-    let Some(chapter_info) = load_chapter(repo, &payload.chapter_id).await else {
+    let Some(chapter_info) = load_chapter(repo, &payload.chapter_id).await
+    else {
         return;
     };
 
-    let system_mail_forms =
-        build_assignment_mails(repo, &chapter_info, receiver_role, workflow_label).await;
+    let system_mail_forms = build_assignment_mails(
+        repo,
+        &chapter_info,
+        receiver_role,
+        workflow_label,
+    )
+    .await;
 
     send_batch(repo, &payload.chapter_id, system_mail_forms).await;
 }
 
 /// Notifies reviewer assignees after workflow progress, except typesetting completion.
-pub async fn notify_reviewers_on_progress<C, R>(repo: &R, payload: ChapterWorkflowCompletedPayload)
-where
+pub async fn notify_reviewers_on_progress<C, R>(
+    repo: &R,
+    payload: ChapterWorkflowCompletedPayload,
+) where
     R: AssignmentRepo<C> + ChapterRepo<C> + SystemMailRepo<C>,
     <R as DeriveTransactional>::Transactional: AssignmentRepoTransactional<C>
         + ChapterRepoTransactional<C>
         + SystemMailRepoTransactional<C>,
 {
-    let Some(workflow_label) = reviewer_progress_label(payload.completed_stage) else {
+    let Some(workflow_label) = reviewer_progress_label(payload.completed_stage)
+    else {
         return;
     };
 
@@ -65,18 +82,24 @@ where
 }
 
 /// Notifies reviewer assignees when a chapter is published.
-pub async fn notify_reviewers_on_publish<C, R>(repo: &R, payload: ChapterPublishedPayload)
-where
+pub async fn notify_reviewers_on_publish<C, R>(
+    repo: &R,
+    payload: ChapterPublishedPayload,
+) where
     R: AssignmentRepo<C> + ChapterRepo<C> + SystemMailRepo<C>,
     <R as DeriveTransactional>::Transactional: AssignmentRepoTransactional<C>
         + ChapterRepoTransactional<C>
         + SystemMailRepoTransactional<C>,
 {
-    notify_reviewers(repo, &payload.chapter_id, trl("mail-workflow-publish")).await;
+    notify_reviewers(repo, &payload.chapter_id, trl("mail-workflow-publish"))
+        .await;
 }
 
-async fn notify_reviewers<C, R>(repo: &R, chapter_id: &str, workflow_label: String)
-where
+async fn notify_reviewers<C, R>(
+    repo: &R,
+    chapter_id: &str,
+    workflow_label: String,
+) where
     R: AssignmentRepo<C> + ChapterRepo<C> + SystemMailRepo<C>,
     <R as DeriveTransactional>::Transactional: AssignmentRepoTransactional<C>
         + ChapterRepoTransactional<C>
@@ -86,8 +109,13 @@ where
         return;
     };
 
-    let system_mail_forms =
-        build_assignment_mails(repo, &chapter_info, RoleField::REVIEWER, workflow_label).await;
+    let system_mail_forms = build_assignment_mails(
+        repo,
+        &chapter_info,
+        RoleField::REVIEWER,
+        workflow_label,
+    )
+    .await;
 
     send_batch(repo, chapter_id, system_mail_forms).await;
 }
@@ -127,7 +155,11 @@ where
 {
     let assignment_infos = Execute::execute(
         repo,
-        &AssignmentStep::list_all_infos_by_chapter(&chapter_info.id, Some(receiver_role), &[]),
+        &AssignmentStep::list_all_infos_by_chapter(
+            &chapter_info.id,
+            Some(receiver_role),
+            &[],
+        ),
     )
     .await;
 
@@ -198,8 +230,11 @@ fn chapter_mail_args(
     Some(args)
 }
 
-async fn send_batch<C, R>(repo: &R, chapter_id: &str, system_mail_forms: Vec<SystemMailForm>)
-where
+async fn send_batch<C, R>(
+    repo: &R,
+    chapter_id: &str,
+    system_mail_forms: Vec<SystemMailForm>,
+) where
     R: SystemMailRepo<C>,
     <R as DeriveTransactional>::Transactional: SystemMailRepoTransactional<C>,
 {
@@ -207,7 +242,9 @@ where
         return;
     }
 
-    let result = Execute::execute(repo, &SystemMailStep::send_batch(&system_mail_forms)).await;
+    let result =
+        Execute::execute(repo, &SystemMailStep::send_batch(&system_mail_forms))
+            .await;
 
     if result.is_err() {
         tracing::warn!(
@@ -219,11 +256,21 @@ where
 
 fn next_phase_config(stage: Stage) -> Option<(RoleField, String)> {
     match stage {
-        Stage::RawProvide => Some((RoleField::TRANSLATOR, trl("mail-workflow-upload"))),
-        Stage::Translate => Some((RoleField::PROOFREADER, trl("mail-workflow-translate"))),
-        Stage::Proofread => Some((RoleField::TYPESETTER, trl("mail-workflow-proofread"))),
-        Stage::TypesetRedraw => Some((RoleField::REVIEWER, trl("mail-workflow-typeset"))),
-        Stage::Review => Some((RoleField::PUBLISHER, trl("mail-workflow-review"))),
+        Stage::RawProvide => {
+            Some((RoleField::TRANSLATOR, trl("mail-workflow-upload")))
+        }
+        Stage::Translate => {
+            Some((RoleField::PROOFREADER, trl("mail-workflow-translate")))
+        }
+        Stage::Proofread => {
+            Some((RoleField::TYPESETTER, trl("mail-workflow-proofread")))
+        }
+        Stage::TypesetRedraw => {
+            Some((RoleField::REVIEWER, trl("mail-workflow-typeset")))
+        }
+        Stage::Review => {
+            Some((RoleField::PUBLISHER, trl("mail-workflow-review")))
+        }
         Stage::Publish => None,
     }
 }

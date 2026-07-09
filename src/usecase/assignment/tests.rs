@@ -148,7 +148,11 @@ fn member(user_id: &str, role_mask: RoleMask) -> MemberInfo {
     }
 }
 
-fn assignment(chapter_id: &str, user_id: &str, role_mask: RoleMask) -> AssignmentInfo {
+fn assignment(
+    chapter_id: &str,
+    user_id: &str,
+    role_mask: RoleMask,
+) -> AssignmentInfo {
     let time = now();
 
     AssignmentInfo {

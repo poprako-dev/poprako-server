@@ -27,7 +27,10 @@ impl CommentPermComplex {
         team_id: &str,
     ) -> RegularResult<()>
     where
-        P: for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RegularError>,
+        P: for<'a> ProxyExecute<
+                FindInfoByUserIdAndTeamId<'a>,
+                Error = RegularError,
+            >,
     {
         check_user_is_team_member(proxy, user_id, team_id).await
     }
@@ -39,7 +42,10 @@ impl CommentPermComplex {
         team_id: &str,
     ) -> RegularResult<()>
     where
-        P: for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RegularError>,
+        P: for<'a> ProxyExecute<
+                FindInfoByUserIdAndTeamId<'a>,
+                Error = RegularError,
+            >,
     {
         check_user_is_team_member(proxy, user_id, team_id).await
     }

@@ -57,10 +57,11 @@ async fn chapter_roundtrip_reads_test_database_url() {
         limit: 10,
     };
 
-    let chapter_infos = Execute::execute(&repo, &ChapterStep::list_infos(&chapter_list_spec))
-        .await
-        .ok()
-        .unwrap();
+    let chapter_infos =
+        Execute::execute(&repo, &ChapterStep::list_infos(&chapter_list_spec))
+            .await
+            .ok()
+            .unwrap();
 
     assert_eq!(chapter_infos.len(), 1);
     assert_eq!(
@@ -75,10 +76,11 @@ async fn chapter_roundtrip_reads_test_database_url() {
         limit: 10,
     };
 
-    let chapter_infos = Execute::execute(&repo, &ChapterStep::list_infos(&chapter_list_spec))
-        .await
-        .ok()
-        .unwrap();
+    let chapter_infos =
+        Execute::execute(&repo, &ChapterStep::list_infos(&chapter_list_spec))
+            .await
+            .ok()
+            .unwrap();
 
     let comic_info = chapter_infos[0].comic.as_ref().unwrap();
 

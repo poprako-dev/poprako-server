@@ -18,7 +18,8 @@ use crate::api::http::result::HttpBody;
 use crate::api::http::result::HttpResult;
 use crate::api::http::state::AppHarn;
 use crate::data::announcement::{
-    AnnouncementInfoVal, CreateAnnouncementData, CreateAnnouncementVal, ListAnnouncementInfosData,
+    AnnouncementInfoVal, CreateAnnouncementData, CreateAnnouncementVal,
+    ListAnnouncementInfosData,
 };
 use crate::model::user::UserToken;
 use crate::usecase;
@@ -96,7 +97,12 @@ pub async fn list_infos(
         limit: query.limit,
     };
 
-    usecase::announcement::list_infos(harn.repo(), harn.image_pool(), user_token, data)
-        .await?
-        .accept(StatusCode::OK)
+    usecase::announcement::list_infos(
+        harn.repo(),
+        harn.image_pool(),
+        user_token,
+        data,
+    )
+    .await?
+    .accept(StatusCode::OK)
 }

@@ -103,7 +103,8 @@ impl<'a> UnitAspect<'a> {
         self.f_translated_text = Some(payload.translated_text.as_deref());
         self.f_last_translator_id = Some(payload.last_translator_id.as_deref());
         self.f_proofread_text = Some(payload.proofread_text.as_deref());
-        self.f_last_proofreader_id = Some(payload.last_proofreader_id.as_deref());
+        self.f_last_proofreader_id =
+            Some(payload.last_proofreader_id.as_deref());
         self
     }
 }
@@ -129,7 +130,12 @@ impl From<UnitRow> for UnitInfo {
 }
 
 impl<'a> UnitEntry<'a> {
-    pub fn new(id: &'a str, page_id: &'a str, index: i32, payload: &'a UnitPayload) -> Self {
+    pub fn new(
+        id: &'a str,
+        page_id: &'a str,
+        index: i32,
+        payload: &'a UnitPayload,
+    ) -> Self {
         let now = OffsetDateTime::now_utc();
 
         Self {

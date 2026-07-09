@@ -4,7 +4,9 @@ use poprako_macro::Paginate;
 use poprako_transactional::step::Step;
 use poprako_util::page::Page;
 
-use crate::model::assignment_invitation::{AssignmentInvitationForm, AssignmentInvitationInfo};
+use crate::model::assignment_invitation::{
+    AssignmentInvitationForm, AssignmentInvitationInfo,
+};
 
 /// Step that inserts an assignment invitation row.
 pub struct Create<'a> {
@@ -81,7 +83,11 @@ impl AssignmentInvitationStep {
     }
 
     /// Constructs a step to list assignment invitations under one chapter.
-    pub fn list_infos<'a>(chapter_id: &'a str, pending: Option<bool>, page: Page) -> ListInfos<'a> {
+    pub fn list_infos<'a>(
+        chapter_id: &'a str,
+        pending: Option<bool>,
+        page: Page,
+    ) -> ListInfos<'a> {
         ListInfos {
             chapter_id,
             pending,
@@ -96,7 +102,9 @@ impl AssignmentInvitationStep {
     }
 
     /// Constructs a step to fetch a pending invitation by code with a lock.
-    pub fn get_info_by_code_excluded<'a>(code: &'a str) -> GetInfoByCodeExcluded<'a> {
+    pub fn get_info_by_code_excluded<'a>(
+        code: &'a str,
+    ) -> GetInfoByCodeExcluded<'a> {
         GetInfoByCodeExcluded { code }
     }
 
@@ -111,7 +119,9 @@ impl AssignmentInvitationStep {
     }
 
     /// Constructs a step to delete all assignment invitations under one chapter.
-    pub fn delete_by_chapter_id<'a>(chapter_id: &'a str) -> DeleteByChapterId<'a> {
+    pub fn delete_by_chapter_id<'a>(
+        chapter_id: &'a str,
+    ) -> DeleteByChapterId<'a> {
         DeleteByChapterId { chapter_id }
     }
 }

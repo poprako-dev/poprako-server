@@ -10,7 +10,9 @@ use crate::result::{ExpectedVariant, RegularError, RegularResult, accept};
 use crate::value::incl::InclOpt;
 
 /// Phase a workflow stage can be in.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema,
+)]
 #[serde(rename_all = "kebab-case")]
 pub enum StagePhase {
     Pending,
@@ -19,7 +21,9 @@ pub enum StagePhase {
 }
 
 /// Stage in the chapter production pipeline.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema,
+)]
 #[serde(rename_all = "kebab-case")]
 pub enum Stage {
     /// Raw provide phase.
@@ -51,7 +55,9 @@ pub fn is_valid_stage_phase(stage: Stage, phase: StagePhase) -> bool {
 }
 
 /// Operation applied to a workflow stage.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema,
+)]
 #[serde(rename_all = "kebab-case")]
 pub enum StageOper {
     /// Advance to the next phase.
@@ -87,9 +93,11 @@ pub fn try_modify_stage(
             StagePhase::Pending,
             StageOper::Advance,
         ) => StagePhase::Completed,
-        (Stage::RawProvide | Stage::Review, StagePhase::Completed, StageOper::Revert) => {
-            StagePhase::Pending
-        }
+        (
+            Stage::RawProvide | Stage::Review,
+            StagePhase::Completed,
+            StageOper::Revert,
+        ) => StagePhase::Pending,
         (_, StagePhase::Pending, StageOper::Advance) => StagePhase::Active,
         (_, StagePhase::Active, StageOper::Advance) => StagePhase::Completed,
         (_, StagePhase::Completed, StageOper::Advance) => {
@@ -172,7 +180,10 @@ impl From<StagePhase> for StagePhaseField {
 }
 
 impl Serialize for StagePhaseField {
-    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    fn serialize<S>(
+        &self,
+        serializer: S,
+    ) -> std::result::Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
@@ -219,8 +230,13 @@ impl StageMask {
         }
     }
 
-    fn field_for_stage_value(value: u32, stage: Stage) -> RegularResult<StagePhaseField> {
-        StagePhaseField::try_from(((value >> Self::stage_shift(stage)) & 0b11) as u8)
+    fn field_for_stage_value(
+        value: u32,
+        stage: Stage,
+    ) -> RegularResult<StagePhaseField> {
+        StagePhaseField::try_from(
+            ((value >> Self::stage_shift(stage)) & 0b11) as u8,
+        )
     }
 
     fn field_for_stage(&self, stage: Stage) -> StagePhaseField {
@@ -259,7 +275,10 @@ impl StageMask {
         accept(())
     }
 
-    fn validate_mask_value(value: u32, allow_ignore: bool) -> RegularResult<()> {
+    fn validate_mask_value(
+        value: u32,
+        allow_ignore: bool,
+    ) -> RegularResult<()> {
         if value & !Self::VALID_BITS != 0 {
             return Err(RegularError::Expected {
                 variant: ExpectedVariant::Args,
@@ -297,7 +316,11 @@ impl StageMask {
     }
 
     /// Return a new mask with the given stage's phase set.
-    pub fn try_set_phase(&self, stage: Stage, phase: StagePhase) -> RegularResult<Self> {
+    pub fn try_set_phase(
+        &self,
+        stage: Stage,
+        phase: StagePhase,
+    ) -> RegularResult<Self> {
         if !is_valid_stage_phase(stage, phase) {
             return Err(RegularError::Expected {
                 variant: ExpectedVariant::Args,
@@ -306,8 +329,8 @@ impl StageMask {
         }
 
         let shift = Self::stage_shift(stage);
-        let value =
-            self.0 & !(0b11 << shift) | ((u8::from(StagePhaseField::from(phase)) as u32) << shift);
+        let value = self.0 & !(0b11 << shift)
+            | ((u8::from(StagePhaseField::from(phase)) as u32) << shift);
 
         Self::try_from(value)
     }
@@ -321,7 +344,8 @@ impl StageMask {
     pub fn matches_filter(&self, filter: StageMask) -> bool {
         Self::STAGES.iter().all(|stage| {
             filter.ignores_stage(*stage)
-                || self.field_for_stage(*stage) == filter.field_for_stage(*stage)
+                || self.field_for_stage(*stage)
+                    == filter.field_for_stage(*stage)
         })
     }
 
@@ -375,7 +399,10 @@ impl From<StageMask> for u32 {
 }
 
 impl Serialize for StageMask {
-    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    fn serialize<S>(
+        &self,
+        serializer: S,
+    ) -> std::result::Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
@@ -418,7 +445,9 @@ impl InclOpt for ChapterInclOpt {
         match self {
             Self::Comic => &[Self::Comic],
             Self::ComicWorkset => &[Self::Comic, Self::ComicWorkset],
-            Self::ComicWorksetTeam => &[Self::Comic, Self::ComicWorkset, Self::ComicWorksetTeam],
+            Self::ComicWorksetTeam => {
+                &[Self::Comic, Self::ComicWorkset, Self::ComicWorksetTeam]
+            }
             Self::ComicCreator => &[Self::Comic, Self::ComicCreator],
             Self::Creator => &[Self::Creator],
         }

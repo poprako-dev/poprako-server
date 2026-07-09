@@ -6,12 +6,15 @@ use poprako_transactional::advance::Advance;
 
 use crate::model::workset::WorksetInfo;
 use crate::part::repo::step::workset::{
-    Create, Delete, GetInfoById, GetInfoExcluded, IncrComicNextIndex, ListAllInfosByTeamIdExcluded,
-    ListInfosByTeamId, UpdateComicCount, UpdateInfo,
+    Create, Delete, GetInfoById, GetInfoExcluded, IncrComicNextIndex,
+    ListAllInfosByTeamIdExcluded, ListInfosByTeamId, UpdateComicCount,
+    UpdateInfo,
 };
 use crate::part::repo::workset::{WorksetRepo, WorksetRepoTransactional};
 use crate::part::shared::execute::Execute;
-use crate::part_impl::repo_mock::{Mock, MockContext, MockTransactional, expected, now};
+use crate::part_impl::repo_mock::{
+    Mock, MockContext, MockTransactional, expected, now,
+};
 use crate::result::RegularError;
 
 impl WorksetRepo<MockContext> for Mock {}
@@ -22,7 +25,10 @@ impl WorksetRepoTransactional<MockContext> for MockTransactional {}
 impl<'a> Execute<GetInfoById<'a>> for Mock {
     type Error = RegularError;
 
-    async fn execute(&self, step: &GetInfoById<'a>) -> Result<WorksetInfo, Self::Error> {
+    async fn execute(
+        &self,
+        step: &GetInfoById<'a>,
+    ) -> Result<WorksetInfo, Self::Error> {
         let state = self.state.lock().unwrap();
         state
             .worksets
@@ -37,7 +43,10 @@ impl<'a> Execute<GetInfoById<'a>> for Mock {
 impl<'a> Execute<ListInfosByTeamId<'a>> for Mock {
     type Error = RegularError;
 
-    async fn execute(&self, step: &ListInfosByTeamId<'a>) -> Result<Vec<WorksetInfo>, Self::Error> {
+    async fn execute(
+        &self,
+        step: &ListInfosByTeamId<'a>,
+    ) -> Result<Vec<WorksetInfo>, Self::Error> {
         let state = self.state.lock().unwrap();
         let mut worksets = state
             .worksets
@@ -111,7 +120,9 @@ impl<'a> Advance<Create<'a>, MockContext> for MockTransactional {
 }
 
 #[async_trait]
-impl<'a> Advance<ListAllInfosByTeamIdExcluded<'a>, MockContext> for MockTransactional {
+impl<'a> Advance<ListAllInfosByTeamIdExcluded<'a>, MockContext>
+    for MockTransactional
+{
     type Error = RegularError;
 
     async fn advance(

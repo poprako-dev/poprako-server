@@ -24,7 +24,10 @@ impl CommentRepo<RdbContext> for RdbRepo {}
 
 impl CommentRepoTransactional<RdbContext> for RdbRepoTransactional {}
 
-async fn list_infos(conn: &mut RdbConn, spec: &CommentListSpec) -> RegularResult<Vec<CommentInfo>> {
+async fn list_infos(
+    conn: &mut RdbConn,
+    spec: &CommentListSpec,
+) -> RegularResult<Vec<CommentInfo>> {
     let rows: Vec<CommentRow> = t_comment
         .filter(f_team_id.eq(spec.team_id.as_str()))
         .select(CommentRow::as_select())
@@ -35,14 +38,19 @@ async fn list_infos(conn: &mut RdbConn, spec: &CommentListSpec) -> RegularResult
         .await
         .map_err(diesel)?;
 
-    let mut infos: Vec<CommentInfo> = rows.into_iter().map(Into::into).collect();
+    let mut infos: Vec<CommentInfo> =
+        rows.into_iter().map(Into::into).collect();
 
-    incl::comment::populate_comment_incls(conn, &mut infos, &spec.incl_opt).await?;
+    incl::comment::populate_comment_incls(conn, &mut infos, &spec.incl_opt)
+        .await?;
 
     Ok(infos)
 }
 
-async fn create(conn: &mut RdbConn, form: &CommentForm) -> RegularResult<CommentInfo> {
+async fn create(
+    conn: &mut RdbConn,
+    form: &CommentForm,
+) -> RegularResult<CommentInfo> {
     let entry = CommentEntry::from(form);
 
     let row: CommentRow = diesel::insert_into(t_comment)
@@ -59,7 +67,10 @@ async fn create(conn: &mut RdbConn, form: &CommentForm) -> RegularResult<Comment
 impl<'a> Execute<ListInfos<'a>> for RdbRepo {
     type Error = RegularError;
 
-    async fn execute(&self, step: &ListInfos<'a>) -> RegularResult<Vec<CommentInfo>> {
+    async fn execute(
+        &self,
+        step: &ListInfos<'a>,
+    ) -> RegularResult<Vec<CommentInfo>> {
         submit_query!(self.core, list_infos, step.spec)
     }
 }

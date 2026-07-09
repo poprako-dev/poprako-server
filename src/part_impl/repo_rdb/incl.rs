@@ -59,7 +59,10 @@ pub trait BatchByIds {
     type Info: Clone + Send;
 
     /// Execute `SELECT * FROM table WHERE f_id IN (...)`.
-    async fn load(conn: &mut RdbConn, ids: Vec<&str>) -> RegularResult<Vec<Self::Row>>;
+    async fn load(
+        conn: &mut RdbConn,
+        ids: Vec<&str>,
+    ) -> RegularResult<Vec<Self::Row>>;
 
     /// Convert a row into its id key and domain info.
     fn into_entry(row: Self::Row) -> RegularResult<(String, Self::Info)>;
@@ -97,7 +100,10 @@ pub trait Incl {
 ///
 /// This is the only include-driving function. Call it once per requested include
 /// variant. Works on slices (list) or single items (via `from_mut`).
-pub async fn populate<I: Incl>(conn: &mut RdbConn, infos: &mut [I::Owner]) -> RegularResult<()> {
+pub async fn populate<I: Incl>(
+    conn: &mut RdbConn,
+    infos: &mut [I::Owner],
+) -> RegularResult<()> {
     let mut key_counts = HashMap::new();
 
     for owner in infos.iter() {
@@ -115,8 +121,9 @@ pub async fn populate<I: Incl>(conn: &mut RdbConn, infos: &mut [I::Owner]) -> Re
 
     let mut map = batch_load::<I::Query>(conn, id_refs).await?;
     for owner in infos.iter_mut() {
-        let related = I::resolve_key(owner)
-            .and_then(|key| take_loaded_related(&mut map, &mut key_counts, key));
+        let related = I::resolve_key(owner).and_then(|key| {
+            take_loaded_related(&mut map, &mut key_counts, key)
+        });
 
         I::inject(owner, related);
     }
@@ -166,7 +173,10 @@ impl BatchByIds for UserByIds {
     type Row = UserRow;
     type Info = UserInfo;
 
-    async fn load(conn: &mut RdbConn, ids: Vec<&str>) -> RegularResult<Vec<UserRow>> {
+    async fn load(
+        conn: &mut RdbConn,
+        ids: Vec<&str>,
+    ) -> RegularResult<Vec<UserRow>> {
         schema::t_user::table
             .filter(schema::t_user::f_id.eq_any(ids))
             .select(UserRow::as_select())
@@ -188,7 +198,10 @@ impl BatchByIds for TeamByIds {
     type Row = TeamRow;
     type Info = TeamInfo;
 
-    async fn load(conn: &mut RdbConn, ids: Vec<&str>) -> RegularResult<Vec<TeamRow>> {
+    async fn load(
+        conn: &mut RdbConn,
+        ids: Vec<&str>,
+    ) -> RegularResult<Vec<TeamRow>> {
         schema::t_team::table
             .filter(schema::t_team::f_id.eq_any(ids))
             .select(TeamRow::as_select())
@@ -210,7 +223,10 @@ impl BatchByIds for WorksetByIds {
     type Row = WorksetRow;
     type Info = WorksetInfo;
 
-    async fn load(conn: &mut RdbConn, ids: Vec<&str>) -> RegularResult<Vec<WorksetRow>> {
+    async fn load(
+        conn: &mut RdbConn,
+        ids: Vec<&str>,
+    ) -> RegularResult<Vec<WorksetRow>> {
         schema::t_workset::table
             .filter(schema::t_workset::f_id.eq_any(ids))
             .select(WorksetRow::as_select())
@@ -232,7 +248,10 @@ impl BatchByIds for ComicByIds {
     type Row = ComicRow;
     type Info = ComicInfo;
 
-    async fn load(conn: &mut RdbConn, ids: Vec<&str>) -> RegularResult<Vec<ComicRow>> {
+    async fn load(
+        conn: &mut RdbConn,
+        ids: Vec<&str>,
+    ) -> RegularResult<Vec<ComicRow>> {
         schema::t_comic::table
             .filter(schema::t_comic::f_id.eq_any(ids))
             .select(ComicRow::as_select())
@@ -254,7 +273,10 @@ impl BatchByIds for ChapterByIds {
     type Row = ChapterRow;
     type Info = ChapterInfo;
 
-    async fn load(conn: &mut RdbConn, ids: Vec<&str>) -> RegularResult<Vec<ChapterRow>> {
+    async fn load(
+        conn: &mut RdbConn,
+        ids: Vec<&str>,
+    ) -> RegularResult<Vec<ChapterRow>> {
         schema::t_chapter::table
             .filter(schema::t_chapter::f_id.eq_any(ids))
             .select(ChapterRow::as_select())

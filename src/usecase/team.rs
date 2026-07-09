@@ -10,8 +10,9 @@ use crate::complex::image::ImageComplex;
 use crate::complex::member::MemberComplex;
 use crate::complex::team::{TeamComplex, TeamPermComplex};
 use crate::data::team::{
-    CreateTeamData, ListTeamInfosData, MarkTeamAvatarUploadedData, ReserveTeamAvatarData,
-    ReserveTeamAvatarVal, TeamInfoVal, UpdateTeamInfoData,
+    CreateTeamData, ListTeamInfosData, MarkTeamAvatarUploadedData,
+    ReserveTeamAvatarData, ReserveTeamAvatarVal, TeamInfoVal,
+    UpdateTeamInfoData,
 };
 use crate::model::member::MemberForm;
 use crate::model::team::{TeamForm, TeamInfo};
@@ -19,7 +20,9 @@ use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
 use crate::part::prom::task::{IMAGE_TOPIC, ImageKind, ImageTask};
 use crate::part::prom::{Payload, Prom, PromStep};
-use crate::part::repo::assignment::{AssignmentRepo, AssignmentRepoTransactional};
+use crate::part::repo::assignment::{
+    AssignmentRepo, AssignmentRepoTransactional,
+};
 use crate::part::repo::assignment_invitation::{
     AssignmentInvitationRepo, AssignmentInvitationRepoTransactional,
 };
@@ -72,7 +75,8 @@ where
 {
     use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
-    TeamPermComplex::can_user_list_all(&mut repo.as_proxy(), &token.user_id).await?;
+    TeamPermComplex::can_user_list_all(&mut repo.as_proxy(), &token.user_id)
+        .await?;
 
     let team_form = TeamForm {
         id: TeamComplex::gen_id(),
@@ -88,7 +92,8 @@ where
                 .advance(context, &UserStep::get_info_excluded(&token.user_id))
                 .await?;
 
-            let team_info = repo.advance(context, &TeamStep::create(&team_form)).await?;
+            let team_info =
+                repo.advance(context, &TeamStep::create(&team_form)).await?;
 
             let member_form = MemberForm {
                 id: MemberComplex::gen_id(),
@@ -118,7 +123,11 @@ where
 /// * `C` — Context anchor.
 /// * `R: TeamRepo<C>` — Team storage.
 /// * `I: ImagePool` — Resolves the avatar signed URL.
-pub async fn get_info<C, R, I>(repo: &R, image_pool: &I, id: String) -> RegularResult<TeamInfoVal>
+pub async fn get_info<C, R, I>(
+    repo: &R,
+    image_pool: &I,
+    id: String,
+) -> RegularResult<TeamInfoVal>
 where
     R: TeamRepo<C>,
     <R as DeriveTransactional>::Transactional: TeamRepoTransactional<C>,
@@ -145,13 +154,18 @@ pub async fn list_infos<C, R, I>(
 ) -> RegularResult<Vec<TeamInfoVal>>
 where
     R: TeamRepo<C> + UserRepo<C> + Sync,
-    <R as DeriveTransactional>::Transactional: TeamRepoTransactional<C> + UserRepoTransactional<C>,
+    <R as DeriveTransactional>::Transactional:
+        TeamRepoTransactional<C> + UserRepoTransactional<C>,
     I: ImagePool,
 {
     if data.user_id.is_none() {
         // TODO: comment
         use crate::part::shared::proxy::AsProxyNonTransactional as _;
-        TeamPermComplex::can_user_list_all(&mut repo.as_proxy(), &token.user_id).await?;
+        TeamPermComplex::can_user_list_all(
+            &mut repo.as_proxy(),
+            &token.user_id,
+        )
+        .await?;
     }
 
     let team_infos = repo
@@ -196,7 +210,12 @@ where
 {
     use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
-    TeamPermComplex::can_user_update_info(&mut repo.as_proxy(), &token.user_id, &data.id).await?;
+    TeamPermComplex::can_user_update_info(
+        &mut repo.as_proxy(),
+        &token.user_id,
+        &data.id,
+    )
+    .await?;
 
     repo.execute(&TeamStep::update_info(
         &data.id,
@@ -249,14 +268,22 @@ where
 {
     use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
-    TeamPermComplex::can_user_reserve_avatar(&mut repo.as_proxy(), &token.user_id, &id).await?;
+    TeamPermComplex::can_user_reserve_avatar(
+        &mut repo.as_proxy(),
+        &token.user_id,
+        &id,
+    )
+    .await?;
 
     let (object_key, avatar_version) = drive
         .with_context(async move |context| {
             let repo = repo.derive_transactional().await;
 
             let avatar_reservation = repo
-                .advance(context, &TeamStep::reserve_avatar(&id, &data.file_ext))
+                .advance(
+                    context,
+                    &TeamStep::reserve_avatar(&id, &data.file_ext),
+                )
                 .await?;
 
             let now = OffsetDateTime::now_utc();
@@ -339,8 +366,12 @@ where
 {
     use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
-    TeamPermComplex::can_user_mark_avatar_uploaded(&mut repo.as_proxy(), &token.user_id, &id)
-        .await?;
+    TeamPermComplex::can_user_mark_avatar_uploaded(
+        &mut repo.as_proxy(),
+        &token.user_id,
+        &id,
+    )
+    .await?;
 
     repo.execute(&TeamStep::mark_avatar_uploaded(&id, data.avatar_version))
         .await?;
@@ -386,22 +417,24 @@ where
         + UnitRepo<C>
         + Send
         + Sync,
-    <R as DeriveTransactional>::Transactional: TeamRepoTransactional<C>
-        + WorksetRepoTransactional<C>
-        + ComicRepoTransactional<C>
-        + MemberRepoTransactional<C>
-        + ChapterRepoTransactional<C>
-        + PageRepoTransactional<C>
-        + AssignmentInvitationRepoTransactional<C>
-        + AssignmentRepoTransactional<C>
-        + UnitRepoTransactional<C>
-        + Send
-        + Sync,
+    <R as DeriveTransactional>::Transactional:
+        TeamRepoTransactional<C>
+            + WorksetRepoTransactional<C>
+            + ComicRepoTransactional<C>
+            + MemberRepoTransactional<C>
+            + ChapterRepoTransactional<C>
+            + PageRepoTransactional<C>
+            + AssignmentInvitationRepoTransactional<C>
+            + AssignmentRepoTransactional<C>
+            + UnitRepoTransactional<C>
+            + Send
+            + Sync,
     P: Prom<C> + Send + Sync,
 {
     use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
-    TeamPermComplex::can_user_delete(&mut repo.as_proxy(), &token.user_id, &id).await?;
+    TeamPermComplex::can_user_delete(&mut repo.as_proxy(), &token.user_id, &id)
+        .await?;
 
     drive
         .with_context(async move |context| {

@@ -5,7 +5,8 @@
 use super::*;
 
 fn image_pool() -> R2ImagePool {
-    let credentials = Credentials::new("access-key", "secret-key", None, None, "test");
+    let credentials =
+        Credentials::new("access-key", "secret-key", None, None, "test");
 
     let config = Config::builder()
         .behavior_version(BehaviorVersion::latest())

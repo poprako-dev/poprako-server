@@ -7,7 +7,8 @@
 use poprako_transactional::advance::Advance;
 
 use crate::part::repo::step::member_invitation::{
-    Create, Delete, GetInfoByCodeExcluded, GetInfoById, ListInfos, MarkPendingAsUsed, UpdateInfo,
+    Create, Delete, GetInfoByCodeExcluded, GetInfoById, ListInfos,
+    MarkPendingAsUsed, UpdateInfo,
 };
 use crate::part::shared::execute::Execute;
 use crate::result::RegularError;

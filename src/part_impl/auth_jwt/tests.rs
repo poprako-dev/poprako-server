@@ -16,7 +16,8 @@ struct TestClaims {
 fn sign_token() {
     let auth = JwtAuth::new("test-secret", 1).unwrap();
 
-    let signed_token = TokenAuth::sign_token(&auth, &UserTokenRef { user_id: "user-1" });
+    let signed_token =
+        TokenAuth::sign_token(&auth, &UserTokenRef { user_id: "user-1" });
     assert!(signed_token.is_ok());
 
     let signed_token = signed_token.ok().unwrap();

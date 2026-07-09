@@ -20,7 +20,9 @@ use crate::part::shared::execute::Execute;
 use crate::part_impl::rdb_core::RdbConn;
 use crate::part_impl::rdb_core::RdbContext;
 use crate::part_impl::rdb_core::result::{diesel, expected};
-use crate::part_impl::repo_rdb::entity::unit::{UnitAspect, UnitEntry, UnitRow};
+use crate::part_impl::repo_rdb::entity::unit::{
+    UnitAspect, UnitEntry, UnitRow,
+};
 use crate::part_impl::repo_rdb::{RdbRepo, RdbRepoTransactional};
 use crate::result::{RegularError, RegularResult};
 
@@ -130,7 +132,11 @@ async fn save_unit(
     Ok(())
 }
 
-async fn save_info(conn: &mut RdbConn, page_id: &str, oper: &UnitOper) -> RegularResult<()> {
+async fn save_info(
+    conn: &mut RdbConn,
+    page_id: &str,
+    oper: &UnitOper,
+) -> RegularResult<()> {
     let (id, payload) = match oper {
         UnitOper::Save {
             id: Some(id),
@@ -143,7 +149,11 @@ async fn save_info(conn: &mut RdbConn, page_id: &str, oper: &UnitOper) -> Regula
     save_unit(conn, page_id, id, payload).await
 }
 
-async fn delete_by_id_in_page(conn: &mut RdbConn, page_id: &str, id: &str) -> RegularResult<()> {
+async fn delete_by_id_in_page(
+    conn: &mut RdbConn,
+    page_id: &str,
+    id: &str,
+) -> RegularResult<()> {
     diesel::delete(t_unit.filter(f_page_id.eq(page_id)).filter(f_id.eq(id)))
         .execute(conn)
         .await
@@ -223,12 +233,15 @@ async fn update_indexes_by_page_id(
     Ok(())
 }
 
-async fn count_by_page_id(conn: &mut RdbConn, page_id: &str) -> RegularResult<UnitCounters> {
+async fn count_by_page_id(
+    conn: &mut RdbConn,
+    page_id: &str,
+) -> RegularResult<UnitCounters> {
     let infos = list_all_infos_by_page_id(conn, page_id).await?;
 
-    let counters = infos
-        .iter()
-        .fold(UnitCounters::default(), |mut counters, unit_info| {
+    let counters = infos.iter().fold(
+        UnitCounters::default(),
+        |mut counters, unit_info| {
             counters.total_unit_count += 1;
 
             if unit_info.is_translated() {
@@ -240,7 +253,8 @@ async fn count_by_page_id(conn: &mut RdbConn, page_id: &str) -> RegularResult<Un
             }
 
             counters
-        });
+        },
+    );
 
     Ok(counters)
 }
@@ -249,7 +263,10 @@ async fn count_by_page_id(conn: &mut RdbConn, page_id: &str) -> RegularResult<Un
 impl<'a> Execute<ListInfosByPageId<'a>> for RdbRepo {
     type Error = RegularError;
 
-    async fn execute(&self, step: &ListInfosByPageId<'a>) -> RegularResult<Vec<UnitInfo>> {
+    async fn execute(
+        &self,
+        step: &ListInfosByPageId<'a>,
+    ) -> RegularResult<Vec<UnitInfo>> {
         submit_query!(self.core, list_infos_by_page_id, step.page_id, step.page)
     }
 }
@@ -258,7 +275,10 @@ impl<'a> Execute<ListInfosByPageId<'a>> for RdbRepo {
 impl<'a> Execute<ListAllInfosByPageId<'a>> for RdbRepo {
     type Error = RegularError;
 
-    async fn execute(&self, step: &ListAllInfosByPageId<'a>) -> RegularResult<Vec<UnitInfo>> {
+    async fn execute(
+        &self,
+        step: &ListAllInfosByPageId<'a>,
+    ) -> RegularResult<Vec<UnitInfo>> {
         submit_query!(self.core, list_all_infos_by_page_id, step.page_id)
     }
 }
@@ -277,7 +297,9 @@ impl<'a> Advance<ListInfosByPageId<'a>, RdbContext> for RdbRepoTransactional {
 }
 
 #[async_trait]
-impl<'a> Advance<ListAllInfosByPageId<'a>, RdbContext> for RdbRepoTransactional {
+impl<'a> Advance<ListAllInfosByPageId<'a>, RdbContext>
+    for RdbRepoTransactional
+{
     type Error = RegularError;
 
     async fn advance(
@@ -293,7 +315,11 @@ impl<'a> Advance<ListAllInfosByPageId<'a>, RdbContext> for RdbRepoTransactional 
 impl<'a> Advance<SaveInfo<'a>, RdbContext> for RdbRepoTransactional {
     type Error = RegularError;
 
-    async fn advance(&self, context: &mut RdbContext, step: &SaveInfo<'a>) -> RegularResult<()> {
+    async fn advance(
+        &self,
+        context: &mut RdbContext,
+        step: &SaveInfo<'a>,
+    ) -> RegularResult<()> {
         save_info(context.conn(), step.page_id, step.oper).await
     }
 }
@@ -325,7 +351,9 @@ impl<'a> Advance<ListIndexesByPageId<'a>, RdbContext> for RdbRepoTransactional {
 }
 
 #[async_trait]
-impl<'a> Advance<UpdateIndexesByPageId<'a>, RdbContext> for RdbRepoTransactional {
+impl<'a> Advance<UpdateIndexesByPageId<'a>, RdbContext>
+    for RdbRepoTransactional
+{
     type Error = RegularError;
 
     async fn advance(
@@ -333,7 +361,8 @@ impl<'a> Advance<UpdateIndexesByPageId<'a>, RdbContext> for RdbRepoTransactional
         context: &mut RdbContext,
         step: &UpdateIndexesByPageId<'a>,
     ) -> RegularResult<()> {
-        update_indexes_by_page_id(context.conn(), step.page_id, step.updates).await
+        update_indexes_by_page_id(context.conn(), step.page_id, step.updates)
+            .await
     }
 }
 

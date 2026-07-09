@@ -3,7 +3,9 @@
 use poprako_transactional::advance::Advance;
 use poprako_transactional::drive::Drive;
 
-use crate::model::assignment::{AssignmentForm, AssignmentListSpec, AssignmentRoleUpdate};
+use crate::model::assignment::{
+    AssignmentForm, AssignmentListSpec, AssignmentRoleUpdate,
+};
 use crate::part::repo::step::assignment::AssignmentStep;
 use crate::part::shared::execute::Execute;
 use crate::part_impl::drive_rdb::RdbDrive;
@@ -67,11 +69,13 @@ async fn assignment_roundtrip_reads_test_database_url() {
         limit: 10,
     };
 
-    let assignment_infos =
-        Execute::execute(&repo, &AssignmentStep::list_infos(&assignment_list_spec))
-            .await
-            .ok()
-            .unwrap();
+    let assignment_infos = Execute::execute(
+        &repo,
+        &AssignmentStep::list_infos(&assignment_list_spec),
+    )
+    .await
+    .ok()
+    .unwrap();
 
     assert_eq!(assignment_infos.len(), 1);
     assert_eq!(
@@ -101,7 +105,10 @@ async fn assignment_roundtrip_reads_test_database_url() {
 
     let assignment_info = Execute::execute(
         &repo,
-        &AssignmentStep::get_info_by_id(&assignment_form.id, &[AssignmentInclOpt::User]),
+        &AssignmentStep::get_info_by_id(
+            &assignment_form.id,
+            &[AssignmentInclOpt::User],
+        ),
     )
     .await
     .ok()

@@ -8,11 +8,14 @@ use crate::complex::page::PageComplex;
 use crate::model::page::{PageForm, PageImageReservation, PageInfo};
 use crate::part::repo::page::{PageRepo, PageRepoTransactional};
 use crate::part::repo::step::page::{
-    CreateBatch, DeleteByChapterId, GetInfoById, GetInfoExcluded, ListAllInfosByChapterId,
-    ListInfosByChapterId, MarkImageUploaded, ReserveImage, SetUnitCounters,
+    CreateBatch, DeleteByChapterId, GetInfoById, GetInfoExcluded,
+    ListAllInfosByChapterId, ListInfosByChapterId, MarkImageUploaded,
+    ReserveImage, SetUnitCounters,
 };
 use crate::part::shared::execute::Execute;
-use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactional, expected, now};
+use crate::part_impl::repo_mock::{
+    Mock, MockContext, MockState, MockTransactional, expected, now,
+};
 use crate::result::{RegularError, RegularResult};
 
 impl PageRepo<MockContext> for Mock {}
@@ -40,7 +43,12 @@ fn list_all_pages(state: &MockState, chapter_id: &str) -> Vec<PageInfo> {
     page_infos
 }
 
-fn list_pages(state: &MockState, chapter_id: &str, offset: u64, limit: u64) -> Vec<PageInfo> {
+fn list_pages(
+    state: &MockState,
+    chapter_id: &str,
+    offset: u64,
+    limit: u64,
+) -> Vec<PageInfo> {
     let page_infos = list_all_pages(state, chapter_id);
 
     let offset = offset as usize;
@@ -74,7 +82,10 @@ fn page_from_form(form: &PageForm) -> PageInfo {
 impl<'a> Execute<GetInfoById<'a>> for Mock {
     type Error = RegularError;
 
-    async fn execute(&self, step: &GetInfoById<'a>) -> Result<PageInfo, Self::Error> {
+    async fn execute(
+        &self,
+        step: &GetInfoById<'a>,
+    ) -> Result<PageInfo, Self::Error> {
         let state = self.state.lock().unwrap();
         get_page_by_id(&state, step.id)
     }
@@ -84,7 +95,10 @@ impl<'a> Execute<GetInfoById<'a>> for Mock {
 impl<'a> Execute<ListInfosByChapterId<'a>> for Mock {
     type Error = RegularError;
 
-    async fn execute(&self, step: &ListInfosByChapterId<'a>) -> Result<Vec<PageInfo>, Self::Error> {
+    async fn execute(
+        &self,
+        step: &ListInfosByChapterId<'a>,
+    ) -> Result<Vec<PageInfo>, Self::Error> {
         let state = self.state.lock().unwrap();
         Ok(list_pages(&state, step.chapter_id, step.offset, step.limit))
     }
@@ -149,7 +163,9 @@ impl<'a> Advance<ListInfosByChapterId<'a>, MockContext> for MockTransactional {
 }
 
 #[async_trait]
-impl<'a> Advance<ListAllInfosByChapterId<'a>, MockContext> for MockTransactional {
+impl<'a> Advance<ListAllInfosByChapterId<'a>, MockContext>
+    for MockTransactional
+{
     type Error = RegularError;
 
     async fn advance(
@@ -180,7 +196,8 @@ impl<'a> Advance<CreateBatch<'a>, MockContext> for MockTransactional {
             return Err(expected("error-already-exists"));
         }
 
-        let page_infos = step.forms.iter().map(page_from_form).collect::<Vec<_>>();
+        let page_infos =
+            step.forms.iter().map(page_from_form).collect::<Vec<_>>();
 
         context.state.pages.extend(page_infos.clone());
 

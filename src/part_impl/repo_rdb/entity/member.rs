@@ -109,22 +109,34 @@ impl<'a> MemberAspect<'a> {
         self
     }
 
-    pub fn assigned_raw_provider_at(mut self, val: Option<OffsetDateTime>) -> Self {
+    pub fn assigned_raw_provider_at(
+        mut self,
+        val: Option<OffsetDateTime>,
+    ) -> Self {
         self.f_assigned_raw_provider_at = Some(val);
         self
     }
 
-    pub fn assigned_translator_at(mut self, val: Option<OffsetDateTime>) -> Self {
+    pub fn assigned_translator_at(
+        mut self,
+        val: Option<OffsetDateTime>,
+    ) -> Self {
         self.f_assigned_translator_at = Some(val);
         self
     }
 
-    pub fn assigned_proofreader_at(mut self, val: Option<OffsetDateTime>) -> Self {
+    pub fn assigned_proofreader_at(
+        mut self,
+        val: Option<OffsetDateTime>,
+    ) -> Self {
         self.f_assigned_proofreader_at = Some(val);
         self
     }
 
-    pub fn assigned_typesetter_at(mut self, val: Option<OffsetDateTime>) -> Self {
+    pub fn assigned_typesetter_at(
+        mut self,
+        val: Option<OffsetDateTime>,
+    ) -> Self {
         self.f_assigned_typesetter_at = Some(val);
         self
     }
@@ -139,7 +151,10 @@ impl<'a> MemberAspect<'a> {
         self
     }
 
-    pub fn assigned_publisher_at(mut self, val: Option<OffsetDateTime>) -> Self {
+    pub fn assigned_publisher_at(
+        mut self,
+        val: Option<OffsetDateTime>,
+    ) -> Self {
         self.f_assigned_publisher_at = Some(val);
         self
     }
@@ -186,8 +201,8 @@ impl From<MemberRow> for MemberInfo {
             bits |= u32::from(RoleField::ADMIN);
         }
 
-        let roles =
-            RoleMask::try_from(bits).unwrap_or_else(|_| RoleMask::from(RoleField::RAW_PROVIDER));
+        let roles = RoleMask::try_from(bits)
+            .unwrap_or_else(|_| RoleMask::from(RoleField::RAW_PROVIDER));
 
         MemberInfo {
             id: v.f_id,

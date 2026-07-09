@@ -36,7 +36,11 @@ impl TeamComplex {
     }
 
     /// Generate the object-storage key for a team avatar image.
-    pub fn gen_avatar_key(id: &str, avatar_version: i64, file_ext: &str) -> String {
+    pub fn gen_avatar_key(
+        id: &str,
+        avatar_version: i64,
+        file_ext: &str,
+    ) -> String {
         format!("team_avatar/{}-{}.{}", id, avatar_version, file_ext)
     }
 
@@ -77,7 +81,13 @@ impl TeamComplex {
             .await?;
 
         for workset_info in workset_infos {
-            WorksetComplex::delete_cascade(repo, prom, context, &workset_info.id).await?;
+            WorksetComplex::delete_cascade(
+                repo,
+                prom,
+                context,
+                &workset_info.id,
+            )
+            .await?;
         }
 
         if let Some(avatar_key) = &team_info.avatar_key
@@ -119,7 +129,10 @@ impl TeamPermComplex {
         team_id: &str,
     ) -> RegularResult<()>
     where
-        P: for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RegularError>,
+        P: for<'a> ProxyExecute<
+                FindInfoByUserIdAndTeamId<'a>,
+                Error = RegularError,
+            >,
     {
         check_user_is_team_admin(proxy, user_id, team_id).await
     }
@@ -131,7 +144,10 @@ impl TeamPermComplex {
         team_id: &str,
     ) -> RegularResult<()>
     where
-        P: for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RegularError>,
+        P: for<'a> ProxyExecute<
+                FindInfoByUserIdAndTeamId<'a>,
+                Error = RegularError,
+            >,
     {
         check_user_is_team_admin(proxy, user_id, team_id).await
     }
@@ -143,7 +159,10 @@ impl TeamPermComplex {
         team_id: &str,
     ) -> RegularResult<()>
     where
-        P: for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RegularError>,
+        P: for<'a> ProxyExecute<
+                FindInfoByUserIdAndTeamId<'a>,
+                Error = RegularError,
+            >,
     {
         check_user_is_team_admin(proxy, user_id, team_id).await
     }
@@ -155,13 +174,19 @@ impl TeamPermComplex {
         team_id: &str,
     ) -> RegularResult<()>
     where
-        P: for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RegularError>,
+        P: for<'a> ProxyExecute<
+                FindInfoByUserIdAndTeamId<'a>,
+                Error = RegularError,
+            >,
     {
         check_user_is_team_admin(proxy, user_id, team_id).await
     }
 
     /// Verify the user has super-admin privileges required to list all teams.
-    pub async fn can_user_list_all<P>(proxy: &mut P, user_id: &str) -> RegularResult<()>
+    pub async fn can_user_list_all<P>(
+        proxy: &mut P,
+        user_id: &str,
+    ) -> RegularResult<()>
     where
         P: for<'a> ProxyExecute<GetInfoById<'a>, Error = RegularError>,
     {
@@ -169,11 +194,15 @@ impl TeamPermComplex {
     }
 
     /// Check whether the user is a super-admin; returns `Perm` error if not.
-    async fn check_user_is_sadmin<P>(proxy: &mut P, user_id: &str) -> RegularResult<()>
+    async fn check_user_is_sadmin<P>(
+        proxy: &mut P,
+        user_id: &str,
+    ) -> RegularResult<()>
     where
         P: for<'a> ProxyExecute<GetInfoById<'a>, Error = RegularError>,
     {
-        let user_info = proxy.execute(&UserStep::get_info_by_id(user_id)).await?;
+        let user_info =
+            proxy.execute(&UserStep::get_info_by_id(user_id)).await?;
 
         if !user_info.is_sadmin {
             return Err(RegularError::Expected {

@@ -17,7 +17,8 @@ use crate::api::http::result::HttpResult;
 use crate::api::http::result::no_content;
 use crate::api::http::state::AppHarn;
 use crate::data::assignment::{
-    AssignmentInfoVal, JoinChapterData, ListAssignmentInfosData, UpdateAssignmentRolesData,
+    AssignmentInfoVal, JoinChapterData, ListAssignmentInfosData,
+    UpdateAssignmentRolesData,
 };
 use crate::model::user::UserToken;
 use crate::usecase;
@@ -41,9 +42,14 @@ pub async fn list_infos(
     Extension(user_token): Extension<UserToken>,
     Query(data): Query<ListAssignmentInfosData>,
 ) -> HttpResult<Vec<AssignmentInfoVal>> {
-    usecase::assignment::list_infos(harn.repo(), harn.image_pool(), user_token, data)
-        .await?
-        .accept(StatusCode::OK)
+    usecase::assignment::list_infos(
+        harn.repo(),
+        harn.image_pool(),
+        user_token,
+        data,
+    )
+    .await?
+    .accept(StatusCode::OK)
 }
 
 /// `PUT /api/v1/chapters/{chapter_id}/assignments/{user_id}/roles` — update roles.
@@ -74,7 +80,13 @@ pub async fn update_roles(
 
     ensure_path_matches_body_id(&user_id, &data.user_id)?;
 
-    usecase::assignment::update_roles(harn.drive(), harn.repo(), user_token, data).await?;
+    usecase::assignment::update_roles(
+        harn.drive(),
+        harn.repo(),
+        user_token,
+        data,
+    )
+    .await?;
 
     // FIXME: use no_content()
     no_content()
@@ -98,7 +110,13 @@ pub async fn delete(
     Path(assignment_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
-    usecase::assignment::delete(harn.drive(), harn.repo(), user_token, assignment_id).await?;
+    usecase::assignment::delete(
+        harn.drive(),
+        harn.repo(),
+        user_token,
+        assignment_id,
+    )
+    .await?;
     no_content()
 }
 

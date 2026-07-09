@@ -9,15 +9,18 @@ use poprako_transactional::advance::Advance;
 
 use crate::model::workset::{WorksetForm, WorksetInfo};
 use crate::part::repo::step::workset::{
-    Create, Delete, GetInfoById, GetInfoExcluded, IncrComicNextIndex, ListAllInfosByTeamIdExcluded,
-    ListInfosByTeamId, UpdateComicCount, UpdateInfo,
+    Create, Delete, GetInfoById, GetInfoExcluded, IncrComicNextIndex,
+    ListAllInfosByTeamIdExcluded, ListInfosByTeamId, UpdateComicCount,
+    UpdateInfo,
 };
 use crate::part::repo::workset::{WorksetRepo, WorksetRepoTransactional};
 use crate::part::shared::execute::Execute;
 use crate::part_impl::rdb_core::RdbConn;
 use crate::part_impl::rdb_core::RdbContext;
 use crate::part_impl::rdb_core::result::{diesel, expected};
-use crate::part_impl::repo_rdb::entity::workset::{WorksetAspect, WorksetEntry, WorksetRow};
+use crate::part_impl::repo_rdb::entity::workset::{
+    WorksetAspect, WorksetEntry, WorksetRow,
+};
 use crate::part_impl::repo_rdb::{RdbRepo, RdbRepoTransactional};
 use crate::result::{RegularError, RegularResult};
 
@@ -27,7 +30,10 @@ impl WorksetRepo<RdbContext> for RdbRepo {}
 
 impl WorksetRepoTransactional<RdbContext> for RdbRepoTransactional {}
 
-async fn get_info_by_id(conn: &mut RdbConn, id: &str) -> RegularResult<WorksetInfo> {
+async fn get_info_by_id(
+    conn: &mut RdbConn,
+    id: &str,
+) -> RegularResult<WorksetInfo> {
     let row: WorksetRow = t_workset
         .filter(f_id.eq(id))
         .select(WorksetRow::as_select())
@@ -93,7 +99,10 @@ async fn list_all_infos_by_team_id_excluded(
     Ok(rows.into_iter().map(Into::into).collect())
 }
 
-async fn get_info_excluded(conn: &mut RdbConn, id: &str) -> RegularResult<WorksetInfo> {
+async fn get_info_excluded(
+    conn: &mut RdbConn,
+    id: &str,
+) -> RegularResult<WorksetInfo> {
     let row: WorksetRow = t_workset
         .filter(f_id.eq(id))
         .select(WorksetRow::as_select())
@@ -116,7 +125,10 @@ async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
     Ok(())
 }
 
-async fn create(conn: &mut RdbConn, form: &WorksetForm) -> RegularResult<WorksetInfo> {
+async fn create(
+    conn: &mut RdbConn,
+    form: &WorksetForm,
+) -> RegularResult<WorksetInfo> {
     let entry = WorksetEntry::from(form);
 
     let row: WorksetRow = diesel::insert_into(t_workset)
@@ -129,7 +141,10 @@ async fn create(conn: &mut RdbConn, form: &WorksetForm) -> RegularResult<Workset
     Ok(row.into())
 }
 
-async fn incr_comic_next_index(conn: &mut RdbConn, id: &str) -> RegularResult<i32> {
+async fn incr_comic_next_index(
+    conn: &mut RdbConn,
+    id: &str,
+) -> RegularResult<i32> {
     let prev: i32 = diesel::update(t_workset.filter(f_id.eq(id)))
         .set(f_comic_next_index.eq(f_comic_next_index + 1))
         .returning(f_comic_next_index - 1)
@@ -140,7 +155,11 @@ async fn incr_comic_next_index(conn: &mut RdbConn, id: &str) -> RegularResult<i3
     Ok(prev)
 }
 
-async fn update_comic_count(conn: &mut RdbConn, id: &str, delta: i32) -> RegularResult<()> {
+async fn update_comic_count(
+    conn: &mut RdbConn,
+    id: &str,
+    delta: i32,
+) -> RegularResult<()> {
     diesel::update(t_workset.filter(f_id.eq(id)))
         .set(f_comic_count.eq(f_comic_count + delta))
         .execute(conn)
@@ -156,7 +175,10 @@ async fn update_comic_count(conn: &mut RdbConn, id: &str, delta: i32) -> Regular
 impl<'a> Execute<GetInfoById<'a>> for RdbRepo {
     type Error = RegularError;
 
-    async fn execute(&self, step: &GetInfoById<'a>) -> RegularResult<WorksetInfo> {
+    async fn execute(
+        &self,
+        step: &GetInfoById<'a>,
+    ) -> RegularResult<WorksetInfo> {
         submit_query!(self.core, get_info_by_id, step.id)
     }
 }
@@ -165,7 +187,10 @@ impl<'a> Execute<GetInfoById<'a>> for RdbRepo {
 impl<'a> Execute<ListInfosByTeamId<'a>> for RdbRepo {
     type Error = RegularError;
 
-    async fn execute(&self, step: &ListInfosByTeamId<'a>) -> RegularResult<Vec<WorksetInfo>> {
+    async fn execute(
+        &self,
+        step: &ListInfosByTeamId<'a>,
+    ) -> RegularResult<Vec<WorksetInfo>> {
         submit_query!(
             self.core,
             list_infos_by_team_id,
@@ -194,7 +219,9 @@ impl<'a> Execute<UpdateInfo<'a>> for RdbRepo {
 // ── Transactional: Advance impls ───────────────────────────────────
 
 #[async_trait]
-impl<'a> Advance<ListAllInfosByTeamIdExcluded<'a>, RdbContext> for RdbRepoTransactional {
+impl<'a> Advance<ListAllInfosByTeamIdExcluded<'a>, RdbContext>
+    for RdbRepoTransactional
+{
     type Error = RegularError;
 
     async fn advance(
@@ -223,7 +250,11 @@ impl<'a> Advance<GetInfoExcluded<'a>, RdbContext> for RdbRepoTransactional {
 impl<'a> Advance<Delete<'a>, RdbContext> for RdbRepoTransactional {
     type Error = RegularError;
 
-    async fn advance(&self, context: &mut RdbContext, step: &Delete<'a>) -> RegularResult<()> {
+    async fn advance(
+        &self,
+        context: &mut RdbContext,
+        step: &Delete<'a>,
+    ) -> RegularResult<()> {
         delete(context.conn(), step.id).await
     }
 }

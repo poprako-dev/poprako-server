@@ -25,7 +25,11 @@ pub fn assert_expected_variant(err: RegularError, expected: ExpectedVariant) {
 }
 
 /// Asserts that `err` is an expected error with the exact variant and i18n key.
-pub fn assert_expected_message(err: RegularError, expected: ExpectedVariant, trl_key: &str) {
+pub fn assert_expected_message(
+    err: RegularError,
+    expected: ExpectedVariant,
+    trl_key: &str,
+) {
     let RegularError::Expected {
         variant,
         message: actual,
@@ -81,7 +85,13 @@ pub fn assert_one_image_check_record(
     image_version: i64,
 ) {
     assert_eq!(
-        count_image_check_records(records, kind, resource_id, object_key, image_version),
+        count_image_check_records(
+            records,
+            kind,
+            resource_id,
+            object_key,
+            image_version
+        ),
         1
     );
 }

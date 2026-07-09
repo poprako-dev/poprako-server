@@ -13,12 +13,15 @@ use crate::model::user::UserInfo;
 use crate::model::workset::WorksetInfo;
 use crate::part::repo::chapter::{ChapterRepo, ChapterRepoTransactional};
 use crate::part::repo::step::chapter::{
-    AdjustUnitCounters, Create, Delete, FindPinnedInfoByComicId, GetInfoById, GetInfoByIdExcluded,
-    ListAllInfosByComicIdExcluded, ListInfos, ListPinnedInfosByComicIds, SetPageCounters,
-    UnpinOthers, UpdateInfo, UpdateStage,
+    AdjustUnitCounters, Create, Delete, FindPinnedInfoByComicId, GetInfoById,
+    GetInfoByIdExcluded, ListAllInfosByComicIdExcluded, ListInfos,
+    ListPinnedInfosByComicIds, SetPageCounters, UnpinOthers, UpdateInfo,
+    UpdateStage,
 };
 use crate::part::shared::execute::Execute;
-use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactional, expected, now};
+use crate::part_impl::repo_mock::{
+    Mock, MockContext, MockState, MockTransactional, expected, now,
+};
 use crate::result::{RegularError, RegularResult};
 use crate::value::chapter::{ChapterInclOpt, StageMask};
 use crate::value::incl::expand_incl_opts;
@@ -69,7 +72,10 @@ fn list_all_chapters(state: &MockState, comic_id: &str) -> Vec<ChapterInfo> {
     chapter_infos
 }
 
-fn create_chapter(state: &mut MockState, form: &ChapterForm) -> RegularResult<ChapterInfo> {
+fn create_chapter(
+    state: &mut MockState,
+    form: &ChapterForm,
+) -> RegularResult<ChapterInfo> {
     if state
         .chapters
         .iter()
@@ -131,7 +137,10 @@ fn find_workset(state: &MockState, workset_id: &str) -> Option<WorksetInfo> {
         .cloned()
 }
 
-fn find_team_for_workset(state: &MockState, workset_info: &WorksetInfo) -> Option<TeamInfo> {
+fn find_team_for_workset(
+    state: &MockState,
+    workset_info: &WorksetInfo,
+) -> Option<TeamInfo> {
     state
         .teams
         .iter()
@@ -139,14 +148,22 @@ fn find_team_for_workset(state: &MockState, workset_info: &WorksetInfo) -> Optio
         .cloned()
 }
 
-fn apply_creator_incl(state: &MockState, chapter_info: &mut ChapterInfo, include_creator: bool) {
+fn apply_creator_incl(
+    state: &MockState,
+    chapter_info: &mut ChapterInfo,
+    include_creator: bool,
+) {
     chapter_info.creator = None;
     if include_creator {
         chapter_info.creator = find_user(state, &chapter_info.creator_id);
     }
 }
 
-fn apply_comic_incl(state: &MockState, chapter_info: &mut ChapterInfo, include_comic: bool) {
+fn apply_comic_incl(
+    state: &MockState,
+    chapter_info: &mut ChapterInfo,
+    include_comic: bool,
+) {
     chapter_info.comic = None;
     if include_comic {
         chapter_info.comic = find_comic(state, &chapter_info.comic_id);
@@ -215,13 +232,21 @@ fn apply_chapter_incls(
 
     for incl_opt in expand_incl_opts(incl_opt) {
         match incl_opt {
-            ChapterInclOpt::Comic => apply_comic_incl(state, chapter_info, true),
-            ChapterInclOpt::ComicWorkset => apply_comic_workset_incl(state, chapter_info, true),
+            ChapterInclOpt::Comic => {
+                apply_comic_incl(state, chapter_info, true)
+            }
+            ChapterInclOpt::ComicWorkset => {
+                apply_comic_workset_incl(state, chapter_info, true)
+            }
             ChapterInclOpt::ComicWorksetTeam => {
                 apply_comic_workset_team_incl(state, chapter_info, true)
             }
-            ChapterInclOpt::ComicCreator => apply_comic_creator_incl(state, chapter_info, true),
-            ChapterInclOpt::Creator => apply_creator_incl(state, chapter_info, true),
+            ChapterInclOpt::ComicCreator => {
+                apply_comic_creator_incl(state, chapter_info, true)
+            }
+            ChapterInclOpt::Creator => {
+                apply_creator_incl(state, chapter_info, true)
+            }
         }
     }
 }
@@ -230,7 +255,10 @@ fn apply_chapter_incls(
 impl<'a> Execute<ListInfos<'a>> for Mock {
     type Error = RegularError;
 
-    async fn execute(&self, step: &ListInfos<'a>) -> Result<Vec<ChapterInfo>, Self::Error> {
+    async fn execute(
+        &self,
+        step: &ListInfos<'a>,
+    ) -> Result<Vec<ChapterInfo>, Self::Error> {
         let state = self.state.lock().unwrap();
         let mut chapters = list_all_chapters(&state, &step.spec.comic_id);
 
@@ -254,7 +282,10 @@ impl<'a> Execute<ListInfos<'a>> for Mock {
 impl<'a> Execute<GetInfoById<'a>> for Mock {
     type Error = RegularError;
 
-    async fn execute(&self, step: &GetInfoById<'a>) -> Result<ChapterInfo, Self::Error> {
+    async fn execute(
+        &self,
+        step: &GetInfoById<'a>,
+    ) -> Result<ChapterInfo, Self::Error> {
         let state = self.state.lock().unwrap();
 
         get_chapter_by_id(&state, step.id, step.incl_opt)
@@ -278,7 +309,9 @@ impl<'a> Execute<FindPinnedInfoByComicId<'a>> for Mock {
         let mut chapter_info = state
             .chapters
             .iter()
-            .find(|chapter_info| chapter_info.comic_id == step.comic_id && chapter_info.is_pinned)
+            .find(|chapter_info| {
+                chapter_info.comic_id == step.comic_id && chapter_info.is_pinned
+            })
             .cloned();
 
         if let Some(chapter_info) = &mut chapter_info {
@@ -305,7 +338,9 @@ impl<'a> Execute<ListPinnedInfosByComicIds<'a>> for Mock {
             let chapter_info = state
                 .chapters
                 .iter()
-                .find(|chapter_info| chapter_info.comic_id == *comic_id && chapter_info.is_pinned)
+                .find(|chapter_info| {
+                    chapter_info.comic_id == *comic_id && chapter_info.is_pinned
+                })
                 .cloned();
 
             let Some(chapter_info) = chapter_info else {
@@ -364,7 +399,9 @@ impl<'a> Advance<GetInfoByIdExcluded<'a>, MockContext> for MockTransactional {
 // }
 
 #[async_trait]
-impl<'a> Advance<ListAllInfosByComicIdExcluded<'a>, MockContext> for MockTransactional {
+impl<'a> Advance<ListAllInfosByComicIdExcluded<'a>, MockContext>
+    for MockTransactional
+{
     type Error = RegularError;
 
     async fn advance(
@@ -377,7 +414,9 @@ impl<'a> Advance<ListAllInfosByComicIdExcluded<'a>, MockContext> for MockTransac
 }
 
 #[async_trait]
-impl<'a> Advance<FindPinnedInfoByComicId<'a>, MockContext> for MockTransactional {
+impl<'a> Advance<FindPinnedInfoByComicId<'a>, MockContext>
+    for MockTransactional
+{
     type Error = RegularError;
 
     async fn advance(
@@ -389,7 +428,9 @@ impl<'a> Advance<FindPinnedInfoByComicId<'a>, MockContext> for MockTransactional
             .state
             .chapters
             .iter()
-            .find(|chapter_info| chapter_info.comic_id == step.comic_id && chapter_info.is_pinned)
+            .find(|chapter_info| {
+                chapter_info.comic_id == step.comic_id && chapter_info.is_pinned
+            })
             .cloned();
 
         if let Some(chapter_info) = &mut chapter_info {
@@ -511,7 +552,9 @@ impl<'a> Advance<UnpinOthers<'a>, MockContext> for MockTransactional {
         step: &UnpinOthers<'a>,
     ) -> Result<(), Self::Error> {
         for chapter_info in &mut context.state.chapters {
-            if chapter_info.comic_id == step.comic_id && chapter_info.id != step.excluded_id {
+            if chapter_info.comic_id == step.comic_id
+                && chapter_info.id != step.excluded_id
+            {
                 chapter_info.is_pinned = false;
                 chapter_info.updated_at = now();
             }

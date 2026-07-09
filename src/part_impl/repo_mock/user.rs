@@ -4,14 +4,19 @@ use async_trait::async_trait;
 use poprako_transactional::advance::Advance;
 
 use crate::complex::user::UserComplex;
-use crate::model::user::{UserAvatarReservation, UserCredential, UserForm, UserInfo};
+use crate::model::user::{
+    UserAvatarReservation, UserCredential, UserForm, UserInfo,
+};
 use crate::part::repo::step::user::{
-    Create, Delete, FindInfoByQid, GetCredentialByQid, GetInfoById, GetInfoExcluded,
-    MarkAvatarUploaded, ReserveAvatar, TouchLastActive, UpdateInfo,
+    Create, Delete, FindInfoByQid, GetCredentialByQid, GetInfoById,
+    GetInfoExcluded, MarkAvatarUploaded, ReserveAvatar, TouchLastActive,
+    UpdateInfo,
 };
 use crate::part::repo::user::{UserRepo, UserRepoTransactional};
 use crate::part::shared::execute::Execute;
-use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactional, expected, now};
+use crate::part_impl::repo_mock::{
+    Mock, MockContext, MockState, MockTransactional, expected, now,
+};
 use crate::result::{RegularError, RegularResult};
 
 impl UserRepo<MockContext> for Mock {}
@@ -19,7 +24,10 @@ impl UserRepo<MockContext> for Mock {}
 impl UserRepoTransactional<MockContext> for MockTransactional {}
 
 /// Inserts a new user with associated credentials, rejecting duplicate ids or qids.
-fn create_user(state: &mut MockState, form: &UserForm) -> RegularResult<UserInfo> {
+fn create_user(
+    state: &mut MockState,
+    form: &UserForm,
+) -> RegularResult<UserInfo> {
     if state.users.iter().any(|user| user.id == form.id) {
         return Err(expected("error-already-exists"));
     }
@@ -52,7 +60,10 @@ fn create_user(state: &mut MockState, form: &UserForm) -> RegularResult<UserInfo
 impl<'a> Execute<GetInfoById<'a>> for Mock {
     type Error = RegularError;
 
-    async fn execute(&self, step: &GetInfoById<'a>) -> Result<UserInfo, Self::Error> {
+    async fn execute(
+        &self,
+        step: &GetInfoById<'a>,
+    ) -> Result<UserInfo, Self::Error> {
         let state = self.state.lock().unwrap();
         state
             .users
@@ -67,7 +78,10 @@ impl<'a> Execute<GetInfoById<'a>> for Mock {
 impl<'a> Execute<GetCredentialByQid<'a>> for Mock {
     type Error = RegularError;
 
-    async fn execute(&self, step: &GetCredentialByQid<'a>) -> Result<UserCredential, Self::Error> {
+    async fn execute(
+        &self,
+        step: &GetCredentialByQid<'a>,
+    ) -> Result<UserCredential, Self::Error> {
         let state = self.state.lock().unwrap();
         let user = state
             .users
@@ -89,7 +103,10 @@ impl<'a> Execute<GetCredentialByQid<'a>> for Mock {
 impl<'a> Execute<FindInfoByQid<'a>> for Mock {
     type Error = RegularError;
 
-    async fn execute(&self, step: &FindInfoByQid<'a>) -> Result<Option<UserInfo>, Self::Error> {
+    async fn execute(
+        &self,
+        step: &FindInfoByQid<'a>,
+    ) -> Result<Option<UserInfo>, Self::Error> {
         let state = self.state.lock().unwrap();
         Ok(state
             .users
@@ -185,7 +202,8 @@ impl<'a> Advance<ReserveAvatar<'a>, MockContext> for MockTransactional {
             .find(|user| user.id == step.id)
             .ok_or_else(|| expected("error-user-not-found"))?;
         let avatar_version = user.avatar_version + 1;
-        let object_key = UserComplex::gen_avatar_key(step.id, avatar_version, step.file_ext);
+        let object_key =
+            UserComplex::gen_avatar_key(step.id, avatar_version, step.file_ext);
         let prev_object_key = user.avatar_key.clone();
         user.avatar_key = Some(object_key.clone());
         user.avatar_uploaded = false;
@@ -290,7 +308,9 @@ impl<'a> Advance<Delete<'a>, MockContext> for MockTransactional {
         context
             .state
             .member_invitations
-            .retain(|member_invitation| member_invitation.invitor_id != step.id);
+            .retain(|member_invitation| {
+                member_invitation.invitor_id != step.id
+            });
         context
             .state
             .system_mails

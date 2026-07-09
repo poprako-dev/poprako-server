@@ -3,8 +3,9 @@
 use poprako_transactional::advance::Advance;
 
 use crate::part::repo::step::page::{
-    CreateBatch, DeleteByChapterId, GetInfoById, GetInfoExcluded, ListAllInfosByChapterId,
-    ListInfosByChapterId, MarkImageUploaded, ReserveImage, SetUnitCounters,
+    CreateBatch, DeleteByChapterId, GetInfoById, GetInfoExcluded,
+    ListAllInfosByChapterId, ListInfosByChapterId, MarkImageUploaded,
+    ReserveImage, SetUnitCounters,
 };
 use crate::part::shared::execute::Execute;
 use crate::result::RegularError;

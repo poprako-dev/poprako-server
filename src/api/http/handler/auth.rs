@@ -47,9 +47,14 @@ pub async fn register(
     State(harn): State<AppHarn>,
     Json(data): Json<RegisterData>,
 ) -> HttpResult<RegisterVal> {
-    let reply =
-        usecase::auth::register(harn.drive(), harn.repo(), harn.auth(), harn.develop(), data)
-            .await?;
+    let reply = usecase::auth::register(
+        harn.drive(),
+        harn.repo(),
+        harn.auth(),
+        harn.develop(),
+        data,
+    )
+    .await?;
 
     let cookie = auth_cookie(&reply.token);
 

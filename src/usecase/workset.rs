@@ -7,13 +7,15 @@ use poprako_util::time::ToUnixMilli;
 
 use crate::complex::workset::{WorksetComplex, WorksetPermComplex};
 use crate::data::workset::{
-    CreateWorksetData, CreateWorksetVal, ListWorksetInfosData, UpdateWorksetInfoData,
-    WorksetInfoVal,
+    CreateWorksetData, CreateWorksetVal, ListWorksetInfosData,
+    UpdateWorksetInfoData, WorksetInfoVal,
 };
 use crate::model::user::UserToken;
 use crate::model::workset::{WorksetForm, WorksetInfoUpdate};
 use crate::part::prom::Prom;
-use crate::part::repo::assignment::{AssignmentRepo, AssignmentRepoTransactional};
+use crate::part::repo::assignment::{
+    AssignmentRepo, AssignmentRepoTransactional,
+};
 use crate::part::repo::assignment_invitation::{
     AssignmentInvitationRepo, AssignmentInvitationRepoTransactional,
 };
@@ -53,8 +55,12 @@ where
 {
     use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
-    WorksetPermComplex::can_user_create(&mut repo.as_proxy(), &token.user_id, &data.team_id)
-        .await?;
+    WorksetPermComplex::can_user_create(
+        &mut repo.as_proxy(),
+        &token.user_id,
+        &data.team_id,
+    )
+    .await?;
 
     let workset_id = drive
         .with_context(async move |context| {
@@ -88,7 +94,11 @@ where
 }
 
 /// Fetches a workset by ID.
-pub async fn get_info<C, R>(repo: &R, token: UserToken, id: String) -> RegularResult<WorksetInfoVal>
+pub async fn get_info<C, R>(
+    repo: &R,
+    token: UserToken,
+    id: String,
+) -> RegularResult<WorksetInfoVal>
 where
     R: WorksetRepo<C> + MemberRepo<C> + Sync,
     <R as DeriveTransactional>::Transactional:
@@ -96,7 +106,12 @@ where
 {
     use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
-    WorksetPermComplex::can_user_get_info(&mut repo.as_proxy(), &token.user_id, &id).await?;
+    WorksetPermComplex::can_user_get_info(
+        &mut repo.as_proxy(),
+        &token.user_id,
+        &id,
+    )
+    .await?;
 
     let workset_info = repo.execute(&WorksetStep::get_info_by_id(&id)).await?;
 
@@ -126,8 +141,12 @@ where
 {
     use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
-    WorksetPermComplex::can_user_list_infos(&mut repo.as_proxy(), &token.user_id, &data.team_id)
-        .await?;
+    WorksetPermComplex::can_user_list_infos(
+        &mut repo.as_proxy(),
+        &token.user_id,
+        &data.team_id,
+    )
+    .await?;
 
     let workset_infos = repo
         .execute(&WorksetStep::list_infos_by_team_id(
@@ -170,8 +189,12 @@ where
 {
     use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
-    WorksetPermComplex::can_user_update_info(&mut repo.as_proxy(), &token.user_id, &data.id)
-        .await?;
+    WorksetPermComplex::can_user_update_info(
+        &mut repo.as_proxy(),
+        &token.user_id,
+        &data.id,
+    )
+    .await?;
 
     let workset_info_update = WorksetInfoUpdate {
         id: data.id,
@@ -207,21 +230,27 @@ where
         + UnitRepo<C>
         + Send
         + Sync,
-    <R as DeriveTransactional>::Transactional: WorksetRepoTransactional<C>
-        + ComicRepoTransactional<C>
-        + MemberRepoTransactional<C>
-        + ChapterRepoTransactional<C>
-        + PageRepoTransactional<C>
-        + AssignmentInvitationRepoTransactional<C>
-        + AssignmentRepoTransactional<C>
-        + UnitRepoTransactional<C>
-        + Send
-        + Sync,
+    <R as DeriveTransactional>::Transactional:
+        WorksetRepoTransactional<C>
+            + ComicRepoTransactional<C>
+            + MemberRepoTransactional<C>
+            + ChapterRepoTransactional<C>
+            + PageRepoTransactional<C>
+            + AssignmentInvitationRepoTransactional<C>
+            + AssignmentRepoTransactional<C>
+            + UnitRepoTransactional<C>
+            + Send
+            + Sync,
     P: Prom<C> + Send + Sync,
 {
     use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
-    WorksetPermComplex::can_user_delete(&mut repo.as_proxy(), &token.user_id, &id).await?;
+    WorksetPermComplex::can_user_delete(
+        &mut repo.as_proxy(),
+        &token.user_id,
+        &id,
+    )
+    .await?;
 
     drive
         .with_context(async move |context| {
@@ -231,7 +260,13 @@ where
                 .advance(context, &WorksetStep::get_info_excluded(&id))
                 .await?;
 
-            WorksetComplex::delete_cascade(&repo, prom, context, &workset_info.id).await?;
+            WorksetComplex::delete_cascade(
+                &repo,
+                prom,
+                context,
+                &workset_info.id,
+            )
+            .await?;
 
             accept(())
         })

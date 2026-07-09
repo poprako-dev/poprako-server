@@ -50,7 +50,9 @@ async fn assignment_invitation_roundtrip_reads_test_database_url() {
             Advance::advance(
                 &transactional_repo,
                 context,
-                &AssignmentInvitationStep::mark_pending_as_used(&assignment_invitation_form.id),
+                &AssignmentInvitationStep::mark_pending_as_used(
+                    &assignment_invitation_form.id,
+                ),
             )
             .await?;
 
@@ -67,7 +69,11 @@ async fn assignment_invitation_roundtrip_reads_test_database_url() {
 
     let assignment_invitation_infos = Execute::execute(
         &repo,
-        &AssignmentInvitationStep::list_infos(&chapter_fixture.chapter_form.id, Some(false), page),
+        &AssignmentInvitationStep::list_infos(
+            &chapter_fixture.chapter_form.id,
+            Some(false),
+            page,
+        ),
     )
     .await
     .ok()

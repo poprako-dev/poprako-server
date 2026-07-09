@@ -9,11 +9,15 @@ use poprako_util::i18n::{trl, trl_kv};
 
 use crate::complex::system_mail::SystemMailComplex;
 use crate::model::system_mail::SystemMailForm;
-use crate::part::effect::event::user::{UserActivePayload, UserSignedUpPayload};
+use crate::part::effect::event::user::{
+    UserActivePayload, UserSignedUpPayload,
+};
 use crate::part::repo::step::system_mail::SystemMailStep;
 use crate::part::repo::step::team::TeamStep;
 use crate::part::repo::step::user::UserStep;
-use crate::part::repo::system_mail::{SystemMailRepo, SystemMailRepoTransactional};
+use crate::part::repo::system_mail::{
+    SystemMailRepo, SystemMailRepoTransactional,
+};
 use crate::part::repo::team::{TeamRepo, TeamRepoTransactional};
 use crate::part::repo::user::{UserRepo, UserRepoTransactional};
 use crate::part::shared::execute::Execute;
@@ -25,7 +29,9 @@ where
     R: UserRepo<C>,
     <R as DeriveTransactional>::Transactional: UserRepoTransactional<C>,
 {
-    let result = Execute::execute(repo, &UserStep::touch_last_active(&payload.user_id)).await;
+    let result =
+        Execute::execute(repo, &UserStep::touch_last_active(&payload.user_id))
+            .await;
 
     if result.is_err() {
         tracing::warn!(
@@ -42,7 +48,9 @@ where
     <R as DeriveTransactional>::Transactional:
         TeamRepoTransactional<C> + SystemMailRepoTransactional<C>,
 {
-    let team_info = Execute::execute(repo, &TeamStep::get_info_by_id(&payload.team_id)).await;
+    let team_info =
+        Execute::execute(repo, &TeamStep::get_info_by_id(&payload.team_id))
+            .await;
 
     let Ok(team_info) = team_info else {
         tracing::warn!(
@@ -72,7 +80,8 @@ where
         content: trl_kv("mail-invitation-used-body", &args),
     };
 
-    let result = Execute::execute(repo, &SystemMailStep::send(&system_mail_form)).await;
+    let result =
+        Execute::execute(repo, &SystemMailStep::send(&system_mail_form)).await;
 
     if result.is_err() {
         tracing::warn!(

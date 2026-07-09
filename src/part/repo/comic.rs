@@ -3,9 +3,9 @@
 use poprako_transactional::advance::Advance;
 
 use crate::part::repo::step::comic::{
-    Create, Delete, GetInfoById, GetInfoExcluded, IncrChapterNextIndex, ListInfos,
-    ListInfosExcluded, MarkCompleted, MarkCoverUploaded, ReserveCover, TouchLastActive,
-    UpdateChapterCount, UpdateInfo,
+    Create, Delete, GetInfoById, GetInfoExcluded, IncrChapterNextIndex,
+    ListInfos, ListInfosExcluded, MarkCompleted, MarkCoverUploaded,
+    ReserveCover, TouchLastActive, UpdateChapterCount, UpdateInfo,
 };
 use crate::part::shared::execute::Execute;
 use crate::result::RegularError;

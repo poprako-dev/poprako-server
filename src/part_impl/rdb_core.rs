@@ -39,14 +39,17 @@ impl RdbCore {
             .with_context(|| "[RdbCore::from_env] DATABASE_URL is not set")?;
 
         Self::from_database_url(&database_url).map_err(|err| match err {
-            RegularError::Expected { message, .. } | RegularError::Unrecoverable { message } => {
+            RegularError::Expected { message, .. }
+            | RegularError::Unrecoverable { message } => {
                 anyhow::anyhow!("{}", message)
             }
         })
     }
 
     pub fn from_database_url(database_url: &str) -> RegularResult<Self> {
-        let manager = AsyncDieselConnectionManager::<AsyncPgConnection>::new(database_url);
+        let manager = AsyncDieselConnectionManager::<AsyncPgConnection>::new(
+            database_url,
+        );
 
         let pool = Pool::builder(manager).build().map_err(pool_build)?;
 

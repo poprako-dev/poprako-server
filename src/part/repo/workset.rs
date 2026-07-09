@@ -6,8 +6,9 @@
 use poprako_transactional::advance::Advance;
 
 use crate::part::repo::step::workset::{
-    Create, Delete, GetInfoById, GetInfoExcluded, IncrComicNextIndex, ListAllInfosByTeamIdExcluded,
-    ListInfosByTeamId, UpdateComicCount, UpdateInfo,
+    Create, Delete, GetInfoById, GetInfoExcluded, IncrComicNextIndex,
+    ListAllInfosByTeamIdExcluded, ListInfosByTeamId, UpdateComicCount,
+    UpdateInfo,
 };
 use crate::part::shared::execute::Execute;
 use crate::result::RegularError;

@@ -31,7 +31,12 @@ async fn system_mail_roundtrip_reads_test_database_url() {
 
     let system_mail_infos = Execute::execute(
         &repo,
-        &SystemMailStep::list_infos(&user_fixture.user_form.id, Some(false), 0, 10),
+        &SystemMailStep::list_infos(
+            &user_fixture.user_form.id,
+            Some(false),
+            0,
+            10,
+        ),
     )
     .await
     .ok()
@@ -41,7 +46,10 @@ async fn system_mail_roundtrip_reads_test_database_url() {
 
     Execute::execute(
         &repo,
-        &SystemMailStep::mark_read(&system_mail_form.id, &user_fixture.user_form.id),
+        &SystemMailStep::mark_read(
+            &system_mail_form.id,
+            &user_fixture.user_form.id,
+        ),
     )
     .await
     .ok()
@@ -49,7 +57,12 @@ async fn system_mail_roundtrip_reads_test_database_url() {
 
     let read_system_mail_infos = Execute::execute(
         &repo,
-        &SystemMailStep::list_infos(&user_fixture.user_form.id, Some(true), 0, 10),
+        &SystemMailStep::list_infos(
+            &user_fixture.user_form.id,
+            Some(true),
+            0,
+            10,
+        ),
     )
     .await
     .ok()

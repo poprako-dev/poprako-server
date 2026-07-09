@@ -63,10 +63,11 @@ where
     D::Error: Into<RegularError>,
     C: Send,
     R: UserRepo<C> + MemberRepo<C> + MemberInvitationRepo<C> + Send + Sync,
-    <R as DeriveTransactional>::Transactional: UserRepoTransactional<C>
-        + MemberRepoTransactional<C>
-        + MemberInvitationRepoTransactional<C>
-        + Send,
+    <R as DeriveTransactional>::Transactional:
+        UserRepoTransactional<C>
+            + MemberRepoTransactional<C>
+            + MemberInvitationRepoTransactional<C>
+            + Send,
     A: TokenAuth,
     V: EffectDevelop + Send + Sync,
 {
@@ -77,7 +78,9 @@ where
             let invitation_info = repo
                 .advance(
                     context,
-                    &MemberInvitationStep::get_info_by_code_excluded(&data.code),
+                    &MemberInvitationStep::get_info_by_code_excluded(
+                        &data.code,
+                    ),
                 )
                 .await?;
 
@@ -98,7 +101,8 @@ where
                 password_hash,
             };
 
-            let user_info = repo.advance(context, &UserStep::create(&user_form)).await?;
+            let user_info =
+                repo.advance(context, &UserStep::create(&user_form)).await?;
 
             let member_form = MemberForm {
                 id: MemberComplex::gen_id(),
@@ -113,7 +117,9 @@ where
 
             repo.advance(
                 context,
-                &MemberInvitationStep::mark_pending_as_used(&invitation_info.id),
+                &MemberInvitationStep::mark_pending_as_used(
+                    &invitation_info.id,
+                ),
             )
             .await?;
 
@@ -154,7 +160,11 @@ where
 /// * `C` — Context anchor.
 /// * `R: UserRepo<C>` — Provides credential lookup.
 /// * `A: TokenAuth` — Signs the session token.
-pub async fn login<C, R, A>(repo: &R, auth: &A, data: LoginData) -> RegularResult<LoginVal>
+pub async fn login<C, R, A>(
+    repo: &R,
+    auth: &A,
+    data: LoginData,
+) -> RegularResult<LoginVal>
 where
     R: UserRepo<C>,
     <R as DeriveTransactional>::Transactional: UserRepoTransactional<C>,
@@ -164,7 +174,10 @@ where
         .execute(&UserStep::get_credential_by_qid(&data.qid))
         .await?;
 
-    if !UserComplex::verify_password(&data.password, &user_credential.password_hash) {
+    if !UserComplex::verify_password(
+        &data.password,
+        &user_credential.password_hash,
+    ) {
         return Err(RegularError::Expected {
             variant: ExpectedVariant::Auth,
             message: trl("error-wrong-credentials"),

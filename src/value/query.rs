@@ -43,13 +43,19 @@ where
             Ok(vec![item])
         }
 
-        fn visit_string<E: de::Error>(self, v: String) -> Result<Self::Value, E> {
+        fn visit_string<E: de::Error>(
+            self,
+            v: String,
+        ) -> Result<Self::Value, E> {
             let item = deserialize_from_str::<T, E>(&v)?;
 
             Ok(vec![item])
         }
 
-        fn visit_seq<S: SeqAccess<'de>>(self, seq: S) -> Result<Self::Value, S::Error> {
+        fn visit_seq<S: SeqAccess<'de>>(
+            self,
+            seq: S,
+        ) -> Result<Self::Value, S::Error> {
             Vec::deserialize(de::value::SeqAccessDeserializer::new(seq))
         }
     }
@@ -64,5 +70,6 @@ where
     T: DeserializeOwned,
     E: de::Error,
 {
-    serde_json::from_value(serde_json::Value::String(s.to_owned())).map_err(de::Error::custom)
+    serde_json::from_value(serde_json::Value::String(s.to_owned()))
+        .map_err(de::Error::custom)
 }

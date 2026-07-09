@@ -43,7 +43,8 @@ impl TokenAuth for Mock {
 fn sign_returns_stable_token() {
     let mock = Mock::new();
 
-    let signed = TokenAuth::sign_token(&mock, &UserTokenRef { user_id: "user-1" });
+    let signed =
+        TokenAuth::sign_token(&mock, &UserTokenRef { user_id: "user-1" });
     assert!(signed.is_ok());
     let signed = signed.ok().unwrap();
 

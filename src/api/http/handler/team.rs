@@ -17,8 +17,9 @@ use crate::api::http::result::HttpResult;
 use crate::api::http::result::no_content;
 use crate::api::http::state::AppHarn;
 use crate::data::team::{
-    CreateTeamData, ListTeamInfosData, MarkTeamAvatarUploadedData, ReserveTeamAvatarData,
-    ReserveTeamAvatarVal, TeamInfoVal, UpdateTeamInfoData,
+    CreateTeamData, ListTeamInfosData, MarkTeamAvatarUploadedData,
+    ReserveTeamAvatarData, ReserveTeamAvatarVal, TeamInfoVal,
+    UpdateTeamInfoData,
 };
 use crate::model::user::UserToken;
 use crate::usecase;
@@ -179,7 +180,8 @@ pub async fn mark_avatar_uploaded(
     Extension(user_token): Extension<UserToken>,
     Json(data): Json<MarkTeamAvatarUploadedData>,
 ) -> HttpNoContent {
-    usecase::team::mark_avatar_uploaded(harn.repo(), user_token, team_id, data).await?;
+    usecase::team::mark_avatar_uploaded(harn.repo(), user_token, team_id, data)
+        .await?;
     no_content()
 }
 
@@ -201,6 +203,13 @@ pub async fn delete(
     Path(team_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
-    usecase::team::delete(harn.drive(), harn.repo(), harn.prom(), user_token, team_id).await?;
+    usecase::team::delete(
+        harn.drive(),
+        harn.repo(),
+        harn.prom(),
+        user_token,
+        team_id,
+    )
+    .await?;
     no_content()
 }

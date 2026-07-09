@@ -14,7 +14,9 @@ use crate::api::http::result::HttpNoContent;
 use crate::api::http::result::HttpResult;
 use crate::api::http::result::no_content;
 use crate::api::http::state::AppHarn;
-use crate::data::system_mail::{ListSystemMailData, MarkSystemMailsReadData, SystemMailVal};
+use crate::data::system_mail::{
+    ListSystemMailData, MarkSystemMailsReadData, SystemMailVal,
+};
 use crate::model::user::UserToken;
 use crate::usecase;
 

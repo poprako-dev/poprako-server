@@ -11,10 +11,12 @@ use crate::api::http::result::HttpError;
 use crate::data::announcement::{
     AnnouncementInfoVal, CreateAnnouncementData, CreateAnnouncementVal,
 };
-use crate::data::assignment::{AssignmentInfoVal, JoinChapterData, UpdateAssignmentRolesData};
+use crate::data::assignment::{
+    AssignmentInfoVal, JoinChapterData, UpdateAssignmentRolesData,
+};
 use crate::data::assignment_invitation::{
-    AssignmentInvitationInfoVal, CreateAssignmentInvitationData, CreateAssignmentInvitationVal,
-    JoinAssignmentInvitationData,
+    AssignmentInvitationInfoVal, CreateAssignmentInvitationData,
+    CreateAssignmentInvitationVal, JoinAssignmentInvitationData,
 };
 use crate::data::auth::{LoginData, LoginVal, RegisterData, RegisterVal};
 use crate::data::chapter::{
@@ -22,36 +24,42 @@ use crate::data::chapter::{
     UpdateChapterStageData,
 };
 use crate::data::chapter_port::{
-    ChapterTranslationExportVal, ChapterTranslationImportData, ChapterTranslationImportVal,
+    ChapterTranslationExportVal, ChapterTranslationImportData,
+    ChapterTranslationImportVal,
 };
 use crate::data::comic::{
     ComicInfoVal, CreateComicData, CreateComicVal, MarkComicCompletedData,
-    MarkComicCoverUploadedData, ReserveComicCoverData, ReserveComicCoverVal, UpdateComicInfoData,
+    MarkComicCoverUploadedData, ReserveComicCoverData, ReserveComicCoverVal,
+    UpdateComicInfoData,
 };
-use crate::data::comment::{CommentInfoVal, CreateCommentData, CreateCommentVal};
+use crate::data::comment::{
+    CommentInfoVal, CreateCommentData, CreateCommentVal,
+};
 use crate::data::member::{
-    CreateMemberData, CreateMemberVal, JoinTeamData, MemberInfoVal, UpdateMemberRolesData,
+    CreateMemberData, CreateMemberVal, JoinTeamData, MemberInfoVal,
+    UpdateMemberRolesData,
 };
 use crate::data::member_invitation::{
-    CreateMemberInvitationData, CreateMemberInvitationVal, MemberInvitationInfoVal,
-    UpdateMemberInvitationRolesData,
+    CreateMemberInvitationData, CreateMemberInvitationVal,
+    MemberInvitationInfoVal, UpdateMemberInvitationRolesData,
 };
 use crate::data::page::{
-    MarkPageImageUploadedData, PageCreationVal, PageInfoVal, ReserveChapterPagesData,
-    ReserveChapterPagesVal, ReservePageImageData, ReservePageImageVal,
+    MarkPageImageUploadedData, PageCreationVal, PageInfoVal,
+    ReserveChapterPagesData, ReserveChapterPagesVal, ReservePageImageData,
+    ReservePageImageVal,
 };
 use crate::data::system_mail::{MarkSystemMailsReadData, SystemMailVal};
 use crate::data::team::{
-    CreateTeamData, MarkTeamAvatarUploadedData, ReserveTeamAvatarData, ReserveTeamAvatarVal,
-    TeamInfoVal, UpdateTeamInfoData,
+    CreateTeamData, MarkTeamAvatarUploadedData, ReserveTeamAvatarData,
+    ReserveTeamAvatarVal, TeamInfoVal, UpdateTeamInfoData,
 };
 use crate::data::unit::{
-    ListPageUnitInfosVal, SavePageUnitsData, SavePageUnitsVal, UnitDiffData, UnitInfoVal,
-    UnitOperData,
+    ListPageUnitInfosVal, SavePageUnitsData, SavePageUnitsVal, UnitDiffData,
+    UnitInfoVal, UnitOperData,
 };
 use crate::data::user::{
-    MarkUserAvatarUploadedData, ReserveUserAvatarData, ReserveUserAvatarVal, UpdateUserInfoData,
-    UserInfoVal,
+    MarkUserAvatarUploadedData, ReserveUserAvatarData, ReserveUserAvatarVal,
+    UpdateUserInfoData, UserInfoVal,
 };
 use crate::data::workset::{
     CreateWorksetData, CreateWorksetVal, UpdateWorksetInfoData, WorksetInfoVal,

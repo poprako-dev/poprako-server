@@ -20,7 +20,8 @@ use crate::value::chapter::StageMask;
 use crate::value::chapter_port::TranslationFormat;
 use crate::value::role::{RoleField, RoleMask};
 
-const LABEL_PLUS_MATERIAL: &str = include_str!("../../../../tests/materials/translations.lp.txt");
+const LABEL_PLUS_MATERIAL: &str =
+    include_str!("../../../../tests/materials/translations.lp.txt");
 
 fn token(user_id: &str) -> UserToken {
     UserToken {
@@ -70,7 +71,11 @@ fn workset(id: &str) -> WorksetInfo {
     }
 }
 
-fn chapter(page_count: i32, total_unit_count: i32, proofread_unit_count: i32) -> ChapterInfo {
+fn chapter(
+    page_count: i32,
+    total_unit_count: i32,
+    proofread_unit_count: i32,
+) -> ChapterInfo {
     let time = OffsetDateTime::now_utc();
 
     ChapterInfo {
@@ -92,7 +97,11 @@ fn chapter(page_count: i32, total_unit_count: i32, proofread_unit_count: i32) ->
     }
 }
 
-fn assignment(chapter_id: &str, user_id: &str, role_mask: RoleMask) -> AssignmentInfo {
+fn assignment(
+    chapter_id: &str,
+    user_id: &str,
+    role_mask: RoleMask,
+) -> AssignmentInfo {
     let time = OffsetDateTime::now_utc();
 
     AssignmentInfo {
@@ -107,7 +116,12 @@ fn assignment(chapter_id: &str, user_id: &str, role_mask: RoleMask) -> Assignmen
     }
 }
 
-fn page(id: &str, index: i32, total_unit_count: i32, proofread_unit_count: i32) -> PageInfo {
+fn page(
+    id: &str,
+    index: i32,
+    total_unit_count: i32,
+    proofread_unit_count: i32,
+) -> PageInfo {
     let time = OffsetDateTime::now_utc();
 
     PageInfo {
@@ -145,12 +159,21 @@ fn unit(id: &str, page_id: &str, index: i32, text: &str) -> UnitInfo {
     }
 }
 
-fn seed_base(mock: &Mock, page_count: i32, total_unit_count: i32, proofread_unit_count: i32) {
+fn seed_base(
+    mock: &Mock,
+    page_count: i32,
+    total_unit_count: i32,
+    proofread_unit_count: i32,
+) {
     mock.seed_workset(workset("workset-1"));
 
     mock.seed_comic(comic("comic-1"));
 
-    mock.seed_chapter(chapter(page_count, total_unit_count, proofread_unit_count));
+    mock.seed_chapter(chapter(
+        page_count,
+        total_unit_count,
+        proofread_unit_count,
+    ));
 
     mock.seed_assignment(assignment(
         "chapter-1",

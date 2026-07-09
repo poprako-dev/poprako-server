@@ -6,11 +6,16 @@ use poprako_util::i18n::trl;
 
 use crate::complex::unit::{UnitComplex, UnitPermComplex};
 use crate::data::unit::{
-    ListPageUnitInfosData, ListPageUnitInfosVal, SavePageUnitsData, SavePageUnitsVal, UnitInfoVal,
+    ListPageUnitInfosData, ListPageUnitInfosVal, SavePageUnitsData,
+    SavePageUnitsVal, UnitInfoVal,
 };
-use crate::model::unit::{UnitApplyAck, UnitCounterDelta, UnitCounters, UnitIdMapper, UnitOper};
+use crate::model::unit::{
+    UnitApplyAck, UnitCounterDelta, UnitCounters, UnitIdMapper, UnitOper,
+};
 use crate::model::user::UserToken;
-use crate::part::repo::assignment::{AssignmentRepo, AssignmentRepoTransactional};
+use crate::part::repo::assignment::{
+    AssignmentRepo, AssignmentRepoTransactional,
+};
 use crate::part::repo::chapter::{ChapterRepo, ChapterRepoTransactional};
 use crate::part::repo::comic::{ComicRepo, ComicRepoTransactional};
 use crate::part::repo::map_drive_err;
@@ -93,7 +98,13 @@ where
     D: Drive<C>,
     D::Error: Into<RegularError>,
     C: Send,
-    R: PageRepo<C> + UnitRepo<C> + ChapterRepo<C> + ComicRepo<C> + AssignmentRepo<C> + Send + Sync,
+    R: PageRepo<C>
+        + UnitRepo<C>
+        + ChapterRepo<C>
+        + ComicRepo<C>
+        + AssignmentRepo<C>
+        + Send
+        + Sync,
     <R as DeriveTransactional>::Transactional: PageRepoTransactional<C>
         + UnitRepoTransactional<C>
         + ChapterRepoTransactional<C>
@@ -142,7 +153,10 @@ where
                 .await?;
 
             let current_indexes = repo
-                .advance(context, &UnitStep::list_indexes_by_page_id(&page_info.id))
+                .advance(
+                    context,
+                    &UnitStep::list_indexes_by_page_id(&page_info.id),
+                )
                 .await?;
 
             let mut sorted_indexes = current_indexes.clone();
@@ -161,25 +175,37 @@ where
             for oper in &opers {
                 match oper {
                     UnitOper::Save { .. } => {
-                        repo.advance(context, &UnitStep::save_info(&page_info.id, oper))
-                            .await?;
+                        repo.advance(
+                            context,
+                            &UnitStep::save_info(&page_info.id, oper),
+                        )
+                        .await?;
                     }
                     UnitOper::Delete { id } => {
-                        repo.advance(context, &UnitStep::delete_by_id_in_page(&page_info.id, id))
-                            .await?;
+                        repo.advance(
+                            context,
+                            &UnitStep::delete_by_id_in_page(&page_info.id, id),
+                        )
+                        .await?;
                     }
                 }
             }
 
-            current_order = UnitComplex::apply_opers_to_order(&opers, current_order);
+            current_order =
+                UnitComplex::apply_opers_to_order(&opers, current_order);
 
-            let index_updates =
-                UnitComplex::build_index_updates_from_order(&current_order, &current_indexes);
+            let index_updates = UnitComplex::build_index_updates_from_order(
+                &current_order,
+                &current_indexes,
+            );
 
             if !index_updates.is_empty() {
                 repo.advance(
                     context,
-                    &UnitStep::update_indexes_by_page_id(&page_info.id, &index_updates),
+                    &UnitStep::update_indexes_by_page_id(
+                        &page_info.id,
+                        &index_updates,
+                    ),
                 )
                 .await?;
             }
@@ -204,7 +230,10 @@ where
 
             repo.advance(
                 context,
-                &ChapterStep::adjust_unit_counters(&page_info.chapter_id, delta),
+                &ChapterStep::adjust_unit_counters(
+                    &page_info.chapter_id,
+                    delta,
+                ),
             )
             .await?;
 
@@ -236,12 +265,17 @@ impl From<UnitApplyAck> for UnitApplyParts {
     }
 }
 
-fn counter_delta(old_counters: UnitCounters, new_counters: UnitCounters) -> UnitCounterDelta {
+fn counter_delta(
+    old_counters: UnitCounters,
+    new_counters: UnitCounters,
+) -> UnitCounterDelta {
     UnitCounterDelta {
-        total_unit_count: new_counters.total_unit_count - old_counters.total_unit_count,
+        total_unit_count: new_counters.total_unit_count
+            - old_counters.total_unit_count,
         translated_unit_count: new_counters.translated_unit_count
             - old_counters.translated_unit_count,
-        proofread_unit_count: new_counters.proofread_unit_count - old_counters.proofread_unit_count,
+        proofread_unit_count: new_counters.proofread_unit_count
+            - old_counters.proofread_unit_count,
     }
 }
 

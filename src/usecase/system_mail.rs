@@ -5,7 +5,9 @@ use poprako_util::time::ToUnixMilli;
 use crate::data::system_mail::{ListSystemMailData, SystemMailVal};
 use crate::model::user::UserToken;
 use crate::part::repo::step::system_mail::SystemMailStep;
-use crate::part::repo::system_mail::{SystemMailRepo, SystemMailRepoTransactional};
+use crate::part::repo::system_mail::{
+    SystemMailRepo, SystemMailRepoTransactional,
+};
 use crate::result::{RegularResult, accept};
 use crate::util::DeriveTransactional;
 
@@ -65,7 +67,11 @@ where
 ///
 /// * `C` — Context anchor.
 /// * `R: SystemMailRepo<C>` — System mail storage.
-pub async fn mark_read<C, R>(repo: &R, token: UserToken, ids: Vec<String>) -> RegularResult<()>
+pub async fn mark_read<C, R>(
+    repo: &R,
+    token: UserToken,
+    ids: Vec<String>,
+) -> RegularResult<()>
 where
     R: SystemMailRepo<C>,
     <R as DeriveTransactional>::Transactional: SystemMailRepoTransactional<C>,

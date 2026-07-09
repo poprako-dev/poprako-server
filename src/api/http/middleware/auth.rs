@@ -21,7 +21,11 @@ use crate::part::auth::TokenAuth as _;
 /// Extracts the bearer token, verifies it, and inserts the decoded
 /// [`UserToken`] into request extensions. Does not perform any
 /// side-effects — it only concerns itself with authentication.
-pub async fn authorize(State(harn): State<AppHarn>, mut request: Request, next: Next) -> Response {
+pub async fn authorize(
+    State(harn): State<AppHarn>,
+    mut request: Request,
+    next: Next,
+) -> Response {
     let raw_token = extract_token(&request);
 
     let user_token = match harn.auth().verify_token(&raw_token) {

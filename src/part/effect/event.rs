@@ -3,7 +3,9 @@
 use crate::part::effect::event::chapter::{
     ChapterPublishedPayload, ChapterWorkflowCompletedPayload,
 };
-use crate::part::effect::event::user::{UserActivePayload, UserSignedUpPayload};
+use crate::part::effect::event::user::{
+    UserActivePayload, UserSignedUpPayload,
+};
 
 pub mod chapter;
 pub mod user;

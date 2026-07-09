@@ -17,7 +17,10 @@ pub trait Drive<C> {
     /// The error type.
     type Error;
 
-    async fn with_context<T, E, F>(&self, f: F) -> Result<T, DriveError<E, Self::Error>>
+    async fn with_context<T, E, F>(
+        &self,
+        f: F,
+    ) -> Result<T, DriveError<E, Self::Error>>
     where
         T: Send,
         E: Send,

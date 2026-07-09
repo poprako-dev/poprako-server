@@ -28,7 +28,11 @@ async fn update_roles_reviewer_creates_missing_assignment() {
         &mock,
         &mock,
         token("reviewer-user"),
-        update_roles_data("chapter-1", "target-user", role(RoleField::TRANSLATOR)),
+        update_roles_data(
+            "chapter-1",
+            "target-user",
+            role(RoleField::TRANSLATOR),
+        ),
     )
     .await
     .unwrap();
@@ -60,7 +64,11 @@ async fn update_roles_reviewer_overwrites_existing_assignment_roles() {
         &mock,
         &mock,
         token("reviewer-user"),
-        update_roles_data("chapter-1", "target-user", role(RoleField::PROOFREADER)),
+        update_roles_data(
+            "chapter-1",
+            "target-user",
+            role(RoleField::PROOFREADER),
+        ),
     )
     .await
     .unwrap();
@@ -97,7 +105,11 @@ async fn update_roles_self_role_reduction_updates_assignment() {
         &mock,
         &mock,
         token("worker-user"),
-        update_roles_data("chapter-1", "worker-user", role(RoleField::TRANSLATOR)),
+        update_roles_data(
+            "chapter-1",
+            "worker-user",
+            role(RoleField::TRANSLATOR),
+        ),
     )
     .await
     .unwrap();
@@ -149,7 +161,11 @@ async fn update_roles_self_role_reduction_requires_member_role() {
         &mock,
         &mock,
         token("worker-user"),
-        update_roles_data("chapter-1", "worker-user", role(RoleField::TRANSLATOR)),
+        update_roles_data(
+            "chapter-1",
+            "worker-user",
+            role(RoleField::TRANSLATOR),
+        ),
     )
     .await
     .err()
@@ -173,7 +189,11 @@ async fn update_roles_non_reviewer_does_not_update_another_user() {
         &mock,
         &mock,
         token("worker-user"),
-        update_roles_data("chapter-1", "target-user", role(RoleField::PROOFREADER)),
+        update_roles_data(
+            "chapter-1",
+            "target-user",
+            role(RoleField::PROOFREADER),
+        ),
     )
     .await
     .err()
@@ -221,7 +241,11 @@ async fn update_roles_target_member_role_mismatch_is_rejected() {
         &mock,
         &mock,
         token("admin-user"),
-        update_roles_data("chapter-1", "target-user", role(RoleField::PROOFREADER)),
+        update_roles_data(
+            "chapter-1",
+            "target-user",
+            role(RoleField::PROOFREADER),
+        ),
     )
     .await
     .err()
@@ -248,7 +272,11 @@ async fn update_roles_only_chapter_admin_does_not_remove_own_admin_role() {
         &mock,
         &mock,
         token("admin-user"),
-        update_roles_data("chapter-1", "admin-user", role(RoleField::TRANSLATOR)),
+        update_roles_data(
+            "chapter-1",
+            "admin-user",
+            role(RoleField::TRANSLATOR),
+        ),
     )
     .await
     .err()

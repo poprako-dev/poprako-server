@@ -75,7 +75,9 @@ fn label_plus_image_name(page_info: &PageInfo) -> String {
     let extension = page_info
         .image_key
         .as_deref()
-        .and_then(|image_key| image_key.rsplit_once('.').map(|(_, extension)| extension))
+        .and_then(|image_key| {
+            image_key.rsplit_once('.').map(|(_, extension)| extension)
+        })
         .filter(|extension| !extension.is_empty())
         .unwrap_or("jpg");
 

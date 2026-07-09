@@ -9,11 +9,13 @@ use crate::part::repo::assignment_invitation::{
     AssignmentInvitationRepo, AssignmentInvitationRepoTransactional,
 };
 use crate::part::repo::step::assignment_invitation::{
-    Create, Delete, DeleteByChapterId, GetInfoByCodeExcluded, GetInfoById, ListInfos,
-    MarkPendingAsUsed,
+    Create, Delete, DeleteByChapterId, GetInfoByCodeExcluded, GetInfoById,
+    ListInfos, MarkPendingAsUsed,
 };
 use crate::part::shared::execute::Execute;
-use crate::part_impl::repo_mock::{Mock, MockContext, MockTransactional, expected, now};
+use crate::part_impl::repo_mock::{
+    Mock, MockContext, MockTransactional, expected, now,
+};
 use crate::result::RegularError;
 
 impl AssignmentInvitationRepo<MockContext> for Mock {}
@@ -34,9 +36,9 @@ impl<'a> Execute<ListInfos<'a>> for Mock {
             .iter()
             .filter(|assignment_invitation_info| {
                 assignment_invitation_info.chapter_id == step.chapter_id
-                    && step
-                        .pending
-                        .is_none_or(|pending| assignment_invitation_info.pending == pending)
+                    && step.pending.is_none_or(|pending| {
+                        assignment_invitation_info.pending == pending
+                    })
             })
             .cloned()
             .collect::<Vec<_>>();
@@ -55,7 +57,8 @@ impl<'a> Execute<ListInfos<'a>> for Mock {
             return Ok(Vec::new());
         }
 
-        let end = std::cmp::min(offset + limit, assignment_invitation_infos.len());
+        let end =
+            std::cmp::min(offset + limit, assignment_invitation_infos.len());
 
         Ok(assignment_invitation_infos[offset..end].to_vec())
     }
@@ -74,7 +77,9 @@ impl<'a> Execute<GetInfoById<'a>> for Mock {
         state
             .assignment_invitations
             .iter()
-            .find(|assignment_invitation_info| assignment_invitation_info.id == step.id)
+            .find(|assignment_invitation_info| {
+                assignment_invitation_info.id == step.id
+            })
             .cloned()
             .ok_or_else(|| expected("error-invitation-not-found"))
     }
@@ -89,25 +94,22 @@ impl<'a> Advance<Create<'a>, MockContext> for MockTransactional {
         context: &mut MockContext,
         step: &Create<'a>,
     ) -> Result<AssignmentInvitationInfo, Self::Error> {
-        if context
-            .state
-            .assignment_invitations
-            .iter()
-            .any(|assignment_invitation_info| assignment_invitation_info.id == step.form.id)
-        {
+        if context.state.assignment_invitations.iter().any(
+            |assignment_invitation_info| {
+                assignment_invitation_info.id == step.form.id
+            },
+        ) {
             return Err(expected("error-already-exists"));
         }
 
-        if context
-            .state
-            .assignment_invitations
-            .iter()
-            .any(|assignment_invitation_info| {
+        if context.state.assignment_invitations.iter().any(
+            |assignment_invitation_info| {
                 assignment_invitation_info.chapter_id == step.form.chapter_id
-                    && assignment_invitation_info.invitee_qid == step.form.invitee_qid
+                    && assignment_invitation_info.invitee_qid
+                        == step.form.invitee_qid
                     && assignment_invitation_info.pending
-            })
-        {
+            },
+        ) {
             return Err(expected("error-already-exists"));
         }
 
@@ -146,7 +148,9 @@ impl<'a> Advance<GetInfoById<'a>, MockContext> for MockTransactional {
             .state
             .assignment_invitations
             .iter()
-            .find(|assignment_invitation_info| assignment_invitation_info.id == step.id)
+            .find(|assignment_invitation_info| {
+                assignment_invitation_info.id == step.id
+            })
             .cloned()
             .ok_or_else(|| expected("error-invitation-not-found"))
     }
@@ -165,7 +169,9 @@ impl<'a> Advance<GetInfoByCodeExcluded<'a>, MockContext> for MockTransactional {
             .state
             .assignment_invitations
             .iter()
-            .find(|invitation| invitation.code == step.code && invitation.pending)
+            .find(|invitation| {
+                invitation.code == step.code && invitation.pending
+            })
             .cloned()
             .ok_or_else(|| expected("error-no-pending-invitation"))
     }
@@ -207,7 +213,9 @@ impl<'a> Advance<Delete<'a>, MockContext> for MockTransactional {
             .state
             .assignment_invitations
             .iter()
-            .position(|assignment_invitation_info| assignment_invitation_info.id == step.id)
+            .position(|assignment_invitation_info| {
+                assignment_invitation_info.id == step.id
+            })
             .ok_or_else(|| expected("error-invitation-not-found"))?;
 
         context.state.assignment_invitations.remove(pos);

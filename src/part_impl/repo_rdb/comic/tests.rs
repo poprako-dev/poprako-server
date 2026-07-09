@@ -27,10 +27,11 @@ async fn comic_roundtrip_reads_test_database_url() {
         limit: 10,
     };
 
-    let comic_infos = Execute::execute(&repo, &ComicStep::list_infos(&comic_list_spec))
-        .await
-        .ok()
-        .unwrap();
+    let comic_infos =
+        Execute::execute(&repo, &ComicStep::list_infos(&comic_list_spec))
+            .await
+            .ok()
+            .unwrap();
 
     assert_eq!(comic_infos.len(), 1);
     assert_eq!(
@@ -73,10 +74,11 @@ async fn comic_roundtrip_reads_test_database_url() {
         limit: 10,
     };
 
-    let comic_infos = Execute::execute(&repo, &ComicStep::list_infos(&comic_list_spec))
-        .await
-        .ok()
-        .unwrap();
+    let comic_infos =
+        Execute::execute(&repo, &ComicStep::list_infos(&comic_list_spec))
+            .await
+            .ok()
+            .unwrap();
 
     assert_eq!(comic_infos.len(), 1);
     assert_eq!(comic_infos[0].id, comic_fixture.comic_form.id);
@@ -90,10 +92,11 @@ async fn comic_roundtrip_reads_test_database_url() {
         limit: 10,
     };
 
-    let comic_infos = Execute::execute(&repo, &ComicStep::list_infos(&comic_list_spec))
-        .await
-        .ok()
-        .unwrap();
+    let comic_infos =
+        Execute::execute(&repo, &ComicStep::list_infos(&comic_list_spec))
+            .await
+            .ok()
+            .unwrap();
 
     assert_eq!(comic_infos.len(), 1);
     assert_eq!(comic_infos[0].index, 0);

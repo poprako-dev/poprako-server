@@ -3,8 +3,8 @@
 use poprako_transactional::advance::Advance;
 
 use crate::part::repo::step::assignment_invitation::{
-    Create, Delete, DeleteByChapterId, GetInfoByCodeExcluded, GetInfoById, ListInfos,
-    MarkPendingAsUsed,
+    Create, Delete, DeleteByChapterId, GetInfoByCodeExcluded, GetInfoById,
+    ListInfos, MarkPendingAsUsed,
 };
 use crate::part::shared::execute::Execute;
 use crate::result::RegularError;

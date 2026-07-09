@@ -7,8 +7,8 @@
 use poprako_transactional::advance::Advance;
 
 use crate::part::repo::step::member::{
-    Create, Delete, FindInfoByUserIdAndTeamId, GetInfoById, ListInfos, ListInfosByUserIdExcluded,
-    UpdateRole, UpdateUserNickname,
+    Create, Delete, FindInfoByUserIdAndTeamId, GetInfoById, ListInfos,
+    ListInfosByUserIdExcluded, UpdateRole, UpdateUserNickname,
 };
 use crate::part::shared::execute::Execute;
 use crate::result::RegularError;

@@ -147,7 +147,11 @@ fn member(user_id: &str, role_mask: RoleMask) -> MemberInfo {
     }
 }
 
-fn assignment(chapter_id: &str, user_id: &str, role_mask: RoleMask) -> AssignmentInfo {
+fn assignment(
+    chapter_id: &str,
+    user_id: &str,
+    role_mask: RoleMask,
+) -> AssignmentInfo {
     let time = now();
 
     AssignmentInfo {
@@ -162,7 +166,11 @@ fn assignment(chapter_id: &str, user_id: &str, role_mask: RoleMask) -> Assignmen
     }
 }
 
-fn invitation(id: &str, invitee_qid: &str, role_mask: RoleMask) -> AssignmentInvitationInfo {
+fn invitation(
+    id: &str,
+    invitee_qid: &str,
+    role_mask: RoleMask,
+) -> AssignmentInvitationInfo {
     let time = now();
 
     AssignmentInvitationInfo {
@@ -267,9 +275,10 @@ async fn create_reviewer_creates_pending_invitation() {
         credential("target-user"),
     );
 
-    let val = create(&mock, &mock, token("admin-user"), create_data("target-qid"))
-        .await
-        .unwrap();
+    let val =
+        create(&mock, &mock, token("admin-user"), create_data("target-qid"))
+            .await
+            .unwrap();
 
     let snapshot = mock.snapshot();
     assert_eq!(snapshot.assignment_invitations.len(), 1);
@@ -296,10 +305,11 @@ async fn create_existing_assignment_is_rejected() {
         role(RoleField::TRANSLATOR),
     ));
 
-    let err = create(&mock, &mock, token("admin-user"), create_data("target-qid"))
-        .await
-        .err()
-        .unwrap();
+    let err =
+        create(&mock, &mock, token("admin-user"), create_data("target-qid"))
+            .await
+            .err()
+            .unwrap();
 
     assert_expected_variant(err, ExpectedVariant::Args);
     assert!(mock.snapshot().assignment_invitations.is_empty());

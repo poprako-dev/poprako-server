@@ -11,14 +11,17 @@ use crate::complex::image::ImageComplex;
 use crate::complex::page::{PageComplex, PagePermComplex};
 use crate::data::page::{
     ListPageInfosData, MarkPageImageUploadedData, PageCreationVal, PageInfoVal,
-    ReserveChapterPagesData, ReserveChapterPagesVal, ReservePageImageData, ReservePageImageVal,
+    ReserveChapterPagesData, ReserveChapterPagesVal, ReservePageImageData,
+    ReservePageImageVal,
 };
 use crate::model::page::PageForm;
 use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
 use crate::part::prom::task::{IMAGE_TOPIC, ImageKind, ImageTask};
 use crate::part::prom::{Payload, Prom, PromStep};
-use crate::part::repo::assignment::{AssignmentRepo, AssignmentRepoTransactional};
+use crate::part::repo::assignment::{
+    AssignmentRepo, AssignmentRepoTransactional,
+};
 use crate::part::repo::chapter::{ChapterRepo, ChapterRepoTransactional};
 use crate::part::repo::comic::{ComicRepo, ComicRepoTransactional};
 use crate::part::repo::map_drive_err;
@@ -47,7 +50,12 @@ where
     D: Drive<C>,
     D::Error: Into<RegularError>,
     C: Send,
-    R: ChapterRepo<C> + ComicRepo<C> + AssignmentRepo<C> + PageRepo<C> + Send + Sync,
+    R: ChapterRepo<C>
+        + ComicRepo<C>
+        + AssignmentRepo<C>
+        + PageRepo<C>
+        + Send
+        + Sync,
     <R as DeriveTransactional>::Transactional: ChapterRepoTransactional<C>
         + ComicRepoTransactional<C>
         + AssignmentRepoTransactional<C>
@@ -67,8 +75,12 @@ where
 
     use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
-    PagePermComplex::can_user_reserve(&mut repo.as_proxy(), &token.user_id, &data.chapter_id)
-        .await?;
+    PagePermComplex::can_user_reserve(
+        &mut repo.as_proxy(),
+        &token.user_id,
+        &data.chapter_id,
+    )
+    .await?;
 
     let reservations = drive
         .with_context(async move |context| {
@@ -77,7 +89,10 @@ where
             let chapter_info = repo
                 .advance(
                     context,
-                    &ChapterStep::get_info_by_id_excluded(&data.chapter_id, &[]),
+                    &ChapterStep::get_info_by_id_excluded(
+                        &data.chapter_id,
+                        &[],
+                    ),
                 )
                 .await?;
 
@@ -138,7 +153,13 @@ where
 
             repo.advance(
                 context,
-                &ChapterStep::set_page_counters(&chapter_info.id, data.page_count, 0, 0, 0),
+                &ChapterStep::set_page_counters(
+                    &chapter_info.id,
+                    data.page_count,
+                    0,
+                    0,
+                    0,
+                ),
             )
             .await?;
 
@@ -153,8 +174,8 @@ where
         .await
         .map_err(map_drive_err)?;
 
-    let creations =
-        futures_util::future::join_all(reservations.into_iter().map(|reservation| async move {
+    let creations = futures_util::future::join_all(
+        reservations.into_iter().map(|reservation| async move {
             let put_url = image_pool
                 .put_signed(&reservation.object_key)
                 .await?
@@ -165,10 +186,11 @@ where
                 put_url,
                 image_version: reservation.image_version,
             })
-        }))
-        .await
-        .into_iter()
-        .collect::<RegularResult<Vec<_>>>()?;
+        }),
+    )
+    .await
+    .into_iter()
+    .collect::<RegularResult<Vec<_>>>()?;
 
     Ok(ReserveChapterPagesVal { creations })
 }
@@ -199,8 +221,12 @@ where
 
     use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
-    PagePermComplex::can_user_reserve(&mut repo.as_proxy(), &token.user_id, &page_info.chapter_id)
-        .await?;
+    PagePermComplex::can_user_reserve(
+        &mut repo.as_proxy(),
+        &token.user_id,
+        &page_info.chapter_id,
+    )
+    .await?;
 
     let file_ext = data.file_ext;
 
@@ -232,7 +258,10 @@ where
             )
             .await?;
 
-            accept((page_reservation.object_key, page_reservation.image_version))
+            accept((
+                page_reservation.object_key,
+                page_reservation.image_version,
+            ))
         })
         .await
         .map_err(map_drive_err)?;
@@ -271,8 +300,12 @@ where
 {
     use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
-    PagePermComplex::can_user_list_infos(&mut repo.as_proxy(), &token.user_id, &data.chapter_id)
-        .await?;
+    PagePermComplex::can_user_list_infos(
+        &mut repo.as_proxy(),
+        &token.user_id,
+        &data.chapter_id,
+    )
+    .await?;
 
     let page_infos = repo
         .execute(&PageStep::list_infos_by_chapter_id(
@@ -372,7 +405,12 @@ where
 {
     use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
-    PagePermComplex::can_user_delete(&mut repo.as_proxy(), &token.user_id, &chapter_id).await?;
+    PagePermComplex::can_user_delete(
+        &mut repo.as_proxy(),
+        &token.user_id,
+        &chapter_id,
+    )
+    .await?;
 
     drive
         .with_context(async move |context| {
@@ -400,8 +438,11 @@ where
                 }
             }
 
-            repo.advance(context, &PageStep::delete_by_chapter_id(&chapter_info.id))
-                .await?;
+            repo.advance(
+                context,
+                &PageStep::delete_by_chapter_id(&chapter_info.id),
+            )
+            .await?;
 
             repo.advance(
                 context,

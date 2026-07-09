@@ -59,10 +59,11 @@ async fn list_infos_deep_chapter_comic_workset_team_incl_fills_full_chain() {
 
     list_data.incl_opt = vec![AssignmentInclOpt::ChapterComicWorksetTeam];
 
-    let assignment_info_vals = list_infos(&mock, &mock, token("member-user"), list_data)
-        .await
-        .ok()
-        .unwrap();
+    let assignment_info_vals =
+        list_infos(&mock, &mock, token("member-user"), list_data)
+            .await
+            .ok()
+            .unwrap();
 
     let chapter_info_val = assignment_info_vals[0].chapter.as_ref().unwrap();
 

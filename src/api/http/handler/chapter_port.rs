@@ -22,7 +22,8 @@ use crate::api::http::result::HttpError;
 use crate::api::http::result::HttpResult;
 use crate::api::http::state::AppHarn;
 use crate::data::chapter_port::{
-    ChapterTranslationExportVal, ChapterTranslationImportData, ChapterTranslationImportVal,
+    ChapterTranslationExportVal, ChapterTranslationImportData,
+    ChapterTranslationImportVal,
 };
 use crate::model::user::UserToken;
 use crate::usecase;
@@ -54,9 +55,15 @@ pub async fn import(
     Extension(user_token): Extension<UserToken>,
     Json(data): Json<ChapterTranslationImportData>,
 ) -> HttpResult<ChapterTranslationImportVal> {
-    usecase::chapter_port::import(harn.drive(), harn.repo(), user_token, data, chapter_id)
-        .await?
-        .accept(StatusCode::OK)
+    usecase::chapter_port::import(
+        harn.drive(),
+        harn.repo(),
+        user_token,
+        data,
+        chapter_id,
+    )
+    .await?
+    .accept(StatusCode::OK)
 }
 
 /// `GET /api/v1/chapters/{chapter_id}/translations/export` — export response body.
@@ -84,7 +91,8 @@ pub async fn export(
     Extension(user_token): Extension<UserToken>,
     Query(query): Query<TranslationExportQuery>,
 ) -> Result<Response, HttpError> {
-    let payload = export_payload(&harn, user_token, chapter_id, query.format).await?;
+    let payload =
+        export_payload(&harn, user_token, chapter_id, query.format).await?;
 
     body_response(payload)
 }
@@ -114,7 +122,8 @@ pub async fn export_download(
     Query(query): Query<TranslationExportQuery>,
 ) -> Result<Response, HttpError> {
     let filename = format!("chapter_{}", chapter_id);
-    let payload = export_payload(&harn, user_token, chapter_id, query.format).await?;
+    let payload =
+        export_payload(&harn, user_token, chapter_id, query.format).await?;
 
     download_response(&filename, payload)
 }
@@ -156,9 +165,12 @@ async fn export_payload(
             })
         }
         TranslationFormat::LabelPlus => {
-            let content =
-                usecase::chapter_port::export_label_plus(harn.repo(), user_token, chapter_id)
-                    .await?;
+            let content = usecase::chapter_port::export_label_plus(
+                harn.repo(),
+                user_token,
+                chapter_id,
+            )
+            .await?;
 
             Ok(TranslationExportPayload {
                 content_type: "text/plain; charset=utf-8",
@@ -170,7 +182,9 @@ async fn export_payload(
 }
 
 /// Builds a `200 OK` export response with the given content type.
-fn body_response(payload: TranslationExportPayload) -> Result<Response, HttpError> {
+fn body_response(
+    payload: TranslationExportPayload,
+) -> Result<Response, HttpError> {
     Response::builder()
         .status(StatusCode::OK)
         .header(CONTENT_TYPE, payload.content_type)

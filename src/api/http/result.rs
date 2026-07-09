@@ -85,7 +85,10 @@ impl From<RegularError> for HttpError {
     fn from(err: RegularError) -> Self {
         match err {
             RegularError::Expected { variant, message } => {
-                tracing::debug!("[HttpError::from] expected error: {}", message);
+                tracing::debug!(
+                    "[HttpError::from] expected error: {}",
+                    message
+                );
 
                 Self::expected(variant, &message)
             }
@@ -256,9 +259,11 @@ mod tests {
 
     #[test]
     fn http_body_serializes_success_envelope() {
-        let http_body = HttpBody::new(StatusCode::CREATED, json!({ "id": "comic_1" }));
+        let http_body =
+            HttpBody::new(StatusCode::CREATED, json!({ "id": "comic_1" }));
 
-        let serialized = serde_json::to_value(http_body).expect("http body serializes");
+        let serialized =
+            serde_json::to_value(http_body).expect("http body serializes");
 
         assert_eq!(
             serialized,

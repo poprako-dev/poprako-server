@@ -38,26 +38,40 @@ impl R2ImagePool {
 
     /// Reads Cloudflare R2 settings from environment variables.
     pub fn from_env() -> anyhow::Result<Self> {
-        let account_id = std::env::var("R2_ACCOUNT_ID")
-            .with_context(|| "[R2ImagePool::from_env] R2_ACCOUNT_ID is not set")?;
+        let account_id = std::env::var("R2_ACCOUNT_ID").with_context(
+            || "[R2ImagePool::from_env] R2_ACCOUNT_ID is not set",
+        )?;
 
-        let access_key_id = std::env::var("R2_ACCESS_KEY_ID")
-            .with_context(|| "[R2ImagePool::from_env] R2_ACCESS_KEY_ID is not set")?;
+        let access_key_id = std::env::var("R2_ACCESS_KEY_ID").with_context(
+            || "[R2ImagePool::from_env] R2_ACCESS_KEY_ID is not set",
+        )?;
 
         let secret_access_key = std::env::var("R2_SECRET_ACCESS_KEY")
-            .with_context(|| "[R2ImagePool::from_env] R2_SECRET_ACCESS_KEY is not set")?;
+            .with_context(
+                || "[R2ImagePool::from_env] R2_SECRET_ACCESS_KEY is not set",
+            )?;
 
-        let region = std::env::var("R2_REGION").unwrap_or_else(|_| "auto".to_string());
+        let region =
+            std::env::var("R2_REGION").unwrap_or_else(|_| "auto".to_string());
 
-        let bucket = std::env::var("R2_BUCKET_NAME")
-            .with_context(|| "[R2ImagePool::from_env] R2_BUCKET_NAME is not set")?;
+        let bucket = std::env::var("R2_BUCKET_NAME").with_context(
+            || "[R2ImagePool::from_env] R2_BUCKET_NAME is not set",
+        )?;
 
-        let domain = std::env::var("R2_CUSTOM_DOMAIN")
-            .with_context(|| "[R2ImagePool::from_env] R2_CUSTOM_DOMAIN is not set")?;
+        let domain = std::env::var("R2_CUSTOM_DOMAIN").with_context(
+            || "[R2ImagePool::from_env] R2_CUSTOM_DOMAIN is not set",
+        )?;
 
-        let endpoint = format!("https://{}.r2.cloudflarestorage.com", account_id);
+        let endpoint =
+            format!("https://{}.r2.cloudflarestorage.com", account_id);
 
-        let credentials = Credentials::new(access_key_id, secret_access_key, None, None, "r2");
+        let credentials = Credentials::new(
+            access_key_id,
+            secret_access_key,
+            None,
+            None,
+            "r2",
+        );
 
         let config = Config::builder()
             .behavior_version(BehaviorVersion::latest())
@@ -76,7 +90,9 @@ impl ImagePool for R2ImagePool {
     async fn get_signed(&self, key: &str) -> RegularResult<Url> {
         if self.domain.is_empty() {
             return Err(RegularError::Unrecoverable {
-                message: "[R2ImagePool::get_signed] custom domain is not configured".to_string(),
+                message:
+                    "[R2ImagePool::get_signed] custom domain is not configured"
+                        .to_string(),
             });
         }
 
@@ -86,7 +102,9 @@ impl ImagePool for R2ImagePool {
         // `http://` / `https://` scheme. `Url::parse` rejects a bare host like
         // `img.example.com/path` as a relative URL without a base, so prepend
         // `https://` when no scheme is present.
-        let url_string = if domain.starts_with("http://") || domain.starts_with("https://") {
+        let url_string = if domain.starts_with("http://")
+            || domain.starts_with("https://")
+        {
             format!("{}/{}", domain, key)
         } else {
             format!("https://{}/{}", domain, key)
@@ -102,19 +120,18 @@ impl ImagePool for R2ImagePool {
 
     #[instrument(err(Debug), skip(self), level = Level::DEBUG)]
     async fn put_signed(&self, key: &str) -> RegularResult<Url> {
-        let content_type = detect_content_type(key).ok_or_else(|| RegularError::Expected {
-            variant: ExpectedVariant::Args,
-            message: trl("error-unsupported-file-type"),
-        })?;
+        let content_type =
+            detect_content_type(key).ok_or_else(|| RegularError::Expected {
+                variant: ExpectedVariant::Args,
+                message: trl("error-unsupported-file-type"),
+            })?;
 
-        let presigning_config =
-            PresigningConfig::expires_in(PUT_SIGNED_EXPIRATION).map_err(|err| {
-                RegularError::Unrecoverable {
-                    message: format!(
-                        "[R2ImagePool::put_signed] failed to build presigning config: {}",
-                        err
-                    ),
-                }
+        let presigning_config = PresigningConfig::expires_in(PUT_SIGNED_EXPIRATION)
+            .map_err(|err| RegularError::Unrecoverable {
+                message: format!(
+                    "[R2ImagePool::put_signed] failed to build presigning config: {}",
+                    err
+                ),
             })?;
 
         let presigned_request = self

@@ -2,7 +2,9 @@
 
 use argon2::Argon2;
 use argon2::password_hash::rand_core::OsRng;
-use argon2::password_hash::{PasswordHash, PasswordHasher as _, PasswordVerifier as _, SaltString};
+use argon2::password_hash::{
+    PasswordHash, PasswordHasher as _, PasswordVerifier as _, SaltString,
+};
 
 use crate::result::{Error as RootError, RegularResult};
 use crate::util::next_snowflake_id;
@@ -24,7 +26,10 @@ impl UserComplex {
             .hash_password(password.as_bytes(), &salt)
             .map(|h| h.to_string())
             .map_err(|e| RootError::Unrecoverable {
-                message: format!("[UserComplex::hash_password] argon2 hashing failed: {}", e),
+                message: format!(
+                    "[UserComplex::hash_password] argon2 hashing failed: {}",
+                    e
+                ),
             })
     }
 
@@ -45,7 +50,11 @@ impl UserComplex {
     }
 
     /// Constructs the object storage key for a user's avatar image from the user ID, version counter, and file extension.
-    pub fn gen_avatar_key(id: &str, avatar_version: i64, file_ext: &str) -> String {
+    pub fn gen_avatar_key(
+        id: &str,
+        avatar_version: i64,
+        file_ext: &str,
+    ) -> String {
         format!("user_avatar/{}-{}.{}", id, avatar_version, file_ext)
     }
 }

@@ -16,10 +16,13 @@ async fn user_roundtrip_reads_test_database_url() {
 
     let repo = RdbRepo::new(shared.clone());
 
-    let user_info = Execute::execute(&repo, &UserStep::get_info_by_id(&user_fixture.user_form.id))
-        .await
-        .ok()
-        .unwrap();
+    let user_info = Execute::execute(
+        &repo,
+        &UserStep::get_info_by_id(&user_fixture.user_form.id),
+    )
+    .await
+    .ok()
+    .unwrap();
 
     assert_eq!(user_info.id, user_fixture.user_form.id);
 

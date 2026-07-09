@@ -2,7 +2,9 @@
 
 use poprako_transactional::step::Step;
 
-use crate::model::member::{MemberForm, MemberInfo, MemberListSpec, MemberRoleUpdate};
+use crate::model::member::{
+    MemberForm, MemberInfo, MemberListSpec, MemberRoleUpdate,
+};
 use crate::value::member::MemberInclOpt;
 
 /// Step that inserts a new membership row.
@@ -101,7 +103,9 @@ impl MemberStep {
     }
 
     /// Constructs a step to list a user's memberships with a pessimistic lock.
-    pub fn list_infos_by_user_id_excluded<'a>(user_id: &'a str) -> ListInfosByUserIdExcluded<'a> {
+    pub fn list_infos_by_user_id_excluded<'a>(
+        user_id: &'a str,
+    ) -> ListInfosByUserIdExcluded<'a> {
         ListInfosByUserIdExcluded { user_id }
     }
 
@@ -119,12 +123,17 @@ impl MemberStep {
     }
 
     /// Constructs a step to fetch one membership by ID.
-    pub fn get_info_by_id<'a>(id: &'a str, incl_opt: &'a [MemberInclOpt]) -> GetInfoById<'a> {
+    pub fn get_info_by_id<'a>(
+        id: &'a str,
+        incl_opt: &'a [MemberInclOpt],
+    ) -> GetInfoById<'a> {
         GetInfoById { id, incl_opt }
     }
 
     /// Constructs a step to update a member's roles.
-    pub fn update_role<'a>(member_role_update: &'a MemberRoleUpdate) -> UpdateRole<'a> {
+    pub fn update_role<'a>(
+        member_role_update: &'a MemberRoleUpdate,
+    ) -> UpdateRole<'a> {
         UpdateRole { member_role_update }
     }
 

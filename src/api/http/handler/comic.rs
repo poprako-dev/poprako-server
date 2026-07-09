@@ -21,8 +21,9 @@ use crate::api::http::result::HttpResult;
 use crate::api::http::result::no_content;
 use crate::api::http::state::AppHarn;
 use crate::data::comic::{
-    ComicInfoVal, CreateComicData, CreateComicVal, ListComicInfosData, MarkComicCompletedData,
-    MarkComicCoverUploadedData, ReserveComicCoverData, ReserveComicCoverVal, UpdateComicInfoData,
+    ComicInfoVal, CreateComicData, CreateComicVal, ListComicInfosData,
+    MarkComicCompletedData, MarkComicCoverUploadedData, ReserveComicCoverData,
+    ReserveComicCoverVal, UpdateComicInfoData,
 };
 use crate::model::user::UserToken;
 use crate::usecase;
@@ -158,9 +159,14 @@ pub async fn get_info(
     Path(comic_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
 ) -> HttpResult<ComicInfoVal> {
-    usecase::comic::get_info(harn.repo(), harn.image_pool(), user_token, comic_id)
-        .await?
-        .accept(StatusCode::OK)
+    usecase::comic::get_info(
+        harn.repo(),
+        harn.image_pool(),
+        user_token,
+        comic_id,
+    )
+    .await?
+    .accept(StatusCode::OK)
 }
 
 /// `PUT /api/v1/comics/{comic_id}` — update a comic's profile.
@@ -244,7 +250,13 @@ pub async fn mark_cover_uploaded(
     Extension(user_token): Extension<UserToken>,
     Json(data): Json<MarkComicCoverUploadedData>,
 ) -> HttpNoContent {
-    usecase::comic::mark_cover_uploaded(harn.repo(), user_token, comic_id, data).await?;
+    usecase::comic::mark_cover_uploaded(
+        harn.repo(),
+        user_token,
+        comic_id,
+        data,
+    )
+    .await?;
     no_content()
 }
 
@@ -297,6 +309,13 @@ pub async fn delete(
     Path(comic_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
-    usecase::comic::delete(harn.drive(), harn.repo(), harn.prom(), user_token, comic_id).await?;
+    usecase::comic::delete(
+        harn.drive(),
+        harn.repo(),
+        harn.prom(),
+        user_token,
+        comic_id,
+    )
+    .await?;
     no_content()
 }

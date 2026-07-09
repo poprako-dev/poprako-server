@@ -21,8 +21,8 @@ use crate::api::http::result::HttpResult;
 use crate::api::http::result::no_content;
 use crate::api::http::state::AppHarn;
 use crate::data::member::{
-    CreateMemberData, CreateMemberVal, JoinTeamData, ListMemberInfosData, MemberInfoVal,
-    UpdateMemberRolesData,
+    CreateMemberData, CreateMemberVal, JoinTeamData, ListMemberInfosData,
+    MemberInfoVal, UpdateMemberRolesData,
 };
 use crate::model::user::UserToken;
 use crate::usecase;
@@ -94,9 +94,14 @@ pub async fn list_infos(
     Extension(user_token): Extension<UserToken>,
     Query(data): Query<ListMemberInfosData>,
 ) -> HttpResult<Vec<MemberInfoVal>> {
-    usecase::member::list_infos(harn.repo(), harn.image_pool(), user_token, data)
-        .await?
-        .accept(StatusCode::OK)
+    usecase::member::list_infos(
+        harn.repo(),
+        harn.image_pool(),
+        user_token,
+        data,
+    )
+    .await?
+    .accept(StatusCode::OK)
 }
 
 /// `GET /api/v1/members/me` — list the current user's memberships.
@@ -126,9 +131,14 @@ pub async fn list_my_infos(
         limit: query.limit,
     };
 
-    usecase::member::list_infos(harn.repo(), harn.image_pool(), user_token, data)
-        .await?
-        .accept(StatusCode::OK)
+    usecase::member::list_infos(
+        harn.repo(),
+        harn.image_pool(),
+        user_token,
+        data,
+    )
+    .await?
+    .accept(StatusCode::OK)
 }
 
 /// `PUT /api/v1/members/{member_id}/roles` — update a member's roles.
@@ -154,7 +164,8 @@ pub async fn update_roles(
 ) -> HttpNoContent {
     ensure_path_matches_body_id(&member_id, &data.id)?;
 
-    usecase::member::update_roles(harn.drive(), harn.repo(), user_token, data).await?;
+    usecase::member::update_roles(harn.drive(), harn.repo(), user_token, data)
+        .await?;
 
     no_content()
 }
@@ -177,7 +188,8 @@ pub async fn delete(
     Path(member_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
-    usecase::member::delete(harn.drive(), harn.repo(), user_token, member_id).await?;
+    usecase::member::delete(harn.drive(), harn.repo(), user_token, member_id)
+        .await?;
     no_content()
 }
 

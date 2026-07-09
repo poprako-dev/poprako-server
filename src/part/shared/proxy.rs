@@ -82,7 +82,10 @@ pub struct ProxyTransactional<'a, R, C> {
 /// Views a transactional handle reference as a transactional proxy.
 pub trait AsProxyTransactional<C> {
     /// Wraps this transactional handle and context as a transactional proxy.
-    fn as_proxy<'a>(&'a self, context: &'a mut C) -> ProxyTransactional<'a, Self, C>
+    fn as_proxy<'a>(
+        &'a self,
+        context: &'a mut C,
+    ) -> ProxyTransactional<'a, Self, C>
     where
         Self: Sized,
     {

@@ -10,8 +10,9 @@
 use poprako_transactional::advance::Advance;
 
 use crate::part::repo::step::user::{
-    Create, Delete, FindInfoByQid, GetCredentialByQid, GetInfoById, GetInfoExcluded,
-    MarkAvatarUploaded, ReserveAvatar, TouchLastActive, UpdateInfo,
+    Create, Delete, FindInfoByQid, GetCredentialByQid, GetInfoById,
+    GetInfoExcluded, MarkAvatarUploaded, ReserveAvatar, TouchLastActive,
+    UpdateInfo,
 };
 use crate::part::shared::execute::Execute;
 use crate::result::RegularError;

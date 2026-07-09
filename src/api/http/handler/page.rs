@@ -18,8 +18,9 @@ use crate::api::http::result::HttpResult;
 use crate::api::http::result::no_content;
 use crate::api::http::state::AppHarn;
 use crate::data::page::{
-    ListPageInfosData, MarkPageImageUploadedData, PageInfoVal, ReserveChapterPagesData,
-    ReserveChapterPagesVal, ReservePageImageData, ReservePageImageVal,
+    ListPageInfosData, MarkPageImageUploadedData, PageInfoVal,
+    ReserveChapterPagesData, ReserveChapterPagesVal, ReservePageImageData,
+    ReservePageImageVal,
 };
 use crate::model::user::UserToken;
 use crate::usecase;
@@ -169,8 +170,14 @@ pub async fn mark_image_uploaded(
     Extension(user_token): Extension<UserToken>,
     Json(data): Json<MarkPageImageUploadedData>,
 ) -> HttpNoContent {
-    usecase::page::mark_image_uploaded(harn.drive(), harn.repo(), user_token, page_id, data)
-        .await?;
+    usecase::page::mark_image_uploaded(
+        harn.drive(),
+        harn.repo(),
+        user_token,
+        page_id,
+        data,
+    )
+    .await?;
 
     no_content()
 }

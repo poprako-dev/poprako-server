@@ -67,14 +67,20 @@ async fn unit_roundtrip_reads_test_database_url() {
             Advance::advance(
                 &transactional_repo,
                 context,
-                &UnitStep::save_info(&page_fixture.page_form.id, &create_unit_oper),
+                &UnitStep::save_info(
+                    &page_fixture.page_form.id,
+                    &create_unit_oper,
+                ),
             )
             .await?;
 
             Advance::advance(
                 &transactional_repo,
                 context,
-                &UnitStep::save_info(&page_fixture.page_form.id, &save_unit_oper),
+                &UnitStep::save_info(
+                    &page_fixture.page_form.id,
+                    &save_unit_oper,
+                ),
             )
             .await?;
 

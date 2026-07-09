@@ -11,7 +11,9 @@ use crate::model::user::UserInfo;
 use crate::part::repo::comment::{CommentRepo, CommentRepoTransactional};
 use crate::part::repo::step::comment::{Create, ListInfos};
 use crate::part::shared::execute::Execute;
-use crate::part_impl::repo_mock::{Mock, MockContext, MockState, MockTransactional, expected, now};
+use crate::part_impl::repo_mock::{
+    Mock, MockContext, MockState, MockTransactional, expected, now,
+};
 use crate::result::{RegularError, RegularResult};
 use crate::util::DeriveTransactional;
 use crate::value::comment::CommentInclOpt;
@@ -28,14 +30,21 @@ fn find_user(state: &MockState, user_id: &str) -> Option<UserInfo> {
         .cloned()
 }
 
-fn apply_user_incl(state: &MockState, comment_info: &mut CommentInfo, include_user: bool) {
+fn apply_user_incl(
+    state: &MockState,
+    comment_info: &mut CommentInfo,
+    include_user: bool,
+) {
     comment_info.user = None;
     if include_user {
         comment_info.user = find_user(state, &comment_info.user_id);
     }
 }
 
-fn list_comments(state: &MockState, spec: &CommentListSpec) -> Vec<CommentInfo> {
+fn list_comments(
+    state: &MockState,
+    spec: &CommentListSpec,
+) -> Vec<CommentInfo> {
     let include_user = spec.incl_opt.contains(&CommentInclOpt::User);
     let mut comment_infos = state
         .comments
@@ -61,7 +70,10 @@ fn list_comments(state: &MockState, spec: &CommentListSpec) -> Vec<CommentInfo> 
     comment_infos[offset..end].to_vec()
 }
 
-fn create_comment(state: &mut MockState, form: &CommentForm) -> RegularResult<CommentInfo> {
+fn create_comment(
+    state: &mut MockState,
+    form: &CommentForm,
+) -> RegularResult<CommentInfo> {
     if state
         .comments
         .iter()
@@ -88,7 +100,10 @@ fn create_comment(state: &mut MockState, form: &CommentForm) -> RegularResult<Co
 impl<'a> Execute<ListInfos<'a>> for Mock {
     type Error = RegularError;
 
-    async fn execute(&self, step: &ListInfos<'a>) -> Result<Vec<CommentInfo>, Self::Error> {
+    async fn execute(
+        &self,
+        step: &ListInfos<'a>,
+    ) -> Result<Vec<CommentInfo>, Self::Error> {
         let state = self.state.lock().unwrap();
 
         Ok(list_comments(&state, step.spec))
@@ -143,7 +158,12 @@ fn credential(user_id: &str) -> UserCredential {
     }
 }
 
-fn comment(id: &str, team_id: &str, user_id: &str, created_at: OffsetDateTime) -> CommentInfo {
+fn comment(
+    id: &str,
+    team_id: &str,
+    user_id: &str,
+    created_at: OffsetDateTime,
+) -> CommentInfo {
     CommentInfo {
         id: id.into(),
         team_id: team_id.into(),
@@ -163,7 +183,11 @@ fn form(id: &str) -> CommentForm {
     }
 }
 
-fn spec(incl_opt: Vec<CommentInclOpt>, offset: u64, limit: u64) -> CommentListSpec {
+fn spec(
+    incl_opt: Vec<CommentInclOpt>,
+    offset: u64,
+    limit: u64,
+) -> CommentListSpec {
     CommentListSpec {
         team_id: "team-1".into(),
         incl_opt,

@@ -36,16 +36,23 @@ async fn team_roundtrip_reads_test_database_url() {
 
     Execute::execute(
         &repo,
-        &TeamStep::update_info(&team_fixture.team_form.id, "RDB Team Updated", "updated"),
+        &TeamStep::update_info(
+            &team_fixture.team_form.id,
+            "RDB Team Updated",
+            "updated",
+        ),
     )
     .await
     .ok()
     .unwrap();
 
-    let team_info = Execute::execute(&repo, &TeamStep::get_info_by_id(&team_fixture.team_form.id))
-        .await
-        .ok()
-        .unwrap();
+    let team_info = Execute::execute(
+        &repo,
+        &TeamStep::get_info_by_id(&team_fixture.team_form.id),
+    )
+    .await
+    .ok()
+    .unwrap();
 
     assert_eq!(team_info.name, "RDB Team Updated");
 

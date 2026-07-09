@@ -2,12 +2,22 @@
 
 use poprako_util::i18n::trl;
 
-use crate::complex::util::{check_user_is_team_admin, check_user_is_team_member};
-use crate::part::repo::step::assignment::{AssignmentStep, GetInfoByChapterIdAndUserId};
-use crate::part::repo::step::chapter::{ChapterStep, GetInfoById as ChapterGetInfoById};
-use crate::part::repo::step::comic::{ComicStep, GetInfoById as ComicGetInfoById};
+use crate::complex::util::{
+    check_user_is_team_admin, check_user_is_team_member,
+};
+use crate::part::repo::step::assignment::{
+    AssignmentStep, GetInfoByChapterIdAndUserId,
+};
+use crate::part::repo::step::chapter::{
+    ChapterStep, GetInfoById as ChapterGetInfoById,
+};
+use crate::part::repo::step::comic::{
+    ComicStep, GetInfoById as ComicGetInfoById,
+};
 use crate::part::repo::step::member::FindInfoByUserIdAndTeamId;
-use crate::part::repo::step::workset::{GetInfoById as WorksetGetInfoById, WorksetStep};
+use crate::part::repo::step::workset::{
+    GetInfoById as WorksetGetInfoById, WorksetStep,
+};
 use crate::part::shared::proxy::ProxyExecute;
 use crate::result::{ExpectedVariant, RegularError, RegularResult, accept};
 use crate::util::next_snowflake_id;
@@ -47,7 +57,10 @@ impl PagePermComplex {
         chapter_id: &str,
     ) -> RegularResult<()>
     where
-        P: for<'a> ProxyExecute<GetInfoByChapterIdAndUserId<'a>, Error = RegularError>,
+        P: for<'a> ProxyExecute<
+                GetInfoByChapterIdAndUserId<'a>,
+                Error = RegularError,
+            >,
     {
         check_reserve_role(proxy, user_id, chapter_id).await
     }
@@ -62,8 +75,13 @@ impl PagePermComplex {
         P: for<'a> ProxyExecute<ChapterGetInfoById<'a>, Error = RegularError>
             + for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RegularError>
             + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RegularError>
-            + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RegularError>
-            + for<'a> ProxyExecute<GetInfoByChapterIdAndUserId<'a>, Error = RegularError>,
+            + for<'a> ProxyExecute<
+                FindInfoByUserIdAndTeamId<'a>,
+                Error = RegularError,
+            > + for<'a> ProxyExecute<
+                GetInfoByChapterIdAndUserId<'a>,
+                Error = RegularError,
+            >,
     {
         let chapter_info = proxy
             .execute(&ChapterStep::get_info_by_id(chapter_id, &[]))
@@ -77,7 +95,9 @@ impl PagePermComplex {
             .execute(&WorksetStep::get_info_by_id(&comic_info.workset_id))
             .await?;
 
-        let member_check = check_user_is_team_member(proxy, user_id, &workset_info.team_id).await;
+        let member_check =
+            check_user_is_team_member(proxy, user_id, &workset_info.team_id)
+                .await;
         if member_check.is_ok() {
             return accept(());
         }
@@ -92,7 +112,10 @@ impl PagePermComplex {
         chapter_id: &str,
     ) -> RegularResult<()>
     where
-        P: for<'a> ProxyExecute<GetInfoByChapterIdAndUserId<'a>, Error = RegularError>,
+        P: for<'a> ProxyExecute<
+                GetInfoByChapterIdAndUserId<'a>,
+                Error = RegularError,
+            >,
     {
         check_upload_role(proxy, user_id, chapter_id).await
     }
@@ -107,7 +130,10 @@ impl PagePermComplex {
         P: for<'a> ProxyExecute<ChapterGetInfoById<'a>, Error = RegularError>
             + for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RegularError>
             + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RegularError>
-            + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RegularError>,
+            + for<'a> ProxyExecute<
+                FindInfoByUserIdAndTeamId<'a>,
+                Error = RegularError,
+            >,
     {
         let chapter_info = proxy
             .execute(&ChapterStep::get_info_by_id(chapter_id, &[]))
@@ -125,9 +151,16 @@ impl PagePermComplex {
     }
 }
 
-async fn check_reserve_role<P>(proxy: &mut P, user_id: &str, chapter_id: &str) -> RegularResult<()>
+async fn check_reserve_role<P>(
+    proxy: &mut P,
+    user_id: &str,
+    chapter_id: &str,
+) -> RegularResult<()>
 where
-    P: for<'a> ProxyExecute<GetInfoByChapterIdAndUserId<'a>, Error = RegularError>,
+    P: for<'a> ProxyExecute<
+            GetInfoByChapterIdAndUserId<'a>,
+            Error = RegularError,
+        >,
 {
     let assignment_info = proxy
         .execute(&AssignmentStep::get_info_by_chapter_id_and_user_id(
@@ -149,9 +182,16 @@ where
     accept(())
 }
 
-async fn check_upload_role<P>(proxy: &mut P, user_id: &str, chapter_id: &str) -> RegularResult<()>
+async fn check_upload_role<P>(
+    proxy: &mut P,
+    user_id: &str,
+    chapter_id: &str,
+) -> RegularResult<()>
 where
-    P: for<'a> ProxyExecute<GetInfoByChapterIdAndUserId<'a>, Error = RegularError>,
+    P: for<'a> ProxyExecute<
+            GetInfoByChapterIdAndUserId<'a>,
+            Error = RegularError,
+        >,
 {
     let assignment_info = proxy
         .execute(&AssignmentStep::get_info_by_chapter_id_and_user_id(
@@ -179,7 +219,10 @@ async fn check_any_assignment<P>(
     chapter_id: &str,
 ) -> RegularResult<()>
 where
-    P: for<'a> ProxyExecute<GetInfoByChapterIdAndUserId<'a>, Error = RegularError>,
+    P: for<'a> ProxyExecute<
+            GetInfoByChapterIdAndUserId<'a>,
+            Error = RegularError,
+        >,
 {
     let assignment_info = proxy
         .execute(&AssignmentStep::get_info_by_chapter_id_and_user_id(

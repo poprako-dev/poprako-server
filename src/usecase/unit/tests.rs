@@ -12,7 +12,8 @@ use super::*;
 use time::OffsetDateTime;
 
 use crate::data::unit::{
-    ListPageUnitInfosData, SavePageUnitsData, UnitDiffData, UnitOperData, UnitPayloadData,
+    ListPageUnitInfosData, SavePageUnitsData, UnitDiffData, UnitOperData,
+    UnitPayloadData,
 };
 use crate::model::assignment::AssignmentInfo;
 use crate::model::chapter::ChapterInfo;
@@ -102,7 +103,13 @@ fn comic(id: &str, workset_id: &str) -> ComicInfo {
     }
 }
 
-fn chapter(id: &str, comic_id: &str, total: i32, translated: i32, proofread: i32) -> ChapterInfo {
+fn chapter(
+    id: &str,
+    comic_id: &str,
+    total: i32,
+    translated: i32,
+    proofread: i32,
+) -> ChapterInfo {
     let time = OffsetDateTime::now_utc();
 
     ChapterInfo {
@@ -137,7 +144,11 @@ fn member(user_id: &str) -> MemberInfo {
     }
 }
 
-fn assignment(chapter_id: &str, user_id: &str, role_mask: RoleMask) -> AssignmentInfo {
+fn assignment(
+    chapter_id: &str,
+    user_id: &str,
+    role_mask: RoleMask,
+) -> AssignmentInfo {
     let time = OffsetDateTime::now_utc();
 
     AssignmentInfo {
@@ -197,7 +208,11 @@ fn unit(
     }
 }
 
-fn save_create_oper(local_id: &str, text: &str, before_id: Option<&str>) -> UnitOperData {
+fn save_create_oper(
+    local_id: &str,
+    text: &str,
+    before_id: Option<&str>,
+) -> UnitOperData {
     UnitOperData::Save {
         local_id: Some(local_id.into()),
         id: None,
@@ -206,7 +221,11 @@ fn save_create_oper(local_id: &str, text: &str, before_id: Option<&str>) -> Unit
     }
 }
 
-fn save_update_oper(id: &str, text: &str, before_id: Option<&str>) -> UnitOperData {
+fn save_update_oper(
+    id: &str,
+    text: &str,
+    before_id: Option<&str>,
+) -> UnitOperData {
     UnitOperData::Save {
         local_id: None,
         id: Some(id.into()),
@@ -219,7 +238,12 @@ fn delete_oper(id: &str) -> UnitOperData {
     UnitOperData::Delete { id: id.into() }
 }
 
-fn payload_data(text: &str, proofread: bool, x_coord: f64, y_coord: f64) -> UnitPayloadData {
+fn payload_data(
+    text: &str,
+    proofread: bool,
+    x_coord: f64,
+    y_coord: f64,
+) -> UnitPayloadData {
     UnitPayloadData {
         is_bubble: true,
         is_proofread: proofread,
@@ -526,9 +550,11 @@ async fn save_infos_concurrent_merge_reaches_consistent_final_state() {
         });
     }
 
-    let b_opers = generate_random_opers(&mut rng, &initial_units, "b", oper_count);
+    let b_opers =
+        generate_random_opers(&mut rng, &initial_units, "b", oper_count);
 
-    let c_opers = generate_random_opers(&mut rng, &initial_units, "c", oper_count);
+    let c_opers =
+        generate_random_opers(&mut rng, &initial_units, "c", oper_count);
 
     let mut b_then_c_oracle = clone_oracle(&initial_units);
 
@@ -566,9 +592,11 @@ async fn save_infos_concurrent_merge_reaches_consistent_final_state() {
 
     let c_then_b_snapshot = c_then_b_mock.snapshot();
 
-    let b_then_c_actual = collect_sorted_units(&b_then_c_snapshot.units, "page-1");
+    let b_then_c_actual =
+        collect_sorted_units(&b_then_c_snapshot.units, "page-1");
 
-    let c_then_b_actual = collect_sorted_units(&c_then_b_snapshot.units, "page-1");
+    let c_then_b_actual =
+        collect_sorted_units(&c_then_b_snapshot.units, "page-1");
 
     assert_eq!(
         b_then_c_actual
@@ -670,14 +698,23 @@ fn generate_random_opers(
             local_id: None,
             id: Some(subject_id),
             before_id,
-            payload: payload_data(&text, proofread, 10.0 + step as f64, 20.0 + step as f64),
+            payload: payload_data(
+                &text,
+                proofread,
+                10.0 + step as f64,
+                20.0 + step as f64,
+            ),
         });
     }
 
     opers
 }
 
-fn apply_opers_to_oracle(oracle_units: &mut Vec<OracleUnit>, opers: &[UnitOperData], tag: &str) {
+fn apply_opers_to_oracle(
+    oracle_units: &mut Vec<OracleUnit>,
+    opers: &[UnitOperData],
+    tag: &str,
+) {
     for (step, oper) in opers.iter().enumerate() {
         match oper {
             UnitOperData::Save {
@@ -686,7 +723,8 @@ fn apply_opers_to_oracle(oracle_units: &mut Vec<OracleUnit>, opers: &[UnitOperDa
                 before_id,
                 payload,
             } => {
-                let resolved_id = id.clone().or_else(|| local_id.clone()).unwrap_or_default();
+                let resolved_id =
+                    id.clone().or_else(|| local_id.clone()).unwrap_or_default();
 
                 let oracle_unit = OracleUnit {
                     id: resolved_id.clone(),
@@ -702,7 +740,9 @@ fn apply_opers_to_oracle(oracle_units: &mut Vec<OracleUnit>, opers: &[UnitOperDa
                     .as_ref()
                     .filter(|before_id| *before_id != &resolved_id)
                     .and_then(|before_id| {
-                        oracle_units.iter().position(|unit| unit.id == *before_id)
+                        oracle_units
+                            .iter()
+                            .position(|unit| unit.id == *before_id)
                     })
                     .unwrap_or(oracle_units.len());
 
@@ -742,7 +782,10 @@ fn build_seeded_mock(initial_units: &[OracleUnit]) -> Mock {
     mock
 }
 
-async fn apply_save_to_mock(mock: &Mock, opers: &[UnitOperData]) -> RegularResult<()> {
+async fn apply_save_to_mock(
+    mock: &Mock,
+    opers: &[UnitOperData],
+) -> RegularResult<()> {
     save_infos(
         mock,
         mock,

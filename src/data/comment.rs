@@ -29,12 +29,17 @@ pub struct CommentInfoVal {
 
 impl CommentInfoVal {
     /// Converts a comment model into a presentation value.
-    pub async fn from_model<P>(image_pool: &P, model: CommentInfo) -> RegularResult<Self>
+    pub async fn from_model<P>(
+        image_pool: &P,
+        model: CommentInfo,
+    ) -> RegularResult<Self>
     where
         P: ImagePool,
     {
         let user = match model.user {
-            Some(user_info) => Some(UserInfoVal::from_model(image_pool, user_info).await?),
+            Some(user_info) => {
+                Some(UserInfoVal::from_model(image_pool, user_info).await?)
+            }
             None => None,
         };
         Ok(Self {

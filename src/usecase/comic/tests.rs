@@ -37,7 +37,8 @@ use crate::part::prom::task::{ImageKind, ImageTask};
 use crate::part_impl::repo_mock::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::{
-    assert_expected_message, assert_expected_variant, assert_one_image_check_record,
+    assert_expected_message, assert_expected_variant,
+    assert_one_image_check_record,
 };
 use crate::usecase::team::tests::workset;
 use crate::value::chapter::{Stage, StageMask, StagePhase};
@@ -69,7 +70,11 @@ fn comic(id: &str, workset_id: &str, index: i32) -> ComicInfo {
     }
 }
 
-fn comic_with_uploaded_cover(id: &str, workset_id: &str, cover_key: &str) -> ComicInfo {
+fn comic_with_uploaded_cover(
+    id: &str,
+    workset_id: &str,
+    cover_key: &str,
+) -> ComicInfo {
     ComicInfo {
         cover_key: Some(cover_key.into()),
         cover_uploaded: true,
@@ -135,7 +140,8 @@ async fn create_allocates_index_and_updates_count() {
     mock.seed_workset(workset("workset-1", "team-1"));
     mock.seed_member(admin_member("user-1", "team-1"));
 
-    let created = create(&mock, &mock, token("user-1"), create_data("workset-1")).await;
+    let created =
+        create(&mock, &mock, token("user-1"), create_data("workset-1")).await;
     assert!(created.is_ok());
     let created = created.ok().unwrap();
     let snapshot = mock.snapshot();
@@ -747,7 +753,11 @@ async fn mark_cover_uploaded_rejects_stale_version() {
     .err()
     .unwrap();
 
-    assert_expected_message(err, ExpectedVariant::Args, "error-stale-cover-upload");
+    assert_expected_message(
+        err,
+        ExpectedVariant::Args,
+        "error-stale-cover-upload",
+    );
     assert!(!mock.snapshot().comics[0].cover_uploaded);
 }
 
@@ -790,7 +800,11 @@ async fn mark_cover_uploaded_rejects_old_reservation_replay() {
     .unwrap();
     let snapshot = mock.snapshot();
 
-    assert_expected_message(err, ExpectedVariant::Args, "error-stale-cover-upload");
+    assert_expected_message(
+        err,
+        ExpectedVariant::Args,
+        "error-stale-cover-upload",
+    );
     assert!(!snapshot.comics[0].cover_uploaded);
     assert_eq!(snapshot.comics[0].cover_version, 2);
 }
@@ -862,10 +876,11 @@ async fn mark_completed_rolls_back_missing_comic() {
     let mock = Mock::new();
     mock.seed_comic(comic("comic-1", "workset-1", 0));
 
-    let err = mark_completed(&mock, &mock, token("user-1"), "missing".into(), true)
-        .await
-        .err()
-        .unwrap();
+    let err =
+        mark_completed(&mock, &mock, token("user-1"), "missing".into(), true)
+            .await
+            .err()
+            .unwrap();
     let snapshot = mock.snapshot();
 
     assert_expected_variant(err, ExpectedVariant::Args);

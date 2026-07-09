@@ -26,7 +26,10 @@ async fn workset_roundtrip_reads_test_database_url() {
 
     let workset_infos = Execute::execute(
         &repo,
-        &WorksetStep::list_infos_by_team_id(&workset_fixture.team_form.id, page),
+        &WorksetStep::list_infos_by_team_id(
+            &workset_fixture.team_form.id,
+            page,
+        ),
     )
     .await
     .ok()

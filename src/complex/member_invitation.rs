@@ -1,6 +1,8 @@
 //! Complex-domain opers for member invitations.
 
-use crate::complex::util::{check_user_is_team_admin, check_user_is_team_member};
+use crate::complex::util::{
+    check_user_is_team_admin, check_user_is_team_member,
+};
 use crate::part::repo::step::member::FindInfoByUserIdAndTeamId;
 use crate::part::repo::step::member_invitation::{
     GetInfoById as MemberInvitationGetInfoById, MemberInvitationStep,
@@ -37,7 +39,10 @@ impl MemberInvitationPermComplex {
         team_id: &str,
     ) -> RegularResult<()>
     where
-        P: for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RegularError>,
+        P: for<'a> ProxyExecute<
+                FindInfoByUserIdAndTeamId<'a>,
+                Error = RegularError,
+            >,
     {
         check_user_is_team_admin(proxy, user_id, team_id).await
     }
@@ -48,7 +53,10 @@ impl MemberInvitationPermComplex {
         team_id: &str,
     ) -> RegularResult<()>
     where
-        P: for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RegularError>,
+        P: for<'a> ProxyExecute<
+                FindInfoByUserIdAndTeamId<'a>,
+                Error = RegularError,
+            >,
     {
         check_user_is_team_member(proxy, user_id, team_id).await
     }
@@ -59,8 +67,13 @@ impl MemberInvitationPermComplex {
         invitation_id: &str,
     ) -> RegularResult<()>
     where
-        P: for<'a> ProxyExecute<MemberInvitationGetInfoById<'a>, Error = RegularError>
-            + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RegularError>,
+        P: for<'a> ProxyExecute<
+                MemberInvitationGetInfoById<'a>,
+                Error = RegularError,
+            > + for<'a> ProxyExecute<
+                FindInfoByUserIdAndTeamId<'a>,
+                Error = RegularError,
+            >,
     {
         let team_id = Self::resolve_team_id(proxy, invitation_id).await?;
         check_user_is_team_admin(proxy, user_id, &team_id).await
@@ -72,16 +85,27 @@ impl MemberInvitationPermComplex {
         invitation_id: &str,
     ) -> RegularResult<()>
     where
-        P: for<'a> ProxyExecute<MemberInvitationGetInfoById<'a>, Error = RegularError>
-            + for<'a> ProxyExecute<FindInfoByUserIdAndTeamId<'a>, Error = RegularError>,
+        P: for<'a> ProxyExecute<
+                MemberInvitationGetInfoById<'a>,
+                Error = RegularError,
+            > + for<'a> ProxyExecute<
+                FindInfoByUserIdAndTeamId<'a>,
+                Error = RegularError,
+            >,
     {
         let team_id = Self::resolve_team_id(proxy, invitation_id).await?;
         check_user_is_team_admin(proxy, user_id, &team_id).await
     }
 
-    async fn resolve_team_id<P>(proxy: &mut P, invitation_id: &str) -> RegularResult<String>
+    async fn resolve_team_id<P>(
+        proxy: &mut P,
+        invitation_id: &str,
+    ) -> RegularResult<String>
     where
-        P: for<'a> ProxyExecute<MemberInvitationGetInfoById<'a>, Error = RegularError>,
+        P: for<'a> ProxyExecute<
+                MemberInvitationGetInfoById<'a>,
+                Error = RegularError,
+            >,
     {
         let member_invitation_info = proxy
             .execute(&MemberInvitationStep::get_info_by_id(invitation_id, &[]))
