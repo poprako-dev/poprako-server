@@ -5,8 +5,9 @@
 
 use std::marker::PhantomData;
 use std::sync::Arc;
-use std::time::Duration;
+use std::time::Duration as StdDuration;
 
+use time::{Duration, OffsetDateTime};
 use tokio::time::sleep;
 use tracing::{Level, instrument};
 
@@ -27,20 +28,36 @@ use crate::part::repo::assignment_invitation::{
 use crate::part::repo::chapter::{ChapterRepo, ChapterRepoTransactional};
 use crate::part::repo::comic::{ComicRepo, ComicRepoTransactional};
 use crate::part::repo::page::{PageRepo, PageRepoTransactional};
+use crate::part::repo::team::TeamRepoTransactional;
 use crate::part::repo::unit::{UnitRepo, UnitRepoTransactional};
+use crate::part::repo::user::UserRepoTransactional;
 use crate::part::repo::workset::{WorksetRepo, WorksetRepoTransactional};
 use crate::part_impl::prom::rdb_impl::{
     ClaimStep, CompleteStep, FailStep, LocalMessageRow, PollPending,
+    ResetStuckStep, RetryStep,
 };
 use crate::part_impl::shared::{RdbContext, RdbCore};
 use crate::result::{RegularError, RegularResult};
 use crate::util::DeriveTransactional;
 
+/// Prom comic event handler.
 mod comic;
+/// Prom image event handler.
 mod image;
 
-const POLL_INTERVAL: Duration = Duration::from_secs(5);
+/// Interval between successive poll cycles in the prom background worker.
+const POLL_INTERVAL: StdDuration = StdDuration::from_secs(5);
+const RETRY_DELAY: Duration = Duration::minutes(5);
+const PROCESSING_TIMEOUT: Duration = Duration::minutes(15);
 
+pub enum TaskOutcome {
+    Complete,
+    Retry(String),
+    Dead(String),
+}
+
+/// Background worker that polls the `t_local_message` table, dispatches by topic,
+/// and completes or fails each record.
 pub struct RdbPromHandler<D, R, P, I> {
     core: RdbCore,
     drive: D,
@@ -73,9 +90,11 @@ where
             + WorksetRepoTransactional<RdbContext>
             + ChapterRepoTransactional<RdbContext>
             + PageRepoTransactional<RdbContext>
+            + TeamRepoTransactional<RdbContext>
             + AssignmentRepoTransactional<RdbContext>
             + AssignmentInvitationRepoTransactional<RdbContext>
             + UnitRepoTransactional<RdbContext>
+            + UserRepoTransactional<RdbContext>
             + Send
             + Sync,
     P: Prom<RdbContext>
@@ -83,6 +102,8 @@ where
         + for<'a> Advance<ClaimStep<'a>, RdbContext, Error = RegularError>
         + for<'a> Advance<CompleteStep<'a>, RdbContext, Error = RegularError>
         + for<'a> Advance<FailStep<'a>, RdbContext, Error = RegularError>
+        + for<'a> Advance<RetryStep<'a>, RdbContext, Error = RegularError>
+        + for<'a> Advance<ResetStuckStep<'a>, RdbContext, Error = RegularError>
         + Send
         + Sync
         + 'static,
@@ -108,6 +129,17 @@ where
     #[instrument(skip(self), level = Level::INFO)]
     pub async fn run(&self) {
         loop {
+            // FIXME: if let. and similary ones.
+            match self.reset_stuck().await {
+                Ok(()) => {}
+                Err(e) => {
+                    tracing::error!(
+                        error = ?e,
+                        "[RdbPromHandler::run] reset stuck failed",
+                    );
+                }
+            }
+
             match self.poll().await {
                 Ok(rows) => {
                     for row in &rows {
@@ -130,15 +162,21 @@ where
         let conn = self.core.get().await?;
         let mut context = RdbContext::new(conn);
 
-        Advance::<PollPending, RdbContext>::advance(
-            &self.prom,
-            &mut context,
-            &PollPending,
-        )
-        .await
+        self.prom.advance(&mut context, &PollPending).await
     }
 
     async fn process_row(&self, row: &LocalMessageRow) {
+        match self.reset_stuck().await {
+            Ok(()) => {}
+            Err(e) => {
+                tracing::error!(
+                    id = %row.f_id,
+                    error = ?e,
+                    "[RdbPromHandler] reset stuck before claim failed",
+                );
+            }
+        }
+
         let claimed = match self.claim(&row.f_id).await {
             Ok(v) => v,
             Err(e) => {
@@ -155,7 +193,7 @@ where
             return;
         }
 
-        let result = dispatch_topic(
+        match dispatch_topic(
             &self.drive,
             &self.repo,
             &self.prom,
@@ -163,20 +201,50 @@ where
             &row.f_topic,
             &row.f_payload,
         )
-        .await;
-
-        match result {
-            Ok(()) => {
-                let _ = self.complete(&row.f_id).await;
+        .await
+        {
+            TaskOutcome::Complete => match self.complete(&row.f_id).await {
+                Ok(()) => {}
+                Err(e) => {
+                    tracing::error!(
+                        id = %row.f_id,
+                        error = ?e,
+                        "[RdbPromHandler] complete failed",
+                    );
+                }
+            },
+            TaskOutcome::Retry(error) => {
+                match self.retry(&row.f_id, &error).await {
+                    Ok(()) => {}
+                    Err(e) => {
+                        tracing::error!(
+                            id = %row.f_id,
+                            original_error = %error,
+                            error = ?e,
+                            "[RdbPromHandler] retry mark failed",
+                        );
+                    }
+                }
             }
-            Err(e) => {
+            TaskOutcome::Dead(error) => {
                 tracing::error!(
                     id = %row.f_id,
                     topic = %row.f_topic,
-                    error = ?e,
+                    error = %error,
                     "[RdbPromHandler] task failed",
                 );
-                let _ = self.fail(&row.f_id, &format!("{:?}", e)).await;
+
+                match self.fail(&row.f_id, &error).await {
+                    Ok(()) => {}
+                    Err(e) => {
+                        tracing::error!(
+                            id = %row.f_id,
+                            original_error = %error,
+                            error = ?e,
+                            "[RdbPromHandler] fail mark failed",
+                        );
+                    }
+                }
             }
         }
     }
@@ -185,36 +253,50 @@ where
         let conn = self.core.get().await?;
         let mut context = RdbContext::new(conn);
 
-        Advance::<ClaimStep<'_>, RdbContext>::advance(
-            &self.prom,
-            &mut context,
-            &ClaimStep { id },
-        )
-        .await
+        self.prom.advance(&mut context, &ClaimStep { id }).await
     }
 
     async fn complete(&self, id: &str) -> RegularResult<()> {
         let conn = self.core.get().await?;
         let mut context = RdbContext::new(conn);
 
-        Advance::<CompleteStep<'_>, RdbContext>::advance(
-            &self.prom,
-            &mut context,
-            &CompleteStep { id },
-        )
-        .await
+        self.prom.advance(&mut context, &CompleteStep { id }).await
     }
 
     async fn fail(&self, id: &str, error: &str) -> RegularResult<()> {
         let conn = self.core.get().await?;
         let mut context = RdbContext::new(conn);
 
-        Advance::<FailStep<'_>, RdbContext>::advance(
-            &self.prom,
-            &mut context,
-            &FailStep { id, error },
-        )
-        .await
+        self.prom
+            .advance(&mut context, &FailStep { id, error })
+            .await
+    }
+
+    async fn retry(&self, id: &str, error: &str) -> RegularResult<()> {
+        let conn = self.core.get().await?;
+        let mut context = RdbContext::new(conn);
+        let visible_at = OffsetDateTime::now_utc() + RETRY_DELAY;
+
+        self.prom
+            .advance(
+                &mut context,
+                &RetryStep {
+                    id,
+                    error,
+                    visible_at: &visible_at,
+                },
+            )
+            .await
+    }
+
+    async fn reset_stuck(&self) -> RegularResult<()> {
+        let conn = self.core.get().await?;
+        let mut context = RdbContext::new(conn);
+        let before = OffsetDateTime::now_utc() - PROCESSING_TIMEOUT;
+
+        self.prom
+            .advance(&mut context, &ResetStuckStep { before: &before })
+            .await
     }
 }
 
@@ -226,7 +308,7 @@ async fn dispatch_topic<D, R, P, I>(
     image_pool: &I,
     topic: &str,
     payload_json: &serde_json::Value,
-) -> RegularResult<()>
+) -> TaskOutcome
 where
     D: Drive<RdbContext>,
     D::Error: Into<RegularError>,
@@ -245,9 +327,11 @@ where
             + WorksetRepoTransactional<RdbContext>
             + ChapterRepoTransactional<RdbContext>
             + PageRepoTransactional<RdbContext>
+            + TeamRepoTransactional<RdbContext>
             + AssignmentRepoTransactional<RdbContext>
             + AssignmentInvitationRepoTransactional<RdbContext>
             + UnitRepoTransactional<RdbContext>
+            + UserRepoTransactional<RdbContext>
             + Send
             + Sync,
     P: Prom<RdbContext> + Send + Sync,
@@ -257,41 +341,51 @@ where
         IMAGE_TOPIC => {
             let payload_str =
                 serde_json::to_string(payload_json).map_err(|e| {
-                    RegularError::Unrecoverable {
-                        message: format!(
-                            "failed to serialize image payload: {}",
-                            e
-                        ),
-                    }
-                })?;
+                    format!("failed to serialize image payload: {}", e)
+                });
 
-            let task: ImageTask<'_> = serde_json::from_str(&payload_str)
-                .map_err(|e| RegularError::Unrecoverable {
-                    message: format!("failed to deserialize image task: {}", e),
-                })?;
+            let payload_str = match payload_str {
+                Ok(payload_str) => payload_str,
+                Err(e) => return TaskOutcome::Dead(e),
+            };
+
+            let task: Result<ImageTask<'_>, String> =
+                serde_json::from_str(&payload_str).map_err(|e| {
+                    format!("failed to deserialize image task: {}", e)
+                });
+
+            let task = match task {
+                Ok(task) => task,
+                Err(e) => return TaskOutcome::Dead(e),
+            };
 
             image::handle(drive, repo, prom, image_pool, &task).await
         }
         COMIC_ARCHIVE_TOPIC => {
             let payload_str =
                 serde_json::to_string(payload_json).map_err(|e| {
-                    RegularError::Unrecoverable {
-                        message: format!(
-                            "failed to serialize comic payload: {}",
-                            e
-                        ),
-                    }
-                })?;
+                    format!("failed to serialize comic payload: {}", e)
+                });
 
-            let task: ComicTask<'_> = serde_json::from_str(&payload_str)
-                .map_err(|e| RegularError::Unrecoverable {
-                    message: format!("failed to deserialize comic task: {}", e),
-                })?;
+            let payload_str = match payload_str {
+                Ok(payload_str) => payload_str,
+                Err(e) => return TaskOutcome::Dead(e),
+            };
+
+            let task: Result<ComicTask<'_>, String> =
+                serde_json::from_str(&payload_str).map_err(|e| {
+                    format!("failed to deserialize comic task: {}", e)
+                });
+
+            let task = match task {
+                Ok(task) => task,
+                Err(e) => return TaskOutcome::Dead(e),
+            };
 
             comic::handle(drive, repo, prom, image_pool, &task).await
         }
-        unknown => Err(RegularError::Unrecoverable {
-            message: format!("unknown prom topic: {}", unknown),
-        }),
+        unknown => {
+            TaskOutcome::Dead(format!("unknown prom topic: {}", unknown))
+        }
     }
 }

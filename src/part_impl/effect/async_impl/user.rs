@@ -20,7 +20,6 @@ use crate::part::repo::system_mail::{
 };
 use crate::part::repo::team::{TeamRepo, TeamRepoTransactional};
 use crate::part::repo::user::{UserRepo, UserRepoTransactional};
-use crate::part::shared::execute::Execute;
 use crate::util::DeriveTransactional;
 
 /// Updates the user's last-active timestamp in response to activity.
@@ -29,11 +28,11 @@ where
     R: UserRepo<C>,
     <R as DeriveTransactional>::Transactional: UserRepoTransactional<C>,
 {
-    let result =
-        Execute::execute(repo, &UserStep::touch_last_active(&payload.user_id))
-            .await;
-
-    if result.is_err() {
+    if repo
+        .execute(&UserStep::touch_last_active(&payload.user_id))
+        .await
+        .is_err()
+    {
         tracing::warn!(
             user_id = %payload.user_id,
             "[AsyncEffectDevelop::touch_last_active] failed to update last-active timestamp",
@@ -48,9 +47,9 @@ where
     <R as DeriveTransactional>::Transactional:
         TeamRepoTransactional<C> + SystemMailRepoTransactional<C>,
 {
-    let team_info =
-        Execute::execute(repo, &TeamStep::get_info_by_id(&payload.team_id))
-            .await;
+    let team_info = repo
+        .execute(&TeamStep::get_info_by_id(&payload.team_id))
+        .await;
 
     let Ok(team_info) = team_info else {
         //
@@ -81,10 +80,9 @@ where
         content: trl_kv("mail-invitation-used-body", &args),
     };
 
-    let result =
-        Execute::execute(repo, &SystemMailStep::send(&system_mail_form)).await;
-
-    if result.is_err() {
+    if let Err(_e) =
+        repo.execute(&SystemMailStep::send(&system_mail_form)).await
+    {
         tracing::warn!(
             team_id = %payload.team_id,
             receiver_id = %system_mail_form.receiver_id,

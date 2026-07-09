@@ -23,12 +23,14 @@ use crate::part::repo::step::system_mail::SystemMailStep;
 use crate::part::repo::system_mail::{
     SystemMailRepo, SystemMailRepoTransactional,
 };
-use crate::part::shared::execute::Execute;
 use crate::util::DeriveTransactional;
 use crate::value::chapter::{ChapterInclOpt, Stage};
 use crate::value::role::RoleField;
 
+/// Default include options for loading chapter data with its comic, workset, and team relations.
 const CHAPTER_INCL_OPT: &[ChapterInclOpt] = &[ChapterInclOpt::ComicWorksetTeam];
+
+/// Maximum number of characters for truncated comic titles in notification messages.
 const TITLE_LIMIT: usize = 15;
 
 /// Notifies next-phase assignees after one workflow stage completes.
@@ -95,6 +97,7 @@ pub async fn notify_reviewers_on_publish<C, R>(
         .await;
 }
 
+/// Notifies all reviewer assignees of a chapter about a workflow event.
 async fn notify_reviewers<C, R>(
     repo: &R,
     chapter_id: &str,
@@ -120,16 +123,15 @@ async fn notify_reviewers<C, R>(
     send_batch(repo, chapter_id, system_mail_forms).await;
 }
 
+/// Loads a chapter by ID with default include options, returning `None` on lookup failure.
 async fn load_chapter<C, R>(repo: &R, chapter_id: &str) -> Option<ChapterInfo>
 where
     R: ChapterRepo<C>,
     <R as DeriveTransactional>::Transactional: ChapterRepoTransactional<C>,
 {
-    let chapter_info = Execute::execute(
-        repo,
-        &ChapterStep::get_info_by_id(chapter_id, CHAPTER_INCL_OPT),
-    )
-    .await;
+    let chapter_info = repo
+        .execute(&ChapterStep::get_info_by_id(chapter_id, CHAPTER_INCL_OPT))
+        .await;
 
     let Ok(chapter_info) = chapter_info else {
         //
@@ -144,6 +146,7 @@ where
     Some(chapter_info)
 }
 
+/// Builds a list of system mail forms for all assignments in a chapter matching a role.
 async fn build_assignment_mails<C, R>(
     repo: &R,
     chapter_info: &ChapterInfo,
@@ -154,15 +157,13 @@ where
     R: AssignmentRepo<C>,
     <R as DeriveTransactional>::Transactional: AssignmentRepoTransactional<C>,
 {
-    let assignment_infos = Execute::execute(
-        repo,
-        &AssignmentStep::list_all_infos_by_chapter(
+    let assignment_infos = repo
+        .execute(&AssignmentStep::list_all_infos_by_chapter(
             &chapter_info.id,
             Some(receiver_role),
             &[],
-        ),
-    )
-    .await;
+        ))
+        .await;
 
     let Ok(assignment_infos) = assignment_infos else {
         //
@@ -199,6 +200,7 @@ where
         .collect()
 }
 
+/// Builds the i18n template arguments for a chapter progress notification mail.
 fn chapter_mail_args(
     chapter_info: &ChapterInfo,
     workflow_label: String,
@@ -241,6 +243,7 @@ fn chapter_mail_args(
     Some(args)
 }
 
+/// Sends a batch of system mail forms, logging a warning on failure.
 async fn send_batch<C, R>(
     repo: &R,
     chapter_id: &str,
@@ -253,11 +256,11 @@ async fn send_batch<C, R>(
         return;
     }
 
-    let result =
-        Execute::execute(repo, &SystemMailStep::send_batch(&system_mail_forms))
-            .await;
-
-    if result.is_err() {
+    if repo
+        .execute(&SystemMailStep::send_batch(&system_mail_forms))
+        .await
+        .is_err()
+    {
         tracing::warn!(
             chapter_id = %chapter_id,
             "[AsyncEffectDevelop::send_batch] failed to send chapter notification mails",
@@ -265,6 +268,7 @@ async fn send_batch<C, R>(
     }
 }
 
+/// Returns the next-phase role and workflow label for a completed stage.
 fn next_phase_config(stage: Stage) -> Option<(RoleField, String)> {
     match stage {
         //
@@ -292,6 +296,7 @@ fn next_phase_config(stage: Stage) -> Option<(RoleField, String)> {
     }
 }
 
+/// Returns the reviewer workflow label for a completed stage, skipping typesetting.
 fn reviewer_progress_label(stage: Stage) -> Option<String> {
     match stage {
         Stage::RawProvide => Some(trl("mail-workflow-upload")),
@@ -303,6 +308,7 @@ fn reviewer_progress_label(stage: Stage) -> Option<String> {
     }
 }
 
+/// Truncates a title to a maximum number of characters, appending ellipsis if truncated.
 fn truncate_title(title: &str, max_chars: usize) -> String {
     //
     let mut chars = title.chars();

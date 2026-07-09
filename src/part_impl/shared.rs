@@ -9,12 +9,15 @@ use diesel_async::pooled_connection::deadpool::{Object, Pool};
 
 use crate::result::{RegularError, RegularResult};
 
+/// Result helpers for Diesel-backed shared internals.
 pub mod result;
 
 use self::result::{pool_build, pool_get};
 
+/// Internal type alias for the Diesel async connection pool.
 type RdbPool = Pool<AsyncPgConnection>;
 
+/// A pooled async PostgreSQL connection obtained from the connection pool.
 pub type RdbPooledConn = Object<AsyncPgConnection>;
 
 /// Alias for the underlying Diesel async connection type.
@@ -23,6 +26,9 @@ pub type RdbPooledConn = Object<AsyncPgConnection>;
 /// connection type is centralized in one place.
 pub type RdbConn = AsyncPgConnection;
 
+/// Centralized database connection pool holder.
+///
+/// Wraps an `RdbPool` behind an `Arc` for shared ownership across the application.
 #[derive(Clone)]
 pub struct RdbCore {
     pool: Arc<RdbPool>,
@@ -63,6 +69,7 @@ impl RdbCore {
     }
 }
 
+/// Transactional context holding a single pooled connection for the duration of a transaction.
 pub struct RdbContext {
     conn: RdbPooledConn,
 }

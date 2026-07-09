@@ -12,6 +12,10 @@ use crate::result::RegularError;
 use crate::part_impl::shared::result::diesel;
 use crate::part_impl::shared::{RdbContext, RdbCore};
 
+/// Diesel-backed transaction driver that wraps operations in database transactions.
+///
+/// Each call to `with_context` opens a new connection, begins a transaction,
+/// runs the closure, and commits or rolls back on success or failure.
 pub struct RdbDrive {
     core: RdbCore,
 }

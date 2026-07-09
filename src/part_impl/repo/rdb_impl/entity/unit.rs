@@ -6,6 +6,7 @@ use time::OffsetDateTime;
 use crate::model::unit::{UnitInfo, UnitPayload};
 use crate::part_impl::repo::rdb_impl::schema::t_unit;
 
+/// Raw database row for the `t_unit` table. Returned by Diesel queries.
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_unit)]
 pub struct UnitRow {
@@ -30,6 +31,7 @@ pub struct UnitRow {
     pub f_updated_at: OffsetDateTime,
 }
 
+/// Insertable struct for creating a new record in the `t_unit` table.
 #[derive(Insertable)]
 #[diesel(table_name = t_unit)]
 pub struct UnitEntry<'a> {
@@ -54,6 +56,7 @@ pub struct UnitEntry<'a> {
     pub f_updated_at: OffsetDateTime,
 }
 
+/// Aspect struct for updating specific fields of a unit record identified by id.
 #[derive(AsChangeset)]
 #[diesel(table_name = t_unit)]
 pub struct UnitAspect<'a> {

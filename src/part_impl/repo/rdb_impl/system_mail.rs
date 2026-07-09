@@ -12,12 +12,12 @@ use crate::part::repo::system_mail::{
     SystemMailRepo, SystemMailRepoTransactional,
 };
 use crate::part::shared::execute::Execute;
-use crate::part_impl::shared::{RdbConn, RdbContext};
-use crate::part_impl::shared::result::{diesel, expected};
 use crate::part_impl::repo::rdb_impl::entity::system_mail::{
     SystemMailEntry, SystemMailRow,
 };
 use crate::part_impl::repo::rdb_impl::{RdbRepo, RdbRepoTransactional};
+use crate::part_impl::shared::result::{diesel, expected};
+use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::{ExpectedVariant, RegularError, RegularResult};
 
 use crate::part_impl::repo::rdb_impl::schema::t_system_mail::dsl::*;
@@ -28,6 +28,7 @@ impl SystemMailRepoTransactional<RdbContext> for RdbRepoTransactional {}
 
 // ── Free functions ──────────────────────────────────────────────────────────
 
+/// Send a single system mail by inserting its row.
 async fn send(conn: &mut RdbConn, form: &SystemMailForm) -> RegularResult<()> {
     //
     let entry = SystemMailEntry::from(form);
@@ -41,6 +42,7 @@ async fn send(conn: &mut RdbConn, form: &SystemMailForm) -> RegularResult<()> {
     Ok(())
 }
 
+/// Batch-send system mail by inserting rows for every form.
 async fn send_batch(
     conn: &mut RdbConn,
     forms: &[SystemMailForm],
@@ -58,6 +60,7 @@ async fn send_batch(
     Ok(())
 }
 
+/// Query system mail for a receiver, optionally filtered by read status.
 async fn list_infos(
     conn: &mut RdbConn,
     receiver_id: &str,
@@ -86,6 +89,7 @@ async fn list_infos(
     Ok(rows.into_iter().map(Into::into).collect())
 }
 
+/// Mark a system mail as read, authorizing by the owning receiver.
 async fn mark_read(
     conn: &mut RdbConn,
     id: &str,

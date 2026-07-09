@@ -6,14 +6,15 @@ use crate::model::comic::ComicInfo;
 use crate::model::team::TeamInfo;
 use crate::model::user::UserInfo;
 use crate::model::workset::WorksetInfo;
-use crate::part_impl::shared::RdbConn;
 use crate::part_impl::repo::rdb_impl::incl::{
     self, ChapterByIds, ComicByIds, Incl, TeamByIds, UserByIds, WorksetByIds,
 };
+use crate::part_impl::shared::RdbConn;
 use crate::result::RegularResult;
 use crate::value::assignment::AssignmentInclOpt;
 use crate::value::incl::expand_incl_opts;
 
+/// Include struct for eager-loading [`ChapterInfo`] data into [`AssignmentInfo`] query results.
 struct AssignmentChapterIncl;
 
 #[async_trait]
@@ -34,6 +35,7 @@ impl Incl for AssignmentChapterIncl {
     }
 }
 
+/// Include struct for eager-loading [`ComicInfo`] data into [`AssignmentInfo`] query results (via chapter).
 struct AssignmentChapterComicIncl;
 
 #[async_trait]
@@ -60,6 +62,7 @@ impl Incl for AssignmentChapterComicIncl {
     }
 }
 
+/// Include struct for eager-loading [`WorksetInfo`] data into [`AssignmentInfo`] query results (via chapter, comic).
 struct AssignmentChapterComicWorksetIncl;
 
 #[async_trait]
@@ -92,6 +95,7 @@ impl Incl for AssignmentChapterComicWorksetIncl {
     }
 }
 
+/// Include struct for eager-loading [`TeamInfo`] data into [`AssignmentInfo`] query results (via chapter, comic, workset).
 struct AssignmentChapterComicWorksetTeamIncl;
 
 #[async_trait]
@@ -125,6 +129,7 @@ impl Incl for AssignmentChapterComicWorksetTeamIncl {
     }
 }
 
+/// Include struct for eager-loading chapter creator [`UserInfo`] into [`AssignmentInfo`] query results.
 struct AssignmentChapterCreatorIncl;
 
 #[async_trait]
@@ -151,6 +156,7 @@ impl Incl for AssignmentChapterCreatorIncl {
     }
 }
 
+/// Include struct for eager-loading comic creator [`UserInfo`] into [`AssignmentInfo`] query results (via chapter).
 struct AssignmentChapterComicCreatorIncl;
 
 #[async_trait]
@@ -183,6 +189,7 @@ impl Incl for AssignmentChapterComicCreatorIncl {
     }
 }
 
+/// Include struct for eager-loading [`UserInfo`] data into [`AssignmentInfo`] query results.
 struct AssignmentUserIncl;
 
 #[async_trait]
@@ -203,6 +210,7 @@ impl Incl for AssignmentUserIncl {
     }
 }
 
+/// Populates assignment query results with eagerly-loaded related entity data.
 pub async fn populate_assignment_incls(
     conn: &mut RdbConn,
     infos: &mut [AssignmentInfo],

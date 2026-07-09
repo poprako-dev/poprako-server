@@ -14,8 +14,7 @@
 
 use super::*;
 
-use time::Duration;
-use time::OffsetDateTime;
+use time::{Duration, OffsetDateTime};
 
 use crate::data::system_mail::ListSystemMailData;
 use crate::model::system_mail::SystemMailInfo;

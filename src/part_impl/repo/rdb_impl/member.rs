@@ -16,12 +16,12 @@ use crate::part::repo::step::member::{
     ListInfosByUserIdExcluded, UpdateRole, UpdateUserNickname,
 };
 use crate::part::shared::execute::Execute;
-use crate::part_impl::shared::{RdbConn, RdbContext};
-use crate::part_impl::shared::result::{diesel, expected};
 use crate::part_impl::repo::rdb_impl::entity::member::{
     MemberAspect, MemberEntry, MemberRow,
 };
-use crate::part_impl::repo::rdb_impl::{incl, RdbRepo, RdbRepoTransactional};
+use crate::part_impl::repo::rdb_impl::{RdbRepo, RdbRepoTransactional, incl};
+use crate::part_impl::shared::result::{diesel, expected};
+use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::{RegularError, RegularResult};
 use crate::value::member::MemberInclOpt;
 use crate::value::role::{RoleField, RoleMask};
@@ -32,6 +32,7 @@ impl MemberRepo<RdbContext> for RdbRepo {}
 
 impl MemberRepoTransactional<RdbContext> for RdbRepoTransactional {}
 
+/// Per-role assignment timestamps extracted from a [`RoleMask`].
 struct RoleTimestamps {
     raw_provider: Option<OffsetDateTime>,
     translator: Option<OffsetDateTime>,
@@ -44,6 +45,8 @@ struct RoleTimestamps {
     bot: Option<OffsetDateTime>,
 }
 
+/// Compute a [`RoleTimestamps`] from a [`RoleMask`], setting each role's
+/// timestamp to `now` when that role is present in the mask.
 fn role_timestamps_from_mask(
     roles: RoleMask,
     now: OffsetDateTime,
@@ -64,6 +67,8 @@ fn role_timestamps_from_mask(
     }
 }
 
+/// Build a [`MemberEntry`] for insertion from a [`MemberForm`] and the
+/// current timestamp.
 fn entry_from_form<'a>(
     form: &'a MemberForm,
     now: OffsetDateTime,
@@ -90,6 +95,8 @@ fn entry_from_form<'a>(
     }
 }
 
+/// Build a [`MemberAspect`] from a [`MemberRoleUpdate`], stamping each
+/// assigned role's timestamp to `now`.
 fn aspect_from_role_update(
     update: &MemberRoleUpdate,
     now: OffsetDateTime,
@@ -134,6 +141,7 @@ fn escape_ilike_pattern(input: &str) -> String {
 
 // ── Free functions ──────────────────────────────────────────────────────────
 
+/// Look up a member by user and team IDs.
 async fn find_info_by_user_id_and_team_id(
     conn: &mut RdbConn,
     user_id: &str,
@@ -151,6 +159,7 @@ async fn find_info_by_user_id_and_team_id(
     Ok(row.map(Into::into))
 }
 
+/// Query a paginated, filtered list of member infos.
 async fn list_infos(
     conn: &mut RdbConn,
     spec: &MemberListSpec,
@@ -238,6 +247,7 @@ async fn list_infos(
     Ok(infos)
 }
 
+/// Load a single member info by ID with optional includes.
 async fn get_info_by_id(
     conn: &mut RdbConn,
     id: &str,
@@ -264,6 +274,7 @@ async fn get_info_by_id(
     Ok(info)
 }
 
+/// Insert a new member and return its info.
 async fn create(
     conn: &mut RdbConn,
     form: &MemberForm,
@@ -282,6 +293,7 @@ async fn create(
     Ok(row.into())
 }
 
+/// Update the user-nickname for every member row owned by the given user.
 async fn update_user_nickname(
     conn: &mut RdbConn,
     user_id: &str,
@@ -300,6 +312,7 @@ async fn update_user_nickname(
     Ok(())
 }
 
+/// Query all member infos for a user, locking the rows for update.
 async fn list_infos_by_user_id_excluded(
     conn: &mut RdbConn,
     user_id: &str,
@@ -315,6 +328,7 @@ async fn list_infos_by_user_id_excluded(
     Ok(rows.into_iter().map(Into::into).collect())
 }
 
+/// Update the role mask and refresh assignment timestamps for a member.
 async fn update_role(
     conn: &mut RdbConn,
     update: &MemberRoleUpdate,
@@ -332,6 +346,7 @@ async fn update_role(
     Ok(())
 }
 
+/// Delete a member by ID.
 async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
     diesel::delete(t_member.filter(f_id.eq(id)))
         .execute(conn)

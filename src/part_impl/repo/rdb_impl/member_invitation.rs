@@ -18,13 +18,13 @@ use crate::part::repo::step::member_invitation::{
     MarkPendingAsUsed, UpdateInfo,
 };
 use crate::part::shared::execute::Execute;
-use crate::part_impl::shared::result::{diesel, expected};
-use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::part_impl::repo::rdb_impl::entity::member_invitation::{
     MemberInvitationAspect, MemberInvitationEntry, MemberInvitationRow,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_member_invitation::dsl::*;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, RdbRepoTransactional, incl};
+use crate::part_impl::shared::result::{diesel, expected};
+use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::{RegularError, RegularResult};
 use crate::value::member_invitation::MemberInvitationInclOpt;
 use crate::value::role::RoleMask;
@@ -35,6 +35,7 @@ impl MemberInvitationRepoTransactional<RdbContext> for RdbRepoTransactional {}
 
 // ── Free functions ──────────────────────────────────────────────────────────
 
+/// Query member invitations matching the given list spec, with optional includes.
 async fn list_infos(
     conn: &mut RdbConn,
     spec: &MemberInvitationListSpec,
@@ -73,6 +74,7 @@ async fn list_infos(
     Ok(infos)
 }
 
+/// Load a single invitation info by ID with optional includes.
 async fn get_info_by_id(
     conn: &mut RdbConn,
     id: &str,
@@ -100,6 +102,7 @@ async fn get_info_by_id(
     Ok(info)
 }
 
+/// Create a new member invitation and return its info.
 async fn create(
     conn: &mut RdbConn,
     form: &MemberInvitationForm,
@@ -117,6 +120,7 @@ async fn create(
     row.try_into()
 }
 
+/// Look up a pending invitation by code, locking the row for update.
 async fn get_info_by_code_excluded(
     conn: &mut RdbConn,
     code: &str,
@@ -136,6 +140,7 @@ async fn get_info_by_code_excluded(
     row.try_into()
 }
 
+/// Mark a pending invitation as used.
 async fn mark_pending_as_used(
     conn: &mut RdbConn,
     id: &str,
@@ -154,6 +159,7 @@ async fn mark_pending_as_used(
     Ok(())
 }
 
+/// Update the roles on an existing invitation.
 async fn update_info(
     conn: &mut RdbConn,
     id: &str,
@@ -174,6 +180,7 @@ async fn update_info(
     Ok(())
 }
 
+/// Delete a member invitation by ID.
 async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
     //
     diesel::delete(t_member_invitation.filter(f_id.eq(id)))

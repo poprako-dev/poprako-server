@@ -24,9 +24,13 @@ use crate::part::repo::team::{TeamRepo, TeamRepoTransactional};
 use crate::part::repo::user::{UserRepo, UserRepoTransactional};
 use crate::util::DeriveTransactional;
 
+/// Chapter event handlers.
 mod chapter;
+/// Event dispatch logic.
 mod dispatch;
+/// Background event handler runner.
 mod handler;
+/// User event handlers.
 mod user;
 
 /// Async side-effect dispatcher backed by a bounded channel.
@@ -167,6 +171,7 @@ where
     }
 }
 
+/// Returns a human-readable label for a domain event variant.
 fn event_name(event: &Event) -> &'static str {
     match event {
         Event::UserActive(_) => "user_active",

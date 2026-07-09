@@ -25,14 +25,17 @@ use crate::util::DeriveTransactional;
 
 use crate::part_impl::effect::async_impl::dispatch::dispatch;
 
-pub(super) struct EffectHandler<C, R> {
-    pub(super) repo: Arc<R>,
-    pub(super) recv: Receiver<Event>,
-    pub(super) shutdown_recv: OneshotReceiver<()>,
-    pub(super) done_send: OneshotSender<()>,
-    pub(super) accepting: Arc<AtomicBool>,
+/// Background event consumer that receives events from the channel and
+/// dispatches them to the appropriate domain handler.
+pub struct EffectHandler<C, R> {
+    // FIXME: why pub??
+    pub repo: Arc<R>,
+    pub recv: Receiver<Event>,
+    pub shutdown_recv: OneshotReceiver<()>,
+    pub done_send: OneshotSender<()>,
+    pub accepting: Arc<AtomicBool>,
 
-    pub(super) _p: PhantomData<C>,
+    pub _p: PhantomData<C>,
 }
 
 impl<C, R> EffectHandler<C, R>
@@ -52,7 +55,7 @@ where
         + UserRepoTransactional<C>,
 {
     #[instrument(skip_all, level = Level::DEBUG)]
-    pub(super) async fn run(mut self) {
+    pub async fn run(mut self) {
         loop {
             tokio::select! {
                 event = self.recv.recv() => {

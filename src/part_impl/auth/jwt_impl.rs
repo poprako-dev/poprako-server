@@ -23,6 +23,7 @@ pub struct JwtAuth {
     decoding_key: DecodingKey,
 }
 
+/// Internal JWT claim structure used for token signing.
 #[derive(Debug, Serialize)]
 struct SignClaims<'a> {
     sub: &'a str,
@@ -35,6 +36,7 @@ struct SignClaims<'a> {
     iss: &'static str,
 }
 
+/// Decoded JWT token claims containing user identification.
 #[derive(Debug, Deserialize)]
 struct TokenClaims {
     user_id: String,

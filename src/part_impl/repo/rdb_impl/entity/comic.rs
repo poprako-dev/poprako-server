@@ -9,6 +9,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_comic;
 
 // ── Queryable / Selectable ─────────────────────────────────────────────────
 
+/// Raw database row for the `t_comic` table. Returned by Diesel queries.
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_comic)]
 pub struct ComicRow {
@@ -39,6 +40,7 @@ pub struct ComicRow {
 
 // ── Insertable ─────────────────────────────────────────────────────────────
 
+/// Insertable struct for creating a new record in the `t_comic` table.
 #[derive(Insertable)]
 #[diesel(table_name = t_comic)]
 pub struct ComicEntry<'a> {
@@ -61,6 +63,7 @@ pub struct ComicEntry<'a> {
 
 // ── Changeset (AsChangeset) ────────────────────────────────────────────────
 
+/// Aspect struct for updating specific fields of a comic record identified by id.
 #[derive(AsChangeset)]
 #[diesel(table_name = t_comic)]
 pub struct ComicAspect<'a> {

@@ -1,5 +1,7 @@
 // comic_roundtrip_reads_test_database_url(ComicStep)(positive): comic repo persists, lists by one-based display index, and refreshes composed search after update.
 
+use super::*;
+
 use crate::model::comic::{ComicInfoUpdate, ComicListKind, ComicListSpec};
 use crate::part::repo::step::comic::ComicStep;
 use crate::part::shared::execute::Execute;

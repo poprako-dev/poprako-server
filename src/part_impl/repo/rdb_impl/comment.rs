@@ -10,10 +10,12 @@ use crate::model::comment::{CommentForm, CommentInfo, CommentListSpec};
 use crate::part::repo::comment::{CommentRepo, CommentRepoTransactional};
 use crate::part::repo::step::comment::{Create, ListInfos};
 use crate::part::shared::execute::Execute;
-use crate::part_impl::shared::{RdbConn, RdbContext};
+use crate::part_impl::repo::rdb_impl::entity::comment::{
+    CommentEntry, CommentRow,
+};
+use crate::part_impl::repo::rdb_impl::{RdbRepo, RdbRepoTransactional, incl};
 use crate::part_impl::shared::result::diesel;
-use crate::part_impl::repo::rdb_impl::entity::comment::{CommentEntry, CommentRow};
-use crate::part_impl::repo::rdb_impl::{incl, RdbRepo, RdbRepoTransactional};
+use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::{RegularError, RegularResult};
 
 use crate::part_impl::repo::rdb_impl::schema::t_comment::dsl::*;
@@ -22,6 +24,7 @@ impl CommentRepo<RdbContext> for RdbRepo {}
 
 impl CommentRepoTransactional<RdbContext> for RdbRepoTransactional {}
 
+/// Query comment infos matching the given list spec, with optional includes.
 async fn list_infos(
     conn: &mut RdbConn,
     spec: &CommentListSpec,
@@ -46,6 +49,7 @@ async fn list_infos(
     Ok(infos)
 }
 
+/// Insert a new comment from the given form and return the created info.
 async fn create(
     conn: &mut RdbConn,
     form: &CommentForm,

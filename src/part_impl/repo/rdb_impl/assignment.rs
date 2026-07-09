@@ -19,12 +19,12 @@ use crate::part::repo::step::assignment::{
     ListInfosByChapterIdExcluded, PutRoles,
 };
 use crate::part::shared::execute::Execute;
-use crate::part_impl::shared::{RdbConn, RdbContext};
-use crate::part_impl::shared::result::{diesel, expected};
 use crate::part_impl::repo::rdb_impl::entity::assignment::{
     AssignmentAspect, AssignmentEntry, AssignmentRoleTimestamps, AssignmentRow,
 };
-use crate::part_impl::repo::rdb_impl::{incl, RdbRepo, RdbRepoTransactional};
+use crate::part_impl::repo::rdb_impl::{RdbRepo, RdbRepoTransactional, incl};
+use crate::part_impl::shared::result::{diesel, expected};
+use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::{RegularError, RegularResult};
 use crate::value::assignment::AssignmentInclOpt;
 use crate::value::role::RoleField;
@@ -36,16 +36,19 @@ impl AssignmentRepo<RdbContext> for RdbRepo {}
 
 impl AssignmentRepoTransactional<RdbContext> for RdbRepoTransactional {}
 
+/// Converts a single `AssignmentRow` into an `AssignmentInfo`.
 fn row_into_info(row: AssignmentRow) -> RegularResult<AssignmentInfo> {
     row.try_into()
 }
 
+/// Converts a vector of `AssignmentRow` values into a vector of `AssignmentInfo`.
 fn rows_into_infos(
     rows: Vec<AssignmentRow>,
 ) -> RegularResult<Vec<AssignmentInfo>> {
     rows.into_iter().map(row_into_info).collect()
 }
 
+/// Queries a single assignment row by chapter ID and user ID, returning `None` if not found.
 async fn get_info_by_chapter_id_and_user_id(
     conn: &mut RdbConn,
     chapter_id: &str,
@@ -64,6 +67,7 @@ async fn get_info_by_chapter_id_and_user_id(
     row.map(row_into_info).transpose()
 }
 
+/// Queries a single assignment row by ID and populates its includes.
 async fn get_info_by_id(
     conn: &mut RdbConn,
     id: &str,
@@ -91,6 +95,7 @@ async fn get_info_by_id(
     Ok(info)
 }
 
+/// Queries assignment rows filtered by the given spec and populates includes.
 async fn list_infos(
     conn: &mut RdbConn,
     spec: &AssignmentListSpec,
@@ -174,6 +179,7 @@ async fn list_infos(
     Ok(infos)
 }
 
+/// Queries all assignment rows for a given chapter, optionally filtered by role.
 async fn list_all_infos_by_chapter(
     conn: &mut RdbConn,
     chapter_id: &str,
@@ -228,6 +234,7 @@ async fn list_all_infos_by_chapter(
     Ok(infos)
 }
 
+/// Queries all assignment rows for a chapter under `FOR UPDATE` lock.
 async fn list_infos_by_chapter_id_excluded(
     conn: &mut RdbConn,
     chapter_id: &str,
@@ -245,6 +252,7 @@ async fn list_infos_by_chapter_id_excluded(
     rows_into_infos(rows)
 }
 
+/// Inserts a new assignment row from the given form and returns the created info.
 async fn create(
     conn: &mut RdbConn,
     form: &AssignmentForm,
@@ -264,6 +272,7 @@ async fn create(
     row_into_info(row)
 }
 
+/// Updates the role timestamps for an assignment row.
 async fn put_roles(
     conn: &mut RdbConn,
     update: &AssignmentRoleUpdate,
@@ -288,6 +297,7 @@ async fn put_roles(
     row_into_info(row)
 }
 
+/// Deletes a single assignment row by ID.
 async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
     //
     diesel::delete(t_assignment.filter(f_id.eq(id)))
@@ -298,6 +308,7 @@ async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
     Ok(())
 }
 
+/// Deletes all assignment rows for a given chapter ID.
 async fn delete_by_chapter_id(
     conn: &mut RdbConn,
     chapter_id: &str,

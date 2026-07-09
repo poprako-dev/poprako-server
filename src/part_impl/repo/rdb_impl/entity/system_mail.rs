@@ -8,6 +8,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_system_mail;
 
 // ── Queryable / Selectable ─────────────────────────────────────────────────
 
+/// Raw database row for the `t_system_mail` table. Returned by Diesel queries.
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_system_mail)]
 pub struct SystemMailRow {
@@ -24,6 +25,7 @@ pub struct SystemMailRow {
 
 // ── Insertable ─────────────────────────────────────────────────────────────
 
+/// Insertable struct for creating a new record in the `t_system_mail` table.
 #[derive(Insertable)]
 #[diesel(table_name = t_system_mail)]
 pub struct SystemMailEntry<'a> {

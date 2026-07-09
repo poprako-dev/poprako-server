@@ -8,6 +8,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_team;
 
 // ── Queryable / Selectable ─────────────────────────────────────────────────
 
+/// Raw database row for the `t_team` table. Returned by Diesel queries.
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_team)]
 pub struct TeamRow {
@@ -27,6 +28,7 @@ pub struct TeamRow {
 
 // ── Insertable ─────────────────────────────────────────────────────────────
 
+/// Insertable struct for creating a new record in the `t_team` table.
 #[derive(Insertable)]
 #[diesel(table_name = t_team)]
 pub struct TeamEntry<'a> {
@@ -42,6 +44,7 @@ pub struct TeamEntry<'a> {
 
 // ── Changeset (AsChangeset) ────────────────────────────────────────────────
 
+/// Aspect struct for updating specific fields of a team record identified by id.
 #[derive(AsChangeset)]
 #[diesel(table_name = t_team)]
 pub struct TeamAspect<'a> {

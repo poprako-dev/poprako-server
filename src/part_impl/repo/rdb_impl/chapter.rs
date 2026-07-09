@@ -22,12 +22,12 @@ use crate::part::repo::step::chapter::{
     UpdateStage,
 };
 use crate::part::shared::execute::Execute;
-use crate::part_impl::shared::{RdbConn, RdbContext};
-use crate::part_impl::shared::result::{diesel, expected};
 use crate::part_impl::repo::rdb_impl::entity::chapter::{
     ChapterAspect, ChapterEntry, ChapterRow,
 };
-use crate::part_impl::repo::rdb_impl::{incl, RdbRepo, RdbRepoTransactional};
+use crate::part_impl::repo::rdb_impl::{RdbRepo, RdbRepoTransactional, incl};
+use crate::part_impl::shared::result::{diesel, expected};
+use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::{RegularError, RegularResult};
 use crate::value::chapter::ChapterInclOpt;
 
@@ -37,14 +37,17 @@ impl ChapterRepo<RdbContext> for RdbRepo {}
 
 impl ChapterRepoTransactional<RdbContext> for RdbRepoTransactional {}
 
+/// Converts a single `ChapterRow` into a `ChapterInfo`.
 fn row_into_info(row: ChapterRow) -> RegularResult<ChapterInfo> {
     row.try_into()
 }
 
+/// Converts a vector of `ChapterRow` values into `ChapterInfo`.
 fn rows_into_infos(rows: Vec<ChapterRow>) -> RegularResult<Vec<ChapterInfo>> {
     rows.into_iter().map(row_into_info).collect()
 }
 
+/// Queries a single chapter row by ID and populates its includes.
 async fn get_info_by_id(
     conn: &mut RdbConn,
     id: &str,
@@ -72,6 +75,7 @@ async fn get_info_by_id(
     Ok(info)
 }
 
+/// Queries a single chapter row by ID under `FOR UPDATE` lock.
 async fn get_info_by_id_excluded(
     conn: &mut RdbConn,
     id: &str,
@@ -100,6 +104,7 @@ async fn get_info_by_id_excluded(
     Ok(info)
 }
 
+/// Queries chapter rows for a given comic, ordered by index descending.
 async fn list_infos(
     conn: &mut RdbConn,
     spec: &ChapterListSpec,
@@ -162,6 +167,7 @@ async fn list_infos(
 //     rows_into_infos(rows)
 // }
 
+/// Queries all chapter rows for a comic under `FOR UPDATE` lock.
 async fn list_all_infos_by_comic_id_excluded(
     conn: &mut RdbConn,
     comic_id: &str,
@@ -179,6 +185,7 @@ async fn list_all_infos_by_comic_id_excluded(
     rows_into_infos(rows)
 }
 
+/// Finds the pinned chapter for a given comic ID, if one exists.
 async fn find_pinned_info_by_comic_id(
     conn: &mut RdbConn,
     comic_id: &str,
@@ -210,6 +217,7 @@ async fn find_pinned_info_by_comic_id(
     Ok(Some(info))
 }
 
+/// Returns a map of comic ID to pinned chapter info for the given comic IDs.
 async fn list_pinned_infos_by_comic_ids(
     conn: &mut RdbConn,
     comic_ids: &[String],
@@ -239,6 +247,7 @@ async fn list_pinned_infos_by_comic_ids(
     Ok(map)
 }
 
+/// Inserts a new chapter row from the given form and returns the created info.
 async fn create(
     conn: &mut RdbConn,
     form: &ChapterForm,
@@ -256,6 +265,7 @@ async fn create(
     row_into_info(row)
 }
 
+/// Updates the modifiable fields of a chapter row.
 async fn update_info(
     conn: &mut RdbConn,
     update: &ChapterInfoUpdate,
@@ -282,6 +292,7 @@ async fn update_info(
     Ok(())
 }
 
+/// Updates the stage timestamps of a chapter row.
 async fn update_stage(
     conn: &mut RdbConn,
     update: &ChapterStageUpdate,
@@ -300,6 +311,7 @@ async fn update_stage(
     Ok(())
 }
 
+/// Sets the page and unit counters on a chapter row.
 async fn set_page_counters(
     conn: &mut RdbConn,
     id: &str,
@@ -326,6 +338,7 @@ async fn set_page_counters(
     Ok(())
 }
 
+/// Adjusts a chapter's unit counters by the given delta.
 async fn adjust_unit_counters(
     conn: &mut RdbConn,
     id: &str,
@@ -350,6 +363,7 @@ async fn adjust_unit_counters(
     Ok(())
 }
 
+/// Unpins all chapters for a comic except the one with the given excluded ID.
 async fn unpin_others(
     conn: &mut RdbConn,
     comic_id: &str,
@@ -371,6 +385,7 @@ async fn unpin_others(
     Ok(())
 }
 
+/// Deletes a single chapter row by ID.
 async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
     //
     diesel::delete(t_chapter.filter(f_id.eq(id)))

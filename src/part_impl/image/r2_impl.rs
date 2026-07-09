@@ -18,6 +18,7 @@ use poprako_util::i18n::trl;
 use crate::part::image::ImagePool;
 use crate::result::{ExpectedVariant, RegularError, RegularResult};
 
+/// Expiration duration for presigned upload URLs (10 minutes).
 const PUT_SIGNED_EXPIRATION: Duration = Duration::from_secs(600);
 
 /// Cloudflare R2-backed image pool.
@@ -202,6 +203,7 @@ impl ImagePool for R2ImagePool {
     }
 }
 
+/// Maps a file extension to its MIME content type for upload requests.
 fn detect_content_type(key: &str) -> Option<&'static str> {
     let extension = key.rsplit('.').next()?.to_lowercase();
 

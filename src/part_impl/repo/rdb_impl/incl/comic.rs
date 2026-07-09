@@ -4,14 +4,15 @@ use crate::model::comic::ComicInfo;
 use crate::model::team::TeamInfo;
 use crate::model::user::UserInfo;
 use crate::model::workset::WorksetInfo;
-use crate::part_impl::shared::RdbConn;
 use crate::part_impl::repo::rdb_impl::incl::{
     self, Incl, TeamByIds, UserByIds, WorksetByIds,
 };
+use crate::part_impl::shared::RdbConn;
 use crate::result::RegularResult;
 use crate::value::comic::ComicInclOpt;
 use crate::value::incl::expand_incl_opts;
 
+/// Include struct for eager-loading [`WorksetInfo`] data into [`ComicInfo`] query results.
 struct ComicWorksetIncl;
 
 #[async_trait]
@@ -29,6 +30,7 @@ impl Incl for ComicWorksetIncl {
     }
 }
 
+/// Include struct for eager-loading [`TeamInfo`] data into [`ComicInfo`] query results (via workset).
 struct ComicWorksetTeamIncl;
 
 #[async_trait]
@@ -49,6 +51,7 @@ impl Incl for ComicWorksetTeamIncl {
     }
 }
 
+/// Include struct for eager-loading creator [`UserInfo`] into [`ComicInfo`] query results.
 struct ComicCreatorIncl;
 
 #[async_trait]
@@ -66,6 +69,7 @@ impl Incl for ComicCreatorIncl {
     }
 }
 
+/// Populates comic query results with eagerly-loaded related entity data.
 pub async fn populate_comic_incls(
     conn: &mut RdbConn,
     infos: &mut [ComicInfo],
