@@ -131,6 +131,7 @@ impl<'a> Advance<Append<'a>, MockContext> for Mock {
 use crate::part::prom::PromStep;
 
 fn user_info(id: &str, avatar_key: &str, avatar_version: i64) -> UserInfo {
+    //
     let now = OffsetDateTime::now_utc();
 
     UserInfo {

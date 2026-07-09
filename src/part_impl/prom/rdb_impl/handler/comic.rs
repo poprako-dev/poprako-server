@@ -66,7 +66,9 @@ where
     match task {
         ComicTask::Archive { comic_id } => {
             match handle_archive(drive, repo, prom, comic_id).await {
+                //
                 Ok(()) => TaskOutcome::Complete,
+
                 Err(e) => TaskOutcome::Retry(format!("{:?}", e)),
             }
         }

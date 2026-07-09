@@ -14,8 +14,10 @@ static_loader! {
 }
 
 static LANGUAGE: LazyLock<LanguageIdentifier> = LazyLock::new(|| {
+    //
     let lang =
         std::env::var("LANGUAGE").unwrap_or_else(|_| "zh-CN".to_string());
+
     lang.parse().unwrap_or_else(|_| langid!("zh-CN"))
 });
 

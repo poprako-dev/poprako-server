@@ -299,11 +299,17 @@ fn next_phase_config(stage: Stage) -> Option<(RoleField, String)> {
 /// Returns the reviewer workflow label for a completed stage, skipping typesetting.
 fn reviewer_progress_label(stage: Stage) -> Option<String> {
     match stage {
+        //
         Stage::RawProvide => Some(trl("mail-workflow-upload")),
+
         Stage::Translate => Some(trl("mail-workflow-translate")),
+
         Stage::Proofread => Some(trl("mail-workflow-proofread")),
+
         Stage::TypesetRedraw => None,
+
         Stage::Review => Some(trl("mail-workflow-review")),
+
         Stage::Publish => None,
     }
 }
@@ -316,7 +322,9 @@ fn truncate_title(title: &str, max_chars: usize) -> String {
     let short_title: String = chars.by_ref().take(max_chars).collect();
 
     match chars.next() {
+        //
         Some(_) => format!("{}...", short_title),
+
         None => short_title,
     }
 }
