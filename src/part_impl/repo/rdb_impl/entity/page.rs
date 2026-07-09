@@ -6,6 +6,7 @@ use time::OffsetDateTime;
 use crate::model::page::{PageForm, PageInfo};
 use crate::part_impl::repo::rdb_impl::schema::t_page;
 
+/// Raw database row for the `t_page` table. Returned by Diesel queries.
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_page)]
 pub struct PageRow {
@@ -26,6 +27,7 @@ pub struct PageRow {
     pub f_updated_at: OffsetDateTime,
 }
 
+/// Insertable struct for creating a new record in the `t_page` table.
 #[derive(Insertable)]
 #[diesel(table_name = t_page)]
 pub struct PageEntry<'a> {
@@ -41,6 +43,7 @@ pub struct PageEntry<'a> {
     pub f_updated_at: OffsetDateTime,
 }
 
+/// Aspect struct for updating specific fields of a page record identified by id.
 #[derive(AsChangeset)]
 #[diesel(table_name = t_page)]
 pub struct PageAspect<'a> {

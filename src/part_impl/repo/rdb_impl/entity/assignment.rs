@@ -8,6 +8,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_assignment;
 use crate::result::RegularError;
 use crate::value::role::{RoleField, RoleMask};
 
+/// Raw database row for the `t_assignment` table. Returned by Diesel queries.
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_assignment)]
 pub struct AssignmentRow {
@@ -28,6 +29,7 @@ pub struct AssignmentRow {
     pub f_updated_at: OffsetDateTime,
 }
 
+/// Insertable struct for creating a new record in the `t_assignment` table.
 #[derive(Insertable)]
 #[diesel(table_name = t_assignment)]
 pub struct AssignmentEntry<'a> {
@@ -48,6 +50,7 @@ pub struct AssignmentEntry<'a> {
     pub f_updated_at: OffsetDateTime,
 }
 
+/// Aspect struct for updating specific assignment role-timestamp fields by id.
 #[derive(AsChangeset)]
 #[diesel(table_name = t_assignment)]
 pub struct AssignmentAspect {
@@ -63,6 +66,8 @@ pub struct AssignmentAspect {
     pub f_updated_at: OffsetDateTime,
 }
 
+/// Timestamps for each role on an assignment, used to build the role-timestamp
+/// mapping for `AssignmentAspect` or `AssignmentEntry`.
 pub struct AssignmentRoleTimestamps {
     pub f_raw_provider: Option<OffsetDateTime>,
     pub f_translator: Option<OffsetDateTime>,

@@ -15,12 +15,12 @@ use crate::part::repo::step::workset::{
 };
 use crate::part::repo::workset::{WorksetRepo, WorksetRepoTransactional};
 use crate::part::shared::execute::Execute;
-use crate::part_impl::shared::{RdbConn, RdbContext};
-use crate::part_impl::shared::result::{diesel, expected};
 use crate::part_impl::repo::rdb_impl::entity::workset::{
     WorksetAspect, WorksetEntry, WorksetRow,
 };
 use crate::part_impl::repo::rdb_impl::{RdbRepo, RdbRepoTransactional};
+use crate::part_impl::shared::result::{diesel, expected};
+use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::{RegularError, RegularResult};
 
 use crate::part_impl::repo::rdb_impl::schema::t_workset::dsl::*;
@@ -29,6 +29,7 @@ impl WorksetRepo<RdbContext> for RdbRepo {}
 
 impl WorksetRepoTransactional<RdbContext> for RdbRepoTransactional {}
 
+/// Load a single workset info by ID.
 async fn get_info_by_id(
     conn: &mut RdbConn,
     id: &str,
@@ -46,6 +47,7 @@ async fn get_info_by_id(
     Ok(row.into())
 }
 
+/// Query a paginated list of worksets for a team, ordered by index.
 async fn list_infos_by_team_id(
     conn: &mut RdbConn,
     team_id: &str,
@@ -66,6 +68,7 @@ async fn list_infos_by_team_id(
     Ok(rows.into_iter().map(Into::into).collect())
 }
 
+/// Update a workset's name and optional description.
 async fn update_info(
     conn: &mut RdbConn,
     id: &str,
@@ -86,6 +89,7 @@ async fn update_info(
     Ok(())
 }
 
+/// Query all worksets for a team, locking the rows for update.
 async fn list_all_infos_by_team_id_excluded(
     conn: &mut RdbConn,
     team_id: &str,
@@ -102,6 +106,7 @@ async fn list_all_infos_by_team_id_excluded(
     Ok(rows.into_iter().map(Into::into).collect())
 }
 
+/// Load a workset info by ID, locking the row for update.
 async fn get_info_excluded(
     conn: &mut RdbConn,
     id: &str,
@@ -120,6 +125,7 @@ async fn get_info_excluded(
     Ok(row.into())
 }
 
+/// Delete a workset by ID.
 async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
     //
     diesel::delete(t_workset.filter(f_id.eq(id)))
@@ -130,6 +136,7 @@ async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
     Ok(())
 }
 
+/// Insert a new workset and return its info.
 async fn create(
     conn: &mut RdbConn,
     form: &WorksetForm,
@@ -147,6 +154,7 @@ async fn create(
     Ok(row.into())
 }
 
+/// Atomically increment and return the previous comic-next-index for a workset.
 async fn incr_comic_next_index(
     conn: &mut RdbConn,
     id: &str,
@@ -162,6 +170,7 @@ async fn incr_comic_next_index(
     Ok(prev)
 }
 
+/// Adjust a workset's comic count by a delta (positive or negative).
 async fn update_comic_count(
     conn: &mut RdbConn,
     id: &str,

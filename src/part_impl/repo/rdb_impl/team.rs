@@ -15,14 +15,14 @@ use crate::part::repo::step::team::{
 };
 use crate::part::repo::team::{TeamRepo, TeamRepoTransactional};
 use crate::part::shared::execute::Execute;
-use crate::part_impl::shared::result::{diesel, expected};
-use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::part_impl::repo::rdb_impl::entity::team::{
     TeamAspect, TeamEntry, TeamRow,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_member;
 use crate::part_impl::repo::rdb_impl::schema::t_team::dsl::*;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, RdbRepoTransactional};
+use crate::part_impl::shared::result::{diesel, expected};
+use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::{RegularError, RegularResult};
 
 impl TeamRepo<RdbContext> for RdbRepo {}
@@ -31,6 +31,7 @@ impl TeamRepoTransactional<RdbContext> for RdbRepoTransactional {}
 
 // ── Free functions ──────────────────────────────────────────────────────────
 
+/// Insert a new team and return its info.
 async fn create(
     conn: &mut RdbConn,
     form: &TeamForm,
@@ -57,6 +58,7 @@ async fn create(
     Ok(row.into())
 }
 
+/// Load a single team info by ID.
 async fn get_info_by_id(
     conn: &mut RdbConn,
     id: &str,
@@ -74,6 +76,7 @@ async fn get_info_by_id(
     Ok(row.into())
 }
 
+/// Query teams, optionally filtered to those a user is a member of.
 async fn list_infos(
     conn: &mut RdbConn,
     user_id: Option<&str>,
@@ -104,6 +107,7 @@ async fn list_infos(
     Ok(rows.into_iter().map(Into::into).collect())
 }
 
+/// Update a team's name and description.
 async fn update_info(
     conn: &mut RdbConn,
     id: &str,
@@ -124,6 +128,7 @@ async fn update_info(
     Ok(())
 }
 
+/// Mark a team avatar as uploaded, checking version staleness.
 async fn mark_avatar_uploaded(
     conn: &mut RdbConn,
     id: &str,
@@ -149,6 +154,8 @@ async fn mark_avatar_uploaded(
     Ok(())
 }
 
+/// Reserve a new avatar slot for a team: bump version, generate object key,
+/// and return the reservation with previous key for cleanup.
 async fn reserve_avatar(
     conn: &mut RdbConn,
     id: &str,
@@ -185,6 +192,7 @@ async fn reserve_avatar(
     })
 }
 
+/// Load a team info by ID, locking the row for update.
 async fn get_info_excluded(
     conn: &mut RdbConn,
     id: &str,
@@ -203,6 +211,7 @@ async fn get_info_excluded(
     Ok(row.into())
 }
 
+/// Delete a team by ID.
 async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
     //
     diesel::delete(t_team.filter(f_id.eq(id)))
@@ -213,6 +222,7 @@ async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
     Ok(())
 }
 
+/// Atomically increment and return the previous workset-next-index for a team.
 async fn increment_workset_next_index(
     conn: &mut RdbConn,
     id: &str,

@@ -1,5 +1,7 @@
 // user_roundtrip_reads_test_database_url(UserStep)(positive): user repo persists and reloads a user from the local test database.
 
+use super::*;
+
 use crate::part::repo::step::user::UserStep;
 use crate::part::shared::execute::Execute;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};

@@ -27,14 +27,16 @@ use crate::part_impl::shared::RdbContext;
 use crate::result::{RegularError, RegularResult};
 use crate::util::DeriveTransactional;
 
+use crate::part_impl::prom::rdb_impl::handler::TaskOutcome;
+
 /// Dispatch a [`ComicTask`] to its concrete handler.
-pub(crate) async fn handle<D, R, P, I>(
+pub async fn handle<D, R, P, I>(
     drive: &D,
     repo: &Arc<R>,
     prom: &P,
     _image_pool: &I,
     task: &ComicTask<'_>,
-) -> RegularResult<()>
+) -> TaskOutcome
 where
     D: Drive<RdbContext>,
     D::Error: Into<RegularError>,
@@ -63,11 +65,15 @@ where
 {
     match task {
         ComicTask::Archive { comic_id } => {
-            handle_archive(drive, repo, prom, comic_id).await
+            match handle_archive(drive, repo, prom, comic_id).await {
+                Ok(()) => TaskOutcome::Complete,
+                Err(e) => TaskOutcome::Retry(format!("{:?}", e)),
+            }
         }
     }
 }
 
+/// Executes the comic archive cascade: deletes the comic and its relations within a transaction.
 #[instrument(skip(drive, repo, prom), level = Level::DEBUG)]
 async fn handle_archive<D, R, P>(
     drive: &D,

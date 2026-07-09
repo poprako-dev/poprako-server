@@ -1,9 +1,9 @@
 //! Domain models for team membership.
 
-use crate::model::team::TeamInfo;
-use crate::model::user::UserInfo;
 use time::OffsetDateTime;
 
+use crate::model::team::TeamInfo;
+use crate::model::user::UserInfo;
 use crate::value::member::MemberInclOpt;
 use crate::value::role::{RoleField, RoleMask};
 

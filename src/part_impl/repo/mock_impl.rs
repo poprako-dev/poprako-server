@@ -27,8 +27,8 @@ use crate::model::unit::UnitInfo;
 use crate::model::user::{UserCredential, UserInfo};
 use crate::model::workset::WorksetInfo;
 use crate::part::effect::event::Event;
-use crate::result::{ExpectedVariant, RegularError};
 use crate::part_impl::prom::mock_impl::MockPromRecord;
+use crate::result::{ExpectedVariant, RegularError};
 use crate::util::DeriveTransactional;
 
 /// In-memory state holding all mock repository records.
@@ -50,6 +50,7 @@ pub struct MockState {
     pub units: Vec<UnitInfo>,
     pub system_mails: Vec<SystemMailInfo>,
     pub prom_records: Vec<MockPromRecord>,
+    pub deleted_image_keys: Vec<String>,
 }
 
 /// A point-in-time copy of [MockState] for assertions after a transaction.
@@ -71,6 +72,7 @@ pub struct MockSnapshot {
     pub units: Vec<UnitInfo>,
     pub system_mails: Vec<SystemMailInfo>,
     pub prom_records: Vec<MockPromRecord>,
+    pub deleted_image_keys: Vec<String>,
 }
 
 impl From<MockState> for MockSnapshot {
@@ -92,6 +94,7 @@ impl From<MockState> for MockSnapshot {
             units: state.units,
             system_mails: state.system_mails,
             prom_records: state.prom_records,
+            deleted_image_keys: state.deleted_image_keys,
         }
     }
 }
@@ -300,9 +303,7 @@ impl Drive<MockContext> for Mock {
             state: self.state.lock().unwrap().clone(),
         };
 
-        let res = f(&mut context).await;
-
-        match res {
+        match f(&mut context).await {
             Ok(value) => {
                 *self.state.lock().unwrap() = context.state;
                 Ok(value)
@@ -341,6 +342,7 @@ pub mod assignment;
 /// Mock implementations for assignment invitation repository opers.
 pub mod assignment_invitation;
 
+/// Mock implementations for chapter repository operations.
 pub mod chapter;
 
 /// Mock implementations for comment repository opers.
@@ -386,6 +388,7 @@ use crate::part::repo::step::user::UserStep;
 use crate::part::shared::execute::Execute;
 use crate::value::role::{RoleField, RoleMask};
 
+/// Build a minimal `UserInfo` for test seeding.
 fn user(id: &str) -> UserInfo {
     //
     let time = now();
@@ -404,6 +407,7 @@ fn user(id: &str) -> UserInfo {
     }
 }
 
+/// Mock helper that verifies a seeded user is readable outside a transaction.
 #[tokio::test]
 async fn execute_reads_seeded_user() {
     let mock = Mock::new();
@@ -423,6 +427,7 @@ async fn execute_reads_seeded_user() {
     assert_eq!(found.id, "user-1");
 }
 
+/// Mock helper that verifies successful transactions commit repo and prom state.
 #[tokio::test]
 async fn transaction_commits_repo_and_prom() {
     let mock = Mock::new();
@@ -460,7 +465,7 @@ async fn transaction_commits_repo_and_prom() {
                 ),
             )
             .await?;
-            Ok(())
+            Ok::<(), RegularError>(())
         })
         .await
         .is_ok()
@@ -471,6 +476,7 @@ async fn transaction_commits_repo_and_prom() {
     assert_eq!(snapshot.prom_records.len(), 1);
 }
 
+/// Mock helper that verifies failed transactions discard repo and prom state.
 #[tokio::test]
 async fn transaction_rolls_back_repo_and_prom() {
     let mock = Mock::new();

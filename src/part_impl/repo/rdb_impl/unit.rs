@@ -18,12 +18,12 @@ use crate::part::repo::step::unit::{
 };
 use crate::part::repo::unit::{UnitRepo, UnitRepoTransactional};
 use crate::part::shared::execute::Execute;
-use crate::part_impl::shared::{RdbConn, RdbContext};
-use crate::part_impl::shared::result::{diesel, expected};
 use crate::part_impl::repo::rdb_impl::entity::unit::{
     UnitAspect, UnitEntry, UnitRow,
 };
 use crate::part_impl::repo::rdb_impl::{RdbRepo, RdbRepoTransactional};
+use crate::part_impl::shared::result::{diesel, expected};
+use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::{RegularError, RegularResult};
 
 use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::*;
@@ -32,6 +32,7 @@ impl UnitRepo<RdbContext> for RdbRepo {}
 
 impl UnitRepoTransactional<RdbContext> for RdbRepoTransactional {}
 
+/// Query a paginated list of unit infos for a page, ordered by index then ID.
 async fn list_infos_by_page_id(
     conn: &mut RdbConn,
     page_id: &str,
@@ -51,6 +52,7 @@ async fn list_infos_by_page_id(
     Ok(rows.into_iter().map(Into::into).collect())
 }
 
+/// Query all unit infos for a page, ordered by index then ID (no pagination).
 async fn list_all_infos_by_page_id(
     conn: &mut RdbConn,
     page_id: &str,
@@ -67,6 +69,7 @@ async fn list_all_infos_by_page_id(
     Ok(rows.into_iter().map(Into::into).collect())
 }
 
+/// Compute the next available unit index for a page.
 async fn next_index(conn: &mut RdbConn, page_id: &str) -> RegularResult<i32> {
     //
     let current: Option<i32> = t_unit
@@ -79,6 +82,7 @@ async fn next_index(conn: &mut RdbConn, page_id: &str) -> RegularResult<i32> {
     Ok(current.map(|index| index + 1).unwrap_or(0))
 }
 
+/// Insert a new unit with the next available index for the given page.
 async fn create_unit(
     conn: &mut RdbConn,
     page_id: &str,
@@ -99,6 +103,7 @@ async fn create_unit(
     Ok(())
 }
 
+/// Upsert a unit: create if absent, otherwise update its payload.
 async fn save_unit(
     conn: &mut RdbConn,
     page_id: &str,
@@ -135,6 +140,7 @@ async fn save_unit(
     Ok(())
 }
 
+/// Save a unit from a [`UnitOper::Save`] operation descriptor.
 async fn save_info(
     conn: &mut RdbConn,
     page_id: &str,
@@ -153,6 +159,7 @@ async fn save_info(
     save_unit(conn, page_id, id, payload).await
 }
 
+/// Delete a unit by its ID within the scope of a page.
 async fn delete_by_id_in_page(
     conn: &mut RdbConn,
     page_id: &str,
@@ -167,6 +174,7 @@ async fn delete_by_id_in_page(
     Ok(())
 }
 
+/// Query (id, index) pairs for all units in a page.
 async fn list_indexes_by_page_id(
     conn: &mut RdbConn,
     page_id: &str,
@@ -185,6 +193,8 @@ async fn list_indexes_by_page_id(
         .collect())
 }
 
+/// Reorder units in a page by assigning new indexes, safely handling cyclic
+/// dependencies via a two-phase shift-then-set strategy.
 async fn update_indexes_by_page_id(
     conn: &mut RdbConn,
     page_id: &str,
@@ -241,6 +251,7 @@ async fn update_indexes_by_page_id(
     Ok(())
 }
 
+/// Count total, translated, and proofread units for a page.
 async fn count_by_page_id(
     conn: &mut RdbConn,
     page_id: &str,

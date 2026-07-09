@@ -9,6 +9,7 @@ use crate::value::role::{RoleField, RoleMask};
 
 // ── Queryable / Selectable ─────────────────────────────────────────────────
 
+/// Raw database row for the `t_member` table. Returned by Diesel queries.
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_member)]
 pub struct MemberRow {
@@ -35,6 +36,7 @@ pub struct MemberRow {
 
 // ── Insertable ─────────────────────────────────────────────────────────────
 
+/// Insertable struct for creating a new record in the `t_member` table.
 #[derive(Insertable)]
 #[diesel(table_name = t_member)]
 pub struct MemberEntry<'a> {
@@ -61,6 +63,7 @@ pub struct MemberEntry<'a> {
 
 // ── Changeset (AsChangeset) ────────────────────────────────────────────────
 
+/// Aspect struct for updating specific fields of a member record identified by id.
 #[derive(AsChangeset)]
 #[diesel(table_name = t_member)]
 pub struct MemberAspect<'a> {

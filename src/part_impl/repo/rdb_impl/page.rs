@@ -17,21 +17,24 @@ use crate::part::repo::step::page::{
     ReserveImage, SetUnitCounters,
 };
 use crate::part::shared::execute::Execute;
-use crate::part_impl::shared::{RdbConn, RdbContext};
-use crate::part_impl::shared::result::{diesel, expected};
 use crate::part_impl::repo::rdb_impl::entity::page::{
     PageAspect, PageEntry, PageRow,
 };
 use crate::part_impl::repo::rdb_impl::{RdbRepo, RdbRepoTransactional};
+use crate::part_impl::shared::result::{diesel, expected};
+use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::{RegularError, RegularResult};
 
 use crate::part_impl::repo::rdb_impl::schema::t_page::dsl::*;
-use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::{f_page_id as unit_f_page_id, t_unit};
+use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::{
+    f_page_id as unit_f_page_id, t_unit,
+};
 
 impl PageRepo<RdbContext> for RdbRepo {}
 
 impl PageRepoTransactional<RdbContext> for RdbRepoTransactional {}
 
+/// Load a single page info by ID.
 async fn get_info_by_id(
     conn: &mut RdbConn,
     id: &str,
@@ -49,6 +52,7 @@ async fn get_info_by_id(
     Ok(row.into())
 }
 
+/// Load a page info by ID, locking the row for update.
 async fn get_info_excluded(
     conn: &mut RdbConn,
     id: &str,
@@ -67,6 +71,7 @@ async fn get_info_excluded(
     Ok(row.into())
 }
 
+/// Query a paginated list of page infos for a chapter, ordered by index.
 async fn list_infos_by_chapter_id(
     conn: &mut RdbConn,
     chapter_id: &str,
@@ -87,6 +92,7 @@ async fn list_infos_by_chapter_id(
     Ok(rows.into_iter().map(Into::into).collect())
 }
 
+/// Query all page infos for a chapter, ordered by index (no pagination).
 async fn list_all_infos_by_chapter_id(
     conn: &mut RdbConn,
     chapter_id: &str,
@@ -103,6 +109,7 @@ async fn list_all_infos_by_chapter_id(
     Ok(rows.into_iter().map(Into::into).collect())
 }
 
+/// Batch-insert pages from a slice of forms and return the created infos.
 async fn create_batch(
     conn: &mut RdbConn,
     forms: &[PageForm],
@@ -120,6 +127,8 @@ async fn create_batch(
     Ok(rows.into_iter().map(Into::into).collect())
 }
 
+/// Reserve a new image slot for a page: bump version, generate object key,
+/// and return the reservation with previous key for cleanup.
 async fn reserve_image(
     conn: &mut RdbConn,
     id: &str,
@@ -159,6 +168,7 @@ async fn reserve_image(
     })
 }
 
+/// Mark a page's image as successfully uploaded, checking version staleness.
 async fn mark_image_uploaded(
     conn: &mut RdbConn,
     id: &str,
@@ -184,6 +194,7 @@ async fn mark_image_uploaded(
     Ok(())
 }
 
+/// Persist unit counters (total, translated, proofread) onto a page row.
 async fn set_unit_counters(
     conn: &mut RdbConn,
     id: &str,
@@ -206,6 +217,7 @@ async fn set_unit_counters(
     Ok(())
 }
 
+/// Delete all pages (and their child units) for a given chapter.
 async fn delete_by_chapter_id(
     conn: &mut RdbConn,
     chapter_id: &str,

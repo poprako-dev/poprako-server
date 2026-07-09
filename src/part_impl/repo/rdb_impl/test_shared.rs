@@ -1,10 +1,12 @@
 use std::env;
 use std::sync::OnceLock;
 
-use diesel::{Connection, PgConnection};
 use diesel::prelude::*;
+use diesel::{Connection, PgConnection};
 use diesel_async::RunQueryDsl;
-use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
+use diesel_migrations::{
+    EmbeddedMigrations, MigrationHarness, embed_migrations,
+};
 
 use poprako_transactional::advance::Advance;
 use poprako_transactional::drive::Drive;
@@ -23,9 +25,9 @@ use crate::part::repo::step::user::UserStep;
 use crate::part::repo::step::workset::WorksetStep;
 use crate::part::shared::execute::Execute;
 use crate::part_impl::drive::rdb_impl::RdbDrive;
+use crate::part_impl::repo::rdb_impl::{RdbRepo, schema};
 use crate::part_impl::shared::RdbCore;
 use crate::part_impl::shared::result::diesel as diesel_error;
-use crate::part_impl::repo::rdb_impl::{RdbRepo, schema};
 use crate::result::{RegularError, RegularResult};
 use crate::util::DeriveTransactional as _;
 

@@ -6,6 +6,7 @@ use time::OffsetDateTime;
 use crate::model::announcement::{AnnouncementForm, AnnouncementInfo};
 use crate::part_impl::repo::rdb_impl::schema::t_announcement;
 
+/// Raw database row for the `t_announcement` table. Returned by Diesel queries.
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_announcement)]
 pub struct AnnouncementRow {
@@ -20,6 +21,7 @@ pub struct AnnouncementRow {
     pub f_created_at: OffsetDateTime,
 }
 
+/// Insertable struct for creating a new record in the `t_announcement` table.
 #[derive(Insertable)]
 #[diesel(table_name = t_announcement)]
 pub struct AnnouncementEntry<'a> {

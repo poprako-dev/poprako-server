@@ -8,6 +8,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_workset;
 
 // ── Queryable / Selectable ─────────────────────────────────────────────────
 
+/// Raw database row for the `t_workset` table. Returned by Diesel queries.
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_workset)]
 pub struct WorksetRow {
@@ -27,6 +28,7 @@ pub struct WorksetRow {
 
 // ── Insertable ─────────────────────────────────────────────────────────────
 
+/// Insertable struct for creating a new record in the `t_workset` table.
 #[derive(Insertable)]
 #[diesel(table_name = t_workset)]
 pub struct WorksetEntry<'a> {
@@ -43,6 +45,7 @@ pub struct WorksetEntry<'a> {
 
 // ── Changeset (AsChangeset) ────────────────────────────────────────────────
 
+/// Aspect struct for updating specific fields of a workset record identified by id.
 #[derive(AsChangeset)]
 #[diesel(table_name = t_workset)]
 pub struct WorksetAspect<'a> {

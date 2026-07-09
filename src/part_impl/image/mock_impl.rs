@@ -52,13 +52,19 @@ impl ImagePool for Mock {
         Ok(true)
     }
 
-    async fn delete_object(&self, _key: &str) -> RegularResult<()> {
+    async fn delete_object(&self, key: &str) -> RegularResult<()> {
         if self.flags.lock().unwrap().image_delete_failure {
             return Err(RegularError::Expected {
                 variant: ExpectedVariant::Args,
                 message: trl("error-image-delete-failed"),
             });
         }
+
+        self.state
+            .lock()
+            .unwrap()
+            .deleted_image_keys
+            .push(key.to_string());
 
         Ok(())
     }
@@ -67,6 +73,7 @@ impl ImagePool for Mock {
 // put_signed_returns_stable_url(ImagePool::put_signed)(positive): put URLs should be deterministic for assertions.
 // get_signed_failure_returns_expected_error(ImagePool::get_signed)(negative): configured get failures should return an expected error.
 
+/// Mock helper that returns a stable deterministic put URL.
 #[tokio::test]
 async fn put_signed_returns_stable_url() {
     let mock = Mock::new();
@@ -78,6 +85,7 @@ async fn put_signed_returns_stable_url() {
     assert_eq!(url.as_str(), "https://test.local/put/avatar.png");
 }
 
+/// Mock helper that returns an expected error when get failure is configured.
 #[tokio::test]
 async fn get_signed_failure_returns_expected_error() {
     let mock = Mock::new().with_image_get_failure();

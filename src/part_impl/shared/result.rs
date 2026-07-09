@@ -7,18 +7,23 @@ use poprako_util::i18n::trl;
 
 use crate::result::{ExpectedVariant, RegularError};
 
+/// Converts a pool build error into an unrecoverable `RegularError`.
 pub fn pool_build(err: BuildError) -> RegularError {
     RegularError::Unrecoverable {
         message: format!("failed to build pool: {}", err),
     }
 }
 
+/// Converts a pool checkout error into an unrecoverable `RegularError`.
 pub fn pool_get(err: PoolError) -> RegularError {
     RegularError::Unrecoverable {
         message: format!("failed to get conn: {}", err),
     }
 }
 
+/// Converts a Diesel error into the appropriate `RegularError` variant.
+///
+/// Unique violations and `NotFound` map to `Expected`; all others are `Unrecoverable`.
 pub fn diesel(err: DieselError) -> RegularError {
     match err {
         //
@@ -47,6 +52,7 @@ pub fn diesel(err: DieselError) -> RegularError {
     }
 }
 
+/// Creates an `Expected` variant `RegularError` with the given i18n message key.
 pub fn expected(message: &str) -> RegularError {
     RegularError::Expected {
         variant: ExpectedVariant::Args,

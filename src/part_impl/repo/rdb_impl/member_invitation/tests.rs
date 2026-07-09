@@ -1,5 +1,7 @@
 // member_invitation_roundtrip_reads_test_database_url(MemberInvitationStep)(positive): member invitation repo creates, lists, and marks invitations used in the local test database.
 
+use super::*;
+
 use poprako_transactional::advance::Advance;
 use poprako_transactional::drive::Drive;
 

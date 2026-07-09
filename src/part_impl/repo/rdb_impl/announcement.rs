@@ -14,12 +14,12 @@ use crate::part::repo::announcement::{
 };
 use crate::part::repo::step::announcement::{Create, ListInfos};
 use crate::part::shared::execute::Execute;
-use crate::part_impl::shared::{RdbConn, RdbContext};
-use crate::part_impl::shared::result::diesel;
 use crate::part_impl::repo::rdb_impl::entity::announcement::{
     AnnouncementEntry, AnnouncementRow,
 };
-use crate::part_impl::repo::rdb_impl::{incl, RdbRepo, RdbRepoTransactional};
+use crate::part_impl::repo::rdb_impl::{RdbRepo, RdbRepoTransactional, incl};
+use crate::part_impl::shared::result::diesel;
+use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::{RegularError, RegularResult};
 
 use crate::part_impl::repo::rdb_impl::schema::t_announcement::dsl::*;
@@ -28,6 +28,7 @@ impl AnnouncementRepo<RdbContext> for RdbRepo {}
 
 impl AnnouncementRepoTransactional<RdbContext> for RdbRepoTransactional {}
 
+/// Queries announcement rows filtered by team ID, ordered by creation time descending.
 async fn list_infos(
     conn: &mut RdbConn,
     spec: &AnnouncementListSpec,
@@ -56,6 +57,7 @@ async fn list_infos(
     Ok(infos)
 }
 
+/// Inserts a new announcement row from the given form and returns the created info.
 async fn create(
     conn: &mut RdbConn,
     form: &AnnouncementForm,

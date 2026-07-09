@@ -12,6 +12,7 @@ use crate::value::role::RoleMask;
 
 // ── Queryable / Selectable ─────────────────────────────────────────────────
 
+/// Raw database row for the `t_member_invitation` table. Returned by Diesel queries.
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_member_invitation)]
 pub struct MemberInvitationRow {
@@ -31,6 +32,7 @@ pub struct MemberInvitationRow {
 
 // ── Insertable ─────────────────────────────────────────────────────────────
 
+/// Insertable struct for creating a new record in the `t_member_invitation` table.
 #[derive(Insertable)]
 #[diesel(table_name = t_member_invitation)]
 pub struct MemberInvitationEntry<'a> {
@@ -50,6 +52,8 @@ pub struct MemberInvitationEntry<'a> {
 
 // ── Changeset (AsChangeset) ────────────────────────────────────────────────
 
+/// Aspect struct for updating specific fields of a member-invitation record
+/// identified by id.
 #[derive(AsChangeset)]
 #[diesel(table_name = t_member_invitation)]
 pub struct MemberInvitationAspect {

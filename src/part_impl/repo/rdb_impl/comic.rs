@@ -20,12 +20,12 @@ use crate::part::repo::step::comic::{
     ReserveCover, TouchLastActive, UpdateChapterCount, UpdateInfo,
 };
 use crate::part::shared::execute::Execute;
-use crate::part_impl::shared::{RdbConn, RdbContext};
-use crate::part_impl::shared::result::{diesel, expected};
 use crate::part_impl::repo::rdb_impl::entity::comic::{
     ComicAspect, ComicEntry, ComicRow,
 };
-use crate::part_impl::repo::rdb_impl::{incl, RdbRepo, RdbRepoTransactional};
+use crate::part_impl::repo::rdb_impl::{RdbRepo, RdbRepoTransactional, incl};
+use crate::part_impl::shared::result::{diesel, expected};
+use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::{RegularError, RegularResult};
 use crate::value::chapter::{Stage, StageMask, StagePhase};
 use crate::value::comic::ComicInclOpt;
@@ -39,6 +39,7 @@ impl ComicRepoTransactional<RdbContext> for RdbRepoTransactional {}
 
 // ── Free functions ──────────────────────────────────────────────────────────
 
+/// Generates a raw SQL predicate for a single-stage (one-shot) workflow column and phase.
 fn one_shot_predicate(column: &str, phase: StagePhase) -> &'static str {
     match (column, phase) {
         //
@@ -71,6 +72,7 @@ fn one_shot_predicate(column: &str, phase: StagePhase) -> &'static str {
     }
 }
 
+/// Generates a SQL predicate for a two-stage (started/completed) workflow column and phase.
 fn two_step_predicate(
     started_column: &str,
     completed_column: &str,
@@ -91,6 +93,7 @@ fn two_step_predicate(
     }
 }
 
+/// Generates a workflow predicate for a given stage and phase.
 fn stage_predicate(stage: Stage, phase: StagePhase) -> String {
     match stage {
         //
@@ -112,6 +115,7 @@ fn stage_predicate(stage: Stage, phase: StagePhase) -> String {
     }
 }
 
+/// Builds an optional `EXISTS` subquery SQL string from a stage mask workflow filter.
 fn workflow_filter_sql(stage_mask: StageMask) -> Option<String> {
     //
     let predicates = StageMask::stages()
@@ -142,6 +146,7 @@ fn workflow_filter_sql(stage_mask: StageMask) -> Option<String> {
     Some(sql)
 }
 
+/// Parses a fuzzy title value as an integer and converts to a stored index.
 fn stored_index_from_numeric_fuzzy(fuzzy_title_value: &str) -> Option<i32> {
     match fuzzy_title_value.trim().parse() {
         Ok(index) => user_index_to_stored_index(index),
@@ -149,6 +154,7 @@ fn stored_index_from_numeric_fuzzy(fuzzy_title_value: &str) -> Option<i32> {
     }
 }
 
+/// Queries a single comic row by ID and populates its includes.
 async fn get_info_by_id(
     conn: &mut RdbConn,
     id: &str,
@@ -176,6 +182,7 @@ async fn get_info_by_id(
     Ok(info)
 }
 
+/// Queries comic rows filtered by workset, optional fuzzy title, and list kind.
 async fn list_infos(
     conn: &mut RdbConn,
     spec: &ComicListSpec,
@@ -233,6 +240,7 @@ async fn list_infos(
     Ok(infos)
 }
 
+/// Updates the title, author, description, and composed title of a comic row.
 async fn update_info(
     conn: &mut RdbConn,
     update: &ComicInfoUpdate,
@@ -263,6 +271,7 @@ async fn update_info(
     Ok(())
 }
 
+/// Marks a comic's cover as uploaded, checking for version match.
 async fn mark_cover_uploaded(
     conn: &mut RdbConn,
     id: &str,
@@ -288,6 +297,7 @@ async fn mark_cover_uploaded(
     Ok(())
 }
 
+/// Inserts a new comic row from the given form and returns the created info.
 async fn create(
     conn: &mut RdbConn,
     form: &ComicForm,
@@ -305,6 +315,7 @@ async fn create(
     Ok(row.into())
 }
 
+/// Queries a single comic row by ID under `FOR UPDATE` lock and populates includes.
 async fn get_info_excluded(
     conn: &mut RdbConn,
     id: &str,
@@ -333,6 +344,7 @@ async fn get_info_excluded(
     Ok(info)
 }
 
+/// Queries comic rows under `FOR UPDATE` lock using the given list spec.
 async fn list_infos_excluded(
     conn: &mut RdbConn,
     spec: &ComicListSpec,
@@ -356,6 +368,7 @@ async fn list_infos_excluded(
     Ok(infos)
 }
 
+/// Reserves a cover image key for a comic, incrementing the cover version.
 async fn reserve_cover(
     conn: &mut RdbConn,
     id: &str,
@@ -391,6 +404,7 @@ async fn reserve_cover(
     })
 }
 
+/// Deletes a single comic row by ID.
 async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
     //
     diesel::delete(t_comic.filter(f_id.eq(id)))
@@ -401,6 +415,7 @@ async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
     Ok(())
 }
 
+/// Sets the completion flag on a comic row.
 async fn mark_completed(
     conn: &mut RdbConn,
     id: &str,
@@ -420,6 +435,7 @@ async fn mark_completed(
     Ok(())
 }
 
+/// Atomically increments and returns the previous `chapter_next_index` value.
 async fn incr_chapter_next_index(
     conn: &mut RdbConn,
     id: &str,
@@ -435,6 +451,7 @@ async fn incr_chapter_next_index(
     Ok(prev)
 }
 
+/// Adjusts a comic's chapter count by the given delta.
 async fn update_chapter_count(
     conn: &mut RdbConn,
     id: &str,
@@ -450,6 +467,7 @@ async fn update_chapter_count(
     Ok(())
 }
 
+/// Updates the `last_active_at` timestamp on a comic row to now.
 async fn touch_last_active(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
     //
     let now = OffsetDateTime::now_utc();

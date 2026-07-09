@@ -18,14 +18,14 @@ use crate::part::repo::step::assignment_invitation::{
     ListInfos, MarkPendingAsUsed,
 };
 use crate::part::shared::execute::Execute;
-use crate::part_impl::shared::result::{diesel, expected};
-use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::part_impl::repo::rdb_impl::entity::assignment_invitation::{
     AssignmentInvitationAspect, AssignmentInvitationEntry,
     AssignmentInvitationRow,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_assignment_invitation::dsl::*;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, RdbRepoTransactional};
+use crate::part_impl::shared::result::{diesel, expected};
+use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::{RegularError, RegularResult};
 
 impl AssignmentInvitationRepo<RdbContext> for RdbRepo {}
@@ -35,18 +35,21 @@ impl AssignmentInvitationRepoTransactional<RdbContext>
 {
 }
 
+/// Converts a single `AssignmentInvitationRow` into an `AssignmentInvitationInfo`.
 fn row_into_info(
     row: AssignmentInvitationRow,
 ) -> RegularResult<AssignmentInvitationInfo> {
     row.try_into()
 }
 
+/// Converts a vector of `AssignmentInvitationRow` values into `AssignmentInvitationInfo`.
 fn rows_into_infos(
     rows: Vec<AssignmentInvitationRow>,
 ) -> RegularResult<Vec<AssignmentInvitationInfo>> {
     rows.into_iter().map(row_into_info).collect()
 }
 
+/// Queries assignment invitation rows filtered by chapter ID and optional pending flag.
 async fn list_infos(
     conn: &mut RdbConn,
     chapter_id: &str,
@@ -75,6 +78,7 @@ async fn list_infos(
     rows_into_infos(rows)
 }
 
+/// Queries a single assignment invitation row by ID.
 async fn get_info_by_id(
     conn: &mut RdbConn,
     id: &str,
@@ -92,6 +96,7 @@ async fn get_info_by_id(
     row_into_info(row)
 }
 
+/// Queries a pending invitation by code under `FOR UPDATE` lock.
 async fn get_info_by_code_excluded(
     conn: &mut RdbConn,
     code: &str,
@@ -111,6 +116,7 @@ async fn get_info_by_code_excluded(
     row_into_info(row)
 }
 
+/// Inserts a new assignment invitation row from the given form.
 async fn create(
     conn: &mut RdbConn,
     form: &AssignmentInvitationForm,
@@ -129,6 +135,7 @@ async fn create(
     row_into_info(row)
 }
 
+/// Sets the pending flag to false on an invitation, marking it as used.
 async fn mark_pending_as_used(
     conn: &mut RdbConn,
     id: &str,
@@ -155,6 +162,7 @@ async fn mark_pending_as_used(
     Ok(())
 }
 
+/// Deletes a single assignment invitation row by ID.
 async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
     //
     diesel::delete(t_assignment_invitation.filter(f_id.eq(id)))
@@ -165,6 +173,7 @@ async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
     Ok(())
 }
 
+/// Deletes all assignment invitation rows for a given chapter ID.
 async fn delete_by_chapter_id(
     conn: &mut RdbConn,
     chapter_id: &str,

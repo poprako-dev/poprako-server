@@ -8,6 +8,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_user;
 
 // ── Queryable / Selectable ─────────────────────────────────────────────────
 
+/// Raw database row for the `t_user` table. Returned by Diesel queries.
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_user)]
 pub struct UserRow {
@@ -27,6 +28,8 @@ pub struct UserRow {
     pub f_updated_at: OffsetDateTime,
 }
 
+/// Raw database row for user credentials (password hash) from the `t_user`
+/// table. Returned by Diesel queries.
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_user)]
 pub struct UserCredentialRow {
@@ -37,6 +40,7 @@ pub struct UserCredentialRow {
 
 // ── Insertable ─────────────────────────────────────────────────────────────
 
+/// Insertable struct for creating a new record in the `t_user` table.
 #[derive(Insertable)]
 #[diesel(table_name = t_user)]
 pub struct UserEntry<'a> {
@@ -54,6 +58,7 @@ pub struct UserEntry<'a> {
 
 // ── Changeset (AsChangeset) ────────────────────────────────────────────────
 
+/// Aspect struct for updating specific fields of a user record identified by id.
 #[derive(AsChangeset)]
 #[diesel(table_name = t_user)]
 pub struct UserAspect<'a> {

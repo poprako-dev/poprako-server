@@ -10,6 +10,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_assignment_invitation;
 use crate::result::RegularError;
 use crate::value::role::RoleMask;
 
+/// Raw database row for the `t_assignment_invitation` table. Returned by Diesel queries.
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_assignment_invitation)]
 pub struct AssignmentInvitationRow {
@@ -29,6 +30,7 @@ pub struct AssignmentInvitationRow {
     pub f_updated_at: OffsetDateTime,
 }
 
+/// Insertable struct for creating a new record in the `t_assignment_invitation` table.
 #[derive(Insertable)]
 #[diesel(table_name = t_assignment_invitation)]
 pub struct AssignmentInvitationEntry<'a> {
@@ -48,6 +50,8 @@ pub struct AssignmentInvitationEntry<'a> {
     pub f_updated_at: OffsetDateTime,
 }
 
+/// Aspect struct for updating specific fields of an assignment-invitation record
+/// identified by id.
 #[derive(AsChangeset)]
 #[diesel(table_name = t_assignment_invitation)]
 pub struct AssignmentInvitationAspect {

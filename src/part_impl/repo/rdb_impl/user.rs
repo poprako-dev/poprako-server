@@ -18,12 +18,12 @@ use crate::part::repo::step::user::{
 };
 use crate::part::repo::user::{UserRepo, UserRepoTransactional};
 use crate::part::shared::execute::Execute;
-use crate::part_impl::shared::{RdbConn, RdbContext};
-use crate::part_impl::shared::result::{diesel, expected};
 use crate::part_impl::repo::rdb_impl::entity::user::{
     UserAspect, UserCredentialRow, UserEntry, UserRow,
 };
 use crate::part_impl::repo::rdb_impl::{RdbRepo, RdbRepoTransactional};
+use crate::part_impl::shared::result::{diesel, expected};
+use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::{RegularError, RegularResult};
 
 use crate::part_impl::repo::rdb_impl::schema::t_user::dsl::*;
@@ -34,6 +34,7 @@ impl UserRepoTransactional<RdbContext> for RdbRepoTransactional {}
 
 // ── Free functions ──────────────────────────────────────────────────────────
 
+/// Load a single user info by ID.
 async fn get_info_by_id(
     conn: &mut RdbConn,
     id: &str,
@@ -51,6 +52,7 @@ async fn get_info_by_id(
     Ok(row.into())
 }
 
+/// Load credential information (password hash etc.) for a user by QID.
 async fn get_credential_by_qid(
     conn: &mut RdbConn,
     qid: &str,
@@ -68,6 +70,7 @@ async fn get_credential_by_qid(
     Ok(row.into())
 }
 
+/// Look up a user info by QID, returning None when not found.
 async fn find_info_by_qid(
     conn: &mut RdbConn,
     qid: &str,
@@ -84,6 +87,7 @@ async fn find_info_by_qid(
     Ok(row.map(Into::into))
 }
 
+/// Insert a new user and return its info.
 async fn create(
     conn: &mut RdbConn,
     form: &UserForm,
@@ -111,6 +115,7 @@ async fn create(
     Ok(row.into())
 }
 
+/// Update a user's QID and nickname.
 async fn update_info(
     conn: &mut RdbConn,
     id: &str,
@@ -131,6 +136,8 @@ async fn update_info(
     Ok(())
 }
 
+/// Reserve a new avatar slot for a user: bump version, generate object key,
+/// and return the reservation with previous key for cleanup.
 async fn reserve_avatar(
     conn: &mut RdbConn,
     id: &str,
@@ -167,6 +174,7 @@ async fn reserve_avatar(
     })
 }
 
+/// Mark a user avatar as uploaded, checking version staleness.
 async fn mark_avatar_uploaded(
     conn: &mut RdbConn,
     id: &str,
@@ -192,6 +200,7 @@ async fn mark_avatar_uploaded(
     Ok(())
 }
 
+/// Update the last-active timestamp for a user.
 async fn touch_last_active(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
     //
     let now = OffsetDateTime::now_utc();
@@ -207,6 +216,7 @@ async fn touch_last_active(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
     Ok(())
 }
 
+/// Load a user info by ID, locking the row for update.
 async fn get_info_by_id_excluded(
     conn: &mut RdbConn,
     id: &str,
@@ -225,6 +235,7 @@ async fn get_info_by_id_excluded(
     Ok(row.into())
 }
 
+/// Delete a user by ID.
 async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
     //
     diesel::delete(t_user.filter(f_id.eq(id)))

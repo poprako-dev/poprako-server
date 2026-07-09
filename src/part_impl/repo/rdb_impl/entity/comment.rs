@@ -6,6 +6,7 @@ use time::OffsetDateTime;
 use crate::model::comment::{CommentForm, CommentInfo};
 use crate::part_impl::repo::rdb_impl::schema::t_comment;
 
+/// Raw database row for the `t_comment` table. Returned by Diesel queries.
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_comment)]
 pub struct CommentRow {
@@ -19,6 +20,7 @@ pub struct CommentRow {
     pub f_created_at: OffsetDateTime,
 }
 
+/// Insertable struct for creating a new record in the `t_comment` table.
 #[derive(Insertable)]
 #[diesel(table_name = t_comment)]
 pub struct CommentEntry<'a> {

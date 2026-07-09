@@ -24,6 +24,7 @@ impl EffectDevelop for Mock {
 use crate::part::effect::event::Event;
 use crate::part::effect::event::user::UserActivePayload;
 
+/// Mock helper that verifies events are collected for later draining.
 #[tokio::test]
 async fn develop_collects_events() {
     let mock = Mock::new();

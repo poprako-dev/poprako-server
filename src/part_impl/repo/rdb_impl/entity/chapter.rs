@@ -8,6 +8,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_chapter;
 use crate::result::RegularError;
 use crate::value::chapter::{Stage, StageMask, StagePhase};
 
+/// Raw database row for the `t_chapter` table. Returned by Diesel queries.
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_chapter)]
 pub struct ChapterRow {
@@ -40,6 +41,7 @@ pub struct ChapterRow {
     pub f_updated_at: OffsetDateTime,
 }
 
+/// Insertable struct for creating a new record in the `t_chapter` table.
 #[derive(Insertable)]
 #[diesel(table_name = t_chapter)]
 pub struct ChapterEntry<'a> {
@@ -57,6 +59,7 @@ pub struct ChapterEntry<'a> {
     pub f_updated_at: OffsetDateTime,
 }
 
+/// Aspect struct for updating specific fields of a chapter record identified by id.
 #[derive(AsChangeset)]
 #[diesel(table_name = t_chapter)]
 pub struct ChapterAspect<'a> {
@@ -159,6 +162,8 @@ impl<'a> ChapterAspect<'a> {
     }
 }
 
+/// Resolve a one-shot stage (RawProvide, Review, Publish) to its timestamp:
+/// `Some(updated_at)` when completed, `None` when pending.
 fn one_shot_timestamp(
     stages: StageMask,
     stage: Stage,
@@ -171,6 +176,10 @@ fn one_shot_timestamp(
     }
 }
 
+/// Resolve a two-step stage (Translate, Proofread, TypesetRedraw) to its
+/// start/completed timestamps. Returns `(Option<Option>, Option<Option>)` for
+/// use in `ChapterAspect` fields where `Some(None)` means "clear the column"
+/// and `Some(Some(ts))` means "set the column".
 fn two_step_timestamps(
     stages: StageMask,
     stage: Stage,
@@ -188,6 +197,8 @@ fn two_step_timestamps(
     }
 }
 
+/// Convert an optional one-shot timestamp to a `StagePhase`:
+/// `Some` maps to `Completed`, `None` maps to `Pending`.
 fn phase_from_one_shot(timestamp: Option<OffsetDateTime>) -> StagePhase {
     match timestamp {
         Some(_) => StagePhase::Completed,
@@ -195,6 +206,9 @@ fn phase_from_one_shot(timestamp: Option<OffsetDateTime>) -> StagePhase {
     }
 }
 
+/// Convert optional start/completed timestamps to a `StagePhase`:
+/// `(Some, Some)` -> `Completed`, `(Some, None)` -> `Active`,
+/// `(None, None)` -> `Pending`.
 fn phase_from_two_step(
     started_at: Option<OffsetDateTime>,
     completed_at: Option<OffsetDateTime>,
@@ -206,6 +220,8 @@ fn phase_from_two_step(
     }
 }
 
+/// Build a `StageMask` from a `ChapterRow` by converting each column-pair into
+/// its corresponding `StagePhase`.
 fn workflow_stage_mask_from_row(
     row: &ChapterRow,
 ) -> Result<StageMask, RegularError> {
@@ -275,4 +291,3 @@ impl<'a> From<&'a ChapterForm> for ChapterEntry<'a> {
         }
     }
 }
-

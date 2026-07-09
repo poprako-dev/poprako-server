@@ -1,5 +1,7 @@
 // announcement_roundtrip_reads_test_database_url(AnnouncementStep)(positive): announcement repo creates and lists included users in the local test database.
 
+use super::*;
+
 use poprako_transactional::advance::Advance;
 use poprako_transactional::drive::Drive;
 

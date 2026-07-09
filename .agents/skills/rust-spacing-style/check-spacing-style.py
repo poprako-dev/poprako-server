@@ -40,6 +40,7 @@ class Block:
     open_line: int
     open_col: int
     is_code: bool
+    check_pairs: bool
     check_start_separator: bool
     kind: str
 
@@ -60,7 +61,6 @@ class Diagnostic:
     col: int
     code: str
     message: str
-    remove_lines: tuple[int, ...]
 
 
 def is_ident_char(ch: str) -> bool:
@@ -175,7 +175,6 @@ def sanitize(src: str) -> str:
             continue
 
         if ch == "'" and i + 1 < n:
-            # Lifetime: 'a, 'static, etc. Do not treat as char literal.
             if src[i + 1].isalpha() or src[i + 1] == "_":
                 j = i + 2
 
@@ -326,33 +325,50 @@ def looks_like_async_block(prefix: str) -> bool:
     return re.search(r"\basync\s+(?:move\s+)?$", prefix[-120:]) is not None
 
 
-def classify_open_brace(clean: str, i: int, parent: Block) -> tuple[bool, bool, str]:
-    prefix = clean[parent.current_start_i : i] if parent.current_start_i is not None else ""
+def line_has_only_open_brace(src: str, line_no: int) -> bool:
+    lines = src.splitlines()
+
+    if line_no < 1 or line_no > len(lines):
+        return False
+
+    return lines[line_no - 1].strip() == "{"
+
+
+def classify_open_brace(
+    clean: str, i: int, parent: Block
+) -> tuple[bool, bool, bool, str]:
+    prefix = (
+        clean[parent.current_start_i : i] if parent.current_start_i is not None else ""
+    )
     fw = first_word(prefix)
     prev = prev_token(clean, i)
 
     if fw == "fn":
-        return True, True, "fn_body"
+        return True, True, True, "fn_body"
 
     if fw in {"impl", "trait", "mod", "extern"}:
-        return True, False, "item_body"
-
-    if fw in {"if", "else", "for", "while", "loop", "unsafe"} or prev == "else":
-        return True, True, "control_body"
+        return True, False, False, "item_body"
 
     if fw == "match":
-        return True, True, "control_body"
+        return True, True, True, "match_body"
 
-    if looks_like_closure_prefix(prefix) or looks_like_async_block(prefix) or prev == "|":
-        return True, True, "closure_body"
+    if fw in {"if", "else", "for", "while", "loop", "unsafe"} or prev == "else":
+        return True, True, True, "control_body"
+
+    if (
+        looks_like_closure_prefix(prefix)
+        or looks_like_async_block(prefix)
+        or prev == "|"
+    ):
+        return True, True, True, "closure_body"
 
     if prev == "=>":
-        return True, True, "match_arm_body"
+        return True, True, True, "arm_block_body"
 
     if prefix.strip() == "":
-        return True, True, "block_expr"
+        return True, True, True, "block_expr"
 
-    return False, False, "literal"
+    return False, False, False, "literal"
 
 
 def control_block_continues(clean: str, after_close_i: int) -> bool:
@@ -362,6 +378,21 @@ def control_block_continues(clean: str, after_close_i: int) -> bool:
         return True
 
     if tok in {"+", "-", "*", "/", "%", "&", "|", "^", "<", ">", "=", ":"}:
+        return True
+
+    return False
+
+
+def match_arm_continues(clean: str, after_close_i: int) -> bool:
+    tok = next_token(clean, after_close_i)
+
+    if tok in {",", ".", "?", ";", ")", "]"}:
+        return True
+
+    if tok in {"+", "-", "*", "/", "%", "&", "|", "^", "<", ">", "=", ":"}:
+        return True
+
+    if tok in {"as"}:
         return True
 
     return False
@@ -420,6 +451,7 @@ def parse_blocks(src: str) -> tuple[list[Block], str]:
         open_line=1,
         open_col=1,
         is_code=True,
+        check_pairs=True,
         check_start_separator=False,
         kind="root",
     )
@@ -442,6 +474,7 @@ def parse_blocks(src: str) -> tuple[list[Block], str]:
                         open_line=line,
                         open_col=col,
                         is_code=False,
+                        check_pairs=False,
                         check_start_separator=False,
                         kind="literal",
                     )
@@ -457,7 +490,10 @@ def parse_blocks(src: str) -> tuple[list[Block], str]:
             continue
 
         if ch == "}":
-            add_statement(top, clean, line_starts, i - 1)
+            if top.kind == "match_body":
+                add_statement(top, clean, line_starts, i - 1)
+            else:
+                add_statement(top, clean, line_starts, i - 1)
 
             popped = stack.pop()
             closed.append(popped)
@@ -466,7 +502,16 @@ def parse_blocks(src: str) -> tuple[list[Block], str]:
                 parent = stack[-1]
 
                 if parent.is_code and parent.current_start_i is not None:
-                    if popped.kind in {"control_body", "match_arm_body", "block_expr"}:
+                    if parent.kind == "match_body":
+                        if not match_arm_continues(clean, i + 1):
+                            add_statement(parent, clean, line_starts, i)
+                    elif popped.kind in {
+                        "control_body",
+                        "match_body",
+                        "arm_block_body",
+                        "block_expr",
+                        "closure_body",
+                    }:
                         if not control_block_continues(clean, i + 1):
                             add_statement(parent, clean, line_starts, i)
                     elif popped.kind in {"fn_body", "item_body"}:
@@ -479,7 +524,9 @@ def parse_blocks(src: str) -> tuple[list[Block], str]:
             start_statement(top, i, line_starts)
 
         if ch == "{":
-            is_code, check_start_separator, kind = classify_open_brace(clean, i, top)
+            is_code, check_pairs, check_start_separator, kind = classify_open_brace(
+                clean, i, top
+            )
             line, col = pos_to_line_col(line_starts, i)
 
             stack.append(
@@ -488,6 +535,7 @@ def parse_blocks(src: str) -> tuple[list[Block], str]:
                     open_line=line,
                     open_col=col,
                     is_code=is_code,
+                    check_pairs=check_pairs,
                     check_start_separator=check_start_separator,
                     kind=kind,
                 )
@@ -508,6 +556,13 @@ def parse_blocks(src: str) -> tuple[list[Block], str]:
                 top.bracket_depth -= 1
         elif ch == ";" and top.paren_depth == 0 and top.bracket_depth == 0:
             add_statement(top, clean, line_starts, i)
+        elif (
+            ch == ","
+            and top.kind == "match_body"
+            and top.paren_depth == 0
+            and top.bracket_depth == 0
+        ):
+            add_statement(top, clean, line_starts, i)
 
         i += 1
 
@@ -521,76 +576,120 @@ def parse_blocks(src: str) -> tuple[list[Block], str]:
     return closed, clean
 
 
-def is_separator_comment_line(line: str) -> bool:
-    return re.fullmatch(r"\s*//\s*", line) is not None
+def count_blank_lines_between(
+    lines: list[str], prev_end_line: int, next_start_line: int
+) -> int:
+    count = 0
+
+    for idx in range(prev_end_line, next_start_line - 1):
+        if 0 <= idx < len(lines) and lines[idx].strip() == "":
+            count += 1
+
+    return count
 
 
-def is_empty_line(line: str) -> bool:
-    return line.strip() == ""
+def has_line_comment_between(lines: list[str], start_line: int, end_line: int) -> bool:
+    for line_no in range(start_line, end_line + 1):
+        if line_no < 1 or line_no > len(lines):
+            continue
+
+        stripped = lines[line_no - 1].strip()
+
+        if stripped.startswith("//"):
+            return True
+
+    return False
 
 
-def find_redundant_separators(path: Path) -> list[Diagnostic]:
+def statement_clean(clean: str, statement: Statement) -> str:
+    return clean[statement.start_i : statement.end_i + 1].strip()
+
+
+def is_root_itemish(clean: str, statement: Statement) -> bool:
+    s = statement_clean(clean, statement)
+
+    return (
+        re.match(
+            r"(#!?\[|"
+            r"use\b|pub\s+use\b|"
+            r"mod\b|pub\s+mod\b|"
+            r"fn\b|pub\s+(?:async\s+)?fn\b|"
+            r"impl\b|trait\b|pub\s+trait\b|"
+            r"struct\b|pub\s+struct\b|"
+            r"enum\b|pub\s+enum\b|"
+            r"type\b|pub\s+type\b|"
+            r"const\b|pub\s+const\b|"
+            r"static\b|pub\s+static\b)",
+            s,
+        )
+        is not None
+    )
+
+
+def analyze_file(path: Path) -> list[Diagnostic]:
     src = path.read_text(encoding="utf-8")
-    lines = src.splitlines(keepends=False)
-    blocks, _ = parse_blocks(src)
+    lines = src.splitlines()
 
+    blocks, clean = parse_blocks(src)
     diagnostics: list[Diagnostic] = []
 
     for block in blocks:
-        if not block.check_start_separator:
+        # 单 statement block 不要求加 block-start `//` 隔离符。
+        if block.check_start_separator and len(block.statements) >= 2:
+            first = block.statements[0]
+
+            if not line_has_only_open_brace(src, block.open_line):
+                has_separator = has_line_comment_between(
+                    lines,
+                    block.open_line + 1,
+                    first.start_line - 1,
+                )
+
+                if not has_separator:
+                    diagnostics.append(
+                        Diagnostic(
+                            path=path,
+                            line=first.start_line,
+                            col=first.start_col,
+                            code="BLK000",
+                            message=(
+                                "missing block-start separator comment before the first statement; "
+                                "when the opening brace is not on its own line and the block has multiple statements, "
+                                "put a `//` line before the first statement"
+                            ),
+                        )
+                    )
+
+        if not block.check_pairs:
             continue
 
-        if len(block.statements) != 1:
-            continue
-
-        first = block.statements[0]
-
-        # Lines between `{` and the first statement.
-        start_line = block.open_line + 1
-        end_line = first.start_line - 1
-
-        if start_line > end_line:
-            continue
-
-        separator_lines: list[int] = []
-        removable_lines: list[int] = []
-        has_real_content = False
-
-        for line_no in range(start_line, end_line + 1):
-            line = lines[line_no - 1]
-
-            if is_separator_comment_line(line):
-                separator_lines.append(line_no)
-                removable_lines.append(line_no)
+        for prev, curr in zip(block.statements, block.statements[1:]):
+            if (
+                block.kind == "root"
+                and is_root_itemish(clean, prev)
+                and is_root_itemish(clean, curr)
+            ):
                 continue
 
-            if is_empty_line(line):
-                removable_lines.append(line_no)
-                continue
-
-            has_real_content = True
-
-        if has_real_content:
-            continue
-
-        if not separator_lines:
-            continue
-
-        diagnostics.append(
-            Diagnostic(
-                path=path,
-                line=separator_lines[0],
-                col=1,
-                code="BFX001",
-                message=(
-                    "redundant block-start separator comment in a single-statement block; "
-                    "remove the empty `//` separator"
-                ),
-                remove_lines=tuple(removable_lines),
+            blank_count = count_blank_lines_between(
+                lines, prev.end_line, curr.start_line
             )
-        )
 
-    return sorted(diagnostics, key=lambda d: (str(d.path), d.line, d.col))
+            if blank_count == 0:
+                diagnostics.append(
+                    Diagnostic(
+                        path=path,
+                        line=curr.start_line,
+                        col=curr.start_col,
+                        code="BLK001",
+                        message=(
+                            "missing blank line before this statement or match arm; "
+                            f"previous statement ended at line {prev.end_line}"
+                        ),
+                    )
+                )
+
+    return sorted(diagnostics, key=lambda d: (str(d.path), d.line, d.col, d.code))
 
 
 def iter_rs_files(paths: list[Path]) -> list[Path]:
@@ -615,40 +714,9 @@ def iter_rs_files(paths: list[Path]) -> list[Path]:
     return sorted(set(files))
 
 
-def apply_fixes(path: Path, diagnostics: list[Diagnostic]) -> bool:
-    if not diagnostics:
-        return False
-
-    src = path.read_text(encoding="utf-8")
-    keepends = src.splitlines(keepends=True)
-
-    remove_line_set: set[int] = set()
-
-    for diagnostic in diagnostics:
-        remove_line_set.update(diagnostic.remove_lines)
-
-    changed = False
-    new_lines: list[str] = []
-
-    for index, line in enumerate(keepends, start=1):
-        if index in remove_line_set:
-            changed = True
-            continue
-
-        new_lines.append(line)
-
-    if changed:
-        path.write_text("".join(new_lines), encoding="utf-8")
-
-    return changed
-
-
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description=(
-            "Find redundant empty `//` separator comments that were inserted "
-            "before the first statement of a single-statement Rust block."
-        )
+        description="Check custom Rust blank-line rules between statements and match arms."
     )
 
     parser.add_argument(
@@ -659,19 +727,12 @@ def main() -> int:
         help="Rust files or directories. Defaults to current directory.",
     )
 
-    parser.add_argument(
-        "--fix",
-        action="store_true",
-        help="Remove the redundant empty separator comment lines and adjacent empty lines in that separator region.",
-    )
-
     args = parser.parse_args()
-
-    all_diagnostics: list[Diagnostic] = []
+    diagnostics: list[Diagnostic] = []
 
     for path in iter_rs_files(args.paths):
         try:
-            diagnostics = find_redundant_separators(path)
+            diagnostics.extend(analyze_file(path))
         except OSError as err:
             print(f"{path}: failed to read file: {err}", file=sys.stderr)
             return 2
@@ -679,18 +740,10 @@ def main() -> int:
             print(f"{path}: failed to read as utf-8: {err}", file=sys.stderr)
             return 2
 
-        all_diagnostics.extend(diagnostics)
+    for diag in sorted(diagnostics, key=lambda d: (str(d.path), d.line, d.col, d.code)):
+        print(f"{diag.path}:{diag.line}:{diag.col}: {diag.code}: {diag.message}")
 
-        if args.fix:
-            apply_fixes(path, diagnostics)
-
-    for diagnostic in sorted(all_diagnostics, key=lambda d: (str(d.path), d.line, d.col)):
-        print(f"{diagnostic.path}:{diagnostic.line}:{diagnostic.col}: {diagnostic.code}: {diagnostic.message}")
-
-    if args.fix and all_diagnostics:
-        print(f"fixed {len(all_diagnostics)} redundant separator block(s)")
-
-    return 1 if all_diagnostics else 0
+    return 1 if diagnostics else 0
 
 
 if __name__ == "__main__":
