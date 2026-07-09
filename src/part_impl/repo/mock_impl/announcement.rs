@@ -1,5 +1,7 @@
 //! Mock implementations of `AnnouncementRepo` and `AnnouncementRepoTransactional`.
 
+use std::cmp::Reverse;
+
 use async_trait::async_trait;
 
 use poprako_transactional::advance::Advance;
@@ -61,7 +63,7 @@ fn list_announcements(
         .cloned()
         .collect::<Vec<_>>();
 
-    announcement_infos.sort_by_key(|right| std::cmp::Reverse(right.created_at));
+    announcement_infos.sort_by_key(|right| Reverse(right.created_at));
 
     for announcement_info in &mut announcement_infos {
         apply_user_incl(state, announcement_info, include_user);
@@ -140,7 +142,7 @@ impl<'a> Advance<Create<'a>, MockContext> for MockTransactional {
 // create_persists_announcement(Create)(positive): create should append one announcement.
 // create_rejects_duplicate_id(Create)(negative): duplicate id should return an argument error.
 
-use time::OffsetDateTime;
+use time::{Duration, OffsetDateTime};
 
 use crate::model::user::UserCredential;
 use crate::part::repo::step::announcement::AnnouncementStep;
@@ -227,13 +229,13 @@ async fn list_infos_filters_sorts_pages_and_includes_user() {
         "announcement-new",
         "team-1",
         "user-1",
-        time + time::Duration::seconds(10),
+        time + Duration::seconds(10),
     ));
     mock.seed_announcement(announcement(
         "announcement-other-team",
         "team-2",
         "user-1",
-        time + time::Duration::seconds(20),
+        time + Duration::seconds(20),
     ));
 
     let announcement_infos = mock

@@ -14,6 +14,7 @@
 
 use super::*;
 
+use time::Duration;
 use time::OffsetDateTime;
 
 use crate::data::system_mail::ListSystemMailData;
@@ -77,8 +78,8 @@ async fn list_returns_current_user_unread_mails() {
 async fn list_applies_pagination_after_desc_sort() {
     let mock = Mock::new();
     let t1 = OffsetDateTime::now_utc();
-    let t2 = t1 + time::Duration::seconds(10);
-    let t3 = t2 + time::Duration::seconds(10);
+    let t2 = t1 + Duration::seconds(10);
+    let t3 = t2 + Duration::seconds(10);
 
     mock.seed_system_mail(mail("sys_mail-1", "user-1", false, t1));
     mock.seed_system_mail(mail("sys_mail-2", "user-1", false, t3));

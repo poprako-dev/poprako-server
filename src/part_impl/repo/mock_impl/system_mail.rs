@@ -1,8 +1,10 @@
 //! Mock implementations of `SystemMailRepo` and `SystemMailRepoTransactional` for in-memory
 //! testing.
 
+use std::cmp::Reverse;
+
 use async_trait::async_trait;
-use time::OffsetDateTime;
+use time::{Duration, OffsetDateTime};
 
 use crate::model::system_mail::{SystemMailForm, SystemMailInfo};
 use crate::part::repo::step::system_mail::{
@@ -113,7 +115,7 @@ impl<'a> Execute<ListInfosByReceiverId<'a>> for Mock {
             .cloned()
             .collect();
 
-        mails.sort_by_key(|b| std::cmp::Reverse(b.created_at));
+        mails.sort_by_key(|b| Reverse(b.created_at));
 
         Ok(mails
             .into_iter()
@@ -265,8 +267,8 @@ async fn send_batch_rejects_duplicate_batch_without_partial_write() {
 async fn list_infos_by_receiver_id_filters_sorts_and_pages() {
     let mock = Mock::new();
     let t1 = now();
-    let t2 = t1 + time::Duration::seconds(10);
-    let t3 = t2 + time::Duration::seconds(10);
+    let t2 = t1 + Duration::seconds(10);
+    let t3 = t2 + Duration::seconds(10);
 
     mock.seed_system_mail(mail_info("sys_mail-1", "user-1", false, t1));
     mock.seed_system_mail(mail_info("sys_mail-2", "user-1", false, t3));

@@ -1,12 +1,10 @@
 //! HTTP server bootstrap and graceful shutdown.
 
-use std::fmt::Debug;
 use std::net::SocketAddr;
 
 use anyhow::Context as _;
 
-use tokio::net::TcpListener;
-use tokio::net::ToSocketAddrs;
+use tokio::net::{TcpListener, ToSocketAddrs};
 use tokio::signal;
 
 use crate::api::http::router;
@@ -35,7 +33,6 @@ async fn shutdown_signal() {
             () = terminate => {},
         }
     }
-
     #[cfg(not(unix))]
     {
         ctrl_c.await;
@@ -47,7 +44,7 @@ async fn shutdown_signal() {
 /// Binds `addr`, builds the router, and serves until shutdown.
 pub async fn serve<A>(harn: AppHarn, addr: A) -> anyhow::Result<()>
 where
-    A: ToSocketAddrs + Debug,
+    A: ToSocketAddrs + std::fmt::Debug,
 {
     let listener = TcpListener::bind(&addr)
         .await

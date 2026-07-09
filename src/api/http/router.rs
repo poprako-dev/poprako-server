@@ -6,12 +6,8 @@
 //! middleware.
 
 use axum::Router;
-use axum::middleware::from_fn;
-use axum::middleware::from_fn_with_state;
-use axum::routing::delete;
-use axum::routing::get;
-use axum::routing::post;
-use axum::routing::put;
+use axum::middleware::{from_fn, from_fn_with_state};
+use axum::routing::{delete, get, post, put};
 
 use tower_http::trace::TraceLayer;
 

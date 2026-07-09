@@ -13,10 +13,11 @@ use async_trait::async_trait;
 use diesel::AsExpression;
 use diesel::pg::Pg;
 use diesel::prelude::*;
+use diesel::serialize::IsNull;
 use diesel::serialize::{Output, ToSql};
+use diesel::serialize::Result as SerializeResult;
 use diesel::sql_types::Text;
 use diesel_async::RunQueryDsl;
-use serde_json::Value;
 use time::OffsetDateTime;
 
 use poprako_transactional::advance::Advance;
@@ -78,9 +79,9 @@ impl ToSql<Text, Pg> for LocalMessageStatus {
     fn to_sql<'b>(
         &'b self,
         out: &mut Output<'b, '_, Pg>,
-    ) -> diesel::serialize::Result {
+    ) -> SerializeResult {
         out.write_all(self.as_str().as_bytes())?;
-        Ok(diesel::serialize::IsNull::No)
+        Ok(IsNull::No)
     }
 }
 
@@ -91,7 +92,7 @@ struct LocalMessageEntry<'a> {
     f_topic: &'a str,
     f_status: LocalMessageStatus,
 
-    f_payload: Value,
+    f_payload: serde_json::Value,
 
     f_visible_at: OffsetDateTime,
 

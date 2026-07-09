@@ -5,6 +5,8 @@
 
 use super::*;
 
+use time::OffsetDateTime;
+
 use crate::model::assignment::AssignmentInfo;
 use crate::model::chapter::ChapterInfo;
 use crate::model::comic::ComicInfo;
@@ -17,7 +19,6 @@ use crate::part::effect::event::user::UserSignedUpPayload;
 use crate::part_impl::repo::mock_impl::{Mock, MockContext};
 use crate::value::chapter::{Stage, StageMask};
 use crate::value::role::{RoleField, RoleMask};
-use time::OffsetDateTime;
 
 fn team_info() -> TeamInfo {
     //

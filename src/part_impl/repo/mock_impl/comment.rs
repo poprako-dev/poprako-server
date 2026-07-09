@@ -1,5 +1,7 @@
 //! Mock implementations of `CommentRepo` and `CommentRepoTransactional`.
 
+use std::cmp::Reverse;
+
 use async_trait::async_trait;
 
 use poprako_transactional::advance::Advance;
@@ -57,7 +59,7 @@ fn list_comments(
         .cloned()
         .collect::<Vec<_>>();
 
-    comment_infos.sort_by_key(|right| std::cmp::Reverse(right.created_at));
+    comment_infos.sort_by_key(|right| Reverse(right.created_at));
 
     for comment_info in &mut comment_infos {
         apply_user_incl(state, comment_info, include_user);
@@ -135,7 +137,7 @@ impl<'a> Advance<Create<'a>, MockContext> for MockTransactional {
 // create_persists_comment(Create)(positive): create should append one comment.
 // create_rejects_duplicate_id(Create)(negative): duplicate id should return an argument error.
 
-use time::OffsetDateTime;
+use time::{Duration, OffsetDateTime};
 
 use crate::model::user::UserCredential;
 use crate::part::repo::step::comment::CommentStep;
@@ -215,13 +217,13 @@ async fn list_infos_filters_sorts_pages_and_includes_user() {
         "comment-new",
         "team-1",
         "user-1",
-        time + time::Duration::seconds(10),
+        time + Duration::seconds(10),
     ));
     mock.seed_comment(comment(
         "comment-other-team",
         "team-2",
         "user-1",
-        time + time::Duration::seconds(20),
+        time + Duration::seconds(20),
     ));
 
     let comment_infos = mock

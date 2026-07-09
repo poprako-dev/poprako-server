@@ -3,6 +3,7 @@
 use poprako_transactional::advance::Advance;
 use poprako_transactional::drive::Drive;
 use poprako_util::i18n::trl;
+use poprako_util::page::Page;
 
 use crate::complex::unit::{UnitComplex, UnitPermComplex};
 use crate::data::unit::{
@@ -71,7 +72,7 @@ where
     let unit_infos = repo
         .execute(&UnitStep::list_infos_by_page_id(
             &page_info.id,
-            poprako_util::page::Page {
+            Page {
                 offset: data.offset,
                 limit: data.limit,
             },

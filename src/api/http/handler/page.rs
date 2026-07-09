@@ -1,21 +1,13 @@
 //! Page handlers: list, delete, batch reserve, and single image upload flow.
 
 use axum::Json;
-use axum::extract::Extension;
-use axum::extract::Path;
-use axum::extract::Query;
-use axum::extract::State;
+use axum::extract::{Extension, Path, Query, State};
 use axum::http::StatusCode;
 
 use tracing::instrument;
 
-use crate::api::http::handler::util::Pagination;
-use crate::api::http::handler::util::ensure_path_matches_body_id;
-use crate::api::http::result::Accept as _;
-use crate::api::http::result::HttpBody;
-use crate::api::http::result::HttpNoContent;
-use crate::api::http::result::HttpResult;
-use crate::api::http::result::no_content;
+use crate::api::http::handler::util::{ensure_path_matches_body_id, Pagination};
+use crate::api::http::result::{Accept as _, HttpBody, HttpNoContent, HttpResult, no_content};
 use crate::api::http::state::AppHarn;
 use crate::data::page::{
     ListPageInfosData, MarkPageImageUploadedData, PageInfoVal,

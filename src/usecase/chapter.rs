@@ -1,5 +1,8 @@
 //! Chapter use cases — list, read, create, update, and deletion.
 
+use poprako_transactional::advance::Advance;
+use poprako_transactional::drive::Drive;
+
 use crate::complex::assignment::AssignmentComplex;
 use crate::complex::chapter::{ChapterComplex, ChapterPermComplex};
 use crate::data::chapter::{
@@ -35,8 +38,6 @@ use crate::result::{RegularError, RegularResult};
 use crate::util::DeriveTransactional;
 use crate::value::chapter::{Stage, StageOper, StagePhase};
 use crate::value::role::{RoleField, RoleMask};
-use poprako_transactional::advance::Advance;
-use poprako_transactional::drive::Drive;
 
 #[cfg(test)]
 mod tests;
@@ -374,7 +375,7 @@ where
     .await?;
 
     let events = drive
-        .with_context(async move |context| -> RegularResult<Vec<crate::part::effect::event::Event>> {
+        .with_context(async move |context| -> RegularResult<Vec<Event>> {
             //
             let repo = repo.derive_transactional().await;
 

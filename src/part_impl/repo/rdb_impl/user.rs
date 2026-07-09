@@ -18,8 +18,7 @@ use crate::part::repo::step::user::{
 };
 use crate::part::repo::user::{UserRepo, UserRepoTransactional};
 use crate::part::shared::execute::Execute;
-use crate::part_impl::shared::RdbConn;
-use crate::part_impl::shared::RdbContext;
+use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::part_impl::shared::result::{diesel, expected};
 use crate::part_impl::repo::rdb_impl::entity::user::{
     UserAspect, UserCredentialRow, UserEntry, UserRow,

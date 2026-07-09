@@ -8,8 +8,9 @@
 //! [`ChapterInfoVal`]: crate::data::chapter::ChapterInfoVal
 //! [`StagePhase`]: crate::value::chapter::StagePhase
 
-use poprako_macro::Paginate;
 use time::OffsetDateTime;
+
+use poprako_macro::Paginate;
 
 use crate::model::comic::ComicInfo;
 use crate::model::user::UserInfo;

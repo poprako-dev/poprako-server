@@ -2,6 +2,8 @@
 
 use crate::model::team::TeamInfo;
 use crate::model::user::UserInfo;
+use time::OffsetDateTime;
+
 use crate::value::member::MemberInclOpt;
 use crate::value::role::{RoleField, RoleMask};
 
@@ -15,7 +17,7 @@ pub struct MemberInfo {
 
     pub user_id: String,
     pub user_nickname: String,
-    pub user_last_active_at: time::OffsetDateTime,
+    pub user_last_active_at: OffsetDateTime,
 
     pub team_id: String,
 
