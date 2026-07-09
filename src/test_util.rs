@@ -6,7 +6,7 @@ use poprako_util::i18n::trl;
 
 use crate::part::prom::Payload;
 use crate::part::prom::task::{ImageKind, ImageTask};
-use crate::part_impl::prom_mock::MockPromRecord;
+use crate::part_impl::prom::mock_impl::MockPromRecord;
 use crate::result::{ExpectedVariant, RegularError};
 
 /// Asserts that `err` is a [`RootError::Expected`] whose variant matches `expected`.

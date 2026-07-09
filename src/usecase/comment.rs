@@ -7,14 +7,13 @@ use crate::complex::comment::{CommentComplex, CommentPermComplex};
 use crate::data::comment::{
     CommentInfoVal, CreateCommentData, CreateCommentVal, ListCommentInfosData,
 };
-use crate::model::comment::{CommentForm, CommentListSpec};
+use crate::model::comment::{CommentForm, CommentInfo, CommentListSpec};
 use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
 use crate::part::repo::comment::{CommentRepo, CommentRepoTransactional};
-use crate::part::repo::map_drive_err;
 use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
 use crate::part::repo::step::comment::CommentStep;
-use crate::result::{RegularError, RegularResult, accept};
+use crate::result::{RegularError, RegularResult};
 use crate::util::DeriveTransactional;
 
 #[cfg(test)]
@@ -55,7 +54,7 @@ where
             .push(CommentInfoVal::from_model(image_pool, comment_info).await?);
     }
 
-    accept(comment_info_vals)
+    Ok(comment_info_vals)
 }
 
 /// Creates a comment under a team.
@@ -83,7 +82,7 @@ where
     .await?;
 
     let comment_info = drive
-        .with_context(async move |context| {
+        .with_context(async move |context| -> RegularResult<CommentInfo> {
             //
             let repo = repo.derive_transactional().await;
 
@@ -98,12 +97,11 @@ where
                 .advance(context, &CommentStep::create(&comment_form))
                 .await?;
 
-            accept(comment_info)
+            Ok(comment_info)
         })
-        .await
-        .map_err(map_drive_err)?;
+        .await?;
 
-    accept(CreateCommentVal {
+    Ok(CreateCommentVal {
         id: comment_info.id,
     })
 }

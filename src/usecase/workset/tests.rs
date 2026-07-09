@@ -24,10 +24,9 @@ use crate::model::user::UserToken;
 use crate::model::workset::WorksetInfo;
 use crate::part::prom::task::ImageTask;
 use crate::part::prom::{Payload, PromStep};
-use crate::part_impl::prom_mock::MockPromRecord;
-use crate::part_impl::repo_mock::{Mock, MockTransactional};
+use crate::part_impl::prom::mock_impl::MockPromRecord;
+use crate::part_impl::repo::mock_impl::{Mock, MockTransactional};
 use crate::result::ExpectedVariant;
-use crate::result::accept;
 use crate::test_util::assert_expected_variant;
 use crate::usecase::team::tests::team;
 use crate::value::role::{RoleField, RoleMask};
@@ -348,7 +347,7 @@ async fn delete_does_not_create_prom_records_when_called_directly() {
         )
         .await?;
 
-        accept(())
+        Ok(())
     })
     .await
     .ok()

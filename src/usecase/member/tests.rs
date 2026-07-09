@@ -25,7 +25,7 @@ use poprako_util::time::ToUnixMilli;
 use crate::model::member::{MemberInfo, MemberListSpec};
 use crate::model::team::TeamInfo;
 use crate::model::user::{UserCredential, UserInfo};
-use crate::part_impl::repo_mock::Mock;
+use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::{self, assert_expected_variant};
 use crate::value::role::{RoleField, RoleMask};

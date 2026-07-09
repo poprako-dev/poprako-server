@@ -18,7 +18,6 @@ use crate::part::repo::assignment::{
 };
 use crate::part::repo::chapter::{ChapterRepo, ChapterRepoTransactional};
 use crate::part::repo::comic::{ComicRepo, ComicRepoTransactional};
-use crate::part::repo::map_drive_err;
 use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
 use crate::part::repo::page::{PageRepo, PageRepoTransactional};
 use crate::part::repo::step::chapter::ChapterStep;
@@ -27,7 +26,7 @@ use crate::part::repo::step::page::PageStep;
 use crate::part::repo::step::unit::UnitStep;
 use crate::part::repo::unit::{UnitRepo, UnitRepoTransactional};
 use crate::part::repo::workset::{WorksetRepo, WorksetRepoTransactional};
-use crate::result::{ExpectedVariant, RegularError, RegularResult, accept};
+use crate::result::{ExpectedVariant, RegularError, RegularResult};
 use crate::util::DeriveTransactional;
 
 #[cfg(test)]
@@ -79,7 +78,7 @@ where
         ))
         .await?;
 
-    accept(ListPageUnitInfosVal {
+    Ok(ListPageUnitInfosVal {
         unit_infos: unit_infos.into_iter().map(UnitInfoVal::from).collect(),
         total_unit_count: page_info.total_unit_count,
         translated_unit_count: page_info.translated_unit_count,
@@ -127,7 +126,7 @@ where
     } = UnitApplyParts::from(UnitComplex::prepare_diff(unit_diff)?);
 
     let save_units = drive
-        .with_context(async move |context| {
+        .with_context(async move |context| -> RegularResult<SavePageUnitsVal> {
             //
             let repo = repo.derive_transactional().await;
 
@@ -246,12 +245,10 @@ where
             )
             .await?;
 
-            accept(SavePageUnitsVal::from_parts(local_id_maps, counters))
+            Ok(SavePageUnitsVal::from_parts(local_id_maps, counters))
         })
-        .await
-        .map_err(map_drive_err)?;
-
-    accept(save_units)
+        .await?;
+    Ok(save_units)
 }
 
 struct UnitApplyParts {

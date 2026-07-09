@@ -6,7 +6,7 @@
 //!
 //! [`register`]: super::register
 //! [`login`]: super::login
-//! [`Mock`]: crate::part_impl::repo_mock::Mock
+//! [`Mock`]: crate::part_impl::repo::mock_impl::Mock
 
 // register(register)(positive): pending invitation should create a user and member, consume the invitation, emit signup, and return a token.
 // register(register)(negative): qid mismatch should rollback user and member creation without consuming the invitation.
@@ -20,7 +20,7 @@ use super::*;
 
 use crate::model::member_invitation::MemberInvitationInfo;
 use crate::part::effect::event::Event;
-use crate::part_impl::repo_mock::Mock;
+use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;
 use crate::usecase::team::tests::team;

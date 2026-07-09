@@ -8,7 +8,7 @@ use crate::part::repo::step::system_mail::SystemMailStep;
 use crate::part::repo::system_mail::{
     SystemMailRepo, SystemMailRepoTransactional,
 };
-use crate::result::{RegularResult, accept};
+use crate::result::{RegularResult};
 use crate::util::DeriveTransactional;
 
 #[cfg(test)]
@@ -54,7 +54,6 @@ where
         })
         .collect();
 
-    // FIXME: accept
     Ok(system_mail_vals)
 }
 
@@ -82,5 +81,5 @@ where
             .await?;
     }
 
-    accept(())
+    Ok(())
 }

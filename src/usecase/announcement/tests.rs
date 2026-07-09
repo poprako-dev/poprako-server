@@ -15,7 +15,7 @@ use crate::data::announcement::{
 use crate::model::announcement::AnnouncementInfo;
 use crate::model::member::MemberInfo;
 use crate::model::user::{UserCredential, UserInfo};
-use crate::part_impl::repo_mock::Mock;
+use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::{assert_expected_variant, now};
 use crate::value::announcement::AnnouncementInclOpt;

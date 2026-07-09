@@ -6,7 +6,7 @@ use utoipa::ToSchema;
 
 use poprako_util::i18n::trl;
 
-use crate::result::{ExpectedVariant, RegularError, RegularResult, accept};
+use crate::result::{ExpectedVariant, RegularError, RegularResult};
 use crate::value::incl::InclOpt;
 
 /// Phase a workflow stage can be in.
@@ -118,7 +118,7 @@ pub fn try_modify_stage(
         });
     }
 
-    accept(next_phase)
+    Ok(next_phase)
 }
 
 /// A singular stage phase value (pending, active, completed, or ignore).
@@ -159,7 +159,7 @@ impl TryFrom<u8> for StagePhaseField {
             });
         }
 
-        accept(Self(value))
+        Ok(Self(value))
     }
 }
 
@@ -253,7 +253,7 @@ impl StageMask {
         if field == StagePhaseField::IGNORE {
             //
             if allow_ignore {
-                return accept(());
+                return Ok(());
             }
 
             return Err(RegularError::Expected {
@@ -276,7 +276,7 @@ impl StageMask {
             });
         }
 
-        accept(())
+        Ok(())
     }
 
     fn validate_mask_value(
@@ -298,7 +298,7 @@ impl StageMask {
             Self::validate_stage_field(*stage, field, allow_ignore)?;
         }
 
-        accept(())
+        Ok(())
     }
 
     /// Construct a filter mask from raw bits.
@@ -309,7 +309,7 @@ impl StageMask {
         //
         Self::validate_mask_value(value, true)?;
 
-        accept(Self(value))
+        Ok(Self(value))
     }
 
     /// Return workflow stages in mask bit order.
@@ -401,7 +401,7 @@ impl TryFrom<u32> for StageMask {
         //
         Self::validate_mask_value(value, false)?;
 
-        accept(Self(value))
+        Ok(Self(value))
     }
 }
 

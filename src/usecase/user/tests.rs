@@ -4,7 +4,7 @@
 //! tracking, and account deletion against a [`Mock`] that doubles as the
 //! driver, repository, prom enqueuer, image pool, and effect developer.
 //!
-//! [`Mock`]: crate::part_impl::repo_mock::Mock
+//! [`Mock`]: crate::part_impl::repo::mock_impl::Mock
 
 // get_info(get_info)(positive): a user reading itself should receive info and emit UserActive.
 // get_info(get_info)(positive): reading another user should not emit UserActive.
@@ -36,8 +36,8 @@ use crate::model::user::{UserCredential, UserInfo};
 use crate::part::effect::event::Event;
 use crate::part::prom::Payload;
 use crate::part::prom::task::{ImageKind, ImageTask};
-use crate::part_impl::prom_mock::MockPromRecord;
-use crate::part_impl::repo_mock::Mock;
+use crate::part_impl::prom::mock_impl::MockPromRecord;
+use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::{
     assert_expected_message, assert_expected_variant,

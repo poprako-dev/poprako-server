@@ -22,7 +22,7 @@ use crate::model::page::PageInfo;
 use crate::model::workset::WorksetInfo;
 use crate::part::prom::Payload;
 use crate::part::prom::task::{ImageKind, ImageTask};
-use crate::part_impl::repo_mock::Mock;
+use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::{
     assert_expected_message, assert_expected_variant,

@@ -11,7 +11,7 @@ use axum::http::header;
 use axum::middleware::Next;
 use axum::response::{IntoResponse, Response};
 
-use crate::api::http::auth_token::{AUTH_BEARER_PREFIX, AUTH_COOKIE_NAME};
+use crate::api::http::auth::{AUTH_BEARER_PREFIX, AUTH_COOKIE_NAME};
 use crate::api::http::result::HttpError;
 use crate::api::http::state::AppHarn;
 use crate::part::auth::TokenAuth as _;

@@ -22,7 +22,7 @@ use crate::part::repo::step::workset::{
     GetInfoById as WorksetGetInfoById, WorksetStep,
 };
 use crate::part::shared::proxy::ProxyExecute;
-use crate::result::{ExpectedVariant, RegularError, RegularResult, accept};
+use crate::result::{ExpectedVariant, RegularError, RegularResult};
 use crate::util::next_snowflake_id;
 use crate::value::role::{RoleField, RoleMask};
 
@@ -151,7 +151,7 @@ impl AssignmentPermComplex {
             >,
     {
         if current_user_id == assignment_info.user_id {
-            return accept(());
+            return Ok(());
         }
 
         check_admin(proxy, current_user_id, &assignment_info.chapter_id).await
@@ -215,7 +215,7 @@ where
         check_user_is_team_member(proxy, user_id, &team_id).await;
 
     if member_check.is_ok() {
-        return accept(());
+        return Ok(());
     }
 
     let assignment_info = proxy
@@ -228,7 +228,7 @@ where
         return Err(assignment_list_permission_error());
     }
 
-    accept(())
+    Ok(())
 }
 
 async fn check_list_by_user<P>(
@@ -240,7 +240,7 @@ where
     P: for<'a> ProxyExecute<UserGetInfoById<'a>, Error = RegularError>,
 {
     if current_user_id == owner_id {
-        return accept(());
+        return Ok(());
     }
 
     let user_info = proxy
@@ -251,7 +251,7 @@ where
         return Err(assignment_list_permission_error());
     }
 
-    accept(())
+    Ok(())
 }
 
 async fn check_admin<P>(
@@ -279,7 +279,7 @@ where
         return Err(chapter_admin_error());
     }
 
-    accept(())
+    Ok(())
 }
 
 async fn check_self_reduce<P>(
@@ -312,7 +312,7 @@ where
         return Err(assignment_self_reduce_error());
     }
 
-    accept(())
+    Ok(())
 }
 
 async fn check_target_roles<P>(
@@ -350,7 +350,7 @@ where
         return Err(assignment_role_not_assignable_perm_error());
     }
 
-    accept(())
+    Ok(())
 }
 
 async fn resolve_team_id<P>(
@@ -374,7 +374,7 @@ where
         .execute(&WorksetStep::get_info_by_id(&comic_info.workset_id))
         .await?;
 
-    accept(workset_info.team_id)
+    Ok(workset_info.team_id)
 }
 
 fn assignment_list_permission_error() -> RegularError {

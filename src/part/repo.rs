@@ -42,10 +42,6 @@
 //! [`Advance`]: poprako_transactional::advance::Advance
 //! [`Drive::with_context`]: poprako_transactional::drive::Drive::with_context
 
-use poprako_transactional::drive::result::Error as DriveError;
-
-use crate::result::RegularError;
-
 pub mod announcement;
 pub mod assignment;
 pub mod assignment_invitation;
@@ -61,18 +57,3 @@ pub mod team;
 pub mod unit;
 pub mod user;
 pub mod workset;
-
-/// Converts a [`DriveError`] into a [`RootError`].
-///
-/// This utility maps transaction-driver errors (which carry both an
-/// oper error `E` and a finalizer/commit error `BE`) into the
-/// application's unified error type.
-pub fn map_drive_err<E, BE>(err: DriveError<E, BE>) -> RegularError
-where
-    E: Into<RegularError>,
-    BE: Into<RegularError>,
-{
-    err.into()
-}
-
-pub mod proxy {}

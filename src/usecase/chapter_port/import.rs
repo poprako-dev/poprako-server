@@ -24,7 +24,6 @@ use crate::part::repo::assignment::{
 };
 use crate::part::repo::chapter::{ChapterRepo, ChapterRepoTransactional};
 use crate::part::repo::comic::{ComicRepo, ComicRepoTransactional};
-use crate::part::repo::map_drive_err;
 use crate::part::repo::page::{PageRepo, PageRepoTransactional};
 use crate::part::repo::step::assignment::AssignmentStep;
 use crate::part::repo::step::chapter::ChapterStep;
@@ -32,7 +31,7 @@ use crate::part::repo::step::comic::ComicStep;
 use crate::part::repo::step::page::PageStep;
 use crate::part::repo::step::unit::UnitStep;
 use crate::part::repo::unit::{UnitRepo, UnitRepoTransactional};
-use crate::result::{ExpectedVariant, RegularError, RegularResult, accept};
+use crate::result::{ExpectedVariant, RegularError, RegularResult};
 use crate::util::DeriveTransactional;
 use crate::value::chapter_port::TranslationFormat;
 use crate::value::role::RoleField;
@@ -93,7 +92,7 @@ where
     };
 
     let imported = drive
-        .with_context(async move |context| {
+        .with_context(async move |context| -> RegularResult<ChapterTranslationImportVal> {
             //
             let repo = repo.derive_transactional().await;
 
@@ -228,15 +227,13 @@ where
             )
             .await?;
 
-            accept(ChapterTranslationImportVal {
+            Ok(ChapterTranslationImportVal {
                 imported_page_count: page_infos.len() as i32,
                 imported_unit_count,
             })
         })
-        .await
-        .map_err(map_drive_err)?;
-
-    accept(imported)
+        .await?;
+    Ok(imported)
 }
 
 fn page_counters(page_info: &PageInfo) -> UnitCounters {

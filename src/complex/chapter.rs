@@ -47,7 +47,7 @@ use crate::part::repo::step::workset::{
 };
 use crate::part::repo::unit::UnitRepoTransactional;
 use crate::part::shared::proxy::ProxyExecute;
-use crate::result::{ExpectedVariant, RegularError, RegularResult, accept};
+use crate::result::{ExpectedVariant, RegularError, RegularResult};
 use crate::util::next_snowflake_id;
 use crate::value::chapter::{Stage, StageOper, StagePhase, try_modify_stage};
 use crate::value::index::stored_index_to_user_index;
@@ -88,7 +88,7 @@ impl ChapterComplex {
             stages: chapter_info.stages.try_set_phase(stage, next_phase)?,
         };
 
-        accept(chapter_stage_update)
+        Ok(chapter_stage_update)
     }
 
     /// Appends page image deletes inside an existing transaction context.
@@ -174,7 +174,7 @@ impl ChapterComplex {
         )
         .await?;
 
-        accept(())
+        Ok(())
     }
 }
 
@@ -235,7 +235,7 @@ where
         }
     }
 
-    accept(())
+    Ok(())
 }
 
 async fn repin_latest_chapter<C, R>(
@@ -255,7 +255,7 @@ where
         .await?;
 
     let Some(chapter_info) = chapter_infos.first() else {
-        return accept(());
+        return Ok(());
     };
 
     let chapter_info_update = ChapterInfoUpdate {
@@ -273,7 +273,7 @@ where
     )
     .await?;
 
-    accept(())
+    Ok(())
 }
 
 /// Permission-gate opers for chapter entities — resolves the owning
@@ -537,7 +537,7 @@ where
         return Err(chapter_admin_error());
     }
 
-    accept(())
+    Ok(())
 }
 
 /// Verify the caller is permitted to perform the given workflow transition
@@ -578,7 +578,7 @@ where
     let roles = assignment_info.roles;
 
     if roles.has_any_role(&[RoleField::REVIEWER]) {
-        return accept(());
+        return Ok(());
     }
 
     let allowed = match (stage, oper) {
@@ -607,7 +607,7 @@ where
         return Err(chapter_workflow_role_error());
     }
 
-    accept(())
+    Ok(())
 }
 
 /// Verify the caller may join a chapter with the given role mask.
@@ -656,7 +656,7 @@ where
         });
     }
 
-    accept(())
+    Ok(())
 }
 
 /// Resolve the owning team identifier by fetching a comic and its parent workset.
@@ -676,7 +676,7 @@ where
         .execute(&WorksetStep::get_info_by_id(&comic_info.workset_id))
         .await?;
 
-    accept(workset_info.team_id)
+    Ok(workset_info.team_id)
 }
 
 /// Construct a "chapter admin required" permission error.

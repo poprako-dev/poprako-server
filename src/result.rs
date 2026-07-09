@@ -24,13 +24,26 @@ pub enum Error {
     },
 }
 
+impl Error {
+    pub fn expected_args(_msg: String) -> Self {
+        todo!()
+    }
+
+    pub fn expected_auth(_msg: String) -> Self {
+        todo!()
+    }
+
+    pub fn expected_perm(_msg: String) -> Self {
+        todo!()
+    }
+
+    pub fn unrecoverable(_msg: String) -> Self {
+        todo!()
+    }
+}
+
 /// Convenience alias for [`std::result::Result`] with the application's [`Error`] type.
 pub type Result<T> = std::result::Result<T, Error>;
-
-/// Wraps a value into the `Ok` variant of [`Result`].
-pub fn accept<T>(v: T) -> Result<T> {
-    Ok(v)
-}
 
 /// Alias for [`Error`] used at module boundary layers.
 pub type RegularError = Error;

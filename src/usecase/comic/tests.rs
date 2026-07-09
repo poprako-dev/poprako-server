@@ -34,7 +34,7 @@ use crate::model::user::UserToken;
 use crate::model::workset::WorksetInfo;
 use crate::part::prom::Payload;
 use crate::part::prom::task::{ComicTask, ImageKind, ImageTask};
-use crate::part_impl::repo_mock::Mock;
+use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::{
     assert_expected_message, assert_expected_variant,
@@ -926,7 +926,7 @@ async fn process_pending_archive_executes_cascade_delete() {
         }),
     );
 
-    crate::part_impl::prom_mock::process_pending(&mock)
+    crate::part_impl::prom::mock_impl::process_pending(&mock)
         .await
         .ok()
         .unwrap();
