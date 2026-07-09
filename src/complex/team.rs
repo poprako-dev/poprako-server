@@ -23,7 +23,7 @@ use crate::part::repo::team::TeamRepoTransactional;
 use crate::part::repo::unit::UnitRepoTransactional;
 use crate::part::repo::workset::WorksetRepoTransactional;
 use crate::part::shared::proxy::ProxyExecute;
-use crate::result::{ExpectedVariant, RegularError, RegularResult, accept};
+use crate::result::{ExpectedVariant, RegularError, RegularResult};
 use crate::util::next_snowflake_id;
 
 /// Domain opers for team entities.
@@ -114,7 +114,7 @@ impl TeamComplex {
         repo.advance(context, &TeamStep::delete(&team_info.id))
             .await?;
 
-        accept(())
+        Ok(())
     }
 }
 
@@ -212,6 +212,6 @@ impl TeamPermComplex {
             });
         }
 
-        accept(())
+        Ok(())
     }
 }

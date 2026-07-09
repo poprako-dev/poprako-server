@@ -28,7 +28,6 @@ use crate::part::repo::assignment_invitation::{
 };
 use crate::part::repo::chapter::{ChapterRepo, ChapterRepoTransactional};
 use crate::part::repo::comic::{ComicRepo, ComicRepoTransactional};
-use crate::part::repo::map_drive_err;
 use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
 use crate::part::repo::page::{PageRepo, PageRepoTransactional};
 use crate::part::repo::step::member::MemberStep;
@@ -38,7 +37,7 @@ use crate::part::repo::team::{TeamRepo, TeamRepoTransactional};
 use crate::part::repo::unit::{UnitRepo, UnitRepoTransactional};
 use crate::part::repo::user::{UserRepo, UserRepoTransactional};
 use crate::part::repo::workset::{WorksetRepo, WorksetRepoTransactional};
-use crate::result::{RegularError, RegularResult, accept};
+use crate::result::{RegularError, RegularResult};
 use crate::util::DeriveTransactional;
 use crate::value::role::{RoleField, RoleMask};
 
@@ -85,7 +84,7 @@ where
     };
 
     let team_info: TeamInfo = drive
-        .with_context(async move |context| {
+        .with_context(async move |context| -> RegularResult<TeamInfo> {
             //
             let repo = repo.derive_transactional().await;
 
@@ -107,11 +106,9 @@ where
             repo.advance(context, &MemberStep::create(&member_form))
                 .await?;
 
-            accept(team_info)
+            Ok(team_info)
         })
-        .await
-        .map_err(map_drive_err)?;
-
+        .await?;
     TeamInfoVal::from_model(image_pool, team_info).await
 }
 
@@ -140,7 +137,6 @@ where
     )
     .await
 }
-
 /// Lists teams with pagination.
 ///
 /// Non-transactional read. Each team's avatar URL is resolved individually.
@@ -189,10 +185,8 @@ where
             .map(|team_info| TeamInfoVal::from_model(image_pool, team_info)),
     )
     .await
-    .into_iter()
-    .collect::<RegularResult<Vec<_>>>()?;
+    .into_iter()    .collect::<RegularResult<Vec<_>>>()?;
 
-    // FIXME: accept
     Ok(team_info_vals)
 }
 
@@ -230,7 +224,7 @@ where
     ))
     .await?;
 
-    accept(())
+    Ok(())
 }
 
 /// Reserves a new avatar upload slot for a team.
@@ -282,7 +276,7 @@ where
     .await?;
 
     let (object_key, avatar_version) = drive
-        .with_context(async move |context| {
+        .with_context(async move |context| -> RegularResult<(String, i64)> {
             //
             let repo = repo.derive_transactional().await;
 
@@ -335,14 +329,12 @@ where
             )
             .await?;
 
-            accept((
+            Ok((
                 avatar_reservation.object_key,
                 avatar_reservation.avatar_version,
             ))
         })
-        .await
-        .map_err(map_drive_err)?;
-
+        .await?;
     // Generate signed URL after commit — the PUT URL should only be issued
     // once the reservation is durable.
     let put_url = image_pool.put_signed(&object_key).await?.to_string();
@@ -385,7 +377,7 @@ where
     repo.execute(&TeamStep::mark_avatar_uploaded(&id, data.avatar_version))
         .await?;
 
-    accept(())
+    Ok(())
 }
 
 /// Deletes a team and all associated data.
@@ -446,16 +438,14 @@ where
         .await?;
 
     drive
-        .with_context(async move |context| {
+        .with_context(async move |context| -> RegularResult<()> {
             //
             let repo = repo.derive_transactional().await;
 
             TeamComplex::delete_cascade(&repo, prom, context, &id).await?;
 
-            accept(())
+            Ok(())
         })
-        .await
-        .map_err(map_drive_err)?;
-
-    accept(())
+        .await?;
+    Ok(())
 }

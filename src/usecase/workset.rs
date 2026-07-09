@@ -21,7 +21,6 @@ use crate::part::repo::assignment_invitation::{
 };
 use crate::part::repo::chapter::{ChapterRepo, ChapterRepoTransactional};
 use crate::part::repo::comic::{ComicRepo, ComicRepoTransactional};
-use crate::part::repo::map_drive_err;
 use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
 use crate::part::repo::page::{PageRepo, PageRepoTransactional};
 use crate::part::repo::step::team::TeamStep;
@@ -29,7 +28,7 @@ use crate::part::repo::step::workset::WorksetStep;
 use crate::part::repo::team::{TeamRepo, TeamRepoTransactional};
 use crate::part::repo::unit::{UnitRepo, UnitRepoTransactional};
 use crate::part::repo::workset::{WorksetRepo, WorksetRepoTransactional};
-use crate::result::{RegularError, RegularResult, accept};
+use crate::result::{RegularError, RegularResult};
 use crate::util::DeriveTransactional;
 
 #[cfg(test)]
@@ -63,7 +62,7 @@ where
     .await?;
 
     let workset_id = drive
-        .with_context(async move |context| {
+        .with_context(async move |context| -> Result<String, RegularError> {
             //
             let repo = repo.derive_transactional().await;
 
@@ -86,10 +85,9 @@ where
                 .advance(context, &WorksetStep::create(&workset_form))
                 .await?;
 
-            accept(workset_info.id)
+            Ok(workset_info.id)
         })
-        .await
-        .map_err(map_drive_err)?;
+        .await?;
 
     Ok(CreateWorksetVal { id: workset_id })
 }
@@ -206,7 +204,7 @@ where
     repo.execute(&WorksetStep::update_info(&workset_info_update))
         .await?;
 
-    accept(())
+    Ok(())
 }
 
 /// Deletes a workset and its child data.
@@ -254,7 +252,7 @@ where
     .await?;
 
     drive
-        .with_context(async move |context| {
+        .with_context(async move |context| -> Result<(), RegularError> {
             //
             let repo = repo.derive_transactional().await;
 
@@ -270,10 +268,9 @@ where
             )
             .await?;
 
-            accept(())
+            Ok(())
         })
-        .await
-        .map_err(map_drive_err)?;
+        .await?;
 
-    accept(())
+    Ok(())
 }

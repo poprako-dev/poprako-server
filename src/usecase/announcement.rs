@@ -10,16 +10,17 @@ use crate::data::announcement::{
     AnnouncementInfoVal, CreateAnnouncementData, CreateAnnouncementVal,
     ListAnnouncementInfosData,
 };
-use crate::model::announcement::{AnnouncementForm, AnnouncementListSpec};
+use crate::model::announcement::{
+    AnnouncementForm, AnnouncementInfo, AnnouncementListSpec,
+};
 use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
 use crate::part::repo::announcement::{
     AnnouncementRepo, AnnouncementRepoTransactional,
 };
-use crate::part::repo::map_drive_err;
 use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
 use crate::part::repo::step::announcement::AnnouncementStep;
-use crate::result::{RegularError, RegularResult, accept};
+use crate::result::{RegularError, RegularResult};
 use crate::util::DeriveTransactional;
 
 #[cfg(test)]
@@ -63,7 +64,7 @@ where
         );
     }
 
-    accept(announcement_info_vals)
+    Ok(announcement_info_vals)
 }
 
 /// Creates an announcement under a team.
@@ -93,7 +94,7 @@ where
     .await?;
 
     let announcement_info = drive
-        .with_context(async move |context| {
+        .with_context(async move |context| -> RegularResult<AnnouncementInfo> {
             //
             let repo = repo.derive_transactional().await;
 
@@ -109,12 +110,10 @@ where
                 .advance(context, &AnnouncementStep::create(&announcement_form))
                 .await?;
 
-            accept(announcement_info)
+            Ok(announcement_info)
         })
-        .await
-        .map_err(map_drive_err)?;
-
-    accept(CreateAnnouncementVal {
+        .await?;
+    Ok(CreateAnnouncementVal {
         id: announcement_info.id,
     })
 }

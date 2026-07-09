@@ -18,7 +18,7 @@ use crate::part::repo::step::comic::GetInfoById as ComicGetInfoById;
 use crate::part::repo::step::member::FindInfoByUserIdAndTeamId;
 use crate::part::repo::step::workset::GetInfoById as WorksetGetInfoById;
 use crate::part::shared::proxy::ProxyExecute;
-use crate::result::{ExpectedVariant, RegularError, RegularResult, accept};
+use crate::result::{ExpectedVariant, RegularError, RegularResult};
 use crate::util::next_snowflake_id;
 
 /// Domain opers for page units.
@@ -95,7 +95,7 @@ impl UnitComplex {
             }
         }
 
-        accept(UnitApplyAck {
+        Ok(UnitApplyAck {
             opers,
             local_id_map,
         })
@@ -263,7 +263,7 @@ fn validate_id(id: &str) -> RegularResult<()> {
         return Err(unit_invalid_oper_error());
     }
 
-    accept(())
+    Ok(())
 }
 
 fn validate_optional_id(id: &Option<String>) -> RegularResult<()> {
@@ -272,7 +272,7 @@ fn validate_optional_id(id: &Option<String>) -> RegularResult<()> {
         return Err(unit_invalid_oper_error());
     }
 
-    accept(())
+    Ok(())
 }
 
 fn insert_before(

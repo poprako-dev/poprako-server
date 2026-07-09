@@ -13,6 +13,9 @@ keywords = ["manga", "translation", "backend", "axum", "diesel"]
 categories = ["web-programming", "asynchronous"]
 publish = false
 
+[lints.clippy]
+mod_module_files = "deny"
+
 [features]
 repo = []
 

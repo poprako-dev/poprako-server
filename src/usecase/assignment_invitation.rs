@@ -12,7 +12,7 @@ use crate::data::assignment_invitation::{
     CreateAssignmentInvitationVal, JoinAssignmentInvitationData,
     ListAssignmentInvitationInfosData,
 };
-use crate::model::assignment::AssignmentForm;
+use crate::model::assignment::{AssignmentForm, AssignmentInfo};
 use crate::model::assignment_invitation::AssignmentInvitationForm;
 use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
@@ -24,7 +24,6 @@ use crate::part::repo::assignment_invitation::{
 };
 use crate::part::repo::chapter::{ChapterRepo, ChapterRepoTransactional};
 use crate::part::repo::comic::{ComicRepo, ComicRepoTransactional};
-use crate::part::repo::map_drive_err;
 use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
 use crate::part::repo::step::assignment::AssignmentStep;
 use crate::part::repo::step::assignment_invitation::AssignmentInvitationStep;
@@ -35,7 +34,7 @@ use crate::part::repo::step::user::UserStep;
 use crate::part::repo::step::workset::WorksetStep;
 use crate::part::repo::user::{UserRepo, UserRepoTransactional};
 use crate::part::repo::workset::{WorksetRepo, WorksetRepoTransactional};
-use crate::result::{ExpectedVariant, RegularError, RegularResult, accept};
+use crate::result::{ExpectedVariant, RegularError, RegularResult};
 use crate::util::{DeriveTransactional, next_snowflake_id};
 use crate::value::role::{RoleField, RoleMask};
 
@@ -76,7 +75,7 @@ where
         ))
         .await?;
 
-    accept(
+    Ok(
         assignment_invitation_infos
             .into_iter()
             .map(AssignmentInvitationInfoVal::from)
@@ -119,7 +118,7 @@ where
     .await?;
 
     let (assignment_invitation_id, code) = drive
-        .with_context(async move |context| {
+        .with_context(async move |context| -> RegularResult<(String, String)> {
             //
             let repo = repo.derive_transactional().await;
 
@@ -169,15 +168,13 @@ where
                 )
                 .await?;
 
-            accept((
+            Ok((
                 assignment_invitation_info.id,
                 assignment_invitation_info.code,
             ))
         })
-        .await
-        .map_err(map_drive_err)?;
-
-    accept(CreateAssignmentInvitationVal {
+        .await?;
+    Ok(CreateAssignmentInvitationVal {
         id: assignment_invitation_id,
         code,
     })
@@ -215,19 +212,17 @@ where
     .await?;
 
     drive
-        .with_context(async move |context| {
+        .with_context(async move |context| -> RegularResult<()> {
             //
             let repo = repo.derive_transactional().await;
 
             repo.advance(context, &AssignmentInvitationStep::delete(&id))
                 .await?;
 
-            accept(())
+            Ok(())
         })
-        .await
-        .map_err(map_drive_err)?;
-
-    accept(())
+        .await?;
+    Ok(())
 }
 
 /// Joins a chapter assignment with a pending invitation code.
@@ -266,7 +261,7 @@ where
     let current_user_id = token.user_id;
 
     let assignment_info = drive
-        .with_context(async move |context| {
+        .with_context(async move |context| -> RegularResult<AssignmentInfo> {
             //
             let repo = repo.derive_transactional().await;
 
@@ -384,11 +379,9 @@ where
             )
             .await?;
 
-            accept(assignment_info)
+            Ok(assignment_info)
         })
-        .await
-        .map_err(map_drive_err)?;
-
+        .await?;
     AssignmentInfoVal::from_model(image_pool, assignment_info).await
 }
 
@@ -415,7 +408,7 @@ fn validate_roles(roles: RoleMask) -> RegularResult<()> {
         return Err(assignment_role_not_assignable_args_error());
     }
 
-    accept(())
+    Ok(())
 }
 
 fn invalid_invitation_error() -> RegularError {

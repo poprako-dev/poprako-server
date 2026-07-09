@@ -17,7 +17,6 @@ use crate::model::member_invitation::{
 };
 use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
-use crate::part::repo::map_drive_err;
 use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
 use crate::part::repo::member_invitation::{
     MemberInvitationRepo, MemberInvitationRepoTransactional,
@@ -26,7 +25,7 @@ use crate::part::repo::step::member::MemberStep;
 use crate::part::repo::step::member_invitation::MemberInvitationStep;
 use crate::part::repo::step::user::UserStep;
 use crate::part::repo::user::{UserRepo, UserRepoTransactional};
-use crate::result::{ExpectedVariant, RegularError, RegularResult, accept};
+use crate::result::{ExpectedVariant, RegularError, RegularResult};
 use crate::util::DeriveTransactional;
 
 #[cfg(test)]
@@ -65,7 +64,7 @@ where
     .await?;
 
     let (member_invitation_id, code) = drive
-        .with_context(async move |context| {
+        .with_context(async move |context| -> RegularResult<(String, String)> {
             //
             let repo = repo.derive_transactional().await;
 
@@ -116,12 +115,10 @@ where
                 )
                 .await?;
 
-            accept((member_invitation_info.id, member_invitation_info.code))
+            Ok((member_invitation_info.id, member_invitation_info.code))
         })
-        .await
-        .map_err(map_drive_err)?;
-
-    accept(CreateMemberInvitationVal {
+        .await?;
+    Ok(CreateMemberInvitationVal {
         id: member_invitation_id,
         code,
     })
@@ -167,7 +164,6 @@ where
         vals.push(MemberInvitationInfoVal::from_model(image_pool, info).await?);
     }
 
-    // FIXME: accept
     Ok(vals)
 }
 
@@ -199,7 +195,7 @@ where
     .await?;
 
     drive
-        .with_context(async move |context| {
+        .with_context(async move |context| -> RegularResult<()> {
             //
             let repo = repo.derive_transactional().await;
 
@@ -214,12 +210,10 @@ where
             )
             .await?;
 
-            accept(())
+            Ok(())
         })
-        .await
-        .map_err(map_drive_err)?;
-
-    accept(())
+        .await?;
+    Ok(())
 }
 
 /// Deletes an invitation.
@@ -250,17 +244,15 @@ where
     .await?;
 
     drive
-        .with_context(async move |context| {
+        .with_context(async move |context| -> RegularResult<()> {
             //
             let repo = repo.derive_transactional().await;
 
             repo.advance(context, &MemberInvitationStep::delete(&id))
                 .await?;
 
-            accept(())
+            Ok(())
         })
-        .await
-        .map_err(map_drive_err)?;
-
-    accept(())
+        .await?;
+    Ok(())
 }

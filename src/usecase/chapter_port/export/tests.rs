@@ -12,7 +12,7 @@ use crate::model::page::PageInfo;
 use crate::model::unit::UnitInfo;
 use crate::model::user::UserToken;
 use crate::model::workset::WorksetInfo;
-use crate::part_impl::repo_mock::Mock;
+use crate::part_impl::repo::mock_impl::Mock;
 use crate::value::chapter::StageMask;
 use crate::value::role::{RoleField, RoleMask};
 

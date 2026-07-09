@@ -1,7 +1,7 @@
 //! Active HTTP API module: result types, auth token constants, middleware,
 //! handlers, router, OpenAPI, and server entry point.
 
-pub mod auth_token;
+pub mod auth;
 
 pub mod handler;
 pub mod middleware;

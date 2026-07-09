@@ -3,7 +3,7 @@
 //! Tests exercise listing unread mails and marking as read against
 //! a [`Mock`] that doubles as the repository.
 //!
-//! [`Mock`]: crate::part_impl::repo_mock::Mock
+//! [`Mock`]: crate::part_impl::repo::mock_impl::Mock
 
 // list(list)(positive): should return only current user's mails matching the read filter, excluding other users.
 // list(list)(positive): should apply pagination after sorting by created_at descending.
@@ -19,7 +19,7 @@ use time::OffsetDateTime;
 use crate::data::system_mail::ListSystemMailData;
 use crate::model::system_mail::SystemMailInfo;
 use crate::model::user::UserToken;
-use crate::part_impl::repo_mock::Mock;
+use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;
 

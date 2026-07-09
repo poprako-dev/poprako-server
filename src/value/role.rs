@@ -6,7 +6,7 @@ use utoipa::ToSchema;
 
 use poprako_util::i18n::trl;
 
-use crate::result::{ExpectedVariant, RegularError, RegularResult, accept};
+use crate::result::{ExpectedVariant, RegularError, RegularResult};
 
 #[cfg(test)]
 mod tests;
@@ -128,7 +128,7 @@ impl TryFrom<u32> for RoleField {
             });
         }
 
-        accept(Self(value))
+        Ok(Self(value))
     }
 }
 
@@ -185,7 +185,7 @@ impl TryFrom<u32> for RoleMask {
             });
         }
 
-        accept(Self(value))
+        Ok(Self(value))
     }
 }
 

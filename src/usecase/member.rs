@@ -9,10 +9,11 @@ use crate::data::member::{
     CreateMemberData, CreateMemberVal, JoinTeamData, ListMemberInfosData,
     MemberInfoVal, UpdateMemberRolesData,
 };
-use crate::model::member::{MemberForm, MemberListSpec, MemberRoleUpdate};
+use crate::model::member::{
+    MemberForm, MemberInfo, MemberListSpec, MemberRoleUpdate,
+};
 use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
-use crate::part::repo::map_drive_err;
 use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
 use crate::part::repo::member_invitation::{
     MemberInvitationRepo, MemberInvitationRepoTransactional,
@@ -23,7 +24,7 @@ use crate::part::repo::step::team::TeamStep;
 use crate::part::repo::step::user::UserStep;
 use crate::part::repo::team::{TeamRepo, TeamRepoTransactional};
 use crate::part::repo::user::{UserRepo, UserRepoTransactional};
-use crate::result::{ExpectedVariant, RegularError, RegularResult, accept};
+use crate::result::{ExpectedVariant, RegularError, RegularResult};
 use crate::util::DeriveTransactional;
 
 #[cfg(test)]
@@ -62,7 +63,7 @@ where
     .await?;
 
     let member_id = drive
-        .with_context(async move |context| {
+        .with_context(async move |context| -> RegularResult<String> {
             //
             let repo = repo.derive_transactional().await;
 
@@ -102,12 +103,10 @@ where
                 .advance(context, &MemberStep::create(&member_form))
                 .await?;
 
-            accept(member_info.id)
+            Ok(member_info.id)
         })
-        .await
-        .map_err(map_drive_err)?;
-
-    accept(CreateMemberVal { id: member_id })
+        .await?;
+    Ok(CreateMemberVal { id: member_id })
 }
 
 /// Joins the current user to a team with a pending invitation code.
@@ -134,7 +133,7 @@ where
     let current_user_id = token.user_id;
 
     let member_info = drive
-        .with_context(async move |context| {
+        .with_context(async move |context| -> RegularResult<MemberInfo> {
             //
             let repo = repo.derive_transactional().await;
 
@@ -192,11 +191,9 @@ where
             )
             .await?;
 
-            accept(member_info)
+            Ok(member_info)
         })
-        .await
-        .map_err(map_drive_err)?;
-
+        .await?;
     MemberInfoVal::from_model(image_pool, member_info).await
 }
 
@@ -240,7 +237,7 @@ where
             .push(MemberInfoVal::from_model(image_pool, member_info).await?);
     }
 
-    accept(member_info_vals)
+    Ok(member_info_vals)
 }
 
 /// Updates one member's roles.
@@ -274,7 +271,7 @@ where
     .await?;
 
     drive
-        .with_context(async move |context| {
+        .with_context(async move |context| -> RegularResult<()> {
             //
             let repo = repo.derive_transactional().await;
 
@@ -289,12 +286,10 @@ where
             )
             .await?;
 
-            accept(())
+            Ok(())
         })
-        .await
-        .map_err(map_drive_err)?;
-
-    accept(())
+        .await?;
+    Ok(())
 }
 
 /// Deletes one member.
@@ -327,18 +322,16 @@ where
     .await?;
 
     drive
-        .with_context(async move |context| {
+        .with_context(async move |context| -> RegularResult<()> {
             //
             let repo = repo.derive_transactional().await;
 
             repo.advance(context, &MemberStep::delete(&id)).await?;
 
-            accept(())
+            Ok(())
         })
-        .await
-        .map_err(map_drive_err)?;
-
-    accept(())
+        .await?;
+    Ok(())
 }
 
 fn invalid_invitation_error() -> RegularError {

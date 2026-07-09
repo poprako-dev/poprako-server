@@ -5,7 +5,7 @@
 //! and image pool. Negative cases use [`FailingCreateRepo`] to simulate
 //! repository errors.
 //!
-//! [`Mock`]: crate::part_impl::repo_mock::Mock
+//! [`Mock`]: crate::part_impl::repo::mock_impl::Mock
 
 // create(create)(positive): creating a team should persist it and return team info.
 // create(create)(positive): creating a team should make creator an admin member.
@@ -64,8 +64,8 @@ use crate::part::repo::step::user::{
 use crate::part::repo::team::{TeamRepo, TeamRepoTransactional};
 use crate::part::repo::user::{UserRepo, UserRepoTransactional};
 use crate::part::shared::execute::Execute;
-use crate::part_impl::prom_mock::MockPromRecord;
-use crate::part_impl::repo_mock::{Mock, MockContext};
+use crate::part_impl::prom::mock_impl::MockPromRecord;
+use crate::part_impl::repo::mock_impl::{Mock, MockContext};
 use crate::result::{ExpectedVariant, RegularError};
 use crate::test_util::{
     assert_expected_message, assert_expected_variant,

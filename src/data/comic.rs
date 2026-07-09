@@ -20,7 +20,7 @@ use crate::data::user::UserInfoVal;
 use crate::data::workset::WorksetInfoVal;
 use crate::model::comic::{ComicInfo, ComicListKind, ComicListSpec};
 use crate::part::image::ImagePool;
-use crate::result::{ExpectedVariant, RegularError, RegularResult, accept};
+use crate::result::{ExpectedVariant, RegularError, RegularResult};
 use crate::value::chapter::StageMask;
 use crate::value::comic::{ComicInclOpt, ComicWithOpt};
 
@@ -215,7 +215,7 @@ impl TryFrom<ListComicInfosData> for ComicListSpec {
             (None, None) => ComicListKind::All,
         };
 
-        accept(Self {
+        Ok(Self {
             workset_id: data.workset_id,
             fuzzy_title: data.fuzzy_title,
             kind,

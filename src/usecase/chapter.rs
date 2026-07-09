@@ -24,7 +24,6 @@ use crate::part::repo::assignment_invitation::{
 };
 use crate::part::repo::chapter::{ChapterRepo, ChapterRepoTransactional};
 use crate::part::repo::comic::{ComicRepo, ComicRepoTransactional};
-use crate::part::repo::map_drive_err;
 use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
 use crate::part::repo::page::{PageRepo, PageRepoTransactional};
 use crate::part::repo::step::assignment::AssignmentStep;
@@ -32,7 +31,7 @@ use crate::part::repo::step::chapter::ChapterStep;
 use crate::part::repo::step::comic::ComicStep;
 use crate::part::repo::unit::{UnitRepo, UnitRepoTransactional};
 use crate::part::repo::workset::{WorksetRepo, WorksetRepoTransactional};
-use crate::result::{RegularError, RegularResult, accept};
+use crate::result::{RegularError, RegularResult};
 use crate::util::DeriveTransactional;
 use crate::value::chapter::{Stage, StageOper, StagePhase};
 use crate::value::role::{RoleField, RoleMask};
@@ -82,7 +81,7 @@ where
             .push(ChapterInfoVal::from_model(image_pool, chapter_info).await?);
     }
 
-    accept(chapter_info_vals)
+    Ok(chapter_info_vals)
 }
 
 /// Fetches a chapter by ID.
@@ -110,7 +109,7 @@ where
     let chapter_info =
         repo.execute(&ChapterStep::get_info_by_id(&id, &[])).await?;
 
-    accept(ChapterInfoVal::from(chapter_info))
+    Ok(ChapterInfoVal::from(chapter_info))
 }
 
 /// Fetches the pinned chapter under one comic.
@@ -139,7 +138,7 @@ where
         .execute(&ChapterStep::find_pinned_info_by_comic_id(&comic_id, &[]))
         .await?;
 
-    accept(chapter_info.map(ChapterInfoVal::from))
+    Ok(chapter_info.map(ChapterInfoVal::from))
 }
 
 /// Creates a new chapter.
@@ -178,7 +177,7 @@ where
     .await?;
 
     let chapter_id = drive
-        .with_context(async move |context| {
+        .with_context(async move |context| -> RegularResult<String> {
             //
             let repo = repo.derive_transactional().await;
 
@@ -243,11 +242,9 @@ where
             repo.advance(context, &AssignmentStep::create(&assignment_form))
                 .await?;
 
-            accept(chapter_info.id)
+            Ok(chapter_info.id)
         })
-        .await
-        .map_err(map_drive_err)?;
-
+        .await?;
     Ok(CreateChapterVal { id: chapter_id })
 }
 
@@ -279,7 +276,7 @@ where
     .await?;
 
     drive
-        .with_context(async move |context| {
+        .with_context(async move |context| -> RegularResult<()> {
             //
             let repo = repo.derive_transactional().await;
 
@@ -331,12 +328,10 @@ where
             )
             .await?;
 
-            accept(())
+            Ok(())
         })
-        .await
-        .map_err(map_drive_err)?;
-
-    accept(())
+        .await?;
+    Ok(())
 }
 
 /// Updates chapter workflow state.
@@ -379,7 +374,7 @@ where
     .await?;
 
     let events = drive
-        .with_context(async move |context| {
+        .with_context(async move |context| -> RegularResult<Vec<crate::part::effect::event::Event>> {
             //
             let repo = repo.derive_transactional().await;
 
@@ -451,14 +446,12 @@ where
             )
             .await?;
 
-            accept(events)
+            Ok(events)
         })
-        .await
-        .map_err(map_drive_err)?;
-
+        .await?;
     events.emit(develop).await;
 
-    accept(())
+    Ok(())
 }
 
 /// Deletes one chapter and its descendant core records.
@@ -506,16 +499,14 @@ where
     .await?;
 
     drive
-        .with_context(async move |context| {
+        .with_context(async move |context| -> RegularResult<()> {
             //
             let repo = repo.derive_transactional().await;
 
             ChapterComplex::delete_cascade(&repo, prom, context, &id).await?;
 
-            accept(())
+            Ok(())
         })
-        .await
-        .map_err(map_drive_err)?;
-
-    accept(())
+        .await?;
+    Ok(())
 }

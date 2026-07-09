@@ -28,7 +28,7 @@ use crate::part::repo::step::page::PageStep;
 use crate::part::repo::step::unit::UnitStep;
 use crate::part::repo::unit::{UnitRepo, UnitRepoTransactional};
 use crate::part::repo::workset::{WorksetRepo, WorksetRepoTransactional};
-use crate::result::{RegularResult, accept};
+use crate::result::{RegularResult};
 use crate::util::DeriveTransactional;
 
 /// Exports one chapter as a JSON-safe translation payload.
@@ -105,7 +105,7 @@ where
         });
     }
 
-    accept(ChapterTranslationExportVal {
+    Ok(ChapterTranslationExportVal {
         chapter_id: chapter_info.id,
         chapter_index: chapter_info.index,
         chapter_subtitle: non_empty(chapter_info.subtitle),
@@ -165,7 +165,7 @@ where
         units_by_page_id.insert(page_info.id.clone(), unit_infos);
     }
 
-    accept(ChapterExportComplex::make_label_plus(
+    Ok(ChapterExportComplex::make_label_plus(
         &page_infos,
         &units_by_page_id,
     ))

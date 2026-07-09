@@ -26,7 +26,7 @@ use crate::part::repo::step::workset::{
 use crate::part::repo::unit::UnitRepoTransactional;
 use crate::part::repo::workset::WorksetRepoTransactional;
 use crate::part::shared::proxy::ProxyExecute;
-use crate::result::{RegularError, RegularResult, accept};
+use crate::result::{RegularError, RegularResult};
 use crate::util::next_snowflake_id;
 use crate::value::index::stored_index_to_user_index;
 
@@ -133,7 +133,7 @@ impl ComicComplex {
         )
         .await?;
 
-        accept(())
+        Ok(())
     }
 }
 

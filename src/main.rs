@@ -13,6 +13,7 @@
 #![deny(clippy::print_stderr)]
 #![deny(clippy::exit)]
 #![deny(clippy::indexing_slicing)]
+#![deny(clippy::mod_module_files)]
 #![warn(clippy::style)]
 #![warn(clippy::pedantic)]
 #![warn(clippy::nursery)]

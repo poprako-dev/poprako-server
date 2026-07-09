@@ -9,7 +9,7 @@ use crate::model::chapter_port::PoprakoProjectImport;
 use crate::model::page_port::{PageTranslationImport, PoprakoPageImport};
 use crate::model::unit::{UnitInfo, UnitPayload};
 use crate::model::unit_port::UnitTranslationImport;
-use crate::result::{ExpectedVariant, RegularError, RegularResult, accept};
+use crate::result::{ExpectedVariant, RegularError, RegularResult};
 
 /// Chapter import parsing and payload merge rules.
 pub struct ChapterImportComplex;
@@ -85,7 +85,7 @@ impl ChapterImportComplex {
             pages.push(PageTranslationImport { units });
         }
 
-        accept(pages)
+        Ok(pages)
     }
 
     /// Parses PopRaKo JSON text into chapter import pages.
@@ -110,7 +110,7 @@ impl ChapterImportComplex {
             .map(parse_poprako_page)
             .collect::<RegularResult<Vec<_>>>()?;
 
-        accept(pages)
+        Ok(pages)
     }
 
     /// Returns an error when imported pages do not match existing pages.
@@ -123,7 +123,7 @@ impl ChapterImportComplex {
             return Err(args_error("error-chapter-import-page-count-mismatch"));
         }
 
-        accept(())
+        Ok(())
     }
 
     /// Builds an import payload by merging parsed text with an existing unit.
@@ -210,7 +210,7 @@ where
         return Err(args_error("error-invalid-chapter-import-content"));
     }
 
-    accept(())
+    Ok(())
 }
 
 fn is_label_plus_page_header(line: &str) -> bool {
@@ -221,7 +221,7 @@ fn parse_label_plus_unit_header(
     line: &str,
 ) -> RegularResult<Option<LabelPlusUnit>> {
     let Some(rest) = line.strip_prefix("----------------[") else {
-        return accept(None);
+        return Ok(None);
     };
 
     let Some((index_text, rest)) = rest.split_once("]----------------[") else {
@@ -256,7 +256,7 @@ fn parse_label_plus_unit_header(
         _ => return Err(args_error("error-invalid-chapter-import-content")),
     };
 
-    accept(Some(LabelPlusUnit {
+    Ok(Some(LabelPlusUnit {
         index: index - 1,
         x_coord,
         y_coord,
@@ -270,7 +270,7 @@ fn flush_label_plus_unit(
     main_text_lines: &mut Vec<String>,
 ) -> RegularResult<()> {
     let Some(label_plus_unit) = current_unit.take() else {
-        return accept(());
+        return Ok(());
     };
 
     let Some(page_units) = current_page.as_mut() else {
@@ -293,7 +293,7 @@ fn flush_label_plus_unit(
 
     main_text_lines.clear();
 
-    accept(())
+    Ok(())
 }
 
 fn parse_poprako_page(
@@ -339,7 +339,7 @@ fn parse_poprako_page(
 
     units.sort_by_key(|left| left.index);
 
-    accept(PageTranslationImport { units })
+    Ok(PageTranslationImport { units })
 }
 
 fn normalize_option(text: Option<String>) -> Option<String> {

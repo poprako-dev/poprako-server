@@ -18,12 +18,11 @@ use crate::part::effect::{EffectDevelop, EffectEmit as _};
 use crate::part::image::ImagePool;
 use crate::part::prom::task::{IMAGE_TOPIC, ImageKind, ImageTask};
 use crate::part::prom::{Payload, Prom, PromStep};
-use crate::part::repo::map_drive_err;
 use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
 use crate::part::repo::step::member::MemberStep;
 use crate::part::repo::step::user::UserStep;
 use crate::part::repo::user::{UserRepo, UserRepoTransactional};
-use crate::result::{ExpectedVariant, RegularError, RegularResult, accept};
+use crate::result::{ExpectedVariant, RegularError, RegularResult};
 use crate::util::DeriveTransactional;
 
 #[cfg(test)]
@@ -106,7 +105,7 @@ where
     }
 
     drive
-        .with_context(async move |context| {
+        .with_context(async move |context| -> Result<(), RegularError> {
             //
             let repo = repo.derive_transactional().await;
 
@@ -129,12 +128,11 @@ where
             )
             .await?;
 
-            accept(())
+            Ok(())
         })
-        .await
-        .map_err(map_drive_err)?;
+        .await?;
 
-    accept(())
+    Ok(())
 }
 
 /// Reserves a new avatar upload slot for a user.
@@ -176,7 +174,7 @@ where
     I: ImagePool,
 {
     let (object_key, avatar_version) = drive
-        .with_context(async move |context| {
+        .with_context(async move |context| -> RegularResult<(String, i64)> {
             //
             let repo = repo.derive_transactional().await;
 
@@ -228,13 +226,12 @@ where
             )
             .await?;
 
-            accept((
+            Ok((
                 avatar_reservation.object_key,
                 avatar_reservation.avatar_version,
             ))
         })
-        .await
-        .map_err(map_drive_err)?;
+        .await?;
 
     let put_url = image_pool.put_signed(&object_key).await?.to_string();
 
@@ -277,7 +274,7 @@ where
     }
 
     drive
-        .with_context(async move |context| {
+        .with_context(async move |context| -> Result<(), RegularError> {
             //
             let repo = repo.derive_transactional().await;
 
@@ -287,12 +284,11 @@ where
             )
             .await?;
 
-            accept(())
+            Ok(())
         })
-        .await
-        .map_err(map_drive_err)?;
+        .await?;
 
-    accept(())
+    Ok(())
 }
 
 /// Deletes a user account and all associated data.
@@ -339,7 +335,7 @@ where
     }
 
     drive
-        .with_context(async move |context| {
+        .with_context(async move |context| -> Result<(), RegularError> {
             //
             let repo = repo.derive_transactional().await;
 
@@ -383,10 +379,9 @@ where
                 .await?;
             }
 
-            accept(())
+            Ok(())
         })
-        .await
-        .map_err(map_drive_err)?;
+        .await?;
 
-    accept(())
+    Ok(())
 }

@@ -13,7 +13,6 @@ use crate::part::auth::TokenAuth;
 use crate::part::effect::event::Event;
 use crate::part::effect::event::user::UserSignedUpPayload;
 use crate::part::effect::{EffectDevelop, EffectEmit as _};
-use crate::part::repo::map_drive_err;
 use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
 use crate::part::repo::member_invitation::{
     MemberInvitationRepo, MemberInvitationRepoTransactional,
@@ -22,7 +21,7 @@ use crate::part::repo::step::member::MemberStep;
 use crate::part::repo::step::member_invitation::MemberInvitationStep;
 use crate::part::repo::step::user::UserStep;
 use crate::part::repo::user::{UserRepo, UserRepoTransactional};
-use crate::result::{ExpectedVariant, RegularError, RegularResult, accept};
+use crate::result::{ExpectedVariant, RegularError, RegularResult};
 use crate::util::DeriveTransactional;
 
 #[cfg(test)]
@@ -72,7 +71,7 @@ where
     V: EffectDevelop + Send + Sync,
 {
     let (user_id, team_id, invitor_id, invitee_qid) = drive
-        .with_context(async move |context| {
+        .with_context(async move |context| -> RegularResult<(String, String, String, String)> {
             //
             let repo = repo.derive_transactional().await;
 
@@ -124,15 +123,14 @@ where
             )
             .await?;
 
-            accept((
+            Ok((
                 user_info.id,
                 invitation_info.team_id,
                 invitation_info.invitor_id,
                 invitation_info.invitee_qid,
             ))
         })
-        .await
-        .map_err(map_drive_err)?;
+        .await?;
 
     // Emit event after successful commit so side-effects don't run inside the transaction.
     Event::UserSignedUp(UserSignedUpPayload {
@@ -145,7 +143,6 @@ where
 
     let token = auth.sign_token(&UserTokenRef { user_id: &user_id })?;
 
-    // FIXME: accept
     Ok(RegisterVal { user_id, token })
 }
 
@@ -190,7 +187,6 @@ where
         user_id: &user_credential.user_id,
     })?;
 
-    // FIXME: accept
     Ok(LoginVal {
         user_id: user_credential.user_id,
         token,

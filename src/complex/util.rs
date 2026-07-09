@@ -16,7 +16,7 @@ use crate::part::repo::step::workset::{
     GetInfoById as WorksetGetInfoById, WorksetStep,
 };
 use crate::part::shared::proxy::ProxyExecute;
-use crate::result::{ExpectedVariant, RegularError, RegularResult, accept};
+use crate::result::{ExpectedVariant, RegularError, RegularResult};
 use crate::value::role::RoleField;
 
 /// Verify the user is a member of the given team; returns `Perm` error if not.
@@ -44,7 +44,7 @@ where
         });
     }
 
-    accept(())
+    Ok(())
 }
 
 /// Verify the user is a team admin; returns `Perm` error if not.
@@ -79,7 +79,7 @@ where
         });
     }
 
-    accept(())
+    Ok(())
 }
 
 /// Verify the user is a team member for the chapter's owning team.
@@ -134,7 +134,7 @@ where
         return Err(chapter_assignee_required_error());
     }
 
-    accept(())
+    Ok(())
 }
 
 /// Verify the user is assigned as translator or proofreader on the chapter.
@@ -166,7 +166,7 @@ where
         return Err(chapter_translator_or_proofreader_required_error());
     }
 
-    accept(())
+    Ok(())
 }
 
 fn chapter_assignee_required_error() -> RegularError {

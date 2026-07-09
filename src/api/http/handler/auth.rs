@@ -8,7 +8,7 @@ use cookie::{Cookie, SameSite};
 
 use tracing::instrument;
 
-use crate::api::http::auth_token::AUTH_COOKIE_NAME;
+use crate::api::http::auth::AUTH_COOKIE_NAME;
 use crate::api::http::result::Accept as _;
 use crate::api::http::result::HttpBody;
 use crate::api::http::result::HttpNoContent;

@@ -19,7 +19,7 @@ use crate::part::repo::step::workset::{
     GetInfoById as WorksetGetInfoById, WorksetStep,
 };
 use crate::part::shared::proxy::ProxyExecute;
-use crate::result::{ExpectedVariant, RegularError, RegularResult, accept};
+use crate::result::{ExpectedVariant, RegularError, RegularResult};
 use crate::util::next_snowflake_id;
 use crate::value::role::RoleField;
 
@@ -100,7 +100,7 @@ impl PagePermComplex {
                 .await;
 
         if member_check.is_ok() {
-            return accept(());
+            return Ok(());
         }
 
         check_any_assignment(proxy, user_id, chapter_id).await
@@ -180,7 +180,7 @@ where
         return Err(page_reserve_role_error());
     }
 
-    accept(())
+    Ok(())
 }
 
 async fn check_upload_role<P>(
@@ -211,7 +211,7 @@ where
         return Err(page_upload_role_error());
     }
 
-    accept(())
+    Ok(())
 }
 
 async fn check_any_assignment<P>(
@@ -238,7 +238,7 @@ where
         });
     }
 
-    accept(())
+    Ok(())
 }
 
 fn page_reserve_role_error() -> RegularError {

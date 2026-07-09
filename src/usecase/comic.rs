@@ -34,7 +34,6 @@ use crate::part::repo::assignment_invitation::{
 };
 use crate::part::repo::chapter::{ChapterRepo, ChapterRepoTransactional};
 use crate::part::repo::comic::{ComicRepo, ComicRepoTransactional};
-use crate::part::repo::map_drive_err;
 use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
 use crate::part::repo::page::{PageRepo, PageRepoTransactional};
 use crate::part::repo::step::assignment::AssignmentStep;
@@ -43,7 +42,7 @@ use crate::part::repo::step::comic::ComicStep;
 use crate::part::repo::step::workset::WorksetStep;
 use crate::part::repo::unit::{UnitRepo, UnitRepoTransactional};
 use crate::part::repo::workset::{WorksetRepo, WorksetRepoTransactional};
-use crate::result::{RegularError, RegularResult, accept};
+use crate::result::{RegularError, RegularResult};
 use crate::util::{DeriveTransactional, next_snowflake_id};
 use crate::value::comic::ComicWithOpt;
 use crate::value::role::{RoleField, RoleMask};
@@ -97,7 +96,7 @@ where
     .await?;
 
     let (comic_id, chapter_id) = drive
-        .with_context(async move |context| {
+        .with_context(async move |context| -> RegularResult<(String, String)> {
             //
             let repo = repo.derive_transactional().await;
 
@@ -184,11 +183,9 @@ where
             repo.advance(context, &AssignmentStep::create(&assignment_form))
                 .await?;
 
-            accept((comic_info.id, chapter_info.id))
+            Ok((comic_info.id, chapter_info.id))
         })
-        .await
-        .map_err(map_drive_err)?;
-
+        .await?;
     Ok(CreateComicVal {
         id: comic_id,
         chapter_id,
@@ -287,7 +284,7 @@ where
         );
     }
 
-    accept(comic_info_vals)
+    Ok(comic_info_vals)
 }
 
 /// Updates a comic's title, author, and description.
@@ -321,7 +318,7 @@ where
     repo.execute(&ComicStep::update_info(&comic_info_update))
         .await?;
 
-    accept(())
+    Ok(())
 }
 
 /// Reserves a new comic cover upload slot.
@@ -357,7 +354,7 @@ where
     .await?;
 
     let (object_key, cover_version) = drive
-        .with_context(async move |context| {
+        .with_context(async move |context| -> RegularResult<(String, i64)> {
             //
             let repo = repo.derive_transactional().await;
 
@@ -408,17 +405,14 @@ where
             )
             .await?;
 
-            accept((
+            Ok((
                 cover_reservation.object_key,
                 cover_reservation.cover_version,
             ))
         })
-        .await
-        .map_err(map_drive_err)?;
-
+        .await?;
     let put_url = image_pool.put_signed(&object_key).await?.to_string();
 
-    // FIXME: accept
     Ok(ReserveComicCoverVal {
         put_url,
         cover_version,
@@ -450,7 +444,7 @@ where
     repo.execute(&ComicStep::mark_cover_uploaded(&id, data.cover_version))
         .await?;
 
-    accept(())
+    Ok(())
 }
 
 /// Deletes a comic and updates the parent workset counter.
@@ -498,7 +492,7 @@ where
     .await?;
 
     drive
-        .with_context(async move |context| {
+        .with_context(async move |context| -> RegularResult<()> {
             //
             let repo = repo.derive_transactional().await;
 
@@ -509,12 +503,10 @@ where
             ComicComplex::delete_cascade(&repo, prom, context, &comic_info.id)
                 .await?;
 
-            accept(())
+            Ok(())
         })
-        .await
-        .map_err(map_drive_err)?;
-
-    accept(())
+        .await?;
+    Ok(())
 }
 
 /// Marks a comic completed and schedules an archive task.
@@ -547,7 +539,7 @@ where
     .await?;
 
     drive
-        .with_context(async move |context| {
+        .with_context(async move |context| -> RegularResult<()> {
             //
             let repo = repo.derive_transactional().await;
 
@@ -569,10 +561,8 @@ where
             )
             .await?;
 
-            accept(())
+            Ok(())
         })
-        .await
-        .map_err(map_drive_err)?;
-
-    accept(())
+        .await?;
+    Ok(())
 }

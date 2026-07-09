@@ -20,7 +20,7 @@ use crate::part::repo::step::workset::{
 use crate::part::repo::unit::UnitRepoTransactional;
 use crate::part::repo::workset::WorksetRepoTransactional;
 use crate::part::shared::proxy::ProxyExecute;
-use crate::result::{RegularError, RegularResult, accept};
+use crate::result::{RegularError, RegularResult};
 use crate::util::next_snowflake_id;
 
 /// Domain opers for workset entities.
@@ -99,7 +99,7 @@ impl WorksetComplex {
         repo.advance(context, &WorksetStep::delete(&workset_info.id))
             .await?;
 
-        accept(())
+        Ok(())
     }
 }
 

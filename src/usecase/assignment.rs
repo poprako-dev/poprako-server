@@ -11,7 +11,7 @@ use crate::data::assignment::{
     UpdateAssignmentRolesData,
 };
 use crate::model::assignment::{
-    AssignmentForm, AssignmentListSpec, AssignmentRoleUpdate,
+    AssignmentForm, AssignmentInfo, AssignmentListSpec, AssignmentRoleUpdate,
 };
 use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
@@ -20,13 +20,12 @@ use crate::part::repo::assignment::{
 };
 use crate::part::repo::chapter::{ChapterRepo, ChapterRepoTransactional};
 use crate::part::repo::comic::{ComicRepo, ComicRepoTransactional};
-use crate::part::repo::map_drive_err;
 use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
 use crate::part::repo::step::assignment::AssignmentStep;
 use crate::part::repo::step::chapter::ChapterStep;
 use crate::part::repo::user::{UserRepo, UserRepoTransactional};
 use crate::part::repo::workset::{WorksetRepo, WorksetRepoTransactional};
-use crate::result::{ExpectedVariant, RegularError, RegularResult, accept};
+use crate::result::{ExpectedVariant, RegularError, RegularResult};
 use crate::util::DeriveTransactional;
 
 #[cfg(test)]
@@ -78,7 +77,7 @@ where
         );
     }
 
-    accept(assignment_info_vals)
+    Ok(assignment_info_vals)
 }
 
 /// Joins a chapter assignment with requested roles.
@@ -130,7 +129,7 @@ where
     .await?;
 
     let assignment_info = drive
-        .with_context(async move |context| {
+        .with_context(async move |context| -> RegularResult<AssignmentInfo> {
             //
             let repo = repo.derive_transactional().await;
 
@@ -173,12 +172,10 @@ where
                 }
             };
 
-            accept(assignment_info)
+            Ok(assignment_info)
         })
-        .await
-        .map_err(map_drive_err)?;
-
-    accept(AssignmentInfoVal::from(assignment_info))
+        .await?;
+    Ok(AssignmentInfoVal::from(assignment_info))
 }
 
 /// Updates assignment roles.
@@ -225,7 +222,7 @@ where
     .await?;
 
     drive
-        .with_context(async move |context| {
+        .with_context(async move |context| -> RegularResult<()> {
             //
             let repo = repo.derive_transactional().await;
 
@@ -249,7 +246,7 @@ where
                     //
                     if AssignmentComplex::is_self_admin_role_removal(
                         &token.user_id,
-                        &assignment_info,
+                        assignment_info,
                         data.roles,
                     ) {
                         return Err(assignment_admin_required_error());
@@ -300,12 +297,10 @@ where
                 }
             }
 
-            accept(())
+            Ok(())
         })
-        .await
-        .map_err(map_drive_err)?;
-
-    accept(())
+        .await?;
+    Ok(())
 }
 
 fn assignment_admin_required_error() -> RegularError {
@@ -344,16 +339,14 @@ where
     .await?;
 
     drive
-        .with_context(async move |context| {
+        .with_context(async move |context| -> RegularResult<()> {
             //
             let repo = repo.derive_transactional().await;
 
             repo.advance(context, &AssignmentStep::delete(&id)).await?;
 
-            accept(())
+            Ok(())
         })
-        .await
-        .map_err(map_drive_err)?;
-
-    accept(())
+        .await?;
+    Ok(())
 }

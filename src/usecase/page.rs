@@ -24,14 +24,13 @@ use crate::part::repo::assignment::{
 };
 use crate::part::repo::chapter::{ChapterRepo, ChapterRepoTransactional};
 use crate::part::repo::comic::{ComicRepo, ComicRepoTransactional};
-use crate::part::repo::map_drive_err;
 use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
 use crate::part::repo::page::{PageRepo, PageRepoTransactional};
 use crate::part::repo::step::chapter::ChapterStep;
 use crate::part::repo::step::comic::ComicStep;
 use crate::part::repo::step::page::PageStep;
 use crate::part::repo::workset::{WorksetRepo, WorksetRepoTransactional};
-use crate::result::{ExpectedVariant, RegularError, RegularResult, accept};
+use crate::result::{ExpectedVariant, RegularError, RegularResult};
 use crate::util::DeriveTransactional;
 
 #[cfg(test)]
@@ -83,7 +82,7 @@ where
     .await?;
 
     let reservations = drive
-        .with_context(async move |context| {
+        .with_context(async move |context| -> RegularResult<Vec<PageReservation>> {
             //
             let repo = repo.derive_transactional().await;
 
@@ -175,11 +174,9 @@ where
             )
             .await?;
 
-            accept(reservations)
+            Ok(reservations)
         })
-        .await
-        .map_err(map_drive_err)?;
-
+        .await?;
     let creations = futures_util::future::join_all(
         reservations.into_iter().map(|reservation| async move {
             //
@@ -188,7 +185,7 @@ where
                 .await?
                 .to_string();
 
-            accept(PageCreationVal {
+            Ok(PageCreationVal {
                 page_id: reservation.page_id,
                 put_url,
                 image_version: reservation.image_version,
@@ -196,10 +193,8 @@ where
         }),
     )
     .await
-    .into_iter()
-    .collect::<RegularResult<Vec<_>>>()?;
+    .into_iter()    .collect::<RegularResult<Vec<_>>>()?;
 
-    // FIXME: accept
     Ok(ReserveChapterPagesVal { creations })
 }
 
@@ -239,7 +234,7 @@ where
     let file_ext = data.file_ext;
 
     let (object_key, image_version) = drive
-        .with_context(async move |context| {
+        .with_context(async move |context| -> RegularResult<(String, i64)> {
             //
             let repo = repo.derive_transactional().await;
 
@@ -267,14 +262,12 @@ where
             )
             .await?;
 
-            accept((
+            Ok((
                 page_reservation.object_key,
                 page_reservation.image_version,
             ))
         })
-        .await
-        .map_err(map_drive_err)?;
-
+        .await?;
     let put_url = image_pool.put_signed(&object_key).await?.to_string();
 
     Ok(ReservePageImageVal {
@@ -332,8 +325,7 @@ where
             .map(|page_info| PageInfoVal::from_model(image_pool, page_info)),
     )
     .await
-    .into_iter()
-    .collect()
+    .into_iter()    .collect()
 }
 
 /// Marks one page image as uploaded.
@@ -365,7 +357,7 @@ where
     .await?;
 
     drive
-        .with_context(async move |context| {
+        .with_context(async move |context| -> RegularResult<()> {
             //
             let repo = repo.derive_transactional().await;
 
@@ -375,12 +367,10 @@ where
             )
             .await?;
 
-            accept(())
+            Ok(())
         })
-        .await
-        .map_err(map_drive_err)?;
-
-    accept(())
+        .await?;
+    Ok(())
 }
 
 /// Deletes all pages under one chapter.
@@ -423,7 +413,7 @@ where
     .await?;
 
     drive
-        .with_context(async move |context| {
+        .with_context(async move |context| -> RegularResult<()> {
             //
             let repo = repo.derive_transactional().await;
 
@@ -467,12 +457,10 @@ where
             )
             .await?;
 
-            accept(())
+            Ok(())
         })
-        .await
-        .map_err(map_drive_err)?;
-
-    accept(())
+        .await?;
+    Ok(())
 }
 
 fn validate_page_count(page_count: i32) -> RegularResult<()> {
@@ -484,7 +472,7 @@ fn validate_page_count(page_count: i32) -> RegularResult<()> {
         });
     }
 
-    accept(())
+    Ok(())
 }
 
 // TODO: batch
@@ -519,7 +507,6 @@ where
     )
     .await
 }
-
 async fn append_delete<C, P>(
     prom: &P,
     context: &mut C,
