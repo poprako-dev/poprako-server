@@ -10,9 +10,6 @@ use serde::{Deserialize, Serialize};
 /// [`Append`]: crate::part::prom::Append
 pub const IMAGE_TOPIC: &str = "image";
 
-/// The prom topic for comic archive deferred actions.
-pub const COMIC_ARCHIVE_TOPIC: &str = "comic_archive";
-
 /// Discriminates the resource type an [`ImageTask`] targets.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ImageKind {
@@ -45,20 +42,4 @@ pub enum ImageTask<'a> {
     },
     /// Delete an object from storage (e.g., an old avatar after a replacement).
     Delete { object_key: &'a str },
-}
-
-/// A deferred comic archive oper to be executed after transaction commit.
-///
-/// These intentions are serialized into [`Payload::ComicArchive`] prom records.
-/// The prom worker deserializes and executes them once their `visible_at`
-/// timestamp has passed.
-///
-/// All fields are borrows — no heap allocation on the append path.
-///
-/// [`Payload::ComicArchive`]: crate::part::prom::Payload::ComicArchive
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum ComicTask<'a> {
-    /// Archive a completed comic — hides it from active lists and cascades
-    /// to its chapters.
-    Archive { comic_id: &'a str },
 }

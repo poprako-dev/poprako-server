@@ -16,9 +16,7 @@ use poprako_transactional::drive::Drive;
 
 use crate::part::image::ImagePool;
 use crate::part::prom::Prom;
-use crate::part::prom::task::{
-    COMIC_ARCHIVE_TOPIC, ComicTask, IMAGE_TOPIC, ImageTask,
-};
+use crate::part::prom::task::{IMAGE_TOPIC, ImageTask};
 use crate::part::repo::assignment::{
     AssignmentRepo, AssignmentRepoTransactional,
 };
@@ -40,8 +38,6 @@ use crate::part_impl::shared::{RdbContext, RdbCore};
 use crate::result::{RegularError, RegularResult};
 use crate::util::DeriveTransactional;
 
-/// Prom comic event handler.
-mod comic;
 /// Prom image event handler.
 mod image;
 
@@ -360,29 +356,6 @@ where
             };
 
             image::handle(drive, repo, prom, image_pool, &task).await
-        }
-        COMIC_ARCHIVE_TOPIC => {
-            let payload_str =
-                serde_json::to_string(payload_json).map_err(|e| {
-                    format!("failed to serialize comic payload: {}", e)
-                });
-
-            let payload_str = match payload_str {
-                Ok(payload_str) => payload_str,
-                Err(e) => return TaskOutcome::Dead(e),
-            };
-
-            let task: Result<ComicTask<'_>, String> =
-                serde_json::from_str(&payload_str).map_err(|e| {
-                    format!("failed to deserialize comic task: {}", e)
-                });
-
-            let task = match task {
-                Ok(task) => task,
-                Err(e) => return TaskOutcome::Dead(e),
-            };
-
-            comic::handle(drive, repo, prom, image_pool, &task).await
         }
         unknown => {
             TaskOutcome::Dead(format!("unknown prom topic: {}", unknown))

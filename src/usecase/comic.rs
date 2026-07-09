@@ -22,9 +22,7 @@ use crate::model::chapter::ChapterForm;
 use crate::model::comic::{ComicForm, ComicInfoUpdate, ComicListSpec};
 use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
-use crate::part::prom::task::{
-    COMIC_ARCHIVE_TOPIC, ComicTask, IMAGE_TOPIC, ImageKind, ImageTask,
-};
+use crate::part::prom::task::{IMAGE_TOPIC, ImageKind, ImageTask};
 use crate::part::prom::{Payload, Prom, PromStep};
 use crate::part::repo::assignment::{
     AssignmentRepo, AssignmentRepoTransactional,
@@ -43,7 +41,7 @@ use crate::part::repo::step::workset::WorksetStep;
 use crate::part::repo::unit::{UnitRepo, UnitRepoTransactional};
 use crate::part::repo::workset::{WorksetRepo, WorksetRepoTransactional};
 use crate::result::{RegularError, RegularResult};
-use crate::util::{DeriveTransactional, next_snowflake_id};
+use crate::util::DeriveTransactional;
 use crate::value::comic::ComicWithOpt;
 use crate::value::role::{RoleField, RoleMask};
 
@@ -513,11 +511,14 @@ where
     Ok(())
 }
 
-/// Marks a comic completed and schedules an archive task.
-pub async fn mark_completed<D, C, R, P>(
+/// Marks a comic archived.
+///
+/// TODO: Archiving is not fully implemented yet. This currently only marks
+/// the comic with the existing completed flag and does not run a cascade
+/// archive/delete workflow.
+pub async fn mark_archived<D, C, R>(
     drive: &D,
     repo: &R,
-    prom: &P,
     token: UserToken,
     id: String,
 ) -> RegularResult<()>
@@ -531,11 +532,10 @@ where
         + MemberRepoTransactional<C>
         + Send
         + Sync,
-    P: Prom<C> + Send + Sync,
 {
     use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
-    ComicPermComplex::can_user_mark_completed(
+    ComicPermComplex::can_user_mark_archived(
         &mut repo.as_proxy(),
         &token.user_id,
         &id,
@@ -547,23 +547,8 @@ where
             //
             let repo = repo.derive_transactional().await;
 
-            repo.advance(context, &ComicStep::mark_completed(&id, true))
+            repo.advance(context, &ComicStep::mark_archived(&id))
                 .await?;
-
-            let archive_id = next_snowflake_id();
-
-            let now = OffsetDateTime::now_utc();
-
-            prom.advance(
-                context,
-                &PromStep::append(
-                    &archive_id,
-                    COMIC_ARCHIVE_TOPIC,
-                    Payload::Comic(ComicTask::Archive { comic_id: &id }),
-                    &now,
-                ),
-            )
-            .await?;
 
             Ok(())
         })

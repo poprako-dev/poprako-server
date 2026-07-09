@@ -155,10 +155,10 @@ pub struct CreateComicVal {
 /// Input parameters for updating a comic's title, author, and description.
 ///
 /// Cover and workflow updates are handled by dedicated endpoints
-/// ([`reserve_cover`], [`mark_completed`]).
+/// ([`reserve_cover`], [`mark_archived`]).
 ///
 /// [`reserve_cover`]: crate::usecase::comic::reserve_cover
-/// [`mark_completed`]: crate::usecase::comic::mark_completed
+/// [`mark_archived`]: crate::usecase::comic::mark_archived
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct UpdateComicInfoData {
     pub id: String,
@@ -253,6 +253,10 @@ pub struct MarkComicCoverUploadedData {
     pub cover_version: i64,
 }
 
-/// Input parameters for marking a comic completed.
+/// Input parameters for marking a comic archived.
+///
+/// `comic_id` must match the path parameter — a mismatch is rejected with `422`.
 #[derive(Debug, Deserialize, ToSchema)]
-pub struct MarkComicCompletedData {}
+pub struct MarkComicArchivedData {
+    pub comic_id: String,
+}

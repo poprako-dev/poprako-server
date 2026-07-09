@@ -7,12 +7,9 @@ use time::OffsetDateTime;
 use poprako_transactional::advance::Advance;
 use poprako_transactional::drive::Drive;
 
-use crate::complex::comic::ComicComplex;
 use crate::model::user::{UserCredential, UserInfo};
 use crate::part::image::ImagePool;
-use crate::part::prom::task::{
-    COMIC_ARCHIVE_TOPIC, ComicTask, IMAGE_TOPIC, ImageKind, ImageTask,
-};
+use crate::part::prom::task::{IMAGE_TOPIC, ImageKind, ImageTask};
 use crate::part::prom::{Append, Payload, Prom};
 use crate::part::repo::step::comic::ComicStep;
 use crate::part::repo::step::page::PageStep;
@@ -329,14 +326,8 @@ pub async fn process_pending(mock: &Mock) -> RegularResult<()> {
 
         match record.topic() {
             IMAGE_TOPIC => {
-                if let Payload::Image(ref task) = payload {
-                    process_image_task(mock, task).await?;
-                }
-            }
-            COMIC_ARCHIVE_TOPIC => {
-                if let Payload::Comic(ref task) = payload {
-                    process_comic_task(mock, task).await?;
-                }
+                let Payload::Image(ref task) = payload;
+                process_image_task(mock, task).await?;
             }
             unknown => {
                 return Err(RegularError::Unrecoverable {
@@ -474,31 +465,5 @@ fn mock_resource_exists(
             .pages
             .iter()
             .any(|page_info| page_info.id == resource_id),
-    }
-}
-
-/// Process a single comic archive task against the mock's in-memory repository.
-async fn process_comic_task(
-    mock: &Mock,
-    task: &ComicTask<'_>,
-) -> RegularResult<()> {
-    match task {
-        ComicTask::Archive { comic_id } => {
-            let comic_id = comic_id.to_string();
-
-            Drive::with_context(mock, async move |context| {
-                let transactional = MockTransactional;
-
-                ComicComplex::delete_cascade(
-                    &transactional,
-                    mock,
-                    context,
-                    &comic_id,
-                )
-                .await
-            })
-            .await
-            .map_err(|e| e.into())
-        }
     }
 }
