@@ -260,7 +260,8 @@ pub async fn mark_cover_uploaded(
     no_content()
 }
 
-/// `POST /api/v1/comics/{comic_id}/mark-completed` — toggle comic completion.
+/// `POST /api/v1/comics/{comic_id}/mark-completed` — mark a comic completed
+/// and enqueue an archive task.
 #[utoipa::path(
     post,
     path = "/api/v1/comics/{comic_id}/mark-completed",
@@ -268,24 +269,24 @@ pub async fn mark_cover_uploaded(
     params(("comic_id" = String, Path, description = "Comic ID")),
     request_body = MarkComicCompletedData,
     responses(
-        (status = 204, description = "Comic completion toggled"),
+        (status = 204, description = "Comic marked completed"),
         (status = 403, description = "No permission to modify this comic"),
         (status = 404, description = "Comic not found"),
     ),
 )]
-#[instrument(err, skip(harn, data))]
+#[instrument(err, skip(harn))]
 pub async fn mark_completed(
     State(harn): State<AppHarn>,
     Path(comic_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Json(data): Json<MarkComicCompletedData>,
+    Json(_data): Json<MarkComicCompletedData>,
 ) -> HttpNoContent {
     usecase::comic::mark_completed(
         harn.drive(),
         harn.repo(),
+        harn.prom(),
         user_token,
         comic_id,
-        data.is_completed,
     )
     .await?;
     no_content()

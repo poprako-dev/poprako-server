@@ -164,6 +164,7 @@ where
         vals.push(MemberInvitationInfoVal::from_model(image_pool, info).await?);
     }
 
+    // FIXME: accept
     Ok(vals)
 }
 

@@ -15,6 +15,7 @@ pub use part_impl::drive_rdb::RdbDrive;
 pub use part_impl::effect_async::AsyncEffectDevelop;
 pub use part_impl::image_r2::R2ImagePool;
 pub use part_impl::prom_rdb::RdbProm;
+pub use part_impl::prom_rdb::spawn_handler;
 pub use part_impl::repo_rdb::RdbRepo;
 
 mod complex;

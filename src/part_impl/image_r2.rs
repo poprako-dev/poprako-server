@@ -6,6 +6,8 @@ use anyhow::Context as _;
 use async_trait::async_trait;
 use aws_credential_types::Credentials;
 use aws_sdk_s3::config::{BehaviorVersion, Region};
+use aws_sdk_s3::error::SdkError;
+use aws_sdk_s3::operation::head_object::HeadObjectError;
 use aws_sdk_s3::presigning::PresigningConfig;
 use aws_sdk_s3::{Client, Config};
 use tracing::{Level, instrument};
@@ -155,6 +157,48 @@ impl ImagePool for R2ImagePool {
                 err
             ),
         })
+    }
+
+    #[instrument(err(Debug), skip(self), level = Level::DEBUG)]
+    async fn head_object(&self, key: &str) -> RegularResult<bool> {
+        match self
+            .client
+            .head_object()
+            .bucket(&self.bucket)
+            .key(key)
+            .send()
+            .await
+        {
+            Ok(_) => Ok(true),
+            Err(SdkError::ServiceError(e))
+                if matches!(e.err(), HeadObjectError::NotFound(_)) =>
+            {
+                Ok(false)
+            }
+            Err(e) => Err(RegularError::Unrecoverable {
+                message: format!(
+                    "[R2ImagePool::head_object] failed to check '{}': {}",
+                    key, e
+                ),
+            }),
+        }
+    }
+
+    #[instrument(err(Debug), skip(self), level = Level::DEBUG)]
+    async fn delete_object(&self, key: &str) -> RegularResult<()> {
+        self.client
+            .delete_object()
+            .bucket(&self.bucket)
+            .key(key)
+            .send()
+            .await
+            .map(|_| ())
+            .map_err(|e| RegularError::Unrecoverable {
+                message: format!(
+                    "[R2ImagePool::delete_object] failed to delete '{}': {}",
+                    key, e
+                ),
+            })
     }
 }
 

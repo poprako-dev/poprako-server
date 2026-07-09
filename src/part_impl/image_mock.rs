@@ -36,6 +36,32 @@ impl ImagePool for Mock {
         }
         Ok(Url::parse(&format!("https://test.local/put/{}", key)).unwrap())
     }
+
+    async fn head_object(&self, _key: &str) -> RegularResult<bool> {
+        if self.flags.lock().unwrap().image_head_failure {
+            return Err(RegularError::Expected {
+                variant: ExpectedVariant::Args,
+                message: trl("error-image-head-failed"),
+            });
+        }
+
+        if self.flags.lock().unwrap().image_head_absent {
+            return Ok(false);
+        }
+
+        Ok(true)
+    }
+
+    async fn delete_object(&self, _key: &str) -> RegularResult<()> {
+        if self.flags.lock().unwrap().image_delete_failure {
+            return Err(RegularError::Expected {
+                variant: ExpectedVariant::Args,
+                message: trl("error-image-delete-failed"),
+            });
+        }
+
+        Ok(())
+    }
 }
 
 // put_signed_returns_stable_url(ImagePool::put_signed)(positive): put URLs should be deterministic for assertions.

@@ -22,7 +22,9 @@ use crate::model::chapter::ChapterForm;
 use crate::model::comic::{ComicForm, ComicInfoUpdate, ComicListSpec};
 use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
-use crate::part::prom::task::{IMAGE_TOPIC, ImageKind, ImageTask};
+use crate::part::prom::task::{
+    COMIC_ARCHIVE_TOPIC, ComicTask, IMAGE_TOPIC, ImageKind, ImageTask,
+};
 use crate::part::prom::{Payload, Prom, PromStep};
 use crate::part::repo::assignment::{
     AssignmentRepo, AssignmentRepoTransactional,
@@ -42,7 +44,7 @@ use crate::part::repo::step::workset::WorksetStep;
 use crate::part::repo::unit::{UnitRepo, UnitRepoTransactional};
 use crate::part::repo::workset::{WorksetRepo, WorksetRepoTransactional};
 use crate::result::{RegularError, RegularResult, accept};
-use crate::util::DeriveTransactional;
+use crate::util::{DeriveTransactional, next_snowflake_id};
 use crate::value::comic::ComicWithOpt;
 use crate::value::role::{RoleField, RoleMask};
 
@@ -266,6 +268,7 @@ where
     let mut comic_info_vals = Vec::with_capacity(comic_infos.len());
 
     for comic_info in comic_infos {
+        // FIXME: spacing.
         let pinned_chapter_val = match pinned_chapters.remove(&comic_info.id) {
             Some(chapter_info) => Some(
                 ChapterInfoVal::from_model(image_pool, chapter_info).await?,
@@ -410,6 +413,7 @@ where
 
     let put_url = image_pool.put_signed(&object_key).await?.to_string();
 
+    // FIXME: accept
     Ok(ReserveComicCoverVal {
         put_url,
         cover_version,
@@ -507,13 +511,13 @@ where
     accept(())
 }
 
-/// Marks a comic completed or active.
-pub async fn mark_completed<D, C, R>(
+/// Marks a comic completed and schedules an archive task.
+pub async fn mark_completed<D, C, R, P>(
     drive: &D,
     repo: &R,
+    prom: &P,
     token: UserToken,
     id: String,
-    is_completed: bool,
 ) -> RegularResult<()>
 where
     D: Drive<C>,
@@ -525,6 +529,7 @@ where
         + MemberRepoTransactional<C>
         + Send
         + Sync,
+    P: Prom<C> + Send + Sync,
 {
     use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
@@ -539,11 +544,20 @@ where
         .with_context(async move |context| {
             let repo = repo.derive_transactional().await;
 
-            // TODO: add prom to archive comic.
-            // TODO: cascadely archive chapters belongs to it.
-            repo.advance(
+            repo.advance(context, &ComicStep::mark_completed(&id, true))
+                .await?;
+
+            let archive_id = next_snowflake_id();
+            let now = OffsetDateTime::now_utc();
+
+            prom.advance(
                 context,
-                &ComicStep::mark_completed(&id, is_completed),
+                &PromStep::append(
+                    &archive_id,
+                    COMIC_ARCHIVE_TOPIC,
+                    Payload::Comic(ComicTask::Archive { comic_id: &id }),
+                    &now,
+                ),
             )
             .await?;
 

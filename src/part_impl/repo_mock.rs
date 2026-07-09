@@ -107,6 +107,11 @@ pub struct MockFlags {
     pub token_failure: bool,
     pub image_get_failure: bool,
     pub image_put_failure: bool,
+
+    pub image_head_failure: bool,
+    pub image_head_absent: bool,
+
+    pub image_delete_failure: bool,
 }
 
 /// The top-level mock driver implementing [DeriveTransactional] and [Drive].
@@ -231,6 +236,24 @@ impl Mock {
     /// Enable image storage failures for subsequent opers.
     pub fn with_image_put_failure(self) -> Self {
         self.flags.lock().unwrap().image_put_failure = true;
+        self
+    }
+
+    /// Enable head-object failures for subsequent opers.
+    pub fn with_image_head_failure(self) -> Self {
+        self.flags.lock().unwrap().image_head_failure = true;
+        self
+    }
+
+    /// Report objects as absent for subsequent head-object opers.
+    pub fn with_image_head_absent(self) -> Self {
+        self.flags.lock().unwrap().image_head_absent = true;
+        self
+    }
+
+    /// Enable delete-object failures for subsequent opers.
+    pub fn with_image_delete_failure(self) -> Self {
+        self.flags.lock().unwrap().image_delete_failure = true;
         self
     }
 

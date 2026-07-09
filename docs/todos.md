@@ -7,4 +7,5 @@
 - [ ] rename: join -> join-{team}
 - [ ] add archive prom in comic complete.
 - [ ] check: raw text response body.
-- [ ] lock main row before delete_cascade.
+- [x] lock main row before delete_cascade.
+- [ ] prom handler.

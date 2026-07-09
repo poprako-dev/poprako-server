@@ -133,8 +133,11 @@ where
     <R as DeriveTransactional>::Transactional: TeamRepoTransactional<C>,
     I: ImagePool,
 {
-    let team_info = repo.execute(&TeamStep::get_info_by_id(&id)).await?;
-    TeamInfoVal::from_model(image_pool, team_info).await
+    TeamInfoVal::from_model(
+        image_pool,
+        repo.execute(&TeamStep::get_info_by_id(&id)).await?,
+    )
+    .await
 }
 
 /// Lists teams with pagination.

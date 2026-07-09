@@ -163,6 +163,7 @@ where
                         user_id: token.user_id,
                         roles: data.roles,
                     };
+
                     repo.advance(
                         context,
                         &AssignmentStep::create(&assignment_form),

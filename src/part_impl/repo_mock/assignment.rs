@@ -217,15 +217,19 @@ fn apply_assignment_incls(
             AssignmentInclOpt::User => {
                 apply_user_incl(state, assignment_info, true)
             }
+
             AssignmentInclOpt::Chapter => {
                 apply_chapter_incl(state, assignment_info, true)
             }
+
             AssignmentInclOpt::ChapterComic => {
                 apply_chapter_comic_incl(state, assignment_info, true)
             }
+
             AssignmentInclOpt::ChapterComicWorkset => {
                 apply_chapter_comic_workset_incl(state, assignment_info, true)
             }
+
             AssignmentInclOpt::ChapterComicWorksetTeam => {
                 apply_chapter_comic_workset_team_incl(
                     state,
@@ -233,9 +237,11 @@ fn apply_assignment_incls(
                     true,
                 )
             }
+
             AssignmentInclOpt::ChapterCreator => {
                 apply_chapter_creator_incl(state, assignment_info, true)
             }
+
             AssignmentInclOpt::ChapterComicCreator => {
                 apply_chapter_comic_creator_incl(state, assignment_info, true)
             }

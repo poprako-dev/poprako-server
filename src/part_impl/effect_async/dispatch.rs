@@ -10,8 +10,7 @@ use crate::part::repo::system_mail::{
 };
 use crate::part::repo::team::{TeamRepo, TeamRepoTransactional};
 use crate::part::repo::user::{UserRepo, UserRepoTransactional};
-use crate::part_impl::effect_async::chapter;
-use crate::part_impl::effect_async::user;
+use crate::part_impl::effect_async::{chapter, user};
 use crate::util::DeriveTransactional;
 
 /// Dispatches a domain event to its side-effect handler.

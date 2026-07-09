@@ -235,15 +235,19 @@ fn apply_chapter_incls(
             ChapterInclOpt::Comic => {
                 apply_comic_incl(state, chapter_info, true)
             }
+
             ChapterInclOpt::ComicWorkset => {
                 apply_comic_workset_incl(state, chapter_info, true)
             }
+
             ChapterInclOpt::ComicWorksetTeam => {
                 apply_comic_workset_team_incl(state, chapter_info, true)
             }
+
             ChapterInclOpt::ComicCreator => {
                 apply_comic_creator_incl(state, chapter_info, true)
             }
+
             ChapterInclOpt::Creator => {
                 apply_creator_incl(state, chapter_info, true)
             }
