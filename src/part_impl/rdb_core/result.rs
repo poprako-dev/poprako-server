@@ -27,6 +27,7 @@ pub fn diesel(err: DieselError) -> RegularError {
                 message: trl("error-already-exists"),
             }
         }
+
         DieselError::NotFound => {
             tracing::warn!(
                 "[rdb_core::diesel] unexpected Diesel NotFound; use optional() and map None at call site"
@@ -37,6 +38,7 @@ pub fn diesel(err: DieselError) -> RegularError {
                 message: trl("error-not-found"),
             }
         }
+
         err => RegularError::Unrecoverable {
             message: format!("diesel error: {}", err),
         },

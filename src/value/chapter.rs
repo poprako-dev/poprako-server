@@ -252,6 +252,7 @@ impl StageMask {
             if allow_ignore {
                 return accept(());
             }
+
             return Err(RegularError::Expected {
                 variant: ExpectedVariant::Args,
                 message: trl("error-invalid-stage-phase"),

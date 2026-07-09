@@ -109,9 +109,11 @@ fn apply_comic_incls(
             ComicInclOpt::Workset => {
                 apply_workset_incl(state, comic_info, true)
             }
+
             ComicInclOpt::WorksetTeam => {
                 apply_team_incl(state, comic_info, true)
             }
+
             ComicInclOpt::Creator => {
                 apply_creator_incl(state, comic_info, true)
             }

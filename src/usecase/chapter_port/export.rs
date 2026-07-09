@@ -1,6 +1,8 @@
 #[cfg(test)]
 mod tests;
 
+// FIXME: specific models and values are necessary.
+
 use std::collections::HashMap;
 
 use crate::complex::chapter_port::{
@@ -157,6 +159,7 @@ where
         let unit_infos = repo
             .execute(&UnitStep::list_all_infos_by_page_id(&page_info.id))
             .await?;
+
         units_by_page_id.insert(page_info.id.clone(), unit_infos);
     }
 
@@ -190,5 +193,6 @@ fn non_empty(text: String) -> Option<String> {
     if text.trim().is_empty() {
         return None;
     }
+
     Some(text)
 }

@@ -46,21 +46,27 @@ fn one_shot_predicate(column: &str, phase: StagePhase) -> &'static str {
         ("f_uploaded_at", StagePhase::Pending) => {
             "pinned_chapter.f_uploaded_at IS NULL"
         }
+
         ("f_uploaded_at", StagePhase::Completed) => {
             "pinned_chapter.f_uploaded_at IS NOT NULL"
         }
+
         ("f_reviewed_at", StagePhase::Pending) => {
             "pinned_chapter.f_reviewed_at IS NULL"
         }
+
         ("f_reviewed_at", StagePhase::Completed) => {
             "pinned_chapter.f_reviewed_at IS NOT NULL"
         }
+
         ("f_published_at", StagePhase::Pending) => {
             "pinned_chapter.f_published_at IS NULL"
         }
+
         ("f_published_at", StagePhase::Completed) => {
             "pinned_chapter.f_published_at IS NOT NULL"
         }
+
         (_, StagePhase::Active) => "FALSE",
         _ => "FALSE",
     }
@@ -92,12 +98,15 @@ fn stage_predicate(stage: Stage, phase: StagePhase) -> String {
         Stage::Translate => {
             two_step_predicate("f_translating_at", "f_translated_at", phase)
         }
+
         Stage::Proofread => {
             two_step_predicate("f_proofreading_at", "f_proofread_at", phase)
         }
+
         Stage::TypesetRedraw => {
             two_step_predicate("f_typesetting_at", "f_typeset_at", phase)
         }
+
         Stage::Review => one_shot_predicate("f_reviewed_at", phase).into(),
         Stage::Publish => one_shot_predicate("f_published_at", phase).into(),
     }
@@ -122,7 +131,6 @@ fn workflow_filter_sql(stage_mask: StageMask) -> Option<String> {
 
     for predicate in predicates {
         sql.push_str(" AND ");
-
         sql.push_str(&predicate);
     }
 

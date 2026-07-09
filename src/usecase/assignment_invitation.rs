@@ -139,6 +139,7 @@ where
                         ),
                     )
                     .await?;
+
                 if existing_assignment_info.is_some() {
                     return Err(invitee_assigned_error());
                 }

@@ -253,8 +253,6 @@ pub struct MarkComicCoverUploadedData {
     pub cover_version: i64,
 }
 
-/// Input parameters for marking a comic completed or active.
+/// Input parameters for marking a comic completed.
 #[derive(Debug, Deserialize, ToSchema)]
-pub struct MarkComicCompletedData {
-    pub is_completed: bool,
-}
+pub struct MarkComicCompletedData {}

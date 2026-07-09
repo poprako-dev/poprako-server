@@ -18,6 +18,7 @@ macro_rules! submit_query {
 }
 
 pub mod announcement;
+
 pub mod assignment;
 pub mod assignment_invitation;
 pub mod chapter;

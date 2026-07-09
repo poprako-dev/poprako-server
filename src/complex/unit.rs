@@ -82,6 +82,7 @@ impl UnitComplex {
                         before_id,
                     });
                 }
+
                 UnitOper::Delete { id } => {
                     validate_id(&id)?;
                     opers.push(UnitOper::Delete { id });
@@ -115,7 +116,9 @@ impl UnitComplex {
                     current_order.retain(|surviving_id| surviving_id != id);
                     insert_before(&mut current_order, id, before_id);
                 }
+
                 UnitOper::Save { id: None, .. } => {}
+
                 UnitOper::Delete { id } => {
                     current_order.retain(|surviving_id| surviving_id != id);
                 }
@@ -265,13 +268,11 @@ fn insert_before(
 ) {
     let Some(before_id) = before_id else {
         order.push(id.to_string());
-
         return;
     };
 
     if before_id == id {
         order.push(id.to_string());
-
         return;
     }
 
@@ -280,7 +281,6 @@ fn insert_before(
         .position(|surviving_id| surviving_id == before_id)
     else {
         order.push(id.to_string());
-
         return;
     };
 

@@ -20,8 +20,8 @@
 // mark_cover_uploaded(mark_cover_uploaded)(negative): old reservation replay should fail without marking current cover uploaded.
 // delete(delete)(positive): deleting a comic should remove it, decrement workset count, and enqueue cover deletion.
 // delete(delete)(negative): missing comic should rollback state.
-// mark_completed(mark_completed)(positive): marking completed should update completion state.
-// mark_completed(mark_completed)(negative): missing comic should rollback state.
+// mark_completed(mark_completed)(positive): marking completed should update completion state and enqueue archive task.
+// mark_completed(mark_completed)(negative): missing comic should rollback state and leave no prom records.
 
 use super::*;
 
@@ -33,7 +33,7 @@ use crate::model::member::MemberInfo;
 use crate::model::user::UserToken;
 use crate::model::workset::WorksetInfo;
 use crate::part::prom::Payload;
-use crate::part::prom::task::{ImageKind, ImageTask};
+use crate::part::prom::task::{ComicTask, ImageKind, ImageTask};
 use crate::part_impl::repo_mock::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::{
@@ -863,12 +863,22 @@ async fn mark_completed_updates_completion_state() {
     mock.seed_member(admin_member("user-1", "team-1"));
     mock.seed_comic(comic("comic-1", "workset-1", 0));
 
-    mark_completed(&mock, &mock, token("user-1"), "comic-1".into(), true)
+    mark_completed(&mock, &mock, &mock, token("user-1"), "comic-1".into())
         .await
         .ok()
         .unwrap();
 
-    assert!(mock.snapshot().comics[0].is_completed);
+    let snapshot = mock.snapshot();
+    assert!(snapshot.comics[0].is_completed);
+
+    assert_eq!(snapshot.prom_records.len(), 1);
+    assert_eq!(snapshot.prom_records[0].topic(), "comic_archive");
+    assert_eq!(
+        snapshot.prom_records[0].payload(),
+        Payload::Comic(ComicTask::Archive {
+            comic_id: "comic-1"
+        }),
+    );
 }
 
 #[tokio::test]
@@ -877,7 +887,7 @@ async fn mark_completed_rolls_back_missing_comic() {
     mock.seed_comic(comic("comic-1", "workset-1", 0));
 
     let err =
-        mark_completed(&mock, &mock, token("user-1"), "missing".into(), true)
+        mark_completed(&mock, &mock, &mock, token("user-1"), "missing".into())
             .await
             .err()
             .unwrap();
@@ -885,4 +895,43 @@ async fn mark_completed_rolls_back_missing_comic() {
 
     assert_expected_variant(err, ExpectedVariant::Args);
     assert!(!snapshot.comics[0].is_completed);
+    assert!(snapshot.prom_records.is_empty());
+}
+
+// process_pending_archive(mark_completed, process_pending)(positive):
+//   After mark_completed enqueues ComicTask::Archive, calling
+//   process_pending executes delete_cascade: the comic is removed.
+#[tokio::test]
+async fn process_pending_archive_executes_cascade_delete() {
+    let mock = Mock::new();
+
+    mock.seed_workset(workset("workset-1", "team-1"));
+    mock.seed_member(admin_member("user-1", "team-1"));
+    mock.seed_comic(comic("comic-1", "workset-1", 0));
+
+    mark_completed(&mock, &mock, &mock, token("user-1"), "comic-1".into())
+        .await
+        .ok()
+        .unwrap();
+
+    let snapshot = mock.snapshot();
+    assert!(snapshot.comics[0].is_completed);
+    assert_eq!(snapshot.prom_records.len(), 1);
+    assert_eq!(
+        snapshot.prom_records[0].payload(),
+        Payload::Comic(ComicTask::Archive {
+            comic_id: "comic-1"
+        }),
+    );
+
+    crate::part_impl::prom_mock::process_pending(&mock)
+        .await
+        .ok()
+        .unwrap();
+
+    let snapshot = mock.snapshot();
+    assert!(
+        !snapshot.comics.iter().any(|c| c.id == "comic-1"),
+        "comic should be removed after archive cascade"
+    );
 }

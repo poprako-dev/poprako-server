@@ -22,8 +22,7 @@
 #![allow(clippy::missing_panics_doc)]
 #![allow(clippy::multiple_crate_versions)]
 
-use std::net::SocketAddr;
-use std::net::ToSocketAddrs;
+use std::net::{SocketAddr, ToSocketAddrs};
 use std::sync::Arc;
 
 use anyhow::Context as _;
@@ -71,13 +70,15 @@ async fn main() -> anyhow::Result<()> {
     let drive = RdbDrive::new(core.clone());
 
     let repo = RdbRepo::new(core.clone());
-    let repo_effect = Arc::new(RdbRepo::new(core));
+    let repo_effect = Arc::new(RdbRepo::new(core.clone()));
 
     let prom = RdbProm;
 
     let auth = JwtAuth::from_env()?;
 
     let image_pool = R2ImagePool::from_env()?;
+
+    poprako_r::spawn_handler(core.clone(), image_pool.clone());
 
     let develop = AsyncEffectDevelop::new(repo_effect, 1024);
 

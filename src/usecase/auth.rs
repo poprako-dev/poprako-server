@@ -144,6 +144,7 @@ where
 
     let token = auth.sign_token(&UserTokenRef { user_id: &user_id })?;
 
+    // FIXME: accept
     Ok(RegisterVal { user_id, token })
 }
 
@@ -188,6 +189,7 @@ where
         user_id: &user_credential.user_id,
     })?;
 
+    // FIXME: accept
     Ok(LoginVal {
         user_id: user_credential.user_id,
         token,

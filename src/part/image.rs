@@ -16,4 +16,11 @@ pub trait ImagePool {
 
     /// Returns a signed upload URL for writing an object at `key`.
     async fn put_signed(&self, key: &str) -> RegularResult<Url>;
+
+    /// Check whether an object exists in storage.
+    async fn head_object(&self, key: &str) -> RegularResult<bool>;
+
+    /// Delete an object from storage. Idempotent — succeeds if the
+    /// object does not exist.
+    async fn delete_object(&self, key: &str) -> RegularResult<()>;
 }
