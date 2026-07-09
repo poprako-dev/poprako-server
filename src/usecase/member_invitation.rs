@@ -66,6 +66,7 @@ where
 
     let (member_invitation_id, code) = drive
         .with_context(async move |context| {
+            //
             let repo = repo.derive_transactional().await;
 
             let invitee_user_info = repo
@@ -76,6 +77,7 @@ where
                 .await?;
 
             if let Some(invitee_user_info) = invitee_user_info {
+                //
                 let invitee_member_info = repo
                     .advance(
                         context,
@@ -95,6 +97,7 @@ where
             }
 
             let member_invitation_id = MemberInvitationComplex::gen_id();
+
             let code = MemberInvitationComplex::gen_code();
 
             let member_invitation_form = MemberInvitationForm {
@@ -197,6 +200,7 @@ where
 
     drive
         .with_context(async move |context| {
+            //
             let repo = repo.derive_transactional().await;
 
             let member_invitation_update = MemberInvitationUpdate {
@@ -247,6 +251,7 @@ where
 
     drive
         .with_context(async move |context| {
+            //
             let repo = repo.derive_transactional().await;
 
             repo.advance(context, &MemberInvitationStep::delete(&id))

@@ -8,6 +8,7 @@ use axum::response::Response;
 
 /// `from_fn` handler that logs the elapsed wall-clock time of each request.
 pub async fn log_latency(request: Request, next: Next) -> Response {
+    //
     let start = Instant::now();
 
     let method = request.method().clone();

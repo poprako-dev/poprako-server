@@ -42,6 +42,7 @@ fn find_user(state: &MockState, user_id: &str) -> Option<UserInfo> {
 }
 
 fn find_chapter(state: &MockState, chapter_id: &str) -> Option<ChapterInfo> {
+    //
     let mut chapter_info = state
         .chapters
         .iter()
@@ -49,12 +50,14 @@ fn find_chapter(state: &MockState, chapter_id: &str) -> Option<ChapterInfo> {
         .cloned()?;
 
     chapter_info.comic = None;
+
     chapter_info.creator = None;
 
     Some(chapter_info)
 }
 
 fn find_comic(state: &MockState, comic_id: &str) -> Option<ComicInfo> {
+    //
     let mut comic_info = state
         .comics
         .iter()
@@ -62,7 +65,9 @@ fn find_comic(state: &MockState, comic_id: &str) -> Option<ComicInfo> {
         .cloned()?;
 
     comic_info.workset = None;
+
     comic_info.team = None;
+
     comic_info.creator = None;
 
     Some(comic_info)
@@ -113,6 +118,7 @@ fn apply_chapter_comic_incl(
     assignment_info: &mut AssignmentInfo,
     include_comic: bool,
 ) {
+    //
     if !include_comic {
         return;
     }
@@ -129,6 +135,7 @@ fn apply_chapter_comic_workset_incl(
     assignment_info: &mut AssignmentInfo,
     include_workset: bool,
 ) {
+    //
     if !include_workset {
         return;
     }
@@ -149,6 +156,7 @@ fn apply_chapter_comic_workset_team_incl(
     assignment_info: &mut AssignmentInfo,
     include_team: bool,
 ) {
+    //
     if !include_team {
         return;
     }
@@ -173,6 +181,7 @@ fn apply_chapter_creator_incl(
     assignment_info: &mut AssignmentInfo,
     include_creator: bool,
 ) {
+    //
     if !include_creator {
         return;
     }
@@ -189,6 +198,7 @@ fn apply_chapter_comic_creator_incl(
     assignment_info: &mut AssignmentInfo,
     include_creator: bool,
 ) {
+    //
     if !include_creator {
         return;
     }
@@ -209,11 +219,14 @@ fn apply_assignment_incls(
     assignment_info: &mut AssignmentInfo,
     incl_opt: &[AssignmentInclOpt],
 ) {
+    //
     assignment_info.user = None;
+
     assignment_info.chapter = None;
 
     for incl_opt in expand_incl_opts(incl_opt) {
         match incl_opt {
+            //
             AssignmentInclOpt::User => {
                 apply_user_incl(state, assignment_info, true)
             }
@@ -269,6 +282,7 @@ fn get_assignment(
     id: &str,
     incl_opt: &[AssignmentInclOpt],
 ) -> RegularResult<AssignmentInfo> {
+    //
     let mut assignment_info = state
         .assignments
         .iter()
@@ -285,6 +299,7 @@ fn list_assignments(
     state: &MockState,
     spec: &AssignmentListSpec,
 ) -> Vec<AssignmentInfo> {
+    //
     let (offset, limit, incl_opt, mut assignment_infos) = match spec {
         AssignmentListSpec::Chapter {
             chapter_id,
@@ -344,6 +359,7 @@ fn list_assignments(
     });
 
     let offset = offset as usize;
+
     let limit = limit as usize;
 
     if offset >= assignment_infos.len() {
@@ -351,6 +367,7 @@ fn list_assignments(
     }
 
     let end = std::cmp::min(offset + limit, assignment_infos.len());
+
     assignment_infos[offset..end].to_vec()
 }
 
@@ -372,6 +389,7 @@ fn list_all_assignments_by_chapter(
     role: Option<RoleField>,
     incl_opt: &[AssignmentInclOpt],
 ) -> Vec<AssignmentInfo> {
+    //
     let mut assignment_infos = state
         .assignments
         .iter()
@@ -401,6 +419,7 @@ fn create_assignment(
     state: &mut MockState,
     form: &AssignmentForm,
 ) -> RegularResult<AssignmentInfo> {
+    //
     if state
         .assignments
         .iter()
@@ -408,6 +427,7 @@ fn create_assignment(
     {
         return Err(expected("error-already-exists"));
     }
+
     if state.assignments.iter().any(|assignment_info| {
         assignment_info.chapter_id == form.chapter_id
             && assignment_info.user_id == form.user_id
@@ -416,6 +436,7 @@ fn create_assignment(
     }
 
     let time = now();
+
     let assignment_info = AssignmentInfo {
         id: form.id.clone(),
         chapter_id: form.chapter_id.clone(),
@@ -426,7 +447,9 @@ fn create_assignment(
         created_at: time,
         updated_at: time,
     };
+
     state.assignments.push(assignment_info.clone());
+
     Ok(assignment_info)
 }
 
@@ -434,12 +457,15 @@ fn delete_assignment_by_id(
     state: &mut MockState,
     id: &str,
 ) -> RegularResult<()> {
+    //
     let index = state
         .assignments
         .iter()
         .position(|assignment_info| assignment_info.id == id)
         .ok_or_else(|| expected("error-assignment-not-found"))?;
+
     state.assignments.remove(index);
+
     Ok(())
 }
 
@@ -447,7 +473,9 @@ fn delete_assignments_by_chapter_id(
     state: &mut MockState,
     chapter_id: &str,
 ) -> RegularResult<()> {
+    //
     state.assignments.retain(|a| a.chapter_id != chapter_id);
+
     Ok(())
 }
 

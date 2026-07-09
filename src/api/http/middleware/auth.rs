@@ -26,6 +26,7 @@ pub async fn authorize(
     mut request: Request,
     next: Next,
 ) -> Response {
+    //
     let raw_token = extract_token(&request);
 
     let user_token = match harn.auth().verify_token(&raw_token) {
@@ -43,6 +44,7 @@ pub async fn authorize(
 /// Prefers the `authorization-token` cookie; falls back to the `Authorization`
 /// header, stripping the `Bearer ` prefix when present.
 pub fn extract_token(request: &Request) -> String {
+    //
     if let Some(cookie) = request.headers().get(header::COOKIE)
         && let Ok(cookie_str) = cookie.to_str()
     {

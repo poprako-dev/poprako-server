@@ -117,6 +117,7 @@ impl TryFrom<u32> for RoleField {
     type Error = RegularError;
 
     fn try_from(value: u32) -> RegularResult<Self> {
+        //
         if value == 0
             || !Self::VALID_VALUES.contains(&value)
             || value.count_ones() != 1
@@ -176,12 +177,14 @@ impl TryFrom<u32> for RoleMask {
     type Error = RegularError;
 
     fn try_from(value: u32) -> RegularResult<Self> {
+        //
         if value == 0 || value & !Self::VALID_BITS != 0 {
             return Err(RegularError::Expected {
                 variant: ExpectedVariant::Args,
                 message: trl("error-invalid-role"),
             });
         }
+
         accept(Self(value))
     }
 }

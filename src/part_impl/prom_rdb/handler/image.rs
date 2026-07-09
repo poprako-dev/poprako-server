@@ -22,6 +22,7 @@ where
     I: ImagePool + Send + Sync,
 {
     match task {
+        //
         ImageTask::CheckUploaded {
             kind,
             resource_id,
@@ -37,6 +38,7 @@ where
             )
             .await
         }
+
         ImageTask::Delete { object_key } => {
             handle_delete(image_pool, object_key).await
         }

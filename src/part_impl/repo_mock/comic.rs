@@ -60,7 +60,9 @@ fn apply_workset_incl(
     comic_info: &mut ComicInfo,
     include_workset: bool,
 ) {
+    //
     comic_info.workset = None;
+
     if include_workset {
         comic_info.workset = find_workset(state, &comic_info.workset_id);
     }
@@ -71,6 +73,7 @@ fn apply_team_incl(
     comic_info: &mut ComicInfo,
     include_team: bool,
 ) {
+    //
     comic_info.team = None;
 
     if !include_team {
@@ -89,7 +92,9 @@ fn apply_creator_incl(
     comic_info: &mut ComicInfo,
     include_creator: bool,
 ) {
+    //
     comic_info.creator = None;
+
     if include_creator {
         comic_info.creator = find_user(state, &comic_info.creator_id);
     }
@@ -100,12 +105,16 @@ fn apply_comic_incls(
     comic_info: &mut ComicInfo,
     incl_opt: &[ComicInclOpt],
 ) {
+    //
     comic_info.workset = None;
+
     comic_info.team = None;
+
     comic_info.creator = None;
 
     for incl_opt in expand_incl_opts(incl_opt) {
         match incl_opt {
+            //
             ComicInclOpt::Workset => {
                 apply_workset_incl(state, comic_info, true)
             }
@@ -130,6 +139,7 @@ fn comic_matches_kind(
         ComicListKind::All => true,
         ComicListKind::Completed => comic_info.is_completed,
         ComicListKind::Active { stages } => {
+            //
             if comic_info.is_completed {
                 return false;
             }
@@ -154,6 +164,7 @@ fn comic_matches_kind(
 }
 
 fn comic_matches_fuzzy(comic_info: &ComicInfo, fuzzy_title: &str) -> bool {
+    //
     let composed_title = ComicComplex::compose_title(
         comic_info.index,
         &comic_info.author,
@@ -182,6 +193,7 @@ fn mark_comic_cover_uploaded(
     id: &str,
     cover_version: i64,
 ) -> RegularResult<()> {
+    //
     let comic = state
         .comics
         .iter_mut()
@@ -191,8 +203,11 @@ fn mark_comic_cover_uploaded(
     if comic.cover_version != cover_version {
         return Err(expected("error-stale-cover-upload"));
     }
+
     comic.cover_uploaded = true;
+
     comic.updated_at = now();
+
     Ok(())
 }
 

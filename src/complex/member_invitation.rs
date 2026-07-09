@@ -22,7 +22,9 @@ impl MemberInvitationComplex {
 
     /// Generate a short invitation code from a unique invitation id.
     pub fn gen_code() -> String {
+        //
         let full = next_snowflake_id();
+
         let len = full.len();
 
         full[len.saturating_sub(6)..].into()
@@ -76,6 +78,7 @@ impl MemberInvitationPermComplex {
             >,
     {
         let team_id = Self::resolve_team_id(proxy, invitation_id).await?;
+
         check_user_is_team_admin(proxy, user_id, &team_id).await
     }
 
@@ -94,6 +97,7 @@ impl MemberInvitationPermComplex {
             >,
     {
         let team_id = Self::resolve_team_id(proxy, invitation_id).await?;
+
         check_user_is_team_admin(proxy, user_id, &team_id).await
     }
 

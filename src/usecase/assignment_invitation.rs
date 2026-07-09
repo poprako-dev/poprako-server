@@ -120,6 +120,7 @@ where
 
     let (assignment_invitation_id, code) = drive
         .with_context(async move |context| {
+            //
             let repo = repo.derive_transactional().await;
 
             let invitee_user_info = repo
@@ -130,6 +131,7 @@ where
                 .await?;
 
             if let Some(invitee_user_info) = invitee_user_info {
+                //
                 let existing_assignment_info = repo
                     .advance(
                         context,
@@ -146,6 +148,7 @@ where
             }
 
             let assignment_invitation_id = gen_assignment_invitation_id();
+
             let code = gen_code();
 
             let assignment_invitation_form = AssignmentInvitationForm {
@@ -213,6 +216,7 @@ where
 
     drive
         .with_context(async move |context| {
+            //
             let repo = repo.derive_transactional().await;
 
             repo.advance(context, &AssignmentInvitationStep::delete(&id))
@@ -263,6 +267,7 @@ where
 
     let assignment_info = drive
         .with_context(async move |context| {
+            //
             let repo = repo.derive_transactional().await;
 
             let current_user_info = repo
@@ -392,7 +397,9 @@ fn gen_assignment_invitation_id() -> String {
 }
 
 fn gen_code() -> String {
+    //
     let id = next_snowflake_id();
+
     let len = id.len();
 
     if len <= 6 {
@@ -403,9 +410,11 @@ fn gen_code() -> String {
 }
 
 fn validate_roles(roles: RoleMask) -> RegularResult<()> {
+    //
     if u32::from(roles) == 0 || roles.has_any_role(&[RoleField::ADMIN]) {
         return Err(assignment_role_not_assignable_args_error());
     }
+
     accept(())
 }
 

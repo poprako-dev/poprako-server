@@ -28,6 +28,7 @@ async fn list_infos(
     conn: &mut RdbConn,
     spec: &CommentListSpec,
 ) -> RegularResult<Vec<CommentInfo>> {
+    //
     let rows: Vec<CommentRow> = t_comment
         .filter(f_team_id.eq(spec.team_id.as_str()))
         .select(CommentRow::as_select())
@@ -51,6 +52,7 @@ async fn create(
     conn: &mut RdbConn,
     form: &CommentForm,
 ) -> RegularResult<CommentInfo> {
+    //
     let entry = CommentEntry::from(form);
 
     let row: CommentRow = diesel::insert_into(t_comment)

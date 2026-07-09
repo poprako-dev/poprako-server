@@ -39,7 +39,9 @@ fn apply_user_incl(
     announcement_info: &mut AnnouncementInfo,
     include_user: bool,
 ) {
+    //
     announcement_info.user = None;
+
     if include_user {
         announcement_info.user = find_user(state, &announcement_info.user_id);
     }
@@ -49,7 +51,9 @@ fn list_announcements(
     state: &MockState,
     spec: &AnnouncementListSpec,
 ) -> Vec<AnnouncementInfo> {
+    //
     let include_user = spec.incl_opt.contains(&AnnouncementInclOpt::User);
+
     let mut announcement_infos = state
         .announcements
         .iter()
@@ -64,6 +68,7 @@ fn list_announcements(
     }
 
     let offset = spec.offset as usize;
+
     let limit = spec.limit as usize;
 
     if offset >= announcement_infos.len() {
@@ -71,6 +76,7 @@ fn list_announcements(
     }
 
     let end = std::cmp::min(offset + limit, announcement_infos.len());
+
     announcement_infos[offset..end].to_vec()
 }
 
@@ -78,6 +84,7 @@ fn create_announcement(
     state: &mut MockState,
     form: &AnnouncementForm,
 ) -> RegularResult<AnnouncementInfo> {
+    //
     if state
         .announcements
         .iter()
@@ -141,7 +148,9 @@ use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;
 
 fn user(id: &str) -> UserInfo {
+    //
     let time = now();
+
     UserInfo {
         id: id.into(),
         qid: id.into(),

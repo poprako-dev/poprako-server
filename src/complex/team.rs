@@ -94,6 +94,7 @@ impl TeamComplex {
             && team_info.avatar_uploaded
         {
             let delete_id = ImageComplex::gen_delete_id();
+
             let now = OffsetDateTime::now_utc();
 
             prom.advance(

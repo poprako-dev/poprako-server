@@ -28,17 +28,23 @@ where
         + UserRepoTransactional<C>,
 {
     match event {
+        //
         Event::UserActive(payload) => {
             user::touch_last_active(repo, payload).await
         }
+
         Event::UserSignedUp(payload) => {
             user::notify_invitor(repo, payload).await
         }
+
         Event::ChapterPublished(payload) => {
             chapter::notify_reviewers_on_publish(repo, payload).await
         }
+
         Event::ChapterWorkflowCompleted(payload) => {
+            //
             chapter::notify_next_phase(repo, &payload).await;
+
             chapter::notify_reviewers_on_progress(repo, payload).await;
         }
     }

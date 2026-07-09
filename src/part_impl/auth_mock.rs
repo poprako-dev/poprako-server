@@ -13,16 +13,19 @@ use crate::result::{ExpectedVariant, RegularError, RegularResult};
 /// Configure [Mock::with_token_failure] to test sign failures.
 impl TokenAuth for Mock {
     fn sign_token(&self, token: &UserTokenRef) -> RegularResult<String> {
+        //
         if self.flags.lock().unwrap().token_failure {
             return Err(RegularError::Expected {
                 variant: ExpectedVariant::Auth,
                 message: trl("error-token-sign-failed"),
             });
         }
+
         Ok(format!("token:{}", token.user_id))
     }
 
     fn verify_token(&self, raw: &str) -> RegularResult<UserToken> {
+        //
         if self.flags.lock().unwrap().token_failure {
             return Err(RegularError::Expected {
                 variant: ExpectedVariant::Auth,

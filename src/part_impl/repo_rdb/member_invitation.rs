@@ -39,6 +39,7 @@ async fn list_infos(
     conn: &mut RdbConn,
     spec: &MemberInvitationListSpec,
 ) -> RegularResult<Vec<MemberInvitationInfo>> {
+    //
     let mut query = t_member_invitation
         .filter(f_team_id.eq(spec.team_id.as_str()))
         .select(MemberInvitationRow::as_select())
@@ -77,6 +78,7 @@ async fn get_info_by_id(
     id: &str,
     incl_opt: &[MemberInvitationInclOpt],
 ) -> RegularResult<MemberInvitationInfo> {
+    //
     let row: MemberInvitationRow = t_member_invitation
         .filter(f_id.eq(id))
         .select(MemberInvitationRow::as_select())
@@ -102,6 +104,7 @@ async fn create(
     conn: &mut RdbConn,
     form: &MemberInvitationForm,
 ) -> RegularResult<MemberInvitationInfo> {
+    //
     let entry = MemberInvitationEntry::from(form);
 
     let row: MemberInvitationRow = diesel::insert_into(t_member_invitation)
@@ -118,6 +121,7 @@ async fn get_info_by_code_excluded(
     conn: &mut RdbConn,
     code: &str,
 ) -> RegularResult<MemberInvitationInfo> {
+    //
     let row: MemberInvitationRow = t_member_invitation
         .filter(f_code.eq(code))
         .filter(f_pending.eq(true))
@@ -136,6 +140,7 @@ async fn mark_pending_as_used(
     conn: &mut RdbConn,
     id: &str,
 ) -> RegularResult<()> {
+    //
     let now = OffsetDateTime::now_utc();
 
     let aspect = MemberInvitationAspect::new(now).pending(false);
@@ -154,6 +159,7 @@ async fn update_info(
     id: &str,
     roles: RoleMask,
 ) -> RegularResult<()> {
+    //
     let now = OffsetDateTime::now_utc();
 
     let aspect =
@@ -169,6 +175,7 @@ async fn update_info(
 }
 
 async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
+    //
     diesel::delete(t_member_invitation.filter(f_id.eq(id)))
         .execute(conn)
         .await

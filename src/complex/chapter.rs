@@ -78,7 +78,9 @@ impl ChapterComplex {
         stage: Stage,
         oper: StageOper,
     ) -> RegularResult<ChapterStageUpdate> {
+        //
         let current_phase = get_phase(chapter_info, stage);
+
         let next_phase = try_modify_stage((stage, current_phase), oper)?;
 
         let chapter_stage_update = ChapterStageUpdate {
@@ -178,12 +180,14 @@ impl ChapterComplex {
 
 /// Generate a human-readable default subtitle for a chapter, e.g. "Ch. 1".
 fn default_subtitle(index: i32) -> String {
+    //
     let mut args = HashMap::new();
 
     args.insert(
         Cow::Borrowed("number"),
         FluentValue::from(stored_index_to_user_index(index)),
     );
+
     trl_kv("chapter-default-subtitle", &args)
 }
 
@@ -440,6 +444,7 @@ where
         >,
 {
     let team_id = resolve_team_id_from_comic(proxy, comic_id).await?;
+
     check_user_is_team_member(proxy, user_id, &team_id).await
 }
 
@@ -480,6 +485,7 @@ where
         >,
 {
     let team_id = resolve_team_id_from_comic(proxy, comic_id).await?;
+
     check_user_is_team_admin(proxy, user_id, &team_id).await
 }
 
@@ -526,6 +532,7 @@ where
     let Some(assignment_info) = assignment_info else {
         return Err(chapter_admin_error());
     };
+
     if !assignment_info.roles.has_any_role(&[RoleField::ADMIN]) {
         return Err(chapter_admin_error());
     }
@@ -569,6 +576,7 @@ where
     };
 
     let roles = assignment_info.roles;
+
     if roles.has_any_role(&[RoleField::REVIEWER]) {
         return accept(());
     }
@@ -627,6 +635,7 @@ where
 
     let team_id =
         resolve_team_id_from_comic(proxy, &chapter_info.comic_id).await?;
+
     let member_info = proxy
         .execute(&MemberStep::find_info_by_user_id_and_team_id(
             user_id, &team_id,
@@ -639,6 +648,7 @@ where
             message: trl("error-team-member-required"),
         });
     };
+
     if !member_info.roles.contains_mask(roles) {
         return Err(RegularError::Expected {
             variant: ExpectedVariant::Perm,

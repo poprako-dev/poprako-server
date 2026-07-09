@@ -131,6 +131,7 @@ where
 
     let assignment_info = drive
         .with_context(async move |context| {
+            //
             let repo = repo.derive_transactional().await;
 
             let existing_assignment_info = repo
@@ -225,6 +226,7 @@ where
 
     drive
         .with_context(async move |context| {
+            //
             let repo = repo.derive_transactional().await;
 
             let locked_assignment_infos = repo
@@ -242,7 +244,9 @@ where
                 });
 
             match existing_assignment_info {
+                //
                 Some(assignment_info) => {
+                    //
                     if AssignmentComplex::is_self_admin_role_removal(
                         &token.user_id,
                         &assignment_info,
@@ -263,13 +267,16 @@ where
                         id: assignment_info.id.clone(),
                         roles: data.roles,
                     };
+
                     repo.advance(
                         context,
                         &AssignmentStep::put_roles(&assignment_role_update),
                     )
                     .await?;
                 }
+
                 None => {
+                    //
                     if !AssignmentComplex::chapter_has_admin_after_role_update(
                         &locked_assignment_infos,
                         &data.user_id,
@@ -284,6 +291,7 @@ where
                         user_id: data.user_id,
                         roles: data.roles,
                     };
+
                     repo.advance(
                         context,
                         &AssignmentStep::create(&assignment_form),
@@ -337,6 +345,7 @@ where
 
     drive
         .with_context(async move |context| {
+            //
             let repo = repo.derive_transactional().await;
 
             repo.advance(context, &AssignmentStep::delete(&id)).await?;

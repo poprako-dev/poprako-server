@@ -34,6 +34,7 @@ async fn list_infos(
     conn: &mut RdbConn,
     spec: &AnnouncementListSpec,
 ) -> RegularResult<Vec<AnnouncementInfo>> {
+    //
     let rows: Vec<AnnouncementRow> = t_announcement
         .filter(f_team_id.eq(spec.team_id.as_str()))
         .select(AnnouncementRow::as_select())
@@ -61,6 +62,7 @@ async fn create(
     conn: &mut RdbConn,
     form: &AnnouncementForm,
 ) -> RegularResult<AnnouncementInfo> {
+    //
     let entry = AnnouncementEntry::from(form);
 
     let row: AnnouncementRow = diesel::insert_into(t_announcement)

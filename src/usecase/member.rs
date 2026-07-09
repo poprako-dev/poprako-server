@@ -63,6 +63,7 @@ where
 
     let member_id = drive
         .with_context(async move |context| {
+            //
             let repo = repo.derive_transactional().await;
 
             let user_info = repo
@@ -134,6 +135,7 @@ where
 
     let member_info = drive
         .with_context(async move |context| {
+            //
             let repo = repo.derive_transactional().await;
 
             let current_user_info = repo
@@ -214,7 +216,9 @@ where
 {
     let member_list_spec: MemberListSpec = data.try_into()?;
 
+    //
     if let MemberListSpec::Team { team_id, .. } = &member_list_spec {
+        //
         use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
         MemberPermComplex::can_user_list_infos(
@@ -271,6 +275,7 @@ where
 
     drive
         .with_context(async move |context| {
+            //
             let repo = repo.derive_transactional().await;
 
             let member_role_update = MemberRoleUpdate {
@@ -323,6 +328,7 @@ where
 
     drive
         .with_context(async move |context| {
+            //
             let repo = repo.derive_transactional().await;
 
             repo.advance(context, &MemberStep::delete(&id)).await?;

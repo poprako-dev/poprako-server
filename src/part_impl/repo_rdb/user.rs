@@ -39,6 +39,7 @@ async fn get_info_by_id(
     conn: &mut RdbConn,
     id: &str,
 ) -> RegularResult<UserInfo> {
+    //
     let row: UserRow = t_user
         .filter(f_id.eq(id))
         .select(UserRow::as_select())
@@ -55,6 +56,7 @@ async fn get_credential_by_qid(
     conn: &mut RdbConn,
     qid: &str,
 ) -> RegularResult<UserCredential> {
+    //
     let row: UserCredentialRow = t_user
         .filter(f_qid.eq(qid))
         .select(UserCredentialRow::as_select())
@@ -71,6 +73,7 @@ async fn find_info_by_qid(
     conn: &mut RdbConn,
     qid: &str,
 ) -> RegularResult<Option<UserInfo>> {
+    //
     let row: Option<UserRow> = t_user
         .filter(f_qid.eq(qid))
         .select(UserRow::as_select())
@@ -86,6 +89,7 @@ async fn create(
     conn: &mut RdbConn,
     form: &UserForm,
 ) -> RegularResult<UserInfo> {
+    //
     let now = OffsetDateTime::now_utc();
 
     let entry = UserEntry {
@@ -114,6 +118,7 @@ async fn update_info(
     qid: &str,
     nickname: &str,
 ) -> RegularResult<()> {
+    //
     let now = OffsetDateTime::now_utc();
 
     let aspect = UserAspect::new(now).nickname(nickname).qid(qid);
@@ -132,6 +137,7 @@ async fn reserve_avatar(
     id: &str,
     file_ext: &str,
 ) -> RegularResult<UserAvatarReservation> {
+    //
     let now = OffsetDateTime::now_utc();
 
     let (prev_key, new_version): (Option<String>, i64) =
@@ -167,6 +173,7 @@ async fn mark_avatar_uploaded(
     id: &str,
     version: i64,
 ) -> RegularResult<()> {
+    //
     let now = OffsetDateTime::now_utc();
 
     let affected = diesel::update(
@@ -187,6 +194,7 @@ async fn mark_avatar_uploaded(
 }
 
 async fn touch_last_active(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
+    //
     let now = OffsetDateTime::now_utc();
 
     let aspect = UserAspect::new(now).last_active_at(now);
@@ -204,6 +212,7 @@ async fn get_info_by_id_excluded(
     conn: &mut RdbConn,
     id: &str,
 ) -> RegularResult<UserInfo> {
+    //
     let row: UserRow = t_user
         .filter(f_id.eq(id))
         .select(UserRow::as_select())
@@ -218,6 +227,7 @@ async fn get_info_by_id_excluded(
 }
 
 async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
+    //
     diesel::delete(t_user.filter(f_id.eq(id)))
         .execute(conn)
         .await

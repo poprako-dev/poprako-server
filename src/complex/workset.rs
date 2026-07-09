@@ -65,6 +65,7 @@ impl WorksetComplex {
         let mut offset: u64 = 0;
 
         loop {
+            //
             let list_spec = ComicListSpec {
                 workset_id: workset_info.id.clone(),
                 fuzzy_title: None,
@@ -150,6 +151,7 @@ impl WorksetPermComplex {
             >,
     {
         let team_id = Self::resolve_team_id(proxy, workset_id).await?;
+
         check_user_is_team_member(proxy, user_id, &team_id).await
     }
 
@@ -167,6 +169,7 @@ impl WorksetPermComplex {
             >,
     {
         let team_id = Self::resolve_team_id(proxy, workset_id).await?;
+
         check_user_is_team_admin(proxy, user_id, &team_id).await
     }
 
@@ -184,6 +187,7 @@ impl WorksetPermComplex {
             >,
     {
         let team_id = Self::resolve_team_id(proxy, workset_id).await?;
+
         check_user_is_team_admin(proxy, user_id, &team_id).await
     }
 

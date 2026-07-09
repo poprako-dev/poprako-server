@@ -34,6 +34,7 @@ async fn get_info_by_id(
     conn: &mut RdbConn,
     id: &str,
 ) -> RegularResult<WorksetInfo> {
+    //
     let row: WorksetRow = t_workset
         .filter(f_id.eq(id))
         .select(WorksetRow::as_select())
@@ -52,6 +53,7 @@ async fn list_infos_by_team_id(
     offset: u64,
     limit: u64,
 ) -> RegularResult<Vec<WorksetInfo>> {
+    //
     let rows: Vec<WorksetRow> = t_workset
         .filter(f_team_id.eq(team_id))
         .select(WorksetRow::as_select())
@@ -71,6 +73,7 @@ async fn update_info(
     name: &str,
     description: Option<&str>,
 ) -> RegularResult<()> {
+    //
     let now = OffsetDateTime::now_utc();
 
     let aspect = WorksetAspect::new(now).name(name).description(description);
@@ -88,6 +91,7 @@ async fn list_all_infos_by_team_id_excluded(
     conn: &mut RdbConn,
     team_id: &str,
 ) -> RegularResult<Vec<WorksetInfo>> {
+    //
     let rows: Vec<WorksetRow> = t_workset
         .filter(f_team_id.eq(team_id))
         .select(WorksetRow::as_select())
@@ -103,6 +107,7 @@ async fn get_info_excluded(
     conn: &mut RdbConn,
     id: &str,
 ) -> RegularResult<WorksetInfo> {
+    //
     let row: WorksetRow = t_workset
         .filter(f_id.eq(id))
         .select(WorksetRow::as_select())
@@ -117,6 +122,7 @@ async fn get_info_excluded(
 }
 
 async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
+    //
     diesel::delete(t_workset.filter(f_id.eq(id)))
         .execute(conn)
         .await
@@ -129,6 +135,7 @@ async fn create(
     conn: &mut RdbConn,
     form: &WorksetForm,
 ) -> RegularResult<WorksetInfo> {
+    //
     let entry = WorksetEntry::from(form);
 
     let row: WorksetRow = diesel::insert_into(t_workset)
@@ -145,6 +152,7 @@ async fn incr_comic_next_index(
     conn: &mut RdbConn,
     id: &str,
 ) -> RegularResult<i32> {
+    //
     let prev: i32 = diesel::update(t_workset.filter(f_id.eq(id)))
         .set(f_comic_next_index.eq(f_comic_next_index + 1))
         .returning(f_comic_next_index - 1)
@@ -160,6 +168,7 @@ async fn update_comic_count(
     id: &str,
     delta: i32,
 ) -> RegularResult<()> {
+    //
     diesel::update(t_workset.filter(f_id.eq(id)))
         .set(f_comic_count.eq(f_comic_count + delta))
         .execute(conn)

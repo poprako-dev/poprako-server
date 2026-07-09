@@ -12,14 +12,17 @@ use crate::result::{ExpectedVariant, RegularError};
 /// Asserts that `err` is a [`RootError::Expected`] whose variant matches `expected`.
 /// Panics with a descriptive message on mismatch.
 pub fn assert_expected_variant(err: RegularError, expected: ExpectedVariant) {
+    //
     let RegularError::Expected { variant, .. } = err else {
         panic!("expected RootError::Expected");
     };
 
     match (variant, expected) {
+        //
         (ExpectedVariant::Args, ExpectedVariant::Args)
         | (ExpectedVariant::Auth, ExpectedVariant::Auth)
         | (ExpectedVariant::Perm, ExpectedVariant::Perm) => {}
+
         _ => panic!("unexpected ExpectedVariant"),
     }
 }
@@ -30,6 +33,7 @@ pub fn assert_expected_message(
     expected: ExpectedVariant,
     trl_key: &str,
 ) {
+    //
     let RegularError::Expected {
         variant,
         message: actual,

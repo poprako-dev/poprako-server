@@ -19,17 +19,23 @@ impl ChapterImportComplex {
     pub fn parse_label_plus(
         content: &str,
     ) -> RegularResult<Vec<PageTranslationImport>> {
+        //
         let mut lines = content.lines();
 
         validate_label_plus_header(&mut lines)?;
 
         let mut pages = Vec::new();
+
         let mut current_page: Option<Vec<UnitTranslationImport>> = None;
+
         let mut current_unit: Option<LabelPlusUnit> = None;
+
         let mut main_text_lines = Vec::new();
 
         for line in lines {
+            //
             if is_label_plus_page_header(line) {
+                //
                 flush_label_plus_unit(
                     &mut current_page,
                     &mut current_unit,
@@ -46,6 +52,7 @@ impl ChapterImportComplex {
             }
 
             if let Some(unit) = parse_label_plus_unit_header(line)? {
+                //
                 if current_page.is_none() {
                     return Err(args_error(
                         "error-invalid-chapter-import-content",
@@ -85,6 +92,7 @@ impl ChapterImportComplex {
     pub fn parse_poprako(
         content: &str,
     ) -> RegularResult<Vec<PageTranslationImport>> {
+        //
         let project: PoprakoProjectImport = serde_json::from_str(content)
             .map_err(|_| args_error("error-invalid-chapter-import-content"))?;
 
@@ -110,9 +118,11 @@ impl ChapterImportComplex {
         imported_page_count: usize,
         existing_page_count: usize,
     ) -> RegularResult<()> {
+        //
         if imported_page_count != existing_page_count {
             return Err(args_error("error-chapter-import-page-count-mismatch"));
         }
+
         accept(())
     }
 
@@ -124,12 +134,15 @@ impl ChapterImportComplex {
         proofreader: bool,
         label_plus: bool,
     ) -> UnitPayload {
+        //
         let mut unit_payload = existing_unit
             .map(payload_from_unit)
             .unwrap_or_else(|| payload_from_import(parsed_unit));
 
         unit_payload.is_bubble = parsed_unit.is_bubble;
+
         unit_payload.x_coord = parsed_unit.x_coord;
+
         unit_payload.y_coord = parsed_unit.y_coord;
 
         match label_plus {

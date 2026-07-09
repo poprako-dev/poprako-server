@@ -32,12 +32,14 @@ fn get_page_by_id(state: &MockState, id: &str) -> RegularResult<PageInfo> {
 }
 
 fn list_all_pages(state: &MockState, chapter_id: &str) -> Vec<PageInfo> {
+    //
     let mut page_infos = state
         .pages
         .iter()
         .filter(|page_info| page_info.chapter_id == chapter_id)
         .cloned()
         .collect::<Vec<_>>();
+
     page_infos.sort_by_key(|left| left.index);
 
     page_infos
@@ -49,20 +51,26 @@ fn list_pages(
     offset: u64,
     limit: u64,
 ) -> Vec<PageInfo> {
+    //
     let page_infos = list_all_pages(state, chapter_id);
 
     let offset = offset as usize;
+
     let limit = limit as usize;
+
     if offset >= page_infos.len() {
         return Vec::new();
     }
 
     let end = std::cmp::min(offset + limit, page_infos.len());
+
     page_infos[offset..end].to_vec()
 }
 
 fn page_from_form(form: &PageForm) -> PageInfo {
+    //
     let time = now();
+
     PageInfo {
         id: form.id.clone(),
         chapter_id: form.chapter_id.clone(),

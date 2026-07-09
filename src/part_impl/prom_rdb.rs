@@ -38,6 +38,7 @@ pub fn spawn_handler(
     core: RdbCore,
     image_pool: impl ImagePool + Send + Sync + 'static,
 ) {
+    //
     let handler = RdbPromHandler::new(
         core.clone(),
         RdbDrive::new(core.clone()),

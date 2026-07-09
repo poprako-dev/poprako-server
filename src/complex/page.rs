@@ -98,6 +98,7 @@ impl PagePermComplex {
         let member_check =
             check_user_is_team_member(proxy, user_id, &workset_info.team_id)
                 .await;
+
         if member_check.is_ok() {
             return accept(());
         }

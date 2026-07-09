@@ -25,11 +25,13 @@ fn create_team(
     state: &mut MockState,
     step: &Create<'_>,
 ) -> RegularResult<TeamInfo> {
+    //
     if state.teams.iter().any(|team| team.id == step.form.id) {
         return Err(expected("error-already-exists"));
     }
 
     let time = now();
+
     let team = TeamInfo {
         id: step.form.id.clone(),
         name: step.form.name.clone(),
@@ -43,6 +45,7 @@ fn create_team(
     };
 
     state.teams.push(team.clone());
+
     Ok(team)
 }
 
@@ -53,6 +56,7 @@ fn mark_team_avatar_uploaded(
     id: &str,
     avatar_version: i64,
 ) -> RegularResult<()> {
+    //
     let team = state
         .teams
         .iter_mut()
@@ -62,8 +66,11 @@ fn mark_team_avatar_uploaded(
     if team.avatar_version != avatar_version {
         return Err(expected("error-stale-avatar-upload"));
     }
+
     team.avatar_uploaded = true;
+
     team.updated_at = now();
+
     Ok(())
 }
 

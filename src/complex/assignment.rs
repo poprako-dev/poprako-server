@@ -98,9 +98,11 @@ impl AssignmentPermComplex {
             > + for<'a> ProxyExecute<UserGetInfoById<'a>, Error = RegularError>,
     {
         match assignment_list_spec {
+            //
             AssignmentListSpec::Chapter { chapter_id, .. } => {
                 check_list_by_chapter(proxy, user_id, chapter_id).await
             }
+
             AssignmentListSpec::User { owner_id, .. } => {
                 check_list_by_user(proxy, user_id, owner_id).await
             }
@@ -208,6 +210,7 @@ where
         >,
 {
     let team_id = resolve_team_id(proxy, chapter_id).await?;
+
     let member_check =
         check_user_is_team_member(proxy, user_id, &team_id).await;
 
@@ -332,6 +335,7 @@ where
     }
 
     let team_id = resolve_team_id(proxy, chapter_id).await?;
+
     let member_info = proxy
         .execute(&MemberStep::find_info_by_user_id_and_team_id(
             user_id, &team_id,

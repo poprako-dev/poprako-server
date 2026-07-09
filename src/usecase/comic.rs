@@ -98,6 +98,7 @@ where
 
     let (comic_id, chapter_id) = drive
         .with_context(async move |context| {
+            //
             let repo = repo.derive_transactional().await;
 
             let index = repo
@@ -275,6 +276,7 @@ where
             ),
             None => None,
         };
+
         comic_info_vals.push(
             ComicInfoVal::from_model(
                 image_pool,
@@ -356,6 +358,7 @@ where
 
     let (object_key, cover_version) = drive
         .with_context(async move |context| {
+            //
             let repo = repo.derive_transactional().await;
 
             let cover_reservation = repo
@@ -368,6 +371,7 @@ where
             let now = OffsetDateTime::now_utc();
 
             if let Some(prev_key) = &cover_reservation.prev_object_key {
+                //
                 let delete_id = ImageComplex::gen_delete_id();
 
                 prom.advance(
@@ -385,6 +389,7 @@ where
             }
 
             let check_id = ImageComplex::gen_check_id();
+
             let check_visible_at = now + Duration::minutes(15);
 
             prom.advance(
@@ -494,6 +499,7 @@ where
 
     drive
         .with_context(async move |context| {
+            //
             let repo = repo.derive_transactional().await;
 
             let comic_info = repo
@@ -542,12 +548,14 @@ where
 
     drive
         .with_context(async move |context| {
+            //
             let repo = repo.derive_transactional().await;
 
             repo.advance(context, &ComicStep::mark_completed(&id, true))
                 .await?;
 
             let archive_id = next_snowflake_id();
+
             let now = OffsetDateTime::now_utc();
 
             prom.advance(

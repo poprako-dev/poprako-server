@@ -47,6 +47,7 @@ use crate::value::role::{RoleField, RoleMask};
 
 /// Builds a [`UserInfo`] fixture with default timestamps and no avatar.
 pub fn user(id: &str, qid: &str, nickname: &str) -> UserInfo {
+    //
     let time = OffsetDateTime::now_utc();
 
     UserInfo {
@@ -82,6 +83,7 @@ pub fn user_with_avatar(
 
 /// Builds a [`UserCredential`] with a properly hashed password.
 pub fn credential(user_id: &str, password: &str) -> UserCredential {
+    //
     let password_hash = match UserComplex::hash_password(password) {
         Ok(password_hash) => password_hash,
         Err(_) => panic!("failed to hash password"),

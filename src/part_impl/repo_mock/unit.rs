@@ -23,6 +23,7 @@ impl UnitRepo<MockContext> for Mock {}
 impl UnitRepoTransactional<MockContext> for MockTransactional {}
 
 fn list_units(state: &MockState, page_id: &str) -> Vec<UnitInfo> {
+    //
     let mut unit_infos = state
         .units
         .iter()
@@ -45,6 +46,7 @@ fn count_units(state: &MockState, page_id: &str) -> UnitCounters {
         .iter()
         .filter(|unit_info| unit_info.page_id == page_id)
         .fold(UnitCounters::default(), |mut counters, unit_info| {
+            //
             counters.total_unit_count += 1;
 
             if unit_info.is_translated() {
@@ -71,14 +73,23 @@ fn next_index(state: &MockState, page_id: &str) -> i32 {
 }
 
 fn write_payload(unit_info: &mut UnitInfo, payload: &UnitPayload) {
+    //
     unit_info.is_bubble = payload.is_bubble;
+
     unit_info.is_proofread = payload.is_proofread;
+
     unit_info.x_coord = payload.x_coord;
+
     unit_info.y_coord = payload.y_coord;
+
     unit_info.translated_text = payload.translated_text.clone();
+
     unit_info.last_translator_id = payload.last_translator_id.clone();
+
     unit_info.proofread_text = payload.proofread_text.clone();
+
     unit_info.last_proofreader_id = payload.last_proofreader_id.clone();
+
     unit_info.updated_at = now();
 }
 
@@ -88,7 +99,9 @@ fn unit_from_payload(
     index: i32,
     payload: &UnitPayload,
 ) -> UnitInfo {
+    //
     let time = now();
+
     UnitInfo {
         id: id.into(),
         page_id: page_id.into(),
@@ -112,11 +125,13 @@ fn create_unit(
     id: &str,
     payload: &UnitPayload,
 ) -> RegularResult<()> {
+    //
     if state.units.iter().any(|unit_info| unit_info.id == id) {
         return Err(expected("error-unit-duplicate"));
     }
 
     let index = next_index(state, page_id);
+
     let unit_info = unit_from_payload(page_id, id, index, payload);
 
     state.units.push(unit_info);
@@ -130,6 +145,7 @@ fn save_unit(
     id: &str,
     payload: &UnitPayload,
 ) -> RegularResult<()> {
+    //
     let existing_position =
         state.units.iter().position(|unit_info| unit_info.id == id);
 

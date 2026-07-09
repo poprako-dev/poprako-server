@@ -34,6 +34,7 @@ fn credential(user_id: &str) -> UserCredential {
 }
 
 fn user(id: &str, qid: &str) -> UserInfo {
+    //
     let time = test_util::now();
 
     UserInfo {
