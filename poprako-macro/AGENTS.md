@@ -19,6 +19,6 @@ This AGENTS.md scopes guidance to `poprako-macro`. Parent AGENTS guidance still 
 
 <!-- OMX:AGENTS-INIT:MANUAL:START -->
 ## Local Notes
-- Add subtree-specific constraints, ownership notes, and test commands here.
-- Keep notes scoped to this directory and its children.
+- This crate contains project-local procedural macros only; keep generated paths compatible with the active `poprako-server` modules.
+- Verify changes with `cargo test -p poprako-macro`.
 <!-- OMX:AGENTS-INIT:MANUAL:END -->

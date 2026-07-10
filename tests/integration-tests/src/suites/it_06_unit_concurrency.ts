@@ -7,7 +7,7 @@
 //
 // Postconditions:
 //   - p1 ends with 12 translated units (F6) plus F8 inserts minus F9 delete.
-//     Final p1 state documented in PROGRESS.md for it_07.
+//     Final p1 state is consumed by it_07.
 //
 // Covers test-plan: F6, F7, F8, F9.
 //
@@ -311,7 +311,7 @@ export async function runIt06Module(ctx: RunCtx): Promise<void> {
 
     // raw_01/raw_02 were referenced in the plan for F8 but they CANNOT save
     // units (RAW_PROVIDER only). The plan's F8 used raw_01/raw_02 as inserters;
-    // adjusted to trans_01/trans_02 here. Note this pin in PROGRESS.md.
+    // adjusted to trans_01/trans_02 here because unit save needs their roles.
     void raw01;
     void raw02;
 

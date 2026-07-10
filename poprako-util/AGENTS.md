@@ -20,6 +20,6 @@ This AGENTS.md scopes guidance to `poprako-util`. Parent AGENTS guidance still a
 
 <!-- OMX:AGENTS-INIT:MANUAL:START -->
 ## Local Notes
-- Add subtree-specific constraints, ownership notes, and test commands here.
-- Keep notes scoped to this directory and its children.
+- This crate provides shared utilities, including localization and time conversion; do not add application-domain dependencies.
+- Verify changes with `cargo test -p poprako-util`.
 <!-- OMX:AGENTS-INIT:MANUAL:END -->

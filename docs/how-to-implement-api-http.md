@@ -14,25 +14,25 @@ whenever adding or changing code under `src/api/http/`.
    use crate::api::http::result::Accept as _;
    use crate::api::http::result::HttpResult;
 
-   pub async fn get_info(...) -> HttpResult<UserBase> {
-       let reply = usecase::user::get_info(&harn, &user_id).await?;
+   pub async fn get_info(...) -> HttpResult<UserInfoVal> {
+       let user_info_val = usecase::user::get_info(...).await?;
 
-       reply.accept(StatusCode::OK)
+       user_info_val.accept(StatusCode::OK)
    }
    ```
 
    Do not import the trait as `Accept`, and do not return successful responses
-   with `Ok(HttpResponse::from(...))` in new handlers.
+   with a manually assembled successful `HttpResult` in new handlers.
 
 2. Propagate usecase errors directly with `?`.
 
    ```rust
-   let reply = usecase::team::get_info(&harn, &team_id).await?;
+   let team_info_val = usecase::team::get_info(...).await?;
    ```
 
    Do not `match` usecase errors in handlers unless the handler is deliberately
    translating a request-local condition that does not belong in the usecase.
-   Usecase errors already convert into `HttpError`.
+   Application errors already convert into `HttpError`.
 
 3. Use standard RESTful route structure.
 
@@ -55,7 +55,7 @@ whenever adding or changing code under `src/api/http/`.
    - Add `#[utoipa::path(...)]` on the handler.
    - Keep the documented method and path exactly aligned with the router.
    - Add request/response schemas to `src/api/http/openapi.rs` when needed.
-   - Keep Swagger UI exposed only in debug builds.
+   - OpenAPI derives and routes are gated by the `swagger-ui` Cargo feature.
    - Swagger and OpenAPI routes live outside versioned API routes:
      `/api/swagger-ui` and `/api/openapi.json`, not under `/api/v1`.
 
@@ -82,4 +82,4 @@ Before finishing an API handler:
 - Register the handler in `src/api/http/openapi.rs`.
 - Register the route in `src/api/http/router.rs`.
 - Verify the route uses plural resource nouns and resource path params.
-- Run `cargo fmt` and `cargo check`.
+- Run `cargo fmt --check` and `cargo check`.
