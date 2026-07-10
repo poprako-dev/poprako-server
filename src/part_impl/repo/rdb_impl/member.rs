@@ -51,9 +51,11 @@ fn role_timestamps_from_mask(
     roles: RoleMask,
     now: OffsetDateTime,
 ) -> RoleTimestamps {
+    //
     let timestamp_fn = |field: RoleField| -> Option<OffsetDateTime> {
         roles.has_any_role(&[field]).then_some(now)
     };
+
     RoleTimestamps {
         raw_provider: timestamp_fn(RoleField::RAW_PROVIDER),
         translator: timestamp_fn(RoleField::TRANSLATOR),
@@ -73,6 +75,7 @@ fn entry_from_form<'a>(
     form: &'a MemberForm,
     now: OffsetDateTime,
 ) -> MemberEntry<'a> {
+    //
     let timestamps = role_timestamps_from_mask(form.roles, now);
 
     MemberEntry {
@@ -101,6 +104,7 @@ fn aspect_from_role_update(
     update: &MemberRoleUpdate,
     now: OffsetDateTime,
 ) -> MemberAspect<'_> {
+    //
     let timestamps = role_timestamps_from_mask(update.roles, now);
 
     let mut aspect = MemberAspect::new(now);
@@ -125,13 +129,18 @@ fn aspect_from_role_update(
 /// patterns and must be escaped to prevent accidental (or malicious) wildcard
 /// injection when the term is embedded in a pattern like `"%{}%"`.
 fn escape_ilike_pattern(input: &str) -> String {
+    //
     let mut escaped = String::with_capacity(input.len());
 
     for ch in input.chars() {
         match ch {
+            //
             '\\' => escaped.push_str("\\\\"),
+
             '%' => escaped.push_str("\\%"),
+
             '_' => escaped.push_str("\\_"),
+
             _ => escaped.push(ch),
         }
     }
@@ -147,6 +156,7 @@ async fn find_info_by_user_id_and_team_id(
     user_id: &str,
     team_id: &str,
 ) -> RegularResult<Option<MemberInfo>> {
+    //
     let row: Option<MemberRow> = t_member
         .filter(f_user_id.eq(user_id))
         .filter(f_team_id.eq(team_id))
@@ -164,8 +174,10 @@ async fn list_infos(
     conn: &mut RdbConn,
     spec: &MemberListSpec,
 ) -> RegularResult<Vec<MemberInfo>> {
+    //
     let rows: Vec<MemberRow> =
         match spec {
+            //
             MemberListSpec::Team {
                 team_id,
                 fuzzy_nickname,
@@ -174,13 +186,16 @@ async fn list_infos(
                 limit,
                 ..
             } => {
+                //
                 let mut query = t_member
                     .filter(f_team_id.eq(team_id.as_str()))
                     .select(MemberRow::as_select())
                     .into_boxed();
 
                 if let Some(nickname) = fuzzy_nickname {
+                    //
                     let escaped = escape_ilike_pattern(nickname);
+
                     query = query.filter(
                         f_user_nickname.ilike(format!("%{}%", escaped)),
                     );
@@ -189,28 +204,38 @@ async fn list_infos(
                 if let Some(role) = role {
                     query =
                         match *role {
+                            //
                             RoleField::RAW_PROVIDER => query.filter(
                                 f_assigned_raw_provider_at.is_not_null(),
                             ),
+
                             RoleField::TRANSLATOR => query
                                 .filter(f_assigned_translator_at.is_not_null()),
+
                             RoleField::PROOFREADER => query.filter(
                                 f_assigned_proofreader_at.is_not_null(),
                             ),
+
                             RoleField::TYPESETTER => query
                                 .filter(f_assigned_typesetter_at.is_not_null()),
+
                             RoleField::REDRAWER => query
                                 .filter(f_assigned_redrawer_at.is_not_null()),
+
                             RoleField::REVIEWER => query
                                 .filter(f_assigned_reviewer_at.is_not_null()),
+
                             RoleField::PUBLISHER => query
                                 .filter(f_assigned_publisher_at.is_not_null()),
+
                             RoleField::ADMIN => {
                                 query.filter(f_assigned_admin_at.is_not_null())
                             }
+
                             RoleField::BOT => {
                                 query.filter(f_assigned_bot_at.is_not_null())
                             }
+
                             _ => query,
                         };
                 }
@@ -223,6 +248,7 @@ async fn list_infos(
                     .await
                     .map_err(diesel)?
             }
+
             MemberListSpec::User {
                 owner_id,
                 offset,
@@ -253,6 +279,7 @@ async fn get_info_by_id(
     id: &str,
     incl_opt: &[MemberInclOpt],
 ) -> RegularResult<MemberInfo> {
+    //
     let row: MemberRow = t_member
         .filter(f_id.eq(id))
         .select(MemberRow::as_select())
@@ -279,6 +306,7 @@ async fn create(
     conn: &mut RdbConn,
     form: &MemberForm,
 ) -> RegularResult<MemberInfo> {
+    //
     let now = OffsetDateTime::now_utc();
 
     let entry = entry_from_form(form, now);
@@ -299,6 +327,7 @@ async fn update_user_nickname(
     user_id: &str,
     nickname: &str,
 ) -> RegularResult<()> {
+    //
     let now = OffsetDateTime::now_utc();
 
     let aspect = MemberAspect::new(now).user_nickname(nickname);
@@ -317,6 +346,7 @@ async fn list_infos_by_user_id_excluded(
     conn: &mut RdbConn,
     user_id: &str,
 ) -> RegularResult<Vec<MemberInfo>> {
+    //
     let rows: Vec<MemberRow> = t_member
         .filter(f_user_id.eq(user_id))
         .select(MemberRow::as_select())
@@ -333,6 +363,7 @@ async fn update_role(
     conn: &mut RdbConn,
     update: &MemberRoleUpdate,
 ) -> RegularResult<()> {
+    //
     let now = OffsetDateTime::now_utc();
 
     let aspect = aspect_from_role_update(update, now);
@@ -348,6 +379,7 @@ async fn update_role(
 
 /// Delete a member by ID.
 async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
+    //
     diesel::delete(t_member.filter(f_id.eq(id)))
         .execute(conn)
         .await

@@ -14,6 +14,7 @@ pub struct PageTranslationExportVal {
     pub page_id: String,
     pub page_index: i32,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub image_url: Option<String>,
 
     pub units: Vec<UnitTranslationExportVal>,

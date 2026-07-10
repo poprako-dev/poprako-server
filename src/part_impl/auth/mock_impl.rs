@@ -45,11 +45,14 @@ impl TokenAuth for Mock {
 /// Mock helper that returns a stable deterministic token.
 #[test]
 fn sign_returns_stable_token() {
+    //
     let mock = Mock::new();
 
     let signed =
         TokenAuth::sign_token(&mock, &UserTokenRef { user_id: "user-1" });
+
     assert!(signed.is_ok());
+
     let signed = signed.ok().unwrap();
 
     assert_eq!(signed, "token:user-1");
@@ -58,6 +61,7 @@ fn sign_returns_stable_token() {
 /// Mock helper that verifies token failure returns an expected auth error.
 #[test]
 fn sign_failure_returns_expected_auth() {
+    //
     let mock = Mock::new().with_token_failure();
 
     let err = TokenAuth::sign_token(&mock, &UserTokenRef { user_id: "user-1" })

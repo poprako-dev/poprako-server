@@ -52,9 +52,13 @@ impl std::fmt::Display for HttpError {
 impl HttpError {
     /// Builds an error from an expected application variant and message.
     pub fn expected(variant: ExpectedVariant, message: &str) -> Self {
+        //
         let (status, code) = match variant {
+            //
             ExpectedVariant::Args => (StatusCode::UNPROCESSABLE_ENTITY, 2),
+
             ExpectedVariant::Auth => (StatusCode::UNAUTHORIZED, 3),
+
             ExpectedVariant::Perm => (StatusCode::FORBIDDEN, 4),
         };
 
@@ -87,7 +91,9 @@ impl HttpError {
 impl From<RegularError> for HttpError {
     fn from(err: RegularError) -> Self {
         match err {
+            //
             RegularError::Expected { variant, message } => {
+                //
                 tracing::debug!(
                     "[HttpError::from] expected error: {}",
                     message
@@ -97,6 +103,7 @@ impl From<RegularError> for HttpError {
             }
 
             RegularError::Unrecoverable { message } => {
+                //
                 tracing::warn!(
                     "[HttpError::from] unrecoverable error concealed: {}",
                     message
@@ -149,6 +156,7 @@ impl<T> HttpBody<T> {
 
     /// Appends a `Set-Cookie` header.
     pub fn with_cookie(mut self, cookie: &Cookie) -> Self {
+        //
         if let Ok(value) = HeaderValue::from_str(&cookie.to_string()) {
             self.headers.insert(SET_COOKIE, value);
         }
@@ -162,6 +170,7 @@ where
     T: Serialize,
 {
     fn into_response(self) -> Response {
+        //
         let status = self.status;
 
         let headers = self.headers.clone();
@@ -192,6 +201,7 @@ impl NoContent {
 
     /// Appends a `Set-Cookie` header to the response.
     pub fn with_cookie(mut self, cookie: &Cookie) -> Self {
+        //
         if let Ok(value) = HeaderValue::from_str(&cookie.to_string()) {
             self.headers.insert(SET_COOKIE, value);
         }
@@ -208,6 +218,7 @@ impl Default for NoContent {
 
 impl IntoResponse for NoContent {
     fn into_response(self) -> Response {
+        //
         let mut response = StatusCode::NO_CONTENT.into_response();
 
         response.headers_mut().extend(self.headers);
@@ -264,6 +275,7 @@ mod tests {
 
     #[test]
     fn http_body_serializes_success_envelope() {
+        //
         let http_body =
             HttpBody::new(StatusCode::CREATED, json!({ "id": "comic_1" }));
 

@@ -144,7 +144,9 @@ where
                 .await?;
 
             let assignment_info = match existing_assignment_info {
+                //
                 Some(existing_assignment_info) => {
+                    //
                     let assignment_role_update = AssignmentComplex::merge_roles(
                         &existing_assignment_info,
                         data.roles,
@@ -156,7 +158,9 @@ where
                     )
                     .await?
                 }
+
                 None => {
+                    //
                     let assignment_form = AssignmentForm {
                         id: AssignmentComplex::gen_id(),
                         chapter_id: data.chapter_id,

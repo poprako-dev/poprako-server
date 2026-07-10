@@ -1,13 +1,8 @@
 # Unit Save API
 
-`POST /api/v1/pages/{page_id}/units/save` saves a page unit operation stream.
-
-This endpoint never accepts `index`, `order`, `candidate_order`, `cand_order`, or
-any equivalent client-provided absolute ordering field. The only public page
-order is the array order returned by `GET /api/v1/pages/{page_id}/units`.
-
-The database `index` is internal storage only. The server derives it from the
-resulting page sequence after applying operations.
+`POST /api/v1/pages/{page_id}/units/save` applies an ordered sequence of unit
+create, save, and delete operations. The server serializes application of the
+operations and returns current counters plus mappings for newly created units.
 
 ## Request
 
@@ -21,44 +16,25 @@ resulting page sequence after applying operations.
 }
 ```
 
-Both `page_id` values must match the path page ID.
+Both body `page_id` values must equal the `{page_id}` path parameter. Each
+operation is a tagged, flat JSON object; unknown fields are rejected.
 
-`opers` is an ordered event stream. The server applies operations exactly in
-array order inside the page transaction.
+| Operation | Identifier | Placement | Payload |
+| --- | --- | --- | --- |
+| `create` | `local_id` | optional `before_id` | required |
+| `save` | `id` | optional `before_id` | required |
+| `delete` | `id` | none | none |
 
-## Unit Payload
-
-Every operation that writes or restores a unit must carry a complete unit
-payload:
-
-```json
-{
-  "is_bubble": true,
-  "is_proofread": false,
-  "x_coord": 12.5,
-  "y_coord": 33.0,
-  "translated_text": "text",
-  "last_translator_id": "user-1",
-  "proofread_text": null,
-  "last_proofreader_id": null
-}
-```
-
-This is required for concurrent replay. If another submission deleted the unit
-first, a later save or move-before operation can still restore the unit from the
-complete payload.
-
-## Operations
-
-### Create
-
-Creates a new unit from a local client ID.
+The shared payload fields are `is_bubble`, `is_proofread`, `x_coord`,
+`y_coord`, `translated_text`, `last_translator_id`, `proofread_text`, and
+`last_proofreader_id`. When translated or proofread text is non-null, its
+corresponding editor identifier must also be non-null.
 
 ```json
 {
   "oper": "create",
   "local_id": "local-uuid-1",
-  "move_before": "unit-b",
+  "before_id": "unit-b",
   "is_bubble": true,
   "is_proofread": false,
   "x_coord": 12.5,
@@ -70,22 +46,11 @@ Creates a new unit from a local client ID.
 }
 ```
 
-`move_before` is optional. When omitted or `null`, the new unit is inserted at
-the tail. When set to an existing unit ID, the new unit is inserted before that
-unit. If the target no longer exists, the server inserts at the tail.
-
-The response returns a local-to-server ID mapping.
-
-### Save
-
-Writes a complete payload for an existing unit and keeps its current position.
-If the unit was deleted by an earlier operation, the server restores it at the
-tail.
-
 ```json
 {
   "oper": "save",
   "id": "unit-a",
+  "before_id": "unit-c",
   "is_bubble": true,
   "is_proofread": true,
   "x_coord": 10.0,
@@ -97,36 +62,6 @@ tail.
 }
 ```
 
-### Move Before
-
-Writes a complete payload and moves or restores the unit before another unit.
-This is a save operation with relative positioning, not a payload-free move.
-
-```json
-{
-  "oper": "move_before",
-  "id": "unit-a",
-  "move_before": "unit-c",
-  "is_bubble": true,
-  "is_proofread": false,
-  "x_coord": 10.0,
-  "y_coord": 20.0,
-  "translated_text": "translated",
-  "last_translator_id": "user-1",
-  "proofread_text": null,
-  "last_proofreader_id": null
-}
-```
-
-`move_before: null` means move to the tail. If the target ID has already been
-deleted, the server also treats it as tail. If `move_before` equals the subject
-unit ID, the server treats it as tail.
-
-### Delete
-
-Deletes a unit from the page. Delete is the only operation that does not carry a
-complete unit payload.
-
 ```json
 {
   "oper": "delete",
@@ -134,18 +69,25 @@ complete unit payload.
 }
 ```
 
-Deleting an already missing unit is a no-op.
+## Ordering
+
+`before_id` places a created or saved unit immediately before the referenced
+unit. Omit it, use `null`, reference the same unit, or reference a missing or
+deleted unit to place the unit at the end. There is no separate move operation:
+a `save` with a `before_id` changes both stored data and position.
+
+Deleting a missing unit is valid and idempotent. A save can restore a unit that
+was deleted by a concurrent request; the server then applies its payload and
+ordering rule.
 
 ## Response
-
-The response contains only local ID mappings and refreshed counters:
 
 ```json
 {
   "local_id_mappers": [
     {
       "local_id": "local-uuid-1",
-      "unit_id": "unit-server-id"
+      "unit_id": "snowflake-server-id"
     }
   ],
   "total_unit_count": 3,
@@ -154,5 +96,7 @@ The response contains only local ID mappings and refreshed counters:
 }
 ```
 
-It does not return unit order. Call `GET /api/v1/pages/{page_id}/units` and use
-the returned array order.
+`local_id_mappers` contains only mappings created by `create` operations. Use
+it to replace client-local IDs, then call
+`GET /api/v1/pages/{page_id}/units` when the latest complete ordering is
+needed.

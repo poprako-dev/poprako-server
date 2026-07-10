@@ -26,10 +26,14 @@ pub struct UnitInfoVal {
     pub x_coord: f64,
     pub y_coord: f64,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub translated_text: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub last_translator_id: Option<String>,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub proofread_text: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub last_proofreader_id: Option<String>,
 
     pub created_at: i64,
@@ -97,57 +101,67 @@ pub struct SavePageUnitsVal {
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
 pub struct UnitDiffData {
     pub page_id: String,
-
     pub opers: Vec<UnitOperData>,
 }
 
 /// Transport-facing unit oper event.
 #[derive(Debug, Clone, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-#[serde(tag = "oper", rename_all = "snake_case")]
+#[serde(tag = "oper", rename_all = "snake_case", deny_unknown_fields)]
 pub enum UnitOperData {
-    Save {
-        #[serde(default)]
-        local_id: Option<String>,
-
-        #[serde(default)]
-        id: Option<String>,
+    Create {
+        local_id: String,
 
         #[serde(default)]
         before_id: Option<String>,
 
-        #[serde(flatten)]
-        payload: UnitPayloadData,
+        is_bubble: bool,
+
+        #[serde(default)]
+        is_proofread: bool,
+
+        x_coord: f64,
+        y_coord: f64,
+
+        translated_text: Option<String>,
+        last_translator_id: Option<String>,
+
+        proofread_text: Option<String>,
+        last_proofreader_id: Option<String>,
+    },
+    Save {
+        id: String,
+
+        #[serde(default)]
+        before_id: Option<String>,
+
+        is_bubble: bool,
+        is_proofread: bool,
+
+        x_coord: f64,
+        y_coord: f64,
+
+        translated_text: Option<String>,
+        last_translator_id: Option<String>,
+
+        proofread_text: Option<String>,
+        last_proofreader_id: Option<String>,
     },
     Delete {
         id: String,
     },
 }
 
-/// Transport-facing complete unit payload.
-#[derive(Debug, Clone, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct UnitPayloadData {
-    pub is_bubble: bool,
-    pub is_proofread: bool,
-
-    pub x_coord: f64,
-    pub y_coord: f64,
-
-    pub translated_text: Option<String>,
-    pub last_translator_id: Option<String>,
-
-    pub proofread_text: Option<String>,
-    pub last_proofreader_id: Option<String>,
-}
-
 impl UnitDiffData {
     /// Converts transport-safe data into domain opers.
     pub fn into_model(self) -> Option<UnitDiff> {
+        //
         let mut opers = Vec::with_capacity(self.opers.len());
 
         for unit_oper_data in self.opers {
+            //
             let unit_oper = unit_oper_data.into_model();
+
             opers.push(unit_oper);
         }
 
@@ -161,33 +175,61 @@ impl UnitDiffData {
 impl UnitOperData {
     fn into_model(self) -> UnitOper {
         match self {
-            UnitOperData::Save {
+            //
+            UnitOperData::Create {
                 local_id,
-                id,
                 before_id,
-                payload,
-            } => UnitOper::Save {
-                local_id,
-                id,
-                payload: payload.into_model(),
+                is_bubble,
+                is_proofread,
+                x_coord,
+                y_coord,
+                translated_text,
+                last_translator_id,
+                proofread_text,
+                last_proofreader_id,
+            } => UnitOper::Create {
+                id: local_id,
+                payload: UnitPayload {
+                    is_bubble,
+                    is_proofread,
+                    x_coord,
+                    y_coord,
+                    translated_text,
+                    last_translator_id,
+                    proofread_text,
+                    last_proofreader_id,
+                },
                 before_id,
             },
-            UnitOperData::Delete { id } => UnitOper::Delete { id },
-        }
-    }
-}
 
-impl UnitPayloadData {
-    fn into_model(self) -> UnitPayload {
-        UnitPayload {
-            is_bubble: self.is_bubble,
-            is_proofread: self.is_proofread,
-            x_coord: self.x_coord,
-            y_coord: self.y_coord,
-            translated_text: self.translated_text,
-            last_translator_id: self.last_translator_id,
-            proofread_text: self.proofread_text,
-            last_proofreader_id: self.last_proofreader_id,
+            //
+            UnitOperData::Save {
+                id,
+                before_id,
+                is_bubble,
+                is_proofread,
+                x_coord,
+                y_coord,
+                translated_text,
+                last_translator_id,
+                proofread_text,
+                last_proofreader_id,
+            } => UnitOper::Save {
+                id,
+                payload: UnitPayload {
+                    is_bubble,
+                    is_proofread,
+                    x_coord,
+                    y_coord,
+                    translated_text,
+                    last_translator_id,
+                    proofread_text,
+                    last_proofreader_id,
+                },
+                before_id,
+            },
+
+            UnitOperData::Delete { id } => UnitOper::Delete { id },
         }
     }
 }
@@ -226,3 +268,6 @@ impl SavePageUnitsVal {
         }
     }
 }
+
+#[cfg(test)]
+mod tests;

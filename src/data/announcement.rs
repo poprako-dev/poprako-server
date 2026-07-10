@@ -22,6 +22,7 @@ pub struct AnnouncementInfoVal {
 
     pub team_id: String,
     pub user_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub user: Option<UserInfoVal>,
 
     pub title: String,
@@ -40,11 +41,14 @@ impl AnnouncementInfoVal {
         P: ImagePool,
     {
         let user = match model.user {
+            //
             Some(user_info) => {
                 Some(UserInfoVal::from_model(image_pool, user_info).await?)
             }
+
             None => None,
         };
+
         Ok(Self {
             id: model.id,
             team_id: model.team_id,

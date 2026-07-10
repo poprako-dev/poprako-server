@@ -9,8 +9,12 @@ use tracing::instrument;
 use crate::api::http::handler::util::{
     Pagination, ensure_path_matches_body_id,
 };
+
+#[cfg(feature = "swagger-ui")]
+use crate::api::http::result::HttpBody;
+
 use crate::api::http::result::{
-    Accept as _, HttpBody, HttpNoContent, HttpResult, no_content,
+    Accept as _, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
 use crate::data::page::{
@@ -39,6 +43,7 @@ pub async fn list_infos(
     Extension(user_token): Extension<UserToken>,
     Query(pagination): Query<Pagination>,
 ) -> HttpResult<Vec<PageInfoVal>> {
+    //
     let data = ListPageInfosData {
         chapter_id,
         offset: pagination.offset,
@@ -67,6 +72,7 @@ pub async fn delete(
     Path(chapter_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
+    //
     usecase::page::delete(
         harn.drive(),
         harn.repo(),
@@ -75,6 +81,7 @@ pub async fn delete(
         chapter_id,
     )
     .await?;
+
     no_content()
 }
 
@@ -99,6 +106,7 @@ pub async fn reserve_chapter_pages(
     Extension(user_token): Extension<UserToken>,
     Json(data): Json<ReserveChapterPagesData>,
 ) -> HttpResult<ReserveChapterPagesVal> {
+    //
     ensure_path_matches_body_id(&chapter_id, &data.chapter_id)?;
 
     usecase::page::reserve_chapter_pages(
@@ -166,6 +174,7 @@ pub async fn mark_image_uploaded(
     Extension(user_token): Extension<UserToken>,
     Json(data): Json<MarkPageImageUploadedData>,
 ) -> HttpNoContent {
+    //
     usecase::page::mark_image_uploaded(
         harn.drive(),
         harn.repo(),

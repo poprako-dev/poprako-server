@@ -24,7 +24,7 @@ import type { RunCtx } from "./state/runCtx.js";
 
 // Progressive integration test orchestration.
 //
-// The suite runs 11 modules in dependency order. Each module reads its
+// The suite runs 12 modules in dependency order. Each module reads its
 // preconditions from `RunCtx` and publishes what it creates back into
 // `RunCtx` for the next module. Modules whose `IMPLEMENTED` flag is `false`
 // are skipped (visible in the test output as skipped subtests), so the suite
@@ -46,6 +46,7 @@ import type { RunCtx } from "./state/runCtx.js";
 //   it_08 info update / avatar / cover / announcements / comments / profile
 //   it_09 cross-team isolation (second team + outsider)
 //   it_10 cascade delete (chapter -> comic -> workset -> team)
+//   it_11 immutable comic archive and image cleanup records
 //
 // Cleanup: `cleanupToSeed()` runs in the `finally` block BEFORE
 // `assertDatabaseIsSeedOnly()` so the assert verifies the suite self-cleans

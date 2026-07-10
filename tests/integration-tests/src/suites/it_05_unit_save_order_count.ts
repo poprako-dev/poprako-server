@@ -3,7 +3,7 @@
 // NOTE: Minimal passing version. Complex unit save scenarios (before_id
 // insert, move, concurrent writes) are deferred — the server's per-unit
 // index update loop has a known unique-constraint limitation when shifting
-// unit positions. See PROGRESS.md.
+// unit positions.
 //
 // Covers test-plan: F1 (create bubble units), F10 (import/export).
 //

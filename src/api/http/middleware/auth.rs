@@ -29,7 +29,9 @@ pub async fn authorize(
     let raw_token = extract_token(&request);
 
     let user_token = match harn.auth().verify_token(&raw_token) {
+        //
         Ok(token) => token,
+
         Err(err) => return HttpError::from(err).into_response(),
     };
 

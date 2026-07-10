@@ -113,6 +113,7 @@ impl<'a> Execute<ListInfos<'a>> for Mock {
         &self,
         step: &ListInfos<'a>,
     ) -> Result<Vec<CommentInfo>, Self::Error> {
+        //
         let state = self.state.lock().unwrap();
 
         Ok(list_comments(&state, step.spec))
@@ -209,16 +210,22 @@ fn spec(
 
 #[tokio::test]
 async fn list_infos_filters_sorts_pages_and_includes_user() {
+    //
     let mock = Mock::new();
+
     let time = now();
+
     mock.seed_user(user("user-1"), credential("user-1"));
+
     mock.seed_comment(comment("comment-old", "team-1", "user-1", time));
+
     mock.seed_comment(comment(
         "comment-new",
         "team-1",
         "user-1",
         time + Duration::seconds(10),
     ));
+
     mock.seed_comment(comment(
         "comment-other-team",
         "team-2",
@@ -237,14 +244,19 @@ async fn list_infos_filters_sorts_pages_and_includes_user() {
         .unwrap();
 
     assert_eq!(comment_infos.len(), 1);
+
     assert_eq!(comment_infos[0].id, "comment-new");
+
     assert_eq!(comment_infos[0].user.as_ref().unwrap().id, "user-1");
 }
 
 #[tokio::test]
 async fn list_infos_omits_user_without_include() {
+    //
     let mock = Mock::new();
+
     mock.seed_user(user("user-1"), credential("user-1"));
+
     mock.seed_comment(comment("comment-1", "team-1", "user-1", now()));
 
     let comment_infos = mock
@@ -258,8 +270,11 @@ async fn list_infos_omits_user_without_include() {
 
 #[tokio::test]
 async fn create_persists_comment() {
+    //
     let mock = Mock::new();
+
     let comment_form = form("comment-1");
+
     let repo = mock.derive_transactional().await;
 
     assert!(
@@ -270,14 +285,19 @@ async fn create_persists_comment() {
         .await
         .is_ok()
     );
+
     assert_eq!(mock.snapshot().comments.len(), 1);
 }
 
 #[tokio::test]
 async fn create_rejects_duplicate_id() {
+    //
     let mock = Mock::new();
+
     mock.seed_comment(comment("comment-1", "team-1", "user-1", now()));
+
     let comment_form = form("comment-1");
+
     let repo = mock.derive_transactional().await;
 
     let err = mock
@@ -294,5 +314,6 @@ async fn create_rejects_duplicate_id() {
     };
 
     assert_expected_variant(err, ExpectedVariant::Args);
+
     assert_eq!(mock.snapshot().comments.len(), 1);
 }

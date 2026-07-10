@@ -55,9 +55,11 @@ impl Incl for AssignmentChapterComicIncl {
         assignment_info: &mut AssignmentInfo,
         comic_info: Option<ComicInfo>,
     ) {
+        //
         let Some(chapter_info) = &mut assignment_info.chapter else {
             return;
         };
+
         chapter_info.comic = comic_info;
     }
 }
@@ -83,6 +85,7 @@ impl Incl for AssignmentChapterComicWorksetIncl {
         assignment_info: &mut AssignmentInfo,
         workset_info: Option<WorksetInfo>,
     ) {
+        //
         let Some(chapter_info) = &mut assignment_info.chapter else {
             return;
         };
@@ -117,6 +120,7 @@ impl Incl for AssignmentChapterComicWorksetTeamIncl {
         assignment_info: &mut AssignmentInfo,
         team_info: Option<TeamInfo>,
     ) {
+        //
         let Some(chapter_info) = &mut assignment_info.chapter else {
             return;
         };
@@ -149,9 +153,11 @@ impl Incl for AssignmentChapterCreatorIncl {
         assignment_info: &mut AssignmentInfo,
         user_info: Option<UserInfo>,
     ) {
+        //
         let Some(chapter_info) = &mut assignment_info.chapter else {
             return;
         };
+
         chapter_info.creator = user_info;
     }
 }
@@ -177,6 +183,7 @@ impl Incl for AssignmentChapterComicCreatorIncl {
         assignment_info: &mut AssignmentInfo,
         user_info: Option<UserInfo>,
     ) {
+        //
         let Some(chapter_info) = &mut assignment_info.chapter else {
             return;
         };
@@ -216,37 +223,46 @@ pub async fn populate_assignment_incls(
     infos: &mut [AssignmentInfo],
     incl_opt: &[AssignmentInclOpt],
 ) -> RegularResult<()> {
+    //
     for incl_opt in expand_incl_opts(incl_opt) {
         match incl_opt {
+            //
             AssignmentInclOpt::User => {
                 incl::populate::<AssignmentUserIncl>(conn, infos).await?
             }
+
             AssignmentInclOpt::Chapter => {
                 incl::populate::<AssignmentChapterIncl>(conn, infos).await?
             }
+
             AssignmentInclOpt::ChapterComic => {
                 incl::populate::<AssignmentChapterComicIncl>(conn, infos)
                     .await?
             }
+
             AssignmentInclOpt::ChapterComicWorkset => {
                 incl::populate::<AssignmentChapterComicWorksetIncl>(conn, infos)
                     .await?
             }
+
             AssignmentInclOpt::ChapterComicWorksetTeam => {
                 incl::populate::<AssignmentChapterComicWorksetTeamIncl>(
                     conn, infos,
                 )
                 .await?
             }
+
             AssignmentInclOpt::ChapterCreator => {
                 incl::populate::<AssignmentChapterCreatorIncl>(conn, infos)
                     .await?
             }
+
             AssignmentInclOpt::ChapterComicCreator => {
                 incl::populate::<AssignmentChapterComicCreatorIncl>(conn, infos)
                     .await?
             }
         }
     }
+
     Ok(())
 }

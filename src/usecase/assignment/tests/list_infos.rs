@@ -14,15 +14,21 @@ use crate::value::assignment::AssignmentInclOpt;
 
 #[tokio::test]
 async fn list_infos_team_member_lists_chapter_assignments() {
+    //
     let mock = Mock::new();
+
     seed_scope(&mock);
+
     seed_user(&mock, "member-user", false);
+
     mock.seed_member(member("member-user", role(RoleField::TRANSLATOR)));
+
     mock.seed_assignment(assignment(
         "chapter-1",
         "member-user",
         role(RoleField::TRANSLATOR),
     ));
+
     mock.seed_assignment(assignment(
         "chapter-1",
         "reviewer-user",
@@ -38,6 +44,7 @@ async fn list_infos_team_member_lists_chapter_assignments() {
     .await;
 
     assert!(assignment_info_vals.is_ok());
+
     let assignment_info_vals = assignment_info_vals.ok().unwrap();
 
     assert_eq!(assignment_info_vals.len(), 2);
@@ -45,10 +52,15 @@ async fn list_infos_team_member_lists_chapter_assignments() {
 
 #[tokio::test]
 async fn list_infos_deep_chapter_comic_workset_team_incl_fills_full_chain() {
+    //
     let mock = Mock::new();
+
     seed_scope(&mock);
+
     seed_user(&mock, "member-user", false);
+
     mock.seed_member(member("member-user", role(RoleField::TRANSLATOR)));
+
     mock.seed_assignment(assignment(
         "chapter-1",
         "member-user",
@@ -70,16 +82,23 @@ async fn list_infos_deep_chapter_comic_workset_team_incl_fills_full_chain() {
     let comic_info_val = chapter_info_val.comic.as_ref().unwrap();
 
     assert_eq!(chapter_info_val.id, "chapter-1");
+
     assert_eq!(comic_info_val.id, "comic-1");
+
     assert_eq!(comic_info_val.workset.as_ref().unwrap().id, "workset-1");
+
     assert_eq!(comic_info_val.team.as_ref().unwrap().id, "team-1");
 }
 
 #[tokio::test]
 async fn list_infos_assignment_fallback_lists_chapter_assignments() {
+    //
     let mock = Mock::new();
+
     seed_scope(&mock);
+
     seed_user(&mock, "assigned-user", false);
+
     mock.seed_assignment(assignment(
         "chapter-1",
         "assigned-user",
@@ -95,18 +114,23 @@ async fn list_infos_assignment_fallback_lists_chapter_assignments() {
     .await;
 
     assert!(assignment_info_vals.is_ok());
+
     assert_eq!(assignment_info_vals.ok().unwrap().len(), 1);
 }
 
 #[tokio::test]
 async fn list_infos_owner_lists_own_assignments() {
+    //
     let mock = Mock::new();
+
     seed_user(&mock, "owner-user", false);
+
     mock.seed_assignment(assignment(
         "chapter-1",
         "owner-user",
         role(RoleField::TRANSLATOR),
     ));
+
     mock.seed_assignment(assignment(
         "chapter-2",
         "other-user",
@@ -122,17 +146,23 @@ async fn list_infos_owner_lists_own_assignments() {
     .await;
 
     assert!(assignment_info_vals.is_ok());
+
     let assignment_info_vals = assignment_info_vals.ok().unwrap();
 
     assert_eq!(assignment_info_vals.len(), 1);
+
     assert_eq!(assignment_info_vals[0].user_id, "owner-user");
 }
 
 #[tokio::test]
 async fn list_infos_super_admin_lists_other_user_assignments() {
+    //
     let mock = Mock::new();
+
     seed_user(&mock, "sadmin-user", true);
+
     seed_user(&mock, "target-user", false);
+
     mock.seed_assignment(assignment(
         "chapter-1",
         "target-user",
@@ -148,13 +178,17 @@ async fn list_infos_super_admin_lists_other_user_assignments() {
     .await;
 
     assert!(assignment_info_vals.is_ok());
+
     assert_eq!(assignment_info_vals.ok().unwrap().len(), 1);
 }
 
 #[tokio::test]
 async fn list_infos_unrelated_user_is_rejected_from_chapter_assignments() {
+    //
     let mock = Mock::new();
+
     seed_scope(&mock);
+
     seed_user(&mock, "outsider-user", false);
 
     let err = list_infos(
@@ -172,8 +206,11 @@ async fn list_infos_unrelated_user_is_rejected_from_chapter_assignments() {
 
 #[tokio::test]
 async fn list_infos_non_owner_non_admin_is_rejected_from_user_assignments() {
+    //
     let mock = Mock::new();
+
     seed_user(&mock, "viewer-user", false);
+
     seed_user(&mock, "target-user", false);
 
     let err = list_infos(
@@ -191,7 +228,9 @@ async fn list_infos_non_owner_non_admin_is_rejected_from_user_assignments() {
 
 #[tokio::test]
 async fn list_infos_invalid_owner_combination_is_rejected() {
+    //
     let mock = Mock::new();
+
     seed_user(&mock, "viewer-user", false);
 
     let err = list_infos(

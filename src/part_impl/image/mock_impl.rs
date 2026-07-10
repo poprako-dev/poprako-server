@@ -18,26 +18,31 @@ use crate::result::{ExpectedVariant, RegularError, RegularResult};
 #[async_trait]
 impl ImagePool for Mock {
     async fn get_signed(&self, key: &str) -> RegularResult<Url> {
+        //
         if self.flags.lock().unwrap().image_get_failure {
             return Err(RegularError::Expected {
                 variant: ExpectedVariant::Args,
                 message: trl("error-image-get-failed"),
             });
         }
+
         Ok(Url::parse(&format!("https://test.local/get/{}", key)).unwrap())
     }
 
     async fn put_signed(&self, key: &str) -> RegularResult<Url> {
+        //
         if self.flags.lock().unwrap().image_put_failure {
             return Err(RegularError::Expected {
                 variant: ExpectedVariant::Args,
                 message: trl("error-image-put-failed"),
             });
         }
+
         Ok(Url::parse(&format!("https://test.local/put/{}", key)).unwrap())
     }
 
     async fn head_object(&self, _key: &str) -> RegularResult<bool> {
+        //
         if self.flags.lock().unwrap().image_head_failure {
             return Err(RegularError::Expected {
                 variant: ExpectedVariant::Args,
@@ -53,6 +58,7 @@ impl ImagePool for Mock {
     }
 
     async fn delete_object(&self, key: &str) -> RegularResult<()> {
+        //
         if self.flags.lock().unwrap().image_delete_failure {
             return Err(RegularError::Expected {
                 variant: ExpectedVariant::Args,
@@ -76,10 +82,13 @@ impl ImagePool for Mock {
 /// Mock helper that returns a stable deterministic put URL.
 #[tokio::test]
 async fn put_signed_returns_stable_url() {
+    //
     let mock = Mock::new();
 
     let url = ImagePool::put_signed(&mock, "avatar.png").await;
+
     assert!(url.is_ok());
+
     let url = url.ok().unwrap();
 
     assert_eq!(url.as_str(), "https://test.local/put/avatar.png");
@@ -88,6 +97,7 @@ async fn put_signed_returns_stable_url() {
 /// Mock helper that returns an expected error when get failure is configured.
 #[tokio::test]
 async fn get_signed_failure_returns_expected_error() {
+    //
     let mock = Mock::new().with_image_get_failure();
 
     let err = ImagePool::get_signed(&mock, "avatar.png")

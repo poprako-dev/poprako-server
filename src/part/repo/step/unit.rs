@@ -4,7 +4,7 @@ use poprako_transactional::step::Step;
 use poprako_util::page::Page;
 
 use crate::model::unit::{
-    UnitCounters, UnitIndex, UnitIndexUpdate, UnitInfo, UnitOper,
+    UnitCounters, UnitIndex, UnitIndexUpdate, UnitInfo, UnitPayload,
 };
 
 /// Step that lists units by page ID.
@@ -27,10 +27,22 @@ impl<'a> Step for ListAllInfosByPageId<'a> {
     type Output = Vec<UnitInfo>;
 }
 
+/// Step that creates one unit row.
+pub struct CreateInfo<'a> {
+    pub page_id: &'a str,
+    pub id: &'a str,
+    pub payload: &'a UnitPayload,
+}
+
+impl<'a> Step for CreateInfo<'a> {
+    type Output = ();
+}
+
 /// Step that saves one unit row by upsert.
 pub struct SaveInfo<'a> {
     pub page_id: &'a str,
-    pub oper: &'a UnitOper,
+    pub id: &'a str,
+    pub payload: &'a UnitPayload,
 }
 
 impl<'a> Step for SaveInfo<'a> {
@@ -94,9 +106,30 @@ impl UnitStep {
         ListAllInfosByPageId { page_id }
     }
 
+    /// Constructs a step to create one unit row.
+    pub fn create_info<'a>(
+        page_id: &'a str,
+        id: &'a str,
+        payload: &'a UnitPayload,
+    ) -> CreateInfo<'a> {
+        CreateInfo {
+            page_id,
+            id,
+            payload,
+        }
+    }
+
     /// Constructs a step to save one unit row by upsert.
-    pub fn save_info<'a>(page_id: &'a str, oper: &'a UnitOper) -> SaveInfo<'a> {
-        SaveInfo { page_id, oper }
+    pub fn save_info<'a>(
+        page_id: &'a str,
+        id: &'a str,
+        payload: &'a UnitPayload,
+    ) -> SaveInfo<'a> {
+        SaveInfo {
+            page_id,
+            id,
+            payload,
+        }
     }
 
     /// Constructs a step to delete one unit by ID, scoped to a page.

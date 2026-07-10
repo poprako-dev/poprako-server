@@ -148,8 +148,11 @@ impl Mock {
 
     /// Seed a user and its credential directly into the mock state.
     pub fn seed_user(&self, user: UserInfo, credential: UserCredential) {
+        //
         let mut state = self.state.lock().unwrap();
+
         state.users.push(user);
+
         state.credentials.push(credential);
     }
 
@@ -239,43 +242,60 @@ impl Mock {
 
     /// Enable token authentication failures for subsequent opers.
     pub fn with_token_failure(self) -> Self {
+        //
         self.flags.lock().unwrap().token_failure = true;
+
         self
     }
 
     /// Enable image retrieval failures for subsequent opers.
     pub fn with_image_get_failure(self) -> Self {
+        //
         self.flags.lock().unwrap().image_get_failure = true;
+
         self
     }
 
     /// Enable image storage failures for subsequent opers.
     pub fn with_image_put_failure(self) -> Self {
+        //
         self.flags.lock().unwrap().image_put_failure = true;
+
         self
     }
 
     /// Enable head-object failures for subsequent opers.
+    #[allow(dead_code)]
     pub fn with_image_head_failure(self) -> Self {
+        //
         self.flags.lock().unwrap().image_head_failure = true;
+
         self
     }
 
     /// Report objects as absent for subsequent head-object opers.
+    #[allow(dead_code)]
     pub fn with_image_head_absent(self) -> Self {
+        //
         self.flags.lock().unwrap().image_head_absent = true;
+
         self
     }
 
     /// Enable delete-object failures for subsequent opers.
+    #[allow(dead_code)]
     pub fn with_image_delete_failure(self) -> Self {
+        //
         self.flags.lock().unwrap().image_delete_failure = true;
+
         self
     }
 
     /// Fail archive persistence before a transaction can commit.
     pub fn with_archive_commit_failure(self) -> Self {
+        //
         self.flags.lock().unwrap().archive_commit_failure = true;
+
         self
     }
 
@@ -327,10 +347,14 @@ impl Drive<MockContext> for Mock {
         };
 
         match f(&mut context).await {
+            //
             Ok(value) => {
+                //
                 *self.state.lock().unwrap() = context.state;
+
                 Ok(value)
             }
+
             Err(err) => Err(DriveError::Advance(err)),
         }
     }
@@ -435,7 +459,9 @@ fn user(id: &str) -> UserInfo {
 /// Mock helper that verifies a seeded user is readable outside a transaction.
 #[tokio::test]
 async fn execute_reads_seeded_user() {
+    //
     let mock = Mock::new();
+
     mock.seed_user(
         user("user-1"),
         UserCredential {
@@ -446,7 +472,9 @@ async fn execute_reads_seeded_user() {
 
     let found =
         Execute::execute(&mock, &UserStep::get_info_by_id("user-1")).await;
+
     assert!(found.is_ok());
+
     let found = found.ok().unwrap();
 
     assert_eq!(found.id, "user-1");
@@ -455,7 +483,9 @@ async fn execute_reads_seeded_user() {
 /// Mock helper that verifies successful transactions commit repo and prom state.
 #[tokio::test]
 async fn transaction_commits_repo_and_prom() {
+    //
     let mock = Mock::new();
+
     let member_form = MemberForm {
         id: "member-1".into(),
         user_id: "user-1".into(),
@@ -463,6 +493,7 @@ async fn transaction_commits_repo_and_prom() {
         team_id: "team-1".into(),
         roles: RoleMask::from(RoleField::RAW_PROVIDER),
     };
+
     let visible_at = now();
 
     assert!(
@@ -497,14 +528,18 @@ async fn transaction_commits_repo_and_prom() {
     );
 
     let snapshot = mock.snapshot();
+
     assert_eq!(snapshot.members.len(), 1);
+
     assert_eq!(snapshot.prom_records.len(), 1);
 }
 
 /// Mock helper that verifies failed transactions discard repo and prom state.
 #[tokio::test]
 async fn transaction_rolls_back_repo_and_prom() {
+    //
     let mock = Mock::new();
+
     let member_form = MemberForm {
         id: "member-1".into(),
         user_id: "user-1".into(),
@@ -512,16 +547,20 @@ async fn transaction_rolls_back_repo_and_prom() {
         team_id: "team-1".into(),
         roles: RoleMask::from(RoleField::RAW_PROVIDER),
     };
+
     let visible_at = now();
 
     let err = Drive::with_context(&mock, async move |context| {
+        //
         let transactional = MockTransactional;
+
         Advance::advance(
             &transactional,
             context,
             &MemberStep::create(&member_form),
         )
         .await?;
+
         Advance::advance(
             &transactional,
             context,
@@ -533,6 +572,7 @@ async fn transaction_rolls_back_repo_and_prom() {
             ),
         )
         .await?;
+
         Err::<(), _>(unrecoverable(
             "[transaction_rolls_back_repo_and_prom] fail",
         ))
@@ -545,7 +585,10 @@ async fn transaction_rolls_back_repo_and_prom() {
         err,
         DriveError::Advance(RegularError::Unrecoverable { .. })
     ));
+
     let snapshot = mock.snapshot();
+
     assert!(snapshot.members.is_empty());
+
     assert!(snapshot.prom_records.is_empty());
 }

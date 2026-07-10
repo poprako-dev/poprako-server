@@ -29,6 +29,7 @@ pub struct ChapterInfoVal {
     pub id: String,
     pub comic_id: String,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[cfg_attr(feature = "swagger-ui", schema(no_recursion))]
     pub comic: Option<Box<ComicInfoVal>>,
 
@@ -45,6 +46,7 @@ pub struct ChapterInfoVal {
 
     pub creator_id: String,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub creator: Option<UserInfoVal>,
 
     pub created_at: i64,
@@ -84,19 +86,25 @@ impl ChapterInfoVal {
         P: ImagePool,
     {
         let creator = match model.creator {
+            //
             Some(user_info) => {
                 Some(UserInfoVal::from_model(image_pool, user_info).await?)
             }
+
             None => None,
         };
 
         let comic = match model.comic {
+            //
             Some(comic_info) => {
+                //
                 let comic =
                     ComicInfoVal::from_model(image_pool, comic_info, None)
                         .await?;
+
                 Some(Box::new(comic))
             }
+
             None => None,
         };
 

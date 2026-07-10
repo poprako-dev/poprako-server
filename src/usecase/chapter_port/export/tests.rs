@@ -180,6 +180,7 @@ fn seed_scope(mock: &Mock) {
 
 #[tokio::test]
 async fn export_returns_chapter_pages_and_units() {
+    //
     let mock = Mock::new();
 
     seed_scope(&mock);
@@ -192,7 +193,9 @@ async fn export_returns_chapter_pages_and_units() {
         export(&mock, &mock, token("user-1"), "chapter-1".into()).await;
 
     let exported = match exported {
+        //
         Ok(exported) => exported,
+
         Err(_) => panic!("expected export success"),
     };
 
@@ -225,6 +228,7 @@ async fn export_returns_chapter_pages_and_units() {
 
 #[tokio::test]
 async fn export_label_plus_returns_text_payload() {
+    //
     let mock = Mock::new();
 
     seed_scope(&mock);
@@ -235,7 +239,9 @@ async fn export_label_plus_returns_text_payload() {
         export_label_plus(&mock, token("user-1"), "chapter-1".into()).await;
 
     let exported = match exported {
+        //
         Ok(exported) => exported,
+
         Err(_) => panic!("expected LabelPlus export success"),
     };
 

@@ -240,9 +240,13 @@ fn seed_admin(mock: &Mock) {
 
 #[tokio::test]
 async fn list_infos_reviewer_lists_chapter_invitations() {
+    //
     let mock = Mock::new();
+
     seed_scope(&mock);
+
     seed_admin(&mock);
+
     mock.seed_assignment_invitation(invitation(
         "invitation-1",
         "target-qid",
@@ -254,13 +258,17 @@ async fn list_infos_reviewer_lists_chapter_invitations() {
         .unwrap();
 
     assert_eq!(val.len(), 1);
+
     assert_eq!(val[0].id, "invitation-1");
 }
 
 #[tokio::test]
 async fn list_infos_non_reviewer_is_rejected() {
+    //
     let mock = Mock::new();
+
     seed_scope(&mock);
+
     mock.seed_assignment_invitation(invitation(
         "invitation-1",
         "target-qid",
@@ -277,9 +285,13 @@ async fn list_infos_non_reviewer_is_rejected() {
 
 #[tokio::test]
 async fn create_reviewer_creates_pending_invitation() {
+    //
     let mock = Mock::new();
+
     seed_scope(&mock);
+
     seed_admin(&mock);
+
     mock.seed_user(
         user("target-user", "target-qid", "Target"),
         credential("target-user"),
@@ -291,24 +303,36 @@ async fn create_reviewer_creates_pending_invitation() {
             .unwrap();
 
     let snapshot = mock.snapshot();
+
     assert_eq!(snapshot.assignment_invitations.len(), 1);
+
     assert_eq!(snapshot.assignment_invitations[0].id, val.id);
+
     assert_eq!(snapshot.assignment_invitations[0].code, val.code);
+
     assert_eq!(snapshot.assignment_invitations[0].chapter_id, "chapter-1");
+
     assert_eq!(snapshot.assignment_invitations[0].inviter_id, "admin-user");
+
     assert_eq!(snapshot.assignment_invitations[0].invitee_qid, "target-qid");
+
     assert!(snapshot.assignment_invitations[0].pending);
 }
 
 #[tokio::test]
 async fn create_existing_assignment_is_rejected() {
+    //
     let mock = Mock::new();
+
     seed_scope(&mock);
+
     seed_admin(&mock);
+
     mock.seed_user(
         user("target-user", "target-qid", "Target"),
         credential("target-user"),
     );
+
     mock.seed_assignment(assignment(
         "chapter-1",
         "target-user",
@@ -322,14 +346,19 @@ async fn create_existing_assignment_is_rejected() {
             .unwrap();
 
     assert_expected_variant(err, ExpectedVariant::Args);
+
     assert!(mock.snapshot().assignment_invitations.is_empty());
 }
 
 #[tokio::test]
 async fn delete_reviewer_deletes_invitation() {
+    //
     let mock = Mock::new();
+
     seed_scope(&mock);
+
     seed_admin(&mock);
+
     mock.seed_assignment_invitation(invitation(
         "invitation-1",
         "target-qid",
@@ -345,8 +374,11 @@ async fn delete_reviewer_deletes_invitation() {
 
 #[tokio::test]
 async fn delete_non_reviewer_is_rejected() {
+    //
     let mock = Mock::new();
+
     seed_scope(&mock);
+
     mock.seed_assignment_invitation(invitation(
         "invitation-1",
         "target-qid",
@@ -359,18 +391,24 @@ async fn delete_non_reviewer_is_rejected() {
         .unwrap();
 
     assert_expected_variant(err, ExpectedVariant::Perm);
+
     assert_eq!(mock.snapshot().assignment_invitations.len(), 1);
 }
 
 #[tokio::test]
 async fn join_invited_user_creates_assignment_and_consumes_invitation() {
+    //
     let mock = Mock::new();
+
     seed_scope(&mock);
+
     mock.seed_user(
         user("target-user", "target-qid", "Target"),
         credential("target-user"),
     );
+
     mock.seed_member(member("target-user", role(RoleField::TRANSLATOR)));
+
     mock.seed_assignment_invitation(invitation(
         "invitation-1",
         "target-qid",
@@ -382,30 +420,41 @@ async fn join_invited_user_creates_assignment_and_consumes_invitation() {
         .unwrap();
 
     let snapshot = mock.snapshot();
+
     assert_eq!(snapshot.assignments.len(), 1);
+
     assert_eq!(snapshot.assignments[0].chapter_id, "chapter-1");
+
     assert_eq!(snapshot.assignments[0].user_id, "target-user");
+
     assert_eq!(snapshot.assignments[0].roles, role(RoleField::TRANSLATOR));
+
     assert!(!snapshot.assignment_invitations[0].pending);
 }
 
 #[tokio::test]
 async fn join_existing_assignment_merges_roles() {
+    //
     let mock = Mock::new();
+
     seed_scope(&mock);
+
     mock.seed_user(
         user("target-user", "target-qid", "Target"),
         credential("target-user"),
     );
+
     mock.seed_member(member(
         "target-user",
         role(RoleField::TRANSLATOR).union(role(RoleField::PROOFREADER)),
     ));
+
     mock.seed_assignment(assignment(
         "chapter-1",
         "target-user",
         role(RoleField::TRANSLATOR),
     ));
+
     mock.seed_assignment_invitation(invitation(
         "invitation-1",
         "target-qid",
@@ -417,24 +466,32 @@ async fn join_existing_assignment_merges_roles() {
         .unwrap();
 
     let snapshot = mock.snapshot();
+
     assert_eq!(snapshot.assignments.len(), 1);
+
     assert!(
         snapshot.assignments[0]
             .roles
             .has_every_role(&[RoleField::TRANSLATOR, RoleField::PROOFREADER])
     );
+
     assert!(!snapshot.assignment_invitations[0].pending);
 }
 
 #[tokio::test]
 async fn join_mismatched_qid_is_rejected() {
+    //
     let mock = Mock::new();
+
     seed_scope(&mock);
+
     mock.seed_user(
         user("target-user", "target-qid", "Target"),
         credential("target-user"),
     );
+
     mock.seed_member(member("target-user", role(RoleField::TRANSLATOR)));
+
     mock.seed_assignment_invitation(invitation(
         "invitation-1",
         "other-qid",
@@ -447,7 +504,10 @@ async fn join_mismatched_qid_is_rejected() {
         .unwrap();
 
     assert_expected_variant(err, ExpectedVariant::Args);
+
     let snapshot = mock.snapshot();
+
     assert!(snapshot.assignments.is_empty());
+
     assert!(snapshot.assignment_invitations[0].pending);
 }

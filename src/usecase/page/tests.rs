@@ -172,8 +172,11 @@ fn seed_scope(mock: &Mock) {
 
 #[tokio::test]
 async fn reserve_chapter_pages_creates_pages_and_urls() {
+    //
     let mock = Mock::new();
+
     seed_scope(&mock);
+
     mock.seed_assignment(assignment(
         "chapter-1",
         "user-1",
@@ -193,34 +196,51 @@ async fn reserve_chapter_pages_creates_pages_and_urls() {
         },
     )
     .await;
+
     assert!(reserved.is_ok());
+
     let reserved = reserved.ok().unwrap();
+
     let snapshot = mock.snapshot();
 
     assert_eq!(reserved.creations.len(), 2);
+
     assert_eq!(snapshot.pages.len(), 2);
+
     assert_eq!(snapshot.pages[0].index, 0);
+
     assert_eq!(snapshot.pages[1].index, 1);
+
     assert_eq!(snapshot.pages[0].image_version, 1);
+
     assert_eq!(snapshot.pages[1].image_version, 1);
+
     assert_eq!(reserved.creations[0].image_version, 1);
+
     assert_eq!(reserved.creations[1].image_version, 1);
+
     assert_eq!(snapshot.chapters[0].page_count, 2);
+
     assert_eq!(snapshot.prom_records.len(), 2);
+
     assert!(
         reserved.creations[0]
             .put_url
             .contains("https://test.local/put/chapter_chapter-1/")
     );
+
     for creation in &reserved.creations {
+        //
         let page_info = snapshot
             .pages
             .iter()
             .find(|page_info| page_info.id == creation.page_id)
             .unwrap();
+
         let object_key = page_info.image_key.as_deref().unwrap();
 
         assert!(object_key.ends_with("-1.png"));
+
         assert_one_image_check_record(
             &snapshot.prom_records,
             ImageKind::PageImage,
@@ -233,7 +253,9 @@ async fn reserve_chapter_pages_creates_pages_and_urls() {
 
 #[tokio::test]
 async fn reserve_chapter_pages_rejects_invalid_count() {
+    //
     let mock = Mock::new();
+
     seed_scope(&mock);
 
     let err = reserve_chapter_pages(
@@ -251,18 +273,25 @@ async fn reserve_chapter_pages_rejects_invalid_count() {
     .await
     .err()
     .unwrap();
+
     let snapshot = mock.snapshot();
 
     assert_expected_variant(err, ExpectedVariant::Args);
+
     assert!(snapshot.pages.is_empty());
+
     assert!(snapshot.prom_records.is_empty());
 }
 
 #[tokio::test]
 async fn reserve_image_replaces_key_and_enqueues_prom() {
+    //
     let mock = Mock::new();
+
     seed_scope(&mock);
+
     mock.seed_page(page("page-1", 0, Some("old.png"), true, 1));
+
     mock.seed_assignment(assignment(
         "chapter-1",
         "user-1",
@@ -281,27 +310,38 @@ async fn reserve_image_replaces_key_and_enqueues_prom() {
         },
     )
     .await;
+
     assert!(reserved.is_ok());
+
     let reserved = reserved.ok().unwrap();
+
     let snapshot = mock.snapshot();
 
     assert_eq!(reserved.page_id, "page-1");
+
     assert_eq!(reserved.image_version, 2);
+
     assert_eq!(
         reserved.put_url,
         "https://test.local/put/chapter_chapter-1/page_page-1-2.jpg"
     );
+
     assert_eq!(
         snapshot.pages[0].image_key,
         Some("chapter_chapter-1/page_page-1-2.jpg".into())
     );
+
     assert!(!snapshot.pages[0].image_uploaded);
+
     assert_eq!(snapshot.pages[0].image_version, 2);
+
     assert_eq!(snapshot.prom_records.len(), 2);
+
     assert!(matches!(
         snapshot.prom_records[0].payload(),
         Payload::Image(ImageTask::Delete { object_key }) if object_key == "old.png"
     ));
+
     assert_one_image_check_record(
         &snapshot.prom_records,
         ImageKind::PageImage,
@@ -313,6 +353,7 @@ async fn reserve_image_replaces_key_and_enqueues_prom() {
 
 #[tokio::test]
 async fn reserve_image_rejects_missing_page() {
+    //
     let mock = Mock::new();
 
     let err = reserve_image(
@@ -335,10 +376,15 @@ async fn reserve_image_rejects_missing_page() {
 
 #[tokio::test]
 async fn list_infos_sorts_and_resolves_uploaded_url() {
+    //
     let mock = Mock::new();
+
     seed_scope(&mock);
+
     mock.seed_member(member("user-1", RoleMask::from(RoleField::TRANSLATOR)));
+
     mock.seed_page(page("page-2", 2, Some("two.png"), true, 1));
+
     mock.seed_page(page("page-1", 1, Some("one.png"), false, 1));
 
     let list = list_infos(
@@ -352,12 +398,17 @@ async fn list_infos_sorts_and_resolves_uploaded_url() {
         },
     )
     .await;
+
     assert!(list.is_ok());
+
     let list = list.ok().unwrap();
 
     assert_eq!(list.len(), 2);
+
     assert_eq!(list[0].id, "page-1");
+
     assert_eq!(list[0].image_url, None);
+
     assert_eq!(
         list[1].image_url,
         Some("https://test.local/get/two.png".into())
@@ -366,7 +417,9 @@ async fn list_infos_sorts_and_resolves_uploaded_url() {
 
 #[tokio::test]
 async fn list_infos_rejects_non_member_without_assignment() {
+    //
     let mock = Mock::new();
+
     seed_scope(&mock);
 
     let err = list_infos(
@@ -388,9 +441,13 @@ async fn list_infos_rejects_non_member_without_assignment() {
 
 #[tokio::test]
 async fn mark_image_uploaded_marks_once_and_idempotent() {
+    //
     let mock = Mock::new();
+
     seed_scope(&mock);
+
     mock.seed_page(page("page-1", 0, Some("one.png"), false, 2));
+
     mock.seed_assignment(assignment(
         "chapter-1",
         "user-1",
@@ -405,7 +462,9 @@ async fn mark_image_uploaded_marks_once_and_idempotent() {
         MarkPageImageUploadedData { image_version: 2 },
     )
     .await;
+
     assert!(first.is_ok());
+
     let second = mark_image_uploaded(
         &mock,
         &mock,
@@ -414,7 +473,9 @@ async fn mark_image_uploaded_marks_once_and_idempotent() {
         MarkPageImageUploadedData { image_version: 2 },
     )
     .await;
+
     assert!(second.is_ok());
+
     let snapshot = mock.snapshot();
 
     assert!(snapshot.pages[0].image_uploaded);
@@ -424,7 +485,9 @@ async fn mark_image_uploaded_marks_once_and_idempotent() {
 async fn mark_image_uploaded_rejects_stale_replay_then_accepts_current_version()
 {
     let mock = Mock::new();
+
     seed_scope(&mock);
+
     mock.seed_page(page(
         "page-1",
         0,
@@ -432,6 +495,7 @@ async fn mark_image_uploaded_rejects_stale_replay_then_accepts_current_version()
         true,
         1,
     ));
+
     mock.seed_assignment(assignment(
         "chapter-1",
         "user-1",
@@ -452,6 +516,7 @@ async fn mark_image_uploaded_rejects_stale_replay_then_accepts_current_version()
     .await
     .ok()
     .unwrap();
+
     assert_eq!(reserved.image_version, 2);
 
     let err = mark_image_uploaded(
@@ -464,6 +529,7 @@ async fn mark_image_uploaded_rejects_stale_replay_then_accepts_current_version()
     .await
     .err()
     .unwrap();
+
     let snapshot = mock.snapshot();
 
     assert_expected_message(
@@ -471,7 +537,9 @@ async fn mark_image_uploaded_rejects_stale_replay_then_accepts_current_version()
         ExpectedVariant::Args,
         "error-stale-page-image-upload",
     );
+
     assert!(!snapshot.pages[0].image_uploaded);
+
     assert_eq!(snapshot.pages[0].image_version, 2);
 
     mark_image_uploaded(
@@ -483,14 +551,19 @@ async fn mark_image_uploaded_rejects_stale_replay_then_accepts_current_version()
     )
     .await
     .unwrap();
+
     assert!(mock.snapshot().pages[0].image_uploaded);
 }
 
 #[tokio::test]
 async fn mark_image_uploaded_rejects_non_raw_provider() {
+    //
     let mock = Mock::new();
+
     seed_scope(&mock);
+
     mock.seed_page(page("page-1", 0, Some("one.png"), false, 1));
+
     mock.seed_assignment(assignment(
         "chapter-1",
         "user-1",
@@ -507,29 +580,42 @@ async fn mark_image_uploaded_rejects_non_raw_provider() {
     .await
     .err()
     .unwrap();
+
     let snapshot = mock.snapshot();
 
     assert_expected_variant(err, ExpectedVariant::Perm);
+
     assert!(!snapshot.pages[0].image_uploaded);
 }
 
 #[tokio::test]
 async fn delete_by_chapter_deletes_pages_and_clears_counters() {
+    //
     let mock = Mock::new();
+
     seed_scope(&mock);
+
     mock.seed_member(member("user-1", RoleMask::from(RoleField::ADMIN)));
+
     mock.seed_page(page("page-1", 0, Some("one.png"), true, 1));
+
     mock.seed_page(page("page-2", 1, None, false, 0));
 
     let deleted =
         delete(&mock, &mock, &mock, token("user-1"), "chapter-1".into()).await;
+
     assert!(deleted.is_ok());
+
     let snapshot = mock.snapshot();
 
     assert!(snapshot.pages.is_empty());
+
     assert_eq!(snapshot.chapters[0].page_count, 0);
+
     assert_eq!(snapshot.chapters[0].total_unit_count, 0);
+
     assert_eq!(snapshot.prom_records.len(), 1);
+
     assert!(matches!(
         snapshot.prom_records[0].payload(),
         Payload::Image(ImageTask::Delete { object_key }) if object_key == "one.png"
@@ -538,19 +624,27 @@ async fn delete_by_chapter_deletes_pages_and_clears_counters() {
 
 #[tokio::test]
 async fn delete_by_chapter_rejects_non_admin_and_rolls_back() {
+    //
     let mock = Mock::new();
+
     seed_scope(&mock);
+
     mock.seed_member(member("user-1", RoleMask::from(RoleField::TRANSLATOR)));
+
     mock.seed_page(page("page-1", 0, Some("one.png"), true, 1));
 
     let err = delete(&mock, &mock, &mock, token("user-1"), "chapter-1".into())
         .await
         .err()
         .unwrap();
+
     let snapshot = mock.snapshot();
 
     assert_expected_variant(err, ExpectedVariant::Perm);
+
     assert_eq!(snapshot.pages.len(), 1);
+
     assert_eq!(snapshot.chapters[0].page_count, 0);
+
     assert!(snapshot.prom_records.is_empty());
 }

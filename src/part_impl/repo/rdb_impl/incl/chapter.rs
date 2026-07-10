@@ -51,9 +51,11 @@ impl Incl for ChapterComicWorksetIncl {
         chapter_info: &mut ChapterInfo,
         workset_info: Option<WorksetInfo>,
     ) {
+        //
         let Some(comic_info) = &mut chapter_info.comic else {
             return;
         };
+
         comic_info.workset = workset_info;
     }
 }
@@ -76,9 +78,11 @@ impl Incl for ChapterComicWorksetTeamIncl {
     }
 
     fn inject(chapter_info: &mut ChapterInfo, team_info: Option<TeamInfo>) {
+        //
         let Some(comic_info) = &mut chapter_info.comic else {
             return;
         };
+
         comic_info.team = team_info;
     }
 }
@@ -100,9 +104,11 @@ impl Incl for ChapterComicCreatorIncl {
     }
 
     fn inject(chapter_info: &mut ChapterInfo, user_info: Option<UserInfo>) {
+        //
         let Some(comic_info) = &mut chapter_info.comic else {
             return;
         };
+
         comic_info.creator = user_info;
     }
 }
@@ -131,25 +137,32 @@ pub async fn populate_chapter_incls(
     infos: &mut [ChapterInfo],
     incl_opt: &[ChapterInclOpt],
 ) -> RegularResult<()> {
+    //
     for incl_opt in expand_incl_opts(incl_opt) {
         match incl_opt {
+            //
             ChapterInclOpt::Comic => {
                 incl::populate::<ChapterComicIncl>(conn, infos).await?
             }
+
             ChapterInclOpt::ComicWorkset => {
                 incl::populate::<ChapterComicWorksetIncl>(conn, infos).await?
             }
+
             ChapterInclOpt::ComicWorksetTeam => {
                 incl::populate::<ChapterComicWorksetTeamIncl>(conn, infos)
                     .await?
             }
+
             ChapterInclOpt::ComicCreator => {
                 incl::populate::<ChapterComicCreatorIncl>(conn, infos).await?
             }
+
             ChapterInclOpt::Creator => {
                 incl::populate::<ChapterCreatorIncl>(conn, infos).await?
             }
         }
     }
+
     Ok(())
 }

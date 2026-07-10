@@ -94,6 +94,7 @@ impl AsyncEffectDevelop {
 
     /// Stops accepting new events and waits for queued events to finish.
     pub async fn close(&self) {
+        //
         if !self.accepting.swap(false, Ordering::AcqRel) {
             return;
         }
@@ -135,21 +136,24 @@ impl EffectDevelop for AsyncEffectDevelop {
         }
 
         for event in iter.into_iter() {
-            match self.send.try_send(event) {
-                Err(TrySendError::Full(event)) => {
-                    tracing::warn!(
-                        event = event_name(&event),
-                        "[AsyncEffectDevelop::develop] event queue is full, dropping event",
-                    );
+            if let Err(e) = self.send.try_send(event) {
+                match e {
+                    TrySendError::Full(event) => {
+                        tracing::warn!(
+                            event = event_name(&event),
+                            "[AsyncEffectDevelop::develop] event queue is full, dropping event",
+                        );
+                    }
+
+                    TrySendError::Closed(event) => {
+                        tracing::warn!(
+                            event = event_name(&event),
+                            "[AsyncEffectDevelop::develop] event queue is closed, dropping event",
+                        );
+
+                        break;
+                    }
                 }
-                Err(TrySendError::Closed(event)) => {
-                    tracing::warn!(
-                        event = event_name(&event),
-                        "[AsyncEffectDevelop::develop] event queue is closed, dropping event",
-                    );
-                    break;
-                }
-                _ => {}
             }
         }
     }
@@ -158,9 +162,13 @@ impl EffectDevelop for AsyncEffectDevelop {
 /// Returns a human-readable label for a domain event variant.
 fn event_name(event: &Event) -> &'static str {
     match event {
+        //
         Event::UserActive(_) => "user_active",
+
         Event::UserSignedUp(_) => "user_signed_up",
+
         Event::ChapterPublished(_) => "chapter_published",
+
         Event::ChapterWorkflowCompleted(_) => "chapter_workflow_completed",
     }
 }

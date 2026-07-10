@@ -85,6 +85,7 @@ pub struct MemberInvitationInfoVal {
     pub team_id: String,
 
     pub invitor_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub invitor: Option<UserInfoVal>,
 
     pub invitee_qid: String,
@@ -121,11 +122,14 @@ impl MemberInvitationInfoVal {
         P: ImagePool,
     {
         let invitor = match model.invitor {
+            //
             Some(user_info) => {
                 Some(UserInfoVal::from_model(image_pool, user_info).await?)
             }
+
             None => None,
         };
+
         Ok(Self {
             id: model.id,
             team_id: model.team_id,

@@ -15,6 +15,7 @@ use super::*;
 #[test]
 fn try_from_accepts_every_singular_bit() {
     for &bit in RoleField::VALID_VALUES {
+        //
         let field = RoleField::try_from(bit).ok().unwrap();
 
         assert_eq!(u32::from(field), bit);
@@ -23,6 +24,7 @@ fn try_from_accepts_every_singular_bit() {
 
 #[test]
 fn try_from_rejects_zero() {
+    //
     let err = RoleField::try_from(0).err().unwrap();
 
     assert_expected_role_error(err);
@@ -30,6 +32,7 @@ fn try_from_rejects_zero() {
 
 #[test]
 fn try_from_rejects_composite_bit() {
+    //
     let err = RoleField::try_from(3).err().unwrap();
 
     assert_expected_role_error(err);
@@ -37,6 +40,7 @@ fn try_from_rejects_composite_bit() {
 
 #[test]
 fn try_from_rejects_out_of_range_bit() {
+    //
     let err = RoleField::try_from(1 << 9).err().unwrap();
 
     assert_expected_role_error(err);
@@ -44,6 +48,7 @@ fn try_from_rejects_out_of_range_bit() {
 
 #[test]
 fn serialize_outputs_raw_field_value() {
+    //
     let field = RoleField::TRANSLATOR;
 
     let json = serde_json::to_string(&field).unwrap();
@@ -53,6 +58,7 @@ fn serialize_outputs_raw_field_value() {
 
 #[test]
 fn deserialize_accepts_valid_field_value() {
+    //
     let field: RoleField = serde_json::from_str("2").unwrap();
 
     assert_eq!(field, RoleField::TRANSLATOR);
@@ -60,6 +66,7 @@ fn deserialize_accepts_valid_field_value() {
 
 #[test]
 fn deserialize_rejects_invalid_field_value_with_message() {
+    //
     let err = serde_json::from_str::<RoleField>("3").err().unwrap();
 
     assert!(err.to_string().contains(&trl("error-invalid-role")));
@@ -67,6 +74,7 @@ fn deserialize_rejects_invalid_field_value_with_message() {
 
 #[test]
 fn try_from_accepts_valid_role_mask() {
+    //
     let role_mask = RoleMask::try_from(3).ok().unwrap();
 
     assert_eq!(u32::from(role_mask), 3);
@@ -74,6 +82,7 @@ fn try_from_accepts_valid_role_mask() {
 
 #[test]
 fn try_from_rejects_zero_role_mask() {
+    //
     let err = RoleMask::try_from(0).err().unwrap();
 
     assert_expected_role_error(err);
@@ -81,6 +90,7 @@ fn try_from_rejects_zero_role_mask() {
 
 #[test]
 fn into_outputs_raw_bits() {
+    //
     let role_mask = RoleMask::from(RoleField::TRANSLATOR);
 
     let role_mask_raw = u32::from(role_mask);
@@ -90,6 +100,7 @@ fn into_outputs_raw_bits() {
 
 #[test]
 fn serialize_outputs_raw_bits() {
+    //
     let role_mask = RoleMask::from(RoleField::TRANSLATOR);
 
     let role_mask_json = serde_json::to_string(&role_mask).unwrap();
@@ -99,6 +110,7 @@ fn serialize_outputs_raw_bits() {
 
 #[test]
 fn deserialize_accepts_valid_bits() {
+    //
     let role_mask = serde_json::from_str::<RoleMask>("2").unwrap();
 
     assert_eq!(role_mask, RoleMask::from(RoleField::TRANSLATOR));
@@ -106,6 +118,7 @@ fn deserialize_accepts_valid_bits() {
 
 #[test]
 fn deserialize_rejects_invalid_bits_with_message() {
+    //
     let err = serde_json::from_str::<RoleMask>("2147483648")
         .err()
         .unwrap();
@@ -114,6 +127,7 @@ fn deserialize_rejects_invalid_bits_with_message() {
 }
 
 fn assert_expected_role_error(err: RegularError) {
+    //
     let RegularError::Expected { message, .. } = err else {
         panic!("expected role error");
     };

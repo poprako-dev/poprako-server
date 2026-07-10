@@ -283,7 +283,9 @@ impl<'a> Execute<ListInfos<'a>> for Mock {
         &self,
         step: &ListInfos<'a>,
     ) -> Result<Vec<ChapterInfo>, Self::Error> {
+        //
         let state = self.state.lock().unwrap();
+
         let mut chapters = list_all_chapters(&state, &step.spec.comic_id);
 
         for chapter in &mut chapters {
@@ -291,6 +293,7 @@ impl<'a> Execute<ListInfos<'a>> for Mock {
         }
 
         let offset = step.spec.offset as usize;
+
         let limit = step.spec.limit as usize;
 
         if offset >= chapters.len() {
@@ -298,6 +301,7 @@ impl<'a> Execute<ListInfos<'a>> for Mock {
         }
 
         let end = std::cmp::min(offset + limit, chapters.len());
+
         Ok(chapters[offset..end].to_vec())
     }
 }
@@ -310,6 +314,7 @@ impl<'a> Execute<GetInfoById<'a>> for Mock {
         &self,
         step: &GetInfoById<'a>,
     ) -> Result<ChapterInfo, Self::Error> {
+        //
         let state = self.state.lock().unwrap();
 
         get_chapter_by_id(&state, step.id, step.incl_opt)
@@ -329,7 +334,9 @@ impl<'a> Execute<FindPinnedInfoByComicId<'a>> for Mock {
         &self,
         step: &FindPinnedInfoByComicId<'a>,
     ) -> Result<Option<ChapterInfo>, Self::Error> {
+        //
         let state = self.state.lock().unwrap();
+
         let mut chapter_info = state
             .chapters
             .iter()
@@ -354,11 +361,13 @@ impl<'a> Execute<ListPinnedInfosByComicIds<'a>> for Mock {
         &self,
         step: &ListPinnedInfosByComicIds<'a>,
     ) -> Result<HashMap<String, ChapterInfo>, Self::Error> {
+        //
         let state = self.state.lock().unwrap();
 
         let mut chapter_infos = HashMap::new();
 
         for comic_id in step.comic_ids {
+            //
             let chapter_info = state
                 .chapters
                 .iter()
@@ -448,6 +457,7 @@ impl<'a> Advance<FindPinnedInfoByComicId<'a>, MockContext>
         context: &mut MockContext,
         step: &FindPinnedInfoByComicId<'a>,
     ) -> Result<Option<ChapterInfo>, Self::Error> {
+        //
         let mut chapter_info = context
             .state
             .chapters
@@ -474,6 +484,7 @@ impl<'a> Advance<UpdateInfo<'a>, MockContext> for MockTransactional {
         context: &mut MockContext,
         step: &UpdateInfo<'a>,
     ) -> Result<(), Self::Error> {
+        //
         let chapter_info = context
             .state
             .chapters
@@ -484,10 +495,13 @@ impl<'a> Advance<UpdateInfo<'a>, MockContext> for MockTransactional {
         if let Some(subtitle) = &step.update.subtitle {
             chapter_info.subtitle = subtitle.clone();
         }
+
         if let Some(is_pinned) = step.update.pin {
             chapter_info.is_pinned = is_pinned;
         }
+
         chapter_info.updated_at = now();
+
         Ok(())
     }
 }
@@ -501,6 +515,7 @@ impl<'a> Advance<UpdateStage<'a>, MockContext> for MockTransactional {
         context: &mut MockContext,
         step: &UpdateStage<'a>,
     ) -> Result<(), Self::Error> {
+        //
         let chapter_info = context
             .state
             .chapters
@@ -511,6 +526,7 @@ impl<'a> Advance<UpdateStage<'a>, MockContext> for MockTransactional {
         chapter_info.stages = step.update.stages;
 
         chapter_info.updated_at = now();
+
         Ok(())
     }
 }
@@ -524,6 +540,7 @@ impl<'a> Advance<SetPageCounters<'a>, MockContext> for MockTransactional {
         context: &mut MockContext,
         step: &SetPageCounters<'a>,
     ) -> Result<(), Self::Error> {
+        //
         let chapter_info = context
             .state
             .chapters
@@ -532,9 +549,13 @@ impl<'a> Advance<SetPageCounters<'a>, MockContext> for MockTransactional {
             .ok_or_else(|| expected("error-chapter-not-found"))?;
 
         chapter_info.page_count = step.page_count;
+
         chapter_info.total_unit_count = step.total_unit_count;
+
         chapter_info.translated_unit_count = step.translated_unit_count;
+
         chapter_info.proofread_unit_count = step.proofread_unit_count;
+
         chapter_info.updated_at = now();
 
         Ok(())
@@ -550,6 +571,7 @@ impl<'a> Advance<AdjustUnitCounters<'a>, MockContext> for MockTransactional {
         context: &mut MockContext,
         step: &AdjustUnitCounters<'a>,
     ) -> Result<(), Self::Error> {
+        //
         let chapter_info = context
             .state
             .chapters
@@ -558,8 +580,11 @@ impl<'a> Advance<AdjustUnitCounters<'a>, MockContext> for MockTransactional {
             .ok_or_else(|| expected("error-chapter-not-found"))?;
 
         chapter_info.total_unit_count += step.delta.total_unit_count;
+
         chapter_info.translated_unit_count += step.delta.translated_unit_count;
+
         chapter_info.proofread_unit_count += step.delta.proofread_unit_count;
+
         chapter_info.updated_at = now();
 
         Ok(())
@@ -575,14 +600,17 @@ impl<'a> Advance<UnpinOthers<'a>, MockContext> for MockTransactional {
         context: &mut MockContext,
         step: &UnpinOthers<'a>,
     ) -> Result<(), Self::Error> {
+        //
         for chapter_info in &mut context.state.chapters {
             if chapter_info.comic_id == step.comic_id
                 && chapter_info.id != step.excluded_id
             {
                 chapter_info.is_pinned = false;
+
                 chapter_info.updated_at = now();
             }
         }
+
         Ok(())
     }
 }
@@ -596,31 +624,38 @@ impl<'a> Advance<Delete<'a>, MockContext> for MockTransactional {
         context: &mut MockContext,
         step: &Delete<'a>,
     ) -> Result<(), Self::Error> {
+        //
         let position = context
             .state
             .chapters
             .iter()
             .position(|chapter_info| chapter_info.id == step.id)
             .ok_or_else(|| expected("error-chapter-not-found"))?;
+
         context.state.chapters.remove(position);
+
         context
             .state
             .pages
             .retain(|page_info| page_info.chapter_id != step.id);
+
         let page_ids = context
             .state
             .pages
             .iter()
             .map(|page_info| page_info.id.clone())
             .collect::<Vec<_>>();
+
         context
             .state
             .units
             .retain(|unit_info| page_ids.contains(&unit_info.page_id));
+
         context
             .state
             .assignments
             .retain(|assignment_info| assignment_info.chapter_id != step.id);
+
         Ok(())
     }
 }

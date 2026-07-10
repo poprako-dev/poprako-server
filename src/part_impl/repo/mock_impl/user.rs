@@ -71,7 +71,9 @@ impl<'a> Execute<GetInfoById<'a>> for Mock {
         &self,
         step: &GetInfoById<'a>,
     ) -> Result<UserInfo, Self::Error> {
+        //
         let state = self.state.lock().unwrap();
+
         state
             .users
             .iter()
@@ -89,12 +91,15 @@ impl<'a> Execute<GetCredentialByQid<'a>> for Mock {
         &self,
         step: &GetCredentialByQid<'a>,
     ) -> Result<UserCredential, Self::Error> {
+        //
         let state = self.state.lock().unwrap();
+
         let user = state
             .users
             .iter()
             .find(|user| user.qid == step.qid)
             .ok_or_else(|| expected("error-user-not-found"));
+
         user.and_then(|user| {
             state
                 .credentials
@@ -114,7 +119,9 @@ impl<'a> Execute<FindInfoByQid<'a>> for Mock {
         &self,
         step: &FindInfoByQid<'a>,
     ) -> Result<Option<UserInfo>, Self::Error> {
+        //
         let state = self.state.lock().unwrap();
+
         Ok(state
             .users
             .iter()
@@ -128,14 +135,19 @@ impl<'a> Execute<TouchLastActive<'a>> for Mock {
     type Error = RegularError;
 
     async fn execute(&self, step: &TouchLastActive<'a>) -> RegularResult<()> {
+        //
         let mut state = self.state.lock().unwrap();
+
         let user = state
             .users
             .iter_mut()
             .find(|user| user.id == step.id)
             .ok_or_else(|| expected("error-user-not-found"))?;
+
         user.last_active_at = now();
+
         user.updated_at = now();
+
         Ok(())
     }
 }
@@ -180,15 +192,20 @@ impl<'a> Advance<UpdateInfo<'a>, MockContext> for MockTransactional {
         context: &mut MockContext,
         step: &UpdateInfo<'a>,
     ) -> Result<(), Self::Error> {
+        //
         let user = context
             .state
             .users
             .iter_mut()
             .find(|user| user.id == step.id)
             .ok_or_else(|| expected("error-user-not-found"))?;
+
         user.qid = step.qid.to_string();
+
         user.nickname = step.nickname.to_string();
+
         user.updated_at = now();
+
         Ok(())
     }
 }
@@ -202,20 +219,29 @@ impl<'a> Advance<ReserveAvatar<'a>, MockContext> for MockTransactional {
         context: &mut MockContext,
         step: &ReserveAvatar<'a>,
     ) -> Result<UserAvatarReservation, Self::Error> {
+        //
         let user = context
             .state
             .users
             .iter_mut()
             .find(|user| user.id == step.id)
             .ok_or_else(|| expected("error-user-not-found"))?;
+
         let avatar_version = user.avatar_version + 1;
+
         let object_key =
             UserComplex::gen_avatar_key(step.id, avatar_version, step.file_ext);
+
         let prev_object_key = user.avatar_key.clone();
+
         user.avatar_key = Some(object_key.clone());
+
         user.avatar_uploaded = false;
+
         user.avatar_version = avatar_version;
+
         user.updated_at = now();
+
         Ok(UserAvatarReservation {
             object_key,
             prev_object_key,
@@ -233,17 +259,22 @@ impl<'a> Advance<MarkAvatarUploaded<'a>, MockContext> for MockTransactional {
         context: &mut MockContext,
         step: &MarkAvatarUploaded<'a>,
     ) -> Result<(), Self::Error> {
+        //
         let user = context
             .state
             .users
             .iter_mut()
             .find(|user| user.id == step.id)
             .ok_or_else(|| expected("error-user-not-found"))?;
+
         if user.avatar_version != step.avatar_version {
             return Err(expected("error-stale-avatar-upload"));
         }
+
         user.avatar_uploaded = true;
+
         user.updated_at = now();
+
         Ok(())
     }
 }
@@ -257,14 +288,18 @@ impl<'a> Advance<TouchLastActive<'a>, MockContext> for MockTransactional {
         context: &mut MockContext,
         step: &TouchLastActive<'a>,
     ) -> Result<(), Self::Error> {
+        //
         let user = context
             .state
             .users
             .iter_mut()
             .find(|user| user.id == step.id)
             .ok_or_else(|| expected("error-user-not-found"))?;
+
         user.last_active_at = now();
+
         user.updated_at = now();
+
         Ok(())
     }
 }
@@ -297,31 +332,38 @@ impl<'a> Advance<Delete<'a>, MockContext> for MockTransactional {
         context: &mut MockContext,
         step: &Delete<'a>,
     ) -> Result<(), Self::Error> {
+        //
         let pos = context
             .state
             .users
             .iter()
             .position(|user| user.id == step.id)
             .ok_or_else(|| expected("error-user-not-found"))?;
+
         context.state.users.remove(pos);
+
         context
             .state
             .credentials
             .retain(|credential| credential.user_id != step.id);
+
         context
             .state
             .members
             .retain(|member| member.user_id != step.id);
+
         context
             .state
             .member_invitations
             .retain(|member_invitation| {
                 member_invitation.invitor_id != step.id
             });
+
         context
             .state
             .system_mails
             .retain(|system_mail| system_mail.receiver_id != step.id);
+
         Ok(())
     }
 }

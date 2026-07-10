@@ -95,23 +95,34 @@ impl AssignmentAspect {
     }
 
     pub fn roles(mut self, timestamps: AssignmentRoleTimestamps) -> Self {
+        //
         self.f_assigned_raw_provider_at = Some(timestamps.f_raw_provider);
+
         self.f_assigned_translator_at = Some(timestamps.f_translator);
+
         self.f_assigned_proofreader_at = Some(timestamps.f_proofreader);
+
         self.f_assigned_typesetter_at = Some(timestamps.f_typesetter);
+
         self.f_assigned_redrawer_at = Some(timestamps.f_redrawer);
+
         self.f_assigned_reviewer_at = Some(timestamps.f_reviewer);
+
         self.f_assigned_publisher_at = Some(timestamps.f_publisher);
+
         self.f_assigned_admin_at = Some(timestamps.f_admin);
+
         self
     }
 }
 
 impl AssignmentRoleTimestamps {
     pub fn from_mask(roles: RoleMask, now: OffsetDateTime) -> Self {
+        //
         let timestamp_fn = |field: RoleField| -> Option<OffsetDateTime> {
             roles.has_any_role(&[field]).then_some(now)
         };
+
         Self {
             f_raw_provider: timestamp_fn(RoleField::RAW_PROVIDER),
             f_translator: timestamp_fn(RoleField::TRANSLATOR),
@@ -129,6 +140,7 @@ impl TryFrom<AssignmentRow> for AssignmentInfo {
     type Error = RegularError;
 
     fn try_from(row: AssignmentRow) -> Result<Self, Self::Error> {
+        //
         let mut bits: u32 = 0;
 
         if row.f_assigned_raw_provider_at.is_some() {
@@ -180,6 +192,7 @@ impl TryFrom<AssignmentRow> for AssignmentInfo {
 
 impl<'a> AssignmentEntry<'a> {
     pub fn from_form(form: &'a AssignmentForm, now: OffsetDateTime) -> Self {
+        //
         let timestamps = AssignmentRoleTimestamps::from_mask(form.roles, now);
 
         Self {

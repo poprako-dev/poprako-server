@@ -172,10 +172,15 @@ fn seed_scope(mock: &Mock, user_id: &str, role_mask: RoleMask) {
 
 #[tokio::test]
 async fn list_infos_paginates_sorted_chapters() {
+    //
     let mock = Mock::new();
+
     seed_scope(&mock, "user-1", RoleMask::from(RoleField::TRANSLATOR));
+
     mock.seed_chapter(chapter("chapter-1", "comic-1", 1, false));
+
     mock.seed_chapter(chapter("chapter-3", "comic-1", 3, false));
+
     mock.seed_chapter(chapter("chapter-2", "comic-1", 2, false));
 
     let list = list_infos(
@@ -190,16 +195,21 @@ async fn list_infos_paginates_sorted_chapters() {
         },
     )
     .await;
+
     assert!(list.is_ok());
+
     let list = list.ok().unwrap();
 
     assert_eq!(list.len(), 1);
+
     assert_eq!(list[0].id, "chapter-2");
 }
 
 #[tokio::test]
 async fn list_infos_rejects_non_member() {
+    //
     let mock = Mock::new();
+
     seed_scope(&mock, "other", RoleMask::from(RoleField::TRANSLATOR));
 
     let err = list_infos(
@@ -222,11 +232,15 @@ async fn list_infos_rejects_non_member() {
 
 #[tokio::test]
 async fn get_info_returns_chapter() {
+    //
     let mock = Mock::new();
+
     seed_scope(&mock, "user-1", RoleMask::from(RoleField::TRANSLATOR));
+
     mock.seed_chapter(chapter("chapter-1", "comic-1", 1, true));
 
     let found = get_info(&mock, token("user-1"), "chapter-1".into()).await;
+
     assert!(found.is_ok());
 
     assert_eq!(found.ok().unwrap().id, "chapter-1");
@@ -234,6 +248,7 @@ async fn get_info_returns_chapter() {
 
 #[tokio::test]
 async fn get_info_rejects_missing_chapter() {
+    //
     let mock = Mock::new();
 
     let err = get_info(&mock, token("user-1"), "missing".into())
@@ -246,25 +261,36 @@ async fn get_info_rejects_missing_chapter() {
 
 #[tokio::test]
 async fn get_pinned_returns_some_and_none() {
+    //
     let mock = Mock::new();
+
     seed_scope(&mock, "user-1", RoleMask::from(RoleField::TRANSLATOR));
+
     mock.seed_chapter(chapter("chapter-1", "comic-1", 1, true));
 
     let found = get_pinned(&mock, token("user-1"), "comic-1".into()).await;
+
     assert!(found.is_ok());
+
     assert_eq!(found.ok().unwrap().unwrap().id, "chapter-1");
 
     let empty_mock = Mock::new();
+
     seed_scope(&empty_mock, "user-1", RoleMask::from(RoleField::TRANSLATOR));
+
     let found =
         get_pinned(&empty_mock, token("user-1"), "comic-1".into()).await;
+
     assert!(found.is_ok());
+
     assert!(found.ok().unwrap().is_none());
 }
 
 #[tokio::test]
 async fn get_pinned_rejects_non_member() {
+    //
     let mock = Mock::new();
+
     seed_scope(&mock, "other", RoleMask::from(RoleField::TRANSLATOR));
 
     let err = get_pinned(&mock, token("user-1"), "comic-1".into())
@@ -277,8 +303,11 @@ async fn get_pinned_rejects_non_member() {
 
 #[tokio::test]
 async fn create_pins_chapter_and_creates_admin_assignment() {
+    //
     let mock = Mock::new();
+
     seed_scope(&mock, "user-1", RoleMask::from(RoleField::ADMIN));
+
     mock.seed_chapter(chapter("chapter-old", "comic-1", 2, true));
 
     let created = create(
@@ -291,11 +320,15 @@ async fn create_pins_chapter_and_creates_admin_assignment() {
         },
     )
     .await;
+
     assert!(created.is_ok());
+
     let snapshot = mock.snapshot();
+
     let created_id = created.ok().unwrap().id;
 
     assert_eq!(snapshot.chapters.len(), 2);
+
     let default_subtitle = ChapterComplex::subtitle_or_default(None, 2);
 
     assert!(snapshot.chapters.iter().any(|chapter_info| {
@@ -304,6 +337,7 @@ async fn create_pins_chapter_and_creates_admin_assignment() {
             && chapter_info.subtitle == default_subtitle
             && chapter_info.index == 2
     }));
+
     assert!(
         snapshot
             .chapters
@@ -311,8 +345,11 @@ async fn create_pins_chapter_and_creates_admin_assignment() {
             .any(|chapter_info| chapter_info.id == "chapter-old"
                 && !chapter_info.is_pinned)
     );
+
     assert_eq!(snapshot.comics[0].chapter_count, 3);
+
     assert_eq!(snapshot.comics[0].chapter_next_index, 3);
+
     assert!(
         snapshot.assignments[0]
             .roles
@@ -322,7 +359,9 @@ async fn create_pins_chapter_and_creates_admin_assignment() {
 
 #[tokio::test]
 async fn create_rolls_back_non_admin() {
+    //
     let mock = Mock::new();
+
     seed_scope(&mock, "user-1", RoleMask::from(RoleField::TRANSLATOR));
 
     let err = create(
@@ -337,19 +376,27 @@ async fn create_rolls_back_non_admin() {
     .await
     .err()
     .unwrap();
+
     let snapshot = mock.snapshot();
 
     assert_expected_variant(err, ExpectedVariant::Perm);
+
     assert!(snapshot.chapters.is_empty());
+
     assert!(snapshot.assignments.is_empty());
+
     assert_eq!(snapshot.comics[0].chapter_count, 2);
 }
 
 #[tokio::test]
 async fn update_info_admin_updates_metadata() {
+    //
     let mock = Mock::new();
+
     seed_scope(&mock, "user-1", RoleMask::from(RoleField::TRANSLATOR));
+
     mock.seed_chapter(chapter("chapter-1", "comic-1", 1, false));
+
     mock.seed_assignment(assignment(
         "chapter-1",
         "user-1",
@@ -369,16 +416,21 @@ async fn update_info_admin_updates_metadata() {
     .await
     .ok()
     .unwrap();
+
     let snapshot = mock.snapshot();
 
     assert_eq!(snapshot.chapters[0].subtitle, "updated");
+
     assert!(snapshot.chapters[0].is_pinned);
 }
 
 #[tokio::test]
 async fn update_info_rejects_non_admin_metadata() {
+    //
     let mock = Mock::new();
+
     seed_scope(&mock, "user-1", RoleMask::from(RoleField::TRANSLATOR));
+
     mock.seed_chapter(chapter("chapter-1", "comic-1", 1, false));
 
     let err = update_info(
@@ -400,9 +452,13 @@ async fn update_info_rejects_non_admin_metadata() {
 
 #[tokio::test]
 async fn update_stage_workflow_role_advances_stage() {
+    //
     let mock = Mock::new();
+
     seed_scope(&mock, "user-1", RoleMask::from(RoleField::TRANSLATOR));
+
     mock.seed_chapter(chapter("chapter-1", "comic-1", 1, false));
+
     mock.seed_assignment(assignment(
         "chapter-1",
         "user-1",
@@ -435,15 +491,21 @@ async fn update_stage_workflow_role_advances_stage() {
 
 #[tokio::test]
 async fn update_stage_rejects_invalid_transition() {
+    //
     let mock = Mock::new();
+
     seed_scope(&mock, "user-1", RoleMask::from(RoleField::PUBLISHER));
+
     let mut chapter_info = chapter("chapter-1", "comic-1", 1, false);
+
     chapter_info.stages = chapter_info
         .stages
         .try_set_phase(Stage::Publish, StagePhase::Completed)
         .ok()
         .unwrap();
+
     mock.seed_chapter(chapter_info);
+
     mock.seed_assignment(assignment(
         "chapter-1",
         "user-1",
@@ -471,14 +533,19 @@ async fn update_stage_rejects_invalid_transition() {
 
 #[tokio::test]
 async fn update_stage_publish_enqueues_page_image_delete() {
+    //
     let mock = Mock::new();
+
     seed_scope(&mock, "user-1", RoleMask::from(RoleField::PUBLISHER));
+
     mock.seed_chapter(chapter("chapter-1", "comic-1", 1, false));
+
     mock.seed_assignment(assignment(
         "chapter-1",
         "user-1",
         RoleMask::from(RoleField::PUBLISHER),
     ));
+
     mock.seed_page(page("page-1", "chapter-1", Some("page-1.png")));
 
     update_stage(
@@ -496,16 +563,21 @@ async fn update_stage_publish_enqueues_page_image_delete() {
     .await
     .ok()
     .unwrap();
+
     let snapshot = mock.snapshot();
 
     assert_eq!(snapshot.prom_records.len(), 1);
+
     let Payload::Image(ImageTask::Delete { object_key }) =
         snapshot.prom_records[0].payload()
     else {
         panic!("expected image delete payload");
     };
+
     assert_eq!(object_key, "page-1.png");
+
     assert_eq!(snapshot.pages[0].image_key.as_deref(), Some("page-1.png"));
+
     assert!(snapshot.pages[0].image_uploaded);
 
     let events = mock.drain_events();
@@ -519,47 +591,68 @@ async fn update_stage_publish_enqueues_page_image_delete() {
 
 #[tokio::test]
 async fn delete_removes_descendants_and_repins_latest_chapter() {
+    //
     let mock = Mock::new();
+
     seed_scope(&mock, "user-1", RoleMask::from(RoleField::ADMIN));
+
     mock.seed_chapter(chapter("chapter-1", "comic-1", 1, true));
+
     mock.seed_chapter(chapter("chapter-2", "comic-1", 2, false));
+
     mock.seed_assignment(assignment(
         "chapter-1",
         "user-2",
         RoleMask::from(RoleField::TRANSLATOR),
     ));
+
     mock.seed_page(page("page-1", "chapter-1", Some("page-1.png")));
 
     delete(&mock, &mock, &mock, token("user-1"), "chapter-1".into())
         .await
         .ok()
         .unwrap();
+
     let snapshot = mock.snapshot();
 
     assert_eq!(snapshot.chapters.len(), 1);
+
     assert_eq!(snapshot.chapters[0].id, "chapter-2");
+
     assert!(snapshot.chapters[0].is_pinned);
+
     assert!(snapshot.assignments.is_empty());
+
     assert!(snapshot.pages.is_empty());
+
     assert_eq!(snapshot.comics[0].chapter_count, 1);
+
     assert_eq!(snapshot.prom_records.len(), 1);
 }
 
 #[tokio::test]
 async fn delete_rolls_back_non_admin() {
+    //
     let mock = Mock::new();
+
     seed_scope(&mock, "user-1", RoleMask::from(RoleField::TRANSLATOR));
+
     mock.seed_chapter(chapter("chapter-1", "comic-1", 1, true));
+
     mock.seed_page(page("page-1", "chapter-1", Some("page-1.png")));
 
     let err = delete(&mock, &mock, &mock, token("user-1"), "chapter-1".into())
         .await
         .err()
         .unwrap();
+
     let snapshot = mock.snapshot();
 
     assert_expected_variant(err, ExpectedVariant::Perm);
+
     assert_eq!(snapshot.chapters.len(), 1);
+
     assert_eq!(snapshot.pages.len(), 1);
+
     assert!(snapshot.prom_records.is_empty());
 }

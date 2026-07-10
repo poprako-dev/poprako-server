@@ -24,6 +24,7 @@ pub struct UserInfoVal {
     pub nickname: String,
     pub qid: String,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub avatar_url: Option<String>,
     pub is_sadmin: bool,
     pub last_active_at: i64,
@@ -48,9 +49,12 @@ impl UserInfoVal {
         P: ImagePool,
     {
         let avatar_url = match (model.avatar_uploaded, &model.avatar_key) {
+            //
             (true, Some(key)) => image_pool.get_signed(key).await.ok(),
+
             _ => None,
         };
+
         Ok(Self {
             id: model.id,
             nickname: model.nickname,

@@ -11,9 +11,12 @@ use tracing::instrument;
 #[cfg(feature = "swagger-ui")]
 use utoipa::IntoParams;
 
+#[cfg(feature = "swagger-ui")]
+use crate::api::http::result::HttpBody;
+
 use crate::api::http::handler::util::ensure_path_matches_body_id;
 use crate::api::http::result::{
-    Accept as _, HttpBody, HttpNoContent, HttpResult, no_content,
+    Accept as _, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
 use crate::data::comic::{
@@ -110,6 +113,7 @@ pub async fn list_infos(
     Extension(user_token): Extension<UserToken>,
     Query(query): Query<ComicListQuery>,
 ) -> HttpResult<Vec<ComicInfoVal>> {
+    //
     let data = ListComicInfosData {
         workset_id,
         fuzzy_title: query.fuzzy_title,
@@ -174,6 +178,7 @@ pub async fn update_info(
     Extension(user_token): Extension<UserToken>,
     Json(data): Json<UpdateComicInfoData>,
 ) -> HttpNoContent {
+    //
     ensure_path_matches_body_id(&comic_id, &data.id)?;
 
     usecase::comic::update_info(harn.repo(), user_token, data).await?;
@@ -234,6 +239,7 @@ pub async fn mark_cover_uploaded(
     Extension(user_token): Extension<UserToken>,
     Json(data): Json<MarkComicCoverUploadedData>,
 ) -> HttpNoContent {
+    //
     usecase::comic::mark_cover_uploaded(
         harn.repo(),
         user_token,
@@ -241,6 +247,7 @@ pub async fn mark_cover_uploaded(
         data,
     )
     .await?;
+
     no_content()
 }
 
@@ -291,6 +298,7 @@ pub async fn delete(
     Path(comic_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
+    //
     usecase::comic::delete(
         harn.drive(),
         harn.repo(),
@@ -299,5 +307,6 @@ pub async fn delete(
         comic_id,
     )
     .await?;
+
     no_content()
 }

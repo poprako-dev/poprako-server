@@ -132,6 +132,7 @@ fn seed_chapter_scope(mock: &Mock) {
 
 #[tokio::test]
 async fn develop_dispatches_user_signup() {
+    //
     let mock = Arc::new(Mock::new());
 
     mock.seed_team(team_info());
@@ -159,14 +160,17 @@ async fn develop_dispatches_user_signup() {
 
 #[tokio::test]
 async fn develop_dispatches_chapter_workflow_completed() {
+    //
     let mock = Arc::new(Mock::new());
 
     seed_chapter_scope(&mock);
+
     mock.seed_assignment(assignment_info(
         "assignment-proofreader",
         "proofreader-user",
         RoleMask::from(RoleField::PROOFREADER),
     ));
+
     mock.seed_assignment(assignment_info(
         "assignment-reviewer",
         "reviewer-user",
@@ -187,6 +191,7 @@ async fn develop_dispatches_chapter_workflow_completed() {
     develop.close().await;
 
     let snapshot = mock.snapshot();
+
     let mut receiver_ids = snapshot
         .system_mails
         .iter()
@@ -200,9 +205,11 @@ async fn develop_dispatches_chapter_workflow_completed() {
 
 #[tokio::test]
 async fn develop_dispatches_chapter_published() {
+    //
     let mock = Arc::new(Mock::new());
 
     seed_chapter_scope(&mock);
+
     mock.seed_assignment(assignment_info(
         "assignment-reviewer",
         "reviewer-user",
@@ -224,11 +231,13 @@ async fn develop_dispatches_chapter_published() {
     let snapshot = mock.snapshot();
 
     assert_eq!(snapshot.system_mails.len(), 1);
+
     assert_eq!(snapshot.system_mails[0].receiver_id, "reviewer-user");
 }
 
 #[tokio::test]
 async fn close_is_idempotent() {
+    //
     let mock = Arc::new(Mock::new());
 
     let develop = AsyncEffectDevelop::new(mock, 8);

@@ -518,7 +518,6 @@ where
     .await
 }
 /// Appends a `Delete` prom task for the given object key.
-
 async fn append_delete<C, P>(
     prom: &P,
     context: &mut C,

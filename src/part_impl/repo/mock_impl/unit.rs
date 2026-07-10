@@ -4,12 +4,10 @@ use async_trait::async_trait;
 
 use poprako_transactional::advance::Advance;
 
-use crate::model::unit::{
-    UnitCounters, UnitIndex, UnitInfo, UnitOper, UnitPayload,
-};
+use crate::model::unit::{UnitCounters, UnitIndex, UnitInfo, UnitPayload};
 use crate::part::repo::step::unit::{
-    CountByPageId, DeleteByIdInPage, ListAllInfosByPageId, ListIndexesByPageId,
-    ListInfosByPageId, SaveInfo, UpdateIndexesByPageId,
+    CountByPageId, CreateInfo, DeleteByIdInPage, ListAllInfosByPageId,
+    ListIndexesByPageId, ListInfosByPageId, SaveInfo, UpdateIndexesByPageId,
 };
 use crate::part::repo::unit::{UnitRepo, UnitRepoTransactional};
 use crate::part::shared::execute::Execute;
@@ -170,6 +168,7 @@ impl<'a> Execute<ListInfosByPageId<'a>> for Mock {
         &self,
         step: &ListInfosByPageId<'a>,
     ) -> Result<Vec<UnitInfo>, Self::Error> {
+        //
         let state = self.state.lock().unwrap();
 
         Ok(list_units(&state, step.page_id)
@@ -188,7 +187,9 @@ impl<'a> Execute<ListAllInfosByPageId<'a>> for Mock {
         &self,
         step: &ListAllInfosByPageId<'a>,
     ) -> Result<Vec<UnitInfo>, Self::Error> {
+        //
         let state = self.state.lock().unwrap();
+
         Ok(list_units(&state, step.page_id))
     }
 }
@@ -224,6 +225,19 @@ impl<'a> Advance<ListInfosByPageId<'a>, MockContext> for MockTransactional {
 }
 
 #[async_trait]
+impl<'a> Advance<CreateInfo<'a>, MockContext> for MockTransactional {
+    type Error = RegularError;
+
+    async fn advance(
+        &self,
+        context: &mut MockContext,
+        step: &CreateInfo<'a>,
+    ) -> Result<(), Self::Error> {
+        create_unit(&mut context.state, step.page_id, step.id, step.payload)
+    }
+}
+
+#[async_trait]
 impl<'a> Advance<SaveInfo<'a>, MockContext> for MockTransactional {
     type Error = RegularError;
 
@@ -232,16 +246,7 @@ impl<'a> Advance<SaveInfo<'a>, MockContext> for MockTransactional {
         context: &mut MockContext,
         step: &SaveInfo<'a>,
     ) -> Result<(), Self::Error> {
-        let (id, payload) = match step.oper {
-            UnitOper::Save {
-                id: Some(id),
-                payload,
-                ..
-            } => (id, payload),
-            _ => return Err(expected("error-invalid-unit-oper")),
-        };
-
-        save_unit(&mut context.state, step.page_id, id, payload)
+        save_unit(&mut context.state, step.page_id, step.id, step.payload)
     }
 }
 
@@ -254,6 +259,7 @@ impl<'a> Advance<DeleteByIdInPage<'a>, MockContext> for MockTransactional {
         context: &mut MockContext,
         step: &DeleteByIdInPage<'a>,
     ) -> Result<(), Self::Error> {
+        //
         context.state.units.retain(|unit_info| {
             !(unit_info.page_id == step.page_id && unit_info.id == step.id)
         });
@@ -293,7 +299,9 @@ impl<'a> Advance<UpdateIndexesByPageId<'a>, MockContext> for MockTransactional {
         context: &mut MockContext,
         step: &UpdateIndexesByPageId<'a>,
     ) -> Result<(), Self::Error> {
+        //
         for unit_index_update in step.updates {
+            //
             let unit_info = context
                 .state
                 .units
@@ -323,5 +331,76 @@ impl<'a> Advance<CountByPageId<'a>, MockContext> for MockTransactional {
         step: &CountByPageId<'a>,
     ) -> Result<UnitCounters, Self::Error> {
         Ok(count_units(&context.state, step.page_id))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    // create_unit(create_unit)(positive): a new id is inserted once.
+    // create_unit(create_unit)(negative): an existing id is rejected without mutation.
+    // save_unit(save_unit)(positive): a missing id is created and an existing id is updated.
+
+    use super::*;
+
+    fn payload(text: &str, proofread: bool) -> UnitPayload {
+        UnitPayload {
+            is_bubble: true,
+            is_proofread: proofread,
+            x_coord: 1.0,
+            y_coord: 2.0,
+            translated_text: Some(text.into()),
+            last_translator_id: Some("user-1".into()),
+            proofread_text: None,
+            last_proofreader_id: None,
+        }
+    }
+
+    #[test]
+    fn create_unit_inserts_once_and_rejects_duplicate() {
+        //
+        let mut state = MockState::default();
+
+        let unit_payload = payload("translated", false);
+
+        let first_result =
+            create_unit(&mut state, "page-1", "unit-1", &unit_payload);
+
+        assert!(first_result.is_ok());
+
+        let duplicate_result =
+            create_unit(&mut state, "page-1", "unit-1", &unit_payload);
+
+        assert!(duplicate_result.is_err());
+
+        assert_eq!(state.units.len(), 1);
+
+        assert_eq!(
+            state.units[0].translated_text.as_deref(),
+            Some("translated")
+        );
+    }
+
+    #[test]
+    fn save_unit_creates_missing_and_updates_existing() {
+        //
+        let mut state = MockState::default();
+
+        let initial_payload = payload("initial", false);
+
+        save_unit(&mut state, "page-1", "unit-1", &initial_payload)
+            .ok()
+            .unwrap();
+
+        let updated_payload = payload("updated", true);
+
+        save_unit(&mut state, "page-1", "unit-1", &updated_payload)
+            .ok()
+            .unwrap();
+
+        assert_eq!(state.units.len(), 1);
+
+        assert_eq!(state.units[0].translated_text.as_deref(), Some("updated"));
+
+        assert!(state.units[0].is_proofread);
     }
 }

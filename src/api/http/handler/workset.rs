@@ -9,8 +9,12 @@ use tracing::instrument;
 use crate::api::http::handler::util::{
     Pagination, ensure_path_matches_body_id,
 };
+
+#[cfg(feature = "swagger-ui")]
+use crate::api::http::result::HttpBody;
+
 use crate::api::http::result::{
-    Accept as _, HttpBody, HttpNoContent, HttpResult, no_content,
+    Accept as _, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
 use crate::data::workset::{
@@ -63,6 +67,7 @@ pub async fn list_infos(
     Extension(user_token): Extension<UserToken>,
     Query(pagination): Query<Pagination>,
 ) -> HttpResult<Vec<WorksetInfoVal>> {
+    //
     let data = ListWorksetInfosData {
         team_id,
         offset: pagination.offset,
@@ -119,6 +124,7 @@ pub async fn update_info(
     Extension(user_token): Extension<UserToken>,
     Json(data): Json<UpdateWorksetInfoData>,
 ) -> HttpNoContent {
+    //
     ensure_path_matches_body_id(&workset_id, &data.id)?;
 
     usecase::workset::update_info(harn.repo(), user_token, data).await?;
@@ -144,6 +150,7 @@ pub async fn delete(
     Path(workset_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
+    //
     usecase::workset::delete(
         harn.drive(),
         harn.repo(),
@@ -152,5 +159,6 @@ pub async fn delete(
         workset_id,
     )
     .await?;
+
     no_content()
 }

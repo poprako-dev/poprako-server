@@ -68,7 +68,9 @@ impl AssignmentInvitationAspect {
     }
 
     pub fn pending(mut self, val: bool) -> Self {
+        //
         self.f_pending = Some(val);
+
         self
     }
 }
@@ -77,7 +79,9 @@ impl TryFrom<AssignmentInvitationRow> for AssignmentInvitationInfo {
     type Error = RegularError;
 
     fn try_from(row: AssignmentInvitationRow) -> Result<Self, Self::Error> {
+        //
         let roles = RoleMask::try_from(row.f_role_mask as u32)?;
+
         Ok(Self {
             id: row.f_id,
             chapter_id: row.f_chapter_id,
@@ -94,6 +98,7 @@ impl TryFrom<AssignmentInvitationRow> for AssignmentInvitationInfo {
 
 impl<'a> From<&'a AssignmentInvitationForm> for AssignmentInvitationEntry<'a> {
     fn from(form: &'a AssignmentInvitationForm) -> Self {
+        //
         let now = OffsetDateTime::now_utc();
 
         Self {

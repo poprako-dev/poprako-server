@@ -41,6 +41,7 @@ impl R2ImagePool {
 
     /// Reads Cloudflare R2 settings from environment variables.
     pub fn from_env() -> anyhow::Result<Self> {
+        //
         let account_id = std::env::var("R2_ACCOUNT_ID").with_context(
             || "[R2ImagePool::from_env] R2_ACCOUNT_ID is not set",
         )?;
@@ -91,6 +92,7 @@ impl R2ImagePool {
 impl ImagePool for R2ImagePool {
     #[instrument(err(Debug), skip(self), level = Level::DEBUG)]
     async fn get_signed(&self, key: &str) -> RegularResult<Url> {
+        //
         if self.domain.is_empty() {
             return Err(RegularError::Unrecoverable {
                 message:
@@ -123,6 +125,7 @@ impl ImagePool for R2ImagePool {
 
     #[instrument(err(Debug), skip(self), level = Level::DEBUG)]
     async fn put_signed(&self, key: &str) -> RegularResult<Url> {
+        //
         let content_type =
             detect_content_type(key).ok_or_else(|| RegularError::Expected {
                 variant: ExpectedVariant::Args,
@@ -171,11 +174,13 @@ impl ImagePool for R2ImagePool {
             .await
         {
             Ok(_) => Ok(true),
+
             Err(SdkError::ServiceError(e))
                 if matches!(e.err(), HeadObjectError::NotFound(_)) =>
             {
                 Ok(false)
             }
+
             Err(e) => Err(RegularError::Unrecoverable {
                 message: format!(
                     "[R2ImagePool::head_object] failed to check '{}': {}",
@@ -205,17 +210,27 @@ impl ImagePool for R2ImagePool {
 
 /// Maps a file extension to its MIME content type for upload requests.
 fn detect_content_type(key: &str) -> Option<&'static str> {
+    //
     let extension = key.rsplit('.').next()?.to_lowercase();
 
     match extension.as_str() {
+        //
         "jpg" | "jpeg" => Some("image/jpeg"),
+
         "png" => Some("image/png"),
+
         "gif" => Some("image/gif"),
+
         "webp" => Some("image/webp"),
+
         "svg" => Some("image/svg+xml"),
+
         "avif" => Some("image/avif"),
+
         "bmp" => Some("image/bmp"),
+
         "tif" | "tiff" => Some("image/tiff"),
+
         _ => None,
     }
 }

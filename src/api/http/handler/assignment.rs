@@ -6,9 +6,12 @@ use axum::http::StatusCode;
 
 use tracing::instrument;
 
+#[cfg(feature = "swagger-ui")]
+use crate::api::http::result::HttpBody;
+
 use crate::api::http::handler::util::ensure_path_matches_body_id;
 use crate::api::http::result::{
-    Accept as _, HttpBody, HttpNoContent, HttpResult, no_content,
+    Accept as _, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
 use crate::data::assignment::{
@@ -71,6 +74,7 @@ pub async fn update_roles(
     Extension(user_token): Extension<UserToken>,
     Json(data): Json<UpdateAssignmentRolesData>,
 ) -> HttpNoContent {
+    //
     ensure_path_matches_body_id(&chapter_id, &data.chapter_id)?;
 
     ensure_path_matches_body_id(&user_id, &data.user_id)?;
@@ -104,6 +108,7 @@ pub async fn delete(
     Path(assignment_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
+    //
     usecase::assignment::delete(
         harn.drive(),
         harn.repo(),
@@ -111,6 +116,7 @@ pub async fn delete(
         assignment_id,
     )
     .await?;
+
     no_content()
 }
 
