@@ -11,9 +11,12 @@ use tracing::instrument;
 #[cfg(feature = "swagger-ui")]
 use utoipa::IntoParams;
 
+#[cfg(feature = "swagger-ui")]
+use crate::api::http::result::HttpBody;
+
 use crate::api::http::handler::util::ensure_path_matches_body_id;
 use crate::api::http::result::{
-    Accept as _, HttpBody, HttpNoContent, HttpResult, no_content,
+    Accept as _, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
 use crate::data::chapter::{
@@ -93,6 +96,7 @@ pub async fn list_infos(
     Extension(user_token): Extension<UserToken>,
     Query(query): Query<ChapterListQuery>,
 ) -> HttpResult<Vec<ChapterInfoVal>> {
+    //
     let data = ListChapterInfosData {
         comic_id,
         incl_opt: query.incl_opt,
@@ -176,6 +180,7 @@ pub async fn update_info(
     Extension(user_token): Extension<UserToken>,
     Json(data): Json<PatchChapterInfoData>,
 ) -> HttpNoContent {
+    //
     ensure_path_matches_body_id(&chapter_id, &data.id)?;
 
     usecase::chapter::update_info(harn.drive(), harn.repo(), user_token, data)
@@ -205,6 +210,7 @@ pub async fn advance_stage(
     Extension(user_token): Extension<UserToken>,
     Json(data): Json<UpdateChapterStageData>,
 ) -> HttpNoContent {
+    //
     ensure_path_matches_body_id(&chapter_id, &data.id)?;
 
     usecase::chapter::update_stage(
@@ -238,6 +244,7 @@ pub async fn delete(
     Path(chapter_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
+    //
     usecase::chapter::delete(
         harn.drive(),
         harn.repo(),
@@ -246,5 +253,6 @@ pub async fn delete(
         chapter_id,
     )
     .await?;
+
     no_content()
 }

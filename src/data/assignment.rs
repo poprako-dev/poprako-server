@@ -26,7 +26,9 @@ pub struct AssignmentInfoVal {
     pub chapter_id: String,
     pub user_id: String,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub user: Option<UserInfoVal>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub chapter: Option<ChapterInfoVal>,
 
     pub roles: RoleMask,
@@ -61,16 +63,20 @@ impl AssignmentInfoVal {
         P: ImagePool,
     {
         let user = match model.user {
+            //
             Some(user_info) => {
                 Some(UserInfoVal::from_model(image_pool, user_info).await?)
             }
+
             None => None,
         };
 
         let chapter = match model.chapter {
+            //
             Some(chapter_info) => Some(
                 ChapterInfoVal::from_model(image_pool, chapter_info).await?,
             ),
+
             None => None,
         };
 
@@ -130,6 +136,7 @@ impl TryInto<AssignmentListSpec> for ListAssignmentInfosData {
     type Error = RegularError;
 
     fn try_into(self) -> RegularResult<AssignmentListSpec> {
+        //
         let invalid_args_err = || RegularError::Expected {
             variant: ExpectedVariant::Args,
             message: trl("error-chapter-or-user-required"),

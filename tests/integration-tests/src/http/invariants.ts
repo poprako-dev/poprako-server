@@ -28,7 +28,7 @@ import type {
 } from "./types.js";
 import type { StageName } from "../state/stages.js";
 
-// Reusable invariant assertions (test-plan section 10, J1–J6). Each invariant
+// Reusable invariant assertions (J1–J6). Each invariant
 // is a pure function over API state: call it after any mutation to verify the
 // domain counters/indexes/uniqueness stayed consistent. They never mutate.
 

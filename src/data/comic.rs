@@ -44,10 +44,12 @@ pub struct ComicInfoVal {
 
     pub title: String,
     pub author: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
 
     /// Resolved signed download URL for the cover image, or [`None`] if
     /// no cover has been uploaded.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub cover_url: Option<String>,
 
     pub chapter_count: i32,
@@ -55,10 +57,14 @@ pub struct ComicInfoVal {
 
     pub creator_id: String,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub workset: Option<WorksetInfoVal>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub team: Option<TeamInfoVal>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub creator: Option<UserInfoVal>,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[cfg_attr(feature = "swagger-ui", schema(no_recursion))]
     pub pinned_chapter: Option<ChapterInfoVal>,
 
@@ -85,21 +91,29 @@ impl ComicInfoVal {
         P: ImagePool,
     {
         let cover_url = match (model.cover_uploaded, &model.cover_key) {
+            //
             (true, Some(key)) => image_pool.get_signed(key).await.ok(),
+
             _ => None,
         };
 
         let workset = model.workset.map(WorksetInfoVal::from);
+
         let team = match model.team {
+            //
             Some(team_info) => {
                 Some(TeamInfoVal::from_model(image_pool, team_info).await?)
             }
+
             None => None,
         };
+
         let creator = match model.creator {
+            //
             Some(user_info) => {
                 Some(UserInfoVal::from_model(image_pool, user_info).await?)
             }
+
             None => None,
         };
 
@@ -198,10 +212,13 @@ impl TryFrom<ListComicInfosData> for ComicListSpec {
     type Error = RegularError;
 
     fn try_from(data: ListComicInfosData) -> RegularResult<Self> {
+        //
         let stages = data.stages.map(StageMask::try_filter_from).transpose()?;
 
         let kind = match stages {
+            //
             Some(stage_mask) => ComicListKind::Stages(stage_mask),
+
             None => ComicListKind::All,
         };
 

@@ -20,11 +20,15 @@ pub struct UnitTranslationExportVal {
 
     pub is_bubble: bool,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub translated_text: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub translator_id: Option<String>,
 
     pub is_proofread: bool,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub proofread_text: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub proofreader_id: Option<String>,
 }

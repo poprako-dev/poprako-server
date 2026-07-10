@@ -704,6 +704,7 @@
           {
             "name": "offset",
             "in": "query",
+            "description": "Zero-based offset for paginated results.",
             "required": true,
             "schema": {
               "type": "integer",
@@ -714,6 +715,7 @@
           {
             "name": "limit",
             "in": "query",
+            "description": "Maximum number of items to return.",
             "required": true,
             "schema": {
               "type": "integer",
@@ -1130,6 +1132,44 @@
         }
       }
     },
+    "/api/v1/comics/{comic_id}/archive": {
+      "post": {
+        "tags": [
+          "comics"
+        ],
+        "summary": "`POST /api/v1/comics/{comic_id}/archive` — archive and remove one active comic.",
+        "operationId": "archive",
+        "parameters": [
+          {
+            "name": "comic_id",
+            "in": "path",
+            "description": "Comic ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Comic archived",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpBody_ArchiveComicVal"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No permission to archive this comic"
+          },
+          "404": {
+            "description": "Comic not found"
+          }
+        }
+      }
+    },
     "/api/v1/comics/{comic_id}/chapters": {
       "get": {
         "tags": [
@@ -1317,47 +1357,6 @@
           },
           "403": {
             "description": "No permission to modify this comic's cover"
-          },
-          "404": {
-            "description": "Comic not found"
-          }
-        }
-      }
-    },
-    "/api/v1/comics/{comic_id}/mark-archived": {
-      "post": {
-        "tags": [
-          "comics"
-        ],
-        "summary": "`POST /api/v1/comics/{comic_id}/mark-archived` — mark a comic archived.",
-        "operationId": "mark_archived",
-        "parameters": [
-          {
-            "name": "comic_id",
-            "in": "path",
-            "description": "Comic ID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/MarkComicArchivedData"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "204": {
-            "description": "Comic marked archived"
-          },
-          "403": {
-            "description": "No permission to modify this comic"
           },
           "404": {
             "description": "Comic not found"
@@ -1931,6 +1930,7 @@
           {
             "name": "offset",
             "in": "query",
+            "description": "Zero-based offset for paginated results.",
             "required": true,
             "schema": {
               "type": "integer",
@@ -1941,6 +1941,7 @@
           {
             "name": "limit",
             "in": "query",
+            "description": "Maximum number of items to return.",
             "required": true,
             "schema": {
               "type": "integer",
@@ -2629,6 +2630,7 @@
           {
             "name": "offset",
             "in": "query",
+            "description": "Zero-based offset for paginated results.",
             "required": true,
             "schema": {
               "type": "integer",
@@ -2639,6 +2641,7 @@
           {
             "name": "limit",
             "in": "query",
+            "description": "Maximum number of items to return.",
             "required": true,
             "schema": {
               "type": "integer",
@@ -3041,7 +3044,7 @@
           "comics"
         ],
         "summary": "`GET /api/v1/worksets/{workset_id}/comics` — list comics in a workset.",
-        "description": "Lists comics in a workset with optional title, completion, and stage filters. `is_completed=true` must not be combined with `stages`; `is_completed=false` or omitting `is_completed` allows `stages`. `incl` embeds related rows, `with` attaches derived rows. Example: `/api/v1/worksets/{workset_id}/comics?is_completed=false&stages=6&incl=workset.team&incl=creator&with=pinned_chapter&offset=0&limit=20`.",
+        "description": "Lists active comics in a workset with optional title and workflow-stage filters. `incl` embeds related rows and `with` attaches derived rows.",
         "operationId": "list_infos",
         "parameters": [
           {
@@ -3063,18 +3066,9 @@
             }
           },
           {
-            "name": "is_completed",
-            "in": "query",
-            "description": "Completion filter. `Some(true)` selects completed comics, `Some(false)`\nselects active comics, `None` leaves completion unconstrained. Must not\nbe `Some(true)` together with `stages`.",
-            "required": false,
-            "schema": {
-              "type": "boolean"
-            }
-          },
-          {
             "name": "stages",
             "in": "query",
-            "description": "Workflow stage bitmask filter for active comics. Only meaningful when\n`is_completed` is not `Some(true)`; rejected otherwise.",
+            "description": "Workflow stage bitmask filter for pinned chapters.",
             "required": false,
             "schema": {
               "type": "integer",
@@ -3109,7 +3103,7 @@
           {
             "name": "offset",
             "in": "query",
-            "description": "Pagination offset (0-based).",
+            "description": "FIXME: Paginate\nPagination offset (0-based).",
             "required": true,
             "schema": {
               "type": "integer",
@@ -3144,7 +3138,7 @@
             "description": "No permission to list comics in this workset"
           },
           "422": {
-            "description": "Invalid argument combination (e.g. is_completed=true with stages)"
+            "description": "Invalid workflow-stage filter"
           }
         }
       }
@@ -3198,6 +3192,18 @@
             ]
           },
           "user_id": {
+            "type": "string"
+          }
+        }
+      },
+      "ArchiveComicVal": {
+        "type": "object",
+        "description": "Value returned after an active comic has been archived atomically.",
+        "required": [
+          "archived_comic_id"
+        ],
+        "properties": {
+          "archived_comic_id": {
             "type": "string"
           }
         }
@@ -3503,7 +3509,6 @@
           "index",
           "title",
           "author",
-          "is_completed",
           "chapter_count",
           "chapter_next_index",
           "creator_id",
@@ -3559,9 +3564,6 @@
           "index": {
             "type": "integer",
             "format": "int32"
-          },
-          "is_completed": {
-            "type": "boolean"
           },
           "last_active_at": {
             "type": "integer",
@@ -3958,6 +3960,34 @@
           }
         }
       },
+      "HttpBody_ArchiveComicVal": {
+        "type": "object",
+        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
+        "required": [
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "example": 0,
+            "minimum": 0
+          },
+          "data": {
+            "type": "object",
+            "description": "Value returned after an active comic has been archived atomically.",
+            "required": [
+              "archived_comic_id"
+            ],
+            "properties": {
+              "archived_comic_id": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
       "HttpBody_AssignmentInfoVal": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
@@ -4242,7 +4272,6 @@
               "index",
               "title",
               "author",
-              "is_completed",
               "chapter_count",
               "chapter_next_index",
               "creator_id",
@@ -4298,9 +4327,6 @@
               "index": {
                 "type": "integer",
                 "format": "int32"
-              },
-              "is_completed": {
-                "type": "boolean"
               },
               "last_active_at": {
                 "type": "integer",
@@ -5537,7 +5563,6 @@
                 "index",
                 "title",
                 "author",
-                "is_completed",
                 "chapter_count",
                 "chapter_next_index",
                 "creator_id",
@@ -5593,9 +5618,6 @@
                 "index": {
                   "type": "integer",
                   "format": "int32"
-                },
-                "is_completed": {
-                  "type": "boolean"
                 },
                 "last_active_at": {
                   "type": "integer",
@@ -6168,12 +6190,6 @@
             "type": "integer",
             "format": "int32",
             "minimum": 0
-          },
-          "message": {
-            "type": [
-              "string",
-              "null"
-            ]
           }
         }
       },
@@ -6278,10 +6294,6 @@
             "type": "string"
           }
         }
-      },
-      "MarkComicArchivedData": {
-        "type": "object",
-        "description": "Input parameters for marking a comic archived."
       },
       "MarkComicCoverUploadedData": {
         "type": "object",
@@ -6945,6 +6957,7 @@
       },
       "TranslationFormat": {
         "type": "string",
+        "description": "Translation format used by a chapter port.\n\nDetermines the tooling and schema for the chapter's translation files.",
         "enum": [
           "label-plus",
           "poprako"
@@ -7056,48 +7069,135 @@
       "UnitOperData": {
         "oneOf": [
           {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/UnitPayloadData"
+            "type": "object",
+            "required": [
+              "local_id",
+              "is_bubble",
+              "x_coord",
+              "y_coord",
+              "oper"
+            ],
+            "properties": {
+              "before_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
               },
-              {
-                "type": "object",
-                "properties": {
-                  "before_id": {
-                    "type": [
-                      "string",
-                      "null"
-                    ]
-                  },
-                  "id": {
-                    "type": [
-                      "string",
-                      "null"
-                    ]
-                  },
-                  "local_id": {
-                    "type": [
-                      "string",
-                      "null"
-                    ]
-                  }
-                }
+              "is_bubble": {
+                "type": "boolean"
               },
-              {
-                "type": "object",
-                "required": [
-                  "oper"
-                ],
-                "properties": {
-                  "oper": {
-                    "type": "string",
-                    "enum": [
-                      "save"
-                    ]
-                  }
-                }
+              "is_proofread": {
+                "type": "boolean"
+              },
+              "last_proofreader_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "last_translator_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "local_id": {
+                "type": "string"
+              },
+              "oper": {
+                "type": "string",
+                "enum": [
+                  "create"
+                ]
+              },
+              "proofread_text": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "translated_text": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "x_coord": {
+                "type": "number",
+                "format": "double"
+              },
+              "y_coord": {
+                "type": "number",
+                "format": "double"
               }
-            ]
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "id",
+              "is_bubble",
+              "is_proofread",
+              "x_coord",
+              "y_coord",
+              "oper"
+            ],
+            "properties": {
+              "before_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "id": {
+                "type": "string"
+              },
+              "is_bubble": {
+                "type": "boolean"
+              },
+              "is_proofread": {
+                "type": "boolean"
+              },
+              "last_proofreader_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "last_translator_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "oper": {
+                "type": "string",
+                "enum": [
+                  "save"
+                ]
+              },
+              "proofread_text": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "translated_text": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "x_coord": {
+                "type": "number",
+                "format": "double"
+              },
+              "y_coord": {
+                "type": "number",
+                "format": "double"
+              }
+            }
           },
           {
             "type": "object",
@@ -7119,56 +7219,6 @@
           }
         ],
         "description": "Transport-facing unit oper event."
-      },
-      "UnitPayloadData": {
-        "type": "object",
-        "description": "Transport-facing complete unit payload.",
-        "required": [
-          "is_bubble",
-          "is_proofread",
-          "x_coord",
-          "y_coord"
-        ],
-        "properties": {
-          "is_bubble": {
-            "type": "boolean"
-          },
-          "is_proofread": {
-            "type": "boolean"
-          },
-          "last_proofreader_id": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "last_translator_id": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "proofread_text": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "translated_text": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "x_coord": {
-            "type": "number",
-            "format": "double"
-          },
-          "y_coord": {
-            "type": "number",
-            "format": "double"
-          }
-        }
       },
       "UnitTranslationExportVal": {
         "type": "object",
@@ -7280,7 +7330,7 @@
       },
       "UpdateComicInfoData": {
         "type": "object",
-        "description": "Input parameters for updating a comic's title, author, and description.\n\nCover and workflow updates are handled by dedicated endpoints\n([`reserve_cover`], [`mark_archived`]).\n\n[`reserve_cover`]: crate::usecase::comic::reserve_cover\n[`mark_archived`]: crate::usecase::comic::mark_archived",
+        "description": "Input parameters for updating a comic's title, author, and description.\n\nCover updates are handled by dedicated endpoints.\n\n[`reserve_cover`]: crate::usecase::comic::reserve_cover",
         "required": [
           "id",
           "title",

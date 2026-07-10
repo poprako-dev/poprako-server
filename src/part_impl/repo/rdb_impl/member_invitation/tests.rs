@@ -21,6 +21,7 @@ const PREFIX: &str = "rdb-test-member-invitation-domain-";
 
 #[tokio::test]
 async fn member_invitation_roundtrip_reads_test_database_url() {
+    //
     let shared = test_shared::shared().await;
 
     test_shared::reset(&shared, PREFIX).await;
@@ -44,6 +45,7 @@ async fn member_invitation_roundtrip_reads_test_database_url() {
 
     drive
         .with_context(async |context| {
+            //
             Advance::advance(
                 &transactional_repo,
                 context,
@@ -83,6 +85,7 @@ async fn member_invitation_roundtrip_reads_test_database_url() {
     .unwrap();
 
     assert_eq!(member_invitation_infos.len(), 1);
+
     assert!(!member_invitation_infos[0].pending);
 
     test_shared::cleanup(&shared, PREFIX).await.ok().unwrap();

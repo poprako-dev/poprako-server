@@ -3,7 +3,10 @@
 use std::sync::OnceLock;
 
 use async_trait::async_trait;
-use bitcode::{Decode, Encode};
+use bitcode::Encode;
+
+#[cfg(test)]
+use bitcode::Decode;
 
 use crate::result::{RegularError, RegularResult};
 
@@ -28,6 +31,7 @@ pub fn next_snowflake_id() -> String {
 
 /// Generate a unique time-ordered 64-bit value backed by a snowflake.
 pub fn next_snowflake_u64() -> u64 {
+    //
     // Make sure snowflake instance is initialized yet.
     ensure_snowflake_init();
 
@@ -82,8 +86,8 @@ where
 }
 
 /// Decompress an archive payload and decode it with the pinned bitcode format.
-// TODO: list read.
-pub fn decompress_archive<T>(archived_bytes: &[u8]) -> RegularResult<T>
+#[cfg(test)]
+pub(crate) fn decompress_archive<T>(archived_bytes: &[u8]) -> RegularResult<T>
 where
     T: for<'a> Decode<'a>,
 {
@@ -109,6 +113,7 @@ where
 /// Initialise the global snowflake instance once from the
 /// `POPRAKO_SNOWFLAKE_NODE_ID` env var (defaults to 0).
 fn ensure_snowflake_init() {
+    //
     // Only init snowflake instance once.
     static INIT_GURAD: OnceLock<()> = OnceLock::new();
 
@@ -119,14 +124,20 @@ fn ensure_snowflake_init() {
 /// Load the snowflake node ID from the `POPRAKO_SNOWFLAKE_NODE_ID` env var.
 /// Load the snowflake node ID from the `POPRAKO_SNOWFLAKE_NODE_ID` env var.
 fn load_snowflake_node_id() -> u16 {
+    //
     let value = match std::env::var("POPRAKO_SNOWFLAKE_NODE_ID") {
+        //
         Ok(value) => value,
+
         Err(_) => return 0,
     };
 
     let parsed: Result<u16, _> = value.parse();
+
     match parsed {
+        //
         Ok(instance) if instance <= 1023 => instance,
+
         _ => unreachable!(),
     }
 }

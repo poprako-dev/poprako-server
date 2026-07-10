@@ -25,6 +25,7 @@ pub struct TeamInfoVal {
     pub name: String,
     pub description: String,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub avatar_url: Option<String>,
 
     pub workset_next_index: i32,
@@ -49,9 +50,12 @@ impl TeamInfoVal {
         P: ImagePool,
     {
         let avatar_url = match (model.avatar_uploaded, &model.avatar_key) {
+            //
             (true, Some(key)) => image_pool.get_signed(key).await.ok(),
+
             _ => None,
         };
+
         Ok(Self {
             id: model.id,
             name: model.name,

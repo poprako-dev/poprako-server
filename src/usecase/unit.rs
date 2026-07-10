@@ -176,10 +176,18 @@ where
             for oper in &opers {
                 match oper {
                     //
-                    UnitOper::Save { .. } => {
+                    UnitOper::Create { id, payload, .. } => {
                         repo.advance(
                             context,
-                            &UnitStep::save_info(&page_info.id, oper),
+                            &UnitStep::create_info(&page_info.id, id, payload),
+                        )
+                        .await?;
+                    }
+
+                    UnitOper::Save { id, payload, .. } => {
+                        repo.advance(
+                            context,
+                            &UnitStep::save_info(&page_info.id, id, payload),
                         )
                         .await?;
                     }
@@ -253,7 +261,7 @@ where
     Ok(save_units)
 }
 
-/// Carries the prepared opers and local ID maps produced by applying a diff.
+/// Carries the validated opers and local ID maps produced by applying a diff.
 struct UnitApplyParts {
     opers: Vec<UnitOper>,
     local_id_maps: Vec<UnitIdMapper>,

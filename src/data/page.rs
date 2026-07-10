@@ -21,6 +21,7 @@ pub struct PageInfoVal {
     pub chapter_id: String,
     pub index: i32,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub image_url: Option<String>,
 
     pub total_unit_count: i32,
@@ -41,7 +42,9 @@ impl PageInfoVal {
         P: ImagePool,
     {
         let image_url = match (model.image_uploaded, &model.image_key) {
+            //
             (true, Some(key)) => image_pool.get_signed(key).await.ok(),
+
             _ => None,
         };
 

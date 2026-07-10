@@ -21,6 +21,7 @@ const PREFIX: &str = "rdb-test-assignment-domain-";
 
 #[tokio::test]
 async fn assignment_roundtrip_reads_test_database_url() {
+    //
     let shared = test_shared::shared().await;
 
     test_shared::reset(&shared, PREFIX).await;
@@ -50,6 +51,7 @@ async fn assignment_roundtrip_reads_test_database_url() {
 
     drive
         .with_context(async |context| {
+            //
             Advance::advance(
                 &transactional_repo,
                 context,
@@ -80,6 +82,7 @@ async fn assignment_roundtrip_reads_test_database_url() {
     .unwrap();
 
     assert_eq!(assignment_infos.len(), 1);
+
     assert_eq!(
         assignment_infos[0].user.as_ref().unwrap().id,
         assignee_form.id
@@ -92,6 +95,7 @@ async fn assignment_roundtrip_reads_test_database_url() {
 
     drive
         .with_context(async |context| {
+            //
             Advance::advance(
                 &transactional_repo,
                 context,
@@ -134,11 +138,14 @@ async fn assignment_roundtrip_reads_test_database_url() {
     let comic_info = chapter_info.comic.as_ref().unwrap();
 
     assert_eq!(chapter_info.id, chapter_fixture.chapter_form.id);
+
     assert_eq!(comic_info.id, chapter_fixture.comic_form.id);
+
     assert_eq!(
         comic_info.workset.as_ref().unwrap().id,
         chapter_fixture.workset_form.id
     );
+
     assert_eq!(
         comic_info.team.as_ref().unwrap().id,
         chapter_fixture.team_form.id

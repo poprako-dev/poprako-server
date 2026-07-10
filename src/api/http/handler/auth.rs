@@ -8,9 +8,12 @@ use cookie::{Cookie, SameSite};
 
 use tracing::instrument;
 
+#[cfg(feature = "swagger-ui")]
+use crate::api::http::result::HttpBody;
+
 use crate::api::http::auth::AUTH_COOKIE_NAME;
 use crate::api::http::result::{
-    Accept as _, HttpBody, HttpNoContent, HttpResult, no_content,
+    Accept as _, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
 use crate::data::auth::{LoginData, LoginVal, RegisterData, RegisterVal};
@@ -45,6 +48,7 @@ pub async fn register(
     State(harn): State<AppHarn>,
     Json(data): Json<RegisterData>,
 ) -> HttpResult<RegisterVal> {
+    //
     let reply = usecase::auth::register(
         harn.drive(),
         harn.repo(),
@@ -80,6 +84,7 @@ pub async fn login(
     State(harn): State<AppHarn>,
     Json(data): Json<LoginData>,
 ) -> HttpResult<LoginVal> {
+    //
     let reply = usecase::auth::login(harn.repo(), harn.auth(), data).await?;
 
     let cookie = auth_cookie(&reply.token);
@@ -103,6 +108,7 @@ pub async fn login(
 ))]
 #[instrument(err)]
 pub async fn logout() -> HttpNoContent {
+    //
     let cookie = Cookie::build((AUTH_COOKIE_NAME, ""))
         .path("/")
         .http_only(true)

@@ -33,6 +33,7 @@ async fn shutdown_signal() {
             () = terminate => {},
         }
     }
+
     #[cfg(not(unix))]
     {
         ctrl_c.await;

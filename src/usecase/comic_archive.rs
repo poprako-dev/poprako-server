@@ -54,20 +54,27 @@ where
 
     let archive_comic_val = drive
         .with_context(async move |context| -> RegularResult<ArchiveComicVal> {
+            //
             let repo = repo.derive_transactional().await;
+
             let comic_archive_snapshot = repo
                 .advance(context, &ComicArchiveStep::lock_snapshot(&comic_id))
                 .await?;
+
             let image_keys = collect_image_keys(&comic_archive_snapshot);
+
             let archived_at = OffsetDateTime::now_utc();
+
             let comic_archive_write = ComicArchiveComplex::build_write(
                 comic_archive_snapshot,
                 token.user_id,
                 archived_at,
             )?;
+
             let archived_comic_id = comic_archive_write.comic_record.id.clone();
 
             for image_key in image_keys {
+                //
                 let image_delete_id = next_snowflake_id();
 
                 prom.advance(

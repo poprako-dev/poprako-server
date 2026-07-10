@@ -25,6 +25,7 @@ fn image_pool() -> R2ImagePool {
 
 #[test]
 fn detect_content_type_maps_supported_extensions() {
+    //
     assert_eq!(detect_content_type("avatar.PNG"), Some("image/png"));
 
     assert_eq!(detect_content_type("avatar.webp"), Some("image/webp"));
@@ -37,9 +38,11 @@ fn detect_content_type_rejects_unknown_extension() {
 
 #[tokio::test]
 async fn get_signed_uses_custom_domain() {
+    //
     let image_pool = image_pool();
 
     let url = ImagePool::get_signed(&image_pool, "avatars/user-1.png").await;
+
     assert!(url.is_ok());
 
     let url = url.ok().unwrap();

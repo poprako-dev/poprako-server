@@ -73,12 +73,16 @@ impl MemberInvitationAspect {
     }
 
     pub fn pending(mut self, val: bool) -> Self {
+        //
         self.f_pending = Some(val);
+
         self
     }
 
     pub fn role_mask(mut self, val: i64) -> Self {
+        //
         self.f_role_mask = Some(val);
+
         self
     }
 }
@@ -89,7 +93,9 @@ impl TryFrom<MemberInvitationRow> for MemberInvitationInfo {
     type Error = RegularError;
 
     fn try_from(v: MemberInvitationRow) -> Result<Self, Self::Error> {
+        //
         let roles = RoleMask::try_from(v.f_role_mask as u32)?;
+
         Ok(MemberInvitationInfo {
             id: v.f_id,
             team_id: v.f_team_id,

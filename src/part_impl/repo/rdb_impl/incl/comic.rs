@@ -75,18 +75,23 @@ pub async fn populate_comic_incls(
     infos: &mut [ComicInfo],
     incl_opt: &[ComicInclOpt],
 ) -> RegularResult<()> {
+    //
     for incl_opt in expand_incl_opts(incl_opt) {
         match incl_opt {
+            //
             ComicInclOpt::Workset => {
                 incl::populate::<ComicWorksetIncl>(conn, infos).await?
             }
+
             ComicInclOpt::WorksetTeam => {
                 incl::populate::<ComicWorksetTeamIncl>(conn, infos).await?
             }
+
             ComicInclOpt::Creator => {
                 incl::populate::<ComicCreatorIncl>(conn, infos).await?
             }
         }
     }
+
     Ok(())
 }

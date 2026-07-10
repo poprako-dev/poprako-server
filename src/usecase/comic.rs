@@ -253,6 +253,7 @@ where
     // NOTE: `with` cannot be executed elegantly by repo layer,
     // so we have to handle it in usecase layer.
     let mut pinned_chapters = if with_pinned_chapter {
+        //
         let comic_ids: Vec<String> =
             comic_infos.iter().map(|info| info.id.clone()).collect();
 
@@ -267,9 +268,11 @@ where
     for comic_info in comic_infos {
         //
         let pinned_chapter_val = match pinned_chapters.remove(&comic_info.id) {
+            //
             Some(chapter_info) => Some(
                 ChapterInfoVal::from_model(image_pool, chapter_info).await?,
             ),
+
             None => None,
         };
 

@@ -53,14 +53,18 @@ impl Drive<RdbContext> for RdbDrive {
             .map_err(|e| DriveError::Backend(diesel(e)))?;
 
         match f(&mut rdb_context).await {
+            //
             Ok(value) => {
+                //
                 AnsiTransactionManager::commit_transaction(rdb_context.conn())
                     .await
                     .map_err(|e| DriveError::Backend(diesel(e)))?;
 
                 Ok(value)
             }
+
             Err(err) => {
+                //
                 AnsiTransactionManager::rollback_transaction(
                     rdb_context.conn(),
                 )

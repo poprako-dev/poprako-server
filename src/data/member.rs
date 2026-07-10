@@ -29,7 +29,9 @@ pub struct MemberInfoVal {
 
     pub team_id: String,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub user: Option<UserInfoVal>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub team: Option<TeamInfoVal>,
 
     pub roles: RoleMask,
@@ -61,17 +63,23 @@ impl MemberInfoVal {
         P: ImagePool,
     {
         let user = match model.user {
+            //
             Some(user_info) => {
                 Some(UserInfoVal::from_model(image_pool, user_info).await?)
             }
+
             None => None,
         };
+
         let team = match model.team {
+            //
             Some(team_info) => {
                 Some(TeamInfoVal::from_model(image_pool, team_info).await?)
             }
+
             None => None,
         };
+
         Ok(Self {
             id: model.id,
             user_id: model.user_id,
@@ -154,6 +162,7 @@ impl TryInto<MemberListSpec> for ListMemberInfosData {
     type Error = RegularError;
 
     fn try_into(self) -> RegularResult<MemberListSpec> {
+        //
         let invalid_args_err = || RegularError::Expected {
             variant: ExpectedVariant::Args,
             message: trl("error-team-or-user-required"),

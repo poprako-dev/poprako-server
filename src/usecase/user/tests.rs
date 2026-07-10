@@ -85,7 +85,9 @@ pub fn user_with_avatar(
 pub fn credential(user_id: &str, password: &str) -> UserCredential {
     //
     let password_hash = match UserComplex::hash_password(password) {
+        //
         Ok(password_hash) => password_hash,
+
         Err(_) => panic!("failed to hash password"),
     };
 
@@ -166,7 +168,9 @@ fn count_delete_records(records: &[MockPromRecord], object_key: &str) -> usize {
 
 #[tokio::test]
 async fn get_info_emits_active_for_self() {
+    //
     let mock = Mock::new();
+
     mock.seed_user(
         user("user-1", "qid-1", "Nick"),
         credential("user-1", "password"),
@@ -177,18 +181,25 @@ async fn get_info_emits_active_for_self() {
         .unwrap();
 
     assert_eq!(val.id, "user-1");
+
     assert_eq!(val.nickname, "Nick");
+
     let events = mock.drain_events();
+
     assert_eq!(events.len(), 1);
+
     let Event::UserActive(payload) = &events[0] else {
         panic!("expected UserActive event");
     };
+
     assert_eq!(payload.user_id, "user-1");
 }
 
 #[tokio::test]
 async fn get_info_does_not_emit_active_for_other_user() {
+    //
     let mock = Mock::new();
+
     mock.seed_user(
         user("user-2", "qid-2", "Other"),
         credential("user-2", "password"),
@@ -203,6 +214,7 @@ async fn get_info_does_not_emit_active_for_other_user() {
 
 #[tokio::test]
 async fn get_info_propagates_missing_user() {
+    //
     let mock = Mock::new();
 
     let err = get_info(&mock, &mock, &mock, token("user-1"), "user-1".into())
@@ -215,11 +227,14 @@ async fn get_info_propagates_missing_user() {
 
 #[tokio::test]
 async fn update_info_updates_user_and_member_nickname() {
+    //
     let mock = Mock::new();
+
     mock.seed_user(
         user("user-1", "qid-1", "Old"),
         credential("user-1", "password"),
     );
+
     mock.seed_member(member("member-1", "user-1", "Old", "team-1"));
 
     update_info(
@@ -232,14 +247,19 @@ async fn update_info_updates_user_and_member_nickname() {
     .unwrap();
 
     let snapshot = mock.snapshot();
+
     assert_eq!(snapshot.users[0].qid, "qid-new");
+
     assert_eq!(snapshot.users[0].nickname, "New");
+
     assert_eq!(snapshot.members[0].user_nickname, "New");
 }
 
 #[tokio::test]
 async fn update_info_rejects_non_owner_without_mutation() {
+    //
     let mock = Mock::new();
+
     mock.seed_user(
         user("user-1", "qid-1", "Old"),
         credential("user-1", "password"),
@@ -256,13 +276,17 @@ async fn update_info_rejects_non_owner_without_mutation() {
     .unwrap();
 
     assert_expected_variant(err, ExpectedVariant::Perm);
+
     let snapshot = mock.snapshot();
+
     assert_eq!(snapshot.users[0].qid, "qid-1");
+
     assert_eq!(snapshot.users[0].nickname, "Old");
 }
 
 #[tokio::test]
 async fn update_info_rolls_back_missing_user() {
+    //
     let mock = Mock::new();
 
     let err = update_info(
@@ -276,12 +300,15 @@ async fn update_info_rolls_back_missing_user() {
     .unwrap();
 
     assert_expected_variant(err, ExpectedVariant::Args);
+
     assert!(mock.snapshot().users.is_empty());
 }
 
 #[tokio::test]
 async fn reserve_avatar_updates_state_enqueues_check_and_returns_put_url() {
+    //
     let mock = Mock::new();
+
     mock.seed_user(
         user("user-1", "qid-1", "Nick"),
         credential("user-1", "password"),
@@ -299,17 +326,21 @@ async fn reserve_avatar_updates_state_enqueues_check_and_returns_put_url() {
     .unwrap();
 
     assert_eq!(val.avatar_version, 1);
+
     assert_eq!(
         val.put_url,
         "https://test.local/put/user_avatar/user-1-1.png"
     );
 
     let snapshot = mock.snapshot();
+
     assert_eq!(
         snapshot.users[0].avatar_key.as_deref(),
         Some("user_avatar/user-1-1.png")
     );
+
     assert!(!snapshot.users[0].avatar_uploaded);
+
     assert_one_image_check_record(
         &snapshot.prom_records,
         ImageKind::UserAvatar,
@@ -321,7 +352,9 @@ async fn reserve_avatar_updates_state_enqueues_check_and_returns_put_url() {
 
 #[tokio::test]
 async fn reserve_avatar_replacing_avatar_enqueues_delete_and_check() {
+    //
     let mock = Mock::new();
+
     mock.seed_user(
         user_with_avatar("user-1", "qid-1", "Nick", "old-key", true, 1),
         credential("user-1", "password"),
@@ -339,7 +372,9 @@ async fn reserve_avatar_replacing_avatar_enqueues_delete_and_check() {
     .unwrap();
 
     let snapshot = mock.snapshot();
+
     assert_eq!(count_delete_records(&snapshot.prom_records, "old-key"), 1);
+
     assert_one_image_check_record(
         &snapshot.prom_records,
         ImageKind::UserAvatar,
@@ -351,6 +386,7 @@ async fn reserve_avatar_replacing_avatar_enqueues_delete_and_check() {
 
 #[tokio::test]
 async fn reserve_avatar_rolls_back_missing_user() {
+    //
     let mock = Mock::new();
 
     let err = reserve_avatar(
@@ -366,14 +402,19 @@ async fn reserve_avatar_rolls_back_missing_user() {
     .unwrap();
 
     assert_expected_variant(err, ExpectedVariant::Args);
+
     let snapshot = mock.snapshot();
+
     assert!(snapshot.users.is_empty());
+
     assert!(snapshot.prom_records.is_empty());
 }
 
 #[tokio::test]
 async fn reserve_avatar_propagates_put_url_failure_after_commit() {
+    //
     let mock = Mock::new().with_image_put_failure();
+
     mock.seed_user(
         user("user-1", "qid-1", "Nick"),
         credential("user-1", "password"),
@@ -392,17 +433,22 @@ async fn reserve_avatar_propagates_put_url_failure_after_commit() {
     .unwrap();
 
     assert_expected_variant(err, ExpectedVariant::Args);
+
     let snapshot = mock.snapshot();
+
     assert_eq!(
         snapshot.users[0].avatar_key.as_deref(),
         Some("user_avatar/user-1-1.png")
     );
+
     assert_eq!(snapshot.prom_records.len(), 1);
 }
 
 #[tokio::test]
 async fn mark_avatar_uploaded_marks_matching_version() {
+    //
     let mock = Mock::new();
+
     mock.seed_user(
         user_with_avatar("user-1", "qid-1", "Nick", "key", false, 2),
         credential("user-1", "password"),
@@ -423,7 +469,9 @@ async fn mark_avatar_uploaded_marks_matching_version() {
 
 #[tokio::test]
 async fn mark_avatar_uploaded_accepts_repeated_matching_version() {
+    //
     let mock = Mock::new();
+
     mock.seed_user(
         user_with_avatar("user-1", "qid-1", "Nick", "key", false, 2),
         credential("user-1", "password"),
@@ -437,7 +485,9 @@ async fn mark_avatar_uploaded_accepts_repeated_matching_version() {
         mark_data(2),
     )
     .await;
+
     assert!(first.is_ok());
+
     let second = mark_avatar_uploaded(
         &mock,
         &mock,
@@ -446,6 +496,7 @@ async fn mark_avatar_uploaded_accepts_repeated_matching_version() {
         mark_data(2),
     )
     .await;
+
     assert!(second.is_ok());
 
     assert!(mock.snapshot().users[0].avatar_uploaded);
@@ -453,7 +504,9 @@ async fn mark_avatar_uploaded_accepts_repeated_matching_version() {
 
 #[tokio::test]
 async fn mark_avatar_uploaded_rejects_non_owner() {
+    //
     let mock = Mock::new();
+
     mock.seed_user(
         user_with_avatar("user-1", "qid-1", "Nick", "key", false, 2),
         credential("user-1", "password"),
@@ -471,12 +524,15 @@ async fn mark_avatar_uploaded_rejects_non_owner() {
     .unwrap();
 
     assert_expected_variant(err, ExpectedVariant::Perm);
+
     assert!(!mock.snapshot().users[0].avatar_uploaded);
 }
 
 #[tokio::test]
 async fn mark_avatar_uploaded_rolls_back_stale_version() {
+    //
     let mock = Mock::new();
+
     mock.seed_user(
         user_with_avatar("user-1", "qid-1", "Nick", "key", false, 2),
         credential("user-1", "password"),
@@ -498,12 +554,15 @@ async fn mark_avatar_uploaded_rolls_back_stale_version() {
         ExpectedVariant::Args,
         "error-stale-avatar-upload",
     );
+
     assert!(!mock.snapshot().users[0].avatar_uploaded);
 }
 
 #[tokio::test]
 async fn mark_avatar_uploaded_rejects_old_reservation_replay() {
+    //
     let mock = Mock::new();
+
     mock.seed_user(
         user_with_avatar("user-1", "qid-1", "Nick", "old-key", true, 1),
         credential("user-1", "password"),
@@ -520,6 +579,7 @@ async fn mark_avatar_uploaded_rejects_old_reservation_replay() {
     .await
     .ok()
     .unwrap();
+
     assert_eq!(reserved.avatar_version, 2);
 
     let err = mark_avatar_uploaded(
@@ -532,6 +592,7 @@ async fn mark_avatar_uploaded_rejects_old_reservation_replay() {
     .await
     .err()
     .unwrap();
+
     let snapshot = mock.snapshot();
 
     assert_expected_message(
@@ -539,18 +600,24 @@ async fn mark_avatar_uploaded_rejects_old_reservation_replay() {
         ExpectedVariant::Args,
         "error-stale-avatar-upload",
     );
+
     assert!(!snapshot.users[0].avatar_uploaded);
+
     assert_eq!(snapshot.users[0].avatar_version, 2);
 }
 
 #[tokio::test]
 async fn delete_removes_user_credentials_members_and_enqueues_avatar_delete() {
+    //
     let mock = Mock::new();
+
     mock.seed_user(
         user_with_avatar("user-1", "qid-1", "Nick", "avatar-key", true, 2),
         credential("user-1", "password"),
     );
+
     mock.seed_member(member("member-1", "user-1", "Nick", "team-1"));
+
     mock.seed_member(member("member-2", "user-1", "Nick", "team-2"));
 
     delete(&mock, &mock, &mock, token("user-1"), "user-1".into())
@@ -558,9 +625,13 @@ async fn delete_removes_user_credentials_members_and_enqueues_avatar_delete() {
         .unwrap();
 
     let snapshot = mock.snapshot();
+
     assert!(snapshot.users.is_empty());
+
     assert!(snapshot.credentials.is_empty());
+
     assert!(snapshot.members.is_empty());
+
     assert_eq!(
         count_delete_records(&snapshot.prom_records, "avatar-key"),
         1
@@ -569,7 +640,9 @@ async fn delete_removes_user_credentials_members_and_enqueues_avatar_delete() {
 
 #[tokio::test]
 async fn delete_without_uploaded_avatar_does_not_enqueue_prom() {
+    //
     let mock = Mock::new();
+
     mock.seed_user(
         user_with_avatar("user-1", "qid-1", "Nick", "avatar-key", false, 2),
         credential("user-1", "password"),
@@ -584,7 +657,9 @@ async fn delete_without_uploaded_avatar_does_not_enqueue_prom() {
 
 #[tokio::test]
 async fn delete_rejects_non_owner_without_mutation() {
+    //
     let mock = Mock::new();
+
     mock.seed_user(
         user("user-1", "qid-1", "Nick"),
         credential("user-1", "password"),
@@ -596,13 +671,17 @@ async fn delete_rejects_non_owner_without_mutation() {
         .unwrap();
 
     assert_expected_variant(err, ExpectedVariant::Perm);
+
     let snapshot = mock.snapshot();
+
     assert_eq!(snapshot.users.len(), 1);
+
     assert_eq!(snapshot.credentials.len(), 1);
 }
 
 #[tokio::test]
 async fn delete_rolls_back_missing_user() {
+    //
     let mock = Mock::new();
 
     let err = delete(&mock, &mock, &mock, token("user-1"), "user-1".into())
@@ -611,5 +690,6 @@ async fn delete_rolls_back_missing_user() {
         .unwrap();
 
     assert_expected_variant(err, ExpectedVariant::Args);
+
     assert!(mock.snapshot().users.is_empty());
 }

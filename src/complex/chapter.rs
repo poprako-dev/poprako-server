@@ -587,24 +587,31 @@ where
     }
 
     let allowed = match (stage, oper) {
+        //
         (Stage::RawProvide, StageOper::Advance) => {
             roles.has_any_role(&[RoleField::RAW_PROVIDER])
         }
+
         (Stage::Translate, StageOper::Advance) => {
             roles.has_any_role(&[RoleField::TRANSLATOR])
         }
+
         (Stage::Translate, StageOper::Revert) => {
             roles.has_any_role(&[RoleField::PROOFREADER])
         }
+
         (Stage::Proofread, StageOper::Advance | StageOper::Revert) => {
             roles.has_any_role(&[RoleField::PROOFREADER])
         }
+
         (Stage::TypesetRedraw, StageOper::Advance | StageOper::Revert) => {
             roles.has_any_role(&[RoleField::TYPESETTER, RoleField::REDRAWER])
         }
+
         (Stage::Publish, StageOper::Advance) => {
             roles.has_any_role(&[RoleField::PUBLISHER])
         }
+
         _ => false,
     };
 

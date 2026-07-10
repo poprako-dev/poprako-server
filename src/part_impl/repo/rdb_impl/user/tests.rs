@@ -10,6 +10,7 @@ const PREFIX: &str = "rdb-test-user-domain-";
 
 #[tokio::test]
 async fn user_roundtrip_reads_test_database_url() {
+    //
     let shared = test_shared::shared().await;
 
     test_shared::reset(&shared, PREFIX).await;

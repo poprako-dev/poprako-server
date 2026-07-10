@@ -23,11 +23,14 @@ This AGENTS.md scopes guidance to `tests`. Parent AGENTS guidance still applies 
 - **Test case doc sync (mandatory):** any change to integration test cases
   under `integration-tests/src/` MUST be reflected in
   `integration-tests/TESTCASES.md` in the same change — add/remove/rename a
-  case row whenever the corresponding `*.ts` is touched. Keep case IDs stable;
-  do not renumber unless a case is removed. Run `cd tests/integration-tests &&
-  pnpm api` to verify before claiming done.
+  suite entry whenever the corresponding `*.ts` is touched. Run `cd
+  integration-tests && pnpm typecheck` for a fast check; use
+  `scripts/api-integration-test.sh` for an isolated database-backed run. That
+  script drops its target database, so `INTEGRATION_DATABASE_URL` must name a
+  disposable database.
 - The integration test project is a standalone pnpm workspace rooted at
-  `integration-tests/`. Run `pnpm install` and `pnpm api` from that directory.
+  `integration-tests/`. Run `pnpm install`, `pnpm typecheck`, and `pnpm api`
+  from that directory when an API server is already running.
 - Add subtree-specific constraints, ownership notes, and test commands here.
 - Keep notes scoped to this directory and its children.
 <!-- OMX:AGENTS-INIT:MANUAL:END -->

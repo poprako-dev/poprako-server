@@ -11,7 +11,10 @@ use tracing::instrument;
 #[cfg(feature = "swagger-ui")]
 use utoipa::IntoParams;
 
-use crate::api::http::result::{Accept as _, HttpBody, HttpResult};
+#[cfg(feature = "swagger-ui")]
+use crate::api::http::result::HttpBody;
+
+use crate::api::http::result::{Accept as _, HttpResult};
 use crate::api::http::state::AppHarn;
 use crate::data::announcement::{
     AnnouncementInfoVal, CreateAnnouncementData, CreateAnnouncementVal,
@@ -87,6 +90,7 @@ pub async fn list_infos(
     Extension(user_token): Extension<UserToken>,
     Query(query): Query<AnnouncementListQuery>,
 ) -> HttpResult<Vec<AnnouncementInfoVal>> {
+    //
     let data = ListAnnouncementInfosData {
         team_id,
         incl_opt: query.incl_opt,

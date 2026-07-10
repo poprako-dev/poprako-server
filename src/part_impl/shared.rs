@@ -41,6 +41,7 @@ impl RdbCore {
     ///
     /// Returns an error if `DATABASE_URL` is not set or the pool cannot be built.
     pub fn from_env() -> anyhow::Result<Self> {
+        //
         let database_url = std::env::var("DATABASE_URL")
             .with_context(|| "[RdbCore::from_env] DATABASE_URL is not set")?;
 
@@ -53,6 +54,7 @@ impl RdbCore {
     }
 
     pub fn from_database_url(database_url: &str) -> RegularResult<Self> {
+        //
         let manager = AsyncDieselConnectionManager::<AsyncPgConnection>::new(
             database_url,
         );

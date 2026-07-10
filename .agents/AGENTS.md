@@ -19,6 +19,6 @@ This AGENTS.md scopes guidance to `.agents`. Parent AGENTS guidance still applie
 
 <!-- OMX:AGENTS-INIT:MANUAL:START -->
 ## Local Notes
-- Add subtree-specific constraints, ownership notes, and test commands here.
-- Keep notes scoped to this directory and its children.
+- Each skill must contain valid `name` and `description` YAML frontmatter.
+- Keep skills concise, scoped to current architecture, and remove instructions for retired modules rather than preserving them as history.
 <!-- OMX:AGENTS-INIT:MANUAL:END -->

@@ -11,8 +11,11 @@ use tracing::instrument;
 #[cfg(feature = "swagger-ui")]
 use utoipa::IntoParams;
 
+#[cfg(feature = "swagger-ui")]
+use crate::api::http::result::HttpBody;
+
 use crate::api::http::result::{
-    Accept as _, HttpBody, HttpNoContent, HttpResult, no_content,
+    Accept as _, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
 use crate::data::assignment::AssignmentInfoVal;
@@ -89,6 +92,7 @@ pub async fn list_infos(
     Extension(user_token): Extension<UserToken>,
     Query(query): Query<AssignmentInvitationListQuery>,
 ) -> HttpResult<Vec<AssignmentInvitationInfoVal>> {
+    //
     let data = ListAssignmentInvitationInfosData {
         chapter_id,
         pending: query.pending,
@@ -119,6 +123,7 @@ pub async fn delete(
     Path(assignment_invitation_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
+    //
     usecase::assignment_invitation::delete(
         harn.drive(),
         harn.repo(),
@@ -126,6 +131,7 @@ pub async fn delete(
         assignment_invitation_id,
     )
     .await?;
+
     no_content()
 }
 

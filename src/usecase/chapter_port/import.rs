@@ -16,7 +16,7 @@ use crate::data::chapter_port::{
 };
 use crate::model::assignment::AssignmentInfo;
 use crate::model::page::PageInfo;
-use crate::model::unit::{UnitCounterDelta, UnitCounters, UnitInfo, UnitOper};
+use crate::model::unit::{UnitCounterDelta, UnitCounters, UnitInfo};
 use crate::model::unit_port::UnitTranslationImport;
 use crate::model::user::UserToken;
 use crate::part::repo::assignment::{
@@ -83,9 +83,11 @@ where
     let label_plus = matches!(data.format, TranslationFormat::LabelPlus);
 
     let imported_pages = match data.format {
+        //
         TranslationFormat::LabelPlus => {
             ChapterImportComplex::parse_label_plus(&data.content)?
         }
+
         TranslationFormat::PopRaKo => {
             ChapterImportComplex::parse_poprako(&data.content)?
         }
@@ -163,16 +165,13 @@ where
                                 label_plus,
                             );
 
-                        let unit_oper = UnitOper::Save {
-                            local_id: None,
-                            id: Some(unit_id.clone()),
-                            payload: unit_payload,
-                            before_id: None,
-                        };
-
                         repo.advance(
                             context,
-                            &UnitStep::save_info(&page_info.id, &unit_oper),
+                            &UnitStep::save_info(
+                                &page_info.id,
+                                &unit_id,
+                                &unit_payload,
+                            ),
                         )
                         .await?;
                     }

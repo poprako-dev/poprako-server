@@ -11,9 +11,12 @@ use tracing::instrument;
 #[cfg(feature = "swagger-ui")]
 use utoipa::IntoParams;
 
+#[cfg(feature = "swagger-ui")]
+use crate::api::http::result::HttpBody;
+
 use crate::api::http::handler::util::ensure_path_matches_body_id;
 use crate::api::http::result::{
-    Accept as _, HttpBody, HttpNoContent, HttpResult, no_content,
+    Accept as _, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
 use crate::data::member_invitation::{
@@ -100,6 +103,7 @@ pub async fn list_infos(
     Extension(user_token): Extension<UserToken>,
     Query(query): Query<MemberInvitationListQuery>,
 ) -> HttpResult<Vec<MemberInvitationInfoVal>> {
+    //
     let data = ListMemberInvitationInfosData {
         team_id,
         pending: query.pending,
@@ -139,6 +143,7 @@ pub async fn update_roles(
     Extension(user_token): Extension<UserToken>,
     Json(data): Json<UpdateMemberInvitationRolesData>,
 ) -> HttpNoContent {
+    //
     ensure_path_matches_body_id(&member_invitation_id, &data.id)?;
 
     usecase::member_invitation::update_roles(
@@ -170,6 +175,7 @@ pub async fn delete(
     Path(member_invitation_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
+    //
     usecase::member_invitation::delete(
         harn.drive(),
         harn.repo(),

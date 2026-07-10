@@ -103,12 +103,16 @@ impl<'a> MemberAspect<'a> {
     }
 
     pub fn user_nickname(mut self, val: &'a str) -> Self {
+        //
         self.f_user_nickname = Some(val);
+
         self
     }
 
     pub fn user_last_active_at(mut self, val: OffsetDateTime) -> Self {
+        //
         self.f_user_last_active_at = Some(val);
+
         self
     }
 
@@ -116,7 +120,9 @@ impl<'a> MemberAspect<'a> {
         mut self,
         val: Option<OffsetDateTime>,
     ) -> Self {
+        //
         self.f_assigned_raw_provider_at = Some(val);
+
         self
     }
 
@@ -124,7 +130,9 @@ impl<'a> MemberAspect<'a> {
         mut self,
         val: Option<OffsetDateTime>,
     ) -> Self {
+        //
         self.f_assigned_translator_at = Some(val);
+
         self
     }
 
@@ -132,7 +140,9 @@ impl<'a> MemberAspect<'a> {
         mut self,
         val: Option<OffsetDateTime>,
     ) -> Self {
+        //
         self.f_assigned_proofreader_at = Some(val);
+
         self
     }
 
@@ -140,17 +150,23 @@ impl<'a> MemberAspect<'a> {
         mut self,
         val: Option<OffsetDateTime>,
     ) -> Self {
+        //
         self.f_assigned_typesetter_at = Some(val);
+
         self
     }
 
     pub fn assigned_redrawer_at(mut self, val: Option<OffsetDateTime>) -> Self {
+        //
         self.f_assigned_redrawer_at = Some(val);
+
         self
     }
 
     pub fn assigned_reviewer_at(mut self, val: Option<OffsetDateTime>) -> Self {
+        //
         self.f_assigned_reviewer_at = Some(val);
+
         self
     }
 
@@ -158,17 +174,23 @@ impl<'a> MemberAspect<'a> {
         mut self,
         val: Option<OffsetDateTime>,
     ) -> Self {
+        //
         self.f_assigned_publisher_at = Some(val);
+
         self
     }
 
     pub fn assigned_admin_at(mut self, val: Option<OffsetDateTime>) -> Self {
+        //
         self.f_assigned_admin_at = Some(val);
+
         self
     }
 
     pub fn assigned_bot_at(mut self, val: Option<OffsetDateTime>) -> Self {
+        //
         self.f_assigned_bot_at = Some(val);
+
         self
     }
 }
@@ -177,29 +199,37 @@ impl<'a> MemberAspect<'a> {
 
 impl From<MemberRow> for MemberInfo {
     fn from(v: MemberRow) -> Self {
+        //
         let mut bits: u32 = 0;
 
         if v.f_assigned_raw_provider_at.is_some() {
             bits |= u32::from(RoleField::RAW_PROVIDER);
         }
+
         if v.f_assigned_translator_at.is_some() {
             bits |= u32::from(RoleField::TRANSLATOR);
         }
+
         if v.f_assigned_proofreader_at.is_some() {
             bits |= u32::from(RoleField::PROOFREADER);
         }
+
         if v.f_assigned_typesetter_at.is_some() {
             bits |= u32::from(RoleField::TYPESETTER);
         }
+
         if v.f_assigned_redrawer_at.is_some() {
             bits |= u32::from(RoleField::REDRAWER);
         }
+
         if v.f_assigned_reviewer_at.is_some() {
             bits |= u32::from(RoleField::REVIEWER);
         }
+
         if v.f_assigned_publisher_at.is_some() {
             bits |= u32::from(RoleField::PUBLISHER);
         }
+
         if v.f_assigned_admin_at.is_some() {
             bits |= u32::from(RoleField::ADMIN);
         }

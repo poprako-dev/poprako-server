@@ -67,7 +67,7 @@ pub mod user;
 pub mod workset;
 
 #[cfg(all(test, feature = "repo"))]
-mod test_shared;
+pub mod test_shared;
 
 /// Diesel-backed repository handle wrapping a connection pool for non-transactional operations.
 pub struct RdbRepo {

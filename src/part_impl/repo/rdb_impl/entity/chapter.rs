@@ -106,12 +106,16 @@ impl<'a> ChapterAspect<'a> {
     }
 
     pub fn pinned(mut self, val: bool) -> Self {
+        //
         self.f_is_pinned = Some(val);
+
         self
     }
 
     pub fn subtitle(mut self, val: &'a str) -> Self {
+        //
         self.f_subtitle = Some(val);
+
         self
     }
 
@@ -120,6 +124,7 @@ impl<'a> ChapterAspect<'a> {
         val: StageMask,
         updated_at: OffsetDateTime,
     ) -> Self {
+        //
         self.f_uploaded_at =
             Some(one_shot_timestamp(val, Stage::RawProvide, updated_at));
 
@@ -142,22 +147,30 @@ impl<'a> ChapterAspect<'a> {
     }
 
     pub fn page_count(mut self, val: i32) -> Self {
+        //
         self.f_page_count = Some(val);
+
         self
     }
 
     pub fn total_unit_count(mut self, val: i32) -> Self {
+        //
         self.f_total_unit_count = Some(val);
+
         self
     }
 
     pub fn translated_unit_count(mut self, val: i32) -> Self {
+        //
         self.f_translated_unit_count = Some(val);
+
         self
     }
 
     pub fn proofread_unit_count(mut self, val: i32) -> Self {
+        //
         self.f_proofread_unit_count = Some(val);
+
         self
     }
 }
@@ -170,8 +183,11 @@ fn one_shot_timestamp(
     updated_at: OffsetDateTime,
 ) -> Option<OffsetDateTime> {
     match stages.get_phase(stage) {
+        //
         StagePhase::Pending => None,
+
         StagePhase::Completed => Some(updated_at),
+
         StagePhase::Active => unreachable!("one-shot stages cannot be active"),
     }
 }
@@ -189,8 +205,11 @@ fn two_step_timestamps(
     Option<Option<OffsetDateTime>>,
 ) {
     match stages.get_phase(stage) {
+        //
         StagePhase::Pending => (Some(None), Some(None)),
+
         StagePhase::Active => (Some(Some(updated_at)), Some(None)),
+
         StagePhase::Completed => {
             (Some(Some(updated_at)), Some(Some(updated_at)))
         }
@@ -201,7 +220,9 @@ fn two_step_timestamps(
 /// `Some` maps to `Completed`, `None` maps to `Pending`.
 fn phase_from_one_shot(timestamp: Option<OffsetDateTime>) -> StagePhase {
     match timestamp {
+        //
         Some(_) => StagePhase::Completed,
+
         None => StagePhase::Pending,
     }
 }
@@ -214,8 +235,11 @@ fn phase_from_two_step(
     completed_at: Option<OffsetDateTime>,
 ) -> StagePhase {
     match (started_at, completed_at) {
+        //
         (_, Some(_)) => StagePhase::Completed,
+
         (Some(_), None) => StagePhase::Active,
+
         (None, None) => StagePhase::Pending,
     }
 }
@@ -225,6 +249,7 @@ fn phase_from_two_step(
 fn workflow_stage_mask_from_row(
     row: &ChapterRow,
 ) -> Result<StageMask, RegularError> {
+    //
     let stages = StageMask::try_from(0u32)?
         .try_set_phase(
             Stage::RawProvide,
@@ -247,6 +272,7 @@ fn workflow_stage_mask_from_row(
             Stage::Publish,
             phase_from_one_shot(row.f_published_at),
         )?;
+
     Ok(stages)
 }
 
@@ -254,7 +280,9 @@ impl TryFrom<ChapterRow> for ChapterInfo {
     type Error = RegularError;
 
     fn try_from(row: ChapterRow) -> Result<Self, Self::Error> {
+        //
         let stages = workflow_stage_mask_from_row(&row)?;
+
         Ok(Self {
             id: row.f_id,
             comic_id: row.f_comic_id,
@@ -277,6 +305,7 @@ impl TryFrom<ChapterRow> for ChapterInfo {
 
 impl<'a> From<&'a ChapterForm> for ChapterEntry<'a> {
     fn from(form: &'a ChapterForm) -> Self {
+        //
         let now = OffsetDateTime::now_utc();
 
         Self {

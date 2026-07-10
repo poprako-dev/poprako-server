@@ -1,11 +1,12 @@
 // list_infos(list_infos)(positive): team member lists page units in index order with page counters.
 // list_infos(list_infos)(positive): chapter assignee lists page units without team membership.
 // list_infos(list_infos)(negative): non-member without assignment cannot list page units.
-// save_infos(save_infos)(positive): save with local_id creates, save with id updates, delete removes.
+// save_infos(save_infos)(positive): create maps a local id, save updates, and delete removes.
 // save_infos(save_infos)(positive): save with before_id places unit before anchor, None appends to tail.
 // save_infos(save_infos)(positive): concurrent merge applies b-then-c and c-then-b to twenty units and reaches consistent final state.
 // save_infos(save_infos)(negative): user without edit role rolls back units and counters.
 // save_infos(save_infos)(negative): invalid diff rolls back units, counters, and comic activity.
+// save_infos(save_infos)(negative): missing text editor ids are rejected before transaction access.
 
 use super::*;
 
@@ -13,7 +14,6 @@ use time::OffsetDateTime;
 
 use crate::data::unit::{
     ListPageUnitInfosData, SavePageUnitsData, UnitDiffData, UnitOperData,
-    UnitPayloadData,
 };
 use crate::model::assignment::AssignmentInfo;
 use crate::model::chapter::ChapterInfo;
@@ -38,6 +38,7 @@ impl TestRng {
     }
 
     fn next(&mut self) -> u64 {
+        //
         self.state = self
             .state
             .wrapping_mul(6_364_136_223_846_793_005)
@@ -62,6 +63,7 @@ fn token(user_id: &str) -> UserToken {
 }
 
 fn workset(id: &str, team_id: &str) -> WorksetInfo {
+    //
     let time = OffsetDateTime::now_utc();
 
     WorksetInfo {
@@ -78,6 +80,7 @@ fn workset(id: &str, team_id: &str) -> WorksetInfo {
 }
 
 fn comic(id: &str, workset_id: &str) -> ComicInfo {
+    //
     let time = OffsetDateTime::now_utc();
 
     ComicInfo {
@@ -109,6 +112,7 @@ fn chapter(
     translated: i32,
     proofread: i32,
 ) -> ChapterInfo {
+    //
     let time = OffsetDateTime::now_utc();
 
     ChapterInfo {
@@ -148,6 +152,7 @@ fn assignment(
     user_id: &str,
     role_mask: RoleMask,
 ) -> AssignmentInfo {
+    //
     let time = OffsetDateTime::now_utc();
 
     AssignmentInfo {
@@ -163,6 +168,7 @@ fn assignment(
 }
 
 fn page(id: &str, total: i32, translated: i32, proofread: i32) -> PageInfo {
+    //
     let time = OffsetDateTime::now_utc();
 
     PageInfo {
@@ -188,6 +194,7 @@ fn unit(
     proofread_text: Option<&str>,
     proofread: bool,
 ) -> UnitInfo {
+    //
     let time = OffsetDateTime::now_utc();
 
     UnitInfo {
@@ -207,55 +214,57 @@ fn unit(
     }
 }
 
-fn save_create_oper(
+fn create_oper(
     local_id: &str,
     text: &str,
     before_id: Option<&str>,
 ) -> UnitOperData {
-    UnitOperData::Save {
-        local_id: Some(local_id.into()),
-        id: None,
+    UnitOperData::Create {
+        local_id: local_id.into(),
         before_id: before_id.map(Into::into),
-        payload: payload_data(text, false, 3.0, 4.0),
+        is_bubble: true,
+        is_proofread: false,
+        x_coord: 3.0,
+        y_coord: 4.0,
+        translated_text: Some(text.into()),
+        last_translator_id: Some("user-1".into()),
+        proofread_text: None,
+        last_proofreader_id: None,
     }
 }
 
-fn save_update_oper(
-    id: &str,
-    text: &str,
-    before_id: Option<&str>,
-) -> UnitOperData {
-    UnitOperData::Save {
-        local_id: None,
-        id: Some(id.into()),
-        before_id: before_id.map(Into::into),
-        payload: payload_data(text, false, 5.0, 6.0),
-    }
+fn save_oper(id: &str, text: &str, before_id: Option<&str>) -> UnitOperData {
+    save_oper_with_payload(id, text, false, 5.0, 6.0, before_id)
 }
 
 fn delete_oper(id: &str) -> UnitOperData {
     UnitOperData::Delete { id: id.into() }
 }
 
-fn payload_data(
+fn save_oper_with_payload(
+    id: &str,
     text: &str,
     proofread: bool,
     x_coord: f64,
     y_coord: f64,
-) -> UnitPayloadData {
-    UnitPayloadData {
+    before_id: Option<&str>,
+) -> UnitOperData {
+    UnitOperData::Save {
+        id: id.into(),
+        before_id: before_id.map(Into::into),
         is_bubble: true,
         is_proofread: proofread,
         x_coord,
         y_coord,
         translated_text: Some(text.into()),
-        last_translator_id: None,
+        last_translator_id: Some("user-1".into()),
         proofread_text: None,
         last_proofreader_id: None,
     }
 }
 
 fn seed_scope(mock: &Mock, total: i32, translated: i32, proofread: i32) {
+    //
     mock.seed_workset(workset("workset-1", "team-1"));
 
     mock.seed_comic(comic("comic-1", "workset-1"));
@@ -272,6 +281,7 @@ fn seed_scope(mock: &Mock, total: i32, translated: i32, proofread: i32) {
 }
 
 fn sorted_unit_ids(units: &[UnitInfo]) -> Vec<String> {
+    //
     let mut unit_infos = units.to_vec();
 
     unit_infos.sort_by_key(|left| left.index);
@@ -284,17 +294,33 @@ fn sorted_unit_ids(units: &[UnitInfo]) -> Vec<String> {
 
 fn assert_perm_error(error: RegularError) {
     match error {
+        //
         RegularError::Expected { variant, .. } => {
             assert!(matches!(variant, ExpectedVariant::Perm));
         }
+
         RegularError::Unrecoverable { .. } => {
             panic!("expected permission error");
         }
     }
 }
 
+fn assert_args_error(error: RegularError) {
+    match error {
+        //
+        RegularError::Expected { variant, .. } => {
+            assert!(matches!(variant, ExpectedVariant::Args));
+        }
+
+        RegularError::Unrecoverable { .. } => {
+            panic!("expected argument error");
+        }
+    }
+}
+
 #[tokio::test]
 async fn list_infos_returns_units_for_team_member() {
+    //
     let mock = Mock::new();
 
     seed_scope(&mock, 2, 1, 1);
@@ -317,7 +343,9 @@ async fn list_infos_returns_units_for_team_member() {
     .await;
 
     let listed = match listed {
+        //
         Ok(listed) => listed,
+
         Err(_) => panic!("expected list success"),
     };
 
@@ -336,6 +364,7 @@ async fn list_infos_returns_units_for_team_member() {
 
 #[tokio::test]
 async fn list_infos_returns_units_for_assignment_fallback() {
+    //
     let mock = Mock::new();
 
     seed_scope(&mock, 1, 1, 0);
@@ -360,7 +389,9 @@ async fn list_infos_returns_units_for_assignment_fallback() {
     .await;
 
     let listed = match listed {
+        //
         Ok(listed) => listed,
+
         Err(_) => panic!("expected list success"),
     };
 
@@ -371,6 +402,7 @@ async fn list_infos_returns_units_for_assignment_fallback() {
 
 #[tokio::test]
 async fn list_infos_rejects_unrelated_user() {
+    //
     let mock = Mock::new();
 
     seed_scope(&mock, 0, 0, 0);
@@ -392,7 +424,8 @@ async fn list_infos_rejects_unrelated_user() {
 }
 
 #[tokio::test]
-async fn save_infos_creates_updates_and_deletes_by_save_and_delete_opers() {
+async fn save_infos_creates_updates_and_deletes_by_typed_opers() {
+    //
     let mock = Mock::new();
 
     seed_scope(&mock, 2, 2, 1);
@@ -417,8 +450,8 @@ async fn save_infos_creates_updates_and_deletes_by_save_and_delete_opers() {
                 page_id: "page-1".into(),
                 opers: vec![
                     delete_oper("unit-b"),
-                    save_create_oper("local-x", "inserted", Some("unit-a")),
-                    save_update_oper("unit-a", "alpha-v2", None),
+                    create_oper("local-x", "inserted", Some("unit-a")),
+                    save_oper("unit-a", "alpha-v2", None),
                 ],
             },
         },
@@ -426,7 +459,9 @@ async fn save_infos_creates_updates_and_deletes_by_save_and_delete_opers() {
     .await;
 
     let saved = match saved {
+        //
         Ok(saved) => saved,
+
         Err(_) => panic!("expected save success"),
     };
 
@@ -454,6 +489,7 @@ async fn save_infos_creates_updates_and_deletes_by_save_and_delete_opers() {
 
 #[tokio::test]
 async fn save_infos_places_unit_before_anchor_or_at_tail_by_before_id() {
+    //
     let mock = Mock::new();
 
     seed_scope(&mock, 2, 2, 0);
@@ -477,8 +513,8 @@ async fn save_infos_places_unit_before_anchor_or_at_tail_by_before_id() {
             diff: UnitDiffData {
                 page_id: "page-1".into(),
                 opers: vec![
-                    save_update_oper("unit-c", "gamma", Some("unit-a")),
-                    save_update_oper("unit-d", "delta", None),
+                    save_oper("unit-c", "gamma", Some("unit-a")),
+                    save_oper("unit-d", "delta", None),
                 ],
             },
         },
@@ -486,7 +522,9 @@ async fn save_infos_places_unit_before_anchor_or_at_tail_by_before_id() {
     .await;
 
     let saved = match saved {
+        //
         Ok(saved) => saved,
+
         Err(_) => panic!("expected save success"),
     };
 
@@ -529,6 +567,7 @@ fn clone_oracle(units: &[OracleUnit]) -> Vec<OracleUnit> {
 
 #[tokio::test]
 async fn save_infos_concurrent_merge_reaches_consistent_final_state() {
+    //
     let initial_count = 20;
 
     let oper_count = 20;
@@ -538,6 +577,7 @@ async fn save_infos_concurrent_merge_reaches_consistent_final_state() {
     let mut initial_units = Vec::new();
 
     for index in 0..initial_count {
+        //
         let unit_id = format!("unit-{}", index);
 
         initial_units.push(OracleUnit {
@@ -680,9 +720,11 @@ fn generate_random_opers(
     tag: &str,
     count: usize,
 ) -> Vec<UnitOperData> {
+    //
     let mut opers = Vec::with_capacity(count);
 
     for step in 0..count {
+        //
         let subject_index = rng.range(initial_units.len());
 
         let subject_id = initial_units[subject_index].id.clone();
@@ -697,17 +739,14 @@ fn generate_random_opers(
 
         let proofread = rng.bool();
 
-        opers.push(UnitOperData::Save {
-            local_id: None,
-            id: Some(subject_id),
-            before_id,
-            payload: payload_data(
-                &text,
-                proofread,
-                10.0 + step as f64,
-                20.0 + step as f64,
-            ),
-        });
+        opers.push(save_oper_with_payload(
+            &subject_id,
+            &text,
+            proofread,
+            10.0 + step as f64,
+            20.0 + step as f64,
+            before_id.as_deref(),
+        ));
     }
 
     opers
@@ -720,21 +759,24 @@ fn apply_opers_to_oracle(
 ) {
     for (step, oper) in opers.iter().enumerate() {
         match oper {
-            UnitOperData::Save {
-                id,
+            //
+            UnitOperData::Create {
                 local_id,
                 before_id,
-                payload,
+                is_proofread,
+                x_coord,
+                y_coord,
+                ..
             } => {
-                let resolved_id =
-                    id.clone().or_else(|| local_id.clone()).unwrap_or_default();
+                //
+                let resolved_id = local_id.clone();
 
                 let oracle_unit = OracleUnit {
                     id: resolved_id.clone(),
                     text: format!("text-{}-{}-{}", tag, resolved_id, step),
-                    proofread: payload.is_proofread,
-                    x_coord: payload.x_coord,
-                    y_coord: payload.y_coord,
+                    proofread: *is_proofread,
+                    x_coord: *x_coord,
+                    y_coord: *y_coord,
                 };
 
                 oracle_units.retain(|unit| unit.id != resolved_id);
@@ -751,6 +793,42 @@ fn apply_opers_to_oracle(
 
                 oracle_units.insert(insert_position, oracle_unit);
             }
+
+            //
+            UnitOperData::Save {
+                id,
+                before_id,
+                is_proofread,
+                x_coord,
+                y_coord,
+                ..
+            } => {
+                //
+                let resolved_id = id.clone();
+
+                let oracle_unit = OracleUnit {
+                    id: resolved_id.clone(),
+                    text: format!("text-{}-{}-{}", tag, resolved_id, step),
+                    proofread: *is_proofread,
+                    x_coord: *x_coord,
+                    y_coord: *y_coord,
+                };
+
+                oracle_units.retain(|unit| unit.id != resolved_id);
+
+                let insert_position = before_id
+                    .as_ref()
+                    .filter(|before_id| *before_id != &resolved_id)
+                    .and_then(|before_id| {
+                        oracle_units
+                            .iter()
+                            .position(|unit| unit.id == *before_id)
+                    })
+                    .unwrap_or(oracle_units.len());
+
+                oracle_units.insert(insert_position, oracle_unit);
+            }
+
             UnitOperData::Delete { id } => {
                 oracle_units.retain(|unit| unit.id != *id);
             }
@@ -759,6 +837,7 @@ fn apply_opers_to_oracle(
 }
 
 fn build_seeded_mock(initial_units: &[OracleUnit]) -> Mock {
+    //
     let mock = Mock::new();
 
     let initial_count = initial_units.len() as i32;
@@ -789,6 +868,7 @@ async fn apply_save_to_mock(
     mock: &Mock,
     opers: &[UnitOperData],
 ) -> RegularResult<()> {
+    //
     save_infos(
         mock,
         mock,
@@ -807,6 +887,7 @@ async fn apply_save_to_mock(
 }
 
 fn collect_sorted_units(units: &[UnitInfo], page_id: &str) -> Vec<UnitInfo> {
+    //
     let mut filtered: Vec<UnitInfo> = units
         .iter()
         .filter(|unit_info| unit_info.page_id == page_id)
@@ -820,6 +901,7 @@ fn collect_sorted_units(units: &[UnitInfo], page_id: &str) -> Vec<UnitInfo> {
 
 #[tokio::test]
 async fn save_infos_rolls_back_without_edit_role() {
+    //
     let mock = Mock::new();
 
     seed_scope(&mock, 1, 1, 0);
@@ -840,7 +922,7 @@ async fn save_infos_rolls_back_without_edit_role() {
             page_id: "page-1".into(),
             diff: UnitDiffData {
                 page_id: "page-1".into(),
-                opers: vec![save_create_oper("local-x", "inserted", None)],
+                opers: vec![create_oper("local-x", "inserted", None)],
             },
         },
     )
@@ -861,6 +943,7 @@ async fn save_infos_rolls_back_without_edit_role() {
 
 #[tokio::test]
 async fn save_infos_rolls_back_invalid_diff() {
+    //
     let mock = Mock::new();
 
     seed_scope(&mock, 1, 1, 0);
@@ -884,8 +967,8 @@ async fn save_infos_rolls_back_invalid_diff() {
             diff: UnitDiffData {
                 page_id: "page-1".into(),
                 opers: vec![
-                    save_create_oper("local-x", "inserted", None),
-                    save_create_oper("local-x", "duplicate", None),
+                    create_oper("local-x", "inserted", None),
+                    create_oper("local-x", "duplicate", None),
                 ],
             },
         },
@@ -896,14 +979,7 @@ async fn save_infos_rolls_back_invalid_diff() {
 
     let snapshot = mock.snapshot();
 
-    match e {
-        RegularError::Expected { variant, .. } => {
-            assert!(matches!(variant, ExpectedVariant::Args));
-        }
-        RegularError::Unrecoverable { .. } => {
-            panic!("expected argument error");
-        }
-    }
+    assert_args_error(e);
 
     assert_eq!(snapshot.units[0].translated_text.as_deref(), Some("alpha"));
 
@@ -915,4 +991,70 @@ async fn save_infos_rolls_back_invalid_diff() {
         snapshot.comics[0].last_active_at,
         before_snapshot.comics[0].last_active_at
     );
+}
+
+#[tokio::test]
+async fn save_infos_rejects_missing_text_editor_ids_before_transaction() {
+    //
+    let mock = Mock::new();
+
+    let create_error = save_infos(
+        &mock,
+        &mock,
+        token("user-1"),
+        SavePageUnitsData {
+            page_id: "page-1".into(),
+            diff: UnitDiffData {
+                page_id: "page-1".into(),
+                opers: vec![UnitOperData::Create {
+                    local_id: "local-1".into(),
+                    before_id: None,
+                    is_bubble: true,
+                    is_proofread: false,
+                    x_coord: 1.0,
+                    y_coord: 2.0,
+                    translated_text: Some("translated".into()),
+                    last_translator_id: None,
+                    proofread_text: None,
+                    last_proofreader_id: None,
+                }],
+            },
+        },
+    )
+    .await
+    .err()
+    .unwrap();
+
+    assert_args_error(create_error);
+
+    let save_error = save_infos(
+        &mock,
+        &mock,
+        token("user-1"),
+        SavePageUnitsData {
+            page_id: "page-1".into(),
+            diff: UnitDiffData {
+                page_id: "page-1".into(),
+                opers: vec![UnitOperData::Save {
+                    id: "unit-a".into(),
+                    before_id: None,
+                    is_bubble: true,
+                    is_proofread: true,
+                    x_coord: 1.0,
+                    y_coord: 2.0,
+                    translated_text: None,
+                    last_translator_id: None,
+                    proofread_text: Some("proofread".into()),
+                    last_proofreader_id: Some(String::new()),
+                }],
+            },
+        },
+    )
+    .await
+    .err()
+    .unwrap();
+
+    assert_args_error(save_error);
+
+    assert!(mock.snapshot().units.is_empty());
 }

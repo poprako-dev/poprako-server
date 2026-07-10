@@ -11,11 +11,16 @@ use serde::Deserialize;
 
 use tracing::instrument;
 
-use crate::api::http::result::{Accept as _, HttpBody, HttpError, HttpResult};
+#[cfg(feature = "swagger-ui")]
+use crate::api::http::result::HttpBody;
+
+#[cfg(feature = "swagger-ui")]
+use crate::data::chapter_port::ChapterTranslationExportVal;
+
+use crate::api::http::result::{Accept as _, HttpError, HttpResult};
 use crate::api::http::state::AppHarn;
 use crate::data::chapter_port::{
-    ChapterTranslationExportVal, ChapterTranslationImportData,
-    ChapterTranslationImportVal,
+    ChapterTranslationImportData, ChapterTranslationImportVal,
 };
 use crate::model::user::UserToken;
 use crate::usecase;
@@ -84,6 +89,7 @@ pub async fn export(
     Extension(user_token): Extension<UserToken>,
     Query(query): Query<TranslationExportQuery>,
 ) -> Result<Response, HttpError> {
+    //
     let payload =
         export_payload(&harn, user_token, chapter_id, query.format).await?;
 
@@ -114,7 +120,9 @@ pub async fn export_download(
     Extension(user_token): Extension<UserToken>,
     Query(query): Query<TranslationExportQuery>,
 ) -> Result<Response, HttpError> {
+    //
     let filename = format!("chapter_{}", chapter_id);
+
     let payload =
         export_payload(&harn, user_token, chapter_id, query.format).await?;
 
@@ -140,7 +148,9 @@ async fn export_payload(
     format: TranslationFormat,
 ) -> Result<TranslationExportPayload, HttpError> {
     match format {
+        //
         TranslationFormat::PopRaKo => {
+            //
             let val = usecase::chapter_port::export(
                 harn.repo(),
                 harn.image_pool(),
@@ -150,10 +160,12 @@ async fn export_payload(
             .await?;
 
             let body = serde_json::to_vec(&val).map_err(|err| {
+                //
                 tracing::warn!(
                     error = %err,
                     "[chapter_port::export_payload] serialization failed",
                 );
+
                 HttpError::internal()
             })?;
 
@@ -163,7 +175,9 @@ async fn export_payload(
                 body: Bytes::from(body),
             })
         }
+
         TranslationFormat::LabelPlus => {
+            //
             let content = usecase::chapter_port::export_label_plus(
                 harn.repo(),
                 user_token,
@@ -189,10 +203,12 @@ fn body_response(
         .header(CONTENT_TYPE, payload.content_type)
         .body(Body::from(payload.body))
         .map_err(|err| {
+            //
             tracing::warn!(
                 error = %err,
                 "[chapter_port::body_response] build failed",
             );
+
             HttpError::internal()
         })
 }
@@ -203,6 +219,7 @@ fn download_response(
     filename_base: &str,
     payload: TranslationExportPayload,
 ) -> Result<Response, HttpError> {
+    //
     let filename = format!("{}.{}", filename_base, payload.extension);
 
     Response::builder()
@@ -214,10 +231,12 @@ fn download_response(
         )
         .body(Body::from(payload.body))
         .map_err(|err| {
+            //
             tracing::warn!(
                 error = %err,
                 "[chapter_port::download_response] build failed",
             );
+
             HttpError::internal()
         })
 }
