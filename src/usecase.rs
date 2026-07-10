@@ -36,45 +36,37 @@
 //! [`Drive::with_context`]: poprako_transactional::drive::Drive::with_context
 //! [`Advance`]: poprako_transactional::advance::Advance
 
-/// Authentication use cases (register, login, logout).
-pub mod auth;
-/// User management use cases.
-pub mod user;
-
-// TODO: check effects.
-/// System mail use cases.
-pub mod system_mail;
-
-/// Member management use cases.
-pub mod member;
-/// Member invitation use cases.
-pub mod member_invitation;
-/// Team management use cases.
-pub mod team;
-
-/// Chapter lifecycle use cases.
-pub mod chapter;
-/// Comic lifecycle use cases.
-pub mod comic;
-/// Immutable comic archive use cases.
-pub mod comic_archive;
-/// Workset lifecycle use cases.
-pub mod workset;
-
+/// Announcement use cases.
+pub mod announcement;
 /// Assignment management use cases.
 pub mod assignment;
 /// Assignment invitation use cases.
 pub mod assignment_invitation;
-
-/// Page management use cases.
-pub mod page;
-/// Unit ordering use cases.
-pub mod unit;
-
-/// Announcement use cases.
-pub mod announcement;
-/// Comment use cases.
-pub mod comment;
-
+/// Authentication use cases (register, login, logout).
+pub mod auth;
+/// Chapter lifecycle use cases.
+pub mod chapter;
 /// Chapter port import/export use cases.
 pub mod chapter_port;
+/// Comic lifecycle use cases.
+pub mod comic;
+/// Immutable comic archive use cases.
+pub mod comic_archive;
+/// Comment use cases.
+pub mod comment;
+/// Member management use cases.
+pub mod member;
+/// Member invitation use cases.
+pub mod member_invitation;
+/// Page management use cases.
+pub mod page;
+/// System mail use cases.
+pub mod system_mail;
+/// Team management use cases.
+pub mod team;
+/// Unit ordering use cases.
+pub mod unit;
+/// User management use cases.
+pub mod user;
+/// Workset lifecycle use cases.
+pub mod workset;
