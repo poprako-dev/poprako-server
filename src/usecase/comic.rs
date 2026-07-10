@@ -265,7 +265,7 @@ where
     let mut comic_info_vals = Vec::with_capacity(comic_infos.len());
 
     for comic_info in comic_infos {
-        // FIXME: spacing.
+        //
         let pinned_chapter_val = match pinned_chapters.remove(&comic_info.id) {
             Some(chapter_info) => Some(
                 ChapterInfoVal::from_model(image_pool, chapter_info).await?,
@@ -409,7 +409,6 @@ where
                 cover_reservation.cover_version,
             ))
         })
-        // FIXME: spacing
         .await?;
 
     let put_url = image_pool.put_signed(&object_key).await?.to_string();

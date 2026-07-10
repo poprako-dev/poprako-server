@@ -45,7 +45,9 @@ impl Drive<RdbContext> for RdbDrive {
 
         let mut rdb_context = RdbContext::new(conn);
 
-        // FIXME: use run_transaction.
+        // Manual begin/commit/rollback instead of `TransactionManager::transaction()`
+        // because that method requires `E: From<diesel::result::Error>`, but our
+        // generic advance error `E` does not satisfy this bound.
         AnsiTransactionManager::begin_transaction(rdb_context.conn())
             .await
             .map_err(|e| DriveError::Backend(diesel(e)))?;

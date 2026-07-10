@@ -83,7 +83,6 @@ pub async fn update_roles(
     )
     .await?;
 
-    // FIXME: use no_content()
     no_content()
 }
 
