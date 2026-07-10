@@ -56,17 +56,37 @@ async fn main() -> anyhow::Result<()> {
 
     dotenvy::dotenv().expect(".env file should be valid");
 
-    if cfg!(debug_assertions) {
+    #[cfg(debug_assertions)]
+    let _log_guard = {
         tracing_subscriber::fmt()
             .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
             .with_span_events(tracing_subscriber::fmt::format::FmtSpan::CLOSE)
             .init();
-    } else {
-        // FIXME: rotating.
+
+        None::<tracing_appender::non_blocking::WorkerGuard>
+    };
+
+    #[cfg(not(debug_assertions))]
+    let _log_guard = {
+        let log_folder = std::path::Path::new("logs");
+
+        std::fs::create_dir_all(log_folder)
+            .context("failed to create log folder")?;
+
+        let file_appender =
+            tracing_appender::rolling::daily(log_folder, "poprako_r.log");
+
+        let (non_blocking, log_guard) =
+            tracing_appender::non_blocking(file_appender);
+
         tracing_subscriber::fmt()
             .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
+            .with_writer(non_blocking)
+            .with_ansi(false)
             .init();
-    }
+
+        Some(log_guard)
+    };
 
     let config = AppConfig::from_default_file()
         .await
