@@ -1,9 +1,9 @@
-# poprako-s Capability Gap Audit For poprako-r Use Cases
+# poprako-s Capability Gap Audit For poprako-server Use Cases
 
 This document is an implementation backlog, not an interface-shape diff.
 
 Only list a gap when `poprako-s` exposes a use-case capability that the active
-`poprako-r` code cannot currently provide. Do not list items merely because the
+`poprako-server` code cannot currently provide. Do not list items merely because the
 Rust implementation path, function name, DTO name, response wrapper, or return
 shape is different.
 

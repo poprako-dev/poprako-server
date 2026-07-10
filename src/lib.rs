@@ -4,6 +4,7 @@
 /// Application configuration parsing and access.
 mod config;
 
+#[cfg(feature = "swagger-ui")]
 pub use api::http::openapi::ApiDoc;
 pub use api::http::server::serve;
 pub use api::http::state::AppHarn;
@@ -14,7 +15,6 @@ pub use part_impl::drive::rdb_impl::RdbDrive;
 pub use part_impl::effect::async_impl::AsyncEffectDevelop;
 pub use part_impl::image::r2_impl::R2ImagePool;
 pub use part_impl::prom::rdb_impl::RdbProm;
-pub use part_impl::prom::rdb_impl::spawn_handler;
 pub use part_impl::repo::rdb_impl::RdbRepo;
 pub use part_impl::shared::RdbCore;
 

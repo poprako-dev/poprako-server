@@ -1,6 +1,6 @@
 ---
 name: code-style-check
-description: All 70 formatting/naming/structural rules across every poprako-r layer. Run each rule as a discrete check.
+description: All 70 formatting/naming/structural rules across every poprako-server layer. Run each rule as a discrete check.
 ---
 
 # Code Style Check — 70 Rules

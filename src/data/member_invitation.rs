@@ -3,6 +3,7 @@
 
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "swagger-ui")]
 use utoipa::{IntoParams, ToSchema};
 
 use poprako_macro::Paginate;
@@ -19,7 +20,8 @@ use crate::value::role::RoleMask;
 /// The invitation binds a specific QQ ID (`invitee_qid`) to a [`RoleMask`]
 /// that will be granted upon acceptance. The actual in-app user lookup
 /// happens during the registration flow.
-#[derive(Debug, Deserialize, ToSchema)]
+#[derive(Debug, Deserialize)]
+#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
 pub struct CreateMemberInvitationData {
     pub team_id: String,
 
@@ -35,7 +37,8 @@ pub struct CreateMemberInvitationData {
 ///
 /// The `code` is a short opaque token the invitee presents during
 /// registration to claim the invitation.
-#[derive(Debug, Serialize, ToSchema)]
+#[derive(Debug, Serialize)]
+#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
 pub struct CreateMemberInvitationVal {
     pub id: String,
     pub code: String,
@@ -48,8 +51,9 @@ pub struct CreateMemberInvitationVal {
 ///
 /// Example: `/api/v1/teams/{team_id}/member-invitations?pending=true&incl=invitor&offset=0&limit=20`.
 #[Paginate]
-#[derive(Debug, Deserialize, IntoParams)]
-#[into_params(parameter_in = Query)]
+#[derive(Debug, Deserialize)]
+#[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
+#[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
 pub struct ListMemberInvitationInfosData {
     /// Parent team whose invitations to list.
     pub team_id: String,
@@ -73,7 +77,8 @@ pub struct ListMemberInvitationInfosData {
 /// model carries no timestamps).
 ///
 /// [`MemberInvitationInfo`]: crate::model::member_invitation::MemberInvitationInfo
-#[derive(Debug, Serialize, ToSchema)]
+#[derive(Debug, Serialize)]
+#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
 pub struct MemberInvitationInfoVal {
     pub id: String,
 
@@ -135,7 +140,8 @@ impl MemberInvitationInfoVal {
 }
 
 /// Input parameters for updating a pending invitation's roles.
-#[derive(Debug, Deserialize, ToSchema)]
+#[derive(Debug, Deserialize)]
+#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
 pub struct UpdateMemberInvitationRolesData {
     pub id: String,
     pub roles: RoleMask,

@@ -8,6 +8,7 @@ use serde::Deserialize;
 
 use tracing::instrument;
 
+#[cfg(feature = "swagger-ui")]
 use utoipa::IntoParams;
 
 use crate::api::http::handler::util::ensure_path_matches_body_id;
@@ -37,8 +38,9 @@ use crate::value::comic::{ComicInclOpt, ComicWithOpt};
 ///
 /// `incl` embeds related rows into each item; `with` attaches derived rows.
 /// Dotted `incl` values implicitly pull in their parent segments.
-#[derive(Debug, Deserialize, IntoParams)]
-#[into_params(parameter_in = Query)]
+#[derive(Debug, Deserialize)]
+#[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
+#[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
 pub struct ComicListQuery {
     /// Fuzzy title substring filter (case-insensitive).
     pub fuzzy_title: Option<String>,
@@ -78,7 +80,7 @@ pub struct ComicListQuery {
 }
 
 /// `POST /api/v1/comics` — create a comic (and its first chapter).
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     post,
     path = "/api/v1/comics",
     tag = "comics",
@@ -88,7 +90,7 @@ pub struct ComicListQuery {
         (status = 403, description = "No permission to create comics in this workset"),
         (status = 404, description = "Workset not found"),
     ),
-)]
+))]
 #[instrument(err, skip(harn, data))]
 pub async fn create(
     State(harn): State<AppHarn>,
@@ -101,7 +103,7 @@ pub async fn create(
 }
 
 /// `GET /api/v1/worksets/{workset_id}/comics` — list comics in a workset.
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     get,
     path = "/api/v1/worksets/{workset_id}/comics",
     tag = "comics",
@@ -112,7 +114,7 @@ pub async fn create(
         (status = 403, description = "No permission to list comics in this workset"),
         (status = 422, description = "Invalid argument combination (e.g. is_completed=true with stages)"),
     ),
-)]
+))]
 #[instrument(err, skip(harn))]
 pub async fn list_infos(
     State(harn): State<AppHarn>,
@@ -137,7 +139,7 @@ pub async fn list_infos(
 }
 
 /// `GET /api/v1/comics/{comic_id}` — fetch a comic by id.
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     get,
     path = "/api/v1/comics/{comic_id}",
     tag = "comics",
@@ -147,7 +149,7 @@ pub async fn list_infos(
         (status = 403, description = "No permission to view this comic"),
         (status = 404, description = "Comic not found"),
     ),
-)]
+))]
 #[instrument(err, skip(harn))]
 pub async fn get_info(
     State(harn): State<AppHarn>,
@@ -165,7 +167,7 @@ pub async fn get_info(
 }
 
 /// `PUT /api/v1/comics/{comic_id}` — update a comic's profile.
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     put,
     path = "/api/v1/comics/{comic_id}",
     tag = "comics",
@@ -177,7 +179,7 @@ pub async fn get_info(
         (status = 403, description = "No permission to update this comic"),
         (status = 404, description = "Comic not found"),
     ),
-)]
+))]
 #[instrument(err, skip(harn, data))]
 pub async fn update_info(
     State(harn): State<AppHarn>,
@@ -193,7 +195,7 @@ pub async fn update_info(
 }
 
 /// `POST /api/v1/comics/{comic_id}/cover/reserve` — reserve a cover upload slot.
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     post,
     path = "/api/v1/comics/{comic_id}/cover/reserve",
     tag = "comics",
@@ -204,7 +206,7 @@ pub async fn update_info(
         (status = 403, description = "No permission to modify this comic's cover"),
         (status = 404, description = "Comic not found"),
     ),
-)]
+))]
 #[instrument(err, skip(harn, data))]
 pub async fn reserve_cover(
     State(harn): State<AppHarn>,
@@ -226,7 +228,7 @@ pub async fn reserve_cover(
 }
 
 /// `POST /api/v1/comics/{comic_id}/cover/mark-uploaded` — confirm a cover upload.
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     post,
     path = "/api/v1/comics/{comic_id}/cover/mark-uploaded",
     tag = "comics",
@@ -237,7 +239,7 @@ pub async fn reserve_cover(
         (status = 403, description = "No permission to modify this comic's cover"),
         (status = 404, description = "Comic not found"),
     ),
-)]
+))]
 #[instrument(err, skip(harn, data))]
 pub async fn mark_cover_uploaded(
     State(harn): State<AppHarn>,
@@ -256,7 +258,7 @@ pub async fn mark_cover_uploaded(
 }
 
 /// `POST /api/v1/comics/{comic_id}/mark-archived` — mark a comic archived.
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     post,
     path = "/api/v1/comics/{comic_id}/mark-archived",
     tag = "comics",
@@ -268,7 +270,7 @@ pub async fn mark_cover_uploaded(
         (status = 403, description = "No permission to modify this comic"),
         (status = 404, description = "Comic not found"),
     ),
-)]
+))]
 #[instrument(err, skip(harn, data))]
 pub async fn mark_archived(
     State(harn): State<AppHarn>,
@@ -289,7 +291,7 @@ pub async fn mark_archived(
 }
 
 /// `DELETE /api/v1/comics/{comic_id}` — delete a comic and descendants.
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     delete,
     path = "/api/v1/comics/{comic_id}",
     tag = "comics",
@@ -299,7 +301,7 @@ pub async fn mark_archived(
         (status = 403, description = "No permission to delete this comic"),
         (status = 404, description = "Comic not found"),
     ),
-)]
+))]
 #[instrument(err, skip(harn))]
 pub async fn delete(
     State(harn): State<AppHarn>,

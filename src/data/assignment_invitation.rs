@@ -2,6 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "swagger-ui")]
 use utoipa::{IntoParams, ToSchema};
 
 use poprako_macro::Paginate;
@@ -11,7 +12,8 @@ use crate::model::assignment_invitation::AssignmentInvitationInfo;
 use crate::value::role::RoleMask;
 
 /// Presentation-ready assignment invitation information.
-#[derive(Debug, Serialize, ToSchema)]
+#[derive(Debug, Serialize)]
+#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
 pub struct AssignmentInvitationInfoVal {
     pub id: String,
 
@@ -50,8 +52,9 @@ impl From<AssignmentInvitationInfo> for AssignmentInvitationInfoVal {
 ///
 /// Example: `/api/v1/assignment-invitations?chapter_id=c_1&pending=true&offset=0&limit=20`.
 #[Paginate]
-#[derive(Debug, Deserialize, IntoParams)]
-#[into_params(parameter_in = Query)]
+#[derive(Debug, Deserialize)]
+#[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
+#[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
 pub struct ListAssignmentInvitationInfosData {
     /// Parent chapter whose assignment invitations to list.
     pub chapter_id: String,
@@ -62,7 +65,8 @@ pub struct ListAssignmentInvitationInfosData {
 }
 
 /// Input parameters for creating an assignment invitation.
-#[derive(Debug, Deserialize, ToSchema)]
+#[derive(Debug, Deserialize)]
+#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
 pub struct CreateAssignmentInvitationData {
     pub chapter_id: String,
     pub invitee_qid: String,
@@ -70,14 +74,16 @@ pub struct CreateAssignmentInvitationData {
 }
 
 /// Return value from creating an assignment invitation.
-#[derive(Debug, Serialize, ToSchema)]
+#[derive(Debug, Serialize)]
+#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
 pub struct CreateAssignmentInvitationVal {
     pub id: String,
     pub code: String,
 }
 
 /// Input parameters for joining an assignment through an invitation code.
-#[derive(Debug, Deserialize, ToSchema)]
+#[derive(Debug, Deserialize)]
+#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
 pub struct JoinAssignmentInvitationData {
     pub code: String,
 }

@@ -2,6 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "swagger-ui")]
 use utoipa::{IntoParams, ToSchema};
 
 use poprako_macro::Paginate;
@@ -14,7 +15,8 @@ use crate::result::RegularResult;
 use crate::value::comment::CommentInclOpt;
 
 /// Presentation-ready team board comment information.
-#[derive(Debug, Serialize, ToSchema)]
+#[derive(Debug, Serialize)]
+#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
 pub struct CommentInfoVal {
     pub id: String,
 
@@ -59,8 +61,9 @@ impl CommentInfoVal {
 ///
 /// Example: `/api/v1/teams/{team_id}/comments?incl=user&offset=0&limit=20`.
 #[Paginate]
-#[derive(Debug, Deserialize, IntoParams)]
-#[into_params(parameter_in = Query)]
+#[derive(Debug, Deserialize)]
+#[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
+#[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
 pub struct ListCommentInfosData {
     /// Parent team whose comments to list.
     pub team_id: String,
@@ -86,14 +89,16 @@ impl From<ListCommentInfosData> for CommentListSpec {
 }
 
 /// Input parameters for creating a comment.
-#[derive(Debug, Deserialize, ToSchema)]
+#[derive(Debug, Deserialize)]
+#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
 pub struct CreateCommentData {
     pub team_id: String,
     pub content: String,
 }
 
 /// Return value from creating a comment.
-#[derive(Debug, Serialize, ToSchema)]
+#[derive(Debug, Serialize)]
+#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
 pub struct CreateCommentVal {
     pub id: String,
 }

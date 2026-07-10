@@ -22,7 +22,7 @@ use crate::model::user::UserToken;
 use crate::usecase;
 
 /// `GET /api/v1/chapters/{chapter_id}/pages` — list pages in a chapter.
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     get,
     path = "/api/v1/chapters/{chapter_id}/pages",
     tag = "pages",
@@ -31,7 +31,7 @@ use crate::usecase;
         (status = 200, description = "Pages listed", body = HttpBody<Vec<PageInfoVal>>),
         (status = 403, description = "No permission to list pages in this chapter"),
     ),
-)]
+))]
 #[instrument(err, skip(harn))]
 pub async fn list_infos(
     State(harn): State<AppHarn>,
@@ -51,7 +51,7 @@ pub async fn list_infos(
 }
 
 /// `DELETE /api/v1/chapters/{chapter_id}/pages` — delete all pages in a chapter.
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     delete,
     path = "/api/v1/chapters/{chapter_id}/pages",
     tag = "pages",
@@ -60,7 +60,7 @@ pub async fn list_infos(
         (status = 204, description = "All pages deleted"),
         (status = 403, description = "No permission to delete pages in this chapter"),
     ),
-)]
+))]
 #[instrument(err, skip(harn))]
 pub async fn delete(
     State(harn): State<AppHarn>,
@@ -79,7 +79,7 @@ pub async fn delete(
 }
 
 /// `POST /api/v1/chapters/{chapter_id}/pages/reserve` — reserve all page images.
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     post,
     path = "/api/v1/chapters/{chapter_id}/pages/reserve",
     tag = "pages",
@@ -91,7 +91,7 @@ pub async fn delete(
         (status = 403, description = "No permission to reserve pages in this chapter"),
         (status = 422, description = "Chapter already has pages or invalid page count"),
     ),
-)]
+))]
 #[instrument(err, skip(harn, data))]
 pub async fn reserve_chapter_pages(
     State(harn): State<AppHarn>,
@@ -114,7 +114,7 @@ pub async fn reserve_chapter_pages(
 }
 
 /// `POST /api/v1/pages/{page_id}/image/reserve` — reserve a replacement page image.
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     post,
     path = "/api/v1/pages/{page_id}/image/reserve",
     tag = "pages",
@@ -125,7 +125,7 @@ pub async fn reserve_chapter_pages(
         (status = 403, description = "No permission to modify this page's image"),
         (status = 404, description = "Page not found"),
     ),
-)]
+))]
 #[instrument(err, skip(harn, data))]
 pub async fn reserve_image(
     State(harn): State<AppHarn>,
@@ -147,7 +147,7 @@ pub async fn reserve_image(
 }
 
 /// `POST /api/v1/pages/{page_id}/image/mark-uploaded` — confirm a page image upload.
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     post,
     path = "/api/v1/pages/{page_id}/image/mark-uploaded",
     tag = "pages",
@@ -158,7 +158,7 @@ pub async fn reserve_image(
         (status = 403, description = "No permission to modify this page's image"),
         (status = 404, description = "Page not found"),
     ),
-)]
+))]
 #[instrument(err, skip(harn, data))]
 pub async fn mark_image_uploaded(
     State(harn): State<AppHarn>,

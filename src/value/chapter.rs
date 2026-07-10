@@ -4,6 +4,7 @@ use std::result::Result;
 
 use serde::{Deserialize, Serialize, Serializer};
 
+#[cfg(feature = "swagger-ui")]
 use utoipa::ToSchema;
 
 use poprako_util::i18n::trl;
@@ -12,9 +13,8 @@ use crate::result::{ExpectedVariant, RegularError, RegularResult};
 use crate::value::incl::InclOpt;
 
 /// Phase a workflow stage can be in.
-#[derive(
-    Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema,
-)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
 #[serde(rename_all = "kebab-case")]
 pub enum StagePhase {
     Pending,
@@ -23,9 +23,8 @@ pub enum StagePhase {
 }
 
 /// Stage in the chapter production pipeline.
-#[derive(
-    Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema,
-)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
 #[serde(rename_all = "kebab-case")]
 pub enum Stage {
     /// Raw provide phase.
@@ -57,9 +56,8 @@ pub fn is_valid_stage_phase(stage: Stage, phase: StagePhase) -> bool {
 }
 
 /// Operation applied to a workflow stage.
-#[derive(
-    Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema,
-)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
 #[serde(rename_all = "kebab-case")]
 pub enum StageOper {
     /// Advance to the next phase.
@@ -212,7 +210,8 @@ impl Serialize for StagePhaseField {
 /// | TypesetRedraw | 6–7 | `StagePhaseField` |
 /// | Review | 8–9 | `StagePhaseField` |
 /// | Publish | 10–11 | `StagePhaseField` |
-#[derive(Debug, Clone, Copy, PartialEq, Eq, ToSchema)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
 pub struct StageMask(u32);
 
 impl StageMask {
@@ -438,7 +437,8 @@ impl Serialize for StageMask {
 /// Each opt embeds additional related data into the returned
 /// `ChapterInfoVal`. Dotted opts implicitly pull in the segments before the
 /// dot (e.g. `comic.workset.team` also embeds `comic` and `comic.workset`).
-#[derive(Debug, Deserialize, Clone, Copy, PartialEq, Eq, ToSchema)]
+#[derive(Debug, Deserialize, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
 pub enum ChapterInclOpt {
     /// Embed the parent comic (`comic`).
     #[serde(rename = "comic")]

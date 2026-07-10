@@ -329,8 +329,8 @@ Test descriptions must be module-level comments. Cover list filtering, sorting, 
 Run:
 
 ```bash
-cargo test -p poprako-r part_impl::repo_mock::comment
-cargo test -p poprako-r part_impl::repo_mock::announcement
+cargo test -p poprako-server part_impl::repo_mock::comment
+cargo test -p poprako-server part_impl::repo_mock::announcement
 ```
 
 Expected: both targeted mock test groups pass.
@@ -388,8 +388,8 @@ Required positive and negative coverage:
 Run:
 
 ```bash
-cargo test -p poprako-r usecase::comment
-cargo test -p poprako-r usecase::announcement
+cargo test -p poprako-server usecase::comment
+cargo test -p poprako-server usecase::announcement
 ```
 
 Expected: both targeted use case test groups pass.
@@ -423,10 +423,10 @@ Run:
 
 ```bash
 cargo fmt
-cargo test -p poprako-r usecase::comment
-cargo test -p poprako-r usecase::announcement
-cargo test -p poprako-r part_impl::repo_mock::comment
-cargo test -p poprako-r part_impl::repo_mock::announcement
+cargo test -p poprako-server usecase::comment
+cargo test -p poprako-server usecase::announcement
+cargo test -p poprako-server part_impl::repo_mock::comment
+cargo test -p poprako-server part_impl::repo_mock::announcement
 cargo check
 ```
 

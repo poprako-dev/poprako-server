@@ -17,7 +17,7 @@ use crate::model::user::UserToken;
 use crate::usecase;
 
 /// `GET /api/v1/system-mails` — list the current user's system mails.
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     get,
     path = "/api/v1/system-mails",
     tag = "system-mails",
@@ -26,7 +26,7 @@ use crate::usecase;
         (status = 200, description = "System mails listed", body = HttpBody<Vec<SystemMailVal>>),
         (status = 401, description = "Authentication required"),
     ),
-)]
+))]
 #[instrument(err, skip(harn))]
 pub async fn list_infos(
     State(harn): State<AppHarn>,
@@ -39,7 +39,7 @@ pub async fn list_infos(
 }
 
 /// `POST /api/v1/system-mails/mark-read` — mark a batch of mails as read.
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     post,
     path = "/api/v1/system-mails/mark-read",
     tag = "system-mails",
@@ -48,7 +48,7 @@ pub async fn list_infos(
         (status = 204, description = "Mails marked as read"),
         (status = 403, description = "One or more mails do not belong to the user"),
     ),
-)]
+))]
 #[instrument(err, skip(harn, data))]
 pub async fn mark_read(
     State(harn): State<AppHarn>,

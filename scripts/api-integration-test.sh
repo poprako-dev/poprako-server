@@ -67,7 +67,7 @@ if [ "$start_api_server" = "1" ]; then
         exit 1
     fi
 
-    cargo run -p poprako-r --bin poprako-r &
+    cargo run -p poprako-server --bin poprako-server &
     server_pid="$!"
 
     health_ok=0

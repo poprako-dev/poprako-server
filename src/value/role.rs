@@ -4,6 +4,7 @@ use std::result::Result;
 
 use serde::de::Error as _;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+#[cfg(feature = "swagger-ui")]
 use utoipa::ToSchema;
 
 use poprako_util::i18n::trl;
@@ -30,8 +31,9 @@ mod tests;
 /// | 256   | `BOT`          | Bot                     |
 ///
 /// Only a **single** valid bit is accepted; composite values are rejected.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, ToSchema)]
-#[schema(example = 2)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger-ui", schema(example = 2))]
 pub struct RoleField(u32);
 
 impl RoleField {
@@ -84,8 +86,9 @@ impl RoleField {
 /// | 256   | `BOT`          | Bot                     |
 ///
 /// **Examples:** `1` = RAW_PROVIDER, `6` = TRANSLATOR | PROOFREADER, `255` = all roles except BOT.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, ToSchema)]
-#[schema(example = 34)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger-ui", schema(example = 34))]
 pub struct RoleMask(u32);
 
 impl RoleMask {

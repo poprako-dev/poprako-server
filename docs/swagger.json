@@ -1,7 +1,7 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "poprako-r",
+    "title": "poprako-server",
     "description": "Event-driven backend service for manga translation project management",
     "license": {
       "name": "MIT",

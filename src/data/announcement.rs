@@ -2,6 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "swagger-ui")]
 use utoipa::{IntoParams, ToSchema};
 
 use poprako_macro::Paginate;
@@ -14,7 +15,8 @@ use crate::result::RegularResult;
 use crate::value::announcement::AnnouncementInclOpt;
 
 /// Presentation-ready team announcement information.
-#[derive(Debug, Serialize, ToSchema)]
+#[derive(Debug, Serialize)]
+#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
 pub struct AnnouncementInfoVal {
     pub id: String,
 
@@ -61,8 +63,9 @@ impl AnnouncementInfoVal {
 ///
 /// Example: `/api/v1/announcements?team_id=t_1&incl=user&offset=0&limit=20`.
 #[Paginate]
-#[derive(Debug, Deserialize, IntoParams)]
-#[into_params(parameter_in = Query)]
+#[derive(Debug, Deserialize)]
+#[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
+#[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
 pub struct ListAnnouncementInfosData {
     /// Parent team whose announcements to list.
     pub team_id: String,
@@ -88,7 +91,8 @@ impl From<ListAnnouncementInfosData> for AnnouncementListSpec {
 }
 
 /// Input parameters for creating an announcement.
-#[derive(Debug, Deserialize, ToSchema)]
+#[derive(Debug, Deserialize)]
+#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
 pub struct CreateAnnouncementData {
     pub team_id: String,
 
@@ -97,7 +101,8 @@ pub struct CreateAnnouncementData {
 }
 
 /// Return value from creating an announcement.
-#[derive(Debug, Serialize, ToSchema)]
+#[derive(Debug, Serialize)]
+#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
 pub struct CreateAnnouncementVal {
     pub id: String,
 }

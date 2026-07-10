@@ -1,13 +1,13 @@
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "swagger-ui")]
 use utoipa::ToSchema;
 
 /// Translation format used by a chapter port.
 ///
 /// Determines the tooling and schema for the chapter's translation files.
-#[derive(
-    Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema,
-)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
 pub enum TranslationFormat {
     /// LabelPlus translation format.
     #[serde(rename = "label-plus")]

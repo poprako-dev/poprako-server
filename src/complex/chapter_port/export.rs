@@ -32,6 +32,7 @@ impl ChapterExportComplex {
             //
             let image_name = label_plus_image_name(page_info);
 
+            // FIXME: why ignore? and similar ones.
             write!(output, "\n\n>>>>>>>>[{}]<<<<<<<<\n", image_name).unwrap_or_else(|error| {
                 tracing::error!(
                     error = %error,

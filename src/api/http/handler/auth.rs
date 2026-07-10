@@ -29,7 +29,7 @@ fn auth_cookie(token: &str) -> Cookie<'static> {
 ///
 /// Public route. On success, sets the `authorization-token` cookie and returns
 /// the new user id with a signed token.
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     post,
     path = "/api/v1/auth/register",
     tag = "auth",
@@ -39,7 +39,7 @@ fn auth_cookie(token: &str) -> Cookie<'static> {
         (status = 422, description = "Invalid request parameters"),
         (status = 401, description = "Invalid invitation code"),
     ),
-)]
+))]
 #[instrument(err, skip(harn, data))]
 pub async fn register(
     State(harn): State<AppHarn>,
@@ -65,7 +65,7 @@ pub async fn register(
 ///
 /// Public route. On success, sets the `authorization-token` cookie and returns
 /// the user id with a signed token.
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     post,
     path = "/api/v1/auth/login",
     tag = "auth",
@@ -74,7 +74,7 @@ pub async fn register(
         (status = 200, description = "Login successful, sets auth cookie", body = HttpBody<LoginVal>),
         (status = 401, description = "Invalid credentials"),
     ),
-)]
+))]
 #[instrument(err, skip(harn, data))]
 pub async fn login(
     State(harn): State<AppHarn>,
@@ -93,14 +93,14 @@ pub async fn login(
 ///
 /// Public route. Logs the client out by clearing the `authorization-token`
 /// cookie. The client will no longer send the token on subsequent requests.
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     post,
     path = "/api/v1/auth/logout",
     tag = "auth",
     responses(
         (status = 204, description = "Logged out successfully, auth cookie cleared"),
     ),
-)]
+))]
 #[instrument(err)]
 pub async fn logout() -> HttpNoContent {
     let cookie = Cookie::build((AUTH_COOKIE_NAME, ""))

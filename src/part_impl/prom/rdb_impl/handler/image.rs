@@ -10,8 +10,8 @@ use poprako_transactional::advance::Advance;
 use poprako_transactional::drive::Drive;
 
 use crate::part::image::ImagePool;
-use crate::part::prom::Prom;
 use crate::part::prom::task::{ImageKind, ImageTask};
+use crate::part_impl::prom::rdb_impl::repo::LocalMessageRepo;
 use crate::part::repo::comic::ComicRepoTransactional;
 use crate::part::repo::page::PageRepoTransactional;
 use crate::part::repo::step::comic::ComicStep;
@@ -45,10 +45,10 @@ fn classify_current_version(
 }
 
 /// Dispatch an [`ImageTask`] to its concrete handler.
-pub async fn handle<D, R, P, I>(
+pub async fn handle<D, R, I>(
     drive: &D,
     repo: &Arc<R>,
-    _prom: &P,
+    _local_message_repo: &LocalMessageRepo,
     image_pool: &I,
     task: &ImageTask<'_>,
 ) -> TaskOutcome
@@ -62,7 +62,6 @@ where
         + PageRepoTransactional<RdbContext>
         + Send
         + Sync,
-    P: Prom<RdbContext> + Send + Sync,
     I: ImagePool + Send + Sync,
 {
     match task {

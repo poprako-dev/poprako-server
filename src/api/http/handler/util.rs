@@ -3,6 +3,7 @@
 
 use serde::Deserialize;
 
+#[cfg(feature = "swagger-ui")]
 use utoipa::IntoParams;
 
 use poprako_util::i18n::trl;
@@ -13,8 +14,9 @@ use crate::result::ExpectedVariant;
 
 /// Pagination query parameters for nested list endpoints where the parent id
 /// is carried by the path.
-#[derive(Debug, Deserialize, IntoParams)]
-#[into_params(parameter_in = Query)]
+#[derive(Debug, Deserialize)]
+#[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
+#[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
 pub struct Pagination {
     /// Zero-based offset for paginated results.
     pub offset: u64,

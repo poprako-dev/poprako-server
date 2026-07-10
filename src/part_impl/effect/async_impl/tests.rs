@@ -16,7 +16,7 @@ use crate::part::effect::event::chapter::{
     ChapterPublishedPayload, ChapterWorkflowCompletedPayload,
 };
 use crate::part::effect::event::user::UserSignedUpPayload;
-use crate::part_impl::repo::mock_impl::{Mock, MockContext};
+use crate::part_impl::repo::mock_impl::Mock;
 use crate::value::chapter::{Stage, StageMask};
 use crate::value::role::{RoleField, RoleMask};
 
@@ -138,7 +138,7 @@ async fn develop_dispatches_user_signup() {
     mock.seed_team(team_info());
 
     let develop =
-        AsyncEffectDevelop::<MockContext, Mock>::new(Arc::clone(&mock), 8);
+        AsyncEffectDevelop::new(Arc::clone(&mock), 8);
 
     EffectDevelop::develop(
         &develop,
@@ -176,7 +176,7 @@ async fn develop_dispatches_chapter_workflow_completed() {
     ));
 
     let develop =
-        AsyncEffectDevelop::<MockContext, Mock>::new(Arc::clone(&mock), 8);
+        AsyncEffectDevelop::new(Arc::clone(&mock), 8);
 
     EffectDevelop::develop(
         &develop,
@@ -213,7 +213,7 @@ async fn develop_dispatches_chapter_published() {
     ));
 
     let develop =
-        AsyncEffectDevelop::<MockContext, Mock>::new(Arc::clone(&mock), 8);
+        AsyncEffectDevelop::new(Arc::clone(&mock), 8);
 
     EffectDevelop::develop(
         &develop,
@@ -235,7 +235,7 @@ async fn develop_dispatches_chapter_published() {
 async fn close_is_idempotent() {
     let mock = Arc::new(Mock::new());
 
-    let develop = AsyncEffectDevelop::<MockContext, Mock>::new(mock, 8);
+    let develop = AsyncEffectDevelop::new(mock, 8);
 
     develop.close().await;
 

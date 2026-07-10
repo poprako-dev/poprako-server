@@ -3,12 +3,12 @@ members = [".", "poprako-macro", "poprako-transactional", "poprako-util"]
 resolver = "3"
 
 [package]
-name = "poprako-r"
+name = "poprako-server"
 version = "0.1.0"
 edition = "2024"
 description = "Event-driven backend service for manga translation project management"
 license = "MIT"
-repository = "https://github.com/anomalyco/poprako-r"
+repository = "https://github.com/anomalyco/poprako-server"
 keywords = ["manga", "translation", "backend", "axum", "diesel"]
 categories = ["web-programming", "asynchronous"]
 publish = false
@@ -18,6 +18,7 @@ mod_module_files = "deny"
 
 [features]
 repo = []
+swagger-ui = ["utoipa-swagger-ui", "utoipa"]
 
 [dependencies]
 anyhow = "1.0.102"
@@ -52,7 +53,7 @@ tracing-appender = "0.2"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter", "time"] }
 unic-langid = "0.9.6"
 url = "2.5.8"
-utoipa = { version = "5.5.0", features = ["axum_extras"] }
-utoipa-swagger-ui = { version = "9", features = ["axum"] }
+utoipa = { version = "5.5.0", features = ["axum_extras"], optional = true }
+utoipa-swagger-ui = { version = "9", features = ["axum"], optional = true }
 governor = "0.6"
 futures = "0.3.32"
