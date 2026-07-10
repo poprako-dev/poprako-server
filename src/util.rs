@@ -35,6 +35,31 @@ pub fn next_snowflake_u64() -> u64 {
     k_snowflake::create_snowflake().to_decimal() as u64
 }
 
+// pub fn to_roman_style(mut num: u8) -> String {
+//     const TABLE: &[(u8, &str)] = &[
+//         (100, "c"),
+//         (90, "xc"),
+//         (50, "l"),
+//         (40, "xl"),
+//         (10, "x"),
+//         (9, "ix"),
+//         (5, "v"),
+//         (4, "iv"),
+//         (1, "i"),
+//     ];
+//
+//     let mut ret = String::new();
+//
+//     for &(value, symbol) in TABLE {
+//         while num >= value {
+//             ret.push_str(symbol);
+//             num -= value;
+//         }
+//     }
+//
+//     ret
+// }
+
 /// Encode an archive payload with bitcode and compress it with Zstd.
 ///
 /// SAFETY: Any encoding-structure or bitcode-version change must be preceded
@@ -57,6 +82,7 @@ where
 }
 
 /// Decompress an archive payload and decode it with the pinned bitcode format.
+// TODO: list read.
 pub fn decompress_archive<T>(archived_bytes: &[u8]) -> RegularResult<T>
 where
     T: for<'a> Decode<'a>,
@@ -103,31 +129,6 @@ fn load_snowflake_node_id() -> u16 {
         Ok(instance) if instance <= 1023 => instance,
         _ => unreachable!(),
     }
-}
-
-fn to_roman_style(mut n: u8) -> String {
-    const TABLE: &[(u8, &str)] = &[
-        (100, "c"),
-        (90, "xc"),
-        (50, "l"),
-        (40, "xl"),
-        (10, "x"),
-        (9, "ix"),
-        (5, "v"),
-        (4, "iv"),
-        (1, "i"),
-    ];
-
-    let mut ret = String::new();
-
-    for &(value, symbol) in TABLE {
-        while n >= value {
-            ret.push_str(symbol);
-            n -= value;
-        }
-    }
-
-    ret
 }
 
 #[cfg(test)]
