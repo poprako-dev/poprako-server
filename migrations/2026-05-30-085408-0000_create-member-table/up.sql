@@ -1,9 +1,9 @@
 CREATE TABLE IF NOT EXISTS "t_member" (
     "f_id" TEXT PRIMARY KEY,
 
-    "f_user_id" TEXT NOT NULL REFERENCES "t_user" ("f_id") ON DELETE CASCADE,
+    "f_user_id" TEXT NOT NULL REFERENCES "t_user" ("f_id") ON DELETE RESTRICT,
     "f_user_nickname" TEXT NOT NULL,
-    "f_team_id" TEXT NOT NULL REFERENCES "t_team" ("f_id") ON DELETE CASCADE,
+    "f_team_id" TEXT NOT NULL REFERENCES "t_team" ("f_id") ON DELETE RESTRICT,
 
     "f_assigned_raw_provider_at" TIMESTAMPTZ,
     "f_assigned_translator_at" TIMESTAMPTZ,
@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS "t_member" (
     "f_assigned_reviewer_at" TIMESTAMPTZ,
     "f_assigned_publisher_at" TIMESTAMPTZ,
     "f_assigned_admin_at" TIMESTAMPTZ,
-    "f_assigned_assistant_at" TIMESTAMPTZ,
+    "f_assigned_bot_at" TIMESTAMPTZ,
 
     "f_user_last_active_at" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
@@ -56,6 +56,6 @@ CREATE INDEX IF NOT EXISTS "idx_member_team_publisher"
 CREATE INDEX IF NOT EXISTS "idx_member_team_admin"
     ON "t_member" ("f_team_id")
     WHERE "f_assigned_admin_at" IS NOT NULL;
-CREATE INDEX IF NOT EXISTS "idx_member_team_assistant"
+CREATE INDEX IF NOT EXISTS "idx_member_team_bot"
     ON "t_member" ("f_team_id")
-    WHERE "f_assigned_assistant_at" IS NOT NULL;
+    WHERE "f_assigned_bot_at" IS NOT NULL;

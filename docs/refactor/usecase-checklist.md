@@ -1,4 +1,4 @@
-# poprako-s → poprako-r Use Case Refactoring Checklist
+# poprako-s → poprako-server Use Case Refactoring Checklist
 
 > Each aggregate must be rebuilt in dependency order: **domain model → query trait → infra query → use cases → API handler**.
 >

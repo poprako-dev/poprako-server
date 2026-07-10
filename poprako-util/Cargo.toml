@@ -2,6 +2,13 @@
 name = "poprako-util"
 version = "0.1.0"
 edition = "2024"
+description = "Shared utility and i18n support for poprako-server"
+license = "MIT"
+repository = "https://github.com/anomalyco/poprako-server"
+keywords = ["i18n", "util", "manga", "translation"]
+categories = ["internationalization", "asynchronous"]
+readme = false
+publish = false
 
 [dependencies]
 fluent-templates = "0.14.0"

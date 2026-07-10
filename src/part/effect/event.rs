@@ -1,30 +1,29 @@
-use std::vec::IntoIter;
+//! Domain event types emitted during use case execution.
 
-use crate::part::effect::EventIter;
-use crate::part::effect::event::user::{UserActivePayload, UserSignedUpPayload};
+use crate::part::effect::event::chapter::{
+    ChapterPublishedPayload, ChapterWorkflowCompletedPayload,
+};
+use crate::part::effect::event::user::{
+    UserActivePayload, UserSignedUpPayload,
+};
 
+/// Chapter-related event payload types.
+pub mod chapter;
+/// User-related event payload types.
 pub mod user;
 
+/// Domain events produced by use cases and dispatched through [`EffectDevelop`].
+///
+/// Each variant carries a payload struct with the data relevant to that event.
+///
+/// [`EffectDevelop`]: crate::part::effect::EffectDevelop
 pub enum Event {
+    /// Emitted when a user shows activity (e.g., views their own profile).
     UserActive(UserActivePayload),
+    /// Emitted when a new user signs up via an invitation.
     UserSignedUp(UserSignedUpPayload),
-}
-
-#[derive(Default)]
-pub struct EventBuffer {
-    events: Vec<Event>,
-}
-
-impl EventBuffer {
-    pub fn push(&mut self, event: Event) {
-        self.events.push(event);
-    }
-}
-
-impl EventIter for EventBuffer {
-    type Iter = IntoIter<Event>;
-
-    fn into_iter(self) -> Self::Iter {
-        <Vec<Event> as IntoIterator>::into_iter(self.events)
-    }
+    /// Emitted when a chapter reaches publish completion.
+    ChapterPublished(ChapterPublishedPayload),
+    /// Emitted when one chapter workflow stage reaches completion.
+    ChapterWorkflowCompleted(ChapterWorkflowCompletedPayload),
 }

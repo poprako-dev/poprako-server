@@ -1,3 +1,13 @@
+//! Test fixtures and cases for the authentication use case module.
+//!
+//! Tests exercise the [`register`] and [`login`] functions against a
+//! [`Mock`] that doubles as the driver, repository, token authority,
+//! and effect developer.
+//!
+//! [`register`]: super::register
+//! [`login`]: super::login
+//! [`Mock`]: crate::part_impl::repo::mock_impl::Mock
+
 // register(register)(positive): pending invitation should create a user and member, consume the invitation, emit signup, and return a token.
 // register(register)(negative): qid mismatch should rollback user and member creation without consuming the invitation.
 // register(register)(negative): token signing failure should propagate after the transaction and signup event finish.
@@ -8,13 +18,16 @@
 
 use super::*;
 
+use crate::model::member_invitation::MemberInvitationInfo;
 use crate::part::effect::event::Event;
-use crate::part_impl::repo_mock::Mock;
+use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;
-use crate::usecase::team::tests::{team, workset};
+use crate::usecase::team::tests::team;
 use crate::usecase::user::tests::{credential, invalid_credential, user};
+use crate::value::role::{RoleField, RoleMask};
 
+/// Builds a pending [`MemberInvitationInfo`] fixture.
 fn invitation(
     id: &str,
     team_id: &str,
@@ -22,27 +35,30 @@ fn invitation(
     invitee_qid: &str,
     code: &str,
     pending: bool,
-) -> crate::model::member_invitation::MemberInvitationInfo {
-    crate::model::member_invitation::MemberInvitationInfo {
+) -> MemberInvitationInfo {
+    MemberInvitationInfo {
         id: id.into(),
         team_id: team_id.into(),
+        invitor: None,
         invitor_id: invitor_id.into(),
         invitee_qid: invitee_qid.into(),
         code: code.into(),
         pending,
-        role_mask: crate::model::role::RoleMask(1),
+        roles: RoleMask::from(RoleField::RAW_PROVIDER),
     }
 }
 
+/// Builds a [`RegisterData`] fixture with a fixed password.
 fn register_data(qid: &str, nickname: &str, code: &str) -> RegisterData {
     RegisterData {
         qid: qid.into(),
         nickname: nickname.into(),
         password: "password".into(),
-        invitation_code: code.into(),
+        code: code.into(),
     }
 }
 
+/// Builds a [`LoginData`] fixture.
 fn login_data(qid: &str, password: &str) -> LoginData {
     LoginData {
         qid: qid.into(),
@@ -63,24 +79,24 @@ async fn register_creates_user_member_consumes_invitation_and_emits_signup() {
         true,
     ));
 
-    let result = register(
+    let val = register(
         &mock,
         &mock,
         &mock,
         &mock,
         register_data("qid-1", "Nick", "code-1"),
     )
-    .await;
-    assert!(result.is_ok());
-    let result = result.ok().unwrap();
+    .await
+    .ok()
+    .unwrap();
 
-    assert_eq!(result.token, format!("token:{}", result.user_id));
+    assert_eq!(val.token, format!("token:{}", val.user_id));
 
     let snapshot = mock.snapshot();
     assert_eq!(snapshot.users.len(), 1);
-    assert_eq!(snapshot.users[0].id, result.user_id);
+    assert_eq!(snapshot.users[0].id, val.user_id);
     assert_eq!(snapshot.members.len(), 1);
-    assert_eq!(snapshot.members[0].user_id, result.user_id);
+    assert_eq!(snapshot.members[0].user_id, val.user_id);
     assert!(!snapshot.member_invitations[0].pending);
 
     let events = mock.drain_events();
@@ -163,12 +179,13 @@ async fn login_returns_signed_token_for_matching_credentials() {
         credential("user-1", "password"),
     );
 
-    let result = login(&mock, &mock, login_data("qid-1", "password")).await;
-    assert!(result.is_ok());
-    let result = result.ok().unwrap();
+    let val = login(&mock, &mock, login_data("qid-1", "password"))
+        .await
+        .ok()
+        .unwrap();
 
-    assert_eq!(result.user_id, "user-1");
-    assert_eq!(result.token, "token:user-1");
+    assert_eq!(val.user_id, "user-1");
+    assert_eq!(val.token, "token:user-1");
 }
 
 #[tokio::test]

@@ -1,11 +1,21 @@
+//! Application-level error and result types used throughout the domain layer.
+
+use std::result::Result as StdResult;
+
 use poprako_transactional::drive::result::Error as DriveError;
 
+/// Categorizes an expected application error by its origin domain.
+#[derive(Debug)]
 pub enum ExpectedVariant {
     Args,
     Auth,
     Perm,
 }
 
+/// A domain error that is either an expected application condition
+/// (invalid arguments, authentication failure, missing permissions) or
+/// an unrecoverable system-level failure.
+#[derive(Debug)]
 pub enum Error {
     Expected {
         variant: ExpectedVariant,
@@ -16,15 +26,14 @@ pub enum Error {
     },
 }
 
-pub type Result<T> = std::result::Result<T, Error>;
+/// Convenience alias for [`std::result::Result`] with the application's [`Error`] type.
+pub type Result<T> = StdResult<T, Error>;
 
-pub fn accept<T>(v: T) -> Result<T> {
-    Ok(v)
-}
+/// Alias for [`Error`] used at module boundary layers.
+pub type RegularError = Error;
 
-pub type RootError = Error;
-
-pub type RootResult<T> = Result<T>;
+/// Alias for [`Result`] used at module boundary layers.
+pub type RegularResult<T> = Result<T>;
 
 impl<E, BE> From<DriveError<E, BE>> for Error
 where
@@ -33,7 +42,9 @@ where
 {
     fn from(value: DriveError<E, BE>) -> Self {
         match value {
+            //
             DriveError::Advance(e) => e.into(),
+
             DriveError::Backend(e) => e.into(),
         }
     }

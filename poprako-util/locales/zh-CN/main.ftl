@@ -2,29 +2,79 @@ error-internal = 服务器内部错误
 
 error-already-exists = 该记录已存在
 
+error-assignment-already-exists = 章节分工已存在
+
 error-user-not-found = 该用户不存在
 error-no-pending-invitation = 不存在待处理的邀请
 error-invitation-not-found = 邀请记录不存在
 error-invalid-invitation-code = 无效的邀请码
+
+error-image-get-failed = 获取图片失败
+error-image-put-failed = 上传图片失败
 error-unauthorized = 无效的授权信息，请尝试重新登录
 error-forbidden = 您没有权限执行此操作
 error-unsupported-file-type = 不支持的文件类型
 error-stale-avatar-upload = 头像上传版本已过期
+error-stale-cover-upload = 封面上传版本已过期
+error-stale-page-image-upload = 页面图片上传版本已过期
 error-team-not-found = 该汉化组不存在
 error-team-or-user-required = 必须提供 team_id 或 user_id
+
+error-token-sign-failed = 令牌签署失败
+error-chapter-or-user-required = 必须提供 chapter_id 或 owner_id
 error-workset-not-found = 该作品集不存在
 error-member-not-found = 该成员不存在
 error-team-member-required = 您不是该汉化组的成员
 error-team-admin-required = 您不是该汉化组的管理员
 error-sadmin-required = 只有超级管理员可以执行此操作
 error-already-team-member = 您已经是该汉化组的成员
+error-system-mail-not-found = 系统消息不存在
+error-comment-not-found = 留言不存在
+error-announcement-not-found = 公告不存在
 error-wrong-credentials = 用户不存在或密码错误
 error-invalid-offset = offset 不能小于 0
 error-invalid-limit = limit 必须在 1 到 200 之间
 error-invalid-role = role 必须为单一角色值
+error-chapter-not-found = 章节不存在
+error-assignment-not-found = 章节分工不存在
+error-page-not-found = 页面不存在
+error-invalid-workflow-transition = 无效的工作流状态转换
+error-invalid-stage = 无效的工作流阶段值
+error-invalid-stage-phase = 无效的工作流阶段状态
+error-chapter-admin-required = 需要章节管理权限
+error-chapter-reviewer-required = 需要章节监修权限
+error-chapter-workflow-role-required = 缺少所需的章节工作流权限
+error-chapter-assignee-required = 需要章节分工
+error-chapter-translator-or-proofreader-required = 需要章节翻译或校对分工
+error-chapter-role-not-assignable = 章节角色不可领取
+error-invalid-page-count = 页面数量必须大于 0
+error-page-reserve-role-required = 需要图源或监修权限才能预留页面
+error-page-upload-role-required = 需要图源权限才能确认页面上传
+error-invalid-unit-oper = 无效的 unit 操作
+error-invalid-chapter-import-content = 章节导入内容格式无效
+error-chapter-import-page-count-mismatch = 导入页数与章节页数不一致
+error-chapter-port-export-permission-required = 只有汉化组成员或章节参与者可以导出章节翻译
+error-chapter-port-import-permission-required = 需要章节翻译或校对分工才能导入章节翻译
+error-unit-list-permission-required = 只有汉化组成员或章节参与者可以查看 unit
+error-unit-edit-permission-required = 需要翻译或校对权限才能编辑 unit
+error-unit-not-found = Unit 不存在
+error-unit-duplicate = Unit 已存在
+error-not-found = 记录不存在
+error-comic-not-found = 该漫画不存在
+error-avatar-version-mismatch = 头像图片版本不匹配
+error-cover-version-mismatch = 封面图片版本不匹配
+error-chapter-pages-already-reserved = 该章节已预留页面
+
+chapter-default-subtitle = 第{ $number }话
 
 mail-invitation-used-title = 你的邀请码已被使用
 mail-invitation-used-body = 你的邀请码已被使用，「{$invitee_qid}」已加入汉化组「{$team_name}」
 
-error-invitation-used-title = 你的邀请码已被使用
-error-invitation-used-body = { $invitee_qid } 已接受您的邀请，加入 { $team_name }。
+mail-workflow-upload = 上传
+mail-workflow-translate = 翻译
+mail-workflow-proofread = 校对
+mail-workflow-typeset = 嵌字
+mail-workflow-review = 监修
+mail-workflow-publish = 发布
+mail-chapter-progress-title = 你参加的漫画『{ $comic_title }』#{ $chapter_index } 章节有进度更新
+mail-chapter-progress-body = 「{ $team_name }」-「{ $workset_name }」漫画 #{ $comic_index }『{ $comic_title }』章节 #{ $chapter_index }「{ $workflow }」已完成。

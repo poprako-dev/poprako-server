@@ -1,9 +1,23 @@
+//! Data transfer objects for user profile use cases.
+
+use serde::{Deserialize, Serialize};
+
+#[cfg(feature = "swagger-ui")]
+use utoipa::ToSchema;
+
 use poprako_util::time::ToUnixMilli;
 
-use crate::model::user::UserInfo as UserInfoModel;
+use crate::model::user::UserInfo;
 use crate::part::image::ImagePool;
-use crate::result::RootResult;
+use crate::result::RegularResult;
 
+/// Presentation-ready user profile information.
+///
+/// Converts the raw [`UserInfoModel`] timestamps to Unix milliseconds and
+/// resolves the avatar key to a signed download URL via [`ImagePool`] when
+/// the avatar has been uploaded.
+#[derive(Debug, Serialize)]
+#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
 pub struct UserInfoVal {
     pub id: String,
 
@@ -19,7 +33,17 @@ pub struct UserInfoVal {
 }
 
 impl UserInfoVal {
-    pub async fn from_model<P>(image_pool: &P, model: UserInfoModel) -> RootResult<Self>
+    /// Converts a [`UserInfoModel`] into a presentation-ready value.
+    ///
+    /// Resolves a signed avatar download URL when the avatar has
+    /// been uploaded and a key is present. Timestamps are converted
+    /// from [`OffsetDateTime`] to Unix milliseconds.
+    ///
+    /// [`OffsetDateTime`]: time::OffsetDateTime
+    pub async fn from_model<P>(
+        image_pool: &P,
+        model: UserInfo,
+    ) -> RegularResult<Self>
     where
         P: ImagePool,
     {
@@ -27,7 +51,6 @@ impl UserInfoVal {
             (true, Some(key)) => image_pool.get_signed(key).await.ok(),
             _ => None,
         };
-
         Ok(Self {
             id: model.id,
             nickname: model.nickname,
@@ -41,6 +64,9 @@ impl UserInfoVal {
     }
 }
 
+/// Input parameters for updating a user's profile.
+#[derive(Debug, Deserialize)]
+#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
 pub struct UpdateUserInfoData {
     pub id: String,
 
@@ -48,15 +74,29 @@ pub struct UpdateUserInfoData {
     pub nickname: String,
 }
 
+/// Input parameters for reserving a new avatar upload slot.
+#[derive(Debug, Deserialize)]
+#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
 pub struct ReserveUserAvatarData {
     pub file_ext: String,
 }
 
+/// Return value from a successful avatar reservation.
+///
+/// The client uses `put_url` to upload the avatar image directly to object
+/// storage. `avatar_version` must be echoed back when confirming the upload.
+#[derive(Debug, Serialize)]
+#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
 pub struct ReserveUserAvatarVal {
     pub put_url: String,
     pub avatar_version: i64,
 }
 
+/// Input parameters for confirming an avatar upload completed.
+///
+/// `avatar_version` must match the version returned by the reservation step.
+#[derive(Debug, Deserialize)]
+#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
 pub struct MarkUserAvatarUploadedData {
     pub avatar_version: i64,
 }

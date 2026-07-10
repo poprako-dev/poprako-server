@@ -1,6 +1,6 @@
 ---
 name: aggregate-definition-spec
-description: Aggregate struct rules for poprako-r. Covers four categories (Aggr/Form/Update/Patch), ID generation, field order, events field, and file organization.
+description: Aggregate struct rules for poprako-server. Covers four categories (Aggr/Form/Update/Patch), ID generation, field order, events field, and file organization.
 ---
 
 # Aggregate Definition Specification

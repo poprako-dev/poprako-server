@@ -1,7 +1,7 @@
-# poprako-r Refactor Workflow
+# poprako-server Refactor Workflow
 
 This document defines the migration workflow from `references/poprako-s` to
-`poprako-r`. The target style is domain-by-domain, but not every domain can be
+`poprako-server`. The target style is domain-by-domain, but not every domain can be
 completed vertically in isolation. Some use cases are inherently cross-domain,
 so the work must be split into stable lower-layer contracts first, then closed
 with use cases and API integration once all dependencies exist.
