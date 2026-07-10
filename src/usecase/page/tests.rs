@@ -65,7 +65,6 @@ fn comic(id: &str, workset_id: &str) -> ComicInfo {
         title: "comic".into(),
         author: "author".into(),
         description: None,
-        is_completed: false,
         cover_key: None,
         cover_uploaded: false,
         cover_version: 0,

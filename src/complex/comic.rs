@@ -272,25 +272,6 @@ impl ComicPermComplex {
         check_user_is_team_admin(proxy, user_id, &team_id).await
     }
 
-    /// Verify the caller is a team admin of the comic's team.
-    pub async fn can_user_mark_archived<P>(
-        proxy: &mut P,
-        user_id: &str,
-        comic_id: &str,
-    ) -> RegularResult<()>
-    where
-        P: for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RegularError>
-            + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RegularError>
-            + for<'a> ProxyExecute<
-                FindInfoByUserIdAndTeamId<'a>,
-                Error = RegularError,
-            >,
-    {
-        let team_id = Self::resolve_team_id_from_comic(proxy, comic_id).await?;
-
-        check_user_is_team_admin(proxy, user_id, &team_id).await
-    }
-
     /// Resolve the owning team ID from a workset ID.
     async fn resolve_team_id_from_workset<P>(
         proxy: &mut P,

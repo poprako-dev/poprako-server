@@ -40,6 +40,7 @@ fluent-templates = "0.14.0"
 futures-util = "0.3.32"
 jsonwebtoken = { version = "10.4.0", features = ["rust_crypto"] }
 base62 = "2.2.4"
+bitcode = "=0.6.9"
 k-snowflake = "2.1.1"
 poprako-macro = { path = "poprako-macro" }
 poprako-transactional = { path = "poprako-transactional" }
@@ -53,6 +54,7 @@ tracing-appender = "0.2"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter", "time"] }
 unic-langid = "0.9.6"
 url = "2.5.8"
+zstd = "=0.13.3"
 utoipa = { version = "5.5.0", features = ["axum_extras"], optional = true }
 utoipa-swagger-ui = { version = "9", features = ["axum"], optional = true }
 governor = "0.6"

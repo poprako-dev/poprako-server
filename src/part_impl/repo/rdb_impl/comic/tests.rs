@@ -23,7 +23,7 @@ async fn comic_roundtrip_reads_test_database_url() {
     let comic_list_spec = ComicListSpec {
         workset_id: comic_fixture.workset_form.id.clone(),
         fuzzy_title: Some("Comic".into()),
-        kind: ComicListKind::Active { stages: None },
+        kind: ComicListKind::All,
         incl_opt: vec![ComicInclOpt::WorksetTeam],
         offset: 0,
         limit: 10,

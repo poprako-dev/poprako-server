@@ -218,7 +218,6 @@
    - `index` 按创建顺序递增；
    - `chapter_count = 1`；
    - `chapter_next_index = 1`；
-   - `is_completed = false`；
    - `cover_url = null`。
 
 3. `GET /api/v1/chapters/{chapter_id}` 返回：
@@ -254,8 +253,6 @@
 6. `workset.comic_next_index` 单调递增。
 7. 删除 comic 后，其 first chapter `GET /chapters/{chapter_id}` 返回 `404`。
 8. 按 `fuzzy_title=雨夜` 能搜到重制版，不能搜到已删除旧版。
-9. `is_completed=false` filter 包含 active 未完结漫画。
-10. `POST /api/v1/comics/{comic_id}/mark-completed` 设 true 后，`is_completed=true` filter 包含它，false filter 不包含它；再设 false 后恢复。
 
 ### C5. 创建多章节，并验证 chapter index/next_index
 
@@ -948,7 +945,6 @@ Stage 测试必须覆盖 6 个阶段：`raw-provide -> translate -> proofread ->
 3. active comic id 唯一。
 4. active comic index 唯一。
 5. `fuzzy_title` 结果是全集子集。
-6. `is_completed` filter 结果全部满足布尔条件。
 7. `incl=workset.team` 的 id 链正确。
 8. `with=pinned_chapter` 只返回该 comic 当前 pinned chapter 或 null。
 

@@ -153,13 +153,13 @@ These changes must happen before or during the handler implementation slice.
 | Method | Path | Success | Usecase | Notes |
 | --- | --- | --- | --- | --- |
 | POST | `/api/v1/comics` | `201 HttpBody<CreateComicVal>` | `comic::create` | body carries `workset_id` |
-| GET | `/api/v1/worksets/{workset_id}/comics` | `200 HttpBody<Vec<ComicInfoVal>>` | `comic::list_infos` | `fuzzy_title`, `is_completed`, `incl`, `with`, `offset`, `limit` |
+| GET | `/api/v1/worksets/{workset_id}/comics` | `200 HttpBody<Vec<ComicInfoVal>>` | `comic::list_infos` | `fuzzy_title`, `stages`, `incl`, `with`, `offset`, `limit` |
 | GET | `/api/v1/comics/{comic_id}` | `200 HttpBody<ComicInfoVal>` | `comic::get_info` | path id target |
 | PUT | `/api/v1/comics/{comic_id}` | `204` | `comic::update_info` | compare path id with body id |
 | DELETE | `/api/v1/comics/{comic_id}` | `204` | `comic::delete` | path id target |
 | POST | `/api/v1/comics/{comic_id}/cover/reserve` | `200 HttpBody<ReserveComicCoverVal>` | `comic::reserve_cover` | RPC |
 | POST | `/api/v1/comics/{comic_id}/cover/mark-uploaded` | `204` | `comic::mark_cover_uploaded` | RPC |
-| POST | `/api/v1/comics/{comic_id}/mark-archived` | `204` | `comic::mark_archived` | RPC |
+| POST | `/api/v1/comics/{comic_id}/archive` | `201 HttpBody<ArchiveComicVal>` | `comic_archive::archive` | Immutable archive and active-subtree removal |
 
 ### Chapters
 

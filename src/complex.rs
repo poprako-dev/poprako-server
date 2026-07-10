@@ -22,6 +22,8 @@ pub mod assignment;
 pub mod chapter;
 /// Comic lifecycle business rules and permission checks.
 pub mod comic;
+/// Immutable comic archive payload construction.
+pub mod comic_archive;
 /// Image handling business rules and signed URL generation.
 pub mod image;
 /// Page business rules and permission checks.

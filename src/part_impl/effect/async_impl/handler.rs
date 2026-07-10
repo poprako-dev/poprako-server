@@ -46,12 +46,11 @@ impl<R> EffectHandler<R> {
             + UserRepo<C>
             + Send
             + Sync,
-        <R as DeriveTransactional>::Transactional:
-            AssignmentRepoTransactional<C>
-                + ChapterRepoTransactional<C>
-                + TeamRepoTransactional<C>
-                + SystemMailRepoTransactional<C>
-                + UserRepoTransactional<C>,
+        <R as DeriveTransactional>::Transactional: AssignmentRepoTransactional<C>
+            + ChapterRepoTransactional<C>
+            + TeamRepoTransactional<C>
+            + SystemMailRepoTransactional<C>
+            + UserRepoTransactional<C>,
     {
         loop {
             tokio::select! {

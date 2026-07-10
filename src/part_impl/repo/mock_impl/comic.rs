@@ -12,8 +12,8 @@ use crate::model::workset::WorksetInfo;
 use crate::part::repo::comic::{ComicRepo, ComicRepoTransactional};
 use crate::part::repo::step::comic::{
     Create, Delete, GetInfoById, GetInfoExcluded, IncrChapterNextIndex,
-    ListInfos, ListInfosExcluded, MarkArchived, MarkCoverUploaded,
-    ReserveCover, TouchLastActive, UpdateChapterCount, UpdateInfo,
+    ListInfos, ListInfosExcluded, MarkCoverUploaded, ReserveCover,
+    TouchLastActive, UpdateChapterCount, UpdateInfo,
 };
 use crate::part::shared::execute::Execute;
 use crate::part_impl::repo::mock_impl::{
@@ -139,30 +139,14 @@ fn comic_matches_kind(
         //
         ComicListKind::All => true,
 
-        ComicListKind::Completed => comic_info.is_completed,
-
-        ComicListKind::Active { stages } => {
-            //
-            if comic_info.is_completed {
-                return false;
-            }
-
-            let Some(stage_mask) = stages else {
-                return true;
-            };
-
-            state
-                .chapters
-                .iter()
-                .find(|chapter_info| {
-                    chapter_info.comic_id == comic_info.id
-                        && chapter_info.is_pinned
-                })
-                .map(|chapter_info| {
-                    chapter_info.stages.matches_filter(*stage_mask)
-                })
-                .unwrap_or(false)
-        }
+        ComicListKind::Stages(stage_mask) => state
+            .chapters
+            .iter()
+            .find(|chapter_info| {
+                chapter_info.comic_id == comic_info.id && chapter_info.is_pinned
+            })
+            .map(|chapter_info| chapter_info.stages.matches_filter(*stage_mask))
+            .unwrap_or(false),
     }
 }
 
@@ -343,7 +327,6 @@ impl<'a> Advance<Create<'a>, MockContext> for MockTransactional {
             title: step.form.title.clone(),
             author: step.form.author.clone(),
             description: step.form.description.clone(),
-            is_completed: false,
             cover_key: None,
             cover_uploaded: false,
             cover_version: 0,
@@ -548,29 +531,6 @@ impl<'a> Advance<Delete<'a>, MockContext> for MockTransactional {
                 .iter()
                 .any(|chapter_id| chapter_id == &assignment_info.chapter_id)
         });
-        Ok(())
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<MarkArchived<'a>, MockContext> for MockTransactional {
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut MockContext,
-        step: &MarkArchived<'a>,
-    ) -> Result<(), Self::Error> {
-        let comic = context
-            .state
-            .comics
-            .iter_mut()
-            .find(|comic| comic.id == step.id)
-            .ok_or_else(|| expected("error-comic-not-found"))?;
-        // TODO: Replace `is_completed` with a real archive state once archive
-        // semantics are designed. For now, archived is represented as completed.
-        comic.is_completed = true;
-        comic.updated_at = now();
         Ok(())
     }
 }

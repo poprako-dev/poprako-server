@@ -16,8 +16,8 @@ use crate::part_impl::prom::rdb_impl::entity::{
     LocalMessageRow, LocalMessageStatus,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_local_message;
-use crate::part_impl::shared::result::diesel;
 use crate::part_impl::shared::RdbContext;
+use crate::part_impl::shared::result::diesel;
 use crate::result::{RegularError, RegularResult};
 
 // ── Handle ──────────────────────────────────────────────────────────────────

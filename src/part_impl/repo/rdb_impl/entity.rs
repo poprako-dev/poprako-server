@@ -10,6 +10,8 @@ pub mod assignment_invitation;
 pub mod chapter;
 /// Comic Diesel entity types.
 pub mod comic;
+/// Immutable comic archive Diesel entity types.
+pub mod comic_archive;
 /// Comment Diesel entity types.
 pub mod comment;
 /// Member Diesel entity types.

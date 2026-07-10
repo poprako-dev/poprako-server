@@ -8,8 +8,10 @@
 //! [`AsyncEffectDevelop`]: crate::part_impl::effect::async_impl::AsyncEffectDevelop
 
 pub mod entity;
-pub(crate) mod repo;
+
 mod handler;
+
+pub(crate) mod repo;
 
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
@@ -27,8 +29,8 @@ use crate::part::image::ImagePool;
 use crate::part::prom::{Append, Prom};
 use crate::part_impl::drive::rdb_impl::RdbDrive;
 use crate::part_impl::prom::rdb_impl::entity::LocalMessageEntry;
-use crate::part_impl::repo::rdb_impl::schema::t_local_message;
 use crate::part_impl::repo::rdb_impl::RdbRepo;
+use crate::part_impl::repo::rdb_impl::schema::t_local_message;
 use crate::part_impl::shared::result::diesel;
 use crate::part_impl::shared::{RdbContext, RdbCore};
 use crate::result::{RegularError, RegularResult};
@@ -58,8 +60,7 @@ impl RdbProm {
     where
         I: ImagePool + Send + Sync + 'static,
     {
-        let (shutdown_send, shutdown_recv) =
-            tokio::sync::oneshot::channel();
+        let (shutdown_send, shutdown_recv) = tokio::sync::oneshot::channel();
 
         let (done_send, done_recv) = tokio::sync::oneshot::channel();
 

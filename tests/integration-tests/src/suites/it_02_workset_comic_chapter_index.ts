@@ -207,7 +207,6 @@ export async function runIt02Module(ctx: RunCtx): Promise<void> {
         assert.equal(comicInfo.index, comicBaselineNext + i, `comic ${spec.label} index monotonic`);
         assert.equal(comicInfo.chapter_count, 1);
         assert.equal(comicInfo.chapter_next_index, 1);
-        assert.equal(comicInfo.is_completed, false);
         assert.equal(comicInfo.cover_url, null);
 
         const chapterInfo = await getChapter(ctx.sadmin, comic.chapter_id);
@@ -351,39 +350,6 @@ export async function runIt02Module(ctx: RunCtx): Promise<void> {
 
     assert.ok(fuzzyYuye.find((comic) => comic.id === yuyeReborn.id), "fuzzy must find 重制版");
     assert.ok(!fuzzyYuye.find((comic) => comic.id === yuyeId), "fuzzy must not find deleted original");
-
-    // is_completed filter: pick 钢铁魔女, mark completed, verify filter, restore
-    const gangtieId = ctx.ids.comicIds["钢铁魔女"]!;
-
-    expectStatus(
-        await ctx.sadmin.post<null>(`/api/v1/comics/${gangtieId}/mark-completed`, {
-            is_completed: true,
-        }),
-        204,
-    );
-
-    const completedTrue = await listWorksetComics(ctx.sadmin, serialWsId, "&is_completed=true");
-
-    assert.ok(completedTrue.find((comic) => comic.id === gangtieId), "is_completed=true must include it");
-
-    const completedFalse = await listWorksetComics(ctx.sadmin, serialWsId, "&is_completed=false");
-
-    assert.ok(
-        !completedFalse.find((comic) => comic.id === gangtieId),
-        "is_completed=false must exclude it",
-    );
-
-    // restore to false for downstream modules
-    expectStatus(
-        await ctx.sadmin.post<null>(`/api/v1/comics/${gangtieId}/mark-completed`, {
-            is_completed: false,
-        }),
-        204,
-    );
-
-    const restored = await getComic(ctx.sadmin, gangtieId);
-
-    assert.equal(restored.is_completed, false);
 
     // ---------- C5. multi-chapter on 星尘旅人, verify chapter index ----------
 

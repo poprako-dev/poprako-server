@@ -22,9 +22,8 @@ use crate::value::comic::ComicInclOpt;
 
 /// A comicrecord as stored in the database.
 ///
-/// Each comic belongs to exactly one workset. The `is_completed` flag
-/// toggles whether the comic is treated as finished in list views.
-/// Cover uploads follow a multi-step flow: a key is reserved via
+/// Each comic belongs to exactly one workset. Cover uploads follow a multi-step
+/// flow: a key is reserved via
 /// [`ComicStep::reserve_cover`], the client uploads to that key, then
 /// the upload is confirmed via [`ComicStep::mark_cover_uploaded`].
 ///
@@ -40,7 +39,6 @@ pub struct ComicInfo {
     pub title: String,
     pub author: String,
     pub description: Option<String>,
-    pub is_completed: bool,
 
     pub cover_key: Option<String>,
     pub cover_uploaded: bool,
@@ -103,11 +101,10 @@ pub struct ComicListSpec {
     pub incl_opt: Vec<ComicInclOpt>,
 }
 
-/// Completion/stage filtering mode for listing comics.
+/// Workflow-stage filtering mode for listing comics.
 pub enum ComicListKind {
     All,
-    Active { stages: Option<StageMask> },
-    Completed,
+    Stages(StageMask),
 }
 
 /// The result of reserving a new comic cover upload slot.

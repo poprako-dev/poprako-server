@@ -39,6 +39,7 @@ struct EmptyArgs;
 
 impl syn::parse::Parse for EmptyArgs {
     fn parse(input: syn::parse::ParseStream<'_>) -> Result<Self> {
+        //
         if !input.is_empty() {
             return Err(Error::new(
                 input.span(),
@@ -51,6 +52,7 @@ impl syn::parse::Parse for EmptyArgs {
 }
 
 fn expand_page(input: DeriveInput) -> Result<proc_macro2::TokenStream> {
+    //
     let named: &FieldsNamed = match &input.data {
         Data::Struct(data) => match &data.fields {
             Fields::Named(fields) => fields,
@@ -70,7 +72,9 @@ fn expand_page(input: DeriveInput) -> Result<proc_macro2::TokenStream> {
     };
 
     for field in &named.named {
+        //
         let ident = field.ident.as_ref().expect("named field ident");
+
         if ident == "offset" || ident == "limit" {
             return Err(Error::new_spanned(
                 ident,
@@ -83,10 +87,15 @@ fn expand_page(input: DeriveInput) -> Result<proc_macro2::TokenStream> {
     }
 
     let vis = &input.vis;
+
     let attrs = &input.attrs;
+
     let struct_ident = &input.ident;
+
     let generics = &input.generics;
+
     let where_clause = &generics.where_clause;
+
     let fields = named.named.iter();
 
     Ok(quote::quote! {

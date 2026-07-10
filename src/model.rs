@@ -16,6 +16,8 @@ pub mod chapter;
 pub mod chapter_port;
 /// Comic persisted entity model.
 pub mod comic;
+/// Immutable comic archive snapshots and persisted records.
+pub mod comic_archive;
 /// Comment persisted entity model.
 pub mod comment;
 /// Member persisted entity model.

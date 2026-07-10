@@ -21,6 +21,8 @@ pub mod chapter;
 pub mod chapter_port;
 /// Comic request/response DTOs.
 pub mod comic;
+/// Immutable comic archive response DTOs.
+pub mod comic_archive;
 /// Comment request/response DTOs.
 pub mod comment;
 /// Member request/response DTOs.

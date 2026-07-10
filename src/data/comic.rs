@@ -12,7 +12,6 @@ use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
 
 use poprako_macro::Paginate;
-use poprako_util::i18n::trl;
 use poprako_util::time::ToUnixMilli;
 
 use crate::data::chapter::ChapterInfoVal;
@@ -21,7 +20,7 @@ use crate::data::user::UserInfoVal;
 use crate::data::workset::WorksetInfoVal;
 use crate::model::comic::{ComicInfo, ComicListKind, ComicListSpec};
 use crate::part::image::ImagePool;
-use crate::result::{ExpectedVariant, RegularError, RegularResult};
+use crate::result::{RegularError, RegularResult};
 use crate::value::chapter::StageMask;
 use crate::value::comic::{ComicInclOpt, ComicWithOpt};
 
@@ -46,7 +45,6 @@ pub struct ComicInfoVal {
     pub title: String,
     pub author: String,
     pub description: Option<String>,
-    pub is_completed: bool,
 
     /// Resolved signed download URL for the cover image, or [`None`] if
     /// no cover has been uploaded.
@@ -112,7 +110,6 @@ impl ComicInfoVal {
             title: model.title,
             author: model.author,
             description: model.description,
-            is_completed: model.is_completed,
             cover_url: cover_url.map(Into::into),
             chapter_count: model.chapter_count,
             chapter_next_index: model.chapter_next_index,
@@ -158,11 +155,9 @@ pub struct CreateComicVal {
 
 /// Input parameters for updating a comic's title, author, and description.
 ///
-/// Cover and workflow updates are handled by dedicated endpoints
-/// ([`reserve_cover`], [`mark_archived`]).
+/// Cover updates are handled by dedicated endpoints.
 ///
 /// [`reserve_cover`]: crate::usecase::comic::reserve_cover
-/// [`mark_archived`]: crate::usecase::comic::mark_archived
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
 pub struct UpdateComicInfoData {
@@ -182,7 +177,6 @@ pub struct ListComicInfosData {
     pub workset_id: String,
 
     pub fuzzy_title: Option<String>,
-    pub is_completed: Option<bool>,
     pub stages: Option<u32>,
 
     #[serde(
@@ -206,19 +200,9 @@ impl TryFrom<ListComicInfosData> for ComicListSpec {
     fn try_from(data: ListComicInfosData) -> RegularResult<Self> {
         let stages = data.stages.map(StageMask::try_filter_from).transpose()?;
 
-        let kind = match (data.is_completed, stages) {
-            (Some(true), Some(_)) => {
-                return Err(RegularError::Expected {
-                    variant: ExpectedVariant::Args,
-                    message: trl("error-invalid-stage-phase"),
-                });
-            }
-            (Some(true), None) => ComicListKind::Completed,
-            (Some(false), stages) => ComicListKind::Active { stages },
-            (None, Some(stages)) => ComicListKind::Active {
-                stages: Some(stages),
-            },
-            (None, None) => ComicListKind::All,
+        let kind = match stages {
+            Some(stage_mask) => ComicListKind::Stages(stage_mask),
+            None => ComicListKind::All,
         };
 
         Ok(Self {
@@ -260,13 +244,4 @@ pub struct ReserveComicCoverVal {
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
 pub struct MarkComicCoverUploadedData {
     pub cover_version: i64,
-}
-
-/// Input parameters for marking a comic archived.
-///
-/// `comic_id` must match the path parameter — a mismatch is rejected with `422`.
-#[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct MarkComicArchivedData {
-    pub comic_id: String,
 }

@@ -16,8 +16,8 @@ use crate::model::comic::{
 use crate::part::repo::comic::{ComicRepo, ComicRepoTransactional};
 use crate::part::repo::step::comic::{
     Create, Delete, GetInfoById, GetInfoExcluded, IncrChapterNextIndex,
-    ListInfos, ListInfosExcluded, MarkArchived, MarkCoverUploaded,
-    ReserveCover, TouchLastActive, UpdateChapterCount, UpdateInfo,
+    ListInfos, ListInfosExcluded, MarkCoverUploaded, ReserveCover,
+    TouchLastActive, UpdateChapterCount, UpdateInfo,
 };
 use crate::part::shared::execute::Execute;
 use crate::part_impl::repo::rdb_impl::entity::comic::{
@@ -216,18 +216,10 @@ async fn list_infos(
         //
         ComicListKind::All => {}
 
-        ComicListKind::Active { stages: _ } => {
-            query = query.filter(f_is_completed.eq(false));
-        }
-
-        ComicListKind::Completed => {
-            query = query.filter(f_is_completed.eq(true));
-        }
+        ComicListKind::Stages(_) => {}
     }
 
-    if let ComicListKind::Active {
-        stages: Some(stage_mask),
-    } = &spec.kind
+    if let ComicListKind::Stages(stage_mask) = &spec.kind
         && let Some(sql) = workflow_filter_sql(*stage_mask)
     {
         query = query.filter(diesel::dsl::sql::<Bool>(&sql));
@@ -423,24 +415,6 @@ async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
     Ok(())
 }
 
-/// Sets the completion flag on a comic row.
-async fn mark_archived(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
-    //
-    let now = OffsetDateTime::now_utc();
-
-    // TODO: Replace `f_is_completed` with a real archive state once archive
-    // semantics are designed. For now, archived is represented as completed.
-    let aspect = ComicAspect::new(now).completed(true);
-
-    diesel::update(t_comic.filter(f_id.eq(id)))
-        .set(&aspect)
-        .execute(conn)
-        .await
-        .map_err(diesel)?;
-
-    Ok(())
-}
-
 /// Atomically increments and returns the previous `chapter_next_index` value.
 async fn incr_chapter_next_index(
     conn: &mut RdbConn,
@@ -628,19 +602,6 @@ impl<'a> Advance<Delete<'a>, RdbContext> for RdbRepoTransactional {
         step: &Delete<'a>,
     ) -> RegularResult<()> {
         delete(context.conn(), step.id).await
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<MarkArchived<'a>, RdbContext> for RdbRepoTransactional {
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut RdbContext,
-        step: &MarkArchived<'a>,
-    ) -> RegularResult<()> {
-        mark_archived(context.conn(), step.id).await
     }
 }
 

@@ -21,6 +21,8 @@ pub mod assignment_invitation;
 pub mod chapter;
 /// Step definitions for the comic domain.
 pub mod comic;
+/// Step definitions for immutable comic archives.
+pub mod comic_archive;
 /// Step definitions for the comment domain.
 pub mod comment;
 /// Step definitions for the member domain.

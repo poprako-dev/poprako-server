@@ -17,6 +17,7 @@ use crate::model::assignment::AssignmentInfo;
 use crate::model::assignment_invitation::AssignmentInvitationInfo;
 use crate::model::chapter::ChapterInfo;
 use crate::model::comic::ComicInfo;
+use crate::model::comic_archive::ComicArchiveRecord;
 use crate::model::comment::CommentInfo;
 use crate::model::member::MemberInfo;
 use crate::model::member_invitation::MemberInvitationInfo;
@@ -49,6 +50,9 @@ pub struct MockState {
     pub pages: Vec<PageInfo>,
     pub units: Vec<UnitInfo>,
     pub system_mails: Vec<SystemMailInfo>,
+    pub archived_comics: Vec<ComicArchiveRecord>,
+    pub archived_chapters: Vec<ComicArchiveRecord>,
+    pub archived_translations: Vec<ComicArchiveRecord>,
     pub prom_records: Vec<MockPromRecord>,
     pub deleted_image_keys: Vec<String>,
 }
@@ -71,6 +75,9 @@ pub struct MockSnapshot {
     pub pages: Vec<PageInfo>,
     pub units: Vec<UnitInfo>,
     pub system_mails: Vec<SystemMailInfo>,
+    pub archived_comics: Vec<ComicArchiveRecord>,
+    pub archived_chapters: Vec<ComicArchiveRecord>,
+    pub archived_translations: Vec<ComicArchiveRecord>,
     pub prom_records: Vec<MockPromRecord>,
     pub deleted_image_keys: Vec<String>,
 }
@@ -93,6 +100,9 @@ impl From<MockState> for MockSnapshot {
             pages: state.pages,
             units: state.units,
             system_mails: state.system_mails,
+            archived_comics: state.archived_comics,
+            archived_chapters: state.archived_chapters,
+            archived_translations: state.archived_translations,
             prom_records: state.prom_records,
             deleted_image_keys: state.deleted_image_keys,
         }
@@ -103,6 +113,7 @@ impl From<MockState> for MockSnapshot {
 /// providing mutable access to the mock state during a simulated transaction.
 pub struct MockContext {
     pub state: MockState,
+    pub archive_commit_failure: bool,
 }
 
 /// Flag toggles that inject controlled failure modes into mock opers.
@@ -116,6 +127,7 @@ pub struct MockFlags {
     pub image_head_absent: bool,
 
     pub image_delete_failure: bool,
+    pub archive_commit_failure: bool,
 }
 
 /// The top-level mock driver implementing [DeriveTransactional] and [Drive].
@@ -261,6 +273,12 @@ impl Mock {
         self
     }
 
+    /// Fail archive persistence before a transaction can commit.
+    pub fn with_archive_commit_failure(self) -> Self {
+        self.flags.lock().unwrap().archive_commit_failure = true;
+        self
+    }
+
     /// Return the number of events emitted so far.
     pub fn event_count(&self) -> usize {
         self.events.lock().unwrap().len()
@@ -301,6 +319,11 @@ impl Drive<MockContext> for Mock {
     {
         let mut context = MockContext {
             state: self.state.lock().unwrap().clone(),
+            archive_commit_failure: self
+                .flags
+                .lock()
+                .unwrap()
+                .archive_commit_failure,
         };
 
         match f(&mut context).await {
@@ -349,6 +372,8 @@ pub mod chapter;
 pub mod comment;
 
 pub mod comic;
+/// Mock implementations for immutable comic archive repository operations.
+pub mod comic_archive;
 
 /// Mock implementations for member repository opers.
 pub mod member;

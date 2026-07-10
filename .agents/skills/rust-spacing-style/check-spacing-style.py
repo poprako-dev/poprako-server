@@ -23,6 +23,10 @@ IGNORED_DIRS = {
     "node_modules",
 }
 
+IGNORED_FILES = {
+    "schema.rs",
+}
+
 
 @dataclass(frozen=True)
 class Statement:
@@ -707,6 +711,9 @@ def iter_rs_files(paths: list[Path]) -> list[Path]:
 
         for child in path.rglob("*.rs"):
             if any(part in IGNORED_DIRS for part in child.parts):
+                continue
+
+            if child.name in IGNORED_FILES:
                 continue
 
             files.append(child)

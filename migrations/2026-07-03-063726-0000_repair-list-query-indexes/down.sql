@@ -12,8 +12,6 @@ DROP INDEX IF EXISTS "idx_member_team_proofreader_last_active";
 DROP INDEX IF EXISTS "idx_member_team_translator_last_active";
 DROP INDEX IF EXISTS "idx_member_team_raw_provider_last_active";
 DROP INDEX IF EXISTS "idx_member_nickname_trgm";
-DROP INDEX IF EXISTS "idx_comic_workset_completed_last_active";
-DROP INDEX IF EXISTS "idx_comic_workset_active_last_active";
 DROP INDEX IF EXISTS "idx_comic_workset_last_active";
 DROP INDEX IF EXISTS "idx_comic_composed_title_trgm";
 
