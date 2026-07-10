@@ -195,11 +195,8 @@ where
         return Err(args_error("error-invalid-chapter-import-content"));
     }
 
-    match lines.next() {
-        //
-        Some("-") => {}
-
-        _ => return Err(args_error("error-invalid-chapter-import-content")),
+    if lines.next().as_deref() != Some("-") {
+        return Err(args_error("error-invalid-chapter-import-content"));
     }
 
     let mut found_separator = false;

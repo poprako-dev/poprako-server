@@ -136,26 +136,24 @@ impl EffectDevelop for AsyncEffectDevelop {
         }
 
         for event in iter.into_iter() {
-            match self.send.try_send(event) {
-                //
-                Err(TrySendError::Full(event)) => {
-                    tracing::warn!(
-                        event = event_name(&event),
-                        "[AsyncEffectDevelop::develop] event queue is full, dropping event",
-                    );
+            if let Err(e) = self.send.try_send(event) {
+                match e {
+                    TrySendError::Full(event) => {
+                        tracing::warn!(
+                            event = event_name(&event),
+                            "[AsyncEffectDevelop::develop] event queue is full, dropping event",
+                        );
+                    }
+
+                    TrySendError::Closed(event) => {
+                        tracing::warn!(
+                            event = event_name(&event),
+                            "[AsyncEffectDevelop::develop] event queue is closed, dropping event",
+                        );
+
+                        break;
+                    }
                 }
-
-                Err(TrySendError::Closed(event)) => {
-                    //
-                    tracing::warn!(
-                        event = event_name(&event),
-                        "[AsyncEffectDevelop::develop] event queue is closed, dropping event",
-                    );
-
-                    break;
-                }
-
-                _ => {}
             }
         }
     }
