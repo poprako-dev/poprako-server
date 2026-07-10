@@ -3,6 +3,9 @@
 use std::sync::OnceLock;
 
 use async_trait::async_trait;
+use bitcode::{Decode, Encode};
+
+use crate::result::{RegularError, RegularResult};
 
 /// Capability to produce a transactional drive clone from a non-transactional
 /// reference. Implementations wrap a database connection pool and spawn a
@@ -30,6 +33,49 @@ pub fn next_snowflake_u64() -> u64 {
 
     // Generate a snowflake id.
     k_snowflake::create_snowflake().to_decimal() as u64
+}
+
+/// Encode an archive payload with bitcode and compress it with Zstd.
+///
+/// SAFETY: Any encoding-structure or bitcode-version change must be preceded
+/// by a full rewrite using a version that can read all existing archive data.
+/// Bitcode does not promise stable formats across major versions.
+pub fn compress_archive<T>(archive_payload: &T) -> RegularResult<Vec<u8>>
+where
+    T: Encode + ?Sized,
+{
+    let encoded_bytes = bitcode::encode(archive_payload);
+
+    zstd::stream::encode_all(encoded_bytes.as_slice(), 0).map_err(|error| {
+        RegularError::Unrecoverable {
+            message: format!(
+                "[util::compress_archive] failed to compress archive payload: {}",
+                error
+            ),
+        }
+    })
+}
+
+/// Decompress an archive payload and decode it with the pinned bitcode format.
+pub fn decompress_archive<T>(archived_bytes: &[u8]) -> RegularResult<T>
+where
+    T: for<'a> Decode<'a>,
+{
+    let encoded_bytes = zstd::stream::decode_all(archived_bytes).map_err(|error| {
+        RegularError::Unrecoverable {
+            message: format!(
+                "[util::decompress_archive] failed to decompress archive payload: {}",
+                error
+            ),
+        }
+    })?;
+
+    bitcode::decode(&encoded_bytes).map_err(|error| RegularError::Unrecoverable {
+        message: format!(
+            "[util::decompress_archive] failed to decode archive payload: {}",
+            error
+        ),
+    })
 }
 
 /// Initialise the global snowflake instance once from the

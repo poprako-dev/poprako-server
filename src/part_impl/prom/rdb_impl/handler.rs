@@ -4,8 +4,8 @@
 //! Topic dispatch routes to [`image`].
 
 use std::marker::PhantomData;
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration as StdDuration;
 
 use time::{Duration, OffsetDateTime};
@@ -391,14 +391,8 @@ where
                 Err(e) => return TaskOutcome::Dead(e),
             };
 
-            image::handle(
-                drive,
-                repo,
-                local_message_repo,
-                image_pool,
-                &task,
-            )
-            .await
+            image::handle(drive, repo, local_message_repo, image_pool, &task)
+                .await
         }
         unknown => {
             TaskOutcome::Dead(format!("unknown prom topic: {}", unknown))

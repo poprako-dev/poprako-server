@@ -58,12 +58,11 @@ impl AsyncEffectDevelop {
             + Send
             + Sync
             + 'static,
-        <R as DeriveTransactional>::Transactional:
-            AssignmentRepoTransactional<C>
-                + ChapterRepoTransactional<C>
-                + TeamRepoTransactional<C>
-                + SystemMailRepoTransactional<C>
-                + UserRepoTransactional<C>,
+        <R as DeriveTransactional>::Transactional: AssignmentRepoTransactional<C>
+            + ChapterRepoTransactional<C>
+            + TeamRepoTransactional<C>
+            + SystemMailRepoTransactional<C>
+            + UserRepoTransactional<C>,
     {
         let (send, recv) = tokio::sync::mpsc::channel(buffer_size);
 

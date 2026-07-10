@@ -8,8 +8,6 @@ CREATE TABLE IF NOT EXISTS "t_comic" (
     "f_author"              TEXT        NOT NULL,
     "f_description"         TEXT,
 
-    "f_is_completed"        BOOLEAN     NOT NULL DEFAULT FALSE,
-
     "f_cover_key"           TEXT,
     "f_cover_uploaded"      BOOLEAN     NOT NULL DEFAULT FALSE,
     "f_cover_version"       BIGINT      NOT NULL DEFAULT 0,
@@ -32,3 +30,24 @@ CREATE INDEX IF NOT EXISTS "idx_comic_workset_id"
 
 CREATE INDEX IF NOT EXISTS "idx_comic_creator_id"
     ON "t_comic" ("f_creator_id");
+
+CREATE TABLE IF NOT EXISTS "t_archived_comic" (
+    "f_id"                  TEXT        PRIMARY KEY,
+    "f_archived_bytes"      BYTEA       NOT NULL,
+    "f_archiver_id"         TEXT        NOT NULL,
+    "f_created_at"          TIMESTAMPTZ NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS "t_archived_chapter" (
+    "f_id"                  TEXT        PRIMARY KEY,
+    "f_archived_bytes"      BYTEA       NOT NULL,
+    "f_archiver_id"         TEXT        NOT NULL,
+    "f_created_at"          TIMESTAMPTZ NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS "t_archived_translation" (
+    "f_id"                  TEXT        PRIMARY KEY,
+    "f_archived_bytes"      BYTEA       NOT NULL,
+    "f_archiver_id"         TEXT        NOT NULL,
+    "f_created_at"          TIMESTAMPTZ NOT NULL
+);

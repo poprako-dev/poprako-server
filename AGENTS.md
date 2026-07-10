@@ -141,7 +141,6 @@ editing Rust code in its area.
 Important active skills include:
 
 - `general-conventions` - project-wide Rust conventions
-- `code-style-check` - aggregate style checks
 - `format-output-spec` / `no-inline-format` - format string rules
 - `thirdparty-macro-usage-spec` - third-party macro import/call-site rules
 - `tracing-usage-spec` - where `#[instrument]` belongs
@@ -149,7 +148,7 @@ Important active skills include:
 - `error-handling-spec` - error construction and propagation rules
 - `test-spec` - test naming and structure
 - `harness-spec` - old harness conventions when touching legacy harness code
-- `rust-use-style` and `rust-ident-style` - strict Rust import/path style
+- `rust-use-style` and `rust-ident-style` and `rust-spacing-style` - strict Rust import/path style
 
 Some older skills still mention `src/domain/query`, `src/infra/query`, or
 `src/domain/model/aggr`. Treat those paths as legacy unless the current task is
@@ -282,7 +281,6 @@ Available `just` commands:
 | `mgr-setup`      | `diesel database setup`                          |
 | `mgr-list`       | `diesel migration list`                          |
 | `mgr-schema`     | `diesel print-schema > src/infra/repo/schema.rs` |
-| `style`          | Run all project style checks through Bun scripts |
 
 ---
 
@@ -294,7 +292,6 @@ Common checks:
 cargo fmt
 cargo check
 cargo test -p poprako-server
-just style
 ```
 
 Use targeted tests first when touching one domain. Run broader checks when the

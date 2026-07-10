@@ -92,15 +92,6 @@ impl<'a> Step for Delete<'a> {
     type Output = ();
 }
 
-/// Step that marks a comic archived.
-pub struct MarkArchived<'a> {
-    pub id: &'a str,
-}
-
-impl<'a> Step for MarkArchived<'a> {
-    type Output = ();
-}
-
 /// Step that allocates one chapter index from a comic-scoped sequence.
 ///
 /// NOTE: Return the current `chapter_next_index` value, then increment it in
@@ -195,11 +186,6 @@ impl ComicStep {
     /// Constructs a step to delete a comic.
     pub fn delete<'a>(id: &'a str) -> Delete<'a> {
         Delete { id }
-    }
-
-    /// Constructs a step to mark archived state.
-    pub fn mark_archived<'a>(id: &'a str) -> MarkArchived<'a> {
-        MarkArchived { id }
     }
 
     /// Constructs a step to increment and return chapter index.

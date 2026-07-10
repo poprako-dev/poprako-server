@@ -26,14 +26,6 @@ CREATE INDEX IF NOT EXISTS "idx_comic_composed_title_trgm"
 CREATE INDEX IF NOT EXISTS "idx_comic_workset_last_active"
     ON "t_comic" ("f_workset_id", "f_last_active_at" DESC);
 
-CREATE INDEX IF NOT EXISTS "idx_comic_workset_active_last_active"
-    ON "t_comic" ("f_workset_id", "f_last_active_at" DESC)
-    WHERE "f_is_completed" = FALSE;
-
-CREATE INDEX IF NOT EXISTS "idx_comic_workset_completed_last_active"
-    ON "t_comic" ("f_workset_id", "f_last_active_at" DESC)
-    WHERE "f_is_completed" = TRUE;
-
 CREATE INDEX IF NOT EXISTS "idx_member_nickname_trgm"
     ON "t_member" USING GIN ("f_user_nickname" gin_trgm_ops);
 

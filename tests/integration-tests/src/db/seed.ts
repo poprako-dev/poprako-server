@@ -8,20 +8,22 @@ const DEFAULT_MEMBER_ID = "member-00000000-0000-0000-0000-000000000001";
 const DEFAULT_PASSWORD_HASH =
   "$argon2id$v=19$m=65536,t=3,p=4$UrCPl9xY0hk3LpfQWl+ZVA$4d+zkTiD9ghoc6XtJJSHpcvfzUpAK1IiZ5MAQezLgrE";
 
-async function withClient(run: (client: Client) => Promise<void>): Promise<void> {
+export async function withDatabaseClient<T>(
+  run: (client: Client) => Promise<T>,
+): Promise<T> {
   const client = new Client({ connectionString: testEnv.databaseUrl });
 
   await client.connect();
 
   try {
-    await run(client);
+    return await run(client);
   } finally {
     await client.end();
   }
 }
 
 export async function resetDatabase(): Promise<void> {
-  await withClient(async (client) => {
+  await withDatabaseClient(async (client) => {
     const tableResult = await client.query<{ tablename: string }>(`
       SELECT tablename
       FROM pg_tables
@@ -108,7 +110,7 @@ export async function resetDatabase(): Promise<void> {
 }
 
 export async function assertDatabaseIsSeedOnly(): Promise<void> {
-  await withClient(async (client) => {
+  await withDatabaseClient(async (client) => {
     const tableResult = await client.query<{ tablename: string }>(`
       SELECT tablename
       FROM pg_tables
@@ -148,7 +150,7 @@ export async function assertDatabaseIsSeedOnly(): Promise<void> {
 }
 
 export async function grantChapterWorkerRoles(chapterId: string, userId: string): Promise<void> {
-  await withClient(async (client) => {
+  await withDatabaseClient(async (client) => {
     await client.query(
       `
         UPDATE "t_assignment"
@@ -175,7 +177,7 @@ export interface LeftoverIds {
 /// (workset -> comic -> chapter -> page -> unit -> assignment) are deleted
 /// through `DELETE /api/v1/worksets/{id}` by the caller, which cascades by FK.
 export async function cleanupLeftoverRows(ids: LeftoverIds): Promise<void> {
-  await withClient(async (client) => {
+  await withDatabaseClient(async (client) => {
     await client.query("BEGIN");
 
     try {
@@ -217,7 +219,7 @@ export async function cleanupLeftoverRows(ids: LeftoverIds): Promise<void> {
 /// dedicated subtree; this function is the safety net that gets the whole DB
 /// back to seed state no matter what.
 export async function cleanupToSeed(): Promise<void> {
-  await withClient(async (client) => {
+  await withDatabaseClient(async (client) => {
     await client.query("BEGIN");
 
     try {
@@ -236,6 +238,9 @@ export async function cleanupToSeed(): Promise<void> {
       await client.query(`DELETE FROM "t_page"`);
       await client.query(`DELETE FROM "t_chapter"`);
       await client.query(`DELETE FROM "t_comic"`);
+      await client.query(`DELETE FROM "t_archived_translation"`);
+      await client.query(`DELETE FROM "t_archived_chapter"`);
+      await client.query(`DELETE FROM "t_archived_comic"`);
       await client.query(`DELETE FROM "t_workset"`);
 
       // 4. Memberships and invitations (depend on team + user).

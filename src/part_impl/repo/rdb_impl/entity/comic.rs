@@ -21,7 +21,6 @@ pub struct ComicRow {
     pub f_author: String,
     pub f_description: Option<String>,
     pub f_composed_title: String,
-    pub f_is_completed: bool,
 
     pub f_cover_key: Option<String>,
     pub f_cover_uploaded: bool,
@@ -72,8 +71,6 @@ pub struct ComicAspect<'a> {
     pub f_description: Option<Option<&'a str>>,
     pub f_composed_title: Option<String>,
 
-    pub f_is_completed: Option<bool>,
-
     pub f_cover_key: Option<&'a str>,
     pub f_cover_uploaded: Option<bool>,
     pub f_cover_version: Option<i64>,
@@ -93,7 +90,6 @@ impl<'a> ComicAspect<'a> {
             f_author: None,
             f_description: None,
             f_composed_title: None,
-            f_is_completed: None,
             f_cover_key: None,
             f_cover_uploaded: None,
             f_cover_version: None,
@@ -121,11 +117,6 @@ impl<'a> ComicAspect<'a> {
 
     pub fn composed_title(mut self, val: String) -> Self {
         self.f_composed_title = Some(val);
-        self
-    }
-
-    pub fn completed(mut self, val: bool) -> Self {
-        self.f_is_completed = Some(val);
         self
     }
 
@@ -171,7 +162,6 @@ impl From<ComicRow> for ComicInfo {
             title: v.f_title,
             author: v.f_author,
             description: v.f_description,
-            is_completed: v.f_is_completed,
             cover_key: v.f_cover_key,
             cover_uploaded: v.f_cover_uploaded,
             cover_version: v.f_cover_version,

@@ -183,7 +183,6 @@ fn comic_with_uploaded_cover(
         title: "comic".into(),
         author: "author".into(),
         description: None,
-        is_completed: false,
         cover_key: Some(cover_key.into()),
         cover_uploaded: true,
         cover_version: 1,

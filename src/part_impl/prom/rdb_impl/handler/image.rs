@@ -11,7 +11,6 @@ use poprako_transactional::drive::Drive;
 
 use crate::part::image::ImagePool;
 use crate::part::prom::task::{ImageKind, ImageTask};
-use crate::part_impl::prom::rdb_impl::repo::LocalMessageRepo;
 use crate::part::repo::comic::ComicRepoTransactional;
 use crate::part::repo::page::PageRepoTransactional;
 use crate::part::repo::step::comic::ComicStep;
@@ -21,6 +20,7 @@ use crate::part::repo::step::user::UserStep;
 use crate::part::repo::team::TeamRepoTransactional;
 use crate::part::repo::user::UserRepoTransactional;
 use crate::part_impl::prom::rdb_impl::handler::TaskOutcome;
+use crate::part_impl::prom::rdb_impl::repo::LocalMessageRepo;
 use crate::part_impl::shared::RdbContext;
 use crate::result::{RegularError, RegularResult};
 use crate::util::DeriveTransactional;

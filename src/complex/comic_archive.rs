@@ -1,0 +1,263 @@
+//! Pure conversion of active comic snapshots into immutable archive payloads.
+
+use time::OffsetDateTime;
+
+use poprako_util::time::ToUnixMilli;
+
+use crate::model::assignment::AssignmentInfo;
+use crate::model::comic_archive::{
+    ArchivedAssignmentPayload, ArchivedChapterPayload, ArchivedComicPayload,
+    ArchivedPagePayload, ArchivedTranslationPayload, ArchivedUnitPayload,
+    ArchivedUserPayload, ArchivedWorksetPayload, ComicArchiveChapterSnapshot,
+    ComicArchiveRecord, ComicArchiveSnapshot, ComicArchiveWrite,
+};
+use crate::result::{RegularError, RegularResult};
+use crate::util::{compress_archive, next_snowflake_id};
+
+/// Constructs immutable comic archive records from a fully locked snapshot.
+pub struct ComicArchiveComplex;
+
+impl ComicArchiveComplex {
+    /// Build the compressed archive rows and source cleanup identifiers.
+    pub fn build_write(
+        comic_archive_snapshot: ComicArchiveSnapshot,
+        archiver_id: String,
+        archived_at: OffsetDateTime,
+    ) -> RegularResult<ComicArchiveWrite> {
+        //
+        let archived_comic_id = next_snowflake_id();
+
+        let archived_chapter_ids = comic_archive_snapshot
+            .chapter_snapshots
+            .iter()
+            .map(|_| next_snowflake_id())
+            .collect::<Vec<_>>();
+
+        let archived_translation_ids = comic_archive_snapshot
+            .chapter_snapshots
+            .iter()
+            .map(|_| next_snowflake_id())
+            .collect::<Vec<_>>();
+
+        let comic_payload =
+            build_comic_payload(&comic_archive_snapshot, &archived_chapter_ids);
+
+        let comic_record = ComicArchiveRecord {
+            id: archived_comic_id.clone(),
+            archived_bytes: compress_archive(&comic_payload)?,
+            archiver_id: archiver_id.clone(),
+            created_at: archived_at,
+        };
+
+        let mut chapter_records = Vec::new();
+
+        let mut translation_records = Vec::new();
+
+        let mut source_chapter_ids = Vec::new();
+
+        let mut source_page_ids = Vec::new();
+
+        for (index, chapter_snapshot) in
+            comic_archive_snapshot.chapter_snapshots.iter().enumerate()
+        {
+            let archived_chapter_id = &archived_chapter_ids[index];
+
+            let archived_translation_id = &archived_translation_ids[index];
+
+            let chapter_payload =
+                build_chapter_payload(chapter_snapshot, &archived_comic_id)?;
+
+            let translation_payload = build_translation_payload(
+                chapter_snapshot,
+                archived_chapter_id,
+            );
+
+            chapter_records.push(ComicArchiveRecord {
+                id: archived_chapter_id.clone(),
+                archived_bytes: compress_archive(&chapter_payload)?,
+                archiver_id: archiver_id.clone(),
+                created_at: archived_at,
+            });
+
+            translation_records.push(ComicArchiveRecord {
+                id: archived_translation_id.clone(),
+                archived_bytes: compress_archive(&translation_payload)?,
+                archiver_id: archiver_id.clone(),
+                created_at: archived_at,
+            });
+
+            source_chapter_ids.push(chapter_snapshot.chapter_info.id.clone());
+
+            source_page_ids.extend(
+                chapter_snapshot
+                    .page_snapshots
+                    .iter()
+                    .map(|page_snapshot| page_snapshot.page_info.id.clone()),
+            );
+        }
+
+        Ok(ComicArchiveWrite {
+            comic_record,
+            chapter_records,
+            translation_records,
+            source_comic_id: comic_archive_snapshot.comic_info.id,
+            source_chapter_ids,
+            source_page_ids,
+        })
+    }
+}
+
+/// Convert the comic and directly loaded workset into the archive payload.
+fn build_comic_payload(
+    comic_archive_snapshot: &ComicArchiveSnapshot,
+    archived_chapter_ids: &[String],
+) -> ArchivedComicPayload {
+    //
+    let comic_info = &comic_archive_snapshot.comic_info;
+
+    let workset_info = &comic_archive_snapshot.workset_info;
+
+    ArchivedComicPayload {
+        source_comic_id: comic_info.id.clone(),
+        workset: ArchivedWorksetPayload {
+            id: workset_info.id.clone(),
+            team_id: workset_info.team_id.clone(),
+            index: workset_info.index,
+            name: workset_info.name.clone(),
+            description: workset_info.description.clone(),
+            comic_count: workset_info.comic_count,
+            comic_next_index: workset_info.comic_next_index,
+            created_at: workset_info.created_at.to_unix_milli(),
+            updated_at: workset_info.updated_at.to_unix_milli(),
+        },
+        index: comic_info.index,
+        title: comic_info.title.clone(),
+        author: comic_info.author.clone(),
+        description: comic_info.description.clone(),
+        chapter_count: comic_info.chapter_count,
+        chapter_next_index: comic_info.chapter_next_index,
+        creator_id: comic_info.creator_id.clone(),
+        last_active_at: comic_info.last_active_at.to_unix_milli(),
+        created_at: comic_info.created_at.to_unix_milli(),
+        updated_at: comic_info.updated_at.to_unix_milli(),
+        chapter_archive_ids: archived_chapter_ids.to_vec(),
+    }
+}
+
+/// Convert a chapter and its assignments into the archive payload.
+fn build_chapter_payload(
+    chapter_snapshot: &ComicArchiveChapterSnapshot,
+    archived_comic_id: &str,
+) -> RegularResult<ArchivedChapterPayload> {
+    //
+    let chapter_info = &chapter_snapshot.chapter_info;
+
+    let assignments = chapter_snapshot
+        .assignment_infos
+        .iter()
+        .map(build_assignment_payload)
+        .collect::<RegularResult<Vec<_>>>()?;
+
+    Ok(ArchivedChapterPayload {
+        source_chapter_id: chapter_info.id.clone(),
+        archived_comic_id: archived_comic_id.into(),
+        is_pinned: chapter_info.is_pinned,
+        index: chapter_info.index,
+        subtitle: chapter_info.subtitle.clone(),
+        page_count: chapter_info.page_count,
+        total_unit_count: chapter_info.total_unit_count,
+        translated_unit_count: chapter_info.translated_unit_count,
+        proofread_unit_count: chapter_info.proofread_unit_count,
+        stages: u32::from(chapter_info.stages),
+        creator_id: chapter_info.creator_id.clone(),
+        created_at: chapter_info.created_at.to_unix_milli(),
+        updated_at: chapter_info.updated_at.to_unix_milli(),
+        assignments,
+    })
+}
+
+/// Convert an assignment and its directly loaded user into archive data.
+fn build_assignment_payload(
+    assignment_info: &AssignmentInfo,
+) -> RegularResult<ArchivedAssignmentPayload> {
+    //
+    let user_info = assignment_info.user.as_ref().ok_or_else(|| {
+        RegularError::Unrecoverable {
+            message: "[ComicArchiveComplex::build_assignment_payload] assignment user was not loaded".into(),
+        }
+    })?;
+
+    Ok(ArchivedAssignmentPayload {
+        source_assignment_id: assignment_info.id.clone(),
+        user_id: assignment_info.user_id.clone(),
+        roles: u32::from(assignment_info.roles),
+        created_at: assignment_info.created_at.to_unix_milli(),
+        updated_at: assignment_info.updated_at.to_unix_milli(),
+        user: ArchivedUserPayload {
+            id: user_info.id.clone(),
+            qid: user_info.qid.clone(),
+            nickname: user_info.nickname.clone(),
+            avatar_key: user_info.avatar_key.clone(),
+            avatar_uploaded: user_info.avatar_uploaded,
+            avatar_version: user_info.avatar_version,
+            is_sadmin: user_info.is_sadmin,
+            last_active_at: user_info.last_active_at.to_unix_milli(),
+            created_at: user_info.created_at.to_unix_milli(),
+            updated_at: user_info.updated_at.to_unix_milli(),
+        },
+    })
+}
+
+/// Convert page and unit data while intentionally excluding image metadata.
+fn build_translation_payload(
+    chapter_snapshot: &ComicArchiveChapterSnapshot,
+    archived_chapter_id: &str,
+) -> ArchivedTranslationPayload {
+    //
+    let pages = chapter_snapshot
+        .page_snapshots
+        .iter()
+        .map(|page_snapshot| {
+            //
+            let page_info = &page_snapshot.page_info;
+
+            ArchivedPagePayload {
+                source_page_id: page_info.id.clone(),
+                index: page_info.index,
+                total_unit_count: page_info.total_unit_count,
+                translated_unit_count: page_info.translated_unit_count,
+                proofread_unit_count: page_info.proofread_unit_count,
+                created_at: page_info.created_at.to_unix_milli(),
+                updated_at: page_info.updated_at.to_unix_milli(),
+                units: page_snapshot
+                    .unit_infos
+                    .iter()
+                    .map(|unit_info| ArchivedUnitPayload {
+                        source_unit_id: unit_info.id.clone(),
+                        index: unit_info.index,
+                        is_bubble: unit_info.is_bubble,
+                        is_proofread: unit_info.is_proofread,
+                        x_coord: unit_info.x_coord,
+                        y_coord: unit_info.y_coord,
+                        translated_text: unit_info.translated_text.clone(),
+                        last_translator_id: unit_info
+                            .last_translator_id
+                            .clone(),
+                        proofread_text: unit_info.proofread_text.clone(),
+                        last_proofreader_id: unit_info
+                            .last_proofreader_id
+                            .clone(),
+                        created_at: unit_info.created_at.to_unix_milli(),
+                        updated_at: unit_info.updated_at.to_unix_milli(),
+                    })
+                    .collect(),
+            }
+        })
+        .collect();
+
+    ArchivedTranslationPayload {
+        source_chapter_id: chapter_snapshot.chapter_info.id.clone(),
+        archived_chapter_id: archived_chapter_id.into(),
+        pages,
+    }
+}

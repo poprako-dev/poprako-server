@@ -116,10 +116,7 @@ pub fn new(harn: AppHarn) -> Router<AppHarn> {
             "/comics/{comic_id}/cover/mark-uploaded",
             post(comic::mark_cover_uploaded),
         )
-        .route(
-            "/comics/{comic_id}/mark-archived",
-            post(comic::mark_archived),
-        );
+        .route("/comics/{comic_id}/archive", post(comic::archive));
 
     let v1_chapter = Router::new()
         .route("/chapters", post(chapter::create))

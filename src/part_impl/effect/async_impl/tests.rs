@@ -65,7 +65,6 @@ fn comic_info() -> ComicInfo {
         title: "Comic One".to_string(),
         author: "Author One".to_string(),
         description: None,
-        is_completed: false,
         cover_key: None,
         cover_uploaded: false,
         cover_version: 0,
@@ -137,8 +136,7 @@ async fn develop_dispatches_user_signup() {
 
     mock.seed_team(team_info());
 
-    let develop =
-        AsyncEffectDevelop::new(Arc::clone(&mock), 8);
+    let develop = AsyncEffectDevelop::new(Arc::clone(&mock), 8);
 
     EffectDevelop::develop(
         &develop,
@@ -175,8 +173,7 @@ async fn develop_dispatches_chapter_workflow_completed() {
         RoleMask::from(RoleField::REVIEWER),
     ));
 
-    let develop =
-        AsyncEffectDevelop::new(Arc::clone(&mock), 8);
+    let develop = AsyncEffectDevelop::new(Arc::clone(&mock), 8);
 
     EffectDevelop::develop(
         &develop,
@@ -212,8 +209,7 @@ async fn develop_dispatches_chapter_published() {
         RoleMask::from(RoleField::REVIEWER),
     ));
 
-    let develop =
-        AsyncEffectDevelop::new(Arc::clone(&mock), 8);
+    let develop = AsyncEffectDevelop::new(Arc::clone(&mock), 8);
 
     EffectDevelop::develop(
         &develop,

@@ -52,6 +52,8 @@ pub mod assignment_invitation;
 pub mod chapter;
 /// Comic repository port.
 pub mod comic;
+/// Immutable comic archive repository port.
+pub mod comic_archive;
 /// Comment repository port.
 pub mod comment;
 /// Member repository port.

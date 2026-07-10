@@ -40,7 +40,6 @@ export interface ComicInfoVal {
     title: string;
     author: string;
     description: string | null;
-    is_completed: boolean;
     cover_url: string | null;
     chapter_count: number;
     chapter_next_index: number;
@@ -182,6 +181,10 @@ export interface CodeVal extends IdVal {
 
 export interface CreateComicVal extends IdVal {
     chapter_id: string;
+}
+
+export interface ArchiveComicVal {
+    archived_comic_id: string;
 }
 
 export interface PageCreationVal {

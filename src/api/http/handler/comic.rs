@@ -1,4 +1,4 @@
-//! Comic handlers: CRUD, cover upload flow, and completion toggle.
+//! Comic handlers: CRUD, cover upload flow, and immutable archiving.
 
 use axum::Json;
 use axum::extract::{Extension, Path, Query, State};
@@ -18,23 +18,17 @@ use crate::api::http::result::{
 use crate::api::http::state::AppHarn;
 use crate::data::comic::{
     ComicInfoVal, CreateComicData, CreateComicVal, ListComicInfosData,
-    MarkComicArchivedData, MarkComicCoverUploadedData, ReserveComicCoverData,
-    ReserveComicCoverVal, UpdateComicInfoData,
+    MarkComicCoverUploadedData, ReserveComicCoverData, ReserveComicCoverVal,
+    UpdateComicInfoData,
 };
+use crate::data::comic_archive::ArchiveComicVal;
 use crate::model::user::UserToken;
 use crate::usecase;
 use crate::value::comic::{ComicInclOpt, ComicWithOpt};
 
 /// Query for listing comics within a workset.
 ///
-/// Filtering modes are selected by `is_completed` and `stages` together:
-/// - omit both: list all comics in the workset;
-/// - `is_completed=true`: list completed comics only (`stages` must be
-///   omitted — combining them is rejected with `422`);
-/// - `is_completed=false`: list active comics, optionally narrowed by
-///   `stages`;
-/// - omit `is_completed` but pass `stages`: list active comics in those
-///   stages.
+/// When present, `stages` narrows the list by pinned chapter workflow state.
 ///
 /// `incl` embeds related rows into each item; `with` attaches derived rows.
 /// Dotted `incl` values implicitly pull in their parent segments.
@@ -45,13 +39,7 @@ pub struct ComicListQuery {
     /// Fuzzy title substring filter (case-insensitive).
     pub fuzzy_title: Option<String>,
 
-    /// Completion filter. `Some(true)` selects completed comics, `Some(false)`
-    /// selects active comics, `None` leaves completion unconstrained. Must not
-    /// be `Some(true)` together with `stages`.
-    pub is_completed: Option<bool>,
-
-    /// Workflow stage bitmask filter for active comics. Only meaningful when
-    /// `is_completed` is not `Some(true)`; rejected otherwise.
+    /// Workflow stage bitmask filter for pinned chapters.
     pub stages: Option<u32>,
 
     /// Related rows to embed. Repeatable. Values: `workset`, `workset.team`,
@@ -107,12 +95,12 @@ pub async fn create(
     get,
     path = "/api/v1/worksets/{workset_id}/comics",
     tag = "comics",
-    description = "Lists comics in a workset with optional title, completion, and stage filters. `is_completed=true` must not be combined with `stages`; `is_completed=false` or omitting `is_completed` allows `stages`. `incl` embeds related rows, `with` attaches derived rows. Example: `/api/v1/worksets/{workset_id}/comics?is_completed=false&stages=6&incl=workset.team&incl=creator&with=pinned_chapter&offset=0&limit=20`.",
+    description = "Lists active comics in a workset with optional title and workflow-stage filters. `incl` embeds related rows and `with` attaches derived rows.",
     params(("workset_id" = String, Path, description = "Workset ID"), ComicListQuery),
     responses(
         (status = 200, description = "Comics listed", body = HttpBody<Vec<ComicInfoVal>>),
         (status = 403, description = "No permission to list comics in this workset"),
-        (status = 422, description = "Invalid argument combination (e.g. is_completed=true with stages)"),
+        (status = 422, description = "Invalid workflow-stage filter"),
     ),
 ))]
 #[instrument(err, skip(harn))]
@@ -125,7 +113,6 @@ pub async fn list_infos(
     let data = ListComicInfosData {
         workset_id,
         fuzzy_title: query.fuzzy_title,
-        is_completed: query.is_completed,
         stages: query.stages,
         incl_opt: query.incl_opt,
         with_opt: query.with_opt,
@@ -257,37 +244,33 @@ pub async fn mark_cover_uploaded(
     no_content()
 }
 
-/// `POST /api/v1/comics/{comic_id}/mark-archived` — mark a comic archived.
+/// `POST /api/v1/comics/{comic_id}/archive` — archive and remove one active comic.
 #[cfg_attr(feature = "swagger-ui", utoipa::path(
     post,
-    path = "/api/v1/comics/{comic_id}/mark-archived",
+    path = "/api/v1/comics/{comic_id}/archive",
     tag = "comics",
     params(("comic_id" = String, Path, description = "Comic ID")),
-    request_body = MarkComicArchivedData,
     responses(
-        (status = 204, description = "Comic marked archived"),
-        (status = 422, description = "Path id does not match body id"),
-        (status = 403, description = "No permission to modify this comic"),
+        (status = 201, description = "Comic archived", body = HttpBody<ArchiveComicVal>),
+        (status = 403, description = "No permission to archive this comic"),
         (status = 404, description = "Comic not found"),
     ),
 ))]
-#[instrument(err, skip(harn, data))]
-pub async fn mark_archived(
+#[instrument(err, skip(harn))]
+pub async fn archive(
     State(harn): State<AppHarn>,
     Path(comic_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Json(data): Json<MarkComicArchivedData>,
-) -> HttpNoContent {
-    ensure_path_matches_body_id(&comic_id, &data.comic_id)?;
-
-    usecase::comic::mark_archived(
+) -> HttpResult<ArchiveComicVal> {
+    usecase::comic_archive::archive(
         harn.drive(),
         harn.repo(),
+        harn.prom(),
         user_token,
-        data.comic_id,
+        comic_id,
     )
-    .await?;
-    no_content()
+    .await?
+    .accept(StatusCode::CREATED)
 }
 
 /// `DELETE /api/v1/comics/{comic_id}` — delete a comic and descendants.

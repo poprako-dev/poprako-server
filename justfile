@@ -22,6 +22,9 @@ mgr-setup:
 mgr-list:
     diesel migration list
 
+mgr-schema:
+    diesel print-schema > src/part_impl/repo/rdb_impl/schema.rs
+
 connect:
     psql ${DATABASE_URL}
 

@@ -10,6 +10,7 @@ import { ApiClient, clientFor } from "./apiClient.js";
 import type { SuccessBody } from "./apiClient.js";
 import type {
     AnnouncementInfoVal,
+    ArchiveComicVal,
     AssignmentInfoVal,
     AssignmentInvitationInfoVal,
     ChapterInfoVal,
@@ -379,6 +380,13 @@ export async function getComic(api: ApiClient, comicId: string): Promise<ComicIn
     return expectSuccessData(await api.get(`/api/v1/comics/${comicId}`), 200);
 }
 
+export async function archiveComic(api: ApiClient, comicId: string): Promise<ArchiveComicVal> {
+    return expectSuccessData(
+        await api.post<SuccessBody<ArchiveComicVal>>(`/api/v1/comics/${comicId}/archive`),
+        201,
+    );
+}
+
 export async function listWorksetComics(
     api: ApiClient,
     worksetId: string,
@@ -430,18 +438,6 @@ export async function markComicCoverUploaded(
     expectNoContent(
         await api.post<null>(`/api/v1/comics/${comicId}/cover/mark-uploaded`, {
             cover_version: coverVersion,
-        }),
-    );
-}
-
-export async function markComicCompleted(
-    api: ApiClient,
-    comicId: string,
-    isCompleted: boolean,
-): Promise<void> {
-    expectNoContent(
-        await api.post<null>(`/api/v1/comics/${comicId}/mark-completed`, {
-            is_completed: isCompleted,
         }),
     );
 }

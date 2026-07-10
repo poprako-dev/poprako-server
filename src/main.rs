@@ -24,6 +24,7 @@
 #![allow(clippy::multiple_crate_versions)]
 
 use std::net::{SocketAddr, ToSocketAddrs};
+use std::path::Path;
 use std::sync::Arc;
 
 use anyhow::Context as _;
@@ -66,7 +67,7 @@ async fn main() -> anyhow::Result<()> {
 
         None
     } else {
-        let log_folder = std::path::Path::new("logs");
+        let log_folder = Path::new("logs");
 
         std::fs::create_dir_all(log_folder)
             .context("failed to create log folder")?;

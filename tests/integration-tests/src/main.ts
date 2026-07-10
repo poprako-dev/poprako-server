@@ -19,6 +19,7 @@ import { IMPLEMENTED as IT07_IMPLEMENTED, runIt07Module } from "./suites/it_07_w
 import { IMPLEMENTED as IT08_IMPLEMENTED, runIt08Module } from "./suites/it_08_info_update_upload_mark.js";
 import { IMPLEMENTED as IT09_IMPLEMENTED, runIt09Module } from "./suites/it_09_cross_team_permission.js";
 import { IMPLEMENTED as IT10_IMPLEMENTED, runIt10Module } from "./suites/it_10_cascade_delete_cleanup.js";
+import { IMPLEMENTED as IT11_IMPLEMENTED, runIt11Module } from "./suites/it_11_comic_archive.js";
 import type { RunCtx } from "./state/runCtx.js";
 
 // Progressive integration test orchestration.
@@ -72,6 +73,7 @@ const modules: ModuleEntry[] = [
     { name: "it_08 info update upload mark", implemented: IT08_IMPLEMENTED, run: runIt08Module },
     { name: "it_09 cross team permission", implemented: IT09_IMPLEMENTED, run: runIt09Module },
     { name: "it_10 cascade delete cleanup", implemented: IT10_IMPLEMENTED, run: runIt10Module },
+    { name: "it_11 comic archive", implemented: IT11_IMPLEMENTED, run: runIt11Module },
 ];
 
 await test("poprako HTTP API integration (progressive)", async (outerT) => {

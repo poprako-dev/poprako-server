@@ -56,6 +56,8 @@ pub mod team;
 pub mod chapter;
 /// Comic lifecycle use cases.
 pub mod comic;
+/// Immutable comic archive use cases.
+pub mod comic_archive;
 /// Workset lifecycle use cases.
 pub mod workset;
 
