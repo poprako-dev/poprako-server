@@ -22,6 +22,6 @@ This AGENTS.md scopes guidance to `poprako-transactional`. Parent AGENTS guidanc
 
 <!-- OMX:AGENTS-INIT:MANUAL:START -->
 ## Local Notes
-- Add subtree-specific constraints, ownership notes, and test commands here.
-- Keep notes scoped to this directory and its children.
+- This crate owns the `Step`, `Execute`, `Advance`, and `Drive` transaction contracts.
+- Keep it independent of application domains and verify changes with `cargo test -p poprako-transactional`.
 <!-- OMX:AGENTS-INIT:MANUAL:END -->

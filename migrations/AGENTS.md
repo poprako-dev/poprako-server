@@ -28,10 +28,13 @@ This AGENTS.md scopes guidance to `migrations`. Parent AGENTS guidance still app
 - `2026-06-07-094231-0000_create-workset-table/`
 - `2026-06-07-124752-0000_create-local-message-table/`
 - `2026-06-24-000000-0000_create-comic-table/`
-- ...and 1 more
+- Additional timestamped migrations for active content, archive, and prom data.
 
 <!-- OMX:AGENTS-INIT:MANUAL:START -->
 ## Local Notes
-- Add subtree-specific constraints, ownership notes, and test commands here.
-- Keep notes scoped to this directory and its children.
+- Change a migration only through its paired `up.sql` and `down.sql` files.
+- Do not edit generated Diesel schema here. After applying the migration, run
+  `just mgr-schema` to regenerate `src/part_impl/repo/rdb_impl/schema.rs`.
+- Use `just mgr-run`, `just mgr-rev`, and `just mgr-list` to validate the
+  migration sequence before compiling the Rust code that depends on it.
 <!-- OMX:AGENTS-INIT:MANUAL:END -->
