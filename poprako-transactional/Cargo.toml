@@ -2,9 +2,9 @@
 name = "poprako-transactional"
 version = "0.1.0"
 edition = "2024"
-description = "Transaction driver and Step-based execution for poprako-r"
+description = "Transaction driver and Step-based execution for poprako-server"
 license = "MIT"
-repository = "https://github.com/anomalyco/poprako-r"
+repository = "https://github.com/anomalyco/poprako-server"
 keywords = ["transaction", "step", "async", "diesel"]
 categories = ["asynchronous"]
 readme = false

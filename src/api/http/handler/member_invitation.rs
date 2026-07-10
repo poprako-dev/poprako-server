@@ -8,6 +8,7 @@ use serde::Deserialize;
 
 use tracing::instrument;
 
+#[cfg(feature = "swagger-ui")]
 use utoipa::IntoParams;
 
 use crate::api::http::handler::util::ensure_path_matches_body_id;
@@ -29,8 +30,9 @@ use crate::value::member_invitation::MemberInvitationInclOpt;
 /// `incl` embeds related rows into each item.
 ///
 /// Example: `?pending=true&incl=invitor&offset=0&limit=20`.
-#[derive(Debug, Deserialize, IntoParams)]
-#[into_params(parameter_in = Query)]
+#[derive(Debug, Deserialize)]
+#[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
+#[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
 pub struct MemberInvitationListQuery {
     /// When `Some(true)`, returns only unconsumed invitations;
     /// `Some(false)` returns only consumed ones; `None` returns all.
@@ -52,7 +54,7 @@ pub struct MemberInvitationListQuery {
 }
 
 /// `POST /api/v1/member-invitations` — create a pending team invitation.
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     post,
     path = "/api/v1/member-invitations",
     tag = "member-invitations",
@@ -62,7 +64,7 @@ pub struct MemberInvitationListQuery {
         (status = 403, description = "No permission to create invitations in this team"),
         (status = 409, description = "Invitee is already a member"),
     ),
-)]
+))]
 #[instrument(err, skip(harn, data))]
 pub async fn create(
     State(harn): State<AppHarn>,
@@ -80,7 +82,7 @@ pub async fn create(
 }
 
 /// `GET /api/v1/teams/{team_id}/member-invitations` — list a team's invitations.
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     get,
     path = "/api/v1/teams/{team_id}/member-invitations",
     tag = "member-invitations",
@@ -90,7 +92,7 @@ pub async fn create(
         (status = 200, description = "Invitations listed", body = HttpBody<Vec<MemberInvitationInfoVal>>),
         (status = 403, description = "No permission to list invitations in this team"),
     ),
-)]
+))]
 #[instrument(err, skip(harn))]
 pub async fn list_infos(
     State(harn): State<AppHarn>,
@@ -117,7 +119,7 @@ pub async fn list_infos(
 }
 
 /// `PUT /api/v1/member-invitations/{member_invitation_id}/roles` — update invitation roles.
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     put,
     path = "/api/v1/member-invitations/{member_invitation_id}/roles",
     tag = "member-invitations",
@@ -129,7 +131,7 @@ pub async fn list_infos(
         (status = 403, description = "No permission to update this invitation"),
         (status = 404, description = "Invitation not found"),
     ),
-)]
+))]
 #[instrument(err, skip(harn, data))]
 pub async fn update_roles(
     State(harn): State<AppHarn>,
@@ -151,7 +153,7 @@ pub async fn update_roles(
 }
 
 /// `DELETE /api/v1/member-invitations/{member_invitation_id}` — delete an invitation.
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     delete,
     path = "/api/v1/member-invitations/{member_invitation_id}",
     tag = "member-invitations",
@@ -161,7 +163,7 @@ pub async fn update_roles(
         (status = 403, description = "No permission to delete this invitation"),
         (status = 404, description = "Invitation not found"),
     ),
-)]
+))]
 #[instrument(err, skip(harn))]
 pub async fn delete(
     State(harn): State<AppHarn>,

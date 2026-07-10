@@ -2,6 +2,7 @@
 
 use serde::Deserialize;
 
+#[cfg(feature = "swagger-ui")]
 use utoipa::ToSchema;
 
 use crate::value::incl::InclOpt;
@@ -11,7 +12,8 @@ use crate::value::incl::InclOpt;
 /// Each opt embeds additional related data into the returned
 /// [`ComicInfoVal`]. Dotted opts implicitly pull in the segments before the
 /// dot (e.g. `workset.team` also embeds `workset`).
-#[derive(Debug, Deserialize, Clone, Copy, PartialEq, Eq, ToSchema)]
+#[derive(Debug, Deserialize, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
 pub enum ComicInclOpt {
     /// Embed the parent workset (`workset`).
     #[serde(rename = "workset")]
@@ -40,7 +42,8 @@ impl InclOpt for ComicInclOpt {
 ///
 /// Unlike `ComicInclOpt`, `with` opts attach derived rather than
 /// directly related data (e.g. the chapter currently pinned to the comic).
-#[derive(Debug, Deserialize, Clone, Copy, PartialEq, Eq, ToSchema)]
+#[derive(Debug, Deserialize, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
 #[serde(rename_all = "snake_case")]
 pub enum ComicWithOpt {
     /// Embed the chapter currently pinned to each comic.

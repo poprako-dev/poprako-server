@@ -19,7 +19,7 @@ use crate::model::user::UserToken;
 use crate::usecase;
 
 /// `GET /api/v1/pages/{page_id}/units` — list units under a page.
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     get,
     path = "/api/v1/pages/{page_id}/units",
     tag = "units",
@@ -29,7 +29,7 @@ use crate::usecase;
         (status = 403, description = "No permission to list units in this page"),
         (status = 404, description = "Page not found"),
     ),
-)]
+))]
 #[instrument(err, skip(harn))]
 pub async fn list_infos(
     State(harn): State<AppHarn>,
@@ -49,7 +49,7 @@ pub async fn list_infos(
 }
 
 /// `POST /api/v1/pages/{page_id}/units/save` — save unit opers.
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     post,
     path = "/api/v1/pages/{page_id}/units/save",
     tag = "units",
@@ -61,7 +61,7 @@ pub async fn list_infos(
         (status = 403, description = "No permission to save units in this page"),
         (status = 422, description = "Invalid unit oper"),
     ),
-)]
+))]
 #[instrument(err, skip(harn, data))]
 pub async fn save_infos(
     State(harn): State<AppHarn>,

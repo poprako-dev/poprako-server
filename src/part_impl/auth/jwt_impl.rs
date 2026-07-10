@@ -102,7 +102,7 @@ impl TokenAuth for JwtAuth {
             iat: issued_at,
             nbf: issued_at,
             exp: expiration,
-            iss: "poprako-r",
+            iss: "poprako-server",
         };
 
         let header = Header::new(Algorithm::HS256);

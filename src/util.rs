@@ -59,9 +59,30 @@ fn load_snowflake_node_id() -> u16 {
     }
 }
 
-// pub trait Validate {
-//     fn validate(&self) -> RootResult<()>;
-// }
+fn to_roman_style(mut n: u8) -> String {
+    const TABLE: &[(u8, &str)] = &[
+        (100, "c"),
+        (90, "xc"),
+        (50, "l"),
+        (40, "xl"),
+        (10, "x"),
+        (9, "ix"),
+        (5, "v"),
+        (4, "iv"),
+        (1, "i"),
+    ];
+
+    let mut ret = String::new();
+
+    for &(value, symbol) in TABLE {
+        while n >= value {
+            ret.push_str(symbol);
+            n -= value;
+        }
+    }
+
+    ret
+}
 
 #[cfg(test)]
 mod tests;

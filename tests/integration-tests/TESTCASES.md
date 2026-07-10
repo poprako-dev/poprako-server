@@ -15,7 +15,7 @@ executes them. Module build-out status is tracked in `PROGRESS.md`.
 ```text
 # 1. PostgreSQL reachable at DATABASE_URL (see repo .env). Apply migrations: just mgr-run
 # 2. Build and start the Rust HTTP server:
-cargo build && ./target/debug/poprako-r      # listens on 127.0.0.1:8888
+cargo build && ./target/debug/poprako-server      # listens on 127.0.0.1:8888
 # 3. Run the suite from the integration-tests project root:
 cd tests/integration-tests && pnpm install && pnpm api
 # 4. Fast static check (no server needed):

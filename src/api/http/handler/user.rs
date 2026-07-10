@@ -21,7 +21,7 @@ use crate::model::user::UserToken;
 use crate::usecase;
 
 /// `GET /api/v1/users/me` — current user's profile.
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     get,
     path = "/api/v1/users/me",
     tag = "users",
@@ -29,7 +29,7 @@ use crate::usecase;
         (status = 200, description = "Current user profile", body = HttpBody<UserInfoVal>),
         (status = 401, description = "Authentication required"),
     ),
-)]
+))]
 #[instrument(err, skip(harn))]
 pub async fn get_my_info(
     State(harn): State<AppHarn>,
@@ -49,7 +49,7 @@ pub async fn get_my_info(
 }
 
 /// `GET /api/v1/users/{user_id}` — a user's profile by id.
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     get,
     path = "/api/v1/users/{user_id}",
     tag = "users",
@@ -59,7 +59,7 @@ pub async fn get_my_info(
         (status = 401, description = "Authentication required"),
         (status = 404, description = "User not found"),
     ),
-)]
+))]
 #[instrument(err, skip(harn))]
 pub async fn get_info(
     State(harn): State<AppHarn>,
@@ -78,7 +78,7 @@ pub async fn get_info(
 }
 
 /// `PUT /api/v1/users/{user_id}` — update a user's profile.
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     put,
     path = "/api/v1/users/{user_id}",
     tag = "users",
@@ -90,7 +90,7 @@ pub async fn get_info(
         (status = 403, description = "Cannot modify another user's profile"),
         (status = 409, description = "QID already taken"),
     ),
-)]
+))]
 #[instrument(err, skip(harn, data))]
 pub async fn update_info(
     State(harn): State<AppHarn>,
@@ -107,7 +107,7 @@ pub async fn update_info(
 }
 
 /// `DELETE /api/v1/users/{user_id}` — delete a user account.
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     delete,
     path = "/api/v1/users/{user_id}",
     tag = "users",
@@ -117,7 +117,7 @@ pub async fn update_info(
         (status = 403, description = "Cannot delete another user's account"),
         (status = 404, description = "User not found"),
     ),
-)]
+))]
 #[instrument(err, skip(harn))]
 pub async fn delete(
     State(harn): State<AppHarn>,
@@ -136,7 +136,7 @@ pub async fn delete(
 }
 
 /// `POST /api/v1/users/{user_id}/avatar/reserve` — reserve an avatar upload slot.
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     post,
     path = "/api/v1/users/{user_id}/avatar/reserve",
     tag = "users",
@@ -146,7 +146,7 @@ pub async fn delete(
         (status = 200, description = "Avatar upload URL reserved", body = HttpBody<ReserveUserAvatarVal>),
         (status = 403, description = "Cannot modify another user's avatar"),
     ),
-)]
+))]
 #[instrument(err, skip(harn, data))]
 pub async fn reserve_avatar(
     State(harn): State<AppHarn>,
@@ -169,7 +169,7 @@ pub async fn reserve_avatar(
 }
 
 /// `POST /api/v1/users/{user_id}/avatar/mark-uploaded` — confirm an avatar upload.
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     post,
     path = "/api/v1/users/{user_id}/avatar/mark-uploaded",
     tag = "users",
@@ -179,7 +179,7 @@ pub async fn reserve_avatar(
         (status = 204, description = "Avatar upload confirmed"),
         (status = 403, description = "Cannot confirm another user's avatar"),
     ),
-)]
+))]
 #[instrument(err, skip(harn, data))]
 pub async fn mark_avatar_uploaded(
     State(harn): State<AppHarn>,

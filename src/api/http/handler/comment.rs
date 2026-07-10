@@ -8,6 +8,7 @@ use serde::Deserialize;
 
 use tracing::instrument;
 
+#[cfg(feature = "swagger-ui")]
 use utoipa::IntoParams;
 
 use crate::api::http::result::{Accept as _, HttpBody, HttpResult};
@@ -24,8 +25,9 @@ use crate::value::comment::CommentInclOpt;
 /// `incl` embeds related rows into each item.
 ///
 /// Example: `?incl=user&offset=0&limit=20`.
-#[derive(Debug, Deserialize, IntoParams)]
-#[into_params(parameter_in = Query)]
+#[derive(Debug, Deserialize)]
+#[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
+#[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
 pub struct CommentListQuery {
     /// Related rows to embed. Repeatable. Values: `user`.
     #[serde(
@@ -43,7 +45,7 @@ pub struct CommentListQuery {
 }
 
 /// `POST /api/v1/comments` — create a team board comment.
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     post,
     path = "/api/v1/comments",
     tag = "comments",
@@ -53,7 +55,7 @@ pub struct CommentListQuery {
         (status = 403, description = "No permission to comment in this team"),
         (status = 404, description = "Team not found"),
     ),
-)]
+))]
 #[instrument(err, skip(harn, data))]
 pub async fn create(
     State(harn): State<AppHarn>,
@@ -66,7 +68,7 @@ pub async fn create(
 }
 
 /// `GET /api/v1/teams/{team_id}/comments` — list a team's comments.
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     get,
     path = "/api/v1/teams/{team_id}/comments",
     tag = "comments",
@@ -76,7 +78,7 @@ pub async fn create(
         (status = 200, description = "Comments listed", body = HttpBody<Vec<CommentInfoVal>>),
         (status = 403, description = "No permission to list comments in this team"),
     ),
-)]
+))]
 #[instrument(err, skip(harn))]
 pub async fn list_infos(
     State(harn): State<AppHarn>,

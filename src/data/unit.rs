@@ -2,6 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "swagger-ui")]
 use utoipa::ToSchema;
 
 use poprako_macro::Paginate;
@@ -12,7 +13,8 @@ use crate::model::unit::{
 };
 
 /// Presentation-ready unit information.
-#[derive(Debug, Serialize, ToSchema)]
+#[derive(Debug, Serialize)]
+#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
 pub struct UnitInfoVal {
     pub id: String,
 
@@ -61,7 +63,8 @@ pub struct ListPageUnitInfosData {
 }
 
 /// Return value for listing units under one page.
-#[derive(Debug, Serialize, ToSchema)]
+#[derive(Debug, Serialize)]
+#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
 pub struct ListPageUnitInfosVal {
     pub unit_infos: Vec<UnitInfoVal>,
 
@@ -71,14 +74,16 @@ pub struct ListPageUnitInfosVal {
 }
 
 /// Input parameters for saving unit opers under one page.
-#[derive(Debug, Deserialize, ToSchema)]
+#[derive(Debug, Deserialize)]
+#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
 pub struct SavePageUnitsData {
     pub page_id: String,
     pub diff: UnitDiffData,
 }
 
 /// Return value for saving unit opers under one page.
-#[derive(Debug, Serialize, ToSchema)]
+#[derive(Debug, Serialize)]
+#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
 pub struct SavePageUnitsVal {
     pub local_id_mappers: Vec<UnitIdMapperVal>,
 
@@ -88,7 +93,8 @@ pub struct SavePageUnitsVal {
 }
 
 /// Transport-facing unit oper.
-#[derive(Debug, Clone, Deserialize, ToSchema)]
+#[derive(Debug, Clone, Deserialize)]
+#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
 pub struct UnitDiffData {
     pub page_id: String,
 
@@ -96,7 +102,8 @@ pub struct UnitDiffData {
 }
 
 /// Transport-facing unit oper event.
-#[derive(Debug, Clone, Deserialize, ToSchema)]
+#[derive(Debug, Clone, Deserialize)]
+#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
 #[serde(tag = "oper", rename_all = "snake_case")]
 pub enum UnitOperData {
     Save {
@@ -118,7 +125,8 @@ pub enum UnitOperData {
 }
 
 /// Transport-facing complete unit payload.
-#[derive(Debug, Clone, Deserialize, ToSchema)]
+#[derive(Debug, Clone, Deserialize)]
+#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
 pub struct UnitPayloadData {
     pub is_bubble: bool,
     pub is_proofread: bool,
@@ -185,7 +193,8 @@ impl UnitPayloadData {
 }
 
 /// Presentation-ready local-to-server id mapping.
-#[derive(Debug, Serialize, ToSchema)]
+#[derive(Debug, Serialize)]
+#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
 pub struct UnitIdMapperVal {
     pub local_id: String,
     pub unit_id: String,

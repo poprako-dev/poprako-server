@@ -29,7 +29,7 @@ pub struct TranslationExportQuery {
 }
 
 /// `POST /api/v1/chapters/{chapter_id}/translations/import` — import translations.
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     post,
     path = "/api/v1/chapters/{chapter_id}/translations/import",
     tag = "chapter-port",
@@ -40,7 +40,7 @@ pub struct TranslationExportQuery {
         (status = 403, description = "No permission to import into this chapter"),
         (status = 422, description = "Invalid import content for the selected format"),
     ),
-)]
+))]
 #[instrument(err, skip(harn, data))]
 pub async fn import(
     State(harn): State<AppHarn>,
@@ -63,7 +63,7 @@ pub async fn import(
 ///
 /// `format=poprako` returns a JSON document (`application/json`); `format=label-plus`
 /// returns a LabelPlus text document (`text/plain`).
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     get,
     path = "/api/v1/chapters/{chapter_id}/translations/export",
     tag = "chapter-port",
@@ -76,7 +76,7 @@ pub async fn import(
         (status = 200, description = "LabelPlus translation export", content_type = "text/plain"),
         (status = 403, description = "No permission to export this chapter"),
     ),
-)]
+))]
 #[instrument(err, skip(harn))]
 pub async fn export(
     State(harn): State<AppHarn>,
@@ -94,7 +94,7 @@ pub async fn export(
 ///
 /// `format=poprako` downloads a JSON document (`application/json`);
 /// `format=label-plus` downloads a LabelPlus text document (`text/plain`).
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     get,
     path = "/api/v1/chapters/{chapter_id}/translations/export/download",
     tag = "chapter-port",
@@ -106,7 +106,7 @@ pub async fn export(
         (status = 200, description = "Translation file download", content_type = "application/json"),
         (status = 403, description = "No permission to export this chapter"),
     ),
-)]
+))]
 #[instrument(err, skip(harn))]
 pub async fn export_download(
     State(harn): State<AppHarn>,

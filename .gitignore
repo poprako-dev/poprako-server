@@ -18,3 +18,5 @@
 .codex/skills/.system/**
 !.codex/prompts/
 !.codex/prompts/**
+
+logs/

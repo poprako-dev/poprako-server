@@ -22,5 +22,5 @@ pub type AppHarn = Harn<
     RdbProm,
     JwtAuth,
     R2ImagePool,
-    AsyncEffectDevelop<RdbContext, RdbRepo>,
+    AsyncEffectDevelop,
 >;

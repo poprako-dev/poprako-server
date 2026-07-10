@@ -12,7 +12,7 @@ suite.
 
 ```text
 # 1. PostgreSQL at DATABASE_URL (see repo .env). Apply migrations: just mgr-run
-# 2. Build + start the Rust HTTP server: cargo build && ./target/debug/poprako-r
+# 2. Build + start the Rust HTTP server: cargo build && ./target/debug/poprako-server
 # 3. From the integration-tests project root:
 cd tests/integration-tests && pnpm install && pnpm api
 ```

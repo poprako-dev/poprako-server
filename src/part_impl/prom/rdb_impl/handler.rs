@@ -1,13 +1,17 @@
 //! Prom-consumer worker that polls, dispatches by topic, and executes
 //! deferred actions using the Advance pattern for local-message lifecycle.
 //!
-//! Topic dispatch routes to [`image`] and [`comic`].
+//! Topic dispatch routes to [`image`].
 
 use std::marker::PhantomData;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration as StdDuration;
 
 use time::{Duration, OffsetDateTime};
+use tokio::sync::oneshot::{
+    Receiver as OneshotReceiver, Sender as OneshotSender,
+};
 use tokio::time::sleep;
 use tracing::{Level, instrument};
 
@@ -15,7 +19,6 @@ use poprako_transactional::advance::Advance;
 use poprako_transactional::drive::Drive;
 
 use crate::part::image::ImagePool;
-use crate::part::prom::Prom;
 use crate::part::prom::task::{IMAGE_TOPIC, ImageTask};
 use crate::part::repo::assignment::{
     AssignmentRepo, AssignmentRepoTransactional,
@@ -30,8 +33,9 @@ use crate::part::repo::team::TeamRepoTransactional;
 use crate::part::repo::unit::{UnitRepo, UnitRepoTransactional};
 use crate::part::repo::user::UserRepoTransactional;
 use crate::part::repo::workset::{WorksetRepo, WorksetRepoTransactional};
-use crate::part_impl::prom::rdb_impl::{
-    ClaimStep, CompleteStep, FailStep, LocalMessageRow, PollPending,
+use crate::part_impl::prom::rdb_impl::entity::LocalMessageRow;
+use crate::part_impl::prom::rdb_impl::repo::{
+    ClaimStep, CompleteStep, FailStep, LocalMessageRepo, PollPending,
     ResetStuckStep, RetryStep,
 };
 use crate::part_impl::shared::{RdbContext, RdbCore};
@@ -54,19 +58,23 @@ pub enum TaskOutcome {
 
 /// Background worker that polls the `t_local_message` table, dispatches by topic,
 /// and completes or fails each record.
-pub struct RdbPromHandler<D, R, P, I> {
+pub struct RdbPromHandler<D, R, I> {
     core: RdbCore,
     drive: D,
 
     repo: Arc<R>,
 
-    prom: P,
+    local_message_repo: LocalMessageRepo,
     image_pool: I,
+
+    shutdown_recv: OneshotReceiver<()>,
+    done_send: OneshotSender<()>,
+    accepting: Arc<AtomicBool>,
 
     _p: PhantomData<RdbContext>,
 }
 
-impl<D, R, P, I> RdbPromHandler<D, R, P, I>
+impl<D, R, I> RdbPromHandler<D, R, I>
 where
     D: Drive<RdbContext>,
     D::Error: Into<RegularError>,
@@ -93,39 +101,34 @@ where
             + UserRepoTransactional<RdbContext>
             + Send
             + Sync,
-    P: Prom<RdbContext>
-        + Advance<PollPending, RdbContext, Error = RegularError>
-        + for<'a> Advance<ClaimStep<'a>, RdbContext, Error = RegularError>
-        + for<'a> Advance<CompleteStep<'a>, RdbContext, Error = RegularError>
-        + for<'a> Advance<FailStep<'a>, RdbContext, Error = RegularError>
-        + for<'a> Advance<RetryStep<'a>, RdbContext, Error = RegularError>
-        + for<'a> Advance<ResetStuckStep<'a>, RdbContext, Error = RegularError>
-        + Send
-        + Sync
-        + 'static,
     I: ImagePool + Send + Sync + 'static,
 {
     pub fn new(
         core: RdbCore,
         drive: D,
         repo: Arc<R>,
-        prom: P,
+        local_message_repo: LocalMessageRepo,
         image_pool: I,
+        shutdown_recv: OneshotReceiver<()>,
+        done_send: OneshotSender<()>,
+        accepting: Arc<AtomicBool>,
     ) -> Self {
         Self {
             core,
             drive,
             repo,
-            prom,
+            local_message_repo,
             image_pool,
+            shutdown_recv,
+            done_send,
+            accepting,
             _p: PhantomData,
         }
     }
 
     #[instrument(skip(self), level = Level::INFO)]
-    pub async fn run(&self) {
+    pub async fn run(mut self) {
         loop {
-            // FIXME: if let. and similary ones.
             match self.reset_stuck().await {
                 Ok(()) => {}
                 Err(e) => {
@@ -150,15 +153,45 @@ where
                 }
             }
 
-            sleep(POLL_INTERVAL).await;
+            tokio::select! {
+                _ = sleep(POLL_INTERVAL) => {}
+                _ = &mut self.shutdown_recv => {
+                    self.accepting.store(false, Ordering::Release);
+                    break;
+                }
+            }
         }
+
+        // Drain one final poll cycle before exiting.
+        match self.poll().await {
+            Ok(rows) => {
+                for row in &rows {
+                    self.process_row(row).await;
+                }
+            }
+            Err(e) => {
+                tracing::error!(
+                    error = ?e,
+                    "[RdbPromHandler::run] final poll after shutdown failed",
+                );
+            }
+        }
+
+        self.done_send.send(()).unwrap_or_else(|error| {
+            tracing::warn!(
+                error = ?error,
+                "[RdbPromHandler::run] completion receiver already dropped",
+            );
+        });
     }
 
     async fn poll(&self) -> RegularResult<Vec<LocalMessageRow>> {
         let conn = self.core.get().await?;
         let mut context = RdbContext::new(conn);
 
-        self.prom.advance(&mut context, &PollPending).await
+        self.local_message_repo
+            .advance(&mut context, &PollPending)
+            .await
     }
 
     async fn process_row(&self, row: &LocalMessageRow) {
@@ -192,7 +225,7 @@ where
         match dispatch_topic(
             &self.drive,
             &self.repo,
-            &self.prom,
+            &self.local_message_repo,
             &self.image_pool,
             &row.f_topic,
             &row.f_payload,
@@ -249,21 +282,25 @@ where
         let conn = self.core.get().await?;
         let mut context = RdbContext::new(conn);
 
-        self.prom.advance(&mut context, &ClaimStep { id }).await
+        self.local_message_repo
+            .advance(&mut context, &ClaimStep { id })
+            .await
     }
 
     async fn complete(&self, id: &str) -> RegularResult<()> {
         let conn = self.core.get().await?;
         let mut context = RdbContext::new(conn);
 
-        self.prom.advance(&mut context, &CompleteStep { id }).await
+        self.local_message_repo
+            .advance(&mut context, &CompleteStep { id })
+            .await
     }
 
     async fn fail(&self, id: &str, error: &str) -> RegularResult<()> {
         let conn = self.core.get().await?;
         let mut context = RdbContext::new(conn);
 
-        self.prom
+        self.local_message_repo
             .advance(&mut context, &FailStep { id, error })
             .await
     }
@@ -273,7 +310,7 @@ where
         let mut context = RdbContext::new(conn);
         let visible_at = OffsetDateTime::now_utc() + RETRY_DELAY;
 
-        self.prom
+        self.local_message_repo
             .advance(
                 &mut context,
                 &RetryStep {
@@ -290,17 +327,17 @@ where
         let mut context = RdbContext::new(conn);
         let before = OffsetDateTime::now_utc() - PROCESSING_TIMEOUT;
 
-        self.prom
+        self.local_message_repo
             .advance(&mut context, &ResetStuckStep { before: &before })
             .await
     }
 }
 
 /// Route a prom record by topic to the appropriate handler module.
-async fn dispatch_topic<D, R, P, I>(
+async fn dispatch_topic<D, R, I>(
     drive: &D,
     repo: &Arc<R>,
-    prom: &P,
+    local_message_repo: &LocalMessageRepo,
     image_pool: &I,
     topic: &str,
     payload_json: &serde_json::Value,
@@ -330,7 +367,6 @@ where
             + UserRepoTransactional<RdbContext>
             + Send
             + Sync,
-    P: Prom<RdbContext> + Send + Sync,
     I: ImagePool + Send + Sync,
 {
     match topic {
@@ -355,7 +391,14 @@ where
                 Err(e) => return TaskOutcome::Dead(e),
             };
 
-            image::handle(drive, repo, prom, image_pool, &task).await
+            image::handle(
+                drive,
+                repo,
+                local_message_repo,
+                image_pool,
+                &task,
+            )
+            .await
         }
         unknown => {
             TaskOutcome::Dead(format!("unknown prom topic: {}", unknown))

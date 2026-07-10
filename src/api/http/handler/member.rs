@@ -8,6 +8,7 @@ use serde::Deserialize;
 
 use tracing::instrument;
 
+#[cfg(feature = "swagger-ui")]
 use utoipa::IntoParams;
 
 use crate::api::http::handler::util::ensure_path_matches_body_id;
@@ -28,8 +29,9 @@ use crate::value::member::MemberInclOpt;
 /// `incl` embeds related rows into each item.
 ///
 /// Example: `?incl=user&incl=team&offset=0&limit=20`.
-#[derive(Debug, Deserialize, IntoParams)]
-#[into_params(parameter_in = Query)]
+#[derive(Debug, Deserialize)]
+#[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
+#[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
 pub struct MemberMeListQuery {
     /// Related rows to embed. Repeatable. Values: `user`, `team`.
     #[serde(
@@ -47,7 +49,7 @@ pub struct MemberMeListQuery {
 }
 
 /// `POST /api/v1/members` — create a member under a team.
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     post,
     path = "/api/v1/members",
     tag = "members",
@@ -58,7 +60,7 @@ pub struct MemberMeListQuery {
         (status = 404, description = "User or team not found"),
         (status = 409, description = "User is already a member"),
     ),
-)]
+))]
 #[instrument(err, skip(harn, data))]
 pub async fn create(
     State(harn): State<AppHarn>,
@@ -71,7 +73,7 @@ pub async fn create(
 }
 
 /// `GET /api/v1/members` — list members by team or owner.
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     get,
     path = "/api/v1/members",
     tag = "members",
@@ -82,7 +84,7 @@ pub async fn create(
         (status = 422, description = "Exactly one of owner_id or team_id is required, or owner_id combined with role/fuzzy_nickname"),
         (status = 403, description = "No permission to list members in this team"),
     ),
-)]
+))]
 #[instrument(err, skip(harn))]
 pub async fn list_infos(
     State(harn): State<AppHarn>,
@@ -100,7 +102,7 @@ pub async fn list_infos(
 }
 
 /// `GET /api/v1/members/me` — list the current user's memberships.
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     get,
     path = "/api/v1/members/me",
     tag = "members",
@@ -109,7 +111,7 @@ pub async fn list_infos(
         (status = 200, description = "Current user memberships", body = HttpBody<Vec<MemberInfoVal>>),
         (status = 401, description = "Authentication required"),
     ),
-)]
+))]
 #[instrument(err, skip(harn))]
 pub async fn list_my_infos(
     State(harn): State<AppHarn>,
@@ -137,7 +139,7 @@ pub async fn list_my_infos(
 }
 
 /// `PUT /api/v1/members/{member_id}/roles` — update a member's roles.
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     put,
     path = "/api/v1/members/{member_id}/roles",
     tag = "members",
@@ -149,7 +151,7 @@ pub async fn list_my_infos(
         (status = 403, description = "No permission to update this member"),
         (status = 404, description = "Member not found"),
     ),
-)]
+))]
 #[instrument(err, skip(harn, data))]
 pub async fn update_roles(
     State(harn): State<AppHarn>,
@@ -166,7 +168,7 @@ pub async fn update_roles(
 }
 
 /// `DELETE /api/v1/members/{member_id}` — delete a member.
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     delete,
     path = "/api/v1/members/{member_id}",
     tag = "members",
@@ -176,7 +178,7 @@ pub async fn update_roles(
         (status = 403, description = "No permission to delete this member"),
         (status = 404, description = "Member not found"),
     ),
-)]
+))]
 #[instrument(err, skip(harn))]
 pub async fn delete(
     State(harn): State<AppHarn>,
@@ -189,7 +191,7 @@ pub async fn delete(
 }
 
 /// `POST /api/v1/members/join` — join a team via invitation code.
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     post,
     path = "/api/v1/members/join",
     tag = "members",
@@ -199,7 +201,7 @@ pub async fn delete(
         (status = 422, description = "Invitation does not target this user or already a member"),
         (status = 404, description = "Invitation code not found"),
     ),
-)]
+))]
 #[instrument(err, skip(harn, data))]
 pub async fn join(
     State(harn): State<AppHarn>,

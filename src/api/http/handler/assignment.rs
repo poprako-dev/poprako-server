@@ -19,7 +19,7 @@ use crate::model::user::UserToken;
 use crate::usecase;
 
 /// `GET /api/v1/assignments` — list assignments by chapter or owner.
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     get,
     path = "/api/v1/assignments",
     tag = "assignments",
@@ -30,7 +30,7 @@ use crate::usecase;
         (status = 422, description = "Exactly one of chapter_id or owner_id is required"),
         (status = 403, description = "No permission to list these assignments"),
     ),
-)]
+))]
 #[instrument(err, skip(harn))]
 pub async fn list_infos(
     State(harn): State<AppHarn>,
@@ -48,7 +48,7 @@ pub async fn list_infos(
 }
 
 /// `PUT /api/v1/chapters/{chapter_id}/assignments/{user_id}/roles` — update roles.
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     put,
     path = "/api/v1/chapters/{chapter_id}/assignments/{user_id}/roles",
     tag = "assignments",
@@ -63,7 +63,7 @@ pub async fn list_infos(
         (status = 403, description = "No permission to update this assignment"),
         (status = 404, description = "Assignment not found"),
     ),
-)]
+))]
 #[instrument(err, skip(harn, data))]
 pub async fn update_roles(
     State(harn): State<AppHarn>,
@@ -87,7 +87,7 @@ pub async fn update_roles(
 }
 
 /// `DELETE /api/v1/assignments/{assignment_id}` — delete an assignment.
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     delete,
     path = "/api/v1/assignments/{assignment_id}",
     tag = "assignments",
@@ -97,7 +97,7 @@ pub async fn update_roles(
         (status = 403, description = "No permission to delete this assignment"),
         (status = 404, description = "Assignment not found"),
     ),
-)]
+))]
 #[instrument(err, skip(harn))]
 pub async fn delete(
     State(harn): State<AppHarn>,
@@ -115,7 +115,7 @@ pub async fn delete(
 }
 
 /// `POST /api/v1/assignments/join` — join a chapter assignment with roles.
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     post,
     path = "/api/v1/assignments/join",
     tag = "assignments",
@@ -125,7 +125,7 @@ pub async fn delete(
         (status = 403, description = "Role not assignable or no permission"),
         (status = 404, description = "Chapter not found"),
     ),
-)]
+))]
 #[instrument(err, skip(harn, data))]
 pub async fn join(
     State(harn): State<AppHarn>,

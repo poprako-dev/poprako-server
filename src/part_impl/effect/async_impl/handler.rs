@@ -1,7 +1,6 @@
 //! Background event handler — receives events from the channel and
 //! dispatches them to the appropriate domain handler.
 
-use std::marker::PhantomData;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -27,35 +26,33 @@ use crate::part_impl::effect::async_impl::dispatch::dispatch;
 
 /// Background event consumer that receives events from the channel and
 /// dispatches them to the appropriate domain handler.
-pub struct EffectHandler<C, R> {
-    // FIXME: why pub??
-    pub repo: Arc<R>,
-    pub recv: Receiver<Event>,
-    pub shutdown_recv: OneshotReceiver<()>,
-    pub done_send: OneshotSender<()>,
-    pub accepting: Arc<AtomicBool>,
-
-    pub _p: PhantomData<C>,
+pub struct EffectHandler<R> {
+    pub(crate) repo: Arc<R>,
+    pub(crate) recv: Receiver<Event>,
+    pub(crate) shutdown_recv: OneshotReceiver<()>,
+    pub(crate) done_send: OneshotSender<()>,
+    pub(crate) accepting: Arc<AtomicBool>,
 }
 
-impl<C, R> EffectHandler<C, R>
-where
-    C: Send,
-    R: AssignmentRepo<C>
-        + ChapterRepo<C>
-        + TeamRepo<C>
-        + SystemMailRepo<C>
-        + UserRepo<C>
-        + Send
-        + Sync,
-    <R as DeriveTransactional>::Transactional: AssignmentRepoTransactional<C>
-        + ChapterRepoTransactional<C>
-        + TeamRepoTransactional<C>
-        + SystemMailRepoTransactional<C>
-        + UserRepoTransactional<C>,
-{
+impl<R> EffectHandler<R> {
     #[instrument(skip_all, level = Level::DEBUG)]
-    pub async fn run(mut self) {
+    pub async fn run<C>(mut self)
+    where
+        C: Send,
+        R: AssignmentRepo<C>
+            + ChapterRepo<C>
+            + TeamRepo<C>
+            + SystemMailRepo<C>
+            + UserRepo<C>
+            + Send
+            + Sync,
+        <R as DeriveTransactional>::Transactional:
+            AssignmentRepoTransactional<C>
+                + ChapterRepoTransactional<C>
+                + TeamRepoTransactional<C>
+                + SystemMailRepoTransactional<C>
+                + UserRepoTransactional<C>,
+    {
         loop {
             tokio::select! {
                 event = self.recv.recv() => {

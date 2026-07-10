@@ -1,128 +1,130 @@
 //! Diesel-backed prom (promise) adapter.
 //!
-//! Provides [`RdbPromTransactional`] — a standalone transactional handle
-//! for enqueuing deferred actions into the `t_local_message` table.
-//! Prom lives in its own module, separate from the repository adapter.
+//! [`RdbProm`] is both the transactional handle for enqueuing deferred actions
+//! into `t_local_message` (via [`Advance<Append>`]) and the owner of the
+//! background consumer task that polls, dispatches, and completes those
+//! records — mirroring the self-contained lifecycle of [`AsyncEffectDevelop`].
+//!
+//! [`AsyncEffectDevelop`]: crate::part_impl::effect::async_impl::AsyncEffectDevelop
 
+pub mod entity;
+pub(crate) mod repo;
 mod handler;
 
-use std::io::Write as _;
-use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex};
 
 use async_trait::async_trait;
-use diesel::AsExpression;
-use diesel::pg::Pg;
-use diesel::prelude::*;
-use diesel::serialize::{IsNull, Output, Result as SerializeResult, ToSql};
-use diesel::sql_types::Text;
 use diesel_async::RunQueryDsl;
 use time::OffsetDateTime;
+use tokio::sync::oneshot::{
+    Receiver as OneshotReceiver, Sender as OneshotSender,
+};
 
 use poprako_transactional::advance::Advance;
-use poprako_transactional::step::Step;
 
 use crate::part::image::ImagePool;
 use crate::part::prom::{Append, Prom};
 use crate::part_impl::drive::rdb_impl::RdbDrive;
-use crate::part_impl::prom::rdb_impl::handler::RdbPromHandler;
-use crate::part_impl::repo::rdb_impl::RdbRepo;
+use crate::part_impl::prom::rdb_impl::entity::LocalMessageEntry;
 use crate::part_impl::repo::rdb_impl::schema::t_local_message;
+use crate::part_impl::repo::rdb_impl::RdbRepo;
 use crate::part_impl::shared::result::diesel;
 use crate::part_impl::shared::{RdbContext, RdbCore};
 use crate::result::{RegularError, RegularResult};
 
-/// Spawns the prom background worker. Returns immediately; the worker
-/// runs on a tokio background task.
-pub fn spawn_handler(
-    core: RdbCore,
-    image_pool: impl ImagePool + Send + Sync + 'static,
-) {
-    //
-    let handler = RdbPromHandler::new(
-        core.clone(),
-        RdbDrive::new(core.clone()),
-        Arc::new(RdbRepo::new(core)),
-        RdbProm,
-        image_pool,
-    );
-
-    tokio::spawn(async move {
-        handler.run().await;
-    });
-}
-
-// ── Entity ─────────────────────────────────────────────────────────────────
-
-/// Lifecycle status of a local message record in the prom queue.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, AsExpression)]
-#[diesel(sql_type = Text)]
-pub enum LocalMessageStatus {
-    Pending,
-    Processing,
-    Completed,
-    Dead,
-}
-
-impl LocalMessageStatus {
-    pub fn as_str(self) -> &'static str {
-        match self {
-            Self::Pending => "local_message_status:pending",
-            Self::Processing => "local_message_status:processing",
-            Self::Completed => "local_message_status:completed",
-            Self::Dead => "local_message_status:dead",
-        }
-    }
-}
-
-impl ToSql<Text, Pg> for LocalMessageStatus {
-    fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Pg>) -> SerializeResult {
-        out.write_all(self.as_str().as_bytes())?;
-        Ok(IsNull::No)
-    }
-}
-
-/// Insertable row for the `t_local_message` table.
-#[derive(Insertable)]
-#[diesel(table_name = t_local_message)]
-struct LocalMessageEntry<'a> {
-    f_id: &'a str,
-    f_topic: &'a str,
-    f_status: LocalMessageStatus,
-
-    f_payload: serde_json::Value,
-
-    f_visible_at: OffsetDateTime,
-
-    f_created_at: OffsetDateTime,
-    f_updated_at: OffsetDateTime,
-}
-
-impl<'a> LocalMessageEntry<'a> {
-    fn from_append(
-        step: &'a Append<'_>,
-        now: OffsetDateTime,
-    ) -> RegularResult<Self> {
-        let f_payload = serde_json::to_value(&step.payload).map_err(|e| {
-            RegularError::Unrecoverable {
-                message: format!("failed to serialize prom payload: {}", e),
-            }
-        })?;
-        Ok(Self {
-            f_id: step.id,
-            f_topic: step.topic,
-            f_status: LocalMessageStatus::Pending,
-            f_payload,
-            f_visible_at: *step.visible_at,
-            f_created_at: now,
-            f_updated_at: now,
-        })
-    }
-}
-
 // ── Handle type ────────────────────────────────────────────────────────────
 
 /// RDBMS-backed prom adapter for enqueuing and consuming deferred actions.
-pub struct RdbProm;
+///
+/// Implements [`Prom<C>`] for transactional enqueuing via [`Advance<Append>`].
+/// The constructor spawns a background worker that polls `t_local_message` and
+/// dispatches completed records by topic.
+///
+/// Call [`close`](RdbProm::close) before dropping to drain pending work
+/// gracefully.
+pub struct RdbProm {
+    accepting: Arc<AtomicBool>,
+    shutdown: Mutex<Option<OneshotSender<()>>>,
+    done: Mutex<Option<OneshotReceiver<()>>>,
+}
+
+impl RdbProm {
+    /// Creates the prom adapter and starts its background consumer task.
+    ///
+    /// The worker polls `t_local_message` on a fixed interval, dispatches
+    /// records by topic, and updates their lifecycle status.
+    pub fn new<I>(core: RdbCore, image_pool: I) -> Self
+    where
+        I: ImagePool + Send + Sync + 'static,
+    {
+        let (shutdown_send, shutdown_recv) =
+            tokio::sync::oneshot::channel();
+
+        let (done_send, done_recv) = tokio::sync::oneshot::channel();
+
+        let accepting = Arc::new(AtomicBool::new(true));
+
+        let drive = RdbDrive::new(core.clone());
+
+        let repo = Arc::new(RdbRepo::new(core.clone()));
+
+        let local_message_repo = repo::LocalMessageRepo;
+
+        let handler = handler::RdbPromHandler::new(
+            core,
+            drive,
+            repo,
+            local_message_repo,
+            image_pool,
+            shutdown_recv,
+            done_send,
+            Arc::clone(&accepting),
+        );
+
+        tokio::spawn(async move {
+            handler.run().await;
+        });
+
+        Self {
+            accepting,
+            shutdown: Mutex::new(Some(shutdown_send)),
+            done: Mutex::new(Some(done_recv)),
+        }
+    }
+
+    /// Signals the background worker to stop and waits for in-flight work
+    /// to complete.
+    pub async fn close(&self) {
+        if !self.accepting.swap(false, Ordering::AcqRel) {
+            return;
+        }
+
+        let shutdown_send = self.shutdown.lock().unwrap().take();
+
+        if let Some(shutdown_send) = shutdown_send {
+            shutdown_send.send(()).unwrap_or_else(|error| {
+                tracing::error!(
+                    error = ?error,
+                    "[RdbProm::close] background task already terminated",
+                );
+            });
+        }
+
+        let done_recv = self.done.lock().unwrap().take();
+
+        let Some(done_recv) = done_recv else {
+            return;
+        };
+
+        done_recv.await.unwrap_or_else(|error| {
+            tracing::error!(
+                error = %error,
+                "[RdbProm::close] background task did not signal completion",
+            );
+        });
+    }
+}
 
 // ── PromTransactional impl ──────────────────────────────────────────────────
 
@@ -149,285 +151,3 @@ impl<'a> Advance<Append<'a>, RdbContext> for RdbProm {
 }
 
 impl Prom<RdbContext> for RdbProm {}
-
-// ── Prom-consumption Steps ─────────────────────────────────────────────────
-//
-// These Step types carry the internal t_local_message read/update
-// operations. They are NOT exposed through any port trait — only
-// Append is exposed via Prom<C>. Advance impls for these Steps live
-// on RdbProm and are used exclusively by RdbPromHandler.
-
-/// A row read from t_local_message during the poll phase.
-#[derive(Debug, Queryable)]
-pub struct LocalMessageRow {
-    pub f_id: String,
-    pub f_topic: String,
-    pub f_payload: serde_json::Value,
-}
-
-/// Poll for pending prom records that are visible now.
-pub struct PollPending;
-
-impl Step for PollPending {
-    type Output = Vec<LocalMessageRow>;
-}
-
-/// Try to claim a record (status Pending → Processing).
-///
-/// Returns `true` if the claim succeeded (i.e. the row was still
-/// Pending), `false` if another worker claimed it first.
-pub struct ClaimStep<'a> {
-    pub id: &'a str,
-}
-
-impl Step for ClaimStep<'_> {
-    type Output = bool;
-}
-
-/// Mark a record as successfully completed.
-pub struct CompleteStep<'a> {
-    pub id: &'a str,
-}
-
-impl Step for CompleteStep<'_> {
-    type Output = ();
-}
-
-/// Mark a record as dead with an error message.
-pub struct FailStep<'a> {
-    pub id: &'a str,
-    pub error: &'a str,
-}
-
-impl Step for FailStep<'_> {
-    type Output = ();
-}
-
-/// Reset one failed processing attempt back to pending for a later retry.
-pub struct RetryStep<'a> {
-    pub id: &'a str,
-    pub error: &'a str,
-    pub visible_at: &'a OffsetDateTime,
-}
-
-impl Step for RetryStep<'_> {
-    type Output = ();
-}
-
-/// Reset processing records stuck before a cutoff timestamp.
-pub struct ResetStuckStep<'a> {
-    pub before: &'a OffsetDateTime,
-}
-
-impl Step for ResetStuckStep<'_> {
-    type Output = ();
-}
-
-// ── Advance impls for internal Steps ───────────────────────────────────────
-
-/// Maximum number of pending records to poll in a single batch.
-const BATCH_SIZE: i64 = 10;
-
-#[async_trait]
-impl Advance<PollPending, RdbContext> for RdbProm {
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut RdbContext,
-        _step: &PollPending,
-    ) -> RegularResult<Vec<LocalMessageRow>> {
-        use diesel::prelude::*;
-        use diesel_async::RunQueryDsl;
-
-        t_local_message::table
-            .filter(
-                t_local_message::f_status
-                    .eq(LocalMessageStatus::Pending.as_str()),
-            )
-            .filter(t_local_message::f_visible_at.le(OffsetDateTime::now_utc()))
-            .order_by(t_local_message::f_created_at.asc())
-            .limit(BATCH_SIZE)
-            .select((
-                t_local_message::f_id,
-                t_local_message::f_topic,
-                t_local_message::f_payload,
-            ))
-            .load::<LocalMessageRow>(context.conn())
-            .await
-            .map_err(diesel)
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<ClaimStep<'a>, RdbContext> for RdbProm {
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut RdbContext,
-        step: &ClaimStep<'a>,
-    ) -> RegularResult<bool> {
-        use diesel::prelude::*;
-        use diesel_async::RunQueryDsl;
-
-        let updated = diesel::update(
-            t_local_message::table
-                .filter(t_local_message::f_id.eq(step.id))
-                .filter(
-                    t_local_message::f_status
-                        .eq(LocalMessageStatus::Pending.as_str()),
-                ),
-        )
-        .set((
-            t_local_message::f_status
-                .eq(LocalMessageStatus::Processing.as_str()),
-            t_local_message::f_updated_at.eq(OffsetDateTime::now_utc()),
-        ))
-        .execute(context.conn())
-        .await
-        .map_err(diesel)?;
-
-        Ok(updated > 0)
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<CompleteStep<'a>, RdbContext> for RdbProm {
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut RdbContext,
-        step: &CompleteStep<'a>,
-    ) -> RegularResult<()> {
-        use diesel::prelude::*;
-        use diesel_async::RunQueryDsl;
-
-        diesel::update(
-            t_local_message::table.filter(t_local_message::f_id.eq(step.id)),
-        )
-        .set((
-            t_local_message::f_status
-                .eq(LocalMessageStatus::Completed.as_str()),
-            t_local_message::f_updated_at.eq(OffsetDateTime::now_utc()),
-        ))
-        .execute(context.conn())
-        .await
-        .map_err(diesel)?;
-
-        Ok(())
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<FailStep<'a>, RdbContext> for RdbProm {
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut RdbContext,
-        step: &FailStep<'a>,
-    ) -> RegularResult<()> {
-        use diesel::prelude::*;
-        use diesel_async::RunQueryDsl;
-
-        diesel::update(
-            t_local_message::table.filter(t_local_message::f_id.eq(step.id)),
-        )
-        .set((
-            t_local_message::f_status.eq(LocalMessageStatus::Dead.as_str()),
-            t_local_message::f_last_error.eq(Some(step.error)),
-            t_local_message::f_updated_at.eq(OffsetDateTime::now_utc()),
-        ))
-        .execute(context.conn())
-        .await
-        .map_err(diesel)?;
-
-        Ok(())
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<RetryStep<'a>, RdbContext> for RdbProm {
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut RdbContext,
-        step: &RetryStep<'a>,
-    ) -> RegularResult<()> {
-        use diesel::prelude::*;
-        use diesel_async::RunQueryDsl;
-
-        diesel::update(
-            t_local_message::table.filter(t_local_message::f_id.eq(step.id)),
-        )
-        .set((
-            t_local_message::f_status.eq(LocalMessageStatus::Pending.as_str()),
-            t_local_message::f_last_error.eq(Some(step.error)),
-            t_local_message::f_retried_count
-                .eq(t_local_message::f_retried_count + 1),
-            t_local_message::f_visible_at.eq(*step.visible_at),
-            t_local_message::f_updated_at.eq(OffsetDateTime::now_utc()),
-        ))
-        .execute(context.conn())
-        .await
-        .map_err(diesel)?;
-
-        Ok(())
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<ResetStuckStep<'a>, RdbContext> for RdbProm {
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut RdbContext,
-        step: &ResetStuckStep<'a>,
-    ) -> RegularResult<()> {
-        use diesel::prelude::*;
-        use diesel_async::RunQueryDsl;
-
-        diesel::update(
-            t_local_message::table
-                .filter(
-                    t_local_message::f_status
-                        .eq(LocalMessageStatus::Processing.as_str()),
-                )
-                .filter(t_local_message::f_updated_at.le(*step.before))
-                .filter(t_local_message::f_lease.ge(3)),
-        )
-        .set((
-            t_local_message::f_status.eq(LocalMessageStatus::Dead.as_str()),
-            t_local_message::f_last_error
-                .eq(Some("processing timeout exceeded")),
-            t_local_message::f_updated_at.eq(OffsetDateTime::now_utc()),
-        ))
-        .execute(context.conn())
-        .await
-        .map_err(diesel)?;
-
-        diesel::update(
-            t_local_message::table
-                .filter(
-                    t_local_message::f_status
-                        .eq(LocalMessageStatus::Processing.as_str()),
-                )
-                .filter(t_local_message::f_updated_at.le(*step.before))
-                .filter(t_local_message::f_lease.lt(3)),
-        )
-        .set((
-            t_local_message::f_status.eq(LocalMessageStatus::Pending.as_str()),
-            t_local_message::f_lease.eq(t_local_message::f_lease + 1),
-            t_local_message::f_updated_at.eq(OffsetDateTime::now_utc()),
-        ))
-        .execute(context.conn())
-        .await
-        .map_err(diesel)?;
-
-        Ok(())
-    }
-}

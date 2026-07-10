@@ -1,9 +1,9 @@
-# poprako-r - Agent Context
+# poprako-server - Agent Context
 
 NO FUCKING WRITING schema.rs DIRECTLY!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 NO FUCKING `schema::`!!!!!!!!!!!!!!!!!!!
 
-`poprako-r` is a Rust rewrite of `poprako-s`, an event-driven backend service
+`poprako-server` is a Rust rewrite of `poprako-s`, an event-driven backend service
 for manga translation project management. It covers users, teams, members,
 member invitations, worksets, comics, chapters, pages, units, assignments,
 system mail, announcements, and comments.
@@ -293,7 +293,7 @@ Common checks:
 ```text
 cargo fmt
 cargo check
-cargo test -p poprako-r
+cargo test -p poprako-server
 just style
 ```
 

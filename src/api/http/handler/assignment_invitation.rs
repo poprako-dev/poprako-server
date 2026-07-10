@@ -8,6 +8,7 @@ use serde::Deserialize;
 
 use tracing::instrument;
 
+#[cfg(feature = "swagger-ui")]
 use utoipa::IntoParams;
 
 use crate::api::http::result::{
@@ -26,8 +27,9 @@ use crate::usecase;
 /// Query for listing assignment invitations under one chapter.
 ///
 /// Example: `?pending=true&offset=0&limit=20`.
-#[derive(Debug, Deserialize, IntoParams)]
-#[into_params(parameter_in = Query)]
+#[derive(Debug, Deserialize)]
+#[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
+#[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
 pub struct AssignmentInvitationListQuery {
     /// When `Some(true)`, returns only unconsumed invitations;
     /// `Some(false)` returns only consumed ones; `None` returns all.
@@ -41,7 +43,7 @@ pub struct AssignmentInvitationListQuery {
 }
 
 /// `POST /api/v1/assignment-invitations` — create a pending assignment invitation.
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     post,
     path = "/api/v1/assignment-invitations",
     tag = "assignment-invitations",
@@ -51,7 +53,7 @@ pub struct AssignmentInvitationListQuery {
         (status = 403, description = "No permission to create invitations in this chapter"),
         (status = 409, description = "Invitee is already assigned"),
     ),
-)]
+))]
 #[instrument(err, skip(harn, data))]
 pub async fn create(
     State(harn): State<AppHarn>,
@@ -69,7 +71,7 @@ pub async fn create(
 }
 
 /// `GET /api/v1/chapters/{chapter_id}/assignment-invitations` — list invitations.
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     get,
     path = "/api/v1/chapters/{chapter_id}/assignment-invitations",
     tag = "assignment-invitations",
@@ -79,7 +81,7 @@ pub async fn create(
         (status = 200, description = "Invitations listed", body = HttpBody<Vec<AssignmentInvitationInfoVal>>),
         (status = 403, description = "No permission to list invitations in this chapter"),
     ),
-)]
+))]
 #[instrument(err, skip(harn))]
 pub async fn list_infos(
     State(harn): State<AppHarn>,
@@ -100,7 +102,7 @@ pub async fn list_infos(
 }
 
 /// `DELETE /api/v1/assignment-invitations/{assignment_invitation_id}` — delete.
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     delete,
     path = "/api/v1/assignment-invitations/{assignment_invitation_id}",
     tag = "assignment-invitations",
@@ -110,7 +112,7 @@ pub async fn list_infos(
         (status = 403, description = "No permission to delete this invitation"),
         (status = 404, description = "Invitation not found"),
     ),
-)]
+))]
 #[instrument(err, skip(harn))]
 pub async fn delete(
     State(harn): State<AppHarn>,
@@ -128,7 +130,7 @@ pub async fn delete(
 }
 
 /// `POST /api/v1/assignment-invitations/join` — join via invitation code.
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     post,
     path = "/api/v1/assignment-invitations/join",
     tag = "assignment-invitations",
@@ -139,7 +141,7 @@ pub async fn delete(
         (status = 403, description = "Role not assignable or no permission"),
         (status = 404, description = "Invitation code not found"),
     ),
-)]
+))]
 #[instrument(err, skip(harn, data))]
 pub async fn join(
     State(harn): State<AppHarn>,

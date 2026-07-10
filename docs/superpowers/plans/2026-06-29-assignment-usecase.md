@@ -91,9 +91,9 @@ repo ports.
 ### Task 5: Verification
 
 - [ ] Run `cargo fmt`.
-- [ ] Run `cargo test -p poprako-r usecase::assignment::tests`.
+- [ ] Run `cargo test -p poprako-server usecase::assignment::tests`.
 - [ ] Run `cargo check`.
-- [ ] Run `cargo test -p poprako-r` when feasible.
+- [ ] Run `cargo test -p poprako-server` when feasible.
 - [ ] Run Rust use-style and ident-style checks on touched Rust files.
 - [ ] Confirm no touched Rust file exceeds 600 lines.
 - [ ] Confirm assignment role updates always carry `roles: RoleMask`.

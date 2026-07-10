@@ -2,6 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "swagger-ui")]
 use utoipa::{IntoParams, ToSchema};
 
 use poprako_macro::Paginate;
@@ -22,12 +23,13 @@ use crate::value::chapter::{ChapterInclOpt, Stage, StageMask, StageOper};
 /// Construct via [`From<ChapterInfo>`] — the conversion is infallible.
 ///
 /// [`ChapterInfo`]: crate::model::chapter::ChapterInfo
-#[derive(Debug, Serialize, ToSchema)]
+#[derive(Debug, Serialize)]
+#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
 pub struct ChapterInfoVal {
     pub id: String,
     pub comic_id: String,
 
-    #[schema(no_recursion)]
+    #[cfg_attr(feature = "swagger-ui", schema(no_recursion))]
     pub comic: Option<Box<ComicInfoVal>>,
 
     pub is_pinned: bool,
@@ -119,7 +121,8 @@ impl ChapterInfoVal {
 }
 
 /// Input parameters for creating a new chapter.
-#[derive(Debug, Deserialize, ToSchema)]
+#[derive(Debug, Deserialize)]
+#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
 pub struct CreateChapterData {
     pub comic_id: String,
 
@@ -131,7 +134,8 @@ pub struct CreateChapterData {
 }
 
 /// Return value from a successful chapter creation.
-#[derive(Debug, Serialize, ToSchema)]
+#[derive(Debug, Serialize)]
+#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
 pub struct CreateChapterVal {
     pub id: String,
 }
@@ -143,8 +147,9 @@ pub struct CreateChapterVal {
 ///
 /// Example: `/api/v1/comics/{comic_id}/chapters?incl=comic.workset.team&incl=creator&offset=0&limit=20`.
 #[Paginate]
-#[derive(Debug, Deserialize, IntoParams)]
-#[into_params(parameter_in = Query)]
+#[derive(Debug, Deserialize)]
+#[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
+#[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
 pub struct ListChapterInfosData {
     /// Parent comic whose chapters to list.
     pub comic_id: String,
@@ -161,7 +166,8 @@ pub struct ListChapterInfosData {
 }
 
 /// Input parameters for partially updating a chapter's profile.
-#[derive(Debug, Deserialize, ToSchema)]
+#[derive(Debug, Deserialize)]
+#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
 pub struct PatchChapterInfoData {
     pub id: String,
 
@@ -174,7 +180,8 @@ pub struct PatchChapterInfoData {
 /// Encodes a single operation on a specific stage, e.g. "start translating"
 /// on the `translate` stage. The use case layer validates that the
 /// transition is legal for the current stage phase before applying it.
-#[derive(Debug, Deserialize, ToSchema)]
+#[derive(Debug, Deserialize)]
+#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
 pub struct UpdateChapterStageData {
     pub id: String,
 

@@ -2,6 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "swagger-ui")]
 use utoipa::{IntoParams, ToSchema};
 
 use poprako_macro::Paginate;
@@ -17,7 +18,8 @@ use crate::value::member::MemberInclOpt;
 use crate::value::role::{RoleField, RoleMask};
 
 /// Presentation-ready membership information.
-#[derive(Debug, Serialize, ToSchema)]
+#[derive(Debug, Serialize)]
+#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
 pub struct MemberInfoVal {
     pub id: String,
 
@@ -84,7 +86,8 @@ impl MemberInfoVal {
 }
 
 /// Input parameters for creating a member.
-#[derive(Debug, Deserialize, ToSchema)]
+#[derive(Debug, Deserialize)]
+#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
 pub struct CreateMemberData {
     pub user_id: String,
     pub team_id: String,
@@ -93,13 +96,15 @@ pub struct CreateMemberData {
 }
 
 /// Return value from creating a member.
-#[derive(Debug, Serialize, ToSchema)]
+#[derive(Debug, Serialize)]
+#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
 pub struct CreateMemberVal {
     pub id: String,
 }
 
 /// Input parameters for joining a team through a member invitation.
-#[derive(Debug, Deserialize, ToSchema)]
+#[derive(Debug, Deserialize)]
+#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
 pub struct JoinTeamData {
     pub code: String,
 }
@@ -116,8 +121,9 @@ pub struct JoinTeamData {
 ///
 /// Example: `/api/v1/members?team_id=t_1&fuzzy_nickname=al&role=1&incl=user&offset=0&limit=20`.
 #[Paginate]
-#[derive(Debug, Deserialize, IntoParams)]
-#[into_params(parameter_in = Query)]
+#[derive(Debug, Deserialize)]
+#[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
+#[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
 pub struct ListMemberInfosData {
     /// Owner-user mode: list teams/memberships owned by this user. Mutually
     /// exclusive with `team_id`; when set, `role` and `fuzzy_nickname` must be
@@ -182,7 +188,8 @@ impl TryInto<MemberListSpec> for ListMemberInfosData {
 }
 
 /// Input parameters for updating a member's roles.
-#[derive(Debug, Deserialize, ToSchema)]
+#[derive(Debug, Deserialize)]
+#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
 pub struct UpdateMemberRolesData {
     pub id: String,
     pub roles: RoleMask,

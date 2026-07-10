@@ -20,7 +20,7 @@ use crate::model::user::UserToken;
 use crate::usecase;
 
 /// `POST /api/v1/teams` — create a new team.
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     post,
     path = "/api/v1/teams",
     tag = "teams",
@@ -30,7 +30,7 @@ use crate::usecase;
         (status = 401, description = "Authentication required"),
         (status = 403, description = "Only super-admins can create teams"),
     ),
-)]
+))]
 #[instrument(err, skip(harn, data))]
 pub async fn create(
     State(harn): State<AppHarn>,
@@ -49,7 +49,7 @@ pub async fn create(
 }
 
 /// `GET /api/v1/teams` — list teams with pagination.
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     get,
     path = "/api/v1/teams",
     tag = "teams",
@@ -60,7 +60,7 @@ pub async fn create(
         (status = 401, description = "Authentication required"),
         (status = 403, description = "Listing all teams requires super-admin"),
     ),
-)]
+))]
 #[instrument(err, skip(harn))]
 pub async fn list_infos(
     State(harn): State<AppHarn>,
@@ -73,7 +73,7 @@ pub async fn list_infos(
 }
 
 /// `GET /api/v1/teams/{team_id}` — fetch a team by id.
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     get,
     path = "/api/v1/teams/{team_id}",
     tag = "teams",
@@ -83,7 +83,7 @@ pub async fn list_infos(
         (status = 401, description = "Authentication required"),
         (status = 404, description = "Team not found"),
     ),
-)]
+))]
 #[instrument(err, skip(harn))]
 pub async fn get_info(
     State(harn): State<AppHarn>,
@@ -95,7 +95,7 @@ pub async fn get_info(
 }
 
 /// `PUT /api/v1/teams/{team_id}` — update a team's profile.
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     put,
     path = "/api/v1/teams/{team_id}",
     tag = "teams",
@@ -107,7 +107,7 @@ pub async fn get_info(
         (status = 403, description = "No permission to update this team"),
         (status = 404, description = "Team not found"),
     ),
-)]
+))]
 #[instrument(err, skip(harn, data))]
 pub async fn update_info(
     State(harn): State<AppHarn>,
@@ -123,7 +123,7 @@ pub async fn update_info(
 }
 
 /// `POST /api/v1/teams/{team_id}/avatar/reserve` — reserve a team avatar upload slot.
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     post,
     path = "/api/v1/teams/{team_id}/avatar/reserve",
     tag = "teams",
@@ -134,7 +134,7 @@ pub async fn update_info(
         (status = 403, description = "No permission to modify this team's avatar"),
         (status = 404, description = "Team not found"),
     ),
-)]
+))]
 #[instrument(err, skip(harn, data))]
 pub async fn reserve_avatar(
     State(harn): State<AppHarn>,
@@ -156,7 +156,7 @@ pub async fn reserve_avatar(
 }
 
 /// `POST /api/v1/teams/{team_id}/avatar/mark-uploaded` — confirm a team avatar upload.
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     post,
     path = "/api/v1/teams/{team_id}/avatar/mark-uploaded",
     tag = "teams",
@@ -167,7 +167,7 @@ pub async fn reserve_avatar(
         (status = 403, description = "No permission to modify this team's avatar"),
         (status = 404, description = "Team not found"),
     ),
-)]
+))]
 #[instrument(err, skip(harn, data))]
 pub async fn mark_avatar_uploaded(
     State(harn): State<AppHarn>,
@@ -181,7 +181,7 @@ pub async fn mark_avatar_uploaded(
 }
 
 /// `DELETE /api/v1/teams/{team_id}` — delete a team and all descendants.
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     delete,
     path = "/api/v1/teams/{team_id}",
     tag = "teams",
@@ -191,7 +191,7 @@ pub async fn mark_avatar_uploaded(
         (status = 403, description = "No permission to delete this team"),
         (status = 404, description = "Team not found"),
     ),
-)]
+))]
 #[instrument(err, skip(harn))]
 pub async fn delete(
     State(harn): State<AppHarn>,

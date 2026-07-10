@@ -8,6 +8,7 @@ use serde::Deserialize;
 
 use tracing::instrument;
 
+#[cfg(feature = "swagger-ui")]
 use utoipa::IntoParams;
 
 use crate::api::http::handler::util::ensure_path_matches_body_id;
@@ -29,8 +30,9 @@ use crate::value::chapter::ChapterInclOpt;
 /// in their parent segments.
 ///
 /// Example: `?incl=comic.workset.team&incl=creator&offset=0&limit=20`.
-#[derive(Debug, Deserialize, IntoParams)]
-#[into_params(parameter_in = Query)]
+#[derive(Debug, Deserialize)]
+#[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
+#[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
 pub struct ChapterListQuery {
     /// Related rows to embed. Repeatable. Values: `comic`, `comic.workset`,
     /// `comic.workset.team`, `comic.creator`, `creator`. Dotted values imply
@@ -50,7 +52,7 @@ pub struct ChapterListQuery {
 }
 
 /// `POST /api/v1/chapters` — create a chapter under a comic.
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     post,
     path = "/api/v1/chapters",
     tag = "chapters",
@@ -60,7 +62,7 @@ pub struct ChapterListQuery {
         (status = 403, description = "No permission to create chapters in this comic"),
         (status = 404, description = "Comic not found"),
     ),
-)]
+))]
 #[instrument(err, skip(harn, data))]
 pub async fn create(
     State(harn): State<AppHarn>,
@@ -73,7 +75,7 @@ pub async fn create(
 }
 
 /// `GET /api/v1/comics/{comic_id}/chapters` — list chapters in a comic.
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     get,
     path = "/api/v1/comics/{comic_id}/chapters",
     tag = "chapters",
@@ -83,7 +85,7 @@ pub async fn create(
         (status = 200, description = "Chapters listed", body = HttpBody<Vec<ChapterInfoVal>>),
         (status = 403, description = "No permission to list chapters in this comic"),
     ),
-)]
+))]
 #[instrument(err, skip(harn))]
 pub async fn list_infos(
     State(harn): State<AppHarn>,
@@ -109,7 +111,7 @@ pub async fn list_infos(
 }
 
 /// `GET /api/v1/comics/{comic_id}/chapters/pinned` — fetch the pinned chapter.
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     get,
     path = "/api/v1/comics/{comic_id}/chapters/pinned",
     tag = "chapters",
@@ -118,7 +120,7 @@ pub async fn list_infos(
         (status = 200, description = "Pinned chapter (or null)", body = HttpBody<Option<ChapterInfoVal>>),
         (status = 403, description = "No permission to view this comic's pinned chapter"),
     ),
-)]
+))]
 #[instrument(err, skip(harn))]
 pub async fn get_pinned(
     State(harn): State<AppHarn>,
@@ -131,7 +133,7 @@ pub async fn get_pinned(
 }
 
 /// `GET /api/v1/chapters/{chapter_id}` — fetch a chapter by id.
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     get,
     path = "/api/v1/chapters/{chapter_id}",
     tag = "chapters",
@@ -141,7 +143,7 @@ pub async fn get_pinned(
         (status = 403, description = "No permission to view this chapter"),
         (status = 404, description = "Chapter not found"),
     ),
-)]
+))]
 #[instrument(err, skip(harn))]
 pub async fn get_info(
     State(harn): State<AppHarn>,
@@ -154,7 +156,7 @@ pub async fn get_info(
 }
 
 /// `PATCH /api/v1/chapters/{chapter_id}` — partially update a chapter's profile.
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     patch,
     path = "/api/v1/chapters/{chapter_id}",
     tag = "chapters",
@@ -166,7 +168,7 @@ pub async fn get_info(
         (status = 403, description = "No permission to update this chapter"),
         (status = 404, description = "Chapter not found"),
     ),
-)]
+))]
 #[instrument(err, skip(harn, data))]
 pub async fn update_info(
     State(harn): State<AppHarn>,
@@ -183,7 +185,7 @@ pub async fn update_info(
 }
 
 /// `POST /api/v1/chapters/{chapter_id}/stage/advance` — advance a workflow stage.
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     post,
     path = "/api/v1/chapters/{chapter_id}/stage/advance",
     tag = "chapters",
@@ -195,7 +197,7 @@ pub async fn update_info(
         (status = 403, description = "No permission to update this chapter's stage"),
         (status = 422, description = "Illegal workflow transition"),
     ),
-)]
+))]
 #[instrument(err, skip(harn, data))]
 pub async fn advance_stage(
     State(harn): State<AppHarn>,
@@ -219,7 +221,7 @@ pub async fn advance_stage(
 }
 
 /// `DELETE /api/v1/chapters/{chapter_id}` — delete a chapter and descendants.
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     delete,
     path = "/api/v1/chapters/{chapter_id}",
     tag = "chapters",
@@ -229,7 +231,7 @@ pub async fn advance_stage(
         (status = 403, description = "No permission to delete this chapter"),
         (status = 404, description = "Chapter not found"),
     ),
-)]
+))]
 #[instrument(err, skip(harn))]
 pub async fn delete(
     State(harn): State<AppHarn>,

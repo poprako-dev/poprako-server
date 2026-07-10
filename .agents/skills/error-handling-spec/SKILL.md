@@ -3,11 +3,11 @@ name: error-handling-spec
 description: Error construction and propagation rules for all layers. Covers Expected vs Unrecoverable, trl() keys, i18n, instrument placement, and diesel NotFound handling.
 ---
 
-# Poprako-r Error Handling Specification
+# Poprako-server Error Handling Specification
 
 ## Core Philosophy
 
-All errors in poprako-r fall into exactly one of two categories:
+All errors in poprako-server fall into exactly one of two categories:
 
 | Category | Variant | Audience | Logged by | Contains location? |
 |----------|---------|----------|-----------|---------------------|

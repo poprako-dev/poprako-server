@@ -21,7 +21,7 @@ use crate::model::user::UserToken;
 use crate::usecase;
 
 /// `POST /api/v1/worksets` — create a workset inside a team.
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     post,
     path = "/api/v1/worksets",
     tag = "worksets",
@@ -32,7 +32,7 @@ use crate::usecase;
         (status = 403, description = "No permission to create worksets in this team"),
         (status = 404, description = "Team not found"),
     ),
-)]
+))]
 #[instrument(err, skip(harn, data))]
 pub async fn create(
     State(harn): State<AppHarn>,
@@ -45,7 +45,7 @@ pub async fn create(
 }
 
 /// `GET /api/v1/teams/{team_id}/worksets` — list worksets in a team.
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     get,
     path = "/api/v1/teams/{team_id}/worksets",
     tag = "worksets",
@@ -55,7 +55,7 @@ pub async fn create(
         (status = 401, description = "Authentication required"),
         (status = 403, description = "No permission to list worksets in this team"),
     ),
-)]
+))]
 #[instrument(err, skip(harn))]
 pub async fn list_infos(
     State(harn): State<AppHarn>,
@@ -75,7 +75,7 @@ pub async fn list_infos(
 }
 
 /// `GET /api/v1/worksets/{workset_id}` — fetch a workset by id.
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     get,
     path = "/api/v1/worksets/{workset_id}",
     tag = "worksets",
@@ -86,7 +86,7 @@ pub async fn list_infos(
         (status = 403, description = "No permission to view this workset"),
         (status = 404, description = "Workset not found"),
     ),
-)]
+))]
 #[instrument(err, skip(harn))]
 pub async fn get_info(
     State(harn): State<AppHarn>,
@@ -99,7 +99,7 @@ pub async fn get_info(
 }
 
 /// `PUT /api/v1/worksets/{workset_id}` — update a workset's profile.
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     put,
     path = "/api/v1/worksets/{workset_id}",
     tag = "worksets",
@@ -111,7 +111,7 @@ pub async fn get_info(
         (status = 403, description = "No permission to update this workset"),
         (status = 404, description = "Workset not found"),
     ),
-)]
+))]
 #[instrument(err, skip(harn, data))]
 pub async fn update_info(
     State(harn): State<AppHarn>,
@@ -127,7 +127,7 @@ pub async fn update_info(
 }
 
 /// `DELETE /api/v1/worksets/{workset_id}` — delete a workset and descendants.
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     delete,
     path = "/api/v1/worksets/{workset_id}",
     tag = "worksets",
@@ -137,7 +137,7 @@ pub async fn update_info(
         (status = 403, description = "No permission to delete this workset"),
         (status = 404, description = "Workset not found"),
     ),
-)]
+))]
 #[instrument(err, skip(harn))]
 pub async fn delete(
     State(harn): State<AppHarn>,

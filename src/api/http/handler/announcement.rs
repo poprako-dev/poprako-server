@@ -8,6 +8,7 @@ use serde::Deserialize;
 
 use tracing::instrument;
 
+#[cfg(feature = "swagger-ui")]
 use utoipa::IntoParams;
 
 use crate::api::http::result::{Accept as _, HttpBody, HttpResult};
@@ -25,8 +26,9 @@ use crate::value::announcement::AnnouncementInclOpt;
 /// `incl` embeds related rows into each item.
 ///
 /// Example: `?incl=user&offset=0&limit=20`.
-#[derive(Debug, Deserialize, IntoParams)]
-#[into_params(parameter_in = Query)]
+#[derive(Debug, Deserialize)]
+#[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
+#[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
 pub struct AnnouncementListQuery {
     /// Related rows to embed. Repeatable. Values: `user`.
     #[serde(
@@ -44,7 +46,7 @@ pub struct AnnouncementListQuery {
 }
 
 /// `POST /api/v1/announcements` — create a team announcement.
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     post,
     path = "/api/v1/announcements",
     tag = "announcements",
@@ -54,7 +56,7 @@ pub struct AnnouncementListQuery {
         (status = 403, description = "No permission to create announcements in this team"),
         (status = 404, description = "Team not found"),
     ),
-)]
+))]
 #[instrument(err, skip(harn, data))]
 pub async fn create(
     State(harn): State<AppHarn>,
@@ -67,7 +69,7 @@ pub async fn create(
 }
 
 /// `GET /api/v1/teams/{team_id}/announcements` — list a team's announcements.
-#[utoipa::path(
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
     get,
     path = "/api/v1/teams/{team_id}/announcements",
     tag = "announcements",
@@ -77,7 +79,7 @@ pub async fn create(
         (status = 200, description = "Announcements listed", body = HttpBody<Vec<AnnouncementInfoVal>>),
         (status = 403, description = "No permission to list announcements in this team"),
     ),
-)]
+))]
 #[instrument(err, skip(harn))]
 pub async fn list_infos(
     State(harn): State<AppHarn>,

@@ -14,6 +14,7 @@ use axum::http::header::{HeaderMap, HeaderValue, SET_COOKIE};
 use axum::response::{IntoResponse, Response};
 use cookie::Cookie;
 use serde::Serialize;
+#[cfg(feature = "swagger-ui")]
 use utoipa::ToSchema;
 
 use poprako_util::i18n::trl;
@@ -22,16 +23,18 @@ use poprako_util::rename::StdResult;
 use crate::result::{Error as RegularError, ExpectedVariant};
 
 /// Business-level error envelope returned by all failing endpoints.
-#[derive(Debug, Serialize, ToSchema)]
+#[derive(Debug, Serialize)]
+#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
 pub struct HttpError {
     #[serde(skip)]
-    #[schema(ignore)]
+    #[cfg_attr(feature = "swagger-ui", schema(ignore))]
     status: StatusCode,
 
-    #[schema(value_type = u16)]
+    #[cfg_attr(feature = "swagger-ui", schema(value_type = u16))]
     code: NonZeroU16,
 
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "swagger-ui", schema(ignore))]
     message: Option<String>,
 }
 
@@ -116,17 +119,18 @@ impl IntoResponse for HttpError {
 /// Serializes as the standard JSON success envelope. HTTP metadata such as
 /// status code, extra headers, and `Set-Cookie` values are not part of the JSON
 /// body.
-#[derive(Debug, Serialize, ToSchema)]
+#[derive(Debug, Serialize)]
+#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
 pub struct HttpBody<T> {
     #[serde(skip)]
-    #[schema(ignore)]
+    #[cfg_attr(feature = "swagger-ui", schema(ignore))]
     status: StatusCode,
 
     #[serde(skip)]
-    #[schema(ignore)]
+    #[cfg_attr(feature = "swagger-ui", schema(ignore))]
     headers: HeaderMap,
 
-    #[schema(value_type = u16, example = 0)]
+    #[cfg_attr(feature = "swagger-ui", schema(value_type = u16, example = 0))]
     code: u16,
 
     data: T,

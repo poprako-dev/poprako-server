@@ -1,6 +1,5 @@
 //! Async background dispatcher for side-effect events.
 
-use std::marker::PhantomData;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
@@ -34,34 +33,38 @@ mod handler;
 mod user;
 
 /// Async side-effect dispatcher backed by a bounded channel.
-pub struct AsyncEffectDevelop<C, R> {
+///
+/// Spawns a background handler on construction that drains the queue and
+/// dispatches each event to the appropriate domain handler. Use
+/// [`close`](AsyncEffectDevelop::close) before dropping to drain pending
+/// events gracefully.
+pub struct AsyncEffectDevelop {
     accepting: Arc<AtomicBool>,
     send: Sender<Event>,
     shutdown: Mutex<Option<OneshotSender<()>>>,
     done: Mutex<Option<OneshotReceiver<()>>>,
-
-    _p: PhantomData<(C, R)>,
 }
 
-impl<C, R> AsyncEffectDevelop<C, R>
-where
-    C: Send + 'static,
-    R: AssignmentRepo<C>
-        + ChapterRepo<C>
-        + TeamRepo<C>
-        + SystemMailRepo<C>
-        + UserRepo<C>
-        + Send
-        + Sync
-        + 'static,
-    <R as DeriveTransactional>::Transactional: AssignmentRepoTransactional<C>
-        + ChapterRepoTransactional<C>
-        + TeamRepoTransactional<C>
-        + SystemMailRepoTransactional<C>
-        + UserRepoTransactional<C>,
-{
+impl AsyncEffectDevelop {
     /// Creates a dispatcher and starts its background task.
-    pub fn new(repo: Arc<R>, buffer_size: usize) -> Self {
+    pub fn new<C, R>(repo: Arc<R>, buffer_size: usize) -> Self
+    where
+        C: Send + 'static,
+        R: AssignmentRepo<C>
+            + ChapterRepo<C>
+            + TeamRepo<C>
+            + SystemMailRepo<C>
+            + UserRepo<C>
+            + Send
+            + Sync
+            + 'static,
+        <R as DeriveTransactional>::Transactional:
+            AssignmentRepoTransactional<C>
+                + ChapterRepoTransactional<C>
+                + TeamRepoTransactional<C>
+                + SystemMailRepoTransactional<C>
+                + UserRepoTransactional<C>,
+    {
         let (send, recv) = tokio::sync::mpsc::channel(buffer_size);
 
         let (shutdown_send, shutdown_recv) = tokio::sync::oneshot::channel();
@@ -70,13 +73,12 @@ where
 
         let accepting = Arc::new(AtomicBool::new(true));
 
-        let handler = handler::EffectHandler {
+        let handler = handler::EffectHandler::<R> {
             repo,
             recv,
             shutdown_recv,
             done_send,
             accepting: Arc::clone(&accepting),
-            _p: PhantomData,
         };
 
         tokio::spawn(async move {
@@ -88,7 +90,6 @@ where
             send,
             shutdown: Mutex::new(Some(shutdown_send)),
             done: Mutex::new(Some(done_recv)),
-            _p: PhantomData,
         }
     }
 
@@ -125,23 +126,7 @@ where
 }
 
 #[async_trait]
-impl<C, R> EffectDevelop for AsyncEffectDevelop<C, R>
-where
-    C: Send + Sync + 'static,
-    R: AssignmentRepo<C>
-        + ChapterRepo<C>
-        + TeamRepo<C>
-        + SystemMailRepo<C>
-        + UserRepo<C>
-        + Send
-        + Sync
-        + 'static,
-    <R as DeriveTransactional>::Transactional: AssignmentRepoTransactional<C>
-        + ChapterRepoTransactional<C>
-        + TeamRepoTransactional<C>
-        + SystemMailRepoTransactional<C>
-        + UserRepoTransactional<C>,
-{
+impl EffectDevelop for AsyncEffectDevelop {
     async fn develop<I>(&self, iter: I)
     where
         I: EventIter + Send,
