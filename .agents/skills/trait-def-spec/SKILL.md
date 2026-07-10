@@ -5,7 +5,7 @@ description: "Trait documentation conventions: every trait and method needs /// 
 
 # Trait Definition Specification
 
-Every trait in poprako-r — public or private — must carry a `///` doc comment
+Every trait in poprako-server — public or private — must carry a `///` doc comment
 that explains its role. Every method inside a trait must also carry a `///` doc
 comment. Multi-method traits must have a blank line between consecutive method
 signatures.

@@ -3,9 +3,22 @@ members = [".", "poprako-macro", "poprako-transactional", "poprako-util"]
 resolver = "3"
 
 [package]
-name = "poprako-r"
+name = "poprako-server"
 version = "0.1.0"
 edition = "2024"
+description = "Event-driven backend service for manga translation project management"
+license = "MIT"
+repository = "https://github.com/anomalyco/poprako-server"
+keywords = ["manga", "translation", "backend", "axum", "diesel"]
+categories = ["web-programming", "asynchronous"]
+publish = false
+
+[lints.clippy]
+mod_module_files = "deny"
+
+[features]
+repo = []
+swagger-ui = ["utoipa-swagger-ui", "utoipa"]
 
 [dependencies]
 anyhow = "1.0.102"
@@ -21,10 +34,14 @@ cookie = "0.18"
 crossfire = { version = "3.1.16", features = ["tokio"] }
 diesel = { version = "2.3.7", features = ["postgres", "serde_json", "time"] }
 diesel-async = { version = "0.9.0", features = ["deadpool", "postgres"] }
+diesel_migrations = "2.3.0"
 dotenvy = "0.15.7"
 fluent-templates = "0.14.0"
 futures-util = "0.3.32"
-jsonwebtoken = "10.4.0"
+jsonwebtoken = { version = "10.4.0", features = ["rust_crypto"] }
+base62 = "2.2.4"
+bitcode = "=0.6.9"
+k-snowflake = "2.1.1"
 poprako-macro = { path = "poprako-macro" }
 poprako-transactional = { path = "poprako-transactional" }
 poprako-util = { path = "poprako-util" }
@@ -33,10 +50,12 @@ serde_json = "1.0.149"
 time = { version = "0.3.47", features = ["serde"] }
 tokio = { version = "1.52.1", features = ["full", "macros"] }
 tracing = "0.1.44"
+tracing-appender = "0.2"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter", "time"] }
 unic-langid = "0.9.6"
 url = "2.5.8"
-utoipa = { version = "5.5.0", features = ["axum_extras"] }
-utoipa-swagger-ui = { version = "9", features = ["axum"] }
-uuid = { version = "1.23.1", features = ["v7"] }
+zstd = "=0.13.3"
+utoipa = { version = "5.5.0", features = ["axum_extras"], optional = true }
+utoipa-swagger-ui = { version = "9", features = ["axum"], optional = true }
+governor = "0.6"
 futures = "0.3.32"

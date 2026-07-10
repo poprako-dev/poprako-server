@@ -1,6 +1,6 @@
 ---
 name: fool-gotchas
-description: Recurring mistakes and pitfalls in poprako-r made by AIs. Each entry is a pattern that was actually screwed up at least once. Consult before committing any non-trivial change.
+description: Recurring mistakes and pitfalls in poprako-server made by AIs. Each entry is a pattern that was actually screwed up at least once. Consult before committing any non-trivial change.
 ---
 
 # Gotchas

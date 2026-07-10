@@ -1,0 +1,13 @@
+.git
+.codex
+.agents
+target
+logs
+references
+docs
+.env
+.env.*
+!.env.example
+Dockerfile
+docker-compose*.yml
+docker-compose*.yaml

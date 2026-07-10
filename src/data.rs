@@ -1,3 +1,47 @@
+//! Data transfer objects that sit between the external world and use cases.
+//!
+//! Types suffixed with `Data` carry inbound request payloads. Types suffixed
+//! with `Val` carry presentation-ready outbound values — timestamps are
+//! converted to Unix milliseconds, and avatar URLs are resolved through
+//! [`ImagePool`].
+//!
+//! [`ImagePool`]: crate::part::image::ImagePool
+
+/// Announcement request/response DTOs.
+pub mod announcement;
+/// Assignment request/response DTOs.
+pub mod assignment;
+/// Assignment invitation request/response DTOs.
+pub mod assignment_invitation;
+/// Authentication request DTOs.
 pub mod auth;
+/// Chapter request/response DTOs.
+pub mod chapter;
+/// Chapter port (import/export) request/response DTOs.
+pub mod chapter_port;
+/// Comic request/response DTOs.
+pub mod comic;
+/// Immutable comic archive response DTOs.
+pub mod comic_archive;
+/// Comment request/response DTOs.
+pub mod comment;
+/// Member request/response DTOs.
+pub mod member;
+/// Member invitation request/response DTOs.
+pub mod member_invitation;
+/// Page request/response DTOs.
+pub mod page;
+/// Page port DTOs.
+pub mod page_port;
+/// System mail request/response DTOs.
+pub mod system_mail;
+/// Team request/response DTOs.
 pub mod team;
+/// Unit request/response DTOs.
+pub mod unit;
+/// Unit port DTOs.
+pub mod unit_port;
+/// User request/response DTOs.
 pub mod user;
+/// Workset request/response DTOs.
+pub mod workset;
