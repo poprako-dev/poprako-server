@@ -21,6 +21,7 @@ pub struct PageInfoVal {
     pub chapter_id: String,
     pub index: i32,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub image_url: Option<String>,
 
     pub total_unit_count: i32,

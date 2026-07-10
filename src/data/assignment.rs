@@ -26,7 +26,9 @@ pub struct AssignmentInfoVal {
     pub chapter_id: String,
     pub user_id: String,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub user: Option<UserInfoVal>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub chapter: Option<ChapterInfoVal>,
 
     pub roles: RoleMask,

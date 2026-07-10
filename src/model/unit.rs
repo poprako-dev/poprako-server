@@ -33,7 +33,7 @@ impl UnitInfo {
     }
 }
 
-/// Mutable payload supplied by create and save opers.
+/// Complete mutable payload supplied by unit opers.
 #[cfg_attr(test, derive(Clone))]
 pub struct UnitPayload {
     pub is_bubble: bool,
@@ -57,21 +57,25 @@ pub struct UnitPayload {
 #[cfg_attr(test, derive(Clone))]
 pub struct UnitDiff {
     pub page_id: String,
-
     pub opers: Vec<UnitOper>,
 }
 
 /// One ordered unit oper submitted by a client.
 ///
-/// `Save` is an upsert: a `local_id` (and no `id`) creates a new unit with a
-/// server-generated id; an `id` (and no `local_id`) updates or restores an
-/// existing unit. `before_id` places the unit relative to the surviving order;
-/// `None` or an absent anchor appends it to the tail.
+/// `Create` carries a client-provided identifier that is resolved before the
+/// transaction starts. `Save` carries a server identifier and is applied as an
+/// upsert so a concurrently deleted unit can be restored. `before_id` places a
+/// created or saved unit relative to the surviving order; `None` or an absent
+/// anchor appends it to the tail.
 #[cfg_attr(test, derive(Clone))]
 pub enum UnitOper {
+    Create {
+        id: String,
+        payload: UnitPayload,
+        before_id: Option<String>,
+    },
     Save {
-        local_id: Option<String>,
-        id: Option<String>,
+        id: String,
         payload: UnitPayload,
         before_id: Option<String>,
     },
@@ -122,7 +126,6 @@ pub struct UnitIdMapper {
 #[cfg_attr(test, derive(Clone))]
 pub struct UnitApplyAck {
     pub opers: Vec<UnitOper>,
-
     pub local_id_map: Vec<UnitIdMapper>,
 }
 

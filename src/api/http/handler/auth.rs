@@ -8,6 +8,9 @@ use cookie::{Cookie, SameSite};
 
 use tracing::instrument;
 
+#[cfg(feature = "swagger-ui")]
+use crate::api::http::result::HttpBody;
+
 use crate::api::http::auth::AUTH_COOKIE_NAME;
 use crate::api::http::result::{
     Accept as _, HttpNoContent, HttpResult, no_content,

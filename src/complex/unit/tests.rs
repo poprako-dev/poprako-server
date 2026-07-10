@@ -1,6 +1,8 @@
 // prepare_diff(UnitComplex::prepare_diff)(positive): create, save, and delete opers are preserved while create ids are mapped.
 // prepare_diff(UnitComplex::prepare_diff)(positive): delete and later save on the same id remain ordered replay opers.
+// prepare_diff(UnitComplex::prepare_diff)(positive): empty text does not require an editor id.
 // prepare_diff(UnitComplex::prepare_diff)(negative): invalid ids and duplicate local ids are rejected.
+// prepare_diff(UnitComplex::prepare_diff)(negative): non-empty translated and proofread text require matching editor ids.
 // apply_opers_to_order(UnitComplex::apply_opers_to_order)(positive): create and save place units before the anchor or at the tail.
 // apply_opers_to_order(UnitComplex::apply_opers_to_order)(positive): delete removes a unit and preserves the remaining order.
 // apply_opers_to_order(UnitComplex::apply_opers_to_order)(positive): save upsert restores a missing unit at the tail.
@@ -19,7 +21,7 @@ fn payload(text: &str, proofread: bool) -> UnitPayload {
         x_coord: 1.0,
         y_coord: 2.0,
         translated_text: Some(text.into()),
-        last_translator_id: None,
+        last_translator_id: Some("user-1".into()),
         proofread_text: None,
         last_proofreader_id: None,
     }
@@ -50,14 +52,12 @@ fn prepare_diff_maps_create_ids_and_keeps_oper_order() {
     //
     let unit_diff = diff(vec![
         UnitOper::Save {
-            local_id: None,
-            id: Some("unit-a".into()),
+            id: "unit-a".into(),
             payload: payload("alpha", false),
             before_id: None,
         },
-        UnitOper::Save {
-            local_id: Some("local-x".into()),
-            id: None,
+        UnitOper::Create {
+            id: "local-x".into(),
             payload: payload("inserted", true),
             before_id: Some("unit-a".into()),
         },
@@ -65,8 +65,7 @@ fn prepare_diff_maps_create_ids_and_keeps_oper_order() {
             id: "unit-b".into(),
         },
         UnitOper::Save {
-            local_id: None,
-            id: Some("unit-a".into()),
+            id: "unit-a".into(),
             payload: payload("alpha-later", false),
             before_id: None,
         },
@@ -89,18 +88,12 @@ fn prepare_diff_maps_create_ids_and_keeps_oper_order() {
 
     match &receipt.opers[1] {
         //
-        UnitOper::Save { id, local_id, .. } => {
-            //
-            assert!(local_id.is_none());
-
-            assert_eq!(
-                id.as_deref(),
-                Some(receipt.local_id_map[0].unit_id.as_str())
-            );
+        UnitOper::Create { id, .. } => {
+            assert_eq!(id, &receipt.local_id_map[0].unit_id);
         }
 
-        UnitOper::Delete { .. } => {
-            panic!("expected save oper");
+        UnitOper::Save { .. } | UnitOper::Delete { .. } => {
+            panic!("expected create oper");
         }
     }
 }
@@ -110,8 +103,7 @@ fn prepare_diff_rejects_invalid_compact_diff() {
     //
     let empty_id_error =
         UnitComplex::prepare_diff(diff(vec![UnitOper::Save {
-            local_id: None,
-            id: Some(String::new()),
+            id: String::new(),
             payload: payload("alpha", false),
             before_id: None,
         }]))
@@ -121,15 +113,13 @@ fn prepare_diff_rejects_invalid_compact_diff() {
     assert_args_error(empty_id_error);
 
     let duplicate_local_id_error = UnitComplex::prepare_diff(diff(vec![
-        UnitOper::Save {
-            local_id: Some("local-x".into()),
-            id: None,
+        UnitOper::Create {
+            id: "local-x".into(),
             payload: payload("one", false),
             before_id: None,
         },
-        UnitOper::Save {
-            local_id: Some("local-x".into()),
-            id: None,
+        UnitOper::Create {
+            id: "local-x".into(),
             payload: payload("two", false),
             before_id: None,
         },
@@ -141,6 +131,61 @@ fn prepare_diff_rejects_invalid_compact_diff() {
 }
 
 #[test]
+fn prepare_diff_allows_empty_text_without_editor_id() {
+    //
+    let unit_payload = UnitPayload {
+        translated_text: Some(String::new()),
+        last_translator_id: None,
+        ..payload("seed", false)
+    };
+
+    let result = UnitComplex::prepare_diff(diff(vec![UnitOper::Create {
+        id: "local-x".into(),
+        payload: unit_payload,
+        before_id: None,
+    }]));
+
+    assert!(result.is_ok());
+}
+
+#[test]
+fn prepare_diff_requires_editor_ids_for_non_empty_text() {
+    //
+    let translated_payload = UnitPayload {
+        last_translator_id: None,
+        ..payload("translated", false)
+    };
+
+    let translated_error =
+        UnitComplex::prepare_diff(diff(vec![UnitOper::Create {
+            id: "local-x".into(),
+            payload: translated_payload,
+            before_id: None,
+        }]))
+        .err()
+        .unwrap();
+
+    assert_args_error(translated_error);
+
+    let proofread_payload = UnitPayload {
+        proofread_text: Some("proofread".into()),
+        last_proofreader_id: Some(String::new()),
+        ..payload("translated", true)
+    };
+
+    let proofread_error =
+        UnitComplex::prepare_diff(diff(vec![UnitOper::Save {
+            id: "unit-a".into(),
+            payload: proofread_payload,
+            before_id: None,
+        }]))
+        .err()
+        .unwrap();
+
+    assert_args_error(proofread_error);
+}
+
+#[test]
 fn prepare_diff_keeps_delete_and_later_save_for_ordered_replay() {
     //
     let receipt = match UnitComplex::prepare_diff(diff(vec![
@@ -148,8 +193,7 @@ fn prepare_diff_keeps_delete_and_later_save_for_ordered_replay() {
             id: "unit-a".into(),
         },
         UnitOper::Save {
-            local_id: None,
-            id: Some("unit-a".into()),
+            id: "unit-a".into(),
             payload: payload("alpha", false),
             before_id: None,
         },
@@ -167,21 +211,18 @@ fn prepare_diff_keeps_delete_and_later_save_for_ordered_replay() {
 fn apply_opers_to_order_places_create_and_save_before_anchor_or_tail() {
     //
     let opers = vec![
-        UnitOper::Save {
-            local_id: None,
-            id: Some("unit-x".into()),
+        UnitOper::Create {
+            id: "unit-x".into(),
             payload: payload("x", false),
             before_id: Some("unit-b".into()),
         },
         UnitOper::Save {
-            local_id: None,
-            id: Some("unit-a".into()),
+            id: "unit-a".into(),
             payload: payload("a", false),
             before_id: None,
         },
         UnitOper::Save {
-            local_id: None,
-            id: Some("unit-c".into()),
+            id: "unit-c".into(),
             payload: payload("c", false),
             before_id: Some("unit-missing".into()),
         },
@@ -212,8 +253,7 @@ fn apply_opers_to_order_removes_deleted_unit_and_keeps_remaining_order() {
 fn apply_opers_to_order_save_upsert_restores_missing_unit_at_tail() {
     //
     let opers = vec![UnitOper::Save {
-        local_id: None,
-        id: Some("unit-z".into()),
+        id: "unit-z".into(),
         payload: payload("z", false),
         before_id: None,
     }];

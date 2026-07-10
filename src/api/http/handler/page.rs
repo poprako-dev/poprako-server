@@ -9,6 +9,10 @@ use tracing::instrument;
 use crate::api::http::handler::util::{
     Pagination, ensure_path_matches_body_id,
 };
+
+#[cfg(feature = "swagger-ui")]
+use crate::api::http::result::HttpBody;
+
 use crate::api::http::result::{
     Accept as _, HttpNoContent, HttpResult, no_content,
 };

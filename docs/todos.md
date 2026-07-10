@@ -9,3 +9,4 @@
 - [x] lock main row before delete_cascade.
 - [x] prom handler.
 - [ ] termbase & term
+- [ ] not all I are named image_pool

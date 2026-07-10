@@ -11,6 +11,9 @@ use tracing::instrument;
 #[cfg(feature = "swagger-ui")]
 use utoipa::IntoParams;
 
+#[cfg(feature = "swagger-ui")]
+use crate::api::http::result::HttpBody;
+
 use crate::api::http::result::{
     Accept as _, HttpNoContent, HttpResult, no_content,
 };
