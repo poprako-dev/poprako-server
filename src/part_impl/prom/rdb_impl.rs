@@ -29,6 +29,7 @@ use crate::part::image::ImagePool;
 use crate::part::prom::{Append, Prom};
 use crate::part_impl::drive::rdb_impl::RdbDrive;
 use crate::part_impl::prom::rdb_impl::entity::LocalMessageEntry;
+use crate::part_impl::prom::rdb_impl::repo::RdbPromRepo;
 use crate::part_impl::repo::rdb_impl::RdbRepo;
 use crate::part_impl::repo::rdb_impl::schema::t_local_message;
 use crate::part_impl::shared::result::diesel;
@@ -68,15 +69,12 @@ impl RdbProm {
 
         let drive = RdbDrive::new(core.clone());
 
-        let repo = Arc::new(RdbRepo::new(core.clone()));
-
-        let local_message_repo = repo::LocalMessageRepo;
+        let repo = RdbPromRepo::new(RdbRepo::new(core.clone()));
 
         let handler = handler::RdbPromHandler::new(
             core,
             drive,
             repo,
-            local_message_repo,
             image_pool,
             shutdown_recv,
             done_send,
@@ -97,6 +95,7 @@ impl RdbProm {
     /// Signals the background worker to stop and waits for in-flight work
     /// to complete.
     pub async fn close(&self) {
+        //
         if !self.accepting.swap(false, Ordering::AcqRel) {
             return;
         }
@@ -138,7 +137,9 @@ impl<'a> Advance<Append<'a>, RdbContext> for RdbProm {
         context: &mut RdbContext,
         step: &Append<'a>,
     ) -> RegularResult<()> {
+        //
         let now = OffsetDateTime::now_utc();
+
         let entry = LocalMessageEntry::from_append(step, now)?;
 
         diesel::insert_into(t_local_message::table)

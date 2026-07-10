@@ -58,11 +58,15 @@ fn list_unread_data(offset: u64, limit: u64) -> ListSystemMailData {
 
 #[tokio::test]
 async fn list_returns_current_user_unread_mails() {
+    //
     let mock = Mock::new();
+
     let time = OffsetDateTime::now_utc();
 
     mock.seed_system_mail(mail("sys_mail-1", "user-1", false, time));
+
     mock.seed_system_mail(mail("sys_mail-2", "user-1", true, time)); // already read
+
     mock.seed_system_mail(mail("sys_mail-3", "user-2", false, time)); // other user
 
     let mails = list_infos(&mock, token("user-1"), list_unread_data(0, 10))
@@ -70,18 +74,25 @@ async fn list_returns_current_user_unread_mails() {
         .unwrap();
 
     assert_eq!(mails.len(), 1);
+
     assert_eq!(mails[0].id, "sys_mail-1");
 }
 
 #[tokio::test]
 async fn list_applies_pagination_after_desc_sort() {
+    //
     let mock = Mock::new();
+
     let t1 = OffsetDateTime::now_utc();
+
     let t2 = t1 + Duration::seconds(10);
+
     let t3 = t2 + Duration::seconds(10);
 
     mock.seed_system_mail(mail("sys_mail-1", "user-1", false, t1));
+
     mock.seed_system_mail(mail("sys_mail-2", "user-1", false, t3));
+
     mock.seed_system_mail(mail("sys_mail-3", "user-1", false, t2));
 
     let mails = list_infos(&mock, token("user-1"), list_unread_data(0, 2))
@@ -89,15 +100,20 @@ async fn list_applies_pagination_after_desc_sort() {
         .unwrap();
 
     assert_eq!(mails.len(), 2);
+
     // Should be sorted by created_at DESC.
     assert_eq!(mails[0].id, "sys_mail-2");
+
     assert_eq!(mails[1].id, "sys_mail-3");
 }
 
 #[tokio::test]
 async fn list_returns_empty_for_missing_page() {
+    //
     let mock = Mock::new();
+
     let time = OffsetDateTime::now_utc();
+
     mock.seed_system_mail(mail("sys_mail-1", "user-1", false, time));
 
     let mails = list_infos(&mock, token("user-1"), list_unread_data(10, 10))
@@ -109,9 +125,13 @@ async fn list_returns_empty_for_missing_page() {
 
 #[tokio::test]
 async fn mark_read_marks_batch_of_mails() {
+    //
     let mock = Mock::new();
+
     let time = OffsetDateTime::now_utc();
+
     mock.seed_system_mail(mail("sys_mail-1", "user-1", false, time));
+
     mock.seed_system_mail(mail("sys_mail-2", "user-1", false, time));
 
     mark_read(
@@ -123,14 +143,19 @@ async fn mark_read_marks_batch_of_mails() {
     .unwrap();
 
     let snapshot = mock.snapshot();
+
     assert!(snapshot.system_mails[0].read);
+
     assert!(snapshot.system_mails[1].read);
 }
 
 #[tokio::test]
 async fn mark_read_short_circuits_on_missing_id() {
+    //
     let mock = Mock::new();
+
     let time = OffsetDateTime::now_utc();
+
     mock.seed_system_mail(mail("sys_mail-1", "user-1", false, time));
 
     let err = mark_read(
@@ -141,25 +166,32 @@ async fn mark_read_short_circuits_on_missing_id() {
     .await
     .err()
     .unwrap();
+
     assert_expected_variant(err, ExpectedVariant::Args);
 
     // First ID was marked before the second failed (non-transactional).
     let snapshot = mock.snapshot();
+
     assert!(snapshot.system_mails[0].read);
 }
 
 #[tokio::test]
 async fn mark_read_rejects_other_user_mail() {
+    //
     let mock = Mock::new();
+
     let time = OffsetDateTime::now_utc();
+
     mock.seed_system_mail(mail("sys_mail-1", "user-1", false, time));
 
     let err = mark_read(&mock, token("user-2"), vec!["sys_mail-1".into()])
         .await
         .err()
         .unwrap();
+
     assert_expected_variant(err, ExpectedVariant::Perm);
 
     let snapshot = mock.snapshot();
+
     assert!(!snapshot.system_mails[0].read);
 }

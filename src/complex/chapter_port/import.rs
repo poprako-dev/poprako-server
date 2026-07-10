@@ -57,7 +57,8 @@ impl ChapterImportComplex {
                     return Err(args_error(
                         "error-invalid-chapter-import-content",
                     ));
-                };
+                }
+
 
                 flush_label_plus_unit(
                     &mut current_page,
@@ -196,7 +197,9 @@ where
     }
 
     match lines.next() {
+        //
         Some("-") => {}
+
         _ => return Err(args_error("error-invalid-chapter-import-content")),
     }
 
@@ -204,7 +207,9 @@ where
 
     for line in lines.by_ref() {
         if line == "-" {
+            //
             found_separator = true;
+
             break;
         }
     }
@@ -231,6 +236,7 @@ fn is_label_plus_page_header(line: &str) -> bool {
 fn parse_label_plus_unit_header(
     line: &str,
 ) -> RegularResult<Option<LabelPlusUnit>> {
+    //
     let Some(rest) = line.strip_prefix("----------------[") else {
         return Ok(None);
     };
@@ -262,8 +268,11 @@ fn parse_label_plus_unit_header(
         .map_err(|_| args_error("error-invalid-chapter-import-content"))?;
 
     let is_bubble = match parts[2] {
+        //
         "1" => true,
+
         "2" => false,
+
         _ => return Err(args_error("error-invalid-chapter-import-content")),
     };
 
@@ -283,6 +292,7 @@ fn flush_label_plus_unit(
     current_unit: &mut Option<LabelPlusUnit>,
     main_text_lines: &mut Vec<String>,
 ) -> RegularResult<()> {
+    //
     let Some(label_plus_unit) = current_unit.take() else {
         return Ok(());
     };
@@ -315,6 +325,7 @@ fn flush_label_plus_unit(
 fn parse_poprako_page(
     page: PoprakoPageImport,
 ) -> RegularResult<PageTranslationImport> {
+    //
     if page.image_filename.trim().is_empty() {
         return Err(args_error("error-invalid-chapter-import-content"));
     }
@@ -324,6 +335,7 @@ fn parse_poprako_page(
     let mut units = Vec::with_capacity(page.units.len());
 
     for unit in page.units {
+        //
         if unit.id.trim().is_empty() {
             return Err(args_error("error-invalid-chapter-import-content"));
         }
@@ -367,9 +379,11 @@ fn normalize_option(text: Option<String>) -> Option<String> {
 /// Normalize a string, returning `None` when the trimmed result is empty
 /// or whitespace-only.
 fn normalize_string(text: String) -> Option<String> {
+    //
     if text.trim().is_empty() {
         return None;
     }
+
     Some(text)
 }
 
@@ -412,15 +426,23 @@ fn apply_label_plus_text(
     proofreader: bool,
 ) {
     match proofreader {
+        //
         true => {
+            //
             unit_payload.proofread_text = parsed_unit.main_text.clone();
+
             if parsed_unit.main_text.is_some() {
+                //
                 unit_payload.is_proofread = true;
+
                 unit_payload.last_proofreader_id = Some(user_id.into());
             }
         }
+
         false => {
+            //
             unit_payload.translated_text = parsed_unit.main_text.clone();
+
             if parsed_unit.main_text.is_some() {
                 unit_payload.last_translator_id = Some(user_id.into());
             }
@@ -436,18 +458,29 @@ fn apply_poprako_text(
     user_id: &str,
     proofreader: bool,
 ) {
+    //
     if let Some(translated_text) = &parsed_unit.translated_text {
+        //
         unit_payload.translated_text = Some(translated_text.clone());
+
         unit_payload.last_translator_id = Some(user_id.into());
     }
+
     if proofreader {
+        //
         if let Some(proofread_text) = &parsed_unit.proofread_text {
+            //
             unit_payload.proofread_text = Some(proofread_text.clone());
+
             unit_payload.is_proofread = true;
+
             unit_payload.last_proofreader_id = Some(user_id.into());
         }
+
         if parsed_unit.proofread_text.is_none() && parsed_unit.is_proofread {
+            //
             unit_payload.is_proofread = true;
+
             unit_payload.last_proofreader_id = Some(user_id.into());
         }
     }

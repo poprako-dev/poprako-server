@@ -208,6 +208,7 @@ impl<'a> Execute<GetInfoById<'a>> for Mock {
         &self,
         step: &GetInfoById<'a>,
     ) -> Result<ComicInfo, Self::Error> {
+        //
         let state = self.state.lock().unwrap();
 
         let mut info = state
@@ -231,7 +232,9 @@ impl<'a> Execute<ListInfos<'a>> for Mock {
         &self,
         step: &ListInfos<'a>,
     ) -> Result<Vec<ComicInfo>, Self::Error> {
+        //
         let state = self.state.lock().unwrap();
+
         let mut comics = state
             .comics
             .iter()
@@ -246,6 +249,7 @@ impl<'a> Execute<ListInfos<'a>> for Mock {
             .filter(|comic| comic_matches_kind(&state, comic, &step.spec.kind))
             .cloned()
             .collect::<Vec<_>>();
+
         comics.sort_by(|left, right| {
             right
                 .last_active_at
@@ -258,6 +262,7 @@ impl<'a> Execute<ListInfos<'a>> for Mock {
         }
 
         let offset = step.spec.offset as usize;
+
         let limit = step.spec.limit as usize;
 
         if offset >= comics.len() {
@@ -265,6 +270,7 @@ impl<'a> Execute<ListInfos<'a>> for Mock {
         }
 
         let end = std::cmp::min(offset + limit, comics.len());
+
         Ok(comics[offset..end].to_vec())
     }
 }
@@ -274,16 +280,23 @@ impl<'a> Execute<UpdateInfo<'a>> for Mock {
     type Error = RegularError;
 
     async fn execute(&self, step: &UpdateInfo<'a>) -> Result<(), Self::Error> {
+        //
         let mut state = self.state.lock().unwrap();
+
         let comic = state
             .comics
             .iter_mut()
             .find(|comic| comic.id == step.update.id)
             .ok_or_else(|| expected("error-comic-not-found"))?;
+
         comic.title = step.update.title.clone();
+
         comic.author = step.update.author.clone();
+
         comic.description = step.update.description.clone();
+
         comic.updated_at = now();
+
         Ok(())
     }
 }
@@ -296,7 +309,9 @@ impl<'a> Execute<MarkCoverUploaded<'a>> for Mock {
         &self,
         step: &MarkCoverUploaded<'a>,
     ) -> Result<(), Self::Error> {
+        //
         let mut state = self.state.lock().unwrap();
+
         mark_comic_cover_uploaded(&mut state, step.id, step.cover_version)
     }
 }
@@ -310,6 +325,7 @@ impl<'a> Advance<Create<'a>, MockContext> for MockTransactional {
         context: &mut MockContext,
         step: &Create<'a>,
     ) -> Result<ComicInfo, Self::Error> {
+        //
         if context
             .state
             .comics
@@ -320,6 +336,7 @@ impl<'a> Advance<Create<'a>, MockContext> for MockTransactional {
         }
 
         let time = now();
+
         let comic = ComicInfo {
             id: step.form.id.clone(),
             workset_id: step.form.workset_id.clone(),
@@ -340,7 +357,9 @@ impl<'a> Advance<Create<'a>, MockContext> for MockTransactional {
             created_at: time,
             updated_at: time,
         };
+
         context.state.comics.push(comic.clone());
+
         Ok(comic)
     }
 }
@@ -354,6 +373,7 @@ impl<'a> Advance<GetInfoById<'a>, MockContext> for MockTransactional {
         context: &mut MockContext,
         step: &GetInfoById<'a>,
     ) -> Result<ComicInfo, Self::Error> {
+        //
         let mut info = context
             .state
             .comics
@@ -377,6 +397,7 @@ impl<'a> Advance<GetInfoExcluded<'a>, MockContext> for MockTransactional {
         context: &mut MockContext,
         step: &GetInfoExcluded<'a>,
     ) -> Result<ComicInfo, Self::Error> {
+        //
         let mut info = context
             .state
             .comics
@@ -400,6 +421,7 @@ impl<'a> Advance<ListInfosExcluded<'a>, MockContext> for MockTransactional {
         context: &mut MockContext,
         step: &ListInfosExcluded<'a>,
     ) -> Result<Vec<ComicInfo>, Self::Error> {
+        //
         let mut comics = context
             .state
             .comics
@@ -417,6 +439,7 @@ impl<'a> Advance<ListInfosExcluded<'a>, MockContext> for MockTransactional {
             })
             .cloned()
             .collect::<Vec<_>>();
+
         comics.sort_by(|left, right| {
             right
                 .last_active_at
@@ -429,6 +452,7 @@ impl<'a> Advance<ListInfosExcluded<'a>, MockContext> for MockTransactional {
         }
 
         let offset = step.spec.offset as usize;
+
         let limit = step.spec.limit as usize;
 
         if offset >= comics.len() {
@@ -436,6 +460,7 @@ impl<'a> Advance<ListInfosExcluded<'a>, MockContext> for MockTransactional {
         }
 
         let end = std::cmp::min(offset + limit, comics.len());
+
         Ok(comics[offset..end].to_vec())
     }
 }
@@ -449,23 +474,32 @@ impl<'a> Advance<ReserveCover<'a>, MockContext> for MockTransactional {
         context: &mut MockContext,
         step: &ReserveCover<'a>,
     ) -> Result<ComicCoverReservation, Self::Error> {
+        //
         let comic = context
             .state
             .comics
             .iter_mut()
             .find(|comic| comic.id == step.id)
             .ok_or_else(|| expected("error-comic-not-found"))?;
+
         let cover_version = comic.cover_version + 1;
+
         let object_key = ComicComplex::gen_cover_key(
             step.id,
             cover_version,
             step.file_extension,
         );
+
         let prev_object_key = comic.cover_key.clone();
+
         comic.cover_key = Some(object_key.clone());
+
         comic.cover_uploaded = false;
+
         comic.cover_version = cover_version;
+
         comic.updated_at = now();
+
         Ok(ComicCoverReservation {
             object_key,
             prev_object_key,
@@ -500,6 +534,7 @@ impl<'a> Advance<Delete<'a>, MockContext> for MockTransactional {
         context: &mut MockContext,
         step: &Delete<'a>,
     ) -> Result<(), Self::Error> {
+        //
         let pos = context
             .state
             .comics
@@ -508,6 +543,7 @@ impl<'a> Advance<Delete<'a>, MockContext> for MockTransactional {
             .ok_or_else(|| expected("error-comic-not-found"))?;
 
         let deleted_comic_id = context.state.comics[pos].id.clone();
+
         let deleted_chapter_ids = context
             .state
             .chapters
@@ -517,20 +553,24 @@ impl<'a> Advance<Delete<'a>, MockContext> for MockTransactional {
             .collect::<Vec<_>>();
 
         context.state.comics.remove(pos);
+
         context
             .state
             .chapters
             .retain(|chapter_info| chapter_info.comic_id != deleted_comic_id);
+
         context.state.pages.retain(|page_info| {
             !deleted_chapter_ids
                 .iter()
                 .any(|chapter_id| chapter_id == &page_info.chapter_id)
         });
+
         context.state.assignments.retain(|assignment_info| {
             !deleted_chapter_ids
                 .iter()
                 .any(|chapter_id| chapter_id == &assignment_info.chapter_id)
         });
+
         Ok(())
     }
 }
@@ -544,15 +584,18 @@ impl<'a> Advance<IncrChapterNextIndex<'a>, MockContext> for MockTransactional {
         context: &mut MockContext,
         step: &IncrChapterNextIndex<'a>,
     ) -> Result<i32, Self::Error> {
+        //
         let comic = context
             .state
             .comics
             .iter_mut()
             .find(|comic| comic.id == step.id)
             .ok_or_else(|| expected("error-comic-not-found"))?;
+
         let index = comic.chapter_next_index;
 
         comic.chapter_next_index += 1;
+
         comic.updated_at = now();
 
         Ok(index)
@@ -568,14 +611,18 @@ impl<'a> Advance<UpdateChapterCount<'a>, MockContext> for MockTransactional {
         context: &mut MockContext,
         step: &UpdateChapterCount<'a>,
     ) -> Result<(), Self::Error> {
+        //
         let comic = context
             .state
             .comics
             .iter_mut()
             .find(|comic| comic.id == step.id)
             .ok_or_else(|| expected("error-comic-not-found"))?;
+
         comic.chapter_count += step.delta;
+
         comic.updated_at = now();
+
         Ok(())
     }
 }
@@ -589,14 +636,18 @@ impl<'a> Advance<TouchLastActive<'a>, MockContext> for MockTransactional {
         context: &mut MockContext,
         step: &TouchLastActive<'a>,
     ) -> Result<(), Self::Error> {
+        //
         let comic = context
             .state
             .comics
             .iter_mut()
             .find(|comic| comic.id == step.id)
             .ok_or_else(|| expected("error-comic-not-found"))?;
+
         comic.last_active_at = now();
+
         comic.updated_at = now();
+
         Ok(())
     }
 }

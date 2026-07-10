@@ -76,6 +76,7 @@ impl<'a> Advance<Append<'a>, MockContext> for MockTransactional {
         context: &mut MockContext,
         step: &Append<'a>,
     ) -> Result<(), Self::Error> {
+        //
         let payload_json =
             serde_json::to_string(&step.payload).map_err(|e| {
                 RegularError::Unrecoverable {
@@ -89,6 +90,7 @@ impl<'a> Advance<Append<'a>, MockContext> for MockTransactional {
             payload_json,
             visible_at: *step.visible_at,
         });
+
         Ok(())
     }
 }
@@ -103,6 +105,7 @@ impl<'a> Advance<Append<'a>, MockContext> for Mock {
         context: &mut MockContext,
         step: &Append<'a>,
     ) -> Result<(), Self::Error> {
+        //
         let payload_json =
             serde_json::to_string(&step.payload).map_err(|e| {
                 RegularError::Unrecoverable {
@@ -116,6 +119,7 @@ impl<'a> Advance<Append<'a>, MockContext> for Mock {
             payload_json,
             visible_at: *step.visible_at,
         });
+
         Ok(())
     }
 }
@@ -154,7 +158,9 @@ fn user_credential(id: &str) -> UserCredential {
 
 #[tokio::test]
 async fn append_records_payload() {
+    //
     let mock = Mock::new();
+
     let visible_at = OffsetDateTime::now_utc();
 
     assert!(
@@ -178,15 +184,21 @@ async fn append_records_payload() {
     );
 
     let snapshot = mock.snapshot();
+
     assert_eq!(snapshot.prom_records.len(), 1);
+
     assert_eq!(snapshot.prom_records[0].id(), "prom-1");
+
     assert_eq!(snapshot.prom_records[0].topic(), "image");
+
     assert_eq!(snapshot.prom_records[0].visible_at(), visible_at);
 }
 
 #[tokio::test]
 async fn process_pending_marks_uploaded_image() {
+    //
     let mock = Mock::new();
+
     let visible_at = OffsetDateTime::now_utc();
 
     mock.seed_user(
@@ -195,6 +207,7 @@ async fn process_pending_marks_uploaded_image() {
     );
 
     Drive::with_context(&mock, async move |context| {
+        //
         let transactional = MockTransactional;
 
         Advance::advance(
@@ -227,7 +240,9 @@ async fn process_pending_marks_uploaded_image() {
 
 #[tokio::test]
 async fn process_pending_keeps_stale_image_for_ordered_delete() {
+    //
     let mock = Mock::new();
+
     let visible_at = OffsetDateTime::now_utc();
 
     mock.seed_user(
@@ -236,6 +251,7 @@ async fn process_pending_keeps_stale_image_for_ordered_delete() {
     );
 
     Drive::with_context(&mock, async move |context| {
+        //
         let transactional = MockTransactional;
 
         Advance::advance(
@@ -266,15 +282,19 @@ async fn process_pending_keeps_stale_image_for_ordered_delete() {
     let snapshot = mock.snapshot();
 
     assert!(!snapshot.users[0].avatar_uploaded);
+
     assert!(snapshot.deleted_image_keys.is_empty());
 }
 
 #[tokio::test]
 async fn process_pending_deletes_missing_resource_image() {
+    //
     let mock = Mock::new();
+
     let visible_at = OffsetDateTime::now_utc();
 
     Drive::with_context(&mock, async move |context| {
+        //
         let transactional = MockTransactional;
 
         Advance::advance(
@@ -319,16 +339,22 @@ async fn process_pending_deletes_missing_resource_image() {
 /// Call this after a usecase has enqueued prom records to exercise
 /// the full deferred-action chain within an integration test.
 pub async fn process_pending(mock: &Mock) -> RegularResult<()> {
+    //
     let snapshot = mock.snapshot();
 
     for record in &snapshot.prom_records {
+        //
         let payload = record.payload();
 
         match record.topic() {
+            //
             IMAGE_TOPIC => {
+                //
                 let Payload::Image(ref task) = payload;
+
                 process_image_task(mock, task).await?;
             }
+
             unknown => {
                 return Err(RegularError::Unrecoverable {
                     message: format!("unknown prom topic in mock: {}", unknown),
@@ -346,12 +372,14 @@ async fn process_image_task(
     task: &ImageTask<'_>,
 ) -> RegularResult<()> {
     match task {
+        //
         ImageTask::CheckUploaded {
             kind,
             resource_id,
             object_key,
             image_version,
         } => match ImagePool::head_object(mock, object_key).await? {
+            //
             true => {
                 process_existing_image(
                     mock,
@@ -362,8 +390,10 @@ async fn process_image_task(
                 )
                 .await
             }
+
             false => Ok(()),
         },
+
         ImageTask::Delete { object_key } => {
             ImagePool::delete_object(mock, object_key).await
         }
@@ -377,7 +407,9 @@ async fn process_existing_image(
     object_key: &str,
     image_version: i64,
 ) -> RegularResult<()> {
+    //
     let mark_result = Drive::with_context(mock, async move |context| {
+        //
         let transactional = MockTransactional;
 
         mark_uploaded(&transactional, context, kind, resource_id, image_version)
@@ -387,13 +419,18 @@ async fn process_existing_image(
     .map_err(|e| e.into());
 
     match mark_result {
+        //
         Ok(()) => Ok(()),
+
         Err(RegularError::Expected { .. }) => {
             match mock_resource_exists(mock, kind, resource_id) {
+                //
                 true => Ok(()),
+
                 false => ImagePool::delete_object(mock, object_key).await,
             }
         }
+
         Err(e) => Err(e),
     }
 }
@@ -406,6 +443,7 @@ async fn mark_uploaded(
     image_version: i64,
 ) -> RegularResult<()> {
     match kind {
+        //
         ImageKind::UserAvatar => {
             Advance::advance(
                 transactional,
@@ -414,6 +452,7 @@ async fn mark_uploaded(
             )
             .await
         }
+
         ImageKind::TeamAvatar => {
             Advance::advance(
                 transactional,
@@ -422,6 +461,7 @@ async fn mark_uploaded(
             )
             .await
         }
+
         ImageKind::ComicCover => {
             Advance::advance(
                 transactional,
@@ -430,6 +470,7 @@ async fn mark_uploaded(
             )
             .await
         }
+
         ImageKind::PageImage => {
             Advance::advance(
                 transactional,
@@ -446,21 +487,26 @@ fn mock_resource_exists(
     kind: ImageKind,
     resource_id: &str,
 ) -> bool {
+    //
     let snapshot = mock.snapshot();
 
     match kind {
+        //
         ImageKind::UserAvatar => snapshot
             .users
             .iter()
             .any(|user_info| user_info.id == resource_id),
+
         ImageKind::TeamAvatar => snapshot
             .teams
             .iter()
             .any(|team_info| team_info.id == resource_id),
+
         ImageKind::ComicCover => snapshot
             .comics
             .iter()
             .any(|comic_info| comic_info.id == resource_id),
+
         ImageKind::PageImage => snapshot
             .pages
             .iter()

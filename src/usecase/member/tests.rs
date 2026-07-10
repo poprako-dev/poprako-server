@@ -138,9 +138,13 @@ fn seed_admin(mock: &Mock) {
 
 #[tokio::test]
 async fn create_admin_creates_member_with_target_user_nickname() {
+    //
     let mock = Mock::new();
+
     seed_admin(&mock);
+
     mock.seed_team(team("team-1"));
+
     mock.seed_user(user("target-user", "Target"), credential("target-user"));
 
     let create_outcome = create(
@@ -150,9 +154,13 @@ async fn create_admin_creates_member_with_target_user_nickname() {
         create_data("target-user", "team-1"),
     )
     .await;
+
     assert!(create_outcome.is_ok());
+
     let created = create_outcome.ok().unwrap();
+
     let snapshot = mock.snapshot();
+
     let created_member_info = snapshot
         .members
         .iter()
@@ -160,8 +168,11 @@ async fn create_admin_creates_member_with_target_user_nickname() {
         .unwrap();
 
     assert_eq!(created_member_info.user_id, "target-user");
+
     assert_eq!(created_member_info.user_nickname, "Target");
+
     assert_eq!(created_member_info.team_id, "team-1");
+
     assert_eq!(
         created_member_info.roles,
         RoleMask::from(RoleField::TRANSLATOR)
@@ -170,7 +181,9 @@ async fn create_admin_creates_member_with_target_user_nickname() {
 
 #[tokio::test]
 async fn create_non_admin_is_rejected() {
+    //
     let mock = Mock::new();
+
     mock.seed_member(member(
         "member-normal",
         "normal-user",
@@ -178,7 +191,9 @@ async fn create_non_admin_is_rejected() {
         "team-1",
         RoleMask::from(RoleField::TRANSLATOR),
     ));
+
     mock.seed_team(team("team-1"));
+
     mock.seed_user(user("target-user", "Target"), credential("target-user"));
 
     let err = create(
@@ -192,15 +207,21 @@ async fn create_non_admin_is_rejected() {
     .unwrap();
 
     assert_expected_variant(err, ExpectedVariant::Perm);
+
     assert_eq!(mock.snapshot().members.len(), 1);
 }
 
 #[tokio::test]
 async fn create_duplicate_member_is_rejected() {
+    //
     let mock = Mock::new();
+
     seed_admin(&mock);
+
     mock.seed_team(team("team-1"));
+
     mock.seed_user(user("target-user", "Target"), credential("target-user"));
+
     mock.seed_member(member(
         "member-target",
         "target-user",
@@ -220,13 +241,17 @@ async fn create_duplicate_member_is_rejected() {
     .unwrap();
 
     assert_expected_variant(err, ExpectedVariant::Args);
+
     assert_eq!(mock.snapshot().members.len(), 2);
 }
 
 #[tokio::test]
 async fn list_infos_member_lists_team_members() {
+    //
     let mock = Mock::new();
+
     seed_admin(&mock);
+
     let mut translator_member_info = member(
         "member-translator",
         "translator-user",
@@ -234,20 +259,27 @@ async fn list_infos_member_lists_team_members() {
         "team-1",
         RoleMask::from(RoleField::TRANSLATOR),
     );
+
     let translator_last_active_at = test_util::now();
 
     translator_member_info.user_last_active_at = translator_last_active_at;
+
     mock.seed_member(translator_member_info);
 
     let member_info_vals =
         list_infos(&mock, &mock, token("admin-user"), list_data("team-1"))
             .await;
+
     assert!(member_info_vals.is_ok());
+
     let member_info_vals = member_info_vals.ok().unwrap();
 
     assert_eq!(member_info_vals.len(), 2);
+
     assert_eq!(member_info_vals[0].id, "member-admin");
+
     assert_eq!(member_info_vals[1].id, "member-translator");
+
     assert_eq!(
         member_info_vals[1].last_active_at,
         translator_last_active_at.to_unix_milli()
@@ -256,8 +288,11 @@ async fn list_infos_member_lists_team_members() {
 
 #[tokio::test]
 async fn list_infos_filters_by_role() {
+    //
     let mock = Mock::new();
+
     seed_admin(&mock);
+
     mock.seed_member(member(
         "member-reviewer",
         "reviewer-user",
@@ -265,6 +300,7 @@ async fn list_infos_filters_by_role() {
         "team-1",
         RoleMask::from(RoleField::REVIEWER),
     ));
+
     mock.seed_member(member(
         "member-translator",
         "translator-user",
@@ -288,17 +324,23 @@ async fn list_infos_filters_by_role() {
         },
     )
     .await;
+
     assert!(member_info_vals.is_ok());
+
     let member_info_vals = member_info_vals.ok().unwrap();
 
     assert_eq!(member_info_vals.len(), 1);
+
     assert_eq!(member_info_vals[0].id, "member-reviewer");
 }
 
 #[tokio::test]
 async fn list_infos_applies_pagination_after_filtering() {
+    //
     let mock = Mock::new();
+
     seed_admin(&mock);
+
     mock.seed_member(member(
         "member-reviewer",
         "reviewer-user",
@@ -306,6 +348,7 @@ async fn list_infos_applies_pagination_after_filtering() {
         "team-1",
         RoleMask::from(RoleField::REVIEWER),
     ));
+
     mock.seed_member(member(
         "member-translator",
         "translator-user",
@@ -329,16 +372,21 @@ async fn list_infos_applies_pagination_after_filtering() {
         },
     )
     .await;
+
     assert!(member_info_vals.is_ok());
+
     let member_info_vals = member_info_vals.ok().unwrap();
 
     assert_eq!(member_info_vals.len(), 1);
+
     assert_eq!(member_info_vals[0].id, "member-reviewer");
 }
 
 #[tokio::test]
 async fn list_infos_owner_lists_own_memberships() {
+    //
     let mock = Mock::new();
+
     mock.seed_member(member(
         "member-one",
         "user-1",
@@ -346,6 +394,7 @@ async fn list_infos_owner_lists_own_memberships() {
         "team-1",
         RoleMask::from(RoleField::TRANSLATOR),
     ));
+
     mock.seed_member(member(
         "member-two",
         "user-1",
@@ -353,6 +402,7 @@ async fn list_infos_owner_lists_own_memberships() {
         "team-2",
         RoleMask::from(RoleField::REVIEWER),
     ));
+
     mock.seed_member(member(
         "member-other",
         "user-2",
@@ -376,17 +426,23 @@ async fn list_infos_owner_lists_own_memberships() {
         },
     )
     .await;
+
     assert!(member_info_vals.is_ok());
+
     let member_info_vals = member_info_vals.ok().unwrap();
 
     assert_eq!(member_info_vals.len(), 2);
+
     assert_eq!(member_info_vals[0].id, "member-one");
+
     assert_eq!(member_info_vals[1].id, "member-two");
 }
 
 #[tokio::test]
 async fn list_infos_non_member_is_rejected() {
+    //
     let mock = Mock::new();
+
     mock.seed_member(member(
         "member-target",
         "target-user",
@@ -406,6 +462,7 @@ async fn list_infos_non_member_is_rejected() {
 
 #[test]
 fn list_infos_rejects_invalid_combination() {
+    //
     let err = TryInto::<MemberListSpec>::try_into(ListMemberInfosData {
         owner_id: Some("user-1".into()),
         team_id: Some("team-1".into()),
@@ -423,6 +480,7 @@ fn list_infos_rejects_invalid_combination() {
 
 #[test]
 fn list_infos_converts_owner_combination_to_mine_spec() {
+    //
     let member_list_spec: MemberListSpec = ListMemberInfosData {
         owner_id: Some("user-1".into()),
         team_id: None,
@@ -447,14 +505,19 @@ fn list_infos_converts_owner_combination_to_mine_spec() {
     };
 
     assert_eq!(owner_id, "user-1");
+
     assert_eq!(offset, 3);
+
     assert_eq!(limit, 5);
 }
 
 #[tokio::test]
 async fn update_roles_admin_updates_member_role_mask() {
+    //
     let mock = Mock::new();
+
     seed_admin(&mock);
+
     mock.seed_member(member(
         "member-target",
         "target-user",
@@ -470,8 +533,11 @@ async fn update_roles_admin_updates_member_role_mask() {
         update_role_data("member-target"),
     )
     .await;
+
     assert!(update_member_role.is_ok());
+
     let snapshot = mock.snapshot();
+
     let member_info = snapshot
         .members
         .iter()
@@ -483,7 +549,9 @@ async fn update_roles_admin_updates_member_role_mask() {
 
 #[tokio::test]
 async fn update_roles_non_admin_is_rejected() {
+    //
     let mock = Mock::new();
+
     mock.seed_member(member(
         "member-normal",
         "normal-user",
@@ -491,6 +559,7 @@ async fn update_roles_non_admin_is_rejected() {
         "team-1",
         RoleMask::from(RoleField::TRANSLATOR),
     ));
+
     mock.seed_member(member(
         "member-target",
         "target-user",
@@ -508,7 +577,9 @@ async fn update_roles_non_admin_is_rejected() {
     .await
     .err()
     .unwrap();
+
     let snapshot = mock.snapshot();
+
     let member_info = snapshot
         .members
         .iter()
@@ -516,12 +587,15 @@ async fn update_roles_non_admin_is_rejected() {
         .unwrap();
 
     assert_expected_variant(err, ExpectedVariant::Perm);
+
     assert_eq!(member_info.roles, RoleMask::from(RoleField::TRANSLATOR));
 }
 
 #[tokio::test]
 async fn update_roles_missing_member_is_rejected() {
+    //
     let mock = Mock::new();
+
     seed_admin(&mock);
 
     let err = update_roles(
@@ -539,8 +613,11 @@ async fn update_roles_missing_member_is_rejected() {
 
 #[tokio::test]
 async fn delete_admin_deletes_member() {
+    //
     let mock = Mock::new();
+
     seed_admin(&mock);
+
     mock.seed_member(member(
         "member-target",
         "target-user",
@@ -551,6 +628,7 @@ async fn delete_admin_deletes_member() {
 
     let delete_member =
         delete(&mock, &mock, token("admin-user"), "member-target".into()).await;
+
     assert!(delete_member.is_ok());
 
     assert!(
@@ -564,7 +642,9 @@ async fn delete_admin_deletes_member() {
 
 #[tokio::test]
 async fn delete_non_admin_is_rejected() {
+    //
     let mock = Mock::new();
+
     mock.seed_member(member(
         "member-normal",
         "normal-user",
@@ -572,6 +652,7 @@ async fn delete_non_admin_is_rejected() {
         "team-1",
         RoleMask::from(RoleField::TRANSLATOR),
     ));
+
     mock.seed_member(member(
         "member-target",
         "target-user",
@@ -587,6 +668,7 @@ async fn delete_non_admin_is_rejected() {
             .unwrap();
 
     assert_expected_variant(err, ExpectedVariant::Perm);
+
     assert!(
         mock.snapshot()
             .members
@@ -597,7 +679,9 @@ async fn delete_non_admin_is_rejected() {
 
 #[tokio::test]
 async fn delete_missing_member_is_rejected() {
+    //
     let mock = Mock::new();
+
     seed_admin(&mock);
 
     let err =
@@ -607,5 +691,6 @@ async fn delete_missing_member_is_rejected() {
             .unwrap();
 
     assert_expected_variant(err, ExpectedVariant::Args);
+
     assert_eq!(mock.snapshot().members.len(), 1);
 }

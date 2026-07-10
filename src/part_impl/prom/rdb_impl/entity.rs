@@ -26,9 +26,13 @@ pub(crate) enum LocalMessageStatus {
 impl LocalMessageStatus {
     pub(crate) fn as_str(self) -> &'static str {
         match self {
+            //
             Self::Pending => "local_message_status:pending",
+
             Self::Processing => "local_message_status:processing",
+
             Self::Completed => "local_message_status:completed",
+
             Self::Dead => "local_message_status:dead",
         }
     }
@@ -36,7 +40,9 @@ impl LocalMessageStatus {
 
 impl ToSql<Text, Pg> for LocalMessageStatus {
     fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Pg>) -> SerializeResult {
+        //
         out.write_all(self.as_str().as_bytes())?;
+
         Ok(IsNull::No)
     }
 }
@@ -62,11 +68,13 @@ impl<'a> LocalMessageEntry<'a> {
         step: &'a Append<'_>,
         now: OffsetDateTime,
     ) -> RegularResult<Self> {
+        //
         let f_payload = serde_json::to_value(&step.payload).map_err(|e| {
             RegularError::Unrecoverable {
                 message: format!("failed to serialize prom payload: {}", e),
             }
         })?;
+
         Ok(Self {
             f_id: step.id,
             f_topic: step.topic,

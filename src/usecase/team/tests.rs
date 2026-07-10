@@ -708,7 +708,9 @@ impl<'a> Advance<MemberDelete<'a>, MockContext> for FailingTeamTransactional {
 
 #[tokio::test]
 async fn create_persists_team_and_returns_info() {
+    //
     let mock = Mock::new();
+
     mock.seed_user(user("user-1", true), credential("user-1"));
 
     let val = create(
@@ -725,15 +727,21 @@ async fn create_persists_team_and_returns_info() {
     .unwrap();
 
     assert_eq!(val.name, "Team");
+
     assert_eq!(val.description, "Desc");
+
     let snapshot = mock.snapshot();
+
     assert_eq!(snapshot.teams.len(), 1);
+
     assert_eq!(snapshot.teams[0].id, val.id);
 }
 
 #[tokio::test]
 async fn create_makes_creator_admin_member() {
+    //
     let mock = Mock::new();
+
     mock.seed_user(user("user-1", true), credential("user-1"));
 
     let val = create(
@@ -750,6 +758,7 @@ async fn create_makes_creator_admin_member() {
     .unwrap();
 
     let snapshot = mock.snapshot();
+
     let member_info = snapshot
         .members
         .iter()
@@ -757,13 +766,17 @@ async fn create_makes_creator_admin_member() {
         .unwrap();
 
     assert_eq!(member_info.user_id, "user-1");
+
     assert!(member_info.roles.has_any_role(&[RoleField::ADMIN]));
 }
 
 #[tokio::test]
 async fn create_propagates_repo_failure() {
+    //
     let repo = FailingCreateRepo;
+
     let drive = Mock::new();
+
     let image = Mock::new();
 
     let err = create(
@@ -785,7 +798,9 @@ async fn create_propagates_repo_failure() {
 
 #[tokio::test]
 async fn get_info_returns_uploaded_avatar_url() {
+    //
     let mock = Mock::new();
+
     mock.seed_team(team_with_avatar(
         "team-1",
         "Team",
@@ -798,6 +813,7 @@ async fn get_info_returns_uploaded_avatar_url() {
     let val = get_info(&mock, &mock, "team-1".into()).await.unwrap();
 
     assert_eq!(val.id, "team-1");
+
     assert_eq!(
         val.avatar_url.as_deref(),
         Some("https://test.local/get/avatar-key")
@@ -806,6 +822,7 @@ async fn get_info_returns_uploaded_avatar_url() {
 
 #[tokio::test]
 async fn get_info_propagates_missing_team() {
+    //
     let mock = Mock::new();
 
     let err = get_info(&mock, &mock, "team-1".into()).await.err().unwrap();
@@ -815,12 +832,19 @@ async fn get_info_propagates_missing_team() {
 
 #[tokio::test]
 async fn list_infos_returns_paged_teams() {
+    //
     let mock = Mock::new();
+
     mock.seed_team(team("team-1", "A", "Desc"));
+
     mock.seed_team(team("team-2", "B", "Desc"));
+
     mock.seed_team(team("team-3", "C", "Desc"));
+
     mock.seed_member(member("member-1", "user-1", "team-2"));
+
     mock.seed_member(member("member-2", "user-1", "team-3"));
+
     mock.seed_member(member("member-3", "user-2", "team-1"));
 
     let val = list_infos(
@@ -833,12 +857,15 @@ async fn list_infos_returns_paged_teams() {
     .unwrap();
 
     assert_eq!(val.len(), 1);
+
     assert_ne!(val[0].id, "team-1");
 }
 
 #[tokio::test]
 async fn list_infos_returns_empty_page_when_offset_exceeds_data() {
+    //
     let mock = Mock::new();
+
     mock.seed_team(team("team-1", "A", "Desc"));
 
     let val = list_infos(
@@ -855,8 +882,11 @@ async fn list_infos_returns_empty_page_when_offset_exceeds_data() {
 
 #[tokio::test]
 async fn list_infos_all_teams_requires_sadmin() {
+    //
     let mock = Mock::new();
+
     mock.seed_team(team("team-1", "A", "Desc"));
+
     mock.seed_user(user("user-1", false), credential("user-1"));
 
     let err = list_infos(&mock, &mock, token("user-1"), list_data(None, 0, 10))
@@ -869,8 +899,11 @@ async fn list_infos_all_teams_requires_sadmin() {
 
 #[tokio::test]
 async fn update_info_updates_team() {
+    //
     let mock = Mock::new();
+
     mock.seed_team(team("team-1", "Old", "Old Desc"));
+
     mock.seed_member(member("member-1", "user-1", "team-1"));
 
     update_info(
@@ -882,13 +915,17 @@ async fn update_info_updates_team() {
     .unwrap();
 
     let snapshot = mock.snapshot();
+
     assert_eq!(snapshot.teams[0].name, "New");
+
     assert_eq!(snapshot.teams[0].description, "New Desc");
 }
 
 #[tokio::test]
 async fn update_info_propagates_missing_team() {
+    //
     let mock = Mock::new();
+
     mock.seed_member(member("member-1", "user-1", "team-1"));
 
     let err = update_info(
@@ -905,8 +942,11 @@ async fn update_info_propagates_missing_team() {
 
 #[tokio::test]
 async fn reserve_avatar_updates_state_enqueues_check_and_returns_put_url() {
+    //
     let mock = Mock::new();
+
     mock.seed_team(team("team-1", "Team", "Desc"));
+
     mock.seed_member(member("member-1", "user-1", "team-1"));
 
     let val = reserve_avatar(
@@ -922,16 +962,19 @@ async fn reserve_avatar_updates_state_enqueues_check_and_returns_put_url() {
     .unwrap();
 
     assert_eq!(val.avatar_version, 1);
+
     assert_eq!(
         val.put_url,
         "https://test.local/put/team_avatar/team-1-1.png"
     );
 
     let snapshot = mock.snapshot();
+
     assert_eq!(
         snapshot.teams[0].avatar_key.as_deref(),
         Some("team_avatar/team-1-1.png")
     );
+
     assert_one_image_check_record(
         &snapshot.prom_records,
         ImageKind::TeamAvatar,
@@ -943,10 +986,13 @@ async fn reserve_avatar_updates_state_enqueues_check_and_returns_put_url() {
 
 #[tokio::test]
 async fn reserve_avatar_replacing_avatar_enqueues_delete_and_check() {
+    //
     let mock = Mock::new();
+
     mock.seed_team(team_with_avatar(
         "team-1", "Team", "Desc", "old-key", true, 1,
     ));
+
     mock.seed_member(member("member-1", "user-1", "team-1"));
 
     reserve_avatar(
@@ -962,7 +1008,9 @@ async fn reserve_avatar_replacing_avatar_enqueues_delete_and_check() {
     .unwrap();
 
     let snapshot = mock.snapshot();
+
     assert_eq!(count_delete_records(&snapshot.prom_records, "old-key"), 1);
+
     assert_one_image_check_record(
         &snapshot.prom_records,
         ImageKind::TeamAvatar,
@@ -974,7 +1022,9 @@ async fn reserve_avatar_replacing_avatar_enqueues_delete_and_check() {
 
 #[tokio::test]
 async fn reserve_avatar_rolls_back_missing_team() {
+    //
     let mock = Mock::new();
+
     mock.seed_member(member("member-1", "user-1", "team-1"));
 
     let err = reserve_avatar(
@@ -991,15 +1041,21 @@ async fn reserve_avatar_rolls_back_missing_team() {
     .unwrap();
 
     assert_expected_variant(err, ExpectedVariant::Args);
+
     let snapshot = mock.snapshot();
+
     assert!(snapshot.teams.is_empty());
+
     assert!(snapshot.prom_records.is_empty());
 }
 
 #[tokio::test]
 async fn reserve_avatar_propagates_put_url_failure_after_commit() {
+    //
     let mock = Mock::new().with_image_put_failure();
+
     mock.seed_team(team("team-1", "Team", "Desc"));
+
     mock.seed_member(member("member-1", "user-1", "team-1"));
 
     let err = reserve_avatar(
@@ -1016,18 +1072,24 @@ async fn reserve_avatar_propagates_put_url_failure_after_commit() {
     .unwrap();
 
     assert_expected_variant(err, ExpectedVariant::Args);
+
     let snapshot = mock.snapshot();
+
     assert_eq!(
         snapshot.teams[0].avatar_key.as_deref(),
         Some("team_avatar/team-1-1.png")
     );
+
     assert_eq!(snapshot.prom_records.len(), 1);
 }
 
 #[tokio::test]
 async fn mark_avatar_uploaded_marks_matching_version() {
+    //
     let mock = Mock::new();
+
     mock.seed_team(team_with_avatar("team-1", "Team", "Desc", "key", false, 2));
+
     mock.seed_member(member("member-1", "user-1", "team-1"));
 
     mark_avatar_uploaded(&mock, token("user-1"), "team-1".into(), mark_data(2))
@@ -1039,8 +1101,11 @@ async fn mark_avatar_uploaded_marks_matching_version() {
 
 #[tokio::test]
 async fn mark_avatar_uploaded_accepts_repeated_matching_version() {
+    //
     let mock = Mock::new();
+
     mock.seed_team(team_with_avatar("team-1", "Team", "Desc", "key", false, 2));
+
     mock.seed_member(member("member-1", "user-1", "team-1"));
 
     let first = mark_avatar_uploaded(
@@ -1050,7 +1115,9 @@ async fn mark_avatar_uploaded_accepts_repeated_matching_version() {
         mark_data(2),
     )
     .await;
+
     assert!(first.is_ok());
+
     let second = mark_avatar_uploaded(
         &mock,
         token("user-1"),
@@ -1058,6 +1125,7 @@ async fn mark_avatar_uploaded_accepts_repeated_matching_version() {
         mark_data(2),
     )
     .await;
+
     assert!(second.is_ok());
 
     assert!(mock.snapshot().teams[0].avatar_uploaded);
@@ -1065,8 +1133,11 @@ async fn mark_avatar_uploaded_accepts_repeated_matching_version() {
 
 #[tokio::test]
 async fn mark_avatar_uploaded_rejects_stale_version() {
+    //
     let mock = Mock::new();
+
     mock.seed_team(team_with_avatar("team-1", "Team", "Desc", "key", false, 2));
+
     mock.seed_member(member("member-1", "user-1", "team-1"));
 
     let err = mark_avatar_uploaded(
@@ -1084,15 +1155,19 @@ async fn mark_avatar_uploaded_rejects_stale_version() {
         ExpectedVariant::Args,
         "error-stale-avatar-upload",
     );
+
     assert!(!mock.snapshot().teams[0].avatar_uploaded);
 }
 
 #[tokio::test]
 async fn mark_avatar_uploaded_rejects_old_reservation_replay() {
+    //
     let mock = Mock::new();
+
     mock.seed_team(team_with_avatar(
         "team-1", "Team", "Desc", "old-key", true, 1,
     ));
+
     mock.seed_member(member("member-1", "user-1", "team-1"));
 
     let reserved = reserve_avatar(
@@ -1107,6 +1182,7 @@ async fn mark_avatar_uploaded_rejects_old_reservation_replay() {
     .await
     .ok()
     .unwrap();
+
     assert_eq!(reserved.avatar_version, 2);
 
     let err = mark_avatar_uploaded(
@@ -1118,6 +1194,7 @@ async fn mark_avatar_uploaded_rejects_old_reservation_replay() {
     .await
     .err()
     .unwrap();
+
     let snapshot = mock.snapshot();
 
     assert_expected_message(
@@ -1125,13 +1202,17 @@ async fn mark_avatar_uploaded_rejects_old_reservation_replay() {
         ExpectedVariant::Args,
         "error-stale-avatar-upload",
     );
+
     assert!(!snapshot.teams[0].avatar_uploaded);
+
     assert_eq!(snapshot.teams[0].avatar_version, 2);
 }
 
 #[tokio::test]
 async fn delete_removes_team_worksets_descendant_comics_and_avatar() {
+    //
     let mock = Mock::new();
+
     mock.seed_team(team_with_avatar(
         "team-1",
         "Team",
@@ -1140,14 +1221,19 @@ async fn delete_removes_team_worksets_descendant_comics_and_avatar() {
         true,
         2,
     ));
+
     mock.seed_member(member("member-1", "user-1", "team-1"));
+
     mock.seed_workset(workset("workset-1", "team-1"));
+
     mock.seed_workset(workset("workset-2", "team-1"));
+
     mock.seed_comic(comic_with_uploaded_cover(
         "comic-1",
         "workset-1",
         "cover-1.png",
     ));
+
     mock.seed_comic(comic_with_uploaded_cover(
         "comic-2",
         "workset-2",
@@ -1159,17 +1245,23 @@ async fn delete_removes_team_worksets_descendant_comics_and_avatar() {
         .unwrap();
 
     let snapshot = mock.snapshot();
+
     assert!(snapshot.teams.is_empty());
+
     assert!(snapshot.worksets.is_empty());
+
     assert!(snapshot.comics.is_empty());
+
     assert_eq!(
         count_delete_records(&snapshot.prom_records, "cover-1.png"),
         1
     );
+
     assert_eq!(
         count_delete_records(&snapshot.prom_records, "cover-2.png"),
         1
     );
+
     assert_eq!(
         count_delete_records(&snapshot.prom_records, "avatar-key"),
         1
@@ -1178,7 +1270,9 @@ async fn delete_removes_team_worksets_descendant_comics_and_avatar() {
 
 #[tokio::test]
 async fn delete_without_uploaded_avatar_does_not_enqueue_prom() {
+    //
     let mock = Mock::new();
+
     mock.seed_team(team_with_avatar(
         "team-1",
         "Team",
@@ -1187,6 +1281,7 @@ async fn delete_without_uploaded_avatar_does_not_enqueue_prom() {
         false,
         2,
     ));
+
     mock.seed_member(member("member-1", "user-1", "team-1"));
 
     delete(&mock, &mock, &mock, token("user-1"), "team-1".into())
@@ -1198,7 +1293,9 @@ async fn delete_without_uploaded_avatar_does_not_enqueue_prom() {
 
 #[tokio::test]
 async fn delete_rolls_back_missing_team() {
+    //
     let mock = Mock::new();
+
     mock.seed_member(member("member-1", "user-1", "team-1"));
 
     let err = delete(&mock, &mock, &mock, token("user-1"), "team-1".into())
@@ -1207,6 +1304,8 @@ async fn delete_rolls_back_missing_team() {
         .unwrap();
 
     assert_expected_variant(err, ExpectedVariant::Args);
+
     assert!(mock.snapshot().teams.is_empty());
+
     assert!(mock.snapshot().prom_records.is_empty());
 }

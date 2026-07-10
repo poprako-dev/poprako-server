@@ -41,16 +41,19 @@ use poprako_server::{
 /// Parses CLI flags, loads configuration, initializes runtime dependencies
 /// (database pool, authentication, image pool, effect dispatcher, Prometheus
 /// collector), wires them into an application harness, and starts the HTTP
-/// server. Pass `--swagger` to print the OpenAPI spec to stdout instead of
+/// server. Pass `--swagger` to print the `OpenAPI` spec to stdout instead of
 /// starting the server.
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    //
     // CLI: --swagger to print swagger.json.
     #[cfg(feature = "swagger-ui")]
     if std::env::args().any(|a| a == "--swagger") {
+        //
         #[allow(clippy::print_stdout)]
         {
             let doc = poprako_server::ApiDoc::openapi();
+
             println!("{}", serde_json::to_string_pretty(&doc)?);
         }
 
@@ -60,6 +63,7 @@ async fn main() -> anyhow::Result<()> {
     dotenvy::dotenv().expect(".env file should be valid");
 
     let _log_guard = if cfg!(debug_assertions) {
+        //
         tracing_subscriber::fmt()
             .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
             .with_span_events(tracing_subscriber::fmt::format::FmtSpan::CLOSE)
@@ -67,6 +71,7 @@ async fn main() -> anyhow::Result<()> {
 
         None
     } else {
+        //
         let log_folder = Path::new("logs");
 
         std::fs::create_dir_all(log_folder)
@@ -96,6 +101,7 @@ async fn main() -> anyhow::Result<()> {
     let drive = RdbDrive::new(core.clone());
 
     let repo = RdbRepo::new(core.clone());
+
     let repo_effect = Arc::new(RdbRepo::new(core.clone()));
 
     let auth = JwtAuth::from_env()?;

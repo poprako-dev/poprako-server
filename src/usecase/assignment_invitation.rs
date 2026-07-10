@@ -343,18 +343,23 @@ where
                 .await?;
 
             let assignment_info = match existing_assignment_info {
+                //
                 Some(existing_assignment_info) => {
+                    //
                     let assignment_role_update = AssignmentComplex::merge_roles(
                         &existing_assignment_info,
                         assignment_invitation_info.roles,
                     );
+
                     repo.advance(
                         context,
                         &AssignmentStep::put_roles(&assignment_role_update),
                     )
                     .await?
                 }
+
                 None => {
+                    //
                     let assignment_form = AssignmentForm {
                         id: AssignmentComplex::gen_id(),
                         chapter_id: assignment_invitation_info
@@ -363,6 +368,7 @@ where
                         user_id: current_user_id,
                         roles: assignment_invitation_info.roles,
                     };
+
                     repo.advance(
                         context,
                         &AssignmentStep::create(&assignment_form),

@@ -7,7 +7,7 @@ use axum::http::StatusCode;
 use tracing::instrument;
 
 use crate::api::http::result::{
-    Accept as _, HttpBody, HttpNoContent, HttpResult, no_content,
+    Accept as _, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
 use crate::data::system_mail::{
@@ -55,6 +55,8 @@ pub async fn mark_read(
     Extension(user_token): Extension<UserToken>,
     Json(data): Json<MarkSystemMailsReadData>,
 ) -> HttpNoContent {
+    //
     usecase::system_mail::mark_read(harn.repo(), user_token, data.ids).await?;
+
     no_content()
 }

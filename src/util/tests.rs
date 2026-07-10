@@ -7,6 +7,7 @@ use super::*;
 
 #[test]
 fn next_snowflake_u64_generates_monotonic_ids() {
+    //
     let first_id = next_snowflake_u64();
 
     let second_id = next_snowflake_u64();
@@ -16,6 +17,7 @@ fn next_snowflake_u64_generates_monotonic_ids() {
 
 #[test]
 fn next_snowflake_id_generates_base62_string() {
+    //
     let snowflake_id = next_snowflake_id();
 
     let parsed = base62::decode(&snowflake_id);
@@ -25,6 +27,7 @@ fn next_snowflake_id_generates_base62_string() {
 
 #[test]
 fn compress_archive_round_trips_payload() {
+    //
     let archive_payload = vec!["comic".to_string(), "chapter".to_string()];
 
     let archived_bytes = compress_archive(&archive_payload).unwrap();
@@ -37,6 +40,7 @@ fn compress_archive_round_trips_payload() {
 
 #[test]
 fn decompress_archive_rejects_damaged_bytes() {
+    //
     let decode_result = decompress_archive::<Vec<String>>(&[1, 2, 3]);
 
     assert!(matches!(

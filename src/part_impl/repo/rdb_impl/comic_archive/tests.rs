@@ -27,18 +27,25 @@ const PREFIX: &str = "rdb-test-comic-archive-domain-";
 
 #[tokio::test]
 async fn comic_archive_roundtrip_reads_test_database_url() {
+    //
     let shared = test_shared::shared().await;
 
     test_shared::reset(&shared, PREFIX).await;
 
     let page_fixture = test_shared::seed_page(&shared, PREFIX).await;
+
     let repo = RdbRepo::new(shared.clone());
+
     let drive = RdbDrive::new(shared.clone());
+
     let transactional_repo = repo.derive_transactional().await;
+
     let source_comic_id = page_fixture.chapter_form.comic_id.clone();
+
     let archiver_id = page_fixture.chapter_form.creator_id.clone();
 
     let (archive_workset_id, workset_comic_count_before) = {
+        //
         let mut conn = shared.get().await.unwrap();
 
         t_workset::table
@@ -54,12 +61,14 @@ async fn comic_archive_roundtrip_reads_test_database_url() {
 
     let comic_archive_write = drive
         .with_context(async |context| {
+            //
             let comic_archive_snapshot = Advance::advance(
                 &transactional_repo,
                 context,
                 &ComicArchiveStep::lock_snapshot(&source_comic_id),
             )
             .await?;
+
             let comic_archive_write = ComicArchiveComplex::build_write(
                 comic_archive_snapshot,
                 archiver_id.clone(),
@@ -80,6 +89,7 @@ async fn comic_archive_roundtrip_reads_test_database_url() {
         .unwrap();
 
     let mut conn = shared.get().await.unwrap();
+
     let (comic_archived_bytes, comic_archiver_id, comic_created_at) =
         t_archived_comic::table
             .filter(
@@ -93,6 +103,7 @@ async fn comic_archive_roundtrip_reads_test_database_url() {
             .first::<(Vec<u8>, String, OffsetDateTime)>(&mut conn)
             .await
             .unwrap();
+
     let chapter_archived_bytes = t_archived_chapter::table
         .filter(
             t_archived_chapter::f_id
@@ -102,6 +113,7 @@ async fn comic_archive_roundtrip_reads_test_database_url() {
         .first::<Vec<u8>>(&mut conn)
         .await
         .unwrap();
+
     let translation_archived_bytes = t_archived_translation::table
         .filter(
             t_archived_translation::f_id
@@ -111,6 +123,7 @@ async fn comic_archive_roundtrip_reads_test_database_url() {
         .first::<Vec<u8>>(&mut conn)
         .await
         .unwrap();
+
     let workset_comic_count_after = t_workset::table
         .filter(t_workset::f_id.eq(&archive_workset_id))
         .select(t_workset::f_comic_count)
@@ -120,30 +133,39 @@ async fn comic_archive_roundtrip_reads_test_database_url() {
 
     let archived_comic_payload: ArchivedComicPayload =
         decompress_archive(&comic_archived_bytes).unwrap();
+
     let archived_chapter_payload: ArchivedChapterPayload =
         decompress_archive(&chapter_archived_bytes).unwrap();
+
     let archived_translation_payload: ArchivedTranslationPayload =
         decompress_archive(&translation_archived_bytes).unwrap();
 
     assert_eq!(comic_archiver_id, archiver_id);
+
     assert_eq!(
         comic_created_at,
         comic_archive_write.comic_record.created_at
     );
+
     assert_eq!(archived_comic_payload.source_comic_id, source_comic_id);
+
     assert_eq!(
         archived_chapter_payload.source_chapter_id,
         page_fixture.chapter_form.id
     );
+
     assert_eq!(
         archived_translation_payload.source_chapter_id,
         page_fixture.chapter_form.id
     );
+
     assert_eq!(archived_translation_payload.pages.len(), 1);
+
     assert_eq!(
         archived_translation_payload.pages[0].source_page_id,
         page_fixture.page_form.id
     );
+
     assert_eq!(
         t_comic::table
             .filter(t_comic::f_id.eq(&source_comic_id))
@@ -153,6 +175,7 @@ async fn comic_archive_roundtrip_reads_test_database_url() {
             .unwrap(),
         0
     );
+
     assert_eq!(
         t_chapter::table
             .filter(t_chapter::f_id.eq(&page_fixture.chapter_form.id))
@@ -162,6 +185,7 @@ async fn comic_archive_roundtrip_reads_test_database_url() {
             .unwrap(),
         0
     );
+
     assert_eq!(
         t_page::table
             .filter(t_page::f_id.eq(&page_fixture.page_form.id))
@@ -171,6 +195,7 @@ async fn comic_archive_roundtrip_reads_test_database_url() {
             .unwrap(),
         0
     );
+
     assert_eq!(workset_comic_count_after, workset_comic_count_before);
 
     diesel::delete(
@@ -182,12 +207,14 @@ async fn comic_archive_roundtrip_reads_test_database_url() {
     .execute(&mut conn)
     .await
     .unwrap();
+
     diesel::delete(t_archived_chapter::table.filter(
         t_archived_chapter::f_id.eq(&comic_archive_write.chapter_records[0].id),
     ))
     .execute(&mut conn)
     .await
     .unwrap();
+
     diesel::delete(t_archived_comic::table.filter(
         t_archived_comic::f_id.eq(&comic_archive_write.comic_record.id),
     ))

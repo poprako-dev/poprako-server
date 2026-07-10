@@ -118,6 +118,7 @@ impl<'a> Execute<ListInfos<'a>> for Mock {
         &self,
         step: &ListInfos<'a>,
     ) -> Result<Vec<AnnouncementInfo>, Self::Error> {
+        //
         let state = self.state.lock().unwrap();
 
         Ok(list_announcements(&state, step.spec))
@@ -216,21 +217,27 @@ fn spec(
 
 #[tokio::test]
 async fn list_infos_filters_sorts_pages_and_includes_user() {
+    //
     let mock = Mock::new();
+
     let time = now();
+
     mock.seed_user(user("user-1"), credential("user-1"));
+
     mock.seed_announcement(announcement(
         "announcement-old",
         "team-1",
         "user-1",
         time,
     ));
+
     mock.seed_announcement(announcement(
         "announcement-new",
         "team-1",
         "user-1",
         time + Duration::seconds(10),
     ));
+
     mock.seed_announcement(announcement(
         "announcement-other-team",
         "team-2",
@@ -249,14 +256,19 @@ async fn list_infos_filters_sorts_pages_and_includes_user() {
         .unwrap();
 
     assert_eq!(announcement_infos.len(), 1);
+
     assert_eq!(announcement_infos[0].id, "announcement-new");
+
     assert_eq!(announcement_infos[0].user.as_ref().unwrap().id, "user-1");
 }
 
 #[tokio::test]
 async fn list_infos_omits_user_without_include() {
+    //
     let mock = Mock::new();
+
     mock.seed_user(user("user-1"), credential("user-1"));
+
     mock.seed_announcement(announcement(
         "announcement-1",
         "team-1",
@@ -275,8 +287,11 @@ async fn list_infos_omits_user_without_include() {
 
 #[tokio::test]
 async fn create_persists_announcement() {
+    //
     let mock = Mock::new();
+
     let announcement_form = form("announcement-1");
+
     let repo = mock.derive_transactional().await;
 
     assert!(
@@ -287,19 +302,24 @@ async fn create_persists_announcement() {
         .await
         .is_ok()
     );
+
     assert_eq!(mock.snapshot().announcements.len(), 1);
 }
 
 #[tokio::test]
 async fn create_rejects_duplicate_id() {
+    //
     let mock = Mock::new();
+
     mock.seed_announcement(announcement(
         "announcement-1",
         "team-1",
         "user-1",
         now(),
     ));
+
     let announcement_form = form("announcement-1");
+
     let repo = mock.derive_transactional().await;
 
     let err = mock
@@ -316,5 +336,6 @@ async fn create_rejects_duplicate_id() {
     };
 
     assert_expected_variant(err, ExpectedVariant::Args);
+
     assert_eq!(mock.snapshot().announcements.len(), 1);
 }

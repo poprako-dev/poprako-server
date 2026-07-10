@@ -8,10 +8,13 @@ const LABEL_PLUS_MATERIAL: &str =
 
 #[test]
 fn parse_label_plus_parses_real_material() {
+    //
     let pages = ChapterImportComplex::parse_label_plus(LABEL_PLUS_MATERIAL);
 
     let pages = match pages {
+        //
         Ok(pages) => pages,
+
         Err(_) => panic!("expected LabelPlus material parse success"),
     };
 
@@ -33,6 +36,7 @@ fn parse_label_plus_parses_real_material() {
 
 #[test]
 fn parse_poprako_preserves_one_based_indexes() {
+    //
     let pages = ChapterImportComplex::parse_poprako(
         r#"{
             "author": "author",
@@ -58,7 +62,9 @@ fn parse_poprako_preserves_one_based_indexes() {
     );
 
     let pages = match pages {
+        //
         Ok(pages) => pages,
+
         Err(_) => panic!("expected PopRaKo parse success"),
     };
 

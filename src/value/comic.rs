@@ -31,8 +31,11 @@ pub enum ComicInclOpt {
 impl InclOpt for ComicInclOpt {
     fn path(self) -> &'static [Self] {
         match self {
+            //
             Self::Workset => &[Self::Workset],
+
             Self::WorksetTeam => &[Self::Workset, Self::WorksetTeam],
+
             Self::Creator => &[Self::Creator],
         }
     }

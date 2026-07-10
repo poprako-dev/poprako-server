@@ -1,16 +1,22 @@
 #!/usr/bin/env -S uv run --script
 # /// script
 # requires-python = ">=3.11"
+# dependencies = [
+#   "tree-sitter>=0.25,<0.26",
+#   "tree-sitter-rust>=0.24,<0.26",
+# ]
 # ///
 
 from __future__ import annotations
 
 import argparse
-import bisect
 import re
 import sys
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
+
+from tree_sitter import Language, Node, Parser
+import tree_sitter_rust
 
 
 IGNORED_DIRS = {
@@ -23,39 +29,12 @@ IGNORED_DIRS = {
     "node_modules",
 }
 
-IGNORED_FILES = {
-    "schema.rs",
+COMMENT_NODE_TYPES = {
+    "line_comment",
+    "block_comment",
 }
 
-
-@dataclass(frozen=True)
-class Statement:
-    start_i: int
-    end_i: int
-    start_line: int
-    start_col: int
-    end_line: int
-    end_col: int
-
-
-@dataclass
-class Block:
-    open_i: int
-    open_line: int
-    open_col: int
-    is_code: bool
-    check_pairs: bool
-    check_start_separator: bool
-    kind: str
-
-    statements: list[Statement] = field(default_factory=list)
-
-    current_start_i: int | None = None
-    current_start_line: int = 0
-    current_start_col: int = 0
-
-    paren_depth: int = 0
-    bracket_depth: int = 0
+BARE_SEPARATOR_RE = re.compile(r"^\s*//\s*$")
 
 
 @dataclass(frozen=True)
@@ -67,636 +46,648 @@ class Diagnostic:
     message: str
 
 
-def is_ident_char(ch: str) -> bool:
-    return ch.isalnum() or ch == "_"
+@dataclass(frozen=True)
+class TextEdit:
+    start_byte: int
+    end_byte: int
+    replacement: bytes
+    code: str
 
 
-def replace_non_newline(chars: list[str], start: int, end: int) -> None:
-    for i in range(start, min(end, len(chars))):
-        if chars[i] != "\n":
-            chars[i] = " "
+@dataclass(frozen=True)
+class FileAnalysis:
+    diagnostics: tuple[Diagnostic, ...]
+    edits: tuple[TextEdit, ...]
+    has_parse_errors: bool
 
 
-def raw_string_at(src: str, i: int) -> tuple[int, int] | None:
-    if i > 0 and is_ident_char(src[i - 1]):
-        return None
+class RustSpacingChecker:
+    def __init__(self) -> None:
+        language = Language(tree_sitter_rust.language())
+        self.parser = Parser(language)
 
-    for prefix in ("br", "rb", "cr", "r"):
-        if not src.startswith(prefix, i):
-            continue
+    def analyze_file(
+        self,
+        path: Path,
+        *,
+        build_fixes: bool = False,
+    ) -> FileAnalysis:
+        source = path.read_bytes()
 
-        j = i + len(prefix)
-        hashes = 0
+        return self.analyze_source(
+            path,
+            source,
+            build_fixes=build_fixes,
+        )
 
-        while j + hashes < len(src) and src[j + hashes] == "#":
-            hashes += 1
+    def analyze_source(
+        self,
+        path: Path,
+        source: bytes,
+        *,
+        build_fixes: bool = False,
+    ) -> FileAnalysis:
+        text = source.decode("utf-8")
+        lines = text.splitlines()
+        line_starts = byte_line_starts(source)
+        newline = detect_newline(source)
 
-        quote_i = j + hashes
+        tree = self.parser.parse(source)
 
-        if quote_i < len(src) and src[quote_i] == '"':
-            return quote_i, hashes
+        # 必须立即收集为 list，避免 Node wrapper 在 generator 迭代期间被 GC。
+        nodes = iter_nodes(tree.root_node)
+
+        parse_diagnostics = self._parse_error_diagnostics(path, nodes)
+        diagnostics = list(parse_diagnostics)
+        edits: list[TextEdit] = []
+
+        for container in nodes:
+            if container.type not in {"block", "match_block"}:
+                continue
+
+            container_diagnostics, container_edits = self._analyze_container(
+                path=path,
+                source=source,
+                lines=lines,
+                line_starts=line_starts,
+                newline=newline,
+                container=container,
+                build_fixes=build_fixes,
+            )
+
+            diagnostics.extend(container_diagnostics)
+            edits.extend(container_edits)
+
+        unique_diagnostics = sorted(
+            set(diagnostics),
+            key=lambda diagnostic: (
+                str(diagnostic.path),
+                diagnostic.line,
+                diagnostic.col,
+                diagnostic.code,
+            ),
+        )
+
+        unique_edits = normalize_edits(edits)
+
+        return FileAnalysis(
+            diagnostics=tuple(unique_diagnostics),
+            edits=tuple(unique_edits),
+            has_parse_errors=bool(parse_diagnostics),
+        )
+
+    def _analyze_container(
+        self,
+        *,
+        path: Path,
+        source: bytes,
+        lines: list[str],
+        line_starts: list[int],
+        newline: bytes,
+        container: Node,
+        build_fixes: bool,
+    ) -> tuple[list[Diagnostic], list[TextEdit]]:
+        units = direct_units(container)
+
+        if not units:
+            return [], []
+
+        brace = opening_brace(container)
+
+        if brace is None:
+            return [], []
+
+        diagnostics: list[Diagnostic] = []
+        edits: list[TextEdit] = []
+
+        separator_rows = separator_rows_before_first(
+            lines=lines,
+            brace=brace,
+            first=units[0],
+        )
+
+        # 多 statement / 多 match arm block：
+        #
+        # if condition {
+        #     //
+        #     statement_1;
+        #
+        #     statement_2;
+        # }
+        #
+        # 如果左花括号独占一行，则不要求 `//`。
+        # 单 statement / 单 arm block 也不要求 `//`。
+        if (
+            len(units) >= 2
+            and not line_is_only_open_brace(lines, brace)
+            and not separator_rows
+        ):
+            first = units[0]
+            kind = unit_kind(container)
+
+            diagnostics.append(
+                Diagnostic(
+                    path=path,
+                    line=first.start_point.row + 1,
+                    col=first.start_point.column + 1,
+                    code="BLK000",
+                    message=(
+                        f"multi-{kind} block whose opening brace is not on its "
+                        f"own line requires a bare `//` separator before its "
+                        f"first {kind}"
+                    ),
+                )
+            )
+
+            if build_fixes:
+                edit = build_block_start_separator_edit(
+                    source=source,
+                    lines=lines,
+                    line_starts=line_starts,
+                    newline=newline,
+                    brace=brace,
+                    first=first,
+                )
+
+                if edit is not None:
+                    edits.append(edit)
+
+        # 删除在“单 statement block 豁免”加入之前产生的错误 fix：
+        #
+        # if condition {
+        #     //
+        #     return;
+        # }
+        if len(units) == 1 and separator_rows:
+            diagnostics.append(
+                Diagnostic(
+                    path=path,
+                    line=separator_rows[0] + 1,
+                    col=1,
+                    code="BLK002",
+                    message=(
+                        "bare `//` block-start separator is redundant in a "
+                        "single-statement block"
+                    ),
+                )
+            )
+
+            if build_fixes:
+                edits.extend(
+                    build_redundant_separator_edits(
+                        lines=lines,
+                        line_starts=line_starts,
+                        brace=brace,
+                        first=units[0],
+                        separator_rows=separator_rows,
+                    )
+                )
+
+        # 同一 block 内任意两个直接 statement 之间必须有空行。
+        # 同一 match block 内任意两个 match arm 之间也必须有空行。
+        for previous, current in zip(units, units[1:]):
+            if has_blank_line_between(lines, previous, current):
+                continue
+
+            kind = unit_kind(container)
+
+            diagnostics.append(
+                Diagnostic(
+                    path=path,
+                    line=current.start_point.row + 1,
+                    col=current.start_point.column + 1,
+                    code="BLK001",
+                    message=(
+                        f"missing blank line before this {kind}; previous "
+                        f"{kind} ended at line {previous.end_point.row + 1}"
+                    ),
+                )
+            )
+
+            if build_fixes:
+                edit = build_blank_line_edit(
+                    source=source,
+                    line_starts=line_starts,
+                    newline=newline,
+                    container=container,
+                    previous=previous,
+                    current=current,
+                )
+
+                if edit is not None:
+                    edits.append(edit)
+
+        return diagnostics, edits
+
+    @staticmethod
+    def _parse_error_diagnostics(
+        path: Path,
+        nodes: list[Node],
+    ) -> list[Diagnostic]:
+        diagnostics: list[Diagnostic] = []
+
+        for node in nodes:
+            if node.type != "ERROR" and not node.is_missing:
+                continue
+
+            diagnostics.append(
+                Diagnostic(
+                    path=path,
+                    line=node.start_point.row + 1,
+                    col=node.start_point.column + 1,
+                    code="PARSE001",
+                    message=(
+                        f"Rust syntax tree contains {node.type!r}; spacing "
+                        "results near this location may be incomplete"
+                    ),
+                )
+            )
+
+        return diagnostics
+
+
+def iter_nodes(root: Node) -> list[Node]:
+    """
+    立即将所有 Node 收集到 list。
+
+    不要改成 generator。tree-sitter Python binding 的 Node wrapper
+    在 generator 迭代和 GC 交错时可能发生生命周期问题。
+    """
+    result: list[Node] = []
+    stack = [root]
+
+    while stack:
+        node = stack.pop()
+        result.append(node)
+
+        # 这里也立即读取 children，避免后续访问已失效 wrapper。
+        children = list(node.children)
+        stack.extend(reversed(children))
+
+    return result
+
+
+def direct_units(container: Node) -> list[Node]:
+    if container.type == "match_block":
+        return [
+            child for child in container.named_children if child.type == "match_arm"
+        ]
+
+    if container.type == "block":
+        return [
+            child
+            for child in container.named_children
+            if child.type not in COMMENT_NODE_TYPES
+        ]
+
+    return []
+
+
+def unit_kind(container: Node) -> str:
+    if container.type == "match_block":
+        return "match arm"
+
+    return "statement"
+
+
+def opening_brace(container: Node) -> Node | None:
+    for child in container.children:
+        if child.type == "{":
+            return child
 
     return None
 
 
-def sanitize(src: str) -> str:
-    chars = list(src)
-    i = 0
-    n = len(src)
+def line_is_only_open_brace(
+    lines: list[str],
+    brace: Node,
+) -> bool:
+    row = brace.start_point.row
 
-    while i < n:
-        raw = raw_string_at(src, i)
+    return 0 <= row < len(lines) and lines[row].strip() == "{"
 
-        if raw is not None:
-            quote_i, hashes = raw
-            end_pat = '"' + ("#" * hashes)
-            j = quote_i + 1
-            end = n
 
-            while j < n:
-                if src.startswith(end_pat, j):
-                    end = j + len(end_pat)
-                    break
+def has_blank_line_between(
+    lines: list[str],
+    previous: Node,
+    current: Node,
+) -> bool:
+    start_row = previous.end_point.row + 1
+    end_row = min(current.start_point.row, len(lines))
 
-                j += 1
+    return any(lines[row].strip() == "" for row in range(start_row, end_row))
 
-            replace_non_newline(chars, i, end)
-            i = end
+
+def separator_rows_before_first(
+    *,
+    lines: list[str],
+    brace: Node,
+    first: Node,
+) -> list[int]:
+    start_row = brace.start_point.row + 1
+    end_row = min(first.start_point.row, len(lines))
+
+    return [
+        row
+        for row in range(start_row, end_row)
+        if BARE_SEPARATOR_RE.fullmatch(lines[row]) is not None
+    ]
+
+
+def direct_comments_between(
+    container: Node,
+    previous: Node,
+    current: Node,
+) -> list[Node]:
+    return [
+        child
+        for child in container.named_children
+        if (
+            child.type in COMMENT_NODE_TYPES
+            and child.start_byte >= previous.end_byte
+            and child.end_byte <= current.start_byte
+            and child.start_point.row > previous.end_point.row
+        )
+    ]
+
+
+def build_block_start_separator_edit(
+    *,
+    source: bytes,
+    lines: list[str],
+    line_starts: list[int],
+    newline: bytes,
+    brace: Node,
+    first: Node,
+) -> TextEdit | None:
+    del lines
+
+    indent = indentation_bytes(
+        source,
+        line_starts,
+        first,
+    )
+
+    # 常见形式：
+    #
+    # if condition {
+    #     first_statement;
+    # }
+    #
+    # 在 first statement 所在行之前插入 `//`。
+    if first.start_point.row > brace.start_point.row:
+        insertion_row = brace.start_point.row + 1
+
+        if insertion_row >= len(line_starts):
+            return None
+
+        return TextEdit(
+            start_byte=line_starts[insertion_row],
+            end_byte=line_starts[insertion_row],
+            replacement=indent + b"//" + newline,
+            code="BLK000",
+        )
+
+    # 极端内联形式：
+    #
+    # if condition { first_statement; second_statement; }
+    gap = source[brace.end_byte : first.start_byte]
+
+    if gap.strip():
+        return None
+
+    return TextEdit(
+        start_byte=brace.end_byte,
+        end_byte=first.start_byte,
+        replacement=(newline + indent + b"//" + newline + indent),
+        code="BLK000",
+    )
+
+
+def build_blank_line_edit(
+    *,
+    source: bytes,
+    line_starts: list[int],
+    newline: bytes,
+    container: Node,
+    previous: Node,
+    current: Node,
+) -> TextEdit | None:
+    comments = direct_comments_between(
+        container,
+        previous,
+        current,
+    )
+
+    # 若两个 statement 之间存在说明性注释，空行应插到注释之前，
+    # 使注释继续归属于后一个 statement。
+    anchor = min(comments, key=lambda node: node.start_byte) if comments else current
+
+    # 常见多行形式：直接在 anchor 所在行前插入一个换行。
+    if anchor.start_point.row > previous.end_point.row:
+        row = anchor.start_point.row
+
+        if row >= len(line_starts):
+            return None
+
+        return TextEdit(
+            start_byte=line_starts[row],
+            end_byte=line_starts[row],
+            replacement=newline,
+            code="BLK001",
+        )
+
+    # 同行多个 statement：
+    #
+    # let a = 1; let b = 2;
+    gap = source[previous.end_byte : anchor.start_byte]
+
+    if gap.strip():
+        return None
+
+    indent = indentation_bytes(
+        source,
+        line_starts,
+        anchor,
+    )
+
+    return TextEdit(
+        start_byte=previous.end_byte,
+        end_byte=anchor.start_byte,
+        replacement=newline + newline + indent,
+        code="BLK001",
+    )
+
+
+def build_redundant_separator_edits(
+    *,
+    lines: list[str],
+    line_starts: list[int],
+    brace: Node,
+    first: Node,
+    separator_rows: list[int],
+) -> list[TextEdit]:
+    region_rows = list(
+        range(
+            brace.start_point.row + 1,
+            min(first.start_point.row, len(lines)),
+        )
+    )
+
+    separator_set = set(separator_rows)
+
+    remaining_rows = [row for row in region_rows if row not in separator_set]
+
+    # 如果 `{` 与首 statement 之间只有空行和裸 `//`，
+    # 则全部删除，恢复普通单 statement block。
+    if all(lines[row].strip() == "" for row in remaining_rows):
+        rows_to_remove = region_rows
+    else:
+        # 如果还存在真实注释，只删除裸 `//`。
+        rows_to_remove = separator_rows
+
+    edits: list[TextEdit] = []
+
+    for start_row, end_row in contiguous_ranges(rows_to_remove):
+        start_byte = line_starts[start_row]
+
+        if end_row + 1 < len(line_starts):
+            end_byte = line_starts[end_row + 1]
+        else:
+            end_byte = start_byte + len(lines[end_row].encode("utf-8"))
+
+        edits.append(
+            TextEdit(
+                start_byte=start_byte,
+                end_byte=end_byte,
+                replacement=b"",
+                code="BLK002",
+            )
+        )
+
+    return edits
+
+
+def contiguous_ranges(
+    rows: list[int],
+) -> list[tuple[int, int]]:
+    if not rows:
+        return []
+
+    sorted_rows = sorted(set(rows))
+
+    result: list[tuple[int, int]] = []
+    start = sorted_rows[0]
+    end = start
+
+    for row in sorted_rows[1:]:
+        if row == end + 1:
+            end = row
             continue
 
-        if src.startswith("//", i):
-            j = src.find("\n", i)
+        result.append((start, end))
+        start = row
+        end = row
 
-            if j == -1:
-                j = n
+    result.append((start, end))
 
-            replace_non_newline(chars, i, j)
-            i = j
-            continue
-
-        if src.startswith("/*", i):
-            depth = 1
-            j = i + 2
-
-            while j < n and depth > 0:
-                if src.startswith("/*", j):
-                    depth += 1
-                    j += 2
-                elif src.startswith("*/", j):
-                    depth -= 1
-                    j += 2
-                else:
-                    j += 1
-
-            replace_non_newline(chars, i, j)
-            i = j
-            continue
-
-        ch = src[i]
-
-        if ch == '"':
-            j = i + 1
-            escaped = False
-
-            while j < n:
-                c = src[j]
-
-                if c == "\n" and not escaped:
-                    break
-
-                if escaped:
-                    escaped = False
-                elif c == "\\":
-                    escaped = True
-                elif c == '"':
-                    j += 1
-                    break
-
-                j += 1
-
-            replace_non_newline(chars, i, j)
-            i = j
-            continue
-
-        if ch == "'" and i + 1 < n:
-            if src[i + 1].isalpha() or src[i + 1] == "_":
-                j = i + 2
-
-                while j < n and is_ident_char(src[j]):
-                    j += 1
-
-                if j >= n or src[j] != "'":
-                    i += 1
-                    continue
-
-            j = i + 1
-            escaped = False
-
-            while j < n:
-                c = src[j]
-
-                if c == "\n" and not escaped:
-                    break
-
-                if escaped:
-                    escaped = False
-                elif c == "\\":
-                    escaped = True
-                elif c == "'":
-                    j += 1
-                    break
-
-                j += 1
-
-            if j > i + 1:
-                replace_non_newline(chars, i, j)
-                i = j
-                continue
-
-        i += 1
-
-    return "".join(chars)
+    return result
 
 
-def make_line_starts(src: str) -> list[int]:
+def indentation_bytes(
+    source: bytes,
+    line_starts: list[int],
+    node: Node,
+) -> bytes:
+    row = node.start_point.row
+
+    if row >= len(line_starts):
+        return b""
+
+    line_start = line_starts[row]
+
+    return source[line_start : node.start_byte]
+
+
+def byte_line_starts(source: bytes) -> list[int]:
     starts = [0]
 
-    for i, ch in enumerate(src):
-        if ch == "\n":
-            starts.append(i + 1)
+    for index, byte in enumerate(source):
+        if byte == 0x0A:
+            starts.append(index + 1)
 
     return starts
 
 
-def pos_to_line_col(line_starts: list[int], i: int) -> tuple[int, int]:
-    if i < 0:
-        i = 0
+def detect_newline(source: bytes) -> bytes:
+    first_lf = source.find(b"\n")
 
-    line = bisect.bisect_right(line_starts, i)
-    col = i - line_starts[line - 1] + 1
+    if first_lf > 0 and source[first_lf - 1 : first_lf + 1] == b"\r\n":
+        return b"\r\n"
 
-    return line, col
-
-
-def prev_non_ws(src: str, i: int) -> int:
-    j = i
-
-    while j >= 0 and src[j].isspace():
-        j -= 1
-
-    return j
+    return b"\n"
 
 
-def skip_ws(src: str, i: int) -> int:
-    while i < len(src) and src[i].isspace():
-        i += 1
+def normalize_edits(
+    edits: list[TextEdit],
+) -> list[TextEdit]:
+    unique = {
+        (
+            edit.start_byte,
+            edit.end_byte,
+            edit.replacement,
+            edit.code,
+        ): edit
+        for edit in edits
+    }
 
-    return i
-
-
-def prev_token(src: str, i: int) -> str:
-    j = prev_non_ws(src, i - 1)
-
-    if j < 0:
-        return ""
-
-    ch = src[j]
-
-    if is_ident_char(ch):
-        k = j
-
-        while k >= 0 and is_ident_char(src[k]):
-            k -= 1
-
-        return src[k + 1 : j + 1]
-
-    if ch == ">" and j > 0 and src[j - 1] == "=":
-        return "=>"
-
-    if ch == ":" and j > 0 and src[j - 1] == ":":
-        return "::"
-
-    return ch
-
-
-def next_token(src: str, i: int) -> str:
-    j = skip_ws(src, i)
-
-    if j >= len(src):
-        return ""
-
-    ch = src[j]
-
-    if is_ident_char(ch):
-        k = j
-
-        while k < len(src) and is_ident_char(src[k]):
-            k += 1
-
-        return src[j:k]
-
-    if ch == "=" and j + 1 < len(src) and src[j + 1] == ">":
-        return "=>"
-
-    if ch == ":" and j + 1 < len(src) and src[j + 1] == ":":
-        return "::"
-
-    return ch
-
-
-def normalized_prefix(prefix: str) -> str:
-    s = prefix.lstrip()
-    s = re.sub(r"^pub(?:\s*\([^)]*\))?\s+", "", s)
-    s = re.sub(r"^async\s+", "", s)
-    s = re.sub(r"^unsafe\s+", "", s)
-    s = re.sub(r"^const\s+", "", s)
-
-    return s
-
-
-def first_word(prefix: str) -> str:
-    s = normalized_prefix(prefix)
-    m = re.match(r"([A-Za-z_]\w*)\b", s)
-
-    return m.group(1) if m else ""
-
-
-def looks_like_closure_prefix(prefix: str) -> bool:
-    return re.search(r"\|[^|{};]*\|\s*$", prefix[-360:]) is not None
-
-
-def looks_like_async_block(prefix: str) -> bool:
-    return re.search(r"\basync\s+(?:move\s+)?$", prefix[-120:]) is not None
-
-
-def line_has_only_open_brace(src: str, line_no: int) -> bool:
-    lines = src.splitlines()
-
-    if line_no < 1 or line_no > len(lines):
-        return False
-
-    return lines[line_no - 1].strip() == "{"
-
-
-def classify_open_brace(
-    clean: str, i: int, parent: Block
-) -> tuple[bool, bool, bool, str]:
-    prefix = (
-        clean[parent.current_start_i : i] if parent.current_start_i is not None else ""
+    result = sorted(
+        unique.values(),
+        key=lambda edit: (
+            edit.start_byte,
+            edit.end_byte,
+            edit.code,
+            edit.replacement,
+        ),
     )
-    fw = first_word(prefix)
-    prev = prev_token(clean, i)
 
-    if fw == "fn":
-        return True, True, True, "fn_body"
+    previous: TextEdit | None = None
 
-    if fw in {"impl", "trait", "mod", "extern"}:
-        return True, False, False, "item_body"
+    for edit in result:
+        if previous is not None and edit.start_byte < previous.end_byte:
+            raise ValueError(
+                "overlapping automatic spacing fixes were generated: "
+                f"{previous} and {edit}"
+            )
 
-    if fw == "match":
-        return True, True, True, "match_body"
+        previous = edit
 
-    if fw in {"if", "else", "for", "while", "loop", "unsafe"} or prev == "else":
-        return True, True, True, "control_body"
+    return result
 
-    if (
-        looks_like_closure_prefix(prefix)
-        or looks_like_async_block(prefix)
-        or prev == "|"
+
+def apply_edits(
+    source: bytes,
+    edits: tuple[TextEdit, ...],
+) -> bytes:
+    result = source
+
+    # 必须按 byte offset 倒序修改，避免前面的插入改变后续 offset。
+    for edit in sorted(
+        edits,
+        key=lambda item: (
+            item.start_byte,
+            item.end_byte,
+        ),
+        reverse=True,
     ):
-        return True, True, True, "closure_body"
+        result = result[: edit.start_byte] + edit.replacement + result[edit.end_byte :]
 
-    if prev == "=>":
-        return True, True, True, "arm_block_body"
+    return result
 
-    if prefix.strip() == "":
-        return True, True, True, "block_expr"
 
-    return False, False, False, "literal"
-
-
-def control_block_continues(clean: str, after_close_i: int) -> bool:
-    tok = next_token(clean, after_close_i)
-
-    if tok in {"else", ".", "?", ";", ",", ")", "]", "=>"}:
-        return True
-
-    if tok in {"+", "-", "*", "/", "%", "&", "|", "^", "<", ">", "=", ":"}:
-        return True
-
-    return False
-
-
-def match_arm_continues(clean: str, after_close_i: int) -> bool:
-    tok = next_token(clean, after_close_i)
-
-    if tok in {",", ".", "?", ";", ")", "]"}:
-        return True
-
-    if tok in {"+", "-", "*", "/", "%", "&", "|", "^", "<", ">", "=", ":"}:
-        return True
-
-    if tok in {"as"}:
-        return True
-
-    return False
-
-
-def start_statement(block: Block, i: int, line_starts: list[int]) -> None:
-    if block.current_start_i is not None:
-        return
-
-    line, col = pos_to_line_col(line_starts, i)
-
-    block.current_start_i = i
-    block.current_start_line = line
-    block.current_start_col = col
-
-
-def add_statement(block: Block, clean: str, line_starts: list[int], end_i: int) -> None:
-    if block.current_start_i is None:
-        return
-
-    real_end_i = prev_non_ws(clean, end_i)
-
-    if real_end_i < block.current_start_i:
-        block.current_start_i = None
-        return
-
-    raw = clean[block.current_start_i : real_end_i + 1].strip()
-
-    if raw:
-        end_line, end_col = pos_to_line_col(line_starts, real_end_i)
-
-        block.statements.append(
-            Statement(
-                start_i=block.current_start_i,
-                end_i=real_end_i,
-                start_line=block.current_start_line,
-                start_col=block.current_start_col,
-                end_line=end_line,
-                end_col=end_col,
-            )
-        )
-
-    block.current_start_i = None
-    block.current_start_line = 0
-    block.current_start_col = 0
-    block.paren_depth = 0
-    block.bracket_depth = 0
-
-
-def parse_blocks(src: str) -> tuple[list[Block], str]:
-    clean = sanitize(src)
-    line_starts = make_line_starts(src)
-
-    root = Block(
-        open_i=0,
-        open_line=1,
-        open_col=1,
-        is_code=True,
-        check_pairs=True,
-        check_start_separator=False,
-        kind="root",
-    )
-
-    stack: list[Block] = [root]
-    closed: list[Block] = []
-    i = 0
-
-    while i < len(clean):
-        ch = clean[i]
-        top = stack[-1]
-
-        if not top.is_code:
-            if ch == "{":
-                line, col = pos_to_line_col(line_starts, i)
-
-                stack.append(
-                    Block(
-                        open_i=i,
-                        open_line=line,
-                        open_col=col,
-                        is_code=False,
-                        check_pairs=False,
-                        check_start_separator=False,
-                        kind="literal",
-                    )
-                )
-            elif ch == "}":
-                closed.append(stack.pop())
-
-            i += 1
-            continue
-
-        if ch.isspace():
-            i += 1
-            continue
-
-        if ch == "}":
-            if top.kind == "match_body":
-                add_statement(top, clean, line_starts, i - 1)
-            else:
-                add_statement(top, clean, line_starts, i - 1)
-
-            popped = stack.pop()
-            closed.append(popped)
-
-            if stack:
-                parent = stack[-1]
-
-                if parent.is_code and parent.current_start_i is not None:
-                    if parent.kind == "match_body":
-                        if not match_arm_continues(clean, i + 1):
-                            add_statement(parent, clean, line_starts, i)
-                    elif popped.kind in {
-                        "control_body",
-                        "match_body",
-                        "arm_block_body",
-                        "block_expr",
-                        "closure_body",
-                    }:
-                        if not control_block_continues(clean, i + 1):
-                            add_statement(parent, clean, line_starts, i)
-                    elif popped.kind in {"fn_body", "item_body"}:
-                        add_statement(parent, clean, line_starts, i)
-
-            i += 1
-            continue
-
-        if ch not in {";", ","}:
-            start_statement(top, i, line_starts)
-
-        if ch == "{":
-            is_code, check_pairs, check_start_separator, kind = classify_open_brace(
-                clean, i, top
-            )
-            line, col = pos_to_line_col(line_starts, i)
-
-            stack.append(
-                Block(
-                    open_i=i,
-                    open_line=line,
-                    open_col=col,
-                    is_code=is_code,
-                    check_pairs=check_pairs,
-                    check_start_separator=check_start_separator,
-                    kind=kind,
-                )
-            )
-
-            i += 1
-            continue
-
-        if ch == "(":
-            top.paren_depth += 1
-        elif ch == ")":
-            if top.paren_depth > 0:
-                top.paren_depth -= 1
-        elif ch == "[":
-            top.bracket_depth += 1
-        elif ch == "]":
-            if top.bracket_depth > 0:
-                top.bracket_depth -= 1
-        elif ch == ";" and top.paren_depth == 0 and top.bracket_depth == 0:
-            add_statement(top, clean, line_starts, i)
-        elif (
-            ch == ","
-            and top.kind == "match_body"
-            and top.paren_depth == 0
-            and top.bracket_depth == 0
-        ):
-            add_statement(top, clean, line_starts, i)
-
-        i += 1
-
-    end_i = prev_non_ws(clean, len(clean) - 1)
-
-    while stack:
-        top = stack.pop()
-        add_statement(top, clean, line_starts, end_i)
-        closed.append(top)
-
-    return closed, clean
-
-
-def count_blank_lines_between(
-    lines: list[str], prev_end_line: int, next_start_line: int
-) -> int:
-    count = 0
-
-    for idx in range(prev_end_line, next_start_line - 1):
-        if 0 <= idx < len(lines) and lines[idx].strip() == "":
-            count += 1
-
-    return count
-
-
-def has_line_comment_between(lines: list[str], start_line: int, end_line: int) -> bool:
-    for line_no in range(start_line, end_line + 1):
-        if line_no < 1 or line_no > len(lines):
-            continue
-
-        stripped = lines[line_no - 1].strip()
-
-        if stripped.startswith("//"):
-            return True
-
-    return False
-
-
-def statement_clean(clean: str, statement: Statement) -> str:
-    return clean[statement.start_i : statement.end_i + 1].strip()
-
-
-def is_root_itemish(clean: str, statement: Statement) -> bool:
-    s = statement_clean(clean, statement)
-
-    return (
-        re.match(
-            r"(#!?\[|"
-            r"use\b|pub\s+use\b|"
-            r"mod\b|pub\s+mod\b|"
-            r"fn\b|pub\s+(?:async\s+)?fn\b|"
-            r"impl\b|trait\b|pub\s+trait\b|"
-            r"struct\b|pub\s+struct\b|"
-            r"enum\b|pub\s+enum\b|"
-            r"type\b|pub\s+type\b|"
-            r"const\b|pub\s+const\b|"
-            r"static\b|pub\s+static\b)",
-            s,
-        )
-        is not None
-    )
-
-
-def analyze_file(path: Path) -> list[Diagnostic]:
-    src = path.read_text(encoding="utf-8")
-    lines = src.splitlines()
-
-    blocks, clean = parse_blocks(src)
-    diagnostics: list[Diagnostic] = []
-
-    for block in blocks:
-        # 单 statement block 不要求加 block-start `//` 隔离符。
-        if block.check_start_separator and len(block.statements) >= 2:
-            first = block.statements[0]
-
-            if not line_has_only_open_brace(src, block.open_line):
-                has_separator = has_line_comment_between(
-                    lines,
-                    block.open_line + 1,
-                    first.start_line - 1,
-                )
-
-                if not has_separator:
-                    diagnostics.append(
-                        Diagnostic(
-                            path=path,
-                            line=first.start_line,
-                            col=first.start_col,
-                            code="BLK000",
-                            message=(
-                                "missing block-start separator comment before the first statement; "
-                                "when the opening brace is not on its own line and the block has multiple statements, "
-                                "put a `//` line before the first statement"
-                            ),
-                        )
-                    )
-
-        if not block.check_pairs:
-            continue
-
-        for prev, curr in zip(block.statements, block.statements[1:]):
-            if (
-                block.kind == "root"
-                and is_root_itemish(clean, prev)
-                and is_root_itemish(clean, curr)
-            ):
-                continue
-
-            blank_count = count_blank_lines_between(
-                lines, prev.end_line, curr.start_line
-            )
-
-            if blank_count == 0:
-                diagnostics.append(
-                    Diagnostic(
-                        path=path,
-                        line=curr.start_line,
-                        col=curr.start_col,
-                        code="BLK001",
-                        message=(
-                            "missing blank line before this statement or match arm; "
-                            f"previous statement ended at line {prev.end_line}"
-                        ),
-                    )
-                )
-
-    return sorted(diagnostics, key=lambda d: (str(d.path), d.line, d.col, d.code))
-
-
-def iter_rs_files(paths: list[Path]) -> list[Path]:
+def iter_rs_files(
+    paths: list[Path],
+) -> list[Path]:
     files: list[Path] = []
 
     for path in paths:
@@ -713,17 +704,39 @@ def iter_rs_files(paths: list[Path]) -> list[Path]:
             if any(part in IGNORED_DIRS for part in child.parts):
                 continue
 
-            if child.name in IGNORED_FILES:
-                continue
-
             files.append(child)
 
     return sorted(set(files))
 
 
+def print_diagnostics(
+    diagnostics: list[Diagnostic],
+) -> None:
+    diagnostics.sort(
+        key=lambda diagnostic: (
+            str(diagnostic.path),
+            diagnostic.line,
+            diagnostic.col,
+            diagnostic.code,
+        )
+    )
+
+    for diagnostic in diagnostics:
+        print(
+            f"{diagnostic.path}:"
+            f"{diagnostic.line}:"
+            f"{diagnostic.col}: "
+            f"{diagnostic.code}: "
+            f"{diagnostic.message}"
+        )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Check custom Rust blank-line rules between statements and match arms."
+        description=(
+            "Check and automatically fix custom Rust spacing rules "
+            "between direct block statements and match arms."
+        )
     )
 
     parser.add_argument(
@@ -731,26 +744,146 @@ def main() -> int:
         nargs="*",
         type=Path,
         default=[Path(".")],
-        help="Rust files or directories. Defaults to current directory.",
+        help=("Rust files or directories. Defaults to the current directory."),
+    )
+
+    parser.add_argument(
+        "--fix",
+        action="store_true",
+        help=(
+            "Apply BLK000, BLK001, and BLK002 fixes in place, "
+            "then run the checker again. Files containing Rust "
+            "parse errors are not changed."
+        ),
     )
 
     args = parser.parse_args()
-    diagnostics: list[Diagnostic] = []
 
-    for path in iter_rs_files(args.paths):
+    checker = RustSpacingChecker()
+    files = iter_rs_files(args.paths)
+
+    if not args.fix:
+        diagnostics: list[Diagnostic] = []
+
+        for path in files:
+            try:
+                analysis = checker.analyze_file(path)
+                diagnostics.extend(analysis.diagnostics)
+            except UnicodeDecodeError as error:
+                print(
+                    f"{path}: failed to decode as UTF-8: {error}",
+                    file=sys.stderr,
+                )
+
+                return 2
+            except OSError as error:
+                print(
+                    f"{path}: failed to read file: {error}",
+                    file=sys.stderr,
+                )
+
+                return 2
+
+        print_diagnostics(diagnostics)
+
+        return 1 if diagnostics else 0
+
+    changed_files = 0
+    applied_edits = 0
+    skipped_parse_error_files = 0
+
+    for path in files:
         try:
-            diagnostics.extend(analyze_file(path))
-        except OSError as err:
-            print(f"{path}: failed to read file: {err}", file=sys.stderr)
+            source = path.read_bytes()
+
+            analysis = checker.analyze_source(
+                path,
+                source,
+                build_fixes=True,
+            )
+        except UnicodeDecodeError as error:
+            print(
+                f"{path}: failed to decode as UTF-8: {error}",
+                file=sys.stderr,
+            )
+
             return 2
-        except UnicodeDecodeError as err:
-            print(f"{path}: failed to read as utf-8: {err}", file=sys.stderr)
+        except OSError as error:
+            print(
+                f"{path}: failed to read file: {error}",
+                file=sys.stderr,
+            )
+
+            return 2
+        except ValueError as error:
+            print(
+                f"{path}: failed to build fixes: {error}",
+                file=sys.stderr,
+            )
+
             return 2
 
-    for diag in sorted(diagnostics, key=lambda d: (str(d.path), d.line, d.col, d.code)):
-        print(f"{diag.path}:{diag.line}:{diag.col}: {diag.code}: {diag.message}")
+        # AST 有语法错误时不自动修改，防止节点范围不完整导致误修。
+        if analysis.has_parse_errors:
+            skipped_parse_error_files += 1
+            continue
 
-    return 1 if diagnostics else 0
+        if not analysis.edits:
+            continue
+
+        fixed_source = apply_edits(
+            source,
+            analysis.edits,
+        )
+
+        if fixed_source == source:
+            continue
+
+        path.write_bytes(fixed_source)
+
+        changed_files += 1
+        applied_edits += len(analysis.edits)
+
+    # 自动修复后重新扫描。
+    remaining: list[Diagnostic] = []
+
+    for path in files:
+        try:
+            analysis = checker.analyze_file(path)
+            remaining.extend(analysis.diagnostics)
+        except UnicodeDecodeError as error:
+            print(
+                (f"{path}: failed to decode as UTF-8 after fixing: {error}"),
+                file=sys.stderr,
+            )
+
+            return 2
+        except OSError as error:
+            print(
+                (f"{path}: failed to read file after fixing: {error}"),
+                file=sys.stderr,
+            )
+
+            return 2
+
+    print(
+        f"fixed {applied_edits} spacing issue(s) "
+        f"in {changed_files} file(s); "
+        f"{len(remaining)} diagnostic(s) remain"
+    )
+
+    if skipped_parse_error_files:
+        print(
+            (
+                f"skipped {skipped_parse_error_files} file(s) "
+                "containing Rust parse errors"
+            ),
+            file=sys.stderr,
+        )
+
+    print_diagnostics(remaining)
+
+    return 1 if remaining else 0
 
 
 if __name__ == "__main__":

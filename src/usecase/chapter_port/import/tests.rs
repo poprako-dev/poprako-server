@@ -196,6 +196,7 @@ fn seed_material_pages(mock: &Mock) {
 
 #[tokio::test]
 async fn import_label_plus_material_updates_units_and_counters() {
+    //
     let mock = Mock::new();
 
     seed_base(&mock, 9, 0, 0);
@@ -215,7 +216,9 @@ async fn import_label_plus_material_updates_units_and_counters() {
     .await;
 
     let imported = match imported {
+        //
         Ok(imported) => imported,
+
         Err(_) => panic!("expected import success"),
     };
 
@@ -261,6 +264,7 @@ async fn import_label_plus_material_updates_units_and_counters() {
 
 #[tokio::test]
 async fn import_rejects_page_count_mismatch_without_mutation() {
+    //
     let mock = Mock::new();
 
     seed_base(&mock, 2, 1, 0);

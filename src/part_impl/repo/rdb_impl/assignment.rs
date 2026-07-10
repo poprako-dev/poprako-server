@@ -102,6 +102,7 @@ async fn list_infos(
 ) -> RegularResult<Vec<AssignmentInfo>> {
     //
     let (role, incl_opt, offset, limit, mut query) = match spec {
+        //
         AssignmentListSpec::Chapter {
             chapter_id,
             role,
@@ -117,6 +118,7 @@ async fn list_infos(
                 .filter(f_chapter_id.eq(chapter_id.as_str()))
                 .into_boxed(),
         ),
+
         AssignmentListSpec::User {
             owner_id,
             role,
@@ -136,28 +138,37 @@ async fn list_infos(
 
     if let Some(role) = role {
         query = match *role {
+            //
             RoleField::RAW_PROVIDER => {
                 query.filter(f_assigned_raw_provider_at.is_not_null())
             }
+
             RoleField::TRANSLATOR => {
                 query.filter(f_assigned_translator_at.is_not_null())
             }
+
             RoleField::PROOFREADER => {
                 query.filter(f_assigned_proofreader_at.is_not_null())
             }
+
             RoleField::TYPESETTER => {
                 query.filter(f_assigned_typesetter_at.is_not_null())
             }
+
             RoleField::REDRAWER => {
                 query.filter(f_assigned_redrawer_at.is_not_null())
             }
+
             RoleField::REVIEWER => {
                 query.filter(f_assigned_reviewer_at.is_not_null())
             }
+
             RoleField::PUBLISHER => {
                 query.filter(f_assigned_publisher_at.is_not_null())
             }
+
             RoleField::ADMIN => query.filter(f_assigned_admin_at.is_not_null()),
+
             _ => query,
         };
     }
@@ -193,28 +204,37 @@ async fn list_all_infos_by_chapter(
 
     if let Some(role) = role {
         query = match role {
+            //
             RoleField::RAW_PROVIDER => {
                 query.filter(f_assigned_raw_provider_at.is_not_null())
             }
+
             RoleField::TRANSLATOR => {
                 query.filter(f_assigned_translator_at.is_not_null())
             }
+
             RoleField::PROOFREADER => {
                 query.filter(f_assigned_proofreader_at.is_not_null())
             }
+
             RoleField::TYPESETTER => {
                 query.filter(f_assigned_typesetter_at.is_not_null())
             }
+
             RoleField::REDRAWER => {
                 query.filter(f_assigned_redrawer_at.is_not_null())
             }
+
             RoleField::REVIEWER => {
                 query.filter(f_assigned_reviewer_at.is_not_null())
             }
+
             RoleField::PUBLISHER => {
                 query.filter(f_assigned_publisher_at.is_not_null())
             }
+
             RoleField::ADMIN => query.filter(f_assigned_admin_at.is_not_null()),
+
             _ => query,
         };
     }

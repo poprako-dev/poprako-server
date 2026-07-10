@@ -144,10 +144,13 @@ pub struct UnitPayloadData {
 impl UnitDiffData {
     /// Converts transport-safe data into domain opers.
     pub fn into_model(self) -> Option<UnitDiff> {
+        //
         let mut opers = Vec::with_capacity(self.opers.len());
 
         for unit_oper_data in self.opers {
+            //
             let unit_oper = unit_oper_data.into_model();
+
             opers.push(unit_oper);
         }
 
@@ -161,6 +164,7 @@ impl UnitDiffData {
 impl UnitOperData {
     fn into_model(self) -> UnitOper {
         match self {
+            //
             UnitOperData::Save {
                 local_id,
                 id,
@@ -172,6 +176,7 @@ impl UnitOperData {
                 payload: payload.into_model(),
                 before_id,
             },
+
             UnitOperData::Delete { id } => UnitOper::Delete { id },
         }
     }

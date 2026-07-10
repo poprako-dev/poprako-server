@@ -113,20 +113,25 @@ fn seed_member(mock: &Mock, user_id: &str, team_id: &str, role_mask: RoleMask) {
 
 #[tokio::test]
 async fn list_infos_team_member_lists_team_announcements() {
+    //
     let mock = Mock::new();
+
     let time = now();
+
     seed_member(
         &mock,
         "viewer-user",
         "team-1",
         RoleMask::from(RoleField::TRANSLATOR),
     );
+
     mock.seed_announcement(announcement(
         "announcement-1",
         "team-1",
         "author-user",
         time,
     ));
+
     mock.seed_announcement(announcement(
         "announcement-2",
         "team-2",
@@ -144,20 +149,26 @@ async fn list_infos_team_member_lists_team_announcements() {
     .unwrap();
 
     assert_eq!(announcement_info_vals.len(), 1);
+
     assert_eq!(announcement_info_vals[0].id, "announcement-1");
 }
 
 #[tokio::test]
 async fn list_infos_user_include_follows_request() {
+    //
     let mock = Mock::new();
+
     let time = now();
+
     seed_member(
         &mock,
         "viewer-user",
         "team-1",
         RoleMask::from(RoleField::TRANSLATOR),
     );
+
     mock.seed_user(user("author-user", "Author"), credential("author-user"));
+
     mock.seed_announcement(announcement(
         "announcement-1",
         "team-1",
@@ -173,6 +184,7 @@ async fn list_infos_user_include_follows_request() {
     )
     .await
     .unwrap();
+
     assert!(without_user[0].user.is_none());
 
     let with_user = list_infos(
@@ -189,7 +201,9 @@ async fn list_infos_user_include_follows_request() {
 
 #[tokio::test]
 async fn list_infos_non_member_is_rejected() {
+    //
     let mock = Mock::new();
+
     mock.seed_announcement(announcement(
         "announcement-1",
         "team-1",
@@ -212,7 +226,9 @@ async fn list_infos_non_member_is_rejected() {
 
 #[tokio::test]
 async fn create_team_admin_creates_announcement() {
+    //
     let mock = Mock::new();
+
     seed_member(
         &mock,
         "admin-user",
@@ -224,17 +240,23 @@ async fn create_team_admin_creates_announcement() {
         create(&mock, &mock, token("admin-user"), create_data("team-1"))
             .await
             .unwrap();
+
     let snapshot = mock.snapshot();
 
     assert_eq!(snapshot.announcements.len(), 1);
+
     assert_eq!(snapshot.announcements[0].id, created_announcement.id);
+
     assert_eq!(snapshot.announcements[0].team_id, "team-1");
+
     assert_eq!(snapshot.announcements[0].user_id, "admin-user");
 }
 
 #[tokio::test]
 async fn create_non_admin_member_is_rejected_without_mutation() {
+    //
     let mock = Mock::new();
+
     seed_member(
         &mock,
         "member-user",
@@ -248,11 +270,13 @@ async fn create_non_admin_member_is_rejected_without_mutation() {
         .unwrap();
 
     assert_expected_variant(err, ExpectedVariant::Perm);
+
     assert!(mock.snapshot().announcements.is_empty());
 }
 
 #[tokio::test]
 async fn create_non_member_is_rejected_without_mutation() {
+    //
     let mock = Mock::new();
 
     let err =
@@ -262,5 +286,6 @@ async fn create_non_member_is_rejected_without_mutation() {
             .unwrap();
 
     assert_expected_variant(err, ExpectedVariant::Perm);
+
     assert!(mock.snapshot().announcements.is_empty());
 }

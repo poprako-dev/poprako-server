@@ -12,6 +12,7 @@ const PREFIX: &str = "rdb-test-comic-domain-";
 
 #[tokio::test]
 async fn comic_roundtrip_reads_test_database_url() {
+    //
     let shared = test_shared::shared().await;
 
     test_shared::reset(&shared, PREFIX).await;
@@ -36,10 +37,12 @@ async fn comic_roundtrip_reads_test_database_url() {
             .unwrap();
 
     assert_eq!(comic_infos.len(), 1);
+
     assert_eq!(
         comic_infos[0].workset.as_ref().unwrap().id,
         comic_fixture.workset_form.id
     );
+
     assert_eq!(
         comic_infos[0].team.as_ref().unwrap().id,
         comic_fixture.team_form.id
@@ -83,6 +86,7 @@ async fn comic_roundtrip_reads_test_database_url() {
             .unwrap();
 
     assert_eq!(comic_infos.len(), 1);
+
     assert_eq!(comic_infos[0].id, comic_fixture.comic_form.id);
 
     let comic_list_spec = ComicListSpec {
@@ -101,6 +105,7 @@ async fn comic_roundtrip_reads_test_database_url() {
             .unwrap();
 
     assert_eq!(comic_infos.len(), 1);
+
     assert_eq!(comic_infos[0].index, 0);
 
     test_shared::cleanup(&shared, PREFIX).await.ok().unwrap();

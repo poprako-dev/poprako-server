@@ -27,8 +27,11 @@ fn join_team_data() -> JoinTeamData {
 
 #[tokio::test]
 async fn join_team_invited_user_creates_member_and_consumes_invitation() {
+    //
     let mock = Mock::new();
+
     mock.seed_user(user("target-user", "Target"), credential("target-user"));
+
     mock.seed_member_invitation(invitation("invitation-1", "target-user"));
 
     super::join_team(
@@ -42,21 +45,30 @@ async fn join_team_invited_user_creates_member_and_consumes_invitation() {
     .unwrap();
 
     let snapshot = mock.snapshot();
+
     assert_eq!(snapshot.members.len(), 1);
+
     assert_eq!(snapshot.members[0].user_id, "target-user");
+
     assert_eq!(snapshot.members[0].user_nickname, "Target");
+
     assert_eq!(snapshot.members[0].team_id, "team-1");
+
     assert_eq!(
         snapshot.members[0].roles,
         RoleMask::from(RoleField::TRANSLATOR)
     );
+
     assert!(!snapshot.member_invitations[0].pending);
 }
 
 #[tokio::test]
 async fn join_team_mismatched_qid_is_rejected() {
+    //
     let mock = Mock::new();
+
     mock.seed_user(user("target-user", "Target"), credential("target-user"));
+
     mock.seed_member_invitation(invitation("invitation-1", "other-qid"));
 
     let err = super::join_team(
@@ -71,15 +83,21 @@ async fn join_team_mismatched_qid_is_rejected() {
     .unwrap();
 
     assert_expected_variant(err, ExpectedVariant::Args);
+
     let snapshot = mock.snapshot();
+
     assert!(snapshot.members.is_empty());
+
     assert!(snapshot.member_invitations[0].pending);
 }
 
 #[tokio::test]
 async fn join_team_duplicate_membership_is_rejected() {
+    //
     let mock = Mock::new();
+
     mock.seed_user(user("target-user", "Target"), credential("target-user"));
+
     mock.seed_member(member(
         "member-target",
         "target-user",
@@ -87,6 +105,7 @@ async fn join_team_duplicate_membership_is_rejected() {
         "team-1",
         RoleMask::from(RoleField::TRANSLATOR),
     ));
+
     mock.seed_member_invitation(invitation("invitation-1", "target-user"));
 
     let err = super::join_team(
@@ -101,7 +120,10 @@ async fn join_team_duplicate_membership_is_rejected() {
     .unwrap();
 
     assert_expected_variant(err, ExpectedVariant::Args);
+
     let snapshot = mock.snapshot();
+
     assert_eq!(snapshot.members.len(), 1);
+
     assert!(snapshot.member_invitations[0].pending);
 }

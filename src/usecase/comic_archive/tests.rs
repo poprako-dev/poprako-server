@@ -176,7 +176,9 @@ fn token() -> UserToken {
 
 #[tokio::test]
 async fn archive_retains_payloads_queues_images_and_deletes_active_data() {
+    //
     let mock = Mock::new();
+
     seed_archive_scope(&mock, RoleMask::from(RoleField::ADMIN));
 
     let archive_comic_val =
@@ -187,21 +189,34 @@ async fn archive_retains_payloads_queues_images_and_deletes_active_data() {
     let snapshot = mock.snapshot();
 
     assert_ne!(archive_comic_val.archived_comic_id, "comic-1");
+
     assert!(snapshot.comics.is_empty());
+
     assert!(snapshot.chapters.is_empty());
+
     assert!(snapshot.assignments.is_empty());
+
     assert!(snapshot.assignment_invitations.is_empty());
+
     assert!(snapshot.pages.is_empty());
+
     assert!(snapshot.units.is_empty());
+
     assert_eq!(snapshot.worksets[0].comic_count, 7);
+
     assert_eq!(snapshot.archived_comics.len(), 1);
+
     assert_eq!(snapshot.archived_chapters.len(), 1);
+
     assert_eq!(snapshot.archived_translations.len(), 1);
+
     assert_eq!(snapshot.archived_comics[0].archiver_id, "user-1");
+
     assert_eq!(
         snapshot.archived_comics[0].created_at,
         snapshot.archived_chapters[0].created_at
     );
+
     assert_eq!(
         snapshot.archived_comics[0].created_at,
         snapshot.archived_translations[0].created_at
@@ -210,39 +225,52 @@ async fn archive_retains_payloads_queues_images_and_deletes_active_data() {
     let archived_comic_payload: ArchivedComicPayload =
         decompress_archive(&snapshot.archived_comics[0].archived_bytes)
             .unwrap();
+
     let archived_chapter_payload: ArchivedChapterPayload =
         decompress_archive(&snapshot.archived_chapters[0].archived_bytes)
             .unwrap();
+
     let archived_translation_payload: ArchivedTranslationPayload =
         decompress_archive(&snapshot.archived_translations[0].archived_bytes)
             .unwrap();
 
     assert_eq!(archived_comic_payload.source_comic_id, "comic-1");
+
     assert_eq!(archived_comic_payload.workset.id, "workset-1");
+
     assert_eq!(
         archived_comic_payload.chapter_archive_ids,
         vec![snapshot.archived_chapters[0].id.clone()]
     );
+
     assert_eq!(archived_chapter_payload.source_chapter_id, "chapter-1");
+
     assert_eq!(
         archived_chapter_payload.archived_comic_id,
         archive_comic_val.archived_comic_id
     );
+
     assert_eq!(archived_chapter_payload.assignments.len(), 1);
+
     assert_eq!(
         archived_chapter_payload.assignments[0].user.nickname,
         "archiver"
     );
+
     assert_eq!(archived_translation_payload.source_chapter_id, "chapter-1");
+
     assert_eq!(
         archived_translation_payload.archived_chapter_id,
         snapshot.archived_chapters[0].id
     );
+
     assert_eq!(archived_translation_payload.pages.len(), 1);
+
     assert_eq!(
         archived_translation_payload.pages[0].source_page_id,
         "page-1"
     );
+
     assert_eq!(
         archived_translation_payload.pages[0].units[0].source_unit_id,
         "unit-1"
@@ -252,12 +280,15 @@ async fn archive_retains_payloads_queues_images_and_deletes_active_data() {
         .prom_records
         .iter()
         .filter_map(|prom_record| match prom_record.payload() {
+            //
             Payload::Image(ImageTask::Delete { object_key }) => {
                 Some(object_key.to_string())
             }
+
             _ => None,
         })
         .collect::<Vec<_>>();
+
     deleted_image_keys.sort();
 
     assert_eq!(
@@ -268,23 +299,30 @@ async fn archive_retains_payloads_queues_images_and_deletes_active_data() {
 
 #[tokio::test]
 async fn archive_rejects_non_admin_without_writing_or_deleting() {
+    //
     let mock = Mock::new();
+
     seed_archive_scope(&mock, RoleMask::from(RoleField::TRANSLATOR));
 
     let archive_result =
         archive(&mock, &mock, &mock, token(), "comic-1".into()).await;
 
     assert_expected_variant(archive_result.unwrap_err(), ExpectedVariant::Perm);
+
     let snapshot = mock.snapshot();
 
     assert_eq!(snapshot.comics.len(), 1);
+
     assert_eq!(snapshot.archived_comics.len(), 0);
+
     assert_eq!(snapshot.prom_records.len(), 0);
 }
 
 #[tokio::test]
 async fn archive_rolls_back_when_archive_persistence_fails() {
+    //
     let mock = Mock::new().with_archive_commit_failure();
+
     seed_archive_scope(&mock, RoleMask::from(RoleField::ADMIN));
 
     let archive_result =
@@ -294,17 +332,28 @@ async fn archive_rolls_back_when_archive_persistence_fails() {
         archive_result,
         Err(RegularError::Unrecoverable { .. })
     ));
+
     let snapshot = mock.snapshot();
 
     assert_eq!(snapshot.comics.len(), 1);
+
     assert_eq!(snapshot.chapters.len(), 1);
+
     assert_eq!(snapshot.assignments.len(), 1);
+
     assert_eq!(snapshot.assignment_invitations.len(), 1);
+
     assert_eq!(snapshot.pages.len(), 1);
+
     assert_eq!(snapshot.units.len(), 1);
+
     assert_eq!(snapshot.worksets[0].comic_count, 7);
+
     assert_eq!(snapshot.archived_comics.len(), 0);
+
     assert_eq!(snapshot.archived_chapters.len(), 0);
+
     assert_eq!(snapshot.archived_translations.len(), 0);
+
     assert_eq!(snapshot.prom_records.len(), 0);
 }

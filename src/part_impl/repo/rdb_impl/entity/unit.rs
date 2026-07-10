@@ -94,20 +94,31 @@ impl<'a> UnitAspect<'a> {
     }
 
     pub fn index(mut self, val: i32) -> Self {
+        //
         self.f_index = Some(val);
+
         self
     }
 
     pub fn payload(mut self, payload: &'a UnitPayload) -> Self {
+        //
         self.f_is_bubble = Some(payload.is_bubble);
+
         self.f_is_proofread = Some(payload.is_proofread);
+
         self.f_x_coord = Some(payload.x_coord);
+
         self.f_y_coord = Some(payload.y_coord);
+
         self.f_translated_text = Some(payload.translated_text.as_deref());
+
         self.f_last_translator_id = Some(payload.last_translator_id.as_deref());
+
         self.f_proofread_text = Some(payload.proofread_text.as_deref());
+
         self.f_last_proofreader_id =
             Some(payload.last_proofreader_id.as_deref());
+
         self
     }
 }
@@ -139,6 +150,7 @@ impl<'a> UnitEntry<'a> {
         index: i32,
         payload: &'a UnitPayload,
     ) -> Self {
+        //
         let now = OffsetDateTime::now_utc();
 
         Self {

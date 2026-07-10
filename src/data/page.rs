@@ -41,7 +41,9 @@ impl PageInfoVal {
         P: ImagePool,
     {
         let image_url = match (model.image_uploaded, &model.image_key) {
+            //
             (true, Some(key)) => image_pool.get_signed(key).await.ok(),
+
             _ => None,
         };
 

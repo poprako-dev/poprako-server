@@ -133,35 +133,50 @@ fn admin_member(user_id: &str, team_id: &str) -> MemberInfo {
 
 #[tokio::test]
 async fn create_allocates_index_and_updates_count() {
+    //
     let mock = Mock::new();
+
     mock.seed_workset(workset("workset-1", "team-1"));
+
     mock.seed_member(admin_member("user-1", "team-1"));
 
     let created =
         create(&mock, &mock, token("user-1"), create_data("workset-1")).await;
+
     assert!(created.is_ok());
+
     let created = created.ok().unwrap();
+
     let snapshot = mock.snapshot();
 
     // Comic
     assert_eq!(created.id, snapshot.comics[0].id);
+
     assert_eq!(snapshot.comics[0].index, 0);
+
     assert_eq!(snapshot.comics[0].creator_id, "user-1");
+
     assert_eq!(snapshot.comics.len(), 1);
 
     // Workset
     assert_eq!(snapshot.worksets[0].comic_count, 1);
+
     assert_eq!(snapshot.worksets[0].comic_next_index, 1);
 
     // First chapter
     assert_eq!(snapshot.chapters.len(), 1);
+
     assert_eq!(snapshot.chapters[0].id, created.chapter_id);
+
     assert_eq!(snapshot.chapters[0].comic_id, created.id);
+
     assert!(snapshot.chapters[0].is_pinned);
+
     assert_eq!(snapshot.chapters[0].index, 0);
 
     // Denormalised chapter counters
     assert_eq!(snapshot.comics[0].chapter_count, 1);
+
     assert_eq!(snapshot.comics[0].chapter_next_index, 1);
 
     // last_active_at should be set (not epoch)
@@ -169,8 +184,11 @@ async fn create_allocates_index_and_updates_count() {
 
     // Creator admin assignment
     assert_eq!(snapshot.assignments.len(), 1);
+
     assert_eq!(snapshot.assignments[0].chapter_id, created.chapter_id);
+
     assert_eq!(snapshot.assignments[0].user_id, "user-1");
+
     assert!(
         snapshot.assignments[0]
             .roles
@@ -180,23 +198,30 @@ async fn create_allocates_index_and_updates_count() {
 
 #[tokio::test]
 async fn create_rolls_back_missing_workset() {
+    //
     let mock = Mock::new();
 
     let err = create(&mock, &mock, token("user-1"), create_data("missing"))
         .await
         .err()
         .unwrap();
+
     let snapshot = mock.snapshot();
 
     assert_expected_variant(err, ExpectedVariant::Args);
+
     assert!(snapshot.comics.is_empty());
 }
 
 #[tokio::test]
 async fn get_info_returns_uploaded_cover_url() {
+    //
     let mock = Mock::new();
+
     mock.seed_workset(workset("workset-1", "team-1"));
+
     mock.seed_member(admin_member("user-1", "team-1"));
+
     mock.seed_comic(comic_with_uploaded_cover(
         "comic-1",
         "workset-1",
@@ -204,10 +229,13 @@ async fn get_info_returns_uploaded_cover_url() {
     ));
 
     let found = get_info(&mock, &mock, token("user-1"), "comic-1".into()).await;
+
     assert!(found.is_ok());
+
     let found = found.ok().unwrap();
 
     assert_eq!(found.id, "comic-1");
+
     assert_eq!(
         found.cover_url,
         Some("https://test.local/get/cover.png".into())
@@ -216,6 +244,7 @@ async fn get_info_returns_uploaded_cover_url() {
 
 #[tokio::test]
 async fn get_info_propagates_missing_comic() {
+    //
     let mock = Mock::new();
 
     let err = get_info(&mock, &mock, token("user-1"), "missing".into())
@@ -228,11 +257,17 @@ async fn get_info_propagates_missing_comic() {
 
 #[tokio::test]
 async fn list_infos_filters_and_sorts_by_last_activity() {
+    //
     let mock = Mock::new();
+
     mock.seed_workset(workset("workset-1", "team-1"));
+
     mock.seed_member(admin_member("user-1", "team-1"));
+
     mock.seed_comic(comic("comic-2", "workset-1", 2));
+
     mock.seed_comic(comic("comic-1", "workset-1", 1));
+
     mock.seed_comic(comic("comic-other", "workset-2", 0));
 
     let list = list_infos(
@@ -250,18 +285,25 @@ async fn list_infos_filters_and_sorts_by_last_activity() {
         },
     )
     .await;
+
     assert!(list.is_ok());
+
     let list = list.ok().unwrap();
 
     assert_eq!(list.len(), 2);
+
     assert_eq!(list[0].id, "comic-1");
+
     assert_eq!(list[1].id, "comic-2");
 }
 
 #[tokio::test]
 async fn list_infos_returns_empty_for_workset_contents() {
+    //
     let mock = Mock::new();
+
     mock.seed_workset(workset("workset-1", "team-1"));
+
     mock.seed_member(admin_member("user-1", "team-1"));
 
     let list = list_infos(
@@ -279,6 +321,7 @@ async fn list_infos_returns_empty_for_workset_contents() {
         },
     )
     .await;
+
     assert!(list.is_ok());
 
     assert!(list.ok().unwrap().is_empty());
@@ -286,19 +329,25 @@ async fn list_infos_returns_empty_for_workset_contents() {
 
 #[tokio::test]
 async fn list_infos_filters_by_fuzzy_title() {
+    //
     let mock = Mock::new();
+
     mock.seed_workset(workset("workset-1", "team-1"));
+
     mock.seed_member(admin_member("user-1", "team-1"));
+
     mock.seed_comic(ComicInfo {
         title: "Alpha Adventure".into(),
         author: "Alice".into(),
         ..comic("comic-alpha", "workset-1", 0)
     });
+
     mock.seed_comic(ComicInfo {
         title: "Beta Journey".into(),
         author: "Bob".into(),
         ..comic("comic-beta", "workset-1", 1)
     });
+
     mock.seed_comic(ComicInfo {
         title: "Gamma Quest".into(),
         author: "Carol".into(),
@@ -321,9 +370,13 @@ async fn list_infos_filters_by_fuzzy_title() {
         },
     )
     .await;
+
     assert!(list.is_ok());
+
     let list = list.ok().unwrap();
+
     assert_eq!(list.len(), 1);
+
     assert_eq!(list[0].id, "comic-beta");
 
     // Match by author substring
@@ -342,9 +395,13 @@ async fn list_infos_filters_by_fuzzy_title() {
         },
     )
     .await;
+
     assert!(list.is_ok());
+
     let list = list.ok().unwrap();
+
     assert_eq!(list.len(), 1);
+
     assert_eq!(list[0].id, "comic-gamma");
 
     // Match by display index
@@ -363,18 +420,27 @@ async fn list_infos_filters_by_fuzzy_title() {
         },
     )
     .await;
+
     assert!(list.is_ok());
+
     let list = list.ok().unwrap();
+
     assert_eq!(list.len(), 1);
+
     assert_eq!(list[0].id, "comic-alpha");
 }
 
 #[tokio::test]
 async fn list_infos_filters_by_pinned_chapter_stages() {
+    //
     let mock = Mock::new();
+
     mock.seed_workset(workset("workset-1", "team-1"));
+
     mock.seed_member(admin_member("user-1", "team-1"));
+
     mock.seed_comic(comic("comic-active", "workset-1", 0));
+
     mock.seed_comic(comic("comic-pending", "workset-1", 1));
 
     let completed_translate_mask = StageMask::try_from(0u32)
@@ -389,6 +455,7 @@ async fn list_infos_filters_by_pinned_chapter_stages() {
         "comic-active",
         completed_translate_mask,
     ));
+
     mock.seed_chapter(chapter(
         "chapter-pending",
         "comic-pending",
@@ -417,17 +484,23 @@ async fn list_infos_filters_by_pinned_chapter_stages() {
         },
     )
     .await;
+
     assert!(list.is_ok());
+
     let list = list.ok().unwrap();
 
     assert_eq!(list.len(), 1);
+
     assert_eq!(list[0].id, "comic-active");
 }
 
 #[tokio::test]
 async fn list_infos_rejects_invalid_stages_filter() {
+    //
     let mock = Mock::new();
+
     mock.seed_workset(workset("workset-1", "team-1"));
+
     mock.seed_member(admin_member("user-1", "team-1"));
 
     let err = list_infos(
@@ -453,19 +526,31 @@ async fn list_infos_rejects_invalid_stages_filter() {
 
 #[tokio::test]
 async fn list_infos_applies_pagination() {
+    //
     let fixed_time = OffsetDateTime::now_utc();
+
     let mut comic_0_info = comic("comic-0", "workset-1", 0);
+
     comic_0_info.last_active_at = fixed_time;
+
     let mut comic_1_info = comic("comic-1", "workset-1", 1);
+
     comic_1_info.last_active_at = fixed_time;
+
     let mut comic_2_info = comic("comic-2", "workset-1", 2);
+
     comic_2_info.last_active_at = fixed_time;
 
     let mock = Mock::new();
+
     mock.seed_workset(workset("workset-1", "team-1"));
+
     mock.seed_member(admin_member("user-1", "team-1"));
+
     mock.seed_comic(comic_0_info);
+
     mock.seed_comic(comic_1_info);
+
     mock.seed_comic(comic_2_info);
 
     let list = list_infos(
@@ -483,18 +568,25 @@ async fn list_infos_applies_pagination() {
         },
     )
     .await;
+
     assert!(list.is_ok());
+
     let list = list.ok().unwrap();
 
     assert_eq!(list.len(), 1);
+
     assert_eq!(list[0].id, "comic-1");
 }
 
 #[tokio::test]
 async fn update_info_updates_comic() {
+    //
     let mock = Mock::new();
+
     mock.seed_workset(workset("workset-1", "team-1"));
+
     mock.seed_member(admin_member("user-1", "team-1"));
+
     mock.seed_comic(comic("comic-1", "workset-1", 0));
 
     update_info(
@@ -510,15 +602,19 @@ async fn update_info_updates_comic() {
     .await
     .ok()
     .unwrap();
+
     let snapshot = mock.snapshot();
 
     assert_eq!(snapshot.comics[0].title, "updated");
+
     assert_eq!(snapshot.comics[0].author, "updated-author");
+
     assert_eq!(snapshot.comics[0].description, Some("updated-desc".into()));
 }
 
 #[tokio::test]
 async fn update_info_propagates_missing_comic() {
+    //
     let mock = Mock::new();
 
     let err = update_info(
@@ -540,9 +636,13 @@ async fn update_info_propagates_missing_comic() {
 
 #[tokio::test]
 async fn reserve_cover_updates_state_enqueues_check_and_returns_put_url() {
+    //
     let mock = Mock::new();
+
     mock.seed_workset(workset("workset-1", "team-1"));
+
     mock.seed_member(admin_member("user-1", "team-1"));
+
     mock.seed_comic(comic("comic-1", "workset-1", 0));
 
     let reserved = reserve_cover(
@@ -557,17 +657,24 @@ async fn reserve_cover_updates_state_enqueues_check_and_returns_put_url() {
         },
     )
     .await;
+
     assert!(reserved.is_ok());
+
     let reserved = reserved.ok().unwrap();
+
     let snapshot = mock.snapshot();
 
     assert_eq!(reserved.cover_version, 1);
+
     assert_eq!(
         reserved.put_url,
         "https://test.local/put/comic_cover/comic-1-1.png"
     );
+
     assert_eq!(snapshot.comics[0].cover_version, 1);
+
     assert_eq!(snapshot.prom_records.len(), 1);
+
     assert_one_image_check_record(
         &snapshot.prom_records,
         ImageKind::ComicCover,
@@ -579,6 +686,7 @@ async fn reserve_cover_updates_state_enqueues_check_and_returns_put_url() {
 
 #[tokio::test]
 async fn reserve_cover_rolls_back_missing_comic() {
+    //
     let mock = Mock::new();
 
     let err = reserve_cover(
@@ -595,17 +703,23 @@ async fn reserve_cover_rolls_back_missing_comic() {
     .await
     .err()
     .unwrap();
+
     let snapshot = mock.snapshot();
 
     assert_expected_variant(err, ExpectedVariant::Args);
+
     assert!(snapshot.prom_records.is_empty());
 }
 
 #[tokio::test]
 async fn mark_cover_uploaded_marks_matching_version() {
+    //
     let mock = Mock::new();
+
     mock.seed_workset(workset("workset-1", "team-1"));
+
     mock.seed_member(admin_member("user-1", "team-1"));
+
     mock.seed_comic(ComicInfo {
         cover_key: Some("cover.png".into()),
         cover_version: 2,
@@ -627,9 +741,13 @@ async fn mark_cover_uploaded_marks_matching_version() {
 
 #[tokio::test]
 async fn mark_cover_uploaded_accepts_repeated_matching_version() {
+    //
     let mock = Mock::new();
+
     mock.seed_workset(workset("workset-1", "team-1"));
+
     mock.seed_member(admin_member("user-1", "team-1"));
+
     mock.seed_comic(ComicInfo {
         cover_key: Some("cover.png".into()),
         cover_version: 2,
@@ -643,7 +761,9 @@ async fn mark_cover_uploaded_accepts_repeated_matching_version() {
         MarkComicCoverUploadedData { cover_version: 2 },
     )
     .await;
+
     assert!(first.is_ok());
+
     let second = mark_cover_uploaded(
         &mock,
         token("user-1"),
@@ -651,6 +771,7 @@ async fn mark_cover_uploaded_accepts_repeated_matching_version() {
         MarkComicCoverUploadedData { cover_version: 2 },
     )
     .await;
+
     assert!(second.is_ok());
 
     assert!(mock.snapshot().comics[0].cover_uploaded);
@@ -658,9 +779,13 @@ async fn mark_cover_uploaded_accepts_repeated_matching_version() {
 
 #[tokio::test]
 async fn mark_cover_uploaded_rejects_stale_version() {
+    //
     let mock = Mock::new();
+
     mock.seed_workset(workset("workset-1", "team-1"));
+
     mock.seed_member(admin_member("user-1", "team-1"));
+
     mock.seed_comic(ComicInfo {
         cover_key: Some("cover.png".into()),
         cover_version: 2,
@@ -682,14 +807,19 @@ async fn mark_cover_uploaded_rejects_stale_version() {
         ExpectedVariant::Args,
         "error-stale-cover-upload",
     );
+
     assert!(!mock.snapshot().comics[0].cover_uploaded);
 }
 
 #[tokio::test]
 async fn mark_cover_uploaded_rejects_old_reservation_replay() {
+    //
     let mock = Mock::new();
+
     mock.seed_workset(workset("workset-1", "team-1"));
+
     mock.seed_member(admin_member("user-1", "team-1"));
+
     mock.seed_comic(ComicInfo {
         cover_key: Some("comic_cover/comic-1-1.png".into()),
         cover_uploaded: true,
@@ -711,6 +841,7 @@ async fn mark_cover_uploaded_rejects_old_reservation_replay() {
     .await
     .ok()
     .unwrap();
+
     assert_eq!(reserved.cover_version, 2);
 
     let err = mark_cover_uploaded(
@@ -722,6 +853,7 @@ async fn mark_cover_uploaded_rejects_old_reservation_replay() {
     .await
     .err()
     .unwrap();
+
     let snapshot = mock.snapshot();
 
     assert_expected_message(
@@ -729,19 +861,25 @@ async fn mark_cover_uploaded_rejects_old_reservation_replay() {
         ExpectedVariant::Args,
         "error-stale-cover-upload",
     );
+
     assert!(!snapshot.comics[0].cover_uploaded);
+
     assert_eq!(snapshot.comics[0].cover_version, 2);
 }
 
 #[tokio::test]
 async fn delete_removes_comic_updates_count_and_enqueues_cover_delete() {
+    //
     let mock = Mock::new();
+
     mock.seed_member(admin_member("user-1", "team-1"));
+
     mock.seed_workset(WorksetInfo {
         comic_count: 1,
         comic_next_index: 1,
         ..workset("workset-1", "team-1")
     });
+
     mock.seed_comic(comic_with_uploaded_cover(
         "comic-1",
         "workset-1",
@@ -752,11 +890,15 @@ async fn delete_removes_comic_updates_count_and_enqueues_cover_delete() {
         .await
         .ok()
         .unwrap();
+
     let snapshot = mock.snapshot();
 
     assert!(snapshot.comics.is_empty());
+
     assert_eq!(snapshot.worksets[0].comic_count, 0);
+
     assert_eq!(snapshot.prom_records.len(), 1);
+
     assert!(matches!(
         snapshot.prom_records[0].payload(),
         Payload::Image(ImageTask::Delete { object_key }) if object_key == "cover.png"
@@ -765,17 +907,23 @@ async fn delete_removes_comic_updates_count_and_enqueues_cover_delete() {
 
 #[tokio::test]
 async fn delete_rolls_back_missing_comic() {
+    //
     let mock = Mock::new();
+
     mock.seed_workset(workset("workset-1", "team-1"));
+
     mock.seed_member(admin_member("user-1", "team-1"));
 
     let err = delete(&mock, &mock, &mock, token("user-1"), "missing".into())
         .await
         .err()
         .unwrap();
+
     let snapshot = mock.snapshot();
 
     assert_expected_variant(err, ExpectedVariant::Args);
+
     assert_eq!(snapshot.worksets.len(), 1);
+
     assert!(snapshot.prom_records.is_empty());
 }

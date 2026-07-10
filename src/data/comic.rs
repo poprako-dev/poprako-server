@@ -85,21 +85,29 @@ impl ComicInfoVal {
         P: ImagePool,
     {
         let cover_url = match (model.cover_uploaded, &model.cover_key) {
+            //
             (true, Some(key)) => image_pool.get_signed(key).await.ok(),
+
             _ => None,
         };
 
         let workset = model.workset.map(WorksetInfoVal::from);
+
         let team = match model.team {
+            //
             Some(team_info) => {
                 Some(TeamInfoVal::from_model(image_pool, team_info).await?)
             }
+
             None => None,
         };
+
         let creator = match model.creator {
+            //
             Some(user_info) => {
                 Some(UserInfoVal::from_model(image_pool, user_info).await?)
             }
+
             None => None,
         };
 
@@ -198,10 +206,13 @@ impl TryFrom<ListComicInfosData> for ComicListSpec {
     type Error = RegularError;
 
     fn try_from(data: ListComicInfosData) -> RegularResult<Self> {
+        //
         let stages = data.stages.map(StageMask::try_filter_from).transpose()?;
 
         let kind = match stages {
+            //
             Some(stage_mask) => ComicListKind::Stages(stage_mask),
+
             None => ComicListKind::All,
         };
 

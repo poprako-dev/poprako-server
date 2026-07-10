@@ -86,9 +86,11 @@ where
             .await?;
 
         let image_url = match (page_info.image_uploaded, &page_info.image_key) {
+            //
             (true, Some(image_key)) => {
                 image_pool.get_signed(image_key).await.ok()
             }
+
             _ => None,
         };
 

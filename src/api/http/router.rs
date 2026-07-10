@@ -236,7 +236,9 @@ pub fn new(harn: AppHarn) -> Router<AppHarn> {
 
     // Swagger UI — debug builds only
     #[cfg(feature = "swagger-ui")]
+
     let router = {
+        //
         use utoipa::OpenApi as _;
 
         use utoipa_swagger_ui::SwaggerUi;

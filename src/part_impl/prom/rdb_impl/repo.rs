@@ -1,4 +1,4 @@
-//! Mini-repo for `t_local_message` lifecycle operations.
+//! Repository for prom task handling and `t_local_message` lifecycle operations.
 //!
 //! These step types and [`Advance`] implementations are used exclusively
 //! by the background handler. They are NOT part of the public [`Prom`]
@@ -19,17 +19,38 @@ use crate::part_impl::repo::rdb_impl::schema::t_local_message;
 use crate::part_impl::shared::RdbContext;
 use crate::part_impl::shared::result::diesel;
 use crate::result::{RegularError, RegularResult};
+use crate::util::DeriveTransactional;
 
 // ── Handle ──────────────────────────────────────────────────────────────────
 
-/// Zero-sized handle for local-message lifecycle operations.
+/// Repository used by the prom background handler.
 ///
-/// Used exclusively by [`RdbPromHandler`] for polling, claiming, completing,
-/// failing, retrying, and resetting stuck records in `t_local_message`.
-/// All state comes from [`RdbContext`]; this type carries no data.
+/// Owns the application repository used by topic handlers while also providing
+/// polling, claiming, completion, failure, retry, and recovery operations for
+/// records in `t_local_message`.
 ///
 /// [`RdbPromHandler`]: super::handler::RdbPromHandler
-pub(crate) struct LocalMessageRepo;
+pub struct RdbPromRepo<R> {
+    repo: R,
+}
+
+impl<R> RdbPromRepo<R> {
+    pub fn new(repo: R) -> Self {
+        Self { repo }
+    }
+}
+
+#[async_trait]
+impl<R> DeriveTransactional for RdbPromRepo<R>
+where
+    R: DeriveTransactional + Send + Sync,
+{
+    type Transactional = R::Transactional;
+
+    async fn derive_transactional(&self) -> Self::Transactional {
+        DeriveTransactional::derive_transactional(&self.repo).await
+    }
+}
 
 // ── Steps ───────────────────────────────────────────────────────────────────
 
@@ -97,7 +118,10 @@ impl Step for ResetStuckStep<'_> {
 pub(crate) const BATCH_SIZE: i64 = 10;
 
 #[async_trait]
-impl Advance<PollPending, RdbContext> for LocalMessageRepo {
+impl<R> Advance<PollPending, RdbContext> for RdbPromRepo<R>
+where
+    R: Sync,
+{
     type Error = RegularError;
 
     async fn advance(
@@ -105,7 +129,9 @@ impl Advance<PollPending, RdbContext> for LocalMessageRepo {
         context: &mut RdbContext,
         _step: &PollPending,
     ) -> RegularResult<Vec<LocalMessageRow>> {
+        //
         use diesel::prelude::*;
+
         use diesel_async::RunQueryDsl;
 
         let local_message_rows: Vec<LocalMessageRow> = t_local_message::table
@@ -130,7 +156,10 @@ impl Advance<PollPending, RdbContext> for LocalMessageRepo {
 }
 
 #[async_trait]
-impl<'a> Advance<ClaimStep<'a>, RdbContext> for LocalMessageRepo {
+impl<'a, R> Advance<ClaimStep<'a>, RdbContext> for RdbPromRepo<R>
+where
+    R: Sync,
+{
     type Error = RegularError;
 
     async fn advance(
@@ -138,7 +167,9 @@ impl<'a> Advance<ClaimStep<'a>, RdbContext> for LocalMessageRepo {
         context: &mut RdbContext,
         step: &ClaimStep<'a>,
     ) -> RegularResult<bool> {
+        //
         use diesel::prelude::*;
+
         use diesel_async::RunQueryDsl;
 
         let updated = diesel::update(
@@ -163,7 +194,10 @@ impl<'a> Advance<ClaimStep<'a>, RdbContext> for LocalMessageRepo {
 }
 
 #[async_trait]
-impl<'a> Advance<CompleteStep<'a>, RdbContext> for LocalMessageRepo {
+impl<'a, R> Advance<CompleteStep<'a>, RdbContext> for RdbPromRepo<R>
+where
+    R: Sync,
+{
     type Error = RegularError;
 
     async fn advance(
@@ -171,7 +205,9 @@ impl<'a> Advance<CompleteStep<'a>, RdbContext> for LocalMessageRepo {
         context: &mut RdbContext,
         step: &CompleteStep<'a>,
     ) -> RegularResult<()> {
+        //
         use diesel::prelude::*;
+
         use diesel_async::RunQueryDsl;
 
         diesel::update(
@@ -191,7 +227,10 @@ impl<'a> Advance<CompleteStep<'a>, RdbContext> for LocalMessageRepo {
 }
 
 #[async_trait]
-impl<'a> Advance<FailStep<'a>, RdbContext> for LocalMessageRepo {
+impl<'a, R> Advance<FailStep<'a>, RdbContext> for RdbPromRepo<R>
+where
+    R: Sync,
+{
     type Error = RegularError;
 
     async fn advance(
@@ -199,7 +238,9 @@ impl<'a> Advance<FailStep<'a>, RdbContext> for LocalMessageRepo {
         context: &mut RdbContext,
         step: &FailStep<'a>,
     ) -> RegularResult<()> {
+        //
         use diesel::prelude::*;
+
         use diesel_async::RunQueryDsl;
 
         diesel::update(
@@ -219,7 +260,10 @@ impl<'a> Advance<FailStep<'a>, RdbContext> for LocalMessageRepo {
 }
 
 #[async_trait]
-impl<'a> Advance<RetryStep<'a>, RdbContext> for LocalMessageRepo {
+impl<'a, R> Advance<RetryStep<'a>, RdbContext> for RdbPromRepo<R>
+where
+    R: Sync,
+{
     type Error = RegularError;
 
     async fn advance(
@@ -227,7 +271,9 @@ impl<'a> Advance<RetryStep<'a>, RdbContext> for LocalMessageRepo {
         context: &mut RdbContext,
         step: &RetryStep<'a>,
     ) -> RegularResult<()> {
+        //
         use diesel::prelude::*;
+
         use diesel_async::RunQueryDsl;
 
         diesel::update(
@@ -250,7 +296,10 @@ impl<'a> Advance<RetryStep<'a>, RdbContext> for LocalMessageRepo {
 }
 
 #[async_trait]
-impl<'a> Advance<ResetStuckStep<'a>, RdbContext> for LocalMessageRepo {
+impl<'a, R> Advance<ResetStuckStep<'a>, RdbContext> for RdbPromRepo<R>
+where
+    R: Sync,
+{
     type Error = RegularError;
 
     async fn advance(
@@ -258,7 +307,9 @@ impl<'a> Advance<ResetStuckStep<'a>, RdbContext> for LocalMessageRepo {
         context: &mut RdbContext,
         step: &ResetStuckStep<'a>,
     ) -> RegularResult<()> {
+        //
         use diesel::prelude::*;
+
         use diesel_async::RunQueryDsl;
 
         diesel::update(

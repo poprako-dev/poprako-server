@@ -101,52 +101,72 @@ impl<'a> ComicAspect<'a> {
     }
 
     pub fn title(mut self, val: &'a str) -> Self {
+        //
         self.f_title = Some(val);
+
         self
     }
 
     pub fn author(mut self, val: &'a str) -> Self {
+        //
         self.f_author = Some(val);
+
         self
     }
 
     pub fn description(mut self, val: Option<&'a str>) -> Self {
+        //
         self.f_description = Some(val);
+
         self
     }
 
     pub fn composed_title(mut self, val: String) -> Self {
+        //
         self.f_composed_title = Some(val);
+
         self
     }
 
     pub fn cover_key(mut self, val: &'a str) -> Self {
+        //
         self.f_cover_key = Some(val);
+
         self
     }
 
     pub fn cover_uploaded(mut self, val: bool) -> Self {
+        //
         self.f_cover_uploaded = Some(val);
+
         self
     }
 
     pub fn cover_version(mut self, val: i64) -> Self {
+        //
         self.f_cover_version = Some(val);
+
         self
     }
 
     pub fn chapter_count(mut self, val: i32) -> Self {
+        //
         self.f_chapter_count = Some(val);
+
         self
     }
 
     pub fn chapter_next_index(mut self, val: i32) -> Self {
+        //
         self.f_chapter_next_index = Some(val);
+
         self
     }
 
     pub fn last_active_at(mut self, val: OffsetDateTime) -> Self {
+        //
         self.f_last_active_at = Some(val);
+
         self
     }
 }

@@ -94,7 +94,9 @@ impl<'a> Execute<GetInfoById<'a>> for Mock {
         &self,
         step: &GetInfoById<'a>,
     ) -> Result<PageInfo, Self::Error> {
+        //
         let state = self.state.lock().unwrap();
+
         get_page_by_id(&state, step.id)
     }
 }
@@ -107,7 +109,9 @@ impl<'a> Execute<ListInfosByChapterId<'a>> for Mock {
         &self,
         step: &ListInfosByChapterId<'a>,
     ) -> Result<Vec<PageInfo>, Self::Error> {
+        //
         let state = self.state.lock().unwrap();
+
         Ok(list_pages(&state, step.chapter_id, step.offset, step.limit))
     }
 }
@@ -120,6 +124,7 @@ impl<'a> Execute<ListAllInfosByChapterId<'a>> for Mock {
         &self,
         step: &ListAllInfosByChapterId<'a>,
     ) -> Result<Vec<PageInfo>, Self::Error> {
+        //
         let state = self.state.lock().unwrap();
 
         Ok(list_all_pages(&state, step.chapter_id))
@@ -194,6 +199,7 @@ impl<'a> Advance<CreateBatch<'a>, MockContext> for MockTransactional {
         context: &mut MockContext,
         step: &CreateBatch<'a>,
     ) -> Result<Vec<PageInfo>, Self::Error> {
+        //
         if step.forms.iter().any(|page_form| {
             context
                 .state
@@ -222,6 +228,7 @@ impl<'a> Advance<ReserveImage<'a>, MockContext> for MockTransactional {
         context: &mut MockContext,
         step: &ReserveImage<'a>,
     ) -> Result<PageImageReservation, Self::Error> {
+        //
         let page_info = context
             .state
             .pages
@@ -230,16 +237,22 @@ impl<'a> Advance<ReserveImage<'a>, MockContext> for MockTransactional {
             .ok_or_else(|| expected("error-page-not-found"))?;
 
         let image_version = page_info.image_version + 1;
+
         let object_key = PageComplex::gen_image_key(
             &page_info.chapter_id,
             step.id,
             image_version,
             step.file_ext,
         );
+
         let prev_object_key = page_info.image_key.clone();
+
         page_info.image_key = Some(object_key.clone());
+
         page_info.image_uploaded = false;
+
         page_info.image_version = image_version;
+
         page_info.updated_at = now();
 
         Ok(PageImageReservation {
@@ -259,6 +272,7 @@ impl<'a> Advance<MarkImageUploaded<'a>, MockContext> for MockTransactional {
         context: &mut MockContext,
         step: &MarkImageUploaded<'a>,
     ) -> Result<(), Self::Error> {
+        //
         let page_info = context
             .state
             .pages
@@ -271,6 +285,7 @@ impl<'a> Advance<MarkImageUploaded<'a>, MockContext> for MockTransactional {
         }
 
         page_info.image_uploaded = true;
+
         page_info.updated_at = now();
 
         Ok(())
@@ -286,6 +301,7 @@ impl<'a> Advance<SetUnitCounters<'a>, MockContext> for MockTransactional {
         context: &mut MockContext,
         step: &SetUnitCounters<'a>,
     ) -> Result<(), Self::Error> {
+        //
         let page_info = context
             .state
             .pages
@@ -294,8 +310,11 @@ impl<'a> Advance<SetUnitCounters<'a>, MockContext> for MockTransactional {
             .ok_or_else(|| expected("error-page-not-found"))?;
 
         page_info.total_unit_count = step.counters.total_unit_count;
+
         page_info.translated_unit_count = step.counters.translated_unit_count;
+
         page_info.proofread_unit_count = step.counters.proofread_unit_count;
+
         page_info.updated_at = now();
 
         Ok(())
@@ -311,16 +330,19 @@ impl<'a> Advance<DeleteByChapterId<'a>, MockContext> for MockTransactional {
         context: &mut MockContext,
         step: &DeleteByChapterId<'a>,
     ) -> Result<(), Self::Error> {
+        //
         context
             .state
             .pages
             .retain(|page_info| page_info.chapter_id != step.chapter_id);
+
         let page_ids = context
             .state
             .pages
             .iter()
             .map(|page_info| page_info.id.clone())
             .collect::<Vec<_>>();
+
         context
             .state
             .units
