@@ -18,7 +18,8 @@ use poprako_transactional::advance::Advance;
 use poprako_transactional::drive::Drive;
 
 use crate::part::image::ImagePool;
-use crate::part::prom::task::{IMAGE_TOPIC, ImageTask};
+use crate::part::prom::Payload;
+use crate::part::prom::task::IMAGE_TOPIC;
 use crate::part::repo::assignment::{
     AssignmentRepo, AssignmentRepoTransactional,
 };
@@ -123,17 +124,11 @@ where
     pub async fn run(mut self) {
         //
         loop {
-            //
-            match self.reset_stuck().await {
-                //
-                Ok(()) => {}
-
-                Err(e) => {
-                    tracing::error!(
-                        error = ?e,
-                        "[RdbPromHandler::run] reset stuck failed",
-                    );
-                }
+            if let Err(e) = self.reset_stuck().await {
+                tracing::error!(
+                    error = ?e,
+                    "[RdbPromHandler::run] reset stuck failed",
+                );
             }
 
             match self.poll().await {
@@ -197,17 +192,12 @@ where
 
     async fn process_row(&self, row: &LocalMessageRow) {
         //
-        match self.reset_stuck().await {
-            //
-            Ok(()) => {}
-
-            Err(e) => {
-                tracing::error!(
-                    id = %row.f_id,
-                    error = ?e,
-                    "[RdbPromHandler] reset stuck before claim failed",
-                );
-            }
+        if let Err(e) = self.reset_stuck().await {
+            tracing::error!(
+                id = %row.f_id,
+                error = ?e,
+                "[RdbPromHandler] reset stuck before claim failed",
+            );
         }
 
         let claimed = match self.claim(&row.f_id).await {
@@ -239,37 +229,28 @@ where
         )
         .await
         {
-            TaskFlow::Complete => match self.complete(&row.f_id).await {
-                //
-                Ok(()) => {}
-
-                Err(e) => {
+            TaskFlow::Complete => {
+                if let Err(e) = self.complete(&row.f_id).await {
                     tracing::error!(
                         id = %row.f_id,
                         error = ?e,
                         "[RdbPromHandler] complete failed",
                     );
                 }
-            },
+            }
 
             TaskFlow::Retry(error) => {
-                match self.retry(&row.f_id, &error).await {
-                    //
-                    Ok(()) => {}
-
-                    Err(e) => {
-                        tracing::error!(
-                            id = %row.f_id,
-                            original_error = %error,
-                            error = ?e,
-                            "[RdbPromHandler] retry mark failed",
-                        );
-                    }
+                if let Err(e) = self.retry(&row.f_id, &error).await {
+                    tracing::error!(
+                        id = %row.f_id,
+                        original_error = %error,
+                        error = ?e,
+                        "[RdbPromHandler] retry mark failed",
+                    );
                 }
             }
 
             TaskFlow::Dead(error) => {
-                //
                 tracing::error!(
                     id = %row.f_id,
                     topic = %row.f_topic,
@@ -277,18 +258,13 @@ where
                     "[RdbPromHandler] task failed",
                 );
 
-                match self.fail(&row.f_id, &error).await {
-                    //
-                    Ok(()) => {}
-
-                    Err(e) => {
-                        tracing::error!(
-                            id = %row.f_id,
-                            original_error = %error,
-                            error = ?e,
-                            "[RdbPromHandler] fail mark failed",
-                        );
-                    }
+                if let Err(e) = self.fail(&row.f_id, &error).await {
+                    tracing::error!(
+                        id = %row.f_id,
+                        original_error = %error,
+                        error = ?e,
+                        "[RdbPromHandler] fail mark failed",
+                    );
                 }
             }
         }
@@ -407,21 +383,170 @@ where
                 Err(e) => return TaskFlow::Dead(e),
             };
 
-            let task: Result<ImageTask<'_>, String> =
+            let payload: Result<Payload<'_>, String> =
                 serde_json::from_str(&payload_str).map_err(|e| {
-                    format!("failed to deserialize image task: {}", e)
+                    format!("failed to deserialize image payload: {}", e)
                 });
 
-            let task = match task {
+            let payload = match payload {
                 //
-                Ok(task) => task,
+                Ok(payload) => payload,
 
                 Err(e) => return TaskFlow::Dead(e),
             };
+
+            let Payload::Image(task) = payload;
 
             image::handle(drive, repo, image_pool, &task).await
         }
 
         unknown => TaskFlow::Dead(format!("unknown prom topic: {}", unknown)),
+    }
+}
+
+#[cfg(all(test, feature = "repo"))]
+mod tests {
+    // image_payloads_from_rdb_dispatch(dispatch_topic)(positive): payloads stored by the RDB append path are decoded and dispatched by their topic.
+
+    use super::*;
+
+    use diesel::prelude::*;
+    use diesel_async::RunQueryDsl;
+    use time::{Duration, OffsetDateTime};
+
+    use crate::part::prom::Append;
+    use crate::part::prom::task::{ImageKind, ImageTask};
+    use crate::part_impl::drive::rdb_impl::RdbDrive;
+    use crate::part_impl::prom::rdb_impl::entity::LocalMessageEntry;
+    use crate::part_impl::repo::mock_impl::Mock;
+    use crate::part_impl::repo::rdb_impl::{RdbRepo, schema, test_shared};
+
+    const PREFIX: &str = "rdb-test-prom-handler-";
+
+    #[tokio::test]
+    async fn image_payloads_from_rdb_dispatch() {
+        //
+        let shared = test_shared::shared().await;
+
+        test_shared::reset(&shared, PREFIX).await;
+
+        let visible_at = OffsetDateTime::now_utc() + Duration::hours(1);
+
+        let delete_image_prom_append = Append {
+            id: "rdb-test-prom-handler-delete",
+            topic: IMAGE_TOPIC,
+            payload: Payload::Image(ImageTask::Delete {
+                object_key: "old-avatar.png",
+            }),
+            visible_at: &visible_at,
+        };
+
+        let delete_local_message_entry = LocalMessageEntry::from_append(
+            &delete_image_prom_append,
+            OffsetDateTime::now_utc(),
+        )
+        .ok()
+        .unwrap();
+
+        let mut conn = shared.get().await.ok().unwrap();
+
+        diesel::insert_into(schema::t_local_message::table)
+            .values(&delete_local_message_entry)
+            .execute(&mut conn)
+            .await
+            .ok()
+            .unwrap();
+
+        let delete_payload: serde_json::Value = schema::t_local_message::table
+            .filter(
+                schema::t_local_message::f_id
+                    .eq("rdb-test-prom-handler-delete"),
+            )
+            .select(schema::t_local_message::f_payload)
+            .first(&mut conn)
+            .await
+            .ok()
+            .unwrap();
+
+        let drive = RdbDrive::new(shared.clone());
+
+        let rdb_prom_repo = RdbPromRepo::new(RdbRepo::new(shared.clone()));
+
+        let delete_image_pool = Mock::new();
+
+        let delete_task_flow = dispatch_topic(
+            &drive,
+            &rdb_prom_repo,
+            &delete_image_pool,
+            IMAGE_TOPIC,
+            &delete_payload,
+        )
+        .await;
+
+        assert!(matches!(delete_task_flow, TaskFlow::Complete));
+
+        assert_eq!(
+            delete_image_pool.snapshot().deleted_image_keys,
+            vec!["old-avatar.png".to_string()]
+        );
+
+        let check_uploaded_image_prom_append = Append {
+            id: "rdb-test-prom-handler-check-uploaded",
+            topic: IMAGE_TOPIC,
+            payload: Payload::Image(ImageTask::CheckUploaded {
+                kind: ImageKind::UserAvatar,
+                resource_id: "missing-user",
+                object_key: "new-avatar.png",
+                image_version: 1,
+            }),
+            visible_at: &visible_at,
+        };
+
+        let check_uploaded_local_message_entry =
+            LocalMessageEntry::from_append(
+                &check_uploaded_image_prom_append,
+                OffsetDateTime::now_utc(),
+            )
+            .ok()
+            .unwrap();
+
+        diesel::insert_into(schema::t_local_message::table)
+            .values(&check_uploaded_local_message_entry)
+            .execute(&mut conn)
+            .await
+            .ok()
+            .unwrap();
+
+        let check_uploaded_payload: serde_json::Value =
+            schema::t_local_message::table
+                .filter(
+                    schema::t_local_message::f_id
+                        .eq("rdb-test-prom-handler-check-uploaded"),
+                )
+                .select(schema::t_local_message::f_payload)
+                .first(&mut conn)
+                .await
+                .ok()
+                .unwrap();
+
+        let check_uploaded_image_pool = Mock::new().with_image_head_absent();
+
+        let check_uploaded_task_flow = dispatch_topic(
+            &drive,
+            &rdb_prom_repo,
+            &check_uploaded_image_pool,
+            IMAGE_TOPIC,
+            &check_uploaded_payload,
+        )
+        .await;
+
+        assert!(matches!(check_uploaded_task_flow, TaskFlow::Complete));
+
+        test_shared::cleanup(&shared, PREFIX).await.ok().unwrap();
+
+        test_shared::assert_no_leftovers(&shared, PREFIX)
+            .await
+            .ok()
+            .unwrap();
     }
 }

@@ -214,13 +214,6 @@ async fn list_infos(
         };
     }
 
-    match &spec.kind {
-        //
-        ComicListKind::All => {}
-
-        ComicListKind::Stages(_) => {}
-    }
-
     if let ComicListKind::Stages(stage_mask) = &spec.kind
         && let Some(sql) = workflow_filter_sql(*stage_mask)
     {
