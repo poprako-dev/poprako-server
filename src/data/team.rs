@@ -25,6 +25,7 @@ pub struct TeamInfoVal {
     pub name: String,
     pub description: String,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub avatar_url: Option<String>,
 
     pub workset_next_index: i32,

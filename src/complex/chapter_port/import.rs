@@ -59,7 +59,6 @@ impl ChapterImportComplex {
                     ));
                 }
 
-
                 flush_label_plus_unit(
                     &mut current_page,
                     &mut current_unit,

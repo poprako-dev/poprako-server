@@ -11,6 +11,7 @@ use crate::complex::util::{
 };
 use crate::model::unit::{
     UnitApplyAck, UnitDiff, UnitIdMapper, UnitIndex, UnitIndexUpdate, UnitOper,
+    UnitPayload,
 };
 use crate::part::repo::step::assignment::GetInfoByChapterIdAndUserId;
 use crate::part::repo::step::chapter::GetInfoById as ChapterGetInfoById;
@@ -44,8 +45,7 @@ impl UnitComplex {
         for unit_oper in diff.opers {
             match unit_oper {
                 //
-                UnitOper::Save {
-                    local_id,
+                UnitOper::Create {
                     id,
                     payload,
                     before_id,
@@ -53,39 +53,42 @@ impl UnitComplex {
                     //
                     validate_optional_id(&before_id)?;
 
-                    let resolved_id = match (local_id, id) {
-                        //
-                        (Some(local_id), None) => {
-                            //
-                            validate_id(&local_id)?;
+                    validate_id(&id)?;
 
-                            if !local_ids.insert(local_id.clone()) {
-                                return Err(unit_invalid_oper_error());
-                            }
+                    validate_payload(&payload)?;
 
-                            let unit_id = Self::gen_id();
+                    if !local_ids.insert(id.clone()) {
+                        return Err(unit_invalid_oper_error());
+                    }
 
-                            local_id_map.push(UnitIdMapper {
-                                local_id: local_id.clone(),
-                                unit_id: unit_id.clone(),
-                            });
+                    let unit_id = Self::gen_id();
 
-                            unit_id
-                        }
+                    local_id_map.push(UnitIdMapper {
+                        local_id: id,
+                        unit_id: unit_id.clone(),
+                    });
 
-                        (None, Some(id)) => {
-                            //
-                            validate_id(&id)?;
+                    opers.push(UnitOper::Create {
+                        id: unit_id,
+                        payload,
+                        before_id,
+                    });
+                }
 
-                            id
-                        }
+                UnitOper::Save {
+                    id,
+                    payload,
+                    before_id,
+                } => {
+                    //
+                    validate_id(&id)?;
 
-                        _ => return Err(unit_invalid_oper_error()),
-                    };
+                    validate_optional_id(&before_id)?;
+
+                    validate_payload(&payload)?;
 
                     opers.push(UnitOper::Save {
-                        local_id: None,
-                        id: Some(resolved_id),
+                        id,
                         payload,
                         before_id,
                     });
@@ -120,18 +123,13 @@ impl UnitComplex {
         for oper in opers {
             match oper {
                 //
-                UnitOper::Save {
-                    id: Some(id),
-                    before_id,
-                    ..
-                } => {
+                UnitOper::Create { id, before_id, .. }
+                | UnitOper::Save { before_id, id, .. } => {
                     //
                     current_order.retain(|surviving_id| surviving_id != id);
 
                     insert_before(&mut current_order, id, before_id);
                 }
-
-                UnitOper::Save { id: None, .. } => {}
 
                 UnitOper::Delete { id } => {
                     current_order.retain(|surviving_id| surviving_id != id);
@@ -285,6 +283,39 @@ fn validate_optional_id(id: &Option<String>) -> RegularResult<()> {
     }
 
     Ok(())
+}
+
+/// Validate editor identifiers required by non-empty unit text fields.
+fn validate_payload(payload: &UnitPayload) -> RegularResult<()> {
+    //
+    validate_text_editor(
+        &payload.translated_text,
+        &payload.last_translator_id,
+    )?;
+
+    validate_text_editor(
+        &payload.proofread_text,
+        &payload.last_proofreader_id,
+    )?;
+
+    Ok(())
+}
+
+/// Require a non-empty editor identifier when text is non-empty.
+fn validate_text_editor(
+    text: &Option<String>,
+    editor_id: &Option<String>,
+) -> RegularResult<()> {
+    let has_text = text.as_ref().map(|text| !text.is_empty()).unwrap_or(false);
+
+    match (has_text, editor_id.as_deref()) {
+        //
+        (true, Some(editor_id)) => validate_id(editor_id),
+
+        (true, None) => Err(unit_invalid_oper_error()),
+
+        (false, _) => Ok(()),
+    }
 }
 
 /// Insert `id` before `before_id` in the order vector. Appends to the end

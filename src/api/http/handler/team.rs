@@ -6,6 +6,9 @@ use axum::http::StatusCode;
 
 use tracing::instrument;
 
+#[cfg(feature = "swagger-ui")]
+use crate::api::http::result::HttpBody;
+
 use crate::api::http::handler::util::ensure_path_matches_body_id;
 use crate::api::http::result::{
     Accept as _, HttpNoContent, HttpResult, no_content,

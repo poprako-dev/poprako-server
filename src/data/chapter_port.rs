@@ -22,6 +22,7 @@ pub struct ChapterTranslationImportData {
 pub struct ChapterTranslationExportVal {
     pub chapter_id: String,
     pub chapter_index: i32,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub chapter_subtitle: Option<String>,
 
     pub comic_id: String,

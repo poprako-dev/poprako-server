@@ -11,11 +11,16 @@ use serde::Deserialize;
 
 use tracing::instrument;
 
+#[cfg(feature = "swagger-ui")]
+use crate::api::http::result::HttpBody;
+
+#[cfg(feature = "swagger-ui")]
+use crate::data::chapter_port::ChapterTranslationExportVal;
+
 use crate::api::http::result::{Accept as _, HttpError, HttpResult};
 use crate::api::http::state::AppHarn;
 use crate::data::chapter_port::{
-    ChapterTranslationImportData,
-    ChapterTranslationImportVal,
+    ChapterTranslationImportData, ChapterTranslationImportVal,
 };
 use crate::model::user::UserToken;
 use crate::usecase;

@@ -10,11 +10,11 @@ use poprako_transactional::advance::Advance;
 use poprako_util::page::Page;
 
 use crate::model::unit::{
-    UnitCounters, UnitIndex, UnitIndexUpdate, UnitInfo, UnitOper, UnitPayload,
+    UnitCounters, UnitIndex, UnitIndexUpdate, UnitInfo, UnitPayload,
 };
 use crate::part::repo::step::unit::{
-    CountByPageId, DeleteByIdInPage, ListAllInfosByPageId, ListIndexesByPageId,
-    ListInfosByPageId, SaveInfo, UpdateIndexesByPageId,
+    CountByPageId, CreateInfo, DeleteByIdInPage, ListAllInfosByPageId,
+    ListIndexesByPageId, ListInfosByPageId, SaveInfo, UpdateIndexesByPageId,
 };
 use crate::part::repo::unit::{UnitRepo, UnitRepoTransactional};
 use crate::part::shared::execute::Execute;
@@ -138,27 +138,6 @@ async fn save_unit(
         .map_err(diesel)?;
 
     Ok(())
-}
-
-/// Save a unit from a [`UnitOper::Save`] operation descriptor.
-async fn save_info(
-    conn: &mut RdbConn,
-    page_id: &str,
-    oper: &UnitOper,
-) -> RegularResult<()> {
-    //
-    let (id, payload) = match oper {
-        //
-        UnitOper::Save {
-            id: Some(id),
-            payload,
-            ..
-        } => (id, payload),
-
-        _ => return Err(expected("error-invalid-unit-oper")),
-    };
-
-    save_unit(conn, page_id, id, payload).await
 }
 
 /// Delete a unit by its ID within the scope of a page.
@@ -335,6 +314,19 @@ impl<'a> Advance<ListAllInfosByPageId<'a>, RdbContext>
 }
 
 #[async_trait]
+impl<'a> Advance<CreateInfo<'a>, RdbContext> for RdbRepoTransactional {
+    type Error = RegularError;
+
+    async fn advance(
+        &self,
+        context: &mut RdbContext,
+        step: &CreateInfo<'a>,
+    ) -> RegularResult<()> {
+        create_unit(context.conn(), step.page_id, step.id, step.payload).await
+    }
+}
+
+#[async_trait]
 impl<'a> Advance<SaveInfo<'a>, RdbContext> for RdbRepoTransactional {
     type Error = RegularError;
 
@@ -343,7 +335,7 @@ impl<'a> Advance<SaveInfo<'a>, RdbContext> for RdbRepoTransactional {
         context: &mut RdbContext,
         step: &SaveInfo<'a>,
     ) -> RegularResult<()> {
-        save_info(context.conn(), step.page_id, step.oper).await
+        save_unit(context.conn(), step.page_id, step.id, step.payload).await
     }
 }
 

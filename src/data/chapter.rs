@@ -29,6 +29,7 @@ pub struct ChapterInfoVal {
     pub id: String,
     pub comic_id: String,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[cfg_attr(feature = "swagger-ui", schema(no_recursion))]
     pub comic: Option<Box<ComicInfoVal>>,
 
@@ -45,6 +46,7 @@ pub struct ChapterInfoVal {
 
     pub creator_id: String,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub creator: Option<UserInfoVal>,
 
     pub created_at: i64,
