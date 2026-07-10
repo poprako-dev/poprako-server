@@ -15,13 +15,17 @@ use crate::test_util::assert_expected_variant;
 
 #[tokio::test]
 async fn update_roles_reviewer_creates_missing_assignment() {
+    //
     let mock = Mock::new();
+
     seed_scope(&mock);
+
     mock.seed_assignment(assignment(
         "chapter-1",
         "reviewer-user",
         roles(RoleField::ADMIN, RoleField::REVIEWER),
     ));
+
     mock.seed_member(member("target-user", role(RoleField::TRANSLATOR)));
 
     update_roles(
@@ -36,6 +40,7 @@ async fn update_roles_reviewer_creates_missing_assignment() {
     )
     .await
     .unwrap();
+
     assert!(
         mock.snapshot()
             .assignments
@@ -46,18 +51,23 @@ async fn update_roles_reviewer_creates_missing_assignment() {
 
 #[tokio::test]
 async fn update_roles_reviewer_overwrites_existing_assignment_roles() {
+    //
     let mock = Mock::new();
+
     seed_scope(&mock);
+
     mock.seed_assignment(assignment(
         "chapter-1",
         "reviewer-user",
         roles(RoleField::ADMIN, RoleField::REVIEWER),
     ));
+
     mock.seed_assignment(assignment(
         "chapter-1",
         "target-user",
         role(RoleField::TRANSLATOR),
     ));
+
     mock.seed_member(member("target-user", role(RoleField::PROOFREADER)));
 
     update_roles(
@@ -72,7 +82,9 @@ async fn update_roles_reviewer_overwrites_existing_assignment_roles() {
     )
     .await
     .unwrap();
+
     let snapshot = mock.snapshot();
+
     let assignment_info = snapshot
         .assignments
         .iter()
@@ -84,18 +96,23 @@ async fn update_roles_reviewer_overwrites_existing_assignment_roles() {
 
 #[tokio::test]
 async fn update_roles_self_role_reduction_updates_assignment() {
+    //
     let mock = Mock::new();
+
     seed_scope(&mock);
+
     mock.seed_assignment(assignment(
         "chapter-1",
         "worker-user",
         roles(RoleField::TRANSLATOR, RoleField::PROOFREADER),
     ));
+
     mock.seed_assignment(assignment(
         "chapter-1",
         "admin-user",
         role(RoleField::ADMIN),
     ));
+
     mock.seed_member(member(
         "worker-user",
         roles(RoleField::TRANSLATOR, RoleField::PROOFREADER),
@@ -113,6 +130,7 @@ async fn update_roles_self_role_reduction_updates_assignment() {
     )
     .await
     .unwrap();
+
     assert_eq!(
         mock.snapshot().assignments[0].roles,
         role(RoleField::TRANSLATOR)
@@ -121,8 +139,11 @@ async fn update_roles_self_role_reduction_updates_assignment() {
 
 #[tokio::test]
 async fn update_roles_self_role_expansion_is_rejected() {
+    //
     let mock = Mock::new();
+
     seed_scope(&mock);
+
     mock.seed_assignment(assignment(
         "chapter-1",
         "worker-user",
@@ -148,13 +169,17 @@ async fn update_roles_self_role_expansion_is_rejected() {
 
 #[tokio::test]
 async fn update_roles_self_role_reduction_requires_member_role() {
+    //
     let mock = Mock::new();
+
     seed_scope(&mock);
+
     mock.seed_assignment(assignment(
         "chapter-1",
         "worker-user",
         roles(RoleField::TRANSLATOR, RoleField::PROOFREADER),
     ));
+
     mock.seed_member(member("worker-user", role(RoleField::PROOFREADER)));
 
     let err = update_roles(
@@ -176,13 +201,17 @@ async fn update_roles_self_role_reduction_requires_member_role() {
 
 #[tokio::test]
 async fn update_roles_non_reviewer_does_not_update_another_user() {
+    //
     let mock = Mock::new();
+
     seed_scope(&mock);
+
     mock.seed_assignment(assignment(
         "chapter-1",
         "worker-user",
         role(RoleField::TRANSLATOR),
     ));
+
     mock.seed_member(member("target-user", role(RoleField::PROOFREADER)));
 
     let err = update_roles(
@@ -204,13 +233,17 @@ async fn update_roles_non_reviewer_does_not_update_another_user() {
 
 #[tokio::test]
 async fn update_roles_admin_role_is_rejected() {
+    //
     let mock = Mock::new();
+
     seed_scope(&mock);
+
     mock.seed_assignment(assignment(
         "chapter-1",
         "admin-user",
         role(RoleField::ADMIN),
     ));
+
     mock.seed_member(member("target-user", role(RoleField::ADMIN)));
 
     let err = update_roles(
@@ -228,13 +261,17 @@ async fn update_roles_admin_role_is_rejected() {
 
 #[tokio::test]
 async fn update_roles_target_member_role_mismatch_is_rejected() {
+    //
     let mock = Mock::new();
+
     seed_scope(&mock);
+
     mock.seed_assignment(assignment(
         "chapter-1",
         "admin-user",
         role(RoleField::ADMIN),
     ));
+
     mock.seed_member(member("target-user", role(RoleField::TRANSLATOR)));
 
     let err = update_roles(
@@ -256,13 +293,17 @@ async fn update_roles_target_member_role_mismatch_is_rejected() {
 
 #[tokio::test]
 async fn update_roles_only_chapter_admin_does_not_remove_own_admin_role() {
+    //
     let mock = Mock::new();
+
     seed_scope(&mock);
+
     mock.seed_assignment(assignment(
         "chapter-1",
         "admin-user",
         roles(RoleField::ADMIN, RoleField::TRANSLATOR),
     ));
+
     mock.seed_member(member(
         "admin-user",
         roles(RoleField::ADMIN, RoleField::TRANSLATOR),

@@ -54,7 +54,9 @@ impl<'a> Execute<ListInfos<'a>> for Mock {
         &self,
         step: &ListInfos<'a>,
     ) -> Result<Vec<MemberInvitationInfo>, Self::Error> {
+        //
         let state = self.state.lock().unwrap();
+
         let mut member_invitation_infos = state
             .member_invitations
             .iter()
@@ -66,6 +68,7 @@ impl<'a> Execute<ListInfos<'a>> for Mock {
             })
             .cloned()
             .collect::<Vec<_>>();
+
         member_invitation_infos.sort_by(|left, right| left.id.cmp(&right.id));
 
         let include_invitor = step
@@ -78,12 +81,15 @@ impl<'a> Execute<ListInfos<'a>> for Mock {
         }
 
         let offset = step.spec.offset as usize;
+
         let limit = step.spec.limit as usize;
+
         if offset >= member_invitation_infos.len() {
             return Ok(Vec::new());
         }
 
         let end = std::cmp::min(offset + limit, member_invitation_infos.len());
+
         Ok(member_invitation_infos[offset..end].to_vec())
     }
 }
@@ -96,6 +102,7 @@ impl<'a> Execute<GetInfoById<'a>> for Mock {
         &self,
         step: &GetInfoById<'a>,
     ) -> Result<MemberInvitationInfo, Self::Error> {
+        //
         let state = self.state.lock().unwrap();
 
         let mut info = state
@@ -123,11 +130,13 @@ impl<'a> Advance<Create<'a>, MockContext> for MockTransactional {
         context: &mut MockContext,
         step: &Create<'a>,
     ) -> Result<MemberInvitationInfo, Self::Error> {
+        //
         if context.state.member_invitations.iter().any(
             |member_invitation_info| member_invitation_info.id == step.form.id,
         ) {
             return Err(expected("error-already-exists"));
         }
+
         if context.state.member_invitations.iter().any(
             |member_invitation_info| {
                 member_invitation_info.team_id == step.form.team_id
@@ -149,10 +158,12 @@ impl<'a> Advance<Create<'a>, MockContext> for MockTransactional {
             pending: true,
             roles: step.form.roles,
         };
+
         context
             .state
             .member_invitations
             .push(member_invitation_info.clone());
+
         Ok(member_invitation_info)
     }
 }
@@ -187,6 +198,7 @@ impl<'a> Advance<GetInfoById<'a>, MockContext> for MockTransactional {
         context: &mut MockContext,
         step: &GetInfoById<'a>,
     ) -> Result<MemberInvitationInfo, Self::Error> {
+        //
         let mut info = context
             .state
             .member_invitations
@@ -213,13 +225,16 @@ impl<'a> Advance<MarkPendingAsUsed<'a>, MockContext> for MockTransactional {
         context: &mut MockContext,
         step: &MarkPendingAsUsed<'a>,
     ) -> Result<(), Self::Error> {
+        //
         let invitation = context
             .state
             .member_invitations
             .iter_mut()
             .find(|invitation| invitation.id == step.id && invitation.pending)
             .ok_or_else(|| expected("error-invitation-not-found"))?;
+
         invitation.pending = false;
+
         Ok(())
     }
 }
@@ -233,6 +248,7 @@ impl<'a> Advance<UpdateInfo<'a>, MockContext> for MockTransactional {
         context: &mut MockContext,
         step: &UpdateInfo<'a>,
     ) -> Result<(), Self::Error> {
+        //
         let member_invitation_info = context
             .state
             .member_invitations
@@ -241,7 +257,9 @@ impl<'a> Advance<UpdateInfo<'a>, MockContext> for MockTransactional {
                 member_invitation_info.id == step.update.id
             })
             .ok_or_else(|| expected("error-invitation-not-found"))?;
+
         member_invitation_info.roles = step.update.roles;
+
         Ok(())
     }
 }
@@ -255,6 +273,7 @@ impl<'a> Advance<Delete<'a>, MockContext> for MockTransactional {
         context: &mut MockContext,
         step: &Delete<'a>,
     ) -> Result<(), Self::Error> {
+        //
         let pos = context
             .state
             .member_invitations
@@ -263,7 +282,9 @@ impl<'a> Advance<Delete<'a>, MockContext> for MockTransactional {
                 member_invitation_info.id == step.id
             })
             .ok_or_else(|| expected("error-invitation-not-found"))?;
+
         context.state.member_invitations.remove(pos);
+
         Ok(())
     }
 }

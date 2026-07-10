@@ -8,7 +8,7 @@ use tracing::instrument;
 
 use crate::api::http::handler::util::ensure_path_matches_body_id;
 use crate::api::http::result::{
-    Accept as _, HttpBody, HttpNoContent, HttpResult, no_content,
+    Accept as _, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
 use crate::data::team::{
@@ -115,6 +115,7 @@ pub async fn update_info(
     Extension(user_token): Extension<UserToken>,
     Json(data): Json<UpdateTeamInfoData>,
 ) -> HttpNoContent {
+    //
     ensure_path_matches_body_id(&team_id, &data.id)?;
 
     usecase::team::update_info(harn.repo(), user_token, data).await?;
@@ -175,8 +176,10 @@ pub async fn mark_avatar_uploaded(
     Extension(user_token): Extension<UserToken>,
     Json(data): Json<MarkTeamAvatarUploadedData>,
 ) -> HttpNoContent {
+    //
     usecase::team::mark_avatar_uploaded(harn.repo(), user_token, team_id, data)
         .await?;
+
     no_content()
 }
 
@@ -198,6 +201,7 @@ pub async fn delete(
     Path(team_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
+    //
     usecase::team::delete(
         harn.drive(),
         harn.repo(),
@@ -206,5 +210,6 @@ pub async fn delete(
         team_id,
     )
     .await?;
+
     no_content()
 }

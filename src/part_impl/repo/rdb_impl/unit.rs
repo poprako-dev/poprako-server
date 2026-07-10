@@ -148,11 +148,13 @@ async fn save_info(
 ) -> RegularResult<()> {
     //
     let (id, payload) = match oper {
+        //
         UnitOper::Save {
             id: Some(id),
             payload,
             ..
         } => (id, payload),
+
         _ => return Err(expected("error-invalid-unit-oper")),
     };
 

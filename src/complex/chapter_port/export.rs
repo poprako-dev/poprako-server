@@ -48,7 +48,9 @@ impl ChapterExportComplex {
             for (index, unit_info) in units.iter().enumerate() {
                 //
                 let group = match unit_info.is_bubble {
+                    //
                     true => 1,
+
                     false => 2,
                 };
 

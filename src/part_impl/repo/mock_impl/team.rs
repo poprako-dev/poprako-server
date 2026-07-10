@@ -84,7 +84,9 @@ impl<'a> Execute<Create<'a>> for Mock {
         &self,
         step: &Create<'a>,
     ) -> Result<TeamInfo, Self::Error> {
+        //
         let mut state = self.state.lock().unwrap();
+
         create_team(&mut state, step)
     }
 }
@@ -97,7 +99,9 @@ impl<'a> Execute<GetInfoById<'a>> for Mock {
         &self,
         step: &GetInfoById<'a>,
     ) -> Result<TeamInfo, Self::Error> {
+        //
         let state = self.state.lock().unwrap();
+
         state
             .teams
             .iter()
@@ -115,8 +119,11 @@ impl<'a> Execute<ListInfos<'a>> for Mock {
         &self,
         step: &ListInfos<'a>,
     ) -> Result<Vec<TeamInfo>, Self::Error> {
+        //
         let state = self.state.lock().unwrap();
+
         let mut teams = match step.user_id {
+            //
             Some(user_id) => state
                 .teams
                 .iter()
@@ -127,11 +134,14 @@ impl<'a> Execute<ListInfos<'a>> for Mock {
                 })
                 .cloned()
                 .collect(),
+
             None => state.teams.clone(),
         };
+
         teams.sort_by_key(|right| Reverse(right.created_at));
 
         let offset = step.offset as usize;
+
         let limit = step.limit as usize;
 
         if offset >= teams.len() {
@@ -139,6 +149,7 @@ impl<'a> Execute<ListInfos<'a>> for Mock {
         }
 
         let end = std::cmp::min(offset + limit, teams.len());
+
         Ok(teams[offset..end].to_vec())
     }
 }
@@ -148,15 +159,21 @@ impl<'a> Execute<UpdateInfo<'a>> for Mock {
     type Error = RegularError;
 
     async fn execute(&self, step: &UpdateInfo<'a>) -> Result<(), Self::Error> {
+        //
         let mut state = self.state.lock().unwrap();
+
         let team = state
             .teams
             .iter_mut()
             .find(|team| team.id == step.id)
             .ok_or_else(|| expected("error-team-not-found"))?;
+
         team.name = step.name.to_string();
+
         team.description = step.description.to_string();
+
         team.updated_at = now();
+
         Ok(())
     }
 }
@@ -169,7 +186,9 @@ impl<'a> Execute<MarkAvatarUploaded<'a>> for Mock {
         &self,
         step: &MarkAvatarUploaded<'a>,
     ) -> Result<(), Self::Error> {
+        //
         let mut state = self.state.lock().unwrap();
+
         mark_team_avatar_uploaded(&mut state, step.id, step.avatar_version)
     }
 }
@@ -183,23 +202,32 @@ impl<'a> Advance<ReserveAvatar<'a>, MockContext> for MockTransactional {
         context: &mut MockContext,
         step: &ReserveAvatar<'a>,
     ) -> Result<TeamAvatarReservation, Self::Error> {
+        //
         let team = context
             .state
             .teams
             .iter_mut()
             .find(|team| team.id == step.id)
             .ok_or_else(|| expected("error-team-not-found"))?;
+
         let avatar_version = team.avatar_version + 1;
+
         let object_key = TeamComplex::gen_avatar_key(
             step.id,
             avatar_version,
             step.file_extension,
         );
+
         let prev_object_key = team.avatar_key.clone();
+
         team.avatar_key = Some(object_key.clone());
+
         team.avatar_uploaded = false;
+
         team.avatar_version = avatar_version;
+
         team.updated_at = now();
+
         Ok(TeamAvatarReservation {
             object_key,
             prev_object_key,
@@ -266,12 +294,14 @@ impl<'a> Advance<Delete<'a>, MockContext> for MockTransactional {
         context: &mut MockContext,
         step: &Delete<'a>,
     ) -> Result<(), Self::Error> {
+        //
         let pos = context
             .state
             .teams
             .iter()
             .position(|team| team.id == step.id)
             .ok_or_else(|| expected("error-team-not-found"))?;
+
         let deleted_team_id = context.state.teams[pos].id.clone();
 
         let deleted_workset_ids = context
@@ -281,6 +311,7 @@ impl<'a> Advance<Delete<'a>, MockContext> for MockTransactional {
             .filter(|workset| workset.team_id == deleted_team_id)
             .map(|workset| workset.id.clone())
             .collect::<Vec<_>>();
+
         let deleted_comic_ids = context
             .state
             .comics
@@ -292,6 +323,7 @@ impl<'a> Advance<Delete<'a>, MockContext> for MockTransactional {
             })
             .map(|comic| comic.id.clone())
             .collect::<Vec<_>>();
+
         let deleted_chapter_ids = context
             .state
             .chapters
@@ -305,40 +337,48 @@ impl<'a> Advance<Delete<'a>, MockContext> for MockTransactional {
             .collect::<Vec<_>>();
 
         context.state.teams.remove(pos);
+
         context
             .state
             .worksets
             .retain(|workset| workset.team_id != deleted_team_id);
+
         context
             .state
             .members
             .retain(|member| member.team_id != deleted_team_id);
+
         context
             .state
             .member_invitations
             .retain(|member_invitation| {
                 member_invitation.team_id != deleted_team_id
             });
+
         context.state.comics.retain(|comic| {
             !deleted_workset_ids
                 .iter()
                 .any(|workset_id| workset_id == &comic.workset_id)
         });
+
         context.state.chapters.retain(|chapter_info| {
             !deleted_comic_ids
                 .iter()
                 .any(|comic_id| comic_id == &chapter_info.comic_id)
         });
+
         context.state.pages.retain(|page_info| {
             !deleted_chapter_ids
                 .iter()
                 .any(|chapter_id| chapter_id == &page_info.chapter_id)
         });
+
         context.state.assignments.retain(|assignment_info| {
             !deleted_chapter_ids
                 .iter()
                 .any(|chapter_id| chapter_id == &assignment_info.chapter_id)
         });
+
         Ok(())
     }
 }
@@ -354,15 +394,20 @@ impl<'a> Advance<IncrementWorksetNextIndex<'a>, MockContext>
         context: &mut MockContext,
         step: &IncrementWorksetNextIndex<'a>,
     ) -> Result<i32, Self::Error> {
+        //
         let team = context
             .state
             .teams
             .iter_mut()
             .find(|team| team.id == step.id)
             .ok_or_else(|| expected("error-team-not-found"))?;
+
         let index = team.workset_next_index;
+
         team.workset_next_index += 1;
+
         team.updated_at = now();
+
         Ok(index)
     }
 }

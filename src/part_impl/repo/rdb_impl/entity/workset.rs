@@ -70,22 +70,30 @@ impl<'a> WorksetAspect<'a> {
     }
 
     pub fn name(mut self, val: &'a str) -> Self {
+        //
         self.f_name = Some(val);
+
         self
     }
 
     pub fn description(mut self, val: Option<&'a str>) -> Self {
+        //
         self.f_description = Some(val);
+
         self
     }
 
     pub fn comic_count(mut self, val: i32) -> Self {
+        //
         self.f_comic_count = Some(val);
+
         self
     }
 
     pub fn comic_next_index(mut self, val: i32) -> Self {
+        //
         self.f_comic_next_index = Some(val);
+
         self
     }
 }

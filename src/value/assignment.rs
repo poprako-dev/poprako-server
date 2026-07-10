@@ -47,19 +47,26 @@ pub enum AssignmentInclOpt {
 impl InclOpt for AssignmentInclOpt {
     fn path(self) -> &'static [Self] {
         match self {
+            //
             Self::User => &[Self::User],
+
             Self::Chapter => &[Self::Chapter],
+
             Self::ChapterComic => &[Self::Chapter, Self::ChapterComic],
+
             Self::ChapterComicWorkset => {
                 &[Self::Chapter, Self::ChapterComic, Self::ChapterComicWorkset]
             }
+
             Self::ChapterComicWorksetTeam => &[
                 Self::Chapter,
                 Self::ChapterComic,
                 Self::ChapterComicWorkset,
                 Self::ChapterComicWorksetTeam,
             ],
+
             Self::ChapterCreator => &[Self::Chapter, Self::ChapterCreator],
+
             Self::ChapterComicCreator => {
                 &[Self::Chapter, Self::ChapterComic, Self::ChapterComicCreator]
             }

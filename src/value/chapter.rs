@@ -48,9 +48,11 @@ pub enum Stage {
 /// accept any phase.
 pub fn is_valid_stage_phase(stage: Stage, phase: StagePhase) -> bool {
     match stage {
+        //
         Stage::RawProvide | Stage::Review | Stage::Publish => {
             matches!(phase, StagePhase::Pending | StagePhase::Completed)
         }
+
         Stage::Translate | Stage::Proofread | Stage::TypesetRedraw => true,
     }
 }
@@ -72,6 +74,7 @@ pub fn try_modify_stage(
     current: (Stage, StagePhase),
     oper: StageOper,
 ) -> RegularResult<StagePhase> {
+    //
     let (stage, phase) = current;
 
     if !is_valid_stage_phase(stage, phase) {
@@ -82,32 +85,41 @@ pub fn try_modify_stage(
     }
 
     let next_phase = match (stage, phase, oper) {
+        //
         (Stage::Publish, _, StageOper::Revert) => {
             return Err(RegularError::Expected {
                 variant: ExpectedVariant::Args,
                 message: trl("error-invalid-workflow-transition"),
             });
         }
+
         (
             Stage::RawProvide | Stage::Review | Stage::Publish,
             StagePhase::Pending,
             StageOper::Advance,
         ) => StagePhase::Completed,
+
         (
             Stage::RawProvide | Stage::Review,
             StagePhase::Completed,
             StageOper::Revert,
         ) => StagePhase::Pending,
+
         (_, StagePhase::Pending, StageOper::Advance) => StagePhase::Active,
+
         (_, StagePhase::Active, StageOper::Advance) => StagePhase::Completed,
+
         (_, StagePhase::Completed, StageOper::Advance) => {
             return Err(RegularError::Expected {
                 variant: ExpectedVariant::Args,
                 message: trl("error-invalid-workflow-transition"),
             });
         }
+
         (_, StagePhase::Completed, StageOper::Revert) => StagePhase::Active,
+
         (_, StagePhase::Active, StageOper::Revert) => StagePhase::Pending,
+
         (_, StagePhase::Pending, StageOper::Revert) => StagePhase::Pending,
     };
 
@@ -466,12 +478,17 @@ pub enum ChapterInclOpt {
 impl InclOpt for ChapterInclOpt {
     fn path(self) -> &'static [Self] {
         match self {
+            //
             Self::Comic => &[Self::Comic],
+
             Self::ComicWorkset => &[Self::Comic, Self::ComicWorkset],
+
             Self::ComicWorksetTeam => {
                 &[Self::Comic, Self::ComicWorkset, Self::ComicWorksetTeam]
             }
+
             Self::ComicCreator => &[Self::Comic, Self::ComicCreator],
+
             Self::Creator => &[Self::Creator],
         }
     }

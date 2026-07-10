@@ -3,7 +3,6 @@
 //!
 //! Topic dispatch routes to [`image`].
 
-use std::marker::PhantomData;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration as StdDuration;
@@ -35,7 +34,7 @@ use crate::part::repo::user::UserRepoTransactional;
 use crate::part::repo::workset::{WorksetRepo, WorksetRepoTransactional};
 use crate::part_impl::prom::rdb_impl::entity::LocalMessageRow;
 use crate::part_impl::prom::rdb_impl::repo::{
-    ClaimStep, CompleteStep, FailStep, LocalMessageRepo, PollPending,
+    ClaimStep, CompleteStep, FailStep, PollPending, RdbPromRepo,
     ResetStuckStep, RetryStep,
 };
 use crate::part_impl::shared::{RdbContext, RdbCore};
@@ -50,7 +49,7 @@ const POLL_INTERVAL: StdDuration = StdDuration::from_secs(5);
 const RETRY_DELAY: Duration = Duration::minutes(5);
 const PROCESSING_TIMEOUT: Duration = Duration::minutes(15);
 
-pub enum TaskOutcome {
+pub enum TaskFlow {
     Complete,
     Retry(String),
     Dead(String),
@@ -62,16 +61,13 @@ pub struct RdbPromHandler<D, R, I> {
     core: RdbCore,
     drive: D,
 
-    repo: Arc<R>,
+    repo: RdbPromRepo<R>,
 
-    local_message_repo: LocalMessageRepo,
     image_pool: I,
 
     shutdown_recv: OneshotReceiver<()>,
     done_send: OneshotSender<()>,
     accepting: Arc<AtomicBool>,
-
-    _p: PhantomData<RdbContext>,
 }
 
 impl<D, R, I> RdbPromHandler<D, R, I>
@@ -106,8 +102,7 @@ where
     pub fn new(
         core: RdbCore,
         drive: D,
-        repo: Arc<R>,
-        local_message_repo: LocalMessageRepo,
+        repo: RdbPromRepo<R>,
         image_pool: I,
         shutdown_recv: OneshotReceiver<()>,
         done_send: OneshotSender<()>,
@@ -117,20 +112,22 @@ where
             core,
             drive,
             repo,
-            local_message_repo,
             image_pool,
             shutdown_recv,
             done_send,
             accepting,
-            _p: PhantomData,
         }
     }
 
     #[instrument(skip(self), level = Level::INFO)]
     pub async fn run(mut self) {
+        //
         loop {
+            //
             match self.reset_stuck().await {
+                //
                 Ok(()) => {}
+
                 Err(e) => {
                     tracing::error!(
                         error = ?e,
@@ -140,11 +137,13 @@ where
             }
 
             match self.poll().await {
+                //
                 Ok(rows) => {
                     for row in &rows {
                         self.process_row(row).await;
                     }
                 }
+
                 Err(e) => {
                     tracing::error!(
                         error = ?e,
@@ -164,11 +163,13 @@ where
 
         // Drain one final poll cycle before exiting.
         match self.poll().await {
+            //
             Ok(rows) => {
                 for row in &rows {
                     self.process_row(row).await;
                 }
             }
+
             Err(e) => {
                 tracing::error!(
                     error = ?e,
@@ -186,17 +187,20 @@ where
     }
 
     async fn poll(&self) -> RegularResult<Vec<LocalMessageRow>> {
+        //
         let conn = self.core.get().await?;
+
         let mut context = RdbContext::new(conn);
 
-        self.local_message_repo
-            .advance(&mut context, &PollPending)
-            .await
+        self.repo.advance(&mut context, &PollPending).await
     }
 
     async fn process_row(&self, row: &LocalMessageRow) {
+        //
         match self.reset_stuck().await {
+            //
             Ok(()) => {}
+
             Err(e) => {
                 tracing::error!(
                     id = %row.f_id,
@@ -207,13 +211,17 @@ where
         }
 
         let claimed = match self.claim(&row.f_id).await {
+            //
             Ok(v) => v,
+
             Err(e) => {
+                //
                 tracing::error!(
                     id = %row.f_id,
                     error = ?e,
                     "[RdbPromHandler] claim failed",
                 );
+
                 return;
             }
         };
@@ -225,15 +233,16 @@ where
         match dispatch_topic(
             &self.drive,
             &self.repo,
-            &self.local_message_repo,
             &self.image_pool,
             &row.f_topic,
             &row.f_payload,
         )
         .await
         {
-            TaskOutcome::Complete => match self.complete(&row.f_id).await {
+            TaskFlow::Complete => match self.complete(&row.f_id).await {
+                //
                 Ok(()) => {}
+
                 Err(e) => {
                     tracing::error!(
                         id = %row.f_id,
@@ -242,9 +251,12 @@ where
                     );
                 }
             },
-            TaskOutcome::Retry(error) => {
+
+            TaskFlow::Retry(error) => {
                 match self.retry(&row.f_id, &error).await {
+                    //
                     Ok(()) => {}
+
                     Err(e) => {
                         tracing::error!(
                             id = %row.f_id,
@@ -255,7 +267,9 @@ where
                     }
                 }
             }
-            TaskOutcome::Dead(error) => {
+
+            TaskFlow::Dead(error) => {
+                //
                 tracing::error!(
                     id = %row.f_id,
                     topic = %row.f_topic,
@@ -264,7 +278,9 @@ where
                 );
 
                 match self.fail(&row.f_id, &error).await {
+                    //
                     Ok(()) => {}
+
                     Err(e) => {
                         tracing::error!(
                             id = %row.f_id,
@@ -279,38 +295,43 @@ where
     }
 
     async fn claim(&self, id: &str) -> RegularResult<bool> {
+        //
         let conn = self.core.get().await?;
+
         let mut context = RdbContext::new(conn);
 
-        self.local_message_repo
-            .advance(&mut context, &ClaimStep { id })
-            .await
+        self.repo.advance(&mut context, &ClaimStep { id }).await
     }
 
     async fn complete(&self, id: &str) -> RegularResult<()> {
+        //
         let conn = self.core.get().await?;
+
         let mut context = RdbContext::new(conn);
 
-        self.local_message_repo
-            .advance(&mut context, &CompleteStep { id })
-            .await
+        self.repo.advance(&mut context, &CompleteStep { id }).await
     }
 
     async fn fail(&self, id: &str, error: &str) -> RegularResult<()> {
+        //
         let conn = self.core.get().await?;
+
         let mut context = RdbContext::new(conn);
 
-        self.local_message_repo
+        self.repo
             .advance(&mut context, &FailStep { id, error })
             .await
     }
 
     async fn retry(&self, id: &str, error: &str) -> RegularResult<()> {
+        //
         let conn = self.core.get().await?;
+
         let mut context = RdbContext::new(conn);
+
         let visible_at = OffsetDateTime::now_utc() + RETRY_DELAY;
 
-        self.local_message_repo
+        self.repo
             .advance(
                 &mut context,
                 &RetryStep {
@@ -323,11 +344,14 @@ where
     }
 
     async fn reset_stuck(&self) -> RegularResult<()> {
+        //
         let conn = self.core.get().await?;
+
         let mut context = RdbContext::new(conn);
+
         let before = OffsetDateTime::now_utc() - PROCESSING_TIMEOUT;
 
-        self.local_message_repo
+        self.repo
             .advance(&mut context, &ResetStuckStep { before: &before })
             .await
     }
@@ -336,12 +360,11 @@ where
 /// Route a prom record by topic to the appropriate handler module.
 async fn dispatch_topic<D, R, I>(
     drive: &D,
-    repo: &Arc<R>,
-    local_message_repo: &LocalMessageRepo,
+    repo: &RdbPromRepo<R>,
     image_pool: &I,
     topic: &str,
-    payload_json: &serde_json::Value,
-) -> TaskOutcome
+    payload: &serde_json::Value,
+) -> TaskFlow
 where
     D: Drive<RdbContext>,
     D::Error: Into<RegularError>,
@@ -370,15 +393,18 @@ where
     I: ImagePool + Send + Sync,
 {
     match topic {
+        //
         IMAGE_TOPIC => {
-            let payload_str =
-                serde_json::to_string(payload_json).map_err(|e| {
-                    format!("failed to serialize image payload: {}", e)
-                });
+            //
+            let payload_str = serde_json::to_string(payload).map_err(|e| {
+                format!("failed to serialize image payload: {}", e)
+            });
 
             let payload_str = match payload_str {
+                //
                 Ok(payload_str) => payload_str,
-                Err(e) => return TaskOutcome::Dead(e),
+
+                Err(e) => return TaskFlow::Dead(e),
             };
 
             let task: Result<ImageTask<'_>, String> =
@@ -387,15 +413,15 @@ where
                 });
 
             let task = match task {
+                //
                 Ok(task) => task,
-                Err(e) => return TaskOutcome::Dead(e),
+
+                Err(e) => return TaskFlow::Dead(e),
             };
 
-            image::handle(drive, repo, local_message_repo, image_pool, &task)
-                .await
+            image::handle(drive, repo, image_pool, &task).await
         }
-        unknown => {
-            TaskOutcome::Dead(format!("unknown prom topic: {}", unknown))
-        }
+
+        unknown => TaskFlow::Dead(format!("unknown prom topic: {}", unknown)),
     }
 }

@@ -140,11 +140,13 @@ impl<'a> Advance<UpdateUserNickname<'a>, MockContext> for MockTransactional {
         context: &mut MockContext,
         step: &UpdateUserNickname<'a>,
     ) -> Result<(), Self::Error> {
+        //
         for member in &mut context.state.members {
             if member.user_id == step.user_id {
                 member.user_nickname = step.user_nickname.to_string();
             }
         }
+
         Ok(())
     }
 }
@@ -178,8 +180,11 @@ impl<'a> Execute<ListInfos<'a>> for Mock {
         &self,
         step: &ListInfos<'a>,
     ) -> Result<Vec<MemberInfo>, Self::Error> {
+        //
         let state = self.state.lock().unwrap();
+
         let (offset, limit, incl_opt, mut member_infos) = match step.spec {
+            //
             MemberListSpec::User {
                 owner_id,
                 incl_opt,
@@ -196,6 +201,7 @@ impl<'a> Execute<ListInfos<'a>> for Mock {
                     .cloned()
                     .collect::<Vec<_>>(),
             ),
+
             MemberListSpec::Team {
                 team_id,
                 fuzzy_nickname,
@@ -229,16 +235,20 @@ impl<'a> Execute<ListInfos<'a>> for Mock {
         };
 
         let include_user = incl_opt.contains(&MemberInclOpt::User);
+
         let include_team = incl_opt.contains(&MemberInclOpt::Team);
 
         for member_info in &mut member_infos {
+            //
             apply_user_incl(&state, member_info, include_user);
+
             apply_team_incl(&state, member_info, include_team);
         }
 
         member_infos.sort_by(|left, right| left.id.cmp(&right.id));
 
         let offset = offset as usize;
+
         let limit = limit as usize;
 
         if offset >= member_infos.len() {
@@ -246,6 +256,7 @@ impl<'a> Execute<ListInfos<'a>> for Mock {
         }
 
         let end = std::cmp::min(offset + limit, member_infos.len());
+
         Ok(member_infos[offset..end].to_vec())
     }
 }
@@ -258,7 +269,9 @@ impl<'a> Execute<FindInfoByUserIdAndTeamId<'a>> for Mock {
         &self,
         step: &FindInfoByUserIdAndTeamId<'a>,
     ) -> Result<Option<MemberInfo>, Self::Error> {
+        //
         let state = self.state.lock().unwrap();
+
         Ok(find_member_by_user_id_and_team_id(
             &state,
             step.user_id,
@@ -275,14 +288,17 @@ impl<'a> Execute<GetInfoById<'a>> for Mock {
         &self,
         step: &GetInfoById<'a>,
     ) -> Result<MemberInfo, Self::Error> {
+        //
         let state = self.state.lock().unwrap();
 
         let mut info = get_member_by_id(&state, step.id)?;
 
         let include_user = step.incl_opt.contains(&MemberInclOpt::User);
+
         let include_team = step.incl_opt.contains(&MemberInclOpt::Team);
 
         apply_user_incl(&state, &mut info, include_user);
+
         apply_team_incl(&state, &mut info, include_team);
 
         Ok(info)
@@ -317,6 +333,7 @@ impl<'a> Advance<UpdateRole<'a>, MockContext> for MockTransactional {
         context: &mut MockContext,
         step: &UpdateRole<'a>,
     ) -> Result<(), Self::Error> {
+        //
         let member_info = context
             .state
             .members
@@ -325,6 +342,7 @@ impl<'a> Advance<UpdateRole<'a>, MockContext> for MockTransactional {
             .ok_or_else(|| expected("error-member-not-found"))?;
 
         member_info.roles = step.member_role_update.roles;
+
         Ok(())
     }
 }
@@ -338,13 +356,16 @@ impl<'a> Advance<Delete<'a>, MockContext> for MockTransactional {
         context: &mut MockContext,
         step: &Delete<'a>,
     ) -> Result<(), Self::Error> {
+        //
         let pos = context
             .state
             .members
             .iter()
             .position(|member| member.id == step.id)
             .ok_or_else(|| expected("error-member-not-found"))?;
+
         context.state.members.remove(pos);
+
         Ok(())
     }
 }

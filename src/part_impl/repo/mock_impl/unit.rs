@@ -170,6 +170,7 @@ impl<'a> Execute<ListInfosByPageId<'a>> for Mock {
         &self,
         step: &ListInfosByPageId<'a>,
     ) -> Result<Vec<UnitInfo>, Self::Error> {
+        //
         let state = self.state.lock().unwrap();
 
         Ok(list_units(&state, step.page_id)
@@ -188,7 +189,9 @@ impl<'a> Execute<ListAllInfosByPageId<'a>> for Mock {
         &self,
         step: &ListAllInfosByPageId<'a>,
     ) -> Result<Vec<UnitInfo>, Self::Error> {
+        //
         let state = self.state.lock().unwrap();
+
         Ok(list_units(&state, step.page_id))
     }
 }
@@ -232,12 +235,15 @@ impl<'a> Advance<SaveInfo<'a>, MockContext> for MockTransactional {
         context: &mut MockContext,
         step: &SaveInfo<'a>,
     ) -> Result<(), Self::Error> {
+        //
         let (id, payload) = match step.oper {
+            //
             UnitOper::Save {
                 id: Some(id),
                 payload,
                 ..
             } => (id, payload),
+
             _ => return Err(expected("error-invalid-unit-oper")),
         };
 
@@ -254,6 +260,7 @@ impl<'a> Advance<DeleteByIdInPage<'a>, MockContext> for MockTransactional {
         context: &mut MockContext,
         step: &DeleteByIdInPage<'a>,
     ) -> Result<(), Self::Error> {
+        //
         context.state.units.retain(|unit_info| {
             !(unit_info.page_id == step.page_id && unit_info.id == step.id)
         });
@@ -293,7 +300,9 @@ impl<'a> Advance<UpdateIndexesByPageId<'a>, MockContext> for MockTransactional {
         context: &mut MockContext,
         step: &UpdateIndexesByPageId<'a>,
     ) -> Result<(), Self::Error> {
+        //
         for unit_index_update in step.updates {
+            //
             let unit_info = context
                 .state
                 .units

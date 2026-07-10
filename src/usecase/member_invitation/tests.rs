@@ -112,14 +112,18 @@ fn update_data(id: &str) -> UpdateMemberInvitationRolesData {
 
 #[tokio::test]
 async fn create_admin_creates_pending_invitation() {
+    //
     let mock = Mock::new();
+
     mock.seed_team(team("team-1", "Team", "Desc"));
+
     mock.seed_member(member(
         "member-1",
         "admin-user",
         "team-1",
         RoleMask::from(RoleField::ADMIN),
     ));
+
     mock.seed_user(user("invitee-user", "qid-2"), credential("invitee-user"));
 
     let created = create(
@@ -132,16 +136,23 @@ async fn create_admin_creates_pending_invitation() {
     .unwrap();
 
     let snapshot = mock.snapshot();
+
     assert_eq!(snapshot.member_invitations.len(), 1);
+
     assert_eq!(snapshot.member_invitations[0].id, created.id);
+
     assert_eq!(snapshot.member_invitations[0].invitor_id, "admin-user");
+
     assert_eq!(snapshot.member_invitations[0].invitee_qid, "qid-2");
+
     assert!(snapshot.member_invitations[0].pending);
 }
 
 #[tokio::test]
 async fn create_non_admin_is_rejected() {
+    //
     let mock = Mock::new();
+
     mock.seed_member(member(
         "member-1",
         "normal-user",
@@ -160,18 +171,22 @@ async fn create_non_admin_is_rejected() {
     .unwrap();
 
     assert_expected_variant(err, ExpectedVariant::Perm);
+
     assert!(mock.snapshot().member_invitations.is_empty());
 }
 
 #[tokio::test]
 async fn list_infos_member_lists_invitations() {
+    //
     let mock = Mock::new();
+
     mock.seed_member(member(
         "member-1",
         "member-user",
         "team-1",
         RoleMask::from(RoleField::TRANSLATOR),
     ));
+
     mock.seed_member_invitation(invitation("inv-1", "team-1", "qid-2"));
 
     let listed =
@@ -180,12 +195,15 @@ async fn list_infos_member_lists_invitations() {
             .unwrap();
 
     assert_eq!(listed.len(), 1);
+
     assert_eq!(listed[0].id, "inv-1");
 }
 
 #[tokio::test]
 async fn list_infos_empty_returns_after_membership() {
+    //
     let mock = Mock::new();
+
     mock.seed_member(member(
         "member-1",
         "member-user",
@@ -203,7 +221,9 @@ async fn list_infos_empty_returns_after_membership() {
 
 #[tokio::test]
 async fn list_infos_non_member_is_rejected() {
+    //
     let mock = Mock::new();
+
     mock.seed_member_invitation(invitation("inv-1", "team-1", "qid-2"));
 
     let err = list_infos(&mock, &mock, token("stranger"), list_data("team-1"))
@@ -216,13 +236,16 @@ async fn list_infos_non_member_is_rejected() {
 
 #[tokio::test]
 async fn update_roles_admin_updates_role_mask() {
+    //
     let mock = Mock::new();
+
     mock.seed_member(member(
         "member-1",
         "admin-user",
         "team-1",
         RoleMask::from(RoleField::ADMIN),
     ));
+
     mock.seed_member_invitation(invitation("inv-1", "team-1", "qid-2"));
 
     update_roles(&mock, &mock, token("admin-user"), update_data("inv-1"))
@@ -237,13 +260,16 @@ async fn update_roles_admin_updates_role_mask() {
 
 #[tokio::test]
 async fn update_roles_non_admin_is_rejected() {
+    //
     let mock = Mock::new();
+
     mock.seed_member(member(
         "member-1",
         "normal-user",
         "team-1",
         RoleMask::from(RoleField::TRANSLATOR),
     ));
+
     mock.seed_member_invitation(invitation("inv-1", "team-1", "qid-2"));
 
     let err =
@@ -257,13 +283,16 @@ async fn update_roles_non_admin_is_rejected() {
 
 #[tokio::test]
 async fn delete_admin_deletes_invitation() {
+    //
     let mock = Mock::new();
+
     mock.seed_member(member(
         "member-1",
         "admin-user",
         "team-1",
         RoleMask::from(RoleField::ADMIN),
     ));
+
     mock.seed_member_invitation(invitation("inv-1", "team-1", "qid-2"));
 
     delete(&mock, &mock, token("admin-user"), "inv-1".into())
@@ -275,13 +304,16 @@ async fn delete_admin_deletes_invitation() {
 
 #[tokio::test]
 async fn delete_non_admin_is_rejected() {
+    //
     let mock = Mock::new();
+
     mock.seed_member(member(
         "member-1",
         "normal-user",
         "team-1",
         RoleMask::from(RoleField::TRANSLATOR),
     ));
+
     mock.seed_member_invitation(invitation("inv-1", "team-1", "qid-2"));
 
     let err = delete(&mock, &mock, token("normal-user"), "inv-1".into())
@@ -290,5 +322,6 @@ async fn delete_non_admin_is_rejected() {
         .unwrap();
 
     assert_expected_variant(err, ExpectedVariant::Perm);
+
     assert_eq!(mock.snapshot().member_invitations.len(), 1);
 }

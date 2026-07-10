@@ -54,7 +54,9 @@ impl UnitComplex {
                     validate_optional_id(&before_id)?;
 
                     let resolved_id = match (local_id, id) {
+                        //
                         (Some(local_id), None) => {
+                            //
                             validate_id(&local_id)?;
 
                             if !local_ids.insert(local_id.clone()) {
@@ -70,11 +72,14 @@ impl UnitComplex {
 
                             unit_id
                         }
+
                         (None, Some(id)) => {
+                            //
                             validate_id(&id)?;
 
                             id
                         }
+
                         _ => return Err(unit_invalid_oper_error()),
                     };
 

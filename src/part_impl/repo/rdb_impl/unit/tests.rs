@@ -31,6 +31,7 @@ fn unit_payload(text: Option<&str>, proofread: bool) -> UnitPayload {
 
 #[tokio::test]
 async fn unit_roundtrip_reads_test_database_url() {
+    //
     let shared = test_shared::shared().await;
 
     test_shared::reset(&shared, PREFIX).await;
@@ -66,6 +67,7 @@ async fn unit_roundtrip_reads_test_database_url() {
 
     drive
         .with_context(async |context| {
+            //
             Advance::advance(
                 &transactional_repo,
                 context,
@@ -117,7 +119,9 @@ async fn unit_roundtrip_reads_test_database_url() {
     .unwrap();
 
     assert_eq!(unit_infos.len(), 1);
+
     assert_eq!(unit_infos[0].index, 5);
+
     assert!(unit_infos[0].is_proofread);
 
     test_shared::cleanup(&shared, PREFIX).await.ok().unwrap();

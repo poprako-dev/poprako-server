@@ -38,6 +38,7 @@ impl TestRng {
     }
 
     fn next(&mut self) -> u64 {
+        //
         self.state = self
             .state
             .wrapping_mul(6_364_136_223_846_793_005)
@@ -62,6 +63,7 @@ fn token(user_id: &str) -> UserToken {
 }
 
 fn workset(id: &str, team_id: &str) -> WorksetInfo {
+    //
     let time = OffsetDateTime::now_utc();
 
     WorksetInfo {
@@ -78,6 +80,7 @@ fn workset(id: &str, team_id: &str) -> WorksetInfo {
 }
 
 fn comic(id: &str, workset_id: &str) -> ComicInfo {
+    //
     let time = OffsetDateTime::now_utc();
 
     ComicInfo {
@@ -109,6 +112,7 @@ fn chapter(
     translated: i32,
     proofread: i32,
 ) -> ChapterInfo {
+    //
     let time = OffsetDateTime::now_utc();
 
     ChapterInfo {
@@ -148,6 +152,7 @@ fn assignment(
     user_id: &str,
     role_mask: RoleMask,
 ) -> AssignmentInfo {
+    //
     let time = OffsetDateTime::now_utc();
 
     AssignmentInfo {
@@ -163,6 +168,7 @@ fn assignment(
 }
 
 fn page(id: &str, total: i32, translated: i32, proofread: i32) -> PageInfo {
+    //
     let time = OffsetDateTime::now_utc();
 
     PageInfo {
@@ -188,6 +194,7 @@ fn unit(
     proofread_text: Option<&str>,
     proofread: bool,
 ) -> UnitInfo {
+    //
     let time = OffsetDateTime::now_utc();
 
     UnitInfo {
@@ -256,6 +263,7 @@ fn payload_data(
 }
 
 fn seed_scope(mock: &Mock, total: i32, translated: i32, proofread: i32) {
+    //
     mock.seed_workset(workset("workset-1", "team-1"));
 
     mock.seed_comic(comic("comic-1", "workset-1"));
@@ -272,6 +280,7 @@ fn seed_scope(mock: &Mock, total: i32, translated: i32, proofread: i32) {
 }
 
 fn sorted_unit_ids(units: &[UnitInfo]) -> Vec<String> {
+    //
     let mut unit_infos = units.to_vec();
 
     unit_infos.sort_by_key(|left| left.index);
@@ -284,9 +293,11 @@ fn sorted_unit_ids(units: &[UnitInfo]) -> Vec<String> {
 
 fn assert_perm_error(error: RegularError) {
     match error {
+        //
         RegularError::Expected { variant, .. } => {
             assert!(matches!(variant, ExpectedVariant::Perm));
         }
+
         RegularError::Unrecoverable { .. } => {
             panic!("expected permission error");
         }
@@ -295,6 +306,7 @@ fn assert_perm_error(error: RegularError) {
 
 #[tokio::test]
 async fn list_infos_returns_units_for_team_member() {
+    //
     let mock = Mock::new();
 
     seed_scope(&mock, 2, 1, 1);
@@ -317,7 +329,9 @@ async fn list_infos_returns_units_for_team_member() {
     .await;
 
     let listed = match listed {
+        //
         Ok(listed) => listed,
+
         Err(_) => panic!("expected list success"),
     };
 
@@ -336,6 +350,7 @@ async fn list_infos_returns_units_for_team_member() {
 
 #[tokio::test]
 async fn list_infos_returns_units_for_assignment_fallback() {
+    //
     let mock = Mock::new();
 
     seed_scope(&mock, 1, 1, 0);
@@ -360,7 +375,9 @@ async fn list_infos_returns_units_for_assignment_fallback() {
     .await;
 
     let listed = match listed {
+        //
         Ok(listed) => listed,
+
         Err(_) => panic!("expected list success"),
     };
 
@@ -371,6 +388,7 @@ async fn list_infos_returns_units_for_assignment_fallback() {
 
 #[tokio::test]
 async fn list_infos_rejects_unrelated_user() {
+    //
     let mock = Mock::new();
 
     seed_scope(&mock, 0, 0, 0);
@@ -393,6 +411,7 @@ async fn list_infos_rejects_unrelated_user() {
 
 #[tokio::test]
 async fn save_infos_creates_updates_and_deletes_by_save_and_delete_opers() {
+    //
     let mock = Mock::new();
 
     seed_scope(&mock, 2, 2, 1);
@@ -426,7 +445,9 @@ async fn save_infos_creates_updates_and_deletes_by_save_and_delete_opers() {
     .await;
 
     let saved = match saved {
+        //
         Ok(saved) => saved,
+
         Err(_) => panic!("expected save success"),
     };
 
@@ -454,6 +475,7 @@ async fn save_infos_creates_updates_and_deletes_by_save_and_delete_opers() {
 
 #[tokio::test]
 async fn save_infos_places_unit_before_anchor_or_at_tail_by_before_id() {
+    //
     let mock = Mock::new();
 
     seed_scope(&mock, 2, 2, 0);
@@ -486,7 +508,9 @@ async fn save_infos_places_unit_before_anchor_or_at_tail_by_before_id() {
     .await;
 
     let saved = match saved {
+        //
         Ok(saved) => saved,
+
         Err(_) => panic!("expected save success"),
     };
 
@@ -529,6 +553,7 @@ fn clone_oracle(units: &[OracleUnit]) -> Vec<OracleUnit> {
 
 #[tokio::test]
 async fn save_infos_concurrent_merge_reaches_consistent_final_state() {
+    //
     let initial_count = 20;
 
     let oper_count = 20;
@@ -538,6 +563,7 @@ async fn save_infos_concurrent_merge_reaches_consistent_final_state() {
     let mut initial_units = Vec::new();
 
     for index in 0..initial_count {
+        //
         let unit_id = format!("unit-{}", index);
 
         initial_units.push(OracleUnit {
@@ -680,9 +706,11 @@ fn generate_random_opers(
     tag: &str,
     count: usize,
 ) -> Vec<UnitOperData> {
+    //
     let mut opers = Vec::with_capacity(count);
 
     for step in 0..count {
+        //
         let subject_index = rng.range(initial_units.len());
 
         let subject_id = initial_units[subject_index].id.clone();
@@ -720,12 +748,14 @@ fn apply_opers_to_oracle(
 ) {
     for (step, oper) in opers.iter().enumerate() {
         match oper {
+            //
             UnitOperData::Save {
                 id,
                 local_id,
                 before_id,
                 payload,
             } => {
+                //
                 let resolved_id =
                     id.clone().or_else(|| local_id.clone()).unwrap_or_default();
 
@@ -751,6 +781,7 @@ fn apply_opers_to_oracle(
 
                 oracle_units.insert(insert_position, oracle_unit);
             }
+
             UnitOperData::Delete { id } => {
                 oracle_units.retain(|unit| unit.id != *id);
             }
@@ -759,6 +790,7 @@ fn apply_opers_to_oracle(
 }
 
 fn build_seeded_mock(initial_units: &[OracleUnit]) -> Mock {
+    //
     let mock = Mock::new();
 
     let initial_count = initial_units.len() as i32;
@@ -789,6 +821,7 @@ async fn apply_save_to_mock(
     mock: &Mock,
     opers: &[UnitOperData],
 ) -> RegularResult<()> {
+    //
     save_infos(
         mock,
         mock,
@@ -807,6 +840,7 @@ async fn apply_save_to_mock(
 }
 
 fn collect_sorted_units(units: &[UnitInfo], page_id: &str) -> Vec<UnitInfo> {
+    //
     let mut filtered: Vec<UnitInfo> = units
         .iter()
         .filter(|unit_info| unit_info.page_id == page_id)
@@ -820,6 +854,7 @@ fn collect_sorted_units(units: &[UnitInfo], page_id: &str) -> Vec<UnitInfo> {
 
 #[tokio::test]
 async fn save_infos_rolls_back_without_edit_role() {
+    //
     let mock = Mock::new();
 
     seed_scope(&mock, 1, 1, 0);
@@ -861,6 +896,7 @@ async fn save_infos_rolls_back_without_edit_role() {
 
 #[tokio::test]
 async fn save_infos_rolls_back_invalid_diff() {
+    //
     let mock = Mock::new();
 
     seed_scope(&mock, 1, 1, 0);
@@ -897,9 +933,11 @@ async fn save_infos_rolls_back_invalid_diff() {
     let snapshot = mock.snapshot();
 
     match e {
+        //
         RegularError::Expected { variant, .. } => {
             assert!(matches!(variant, ExpectedVariant::Args));
         }
+
         RegularError::Unrecoverable { .. } => {
             panic!("expected argument error");
         }

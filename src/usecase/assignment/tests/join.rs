@@ -9,8 +9,11 @@ use crate::test_util::assert_expected_variant;
 
 #[tokio::test]
 async fn join_creates_assignment() {
+    //
     let mock = Mock::new();
+
     seed_scope(&mock);
+
     mock.seed_member(member("user-1", role(RoleField::TRANSLATOR)));
 
     let joined = join(
@@ -23,21 +26,28 @@ async fn join_creates_assignment() {
         },
     )
     .await;
+
     assert!(joined.is_ok());
+
     let joined = joined.ok().unwrap();
 
     assert_eq!(joined.chapter_id, "chapter-1");
+
     assert_eq!(mock.snapshot().assignments.len(), 1);
 }
 
 #[tokio::test]
 async fn join_unions_existing_assignment_roles() {
+    //
     let mock = Mock::new();
+
     seed_scope(&mock);
+
     mock.seed_member(member(
         "user-1",
         roles(RoleField::TRANSLATOR, RoleField::PROOFREADER),
     ));
+
     mock.seed_assignment(assignment(
         "chapter-1",
         "user-1",
@@ -54,7 +64,9 @@ async fn join_unions_existing_assignment_roles() {
         },
     )
     .await;
+
     assert!(joined.is_ok());
+
     let snapshot = mock.snapshot();
 
     assert!(
@@ -66,8 +78,11 @@ async fn join_unions_existing_assignment_roles() {
 
 #[tokio::test]
 async fn join_rejects_role_outside_member_mask() {
+    //
     let mock = Mock::new();
+
     seed_scope(&mock);
+
     mock.seed_member(member("user-1", role(RoleField::TRANSLATOR)));
 
     let err = join(

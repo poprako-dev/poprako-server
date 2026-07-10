@@ -72,32 +72,44 @@ impl<'a> PageAspect<'a> {
     }
 
     pub fn image_key(mut self, val: Option<&'a str>) -> Self {
+        //
         self.f_image_key = Some(val);
+
         self
     }
 
     pub fn image_uploaded(mut self, val: bool) -> Self {
+        //
         self.f_image_uploaded = Some(val);
+
         self
     }
 
     pub fn image_version(mut self, val: i64) -> Self {
+        //
         self.f_image_version = Some(val);
+
         self
     }
 
     pub fn total_unit_count(mut self, val: i32) -> Self {
+        //
         self.f_total_unit_count = Some(val);
+
         self
     }
 
     pub fn translated_unit_count(mut self, val: i32) -> Self {
+        //
         self.f_translated_unit_count = Some(val);
+
         self
     }
 
     pub fn proofread_unit_count(mut self, val: i32) -> Self {
+        //
         self.f_proofread_unit_count = Some(val);
+
         self
     }
 }
@@ -122,6 +134,7 @@ impl From<PageRow> for PageInfo {
 
 impl<'a> From<&'a PageForm> for PageEntry<'a> {
     fn from(form: &'a PageForm) -> Self {
+        //
         let now = OffsetDateTime::now_utc();
 
         Self {

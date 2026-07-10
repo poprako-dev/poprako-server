@@ -19,6 +19,7 @@ const PREFIX: &str = "rdb-test-page-domain-";
 
 #[tokio::test]
 async fn page_roundtrip_reads_test_database_url() {
+    //
     let shared = test_shared::shared().await;
 
     test_shared::reset(&shared, PREFIX).await;
@@ -39,6 +40,7 @@ async fn page_roundtrip_reads_test_database_url() {
 
     drive
         .with_context(async |context| {
+            //
             Advance::advance(
                 &transactional_repo,
                 context,
@@ -72,6 +74,7 @@ async fn page_roundtrip_reads_test_database_url() {
     .unwrap();
 
     assert_eq!(page_infos.len(), 1);
+
     assert_eq!(page_infos[0].total_unit_count, 2);
 
     test_shared::cleanup(&shared, PREFIX).await.ok().unwrap();

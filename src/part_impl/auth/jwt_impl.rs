@@ -45,6 +45,7 @@ struct TokenClaims {
 impl JwtAuth {
     /// Creates a JWT signer from a shared secret and token lifetime.
     pub fn new(secret: &str, expiration_hours: i64) -> RegularResult<Self> {
+        //
         if expiration_hours <= 0 {
             return Err(RegularError::Unrecoverable {
                 message: "[JwtAuth::new] JWT_EXPIRATION_HOURS must be positive"
@@ -67,6 +68,7 @@ impl JwtAuth {
 
     /// Reads JWT settings from environment variables.
     pub fn from_env() -> anyhow::Result<Self> {
+        //
         let secret = std::env::var("JWT_SECRET")
             .with_context(|| "[JwtAuth::from_env] JWT_SECRET is not set")?;
 
@@ -89,6 +91,7 @@ impl JwtAuth {
 impl TokenAuth for JwtAuth {
     #[instrument(err(Debug), skip(self, token), level = Level::DEBUG)]
     fn sign_token(&self, token: &UserTokenRef) -> RegularResult<String> {
+        //
         let now = OffsetDateTime::now_utc();
 
         let issued_at = now.unix_timestamp() as usize;
@@ -119,18 +122,22 @@ impl TokenAuth for JwtAuth {
 
     #[instrument(err(Debug), skip(self), level = Level::DEBUG)]
     fn verify_token(&self, raw: &str) -> RegularResult<UserToken> {
+        //
         let token_data = decode::<TokenClaims>(
             raw,
             &self.decoding_key,
             &Validation::new(Algorithm::HS256),
         )
         .map_err(|err| {
+            //
             tracing::debug!("[JwtAuth::verify_token] decode failed: {}", err);
+
             RegularError::Expected {
                 variant: ExpectedVariant::Auth,
                 message: trl("error-unauthorized"),
             }
         })?;
+
         Ok(UserToken {
             user_id: token_data.claims.user_id,
         })

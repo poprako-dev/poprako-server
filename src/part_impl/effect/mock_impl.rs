@@ -27,6 +27,7 @@ use crate::part::effect::event::user::UserActivePayload;
 /// Mock helper that verifies events are collected for later draining.
 #[tokio::test]
 async fn develop_collects_events() {
+    //
     let mock = Mock::new();
 
     EffectDevelop::develop(
@@ -38,7 +39,10 @@ async fn develop_collects_events() {
     .await;
 
     assert_eq!(mock.event_count(), 1);
+
     let events = mock.drain_events();
+
     assert_eq!(events.len(), 1);
+
     assert_eq!(mock.event_count(), 0);
 }

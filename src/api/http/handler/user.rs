@@ -10,7 +10,7 @@ use crate::api::http::handler::util::{
     ensure_current_user, ensure_path_matches_body_id,
 };
 use crate::api::http::result::{
-    Accept as _, HttpBody, HttpNoContent, HttpResult, no_content,
+    Accept as _, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
 use crate::data::user::{
@@ -35,6 +35,7 @@ pub async fn get_my_info(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
 ) -> HttpResult<UserInfoVal> {
+    //
     let id = user_token.user_id.clone();
 
     usecase::user::get_info(
@@ -98,6 +99,7 @@ pub async fn update_info(
     Extension(user_token): Extension<UserToken>,
     Json(data): Json<UpdateUserInfoData>,
 ) -> HttpNoContent {
+    //
     ensure_path_matches_body_id(&user_id, &data.id)?;
 
     usecase::user::update_info(harn.drive(), harn.repo(), user_token, data)
@@ -124,6 +126,7 @@ pub async fn delete(
     Path(user_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
+    //
     usecase::user::delete(
         harn.drive(),
         harn.repo(),
@@ -132,6 +135,7 @@ pub async fn delete(
         user_id,
     )
     .await?;
+
     no_content()
 }
 
@@ -154,6 +158,7 @@ pub async fn reserve_avatar(
     Extension(user_token): Extension<UserToken>,
     Json(data): Json<ReserveUserAvatarData>,
 ) -> HttpResult<ReserveUserAvatarVal> {
+    //
     ensure_current_user(&user_id, &user_token)?;
 
     usecase::user::reserve_avatar(
@@ -187,6 +192,7 @@ pub async fn mark_avatar_uploaded(
     Extension(user_token): Extension<UserToken>,
     Json(data): Json<MarkUserAvatarUploadedData>,
 ) -> HttpNoContent {
+    //
     usecase::user::mark_avatar_uploaded(
         harn.drive(),
         harn.repo(),

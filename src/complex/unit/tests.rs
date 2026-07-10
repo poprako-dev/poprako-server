@@ -47,6 +47,7 @@ fn assert_args_error(error: RegularError) {
 
 #[test]
 fn prepare_diff_maps_create_ids_and_keeps_oper_order() {
+    //
     let unit_diff = diff(vec![
         UnitOper::Save {
             local_id: None,
@@ -72,23 +73,32 @@ fn prepare_diff_maps_create_ids_and_keeps_oper_order() {
     ]);
 
     let receipt = match UnitComplex::prepare_diff(unit_diff) {
+        //
         Ok(receipt) => receipt,
+
         Err(_) => panic!("expected valid difference"),
     };
 
     assert_eq!(receipt.opers.len(), 4);
+
     assert_eq!(receipt.local_id_map.len(), 1);
+
     assert_eq!(receipt.local_id_map[0].local_id, "local-x");
+
     assert!(!receipt.local_id_map[0].unit_id.is_empty());
 
     match &receipt.opers[1] {
+        //
         UnitOper::Save { id, local_id, .. } => {
+            //
             assert!(local_id.is_none());
+
             assert_eq!(
                 id.as_deref(),
                 Some(receipt.local_id_map[0].unit_id.as_str())
             );
         }
+
         UnitOper::Delete { .. } => {
             panic!("expected save oper");
         }
@@ -97,6 +107,7 @@ fn prepare_diff_maps_create_ids_and_keeps_oper_order() {
 
 #[test]
 fn prepare_diff_rejects_invalid_compact_diff() {
+    //
     let empty_id_error =
         UnitComplex::prepare_diff(diff(vec![UnitOper::Save {
             local_id: None,
@@ -131,6 +142,7 @@ fn prepare_diff_rejects_invalid_compact_diff() {
 
 #[test]
 fn prepare_diff_keeps_delete_and_later_save_for_ordered_replay() {
+    //
     let receipt = match UnitComplex::prepare_diff(diff(vec![
         UnitOper::Delete {
             id: "unit-a".into(),
@@ -142,7 +154,9 @@ fn prepare_diff_keeps_delete_and_later_save_for_ordered_replay() {
             before_id: None,
         },
     ])) {
+        //
         Ok(receipt) => receipt,
+
         Err(_) => panic!("expected delete and later save to be valid"),
     };
 
@@ -151,6 +165,7 @@ fn prepare_diff_keeps_delete_and_later_save_for_ordered_replay() {
 
 #[test]
 fn apply_opers_to_order_places_create_and_save_before_anchor_or_tail() {
+    //
     let opers = vec![
         UnitOper::Save {
             local_id: None,
@@ -181,6 +196,7 @@ fn apply_opers_to_order_places_create_and_save_before_anchor_or_tail() {
 
 #[test]
 fn apply_opers_to_order_removes_deleted_unit_and_keeps_remaining_order() {
+    //
     let opers = vec![UnitOper::Delete {
         id: "unit-b".into(),
     }];
@@ -194,6 +210,7 @@ fn apply_opers_to_order_removes_deleted_unit_and_keeps_remaining_order() {
 
 #[test]
 fn apply_opers_to_order_save_upsert_restores_missing_unit_at_tail() {
+    //
     let opers = vec![UnitOper::Save {
         local_id: None,
         id: Some("unit-z".into()),
@@ -210,6 +227,7 @@ fn apply_opers_to_order_save_upsert_restores_missing_unit_at_tail() {
 
 #[test]
 fn build_index_updates_compacts_server_order() {
+    //
     let current_indexes = vec![
         UnitIndex {
             id: "unit-a".into(),
@@ -250,6 +268,7 @@ fn build_index_updates_compacts_server_order() {
 
 #[test]
 fn build_index_updates_skips_compact_server_order() {
+    //
     let current_indexes = vec![
         UnitIndex {
             id: "unit-a".into(),

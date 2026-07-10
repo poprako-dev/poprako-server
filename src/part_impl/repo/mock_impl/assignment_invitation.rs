@@ -30,7 +30,9 @@ impl<'a> Execute<ListInfos<'a>> for Mock {
         &self,
         step: &ListInfos<'a>,
     ) -> Result<Vec<AssignmentInvitationInfo>, Self::Error> {
+        //
         let state = self.state.lock().unwrap();
+
         let mut assignment_invitation_infos = state
             .assignment_invitations
             .iter()
@@ -51,6 +53,7 @@ impl<'a> Execute<ListInfos<'a>> for Mock {
         });
 
         let offset = step.offset as usize;
+
         let limit = step.limit as usize;
 
         if offset >= assignment_invitation_infos.len() {
@@ -72,6 +75,7 @@ impl<'a> Execute<GetInfoById<'a>> for Mock {
         &self,
         step: &GetInfoById<'a>,
     ) -> Result<AssignmentInvitationInfo, Self::Error> {
+        //
         let state = self.state.lock().unwrap();
 
         state
@@ -94,6 +98,7 @@ impl<'a> Advance<Create<'a>, MockContext> for MockTransactional {
         context: &mut MockContext,
         step: &Create<'a>,
     ) -> Result<AssignmentInvitationInfo, Self::Error> {
+        //
         if context.state.assignment_invitations.iter().any(
             |assignment_invitation_info| {
                 assignment_invitation_info.id == step.form.id
@@ -114,6 +119,7 @@ impl<'a> Advance<Create<'a>, MockContext> for MockTransactional {
         }
 
         let time = now();
+
         let assignment_invitation_info = AssignmentInvitationInfo {
             id: step.form.id.clone(),
             chapter_id: step.form.chapter_id.clone(),
@@ -186,6 +192,7 @@ impl<'a> Advance<MarkPendingAsUsed<'a>, MockContext> for MockTransactional {
         context: &mut MockContext,
         step: &MarkPendingAsUsed<'a>,
     ) -> Result<(), Self::Error> {
+        //
         let invitation = context
             .state
             .assignment_invitations
@@ -194,6 +201,7 @@ impl<'a> Advance<MarkPendingAsUsed<'a>, MockContext> for MockTransactional {
             .ok_or_else(|| expected("error-invitation-not-found"))?;
 
         invitation.pending = false;
+
         invitation.updated_at = now();
 
         Ok(())
@@ -209,6 +217,7 @@ impl<'a> Advance<Delete<'a>, MockContext> for MockTransactional {
         context: &mut MockContext,
         step: &Delete<'a>,
     ) -> Result<(), Self::Error> {
+        //
         let pos = context
             .state
             .assignment_invitations
@@ -233,6 +242,7 @@ impl<'a> Advance<DeleteByChapterId<'a>, MockContext> for MockTransactional {
         context: &mut MockContext,
         step: &DeleteByChapterId<'a>,
     ) -> Result<(), Self::Error> {
+        //
         context
             .state
             .assignment_invitations

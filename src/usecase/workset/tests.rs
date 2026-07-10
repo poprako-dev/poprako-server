@@ -120,41 +120,56 @@ fn count_delete_records(records: &[MockPromRecord], object_key: &str) -> usize {
 
 #[tokio::test]
 async fn create_allocates_index_and_persists() {
+    //
     let mock = Mock::new();
+
     mock.seed_team(team("team-1", "Team", "Desc"));
+
     mock.seed_member(admin_member("user-1", "team-1"));
 
     let created = create(&mock, &mock, token("user-1"), create_data("team-1"))
         .await
         .unwrap();
+
     let snapshot = mock.snapshot();
 
     assert_eq!(created.id, snapshot.worksets[0].id);
+
     assert_eq!(snapshot.worksets[0].index, 0);
+
     assert_eq!(snapshot.teams[0].workset_next_index, 1);
+
     assert_eq!(snapshot.worksets.len(), 1);
+
     assert_eq!(snapshot.worksets[0].name, "new");
 }
 
 #[tokio::test]
 async fn create_rolls_back_missing_team() {
+    //
     let mock = Mock::new();
+
     mock.seed_member(admin_member("user-1", "missing"));
 
     let err = create(&mock, &mock, token("user-1"), create_data("missing"))
         .await
         .err()
         .unwrap();
+
     let snapshot = mock.snapshot();
 
     assert_expected_variant(err, ExpectedVariant::Args);
+
     assert!(snapshot.worksets.is_empty());
 }
 
 #[tokio::test]
 async fn get_info_returns_existing_workset() {
+    //
     let mock = Mock::new();
+
     mock.seed_workset(workset("workset-1", "team-1", 2));
+
     mock.seed_member(admin_member("user-1", "team-1"));
 
     let found = get_info(&mock, token("user-1"), "workset-1".into())
@@ -162,11 +177,13 @@ async fn get_info_returns_existing_workset() {
         .unwrap();
 
     assert_eq!(found.id, "workset-1");
+
     assert_eq!(found.index, 2);
 }
 
 #[tokio::test]
 async fn get_info_propagates_missing_workset() {
+    //
     let mock = Mock::new();
 
     let err = get_info(&mock, token("user-1"), "missing".into())
@@ -179,10 +196,15 @@ async fn get_info_propagates_missing_workset() {
 
 #[tokio::test]
 async fn list_infos_filters_and_sorts_by_index() {
+    //
     let mock = Mock::new();
+
     mock.seed_member(admin_member("user-1", "team-1"));
+
     mock.seed_workset(workset("workset-2", "team-1", 2));
+
     mock.seed_workset(workset("workset-1", "team-1", 1));
+
     mock.seed_workset(workset("workset-other", "team-2", 0));
 
     let list = list_infos(
@@ -198,13 +220,17 @@ async fn list_infos_filters_and_sorts_by_index() {
     .unwrap();
 
     assert_eq!(list.len(), 2);
+
     assert_eq!(list[0].id, "workset-1");
+
     assert_eq!(list[1].id, "workset-2");
 }
 
 #[tokio::test]
 async fn list_infos_returns_empty_for_missing_team_contents() {
+    //
     let mock = Mock::new();
+
     mock.seed_member(admin_member("user-1", "missing"));
 
     let list = list_infos(
@@ -218,13 +244,17 @@ async fn list_infos_returns_empty_for_missing_team_contents() {
     )
     .await
     .unwrap();
+
     assert!(list.is_empty());
 }
 
 #[tokio::test]
 async fn update_info_updates_workset() {
+    //
     let mock = Mock::new();
+
     mock.seed_workset(workset("workset-1", "team-1", 0));
+
     mock.seed_member(admin_member("user-1", "team-1"));
 
     update_info(
@@ -238,9 +268,11 @@ async fn update_info_updates_workset() {
     )
     .await
     .unwrap();
+
     let snapshot = mock.snapshot();
 
     assert_eq!(snapshot.worksets[0].name, "updated");
+
     assert_eq!(
         snapshot.worksets[0].description,
         Some("updated-desc".into())
@@ -249,6 +281,7 @@ async fn update_info_updates_workset() {
 
 #[tokio::test]
 async fn update_info_propagates_missing_workset() {
+    //
     let mock = Mock::new();
 
     let err = update_info(
@@ -269,14 +302,19 @@ async fn update_info_propagates_missing_workset() {
 
 #[tokio::test]
 async fn delete_removes_workset_and_enqueues_child_cover_deletes() {
+    //
     let mock = Mock::new();
+
     mock.seed_workset(workset("workset-1", "team-1", 0));
+
     mock.seed_member(admin_member("user-1", "team-1"));
+
     mock.seed_comic(comic_with_uploaded_cover(
         "comic-1",
         "workset-1",
         "cover-1.png",
     ));
+
     mock.seed_comic(comic_with_uploaded_cover(
         "comic-2",
         "workset-1",
@@ -286,14 +324,18 @@ async fn delete_removes_workset_and_enqueues_child_cover_deletes() {
     delete(&mock, &mock, &mock, token("user-1"), "workset-1".into())
         .await
         .unwrap();
+
     let snapshot = mock.snapshot();
 
     assert!(snapshot.worksets.is_empty());
+
     assert!(snapshot.comics.is_empty());
+
     assert_eq!(
         count_delete_records(&snapshot.prom_records, "cover-1.png"),
         1
     );
+
     assert_eq!(
         count_delete_records(&snapshot.prom_records, "cover-2.png"),
         1
@@ -302,27 +344,36 @@ async fn delete_removes_workset_and_enqueues_child_cover_deletes() {
 
 #[tokio::test]
 async fn delete_rolls_back_missing_workset() {
+    //
     let mock = Mock::new();
+
     mock.seed_workset(workset("workset-1", "team-1", 0));
+
     mock.seed_member(admin_member("user-1", "team-1"));
 
     let err = delete(&mock, &mock, &mock, token("user-1"), "missing".into())
         .await
         .err()
         .unwrap();
+
     let snapshot = mock.snapshot();
 
     assert_expected_variant(err, ExpectedVariant::Args);
+
     assert_eq!(snapshot.worksets.len(), 1);
+
     assert!(snapshot.prom_records.is_empty());
 }
 
 #[tokio::test]
 async fn delete_does_not_create_prom_records_when_called_directly() {
+    //
     let mock = Mock::new();
+
     mock.seed_workset(workset("workset-1", "team-1", 0));
 
     Drive::with_context(&mock, async move |context| {
+        //
         let transactional = MockTransactional;
 
         Advance::advance(
@@ -353,10 +404,13 @@ async fn delete_does_not_create_prom_records_when_called_directly() {
     .unwrap();
 
     let snapshot = mock.snapshot();
+
     assert_eq!(
         count_delete_records(&snapshot.prom_records, "existing.png"),
         1
     );
+
     assert_eq!(snapshot.prom_records.len(), 1);
+
     assert!(snapshot.worksets.is_empty());
 }

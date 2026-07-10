@@ -9,8 +9,11 @@ use crate::test_util::assert_expected_variant;
 
 #[tokio::test]
 async fn delete_owner_deletes_own_assignment() {
+    //
     let mock = Mock::new();
+
     seed_scope(&mock);
+
     mock.seed_assignment(assignment(
         "chapter-1",
         "worker-user",
@@ -31,13 +34,17 @@ async fn delete_owner_deletes_own_assignment() {
 
 #[tokio::test]
 async fn delete_reviewer_deletes_another_user_assignment() {
+    //
     let mock = Mock::new();
+
     seed_scope(&mock);
+
     mock.seed_assignment(assignment(
         "chapter-1",
         "admin-user",
         role(RoleField::ADMIN),
     ));
+
     mock.seed_assignment(assignment(
         "chapter-1",
         "target-user",
@@ -52,18 +59,23 @@ async fn delete_reviewer_deletes_another_user_assignment() {
     )
     .await
     .unwrap();
+
     assert_eq!(mock.snapshot().assignments.len(), 1);
 }
 
 #[tokio::test]
 async fn delete_non_reviewer_does_not_delete_another_user_assignment() {
+    //
     let mock = Mock::new();
+
     seed_scope(&mock);
+
     mock.seed_assignment(assignment(
         "chapter-1",
         "worker-user",
         role(RoleField::TRANSLATOR),
     ));
+
     mock.seed_assignment(assignment(
         "chapter-1",
         "target-user",
@@ -81,5 +93,6 @@ async fn delete_non_reviewer_does_not_delete_another_user_assignment() {
     .unwrap();
 
     assert_expected_variant(err, ExpectedVariant::Perm);
+
     assert_eq!(mock.snapshot().assignments.len(), 2);
 }

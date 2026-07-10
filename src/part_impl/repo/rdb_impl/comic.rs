@@ -206,8 +206,10 @@ async fn list_infos(
         let pattern = format!("%{}%", fuzzy_title);
 
         query = match stored_index_from_numeric_fuzzy(fuzzy_title) {
+            //
             Some(index) => query
                 .filter(f_composed_title.ilike(pattern).or(f_index.eq(index))),
+
             None => query.filter(f_composed_title.ilike(pattern)),
         };
     }

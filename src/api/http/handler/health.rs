@@ -21,6 +21,7 @@ use axum::http::StatusCode;
 pub async fn check_health(
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
 ) -> Result<StatusCode, StatusCode> {
+    //
     if !addr.ip().is_loopback() {
         return Err(StatusCode::NOT_FOUND);
     }

@@ -19,6 +19,7 @@ const PREFIX: &str = "rdb-test-member-domain-";
 
 #[tokio::test]
 async fn member_roundtrip_reads_test_database_url() {
+    //
     let shared = test_shared::shared().await;
 
     test_shared::reset(&shared, PREFIX).await;
@@ -45,6 +46,7 @@ async fn member_roundtrip_reads_test_database_url() {
 
     drive
         .with_context(async |context| {
+            //
             Advance::advance(
                 &transactional_repo,
                 context,
@@ -74,6 +76,7 @@ async fn member_roundtrip_reads_test_database_url() {
             .unwrap();
 
     assert_eq!(member_infos.len(), 1);
+
     assert_eq!(
         member_infos[0].user.as_ref().unwrap().id,
         team_fixture.user_form.id
@@ -86,6 +89,7 @@ async fn member_roundtrip_reads_test_database_url() {
 
     drive
         .with_context(async |context| {
+            //
             Advance::advance(
                 &transactional_repo,
                 context,

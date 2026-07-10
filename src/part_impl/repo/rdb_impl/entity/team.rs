@@ -71,27 +71,37 @@ impl<'a> TeamAspect<'a> {
     }
 
     pub fn name(mut self, val: &'a str) -> Self {
+        //
         self.f_name = Some(val);
+
         self
     }
 
     pub fn description(mut self, val: &'a str) -> Self {
+        //
         self.f_description = Some(val);
+
         self
     }
 
     pub fn avatar_key(mut self, val: &'a str) -> Self {
+        //
         self.f_avatar_key = Some(val);
+
         self
     }
 
     pub fn avatar_uploaded(mut self, val: bool) -> Self {
+        //
         self.f_avatar_uploaded = Some(val);
+
         self
     }
 
     pub fn avatar_version(mut self, val: i64) -> Self {
+        //
         self.f_avatar_version = Some(val);
+
         self
     }
 }

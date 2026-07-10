@@ -48,9 +48,12 @@ impl UserInfoVal {
         P: ImagePool,
     {
         let avatar_url = match (model.avatar_uploaded, &model.avatar_key) {
+            //
             (true, Some(key)) => image_pool.get_signed(key).await.ok(),
+
             _ => None,
         };
+
         Ok(Self {
             id: model.id,
             nickname: model.nickname,

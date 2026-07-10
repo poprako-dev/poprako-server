@@ -14,10 +14,12 @@ struct TestClaims {
 
 #[test]
 fn sign_token() {
+    //
     let auth = JwtAuth::new("test-secret", 1).unwrap();
 
     let signed_token =
         TokenAuth::sign_token(&auth, &UserTokenRef { user_id: "user-1" });
+
     assert!(signed_token.is_ok());
 
     let signed_token = signed_token.ok().unwrap();
@@ -36,6 +38,7 @@ fn sign_token() {
 
 #[test]
 fn new_rejects_non_positive_expiration() {
+    //
     let err = JwtAuth::new("test-secret", 0).err().unwrap();
 
     assert!(matches!(err, RegularError::Unrecoverable { .. }));

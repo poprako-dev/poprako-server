@@ -301,6 +301,7 @@ fn list_assignments(
 ) -> Vec<AssignmentInfo> {
     //
     let (offset, limit, incl_opt, mut assignment_infos) = match spec {
+        //
         AssignmentListSpec::Chapter {
             chapter_id,
             role,
@@ -324,6 +325,7 @@ fn list_assignments(
                 .cloned()
                 .collect::<Vec<_>>(),
         ),
+
         AssignmentListSpec::User {
             owner_id,
             role,
@@ -487,7 +489,9 @@ impl<'a> Execute<GetInfoByChapterIdAndUserId<'a>> for Mock {
         &self,
         step: &GetInfoByChapterIdAndUserId<'a>,
     ) -> Result<Option<AssignmentInfo>, Self::Error> {
+        //
         let state = self.state.lock().unwrap();
+
         Ok(find_assignment(&state, step.chapter_id, step.user_id))
     }
 }
@@ -500,7 +504,9 @@ impl<'a> Execute<ListInfos<'a>> for Mock {
         &self,
         step: &ListInfos<'a>,
     ) -> Result<Vec<AssignmentInfo>, Self::Error> {
+        //
         let state = self.state.lock().unwrap();
+
         Ok(list_assignments(&state, step.spec))
     }
 }
@@ -513,7 +519,9 @@ impl<'a> Execute<ListAllInfosByChapter<'a>> for Mock {
         &self,
         step: &ListAllInfosByChapter<'a>,
     ) -> Result<Vec<AssignmentInfo>, Self::Error> {
+        //
         let state = self.state.lock().unwrap();
+
         Ok(list_all_assignments_by_chapter(
             &state,
             step.chapter_id,
@@ -531,7 +539,9 @@ impl<'a> Execute<GetInfoById<'a>> for Mock {
         &self,
         step: &GetInfoById<'a>,
     ) -> Result<AssignmentInfo, Self::Error> {
+        //
         let state = self.state.lock().unwrap();
+
         get_assignment(&state, step.id, step.incl_opt)
     }
 }
@@ -613,6 +623,7 @@ impl<'a> Advance<PutRoles<'a>, MockContext> for MockTransactional {
         context: &mut MockContext,
         step: &PutRoles<'a>,
     ) -> Result<AssignmentInfo, Self::Error> {
+        //
         let assignment_info = context
             .state
             .assignments
@@ -621,7 +632,9 @@ impl<'a> Advance<PutRoles<'a>, MockContext> for MockTransactional {
             .ok_or_else(|| expected("error-assignment-not-found"))?;
 
         assignment_info.roles = step.update.roles;
+
         assignment_info.updated_at = now();
+
         Ok(assignment_info.clone())
     }
 }
