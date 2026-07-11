@@ -124,6 +124,7 @@ where
     pub async fn run(mut self) {
         //
         loop {
+            //
             if let Err(e) = self.reset_stuck().await {
                 tracing::error!(
                     error = ?e,
@@ -251,6 +252,7 @@ where
             }
 
             TaskFlow::Dead(error) => {
+                //
                 tracing::error!(
                     id = %row.f_id,
                     topic = %row.f_topic,
@@ -276,7 +278,9 @@ where
 
         let mut context = RdbContext::new(conn);
 
-        self.repo.advance(&mut context, &ClaimStep { id }).await
+        let claim_step = ClaimStep::new(id);
+
+        self.repo.advance(&mut context, &claim_step).await
     }
 
     async fn complete(&self, id: &str) -> RegularResult<()> {
@@ -285,7 +289,9 @@ where
 
         let mut context = RdbContext::new(conn);
 
-        self.repo.advance(&mut context, &CompleteStep { id }).await
+        let complete_step = CompleteStep::new(id);
+
+        self.repo.advance(&mut context, &complete_step).await
     }
 
     async fn fail(&self, id: &str, error: &str) -> RegularResult<()> {
@@ -294,9 +300,9 @@ where
 
         let mut context = RdbContext::new(conn);
 
-        self.repo
-            .advance(&mut context, &FailStep { id, error })
-            .await
+        let fail_step = FailStep::new(id, error);
+
+        self.repo.advance(&mut context, &fail_step).await
     }
 
     async fn retry(&self, id: &str, error: &str) -> RegularResult<()> {
@@ -307,16 +313,9 @@ where
 
         let visible_at = OffsetDateTime::now_utc() + RETRY_DELAY;
 
-        self.repo
-            .advance(
-                &mut context,
-                &RetryStep {
-                    id,
-                    error,
-                    visible_at: &visible_at,
-                },
-            )
-            .await
+        let retry_step = RetryStep::new(id, error, &visible_at);
+
+        self.repo.advance(&mut context, &retry_step).await
     }
 
     async fn reset_stuck(&self) -> RegularResult<()> {
@@ -327,9 +326,9 @@ where
 
         let before = OffsetDateTime::now_utc() - PROCESSING_TIMEOUT;
 
-        self.repo
-            .advance(&mut context, &ResetStuckStep { before: &before })
-            .await
+        let reset_stuck_step = ResetStuckStep::new(&before);
+
+        self.repo.advance(&mut context, &reset_stuck_step).await
     }
 }
 

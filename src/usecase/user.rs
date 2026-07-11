@@ -26,7 +26,7 @@ use crate::result::{ExpectedVariant, RegularError, RegularResult};
 use crate::util::DeriveTransactional;
 
 #[cfg(test)]
-pub(crate) mod tests;
+mod tests;
 
 /// Fetches a user's profile with avatar URL resolution.
 ///

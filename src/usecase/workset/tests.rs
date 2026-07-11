@@ -28,7 +28,7 @@ use crate::part_impl::prom::mock_impl::MockPromRecord;
 use crate::part_impl::repo::mock_impl::{Mock, MockTransactional};
 use crate::result::{ExpectedVariant, RegularError};
 use crate::test_util::assert_expected_variant;
-use crate::usecase::team::tests::team;
+use crate::test_util::fixture::team;
 use crate::value::role::{RoleField, RoleMask};
 
 fn workset(id: &str, team_id: &str, index: i32) -> WorksetInfo {

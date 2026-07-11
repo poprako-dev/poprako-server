@@ -7,11 +7,11 @@
 //!
 //! [`AsyncEffectDevelop`]: crate::part_impl::effect::async_impl::AsyncEffectDevelop
 
-pub mod entity;
+mod entity;
 
 mod handler;
 
-pub(crate) mod repo;
+mod repo;
 
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};

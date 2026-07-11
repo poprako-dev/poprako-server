@@ -42,7 +42,7 @@ use crate::util::DeriveTransactional;
 use crate::value::role::{RoleField, RoleMask};
 
 #[cfg(test)]
-pub(crate) mod tests;
+mod tests;
 
 /// Creates a new team.
 ///
