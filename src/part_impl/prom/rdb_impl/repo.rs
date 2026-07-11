@@ -55,7 +55,7 @@ where
 // ── Steps ───────────────────────────────────────────────────────────────────
 
 /// Poll for pending prom records that are visible now.
-pub(crate) struct PollPending;
+pub struct PollPending;
 
 impl Step for PollPending {
     type Output = Vec<LocalMessageRow>;
@@ -65,8 +65,15 @@ impl Step for PollPending {
 ///
 /// Returns `true` if the claim succeeded (i.e. the row was still
 /// Pending), `false` if another worker claimed it first.
-pub(crate) struct ClaimStep<'a> {
-    pub(crate) id: &'a str,
+pub struct ClaimStep<'a> {
+    id: &'a str,
+}
+
+impl<'a> ClaimStep<'a> {
+    /// Builds a step that claims the message identified by `id`.
+    pub fn new(id: &'a str) -> Self {
+        Self { id }
+    }
 }
 
 impl Step for ClaimStep<'_> {
@@ -74,8 +81,15 @@ impl Step for ClaimStep<'_> {
 }
 
 /// Mark a record as successfully completed.
-pub(crate) struct CompleteStep<'a> {
-    pub(crate) id: &'a str,
+pub struct CompleteStep<'a> {
+    id: &'a str,
+}
+
+impl<'a> CompleteStep<'a> {
+    /// Builds a step that completes the message identified by `id`.
+    pub fn new(id: &'a str) -> Self {
+        Self { id }
+    }
 }
 
 impl Step for CompleteStep<'_> {
@@ -83,9 +97,16 @@ impl Step for CompleteStep<'_> {
 }
 
 /// Mark a record as dead with an error message.
-pub(crate) struct FailStep<'a> {
-    pub(crate) id: &'a str,
-    pub(crate) error: &'a str,
+pub struct FailStep<'a> {
+    id: &'a str,
+    error: &'a str,
+}
+
+impl<'a> FailStep<'a> {
+    /// Builds a step that permanently fails the message identified by `id`.
+    pub fn new(id: &'a str, error: &'a str) -> Self {
+        Self { id, error }
+    }
 }
 
 impl Step for FailStep<'_> {
@@ -93,10 +114,25 @@ impl Step for FailStep<'_> {
 }
 
 /// Reset one failed processing attempt back to pending for a later retry.
-pub(crate) struct RetryStep<'a> {
-    pub(crate) id: &'a str,
-    pub(crate) error: &'a str,
-    pub(crate) visible_at: &'a OffsetDateTime,
+pub struct RetryStep<'a> {
+    id: &'a str,
+    error: &'a str,
+    visible_at: &'a OffsetDateTime,
+}
+
+impl<'a> RetryStep<'a> {
+    /// Builds a step that schedules the message identified by `id` for retry.
+    pub fn new(
+        id: &'a str,
+        error: &'a str,
+        visible_at: &'a OffsetDateTime,
+    ) -> Self {
+        Self {
+            id,
+            error,
+            visible_at,
+        }
+    }
 }
 
 impl Step for RetryStep<'_> {
@@ -104,8 +140,15 @@ impl Step for RetryStep<'_> {
 }
 
 /// Reset processing records stuck before a cutoff timestamp.
-pub(crate) struct ResetStuckStep<'a> {
-    pub(crate) before: &'a OffsetDateTime,
+pub struct ResetStuckStep<'a> {
+    before: &'a OffsetDateTime,
+}
+
+impl<'a> ResetStuckStep<'a> {
+    /// Builds a step that resets messages stuck before the cutoff.
+    pub fn new(before: &'a OffsetDateTime) -> Self {
+        Self { before }
+    }
 }
 
 impl Step for ResetStuckStep<'_> {
@@ -115,7 +158,7 @@ impl Step for ResetStuckStep<'_> {
 // ── Advance impls ───────────────────────────────────────────────────────────
 
 /// Maximum number of pending records to poll in a single batch.
-pub(crate) const BATCH_SIZE: i64 = 10;
+const BATCH_SIZE: i64 = 10;
 
 #[async_trait]
 impl<R> Advance<PollPending, RdbContext> for RdbPromRepo<R>

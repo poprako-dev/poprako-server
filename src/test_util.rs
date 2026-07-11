@@ -1,5 +1,7 @@
 //! Test helpers for assertions and time fixtures.
 
+pub mod fixture;
+
 use time::OffsetDateTime;
 
 use poprako_util::i18n::trl;

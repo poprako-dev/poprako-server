@@ -87,7 +87,7 @@ where
 
 /// Decompress an archive payload and decode it with the pinned bitcode format.
 #[cfg(test)]
-pub(crate) fn decompress_archive<T>(archived_bytes: &[u8]) -> RegularResult<T>
+pub fn decompress_archive<T>(archived_bytes: &[u8]) -> RegularResult<T>
 where
     T: for<'a> Decode<'a>,
 {

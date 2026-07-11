@@ -46,15 +46,6 @@ pub mod page;
 /// Diesel-generated schema.
 pub mod schema;
 
-// FIXME: forbidden pattern.
-use self::schema as generated;
-
-pub(crate) use generated::{
-    t_archived_chapter, t_archived_comic, t_archived_translation, t_assignment,
-    t_assignment_invitation, t_chapter, t_comic, t_page, t_unit, t_user,
-    t_workset,
-};
-
 /// System mail repository operations.
 pub mod system_mail;
 /// Team repository operations.

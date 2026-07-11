@@ -23,8 +23,7 @@ use crate::part::effect::event::Event;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;
-use crate::usecase::team::tests::team;
-use crate::usecase::user::tests::{credential, invalid_credential, user};
+use crate::test_util::fixture::{credential, invalid_credential, team, user};
 use crate::value::role::{RoleField, RoleMask};
 
 /// Builds a pending [`MemberInvitationInfo`] fixture.

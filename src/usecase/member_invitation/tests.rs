@@ -15,8 +15,8 @@ use crate::model::member_invitation::MemberInvitationInfo;
 use crate::model::user::{UserCredential, UserInfo};
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
+use crate::test_util::fixture::team;
 use crate::test_util::{self, assert_expected_variant};
-use crate::usecase::team::tests::team;
 use crate::value::role::{RoleField, RoleMask};
 
 fn token(user_id: &str) -> UserToken {
