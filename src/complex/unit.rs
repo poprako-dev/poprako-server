@@ -306,6 +306,7 @@ fn validate_text_editor(
     text: &Option<String>,
     editor_id: &Option<String>,
 ) -> RegularResult<()> {
+    //
     let has_text = text.as_ref().map(|text| !text.is_empty()).unwrap_or(false);
 
     match (has_text, editor_id.as_deref()) {

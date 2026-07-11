@@ -48,9 +48,11 @@ async fn main() -> anyhow::Result<()> {
     //
     // CLI: --swagger to print swagger.json.
     #[cfg(feature = "swagger-ui")]
+
     if std::env::args().any(|a| a == "--swagger") {
         //
         #[allow(clippy::print_stdout)]
+
         {
             let doc = poprako_server::ApiDoc::openapi();
 

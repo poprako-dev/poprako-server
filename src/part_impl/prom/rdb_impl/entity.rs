@@ -16,7 +16,7 @@ use crate::result::{RegularError, RegularResult};
 /// Lifecycle status of a local message record in the prom queue.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, AsExpression)]
 #[diesel(sql_type = Text)]
-pub(crate) enum LocalMessageStatus {
+pub enum LocalMessageStatus {
     Pending,
     Processing,
     Completed,
@@ -24,7 +24,7 @@ pub(crate) enum LocalMessageStatus {
 }
 
 impl LocalMessageStatus {
-    pub(crate) fn as_str(self) -> &'static str {
+    pub fn as_str(self) -> &'static str {
         match self {
             //
             Self::Pending => "local_message_status:pending",
@@ -50,21 +50,21 @@ impl ToSql<Text, Pg> for LocalMessageStatus {
 /// Insertable row for the `t_local_message` table.
 #[derive(Insertable)]
 #[diesel(table_name = t_local_message)]
-pub(crate) struct LocalMessageEntry<'a> {
-    pub(crate) f_id: &'a str,
-    pub(crate) f_topic: &'a str,
-    pub(crate) f_status: LocalMessageStatus,
+pub struct LocalMessageEntry<'a> {
+    pub f_id: &'a str,
+    pub f_topic: &'a str,
+    pub f_status: LocalMessageStatus,
 
-    pub(crate) f_payload: serde_json::Value,
+    pub f_payload: serde_json::Value,
 
-    pub(crate) f_visible_at: OffsetDateTime,
+    pub f_visible_at: OffsetDateTime,
 
-    pub(crate) f_created_at: OffsetDateTime,
-    pub(crate) f_updated_at: OffsetDateTime,
+    pub f_created_at: OffsetDateTime,
+    pub f_updated_at: OffsetDateTime,
 }
 
 impl<'a> LocalMessageEntry<'a> {
-    pub(crate) fn from_append(
+    pub fn from_append(
         step: &'a Append<'_>,
         now: OffsetDateTime,
     ) -> RegularResult<Self> {
@@ -89,8 +89,8 @@ impl<'a> LocalMessageEntry<'a> {
 
 /// A row read from `t_local_message` during the poll phase.
 #[derive(Debug, Queryable)]
-pub(crate) struct LocalMessageRow {
-    pub(crate) f_id: String,
-    pub(crate) f_topic: String,
-    pub(crate) f_payload: serde_json::Value,
+pub struct LocalMessageRow {
+    pub f_id: String,
+    pub f_topic: String,
+    pub f_payload: serde_json::Value,
 }

@@ -20,6 +20,7 @@ async fn shutdown_signal() {
     };
 
     #[cfg(unix)]
+
     {
         let terminate = async {
             signal::unix::signal(signal::unix::SignalKind::terminate())
@@ -35,6 +36,7 @@ async fn shutdown_signal() {
     }
 
     #[cfg(not(unix))]
+
     {
         ctrl_c.await;
     }

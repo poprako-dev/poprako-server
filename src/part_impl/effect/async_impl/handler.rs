@@ -27,14 +27,31 @@ use crate::part_impl::effect::async_impl::dispatch::dispatch;
 /// Background event consumer that receives events from the channel and
 /// dispatches them to the appropriate domain handler.
 pub struct EffectHandler<R> {
-    pub(crate) repo: Arc<R>,
-    pub(crate) recv: Receiver<Event>,
-    pub(crate) shutdown_recv: OneshotReceiver<()>,
-    pub(crate) done_send: OneshotSender<()>,
-    pub(crate) accepting: Arc<AtomicBool>,
+    repo: Arc<R>,
+    recv: Receiver<Event>,
+    shutdown_recv: OneshotReceiver<()>,
+    done_send: OneshotSender<()>,
+    accepting: Arc<AtomicBool>,
 }
 
 impl<R> EffectHandler<R> {
+    /// Builds a background handler from its queue and shutdown channels.
+    pub fn new(
+        repo: Arc<R>,
+        recv: Receiver<Event>,
+        shutdown_recv: OneshotReceiver<()>,
+        done_send: OneshotSender<()>,
+        accepting: Arc<AtomicBool>,
+    ) -> Self {
+        Self {
+            repo,
+            recv,
+            shutdown_recv,
+            done_send,
+            accepting,
+        }
+    }
+
     #[instrument(skip_all, level = Level::DEBUG)]
     pub async fn run<C>(mut self)
     where

@@ -30,42 +30,23 @@ use super::*;
 
 use time::OffsetDateTime;
 
-use crate::complex::user::UserComplex;
 use crate::model::member::MemberInfo;
-use crate::model::user::{UserCredential, UserInfo};
+use crate::model::user::UserInfo;
 use crate::part::effect::event::Event;
 use crate::part::prom::Payload;
 use crate::part::prom::task::{ImageKind, ImageTask};
 use crate::part_impl::prom::mock_impl::MockPromRecord;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
+use crate::test_util::fixture::{credential, user};
 use crate::test_util::{
     assert_expected_message, assert_expected_variant,
     assert_one_image_check_record,
 };
 use crate::value::role::{RoleField, RoleMask};
 
-/// Builds a [`UserInfo`] fixture with default timestamps and no avatar.
-pub fn user(id: &str, qid: &str, nickname: &str) -> UserInfo {
-    //
-    let time = OffsetDateTime::now_utc();
-
-    UserInfo {
-        id: id.into(),
-        qid: qid.into(),
-        nickname: nickname.into(),
-        avatar_key: None,
-        avatar_uploaded: false,
-        avatar_version: 0,
-        is_sadmin: false,
-        last_active_at: time,
-        created_at: time,
-        updated_at: time,
-    }
-}
-
 /// Builds a [`UserInfo`] fixture with avatar fields set.
-pub fn user_with_avatar(
+fn user_with_avatar(
     id: &str,
     qid: &str,
     nickname: &str,
@@ -81,32 +62,8 @@ pub fn user_with_avatar(
     }
 }
 
-/// Builds a [`UserCredential`] with a properly hashed password.
-pub fn credential(user_id: &str, password: &str) -> UserCredential {
-    //
-    let password_hash = match UserComplex::hash_password(password) {
-        //
-        Ok(password_hash) => password_hash,
-
-        Err(_) => panic!("failed to hash password"),
-    };
-
-    UserCredential {
-        user_id: user_id.into(),
-        password_hash,
-    }
-}
-
-/// Builds a [`UserCredential`] that will never match any real password.
-pub fn invalid_credential(user_id: &str) -> UserCredential {
-    UserCredential {
-        user_id: user_id.into(),
-        password_hash: "invalid-password-hash".into(),
-    }
-}
-
 /// Builds a [`MemberInfo`] fixture.
-pub fn member(
+fn member(
     id: &str,
     user_id: &str,
     user_nickname: &str,

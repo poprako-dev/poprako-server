@@ -16,10 +16,11 @@ use crate::model::comic_archive::{
 };
 use crate::part::repo::step::comic_archive::ComicArchiveStep;
 use crate::part_impl::drive::rdb_impl::RdbDrive;
-use crate::part_impl::repo::rdb_impl::{
-    RdbRepo, t_archived_chapter, t_archived_comic, t_archived_translation,
-    t_chapter, t_comic, t_page, t_workset, test_shared,
+use crate::part_impl::repo::rdb_impl::schema::{
+    t_archived_chapter, t_archived_comic, t_archived_translation, t_chapter,
+    t_comic, t_page, t_workset,
 };
+use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
 use crate::result::RegularError;
 use crate::util::{DeriveTransactional as _, decompress_archive};
 

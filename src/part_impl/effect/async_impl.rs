@@ -72,13 +72,13 @@ impl AsyncEffectDevelop {
 
         let accepting = Arc::new(AtomicBool::new(true));
 
-        let handler = handler::EffectHandler::<R> {
+        let handler = handler::EffectHandler::<R>::new(
             repo,
             recv,
             shutdown_recv,
             done_send,
-            accepting: Arc::clone(&accepting),
-        };
+            Arc::clone(&accepting),
+        );
 
         tokio::spawn(async move {
             handler.run().await;
@@ -138,6 +138,7 @@ impl EffectDevelop for AsyncEffectDevelop {
         for event in iter.into_iter() {
             if let Err(e) = self.send.try_send(event) {
                 match e {
+                    //
                     TrySendError::Full(event) => {
                         tracing::warn!(
                             event = event_name(&event),
@@ -146,6 +147,7 @@ impl EffectDevelop for AsyncEffectDevelop {
                     }
 
                     TrySendError::Closed(event) => {
+                        //
                         tracing::warn!(
                             event = event_name(&event),
                             "[AsyncEffectDevelop::develop] event queue is closed, dropping event",
