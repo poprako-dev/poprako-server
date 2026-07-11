@@ -25,7 +25,7 @@ use crate::result::{ExpectedVariant, RegularError, RegularResult};
 use crate::util::DeriveTransactional;
 
 #[cfg(test)]
-pub(crate) mod tests;
+mod tests;
 
 /// Registers a new user using an invitation code.
 ///

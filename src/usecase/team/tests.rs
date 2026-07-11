@@ -40,7 +40,6 @@ use crate::model::comic::ComicInfo;
 use crate::model::member::MemberInfo;
 use crate::model::team::{TeamAvatarReservation, TeamInfo};
 use crate::model::user::{UserAvatarReservation, UserCredential, UserInfo};
-use crate::model::workset::WorksetInfo;
 use crate::part::prom::Payload;
 use crate::part::prom::task::{ImageKind, ImageTask};
 use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
@@ -67,6 +66,7 @@ use crate::part::shared::execute::Execute;
 use crate::part_impl::prom::mock_impl::MockPromRecord;
 use crate::part_impl::repo::mock_impl::{Mock, MockContext};
 use crate::result::{ExpectedVariant, RegularError};
+use crate::test_util::fixture::{team, workset};
 use crate::test_util::{
     assert_expected_message, assert_expected_variant,
     assert_one_image_check_record,
@@ -100,26 +100,8 @@ impl TeamRepoTransactional<MockContext> for FailingTeamTransactional {}
 impl UserRepoTransactional<MockContext> for FailingTeamTransactional {}
 impl MemberRepoTransactional<MockContext> for FailingTeamTransactional {}
 
-/// Builds a [`TeamInfo`] fixture with default timestamps and no avatar.
-pub fn team(id: &str, name: &str, description: &str) -> TeamInfo {
-    //
-    let time = OffsetDateTime::now_utc();
-
-    TeamInfo {
-        id: id.into(),
-        name: name.into(),
-        description: description.into(),
-        avatar_key: None,
-        avatar_uploaded: false,
-        avatar_version: 0,
-        workset_next_index: 0,
-        created_at: time,
-        updated_at: time,
-    }
-}
-
 /// Builds a [`TeamInfo`] fixture with avatar fields set.
-pub fn team_with_avatar(
+fn team_with_avatar(
     id: &str,
     name: &str,
     description: &str,
@@ -132,24 +114,6 @@ pub fn team_with_avatar(
         avatar_uploaded,
         avatar_version,
         ..team(id, name, description)
-    }
-}
-
-/// Builds a [`WorksetInfo`] fixture.
-pub fn workset(id: &str, team_id: &str) -> WorksetInfo {
-    //
-    let time = OffsetDateTime::now_utc();
-
-    WorksetInfo {
-        id: id.into(),
-        team_id: team_id.into(),
-        index: 0,
-        name: "workset".into(),
-        description: None,
-        comic_count: 0,
-        comic_next_index: 0,
-        created_at: time,
-        updated_at: time,
     }
 }
 

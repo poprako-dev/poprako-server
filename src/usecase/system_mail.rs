@@ -12,7 +12,7 @@ use crate::result::RegularResult;
 use crate::util::DeriveTransactional;
 
 #[cfg(test)]
-pub(crate) mod tests;
+mod tests;
 
 /// Lists system mails for the current user.
 ///

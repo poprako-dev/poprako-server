@@ -32,11 +32,11 @@ use crate::part::prom::Payload;
 use crate::part::prom::task::{ImageKind, ImageTask};
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
+use crate::test_util::fixture::workset;
 use crate::test_util::{
     assert_expected_message, assert_expected_variant,
     assert_one_image_check_record,
 };
-use crate::usecase::team::tests::workset;
 use crate::value::chapter::{Stage, StageMask, StagePhase};
 use crate::value::role::{RoleField, RoleMask};
 
