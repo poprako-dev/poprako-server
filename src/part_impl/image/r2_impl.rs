@@ -88,6 +88,7 @@ impl R2ImagePool {
     }
 
     fn public_url(domain: &str, key: &str) -> RegularResult<Url> {
+        //
         if domain.is_empty() {
             return Err(RegularError::Unrecoverable {
                 message:
@@ -102,7 +103,9 @@ impl R2ImagePool {
             domain.starts_with("http://"),
             domain.starts_with("https://"),
         ) {
+            //
             (true, _) | (_, true) => format!("{}/{}", domain, key),
+
             _ => format!("https://{}/{}", domain, key),
         };
 

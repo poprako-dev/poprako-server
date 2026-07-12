@@ -1,12 +1,9 @@
 use super::*;
 
-use crate::model::assignment_model;
-use crate::model::chapter_model;
-use crate::model::comic_model;
-use crate::model::member_model;
-use crate::model::team_model;
-use crate::model::user_model;
-use crate::model::workset_model;
+use crate::model::{
+    assignment_model, chapter_model, comic_model, member_model, team_model,
+    user_model, workset_model,
+};
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::test_util::now;
 use crate::value::chapter::StageMask;

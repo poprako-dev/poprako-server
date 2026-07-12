@@ -2,8 +2,7 @@
 
 use time::OffsetDateTime;
 
-use crate::model::team_model;
-use crate::model::user_model;
+use crate::model::{team_model, user_model};
 use crate::value::member::MemberInclOpt;
 use crate::value::role::{RoleField, RoleMask};
 

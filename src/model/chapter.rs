@@ -12,8 +12,7 @@ use time::OffsetDateTime;
 
 use poprako_macro::Paginate;
 
-use crate::model::comic_model;
-use crate::model::user_model;
+use crate::model::{comic_model, user_model};
 use crate::value::chapter::{ChapterInclOpt, StageMask};
 
 /// A chapterrecord as stored in the database.

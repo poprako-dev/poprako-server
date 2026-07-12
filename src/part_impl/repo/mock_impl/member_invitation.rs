@@ -5,8 +5,7 @@ use async_trait::async_trait;
 
 use poprako_transactional::advance::Advance;
 
-use crate::model::member_invitation_model;
-use crate::model::user_model;
+use crate::model::{member_invitation_model, user_model};
 use crate::part::repo::member_invitation::{
     MemberInvitationRepo, MemberInvitationRepoTransactional,
 };

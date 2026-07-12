@@ -4,8 +4,7 @@ use poprako_macro::Paginate;
 use poprako_transactional::step::Step;
 use poprako_util::page::Page;
 
-use crate::model::page_model;
-use crate::model::unit_model;
+use crate::model::{page_model, unit_model};
 
 /// Step that fetches a page by its identifier.
 pub struct GetInfoById<'a> {

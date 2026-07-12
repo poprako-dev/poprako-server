@@ -11,8 +11,7 @@
 
 use time::OffsetDateTime;
 
-use crate::model::chapter_model;
-use crate::model::user_model;
+use crate::model::{chapter_model, user_model};
 use crate::value::assignment::AssignmentInclOpt;
 use crate::value::role::{RoleField, RoleMask};
 

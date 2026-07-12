@@ -4,9 +4,7 @@ use async_trait::async_trait;
 
 use poprako_transactional::advance::Advance;
 
-use crate::model::member_model;
-use crate::model::team_model;
-use crate::model::user_model;
+use crate::model::{member_model, team_model, user_model};
 use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
 use crate::part::repo::step::member::{
     Create, Delete, FindInfoByUserIdAndTeamId, GetInfoById, ListInfos,

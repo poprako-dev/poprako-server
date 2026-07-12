@@ -22,9 +22,7 @@ use super::*;
 
 use poprako_util::time::ToUnixMilli;
 
-use crate::model::member_model;
-use crate::model::team_model;
-use crate::model::user_model;
+use crate::model::{member_model, team_model, user_model};
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::{self, assert_expected_variant};

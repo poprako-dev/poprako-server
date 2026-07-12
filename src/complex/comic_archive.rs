@@ -4,8 +4,7 @@ use time::OffsetDateTime;
 
 use poprako_util::time::ToUnixMilli;
 
-use crate::model::assignment_model;
-use crate::model::comic_archive_model;
+use crate::model::{assignment_model, comic_archive_model};
 use crate::result::{RegularError, RegularResult};
 use crate::util::{compress_archive, next_snowflake_id};
 

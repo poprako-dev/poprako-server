@@ -4,8 +4,7 @@ use std::collections::HashMap;
 
 use poprako_transactional::step::Step;
 
-use crate::model::chapter_model;
-use crate::model::unit_model;
+use crate::model::{chapter_model, unit_model};
 use crate::value::chapter::ChapterInclOpt;
 
 /// Step that lists chapters with include options and pagination.

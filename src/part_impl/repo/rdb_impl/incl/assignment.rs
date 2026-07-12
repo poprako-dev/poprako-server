@@ -1,11 +1,9 @@
 use async_trait::async_trait;
 
-use crate::model::assignment_model;
-use crate::model::chapter_model;
-use crate::model::comic_model;
-use crate::model::team_model;
-use crate::model::user_model;
-use crate::model::workset_model;
+use crate::model::{
+    assignment_model, chapter_model, comic_model, team_model, user_model,
+    workset_model,
+};
 use crate::part_impl::repo::rdb_impl::incl::{
     self, ChapterByIds, ComicByIds, Incl, TeamByIds, UserByIds, WorksetByIds,
 };

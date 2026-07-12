@@ -12,20 +12,12 @@ use poprako_transactional::drive::result::Error as DriveError;
 use poprako_transactional::util::AsyncFnMark;
 use poprako_util::i18n::trl;
 
-use crate::model::announcement_model;
-use crate::model::assignment_invitation_model;
-use crate::model::assignment_model;
-use crate::model::chapter_model;
-use crate::model::comic_archive_model;
-use crate::model::comic_model;
-use crate::model::comment_model;
-use crate::model::member_invitation_model;
-use crate::model::page_model;
-use crate::model::system_mail_model;
-use crate::model::team_model;
-use crate::model::unit_model;
-use crate::model::user_model;
-use crate::model::workset_model;
+use crate::model::{
+    announcement_model, assignment_invitation_model, assignment_model,
+    chapter_model, comic_archive_model, comic_model, comment_model,
+    member_invitation_model, page_model, system_mail_model, team_model,
+    unit_model, user_model, workset_model,
+};
 use crate::part::effect::event::Event;
 use crate::part_impl::prom::mock_impl::MockPromRecord;
 use crate::result::{ExpectedVariant, RegularError};

@@ -23,11 +23,9 @@ use super::*;
 
 use time::OffsetDateTime;
 
-use crate::model::chapter_model;
-use crate::model::comic_model;
-use crate::model::member_model;
-use crate::model::user_model;
-use crate::model::workset_model;
+use crate::model::{
+    chapter_model, comic_model, member_model, user_model, workset_model,
+};
 use crate::part::prom::Payload;
 use crate::part::prom::task::{ImageKind, ImageTask};
 use crate::part_impl::repo::mock_impl::Mock;
