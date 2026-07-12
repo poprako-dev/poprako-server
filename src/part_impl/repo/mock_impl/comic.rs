@@ -183,7 +183,7 @@ fn comic_matches_fuzzy(
 fn mark_comic_cover_uploaded(
     state: &mut MockState,
     id: &str,
-    cover_version: i64,
+    cover_version: u32,
 ) -> RegularResult<()> {
     //
     let comic = state

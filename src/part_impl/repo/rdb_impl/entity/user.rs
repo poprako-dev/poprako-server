@@ -20,7 +20,8 @@ pub struct UserRow {
 
     pub f_avatar_key: Option<String>,
     pub f_avatar_uploaded: bool,
-    pub f_avatar_version: i64,
+    #[diesel(deserialize_as = i64)]
+    pub f_avatar_version: u32,
 
     pub f_last_active_at: OffsetDateTime,
 
@@ -115,9 +116,9 @@ impl<'a> UserAspect<'a> {
         self
     }
 
-    pub fn avatar_version(mut self, val: i64) -> Self {
+    pub fn avatar_version(mut self, val: u32) -> Self {
         //
-        self.f_avatar_version = Some(val);
+        self.f_avatar_version = Some(i64::from(val));
 
         self
     }

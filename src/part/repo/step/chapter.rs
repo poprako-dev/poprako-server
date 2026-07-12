@@ -46,7 +46,6 @@ impl<'a> Step for GetInfoByIdExcluded<'a> {
 }
 
 // /// Step that lists chapters by comic.
-// #[Paginate]
 // pub struct ListInfosByComicId<'a> {
 //     pub comic_id: &'a str,
 // }
@@ -56,7 +55,6 @@ impl<'a> Step for GetInfoByIdExcluded<'a> {
 // }
 //
 // /// Step that lists chapters by comic with a pessimistic lock.
-// #[Paginate]
 // pub struct ListInfosByComicIdExcluded<'a> {
 //     pub comic_id: &'a str,
 // }

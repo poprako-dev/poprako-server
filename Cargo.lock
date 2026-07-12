@@ -2552,15 +2552,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5dcdc93847ad24990939cce6e1804361e903efcb5f99daa5abd87943a9d6d7ba"
 
 [[package]]
-name = "poprako-macro"
-version = "0.1.0"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
 name = "poprako-orchestra"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2568,9 +2559,9 @@ checksum = "9f5f2cfe68ca8b70bbbe4cb4e17fa1cd45a58ba97d94bf1a50519e03d418f7db"
 
 [[package]]
 name = "poprako-orchestra-extra"
-version = "0.1.0"
+version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2cd2ae64206c4ba1827b29b06da5598f0678998e4de9a48b4c49cceb7aeaf28f"
+checksum = "f031600914245ff0579cc33b587acd87e8f68071581f6fe4be12a06d1a6e6636"
 dependencies = [
  "poprako-orchestra",
 ]
@@ -2600,7 +2591,6 @@ dependencies = [
  "governor",
  "jsonwebtoken",
  "k-snowflake",
- "poprako-macro",
  "poprako-orchestra",
  "poprako-orchestra-extra",
  "poprako-transactional",

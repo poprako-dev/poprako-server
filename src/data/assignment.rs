@@ -5,12 +5,10 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "swagger-ui")]
 use utoipa::{IntoParams, ToSchema};
 
-use poprako_macro::Paginate;
 use poprako_util::i18n::trl;
 use poprako_util::time::ToUnixMilli;
 
-use crate::data::chapter_data;
-use crate::data::user_data;
+use crate::data::{chapter_data, user_data};
 use crate::model::assignment_model;
 use crate::part::image::ImagePool;
 use crate::result::{ExpectedVariant, RegularError, RegularResult};
@@ -104,7 +102,6 @@ impl InfoVal {
 /// embeds related rows; dotted values imply their parent segments.
 ///
 /// Example: `/api/v1/assignments?chapter_id=c_1&role=1&incl=chapter.comic.workset.team&offset=0&limit=20`.
-#[Paginate]
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
 #[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
@@ -131,6 +128,9 @@ pub struct ListInfosData {
         deserialize_with = "crate::value::query::deserialize_vec"
     )]
     pub incl_opt: Vec<AssignmentInclOpt>,
+
+    pub offset: u32,
+    pub limit: u32,
 }
 
 impl TryInto<assignment_model::ListSpec> for ListInfosData {

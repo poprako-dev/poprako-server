@@ -56,7 +56,7 @@ fn create_team(
 fn mark_team_avatar_uploaded(
     state: &mut MockState,
     id: &str,
-    avatar_version: i64,
+    avatar_version: u32,
 ) -> RegularResult<()> {
     //
     let team = state

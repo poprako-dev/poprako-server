@@ -19,9 +19,9 @@ use crate::result::ExpectedVariant;
 #[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
 pub struct Pagination {
     /// Zero-based offset for paginated results.
-    pub offset: u64,
+    pub offset: u32,
     /// Maximum number of items to return.
-    pub limit: u64,
+    pub limit: u32,
 }
 
 /// Ensures a path id matches the body id, returning `422` on mismatch.

@@ -5,7 +5,6 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "swagger-ui")]
 use utoipa::ToSchema;
 
-use poprako_macro::Paginate;
 use poprako_util::time::ToUnixMilli;
 
 use crate::model::unit_model;
@@ -58,10 +57,12 @@ impl From<unit_model::Info> for InfoVal {
 }
 
 /// Input parameters for listing units under one page.
-#[Paginate]
 #[derive(Debug, Deserialize)]
 pub struct ListPageInfosData {
     pub page_id: String,
+
+    pub offset: u32,
+    pub limit: u32,
 }
 
 /// Return value for listing units under one page.

@@ -8,12 +8,8 @@ use std::collections::HashMap;
 use crate::complex::chapter_port::{
     ChapterExportComplex, ChapterPortPermComplex,
 };
-use crate::data::chapter_port_data;
-use crate::data::page_port_data;
-use crate::data::unit_port_data;
-use crate::model::page_model;
-use crate::model::unit_model;
-use crate::model::user_model;
+use crate::data::{chapter_port_data, page_port_data, unit_port_data};
+use crate::model::{page_model, unit_model, user_model};
 use crate::part::image::ImagePool;
 use crate::part::repo::assignment::{
     AssignmentRepo, AssignmentRepoTransactional,

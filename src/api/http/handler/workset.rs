@@ -10,11 +10,9 @@ use crate::api::http::handler::util::{
     Pagination, ensure_path_matches_body_id,
 };
 
-#[cfg(feature = "swagger-ui")]
-use crate::api::http::result::HttpBody;
-
+#[allow(unused_imports)]
 use crate::api::http::result::{
-    Accept as _, HttpNoContent, HttpResult, no_content,
+    Accept as _, HttpBody, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
 use crate::data::workset_data;

@@ -1,6 +1,5 @@
 //! Step types for page repository opers.
 
-use poprako_macro::Paginate;
 use poprako_transactional::step::Step;
 use poprako_util::page::Page;
 
@@ -25,9 +24,11 @@ impl<'a> Step for GetInfoExcluded<'a> {
 }
 
 /// Step that lists pages by chapter ID.
-#[Paginate]
 pub struct ListInfosByChapterId<'a> {
     pub chapter_id: &'a str,
+
+    pub offset: u32,
+    pub limit: u32,
 }
 
 impl<'a> Step for ListInfosByChapterId<'a> {
@@ -65,7 +66,7 @@ impl<'a> Step for ReserveImage<'a> {
 /// Step that marks a page image upload as completed.
 pub struct MarkImageUploaded<'a> {
     pub id: &'a str,
-    pub image_version: i64,
+    pub image_version: u32,
 }
 
 impl<'a> Step for MarkImageUploaded<'a> {
@@ -140,7 +141,7 @@ impl PageStep {
     /// Constructs a step to mark a page image uploaded.
     pub fn mark_image_uploaded<'a>(
         id: &'a str,
-        image_version: i64,
+        image_version: u32,
     ) -> MarkImageUploaded<'a> {
         MarkImageUploaded { id, image_version }
     }

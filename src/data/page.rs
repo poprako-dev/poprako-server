@@ -5,7 +5,6 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "swagger-ui")]
 use utoipa::ToSchema;
 
-use poprako_macro::Paginate;
 use poprako_util::time::ToUnixMilli;
 
 use crate::model::page_model;
@@ -84,7 +83,7 @@ pub struct ReserveChapterVal {
 pub struct CreationVal {
     pub page_id: String,
     pub put_url: String,
-    pub image_version: i64,
+    pub image_version: u32,
 }
 
 /// Input parameters for reserving one page image.
@@ -100,20 +99,22 @@ pub struct ReserveImageData {
 pub struct ReserveImageVal {
     pub page_id: String,
     pub put_url: String,
-    pub image_version: i64,
+    pub image_version: u32,
 }
 
 /// Input parameters for confirming a page image upload completed.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
 pub struct MarkImageUploadedData {
-    pub image_version: i64,
+    pub image_version: u32,
 }
 
 /// Input parameters for listing pages under one chapter.
 ///
 /// Example: `/api/v1/chapters/{chapter_id}/pages?offset=0&limit=20`.
-#[Paginate]
 pub struct ListInfosData {
     pub chapter_id: String,
+
+    pub offset: u32,
+    pub limit: u32,
 }

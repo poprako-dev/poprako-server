@@ -134,7 +134,7 @@ use crate::part::prom::PromStep;
 fn user_info(
     id: &str,
     avatar_key: &str,
-    avatar_version: i64,
+    avatar_version: u32,
 ) -> user_model::Info {
     //
     let now = OffsetDateTime::now_utc();
@@ -409,7 +409,7 @@ async fn process_existing_image(
     kind: ImageKind,
     resource_id: &str,
     object_key: &str,
-    image_version: i64,
+    image_version: u32,
 ) -> RegularResult<()> {
     //
     let mark_result = Drive::with_context(mock, async move |context| {
@@ -444,7 +444,7 @@ async fn mark_uploaded(
     context: &mut MockContext,
     kind: ImageKind,
     resource_id: &str,
-    image_version: i64,
+    image_version: u32,
 ) -> RegularResult<()> {
     match kind {
         //

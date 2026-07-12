@@ -11,12 +11,8 @@ use crate::complex::assignment::AssignmentComplex;
 use crate::complex::chapter::ChapterComplex;
 use crate::complex::comic::{ComicComplex, ComicPermComplex};
 use crate::complex::image::ImageComplex;
-use crate::data::chapter_data;
-use crate::data::comic_data;
-use crate::model::assignment_model;
-use crate::model::chapter_model;
-use crate::model::comic_model;
-use crate::model::user_model;
+use crate::data::{chapter_data, comic_data};
+use crate::model::{assignment_model, chapter_model, comic_model, user_model};
 use crate::part::image::ImagePool;
 use crate::part::prom::task::{IMAGE_TOPIC, ImageKind, ImageTask};
 use crate::part::prom::{Payload, Prom, PromStep};
@@ -353,7 +349,7 @@ where
     .await?;
 
     let (object_key, cover_version) = drive
-        .with_context(async move |context| -> RegularResult<(String, i64)> {
+        .with_context(async move |context| -> RegularResult<(String, u32)> {
             //
             let repo = repo.derive_transactional().await;
 

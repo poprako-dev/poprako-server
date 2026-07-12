@@ -69,7 +69,7 @@ impl<'a> Step for ReserveAvatar<'a> {
 /// `avatar_version` must match the version returned by [`ReserveAvatar`].
 pub struct MarkAvatarUploaded<'a> {
     pub id: &'a str,
-    pub avatar_version: i64,
+    pub avatar_version: u32,
 }
 
 impl<'a> Step for MarkAvatarUploaded<'a> {
@@ -150,7 +150,7 @@ impl UserStep {
     /// Constructs a step to confirm an avatar upload completed.
     pub fn mark_avatar_uploaded<'a>(
         id: &'a str,
-        avatar_version: i64,
+        avatar_version: u32,
     ) -> MarkAvatarUploaded<'a> {
         MarkAvatarUploaded { id, avatar_version }
     }

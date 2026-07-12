@@ -29,8 +29,8 @@ enum ResourceState {
 }
 
 fn classify_current_version(
-    current_version: i64,
-    image_version: i64,
+    current_version: u32,
+    image_version: u32,
     error_message: &'static str,
 ) -> RegularResult<ResourceState> {
     match current_version == image_version {
@@ -97,7 +97,7 @@ async fn handle_check_uploaded<D, R, I>(
     kind: ImageKind,
     resource_id: &str,
     object_key: &str,
-    image_version: i64,
+    image_version: u32,
 ) -> TaskFlow
 where
     D: Drive<RdbContext>,
@@ -144,7 +144,7 @@ async fn process_existing_image<D, R, I>(
     kind: ImageKind,
     resource_id: &str,
     object_key: &str,
-    image_version: i64,
+    image_version: u32,
 ) -> TaskFlow
 where
     D: Drive<RdbContext>,
@@ -181,7 +181,7 @@ async fn mark_current_or_classify<D, R>(
     repo: &R,
     kind: ImageKind,
     resource_id: &str,
-    image_version: i64,
+    image_version: u32,
 ) -> RegularResult<ResourceState>
 where
     D: Drive<RdbContext>,
@@ -233,7 +233,7 @@ async fn mark_uploaded_by_kind<T>(
     context: &mut RdbContext,
     kind: ImageKind,
     resource_id: &str,
-    image_version: i64,
+    image_version: u32,
 ) -> RegularResult<()>
 where
     T: UserRepoTransactional<RdbContext>
@@ -288,7 +288,7 @@ async fn classify_expected_mark<T>(
     context: &mut RdbContext,
     kind: ImageKind,
     resource_id: &str,
-    image_version: i64,
+    image_version: u32,
 ) -> RegularResult<ResourceState>
 where
     T: UserRepoTransactional<RdbContext>

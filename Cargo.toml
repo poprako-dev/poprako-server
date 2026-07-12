@@ -1,5 +1,5 @@
 [workspace]
-members = [".", "poprako-macro", "poprako-transactional", "poprako-util"]
+members = [".", "poprako-transactional", "poprako-util"]
 resolver = "3"
 
 [package]
@@ -42,7 +42,6 @@ jsonwebtoken = { version = "10.4.0", features = ["rust_crypto"] }
 base62 = "2.2.4"
 bitcode = "=0.6.9"
 k-snowflake = "2.1.1"
-poprako-macro = { path = "poprako-macro" }
 poprako-transactional = { path = "poprako-transactional" }
 poprako-util = { path = "poprako-util" }
 serde = { version = "1.0.228", features = ["derive"] }
@@ -60,4 +59,4 @@ utoipa-swagger-ui = { version = "9", features = ["axum"], optional = true }
 governor = "0.6"
 futures = "0.3.32"
 poprako-orchestra = "0.2.0"
-poprako-orchestra-extra = { version = "0.1.0", features = ["promise"] }
+poprako-orchestra-extra = { version = "0.2.0", features = ["promise"] }

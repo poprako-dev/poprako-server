@@ -11,10 +11,8 @@ use tracing::instrument;
 #[cfg(feature = "swagger-ui")]
 use utoipa::IntoParams;
 
-#[cfg(feature = "swagger-ui")]
-use crate::api::http::result::HttpBody;
-
-use crate::api::http::result::{Accept as _, HttpResult};
+#[allow(unused_imports)]
+use crate::api::http::result::{Accept as _, HttpBody, HttpResult};
 use crate::api::http::state::AppHarn;
 use crate::data::comment_data;
 use crate::model::user_model;
@@ -39,10 +37,10 @@ pub struct CommentListQuery {
     pub incl_opt: Vec<CommentInclOpt>,
 
     /// Pagination offset (0-based).
-    pub offset: u64,
+    pub offset: u32,
 
     /// Maximum number of items to return.
-    pub limit: u64,
+    pub limit: u32,
 }
 
 /// `POST /api/v1/comments` — create a team board comment.

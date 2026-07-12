@@ -5,15 +5,15 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "swagger-ui")]
 use utoipa::{IntoParams, ToSchema};
 
-use poprako_macro::Paginate;
-
 /// Input parameters for listing system mails.
-#[Paginate]
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
 #[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
 pub struct ListData {
     pub read: Option<bool>,
+
+    pub offset: u32,
+    pub limit: u32,
 }
 
 /// Presentation-ready system mail value.

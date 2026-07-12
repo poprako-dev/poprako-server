@@ -171,7 +171,7 @@ where
     I: ImagePool,
 {
     let (object_key, avatar_version) = drive
-        .with_context(async move |context| -> RegularResult<(String, i64)> {
+        .with_context(async move |context| -> RegularResult<(String, u32)> {
             //
             let repo = repo.derive_transactional().await;
 

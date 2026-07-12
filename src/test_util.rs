@@ -61,7 +61,7 @@ pub fn count_image_check_records(
     kind: ImageKind,
     resource_id: &str,
     object_key: &str,
-    image_version: i64,
+    image_version: u32,
 ) -> usize {
     records
         .iter()
@@ -88,7 +88,7 @@ pub fn assert_one_image_check_record(
     kind: ImageKind,
     resource_id: &str,
     object_key: &str,
-    image_version: i64,
+    image_version: u32,
 ) {
     assert_eq!(
         count_image_check_records(

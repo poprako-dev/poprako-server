@@ -160,10 +160,12 @@ class RustSpacingChecker:
         diagnostics: list[Diagnostic] = []
         edits: list[TextEdit] = []
 
+        first = unit_anchor(container, units[0])
+
         separator_rows = separator_rows_before_first(
             lines=lines,
             brace=brace,
-            first=units[0],
+            first=first,
         )
 
         # 多 statement / 多 match arm block：
@@ -182,7 +184,6 @@ class RustSpacingChecker:
             and not line_is_only_open_brace(lines, brace)
             and not separator_rows
         ):
-            first = units[0]
             kind = unit_kind(container)
 
             diagnostics.append(
@@ -238,7 +239,7 @@ class RustSpacingChecker:
                         lines=lines,
                         line_starts=line_starts,
                         brace=brace,
-                        first=units[0],
+                        first=first,
                         separator_rows=separator_rows,
                     )
                 )
@@ -246,7 +247,9 @@ class RustSpacingChecker:
         # 同一 block 内任意两个直接 statement 之间必须有空行。
         # 同一 match block 内任意两个 match arm 之间也必须有空行。
         for previous, current in zip(units, units[1:]):
-            if has_blank_line_between(lines, previous, current):
+            current_anchor = unit_anchor(container, current)
+
+            if has_blank_line_between(lines, previous, current_anchor):
                 continue
 
             kind = unit_kind(container)
@@ -254,8 +257,8 @@ class RustSpacingChecker:
             diagnostics.append(
                 Diagnostic(
                     path=path,
-                    line=current.start_point.row + 1,
-                    col=current.start_point.column + 1,
+                    line=current_anchor.start_point.row + 1,
+                    col=current_anchor.start_point.column + 1,
                     code="BLK001",
                     message=(
                         f"missing blank line before this {kind}; previous "
@@ -271,7 +274,7 @@ class RustSpacingChecker:
                     newline=newline,
                     container=container,
                     previous=previous,
-                    current=current,
+                    current=current_anchor,
                 )
 
                 if edit is not None:
@@ -337,10 +340,30 @@ def direct_units(container: Node) -> list[Node]:
         return [
             child
             for child in container.named_children
-            if child.type not in COMMENT_NODE_TYPES
+            if child.type not in COMMENT_NODE_TYPES | {"attribute_item"}
         ]
 
     return []
+
+
+def unit_anchor(container: Node, unit: Node) -> Node:
+    """Return the first outer attribute belonging to a direct statement."""
+    anchor = unit
+
+    for child in reversed(container.named_children):
+        if child.end_byte > anchor.start_byte:
+            continue
+
+        if child.type == "attribute_item":
+            anchor = child
+            continue
+
+        if child.type in COMMENT_NODE_TYPES:
+            continue
+
+        break
+
+    return anchor
 
 
 def unit_kind(container: Node) -> str:

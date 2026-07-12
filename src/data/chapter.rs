@@ -5,11 +5,9 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "swagger-ui")]
 use utoipa::{IntoParams, ToSchema};
 
-use poprako_macro::Paginate;
 use poprako_util::time::ToUnixMilli;
 
-use crate::data::comic_data;
-use crate::data::user_data;
+use crate::data::{comic_data, user_data};
 use crate::model::chapter_model;
 use crate::part::image::ImagePool;
 use crate::result::RegularResult;
@@ -155,7 +153,6 @@ pub struct CreateVal {
 /// in their parent segments.
 ///
 /// Example: `/api/v1/comics/{comic_id}/chapters?incl=comic.workset.team&incl=creator&offset=0&limit=20`.
-#[Paginate]
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
 #[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
@@ -172,6 +169,9 @@ pub struct ListInfosData {
         deserialize_with = "crate::value::query::deserialize_vec"
     )]
     pub incl_opt: Vec<ChapterInclOpt>,
+
+    pub offset: u32,
+    pub limit: u32,
 }
 
 /// Input parameters for partially updating a chapter's profile.

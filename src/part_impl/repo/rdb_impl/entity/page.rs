@@ -17,7 +17,8 @@ pub struct PageRow {
 
     pub f_image_key: Option<String>,
     pub f_image_uploaded: bool,
-    pub f_image_version: i64,
+    #[diesel(deserialize_as = i64)]
+    pub f_image_version: u32,
 
     pub f_total_unit_count: i32,
     pub f_translated_unit_count: i32,
@@ -85,9 +86,9 @@ impl<'a> PageAspect<'a> {
         self
     }
 
-    pub fn image_version(mut self, val: i64) -> Self {
+    pub fn image_version(mut self, val: u32) -> Self {
         //
-        self.f_image_version = Some(val);
+        self.f_image_version = Some(i64::from(val));
 
         self
     }
@@ -142,7 +143,7 @@ impl<'a> From<&'a page_model::Form> for PageEntry<'a> {
             f_chapter_id: &form.chapter_id,
             f_index: form.index,
             f_image_key: form.image_key.as_deref(),
-            f_image_version: form.image_version,
+            f_image_version: i64::from(form.image_version),
             f_created_at: now,
             f_updated_at: now,
         }

@@ -74,7 +74,7 @@ impl<'a> Step for ReserveCover<'a> {
 /// Step that marks a reserved cover as successfully uploaded.
 pub struct MarkCoverUploaded<'a> {
     pub id: &'a str,
-    pub cover_version: i64,
+    pub cover_version: u32,
 }
 
 impl<'a> Step for MarkCoverUploaded<'a> {
@@ -178,7 +178,7 @@ impl ComicStep {
     /// Constructs a step to confirm a comic cover upload completed.
     pub fn mark_cover_uploaded<'a>(
         id: &'a str,
-        cover_version: i64,
+        cover_version: u32,
     ) -> MarkCoverUploaded<'a> {
         MarkCoverUploaded { id, cover_version }
     }

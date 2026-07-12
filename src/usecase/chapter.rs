@@ -6,9 +6,7 @@ use poprako_transactional::drive::Drive;
 use crate::complex::assignment::AssignmentComplex;
 use crate::complex::chapter::{ChapterComplex, ChapterPermComplex};
 use crate::data::chapter_data;
-use crate::model::assignment_model;
-use crate::model::chapter_model;
-use crate::model::user_model;
+use crate::model::{assignment_model, chapter_model, user_model};
 use crate::part::effect::event::Event;
 use crate::part::effect::event::chapter::{
     ChapterPublishedPayload, ChapterWorkflowCompletedPayload,

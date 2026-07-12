@@ -38,7 +38,7 @@ pub enum ImageTask<'a> {
         kind: ImageKind,
         resource_id: &'a str,
         object_key: &'a str,
-        image_version: i64,
+        image_version: u32,
     },
     /// Delete an object from storage (e.g., an old avatar after a replacement).
     Delete { object_key: &'a str },

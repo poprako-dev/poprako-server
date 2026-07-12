@@ -10,8 +10,7 @@ use poprako_util::page::Page;
 use crate::complex::image::ImageComplex;
 use crate::complex::page::{PageComplex, PagePermComplex};
 use crate::data::page_data;
-use crate::model::page_model;
-use crate::model::user_model;
+use crate::model::{page_model, user_model};
 use crate::part::image::ImagePool;
 use crate::part::prom::task::{IMAGE_TOPIC, ImageKind, ImageTask};
 use crate::part::prom::{Payload, Prom, PromStep};
@@ -66,7 +65,7 @@ where
     struct PageReservation {
         page_id: String,
         object_key: String,
-        image_version: i64,
+        image_version: u32,
     }
 
     use crate::part::shared::proxy::AsProxyNonTransactional as _;
@@ -237,7 +236,7 @@ where
     let file_ext = data.file_ext;
 
     let (object_key, image_version) = drive
-        .with_context(async move |context| -> RegularResult<(String, i64)> {
+        .with_context(async move |context| -> RegularResult<(String, u32)> {
             //
             let repo = repo.derive_transactional().await;
 
@@ -331,7 +330,6 @@ where
 }
 
 /// Marks one page image as uploaded.
-/// TODO: batch
 pub async fn mark_image_uploaded<D, C, R>(
     drive: &D,
     repo: &R,
@@ -480,15 +478,13 @@ fn validate_page_count(page_count: i32) -> RegularResult<()> {
     Ok(())
 }
 
-// TODO: batch
-
 /// Appends a `CheckUploaded` prom task for the given page image.
 async fn append_check_uploaded<C, P>(
     prom: &P,
     context: &mut C,
     page_id: &str,
     object_key: &str,
-    image_version: i64,
+    image_version: u32,
     visible_at: &OffsetDateTime,
 ) -> RegularResult<()>
 where

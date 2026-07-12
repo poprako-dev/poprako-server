@@ -8,7 +8,6 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "swagger-ui")]
 use utoipa::{IntoParams, ToSchema};
 
-use poprako_macro::Paginate;
 use poprako_util::time::ToUnixMilli;
 
 use crate::model::workset_model;
@@ -83,10 +82,12 @@ pub struct UpdateInfoData {
 }
 
 /// Input parameters for listing worksets within a team.
-#[Paginate]
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
 #[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
 pub struct ListInfosData {
     pub team_id: String,
+
+    pub offset: u32,
+    pub limit: u32,
 }

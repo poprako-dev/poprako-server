@@ -268,7 +268,7 @@ async fn update_info(
 async fn mark_cover_uploaded(
     conn: &mut RdbConn,
     id: &str,
-    version: i64,
+    version: u32,
 ) -> RegularResult<()> {
     //
     let now = OffsetDateTime::now_utc();
@@ -276,7 +276,7 @@ async fn mark_cover_uploaded(
     let affected = diesel::update(
         t_comic
             .filter(f_id.eq(id))
-            .filter(f_cover_version.eq(version)),
+            .filter(f_cover_version.eq(i64::from(version))),
     )
     .set((f_cover_uploaded.eq(true), f_updated_at.eq(now)))
     .execute(conn)
@@ -370,19 +370,22 @@ async fn reserve_cover(
     //
     let now = OffsetDateTime::now_utc();
 
-    let (prev_key, new_version) = diesel::update(t_comic.filter(f_id.eq(id)))
-        .set((
-            f_cover_key.eq::<Option<&str>>(None),
-            f_cover_uploaded.eq(false),
-            f_cover_version.eq(f_cover_version + 1),
-            f_updated_at.eq(now),
-        ))
-        .returning((f_cover_key, f_cover_version))
-        .get_result(conn)
-        .await
-        .map_err(diesel)?;
+    let (prev_key, version): (Option<String>, i64) =
+        diesel::update(t_comic.filter(f_id.eq(id)))
+            .set((
+                f_cover_key.eq::<Option<&str>>(None),
+                f_cover_uploaded.eq(false),
+                f_cover_version.eq(f_cover_version + 1),
+                f_updated_at.eq(now),
+            ))
+            .returning((f_cover_key, f_cover_version))
+            .get_result(conn)
+            .await
+            .map_err(diesel)?;
 
-    let object_key = ComicComplex::gen_cover_key(id, new_version, file_ext);
+    let version = crate::part_impl::shared::result::version(version)?;
+
+    let object_key = ComicComplex::gen_cover_key(id, version, file_ext);
 
     diesel::update(t_comic.filter(f_id.eq(id)))
         .set((f_cover_key.eq(Some(&object_key)), f_updated_at.eq(now)))
@@ -393,7 +396,7 @@ async fn reserve_cover(
     Ok(comic_model::CoverReservation {
         object_key,
         prev_object_key: prev_key,
-        cover_version: new_version,
+        cover_version: version,
     })
 }
 

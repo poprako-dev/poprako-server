@@ -8,8 +8,7 @@ use time::OffsetDateTime;
 use poprako_transactional::advance::Advance;
 
 use crate::complex::page::PageComplex;
-use crate::model::page_model;
-use crate::model::unit_model;
+use crate::model::{page_model, unit_model};
 use crate::part::repo::page::{PageRepo, PageRepoTransactional};
 use crate::part::repo::step::page::{
     CreateBatch, DeleteByChapterId, GetInfoById, GetInfoExcluded,
@@ -75,8 +74,8 @@ async fn get_info_excluded(
 async fn list_infos_by_chapter_id(
     conn: &mut RdbConn,
     chapter_id: &str,
-    offset: u64,
-    limit: u64,
+    offset: u32,
+    limit: u32,
 ) -> RegularResult<Vec<page_model::Info>> {
     //
     let rows: Vec<PageRow> = t_page
@@ -137,7 +136,7 @@ async fn reserve_image(
     //
     let now = OffsetDateTime::now_utc();
 
-    let (chapter_id, prev_key, new_version): (String, Option<String>, i64) =
+    let (chapter_id, prev_key, version): (String, Option<String>, i64) =
         diesel::update(t_page.filter(f_id.eq(id)))
             .set((
                 f_image_key.eq::<Option<&str>>(None),
@@ -150,8 +149,10 @@ async fn reserve_image(
             .await
             .map_err(diesel)?;
 
+    let version = crate::part_impl::shared::result::version(version)?;
+
     let object_key =
-        PageComplex::gen_image_key(&chapter_id, id, new_version, file_ext);
+        PageComplex::gen_image_key(&chapter_id, id, version, file_ext);
 
     let aspect = PageAspect::new(now).image_key(Some(&object_key));
 
@@ -164,7 +165,7 @@ async fn reserve_image(
     Ok(page_model::ImageReservation {
         object_key,
         prev_object_key: prev_key,
-        image_version: new_version,
+        image_version: version,
     })
 }
 
@@ -172,7 +173,7 @@ async fn reserve_image(
 async fn mark_image_uploaded(
     conn: &mut RdbConn,
     id: &str,
-    image_version: i64,
+    version: u32,
 ) -> RegularResult<()> {
     //
     let now = OffsetDateTime::now_utc();
@@ -180,7 +181,7 @@ async fn mark_image_uploaded(
     let affected = diesel::update(
         t_page
             .filter(f_id.eq(id))
-            .filter(f_image_version.eq(image_version)),
+            .filter(f_image_version.eq(i64::from(version))),
     )
     .set((f_image_uploaded.eq(true), f_updated_at.eq(now)))
     .execute(conn)

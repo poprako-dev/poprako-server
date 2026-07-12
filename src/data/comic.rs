@@ -11,13 +11,9 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "swagger-ui")]
 use utoipa::{IntoParams, ToSchema};
 
-use poprako_macro::Paginate;
 use poprako_util::time::ToUnixMilli;
 
-use crate::data::chapter_data;
-use crate::data::team_data;
-use crate::data::user_data;
-use crate::data::workset_data;
+use crate::data::{chapter_data, team_data, user_data, workset_data};
 use crate::model::comic_model;
 use crate::part::image::ImagePool;
 use crate::result::{RegularError, RegularResult};
@@ -183,7 +179,6 @@ pub struct UpdateInfoData {
 }
 
 /// Input parameters for listing comics within a workset.
-#[Paginate]
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
 #[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
@@ -206,6 +201,9 @@ pub struct ListInfosData {
         deserialize_with = "crate::value::query::deserialize_vec"
     )]
     pub with_opt: Vec<ComicWithOpt>,
+
+    pub offset: u32,
+    pub limit: u32,
 }
 
 impl TryFrom<ListInfosData> for comic_model::ListSpec {
@@ -251,7 +249,7 @@ pub struct ReserveCoverData {
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
 pub struct ReserveCoverVal {
     pub put_url: String,
-    pub cover_version: i64,
+    pub cover_version: u32,
 }
 
 /// Input parameters for confirming a comic cover upload completed.
@@ -260,5 +258,5 @@ pub struct ReserveCoverVal {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
 pub struct MarkCoverUploadedData {
-    pub cover_version: i64,
+    pub cover_version: u32,
 }

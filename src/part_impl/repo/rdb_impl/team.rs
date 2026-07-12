@@ -80,8 +80,8 @@ async fn get_info_by_id(
 async fn list_infos(
     conn: &mut RdbConn,
     user_id: Option<&str>,
-    offset: u64,
-    limit: u64,
+    offset: u32,
+    limit: u32,
 ) -> RegularResult<Vec<team_model::Info>> {
     //
     let mut query = t_team.into_boxed();
@@ -132,7 +132,7 @@ async fn update_info(
 async fn mark_avatar_uploaded(
     conn: &mut RdbConn,
     id: &str,
-    version: i64,
+    version: u32,
 ) -> RegularResult<()> {
     //
     let now = OffsetDateTime::now_utc();
@@ -140,7 +140,7 @@ async fn mark_avatar_uploaded(
     let affected = diesel::update(
         t_team
             .filter(f_id.eq(id))
-            .filter(f_avatar_version.eq(version)),
+            .filter(f_avatar_version.eq(i64::from(version))),
     )
     .set((f_avatar_uploaded.eq(true), f_updated_at.eq(now)))
     .execute(conn)
@@ -164,7 +164,7 @@ async fn reserve_avatar(
     //
     let now = OffsetDateTime::now_utc();
 
-    let (prev_key, new_version): (Option<String>, i64) =
+    let (prev_key, version): (Option<String>, i64) =
         diesel::update(t_team.filter(f_id.eq(id)))
             .set((
                 f_avatar_key.eq::<Option<&str>>(None),
@@ -177,7 +177,9 @@ async fn reserve_avatar(
             .await
             .map_err(diesel)?;
 
-    let object_key = TeamComplex::gen_avatar_key(id, new_version, file_ext);
+    let version = crate::part_impl::shared::result::version(version)?;
+
+    let object_key = TeamComplex::gen_avatar_key(id, version, file_ext);
 
     diesel::update(t_team.filter(f_id.eq(id)))
         .set((f_avatar_key.eq(Some(&object_key)), f_updated_at.eq(now)))
@@ -188,7 +190,7 @@ async fn reserve_avatar(
     Ok(team_model::AvatarReservation {
         object_key,
         prev_object_key: prev_key,
-        avatar_version: new_version,
+        avatar_version: version,
     })
 }
 

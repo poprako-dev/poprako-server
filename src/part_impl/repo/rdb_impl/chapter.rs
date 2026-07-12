@@ -9,8 +9,7 @@ use time::OffsetDateTime;
 
 use poprako_transactional::advance::Advance;
 
-use crate::model::chapter_model;
-use crate::model::unit_model;
+use crate::model::{chapter_model, unit_model};
 use crate::part::repo::chapter::{ChapterRepo, ChapterRepoTransactional};
 use crate::part::repo::step::chapter::{
     AdjustUnitCounters, Create, Delete, FindPinnedInfoByComicId, GetInfoById,
@@ -130,8 +129,8 @@ async fn list_infos(
 // async fn list_infos_by_comic_id(
 //     conn: &mut RdbConn,
 //     comic_id: &str,
-//     offset: u64,
-//     limit: u64,
+//     offset: u32,
+//     limit: u32,
 // ) -> RegularResult<Vec<ChapterInfo>> {
 //     let rows: Vec<ChapterRow> = t_chapter
 //         .filter(f_comic_id.eq(comic_id))
@@ -149,8 +148,8 @@ async fn list_infos(
 // async fn list_infos_by_comic_id_excluded(
 //     conn: &mut RdbConn,
 //     comic_id: &str,
-//     offset: u64,
-//     limit: u64,
+//     offset: u32,
+//     limit: u32,
 // ) -> RegularResult<Vec<ChapterInfo>> {
 //     let rows: Vec<ChapterRow> = t_chapter
 //         .filter(f_comic_id.eq(comic_id))

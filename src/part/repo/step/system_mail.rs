@@ -28,8 +28,8 @@ pub struct ListInfosByReceiverId<'a> {
 
     pub read: Option<bool>,
 
-    pub offset: u64,
-    pub limit: u64,
+    pub offset: u32,
+    pub limit: u32,
 }
 
 impl<'a> Step for ListInfosByReceiverId<'a> {
@@ -67,8 +67,8 @@ impl SystemMailStep {
     pub fn list_infos<'a>(
         receiver_id: &'a str,
         read: Option<bool>,
-        offset: u64,
-        limit: u64,
+        offset: u32,
+        limit: u32,
     ) -> ListInfosByReceiverId<'a> {
         ListInfosByReceiverId {
             receiver_id,

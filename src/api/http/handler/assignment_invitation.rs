@@ -11,15 +11,12 @@ use tracing::instrument;
 #[cfg(feature = "swagger-ui")]
 use utoipa::IntoParams;
 
-#[cfg(feature = "swagger-ui")]
-use crate::api::http::result::HttpBody;
-
+#[allow(unused_imports)]
 use crate::api::http::result::{
-    Accept as _, HttpNoContent, HttpResult, no_content,
+    Accept as _, HttpBody, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
-use crate::data::assignment_data;
-use crate::data::assignment_invitation_data;
+use crate::data::{assignment_data, assignment_invitation_data};
 use crate::model::user_model;
 use crate::usecase;
 
@@ -35,10 +32,10 @@ pub struct AssignmentInvitationListQuery {
     pub pending: Option<bool>,
 
     /// Pagination offset (0-based).
-    pub offset: u64,
+    pub offset: u32,
 
     /// Maximum number of items to return.
-    pub limit: u64,
+    pub limit: u32,
 }
 
 /// `POST /api/v1/assignment-invitations` — create a pending assignment invitation.

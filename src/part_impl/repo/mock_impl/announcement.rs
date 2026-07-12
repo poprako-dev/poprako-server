@@ -201,8 +201,8 @@ fn form(id: &str) -> announcement_model::Form {
 
 fn spec(
     incl_opt: Vec<AnnouncementInclOpt>,
-    offset: u64,
-    limit: u64,
+    offset: u32,
+    limit: u32,
 ) -> announcement_model::ListSpec {
     announcement_model::ListSpec {
         team_id: "team-1".into(),
