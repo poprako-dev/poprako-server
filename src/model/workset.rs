@@ -7,7 +7,7 @@ use time::OffsetDateTime;
 /// Worksets are scoped to a team and keep denormalized comic counters for
 /// list views and comic index allocation.
 #[derive(Clone)]
-pub struct WorksetInfo {
+pub struct Info {
     pub id: String,
 
     pub team_id: String,
@@ -25,7 +25,7 @@ pub struct WorksetInfo {
 
 /// The data needed to create a new workset.
 #[cfg_attr(test, derive(Clone))]
-pub struct WorksetForm {
+pub struct Form {
     pub id: String,
 
     pub team_id: String,
@@ -37,7 +37,7 @@ pub struct WorksetForm {
 
 /// Mutable profile fields for a workset.
 #[cfg_attr(test, derive(Clone))]
-pub struct WorksetInfoUpdate {
+pub struct InfoUpdate {
     pub id: String,
     pub name: String,
     pub description: Option<String>,

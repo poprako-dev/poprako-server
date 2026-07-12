@@ -17,10 +17,10 @@ use time::OffsetDateTime;
 use poprako_transactional::advance::Advance;
 use poprako_transactional::drive::Drive;
 
-use crate::model::comic::ComicInfo;
-use crate::model::member::MemberInfo;
-use crate::model::user::UserToken;
-use crate::model::workset::WorksetInfo;
+use crate::model::comic_model;
+use crate::model::member_model;
+use crate::model::user_model;
+use crate::model::workset_model;
 use crate::part::prom::task::ImageTask;
 use crate::part::prom::{Payload, PromStep};
 use crate::part::repo::step::workset;
@@ -31,11 +31,11 @@ use crate::test_util::assert_expected_variant;
 use crate::test_util::fixture::team;
 use crate::value::role::{RoleField, RoleMask};
 
-fn workset(id: &str, team_id: &str, index: i32) -> WorksetInfo {
+fn workset(id: &str, team_id: &str, index: i32) -> workset_model::Info {
     //
     let time = OffsetDateTime::now_utc();
 
-    WorksetInfo {
+    workset_model::Info {
         id: id.into(),
         team_id: team_id.into(),
         index,
@@ -48,22 +48,22 @@ fn workset(id: &str, team_id: &str, index: i32) -> WorksetInfo {
     }
 }
 
-fn create_data(team_id: &str) -> CreateWorksetData {
-    CreateWorksetData {
+fn create_data(team_id: &str) -> workset_data::CreateData {
+    workset_data::CreateData {
         team_id: team_id.into(),
         name: "new".into(),
         description: Some("desc".into()),
     }
 }
 
-fn token(user_id: &str) -> UserToken {
-    UserToken {
+fn token(user_id: &str) -> user_model::Token {
+    user_model::Token {
         user_id: user_id.into(),
     }
 }
 
-fn admin_member(user_id: &str, team_id: &str) -> MemberInfo {
-    MemberInfo {
+fn admin_member(user_id: &str, team_id: &str) -> member_model::Info {
+    member_model::Info {
         id: format!("member-{}-{}", user_id, team_id),
         user_id: user_id.into(),
         user_nickname: user_id.into(),
@@ -79,11 +79,11 @@ fn comic_with_uploaded_cover(
     id: &str,
     workset_id: &str,
     cover_key: &str,
-) -> ComicInfo {
+) -> comic_model::Info {
     //
     let time = OffsetDateTime::now_utc();
 
-    ComicInfo {
+    comic_model::Info {
         id: id.into(),
         workset_id: workset_id.into(),
         index: 0,
@@ -210,7 +210,7 @@ async fn list_infos_filters_and_sorts_by_index() {
     let list = list_infos(
         &mock,
         token("user-1"),
-        ListWorksetInfosData {
+        workset_data::ListInfosData {
             team_id: "team-1".into(),
             offset: 0,
             limit: 10,
@@ -236,7 +236,7 @@ async fn list_infos_returns_empty_for_missing_team_contents() {
     let list = list_infos(
         &mock,
         token("user-1"),
-        ListWorksetInfosData {
+        workset_data::ListInfosData {
             team_id: "missing".into(),
             offset: 0,
             limit: 10,
@@ -260,7 +260,7 @@ async fn update_info_updates_workset() {
     update_info(
         &mock,
         token("user-1"),
-        UpdateWorksetInfoData {
+        workset_data::UpdateInfoData {
             id: "workset-1".into(),
             name: "updated".into(),
             description: Some("updated-desc".into()),
@@ -287,7 +287,7 @@ async fn update_info_propagates_missing_workset() {
     let err = update_info(
         &mock,
         token("user-1"),
-        UpdateWorksetInfoData {
+        workset_data::UpdateInfoData {
             id: "missing".into(),
             name: "updated".into(),
             description: None,

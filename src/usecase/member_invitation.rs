@@ -7,15 +7,9 @@ use poprako_util::i18n::trl;
 use crate::complex::member_invitation::{
     MemberInvitationComplex, MemberInvitationPermComplex,
 };
-use crate::data::member_invitation::{
-    CreateMemberInvitationData, CreateMemberInvitationVal,
-    ListMemberInvitationInfosData, MemberInvitationInfoVal,
-    UpdateMemberInvitationRolesData,
-};
-use crate::model::member_invitation::{
-    MemberInvitationForm, MemberInvitationListSpec, MemberInvitationUpdate,
-};
-use crate::model::user::UserToken;
+use crate::data::member_invitation_data;
+use crate::model::member_invitation_model;
+use crate::model::user_model;
 use crate::part::image::ImagePool;
 use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
 use crate::part::repo::member_invitation::{
@@ -37,9 +31,9 @@ mod tests;
 pub async fn create<D, C, R>(
     drive: &D,
     repo: &R,
-    token: UserToken,
-    data: CreateMemberInvitationData,
-) -> RegularResult<CreateMemberInvitationVal>
+    token: user_model::Token,
+    data: member_invitation_data::CreateData,
+) -> RegularResult<member_invitation_data::CreateVal>
 where
     D: Drive<C>,
     D::Error: Into<RegularError>,
@@ -99,7 +93,7 @@ where
 
             let code = MemberInvitationComplex::gen_code();
 
-            let member_invitation_form = MemberInvitationForm {
+            let member_invitation_form = member_invitation_model::Form {
                 id: member_invitation_id,
                 team_id: data.team_id,
                 invitor_id: token.user_id,
@@ -119,7 +113,7 @@ where
         })
         .await?;
 
-    Ok(CreateMemberInvitationVal {
+    Ok(member_invitation_data::CreateVal {
         id: member_invitation_id,
         code,
     })
@@ -129,9 +123,9 @@ where
 pub async fn list_infos<C, R, I>(
     repo: &R,
     image_pool: &I,
-    token: UserToken,
-    data: ListMemberInvitationInfosData,
-) -> RegularResult<Vec<MemberInvitationInfoVal>>
+    token: user_model::Token,
+    data: member_invitation_data::ListInfosData,
+) -> RegularResult<Vec<member_invitation_data::InfoVal>>
 where
     R: MemberInvitationRepo<C> + MemberRepo<C> + Sync,
     <R as DeriveTransactional>::Transactional:
@@ -147,7 +141,7 @@ where
     )
     .await?;
 
-    let spec = MemberInvitationListSpec {
+    let spec = member_invitation_model::ListSpec {
         team_id: data.team_id,
         pending: data.pending,
         incl_opt: data.incl_opt,
@@ -162,7 +156,10 @@ where
     let mut vals = Vec::with_capacity(infos.len());
 
     for info in infos {
-        vals.push(MemberInvitationInfoVal::from_model(image_pool, info).await?);
+        vals.push(
+            member_invitation_data::InfoVal::from_model(image_pool, info)
+                .await?,
+        );
     }
 
     Ok(vals)
@@ -172,8 +169,8 @@ where
 pub async fn update_roles<D, C, R>(
     drive: &D,
     repo: &R,
-    token: UserToken,
-    data: UpdateMemberInvitationRolesData,
+    token: user_model::Token,
+    data: member_invitation_data::UpdateRolesData,
 ) -> RegularResult<()>
 where
     D: Drive<C>,
@@ -200,7 +197,7 @@ where
             //
             let repo = repo.derive_transactional().await;
 
-            let member_invitation_update = MemberInvitationUpdate {
+            let member_invitation_update = member_invitation_model::Update {
                 id: data.id,
                 roles: data.roles,
             };
@@ -222,7 +219,7 @@ where
 pub async fn delete<D, C, R>(
     drive: &D,
     repo: &R,
-    token: UserToken,
+    token: user_model::Token,
     id: String,
 ) -> RegularResult<()>
 where

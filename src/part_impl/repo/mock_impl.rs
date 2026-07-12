@@ -12,21 +12,20 @@ use poprako_transactional::drive::result::Error as DriveError;
 use poprako_transactional::util::AsyncFnMark;
 use poprako_util::i18n::trl;
 
-use crate::model::announcement::AnnouncementInfo;
-use crate::model::assignment::AssignmentInfo;
-use crate::model::assignment_invitation::AssignmentInvitationInfo;
-use crate::model::chapter::ChapterInfo;
-use crate::model::comic::ComicInfo;
-use crate::model::comic_archive::ComicArchiveRecord;
-use crate::model::comment::CommentInfo;
-use crate::model::member::MemberInfo;
-use crate::model::member_invitation::MemberInvitationInfo;
-use crate::model::page::PageInfo;
-use crate::model::system_mail::SystemMailInfo;
-use crate::model::team::TeamInfo;
-use crate::model::unit::UnitInfo;
-use crate::model::user::{UserCredential, UserInfo};
-use crate::model::workset::WorksetInfo;
+use crate::model::announcement_model;
+use crate::model::assignment_invitation_model;
+use crate::model::assignment_model;
+use crate::model::chapter_model;
+use crate::model::comic_archive_model;
+use crate::model::comic_model;
+use crate::model::comment_model;
+use crate::model::member_invitation_model;
+use crate::model::page_model;
+use crate::model::system_mail_model;
+use crate::model::team_model;
+use crate::model::unit_model;
+use crate::model::user_model;
+use crate::model::workset_model;
 use crate::part::effect::event::Event;
 use crate::part_impl::prom::mock_impl::MockPromRecord;
 use crate::result::{ExpectedVariant, RegularError};
@@ -35,24 +34,24 @@ use crate::util::DeriveTransactional;
 /// In-memory state holding all mock repository records.
 #[cfg_attr(test, derive(Clone, Default))]
 pub struct MockState {
-    pub users: Vec<UserInfo>,
-    pub credentials: Vec<UserCredential>,
-    pub announcements: Vec<AnnouncementInfo>,
-    pub comments: Vec<CommentInfo>,
-    pub teams: Vec<TeamInfo>,
-    pub members: Vec<MemberInfo>,
-    pub member_invitations: Vec<MemberInvitationInfo>,
-    pub worksets: Vec<WorksetInfo>,
-    pub comics: Vec<ComicInfo>,
-    pub chapters: Vec<ChapterInfo>,
-    pub assignments: Vec<AssignmentInfo>,
-    pub assignment_invitations: Vec<AssignmentInvitationInfo>,
-    pub pages: Vec<PageInfo>,
-    pub units: Vec<UnitInfo>,
-    pub system_mails: Vec<SystemMailInfo>,
-    pub archived_comics: Vec<ComicArchiveRecord>,
-    pub archived_chapters: Vec<ComicArchiveRecord>,
-    pub archived_translations: Vec<ComicArchiveRecord>,
+    pub users: Vec<user_model::Info>,
+    pub credentials: Vec<user_model::Credential>,
+    pub announcements: Vec<announcement_model::Info>,
+    pub comments: Vec<comment_model::Info>,
+    pub teams: Vec<team_model::Info>,
+    pub members: Vec<member_model::Info>,
+    pub member_invitations: Vec<member_invitation_model::Info>,
+    pub worksets: Vec<workset_model::Info>,
+    pub comics: Vec<comic_model::Info>,
+    pub chapters: Vec<chapter_model::Info>,
+    pub assignments: Vec<assignment_model::Info>,
+    pub assignment_invitations: Vec<assignment_invitation_model::Info>,
+    pub pages: Vec<page_model::Info>,
+    pub units: Vec<unit_model::Info>,
+    pub system_mails: Vec<system_mail_model::Info>,
+    pub archived_comics: Vec<comic_archive_model::Record>,
+    pub archived_chapters: Vec<comic_archive_model::Record>,
+    pub archived_translations: Vec<comic_archive_model::Record>,
     pub prom_records: Vec<MockPromRecord>,
     pub deleted_image_keys: Vec<String>,
 }
@@ -60,24 +59,24 @@ pub struct MockState {
 /// A point-in-time copy of [MockState] for assertions after a transaction.
 #[cfg_attr(test, derive(Clone))]
 pub struct MockSnapshot {
-    pub users: Vec<UserInfo>,
-    pub credentials: Vec<UserCredential>,
-    pub announcements: Vec<AnnouncementInfo>,
-    pub comments: Vec<CommentInfo>,
-    pub teams: Vec<TeamInfo>,
-    pub members: Vec<MemberInfo>,
-    pub member_invitations: Vec<MemberInvitationInfo>,
-    pub worksets: Vec<WorksetInfo>,
-    pub comics: Vec<ComicInfo>,
-    pub chapters: Vec<ChapterInfo>,
-    pub assignments: Vec<AssignmentInfo>,
-    pub assignment_invitations: Vec<AssignmentInvitationInfo>,
-    pub pages: Vec<PageInfo>,
-    pub units: Vec<UnitInfo>,
-    pub system_mails: Vec<SystemMailInfo>,
-    pub archived_comics: Vec<ComicArchiveRecord>,
-    pub archived_chapters: Vec<ComicArchiveRecord>,
-    pub archived_translations: Vec<ComicArchiveRecord>,
+    pub users: Vec<user_model::Info>,
+    pub credentials: Vec<user_model::Credential>,
+    pub announcements: Vec<announcement_model::Info>,
+    pub comments: Vec<comment_model::Info>,
+    pub teams: Vec<team_model::Info>,
+    pub members: Vec<member_model::Info>,
+    pub member_invitations: Vec<member_invitation_model::Info>,
+    pub worksets: Vec<workset_model::Info>,
+    pub comics: Vec<comic_model::Info>,
+    pub chapters: Vec<chapter_model::Info>,
+    pub assignments: Vec<assignment_model::Info>,
+    pub assignment_invitations: Vec<assignment_invitation_model::Info>,
+    pub pages: Vec<page_model::Info>,
+    pub units: Vec<unit_model::Info>,
+    pub system_mails: Vec<system_mail_model::Info>,
+    pub archived_comics: Vec<comic_archive_model::Record>,
+    pub archived_chapters: Vec<comic_archive_model::Record>,
+    pub archived_translations: Vec<comic_archive_model::Record>,
     pub prom_records: Vec<MockPromRecord>,
     pub deleted_image_keys: Vec<String>,
 }
@@ -147,7 +146,11 @@ impl Mock {
     }
 
     /// Seed a user and its credential directly into the mock state.
-    pub fn seed_user(&self, user: UserInfo, credential: UserCredential) {
+    pub fn seed_user(
+        &self,
+        user: user_model::Info,
+        credential: user_model::Credential,
+    ) {
         //
         let mut state = self.state.lock().unwrap();
 
@@ -157,29 +160,29 @@ impl Mock {
     }
 
     /// Seed an announcement directly into the mock state.
-    pub fn seed_announcement(&self, announcement: AnnouncementInfo) {
+    pub fn seed_announcement(&self, announcement: announcement_model::Info) {
         self.state.lock().unwrap().announcements.push(announcement);
     }
 
     /// Seed a comment directly into the mock state.
-    pub fn seed_comment(&self, comment: CommentInfo) {
+    pub fn seed_comment(&self, comment: comment_model::Info) {
         self.state.lock().unwrap().comments.push(comment);
     }
 
     /// Seed a team directly into the mock state.
-    pub fn seed_team(&self, team: TeamInfo) {
+    pub fn seed_team(&self, team: team_model::Info) {
         self.state.lock().unwrap().teams.push(team);
     }
 
     /// Seed a member directly into the mock state.
-    pub fn seed_member(&self, member: MemberInfo) {
+    pub fn seed_member(&self, member: member_model::Info) {
         self.state.lock().unwrap().members.push(member);
     }
 
     /// Seed a member invitation directly into the mock state.
     pub fn seed_member_invitation(
         &self,
-        member_invitation: MemberInvitationInfo,
+        member_invitation: member_invitation_model::Info,
     ) {
         self.state
             .lock()
@@ -189,29 +192,29 @@ impl Mock {
     }
 
     /// Seed a workset directly into the mock state.
-    pub fn seed_workset(&self, workset: WorksetInfo) {
+    pub fn seed_workset(&self, workset: workset_model::Info) {
         self.state.lock().unwrap().worksets.push(workset);
     }
 
     /// Seed a comic directly into the mock state.
-    pub fn seed_comic(&self, comic: ComicInfo) {
+    pub fn seed_comic(&self, comic: comic_model::Info) {
         self.state.lock().unwrap().comics.push(comic);
     }
 
     /// Seed a chapter directly into the mock state.
-    pub fn seed_chapter(&self, chapter: ChapterInfo) {
+    pub fn seed_chapter(&self, chapter: chapter_model::Info) {
         self.state.lock().unwrap().chapters.push(chapter);
     }
 
     /// Seed an assignment directly into the mock state.
-    pub fn seed_assignment(&self, assignment: AssignmentInfo) {
+    pub fn seed_assignment(&self, assignment: assignment_model::Info) {
         self.state.lock().unwrap().assignments.push(assignment);
     }
 
     /// Seed an assignment invitation directly into the mock state.
     pub fn seed_assignment_invitation(
         &self,
-        assignment_invitation: AssignmentInvitationInfo,
+        assignment_invitation: assignment_invitation_model::Info,
     ) {
         self.state
             .lock()
@@ -221,17 +224,17 @@ impl Mock {
     }
 
     /// Seed a page directly into the mock state.
-    pub fn seed_page(&self, page: PageInfo) {
+    pub fn seed_page(&self, page: page_model::Info) {
         self.state.lock().unwrap().pages.push(page);
     }
 
     /// Seed a unit directly into the mock state.
-    pub fn seed_unit(&self, unit: UnitInfo) {
+    pub fn seed_unit(&self, unit: unit_model::Info) {
         self.state.lock().unwrap().units.push(unit);
     }
 
     /// Seed a system mail directly into the mock state.
-    pub fn seed_system_mail(&self, system_mail: SystemMailInfo) {
+    pub fn seed_system_mail(&self, system_mail: system_mail_model::Info) {
         self.state.lock().unwrap().system_mails.push(system_mail);
     }
 
@@ -429,7 +432,7 @@ pub mod workset;
 
 use poprako_transactional::advance::Advance;
 
-use crate::model::member::MemberForm;
+use crate::model::member_model;
 use crate::part::prom::task::{ImageKind, ImageTask};
 use crate::part::prom::{Payload, PromStep};
 use crate::part::repo::step::member::MemberStep;
@@ -438,11 +441,11 @@ use crate::part::shared::execute::Execute;
 use crate::value::role::{RoleField, RoleMask};
 
 /// Build a minimal `UserInfo` for test seeding.
-fn user(id: &str) -> UserInfo {
+fn user(id: &str) -> user_model::Info {
     //
     let time = now();
 
-    UserInfo {
+    user_model::Info {
         id: id.into(),
         qid: "qid".into(),
         nickname: "nick".into(),
@@ -464,7 +467,7 @@ async fn execute_reads_seeded_user() {
 
     mock.seed_user(
         user("user-1"),
-        UserCredential {
+        user_model::Credential {
             user_id: "user-1".into(),
             password_hash: "hash".into(),
         },
@@ -486,7 +489,7 @@ async fn transaction_commits_repo_and_prom() {
     //
     let mock = Mock::new();
 
-    let member_form = MemberForm {
+    let member_form = member_model::Form {
         id: "member-1".into(),
         user_id: "user-1".into(),
         user_nickname: "nick".into(),
@@ -540,7 +543,7 @@ async fn transaction_rolls_back_repo_and_prom() {
     //
     let mock = Mock::new();
 
-    let member_form = MemberForm {
+    let member_form = member_model::Form {
         id: "member-1".into(),
         user_id: "user-1".into(),
         user_nickname: "nick".into(),

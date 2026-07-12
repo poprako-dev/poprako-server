@@ -11,14 +11,12 @@ use crate::complex::chapter_port::{
     ChapterImportComplex, ChapterPortPermComplex,
 };
 use crate::complex::unit::UnitComplex;
-use crate::data::chapter_port::{
-    ChapterTranslationImportData, ChapterTranslationImportVal,
-};
-use crate::model::assignment::AssignmentInfo;
-use crate::model::page::PageInfo;
-use crate::model::unit::{UnitCounterDelta, UnitCounters, UnitInfo};
-use crate::model::unit_port::UnitTranslationImport;
-use crate::model::user::UserToken;
+use crate::data::chapter_port_data;
+use crate::model::assignment_model;
+use crate::model::page_model;
+use crate::model::unit_model;
+use crate::model::unit_port_model;
+use crate::model::user_model;
 use crate::part::repo::assignment::{
     AssignmentRepo, AssignmentRepoTransactional,
 };
@@ -40,10 +38,10 @@ use crate::value::role::RoleField;
 pub async fn import<D, C, R>(
     drive: &D,
     repo: &R,
-    token: UserToken,
-    data: ChapterTranslationImportData,
+    token: user_model::Token,
+    data: chapter_port_data::TranslationImportData,
     chapter_id: String,
-) -> RegularResult<ChapterTranslationImportVal>
+) -> RegularResult<chapter_port_data::TranslationImportVal>
 where
     D: Drive<C>,
     D::Error: Into<RegularError>,
@@ -95,7 +93,9 @@ where
 
     let imported = drive
         .with_context(
-            async move |context| -> RegularResult<ChapterTranslationImportVal> {
+            async move |context| -> RegularResult<
+                chapter_port_data::TranslationImportVal,
+            > {
                 //
                 let repo = repo.derive_transactional().await;
 
@@ -230,7 +230,7 @@ where
                 )
                 .await?;
 
-                Ok(ChapterTranslationImportVal {
+                Ok(chapter_port_data::TranslationImportVal {
                     imported_page_count: page_infos.len() as i32,
                     imported_unit_count,
                 })
@@ -242,8 +242,8 @@ where
 }
 
 /// Extracts unit counters from a [`PageInfo`].
-fn page_counters(page_info: &PageInfo) -> UnitCounters {
-    UnitCounters {
+fn page_counters(page_info: &page_model::Info) -> unit_model::Counters {
+    unit_model::Counters {
         total_unit_count: page_info.total_unit_count,
         translated_unit_count: page_info.translated_unit_count,
         proofread_unit_count: page_info.proofread_unit_count,
@@ -253,8 +253,8 @@ fn page_counters(page_info: &PageInfo) -> UnitCounters {
 /// Resolves the unit ID from an import — uses the provided ID, falls back to
 /// an existing unit with the same index, or generates a new one.
 fn resolve_unit_id(
-    imported_unit: &UnitTranslationImport,
-    existing_by_index: &HashMap<i32, &UnitInfo>,
+    imported_unit: &unit_port_model::TranslationImport,
+    existing_by_index: &HashMap<i32, &unit_model::Info>,
 ) -> String {
     //
     if let Some(id) = imported_unit
@@ -273,7 +273,7 @@ fn resolve_unit_id(
 }
 
 /// Returns true if the assignment grants a PROOFREADER role.
-fn has_proofreader_role(assignment_info: &AssignmentInfo) -> bool {
+fn has_proofreader_role(assignment_info: &assignment_model::Info) -> bool {
     assignment_info
         .roles
         .has_any_role(&[RoleField::PROOFREADER])
@@ -281,10 +281,10 @@ fn has_proofreader_role(assignment_info: &AssignmentInfo) -> bool {
 
 /// Computes the per-counter delta between old and new unit counters.
 fn counter_delta(
-    old_counters: UnitCounters,
-    new_counters: UnitCounters,
-) -> UnitCounterDelta {
-    UnitCounterDelta {
+    old_counters: unit_model::Counters,
+    new_counters: unit_model::Counters,
+) -> unit_model::CounterDelta {
+    unit_model::CounterDelta {
         total_unit_count: new_counters.total_unit_count
             - old_counters.total_unit_count,
         translated_unit_count: new_counters.translated_unit_count

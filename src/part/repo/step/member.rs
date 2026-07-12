@@ -2,18 +2,16 @@
 
 use poprako_transactional::step::Step;
 
-use crate::model::member::{
-    MemberForm, MemberInfo, MemberListSpec, MemberRoleUpdate,
-};
+use crate::model::member_model;
 use crate::value::member::MemberInclOpt;
 
 /// Step that inserts a new membership row.
 pub struct Create<'a> {
-    pub form: &'a MemberForm,
+    pub form: &'a member_model::Form,
 }
 
 impl<'a> Step for Create<'a> {
-    type Output = MemberInfo;
+    type Output = member_model::Info;
 }
 
 /// Step that updates the cached nickname across a user's memberships.
@@ -32,16 +30,16 @@ pub struct ListInfosByUserIdExcluded<'a> {
 }
 
 impl<'a> Step for ListInfosByUserIdExcluded<'a> {
-    type Output = Vec<MemberInfo>;
+    type Output = Vec<member_model::Info>;
 }
 
 /// Step that lists memberships under one team.
 pub struct ListInfos<'a> {
-    pub spec: &'a MemberListSpec,
+    pub spec: &'a member_model::ListSpec,
 }
 
 impl<'a> Step for ListInfos<'a> {
-    type Output = Vec<MemberInfo>;
+    type Output = Vec<member_model::Info>;
 }
 
 /// Step that finds one membership by user ID and team ID.
@@ -51,7 +49,7 @@ pub struct FindInfoByUserIdAndTeamId<'a> {
 }
 
 impl<'a> Step for FindInfoByUserIdAndTeamId<'a> {
-    type Output = Option<MemberInfo>;
+    type Output = Option<member_model::Info>;
 }
 
 /// Step that fetches one membership by ID.
@@ -61,12 +59,12 @@ pub struct GetInfoById<'a> {
 }
 
 impl<'a> Step for GetInfoById<'a> {
-    type Output = MemberInfo;
+    type Output = member_model::Info;
 }
 
 /// Step that updates one membership's roles.
 pub struct UpdateRole<'a> {
-    pub member_role_update: &'a MemberRoleUpdate,
+    pub member_role_update: &'a member_model::RoleUpdate,
 }
 
 impl<'a> Step for UpdateRole<'a> {
@@ -87,7 +85,7 @@ pub struct MemberStep;
 
 impl MemberStep {
     /// Constructs a step to insert a new membership.
-    pub fn create<'a>(form: &'a MemberForm) -> Create<'a> {
+    pub fn create<'a>(form: &'a member_model::Form) -> Create<'a> {
         Create { form }
     }
 
@@ -110,7 +108,7 @@ impl MemberStep {
     }
 
     /// Constructs a step to list team memberships.
-    pub fn list_infos<'a>(spec: &'a MemberListSpec) -> ListInfos<'a> {
+    pub fn list_infos<'a>(spec: &'a member_model::ListSpec) -> ListInfos<'a> {
         ListInfos { spec }
     }
 
@@ -132,7 +130,7 @@ impl MemberStep {
 
     /// Constructs a step to update a member's roles.
     pub fn update_role<'a>(
-        member_role_update: &'a MemberRoleUpdate,
+        member_role_update: &'a member_model::RoleUpdate,
     ) -> UpdateRole<'a> {
         UpdateRole { member_role_update }
     }

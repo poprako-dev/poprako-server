@@ -6,14 +6,9 @@ use poprako_transactional::drive::Drive;
 use crate::complex::announcement::{
     AnnouncementComplex, AnnouncementPermComplex,
 };
-use crate::data::announcement::{
-    AnnouncementInfoVal, CreateAnnouncementData, CreateAnnouncementVal,
-    ListAnnouncementInfosData,
-};
-use crate::model::announcement::{
-    AnnouncementForm, AnnouncementInfo, AnnouncementListSpec,
-};
-use crate::model::user::UserToken;
+use crate::data::announcement_data;
+use crate::model::announcement_model;
+use crate::model::user_model;
 use crate::part::image::ImagePool;
 use crate::part::repo::announcement::{
     AnnouncementRepo, AnnouncementRepoTransactional,
@@ -30,16 +25,16 @@ mod tests;
 pub async fn list_infos<C, R, I>(
     repo: &R,
     image_pool: &I,
-    token: UserToken,
-    data: ListAnnouncementInfosData,
-) -> RegularResult<Vec<AnnouncementInfoVal>>
+    token: user_model::Token,
+    data: announcement_data::ListInfosData,
+) -> RegularResult<Vec<announcement_data::InfoVal>>
 where
     R: AnnouncementRepo<C> + MemberRepo<C> + Sync,
     <R as DeriveTransactional>::Transactional:
         AnnouncementRepoTransactional<C> + MemberRepoTransactional<C>,
     I: ImagePool,
 {
-    let announcement_list_spec: AnnouncementListSpec = data.into();
+    let announcement_list_spec: announcement_model::ListSpec = data.into();
 
     use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
@@ -59,8 +54,11 @@ where
 
     for announcement_info in announcement_infos {
         announcement_info_vals.push(
-            AnnouncementInfoVal::from_model(image_pool, announcement_info)
-                .await?,
+            announcement_data::InfoVal::from_model(
+                image_pool,
+                announcement_info,
+            )
+            .await?,
         );
     }
 
@@ -71,9 +69,9 @@ where
 pub async fn create<D, C, R>(
     drive: &D,
     repo: &R,
-    token: UserToken,
-    data: CreateAnnouncementData,
-) -> RegularResult<CreateAnnouncementVal>
+    token: user_model::Token,
+    data: announcement_data::CreateData,
+) -> RegularResult<announcement_data::CreateVal>
 where
     D: Drive<C>,
     D::Error: Into<RegularError>,
@@ -94,27 +92,32 @@ where
     .await?;
 
     let announcement_info = drive
-        .with_context(async move |context| -> RegularResult<AnnouncementInfo> {
-            //
-            let repo = repo.derive_transactional().await;
+        .with_context(
+            async move |context| -> RegularResult<announcement_model::Info> {
+                //
+                let repo = repo.derive_transactional().await;
 
-            let announcement_form = AnnouncementForm {
-                id: AnnouncementComplex::gen_id(),
-                team_id: data.team_id,
-                user_id: token.user_id,
-                title: data.title,
-                content: data.content,
-            };
+                let announcement_form = announcement_model::Form {
+                    id: AnnouncementComplex::gen_id(),
+                    team_id: data.team_id,
+                    user_id: token.user_id,
+                    title: data.title,
+                    content: data.content,
+                };
 
-            let announcement_info = repo
-                .advance(context, &AnnouncementStep::create(&announcement_form))
-                .await?;
+                let announcement_info = repo
+                    .advance(
+                        context,
+                        &AnnouncementStep::create(&announcement_form),
+                    )
+                    .await?;
 
-            Ok(announcement_info)
-        })
+                Ok(announcement_info)
+            },
+        )
         .await?;
 
-    Ok(CreateAnnouncementVal {
+    Ok(announcement_data::CreateVal {
         id: announcement_info.id,
     })
 }

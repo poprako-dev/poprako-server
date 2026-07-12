@@ -14,11 +14,8 @@ use crate::api::http::result::{
     Accept as _, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
-use crate::data::assignment::{
-    AssignmentInfoVal, JoinChapterData, ListAssignmentInfosData,
-    UpdateAssignmentRolesData,
-};
-use crate::model::user::UserToken;
+use crate::data::assignment_data;
+use crate::model::user_model;
 use crate::usecase;
 
 /// `GET /api/v1/assignments` — list assignments by chapter or owner.
@@ -27,9 +24,9 @@ use crate::usecase;
     path = "/api/v1/assignments",
     tag = "assignments",
     description = "Lists assignments. Exactly one of `chapter_id` or `owner_id` is required; `role` optionally narrows by a single role bit. `incl` embeds related rows; dotted values imply their parent segments. Examples: `/api/v1/assignments?chapter_id=c_1&role=1&incl=chapter.comic.workset.team`, `/api/v1/assignments?owner_id=u_1&incl=user`.",
-    params(ListAssignmentInfosData),
+    params(assignment_data::ListInfosData),
     responses(
-        (status = 200, description = "Assignments listed", body = HttpBody<Vec<AssignmentInfoVal>>),
+        (status = 200, description = "Assignments listed", body = HttpBody<Vec<assignment_data::InfoVal>>),
         (status = 422, description = "Exactly one of chapter_id or owner_id is required"),
         (status = 403, description = "No permission to list these assignments"),
     ),
@@ -37,9 +34,9 @@ use crate::usecase;
 #[instrument(err, skip(harn))]
 pub async fn list_infos(
     State(harn): State<AppHarn>,
-    Extension(user_token): Extension<UserToken>,
-    Query(data): Query<ListAssignmentInfosData>,
-) -> HttpResult<Vec<AssignmentInfoVal>> {
+    Extension(user_token): Extension<user_model::Token>,
+    Query(data): Query<assignment_data::ListInfosData>,
+) -> HttpResult<Vec<assignment_data::InfoVal>> {
     usecase::assignment::list_infos(
         harn.repo(),
         harn.image_pool(),
@@ -59,7 +56,7 @@ pub async fn list_infos(
         ("chapter_id" = String, Path, description = "Chapter ID"),
         ("user_id" = String, Path, description = "Assignee user ID"),
     ),
-    request_body = UpdateAssignmentRolesData,
+    request_body = assignment_data::UpdateRolesData,
     responses(
         (status = 204, description = "Assignment roles updated"),
         (status = 422, description = "Path ids do not match body ids"),
@@ -71,8 +68,8 @@ pub async fn list_infos(
 pub async fn update_roles(
     State(harn): State<AppHarn>,
     Path((chapter_id, user_id)): Path<(String, String)>,
-    Extension(user_token): Extension<UserToken>,
-    Json(data): Json<UpdateAssignmentRolesData>,
+    Extension(user_token): Extension<user_model::Token>,
+    Json(data): Json<assignment_data::UpdateRolesData>,
 ) -> HttpNoContent {
     //
     ensure_path_matches_body_id(&chapter_id, &data.chapter_id)?;
@@ -106,7 +103,7 @@ pub async fn update_roles(
 pub async fn delete(
     State(harn): State<AppHarn>,
     Path(assignment_id): Path<String>,
-    Extension(user_token): Extension<UserToken>,
+    Extension(user_token): Extension<user_model::Token>,
 ) -> HttpNoContent {
     //
     usecase::assignment::delete(
@@ -127,7 +124,7 @@ pub async fn delete(
     tag = "assignments",
     request_body = JoinChapterData,
     responses(
-        (status = 201, description = "Joined assignment", body = HttpBody<AssignmentInfoVal>),
+        (status = 201, description = "Joined assignment", body = HttpBody<assignment_data::InfoVal>),
         (status = 403, description = "Role not assignable or no permission"),
         (status = 404, description = "Chapter not found"),
     ),
@@ -135,9 +132,9 @@ pub async fn delete(
 #[instrument(err, skip(harn, data))]
 pub async fn join(
     State(harn): State<AppHarn>,
-    Extension(user_token): Extension<UserToken>,
-    Json(data): Json<JoinChapterData>,
-) -> HttpResult<AssignmentInfoVal> {
+    Extension(user_token): Extension<user_model::Token>,
+    Json(data): Json<assignment_data::JoinChapterData>,
+) -> HttpResult<assignment_data::InfoVal> {
     usecase::assignment::join(harn.drive(), harn.repo(), user_token, data)
         .await?
         .accept(StatusCode::CREATED)

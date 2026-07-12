@@ -9,10 +9,7 @@ use time::OffsetDateTime;
 use poprako_transactional::advance::Advance;
 
 use crate::complex::comic::ComicComplex;
-use crate::model::comic::{
-    ComicCoverReservation, ComicForm, ComicInfo, ComicInfoUpdate,
-    ComicListKind, ComicListSpec,
-};
+use crate::model::comic_model;
 use crate::part::repo::comic::{ComicRepo, ComicRepoTransactional};
 use crate::part::repo::step::comic::{
     Create, Delete, GetInfoById, GetInfoExcluded, IncrChapterNextIndex,
@@ -167,7 +164,7 @@ async fn get_info_by_id(
     conn: &mut RdbConn,
     id: &str,
     incl_opt: &[ComicInclOpt],
-) -> RegularResult<ComicInfo> {
+) -> RegularResult<comic_model::Info> {
     //
     let row: ComicRow = t_comic
         .filter(f_id.eq(id))
@@ -178,7 +175,7 @@ async fn get_info_by_id(
         .map_err(diesel)?
         .ok_or_else(|| expected("error-comic-not-found"))?;
 
-    let mut info: ComicInfo = row.into();
+    let mut info: comic_model::Info = row.into();
 
     incl::comic::populate_comic_incls(
         conn,
@@ -193,8 +190,8 @@ async fn get_info_by_id(
 /// Queries comic rows filtered by workset, optional fuzzy title, and list kind.
 async fn list_infos(
     conn: &mut RdbConn,
-    spec: &ComicListSpec,
-) -> RegularResult<Vec<ComicInfo>> {
+    spec: &comic_model::ListSpec,
+) -> RegularResult<Vec<comic_model::Info>> {
     //
     let mut query = t_comic
         .filter(f_workset_id.eq(spec.workset_id.as_str()))
@@ -214,7 +211,7 @@ async fn list_infos(
         };
     }
 
-    if let ComicListKind::Stages(stage_mask) = &spec.kind
+    if let comic_model::ListKind::Stages(stage_mask) = &spec.kind
         && let Some(sql) = workflow_filter_sql(*stage_mask)
     {
         query = query.filter(diesel::dsl::sql::<Bool>(&sql));
@@ -228,7 +225,8 @@ async fn list_infos(
         .await
         .map_err(diesel)?;
 
-    let mut infos: Vec<ComicInfo> = rows.into_iter().map(Into::into).collect();
+    let mut infos: Vec<comic_model::Info> =
+        rows.into_iter().map(Into::into).collect();
 
     incl::comic::populate_comic_incls(conn, &mut infos, &spec.incl_opt).await?;
 
@@ -238,7 +236,7 @@ async fn list_infos(
 /// Updates the title, author, description, and composed title of a comic row.
 async fn update_info(
     conn: &mut RdbConn,
-    update: &ComicInfoUpdate,
+    update: &comic_model::InfoUpdate,
 ) -> RegularResult<()> {
     //
     let now = OffsetDateTime::now_utc();
@@ -295,8 +293,8 @@ async fn mark_cover_uploaded(
 /// Inserts a new comic row from the given form and returns the created info.
 async fn create(
     conn: &mut RdbConn,
-    form: &ComicForm,
-) -> RegularResult<ComicInfo> {
+    form: &comic_model::Form,
+) -> RegularResult<comic_model::Info> {
     //
     let entry = ComicEntry::from(form);
 
@@ -315,7 +313,7 @@ async fn get_info_excluded(
     conn: &mut RdbConn,
     id: &str,
     incl_opt: &[ComicInclOpt],
-) -> RegularResult<ComicInfo> {
+) -> RegularResult<comic_model::Info> {
     //
     let row: ComicRow = t_comic
         .filter(f_id.eq(id))
@@ -327,7 +325,7 @@ async fn get_info_excluded(
         .map_err(diesel)?
         .ok_or_else(|| expected("error-comic-not-found"))?;
 
-    let mut info: ComicInfo = row.into();
+    let mut info: comic_model::Info = row.into();
 
     incl::comic::populate_comic_incls(
         conn,
@@ -342,8 +340,8 @@ async fn get_info_excluded(
 /// Queries comic rows under `FOR UPDATE` lock using the given list spec.
 async fn list_infos_excluded(
     conn: &mut RdbConn,
-    spec: &ComicListSpec,
-) -> RegularResult<Vec<ComicInfo>> {
+    spec: &comic_model::ListSpec,
+) -> RegularResult<Vec<comic_model::Info>> {
     //
     let infos = list_infos(conn, spec).await?;
 
@@ -368,7 +366,7 @@ async fn reserve_cover(
     conn: &mut RdbConn,
     id: &str,
     file_ext: &str,
-) -> RegularResult<ComicCoverReservation> {
+) -> RegularResult<comic_model::CoverReservation> {
     //
     let now = OffsetDateTime::now_utc();
 
@@ -392,7 +390,7 @@ async fn reserve_cover(
         .await
         .map_err(diesel)?;
 
-    Ok(ComicCoverReservation {
+    Ok(comic_model::CoverReservation {
         object_key,
         prev_object_key: prev_key,
         cover_version: new_version,
@@ -467,7 +465,7 @@ impl<'a> Execute<GetInfoById<'a>> for RdbRepo {
     async fn execute(
         &self,
         step: &GetInfoById<'a>,
-    ) -> RegularResult<ComicInfo> {
+    ) -> RegularResult<comic_model::Info> {
         submit_query!(self.core, get_info_by_id, step.id, step.incl_opt)
     }
 }
@@ -479,7 +477,7 @@ impl<'a> Execute<ListInfos<'a>> for RdbRepo {
     async fn execute(
         &self,
         step: &ListInfos<'a>,
-    ) -> RegularResult<Vec<ComicInfo>> {
+    ) -> RegularResult<Vec<comic_model::Info>> {
         submit_query!(self.core, list_infos, step.spec)
     }
 }
@@ -517,7 +515,7 @@ impl<'a> Advance<Create<'a>, RdbContext> for RdbRepoTransactional {
         &self,
         context: &mut RdbContext,
         step: &Create<'a>,
-    ) -> RegularResult<ComicInfo> {
+    ) -> RegularResult<comic_model::Info> {
         create(context.conn(), step.form).await
     }
 }
@@ -530,7 +528,7 @@ impl<'a> Advance<GetInfoById<'a>, RdbContext> for RdbRepoTransactional {
         &self,
         context: &mut RdbContext,
         step: &GetInfoById<'a>,
-    ) -> RegularResult<ComicInfo> {
+    ) -> RegularResult<comic_model::Info> {
         get_info_by_id(context.conn(), step.id, step.incl_opt).await
     }
 }
@@ -543,7 +541,7 @@ impl<'a> Advance<GetInfoExcluded<'a>, RdbContext> for RdbRepoTransactional {
         &self,
         context: &mut RdbContext,
         step: &GetInfoExcluded<'a>,
-    ) -> RegularResult<ComicInfo> {
+    ) -> RegularResult<comic_model::Info> {
         get_info_excluded(context.conn(), step.id, step.incl_opt).await
     }
 }
@@ -556,7 +554,7 @@ impl<'a> Advance<ListInfosExcluded<'a>, RdbContext> for RdbRepoTransactional {
         &self,
         context: &mut RdbContext,
         step: &ListInfosExcluded<'a>,
-    ) -> RegularResult<Vec<ComicInfo>> {
+    ) -> RegularResult<Vec<comic_model::Info>> {
         list_infos_excluded(context.conn(), step.spec).await
     }
 }
@@ -569,7 +567,7 @@ impl<'a> Advance<ReserveCover<'a>, RdbContext> for RdbRepoTransactional {
         &self,
         context: &mut RdbContext,
         step: &ReserveCover<'a>,
-    ) -> RegularResult<ComicCoverReservation> {
+    ) -> RegularResult<comic_model::CoverReservation> {
         reserve_cover(context.conn(), step.id, step.file_extension).await
     }
 }

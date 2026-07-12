@@ -22,9 +22,9 @@ use super::*;
 
 use poprako_util::time::ToUnixMilli;
 
-use crate::model::member::{MemberInfo, MemberListSpec};
-use crate::model::team::TeamInfo;
-use crate::model::user::{UserCredential, UserInfo};
+use crate::model::member_model;
+use crate::model::team_model;
+use crate::model::user_model;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::{self, assert_expected_variant};
@@ -32,24 +32,24 @@ use crate::value::role::{RoleField, RoleMask};
 
 mod join_team;
 
-fn token(user_id: &str) -> UserToken {
-    UserToken {
+fn token(user_id: &str) -> user_model::Token {
+    user_model::Token {
         user_id: user_id.into(),
     }
 }
 
-fn credential(user_id: &str) -> UserCredential {
-    UserCredential {
+fn credential(user_id: &str) -> user_model::Credential {
+    user_model::Credential {
         user_id: user_id.into(),
         password_hash: "hash".into(),
     }
 }
 
-fn user(id: &str, nickname: &str) -> UserInfo {
+fn user(id: &str, nickname: &str) -> user_model::Info {
     //
     let time = test_util::now();
 
-    UserInfo {
+    user_model::Info {
         id: id.into(),
         qid: id.into(),
         nickname: nickname.into(),
@@ -63,11 +63,11 @@ fn user(id: &str, nickname: &str) -> UserInfo {
     }
 }
 
-fn team(id: &str) -> TeamInfo {
+fn team(id: &str) -> team_model::Info {
     //
     let time = test_util::now();
 
-    TeamInfo {
+    team_model::Info {
         id: id.into(),
         name: id.into(),
         description: "description".into(),
@@ -86,8 +86,8 @@ fn member(
     user_nickname: &str,
     team_id: &str,
     role_mask: RoleMask,
-) -> MemberInfo {
-    MemberInfo {
+) -> member_model::Info {
+    member_model::Info {
         id: id.into(),
         user_id: user_id.into(),
         user_nickname: user_nickname.into(),
@@ -99,16 +99,16 @@ fn member(
     }
 }
 
-fn create_data(user_id: &str, team_id: &str) -> CreateMemberData {
-    CreateMemberData {
+fn create_data(user_id: &str, team_id: &str) -> member_data::CreateData {
+    member_data::CreateData {
         user_id: user_id.into(),
         team_id: team_id.into(),
         roles: RoleMask::from(RoleField::TRANSLATOR),
     }
 }
 
-fn list_data(team_id: &str) -> ListMemberInfosData {
-    ListMemberInfosData {
+fn list_data(team_id: &str) -> member_data::ListInfosData {
+    member_data::ListInfosData {
         owner_id: None,
         team_id: Some(team_id.into()),
         fuzzy_nickname: None,
@@ -119,8 +119,8 @@ fn list_data(team_id: &str) -> ListMemberInfosData {
     }
 }
 
-fn update_role_data(id: &str) -> UpdateMemberRolesData {
-    UpdateMemberRolesData {
+fn update_role_data(id: &str) -> member_data::UpdateRolesData {
+    member_data::UpdateRolesData {
         id: id.into(),
         roles: RoleMask::from(RoleField::REVIEWER),
     }
@@ -313,7 +313,7 @@ async fn list_infos_filters_by_role() {
         &mock,
         &mock,
         token("admin-user"),
-        ListMemberInfosData {
+        member_data::ListInfosData {
             owner_id: None,
             team_id: Some("team-1".into()),
             fuzzy_nickname: None,
@@ -361,7 +361,7 @@ async fn list_infos_applies_pagination_after_filtering() {
         &mock,
         &mock,
         token("admin-user"),
-        ListMemberInfosData {
+        member_data::ListInfosData {
             owner_id: None,
             team_id: Some("team-1".into()),
             fuzzy_nickname: None,
@@ -415,7 +415,7 @@ async fn list_infos_owner_lists_own_memberships() {
         &mock,
         &mock,
         token("user-1"),
-        ListMemberInfosData {
+        member_data::ListInfosData {
             owner_id: Some("user-1".into()),
             team_id: None,
             fuzzy_nickname: None,
@@ -463,15 +463,17 @@ async fn list_infos_non_member_is_rejected() {
 #[test]
 fn list_infos_rejects_invalid_combination() {
     //
-    let err = TryInto::<MemberListSpec>::try_into(ListMemberInfosData {
-        owner_id: Some("user-1".into()),
-        team_id: Some("team-1".into()),
-        fuzzy_nickname: None,
-        role: None,
-        incl_opt: Vec::new(),
-        offset: 0,
-        limit: 10,
-    })
+    let err = TryInto::<member_model::ListSpec>::try_into(
+        member_data::ListInfosData {
+            owner_id: Some("user-1".into()),
+            team_id: Some("team-1".into()),
+            fuzzy_nickname: None,
+            role: None,
+            incl_opt: Vec::new(),
+            offset: 0,
+            limit: 10,
+        },
+    )
     .err()
     .unwrap();
 
@@ -481,7 +483,7 @@ fn list_infos_rejects_invalid_combination() {
 #[test]
 fn list_infos_converts_owner_combination_to_mine_spec() {
     //
-    let member_list_spec: MemberListSpec = ListMemberInfosData {
+    let member_list_spec: member_model::ListSpec = member_data::ListInfosData {
         owner_id: Some("user-1".into()),
         team_id: None,
         fuzzy_nickname: None,
@@ -494,7 +496,7 @@ fn list_infos_converts_owner_combination_to_mine_spec() {
     .ok()
     .unwrap();
 
-    let MemberListSpec::User {
+    let member_model::ListSpec::User {
         owner_id,
         offset,
         limit,

@@ -7,9 +7,7 @@ use time::OffsetDateTime;
 
 use poprako_transactional::advance::Advance;
 
-use crate::model::member::{
-    MemberForm, MemberInfo, MemberListSpec, MemberRoleUpdate,
-};
+use crate::model::member_model;
 use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
 use crate::part::repo::step::member::{
     Create, Delete, FindInfoByUserIdAndTeamId, GetInfoById, ListInfos,
@@ -72,7 +70,7 @@ fn role_timestamps_from_mask(
 /// Build a [`MemberEntry`] for insertion from a [`MemberForm`] and the
 /// current timestamp.
 fn entry_from_form<'a>(
-    form: &'a MemberForm,
+    form: &'a member_model::Form,
     now: OffsetDateTime,
 ) -> MemberEntry<'a> {
     //
@@ -101,7 +99,7 @@ fn entry_from_form<'a>(
 /// Build a [`MemberAspect`] from a [`MemberRoleUpdate`], stamping each
 /// assigned role's timestamp to `now`.
 fn aspect_from_role_update(
-    update: &MemberRoleUpdate,
+    update: &member_model::RoleUpdate,
     now: OffsetDateTime,
 ) -> MemberAspect<'_> {
     //
@@ -155,7 +153,7 @@ async fn find_info_by_user_id_and_team_id(
     conn: &mut RdbConn,
     user_id: &str,
     team_id: &str,
-) -> RegularResult<Option<MemberInfo>> {
+) -> RegularResult<Option<member_model::Info>> {
     //
     let row: Option<MemberRow> = t_member
         .filter(f_user_id.eq(user_id))
@@ -172,13 +170,13 @@ async fn find_info_by_user_id_and_team_id(
 /// Query a paginated, filtered list of member infos.
 async fn list_infos(
     conn: &mut RdbConn,
-    spec: &MemberListSpec,
-) -> RegularResult<Vec<MemberInfo>> {
+    spec: &member_model::ListSpec,
+) -> RegularResult<Vec<member_model::Info>> {
     //
     let rows: Vec<MemberRow> =
         match spec {
             //
-            MemberListSpec::Team {
+            member_model::ListSpec::Team {
                 team_id,
                 fuzzy_nickname,
                 role,
@@ -249,7 +247,7 @@ async fn list_infos(
                     .map_err(diesel)?
             }
 
-            MemberListSpec::User {
+            member_model::ListSpec::User {
                 owner_id,
                 offset,
                 limit,
@@ -265,7 +263,8 @@ async fn list_infos(
                 .map_err(diesel)?,
         };
 
-    let mut infos: Vec<MemberInfo> = rows.into_iter().map(Into::into).collect();
+    let mut infos: Vec<member_model::Info> =
+        rows.into_iter().map(Into::into).collect();
 
     incl::member::populate_member_incls(conn, &mut infos, spec.incl_opt())
         .await?;
@@ -278,7 +277,7 @@ async fn get_info_by_id(
     conn: &mut RdbConn,
     id: &str,
     incl_opt: &[MemberInclOpt],
-) -> RegularResult<MemberInfo> {
+) -> RegularResult<member_model::Info> {
     //
     let row: MemberRow = t_member
         .filter(f_id.eq(id))
@@ -289,7 +288,7 @@ async fn get_info_by_id(
         .map_err(diesel)?
         .ok_or_else(|| expected("error-member-not-found"))?;
 
-    let mut info: MemberInfo = row.into();
+    let mut info: member_model::Info = row.into();
 
     incl::member::populate_member_incls(
         conn,
@@ -304,8 +303,8 @@ async fn get_info_by_id(
 /// Insert a new member and return its info.
 async fn create(
     conn: &mut RdbConn,
-    form: &MemberForm,
-) -> RegularResult<MemberInfo> {
+    form: &member_model::Form,
+) -> RegularResult<member_model::Info> {
     //
     let now = OffsetDateTime::now_utc();
 
@@ -345,7 +344,7 @@ async fn update_user_nickname(
 async fn list_infos_by_user_id_excluded(
     conn: &mut RdbConn,
     user_id: &str,
-) -> RegularResult<Vec<MemberInfo>> {
+) -> RegularResult<Vec<member_model::Info>> {
     //
     let rows: Vec<MemberRow> = t_member
         .filter(f_user_id.eq(user_id))
@@ -361,7 +360,7 @@ async fn list_infos_by_user_id_excluded(
 /// Update the role mask and refresh assignment timestamps for a member.
 async fn update_role(
     conn: &mut RdbConn,
-    update: &MemberRoleUpdate,
+    update: &member_model::RoleUpdate,
 ) -> RegularResult<()> {
     //
     let now = OffsetDateTime::now_utc();
@@ -397,7 +396,7 @@ impl<'a> Execute<FindInfoByUserIdAndTeamId<'a>> for RdbRepo {
     async fn execute(
         &self,
         step: &FindInfoByUserIdAndTeamId<'a>,
-    ) -> RegularResult<Option<MemberInfo>> {
+    ) -> RegularResult<Option<member_model::Info>> {
         submit_query!(
             self.core,
             find_info_by_user_id_and_team_id,
@@ -414,7 +413,7 @@ impl<'a> Execute<ListInfos<'a>> for RdbRepo {
     async fn execute(
         &self,
         step: &ListInfos<'a>,
-    ) -> RegularResult<Vec<MemberInfo>> {
+    ) -> RegularResult<Vec<member_model::Info>> {
         submit_query!(self.core, list_infos, step.spec)
     }
 }
@@ -426,7 +425,7 @@ impl<'a> Execute<GetInfoById<'a>> for RdbRepo {
     async fn execute(
         &self,
         step: &GetInfoById<'a>,
-    ) -> RegularResult<MemberInfo> {
+    ) -> RegularResult<member_model::Info> {
         submit_query!(self.core, get_info_by_id, step.id, step.incl_opt)
     }
 }
@@ -441,7 +440,7 @@ impl<'a> Advance<Create<'a>, RdbContext> for RdbRepoTransactional {
         &self,
         context: &mut RdbContext,
         step: &Create<'a>,
-    ) -> RegularResult<MemberInfo> {
+    ) -> RegularResult<member_model::Info> {
         create(context.conn(), step.form).await
     }
 }
@@ -470,7 +469,7 @@ impl<'a> Advance<ListInfosByUserIdExcluded<'a>, RdbContext>
         &self,
         context: &mut RdbContext,
         step: &ListInfosByUserIdExcluded<'a>,
-    ) -> RegularResult<Vec<MemberInfo>> {
+    ) -> RegularResult<Vec<member_model::Info>> {
         list_infos_by_user_id_excluded(context.conn(), step.user_id).await
     }
 }
@@ -485,7 +484,7 @@ impl<'a> Advance<FindInfoByUserIdAndTeamId<'a>, RdbContext>
         &self,
         context: &mut RdbContext,
         step: &FindInfoByUserIdAndTeamId<'a>,
-    ) -> RegularResult<Option<MemberInfo>> {
+    ) -> RegularResult<Option<member_model::Info>> {
         find_info_by_user_id_and_team_id(
             context.conn(),
             step.user_id,

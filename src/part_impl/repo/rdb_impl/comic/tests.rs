@@ -2,7 +2,7 @@
 
 use super::*;
 
-use crate::model::comic::{ComicInfoUpdate, ComicListKind, ComicListSpec};
+use crate::model::comic_model;
 use crate::part::repo::step::comic::ComicStep;
 use crate::part::shared::execute::Execute;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
@@ -21,10 +21,10 @@ async fn comic_roundtrip_reads_test_database_url() {
 
     let repo = RdbRepo::new(shared.clone());
 
-    let comic_list_spec = ComicListSpec {
+    let comic_list_spec = comic_model::ListSpec {
         workset_id: comic_fixture.workset_form.id.clone(),
         fuzzy_title: Some("Comic".into()),
-        kind: ComicListKind::All,
+        kind: comic_model::ListKind::All,
         incl_opt: vec![ComicInclOpt::WorksetTeam],
         offset: 0,
         limit: 10,
@@ -48,7 +48,7 @@ async fn comic_roundtrip_reads_test_database_url() {
         comic_fixture.team_form.id
     );
 
-    let comic_info_update = ComicInfoUpdate {
+    let comic_info_update = comic_model::InfoUpdate {
         id: comic_fixture.comic_form.id.clone(),
         title: "RDB Comic Updated".into(),
         author: "RDB Author Updated".into(),
@@ -70,10 +70,10 @@ async fn comic_roundtrip_reads_test_database_url() {
 
     assert_eq!(comic_info.title, "RDB Comic Updated");
 
-    let comic_list_spec = ComicListSpec {
+    let comic_list_spec = comic_model::ListSpec {
         workset_id: comic_fixture.workset_form.id.clone(),
         fuzzy_title: Some("RDB Author Updated".into()),
-        kind: ComicListKind::All,
+        kind: comic_model::ListKind::All,
         incl_opt: Vec::new(),
         offset: 0,
         limit: 10,
@@ -89,10 +89,10 @@ async fn comic_roundtrip_reads_test_database_url() {
 
     assert_eq!(comic_infos[0].id, comic_fixture.comic_form.id);
 
-    let comic_list_spec = ComicListSpec {
+    let comic_list_spec = comic_model::ListSpec {
         workset_id: comic_fixture.workset_form.id.clone(),
         fuzzy_title: Some("1".into()),
-        kind: ComicListKind::All,
+        kind: comic_model::ListKind::All,
         incl_opt: Vec::new(),
         offset: 0,
         limit: 10,

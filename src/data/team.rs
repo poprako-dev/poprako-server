@@ -8,7 +8,7 @@ use utoipa::{IntoParams, ToSchema};
 use poprako_macro::Paginate;
 use poprako_util::time::ToUnixMilli;
 
-use crate::model::team::TeamInfo;
+use crate::model::team_model;
 use crate::part::image::ImagePool;
 use crate::result::RegularResult;
 
@@ -19,7 +19,7 @@ use crate::result::RegularResult;
 /// the avatar has been uploaded.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct TeamInfoVal {
+pub struct InfoVal {
     pub id: String,
 
     pub name: String,
@@ -34,7 +34,7 @@ pub struct TeamInfoVal {
     pub updated_at: i64,
 }
 
-impl TeamInfoVal {
+impl InfoVal {
     /// Converts a [`TeamInfoModel`] into a presentation-ready value.
     ///
     /// Resolves a signed avatar download URL when the avatar has
@@ -44,7 +44,7 @@ impl TeamInfoVal {
     /// [`OffsetDateTime`]: time::OffsetDateTime
     pub async fn from_model<P>(
         image_pool: &P,
-        model: TeamInfo,
+        model: team_model::Info,
     ) -> RegularResult<Self>
     where
         P: ImagePool,
@@ -71,7 +71,7 @@ impl TeamInfoVal {
 /// Input parameters for creating a new team.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct CreateTeamData {
+pub struct CreateData {
     pub name: String,
     pub description: String,
 }
@@ -88,7 +88,7 @@ pub struct CreateTeamData {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
 #[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
-pub struct ListTeamInfosData {
+pub struct ListInfosData {
     /// Filter to teams joined by this user. Omit to list all teams
     /// (super-admin only).
     pub user_id: Option<String>,
@@ -97,7 +97,7 @@ pub struct ListTeamInfosData {
 /// Input parameters for updating a team's profile.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct UpdateTeamInfoData {
+pub struct UpdateInfoData {
     pub id: String,
 
     pub name: String,
@@ -107,14 +107,14 @@ pub struct UpdateTeamInfoData {
 /// Input parameters for reserving a new team avatar upload slot.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct ReserveTeamAvatarData {
+pub struct ReserveAvatarData {
     pub file_ext: String,
 }
 
 /// Return value from a successful team avatar reservation.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct ReserveTeamAvatarVal {
+pub struct ReserveAvatarVal {
     pub put_url: String,
     pub avatar_version: i64,
 }
@@ -122,6 +122,6 @@ pub struct ReserveTeamAvatarVal {
 /// Input parameters for confirming a team avatar upload completed.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct MarkTeamAvatarUploadedData {
+pub struct MarkAvatarUploadedData {
     pub avatar_version: i64,
 }

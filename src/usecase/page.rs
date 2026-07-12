@@ -9,13 +9,9 @@ use poprako_util::page::Page;
 
 use crate::complex::image::ImageComplex;
 use crate::complex::page::{PageComplex, PagePermComplex};
-use crate::data::page::{
-    ListPageInfosData, MarkPageImageUploadedData, PageCreationVal, PageInfoVal,
-    ReserveChapterPagesData, ReserveChapterPagesVal, ReservePageImageData,
-    ReservePageImageVal,
-};
-use crate::model::page::PageForm;
-use crate::model::user::UserToken;
+use crate::data::page_data;
+use crate::model::page_model;
+use crate::model::user_model;
 use crate::part::image::ImagePool;
 use crate::part::prom::task::{IMAGE_TOPIC, ImageKind, ImageTask};
 use crate::part::prom::{Payload, Prom, PromStep};
@@ -42,9 +38,9 @@ pub async fn reserve_chapter_pages<D, C, R, P, I>(
     repo: &R,
     prom: &P,
     image_pool: &I,
-    token: UserToken,
-    data: ReserveChapterPagesData,
-) -> RegularResult<ReserveChapterPagesVal>
+    token: user_model::Token,
+    data: page_data::ReserveChapterData,
+) -> RegularResult<page_data::ReserveChapterVal>
 where
     D: Drive<C>,
     D::Error: Into<RegularError>,
@@ -124,7 +120,7 @@ where
                         &data.file_ext,
                     );
 
-                    let page_form = PageForm {
+                    let page_form = page_model::Form {
                         id: page_id.clone(),
                         chapter_id: chapter_info.id.clone(),
                         index,
@@ -191,7 +187,7 @@ where
                 .await?
                 .to_string();
 
-            Ok(PageCreationVal {
+            Ok(page_data::CreationVal {
                 page_id: reservation.page_id,
                 put_url,
                 image_version: reservation.image_version,
@@ -202,7 +198,7 @@ where
     .into_iter()
     .collect::<RegularResult<Vec<_>>>()?;
 
-    Ok(ReserveChapterPagesVal { creations })
+    Ok(page_data::ReserveChapterVal { creations })
 }
 
 /// Reserves a replacement image upload slot for one page.
@@ -211,10 +207,10 @@ pub async fn reserve_image<D, C, R, P, I>(
     repo: &R,
     prom: &P,
     image_pool: &I,
-    token: UserToken,
+    token: user_model::Token,
     id: String,
-    data: ReservePageImageData,
-) -> RegularResult<ReservePageImageVal>
+    data: page_data::ReserveImageData,
+) -> RegularResult<page_data::ReserveImageVal>
 where
     D: Drive<C>,
     D::Error: Into<RegularError>,
@@ -275,7 +271,7 @@ where
 
     let put_url = image_pool.put_signed(&object_key).await?.to_string();
 
-    Ok(ReservePageImageVal {
+    Ok(page_data::ReserveImageVal {
         page_id,
         put_url,
         image_version,
@@ -286,9 +282,9 @@ where
 pub async fn list_infos<C, R, I>(
     repo: &R,
     image_pool: &I,
-    token: UserToken,
-    data: ListPageInfosData,
-) -> RegularResult<Vec<PageInfoVal>>
+    token: user_model::Token,
+    data: page_data::ListInfosData,
+) -> RegularResult<Vec<page_data::InfoVal>>
 where
     R: PageRepo<C>
         + ChapterRepo<C>
@@ -325,9 +321,9 @@ where
         .await?;
 
     futures_util::future::join_all(
-        page_infos
-            .into_iter()
-            .map(|page_info| PageInfoVal::from_model(image_pool, page_info)),
+        page_infos.into_iter().map(|page_info| {
+            page_data::InfoVal::from_model(image_pool, page_info)
+        }),
     )
     .await
     .into_iter()
@@ -339,9 +335,9 @@ where
 pub async fn mark_image_uploaded<D, C, R>(
     drive: &D,
     repo: &R,
-    token: UserToken,
+    token: user_model::Token,
     id: String,
-    data: MarkPageImageUploadedData,
+    data: page_data::MarkImageUploadedData,
 ) -> RegularResult<()>
 where
     D: Drive<C>,
@@ -385,7 +381,7 @@ pub async fn delete<D, C, R, P>(
     drive: &D,
     repo: &R,
     prom: &P,
-    token: UserToken,
+    token: user_model::Token,
     chapter_id: String,
 ) -> RegularResult<()>
 where

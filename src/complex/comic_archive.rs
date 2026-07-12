@@ -4,13 +4,8 @@ use time::OffsetDateTime;
 
 use poprako_util::time::ToUnixMilli;
 
-use crate::model::assignment::AssignmentInfo;
-use crate::model::comic_archive::{
-    ArchivedAssignmentPayload, ArchivedChapterPayload, ArchivedComicPayload,
-    ArchivedPagePayload, ArchivedTranslationPayload, ArchivedUnitPayload,
-    ArchivedUserPayload, ArchivedWorksetPayload, ComicArchiveChapterSnapshot,
-    ComicArchiveRecord, ComicArchiveSnapshot, ComicArchiveWrite,
-};
+use crate::model::assignment_model;
+use crate::model::comic_archive_model;
 use crate::result::{RegularError, RegularResult};
 use crate::util::{compress_archive, next_snowflake_id};
 
@@ -20,10 +15,10 @@ pub struct ComicArchiveComplex;
 impl ComicArchiveComplex {
     /// Build the compressed archive rows and source cleanup identifiers.
     pub fn build_write(
-        comic_archive_snapshot: ComicArchiveSnapshot,
+        comic_archive_snapshot: comic_archive_model::Snapshot,
         archiver_id: String,
         archived_at: OffsetDateTime,
-    ) -> RegularResult<ComicArchiveWrite> {
+    ) -> RegularResult<comic_archive_model::Write> {
         //
         let archived_comic_id = next_snowflake_id();
 
@@ -42,7 +37,7 @@ impl ComicArchiveComplex {
         let comic_payload =
             build_comic_payload(&comic_archive_snapshot, &archived_chapter_ids);
 
-        let comic_record = ComicArchiveRecord {
+        let comic_record = comic_archive_model::Record {
             id: archived_comic_id.clone(),
             archived_bytes: compress_archive(&comic_payload)?,
             archiver_id: archiver_id.clone(),
@@ -72,14 +67,14 @@ impl ComicArchiveComplex {
                 archived_chapter_id,
             );
 
-            chapter_records.push(ComicArchiveRecord {
+            chapter_records.push(comic_archive_model::Record {
                 id: archived_chapter_id.clone(),
                 archived_bytes: compress_archive(&chapter_payload)?,
                 archiver_id: archiver_id.clone(),
                 created_at: archived_at,
             });
 
-            translation_records.push(ComicArchiveRecord {
+            translation_records.push(comic_archive_model::Record {
                 id: archived_translation_id.clone(),
                 archived_bytes: compress_archive(&translation_payload)?,
                 archiver_id: archiver_id.clone(),
@@ -96,7 +91,7 @@ impl ComicArchiveComplex {
             );
         }
 
-        Ok(ComicArchiveWrite {
+        Ok(comic_archive_model::Write {
             comic_record,
             chapter_records,
             translation_records,
@@ -109,17 +104,17 @@ impl ComicArchiveComplex {
 
 /// Convert the comic and directly loaded workset into the archive payload.
 fn build_comic_payload(
-    comic_archive_snapshot: &ComicArchiveSnapshot,
+    comic_archive_snapshot: &comic_archive_model::Snapshot,
     archived_chapter_ids: &[String],
-) -> ArchivedComicPayload {
+) -> comic_archive_model::ArchivedPayload {
     //
     let comic_info = &comic_archive_snapshot.comic_info;
 
     let workset_info = &comic_archive_snapshot.workset_info;
 
-    ArchivedComicPayload {
+    comic_archive_model::ArchivedPayload {
         source_comic_id: comic_info.id.clone(),
-        workset: ArchivedWorksetPayload {
+        workset: comic_archive_model::ArchivedWorksetPayload {
             id: workset_info.id.clone(),
             team_id: workset_info.team_id.clone(),
             index: workset_info.index,
@@ -146,9 +141,9 @@ fn build_comic_payload(
 
 /// Convert a chapter and its assignments into the archive payload.
 fn build_chapter_payload(
-    chapter_snapshot: &ComicArchiveChapterSnapshot,
+    chapter_snapshot: &comic_archive_model::ChapterSnapshot,
     archived_comic_id: &str,
-) -> RegularResult<ArchivedChapterPayload> {
+) -> RegularResult<comic_archive_model::ArchivedChapterPayload> {
     //
     let chapter_info = &chapter_snapshot.chapter_info;
 
@@ -158,7 +153,7 @@ fn build_chapter_payload(
         .map(build_assignment_payload)
         .collect::<RegularResult<Vec<_>>>()?;
 
-    Ok(ArchivedChapterPayload {
+    Ok(comic_archive_model::ArchivedChapterPayload {
         source_chapter_id: chapter_info.id.clone(),
         archived_comic_id: archived_comic_id.into(),
         is_pinned: chapter_info.is_pinned,
@@ -178,8 +173,8 @@ fn build_chapter_payload(
 
 /// Convert an assignment and its directly loaded user into archive data.
 fn build_assignment_payload(
-    assignment_info: &AssignmentInfo,
-) -> RegularResult<ArchivedAssignmentPayload> {
+    assignment_info: &assignment_model::Info,
+) -> RegularResult<comic_archive_model::ArchivedAssignmentPayload> {
     //
     let user_info = assignment_info.user.as_ref().ok_or_else(|| {
         RegularError::Unrecoverable {
@@ -187,13 +182,13 @@ fn build_assignment_payload(
         }
     })?;
 
-    Ok(ArchivedAssignmentPayload {
+    Ok(comic_archive_model::ArchivedAssignmentPayload {
         source_assignment_id: assignment_info.id.clone(),
         user_id: assignment_info.user_id.clone(),
         roles: u32::from(assignment_info.roles),
         created_at: assignment_info.created_at.to_unix_milli(),
         updated_at: assignment_info.updated_at.to_unix_milli(),
-        user: ArchivedUserPayload {
+        user: comic_archive_model::ArchivedUserPayload {
             id: user_info.id.clone(),
             qid: user_info.qid.clone(),
             nickname: user_info.nickname.clone(),
@@ -210,9 +205,9 @@ fn build_assignment_payload(
 
 /// Convert page and unit data while intentionally excluding image metadata.
 fn build_translation_payload(
-    chapter_snapshot: &ComicArchiveChapterSnapshot,
+    chapter_snapshot: &comic_archive_model::ChapterSnapshot,
     archived_chapter_id: &str,
-) -> ArchivedTranslationPayload {
+) -> comic_archive_model::ArchivedTranslationPayload {
     //
     let pages = chapter_snapshot
         .page_snapshots
@@ -221,7 +216,7 @@ fn build_translation_payload(
             //
             let page_info = &page_snapshot.page_info;
 
-            ArchivedPagePayload {
+            comic_archive_model::ArchivedPagePayload {
                 source_page_id: page_info.id.clone(),
                 index: page_info.index,
                 total_unit_count: page_info.total_unit_count,
@@ -232,7 +227,7 @@ fn build_translation_payload(
                 units: page_snapshot
                     .unit_infos
                     .iter()
-                    .map(|unit_info| ArchivedUnitPayload {
+                    .map(|unit_info| comic_archive_model::ArchivedUnitPayload {
                         source_unit_id: unit_info.id.clone(),
                         index: unit_info.index,
                         is_bubble: unit_info.is_bubble,
@@ -255,7 +250,7 @@ fn build_translation_payload(
         })
         .collect();
 
-    ArchivedTranslationPayload {
+    comic_archive_model::ArchivedTranslationPayload {
         source_chapter_id: chapter_snapshot.chapter_info.id.clone(),
         archived_chapter_id: archived_chapter_id.into(),
         pages,

@@ -3,7 +3,7 @@
 use diesel::prelude::*;
 use time::OffsetDateTime;
 
-use crate::model::user::{UserCredential, UserInfo};
+use crate::model::user_model;
 use crate::part_impl::repo::rdb_impl::schema::t_user;
 
 // ── Queryable / Selectable ─────────────────────────────────────────────────
@@ -132,9 +132,9 @@ impl<'a> UserAspect<'a> {
 
 // ── Conversions ────────────────────────────────────────────────────────────
 
-impl From<UserRow> for UserInfo {
+impl From<UserRow> for user_model::Info {
     fn from(v: UserRow) -> Self {
-        UserInfo {
+        user_model::Info {
             id: v.f_id,
             qid: v.f_qid,
             nickname: v.f_nickname,
@@ -149,9 +149,9 @@ impl From<UserRow> for UserInfo {
     }
 }
 
-impl From<UserCredentialRow> for UserCredential {
+impl From<UserCredentialRow> for user_model::Credential {
     fn from(v: UserCredentialRow) -> Self {
-        UserCredential {
+        user_model::Credential {
             user_id: v.f_id,
             password_hash: v.f_password_hash,
         }

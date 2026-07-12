@@ -9,10 +9,7 @@ use crate::complex::util::{
     check_user_is_chapter_translator_or_proofreader,
     check_user_is_team_member_by_chapter,
 };
-use crate::model::unit::{
-    UnitApplyAck, UnitDiff, UnitIdMapper, UnitIndex, UnitIndexUpdate, UnitOper,
-    UnitPayload,
-};
+use crate::model::unit_model;
 use crate::part::repo::step::assignment::GetInfoByChapterIdAndUserId;
 use crate::part::repo::step::chapter::GetInfoById as ChapterGetInfoById;
 use crate::part::repo::step::comic::GetInfoById as ComicGetInfoById;
@@ -32,7 +29,9 @@ impl UnitComplex {
     }
 
     /// Validates one compact difference and resolves local create ids.
-    pub fn prepare_diff(diff: UnitDiff) -> RegularResult<UnitApplyAck> {
+    pub fn prepare_diff(
+        diff: unit_model::Diff,
+    ) -> RegularResult<unit_model::ApplyAck> {
         //
         validate_page_id(&diff.page_id)?;
 
@@ -45,7 +44,7 @@ impl UnitComplex {
         for unit_oper in diff.opers {
             match unit_oper {
                 //
-                UnitOper::Create {
+                unit_model::Oper::Create {
                     id,
                     payload,
                     before_id,
@@ -63,19 +62,19 @@ impl UnitComplex {
 
                     let unit_id = Self::gen_id();
 
-                    local_id_map.push(UnitIdMapper {
+                    local_id_map.push(unit_model::IdMapper {
                         local_id: id,
                         unit_id: unit_id.clone(),
                     });
 
-                    opers.push(UnitOper::Create {
+                    opers.push(unit_model::Oper::Create {
                         id: unit_id,
                         payload,
                         before_id,
                     });
                 }
 
-                UnitOper::Save {
+                unit_model::Oper::Save {
                     id,
                     payload,
                     before_id,
@@ -87,23 +86,23 @@ impl UnitComplex {
 
                     validate_payload(&payload)?;
 
-                    opers.push(UnitOper::Save {
+                    opers.push(unit_model::Oper::Save {
                         id,
                         payload,
                         before_id,
                     });
                 }
 
-                UnitOper::Delete { id } => {
+                unit_model::Oper::Delete { id } => {
                     //
                     validate_id(&id)?;
 
-                    opers.push(UnitOper::Delete { id });
+                    opers.push(unit_model::Oper::Delete { id });
                 }
             }
         }
 
-        Ok(UnitApplyAck {
+        Ok(unit_model::ApplyAck {
             opers,
             local_id_map,
         })
@@ -116,22 +115,22 @@ impl UnitComplex {
     /// absent from the surviving order appends the unit to the tail. Delete
     /// removes the unit. Units untouched by the diff keep their relative order.
     pub fn apply_opers_to_order(
-        opers: &[UnitOper],
+        opers: &[unit_model::Oper],
         mut current_order: Vec<String>,
     ) -> Vec<String> {
         //
         for oper in opers {
             match oper {
                 //
-                UnitOper::Create { id, before_id, .. }
-                | UnitOper::Save { before_id, id, .. } => {
+                unit_model::Oper::Create { id, before_id, .. }
+                | unit_model::Oper::Save { before_id, id, .. } => {
                     //
                     current_order.retain(|surviving_id| surviving_id != id);
 
                     insert_before(&mut current_order, id, before_id);
                 }
 
-                UnitOper::Delete { id } => {
+                unit_model::Oper::Delete { id } => {
                     current_order.retain(|surviving_id| surviving_id != id);
                 }
             }
@@ -144,8 +143,8 @@ impl UnitComplex {
     /// persisted indexes.
     pub fn build_index_updates_from_order(
         final_order: &[String],
-        current_indexes: &[UnitIndex],
-    ) -> Vec<UnitIndexUpdate> {
+        current_indexes: &[unit_model::Index],
+    ) -> Vec<unit_model::IndexUpdate> {
         //
         let current_map: HashMap<&String, i32> = current_indexes
             .iter()
@@ -163,7 +162,7 @@ impl UnitComplex {
                     return None;
                 }
 
-                Some(UnitIndexUpdate {
+                Some(unit_model::IndexUpdate {
                     id: id.clone(),
                     index,
                 })
@@ -173,8 +172,8 @@ impl UnitComplex {
 
     /// Builds compact index updates by compacting the current server order.
     pub fn build_index_updates(
-        current_indexes: Vec<UnitIndex>,
-    ) -> Vec<UnitIndexUpdate> {
+        current_indexes: Vec<unit_model::Index>,
+    ) -> Vec<unit_model::IndexUpdate> {
         //
         let mut sorted_indexes = current_indexes;
 
@@ -286,7 +285,7 @@ fn validate_optional_id(id: &Option<String>) -> RegularResult<()> {
 }
 
 /// Validate editor identifiers required by non-empty unit text fields.
-fn validate_payload(payload: &UnitPayload) -> RegularResult<()> {
+fn validate_payload(payload: &unit_model::Payload) -> RegularResult<()> {
     //
     validate_text_editor(
         &payload.translated_text,
@@ -357,8 +356,8 @@ fn insert_before(
 /// Build index updates by enumerating sorted unit indexes and emitting
 /// updates only for positions that differ from the stored index.
 fn compact_index_updates_from_order(
-    unit_indexes: Vec<UnitIndex>,
-) -> Vec<UnitIndexUpdate> {
+    unit_indexes: Vec<unit_model::Index>,
+) -> Vec<unit_model::IndexUpdate> {
     unit_indexes
         .into_iter()
         .enumerate()
@@ -370,7 +369,7 @@ fn compact_index_updates_from_order(
                 return None;
             }
 
-            Some(UnitIndexUpdate {
+            Some(unit_model::IndexUpdate {
                 id: unit_index.id,
                 index,
             })

@@ -10,33 +10,33 @@
 
 use super::*;
 
-use crate::model::member::MemberInfo;
-use crate::model::member_invitation::MemberInvitationInfo;
-use crate::model::user::{UserCredential, UserInfo};
+use crate::model::member_invitation_model;
+use crate::model::member_model;
+use crate::model::user_model;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::fixture::team;
 use crate::test_util::{self, assert_expected_variant};
 use crate::value::role::{RoleField, RoleMask};
 
-fn token(user_id: &str) -> UserToken {
-    UserToken {
+fn token(user_id: &str) -> user_model::Token {
+    user_model::Token {
         user_id: user_id.into(),
     }
 }
 
-fn credential(user_id: &str) -> UserCredential {
-    UserCredential {
+fn credential(user_id: &str) -> user_model::Credential {
+    user_model::Credential {
         user_id: user_id.into(),
         password_hash: "hash".into(),
     }
 }
 
-fn user(id: &str, qid: &str) -> UserInfo {
+fn user(id: &str, qid: &str) -> user_model::Info {
     //
     let time = test_util::now();
 
-    UserInfo {
+    user_model::Info {
         id: id.into(),
         qid: qid.into(),
         nickname: id.into(),
@@ -55,8 +55,8 @@ fn member(
     user_id: &str,
     team_id: &str,
     role_mask: RoleMask,
-) -> MemberInfo {
-    MemberInfo {
+) -> member_model::Info {
+    member_model::Info {
         id: id.into(),
         user_id: user_id.into(),
         user_nickname: user_id.into(),
@@ -72,8 +72,8 @@ fn invitation(
     id: &str,
     team_id: &str,
     invitee_qid: &str,
-) -> MemberInvitationInfo {
-    MemberInvitationInfo {
+) -> member_invitation_model::Info {
+    member_invitation_model::Info {
         id: id.into(),
         team_id: team_id.into(),
         invitor: None,
@@ -85,16 +85,19 @@ fn invitation(
     }
 }
 
-fn create_data(team_id: &str, invitee_qid: &str) -> CreateMemberInvitationData {
-    CreateMemberInvitationData {
+fn create_data(
+    team_id: &str,
+    invitee_qid: &str,
+) -> member_invitation_data::CreateData {
+    member_invitation_data::CreateData {
         team_id: team_id.into(),
         invitee_qid: invitee_qid.into(),
         roles: RoleMask::from(RoleField::TRANSLATOR),
     }
 }
 
-fn list_data(team_id: &str) -> ListMemberInvitationInfosData {
-    ListMemberInvitationInfosData {
+fn list_data(team_id: &str) -> member_invitation_data::ListInfosData {
+    member_invitation_data::ListInfosData {
         incl_opt: Vec::new(),
         team_id: team_id.into(),
         pending: Some(true),
@@ -103,8 +106,8 @@ fn list_data(team_id: &str) -> ListMemberInvitationInfosData {
     }
 }
 
-fn update_data(id: &str) -> UpdateMemberInvitationRolesData {
-    UpdateMemberInvitationRolesData {
+fn update_data(id: &str) -> member_invitation_data::UpdateRolesData {
+    member_invitation_data::UpdateRolesData {
         id: id.into(),
         roles: RoleMask::from(RoleField::REVIEWER),
     }

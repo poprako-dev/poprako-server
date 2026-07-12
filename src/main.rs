@@ -17,12 +17,9 @@
 #![warn(clippy::style)]
 #![warn(clippy::pedantic)]
 #![warn(clippy::nursery)]
-#![warn(clippy::cargo)]
-#![allow(clippy::module_name_repetitions)]
-#![allow(clippy::missing_errors_doc)]
-#![allow(clippy::missing_panics_doc)]
-#![allow(clippy::multiple_crate_versions)]
 
+#[cfg(feature = "swagger-ui")]
+use std::io::Write as _;
 use std::net::{SocketAddr, ToSocketAddrs};
 use std::path::Path;
 use std::sync::Arc;
@@ -48,16 +45,13 @@ async fn main() -> anyhow::Result<()> {
     //
     // CLI: --swagger to print swagger.json.
     #[cfg(feature = "swagger-ui")]
-
     if std::env::args().any(|a| a == "--swagger") {
         //
-        #[allow(clippy::print_stdout)]
+        let doc = poprako_server::ApiDoc::openapi();
 
-        {
-            let doc = poprako_server::ApiDoc::openapi();
+        let swagger_json = serde_json::to_string_pretty(&doc)?;
 
-            println!("{}", serde_json::to_string_pretty(&doc)?);
-        }
+        std::io::stdout().write_all(swagger_json.as_bytes())?;
 
         return Ok(());
     }

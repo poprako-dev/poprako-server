@@ -7,11 +7,11 @@ use super::*;
 
 use time::OffsetDateTime;
 
-use crate::model::assignment::AssignmentInfo;
-use crate::model::chapter::ChapterInfo;
-use crate::model::comic::ComicInfo;
-use crate::model::team::TeamInfo;
-use crate::model::workset::WorksetInfo;
+use crate::model::assignment_model;
+use crate::model::chapter_model;
+use crate::model::comic_model;
+use crate::model::team_model;
+use crate::model::workset_model;
 use crate::part::effect::event::chapter::{
     ChapterPublishedPayload, ChapterWorkflowCompletedPayload,
 };
@@ -20,11 +20,11 @@ use crate::part_impl::repo::mock_impl::Mock;
 use crate::value::chapter::{Stage, StageMask};
 use crate::value::role::{RoleField, RoleMask};
 
-fn team_info() -> TeamInfo {
+fn team_info() -> team_model::Info {
     //
     let time = OffsetDateTime::now_utc();
 
-    TeamInfo {
+    team_model::Info {
         id: "team-1".to_string(),
         name: "Team One".to_string(),
         description: "Team description".to_string(),
@@ -37,11 +37,11 @@ fn team_info() -> TeamInfo {
     }
 }
 
-fn workset_info() -> WorksetInfo {
+fn workset_info() -> workset_model::Info {
     //
     let time = OffsetDateTime::now_utc();
 
-    WorksetInfo {
+    workset_model::Info {
         id: "workset-1".to_string(),
         team_id: "team-1".to_string(),
         index: 0,
@@ -54,11 +54,11 @@ fn workset_info() -> WorksetInfo {
     }
 }
 
-fn comic_info() -> ComicInfo {
+fn comic_info() -> comic_model::Info {
     //
     let time = OffsetDateTime::now_utc();
 
-    ComicInfo {
+    comic_model::Info {
         id: "comic-1".to_string(),
         workset_id: "workset-1".to_string(),
         index: 0,
@@ -80,11 +80,11 @@ fn comic_info() -> ComicInfo {
     }
 }
 
-fn chapter_info() -> ChapterInfo {
+fn chapter_info() -> chapter_model::Info {
     //
     let time = OffsetDateTime::now_utc();
 
-    ChapterInfo {
+    chapter_model::Info {
         id: "chapter-1".to_string(),
         comic_id: "comic-1".to_string(),
         comic: None,
@@ -103,11 +103,15 @@ fn chapter_info() -> ChapterInfo {
     }
 }
 
-fn assignment_info(id: &str, user_id: &str, roles: RoleMask) -> AssignmentInfo {
+fn assignment_info(
+    id: &str,
+    user_id: &str,
+    roles: RoleMask,
+) -> assignment_model::Info {
     //
     let time = OffsetDateTime::now_utc();
 
-    AssignmentInfo {
+    assignment_model::Info {
         id: id.to_string(),
         chapter_id: "chapter-1".to_string(),
         user_id: user_id.to_string(),

@@ -27,3 +27,7 @@ name.
 
 Repository steps may name a storage-specific selection, lock, or exclusion
 when that detail belongs to the persistence operation.
+
+## Use of `data` structs must be qualified with `*_data::`
+
+Use `user_data::InfoVal` instead of raw `InfoVal`, for example.

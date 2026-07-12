@@ -3,7 +3,7 @@
 use diesel::prelude::*;
 use time::OffsetDateTime;
 
-use crate::model::unit::{UnitInfo, UnitPayload};
+use crate::model::unit_model;
 use crate::part_impl::repo::rdb_impl::schema::t_unit;
 
 /// Raw database row for the `t_unit` table. Returned by Diesel queries.
@@ -100,7 +100,7 @@ impl<'a> UnitAspect<'a> {
         self
     }
 
-    pub fn payload(mut self, payload: &'a UnitPayload) -> Self {
+    pub fn payload(mut self, payload: &'a unit_model::Payload) -> Self {
         //
         self.f_is_bubble = Some(payload.is_bubble);
 
@@ -123,7 +123,7 @@ impl<'a> UnitAspect<'a> {
     }
 }
 
-impl From<UnitRow> for UnitInfo {
+impl From<UnitRow> for unit_model::Info {
     fn from(row: UnitRow) -> Self {
         Self {
             id: row.f_id,
@@ -148,7 +148,7 @@ impl<'a> UnitEntry<'a> {
         id: &'a str,
         page_id: &'a str,
         index: i32,
-        payload: &'a UnitPayload,
+        payload: &'a unit_model::Payload,
     ) -> Self {
         //
         let now = OffsetDateTime::now_utc();

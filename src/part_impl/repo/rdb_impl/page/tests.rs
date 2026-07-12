@@ -7,7 +7,7 @@ use poprako_transactional::drive::Drive;
 
 use poprako_util::page::Page;
 
-use crate::model::unit::UnitCounters;
+use crate::model::unit_model;
 use crate::part::repo::step::page::PageStep;
 use crate::part::shared::execute::Execute;
 use crate::part_impl::drive::rdb_impl::RdbDrive;
@@ -32,7 +32,7 @@ async fn page_roundtrip_reads_test_database_url() {
 
     let transactional_repo = repo.derive_transactional().await;
 
-    let unit_counters = UnitCounters {
+    let unit_counters = unit_model::Counters {
         total_unit_count: 2,
         translated_unit_count: 1,
         proofread_unit_count: 1,

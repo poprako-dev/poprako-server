@@ -12,17 +12,15 @@ use super::*;
 
 use time::OffsetDateTime;
 
-use crate::data::unit::{
-    ListPageUnitInfosData, SavePageUnitsData, UnitDiffData, UnitOperData,
-};
-use crate::model::assignment::AssignmentInfo;
-use crate::model::chapter::ChapterInfo;
-use crate::model::comic::ComicInfo;
-use crate::model::member::MemberInfo;
-use crate::model::page::PageInfo;
-use crate::model::unit::UnitInfo;
-use crate::model::user::UserToken;
-use crate::model::workset::WorksetInfo;
+use crate::data::unit_data;
+use crate::model::assignment_model;
+use crate::model::chapter_model;
+use crate::model::comic_model;
+use crate::model::member_model;
+use crate::model::page_model;
+use crate::model::unit_model;
+use crate::model::user_model;
+use crate::model::workset_model;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::{ExpectedVariant, RegularError};
 use crate::value::chapter::StageMask;
@@ -56,17 +54,17 @@ impl TestRng {
     }
 }
 
-fn token(user_id: &str) -> UserToken {
-    UserToken {
+fn token(user_id: &str) -> user_model::Token {
+    user_model::Token {
         user_id: user_id.into(),
     }
 }
 
-fn workset(id: &str, team_id: &str) -> WorksetInfo {
+fn workset(id: &str, team_id: &str) -> workset_model::Info {
     //
     let time = OffsetDateTime::now_utc();
 
-    WorksetInfo {
+    workset_model::Info {
         id: id.into(),
         team_id: team_id.into(),
         index: 0,
@@ -79,11 +77,11 @@ fn workset(id: &str, team_id: &str) -> WorksetInfo {
     }
 }
 
-fn comic(id: &str, workset_id: &str) -> ComicInfo {
+fn comic(id: &str, workset_id: &str) -> comic_model::Info {
     //
     let time = OffsetDateTime::now_utc();
 
-    ComicInfo {
+    comic_model::Info {
         id: id.into(),
         workset_id: workset_id.into(),
         index: 0,
@@ -111,11 +109,11 @@ fn chapter(
     total: i32,
     translated: i32,
     proofread: i32,
-) -> ChapterInfo {
+) -> chapter_model::Info {
     //
     let time = OffsetDateTime::now_utc();
 
-    ChapterInfo {
+    chapter_model::Info {
         id: id.into(),
         comic_id: comic_id.into(),
         comic: None,
@@ -134,8 +132,8 @@ fn chapter(
     }
 }
 
-fn member(user_id: &str) -> MemberInfo {
-    MemberInfo {
+fn member(user_id: &str) -> member_model::Info {
+    member_model::Info {
         id: format!("member-{}", user_id),
         user_id: user_id.into(),
         user_nickname: user_id.into(),
@@ -151,11 +149,11 @@ fn assignment(
     chapter_id: &str,
     user_id: &str,
     role_mask: RoleMask,
-) -> AssignmentInfo {
+) -> assignment_model::Info {
     //
     let time = OffsetDateTime::now_utc();
 
-    AssignmentInfo {
+    assignment_model::Info {
         id: format!("assignment-{}-{}", chapter_id, user_id),
         chapter_id: chapter_id.into(),
         user_id: user_id.into(),
@@ -167,11 +165,16 @@ fn assignment(
     }
 }
 
-fn page(id: &str, total: i32, translated: i32, proofread: i32) -> PageInfo {
+fn page(
+    id: &str,
+    total: i32,
+    translated: i32,
+    proofread: i32,
+) -> page_model::Info {
     //
     let time = OffsetDateTime::now_utc();
 
-    PageInfo {
+    page_model::Info {
         id: id.into(),
         chapter_id: "chapter-1".into(),
         index: 0,
@@ -193,11 +196,11 @@ fn unit(
     text: &str,
     proofread_text: Option<&str>,
     proofread: bool,
-) -> UnitInfo {
+) -> unit_model::Info {
     //
     let time = OffsetDateTime::now_utc();
 
-    UnitInfo {
+    unit_model::Info {
         id: id.into(),
         page_id: page_id.into(),
         index,
@@ -218,8 +221,8 @@ fn create_oper(
     local_id: &str,
     text: &str,
     before_id: Option<&str>,
-) -> UnitOperData {
-    UnitOperData::Create {
+) -> unit_data::OperData {
+    unit_data::OperData::Create {
         local_id: local_id.into(),
         before_id: before_id.map(Into::into),
         is_bubble: true,
@@ -233,12 +236,16 @@ fn create_oper(
     }
 }
 
-fn save_oper(id: &str, text: &str, before_id: Option<&str>) -> UnitOperData {
+fn save_oper(
+    id: &str,
+    text: &str,
+    before_id: Option<&str>,
+) -> unit_data::OperData {
     save_oper_with_payload(id, text, false, 5.0, 6.0, before_id)
 }
 
-fn delete_oper(id: &str) -> UnitOperData {
-    UnitOperData::Delete { id: id.into() }
+fn delete_oper(id: &str) -> unit_data::OperData {
+    unit_data::OperData::Delete { id: id.into() }
 }
 
 fn save_oper_with_payload(
@@ -248,8 +255,8 @@ fn save_oper_with_payload(
     x_coord: f64,
     y_coord: f64,
     before_id: Option<&str>,
-) -> UnitOperData {
-    UnitOperData::Save {
+) -> unit_data::OperData {
+    unit_data::OperData::Save {
         id: id.into(),
         before_id: before_id.map(Into::into),
         is_bubble: true,
@@ -280,7 +287,7 @@ fn seed_scope(mock: &Mock, total: i32, translated: i32, proofread: i32) {
     mock.seed_page(page("page-1", total, translated, proofread));
 }
 
-fn sorted_unit_ids(units: &[UnitInfo]) -> Vec<String> {
+fn sorted_unit_ids(units: &[unit_model::Info]) -> Vec<String> {
     //
     let mut unit_infos = units.to_vec();
 
@@ -334,7 +341,7 @@ async fn list_infos_returns_units_for_team_member() {
     let listed = list_infos(
         &mock,
         token("user-1"),
-        ListPageUnitInfosData {
+        unit_data::ListPageInfosData {
             page_id: "page-1".into(),
             offset: 0,
             limit: 100,
@@ -380,7 +387,7 @@ async fn list_infos_returns_units_for_assignment_fallback() {
     let listed = list_infos(
         &mock,
         token("user-2"),
-        ListPageUnitInfosData {
+        unit_data::ListPageInfosData {
             page_id: "page-1".into(),
             offset: 0,
             limit: 100,
@@ -410,7 +417,7 @@ async fn list_infos_rejects_unrelated_user() {
     let e = list_infos(
         &mock,
         token("user-2"),
-        ListPageUnitInfosData {
+        unit_data::ListPageInfosData {
             page_id: "page-1".into(),
             offset: 0,
             limit: 100,
@@ -444,9 +451,9 @@ async fn save_infos_creates_updates_and_deletes_by_typed_opers() {
         &mock,
         &mock,
         token("user-1"),
-        SavePageUnitsData {
+        unit_data::SavePageData {
             page_id: "page-1".into(),
-            diff: UnitDiffData {
+            diff: unit_data::DiffData {
                 page_id: "page-1".into(),
                 opers: vec![
                     delete_oper("unit-b"),
@@ -508,9 +515,9 @@ async fn save_infos_places_unit_before_anchor_or_at_tail_by_before_id() {
         &mock,
         &mock,
         token("user-1"),
-        SavePageUnitsData {
+        unit_data::SavePageData {
             page_id: "page-1".into(),
-            diff: UnitDiffData {
+            diff: unit_data::DiffData {
                 page_id: "page-1".into(),
                 opers: vec![
                     save_oper("unit-c", "gamma", Some("unit-a")),
@@ -719,7 +726,7 @@ fn generate_random_opers(
     initial_units: &[OracleUnit],
     tag: &str,
     count: usize,
-) -> Vec<UnitOperData> {
+) -> Vec<unit_data::OperData> {
     //
     let mut opers = Vec::with_capacity(count);
 
@@ -754,13 +761,13 @@ fn generate_random_opers(
 
 fn apply_opers_to_oracle(
     oracle_units: &mut Vec<OracleUnit>,
-    opers: &[UnitOperData],
+    opers: &[unit_data::OperData],
     tag: &str,
 ) {
     for (step, oper) in opers.iter().enumerate() {
         match oper {
             //
-            UnitOperData::Create {
+            unit_data::OperData::Create {
                 local_id,
                 before_id,
                 is_proofread,
@@ -795,7 +802,7 @@ fn apply_opers_to_oracle(
             }
 
             //
-            UnitOperData::Save {
+            unit_data::OperData::Save {
                 id,
                 before_id,
                 is_proofread,
@@ -829,7 +836,7 @@ fn apply_opers_to_oracle(
                 oracle_units.insert(insert_position, oracle_unit);
             }
 
-            UnitOperData::Delete { id } => {
+            unit_data::OperData::Delete { id } => {
                 oracle_units.retain(|unit| unit.id != *id);
             }
         }
@@ -866,16 +873,16 @@ fn build_seeded_mock(initial_units: &[OracleUnit]) -> Mock {
 
 async fn apply_save_to_mock(
     mock: &Mock,
-    opers: &[UnitOperData],
+    opers: &[unit_data::OperData],
 ) -> RegularResult<()> {
     //
     save_infos(
         mock,
         mock,
         token("user-1"),
-        SavePageUnitsData {
+        unit_data::SavePageData {
             page_id: "page-1".into(),
-            diff: UnitDiffData {
+            diff: unit_data::DiffData {
                 page_id: "page-1".into(),
                 opers: opers.to_vec(),
             },
@@ -886,9 +893,12 @@ async fn apply_save_to_mock(
     Ok(())
 }
 
-fn collect_sorted_units(units: &[UnitInfo], page_id: &str) -> Vec<UnitInfo> {
+fn collect_sorted_units(
+    units: &[unit_model::Info],
+    page_id: &str,
+) -> Vec<unit_model::Info> {
     //
-    let mut filtered: Vec<UnitInfo> = units
+    let mut filtered: Vec<unit_model::Info> = units
         .iter()
         .filter(|unit_info| unit_info.page_id == page_id)
         .cloned()
@@ -918,9 +928,9 @@ async fn save_infos_rolls_back_without_edit_role() {
         &mock,
         &mock,
         token("user-1"),
-        SavePageUnitsData {
+        unit_data::SavePageData {
             page_id: "page-1".into(),
-            diff: UnitDiffData {
+            diff: unit_data::DiffData {
                 page_id: "page-1".into(),
                 opers: vec![create_oper("local-x", "inserted", None)],
             },
@@ -962,9 +972,9 @@ async fn save_infos_rolls_back_invalid_diff() {
         &mock,
         &mock,
         token("user-1"),
-        SavePageUnitsData {
+        unit_data::SavePageData {
             page_id: "page-1".into(),
-            diff: UnitDiffData {
+            diff: unit_data::DiffData {
                 page_id: "page-1".into(),
                 opers: vec![
                     create_oper("local-x", "inserted", None),
@@ -1002,11 +1012,11 @@ async fn save_infos_rejects_missing_text_editor_ids_before_transaction() {
         &mock,
         &mock,
         token("user-1"),
-        SavePageUnitsData {
+        unit_data::SavePageData {
             page_id: "page-1".into(),
-            diff: UnitDiffData {
+            diff: unit_data::DiffData {
                 page_id: "page-1".into(),
-                opers: vec![UnitOperData::Create {
+                opers: vec![unit_data::OperData::Create {
                     local_id: "local-1".into(),
                     before_id: None,
                     is_bubble: true,
@@ -1031,11 +1041,11 @@ async fn save_infos_rejects_missing_text_editor_ids_before_transaction() {
         &mock,
         &mock,
         token("user-1"),
-        SavePageUnitsData {
+        unit_data::SavePageData {
             page_id: "page-1".into(),
-            diff: UnitDiffData {
+            diff: unit_data::DiffData {
                 page_id: "page-1".into(),
-                opers: vec![UnitOperData::Save {
+                opers: vec![unit_data::OperData::Save {
                     id: "unit-a".into(),
                     before_id: None,
                     is_bubble: true,

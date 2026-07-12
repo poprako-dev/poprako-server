@@ -4,15 +4,15 @@ use poprako_macro::Paginate;
 use poprako_transactional::step::Step;
 use poprako_util::page::Page;
 
-use crate::model::team::{TeamAvatarReservation, TeamForm, TeamInfo};
+use crate::model::team_model;
 
 /// Step that inserts a new team row.
 pub struct Create<'a> {
-    pub form: &'a TeamForm,
+    pub form: &'a team_model::Form,
 }
 
 impl<'a> Step for Create<'a> {
-    type Output = TeamInfo;
+    type Output = team_model::Info;
 }
 
 /// Step that fetches a team by its identifier.
@@ -21,7 +21,7 @@ pub struct GetInfoById<'a> {
 }
 
 impl<'a> Step for GetInfoById<'a> {
-    type Output = TeamInfo;
+    type Output = team_model::Info;
 }
 
 /// Step that lists teams with pagination.
@@ -31,7 +31,7 @@ pub struct ListInfos<'a> {
 }
 
 impl<'a> Step for ListInfos<'a> {
-    type Output = Vec<TeamInfo>;
+    type Output = Vec<team_model::Info>;
 }
 
 /// Step that updates a team's name and description.
@@ -52,7 +52,7 @@ pub struct ReserveAvatar<'a> {
 }
 
 impl<'a> Step for ReserveAvatar<'a> {
-    type Output = TeamAvatarReservation;
+    type Output = team_model::AvatarReservation;
 }
 
 /// Step that marks a reserved team avatar as successfully uploaded.
@@ -71,7 +71,7 @@ pub struct GetInfoExcluded<'a> {
 }
 
 impl<'a> Step for GetInfoExcluded<'a> {
-    type Output = TeamInfo;
+    type Output = team_model::Info;
 }
 
 /// Step that deletes a team by its identifier.
@@ -102,7 +102,7 @@ pub struct TeamStep;
 
 impl TeamStep {
     /// Constructs a step to insert a new team.
-    pub fn create<'a>(form: &'a TeamForm) -> Create<'a> {
+    pub fn create<'a>(form: &'a team_model::Form) -> Create<'a> {
         Create { form }
     }
 

@@ -11,16 +11,12 @@ use crate::complex::assignment::AssignmentComplex;
 use crate::complex::chapter::ChapterComplex;
 use crate::complex::comic::{ComicComplex, ComicPermComplex};
 use crate::complex::image::ImageComplex;
-use crate::data::chapter::ChapterInfoVal;
-use crate::data::comic::{
-    ComicInfoVal, CreateComicData, CreateComicVal, ListComicInfosData,
-    MarkComicCoverUploadedData, ReserveComicCoverData, ReserveComicCoverVal,
-    UpdateComicInfoData,
-};
-use crate::model::assignment::AssignmentForm;
-use crate::model::chapter::ChapterForm;
-use crate::model::comic::{ComicForm, ComicInfoUpdate, ComicListSpec};
-use crate::model::user::UserToken;
+use crate::data::chapter_data;
+use crate::data::comic_data;
+use crate::model::assignment_model;
+use crate::model::chapter_model;
+use crate::model::comic_model;
+use crate::model::user_model;
 use crate::part::image::ImagePool;
 use crate::part::prom::task::{IMAGE_TOPIC, ImageKind, ImageTask};
 use crate::part::prom::{Payload, Prom, PromStep};
@@ -62,9 +58,9 @@ pub mod tests;
 pub async fn create<D, C, R>(
     drive: &D,
     repo: &R,
-    token: UserToken,
-    data: CreateComicData,
-) -> RegularResult<CreateComicVal>
+    token: user_model::Token,
+    data: comic_data::CreateData,
+) -> RegularResult<comic_data::CreateVal>
 where
     D: Drive<C>,
     D::Error: Into<RegularError>,
@@ -105,7 +101,7 @@ where
                 )
                 .await?;
 
-            let comic_form = ComicForm {
+            let comic_form = comic_model::Form {
                 id: ComicComplex::gen_id(),
                 workset_id: data.workset_id,
                 index,
@@ -137,7 +133,7 @@ where
                 chapter_index,
             );
 
-            let chapter_form = ChapterForm {
+            let chapter_form = chapter_model::Form {
                 id: ChapterComplex::gen_id(),
                 comic_id: comic_info.id.clone(),
                 is_pinned: true,
@@ -171,7 +167,7 @@ where
             )
             .await?;
 
-            let assignment_form = AssignmentForm {
+            let assignment_form = assignment_model::Form {
                 id: AssignmentComplex::gen_id(),
                 chapter_id: chapter_info.id.clone(),
                 user_id: token.user_id,
@@ -185,7 +181,7 @@ where
         })
         .await?;
 
-    Ok(CreateComicVal {
+    Ok(comic_data::CreateVal {
         id: comic_id,
         chapter_id,
     })
@@ -195,9 +191,9 @@ where
 pub async fn get_info<C, R, I>(
     repo: &R,
     image_pool: &I,
-    token: UserToken,
+    token: user_model::Token,
     id: String,
-) -> RegularResult<ComicInfoVal>
+) -> RegularResult<comic_data::InfoVal>
 where
     R: ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Sync,
     <R as DeriveTransactional>::Transactional: ComicRepoTransactional<C>
@@ -216,16 +212,16 @@ where
 
     let comic_info = repo.execute(&ComicStep::get_info_by_id(&id, &[])).await?;
 
-    ComicInfoVal::from_model(image_pool, comic_info, None).await
+    comic_data::InfoVal::from_model(image_pool, comic_info, None).await
 }
 
 /// Lists comics for a workset with optional title filter, completion filter, and pagination.
 pub async fn list_infos<C, R, I>(
     repo: &R,
     image_pool: &I,
-    token: UserToken,
-    data: ListComicInfosData,
-) -> RegularResult<Vec<ComicInfoVal>>
+    token: user_model::Token,
+    data: comic_data::ListInfosData,
+) -> RegularResult<Vec<comic_data::InfoVal>>
 where
     R: ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + ChapterRepo<C> + Sync,
     <R as DeriveTransactional>::Transactional: ComicRepoTransactional<C>
@@ -246,7 +242,7 @@ where
     let with_pinned_chapter =
         data.with_opt.contains(&ComicWithOpt::PinnedChapter);
 
-    let spec: ComicListSpec = data.try_into()?;
+    let spec: comic_model::ListSpec = data.try_into()?;
 
     let comic_infos = repo.execute(&ComicStep::list_infos(&spec)).await?;
 
@@ -270,14 +266,15 @@ where
         let pinned_chapter_val = match pinned_chapters.remove(&comic_info.id) {
             //
             Some(chapter_info) => Some(
-                ChapterInfoVal::from_model(image_pool, chapter_info).await?,
+                chapter_data::InfoVal::from_model(image_pool, chapter_info)
+                    .await?,
             ),
 
             None => None,
         };
 
         comic_info_vals.push(
-            ComicInfoVal::from_model(
+            comic_data::InfoVal::from_model(
                 image_pool,
                 comic_info,
                 pinned_chapter_val,
@@ -292,8 +289,8 @@ where
 /// Updates a comic's title, author, and description.
 pub async fn update_info<C, R>(
     repo: &R,
-    token: UserToken,
-    data: UpdateComicInfoData,
+    token: user_model::Token,
+    data: comic_data::UpdateInfoData,
 ) -> RegularResult<()>
 where
     R: ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Sync,
@@ -310,7 +307,7 @@ where
     )
     .await?;
 
-    let comic_info_update = ComicInfoUpdate {
+    let comic_info_update = comic_model::InfoUpdate {
         id: data.id,
         title: data.title,
         author: data.author,
@@ -329,10 +326,10 @@ pub async fn reserve_cover<D, C, R, P, I>(
     repo: &R,
     prom: &P,
     image_pool: &I,
-    token: UserToken,
+    token: user_model::Token,
     id: String,
-    data: ReserveComicCoverData,
-) -> RegularResult<ReserveComicCoverVal>
+    data: comic_data::ReserveCoverData,
+) -> RegularResult<comic_data::ReserveCoverVal>
 where
     D: Drive<C>,
     D::Error: Into<RegularError>,
@@ -416,7 +413,7 @@ where
 
     let put_url = image_pool.put_signed(&object_key).await?.to_string();
 
-    Ok(ReserveComicCoverVal {
+    Ok(comic_data::ReserveCoverVal {
         put_url,
         cover_version,
     })
@@ -425,9 +422,9 @@ where
 /// Marks a reserved comic cover as successfully uploaded.
 pub async fn mark_cover_uploaded<C, R>(
     repo: &R,
-    token: UserToken,
+    token: user_model::Token,
     id: String,
-    data: MarkComicCoverUploadedData,
+    data: comic_data::MarkCoverUploadedData,
 ) -> RegularResult<()>
 where
     R: ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Sync,
@@ -455,7 +452,7 @@ pub async fn delete<D, C, R, P>(
     drive: &D,
     repo: &R,
     prom: &P,
-    token: UserToken,
+    token: user_model::Token,
     id: String,
 ) -> RegularResult<()>
 where

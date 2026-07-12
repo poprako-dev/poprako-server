@@ -8,7 +8,7 @@ use time::OffsetDateTime;
 use poprako_transactional::advance::Advance;
 
 use crate::complex::team::TeamComplex;
-use crate::model::team::{TeamAvatarReservation, TeamForm, TeamInfo};
+use crate::model::team_model;
 use crate::part::repo::step::team::{
     Create, Delete, GetInfoById, GetInfoExcluded, IncrementWorksetNextIndex,
     ListInfos, MarkAvatarUploaded, ReserveAvatar, UpdateInfo,
@@ -34,8 +34,8 @@ impl TeamRepoTransactional<RdbContext> for RdbRepoTransactional {}
 /// Insert a new team and return its info.
 async fn create(
     conn: &mut RdbConn,
-    form: &TeamForm,
-) -> RegularResult<TeamInfo> {
+    form: &team_model::Form,
+) -> RegularResult<team_model::Info> {
     //
     let now = OffsetDateTime::now_utc();
 
@@ -62,7 +62,7 @@ async fn create(
 async fn get_info_by_id(
     conn: &mut RdbConn,
     id: &str,
-) -> RegularResult<TeamInfo> {
+) -> RegularResult<team_model::Info> {
     //
     let row: TeamRow = t_team
         .filter(f_id.eq(id))
@@ -82,7 +82,7 @@ async fn list_infos(
     user_id: Option<&str>,
     offset: u64,
     limit: u64,
-) -> RegularResult<Vec<TeamInfo>> {
+) -> RegularResult<Vec<team_model::Info>> {
     //
     let mut query = t_team.into_boxed();
 
@@ -160,7 +160,7 @@ async fn reserve_avatar(
     conn: &mut RdbConn,
     id: &str,
     file_ext: &str,
-) -> RegularResult<TeamAvatarReservation> {
+) -> RegularResult<team_model::AvatarReservation> {
     //
     let now = OffsetDateTime::now_utc();
 
@@ -185,7 +185,7 @@ async fn reserve_avatar(
         .await
         .map_err(diesel)?;
 
-    Ok(TeamAvatarReservation {
+    Ok(team_model::AvatarReservation {
         object_key,
         prev_object_key: prev_key,
         avatar_version: new_version,
@@ -196,7 +196,7 @@ async fn reserve_avatar(
 async fn get_info_excluded(
     conn: &mut RdbConn,
     id: &str,
-) -> RegularResult<TeamInfo> {
+) -> RegularResult<team_model::Info> {
     //
     let row: TeamRow = t_team
         .filter(f_id.eq(id))
@@ -247,7 +247,7 @@ impl<'a> Execute<Create<'a>> for RdbRepo {
     async fn execute(
         &self,
         step: &Create<'a>,
-    ) -> Result<TeamInfo, Self::Error> {
+    ) -> Result<team_model::Info, Self::Error> {
         submit_query!(self.core, create, step.form)
     }
 }
@@ -259,7 +259,7 @@ impl<'a> Execute<GetInfoById<'a>> for RdbRepo {
     async fn execute(
         &self,
         step: &GetInfoById<'a>,
-    ) -> Result<TeamInfo, Self::Error> {
+    ) -> Result<team_model::Info, Self::Error> {
         submit_query!(self.core, get_info_by_id, step.id)
     }
 }
@@ -271,7 +271,7 @@ impl<'a> Execute<ListInfos<'a>> for RdbRepo {
     async fn execute(
         &self,
         step: &ListInfos<'a>,
-    ) -> Result<Vec<TeamInfo>, Self::Error> {
+    ) -> Result<Vec<team_model::Info>, Self::Error> {
         submit_query!(
             self.core,
             list_infos,
@@ -324,7 +324,7 @@ impl<'a> Advance<Create<'a>, RdbContext> for RdbRepoTransactional {
         &self,
         context: &mut RdbContext,
         step: &Create<'a>,
-    ) -> RegularResult<TeamInfo> {
+    ) -> RegularResult<team_model::Info> {
         create(context.conn(), step.form).await
     }
 }
@@ -337,7 +337,7 @@ impl<'a> Advance<ReserveAvatar<'a>, RdbContext> for RdbRepoTransactional {
         &self,
         context: &mut RdbContext,
         step: &ReserveAvatar<'a>,
-    ) -> RegularResult<TeamAvatarReservation> {
+    ) -> RegularResult<team_model::AvatarReservation> {
         reserve_avatar(context.conn(), step.id, step.file_extension).await
     }
 }
@@ -363,7 +363,7 @@ impl<'a> Advance<GetInfoExcluded<'a>, RdbContext> for RdbRepoTransactional {
         &self,
         context: &mut RdbContext,
         step: &GetInfoExcluded<'a>,
-    ) -> RegularResult<TeamInfo> {
+    ) -> RegularResult<team_model::Info> {
         get_info_excluded(context.conn(), step.id).await
     }
 }

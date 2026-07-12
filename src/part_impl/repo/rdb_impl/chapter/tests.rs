@@ -5,7 +5,7 @@ use super::*;
 use poprako_transactional::advance::Advance;
 use poprako_transactional::drive::Drive;
 
-use crate::model::chapter::{ChapterListSpec, ChapterStageUpdate};
+use crate::model::chapter_model;
 use crate::part::repo::step::chapter::ChapterStep;
 use crate::part::shared::execute::Execute;
 use crate::part_impl::drive::rdb_impl::RdbDrive;
@@ -33,7 +33,7 @@ async fn chapter_roundtrip_reads_test_database_url() {
 
     let stage_mask = StageMask::try_from(0u32).ok().unwrap();
 
-    let chapter_stage_update = ChapterStageUpdate {
+    let chapter_stage_update = chapter_model::StageUpdate {
         id: chapter_fixture.chapter_form.id.clone(),
         stages: stage_mask,
     };
@@ -54,7 +54,7 @@ async fn chapter_roundtrip_reads_test_database_url() {
         .ok()
         .unwrap();
 
-    let chapter_list_spec = ChapterListSpec {
+    let chapter_list_spec = chapter_model::ListSpec {
         comic_id: chapter_fixture.comic_form.id.clone(),
         incl_opt: vec![ChapterInclOpt::Creator],
         offset: 0,
@@ -74,7 +74,7 @@ async fn chapter_roundtrip_reads_test_database_url() {
         chapter_fixture.creator_form.id
     );
 
-    let chapter_list_spec = ChapterListSpec {
+    let chapter_list_spec = chapter_model::ListSpec {
         comic_id: chapter_fixture.comic_form.id.clone(),
         incl_opt: vec![ChapterInclOpt::ComicWorksetTeam],
         offset: 0,

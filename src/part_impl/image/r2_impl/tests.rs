@@ -4,25 +4,6 @@
 
 use super::*;
 
-fn image_pool() -> R2ImagePool {
-    //
-    let credentials =
-        Credentials::new("access-key", "secret-key", None, None, "test");
-
-    let config = Config::builder()
-        .behavior_version(BehaviorVersion::latest())
-        .region(Region::new("auto"))
-        .endpoint_url("https://example.invalid")
-        .credentials_provider(credentials)
-        .build();
-
-    R2ImagePool::new(
-        Client::from_conf(config),
-        "bucket".to_string(),
-        "https://images.example.test/root/".to_string(),
-    )
-}
-
 #[test]
 fn detect_content_type_maps_supported_extensions() {
     //
@@ -36,12 +17,13 @@ fn detect_content_type_rejects_unknown_extension() {
     assert_eq!(detect_content_type("avatar.txt"), None);
 }
 
-#[tokio::test]
-async fn get_signed_uses_custom_domain() {
+#[test]
+fn get_signed_uses_custom_domain() {
     //
-    let image_pool = image_pool();
-
-    let url = ImagePool::get_signed(&image_pool, "avatars/user-1.png").await;
+    let url = R2ImagePool::public_url(
+        "https://images.example.test/root/",
+        "avatars/user-1.png",
+    );
 
     assert!(url.is_ok());
 

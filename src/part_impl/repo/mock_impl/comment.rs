@@ -8,8 +8,7 @@ use poprako_transactional::advance::Advance;
 use poprako_transactional::drive::Drive;
 use poprako_transactional::drive::result::Error as DriveError;
 
-use crate::model::comment::{CommentForm, CommentInfo, CommentListSpec};
-use crate::model::user::UserInfo;
+use crate::model::comment_model;
 use crate::part::repo::comment::{CommentRepo, CommentRepoTransactional};
 use crate::part::repo::step::comment::{Create, ListInfos};
 use crate::part::shared::execute::Execute;
@@ -24,7 +23,7 @@ impl CommentRepo<MockContext> for Mock {}
 
 impl CommentRepoTransactional<MockContext> for MockTransactional {}
 
-fn find_user(state: &MockState, user_id: &str) -> Option<UserInfo> {
+fn find_user(state: &MockState, user_id: &str) -> Option<user_model::Info> {
     state
         .users
         .iter()
@@ -34,7 +33,7 @@ fn find_user(state: &MockState, user_id: &str) -> Option<UserInfo> {
 
 fn apply_user_incl(
     state: &MockState,
-    comment_info: &mut CommentInfo,
+    comment_info: &mut comment_model::Info,
     include_user: bool,
 ) {
     //
@@ -47,8 +46,8 @@ fn apply_user_incl(
 
 fn list_comments(
     state: &MockState,
-    spec: &CommentListSpec,
-) -> Vec<CommentInfo> {
+    spec: &comment_model::ListSpec,
+) -> Vec<comment_model::Info> {
     //
     let include_user = spec.incl_opt.contains(&CommentInclOpt::User);
 
@@ -80,8 +79,8 @@ fn list_comments(
 
 fn create_comment(
     state: &mut MockState,
-    form: &CommentForm,
-) -> RegularResult<CommentInfo> {
+    form: &comment_model::Form,
+) -> RegularResult<comment_model::Info> {
     //
     if state
         .comments
@@ -91,7 +90,7 @@ fn create_comment(
         return Err(expected("error-already-exists"));
     }
 
-    let comment_info = CommentInfo {
+    let comment_info = comment_model::Info {
         id: form.id.clone(),
         team_id: form.team_id.clone(),
         user_id: form.user_id.clone(),
@@ -112,7 +111,7 @@ impl<'a> Execute<ListInfos<'a>> for Mock {
     async fn execute(
         &self,
         step: &ListInfos<'a>,
-    ) -> Result<Vec<CommentInfo>, Self::Error> {
+    ) -> Result<Vec<comment_model::Info>, Self::Error> {
         //
         let state = self.state.lock().unwrap();
 
@@ -128,7 +127,7 @@ impl<'a> Advance<Create<'a>, MockContext> for MockTransactional {
         &self,
         context: &mut MockContext,
         step: &Create<'a>,
-    ) -> Result<CommentInfo, Self::Error> {
+    ) -> Result<comment_model::Info, Self::Error> {
         create_comment(&mut context.state, step.form)
     }
 }
@@ -140,16 +139,16 @@ impl<'a> Advance<Create<'a>, MockContext> for MockTransactional {
 
 use time::{Duration, OffsetDateTime};
 
-use crate::model::user::UserCredential;
+use crate::model::user_model;
 use crate::part::repo::step::comment::CommentStep;
 use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;
 
-fn user(id: &str) -> UserInfo {
+fn user(id: &str) -> user_model::Info {
     //
     let time = now();
 
-    UserInfo {
+    user_model::Info {
         id: id.into(),
         qid: id.into(),
         nickname: id.into(),
@@ -163,8 +162,8 @@ fn user(id: &str) -> UserInfo {
     }
 }
 
-fn credential(user_id: &str) -> UserCredential {
-    UserCredential {
+fn credential(user_id: &str) -> user_model::Credential {
+    user_model::Credential {
         user_id: user_id.into(),
         password_hash: "hash".into(),
     }
@@ -175,8 +174,8 @@ fn comment(
     team_id: &str,
     user_id: &str,
     created_at: OffsetDateTime,
-) -> CommentInfo {
-    CommentInfo {
+) -> comment_model::Info {
+    comment_model::Info {
         id: id.into(),
         team_id: team_id.into(),
         user_id: user_id.into(),
@@ -186,8 +185,8 @@ fn comment(
     }
 }
 
-fn form(id: &str) -> CommentForm {
-    CommentForm {
+fn form(id: &str) -> comment_model::Form {
+    comment_model::Form {
         id: id.into(),
         team_id: "team-1".into(),
         user_id: "user-1".into(),
@@ -199,8 +198,8 @@ fn spec(
     incl_opt: Vec<CommentInclOpt>,
     offset: u64,
     limit: u64,
-) -> CommentListSpec {
-    CommentListSpec {
+) -> comment_model::ListSpec {
+    comment_model::ListSpec {
         team_id: "team-1".into(),
         incl_opt,
         offset,

@@ -2,28 +2,25 @@
 
 use poprako_transactional::step::Step;
 
-use crate::model::member_invitation::{
-    MemberInvitationForm, MemberInvitationInfo, MemberInvitationListSpec,
-    MemberInvitationUpdate,
-};
+use crate::model::member_invitation_model;
 use crate::value::member_invitation::MemberInvitationInclOpt;
 
 /// Step that inserts a member invitation row.
 pub struct Create<'a> {
-    pub form: &'a MemberInvitationForm,
+    pub form: &'a member_invitation_model::Form,
 }
 
 impl<'a> Step for Create<'a> {
-    type Output = MemberInvitationInfo;
+    type Output = member_invitation_model::Info;
 }
 
 /// Step that lists member invitations for a team with include options and pagination.
 pub struct ListInfos<'a> {
-    pub spec: &'a MemberInvitationListSpec,
+    pub spec: &'a member_invitation_model::ListSpec,
 }
 
 impl<'a> Step for ListInfos<'a> {
-    type Output = Vec<MemberInvitationInfo>;
+    type Output = Vec<member_invitation_model::Info>;
 }
 
 /// Step that fetches an invitation by id.
@@ -33,7 +30,7 @@ pub struct GetInfoById<'a> {
 }
 
 impl<'a> Step for GetInfoById<'a> {
-    type Output = MemberInvitationInfo;
+    type Output = member_invitation_model::Info;
 }
 
 /// Step that fetches a pending invitation by its code with a pessimistic lock.
@@ -42,7 +39,7 @@ pub struct GetInfoByCodeExcluded<'a> {
 }
 
 impl<'a> Step for GetInfoByCodeExcluded<'a> {
-    type Output = MemberInvitationInfo;
+    type Output = member_invitation_model::Info;
 }
 
 /// Step that marks a pending invitation as consumed.
@@ -56,7 +53,7 @@ impl<'a> Step for MarkPendingAsUsed<'a> {
 
 /// Step that updates an invitation's roles.
 pub struct UpdateInfo<'a> {
-    pub update: &'a MemberInvitationUpdate,
+    pub update: &'a member_invitation_model::Update,
 }
 
 impl<'a> Step for UpdateInfo<'a> {
@@ -77,12 +74,14 @@ pub struct MemberInvitationStep;
 
 impl MemberInvitationStep {
     /// Constructs a step to insert a member invitation.
-    pub fn create<'a>(form: &'a MemberInvitationForm) -> Create<'a> {
+    pub fn create<'a>(form: &'a member_invitation_model::Form) -> Create<'a> {
         Create { form }
     }
 
     /// Constructs a step to list member invitations for a team.
-    pub fn list_infos<'a>(spec: &'a MemberInvitationListSpec) -> ListInfos<'a> {
+    pub fn list_infos<'a>(
+        spec: &'a member_invitation_model::ListSpec,
+    ) -> ListInfos<'a> {
         ListInfos { spec }
     }
 
@@ -108,7 +107,7 @@ impl MemberInvitationStep {
 
     /// Constructs a step to update invitation info.
     pub fn update_info<'a>(
-        update: &'a MemberInvitationUpdate,
+        update: &'a member_invitation_model::Update,
     ) -> UpdateInfo<'a> {
         UpdateInfo { update }
     }

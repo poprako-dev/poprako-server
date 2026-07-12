@@ -11,7 +11,7 @@ use utoipa::{IntoParams, ToSchema};
 use poprako_macro::Paginate;
 use poprako_util::time::ToUnixMilli;
 
-use crate::model::workset::WorksetInfo;
+use crate::model::workset_model;
 
 /// Presentation-ready workset information.
 ///
@@ -20,7 +20,7 @@ use crate::model::workset::WorksetInfo;
 /// [`WorksetInfo`]: crate::model::workset::WorksetInfo
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct WorksetInfoVal {
+pub struct InfoVal {
     pub id: String,
     pub team_id: String,
 
@@ -37,8 +37,8 @@ pub struct WorksetInfoVal {
     pub updated_at: i64,
 }
 
-impl From<WorksetInfo> for WorksetInfoVal {
-    fn from(model: WorksetInfo) -> Self {
+impl From<workset_model::Info> for InfoVal {
+    fn from(model: workset_model::Info) -> Self {
         Self {
             id: model.id,
             team_id: model.team_id,
@@ -56,7 +56,7 @@ impl From<WorksetInfo> for WorksetInfoVal {
 /// Input parameters for creating a new workset inside a team.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct CreateWorksetData {
+pub struct CreateData {
     pub team_id: String,
 
     pub name: String,
@@ -66,7 +66,7 @@ pub struct CreateWorksetData {
 /// Return value from a successful workset creation.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct CreateWorksetVal {
+pub struct CreateVal {
     pub id: String,
 }
 
@@ -75,7 +75,7 @@ pub struct CreateWorksetVal {
 /// Cover and counter updates are handled internally by the repo layer.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct UpdateWorksetInfoData {
+pub struct UpdateInfoData {
     pub id: String,
 
     pub name: String,
@@ -87,6 +87,6 @@ pub struct UpdateWorksetInfoData {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
 #[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
-pub struct ListWorksetInfosData {
+pub struct ListInfosData {
     pub team_id: String,
 }

@@ -3,7 +3,7 @@
 use diesel::prelude::*;
 use time::OffsetDateTime;
 
-use crate::model::team::TeamInfo;
+use crate::model::team_model;
 use crate::part_impl::repo::rdb_impl::schema::t_team;
 
 // ── Queryable / Selectable ─────────────────────────────────────────────────
@@ -108,9 +108,9 @@ impl<'a> TeamAspect<'a> {
 
 // ── Conversions ────────────────────────────────────────────────────────────
 
-impl From<TeamRow> for TeamInfo {
+impl From<TeamRow> for team_model::Info {
     fn from(v: TeamRow) -> Self {
-        TeamInfo {
+        team_model::Info {
             id: v.f_id,
             name: v.f_name,
             description: v.f_description.unwrap_or_default(),

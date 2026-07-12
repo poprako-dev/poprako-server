@@ -3,7 +3,7 @@
 use diesel::prelude::*;
 use time::OffsetDateTime;
 
-use crate::model::member::MemberInfo;
+use crate::model::member_model;
 use crate::part_impl::repo::rdb_impl::schema::t_member;
 use crate::value::role::{RoleField, RoleMask};
 
@@ -197,7 +197,7 @@ impl<'a> MemberAspect<'a> {
 
 // ── Conversions ────────────────────────────────────────────────────────────
 
-impl From<MemberRow> for MemberInfo {
+impl From<MemberRow> for member_model::Info {
     fn from(v: MemberRow) -> Self {
         //
         let mut bits: u32 = 0;
@@ -237,7 +237,7 @@ impl From<MemberRow> for MemberInfo {
         let roles = RoleMask::try_from(bits)
             .unwrap_or_else(|_| RoleMask::from(RoleField::RAW_PROVIDER));
 
-        MemberInfo {
+        member_model::Info {
             id: v.f_id,
             user_id: v.f_user_id,
             user_nickname: v.f_user_nickname,

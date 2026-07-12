@@ -14,11 +14,11 @@ use utoipa::{IntoParams, ToSchema};
 use poprako_macro::Paginate;
 use poprako_util::time::ToUnixMilli;
 
-use crate::data::chapter::ChapterInfoVal;
-use crate::data::team::TeamInfoVal;
-use crate::data::user::UserInfoVal;
-use crate::data::workset::WorksetInfoVal;
-use crate::model::comic::{ComicInfo, ComicListKind, ComicListSpec};
+use crate::data::chapter_data;
+use crate::data::team_data;
+use crate::data::user_data;
+use crate::data::workset_data;
+use crate::model::comic_model;
 use crate::part::image::ImagePool;
 use crate::result::{RegularError, RegularResult};
 use crate::value::chapter::StageMask;
@@ -36,7 +36,7 @@ use crate::value::comic::{ComicInclOpt, ComicWithOpt};
 /// [`ComicInfo`]: crate::model::comic::ComicInfo
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct ComicInfoVal {
+pub struct InfoVal {
     pub id: String,
 
     pub workset_id: String,
@@ -58,15 +58,15 @@ pub struct ComicInfoVal {
     pub creator_id: String,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub workset: Option<WorksetInfoVal>,
+    pub workset: Option<workset_data::InfoVal>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub team: Option<TeamInfoVal>,
+    pub team: Option<team_data::InfoVal>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub creator: Option<UserInfoVal>,
+    pub creator: Option<user_data::InfoVal>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     #[cfg_attr(feature = "swagger-ui", schema(no_recursion))]
-    pub pinned_chapter: Option<ChapterInfoVal>,
+    pub pinned_chapter: Option<chapter_data::InfoVal>,
 
     pub last_active_at: i64,
 
@@ -74,7 +74,7 @@ pub struct ComicInfoVal {
     pub updated_at: i64,
 }
 
-impl ComicInfoVal {
+impl InfoVal {
     /// Converts a [`ComicInfo`] into a presentation-ready value.
     ///
     /// Resolves a signed cover download URL when the cover has been uploaded
@@ -84,8 +84,8 @@ impl ComicInfoVal {
     /// [`OffsetDateTime`]: time::OffsetDateTime
     pub async fn from_model<P>(
         image_pool: &P,
-        model: ComicInfo,
-        pinned_chapter: Option<ChapterInfoVal>,
+        model: comic_model::Info,
+        pinned_chapter: Option<chapter_data::InfoVal>,
     ) -> RegularResult<Self>
     where
         P: ImagePool,
@@ -97,22 +97,22 @@ impl ComicInfoVal {
             _ => None,
         };
 
-        let workset = model.workset.map(WorksetInfoVal::from);
+        let workset = model.workset.map(workset_data::InfoVal::from);
 
         let team = match model.team {
             //
-            Some(team_info) => {
-                Some(TeamInfoVal::from_model(image_pool, team_info).await?)
-            }
+            Some(team_info) => Some(
+                team_data::InfoVal::from_model(image_pool, team_info).await?,
+            ),
 
             None => None,
         };
 
         let creator = match model.creator {
             //
-            Some(user_info) => {
-                Some(UserInfoVal::from_model(image_pool, user_info).await?)
-            }
+            Some(user_info) => Some(
+                user_data::InfoVal::from_model(image_pool, user_info).await?,
+            ),
 
             None => None,
         };
@@ -146,7 +146,7 @@ impl ComicInfoVal {
 /// locale-aware default (e.g. "Ch. 1") is generated.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct CreateComicData {
+pub struct CreateData {
     pub workset_id: String,
 
     pub title: String,
@@ -162,7 +162,7 @@ pub struct CreateComicData {
 /// Includes the IDs of both the new comic and its auto-created first chapter.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct CreateComicVal {
+pub struct CreateVal {
     pub id: String,
     pub chapter_id: String,
 }
@@ -174,7 +174,7 @@ pub struct CreateComicVal {
 /// [`reserve_cover`]: crate::usecase::comic::reserve_cover
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct UpdateComicInfoData {
+pub struct UpdateInfoData {
     pub id: String,
 
     pub title: String,
@@ -187,7 +187,7 @@ pub struct UpdateComicInfoData {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
 #[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
-pub struct ListComicInfosData {
+pub struct ListInfosData {
     pub workset_id: String,
 
     pub fuzzy_title: Option<String>,
@@ -208,18 +208,18 @@ pub struct ListComicInfosData {
     pub with_opt: Vec<ComicWithOpt>,
 }
 
-impl TryFrom<ListComicInfosData> for ComicListSpec {
+impl TryFrom<ListInfosData> for comic_model::ListSpec {
     type Error = RegularError;
 
-    fn try_from(data: ListComicInfosData) -> RegularResult<Self> {
+    fn try_from(data: ListInfosData) -> RegularResult<Self> {
         //
         let stages = data.stages.map(StageMask::try_filter_from).transpose()?;
 
         let kind = match stages {
             //
-            Some(stage_mask) => ComicListKind::Stages(stage_mask),
+            Some(stage_mask) => comic_model::ListKind::Stages(stage_mask),
 
-            None => ComicListKind::All,
+            None => comic_model::ListKind::All,
         };
 
         Ok(Self {
@@ -239,7 +239,7 @@ impl TryFrom<ListComicInfosData> for ComicListSpec {
 /// reservation the client uploads directly to the returned PUT URL.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct ReserveComicCoverData {
+pub struct ReserveCoverData {
     pub file_ext: String,
 }
 
@@ -249,7 +249,7 @@ pub struct ReserveComicCoverData {
 /// storage. `cover_version` must be echoed back when confirming the upload.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct ReserveComicCoverVal {
+pub struct ReserveCoverVal {
     pub put_url: String,
     pub cover_version: i64,
 }
@@ -259,6 +259,6 @@ pub struct ReserveComicCoverVal {
 /// `cover_version` must match the version returned by the reservation step.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct MarkComicCoverUploadedData {
+pub struct MarkCoverUploadedData {
     pub cover_version: i64,
 }

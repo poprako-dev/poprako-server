@@ -8,12 +8,12 @@ use std::collections::HashMap;
 use crate::complex::chapter_port::{
     ChapterExportComplex, ChapterPortPermComplex,
 };
-use crate::data::chapter_port::ChapterTranslationExportVal;
-use crate::data::page_port::PageTranslationExportVal;
-use crate::data::unit_port::UnitTranslationExportVal;
-use crate::model::page::PageInfo;
-use crate::model::unit::UnitInfo;
-use crate::model::user::UserToken;
+use crate::data::chapter_port_data;
+use crate::data::page_port_data;
+use crate::data::unit_port_data;
+use crate::model::page_model;
+use crate::model::unit_model;
+use crate::model::user_model;
 use crate::part::image::ImagePool;
 use crate::part::repo::assignment::{
     AssignmentRepo, AssignmentRepoTransactional,
@@ -35,9 +35,9 @@ use crate::util::DeriveTransactional;
 pub async fn export<C, R, I>(
     repo: &R,
     image_pool: &I,
-    token: UserToken,
+    token: user_model::Token,
     chapter_id: String,
-) -> RegularResult<ChapterTranslationExportVal>
+) -> RegularResult<chapter_port_data::TranslationExportVal>
 where
     R: ChapterRepo<C>
         + ComicRepo<C>
@@ -99,7 +99,7 @@ where
             .map(|unit_info| make_unit_export(&page_info, unit_info))
             .collect();
 
-        page_vals.push(PageTranslationExportVal {
+        page_vals.push(page_port_data::TranslationExportVal {
             page_id: page_info.id,
             page_index: page_info.index,
             image_url: image_url.map(Into::into),
@@ -107,7 +107,7 @@ where
         });
     }
 
-    Ok(ChapterTranslationExportVal {
+    Ok(chapter_port_data::TranslationExportVal {
         chapter_id: chapter_info.id,
         chapter_index: chapter_info.index,
         chapter_subtitle: non_empty(chapter_info.subtitle),
@@ -120,7 +120,7 @@ where
 /// Exports one chapter as LabelPlus text.
 pub async fn export_label_plus<C, R>(
     repo: &R,
-    token: UserToken,
+    token: user_model::Token,
     chapter_id: String,
 ) -> RegularResult<String>
 where
@@ -175,10 +175,10 @@ where
 
 /// Builds a [`UnitTranslationExportVal`] from page and unit info.
 fn make_unit_export(
-    page_info: &PageInfo,
-    unit_info: UnitInfo,
-) -> UnitTranslationExportVal {
-    UnitTranslationExportVal {
+    page_info: &page_model::Info,
+    unit_info: unit_model::Info,
+) -> unit_port_data::TranslationExportVal {
+    unit_port_data::TranslationExportVal {
         unit_id: unit_info.id,
         unit_index: unit_info.index,
         page_id: page_info.id.clone(),

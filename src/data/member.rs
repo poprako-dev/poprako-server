@@ -9,9 +9,9 @@ use poprako_macro::Paginate;
 use poprako_util::i18n::trl;
 use poprako_util::time::ToUnixMilli;
 
-use crate::data::team::TeamInfoVal;
-use crate::data::user::UserInfoVal;
-use crate::model::member::{MemberInfo, MemberListSpec};
+use crate::data::team_data;
+use crate::data::user_data;
+use crate::model::member_model;
 use crate::part::image::ImagePool;
 use crate::result::{ExpectedVariant, RegularError, RegularResult};
 use crate::value::member::MemberInclOpt;
@@ -20,7 +20,7 @@ use crate::value::role::{RoleField, RoleMask};
 /// Presentation-ready membership information.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct MemberInfoVal {
+pub struct InfoVal {
     pub id: String,
 
     pub user_id: String,
@@ -30,15 +30,15 @@ pub struct MemberInfoVal {
     pub team_id: String,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub user: Option<UserInfoVal>,
+    pub user: Option<user_data::InfoVal>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub team: Option<TeamInfoVal>,
+    pub team: Option<team_data::InfoVal>,
 
     pub roles: RoleMask,
 }
 
-impl From<MemberInfo> for MemberInfoVal {
-    fn from(value: MemberInfo) -> Self {
+impl From<member_model::Info> for InfoVal {
+    fn from(value: member_model::Info) -> Self {
         Self {
             id: value.id,
             user_id: value.user_id,
@@ -52,30 +52,30 @@ impl From<MemberInfo> for MemberInfoVal {
     }
 }
 
-impl MemberInfoVal {
+impl InfoVal {
     /// Converts a member model into a presentation-ready value,
     /// resolving included user/team data when present.
     pub async fn from_model<P>(
         image_pool: &P,
-        model: MemberInfo,
+        model: member_model::Info,
     ) -> RegularResult<Self>
     where
         P: ImagePool,
     {
         let user = match model.user {
             //
-            Some(user_info) => {
-                Some(UserInfoVal::from_model(image_pool, user_info).await?)
-            }
+            Some(user_info) => Some(
+                user_data::InfoVal::from_model(image_pool, user_info).await?,
+            ),
 
             None => None,
         };
 
         let team = match model.team {
             //
-            Some(team_info) => {
-                Some(TeamInfoVal::from_model(image_pool, team_info).await?)
-            }
+            Some(team_info) => Some(
+                team_data::InfoVal::from_model(image_pool, team_info).await?,
+            ),
 
             None => None,
         };
@@ -96,7 +96,7 @@ impl MemberInfoVal {
 /// Input parameters for creating a member.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct CreateMemberData {
+pub struct CreateData {
     pub user_id: String,
     pub team_id: String,
 
@@ -106,7 +106,7 @@ pub struct CreateMemberData {
 /// Return value from creating a member.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct CreateMemberVal {
+pub struct CreateVal {
     pub id: String,
 }
 
@@ -132,7 +132,7 @@ pub struct JoinTeamData {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
 #[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
-pub struct ListMemberInfosData {
+pub struct ListInfosData {
     /// Owner-user mode: list teams/memberships owned by this user. Mutually
     /// exclusive with `team_id`; when set, `role` and `fuzzy_nickname` must be
     /// omitted.
@@ -158,10 +158,10 @@ pub struct ListMemberInfosData {
     pub incl_opt: Vec<MemberInclOpt>,
 }
 
-impl TryInto<MemberListSpec> for ListMemberInfosData {
+impl TryInto<member_model::ListSpec> for ListInfosData {
     type Error = RegularError;
 
-    fn try_into(self) -> RegularResult<MemberListSpec> {
+    fn try_into(self) -> RegularResult<member_model::ListSpec> {
         //
         let invalid_args_err = || RegularError::Expected {
             variant: ExpectedVariant::Args,
@@ -177,7 +177,7 @@ impl TryInto<MemberListSpec> for ListMemberInfosData {
         }
 
         if let Some(owner_id) = self.owner_id {
-            return Ok(MemberListSpec::User {
+            return Ok(member_model::ListSpec::User {
                 owner_id,
                 incl_opt: self.incl_opt,
                 offset: self.offset,
@@ -185,7 +185,7 @@ impl TryInto<MemberListSpec> for ListMemberInfosData {
             });
         }
 
-        Ok(MemberListSpec::Team {
+        Ok(member_model::ListSpec::Team {
             team_id: self.team_id.ok_or_else(invalid_args_err)?,
             fuzzy_nickname: self.fuzzy_nickname,
             role: self.role,
@@ -199,7 +199,7 @@ impl TryInto<MemberListSpec> for ListMemberInfosData {
 /// Input parameters for updating a member's roles.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct UpdateMemberRolesData {
+pub struct UpdateRolesData {
     pub id: String,
     pub roles: RoleMask,
 }

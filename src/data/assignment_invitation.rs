@@ -8,13 +8,13 @@ use utoipa::{IntoParams, ToSchema};
 use poprako_macro::Paginate;
 use poprako_util::time::ToUnixMilli;
 
-use crate::model::assignment_invitation::AssignmentInvitationInfo;
+use crate::model::assignment_invitation_model;
 use crate::value::role::RoleMask;
 
 /// Presentation-ready assignment invitation information.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct AssignmentInvitationInfoVal {
+pub struct InfoVal {
     pub id: String,
 
     pub chapter_id: String,
@@ -32,8 +32,8 @@ pub struct AssignmentInvitationInfoVal {
     pub updated_at: i64,
 }
 
-impl From<AssignmentInvitationInfo> for AssignmentInvitationInfoVal {
-    fn from(value: AssignmentInvitationInfo) -> Self {
+impl From<assignment_invitation_model::Info> for InfoVal {
+    fn from(value: assignment_invitation_model::Info) -> Self {
         Self {
             id: value.id,
             chapter_id: value.chapter_id,
@@ -55,7 +55,7 @@ impl From<AssignmentInvitationInfo> for AssignmentInvitationInfoVal {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
 #[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
-pub struct ListAssignmentInvitationInfosData {
+pub struct ListInfosData {
     /// Parent chapter whose assignment invitations to list.
     pub chapter_id: String,
 
@@ -67,7 +67,7 @@ pub struct ListAssignmentInvitationInfosData {
 /// Input parameters for creating an assignment invitation.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct CreateAssignmentInvitationData {
+pub struct CreateData {
     pub chapter_id: String,
     pub invitee_qid: String,
     pub roles: RoleMask,
@@ -76,7 +76,7 @@ pub struct CreateAssignmentInvitationData {
 /// Return value from creating an assignment invitation.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct CreateAssignmentInvitationVal {
+pub struct CreateVal {
     pub id: String,
     pub code: String,
 }
@@ -84,6 +84,6 @@ pub struct CreateAssignmentInvitationVal {
 /// Input parameters for joining an assignment through an invitation code.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct JoinAssignmentInvitationData {
+pub struct JoinData {
     pub code: String,
 }

@@ -4,7 +4,7 @@ use async_trait::async_trait;
 
 use poprako_transactional::advance::Advance;
 
-use crate::model::workset::WorksetInfo;
+use crate::model::workset_model;
 use crate::part::repo::step::workset::{
     Create, Delete, GetInfoById, GetInfoExcluded, IncrComicNextIndex,
     ListAllInfosByTeamIdExcluded, ListInfosByTeamId, UpdateComicCount,
@@ -28,7 +28,7 @@ impl<'a> Execute<GetInfoById<'a>> for Mock {
     async fn execute(
         &self,
         step: &GetInfoById<'a>,
-    ) -> Result<WorksetInfo, Self::Error> {
+    ) -> Result<workset_model::Info, Self::Error> {
         //
         let state = self.state.lock().unwrap();
 
@@ -48,7 +48,7 @@ impl<'a> Execute<ListInfosByTeamId<'a>> for Mock {
     async fn execute(
         &self,
         step: &ListInfosByTeamId<'a>,
-    ) -> Result<Vec<WorksetInfo>, Self::Error> {
+    ) -> Result<Vec<workset_model::Info>, Self::Error> {
         //
         let state = self.state.lock().unwrap();
 
@@ -107,7 +107,7 @@ impl<'a> Advance<Create<'a>, MockContext> for MockTransactional {
         &self,
         context: &mut MockContext,
         step: &Create<'a>,
-    ) -> Result<WorksetInfo, Self::Error> {
+    ) -> Result<workset_model::Info, Self::Error> {
         //
         if context
             .state
@@ -120,7 +120,7 @@ impl<'a> Advance<Create<'a>, MockContext> for MockTransactional {
 
         let time = now();
 
-        let workset = WorksetInfo {
+        let workset = workset_model::Info {
             id: step.form.id.clone(),
             team_id: step.form.team_id.clone(),
             index: step.form.index,
@@ -148,7 +148,7 @@ impl<'a> Advance<ListAllInfosByTeamIdExcluded<'a>, MockContext>
         &self,
         context: &mut MockContext,
         step: &ListAllInfosByTeamIdExcluded<'a>,
-    ) -> Result<Vec<WorksetInfo>, Self::Error> {
+    ) -> Result<Vec<workset_model::Info>, Self::Error> {
         Ok(context
             .state
             .worksets
@@ -167,7 +167,7 @@ impl<'a> Advance<GetInfoById<'a>, MockContext> for MockTransactional {
         &self,
         context: &mut MockContext,
         step: &GetInfoById<'a>,
-    ) -> Result<WorksetInfo, Self::Error> {
+    ) -> Result<workset_model::Info, Self::Error> {
         context
             .state
             .worksets
@@ -186,7 +186,7 @@ impl<'a> Advance<GetInfoExcluded<'a>, MockContext> for MockTransactional {
         &self,
         context: &mut MockContext,
         step: &GetInfoExcluded<'a>,
-    ) -> Result<WorksetInfo, Self::Error> {
+    ) -> Result<workset_model::Info, Self::Error> {
         context
             .state
             .worksets

@@ -2,8 +2,8 @@
 
 use poprako_util::time::ToUnixMilli;
 
-use crate::data::system_mail::{ListSystemMailData, SystemMailVal};
-use crate::model::user::UserToken;
+use crate::data::system_mail_data;
+use crate::model::user_model;
 use crate::part::repo::step::system_mail::SystemMailStep;
 use crate::part::repo::system_mail::{
     SystemMailRepo, SystemMailRepoTransactional,
@@ -27,9 +27,9 @@ mod tests;
 /// * `R: SystemMailRepo<C>` — System mail storage.
 pub async fn list_infos<C, R>(
     repo: &R,
-    token: UserToken,
-    data: ListSystemMailData,
-) -> RegularResult<Vec<SystemMailVal>>
+    token: user_model::Token,
+    data: system_mail_data::ListData,
+) -> RegularResult<Vec<system_mail_data::Val>>
 where
     R: SystemMailRepo<C>,
     <R as DeriveTransactional>::Transactional: SystemMailRepoTransactional<C>,
@@ -45,7 +45,7 @@ where
 
     let system_mail_vals = system_mail_infos
         .into_iter()
-        .map(|system_mail_info| SystemMailVal {
+        .map(|system_mail_info| system_mail_data::Val {
             id: system_mail_info.id,
             title: system_mail_info.title,
             content: system_mail_info.content,
@@ -69,7 +69,7 @@ where
 /// * `R: SystemMailRepo<C>` — System mail storage.
 pub async fn mark_read<C, R>(
     repo: &R,
-    token: UserToken,
+    token: user_model::Token,
     ids: Vec<String>,
 ) -> RegularResult<()>
 where

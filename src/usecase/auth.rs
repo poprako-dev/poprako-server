@@ -6,9 +6,9 @@ use poprako_util::i18n::trl;
 
 use crate::complex::member::MemberComplex;
 use crate::complex::user::UserComplex;
-use crate::data::auth::{LoginData, LoginVal, RegisterData, RegisterVal};
-use crate::model::member::MemberForm;
-use crate::model::user::{UserForm, UserTokenRef};
+use crate::data::auth_data;
+use crate::model::member_model;
+use crate::model::user_model;
 use crate::part::auth::TokenAuth;
 use crate::part::effect::event::Event;
 use crate::part::effect::event::user::UserSignedUpPayload;
@@ -55,8 +55,8 @@ pub async fn register<D, C, R, A, V>(
     repo: &R,
     auth: &A,
     develop: &V,
-    data: RegisterData,
-) -> RegularResult<RegisterVal>
+    data: auth_data::RegisterData,
+) -> RegularResult<auth_data::RegisterVal>
 where
     D: Drive<C>,
     D::Error: Into<RegularError>,
@@ -102,7 +102,7 @@ where
                     let password_hash =
                         UserComplex::hash_password(&data.password)?;
 
-                    let user_form = UserForm {
+                    let user_form = user_model::Form {
                         id: UserComplex::gen_id(),
                         qid: data.qid.clone(),
                         nickname: data.nickname.clone(),
@@ -113,7 +113,7 @@ where
                         .advance(context, &UserStep::create(&user_form))
                         .await?;
 
-                    let member_form = MemberForm {
+                    let member_form = member_model::Form {
                         id: MemberComplex::gen_id(),
                         user_id: user_info.id.clone(),
                         user_nickname: user_info.nickname.clone(),
@@ -151,9 +151,9 @@ where
     .emit(develop)
     .await;
 
-    let token = auth.sign_token(&UserTokenRef { user_id: &user_id })?;
+    let token = auth.sign_token(&user_model::TokenRef { user_id: &user_id })?;
 
-    Ok(RegisterVal { user_id, token })
+    Ok(auth_data::RegisterVal { user_id, token })
 }
 
 /// Authenticates a user with QQ ID and password.
@@ -172,8 +172,8 @@ where
 pub async fn login<C, R, A>(
     repo: &R,
     auth: &A,
-    data: LoginData,
-) -> RegularResult<LoginVal>
+    data: auth_data::LoginData,
+) -> RegularResult<auth_data::LoginVal>
 where
     R: UserRepo<C>,
     <R as DeriveTransactional>::Transactional: UserRepoTransactional<C>,
@@ -193,11 +193,11 @@ where
         });
     }
 
-    let token = auth.sign_token(&UserTokenRef {
+    let token = auth.sign_token(&user_model::TokenRef {
         user_id: &user_credential.user_id,
     })?;
 
-    Ok(LoginVal {
+    Ok(auth_data::LoginVal {
         user_id: user_credential.user_id,
         token,
     })

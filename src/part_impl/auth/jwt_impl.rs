@@ -10,7 +10,7 @@ use tracing::{Level, instrument};
 
 use poprako_util::i18n::trl;
 
-use crate::model::user::{UserToken, UserTokenRef};
+use crate::model::user_model;
 use crate::part::auth::TokenAuth;
 use crate::result::{ExpectedVariant, RegularError, RegularResult};
 
@@ -90,7 +90,10 @@ impl JwtAuth {
 
 impl TokenAuth for JwtAuth {
     #[instrument(err(Debug), skip(self, token), level = Level::DEBUG)]
-    fn sign_token(&self, token: &UserTokenRef) -> RegularResult<String> {
+    fn sign_token(
+        &self,
+        token: &user_model::TokenRef,
+    ) -> RegularResult<String> {
         //
         let now = OffsetDateTime::now_utc();
 
@@ -121,7 +124,7 @@ impl TokenAuth for JwtAuth {
     }
 
     #[instrument(err(Debug), skip(self), level = Level::DEBUG)]
-    fn verify_token(&self, raw: &str) -> RegularResult<UserToken> {
+    fn verify_token(&self, raw: &str) -> RegularResult<user_model::Token> {
         //
         let token_data = decode::<TokenClaims>(
             raw,
@@ -138,7 +141,7 @@ impl TokenAuth for JwtAuth {
             }
         })?;
 
-        Ok(UserToken {
+        Ok(user_model::Token {
             user_id: token_data.claims.user_id,
         })
     }

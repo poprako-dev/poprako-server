@@ -16,7 +16,7 @@ use crate::api::http::result::{
     Accept as _, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
-use crate::data::auth::{LoginData, LoginVal, RegisterData, RegisterVal};
+use crate::data::auth_data;
 use crate::usecase;
 
 /// Builds the `authorization-token` HttpOnly cookie carrying the bearer token.
@@ -36,9 +36,9 @@ fn auth_cookie(token: &str) -> Cookie<'static> {
     post,
     path = "/api/v1/auth/register",
     tag = "auth",
-    request_body = RegisterData,
+    request_body = auth_data::RegisterData,
     responses(
-        (status = 201, description = "Registration successful, sets auth cookie", body = HttpBody<RegisterVal>),
+        (status = 201, description = "Registration successful, sets auth cookie", body = HttpBody<auth_data::RegisterVal>),
         (status = 422, description = "Invalid request parameters"),
         (status = 401, description = "Invalid invitation code"),
     ),
@@ -46,8 +46,8 @@ fn auth_cookie(token: &str) -> Cookie<'static> {
 #[instrument(err, skip(harn, data))]
 pub async fn register(
     State(harn): State<AppHarn>,
-    Json(data): Json<RegisterData>,
-) -> HttpResult<RegisterVal> {
+    Json(data): Json<auth_data::RegisterData>,
+) -> HttpResult<auth_data::RegisterVal> {
     //
     let reply = usecase::auth::register(
         harn.drive(),
@@ -73,17 +73,17 @@ pub async fn register(
     post,
     path = "/api/v1/auth/login",
     tag = "auth",
-    request_body = LoginData,
+    request_body = auth_data::LoginData,
     responses(
-        (status = 200, description = "Login successful, sets auth cookie", body = HttpBody<LoginVal>),
+        (status = 200, description = "Login successful, sets auth cookie", body = HttpBody<auth_data::LoginVal>),
         (status = 401, description = "Invalid credentials"),
     ),
 ))]
 #[instrument(err, skip(harn, data))]
 pub async fn login(
     State(harn): State<AppHarn>,
-    Json(data): Json<LoginData>,
-) -> HttpResult<LoginVal> {
+    Json(data): Json<auth_data::LoginData>,
+) -> HttpResult<auth_data::LoginVal> {
     //
     let reply = usecase::auth::login(harn.repo(), harn.auth(), data).await?;
 

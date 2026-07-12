@@ -83,9 +83,9 @@ impl ImagePool for Mock {
 #[tokio::test]
 async fn put_signed_returns_stable_url() {
     //
-    let mock = Mock::new();
+    let image_pool = Mock::new();
 
-    let url = ImagePool::put_signed(&mock, "avatar.png").await;
+    let url = ImagePool::put_signed(&image_pool, "avatar.png").await;
 
     assert!(url.is_ok());
 
@@ -98,9 +98,9 @@ async fn put_signed_returns_stable_url() {
 #[tokio::test]
 async fn get_signed_failure_returns_expected_error() {
     //
-    let mock = Mock::new().with_image_get_failure();
+    let image_pool = Mock::new().with_image_get_failure();
 
-    let err = ImagePool::get_signed(&mock, "avatar.png")
+    let err = ImagePool::get_signed(&image_pool, "avatar.png")
         .await
         .err()
         .unwrap();

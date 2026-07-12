@@ -5,7 +5,7 @@ use super::*;
 use poprako_transactional::advance::Advance;
 use poprako_transactional::drive::Drive;
 
-use crate::model::member::{MemberForm, MemberListSpec, MemberRoleUpdate};
+use crate::model::member_model;
 use crate::part::repo::step::member::MemberStep;
 use crate::part::shared::execute::Execute;
 use crate::part_impl::drive::rdb_impl::RdbDrive;
@@ -36,7 +36,7 @@ async fn member_roundtrip_reads_test_database_url() {
 
     let member_role = RoleMask::from(RoleField::TRANSLATOR);
 
-    let member_form = MemberForm {
+    let member_form = member_model::Form {
         id: format!("{}member", PREFIX),
         user_id: team_fixture.user_form.id.clone(),
         user_nickname: team_fixture.user_form.nickname.clone(),
@@ -60,7 +60,7 @@ async fn member_roundtrip_reads_test_database_url() {
         .ok()
         .unwrap();
 
-    let member_list_spec = MemberListSpec::Team {
+    let member_list_spec = member_model::ListSpec::Team {
         team_id: team_fixture.team_form.id.clone(),
         fuzzy_nickname: Some("RDB".into()),
         role: Some(RoleField::ADMIN),
@@ -82,7 +82,7 @@ async fn member_roundtrip_reads_test_database_url() {
         team_fixture.user_form.id
     );
 
-    let member_role_update = MemberRoleUpdate {
+    let member_role_update = member_model::RoleUpdate {
         id: member_form.id.clone(),
         roles: member_role,
     };

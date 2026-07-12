@@ -11,8 +11,8 @@
 
 use time::OffsetDateTime;
 
-use crate::model::chapter::ChapterInfo;
-use crate::model::user::UserInfo;
+use crate::model::chapter_model;
+use crate::model::user_model;
 use crate::value::assignment::AssignmentInclOpt;
 use crate::value::role::{RoleField, RoleMask};
 
@@ -22,14 +22,14 @@ use crate::value::role::{RoleField, RoleMask};
 /// The `roles` mask specifies which workflow roles the user holds for this
 /// chapter (translator, proofreader, etc.).
 #[cfg_attr(test, derive(Clone))]
-pub struct AssignmentInfo {
+pub struct Info {
     pub id: String,
 
     pub chapter_id: String,
     pub user_id: String,
 
-    pub user: Option<UserInfo>,
-    pub chapter: Option<ChapterInfo>,
+    pub user: Option<user_model::Info>,
+    pub chapter: Option<chapter_model::Info>,
 
     pub roles: RoleMask,
 
@@ -41,7 +41,7 @@ pub struct AssignmentInfo {
 ///
 /// The `roles` mask specifies the initial set of roles.
 #[cfg_attr(test, derive(Clone))]
-pub struct AssignmentForm {
+pub struct Form {
     pub id: String,
 
     pub chapter_id: String,
@@ -58,14 +58,14 @@ pub struct AssignmentForm {
 ///
 /// [`AssignmentComplex::merge_roles`]: crate::complex::assignment::AssignmentComplex::merge_roles
 #[cfg_attr(test, derive(Clone))]
-pub struct AssignmentRoleUpdate {
+pub struct RoleUpdate {
     pub id: String,
 
     pub roles: RoleMask,
 }
 
 /// Filtering and pagination parameters for listing chapter assignments.
-pub enum AssignmentListSpec {
+pub enum ListSpec {
     Chapter {
         chapter_id: String,
         role: Option<RoleField>,

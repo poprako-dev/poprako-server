@@ -22,7 +22,7 @@ use time::OffsetDateTime;
 ///
 /// [`ChapterInfo`]: crate::model::chapter::ChapterInfo
 #[cfg_attr(test, derive(Clone))]
-pub struct PageInfo {
+pub struct Info {
     pub id: String,
 
     pub chapter_id: String,
@@ -42,7 +42,7 @@ pub struct PageInfo {
 
 /// The data needed to insert one page row.
 #[cfg_attr(test, derive(Clone))]
-pub struct PageForm {
+pub struct Form {
     pub id: String,
 
     pub chapter_id: String,
@@ -54,7 +54,7 @@ pub struct PageForm {
 
 /// Image reservation result for a page.
 #[cfg_attr(test, derive(Clone))]
-pub struct PageImageReservation {
+pub struct ImageReservation {
     pub object_key: String,
     pub prev_object_key: Option<String>,
     pub image_version: i64,

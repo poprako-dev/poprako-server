@@ -7,11 +7,11 @@ use async_trait::async_trait;
 
 use poprako_transactional::advance::Advance;
 
-use crate::model::chapter::{ChapterForm, ChapterInfo};
-use crate::model::comic::ComicInfo;
-use crate::model::team::TeamInfo;
-use crate::model::user::UserInfo;
-use crate::model::workset::WorksetInfo;
+use crate::model::chapter_model;
+use crate::model::comic_model;
+use crate::model::team_model;
+use crate::model::user_model;
+use crate::model::workset_model;
 use crate::part::repo::chapter::{ChapterRepo, ChapterRepoTransactional};
 use crate::part::repo::step::chapter::{
     AdjustUnitCounters, Create, Delete, FindPinnedInfoByComicId, GetInfoById,
@@ -35,7 +35,7 @@ fn get_chapter_by_id(
     state: &MockState,
     id: &str,
     incl_opt: &[ChapterInclOpt],
-) -> RegularResult<ChapterInfo> {
+) -> RegularResult<chapter_model::Info> {
     //
     let mut chapter_info = state
         .chapters
@@ -62,7 +62,10 @@ fn get_chapter_by_id(
 //     chapter_infos[offset..end].to_vec()
 // }
 
-fn list_all_chapters(state: &MockState, comic_id: &str) -> Vec<ChapterInfo> {
+fn list_all_chapters(
+    state: &MockState,
+    comic_id: &str,
+) -> Vec<chapter_model::Info> {
     //
     let mut chapter_infos = state
         .chapters
@@ -78,8 +81,8 @@ fn list_all_chapters(state: &MockState, comic_id: &str) -> Vec<ChapterInfo> {
 
 fn create_chapter(
     state: &mut MockState,
-    form: &ChapterForm,
-) -> RegularResult<ChapterInfo> {
+    form: &chapter_model::Form,
+) -> RegularResult<chapter_model::Info> {
     //
     if state
         .chapters
@@ -91,7 +94,7 @@ fn create_chapter(
 
     let time = now();
 
-    let chapter_info = ChapterInfo {
+    let chapter_info = chapter_model::Info {
         id: form.id.clone(),
         comic_id: form.comic_id.clone(),
         comic: None,
@@ -114,7 +117,7 @@ fn create_chapter(
     Ok(chapter_info)
 }
 
-fn find_user(state: &MockState, user_id: &str) -> Option<UserInfo> {
+fn find_user(state: &MockState, user_id: &str) -> Option<user_model::Info> {
     state
         .users
         .iter()
@@ -122,7 +125,7 @@ fn find_user(state: &MockState, user_id: &str) -> Option<UserInfo> {
         .cloned()
 }
 
-fn find_comic(state: &MockState, comic_id: &str) -> Option<ComicInfo> {
+fn find_comic(state: &MockState, comic_id: &str) -> Option<comic_model::Info> {
     //
     let mut comic_info = state
         .comics
@@ -139,7 +142,10 @@ fn find_comic(state: &MockState, comic_id: &str) -> Option<ComicInfo> {
     Some(comic_info)
 }
 
-fn find_workset(state: &MockState, workset_id: &str) -> Option<WorksetInfo> {
+fn find_workset(
+    state: &MockState,
+    workset_id: &str,
+) -> Option<workset_model::Info> {
     state
         .worksets
         .iter()
@@ -149,8 +155,8 @@ fn find_workset(state: &MockState, workset_id: &str) -> Option<WorksetInfo> {
 
 fn find_team_for_workset(
     state: &MockState,
-    workset_info: &WorksetInfo,
-) -> Option<TeamInfo> {
+    workset_info: &workset_model::Info,
+) -> Option<team_model::Info> {
     state
         .teams
         .iter()
@@ -160,7 +166,7 @@ fn find_team_for_workset(
 
 fn apply_creator_incl(
     state: &MockState,
-    chapter_info: &mut ChapterInfo,
+    chapter_info: &mut chapter_model::Info,
     include_creator: bool,
 ) {
     //
@@ -173,7 +179,7 @@ fn apply_creator_incl(
 
 fn apply_comic_incl(
     state: &MockState,
-    chapter_info: &mut ChapterInfo,
+    chapter_info: &mut chapter_model::Info,
     include_comic: bool,
 ) {
     //
@@ -186,7 +192,7 @@ fn apply_comic_incl(
 
 fn apply_comic_workset_incl(
     state: &MockState,
-    chapter_info: &mut ChapterInfo,
+    chapter_info: &mut chapter_model::Info,
     include_workset: bool,
 ) {
     //
@@ -203,7 +209,7 @@ fn apply_comic_workset_incl(
 
 fn apply_comic_workset_team_incl(
     state: &MockState,
-    chapter_info: &mut ChapterInfo,
+    chapter_info: &mut chapter_model::Info,
     include_team: bool,
 ) {
     //
@@ -224,7 +230,7 @@ fn apply_comic_workset_team_incl(
 
 fn apply_comic_creator_incl(
     state: &MockState,
-    chapter_info: &mut ChapterInfo,
+    chapter_info: &mut chapter_model::Info,
     include_creator: bool,
 ) {
     //
@@ -241,7 +247,7 @@ fn apply_comic_creator_incl(
 
 fn apply_chapter_incls(
     state: &MockState,
-    chapter_info: &mut ChapterInfo,
+    chapter_info: &mut chapter_model::Info,
     incl_opt: &[ChapterInclOpt],
 ) {
     //
@@ -282,7 +288,7 @@ impl<'a> Execute<ListInfos<'a>> for Mock {
     async fn execute(
         &self,
         step: &ListInfos<'a>,
-    ) -> Result<Vec<ChapterInfo>, Self::Error> {
+    ) -> Result<Vec<chapter_model::Info>, Self::Error> {
         //
         let state = self.state.lock().unwrap();
 
@@ -313,7 +319,7 @@ impl<'a> Execute<GetInfoById<'a>> for Mock {
     async fn execute(
         &self,
         step: &GetInfoById<'a>,
-    ) -> Result<ChapterInfo, Self::Error> {
+    ) -> Result<chapter_model::Info, Self::Error> {
         //
         let state = self.state.lock().unwrap();
 
@@ -333,7 +339,7 @@ impl<'a> Execute<FindPinnedInfoByComicId<'a>> for Mock {
     async fn execute(
         &self,
         step: &FindPinnedInfoByComicId<'a>,
-    ) -> Result<Option<ChapterInfo>, Self::Error> {
+    ) -> Result<Option<chapter_model::Info>, Self::Error> {
         //
         let state = self.state.lock().unwrap();
 
@@ -360,7 +366,7 @@ impl<'a> Execute<ListPinnedInfosByComicIds<'a>> for Mock {
     async fn execute(
         &self,
         step: &ListPinnedInfosByComicIds<'a>,
-    ) -> Result<HashMap<String, ChapterInfo>, Self::Error> {
+    ) -> Result<HashMap<String, chapter_model::Info>, Self::Error> {
         //
         let state = self.state.lock().unwrap();
 
@@ -395,7 +401,7 @@ impl<'a> Advance<Create<'a>, MockContext> for MockTransactional {
         &self,
         context: &mut MockContext,
         step: &Create<'a>,
-    ) -> Result<ChapterInfo, Self::Error> {
+    ) -> Result<chapter_model::Info, Self::Error> {
         create_chapter(&mut context.state, step.form)
     }
 }
@@ -408,7 +414,7 @@ impl<'a> Advance<GetInfoById<'a>, MockContext> for MockTransactional {
         &self,
         context: &mut MockContext,
         step: &GetInfoById<'a>,
-    ) -> Result<ChapterInfo, Self::Error> {
+    ) -> Result<chapter_model::Info, Self::Error> {
         get_chapter_by_id(&context.state, step.id, step.incl_opt)
     }
 }
@@ -421,7 +427,7 @@ impl<'a> Advance<GetInfoByIdExcluded<'a>, MockContext> for MockTransactional {
         &self,
         context: &mut MockContext,
         step: &GetInfoByIdExcluded<'a>,
-    ) -> Result<ChapterInfo, Self::Error> {
+    ) -> Result<chapter_model::Info, Self::Error> {
         get_chapter_by_id(&context.state, step.id, step.incl_opt)
     }
 }
@@ -441,7 +447,7 @@ impl<'a> Advance<ListAllInfosByComicIdExcluded<'a>, MockContext>
         &self,
         context: &mut MockContext,
         step: &ListAllInfosByComicIdExcluded<'a>,
-    ) -> Result<Vec<ChapterInfo>, Self::Error> {
+    ) -> Result<Vec<chapter_model::Info>, Self::Error> {
         Ok(list_all_chapters(&context.state, step.comic_id))
     }
 }
@@ -456,7 +462,7 @@ impl<'a> Advance<FindPinnedInfoByComicId<'a>, MockContext>
         &self,
         context: &mut MockContext,
         step: &FindPinnedInfoByComicId<'a>,
-    ) -> Result<Option<ChapterInfo>, Self::Error> {
+    ) -> Result<Option<chapter_model::Info>, Self::Error> {
         //
         let mut chapter_info = context
             .state

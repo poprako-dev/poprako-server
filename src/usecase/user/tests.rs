@@ -30,8 +30,8 @@ use super::*;
 
 use time::OffsetDateTime;
 
-use crate::model::member::MemberInfo;
-use crate::model::user::UserInfo;
+use crate::model::member_model;
+use crate::model::user_model;
 use crate::part::effect::event::Event;
 use crate::part::prom::Payload;
 use crate::part::prom::task::{ImageKind, ImageTask};
@@ -53,8 +53,8 @@ fn user_with_avatar(
     avatar_key: &str,
     avatar_uploaded: bool,
     avatar_version: i64,
-) -> UserInfo {
-    UserInfo {
+) -> user_model::Info {
+    user_model::Info {
         avatar_key: Some(avatar_key.into()),
         avatar_uploaded,
         avatar_version,
@@ -68,8 +68,8 @@ fn member(
     user_id: &str,
     user_nickname: &str,
     team_id: &str,
-) -> MemberInfo {
-    MemberInfo {
+) -> member_model::Info {
+    member_model::Info {
         id: id.into(),
         user_id: user_id.into(),
         user_nickname: user_nickname.into(),
@@ -82,15 +82,19 @@ fn member(
 }
 
 /// Builds a [`UserToken`] fixture for the given user ID.
-fn token(user_id: &str) -> UserToken {
-    UserToken {
+fn token(user_id: &str) -> user_model::Token {
+    user_model::Token {
         user_id: user_id.into(),
     }
 }
 
 /// Builds an [`UpdateUserInfoData`] fixture.
-fn update_data(id: &str, qid: &str, nickname: &str) -> UpdateUserInfoData {
-    UpdateUserInfoData {
+fn update_data(
+    id: &str,
+    qid: &str,
+    nickname: &str,
+) -> user_data::UpdateInfoData {
+    user_data::UpdateInfoData {
         id: id.into(),
         qid: qid.into(),
         nickname: nickname.into(),
@@ -98,15 +102,15 @@ fn update_data(id: &str, qid: &str, nickname: &str) -> UpdateUserInfoData {
 }
 
 /// Builds a [`ReserveUserAvatarData`] fixture.
-fn reserve_data(file_ext: &str) -> ReserveUserAvatarData {
-    ReserveUserAvatarData {
+fn reserve_data(file_ext: &str) -> user_data::ReserveAvatarData {
+    user_data::ReserveAvatarData {
         file_ext: file_ext.into(),
     }
 }
 
 /// Builds a [`MarkUserAvatarUploadedData`] fixture.
-fn mark_data(avatar_version: i64) -> MarkUserAvatarUploadedData {
-    MarkUserAvatarUploadedData { avatar_version }
+fn mark_data(avatar_version: i64) -> user_data::MarkAvatarUploadedData {
+    user_data::MarkAvatarUploadedData { avatar_version }
 }
 
 /// Counts [`Delete`](ImageTask::Delete) prom records matching the given object key.

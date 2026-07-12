@@ -2,7 +2,7 @@
 
 use poprako_macro::Paginate;
 
-use crate::model::user::UserInfo;
+use crate::model::user_model;
 use crate::value::member_invitation::MemberInvitationInclOpt;
 use crate::value::role::RoleMask;
 
@@ -12,12 +12,12 @@ use crate::value::role::RoleMask;
 /// a pending flag indicating whether the invitation has been consumed,
 /// and the [`RoleMask`] that will be assigned upon acceptance.
 #[cfg_attr(test, derive(Clone))]
-pub struct MemberInvitationInfo {
+pub struct Info {
     pub id: String,
 
     pub team_id: String,
 
-    pub invitor: Option<UserInfo>,
+    pub invitor: Option<user_model::Info>,
 
     pub invitor_id: String,
     pub invitee_qid: String,
@@ -30,7 +30,7 @@ pub struct MemberInvitationInfo {
 }
 
 /// The data needed to insert a member invitation row.
-pub struct MemberInvitationForm {
+pub struct Form {
     pub id: String,
 
     pub team_id: String,
@@ -44,14 +44,14 @@ pub struct MemberInvitationForm {
 }
 
 /// Mutable fields for a member invitation.
-pub struct MemberInvitationUpdate {
+pub struct Update {
     pub id: String,
     pub roles: RoleMask,
 }
 
 /// Filtering, pagination, and include parameters for listing invitations.
 #[Paginate]
-pub struct MemberInvitationListSpec {
+pub struct ListSpec {
     pub team_id: String,
     pub pending: Option<bool>,
     pub incl_opt: Vec<MemberInvitationInclOpt>,

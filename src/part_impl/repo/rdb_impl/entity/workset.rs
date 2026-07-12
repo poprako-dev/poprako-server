@@ -3,7 +3,7 @@
 use diesel::prelude::*;
 use time::OffsetDateTime;
 
-use crate::model::workset::{WorksetForm, WorksetInfo};
+use crate::model::workset_model;
 use crate::part_impl::repo::rdb_impl::schema::t_workset;
 
 // ── Queryable / Selectable ─────────────────────────────────────────────────
@@ -100,9 +100,9 @@ impl<'a> WorksetAspect<'a> {
 
 // ── Conversions ────────────────────────────────────────────────────────────
 
-impl From<WorksetRow> for WorksetInfo {
+impl From<WorksetRow> for workset_model::Info {
     fn from(v: WorksetRow) -> Self {
-        WorksetInfo {
+        workset_model::Info {
             id: v.f_id,
             team_id: v.f_team_id,
             index: v.f_index,
@@ -116,8 +116,8 @@ impl From<WorksetRow> for WorksetInfo {
     }
 }
 
-impl<'a> From<&'a WorksetForm> for WorksetEntry<'a> {
-    fn from(form: &'a WorksetForm) -> Self {
+impl<'a> From<&'a workset_model::Form> for WorksetEntry<'a> {
+    fn from(form: &'a workset_model::Form) -> Self {
         Self {
             f_id: &form.id,
             f_team_id: &form.team_id,

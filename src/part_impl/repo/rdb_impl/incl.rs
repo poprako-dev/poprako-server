@@ -22,11 +22,11 @@ use async_trait::async_trait;
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 
-use crate::model::chapter::ChapterInfo;
-use crate::model::comic::ComicInfo;
-use crate::model::team::TeamInfo;
-use crate::model::user::UserInfo;
-use crate::model::workset::WorksetInfo;
+use crate::model::chapter_model;
+use crate::model::comic_model;
+use crate::model::team_model;
+use crate::model::user_model;
+use crate::model::workset_model;
 use crate::part_impl::repo::rdb_impl::entity::chapter::ChapterRow;
 use crate::part_impl::repo::rdb_impl::entity::comic::ComicRow;
 use crate::part_impl::repo::rdb_impl::entity::team::TeamRow;
@@ -193,7 +193,7 @@ pub struct UserByIds;
 #[async_trait]
 impl BatchByIds for UserByIds {
     type Row = UserRow;
-    type Info = UserInfo;
+    type Info = user_model::Info;
 
     async fn load(
         conn: &mut RdbConn,
@@ -207,11 +207,11 @@ impl BatchByIds for UserByIds {
             .map_err(diesel)
     }
 
-    fn into_entry(row: UserRow) -> RegularResult<(String, UserInfo)> {
+    fn into_entry(row: UserRow) -> RegularResult<(String, user_model::Info)> {
         //
         let id = row.f_id.clone();
 
-        Ok((id, UserInfo::from(row)))
+        Ok((id, user_model::Info::from(row)))
     }
 }
 
@@ -221,7 +221,7 @@ pub struct TeamByIds;
 #[async_trait]
 impl BatchByIds for TeamByIds {
     type Row = TeamRow;
-    type Info = TeamInfo;
+    type Info = team_model::Info;
 
     async fn load(
         conn: &mut RdbConn,
@@ -235,11 +235,11 @@ impl BatchByIds for TeamByIds {
             .map_err(diesel)
     }
 
-    fn into_entry(row: TeamRow) -> RegularResult<(String, TeamInfo)> {
+    fn into_entry(row: TeamRow) -> RegularResult<(String, team_model::Info)> {
         //
         let id = row.f_id.clone();
 
-        Ok((id, TeamInfo::from(row)))
+        Ok((id, team_model::Info::from(row)))
     }
 }
 
@@ -249,7 +249,7 @@ pub struct WorksetByIds;
 #[async_trait]
 impl BatchByIds for WorksetByIds {
     type Row = WorksetRow;
-    type Info = WorksetInfo;
+    type Info = workset_model::Info;
 
     async fn load(
         conn: &mut RdbConn,
@@ -263,11 +263,13 @@ impl BatchByIds for WorksetByIds {
             .map_err(diesel)
     }
 
-    fn into_entry(row: WorksetRow) -> RegularResult<(String, WorksetInfo)> {
+    fn into_entry(
+        row: WorksetRow,
+    ) -> RegularResult<(String, workset_model::Info)> {
         //
         let id = row.f_id.clone();
 
-        Ok((id, WorksetInfo::from(row)))
+        Ok((id, workset_model::Info::from(row)))
     }
 }
 
@@ -277,7 +279,7 @@ pub struct ComicByIds;
 #[async_trait]
 impl BatchByIds for ComicByIds {
     type Row = ComicRow;
-    type Info = ComicInfo;
+    type Info = comic_model::Info;
 
     async fn load(
         conn: &mut RdbConn,
@@ -291,11 +293,11 @@ impl BatchByIds for ComicByIds {
             .map_err(diesel)
     }
 
-    fn into_entry(row: ComicRow) -> RegularResult<(String, ComicInfo)> {
+    fn into_entry(row: ComicRow) -> RegularResult<(String, comic_model::Info)> {
         //
         let id = row.f_id.clone();
 
-        Ok((id, ComicInfo::from(row)))
+        Ok((id, comic_model::Info::from(row)))
     }
 }
 
@@ -305,7 +307,7 @@ pub struct ChapterByIds;
 #[async_trait]
 impl BatchByIds for ChapterByIds {
     type Row = ChapterRow;
-    type Info = ChapterInfo;
+    type Info = chapter_model::Info;
 
     async fn load(
         conn: &mut RdbConn,
@@ -319,11 +321,13 @@ impl BatchByIds for ChapterByIds {
             .map_err(diesel)
     }
 
-    fn into_entry(row: ChapterRow) -> RegularResult<(String, ChapterInfo)> {
+    fn into_entry(
+        row: ChapterRow,
+    ) -> RegularResult<(String, chapter_model::Info)> {
         //
         let id = row.f_id.clone();
 
-        let chapter_info = ChapterInfo::try_from(row)?;
+        let chapter_info = chapter_model::Info::try_from(row)?;
 
         Ok((id, chapter_info))
     }

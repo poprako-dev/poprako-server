@@ -36,10 +36,10 @@ use time::OffsetDateTime;
 
 use poprako_transactional::advance::Advance;
 
-use crate::model::comic::ComicInfo;
-use crate::model::member::MemberInfo;
-use crate::model::team::{TeamAvatarReservation, TeamInfo};
-use crate::model::user::{UserAvatarReservation, UserCredential, UserInfo};
+use crate::model::comic_model;
+use crate::model::member_model;
+use crate::model::team_model;
+use crate::model::user_model;
 use crate::part::prom::Payload;
 use crate::part::prom::task::{ImageKind, ImageTask};
 use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
@@ -108,8 +108,8 @@ fn team_with_avatar(
     avatar_key: &str,
     avatar_uploaded: bool,
     avatar_version: i64,
-) -> TeamInfo {
-    TeamInfo {
+) -> team_model::Info {
+    team_model::Info {
         avatar_key: Some(avatar_key.into()),
         avatar_uploaded,
         avatar_version,
@@ -118,8 +118,8 @@ fn team_with_avatar(
 }
 
 /// Builds a [`MemberInfo`] fixture.
-fn member(id: &str, user_id: &str, team_id: &str) -> MemberInfo {
-    MemberInfo {
+fn member(id: &str, user_id: &str, team_id: &str) -> member_model::Info {
+    member_model::Info {
         id: id.into(),
         user_id: user_id.into(),
         user_nickname: user_id.into(),
@@ -136,11 +136,11 @@ fn comic_with_uploaded_cover(
     id: &str,
     workset_id: &str,
     cover_key: &str,
-) -> ComicInfo {
+) -> comic_model::Info {
     //
     let time = OffsetDateTime::now_utc();
 
-    ComicInfo {
+    comic_model::Info {
         id: id.into(),
         workset_id: workset_id.into(),
         index: 0,
@@ -171,26 +171,26 @@ fn expected_error() -> RegularError {
 }
 
 /// Builds a [`UserToken`] fixture.
-fn token(user_id: &str) -> UserToken {
-    UserToken {
+fn token(user_id: &str) -> user_model::Token {
+    user_model::Token {
         user_id: user_id.into(),
     }
 }
 
 /// Builds a [`UserCredential`] fixture.
-fn credential(user_id: &str) -> UserCredential {
-    UserCredential {
+fn credential(user_id: &str) -> user_model::Credential {
+    user_model::Credential {
         user_id: user_id.into(),
         password_hash: "hash".into(),
     }
 }
 
 /// Builds a [`UserInfo`] fixture.
-fn user(id: &str, is_sadmin: bool) -> UserInfo {
+fn user(id: &str, is_sadmin: bool) -> user_model::Info {
     //
     let time = OffsetDateTime::now_utc();
 
-    UserInfo {
+    user_model::Info {
         id: id.into(),
         qid: id.into(),
         nickname: id.into(),
@@ -209,8 +209,8 @@ fn list_data(
     user_id: Option<&str>,
     offset: u64,
     limit: u64,
-) -> ListTeamInfosData {
-    ListTeamInfosData {
+) -> team_data::ListInfosData {
+    team_data::ListInfosData {
         user_id: user_id.map(Into::into),
         offset,
         limit,
@@ -218,20 +218,24 @@ fn list_data(
 }
 
 /// Builds a [`ReserveTeamAvatarData`] fixture.
-fn reserve_data(file_ext: &str) -> ReserveTeamAvatarData {
-    ReserveTeamAvatarData {
+fn reserve_data(file_ext: &str) -> team_data::ReserveAvatarData {
+    team_data::ReserveAvatarData {
         file_ext: file_ext.into(),
     }
 }
 
 /// Builds a [`MarkTeamAvatarUploadedData`] fixture.
-fn mark_data(avatar_version: i64) -> MarkTeamAvatarUploadedData {
-    MarkTeamAvatarUploadedData { avatar_version }
+fn mark_data(avatar_version: i64) -> team_data::MarkAvatarUploadedData {
+    team_data::MarkAvatarUploadedData { avatar_version }
 }
 
 /// Builds an [`UpdateTeamInfoData`] fixture.
-fn update_data(id: &str, name: &str, description: &str) -> UpdateTeamInfoData {
-    UpdateTeamInfoData {
+fn update_data(
+    id: &str,
+    name: &str,
+    description: &str,
+) -> team_data::UpdateInfoData {
+    team_data::UpdateInfoData {
         id: id.into(),
         name: name.into(),
         description: description.into(),
@@ -256,7 +260,10 @@ fn count_delete_records(records: &[MockPromRecord], object_key: &str) -> usize {
 impl<'a> Execute<Create<'a>> for FailingCreateRepo {
     type Error = RegularError;
 
-    async fn execute(&self, _: &Create<'a>) -> Result<TeamInfo, Self::Error> {
+    async fn execute(
+        &self,
+        _: &Create<'a>,
+    ) -> Result<team_model::Info, Self::Error> {
         Err(expected_error())
     }
 }
@@ -269,7 +276,7 @@ impl<'a> Advance<Create<'a>, MockContext> for FailingTeamTransactional {
         &self,
         _: &mut MockContext,
         _: &Create<'a>,
-    ) -> Result<TeamInfo, Self::Error> {
+    ) -> Result<team_model::Info, Self::Error> {
         Err(expected_error())
     }
 }
@@ -281,7 +288,7 @@ impl<'a> Execute<UserGetInfoById<'a>> for FailingCreateRepo {
     async fn execute(
         &self,
         step: &UserGetInfoById<'a>,
-    ) -> Result<UserInfo, Self::Error> {
+    ) -> Result<user_model::Info, Self::Error> {
         Ok(user(step.id, true))
     }
 }
@@ -293,7 +300,7 @@ impl<'a> Execute<GetCredentialByQid<'a>> for FailingCreateRepo {
     async fn execute(
         &self,
         _: &GetCredentialByQid<'a>,
-    ) -> Result<UserCredential, Self::Error> {
+    ) -> Result<user_model::Credential, Self::Error> {
         Err(expected_error())
     }
 }
@@ -305,7 +312,7 @@ impl<'a> Execute<FindInfoByQid<'a>> for FailingCreateRepo {
     async fn execute(
         &self,
         _: &FindInfoByQid<'a>,
-    ) -> Result<Option<UserInfo>, Self::Error> {
+    ) -> Result<Option<user_model::Info>, Self::Error> {
         Ok(None)
     }
 }
@@ -318,7 +325,7 @@ impl<'a> Advance<UserCreate<'a>, MockContext> for FailingTeamTransactional {
         &self,
         _: &mut MockContext,
         _: &UserCreate<'a>,
-    ) -> Result<UserInfo, Self::Error> {
+    ) -> Result<user_model::Info, Self::Error> {
         Err(expected_error())
     }
 }
@@ -331,7 +338,7 @@ impl<'a> Advance<FindInfoByQid<'a>, MockContext> for FailingTeamTransactional {
         &self,
         _: &mut MockContext,
         _: &FindInfoByQid<'a>,
-    ) -> Result<Option<UserInfo>, Self::Error> {
+    ) -> Result<Option<user_model::Info>, Self::Error> {
         Ok(None)
     }
 }
@@ -359,7 +366,7 @@ impl<'a> Advance<UserReserveAvatar<'a>, MockContext>
         &self,
         _: &mut MockContext,
         _: &UserReserveAvatar<'a>,
-    ) -> Result<UserAvatarReservation, Self::Error> {
+    ) -> Result<user_model::AvatarReservation, Self::Error> {
         Err(expected_error())
     }
 }
@@ -404,7 +411,7 @@ impl<'a> Advance<UserGetInfoExcluded<'a>, MockContext>
         &self,
         _: &mut MockContext,
         step: &UserGetInfoExcluded<'a>,
-    ) -> Result<UserInfo, Self::Error> {
+    ) -> Result<user_model::Info, Self::Error> {
         Ok(user(step.id, true))
     }
 }
@@ -429,7 +436,7 @@ impl<'a> Execute<GetInfoById<'a>> for FailingCreateRepo {
     async fn execute(
         &self,
         _: &GetInfoById<'a>,
-    ) -> Result<TeamInfo, Self::Error> {
+    ) -> Result<team_model::Info, Self::Error> {
         Err(expected_error())
     }
 }
@@ -441,7 +448,7 @@ impl<'a> Execute<ListInfos<'a>> for FailingCreateRepo {
     async fn execute(
         &self,
         _: &ListInfos<'a>,
-    ) -> Result<Vec<TeamInfo>, Self::Error> {
+    ) -> Result<Vec<team_model::Info>, Self::Error> {
         Err(expected_error())
     }
 }
@@ -487,7 +494,7 @@ impl<'a> Advance<ReserveAvatar<'a>, MockContext> for FailingTeamTransactional {
         &self,
         _: &mut MockContext,
         _: &ReserveAvatar<'a>,
-    ) -> Result<TeamAvatarReservation, Self::Error> {
+    ) -> Result<team_model::AvatarReservation, Self::Error> {
         Err(expected_error())
     }
 }
@@ -517,7 +524,7 @@ impl<'a> Advance<GetInfoExcluded<'a>, MockContext>
         &self,
         _: &mut MockContext,
         _: &GetInfoExcluded<'a>,
-    ) -> Result<TeamInfo, Self::Error> {
+    ) -> Result<team_model::Info, Self::Error> {
         Err(expected_error())
     }
 }
@@ -557,7 +564,7 @@ impl<'a> Execute<FindInfoByUserIdAndTeamId<'a>> for FailingCreateRepo {
     async fn execute(
         &self,
         _: &FindInfoByUserIdAndTeamId<'a>,
-    ) -> Result<Option<MemberInfo>, Self::Error> {
+    ) -> Result<Option<member_model::Info>, Self::Error> {
         Ok(None)
     }
 }
@@ -569,7 +576,7 @@ impl<'a> Execute<MemberListInfos<'a>> for FailingCreateRepo {
     async fn execute(
         &self,
         _: &MemberListInfos<'a>,
-    ) -> Result<Vec<MemberInfo>, Self::Error> {
+    ) -> Result<Vec<member_model::Info>, Self::Error> {
         Ok(Vec::new())
     }
 }
@@ -581,7 +588,7 @@ impl<'a> Execute<MemberGetInfoById<'a>> for FailingCreateRepo {
     async fn execute(
         &self,
         _: &MemberGetInfoById<'a>,
-    ) -> Result<MemberInfo, Self::Error> {
+    ) -> Result<member_model::Info, Self::Error> {
         Err(expected_error())
     }
 }
@@ -594,7 +601,7 @@ impl<'a> Advance<MemberCreate<'a>, MockContext> for FailingTeamTransactional {
         &self,
         _: &mut MockContext,
         _: &MemberCreate<'a>,
-    ) -> Result<MemberInfo, Self::Error> {
+    ) -> Result<member_model::Info, Self::Error> {
         Err(expected_error())
     }
 }
@@ -624,7 +631,7 @@ impl<'a> Advance<ListInfosByUserIdExcluded<'a>, MockContext>
         &self,
         _: &mut MockContext,
         _: &ListInfosByUserIdExcluded<'a>,
-    ) -> Result<Vec<MemberInfo>, Self::Error> {
+    ) -> Result<Vec<member_model::Info>, Self::Error> {
         Err(expected_error())
     }
 }
@@ -639,7 +646,7 @@ impl<'a> Advance<FindInfoByUserIdAndTeamId<'a>, MockContext>
         &self,
         _: &mut MockContext,
         _: &FindInfoByUserIdAndTeamId<'a>,
-    ) -> Result<Option<MemberInfo>, Self::Error> {
+    ) -> Result<Option<member_model::Info>, Self::Error> {
         Err(expected_error())
     }
 }
@@ -682,7 +689,7 @@ async fn create_persists_team_and_returns_info() {
         &mock,
         &mock,
         token("user-1"),
-        CreateTeamData {
+        team_data::CreateData {
             name: "Team".into(),
             description: "Desc".into(),
         },
@@ -713,7 +720,7 @@ async fn create_makes_creator_admin_member() {
         &mock,
         &mock,
         token("user-1"),
-        CreateTeamData {
+        team_data::CreateData {
             name: "Team".into(),
             description: "Desc".into(),
         },
@@ -748,7 +755,7 @@ async fn create_propagates_repo_failure() {
         &repo,
         &image,
         token("user-1"),
-        CreateTeamData {
+        team_data::CreateData {
             name: "Team".into(),
             description: "Desc".into(),
         },

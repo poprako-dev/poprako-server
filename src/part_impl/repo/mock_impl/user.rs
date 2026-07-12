@@ -5,9 +5,7 @@ use async_trait::async_trait;
 use poprako_transactional::advance::Advance;
 
 use crate::complex::user::UserComplex;
-use crate::model::user::{
-    UserAvatarReservation, UserCredential, UserForm, UserInfo,
-};
+use crate::model::user_model;
 use crate::part::repo::step::user::{
     Create, Delete, FindInfoByQid, GetCredentialByQid, GetInfoById,
     GetInfoExcluded, MarkAvatarUploaded, ReserveAvatar, TouchLastActive,
@@ -27,8 +25,8 @@ impl UserRepoTransactional<MockContext> for MockTransactional {}
 /// Inserts a new user with associated credentials, rejecting duplicate ids or qids.
 fn create_user(
     state: &mut MockState,
-    form: &UserForm,
-) -> RegularResult<UserInfo> {
+    form: &user_model::Form,
+) -> RegularResult<user_model::Info> {
     //
     if state.users.iter().any(|user| user.id == form.id) {
         return Err(expected("error-already-exists"));
@@ -40,7 +38,7 @@ fn create_user(
 
     let time = now();
 
-    let user = UserInfo {
+    let user = user_model::Info {
         id: form.id.clone(),
         qid: form.qid.clone(),
         nickname: form.nickname.clone(),
@@ -55,7 +53,7 @@ fn create_user(
 
     state.users.push(user.clone());
 
-    state.credentials.push(UserCredential {
+    state.credentials.push(user_model::Credential {
         user_id: form.id.clone(),
         password_hash: form.password_hash.clone(),
     });
@@ -70,7 +68,7 @@ impl<'a> Execute<GetInfoById<'a>> for Mock {
     async fn execute(
         &self,
         step: &GetInfoById<'a>,
-    ) -> Result<UserInfo, Self::Error> {
+    ) -> Result<user_model::Info, Self::Error> {
         //
         let state = self.state.lock().unwrap();
 
@@ -90,7 +88,7 @@ impl<'a> Execute<GetCredentialByQid<'a>> for Mock {
     async fn execute(
         &self,
         step: &GetCredentialByQid<'a>,
-    ) -> Result<UserCredential, Self::Error> {
+    ) -> Result<user_model::Credential, Self::Error> {
         //
         let state = self.state.lock().unwrap();
 
@@ -118,7 +116,7 @@ impl<'a> Execute<FindInfoByQid<'a>> for Mock {
     async fn execute(
         &self,
         step: &FindInfoByQid<'a>,
-    ) -> Result<Option<UserInfo>, Self::Error> {
+    ) -> Result<Option<user_model::Info>, Self::Error> {
         //
         let state = self.state.lock().unwrap();
 
@@ -160,7 +158,7 @@ impl<'a> Advance<FindInfoByQid<'a>, MockContext> for MockTransactional {
         &self,
         context: &mut MockContext,
         step: &FindInfoByQid<'a>,
-    ) -> Result<Option<UserInfo>, Self::Error> {
+    ) -> Result<Option<user_model::Info>, Self::Error> {
         Ok(context
             .state
             .users
@@ -178,7 +176,7 @@ impl<'a> Advance<Create<'a>, MockContext> for MockTransactional {
         &self,
         context: &mut MockContext,
         step: &Create<'a>,
-    ) -> Result<UserInfo, Self::Error> {
+    ) -> Result<user_model::Info, Self::Error> {
         create_user(&mut context.state, step.form)
     }
 }
@@ -218,7 +216,7 @@ impl<'a> Advance<ReserveAvatar<'a>, MockContext> for MockTransactional {
         &self,
         context: &mut MockContext,
         step: &ReserveAvatar<'a>,
-    ) -> Result<UserAvatarReservation, Self::Error> {
+    ) -> Result<user_model::AvatarReservation, Self::Error> {
         //
         let user = context
             .state
@@ -242,7 +240,7 @@ impl<'a> Advance<ReserveAvatar<'a>, MockContext> for MockTransactional {
 
         user.updated_at = now();
 
-        Ok(UserAvatarReservation {
+        Ok(user_model::AvatarReservation {
             object_key,
             prev_object_key,
             avatar_version,
@@ -312,7 +310,7 @@ impl<'a> Advance<GetInfoExcluded<'a>, MockContext> for MockTransactional {
         &self,
         context: &mut MockContext,
         step: &GetInfoExcluded<'a>,
-    ) -> Result<UserInfo, Self::Error> {
+    ) -> Result<user_model::Info, Self::Error> {
         context
             .state
             .users

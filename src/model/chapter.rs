@@ -12,8 +12,8 @@ use time::OffsetDateTime;
 
 use poprako_macro::Paginate;
 
-use crate::model::comic::ComicInfo;
-use crate::model::user::UserInfo;
+use crate::model::comic_model;
+use crate::model::user_model;
 use crate::value::chapter::{ChapterInclOpt, StageMask};
 
 /// A chapterrecord as stored in the database.
@@ -31,11 +31,11 @@ use crate::value::chapter::{ChapterInclOpt, StageMask};
 /// typeset_redraw → review → publish. Each phase transitions through
 /// [`StagePhase`] values independently.
 #[derive(Clone)]
-pub struct ChapterInfo {
+pub struct Info {
     pub id: String,
     pub comic_id: String,
 
-    pub comic: Option<ComicInfo>,
+    pub comic: Option<comic_model::Info>,
 
     pub is_pinned: bool,
     pub index: i32,
@@ -54,7 +54,7 @@ pub struct ChapterInfo {
 
     pub creator_id: String,
 
-    pub creator: Option<UserInfo>,
+    pub creator: Option<user_model::Info>,
 
     pub created_at: OffsetDateTime,
     pub updated_at: OffsetDateTime,
@@ -70,7 +70,7 @@ pub struct ChapterInfo {
 ///
 /// [`ChapterComplex::gen_id`]: crate::complex::chapter::ChapterComplex::gen_id
 #[cfg_attr(test, derive(Clone))]
-pub struct ChapterForm {
+pub struct Form {
     pub id: String,
     pub comic_id: String,
 
@@ -87,7 +87,7 @@ pub struct ChapterForm {
 /// update endpoint. Workflow phase transitions are handled via
 /// [`ChapterStageUpdate`] instead.
 #[cfg_attr(test, derive(Clone))]
-pub struct ChapterInfoUpdate {
+pub struct InfoUpdate {
     pub id: String,
 
     pub subtitle: Option<String>,
@@ -98,7 +98,7 @@ pub struct ChapterInfoUpdate {
 ///
 /// The use case layer validates transition legality before building this update.
 #[cfg_attr(test, derive(Clone))]
-pub struct ChapterStageUpdate {
+pub struct StageUpdate {
     pub id: String,
 
     pub stages: StageMask,
@@ -106,7 +106,7 @@ pub struct ChapterStageUpdate {
 
 /// Filtering, pagination, and include parameters for listing chapters.
 #[Paginate]
-pub struct ChapterListSpec {
+pub struct ListSpec {
     pub comic_id: String,
     pub incl_opt: Vec<ChapterInclOpt>,
 }

@@ -10,10 +10,7 @@ use poprako_transactional::advance::Advance;
 use poprako_transactional::drive::Drive;
 
 use crate::complex::comic_archive::ComicArchiveComplex;
-use crate::model::comic_archive::{
-    ArchivedChapterPayload, ArchivedComicPayload, ArchivedTranslationPayload,
-    ComicArchiveWrite,
-};
+use crate::model::comic_archive_model;
 use crate::part::repo::step::comic_archive::ComicArchiveStep;
 use crate::part_impl::drive::rdb_impl::RdbDrive;
 use crate::part_impl::repo::rdb_impl::schema::{
@@ -83,7 +80,7 @@ async fn comic_archive_roundtrip_reads_test_database_url() {
             )
             .await?;
 
-            Ok::<ComicArchiveWrite, RegularError>(comic_archive_write)
+            Ok::<comic_archive_model::Write, RegularError>(comic_archive_write)
         })
         .await
         .ok()
@@ -132,13 +129,13 @@ async fn comic_archive_roundtrip_reads_test_database_url() {
         .await
         .unwrap();
 
-    let archived_comic_payload: ArchivedComicPayload =
+    let archived_comic_payload: comic_archive_model::ArchivedPayload =
         decompress_archive(&comic_archived_bytes).unwrap();
 
-    let archived_chapter_payload: ArchivedChapterPayload =
+    let archived_chapter_payload: comic_archive_model::ArchivedChapterPayload =
         decompress_archive(&chapter_archived_bytes).unwrap();
 
-    let archived_translation_payload: ArchivedTranslationPayload =
+    let archived_translation_payload: comic_archive_model::ArchivedTranslationPayload =
         decompress_archive(&translation_archived_bytes).unwrap();
 
     assert_eq!(comic_archiver_id, archiver_id);

@@ -8,17 +8,14 @@ use diesel_async::RunQueryDsl;
 
 use poprako_transactional::advance::Advance;
 
-use crate::model::assignment::AssignmentInfo;
-use crate::model::chapter::ChapterInfo;
-use crate::model::comic::ComicInfo;
-use crate::model::comic_archive::{
-    ComicArchiveChapterSnapshot, ComicArchivePageSnapshot,
-    ComicArchiveSnapshot, ComicArchiveWrite,
-};
-use crate::model::page::PageInfo;
-use crate::model::unit::UnitInfo;
-use crate::model::user::UserInfo;
-use crate::model::workset::WorksetInfo;
+use crate::model::assignment_model;
+use crate::model::chapter_model;
+use crate::model::comic_archive_model;
+use crate::model::comic_model;
+use crate::model::page_model;
+use crate::model::unit_model;
+use crate::model::user_model;
+use crate::model::workset_model;
 use crate::part::repo::comic_archive::ComicArchiveRepoTransactional;
 use crate::part::repo::step::comic_archive::{Commit, LockSnapshot};
 use crate::part_impl::repo::rdb_impl::RdbRepoTransactional;
@@ -71,7 +68,7 @@ impl ComicArchiveRepoTransactional<RdbContext> for RdbRepoTransactional {}
 async fn lock_snapshot(
     conn: &mut RdbConn,
     source_comic_id: &str,
-) -> RegularResult<ComicArchiveSnapshot> {
+) -> RegularResult<comic_archive_model::Snapshot> {
     //
     let comic_row: ComicRow = t_comic
         .filter(comic_id.eq(source_comic_id))
@@ -83,7 +80,7 @@ async fn lock_snapshot(
         .map_err(diesel)?
         .ok_or_else(|| expected("error-comic-not-found"))?;
 
-    let comic_info: ComicInfo = comic_row.into();
+    let comic_info: comic_model::Info = comic_row.into();
 
     let workset_row: WorksetRow = t_workset
         .filter(workset_id.eq(&comic_info.workset_id))
@@ -95,7 +92,7 @@ async fn lock_snapshot(
         .map_err(diesel)?
         .ok_or_else(|| expected("error-workset-not-found"))?;
 
-    let workset_info: WorksetInfo = workset_row.into();
+    let workset_info: workset_model::Info = workset_row.into();
 
     let chapter_rows: Vec<ChapterRow> = t_chapter
         .filter(chapter_comic_id.eq(&comic_info.id))
@@ -106,9 +103,9 @@ async fn lock_snapshot(
         .await
         .map_err(diesel)?;
 
-    let chapter_infos: Vec<ChapterInfo> = chapter_rows
+    let chapter_infos: Vec<chapter_model::Info> = chapter_rows
         .into_iter()
-        .map(ChapterInfo::try_from)
+        .map(chapter_model::Info::try_from)
         .collect::<RegularResult<Vec<_>>>()?;
 
     let source_chapter_ids = chapter_infos
@@ -134,7 +131,7 @@ async fn lock_snapshot(
 
     let assignment_infos = assignment_rows
         .into_iter()
-        .map(AssignmentInfo::try_from)
+        .map(assignment_model::Info::try_from)
         .collect::<RegularResult<Vec<_>>>()?;
 
     let assigned_user_ids = assignment_infos
@@ -154,7 +151,7 @@ async fn lock_snapshot(
         .into_iter()
         .map(|user_row| {
             //
-            let user_info: UserInfo = user_row.into();
+            let user_info: user_model::Info = user_row.into();
 
             (user_info.id.clone(), user_info)
         })
@@ -169,7 +166,7 @@ async fn lock_snapshot(
         .await
         .map_err(diesel)?;
 
-    let page_infos: Vec<PageInfo> =
+    let page_infos: Vec<page_model::Info> =
         page_rows.into_iter().map(Into::into).collect::<Vec<_>>();
 
     let source_page_ids = page_infos
@@ -186,11 +183,13 @@ async fn lock_snapshot(
         .await
         .map_err(diesel)?;
 
-    let unit_infos: Vec<UnitInfo> =
+    let unit_infos: Vec<unit_model::Info> =
         unit_rows.into_iter().map(Into::into).collect::<Vec<_>>();
 
-    let mut assignment_infos_by_chapter: HashMap<String, Vec<AssignmentInfo>> =
-        HashMap::new();
+    let mut assignment_infos_by_chapter: HashMap<
+        String,
+        Vec<assignment_model::Info>,
+    > = HashMap::new();
 
     for mut assignment_info in assignment_infos {
         //
@@ -226,7 +225,7 @@ async fn lock_snapshot(
         page_snapshots_by_chapter
             .entry(page_info.chapter_id.clone())
             .or_insert_with(Vec::new)
-            .push(ComicArchivePageSnapshot {
+            .push(comic_archive_model::PageSnapshot {
                 page_info,
                 unit_infos,
             });
@@ -244,7 +243,7 @@ async fn lock_snapshot(
                 .remove(&chapter_info.id)
                 .unwrap_or_default();
 
-            ComicArchiveChapterSnapshot {
+            comic_archive_model::ChapterSnapshot {
                 chapter_info,
                 assignment_infos,
                 page_snapshots,
@@ -252,7 +251,7 @@ async fn lock_snapshot(
         })
         .collect();
 
-    Ok(ComicArchiveSnapshot {
+    Ok(comic_archive_model::Snapshot {
         comic_info,
         workset_info,
         chapter_snapshots,
@@ -262,7 +261,7 @@ async fn lock_snapshot(
 /// Insert archive rows and remove the active comic subtree without touching workset counters.
 async fn commit(
     conn: &mut RdbConn,
-    comic_archive_write: &ComicArchiveWrite,
+    comic_archive_write: &comic_archive_model::Write,
 ) -> RegularResult<()> {
     //
     let comic_entry =
@@ -357,7 +356,7 @@ impl<'a> Advance<LockSnapshot<'a>, RdbContext> for RdbRepoTransactional {
         &self,
         context: &mut RdbContext,
         step: &LockSnapshot<'a>,
-    ) -> RegularResult<ComicArchiveSnapshot> {
+    ) -> RegularResult<comic_archive_model::Snapshot> {
         lock_snapshot(context.conn(), step.comic_id).await
     }
 }

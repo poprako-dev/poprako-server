@@ -4,29 +4,26 @@ use std::collections::HashMap;
 
 use poprako_transactional::step::Step;
 
-use crate::model::chapter::{
-    ChapterForm, ChapterInfo, ChapterInfoUpdate, ChapterListSpec,
-    ChapterStageUpdate,
-};
-use crate::model::unit::UnitCounterDelta;
+use crate::model::chapter_model;
+use crate::model::unit_model;
 use crate::value::chapter::ChapterInclOpt;
 
 /// Step that lists chapters with include options and pagination.
 pub struct ListInfos<'a> {
-    pub spec: &'a ChapterListSpec,
+    pub spec: &'a chapter_model::ListSpec,
 }
 
 impl<'a> Step for ListInfos<'a> {
-    type Output = Vec<ChapterInfo>;
+    type Output = Vec<chapter_model::Info>;
 }
 
 /// Step that inserts a new chapter row.
 pub struct Create<'a> {
-    pub form: &'a ChapterForm,
+    pub form: &'a chapter_model::Form,
 }
 
 impl<'a> Step for Create<'a> {
-    type Output = ChapterInfo;
+    type Output = chapter_model::Info;
 }
 
 /// Step that fetches a chapter by its identifier.
@@ -36,7 +33,7 @@ pub struct GetInfoById<'a> {
 }
 
 impl<'a> Step for GetInfoById<'a> {
-    type Output = ChapterInfo;
+    type Output = chapter_model::Info;
 }
 
 /// Step that fetches a chapter by ID with a pessimistic lock.
@@ -46,7 +43,7 @@ pub struct GetInfoByIdExcluded<'a> {
 }
 
 impl<'a> Step for GetInfoByIdExcluded<'a> {
-    type Output = ChapterInfo;
+    type Output = chapter_model::Info;
 }
 
 // /// Step that lists chapters by comic.
@@ -75,7 +72,7 @@ pub struct ListAllInfosByComicIdExcluded<'a> {
 }
 
 impl<'a> Step for ListAllInfosByComicIdExcluded<'a> {
-    type Output = Vec<ChapterInfo>;
+    type Output = Vec<chapter_model::Info>;
 }
 
 /// Step that finds the pinned chapter under a comic.
@@ -85,7 +82,7 @@ pub struct FindPinnedInfoByComicId<'a> {
 }
 
 impl<'a> Step for FindPinnedInfoByComicId<'a> {
-    type Output = Option<ChapterInfo>;
+    type Output = Option<chapter_model::Info>;
 }
 
 /// Step that batch-queries pinned chapters by comic IDs.
@@ -94,12 +91,12 @@ pub struct ListPinnedInfosByComicIds<'a> {
 }
 
 impl<'a> Step for ListPinnedInfosByComicIds<'a> {
-    type Output = HashMap<String, ChapterInfo>;
+    type Output = HashMap<String, chapter_model::Info>;
 }
 
 /// Step that updates chapter metadata fields.
 pub struct UpdateInfo<'a> {
-    pub update: &'a ChapterInfoUpdate,
+    pub update: &'a chapter_model::InfoUpdate,
 }
 
 impl<'a> Step for UpdateInfo<'a> {
@@ -108,7 +105,7 @@ impl<'a> Step for UpdateInfo<'a> {
 
 /// Step that updates chapter workflow phase fields.
 pub struct UpdateStage<'a> {
-    pub update: &'a ChapterStageUpdate,
+    pub update: &'a chapter_model::StageUpdate,
 }
 
 impl<'a> Step for UpdateStage<'a> {
@@ -131,7 +128,7 @@ impl<'a> Step for SetPageCounters<'a> {
 /// Step that adjusts unit counters for one chapter by delta.
 pub struct AdjustUnitCounters<'a> {
     pub id: &'a str,
-    pub delta: UnitCounterDelta,
+    pub delta: unit_model::CounterDelta,
 }
 
 impl<'a> Step for AdjustUnitCounters<'a> {
@@ -162,12 +159,12 @@ pub struct ChapterStep;
 
 impl ChapterStep {
     /// Constructs a step to list chapters with include options and pagination.
-    pub fn list_infos<'a>(spec: &'a ChapterListSpec) -> ListInfos<'a> {
+    pub fn list_infos<'a>(spec: &'a chapter_model::ListSpec) -> ListInfos<'a> {
         ListInfos { spec }
     }
 
     /// Constructs a step to insert a new chapter.
-    pub fn create<'a>(form: &'a ChapterForm) -> Create<'a> {
+    pub fn create<'a>(form: &'a chapter_model::Form) -> Create<'a> {
         Create { form }
     }
 
@@ -231,12 +228,16 @@ impl ChapterStep {
     }
 
     /// Constructs a step to update chapter metadata.
-    pub fn update_info<'a>(update: &'a ChapterInfoUpdate) -> UpdateInfo<'a> {
+    pub fn update_info<'a>(
+        update: &'a chapter_model::InfoUpdate,
+    ) -> UpdateInfo<'a> {
         UpdateInfo { update }
     }
 
     /// Constructs a step to update chapter workflow phases.
-    pub fn update_stage<'a>(update: &'a ChapterStageUpdate) -> UpdateStage<'a> {
+    pub fn update_stage<'a>(
+        update: &'a chapter_model::StageUpdate,
+    ) -> UpdateStage<'a> {
         UpdateStage { update }
     }
 
@@ -260,7 +261,7 @@ impl ChapterStep {
     /// Constructs a step to adjust unit counters by delta.
     pub fn adjust_unit_counters<'a>(
         id: &'a str,
-        delta: UnitCounterDelta,
+        delta: unit_model::CounterDelta,
     ) -> AdjustUnitCounters<'a> {
         AdjustUnitCounters { id, delta }
     }

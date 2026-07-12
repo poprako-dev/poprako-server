@@ -6,7 +6,7 @@ use std::cmp::Reverse;
 use async_trait::async_trait;
 use time::{Duration, OffsetDateTime};
 
-use crate::model::system_mail::{SystemMailForm, SystemMailInfo};
+use crate::model::system_mail_model;
 use crate::part::repo::step::system_mail::{
     ListInfosByReceiverId, MarkRead, Send, SendBatch,
 };
@@ -24,8 +24,8 @@ impl SystemMailRepo<MockContext> for Mock {}
 impl SystemMailRepoTransactional<MockContext> for MockTransactional {}
 
 /// Appends a new system mail as unread to the in-memory store.
-fn insert_mail(state: &mut MockState, form: &SystemMailForm) {
-    state.system_mails.push(SystemMailInfo {
+fn insert_mail(state: &mut MockState, form: &system_mail_model::Form) {
+    state.system_mails.push(system_mail_model::Info {
         id: form.id.clone(),
         receiver_id: form.receiver_id.clone(),
         read: false,
@@ -102,11 +102,11 @@ impl<'a> Execute<ListInfosByReceiverId<'a>> for Mock {
     async fn execute(
         &self,
         step: &ListInfosByReceiverId<'a>,
-    ) -> Result<Vec<SystemMailInfo>, Self::Error> {
+    ) -> Result<Vec<system_mail_model::Info>, Self::Error> {
         //
         let state = self.state.lock().unwrap();
 
-        let mut mails: Vec<SystemMailInfo> = state
+        let mut mails: Vec<system_mail_model::Info> = state
             .system_mails
             .iter()
             .filter(|mail| {
@@ -175,8 +175,8 @@ fn mail_info(
     receiver_id: &str,
     read: bool,
     created_at: OffsetDateTime,
-) -> SystemMailInfo {
-    SystemMailInfo {
+) -> system_mail_model::Info {
+    system_mail_model::Info {
         id: id.into(),
         receiver_id: receiver_id.into(),
         read,
@@ -186,8 +186,8 @@ fn mail_info(
     }
 }
 
-fn mail_form(id: &str, receiver_id: &str) -> SystemMailForm {
-    SystemMailForm {
+fn mail_form(id: &str, receiver_id: &str) -> system_mail_model::Form {
+    system_mail_model::Form {
         id: id.into(),
         receiver_id: receiver_id.into(),
         title: "title".into(),

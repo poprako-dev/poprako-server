@@ -2,7 +2,7 @@
 
 use super::*;
 
-use crate::model::system_mail::SystemMailForm;
+use crate::model::system_mail_model;
 use crate::part::repo::step::system_mail::SystemMailStep;
 use crate::part::shared::execute::Execute;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
@@ -20,7 +20,7 @@ async fn system_mail_roundtrip_reads_test_database_url() {
 
     let repo = RdbRepo::new(shared.clone());
 
-    let system_mail_form = SystemMailForm {
+    let system_mail_form = system_mail_model::Form {
         id: format!("{}system-mail", PREFIX),
         receiver_id: user_fixture.user_form.id.clone(),
         title: "RDB Mail".into(),

@@ -5,13 +5,10 @@ use poprako_transactional::drive::Drive;
 
 use crate::complex::assignment::AssignmentComplex;
 use crate::complex::chapter::{ChapterComplex, ChapterPermComplex};
-use crate::data::chapter::{
-    ChapterInfoVal, CreateChapterData, CreateChapterVal, ListChapterInfosData,
-    PatchChapterInfoData, UpdateChapterStageData,
-};
-use crate::model::assignment::AssignmentForm;
-use crate::model::chapter::{ChapterForm, ChapterInfoUpdate, ChapterListSpec};
-use crate::model::user::UserToken;
+use crate::data::chapter_data;
+use crate::model::assignment_model;
+use crate::model::chapter_model;
+use crate::model::user_model;
 use crate::part::effect::event::Event;
 use crate::part::effect::event::chapter::{
     ChapterPublishedPayload, ChapterWorkflowCompletedPayload,
@@ -46,9 +43,9 @@ mod tests;
 pub async fn list_infos<C, R, I>(
     repo: &R,
     image_pool: &I,
-    token: UserToken,
-    data: ListChapterInfosData,
-) -> RegularResult<Vec<ChapterInfoVal>>
+    token: user_model::Token,
+    data: chapter_data::ListInfosData,
+) -> RegularResult<Vec<chapter_data::InfoVal>>
 where
     R: ChapterRepo<C> + ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Sync,
     <R as DeriveTransactional>::Transactional: ChapterRepoTransactional<C>
@@ -66,7 +63,7 @@ where
     )
     .await?;
 
-    let spec = ChapterListSpec {
+    let spec = chapter_model::ListSpec {
         comic_id: data.comic_id,
         incl_opt: data.incl_opt,
         offset: data.offset,
@@ -78,8 +75,9 @@ where
     let mut chapter_info_vals = Vec::with_capacity(chapter_infos.len());
 
     for chapter_info in chapter_infos {
-        chapter_info_vals
-            .push(ChapterInfoVal::from_model(image_pool, chapter_info).await?);
+        chapter_info_vals.push(
+            chapter_data::InfoVal::from_model(image_pool, chapter_info).await?,
+        );
     }
 
     Ok(chapter_info_vals)
@@ -88,9 +86,9 @@ where
 /// Fetches a chapter by ID.
 pub async fn get_info<C, R>(
     repo: &R,
-    token: UserToken,
+    token: user_model::Token,
     id: String,
-) -> RegularResult<ChapterInfoVal>
+) -> RegularResult<chapter_data::InfoVal>
 where
     R: ChapterRepo<C> + ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Sync,
     <R as DeriveTransactional>::Transactional: ChapterRepoTransactional<C>
@@ -110,15 +108,15 @@ where
     let chapter_info =
         repo.execute(&ChapterStep::get_info_by_id(&id, &[])).await?;
 
-    Ok(ChapterInfoVal::from(chapter_info))
+    Ok(chapter_data::InfoVal::from(chapter_info))
 }
 
 /// Fetches the pinned chapter under one comic.
 pub async fn get_pinned<C, R>(
     repo: &R,
-    token: UserToken,
+    token: user_model::Token,
     comic_id: String,
-) -> RegularResult<Option<ChapterInfoVal>>
+) -> RegularResult<Option<chapter_data::InfoVal>>
 where
     R: ChapterRepo<C> + ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Sync,
     <R as DeriveTransactional>::Transactional: ChapterRepoTransactional<C>
@@ -139,16 +137,16 @@ where
         .execute(&ChapterStep::find_pinned_info_by_comic_id(&comic_id, &[]))
         .await?;
 
-    Ok(chapter_info.map(ChapterInfoVal::from))
+    Ok(chapter_info.map(chapter_data::InfoVal::from))
 }
 
 /// Creates a new chapter.
 pub async fn create<D, C, R>(
     drive: &D,
     repo: &R,
-    token: UserToken,
-    data: CreateChapterData,
-) -> RegularResult<CreateChapterVal>
+    token: user_model::Token,
+    data: chapter_data::CreateData,
+) -> RegularResult<chapter_data::CreateVal>
 where
     D: Drive<C>,
     D::Error: Into<RegularError>,
@@ -208,7 +206,7 @@ where
             )
             .await?;
 
-            let chapter_form = ChapterForm {
+            let chapter_form = chapter_model::Form {
                 id: chapter_id,
                 comic_id: data.comic_id,
                 is_pinned: true,
@@ -233,7 +231,7 @@ where
             )
             .await?;
 
-            let assignment_form = AssignmentForm {
+            let assignment_form = assignment_model::Form {
                 id: AssignmentComplex::gen_id(),
                 chapter_id: chapter_info.id.clone(),
                 user_id: token.user_id,
@@ -247,15 +245,15 @@ where
         })
         .await?;
 
-    Ok(CreateChapterVal { id: chapter_id })
+    Ok(chapter_data::CreateVal { id: chapter_id })
 }
 
 /// Updates chapter metadata.
 pub async fn update_info<D, C, R>(
     drive: &D,
     repo: &R,
-    token: UserToken,
-    data: PatchChapterInfoData,
+    token: user_model::Token,
+    data: chapter_data::PatchInfoData,
 ) -> RegularResult<()>
 where
     D: Drive<C>,
@@ -291,7 +289,7 @@ where
 
             if data.subtitle.is_some() || data.pin.is_some() {
                 //
-                let chapter_info_update = ChapterInfoUpdate {
+                let chapter_info_update = chapter_model::InfoUpdate {
                     id: data.id.clone(),
                     subtitle: data.subtitle,
                     pin: data.pin,
@@ -343,8 +341,8 @@ pub async fn update_stage<D, C, R, P, V>(
     repo: &R,
     prom: &P,
     develop: &V,
-    token: UserToken,
-    data: UpdateChapterStageData,
+    token: user_model::Token,
+    data: chapter_data::UpdateStageData,
 ) -> RegularResult<()>
 where
     D: Drive<C>,
@@ -463,7 +461,7 @@ pub async fn delete<D, C, R, P>(
     drive: &D,
     repo: &R,
     prom: &P,
-    token: UserToken,
+    token: user_model::Token,
     id: String,
 ) -> RegularResult<()>
 where

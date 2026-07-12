@@ -8,9 +8,7 @@ use time::OffsetDateTime;
 use poprako_transactional::advance::Advance;
 
 use crate::complex::user::UserComplex;
-use crate::model::user::{
-    UserAvatarReservation, UserCredential, UserForm, UserInfo,
-};
+use crate::model::user_model;
 use crate::part::repo::step::user::{
     Create, Delete, FindInfoByQid, GetCredentialByQid, GetInfoById,
     GetInfoExcluded, MarkAvatarUploaded, ReserveAvatar, TouchLastActive,
@@ -38,7 +36,7 @@ impl UserRepoTransactional<RdbContext> for RdbRepoTransactional {}
 async fn get_info_by_id(
     conn: &mut RdbConn,
     id: &str,
-) -> RegularResult<UserInfo> {
+) -> RegularResult<user_model::Info> {
     //
     let row: UserRow = t_user
         .filter(f_id.eq(id))
@@ -56,7 +54,7 @@ async fn get_info_by_id(
 async fn get_credential_by_qid(
     conn: &mut RdbConn,
     qid: &str,
-) -> RegularResult<UserCredential> {
+) -> RegularResult<user_model::Credential> {
     //
     let row: UserCredentialRow = t_user
         .filter(f_qid.eq(qid))
@@ -74,7 +72,7 @@ async fn get_credential_by_qid(
 async fn find_info_by_qid(
     conn: &mut RdbConn,
     qid: &str,
-) -> RegularResult<Option<UserInfo>> {
+) -> RegularResult<Option<user_model::Info>> {
     //
     let row: Option<UserRow> = t_user
         .filter(f_qid.eq(qid))
@@ -90,8 +88,8 @@ async fn find_info_by_qid(
 /// Insert a new user and return its info.
 async fn create(
     conn: &mut RdbConn,
-    form: &UserForm,
-) -> RegularResult<UserInfo> {
+    form: &user_model::Form,
+) -> RegularResult<user_model::Info> {
     //
     let now = OffsetDateTime::now_utc();
 
@@ -142,7 +140,7 @@ async fn reserve_avatar(
     conn: &mut RdbConn,
     id: &str,
     file_ext: &str,
-) -> RegularResult<UserAvatarReservation> {
+) -> RegularResult<user_model::AvatarReservation> {
     //
     let now = OffsetDateTime::now_utc();
 
@@ -167,7 +165,7 @@ async fn reserve_avatar(
         .await
         .map_err(diesel)?;
 
-    Ok(UserAvatarReservation {
+    Ok(user_model::AvatarReservation {
         object_key,
         prev_object_key: prev_key,
         avatar_version: new_version,
@@ -220,7 +218,7 @@ async fn touch_last_active(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
 async fn get_info_by_id_excluded(
     conn: &mut RdbConn,
     id: &str,
-) -> RegularResult<UserInfo> {
+) -> RegularResult<user_model::Info> {
     //
     let row: UserRow = t_user
         .filter(f_id.eq(id))
@@ -255,7 +253,7 @@ impl<'a> Execute<GetInfoById<'a>> for RdbRepo {
     async fn execute(
         &self,
         step: &GetInfoById<'a>,
-    ) -> Result<UserInfo, Self::Error> {
+    ) -> Result<user_model::Info, Self::Error> {
         submit_query!(self.core, get_info_by_id, step.id)
     }
 }
@@ -267,7 +265,7 @@ impl<'a> Execute<GetCredentialByQid<'a>> for RdbRepo {
     async fn execute(
         &self,
         step: &GetCredentialByQid<'a>,
-    ) -> Result<UserCredential, Self::Error> {
+    ) -> Result<user_model::Credential, Self::Error> {
         submit_query!(self.core, get_credential_by_qid, step.qid)
     }
 }
@@ -279,7 +277,7 @@ impl<'a> Execute<FindInfoByQid<'a>> for RdbRepo {
     async fn execute(
         &self,
         step: &FindInfoByQid<'a>,
-    ) -> Result<Option<UserInfo>, Self::Error> {
+    ) -> Result<Option<user_model::Info>, Self::Error> {
         submit_query!(self.core, find_info_by_qid, step.qid)
     }
 }
@@ -303,7 +301,7 @@ impl<'a> Advance<Create<'a>, RdbContext> for RdbRepoTransactional {
         &self,
         context: &mut RdbContext,
         step: &Create<'a>,
-    ) -> RegularResult<UserInfo> {
+    ) -> RegularResult<user_model::Info> {
         create(context.conn(), step.form).await
     }
 }
@@ -316,7 +314,7 @@ impl<'a> Advance<FindInfoByQid<'a>, RdbContext> for RdbRepoTransactional {
         &self,
         context: &mut RdbContext,
         step: &FindInfoByQid<'a>,
-    ) -> RegularResult<Option<UserInfo>> {
+    ) -> RegularResult<Option<user_model::Info>> {
         find_info_by_qid(context.conn(), step.qid).await
     }
 }
@@ -342,7 +340,7 @@ impl<'a> Advance<ReserveAvatar<'a>, RdbContext> for RdbRepoTransactional {
         &self,
         context: &mut RdbContext,
         step: &ReserveAvatar<'a>,
-    ) -> RegularResult<UserAvatarReservation> {
+    ) -> RegularResult<user_model::AvatarReservation> {
         reserve_avatar(context.conn(), step.id, step.file_ext).await
     }
 }
@@ -381,7 +379,7 @@ impl<'a> Advance<GetInfoExcluded<'a>, RdbContext> for RdbRepoTransactional {
         &self,
         context: &mut RdbContext,
         step: &GetInfoExcluded<'a>,
-    ) -> RegularResult<UserInfo> {
+    ) -> RegularResult<user_model::Info> {
         get_info_by_id_excluded(context.conn(), step.id).await
     }
 }

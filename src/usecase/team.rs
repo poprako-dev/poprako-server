@@ -9,14 +9,10 @@ use poprako_util::page::Page;
 use crate::complex::image::ImageComplex;
 use crate::complex::member::MemberComplex;
 use crate::complex::team::{TeamComplex, TeamPermComplex};
-use crate::data::team::{
-    CreateTeamData, ListTeamInfosData, MarkTeamAvatarUploadedData,
-    ReserveTeamAvatarData, ReserveTeamAvatarVal, TeamInfoVal,
-    UpdateTeamInfoData,
-};
-use crate::model::member::MemberForm;
-use crate::model::team::{TeamForm, TeamInfo};
-use crate::model::user::UserToken;
+use crate::data::team_data;
+use crate::model::member_model;
+use crate::model::team_model;
+use crate::model::user_model;
 use crate::part::image::ImagePool;
 use crate::part::prom::task::{IMAGE_TOPIC, ImageKind, ImageTask};
 use crate::part::prom::{Payload, Prom, PromStep};
@@ -57,9 +53,9 @@ pub async fn create<D, C, R, I>(
     drive: &D,
     repo: &R,
     image_pool: &I,
-    token: UserToken,
-    data: CreateTeamData,
-) -> RegularResult<TeamInfoVal>
+    token: user_model::Token,
+    data: team_data::CreateData,
+) -> RegularResult<team_data::InfoVal>
 where
     D: Drive<C>,
     D::Error: Into<RegularError>,
@@ -77,14 +73,14 @@ where
     TeamPermComplex::can_user_list_all(&mut repo.as_proxy(), &token.user_id)
         .await?;
 
-    let team_form = TeamForm {
+    let team_form = team_model::Form {
         id: TeamComplex::gen_id(),
         name: data.name,
         description: data.description,
     };
 
-    let team_info: TeamInfo = drive
-        .with_context(async move |context| -> RegularResult<TeamInfo> {
+    let team_info: team_model::Info = drive
+        .with_context(async move |context| -> RegularResult<team_model::Info> {
             //
             let repo = repo.derive_transactional().await;
 
@@ -95,7 +91,7 @@ where
             let team_info =
                 repo.advance(context, &TeamStep::create(&team_form)).await?;
 
-            let member_form = MemberForm {
+            let member_form = member_model::Form {
                 id: MemberComplex::gen_id(),
                 user_id: token.user_id,
                 user_nickname: user_info.nickname,
@@ -110,7 +106,7 @@ where
         })
         .await?;
 
-    TeamInfoVal::from_model(image_pool, team_info).await
+    team_data::InfoVal::from_model(image_pool, team_info).await
 }
 
 /// Fetches a team by ID with avatar URL resolution.
@@ -126,13 +122,13 @@ pub async fn get_info<C, R, I>(
     repo: &R,
     image_pool: &I,
     id: String,
-) -> RegularResult<TeamInfoVal>
+) -> RegularResult<team_data::InfoVal>
 where
     R: TeamRepo<C>,
     <R as DeriveTransactional>::Transactional: TeamRepoTransactional<C>,
     I: ImagePool,
 {
-    TeamInfoVal::from_model(
+    team_data::InfoVal::from_model(
         image_pool,
         repo.execute(&TeamStep::get_info_by_id(&id)).await?,
     )
@@ -150,9 +146,9 @@ where
 pub async fn list_infos<C, R, I>(
     repo: &R,
     image_pool: &I,
-    token: UserToken,
-    data: ListTeamInfosData,
-) -> RegularResult<Vec<TeamInfoVal>>
+    token: user_model::Token,
+    data: team_data::ListInfosData,
+) -> RegularResult<Vec<team_data::InfoVal>>
 where
     R: TeamRepo<C> + UserRepo<C> + Sync,
     <R as DeriveTransactional>::Transactional:
@@ -161,7 +157,6 @@ where
 {
     if data.user_id.is_none() {
         //
-        // TODO: comment
         use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
         TeamPermComplex::can_user_list_all(
@@ -181,14 +176,13 @@ where
         ))
         .await?;
 
-    let team_info_vals = futures_util::future::join_all(
-        team_infos
-            .into_iter()
-            .map(|team_info| TeamInfoVal::from_model(image_pool, team_info)),
-    )
-    .await
-    .into_iter()
-    .collect::<RegularResult<Vec<_>>>()?;
+    let team_info_vals =
+        futures_util::future::join_all(team_infos.into_iter().map(
+            |team_info| team_data::InfoVal::from_model(image_pool, team_info),
+        ))
+        .await
+        .into_iter()
+        .collect::<RegularResult<Vec<_>>>()?;
 
     Ok(team_info_vals)
 }
@@ -203,8 +197,8 @@ where
 /// * `R: TeamRepo<C>` — Team storage.
 pub async fn update_info<C, R>(
     repo: &R,
-    token: UserToken,
-    data: UpdateTeamInfoData,
+    token: user_model::Token,
+    data: team_data::UpdateInfoData,
 ) -> RegularResult<()>
 where
     R: TeamRepo<C> + MemberRepo<C> + Sync,
@@ -220,6 +214,7 @@ where
     )
     .await?;
 
+    // FIXME: use TeamInfoUpdate instead.
     repo.execute(&TeamStep::update_info(
         &data.id,
         &data.name,
@@ -255,10 +250,10 @@ pub async fn reserve_avatar<D, C, R, P, I>(
     repo: &R,
     prom: &P,
     image_pool: &I,
-    token: UserToken,
+    token: user_model::Token,
     id: String,
-    data: ReserveTeamAvatarData,
-) -> RegularResult<ReserveTeamAvatarVal>
+    data: team_data::ReserveAvatarData,
+) -> RegularResult<team_data::ReserveAvatarVal>
 where
     D: Drive<C>,
     D::Error: Into<RegularError>,
@@ -343,7 +338,7 @@ where
 
     let put_url = image_pool.put_signed(&object_key).await?.to_string();
 
-    Ok(ReserveTeamAvatarVal {
+    Ok(team_data::ReserveAvatarVal {
         put_url,
         avatar_version,
     })
@@ -360,9 +355,9 @@ where
 /// * `R: TeamRepo<C>` — Team storage.
 pub async fn mark_avatar_uploaded<C, R>(
     repo: &R,
-    token: UserToken,
+    token: user_model::Token,
     id: String,
-    data: MarkTeamAvatarUploadedData,
+    data: team_data::MarkAvatarUploadedData,
 ) -> RegularResult<()>
 where
     R: TeamRepo<C> + MemberRepo<C> + Sync,
@@ -404,7 +399,7 @@ pub async fn delete<D, C, R, P>(
     drive: &D,
     repo: &R,
     prom: &P,
-    token: UserToken,
+    token: user_model::Token,
     id: String,
 ) -> RegularResult<()>
 where

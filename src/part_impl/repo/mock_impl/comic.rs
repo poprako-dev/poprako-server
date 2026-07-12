@@ -5,10 +5,10 @@ use async_trait::async_trait;
 use poprako_transactional::advance::Advance;
 
 use crate::complex::comic::ComicComplex;
-use crate::model::comic::{ComicCoverReservation, ComicInfo, ComicListKind};
-use crate::model::team::TeamInfo;
-use crate::model::user::UserInfo;
-use crate::model::workset::WorksetInfo;
+use crate::model::comic_model;
+use crate::model::team_model;
+use crate::model::user_model;
+use crate::model::workset_model;
 use crate::part::repo::comic::{ComicRepo, ComicRepoTransactional};
 use crate::part::repo::step::comic::{
     Create, Delete, GetInfoById, GetInfoExcluded, IncrChapterNextIndex,
@@ -28,7 +28,10 @@ impl ComicRepo<MockContext> for Mock {}
 
 impl ComicRepoTransactional<MockContext> for MockTransactional {}
 
-fn find_workset(state: &MockState, workset_id: &str) -> Option<WorksetInfo> {
+fn find_workset(
+    state: &MockState,
+    workset_id: &str,
+) -> Option<workset_model::Info> {
     state
         .worksets
         .iter()
@@ -38,8 +41,8 @@ fn find_workset(state: &MockState, workset_id: &str) -> Option<WorksetInfo> {
 
 fn find_team_for_workset(
     state: &MockState,
-    workset: &WorksetInfo,
-) -> Option<TeamInfo> {
+    workset: &workset_model::Info,
+) -> Option<team_model::Info> {
     state
         .teams
         .iter()
@@ -47,7 +50,7 @@ fn find_team_for_workset(
         .cloned()
 }
 
-fn find_user(state: &MockState, user_id: &str) -> Option<UserInfo> {
+fn find_user(state: &MockState, user_id: &str) -> Option<user_model::Info> {
     state
         .users
         .iter()
@@ -57,7 +60,7 @@ fn find_user(state: &MockState, user_id: &str) -> Option<UserInfo> {
 
 fn apply_workset_incl(
     state: &MockState,
-    comic_info: &mut ComicInfo,
+    comic_info: &mut comic_model::Info,
     include_workset: bool,
 ) {
     //
@@ -70,7 +73,7 @@ fn apply_workset_incl(
 
 fn apply_team_incl(
     state: &MockState,
-    comic_info: &mut ComicInfo,
+    comic_info: &mut comic_model::Info,
     include_team: bool,
 ) {
     //
@@ -89,7 +92,7 @@ fn apply_team_incl(
 
 fn apply_creator_incl(
     state: &MockState,
-    comic_info: &mut ComicInfo,
+    comic_info: &mut comic_model::Info,
     include_creator: bool,
 ) {
     //
@@ -102,7 +105,7 @@ fn apply_creator_incl(
 
 fn apply_comic_incls(
     state: &MockState,
-    comic_info: &mut ComicInfo,
+    comic_info: &mut comic_model::Info,
     incl_opt: &[ComicInclOpt],
 ) {
     //
@@ -132,14 +135,14 @@ fn apply_comic_incls(
 
 fn comic_matches_kind(
     state: &MockState,
-    comic_info: &ComicInfo,
-    kind: &ComicListKind,
+    comic_info: &comic_model::Info,
+    kind: &comic_model::ListKind,
 ) -> bool {
     match kind {
         //
-        ComicListKind::All => true,
+        comic_model::ListKind::All => true,
 
-        ComicListKind::Stages(stage_mask) => state
+        comic_model::ListKind::Stages(stage_mask) => state
             .chapters
             .iter()
             .find(|chapter_info| {
@@ -150,7 +153,10 @@ fn comic_matches_kind(
     }
 }
 
-fn comic_matches_fuzzy(comic_info: &ComicInfo, fuzzy_title: &str) -> bool {
+fn comic_matches_fuzzy(
+    comic_info: &comic_model::Info,
+    fuzzy_title: &str,
+) -> bool {
     //
     let composed_title = ComicComplex::compose_title(
         comic_info.index,
@@ -207,7 +213,7 @@ impl<'a> Execute<GetInfoById<'a>> for Mock {
     async fn execute(
         &self,
         step: &GetInfoById<'a>,
-    ) -> Result<ComicInfo, Self::Error> {
+    ) -> Result<comic_model::Info, Self::Error> {
         //
         let state = self.state.lock().unwrap();
 
@@ -231,7 +237,7 @@ impl<'a> Execute<ListInfos<'a>> for Mock {
     async fn execute(
         &self,
         step: &ListInfos<'a>,
-    ) -> Result<Vec<ComicInfo>, Self::Error> {
+    ) -> Result<Vec<comic_model::Info>, Self::Error> {
         //
         let state = self.state.lock().unwrap();
 
@@ -324,7 +330,7 @@ impl<'a> Advance<Create<'a>, MockContext> for MockTransactional {
         &self,
         context: &mut MockContext,
         step: &Create<'a>,
-    ) -> Result<ComicInfo, Self::Error> {
+    ) -> Result<comic_model::Info, Self::Error> {
         //
         if context
             .state
@@ -337,7 +343,7 @@ impl<'a> Advance<Create<'a>, MockContext> for MockTransactional {
 
         let time = now();
 
-        let comic = ComicInfo {
+        let comic = comic_model::Info {
             id: step.form.id.clone(),
             workset_id: step.form.workset_id.clone(),
             index: step.form.index,
@@ -372,7 +378,7 @@ impl<'a> Advance<GetInfoById<'a>, MockContext> for MockTransactional {
         &self,
         context: &mut MockContext,
         step: &GetInfoById<'a>,
-    ) -> Result<ComicInfo, Self::Error> {
+    ) -> Result<comic_model::Info, Self::Error> {
         //
         let mut info = context
             .state
@@ -396,7 +402,7 @@ impl<'a> Advance<GetInfoExcluded<'a>, MockContext> for MockTransactional {
         &self,
         context: &mut MockContext,
         step: &GetInfoExcluded<'a>,
-    ) -> Result<ComicInfo, Self::Error> {
+    ) -> Result<comic_model::Info, Self::Error> {
         //
         let mut info = context
             .state
@@ -420,7 +426,7 @@ impl<'a> Advance<ListInfosExcluded<'a>, MockContext> for MockTransactional {
         &self,
         context: &mut MockContext,
         step: &ListInfosExcluded<'a>,
-    ) -> Result<Vec<ComicInfo>, Self::Error> {
+    ) -> Result<Vec<comic_model::Info>, Self::Error> {
         //
         let mut comics = context
             .state
@@ -473,7 +479,7 @@ impl<'a> Advance<ReserveCover<'a>, MockContext> for MockTransactional {
         &self,
         context: &mut MockContext,
         step: &ReserveCover<'a>,
-    ) -> Result<ComicCoverReservation, Self::Error> {
+    ) -> Result<comic_model::CoverReservation, Self::Error> {
         //
         let comic = context
             .state
@@ -500,7 +506,7 @@ impl<'a> Advance<ReserveCover<'a>, MockContext> for MockTransactional {
 
         comic.updated_at = now();
 
-        Ok(ComicCoverReservation {
+        Ok(comic_model::CoverReservation {
             object_key,
             prev_object_key,
             cover_version,

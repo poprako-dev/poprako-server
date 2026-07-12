@@ -6,14 +6,9 @@ use poprako_util::i18n::trl;
 
 use crate::complex::assignment::{AssignmentComplex, AssignmentPermComplex};
 use crate::complex::chapter::ChapterPermComplex;
-use crate::data::assignment::{
-    AssignmentInfoVal, JoinChapterData, ListAssignmentInfosData,
-    UpdateAssignmentRolesData,
-};
-use crate::model::assignment::{
-    AssignmentForm, AssignmentInfo, AssignmentListSpec, AssignmentRoleUpdate,
-};
-use crate::model::user::UserToken;
+use crate::data::assignment_data;
+use crate::model::assignment_model;
+use crate::model::user_model;
 use crate::part::image::ImagePool;
 use crate::part::repo::assignment::{
     AssignmentRepo, AssignmentRepoTransactional,
@@ -35,9 +30,9 @@ mod tests;
 pub async fn list_infos<C, R, I>(
     repo: &R,
     image_pool: &I,
-    token: UserToken,
-    data: ListAssignmentInfosData,
-) -> RegularResult<Vec<AssignmentInfoVal>>
+    token: user_model::Token,
+    data: assignment_data::ListInfosData,
+) -> RegularResult<Vec<assignment_data::InfoVal>>
 where
     R: AssignmentRepo<C>
         + ChapterRepo<C>
@@ -54,7 +49,7 @@ where
         + UserRepoTransactional<C>,
     I: ImagePool,
 {
-    let assignment_list_spec: AssignmentListSpec = data.try_into()?;
+    let assignment_list_spec: assignment_model::ListSpec = data.try_into()?;
 
     use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
@@ -73,7 +68,8 @@ where
 
     for assignment_info in assignment_infos {
         assignment_info_vals.push(
-            AssignmentInfoVal::from_model(image_pool, assignment_info).await?,
+            assignment_data::InfoVal::from_model(image_pool, assignment_info)
+                .await?,
         );
     }
 
@@ -84,9 +80,9 @@ where
 pub async fn join<D, C, R>(
     drive: &D,
     repo: &R,
-    token: UserToken,
-    data: JoinChapterData,
-) -> RegularResult<AssignmentInfoVal>
+    token: user_model::Token,
+    data: assignment_data::JoinChapterData,
+) -> RegularResult<assignment_data::InfoVal>
 where
     D: Drive<C>,
     D::Error: Into<RegularError>,
@@ -129,66 +125,69 @@ where
     .await?;
 
     let assignment_info = drive
-        .with_context(async move |context| -> RegularResult<AssignmentInfo> {
-            //
-            let repo = repo.derive_transactional().await;
-
-            let existing_assignment_info = repo
-                .advance(
-                    context,
-                    &AssignmentStep::get_info_by_chapter_id_and_user_id(
-                        &data.chapter_id,
-                        &token.user_id,
-                    ),
-                )
-                .await?;
-
-            let assignment_info = match existing_assignment_info {
+        .with_context(
+            async move |context| -> RegularResult<assignment_model::Info> {
                 //
-                Some(existing_assignment_info) => {
-                    //
-                    let assignment_role_update = AssignmentComplex::merge_roles(
-                        &existing_assignment_info,
-                        data.roles,
-                    );
+                let repo = repo.derive_transactional().await;
 
-                    repo.advance(
+                let existing_assignment_info = repo
+                    .advance(
                         context,
-                        &AssignmentStep::put_roles(&assignment_role_update),
+                        &AssignmentStep::get_info_by_chapter_id_and_user_id(
+                            &data.chapter_id,
+                            &token.user_id,
+                        ),
                     )
-                    .await?
-                }
+                    .await?;
 
-                None => {
+                let assignment_info = match existing_assignment_info {
                     //
-                    let assignment_form = AssignmentForm {
-                        id: AssignmentComplex::gen_id(),
-                        chapter_id: data.chapter_id,
-                        user_id: token.user_id,
-                        roles: data.roles,
-                    };
+                    Some(existing_assignment_info) => {
+                        //
+                        let assignment_role_update =
+                            AssignmentComplex::merge_roles(
+                                &existing_assignment_info,
+                                data.roles,
+                            );
 
-                    repo.advance(
-                        context,
-                        &AssignmentStep::create(&assignment_form),
-                    )
-                    .await?
-                }
-            };
+                        repo.advance(
+                            context,
+                            &AssignmentStep::put_roles(&assignment_role_update),
+                        )
+                        .await?
+                    }
 
-            Ok(assignment_info)
-        })
+                    None => {
+                        //
+                        let assignment_form = assignment_model::Form {
+                            id: AssignmentComplex::gen_id(),
+                            chapter_id: data.chapter_id,
+                            user_id: token.user_id,
+                            roles: data.roles,
+                        };
+
+                        repo.advance(
+                            context,
+                            &AssignmentStep::create(&assignment_form),
+                        )
+                        .await?
+                    }
+                };
+
+                Ok(assignment_info)
+            },
+        )
         .await?;
 
-    Ok(AssignmentInfoVal::from(assignment_info))
+    Ok(assignment_data::InfoVal::from(assignment_info))
 }
 
 /// Updates assignment roles.
 pub async fn update_roles<D, C, R>(
     drive: &D,
     repo: &R,
-    token: UserToken,
-    data: UpdateAssignmentRolesData,
+    token: user_model::Token,
+    data: assignment_data::UpdateRolesData,
 ) -> RegularResult<()>
 where
     D: Drive<C>,
@@ -265,7 +264,7 @@ where
                         return Err(assignment_admin_required_error());
                     }
 
-                    let assignment_role_update = AssignmentRoleUpdate {
+                    let assignment_role_update = assignment_model::RoleUpdate {
                         id: assignment_info.id.clone(),
                         roles: data.roles,
                     };
@@ -287,7 +286,7 @@ where
                         return Err(assignment_admin_required_error());
                     }
 
-                    let assignment_form = AssignmentForm {
+                    let assignment_form = assignment_model::Form {
                         id: AssignmentComplex::gen_id(),
                         chapter_id: data.chapter_id,
                         user_id: data.user_id,
@@ -321,7 +320,7 @@ fn assignment_admin_required_error() -> RegularError {
 pub async fn delete<D, C, R>(
     drive: &D,
     repo: &R,
-    token: UserToken,
+    token: user_model::Token,
     id: String,
 ) -> RegularResult<()>
 where

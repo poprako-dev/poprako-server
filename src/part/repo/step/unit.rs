@@ -3,9 +3,7 @@
 use poprako_transactional::step::Step;
 use poprako_util::page::Page;
 
-use crate::model::unit::{
-    UnitCounters, UnitIndex, UnitIndexUpdate, UnitInfo, UnitPayload,
-};
+use crate::model::unit_model;
 
 /// Step that lists units by page ID.
 pub struct ListInfosByPageId<'a> {
@@ -15,7 +13,7 @@ pub struct ListInfosByPageId<'a> {
 }
 
 impl<'a> Step for ListInfosByPageId<'a> {
-    type Output = Vec<UnitInfo>;
+    type Output = Vec<unit_model::Info>;
 }
 
 /// Step that lists all units by page ID (no pagination).
@@ -24,14 +22,14 @@ pub struct ListAllInfosByPageId<'a> {
 }
 
 impl<'a> Step for ListAllInfosByPageId<'a> {
-    type Output = Vec<UnitInfo>;
+    type Output = Vec<unit_model::Info>;
 }
 
 /// Step that creates one unit row.
 pub struct CreateInfo<'a> {
     pub page_id: &'a str,
     pub id: &'a str,
-    pub payload: &'a UnitPayload,
+    pub payload: &'a unit_model::Payload,
 }
 
 impl<'a> Step for CreateInfo<'a> {
@@ -42,7 +40,7 @@ impl<'a> Step for CreateInfo<'a> {
 pub struct SaveInfo<'a> {
     pub page_id: &'a str,
     pub id: &'a str,
-    pub payload: &'a UnitPayload,
+    pub payload: &'a unit_model::Payload,
 }
 
 impl<'a> Step for SaveInfo<'a> {
@@ -65,13 +63,13 @@ pub struct ListIndexesByPageId<'a> {
 }
 
 impl<'a> Step for ListIndexesByPageId<'a> {
-    type Output = Vec<UnitIndex>;
+    type Output = Vec<unit_model::Index>;
 }
 
 /// Step that updates changed indexes for one page ID.
 pub struct UpdateIndexesByPageId<'a> {
     pub page_id: &'a str,
-    pub updates: &'a [UnitIndexUpdate],
+    pub updates: &'a [unit_model::IndexUpdate],
 }
 
 impl<'a> Step for UpdateIndexesByPageId<'a> {
@@ -84,7 +82,7 @@ pub struct CountByPageId<'a> {
 }
 
 impl<'a> Step for CountByPageId<'a> {
-    type Output = UnitCounters;
+    type Output = unit_model::Counters;
 }
 
 /// Factory for constructing unit repository [`Step`] values.
@@ -110,7 +108,7 @@ impl UnitStep {
     pub fn create_info<'a>(
         page_id: &'a str,
         id: &'a str,
-        payload: &'a UnitPayload,
+        payload: &'a unit_model::Payload,
     ) -> CreateInfo<'a> {
         CreateInfo {
             page_id,
@@ -123,7 +121,7 @@ impl UnitStep {
     pub fn save_info<'a>(
         page_id: &'a str,
         id: &'a str,
-        payload: &'a UnitPayload,
+        payload: &'a unit_model::Payload,
     ) -> SaveInfo<'a> {
         SaveInfo {
             page_id,
@@ -150,7 +148,7 @@ impl UnitStep {
     /// Constructs a step to update changed indexes by page ID.
     pub fn update_indexes_by_page_id<'a>(
         page_id: &'a str,
-        updates: &'a [UnitIndexUpdate],
+        updates: &'a [unit_model::IndexUpdate],
     ) -> UpdateIndexesByPageId<'a> {
         UpdateIndexesByPageId { page_id, updates }
     }

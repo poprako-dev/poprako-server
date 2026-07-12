@@ -7,7 +7,7 @@ use async_trait::async_trait;
 use poprako_transactional::advance::Advance;
 
 use crate::complex::team::TeamComplex;
-use crate::model::team::{TeamAvatarReservation, TeamInfo};
+use crate::model::team_model;
 use crate::part::repo::step::team::{
     Create, Delete, GetInfoById, GetInfoExcluded, IncrementWorksetNextIndex,
     ListInfos, MarkAvatarUploaded, ReserveAvatar, UpdateInfo,
@@ -26,7 +26,7 @@ impl TeamRepoTransactional<MockContext> for MockTransactional {}
 fn create_team(
     state: &mut MockState,
     step: &Create<'_>,
-) -> RegularResult<TeamInfo> {
+) -> RegularResult<team_model::Info> {
     //
     if state.teams.iter().any(|team| team.id == step.form.id) {
         return Err(expected("error-already-exists"));
@@ -34,7 +34,7 @@ fn create_team(
 
     let time = now();
 
-    let team = TeamInfo {
+    let team = team_model::Info {
         id: step.form.id.clone(),
         name: step.form.name.clone(),
         description: step.form.description.clone(),
@@ -83,7 +83,7 @@ impl<'a> Execute<Create<'a>> for Mock {
     async fn execute(
         &self,
         step: &Create<'a>,
-    ) -> Result<TeamInfo, Self::Error> {
+    ) -> Result<team_model::Info, Self::Error> {
         //
         let mut state = self.state.lock().unwrap();
 
@@ -98,7 +98,7 @@ impl<'a> Execute<GetInfoById<'a>> for Mock {
     async fn execute(
         &self,
         step: &GetInfoById<'a>,
-    ) -> Result<TeamInfo, Self::Error> {
+    ) -> Result<team_model::Info, Self::Error> {
         //
         let state = self.state.lock().unwrap();
 
@@ -118,7 +118,7 @@ impl<'a> Execute<ListInfos<'a>> for Mock {
     async fn execute(
         &self,
         step: &ListInfos<'a>,
-    ) -> Result<Vec<TeamInfo>, Self::Error> {
+    ) -> Result<Vec<team_model::Info>, Self::Error> {
         //
         let state = self.state.lock().unwrap();
 
@@ -201,7 +201,7 @@ impl<'a> Advance<ReserveAvatar<'a>, MockContext> for MockTransactional {
         &self,
         context: &mut MockContext,
         step: &ReserveAvatar<'a>,
-    ) -> Result<TeamAvatarReservation, Self::Error> {
+    ) -> Result<team_model::AvatarReservation, Self::Error> {
         //
         let team = context
             .state
@@ -228,7 +228,7 @@ impl<'a> Advance<ReserveAvatar<'a>, MockContext> for MockTransactional {
 
         team.updated_at = now();
 
-        Ok(TeamAvatarReservation {
+        Ok(team_model::AvatarReservation {
             object_key,
             prev_object_key,
             avatar_version,
@@ -244,7 +244,7 @@ impl<'a> Advance<Create<'a>, MockContext> for MockTransactional {
         &self,
         context: &mut MockContext,
         step: &Create<'a>,
-    ) -> Result<TeamInfo, Self::Error> {
+    ) -> Result<team_model::Info, Self::Error> {
         create_team(&mut context.state, step)
     }
 }
@@ -274,7 +274,7 @@ impl<'a> Advance<GetInfoExcluded<'a>, MockContext> for MockTransactional {
         &self,
         context: &mut MockContext,
         step: &GetInfoExcluded<'a>,
-    ) -> Result<TeamInfo, Self::Error> {
+    ) -> Result<team_model::Info, Self::Error> {
         context
             .state
             .teams

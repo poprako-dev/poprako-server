@@ -7,9 +7,7 @@ use time::OffsetDateTime;
 
 use poprako_transactional::advance::Advance;
 
-use crate::model::assignment_invitation::{
-    AssignmentInvitationForm, AssignmentInvitationInfo,
-};
+use crate::model::assignment_invitation_model;
 use crate::part::repo::assignment_invitation::{
     AssignmentInvitationRepo, AssignmentInvitationRepoTransactional,
 };
@@ -38,14 +36,14 @@ impl AssignmentInvitationRepoTransactional<RdbContext>
 /// Converts a single `AssignmentInvitationRow` into an `AssignmentInvitationInfo`.
 fn row_into_info(
     row: AssignmentInvitationRow,
-) -> RegularResult<AssignmentInvitationInfo> {
+) -> RegularResult<assignment_invitation_model::Info> {
     row.try_into()
 }
 
 /// Converts a vector of `AssignmentInvitationRow` values into `AssignmentInvitationInfo`.
 fn rows_into_infos(
     rows: Vec<AssignmentInvitationRow>,
-) -> RegularResult<Vec<AssignmentInvitationInfo>> {
+) -> RegularResult<Vec<assignment_invitation_model::Info>> {
     rows.into_iter().map(row_into_info).collect()
 }
 
@@ -56,7 +54,7 @@ async fn list_infos(
     pending: Option<bool>,
     offset: u64,
     limit: u64,
-) -> RegularResult<Vec<AssignmentInvitationInfo>> {
+) -> RegularResult<Vec<assignment_invitation_model::Info>> {
     //
     let mut query = t_assignment_invitation
         .filter(f_chapter_id.eq(chapter_id))
@@ -82,7 +80,7 @@ async fn list_infos(
 async fn get_info_by_id(
     conn: &mut RdbConn,
     id: &str,
-) -> RegularResult<AssignmentInvitationInfo> {
+) -> RegularResult<assignment_invitation_model::Info> {
     //
     let row: AssignmentInvitationRow = t_assignment_invitation
         .filter(f_id.eq(id))
@@ -100,7 +98,7 @@ async fn get_info_by_id(
 async fn get_info_by_code_excluded(
     conn: &mut RdbConn,
     code: &str,
-) -> RegularResult<AssignmentInvitationInfo> {
+) -> RegularResult<assignment_invitation_model::Info> {
     //
     let row: AssignmentInvitationRow = t_assignment_invitation
         .filter(f_code.eq(code))
@@ -119,8 +117,8 @@ async fn get_info_by_code_excluded(
 /// Inserts a new assignment invitation row from the given form.
 async fn create(
     conn: &mut RdbConn,
-    form: &AssignmentInvitationForm,
-) -> RegularResult<AssignmentInvitationInfo> {
+    form: &assignment_invitation_model::Form,
+) -> RegularResult<assignment_invitation_model::Info> {
     //
     let entry = AssignmentInvitationEntry::from(form);
 
@@ -194,7 +192,7 @@ impl<'a> Execute<ListInfos<'a>> for RdbRepo {
     async fn execute(
         &self,
         step: &ListInfos<'a>,
-    ) -> RegularResult<Vec<AssignmentInvitationInfo>> {
+    ) -> RegularResult<Vec<assignment_invitation_model::Info>> {
         submit_query!(
             self.core,
             list_infos,
@@ -213,7 +211,7 @@ impl<'a> Execute<GetInfoById<'a>> for RdbRepo {
     async fn execute(
         &self,
         step: &GetInfoById<'a>,
-    ) -> RegularResult<AssignmentInvitationInfo> {
+    ) -> RegularResult<assignment_invitation_model::Info> {
         submit_query!(self.core, get_info_by_id, step.id)
     }
 }
@@ -226,7 +224,7 @@ impl<'a> Advance<Create<'a>, RdbContext> for RdbRepoTransactional {
         &self,
         context: &mut RdbContext,
         step: &Create<'a>,
-    ) -> RegularResult<AssignmentInvitationInfo> {
+    ) -> RegularResult<assignment_invitation_model::Info> {
         create(context.conn(), step.form).await
     }
 }
@@ -239,7 +237,7 @@ impl<'a> Advance<GetInfoById<'a>, RdbContext> for RdbRepoTransactional {
         &self,
         context: &mut RdbContext,
         step: &GetInfoById<'a>,
-    ) -> RegularResult<AssignmentInvitationInfo> {
+    ) -> RegularResult<assignment_invitation_model::Info> {
         get_info_by_id(context.conn(), step.id).await
     }
 }
@@ -254,7 +252,7 @@ impl<'a> Advance<GetInfoByCodeExcluded<'a>, RdbContext>
         &self,
         context: &mut RdbContext,
         step: &GetInfoByCodeExcluded<'a>,
-    ) -> RegularResult<AssignmentInvitationInfo> {
+    ) -> RegularResult<assignment_invitation_model::Info> {
         get_info_by_code_excluded(context.conn(), step.code).await
     }
 }

@@ -8,7 +8,7 @@ use fluent_templates::fluent_bundle::FluentValue;
 use poprako_util::i18n::{trl, trl_kv};
 
 use crate::complex::system_mail::SystemMailComplex;
-use crate::model::system_mail::SystemMailForm;
+use crate::model::system_mail_model;
 use crate::part::effect::event::user::{
     UserActivePayload, UserSignedUpPayload,
 };
@@ -73,7 +73,7 @@ where
         FluentValue::from(team_info.name.as_str()),
     );
 
-    let system_mail_form = SystemMailForm {
+    let system_mail_form = system_mail_model::Form {
         id: SystemMailComplex::gen_id(),
         receiver_id: payload.invitor_id,
         title: trl("mail-invitation-used-title"),

@@ -16,11 +16,8 @@ use crate::api::http::result::{
     Accept as _, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
-use crate::data::user::{
-    MarkUserAvatarUploadedData, ReserveUserAvatarData, ReserveUserAvatarVal,
-    UpdateUserInfoData, UserInfoVal,
-};
-use crate::model::user::UserToken;
+use crate::data::user_data;
+use crate::model::user_model;
 use crate::usecase;
 
 /// `GET /api/v1/users/me` — current user's profile.
@@ -29,15 +26,15 @@ use crate::usecase;
     path = "/api/v1/users/me",
     tag = "users",
     responses(
-        (status = 200, description = "Current user profile", body = HttpBody<UserInfoVal>),
+        (status = 200, description = "Current user profile", body = HttpBody<user_data::InfoVal>),
         (status = 401, description = "Authentication required"),
     ),
 ))]
 #[instrument(err, skip(harn))]
 pub async fn get_my_info(
     State(harn): State<AppHarn>,
-    Extension(user_token): Extension<UserToken>,
-) -> HttpResult<UserInfoVal> {
+    Extension(user_token): Extension<user_model::Token>,
+) -> HttpResult<user_data::InfoVal> {
     //
     let id = user_token.user_id.clone();
 
@@ -59,7 +56,7 @@ pub async fn get_my_info(
     tag = "users",
     params(("user_id" = String, Path, description = "Target user ID")),
     responses(
-        (status = 200, description = "User profile retrieved", body = HttpBody<UserInfoVal>),
+        (status = 200, description = "User profile retrieved", body = HttpBody<user_data::InfoVal>),
         (status = 401, description = "Authentication required"),
         (status = 404, description = "User not found"),
     ),
@@ -68,8 +65,8 @@ pub async fn get_my_info(
 pub async fn get_info(
     State(harn): State<AppHarn>,
     Path(user_id): Path<String>,
-    Extension(token): Extension<UserToken>,
-) -> HttpResult<UserInfoVal> {
+    Extension(token): Extension<user_model::Token>,
+) -> HttpResult<user_data::InfoVal> {
     usecase::user::get_info(
         harn.repo(),
         harn.image_pool(),
@@ -87,7 +84,7 @@ pub async fn get_info(
     path = "/api/v1/users/{user_id}",
     tag = "users",
     params(("user_id" = String, Path, description = "Target user ID")),
-    request_body = UpdateUserInfoData,
+    request_body = user_data::UpdateInfoData,
     responses(
         (status = 204, description = "Profile updated"),
         (status = 422, description = "Path id does not match body id"),
@@ -99,8 +96,8 @@ pub async fn get_info(
 pub async fn update_info(
     State(harn): State<AppHarn>,
     Path(user_id): Path<String>,
-    Extension(user_token): Extension<UserToken>,
-    Json(data): Json<UpdateUserInfoData>,
+    Extension(user_token): Extension<user_model::Token>,
+    Json(data): Json<user_data::UpdateInfoData>,
 ) -> HttpNoContent {
     //
     ensure_path_matches_body_id(&user_id, &data.id)?;
@@ -127,7 +124,7 @@ pub async fn update_info(
 pub async fn delete(
     State(harn): State<AppHarn>,
     Path(user_id): Path<String>,
-    Extension(user_token): Extension<UserToken>,
+    Extension(user_token): Extension<user_model::Token>,
 ) -> HttpNoContent {
     //
     usecase::user::delete(
@@ -148,9 +145,9 @@ pub async fn delete(
     path = "/api/v1/users/{user_id}/avatar/reserve",
     tag = "users",
     params(("user_id" = String, Path, description = "Target user ID (must match authenticated user)")),
-    request_body = ReserveUserAvatarData,
+    request_body = user_data::ReserveAvatarData,
     responses(
-        (status = 200, description = "Avatar upload URL reserved", body = HttpBody<ReserveUserAvatarVal>),
+        (status = 200, description = "Avatar upload URL reserved", body = HttpBody<user_data::ReserveAvatarVal>),
         (status = 403, description = "Cannot modify another user's avatar"),
     ),
 ))]
@@ -158,9 +155,9 @@ pub async fn delete(
 pub async fn reserve_avatar(
     State(harn): State<AppHarn>,
     Path(user_id): Path<String>,
-    Extension(user_token): Extension<UserToken>,
-    Json(data): Json<ReserveUserAvatarData>,
-) -> HttpResult<ReserveUserAvatarVal> {
+    Extension(user_token): Extension<user_model::Token>,
+    Json(data): Json<user_data::ReserveAvatarData>,
+) -> HttpResult<user_data::ReserveAvatarVal> {
     //
     ensure_current_user(&user_id, &user_token)?;
 
@@ -182,7 +179,7 @@ pub async fn reserve_avatar(
     path = "/api/v1/users/{user_id}/avatar/mark-uploaded",
     tag = "users",
     params(("user_id" = String, Path, description = "Target user ID (must match authenticated user)")),
-    request_body = MarkUserAvatarUploadedData,
+    request_body = user_data::MarkAvatarUploadedData,
     responses(
         (status = 204, description = "Avatar upload confirmed"),
         (status = 403, description = "Cannot confirm another user's avatar"),
@@ -192,8 +189,8 @@ pub async fn reserve_avatar(
 pub async fn mark_avatar_uploaded(
     State(harn): State<AppHarn>,
     Path(user_id): Path<String>,
-    Extension(user_token): Extension<UserToken>,
-    Json(data): Json<MarkUserAvatarUploadedData>,
+    Extension(user_token): Extension<user_model::Token>,
+    Json(data): Json<user_data::MarkAvatarUploadedData>,
 ) -> HttpNoContent {
     //
     usecase::user::mark_avatar_uploaded(

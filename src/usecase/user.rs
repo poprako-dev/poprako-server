@@ -7,11 +7,8 @@ use poprako_transactional::drive::Drive;
 use poprako_util::i18n::trl;
 
 use crate::complex::image::ImageComplex;
-use crate::data::user::{
-    MarkUserAvatarUploadedData, ReserveUserAvatarData, ReserveUserAvatarVal,
-    UpdateUserInfoData, UserInfoVal,
-};
-use crate::model::user::UserToken;
+use crate::data::user_data;
+use crate::model::user_model;
 use crate::part::effect::event::Event;
 use crate::part::effect::event::user::UserActivePayload;
 use crate::part::effect::{EffectDevelop, EffectEmit as _};
@@ -44,9 +41,9 @@ pub async fn get_info<C, R, I, V>(
     repo: &R,
     image_pool: &I,
     develop: &V,
-    token: UserToken,
+    token: user_model::Token,
     id: String,
-) -> RegularResult<UserInfoVal>
+) -> RegularResult<user_data::InfoVal>
 where
     R: UserRepo<C>,
     <R as DeriveTransactional>::Transactional: UserRepoTransactional<C>,
@@ -64,7 +61,7 @@ where
         .await;
     }
 
-    UserInfoVal::from_model(image_pool, user_info).await
+    user_data::InfoVal::from_model(image_pool, user_info).await
 }
 
 /// Updates a user's QQ ID and nickname.
@@ -85,8 +82,8 @@ where
 pub async fn update_info<D, C, R>(
     drive: &D,
     repo: &R,
-    token: UserToken,
-    data: UpdateUserInfoData,
+    token: user_model::Token,
+    data: user_data::UpdateInfoData,
 ) -> RegularResult<()>
 where
     D: Drive<C>,
@@ -161,9 +158,9 @@ pub async fn reserve_avatar<D, C, R, P, I>(
     repo: &R,
     prom: &P,
     image_pool: &I,
-    token: UserToken,
-    data: ReserveUserAvatarData,
-) -> RegularResult<ReserveUserAvatarVal>
+    token: user_model::Token,
+    data: user_data::ReserveAvatarData,
+) -> RegularResult<user_data::ReserveAvatarVal>
 where
     D: Drive<C>,
     D::Error: Into<RegularError>,
@@ -235,7 +232,7 @@ where
 
     let put_url = image_pool.put_signed(&object_key).await?.to_string();
 
-    Ok(ReserveUserAvatarVal {
+    Ok(user_data::ReserveAvatarVal {
         put_url,
         avatar_version,
     })
@@ -255,9 +252,9 @@ where
 pub async fn mark_avatar_uploaded<D, C, R>(
     drive: &D,
     repo: &R,
-    token: UserToken,
+    token: user_model::Token,
     id: String,
-    data: MarkUserAvatarUploadedData,
+    data: user_data::MarkAvatarUploadedData,
 ) -> RegularResult<()>
 where
     D: Drive<C>,
@@ -314,7 +311,7 @@ pub async fn delete<D, C, R, P>(
     drive: &D,
     repo: &R,
     prom: &P,
-    token: UserToken,
+    token: user_model::Token,
     id: String,
 ) -> RegularResult<()>
 where

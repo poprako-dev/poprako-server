@@ -8,9 +8,9 @@ use utoipa::{IntoParams, ToSchema};
 use poprako_macro::Paginate;
 use poprako_util::time::ToUnixMilli;
 
-use crate::data::comic::ComicInfoVal;
-use crate::data::user::UserInfoVal;
-use crate::model::chapter::ChapterInfo;
+use crate::data::comic_data;
+use crate::data::user_data;
+use crate::model::chapter_model;
 use crate::part::image::ImagePool;
 use crate::result::RegularResult;
 use crate::value::chapter::{ChapterInclOpt, Stage, StageMask, StageOper};
@@ -25,13 +25,13 @@ use crate::value::chapter::{ChapterInclOpt, Stage, StageMask, StageOper};
 /// [`ChapterInfo`]: crate::model::chapter::ChapterInfo
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct ChapterInfoVal {
+pub struct InfoVal {
     pub id: String,
     pub comic_id: String,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     #[cfg_attr(feature = "swagger-ui", schema(no_recursion))]
-    pub comic: Option<Box<ComicInfoVal>>,
+    pub comic: Option<Box<comic_data::InfoVal>>,
 
     pub is_pinned: bool,
     pub index: i32,
@@ -47,14 +47,14 @@ pub struct ChapterInfoVal {
     pub creator_id: String,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub creator: Option<UserInfoVal>,
+    pub creator: Option<user_data::InfoVal>,
 
     pub created_at: i64,
     pub updated_at: i64,
 }
 
-impl From<ChapterInfo> for ChapterInfoVal {
-    fn from(model: ChapterInfo) -> Self {
+impl From<chapter_model::Info> for InfoVal {
+    fn from(model: chapter_model::Info) -> Self {
         Self {
             id: model.id,
             comic_id: model.comic_id,
@@ -75,21 +75,21 @@ impl From<ChapterInfo> for ChapterInfoVal {
     }
 }
 
-impl ChapterInfoVal {
+impl InfoVal {
     /// Converts a chapter model into a presentation-ready value,
     /// resolving included creator avatar when present.
     pub async fn from_model<P>(
         image_pool: &P,
-        model: ChapterInfo,
+        model: chapter_model::Info,
     ) -> RegularResult<Self>
     where
         P: ImagePool,
     {
         let creator = match model.creator {
             //
-            Some(user_info) => {
-                Some(UserInfoVal::from_model(image_pool, user_info).await?)
-            }
+            Some(user_info) => Some(
+                user_data::InfoVal::from_model(image_pool, user_info).await?,
+            ),
 
             None => None,
         };
@@ -98,9 +98,10 @@ impl ChapterInfoVal {
             //
             Some(comic_info) => {
                 //
-                let comic =
-                    ComicInfoVal::from_model(image_pool, comic_info, None)
-                        .await?;
+                let comic = comic_data::InfoVal::from_model(
+                    image_pool, comic_info, None,
+                )
+                .await?;
 
                 Some(Box::new(comic))
             }
@@ -131,7 +132,7 @@ impl ChapterInfoVal {
 /// Input parameters for creating a new chapter.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct CreateChapterData {
+pub struct CreateData {
     pub comic_id: String,
 
     /// Optional display subtitle; defaults to a generated value
@@ -144,7 +145,7 @@ pub struct CreateChapterData {
 /// Return value from a successful chapter creation.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct CreateChapterVal {
+pub struct CreateVal {
     pub id: String,
 }
 
@@ -158,7 +159,7 @@ pub struct CreateChapterVal {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
 #[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
-pub struct ListChapterInfosData {
+pub struct ListInfosData {
     /// Parent comic whose chapters to list.
     pub comic_id: String,
 
@@ -176,7 +177,7 @@ pub struct ListChapterInfosData {
 /// Input parameters for partially updating a chapter's profile.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct PatchChapterInfoData {
+pub struct PatchInfoData {
     pub id: String,
 
     pub subtitle: Option<String>,
@@ -190,7 +191,7 @@ pub struct PatchChapterInfoData {
 /// transition is legal for the current stage phase before applying it.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct UpdateChapterStageData {
+pub struct UpdateStageData {
     pub id: String,
 
     pub stage: Stage,
