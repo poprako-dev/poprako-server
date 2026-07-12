@@ -93,7 +93,7 @@ pub struct ReserveAvatarData {
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
 pub struct ReserveAvatarVal {
     pub put_url: String,
-    pub avatar_version: i64,
+    pub avatar_version: u32,
 }
 
 /// Input parameters for confirming an avatar upload completed.
@@ -102,5 +102,5 @@ pub struct ReserveAvatarVal {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
 pub struct MarkAvatarUploadedData {
-    pub avatar_version: i64,
+    pub avatar_version: u32,
 }

@@ -5,7 +5,6 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "swagger-ui")]
 use utoipa::{IntoParams, ToSchema};
 
-use poprako_macro::Paginate;
 use poprako_util::time::ToUnixMilli;
 
 use crate::model::assignment_invitation_model;
@@ -51,7 +50,6 @@ impl From<assignment_invitation_model::Info> for InfoVal {
 /// Input parameters for listing invitations under one chapter.
 ///
 /// Example: `/api/v1/assignment-invitations?chapter_id=c_1&pending=true&offset=0&limit=20`.
-#[Paginate]
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
 #[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
@@ -62,6 +60,9 @@ pub struct ListInfosData {
     /// When `Some(true)`, returns only unconsumed invitations;
     /// `Some(false)` returns only consumed ones; `None` returns all.
     pub pending: Option<bool>,
+
+    pub offset: u32,
+    pub limit: u32,
 }
 
 /// Input parameters for creating an assignment invitation.

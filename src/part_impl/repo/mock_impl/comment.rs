@@ -196,8 +196,8 @@ fn form(id: &str) -> comment_model::Form {
 
 fn spec(
     incl_opt: Vec<CommentInclOpt>,
-    offset: u64,
-    limit: u64,
+    offset: u32,
+    limit: u32,
 ) -> comment_model::ListSpec {
     comment_model::ListSpec {
         team_id: "team-1".into(),

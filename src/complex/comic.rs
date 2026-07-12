@@ -43,7 +43,7 @@ impl ComicComplex {
     /// Construct the object-storage key for a comic cover image.
     ///
     /// Format: `comic_cover/{id}-{version}.{ext}`.
-    pub fn gen_cover_key(id: &str, version: i64, file_ext: &str) -> String {
+    pub fn gen_cover_key(id: &str, version: u32, file_ext: &str) -> String {
         // FIXME: change to cover/id/version/ext
         // All images needs fixes.
         format!("comic_cover/{}-{}.{}", id, version, file_ext)

@@ -7,8 +7,7 @@ use poprako_util::page::Page;
 
 use crate::complex::unit::{UnitComplex, UnitPermComplex};
 use crate::data::unit_data;
-use crate::model::unit_model;
-use crate::model::user_model;
+use crate::model::{unit_model, user_model};
 use crate::part::repo::assignment::{
     AssignmentRepo, AssignmentRepoTransactional,
 };

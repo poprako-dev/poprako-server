@@ -7,8 +7,7 @@ use poprako_util::time::ToUnixMilli;
 
 use crate::complex::workset::{WorksetComplex, WorksetPermComplex};
 use crate::data::workset_data;
-use crate::model::user_model;
-use crate::model::workset_model;
+use crate::model::{user_model, workset_model};
 use crate::part::prom::Prom;
 use crate::part::repo::assignment::{
     AssignmentRepo, AssignmentRepoTransactional,

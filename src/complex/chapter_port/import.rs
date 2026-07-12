@@ -5,10 +5,9 @@ use poprako_util::i18n::trl;
 #[cfg(test)]
 mod tests;
 
-use crate::model::chapter_port_model;
-use crate::model::page_port_model;
-use crate::model::unit_model;
-use crate::model::unit_port_model;
+use crate::model::{
+    chapter_port_model, page_port_model, unit_model, unit_port_model,
+};
 use crate::result::{ExpectedVariant, RegularError, RegularResult};
 
 /// Chapter import parsing and payload merge rules.

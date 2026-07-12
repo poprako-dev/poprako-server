@@ -11,12 +11,10 @@ use tracing::instrument;
 #[cfg(feature = "swagger-ui")]
 use utoipa::IntoParams;
 
-#[cfg(feature = "swagger-ui")]
-use crate::api::http::result::HttpBody;
-
 use crate::api::http::handler::util::ensure_path_matches_body_id;
+#[allow(unused_imports)]
 use crate::api::http::result::{
-    Accept as _, HttpNoContent, HttpResult, no_content,
+    Accept as _, HttpBody, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
 use crate::data::member_invitation_data;
@@ -46,10 +44,10 @@ pub struct MemberInvitationListQuery {
     pub incl_opt: Vec<MemberInvitationInclOpt>,
 
     /// Pagination offset (0-based).
-    pub offset: u64,
+    pub offset: u32,
 
     /// Maximum number of items to return.
-    pub limit: u64,
+    pub limit: u32,
 }
 
 /// `POST /api/v1/member-invitations` — create a pending team invitation.

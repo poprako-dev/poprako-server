@@ -47,7 +47,7 @@ fn get_chapter_by_id(
     Ok(chapter_info)
 }
 
-// fn list_chapters(state: &MockState, comic_id: &str, offset: u64, limit: u64) -> Vec<ChapterInfo> {
+// fn list_chapters(state: &MockState, comic_id: &str, offset: u32, limit: u32) -> Vec<ChapterInfo> {
 //     let chapter_infos = list_all_chapters(state, comic_id);
 //
 //     let offset = offset as usize;

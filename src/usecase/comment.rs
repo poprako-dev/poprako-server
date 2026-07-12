@@ -5,8 +5,7 @@ use poprako_transactional::drive::Drive;
 
 use crate::complex::comment::{CommentComplex, CommentPermComplex};
 use crate::data::comment_data;
-use crate::model::comment_model;
-use crate::model::user_model;
+use crate::model::{comment_model, user_model};
 use crate::part::image::ImagePool;
 use crate::part::repo::comment::{CommentRepo, CommentRepoTransactional};
 use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};

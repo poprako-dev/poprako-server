@@ -5,12 +5,10 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "swagger-ui")]
 use utoipa::{IntoParams, ToSchema};
 
-use poprako_macro::Paginate;
 use poprako_util::i18n::trl;
 use poprako_util::time::ToUnixMilli;
 
-use crate::data::team_data;
-use crate::data::user_data;
+use crate::data::{team_data, user_data};
 use crate::model::member_model;
 use crate::part::image::ImagePool;
 use crate::result::{ExpectedVariant, RegularError, RegularResult};
@@ -128,7 +126,6 @@ pub struct JoinTeamData {
 /// `incl` embeds related rows (`user`, `team`).
 ///
 /// Example: `/api/v1/members?team_id=t_1&fuzzy_nickname=al&role=1&incl=user&offset=0&limit=20`.
-#[Paginate]
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
 #[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
@@ -156,6 +153,9 @@ pub struct ListInfosData {
         deserialize_with = "crate::value::query::deserialize_vec"
     )]
     pub incl_opt: Vec<MemberInclOpt>,
+
+    pub offset: u32,
+    pub limit: u32,
 }
 
 impl TryInto<member_model::ListSpec> for ListInfosData {

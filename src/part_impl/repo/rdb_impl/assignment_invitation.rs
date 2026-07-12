@@ -52,8 +52,8 @@ async fn list_infos(
     conn: &mut RdbConn,
     chapter_id: &str,
     pending: Option<bool>,
-    offset: u64,
-    limit: u64,
+    offset: u32,
+    limit: u32,
 ) -> RegularResult<Vec<assignment_invitation_model::Info>> {
     //
     let mut query = t_assignment_invitation

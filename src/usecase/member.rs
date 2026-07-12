@@ -6,8 +6,7 @@ use poprako_util::i18n::trl;
 
 use crate::complex::member::{MemberComplex, MemberPermComplex};
 use crate::data::member_data;
-use crate::model::member_model;
-use crate::model::user_model;
+use crate::model::{member_model, user_model};
 use crate::part::image::ImagePool;
 use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
 use crate::part::repo::member_invitation::{

@@ -1,6 +1,5 @@
 //! Step types for workset repository opers.
 
-use poprako_macro::Paginate;
 use poprako_transactional::step::Step;
 use poprako_util::page::Page;
 
@@ -25,9 +24,11 @@ impl<'a> Step for GetInfoById<'a> {
 }
 
 /// Step that lists all worksets for a team with pagination.
-#[Paginate]
 pub struct ListInfosByTeamId<'a> {
     pub team_id: &'a str,
+
+    pub offset: u32,
+    pub limit: u32,
 }
 
 impl<'a> Step for ListInfosByTeamId<'a> {

@@ -8,14 +8,10 @@ use diesel_async::RunQueryDsl;
 
 use poprako_transactional::advance::Advance;
 
-use crate::model::assignment_model;
-use crate::model::chapter_model;
-use crate::model::comic_archive_model;
-use crate::model::comic_model;
-use crate::model::page_model;
-use crate::model::unit_model;
-use crate::model::user_model;
-use crate::model::workset_model;
+use crate::model::{
+    assignment_model, chapter_model, comic_archive_model, comic_model,
+    page_model, unit_model, user_model, workset_model,
+};
 use crate::part::repo::comic_archive::ComicArchiveRepoTransactional;
 use crate::part::repo::step::comic_archive::{Commit, LockSnapshot};
 use crate::part_impl::repo::rdb_impl::RdbRepoTransactional;

@@ -52,16 +52,16 @@ pub enum ListSpec {
     User {
         owner_id: String,
         incl_opt: Vec<MemberInclOpt>,
-        offset: u64,
-        limit: u64,
+        offset: u32,
+        limit: u32,
     },
     Team {
         team_id: String,
         fuzzy_nickname: Option<String>,
         role: Option<RoleField>,
         incl_opt: Vec<MemberInclOpt>,
-        offset: u64,
-        limit: u64,
+        offset: u32,
+        limit: u32,
     },
 }
 

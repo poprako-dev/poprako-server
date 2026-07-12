@@ -5,7 +5,6 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "swagger-ui")]
 use utoipa::{IntoParams, ToSchema};
 
-use poprako_macro::Paginate;
 use poprako_util::time::ToUnixMilli;
 
 use crate::model::team_model;
@@ -84,7 +83,6 @@ pub struct CreateData {
 /// - `user_id` present: list teams the given user has joined.
 ///
 /// Example: `/api/v1/teams?user_id=u_123&offset=0&limit=20`.
-#[Paginate]
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
 #[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
@@ -92,6 +90,9 @@ pub struct ListInfosData {
     /// Filter to teams joined by this user. Omit to list all teams
     /// (super-admin only).
     pub user_id: Option<String>,
+
+    pub offset: u32,
+    pub limit: u32,
 }
 
 /// Input parameters for updating a team's profile.
@@ -116,12 +117,12 @@ pub struct ReserveAvatarData {
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
 pub struct ReserveAvatarVal {
     pub put_url: String,
-    pub avatar_version: i64,
+    pub avatar_version: u32,
 }
 
 /// Input parameters for confirming a team avatar upload completed.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
 pub struct MarkAvatarUploadedData {
-    pub avatar_version: i64,
+    pub avatar_version: u32,
 }

@@ -6,12 +6,10 @@ use axum::http::StatusCode;
 
 use tracing::instrument;
 
-#[cfg(feature = "swagger-ui")]
-use crate::api::http::result::HttpBody;
-
 use crate::api::http::handler::util::ensure_path_matches_body_id;
+#[allow(unused_imports)]
 use crate::api::http::result::{
-    Accept as _, HttpNoContent, HttpResult, no_content,
+    Accept as _, HttpBody, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
 use crate::data::assignment_data;
@@ -122,7 +120,7 @@ pub async fn delete(
     post,
     path = "/api/v1/assignments/join",
     tag = "assignments",
-    request_body = JoinChapterData,
+    request_body = assignment_data::JoinChapterData,
     responses(
         (status = 201, description = "Joined assignment", body = HttpBody<assignment_data::InfoVal>),
         (status = 403, description = "Role not assignable or no permission"),

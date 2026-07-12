@@ -51,7 +51,7 @@ fn user_with_avatar(
     nickname: &str,
     avatar_key: &str,
     avatar_uploaded: bool,
-    avatar_version: i64,
+    avatar_version: u32,
 ) -> user_model::Info {
     user_model::Info {
         avatar_key: Some(avatar_key.into()),
@@ -108,7 +108,7 @@ fn reserve_data(file_ext: &str) -> user_data::ReserveAvatarData {
 }
 
 /// Builds a [`MarkUserAvatarUploadedData`] fixture.
-fn mark_data(avatar_version: i64) -> user_data::MarkAvatarUploadedData {
+fn mark_data(avatar_version: u32) -> user_data::MarkAvatarUploadedData {
     user_data::MarkAvatarUploadedData { avatar_version }
 }
 

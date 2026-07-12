@@ -5,7 +5,6 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "swagger-ui")]
 use utoipa::{IntoParams, ToSchema};
 
-use poprako_macro::Paginate;
 use poprako_util::time::ToUnixMilli;
 
 use crate::data::user_data;
@@ -66,7 +65,6 @@ impl InfoVal {
 /// `incl` embeds related rows into each item.
 ///
 /// Example: `/api/v1/announcements?team_id=t_1&incl=user&offset=0&limit=20`.
-#[Paginate]
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
 #[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
@@ -81,6 +79,9 @@ pub struct ListInfosData {
         deserialize_with = "crate::value::query::deserialize_vec"
     )]
     pub incl_opt: Vec<AnnouncementInclOpt>,
+
+    pub offset: u32,
+    pub limit: u32,
 }
 
 impl From<ListInfosData> for announcement_model::ListSpec {

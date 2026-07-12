@@ -69,14 +69,14 @@ pub enum ListSpec {
         chapter_id: String,
         role: Option<RoleField>,
         incl_opt: Vec<AssignmentInclOpt>,
-        offset: u64,
-        limit: u64,
+        offset: u32,
+        limit: u32,
     },
     User {
         owner_id: String,
         role: Option<RoleField>,
         incl_opt: Vec<AssignmentInclOpt>,
-        offset: u64,
-        limit: u64,
+        offset: u32,
+        limit: u32,
     },
 }

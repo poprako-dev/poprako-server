@@ -7,8 +7,7 @@ use poprako_util::i18n::trl;
 use crate::complex::assignment::{AssignmentComplex, AssignmentPermComplex};
 use crate::complex::chapter::ChapterPermComplex;
 use crate::data::assignment_data;
-use crate::model::assignment_model;
-use crate::model::user_model;
+use crate::model::{assignment_model, user_model};
 use crate::part::image::ImagePool;
 use crate::part::repo::assignment::{
     AssignmentRepo, AssignmentRepoTransactional,

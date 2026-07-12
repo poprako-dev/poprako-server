@@ -51,8 +51,8 @@ async fn get_info_by_id(
 async fn list_infos_by_team_id(
     conn: &mut RdbConn,
     team_id: &str,
-    offset: u64,
-    limit: u64,
+    offset: u32,
+    limit: u32,
 ) -> RegularResult<Vec<workset_model::Info>> {
     //
     let rows: Vec<WorksetRow> = t_workset

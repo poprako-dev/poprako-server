@@ -36,7 +36,7 @@ impl PageComplex {
     pub fn gen_image_key(
         chapter_id: &str,
         page_id: &str,
-        image_version: i64,
+        image_version: u32,
         file_ext: &str,
     ) -> String {
         format!(

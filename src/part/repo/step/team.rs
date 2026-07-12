@@ -1,6 +1,5 @@
 //! Step types for team repository opers.
 
-use poprako_macro::Paginate;
 use poprako_transactional::step::Step;
 use poprako_util::page::Page;
 
@@ -25,9 +24,11 @@ impl<'a> Step for GetInfoById<'a> {
 }
 
 /// Step that lists teams with pagination.
-#[Paginate]
 pub struct ListInfos<'a> {
     pub user_id: Option<&'a str>,
+
+    pub offset: u32,
+    pub limit: u32,
 }
 
 impl<'a> Step for ListInfos<'a> {
@@ -58,7 +59,7 @@ impl<'a> Step for ReserveAvatar<'a> {
 /// Step that marks a reserved team avatar as successfully uploaded.
 pub struct MarkAvatarUploaded<'a> {
     pub id: &'a str,
-    pub avatar_version: i64,
+    pub avatar_version: u32,
 }
 
 impl<'a> Step for MarkAvatarUploaded<'a> {
@@ -147,7 +148,7 @@ impl TeamStep {
     /// Constructs a step to confirm a team avatar upload completed.
     pub fn mark_avatar_uploaded<'a>(
         id: &'a str,
-        avatar_version: i64,
+        avatar_version: u32,
     ) -> MarkAvatarUploaded<'a> {
         MarkAvatarUploaded { id, avatar_version }
     }

@@ -6,8 +6,6 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "swagger-ui")]
 use utoipa::{IntoParams, ToSchema};
 
-use poprako_macro::Paginate;
-
 use crate::data::user_data;
 use crate::model::member_invitation_model;
 use crate::part::image::ImagePool;
@@ -50,7 +48,6 @@ pub struct CreateVal {
 /// `incl` embeds related rows into each item.
 ///
 /// Example: `/api/v1/teams/{team_id}/member-invitations?pending=true&incl=invitor&offset=0&limit=20`.
-#[Paginate]
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
 #[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
@@ -69,6 +66,9 @@ pub struct ListInfosData {
         deserialize_with = "crate::value::query::deserialize_vec"
     )]
     pub incl_opt: Vec<MemberInvitationInclOpt>,
+
+    pub offset: u32,
+    pub limit: u32,
 }
 
 /// Presentation-ready member invitation information.

@@ -11,13 +11,8 @@ use serde::Deserialize;
 
 use tracing::instrument;
 
-#[cfg(feature = "swagger-ui")]
-use crate::api::http::result::HttpBody;
-
-#[cfg(feature = "swagger-ui")]
-use crate::data::chapter_port_data;
-
-use crate::api::http::result::{Accept as _, HttpError, HttpResult};
+#[allow(unused_imports)]
+use crate::api::http::result::{Accept as _, HttpBody, HttpError, HttpResult};
 use crate::api::http::state::AppHarn;
 use crate::data::chapter_port_data;
 use crate::model::user_model;

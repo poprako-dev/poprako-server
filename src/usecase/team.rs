@@ -10,9 +10,7 @@ use crate::complex::image::ImageComplex;
 use crate::complex::member::MemberComplex;
 use crate::complex::team::{TeamComplex, TeamPermComplex};
 use crate::data::team_data;
-use crate::model::member_model;
-use crate::model::team_model;
-use crate::model::user_model;
+use crate::model::{member_model, team_model, user_model};
 use crate::part::image::ImagePool;
 use crate::part::prom::task::{IMAGE_TOPIC, ImageKind, ImageTask};
 use crate::part::prom::{Payload, Prom, PromStep};
@@ -274,7 +272,7 @@ where
     .await?;
 
     let (object_key, avatar_version) = drive
-        .with_context(async move |context| -> RegularResult<(String, i64)> {
+        .with_context(async move |context| -> RegularResult<(String, u32)> {
             //
             let repo = repo.derive_transactional().await;
 

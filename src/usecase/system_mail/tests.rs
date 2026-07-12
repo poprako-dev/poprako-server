@@ -47,7 +47,7 @@ fn token(user_id: &str) -> user_model::Token {
 }
 
 /// Builds a [`ListSystemMailData`] for listing unread mails.
-fn list_unread_data(offset: u64, limit: u64) -> system_mail_data::ListData {
+fn list_unread_data(offset: u32, limit: u32) -> system_mail_data::ListData {
     system_mail_data::ListData {
         read: Some(false),
         offset,

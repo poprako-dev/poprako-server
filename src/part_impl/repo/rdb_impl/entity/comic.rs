@@ -24,7 +24,8 @@ pub struct ComicRow {
 
     pub f_cover_key: Option<String>,
     pub f_cover_uploaded: bool,
-    pub f_cover_version: i64,
+    #[diesel(deserialize_as = i64)]
+    pub f_cover_version: u32,
 
     pub f_chapter_count: i32,
     pub f_chapter_next_index: i32,
@@ -142,9 +143,9 @@ impl<'a> ComicAspect<'a> {
         self
     }
 
-    pub fn cover_version(mut self, val: i64) -> Self {
+    pub fn cover_version(mut self, val: u32) -> Self {
         //
-        self.f_cover_version = Some(val);
+        self.f_cover_version = Some(i64::from(val));
 
         self
     }

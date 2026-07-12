@@ -8,8 +8,7 @@ use crate::complex::member_invitation::{
     MemberInvitationComplex, MemberInvitationPermComplex,
 };
 use crate::data::member_invitation_data;
-use crate::model::member_invitation_model;
-use crate::model::user_model;
+use crate::model::{member_invitation_model, user_model};
 use crate::part::image::ImagePool;
 use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
 use crate::part::repo::member_invitation::{

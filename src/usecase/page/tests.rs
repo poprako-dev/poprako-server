@@ -139,7 +139,7 @@ fn page(
     index: i32,
     image_key: Option<&str>,
     image_uploaded: bool,
-    image_version: i64,
+    image_version: u32,
 ) -> page_model::Info {
     //
     let time = OffsetDateTime::now_utc();

@@ -1,7 +1,5 @@
 //! Domain models for member invitations.
 
-use poprako_macro::Paginate;
-
 use crate::model::user_model;
 use crate::value::member_invitation::MemberInvitationInclOpt;
 use crate::value::role::RoleMask;
@@ -50,9 +48,11 @@ pub struct Update {
 }
 
 /// Filtering, pagination, and include parameters for listing invitations.
-#[Paginate]
 pub struct ListSpec {
     pub team_id: String,
     pub pending: Option<bool>,
     pub incl_opt: Vec<MemberInvitationInclOpt>,
+
+    pub offset: u32,
+    pub limit: u32,
 }

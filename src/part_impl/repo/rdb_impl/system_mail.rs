@@ -68,8 +68,8 @@ async fn list_infos(
     conn: &mut RdbConn,
     receiver_id: &str,
     read: Option<bool>,
-    offset: u64,
-    limit: u64,
+    offset: u32,
+    limit: u32,
 ) -> RegularResult<Vec<system_mail_model::Info>> {
     //
     let mut query = t_system_mail

@@ -104,7 +104,7 @@ fn team_with_avatar(
     description: &str,
     avatar_key: &str,
     avatar_uploaded: bool,
-    avatar_version: i64,
+    avatar_version: u32,
 ) -> team_model::Info {
     team_model::Info {
         avatar_key: Some(avatar_key.into()),
@@ -204,8 +204,8 @@ fn user(id: &str, is_sadmin: bool) -> user_model::Info {
 /// Builds a [`ListTeamInfosData`] fixture.
 fn list_data(
     user_id: Option<&str>,
-    offset: u64,
-    limit: u64,
+    offset: u32,
+    limit: u32,
 ) -> team_data::ListInfosData {
     team_data::ListInfosData {
         user_id: user_id.map(Into::into),
@@ -222,7 +222,7 @@ fn reserve_data(file_ext: &str) -> team_data::ReserveAvatarData {
 }
 
 /// Builds a [`MarkTeamAvatarUploadedData`] fixture.
-fn mark_data(avatar_version: i64) -> team_data::MarkAvatarUploadedData {
+fn mark_data(avatar_version: u32) -> team_data::MarkAvatarUploadedData {
     team_data::MarkAvatarUploadedData { avatar_version }
 }
 

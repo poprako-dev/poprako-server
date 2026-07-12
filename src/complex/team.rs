@@ -38,7 +38,7 @@ impl TeamComplex {
     /// Generate the object-storage key for a team avatar image.
     pub fn gen_avatar_key(
         id: &str,
-        avatar_version: i64,
+        avatar_version: u32,
         file_ext: &str,
     ) -> String {
         format!("team_avatar/{}-{}.{}", id, avatar_version, file_ext)

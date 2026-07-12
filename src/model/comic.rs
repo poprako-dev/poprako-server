@@ -12,8 +12,6 @@
 
 use time::OffsetDateTime;
 
-use poprako_macro::Paginate;
-
 use crate::model::{team_model, user_model, workset_model};
 use crate::value::chapter::StageMask;
 use crate::value::comic::ComicInclOpt;
@@ -40,7 +38,7 @@ pub struct Info {
 
     pub cover_key: Option<String>,
     pub cover_uploaded: bool,
-    pub cover_version: i64,
+    pub cover_version: u32,
 
     pub chapter_count: i32,
     pub chapter_next_index: i32,
@@ -89,7 +87,6 @@ pub struct InfoUpdate {
 }
 
 /// Filtering and pagination parameters for listing comics within a workset.
-#[Paginate]
 pub struct ListSpec {
     pub workset_id: String,
 
@@ -97,6 +94,9 @@ pub struct ListSpec {
     pub kind: ListKind,
 
     pub incl_opt: Vec<ComicInclOpt>,
+
+    pub offset: u32,
+    pub limit: u32,
 }
 
 /// Workflow-stage filtering mode for listing comics.
@@ -117,5 +117,5 @@ pub enum ListKind {
 pub struct CoverReservation {
     pub object_key: String,
     pub prev_object_key: Option<String>,
-    pub cover_version: i64,
+    pub cover_version: u32,
 }

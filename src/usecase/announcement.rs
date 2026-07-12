@@ -7,8 +7,7 @@ use crate::complex::announcement::{
     AnnouncementComplex, AnnouncementPermComplex,
 };
 use crate::data::announcement_data;
-use crate::model::announcement_model;
-use crate::model::user_model;
+use crate::model::{announcement_model, user_model};
 use crate::part::image::ImagePool;
 use crate::part::repo::announcement::{
     AnnouncementRepo, AnnouncementRepoTransactional,

@@ -60,9 +60,9 @@ impl WorksetComplex {
             .advance(context, &WorksetStep::get_info_excluded(id))
             .await?;
 
-        const PAGE_SIZE: u64 = 50;
+        const PAGE_SIZE: u32 = 50;
 
-        let mut offset: u64 = 0;
+        let mut offset: u32 = 0;
 
         loop {
             //

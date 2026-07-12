@@ -54,8 +54,8 @@ fn list_all_pages(
 fn list_pages(
     state: &MockState,
     chapter_id: &str,
-    offset: u64,
-    limit: u64,
+    offset: u32,
+    limit: u32,
 ) -> Vec<page_model::Info> {
     //
     let page_infos = list_all_pages(state, chapter_id);

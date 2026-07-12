@@ -30,7 +30,7 @@ pub struct Info {
 
     pub image_key: Option<String>,
     pub image_uploaded: bool,
-    pub image_version: i64,
+    pub image_version: u32,
 
     pub total_unit_count: i32,
     pub translated_unit_count: i32,
@@ -49,7 +49,7 @@ pub struct Form {
     pub index: i32,
 
     pub image_key: Option<String>,
-    pub image_version: i64,
+    pub image_version: u32,
 }
 
 /// Image reservation result for a page.
@@ -57,5 +57,5 @@ pub struct Form {
 pub struct ImageReservation {
     pub object_key: String,
     pub prev_object_key: Option<String>,
-    pub image_version: i64,
+    pub image_version: u32,
 }

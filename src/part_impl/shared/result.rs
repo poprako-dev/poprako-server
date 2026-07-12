@@ -5,7 +5,14 @@ use diesel_async::pooled_connection::deadpool::{BuildError, PoolError};
 
 use poprako_util::i18n::trl;
 
-use crate::result::{ExpectedVariant, RegularError};
+use crate::result::{ExpectedVariant, RegularError, RegularResult};
+
+/// Converts a persisted signed version into the application's unsigned type.
+pub fn version(value: i64) -> RegularResult<u32> {
+    u32::try_from(value).map_err(|err| RegularError::Unrecoverable {
+        message: format!("invalid persisted version {}: {}", value, err),
+    })
+}
 
 /// Converts a pool build error into an unrecoverable `RegularError`.
 pub fn pool_build(err: BuildError) -> RegularError {

@@ -11,7 +11,6 @@ RUN apk add --no-cache \
     pkgconf
 
 COPY Cargo.toml Cargo.lock ./
-COPY poprako-macro ./poprako-macro
 COPY poprako-transactional ./poprako-transactional
 COPY poprako-util ./poprako-util
 COPY src ./src

@@ -6,11 +6,8 @@ use poprako_util::i18n::trl;
 use poprako_util::page::Page;
 
 use crate::complex::assignment::{AssignmentComplex, AssignmentPermComplex};
-use crate::data::assignment_data;
-use crate::data::assignment_invitation_data;
-use crate::model::assignment_invitation_model;
-use crate::model::assignment_model;
-use crate::model::user_model;
+use crate::data::{assignment_data, assignment_invitation_data};
+use crate::model::{assignment_invitation_model, assignment_model, user_model};
 use crate::part::image::ImagePool;
 use crate::part::repo::assignment::{
     AssignmentRepo, AssignmentRepoTransactional,

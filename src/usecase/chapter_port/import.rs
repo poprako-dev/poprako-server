@@ -12,11 +12,9 @@ use crate::complex::chapter_port::{
 };
 use crate::complex::unit::UnitComplex;
 use crate::data::chapter_port_data;
-use crate::model::assignment_model;
-use crate::model::page_model;
-use crate::model::unit_model;
-use crate::model::unit_port_model;
-use crate::model::user_model;
+use crate::model::{
+    assignment_model, page_model, unit_model, unit_port_model, user_model,
+};
 use crate::part::repo::assignment::{
     AssignmentRepo, AssignmentRepoTransactional,
 };

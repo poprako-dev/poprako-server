@@ -1,6 +1,5 @@
 //! Step types for assignment invitation repository opers.
 
-use poprako_macro::Paginate;
 use poprako_transactional::step::Step;
 use poprako_util::page::Page;
 
@@ -16,10 +15,12 @@ impl<'a> Step for Create<'a> {
 }
 
 /// Step that lists assignment invitations under one chapter.
-#[Paginate]
 pub struct ListInfos<'a> {
     pub chapter_id: &'a str,
     pub pending: Option<bool>,
+
+    pub offset: u32,
+    pub limit: u32,
 }
 
 impl<'a> Step for ListInfos<'a> {

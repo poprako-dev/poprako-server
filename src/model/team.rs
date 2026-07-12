@@ -18,7 +18,7 @@ pub struct Info {
 
     pub avatar_key: Option<String>,
     pub avatar_uploaded: bool,
-    pub avatar_version: i64,
+    pub avatar_version: u32,
 
     pub workset_next_index: i32,
 
@@ -46,7 +46,7 @@ pub struct Form {
 pub struct AvatarReservation {
     pub object_key: String,
     pub prev_object_key: Option<String>,
-    pub avatar_version: i64,
+    pub avatar_version: u32,
 }
 
 // TODO: update
