@@ -2,18 +2,16 @@
 
 use poprako_transactional::step::Step;
 
-use crate::model::comic::{
-    ComicCoverReservation, ComicForm, ComicInfo, ComicInfoUpdate, ComicListSpec,
-};
+use crate::model::comic_model;
 use crate::value::comic::ComicInclOpt;
 
 /// Step that inserts a new comic row.
 pub struct Create<'a> {
-    pub form: &'a ComicForm,
+    pub form: &'a comic_model::Form,
 }
 
 impl<'a> Step for Create<'a> {
-    type Output = ComicInfo;
+    type Output = comic_model::Info;
 }
 
 /// Step that fetches a comic by its identifier.
@@ -23,7 +21,7 @@ pub struct GetInfoById<'a> {
 }
 
 impl<'a> Step for GetInfoById<'a> {
-    type Output = ComicInfo;
+    type Output = comic_model::Info;
 }
 
 /// Step that fetches a comic by ID with a pessimistic lock.
@@ -33,30 +31,30 @@ pub struct GetInfoExcluded<'a> {
 }
 
 impl<'a> Step for GetInfoExcluded<'a> {
-    type Output = ComicInfo;
+    type Output = comic_model::Info;
 }
 
 /// Step that lists comics for a workset with filters and pagination.
 pub struct ListInfos<'a> {
-    pub spec: &'a ComicListSpec,
+    pub spec: &'a comic_model::ListSpec,
 }
 
 impl<'a> Step for ListInfos<'a> {
-    type Output = Vec<ComicInfo>;
+    type Output = Vec<comic_model::Info>;
 }
 
 /// Step that lists comics for a workset with a pessimistic lock.
 pub struct ListInfosExcluded<'a> {
-    pub spec: &'a ComicListSpec,
+    pub spec: &'a comic_model::ListSpec,
 }
 
 impl<'a> Step for ListInfosExcluded<'a> {
-    type Output = Vec<ComicInfo>;
+    type Output = Vec<comic_model::Info>;
 }
 
 /// Step that updates a comic's profile fields.
 pub struct UpdateInfo<'a> {
-    pub update: &'a ComicInfoUpdate,
+    pub update: &'a comic_model::InfoUpdate,
 }
 
 impl<'a> Step for UpdateInfo<'a> {
@@ -70,7 +68,7 @@ pub struct ReserveCover<'a> {
 }
 
 impl<'a> Step for ReserveCover<'a> {
-    type Output = ComicCoverReservation;
+    type Output = comic_model::CoverReservation;
 }
 
 /// Step that marks a reserved cover as successfully uploaded.
@@ -130,7 +128,7 @@ pub struct ComicStep;
 
 impl ComicStep {
     /// Constructs a step to insert a new comic.
-    pub fn create<'a>(form: &'a ComicForm) -> Create<'a> {
+    pub fn create<'a>(form: &'a comic_model::Form) -> Create<'a> {
         Create { form }
     }
 
@@ -151,19 +149,21 @@ impl ComicStep {
     }
 
     /// Constructs a step to list comics with filters and pagination.
-    pub fn list_infos<'a>(spec: &'a ComicListSpec) -> ListInfos<'a> {
+    pub fn list_infos<'a>(spec: &'a comic_model::ListSpec) -> ListInfos<'a> {
         ListInfos { spec }
     }
 
     /// Constructs a step to list comics with a pessimistic lock.
     pub fn list_infos_excluded<'a>(
-        spec: &'a ComicListSpec,
+        spec: &'a comic_model::ListSpec,
     ) -> ListInfosExcluded<'a> {
         ListInfosExcluded { spec }
     }
 
     /// Constructs a step to update a comic's profile fields.
-    pub fn update_info<'a>(update: &'a ComicInfoUpdate) -> UpdateInfo<'a> {
+    pub fn update_info<'a>(
+        update: &'a comic_model::InfoUpdate,
+    ) -> UpdateInfo<'a> {
         UpdateInfo { update }
     }
 

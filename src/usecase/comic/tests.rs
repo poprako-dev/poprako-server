@@ -23,11 +23,11 @@ use super::*;
 
 use time::OffsetDateTime;
 
-use crate::model::chapter::ChapterInfo;
-use crate::model::comic::ComicInfo;
-use crate::model::member::MemberInfo;
-use crate::model::user::UserToken;
-use crate::model::workset::WorksetInfo;
+use crate::model::chapter_model;
+use crate::model::comic_model;
+use crate::model::member_model;
+use crate::model::user_model;
+use crate::model::workset_model;
 use crate::part::prom::Payload;
 use crate::part::prom::task::{ImageKind, ImageTask};
 use crate::part_impl::repo::mock_impl::Mock;
@@ -40,11 +40,11 @@ use crate::test_util::{
 use crate::value::chapter::{Stage, StageMask, StagePhase};
 use crate::value::role::{RoleField, RoleMask};
 
-fn comic(id: &str, workset_id: &str, index: i32) -> ComicInfo {
+fn comic(id: &str, workset_id: &str, index: i32) -> comic_model::Info {
     //
     let time = OffsetDateTime::now_utc();
 
-    ComicInfo {
+    comic_model::Info {
         id: id.into(),
         workset_id: workset_id.into(),
         index,
@@ -70,8 +70,8 @@ fn comic_with_uploaded_cover(
     id: &str,
     workset_id: &str,
     cover_key: &str,
-) -> ComicInfo {
-    ComicInfo {
+) -> comic_model::Info {
+    comic_model::Info {
         cover_key: Some(cover_key.into()),
         cover_uploaded: true,
         cover_version: 1,
@@ -79,11 +79,15 @@ fn comic_with_uploaded_cover(
     }
 }
 
-fn chapter(id: &str, comic_id: &str, stage_mask: StageMask) -> ChapterInfo {
+fn chapter(
+    id: &str,
+    comic_id: &str,
+    stage_mask: StageMask,
+) -> chapter_model::Info {
     //
     let time = OffsetDateTime::now_utc();
 
-    ChapterInfo {
+    chapter_model::Info {
         id: id.into(),
         comic_id: comic_id.into(),
         comic: None,
@@ -102,8 +106,8 @@ fn chapter(id: &str, comic_id: &str, stage_mask: StageMask) -> ChapterInfo {
     }
 }
 
-fn create_data(workset_id: &str) -> CreateComicData {
-    CreateComicData {
+fn create_data(workset_id: &str) -> comic_data::CreateData {
+    comic_data::CreateData {
         workset_id: workset_id.into(),
         title: "new".into(),
         author: "author".into(),
@@ -112,14 +116,14 @@ fn create_data(workset_id: &str) -> CreateComicData {
     }
 }
 
-fn token(user_id: &str) -> UserToken {
-    UserToken {
+fn token(user_id: &str) -> user_model::Token {
+    user_model::Token {
         user_id: user_id.into(),
     }
 }
 
-fn admin_member(user_id: &str, team_id: &str) -> MemberInfo {
-    MemberInfo {
+fn admin_member(user_id: &str, team_id: &str) -> member_model::Info {
+    member_model::Info {
         id: format!("member-{}-{}", user_id, team_id),
         user_id: user_id.into(),
         user_nickname: user_id.into(),
@@ -274,7 +278,7 @@ async fn list_infos_filters_and_sorts_by_last_activity() {
         &mock,
         &mock,
         token("user-1"),
-        ListComicInfosData {
+        comic_data::ListInfosData {
             incl_opt: Vec::new(),
             with_opt: vec![],
             workset_id: "workset-1".into(),
@@ -310,7 +314,7 @@ async fn list_infos_returns_empty_for_workset_contents() {
         &mock,
         &mock,
         token("user-1"),
-        ListComicInfosData {
+        comic_data::ListInfosData {
             incl_opt: Vec::new(),
             with_opt: vec![],
             workset_id: "workset-1".into(),
@@ -336,19 +340,19 @@ async fn list_infos_filters_by_fuzzy_title() {
 
     mock.seed_member(admin_member("user-1", "team-1"));
 
-    mock.seed_comic(ComicInfo {
+    mock.seed_comic(comic_model::Info {
         title: "Alpha Adventure".into(),
         author: "Alice".into(),
         ..comic("comic-alpha", "workset-1", 0)
     });
 
-    mock.seed_comic(ComicInfo {
+    mock.seed_comic(comic_model::Info {
         title: "Beta Journey".into(),
         author: "Bob".into(),
         ..comic("comic-beta", "workset-1", 1)
     });
 
-    mock.seed_comic(ComicInfo {
+    mock.seed_comic(comic_model::Info {
         title: "Gamma Quest".into(),
         author: "Carol".into(),
         ..comic("comic-gamma", "workset-1", 2)
@@ -359,7 +363,7 @@ async fn list_infos_filters_by_fuzzy_title() {
         &mock,
         &mock,
         token("user-1"),
-        ListComicInfosData {
+        comic_data::ListInfosData {
             incl_opt: Vec::new(),
             with_opt: vec![],
             workset_id: "workset-1".into(),
@@ -384,7 +388,7 @@ async fn list_infos_filters_by_fuzzy_title() {
         &mock,
         &mock,
         token("user-1"),
-        ListComicInfosData {
+        comic_data::ListInfosData {
             incl_opt: Vec::new(),
             with_opt: vec![],
             workset_id: "workset-1".into(),
@@ -409,7 +413,7 @@ async fn list_infos_filters_by_fuzzy_title() {
         &mock,
         &mock,
         token("user-1"),
-        ListComicInfosData {
+        comic_data::ListInfosData {
             incl_opt: Vec::new(),
             with_opt: vec![],
             workset_id: "workset-1".into(),
@@ -473,7 +477,7 @@ async fn list_infos_filters_by_pinned_chapter_stages() {
         &mock,
         &mock,
         token("user-1"),
-        ListComicInfosData {
+        comic_data::ListInfosData {
             incl_opt: Vec::new(),
             with_opt: vec![],
             workset_id: "workset-1".into(),
@@ -507,7 +511,7 @@ async fn list_infos_rejects_invalid_stages_filter() {
         &mock,
         &mock,
         token("user-1"),
-        ListComicInfosData {
+        comic_data::ListInfosData {
             incl_opt: Vec::new(),
             with_opt: vec![],
             workset_id: "workset-1".into(),
@@ -557,7 +561,7 @@ async fn list_infos_applies_pagination() {
         &mock,
         &mock,
         token("user-1"),
-        ListComicInfosData {
+        comic_data::ListInfosData {
             incl_opt: Vec::new(),
             with_opt: vec![],
             workset_id: "workset-1".into(),
@@ -592,7 +596,7 @@ async fn update_info_updates_comic() {
     update_info(
         &mock,
         token("user-1"),
-        UpdateComicInfoData {
+        comic_data::UpdateInfoData {
             id: "comic-1".into(),
             title: "updated".into(),
             author: "updated-author".into(),
@@ -620,7 +624,7 @@ async fn update_info_propagates_missing_comic() {
     let err = update_info(
         &mock,
         token("user-1"),
-        UpdateComicInfoData {
+        comic_data::UpdateInfoData {
             id: "missing".into(),
             title: "updated".into(),
             author: "updated-author".into(),
@@ -652,7 +656,7 @@ async fn reserve_cover_updates_state_enqueues_check_and_returns_put_url() {
         &mock,
         token("user-1"),
         "comic-1".into(),
-        ReserveComicCoverData {
+        comic_data::ReserveCoverData {
             file_ext: "png".into(),
         },
     )
@@ -696,7 +700,7 @@ async fn reserve_cover_rolls_back_missing_comic() {
         &mock,
         token("user-1"),
         "missing".into(),
-        ReserveComicCoverData {
+        comic_data::ReserveCoverData {
             file_ext: "png".into(),
         },
     )
@@ -720,7 +724,7 @@ async fn mark_cover_uploaded_marks_matching_version() {
 
     mock.seed_member(admin_member("user-1", "team-1"));
 
-    mock.seed_comic(ComicInfo {
+    mock.seed_comic(comic_model::Info {
         cover_key: Some("cover.png".into()),
         cover_version: 2,
         ..comic("comic-1", "workset-1", 0)
@@ -730,7 +734,7 @@ async fn mark_cover_uploaded_marks_matching_version() {
         &mock,
         token("user-1"),
         "comic-1".into(),
-        MarkComicCoverUploadedData { cover_version: 2 },
+        comic_data::MarkCoverUploadedData { cover_version: 2 },
     )
     .await
     .ok()
@@ -748,7 +752,7 @@ async fn mark_cover_uploaded_accepts_repeated_matching_version() {
 
     mock.seed_member(admin_member("user-1", "team-1"));
 
-    mock.seed_comic(ComicInfo {
+    mock.seed_comic(comic_model::Info {
         cover_key: Some("cover.png".into()),
         cover_version: 2,
         ..comic("comic-1", "workset-1", 0)
@@ -758,7 +762,7 @@ async fn mark_cover_uploaded_accepts_repeated_matching_version() {
         &mock,
         token("user-1"),
         "comic-1".into(),
-        MarkComicCoverUploadedData { cover_version: 2 },
+        comic_data::MarkCoverUploadedData { cover_version: 2 },
     )
     .await;
 
@@ -768,7 +772,7 @@ async fn mark_cover_uploaded_accepts_repeated_matching_version() {
         &mock,
         token("user-1"),
         "comic-1".into(),
-        MarkComicCoverUploadedData { cover_version: 2 },
+        comic_data::MarkCoverUploadedData { cover_version: 2 },
     )
     .await;
 
@@ -786,7 +790,7 @@ async fn mark_cover_uploaded_rejects_stale_version() {
 
     mock.seed_member(admin_member("user-1", "team-1"));
 
-    mock.seed_comic(ComicInfo {
+    mock.seed_comic(comic_model::Info {
         cover_key: Some("cover.png".into()),
         cover_version: 2,
         ..comic("comic-1", "workset-1", 0)
@@ -796,7 +800,7 @@ async fn mark_cover_uploaded_rejects_stale_version() {
         &mock,
         token("user-1"),
         "comic-1".into(),
-        MarkComicCoverUploadedData { cover_version: 1 },
+        comic_data::MarkCoverUploadedData { cover_version: 1 },
     )
     .await
     .err()
@@ -820,7 +824,7 @@ async fn mark_cover_uploaded_rejects_old_reservation_replay() {
 
     mock.seed_member(admin_member("user-1", "team-1"));
 
-    mock.seed_comic(ComicInfo {
+    mock.seed_comic(comic_model::Info {
         cover_key: Some("comic_cover/comic-1-1.png".into()),
         cover_uploaded: true,
         cover_version: 1,
@@ -834,7 +838,7 @@ async fn mark_cover_uploaded_rejects_old_reservation_replay() {
         &mock,
         token("user-1"),
         "comic-1".into(),
-        ReserveComicCoverData {
+        comic_data::ReserveCoverData {
             file_ext: "png".into(),
         },
     )
@@ -848,7 +852,7 @@ async fn mark_cover_uploaded_rejects_old_reservation_replay() {
         &mock,
         token("user-1"),
         "comic-1".into(),
-        MarkComicCoverUploadedData { cover_version: 1 },
+        comic_data::MarkCoverUploadedData { cover_version: 1 },
     )
     .await
     .err()
@@ -874,7 +878,7 @@ async fn delete_removes_comic_updates_count_and_enqueues_cover_delete() {
 
     mock.seed_member(admin_member("user-1", "team-1"));
 
-    mock.seed_workset(WorksetInfo {
+    mock.seed_workset(workset_model::Info {
         comic_count: 1,
         comic_next_index: 1,
         ..workset("workset-1", "team-1")

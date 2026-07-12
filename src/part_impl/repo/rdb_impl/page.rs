@@ -8,8 +8,8 @@ use time::OffsetDateTime;
 use poprako_transactional::advance::Advance;
 
 use crate::complex::page::PageComplex;
-use crate::model::page::{PageForm, PageImageReservation, PageInfo};
-use crate::model::unit::UnitCounters;
+use crate::model::page_model;
+use crate::model::unit_model;
 use crate::part::repo::page::{PageRepo, PageRepoTransactional};
 use crate::part::repo::step::page::{
     CreateBatch, DeleteByChapterId, GetInfoById, GetInfoExcluded,
@@ -38,7 +38,7 @@ impl PageRepoTransactional<RdbContext> for RdbRepoTransactional {}
 async fn get_info_by_id(
     conn: &mut RdbConn,
     id: &str,
-) -> RegularResult<PageInfo> {
+) -> RegularResult<page_model::Info> {
     //
     let row: PageRow = t_page
         .filter(f_id.eq(id))
@@ -56,7 +56,7 @@ async fn get_info_by_id(
 async fn get_info_excluded(
     conn: &mut RdbConn,
     id: &str,
-) -> RegularResult<PageInfo> {
+) -> RegularResult<page_model::Info> {
     //
     let row: PageRow = t_page
         .filter(f_id.eq(id))
@@ -77,7 +77,7 @@ async fn list_infos_by_chapter_id(
     chapter_id: &str,
     offset: u64,
     limit: u64,
-) -> RegularResult<Vec<PageInfo>> {
+) -> RegularResult<Vec<page_model::Info>> {
     //
     let rows: Vec<PageRow> = t_page
         .filter(f_chapter_id.eq(chapter_id))
@@ -96,7 +96,7 @@ async fn list_infos_by_chapter_id(
 async fn list_all_infos_by_chapter_id(
     conn: &mut RdbConn,
     chapter_id: &str,
-) -> RegularResult<Vec<PageInfo>> {
+) -> RegularResult<Vec<page_model::Info>> {
     //
     let rows: Vec<PageRow> = t_page
         .filter(f_chapter_id.eq(chapter_id))
@@ -112,8 +112,8 @@ async fn list_all_infos_by_chapter_id(
 /// Batch-insert pages from a slice of forms and return the created infos.
 async fn create_batch(
     conn: &mut RdbConn,
-    forms: &[PageForm],
-) -> RegularResult<Vec<PageInfo>> {
+    forms: &[page_model::Form],
+) -> RegularResult<Vec<page_model::Info>> {
     //
     let entries: Vec<PageEntry> = forms.iter().map(PageEntry::from).collect();
 
@@ -133,7 +133,7 @@ async fn reserve_image(
     conn: &mut RdbConn,
     id: &str,
     file_ext: &str,
-) -> RegularResult<PageImageReservation> {
+) -> RegularResult<page_model::ImageReservation> {
     //
     let now = OffsetDateTime::now_utc();
 
@@ -161,7 +161,7 @@ async fn reserve_image(
         .await
         .map_err(diesel)?;
 
-    Ok(PageImageReservation {
+    Ok(page_model::ImageReservation {
         object_key,
         prev_object_key: prev_key,
         image_version: new_version,
@@ -198,7 +198,7 @@ async fn mark_image_uploaded(
 async fn set_unit_counters(
     conn: &mut RdbConn,
     id: &str,
-    counters: UnitCounters,
+    counters: unit_model::Counters,
 ) -> RegularResult<()> {
     //
     let now = OffsetDateTime::now_utc();
@@ -249,7 +249,10 @@ async fn delete_by_chapter_id(
 impl<'a> Execute<GetInfoById<'a>> for RdbRepo {
     type Error = RegularError;
 
-    async fn execute(&self, step: &GetInfoById<'a>) -> RegularResult<PageInfo> {
+    async fn execute(
+        &self,
+        step: &GetInfoById<'a>,
+    ) -> RegularResult<page_model::Info> {
         submit_query!(self.core, get_info_by_id, step.id)
     }
 }
@@ -261,7 +264,7 @@ impl<'a> Execute<ListInfosByChapterId<'a>> for RdbRepo {
     async fn execute(
         &self,
         step: &ListInfosByChapterId<'a>,
-    ) -> RegularResult<Vec<PageInfo>> {
+    ) -> RegularResult<Vec<page_model::Info>> {
         submit_query!(
             self.core,
             list_infos_by_chapter_id,
@@ -279,7 +282,7 @@ impl<'a> Execute<ListAllInfosByChapterId<'a>> for RdbRepo {
     async fn execute(
         &self,
         step: &ListAllInfosByChapterId<'a>,
-    ) -> RegularResult<Vec<PageInfo>> {
+    ) -> RegularResult<Vec<page_model::Info>> {
         submit_query!(self.core, list_all_infos_by_chapter_id, step.chapter_id)
     }
 }
@@ -292,7 +295,7 @@ impl<'a> Advance<GetInfoById<'a>, RdbContext> for RdbRepoTransactional {
         &self,
         context: &mut RdbContext,
         step: &GetInfoById<'a>,
-    ) -> RegularResult<PageInfo> {
+    ) -> RegularResult<page_model::Info> {
         get_info_by_id(context.conn(), step.id).await
     }
 }
@@ -305,7 +308,7 @@ impl<'a> Advance<GetInfoExcluded<'a>, RdbContext> for RdbRepoTransactional {
         &self,
         context: &mut RdbContext,
         step: &GetInfoExcluded<'a>,
-    ) -> RegularResult<PageInfo> {
+    ) -> RegularResult<page_model::Info> {
         get_info_excluded(context.conn(), step.id).await
     }
 }
@@ -320,7 +323,7 @@ impl<'a> Advance<ListInfosByChapterId<'a>, RdbContext>
         &self,
         context: &mut RdbContext,
         step: &ListInfosByChapterId<'a>,
-    ) -> RegularResult<Vec<PageInfo>> {
+    ) -> RegularResult<Vec<page_model::Info>> {
         list_infos_by_chapter_id(
             context.conn(),
             step.chapter_id,
@@ -341,7 +344,7 @@ impl<'a> Advance<ListAllInfosByChapterId<'a>, RdbContext>
         &self,
         context: &mut RdbContext,
         step: &ListAllInfosByChapterId<'a>,
-    ) -> RegularResult<Vec<PageInfo>> {
+    ) -> RegularResult<Vec<page_model::Info>> {
         list_all_infos_by_chapter_id(context.conn(), step.chapter_id).await
     }
 }
@@ -354,7 +357,7 @@ impl<'a> Advance<CreateBatch<'a>, RdbContext> for RdbRepoTransactional {
         &self,
         context: &mut RdbContext,
         step: &CreateBatch<'a>,
-    ) -> RegularResult<Vec<PageInfo>> {
+    ) -> RegularResult<Vec<page_model::Info>> {
         create_batch(context.conn(), step.forms).await
     }
 }
@@ -367,7 +370,7 @@ impl<'a> Advance<ReserveImage<'a>, RdbContext> for RdbRepoTransactional {
         &self,
         context: &mut RdbContext,
         step: &ReserveImage<'a>,
-    ) -> RegularResult<PageImageReservation> {
+    ) -> RegularResult<page_model::ImageReservation> {
         reserve_image(context.conn(), step.id, step.file_ext).await
     }
 }

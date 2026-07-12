@@ -4,7 +4,7 @@ use diesel::prelude::*;
 use time::OffsetDateTime;
 
 use crate::complex::comic::ComicComplex;
-use crate::model::comic::{ComicForm, ComicInfo};
+use crate::model::comic_model;
 use crate::part_impl::repo::rdb_impl::schema::t_comic;
 
 // ── Queryable / Selectable ─────────────────────────────────────────────────
@@ -173,9 +173,9 @@ impl<'a> ComicAspect<'a> {
 
 // ── Conversions ────────────────────────────────────────────────────────────
 
-impl From<ComicRow> for ComicInfo {
+impl From<ComicRow> for comic_model::Info {
     fn from(v: ComicRow) -> Self {
-        ComicInfo {
+        comic_model::Info {
             id: v.f_id,
             workset_id: v.f_workset_id,
             index: v.f_index,
@@ -198,8 +198,8 @@ impl From<ComicRow> for ComicInfo {
     }
 }
 
-impl<'a> From<&'a ComicForm> for ComicEntry<'a> {
-    fn from(form: &'a ComicForm) -> Self {
+impl<'a> From<&'a comic_model::Form> for ComicEntry<'a> {
+    fn from(form: &'a comic_model::Form) -> Self {
         Self {
             f_id: &form.id,
             f_workset_id: &form.workset_id,

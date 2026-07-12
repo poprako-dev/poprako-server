@@ -7,7 +7,7 @@ use time::OffsetDateTime;
 
 use poprako_transactional::advance::Advance;
 
-use crate::model::workset::{WorksetForm, WorksetInfo};
+use crate::model::workset_model;
 use crate::part::repo::step::workset::{
     Create, Delete, GetInfoById, GetInfoExcluded, IncrComicNextIndex,
     ListAllInfosByTeamIdExcluded, ListInfosByTeamId, UpdateComicCount,
@@ -33,7 +33,7 @@ impl WorksetRepoTransactional<RdbContext> for RdbRepoTransactional {}
 async fn get_info_by_id(
     conn: &mut RdbConn,
     id: &str,
-) -> RegularResult<WorksetInfo> {
+) -> RegularResult<workset_model::Info> {
     //
     let row: WorksetRow = t_workset
         .filter(f_id.eq(id))
@@ -53,7 +53,7 @@ async fn list_infos_by_team_id(
     team_id: &str,
     offset: u64,
     limit: u64,
-) -> RegularResult<Vec<WorksetInfo>> {
+) -> RegularResult<Vec<workset_model::Info>> {
     //
     let rows: Vec<WorksetRow> = t_workset
         .filter(f_team_id.eq(team_id))
@@ -93,7 +93,7 @@ async fn update_info(
 async fn list_all_infos_by_team_id_excluded(
     conn: &mut RdbConn,
     team_id: &str,
-) -> RegularResult<Vec<WorksetInfo>> {
+) -> RegularResult<Vec<workset_model::Info>> {
     //
     let rows: Vec<WorksetRow> = t_workset
         .filter(f_team_id.eq(team_id))
@@ -110,7 +110,7 @@ async fn list_all_infos_by_team_id_excluded(
 async fn get_info_excluded(
     conn: &mut RdbConn,
     id: &str,
-) -> RegularResult<WorksetInfo> {
+) -> RegularResult<workset_model::Info> {
     //
     let row: WorksetRow = t_workset
         .filter(f_id.eq(id))
@@ -139,8 +139,8 @@ async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
 /// Insert a new workset and return its info.
 async fn create(
     conn: &mut RdbConn,
-    form: &WorksetForm,
-) -> RegularResult<WorksetInfo> {
+    form: &workset_model::Form,
+) -> RegularResult<workset_model::Info> {
     //
     let entry = WorksetEntry::from(form);
 
@@ -195,7 +195,7 @@ impl<'a> Execute<GetInfoById<'a>> for RdbRepo {
     async fn execute(
         &self,
         step: &GetInfoById<'a>,
-    ) -> RegularResult<WorksetInfo> {
+    ) -> RegularResult<workset_model::Info> {
         submit_query!(self.core, get_info_by_id, step.id)
     }
 }
@@ -207,7 +207,7 @@ impl<'a> Execute<ListInfosByTeamId<'a>> for RdbRepo {
     async fn execute(
         &self,
         step: &ListInfosByTeamId<'a>,
-    ) -> RegularResult<Vec<WorksetInfo>> {
+    ) -> RegularResult<Vec<workset_model::Info>> {
         submit_query!(
             self.core,
             list_infos_by_team_id,
@@ -245,7 +245,7 @@ impl<'a> Advance<ListAllInfosByTeamIdExcluded<'a>, RdbContext>
         &self,
         context: &mut RdbContext,
         step: &ListAllInfosByTeamIdExcluded<'a>,
-    ) -> RegularResult<Vec<WorksetInfo>> {
+    ) -> RegularResult<Vec<workset_model::Info>> {
         list_all_infos_by_team_id_excluded(context.conn(), step.team_id).await
     }
 }
@@ -258,7 +258,7 @@ impl<'a> Advance<GetInfoExcluded<'a>, RdbContext> for RdbRepoTransactional {
         &self,
         context: &mut RdbContext,
         step: &GetInfoExcluded<'a>,
-    ) -> RegularResult<WorksetInfo> {
+    ) -> RegularResult<workset_model::Info> {
         get_info_excluded(context.conn(), step.id).await
     }
 }
@@ -284,7 +284,7 @@ impl<'a> Advance<GetInfoById<'a>, RdbContext> for RdbRepoTransactional {
         &self,
         context: &mut RdbContext,
         step: &GetInfoById<'a>,
-    ) -> RegularResult<WorksetInfo> {
+    ) -> RegularResult<workset_model::Info> {
         get_info_by_id(context.conn(), step.id).await
     }
 }
@@ -297,7 +297,7 @@ impl<'a> Advance<Create<'a>, RdbContext> for RdbRepoTransactional {
         &self,
         context: &mut RdbContext,
         step: &Create<'a>,
-    ) -> RegularResult<WorksetInfo> {
+    ) -> RegularResult<workset_model::Info> {
         create(context.conn(), step.form).await
     }
 }

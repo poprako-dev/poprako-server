@@ -10,7 +10,7 @@ use time::OffsetDateTime;
 ///
 /// [`TeamInfoVal`]: crate::data::team::TeamInfoVal
 #[derive(Clone)]
-pub struct TeamInfo {
+pub struct Info {
     pub id: String,
 
     pub name: String,
@@ -28,7 +28,7 @@ pub struct TeamInfo {
 
 /// The data needed to create a new team.
 #[cfg_attr(test, derive(Clone))]
-pub struct TeamForm {
+pub struct Form {
     pub id: String,
 
     pub name: String,
@@ -43,7 +43,7 @@ pub struct TeamForm {
 ///
 /// [`UserAvatarReservation`]: crate::model::user::UserAvatarReservation
 #[cfg_attr(test, derive(Clone))]
-pub struct TeamAvatarReservation {
+pub struct AvatarReservation {
     pub object_key: String,
     pub prev_object_key: Option<String>,
     pub avatar_version: i64,

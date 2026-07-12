@@ -5,9 +5,7 @@ use super::*;
 use poprako_transactional::advance::Advance;
 use poprako_transactional::drive::Drive;
 
-use crate::model::assignment::{
-    AssignmentForm, AssignmentListSpec, AssignmentRoleUpdate,
-};
+use crate::model::assignment_model;
 use crate::part::repo::step::assignment::AssignmentStep;
 use crate::part::shared::execute::Execute;
 use crate::part_impl::drive::rdb_impl::RdbDrive;
@@ -42,7 +40,7 @@ async fn assignment_roundtrip_reads_test_database_url() {
 
     let reviewer_role = RoleMask::from(RoleField::REVIEWER);
 
-    let assignment_form = AssignmentForm {
+    let assignment_form = assignment_model::Form {
         id: format!("{}assignment", PREFIX),
         chapter_id: chapter_fixture.chapter_form.id.clone(),
         user_id: assignee_form.id.clone(),
@@ -65,7 +63,7 @@ async fn assignment_roundtrip_reads_test_database_url() {
         .ok()
         .unwrap();
 
-    let assignment_list_spec = AssignmentListSpec::Chapter {
+    let assignment_list_spec = assignment_model::ListSpec::Chapter {
         chapter_id: chapter_fixture.chapter_form.id.clone(),
         role: Some(RoleField::TRANSLATOR),
         incl_opt: vec![AssignmentInclOpt::User],
@@ -88,7 +86,7 @@ async fn assignment_roundtrip_reads_test_database_url() {
         assignee_form.id
     );
 
-    let assignment_role_update = AssignmentRoleUpdate {
+    let assignment_role_update = assignment_model::RoleUpdate {
         id: assignment_form.id.clone(),
         roles: reviewer_role,
     };

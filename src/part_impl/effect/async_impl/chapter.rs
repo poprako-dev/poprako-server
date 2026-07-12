@@ -8,8 +8,8 @@ use fluent_templates::fluent_bundle::FluentValue;
 use poprako_util::i18n::{trl, trl_kv};
 
 use crate::complex::system_mail::SystemMailComplex;
-use crate::model::chapter::ChapterInfo;
-use crate::model::system_mail::SystemMailForm;
+use crate::model::chapter_model;
+use crate::model::system_mail_model;
 use crate::part::effect::event::chapter::{
     ChapterPublishedPayload, ChapterWorkflowCompletedPayload,
 };
@@ -124,7 +124,10 @@ async fn notify_reviewers<C, R>(
 }
 
 /// Loads a chapter by ID with default include options, returning `None` on lookup failure.
-async fn load_chapter<C, R>(repo: &R, chapter_id: &str) -> Option<ChapterInfo>
+async fn load_chapter<C, R>(
+    repo: &R,
+    chapter_id: &str,
+) -> Option<chapter_model::Info>
 where
     R: ChapterRepo<C>,
     <R as DeriveTransactional>::Transactional: ChapterRepoTransactional<C>,
@@ -149,10 +152,10 @@ where
 /// Builds a list of system mail forms for all assignments in a chapter matching a role.
 async fn build_assignment_mails<C, R>(
     repo: &R,
-    chapter_info: &ChapterInfo,
+    chapter_info: &chapter_model::Info,
     receiver_role: RoleField,
     workflow_label: String,
-) -> Vec<SystemMailForm>
+) -> Vec<system_mail_model::Form>
 where
     R: AssignmentRepo<C>,
     <R as DeriveTransactional>::Transactional: AssignmentRepoTransactional<C>,
@@ -191,7 +194,7 @@ where
 
     assignment_infos
         .into_iter()
-        .map(|assignment_info| SystemMailForm {
+        .map(|assignment_info| system_mail_model::Form {
             id: SystemMailComplex::gen_id(),
             receiver_id: assignment_info.user_id,
             title: title.clone(),
@@ -202,7 +205,7 @@ where
 
 /// Builds the i18n template arguments for a chapter progress notification mail.
 fn chapter_mail_args(
-    chapter_info: &ChapterInfo,
+    chapter_info: &chapter_model::Info,
     workflow_label: String,
 ) -> Option<HashMap<Cow<'static, str>, FluentValue<'static>>> {
     //
@@ -247,7 +250,7 @@ fn chapter_mail_args(
 async fn send_batch<C, R>(
     repo: &R,
     chapter_id: &str,
-    system_mail_forms: Vec<SystemMailForm>,
+    system_mail_forms: Vec<system_mail_model::Form>,
 ) where
     R: SystemMailRepo<C>,
     <R as DeriveTransactional>::Transactional: SystemMailRepoTransactional<C>,

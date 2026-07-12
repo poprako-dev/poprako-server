@@ -7,9 +7,7 @@ use time::OffsetDateTime;
 
 use poprako_transactional::advance::Advance;
 
-use crate::model::member_invitation::{
-    MemberInvitationForm, MemberInvitationInfo, MemberInvitationListSpec,
-};
+use crate::model::member_invitation_model;
 use crate::part::repo::member_invitation::{
     MemberInvitationRepo, MemberInvitationRepoTransactional,
 };
@@ -38,8 +36,8 @@ impl MemberInvitationRepoTransactional<RdbContext> for RdbRepoTransactional {}
 /// Query member invitations matching the given list spec, with optional includes.
 async fn list_infos(
     conn: &mut RdbConn,
-    spec: &MemberInvitationListSpec,
-) -> RegularResult<Vec<MemberInvitationInfo>> {
+    spec: &member_invitation_model::ListSpec,
+) -> RegularResult<Vec<member_invitation_model::Info>> {
     //
     let mut query = t_member_invitation
         .filter(f_team_id.eq(spec.team_id.as_str()))
@@ -79,7 +77,7 @@ async fn get_info_by_id(
     conn: &mut RdbConn,
     id: &str,
     incl_opt: &[MemberInvitationInclOpt],
-) -> RegularResult<MemberInvitationInfo> {
+) -> RegularResult<member_invitation_model::Info> {
     //
     let row: MemberInvitationRow = t_member_invitation
         .filter(f_id.eq(id))
@@ -90,7 +88,7 @@ async fn get_info_by_id(
         .map_err(diesel)?
         .ok_or_else(|| expected("error-invitation-not-found"))?;
 
-    let mut info: MemberInvitationInfo = row.try_into()?;
+    let mut info: member_invitation_model::Info = row.try_into()?;
 
     incl::member_invitation::populate_member_invitation_incls(
         conn,
@@ -105,8 +103,8 @@ async fn get_info_by_id(
 /// Create a new member invitation and return its info.
 async fn create(
     conn: &mut RdbConn,
-    form: &MemberInvitationForm,
-) -> RegularResult<MemberInvitationInfo> {
+    form: &member_invitation_model::Form,
+) -> RegularResult<member_invitation_model::Info> {
     //
     let entry = MemberInvitationEntry::from(form);
 
@@ -124,7 +122,7 @@ async fn create(
 async fn get_info_by_code_excluded(
     conn: &mut RdbConn,
     code: &str,
-) -> RegularResult<MemberInvitationInfo> {
+) -> RegularResult<member_invitation_model::Info> {
     //
     let row: MemberInvitationRow = t_member_invitation
         .filter(f_code.eq(code))
@@ -200,7 +198,7 @@ impl<'a> Execute<ListInfos<'a>> for RdbRepo {
     async fn execute(
         &self,
         step: &ListInfos<'a>,
-    ) -> RegularResult<Vec<MemberInvitationInfo>> {
+    ) -> RegularResult<Vec<member_invitation_model::Info>> {
         submit_query!(self.core, list_infos, step.spec)
     }
 }
@@ -212,7 +210,7 @@ impl<'a> Execute<GetInfoById<'a>> for RdbRepo {
     async fn execute(
         &self,
         step: &GetInfoById<'a>,
-    ) -> RegularResult<MemberInvitationInfo> {
+    ) -> RegularResult<member_invitation_model::Info> {
         submit_query!(self.core, get_info_by_id, step.id, step.incl_opt)
     }
 }
@@ -227,7 +225,7 @@ impl<'a> Advance<Create<'a>, RdbContext> for RdbRepoTransactional {
         &self,
         context: &mut RdbContext,
         step: &Create<'a>,
-    ) -> RegularResult<MemberInvitationInfo> {
+    ) -> RegularResult<member_invitation_model::Info> {
         create(context.conn(), step.form).await
     }
 }
@@ -242,7 +240,7 @@ impl<'a> Advance<GetInfoByCodeExcluded<'a>, RdbContext>
         &self,
         context: &mut RdbContext,
         step: &GetInfoByCodeExcluded<'a>,
-    ) -> RegularResult<MemberInvitationInfo> {
+    ) -> RegularResult<member_invitation_model::Info> {
         get_info_by_code_excluded(context.conn(), step.code).await
     }
 }
@@ -268,7 +266,7 @@ impl<'a> Advance<GetInfoById<'a>, RdbContext> for RdbRepoTransactional {
         &self,
         context: &mut RdbContext,
         step: &GetInfoById<'a>,
-    ) -> RegularResult<MemberInvitationInfo> {
+    ) -> RegularResult<member_invitation_model::Info> {
         get_info_by_id(context.conn(), step.id, step.incl_opt).await
     }
 }

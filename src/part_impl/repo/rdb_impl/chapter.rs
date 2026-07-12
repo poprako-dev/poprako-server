@@ -9,11 +9,8 @@ use time::OffsetDateTime;
 
 use poprako_transactional::advance::Advance;
 
-use crate::model::chapter::{
-    ChapterForm, ChapterInfo, ChapterInfoUpdate, ChapterListSpec,
-    ChapterStageUpdate,
-};
-use crate::model::unit::UnitCounterDelta;
+use crate::model::chapter_model;
+use crate::model::unit_model;
 use crate::part::repo::chapter::{ChapterRepo, ChapterRepoTransactional};
 use crate::part::repo::step::chapter::{
     AdjustUnitCounters, Create, Delete, FindPinnedInfoByComicId, GetInfoById,
@@ -38,12 +35,14 @@ impl ChapterRepo<RdbContext> for RdbRepo {}
 impl ChapterRepoTransactional<RdbContext> for RdbRepoTransactional {}
 
 /// Converts a single `ChapterRow` into a `ChapterInfo`.
-fn row_into_info(row: ChapterRow) -> RegularResult<ChapterInfo> {
+fn row_into_info(row: ChapterRow) -> RegularResult<chapter_model::Info> {
     row.try_into()
 }
 
 /// Converts a vector of `ChapterRow` values into `ChapterInfo`.
-fn rows_into_infos(rows: Vec<ChapterRow>) -> RegularResult<Vec<ChapterInfo>> {
+fn rows_into_infos(
+    rows: Vec<ChapterRow>,
+) -> RegularResult<Vec<chapter_model::Info>> {
     rows.into_iter().map(row_into_info).collect()
 }
 
@@ -52,7 +51,7 @@ async fn get_info_by_id(
     conn: &mut RdbConn,
     id: &str,
     incl_opt: &[ChapterInclOpt],
-) -> RegularResult<ChapterInfo> {
+) -> RegularResult<chapter_model::Info> {
     //
     let row: ChapterRow = t_chapter
         .filter(f_id.eq(id))
@@ -80,7 +79,7 @@ async fn get_info_by_id_excluded(
     conn: &mut RdbConn,
     id: &str,
     incl_opt: &[ChapterInclOpt],
-) -> RegularResult<ChapterInfo> {
+) -> RegularResult<chapter_model::Info> {
     //
     let row: ChapterRow = t_chapter
         .filter(f_id.eq(id))
@@ -107,8 +106,8 @@ async fn get_info_by_id_excluded(
 /// Queries chapter rows for a given comic, ordered by index descending.
 async fn list_infos(
     conn: &mut RdbConn,
-    spec: &ChapterListSpec,
-) -> RegularResult<Vec<ChapterInfo>> {
+    spec: &chapter_model::ListSpec,
+) -> RegularResult<Vec<chapter_model::Info>> {
     //
     let rows: Vec<ChapterRow> = t_chapter
         .filter(f_comic_id.eq(spec.comic_id.as_str()))
@@ -171,7 +170,7 @@ async fn list_infos(
 async fn list_all_infos_by_comic_id_excluded(
     conn: &mut RdbConn,
     comic_id: &str,
-) -> RegularResult<Vec<ChapterInfo>> {
+) -> RegularResult<Vec<chapter_model::Info>> {
     //
     let rows: Vec<ChapterRow> = t_chapter
         .filter(f_comic_id.eq(comic_id))
@@ -190,7 +189,7 @@ async fn find_pinned_info_by_comic_id(
     conn: &mut RdbConn,
     comic_id: &str,
     incl_opt: &[ChapterInclOpt],
-) -> RegularResult<Option<ChapterInfo>> {
+) -> RegularResult<Option<chapter_model::Info>> {
     //
     let row: Option<ChapterRow> = t_chapter
         .filter(f_comic_id.eq(comic_id))
@@ -221,7 +220,7 @@ async fn find_pinned_info_by_comic_id(
 async fn list_pinned_infos_by_comic_ids(
     conn: &mut RdbConn,
     comic_ids: &[String],
-) -> RegularResult<HashMap<String, ChapterInfo>> {
+) -> RegularResult<HashMap<String, chapter_model::Info>> {
     //
     if comic_ids.is_empty() {
         return Ok(HashMap::new());
@@ -250,8 +249,8 @@ async fn list_pinned_infos_by_comic_ids(
 /// Inserts a new chapter row from the given form and returns the created info.
 async fn create(
     conn: &mut RdbConn,
-    form: &ChapterForm,
-) -> RegularResult<ChapterInfo> {
+    form: &chapter_model::Form,
+) -> RegularResult<chapter_model::Info> {
     //
     let entry = ChapterEntry::from(form);
 
@@ -268,7 +267,7 @@ async fn create(
 /// Updates the modifiable fields of a chapter row.
 async fn update_info(
     conn: &mut RdbConn,
-    update: &ChapterInfoUpdate,
+    update: &chapter_model::InfoUpdate,
 ) -> RegularResult<()> {
     //
     let now = OffsetDateTime::now_utc();
@@ -295,7 +294,7 @@ async fn update_info(
 /// Updates the stage timestamps of a chapter row.
 async fn update_stage(
     conn: &mut RdbConn,
-    update: &ChapterStageUpdate,
+    update: &chapter_model::StageUpdate,
 ) -> RegularResult<()> {
     //
     let now = OffsetDateTime::now_utc();
@@ -342,7 +341,7 @@ async fn set_page_counters(
 async fn adjust_unit_counters(
     conn: &mut RdbConn,
     id: &str,
-    delta: &UnitCounterDelta,
+    delta: &unit_model::CounterDelta,
 ) -> RegularResult<()> {
     //
     let now = OffsetDateTime::now_utc();
@@ -403,7 +402,7 @@ impl<'a> Execute<GetInfoById<'a>> for RdbRepo {
     async fn execute(
         &self,
         step: &GetInfoById<'a>,
-    ) -> RegularResult<ChapterInfo> {
+    ) -> RegularResult<chapter_model::Info> {
         submit_query!(self.core, get_info_by_id, step.id, step.incl_opt)
     }
 }
@@ -415,7 +414,7 @@ impl<'a> Execute<ListInfos<'a>> for RdbRepo {
     async fn execute(
         &self,
         step: &ListInfos<'a>,
-    ) -> RegularResult<Vec<ChapterInfo>> {
+    ) -> RegularResult<Vec<chapter_model::Info>> {
         submit_query!(self.core, list_infos, step.spec)
     }
 }
@@ -432,7 +431,7 @@ impl<'a> Execute<FindPinnedInfoByComicId<'a>> for RdbRepo {
     async fn execute(
         &self,
         step: &FindPinnedInfoByComicId<'a>,
-    ) -> RegularResult<Option<ChapterInfo>> {
+    ) -> RegularResult<Option<chapter_model::Info>> {
         submit_query!(
             self.core,
             find_pinned_info_by_comic_id,
@@ -449,7 +448,7 @@ impl<'a> Execute<ListPinnedInfosByComicIds<'a>> for RdbRepo {
     async fn execute(
         &self,
         step: &ListPinnedInfosByComicIds<'a>,
-    ) -> RegularResult<HashMap<String, ChapterInfo>> {
+    ) -> RegularResult<HashMap<String, chapter_model::Info>> {
         submit_query!(self.core, list_pinned_infos_by_comic_ids, step.comic_ids)
     }
 }
@@ -462,7 +461,7 @@ impl<'a> Advance<Create<'a>, RdbContext> for RdbRepoTransactional {
         &self,
         context: &mut RdbContext,
         step: &Create<'a>,
-    ) -> RegularResult<ChapterInfo> {
+    ) -> RegularResult<chapter_model::Info> {
         create(context.conn(), step.form).await
     }
 }
@@ -475,7 +474,7 @@ impl<'a> Advance<GetInfoById<'a>, RdbContext> for RdbRepoTransactional {
         &self,
         context: &mut RdbContext,
         step: &GetInfoById<'a>,
-    ) -> RegularResult<ChapterInfo> {
+    ) -> RegularResult<chapter_model::Info> {
         get_info_by_id(context.conn(), step.id, step.incl_opt).await
     }
 }
@@ -488,7 +487,7 @@ impl<'a> Advance<GetInfoByIdExcluded<'a>, RdbContext> for RdbRepoTransactional {
         &self,
         context: &mut RdbContext,
         step: &GetInfoByIdExcluded<'a>,
-    ) -> RegularResult<ChapterInfo> {
+    ) -> RegularResult<chapter_model::Info> {
         get_info_by_id_excluded(context.conn(), step.id, step.incl_opt).await
     }
 }
@@ -508,7 +507,7 @@ impl<'a> Advance<ListAllInfosByComicIdExcluded<'a>, RdbContext>
         &self,
         context: &mut RdbContext,
         step: &ListAllInfosByComicIdExcluded<'a>,
-    ) -> RegularResult<Vec<ChapterInfo>> {
+    ) -> RegularResult<Vec<chapter_model::Info>> {
         list_all_infos_by_comic_id_excluded(context.conn(), step.comic_id).await
     }
 }
@@ -523,7 +522,7 @@ impl<'a> Advance<FindPinnedInfoByComicId<'a>, RdbContext>
         &self,
         context: &mut RdbContext,
         step: &FindPinnedInfoByComicId<'a>,
-    ) -> RegularResult<Option<ChapterInfo>> {
+    ) -> RegularResult<Option<chapter_model::Info>> {
         find_pinned_info_by_comic_id(
             context.conn(),
             step.comic_id,

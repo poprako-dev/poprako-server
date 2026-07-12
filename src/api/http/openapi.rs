@@ -8,62 +8,23 @@ use utoipa::OpenApi;
 
 use crate::api::http::handler;
 use crate::api::http::result::HttpError;
-use crate::data::announcement::{
-    AnnouncementInfoVal, CreateAnnouncementData, CreateAnnouncementVal,
-};
-use crate::data::assignment::{
-    AssignmentInfoVal, JoinChapterData, UpdateAssignmentRolesData,
-};
-use crate::data::assignment_invitation::{
-    AssignmentInvitationInfoVal, CreateAssignmentInvitationData,
-    CreateAssignmentInvitationVal, JoinAssignmentInvitationData,
-};
-use crate::data::auth::{LoginData, LoginVal, RegisterData, RegisterVal};
-use crate::data::chapter::{
-    ChapterInfoVal, CreateChapterData, CreateChapterVal, PatchChapterInfoData,
-    UpdateChapterStageData,
-};
-use crate::data::chapter_port::{
-    ChapterTranslationExportVal, ChapterTranslationImportData,
-    ChapterTranslationImportVal,
-};
-use crate::data::comic::{
-    ComicInfoVal, CreateComicData, CreateComicVal, MarkComicCoverUploadedData,
-    ReserveComicCoverData, ReserveComicCoverVal, UpdateComicInfoData,
-};
-use crate::data::comic_archive::ArchiveComicVal;
-use crate::data::comment::{
-    CommentInfoVal, CreateCommentData, CreateCommentVal,
-};
-use crate::data::member::{
-    CreateMemberData, CreateMemberVal, JoinTeamData, MemberInfoVal,
-    UpdateMemberRolesData,
-};
-use crate::data::member_invitation::{
-    CreateMemberInvitationData, CreateMemberInvitationVal,
-    MemberInvitationInfoVal, UpdateMemberInvitationRolesData,
-};
-use crate::data::page::{
-    MarkPageImageUploadedData, PageCreationVal, PageInfoVal,
-    ReserveChapterPagesData, ReserveChapterPagesVal, ReservePageImageData,
-    ReservePageImageVal,
-};
-use crate::data::system_mail::{MarkSystemMailsReadData, SystemMailVal};
-use crate::data::team::{
-    CreateTeamData, MarkTeamAvatarUploadedData, ReserveTeamAvatarData,
-    ReserveTeamAvatarVal, TeamInfoVal, UpdateTeamInfoData,
-};
-use crate::data::unit::{
-    ListPageUnitInfosVal, SavePageUnitsData, SavePageUnitsVal, UnitDiffData,
-    UnitInfoVal, UnitOperData,
-};
-use crate::data::user::{
-    MarkUserAvatarUploadedData, ReserveUserAvatarData, ReserveUserAvatarVal,
-    UpdateUserInfoData, UserInfoVal,
-};
-use crate::data::workset::{
-    CreateWorksetData, CreateWorksetVal, UpdateWorksetInfoData, WorksetInfoVal,
-};
+use crate::data::announcement_data;
+use crate::data::assignment_data;
+use crate::data::assignment_invitation_data;
+use crate::data::auth_data;
+use crate::data::chapter_data;
+use crate::data::chapter_port_data;
+use crate::data::comic_archive_data;
+use crate::data::comic_data;
+use crate::data::comment_data;
+use crate::data::member_data;
+use crate::data::member_invitation_data;
+use crate::data::page_data;
+use crate::data::system_mail_data;
+use crate::data::team_data;
+use crate::data::unit_data;
+use crate::data::user_data;
+use crate::data::workset_data;
 use crate::value::announcement::AnnouncementInclOpt;
 use crate::value::assignment::AssignmentInclOpt;
 use crate::value::chapter::ChapterInclOpt;
@@ -151,78 +112,78 @@ use crate::value::role::RoleField;
     ),
     components(schemas(
         HttpError,
-        RegisterData,
-        RegisterVal,
-        LoginData,
-        LoginVal,
-        UserInfoVal,
-        UpdateUserInfoData,
-        ReserveUserAvatarData,
-        ReserveUserAvatarVal,
-        MarkUserAvatarUploadedData,
-        TeamInfoVal,
-        CreateTeamData,
-        UpdateTeamInfoData,
-        ReserveTeamAvatarData,
-        ReserveTeamAvatarVal,
-        MarkTeamAvatarUploadedData,
-        WorksetInfoVal,
-        CreateWorksetData,
-        CreateWorksetVal,
-        UpdateWorksetInfoData,
-        ComicInfoVal,
-        CreateComicData,
-        CreateComicVal,
-        UpdateComicInfoData,
-        ReserveComicCoverData,
-        ReserveComicCoverVal,
-        MarkComicCoverUploadedData,
-        ArchiveComicVal,
-        ChapterInfoVal,
-        CreateChapterData,
-        CreateChapterVal,
-        PatchChapterInfoData,
-        UpdateChapterStageData,
-        ChapterTranslationExportVal,
-        ChapterTranslationImportData,
-        ChapterTranslationImportVal,
-        PageInfoVal,
-        PageCreationVal,
-        ReserveChapterPagesData,
-        ReserveChapterPagesVal,
-        ReservePageImageData,
-        ReservePageImageVal,
-        MarkPageImageUploadedData,
-        UnitInfoVal,
-        ListPageUnitInfosVal,
-        SavePageUnitsData,
-        SavePageUnitsVal,
-        UnitDiffData,
-        UnitOperData,
-        AssignmentInfoVal,
-        JoinChapterData,
-        UpdateAssignmentRolesData,
-        AssignmentInvitationInfoVal,
-        CreateAssignmentInvitationData,
-        CreateAssignmentInvitationVal,
-        JoinAssignmentInvitationData,
-        SystemMailVal,
-        MarkSystemMailsReadData,
-        AnnouncementInfoVal,
-        CreateAnnouncementData,
-        CreateAnnouncementVal,
-        CommentInfoVal,
-        CreateCommentData,
-        CreateCommentVal,
-        MemberInfoVal,
-        CreateMemberData,
-        CreateMemberVal,
-        JoinTeamData,
-        UpdateMemberRolesData,
-        MemberInvitationInfoVal,
-        CreateMemberInvitationData,
-        CreateMemberInvitationVal,
-        UpdateMemberInvitationRolesData,
+        auth_data::RegisterData,
+        auth_data::RegisterVal,
+        auth_data::LoginData,
+        auth_data::LoginVal,
+        user_data::InfoVal,
+        user_data::UpdateInfoData,
+        user_data::ReserveAvatarData,
+        user_data::ReserveAvatarVal,
+        user_data::MarkAvatarUploadedData,
+        team_data::InfoVal,
+        team_data::CreateData,
+        team_data::UpdateInfoData,
+        team_data::ReserveAvatarData,
+        team_data::ReserveAvatarVal,
+        team_data::MarkAvatarUploadedData,
+        workset_data::InfoVal,
+        workset_data::CreateData,
+        workset_data::CreateVal,
+        workset_data::UpdateInfoData,
+        comic_data::InfoVal,
+        comic_data::CreateData,
+        comic_data::CreateVal,
+        comic_data::UpdateInfoData,
+        comic_data::ReserveCoverData,
+        comic_data::ReserveCoverVal,
+        comic_data::MarkCoverUploadedData,
+        comic_archive_data::Val,
+        chapter_data::InfoVal,
+        chapter_data::CreateData,
+        chapter_data::CreateVal,
+        chapter_data::PatchInfoData,
+        chapter_data::UpdateStageData,
+        chapter_port_data::TranslationExportVal,
+        chapter_port_data::TranslationImportData,
+        chapter_port_data::TranslationImportVal,
+        page_data::InfoVal,
+        page_data::CreationVal,
+        page_data::ReserveChapterData,
+        page_data::ReserveChapterVal,
+        page_data::ReserveImageData,
+        page_data::ReserveImageVal,
+        page_data::MarkImageUploadedData,
+        unit_data::InfoVal,
+        unit_data::ListPageInfosVal,
+        unit_data::SavePageData,
+        unit_data::SavePageVal,
+        unit_data::DiffData,
+        OperData,
+        assignment_data::InfoVal,
+        assignment_data::JoinChapterData,
+        assignment_data::UpdateRolesData,
+        assignment_invitation_data::InfoVal,
+        assignment_invitation_data::CreateData,
+        assignment_invitation_data::CreateVal,
+        assignment_invitation_data::JoinData,
+        system_mail_data::Val,
+        system_mail_data::MarkReadData,
+        announcement_data::InfoVal,
+        announcement_data::CreateData,
+        announcement_data::CreateVal,
+        comment_data::InfoVal,
+        comment_data::CreateData,
+        comment_data::CreateVal,
+        member_data::InfoVal,
+        member_data::CreateData,
+        member_data::CreateVal,
+        member_data::JoinTeamData,
+        member_data::UpdateRolesData,
+        member_invitation_data::InfoVal,
+        member_invitation_data::CreateData,
+        member_invitation_data::CreateVal,
+        member_invitation_data::UpdateRolesData,
         ComicInclOpt,
         ComicWithOpt,
         ChapterInclOpt,

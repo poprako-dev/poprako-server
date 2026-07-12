@@ -4,7 +4,7 @@
 
 use super::*;
 
-use crate::model::unit::UnitOper;
+use crate::model::unit_model;
 
 #[test]
 fn unit_diff_data_into_model_defaults_minimal_create() {
@@ -20,14 +20,13 @@ fn unit_diff_data_into_model_defaults_minimal_create() {
         }]
     });
 
-    let unit_diff_data: UnitDiffData =
-        serde_json::from_value(value).ok().unwrap();
+    let unit_diff_data: DiffData = serde_json::from_value(value).ok().unwrap();
 
     let unit_diff = unit_diff_data.into_model().unwrap();
 
     match &unit_diff.opers[0] {
         //
-        UnitOper::Create {
+        unit_model::Oper::Create {
             id: local_id,
             payload,
             before_id,
@@ -50,7 +49,7 @@ fn unit_diff_data_into_model_defaults_minimal_create() {
             assert!(payload.last_proofreader_id.is_none());
         }
 
-        UnitOper::Save { .. } | UnitOper::Delete { .. } => {
+        unit_model::Oper::Save { .. } | unit_model::Oper::Delete { .. } => {
             panic!("expected create oper");
         }
     }
@@ -90,14 +89,13 @@ fn unit_diff_data_into_model_preserves_create_and_save_content() {
         ]
     });
 
-    let unit_diff_data: UnitDiffData =
-        serde_json::from_value(value).ok().unwrap();
+    let unit_diff_data: DiffData = serde_json::from_value(value).ok().unwrap();
 
     let unit_diff = unit_diff_data.into_model().unwrap();
 
     match &unit_diff.opers[0] {
         //
-        UnitOper::Create {
+        unit_model::Oper::Create {
             payload, before_id, ..
         } => {
             //
@@ -114,14 +112,14 @@ fn unit_diff_data_into_model_preserves_create_and_save_content() {
             assert_eq!(payload.last_proofreader_id.as_deref(), Some("user-2"));
         }
 
-        UnitOper::Save { .. } | UnitOper::Delete { .. } => {
+        unit_model::Oper::Save { .. } | unit_model::Oper::Delete { .. } => {
             panic!("expected create oper");
         }
     }
 
     match &unit_diff.opers[1] {
         //
-        UnitOper::Save { id, payload, .. } => {
+        unit_model::Oper::Save { id, payload, .. } => {
             //
             assert_eq!(id, "unit-a");
 
@@ -130,7 +128,7 @@ fn unit_diff_data_into_model_preserves_create_and_save_content() {
             assert!(payload.translated_text.is_none());
         }
 
-        UnitOper::Create { .. } | UnitOper::Delete { .. } => {
+        unit_model::Oper::Create { .. } | unit_model::Oper::Delete { .. } => {
             panic!("expected save oper");
         }
     }
@@ -172,7 +170,7 @@ fn unit_diff_data_rejects_legacy_or_mixed_identifiers() {
             "opers": [invalid_oper]
         });
 
-        let result = serde_json::from_value::<UnitDiffData>(value);
+        let result = serde_json::from_value::<DiffData>(value);
 
         assert!(result.is_err());
     }

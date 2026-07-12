@@ -1,11 +1,11 @@
 use async_trait::async_trait;
 
-use crate::model::assignment::AssignmentInfo;
-use crate::model::chapter::ChapterInfo;
-use crate::model::comic::ComicInfo;
-use crate::model::team::TeamInfo;
-use crate::model::user::UserInfo;
-use crate::model::workset::WorksetInfo;
+use crate::model::assignment_model;
+use crate::model::chapter_model;
+use crate::model::comic_model;
+use crate::model::team_model;
+use crate::model::user_model;
+use crate::model::workset_model;
 use crate::part_impl::repo::rdb_impl::incl::{
     self, ChapterByIds, ComicByIds, Incl, TeamByIds, UserByIds, WorksetByIds,
 };
@@ -19,17 +19,17 @@ struct AssignmentChapterIncl;
 
 #[async_trait]
 impl Incl for AssignmentChapterIncl {
-    type Owner = AssignmentInfo;
-    type Related = ChapterInfo;
+    type Owner = assignment_model::Info;
+    type Related = chapter_model::Info;
     type Query = ChapterByIds;
 
-    fn resolve_key(assignment_info: &AssignmentInfo) -> Option<&str> {
+    fn resolve_key(assignment_info: &assignment_model::Info) -> Option<&str> {
         Some(&assignment_info.chapter_id)
     }
 
     fn inject(
-        assignment_info: &mut AssignmentInfo,
-        chapter_info: Option<ChapterInfo>,
+        assignment_info: &mut assignment_model::Info,
+        chapter_info: Option<chapter_model::Info>,
     ) {
         assignment_info.chapter = chapter_info;
     }
@@ -40,11 +40,11 @@ struct AssignmentChapterComicIncl;
 
 #[async_trait]
 impl Incl for AssignmentChapterComicIncl {
-    type Owner = AssignmentInfo;
-    type Related = ComicInfo;
+    type Owner = assignment_model::Info;
+    type Related = comic_model::Info;
     type Query = ComicByIds;
 
-    fn resolve_key(assignment_info: &AssignmentInfo) -> Option<&str> {
+    fn resolve_key(assignment_info: &assignment_model::Info) -> Option<&str> {
         assignment_info
             .chapter
             .as_ref()
@@ -52,8 +52,8 @@ impl Incl for AssignmentChapterComicIncl {
     }
 
     fn inject(
-        assignment_info: &mut AssignmentInfo,
-        comic_info: Option<ComicInfo>,
+        assignment_info: &mut assignment_model::Info,
+        comic_info: Option<comic_model::Info>,
     ) {
         //
         let Some(chapter_info) = &mut assignment_info.chapter else {
@@ -69,11 +69,11 @@ struct AssignmentChapterComicWorksetIncl;
 
 #[async_trait]
 impl Incl for AssignmentChapterComicWorksetIncl {
-    type Owner = AssignmentInfo;
-    type Related = WorksetInfo;
+    type Owner = assignment_model::Info;
+    type Related = workset_model::Info;
     type Query = WorksetByIds;
 
-    fn resolve_key(assignment_info: &AssignmentInfo) -> Option<&str> {
+    fn resolve_key(assignment_info: &assignment_model::Info) -> Option<&str> {
         assignment_info
             .chapter
             .as_ref()
@@ -82,8 +82,8 @@ impl Incl for AssignmentChapterComicWorksetIncl {
     }
 
     fn inject(
-        assignment_info: &mut AssignmentInfo,
-        workset_info: Option<WorksetInfo>,
+        assignment_info: &mut assignment_model::Info,
+        workset_info: Option<workset_model::Info>,
     ) {
         //
         let Some(chapter_info) = &mut assignment_info.chapter else {
@@ -103,11 +103,11 @@ struct AssignmentChapterComicWorksetTeamIncl;
 
 #[async_trait]
 impl Incl for AssignmentChapterComicWorksetTeamIncl {
-    type Owner = AssignmentInfo;
-    type Related = TeamInfo;
+    type Owner = assignment_model::Info;
+    type Related = team_model::Info;
     type Query = TeamByIds;
 
-    fn resolve_key(assignment_info: &AssignmentInfo) -> Option<&str> {
+    fn resolve_key(assignment_info: &assignment_model::Info) -> Option<&str> {
         assignment_info
             .chapter
             .as_ref()
@@ -117,8 +117,8 @@ impl Incl for AssignmentChapterComicWorksetTeamIncl {
     }
 
     fn inject(
-        assignment_info: &mut AssignmentInfo,
-        team_info: Option<TeamInfo>,
+        assignment_info: &mut assignment_model::Info,
+        team_info: Option<team_model::Info>,
     ) {
         //
         let Some(chapter_info) = &mut assignment_info.chapter else {
@@ -138,11 +138,11 @@ struct AssignmentChapterCreatorIncl;
 
 #[async_trait]
 impl Incl for AssignmentChapterCreatorIncl {
-    type Owner = AssignmentInfo;
-    type Related = UserInfo;
+    type Owner = assignment_model::Info;
+    type Related = user_model::Info;
     type Query = UserByIds;
 
-    fn resolve_key(assignment_info: &AssignmentInfo) -> Option<&str> {
+    fn resolve_key(assignment_info: &assignment_model::Info) -> Option<&str> {
         assignment_info
             .chapter
             .as_ref()
@@ -150,8 +150,8 @@ impl Incl for AssignmentChapterCreatorIncl {
     }
 
     fn inject(
-        assignment_info: &mut AssignmentInfo,
-        user_info: Option<UserInfo>,
+        assignment_info: &mut assignment_model::Info,
+        user_info: Option<user_model::Info>,
     ) {
         //
         let Some(chapter_info) = &mut assignment_info.chapter else {
@@ -167,11 +167,11 @@ struct AssignmentChapterComicCreatorIncl;
 
 #[async_trait]
 impl Incl for AssignmentChapterComicCreatorIncl {
-    type Owner = AssignmentInfo;
-    type Related = UserInfo;
+    type Owner = assignment_model::Info;
+    type Related = user_model::Info;
     type Query = UserByIds;
 
-    fn resolve_key(assignment_info: &AssignmentInfo) -> Option<&str> {
+    fn resolve_key(assignment_info: &assignment_model::Info) -> Option<&str> {
         assignment_info
             .chapter
             .as_ref()
@@ -180,8 +180,8 @@ impl Incl for AssignmentChapterComicCreatorIncl {
     }
 
     fn inject(
-        assignment_info: &mut AssignmentInfo,
-        user_info: Option<UserInfo>,
+        assignment_info: &mut assignment_model::Info,
+        user_info: Option<user_model::Info>,
     ) {
         //
         let Some(chapter_info) = &mut assignment_info.chapter else {
@@ -201,17 +201,17 @@ struct AssignmentUserIncl;
 
 #[async_trait]
 impl Incl for AssignmentUserIncl {
-    type Owner = AssignmentInfo;
-    type Related = UserInfo;
+    type Owner = assignment_model::Info;
+    type Related = user_model::Info;
     type Query = UserByIds;
 
-    fn resolve_key(assignment_info: &AssignmentInfo) -> Option<&str> {
+    fn resolve_key(assignment_info: &assignment_model::Info) -> Option<&str> {
         Some(&assignment_info.user_id)
     }
 
     fn inject(
-        assignment_info: &mut AssignmentInfo,
-        user_info: Option<UserInfo>,
+        assignment_info: &mut assignment_model::Info,
+        user_info: Option<user_model::Info>,
     ) {
         assignment_info.user = user_info;
     }
@@ -220,7 +220,7 @@ impl Incl for AssignmentUserIncl {
 /// Populates assignment query results with eagerly-loaded related entity data.
 pub async fn populate_assignment_incls(
     conn: &mut RdbConn,
-    infos: &mut [AssignmentInfo],
+    infos: &mut [assignment_model::Info],
     incl_opt: &[AssignmentInclOpt],
 ) -> RegularResult<()> {
     //

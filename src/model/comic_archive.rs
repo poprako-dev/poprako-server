@@ -3,36 +3,36 @@
 use bitcode::{Decode, Encode};
 use time::OffsetDateTime;
 
-use crate::model::assignment::AssignmentInfo;
-use crate::model::chapter::ChapterInfo;
-use crate::model::comic::ComicInfo;
-use crate::model::page::PageInfo;
-use crate::model::unit::UnitInfo;
-use crate::model::workset::WorksetInfo;
+use crate::model::assignment_model;
+use crate::model::chapter_model;
+use crate::model::comic_model;
+use crate::model::page_model;
+use crate::model::unit_model;
+use crate::model::workset_model;
 
 /// Fully locked active data used to build an immutable archive.
-pub struct ComicArchiveSnapshot {
-    pub comic_info: ComicInfo,
-    pub workset_info: WorksetInfo,
-    pub chapter_snapshots: Vec<ComicArchiveChapterSnapshot>,
+pub struct Snapshot {
+    pub comic_info: comic_model::Info,
+    pub workset_info: workset_model::Info,
+    pub chapter_snapshots: Vec<ChapterSnapshot>,
 }
 
 /// Active descendants belonging to one archived chapter.
-pub struct ComicArchiveChapterSnapshot {
-    pub chapter_info: ChapterInfo,
-    pub assignment_infos: Vec<AssignmentInfo>,
-    pub page_snapshots: Vec<ComicArchivePageSnapshot>,
+pub struct ChapterSnapshot {
+    pub chapter_info: chapter_model::Info,
+    pub assignment_infos: Vec<assignment_model::Info>,
+    pub page_snapshots: Vec<PageSnapshot>,
 }
 
 /// Active page data and its ordered text units.
-pub struct ComicArchivePageSnapshot {
-    pub page_info: PageInfo,
-    pub unit_infos: Vec<UnitInfo>,
+pub struct PageSnapshot {
+    pub page_info: page_model::Info,
+    pub unit_infos: Vec<unit_model::Info>,
 }
 
 /// One compressed row to persist in an archive table.
 #[derive(Clone)]
-pub struct ComicArchiveRecord {
+pub struct Record {
     pub id: String,
     pub archived_bytes: Vec<u8>,
     pub archiver_id: String,
@@ -40,10 +40,10 @@ pub struct ComicArchiveRecord {
 }
 
 /// Archive rows and the source IDs that must be deleted atomically.
-pub struct ComicArchiveWrite {
-    pub comic_record: ComicArchiveRecord,
-    pub chapter_records: Vec<ComicArchiveRecord>,
-    pub translation_records: Vec<ComicArchiveRecord>,
+pub struct Write {
+    pub comic_record: Record,
+    pub chapter_records: Vec<Record>,
+    pub translation_records: Vec<Record>,
     pub source_comic_id: String,
     pub source_chapter_ids: Vec<String>,
     pub source_page_ids: Vec<String>,
@@ -51,7 +51,7 @@ pub struct ComicArchiveWrite {
 
 /// Immutable comic payload stored in `t_archived_comic`.
 #[derive(Debug, PartialEq, Encode, Decode)]
-pub struct ArchivedComicPayload {
+pub struct ArchivedPayload {
     pub source_comic_id: String,
     pub workset: ArchivedWorksetPayload,
     pub index: i32,

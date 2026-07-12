@@ -16,9 +16,9 @@ use super::*;
 
 use time::{Duration, OffsetDateTime};
 
-use crate::data::system_mail::ListSystemMailData;
-use crate::model::system_mail::SystemMailInfo;
-use crate::model::user::UserToken;
+use crate::data::system_mail_data;
+use crate::model::system_mail_model;
+use crate::model::user_model;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;
@@ -29,8 +29,8 @@ fn mail(
     receiver_id: &str,
     read: bool,
     created_at: OffsetDateTime,
-) -> SystemMailInfo {
-    SystemMailInfo {
+) -> system_mail_model::Info {
+    system_mail_model::Info {
         id: id.into(),
         receiver_id: receiver_id.into(),
         read,
@@ -41,15 +41,15 @@ fn mail(
 }
 
 /// Builds a [`UserToken`] fixture.
-fn token(user_id: &str) -> UserToken {
-    UserToken {
+fn token(user_id: &str) -> user_model::Token {
+    user_model::Token {
         user_id: user_id.into(),
     }
 }
 
 /// Builds a [`ListSystemMailData`] for listing unread mails.
-fn list_unread_data(offset: u64, limit: u64) -> ListSystemMailData {
-    ListSystemMailData {
+fn list_unread_data(offset: u64, limit: u64) -> system_mail_data::ListData {
+    system_mail_data::ListData {
         read: Some(false),
         offset,
         limit,

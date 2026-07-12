@@ -20,9 +20,7 @@ use crate::complex::image::ImageComplex;
 use crate::complex::util::{
     check_user_is_team_admin, check_user_is_team_member,
 };
-use crate::model::chapter::{
-    ChapterInfo, ChapterInfoUpdate, ChapterStageUpdate,
-};
+use crate::model::chapter_model;
 use crate::part::prom::task::{IMAGE_TOPIC, ImageTask};
 use crate::part::prom::{Payload, Prom, PromStep};
 use crate::part::repo::assignment::AssignmentRepoTransactional;
@@ -74,16 +72,16 @@ impl ChapterComplex {
     /// Compute the next [`ChapterStageUpdate`] by applying a [`StageOper`]
     /// to the current [`WorkflowStage`] phase of a chapter.
     pub fn build_stage_update(
-        chapter_info: &ChapterInfo,
+        chapter_info: &chapter_model::Info,
         stage: Stage,
         oper: StageOper,
-    ) -> RegularResult<ChapterStageUpdate> {
+    ) -> RegularResult<chapter_model::StageUpdate> {
         //
         let current_phase = get_phase(chapter_info, stage);
 
         let next_phase = try_modify_stage((stage, current_phase), oper)?;
 
-        let chapter_stage_update = ChapterStageUpdate {
+        let chapter_stage_update = chapter_model::StageUpdate {
             id: chapter_info.id.clone(),
             stages: chapter_info.stages.try_set_phase(stage, next_phase)?,
         };
@@ -193,7 +191,7 @@ fn default_subtitle(index: i32) -> String {
 
 /// Extract the current [`StagePhase`] for a given [`Stage`] from a
 /// [`ChapterInfo`] record.
-fn get_phase(chapter_info: &ChapterInfo, stage: Stage) -> StagePhase {
+fn get_phase(chapter_info: &chapter_model::Info, stage: Stage) -> StagePhase {
     chapter_info.stages.get_phase(stage)
 }
 
@@ -262,7 +260,7 @@ where
         return Ok(());
     };
 
-    let chapter_info_update = ChapterInfoUpdate {
+    let chapter_info_update = chapter_model::InfoUpdate {
         id: chapter_info.id.clone(),
         subtitle: None,
         pin: Some(true),
@@ -400,7 +398,7 @@ impl ChapterPermComplex {
     pub async fn can_user_join<P>(
         proxy: &mut P,
         user_id: &str,
-        chapter_info: &ChapterInfo,
+        chapter_info: &chapter_model::Info,
         roles: RoleMask,
     ) -> RegularResult<()>
     where
@@ -630,7 +628,7 @@ where
 async fn check_join_role<P>(
     proxy: &mut P,
     user_id: &str,
-    chapter_info: &ChapterInfo,
+    chapter_info: &chapter_model::Info,
     roles: RoleMask,
 ) -> RegularResult<()>
 where

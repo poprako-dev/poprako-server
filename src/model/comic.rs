@@ -14,9 +14,9 @@ use time::OffsetDateTime;
 
 use poprako_macro::Paginate;
 
-use crate::model::team::TeamInfo;
-use crate::model::user::UserInfo;
-use crate::model::workset::WorksetInfo;
+use crate::model::team_model;
+use crate::model::user_model;
+use crate::model::workset_model;
 use crate::value::chapter::StageMask;
 use crate::value::comic::ComicInclOpt;
 
@@ -30,7 +30,7 @@ use crate::value::comic::ComicInclOpt;
 /// [`ComicStep::reserve_cover`]: crate::part::repo::step::comic::ComicStep::reserve_cover
 /// [`ComicStep::mark_cover_uploaded`]: crate::part::repo::step::comic::ComicStep::mark_cover_uploaded
 #[derive(Clone)]
-pub struct ComicInfo {
+pub struct Info {
     pub id: String,
 
     pub workset_id: String,
@@ -49,9 +49,9 @@ pub struct ComicInfo {
 
     pub creator_id: String,
 
-    pub workset: Option<WorksetInfo>,
-    pub team: Option<TeamInfo>,
-    pub creator: Option<UserInfo>,
+    pub workset: Option<workset_model::Info>,
+    pub team: Option<team_model::Info>,
+    pub creator: Option<user_model::Info>,
 
     pub last_active_at: OffsetDateTime,
 
@@ -67,7 +67,7 @@ pub struct ComicInfo {
 ///
 /// [`ComicComplex::gen_id`]: crate::complex::comic::ComicComplex::gen_id
 #[cfg_attr(test, derive(Clone))]
-pub struct ComicForm {
+pub struct Form {
     pub id: String,
 
     pub workset_id: String,
@@ -82,7 +82,7 @@ pub struct ComicForm {
 
 /// Mutable profile (non-cover, non-counter) fields for a comic.
 #[cfg_attr(test, derive(Clone))]
-pub struct ComicInfoUpdate {
+pub struct InfoUpdate {
     pub id: String,
 
     pub title: String,
@@ -92,17 +92,17 @@ pub struct ComicInfoUpdate {
 
 /// Filtering and pagination parameters for listing comics within a workset.
 #[Paginate]
-pub struct ComicListSpec {
+pub struct ListSpec {
     pub workset_id: String,
 
     pub fuzzy_title: Option<String>,
-    pub kind: ComicListKind,
+    pub kind: ListKind,
 
     pub incl_opt: Vec<ComicInclOpt>,
 }
 
 /// Workflow-stage filtering mode for listing comics.
-pub enum ComicListKind {
+pub enum ListKind {
     All,
     Stages(StageMask),
 }
@@ -116,7 +116,7 @@ pub enum ComicListKind {
 ///
 /// [`TeamAvatarReservation`]: crate::model::team::TeamAvatarReservation
 #[cfg_attr(test, derive(Clone))]
-pub struct ComicCoverReservation {
+pub struct CoverReservation {
     pub object_key: String,
     pub prev_object_key: Option<String>,
     pub cover_version: i64,

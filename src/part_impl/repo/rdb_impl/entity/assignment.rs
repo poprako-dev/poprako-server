@@ -3,7 +3,7 @@
 use diesel::prelude::*;
 use time::OffsetDateTime;
 
-use crate::model::assignment::{AssignmentForm, AssignmentInfo};
+use crate::model::assignment_model;
 use crate::part_impl::repo::rdb_impl::schema::t_assignment;
 use crate::result::RegularError;
 use crate::value::role::{RoleField, RoleMask};
@@ -136,7 +136,7 @@ impl AssignmentRoleTimestamps {
     }
 }
 
-impl TryFrom<AssignmentRow> for AssignmentInfo {
+impl TryFrom<AssignmentRow> for assignment_model::Info {
     type Error = RegularError;
 
     fn try_from(row: AssignmentRow) -> Result<Self, Self::Error> {
@@ -191,7 +191,10 @@ impl TryFrom<AssignmentRow> for AssignmentInfo {
 }
 
 impl<'a> AssignmentEntry<'a> {
-    pub fn from_form(form: &'a AssignmentForm, now: OffsetDateTime) -> Self {
+    pub fn from_form(
+        form: &'a assignment_model::Form,
+        now: OffsetDateTime,
+    ) -> Self {
         //
         let timestamps = AssignmentRoleTimestamps::from_mask(form.roles, now);
 

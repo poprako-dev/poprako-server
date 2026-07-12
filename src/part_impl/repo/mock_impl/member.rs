@@ -4,9 +4,9 @@ use async_trait::async_trait;
 
 use poprako_transactional::advance::Advance;
 
-use crate::model::member::{MemberForm, MemberInfo, MemberListSpec};
-use crate::model::team::TeamInfo;
-use crate::model::user::UserInfo;
+use crate::model::member_model;
+use crate::model::team_model;
+use crate::model::user_model;
 use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
 use crate::part::repo::step::member::{
     Create, Delete, FindInfoByUserIdAndTeamId, GetInfoById, ListInfos,
@@ -23,7 +23,7 @@ impl MemberRepo<MockContext> for Mock {}
 
 impl MemberRepoTransactional<MockContext> for MockTransactional {}
 
-fn find_user(state: &MockState, user_id: &str) -> Option<UserInfo> {
+fn find_user(state: &MockState, user_id: &str) -> Option<user_model::Info> {
     state
         .users
         .iter()
@@ -31,7 +31,7 @@ fn find_user(state: &MockState, user_id: &str) -> Option<UserInfo> {
         .cloned()
 }
 
-fn find_team(state: &MockState, team_id: &str) -> Option<TeamInfo> {
+fn find_team(state: &MockState, team_id: &str) -> Option<team_model::Info> {
     state
         .teams
         .iter()
@@ -41,7 +41,7 @@ fn find_team(state: &MockState, team_id: &str) -> Option<TeamInfo> {
 
 fn apply_user_incl(
     state: &MockState,
-    member_info: &mut MemberInfo,
+    member_info: &mut member_model::Info,
     include_user: bool,
 ) {
     //
@@ -54,7 +54,7 @@ fn apply_user_incl(
 
 fn apply_team_incl(
     state: &MockState,
-    member_info: &mut MemberInfo,
+    member_info: &mut member_model::Info,
     include_team: bool,
 ) {
     //
@@ -68,8 +68,8 @@ fn apply_team_incl(
 /// Inserts a new member record, rejecting duplicates by id or by the same user+team pair.
 fn create_member(
     state: &mut MockState,
-    form: &MemberForm,
-) -> RegularResult<MemberInfo> {
+    form: &member_model::Form,
+) -> RegularResult<member_model::Info> {
     //
     if state.members.iter().any(|member| member.id == form.id) {
         return Err(expected("error-already-exists"));
@@ -81,7 +81,7 @@ fn create_member(
         return Err(expected("error-already-exists"));
     }
 
-    let member = MemberInfo {
+    let member = member_model::Info {
         id: form.id.clone(),
         user_id: form.user_id.clone(),
         user_nickname: form.user_nickname.clone(),
@@ -101,7 +101,7 @@ fn find_member_by_user_id_and_team_id(
     state: &MockState,
     user_id: &str,
     team_id: &str,
-) -> Option<MemberInfo> {
+) -> Option<member_model::Info> {
     state
         .members
         .iter()
@@ -109,7 +109,10 @@ fn find_member_by_user_id_and_team_id(
         .cloned()
 }
 
-fn get_member_by_id(state: &MockState, id: &str) -> RegularResult<MemberInfo> {
+fn get_member_by_id(
+    state: &MockState,
+    id: &str,
+) -> RegularResult<member_model::Info> {
     state
         .members
         .iter()
@@ -126,7 +129,7 @@ impl<'a> Advance<Create<'a>, MockContext> for MockTransactional {
         &self,
         context: &mut MockContext,
         step: &Create<'a>,
-    ) -> Result<MemberInfo, Self::Error> {
+    ) -> Result<member_model::Info, Self::Error> {
         create_member(&mut context.state, step.form)
     }
 }
@@ -161,7 +164,7 @@ impl<'a> Advance<ListInfosByUserIdExcluded<'a>, MockContext>
         &self,
         context: &mut MockContext,
         step: &ListInfosByUserIdExcluded<'a>,
-    ) -> Result<Vec<MemberInfo>, Self::Error> {
+    ) -> Result<Vec<member_model::Info>, Self::Error> {
         Ok(context
             .state
             .members
@@ -179,13 +182,13 @@ impl<'a> Execute<ListInfos<'a>> for Mock {
     async fn execute(
         &self,
         step: &ListInfos<'a>,
-    ) -> Result<Vec<MemberInfo>, Self::Error> {
+    ) -> Result<Vec<member_model::Info>, Self::Error> {
         //
         let state = self.state.lock().unwrap();
 
         let (offset, limit, incl_opt, mut member_infos) = match step.spec {
             //
-            MemberListSpec::User {
+            member_model::ListSpec::User {
                 owner_id,
                 incl_opt,
                 offset,
@@ -202,7 +205,7 @@ impl<'a> Execute<ListInfos<'a>> for Mock {
                     .collect::<Vec<_>>(),
             ),
 
-            MemberListSpec::Team {
+            member_model::ListSpec::Team {
                 team_id,
                 fuzzy_nickname,
                 role,
@@ -268,7 +271,7 @@ impl<'a> Execute<FindInfoByUserIdAndTeamId<'a>> for Mock {
     async fn execute(
         &self,
         step: &FindInfoByUserIdAndTeamId<'a>,
-    ) -> Result<Option<MemberInfo>, Self::Error> {
+    ) -> Result<Option<member_model::Info>, Self::Error> {
         //
         let state = self.state.lock().unwrap();
 
@@ -287,7 +290,7 @@ impl<'a> Execute<GetInfoById<'a>> for Mock {
     async fn execute(
         &self,
         step: &GetInfoById<'a>,
-    ) -> Result<MemberInfo, Self::Error> {
+    ) -> Result<member_model::Info, Self::Error> {
         //
         let state = self.state.lock().unwrap();
 
@@ -315,7 +318,7 @@ impl<'a> Advance<FindInfoByUserIdAndTeamId<'a>, MockContext>
         &self,
         context: &mut MockContext,
         step: &FindInfoByUserIdAndTeamId<'a>,
-    ) -> Result<Option<MemberInfo>, Self::Error> {
+    ) -> Result<Option<member_model::Info>, Self::Error> {
         Ok(find_member_by_user_id_and_team_id(
             &context.state,
             step.user_id,

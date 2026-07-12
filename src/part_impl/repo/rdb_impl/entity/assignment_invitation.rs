@@ -3,9 +3,7 @@
 use diesel::prelude::*;
 use time::OffsetDateTime;
 
-use crate::model::assignment_invitation::{
-    AssignmentInvitationForm, AssignmentInvitationInfo,
-};
+use crate::model::assignment_invitation_model;
 use crate::part_impl::repo::rdb_impl::schema::t_assignment_invitation;
 use crate::result::RegularError;
 use crate::value::role::RoleMask;
@@ -75,7 +73,7 @@ impl AssignmentInvitationAspect {
     }
 }
 
-impl TryFrom<AssignmentInvitationRow> for AssignmentInvitationInfo {
+impl TryFrom<AssignmentInvitationRow> for assignment_invitation_model::Info {
     type Error = RegularError;
 
     fn try_from(row: AssignmentInvitationRow) -> Result<Self, Self::Error> {
@@ -96,8 +94,10 @@ impl TryFrom<AssignmentInvitationRow> for AssignmentInvitationInfo {
     }
 }
 
-impl<'a> From<&'a AssignmentInvitationForm> for AssignmentInvitationEntry<'a> {
-    fn from(form: &'a AssignmentInvitationForm) -> Self {
+impl<'a> From<&'a assignment_invitation_model::Form>
+    for AssignmentInvitationEntry<'a>
+{
+    fn from(form: &'a assignment_invitation_model::Form) -> Self {
         //
         let now = OffsetDateTime::now_utc();
 

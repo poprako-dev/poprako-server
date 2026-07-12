@@ -4,14 +4,12 @@ use async_trait::async_trait;
 
 use poprako_transactional::advance::Advance;
 
-use crate::model::assignment::{
-    AssignmentForm, AssignmentInfo, AssignmentListSpec,
-};
-use crate::model::chapter::ChapterInfo;
-use crate::model::comic::ComicInfo;
-use crate::model::team::TeamInfo;
-use crate::model::user::UserInfo;
-use crate::model::workset::WorksetInfo;
+use crate::model::assignment_model;
+use crate::model::chapter_model;
+use crate::model::comic_model;
+use crate::model::team_model;
+use crate::model::user_model;
+use crate::model::workset_model;
 use crate::part::repo::assignment::{
     AssignmentRepo, AssignmentRepoTransactional,
 };
@@ -33,7 +31,7 @@ impl AssignmentRepo<MockContext> for Mock {}
 
 impl AssignmentRepoTransactional<MockContext> for MockTransactional {}
 
-fn find_user(state: &MockState, user_id: &str) -> Option<UserInfo> {
+fn find_user(state: &MockState, user_id: &str) -> Option<user_model::Info> {
     state
         .users
         .iter()
@@ -41,7 +39,10 @@ fn find_user(state: &MockState, user_id: &str) -> Option<UserInfo> {
         .cloned()
 }
 
-fn find_chapter(state: &MockState, chapter_id: &str) -> Option<ChapterInfo> {
+fn find_chapter(
+    state: &MockState,
+    chapter_id: &str,
+) -> Option<chapter_model::Info> {
     //
     let mut chapter_info = state
         .chapters
@@ -56,7 +57,7 @@ fn find_chapter(state: &MockState, chapter_id: &str) -> Option<ChapterInfo> {
     Some(chapter_info)
 }
 
-fn find_comic(state: &MockState, comic_id: &str) -> Option<ComicInfo> {
+fn find_comic(state: &MockState, comic_id: &str) -> Option<comic_model::Info> {
     //
     let mut comic_info = state
         .comics
@@ -73,7 +74,10 @@ fn find_comic(state: &MockState, comic_id: &str) -> Option<ComicInfo> {
     Some(comic_info)
 }
 
-fn find_workset(state: &MockState, workset_id: &str) -> Option<WorksetInfo> {
+fn find_workset(
+    state: &MockState,
+    workset_id: &str,
+) -> Option<workset_model::Info> {
     state
         .worksets
         .iter()
@@ -83,8 +87,8 @@ fn find_workset(state: &MockState, workset_id: &str) -> Option<WorksetInfo> {
 
 fn find_team_for_workset(
     state: &MockState,
-    workset_info: &WorksetInfo,
-) -> Option<TeamInfo> {
+    workset_info: &workset_model::Info,
+) -> Option<team_model::Info> {
     state
         .teams
         .iter()
@@ -94,7 +98,7 @@ fn find_team_for_workset(
 
 fn apply_user_incl(
     state: &MockState,
-    assignment_info: &mut AssignmentInfo,
+    assignment_info: &mut assignment_model::Info,
     include_user: bool,
 ) {
     if include_user {
@@ -104,7 +108,7 @@ fn apply_user_incl(
 
 fn apply_chapter_incl(
     state: &MockState,
-    assignment_info: &mut AssignmentInfo,
+    assignment_info: &mut assignment_model::Info,
     include_chapter: bool,
 ) {
     if include_chapter {
@@ -115,7 +119,7 @@ fn apply_chapter_incl(
 
 fn apply_chapter_comic_incl(
     state: &MockState,
-    assignment_info: &mut AssignmentInfo,
+    assignment_info: &mut assignment_model::Info,
     include_comic: bool,
 ) {
     //
@@ -132,7 +136,7 @@ fn apply_chapter_comic_incl(
 
 fn apply_chapter_comic_workset_incl(
     state: &MockState,
-    assignment_info: &mut AssignmentInfo,
+    assignment_info: &mut assignment_model::Info,
     include_workset: bool,
 ) {
     //
@@ -153,7 +157,7 @@ fn apply_chapter_comic_workset_incl(
 
 fn apply_chapter_comic_workset_team_incl(
     state: &MockState,
-    assignment_info: &mut AssignmentInfo,
+    assignment_info: &mut assignment_model::Info,
     include_team: bool,
 ) {
     //
@@ -178,7 +182,7 @@ fn apply_chapter_comic_workset_team_incl(
 
 fn apply_chapter_creator_incl(
     state: &MockState,
-    assignment_info: &mut AssignmentInfo,
+    assignment_info: &mut assignment_model::Info,
     include_creator: bool,
 ) {
     //
@@ -195,7 +199,7 @@ fn apply_chapter_creator_incl(
 
 fn apply_chapter_comic_creator_incl(
     state: &MockState,
-    assignment_info: &mut AssignmentInfo,
+    assignment_info: &mut assignment_model::Info,
     include_creator: bool,
 ) {
     //
@@ -216,7 +220,7 @@ fn apply_chapter_comic_creator_incl(
 
 fn apply_assignment_incls(
     state: &MockState,
-    assignment_info: &mut AssignmentInfo,
+    assignment_info: &mut assignment_model::Info,
     incl_opt: &[AssignmentInclOpt],
 ) {
     //
@@ -266,7 +270,7 @@ fn find_assignment(
     state: &MockState,
     chapter_id: &str,
     user_id: &str,
-) -> Option<AssignmentInfo> {
+) -> Option<assignment_model::Info> {
     state
         .assignments
         .iter()
@@ -281,7 +285,7 @@ fn get_assignment(
     state: &MockState,
     id: &str,
     incl_opt: &[AssignmentInclOpt],
-) -> RegularResult<AssignmentInfo> {
+) -> RegularResult<assignment_model::Info> {
     //
     let mut assignment_info = state
         .assignments
@@ -297,12 +301,12 @@ fn get_assignment(
 
 fn list_assignments(
     state: &MockState,
-    spec: &AssignmentListSpec,
-) -> Vec<AssignmentInfo> {
+    spec: &assignment_model::ListSpec,
+) -> Vec<assignment_model::Info> {
     //
     let (offset, limit, incl_opt, mut assignment_infos) = match spec {
         //
-        AssignmentListSpec::Chapter {
+        assignment_model::ListSpec::Chapter {
             chapter_id,
             role,
             incl_opt,
@@ -326,7 +330,7 @@ fn list_assignments(
                 .collect::<Vec<_>>(),
         ),
 
-        AssignmentListSpec::User {
+        assignment_model::ListSpec::User {
             owner_id,
             role,
             incl_opt,
@@ -376,7 +380,7 @@ fn list_assignments(
 fn list_assignments_by_chapter_id_excluded(
     state: &MockState,
     chapter_id: &str,
-) -> Vec<AssignmentInfo> {
+) -> Vec<assignment_model::Info> {
     state
         .assignments
         .iter()
@@ -390,7 +394,7 @@ fn list_all_assignments_by_chapter(
     chapter_id: &str,
     role: Option<RoleField>,
     incl_opt: &[AssignmentInclOpt],
-) -> Vec<AssignmentInfo> {
+) -> Vec<assignment_model::Info> {
     //
     let mut assignment_infos = state
         .assignments
@@ -419,8 +423,8 @@ fn list_all_assignments_by_chapter(
 
 fn create_assignment(
     state: &mut MockState,
-    form: &AssignmentForm,
-) -> RegularResult<AssignmentInfo> {
+    form: &assignment_model::Form,
+) -> RegularResult<assignment_model::Info> {
     //
     if state
         .assignments
@@ -439,7 +443,7 @@ fn create_assignment(
 
     let time = now();
 
-    let assignment_info = AssignmentInfo {
+    let assignment_info = assignment_model::Info {
         id: form.id.clone(),
         chapter_id: form.chapter_id.clone(),
         user_id: form.user_id.clone(),
@@ -488,7 +492,7 @@ impl<'a> Execute<GetInfoByChapterIdAndUserId<'a>> for Mock {
     async fn execute(
         &self,
         step: &GetInfoByChapterIdAndUserId<'a>,
-    ) -> Result<Option<AssignmentInfo>, Self::Error> {
+    ) -> Result<Option<assignment_model::Info>, Self::Error> {
         //
         let state = self.state.lock().unwrap();
 
@@ -503,7 +507,7 @@ impl<'a> Execute<ListInfos<'a>> for Mock {
     async fn execute(
         &self,
         step: &ListInfos<'a>,
-    ) -> Result<Vec<AssignmentInfo>, Self::Error> {
+    ) -> Result<Vec<assignment_model::Info>, Self::Error> {
         //
         let state = self.state.lock().unwrap();
 
@@ -518,7 +522,7 @@ impl<'a> Execute<ListAllInfosByChapter<'a>> for Mock {
     async fn execute(
         &self,
         step: &ListAllInfosByChapter<'a>,
-    ) -> Result<Vec<AssignmentInfo>, Self::Error> {
+    ) -> Result<Vec<assignment_model::Info>, Self::Error> {
         //
         let state = self.state.lock().unwrap();
 
@@ -538,7 +542,7 @@ impl<'a> Execute<GetInfoById<'a>> for Mock {
     async fn execute(
         &self,
         step: &GetInfoById<'a>,
-    ) -> Result<AssignmentInfo, Self::Error> {
+    ) -> Result<assignment_model::Info, Self::Error> {
         //
         let state = self.state.lock().unwrap();
 
@@ -556,7 +560,7 @@ impl<'a> Advance<GetInfoByChapterIdAndUserId<'a>, MockContext>
         &self,
         context: &mut MockContext,
         step: &GetInfoByChapterIdAndUserId<'a>,
-    ) -> Result<Option<AssignmentInfo>, Self::Error> {
+    ) -> Result<Option<assignment_model::Info>, Self::Error> {
         Ok(find_assignment(
             &context.state,
             step.chapter_id,
@@ -575,7 +579,7 @@ impl<'a> Advance<ListInfosByChapterIdExcluded<'a>, MockContext>
         &self,
         context: &mut MockContext,
         step: &ListInfosByChapterIdExcluded<'a>,
-    ) -> Result<Vec<AssignmentInfo>, Self::Error> {
+    ) -> Result<Vec<assignment_model::Info>, Self::Error> {
         Ok(list_assignments_by_chapter_id_excluded(
             &context.state,
             step.chapter_id,
@@ -591,7 +595,7 @@ impl<'a> Advance<ListAllInfosByChapter<'a>, MockContext> for MockTransactional {
         &self,
         context: &mut MockContext,
         step: &ListAllInfosByChapter<'a>,
-    ) -> Result<Vec<AssignmentInfo>, Self::Error> {
+    ) -> Result<Vec<assignment_model::Info>, Self::Error> {
         Ok(list_all_assignments_by_chapter(
             &context.state,
             step.chapter_id,
@@ -609,7 +613,7 @@ impl<'a> Advance<Create<'a>, MockContext> for MockTransactional {
         &self,
         context: &mut MockContext,
         step: &Create<'a>,
-    ) -> Result<AssignmentInfo, Self::Error> {
+    ) -> Result<assignment_model::Info, Self::Error> {
         create_assignment(&mut context.state, step.form)
     }
 }
@@ -622,7 +626,7 @@ impl<'a> Advance<PutRoles<'a>, MockContext> for MockTransactional {
         &self,
         context: &mut MockContext,
         step: &PutRoles<'a>,
-    ) -> Result<AssignmentInfo, Self::Error> {
+    ) -> Result<assignment_model::Info, Self::Error> {
         //
         let assignment_info = context
             .state

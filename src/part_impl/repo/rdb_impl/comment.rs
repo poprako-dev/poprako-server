@@ -6,7 +6,7 @@ use diesel_async::RunQueryDsl;
 
 use poprako_transactional::advance::Advance;
 
-use crate::model::comment::{CommentForm, CommentInfo, CommentListSpec};
+use crate::model::comment_model;
 use crate::part::repo::comment::{CommentRepo, CommentRepoTransactional};
 use crate::part::repo::step::comment::{Create, ListInfos};
 use crate::part::shared::execute::Execute;
@@ -27,8 +27,8 @@ impl CommentRepoTransactional<RdbContext> for RdbRepoTransactional {}
 /// Query comment infos matching the given list spec, with optional includes.
 async fn list_infos(
     conn: &mut RdbConn,
-    spec: &CommentListSpec,
-) -> RegularResult<Vec<CommentInfo>> {
+    spec: &comment_model::ListSpec,
+) -> RegularResult<Vec<comment_model::Info>> {
     //
     let rows: Vec<CommentRow> = t_comment
         .filter(f_team_id.eq(spec.team_id.as_str()))
@@ -40,7 +40,7 @@ async fn list_infos(
         .await
         .map_err(diesel)?;
 
-    let mut infos: Vec<CommentInfo> =
+    let mut infos: Vec<comment_model::Info> =
         rows.into_iter().map(Into::into).collect();
 
     incl::comment::populate_comment_incls(conn, &mut infos, &spec.incl_opt)
@@ -52,8 +52,8 @@ async fn list_infos(
 /// Insert a new comment from the given form and return the created info.
 async fn create(
     conn: &mut RdbConn,
-    form: &CommentForm,
-) -> RegularResult<CommentInfo> {
+    form: &comment_model::Form,
+) -> RegularResult<comment_model::Info> {
     //
     let entry = CommentEntry::from(form);
 
@@ -74,7 +74,7 @@ impl<'a> Execute<ListInfos<'a>> for RdbRepo {
     async fn execute(
         &self,
         step: &ListInfos<'a>,
-    ) -> RegularResult<Vec<CommentInfo>> {
+    ) -> RegularResult<Vec<comment_model::Info>> {
         submit_query!(self.core, list_infos, step.spec)
     }
 }
@@ -87,7 +87,7 @@ impl<'a> Advance<Create<'a>, RdbContext> for RdbRepoTransactional {
         &self,
         context: &mut RdbContext,
         step: &Create<'a>,
-    ) -> RegularResult<CommentInfo> {
+    ) -> RegularResult<comment_model::Info> {
         create(context.conn(), step.form).await
     }
 }

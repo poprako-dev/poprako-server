@@ -3,7 +3,7 @@
 use diesel::prelude::*;
 use time::OffsetDateTime;
 
-use crate::model::system_mail::{SystemMailForm, SystemMailInfo};
+use crate::model::system_mail_model;
 use crate::part_impl::repo::rdb_impl::schema::t_system_mail;
 
 // ── Queryable / Selectable ─────────────────────────────────────────────────
@@ -40,9 +40,9 @@ pub struct SystemMailEntry<'a> {
 
 // ── Conversions ────────────────────────────────────────────────────────────
 
-impl From<SystemMailRow> for SystemMailInfo {
+impl From<SystemMailRow> for system_mail_model::Info {
     fn from(v: SystemMailRow) -> Self {
-        SystemMailInfo {
+        system_mail_model::Info {
             id: v.f_id,
             receiver_id: v.f_receiver_id,
             read: v.f_read,
@@ -53,8 +53,8 @@ impl From<SystemMailRow> for SystemMailInfo {
     }
 }
 
-impl<'a> From<&'a SystemMailForm> for SystemMailEntry<'a> {
-    fn from(form: &'a SystemMailForm) -> Self {
+impl<'a> From<&'a system_mail_model::Form> for SystemMailEntry<'a> {
+    fn from(form: &'a system_mail_model::Form) -> Self {
         Self {
             f_id: &form.id,
             f_receiver_id: &form.receiver_id,

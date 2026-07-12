@@ -1,8 +1,8 @@
 use async_trait::async_trait;
 
-use crate::model::member::MemberInfo;
-use crate::model::team::TeamInfo;
-use crate::model::user::UserInfo;
+use crate::model::member_model;
+use crate::model::team_model;
+use crate::model::user_model;
 use crate::part_impl::repo::rdb_impl::incl::{
     self, Incl, TeamByIds, UserByIds,
 };
@@ -15,15 +15,18 @@ struct MemberUserIncl;
 
 #[async_trait]
 impl Incl for MemberUserIncl {
-    type Owner = MemberInfo;
-    type Related = UserInfo;
+    type Owner = member_model::Info;
+    type Related = user_model::Info;
     type Query = UserByIds;
 
-    fn resolve_key(owner: &MemberInfo) -> Option<&str> {
+    fn resolve_key(owner: &member_model::Info) -> Option<&str> {
         Some(&owner.user_id)
     }
 
-    fn inject(owner: &mut MemberInfo, related: Option<UserInfo>) {
+    fn inject(
+        owner: &mut member_model::Info,
+        related: Option<user_model::Info>,
+    ) {
         owner.user = related;
     }
 }
@@ -33,15 +36,18 @@ struct MemberTeamIncl;
 
 #[async_trait]
 impl Incl for MemberTeamIncl {
-    type Owner = MemberInfo;
-    type Related = TeamInfo;
+    type Owner = member_model::Info;
+    type Related = team_model::Info;
     type Query = TeamByIds;
 
-    fn resolve_key(owner: &MemberInfo) -> Option<&str> {
+    fn resolve_key(owner: &member_model::Info) -> Option<&str> {
         Some(&owner.team_id)
     }
 
-    fn inject(owner: &mut MemberInfo, related: Option<TeamInfo>) {
+    fn inject(
+        owner: &mut member_model::Info,
+        related: Option<team_model::Info>,
+    ) {
         owner.team = related;
     }
 }
@@ -49,7 +55,7 @@ impl Incl for MemberTeamIncl {
 /// Populates member query results with eagerly-loaded user and team data.
 pub async fn populate_member_incls(
     conn: &mut RdbConn,
-    infos: &mut [MemberInfo],
+    infos: &mut [member_model::Info],
     incl_opt: &[MemberInclOpt],
 ) -> RegularResult<()> {
     //

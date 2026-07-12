@@ -15,14 +15,12 @@ use tracing::instrument;
 use crate::api::http::result::HttpBody;
 
 #[cfg(feature = "swagger-ui")]
-use crate::data::chapter_port::ChapterTranslationExportVal;
+use crate::data::chapter_port_data;
 
 use crate::api::http::result::{Accept as _, HttpError, HttpResult};
 use crate::api::http::state::AppHarn;
-use crate::data::chapter_port::{
-    ChapterTranslationImportData, ChapterTranslationImportVal,
-};
-use crate::model::user::UserToken;
+use crate::data::chapter_port_data;
+use crate::model::user_model;
 use crate::usecase;
 use crate::value::chapter_port::TranslationFormat;
 
@@ -39,9 +37,9 @@ pub struct TranslationExportQuery {
     path = "/api/v1/chapters/{chapter_id}/translations/import",
     tag = "chapter-port",
     params(("chapter_id" = String, Path, description = "Chapter ID")),
-    request_body = ChapterTranslationImportData,
+    request_body = chapter_port_data::TranslationImportData,
     responses(
-        (status = 200, description = "Translations imported", body = HttpBody<ChapterTranslationImportVal>),
+        (status = 200, description = "Translations imported", body = HttpBody<chapter_port_data::TranslationImportVal>),
         (status = 403, description = "No permission to import into this chapter"),
         (status = 422, description = "Invalid import content for the selected format"),
     ),
@@ -50,9 +48,9 @@ pub struct TranslationExportQuery {
 pub async fn import(
     State(harn): State<AppHarn>,
     Path(chapter_id): Path<String>,
-    Extension(user_token): Extension<UserToken>,
-    Json(data): Json<ChapterTranslationImportData>,
-) -> HttpResult<ChapterTranslationImportVal> {
+    Extension(user_token): Extension<user_model::Token>,
+    Json(data): Json<chapter_port_data::TranslationImportData>,
+) -> HttpResult<chapter_port_data::TranslationImportVal> {
     usecase::chapter_port::import(
         harn.drive(),
         harn.repo(),
@@ -77,7 +75,7 @@ pub async fn import(
         ("format" = TranslationFormat, Query, description = "Export format: poprako or label-plus"),
     ),
     responses(
-        (status = 200, description = "PopRaKo translation export", body = HttpBody<ChapterTranslationExportVal>, content_type = "application/json"),
+        (status = 200, description = "PopRaKo translation export", body = HttpBody<chapter_port_data::TranslationExportVal>, content_type = "application/json"),
         (status = 200, description = "LabelPlus translation export", content_type = "text/plain"),
         (status = 403, description = "No permission to export this chapter"),
     ),
@@ -86,7 +84,7 @@ pub async fn import(
 pub async fn export(
     State(harn): State<AppHarn>,
     Path(chapter_id): Path<String>,
-    Extension(user_token): Extension<UserToken>,
+    Extension(user_token): Extension<user_model::Token>,
     Query(query): Query<TranslationExportQuery>,
 ) -> Result<Response, HttpError> {
     //
@@ -117,7 +115,7 @@ pub async fn export(
 pub async fn export_download(
     State(harn): State<AppHarn>,
     Path(chapter_id): Path<String>,
-    Extension(user_token): Extension<UserToken>,
+    Extension(user_token): Extension<user_model::Token>,
     Query(query): Query<TranslationExportQuery>,
 ) -> Result<Response, HttpError> {
     //
@@ -143,7 +141,7 @@ struct TranslationExportPayload {
 /// selected format.
 async fn export_payload(
     harn: &AppHarn,
-    user_token: UserToken,
+    user_token: user_model::Token,
     chapter_id: String,
     format: TranslationFormat,
 ) -> Result<TranslationExportPayload, HttpError> {

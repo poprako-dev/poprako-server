@@ -2,9 +2,7 @@
 
 use poprako_transactional::step::Step;
 
-use crate::model::user::{
-    UserAvatarReservation, UserCredential, UserForm, UserInfo,
-};
+use crate::model::user_model;
 
 /// Step that fetches a user by their identifier.
 pub struct GetInfoById<'a> {
@@ -12,7 +10,7 @@ pub struct GetInfoById<'a> {
 }
 
 impl<'a> Step for GetInfoById<'a> {
-    type Output = UserInfo;
+    type Output = user_model::Info;
 }
 
 /// Step that fetches a user's stored credential by QQ ID.
@@ -21,7 +19,7 @@ pub struct GetCredentialByQid<'a> {
 }
 
 impl<'a> Step for GetCredentialByQid<'a> {
-    type Output = UserCredential;
+    type Output = user_model::Credential;
 }
 
 /// Step that finds a user profile by QQ ID.
@@ -30,16 +28,16 @@ pub struct FindInfoByQid<'a> {
 }
 
 impl<'a> Step for FindInfoByQid<'a> {
-    type Output = Option<UserInfo>;
+    type Output = Option<user_model::Info>;
 }
 
 /// Step that inserts a new user row.
 pub struct Create<'a> {
-    pub form: &'a UserForm,
+    pub form: &'a user_model::Form,
 }
 
 impl<'a> Step for Create<'a> {
-    type Output = UserInfo;
+    type Output = user_model::Info;
 }
 
 /// Step that updates a user's QQ ID and nickname.
@@ -63,7 +61,7 @@ pub struct ReserveAvatar<'a> {
 }
 
 impl<'a> Step for ReserveAvatar<'a> {
-    type Output = UserAvatarReservation;
+    type Output = user_model::AvatarReservation;
 }
 
 /// Step that marks a reserved avatar as successfully uploaded.
@@ -96,7 +94,7 @@ pub struct GetInfoExcluded<'a> {
 }
 
 impl<'a> Step for GetInfoExcluded<'a> {
-    type Output = UserInfo;
+    type Output = user_model::Info;
 }
 
 /// Step that deletes a user by their identifier.
@@ -128,7 +126,7 @@ impl UserStep {
     }
 
     /// Constructs a step to insert a new user.
-    pub fn create<'a>(form: &'a UserForm) -> Create<'a> {
+    pub fn create<'a>(form: &'a user_model::Form) -> Create<'a> {
         Create { form }
     }
 

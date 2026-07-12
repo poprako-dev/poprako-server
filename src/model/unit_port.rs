@@ -3,7 +3,7 @@
 use serde::Deserialize;
 
 /// One parsed import unit.
-pub struct UnitTranslationImport {
+pub struct TranslationImport {
     pub id: Option<String>,
     pub index: i32,
     pub x_coord: f64,
@@ -18,7 +18,7 @@ pub struct UnitTranslationImport {
 
 /// PopRaKo JSON import unit.
 #[derive(Deserialize)]
-pub struct PoprakoUnitImport {
+pub struct PoprakoImport {
     pub id: String,
 
     pub x: f64,

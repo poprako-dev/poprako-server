@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 
-use crate::model::system_mail::{SystemMailForm, SystemMailInfo};
+use crate::model::system_mail_model;
 use crate::part::repo::step::system_mail::{
     ListInfosByReceiverId, MarkRead, Send, SendBatch,
 };
@@ -29,7 +29,10 @@ impl SystemMailRepoTransactional<RdbContext> for RdbRepoTransactional {}
 // ── Free functions ──────────────────────────────────────────────────────────
 
 /// Send a single system mail by inserting its row.
-async fn send(conn: &mut RdbConn, form: &SystemMailForm) -> RegularResult<()> {
+async fn send(
+    conn: &mut RdbConn,
+    form: &system_mail_model::Form,
+) -> RegularResult<()> {
     //
     let entry = SystemMailEntry::from(form);
 
@@ -45,7 +48,7 @@ async fn send(conn: &mut RdbConn, form: &SystemMailForm) -> RegularResult<()> {
 /// Batch-send system mail by inserting rows for every form.
 async fn send_batch(
     conn: &mut RdbConn,
-    forms: &[SystemMailForm],
+    forms: &[system_mail_model::Form],
 ) -> RegularResult<()> {
     //
     let entries: Vec<SystemMailEntry<'_>> =
@@ -67,7 +70,7 @@ async fn list_infos(
     read: Option<bool>,
     offset: u64,
     limit: u64,
-) -> RegularResult<Vec<SystemMailInfo>> {
+) -> RegularResult<Vec<system_mail_model::Info>> {
     //
     let mut query = t_system_mail
         .filter(f_receiver_id.eq(receiver_id))
@@ -149,7 +152,7 @@ impl<'a> Execute<ListInfosByReceiverId<'a>> for RdbRepo {
     async fn execute(
         &self,
         step: &ListInfosByReceiverId<'a>,
-    ) -> RegularResult<Vec<SystemMailInfo>> {
+    ) -> RegularResult<Vec<system_mail_model::Info>> {
         submit_query!(
             self.core,
             list_infos,

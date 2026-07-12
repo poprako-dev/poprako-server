@@ -7,7 +7,7 @@ use poprako_transactional::advance::Advance;
 use poprako_transactional::drive::Drive;
 use poprako_util::page::Page;
 
-use crate::model::unit::{UnitIndexUpdate, UnitPayload};
+use crate::model::unit_model;
 use crate::part::repo::step::unit::UnitStep;
 use crate::part::shared::execute::Execute;
 use crate::part_impl::drive::rdb_impl::RdbDrive;
@@ -17,8 +17,8 @@ use crate::util::DeriveTransactional as _;
 
 const PREFIX: &str = "rdb-test-unit-domain-";
 
-fn unit_payload(text: Option<&str>, proofread: bool) -> UnitPayload {
-    UnitPayload {
+fn unit_payload(text: Option<&str>, proofread: bool) -> unit_model::Payload {
+    unit_model::Payload {
         is_bubble: true,
         is_proofread: proofread,
         x_coord: 1.0,
@@ -55,7 +55,7 @@ async fn unit_roundtrip_reads_test_database_url() {
 
     let restored_unit_payload = unit_payload(Some("restored"), false);
 
-    let unit_index_updates = [UnitIndexUpdate {
+    let unit_index_updates = [unit_model::IndexUpdate {
         id: unit_id.clone(),
         index: 5,
     }];

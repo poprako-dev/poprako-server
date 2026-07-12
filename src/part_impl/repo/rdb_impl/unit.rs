@@ -9,9 +9,7 @@ use time::OffsetDateTime;
 use poprako_transactional::advance::Advance;
 use poprako_util::page::Page;
 
-use crate::model::unit::{
-    UnitCounters, UnitIndex, UnitIndexUpdate, UnitInfo, UnitPayload,
-};
+use crate::model::unit_model;
 use crate::part::repo::step::unit::{
     CountByPageId, CreateInfo, DeleteByIdInPage, ListAllInfosByPageId,
     ListIndexesByPageId, ListInfosByPageId, SaveInfo, UpdateIndexesByPageId,
@@ -37,7 +35,7 @@ async fn list_infos_by_page_id(
     conn: &mut RdbConn,
     page_id: &str,
     page: Page,
-) -> RegularResult<Vec<UnitInfo>> {
+) -> RegularResult<Vec<unit_model::Info>> {
     //
     let rows: Vec<UnitRow> = t_unit
         .filter(f_page_id.eq(page_id))
@@ -56,7 +54,7 @@ async fn list_infos_by_page_id(
 async fn list_all_infos_by_page_id(
     conn: &mut RdbConn,
     page_id: &str,
-) -> RegularResult<Vec<UnitInfo>> {
+) -> RegularResult<Vec<unit_model::Info>> {
     //
     let rows: Vec<UnitRow> = t_unit
         .filter(f_page_id.eq(page_id))
@@ -87,7 +85,7 @@ async fn create_unit(
     conn: &mut RdbConn,
     page_id: &str,
     id: &str,
-    payload: &UnitPayload,
+    payload: &unit_model::Payload,
 ) -> RegularResult<()> {
     //
     let index = next_index(conn, page_id).await?;
@@ -108,7 +106,7 @@ async fn save_unit(
     conn: &mut RdbConn,
     page_id: &str,
     id: &str,
-    payload: &UnitPayload,
+    payload: &unit_model::Payload,
 ) -> RegularResult<()> {
     //
     let existing_page_id: Option<String> = t_unit
@@ -159,7 +157,7 @@ async fn delete_by_id_in_page(
 async fn list_indexes_by_page_id(
     conn: &mut RdbConn,
     page_id: &str,
-) -> RegularResult<Vec<UnitIndex>> {
+) -> RegularResult<Vec<unit_model::Index>> {
     //
     let indexes: Vec<(String, i32)> = t_unit
         .filter(f_page_id.eq(page_id))
@@ -170,7 +168,7 @@ async fn list_indexes_by_page_id(
 
     Ok(indexes
         .into_iter()
-        .map(|(id, index)| UnitIndex { id, index })
+        .map(|(id, index)| unit_model::Index { id, index })
         .collect())
 }
 
@@ -179,7 +177,7 @@ async fn list_indexes_by_page_id(
 async fn update_indexes_by_page_id(
     conn: &mut RdbConn,
     page_id: &str,
-    updates: &[UnitIndexUpdate],
+    updates: &[unit_model::IndexUpdate],
 ) -> RegularResult<()> {
     //
     if updates.is_empty() {
@@ -236,12 +234,12 @@ async fn update_indexes_by_page_id(
 async fn count_by_page_id(
     conn: &mut RdbConn,
     page_id: &str,
-) -> RegularResult<UnitCounters> {
+) -> RegularResult<unit_model::Counters> {
     //
     let infos = list_all_infos_by_page_id(conn, page_id).await?;
 
     let counters = infos.iter().fold(
-        UnitCounters::default(),
+        unit_model::Counters::default(),
         |mut counters, unit_info| {
             //
             counters.total_unit_count += 1;
@@ -268,7 +266,7 @@ impl<'a> Execute<ListInfosByPageId<'a>> for RdbRepo {
     async fn execute(
         &self,
         step: &ListInfosByPageId<'a>,
-    ) -> RegularResult<Vec<UnitInfo>> {
+    ) -> RegularResult<Vec<unit_model::Info>> {
         submit_query!(self.core, list_infos_by_page_id, step.page_id, step.page)
     }
 }
@@ -280,7 +278,7 @@ impl<'a> Execute<ListAllInfosByPageId<'a>> for RdbRepo {
     async fn execute(
         &self,
         step: &ListAllInfosByPageId<'a>,
-    ) -> RegularResult<Vec<UnitInfo>> {
+    ) -> RegularResult<Vec<unit_model::Info>> {
         submit_query!(self.core, list_all_infos_by_page_id, step.page_id)
     }
 }
@@ -293,7 +291,7 @@ impl<'a> Advance<ListInfosByPageId<'a>, RdbContext> for RdbRepoTransactional {
         &self,
         context: &mut RdbContext,
         step: &ListInfosByPageId<'a>,
-    ) -> RegularResult<Vec<UnitInfo>> {
+    ) -> RegularResult<Vec<unit_model::Info>> {
         list_infos_by_page_id(context.conn(), step.page_id, step.page).await
     }
 }
@@ -308,7 +306,7 @@ impl<'a> Advance<ListAllInfosByPageId<'a>, RdbContext>
         &self,
         context: &mut RdbContext,
         step: &ListAllInfosByPageId<'a>,
-    ) -> RegularResult<Vec<UnitInfo>> {
+    ) -> RegularResult<Vec<unit_model::Info>> {
         list_all_infos_by_page_id(context.conn(), step.page_id).await
     }
 }
@@ -360,7 +358,7 @@ impl<'a> Advance<ListIndexesByPageId<'a>, RdbContext> for RdbRepoTransactional {
         &self,
         context: &mut RdbContext,
         step: &ListIndexesByPageId<'a>,
-    ) -> RegularResult<Vec<UnitIndex>> {
+    ) -> RegularResult<Vec<unit_model::Index>> {
         list_indexes_by_page_id(context.conn(), step.page_id).await
     }
 }
@@ -389,7 +387,7 @@ impl<'a> Advance<CountByPageId<'a>, RdbContext> for RdbRepoTransactional {
         &self,
         context: &mut RdbContext,
         step: &CountByPageId<'a>,
-    ) -> RegularResult<UnitCounters> {
+    ) -> RegularResult<unit_model::Counters> {
         count_by_page_id(context.conn(), step.page_id).await
     }
 }

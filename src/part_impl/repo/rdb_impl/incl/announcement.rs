@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 
-use crate::model::announcement::AnnouncementInfo;
-use crate::model::user::UserInfo;
+use crate::model::announcement_model;
+use crate::model::user_model;
 use crate::part_impl::repo::rdb_impl::incl::{self, Incl, UserByIds};
 use crate::part_impl::shared::RdbConn;
 use crate::result::RegularResult;
@@ -12,15 +12,18 @@ struct AnnouncementUserIncl;
 
 #[async_trait]
 impl Incl for AnnouncementUserIncl {
-    type Owner = AnnouncementInfo;
-    type Related = UserInfo;
+    type Owner = announcement_model::Info;
+    type Related = user_model::Info;
     type Query = UserByIds;
 
-    fn resolve_key(owner: &AnnouncementInfo) -> Option<&str> {
+    fn resolve_key(owner: &announcement_model::Info) -> Option<&str> {
         Some(&owner.user_id)
     }
 
-    fn inject(owner: &mut AnnouncementInfo, related: Option<UserInfo>) {
+    fn inject(
+        owner: &mut announcement_model::Info,
+        related: Option<user_model::Info>,
+    ) {
         owner.user = related;
     }
 }
@@ -28,7 +31,7 @@ impl Incl for AnnouncementUserIncl {
 /// Populates announcement query results with eagerly-loaded user data.
 pub async fn populate_announcement_incls(
     conn: &mut RdbConn,
-    infos: &mut [AnnouncementInfo],
+    infos: &mut [announcement_model::Info],
     incl_opt: &[AnnouncementInclOpt],
 ) -> RegularResult<()> {
     //

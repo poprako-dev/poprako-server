@@ -5,14 +5,9 @@ use poprako_transactional::drive::Drive;
 use poprako_util::i18n::trl;
 
 use crate::complex::member::{MemberComplex, MemberPermComplex};
-use crate::data::member::{
-    CreateMemberData, CreateMemberVal, JoinTeamData, ListMemberInfosData,
-    MemberInfoVal, UpdateMemberRolesData,
-};
-use crate::model::member::{
-    MemberForm, MemberInfo, MemberListSpec, MemberRoleUpdate,
-};
-use crate::model::user::UserToken;
+use crate::data::member_data;
+use crate::model::member_model;
+use crate::model::user_model;
 use crate::part::image::ImagePool;
 use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
 use crate::part::repo::member_invitation::{
@@ -37,9 +32,9 @@ mod tests;
 pub async fn create<D, C, R>(
     drive: &D,
     repo: &R,
-    token: UserToken,
-    data: CreateMemberData,
-) -> RegularResult<CreateMemberVal>
+    token: user_model::Token,
+    data: member_data::CreateData,
+) -> RegularResult<member_data::CreateVal>
 where
     D: Drive<C>,
     D::Error: Into<RegularError>,
@@ -91,7 +86,7 @@ where
                 });
             }
 
-            let member_form = MemberForm {
+            let member_form = member_model::Form {
                 id: MemberComplex::gen_id(),
                 user_id: data.user_id,
                 user_nickname: user_info.nickname,
@@ -107,7 +102,7 @@ where
         })
         .await?;
 
-    Ok(CreateMemberVal { id: member_id })
+    Ok(member_data::CreateVal { id: member_id })
 }
 
 /// Joins the current user to a team with a pending invitation code.
@@ -115,9 +110,9 @@ pub async fn join_team<D, C, R, I>(
     drive: &D,
     repo: &R,
     image_pool: &I,
-    token: UserToken,
-    data: JoinTeamData,
-) -> RegularResult<MemberInfoVal>
+    token: user_model::Token,
+    data: member_data::JoinTeamData,
+) -> RegularResult<member_data::InfoVal>
 where
     D: Drive<C>,
     D::Error: Into<RegularError>,
@@ -134,69 +129,71 @@ where
     let current_user_id = token.user_id;
 
     let member_info = drive
-        .with_context(async move |context| -> RegularResult<MemberInfo> {
-            //
-            let repo = repo.derive_transactional().await;
+        .with_context(
+            async move |context| -> RegularResult<member_model::Info> {
+                //
+                let repo = repo.derive_transactional().await;
 
-            let current_user_info = repo
-                .advance(
-                    context,
-                    &UserStep::get_info_excluded(&current_user_id),
-                )
-                .await?;
+                let current_user_info = repo
+                    .advance(
+                        context,
+                        &UserStep::get_info_excluded(&current_user_id),
+                    )
+                    .await?;
 
-            let member_invitation_info = repo
-                .advance(
+                let member_invitation_info = repo
+                    .advance(
+                        context,
+                        &MemberInvitationStep::get_info_by_code_excluded(
+                            &data.code,
+                        ),
+                    )
+                    .await?;
+
+                if member_invitation_info.invitee_qid != current_user_info.qid {
+                    return Err(invalid_invitation_error());
+                }
+
+                let existing_member_info = repo
+                    .advance(
+                        context,
+                        &MemberStep::find_info_by_user_id_and_team_id(
+                            &current_user_id,
+                            &member_invitation_info.team_id,
+                        ),
+                    )
+                    .await?;
+
+                if existing_member_info.is_some() {
+                    return Err(already_team_member_error());
+                }
+
+                let member_form = member_model::Form {
+                    id: MemberComplex::gen_id(),
+                    user_id: current_user_id,
+                    user_nickname: current_user_info.nickname,
+                    team_id: member_invitation_info.team_id.clone(),
+                    roles: member_invitation_info.roles,
+                };
+
+                let member_info = repo
+                    .advance(context, &MemberStep::create(&member_form))
+                    .await?;
+
+                repo.advance(
                     context,
-                    &MemberInvitationStep::get_info_by_code_excluded(
-                        &data.code,
+                    &MemberInvitationStep::mark_pending_as_used(
+                        &member_invitation_info.id,
                     ),
                 )
                 .await?;
 
-            if member_invitation_info.invitee_qid != current_user_info.qid {
-                return Err(invalid_invitation_error());
-            }
-
-            let existing_member_info = repo
-                .advance(
-                    context,
-                    &MemberStep::find_info_by_user_id_and_team_id(
-                        &current_user_id,
-                        &member_invitation_info.team_id,
-                    ),
-                )
-                .await?;
-
-            if existing_member_info.is_some() {
-                return Err(already_team_member_error());
-            }
-
-            let member_form = MemberForm {
-                id: MemberComplex::gen_id(),
-                user_id: current_user_id,
-                user_nickname: current_user_info.nickname,
-                team_id: member_invitation_info.team_id.clone(),
-                roles: member_invitation_info.roles,
-            };
-
-            let member_info = repo
-                .advance(context, &MemberStep::create(&member_form))
-                .await?;
-
-            repo.advance(
-                context,
-                &MemberInvitationStep::mark_pending_as_used(
-                    &member_invitation_info.id,
-                ),
-            )
-            .await?;
-
-            Ok(member_info)
-        })
+                Ok(member_info)
+            },
+        )
         .await?;
 
-    MemberInfoVal::from_model(image_pool, member_info).await
+    member_data::InfoVal::from_model(image_pool, member_info).await
 }
 
 /// Lists members under one team.
@@ -205,18 +202,18 @@ where
 pub async fn list_infos<C, R, I>(
     repo: &R,
     image_pool: &I,
-    token: UserToken,
-    data: ListMemberInfosData,
-) -> RegularResult<Vec<MemberInfoVal>>
+    token: user_model::Token,
+    data: member_data::ListInfosData,
+) -> RegularResult<Vec<member_data::InfoVal>>
 where
     R: MemberRepo<C> + Sync,
     <R as DeriveTransactional>::Transactional: MemberRepoTransactional<C>,
     I: ImagePool,
 {
-    let member_list_spec: MemberListSpec = data.try_into()?;
+    let member_list_spec: member_model::ListSpec = data.try_into()?;
 
     //
-    if let MemberListSpec::Team { team_id, .. } = &member_list_spec {
+    if let member_model::ListSpec::Team { team_id, .. } = &member_list_spec {
         //
         use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
@@ -235,8 +232,9 @@ where
     let mut member_info_vals = Vec::with_capacity(member_infos.len());
 
     for member_info in member_infos {
-        member_info_vals
-            .push(MemberInfoVal::from_model(image_pool, member_info).await?);
+        member_info_vals.push(
+            member_data::InfoVal::from_model(image_pool, member_info).await?,
+        );
     }
 
     Ok(member_info_vals)
@@ -248,8 +246,8 @@ where
 pub async fn update_roles<D, C, R>(
     drive: &D,
     repo: &R,
-    token: UserToken,
-    data: UpdateMemberRolesData,
+    token: user_model::Token,
+    data: member_data::UpdateRolesData,
 ) -> RegularResult<()>
 where
     D: Drive<C>,
@@ -277,7 +275,7 @@ where
             //
             let repo = repo.derive_transactional().await;
 
-            let member_role_update = MemberRoleUpdate {
+            let member_role_update = member_model::RoleUpdate {
                 id: data.id,
                 roles: data.roles,
             };
@@ -301,7 +299,7 @@ where
 pub async fn delete<D, C, R>(
     drive: &D,
     repo: &R,
-    token: UserToken,
+    token: user_model::Token,
     id: String,
 ) -> RegularResult<()>
 where

@@ -3,10 +3,8 @@
 use poprako_util::i18n::trl;
 
 use crate::complex::util::check_user_is_team_member;
-use crate::data::assignment::UpdateAssignmentRolesData;
-use crate::model::assignment::{
-    AssignmentInfo, AssignmentListSpec, AssignmentRoleUpdate,
-};
+use crate::data::assignment_data;
+use crate::model::assignment_model;
 use crate::part::repo::step::assignment::{
     AssignmentStep, GetInfoByChapterIdAndUserId,
 };
@@ -38,10 +36,10 @@ impl AssignmentComplex {
     /// Merge new roles into an existing assignment, preserving existing roles
     /// and writing new ones.
     pub fn merge_roles(
-        assignment_info: &AssignmentInfo,
+        assignment_info: &assignment_model::Info,
         roles: RoleMask,
-    ) -> AssignmentRoleUpdate {
-        AssignmentRoleUpdate {
+    ) -> assignment_model::RoleUpdate {
+        assignment_model::RoleUpdate {
             id: assignment_info.id.clone(),
             roles: assignment_info.roles.union(roles),
         }
@@ -50,7 +48,7 @@ impl AssignmentComplex {
     /// Checks whether a role update would remove the caller's own admin role.
     pub fn is_self_admin_role_removal(
         current_user_id: &str,
-        assignment_info: &AssignmentInfo,
+        assignment_info: &assignment_model::Info,
         roles: RoleMask,
     ) -> bool {
         current_user_id == assignment_info.user_id
@@ -60,7 +58,7 @@ impl AssignmentComplex {
 
     /// Checks whether a chapter still has at least one admin after a role update.
     pub fn chapter_has_admin_after_role_update(
-        assignment_infos: &[AssignmentInfo],
+        assignment_infos: &[assignment_model::Info],
         user_id: &str,
         roles: RoleMask,
     ) -> bool {
@@ -85,7 +83,7 @@ impl AssignmentPermComplex {
     pub async fn can_user_list_infos<P>(
         proxy: &mut P,
         user_id: &str,
-        assignment_list_spec: &AssignmentListSpec,
+        assignment_list_spec: &assignment_model::ListSpec,
     ) -> RegularResult<()>
     where
         P: for<'a> ProxyExecute<ChapterGetInfoById<'a>, Error = RegularError>
@@ -101,11 +99,11 @@ impl AssignmentPermComplex {
     {
         match assignment_list_spec {
             //
-            AssignmentListSpec::Chapter { chapter_id, .. } => {
+            assignment_model::ListSpec::Chapter { chapter_id, .. } => {
                 check_list_by_chapter(proxy, user_id, chapter_id).await
             }
 
-            AssignmentListSpec::User { owner_id, .. } => {
+            assignment_model::ListSpec::User { owner_id, .. } => {
                 check_list_by_user(proxy, user_id, owner_id).await
             }
         }
@@ -115,7 +113,7 @@ impl AssignmentPermComplex {
     pub async fn can_user_update_roles<P>(
         proxy: &mut P,
         current_user_id: &str,
-        data: &UpdateAssignmentRolesData,
+        data: &assignment_data::UpdateRolesData,
     ) -> RegularResult<()>
     where
         P: for<'a> ProxyExecute<ChapterGetInfoById<'a>, Error = RegularError>
@@ -144,7 +142,7 @@ impl AssignmentPermComplex {
     pub async fn can_user_delete<P>(
         proxy: &mut P,
         current_user_id: &str,
-        assignment_info: &AssignmentInfo,
+        assignment_info: &assignment_model::Info,
     ) -> RegularResult<()>
     where
         P: for<'a> ProxyExecute<
@@ -295,7 +293,7 @@ where
 async fn check_self_reduce<P>(
     proxy: &mut P,
     current_user_id: &str,
-    data: &UpdateAssignmentRolesData,
+    data: &assignment_data::UpdateRolesData,
 ) -> RegularResult<()>
 where
     P: for<'a> ProxyExecute<

@@ -11,12 +11,12 @@ use diesel_migrations::{
 use poprako_transactional::advance::Advance;
 use poprako_transactional::drive::Drive;
 
-use crate::model::chapter::ChapterForm;
-use crate::model::comic::ComicForm;
-use crate::model::page::PageForm;
-use crate::model::team::TeamForm;
-use crate::model::user::UserForm;
-use crate::model::workset::WorksetForm;
+use crate::model::chapter_model;
+use crate::model::comic_model;
+use crate::model::page_model;
+use crate::model::team_model;
+use crate::model::user_model;
+use crate::model::workset_model;
 use crate::part::repo::step::chapter::ChapterStep;
 use crate::part::repo::step::comic::ComicStep;
 use crate::part::repo::step::page::PageStep;
@@ -32,37 +32,37 @@ use crate::result::{RegularError, RegularResult};
 use crate::util::DeriveTransactional as _;
 
 pub struct UserFixture {
-    pub user_form: UserForm,
+    pub user_form: user_model::Form,
 }
 
 pub struct TeamFixture {
-    pub user_form: UserForm,
-    pub team_form: TeamForm,
+    pub user_form: user_model::Form,
+    pub team_form: team_model::Form,
 }
 
 pub struct WorksetFixture {
-    pub team_form: TeamForm,
-    pub workset_form: WorksetForm,
+    pub team_form: team_model::Form,
+    pub workset_form: workset_model::Form,
 }
 
 pub struct ComicFixture {
-    pub creator_form: UserForm,
-    pub team_form: TeamForm,
-    pub workset_form: WorksetForm,
-    pub comic_form: ComicForm,
+    pub creator_form: user_model::Form,
+    pub team_form: team_model::Form,
+    pub workset_form: workset_model::Form,
+    pub comic_form: comic_model::Form,
 }
 
 pub struct ChapterFixture {
-    pub creator_form: UserForm,
-    pub team_form: TeamForm,
-    pub workset_form: WorksetForm,
-    pub comic_form: ComicForm,
-    pub chapter_form: ChapterForm,
+    pub creator_form: user_model::Form,
+    pub team_form: team_model::Form,
+    pub workset_form: workset_model::Form,
+    pub comic_form: comic_model::Form,
+    pub chapter_form: chapter_model::Form,
 }
 
 pub struct PageFixture {
-    pub chapter_form: ChapterForm,
-    pub page_form: PageForm,
+    pub chapter_form: chapter_model::Form,
+    pub page_form: page_model::Form,
 }
 
 const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations");
@@ -369,8 +369,8 @@ pub async fn assert_no_leftovers(
     Ok(())
 }
 
-pub fn user_form(prefix: &str, name: &str) -> UserForm {
-    UserForm {
+pub fn user_form(prefix: &str, name: &str) -> user_model::Form {
+    user_model::Form {
         id: format!("{}user-{}", prefix, name),
         nickname: format!("RDB User {}", name),
         qid: format!("{}qid-{}", prefix, name),
@@ -378,16 +378,19 @@ pub fn user_form(prefix: &str, name: &str) -> UserForm {
     }
 }
 
-pub fn team_form(prefix: &str) -> TeamForm {
-    TeamForm {
+pub fn team_form(prefix: &str) -> team_model::Form {
+    team_model::Form {
         id: format!("{}team", prefix),
         name: "RDB Team".into(),
         description: "team".into(),
     }
 }
 
-pub fn workset_form(prefix: &str, team_form: &TeamForm) -> WorksetForm {
-    WorksetForm {
+pub fn workset_form(
+    prefix: &str,
+    team_form: &team_model::Form,
+) -> workset_model::Form {
+    workset_model::Form {
         id: format!("{}workset", prefix),
         team_id: team_form.id.clone(),
         index: 0,
@@ -398,10 +401,10 @@ pub fn workset_form(prefix: &str, team_form: &TeamForm) -> WorksetForm {
 
 pub fn comic_form(
     prefix: &str,
-    workset_form: &WorksetForm,
-    creator_form: &UserForm,
-) -> ComicForm {
-    ComicForm {
+    workset_form: &workset_model::Form,
+    creator_form: &user_model::Form,
+) -> comic_model::Form {
+    comic_model::Form {
         id: format!("{}comic", prefix),
         workset_id: workset_form.id.clone(),
         index: 0,
@@ -414,10 +417,10 @@ pub fn comic_form(
 
 pub fn chapter_form(
     prefix: &str,
-    comic_form: &ComicForm,
-    creator_form: &UserForm,
-) -> ChapterForm {
-    ChapterForm {
+    comic_form: &comic_model::Form,
+    creator_form: &user_model::Form,
+) -> chapter_model::Form {
+    chapter_model::Form {
         id: format!("{}chapter", prefix),
         comic_id: comic_form.id.clone(),
         is_pinned: true,
@@ -427,8 +430,11 @@ pub fn chapter_form(
     }
 }
 
-pub fn page_form(prefix: &str, chapter_form: &ChapterForm) -> PageForm {
-    PageForm {
+pub fn page_form(
+    prefix: &str,
+    chapter_form: &chapter_model::Form,
+) -> page_model::Form {
+    page_model::Form {
         id: format!("{}page", prefix),
         chapter_id: chapter_form.id.clone(),
         index: 0,
@@ -437,7 +443,7 @@ pub fn page_form(prefix: &str, chapter_form: &ChapterForm) -> PageForm {
     }
 }
 
-pub async fn create_user(shared: &RdbCore, user_form: &UserForm) {
+pub async fn create_user(shared: &RdbCore, user_form: &user_model::Form) {
     //
     let repo = RdbRepo::new(shared.clone());
 

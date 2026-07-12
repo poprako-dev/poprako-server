@@ -8,8 +8,8 @@ use utoipa::{IntoParams, ToSchema};
 use poprako_macro::Paginate;
 use poprako_util::time::ToUnixMilli;
 
-use crate::data::user::UserInfoVal;
-use crate::model::comment::{CommentInfo, CommentListSpec};
+use crate::data::user_data;
+use crate::model::comment_model;
 use crate::part::image::ImagePool;
 use crate::result::RegularResult;
 use crate::value::comment::CommentInclOpt;
@@ -17,33 +17,33 @@ use crate::value::comment::CommentInclOpt;
 /// Presentation-ready team board comment information.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct CommentInfoVal {
+pub struct InfoVal {
     pub id: String,
 
     pub team_id: String,
     pub user_id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub user: Option<UserInfoVal>,
+    pub user: Option<user_data::InfoVal>,
 
     pub content: String,
 
     pub created_at: i64,
 }
 
-impl CommentInfoVal {
+impl InfoVal {
     /// Converts a comment model into a presentation value.
     pub async fn from_model<P>(
         image_pool: &P,
-        model: CommentInfo,
+        model: comment_model::Info,
     ) -> RegularResult<Self>
     where
         P: ImagePool,
     {
         let user = match model.user {
             //
-            Some(user_info) => {
-                Some(UserInfoVal::from_model(image_pool, user_info).await?)
-            }
+            Some(user_info) => Some(
+                user_data::InfoVal::from_model(image_pool, user_info).await?,
+            ),
 
             None => None,
         };
@@ -68,7 +68,7 @@ impl CommentInfoVal {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
 #[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
-pub struct ListCommentInfosData {
+pub struct ListInfosData {
     /// Parent team whose comments to list.
     pub team_id: String,
 
@@ -81,8 +81,8 @@ pub struct ListCommentInfosData {
     pub incl_opt: Vec<CommentInclOpt>,
 }
 
-impl From<ListCommentInfosData> for CommentListSpec {
-    fn from(data: ListCommentInfosData) -> Self {
+impl From<ListInfosData> for comment_model::ListSpec {
+    fn from(data: ListInfosData) -> Self {
         Self {
             team_id: data.team_id,
             incl_opt: data.incl_opt,
@@ -95,7 +95,7 @@ impl From<ListCommentInfosData> for CommentListSpec {
 /// Input parameters for creating a comment.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct CreateCommentData {
+pub struct CreateData {
     pub team_id: String,
     pub content: String,
 }
@@ -103,6 +103,6 @@ pub struct CreateCommentData {
 /// Return value from creating a comment.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct CreateCommentVal {
+pub struct CreateVal {
     pub id: String,
 }

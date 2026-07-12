@@ -2,8 +2,8 @@
 
 use time::OffsetDateTime;
 
-use crate::model::team::TeamInfo;
-use crate::model::user::UserInfo;
+use crate::model::team_model;
+use crate::model::user_model;
 use crate::value::member::MemberInclOpt;
 use crate::value::role::{RoleField, RoleMask};
 
@@ -12,7 +12,7 @@ use crate::value::role::{RoleField, RoleMask};
 /// Lightweight projection — does not carry the full user or team record,
 /// only the identifiers and a cached nickname for display purposes.
 #[cfg_attr(test, derive(Clone))]
-pub struct MemberInfo {
+pub struct Info {
     pub id: String,
 
     pub user_id: String,
@@ -21,8 +21,8 @@ pub struct MemberInfo {
 
     pub team_id: String,
 
-    pub user: Option<UserInfo>,
-    pub team: Option<TeamInfo>,
+    pub user: Option<user_model::Info>,
+    pub team: Option<team_model::Info>,
 
     pub roles: RoleMask,
 }
@@ -31,7 +31,7 @@ pub struct MemberInfo {
 ///
 /// Includes a [`RoleMask`] specifying the member's permissions within the team.
 #[cfg_attr(test, derive(Clone))]
-pub struct MemberForm {
+pub struct Form {
     pub id: String,
 
     pub user_id: String,
@@ -43,13 +43,13 @@ pub struct MemberForm {
 }
 
 /// Mutable fields for a membership record.
-pub struct MemberRoleUpdate {
+pub struct RoleUpdate {
     pub id: String,
     pub roles: RoleMask,
 }
 
 /// Filtering and pagination parameters for listing memberships.
-pub enum MemberListSpec {
+pub enum ListSpec {
     User {
         owner_id: String,
         incl_opt: Vec<MemberInclOpt>,
@@ -66,14 +66,14 @@ pub enum MemberListSpec {
     },
 }
 
-impl MemberListSpec {
+impl ListSpec {
     /// Returns the include options regardless of which variant the spec is.
     pub fn incl_opt(&self) -> &[MemberInclOpt] {
         match self {
             //
-            MemberListSpec::User { incl_opt, .. } => incl_opt,
+            ListSpec::User { incl_opt, .. } => incl_opt,
 
-            MemberListSpec::Team { incl_opt, .. } => incl_opt,
+            ListSpec::Team { incl_opt, .. } => incl_opt,
         }
     }
 }

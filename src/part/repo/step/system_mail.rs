@@ -2,11 +2,11 @@
 
 use poprako_transactional::step::Step;
 
-use crate::model::system_mail::{SystemMailForm, SystemMailInfo};
+use crate::model::system_mail_model;
 
 /// Step that inserts a single system mail row.
 pub struct Send<'a> {
-    pub form: &'a SystemMailForm,
+    pub form: &'a system_mail_model::Form,
 }
 
 impl<'a> Step for Send<'a> {
@@ -15,7 +15,7 @@ impl<'a> Step for Send<'a> {
 
 /// Step that inserts multiple system mail rows atomically.
 pub struct SendBatch<'a> {
-    pub forms: &'a [SystemMailForm],
+    pub forms: &'a [system_mail_model::Form],
 }
 
 impl<'a> Step for SendBatch<'a> {
@@ -33,7 +33,7 @@ pub struct ListInfosByReceiverId<'a> {
 }
 
 impl<'a> Step for ListInfosByReceiverId<'a> {
-    type Output = Vec<SystemMailInfo>;
+    type Output = Vec<system_mail_model::Info>;
 }
 
 /// Step that marks a system mail as read, verifying receiver ownership.
@@ -52,12 +52,14 @@ pub struct SystemMailStep;
 
 impl SystemMailStep {
     /// Constructs a step to insert a single system mail.
-    pub fn send<'a>(form: &'a SystemMailForm) -> Send<'a> {
+    pub fn send<'a>(form: &'a system_mail_model::Form) -> Send<'a> {
         Send { form }
     }
 
     /// Constructs a step to insert multiple system mails atomically.
-    pub fn send_batch<'a>(forms: &'a [SystemMailForm]) -> SendBatch<'a> {
+    pub fn send_batch<'a>(
+        forms: &'a [system_mail_model::Form],
+    ) -> SendBatch<'a> {
         SendBatch { forms }
     }
 

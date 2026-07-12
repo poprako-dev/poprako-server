@@ -7,9 +7,7 @@ use time::OffsetDateTime;
 
 use poprako_transactional::advance::Advance;
 
-use crate::model::assignment::{
-    AssignmentForm, AssignmentInfo, AssignmentListSpec, AssignmentRoleUpdate,
-};
+use crate::model::assignment_model;
 use crate::part::repo::assignment::{
     AssignmentRepo, AssignmentRepoTransactional,
 };
@@ -37,14 +35,14 @@ impl AssignmentRepo<RdbContext> for RdbRepo {}
 impl AssignmentRepoTransactional<RdbContext> for RdbRepoTransactional {}
 
 /// Converts a single `AssignmentRow` into an `AssignmentInfo`.
-fn row_into_info(row: AssignmentRow) -> RegularResult<AssignmentInfo> {
+fn row_into_info(row: AssignmentRow) -> RegularResult<assignment_model::Info> {
     row.try_into()
 }
 
 /// Converts a vector of `AssignmentRow` values into a vector of `AssignmentInfo`.
 fn rows_into_infos(
     rows: Vec<AssignmentRow>,
-) -> RegularResult<Vec<AssignmentInfo>> {
+) -> RegularResult<Vec<assignment_model::Info>> {
     rows.into_iter().map(row_into_info).collect()
 }
 
@@ -53,7 +51,7 @@ async fn get_info_by_chapter_id_and_user_id(
     conn: &mut RdbConn,
     chapter_id: &str,
     user_id: &str,
-) -> RegularResult<Option<AssignmentInfo>> {
+) -> RegularResult<Option<assignment_model::Info>> {
     //
     let row: Option<AssignmentRow> = t_assignment
         .filter(f_chapter_id.eq(chapter_id))
@@ -72,7 +70,7 @@ async fn get_info_by_id(
     conn: &mut RdbConn,
     id: &str,
     incl_opt: &[AssignmentInclOpt],
-) -> RegularResult<AssignmentInfo> {
+) -> RegularResult<assignment_model::Info> {
     //
     let row: AssignmentRow = t_assignment
         .filter(f_id.eq(id))
@@ -98,12 +96,12 @@ async fn get_info_by_id(
 /// Queries assignment rows filtered by the given spec and populates includes.
 async fn list_infos(
     conn: &mut RdbConn,
-    spec: &AssignmentListSpec,
-) -> RegularResult<Vec<AssignmentInfo>> {
+    spec: &assignment_model::ListSpec,
+) -> RegularResult<Vec<assignment_model::Info>> {
     //
     let (role, incl_opt, offset, limit, mut query) = match spec {
         //
-        AssignmentListSpec::Chapter {
+        assignment_model::ListSpec::Chapter {
             chapter_id,
             role,
             incl_opt,
@@ -119,7 +117,7 @@ async fn list_infos(
                 .into_boxed(),
         ),
 
-        AssignmentListSpec::User {
+        assignment_model::ListSpec::User {
             owner_id,
             role,
             incl_opt,
@@ -196,7 +194,7 @@ async fn list_all_infos_by_chapter(
     chapter_id: &str,
     role: Option<RoleField>,
     incl_opt: &[AssignmentInclOpt],
-) -> RegularResult<Vec<AssignmentInfo>> {
+) -> RegularResult<Vec<assignment_model::Info>> {
     //
     let mut query = t_assignment
         .filter(f_chapter_id.eq(chapter_id))
@@ -258,7 +256,7 @@ async fn list_all_infos_by_chapter(
 async fn list_infos_by_chapter_id_excluded(
     conn: &mut RdbConn,
     chapter_id: &str,
-) -> RegularResult<Vec<AssignmentInfo>> {
+) -> RegularResult<Vec<assignment_model::Info>> {
     //
     let rows: Vec<AssignmentRow> = t_assignment
         .filter(f_chapter_id.eq(chapter_id))
@@ -275,8 +273,8 @@ async fn list_infos_by_chapter_id_excluded(
 /// Inserts a new assignment row from the given form and returns the created info.
 async fn create(
     conn: &mut RdbConn,
-    form: &AssignmentForm,
-) -> RegularResult<AssignmentInfo> {
+    form: &assignment_model::Form,
+) -> RegularResult<assignment_model::Info> {
     //
     let now = OffsetDateTime::now_utc();
 
@@ -295,8 +293,8 @@ async fn create(
 /// Updates the role timestamps for an assignment row.
 async fn put_roles(
     conn: &mut RdbConn,
-    update: &AssignmentRoleUpdate,
-) -> RegularResult<AssignmentInfo> {
+    update: &assignment_model::RoleUpdate,
+) -> RegularResult<assignment_model::Info> {
     //
     let now = OffsetDateTime::now_utc();
 
@@ -349,7 +347,7 @@ impl<'a> Execute<GetInfoByChapterIdAndUserId<'a>> for RdbRepo {
     async fn execute(
         &self,
         step: &GetInfoByChapterIdAndUserId<'a>,
-    ) -> RegularResult<Option<AssignmentInfo>> {
+    ) -> RegularResult<Option<assignment_model::Info>> {
         submit_query!(
             self.core,
             get_info_by_chapter_id_and_user_id,
@@ -366,7 +364,7 @@ impl<'a> Execute<ListInfos<'a>> for RdbRepo {
     async fn execute(
         &self,
         step: &ListInfos<'a>,
-    ) -> RegularResult<Vec<AssignmentInfo>> {
+    ) -> RegularResult<Vec<assignment_model::Info>> {
         submit_query!(self.core, list_infos, step.spec)
     }
 }
@@ -378,7 +376,7 @@ impl<'a> Execute<GetInfoById<'a>> for RdbRepo {
     async fn execute(
         &self,
         step: &GetInfoById<'a>,
-    ) -> RegularResult<AssignmentInfo> {
+    ) -> RegularResult<assignment_model::Info> {
         submit_query!(self.core, get_info_by_id, step.id, step.incl_opt)
     }
 }
@@ -390,7 +388,7 @@ impl<'a> Execute<ListAllInfosByChapter<'a>> for RdbRepo {
     async fn execute(
         &self,
         step: &ListAllInfosByChapter<'a>,
-    ) -> RegularResult<Vec<AssignmentInfo>> {
+    ) -> RegularResult<Vec<assignment_model::Info>> {
         submit_query!(
             self.core,
             list_all_infos_by_chapter,
@@ -411,7 +409,7 @@ impl<'a> Advance<ListAllInfosByChapter<'a>, RdbContext>
         &self,
         context: &mut RdbContext,
         step: &ListAllInfosByChapter<'a>,
-    ) -> RegularResult<Vec<AssignmentInfo>> {
+    ) -> RegularResult<Vec<assignment_model::Info>> {
         list_all_infos_by_chapter(
             context.conn(),
             step.chapter_id,
@@ -432,7 +430,7 @@ impl<'a> Advance<GetInfoByChapterIdAndUserId<'a>, RdbContext>
         &self,
         context: &mut RdbContext,
         step: &GetInfoByChapterIdAndUserId<'a>,
-    ) -> RegularResult<Option<AssignmentInfo>> {
+    ) -> RegularResult<Option<assignment_model::Info>> {
         get_info_by_chapter_id_and_user_id(
             context.conn(),
             step.chapter_id,
@@ -452,7 +450,7 @@ impl<'a> Advance<ListInfosByChapterIdExcluded<'a>, RdbContext>
         &self,
         context: &mut RdbContext,
         step: &ListInfosByChapterIdExcluded<'a>,
-    ) -> RegularResult<Vec<AssignmentInfo>> {
+    ) -> RegularResult<Vec<assignment_model::Info>> {
         list_infos_by_chapter_id_excluded(context.conn(), step.chapter_id).await
     }
 }
@@ -465,7 +463,7 @@ impl<'a> Advance<Create<'a>, RdbContext> for RdbRepoTransactional {
         &self,
         context: &mut RdbContext,
         step: &Create<'a>,
-    ) -> RegularResult<AssignmentInfo> {
+    ) -> RegularResult<assignment_model::Info> {
         create(context.conn(), step.form).await
     }
 }
@@ -478,7 +476,7 @@ impl<'a> Advance<PutRoles<'a>, RdbContext> for RdbRepoTransactional {
         &self,
         context: &mut RdbContext,
         step: &PutRoles<'a>,
-    ) -> RegularResult<AssignmentInfo> {
+    ) -> RegularResult<assignment_model::Info> {
         put_roles(context.conn(), step.update).await
     }
 }

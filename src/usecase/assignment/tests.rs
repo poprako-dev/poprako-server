@@ -1,12 +1,12 @@
 use super::*;
 
-use crate::model::assignment::AssignmentInfo;
-use crate::model::chapter::ChapterInfo;
-use crate::model::comic::ComicInfo;
-use crate::model::member::MemberInfo;
-use crate::model::team::TeamInfo;
-use crate::model::user::{UserCredential, UserInfo};
-use crate::model::workset::WorksetInfo;
+use crate::model::assignment_model;
+use crate::model::chapter_model;
+use crate::model::comic_model;
+use crate::model::member_model;
+use crate::model::team_model;
+use crate::model::user_model;
+use crate::model::workset_model;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::test_util::now;
 use crate::value::chapter::StageMask;
@@ -17,8 +17,8 @@ mod join;
 mod list_infos;
 mod update_roles;
 
-fn token(user_id: &str) -> UserToken {
-    UserToken {
+fn token(user_id: &str) -> user_model::Token {
+    user_model::Token {
         user_id: user_id.into(),
     }
 }
@@ -31,11 +31,11 @@ fn roles(left: RoleField, right: RoleField) -> RoleMask {
     role(left).union(role(right))
 }
 
-fn user(id: &str, is_sadmin: bool) -> UserInfo {
+fn user(id: &str, is_sadmin: bool) -> user_model::Info {
     //
     let time = now();
 
-    UserInfo {
+    user_model::Info {
         id: id.into(),
         qid: id.into(),
         nickname: id.into(),
@@ -49,18 +49,18 @@ fn user(id: &str, is_sadmin: bool) -> UserInfo {
     }
 }
 
-fn credential(user_id: &str) -> UserCredential {
-    UserCredential {
+fn credential(user_id: &str) -> user_model::Credential {
+    user_model::Credential {
         user_id: user_id.into(),
         password_hash: "hash".into(),
     }
 }
 
-fn team(id: &str) -> TeamInfo {
+fn team(id: &str) -> team_model::Info {
     //
     let time = now();
 
-    TeamInfo {
+    team_model::Info {
         id: id.into(),
         name: id.into(),
         description: "description".into(),
@@ -73,11 +73,11 @@ fn team(id: &str) -> TeamInfo {
     }
 }
 
-fn workset(id: &str, team_id: &str) -> WorksetInfo {
+fn workset(id: &str, team_id: &str) -> workset_model::Info {
     //
     let time = now();
 
-    WorksetInfo {
+    workset_model::Info {
         id: id.into(),
         team_id: team_id.into(),
         index: 0,
@@ -90,11 +90,11 @@ fn workset(id: &str, team_id: &str) -> WorksetInfo {
     }
 }
 
-fn comic(id: &str, workset_id: &str) -> ComicInfo {
+fn comic(id: &str, workset_id: &str) -> comic_model::Info {
     //
     let time = now();
 
-    ComicInfo {
+    comic_model::Info {
         id: id.into(),
         workset_id: workset_id.into(),
         index: 0,
@@ -116,11 +116,11 @@ fn comic(id: &str, workset_id: &str) -> ComicInfo {
     }
 }
 
-fn chapter(id: &str, comic_id: &str) -> ChapterInfo {
+fn chapter(id: &str, comic_id: &str) -> chapter_model::Info {
     //
     let time = now();
 
-    ChapterInfo {
+    chapter_model::Info {
         id: id.into(),
         comic_id: comic_id.into(),
         comic: None,
@@ -139,8 +139,8 @@ fn chapter(id: &str, comic_id: &str) -> ChapterInfo {
     }
 }
 
-fn member(user_id: &str, role_mask: RoleMask) -> MemberInfo {
-    MemberInfo {
+fn member(user_id: &str, role_mask: RoleMask) -> member_model::Info {
+    member_model::Info {
         id: format!("member-{}", user_id),
         user_id: user_id.into(),
         user_nickname: user_id.into(),
@@ -156,11 +156,11 @@ fn assignment(
     chapter_id: &str,
     user_id: &str,
     role_mask: RoleMask,
-) -> AssignmentInfo {
+) -> assignment_model::Info {
     //
     let time = now();
 
-    AssignmentInfo {
+    assignment_model::Info {
         id: format!("assignment-{}-{}", chapter_id, user_id),
         chapter_id: chapter_id.into(),
         user_id: user_id.into(),
@@ -172,8 +172,8 @@ fn assignment(
     }
 }
 
-fn list_by_chapter_data(chapter_id: &str) -> ListAssignmentInfosData {
-    ListAssignmentInfosData {
+fn list_by_chapter_data(chapter_id: &str) -> assignment_data::ListInfosData {
+    assignment_data::ListInfosData {
         incl_opt: Vec::new(),
         chapter_id: Some(chapter_id.into()),
         owner_id: None,
@@ -183,8 +183,8 @@ fn list_by_chapter_data(chapter_id: &str) -> ListAssignmentInfosData {
     }
 }
 
-fn list_by_user_data(owner_id: &str) -> ListAssignmentInfosData {
-    ListAssignmentInfosData {
+fn list_by_user_data(owner_id: &str) -> assignment_data::ListInfosData {
+    assignment_data::ListInfosData {
         incl_opt: Vec::new(),
         chapter_id: None,
         owner_id: Some(owner_id.into()),
@@ -198,8 +198,8 @@ fn update_roles_data(
     chapter_id: &str,
     user_id: &str,
     role_mask: RoleMask,
-) -> UpdateAssignmentRolesData {
-    UpdateAssignmentRolesData {
+) -> assignment_data::UpdateRolesData {
+    assignment_data::UpdateRolesData {
         chapter_id: chapter_id.into(),
         user_id: user_id.into(),
         roles: role_mask,

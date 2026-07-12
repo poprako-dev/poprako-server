@@ -14,12 +14,13 @@ use super::*;
 
 use time::OffsetDateTime;
 
-use crate::model::assignment::AssignmentInfo;
-use crate::model::chapter::ChapterInfo;
-use crate::model::comic::ComicInfo;
-use crate::model::member::MemberInfo;
-use crate::model::page::PageInfo;
-use crate::model::workset::WorksetInfo;
+use crate::model::assignment_model;
+use crate::model::chapter_model;
+use crate::model::comic_model;
+use crate::model::member_model;
+use crate::model::page_model;
+use crate::model::user_model;
+use crate::model::workset_model;
 use crate::part::prom::Payload;
 use crate::part::prom::task::{ImageKind, ImageTask};
 use crate::part_impl::repo::mock_impl::Mock;
@@ -31,17 +32,17 @@ use crate::test_util::{
 use crate::value::chapter::StageMask;
 use crate::value::role::{RoleField, RoleMask};
 
-fn token(user_id: &str) -> UserToken {
-    UserToken {
+fn token(user_id: &str) -> user_model::Token {
+    user_model::Token {
         user_id: user_id.into(),
     }
 }
 
-fn workset(id: &str, team_id: &str) -> WorksetInfo {
+fn workset(id: &str, team_id: &str) -> workset_model::Info {
     //
     let time = OffsetDateTime::now_utc();
 
-    WorksetInfo {
+    workset_model::Info {
         id: id.into(),
         team_id: team_id.into(),
         index: 0,
@@ -54,11 +55,11 @@ fn workset(id: &str, team_id: &str) -> WorksetInfo {
     }
 }
 
-fn comic(id: &str, workset_id: &str) -> ComicInfo {
+fn comic(id: &str, workset_id: &str) -> comic_model::Info {
     //
     let time = OffsetDateTime::now_utc();
 
-    ComicInfo {
+    comic_model::Info {
         id: id.into(),
         workset_id: workset_id.into(),
         index: 0,
@@ -80,11 +81,11 @@ fn comic(id: &str, workset_id: &str) -> ComicInfo {
     }
 }
 
-fn chapter(id: &str, comic_id: &str, page_count: i32) -> ChapterInfo {
+fn chapter(id: &str, comic_id: &str, page_count: i32) -> chapter_model::Info {
     //
     let time = OffsetDateTime::now_utc();
 
-    ChapterInfo {
+    chapter_model::Info {
         id: id.into(),
         comic_id: comic_id.into(),
         comic: None,
@@ -103,8 +104,8 @@ fn chapter(id: &str, comic_id: &str, page_count: i32) -> ChapterInfo {
     }
 }
 
-fn member(user_id: &str, role_mask: RoleMask) -> MemberInfo {
-    MemberInfo {
+fn member(user_id: &str, role_mask: RoleMask) -> member_model::Info {
+    member_model::Info {
         id: format!("member-{}", user_id),
         user_id: user_id.into(),
         user_nickname: user_id.into(),
@@ -120,11 +121,11 @@ fn assignment(
     chapter_id: &str,
     user_id: &str,
     role_mask: RoleMask,
-) -> AssignmentInfo {
+) -> assignment_model::Info {
     //
     let time = OffsetDateTime::now_utc();
 
-    AssignmentInfo {
+    assignment_model::Info {
         id: format!("assignment-{}-{}", chapter_id, user_id),
         chapter_id: chapter_id.into(),
         user_id: user_id.into(),
@@ -142,11 +143,11 @@ fn page(
     image_key: Option<&str>,
     image_uploaded: bool,
     image_version: i64,
-) -> PageInfo {
+) -> page_model::Info {
     //
     let time = OffsetDateTime::now_utc();
 
-    PageInfo {
+    page_model::Info {
         id: id.into(),
         chapter_id: "chapter-1".into(),
         index,
@@ -189,7 +190,7 @@ async fn reserve_chapter_pages_creates_pages_and_urls() {
         &mock,
         &mock,
         token("user-1"),
-        ReserveChapterPagesData {
+        page_data::ReserveChapterData {
             chapter_id: "chapter-1".into(),
             page_count: 2,
             file_ext: "png".into(),
@@ -264,7 +265,7 @@ async fn reserve_chapter_pages_rejects_invalid_count() {
         &mock,
         &mock,
         token("user-1"),
-        ReserveChapterPagesData {
+        page_data::ReserveChapterData {
             chapter_id: "chapter-1".into(),
             page_count: 0,
             file_ext: "png".into(),
@@ -305,7 +306,7 @@ async fn reserve_image_replaces_key_and_enqueues_prom() {
         &mock,
         token("user-1"),
         "page-1".into(),
-        ReservePageImageData {
+        page_data::ReserveImageData {
             file_ext: "jpg".into(),
         },
     )
@@ -363,7 +364,7 @@ async fn reserve_image_rejects_missing_page() {
         &mock,
         token("user-1"),
         "missing".into(),
-        ReservePageImageData {
+        page_data::ReserveImageData {
             file_ext: "jpg".into(),
         },
     )
@@ -391,7 +392,7 @@ async fn list_infos_sorts_and_resolves_uploaded_url() {
         &mock,
         &mock,
         token("user-1"),
-        ListPageInfosData {
+        page_data::ListInfosData {
             chapter_id: "chapter-1".into(),
             offset: 0,
             limit: 10,
@@ -426,7 +427,7 @@ async fn list_infos_rejects_non_member_without_assignment() {
         &mock,
         &mock,
         token("user-1"),
-        ListPageInfosData {
+        page_data::ListInfosData {
             chapter_id: "chapter-1".into(),
             offset: 0,
             limit: 10,
@@ -459,7 +460,7 @@ async fn mark_image_uploaded_marks_once_and_idempotent() {
         &mock,
         token("user-1"),
         "page-1".into(),
-        MarkPageImageUploadedData { image_version: 2 },
+        page_data::MarkImageUploadedData { image_version: 2 },
     )
     .await;
 
@@ -470,7 +471,7 @@ async fn mark_image_uploaded_marks_once_and_idempotent() {
         &mock,
         token("user-1"),
         "page-1".into(),
-        MarkPageImageUploadedData { image_version: 2 },
+        page_data::MarkImageUploadedData { image_version: 2 },
     )
     .await;
 
@@ -509,7 +510,7 @@ async fn mark_image_uploaded_rejects_stale_replay_then_accepts_current_version()
         &mock,
         token("user-1"),
         "page-1".into(),
-        ReservePageImageData {
+        page_data::ReserveImageData {
             file_ext: "png".into(),
         },
     )
@@ -524,7 +525,7 @@ async fn mark_image_uploaded_rejects_stale_replay_then_accepts_current_version()
         &mock,
         token("user-1"),
         "page-1".into(),
-        MarkPageImageUploadedData { image_version: 1 },
+        page_data::MarkImageUploadedData { image_version: 1 },
     )
     .await
     .err()
@@ -547,7 +548,7 @@ async fn mark_image_uploaded_rejects_stale_replay_then_accepts_current_version()
         &mock,
         token("user-1"),
         "page-1".into(),
-        MarkPageImageUploadedData { image_version: 2 },
+        page_data::MarkImageUploadedData { image_version: 2 },
     )
     .await
     .unwrap();
@@ -575,7 +576,7 @@ async fn mark_image_uploaded_rejects_non_raw_provider() {
         &mock,
         token("user-1"),
         "page-1".into(),
-        MarkPageImageUploadedData { image_version: 1 },
+        page_data::MarkImageUploadedData { image_version: 1 },
     )
     .await
     .err()

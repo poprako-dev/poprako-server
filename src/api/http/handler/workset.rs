@@ -17,11 +17,8 @@ use crate::api::http::result::{
     Accept as _, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
-use crate::data::workset::{
-    CreateWorksetData, CreateWorksetVal, ListWorksetInfosData,
-    UpdateWorksetInfoData, WorksetInfoVal,
-};
-use crate::model::user::UserToken;
+use crate::data::workset_data;
+use crate::model::user_model;
 use crate::usecase;
 
 /// `POST /api/v1/worksets` — create a workset inside a team.
@@ -29,9 +26,9 @@ use crate::usecase;
     post,
     path = "/api/v1/worksets",
     tag = "worksets",
-    request_body = CreateWorksetData,
+    request_body = workset_data::CreateData,
     responses(
-        (status = 201, description = "Workset created", body = HttpBody<CreateWorksetVal>),
+        (status = 201, description = "Workset created", body = HttpBody<workset_data::CreateVal>),
         (status = 401, description = "Authentication required"),
         (status = 403, description = "No permission to create worksets in this team"),
         (status = 404, description = "Team not found"),
@@ -40,9 +37,9 @@ use crate::usecase;
 #[instrument(err, skip(harn, data))]
 pub async fn create(
     State(harn): State<AppHarn>,
-    Extension(user_token): Extension<UserToken>,
-    Json(data): Json<CreateWorksetData>,
-) -> HttpResult<CreateWorksetVal> {
+    Extension(user_token): Extension<user_model::Token>,
+    Json(data): Json<workset_data::CreateData>,
+) -> HttpResult<workset_data::CreateVal> {
     usecase::workset::create(harn.drive(), harn.repo(), user_token, data)
         .await?
         .accept(StatusCode::CREATED)
@@ -55,7 +52,7 @@ pub async fn create(
     tag = "worksets",
     params(("team_id" = String, Path, description = "Team ID"), Pagination),
     responses(
-        (status = 200, description = "Worksets listed", body = HttpBody<Vec<WorksetInfoVal>>),
+        (status = 200, description = "Worksets listed", body = HttpBody<Vec<workset_data::InfoVal>>),
         (status = 401, description = "Authentication required"),
         (status = 403, description = "No permission to list worksets in this team"),
     ),
@@ -64,11 +61,11 @@ pub async fn create(
 pub async fn list_infos(
     State(harn): State<AppHarn>,
     Path(team_id): Path<String>,
-    Extension(user_token): Extension<UserToken>,
+    Extension(user_token): Extension<user_model::Token>,
     Query(pagination): Query<Pagination>,
-) -> HttpResult<Vec<WorksetInfoVal>> {
+) -> HttpResult<Vec<workset_data::InfoVal>> {
     //
-    let data = ListWorksetInfosData {
+    let data = workset_data::ListInfosData {
         team_id,
         offset: pagination.offset,
         limit: pagination.limit,
@@ -86,7 +83,7 @@ pub async fn list_infos(
     tag = "worksets",
     params(("workset_id" = String, Path, description = "Workset ID")),
     responses(
-        (status = 200, description = "Workset info retrieved", body = HttpBody<WorksetInfoVal>),
+        (status = 200, description = "Workset info retrieved", body = HttpBody<workset_data::InfoVal>),
         (status = 401, description = "Authentication required"),
         (status = 403, description = "No permission to view this workset"),
         (status = 404, description = "Workset not found"),
@@ -96,8 +93,8 @@ pub async fn list_infos(
 pub async fn get_info(
     State(harn): State<AppHarn>,
     Path(workset_id): Path<String>,
-    Extension(user_token): Extension<UserToken>,
-) -> HttpResult<WorksetInfoVal> {
+    Extension(user_token): Extension<user_model::Token>,
+) -> HttpResult<workset_data::InfoVal> {
     usecase::workset::get_info(harn.repo(), user_token, workset_id)
         .await?
         .accept(StatusCode::OK)
@@ -109,7 +106,7 @@ pub async fn get_info(
     path = "/api/v1/worksets/{workset_id}",
     tag = "worksets",
     params(("workset_id" = String, Path, description = "Workset ID")),
-    request_body = UpdateWorksetInfoData,
+    request_body = workset_data::UpdateInfoData,
     responses(
         (status = 204, description = "Workset updated"),
         (status = 422, description = "Path id does not match body id"),
@@ -121,8 +118,8 @@ pub async fn get_info(
 pub async fn update_info(
     State(harn): State<AppHarn>,
     Path(workset_id): Path<String>,
-    Extension(user_token): Extension<UserToken>,
-    Json(data): Json<UpdateWorksetInfoData>,
+    Extension(user_token): Extension<user_model::Token>,
+    Json(data): Json<workset_data::UpdateInfoData>,
 ) -> HttpNoContent {
     //
     ensure_path_matches_body_id(&workset_id, &data.id)?;
@@ -148,7 +145,7 @@ pub async fn update_info(
 pub async fn delete(
     State(harn): State<AppHarn>,
     Path(workset_id): Path<String>,
-    Extension(user_token): Extension<UserToken>,
+    Extension(user_token): Extension<user_model::Token>,
 ) -> HttpNoContent {
     //
     usecase::workset::delete(

@@ -2,9 +2,7 @@
 
 use poprako_transactional::step::Step;
 
-use crate::model::assignment::{
-    AssignmentForm, AssignmentInfo, AssignmentListSpec, AssignmentRoleUpdate,
-};
+use crate::model::assignment_model;
 use crate::value::assignment::AssignmentInclOpt;
 use crate::value::role::RoleField;
 
@@ -15,16 +13,16 @@ pub struct GetInfoByChapterIdAndUserId<'a> {
 }
 
 impl<'a> Step for GetInfoByChapterIdAndUserId<'a> {
-    type Output = Option<AssignmentInfo>;
+    type Output = Option<assignment_model::Info>;
 }
 
 /// Step that lists assignments by query specification.
 pub struct ListInfos<'a> {
-    pub spec: &'a AssignmentListSpec,
+    pub spec: &'a assignment_model::ListSpec,
 }
 
 impl<'a> Step for ListInfos<'a> {
-    type Output = Vec<AssignmentInfo>;
+    type Output = Vec<assignment_model::Info>;
 }
 
 /// Step that lists all assignments by chapter (no pagination).
@@ -35,7 +33,7 @@ pub struct ListAllInfosByChapter<'a> {
 }
 
 impl<'a> Step for ListAllInfosByChapter<'a> {
-    type Output = Vec<AssignmentInfo>;
+    type Output = Vec<assignment_model::Info>;
 }
 
 /// Step that fetches one assignment by its identifier.
@@ -45,7 +43,7 @@ pub struct GetInfoById<'a> {
 }
 
 impl<'a> Step for GetInfoById<'a> {
-    type Output = AssignmentInfo;
+    type Output = assignment_model::Info;
 }
 
 /// Step that locks all assignment rows under one chapter.
@@ -54,25 +52,25 @@ pub struct ListInfosByChapterIdExcluded<'a> {
 }
 
 impl<'a> Step for ListInfosByChapterIdExcluded<'a> {
-    type Output = Vec<AssignmentInfo>;
+    type Output = Vec<assignment_model::Info>;
 }
 
 /// Step that inserts a new assignment row.
 pub struct Create<'a> {
-    pub form: &'a AssignmentForm,
+    pub form: &'a assignment_model::Form,
 }
 
 impl<'a> Step for Create<'a> {
-    type Output = AssignmentInfo;
+    type Output = assignment_model::Info;
 }
 
 /// Step that updates assignment roles.
 pub struct PutRoles<'a> {
-    pub update: &'a AssignmentRoleUpdate,
+    pub update: &'a assignment_model::RoleUpdate,
 }
 
 impl<'a> Step for PutRoles<'a> {
-    type Output = AssignmentInfo;
+    type Output = assignment_model::Info;
 }
 
 /// Step that deletes one assignment by its identifier.
@@ -109,7 +107,9 @@ impl AssignmentStep {
     }
 
     /// Constructs a step to list assignments.
-    pub fn list_infos<'a>(spec: &'a AssignmentListSpec) -> ListInfos<'a> {
+    pub fn list_infos<'a>(
+        spec: &'a assignment_model::ListSpec,
+    ) -> ListInfos<'a> {
         ListInfos { spec }
     }
 
@@ -142,12 +142,14 @@ impl AssignmentStep {
     }
 
     /// Constructs a step to insert a new assignment.
-    pub fn create<'a>(form: &'a AssignmentForm) -> Create<'a> {
+    pub fn create<'a>(form: &'a assignment_model::Form) -> Create<'a> {
         Create { form }
     }
 
     /// Constructs a step to update assignment roles.
-    pub fn put_roles<'a>(update: &'a AssignmentRoleUpdate) -> PutRoles<'a> {
+    pub fn put_roles<'a>(
+        update: &'a assignment_model::RoleUpdate,
+    ) -> PutRoles<'a> {
         PutRoles { update }
     }
 

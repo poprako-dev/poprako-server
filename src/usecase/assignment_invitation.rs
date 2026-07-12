@@ -6,15 +6,11 @@ use poprako_util::i18n::trl;
 use poprako_util::page::Page;
 
 use crate::complex::assignment::{AssignmentComplex, AssignmentPermComplex};
-use crate::data::assignment::AssignmentInfoVal;
-use crate::data::assignment_invitation::{
-    AssignmentInvitationInfoVal, CreateAssignmentInvitationData,
-    CreateAssignmentInvitationVal, JoinAssignmentInvitationData,
-    ListAssignmentInvitationInfosData,
-};
-use crate::model::assignment::{AssignmentForm, AssignmentInfo};
-use crate::model::assignment_invitation::AssignmentInvitationForm;
-use crate::model::user::UserToken;
+use crate::data::assignment_data;
+use crate::data::assignment_invitation_data;
+use crate::model::assignment_invitation_model;
+use crate::model::assignment_model;
+use crate::model::user_model;
 use crate::part::image::ImagePool;
 use crate::part::repo::assignment::{
     AssignmentRepo, AssignmentRepoTransactional,
@@ -46,9 +42,9 @@ mod tests;
 /// Lists assignment invitations under one chapter.
 pub async fn list_infos<C, R>(
     repo: &R,
-    token: UserToken,
-    data: ListAssignmentInvitationInfosData,
-) -> RegularResult<Vec<AssignmentInvitationInfoVal>>
+    token: user_model::Token,
+    data: assignment_invitation_data::ListInfosData,
+) -> RegularResult<Vec<assignment_invitation_data::InfoVal>>
 where
     R: AssignmentInvitationRepo<C> + AssignmentRepo<C> + Sync,
     <R as DeriveTransactional>::Transactional:
@@ -77,7 +73,7 @@ where
 
     Ok(assignment_invitation_infos
         .into_iter()
-        .map(AssignmentInvitationInfoVal::from)
+        .map(assignment_invitation_data::InfoVal::from)
         .collect())
 }
 
@@ -85,9 +81,9 @@ where
 pub async fn create<D, C, R>(
     drive: &D,
     repo: &R,
-    token: UserToken,
-    data: CreateAssignmentInvitationData,
-) -> RegularResult<CreateAssignmentInvitationVal>
+    token: user_model::Token,
+    data: assignment_invitation_data::CreateData,
+) -> RegularResult<assignment_invitation_data::CreateVal>
 where
     D: Drive<C>,
     D::Error: Into<RegularError>,
@@ -148,14 +144,15 @@ where
 
             let code = gen_code();
 
-            let assignment_invitation_form = AssignmentInvitationForm {
-                id: assignment_invitation_id,
-                chapter_id: data.chapter_id,
-                inviter_id: token.user_id,
-                invitee_qid: data.invitee_qid,
-                code,
-                roles: data.roles,
-            };
+            let assignment_invitation_form =
+                assignment_invitation_model::Form {
+                    id: assignment_invitation_id,
+                    chapter_id: data.chapter_id,
+                    inviter_id: token.user_id,
+                    invitee_qid: data.invitee_qid,
+                    code,
+                    roles: data.roles,
+                };
 
             let assignment_invitation_info = repo
                 .advance(
@@ -173,7 +170,7 @@ where
         })
         .await?;
 
-    Ok(CreateAssignmentInvitationVal {
+    Ok(assignment_invitation_data::CreateVal {
         id: assignment_invitation_id,
         code,
     })
@@ -183,7 +180,7 @@ where
 pub async fn delete<D, C, R>(
     drive: &D,
     repo: &R,
-    token: UserToken,
+    token: user_model::Token,
     id: String,
 ) -> RegularResult<()>
 where
@@ -230,9 +227,9 @@ pub async fn join<D, C, R, I>(
     drive: &D,
     repo: &R,
     image_pool: &I,
-    token: UserToken,
-    data: JoinAssignmentInvitationData,
-) -> RegularResult<AssignmentInfoVal>
+    token: user_model::Token,
+    data: assignment_invitation_data::JoinData,
+) -> RegularResult<assignment_data::InfoVal>
 where
     D: Drive<C>,
     D::Error: Into<RegularError>,
@@ -261,135 +258,140 @@ where
     let current_user_id = token.user_id;
 
     let assignment_info = drive
-        .with_context(async move |context| -> RegularResult<AssignmentInfo> {
-            //
-            let repo = repo.derive_transactional().await;
-
-            let current_user_info = repo
-                .advance(
-                    context,
-                    &UserStep::get_info_excluded(&current_user_id),
-                )
-                .await?;
-
-            let assignment_invitation_info = repo
-                .advance(
-                    context,
-                    &AssignmentInvitationStep::get_info_by_code_excluded(
-                        &data.code,
-                    ),
-                )
-                .await?;
-
-            if assignment_invitation_info.invitee_qid != current_user_info.qid {
-                return Err(invalid_invitation_error());
-            }
-
-            validate_roles(assignment_invitation_info.roles)?;
-
-            let chapter_info = repo
-                .advance(
-                    context,
-                    &ChapterStep::get_info_by_id(
-                        &assignment_invitation_info.chapter_id,
-                        &[],
-                    ),
-                )
-                .await?;
-
-            let comic_info = repo
-                .advance(
-                    context,
-                    &ComicStep::get_info_by_id(&chapter_info.comic_id, &[]),
-                )
-                .await?;
-
-            let workset_info = repo
-                .advance(
-                    context,
-                    &WorksetStep::get_info_by_id(&comic_info.workset_id),
-                )
-                .await?;
-
-            let member_info = repo
-                .advance(
-                    context,
-                    &MemberStep::find_info_by_user_id_and_team_id(
-                        &current_user_id,
-                        &workset_info.team_id,
-                    ),
-                )
-                .await?;
-
-            let Some(member_info) = member_info else {
-                return Err(assignment_role_not_assignable_perm_error());
-            };
-
-            if !member_info
-                .roles
-                .contains_mask(assignment_invitation_info.roles)
-            {
-                return Err(assignment_role_not_assignable_perm_error());
-            }
-
-            let existing_assignment_info = repo
-                .advance(
-                    context,
-                    &AssignmentStep::get_info_by_chapter_id_and_user_id(
-                        &assignment_invitation_info.chapter_id,
-                        &current_user_id,
-                    ),
-                )
-                .await?;
-
-            let assignment_info = match existing_assignment_info {
+        .with_context(
+            async move |context| -> RegularResult<assignment_model::Info> {
                 //
-                Some(existing_assignment_info) => {
-                    //
-                    let assignment_role_update = AssignmentComplex::merge_roles(
-                        &existing_assignment_info,
-                        assignment_invitation_info.roles,
-                    );
+                let repo = repo.derive_transactional().await;
 
-                    repo.advance(
+                let current_user_info = repo
+                    .advance(
                         context,
-                        &AssignmentStep::put_roles(&assignment_role_update),
+                        &UserStep::get_info_excluded(&current_user_id),
                     )
-                    .await?
+                    .await?;
+
+                let assignment_invitation_info = repo
+                    .advance(
+                        context,
+                        &AssignmentInvitationStep::get_info_by_code_excluded(
+                            &data.code,
+                        ),
+                    )
+                    .await?;
+
+                if assignment_invitation_info.invitee_qid
+                    != current_user_info.qid
+                {
+                    return Err(invalid_invitation_error());
                 }
 
-                None => {
-                    //
-                    let assignment_form = AssignmentForm {
-                        id: AssignmentComplex::gen_id(),
-                        chapter_id: assignment_invitation_info
-                            .chapter_id
-                            .clone(),
-                        user_id: current_user_id,
-                        roles: assignment_invitation_info.roles,
-                    };
+                validate_roles(assignment_invitation_info.roles)?;
 
-                    repo.advance(
+                let chapter_info = repo
+                    .advance(
                         context,
-                        &AssignmentStep::create(&assignment_form),
+                        &ChapterStep::get_info_by_id(
+                            &assignment_invitation_info.chapter_id,
+                            &[],
+                        ),
                     )
-                    .await?
+                    .await?;
+
+                let comic_info = repo
+                    .advance(
+                        context,
+                        &ComicStep::get_info_by_id(&chapter_info.comic_id, &[]),
+                    )
+                    .await?;
+
+                let workset_info = repo
+                    .advance(
+                        context,
+                        &WorksetStep::get_info_by_id(&comic_info.workset_id),
+                    )
+                    .await?;
+
+                let member_info = repo
+                    .advance(
+                        context,
+                        &MemberStep::find_info_by_user_id_and_team_id(
+                            &current_user_id,
+                            &workset_info.team_id,
+                        ),
+                    )
+                    .await?;
+
+                let Some(member_info) = member_info else {
+                    return Err(assignment_role_not_assignable_perm_error());
+                };
+
+                if !member_info
+                    .roles
+                    .contains_mask(assignment_invitation_info.roles)
+                {
+                    return Err(assignment_role_not_assignable_perm_error());
                 }
-            };
 
-            repo.advance(
-                context,
-                &AssignmentInvitationStep::mark_pending_as_used(
-                    &assignment_invitation_info.id,
-                ),
-            )
-            .await?;
+                let existing_assignment_info = repo
+                    .advance(
+                        context,
+                        &AssignmentStep::get_info_by_chapter_id_and_user_id(
+                            &assignment_invitation_info.chapter_id,
+                            &current_user_id,
+                        ),
+                    )
+                    .await?;
 
-            Ok(assignment_info)
-        })
+                let assignment_info = match existing_assignment_info {
+                    //
+                    Some(existing_assignment_info) => {
+                        //
+                        let assignment_role_update =
+                            AssignmentComplex::merge_roles(
+                                &existing_assignment_info,
+                                assignment_invitation_info.roles,
+                            );
+
+                        repo.advance(
+                            context,
+                            &AssignmentStep::put_roles(&assignment_role_update),
+                        )
+                        .await?
+                    }
+
+                    None => {
+                        //
+                        let assignment_form = assignment_model::Form {
+                            id: AssignmentComplex::gen_id(),
+                            chapter_id: assignment_invitation_info
+                                .chapter_id
+                                .clone(),
+                            user_id: current_user_id,
+                            roles: assignment_invitation_info.roles,
+                        };
+
+                        repo.advance(
+                            context,
+                            &AssignmentStep::create(&assignment_form),
+                        )
+                        .await?
+                    }
+                };
+
+                repo.advance(
+                    context,
+                    &AssignmentInvitationStep::mark_pending_as_used(
+                        &assignment_invitation_info.id,
+                    ),
+                )
+                .await?;
+
+                Ok(assignment_info)
+            },
+        )
         .await?;
 
-    AssignmentInfoVal::from_model(image_pool, assignment_info).await
+    assignment_data::InfoVal::from_model(image_pool, assignment_info).await
 }
 
 /// Generates a snowflake ID for a new invitation.

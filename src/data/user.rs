@@ -7,7 +7,7 @@ use utoipa::ToSchema;
 
 use poprako_util::time::ToUnixMilli;
 
-use crate::model::user::UserInfo;
+use crate::model::user_model;
 use crate::part::image::ImagePool;
 use crate::result::RegularResult;
 
@@ -18,7 +18,7 @@ use crate::result::RegularResult;
 /// the avatar has been uploaded.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct UserInfoVal {
+pub struct InfoVal {
     pub id: String,
 
     pub nickname: String,
@@ -33,7 +33,7 @@ pub struct UserInfoVal {
     pub updated_at: i64,
 }
 
-impl UserInfoVal {
+impl InfoVal {
     /// Converts a [`UserInfoModel`] into a presentation-ready value.
     ///
     /// Resolves a signed avatar download URL when the avatar has
@@ -43,7 +43,7 @@ impl UserInfoVal {
     /// [`OffsetDateTime`]: time::OffsetDateTime
     pub async fn from_model<P>(
         image_pool: &P,
-        model: UserInfo,
+        model: user_model::Info,
     ) -> RegularResult<Self>
     where
         P: ImagePool,
@@ -71,7 +71,7 @@ impl UserInfoVal {
 /// Input parameters for updating a user's profile.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct UpdateUserInfoData {
+pub struct UpdateInfoData {
     pub id: String,
 
     pub qid: String,
@@ -81,7 +81,7 @@ pub struct UpdateUserInfoData {
 /// Input parameters for reserving a new avatar upload slot.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct ReserveUserAvatarData {
+pub struct ReserveAvatarData {
     pub file_ext: String,
 }
 
@@ -91,7 +91,7 @@ pub struct ReserveUserAvatarData {
 /// storage. `avatar_version` must be echoed back when confirming the upload.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct ReserveUserAvatarVal {
+pub struct ReserveAvatarVal {
     pub put_url: String,
     pub avatar_version: i64,
 }
@@ -101,6 +101,6 @@ pub struct ReserveUserAvatarVal {
 /// `avatar_version` must match the version returned by the reservation step.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct MarkUserAvatarUploadedData {
+pub struct MarkAvatarUploadedData {
     pub avatar_version: i64,
 }

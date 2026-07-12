@@ -3,7 +3,7 @@
 use diesel::prelude::*;
 use time::OffsetDateTime;
 
-use crate::model::comment::{CommentForm, CommentInfo};
+use crate::model::comment_model;
 use crate::part_impl::repo::rdb_impl::schema::t_comment;
 
 /// Raw database row for the `t_comment` table. Returned by Diesel queries.
@@ -34,7 +34,7 @@ pub struct CommentEntry<'a> {
     pub f_created_at: OffsetDateTime,
 }
 
-impl From<CommentRow> for CommentInfo {
+impl From<CommentRow> for comment_model::Info {
     fn from(row: CommentRow) -> Self {
         Self {
             id: row.f_id,
@@ -47,8 +47,8 @@ impl From<CommentRow> for CommentInfo {
     }
 }
 
-impl<'a> From<&'a CommentForm> for CommentEntry<'a> {
-    fn from(form: &'a CommentForm) -> Self {
+impl<'a> From<&'a comment_model::Form> for CommentEntry<'a> {
+    fn from(form: &'a comment_model::Form) -> Self {
         Self {
             f_id: &form.id,
             f_team_id: &form.team_id,

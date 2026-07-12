@@ -18,7 +18,7 @@
 
 use super::*;
 
-use crate::model::member_invitation::MemberInvitationInfo;
+use crate::model::member_invitation_model;
 use crate::part::effect::event::Event;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
@@ -34,8 +34,8 @@ fn invitation(
     invitee_qid: &str,
     code: &str,
     pending: bool,
-) -> MemberInvitationInfo {
-    MemberInvitationInfo {
+) -> member_invitation_model::Info {
+    member_invitation_model::Info {
         id: id.into(),
         team_id: team_id.into(),
         invitor: None,
@@ -47,9 +47,13 @@ fn invitation(
     }
 }
 
-/// Builds a [`RegisterData`] fixture with a fixed password.
-fn register_data(qid: &str, nickname: &str, code: &str) -> RegisterData {
-    RegisterData {
+/// Builds a [`AuthRegisterData`] fixture with a fixed password.
+fn register_data(
+    qid: &str,
+    nickname: &str,
+    code: &str,
+) -> auth_data::RegisterData {
+    auth_data::RegisterData {
         qid: qid.into(),
         nickname: nickname.into(),
         password: "password".into(),
@@ -57,9 +61,9 @@ fn register_data(qid: &str, nickname: &str, code: &str) -> RegisterData {
     }
 }
 
-/// Builds a [`LoginData`] fixture.
-fn login_data(qid: &str, password: &str) -> LoginData {
-    LoginData {
+/// Builds a [`AuthLoginData`] fixture.
+fn login_data(qid: &str, password: &str) -> auth_data::LoginData {
+    auth_data::LoginData {
         qid: qid.into(),
         password: password.into(),
     }

@@ -5,28 +5,28 @@ use super::*;
 
 use time::OffsetDateTime;
 
-use crate::model::assignment::AssignmentInfo;
-use crate::model::chapter::ChapterInfo;
-use crate::model::comic::ComicInfo;
-use crate::model::page::PageInfo;
-use crate::model::unit::UnitInfo;
-use crate::model::user::UserToken;
-use crate::model::workset::WorksetInfo;
+use crate::model::assignment_model;
+use crate::model::chapter_model;
+use crate::model::comic_model;
+use crate::model::page_model;
+use crate::model::unit_model;
+use crate::model::user_model;
+use crate::model::workset_model;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::value::chapter::StageMask;
 use crate::value::role::{RoleField, RoleMask};
 
-fn token(user_id: &str) -> UserToken {
-    UserToken {
+fn token(user_id: &str) -> user_model::Token {
+    user_model::Token {
         user_id: user_id.into(),
     }
 }
 
-fn comic(id: &str) -> ComicInfo {
+fn comic(id: &str) -> comic_model::Info {
     //
     let time = OffsetDateTime::now_utc();
 
-    ComicInfo {
+    comic_model::Info {
         id: id.into(),
         workset_id: "workset-1".into(),
         index: 0,
@@ -48,11 +48,11 @@ fn comic(id: &str) -> ComicInfo {
     }
 }
 
-fn workset(id: &str) -> WorksetInfo {
+fn workset(id: &str) -> workset_model::Info {
     //
     let time = OffsetDateTime::now_utc();
 
-    WorksetInfo {
+    workset_model::Info {
         id: id.into(),
         team_id: "team-1".into(),
         index: 0,
@@ -65,11 +65,11 @@ fn workset(id: &str) -> WorksetInfo {
     }
 }
 
-fn chapter(id: &str) -> ChapterInfo {
+fn chapter(id: &str) -> chapter_model::Info {
     //
     let time = OffsetDateTime::now_utc();
 
-    ChapterInfo {
+    chapter_model::Info {
         id: id.into(),
         comic_id: "comic-1".into(),
         is_pinned: true,
@@ -92,11 +92,11 @@ fn assignment(
     chapter_id: &str,
     user_id: &str,
     role_mask: RoleMask,
-) -> AssignmentInfo {
+) -> assignment_model::Info {
     //
     let time = OffsetDateTime::now_utc();
 
-    AssignmentInfo {
+    assignment_model::Info {
         id: format!("assignment-{}-{}", chapter_id, user_id),
         chapter_id: chapter_id.into(),
         user_id: user_id.into(),
@@ -113,11 +113,11 @@ fn page(
     index: i32,
     image_key: Option<&str>,
     image_uploaded: bool,
-) -> PageInfo {
+) -> page_model::Info {
     //
     let time = OffsetDateTime::now_utc();
 
-    PageInfo {
+    page_model::Info {
         id: id.into(),
         chapter_id: "chapter-1".into(),
         index,
@@ -138,11 +138,11 @@ fn unit(
     index: i32,
     text: &str,
     proofread_text: Option<&str>,
-) -> UnitInfo {
+) -> unit_model::Info {
     //
     let time = OffsetDateTime::now_utc();
 
-    UnitInfo {
+    unit_model::Info {
         id: id.into(),
         page_id: page_id.into(),
         index,

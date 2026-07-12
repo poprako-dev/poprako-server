@@ -4,7 +4,7 @@ use super::*;
 
 use poprako_util::page::Page;
 
-use crate::model::workset::WorksetInfoUpdate;
+use crate::model::workset_model;
 use crate::part::repo::step::workset::WorksetStep;
 use crate::part::shared::execute::Execute;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
@@ -40,7 +40,7 @@ async fn workset_roundtrip_reads_test_database_url() {
 
     assert_eq!(workset_infos.len(), 1);
 
-    let workset_info_update = WorksetInfoUpdate {
+    let workset_info_update = workset_model::InfoUpdate {
         id: workset_fixture.workset_form.id.clone(),
         name: "RDB Workset Updated".into(),
         description: Some("updated".into()),

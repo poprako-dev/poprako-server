@@ -237,7 +237,7 @@ async fn list_infos_invalid_owner_combination_is_rejected() {
         &mock,
         &mock,
         token("viewer-user"),
-        ListAssignmentInfosData {
+        assignment_data::ListInfosData {
             incl_opt: Vec::new(),
             chapter_id: Some("chapter-1".into()),
             owner_id: Some("owner-user".into()),

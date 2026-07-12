@@ -3,7 +3,7 @@
 use diesel::prelude::*;
 use time::OffsetDateTime;
 
-use crate::model::page::{PageForm, PageInfo};
+use crate::model::page_model;
 use crate::part_impl::repo::rdb_impl::schema::t_page;
 
 /// Raw database row for the `t_page` table. Returned by Diesel queries.
@@ -114,7 +114,7 @@ impl<'a> PageAspect<'a> {
     }
 }
 
-impl From<PageRow> for PageInfo {
+impl From<PageRow> for page_model::Info {
     fn from(row: PageRow) -> Self {
         Self {
             id: row.f_id,
@@ -132,8 +132,8 @@ impl From<PageRow> for PageInfo {
     }
 }
 
-impl<'a> From<&'a PageForm> for PageEntry<'a> {
-    fn from(form: &'a PageForm) -> Self {
+impl<'a> From<&'a page_model::Form> for PageEntry<'a> {
+    fn from(form: &'a page_model::Form) -> Self {
         //
         let now = OffsetDateTime::now_utc();
 

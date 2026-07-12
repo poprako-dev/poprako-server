@@ -5,7 +5,7 @@ use super::*;
 use poprako_transactional::advance::Advance;
 use poprako_transactional::drive::Drive;
 
-use crate::model::announcement::{AnnouncementForm, AnnouncementListSpec};
+use crate::model::announcement_model;
 use crate::part::repo::step::announcement::AnnouncementStep;
 use crate::part::shared::execute::Execute;
 use crate::part_impl::drive::rdb_impl::RdbDrive;
@@ -31,7 +31,7 @@ async fn announcement_roundtrip_reads_test_database_url() {
 
     let transactional_repo = repo.derive_transactional().await;
 
-    let announcement_form = AnnouncementForm {
+    let announcement_form = announcement_model::Form {
         id: format!("{}announcement", PREFIX),
         team_id: team_fixture.team_form.id.clone(),
         user_id: team_fixture.user_form.id.clone(),
@@ -55,7 +55,7 @@ async fn announcement_roundtrip_reads_test_database_url() {
         .ok()
         .unwrap();
 
-    let announcement_list_spec = AnnouncementListSpec {
+    let announcement_list_spec = announcement_model::ListSpec {
         team_id: team_fixture.team_form.id.clone(),
         incl_opt: vec![AnnouncementInclOpt::User],
         offset: 0,

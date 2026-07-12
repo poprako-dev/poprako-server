@@ -6,7 +6,7 @@ use poprako_transactional::advance::Advance;
 use poprako_transactional::drive::Drive;
 use poprako_util::page::Page;
 
-use crate::model::assignment_invitation::AssignmentInvitationForm;
+use crate::model::assignment_invitation_model;
 use crate::part::repo::step::assignment_invitation::AssignmentInvitationStep;
 use crate::part::shared::execute::Execute;
 use crate::part_impl::drive::rdb_impl::RdbDrive;
@@ -32,7 +32,7 @@ async fn assignment_invitation_roundtrip_reads_test_database_url() {
 
     let transactional_repo = repo.derive_transactional().await;
 
-    let assignment_invitation_form = AssignmentInvitationForm {
+    let assignment_invitation_form = assignment_invitation_model::Form {
         id: format!("{}assignment-invitation", PREFIX),
         chapter_id: chapter_fixture.chapter_form.id.clone(),
         inviter_id: chapter_fixture.creator_form.id.clone(),

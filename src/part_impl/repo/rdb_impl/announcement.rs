@@ -6,9 +6,7 @@ use diesel_async::RunQueryDsl;
 
 use poprako_transactional::advance::Advance;
 
-use crate::model::announcement::{
-    AnnouncementForm, AnnouncementInfo, AnnouncementListSpec,
-};
+use crate::model::announcement_model;
 use crate::part::repo::announcement::{
     AnnouncementRepo, AnnouncementRepoTransactional,
 };
@@ -31,8 +29,8 @@ impl AnnouncementRepoTransactional<RdbContext> for RdbRepoTransactional {}
 /// Queries announcement rows filtered by team ID, ordered by creation time descending.
 async fn list_infos(
     conn: &mut RdbConn,
-    spec: &AnnouncementListSpec,
-) -> RegularResult<Vec<AnnouncementInfo>> {
+    spec: &announcement_model::ListSpec,
+) -> RegularResult<Vec<announcement_model::Info>> {
     //
     let rows: Vec<AnnouncementRow> = t_announcement
         .filter(f_team_id.eq(spec.team_id.as_str()))
@@ -44,7 +42,7 @@ async fn list_infos(
         .await
         .map_err(diesel)?;
 
-    let mut infos: Vec<AnnouncementInfo> =
+    let mut infos: Vec<announcement_model::Info> =
         rows.into_iter().map(Into::into).collect();
 
     incl::announcement::populate_announcement_incls(
@@ -60,8 +58,8 @@ async fn list_infos(
 /// Inserts a new announcement row from the given form and returns the created info.
 async fn create(
     conn: &mut RdbConn,
-    form: &AnnouncementForm,
-) -> RegularResult<AnnouncementInfo> {
+    form: &announcement_model::Form,
+) -> RegularResult<announcement_model::Info> {
     //
     let entry = AnnouncementEntry::from(form);
 
@@ -82,7 +80,7 @@ impl<'a> Execute<ListInfos<'a>> for RdbRepo {
     async fn execute(
         &self,
         step: &ListInfos<'a>,
-    ) -> RegularResult<Vec<AnnouncementInfo>> {
+    ) -> RegularResult<Vec<announcement_model::Info>> {
         submit_query!(self.core, list_infos, step.spec)
     }
 }
@@ -95,7 +93,7 @@ impl<'a> Advance<Create<'a>, RdbContext> for RdbRepoTransactional {
         &self,
         context: &mut RdbContext,
         step: &Create<'a>,
-    ) -> RegularResult<AnnouncementInfo> {
+    ) -> RegularResult<announcement_model::Info> {
         create(context.conn(), step.form).await
     }
 }

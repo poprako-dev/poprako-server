@@ -471,12 +471,12 @@ mod tests {
 
         let rdb_prom_repo = RdbPromRepo::new(RdbRepo::new(shared.clone()));
 
-        let delete_image_pool = Mock::new();
+        let image_pool = Mock::new();
 
         let delete_task_flow = dispatch_topic(
             &drive,
             &rdb_prom_repo,
-            &delete_image_pool,
+            &image_pool,
             IMAGE_TOPIC,
             &delete_payload,
         )
@@ -485,7 +485,7 @@ mod tests {
         assert!(matches!(delete_task_flow, TaskFlow::Complete));
 
         assert_eq!(
-            delete_image_pool.snapshot().deleted_image_keys,
+            image_pool.snapshot().deleted_image_keys,
             vec!["old-avatar.png".to_string()]
         );
 
@@ -528,12 +528,12 @@ mod tests {
                 .ok()
                 .unwrap();
 
-        let check_uploaded_image_pool = Mock::new().with_image_head_absent();
+        let image_pool = Mock::new().with_image_head_absent();
 
         let check_uploaded_task_flow = dispatch_topic(
             &drive,
             &rdb_prom_repo,
-            &check_uploaded_image_pool,
+            &image_pool,
             IMAGE_TOPIC,
             &check_uploaded_payload,
         )

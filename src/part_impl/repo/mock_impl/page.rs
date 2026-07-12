@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use poprako_transactional::advance::Advance;
 
 use crate::complex::page::PageComplex;
-use crate::model::page::{PageForm, PageImageReservation, PageInfo};
+use crate::model::page_model;
 use crate::part::repo::page::{PageRepo, PageRepoTransactional};
 use crate::part::repo::step::page::{
     CreateBatch, DeleteByChapterId, GetInfoById, GetInfoExcluded,
@@ -22,7 +22,10 @@ impl PageRepo<MockContext> for Mock {}
 
 impl PageRepoTransactional<MockContext> for MockTransactional {}
 
-fn get_page_by_id(state: &MockState, id: &str) -> RegularResult<PageInfo> {
+fn get_page_by_id(
+    state: &MockState,
+    id: &str,
+) -> RegularResult<page_model::Info> {
     state
         .pages
         .iter()
@@ -31,7 +34,10 @@ fn get_page_by_id(state: &MockState, id: &str) -> RegularResult<PageInfo> {
         .ok_or_else(|| expected("error-page-not-found"))
 }
 
-fn list_all_pages(state: &MockState, chapter_id: &str) -> Vec<PageInfo> {
+fn list_all_pages(
+    state: &MockState,
+    chapter_id: &str,
+) -> Vec<page_model::Info> {
     //
     let mut page_infos = state
         .pages
@@ -50,7 +56,7 @@ fn list_pages(
     chapter_id: &str,
     offset: u64,
     limit: u64,
-) -> Vec<PageInfo> {
+) -> Vec<page_model::Info> {
     //
     let page_infos = list_all_pages(state, chapter_id);
 
@@ -67,11 +73,11 @@ fn list_pages(
     page_infos[offset..end].to_vec()
 }
 
-fn page_from_form(form: &PageForm) -> PageInfo {
+fn page_from_form(form: &page_model::Form) -> page_model::Info {
     //
     let time = now();
 
-    PageInfo {
+    page_model::Info {
         id: form.id.clone(),
         chapter_id: form.chapter_id.clone(),
         index: form.index,
@@ -93,7 +99,7 @@ impl<'a> Execute<GetInfoById<'a>> for Mock {
     async fn execute(
         &self,
         step: &GetInfoById<'a>,
-    ) -> Result<PageInfo, Self::Error> {
+    ) -> Result<page_model::Info, Self::Error> {
         //
         let state = self.state.lock().unwrap();
 
@@ -108,7 +114,7 @@ impl<'a> Execute<ListInfosByChapterId<'a>> for Mock {
     async fn execute(
         &self,
         step: &ListInfosByChapterId<'a>,
-    ) -> Result<Vec<PageInfo>, Self::Error> {
+    ) -> Result<Vec<page_model::Info>, Self::Error> {
         //
         let state = self.state.lock().unwrap();
 
@@ -123,7 +129,7 @@ impl<'a> Execute<ListAllInfosByChapterId<'a>> for Mock {
     async fn execute(
         &self,
         step: &ListAllInfosByChapterId<'a>,
-    ) -> Result<Vec<PageInfo>, Self::Error> {
+    ) -> Result<Vec<page_model::Info>, Self::Error> {
         //
         let state = self.state.lock().unwrap();
 
@@ -139,7 +145,7 @@ impl<'a> Advance<GetInfoById<'a>, MockContext> for MockTransactional {
         &self,
         context: &mut MockContext,
         step: &GetInfoById<'a>,
-    ) -> Result<PageInfo, Self::Error> {
+    ) -> Result<page_model::Info, Self::Error> {
         get_page_by_id(&context.state, step.id)
     }
 }
@@ -152,7 +158,7 @@ impl<'a> Advance<GetInfoExcluded<'a>, MockContext> for MockTransactional {
         &self,
         context: &mut MockContext,
         step: &GetInfoExcluded<'a>,
-    ) -> Result<PageInfo, Self::Error> {
+    ) -> Result<page_model::Info, Self::Error> {
         get_page_by_id(&context.state, step.id)
     }
 }
@@ -165,7 +171,7 @@ impl<'a> Advance<ListInfosByChapterId<'a>, MockContext> for MockTransactional {
         &self,
         context: &mut MockContext,
         step: &ListInfosByChapterId<'a>,
-    ) -> Result<Vec<PageInfo>, Self::Error> {
+    ) -> Result<Vec<page_model::Info>, Self::Error> {
         Ok(list_pages(
             &context.state,
             step.chapter_id,
@@ -185,7 +191,7 @@ impl<'a> Advance<ListAllInfosByChapterId<'a>, MockContext>
         &self,
         context: &mut MockContext,
         step: &ListAllInfosByChapterId<'a>,
-    ) -> Result<Vec<PageInfo>, Self::Error> {
+    ) -> Result<Vec<page_model::Info>, Self::Error> {
         Ok(list_all_pages(&context.state, step.chapter_id))
     }
 }
@@ -198,7 +204,7 @@ impl<'a> Advance<CreateBatch<'a>, MockContext> for MockTransactional {
         &self,
         context: &mut MockContext,
         step: &CreateBatch<'a>,
-    ) -> Result<Vec<PageInfo>, Self::Error> {
+    ) -> Result<Vec<page_model::Info>, Self::Error> {
         //
         if step.forms.iter().any(|page_form| {
             context
@@ -227,7 +233,7 @@ impl<'a> Advance<ReserveImage<'a>, MockContext> for MockTransactional {
         &self,
         context: &mut MockContext,
         step: &ReserveImage<'a>,
-    ) -> Result<PageImageReservation, Self::Error> {
+    ) -> Result<page_model::ImageReservation, Self::Error> {
         //
         let page_info = context
             .state
@@ -255,7 +261,7 @@ impl<'a> Advance<ReserveImage<'a>, MockContext> for MockTransactional {
 
         page_info.updated_at = now();
 
-        Ok(PageImageReservation {
+        Ok(page_model::ImageReservation {
             object_key,
             prev_object_key,
             image_version,

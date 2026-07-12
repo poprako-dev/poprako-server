@@ -20,7 +20,7 @@ async fn join_creates_assignment() {
         &mock,
         &mock,
         token("user-1"),
-        JoinChapterData {
+        assignment_data::JoinChapterData {
             chapter_id: "chapter-1".into(),
             roles: role(RoleField::TRANSLATOR),
         },
@@ -58,7 +58,7 @@ async fn join_unions_existing_assignment_roles() {
         &mock,
         &mock,
         token("user-1"),
-        JoinChapterData {
+        assignment_data::JoinChapterData {
             chapter_id: "chapter-1".into(),
             roles: role(RoleField::PROOFREADER),
         },
@@ -89,7 +89,7 @@ async fn join_rejects_role_outside_member_mask() {
         &mock,
         &mock,
         token("user-1"),
-        JoinChapterData {
+        assignment_data::JoinChapterData {
             chapter_id: "chapter-1".into(),
             roles: role(RoleField::PROOFREADER),
         },

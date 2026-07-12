@@ -4,10 +4,10 @@
 
 use super::*;
 
-use crate::model::member_invitation::MemberInvitationInfo;
+use crate::model::member_invitation_model;
 
-fn invitation(id: &str, invitee_qid: &str) -> MemberInvitationInfo {
-    MemberInvitationInfo {
+fn invitation(id: &str, invitee_qid: &str) -> member_invitation_model::Info {
+    member_invitation_model::Info {
         id: id.into(),
         team_id: "team-1".into(),
         invitor: None,
@@ -19,8 +19,8 @@ fn invitation(id: &str, invitee_qid: &str) -> MemberInvitationInfo {
     }
 }
 
-fn join_team_data() -> JoinTeamData {
-    JoinTeamData {
+fn join_team_data() -> member_data::JoinTeamData {
+    member_data::JoinTeamData {
         code: "INV123".into(),
     }
 }

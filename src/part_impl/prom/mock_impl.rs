@@ -7,7 +7,7 @@ use time::OffsetDateTime;
 use poprako_transactional::advance::Advance;
 use poprako_transactional::drive::Drive;
 
-use crate::model::user::{UserCredential, UserInfo};
+use crate::model::user_model;
 use crate::part::image::ImagePool;
 use crate::part::prom::task::{IMAGE_TOPIC, ImageKind, ImageTask};
 use crate::part::prom::{Append, Payload, Prom};
@@ -131,11 +131,15 @@ impl<'a> Advance<Append<'a>, MockContext> for Mock {
 
 use crate::part::prom::PromStep;
 
-fn user_info(id: &str, avatar_key: &str, avatar_version: i64) -> UserInfo {
+fn user_info(
+    id: &str,
+    avatar_key: &str,
+    avatar_version: i64,
+) -> user_model::Info {
     //
     let now = OffsetDateTime::now_utc();
 
-    UserInfo {
+    user_model::Info {
         id: id.to_string(),
         qid: format!("qid-{}", id),
         nickname: format!("nick-{}", id),
@@ -149,8 +153,8 @@ fn user_info(id: &str, avatar_key: &str, avatar_version: i64) -> UserInfo {
     }
 }
 
-fn user_credential(id: &str) -> UserCredential {
-    UserCredential {
+fn user_credential(id: &str) -> user_model::Credential {
+    user_model::Credential {
         user_id: id.to_string(),
         password_hash: format!("hash-{}", id),
     }
@@ -368,7 +372,7 @@ pub async fn process_pending(mock: &Mock) -> RegularResult<()> {
 
 /// Process a single image task against the mock's in-memory image pool.
 async fn process_image_task(
-    mock: &Mock,
+    image_pool: &Mock,
     task: &ImageTask<'_>,
 ) -> RegularResult<()> {
     match task {
@@ -378,11 +382,11 @@ async fn process_image_task(
             resource_id,
             object_key,
             image_version,
-        } => match ImagePool::head_object(mock, object_key).await? {
+        } => match ImagePool::head_object(image_pool, object_key).await? {
             //
             true => {
                 process_existing_image(
-                    mock,
+                    image_pool,
                     *kind,
                     resource_id,
                     object_key,
@@ -395,7 +399,7 @@ async fn process_image_task(
         },
 
         ImageTask::Delete { object_key } => {
-            ImagePool::delete_object(mock, object_key).await
+            ImagePool::delete_object(image_pool, object_key).await
         }
     }
 }

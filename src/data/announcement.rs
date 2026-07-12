@@ -8,8 +8,8 @@ use utoipa::{IntoParams, ToSchema};
 use poprako_macro::Paginate;
 use poprako_util::time::ToUnixMilli;
 
-use crate::data::user::UserInfoVal;
-use crate::model::announcement::{AnnouncementInfo, AnnouncementListSpec};
+use crate::data::user_data;
+use crate::model::announcement_model;
 use crate::part::image::ImagePool;
 use crate::result::RegularResult;
 use crate::value::announcement::AnnouncementInclOpt;
@@ -17,13 +17,13 @@ use crate::value::announcement::AnnouncementInclOpt;
 /// Presentation-ready team announcement information.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct AnnouncementInfoVal {
+pub struct InfoVal {
     pub id: String,
 
     pub team_id: String,
     pub user_id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub user: Option<UserInfoVal>,
+    pub user: Option<user_data::InfoVal>,
 
     pub title: String,
     pub content: String,
@@ -31,20 +31,20 @@ pub struct AnnouncementInfoVal {
     pub created_at: i64,
 }
 
-impl AnnouncementInfoVal {
+impl InfoVal {
     /// Converts an announcement model into a presentation value.
     pub async fn from_model<P>(
         image_pool: &P,
-        model: AnnouncementInfo,
+        model: announcement_model::Info,
     ) -> RegularResult<Self>
     where
         P: ImagePool,
     {
         let user = match model.user {
             //
-            Some(user_info) => {
-                Some(UserInfoVal::from_model(image_pool, user_info).await?)
-            }
+            Some(user_info) => Some(
+                user_data::InfoVal::from_model(image_pool, user_info).await?,
+            ),
 
             None => None,
         };
@@ -70,7 +70,7 @@ impl AnnouncementInfoVal {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
 #[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
-pub struct ListAnnouncementInfosData {
+pub struct ListInfosData {
     /// Parent team whose announcements to list.
     pub team_id: String,
 
@@ -83,8 +83,8 @@ pub struct ListAnnouncementInfosData {
     pub incl_opt: Vec<AnnouncementInclOpt>,
 }
 
-impl From<ListAnnouncementInfosData> for AnnouncementListSpec {
-    fn from(data: ListAnnouncementInfosData) -> Self {
+impl From<ListInfosData> for announcement_model::ListSpec {
+    fn from(data: ListInfosData) -> Self {
         Self {
             team_id: data.team_id,
             incl_opt: data.incl_opt,
@@ -97,7 +97,7 @@ impl From<ListAnnouncementInfosData> for AnnouncementListSpec {
 /// Input parameters for creating an announcement.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct CreateAnnouncementData {
+pub struct CreateData {
     pub team_id: String,
 
     pub title: String,
@@ -107,6 +107,6 @@ pub struct CreateAnnouncementData {
 /// Return value from creating an announcement.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct CreateAnnouncementVal {
+pub struct CreateVal {
     pub id: String,
 }

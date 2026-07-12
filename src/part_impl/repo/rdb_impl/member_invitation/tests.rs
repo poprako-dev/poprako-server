@@ -5,9 +5,7 @@ use super::*;
 use poprako_transactional::advance::Advance;
 use poprako_transactional::drive::Drive;
 
-use crate::model::member_invitation::{
-    MemberInvitationForm, MemberInvitationListSpec,
-};
+use crate::model::member_invitation_model;
 use crate::part::repo::step::member_invitation::MemberInvitationStep;
 use crate::part::shared::execute::Execute;
 use crate::part_impl::drive::rdb_impl::RdbDrive;
@@ -34,7 +32,7 @@ async fn member_invitation_roundtrip_reads_test_database_url() {
 
     let transactional_repo = repo.derive_transactional().await;
 
-    let member_invitation_form = MemberInvitationForm {
+    let member_invitation_form = member_invitation_model::Form {
         id: format!("{}member-invitation", PREFIX),
         team_id: team_fixture.team_form.id.clone(),
         invitor_id: team_fixture.user_form.id.clone(),
@@ -68,7 +66,7 @@ async fn member_invitation_roundtrip_reads_test_database_url() {
         .ok()
         .unwrap();
 
-    let member_invitation_list_spec = MemberInvitationListSpec {
+    let member_invitation_list_spec = member_invitation_model::ListSpec {
         team_id: team_fixture.team_form.id.clone(),
         pending: Some(false),
         incl_opt: vec![MemberInvitationInclOpt::Invitor],

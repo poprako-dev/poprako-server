@@ -8,34 +8,34 @@ use super::*;
 
 use time::OffsetDateTime;
 
-use crate::data::comment::{CreateCommentData, ListCommentInfosData};
-use crate::model::comment::CommentInfo;
-use crate::model::member::MemberInfo;
-use crate::model::user::{UserCredential, UserInfo};
+use crate::data::comment_data;
+use crate::model::comment_model;
+use crate::model::member_model;
+use crate::model::user_model;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::{assert_expected_variant, now};
 use crate::value::comment::CommentInclOpt;
 use crate::value::role::{RoleField, RoleMask};
 
-fn token(user_id: &str) -> UserToken {
-    UserToken {
+fn token(user_id: &str) -> user_model::Token {
+    user_model::Token {
         user_id: user_id.into(),
     }
 }
 
-fn credential(user_id: &str) -> UserCredential {
-    UserCredential {
+fn credential(user_id: &str) -> user_model::Credential {
+    user_model::Credential {
         user_id: user_id.into(),
         password_hash: "hash".into(),
     }
 }
 
-fn user(id: &str, nickname: &str) -> UserInfo {
+fn user(id: &str, nickname: &str) -> user_model::Info {
     //
     let time = now();
 
-    UserInfo {
+    user_model::Info {
         id: id.into(),
         qid: id.into(),
         nickname: nickname.into(),
@@ -54,8 +54,8 @@ fn member(
     user_id: &str,
     team_id: &str,
     role_mask: RoleMask,
-) -> MemberInfo {
-    MemberInfo {
+) -> member_model::Info {
+    member_model::Info {
         id: id.into(),
         user_id: user_id.into(),
         user_nickname: user_id.into(),
@@ -72,8 +72,8 @@ fn comment(
     team_id: &str,
     user_id: &str,
     created_at: OffsetDateTime,
-) -> CommentInfo {
-    CommentInfo {
+) -> comment_model::Info {
+    comment_model::Info {
         id: id.into(),
         team_id: team_id.into(),
         user_id: user_id.into(),
@@ -86,8 +86,8 @@ fn comment(
 fn list_data(
     team_id: &str,
     incl_opt: Vec<CommentInclOpt>,
-) -> ListCommentInfosData {
-    ListCommentInfosData {
+) -> comment_data::ListInfosData {
+    comment_data::ListInfosData {
         team_id: team_id.into(),
         incl_opt,
         offset: 0,
@@ -95,8 +95,8 @@ fn list_data(
     }
 }
 
-fn create_data(team_id: &str) -> CreateCommentData {
-    CreateCommentData {
+fn create_data(team_id: &str) -> comment_data::CreateData {
+    comment_data::CreateData {
         team_id: team_id.into(),
         content: "created".into(),
     }

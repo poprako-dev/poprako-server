@@ -4,15 +4,15 @@ use poprako_macro::Paginate;
 use poprako_transactional::step::Step;
 use poprako_util::page::Page;
 
-use crate::model::workset::{WorksetForm, WorksetInfo, WorksetInfoUpdate};
+use crate::model::workset_model;
 
 /// Step that inserts a new workset row.
 pub struct Create<'a> {
-    pub form: &'a WorksetForm,
+    pub form: &'a workset_model::Form,
 }
 
 impl<'a> Step for Create<'a> {
-    type Output = WorksetInfo;
+    type Output = workset_model::Info;
 }
 
 /// Step that fetches a workset by its identifier.
@@ -21,7 +21,7 @@ pub struct GetInfoById<'a> {
 }
 
 impl<'a> Step for GetInfoById<'a> {
-    type Output = WorksetInfo;
+    type Output = workset_model::Info;
 }
 
 /// Step that lists all worksets for a team with pagination.
@@ -31,12 +31,12 @@ pub struct ListInfosByTeamId<'a> {
 }
 
 impl<'a> Step for ListInfosByTeamId<'a> {
-    type Output = Vec<WorksetInfo>;
+    type Output = Vec<workset_model::Info>;
 }
 
 /// Step that updates a workset's profile fields.
 pub struct UpdateInfo<'a> {
-    pub update: &'a WorksetInfoUpdate,
+    pub update: &'a workset_model::InfoUpdate,
 }
 
 impl<'a> Step for UpdateInfo<'a> {
@@ -49,7 +49,7 @@ pub struct ListAllInfosByTeamIdExcluded<'a> {
 }
 
 impl<'a> Step for ListAllInfosByTeamIdExcluded<'a> {
-    type Output = Vec<WorksetInfo>;
+    type Output = Vec<workset_model::Info>;
 }
 
 /// Step that fetches a workset by ID with a pessimistic lock.
@@ -58,7 +58,7 @@ pub struct GetInfoExcluded<'a> {
 }
 
 impl<'a> Step for GetInfoExcluded<'a> {
-    type Output = WorksetInfo;
+    type Output = workset_model::Info;
 }
 
 /// Step that deletes a workset row.
@@ -105,7 +105,7 @@ pub struct WorksetStep;
 
 impl WorksetStep {
     /// Constructs a step to insert a new workset.
-    pub fn create<'a>(form: &'a WorksetForm) -> Create<'a> {
+    pub fn create<'a>(form: &'a workset_model::Form) -> Create<'a> {
         Create { form }
     }
 
@@ -127,7 +127,9 @@ impl WorksetStep {
     }
 
     /// Constructs a step to update a workset's profile fields.
-    pub fn update_info<'a>(update: &'a WorksetInfoUpdate) -> UpdateInfo<'a> {
+    pub fn update_info<'a>(
+        update: &'a workset_model::InfoUpdate,
+    ) -> UpdateInfo<'a> {
         UpdateInfo { update }
     }
 

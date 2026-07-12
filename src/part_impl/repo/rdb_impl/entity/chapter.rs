@@ -3,7 +3,7 @@
 use diesel::prelude::*;
 use time::OffsetDateTime;
 
-use crate::model::chapter::{ChapterForm, ChapterInfo};
+use crate::model::chapter_model;
 use crate::part_impl::repo::rdb_impl::schema::t_chapter;
 use crate::result::RegularError;
 use crate::value::chapter::{Stage, StageMask, StagePhase};
@@ -276,7 +276,7 @@ fn workflow_stage_mask_from_row(
     Ok(stages)
 }
 
-impl TryFrom<ChapterRow> for ChapterInfo {
+impl TryFrom<ChapterRow> for chapter_model::Info {
     type Error = RegularError;
 
     fn try_from(row: ChapterRow) -> Result<Self, Self::Error> {
@@ -303,8 +303,8 @@ impl TryFrom<ChapterRow> for ChapterInfo {
     }
 }
 
-impl<'a> From<&'a ChapterForm> for ChapterEntry<'a> {
-    fn from(form: &'a ChapterForm) -> Self {
+impl<'a> From<&'a chapter_model::Form> for ChapterEntry<'a> {
+    fn from(form: &'a chapter_model::Form) -> Self {
         //
         let now = OffsetDateTime::now_utc();
 

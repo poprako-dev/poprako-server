@@ -3,9 +3,7 @@
 use diesel::prelude::*;
 use time::OffsetDateTime;
 
-use crate::model::member_invitation::{
-    MemberInvitationForm, MemberInvitationInfo,
-};
+use crate::model::member_invitation_model;
 use crate::part_impl::repo::rdb_impl::schema::t_member_invitation;
 use crate::result::RegularError;
 use crate::value::role::RoleMask;
@@ -89,14 +87,14 @@ impl MemberInvitationAspect {
 
 // ── Conversions ────────────────────────────────────────────────────────────
 
-impl TryFrom<MemberInvitationRow> for MemberInvitationInfo {
+impl TryFrom<MemberInvitationRow> for member_invitation_model::Info {
     type Error = RegularError;
 
     fn try_from(v: MemberInvitationRow) -> Result<Self, Self::Error> {
         //
         let roles = RoleMask::try_from(v.f_role_mask as u32)?;
 
-        Ok(MemberInvitationInfo {
+        Ok(member_invitation_model::Info {
             id: v.f_id,
             team_id: v.f_team_id,
             invitor: None,
@@ -109,8 +107,8 @@ impl TryFrom<MemberInvitationRow> for MemberInvitationInfo {
     }
 }
 
-impl<'a> From<&'a MemberInvitationForm> for MemberInvitationEntry<'a> {
-    fn from(form: &'a MemberInvitationForm) -> Self {
+impl<'a> From<&'a member_invitation_model::Form> for MemberInvitationEntry<'a> {
+    fn from(form: &'a member_invitation_model::Form) -> Self {
         Self {
             f_id: &form.id,
             f_inviter_id: &form.invitor_id,

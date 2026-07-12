@@ -16,11 +16,8 @@ use crate::api::http::result::HttpBody;
 
 use crate::api::http::result::{Accept as _, HttpResult};
 use crate::api::http::state::AppHarn;
-use crate::data::announcement::{
-    AnnouncementInfoVal, CreateAnnouncementData, CreateAnnouncementVal,
-    ListAnnouncementInfosData,
-};
-use crate::model::user::UserToken;
+use crate::data::announcement_data;
+use crate::model::user_model;
 use crate::usecase;
 use crate::value::announcement::AnnouncementInclOpt;
 
@@ -53,9 +50,9 @@ pub struct AnnouncementListQuery {
     post,
     path = "/api/v1/announcements",
     tag = "announcements",
-    request_body = CreateAnnouncementData,
+    request_body = announcement_data::CreateData,
     responses(
-        (status = 201, description = "Announcement created", body = HttpBody<CreateAnnouncementVal>),
+        (status = 201, description = "Announcement created", body = HttpBody<announcement_data::CreateVal>),
         (status = 403, description = "No permission to create announcements in this team"),
         (status = 404, description = "Team not found"),
     ),
@@ -63,9 +60,9 @@ pub struct AnnouncementListQuery {
 #[instrument(err, skip(harn, data))]
 pub async fn create(
     State(harn): State<AppHarn>,
-    Extension(user_token): Extension<UserToken>,
-    Json(data): Json<CreateAnnouncementData>,
-) -> HttpResult<CreateAnnouncementVal> {
+    Extension(user_token): Extension<user_model::Token>,
+    Json(data): Json<announcement_data::CreateData>,
+) -> HttpResult<announcement_data::CreateVal> {
     usecase::announcement::create(harn.drive(), harn.repo(), user_token, data)
         .await?
         .accept(StatusCode::CREATED)
@@ -79,7 +76,7 @@ pub async fn create(
     description = "Lists a team's announcements. `incl` embeds related rows. Example: `/api/v1/teams/{team_id}/announcements?incl=user&offset=0&limit=20`.",
     params(("team_id" = String, Path, description = "Team ID"), AnnouncementListQuery),
     responses(
-        (status = 200, description = "Announcements listed", body = HttpBody<Vec<AnnouncementInfoVal>>),
+        (status = 200, description = "Announcements listed", body = HttpBody<Vec<announcement_data::InfoVal>>),
         (status = 403, description = "No permission to list announcements in this team"),
     ),
 ))]
@@ -87,11 +84,11 @@ pub async fn create(
 pub async fn list_infos(
     State(harn): State<AppHarn>,
     Path(team_id): Path<String>,
-    Extension(user_token): Extension<UserToken>,
+    Extension(user_token): Extension<user_model::Token>,
     Query(query): Query<AnnouncementListQuery>,
-) -> HttpResult<Vec<AnnouncementInfoVal>> {
+) -> HttpResult<Vec<announcement_data::InfoVal>> {
     //
-    let data = ListAnnouncementInfosData {
+    let data = announcement_data::ListInfosData {
         team_id,
         incl_opt: query.incl_opt,
         offset: query.offset,

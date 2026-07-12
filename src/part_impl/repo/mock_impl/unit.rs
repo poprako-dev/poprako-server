@@ -4,7 +4,7 @@ use async_trait::async_trait;
 
 use poprako_transactional::advance::Advance;
 
-use crate::model::unit::{UnitCounters, UnitIndex, UnitInfo, UnitPayload};
+use crate::model::unit_model;
 use crate::part::repo::step::unit::{
     CountByPageId, CreateInfo, DeleteByIdInPage, ListAllInfosByPageId,
     ListIndexesByPageId, ListInfosByPageId, SaveInfo, UpdateIndexesByPageId,
@@ -20,7 +20,7 @@ impl UnitRepo<MockContext> for Mock {}
 
 impl UnitRepoTransactional<MockContext> for MockTransactional {}
 
-fn list_units(state: &MockState, page_id: &str) -> Vec<UnitInfo> {
+fn list_units(state: &MockState, page_id: &str) -> Vec<unit_model::Info> {
     //
     let mut unit_infos = state
         .units
@@ -38,25 +38,28 @@ fn list_units(state: &MockState, page_id: &str) -> Vec<UnitInfo> {
     unit_infos
 }
 
-fn count_units(state: &MockState, page_id: &str) -> UnitCounters {
+fn count_units(state: &MockState, page_id: &str) -> unit_model::Counters {
     state
         .units
         .iter()
         .filter(|unit_info| unit_info.page_id == page_id)
-        .fold(UnitCounters::default(), |mut counters, unit_info| {
-            //
-            counters.total_unit_count += 1;
+        .fold(
+            unit_model::Counters::default(),
+            |mut counters, unit_info| {
+                //
+                counters.total_unit_count += 1;
 
-            if unit_info.is_translated() {
-                counters.translated_unit_count += 1;
-            }
+                if unit_info.is_translated() {
+                    counters.translated_unit_count += 1;
+                }
 
-            if unit_info.is_proofread {
-                counters.proofread_unit_count += 1;
-            }
+                if unit_info.is_proofread {
+                    counters.proofread_unit_count += 1;
+                }
 
-            counters
-        })
+                counters
+            },
+        )
 }
 
 fn next_index(state: &MockState, page_id: &str) -> i32 {
@@ -70,7 +73,10 @@ fn next_index(state: &MockState, page_id: &str) -> i32 {
         .unwrap_or(0)
 }
 
-fn write_payload(unit_info: &mut UnitInfo, payload: &UnitPayload) {
+fn write_payload(
+    unit_info: &mut unit_model::Info,
+    payload: &unit_model::Payload,
+) {
     //
     unit_info.is_bubble = payload.is_bubble;
 
@@ -95,12 +101,12 @@ fn unit_from_payload(
     page_id: &str,
     id: &str,
     index: i32,
-    payload: &UnitPayload,
-) -> UnitInfo {
+    payload: &unit_model::Payload,
+) -> unit_model::Info {
     //
     let time = now();
 
-    UnitInfo {
+    unit_model::Info {
         id: id.into(),
         page_id: page_id.into(),
         index,
@@ -121,7 +127,7 @@ fn create_unit(
     state: &mut MockState,
     page_id: &str,
     id: &str,
-    payload: &UnitPayload,
+    payload: &unit_model::Payload,
 ) -> RegularResult<()> {
     //
     if state.units.iter().any(|unit_info| unit_info.id == id) {
@@ -141,7 +147,7 @@ fn save_unit(
     state: &mut MockState,
     page_id: &str,
     id: &str,
-    payload: &UnitPayload,
+    payload: &unit_model::Payload,
 ) -> RegularResult<()> {
     //
     let existing_position =
@@ -167,7 +173,7 @@ impl<'a> Execute<ListInfosByPageId<'a>> for Mock {
     async fn execute(
         &self,
         step: &ListInfosByPageId<'a>,
-    ) -> Result<Vec<UnitInfo>, Self::Error> {
+    ) -> Result<Vec<unit_model::Info>, Self::Error> {
         //
         let state = self.state.lock().unwrap();
 
@@ -186,7 +192,7 @@ impl<'a> Execute<ListAllInfosByPageId<'a>> for Mock {
     async fn execute(
         &self,
         step: &ListAllInfosByPageId<'a>,
-    ) -> Result<Vec<UnitInfo>, Self::Error> {
+    ) -> Result<Vec<unit_model::Info>, Self::Error> {
         //
         let state = self.state.lock().unwrap();
 
@@ -202,7 +208,7 @@ impl<'a> Advance<ListAllInfosByPageId<'a>, MockContext> for MockTransactional {
         &self,
         context: &mut MockContext,
         step: &ListAllInfosByPageId<'a>,
-    ) -> Result<Vec<UnitInfo>, Self::Error> {
+    ) -> Result<Vec<unit_model::Info>, Self::Error> {
         Ok(list_units(&context.state, step.page_id))
     }
 }
@@ -215,7 +221,7 @@ impl<'a> Advance<ListInfosByPageId<'a>, MockContext> for MockTransactional {
         &self,
         context: &mut MockContext,
         step: &ListInfosByPageId<'a>,
-    ) -> Result<Vec<UnitInfo>, Self::Error> {
+    ) -> Result<Vec<unit_model::Info>, Self::Error> {
         Ok(list_units(&context.state, step.page_id)
             .into_iter()
             .skip(step.page.offset as usize)
@@ -276,13 +282,13 @@ impl<'a> Advance<ListIndexesByPageId<'a>, MockContext> for MockTransactional {
         &self,
         context: &mut MockContext,
         step: &ListIndexesByPageId<'a>,
-    ) -> Result<Vec<UnitIndex>, Self::Error> {
+    ) -> Result<Vec<unit_model::Index>, Self::Error> {
         Ok(context
             .state
             .units
             .iter()
             .filter(|unit_info| unit_info.page_id == step.page_id)
-            .map(|unit_info| UnitIndex {
+            .map(|unit_info| unit_model::Index {
                 id: unit_info.id.clone(),
                 index: unit_info.index,
             })
@@ -329,7 +335,7 @@ impl<'a> Advance<CountByPageId<'a>, MockContext> for MockTransactional {
         &self,
         context: &mut MockContext,
         step: &CountByPageId<'a>,
-    ) -> Result<UnitCounters, Self::Error> {
+    ) -> Result<unit_model::Counters, Self::Error> {
         Ok(count_units(&context.state, step.page_id))
     }
 }
@@ -342,8 +348,8 @@ mod tests {
 
     use super::*;
 
-    fn payload(text: &str, proofread: bool) -> UnitPayload {
-        UnitPayload {
+    fn payload(text: &str, proofread: bool) -> unit_model::Payload {
+        unit_model::Payload {
             is_bubble: true,
             is_proofread: proofread,
             x_coord: 1.0,

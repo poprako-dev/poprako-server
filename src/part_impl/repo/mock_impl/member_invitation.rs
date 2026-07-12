@@ -5,8 +5,8 @@ use async_trait::async_trait;
 
 use poprako_transactional::advance::Advance;
 
-use crate::model::member_invitation::MemberInvitationInfo;
-use crate::model::user::UserInfo;
+use crate::model::member_invitation_model;
+use crate::model::user_model;
 use crate::part::repo::member_invitation::{
     MemberInvitationRepo, MemberInvitationRepoTransactional,
 };
@@ -25,7 +25,7 @@ impl MemberInvitationRepo<MockContext> for Mock {}
 
 impl MemberInvitationRepoTransactional<MockContext> for MockTransactional {}
 
-fn find_user(state: &MockState, user_id: &str) -> Option<UserInfo> {
+fn find_user(state: &MockState, user_id: &str) -> Option<user_model::Info> {
     state
         .users
         .iter()
@@ -35,7 +35,7 @@ fn find_user(state: &MockState, user_id: &str) -> Option<UserInfo> {
 
 fn apply_invitor_incl(
     state: &MockState,
-    info: &mut MemberInvitationInfo,
+    info: &mut member_invitation_model::Info,
     include_invitor: bool,
 ) {
     //
@@ -53,7 +53,7 @@ impl<'a> Execute<ListInfos<'a>> for Mock {
     async fn execute(
         &self,
         step: &ListInfos<'a>,
-    ) -> Result<Vec<MemberInvitationInfo>, Self::Error> {
+    ) -> Result<Vec<member_invitation_model::Info>, Self::Error> {
         //
         let state = self.state.lock().unwrap();
 
@@ -101,7 +101,7 @@ impl<'a> Execute<GetInfoById<'a>> for Mock {
     async fn execute(
         &self,
         step: &GetInfoById<'a>,
-    ) -> Result<MemberInvitationInfo, Self::Error> {
+    ) -> Result<member_invitation_model::Info, Self::Error> {
         //
         let state = self.state.lock().unwrap();
 
@@ -129,7 +129,7 @@ impl<'a> Advance<Create<'a>, MockContext> for MockTransactional {
         &self,
         context: &mut MockContext,
         step: &Create<'a>,
-    ) -> Result<MemberInvitationInfo, Self::Error> {
+    ) -> Result<member_invitation_model::Info, Self::Error> {
         //
         if context.state.member_invitations.iter().any(
             |member_invitation_info| member_invitation_info.id == step.form.id,
@@ -148,7 +148,7 @@ impl<'a> Advance<Create<'a>, MockContext> for MockTransactional {
             return Err(expected("error-already-exists"));
         }
 
-        let member_invitation_info = MemberInvitationInfo {
+        let member_invitation_info = member_invitation_model::Info {
             id: step.form.id.clone(),
             team_id: step.form.team_id.clone(),
             invitor: None,
@@ -176,7 +176,7 @@ impl<'a> Advance<GetInfoByCodeExcluded<'a>, MockContext> for MockTransactional {
         &self,
         context: &mut MockContext,
         step: &GetInfoByCodeExcluded<'a>,
-    ) -> Result<MemberInvitationInfo, Self::Error> {
+    ) -> Result<member_invitation_model::Info, Self::Error> {
         context
             .state
             .member_invitations
@@ -197,7 +197,7 @@ impl<'a> Advance<GetInfoById<'a>, MockContext> for MockTransactional {
         &self,
         context: &mut MockContext,
         step: &GetInfoById<'a>,
-    ) -> Result<MemberInvitationInfo, Self::Error> {
+    ) -> Result<member_invitation_model::Info, Self::Error> {
         //
         let mut info = context
             .state

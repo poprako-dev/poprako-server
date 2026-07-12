@@ -4,8 +4,8 @@ use poprako_macro::Paginate;
 use poprako_transactional::step::Step;
 use poprako_util::page::Page;
 
-use crate::model::page::{PageForm, PageImageReservation, PageInfo};
-use crate::model::unit::UnitCounters;
+use crate::model::page_model;
+use crate::model::unit_model;
 
 /// Step that fetches a page by its identifier.
 pub struct GetInfoById<'a> {
@@ -13,7 +13,7 @@ pub struct GetInfoById<'a> {
 }
 
 impl<'a> Step for GetInfoById<'a> {
-    type Output = PageInfo;
+    type Output = page_model::Info;
 }
 
 /// Step that fetches a page by ID with a pessimistic lock.
@@ -22,7 +22,7 @@ pub struct GetInfoExcluded<'a> {
 }
 
 impl<'a> Step for GetInfoExcluded<'a> {
-    type Output = PageInfo;
+    type Output = page_model::Info;
 }
 
 /// Step that lists pages by chapter ID.
@@ -32,7 +32,7 @@ pub struct ListInfosByChapterId<'a> {
 }
 
 impl<'a> Step for ListInfosByChapterId<'a> {
-    type Output = Vec<PageInfo>;
+    type Output = Vec<page_model::Info>;
 }
 
 /// Step that lists all pages by chapter ID.
@@ -41,16 +41,16 @@ pub struct ListAllInfosByChapterId<'a> {
 }
 
 impl<'a> Step for ListAllInfosByChapterId<'a> {
-    type Output = Vec<PageInfo>;
+    type Output = Vec<page_model::Info>;
 }
 
 /// Step that inserts multiple page rows.
 pub struct CreateBatch<'a> {
-    pub forms: &'a [PageForm],
+    pub forms: &'a [page_model::Form],
 }
 
 impl<'a> Step for CreateBatch<'a> {
-    type Output = Vec<PageInfo>;
+    type Output = Vec<page_model::Info>;
 }
 
 /// Step that reserves a page image key and resets upload state.
@@ -60,7 +60,7 @@ pub struct ReserveImage<'a> {
 }
 
 impl<'a> Step for ReserveImage<'a> {
-    type Output = PageImageReservation;
+    type Output = page_model::ImageReservation;
 }
 
 /// Step that marks a page image upload as completed.
@@ -76,7 +76,7 @@ impl<'a> Step for MarkImageUploaded<'a> {
 /// Step that overwrites unit counters for one page.
 pub struct SetUnitCounters<'a> {
     pub id: &'a str,
-    pub counters: UnitCounters,
+    pub counters: unit_model::Counters,
 }
 
 impl<'a> Step for SetUnitCounters<'a> {
@@ -126,7 +126,7 @@ impl PageStep {
     }
 
     /// Constructs a step to insert multiple pages.
-    pub fn create_batch<'a>(forms: &'a [PageForm]) -> CreateBatch<'a> {
+    pub fn create_batch<'a>(forms: &'a [page_model::Form]) -> CreateBatch<'a> {
         CreateBatch { forms }
     }
 
@@ -149,7 +149,7 @@ impl PageStep {
     /// Constructs a step to overwrite unit counters for one page.
     pub fn set_unit_counters<'a>(
         id: &'a str,
-        counters: UnitCounters,
+        counters: unit_model::Counters,
     ) -> SetUnitCounters<'a> {
         SetUnitCounters { id, counters }
     }

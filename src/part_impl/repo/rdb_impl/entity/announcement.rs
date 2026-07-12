@@ -3,7 +3,7 @@
 use diesel::prelude::*;
 use time::OffsetDateTime;
 
-use crate::model::announcement::{AnnouncementForm, AnnouncementInfo};
+use crate::model::announcement_model;
 use crate::part_impl::repo::rdb_impl::schema::t_announcement;
 
 /// Raw database row for the `t_announcement` table. Returned by Diesel queries.
@@ -36,7 +36,7 @@ pub struct AnnouncementEntry<'a> {
     pub f_created_at: OffsetDateTime,
 }
 
-impl From<AnnouncementRow> for AnnouncementInfo {
+impl From<AnnouncementRow> for announcement_model::Info {
     fn from(row: AnnouncementRow) -> Self {
         Self {
             id: row.f_id,
@@ -50,8 +50,8 @@ impl From<AnnouncementRow> for AnnouncementInfo {
     }
 }
 
-impl<'a> From<&'a AnnouncementForm> for AnnouncementEntry<'a> {
-    fn from(form: &'a AnnouncementForm) -> Self {
+impl<'a> From<&'a announcement_model::Form> for AnnouncementEntry<'a> {
+    fn from(form: &'a announcement_model::Form) -> Self {
         Self {
             f_id: &form.id,
             f_team_id: &form.team_id,

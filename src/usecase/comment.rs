@@ -4,11 +4,9 @@ use poprako_transactional::advance::Advance;
 use poprako_transactional::drive::Drive;
 
 use crate::complex::comment::{CommentComplex, CommentPermComplex};
-use crate::data::comment::{
-    CommentInfoVal, CreateCommentData, CreateCommentVal, ListCommentInfosData,
-};
-use crate::model::comment::{CommentForm, CommentInfo, CommentListSpec};
-use crate::model::user::UserToken;
+use crate::data::comment_data;
+use crate::model::comment_model;
+use crate::model::user_model;
 use crate::part::image::ImagePool;
 use crate::part::repo::comment::{CommentRepo, CommentRepoTransactional};
 use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
@@ -23,16 +21,16 @@ mod tests;
 pub async fn list_infos<C, R, I>(
     repo: &R,
     image_pool: &I,
-    token: UserToken,
-    data: ListCommentInfosData,
-) -> RegularResult<Vec<CommentInfoVal>>
+    token: user_model::Token,
+    data: comment_data::ListInfosData,
+) -> RegularResult<Vec<comment_data::InfoVal>>
 where
     R: CommentRepo<C> + MemberRepo<C> + Sync,
     <R as DeriveTransactional>::Transactional:
         CommentRepoTransactional<C> + MemberRepoTransactional<C>,
     I: ImagePool,
 {
-    let comment_list_spec: CommentListSpec = data.into();
+    let comment_list_spec: comment_model::ListSpec = data.into();
 
     use crate::part::shared::proxy::AsProxyNonTransactional as _;
 
@@ -50,8 +48,9 @@ where
     let mut comment_info_vals = Vec::with_capacity(comment_infos.len());
 
     for comment_info in comment_infos {
-        comment_info_vals
-            .push(CommentInfoVal::from_model(image_pool, comment_info).await?);
+        comment_info_vals.push(
+            comment_data::InfoVal::from_model(image_pool, comment_info).await?,
+        );
     }
 
     Ok(comment_info_vals)
@@ -61,9 +60,9 @@ where
 pub async fn create<D, C, R>(
     drive: &D,
     repo: &R,
-    token: UserToken,
-    data: CreateCommentData,
-) -> RegularResult<CreateCommentVal>
+    token: user_model::Token,
+    data: comment_data::CreateData,
+) -> RegularResult<comment_data::CreateVal>
 where
     D: Drive<C>,
     D::Error: Into<RegularError>,
@@ -82,26 +81,28 @@ where
     .await?;
 
     let comment_info = drive
-        .with_context(async move |context| -> RegularResult<CommentInfo> {
-            //
-            let repo = repo.derive_transactional().await;
+        .with_context(
+            async move |context| -> RegularResult<comment_model::Info> {
+                //
+                let repo = repo.derive_transactional().await;
 
-            let comment_form = CommentForm {
-                id: CommentComplex::gen_id(),
-                team_id: data.team_id,
-                user_id: token.user_id,
-                content: data.content,
-            };
+                let comment_form = comment_model::Form {
+                    id: CommentComplex::gen_id(),
+                    team_id: data.team_id,
+                    user_id: token.user_id,
+                    content: data.content,
+                };
 
-            let comment_info = repo
-                .advance(context, &CommentStep::create(&comment_form))
-                .await?;
+                let comment_info = repo
+                    .advance(context, &CommentStep::create(&comment_form))
+                    .await?;
 
-            Ok(comment_info)
-        })
+                Ok(comment_info)
+            },
+        )
         .await?;
 
-    Ok(CreateCommentVal {
+    Ok(comment_data::CreateVal {
         id: comment_info.id,
     })
 }

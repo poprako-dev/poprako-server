@@ -3,16 +3,16 @@
 use time::OffsetDateTime;
 
 use crate::complex::user::UserComplex;
-use crate::model::team::TeamInfo;
-use crate::model::user::{UserCredential, UserInfo};
-use crate::model::workset::WorksetInfo;
+use crate::model::team_model;
+use crate::model::user_model;
+use crate::model::workset_model;
 
 /// Builds a [`UserInfo`] fixture with default timestamps and no avatar.
-pub fn user(id: &str, qid: &str, nickname: &str) -> UserInfo {
+pub fn user(id: &str, qid: &str, nickname: &str) -> user_model::Info {
     //
     let time = OffsetDateTime::now_utc();
 
-    UserInfo {
+    user_model::Info {
         id: id.into(),
         qid: qid.into(),
         nickname: nickname.into(),
@@ -27,7 +27,7 @@ pub fn user(id: &str, qid: &str, nickname: &str) -> UserInfo {
 }
 
 /// Builds a [`UserCredential`] with a properly hashed password.
-pub fn credential(user_id: &str, password: &str) -> UserCredential {
+pub fn credential(user_id: &str, password: &str) -> user_model::Credential {
     //
     let password_hash = match UserComplex::hash_password(password) {
         //
@@ -36,26 +36,26 @@ pub fn credential(user_id: &str, password: &str) -> UserCredential {
         Err(_) => panic!("failed to hash password"),
     };
 
-    UserCredential {
+    user_model::Credential {
         user_id: user_id.into(),
         password_hash,
     }
 }
 
 /// Builds a [`UserCredential`] that will never match any real password.
-pub fn invalid_credential(user_id: &str) -> UserCredential {
-    UserCredential {
+pub fn invalid_credential(user_id: &str) -> user_model::Credential {
+    user_model::Credential {
         user_id: user_id.into(),
         password_hash: "invalid-password-hash".into(),
     }
 }
 
 /// Builds a [`TeamInfo`] fixture with default timestamps and no avatar.
-pub fn team(id: &str, name: &str, description: &str) -> TeamInfo {
+pub fn team(id: &str, name: &str, description: &str) -> team_model::Info {
     //
     let time = OffsetDateTime::now_utc();
 
-    TeamInfo {
+    team_model::Info {
         id: id.into(),
         name: name.into(),
         description: description.into(),
@@ -69,11 +69,11 @@ pub fn team(id: &str, name: &str, description: &str) -> TeamInfo {
 }
 
 /// Builds a [`WorksetInfo`] fixture.
-pub fn workset(id: &str, team_id: &str) -> WorksetInfo {
+pub fn workset(id: &str, team_id: &str) -> workset_model::Info {
     //
     let time = OffsetDateTime::now_utc();
 
-    WorksetInfo {
+    workset_model::Info {
         id: id.into(),
         team_id: team_id.into(),
         index: 0,

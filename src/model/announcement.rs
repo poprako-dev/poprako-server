@@ -4,17 +4,17 @@ use time::OffsetDateTime;
 
 use poprako_macro::Paginate;
 
-use crate::model::user::UserInfo;
+use crate::model::user_model;
 use crate::value::announcement::AnnouncementInclOpt;
 
 /// A team announcement as stored in the database, with optional included user data.
 #[cfg_attr(test, derive(Clone))]
-pub struct AnnouncementInfo {
+pub struct Info {
     pub id: String,
 
     pub team_id: String,
     pub user_id: String,
-    pub user: Option<UserInfo>,
+    pub user: Option<user_model::Info>,
 
     pub title: String,
     pub content: String,
@@ -24,7 +24,7 @@ pub struct AnnouncementInfo {
 
 /// The data needed to insert a team announcement row.
 #[cfg_attr(test, derive(Clone))]
-pub struct AnnouncementForm {
+pub struct Form {
     pub id: String,
 
     pub team_id: String,
@@ -36,7 +36,7 @@ pub struct AnnouncementForm {
 
 /// Filtering, pagination, and include parameters for listing announcements.
 #[Paginate]
-pub struct AnnouncementListSpec {
+pub struct ListSpec {
     pub team_id: String,
     pub incl_opt: Vec<AnnouncementInclOpt>,
 }

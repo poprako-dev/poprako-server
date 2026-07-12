@@ -2,26 +2,24 @@
 
 use poprako_transactional::step::Step;
 
-use crate::model::announcement::{
-    AnnouncementForm, AnnouncementInfo, AnnouncementListSpec,
-};
+use crate::model::announcement_model;
 
 /// Step that lists announcements by query specification.
 pub struct ListInfos<'a> {
-    pub spec: &'a AnnouncementListSpec,
+    pub spec: &'a announcement_model::ListSpec,
 }
 
 impl<'a> Step for ListInfos<'a> {
-    type Output = Vec<AnnouncementInfo>;
+    type Output = Vec<announcement_model::Info>;
 }
 
 /// Step that inserts a new announcement row.
 pub struct Create<'a> {
-    pub form: &'a AnnouncementForm,
+    pub form: &'a announcement_model::Form,
 }
 
 impl<'a> Step for Create<'a> {
-    type Output = AnnouncementInfo;
+    type Output = announcement_model::Info;
 }
 
 /// Factory for constructing announcement repository [`Step`] values.
@@ -29,12 +27,14 @@ pub struct AnnouncementStep;
 
 impl AnnouncementStep {
     /// Constructs a step to list announcements.
-    pub fn list_infos<'a>(spec: &'a AnnouncementListSpec) -> ListInfos<'a> {
+    pub fn list_infos<'a>(
+        spec: &'a announcement_model::ListSpec,
+    ) -> ListInfos<'a> {
         ListInfos { spec }
     }
 
     /// Constructs a step to insert a new announcement.
-    pub fn create<'a>(form: &'a AnnouncementForm) -> Create<'a> {
+    pub fn create<'a>(form: &'a announcement_model::Form) -> Create<'a> {
         Create { form }
     }
 }

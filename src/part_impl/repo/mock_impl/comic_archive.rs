@@ -4,10 +4,7 @@ use async_trait::async_trait;
 
 use poprako_transactional::advance::Advance;
 
-use crate::model::comic_archive::{
-    ComicArchiveChapterSnapshot, ComicArchivePageSnapshot,
-    ComicArchiveSnapshot, ComicArchiveWrite,
-};
+use crate::model::comic_archive_model;
 use crate::part::repo::comic_archive::ComicArchiveRepoTransactional;
 use crate::part::repo::step::comic_archive::{Commit, LockSnapshot};
 use crate::part_impl::repo::mock_impl::{
@@ -21,7 +18,7 @@ impl ComicArchiveRepoTransactional<MockContext> for MockTransactional {}
 fn lock_snapshot(
     context: &mut MockContext,
     source_comic_id: &str,
-) -> RegularResult<ComicArchiveSnapshot> {
+) -> RegularResult<comic_archive_model::Snapshot> {
     //
     let comic_info = context
         .state
@@ -89,14 +86,14 @@ fn lock_snapshot(
                         .cloned()
                         .collect();
 
-                    ComicArchivePageSnapshot {
+                    comic_archive_model::PageSnapshot {
                         page_info,
                         unit_infos,
                     }
                 })
                 .collect();
 
-            Ok(ComicArchiveChapterSnapshot {
+            Ok(comic_archive_model::ChapterSnapshot {
                 chapter_info,
                 assignment_infos,
                 page_snapshots,
@@ -104,7 +101,7 @@ fn lock_snapshot(
         })
         .collect::<RegularResult<Vec<_>>>()?;
 
-    Ok(ComicArchiveSnapshot {
+    Ok(comic_archive_model::Snapshot {
         comic_info,
         workset_info,
         chapter_snapshots,
@@ -114,7 +111,7 @@ fn lock_snapshot(
 /// Persist archive rows and delete active records in the mock transaction state.
 fn commit(
     context: &mut MockContext,
-    comic_archive_write: &ComicArchiveWrite,
+    comic_archive_write: &comic_archive_model::Write,
 ) -> RegularResult<()> {
     //
     if context.archive_commit_failure {
@@ -186,7 +183,7 @@ impl<'a> Advance<LockSnapshot<'a>, MockContext> for MockTransactional {
         &self,
         context: &mut MockContext,
         step: &LockSnapshot<'a>,
-    ) -> RegularResult<ComicArchiveSnapshot> {
+    ) -> RegularResult<comic_archive_model::Snapshot> {
         lock_snapshot(context, step.comic_id)
     }
 }

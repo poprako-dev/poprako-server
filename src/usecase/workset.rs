@@ -6,12 +6,9 @@ use poprako_util::page::Page;
 use poprako_util::time::ToUnixMilli;
 
 use crate::complex::workset::{WorksetComplex, WorksetPermComplex};
-use crate::data::workset::{
-    CreateWorksetData, CreateWorksetVal, ListWorksetInfosData,
-    UpdateWorksetInfoData, WorksetInfoVal,
-};
-use crate::model::user::UserToken;
-use crate::model::workset::{WorksetForm, WorksetInfoUpdate};
+use crate::data::workset_data;
+use crate::model::user_model;
+use crate::model::workset_model;
 use crate::part::prom::Prom;
 use crate::part::repo::assignment::{
     AssignmentRepo, AssignmentRepoTransactional,
@@ -38,9 +35,9 @@ pub mod tests;
 pub async fn create<D, C, R>(
     drive: &D,
     repo: &R,
-    token: UserToken,
-    data: CreateWorksetData,
-) -> RegularResult<CreateWorksetVal>
+    token: user_model::Token,
+    data: workset_data::CreateData,
+) -> RegularResult<workset_data::CreateVal>
 where
     D: Drive<C>,
     D::Error: Into<RegularError>,
@@ -73,7 +70,7 @@ where
                 )
                 .await?;
 
-            let workset_form = WorksetForm {
+            let workset_form = workset_model::Form {
                 id: WorksetComplex::gen_id(),
                 team_id: data.team_id,
                 index,
@@ -89,15 +86,15 @@ where
         })
         .await?;
 
-    Ok(CreateWorksetVal { id: workset_id })
+    Ok(workset_data::CreateVal { id: workset_id })
 }
 
 /// Fetches a workset by ID.
 pub async fn get_info<C, R>(
     repo: &R,
-    token: UserToken,
+    token: user_model::Token,
     id: String,
-) -> RegularResult<WorksetInfoVal>
+) -> RegularResult<workset_data::InfoVal>
 where
     R: WorksetRepo<C> + MemberRepo<C> + Sync,
     <R as DeriveTransactional>::Transactional:
@@ -114,7 +111,7 @@ where
 
     let workset_info = repo.execute(&WorksetStep::get_info_by_id(&id)).await?;
 
-    Ok(WorksetInfoVal {
+    Ok(workset_data::InfoVal {
         id: workset_info.id,
         team_id: workset_info.team_id,
         index: workset_info.index,
@@ -130,9 +127,9 @@ where
 /// Lists worksets for a team.
 pub async fn list_infos<C, R>(
     repo: &R,
-    token: UserToken,
-    data: ListWorksetInfosData,
-) -> RegularResult<Vec<WorksetInfoVal>>
+    token: user_model::Token,
+    data: workset_data::ListInfosData,
+) -> RegularResult<Vec<workset_data::InfoVal>>
 where
     R: WorksetRepo<C> + MemberRepo<C> + Sync,
     <R as DeriveTransactional>::Transactional:
@@ -159,7 +156,7 @@ where
 
     let workset_info_vals = workset_infos
         .into_iter()
-        .map(|workset_info| WorksetInfoVal {
+        .map(|workset_info| workset_data::InfoVal {
             id: workset_info.id,
             team_id: workset_info.team_id,
             index: workset_info.index,
@@ -178,8 +175,8 @@ where
 /// Updates a workset's name and description.
 pub async fn update_info<C, R>(
     repo: &R,
-    token: UserToken,
-    data: UpdateWorksetInfoData,
+    token: user_model::Token,
+    data: workset_data::UpdateInfoData,
 ) -> RegularResult<()>
 where
     R: WorksetRepo<C> + MemberRepo<C> + Sync,
@@ -195,7 +192,7 @@ where
     )
     .await?;
 
-    let workset_info_update = WorksetInfoUpdate {
+    let workset_info_update = workset_model::InfoUpdate {
         id: data.id,
         name: data.name,
         description: data.description,
@@ -212,7 +209,7 @@ pub async fn delete<D, C, R, P>(
     drive: &D,
     repo: &R,
     prom: &P,
-    token: UserToken,
+    token: user_model::Token,
     id: String,
 ) -> RegularResult<()>
 where

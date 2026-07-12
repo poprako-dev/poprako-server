@@ -5,13 +5,13 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "swagger-ui")]
 use utoipa::ToSchema;
 
-use crate::data::page_port::PageTranslationExportVal;
+use crate::data::page_port_data;
 use crate::value::chapter_port::TranslationFormat;
 
 /// Request body for importing chapter translations.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct ChapterTranslationImportData {
+pub struct TranslationImportData {
     pub format: TranslationFormat,
     pub content: String,
 }
@@ -19,7 +19,7 @@ pub struct ChapterTranslationImportData {
 /// JSON-safe export object for one translated chapter.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct ChapterTranslationExportVal {
+pub struct TranslationExportVal {
     pub chapter_id: String,
     pub chapter_index: i32,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -28,13 +28,13 @@ pub struct ChapterTranslationExportVal {
     pub comic_id: String,
     pub comic_title: String,
 
-    pub pages: Vec<PageTranslationExportVal>,
+    pub pages: Vec<page_port_data::TranslationExportVal>,
 }
 
 /// Summary returned after importing chapter translations.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct ChapterTranslationImportVal {
+pub struct TranslationImportVal {
     pub imported_page_count: i32,
     pub imported_unit_count: i32,
 }

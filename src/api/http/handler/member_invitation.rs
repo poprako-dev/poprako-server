@@ -19,12 +19,8 @@ use crate::api::http::result::{
     Accept as _, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
-use crate::data::member_invitation::{
-    CreateMemberInvitationData, CreateMemberInvitationVal,
-    ListMemberInvitationInfosData, MemberInvitationInfoVal,
-    UpdateMemberInvitationRolesData,
-};
-use crate::model::user::UserToken;
+use crate::data::member_invitation_data;
+use crate::model::user_model;
 use crate::usecase;
 use crate::value::member_invitation::MemberInvitationInclOpt;
 
@@ -61,9 +57,9 @@ pub struct MemberInvitationListQuery {
     post,
     path = "/api/v1/member-invitations",
     tag = "member-invitations",
-    request_body = CreateMemberInvitationData,
+    request_body = member_invitation_data::CreateData,
     responses(
-        (status = 201, description = "Invitation created", body = HttpBody<CreateMemberInvitationVal>),
+        (status = 201, description = "Invitation created", body = HttpBody<member_invitation_data::CreateVal>),
         (status = 403, description = "No permission to create invitations in this team"),
         (status = 409, description = "Invitee is already a member"),
     ),
@@ -71,9 +67,9 @@ pub struct MemberInvitationListQuery {
 #[instrument(err, skip(harn, data))]
 pub async fn create(
     State(harn): State<AppHarn>,
-    Extension(user_token): Extension<UserToken>,
-    Json(data): Json<CreateMemberInvitationData>,
-) -> HttpResult<CreateMemberInvitationVal> {
+    Extension(user_token): Extension<user_model::Token>,
+    Json(data): Json<member_invitation_data::CreateData>,
+) -> HttpResult<member_invitation_data::CreateVal> {
     usecase::member_invitation::create(
         harn.drive(),
         harn.repo(),
@@ -92,7 +88,7 @@ pub async fn create(
     description = "Lists a team's member invitations. `pending` filters by consumption state; `incl` embeds related rows. Example: `/api/v1/teams/{team_id}/member-invitations?pending=true&incl=invitor&offset=0&limit=20`.",
     params(("team_id" = String, Path, description = "Team ID"), MemberInvitationListQuery),
     responses(
-        (status = 200, description = "Invitations listed", body = HttpBody<Vec<MemberInvitationInfoVal>>),
+        (status = 200, description = "Invitations listed", body = HttpBody<Vec<member_invitation_data::InfoVal>>),
         (status = 403, description = "No permission to list invitations in this team"),
     ),
 ))]
@@ -100,11 +96,11 @@ pub async fn create(
 pub async fn list_infos(
     State(harn): State<AppHarn>,
     Path(team_id): Path<String>,
-    Extension(user_token): Extension<UserToken>,
+    Extension(user_token): Extension<user_model::Token>,
     Query(query): Query<MemberInvitationListQuery>,
-) -> HttpResult<Vec<MemberInvitationInfoVal>> {
+) -> HttpResult<Vec<member_invitation_data::InfoVal>> {
     //
-    let data = ListMemberInvitationInfosData {
+    let data = member_invitation_data::ListInfosData {
         team_id,
         pending: query.pending,
         incl_opt: query.incl_opt,
@@ -128,7 +124,7 @@ pub async fn list_infos(
     path = "/api/v1/member-invitations/{member_invitation_id}/roles",
     tag = "member-invitations",
     params(("member_invitation_id" = String, Path, description = "Invitation ID")),
-    request_body = UpdateMemberInvitationRolesData,
+    request_body = member_invitation_data::UpdateRolesData,
     responses(
         (status = 204, description = "Invitation roles updated"),
         (status = 422, description = "Path id does not match body id"),
@@ -140,8 +136,8 @@ pub async fn list_infos(
 pub async fn update_roles(
     State(harn): State<AppHarn>,
     Path(member_invitation_id): Path<String>,
-    Extension(user_token): Extension<UserToken>,
-    Json(data): Json<UpdateMemberInvitationRolesData>,
+    Extension(user_token): Extension<user_model::Token>,
+    Json(data): Json<member_invitation_data::UpdateRolesData>,
 ) -> HttpNoContent {
     //
     ensure_path_matches_body_id(&member_invitation_id, &data.id)?;
@@ -173,7 +169,7 @@ pub async fn update_roles(
 pub async fn delete(
     State(harn): State<AppHarn>,
     Path(member_invitation_id): Path<String>,
-    Extension(user_token): Extension<UserToken>,
+    Extension(user_token): Extension<user_model::Token>,
 ) -> HttpNoContent {
     //
     usecase::member_invitation::delete(
