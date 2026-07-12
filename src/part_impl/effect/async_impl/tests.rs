@@ -7,11 +7,9 @@ use super::*;
 
 use time::OffsetDateTime;
 
-use crate::model::assignment_model;
-use crate::model::chapter_model;
-use crate::model::comic_model;
-use crate::model::team_model;
-use crate::model::workset_model;
+use crate::model::{
+    assignment_model, chapter_model, comic_model, team_model, workset_model,
+};
 use crate::part::effect::event::chapter::{
     ChapterPublishedPayload, ChapterWorkflowCompletedPayload,
 };

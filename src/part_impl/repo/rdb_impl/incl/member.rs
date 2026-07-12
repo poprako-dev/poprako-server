@@ -1,8 +1,6 @@
 use async_trait::async_trait;
 
-use crate::model::member_model;
-use crate::model::team_model;
-use crate::model::user_model;
+use crate::model::{member_model, team_model, user_model};
 use crate::part_impl::repo::rdb_impl::incl::{
     self, Incl, TeamByIds, UserByIds,
 };

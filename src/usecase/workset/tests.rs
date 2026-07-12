@@ -17,10 +17,7 @@ use time::OffsetDateTime;
 use poprako_transactional::advance::Advance;
 use poprako_transactional::drive::Drive;
 
-use crate::model::comic_model;
-use crate::model::member_model;
-use crate::model::user_model;
-use crate::model::workset_model;
+use crate::model::{comic_model, member_model, user_model, workset_model};
 use crate::part::prom::task::ImageTask;
 use crate::part::prom::{Payload, PromStep};
 use crate::part::repo::step::workset;

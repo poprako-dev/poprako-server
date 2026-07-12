@@ -10,9 +10,7 @@
 
 use super::*;
 
-use crate::model::member_invitation_model;
-use crate::model::member_model;
-use crate::model::user_model;
+use crate::model::{member_invitation_model, member_model, user_model};
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::fixture::team;

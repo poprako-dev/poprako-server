@@ -13,14 +13,10 @@ use super::*;
 use time::OffsetDateTime;
 
 use crate::data::unit_data;
-use crate::model::assignment_model;
-use crate::model::chapter_model;
-use crate::model::comic_model;
-use crate::model::member_model;
-use crate::model::page_model;
-use crate::model::unit_model;
-use crate::model::user_model;
-use crate::model::workset_model;
+use crate::model::{
+    assignment_model, chapter_model, comic_model, member_model, page_model,
+    unit_model, user_model, workset_model,
+};
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::{ExpectedVariant, RegularError};
 use crate::value::chapter::StageMask;

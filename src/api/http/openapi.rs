@@ -8,23 +8,12 @@ use utoipa::OpenApi;
 
 use crate::api::http::handler;
 use crate::api::http::result::HttpError;
-use crate::data::announcement_data;
-use crate::data::assignment_data;
-use crate::data::assignment_invitation_data;
-use crate::data::auth_data;
-use crate::data::chapter_data;
-use crate::data::chapter_port_data;
-use crate::data::comic_archive_data;
-use crate::data::comic_data;
-use crate::data::comment_data;
-use crate::data::member_data;
-use crate::data::member_invitation_data;
-use crate::data::page_data;
-use crate::data::system_mail_data;
-use crate::data::team_data;
-use crate::data::unit_data;
-use crate::data::user_data;
-use crate::data::workset_data;
+use crate::data::{
+    announcement_data, assignment_data, assignment_invitation_data, auth_data,
+    chapter_data, chapter_port_data, comic_archive_data, comic_data,
+    comment_data, member_data, member_invitation_data, page_data,
+    system_mail_data, team_data, unit_data, user_data, workset_data,
+};
 use crate::value::announcement::AnnouncementInclOpt;
 use crate::value::assignment::AssignmentInclOpt;
 use crate::value::chapter::ChapterInclOpt;

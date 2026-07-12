@@ -1,8 +1,7 @@
 use std::collections::HashMap;
 use std::fmt::Write as _;
 
-use crate::model::page_model;
-use crate::model::unit_model;
+use crate::model::{page_model, unit_model};
 
 /// Chapter export formatting rules.
 pub struct ChapterExportComplex;

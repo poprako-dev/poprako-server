@@ -3,12 +3,10 @@
 use bitcode::{Decode, Encode};
 use time::OffsetDateTime;
 
-use crate::model::assignment_model;
-use crate::model::chapter_model;
-use crate::model::comic_model;
-use crate::model::page_model;
-use crate::model::unit_model;
-use crate::model::workset_model;
+use crate::model::{
+    assignment_model, chapter_model, comic_model, page_model, unit_model,
+    workset_model,
+};
 
 /// Fully locked active data used to build an immutable archive.
 pub struct Snapshot {

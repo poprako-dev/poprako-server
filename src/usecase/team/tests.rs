@@ -36,10 +36,7 @@ use time::OffsetDateTime;
 
 use poprako_transactional::advance::Advance;
 
-use crate::model::comic_model;
-use crate::model::member_model;
-use crate::model::team_model;
-use crate::model::user_model;
+use crate::model::{comic_model, member_model, team_model, user_model};
 use crate::part::prom::Payload;
 use crate::part::prom::task::{ImageKind, ImageTask};
 use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};

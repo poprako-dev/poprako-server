@@ -1,7 +1,6 @@
 use async_trait::async_trait;
 
-use crate::model::member_invitation_model;
-use crate::model::user_model;
+use crate::model::{member_invitation_model, user_model};
 use crate::part_impl::repo::rdb_impl::incl::{self, Incl, UserByIds};
 use crate::part_impl::shared::RdbConn;
 use crate::result::RegularResult;

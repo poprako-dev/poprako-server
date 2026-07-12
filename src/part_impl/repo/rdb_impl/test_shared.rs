@@ -11,12 +11,10 @@ use diesel_migrations::{
 use poprako_transactional::advance::Advance;
 use poprako_transactional::drive::Drive;
 
-use crate::model::chapter_model;
-use crate::model::comic_model;
-use crate::model::page_model;
-use crate::model::team_model;
-use crate::model::user_model;
-use crate::model::workset_model;
+use crate::model::{
+    chapter_model, comic_model, page_model, team_model, user_model,
+    workset_model,
+};
 use crate::part::repo::step::chapter::ChapterStep;
 use crate::part::repo::step::comic::ComicStep;
 use crate::part::repo::step::page::PageStep;

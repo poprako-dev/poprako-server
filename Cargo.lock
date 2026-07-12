@@ -2561,6 +2561,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "poprako-orchestra"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9f5f2cfe68ca8b70bbbe4cb4e17fa1cd45a58ba97d94bf1a50519e03d418f7db"
+
+[[package]]
+name = "poprako-orchestra-extra"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2cd2ae64206c4ba1827b29b06da5598f0678998e4de9a48b4c49cceb7aeaf28f"
+dependencies = [
+ "poprako-orchestra",
+]
+
+[[package]]
 name = "poprako-server"
 version = "0.1.0"
 dependencies = [
@@ -2586,6 +2601,8 @@ dependencies = [
  "jsonwebtoken",
  "k-snowflake",
  "poprako-macro",
+ "poprako-orchestra",
+ "poprako-orchestra-extra",
  "poprako-transactional",
  "poprako-util",
  "serde",

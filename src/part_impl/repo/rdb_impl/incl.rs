@@ -22,11 +22,9 @@ use async_trait::async_trait;
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 
-use crate::model::chapter_model;
-use crate::model::comic_model;
-use crate::model::team_model;
-use crate::model::user_model;
-use crate::model::workset_model;
+use crate::model::{
+    chapter_model, comic_model, team_model, user_model, workset_model,
+};
 use crate::part_impl::repo::rdb_impl::entity::chapter::ChapterRow;
 use crate::part_impl::repo::rdb_impl::entity::comic::ComicRow;
 use crate::part_impl::repo::rdb_impl::entity::team::TeamRow;

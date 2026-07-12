@@ -19,13 +19,10 @@ use super::*;
 use time::OffsetDateTime;
 
 use crate::complex::chapter::ChapterComplex;
-use crate::model::assignment_model;
-use crate::model::chapter_model;
-use crate::model::comic_model;
-use crate::model::member_model;
-use crate::model::page_model;
-use crate::model::user_model;
-use crate::model::workset_model;
+use crate::model::{
+    assignment_model, chapter_model, comic_model, member_model, page_model,
+    user_model, workset_model,
+};
 use crate::part::prom::Payload;
 use crate::part::prom::task::ImageTask;
 use crate::part_impl::repo::mock_impl::Mock;

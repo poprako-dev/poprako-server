@@ -14,9 +14,7 @@ use time::OffsetDateTime;
 
 use poprako_macro::Paginate;
 
-use crate::model::team_model;
-use crate::model::user_model;
-use crate::model::workset_model;
+use crate::model::{team_model, user_model, workset_model};
 use crate::value::chapter::StageMask;
 use crate::value::comic::ComicInclOpt;
 

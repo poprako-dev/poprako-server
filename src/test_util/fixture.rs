@@ -3,9 +3,7 @@
 use time::OffsetDateTime;
 
 use crate::complex::user::UserComplex;
-use crate::model::team_model;
-use crate::model::user_model;
-use crate::model::workset_model;
+use crate::model::{team_model, user_model, workset_model};
 
 /// Builds a [`UserInfo`] fixture with default timestamps and no avatar.
 pub fn user(id: &str, qid: &str, nickname: &str) -> user_model::Info {

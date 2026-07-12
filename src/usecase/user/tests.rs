@@ -30,8 +30,7 @@ use super::*;
 
 use time::OffsetDateTime;
 
-use crate::model::member_model;
-use crate::model::user_model;
+use crate::model::{member_model, user_model};
 use crate::part::effect::event::Event;
 use crate::part::prom::Payload;
 use crate::part::prom::task::{ImageKind, ImageTask};

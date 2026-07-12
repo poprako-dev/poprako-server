@@ -8,8 +8,7 @@ use fluent_templates::fluent_bundle::FluentValue;
 use poprako_util::i18n::{trl, trl_kv};
 
 use crate::complex::system_mail::SystemMailComplex;
-use crate::model::chapter_model;
-use crate::model::system_mail_model;
+use crate::model::{chapter_model, system_mail_model};
 use crate::part::effect::event::chapter::{
     ChapterPublishedPayload, ChapterWorkflowCompletedPayload,
 };
