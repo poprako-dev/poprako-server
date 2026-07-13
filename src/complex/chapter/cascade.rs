@@ -1,4 +1,4 @@
-use poprako_orchestra_extra::prom::oper::Defer;
+use poprako_orchestra_extra::prom::oper::DeferBatch;
 use poprako_orchestra_extra::prom::task::Task;
 
 use crate::complex::chapter::ChapterComplex;
@@ -148,25 +148,33 @@ where
         .step(context, &ListPageInfos::AllChapter { chapter_id })
         .await?;
 
+    let mut delete_ids = Vec::new();
+
+    let mut payloads = Vec::new();
+
     for page_info in page_infos {
         if let Some(image_key) = page_info.image_key
             && page_info.image_uploaded
         {
-            let delete_id = ImageComplex::gen_delete_id();
+            delete_ids.push(ImageComplex::gen_delete_id());
 
-            let payload = Payload::Image(image::Payload::Delete {
+            payloads.push(Payload::Image(image::Payload::Delete {
                 object_key: image_key,
-            });
-
-            let task = Task {
-                id: &delete_id,
-                payload: &payload,
-                delay: None,
-            };
-
-            prom.step(context, &Defer::new(task)).await?;
+            }));
         }
     }
+
+    let tasks: Vec<_> = delete_ids
+        .iter()
+        .zip(payloads.iter())
+        .map(|(id, payload)| Task {
+            id,
+            payload,
+            delay: None,
+        })
+        .collect();
+
+    prom.step(context, &DeferBatch::new(&tasks)).await?;
 
     Ok(())
 }

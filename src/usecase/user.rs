@@ -3,7 +3,7 @@
 use std::time::Duration;
 
 use poprako_orchestra::Nucl;
-use poprako_orchestra_extra::prom::oper::Defer;
+use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
 use poprako_orchestra_extra::prom::task::Task;
 
 use poprako_util::i18n::trl;
@@ -182,40 +182,49 @@ where
                 )
                 .await?;
 
+            let mut batch_ids = Vec::new();
+
+            let mut batch_payloads = Vec::new();
+
+            let mut batch_delays = Vec::new();
+
             // If replacing an existing avatar, schedule deletion of the old object.
             if let Some(prev_key) = &avatar_reservation.prev_object_key {
-                //
-                let delete_id = ImageComplex::gen_delete_id();
+                batch_ids.push(ImageComplex::gen_delete_id());
 
-                let delete_payload = Payload::Image(image::Payload::Delete {
+                batch_payloads.push(Payload::Image(image::Payload::Delete {
                     object_key: prev_key.clone(),
-                });
+                }));
 
-                let delete_task = Task {
-                    id: &delete_id,
-                    payload: &delete_payload,
-                    delay: None,
-                };
-
-                prom.step(context, &Defer::new(delete_task)).await?;
+                batch_delays.push(None);
             }
 
-            let check_id = ImageComplex::gen_check_id();
+            batch_ids.push(ImageComplex::gen_check_id());
 
-            let check_payload = Payload::Image(image::Payload::CheckUpload {
-                resource_kind: image::ResourceKind::UserAvatar,
-                resource_id: token.user_id.clone(),
-                object_key: avatar_reservation.object_key.clone(),
-                version: avatar_reservation.avatar_version,
-            });
+            batch_payloads.push(Payload::Image(
+                image::Payload::CheckUpload {
+                    resource_kind: image::ResourceKind::UserAvatar,
+                    resource_id: token.user_id.clone(),
+                    object_key: avatar_reservation.object_key.clone(),
+                    version: avatar_reservation.avatar_version,
+                },
+            ));
 
-            let check_task = Task {
-                id: &check_id,
-                payload: &check_payload,
-                delay: Some(Duration::from_secs(15 * 60)),
-            };
+            batch_delays.push(Some(Duration::from_secs(15 * 60)));
 
-            prom.step(context, &Defer::new(check_task)).await?;
+            let batch_tasks: Vec<_> = batch_ids
+                .iter()
+                .zip(batch_payloads.iter())
+                .zip(batch_delays.iter())
+                .map(|((id, payload), delay)| Task {
+                    id,
+                    payload,
+                    delay: *delay,
+                })
+                .collect();
+
+            prom.step(context, &DeferBatch::new(&batch_tasks))
+                .await?;
 
             Ok((
                 avatar_reservation.object_key,
