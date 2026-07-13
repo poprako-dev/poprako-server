@@ -148,7 +148,6 @@ async fn export_payload(
             //
             let val = usecase::chapter_port::export(
                 harn.repo(),
-                harn.image_pool(),
                 user_token,
                 chapter_id,
             )

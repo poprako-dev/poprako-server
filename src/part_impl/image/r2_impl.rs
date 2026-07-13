@@ -20,6 +20,10 @@ use crate::result::{ExpectedVariant, RegularError, RegularResult};
 /// Expiration duration for presigned upload URLs (10 minutes).
 const PUT_SIGNED_EXPIRATION: Duration = Duration::from_secs(600);
 
+/// Cloudflare Image Resizing options for public thumbnail URLs.
+const THUMBNAIL_TRANSFORM: &str =
+    "width=300,fit=scale-down,quality=80,format=auto,metadata=none";
+
 /// Cloudflare R2-backed image pool.
 #[derive(Clone)]
 pub struct R2ImagePool {
@@ -90,31 +94,22 @@ impl R2ImagePool {
 impl ImagePool for R2ImagePool {
     #[instrument(err(Debug), skip(self), level = Level::DEBUG)]
     async fn gen_download_url(&self, key: &str) -> RegularResult<Url> {
-        //
-        if self.domain.is_empty() {
-            return Err(RegularError::Unrecoverable {
-                message:
-                    "[R2ImagePool::gen_download_url] custom domain is not configured"
-                        .to_string(),
-            });
-        }
+        build_public_url(&self.domain, key, "gen_download_url")
+    }
 
-        let domain = self.domain.trim_end_matches('/');
+    #[instrument(err(Debug), skip(self), level = Level::DEBUG)]
+    async fn gen_thumbnail_download_url(
+        &self,
+        original_key: &str,
+    ) -> RegularResult<Url> {
+        let thumbnail_path =
+            format!("cdn-cgi/image/{}/{}", THUMBNAIL_TRANSFORM, original_key);
 
-        let url_string = if domain.starts_with("http://")
-            || domain.starts_with("https://")
-        {
-            format!("{}/{}", domain, key)
-        } else {
-            format!("https://{}/{}", domain, key)
-        };
-
-        Url::parse(&url_string).map_err(|err| RegularError::Unrecoverable {
-            message: format!(
-                "[R2ImagePool::gen_download_url] failed to parse URL '{}': {}",
-                url_string, err
-            ),
-        })
+        build_public_url(
+            &self.domain,
+            &thumbnail_path,
+            "gen_thumbnail_download_url",
+        )
     }
 
     #[instrument(err(Debug), skip(self), level = Level::DEBUG)]
@@ -202,6 +197,42 @@ impl ImageManager for R2ImagePool {
                 ),
             })
     }
+}
+
+/// Builds a URL under the configured public image domain.
+fn build_public_url(
+    domain: &str,
+    path: &str,
+    operation: &str,
+) -> RegularResult<Url> {
+    if domain.is_empty() {
+        return Err(RegularError::Unrecoverable {
+            message: format!(
+                "[R2ImagePool::{}] custom domain is not configured",
+                operation
+            ),
+        });
+    }
+
+    let domain = domain.trim_end_matches('/');
+
+    let url_string =
+        match domain.starts_with("http://") || domain.starts_with("https://") {
+            true => {
+                format!("{}/{}", domain, path)
+            }
+
+            false => {
+                format!("https://{}/{}", domain, path)
+            }
+        };
+
+    Url::parse(&url_string).map_err(|err| RegularError::Unrecoverable {
+        message: format!(
+            "[R2ImagePool::{}] failed to parse URL '{}': {}",
+            operation, url_string, err
+        ),
+    })
 }
 
 /// Maps a file extension to its MIME content type for upload requests.

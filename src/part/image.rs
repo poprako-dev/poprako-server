@@ -18,6 +18,12 @@ pub trait ImagePool: Sync {
         key: &str,
     ) -> impl Future<Output = RegularResult<Url>> + Send;
 
+    /// Returns a thumbnail download URL for the object at `original_key`.
+    fn gen_thumbnail_download_url(
+        &self,
+        original_key: &str,
+    ) -> impl Future<Output = RegularResult<Url>> + Send;
+
     /// Returns a signed upload URL for writing an object at `key`.
     fn get_upload_url(
         &self,

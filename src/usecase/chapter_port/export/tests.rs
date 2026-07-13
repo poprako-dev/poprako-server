@@ -1,4 +1,4 @@
-// export(export)(positive): assignee exports chapter metadata, signed uploaded page URLs, and ordered units.
+// export(export)(positive): assignee exports chapter metadata and ordered text units.
 // export_label_plus(export_label_plus)(positive): assignee exports ordered pages and units as LabelPlus text.
 
 use super::*;
@@ -189,8 +189,7 @@ async fn export_returns_chapter_pages_and_units() {
 
     mock.seed_unit(unit("unit-a", "page-1", 0, "alpha", Some("alpha proof")));
 
-    let exported =
-        export(&mock, &mock, token("user-1"), "chapter-1".into()).await;
+    let exported = export(&mock, token("user-1"), "chapter-1".into()).await;
 
     let exported = match exported {
         //
@@ -208,13 +207,6 @@ async fn export_returns_chapter_pages_and_units() {
     assert_eq!(exported.comic_title, "Pop Comic");
 
     assert_eq!(exported.pages.len(), 2);
-
-    assert_eq!(
-        exported.pages[0].image_url,
-        Some("https://test.local/get/one.png".into())
-    );
-
-    assert_eq!(exported.pages[1].image_url, None);
 
     assert_eq!(exported.pages[0].units.len(), 2);
 

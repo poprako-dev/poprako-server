@@ -26,6 +26,9 @@ pub struct UserInfoVal {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub avatar_url: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub avatar_thumbnail_url: Option<String>,
+
     pub is_sadmin: bool,
     pub last_active_at: i64,
 
@@ -49,18 +52,23 @@ impl UserInfoVal {
     where
         P: ImagePool,
     {
-        let avatar_url = match (model.avatar_uploaded, &model.avatar_key) {
-            //
-            (true, Some(key)) => image_pool.gen_download_url(key).await.ok(),
+        let (avatar_url, avatar_thumbnail_url) =
+            match (model.avatar_uploaded, &model.avatar_key) {
+                //
+                (true, Some(key)) => (
+                    image_pool.gen_download_url(key).await.ok(),
+                    image_pool.gen_thumbnail_download_url(key).await.ok(),
+                ),
 
-            _ => None,
-        };
+                _ => (None, None),
+            };
 
         Ok(Self {
             id: model.id,
             nickname: model.nickname,
             qid: model.qid,
             avatar_url: avatar_url.map(Into::into),
+            avatar_thumbnail_url: avatar_thumbnail_url.map(Into::into),
             is_sadmin: model.is_sadmin,
             last_active_at: model.last_active_at.to_unix_milli(),
             created_at: model.created_at.to_unix_milli(),

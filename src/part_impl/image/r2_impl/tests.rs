@@ -1,31 +1,9 @@
 // detect_content_type(detect_content_type)(positive): supported image extensions should map to MIME types.
 // detect_content_type_rejects_unknown_extension(detect_content_type)(negative): unsupported extensions should be rejected.
 // gen_download_url_uses_custom_domain(ImagePool::gen_download_url)(positive): download URLs should be built from the configured public domain.
+// gen_thumbnail_download_url_uses_cloudflare_image_resizing(ImagePool::gen_thumbnail_download_url)(positive): thumbnail URLs should apply the configured Cloudflare Image Resizing options.
 
 use super::*;
-
-use aws_credential_types::Credentials;
-use aws_sdk_s3::Client;
-use aws_sdk_s3::config::{BehaviorVersion, Region};
-
-fn image_pool() -> R2ImagePool {
-    //
-    let credentials =
-        Credentials::new("access-key", "secret-key", None, None, "test");
-
-    let config = Config::builder()
-        .behavior_version(BehaviorVersion::latest())
-        .region(Region::new("auto"))
-        .endpoint_url("https://example.invalid")
-        .credentials_provider(credentials)
-        .build();
-
-    R2ImagePool::new(
-        Client::from_conf(config),
-        "bucket".to_string(),
-        "https://images.example.test/root/".to_string(),
-    )
-}
 
 #[test]
 fn detect_content_type_maps_supported_extensions() {
@@ -39,20 +17,37 @@ fn detect_content_type_rejects_unknown_extension() {
     assert_eq!(detect_content_type("avatar.txt"), None);
 }
 
-#[tokio::test]
-async fn gen_download_url_uses_custom_domain() {
-    //
-    let image_pool = image_pool();
-
-    let url =
-        ImagePool::gen_download_url(&image_pool, "avatars/user-1.png").await;
-
-    assert!(url.is_ok());
-
-    let url = url.ok().unwrap();
+#[test]
+fn gen_download_url_uses_custom_domain() {
+    let url = build_public_url(
+        "https://images.example.test/root/",
+        "avatars/user-1.png",
+        "gen_download_url",
+    )
+    .unwrap();
 
     assert_eq!(
         url.as_str(),
         "https://images.example.test/root/avatars/user-1.png"
+    );
+}
+
+#[test]
+fn gen_thumbnail_download_url_uses_cloudflare_image_resizing() {
+    let thumbnail_path = format!(
+        "cdn-cgi/image/{}/{}",
+        THUMBNAIL_TRANSFORM, "chapters/chapter-1/pages/page-1.jpg"
+    );
+
+    let url = build_public_url(
+        "https://images.example.test/root/",
+        &thumbnail_path,
+        "gen_thumbnail_download_url",
+    )
+    .unwrap();
+
+    assert_eq!(
+        url.as_str(),
+        "https://images.example.test/root/cdn-cgi/image/width=300,fit=scale-down,quality=80,format=auto,metadata=none/chapters/chapter-1/pages/page-1.jpg"
     );
 }
