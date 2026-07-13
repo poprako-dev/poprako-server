@@ -10,14 +10,13 @@
 
 use super::*;
 
-use crate::data::member_invitation::CreateMemberInvitationParams;
-use crate::data::member_invitation::ListMemberInvitationInfosParams;
-use crate::data::member_invitation::UpdateMemberInvitationRolesParams;
+use crate::data::member_invitation::{
+    CreateMemberInvitationParams, ListMemberInvitationInfosParams,
+    UpdateMemberInvitationRolesParams,
+};
 use crate::model::member::MemberInfo;
 use crate::model::member_invitation::MemberInvitationInfo;
-use crate::model::user::UserCredential;
-use crate::model::user::UserInfo;
-use crate::model::user::UserToken;
+use crate::model::user::{UserCredential, UserInfo, UserToken};
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::fixture::team;

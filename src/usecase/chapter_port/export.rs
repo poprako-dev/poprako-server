@@ -51,7 +51,7 @@ where
         + Sync,
     I: ImagePool,
 {
-    ChapterPortPermComplex::can_user_export(
+    ChapterPortPermComplex::ensure_user_can_export(
         &mut run_proxy! {
             repo =>
                 for<'a, 'b> GetChapterInfo<'a, 'b>,
@@ -143,7 +143,7 @@ where
         + UnitRepo<C>
         + Sync,
 {
-    ChapterPortPermComplex::can_user_export(
+    ChapterPortPermComplex::ensure_user_can_export(
         &mut run_proxy! {
             repo =>
                 for<'a, 'b> GetChapterInfo<'a, 'b>,

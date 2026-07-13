@@ -9,20 +9,17 @@ use poprako_orchestra_extra::prom::task::Task;
 use crate::complex::image::ImageComplex;
 use crate::complex::member::MemberComplex;
 use crate::complex::team::{TeamComplex, TeamPermComplex};
-use crate::data::team::CreateTeamParams;
-use crate::data::team::ListTeamInfosParams;
-use crate::data::team::MarkTeamAvatarUploadedParams;
-use crate::data::team::ReserveTeamAvatarParams;
-use crate::data::team::ReserveTeamAvatarPayload;
-use crate::data::team::TeamInfoVal;
-use crate::data::team::UpdateTeamInfoParams;
+use crate::data::team::{
+    CreateTeamParams, ListTeamInfosParams, MarkTeamAvatarUploadedParams,
+    ReserveTeamAvatarParams, ReserveTeamAvatarPayload, TeamInfoVal,
+    UpdateTeamInfoParams,
+};
 use crate::model::member::MemberEntry;
-use crate::model::team::TeamEntry;
-use crate::model::team::TeamInfo;
+use crate::model::team::{TeamEntry, TeamInfo};
 use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
 use crate::part::prom::Prom;
-use crate::part::prom::payload::{Payload, image};
+use crate::part::prom::payload::{image, Payload};
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
 use crate::part::repo::chapter::ChapterRepo;
@@ -66,7 +63,7 @@ where
     R: TeamRepo<C> + UserRepo<C> + MemberRepo<C> + Send + Sync,
     I: ImagePool,
 {
-    TeamPermComplex::can_user_list_all(
+    TeamPermComplex::ensure_user_can_list_all(
         &mut run_proxy! {
             repo => for<'a> GetUserInfo<'a>;
         },
@@ -82,6 +79,7 @@ where
 
     let team_info: TeamInfo = nucl
         .coord(async move |context| -> RegularResult<TeamInfo> {
+            //
             let get_user_info_excluded =
                 GetUserInfoExcluded::Id { id: &token.user_id };
 
@@ -158,7 +156,7 @@ where
     I: ImagePool,
 {
     if params.user_id.is_none() {
-        TeamPermComplex::can_user_list_all(
+        TeamPermComplex::ensure_user_can_list_all(
             &mut run_proxy! {
                 repo => for<'a> GetUserInfo<'a>;
             },
@@ -203,7 +201,7 @@ pub async fn update_info<C, R>(
 where
     R: TeamRepo<C> + MemberRepo<C> + Sync,
 {
-    TeamPermComplex::can_user_update_info(
+    TeamPermComplex::ensure_user_can_update_info(
         &mut run_proxy! {
             repo => for<'a> FindMemberInfo<'a>;
         },
@@ -258,7 +256,7 @@ where
     P: Prom<C> + Send + Sync,
     I: ImagePool,
 {
-    TeamPermComplex::can_user_reserve_avatar(
+    TeamPermComplex::ensure_user_can_reserve_avatar(
         &mut run_proxy! {
             repo => for<'a> FindMemberInfo<'a>;
         },
@@ -269,6 +267,7 @@ where
 
     let (object_key, avatar_version) = nucl
         .coord(async move |context| -> RegularResult<(String, u32)> {
+            //
             let avatar_reservation = repo
                 .step(
                     context,
@@ -281,6 +280,7 @@ where
 
             // If replacing an existing avatar, schedule deletion of the old object.
             if let Some(prev_key) = &avatar_reservation.prev_object_key {
+                //
                 let delete_id = ImageComplex::gen_delete_id();
 
                 let delete_payload = Payload::Image(image::Payload::Delete {
@@ -349,7 +349,7 @@ pub async fn mark_avatar_uploaded<C, R>(
 where
     R: TeamRepo<C> + MemberRepo<C> + Sync,
 {
-    TeamPermComplex::can_user_mark_avatar_uploaded(
+    TeamPermComplex::ensure_user_can_mark_avatar_uploaded(
         &mut run_proxy! {
             repo => for<'a> FindMemberInfo<'a>;
         },
@@ -407,7 +407,7 @@ where
         + Sync,
     P: Prom<C> + Send + Sync,
 {
-    TeamPermComplex::can_user_delete(
+    TeamPermComplex::ensure_user_can_delete(
         &mut run_proxy! {
             repo => for<'a> FindMemberInfo<'a>;
         },
@@ -417,6 +417,7 @@ where
     .await?;
 
     nucl.coord(async move |context| -> RegularResult<()> {
+        //
         TeamComplex::delete_cascade(repo, prom, context, &id).await?;
 
         Ok(())

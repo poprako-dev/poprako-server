@@ -5,16 +5,11 @@ use poprako_orchestra::{Nucl, run_proxy};
 use poprako_util::i18n::trl;
 
 use crate::complex::member::{MemberComplex, MemberPermComplex};
-use crate::data::member::CreateMemberParams;
-use crate::data::member::CreateMemberPayload;
-use crate::data::member::JoinTeamParams;
-use crate::data::member::ListMemberInfosParams;
-use crate::data::member::MemberInfoVal;
-use crate::data::member::UpdateMemberRolesParams;
-use crate::model::member::MemberEntry;
-use crate::model::member::MemberInfo;
-use crate::model::member::MemberListSpec;
-use crate::model::member::MemberRoleUpdate;
+use crate::data::member::{
+    CreateMemberParams, CreateMemberPayload, JoinTeamParams,
+    ListMemberInfosParams, MemberInfoVal, UpdateMemberRolesParams,
+};
+use crate::model::member::{MemberEntry, MemberInfo, MemberListSpec, MemberRoleUpdate};
 use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
 use crate::part::repo::member::MemberRepo;
@@ -52,7 +47,7 @@ where
 {
     let roles = params.roles;
 
-    MemberPermComplex::can_user_create(
+    MemberPermComplex::ensure_user_can_create(
         &mut run_proxy! {
             repo => for<'a> FindMemberInfo<'a>;
         },
@@ -63,6 +58,7 @@ where
 
     let member_id = nucl
         .coord(async move |context| -> RegularResult<String> {
+            //
             let get_user_info_excluded = GetUserInfoExcluded::Id {
                 id: &params.user_id,
             };
@@ -132,6 +128,7 @@ where
 
     let member_info = nucl
         .coord(async move |context| -> RegularResult<MemberInfo> {
+            //
             let get_current_user_info_excluded = GetUserInfoExcluded::Id {
                 id: &current_user_id,
             };
@@ -208,7 +205,7 @@ where
     let member_list_spec: MemberListSpec = params.try_into()?;
 
     if let MemberListSpec::Team { team_id, .. } = &member_list_spec {
-        MemberPermComplex::can_user_list_infos(
+        MemberPermComplex::ensure_user_can_list_infos(
             &mut run_proxy! {
                 repo => for<'a> FindMemberInfo<'a>;
             },
@@ -255,7 +252,7 @@ where
 
     let member_info = repo.run(&get_member_info).await?;
 
-    MemberPermComplex::can_user_update_info(
+    MemberPermComplex::ensure_user_can_update_info(
         &mut run_proxy! {
             repo => for<'a> FindMemberInfo<'a>;
         },
@@ -266,6 +263,7 @@ where
 
     let transaction_output = nucl
         .coord(async move |context| -> RegularResult<()> {
+            //
             let member_role_update = MemberRoleUpdate {
                 id: params.id,
                 roles: params.roles,
@@ -307,7 +305,7 @@ where
 
     let member_info = repo.run(&get_member_info).await?;
 
-    MemberPermComplex::can_user_delete(
+    MemberPermComplex::ensure_user_can_delete(
         &mut run_proxy! {
             repo => for<'a> FindMemberInfo<'a>;
         },
@@ -318,6 +316,7 @@ where
 
     let transaction_output = nucl
         .coord(async move |context| -> RegularResult<()> {
+            //
             repo.step(context, &DeleteMember { id: &id }).await?;
 
             Ok(())

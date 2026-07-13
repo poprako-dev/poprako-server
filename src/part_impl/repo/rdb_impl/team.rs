@@ -7,9 +7,7 @@ use time::OffsetDateTime;
 use poprako_orchestra::{Run, Step};
 
 use crate::complex::team::TeamComplex;
-use crate::model::team::TeamAvatarReservation;
-use crate::model::team::TeamEntry;
-use crate::model::team::TeamInfo;
+use crate::model::team::{TeamAvatarReservation,TeamEntry,TeamInfo};
 use crate::part::repo::oper::team::{
     AllocateTeamWorksetIndex, CreateTeam, DeleteTeam, GetTeamInfo,
     GetTeamInfoExcluded, ListTeamInfos, ReserveTeamAvatar, UpdateTeam,
@@ -286,6 +284,7 @@ impl<'a> Run<UpdateTeam<'a>> for RdbRepo {
 
     async fn run(&self, oper: &UpdateTeam<'a>) -> RegularResult<()> {
         match oper {
+            //
             UpdateTeam::Info {
                 id,
                 name,
@@ -325,6 +324,7 @@ impl<'a> Step<UpdateTeam<'a>, RdbContext> for RdbRepo {
         oper: &UpdateTeam<'a>,
     ) -> RegularResult<()> {
         match oper {
+            //
             UpdateTeam::Info {
                 id,
                 name,

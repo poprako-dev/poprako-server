@@ -1,8 +1,7 @@
-use crate::model::page::PageEntry;
-use crate::model::page::PageImageReservation;
-use crate::model::page::PageInfo;
-use crate::model::unit::UnitCounters;
 use poprako_orchestra::Oper;
+
+use crate::model::page::{PageEntry, PageImageReservation, PageInfo};
+use crate::model::unit::UnitCounters;
 
 pub struct GetPageInfo<'a> {
     pub id: &'a str,

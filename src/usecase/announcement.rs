@@ -5,12 +5,11 @@ use poprako_orchestra::{Nucl, run_proxy};
 use crate::complex::announcement::{
     AnnouncementComplex, AnnouncementPermComplex,
 };
-use crate::data::announcement::AnnouncementInfoVal;
-use crate::data::announcement::CreateAnnouncementParams;
-use crate::data::announcement::CreateAnnouncementPayload;
-use crate::data::announcement::ListAnnouncementInfosParams;
-use crate::model::announcement::AnnouncementEntry;
-use crate::model::announcement::AnnouncementListSpec;
+use crate::data::announcement::{
+    AnnouncementInfoVal, CreateAnnouncementParams, CreateAnnouncementPayload,
+    ListAnnouncementInfosParams,
+};
+use crate::model::announcement::{AnnouncementEntry, AnnouncementListSpec};
 use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
 use crate::part::repo::announcement::AnnouncementRepo;
@@ -37,7 +36,7 @@ where
 {
     let announcement_list_spec: AnnouncementListSpec = params.into();
 
-    AnnouncementPermComplex::can_user_list_infos(
+    AnnouncementPermComplex::ensure_user_can_list_infos(
         &mut run_proxy! {
             repo => for<'a> FindMemberInfo<'a>;
         },
@@ -77,7 +76,7 @@ where
     C: Send,
     R: AnnouncementRepo<C> + MemberRepo<C> + Send + Sync,
 {
-    AnnouncementPermComplex::can_user_create(
+    AnnouncementPermComplex::ensure_user_can_create(
         &mut run_proxy! {
             repo => for<'a> FindMemberInfo<'a>;
         },
@@ -88,6 +87,7 @@ where
 
     let announcement_info = nucl
         .coord(async move |context| {
+            //
             let announcement_entry = AnnouncementEntry {
                 id: AnnouncementComplex::gen_id(),
                 team_id: params.team_id,

@@ -6,13 +6,11 @@ use poprako_util::i18n::trl;
 
 use crate::complex::member::MemberComplex;
 use crate::complex::user::UserComplex;
-use crate::data::auth::LoginAuthParams;
-use crate::data::auth::LoginAuthPayload;
-use crate::data::auth::RegisterAuthParams;
-use crate::data::auth::RegisterAuthPayload;
+use crate::data::auth::{
+    LoginAuthParams, LoginAuthPayload, RegisterAuthParams, RegisterAuthPayload,
+};
 use crate::model::member::MemberEntry;
-use crate::model::user::UserEntry;
-use crate::model::user::UserTokenRef;
+use crate::model::user::{UserEntry, UserTokenRef};
 use crate::part::auth::TokenAuth;
 use crate::part::effect::event::Event;
 use crate::part::effect::event::user::UserSignedUpPayload;

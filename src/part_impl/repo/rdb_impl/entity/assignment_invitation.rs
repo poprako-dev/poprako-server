@@ -3,8 +3,7 @@
 use diesel::prelude::*;
 use time::OffsetDateTime;
 
-use crate::model::assignment_invitation::AssignmentInvitationEntry;
-use crate::model::assignment_invitation::AssignmentInvitationInfo;
+use crate::model::assignment_invitation::{AssignmentInvitationEntry, AssignmentInvitationInfo};
 use crate::part_impl::repo::rdb_impl::schema::t_assignment_invitation;
 use crate::result::RegularError;
 use crate::value::role::RoleMask;

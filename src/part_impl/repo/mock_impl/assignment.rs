@@ -15,9 +15,7 @@ use crate::value::assignment::AssignmentInclOpt;
 use crate::value::role::RoleField;
 
 use self::incl::apply_assignment_incls;
-use crate::model::assignment::AssignmentEntry;
-use crate::model::assignment::AssignmentInfo;
-use crate::model::assignment::AssignmentInfoListSpec;
+use crate::model::assignment::{AssignmentEntry,AssignmentInfo,AssignmentInfoListSpec};
 
 mod incl;
 
@@ -44,6 +42,7 @@ fn find_assignment_by_user_and_comic(
     comic_id: &str,
     incls: &[AssignmentInclOpt],
 ) -> Option<AssignmentInfo> {
+    //
     let mut assignment_infos = state
         .assignments
         .iter()
@@ -277,13 +276,16 @@ impl Run<FindAssignmentInfo<'_, '_>> for Mock {
         &self,
         oper: &FindAssignmentInfo<'_, '_>,
     ) -> Result<Option<AssignmentInfo>, Self::Error> {
+        //
         let state = self.state.lock().unwrap();
 
         let assignment_info = match oper {
+            //
             FindAssignmentInfo::ChapterUser {
                 chapter_id,
                 user_id,
             } => find_assignment(&state, chapter_id, user_id),
+
             FindAssignmentInfo::UserComic {
                 user_id,
                 comic_id,
@@ -304,12 +306,15 @@ impl Run<ListAssignmentInfos<'_, '_>> for Mock {
         &self,
         oper: &ListAssignmentInfos<'_, '_>,
     ) -> Result<Vec<AssignmentInfo>, Self::Error> {
+        //
         let state = self.state.lock().unwrap();
 
         let assignment_infos = match oper {
+            //
             ListAssignmentInfos::Spec { spec } => {
                 list_assignments(&state, spec)
             }
+
             ListAssignmentInfos::Chapter {
                 chapter_id,
                 role,
@@ -330,6 +335,7 @@ impl Run<GetAssignmentInfo<'_, '_>> for Mock {
         &self,
         oper: &GetAssignmentInfo<'_, '_>,
     ) -> Result<AssignmentInfo, Self::Error> {
+        //
         let state = self.state.lock().unwrap();
 
         get_assignment(&state, oper.id, oper.incls)
@@ -344,11 +350,14 @@ impl Step<FindAssignmentInfo<'_, '_>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &FindAssignmentInfo<'_, '_>,
     ) -> Result<Option<AssignmentInfo>, Self::Error> {
+        //
         let assignment_info = match oper {
+            //
             FindAssignmentInfo::ChapterUser {
                 chapter_id,
                 user_id,
             } => find_assignment(&context.state, chapter_id, user_id),
+
             FindAssignmentInfo::UserComic {
                 user_id,
                 comic_id,
@@ -392,10 +401,13 @@ impl Step<ListAssignmentInfos<'_, '_>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &ListAssignmentInfos<'_, '_>,
     ) -> Result<Vec<AssignmentInfo>, Self::Error> {
+        //
         let assignment_infos = match oper {
+            //
             ListAssignmentInfos::Spec { spec } => {
                 list_assignments(&context.state, spec)
             }
+
             ListAssignmentInfos::Chapter {
                 chapter_id,
                 role,
@@ -457,9 +469,11 @@ impl Step<DeleteAssignments<'_>, MockContext> for Mock {
         oper: &DeleteAssignments<'_>,
     ) -> Result<(), Self::Error> {
         match oper {
+            //
             DeleteAssignments::Id { id } => {
                 delete_assignment_by_id(&mut context.state, id)
             }
+
             DeleteAssignments::Chapter { chapter_id } => {
                 delete_assignments_by_chapter_id(&mut context.state, chapter_id)
             }

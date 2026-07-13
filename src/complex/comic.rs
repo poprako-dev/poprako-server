@@ -142,7 +142,7 @@ pub struct ComicPermComplex;
 
 impl ComicPermComplex {
     /// Verify the caller is a team admin of the owning workset's team.
-    pub async fn can_user_create<P>(
+    pub async fn ensure_user_can_create<P>(
         proxy: &mut P,
         user_id: &str,
         workset_id: &str,
@@ -158,7 +158,7 @@ impl ComicPermComplex {
     }
 
     /// Verify the caller is a team member of the owning workset's team.
-    pub async fn can_user_list_infos<P>(
+    pub async fn ensure_user_can_list_infos<P>(
         proxy: &mut P,
         user_id: &str,
         workset_id: &str,
@@ -174,7 +174,7 @@ impl ComicPermComplex {
     }
 
     /// Verify the caller is a team member of the comic's team.
-    pub async fn can_user_get_info<P>(
+    pub async fn ensure_user_can_get_info<P>(
         proxy: &mut P,
         user_id: &str,
         comic_id: &str,
@@ -190,7 +190,7 @@ impl ComicPermComplex {
     }
 
     /// Verify the caller is a team admin of the comic's team.
-    pub async fn can_user_update_info<P>(
+    pub async fn ensure_user_can_update_info<P>(
         proxy: &mut P,
         user_id: &str,
         comic_id: &str,
@@ -206,7 +206,7 @@ impl ComicPermComplex {
     }
 
     /// Verify the caller is a team admin of the comic's team.
-    pub async fn can_user_reserve_cover<P>(
+    pub async fn ensure_user_can_reserve_cover<P>(
         proxy: &mut P,
         user_id: &str,
         comic_id: &str,
@@ -222,7 +222,7 @@ impl ComicPermComplex {
     }
 
     /// Verify the caller is a team admin of the comic's team.
-    pub async fn can_user_mark_cover_uploaded<P>(
+    pub async fn ensure_user_can_mark_cover_uploaded<P>(
         proxy: &mut P,
         user_id: &str,
         comic_id: &str,
@@ -238,7 +238,7 @@ impl ComicPermComplex {
     }
 
     /// Verify the caller is a team admin of the comic's team.
-    pub async fn can_user_delete<P>(
+    pub async fn ensure_user_can_delete<P>(
         proxy: &mut P,
         user_id: &str,
         comic_id: &str,

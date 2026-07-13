@@ -377,15 +377,13 @@ use crate::model::chapter::ChapterInfo;
 use crate::model::comic::ComicInfo;
 use crate::model::comic_archive::ComicArchiveRecord;
 use crate::model::comment::CommentInfo;
-use crate::model::member::MemberEntry;
-use crate::model::member::MemberInfo;
+use crate::model::member::{MemberEntry, MemberInfo};
 use crate::model::member_invitation::MemberInvitationInfo;
 use crate::model::page::PageInfo;
 use crate::model::system_mail::SystemMailInfo;
 use crate::model::team::TeamInfo;
 use crate::model::unit::UnitInfo;
-use crate::model::user::UserCredential;
-use crate::model::user::UserInfo;
+use crate::model::user::{UserCredential, UserInfo};
 use crate::model::workset::WorksetInfo;
 use crate::part::prom::payload::{Payload, image};
 use crate::part::repo::oper::member::CreateMember;
@@ -438,6 +436,7 @@ async fn run_reads_seeded_user() {
 
 #[tokio::test]
 async fn nucl_coord_commits_repo_and_prom() {
+    //
     let mock = Mock::new();
 
     let member_entry = MemberEntry {
@@ -492,6 +491,7 @@ async fn nucl_coord_commits_repo_and_prom() {
 
 #[tokio::test]
 async fn nucl_coord_rolls_back_repo_and_prom() {
+    //
     let mock = Mock::new();
 
     let member_entry = MemberEntry {
@@ -508,6 +508,7 @@ async fn nucl_coord_rolls_back_repo_and_prom() {
 
     let err = mock
         .coord(async move |context| {
+            //
             repo.step(
                 context,
                 &CreateMember {
@@ -552,9 +553,11 @@ async fn nucl_coord_rolls_back_repo_and_prom() {
 
 #[tokio::test]
 async fn nucl_coord_commits_state() {
+    //
     let mock = Mock::new();
 
     Nucl::coord(&mock, async |context| {
+        //
         context.state.users.push(user("user-1"));
 
         Ok::<(), RegularError>(())
@@ -570,9 +573,11 @@ async fn nucl_coord_commits_state() {
 
 #[tokio::test]
 async fn nucl_coord_rolls_back_state() {
+    //
     let mock = Mock::new();
 
     let error = Nucl::coord(&mock, async |context| {
+        //
         context.state.users.push(user("user-1"));
 
         Err::<(), _>(unrecoverable("[nucl_coord_rolls_back_state] fail"))

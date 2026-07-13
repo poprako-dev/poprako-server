@@ -3,8 +3,7 @@
 use diesel::prelude::*;
 use time::OffsetDateTime;
 
-use crate::model::unit::UnitContent;
-use crate::model::unit::UnitInfo;
+use crate::model::unit::{UnitContent, UnitInfo};
 use crate::part_impl::repo::rdb_impl::schema::t_unit;
 
 /// Raw database row for the `t_unit` table. Returned by Diesel queries.

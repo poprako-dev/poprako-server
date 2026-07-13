@@ -3,6 +3,7 @@
 // unit_diff_params_rejects_legacy_or_mixed_identifiers(UnitDiffParams)(negative): legacy and mixed create-save identifiers are rejected.
 
 use super::*;
+
 use crate::model::unit::UnitOper;
 
 #[test]

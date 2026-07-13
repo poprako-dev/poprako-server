@@ -135,6 +135,7 @@ impl<'a> Step<Defer<'a, String, Payload, ()>, RdbContext> for RdbProm {
         context: &mut RdbContext,
         oper: &Defer<'a, String, Payload, ()>,
     ) -> RegularResult<()> {
+        //
         let now = OffsetDateTime::now_utc();
 
         let entry = LocalMessageEntry::from_task(&oper.task, now)?;
@@ -159,6 +160,7 @@ impl<'t, 'a> Step<DeferBatch<'t, 'a, String, Payload, ()>, RdbContext>
         context: &mut RdbContext,
         oper: &DeferBatch<'t, 'a, String, Payload, ()>,
     ) -> RegularResult<()> {
+        //
         if oper.tasks.is_empty() {
             return Ok(());
         }

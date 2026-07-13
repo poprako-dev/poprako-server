@@ -1,7 +1,6 @@
 use poprako_orchestra::{Run, Step};
 
-use crate::model::page::PageImageReservation;
-use crate::model::page::PageInfo;
+use crate::model::page::{PageImageReservation, PageInfo};
 use crate::part::repo::oper::page::{
     CreatePages, DeletePages, GetPageInfo, GetPageInfoExcluded, ListPageInfos,
     MarkPageImageUploaded, ReservePageImage, SetPageUnitCounters,
@@ -31,6 +30,7 @@ impl<'a> Run<ListPageInfos<'a>> for RdbRepo {
         oper: &ListPageInfos<'a>,
     ) -> RegularResult<Vec<PageInfo>> {
         match oper {
+            //
             ListPageInfos::Chapter {
                 chapter_id,
                 offset,
@@ -44,6 +44,7 @@ impl<'a> Run<ListPageInfos<'a>> for RdbRepo {
                     *limit
                 )
             }
+
             ListPageInfos::AllChapter { chapter_id } => {
                 submit_query!(
                     self.core,
@@ -76,6 +77,7 @@ impl<'a> Step<ListPageInfos<'a>, RdbContext> for RdbRepo {
         oper: &ListPageInfos<'a>,
     ) -> RegularResult<Vec<PageInfo>> {
         match oper {
+            //
             ListPageInfos::Chapter {
                 chapter_id,
                 offset,
@@ -89,6 +91,7 @@ impl<'a> Step<ListPageInfos<'a>, RdbContext> for RdbRepo {
                 )
                 .await
             }
+
             ListPageInfos::AllChapter { chapter_id } => {
                 list_all_infos_by_chapter_id(context.conn(), chapter_id).await
             }

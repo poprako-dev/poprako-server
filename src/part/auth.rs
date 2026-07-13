@@ -1,7 +1,6 @@
 //! Authentication token port.
 
-use crate::model::user::UserToken;
-use crate::model::user::UserTokenRef;
+use crate::model::user::{UserToken, UserTokenRef};
 use crate::result::RegularResult;
 
 /// Signs and verifies authentication tokens for user sessions.

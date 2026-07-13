@@ -11,13 +11,10 @@ use crate::complex::util::{
     check_user_is_chapter_translator_or_proofreader,
     check_user_is_team_member_by_chapter,
 };
-use crate::model::unit::UnitApplyAck;
-use crate::model::unit::UnitContent;
-use crate::model::unit::UnitDiff;
-use crate::model::unit::UnitIdMapper;
-use crate::model::unit::UnitIndex;
-use crate::model::unit::UnitIndexUpdate;
-use crate::model::unit::UnitOper;
+use crate::model::unit::{
+    UnitApplyAck, UnitContent, UnitDiff, UnitIdMapper, UnitIndex,
+    UnitIndexUpdate, UnitOper,
+};
 use crate::part::repo::oper::assignment::FindAssignmentInfo;
 use crate::part::repo::oper::chapter::GetChapterInfo;
 use crate::part::repo::oper::comic::GetComicInfo;
@@ -197,7 +194,7 @@ pub struct UnitPermComplex;
 
 impl UnitPermComplex {
     /// Verify the caller may list units on a chapter page.
-    pub async fn can_user_list_infos<P>(
+    pub async fn ensure_user_can_list_infos<P>(
         proxy: &mut P,
         user_id: &str,
         chapter_id: &str,
@@ -231,7 +228,7 @@ impl UnitPermComplex {
     }
 
     /// Verify the caller may edit units on a chapter page.
-    pub async fn can_user_save_infos<P>(
+    pub async fn ensure_user_can_save_infos<P>(
         proxy: &mut P,
         user_id: &str,
         chapter_id: &str,

@@ -3,8 +3,7 @@
 use diesel::prelude::*;
 use time::OffsetDateTime;
 
-use crate::model::announcement::AnnouncementEntry;
-use crate::model::announcement::AnnouncementInfo;
+use crate::model::announcement::{AnnouncementEntry, AnnouncementInfo};
 use crate::part_impl::repo::rdb_impl::schema::t_announcement;
 
 /// Raw database row for the `t_announcement` table. Returned by Diesel queries.

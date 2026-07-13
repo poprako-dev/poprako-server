@@ -36,6 +36,7 @@ fn classify_current_version(
     error_message: &'static str,
 ) -> RegularResult<ResourceState> {
     match current_version == image_version {
+        //
         true => Err(RegularError::Unrecoverable {
             message: error_message.into(),
         }),
@@ -62,6 +63,7 @@ where
     I: ImagePool + Send + Sync,
 {
     match task {
+        //
         Payload::CheckUpload {
             resource_kind,
             resource_id,
@@ -108,12 +110,14 @@ where
     I: ImagePool + Send + Sync,
 {
     let exists = match image_pool.head_object(object_key).await {
+        //
         Ok(exists) => exists,
 
         Err(error) => return TaskFlow::Retry(format!("{:?}", error)),
     };
 
     match exists {
+        //
         false => TaskFlow::Complete,
 
         true => {
@@ -155,6 +159,7 @@ where
             .await;
 
     match resource_state {
+        //
         Ok(ResourceState::Current) | Ok(ResourceState::Stale) => {
             TaskFlow::Complete
         }
@@ -231,7 +236,9 @@ where
         + Sync,
 {
     match kind {
+        //
         ResourceKind::UserAvatar => {
+            //
             let update_user = UpdateUser::MarkAvatarUploaded {
                 id: resource_id,
                 avatar_version: image_version,
@@ -241,6 +248,7 @@ where
         }
 
         ResourceKind::TeamAvatar => {
+            //
             let update_team = UpdateTeam::MarkAvatarUploaded {
                 id: resource_id,
                 avatar_version: image_version,
@@ -289,11 +297,14 @@ where
         + Sync,
 {
     match kind {
+        //
         ResourceKind::UserAvatar => {
+            //
             let get_user_info_excluded =
                 GetUserInfoExcluded::Id { id: resource_id };
 
             match repo.step(context, &get_user_info_excluded).await {
+                //
                 Ok(user_info) => classify_current_version(
                     user_info.avatar_version,
                     image_version,
@@ -309,10 +320,12 @@ where
         }
 
         ResourceKind::TeamAvatar => {
+            //
             let get_team_info_excluded =
                 GetTeamInfoExcluded::Id { id: resource_id };
 
             match repo.step(context, &get_team_info_excluded).await {
+                //
                 Ok(team_info) => classify_current_version(
                     team_info.avatar_version,
                     image_version,
@@ -380,6 +393,7 @@ where
     I: ImagePool + Send + Sync,
 {
     match image_pool.delete_object(object_key).await {
+        //
         Ok(()) => TaskFlow::Complete,
 
         Err(error) => TaskFlow::Retry(format!("{:?}", error)),

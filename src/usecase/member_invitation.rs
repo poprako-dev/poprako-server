@@ -7,14 +7,14 @@ use poprako_util::i18n::trl;
 use crate::complex::member_invitation::{
     MemberInvitationComplex, MemberInvitationPermComplex,
 };
-use crate::data::member_invitation::CreateMemberInvitationParams;
-use crate::data::member_invitation::CreateMemberInvitationPayload;
-use crate::data::member_invitation::ListMemberInvitationInfosParams;
-use crate::data::member_invitation::MemberInvitationInfoVal;
-use crate::data::member_invitation::UpdateMemberInvitationRolesParams;
-use crate::model::member_invitation::MemberInvitationEntry;
-use crate::model::member_invitation::MemberInvitationListSpec;
-use crate::model::member_invitation::MemberInvitationUpdate;
+use crate::data::member_invitation::{
+    CreateMemberInvitationParams, CreateMemberInvitationPayload,
+    ListMemberInvitationInfosParams, MemberInvitationInfoVal,
+    UpdateMemberInvitationRolesParams,
+};
+use crate::model::member_invitation::{
+    MemberInvitationEntry, MemberInvitationListSpec, MemberInvitationUpdate,
+};
 use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
 use crate::part::repo::member::MemberRepo;
@@ -47,7 +47,7 @@ where
 {
     let roles = params.roles;
 
-    MemberInvitationPermComplex::can_user_create(
+    MemberInvitationPermComplex::ensure_user_can_create(
         &mut run_proxy! {
             repo => for<'a> FindMemberInfo<'a>;
         },
@@ -58,6 +58,7 @@ where
 
     let (member_invitation_id, code) = nucl
         .coord(async move |context| -> RegularResult<(String, String)> {
+            //
             let find_invitee_user_info = FindUserInfo::Qid {
                 qid: &params.invitee_qid,
             };
@@ -66,6 +67,7 @@ where
                 repo.step(context, &find_invitee_user_info).await?;
 
             if let Some(invitee_user_info) = invitee_user_info {
+                //
                 let find_invitee_member_info = FindMemberInfo::UserTeam {
                     user_id: &invitee_user_info.id,
                     team_id: &params.team_id,
@@ -125,7 +127,7 @@ where
     R: MemberInvitationRepo<C> + MemberRepo<C> + Sync,
     I: ImagePool,
 {
-    MemberInvitationPermComplex::can_user_list_infos(
+    MemberInvitationPermComplex::ensure_user_can_list_infos(
         &mut run_proxy! {
             repo => for<'a> FindMemberInfo<'a>;
         },
@@ -176,7 +178,7 @@ where
     C: Send,
     R: MemberInvitationRepo<C> + MemberRepo<C> + Send + Sync,
 {
-    MemberInvitationPermComplex::can_user_update_info(
+    MemberInvitationPermComplex::ensure_user_can_update_info(
         &mut run_proxy! {
             repo =>
                 for<'a, 'b> GetMemberInvitationInfo<'a, 'b>,
@@ -189,6 +191,7 @@ where
 
     let transaction_output = nucl
         .coord(async move |context| -> RegularResult<()> {
+            //
             let member_invitation_update = MemberInvitationUpdate {
                 id: params.id,
                 roles: params.roles,
@@ -221,7 +224,7 @@ where
     C: Send,
     R: MemberInvitationRepo<C> + MemberRepo<C> + Send + Sync,
 {
-    MemberInvitationPermComplex::can_user_delete(
+    MemberInvitationPermComplex::ensure_user_can_delete(
         &mut run_proxy! {
             repo =>
                 for<'a, 'b> GetMemberInvitationInfo<'a, 'b>,
@@ -234,6 +237,7 @@ where
 
     let transaction_output = nucl
         .coord(async move |context| -> RegularResult<()> {
+            //
             repo.step(context, &DeleteMemberInvitation { id: &id })
                 .await?;
 

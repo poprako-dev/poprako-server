@@ -1,7 +1,6 @@
 use poprako_orchestra::{Run, Step};
 
-use crate::model::comic::ComicCoverReservation;
-use crate::model::comic::ComicInfo;
+use crate::model::comic::{ComicCoverReservation,ComicInfo};
 use crate::part::repo::oper::comic::{
     AllocateComicChapterIndex, CreateComic, DeleteComic, GetComicInfo,
     GetComicInfoExcluded, ListComicInfos, ListComicInfosExcluded,

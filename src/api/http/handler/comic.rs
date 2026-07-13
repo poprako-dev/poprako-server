@@ -17,14 +17,11 @@ use crate::api::http::result::{
     Accept as _, HttpBody, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
-use crate::data::comic::ComicInfoVal;
-use crate::data::comic::CreateComicParams;
-use crate::data::comic::CreateComicPayload;
-use crate::data::comic::ListComicInfosParams;
-use crate::data::comic::MarkComicCoverUploadedParams;
-use crate::data::comic::ReserveComicCoverParams;
-use crate::data::comic::ReserveComicCoverPayload;
-use crate::data::comic::UpdateComicInfoParams;
+use crate::data::comic::{
+    ComicInfoVal, CreateComicParams, CreateComicPayload, ListComicInfosParams,
+    MarkComicCoverUploadedParams, ReserveComicCoverParams,
+    ReserveComicCoverPayload, UpdateComicInfoParams,
+};
 use crate::data::comic_archive::ArchiveComicPayload;
 use crate::model::user::UserToken;
 use crate::usecase;

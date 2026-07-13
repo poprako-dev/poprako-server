@@ -19,7 +19,7 @@ pub struct ChapterPortPermComplex;
 
 impl ChapterPortPermComplex {
     /// Verify the caller may export chapter translations.
-    pub async fn can_user_export<P>(
+    pub async fn ensure_user_can_export<P>(
         proxy: &mut P,
         user_id: &str,
         chapter_id: &str,
@@ -53,7 +53,7 @@ impl ChapterPortPermComplex {
     }
 
     /// Verify the caller may import chapter translations.
-    pub async fn can_user_import<P>(
+    pub async fn ensure_user_can_import<P>(
         proxy: &mut P,
         user_id: &str,
         chapter_id: &str,

@@ -14,10 +14,7 @@ use crate::api::http::result::{
     Accept as _, HttpBody, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
-use crate::data::auth::LoginAuthParams;
-use crate::data::auth::LoginAuthPayload;
-use crate::data::auth::RegisterAuthParams;
-use crate::data::auth::RegisterAuthPayload;
+use crate::data::auth::{LoginAuthParams, LoginAuthPayload, RegisterAuthParams, RegisterAuthPayload};
 use crate::usecase;
 
 /// Builds the `authorization-token` HttpOnly cookie carrying the bearer token.

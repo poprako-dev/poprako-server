@@ -1,9 +1,9 @@
 //! Diesel entries for immutable comic archive rows.
 
-use crate::model::comic_archive::ComicArchiveRecord;
 use diesel::prelude::*;
 use time::OffsetDateTime;
 
+use crate::model::comic_archive::ComicArchiveRecord;
 use crate::part_impl::repo::rdb_impl::schema::{
     t_archived_chapter, t_archived_comic, t_archived_translation,
 };

@@ -1,10 +1,7 @@
 use poprako_orchestra::{Run, Step};
 
 use crate::complex::comic::ComicComplex;
-use crate::model::comic::ComicCoverReservation;
-use crate::model::comic::ComicInfo;
-use crate::model::comic::ComicInfoListKind;
-use crate::model::comic::ComicInfoListSpec;
+use crate::model::comic::{ComicCoverReservation,ComicInfo,ComicInfoListKind,ComicInfoListSpec};
 use crate::model::team::TeamInfo;
 use crate::model::user::UserInfo;
 use crate::model::workset::WorksetInfo;
@@ -179,6 +176,7 @@ fn mark_comic_cover_uploaded(
     id: &str,
     cover_version: u32,
 ) -> RegularResult<()> {
+    //
     let comic = state
         .comics
         .iter_mut()
@@ -201,6 +199,7 @@ fn get_comic_info(
     id: &str,
     incls: &[ComicInclOpt],
 ) -> RegularResult<ComicInfo> {
+    //
     let mut comic_info = state
         .comics
         .iter()
@@ -217,6 +216,7 @@ fn list_comic_infos(
     state: &MockState,
     spec: &ComicInfoListSpec,
 ) -> Vec<ComicInfo> {
+    //
     let mut comic_infos = state
         .comics
         .iter()
@@ -247,8 +247,11 @@ fn list_comic_infos(
     let limit = spec.limit as usize;
 
     match offset >= comic_infos.len() {
+        //
         true => Vec::new(),
+
         false => {
+            //
             let end = std::cmp::min(offset + limit, comic_infos.len());
 
             comic_infos[offset..end].to_vec()
@@ -263,6 +266,7 @@ impl<'a, 'b> Run<GetComicInfo<'a, 'b>> for Mock {
         &self,
         oper: &GetComicInfo<'a, 'b>,
     ) -> Result<ComicInfo, Self::Error> {
+        //
         let state = self.state.lock().unwrap();
 
         get_comic_info(&state, oper.id, oper.incls)
@@ -276,6 +280,7 @@ impl<'a> Run<ListComicInfos<'a>> for Mock {
         &self,
         oper: &ListComicInfos<'a>,
     ) -> Result<Vec<ComicInfo>, Self::Error> {
+        //
         let state = self.state.lock().unwrap();
 
         Ok(list_comic_infos(&state, oper.spec))

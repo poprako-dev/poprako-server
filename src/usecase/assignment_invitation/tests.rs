@@ -10,18 +10,17 @@
 
 use super::*;
 
-use crate::data::assignment_invitation::CreateAssignmentInvitationParams;
-use crate::data::assignment_invitation::JoinAssignmentInvitationParams;
-use crate::data::assignment_invitation::ListAssignmentInvitationInfosParams;
+use crate::data::assignment_invitation::{
+    CreateAssignmentInvitationParams, JoinAssignmentInvitationParams,
+    ListAssignmentInvitationInfosParams,
+};
 use crate::model::assignment::AssignmentInfo;
 use crate::model::assignment_invitation::AssignmentInvitationInfo;
 use crate::model::chapter::ChapterInfo;
 use crate::model::comic::ComicInfo;
 use crate::model::member::MemberInfo;
 use crate::model::team::TeamInfo;
-use crate::model::user::UserCredential;
-use crate::model::user::UserInfo;
-use crate::model::user::UserToken;
+use crate::model::user::{UserCredential, UserInfo, UserToken};
 use crate::model::workset::WorksetInfo;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;

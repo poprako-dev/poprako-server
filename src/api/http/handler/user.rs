@@ -14,11 +14,10 @@ use crate::api::http::result::{
     Accept as _, HttpBody, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
-use crate::data::user::MarkUserAvatarUploadedParams;
-use crate::data::user::ReserveUserAvatarParams;
-use crate::data::user::ReserveUserAvatarPayload;
-use crate::data::user::UpdateUserInfoParams;
-use crate::data::user::UserInfoVal;
+use crate::data::user::{
+    MarkUserAvatarUploadedParams, ReserveUserAvatarParams,
+    ReserveUserAvatarPayload, UpdateUserInfoParams, UserInfoVal,
+};
 use crate::model::user::UserToken;
 use crate::usecase;
 

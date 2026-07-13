@@ -4,8 +4,7 @@ use std::cmp::Reverse;
 
 use poprako_orchestra::Run;
 
-use crate::model::system_mail::SystemMailEntry;
-use crate::model::system_mail::SystemMailInfo;
+use crate::model::system_mail::{SystemMailEntry,SystemMailInfo};
 use crate::part::repo::oper::system_mail::{
     ListSystemMailInfos, MarkSystemMailRead, SendSystemMail, SendSystemMails,
 };
@@ -32,6 +31,7 @@ fn send_system_mail(
     state: &mut MockState,
     entry: &SystemMailEntry,
 ) -> RegularResult<()> {
+    //
     if state
         .system_mails
         .iter()
@@ -49,7 +49,9 @@ fn send_system_mails(
     state: &mut MockState,
     entries: &[SystemMailEntry],
 ) -> RegularResult<()> {
+    //
     for system_mail_entry in entries {
+        //
         let persisted = state.system_mails.iter().any(|system_mail_info| {
             system_mail_info.id == system_mail_entry.id
         });
@@ -76,12 +78,14 @@ fn list_system_mail_infos(
     state: &MockState,
     oper: &ListSystemMailInfos<'_>,
 ) -> Vec<SystemMailInfo> {
+    //
     let mut system_mail_infos = state
         .system_mails
         .iter()
         .filter(|system_mail_info| {
             system_mail_info.receiver_id == oper.receiver_id
                 && match oper.read {
+                    //
                     Some(read) => system_mail_info.read == read,
 
                     None => true,
@@ -105,6 +109,7 @@ fn mark_system_mail_read(
     id: &str,
     user_id: &str,
 ) -> RegularResult<()> {
+    //
     let system_mail_info = state
         .system_mails
         .iter_mut()
@@ -127,6 +132,7 @@ impl Run<SendSystemMail<'_>> for Mock {
     type Error = RegularError;
 
     async fn run(&self, oper: &SendSystemMail<'_>) -> RegularResult<()> {
+        //
         let mut state = self.state.lock().unwrap();
 
         send_system_mail(&mut state, oper.entry)
@@ -137,6 +143,7 @@ impl Run<SendSystemMails<'_>> for Mock {
     type Error = RegularError;
 
     async fn run(&self, oper: &SendSystemMails<'_>) -> RegularResult<()> {
+        //
         let mut state = self.state.lock().unwrap();
 
         send_system_mails(&mut state, oper.entries)
@@ -150,6 +157,7 @@ impl Run<ListSystemMailInfos<'_>> for Mock {
         &self,
         oper: &ListSystemMailInfos<'_>,
     ) -> RegularResult<Vec<SystemMailInfo>> {
+        //
         let state = self.state.lock().unwrap();
 
         Ok(list_system_mail_infos(&state, oper))
@@ -160,6 +168,7 @@ impl Run<MarkSystemMailRead<'_>> for Mock {
     type Error = RegularError;
 
     async fn run(&self, oper: &MarkSystemMailRead<'_>) -> RegularResult<()> {
+        //
         let mut state = self.state.lock().unwrap();
 
         mark_system_mail_read(&mut state, oper.id, oper.user_id)

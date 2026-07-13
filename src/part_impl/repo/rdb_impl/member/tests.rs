@@ -4,9 +4,7 @@ use super::*;
 
 use poprako_orchestra::{Nucl as _, Step as _};
 
-use crate::model::member::MemberEntry;
-use crate::model::member::MemberListSpec;
-use crate::model::member::MemberRoleUpdate;
+use crate::model::member::{MemberEntry,MemberListSpec,MemberRoleUpdate};
 use crate::part::repo::oper::member::{
     CreateMember, GetMemberInfo, ListMemberInfos, UpdateMember,
 };
@@ -44,6 +42,7 @@ async fn member_roundtrip_reads_test_database_url() {
     };
 
     nucl.coord(async |context| {
+        //
         repo.step(
             context,
             &CreateMember {
@@ -86,6 +85,7 @@ async fn member_roundtrip_reads_test_database_url() {
     };
 
     nucl.coord(async |context| {
+        //
         let update_member = UpdateMember::Role {
             update: &member_role_update,
         };

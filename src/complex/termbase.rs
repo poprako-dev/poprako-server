@@ -34,7 +34,7 @@ impl TermbaseComplex {
 pub struct TermbasePermComplex;
 
 impl TermbasePermComplex {
-    pub async fn ensure_user_create_team_termbase<P>(
+    pub async fn ensure_user_can_create_team_termbase<P>(
         proxy: &mut P,
         user_id: &str,
         team_id: &str,
@@ -57,7 +57,7 @@ impl TermbasePermComplex {
         accept(())
     }
 
-    pub async fn ensure_user_create_comic_termbase<P>(
+    pub async fn ensure_user_can_create_comic_termbase<P>(
         proxy: &mut P,
         user_id: &str,
         comic_id: &str,
@@ -85,7 +85,8 @@ impl TermbasePermComplex {
             })?;
 
         // Delegate to team level permission check.
-        Self::ensure_user_create_team_termbase(proxy, user_id, team_id).await?;
+        Self::ensure_user_can_create_team_termbase(proxy, user_id, team_id)
+            .await?;
 
         accept(())
     }

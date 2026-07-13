@@ -16,11 +16,7 @@ use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::RegularResult;
 use crate::value::chapter::ChapterInclOpt;
 
-use crate::model::chapter::ChapterEntry;
-use crate::model::chapter::ChapterInfo;
-use crate::model::chapter::ChapterInfoListSpec;
-use crate::model::chapter::ChapterInfoUpdate;
-use crate::model::chapter::ChapterStageUpdate;
+use crate::model::chapter::{ChapterEntry,ChapterInfo,ChapterInfoListSpec,ChapterInfoUpdate,ChapterStageUpdate};
 use crate::model::unit::UnitCounterDelta;
 use crate::part_impl::repo::rdb_impl::schema::t_chapter::dsl::*;
 

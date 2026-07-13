@@ -8,18 +8,12 @@ use poprako_util::time::ToUnixMilli;
 
 use crate::complex::util::check_user_is_team_admin;
 use crate::model::assignment::AssignmentInfo;
-use crate::model::comic_archive::ArchivedAssignmentPayload;
-use crate::model::comic_archive::ArchivedChapterPayload;
-use crate::model::comic_archive::ArchivedComicPayload;
-use crate::model::comic_archive::ArchivedPagePayload;
-use crate::model::comic_archive::ArchivedTranslationPayload;
-use crate::model::comic_archive::ArchivedUnitPayload;
-use crate::model::comic_archive::ArchivedUserPayload;
-use crate::model::comic_archive::ArchivedWorksetPayload;
-use crate::model::comic_archive::ComicArchiveChapterSnapshot;
-use crate::model::comic_archive::ComicArchiveRecord;
-use crate::model::comic_archive::ComicArchiveSnapshot;
-use crate::model::comic_archive::ComicArchiveWrite;
+use crate::model::comic_archive::{
+    ArchivedAssignmentPayload, ArchivedChapterPayload, ArchivedComicPayload,
+    ArchivedPagePayload, ArchivedTranslationPayload, ArchivedUnitPayload,
+    ArchivedUserPayload, ArchivedWorksetPayload, ComicArchiveChapterSnapshot,
+    ComicArchiveRecord, ComicArchiveSnapshot, ComicArchiveWrite,
+};
 use crate::part::repo::oper::comic::GetComicInfo;
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::workset::GetWorksetInfo;
@@ -124,7 +118,7 @@ pub struct ComicArchivePermComplex;
 
 impl ComicArchivePermComplex {
     /// Verify that the caller is an administrator of the comic's owning team.
-    pub async fn can_user_archive<P>(
+    pub async fn ensure_user_can_archive<P>(
         proxy: &mut P,
         user_id: &str,
         comic_id: &str,

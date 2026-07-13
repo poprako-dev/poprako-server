@@ -7,13 +7,12 @@ use poprako_util::page::Page;
 
 use crate::complex::assignment::AssignmentComplex;
 use crate::data::assignment::AssignmentInfoVal;
-use crate::data::assignment_invitation::AssignmentInvitationInfoVal;
-use crate::data::assignment_invitation::CreateAssignmentInvitationParams;
-use crate::data::assignment_invitation::CreateAssignmentInvitationPayload;
-use crate::data::assignment_invitation::JoinAssignmentInvitationParams;
-use crate::data::assignment_invitation::ListAssignmentInvitationInfosParams;
-use crate::model::assignment::AssignmentEntry;
-use crate::model::assignment::AssignmentInfo;
+use crate::data::assignment_invitation::{
+    AssignmentInvitationInfoVal, CreateAssignmentInvitationParams,
+    CreateAssignmentInvitationPayload, JoinAssignmentInvitationParams,
+    ListAssignmentInvitationInfosParams,
+};
+use crate::model::assignment::{AssignmentEntry, AssignmentInfo};
 use crate::model::assignment_invitation::AssignmentInvitationEntry;
 use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
@@ -96,6 +95,7 @@ where
 
     let (assignment_invitation_id, code) = nucl
         .coord(async move |context| -> RegularResult<(String, String)> {
+            //
             let find_user_info = FindUserInfo::Qid {
                 qid: &params.invitee_qid,
             };
@@ -103,6 +103,7 @@ where
             let invitee_user_info = repo.step(context, &find_user_info).await?;
 
             if let Some(invitee_user_info) = invitee_user_info {
+                //
                 let find_assignment_info = FindAssignmentInfo::ChapterUser {
                     chapter_id: &params.chapter_id,
                     user_id: &invitee_user_info.id,
@@ -177,6 +178,7 @@ where
     .await?;
 
     nucl.coord(async move |context| -> RegularResult<()> {
+        //
         let delete_assignment_invitation =
             DeleteAssignmentInvitations::Id { id: &id };
 
@@ -215,6 +217,7 @@ where
 
     let assignment_info = nucl
         .coord(async move |context| -> RegularResult<AssignmentInfo> {
+            //
             let get_user_info_excluded = GetUserInfoExcluded::Id {
                 id: &current_user_id,
             };

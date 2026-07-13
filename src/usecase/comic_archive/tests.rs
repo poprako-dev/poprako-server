@@ -10,18 +10,16 @@ use crate::model::assignment::AssignmentInfo;
 use crate::model::assignment_invitation::AssignmentInvitationInfo;
 use crate::model::chapter::ChapterInfo;
 use crate::model::comic::ComicInfo;
-use crate::model::comic_archive::ArchivedChapterPayload;
-use crate::model::comic_archive::ArchivedComicPayload;
-use crate::model::comic_archive::ArchivedTranslationPayload;
+use crate::model::comic_archive::{
+    ArchivedChapterPayload, ArchivedComicPayload, ArchivedTranslationPayload,
+};
 use crate::model::member::MemberInfo;
 use crate::model::page::PageInfo;
 use crate::model::unit::UnitInfo;
-use crate::model::user::UserCredential;
-use crate::model::user::UserInfo;
-use crate::model::user::UserToken;
+use crate::model::user::{UserCredential, UserInfo, UserToken};
 use crate::model::workset::WorksetInfo;
-use crate::part::prom::payload::Payload;
 use crate::part::prom::payload::image::Payload as ImagePayload;
+use crate::part::prom::payload::Payload;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;

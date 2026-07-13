@@ -8,8 +8,7 @@ use utoipa::{IntoParams, ToSchema};
 use poprako_util::time::ToUnixMilli;
 
 use crate::data::user::UserInfoVal;
-use crate::model::announcement::AnnouncementInfo;
-use crate::model::announcement::AnnouncementListSpec;
+use crate::model::announcement::{AnnouncementInfo, AnnouncementListSpec};
 use crate::part::image::ImagePool;
 use crate::result::RegularResult;
 use crate::value::announcement::AnnouncementInclOpt;

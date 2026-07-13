@@ -2,9 +2,7 @@
 
 use poprako_orchestra::{Run, Step};
 
-use crate::model::member::MemberEntry;
-use crate::model::member::MemberInfo;
-use crate::model::member::MemberListSpec;
+use crate::model::member::{MemberEntry,MemberInfo,MemberListSpec};
 use crate::model::team::TeamInfo;
 use crate::model::user::UserInfo;
 use crate::part::repo::member::MemberRepo;
@@ -41,6 +39,7 @@ fn apply_user_incl(
     member_info: &mut MemberInfo,
     include_user: bool,
 ) {
+    //
     member_info.user = None;
 
     if include_user {
@@ -112,6 +111,7 @@ impl<'a> Run<FindMemberInfo<'a>> for Mock {
         &self,
         oper: &FindMemberInfo<'a>,
     ) -> RegularResult<Option<MemberInfo>> {
+        //
         let state = self.state.lock().unwrap();
 
         match oper {
@@ -136,6 +136,7 @@ fn get_member_info(
     id: &str,
     incls: &[MemberInclOpt],
 ) -> RegularResult<MemberInfo> {
+    //
     let mut member_info = get_member_by_id(state, id)?;
 
     let include_user = incls.contains(&MemberInclOpt::User);
@@ -153,7 +154,9 @@ fn list_member_infos(
     state: &MockState,
     spec: &MemberListSpec,
 ) -> Vec<MemberInfo> {
+    //
     let (offset, limit, incls, mut member_infos) = match spec {
+        //
         MemberListSpec::User {
             owner_id,
             incl_opt,
@@ -208,6 +211,7 @@ fn list_member_infos(
     let include_team = incls.contains(&MemberInclOpt::Team);
 
     for member_info in &mut member_infos {
+        //
         apply_user_incl(state, member_info, include_user);
 
         apply_team_incl(state, member_info, include_team);
@@ -220,8 +224,11 @@ fn list_member_infos(
     let limit = limit as usize;
 
     match offset >= member_infos.len() {
+        //
         true => Vec::new(),
+
         false => {
+            //
             let end = std::cmp::min(offset + limit, member_infos.len());
 
             member_infos[offset..end].to_vec()
@@ -248,9 +255,11 @@ impl<'a> Run<ListMemberInfos<'a>> for Mock {
         &self,
         oper: &ListMemberInfos<'a>,
     ) -> RegularResult<Vec<MemberInfo>> {
+        //
         let state = self.state.lock().unwrap();
 
         match oper {
+            //
             ListMemberInfos::Spec { spec } => {
                 Ok(list_member_infos(&state, spec))
             }
@@ -269,6 +278,7 @@ impl<'a, 'b> Run<GetMemberInfo<'a, 'b>> for Mock {
         &self,
         oper: &GetMemberInfo<'a, 'b>,
     ) -> RegularResult<MemberInfo> {
+        //
         let state = self.state.lock().unwrap();
 
         match oper {
@@ -300,10 +310,12 @@ impl<'a> Step<UpdateMember<'a>, MockContext> for Mock {
         oper: &UpdateMember<'a>,
     ) -> RegularResult<()> {
         match oper {
+            //
             UpdateMember::UserNickname {
                 user_id,
                 user_nickname,
             } => {
+                //
                 context
                     .state
                     .members
@@ -317,6 +329,7 @@ impl<'a> Step<UpdateMember<'a>, MockContext> for Mock {
             }
 
             UpdateMember::Role { update } => {
+                //
                 let member_info = context
                     .state
                     .members
@@ -341,6 +354,7 @@ impl<'a> Step<ListMemberInfos<'a>, MockContext> for Mock {
         oper: &ListMemberInfos<'a>,
     ) -> RegularResult<Vec<MemberInfo>> {
         match oper {
+            //
             ListMemberInfos::Spec { spec } => {
                 Ok(list_member_infos(&context.state, spec))
             }
@@ -412,6 +426,7 @@ impl<'a> Step<DeleteMember<'a>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &DeleteMember<'a>,
     ) -> RegularResult<()> {
+        //
         let position = context
             .state
             .members

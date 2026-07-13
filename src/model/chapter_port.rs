@@ -1,7 +1,8 @@
 //! Internal chapter translation import format models.
 
-use crate::model::page_port::PoprakoPageImport;
 use serde::Deserialize;
+
+use crate::model::page_port::PoprakoPageImport;
 
 /// PopRaKo JSON import root.
 #[derive(Deserialize)]

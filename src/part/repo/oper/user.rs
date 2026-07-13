@@ -1,8 +1,6 @@
-use crate::model::user::UserAvatarReservation;
-use crate::model::user::UserCredential;
-use crate::model::user::UserEntry;
-use crate::model::user::UserInfo;
 use poprako_orchestra::Oper;
+
+use crate::model::user::{UserAvatarReservation, UserCredential, UserEntry, UserInfo};
 
 pub struct CreateUser<'a> {
     pub entry: &'a UserEntry,

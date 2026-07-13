@@ -8,8 +8,9 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "swagger-ui")]
 use utoipa::{IntoParams, ToSchema};
 
-use crate::model::workset::WorksetInfo;
 use poprako_util::time::ToUnixMilli;
+
+use crate::model::workset::WorksetInfo;
 
 /// Presentation-ready workset information.
 ///

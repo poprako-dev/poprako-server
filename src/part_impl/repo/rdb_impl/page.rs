@@ -14,9 +14,7 @@ use crate::part_impl::shared::result::{diesel, expected, version};
 use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::RegularResult;
 
-use crate::model::page::PageEntry;
-use crate::model::page::PageImageReservation;
-use crate::model::page::PageInfo;
+use crate::model::page::{PageEntry, PageImageReservation, PageInfo};
 use crate::model::unit::UnitCounters;
 use crate::part_impl::repo::rdb_impl::schema::t_page::dsl::*;
 use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::{

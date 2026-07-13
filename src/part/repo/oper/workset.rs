@@ -1,9 +1,8 @@
 use poprako_orchestra::Oper;
 
-use crate::model::workset::WorksetEntry;
-use crate::model::workset::WorksetInfo;
-use crate::model::workset::WorksetInfoUpdate;
 use poprako_util::page::Page;
+
+use crate::model::workset::{WorksetEntry, WorksetInfo, WorksetInfoUpdate};
 
 pub struct CreateWorkset<'a> {
     pub entry: &'a WorksetEntry,

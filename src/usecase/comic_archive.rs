@@ -48,7 +48,7 @@ where
         + Sync,
     P: Prom<C> + Send + Sync,
 {
-    ComicArchivePermComplex::can_user_archive(
+    ComicArchivePermComplex::ensure_user_can_archive(
         &mut run_proxy! {
             repo =>
                 for<'a, 'b> GetComicInfo<'a, 'b>,
@@ -62,6 +62,7 @@ where
 
     let archive_comic_val = nucl
         .coord(async move |context| -> RegularResult<ArchiveComicPayload> {
+            //
             let comic_archive_snapshot = repo
                 .step(
                     context,
@@ -84,6 +85,7 @@ where
             let archived_comic_id = comic_archive_write.comic_record.id.clone();
 
             for image_key in image_keys {
+                //
                 let image_delete_id = next_snowflake_id();
 
                 let payload = Payload::Image(image::Payload::Delete {

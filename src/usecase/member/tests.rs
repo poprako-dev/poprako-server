@@ -22,15 +22,12 @@ use super::*;
 
 use poprako_util::time::ToUnixMilli;
 
-use crate::data::member::CreateMemberParams;
-use crate::data::member::ListMemberInfosParams;
-use crate::data::member::UpdateMemberRolesParams;
-use crate::model::member::MemberInfo;
-use crate::model::member::MemberListSpec;
+use crate::data::member::{
+    CreateMemberParams, ListMemberInfosParams, UpdateMemberRolesParams,
+};
+use crate::model::member::{MemberInfo, MemberListSpec};
 use crate::model::team::TeamInfo;
-use crate::model::user::UserCredential;
-use crate::model::user::UserInfo;
-use crate::model::user::UserToken;
+use crate::model::user::{UserCredential, UserInfo, UserToken};
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::{self, assert_expected_variant};

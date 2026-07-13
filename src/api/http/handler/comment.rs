@@ -14,10 +14,10 @@ use utoipa::IntoParams;
 #[allow(unused_imports)]
 use crate::api::http::result::{Accept as _, HttpBody, HttpResult};
 use crate::api::http::state::AppHarn;
-use crate::data::comment::CommentInfoVal;
-use crate::data::comment::CreateCommentParams;
-use crate::data::comment::CreateCommentPayload;
-use crate::data::comment::ListCommentInfosParams;
+use crate::data::comment::{
+    CommentInfoVal, CreateCommentParams, CreateCommentPayload,
+    ListCommentInfosParams,
+};
 use crate::model::user::UserToken;
 use crate::usecase;
 use crate::value::comment::CommentInclOpt;

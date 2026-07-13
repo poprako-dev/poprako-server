@@ -3,8 +3,7 @@
 use diesel::prelude::*;
 use time::OffsetDateTime;
 
-use crate::model::page::PageEntry;
-use crate::model::page::PageInfo;
+use crate::model::page::{PageEntry, PageInfo};
 use crate::part_impl::repo::rdb_impl::schema::t_page;
 
 /// Raw database row for the `t_page` table. Returned by Diesel queries.

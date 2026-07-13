@@ -1,9 +1,8 @@
 use poprako_orchestra::Oper;
 
-use crate::model::member_invitation::MemberInvitationEntry;
-use crate::model::member_invitation::MemberInvitationInfo;
-use crate::model::member_invitation::MemberInvitationListSpec;
-use crate::model::member_invitation::MemberInvitationUpdate;
+use crate::model::member_invitation::{
+    MemberInvitationEntry, MemberInvitationInfo, MemberInvitationListSpec, MemberInvitationUpdate,
+};
 use crate::value::member_invitation::MemberInvitationInclOpt;
 
 pub struct CreateMemberInvitation<'a> {

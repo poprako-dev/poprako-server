@@ -3,8 +3,7 @@
 use diesel::prelude::*;
 use time::OffsetDateTime;
 
-use crate::model::user::UserCredential;
-use crate::model::user::UserInfo;
+use crate::model::user::{UserCredential, UserInfo};
 use crate::part_impl::repo::rdb_impl::schema::t_user;
 
 // ── Queryable / Selectable ─────────────────────────────────────────────────

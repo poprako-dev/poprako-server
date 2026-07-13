@@ -21,8 +21,12 @@
 
 use super::*;
 
+use fixture::*;
+
 use time::OffsetDateTime;
 
+use crate::data::comic::{ListComicInfosParams, UpdateComicInfoParams};
+use crate::model::comic::ComicInfo;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;
@@ -32,11 +36,6 @@ use crate::value::role::RoleField;
 
 mod cover;
 mod fixture;
-
-use crate::data::comic::ListComicInfosParams;
-use crate::data::comic::UpdateComicInfoParams;
-use crate::model::comic::ComicInfo;
-use fixture::*;
 
 #[tokio::test]
 async fn create_allocates_index_and_updates_count() {

@@ -3,8 +3,7 @@
 use diesel::prelude::*;
 use time::OffsetDateTime;
 
-use crate::model::system_mail::SystemMailEntry;
-use crate::model::system_mail::SystemMailInfo;
+use crate::model::system_mail::{SystemMailEntry, SystemMailInfo};
 use crate::part_impl::repo::rdb_impl::schema::t_system_mail;
 
 // ── Queryable / Selectable ─────────────────────────────────────────────────

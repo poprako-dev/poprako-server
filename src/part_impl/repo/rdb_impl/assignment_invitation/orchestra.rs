@@ -95,9 +95,11 @@ impl<'a> Step<DeleteAssignmentInvitations<'a>, RdbContext> for RdbRepo {
         oper: &DeleteAssignmentInvitations<'a>,
     ) -> RegularResult<()> {
         match oper {
+            //
             DeleteAssignmentInvitations::Id { id } => {
                 delete(context.conn(), id).await
             }
+
             DeleteAssignmentInvitations::Chapter { chapter_id } => {
                 delete_by_chapter_id(context.conn(), chapter_id).await
             }

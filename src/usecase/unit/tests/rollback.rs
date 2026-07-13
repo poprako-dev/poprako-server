@@ -1,7 +1,6 @@
 use super::*;
-use crate::data::unit::SavePageUnitsParams;
-use crate::data::unit::UnitDiffParams;
-use crate::data::unit::UnitOperParams;
+
+use crate::data::unit::{SavePageUnitsParams, UnitDiffParams, UnitOperParams};
 
 #[tokio::test]
 async fn save_infos_rolls_back_without_edit_role() {

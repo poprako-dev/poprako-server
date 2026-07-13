@@ -2,8 +2,7 @@ use std::collections::HashMap;
 
 use poprako_orchestra::{Run, Step};
 
-use crate::model::chapter::ChapterInfo;
-use crate::model::chapter::ChapterInfoListSpec;
+use crate::model::chapter::{ChapterInfo,ChapterInfoListSpec};
 use crate::part::repo::oper::chapter::{
     AdjustChapterUnitCounters, CreateChapter, DeleteChapter,
     FindPinnedChapterInfo, GetChapterInfo, GetChapterInfoExcluded,
@@ -24,6 +23,7 @@ fn list_chapter_infos(
     state: &MockState,
     spec: &ChapterInfoListSpec,
 ) -> Vec<ChapterInfo> {
+    //
     let mut chapter_infos = list_all_chapters(state, &spec.comic_id);
 
     for chapter_info in &mut chapter_infos {
@@ -35,8 +35,11 @@ fn list_chapter_infos(
     let limit = spec.limit as usize;
 
     match offset >= chapter_infos.len() {
+        //
         true => Vec::new(),
+
         false => {
+            //
             let end = std::cmp::min(offset + limit, chapter_infos.len());
 
             chapter_infos[offset..end].to_vec()
@@ -49,6 +52,7 @@ fn find_pinned_chapter_info(
     comic_id: &str,
     incls: &[ChapterInclOpt],
 ) -> Option<ChapterInfo> {
+    //
     let mut chapter_info = state
         .chapters
         .iter()
@@ -68,9 +72,11 @@ fn list_pinned_chapter_infos(
     state: &MockState,
     comic_ids: &[String],
 ) -> HashMap<String, ChapterInfo> {
+    //
     let mut chapter_infos = HashMap::new();
 
     for comic_id in comic_ids {
+        //
         let chapter_info = state
             .chapters
             .iter()
@@ -96,6 +102,7 @@ impl<'a> Run<ListChapterInfos<'a>> for Mock {
         &self,
         oper: &ListChapterInfos<'a>,
     ) -> RegularResult<Vec<ChapterInfo>> {
+        //
         let state = self.state.lock().unwrap();
 
         Ok(list_chapter_infos(&state, oper.spec))
@@ -109,6 +116,7 @@ impl<'a, 'b> Run<GetChapterInfo<'a, 'b>> for Mock {
         &self,
         oper: &GetChapterInfo<'a, 'b>,
     ) -> RegularResult<ChapterInfo> {
+        //
         let state = self.state.lock().unwrap();
 
         get_chapter_by_id(&state, oper.id, oper.incls)
@@ -122,6 +130,7 @@ impl<'a, 'b> Run<FindPinnedChapterInfo<'a, 'b>> for Mock {
         &self,
         oper: &FindPinnedChapterInfo<'a, 'b>,
     ) -> RegularResult<Option<ChapterInfo>> {
+        //
         let state = self.state.lock().unwrap();
 
         Ok(find_pinned_chapter_info(&state, oper.comic_id, oper.incls))
@@ -135,6 +144,7 @@ impl<'a> Run<ListPinnedChapterInfos<'a>> for Mock {
         &self,
         oper: &ListPinnedChapterInfos<'a>,
     ) -> RegularResult<HashMap<String, ChapterInfo>> {
+        //
         let state = self.state.lock().unwrap();
 
         Ok(list_pinned_chapter_infos(&state, oper.comic_ids))
@@ -213,6 +223,7 @@ impl<'a> Step<UpdateChapter<'a>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &UpdateChapter<'a>,
     ) -> RegularResult<()> {
+        //
         let chapter_info = context
             .state
             .chapters
@@ -242,6 +253,7 @@ impl<'a> Step<UpdateChapterStage<'a>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &UpdateChapterStage<'a>,
     ) -> RegularResult<()> {
+        //
         let chapter_info = context
             .state
             .chapters
@@ -265,6 +277,7 @@ impl<'a> Step<SetChapterPageCounters<'a>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &SetChapterPageCounters<'a>,
     ) -> RegularResult<()> {
+        //
         let chapter_info = context
             .state
             .chapters
@@ -294,6 +307,7 @@ impl<'a> Step<AdjustChapterUnitCounters<'a>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &AdjustChapterUnitCounters<'a>,
     ) -> RegularResult<()> {
+        //
         let chapter_info = context
             .state
             .chapters
@@ -321,6 +335,7 @@ impl<'a> Step<UnpinOtherChapters<'a>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &UnpinOtherChapters<'a>,
     ) -> RegularResult<()> {
+        //
         for chapter_info in &mut context.state.chapters {
             if chapter_info.comic_id == oper.comic_id
                 && chapter_info.id != oper.excluded_id
@@ -343,6 +358,7 @@ impl<'a> Step<DeleteChapter<'a>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &DeleteChapter<'a>,
     ) -> RegularResult<()> {
+        //
         let position = context
             .state
             .chapters

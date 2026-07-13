@@ -4,8 +4,7 @@ use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use time::OffsetDateTime;
 
-use crate::model::assignment_invitation::AssignmentInvitationEntry;
-use crate::model::assignment_invitation::AssignmentInvitationInfo;
+use crate::model::assignment_invitation::{AssignmentInvitationEntry,AssignmentInvitationInfo};
 use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
 use crate::part_impl::repo::rdb_impl::RdbRepo;
 use crate::part_impl::repo::rdb_impl::entity::assignment_invitation::{

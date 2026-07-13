@@ -6,14 +6,13 @@ use poprako_util::i18n::trl;
 
 use crate::complex::assignment::{AssignmentComplex, AssignmentPermComplex};
 use crate::complex::chapter::ChapterPermComplex;
-use crate::data::assignment::AssignmentInfoVal;
-use crate::data::assignment::JoinChapterAssignmentParams;
-use crate::data::assignment::ListAssignmentInfosParams;
-use crate::data::assignment::UpdateAssignmentRolesParams;
-use crate::model::assignment::AssignmentEntry;
-use crate::model::assignment::AssignmentInfo;
-use crate::model::assignment::AssignmentInfoListSpec;
-use crate::model::assignment::AssignmentRoleUpdate;
+use crate::data::assignment::{
+    AssignmentInfoVal, JoinChapterAssignmentParams, ListAssignmentInfosParams,
+    UpdateAssignmentRolesParams,
+};
+use crate::model::assignment::{
+    AssignmentEntry, AssignmentInfo, AssignmentInfoListSpec, AssignmentRoleUpdate,
+};
 use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
 use crate::part::repo::assignment::AssignmentRepo;
@@ -55,7 +54,7 @@ where
 {
     let assignment_list_spec: AssignmentInfoListSpec = params.try_into()?;
 
-    AssignmentPermComplex::can_user_list_infos(
+    AssignmentPermComplex::ensure_user_can_list_infos(
         &mut run_proxy! {
             repo =>
                 for<'a, 'b> GetChapterInfo<'a, 'b>,
@@ -112,7 +111,7 @@ where
         })
         .await?;
 
-    ChapterPermComplex::can_user_join(
+    ChapterPermComplex::ensure_user_can_join(
         &mut run_proxy! {
             repo =>
                 for<'a, 'b> GetComicInfo<'a, 'b>,
@@ -126,7 +125,7 @@ where
     )
     .await?;
 
-    AssignmentPermComplex::can_user_take_roles(
+    AssignmentPermComplex::ensure_user_can_take_roles(
         &mut run_proxy! {
             repo =>
                 for<'a, 'b> GetComicInfo<'a, 'b>,
@@ -142,6 +141,7 @@ where
 
     let assignment_info = nucl
         .coord(async move |context| -> RegularResult<AssignmentInfo> {
+            //
             let find_assignment_info = FindAssignmentInfo::ChapterUser {
                 chapter_id: &params.chapter_id,
                 user_id: &token.user_id,
@@ -151,7 +151,9 @@ where
                 repo.step(context, &find_assignment_info).await?;
 
             match existing_assignment_info {
+                //
                 Some(existing_assignment_info) => {
+                    //
                     let assignment_role_update = AssignmentComplex::merge_roles(
                         &existing_assignment_info,
                         params.roles,
@@ -167,6 +169,7 @@ where
                 }
 
                 None => {
+                    //
                     let assignment_entry = AssignmentEntry {
                         id: AssignmentComplex::gen_id(),
                         chapter_id: params.chapter_id,
@@ -207,7 +210,7 @@ where
         + Send
         + Sync,
 {
-    AssignmentPermComplex::can_user_update_roles(
+    AssignmentPermComplex::ensure_user_can_update_roles(
         &mut run_proxy! {
             repo =>
                 for<'a, 'b> GetChapterInfo<'a, 'b>,
@@ -221,7 +224,7 @@ where
     )
     .await?;
 
-    AssignmentPermComplex::can_user_take_roles(
+    AssignmentPermComplex::ensure_user_can_take_roles(
         &mut run_proxy! {
             repo =>
                 for<'a, 'b> GetChapterInfo<'a, 'b>,
@@ -238,6 +241,7 @@ where
 
     let transaction_output = nucl
         .coord(async move |context| -> RegularResult<()> {
+            //
             let list_assignment_infos_excluded =
                 ListAssignmentInfosExcluded::Chapter {
                     chapter_id: &params.chapter_id,
@@ -252,7 +256,9 @@ where
                 });
 
             match existing_assignment_info {
+                //
                 Some(assignment_info) => {
+                    //
                     if AssignmentComplex::is_self_admin_role_removal(
                         &token.user_id,
                         assignment_info,
@@ -284,6 +290,7 @@ where
                 }
 
                 None => {
+                    //
                     if !AssignmentComplex::chapter_has_admin_after_role_update(
                         &assignment_infos,
                         &params.user_id,
@@ -345,7 +352,7 @@ where
         })
         .await?;
 
-    AssignmentPermComplex::can_user_delete(
+    AssignmentPermComplex::ensure_user_can_delete(
         &mut run_proxy! {
             repo => for<'a, 'b> FindAssignmentInfo<'a, 'b>;
         },
@@ -356,6 +363,7 @@ where
 
     let transaction_output = nucl
         .coord(async move |context| -> RegularResult<()> {
+            //
             let delete_assignment = DeleteAssignments::Id { id: &id };
 
             repo.step(context, &delete_assignment).await?;
