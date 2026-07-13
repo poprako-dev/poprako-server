@@ -3456,12 +3456,6 @@
             "type": "integer",
             "format": "int32"
           },
-          "cover_thumbnail_url": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
           "cover_url": {
             "type": [
               "string",
@@ -4174,12 +4168,6 @@
               "chapter_next_index": {
                 "type": "integer",
                 "format": "int32"
-              },
-              "cover_thumbnail_url": {
-                "type": [
-                  "string",
-                  "null"
-                ]
               },
               "cover_url": {
                 "type": [
@@ -5122,12 +5110,6 @@
               "updated_at"
             ],
             "properties": {
-              "avatar_thumbnail_url": {
-                "type": [
-                  "string",
-                  "null"
-                ]
-              },
               "avatar_url": {
                 "type": [
                   "string",
@@ -5186,12 +5168,6 @@
               "updated_at"
             ],
             "properties": {
-              "avatar_thumbnail_url": {
-                "type": [
-                  "string",
-                  "null"
-                ]
-              },
               "avatar_url": {
                 "type": [
                   "string",
@@ -5576,12 +5552,6 @@
                   "type": "integer",
                   "format": "int32"
                 },
-                "cover_thumbnail_url": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
                 "cover_url": {
                   "type": [
                     "string",
@@ -5903,12 +5873,6 @@
                 "id": {
                   "type": "string"
                 },
-                "image_thumbnail_url": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
                 "image_url": {
                   "type": [
                     "string",
@@ -6016,12 +5980,6 @@
                 "updated_at"
               ],
               "properties": {
-                "avatar_thumbnail_url": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
                 "avatar_url": {
                   "type": [
                     "string",
@@ -6572,12 +6530,6 @@
           "id": {
             "type": "string"
           },
-          "image_thumbnail_url": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
           "image_url": {
             "type": [
               "string",
@@ -6615,6 +6567,12 @@
           "units"
         ],
         "properties": {
+          "image_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "page_id": {
             "type": "string"
           },
@@ -6957,12 +6915,6 @@
           "updated_at"
         ],
         "properties": {
-          "avatar_thumbnail_url": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
           "avatar_url": {
             "type": [
               "string",
@@ -7522,12 +7474,6 @@
           "updated_at"
         ],
         "properties": {
-          "avatar_thumbnail_url": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
           "avatar_url": {
             "type": [
               "string",
