@@ -1,3 +1,5 @@
+use tracing::instrument;
+
 use crate::model::member::MemberInfo;
 use crate::model::team::TeamInfo;
 use crate::model::user::UserInfo;
@@ -43,6 +45,7 @@ impl Incl for MemberTeamIncl {
 }
 
 /// Populates member query results with eagerly-loaded user and team data.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn populate_member_incls(
     conn: &mut RdbConn,
     infos: &mut [MemberInfo],

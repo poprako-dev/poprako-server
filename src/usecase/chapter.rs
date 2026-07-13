@@ -2,6 +2,8 @@
 
 use poprako_orchestra::{Nucl, run_proxy};
 
+use tracing::instrument;
+
 use crate::complex::assignment::AssignmentComplex;
 use crate::complex::chapter::{ChapterComplex, ChapterPermComplex};
 use crate::data::chapter::{
@@ -50,6 +52,7 @@ use crate::value::role::{RoleField, RoleMask};
 mod tests;
 
 /// Lists chapters under one comic.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn list_infos<C, R, I>(
     repo: &R,
     image_pool: &I,
@@ -92,6 +95,7 @@ where
 }
 
 /// Fetches a chapter by ID.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn get_info<C, R>(
     repo: &R,
     token: UserToken,
@@ -124,6 +128,7 @@ where
 }
 
 /// Fetches the pinned chapter under one comic.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn get_pinned<C, R>(
     repo: &R,
     token: UserToken,
@@ -155,6 +160,7 @@ where
 }
 
 /// Creates a new chapter.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn create<N, C, R>(
     nucl: &N,
     repo: &R,
@@ -276,6 +282,7 @@ where
 }
 
 /// Updates chapter metadata.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn update_info<N, C, R>(
     nucl: &N,
     repo: &R,
@@ -362,6 +369,7 @@ where
 }
 
 /// Updates chapter workflow state.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn update_stage<N, C, R, P, V>(
     nucl: &N,
     repo: &R,
@@ -482,6 +490,7 @@ where
 }
 
 /// Deletes one chapter and its descendant core records.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn delete<N, C, R, P>(
     nucl: &N,
     repo: &R,

@@ -1,5 +1,7 @@
 use poprako_orchestra::{Run, Step};
 
+use tracing::instrument;
+
 use crate::model::unit::{UnitCounters, UnitIndex, UnitInfo};
 use crate::part::repo::oper::unit::{
     CountUnits, CreateUnit, DeleteUnit, ListUnitIndexes, ListUnitInfos,
@@ -16,6 +18,7 @@ use crate::result::{RegularError, RegularResult};
 
 impl<'a> Run<ListUnitInfos<'a>> for RdbRepo {
     type Error = RegularError;
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &ListUnitInfos<'a>,
@@ -35,6 +38,7 @@ impl<'a> Run<ListUnitInfos<'a>> for RdbRepo {
 
 impl<'a> Step<ListUnitInfos<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -55,6 +59,7 @@ impl<'a> Step<ListUnitInfos<'a>, RdbContext> for RdbRepo {
 
 impl<'a> Step<CreateUnit<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -65,6 +70,7 @@ impl<'a> Step<CreateUnit<'a>, RdbContext> for RdbRepo {
 }
 impl<'a> Step<SaveUnit<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -75,6 +81,7 @@ impl<'a> Step<SaveUnit<'a>, RdbContext> for RdbRepo {
 }
 impl<'a> Step<DeleteUnit<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -85,6 +92,7 @@ impl<'a> Step<DeleteUnit<'a>, RdbContext> for RdbRepo {
 }
 impl<'a> Step<ListUnitIndexes<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -95,6 +103,7 @@ impl<'a> Step<ListUnitIndexes<'a>, RdbContext> for RdbRepo {
 }
 impl<'a> Step<UpdateUnitIndexes<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -106,6 +115,7 @@ impl<'a> Step<UpdateUnitIndexes<'a>, RdbContext> for RdbRepo {
 }
 impl<'a> Step<CountUnits<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,

@@ -41,7 +41,7 @@ pub struct TranslationExportQuery {
         (status = 422, description = "Invalid import content for the selected format"),
     ),
 ))]
-#[instrument(err, skip(harn, params))]
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn import(
     State(harn): State<AppHarn>,
     Path(chapter_id): Path<String>,
@@ -77,7 +77,7 @@ pub async fn import(
         (status = 403, description = "No permission to export this chapter"),
     ),
 ))]
-#[instrument(err, skip(harn))]
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn export(
     State(harn): State<AppHarn>,
     Path(chapter_id): Path<String>,
@@ -108,7 +108,7 @@ pub async fn export(
         (status = 403, description = "No permission to export this chapter"),
     ),
 ))]
-#[instrument(err, skip(harn))]
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn export_download(
     State(harn): State<AppHarn>,
     Path(chapter_id): Path<String>,
@@ -136,6 +136,7 @@ struct TranslationExportPayload {
 
 /// Loads the export content from the usecase and builds the payload for the
 /// selected format.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn export_payload(
     harn: &AppHarn,
     user_token: UserToken,

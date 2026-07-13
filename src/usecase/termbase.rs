@@ -1,5 +1,7 @@
 use poprako_orchestra::{Nucl, run_proxy, step_proxy};
 
+use tracing::instrument;
+
 use crate::complex::termbase::{TermbaseComplex, TermbasePermComplex};
 use crate::data::termbase::CreateTermbaseParams;
 use crate::model::termbase::TermbaseEntry;
@@ -16,6 +18,7 @@ use crate::part::repo::term::TermRepo;
 use crate::part::repo::termbase::TermbaseRepo;
 use crate::result::{RegularError, RegularResult, accept};
 
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn create_termbase<C, R>(
     repo: &R,
     token: UserToken,
@@ -58,6 +61,7 @@ where
     accept(())
 }
 
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn delete_termbase<C, N, R>(
     nucl: &N,
     repo: &R,

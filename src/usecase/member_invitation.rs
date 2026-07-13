@@ -4,6 +4,8 @@ use poprako_orchestra::{Nucl, run_proxy};
 
 use poprako_util::i18n::trl;
 
+use tracing::instrument;
+
 use crate::complex::member_invitation::{
     MemberInvitationComplex, MemberInvitationPermComplex,
 };
@@ -34,6 +36,7 @@ mod tests;
 // FIXME: invitations should be fired out after a period of time.
 
 /// Creates a pending invitation for a team.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn create<N, C, R>(
     nucl: &N,
     repo: &R,
@@ -123,6 +126,7 @@ where
 }
 
 /// Lists invitations for a team.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn list_infos<C, R, I>(
     repo: &R,
     image_pool: &I,
@@ -173,6 +177,7 @@ where
 }
 
 /// Updates the roles of an invitation.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn update_roles<N, C, R>(
     nucl: &N,
     repo: &R,
@@ -221,6 +226,7 @@ where
 }
 
 /// Deletes an invitation.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn delete<N, C, R>(
     nucl: &N,
     repo: &R,

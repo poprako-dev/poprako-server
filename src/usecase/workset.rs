@@ -4,6 +4,8 @@ use poprako_orchestra::{Nucl, run_proxy};
 
 use poprako_util::page::Page;
 
+use tracing::instrument;
+
 use crate::complex::workset::{WorksetComplex, WorksetPermComplex};
 use crate::data::workset::{
     CreateWorksetParams, CreateWorksetPayload, ListWorksetInfosParams,
@@ -32,6 +34,7 @@ use crate::result::{RegularError, RegularResult};
 pub mod tests;
 
 /// Creates a new workset inside a team.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn create<N, C, R>(
     nucl: &N,
     repo: &R,
@@ -89,6 +92,7 @@ where
 }
 
 /// Fetches a workset by ID.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn get_info<C, R>(
     repo: &R,
     token: UserToken,
@@ -114,6 +118,7 @@ where
 }
 
 /// Lists worksets for a team.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn list_infos<C, R>(
     repo: &R,
     token: UserToken,
@@ -145,6 +150,7 @@ where
 }
 
 /// Updates a workset's name and description.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn update_info<C, R>(
     repo: &R,
     token: UserToken,
@@ -179,6 +185,7 @@ where
 }
 
 /// Deletes a workset and its child data.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn delete<N, C, R, P>(
     nucl: &N,
     repo: &R,

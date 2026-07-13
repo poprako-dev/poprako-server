@@ -1,3 +1,5 @@
+use tracing::instrument;
+
 use crate::model::comic::ComicInfo;
 use crate::model::team::TeamInfo;
 use crate::model::user::UserInfo;
@@ -65,6 +67,7 @@ impl Incl for ComicCreatorIncl {
 }
 
 /// Populates comic query results with eagerly-loaded related entity data.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn populate_comic_incls(
     conn: &mut RdbConn,
     infos: &mut [ComicInfo],

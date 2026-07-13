@@ -7,6 +7,8 @@ use fluent_templates::fluent_bundle::FluentValue;
 
 use poprako_util::i18n::{trl, trl_kv};
 
+use tracing::instrument;
+
 use crate::complex::system_mail::SystemMailComplex;
 use crate::model::chapter::ChapterInfo;
 use crate::model::system_mail::SystemMailEntry;
@@ -29,6 +31,7 @@ const CHAPTER_INCL_OPT: &[ChapterInclOpt] = &[ChapterInclOpt::ComicWorksetTeam];
 const TITLE_LIMIT: usize = 15;
 
 /// Notifies next-phase assignees after one workflow stage completes.
+#[instrument(level = "info", skip_all)]
 pub async fn notify_next_phase<C, R>(
     repo: &R,
     payload: &ChapterWorkflowCompletedPayload,
@@ -58,6 +61,7 @@ pub async fn notify_next_phase<C, R>(
 }
 
 /// Notifies reviewer assignees after workflow progress, except typesetting completion.
+#[instrument(level = "info", skip_all)]
 pub async fn notify_reviewers_on_progress<C, R>(
     repo: &R,
     payload: ChapterWorkflowCompletedPayload,
@@ -73,6 +77,7 @@ pub async fn notify_reviewers_on_progress<C, R>(
 }
 
 /// Notifies reviewer assignees when a chapter is published.
+#[instrument(level = "info", skip_all)]
 pub async fn notify_reviewers_on_publish<C, R>(
     repo: &R,
     payload: ChapterPublishedPayload,
@@ -84,6 +89,7 @@ pub async fn notify_reviewers_on_publish<C, R>(
 }
 
 /// Notifies all reviewer assignees of a chapter about a workflow event.
+#[instrument(level = "info", skip_all)]
 async fn notify_reviewers<C, R>(
     repo: &R,
     chapter_id: &str,
@@ -107,6 +113,7 @@ async fn notify_reviewers<C, R>(
 }
 
 /// Loads a chapter by ID with default include options, returning `None` on lookup failure.
+#[instrument(level = "info", skip_all)]
 async fn load_chapter<C, R>(repo: &R, chapter_id: &str) -> Option<ChapterInfo>
 where
     R: ChapterRepo<C>,
@@ -132,6 +139,7 @@ where
 }
 
 /// Builds a list of system mail forms for all assignments in a chapter matching a role.
+#[instrument(level = "info", skip_all)]
 async fn build_assignment_mails<C, R>(
     repo: &R,
     chapter_info: &ChapterInfo,
@@ -228,6 +236,7 @@ fn chapter_mail_args(
 }
 
 /// Sends a batch of system mail forms, logging a warning on failure.
+#[instrument(level = "info", skip_all)]
 async fn send_batch<C, R>(
     repo: &R,
     chapter_id: &str,

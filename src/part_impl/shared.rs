@@ -7,6 +7,8 @@ use diesel_async::AsyncPgConnection;
 use diesel_async::pooled_connection::AsyncDieselConnectionManager;
 use diesel_async::pooled_connection::deadpool::{Object, Pool};
 
+use tracing::instrument;
+
 use crate::result::{RegularError, RegularResult};
 
 /// Result helpers for Diesel-backed shared internals.
@@ -66,6 +68,7 @@ impl RdbCore {
         })
     }
 
+#[instrument(level = "info", err(Debug), skip_all)]
     pub async fn get(&self) -> RegularResult<RdbPooledConn> {
         self.pool.get().await.map_err(pool_get)
     }

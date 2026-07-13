@@ -7,6 +7,8 @@ use fluent_templates::fluent_bundle::FluentValue;
 
 use poprako_util::i18n::{trl, trl_kv};
 
+use tracing::instrument;
+
 use crate::complex::system_mail::SystemMailComplex;
 use crate::model::system_mail::SystemMailEntry;
 use crate::part::effect::event::user::{
@@ -20,6 +22,7 @@ use crate::part::repo::team::TeamRepo;
 use crate::part::repo::user::UserRepo;
 
 /// Updates the user's last-active timestamp in response to activity.
+#[instrument(level = "info", skip_all)]
 pub async fn touch_last_active<C, R>(repo: &R, payload: UserActivePayload)
 where
     R: UserRepo<C>,
@@ -39,6 +42,7 @@ where
 }
 
 /// Notifies an invitor when a user signs up through their invitation.
+#[instrument(level = "info", skip_all)]
 pub async fn notify_invitor<C, R>(repo: &R, payload: UserSignedUpPayload)
 where
     R: TeamRepo<C> + SystemMailRepo<C>,

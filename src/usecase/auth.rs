@@ -4,6 +4,8 @@ use poprako_orchestra::Nucl;
 
 use poprako_util::i18n::trl;
 
+use tracing::instrument;
+
 use crate::complex::member::MemberComplex;
 use crate::complex::user::UserComplex;
 use crate::data::auth::{
@@ -51,6 +53,7 @@ mod tests;
 /// * `R` — Repository bundle: [`UserRepo`], [`MemberRepo`], [`MemberInvitationRepo`].
 /// * `A: TokenAuth` — Signs the session token.
 /// * `V: EffectDevelop` — Processes the signup event.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn register<N, C, R, A, V>(
     nucl: &N,
     repo: &R,
@@ -168,6 +171,7 @@ where
 /// * `C` — Context anchor.
 /// * `R: UserRepo<C>` — Provides credential lookup.
 /// * `A: TokenAuth` — Signs the session token.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn login<C, R, A>(
     repo: &R,
     auth: &A,
