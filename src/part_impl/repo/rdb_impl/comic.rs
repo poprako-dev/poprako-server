@@ -5,10 +5,15 @@ use diesel_async::RunQueryDsl;
 use time::OffsetDateTime;
 
 use crate::complex::comic::ComicComplex;
+use crate::model::comic::{
+    ComicCoverReservation, ComicEntry, ComicInfo, ComicInfoListKind,
+    ComicInfoListSpec, ComicInfoUpdate,
+};
 use crate::part::repo::comic::ComicRepo;
 use crate::part_impl::repo::rdb_impl::entity::comic::{
     ComicAspect, ComicRow, ComicRowEntry,
 };
+use crate::part_impl::repo::rdb_impl::schema::t_comic::dsl::*;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, incl};
 use crate::part_impl::shared::result::{diesel, expected, version};
 use crate::part_impl::shared::{RdbConn, RdbContext};
@@ -16,12 +21,6 @@ use crate::result::RegularResult;
 use crate::value::chapter::{Stage, StageMask, StagePhase};
 use crate::value::comic::ComicInclOpt;
 use crate::value::index::user_index_to_stored_index;
-
-use crate::model::comic::{
-    ComicCoverReservation, ComicEntry, ComicInfo, ComicInfoListKind,
-    ComicInfoListSpec, ComicInfoUpdate,
-};
-use crate::part_impl::repo::rdb_impl::schema::t_comic::dsl::*;
 
 impl ComicRepo<RdbContext> for RdbRepo {}
 

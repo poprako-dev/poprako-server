@@ -16,6 +16,7 @@
 
 use super::*;
 
+use self::fixture::*;
 use crate::complex::chapter::ChapterComplex;
 use crate::data::chapter::{
     CreateChapterParams, ListChapterInfosParams, UpdateChapterInfoParams,
@@ -27,8 +28,6 @@ use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;
 use crate::value::chapter::Stage;
-
-use self::fixture::*;
 
 mod fixture;
 

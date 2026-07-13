@@ -1,5 +1,3 @@
-use async_trait::async_trait;
-
 use crate::model::member::MemberInfo;
 use crate::model::team::TeamInfo;
 use crate::model::user::UserInfo;
@@ -13,7 +11,6 @@ use crate::value::member::MemberInclOpt;
 /// Include struct for eager-loading [`UserInfo`] data into [`MemberInfo`] query results.
 struct MemberUserIncl;
 
-#[async_trait]
 impl Incl for MemberUserIncl {
     type Owner = MemberInfo;
     type Related = UserInfo;
@@ -31,7 +28,6 @@ impl Incl for MemberUserIncl {
 /// Include struct for eager-loading [`TeamInfo`] data into [`MemberInfo`] query results.
 struct MemberTeamIncl;
 
-#[async_trait]
 impl Incl for MemberTeamIncl {
     type Owner = MemberInfo;
     type Related = TeamInfo;

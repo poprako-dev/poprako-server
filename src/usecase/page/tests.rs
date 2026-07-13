@@ -417,10 +417,16 @@ async fn list_infos_sorts_and_resolves_uploaded_url() {
     assert_eq!(list[0].id, "page-1");
 
     assert_eq!(list[0].image_url, None);
+    assert_eq!(list[0].image_thumbnail_url, None);
 
     assert_eq!(
         list[1].image_url,
         Some("https://test.local/get/two.png".into())
+    );
+
+    assert_eq!(
+        list[1].image_thumbnail_url,
+        Some("https://test.local/cdn-cgi/image/width=300,fit=scale-down,quality=80,format=auto,metadata=none/two.png".into())
     );
 }
 

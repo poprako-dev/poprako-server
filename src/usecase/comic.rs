@@ -414,14 +414,12 @@ where
 
             batch_ids.push(ImageComplex::gen_check_id());
 
-            batch_payloads.push(Payload::Image(
-                image::Payload::CheckUpload {
-                    resource_kind: image::ResourceKind::ComicCover,
-                    resource_id: id.clone(),
-                    object_key: cover_reservation.object_key.clone(),
-                    version: cover_reservation.cover_version,
-                },
-            ));
+            batch_payloads.push(Payload::Image(image::Payload::CheckUpload {
+                resource_kind: image::ResourceKind::ComicCover,
+                resource_id: id.clone(),
+                object_key: cover_reservation.object_key.clone(),
+                version: cover_reservation.cover_version,
+            }));
 
             batch_delays.push(Some(Duration::from_secs(15 * 60)));
 
@@ -436,8 +434,7 @@ where
                 })
                 .collect();
 
-            prom.step(context, &DeferBatch::new(&batch_tasks))
-                .await?;
+            prom.step(context, &DeferBatch::new(&batch_tasks)).await?;
 
             Ok((
                 cover_reservation.object_key,
@@ -446,7 +443,7 @@ where
         })
         .await?;
 
-    let put_url = image_pool.put_signed(&object_key).await?.to_string();
+    let put_url = image_pool.get_upload_url(&object_key).await?.to_string();
 
     Ok(ReserveComicCoverPayload {
         put_url,

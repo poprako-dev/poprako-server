@@ -12,9 +12,9 @@ use crate::data::auth::{
 use crate::model::member::MemberEntry;
 use crate::model::user::{UserEntry, UserTokenRef};
 use crate::part::auth::TokenAuth;
+use crate::part::effect::EffectDevelop;
 use crate::part::effect::event::Event;
 use crate::part::effect::event::user::UserSignedUpPayload;
-use crate::part::effect::{EffectDevelop, EffectEmit as _};
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::member_invitation::MemberInvitationRepo;
 use crate::part::repo::oper::member::CreateMember;
@@ -141,14 +141,14 @@ where
             )
             .await?;
 
-    // Emit event after successful commit so side-effects don't run inside the transaction.
-    Event::UserSignedUp(UserSignedUpPayload {
+    // Dispatch after successful commit so side effects do not run inside the transaction.
+    let event = Event::UserSignedUp(UserSignedUpPayload {
         team_id: team_id.clone(),
         invitor_id,
         invitee_qid,
-    })
-    .emit(develop)
-    .await;
+    });
+
+    develop.develop(event).await;
 
     let token = auth.sign_token(&UserTokenRef { user_id: &user_id })?;
 

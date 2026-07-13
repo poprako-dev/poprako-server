@@ -948,7 +948,7 @@ export function buildPoprakoImportContent(
         author,
         title: exportVal.comic_title,
         pages: exportVal.pages.map((page) => ({
-            image_filename: page.image_url ?? page.page_id,
+            image_filename: page.page_id,
             units: page.units.map((unit) => ({
                 id: unit.unit_id,
                 x: unit.x_coord,

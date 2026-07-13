@@ -1,4 +1,5 @@
 #![deny(unsafe_code)]
+#![recursion_limit = "256"]
 #![deny(clippy::correctness)]
 #![deny(clippy::suspicious)]
 #![deny(clippy::complexity)]
@@ -42,16 +43,18 @@ use poprako_server::{
 /// starting the server.
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    //
     // CLI: --swagger to print swagger.json.
     #[cfg(feature = "swagger-ui")]
     if std::env::args().any(|a| a == "--swagger") {
         //
-        let doc = poprako_server::ApiDoc::openapi();
+        #[allow(clippy::print_stdout)]
+        {
+            let doc = poprako_server::ApiDoc::openapi();
 
-        let swagger_json = serde_json::to_string_pretty(&doc)?;
+            let swagger_json = serde_json::to_string_pretty(&doc)?;
 
-        std::io::stdout().write_all(swagger_json.as_bytes())?;
+            std::io::stdout().write_all(swagger_json.as_bytes())?;
+        }
 
         return Ok(());
     }

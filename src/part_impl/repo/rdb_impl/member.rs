@@ -2,26 +2,24 @@
 
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
+use poprako_orchestra::Run;
 use time::OffsetDateTime;
 
-use poprako_orchestra::Run;
-
+use crate::model::member::{
+    MemberEntry, MemberInfo, MemberListSpec, MemberRoleUpdate,
+};
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part_impl::repo::rdb_impl::entity::member::{
     MemberAspect, MemberRow, MemberRowEntry,
 };
+use crate::part_impl::repo::rdb_impl::schema::t_member::dsl::*;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, incl};
 use crate::part_impl::shared::result::{diesel, expected};
 use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::{RegularError, RegularResult};
 use crate::value::member::MemberInclOpt;
 use crate::value::role::{RoleField, RoleMask};
-
-use crate::model::member::{
-    MemberEntry, MemberInfo, MemberListSpec, MemberRoleUpdate,
-};
-use crate::part_impl::repo::rdb_impl::schema::t_member::dsl::*;
 
 impl MemberRepo<RdbContext> for RdbRepo {}
 

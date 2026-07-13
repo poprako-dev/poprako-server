@@ -1,5 +1,3 @@
-use async_trait::async_trait;
-
 use crate::model::assignment::AssignmentInfo;
 use crate::model::chapter::ChapterInfo;
 use crate::model::comic::ComicInfo;
@@ -17,7 +15,6 @@ use crate::value::incl::expand_incl_opts;
 /// Include struct for eager-loading [`ChapterInfo`] data into [`AssignmentInfo`] query results.
 struct AssignmentChapterIncl;
 
-#[async_trait]
 impl Incl for AssignmentChapterIncl {
     type Owner = AssignmentInfo;
     type Related = ChapterInfo;
@@ -38,7 +35,6 @@ impl Incl for AssignmentChapterIncl {
 /// Include struct for eager-loading [`ComicInfo`] data into [`AssignmentInfo`] query results (via chapter).
 struct AssignmentChapterComicIncl;
 
-#[async_trait]
 impl Incl for AssignmentChapterComicIncl {
     type Owner = AssignmentInfo;
     type Related = ComicInfo;
@@ -67,7 +63,6 @@ impl Incl for AssignmentChapterComicIncl {
 /// Include struct for eager-loading [`WorksetInfo`] data into [`AssignmentInfo`] query results (via chapter, comic).
 struct AssignmentChapterComicWorksetIncl;
 
-#[async_trait]
 impl Incl for AssignmentChapterComicWorksetIncl {
     type Owner = AssignmentInfo;
     type Related = WorksetInfo;
@@ -101,7 +96,6 @@ impl Incl for AssignmentChapterComicWorksetIncl {
 /// Include struct for eager-loading [`TeamInfo`] data into [`AssignmentInfo`] query results (via chapter, comic, workset).
 struct AssignmentChapterComicWorksetTeamIncl;
 
-#[async_trait]
 impl Incl for AssignmentChapterComicWorksetTeamIncl {
     type Owner = AssignmentInfo;
     type Related = TeamInfo;
@@ -136,7 +130,6 @@ impl Incl for AssignmentChapterComicWorksetTeamIncl {
 /// Include struct for eager-loading chapter creator [`UserInfo`] into [`AssignmentInfo`] query results.
 struct AssignmentChapterCreatorIncl;
 
-#[async_trait]
 impl Incl for AssignmentChapterCreatorIncl {
     type Owner = AssignmentInfo;
     type Related = UserInfo;
@@ -165,7 +158,6 @@ impl Incl for AssignmentChapterCreatorIncl {
 /// Include struct for eager-loading comic creator [`UserInfo`] into [`AssignmentInfo`] query results (via chapter).
 struct AssignmentChapterComicCreatorIncl;
 
-#[async_trait]
 impl Incl for AssignmentChapterComicCreatorIncl {
     type Owner = AssignmentInfo;
     type Related = UserInfo;
@@ -199,7 +191,6 @@ impl Incl for AssignmentChapterComicCreatorIncl {
 /// Include struct for eager-loading [`UserInfo`] data into [`AssignmentInfo`] query results.
 struct AssignmentUserIncl;
 
-#[async_trait]
 impl Incl for AssignmentUserIncl {
     type Owner = AssignmentInfo;
     type Related = UserInfo;

@@ -2,10 +2,10 @@
 
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
+use poprako_orchestra::{Run, Step};
 use time::OffsetDateTime;
 
-use poprako_orchestra::{Run, Step};
-
+use crate::model::workset::{WorksetEntry, WorksetInfo, WorksetInfoUpdate};
 use crate::part::repo::oper::workset::{
     AllocateWorksetComicIndex, CreateWorkset, DeleteWorkset, GetWorksetInfo,
     GetWorksetInfoExcluded, ListWorksetInfos, ListWorksetInfosExcluded,
@@ -16,12 +16,10 @@ use crate::part_impl::repo::rdb_impl::RdbRepo;
 use crate::part_impl::repo::rdb_impl::entity::workset::{
     WorksetAspect, WorksetRow, WorksetRowEntry,
 };
+use crate::part_impl::repo::rdb_impl::schema::t_workset::dsl::*;
 use crate::part_impl::shared::result::{diesel, expected};
 use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::{RegularError, RegularResult};
-
-use crate::model::workset::{WorksetEntry, WorksetInfo, WorksetInfoUpdate};
-use crate::part_impl::repo::rdb_impl::schema::t_workset::dsl::*;
 
 impl WorksetRepo<RdbContext> for RdbRepo {}
 

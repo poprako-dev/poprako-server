@@ -2,6 +2,10 @@
 
 use poprako_orchestra::{Run, Step};
 
+use self::incl::apply_assignment_incls;
+use crate::model::assignment::{
+    AssignmentEntry, AssignmentInfo, AssignmentInfoListSpec,
+};
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::oper::assignment::{
     CreateAssignment, DeleteAssignments, FindAssignmentInfo, GetAssignmentInfo,
@@ -13,11 +17,6 @@ use crate::part_impl::repo::mock_impl::{
 use crate::result::{RegularError, RegularResult};
 use crate::value::assignment::AssignmentInclOpt;
 use crate::value::role::RoleField;
-
-use self::incl::apply_assignment_incls;
-use crate::model::assignment::{
-    AssignmentEntry, AssignmentInfo, AssignmentInfoListSpec,
-};
 
 mod incl;
 
