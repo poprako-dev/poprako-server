@@ -173,8 +173,7 @@ where
                     })
                     .collect();
 
-                prom.step(context, &DeferBatch::new(&check_tasks))
-                    .await?;
+                prom.step(context, &DeferBatch::new(&check_tasks)).await?;
 
                 repo.step(
                     context,
@@ -205,7 +204,7 @@ where
         reservations.into_iter().map(|reservation| async move {
             //
             let put_url = image_pool
-                .put_signed(&reservation.object_key)
+                .get_upload_url(&reservation.object_key)
                 .await?
                 .to_string();
 
@@ -288,14 +287,12 @@ where
 
             batch_ids.push(ImageComplex::gen_check_id());
 
-            batch_payloads.push(Payload::Image(
-                image::Payload::CheckUpload {
-                    resource_kind: image::ResourceKind::PageImage,
-                    resource_id: page_info.id.clone(),
-                    object_key: page_reservation.object_key.clone(),
-                    version: page_reservation.image_version,
-                },
-            ));
+            batch_payloads.push(Payload::Image(image::Payload::CheckUpload {
+                resource_kind: image::ResourceKind::PageImage,
+                resource_id: page_info.id.clone(),
+                object_key: page_reservation.object_key.clone(),
+                version: page_reservation.image_version,
+            }));
 
             batch_delays.push(Some(Duration::from_secs(15 * 60)));
 
@@ -310,14 +307,13 @@ where
                 })
                 .collect();
 
-            prom.step(context, &DeferBatch::new(&batch_tasks))
-                .await?;
+            prom.step(context, &DeferBatch::new(&batch_tasks)).await?;
 
             Ok((page_reservation.object_key, page_reservation.image_version))
         })
         .await?;
 
-    let put_url = image_pool.put_signed(&object_key).await?.to_string();
+    let put_url = image_pool.get_upload_url(&object_key).await?.to_string();
 
     Ok(ReservePageImagePayload {
         page_id,
@@ -496,8 +492,7 @@ where
             })
             .collect();
 
-        prom.step(context, &DeferBatch::new(&delete_tasks))
-            .await?;
+        prom.step(context, &DeferBatch::new(&delete_tasks)).await?;
 
         repo.step(
             context,
@@ -546,4 +541,3 @@ fn validate_page_count(page_count: i32) -> RegularResult<()> {
 
     Ok(())
 }
-

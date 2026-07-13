@@ -51,7 +51,7 @@ impl TeamInfoVal {
     {
         let avatar_url = match (model.avatar_uploaded, &model.avatar_key) {
             //
-            (true, Some(key)) => image_pool.get_signed(key).await.ok(),
+            (true, Some(key)) => image_pool.gen_download_url(key).await.ok(),
 
             _ => None,
         };

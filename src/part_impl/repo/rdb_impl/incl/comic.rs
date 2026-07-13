@@ -1,5 +1,3 @@
-use async_trait::async_trait;
-
 use crate::model::comic::ComicInfo;
 use crate::model::team::TeamInfo;
 use crate::model::user::UserInfo;
@@ -15,7 +13,6 @@ use crate::value::incl::expand_incl_opts;
 /// Include struct for eager-loading [`WorksetInfo`] data into [`ComicInfo`] query results.
 struct ComicWorksetIncl;
 
-#[async_trait]
 impl Incl for ComicWorksetIncl {
     type Owner = ComicInfo;
     type Related = WorksetInfo;
@@ -33,7 +30,6 @@ impl Incl for ComicWorksetIncl {
 /// Include struct for eager-loading [`TeamInfo`] data into [`ComicInfo`] query results (via workset).
 struct ComicWorksetTeamIncl;
 
-#[async_trait]
 impl Incl for ComicWorksetTeamIncl {
     type Owner = ComicInfo;
     type Related = TeamInfo;
@@ -54,7 +50,6 @@ impl Incl for ComicWorksetTeamIncl {
 /// Include struct for eager-loading creator [`UserInfo`] into [`ComicInfo`] query results.
 struct ComicCreatorIncl;
 
-#[async_trait]
 impl Incl for ComicCreatorIncl {
     type Owner = ComicInfo;
     type Related = UserInfo;

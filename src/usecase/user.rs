@@ -14,9 +14,9 @@ use crate::data::user::{
     ReserveUserAvatarPayload, UpdateUserInfoParams, UserInfoVal,
 };
 use crate::model::user::UserToken;
+use crate::part::effect::EffectDevelop;
 use crate::part::effect::event::Event;
 use crate::part::effect::event::user::UserActivePayload;
-use crate::part::effect::{EffectDevelop, EffectEmit as _};
 use crate::part::image::ImagePool;
 use crate::part::prom::Prom;
 use crate::part::prom::payload::{Payload, image};
@@ -59,13 +59,13 @@ where
 {
     let user_info = repo.run(&GetUserInfo::Id { id: &id }).await?;
 
-    // Emit an activity event when the user reads their own profile.
+    // Dispatch an activity event when the user reads their own profile.
     if token.user_id == id {
-        Event::UserActive(UserActivePayload {
+        let event = Event::UserActive(UserActivePayload {
             user_id: token.user_id,
-        })
-        .emit(develop)
-        .await;
+        });
+
+        develop.develop(event).await;
     }
 
     UserInfoVal::from_model(image_pool, user_info).await
@@ -201,14 +201,12 @@ where
 
             batch_ids.push(ImageComplex::gen_check_id());
 
-            batch_payloads.push(Payload::Image(
-                image::Payload::CheckUpload {
-                    resource_kind: image::ResourceKind::UserAvatar,
-                    resource_id: token.user_id.clone(),
-                    object_key: avatar_reservation.object_key.clone(),
-                    version: avatar_reservation.avatar_version,
-                },
-            ));
+            batch_payloads.push(Payload::Image(image::Payload::CheckUpload {
+                resource_kind: image::ResourceKind::UserAvatar,
+                resource_id: token.user_id.clone(),
+                object_key: avatar_reservation.object_key.clone(),
+                version: avatar_reservation.avatar_version,
+            }));
 
             batch_delays.push(Some(Duration::from_secs(15 * 60)));
 
@@ -223,8 +221,7 @@ where
                 })
                 .collect();
 
-            prom.step(context, &DeferBatch::new(&batch_tasks))
-                .await?;
+            prom.step(context, &DeferBatch::new(&batch_tasks)).await?;
 
             Ok((
                 avatar_reservation.object_key,
@@ -233,7 +230,7 @@ where
         })
         .await?;
 
-    let put_url = image_pool.put_signed(&object_key).await?.to_string();
+    let put_url = image_pool.get_upload_url(&object_key).await?.to_string();
 
     Ok(ReserveUserAvatarPayload {
         put_url,

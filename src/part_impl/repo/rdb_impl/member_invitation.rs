@@ -2,9 +2,8 @@
 
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
-use time::OffsetDateTime;
-
 use poprako_orchestra::{Run, Step};
+use time::OffsetDateTime;
 
 use crate::model::member_invitation::{
     MemberInvitationEntry, MemberInvitationInfo, MemberInvitationListSpec,

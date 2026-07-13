@@ -1,11 +1,11 @@
-//! Mock implementation of [ImagePool] for testing signed URL resolution with deterministic output.
+//! Mock implementation of [ImagePool] and [ImageManager] for testing
+//! signed URL resolution with deterministic output.
 
-use async_trait::async_trait;
 use url::Url;
 
 use poprako_util::i18n::trl;
 
-use crate::part::image::ImagePool;
+use crate::part::image::{ImageManager, ImagePool};
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::{ExpectedVariant, RegularError, RegularResult};
 
@@ -15,9 +15,8 @@ use crate::result::{ExpectedVariant, RegularError, RegularResult};
 /// `https://test.local/put/{key}`). Configure
 /// [Mock::with_image_get_failure] or [Mock::with_image_put_failure] to test
 /// error paths.
-#[async_trait]
 impl ImagePool for Mock {
-    async fn get_signed(&self, key: &str) -> RegularResult<Url> {
+    async fn gen_download_url(&self, key: &str) -> RegularResult<Url> {
         //
         if self.flags.lock().unwrap().image_get_failure {
             return Err(RegularError::Expected {
@@ -29,7 +28,7 @@ impl ImagePool for Mock {
         Ok(Url::parse(&format!("https://test.local/get/{}", key)).unwrap())
     }
 
-    async fn put_signed(&self, key: &str) -> RegularResult<Url> {
+    async fn get_upload_url(&self, key: &str) -> RegularResult<Url> {
         //
         if self.flags.lock().unwrap().image_put_failure {
             return Err(RegularError::Expected {
@@ -40,7 +39,10 @@ impl ImagePool for Mock {
 
         Ok(Url::parse(&format!("https://test.local/put/{}", key)).unwrap())
     }
+}
 
+/// Mock implementation of [ImageManager].
+impl ImageManager for Mock {
     async fn head_object(&self, _key: &str) -> RegularResult<bool> {
         //
         if self.flags.lock().unwrap().image_head_failure {
@@ -76,16 +78,17 @@ impl ImagePool for Mock {
     }
 }
 
-// put_signed_returns_stable_url(ImagePool::put_signed)(positive): put URLs should be deterministic for assertions.
-// get_signed_failure_returns_expected_error(ImagePool::get_signed)(negative): configured get failures should return an expected error.
+// gen_download_url_returns_stable_url(ImagePool::gen_download_url)(positive): download URLs should be deterministic for assertions.
+// get_upload_url_returns_stable_url(ImagePool::get_upload_url)(positive): upload URLs should be deterministic for assertions.
+// gen_download_url_failure_returns_expected_error(ImagePool::gen_download_url)(negative): configured get failures should return an expected error.
 
-/// Mock helper that returns a stable deterministic put URL.
+/// Mock helper that returns a stable deterministic upload URL.
 #[tokio::test]
-async fn put_signed_returns_stable_url() {
+async fn get_upload_url_returns_stable_url() {
     //
-    let image_pool = Mock::new();
+    let mock = Mock::new();
 
-    let url = ImagePool::put_signed(&image_pool, "avatar.png").await;
+    let url = ImagePool::get_upload_url(&mock, "avatar.png").await;
 
     assert!(url.is_ok());
 
@@ -94,13 +97,13 @@ async fn put_signed_returns_stable_url() {
     assert_eq!(url.as_str(), "https://test.local/put/avatar.png");
 }
 
-/// Mock helper that returns an expected error when get failure is configured.
+/// Mock helper that returns an expected error when download failure is configured.
 #[tokio::test]
-async fn get_signed_failure_returns_expected_error() {
+async fn gen_download_url_failure_returns_expected_error() {
     //
-    let image_pool = Mock::new().with_image_get_failure();
+    let mock = Mock::new().with_image_get_failure();
 
-    let err = ImagePool::get_signed(&image_pool, "avatar.png")
+    let err = ImagePool::gen_download_url(&mock, "avatar.png")
         .await
         .err()
         .unwrap();

@@ -3,7 +3,6 @@
 use std::time::Duration;
 
 use anyhow::Context as _;
-use async_trait::async_trait;
 use aws_credential_types::Credentials;
 use aws_sdk_s3::config::{BehaviorVersion, Region};
 use aws_sdk_s3::error::SdkError;
@@ -15,7 +14,7 @@ use url::Url;
 
 use poprako_util::i18n::trl;
 
-use crate::part::image::ImagePool;
+use crate::part::image::{ImageManager, ImagePool};
 use crate::result::{ExpectedVariant, RegularError, RegularResult};
 
 /// Expiration duration for presigned upload URLs (10 minutes).
@@ -86,47 +85,40 @@ impl R2ImagePool {
 
         Ok(Self::new(Client::from_conf(config), bucket, domain))
     }
+}
 
-    fn public_url(domain: &str, key: &str) -> RegularResult<Url> {
+impl ImagePool for R2ImagePool {
+    #[instrument(err(Debug), skip(self), level = Level::DEBUG)]
+    async fn gen_download_url(&self, key: &str) -> RegularResult<Url> {
         //
-        if domain.is_empty() {
+        if self.domain.is_empty() {
             return Err(RegularError::Unrecoverable {
                 message:
-                    "[R2ImagePool::get_signed] custom domain is not configured"
+                    "[R2ImagePool::gen_download_url] custom domain is not configured"
                         .to_string(),
             });
         }
 
-        let domain = domain.trim_end_matches('/');
+        let domain = self.domain.trim_end_matches('/');
 
-        let url_string = match (
-            domain.starts_with("http://"),
-            domain.starts_with("https://"),
-        ) {
-            //
-            (true, _) | (_, true) => format!("{}/{}", domain, key),
-
-            _ => format!("https://{}/{}", domain, key),
+        let url_string = if domain.starts_with("http://")
+            || domain.starts_with("https://")
+        {
+            format!("{}/{}", domain, key)
+        } else {
+            format!("https://{}/{}", domain, key)
         };
 
         Url::parse(&url_string).map_err(|err| RegularError::Unrecoverable {
             message: format!(
-                "[R2ImagePool::get_signed] failed to parse URL '{}': {}",
+                "[R2ImagePool::gen_download_url] failed to parse URL '{}': {}",
                 url_string, err
             ),
         })
     }
-}
-
-#[async_trait]
-impl ImagePool for R2ImagePool {
-    #[instrument(err(Debug), skip(self), level = Level::DEBUG)]
-    async fn get_signed(&self, key: &str) -> RegularResult<Url> {
-        Self::public_url(&self.domain, key)
-    }
 
     #[instrument(err(Debug), skip(self), level = Level::DEBUG)]
-    async fn put_signed(&self, key: &str) -> RegularResult<Url> {
+    async fn get_upload_url(&self, key: &str) -> RegularResult<Url> {
         //
         let content_type =
             detect_content_type(key).ok_or_else(|| RegularError::Expected {
@@ -137,7 +129,7 @@ impl ImagePool for R2ImagePool {
         let presigning_config = PresigningConfig::expires_in(PUT_SIGNED_EXPIRATION)
             .map_err(|err| RegularError::Unrecoverable {
                 message: format!(
-                    "[R2ImagePool::put_signed] failed to build presigning config: {}",
+                    "[R2ImagePool::get_upload_url] failed to build presigning config: {}",
                     err
                 ),
             })?;
@@ -152,19 +144,21 @@ impl ImagePool for R2ImagePool {
             .await
             .map_err(|err| RegularError::Unrecoverable {
                 message: format!(
-                    "[R2ImagePool::put_signed] failed to generate presigned put URL: {}",
+                    "[R2ImagePool::get_upload_url] failed to generate presigned put URL: {}",
                     err
                 ),
             })?;
 
         Url::parse(presigned_request.uri()).map_err(|err| RegularError::Unrecoverable {
             message: format!(
-                "[R2ImagePool::put_signed] failed to parse presigned URI: {}",
+                "[R2ImagePool::get_upload_url] failed to parse presigned URI: {}",
                 err
             ),
         })
     }
+}
 
+impl ImageManager for R2ImagePool {
     #[instrument(err(Debug), skip(self), level = Level::DEBUG)]
     async fn head_object(&self, key: &str) -> RegularResult<bool> {
         match self

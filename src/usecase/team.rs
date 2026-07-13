@@ -300,14 +300,12 @@ where
             // Schedule an upload verification check 15 minutes from now.
             batch_ids.push(ImageComplex::gen_check_id());
 
-            batch_payloads.push(Payload::Image(
-                image::Payload::CheckUpload {
-                    resource_kind: image::ResourceKind::TeamAvatar,
-                    resource_id: id.clone(),
-                    object_key: avatar_reservation.object_key.clone(),
-                    version: avatar_reservation.avatar_version,
-                },
-            ));
+            batch_payloads.push(Payload::Image(image::Payload::CheckUpload {
+                resource_kind: image::ResourceKind::TeamAvatar,
+                resource_id: id.clone(),
+                object_key: avatar_reservation.object_key.clone(),
+                version: avatar_reservation.avatar_version,
+            }));
 
             batch_delays.push(Some(Duration::from_secs(15 * 60)));
 
@@ -322,8 +320,7 @@ where
                 })
                 .collect();
 
-            prom.step(context, &DeferBatch::new(&batch_tasks))
-                .await?;
+            prom.step(context, &DeferBatch::new(&batch_tasks)).await?;
 
             Ok((
                 avatar_reservation.object_key,
@@ -334,7 +331,7 @@ where
     // Generate signed URL after commit — the PUT URL should only be issued
     // once the reservation is durable.
 
-    let put_url = image_pool.put_signed(&object_key).await?.to_string();
+    let put_url = image_pool.get_upload_url(&object_key).await?.to_string();
 
     Ok(ReserveTeamAvatarPayload {
         put_url,

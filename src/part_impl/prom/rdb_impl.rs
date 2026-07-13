@@ -17,15 +17,14 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
 use diesel_async::RunQueryDsl;
+use poprako_orchestra::Step;
+use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
 use time::OffsetDateTime;
 use tokio::sync::oneshot::{
     Receiver as OneshotReceiver, Sender as OneshotSender,
 };
 
-use poprako_orchestra::Step;
-use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
-
-use crate::part::image::ImagePool;
+use crate::part::image::ImageManager;
 use crate::part::prom::Prom;
 use crate::part::prom::payload::Payload;
 use crate::part_impl::drive::rdb_impl::RdbDrive;
@@ -60,7 +59,7 @@ impl RdbProm {
     /// records by topic, and updates their lifecycle status.
     pub fn new<I>(core: RdbCore, image_pool: I) -> Self
     where
-        I: ImagePool + Send + Sync + 'static,
+        I: ImageManager + Send + Sync + 'static,
     {
         let (shutdown_send, shutdown_recv) = tokio::sync::oneshot::channel();
 

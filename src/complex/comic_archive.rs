@@ -1,8 +1,7 @@
 //! Pure conversion of active comic snapshots into immutable archive payloads.
 
-use time::OffsetDateTime;
-
 use poprako_orchestra::Proxy;
+use time::OffsetDateTime;
 
 use poprako_util::time::ToUnixMilli;
 

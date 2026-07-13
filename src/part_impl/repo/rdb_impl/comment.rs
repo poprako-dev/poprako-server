@@ -2,21 +2,19 @@
 
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
-
 use poprako_orchestra::{Run, Step};
 
+use crate::model::comment::{CommentEntry, CommentInfo, CommentListSpec};
 use crate::part::repo::comment::CommentRepo;
 use crate::part::repo::oper::comment::{CreateComment, ListCommentInfos};
 use crate::part_impl::repo::rdb_impl::entity::comment::{
     CommentRow, CommentRowEntry,
 };
+use crate::part_impl::repo::rdb_impl::schema::t_comment::dsl::*;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, incl};
 use crate::part_impl::shared::result::diesel;
 use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::{RegularError, RegularResult};
-
-use crate::model::comment::{CommentEntry, CommentInfo, CommentListSpec};
-use crate::part_impl::repo::rdb_impl::schema::t_comment::dsl::*;
 
 impl CommentRepo<RdbContext> for RdbRepo {}
 

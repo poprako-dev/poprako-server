@@ -8,7 +8,6 @@
 use axum::Router;
 use axum::middleware::{from_fn, from_fn_with_state};
 use axum::routing::{delete, get, post, put};
-
 use tower_http::trace::TraceLayer;
 
 use crate::api::http::handler::{

@@ -3,7 +3,6 @@
 use axum::Json;
 use axum::extract::{Extension, Query, State};
 use axum::http::StatusCode;
-
 use tracing::instrument;
 
 #[allow(unused_imports)]
