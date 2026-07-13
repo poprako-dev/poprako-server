@@ -140,18 +140,6 @@ impl AssignmentPermComplex {
         check_admin(proxy, current_user_id, &assignment_info.chapter_id).await
     }
 
-    /// Verify the caller is an admin for the target chapter.
-    pub async fn ensure_user_can_admin<P>(
-        proxy: &mut P,
-        current_user_id: &str,
-        chapter_id: &str,
-    ) -> RegularResult<()>
-    where
-        P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = RegularError>,
-    {
-        check_admin(proxy, current_user_id, chapter_id).await
-    }
-
     /// Verify the target user may take the requested chapter assignment roles.
     pub async fn ensure_user_can_take_roles<P>(
         proxy: &mut P,
