@@ -2,116 +2,121 @@
 
 use time::OffsetDateTime;
 
-use poprako_transactional::advance::Advance;
-use poprako_transactional::drive::Drive;
+use poprako_orchestra::{Nucl, run_proxy};
+use poprako_orchestra_extra::prom::oper::Defer;
+use poprako_orchestra_extra::prom::task::Task;
 
-use crate::complex::comic::ComicPermComplex;
-use crate::complex::comic_archive::ComicArchiveComplex;
-use crate::data::comic_archive_data;
-use crate::model::{comic_archive_model, user_model};
-use crate::part::prom::task::{IMAGE_TOPIC, ImageTask};
-use crate::part::prom::{Payload, Prom, PromStep};
-use crate::part::repo::comic::{ComicRepo, ComicRepoTransactional};
-use crate::part::repo::comic_archive::ComicArchiveRepoTransactional;
-use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
-use crate::part::repo::step::comic_archive::ComicArchiveStep;
-use crate::part::repo::workset::{WorksetRepo, WorksetRepoTransactional};
-use crate::part::shared::proxy::AsProxyNonTransactional;
-use crate::result::{RegularError, RegularResult};
+use crate::complex::comic_archive::{
+    ComicArchiveComplex, ComicArchivePermComplex,
+};
+use crate::data::comic_archive::ArchiveComicPayload;
+use crate::model::comic_archive::ComicArchiveSnapshot;
+use crate::model::user::UserToken;
+use crate::part::prom::Prom;
+use crate::part::prom::payload::{Payload, image};
+use crate::part::repo::comic::ComicRepo;
+use crate::part::repo::comic_archive::ComicArchiveRepo;
+use crate::part::repo::member::MemberRepo;
+use crate::part::repo::oper::comic::GetComicInfo;
+use crate::part::repo::oper::comic_archive::{
+    CommitComicArchive, GetComicArchiveSnapshotExcluded,
+};
+use crate::part::repo::oper::member::FindMemberInfo;
+use crate::part::repo::oper::workset::GetWorksetInfo;
+use crate::part::repo::workset::WorksetRepo;
+use crate::result::{RegularError, RegularResult, accept};
 use crate::util::next_snowflake_id;
 
 #[cfg(test)]
 mod tests;
 
 /// Archive one active comic, its descendants, and all retained image keys.
-pub async fn archive<D, C, R, P>(
-    drive: &D,
+pub async fn archive<N, C, R, P>(
+    nucl: &N,
     repo: &R,
     prom: &P,
-    token: user_model::Token,
+    token: UserToken,
     comic_id: String,
-) -> RegularResult<comic_archive_data::Val>
+) -> RegularResult<ArchiveComicPayload>
 where
-    D: Drive<C>,
-    D::Error: Into<RegularError>,
-    C: Send,
-    R: ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Send + Sync,
-    R::Transactional: ComicRepoTransactional<C>
-        + WorksetRepoTransactional<C>
-        + MemberRepoTransactional<C>
-        + ComicArchiveRepoTransactional<C>
+    N: Nucl<Context = C, Error = RegularError>,
+    R: ComicRepo<C>
+        + ComicArchiveRepo<C>
+        + WorksetRepo<C>
+        + MemberRepo<C>
         + Send
         + Sync,
     P: Prom<C> + Send + Sync,
 {
-    ComicPermComplex::can_user_update_info(
-        &mut repo.as_proxy(),
+    ComicArchivePermComplex::can_user_archive(
+        &mut run_proxy! {
+            repo =>
+                for<'a, 'b> GetComicInfo<'a, 'b>,
+                for<'a> GetWorksetInfo<'a>,
+                for<'a> FindMemberInfo<'a>;
+        },
         &token.user_id,
         &comic_id,
     )
     .await?;
 
-    let archive_comic_val = drive
-        .with_context(
-            async move |context| -> RegularResult<comic_archive_data::Val> {
-                //
-                let repo = repo.derive_transactional().await;
-
-                let comic_archive_snapshot = repo
-                    .advance(
-                        context,
-                        &ComicArchiveStep::lock_snapshot(&comic_id),
-                    )
-                    .await?;
-
-                let image_keys = collect_image_keys(&comic_archive_snapshot);
-
-                let archived_at = OffsetDateTime::now_utc();
-
-                let comic_archive_write = ComicArchiveComplex::build_write(
-                    comic_archive_snapshot,
-                    token.user_id,
-                    archived_at,
-                )?;
-
-                let archived_comic_id =
-                    comic_archive_write.comic_record.id.clone();
-
-                for image_key in image_keys {
-                    //
-                    let image_delete_id = next_snowflake_id();
-
-                    prom.advance(
-                        context,
-                        &PromStep::append(
-                            &image_delete_id,
-                            IMAGE_TOPIC,
-                            Payload::Image(ImageTask::Delete {
-                                object_key: &image_key,
-                            }),
-                            &archived_at,
-                        ),
-                    )
-                    .await?;
-                }
-
-                repo.advance(
+    let archive_comic_val = nucl
+        .coord(async move |context| -> RegularResult<ArchiveComicPayload> {
+            let comic_archive_snapshot = repo
+                .step(
                     context,
-                    &ComicArchiveStep::commit(&comic_archive_write),
+                    &GetComicArchiveSnapshotExcluded {
+                        comic_id: &comic_id,
+                    },
                 )
                 .await?;
 
-                Ok(comic_archive_data::Val { archived_comic_id })
-            },
-        )
+            let image_keys = collect_image_keys(&comic_archive_snapshot);
+
+            let archived_at = OffsetDateTime::now_utc();
+
+            let comic_archive_write = ComicArchiveComplex::build_write(
+                comic_archive_snapshot,
+                token.user_id,
+                archived_at,
+            )?;
+
+            let archived_comic_id = comic_archive_write.comic_record.id.clone();
+
+            for image_key in image_keys {
+                let image_delete_id = next_snowflake_id();
+
+                let payload = Payload::Image(image::Payload::Delete {
+                    object_key: image_key,
+                });
+
+                let task = Task {
+                    id: &image_delete_id,
+                    payload: &payload,
+                    delay: None,
+                };
+
+                prom.step(context, &Defer::new(task)).await?;
+            }
+
+            repo.step(
+                context,
+                &CommitComicArchive {
+                    write: &comic_archive_write,
+                },
+            )
+            .await?;
+
+            Ok(ArchiveComicPayload { archived_comic_id })
+        })
         .await?;
 
-    Ok(archive_comic_val)
+    accept(archive_comic_val)
 }
 
 /// Collect every current comic or page object key, including reserved uploads.
 fn collect_image_keys(
-    comic_archive_snapshot: &comic_archive_model::Snapshot,
+    comic_archive_snapshot: &ComicArchiveSnapshot,
 ) -> Vec<String> {
     //
     let mut image_keys = Vec::new();

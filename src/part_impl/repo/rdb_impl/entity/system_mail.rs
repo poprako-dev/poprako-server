@@ -3,7 +3,8 @@
 use diesel::prelude::*;
 use time::OffsetDateTime;
 
-use crate::model::system_mail_model;
+use crate::model::system_mail::SystemMailEntry;
+use crate::model::system_mail::SystemMailInfo;
 use crate::part_impl::repo::rdb_impl::schema::t_system_mail;
 
 // ── Queryable / Selectable ─────────────────────────────────────────────────
@@ -28,7 +29,7 @@ pub struct SystemMailRow {
 /// Insertable struct for creating a new record in the `t_system_mail` table.
 #[derive(Insertable)]
 #[diesel(table_name = t_system_mail)]
-pub struct SystemMailEntry<'a> {
+pub struct SystemMailRowEntry<'a> {
     pub f_id: &'a str,
     pub f_receiver_id: &'a str,
 
@@ -40,9 +41,9 @@ pub struct SystemMailEntry<'a> {
 
 // ── Conversions ────────────────────────────────────────────────────────────
 
-impl From<SystemMailRow> for system_mail_model::Info {
+impl From<SystemMailRow> for SystemMailInfo {
     fn from(v: SystemMailRow) -> Self {
-        system_mail_model::Info {
+        SystemMailInfo {
             id: v.f_id,
             receiver_id: v.f_receiver_id,
             read: v.f_read,
@@ -53,13 +54,13 @@ impl From<SystemMailRow> for system_mail_model::Info {
     }
 }
 
-impl<'a> From<&'a system_mail_model::Form> for SystemMailEntry<'a> {
-    fn from(form: &'a system_mail_model::Form) -> Self {
+impl<'a> From<&'a SystemMailEntry> for SystemMailRowEntry<'a> {
+    fn from(entry: &'a SystemMailEntry) -> Self {
         Self {
-            f_id: &form.id,
-            f_receiver_id: &form.receiver_id,
-            f_title: &form.title,
-            f_content: &form.content,
+            f_id: &entry.id,
+            f_receiver_id: &entry.receiver_id,
+            f_title: &entry.title,
+            f_content: &entry.content,
             f_created_at: OffsetDateTime::now_utc(),
         }
     }

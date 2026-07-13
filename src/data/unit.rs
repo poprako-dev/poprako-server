@@ -7,12 +7,14 @@ use utoipa::ToSchema;
 
 use poprako_util::time::ToUnixMilli;
 
-use crate::model::unit_model;
+use crate::model::unit::{
+    UnitContent, UnitCounters, UnitDiff, UnitIdMapper, UnitInfo, UnitOper,
+};
 
 /// Presentation-ready unit information.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct InfoVal {
+pub struct UnitInfoVal {
     pub id: String,
 
     pub page_id: String,
@@ -37,8 +39,8 @@ pub struct InfoVal {
     pub updated_at: i64,
 }
 
-impl From<unit_model::Info> for InfoVal {
-    fn from(model: unit_model::Info) -> Self {
+impl From<UnitInfo> for UnitInfoVal {
+    fn from(model: UnitInfo) -> Self {
         Self {
             id: model.id,
             page_id: model.page_id,
@@ -58,7 +60,7 @@ impl From<unit_model::Info> for InfoVal {
 
 /// Input parameters for listing units under one page.
 #[derive(Debug, Deserialize)]
-pub struct ListPageInfosData {
+pub struct ListPageUnitInfosParams {
     pub page_id: String,
 
     pub offset: u32,
@@ -68,8 +70,8 @@ pub struct ListPageInfosData {
 /// Return value for listing units under one page.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct ListPageInfosVal {
-    pub unit_infos: Vec<InfoVal>,
+pub struct ListPageUnitInfosPayload {
+    pub unit_infos: Vec<UnitInfoVal>,
 
     pub total_unit_count: i32,
     pub translated_unit_count: i32,
@@ -79,16 +81,16 @@ pub struct ListPageInfosVal {
 /// Input parameters for saving unit opers under one page.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct SavePageData {
+pub struct SavePageUnitsParams {
     pub page_id: String,
-    pub diff: DiffData,
+    pub diff: UnitDiffParams,
 }
 
 /// Return value for saving unit opers under one page.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct SavePageVal {
-    pub local_id_mappers: Vec<IdMapperVal>,
+pub struct SavePageUnitsPayload {
+    pub local_id_mappers: Vec<UnitIdMapperVal>,
 
     pub total_unit_count: i32,
     pub translated_unit_count: i32,
@@ -98,16 +100,16 @@ pub struct SavePageVal {
 /// Transport-facing unit oper.
 #[derive(Debug, Clone, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct DiffData {
+pub struct UnitDiffParams {
     pub page_id: String,
-    pub opers: Vec<OperData>,
+    pub opers: Vec<UnitOperParams>,
 }
 
 /// Transport-facing unit oper event.
 #[derive(Debug, Clone, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
 #[serde(tag = "oper", rename_all = "snake_case", deny_unknown_fields)]
-pub enum OperData {
+pub enum UnitOperParams {
     Create {
         local_id: String,
 
@@ -151,9 +153,9 @@ pub enum OperData {
     },
 }
 
-impl DiffData {
+impl UnitDiffParams {
     /// Converts transport-safe data into domain opers.
-    pub fn into_model(self) -> Option<unit_model::Diff> {
+    pub fn into_model(self) -> Option<UnitDiff> {
         //
         let mut opers = Vec::with_capacity(self.opers.len());
 
@@ -164,18 +166,18 @@ impl DiffData {
             opers.push(unit_oper);
         }
 
-        Some(unit_model::Diff {
+        Some(UnitDiff {
             page_id: self.page_id,
             opers,
         })
     }
 }
 
-impl OperData {
-    fn into_model(self) -> unit_model::Oper {
+impl UnitOperParams {
+    fn into_model(self) -> UnitOper {
         match self {
             //
-            OperData::Create {
+            UnitOperParams::Create {
                 local_id,
                 before_id,
                 is_bubble,
@@ -186,9 +188,9 @@ impl OperData {
                 last_translator_id,
                 proofread_text,
                 last_proofreader_id,
-            } => unit_model::Oper::Create {
+            } => UnitOper::Create {
                 id: local_id,
-                payload: unit_model::Payload {
+                payload: UnitContent {
                     is_bubble,
                     is_proofread,
                     x_coord,
@@ -202,7 +204,7 @@ impl OperData {
             },
 
             //
-            OperData::Save {
+            UnitOperParams::Save {
                 id,
                 before_id,
                 is_bubble,
@@ -213,9 +215,9 @@ impl OperData {
                 last_translator_id,
                 proofread_text,
                 last_proofreader_id,
-            } => unit_model::Oper::Save {
+            } => UnitOper::Save {
                 id,
-                payload: unit_model::Payload {
+                payload: UnitContent {
                     is_bubble,
                     is_proofread,
                     x_coord,
@@ -228,7 +230,7 @@ impl OperData {
                 before_id,
             },
 
-            OperData::Delete { id } => unit_model::Oper::Delete { id },
+            UnitOperParams::Delete { id } => UnitOper::Delete { id },
         }
     }
 }
@@ -236,13 +238,13 @@ impl OperData {
 /// Presentation-ready local-to-server id mapping.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct IdMapperVal {
+pub struct UnitIdMapperVal {
     pub local_id: String,
     pub unit_id: String,
 }
 
-impl From<unit_model::IdMapper> for IdMapperVal {
-    fn from(model: unit_model::IdMapper) -> Self {
+impl From<UnitIdMapper> for UnitIdMapperVal {
+    fn from(model: UnitIdMapper) -> Self {
         Self {
             local_id: model.local_id,
             unit_id: model.unit_id,
@@ -250,16 +252,16 @@ impl From<unit_model::IdMapper> for IdMapperVal {
     }
 }
 
-impl SavePageVal {
+impl SavePageUnitsPayload {
     /// Builds a compact save response from mappings and counters.
     pub fn from_parts(
-        local_id_mappers: Vec<unit_model::IdMapper>,
-        counters: unit_model::Counters,
+        local_id_mappers: Vec<UnitIdMapper>,
+        counters: UnitCounters,
     ) -> Self {
         Self {
             local_id_mappers: local_id_mappers
                 .into_iter()
-                .map(IdMapperVal::from)
+                .map(UnitIdMapperVal::from)
                 .collect(),
             total_unit_count: counters.total_unit_count,
             translated_unit_count: counters.translated_unit_count,

@@ -14,8 +14,11 @@ use utoipa::IntoParams;
 #[allow(unused_imports)]
 use crate::api::http::result::{Accept as _, HttpBody, HttpResult};
 use crate::api::http::state::AppHarn;
-use crate::data::announcement_data;
-use crate::model::user_model;
+use crate::data::announcement::AnnouncementInfoVal;
+use crate::data::announcement::CreateAnnouncementParams;
+use crate::data::announcement::CreateAnnouncementPayload;
+use crate::data::announcement::ListAnnouncementInfosParams;
+use crate::model::user::UserToken;
 use crate::usecase;
 use crate::value::announcement::AnnouncementInclOpt;
 
@@ -48,20 +51,20 @@ pub struct AnnouncementListQuery {
     post,
     path = "/api/v1/announcements",
     tag = "announcements",
-    request_body = announcement_data::CreateData,
+    request_body = CreateAnnouncementParams,
     responses(
-        (status = 201, description = "Announcement created", body = HttpBody<announcement_data::CreateVal>),
+        (status = 201, description = "Announcement created", body = HttpBody<CreateAnnouncementPayload>),
         (status = 403, description = "No permission to create announcements in this team"),
         (status = 404, description = "Team not found"),
     ),
 ))]
-#[instrument(err, skip(harn, data))]
+#[instrument(err, skip(harn, params))]
 pub async fn create(
     State(harn): State<AppHarn>,
-    Extension(user_token): Extension<user_model::Token>,
-    Json(data): Json<announcement_data::CreateData>,
-) -> HttpResult<announcement_data::CreateVal> {
-    usecase::announcement::create(harn.drive(), harn.repo(), user_token, data)
+    Extension(user_token): Extension<UserToken>,
+    Json(params): Json<CreateAnnouncementParams>,
+) -> HttpResult<CreateAnnouncementPayload> {
+    usecase::announcement::create(harn.drive(), harn.repo(), user_token, params)
         .await?
         .accept(StatusCode::CREATED)
 }
@@ -74,7 +77,7 @@ pub async fn create(
     description = "Lists a team's announcements. `incl` embeds related rows. Example: `/api/v1/teams/{team_id}/announcements?incl=user&offset=0&limit=20`.",
     params(("team_id" = String, Path, description = "Team ID"), AnnouncementListQuery),
     responses(
-        (status = 200, description = "Announcements listed", body = HttpBody<Vec<announcement_data::InfoVal>>),
+        (status = 200, description = "Announcements listed", body = HttpBody<Vec<AnnouncementInfoVal>>),
         (status = 403, description = "No permission to list announcements in this team"),
     ),
 ))]
@@ -82,11 +85,11 @@ pub async fn create(
 pub async fn list_infos(
     State(harn): State<AppHarn>,
     Path(team_id): Path<String>,
-    Extension(user_token): Extension<user_model::Token>,
+    Extension(user_token): Extension<UserToken>,
     Query(query): Query<AnnouncementListQuery>,
-) -> HttpResult<Vec<announcement_data::InfoVal>> {
+) -> HttpResult<Vec<AnnouncementInfoVal>> {
     //
-    let data = announcement_data::ListInfosData {
+    let params = ListAnnouncementInfosParams {
         team_id,
         incl_opt: query.incl_opt,
         offset: query.offset,
@@ -97,7 +100,7 @@ pub async fn list_infos(
         harn.repo(),
         harn.image_pool(),
         user_token,
-        data,
+        params,
     )
     .await?
     .accept(StatusCode::OK)

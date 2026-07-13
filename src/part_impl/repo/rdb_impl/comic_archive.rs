@@ -2,19 +2,27 @@
 
 use std::collections::HashMap;
 
-use async_trait::async_trait;
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 
-use poprako_transactional::advance::Advance;
+use poprako_orchestra::Step;
 
-use crate::model::{
-    assignment_model, chapter_model, comic_archive_model, comic_model,
-    page_model, unit_model, user_model, workset_model,
+use crate::model::assignment::AssignmentInfo;
+use crate::model::chapter::ChapterInfo;
+use crate::model::comic::ComicInfo;
+use crate::model::comic_archive::ComicArchiveChapterSnapshot;
+use crate::model::comic_archive::ComicArchivePageSnapshot;
+use crate::model::comic_archive::ComicArchiveSnapshot;
+use crate::model::comic_archive::ComicArchiveWrite;
+use crate::model::page::PageInfo;
+use crate::model::unit::UnitInfo;
+use crate::model::user::UserInfo;
+use crate::model::workset::WorksetInfo;
+use crate::part::repo::comic_archive::ComicArchiveRepo;
+use crate::part::repo::oper::comic_archive::{
+    CommitComicArchive, GetComicArchiveSnapshotExcluded,
 };
-use crate::part::repo::comic_archive::ComicArchiveRepoTransactional;
-use crate::part::repo::step::comic_archive::{Commit, LockSnapshot};
-use crate::part_impl::repo::rdb_impl::RdbRepoTransactional;
+use crate::part_impl::repo::rdb_impl::RdbRepo;
 use crate::part_impl::repo::rdb_impl::entity::assignment::AssignmentRow;
 use crate::part_impl::repo::rdb_impl::entity::chapter::ChapterRow;
 use crate::part_impl::repo::rdb_impl::entity::comic::ComicRow;
@@ -58,13 +66,13 @@ use crate::part_impl::shared::result::{diesel, expected};
 use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::{RegularError, RegularResult};
 
-impl ComicArchiveRepoTransactional<RdbContext> for RdbRepoTransactional {}
+impl ComicArchiveRepo<RdbContext> for RdbRepo {}
 
 /// Lock every active descendant needed by an archive transaction.
-async fn lock_snapshot(
+async fn get_snapshot_excluded(
     conn: &mut RdbConn,
     source_comic_id: &str,
-) -> RegularResult<comic_archive_model::Snapshot> {
+) -> RegularResult<ComicArchiveSnapshot> {
     //
     let comic_row: ComicRow = t_comic
         .filter(comic_id.eq(source_comic_id))
@@ -76,7 +84,7 @@ async fn lock_snapshot(
         .map_err(diesel)?
         .ok_or_else(|| expected("error-comic-not-found"))?;
 
-    let comic_info: comic_model::Info = comic_row.into();
+    let comic_info: ComicInfo = comic_row.into();
 
     let workset_row: WorksetRow = t_workset
         .filter(workset_id.eq(&comic_info.workset_id))
@@ -88,7 +96,7 @@ async fn lock_snapshot(
         .map_err(diesel)?
         .ok_or_else(|| expected("error-workset-not-found"))?;
 
-    let workset_info: workset_model::Info = workset_row.into();
+    let workset_info: WorksetInfo = workset_row.into();
 
     let chapter_rows: Vec<ChapterRow> = t_chapter
         .filter(chapter_comic_id.eq(&comic_info.id))
@@ -99,9 +107,9 @@ async fn lock_snapshot(
         .await
         .map_err(diesel)?;
 
-    let chapter_infos: Vec<chapter_model::Info> = chapter_rows
+    let chapter_infos: Vec<ChapterInfo> = chapter_rows
         .into_iter()
-        .map(chapter_model::Info::try_from)
+        .map(ChapterInfo::try_from)
         .collect::<RegularResult<Vec<_>>>()?;
 
     let source_chapter_ids = chapter_infos
@@ -127,7 +135,7 @@ async fn lock_snapshot(
 
     let assignment_infos = assignment_rows
         .into_iter()
-        .map(assignment_model::Info::try_from)
+        .map(AssignmentInfo::try_from)
         .collect::<RegularResult<Vec<_>>>()?;
 
     let assigned_user_ids = assignment_infos
@@ -147,7 +155,7 @@ async fn lock_snapshot(
         .into_iter()
         .map(|user_row| {
             //
-            let user_info: user_model::Info = user_row.into();
+            let user_info: UserInfo = user_row.into();
 
             (user_info.id.clone(), user_info)
         })
@@ -162,7 +170,7 @@ async fn lock_snapshot(
         .await
         .map_err(diesel)?;
 
-    let page_infos: Vec<page_model::Info> =
+    let page_infos: Vec<PageInfo> =
         page_rows.into_iter().map(Into::into).collect::<Vec<_>>();
 
     let source_page_ids = page_infos
@@ -179,13 +187,11 @@ async fn lock_snapshot(
         .await
         .map_err(diesel)?;
 
-    let unit_infos: Vec<unit_model::Info> =
+    let unit_infos: Vec<UnitInfo> =
         unit_rows.into_iter().map(Into::into).collect::<Vec<_>>();
 
-    let mut assignment_infos_by_chapter: HashMap<
-        String,
-        Vec<assignment_model::Info>,
-    > = HashMap::new();
+    let mut assignment_infos_by_chapter: HashMap<String, Vec<AssignmentInfo>> =
+        HashMap::new();
 
     for mut assignment_info in assignment_infos {
         //
@@ -221,7 +227,7 @@ async fn lock_snapshot(
         page_snapshots_by_chapter
             .entry(page_info.chapter_id.clone())
             .or_insert_with(Vec::new)
-            .push(comic_archive_model::PageSnapshot {
+            .push(ComicArchivePageSnapshot {
                 page_info,
                 unit_infos,
             });
@@ -239,7 +245,7 @@ async fn lock_snapshot(
                 .remove(&chapter_info.id)
                 .unwrap_or_default();
 
-            comic_archive_model::ChapterSnapshot {
+            ComicArchiveChapterSnapshot {
                 chapter_info,
                 assignment_infos,
                 page_snapshots,
@@ -247,7 +253,7 @@ async fn lock_snapshot(
         })
         .collect();
 
-    Ok(comic_archive_model::Snapshot {
+    Ok(ComicArchiveSnapshot {
         comic_info,
         workset_info,
         chapter_snapshots,
@@ -257,7 +263,7 @@ async fn lock_snapshot(
 /// Insert archive rows and remove the active comic subtree without touching workset counters.
 async fn commit(
     conn: &mut RdbConn,
-    comic_archive_write: &comic_archive_model::Write,
+    comic_archive_write: &ComicArchiveWrite,
 ) -> RegularResult<()> {
     //
     let comic_entry =
@@ -344,29 +350,27 @@ async fn commit(
     Ok(())
 }
 
-#[async_trait]
-impl<'a> Advance<LockSnapshot<'a>, RdbContext> for RdbRepoTransactional {
+impl<'a> Step<GetComicArchiveSnapshotExcluded<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
-    async fn advance(
+    async fn step(
         &self,
         context: &mut RdbContext,
-        step: &LockSnapshot<'a>,
-    ) -> RegularResult<comic_archive_model::Snapshot> {
-        lock_snapshot(context.conn(), step.comic_id).await
+        oper: &GetComicArchiveSnapshotExcluded<'a>,
+    ) -> RegularResult<ComicArchiveSnapshot> {
+        get_snapshot_excluded(context.conn(), oper.comic_id).await
     }
 }
 
-#[async_trait]
-impl<'a> Advance<Commit<'a>, RdbContext> for RdbRepoTransactional {
+impl<'a> Step<CommitComicArchive<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
-    async fn advance(
+    async fn step(
         &self,
         context: &mut RdbContext,
-        step: &Commit<'a>,
+        oper: &CommitComicArchive<'a>,
     ) -> RegularResult<()> {
-        commit(context.conn(), step.comic_archive_write).await
+        commit(context.conn(), oper.write).await
     }
 }
 

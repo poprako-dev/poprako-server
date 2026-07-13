@@ -1,20 +1,22 @@
-//! Mock implementations of `ComicRepo` and `ComicRepoTransactional` for in-memory testing.
-
-use async_trait::async_trait;
-
-use poprako_transactional::advance::Advance;
+use poprako_orchestra::{Run, Step};
 
 use crate::complex::comic::ComicComplex;
-use crate::model::{comic_model, team_model, user_model, workset_model};
-use crate::part::repo::comic::{ComicRepo, ComicRepoTransactional};
-use crate::part::repo::step::comic::{
-    Create, Delete, GetInfoById, GetInfoExcluded, IncrChapterNextIndex,
-    ListInfos, ListInfosExcluded, MarkCoverUploaded, ReserveCover,
-    TouchLastActive, UpdateChapterCount, UpdateInfo,
+use crate::model::comic::ComicCoverReservation;
+use crate::model::comic::ComicInfo;
+use crate::model::comic::ComicInfoListKind;
+use crate::model::comic::ComicInfoListSpec;
+use crate::model::team::TeamInfo;
+use crate::model::user::UserInfo;
+use crate::model::workset::WorksetInfo;
+use crate::part::repo::comic::ComicRepo;
+use crate::part::repo::oper::comic::{
+    AllocateComicChapterIndex, CreateComic, DeleteComic, GetComicInfo,
+    GetComicInfoExcluded, ListComicInfos, ListComicInfosExcluded,
+    MarkComicCoverUploaded, ReserveComicCover, TouchComicLastActive,
+    UpdateComic, UpdateComicChapterCount,
 };
-use crate::part::shared::execute::Execute;
 use crate::part_impl::repo::mock_impl::{
-    Mock, MockContext, MockState, MockTransactional, expected, now,
+    Mock, MockContext, MockState, expected, now,
 };
 use crate::result::{RegularError, RegularResult};
 use crate::value::comic::ComicInclOpt;
@@ -23,12 +25,7 @@ use crate::value::index::user_index_to_stored_index;
 
 impl ComicRepo<MockContext> for Mock {}
 
-impl ComicRepoTransactional<MockContext> for MockTransactional {}
-
-fn find_workset(
-    state: &MockState,
-    workset_id: &str,
-) -> Option<workset_model::Info> {
+fn find_workset(state: &MockState, workset_id: &str) -> Option<WorksetInfo> {
     state
         .worksets
         .iter()
@@ -38,8 +35,8 @@ fn find_workset(
 
 fn find_team_for_workset(
     state: &MockState,
-    workset: &workset_model::Info,
-) -> Option<team_model::Info> {
+    workset: &WorksetInfo,
+) -> Option<TeamInfo> {
     state
         .teams
         .iter()
@@ -47,7 +44,7 @@ fn find_team_for_workset(
         .cloned()
 }
 
-fn find_user(state: &MockState, user_id: &str) -> Option<user_model::Info> {
+fn find_user(state: &MockState, user_id: &str) -> Option<UserInfo> {
     state
         .users
         .iter()
@@ -57,7 +54,7 @@ fn find_user(state: &MockState, user_id: &str) -> Option<user_model::Info> {
 
 fn apply_workset_incl(
     state: &MockState,
-    comic_info: &mut comic_model::Info,
+    comic_info: &mut ComicInfo,
     include_workset: bool,
 ) {
     //
@@ -70,7 +67,7 @@ fn apply_workset_incl(
 
 fn apply_team_incl(
     state: &MockState,
-    comic_info: &mut comic_model::Info,
+    comic_info: &mut ComicInfo,
     include_team: bool,
 ) {
     //
@@ -89,7 +86,7 @@ fn apply_team_incl(
 
 fn apply_creator_incl(
     state: &MockState,
-    comic_info: &mut comic_model::Info,
+    comic_info: &mut ComicInfo,
     include_creator: bool,
 ) {
     //
@@ -102,7 +99,7 @@ fn apply_creator_incl(
 
 fn apply_comic_incls(
     state: &MockState,
-    comic_info: &mut comic_model::Info,
+    comic_info: &mut ComicInfo,
     incl_opt: &[ComicInclOpt],
 ) {
     //
@@ -132,14 +129,14 @@ fn apply_comic_incls(
 
 fn comic_matches_kind(
     state: &MockState,
-    comic_info: &comic_model::Info,
-    kind: &comic_model::ListKind,
+    comic_info: &ComicInfo,
+    kind: &ComicInfoListKind,
 ) -> bool {
     match kind {
         //
-        comic_model::ListKind::All => true,
+        ComicInfoListKind::All => true,
 
-        comic_model::ListKind::Stages(stage_mask) => state
+        ComicInfoListKind::Stages(stage_mask) => state
             .chapters
             .iter()
             .find(|chapter_info| {
@@ -150,10 +147,7 @@ fn comic_matches_kind(
     }
 }
 
-fn comic_matches_fuzzy(
-    comic_info: &comic_model::Info,
-    fuzzy_title: &str,
-) -> bool {
+fn comic_matches_fuzzy(comic_info: &ComicInfo, fuzzy_title: &str) -> bool {
     //
     let composed_title = ComicComplex::compose_title(
         comic_info.index,
@@ -185,7 +179,6 @@ fn mark_comic_cover_uploaded(
     id: &str,
     cover_version: u32,
 ) -> RegularResult<()> {
-    //
     let comic = state
         .comics
         .iter_mut()
@@ -203,100 +196,110 @@ fn mark_comic_cover_uploaded(
     Ok(())
 }
 
-#[async_trait]
-impl<'a> Execute<GetInfoById<'a>> for Mock {
-    type Error = RegularError;
+fn get_comic_info(
+    state: &MockState,
+    id: &str,
+    incls: &[ComicInclOpt],
+) -> RegularResult<ComicInfo> {
+    let mut comic_info = state
+        .comics
+        .iter()
+        .find(|comic_info| comic_info.id == id)
+        .cloned()
+        .ok_or_else(|| expected("error-comic-not-found"))?;
 
-    async fn execute(
-        &self,
-        step: &GetInfoById<'a>,
-    ) -> Result<comic_model::Info, Self::Error> {
-        //
-        let state = self.state.lock().unwrap();
+    apply_comic_incls(state, &mut comic_info, incls);
 
-        let mut info = state
-            .comics
-            .iter()
-            .find(|comic| comic.id == step.id)
-            .cloned()
-            .ok_or_else(|| expected("error-comic-not-found"))?;
+    Ok(comic_info)
+}
 
-        apply_comic_incls(&state, &mut info, step.incl_opt);
+fn list_comic_infos(
+    state: &MockState,
+    spec: &ComicInfoListSpec,
+) -> Vec<ComicInfo> {
+    let mut comic_infos = state
+        .comics
+        .iter()
+        .filter(|comic_info| comic_info.workset_id == spec.workset_id)
+        .filter(|comic_info| {
+            spec.fuzzy_title
+                .as_ref()
+                .map(|keyword| comic_matches_fuzzy(comic_info, keyword))
+                .unwrap_or(true)
+        })
+        .filter(|comic_info| comic_matches_kind(state, comic_info, &spec.kind))
+        .cloned()
+        .collect::<Vec<_>>();
 
-        Ok(info)
+    comic_infos.sort_by(|left, right| {
+        right
+            .last_active_at
+            .cmp(&left.last_active_at)
+            .then_with(|| left.index.cmp(&right.index))
+    });
+
+    for comic_info in &mut comic_infos {
+        apply_comic_incls(state, comic_info, &spec.incl_opt);
+    }
+
+    let offset = spec.offset as usize;
+
+    let limit = spec.limit as usize;
+
+    match offset >= comic_infos.len() {
+        true => Vec::new(),
+        false => {
+            let end = std::cmp::min(offset + limit, comic_infos.len());
+
+            comic_infos[offset..end].to_vec()
+        }
     }
 }
 
-#[async_trait]
-impl<'a> Execute<ListInfos<'a>> for Mock {
+impl<'a, 'b> Run<GetComicInfo<'a, 'b>> for Mock {
     type Error = RegularError;
 
-    async fn execute(
+    async fn run(
         &self,
-        step: &ListInfos<'a>,
-    ) -> Result<Vec<comic_model::Info>, Self::Error> {
-        //
+        oper: &GetComicInfo<'a, 'b>,
+    ) -> Result<ComicInfo, Self::Error> {
         let state = self.state.lock().unwrap();
 
-        let mut comics = state
-            .comics
-            .iter()
-            .filter(|comic| comic.workset_id == step.spec.workset_id)
-            .filter(|comic| {
-                step.spec
-                    .fuzzy_title
-                    .as_ref()
-                    .map(|kw| comic_matches_fuzzy(comic, kw))
-                    .unwrap_or(true)
-            })
-            .filter(|comic| comic_matches_kind(&state, comic, &step.spec.kind))
-            .cloned()
-            .collect::<Vec<_>>();
-
-        comics.sort_by(|left, right| {
-            right
-                .last_active_at
-                .cmp(&left.last_active_at)
-                .then_with(|| left.index.cmp(&right.index))
-        });
-
-        for comic in &mut comics {
-            apply_comic_incls(&state, comic, &step.spec.incl_opt);
-        }
-
-        let offset = step.spec.offset as usize;
-
-        let limit = step.spec.limit as usize;
-
-        if offset >= comics.len() {
-            return Ok(Vec::new());
-        }
-
-        let end = std::cmp::min(offset + limit, comics.len());
-
-        Ok(comics[offset..end].to_vec())
+        get_comic_info(&state, oper.id, oper.incls)
     }
 }
 
-#[async_trait]
-impl<'a> Execute<UpdateInfo<'a>> for Mock {
+impl<'a> Run<ListComicInfos<'a>> for Mock {
     type Error = RegularError;
 
-    async fn execute(&self, step: &UpdateInfo<'a>) -> Result<(), Self::Error> {
+    async fn run(
+        &self,
+        oper: &ListComicInfos<'a>,
+    ) -> Result<Vec<ComicInfo>, Self::Error> {
+        let state = self.state.lock().unwrap();
+
+        Ok(list_comic_infos(&state, oper.spec))
+    }
+}
+
+impl<'a> Run<UpdateComic<'a>> for Mock {
+    type Error = RegularError;
+
+    async fn run(&self, oper: &UpdateComic<'a>) -> Result<(), Self::Error> {
         //
         let mut state = self.state.lock().unwrap();
 
         let comic = state
             .comics
             .iter_mut()
-            .find(|comic| comic.id == step.update.id)
+            .find(|comic| comic.id == oper.update.id)
             .ok_or_else(|| expected("error-comic-not-found"))?;
 
-        comic.title = step.update.title.clone();
+        comic.title = oper.update.title.clone();
 
-        comic.author = step.update.author.clone();
+        comic.author = oper.update.author.clone();
 
-        comic.description = step.update.description.clone();
+        comic.description = oper.update.description.clone();
 
         comic.updated_at = now();
 
@@ -304,55 +307,53 @@ impl<'a> Execute<UpdateInfo<'a>> for Mock {
     }
 }
 
-#[async_trait]
-impl<'a> Execute<MarkCoverUploaded<'a>> for Mock {
+impl<'a> Run<MarkComicCoverUploaded<'a>> for Mock {
     type Error = RegularError;
 
-    async fn execute(
+    async fn run(
         &self,
-        step: &MarkCoverUploaded<'a>,
+        oper: &MarkComicCoverUploaded<'a>,
     ) -> Result<(), Self::Error> {
         //
         let mut state = self.state.lock().unwrap();
 
-        mark_comic_cover_uploaded(&mut state, step.id, step.cover_version)
+        mark_comic_cover_uploaded(&mut state, oper.id, oper.cover_version)
     }
 }
 
-#[async_trait]
-impl<'a> Advance<Create<'a>, MockContext> for MockTransactional {
+impl<'a> Step<CreateComic<'a>, MockContext> for Mock {
     type Error = RegularError;
 
-    async fn advance(
+    async fn step(
         &self,
         context: &mut MockContext,
-        step: &Create<'a>,
-    ) -> Result<comic_model::Info, Self::Error> {
+        oper: &CreateComic<'a>,
+    ) -> Result<ComicInfo, Self::Error> {
         //
         if context
             .state
             .comics
             .iter()
-            .any(|comic| comic.id == step.form.id)
+            .any(|comic| comic.id == oper.entry.id)
         {
             return Err(expected("error-already-exists"));
         }
 
         let time = now();
 
-        let comic = comic_model::Info {
-            id: step.form.id.clone(),
-            workset_id: step.form.workset_id.clone(),
-            index: step.form.index,
-            title: step.form.title.clone(),
-            author: step.form.author.clone(),
-            description: step.form.description.clone(),
+        let comic = ComicInfo {
+            id: oper.entry.id.clone(),
+            workset_id: oper.entry.workset_id.clone(),
+            index: oper.entry.index,
+            title: oper.entry.title.clone(),
+            author: oper.entry.author.clone(),
+            description: oper.entry.description.clone(),
             cover_key: None,
             cover_uploaded: false,
             cover_version: 0,
             chapter_count: 0,
             chapter_next_index: 0,
-            creator_id: step.form.creator_id.clone(),
+            creator_id: oper.entry.creator_id.clone(),
             workset: None,
             team: None,
             creator: None,
@@ -367,130 +368,76 @@ impl<'a> Advance<Create<'a>, MockContext> for MockTransactional {
     }
 }
 
-#[async_trait]
-impl<'a> Advance<GetInfoById<'a>, MockContext> for MockTransactional {
+impl<'a, 'b> Step<GetComicInfo<'a, 'b>, MockContext> for Mock {
     type Error = RegularError;
 
-    async fn advance(
+    async fn step(
         &self,
         context: &mut MockContext,
-        step: &GetInfoById<'a>,
-    ) -> Result<comic_model::Info, Self::Error> {
-        //
-        let mut info = context
-            .state
-            .comics
-            .iter()
-            .find(|comic| comic.id == step.id)
-            .cloned()
-            .ok_or_else(|| expected("error-comic-not-found"))?;
-
-        apply_comic_incls(&context.state, &mut info, step.incl_opt);
-
-        Ok(info)
+        oper: &GetComicInfo<'a, 'b>,
+    ) -> Result<ComicInfo, Self::Error> {
+        get_comic_info(&context.state, oper.id, oper.incls)
     }
 }
 
-#[async_trait]
-impl<'a> Advance<GetInfoExcluded<'a>, MockContext> for MockTransactional {
+impl<'a, 'b> Step<GetComicInfoExcluded<'a, 'b>, MockContext> for Mock {
     type Error = RegularError;
 
-    async fn advance(
+    async fn step(
         &self,
         context: &mut MockContext,
-        step: &GetInfoExcluded<'a>,
-    ) -> Result<comic_model::Info, Self::Error> {
-        //
-        let mut info = context
-            .state
-            .comics
-            .iter()
-            .find(|comic| comic.id == step.id)
-            .cloned()
-            .ok_or_else(|| expected("error-comic-not-found"))?;
-
-        apply_comic_incls(&context.state, &mut info, step.incl_opt);
-
-        Ok(info)
+        oper: &GetComicInfoExcluded<'a, 'b>,
+    ) -> Result<ComicInfo, Self::Error> {
+        get_comic_info(&context.state, oper.id, oper.incls)
     }
 }
 
-#[async_trait]
-impl<'a> Advance<ListInfosExcluded<'a>, MockContext> for MockTransactional {
+impl<'a> Step<ListComicInfosExcluded<'a>, MockContext> for Mock {
     type Error = RegularError;
 
-    async fn advance(
+    async fn step(
         &self,
         context: &mut MockContext,
-        step: &ListInfosExcluded<'a>,
-    ) -> Result<Vec<comic_model::Info>, Self::Error> {
-        //
-        let mut comics = context
-            .state
-            .comics
-            .iter()
-            .filter(|comic| comic.workset_id == step.spec.workset_id)
-            .filter(|comic| {
-                step.spec
-                    .fuzzy_title
-                    .as_ref()
-                    .map(|kw| comic_matches_fuzzy(comic, kw))
-                    .unwrap_or(true)
-            })
-            .filter(|comic| {
-                comic_matches_kind(&context.state, comic, &step.spec.kind)
-            })
-            .cloned()
-            .collect::<Vec<_>>();
-
-        comics.sort_by(|left, right| {
-            right
-                .last_active_at
-                .cmp(&left.last_active_at)
-                .then_with(|| left.index.cmp(&right.index))
-        });
-
-        for comic in &mut comics {
-            apply_comic_incls(&context.state, comic, &step.spec.incl_opt);
-        }
-
-        let offset = step.spec.offset as usize;
-
-        let limit = step.spec.limit as usize;
-
-        if offset >= comics.len() {
-            return Ok(Vec::new());
-        }
-
-        let end = std::cmp::min(offset + limit, comics.len());
-
-        Ok(comics[offset..end].to_vec())
+        oper: &ListComicInfosExcluded<'a>,
+    ) -> Result<Vec<ComicInfo>, Self::Error> {
+        Ok(list_comic_infos(&context.state, oper.spec))
     }
 }
 
-#[async_trait]
-impl<'a> Advance<ReserveCover<'a>, MockContext> for MockTransactional {
+impl<'a> Step<ListComicInfos<'a>, MockContext> for Mock {
     type Error = RegularError;
 
-    async fn advance(
+    async fn step(
         &self,
         context: &mut MockContext,
-        step: &ReserveCover<'a>,
-    ) -> Result<comic_model::CoverReservation, Self::Error> {
+        oper: &ListComicInfos<'a>,
+    ) -> Result<Vec<ComicInfo>, Self::Error> {
+        Ok(list_comic_infos(&context.state, oper.spec))
+    }
+}
+
+impl<'a> Step<ReserveComicCover<'a>, MockContext> for Mock {
+    type Error = RegularError;
+
+    async fn step(
+        &self,
+        context: &mut MockContext,
+        oper: &ReserveComicCover<'a>,
+    ) -> Result<ComicCoverReservation, Self::Error> {
         //
         let comic = context
             .state
             .comics
             .iter_mut()
-            .find(|comic| comic.id == step.id)
+            .find(|comic| comic.id == oper.id)
             .ok_or_else(|| expected("error-comic-not-found"))?;
 
         let cover_version = comic.cover_version + 1;
 
         let object_key = ComicComplex::gen_cover_key(
-            step.id,
+            oper.id,
             cover_version,
-            step.file_extension,
+            oper.file_extension,
         );
 
         let prev_object_key = comic.cover_key.clone();
@@ -503,7 +450,7 @@ impl<'a> Advance<ReserveCover<'a>, MockContext> for MockTransactional {
 
         comic.updated_at = now();
 
-        Ok(comic_model::CoverReservation {
+        Ok(ComicCoverReservation {
             object_key,
             prev_object_key,
             cover_version,
@@ -511,38 +458,36 @@ impl<'a> Advance<ReserveCover<'a>, MockContext> for MockTransactional {
     }
 }
 
-#[async_trait]
-impl<'a> Advance<MarkCoverUploaded<'a>, MockContext> for MockTransactional {
+impl<'a> Step<MarkComicCoverUploaded<'a>, MockContext> for Mock {
     type Error = RegularError;
 
-    async fn advance(
+    async fn step(
         &self,
         context: &mut MockContext,
-        step: &MarkCoverUploaded<'a>,
+        oper: &MarkComicCoverUploaded<'a>,
     ) -> Result<(), Self::Error> {
         mark_comic_cover_uploaded(
             &mut context.state,
-            step.id,
-            step.cover_version,
+            oper.id,
+            oper.cover_version,
         )
     }
 }
 
-#[async_trait]
-impl<'a> Advance<Delete<'a>, MockContext> for MockTransactional {
+impl<'a> Step<DeleteComic<'a>, MockContext> for Mock {
     type Error = RegularError;
 
-    async fn advance(
+    async fn step(
         &self,
         context: &mut MockContext,
-        step: &Delete<'a>,
+        oper: &DeleteComic<'a>,
     ) -> Result<(), Self::Error> {
         //
         let pos = context
             .state
             .comics
             .iter()
-            .position(|comic| comic.id == step.id)
+            .position(|comic| comic.id == oper.id)
             .ok_or_else(|| expected("error-comic-not-found"))?;
 
         let deleted_comic_id = context.state.comics[pos].id.clone();
@@ -578,21 +523,20 @@ impl<'a> Advance<Delete<'a>, MockContext> for MockTransactional {
     }
 }
 
-#[async_trait]
-impl<'a> Advance<IncrChapterNextIndex<'a>, MockContext> for MockTransactional {
+impl<'a> Step<AllocateComicChapterIndex<'a>, MockContext> for Mock {
     type Error = RegularError;
 
-    async fn advance(
+    async fn step(
         &self,
         context: &mut MockContext,
-        step: &IncrChapterNextIndex<'a>,
+        oper: &AllocateComicChapterIndex<'a>,
     ) -> Result<i32, Self::Error> {
         //
         let comic = context
             .state
             .comics
             .iter_mut()
-            .find(|comic| comic.id == step.id)
+            .find(|comic| comic.id == oper.id)
             .ok_or_else(|| expected("error-comic-not-found"))?;
 
         let index = comic.chapter_next_index;
@@ -605,24 +549,23 @@ impl<'a> Advance<IncrChapterNextIndex<'a>, MockContext> for MockTransactional {
     }
 }
 
-#[async_trait]
-impl<'a> Advance<UpdateChapterCount<'a>, MockContext> for MockTransactional {
+impl<'a> Step<UpdateComicChapterCount<'a>, MockContext> for Mock {
     type Error = RegularError;
 
-    async fn advance(
+    async fn step(
         &self,
         context: &mut MockContext,
-        step: &UpdateChapterCount<'a>,
+        oper: &UpdateComicChapterCount<'a>,
     ) -> Result<(), Self::Error> {
         //
         let comic = context
             .state
             .comics
             .iter_mut()
-            .find(|comic| comic.id == step.id)
+            .find(|comic| comic.id == oper.id)
             .ok_or_else(|| expected("error-comic-not-found"))?;
 
-        comic.chapter_count += step.delta;
+        comic.chapter_count += oper.delta;
 
         comic.updated_at = now();
 
@@ -630,21 +573,20 @@ impl<'a> Advance<UpdateChapterCount<'a>, MockContext> for MockTransactional {
     }
 }
 
-#[async_trait]
-impl<'a> Advance<TouchLastActive<'a>, MockContext> for MockTransactional {
+impl<'a> Step<TouchComicLastActive<'a>, MockContext> for Mock {
     type Error = RegularError;
 
-    async fn advance(
+    async fn step(
         &self,
         context: &mut MockContext,
-        step: &TouchLastActive<'a>,
+        oper: &TouchComicLastActive<'a>,
     ) -> Result<(), Self::Error> {
         //
         let comic = context
             .state
             .comics
             .iter_mut()
-            .find(|comic| comic.id == step.id)
+            .find(|comic| comic.id == oper.id)
             .ok_or_else(|| expected("error-comic-not-found"))?;
 
         comic.last_active_at = now();

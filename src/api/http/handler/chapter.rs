@@ -17,8 +17,13 @@ use crate::api::http::result::{
     Accept as _, HttpBody, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
-use crate::data::chapter_data;
-use crate::model::user_model;
+use crate::data::chapter::ChapterInfoVal;
+use crate::data::chapter::CreateChapterParams;
+use crate::data::chapter::CreateChapterPayload;
+use crate::data::chapter::ListChapterInfosParams;
+use crate::data::chapter::UpdateChapterInfoParams;
+use crate::data::chapter::UpdateChapterStageParams;
+use crate::model::user::UserToken;
 use crate::usecase;
 use crate::value::chapter::ChapterInclOpt;
 
@@ -54,20 +59,20 @@ pub struct ChapterListQuery {
     post,
     path = "/api/v1/chapters",
     tag = "chapters",
-    request_body = chapter_data::CreateData,
+    request_body = CreateChapterParams,
     responses(
-        (status = 201, description = "Chapter created", body = HttpBody<chapter_data::CreateVal>),
+        (status = 201, description = "Chapter created", body = HttpBody<CreateChapterPayload>),
         (status = 403, description = "No permission to create chapters in this comic"),
         (status = 404, description = "Comic not found"),
     ),
 ))]
-#[instrument(err, skip(harn, data))]
+#[instrument(err, skip(harn, params))]
 pub async fn create(
     State(harn): State<AppHarn>,
-    Extension(user_token): Extension<user_model::Token>,
-    Json(data): Json<chapter_data::CreateData>,
-) -> HttpResult<chapter_data::CreateVal> {
-    usecase::chapter::create(harn.drive(), harn.repo(), user_token, data)
+    Extension(user_token): Extension<UserToken>,
+    Json(params): Json<CreateChapterParams>,
+) -> HttpResult<CreateChapterPayload> {
+    usecase::chapter::create(harn.drive(), harn.repo(), user_token, params)
         .await?
         .accept(StatusCode::CREATED)
 }
@@ -80,7 +85,7 @@ pub async fn create(
     description = "Lists chapters of a comic. `incl` embeds related rows; dotted values imply their parent segments. Example: `/api/v1/comics/{comic_id}/chapters?incl=comic.workset.team&incl=creator&offset=0&limit=20`.",
     params(("comic_id" = String, Path, description = "Comic ID"), ChapterListQuery),
     responses(
-        (status = 200, description = "Chapters listed", body = HttpBody<Vec<chapter_data::InfoVal>>),
+        (status = 200, description = "Chapters listed", body = HttpBody<Vec<ChapterInfoVal>>),
         (status = 403, description = "No permission to list chapters in this comic"),
     ),
 ))]
@@ -88,11 +93,11 @@ pub async fn create(
 pub async fn list_infos(
     State(harn): State<AppHarn>,
     Path(comic_id): Path<String>,
-    Extension(user_token): Extension<user_model::Token>,
+    Extension(user_token): Extension<UserToken>,
     Query(query): Query<ChapterListQuery>,
-) -> HttpResult<Vec<chapter_data::InfoVal>> {
+) -> HttpResult<Vec<ChapterInfoVal>> {
     //
-    let data = chapter_data::ListInfosData {
+    let params = ListChapterInfosParams {
         comic_id,
         incl_opt: query.incl_opt,
         offset: query.offset,
@@ -103,7 +108,7 @@ pub async fn list_infos(
         harn.repo(),
         harn.image_pool(),
         user_token,
-        data,
+        params,
     )
     .await?
     .accept(StatusCode::OK)
@@ -116,7 +121,7 @@ pub async fn list_infos(
     tag = "chapters",
     params(("comic_id" = String, Path, description = "Comic ID")),
     responses(
-        (status = 200, description = "Pinned chapter (or null)", body = HttpBody<Option<chapter_data::InfoVal>>),
+        (status = 200, description = "Pinned chapter (or null)", body = HttpBody<Option<ChapterInfoVal>>),
         (status = 403, description = "No permission to view this comic's pinned chapter"),
     ),
 ))]
@@ -124,8 +129,8 @@ pub async fn list_infos(
 pub async fn get_pinned(
     State(harn): State<AppHarn>,
     Path(comic_id): Path<String>,
-    Extension(user_token): Extension<user_model::Token>,
-) -> HttpResult<Option<chapter_data::InfoVal>> {
+    Extension(user_token): Extension<UserToken>,
+) -> HttpResult<Option<ChapterInfoVal>> {
     usecase::chapter::get_pinned(harn.repo(), user_token, comic_id)
         .await?
         .accept(StatusCode::OK)
@@ -138,7 +143,7 @@ pub async fn get_pinned(
     tag = "chapters",
     params(("chapter_id" = String, Path, description = "Chapter ID")),
     responses(
-        (status = 200, description = "Chapter info retrieved", body = HttpBody<chapter_data::InfoVal>),
+        (status = 200, description = "Chapter info retrieved", body = HttpBody<ChapterInfoVal>),
         (status = 403, description = "No permission to view this chapter"),
         (status = 404, description = "Chapter not found"),
     ),
@@ -147,8 +152,8 @@ pub async fn get_pinned(
 pub async fn get_info(
     State(harn): State<AppHarn>,
     Path(chapter_id): Path<String>,
-    Extension(user_token): Extension<user_model::Token>,
-) -> HttpResult<chapter_data::InfoVal> {
+    Extension(user_token): Extension<UserToken>,
+) -> HttpResult<ChapterInfoVal> {
     usecase::chapter::get_info(harn.repo(), user_token, chapter_id)
         .await?
         .accept(StatusCode::OK)
@@ -160,7 +165,7 @@ pub async fn get_info(
     path = "/api/v1/chapters/{chapter_id}",
     tag = "chapters",
     params(("chapter_id" = String, Path, description = "Chapter ID")),
-    request_body = chapter_data::PatchInfoData,
+    request_body = UpdateChapterInfoParams,
     responses(
         (status = 204, description = "Chapter updated"),
         (status = 422, description = "Path id does not match body id"),
@@ -168,18 +173,23 @@ pub async fn get_info(
         (status = 404, description = "Chapter not found"),
     ),
 ))]
-#[instrument(err, skip(harn, data))]
+#[instrument(err, skip(harn, params))]
 pub async fn update_info(
     State(harn): State<AppHarn>,
     Path(chapter_id): Path<String>,
-    Extension(user_token): Extension<user_model::Token>,
-    Json(data): Json<chapter_data::PatchInfoData>,
+    Extension(user_token): Extension<UserToken>,
+    Json(params): Json<UpdateChapterInfoParams>,
 ) -> HttpNoContent {
     //
-    ensure_path_matches_body_id(&chapter_id, &data.id)?;
+    ensure_path_matches_body_id(&chapter_id, &params.id)?;
 
-    usecase::chapter::update_info(harn.drive(), harn.repo(), user_token, data)
-        .await?;
+    usecase::chapter::update_info(
+        harn.drive(),
+        harn.repo(),
+        user_token,
+        params,
+    )
+    .await?;
 
     no_content()
 }
@@ -190,7 +200,7 @@ pub async fn update_info(
     path = "/api/v1/chapters/{chapter_id}/stage/advance",
     tag = "chapters",
     params(("chapter_id" = String, Path, description = "Chapter ID")),
-    request_body = chapter_data::UpdateStageData,
+    request_body = UpdateChapterStageParams,
     responses(
         (status = 204, description = "Stage advanced"),
         (status = 422, description = "Path id does not match body id"),
@@ -198,15 +208,15 @@ pub async fn update_info(
         (status = 422, description = "Illegal workflow transition"),
     ),
 ))]
-#[instrument(err, skip(harn, data))]
+#[instrument(err, skip(harn, params))]
 pub async fn advance_stage(
     State(harn): State<AppHarn>,
     Path(chapter_id): Path<String>,
-    Extension(user_token): Extension<user_model::Token>,
-    Json(data): Json<chapter_data::UpdateStageData>,
+    Extension(user_token): Extension<UserToken>,
+    Json(params): Json<UpdateChapterStageParams>,
 ) -> HttpNoContent {
     //
-    ensure_path_matches_body_id(&chapter_id, &data.id)?;
+    ensure_path_matches_body_id(&chapter_id, &params.id)?;
 
     usecase::chapter::update_stage(
         harn.drive(),
@@ -214,7 +224,7 @@ pub async fn advance_stage(
         harn.prom(),
         harn.develop(),
         user_token,
-        data,
+        params,
     )
     .await?;
 
@@ -237,7 +247,7 @@ pub async fn advance_stage(
 pub async fn delete(
     State(harn): State<AppHarn>,
     Path(chapter_id): Path<String>,
-    Extension(user_token): Extension<user_model::Token>,
+    Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
     usecase::chapter::delete(

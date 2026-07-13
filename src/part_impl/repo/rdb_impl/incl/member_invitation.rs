@@ -1,6 +1,7 @@
 use async_trait::async_trait;
 
-use crate::model::{member_invitation_model, user_model};
+use crate::model::member_invitation::MemberInvitationInfo;
+use crate::model::user::UserInfo;
 use crate::part_impl::repo::rdb_impl::incl::{self, Incl, UserByIds};
 use crate::part_impl::shared::RdbConn;
 use crate::result::RegularResult;
@@ -11,18 +12,15 @@ struct MemberInvitationInvitorIncl;
 
 #[async_trait]
 impl Incl for MemberInvitationInvitorIncl {
-    type Owner = member_invitation_model::Info;
-    type Related = user_model::Info;
+    type Owner = MemberInvitationInfo;
+    type Related = UserInfo;
     type Query = UserByIds;
 
-    fn resolve_key(owner: &member_invitation_model::Info) -> Option<&str> {
+    fn resolve_key(owner: &MemberInvitationInfo) -> Option<&str> {
         Some(&owner.invitor_id)
     }
 
-    fn inject(
-        owner: &mut member_invitation_model::Info,
-        related: Option<user_model::Info>,
-    ) {
+    fn inject(owner: &mut MemberInvitationInfo, related: Option<UserInfo>) {
         owner.invitor = related;
     }
 }
@@ -30,7 +28,7 @@ impl Incl for MemberInvitationInvitorIncl {
 /// Populates member invitation query results with eagerly-loaded invitor user data.
 pub async fn populate_member_invitation_incls(
     conn: &mut RdbConn,
-    infos: &mut [member_invitation_model::Info],
+    infos: &mut [MemberInvitationInfo],
     incl_opt: &[MemberInvitationInclOpt],
 ) -> RegularResult<()> {
     //

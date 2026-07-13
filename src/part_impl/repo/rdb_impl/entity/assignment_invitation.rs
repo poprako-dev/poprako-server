@@ -3,7 +3,8 @@
 use diesel::prelude::*;
 use time::OffsetDateTime;
 
-use crate::model::assignment_invitation_model;
+use crate::model::assignment_invitation::AssignmentInvitationEntry;
+use crate::model::assignment_invitation::AssignmentInvitationInfo;
 use crate::part_impl::repo::rdb_impl::schema::t_assignment_invitation;
 use crate::result::RegularError;
 use crate::value::role::RoleMask;
@@ -31,7 +32,7 @@ pub struct AssignmentInvitationRow {
 /// Insertable struct for creating a new record in the `t_assignment_invitation` table.
 #[derive(Insertable)]
 #[diesel(table_name = t_assignment_invitation)]
-pub struct AssignmentInvitationEntry<'a> {
+pub struct AssignmentInvitationRowEntry<'a> {
     pub f_id: &'a str,
 
     pub f_chapter_id: &'a str,
@@ -73,7 +74,7 @@ impl AssignmentInvitationAspect {
     }
 }
 
-impl TryFrom<AssignmentInvitationRow> for assignment_invitation_model::Info {
+impl TryFrom<AssignmentInvitationRow> for AssignmentInvitationInfo {
     type Error = RegularError;
 
     fn try_from(row: AssignmentInvitationRow) -> Result<Self, Self::Error> {
@@ -94,21 +95,21 @@ impl TryFrom<AssignmentInvitationRow> for assignment_invitation_model::Info {
     }
 }
 
-impl<'a> From<&'a assignment_invitation_model::Form>
-    for AssignmentInvitationEntry<'a>
+impl<'a> From<&'a AssignmentInvitationEntry>
+    for AssignmentInvitationRowEntry<'a>
 {
-    fn from(form: &'a assignment_invitation_model::Form) -> Self {
+    fn from(entry: &'a AssignmentInvitationEntry) -> Self {
         //
         let now = OffsetDateTime::now_utc();
 
         Self {
-            f_id: &form.id,
-            f_chapter_id: &form.chapter_id,
-            f_inviter_id: &form.inviter_id,
-            f_invitee_qid: &form.invitee_qid,
-            f_code: &form.code,
+            f_id: &entry.id,
+            f_chapter_id: &entry.chapter_id,
+            f_inviter_id: &entry.inviter_id,
+            f_invitee_qid: &entry.invitee_qid,
+            f_code: &entry.code,
             f_pending: true,
-            f_role_mask: i64::from(u32::from(form.roles)),
+            f_role_mask: i64::from(u32::from(entry.roles)),
             f_created_at: now,
             f_updated_at: now,
         }

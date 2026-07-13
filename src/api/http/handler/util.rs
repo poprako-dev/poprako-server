@@ -9,7 +9,7 @@ use utoipa::IntoParams;
 use poprako_util::i18n::trl;
 
 use crate::api::http::result::HttpError;
-use crate::model::user_model;
+use crate::model::user::UserToken;
 use crate::result::ExpectedVariant;
 
 /// Pagination query parameters for nested list endpoints where the parent id
@@ -42,7 +42,7 @@ pub fn ensure_path_matches_body_id(
 /// the path.
 pub fn ensure_current_user(
     path_user_id: &str,
-    token: &user_model::Token,
+    token: &UserToken,
 ) -> Result<(), HttpError> {
     //
     if path_user_id != token.user_id {

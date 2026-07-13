@@ -8,8 +8,9 @@ use utoipa::{IntoParams, ToSchema};
 use poprako_util::i18n::trl;
 use poprako_util::time::ToUnixMilli;
 
-use crate::data::{chapter_data, user_data};
-use crate::model::assignment_model;
+use crate::data::chapter::ChapterInfoVal;
+use crate::data::user::UserInfoVal;
+use crate::model::assignment::{AssignmentInfo, AssignmentInfoListSpec};
 use crate::part::image::ImagePool;
 use crate::result::{ExpectedVariant, RegularError, RegularResult};
 use crate::value::assignment::AssignmentInclOpt;
@@ -18,16 +19,16 @@ use crate::value::role::{RoleField, RoleMask};
 /// Presentation-ready chapter assignment information.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct InfoVal {
+pub struct AssignmentInfoVal {
     pub id: String,
 
     pub chapter_id: String,
     pub user_id: String,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub user: Option<user_data::InfoVal>,
+    pub user: Option<UserInfoVal>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub chapter: Option<chapter_data::InfoVal>,
+    pub chapter: Option<ChapterInfoVal>,
 
     pub roles: RoleMask,
 
@@ -35,8 +36,8 @@ pub struct InfoVal {
     pub updated_at: i64,
 }
 
-impl From<assignment_model::Info> for InfoVal {
-    fn from(model: assignment_model::Info) -> Self {
+impl From<AssignmentInfo> for AssignmentInfoVal {
+    fn from(model: AssignmentInfo) -> Self {
         Self {
             id: model.id,
             chapter_id: model.chapter_id,
@@ -50,21 +51,21 @@ impl From<assignment_model::Info> for InfoVal {
     }
 }
 
-impl InfoVal {
+impl AssignmentInfoVal {
     /// Converts an assignment model into a presentation-ready value,
     /// resolving included user avatar when present.
     pub async fn from_model<P>(
         image_pool: &P,
-        model: assignment_model::Info,
+        model: AssignmentInfo,
     ) -> RegularResult<Self>
     where
         P: ImagePool,
     {
         let user = match model.user {
             //
-            Some(user_info) => Some(
-                user_data::InfoVal::from_model(image_pool, user_info).await?,
-            ),
+            Some(user_info) => {
+                Some(UserInfoVal::from_model(image_pool, user_info).await?)
+            }
 
             None => None,
         };
@@ -72,8 +73,7 @@ impl InfoVal {
         let chapter = match model.chapter {
             //
             Some(chapter_info) => Some(
-                chapter_data::InfoVal::from_model(image_pool, chapter_info)
-                    .await?,
+                ChapterInfoVal::from_model(image_pool, chapter_info).await?,
             ),
 
             None => None,
@@ -105,7 +105,7 @@ impl InfoVal {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
 #[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
-pub struct ListInfosData {
+pub struct ListAssignmentInfosParams {
     /// Chapter mode: list assignments on this chapter. Mutually exclusive with
     /// `owner_id`.
     pub chapter_id: Option<String>,
@@ -133,10 +133,10 @@ pub struct ListInfosData {
     pub limit: u32,
 }
 
-impl TryInto<assignment_model::ListSpec> for ListInfosData {
+impl TryInto<AssignmentInfoListSpec> for ListAssignmentInfosParams {
     type Error = RegularError;
 
-    fn try_into(self) -> RegularResult<assignment_model::ListSpec> {
+    fn try_into(self) -> RegularResult<AssignmentInfoListSpec> {
         //
         let invalid_args_err = || RegularError::Expected {
             variant: ExpectedVariant::Args,
@@ -148,7 +148,7 @@ impl TryInto<assignment_model::ListSpec> for ListInfosData {
         }
 
         if let Some(chapter_id) = self.chapter_id {
-            return Ok(assignment_model::ListSpec::Chapter {
+            return Ok(AssignmentInfoListSpec::Chapter {
                 chapter_id,
                 role: self.role,
                 incl_opt: self.incl_opt,
@@ -157,7 +157,7 @@ impl TryInto<assignment_model::ListSpec> for ListInfosData {
             });
         }
 
-        Ok(assignment_model::ListSpec::User {
+        Ok(AssignmentInfoListSpec::User {
             owner_id: self.owner_id.ok_or_else(invalid_args_err)?,
             role: self.role,
             incl_opt: self.incl_opt,
@@ -170,7 +170,7 @@ impl TryInto<assignment_model::ListSpec> for ListInfosData {
 /// Input parameters for updating assignment roles.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct UpdateRolesData {
+pub struct UpdateAssignmentRolesParams {
     pub chapter_id: String,
     pub user_id: String,
 
@@ -184,7 +184,7 @@ pub struct UpdateRolesData {
 /// assignment; the use case layer validates this before applying.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct JoinChapterData {
+pub struct JoinChapterAssignmentParams {
     pub chapter_id: String,
 
     pub roles: RoleMask,

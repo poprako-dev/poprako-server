@@ -1,36 +1,26 @@
 //! Repository traits for the assignment domain.
 
-use poprako_transactional::advance::Advance;
+use poprako_orchestra::{Run, Step};
 
-use crate::part::repo::step::assignment::{
-    Create, Delete, DeleteByChapterId, GetInfoByChapterIdAndUserId,
-    GetInfoById, ListAllInfosByChapter, ListInfos,
-    ListInfosByChapterIdExcluded, PutRoles,
+use crate::part::repo::oper::assignment::{
+    CreateAssignment, DeleteAssignments, FindAssignmentInfo, GetAssignmentInfo,
+    ListAssignmentInfos, ListAssignmentInfosExcluded, UpdateAssignmentRoles,
 };
-use crate::part::shared::execute::Execute;
 use crate::result::RegularError;
-use crate::util::DeriveTransactional;
 
-/// Non-transactional assignment repository.
+/// Assignment repository operations.
+///
+/// Read operations can run independently. Operations participating in an
+/// atomic workflow step through the context supplied by `Nucl::coord`.
 pub trait AssignmentRepo<C>:
-    DeriveTransactional
-    + for<'a> Execute<GetInfoByChapterIdAndUserId<'a>, Error = RegularError>
-    + for<'a> Execute<ListInfos<'a>, Error = RegularError>
-    + for<'a> Execute<GetInfoById<'a>, Error = RegularError>
-    + for<'a> Execute<ListAllInfosByChapter<'a>, Error = RegularError>
-where
-    Self::Transactional: AssignmentRepoTransactional<C>,
-{
-}
-
-/// Transactional assignment repository.
-pub trait AssignmentRepoTransactional<C>:
-    for<'a> Advance<GetInfoByChapterIdAndUserId<'a>, C, Error = RegularError>
-    + for<'a> Advance<ListInfosByChapterIdExcluded<'a>, C, Error = RegularError>
-    + for<'a> Advance<ListAllInfosByChapter<'a>, C, Error = RegularError>
-    + for<'a> Advance<Create<'a>, C, Error = RegularError>
-    + for<'a> Advance<PutRoles<'a>, C, Error = RegularError>
-    + for<'a> Advance<Delete<'a>, C, Error = RegularError>
-    + for<'a> Advance<DeleteByChapterId<'a>, C, Error = RegularError>
+    for<'a, 'b> Run<FindAssignmentInfo<'a, 'b>, Error = RegularError>
+    + for<'a, 'b> Run<GetAssignmentInfo<'a, 'b>, Error = RegularError>
+    + for<'a, 'b> Run<ListAssignmentInfos<'a, 'b>, Error = RegularError>
+    + for<'a, 'b> Step<FindAssignmentInfo<'a, 'b>, C, Error = RegularError>
+    + for<'a, 'b> Step<ListAssignmentInfos<'a, 'b>, C, Error = RegularError>
+    + for<'a> Step<ListAssignmentInfosExcluded<'a>, C, Error = RegularError>
+    + for<'a> Step<CreateAssignment<'a>, C, Error = RegularError>
+    + for<'a> Step<UpdateAssignmentRoles<'a>, C, Error = RegularError>
+    + for<'a> Step<DeleteAssignments<'a>, C, Error = RegularError>
 {
 }

@@ -1,9 +1,9 @@
 //! Diesel entries for immutable comic archive rows.
 
+use crate::model::comic_archive::ComicArchiveRecord;
 use diesel::prelude::*;
 use time::OffsetDateTime;
 
-use crate::model::comic_archive_model;
 use crate::part_impl::repo::rdb_impl::schema::{
     t_archived_chapter, t_archived_comic, t_archived_translation,
 };
@@ -38,8 +38,8 @@ pub struct ArchivedTranslationEntry<'a> {
     pub f_created_at: OffsetDateTime,
 }
 
-impl<'a> From<&'a comic_archive_model::Record> for ArchivedComicEntry<'a> {
-    fn from(comic_archive_record: &'a comic_archive_model::Record) -> Self {
+impl<'a> From<&'a ComicArchiveRecord> for ArchivedComicEntry<'a> {
+    fn from(comic_archive_record: &'a ComicArchiveRecord) -> Self {
         Self {
             f_id: &comic_archive_record.id,
             f_archived_bytes: &comic_archive_record.archived_bytes,
@@ -49,8 +49,8 @@ impl<'a> From<&'a comic_archive_model::Record> for ArchivedComicEntry<'a> {
     }
 }
 
-impl<'a> From<&'a comic_archive_model::Record> for ArchivedChapterEntry<'a> {
-    fn from(comic_archive_record: &'a comic_archive_model::Record) -> Self {
+impl<'a> From<&'a ComicArchiveRecord> for ArchivedChapterEntry<'a> {
+    fn from(comic_archive_record: &'a ComicArchiveRecord) -> Self {
         Self {
             f_id: &comic_archive_record.id,
             f_archived_bytes: &comic_archive_record.archived_bytes,
@@ -60,10 +60,8 @@ impl<'a> From<&'a comic_archive_model::Record> for ArchivedChapterEntry<'a> {
     }
 }
 
-impl<'a> From<&'a comic_archive_model::Record>
-    for ArchivedTranslationEntry<'a>
-{
-    fn from(comic_archive_record: &'a comic_archive_model::Record) -> Self {
+impl<'a> From<&'a ComicArchiveRecord> for ArchivedTranslationEntry<'a> {
+    fn from(comic_archive_record: &'a ComicArchiveRecord) -> Self {
         Self {
             f_id: &comic_archive_record.id,
             f_archived_bytes: &comic_archive_record.archived_bytes,

@@ -1,17 +1,19 @@
-// assignment_roundtrip_reads_test_database_url(AssignmentStep)(positive): assignment repo creates, lists, fetches, and updates roles in the local test database.
+// assignment_roundtrip_reads_test_database_url(CreateAssignment, ListAssignmentInfos, GetAssignmentInfo, UpdateAssignmentRoles)(positive): assignment repo creates, lists, fetches, and updates roles in the local test database.
 
 use super::*;
 
-use poprako_transactional::advance::Advance;
-use poprako_transactional::drive::Drive;
+use poprako_orchestra::{Nucl as _, Run as _, Step as _};
 
-use crate::model::assignment_model;
-use crate::part::repo::step::assignment::AssignmentStep;
-use crate::part::shared::execute::Execute;
+use crate::model::assignment::AssignmentEntry;
+use crate::model::assignment::AssignmentInfoListSpec;
+use crate::model::assignment::AssignmentRoleUpdate;
+use crate::part::repo::oper::assignment::{
+    CreateAssignment, GetAssignmentInfo, ListAssignmentInfos,
+    UpdateAssignmentRoles,
+};
 use crate::part_impl::drive::rdb_impl::RdbDrive;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
 use crate::result::RegularError;
-use crate::util::DeriveTransactional as _;
 use crate::value::assignment::AssignmentInclOpt;
 use crate::value::role::{RoleField, RoleMask};
 
@@ -30,9 +32,7 @@ async fn assignment_roundtrip_reads_test_database_url() {
 
     let drive = RdbDrive::new(shared.clone());
 
-    let transactional_repo = repo.derive_transactional().await;
-
-    let assignee_form = test_shared::user_form(PREFIX, "assignee");
+    let assignee_form = test_shared::user_entry(PREFIX, "assignee");
 
     test_shared::create_user(&shared, &assignee_form).await;
 
@@ -40,20 +40,20 @@ async fn assignment_roundtrip_reads_test_database_url() {
 
     let reviewer_role = RoleMask::from(RoleField::REVIEWER);
 
-    let assignment_form = assignment_model::Form {
+    let assignment_entry = AssignmentEntry {
         id: format!("{}assignment", PREFIX),
-        chapter_id: chapter_fixture.chapter_form.id.clone(),
+        chapter_id: chapter_fixture.chapter_entry.id.clone(),
         user_id: assignee_form.id.clone(),
         roles: translator_role,
     };
 
     drive
-        .with_context(async |context| {
-            //
-            Advance::advance(
-                &transactional_repo,
+        .coord(async |context| {
+            repo.step(
                 context,
-                &AssignmentStep::create(&assignment_form),
+                &CreateAssignment {
+                    entry: &assignment_entry,
+                },
             )
             .await?;
 
@@ -63,21 +63,19 @@ async fn assignment_roundtrip_reads_test_database_url() {
         .ok()
         .unwrap();
 
-    let assignment_list_spec = assignment_model::ListSpec::Chapter {
-        chapter_id: chapter_fixture.chapter_form.id.clone(),
+    let assignment_list_spec = AssignmentInfoListSpec::Chapter {
+        chapter_id: chapter_fixture.chapter_entry.id.clone(),
         role: Some(RoleField::TRANSLATOR),
         incl_opt: vec![AssignmentInclOpt::User],
         offset: 0,
         limit: 10,
     };
 
-    let assignment_infos = Execute::execute(
-        &repo,
-        &AssignmentStep::list_infos(&assignment_list_spec),
-    )
-    .await
-    .ok()
-    .unwrap();
+    let list_assignment_infos = ListAssignmentInfos::Spec {
+        spec: &assignment_list_spec,
+    };
+
+    let assignment_infos = repo.run(&list_assignment_infos).await.ok().unwrap();
 
     assert_eq!(assignment_infos.len(), 1);
 
@@ -86,18 +84,18 @@ async fn assignment_roundtrip_reads_test_database_url() {
         assignee_form.id
     );
 
-    let assignment_role_update = assignment_model::RoleUpdate {
-        id: assignment_form.id.clone(),
+    let assignment_role_update = AssignmentRoleUpdate {
+        id: assignment_entry.id.clone(),
         roles: reviewer_role,
     };
 
     drive
-        .with_context(async |context| {
-            //
-            Advance::advance(
-                &transactional_repo,
+        .coord(async |context| {
+            repo.step(
                 context,
-                &AssignmentStep::put_roles(&assignment_role_update),
+                &UpdateAssignmentRoles {
+                    update: &assignment_role_update,
+                },
             )
             .await?;
 
@@ -107,46 +105,42 @@ async fn assignment_roundtrip_reads_test_database_url() {
         .ok()
         .unwrap();
 
-    let assignment_info = Execute::execute(
-        &repo,
-        &AssignmentStep::get_info_by_id(
-            &assignment_form.id,
-            &[AssignmentInclOpt::User],
-        ),
-    )
-    .await
-    .ok()
-    .unwrap();
+    let assignment_info = repo
+        .run(&GetAssignmentInfo {
+            id: &assignment_entry.id,
+            incls: &[AssignmentInclOpt::User],
+        })
+        .await
+        .ok()
+        .unwrap();
 
     assert_eq!(assignment_info.roles, reviewer_role);
 
-    let assignment_info = Execute::execute(
-        &repo,
-        &AssignmentStep::get_info_by_id(
-            &assignment_form.id,
-            &[AssignmentInclOpt::ChapterComicWorksetTeam],
-        ),
-    )
-    .await
-    .ok()
-    .unwrap();
+    let assignment_info = repo
+        .run(&GetAssignmentInfo {
+            id: &assignment_entry.id,
+            incls: &[AssignmentInclOpt::ChapterComicWorksetTeam],
+        })
+        .await
+        .ok()
+        .unwrap();
 
     let chapter_info = assignment_info.chapter.as_ref().unwrap();
 
     let comic_info = chapter_info.comic.as_ref().unwrap();
 
-    assert_eq!(chapter_info.id, chapter_fixture.chapter_form.id);
+    assert_eq!(chapter_info.id, chapter_fixture.chapter_entry.id);
 
-    assert_eq!(comic_info.id, chapter_fixture.comic_form.id);
+    assert_eq!(comic_info.id, chapter_fixture.comic_entry.id);
 
     assert_eq!(
         comic_info.workset.as_ref().unwrap().id,
-        chapter_fixture.workset_form.id
+        chapter_fixture.workset_entry.id
     );
 
     assert_eq!(
         comic_info.team.as_ref().unwrap().id,
-        chapter_fixture.team_form.id
+        chapter_fixture.team_entry.id
     );
 
     test_shared::cleanup(&shared, PREFIX).await.ok().unwrap();

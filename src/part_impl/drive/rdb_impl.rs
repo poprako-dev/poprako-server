@@ -1,11 +1,8 @@
 //! Diesel-backed transaction driver.
 
-use async_trait::async_trait;
 use diesel_async::{AnsiTransactionManager, TransactionManager};
-
-use poprako_transactional::drive::Drive;
-use poprako_transactional::drive::result::Error as DriveError;
-use poprako_transactional::util::AsyncFnMark;
+use poprako_orchestra::Nucl;
+use poprako_orchestra::nucl::Error as NuclError;
 
 use crate::result::RegularError;
 
@@ -14,7 +11,7 @@ use crate::part_impl::shared::{RdbContext, RdbCore};
 
 /// Diesel-backed transaction driver that wraps operations in database transactions.
 ///
-/// Each call to `with_context` opens a new connection, begins a transaction,
+/// Each call to [`Nucl::coord`] opens a new connection, begins a transaction,
 /// runs the closure, and commits or rolls back on success or failure.
 pub struct RdbDrive {
     core: RdbCore,
@@ -26,52 +23,42 @@ impl RdbDrive {
     }
 }
 
-#[async_trait]
-impl Drive<RdbContext> for RdbDrive {
+impl Nucl for RdbDrive {
     type Error = RegularError;
 
-    async fn with_context<T, E, F>(
-        &self,
-        f: F,
-    ) -> Result<T, DriveError<E, Self::Error>>
+    type Context = RdbContext;
+
+    async fn coord<F, T, E>(&self, f: F) -> Result<T, NuclError<Self::Error, E>>
     where
+        F: for<'cx> AsyncFnOnce(&'cx mut Self::Context) -> Result<T, E> + Send,
         T: Send,
         E: Send,
-        for<'c> F: AsyncFnOnce(&'c mut RdbContext) -> Result<T, E>
-            + AsyncFnMark<&'c mut RdbContext, Result<T, E>, Fut: Send>
-            + Send,
     {
-        let conn = self.core.get().await.map_err(DriveError::Backend)?;
+        let conn = self.core.get().await.map_err(NuclError::Backend)?;
 
         let mut rdb_context = RdbContext::new(conn);
 
-        // Manual begin/commit/rollback instead of `TransactionManager::transaction()`
-        // because that method requires `E: From<diesel::result::Error>`, but our
-        // generic advance error `E` does not satisfy this bound.
         AnsiTransactionManager::begin_transaction(rdb_context.conn())
             .await
-            .map_err(|e| DriveError::Backend(diesel(e)))?;
+            .map_err(|error| NuclError::Backend(diesel(error)))?;
 
         match f(&mut rdb_context).await {
-            //
             Ok(value) => {
-                //
                 AnsiTransactionManager::commit_transaction(rdb_context.conn())
                     .await
-                    .map_err(|e| DriveError::Backend(diesel(e)))?;
+                    .map_err(|error| NuclError::Backend(diesel(error)))?;
 
                 Ok(value)
             }
 
-            Err(err) => {
-                //
+            Err(error) => {
                 AnsiTransactionManager::rollback_transaction(
                     rdb_context.conn(),
                 )
                 .await
-                .map_err(|e| DriveError::Backend(diesel(e)))?;
+                .map_err(|error| NuclError::Backend(diesel(error)))?;
 
-                Err(DriveError::Advance(err))
+                Err(NuclError::Step(error))
             }
         }
     }

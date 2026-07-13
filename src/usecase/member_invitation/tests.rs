@@ -10,31 +10,38 @@
 
 use super::*;
 
-use crate::model::{member_invitation_model, member_model, user_model};
+use crate::data::member_invitation::CreateMemberInvitationParams;
+use crate::data::member_invitation::ListMemberInvitationInfosParams;
+use crate::data::member_invitation::UpdateMemberInvitationRolesParams;
+use crate::model::member::MemberInfo;
+use crate::model::member_invitation::MemberInvitationInfo;
+use crate::model::user::UserCredential;
+use crate::model::user::UserInfo;
+use crate::model::user::UserToken;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::fixture::team;
 use crate::test_util::{self, assert_expected_variant};
 use crate::value::role::{RoleField, RoleMask};
 
-fn token(user_id: &str) -> user_model::Token {
-    user_model::Token {
+fn token(user_id: &str) -> UserToken {
+    UserToken {
         user_id: user_id.into(),
     }
 }
 
-fn credential(user_id: &str) -> user_model::Credential {
-    user_model::Credential {
+fn credential(user_id: &str) -> UserCredential {
+    UserCredential {
         user_id: user_id.into(),
         password_hash: "hash".into(),
     }
 }
 
-fn user(id: &str, qid: &str) -> user_model::Info {
+fn user(id: &str, qid: &str) -> UserInfo {
     //
     let time = test_util::now();
 
-    user_model::Info {
+    UserInfo {
         id: id.into(),
         qid: qid.into(),
         nickname: id.into(),
@@ -53,8 +60,8 @@ fn member(
     user_id: &str,
     team_id: &str,
     role_mask: RoleMask,
-) -> member_model::Info {
-    member_model::Info {
+) -> MemberInfo {
+    MemberInfo {
         id: id.into(),
         user_id: user_id.into(),
         user_nickname: user_id.into(),
@@ -70,8 +77,8 @@ fn invitation(
     id: &str,
     team_id: &str,
     invitee_qid: &str,
-) -> member_invitation_model::Info {
-    member_invitation_model::Info {
+) -> MemberInvitationInfo {
+    MemberInvitationInfo {
         id: id.into(),
         team_id: team_id.into(),
         invitor: None,
@@ -83,19 +90,19 @@ fn invitation(
     }
 }
 
-fn create_data(
+fn create_params(
     team_id: &str,
     invitee_qid: &str,
-) -> member_invitation_data::CreateData {
-    member_invitation_data::CreateData {
+) -> CreateMemberInvitationParams {
+    CreateMemberInvitationParams {
         team_id: team_id.into(),
         invitee_qid: invitee_qid.into(),
         roles: RoleMask::from(RoleField::TRANSLATOR),
     }
 }
 
-fn list_data(team_id: &str) -> member_invitation_data::ListInfosData {
-    member_invitation_data::ListInfosData {
+fn list_params(team_id: &str) -> ListMemberInvitationInfosParams {
+    ListMemberInvitationInfosParams {
         incl_opt: Vec::new(),
         team_id: team_id.into(),
         pending: Some(true),
@@ -104,8 +111,8 @@ fn list_data(team_id: &str) -> member_invitation_data::ListInfosData {
     }
 }
 
-fn update_data(id: &str) -> member_invitation_data::UpdateRolesData {
-    member_invitation_data::UpdateRolesData {
+fn update_params(id: &str) -> UpdateMemberInvitationRolesParams {
+    UpdateMemberInvitationRolesParams {
         id: id.into(),
         roles: RoleMask::from(RoleField::REVIEWER),
     }
@@ -131,7 +138,7 @@ async fn create_admin_creates_pending_invitation() {
         &mock,
         &mock,
         token("admin-user"),
-        create_data("team-1", "qid-2"),
+        create_params("team-1", "qid-2"),
     )
     .await
     .unwrap();
@@ -165,7 +172,7 @@ async fn create_non_admin_is_rejected() {
         &mock,
         &mock,
         token("normal-user"),
-        create_data("team-1", "qid-2"),
+        create_params("team-1", "qid-2"),
     )
     .await
     .err()
@@ -191,7 +198,7 @@ async fn list_infos_member_lists_invitations() {
     mock.seed_member_invitation(invitation("inv-1", "team-1", "qid-2"));
 
     let listed =
-        list_infos(&mock, &mock, token("member-user"), list_data("team-1"))
+        list_infos(&mock, &mock, token("member-user"), list_params("team-1"))
             .await
             .unwrap();
 
@@ -213,7 +220,7 @@ async fn list_infos_empty_returns_after_membership() {
     ));
 
     let listed =
-        list_infos(&mock, &mock, token("member-user"), list_data("team-1"))
+        list_infos(&mock, &mock, token("member-user"), list_params("team-1"))
             .await
             .unwrap();
 
@@ -227,10 +234,11 @@ async fn list_infos_non_member_is_rejected() {
 
     mock.seed_member_invitation(invitation("inv-1", "team-1", "qid-2"));
 
-    let err = list_infos(&mock, &mock, token("stranger"), list_data("team-1"))
-        .await
-        .err()
-        .unwrap();
+    let err =
+        list_infos(&mock, &mock, token("stranger"), list_params("team-1"))
+            .await
+            .err()
+            .unwrap();
 
     assert_expected_variant(err, ExpectedVariant::Perm);
 }
@@ -249,7 +257,7 @@ async fn update_roles_admin_updates_role_mask() {
 
     mock.seed_member_invitation(invitation("inv-1", "team-1", "qid-2"));
 
-    update_roles(&mock, &mock, token("admin-user"), update_data("inv-1"))
+    update_roles(&mock, &mock, token("admin-user"), update_params("inv-1"))
         .await
         .unwrap();
 
@@ -273,11 +281,15 @@ async fn update_roles_non_admin_is_rejected() {
 
     mock.seed_member_invitation(invitation("inv-1", "team-1", "qid-2"));
 
-    let err =
-        update_roles(&mock, &mock, token("normal-user"), update_data("inv-1"))
-            .await
-            .err()
-            .unwrap();
+    let err = update_roles(
+        &mock,
+        &mock,
+        token("normal-user"),
+        update_params("inv-1"),
+    )
+    .await
+    .err()
+    .unwrap();
 
     assert_expected_variant(err, ExpectedVariant::Perm);
 }

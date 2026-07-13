@@ -7,8 +7,9 @@ use utoipa::{IntoParams, ToSchema};
 
 use poprako_util::time::ToUnixMilli;
 
-use crate::data::user_data;
-use crate::model::announcement_model;
+use crate::data::user::UserInfoVal;
+use crate::model::announcement::AnnouncementInfo;
+use crate::model::announcement::AnnouncementListSpec;
 use crate::part::image::ImagePool;
 use crate::result::RegularResult;
 use crate::value::announcement::AnnouncementInclOpt;
@@ -16,13 +17,13 @@ use crate::value::announcement::AnnouncementInclOpt;
 /// Presentation-ready team announcement information.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct InfoVal {
+pub struct AnnouncementInfoVal {
     pub id: String,
 
     pub team_id: String,
     pub user_id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub user: Option<user_data::InfoVal>,
+    pub user: Option<UserInfoVal>,
 
     pub title: String,
     pub content: String,
@@ -30,20 +31,20 @@ pub struct InfoVal {
     pub created_at: i64,
 }
 
-impl InfoVal {
+impl AnnouncementInfoVal {
     /// Converts an announcement model into a presentation value.
     pub async fn from_model<P>(
         image_pool: &P,
-        model: announcement_model::Info,
+        model: AnnouncementInfo,
     ) -> RegularResult<Self>
     where
         P: ImagePool,
     {
         let user = match model.user {
             //
-            Some(user_info) => Some(
-                user_data::InfoVal::from_model(image_pool, user_info).await?,
-            ),
+            Some(user_info) => {
+                Some(UserInfoVal::from_model(image_pool, user_info).await?)
+            }
 
             None => None,
         };
@@ -68,7 +69,7 @@ impl InfoVal {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
 #[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
-pub struct ListInfosData {
+pub struct ListAnnouncementInfosParams {
     /// Parent team whose announcements to list.
     pub team_id: String,
 
@@ -84,13 +85,13 @@ pub struct ListInfosData {
     pub limit: u32,
 }
 
-impl From<ListInfosData> for announcement_model::ListSpec {
-    fn from(data: ListInfosData) -> Self {
+impl From<ListAnnouncementInfosParams> for AnnouncementListSpec {
+    fn from(params: ListAnnouncementInfosParams) -> Self {
         Self {
-            team_id: data.team_id,
-            incl_opt: data.incl_opt,
-            offset: data.offset,
-            limit: data.limit,
+            team_id: params.team_id,
+            incl_opt: params.incl_opt,
+            offset: params.offset,
+            limit: params.limit,
         }
     }
 }
@@ -98,7 +99,7 @@ impl From<ListInfosData> for announcement_model::ListSpec {
 /// Input parameters for creating an announcement.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct CreateData {
+pub struct CreateAnnouncementParams {
     pub team_id: String,
 
     pub title: String,
@@ -108,6 +109,6 @@ pub struct CreateData {
 /// Return value from creating an announcement.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct CreateVal {
+pub struct CreateAnnouncementPayload {
     pub id: String,
 }

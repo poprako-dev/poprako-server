@@ -9,7 +9,9 @@ use diesel::serialize::{IsNull, Output, Result as SerializeResult, ToSql};
 use diesel::sql_types::Text;
 use time::OffsetDateTime;
 
-use crate::part::prom::Append;
+use poprako_orchestra_extra::prom::task::Task;
+
+use crate::part::prom::payload::Payload;
 use crate::part_impl::repo::rdb_impl::schema::t_local_message;
 use crate::result::{RegularError, RegularResult};
 
@@ -64,23 +66,26 @@ pub struct LocalMessageEntry<'a> {
 }
 
 impl<'a> LocalMessageEntry<'a> {
-    pub fn from_append(
-        step: &'a Append<'_>,
+    pub fn from_task(
+        task: &Task<'a, String, Payload>,
         now: OffsetDateTime,
     ) -> RegularResult<Self> {
-        //
-        let f_payload = serde_json::to_value(&step.payload).map_err(|e| {
-            RegularError::Unrecoverable {
-                message: format!("failed to serialize prom payload: {}", e),
-            }
-        })?;
+        let f_payload =
+            serde_json::to_value(task.payload).map_err(|error| {
+                RegularError::Unrecoverable {
+                    message: format!(
+                        "failed to serialize prom payload: {}",
+                        error
+                    ),
+                }
+            })?;
 
         Ok(Self {
-            f_id: step.id,
-            f_topic: step.topic,
+            f_id: task.id.as_ref(),
+            f_topic: task.payload.topic(),
             f_status: LocalMessageStatus::Pending,
             f_payload,
-            f_visible_at: *step.visible_at,
+            f_visible_at: now + task.delay.unwrap_or_default(),
             f_created_at: now,
             f_updated_at: now,
         })

@@ -1,274 +1,33 @@
-//! Mock implementations of `AssignmentRepo` and `AssignmentRepoTransactional`.
+//! Mock implementation of assignment repository operations.
 
-use async_trait::async_trait;
+use poprako_orchestra::{Run, Step};
 
-use poprako_transactional::advance::Advance;
-
-use crate::model::{
-    assignment_model, chapter_model, comic_model, team_model, user_model,
-    workset_model,
+use crate::part::repo::assignment::AssignmentRepo;
+use crate::part::repo::oper::assignment::{
+    CreateAssignment, DeleteAssignments, FindAssignmentInfo, GetAssignmentInfo,
+    ListAssignmentInfos, ListAssignmentInfosExcluded, UpdateAssignmentRoles,
 };
-use crate::part::repo::assignment::{
-    AssignmentRepo, AssignmentRepoTransactional,
-};
-use crate::part::repo::step::assignment::{
-    Create, Delete, DeleteByChapterId, GetInfoByChapterIdAndUserId,
-    GetInfoById, ListAllInfosByChapter, ListInfos,
-    ListInfosByChapterIdExcluded, PutRoles,
-};
-use crate::part::shared::execute::Execute;
 use crate::part_impl::repo::mock_impl::{
-    Mock, MockContext, MockState, MockTransactional, expected, now,
+    Mock, MockContext, MockState, expected, now,
 };
 use crate::result::{RegularError, RegularResult};
 use crate::value::assignment::AssignmentInclOpt;
-use crate::value::incl::expand_incl_opts;
 use crate::value::role::RoleField;
 
+use self::incl::apply_assignment_incls;
+use crate::model::assignment::AssignmentEntry;
+use crate::model::assignment::AssignmentInfo;
+use crate::model::assignment::AssignmentInfoListSpec;
+
+mod incl;
+
 impl AssignmentRepo<MockContext> for Mock {}
-
-impl AssignmentRepoTransactional<MockContext> for MockTransactional {}
-
-fn find_user(state: &MockState, user_id: &str) -> Option<user_model::Info> {
-    state
-        .users
-        .iter()
-        .find(|user_info| user_info.id == user_id)
-        .cloned()
-}
-
-fn find_chapter(
-    state: &MockState,
-    chapter_id: &str,
-) -> Option<chapter_model::Info> {
-    //
-    let mut chapter_info = state
-        .chapters
-        .iter()
-        .find(|chapter_info| chapter_info.id == chapter_id)
-        .cloned()?;
-
-    chapter_info.comic = None;
-
-    chapter_info.creator = None;
-
-    Some(chapter_info)
-}
-
-fn find_comic(state: &MockState, comic_id: &str) -> Option<comic_model::Info> {
-    //
-    let mut comic_info = state
-        .comics
-        .iter()
-        .find(|comic_info| comic_info.id == comic_id)
-        .cloned()?;
-
-    comic_info.workset = None;
-
-    comic_info.team = None;
-
-    comic_info.creator = None;
-
-    Some(comic_info)
-}
-
-fn find_workset(
-    state: &MockState,
-    workset_id: &str,
-) -> Option<workset_model::Info> {
-    state
-        .worksets
-        .iter()
-        .find(|workset_info| workset_info.id == workset_id)
-        .cloned()
-}
-
-fn find_team_for_workset(
-    state: &MockState,
-    workset_info: &workset_model::Info,
-) -> Option<team_model::Info> {
-    state
-        .teams
-        .iter()
-        .find(|team_info| team_info.id == workset_info.team_id)
-        .cloned()
-}
-
-fn apply_user_incl(
-    state: &MockState,
-    assignment_info: &mut assignment_model::Info,
-    include_user: bool,
-) {
-    if include_user {
-        assignment_info.user = find_user(state, &assignment_info.user_id);
-    }
-}
-
-fn apply_chapter_incl(
-    state: &MockState,
-    assignment_info: &mut assignment_model::Info,
-    include_chapter: bool,
-) {
-    if include_chapter {
-        assignment_info.chapter =
-            find_chapter(state, &assignment_info.chapter_id);
-    }
-}
-
-fn apply_chapter_comic_incl(
-    state: &MockState,
-    assignment_info: &mut assignment_model::Info,
-    include_comic: bool,
-) {
-    //
-    if !include_comic {
-        return;
-    }
-
-    let Some(chapter_info) = &mut assignment_info.chapter else {
-        return;
-    };
-
-    chapter_info.comic = find_comic(state, &chapter_info.comic_id);
-}
-
-fn apply_chapter_comic_workset_incl(
-    state: &MockState,
-    assignment_info: &mut assignment_model::Info,
-    include_workset: bool,
-) {
-    //
-    if !include_workset {
-        return;
-    }
-
-    let Some(chapter_info) = &mut assignment_info.chapter else {
-        return;
-    };
-
-    let Some(comic_info) = &mut chapter_info.comic else {
-        return;
-    };
-
-    comic_info.workset = find_workset(state, &comic_info.workset_id);
-}
-
-fn apply_chapter_comic_workset_team_incl(
-    state: &MockState,
-    assignment_info: &mut assignment_model::Info,
-    include_team: bool,
-) {
-    //
-    if !include_team {
-        return;
-    }
-
-    let Some(chapter_info) = &mut assignment_info.chapter else {
-        return;
-    };
-
-    let Some(comic_info) = &mut chapter_info.comic else {
-        return;
-    };
-
-    let Some(workset_info) = &comic_info.workset else {
-        return;
-    };
-
-    comic_info.team = find_team_for_workset(state, workset_info);
-}
-
-fn apply_chapter_creator_incl(
-    state: &MockState,
-    assignment_info: &mut assignment_model::Info,
-    include_creator: bool,
-) {
-    //
-    if !include_creator {
-        return;
-    }
-
-    let Some(chapter_info) = &mut assignment_info.chapter else {
-        return;
-    };
-
-    chapter_info.creator = find_user(state, &chapter_info.creator_id);
-}
-
-fn apply_chapter_comic_creator_incl(
-    state: &MockState,
-    assignment_info: &mut assignment_model::Info,
-    include_creator: bool,
-) {
-    //
-    if !include_creator {
-        return;
-    }
-
-    let Some(chapter_info) = &mut assignment_info.chapter else {
-        return;
-    };
-
-    let Some(comic_info) = &mut chapter_info.comic else {
-        return;
-    };
-
-    comic_info.creator = find_user(state, &comic_info.creator_id);
-}
-
-fn apply_assignment_incls(
-    state: &MockState,
-    assignment_info: &mut assignment_model::Info,
-    incl_opt: &[AssignmentInclOpt],
-) {
-    //
-    assignment_info.user = None;
-
-    assignment_info.chapter = None;
-
-    for incl_opt in expand_incl_opts(incl_opt) {
-        match incl_opt {
-            //
-            AssignmentInclOpt::User => {
-                apply_user_incl(state, assignment_info, true)
-            }
-
-            AssignmentInclOpt::Chapter => {
-                apply_chapter_incl(state, assignment_info, true)
-            }
-
-            AssignmentInclOpt::ChapterComic => {
-                apply_chapter_comic_incl(state, assignment_info, true)
-            }
-
-            AssignmentInclOpt::ChapterComicWorkset => {
-                apply_chapter_comic_workset_incl(state, assignment_info, true)
-            }
-
-            AssignmentInclOpt::ChapterComicWorksetTeam => {
-                apply_chapter_comic_workset_team_incl(
-                    state,
-                    assignment_info,
-                    true,
-                )
-            }
-
-            AssignmentInclOpt::ChapterCreator => {
-                apply_chapter_creator_incl(state, assignment_info, true)
-            }
-
-            AssignmentInclOpt::ChapterComicCreator => {
-                apply_chapter_comic_creator_incl(state, assignment_info, true)
-            }
-        }
-    }
-}
 
 fn find_assignment(
     state: &MockState,
     chapter_id: &str,
     user_id: &str,
-) -> Option<assignment_model::Info> {
+) -> Option<AssignmentInfo> {
     state
         .assignments
         .iter()
@@ -279,11 +38,44 @@ fn find_assignment(
         .cloned()
 }
 
+fn find_assignment_by_user_and_comic(
+    state: &MockState,
+    user_id: &str,
+    comic_id: &str,
+    incls: &[AssignmentInclOpt],
+) -> Option<AssignmentInfo> {
+    let mut assignment_infos = state
+        .assignments
+        .iter()
+        .filter(|assignment_info| assignment_info.user_id == user_id)
+        .filter(|assignment_info| {
+            state.chapters.iter().any(|chapter_info| {
+                chapter_info.id == assignment_info.chapter_id
+                    && chapter_info.comic_id == comic_id
+            })
+        })
+        .cloned()
+        .collect::<Vec<_>>();
+
+    assignment_infos.sort_by(|left, right| {
+        right
+            .created_at
+            .cmp(&left.created_at)
+            .then_with(|| left.id.cmp(&right.id))
+    });
+
+    let mut assignment_info = assignment_infos.into_iter().next()?;
+
+    apply_assignment_incls(state, &mut assignment_info, incls);
+
+    Some(assignment_info)
+}
+
 fn get_assignment(
     state: &MockState,
     id: &str,
     incl_opt: &[AssignmentInclOpt],
-) -> RegularResult<assignment_model::Info> {
+) -> RegularResult<AssignmentInfo> {
     //
     let mut assignment_info = state
         .assignments
@@ -299,12 +91,12 @@ fn get_assignment(
 
 fn list_assignments(
     state: &MockState,
-    spec: &assignment_model::ListSpec,
-) -> Vec<assignment_model::Info> {
+    spec: &AssignmentInfoListSpec,
+) -> Vec<AssignmentInfo> {
     //
     let (offset, limit, incl_opt, mut assignment_infos) = match spec {
         //
-        assignment_model::ListSpec::Chapter {
+        AssignmentInfoListSpec::Chapter {
             chapter_id,
             role,
             incl_opt,
@@ -328,7 +120,7 @@ fn list_assignments(
                 .collect::<Vec<_>>(),
         ),
 
-        assignment_model::ListSpec::User {
+        AssignmentInfoListSpec::User {
             owner_id,
             role,
             incl_opt,
@@ -375,24 +167,12 @@ fn list_assignments(
     assignment_infos[offset..end].to_vec()
 }
 
-fn list_assignments_by_chapter_id_excluded(
-    state: &MockState,
-    chapter_id: &str,
-) -> Vec<assignment_model::Info> {
-    state
-        .assignments
-        .iter()
-        .filter(|assignment_info| assignment_info.chapter_id == chapter_id)
-        .cloned()
-        .collect()
-}
-
 fn list_all_assignments_by_chapter(
     state: &MockState,
     chapter_id: &str,
     role: Option<RoleField>,
     incl_opt: &[AssignmentInclOpt],
-) -> Vec<assignment_model::Info> {
+) -> Vec<AssignmentInfo> {
     //
     let mut assignment_infos = state
         .assignments
@@ -419,35 +199,42 @@ fn list_all_assignments_by_chapter(
     assignment_infos
 }
 
+fn list_assignments_by_chapter_id_excluded(
+    state: &MockState,
+    chapter_id: &str,
+) -> Vec<AssignmentInfo> {
+    list_all_assignments_by_chapter(state, chapter_id, None, &[])
+}
+
 fn create_assignment(
     state: &mut MockState,
-    form: &assignment_model::Form,
-) -> RegularResult<assignment_model::Info> {
+    entry: &AssignmentEntry,
+) -> RegularResult<AssignmentInfo> {
     //
     if state
         .assignments
         .iter()
-        .any(|assignment_info| assignment_info.id == form.id)
+        .any(|assignment_info| assignment_info.id == entry.id)
     {
         return Err(expected("error-already-exists"));
     }
 
     if state.assignments.iter().any(|assignment_info| {
-        assignment_info.chapter_id == form.chapter_id
-            && assignment_info.user_id == form.user_id
+        assignment_info.chapter_id == entry.chapter_id
+            && assignment_info.user_id == entry.user_id
     }) {
         return Err(expected("error-already-exists"));
     }
 
     let time = now();
 
-    let assignment_info = assignment_model::Info {
-        id: form.id.clone(),
-        chapter_id: form.chapter_id.clone(),
-        user_id: form.user_id.clone(),
+    let assignment_info = AssignmentInfo {
+        id: entry.id.clone(),
+        chapter_id: entry.chapter_id.clone(),
+        user_id: entry.user_id.clone(),
         user: None,
         chapter: None,
-        roles: form.roles,
+        roles: entry.roles,
         created_at: time,
         updated_at: time,
     };
@@ -483,157 +270,177 @@ fn delete_assignments_by_chapter_id(
     Ok(())
 }
 
-#[async_trait]
-impl<'a> Execute<GetInfoByChapterIdAndUserId<'a>> for Mock {
+impl Run<FindAssignmentInfo<'_, '_>> for Mock {
     type Error = RegularError;
 
-    async fn execute(
+    async fn run(
         &self,
-        step: &GetInfoByChapterIdAndUserId<'a>,
-    ) -> Result<Option<assignment_model::Info>, Self::Error> {
-        //
+        oper: &FindAssignmentInfo<'_, '_>,
+    ) -> Result<Option<AssignmentInfo>, Self::Error> {
         let state = self.state.lock().unwrap();
 
-        Ok(find_assignment(&state, step.chapter_id, step.user_id))
+        let assignment_info = match oper {
+            FindAssignmentInfo::ChapterUser {
+                chapter_id,
+                user_id,
+            } => find_assignment(&state, chapter_id, user_id),
+            FindAssignmentInfo::UserComic {
+                user_id,
+                comic_id,
+                incls,
+            } => find_assignment_by_user_and_comic(
+                &state, user_id, comic_id, incls,
+            ),
+        };
+
+        Ok(assignment_info)
     }
 }
 
-#[async_trait]
-impl<'a> Execute<ListInfos<'a>> for Mock {
+impl Run<ListAssignmentInfos<'_, '_>> for Mock {
     type Error = RegularError;
 
-    async fn execute(
+    async fn run(
         &self,
-        step: &ListInfos<'a>,
-    ) -> Result<Vec<assignment_model::Info>, Self::Error> {
-        //
+        oper: &ListAssignmentInfos<'_, '_>,
+    ) -> Result<Vec<AssignmentInfo>, Self::Error> {
         let state = self.state.lock().unwrap();
 
-        Ok(list_assignments(&state, step.spec))
+        let assignment_infos = match oper {
+            ListAssignmentInfos::Spec { spec } => {
+                list_assignments(&state, spec)
+            }
+            ListAssignmentInfos::Chapter {
+                chapter_id,
+                role,
+                incls,
+            } => list_all_assignments_by_chapter(
+                &state, chapter_id, *role, incls,
+            ),
+        };
+
+        Ok(assignment_infos)
     }
 }
 
-#[async_trait]
-impl<'a> Execute<ListAllInfosByChapter<'a>> for Mock {
+impl Run<GetAssignmentInfo<'_, '_>> for Mock {
     type Error = RegularError;
 
-    async fn execute(
+    async fn run(
         &self,
-        step: &ListAllInfosByChapter<'a>,
-    ) -> Result<Vec<assignment_model::Info>, Self::Error> {
-        //
+        oper: &GetAssignmentInfo<'_, '_>,
+    ) -> Result<AssignmentInfo, Self::Error> {
         let state = self.state.lock().unwrap();
 
-        Ok(list_all_assignments_by_chapter(
-            &state,
-            step.chapter_id,
-            step.role,
-            step.incl_opt,
-        ))
+        get_assignment(&state, oper.id, oper.incls)
     }
 }
 
-#[async_trait]
-impl<'a> Execute<GetInfoById<'a>> for Mock {
+impl Step<FindAssignmentInfo<'_, '_>, MockContext> for Mock {
     type Error = RegularError;
 
-    async fn execute(
-        &self,
-        step: &GetInfoById<'a>,
-    ) -> Result<assignment_model::Info, Self::Error> {
-        //
-        let state = self.state.lock().unwrap();
-
-        get_assignment(&state, step.id, step.incl_opt)
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<GetInfoByChapterIdAndUserId<'a>, MockContext>
-    for MockTransactional
-{
-    type Error = RegularError;
-
-    async fn advance(
+    async fn step(
         &self,
         context: &mut MockContext,
-        step: &GetInfoByChapterIdAndUserId<'a>,
-    ) -> Result<Option<assignment_model::Info>, Self::Error> {
-        Ok(find_assignment(
-            &context.state,
-            step.chapter_id,
-            step.user_id,
-        ))
+        oper: &FindAssignmentInfo<'_, '_>,
+    ) -> Result<Option<AssignmentInfo>, Self::Error> {
+        let assignment_info = match oper {
+            FindAssignmentInfo::ChapterUser {
+                chapter_id,
+                user_id,
+            } => find_assignment(&context.state, chapter_id, user_id),
+            FindAssignmentInfo::UserComic {
+                user_id,
+                comic_id,
+                incls,
+            } => find_assignment_by_user_and_comic(
+                &context.state,
+                user_id,
+                comic_id,
+                incls,
+            ),
+        };
+
+        Ok(assignment_info)
     }
 }
 
-#[async_trait]
-impl<'a> Advance<ListInfosByChapterIdExcluded<'a>, MockContext>
-    for MockTransactional
-{
+impl Step<ListAssignmentInfosExcluded<'_>, MockContext> for Mock {
     type Error = RegularError;
 
-    async fn advance(
+    async fn step(
         &self,
         context: &mut MockContext,
-        step: &ListInfosByChapterIdExcluded<'a>,
-    ) -> Result<Vec<assignment_model::Info>, Self::Error> {
-        Ok(list_assignments_by_chapter_id_excluded(
-            &context.state,
-            step.chapter_id,
-        ))
+        oper: &ListAssignmentInfosExcluded<'_>,
+    ) -> Result<Vec<AssignmentInfo>, Self::Error> {
+        match oper {
+            ListAssignmentInfosExcluded::Chapter { chapter_id } => {
+                Ok(list_assignments_by_chapter_id_excluded(
+                    &context.state,
+                    chapter_id,
+                ))
+            }
+        }
     }
 }
 
-#[async_trait]
-impl<'a> Advance<ListAllInfosByChapter<'a>, MockContext> for MockTransactional {
+impl Step<ListAssignmentInfos<'_, '_>, MockContext> for Mock {
     type Error = RegularError;
 
-    async fn advance(
+    async fn step(
         &self,
         context: &mut MockContext,
-        step: &ListAllInfosByChapter<'a>,
-    ) -> Result<Vec<assignment_model::Info>, Self::Error> {
-        Ok(list_all_assignments_by_chapter(
-            &context.state,
-            step.chapter_id,
-            step.role,
-            step.incl_opt,
-        ))
+        oper: &ListAssignmentInfos<'_, '_>,
+    ) -> Result<Vec<AssignmentInfo>, Self::Error> {
+        let assignment_infos = match oper {
+            ListAssignmentInfos::Spec { spec } => {
+                list_assignments(&context.state, spec)
+            }
+            ListAssignmentInfos::Chapter {
+                chapter_id,
+                role,
+                incls,
+            } => list_all_assignments_by_chapter(
+                &context.state,
+                chapter_id,
+                *role,
+                incls,
+            ),
+        };
+
+        Ok(assignment_infos)
     }
 }
 
-#[async_trait]
-impl<'a> Advance<Create<'a>, MockContext> for MockTransactional {
+impl Step<CreateAssignment<'_>, MockContext> for Mock {
     type Error = RegularError;
 
-    async fn advance(
+    async fn step(
         &self,
         context: &mut MockContext,
-        step: &Create<'a>,
-    ) -> Result<assignment_model::Info, Self::Error> {
-        create_assignment(&mut context.state, step.form)
+        oper: &CreateAssignment<'_>,
+    ) -> Result<AssignmentInfo, Self::Error> {
+        create_assignment(&mut context.state, oper.entry)
     }
 }
 
-#[async_trait]
-impl<'a> Advance<PutRoles<'a>, MockContext> for MockTransactional {
+impl Step<UpdateAssignmentRoles<'_>, MockContext> for Mock {
     type Error = RegularError;
 
-    async fn advance(
+    async fn step(
         &self,
         context: &mut MockContext,
-        step: &PutRoles<'a>,
-    ) -> Result<assignment_model::Info, Self::Error> {
+        oper: &UpdateAssignmentRoles<'_>,
+    ) -> Result<AssignmentInfo, Self::Error> {
         //
         let assignment_info = context
             .state
             .assignments
             .iter_mut()
-            .find(|assignment_info| assignment_info.id == step.update.id)
+            .find(|assignment_info| assignment_info.id == oper.update.id)
             .ok_or_else(|| expected("error-assignment-not-found"))?;
 
-        assignment_info.roles = step.update.roles;
+        assignment_info.roles = oper.update.roles;
 
         assignment_info.updated_at = now();
 
@@ -641,28 +448,21 @@ impl<'a> Advance<PutRoles<'a>, MockContext> for MockTransactional {
     }
 }
 
-#[async_trait]
-impl<'a> Advance<Delete<'a>, MockContext> for MockTransactional {
+impl Step<DeleteAssignments<'_>, MockContext> for Mock {
     type Error = RegularError;
 
-    async fn advance(
+    async fn step(
         &self,
         context: &mut MockContext,
-        step: &Delete<'a>,
+        oper: &DeleteAssignments<'_>,
     ) -> Result<(), Self::Error> {
-        delete_assignment_by_id(&mut context.state, step.id)
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<DeleteByChapterId<'a>, MockContext> for MockTransactional {
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut MockContext,
-        step: &DeleteByChapterId<'a>,
-    ) -> Result<(), Self::Error> {
-        delete_assignments_by_chapter_id(&mut context.state, step.chapter_id)
+        match oper {
+            DeleteAssignments::Id { id } => {
+                delete_assignment_by_id(&mut context.state, id)
+            }
+            DeleteAssignments::Chapter { chapter_id } => {
+                delete_assignments_by_chapter_id(&mut context.state, chapter_id)
+            }
+        }
     }
 }

@@ -2553,9 +2553,9 @@ checksum = "5dcdc93847ad24990939cce6e1804361e903efcb5f99daa5abd87943a9d6d7ba"
 
 [[package]]
 name = "poprako-orchestra"
-version = "0.2.0"
+version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9f5f2cfe68ca8b70bbbe4cb4e17fa1cd45a58ba97d94bf1a50519e03d418f7db"
+checksum = "3de95d1c988caa117bf0f06967f9b8c7e9a74cfcbc33bb82d43c55abd49f0f8c"
 
 [[package]]
 name = "poprako-orchestra-extra"
@@ -2593,7 +2593,6 @@ dependencies = [
  "k-snowflake",
  "poprako-orchestra",
  "poprako-orchestra-extra",
- "poprako-transactional",
  "poprako-util",
  "serde",
  "serde_json",
@@ -2609,14 +2608,6 @@ dependencies = [
  "utoipa",
  "utoipa-swagger-ui",
  "zstd",
-]
-
-[[package]]
-name = "poprako-transactional"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "futures",
 ]
 
 [[package]]

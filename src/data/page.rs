@@ -7,14 +7,14 @@ use utoipa::ToSchema;
 
 use poprako_util::time::ToUnixMilli;
 
-use crate::model::page_model;
+use crate::model::page::PageInfo;
 use crate::part::image::ImagePool;
 use crate::result::RegularResult;
 
 /// Presentation-ready page information.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct InfoVal {
+pub struct PageInfoVal {
     pub id: String,
 
     pub chapter_id: String,
@@ -31,11 +31,11 @@ pub struct InfoVal {
     pub updated_at: i64,
 }
 
-impl InfoVal {
+impl PageInfoVal {
     /// Converts a [`PageInfo`] into a presentation-ready value.
     pub async fn from_model<P>(
         image_pool: &P,
-        model: page_model::Info,
+        model: PageInfo,
     ) -> RegularResult<Self>
     where
         P: ImagePool,
@@ -64,7 +64,7 @@ impl InfoVal {
 /// Input parameters for reserving all page images of a chapter.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct ReserveChapterData {
+pub struct ReserveChapterPagesParams {
     pub chapter_id: String,
     pub page_count: i32,
     pub file_ext: String,
@@ -73,14 +73,14 @@ pub struct ReserveChapterData {
 /// Return value from successful chapter page reservations.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct ReserveChapterVal {
-    pub creations: Vec<CreationVal>,
+pub struct ReserveChapterPagesPayload {
+    pub creations: Vec<PageCreationPayload>,
 }
 
 /// One reserved page upload target.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct CreationVal {
+pub struct PageCreationPayload {
     pub page_id: String,
     pub put_url: String,
     pub image_version: u32,
@@ -89,14 +89,14 @@ pub struct CreationVal {
 /// Input parameters for reserving one page image.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct ReserveImageData {
+pub struct ReservePageImageParams {
     pub file_ext: String,
 }
 
 /// Return value from a successful single-page image reservation.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct ReserveImageVal {
+pub struct ReservePageImagePayload {
     pub page_id: String,
     pub put_url: String,
     pub image_version: u32,
@@ -105,14 +105,14 @@ pub struct ReserveImageVal {
 /// Input parameters for confirming a page image upload completed.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct MarkImageUploadedData {
+pub struct MarkPageImageUploadedParams {
     pub image_version: u32,
 }
 
 /// Input parameters for listing pages under one chapter.
 ///
 /// Example: `/api/v1/chapters/{chapter_id}/pages?offset=0&limit=20`.
-pub struct ListInfosData {
+pub struct ListPageInfosParams {
     pub chapter_id: String,
 
     pub offset: u32,

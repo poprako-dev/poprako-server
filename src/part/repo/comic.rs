@@ -1,39 +1,32 @@
-//! Repository traits for the comic domain.
+use poprako_orchestra::{Run, Step};
 
-use poprako_transactional::advance::Advance;
-
-use crate::part::repo::step::comic::{
-    Create, Delete, GetInfoById, GetInfoExcluded, IncrChapterNextIndex,
-    ListInfos, ListInfosExcluded, MarkCoverUploaded, ReserveCover,
-    TouchLastActive, UpdateChapterCount, UpdateInfo,
+use crate::part::repo::oper::comic::{
+    AllocateComicChapterIndex, CreateComic, DeleteComic, GetComicInfo,
+    GetComicInfoExcluded, ListComicInfos, ListComicInfosExcluded,
+    MarkComicCoverUploaded, ReserveComicCover, TouchComicLastActive,
+    UpdateComic, UpdateComicChapterCount,
 };
-use crate::part::shared::execute::Execute;
 use crate::result::RegularError;
-use crate::util::DeriveTransactional;
 
-/// Non-transactional comic repository.
+/// Comic repository operations.
+///
+/// Independent reads and externally confirmed updates use [`Run`].
+/// Coordinated reads, mutations, and pessimistic locks use [`Step`].
 pub trait ComicRepo<C>:
-    DeriveTransactional
-    + for<'a> Execute<GetInfoById<'a>, Error = RegularError>
-    + for<'a> Execute<ListInfos<'a>, Error = RegularError>
-    + for<'a> Execute<UpdateInfo<'a>, Error = RegularError>
-    + for<'a> Execute<MarkCoverUploaded<'a>, Error = RegularError>
-where
-    Self::Transactional: ComicRepoTransactional<C>,
-{
-}
-
-/// Transactional comic repository.
-pub trait ComicRepoTransactional<C>:
-    for<'a> Advance<Create<'a>, C, Error = RegularError>
-    + for<'a> Advance<GetInfoById<'a>, C, Error = RegularError>
-    + for<'a> Advance<GetInfoExcluded<'a>, C, Error = RegularError>
-    + for<'a> Advance<ListInfosExcluded<'a>, C, Error = RegularError>
-    + for<'a> Advance<ReserveCover<'a>, C, Error = RegularError>
-    + for<'a> Advance<MarkCoverUploaded<'a>, C, Error = RegularError>
-    + for<'a> Advance<Delete<'a>, C, Error = RegularError>
-    + for<'a> Advance<IncrChapterNextIndex<'a>, C, Error = RegularError>
-    + for<'a> Advance<UpdateChapterCount<'a>, C, Error = RegularError>
-    + for<'a> Advance<TouchLastActive<'a>, C, Error = RegularError>
+    for<'a, 'b> Run<GetComicInfo<'a, 'b>, Error = RegularError>
+    + for<'a> Run<ListComicInfos<'a>, Error = RegularError>
+    + for<'a> Run<UpdateComic<'a>, Error = RegularError>
+    + for<'a> Run<MarkComicCoverUploaded<'a>, Error = RegularError>
+    + for<'a, 'b> Step<GetComicInfo<'a, 'b>, C, Error = RegularError>
+    + for<'a> Step<ListComicInfos<'a>, C, Error = RegularError>
+    + for<'a, 'b> Step<GetComicInfoExcluded<'a, 'b>, C, Error = RegularError>
+    + for<'a> Step<ListComicInfosExcluded<'a>, C, Error = RegularError>
+    + for<'a> Step<CreateComic<'a>, C, Error = RegularError>
+    + for<'a> Step<ReserveComicCover<'a>, C, Error = RegularError>
+    + for<'a> Step<MarkComicCoverUploaded<'a>, C, Error = RegularError>
+    + for<'a> Step<DeleteComic<'a>, C, Error = RegularError>
+    + for<'a> Step<AllocateComicChapterIndex<'a>, C, Error = RegularError>
+    + for<'a> Step<UpdateComicChapterCount<'a>, C, Error = RegularError>
+    + for<'a> Step<TouchComicLastActive<'a>, C, Error = RegularError>
 {
 }

@@ -8,7 +8,7 @@ use utoipa::ToSchema;
 /// JSON-safe export object for one page unit.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct TranslationExportVal {
+pub struct UnitTranslationExportPayload {
     pub unit_id: String,
     pub unit_index: i32,
 

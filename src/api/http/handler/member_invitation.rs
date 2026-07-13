@@ -17,8 +17,12 @@ use crate::api::http::result::{
     Accept as _, HttpBody, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
-use crate::data::member_invitation_data;
-use crate::model::user_model;
+use crate::data::member_invitation::CreateMemberInvitationParams;
+use crate::data::member_invitation::CreateMemberInvitationPayload;
+use crate::data::member_invitation::ListMemberInvitationInfosParams;
+use crate::data::member_invitation::MemberInvitationInfoVal;
+use crate::data::member_invitation::UpdateMemberInvitationRolesParams;
+use crate::model::user::UserToken;
 use crate::usecase;
 use crate::value::member_invitation::MemberInvitationInclOpt;
 
@@ -55,24 +59,24 @@ pub struct MemberInvitationListQuery {
     post,
     path = "/api/v1/member-invitations",
     tag = "member-invitations",
-    request_body = member_invitation_data::CreateData,
+    request_body = CreateMemberInvitationParams,
     responses(
-        (status = 201, description = "Invitation created", body = HttpBody<member_invitation_data::CreateVal>),
+        (status = 201, description = "Invitation created", body = HttpBody<CreateMemberInvitationPayload>),
         (status = 403, description = "No permission to create invitations in this team"),
         (status = 409, description = "Invitee is already a member"),
     ),
 ))]
-#[instrument(err, skip(harn, data))]
+#[instrument(err, skip(harn, params))]
 pub async fn create(
     State(harn): State<AppHarn>,
-    Extension(user_token): Extension<user_model::Token>,
-    Json(data): Json<member_invitation_data::CreateData>,
-) -> HttpResult<member_invitation_data::CreateVal> {
+    Extension(user_token): Extension<UserToken>,
+    Json(params): Json<CreateMemberInvitationParams>,
+) -> HttpResult<CreateMemberInvitationPayload> {
     usecase::member_invitation::create(
         harn.drive(),
         harn.repo(),
         user_token,
-        data,
+        params,
     )
     .await?
     .accept(StatusCode::CREATED)
@@ -86,7 +90,7 @@ pub async fn create(
     description = "Lists a team's member invitations. `pending` filters by consumption state; `incl` embeds related rows. Example: `/api/v1/teams/{team_id}/member-invitations?pending=true&incl=invitor&offset=0&limit=20`.",
     params(("team_id" = String, Path, description = "Team ID"), MemberInvitationListQuery),
     responses(
-        (status = 200, description = "Invitations listed", body = HttpBody<Vec<member_invitation_data::InfoVal>>),
+        (status = 200, description = "Invitations listed", body = HttpBody<Vec<MemberInvitationInfoVal>>),
         (status = 403, description = "No permission to list invitations in this team"),
     ),
 ))]
@@ -94,11 +98,11 @@ pub async fn create(
 pub async fn list_infos(
     State(harn): State<AppHarn>,
     Path(team_id): Path<String>,
-    Extension(user_token): Extension<user_model::Token>,
+    Extension(user_token): Extension<UserToken>,
     Query(query): Query<MemberInvitationListQuery>,
-) -> HttpResult<Vec<member_invitation_data::InfoVal>> {
+) -> HttpResult<Vec<MemberInvitationInfoVal>> {
     //
-    let data = member_invitation_data::ListInfosData {
+    let params = ListMemberInvitationInfosParams {
         team_id,
         pending: query.pending,
         incl_opt: query.incl_opt,
@@ -110,7 +114,7 @@ pub async fn list_infos(
         harn.repo(),
         harn.image_pool(),
         user_token,
-        data,
+        params,
     )
     .await?
     .accept(StatusCode::OK)
@@ -122,7 +126,7 @@ pub async fn list_infos(
     path = "/api/v1/member-invitations/{member_invitation_id}/roles",
     tag = "member-invitations",
     params(("member_invitation_id" = String, Path, description = "Invitation ID")),
-    request_body = member_invitation_data::UpdateRolesData,
+    request_body = UpdateMemberInvitationRolesParams,
     responses(
         (status = 204, description = "Invitation roles updated"),
         (status = 422, description = "Path id does not match body id"),
@@ -130,21 +134,21 @@ pub async fn list_infos(
         (status = 404, description = "Invitation not found"),
     ),
 ))]
-#[instrument(err, skip(harn, data))]
+#[instrument(err, skip(harn, params))]
 pub async fn update_roles(
     State(harn): State<AppHarn>,
     Path(member_invitation_id): Path<String>,
-    Extension(user_token): Extension<user_model::Token>,
-    Json(data): Json<member_invitation_data::UpdateRolesData>,
+    Extension(user_token): Extension<UserToken>,
+    Json(params): Json<UpdateMemberInvitationRolesParams>,
 ) -> HttpNoContent {
     //
-    ensure_path_matches_body_id(&member_invitation_id, &data.id)?;
+    ensure_path_matches_body_id(&member_invitation_id, &params.id)?;
 
     usecase::member_invitation::update_roles(
         harn.drive(),
         harn.repo(),
         user_token,
-        data,
+        params,
     )
     .await?;
 
@@ -167,7 +171,7 @@ pub async fn update_roles(
 pub async fn delete(
     State(harn): State<AppHarn>,
     Path(member_invitation_id): Path<String>,
-    Extension(user_token): Extension<user_model::Token>,
+    Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
     usecase::member_invitation::delete(

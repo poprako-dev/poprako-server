@@ -1,40 +1,37 @@
 //! RDB-backed system mail repository — free query functions and thin trait impls.
 
-use async_trait::async_trait;
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 
-use crate::model::system_mail_model;
-use crate::part::repo::step::system_mail::{
-    ListInfosByReceiverId, MarkRead, Send, SendBatch,
+use poprako_orchestra::Run;
+
+use crate::part::repo::oper::system_mail::{
+    ListSystemMailInfos, MarkSystemMailRead, SendSystemMail, SendSystemMails,
 };
-use crate::part::repo::system_mail::{
-    SystemMailRepo, SystemMailRepoTransactional,
-};
-use crate::part::shared::execute::Execute;
+use crate::part::repo::system_mail::SystemMailRepo;
+use crate::part_impl::repo::rdb_impl::RdbRepo;
 use crate::part_impl::repo::rdb_impl::entity::system_mail::{
-    SystemMailEntry, SystemMailRow,
+    SystemMailRow, SystemMailRowEntry,
 };
-use crate::part_impl::repo::rdb_impl::{RdbRepo, RdbRepoTransactional};
 use crate::part_impl::shared::result::{diesel, expected};
 use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::{ExpectedVariant, RegularError, RegularResult};
 
+use crate::model::system_mail::SystemMailEntry;
+use crate::model::system_mail::SystemMailInfo;
 use crate::part_impl::repo::rdb_impl::schema::t_system_mail::dsl::*;
 
 impl SystemMailRepo<RdbContext> for RdbRepo {}
-
-impl SystemMailRepoTransactional<RdbContext> for RdbRepoTransactional {}
 
 // ── Free functions ──────────────────────────────────────────────────────────
 
 /// Send a single system mail by inserting its row.
 async fn send(
     conn: &mut RdbConn,
-    form: &system_mail_model::Form,
+    entry: &SystemMailEntry,
 ) -> RegularResult<()> {
     //
-    let entry = SystemMailEntry::from(form);
+    let entry = SystemMailRowEntry::from(entry);
 
     diesel::insert_into(t_system_mail)
         .values(&entry)
@@ -45,14 +42,14 @@ async fn send(
     Ok(())
 }
 
-/// Batch-send system mail by inserting rows for every form.
+/// Batch-send system mail by inserting rows for every entry.
 async fn send_batch(
     conn: &mut RdbConn,
-    forms: &[system_mail_model::Form],
+    entries: &[SystemMailEntry],
 ) -> RegularResult<()> {
     //
-    let entries: Vec<SystemMailEntry<'_>> =
-        forms.iter().map(SystemMailEntry::from).collect();
+    let entries: Vec<SystemMailRowEntry<'_>> =
+        entries.iter().map(SystemMailRowEntry::from).collect();
 
     diesel::insert_into(t_system_mail)
         .values(&entries)
@@ -70,7 +67,7 @@ async fn list_infos(
     read: Option<bool>,
     offset: u32,
     limit: u32,
-) -> RegularResult<Vec<system_mail_model::Info>> {
+) -> RegularResult<Vec<SystemMailInfo>> {
     //
     let mut query = t_system_mail
         .filter(f_receiver_id.eq(receiver_id))
@@ -125,52 +122,47 @@ async fn mark_read(
     Ok(())
 }
 
-// ── Non-transactional: Execute impls ─────────────────────────────────────────
-
-#[async_trait]
-impl<'a> Execute<Send<'a>> for RdbRepo {
+impl Run<SendSystemMail<'_>> for RdbRepo {
     type Error = RegularError;
 
-    async fn execute(&self, step: &Send<'a>) -> RegularResult<()> {
-        submit_query!(self.core, send, step.form)
+    async fn run(&self, oper: &SendSystemMail<'_>) -> RegularResult<()> {
+        submit_query!(self.core, send, oper.entry)
     }
 }
 
-#[async_trait]
-impl<'a> Execute<SendBatch<'a>> for RdbRepo {
+impl Run<SendSystemMails<'_>> for RdbRepo {
     type Error = RegularError;
 
-    async fn execute(&self, step: &SendBatch<'a>) -> RegularResult<()> {
-        submit_query!(self.core, send_batch, step.forms)
+    async fn run(&self, oper: &SendSystemMails<'_>) -> RegularResult<()> {
+        submit_query!(self.core, send_batch, oper.entries)
     }
 }
 
-#[async_trait]
-impl<'a> Execute<ListInfosByReceiverId<'a>> for RdbRepo {
+impl Run<ListSystemMailInfos<'_>> for RdbRepo {
     type Error = RegularError;
 
-    async fn execute(
+    async fn run(
         &self,
-        step: &ListInfosByReceiverId<'a>,
-    ) -> RegularResult<Vec<system_mail_model::Info>> {
+        oper: &ListSystemMailInfos<'_>,
+    ) -> RegularResult<Vec<SystemMailInfo>> {
         submit_query!(
             self.core,
             list_infos,
-            step.receiver_id,
-            step.read,
-            step.offset,
-            step.limit
+            oper.receiver_id,
+            oper.read,
+            oper.offset,
+            oper.limit
         )
     }
 }
 
-#[async_trait]
-impl<'a> Execute<MarkRead<'a>> for RdbRepo {
+impl Run<MarkSystemMailRead<'_>> for RdbRepo {
     type Error = RegularError;
 
-    async fn execute(&self, step: &MarkRead<'a>) -> RegularResult<()> {
-        submit_query!(self.core, mark_read, step.id, step.user_id)
+    async fn run(&self, oper: &MarkSystemMailRead<'_>) -> RegularResult<()> {
+        submit_query!(self.core, mark_read, oper.id, oper.user_id)
     }
 }
+
 #[cfg(all(test, feature = "repo"))]
 mod tests;

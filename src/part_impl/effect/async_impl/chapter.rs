@@ -8,21 +8,17 @@ use fluent_templates::fluent_bundle::FluentValue;
 use poprako_util::i18n::{trl, trl_kv};
 
 use crate::complex::system_mail::SystemMailComplex;
-use crate::model::{chapter_model, system_mail_model};
+use crate::model::chapter::ChapterInfo;
+use crate::model::system_mail::SystemMailEntry;
 use crate::part::effect::event::chapter::{
     ChapterPublishedPayload, ChapterWorkflowCompletedPayload,
 };
-use crate::part::repo::assignment::{
-    AssignmentRepo, AssignmentRepoTransactional,
-};
-use crate::part::repo::chapter::{ChapterRepo, ChapterRepoTransactional};
-use crate::part::repo::step::assignment::AssignmentStep;
-use crate::part::repo::step::chapter::ChapterStep;
-use crate::part::repo::step::system_mail::SystemMailStep;
-use crate::part::repo::system_mail::{
-    SystemMailRepo, SystemMailRepoTransactional,
-};
-use crate::util::DeriveTransactional;
+use crate::part::repo::assignment::AssignmentRepo;
+use crate::part::repo::chapter::ChapterRepo;
+use crate::part::repo::oper::assignment::ListAssignmentInfos;
+use crate::part::repo::oper::chapter::GetChapterInfo;
+use crate::part::repo::oper::system_mail::SendSystemMails;
+use crate::part::repo::system_mail::SystemMailRepo;
 use crate::value::chapter::{ChapterInclOpt, Stage};
 use crate::value::role::RoleField;
 
@@ -38,9 +34,6 @@ pub async fn notify_next_phase<C, R>(
     payload: &ChapterWorkflowCompletedPayload,
 ) where
     R: AssignmentRepo<C> + ChapterRepo<C> + SystemMailRepo<C>,
-    <R as DeriveTransactional>::Transactional: AssignmentRepoTransactional<C>
-        + ChapterRepoTransactional<C>
-        + SystemMailRepoTransactional<C>,
 {
     let Some((receiver_role, workflow_label)) =
         next_phase_config(payload.completed_stage)
@@ -53,7 +46,7 @@ pub async fn notify_next_phase<C, R>(
         return;
     };
 
-    let system_mail_forms = build_assignment_mails(
+    let system_mail_entries = build_assignment_mails(
         repo,
         &chapter_info,
         receiver_role,
@@ -61,7 +54,7 @@ pub async fn notify_next_phase<C, R>(
     )
     .await;
 
-    send_batch(repo, &payload.chapter_id, system_mail_forms).await;
+    send_batch(repo, &payload.chapter_id, system_mail_entries).await;
 }
 
 /// Notifies reviewer assignees after workflow progress, except typesetting completion.
@@ -70,9 +63,6 @@ pub async fn notify_reviewers_on_progress<C, R>(
     payload: ChapterWorkflowCompletedPayload,
 ) where
     R: AssignmentRepo<C> + ChapterRepo<C> + SystemMailRepo<C>,
-    <R as DeriveTransactional>::Transactional: AssignmentRepoTransactional<C>
-        + ChapterRepoTransactional<C>
-        + SystemMailRepoTransactional<C>,
 {
     let Some(workflow_label) = reviewer_progress_label(payload.completed_stage)
     else {
@@ -88,9 +78,6 @@ pub async fn notify_reviewers_on_publish<C, R>(
     payload: ChapterPublishedPayload,
 ) where
     R: AssignmentRepo<C> + ChapterRepo<C> + SystemMailRepo<C>,
-    <R as DeriveTransactional>::Transactional: AssignmentRepoTransactional<C>
-        + ChapterRepoTransactional<C>
-        + SystemMailRepoTransactional<C>,
 {
     notify_reviewers(repo, &payload.chapter_id, trl("mail-workflow-publish"))
         .await;
@@ -103,15 +90,12 @@ async fn notify_reviewers<C, R>(
     workflow_label: String,
 ) where
     R: AssignmentRepo<C> + ChapterRepo<C> + SystemMailRepo<C>,
-    <R as DeriveTransactional>::Transactional: AssignmentRepoTransactional<C>
-        + ChapterRepoTransactional<C>
-        + SystemMailRepoTransactional<C>,
 {
     let Some(chapter_info) = load_chapter(repo, chapter_id).await else {
         return;
     };
 
-    let system_mail_forms = build_assignment_mails(
+    let system_mail_entries = build_assignment_mails(
         repo,
         &chapter_info,
         RoleField::REVIEWER,
@@ -119,20 +103,19 @@ async fn notify_reviewers<C, R>(
     )
     .await;
 
-    send_batch(repo, chapter_id, system_mail_forms).await;
+    send_batch(repo, chapter_id, system_mail_entries).await;
 }
 
 /// Loads a chapter by ID with default include options, returning `None` on lookup failure.
-async fn load_chapter<C, R>(
-    repo: &R,
-    chapter_id: &str,
-) -> Option<chapter_model::Info>
+async fn load_chapter<C, R>(repo: &R, chapter_id: &str) -> Option<ChapterInfo>
 where
     R: ChapterRepo<C>,
-    <R as DeriveTransactional>::Transactional: ChapterRepoTransactional<C>,
 {
     let chapter_info = repo
-        .execute(&ChapterStep::get_info_by_id(chapter_id, CHAPTER_INCL_OPT))
+        .run(&GetChapterInfo {
+            id: chapter_id,
+            incls: CHAPTER_INCL_OPT,
+        })
         .await;
 
     let Ok(chapter_info) = chapter_info else {
@@ -151,21 +134,20 @@ where
 /// Builds a list of system mail forms for all assignments in a chapter matching a role.
 async fn build_assignment_mails<C, R>(
     repo: &R,
-    chapter_info: &chapter_model::Info,
+    chapter_info: &ChapterInfo,
     receiver_role: RoleField,
     workflow_label: String,
-) -> Vec<system_mail_model::Form>
+) -> Vec<SystemMailEntry>
 where
     R: AssignmentRepo<C>,
-    <R as DeriveTransactional>::Transactional: AssignmentRepoTransactional<C>,
 {
-    let assignment_infos = repo
-        .execute(&AssignmentStep::list_all_infos_by_chapter(
-            &chapter_info.id,
-            Some(receiver_role),
-            &[],
-        ))
-        .await;
+    let list_assignment_infos = ListAssignmentInfos::Chapter {
+        chapter_id: &chapter_info.id,
+        role: Some(receiver_role),
+        incls: &[],
+    };
+
+    let assignment_infos = repo.run(&list_assignment_infos).await;
 
     let Ok(assignment_infos) = assignment_infos else {
         //
@@ -193,7 +175,7 @@ where
 
     assignment_infos
         .into_iter()
-        .map(|assignment_info| system_mail_model::Form {
+        .map(|assignment_info| SystemMailEntry {
             id: SystemMailComplex::gen_id(),
             receiver_id: assignment_info.user_id,
             title: title.clone(),
@@ -204,7 +186,7 @@ where
 
 /// Builds the i18n template arguments for a chapter progress notification mail.
 fn chapter_mail_args(
-    chapter_info: &chapter_model::Info,
+    chapter_info: &ChapterInfo,
     workflow_label: String,
 ) -> Option<HashMap<Cow<'static, str>, FluentValue<'static>>> {
     //
@@ -249,17 +231,18 @@ fn chapter_mail_args(
 async fn send_batch<C, R>(
     repo: &R,
     chapter_id: &str,
-    system_mail_forms: Vec<system_mail_model::Form>,
+    system_mail_entries: Vec<SystemMailEntry>,
 ) where
     R: SystemMailRepo<C>,
-    <R as DeriveTransactional>::Transactional: SystemMailRepoTransactional<C>,
 {
-    if system_mail_forms.is_empty() {
+    if system_mail_entries.is_empty() {
         return;
     }
 
     if repo
-        .execute(&SystemMailStep::send_batch(&system_mail_forms))
+        .run(&SendSystemMails {
+            entries: &system_mail_entries,
+        })
         .await
         .is_err()
     {

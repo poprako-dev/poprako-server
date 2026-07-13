@@ -2,25 +2,12 @@
 
 use std::sync::OnceLock;
 
-use async_trait::async_trait;
 use bitcode::Encode;
 
 #[cfg(test)]
 use bitcode::Decode;
 
 use crate::result::{RegularError, RegularResult};
-
-/// Capability to produce a transactional drive clone from a non-transactional
-/// reference. Implementations wrap a database connection pool and spawn a
-/// new transaction for each call.
-#[async_trait]
-pub trait DeriveTransactional {
-    /// Transactional variant of the implementation type.
-    type Transactional;
-
-    /// Obtain a transactional handle from a non-transactional reference.
-    async fn derive_transactional(&self) -> Self::Transactional;
-}
 
 /// Generate a unique time-ordered identifier in base62 format.
 ///

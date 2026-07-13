@@ -1,8 +1,10 @@
 use async_trait::async_trait;
 
-use crate::model::{
-    chapter_model, comic_model, team_model, user_model, workset_model,
-};
+use crate::model::chapter::ChapterInfo;
+use crate::model::comic::ComicInfo;
+use crate::model::team::TeamInfo;
+use crate::model::user::UserInfo;
+use crate::model::workset::WorksetInfo;
 use crate::part_impl::repo::rdb_impl::incl::{
     self, ComicByIds, Incl, TeamByIds, UserByIds, WorksetByIds,
 };
@@ -16,18 +18,15 @@ struct ChapterComicIncl;
 
 #[async_trait]
 impl Incl for ChapterComicIncl {
-    type Owner = chapter_model::Info;
-    type Related = comic_model::Info;
+    type Owner = ChapterInfo;
+    type Related = ComicInfo;
     type Query = ComicByIds;
 
-    fn resolve_key(chapter_info: &chapter_model::Info) -> Option<&str> {
+    fn resolve_key(chapter_info: &ChapterInfo) -> Option<&str> {
         Some(&chapter_info.comic_id)
     }
 
-    fn inject(
-        chapter_info: &mut chapter_model::Info,
-        comic_info: Option<comic_model::Info>,
-    ) {
+    fn inject(chapter_info: &mut ChapterInfo, comic_info: Option<ComicInfo>) {
         chapter_info.comic = comic_info;
     }
 }
@@ -37,11 +36,11 @@ struct ChapterComicWorksetIncl;
 
 #[async_trait]
 impl Incl for ChapterComicWorksetIncl {
-    type Owner = chapter_model::Info;
-    type Related = workset_model::Info;
+    type Owner = ChapterInfo;
+    type Related = WorksetInfo;
     type Query = WorksetByIds;
 
-    fn resolve_key(chapter_info: &chapter_model::Info) -> Option<&str> {
+    fn resolve_key(chapter_info: &ChapterInfo) -> Option<&str> {
         chapter_info
             .comic
             .as_ref()
@@ -49,8 +48,8 @@ impl Incl for ChapterComicWorksetIncl {
     }
 
     fn inject(
-        chapter_info: &mut chapter_model::Info,
-        workset_info: Option<workset_model::Info>,
+        chapter_info: &mut ChapterInfo,
+        workset_info: Option<WorksetInfo>,
     ) {
         //
         let Some(comic_info) = &mut chapter_info.comic else {
@@ -66,11 +65,11 @@ struct ChapterComicWorksetTeamIncl;
 
 #[async_trait]
 impl Incl for ChapterComicWorksetTeamIncl {
-    type Owner = chapter_model::Info;
-    type Related = team_model::Info;
+    type Owner = ChapterInfo;
+    type Related = TeamInfo;
     type Query = TeamByIds;
 
-    fn resolve_key(chapter_info: &chapter_model::Info) -> Option<&str> {
+    fn resolve_key(chapter_info: &ChapterInfo) -> Option<&str> {
         chapter_info
             .comic
             .as_ref()
@@ -78,10 +77,7 @@ impl Incl for ChapterComicWorksetTeamIncl {
             .map(|workset_info| workset_info.team_id.as_str())
     }
 
-    fn inject(
-        chapter_info: &mut chapter_model::Info,
-        team_info: Option<team_model::Info>,
-    ) {
+    fn inject(chapter_info: &mut ChapterInfo, team_info: Option<TeamInfo>) {
         //
         let Some(comic_info) = &mut chapter_info.comic else {
             return;
@@ -96,21 +92,18 @@ struct ChapterComicCreatorIncl;
 
 #[async_trait]
 impl Incl for ChapterComicCreatorIncl {
-    type Owner = chapter_model::Info;
-    type Related = user_model::Info;
+    type Owner = ChapterInfo;
+    type Related = UserInfo;
     type Query = UserByIds;
 
-    fn resolve_key(chapter_info: &chapter_model::Info) -> Option<&str> {
+    fn resolve_key(chapter_info: &ChapterInfo) -> Option<&str> {
         chapter_info
             .comic
             .as_ref()
             .map(|comic_info| comic_info.creator_id.as_str())
     }
 
-    fn inject(
-        chapter_info: &mut chapter_model::Info,
-        user_info: Option<user_model::Info>,
-    ) {
+    fn inject(chapter_info: &mut ChapterInfo, user_info: Option<UserInfo>) {
         //
         let Some(comic_info) = &mut chapter_info.comic else {
             return;
@@ -125,18 +118,15 @@ struct ChapterCreatorIncl;
 
 #[async_trait]
 impl Incl for ChapterCreatorIncl {
-    type Owner = chapter_model::Info;
-    type Related = user_model::Info;
+    type Owner = ChapterInfo;
+    type Related = UserInfo;
     type Query = UserByIds;
 
-    fn resolve_key(chapter_info: &chapter_model::Info) -> Option<&str> {
+    fn resolve_key(chapter_info: &ChapterInfo) -> Option<&str> {
         Some(&chapter_info.creator_id)
     }
 
-    fn inject(
-        chapter_info: &mut chapter_model::Info,
-        user_info: Option<user_model::Info>,
-    ) {
+    fn inject(chapter_info: &mut ChapterInfo, user_info: Option<UserInfo>) {
         chapter_info.creator = user_info;
     }
 }
@@ -144,7 +134,7 @@ impl Incl for ChapterCreatorIncl {
 /// Populates chapter query results with eagerly-loaded related entity data.
 pub async fn populate_chapter_incls(
     conn: &mut RdbConn,
-    infos: &mut [chapter_model::Info],
+    infos: &mut [ChapterInfo],
     incl_opt: &[ChapterInclOpt],
 ) -> RegularResult<()> {
     //

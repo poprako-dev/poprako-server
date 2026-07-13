@@ -1,37 +1,24 @@
-//! Repository traits for the page domain.
+//! Repository trait for the page domain.
 
-use poprako_transactional::advance::Advance;
+use poprako_orchestra::{Run, Step};
 
-use crate::part::repo::step::page::{
-    CreateBatch, DeleteByChapterId, GetInfoById, GetInfoExcluded,
-    ListAllInfosByChapterId, ListInfosByChapterId, MarkImageUploaded,
-    ReserveImage, SetUnitCounters,
+use crate::part::repo::oper::page::{
+    CreatePages, DeletePages, GetPageInfo, GetPageInfoExcluded, ListPageInfos,
+    MarkPageImageUploaded, ReservePageImage, SetPageUnitCounters,
 };
-use crate::part::shared::execute::Execute;
 use crate::result::RegularError;
-use crate::util::DeriveTransactional;
 
-/// Non-transactional page repository.
+/// Page repository operations over standalone runs and coordinated steps.
 pub trait PageRepo<C>:
-    DeriveTransactional
-    + for<'a> Execute<GetInfoById<'a>, Error = RegularError>
-    + for<'a> Execute<ListInfosByChapterId<'a>, Error = RegularError>
-    + for<'a> Execute<ListAllInfosByChapterId<'a>, Error = RegularError>
-where
-    Self::Transactional: PageRepoTransactional<C>,
-{
-}
-
-/// Transactional page repository.
-pub trait PageRepoTransactional<C>:
-    for<'a> Advance<GetInfoById<'a>, C, Error = RegularError>
-    + for<'a> Advance<GetInfoExcluded<'a>, C, Error = RegularError>
-    + for<'a> Advance<ListInfosByChapterId<'a>, C, Error = RegularError>
-    + for<'a> Advance<ListAllInfosByChapterId<'a>, C, Error = RegularError>
-    + for<'a> Advance<CreateBatch<'a>, C, Error = RegularError>
-    + for<'a> Advance<ReserveImage<'a>, C, Error = RegularError>
-    + for<'a> Advance<MarkImageUploaded<'a>, C, Error = RegularError>
-    + for<'a> Advance<SetUnitCounters<'a>, C, Error = RegularError>
-    + for<'a> Advance<DeleteByChapterId<'a>, C, Error = RegularError>
+    for<'a> Run<GetPageInfo<'a>, Error = RegularError>
+    + for<'a> Run<ListPageInfos<'a>, Error = RegularError>
+    + for<'a> Step<GetPageInfo<'a>, C, Error = RegularError>
+    + for<'a> Step<ListPageInfos<'a>, C, Error = RegularError>
+    + for<'a> Step<CreatePages<'a>, C, Error = RegularError>
+    + for<'a> Step<GetPageInfoExcluded<'a>, C, Error = RegularError>
+    + for<'a> Step<ReservePageImage<'a>, C, Error = RegularError>
+    + for<'a> Step<MarkPageImageUploaded<'a>, C, Error = RegularError>
+    + for<'a> Step<SetPageUnitCounters<'a>, C, Error = RegularError>
+    + for<'a> Step<DeletePages<'a>, C, Error = RegularError>
 {
 }

@@ -1,24 +1,27 @@
 //! In-memory comic archive repository operations for use-case tests.
 
-use async_trait::async_trait;
+use poprako_orchestra::Step;
 
-use poprako_transactional::advance::Advance;
-
-use crate::model::comic_archive_model;
-use crate::part::repo::comic_archive::ComicArchiveRepoTransactional;
-use crate::part::repo::step::comic_archive::{Commit, LockSnapshot};
+use crate::model::comic_archive::ComicArchiveChapterSnapshot;
+use crate::model::comic_archive::ComicArchivePageSnapshot;
+use crate::model::comic_archive::ComicArchiveSnapshot;
+use crate::model::comic_archive::ComicArchiveWrite;
+use crate::part::repo::comic_archive::ComicArchiveRepo;
+use crate::part::repo::oper::comic_archive::{
+    CommitComicArchive, GetComicArchiveSnapshotExcluded,
+};
 use crate::part_impl::repo::mock_impl::{
-    MockContext, MockTransactional, expected, unrecoverable,
+    Mock, MockContext, expected, unrecoverable,
 };
 use crate::result::{RegularError, RegularResult};
 
-impl ComicArchiveRepoTransactional<MockContext> for MockTransactional {}
+impl ComicArchiveRepo<MockContext> for Mock {}
 
 /// Clone a fully assembled archive snapshot from locked mock state.
-fn lock_snapshot(
+fn get_snapshot_excluded(
     context: &mut MockContext,
     source_comic_id: &str,
-) -> RegularResult<comic_archive_model::Snapshot> {
+) -> RegularResult<ComicArchiveSnapshot> {
     //
     let comic_info = context
         .state
@@ -86,14 +89,14 @@ fn lock_snapshot(
                         .cloned()
                         .collect();
 
-                    comic_archive_model::PageSnapshot {
+                    ComicArchivePageSnapshot {
                         page_info,
                         unit_infos,
                     }
                 })
                 .collect();
 
-            Ok(comic_archive_model::ChapterSnapshot {
+            Ok(ComicArchiveChapterSnapshot {
                 chapter_info,
                 assignment_infos,
                 page_snapshots,
@@ -101,7 +104,7 @@ fn lock_snapshot(
         })
         .collect::<RegularResult<Vec<_>>>()?;
 
-    Ok(comic_archive_model::Snapshot {
+    Ok(ComicArchiveSnapshot {
         comic_info,
         workset_info,
         chapter_snapshots,
@@ -111,7 +114,7 @@ fn lock_snapshot(
 /// Persist archive rows and delete active records in the mock transaction state.
 fn commit(
     context: &mut MockContext,
-    comic_archive_write: &comic_archive_model::Write,
+    comic_archive_write: &ComicArchiveWrite,
 ) -> RegularResult<()> {
     //
     if context.archive_commit_failure {
@@ -175,28 +178,26 @@ fn commit(
     Ok(())
 }
 
-#[async_trait]
-impl<'a> Advance<LockSnapshot<'a>, MockContext> for MockTransactional {
+impl<'a> Step<GetComicArchiveSnapshotExcluded<'a>, MockContext> for Mock {
     type Error = RegularError;
 
-    async fn advance(
+    async fn step(
         &self,
         context: &mut MockContext,
-        step: &LockSnapshot<'a>,
-    ) -> RegularResult<comic_archive_model::Snapshot> {
-        lock_snapshot(context, step.comic_id)
+        oper: &GetComicArchiveSnapshotExcluded<'a>,
+    ) -> RegularResult<ComicArchiveSnapshot> {
+        get_snapshot_excluded(context, oper.comic_id)
     }
 }
 
-#[async_trait]
-impl<'a> Advance<Commit<'a>, MockContext> for MockTransactional {
+impl<'a> Step<CommitComicArchive<'a>, MockContext> for Mock {
     type Error = RegularError;
 
-    async fn advance(
+    async fn step(
         &self,
         context: &mut MockContext,
-        step: &Commit<'a>,
+        oper: &CommitComicArchive<'a>,
     ) -> RegularResult<()> {
-        commit(context, step.comic_archive_write)
+        commit(context, oper.write)
     }
 }

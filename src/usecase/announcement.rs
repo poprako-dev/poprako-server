@@ -1,21 +1,25 @@
 //! Announcement use cases — list and create team announcements.
 
-use poprako_transactional::advance::Advance;
-use poprako_transactional::drive::Drive;
+use poprako_orchestra::{Nucl, run_proxy};
 
 use crate::complex::announcement::{
     AnnouncementComplex, AnnouncementPermComplex,
 };
-use crate::data::announcement_data;
-use crate::model::{announcement_model, user_model};
+use crate::data::announcement::AnnouncementInfoVal;
+use crate::data::announcement::CreateAnnouncementParams;
+use crate::data::announcement::CreateAnnouncementPayload;
+use crate::data::announcement::ListAnnouncementInfosParams;
+use crate::model::announcement::AnnouncementEntry;
+use crate::model::announcement::AnnouncementListSpec;
+use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
-use crate::part::repo::announcement::{
-    AnnouncementRepo, AnnouncementRepoTransactional,
+use crate::part::repo::announcement::AnnouncementRepo;
+use crate::part::repo::member::MemberRepo;
+use crate::part::repo::oper::announcement::{
+    CreateAnnouncement, ListAnnouncementInfos,
 };
-use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
-use crate::part::repo::step::announcement::AnnouncementStep;
+use crate::part::repo::oper::member::FindMemberInfo;
 use crate::result::{RegularError, RegularResult};
-use crate::util::DeriveTransactional;
 
 #[cfg(test)]
 mod tests;
@@ -24,28 +28,28 @@ mod tests;
 pub async fn list_infos<C, R, I>(
     repo: &R,
     image_pool: &I,
-    token: user_model::Token,
-    data: announcement_data::ListInfosData,
-) -> RegularResult<Vec<announcement_data::InfoVal>>
+    token: UserToken,
+    params: ListAnnouncementInfosParams,
+) -> RegularResult<Vec<AnnouncementInfoVal>>
 where
     R: AnnouncementRepo<C> + MemberRepo<C> + Sync,
-    <R as DeriveTransactional>::Transactional:
-        AnnouncementRepoTransactional<C> + MemberRepoTransactional<C>,
     I: ImagePool,
 {
-    let announcement_list_spec: announcement_model::ListSpec = data.into();
-
-    use crate::part::shared::proxy::AsProxyNonTransactional as _;
+    let announcement_list_spec: AnnouncementListSpec = params.into();
 
     AnnouncementPermComplex::can_user_list_infos(
-        &mut repo.as_proxy(),
+        &mut run_proxy! {
+            repo => for<'a> FindMemberInfo<'a>;
+        },
         &token.user_id,
         &announcement_list_spec.team_id,
     )
     .await?;
 
     let announcement_infos = repo
-        .execute(&AnnouncementStep::list_infos(&announcement_list_spec))
+        .run(&ListAnnouncementInfos {
+            spec: &announcement_list_spec,
+        })
         .await?;
 
     let mut announcement_info_vals =
@@ -53,11 +57,8 @@ where
 
     for announcement_info in announcement_infos {
         announcement_info_vals.push(
-            announcement_data::InfoVal::from_model(
-                image_pool,
-                announcement_info,
-            )
-            .await?,
+            AnnouncementInfoVal::from_model(image_pool, announcement_info)
+                .await?,
         );
     }
 
@@ -65,58 +66,47 @@ where
 }
 
 /// Creates an announcement under a team.
-pub async fn create<D, C, R>(
-    drive: &D,
+pub async fn create<N, C, R>(
+    nucl: &N,
     repo: &R,
-    token: user_model::Token,
-    data: announcement_data::CreateData,
-) -> RegularResult<announcement_data::CreateVal>
+    token: UserToken,
+    params: CreateAnnouncementParams,
+) -> RegularResult<CreateAnnouncementPayload>
 where
-    D: Drive<C>,
-    D::Error: Into<RegularError>,
+    N: Nucl<Context = C, Error = RegularError>,
     C: Send,
     R: AnnouncementRepo<C> + MemberRepo<C> + Send + Sync,
-    <R as DeriveTransactional>::Transactional: AnnouncementRepoTransactional<C>
-        + MemberRepoTransactional<C>
-        + Send
-        + Sync,
 {
-    use crate::part::shared::proxy::AsProxyNonTransactional as _;
-
     AnnouncementPermComplex::can_user_create(
-        &mut repo.as_proxy(),
+        &mut run_proxy! {
+            repo => for<'a> FindMemberInfo<'a>;
+        },
         &token.user_id,
-        &data.team_id,
+        &params.team_id,
     )
     .await?;
 
-    let announcement_info = drive
-        .with_context(
-            async move |context| -> RegularResult<announcement_model::Info> {
-                //
-                let repo = repo.derive_transactional().await;
+    let announcement_info = nucl
+        .coord(async move |context| {
+            let announcement_entry = AnnouncementEntry {
+                id: AnnouncementComplex::gen_id(),
+                team_id: params.team_id,
+                user_id: token.user_id,
+                title: params.title,
+                content: params.content,
+            };
 
-                let announcement_form = announcement_model::Form {
-                    id: AnnouncementComplex::gen_id(),
-                    team_id: data.team_id,
-                    user_id: token.user_id,
-                    title: data.title,
-                    content: data.content,
-                };
-
-                let announcement_info = repo
-                    .advance(
-                        context,
-                        &AnnouncementStep::create(&announcement_form),
-                    )
-                    .await?;
-
-                Ok(announcement_info)
-            },
-        )
+            repo.step(
+                context,
+                &CreateAnnouncement {
+                    entry: &announcement_entry,
+                },
+            )
+            .await
+        })
         .await?;
 
-    Ok(announcement_data::CreateVal {
+    Ok(CreateAnnouncementPayload {
         id: announcement_info.id,
     })
 }

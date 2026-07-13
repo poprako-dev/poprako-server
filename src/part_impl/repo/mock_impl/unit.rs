@@ -1,26 +1,21 @@
-//! Mock implementations of `UnitRepo` and `UnitRepoTransactional`.
+//! Mock implementation of `UnitRepo`.
 
-use async_trait::async_trait;
+use poprako_util::page::Page;
 
-use poprako_transactional::advance::Advance;
-
-use crate::model::unit_model;
-use crate::part::repo::step::unit::{
-    CountByPageId, CreateInfo, DeleteByIdInPage, ListAllInfosByPageId,
-    ListIndexesByPageId, ListInfosByPageId, SaveInfo, UpdateIndexesByPageId,
-};
-use crate::part::repo::unit::{UnitRepo, UnitRepoTransactional};
-use crate::part::shared::execute::Execute;
+use crate::model::unit::UnitContent;
+use crate::model::unit::UnitCounters;
+use crate::model::unit::UnitInfo;
+use crate::part::repo::unit::UnitRepo;
 use crate::part_impl::repo::mock_impl::{
-    Mock, MockContext, MockState, MockTransactional, expected, now,
+    Mock, MockContext, MockState, expected, now,
 };
-use crate::result::{RegularError, RegularResult};
+use crate::result::RegularResult;
 
 impl UnitRepo<MockContext> for Mock {}
 
-impl UnitRepoTransactional<MockContext> for MockTransactional {}
+mod orchestra;
 
-fn list_units(state: &MockState, page_id: &str) -> Vec<unit_model::Info> {
+fn list_all_units(state: &MockState, page_id: &str) -> Vec<UnitInfo> {
     //
     let mut unit_infos = state
         .units
@@ -38,28 +33,33 @@ fn list_units(state: &MockState, page_id: &str) -> Vec<unit_model::Info> {
     unit_infos
 }
 
-fn count_units(state: &MockState, page_id: &str) -> unit_model::Counters {
+fn list_units(state: &MockState, page_id: &str, page: Page) -> Vec<UnitInfo> {
+    list_all_units(state, page_id)
+        .into_iter()
+        .skip(page.offset as usize)
+        .take(page.limit as usize)
+        .collect()
+}
+
+fn count_units(state: &MockState, page_id: &str) -> UnitCounters {
     state
         .units
         .iter()
         .filter(|unit_info| unit_info.page_id == page_id)
-        .fold(
-            unit_model::Counters::default(),
-            |mut counters, unit_info| {
-                //
-                counters.total_unit_count += 1;
+        .fold(UnitCounters::default(), |mut counters, unit_info| {
+            //
+            counters.total_unit_count += 1;
 
-                if unit_info.is_translated() {
-                    counters.translated_unit_count += 1;
-                }
+            if unit_info.is_translated() {
+                counters.translated_unit_count += 1;
+            }
 
-                if unit_info.is_proofread {
-                    counters.proofread_unit_count += 1;
-                }
+            if unit_info.is_proofread {
+                counters.proofread_unit_count += 1;
+            }
 
-                counters
-            },
-        )
+            counters
+        })
 }
 
 fn next_index(state: &MockState, page_id: &str) -> i32 {
@@ -73,10 +73,7 @@ fn next_index(state: &MockState, page_id: &str) -> i32 {
         .unwrap_or(0)
 }
 
-fn write_payload(
-    unit_info: &mut unit_model::Info,
-    payload: &unit_model::Payload,
-) {
+fn write_payload(unit_info: &mut UnitInfo, payload: &UnitContent) {
     //
     unit_info.is_bubble = payload.is_bubble;
 
@@ -101,12 +98,12 @@ fn unit_from_payload(
     page_id: &str,
     id: &str,
     index: i32,
-    payload: &unit_model::Payload,
-) -> unit_model::Info {
+    payload: &UnitContent,
+) -> UnitInfo {
     //
     let time = now();
 
-    unit_model::Info {
+    UnitInfo {
         id: id.into(),
         page_id: page_id.into(),
         index,
@@ -127,7 +124,7 @@ fn create_unit(
     state: &mut MockState,
     page_id: &str,
     id: &str,
-    payload: &unit_model::Payload,
+    payload: &UnitContent,
 ) -> RegularResult<()> {
     //
     if state.units.iter().any(|unit_info| unit_info.id == id) {
@@ -147,7 +144,7 @@ fn save_unit(
     state: &mut MockState,
     page_id: &str,
     id: &str,
-    payload: &unit_model::Payload,
+    payload: &UnitContent,
 ) -> RegularResult<()> {
     //
     let existing_position =
@@ -166,180 +163,6 @@ fn save_unit(
     Ok(())
 }
 
-#[async_trait]
-impl<'a> Execute<ListInfosByPageId<'a>> for Mock {
-    type Error = RegularError;
-
-    async fn execute(
-        &self,
-        step: &ListInfosByPageId<'a>,
-    ) -> Result<Vec<unit_model::Info>, Self::Error> {
-        //
-        let state = self.state.lock().unwrap();
-
-        Ok(list_units(&state, step.page_id)
-            .into_iter()
-            .skip(step.page.offset as usize)
-            .take(step.page.limit as usize)
-            .collect())
-    }
-}
-
-#[async_trait]
-impl<'a> Execute<ListAllInfosByPageId<'a>> for Mock {
-    type Error = RegularError;
-
-    async fn execute(
-        &self,
-        step: &ListAllInfosByPageId<'a>,
-    ) -> Result<Vec<unit_model::Info>, Self::Error> {
-        //
-        let state = self.state.lock().unwrap();
-
-        Ok(list_units(&state, step.page_id))
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<ListAllInfosByPageId<'a>, MockContext> for MockTransactional {
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut MockContext,
-        step: &ListAllInfosByPageId<'a>,
-    ) -> Result<Vec<unit_model::Info>, Self::Error> {
-        Ok(list_units(&context.state, step.page_id))
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<ListInfosByPageId<'a>, MockContext> for MockTransactional {
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut MockContext,
-        step: &ListInfosByPageId<'a>,
-    ) -> Result<Vec<unit_model::Info>, Self::Error> {
-        Ok(list_units(&context.state, step.page_id)
-            .into_iter()
-            .skip(step.page.offset as usize)
-            .take(step.page.limit as usize)
-            .collect())
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<CreateInfo<'a>, MockContext> for MockTransactional {
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut MockContext,
-        step: &CreateInfo<'a>,
-    ) -> Result<(), Self::Error> {
-        create_unit(&mut context.state, step.page_id, step.id, step.payload)
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<SaveInfo<'a>, MockContext> for MockTransactional {
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut MockContext,
-        step: &SaveInfo<'a>,
-    ) -> Result<(), Self::Error> {
-        save_unit(&mut context.state, step.page_id, step.id, step.payload)
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<DeleteByIdInPage<'a>, MockContext> for MockTransactional {
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut MockContext,
-        step: &DeleteByIdInPage<'a>,
-    ) -> Result<(), Self::Error> {
-        //
-        context.state.units.retain(|unit_info| {
-            !(unit_info.page_id == step.page_id && unit_info.id == step.id)
-        });
-
-        Ok(())
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<ListIndexesByPageId<'a>, MockContext> for MockTransactional {
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut MockContext,
-        step: &ListIndexesByPageId<'a>,
-    ) -> Result<Vec<unit_model::Index>, Self::Error> {
-        Ok(context
-            .state
-            .units
-            .iter()
-            .filter(|unit_info| unit_info.page_id == step.page_id)
-            .map(|unit_info| unit_model::Index {
-                id: unit_info.id.clone(),
-                index: unit_info.index,
-            })
-            .collect())
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<UpdateIndexesByPageId<'a>, MockContext> for MockTransactional {
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut MockContext,
-        step: &UpdateIndexesByPageId<'a>,
-    ) -> Result<(), Self::Error> {
-        //
-        for unit_index_update in step.updates {
-            //
-            let unit_info = context
-                .state
-                .units
-                .iter_mut()
-                .find(|unit_info| {
-                    unit_info.page_id == step.page_id
-                        && unit_info.id == unit_index_update.id
-                })
-                .ok_or_else(|| expected("error-unit-not-found"))?;
-
-            unit_info.index = unit_index_update.index;
-
-            unit_info.updated_at = now();
-        }
-
-        Ok(())
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<CountByPageId<'a>, MockContext> for MockTransactional {
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut MockContext,
-        step: &CountByPageId<'a>,
-    ) -> Result<unit_model::Counters, Self::Error> {
-        Ok(count_units(&context.state, step.page_id))
-    }
-}
-
 #[cfg(test)]
 mod tests {
     // create_unit(create_unit)(positive): a new id is inserted once.
@@ -348,8 +171,8 @@ mod tests {
 
     use super::*;
 
-    fn payload(text: &str, proofread: bool) -> unit_model::Payload {
-        unit_model::Payload {
+    fn payload(text: &str, proofread: bool) -> UnitContent {
+        UnitContent {
             is_bubble: true,
             is_proofread: proofread,
             x_coord: 1.0,

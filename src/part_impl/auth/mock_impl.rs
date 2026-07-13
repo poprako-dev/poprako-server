@@ -2,7 +2,8 @@
 
 use poprako_util::i18n::trl;
 
-use crate::model::user_model;
+use crate::model::user::UserToken;
+use crate::model::user::UserTokenRef;
 use crate::part::auth::TokenAuth;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::{ExpectedVariant, RegularError, RegularResult};
@@ -12,10 +13,7 @@ use crate::result::{ExpectedVariant, RegularError, RegularResult};
 /// Returns a deterministic token (`"token:{user_id}"`) by default.
 /// Configure [Mock::with_token_failure] to test sign failures.
 impl TokenAuth for Mock {
-    fn sign_token(
-        &self,
-        token: &user_model::TokenRef,
-    ) -> RegularResult<String> {
+    fn sign_token(&self, token: &UserTokenRef) -> RegularResult<String> {
         //
         if self.flags.lock().unwrap().token_failure {
             return Err(RegularError::Expected {
@@ -27,7 +25,7 @@ impl TokenAuth for Mock {
         Ok(format!("token:{}", token.user_id))
     }
 
-    fn verify_token(&self, raw: &str) -> RegularResult<user_model::Token> {
+    fn verify_token(&self, raw: &str) -> RegularResult<UserToken> {
         //
         if self.flags.lock().unwrap().token_failure {
             return Err(RegularError::Expected {
@@ -38,7 +36,7 @@ impl TokenAuth for Mock {
 
         let user_id = raw.strip_prefix("token:").unwrap_or(raw).to_string();
 
-        Ok(user_model::Token { user_id })
+        Ok(UserToken { user_id })
     }
 }
 
@@ -51,10 +49,8 @@ fn sign_returns_stable_token() {
     //
     let mock = Mock::new();
 
-    let signed = TokenAuth::sign_token(
-        &mock,
-        &user_model::TokenRef { user_id: "user-1" },
-    );
+    let signed =
+        TokenAuth::sign_token(&mock, &UserTokenRef { user_id: "user-1" });
 
     assert!(signed.is_ok());
 
@@ -69,12 +65,9 @@ fn sign_failure_returns_expected_auth() {
     //
     let mock = Mock::new().with_token_failure();
 
-    let err = TokenAuth::sign_token(
-        &mock,
-        &user_model::TokenRef { user_id: "user-1" },
-    )
-    .err()
-    .unwrap();
+    let err = TokenAuth::sign_token(&mock, &UserTokenRef { user_id: "user-1" })
+        .err()
+        .unwrap();
 
     assert!(matches!(
         err,

@@ -1,48 +1,61 @@
 //! Page use cases — image reservation, listing, upload confirmation, and deletion.
 
-use time::{Duration, OffsetDateTime};
+use std::time::Duration;
 
-use poprako_transactional::advance::Advance;
-use poprako_transactional::drive::Drive;
+use poprako_orchestra::{Nucl, run_proxy};
+use poprako_orchestra_extra::prom::oper::Defer;
+use poprako_orchestra_extra::prom::task::Task;
+
 use poprako_util::i18n::trl;
-use poprako_util::page::Page;
 
 use crate::complex::image::ImageComplex;
 use crate::complex::page::{PageComplex, PagePermComplex};
-use crate::data::page_data;
-use crate::model::{page_model, user_model};
+use crate::data::page::ListPageInfosParams;
+use crate::data::page::MarkPageImageUploadedParams;
+use crate::data::page::PageCreationPayload;
+use crate::data::page::PageInfoVal;
+use crate::data::page::ReserveChapterPagesParams;
+use crate::data::page::ReserveChapterPagesPayload;
+use crate::data::page::ReservePageImageParams;
+use crate::data::page::ReservePageImagePayload;
+use crate::model::page::PageEntry;
+use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
-use crate::part::prom::task::{IMAGE_TOPIC, ImageKind, ImageTask};
-use crate::part::prom::{Payload, Prom, PromStep};
-use crate::part::repo::assignment::{
-    AssignmentRepo, AssignmentRepoTransactional,
+use crate::part::prom::Prom;
+use crate::part::prom::payload::{Payload, image};
+use crate::part::repo::assignment::AssignmentRepo;
+use crate::part::repo::chapter::ChapterRepo;
+use crate::part::repo::comic::ComicRepo;
+use crate::part::repo::member::MemberRepo;
+use crate::part::repo::oper::assignment::FindAssignmentInfo;
+use crate::part::repo::oper::chapter::{
+    GetChapterInfo, GetChapterInfoExcluded, SetChapterPageCounters,
 };
-use crate::part::repo::chapter::{ChapterRepo, ChapterRepoTransactional};
-use crate::part::repo::comic::{ComicRepo, ComicRepoTransactional};
-use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
-use crate::part::repo::page::{PageRepo, PageRepoTransactional};
-use crate::part::repo::step::chapter::ChapterStep;
-use crate::part::repo::step::comic::ComicStep;
-use crate::part::repo::step::page::PageStep;
-use crate::part::repo::workset::{WorksetRepo, WorksetRepoTransactional};
+use crate::part::repo::oper::comic::{GetComicInfo, TouchComicLastActive};
+use crate::part::repo::oper::member::FindMemberInfo;
+use crate::part::repo::oper::page::{
+    CreatePages, DeletePages, GetPageInfo, ListPageInfos,
+    MarkPageImageUploaded, ReservePageImage,
+};
+use crate::part::repo::oper::workset::GetWorksetInfo;
+use crate::part::repo::page::PageRepo;
+use crate::part::repo::workset::WorksetRepo;
 use crate::result::{ExpectedVariant, RegularError, RegularResult};
-use crate::util::DeriveTransactional;
 
 #[cfg(test)]
 mod tests;
 
 /// Reserves upload slots for all pages in an empty chapter.
-pub async fn reserve_chapter_pages<D, C, R, P, I>(
-    drive: &D,
+pub async fn reserve_chapter_pages<N, C, R, P, I>(
+    nucl: &N,
     repo: &R,
     prom: &P,
     image_pool: &I,
-    token: user_model::Token,
-    data: page_data::ReserveChapterData,
-) -> RegularResult<page_data::ReserveChapterVal>
+    token: UserToken,
+    params: ReserveChapterPagesParams,
+) -> RegularResult<ReserveChapterPagesPayload>
 where
-    D: Drive<C>,
-    D::Error: Into<RegularError>,
+    N: Nucl<Context = C, Error = RegularError>,
     C: Send,
     R: ChapterRepo<C>
         + ComicRepo<C>
@@ -50,16 +63,10 @@ where
         + PageRepo<C>
         + Send
         + Sync,
-    <R as DeriveTransactional>::Transactional: ChapterRepoTransactional<C>
-        + ComicRepoTransactional<C>
-        + AssignmentRepoTransactional<C>
-        + PageRepoTransactional<C>
-        + Send
-        + Sync,
     P: Prom<C> + Send + Sync,
     I: ImagePool,
 {
-    validate_page_count(data.page_count)?;
+    validate_page_count(params.page_count)?;
 
     /// Holds the ID, storage key, and version for one reserved page upload.
     struct PageReservation {
@@ -68,28 +75,25 @@ where
         image_version: u32,
     }
 
-    use crate::part::shared::proxy::AsProxyNonTransactional as _;
-
     PagePermComplex::can_user_reserve(
-        &mut repo.as_proxy(),
+        &mut run_proxy! {
+            repo => for<'a, 'b> FindAssignmentInfo<'a, 'b>;
+        },
         &token.user_id,
-        &data.chapter_id,
+        &params.chapter_id,
     )
     .await?;
 
-    let reservations = drive
-        .with_context(
+    let reservations = nucl
+        .coord(
             async move |context| -> RegularResult<Vec<PageReservation>> {
-                //
-                let repo = repo.derive_transactional().await;
-
                 let chapter_info = repo
-                    .advance(
+                    .step(
                         context,
-                        &ChapterStep::get_info_by_id_excluded(
-                            &data.chapter_id,
-                            &[],
-                        ),
+                        &GetChapterInfoExcluded {
+                            id: &params.chapter_id,
+                            incls: &[],
+                        },
                     )
                     .await?;
 
@@ -100,13 +104,13 @@ where
                     });
                 }
 
-                let mut page_forms =
-                    Vec::with_capacity(data.page_count as usize);
+                let mut page_entries =
+                    Vec::with_capacity(params.page_count as usize);
 
                 let mut reservations =
-                    Vec::with_capacity(data.page_count as usize);
+                    Vec::with_capacity(params.page_count as usize);
 
-                for index in 0..data.page_count {
+                for index in 0..params.page_count {
                     //
                     let page_id = PageComplex::gen_id();
 
@@ -116,10 +120,10 @@ where
                         &chapter_info.id,
                         &page_id,
                         image_version,
-                        &data.file_ext,
+                        &params.file_ext,
                     );
 
-                    let page_form = page_model::Form {
+                    let page_entry = PageEntry {
                         id: page_id.clone(),
                         chapter_id: chapter_info.id.clone(),
                         index,
@@ -127,7 +131,7 @@ where
                         image_version,
                     };
 
-                    page_forms.push(page_form);
+                    page_entries.push(page_entry);
 
                     reservations.push(PageReservation {
                         page_id,
@@ -136,12 +140,13 @@ where
                     });
                 }
 
-                repo.advance(context, &PageStep::create_batch(&page_forms))
-                    .await?;
-
-                let now = OffsetDateTime::now_utc();
-
-                let check_visible_at = now + Duration::minutes(15);
+                repo.step(
+                    context,
+                    &CreatePages {
+                        entries: &page_entries,
+                    },
+                )
+                .await?;
 
                 for reservation in &reservations {
                     append_check_uploaded(
@@ -150,26 +155,27 @@ where
                         &reservation.page_id,
                         &reservation.object_key,
                         reservation.image_version,
-                        &check_visible_at,
                     )
                     .await?;
                 }
 
-                repo.advance(
+                repo.step(
                     context,
-                    &ChapterStep::set_page_counters(
-                        &chapter_info.id,
-                        data.page_count,
-                        0,
-                        0,
-                        0,
-                    ),
+                    &SetChapterPageCounters {
+                        id: &chapter_info.id,
+                        page_count: params.page_count,
+                        total_unit_count: 0,
+                        translated_unit_count: 0,
+                        proofread_unit_count: 0,
+                    },
                 )
                 .await?;
 
-                repo.advance(
+                repo.step(
                     context,
-                    &ComicStep::touch_last_active(&chapter_info.comic_id),
+                    &TouchComicLastActive {
+                        id: &chapter_info.comic_id,
+                    },
                 )
                 .await?;
 
@@ -186,7 +192,7 @@ where
                 .await?
                 .to_string();
 
-            Ok(page_data::CreationVal {
+            Ok(PageCreationPayload {
                 page_id: reservation.page_id,
                 put_url,
                 image_version: reservation.image_version,
@@ -197,62 +203,58 @@ where
     .into_iter()
     .collect::<RegularResult<Vec<_>>>()?;
 
-    Ok(page_data::ReserveChapterVal { creations })
+    Ok(ReserveChapterPagesPayload { creations })
 }
 
 /// Reserves a replacement image upload slot for one page.
-pub async fn reserve_image<D, C, R, P, I>(
-    drive: &D,
+pub async fn reserve_image<N, C, R, P, I>(
+    nucl: &N,
     repo: &R,
     prom: &P,
     image_pool: &I,
-    token: user_model::Token,
+    token: UserToken,
     id: String,
-    data: page_data::ReserveImageData,
-) -> RegularResult<page_data::ReserveImageVal>
+    params: ReservePageImageParams,
+) -> RegularResult<ReservePageImagePayload>
 where
-    D: Drive<C>,
-    D::Error: Into<RegularError>,
+    N: Nucl<Context = C, Error = RegularError>,
     C: Send,
     R: PageRepo<C> + AssignmentRepo<C> + Send + Sync,
-    <R as DeriveTransactional>::Transactional:
-        PageRepoTransactional<C> + AssignmentRepoTransactional<C> + Send + Sync,
     P: Prom<C> + Send + Sync,
     I: ImagePool,
 {
     let page_id = id.clone();
 
-    let page_info = repo.execute(&PageStep::get_info_by_id(&id)).await?;
-
-    use crate::part::shared::proxy::AsProxyNonTransactional as _;
+    let page_info = repo.run(&GetPageInfo { id: &id }).await?;
 
     PagePermComplex::can_user_reserve(
-        &mut repo.as_proxy(),
+        &mut run_proxy! {
+            repo => for<'a, 'b> FindAssignmentInfo<'a, 'b>;
+        },
         &token.user_id,
         &page_info.chapter_id,
     )
     .await?;
 
-    let file_ext = data.file_ext;
+    let file_ext = params.file_ext;
 
-    let (object_key, image_version) = drive
-        .with_context(async move |context| -> RegularResult<(String, u32)> {
-            //
-            let repo = repo.derive_transactional().await;
-
+    let (object_key, image_version) = nucl
+        .coord(async move |context| -> RegularResult<(String, u32)> {
             let page_reservation = repo
-                .advance(context, &PageStep::reserve_image(&id, &file_ext))
+                .step(
+                    context,
+                    &ReservePageImage {
+                        id: &id,
+                        file_ext: &file_ext,
+                    },
+                )
                 .await?;
-
-            let now = OffsetDateTime::now_utc();
 
             if let Some(prev_object_key) = &page_reservation.prev_object_key
                 && prev_object_key != &page_reservation.object_key
             {
-                append_delete(prom, context, prev_object_key, &now).await?;
+                append_delete(prom, context, prev_object_key).await?;
             }
-
-            let check_visible_at = now + Duration::minutes(15);
 
             append_check_uploaded(
                 prom,
@@ -260,7 +262,6 @@ where
                 &page_info.id,
                 &page_reservation.object_key,
                 page_reservation.image_version,
-                &check_visible_at,
             )
             .await?;
 
@@ -270,7 +271,7 @@ where
 
     let put_url = image_pool.put_signed(&object_key).await?.to_string();
 
-    Ok(page_data::ReserveImageVal {
+    Ok(ReservePageImagePayload {
         page_id,
         put_url,
         image_version,
@@ -281,9 +282,9 @@ where
 pub async fn list_infos<C, R, I>(
     repo: &R,
     image_pool: &I,
-    token: user_model::Token,
-    data: page_data::ListInfosData,
-) -> RegularResult<Vec<page_data::InfoVal>>
+    token: UserToken,
+    params: ListPageInfosParams,
+) -> RegularResult<Vec<PageInfoVal>>
 where
     R: PageRepo<C>
         + ChapterRepo<C>
@@ -292,37 +293,34 @@ where
         + MemberRepo<C>
         + AssignmentRepo<C>
         + Sync,
-    <R as DeriveTransactional>::Transactional: PageRepoTransactional<C>
-        + ChapterRepoTransactional<C>
-        + ComicRepoTransactional<C>
-        + WorksetRepoTransactional<C>
-        + MemberRepoTransactional<C>
-        + AssignmentRepoTransactional<C>,
     I: ImagePool,
 {
-    use crate::part::shared::proxy::AsProxyNonTransactional as _;
-
     PagePermComplex::can_user_list_infos(
-        &mut repo.as_proxy(),
+        &mut run_proxy! {
+            repo =>
+                for<'a, 'b> GetChapterInfo<'a, 'b>,
+                for<'a, 'b> GetComicInfo<'a, 'b>,
+                for<'a> GetWorksetInfo<'a>,
+                for<'a> FindMemberInfo<'a>,
+                for<'a, 'b> FindAssignmentInfo<'a, 'b>;
+        },
         &token.user_id,
-        &data.chapter_id,
+        &params.chapter_id,
     )
     .await?;
 
-    let page_infos = repo
-        .execute(&PageStep::list_infos_by_chapter_id(
-            &data.chapter_id,
-            Page {
-                offset: data.offset,
-                limit: data.limit,
-            },
-        ))
-        .await?;
+    let list_page_infos = ListPageInfos::Chapter {
+        chapter_id: &params.chapter_id,
+        offset: params.offset,
+        limit: params.limit,
+    };
+
+    let page_infos = repo.run(&list_page_infos).await?;
 
     futures_util::future::join_all(
-        page_infos.into_iter().map(|page_info| {
-            page_data::InfoVal::from_model(image_pool, page_info)
-        }),
+        page_infos
+            .into_iter()
+            .map(|page_info| PageInfoVal::from_model(image_pool, page_info)),
     )
     .await
     .into_iter()
@@ -330,61 +328,56 @@ where
 }
 
 /// Marks one page image as uploaded.
-pub async fn mark_image_uploaded<D, C, R>(
-    drive: &D,
+pub async fn mark_image_uploaded<N, C, R>(
+    nucl: &N,
     repo: &R,
-    token: user_model::Token,
+    token: UserToken,
     id: String,
-    data: page_data::MarkImageUploadedData,
+    params: MarkPageImageUploadedParams,
 ) -> RegularResult<()>
 where
-    D: Drive<C>,
-    D::Error: Into<RegularError>,
+    N: Nucl<Context = C, Error = RegularError>,
     C: Send,
     R: PageRepo<C> + AssignmentRepo<C> + Send + Sync,
-    <R as DeriveTransactional>::Transactional:
-        PageRepoTransactional<C> + AssignmentRepoTransactional<C> + Send + Sync,
 {
-    let page_info = repo.execute(&PageStep::get_info_by_id(&id)).await?;
-
-    use crate::part::shared::proxy::AsProxyNonTransactional as _;
+    let page_info = repo.run(&GetPageInfo { id: &id }).await?;
 
     PagePermComplex::can_user_mark_image_uploaded(
-        &mut repo.as_proxy(),
+        &mut run_proxy! {
+            repo => for<'a, 'b> FindAssignmentInfo<'a, 'b>;
+        },
         &token.user_id,
         &page_info.chapter_id,
     )
     .await?;
 
-    drive
-        .with_context(async move |context| -> RegularResult<()> {
-            //
-            let repo = repo.derive_transactional().await;
-
-            repo.advance(
-                context,
-                &PageStep::mark_image_uploaded(&id, data.image_version),
-            )
-            .await?;
-
-            Ok(())
-        })
+    nucl.coord(async move |context| -> RegularResult<()> {
+        repo.step(
+            context,
+            &MarkPageImageUploaded {
+                id: &id,
+                image_version: params.image_version,
+            },
+        )
         .await?;
+
+        Ok(())
+    })
+    .await?;
 
     Ok(())
 }
 
 /// Deletes all pages under one chapter.
-pub async fn delete<D, C, R, P>(
-    drive: &D,
+pub async fn delete<N, C, R, P>(
+    nucl: &N,
     repo: &R,
     prom: &P,
-    token: user_model::Token,
+    token: UserToken,
     chapter_id: String,
 ) -> RegularResult<()>
 where
-    D: Drive<C>,
-    D::Error: Into<RegularError>,
+    N: Nucl<Context = C, Error = RegularError>,
     C: Send,
     R: PageRepo<C>
         + ChapterRepo<C>
@@ -394,73 +387,73 @@ where
         + AssignmentRepo<C>
         + Send
         + Sync,
-    <R as DeriveTransactional>::Transactional: PageRepoTransactional<C>
-        + ChapterRepoTransactional<C>
-        + ComicRepoTransactional<C>
-        + WorksetRepoTransactional<C>
-        + MemberRepoTransactional<C>
-        + AssignmentRepoTransactional<C>
-        + Send
-        + Sync,
     P: Prom<C> + Send + Sync,
 {
-    use crate::part::shared::proxy::AsProxyNonTransactional as _;
-
     PagePermComplex::can_user_delete(
-        &mut repo.as_proxy(),
+        &mut run_proxy! {
+            repo =>
+                for<'a, 'b> GetChapterInfo<'a, 'b>,
+                for<'a, 'b> GetComicInfo<'a, 'b>,
+                for<'a> GetWorksetInfo<'a>,
+                for<'a> FindMemberInfo<'a>;
+        },
         &token.user_id,
         &chapter_id,
     )
     .await?;
 
-    drive
-        .with_context(async move |context| -> RegularResult<()> {
-            //
-            let repo = repo.derive_transactional().await;
+    nucl.coord(async move |context| -> RegularResult<()> {
+        let chapter_info = repo
+            .step(
+                context,
+                &GetChapterInfoExcluded {
+                    id: &chapter_id,
+                    incls: &[],
+                },
+            )
+            .await?;
 
-            let chapter_info = repo
-                .advance(
-                    context,
-                    &ChapterStep::get_info_by_id_excluded(&chapter_id, &[]),
-                )
-                .await?;
+        let list_page_infos = ListPageInfos::AllChapter {
+            chapter_id: &chapter_info.id,
+        };
 
-            let page_infos = repo
-                .advance(
-                    context,
-                    &PageStep::list_all_infos_by_chapter_id(&chapter_info.id),
-                )
-                .await?;
+        let page_infos = repo.step(context, &list_page_infos).await?;
 
-            let now = OffsetDateTime::now_utc();
-
-            for page_info in page_infos {
-                if let Some(object_key) = page_info.image_key {
-                    append_delete(prom, context, &object_key, &now).await?;
-                }
+        for page_info in page_infos {
+            if let Some(object_key) = page_info.image_key {
+                append_delete(prom, context, &object_key).await?;
             }
+        }
 
-            repo.advance(
-                context,
-                &PageStep::delete_by_chapter_id(&chapter_info.id),
-            )
-            .await?;
+        let delete_pages = DeletePages::Chapter {
+            chapter_id: &chapter_info.id,
+        };
 
-            repo.advance(
-                context,
-                &ChapterStep::set_page_counters(&chapter_info.id, 0, 0, 0, 0),
-            )
-            .await?;
+        repo.step(context, &delete_pages).await?;
 
-            repo.advance(
-                context,
-                &ComicStep::touch_last_active(&chapter_info.comic_id),
-            )
-            .await?;
-
-            Ok(())
-        })
+        repo.step(
+            context,
+            &SetChapterPageCounters {
+                id: &chapter_info.id,
+                page_count: 0,
+                total_unit_count: 0,
+                translated_unit_count: 0,
+                proofread_unit_count: 0,
+            },
+        )
         .await?;
+
+        repo.step(
+            context,
+            &TouchComicLastActive {
+                id: &chapter_info.comic_id,
+            },
+        )
+        .await?;
+
+        Ok(())
+    })
+    .await?;
 
     Ok(())
 }
@@ -478,14 +471,13 @@ fn validate_page_count(page_count: i32) -> RegularResult<()> {
     Ok(())
 }
 
-/// Appends a `CheckUploaded` prom task for the given page image.
+/// Defers an upload-check task for the given page image.
 async fn append_check_uploaded<C, P>(
     prom: &P,
     context: &mut C,
     page_id: &str,
     object_key: &str,
     image_version: u32,
-    visible_at: &OffsetDateTime,
 ) -> RegularResult<()>
 where
     C: Send,
@@ -493,28 +485,27 @@ where
 {
     let check_id = ImageComplex::gen_check_id();
 
-    prom.advance(
-        context,
-        &PromStep::append(
-            &check_id,
-            IMAGE_TOPIC,
-            Payload::Image(ImageTask::CheckUploaded {
-                kind: ImageKind::PageImage,
-                resource_id: page_id,
-                object_key,
-                image_version,
-            }),
-            visible_at,
-        ),
-    )
-    .await
+    let payload = Payload::Image(image::Payload::CheckUpload {
+        resource_kind: image::ResourceKind::PageImage,
+        resource_id: page_id.to_string(),
+        object_key: object_key.to_string(),
+        version: image_version,
+    });
+
+    let task = Task {
+        id: &check_id,
+        payload: &payload,
+        delay: Some(Duration::from_secs(15 * 60)),
+    };
+
+    prom.step(context, &Defer::new(task)).await
 }
-/// Appends a `Delete` prom task for the given object key.
+
+/// Defers an image-delete task for the given object key.
 async fn append_delete<C, P>(
     prom: &P,
     context: &mut C,
     object_key: &str,
-    visible_at: &OffsetDateTime,
 ) -> RegularResult<()>
 where
     C: Send,
@@ -522,14 +513,15 @@ where
 {
     let delete_id = ImageComplex::gen_delete_id();
 
-    prom.advance(
-        context,
-        &PromStep::append(
-            &delete_id,
-            IMAGE_TOPIC,
-            Payload::Image(ImageTask::Delete { object_key }),
-            visible_at,
-        ),
-    )
-    .await
+    let payload = Payload::Image(image::Payload::Delete {
+        object_key: object_key.to_string(),
+    });
+
+    let task = Task {
+        id: &delete_id,
+        payload: &payload,
+        delay: None,
+    };
+
+    prom.step(context, &Defer::new(task)).await
 }

@@ -6,13 +6,22 @@ use super::*;
 
 use time::OffsetDateTime;
 
-use crate::model::{
-    assignment_invitation_model, assignment_model, chapter_model,
-    comic_archive_model, comic_model, member_model, page_model, unit_model,
-    user_model, workset_model,
-};
-use crate::part::prom::Payload;
-use crate::part::prom::task::ImageTask;
+use crate::model::assignment::AssignmentInfo;
+use crate::model::assignment_invitation::AssignmentInvitationInfo;
+use crate::model::chapter::ChapterInfo;
+use crate::model::comic::ComicInfo;
+use crate::model::comic_archive::ArchivedChapterPayload;
+use crate::model::comic_archive::ArchivedComicPayload;
+use crate::model::comic_archive::ArchivedTranslationPayload;
+use crate::model::member::MemberInfo;
+use crate::model::page::PageInfo;
+use crate::model::unit::UnitInfo;
+use crate::model::user::UserCredential;
+use crate::model::user::UserInfo;
+use crate::model::user::UserToken;
+use crate::model::workset::WorksetInfo;
+use crate::part::prom::payload::Payload;
+use crate::part::prom::payload::image::Payload as ImagePayload;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;
@@ -27,7 +36,7 @@ fn seed_archive_scope(mock: &Mock, member_roles: RoleMask) {
     let stage_mask = StageMask::try_from(0).unwrap();
 
     mock.seed_user(
-        user_model::Info {
+        UserInfo {
             id: "user-1".into(),
             qid: "qid-user-1".into(),
             nickname: "archiver".into(),
@@ -39,13 +48,13 @@ fn seed_archive_scope(mock: &Mock, member_roles: RoleMask) {
             created_at: archived_at,
             updated_at: archived_at,
         },
-        user_model::Credential {
+        UserCredential {
             user_id: "user-1".into(),
             password_hash: "hashed".into(),
         },
     );
 
-    mock.seed_workset(workset_model::Info {
+    mock.seed_workset(WorksetInfo {
         id: "workset-1".into(),
         team_id: "team-1".into(),
         index: 4,
@@ -57,7 +66,7 @@ fn seed_archive_scope(mock: &Mock, member_roles: RoleMask) {
         updated_at: archived_at,
     });
 
-    mock.seed_member(member_model::Info {
+    mock.seed_member(MemberInfo {
         id: "member-1".into(),
         user_id: "user-1".into(),
         user_nickname: "archiver".into(),
@@ -68,7 +77,7 @@ fn seed_archive_scope(mock: &Mock, member_roles: RoleMask) {
         roles: member_roles,
     });
 
-    mock.seed_comic(comic_model::Info {
+    mock.seed_comic(ComicInfo {
         id: "comic-1".into(),
         workset_id: "workset-1".into(),
         index: 2,
@@ -89,7 +98,7 @@ fn seed_archive_scope(mock: &Mock, member_roles: RoleMask) {
         updated_at: archived_at,
     });
 
-    mock.seed_chapter(chapter_model::Info {
+    mock.seed_chapter(ChapterInfo {
         id: "chapter-1".into(),
         comic_id: "comic-1".into(),
         comic: None,
@@ -107,7 +116,7 @@ fn seed_archive_scope(mock: &Mock, member_roles: RoleMask) {
         updated_at: archived_at,
     });
 
-    mock.seed_assignment(assignment_model::Info {
+    mock.seed_assignment(AssignmentInfo {
         id: "assignment-1".into(),
         chapter_id: "chapter-1".into(),
         user_id: "user-1".into(),
@@ -118,7 +127,7 @@ fn seed_archive_scope(mock: &Mock, member_roles: RoleMask) {
         updated_at: archived_at,
     });
 
-    mock.seed_assignment_invitation(assignment_invitation_model::Info {
+    mock.seed_assignment_invitation(AssignmentInvitationInfo {
         id: "invitation-1".into(),
         chapter_id: "chapter-1".into(),
         inviter_id: "user-1".into(),
@@ -130,7 +139,7 @@ fn seed_archive_scope(mock: &Mock, member_roles: RoleMask) {
         updated_at: archived_at,
     });
 
-    mock.seed_page(page_model::Info {
+    mock.seed_page(PageInfo {
         id: "page-1".into(),
         chapter_id: "chapter-1".into(),
         index: 0,
@@ -144,7 +153,7 @@ fn seed_archive_scope(mock: &Mock, member_roles: RoleMask) {
         updated_at: archived_at,
     });
 
-    mock.seed_unit(unit_model::Info {
+    mock.seed_unit(UnitInfo {
         id: "unit-1".into(),
         page_id: "page-1".into(),
         index: 0,
@@ -161,8 +170,8 @@ fn seed_archive_scope(mock: &Mock, member_roles: RoleMask) {
     });
 }
 
-fn token() -> user_model::Token {
-    user_model::Token {
+fn token() -> UserToken {
+    UserToken {
         user_id: "user-1".into(),
     }
 }
@@ -215,15 +224,15 @@ async fn archive_retains_payloads_queues_images_and_deletes_active_data() {
         snapshot.archived_translations[0].created_at
     );
 
-    let archived_comic_payload: comic_archive_model::ArchivedPayload =
+    let archived_comic_payload: ArchivedComicPayload =
         decompress_archive(&snapshot.archived_comics[0].archived_bytes)
             .unwrap();
 
-    let archived_chapter_payload: comic_archive_model::ArchivedChapterPayload =
+    let archived_chapter_payload: ArchivedChapterPayload =
         decompress_archive(&snapshot.archived_chapters[0].archived_bytes)
             .unwrap();
 
-    let archived_translation_payload: comic_archive_model::ArchivedTranslationPayload =
+    let archived_translation_payload: ArchivedTranslationPayload =
         decompress_archive(&snapshot.archived_translations[0].archived_bytes)
             .unwrap();
 
@@ -274,7 +283,7 @@ async fn archive_retains_payloads_queues_images_and_deletes_active_data() {
         .iter()
         .filter_map(|prom_record| match prom_record.payload() {
             //
-            Payload::Image(ImageTask::Delete { object_key }) => {
+            Payload::Image(ImagePayload::Delete { object_key }) => {
                 Some(object_key.to_string())
             }
 

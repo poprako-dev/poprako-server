@@ -7,16 +7,13 @@
 //!
 //! # Execution model
 //!
-//! Use cases fall into two categories:
+//! Use cases compose two execution modes:
 //!
-//! - **Non-transactional** — simple reads or single-row writes that call
-//!   [`repo.execute(...)`](Execute::execute) directly. Each call uses its own
-//!   database connection and commits independently.
+//! - **Standalone** — independent operations use Orchestra [`Run`].
 //!
-//! - **Transactional** — multi-step opers wrapped in
-//!   [`drive.with_context(...)`](Drive::with_context). All [`Advance`] calls
-//!   within the block share a transaction and commit or rollback atomically.
-//!   Side-effects (events, prom records) are deferred until after commit.
+//! - **Coordinated** — multi-step operations run inside [`Nucl::coord`]. All
+//!   [`Step`] calls share one context and commit or roll back atomically.
+//!   Side-effects and prom records keep their existing post-commit ordering.
 //!
 //! # Type parameters
 //!
@@ -24,17 +21,17 @@
 //!
 //! | Parameter | Role |
 //! |-----------|------|
-//! | `D: Drive<C>` | Transaction lifecycle driver |
-//! | `C` | Context anchor linking transactional opers |
+//! | `N: Nucl<Context = C>` | Transaction coordinator |
+//! | `C` | Context shared by coordinated steps |
 //! | `R: XxxRepo<C>` | Repository bundle for data access |
 //! | `P: Prom<C>` | Deferred-action enqueuer |
 //! | `I: ImagePool` | Object-storage signed URL provider |
 //! | `V: EffectDevelop` | Side-effect processor for domain events |
 //! | `A: TokenAuth` | Authentication token signer |
 //!
-//! [`Execute::execute`]: crate::part::shared::execute::Execute::execute
-//! [`Drive::with_context`]: poprako_transactional::drive::Drive::with_context
-//! [`Advance`]: poprako_transactional::advance::Advance
+//! [`Nucl::coord`]: poprako_orchestra::Nucl::coord
+//! [`Run`]: poprako_orchestra::Run
+//! [`Step`]: poprako_orchestra::Step
 
 /// Announcement use cases.
 pub mod announcement;
@@ -64,6 +61,8 @@ pub mod page;
 pub mod system_mail;
 /// Team management use cases.
 pub mod team;
+/// Termbase management use cases.
+pub mod termbase;
 /// Unit ordering use cases.
 pub mod unit;
 /// User management use cases.

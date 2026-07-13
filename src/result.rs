@@ -2,7 +2,7 @@
 
 use std::result::Result as StdResult;
 
-use poprako_transactional::drive::result::Error as DriveError;
+use poprako_orchestra::nucl::Error as NuclError;
 
 /// Categorizes an expected application error by its origin domain.
 #[derive(Debug)]
@@ -29,23 +29,26 @@ pub enum Error {
 /// Convenience alias for [`std::result::Result`] with the application's [`Error`] type.
 pub type Result<T> = StdResult<T, Error>;
 
+pub fn accept<T>(v: T) -> Result<T> {
+    Ok(v)
+}
+
 /// Alias for [`Error`] used at module boundary layers.
 pub type RegularError = Error;
 
 /// Alias for [`Result`] used at module boundary layers.
 pub type RegularResult<T> = Result<T>;
 
-impl<E, BE> From<DriveError<E, BE>> for Error
+impl<BE, E> From<NuclError<BE, E>> for Error
 where
-    E: Into<Error>,
     BE: Into<Error>,
+    E: Into<Error>,
 {
-    fn from(value: DriveError<E, BE>) -> Self {
+    fn from(value: NuclError<BE, E>) -> Self {
         match value {
-            //
-            DriveError::Advance(e) => e.into(),
+            NuclError::Backend(error) => error.into(),
 
-            DriveError::Backend(e) => e.into(),
+            NuclError::Step(error) => error.into(),
         }
     }
 }

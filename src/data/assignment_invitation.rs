@@ -7,13 +7,13 @@ use utoipa::{IntoParams, ToSchema};
 
 use poprako_util::time::ToUnixMilli;
 
-use crate::model::assignment_invitation_model;
+use crate::model::assignment_invitation::AssignmentInvitationInfo;
 use crate::value::role::RoleMask;
 
 /// Presentation-ready assignment invitation information.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct InfoVal {
+pub struct AssignmentInvitationInfoVal {
     pub id: String,
 
     pub chapter_id: String,
@@ -31,8 +31,8 @@ pub struct InfoVal {
     pub updated_at: i64,
 }
 
-impl From<assignment_invitation_model::Info> for InfoVal {
-    fn from(value: assignment_invitation_model::Info) -> Self {
+impl From<AssignmentInvitationInfo> for AssignmentInvitationInfoVal {
+    fn from(value: AssignmentInvitationInfo) -> Self {
         Self {
             id: value.id,
             chapter_id: value.chapter_id,
@@ -53,7 +53,7 @@ impl From<assignment_invitation_model::Info> for InfoVal {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
 #[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
-pub struct ListInfosData {
+pub struct ListAssignmentInvitationInfosParams {
     /// Parent chapter whose assignment invitations to list.
     pub chapter_id: String,
 
@@ -68,7 +68,7 @@ pub struct ListInfosData {
 /// Input parameters for creating an assignment invitation.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct CreateData {
+pub struct CreateAssignmentInvitationParams {
     pub chapter_id: String,
     pub invitee_qid: String,
     pub roles: RoleMask,
@@ -77,7 +77,7 @@ pub struct CreateData {
 /// Return value from creating an assignment invitation.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct CreateVal {
+pub struct CreateAssignmentInvitationPayload {
     pub id: String,
     pub code: String,
 }
@@ -85,6 +85,6 @@ pub struct CreateVal {
 /// Input parameters for joining an assignment through an invitation code.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct JoinData {
+pub struct JoinAssignmentInvitationParams {
     pub code: String,
 }

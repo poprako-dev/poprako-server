@@ -12,7 +12,9 @@
 
 use time::OffsetDateTime;
 
-use crate::model::{team_model, user_model, workset_model};
+use crate::model::team::TeamInfo;
+use crate::model::user::UserInfo;
+use crate::model::workset::WorksetInfo;
 use crate::value::chapter::StageMask;
 use crate::value::comic::ComicInclOpt;
 
@@ -20,13 +22,13 @@ use crate::value::comic::ComicInclOpt;
 ///
 /// Each comic belongs to exactly one workset. Cover uploads follow a multi-step
 /// flow: a key is reserved via
-/// [`ComicStep::reserve_cover`], the client uploads to that key, then
-/// the upload is confirmed via [`ComicStep::mark_cover_uploaded`].
+/// [`ReserveComicCover`], the client uploads to that key, then
+/// the upload is confirmed via [`MarkComicCoverUploaded`].
 ///
-/// [`ComicStep::reserve_cover`]: crate::part::repo::step::comic::ComicStep::reserve_cover
-/// [`ComicStep::mark_cover_uploaded`]: crate::part::repo::step::comic::ComicStep::mark_cover_uploaded
+/// [`ReserveComicCover`]: crate::part::repo::oper::comic::ReserveComicCover
+/// [`MarkComicCoverUploaded`]: crate::part::repo::oper::comic::MarkComicCoverUploaded
 #[derive(Clone)]
-pub struct Info {
+pub struct ComicInfo {
     pub id: String,
 
     pub workset_id: String,
@@ -45,9 +47,9 @@ pub struct Info {
 
     pub creator_id: String,
 
-    pub workset: Option<workset_model::Info>,
-    pub team: Option<team_model::Info>,
-    pub creator: Option<user_model::Info>,
+    pub workset: Option<WorksetInfo>,
+    pub team: Option<TeamInfo>,
+    pub creator: Option<UserInfo>,
 
     pub last_active_at: OffsetDateTime,
 
@@ -63,7 +65,7 @@ pub struct Info {
 ///
 /// [`ComicComplex::gen_id`]: crate::complex::comic::ComicComplex::gen_id
 #[cfg_attr(test, derive(Clone))]
-pub struct Form {
+pub struct ComicEntry {
     pub id: String,
 
     pub workset_id: String,
@@ -78,7 +80,7 @@ pub struct Form {
 
 /// Mutable profile (non-cover, non-counter) fields for a comic.
 #[cfg_attr(test, derive(Clone))]
-pub struct InfoUpdate {
+pub struct ComicInfoUpdate {
     pub id: String,
 
     pub title: String,
@@ -87,11 +89,11 @@ pub struct InfoUpdate {
 }
 
 /// Filtering and pagination parameters for listing comics within a workset.
-pub struct ListSpec {
+pub struct ComicInfoListSpec {
     pub workset_id: String,
 
     pub fuzzy_title: Option<String>,
-    pub kind: ListKind,
+    pub kind: ComicInfoListKind,
 
     pub incl_opt: Vec<ComicInclOpt>,
 
@@ -100,7 +102,7 @@ pub struct ListSpec {
 }
 
 /// Workflow-stage filtering mode for listing comics.
-pub enum ListKind {
+pub enum ComicInfoListKind {
     All,
     Stages(StageMask),
 }
@@ -114,7 +116,7 @@ pub enum ListKind {
 ///
 /// [`TeamAvatarReservation`]: crate::model::team::TeamAvatarReservation
 #[cfg_attr(test, derive(Clone))]
-pub struct CoverReservation {
+pub struct ComicCoverReservation {
     pub object_key: String,
     pub prev_object_key: Option<String>,
     pub cover_version: u32,

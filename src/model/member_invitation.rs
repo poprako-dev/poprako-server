@@ -1,6 +1,6 @@
 //! Domain models for member invitations.
 
-use crate::model::user_model;
+use crate::model::user::UserInfo;
 use crate::value::member_invitation::MemberInvitationInclOpt;
 use crate::value::role::RoleMask;
 
@@ -10,12 +10,12 @@ use crate::value::role::RoleMask;
 /// a pending flag indicating whether the invitation has been consumed,
 /// and the [`RoleMask`] that will be assigned upon acceptance.
 #[cfg_attr(test, derive(Clone))]
-pub struct Info {
+pub struct MemberInvitationInfo {
     pub id: String,
 
     pub team_id: String,
 
-    pub invitor: Option<user_model::Info>,
+    pub invitor: Option<UserInfo>,
 
     pub invitor_id: String,
     pub invitee_qid: String,
@@ -28,7 +28,7 @@ pub struct Info {
 }
 
 /// The data needed to insert a member invitation row.
-pub struct Form {
+pub struct MemberInvitationEntry {
     pub id: String,
 
     pub team_id: String,
@@ -42,13 +42,13 @@ pub struct Form {
 }
 
 /// Mutable fields for a member invitation.
-pub struct Update {
+pub struct MemberInvitationUpdate {
     pub id: String,
     pub roles: RoleMask,
 }
 
 /// Filtering, pagination, and include parameters for listing invitations.
-pub struct ListSpec {
+pub struct MemberInvitationListSpec {
     pub team_id: String,
     pub pending: Option<bool>,
     pub incl_opt: Vec<MemberInvitationInclOpt>,

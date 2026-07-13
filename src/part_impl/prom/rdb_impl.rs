@@ -1,7 +1,7 @@
 //! Diesel-backed prom (promise) adapter.
 //!
 //! [`RdbProm`] is both the transactional handle for enqueuing deferred actions
-//! into `t_local_message` (via [`Advance<Append>`]) and the owner of the
+//! into `t_local_message` and the owner of the
 //! background consumer task that polls, dispatches, and completes those
 //! records — mirroring the self-contained lifecycle of [`AsyncEffectDevelop`].
 //!
@@ -16,17 +16,18 @@ mod repo;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
-use async_trait::async_trait;
 use diesel_async::RunQueryDsl;
 use time::OffsetDateTime;
 use tokio::sync::oneshot::{
     Receiver as OneshotReceiver, Sender as OneshotSender,
 };
 
-use poprako_transactional::advance::Advance;
+use poprako_orchestra::Step;
+use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
 
 use crate::part::image::ImagePool;
-use crate::part::prom::{Append, Prom};
+use crate::part::prom::Prom;
+use crate::part::prom::payload::Payload;
 use crate::part_impl::drive::rdb_impl::RdbDrive;
 use crate::part_impl::prom::rdb_impl::entity::LocalMessageEntry;
 use crate::part_impl::prom::rdb_impl::repo::RdbPromRepo;
@@ -40,7 +41,7 @@ use crate::result::{RegularError, RegularResult};
 
 /// RDBMS-backed prom adapter for enqueuing and consuming deferred actions.
 ///
-/// Implements [`Prom<C>`] for transactional enqueuing via [`Advance<Append>`].
+/// Implements [`Prom<C>`] for transactional task deferral.
 /// The constructor spawns a background worker that polls `t_local_message` and
 /// dispatches completed records by topic.
 ///
@@ -126,24 +127,52 @@ impl RdbProm {
     }
 }
 
-// ── PromTransactional impl ──────────────────────────────────────────────────
-
-#[async_trait]
-impl<'a> Advance<Append<'a>, RdbContext> for RdbProm {
+impl<'a> Step<Defer<'a, String, Payload, ()>, RdbContext> for RdbProm {
     type Error = RegularError;
 
-    async fn advance(
+    async fn step(
         &self,
         context: &mut RdbContext,
-        step: &Append<'a>,
+        oper: &Defer<'a, String, Payload, ()>,
     ) -> RegularResult<()> {
-        //
         let now = OffsetDateTime::now_utc();
 
-        let entry = LocalMessageEntry::from_append(step, now)?;
+        let entry = LocalMessageEntry::from_task(&oper.task, now)?;
 
         diesel::insert_into(t_local_message::table)
             .values(&entry)
+            .execute(context.conn())
+            .await
+            .map_err(diesel)?;
+
+        Ok(())
+    }
+}
+
+impl<'t, 'a> Step<DeferBatch<'t, 'a, String, Payload, ()>, RdbContext>
+    for RdbProm
+{
+    type Error = RegularError;
+
+    async fn step(
+        &self,
+        context: &mut RdbContext,
+        oper: &DeferBatch<'t, 'a, String, Payload, ()>,
+    ) -> RegularResult<()> {
+        if oper.tasks.is_empty() {
+            return Ok(());
+        }
+
+        let now = OffsetDateTime::now_utc();
+
+        let entries = oper
+            .tasks
+            .iter()
+            .map(|task| LocalMessageEntry::from_task(task, now))
+            .collect::<RegularResult<Vec<_>>>()?;
+
+        diesel::insert_into(t_local_message::table)
+            .values(&entries)
             .execute(context.conn())
             .await
             .map_err(diesel)?;

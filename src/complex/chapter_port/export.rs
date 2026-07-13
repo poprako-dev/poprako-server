@@ -1,7 +1,7 @@
+use crate::model::page::PageInfo;
+use crate::model::unit::UnitInfo;
 use std::collections::HashMap;
 use std::fmt::Write as _;
-
-use crate::model::{page_model, unit_model};
 
 /// Chapter export formatting rules.
 pub struct ChapterExportComplex;
@@ -9,8 +9,8 @@ pub struct ChapterExportComplex;
 impl ChapterExportComplex {
     /// Converts pages and units into LabelPlus text.
     pub fn make_label_plus(
-        pages: &[page_model::Info],
-        units_by_page_id: &HashMap<String, Vec<unit_model::Info>>,
+        pages: &[PageInfo],
+        units_by_page_id: &HashMap<String, Vec<UnitInfo>>,
     ) -> String {
         //
         let mut output = String::new();
@@ -85,7 +85,7 @@ impl ChapterExportComplex {
 
 /// Build a LabelPlus image filename from a page's stored index and image
 /// file extension (defaults to `jpg` when the image key has no extension).
-fn label_plus_image_name(page_info: &page_model::Info) -> String {
+fn label_plus_image_name(page_info: &PageInfo) -> String {
     //
     let extension = page_info
         .image_key
@@ -101,7 +101,7 @@ fn label_plus_image_name(page_info: &page_model::Info) -> String {
 
 /// Return the proofread text if non-empty, falling back to translated text
 /// if no proofread content is available.
-fn select_main_text(unit_info: &unit_model::Info) -> Option<&str> {
+fn select_main_text(unit_info: &UnitInfo) -> Option<&str> {
     unit_info
         .proofread_text
         .as_deref()

@@ -6,8 +6,8 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "swagger-ui")]
 use utoipa::{IntoParams, ToSchema};
 
-use crate::data::user_data;
-use crate::model::member_invitation_model;
+use crate::data::user::UserInfoVal;
+use crate::model::member_invitation::MemberInvitationInfo;
 use crate::part::image::ImagePool;
 use crate::result::RegularResult;
 use crate::value::member_invitation::MemberInvitationInclOpt;
@@ -20,7 +20,7 @@ use crate::value::role::RoleMask;
 /// happens during the registration flow.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct CreateData {
+pub struct CreateMemberInvitationParams {
     pub team_id: String,
 
     /// The QQ ID of the person being invited (not a user UUID).
@@ -37,7 +37,7 @@ pub struct CreateData {
 /// registration to claim the invitation.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct CreateVal {
+pub struct CreateMemberInvitationPayload {
     pub id: String,
     pub code: String,
 }
@@ -51,7 +51,7 @@ pub struct CreateVal {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
 #[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
-pub struct ListInfosData {
+pub struct ListMemberInvitationInfosParams {
     /// Parent team whose invitations to list.
     pub team_id: String,
 
@@ -79,14 +79,14 @@ pub struct ListInfosData {
 /// [`MemberInvitationInfo`]: crate::model::member_invitation::MemberInvitationInfo
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct InfoVal {
+pub struct MemberInvitationInfoVal {
     pub id: String,
 
     pub team_id: String,
 
     pub invitor_id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub invitor: Option<user_data::InfoVal>,
+    pub invitor: Option<UserInfoVal>,
 
     pub invitee_qid: String,
     pub code: String,
@@ -96,8 +96,8 @@ pub struct InfoVal {
     pub roles: RoleMask,
 }
 
-impl From<member_invitation_model::Info> for InfoVal {
-    fn from(value: member_invitation_model::Info) -> Self {
+impl From<MemberInvitationInfo> for MemberInvitationInfoVal {
+    fn from(value: MemberInvitationInfo) -> Self {
         Self {
             id: value.id,
             team_id: value.team_id,
@@ -111,21 +111,21 @@ impl From<member_invitation_model::Info> for InfoVal {
     }
 }
 
-impl InfoVal {
+impl MemberInvitationInfoVal {
     /// Converts an invitation model into a presentation-ready value,
     /// resolving included invitor avatar when present.
     pub async fn from_model<P>(
         image_pool: &P,
-        model: member_invitation_model::Info,
+        model: MemberInvitationInfo,
     ) -> RegularResult<Self>
     where
         P: ImagePool,
     {
         let invitor = match model.invitor {
             //
-            Some(user_info) => Some(
-                user_data::InfoVal::from_model(image_pool, user_info).await?,
-            ),
+            Some(user_info) => {
+                Some(UserInfoVal::from_model(image_pool, user_info).await?)
+            }
 
             None => None,
         };
@@ -146,7 +146,7 @@ impl InfoVal {
 /// Input parameters for updating a pending invitation's roles.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct UpdateRolesData {
+pub struct UpdateMemberInvitationRolesParams {
     pub id: String,
     pub roles: RoleMask,
 }

@@ -2,16 +2,16 @@
 
 use serde::Deserialize;
 
-use crate::model::unit_port_model;
+use crate::model::unit_port::{PoprakoUnitImport, UnitTranslationImport};
 
 /// One parsed import page.
-pub struct TranslationImport {
-    pub units: Vec<unit_port_model::TranslationImport>,
+pub struct PageTranslationImport {
+    pub units: Vec<UnitTranslationImport>,
 }
 
 /// PopRaKo JSON import page.
 #[derive(Deserialize)]
-pub struct PoprakoImport {
+pub struct PoprakoPageImport {
     pub image_filename: String,
-    pub units: Vec<unit_port_model::PoprakoImport>,
+    pub units: Vec<PoprakoUnitImport>,
 }

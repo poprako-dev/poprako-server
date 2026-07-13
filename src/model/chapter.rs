@@ -10,7 +10,8 @@
 
 use time::OffsetDateTime;
 
-use crate::model::{comic_model, user_model};
+use crate::model::comic::ComicInfo;
+use crate::model::user::UserInfo;
 use crate::value::chapter::{ChapterInclOpt, StageMask};
 
 /// A chapterrecord as stored in the database.
@@ -28,11 +29,11 @@ use crate::value::chapter::{ChapterInclOpt, StageMask};
 /// typeset_redraw → review → publish. Each phase transitions through
 /// [`StagePhase`] values independently.
 #[derive(Clone)]
-pub struct Info {
+pub struct ChapterInfo {
     pub id: String,
     pub comic_id: String,
 
-    pub comic: Option<comic_model::Info>,
+    pub comic: Option<ComicInfo>,
 
     pub is_pinned: bool,
     pub index: i32,
@@ -51,7 +52,7 @@ pub struct Info {
 
     pub creator_id: String,
 
-    pub creator: Option<user_model::Info>,
+    pub creator: Option<UserInfo>,
 
     pub created_at: OffsetDateTime,
     pub updated_at: OffsetDateTime,
@@ -67,7 +68,7 @@ pub struct Info {
 ///
 /// [`ChapterComplex::gen_id`]: crate::complex::chapter::ChapterComplex::gen_id
 #[cfg_attr(test, derive(Clone))]
-pub struct Form {
+pub struct ChapterEntry {
     pub id: String,
     pub comic_id: String,
 
@@ -84,7 +85,7 @@ pub struct Form {
 /// update endpoint. Workflow phase transitions are handled via
 /// [`ChapterStageUpdate`] instead.
 #[cfg_attr(test, derive(Clone))]
-pub struct InfoUpdate {
+pub struct ChapterInfoUpdate {
     pub id: String,
 
     pub subtitle: Option<String>,
@@ -95,14 +96,14 @@ pub struct InfoUpdate {
 ///
 /// The use case layer validates transition legality before building this update.
 #[cfg_attr(test, derive(Clone))]
-pub struct StageUpdate {
+pub struct ChapterStageUpdate {
     pub id: String,
 
     pub stages: StageMask,
 }
 
 /// Filtering, pagination, and include parameters for listing chapters.
-pub struct ListSpec {
+pub struct ChapterInfoListSpec {
     pub comic_id: String,
     pub incl_opt: Vec<ChapterInclOpt>,
 

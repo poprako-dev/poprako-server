@@ -6,7 +6,7 @@ use crate::value::role::RoleMask;
 
 /// An invitation record for joining a chapter assignment.
 #[cfg_attr(test, derive(Clone))]
-pub struct Info {
+pub struct AssignmentInvitationInfo {
     pub id: String,
 
     pub chapter_id: String,
@@ -25,7 +25,7 @@ pub struct Info {
 }
 
 /// The data needed to insert an assignment invitation row.
-pub struct Form {
+pub struct AssignmentInvitationEntry {
     pub id: String,
 
     pub chapter_id: String,
