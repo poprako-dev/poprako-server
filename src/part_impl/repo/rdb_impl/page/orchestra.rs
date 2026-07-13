@@ -1,5 +1,7 @@
 use poprako_orchestra::{Run, Step};
 
+use tracing::instrument;
+
 use crate::model::page::{PageImageReservation, PageInfo};
 use crate::part::repo::oper::page::{
     CreatePages, DeletePages, GetPageInfo, GetPageInfoExcluded, ListPageInfos,
@@ -17,6 +19,7 @@ use crate::result::{RegularError, RegularResult};
 impl<'a> Run<GetPageInfo<'a>> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(&self, oper: &GetPageInfo<'a>) -> RegularResult<PageInfo> {
         submit_query!(self.core, get_info_by_id, oper.id)
     }
@@ -25,6 +28,7 @@ impl<'a> Run<GetPageInfo<'a>> for RdbRepo {
 impl<'a> Run<ListPageInfos<'a>> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &ListPageInfos<'a>,
@@ -59,6 +63,7 @@ impl<'a> Run<ListPageInfos<'a>> for RdbRepo {
 impl<'a> Step<GetPageInfo<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -71,6 +76,7 @@ impl<'a> Step<GetPageInfo<'a>, RdbContext> for RdbRepo {
 impl<'a> Step<ListPageInfos<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -101,6 +107,7 @@ impl<'a> Step<ListPageInfos<'a>, RdbContext> for RdbRepo {
 
 impl<'a> Step<CreatePages<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -112,6 +119,7 @@ impl<'a> Step<CreatePages<'a>, RdbContext> for RdbRepo {
 
 impl<'a> Step<GetPageInfoExcluded<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -123,6 +131,7 @@ impl<'a> Step<GetPageInfoExcluded<'a>, RdbContext> for RdbRepo {
 
 impl<'a> Step<ReservePageImage<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -134,6 +143,7 @@ impl<'a> Step<ReservePageImage<'a>, RdbContext> for RdbRepo {
 
 impl<'a> Step<MarkPageImageUploaded<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -145,6 +155,7 @@ impl<'a> Step<MarkPageImageUploaded<'a>, RdbContext> for RdbRepo {
 
 impl<'a> Step<SetPageUnitCounters<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -156,6 +167,7 @@ impl<'a> Step<SetPageUnitCounters<'a>, RdbContext> for RdbRepo {
 
 impl<'a> Step<DeletePages<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,

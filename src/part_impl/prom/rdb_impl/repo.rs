@@ -10,6 +10,8 @@
 use poprako_orchestra::{Oper, Step};
 use time::OffsetDateTime;
 
+use tracing::instrument;
+
 use crate::part_impl::prom::rdb_impl::entity::{
     LocalMessageRow, LocalMessageStatus,
 };
@@ -174,6 +176,7 @@ where
 {
     type Error = RegularError;
 
+#[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -211,6 +214,7 @@ where
 {
     type Error = RegularError;
 
+#[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -248,6 +252,7 @@ where
 {
     type Error = RegularError;
 
+#[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -280,6 +285,7 @@ where
 {
     type Error = RegularError;
 
+#[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -312,6 +318,7 @@ where
 {
     type Error = RegularError;
 
+#[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -347,6 +354,7 @@ where
 {
     type Error = RegularError;
 
+#[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -404,6 +412,7 @@ where
 {
     type Error = RegularError;
 
+#[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,

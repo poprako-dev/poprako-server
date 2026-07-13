@@ -5,6 +5,8 @@ use diesel_async::RunQueryDsl;
 use poprako_orchestra::{Run, Step};
 use time::OffsetDateTime;
 
+use tracing::instrument;
+
 use crate::complex::team::TeamComplex;
 use crate::model::team::{TeamAvatarReservation, TeamEntry, TeamInfo};
 use crate::part::repo::oper::team::{
@@ -27,6 +29,7 @@ impl TeamRepo<RdbContext> for RdbRepo {}
 // ── Free functions ──────────────────────────────────────────────────────────
 
 /// Insert a new team and return its info.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn create(
     conn: &mut RdbConn,
     entry: &TeamEntry,
@@ -54,6 +57,7 @@ async fn create(
 }
 
 /// Load a single team info by ID.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn get_info_by_id(
     conn: &mut RdbConn,
     id: &str,
@@ -72,6 +76,7 @@ async fn get_info_by_id(
 }
 
 /// Query teams, optionally filtered to those a user is a member of.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn list_infos(
     conn: &mut RdbConn,
     user_id: Option<&str>,
@@ -103,6 +108,7 @@ async fn list_infos(
 }
 
 /// Update a team's name and description.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn update_info(
     conn: &mut RdbConn,
     id: &str,
@@ -124,6 +130,7 @@ async fn update_info(
 }
 
 /// Mark a team avatar as uploaded, checking version staleness.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn mark_avatar_uploaded(
     conn: &mut RdbConn,
     id: &str,
@@ -151,6 +158,7 @@ async fn mark_avatar_uploaded(
 
 /// Reserve a new avatar slot for a team: bump version, generate object key,
 /// and return the reservation with previous key for cleanup.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn reserve_avatar(
     conn: &mut RdbConn,
     id: &str,
@@ -190,6 +198,7 @@ async fn reserve_avatar(
 }
 
 /// Load a team info by ID, locking the row for update.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn get_info_excluded(
     conn: &mut RdbConn,
     id: &str,
@@ -209,6 +218,7 @@ async fn get_info_excluded(
 }
 
 /// Delete a team by ID.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
     //
     diesel::delete(t_team.filter(f_id.eq(id)))
@@ -220,6 +230,7 @@ async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
 }
 
 /// Atomically increment and return the previous workset-next-index for a team.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn increment_workset_next_index(
     conn: &mut RdbConn,
     id: &str,
@@ -238,6 +249,7 @@ async fn increment_workset_next_index(
 impl<'a> Run<CreateTeam<'a>> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &CreateTeam<'a>,
@@ -249,6 +261,7 @@ impl<'a> Run<CreateTeam<'a>> for RdbRepo {
 impl<'a> Run<GetTeamInfo<'a>> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &GetTeamInfo<'a>,
@@ -264,6 +277,7 @@ impl<'a> Run<GetTeamInfo<'a>> for RdbRepo {
 impl<'a> Run<ListTeamInfos<'a>> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &ListTeamInfos<'a>,
@@ -281,6 +295,7 @@ impl<'a> Run<ListTeamInfos<'a>> for RdbRepo {
 impl<'a> Run<UpdateTeam<'a>> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(&self, oper: &UpdateTeam<'a>) -> RegularResult<()> {
         match oper {
             //
@@ -305,6 +320,7 @@ impl<'a> Run<UpdateTeam<'a>> for RdbRepo {
 impl<'a> Step<CreateTeam<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -317,6 +333,7 @@ impl<'a> Step<CreateTeam<'a>, RdbContext> for RdbRepo {
 impl<'a> Step<UpdateTeam<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -340,6 +357,7 @@ impl<'a> Step<UpdateTeam<'a>, RdbContext> for RdbRepo {
 impl<'a> Step<ReserveTeamAvatar<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -352,6 +370,7 @@ impl<'a> Step<ReserveTeamAvatar<'a>, RdbContext> for RdbRepo {
 impl<'a> Step<GetTeamInfoExcluded<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -368,6 +387,7 @@ impl<'a> Step<GetTeamInfoExcluded<'a>, RdbContext> for RdbRepo {
 impl<'a> Step<DeleteTeam<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -380,6 +400,7 @@ impl<'a> Step<DeleteTeam<'a>, RdbContext> for RdbRepo {
 impl<'a> Step<AllocateTeamWorksetIndex<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,

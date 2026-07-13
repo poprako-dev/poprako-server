@@ -2,6 +2,8 @@
 
 use poprako_orchestra::{Nucl, run_proxy};
 
+use tracing::instrument;
+
 use crate::complex::announcement::{
     AnnouncementComplex, AnnouncementPermComplex,
 };
@@ -24,6 +26,7 @@ use crate::result::{RegularError, RegularResult};
 mod tests;
 
 /// Lists announcements under a team.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn list_infos<C, R, I>(
     repo: &R,
     image_pool: &I,
@@ -65,6 +68,7 @@ where
 }
 
 /// Creates an announcement under a team.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn create<N, C, R>(
     nucl: &N,
     repo: &R,

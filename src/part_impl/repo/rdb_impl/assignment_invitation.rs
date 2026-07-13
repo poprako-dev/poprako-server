@@ -4,6 +4,8 @@ use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use time::OffsetDateTime;
 
+use tracing::instrument;
+
 use crate::model::assignment_invitation::{
     AssignmentInvitationEntry, AssignmentInvitationInfo,
 };
@@ -37,6 +39,7 @@ fn rows_into_infos(
 }
 
 /// Queries assignment invitation rows filtered by chapter ID and optional pending flag.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn list_infos(
     conn: &mut RdbConn,
     chapter_id: &str,
@@ -66,6 +69,7 @@ async fn list_infos(
 }
 
 /// Queries a single assignment invitation row by ID.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn get_info_by_id(
     conn: &mut RdbConn,
     id: &str,
@@ -84,6 +88,7 @@ async fn get_info_by_id(
 }
 
 /// Queries a pending invitation by code under `FOR UPDATE` lock.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn get_info_by_code_excluded(
     conn: &mut RdbConn,
     code: &str,
@@ -104,6 +109,7 @@ async fn get_info_by_code_excluded(
 }
 
 /// Inserts a new assignment invitation row from the given entry.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn create(
     conn: &mut RdbConn,
     model_entry: &AssignmentInvitationEntry,
@@ -123,6 +129,7 @@ async fn create(
 }
 
 /// Sets the pending flag to false on an invitation, marking it as used.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn mark_pending_as_used(
     conn: &mut RdbConn,
     id: &str,
@@ -150,6 +157,7 @@ async fn mark_pending_as_used(
 }
 
 /// Deletes a single assignment invitation row by ID.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
     //
     diesel::delete(t_assignment_invitation.filter(f_id.eq(id)))
@@ -161,6 +169,7 @@ async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
 }
 
 /// Deletes all assignment invitation rows for a given chapter ID.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn delete_by_chapter_id(
     conn: &mut RdbConn,
     chapter_id: &str,

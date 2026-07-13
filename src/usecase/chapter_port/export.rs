@@ -7,6 +7,8 @@ use std::collections::HashMap;
 
 use poprako_orchestra::run_proxy;
 
+use tracing::instrument;
+
 use crate::complex::chapter_port::{
     ChapterExportComplex, ChapterPortPermComplex,
 };
@@ -33,6 +35,7 @@ use crate::part::repo::workset::WorksetRepo;
 use crate::result::RegularResult;
 
 /// Exports one chapter as a JSON-safe translation payload.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn export<C, R>(
     repo: &R,
     token: UserToken,
@@ -116,6 +119,7 @@ where
 }
 
 /// Exports one chapter as LabelPlus text.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn export_label_plus<C, R>(
     repo: &R,
     token: UserToken,

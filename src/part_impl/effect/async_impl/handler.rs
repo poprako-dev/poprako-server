@@ -8,7 +8,7 @@ use tokio::sync::mpsc::Receiver;
 use tokio::sync::oneshot::{
     Receiver as OneshotReceiver, Sender as OneshotSender,
 };
-use tracing::{Level, instrument};
+use tracing::instrument;
 
 use crate::part::effect::event::Event;
 use crate::part::repo::assignment::AssignmentRepo;
@@ -46,7 +46,7 @@ impl<R> EffectHandler<R> {
         }
     }
 
-    #[instrument(skip_all, level = Level::DEBUG)]
+#[instrument(level = "info", skip_all)]
     pub async fn run<C>(mut self)
     where
         C: Send,

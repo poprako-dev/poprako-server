@@ -3,7 +3,7 @@
 //! Dispatches image [`Payload`] variants to their concrete implementations.
 
 use poprako_orchestra::Nucl;
-use tracing::{Level, instrument};
+use tracing::instrument;
 
 use crate::part::image::ImageManager;
 use crate::part::prom::payload::image::{Payload, ResourceKind};
@@ -45,6 +45,7 @@ fn classify_current_version(
 }
 
 /// Dispatch an image [`Payload`] to its concrete handler.
+#[instrument(level = "info", skip_all)]
 pub async fn handle<N, R, I>(
     nucl: &N,
     repo: &R,
@@ -88,7 +89,7 @@ where
 }
 
 /// Verifies that an uploaded image object exists and confirms current DB ownership.
-#[instrument(skip(nucl, repo, image_pool), level = Level::DEBUG)]
+#[instrument(level = "info", skip_all)]
 async fn handle_check_uploaded<N, R, I>(
     nucl: &N,
     repo: &R,
@@ -134,6 +135,7 @@ where
     }
 }
 
+#[instrument(level = "info", skip_all)]
 async fn process_existing_image<N, R, I>(
     nucl: &N,
     repo: &R,
@@ -171,6 +173,7 @@ where
     }
 }
 
+#[instrument(level = "info", skip_all)]
 async fn mark_current_or_classify<N, R>(
     nucl: &N,
     repo: &R,
@@ -219,6 +222,7 @@ where
     Ok(resource_state)
 }
 
+#[instrument(level = "info", skip_all)]
 async fn mark_uploaded_by_kind<R>(
     repo: &R,
     context: &mut RdbContext,
@@ -286,6 +290,7 @@ where
     }
 }
 
+#[instrument(level = "info", skip_all)]
 async fn classify_expected_mark<R>(
     repo: &R,
     context: &mut RdbContext,
@@ -394,7 +399,7 @@ where
 }
 
 /// Deletes an image object from the storage backend.
-#[instrument(skip(image_pool), level = Level::DEBUG)]
+#[instrument(level = "info", skip_all)]
 async fn handle_delete<I>(image_pool: &I, object_key: &str) -> TaskFlow
 where
     I: ImageManager + Send + Sync,

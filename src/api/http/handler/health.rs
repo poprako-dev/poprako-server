@@ -4,6 +4,7 @@ use std::net::SocketAddr;
 
 use axum::extract::ConnectInfo;
 use axum::http::StatusCode;
+use tracing::instrument;
 
 /// `GET /api/health` — returns `204` for loopback callers, `404` otherwise.
 ///
@@ -18,6 +19,7 @@ use axum::http::StatusCode;
         (status = 404, description = "Not found (non-loopback request)"),
     ),
 ))]
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn check_health(
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
 ) -> Result<StatusCode, StatusCode> {

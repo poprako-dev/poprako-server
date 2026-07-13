@@ -42,7 +42,7 @@ fn auth_cookie(token: &str) -> Cookie<'static> {
         (status = 401, description = "Invalid invitation code"),
     ),
 ))]
-#[instrument(err, skip(harn, params))]
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn register(
     State(harn): State<AppHarn>,
     Json(params): Json<RegisterAuthParams>,
@@ -78,7 +78,7 @@ pub async fn register(
         (status = 401, description = "Invalid credentials"),
     ),
 ))]
-#[instrument(err, skip(harn, params))]
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn login(
     State(harn): State<AppHarn>,
     Json(params): Json<LoginAuthParams>,
@@ -105,7 +105,7 @@ pub async fn login(
         (status = 204, description = "Logged out successfully, auth cookie cleared"),
     ),
 ))]
-#[instrument(err)]
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn logout() -> HttpNoContent {
     //
     let cookie = Cookie::build((AUTH_COOKIE_NAME, ""))

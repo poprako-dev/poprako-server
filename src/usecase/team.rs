@@ -6,6 +6,8 @@ use poprako_orchestra::{Nucl, run_proxy};
 use poprako_orchestra_extra::prom::oper::DeferBatch;
 use poprako_orchestra_extra::prom::task::Task;
 
+use tracing::instrument;
+
 use crate::complex::image::ImageComplex;
 use crate::complex::member::MemberComplex;
 use crate::complex::team::{TeamComplex, TeamPermComplex};
@@ -50,6 +52,7 @@ mod tests;
 /// * `C` — Context anchor.
 /// * `R: TeamRepo<C>` — Team storage.
 /// * `I: ImagePool` — Resolves the avatar signed URL.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn create<N, C, R, I>(
     nucl: &N,
     repo: &R,
@@ -122,6 +125,7 @@ where
 /// * `C` — Context anchor.
 /// * `R: TeamRepo<C>` — Team storage.
 /// * `I: ImagePool` — Resolves the avatar signed URL.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn get_info<C, R, I>(
     repo: &R,
     image_pool: &I,
@@ -147,6 +151,7 @@ where
 /// * `C` — Context anchor.
 /// * `R: TeamRepo<C>` — Team storage.
 /// * `I: ImagePool` — Resolves avatar signed URLs.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn list_infos<C, R, I>(
     repo: &R,
     image_pool: &I,
@@ -195,6 +200,7 @@ where
 ///
 /// * `C` — Context anchor.
 /// * `R: TeamRepo<C>` — Team storage.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn update_info<C, R>(
     repo: &R,
     token: UserToken,
@@ -242,6 +248,7 @@ where
 /// * `R: TeamRepo<C>` — Team storage.
 /// * `P: Prom<C>` — Prom enqueuer for deferred image opers.
 /// * `I: ImagePool` — Generates the signed upload URL.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn reserve_avatar<N, C, R, P, I>(
     nucl: &N,
     repo: &R,
@@ -348,6 +355,7 @@ where
 ///
 /// * `C` — Context anchor.
 /// * `R: TeamRepo<C>` — Team storage.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn mark_avatar_uploaded<C, R>(
     repo: &R,
     token: UserToken,
@@ -391,6 +399,7 @@ where
 /// * `C` — Context anchor.
 /// * `R: TeamRepo<C> + WorksetRepo<C> + ComicRepo<C>` — Team, workset, and comic storage.
 /// * `P: Prom<C>` — Prom enqueuer for deferred avatar deletion.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn delete<N, C, R, P>(
     nucl: &N,
     repo: &R,

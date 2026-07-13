@@ -7,6 +7,8 @@ use poprako_orchestra::{Nucl, run_proxy};
 use poprako_orchestra_extra::prom::oper::DeferBatch;
 use poprako_orchestra_extra::prom::task::Task;
 
+use tracing::instrument;
+
 use crate::complex::assignment::AssignmentComplex;
 use crate::complex::chapter::ChapterComplex;
 use crate::complex::comic::{ComicComplex, ComicPermComplex};
@@ -63,6 +65,7 @@ pub mod tests;
 /// 5. Updates the comic's denormalised chapter counter and last-activity
 ///    timestamp.
 /// 6. Creates an ADMIN assignment on the new chapter for the caller.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn create<N, C, R>(
     nucl: &N,
     repo: &R,
@@ -213,6 +216,7 @@ where
 }
 
 /// Fetches a comic by ID with cover URL resolution.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn get_info<C, R, I>(
     repo: &R,
     image_pool: &I,
@@ -246,6 +250,7 @@ where
 }
 
 /// Lists comics for a workset with optional title filter, completion filter, and pagination.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn list_infos<C, R, I>(
     repo: &R,
     image_pool: &I,
@@ -319,6 +324,7 @@ where
 }
 
 /// Updates a comic's title, author, and description.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn update_info<C, R>(
     repo: &R,
     token: UserToken,
@@ -355,6 +361,7 @@ where
 }
 
 /// Reserves a new comic cover upload slot.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn reserve_cover<N, C, R, P, I>(
     nucl: &N,
     repo: &R,
@@ -452,6 +459,7 @@ where
 }
 
 /// Marks a reserved comic cover as successfully uploaded.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn mark_cover_uploaded<C, R>(
     repo: &R,
     token: UserToken,
@@ -483,6 +491,7 @@ where
 }
 
 /// Deletes a comic and updates the parent workset counter.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn delete<N, C, R, P>(
     nucl: &N,
     repo: &R,

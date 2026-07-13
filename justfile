@@ -45,6 +45,9 @@ prod-stop:
 prod-ci-build:
     scripts/ci-build-prod.sh
 
+deploy-release:
+    sh scripts/deploy-release.sh
+
 # Run all fmt/*/check.py checkers in order, continuing on failure.
 fmt-check:
     bash fmt/run-check.sh

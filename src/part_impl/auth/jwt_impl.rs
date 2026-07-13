@@ -6,7 +6,7 @@ use jsonwebtoken::{
 };
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
-use tracing::{Level, instrument};
+use tracing::instrument;
 
 use poprako_util::i18n::trl;
 
@@ -89,7 +89,7 @@ impl JwtAuth {
 }
 
 impl TokenAuth for JwtAuth {
-    #[instrument(err(Debug), skip(self, token), level = Level::DEBUG)]
+#[instrument(level = "info", err(Debug), skip_all)]
     fn sign_token(&self, token: &UserTokenRef) -> RegularResult<String> {
         //
         let now = OffsetDateTime::now_utc();
@@ -120,7 +120,7 @@ impl TokenAuth for JwtAuth {
         })
     }
 
-    #[instrument(err(Debug), skip(self), level = Level::DEBUG)]
+#[instrument(level = "info", err(Debug), skip_all)]
     fn verify_token(&self, raw: &str) -> RegularResult<UserToken> {
         //
         let token_data = decode::<TokenClaims>(

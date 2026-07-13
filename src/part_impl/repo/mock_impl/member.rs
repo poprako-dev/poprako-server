@@ -2,6 +2,8 @@
 
 use poprako_orchestra::{Run, Step};
 
+use tracing::instrument;
+
 use crate::model::member::{MemberEntry, MemberInfo, MemberListSpec};
 use crate::model::team::TeamInfo;
 use crate::model::user::UserInfo;
@@ -107,6 +109,7 @@ fn find_member_by_user_id_and_team_id(
 impl<'a> Run<FindMemberInfo<'a>> for Mock {
     type Error = RegularError;
 
+#[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &FindMemberInfo<'a>,
@@ -251,6 +254,7 @@ fn list_member_infos_by_user(
 impl<'a> Run<ListMemberInfos<'a>> for Mock {
     type Error = RegularError;
 
+#[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &ListMemberInfos<'a>,
@@ -274,6 +278,7 @@ impl<'a> Run<ListMemberInfos<'a>> for Mock {
 impl<'a, 'b> Run<GetMemberInfo<'a, 'b>> for Mock {
     type Error = RegularError;
 
+#[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &GetMemberInfo<'a, 'b>,
@@ -292,6 +297,7 @@ impl<'a, 'b> Run<GetMemberInfo<'a, 'b>> for Mock {
 impl<'a> Step<CreateMember<'a>, MockContext> for Mock {
     type Error = RegularError;
 
+#[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -304,6 +310,7 @@ impl<'a> Step<CreateMember<'a>, MockContext> for Mock {
 impl<'a> Step<UpdateMember<'a>, MockContext> for Mock {
     type Error = RegularError;
 
+#[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -348,6 +355,7 @@ impl<'a> Step<UpdateMember<'a>, MockContext> for Mock {
 impl<'a> Step<ListMemberInfos<'a>, MockContext> for Mock {
     type Error = RegularError;
 
+#[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -369,6 +377,7 @@ impl<'a> Step<ListMemberInfos<'a>, MockContext> for Mock {
 impl<'a> Step<FindMemberInfo<'a>, MockContext> for Mock {
     type Error = RegularError;
 
+#[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -389,6 +398,7 @@ impl<'a> Step<FindMemberInfo<'a>, MockContext> for Mock {
 impl<'a, 'b> Step<GetMemberInfo<'a, 'b>, MockContext> for Mock {
     type Error = RegularError;
 
+#[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -405,6 +415,7 @@ impl<'a, 'b> Step<GetMemberInfo<'a, 'b>, MockContext> for Mock {
 impl<'a> Step<ListMemberInfosExcluded<'a>, MockContext> for Mock {
     type Error = RegularError;
 
+#[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -421,6 +432,7 @@ impl<'a> Step<ListMemberInfosExcluded<'a>, MockContext> for Mock {
 impl<'a> Step<DeleteMember<'a>, MockContext> for Mock {
     type Error = RegularError;
 
+#[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,

@@ -1,3 +1,5 @@
+use tracing::instrument;
+
 use crate::model::assignment::AssignmentInfo;
 use crate::model::chapter::ChapterInfo;
 use crate::model::comic::ComicInfo;
@@ -209,6 +211,7 @@ impl Incl for AssignmentUserIncl {
 }
 
 /// Populates assignment query results with eagerly-loaded related entity data.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn populate_assignment_incls(
     conn: &mut RdbConn,
     infos: &mut [AssignmentInfo],

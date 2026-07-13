@@ -5,6 +5,8 @@ use poprako_orchestra::{Nucl, run_proxy, step_proxy};
 use poprako_util::i18n::trl;
 use poprako_util::page::Page;
 
+use tracing::instrument;
+
 use crate::complex::unit::{UnitComplex, UnitPermComplex};
 use crate::data::unit::{
     ListPageUnitInfosParams, ListPageUnitInfosPayload, SavePageUnitsParams,
@@ -41,6 +43,7 @@ use crate::result::{ExpectedVariant, RegularError, RegularResult};
 mod tests;
 
 /// Lists units under one page.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn list_infos<C, R>(
     repo: &R,
     token: UserToken,
@@ -95,6 +98,7 @@ where
 }
 
 /// Saves unit opers under one page.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn save_infos<N, C, R>(
     nucl: &N,
     repo: &R,

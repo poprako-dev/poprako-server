@@ -22,7 +22,6 @@
 #[cfg(feature = "swagger-ui")]
 use std::io::Write as _;
 use std::net::{SocketAddr, ToSocketAddrs};
-use std::path::Path;
 use std::sync::Arc;
 
 use anyhow::Context as _;
@@ -61,35 +60,17 @@ async fn main() -> anyhow::Result<()> {
 
     dotenvy::dotenv().expect(".env file should be valid");
 
-    let _log_guard = if cfg!(debug_assertions) {
-        //
-        tracing_subscriber::fmt()
-            .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
-            .with_span_events(tracing_subscriber::fmt::format::FmtSpan::CLOSE)
-            .init();
-
-        None
-    } else {
-        //
-        let log_folder = Path::new("logs");
-
-        std::fs::create_dir_all(log_folder)
-            .context("failed to create log folder")?;
-
-        let file_appender =
-            tracing_appender::rolling::daily(log_folder, "poprako_server.log");
-
-        let (non_blocking, log_guard) =
-            tracing_appender::non_blocking(file_appender);
-
-        tracing_subscriber::fmt()
-            .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
-            .with_writer(non_blocking)
-            .with_ansi(false)
-            .init();
-
-        Some(log_guard)
-    };
+    tracing_subscriber::fmt()
+        .with_env_filter(
+            tracing_subscriber::EnvFilter::builder()
+                .with_default_directive(
+                    tracing_subscriber::filter::LevelFilter::INFO.into(),
+                )
+                .from_env_lossy(),
+        )
+        .with_span_events(tracing_subscriber::fmt::format::FmtSpan::CLOSE)
+        .with_ansi(false)
+        .init();
 
     let config = AppConfig::from_default_file()
         .await

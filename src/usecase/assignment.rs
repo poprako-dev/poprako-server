@@ -4,6 +4,8 @@ use poprako_orchestra::{Nucl, run_proxy};
 
 use poprako_util::i18n::trl;
 
+use tracing::instrument;
+
 use crate::complex::assignment::{AssignmentComplex, AssignmentPermComplex};
 use crate::complex::chapter::ChapterPermComplex;
 use crate::data::assignment::{
@@ -37,6 +39,7 @@ use crate::result::{ExpectedVariant, RegularError, RegularResult};
 mod tests;
 
 /// Lists assignments by chapter or owner user.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn list_infos<C, R, I>(
     repo: &R,
     image_pool: &I,
@@ -88,6 +91,7 @@ where
 }
 
 /// Joins a chapter assignment with requested roles.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn join<N, C, R>(
     nucl: &N,
     repo: &R,
@@ -197,6 +201,7 @@ where
 }
 
 /// Updates assignment roles.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn update_roles<N, C, R>(
     nucl: &N,
     repo: &R,
@@ -340,6 +345,7 @@ fn assignment_admin_required_error() -> RegularError {
 }
 
 /// Deletes one assignment by identifier.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn delete<N, C, R>(
     nucl: &N,
     repo: &R,

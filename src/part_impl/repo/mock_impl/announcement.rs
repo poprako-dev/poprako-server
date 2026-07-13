@@ -4,6 +4,8 @@ use std::cmp::Reverse;
 
 use poprako_orchestra::{Run, Step};
 
+use tracing::instrument;
+
 use crate::model::announcement::{
     AnnouncementEntry, AnnouncementInfo, AnnouncementListSpec,
 };
@@ -110,6 +112,7 @@ fn create_announcement(
 impl Run<ListAnnouncementInfos<'_>> for Mock {
     type Error = RegularError;
 
+#[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &ListAnnouncementInfos<'_>,
@@ -124,6 +127,7 @@ impl Run<ListAnnouncementInfos<'_>> for Mock {
 impl Step<CreateAnnouncement<'_>, MockContext> for Mock {
     type Error = RegularError;
 
+#[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,

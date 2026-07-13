@@ -1,5 +1,7 @@
 use poprako_orchestra::{Run, Step};
 
+use tracing::instrument;
+
 use crate::model::assignment_invitation::AssignmentInvitationInfo;
 use crate::part::repo::oper::assignment_invitation::{
     CreateAssignmentInvitation, DeleteAssignmentInvitations,
@@ -16,6 +18,7 @@ use crate::result::{RegularError, RegularResult};
 
 impl<'a> Run<ListAssignmentInvitationInfos<'a>> for RdbRepo {
     type Error = RegularError;
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &ListAssignmentInvitationInfos<'a>,
@@ -32,6 +35,7 @@ impl<'a> Run<ListAssignmentInvitationInfos<'a>> for RdbRepo {
 }
 impl<'a> Run<GetAssignmentInvitationInfo<'a>> for RdbRepo {
     type Error = RegularError;
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &GetAssignmentInvitationInfo<'a>,
@@ -45,6 +49,7 @@ impl<'a> Run<GetAssignmentInvitationInfo<'a>> for RdbRepo {
 }
 impl<'a> Step<CreateAssignmentInvitation<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -55,6 +60,7 @@ impl<'a> Step<CreateAssignmentInvitation<'a>, RdbContext> for RdbRepo {
 }
 impl<'a> Step<GetAssignmentInvitationInfo<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -69,6 +75,7 @@ impl<'a> Step<GetAssignmentInvitationInfo<'a>, RdbContext> for RdbRepo {
 }
 impl<'a> Step<GetAssignmentInvitationInfoExcluded<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -79,6 +86,7 @@ impl<'a> Step<GetAssignmentInvitationInfoExcluded<'a>, RdbContext> for RdbRepo {
 }
 impl<'a> Step<MarkAssignmentInvitationUsed<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -89,6 +97,7 @@ impl<'a> Step<MarkAssignmentInvitationUsed<'a>, RdbContext> for RdbRepo {
 }
 impl<'a> Step<DeleteAssignmentInvitations<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,

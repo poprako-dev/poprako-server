@@ -8,6 +8,8 @@ use poprako_orchestra_extra::prom::task::Task;
 
 use poprako_util::i18n::trl;
 
+use tracing::instrument;
+
 use crate::complex::image::ImageComplex;
 use crate::complex::page::{PageComplex, PagePermComplex};
 use crate::data::page::{
@@ -43,6 +45,7 @@ use crate::result::{ExpectedVariant, RegularError, RegularResult};
 mod tests;
 
 /// Reserves upload slots for all pages in an empty chapter.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn reserve_chapter_pages<N, C, R, P, I>(
     nucl: &N,
     repo: &R,
@@ -223,6 +226,7 @@ where
 }
 
 /// Reserves a replacement image upload slot for one page.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn reserve_image<N, C, R, P, I>(
     nucl: &N,
     repo: &R,
@@ -323,6 +327,7 @@ where
 }
 
 /// Lists pages under one chapter.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn list_infos<C, R, I>(
     repo: &R,
     image_pool: &I,
@@ -372,6 +377,7 @@ where
 }
 
 /// Marks one page image as uploaded.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn mark_image_uploaded<N, C, R>(
     nucl: &N,
     repo: &R,
@@ -414,6 +420,7 @@ where
 }
 
 /// Deletes all pages under one chapter.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn delete<N, C, R, P>(
     nucl: &N,
     repo: &R,

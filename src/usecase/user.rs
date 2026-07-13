@@ -8,6 +8,8 @@ use poprako_orchestra_extra::prom::task::Task;
 
 use poprako_util::i18n::trl;
 
+use tracing::instrument;
+
 use crate::complex::image::ImageComplex;
 use crate::data::user::{
     MarkUserAvatarUploadedParams, ReserveUserAvatarParams,
@@ -45,6 +47,7 @@ mod tests;
 /// * `R: UserRepo<C>` — User storage.
 /// * `I: ImagePool` — Resolves the avatar signed URL.
 /// * `V: EffectDevelop` — Processes the activity event (only for self-reads).
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn get_info<C, R, I, V>(
     repo: &R,
     image_pool: &I,
@@ -86,6 +89,7 @@ where
 /// * `N: Nucl<Context = C>` — Transaction coordinator.
 /// * `C` — Context anchor.
 /// * `R: UserRepo<C> + MemberRepo<C>` — User and member storage.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn update_info<N, C, R>(
     nucl: &N,
     repo: &R,
@@ -154,6 +158,7 @@ where
 /// * `I: ImagePool` — Generates the signed upload URL.
 ///
 /// [`team::reserve_avatar`]: super::team::reserve_avatar
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn reserve_avatar<N, C, R, P, I>(
     nucl: &N,
     repo: &R,
@@ -249,6 +254,7 @@ where
 /// * `N: Nucl<Context = C>` — Transaction coordinator.
 /// * `C` — Context anchor.
 /// * `R: UserRepo<C>` — User storage.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn mark_avatar_uploaded<N, C, R>(
     nucl: &N,
     repo: &R,
@@ -306,6 +312,7 @@ where
 /// * `C` — Context anchor.
 /// * `R: UserRepo<C> + MemberRepo<C>` — User and member storage.
 /// * `P: Prom<C>` — Prom enqueuer for deferred avatar deletion.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn delete<N, C, R, P>(
     nucl: &N,
     repo: &R,

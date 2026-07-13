@@ -1,3 +1,5 @@
+use tracing::instrument;
+
 use crate::model::chapter::ChapterInfo;
 use crate::model::comic::ComicInfo;
 use crate::model::team::TeamInfo;
@@ -125,6 +127,7 @@ impl Incl for ChapterCreatorIncl {
 }
 
 /// Populates chapter query results with eagerly-loaded related entity data.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn populate_chapter_incls(
     conn: &mut RdbConn,
     infos: &mut [ChapterInfo],
