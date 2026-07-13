@@ -22,7 +22,6 @@
 use super::*;
 
 use fixture::*;
-
 use time::OffsetDateTime;
 
 use crate::data::comic::{ListComicInfosParams, UpdateComicInfoParams};

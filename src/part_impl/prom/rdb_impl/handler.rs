@@ -7,6 +7,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration as StdDuration;
 
+use poprako_orchestra::{Nucl, Step as _};
 use time::{Duration, OffsetDateTime};
 use tokio::sync::oneshot::{
     Receiver as OneshotReceiver, Sender as OneshotSender,
@@ -14,9 +15,7 @@ use tokio::sync::oneshot::{
 use tokio::time::sleep;
 use tracing::{Level, instrument};
 
-use poprako_orchestra::{Nucl, Step as _};
-
-use crate::part::image::ImagePool;
+use crate::part::image::ImageManager;
 use crate::part::prom::payload::Payload;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::page::PageRepo;
@@ -69,7 +68,7 @@ where
         + Send
         + Sync
         + 'static,
-    I: ImagePool + Send + Sync + 'static,
+    I: ImageManager + Send + Sync + 'static,
 {
     pub fn new(
         core: RdbCore,
@@ -317,7 +316,7 @@ where
         + UserRepo<RdbContext>
         + Send
         + Sync,
-    I: ImagePool + Send + Sync,
+    I: ImageManager + Send + Sync,
 {
     let payload: Payload = match serde_json::from_value(payload.clone()) {
         //
@@ -354,9 +353,8 @@ mod tests {
 
     use diesel::prelude::*;
     use diesel_async::RunQueryDsl;
-    use time::OffsetDateTime;
-
     use poprako_orchestra_extra::prom::task::Task;
+    use time::OffsetDateTime;
 
     use crate::part::prom::payload::image;
     use crate::part_impl::drive::rdb_impl::RdbDrive;

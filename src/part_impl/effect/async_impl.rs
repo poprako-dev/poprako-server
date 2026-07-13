@@ -3,7 +3,6 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
-use async_trait::async_trait;
 use tokio::sync::mpsc::Sender;
 use tokio::sync::mpsc::error::TrySendError;
 use tokio::sync::oneshot::{
@@ -115,7 +114,6 @@ impl AsyncEffectDevelop {
     }
 }
 
-#[async_trait]
 impl EffectDevelop for AsyncEffectDevelop {
     async fn develop<I>(&self, iter: I)
     where

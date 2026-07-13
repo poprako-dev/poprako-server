@@ -17,8 +17,8 @@
 //! `&mut Owner` (single item via `std::slice::from_mut`).
 
 use std::collections::HashMap;
+use std::future::Future;
 
-use async_trait::async_trait;
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 
@@ -57,7 +57,6 @@ pub mod member_invitation;
 /// Per-table batch loader — implemented once per database table.
 ///
 /// Shared across every entity repo that needs eager-loading of this table's data.
-#[async_trait]
 pub trait BatchByIds {
     /// The Diesel row type (Queryable + Selectable).
     type Row: Send;
@@ -66,10 +65,10 @@ pub trait BatchByIds {
     type Info: Clone + Send;
 
     /// Execute `SELECT * FROM table WHERE f_id IN (...)`.
-    async fn load(
+    fn load(
         conn: &mut RdbConn,
         ids: Vec<&str>,
-    ) -> RegularResult<Vec<Self::Row>>;
+    ) -> impl Future<Output = RegularResult<Vec<Self::Row>>> + Send;
 
     /// Convert a row into its id key and domain info.
     fn into_entry(row: Self::Row) -> RegularResult<(String, Self::Info)>;
@@ -81,7 +80,6 @@ pub trait BatchByIds {
 ///
 /// Implementations are ~7-line unit structs. The associated [`BatchByIds`] handles
 /// the SQL; this trait only declares FK extraction and field assignment.
-#[async_trait]
 pub trait Incl {
     /// The entity that owns the optional foreign key.
     type Owner;
@@ -190,7 +188,6 @@ async fn batch_load<B: BatchByIds>(
 /// [`BatchByIds`] implementation for the `t_user` table.
 pub struct UserByIds;
 
-#[async_trait]
 impl BatchByIds for UserByIds {
     type Row = UserRow;
     type Info = UserInfo;
@@ -218,7 +215,6 @@ impl BatchByIds for UserByIds {
 /// [`BatchByIds`] implementation for the `t_team` table.
 pub struct TeamByIds;
 
-#[async_trait]
 impl BatchByIds for TeamByIds {
     type Row = TeamRow;
     type Info = TeamInfo;
@@ -246,7 +242,6 @@ impl BatchByIds for TeamByIds {
 /// [`BatchByIds`] implementation for the `t_workset` table.
 pub struct WorksetByIds;
 
-#[async_trait]
 impl BatchByIds for WorksetByIds {
     type Row = WorksetRow;
     type Info = WorksetInfo;
@@ -274,7 +269,6 @@ impl BatchByIds for WorksetByIds {
 /// [`BatchByIds`] implementation for the `t_comic` table.
 pub struct ComicByIds;
 
-#[async_trait]
 impl BatchByIds for ComicByIds {
     type Row = ComicRow;
     type Info = ComicInfo;
@@ -302,7 +296,6 @@ impl BatchByIds for ComicByIds {
 /// [`BatchByIds`] implementation for the `t_chapter` table.
 pub struct ChapterByIds;
 
-#[async_trait]
 impl BatchByIds for ChapterByIds {
     type Row = ChapterRow;
     type Info = ChapterInfo;

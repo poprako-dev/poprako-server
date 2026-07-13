@@ -1,5 +1,3 @@
-use async_trait::async_trait;
-
 use crate::model::comment::CommentInfo;
 use crate::model::user::UserInfo;
 use crate::part_impl::repo::rdb_impl::incl::{self, Incl, UserByIds};
@@ -10,7 +8,6 @@ use crate::value::comment::CommentInclOpt;
 /// Include struct for eager-loading [`UserInfo`] data into [`CommentInfo`] query results.
 struct CommentUserIncl;
 
-#[async_trait]
 impl Incl for CommentUserIncl {
     type Owner = CommentInfo;
     type Related = UserInfo;

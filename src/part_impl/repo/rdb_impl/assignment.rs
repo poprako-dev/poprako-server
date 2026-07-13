@@ -2,10 +2,13 @@
 
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
+use poprako_orchestra::{Run, Step};
 use time::OffsetDateTime;
 
-use poprako_orchestra::{Run, Step};
-
+use crate::model::assignment::{
+    AssignmentEntry, AssignmentInfo, AssignmentInfoListSpec,
+    AssignmentRoleUpdate,
+};
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::oper::assignment::{
     CreateAssignment, DeleteAssignments, FindAssignmentInfo, GetAssignmentInfo,
@@ -15,21 +18,16 @@ use crate::part_impl::repo::rdb_impl::entity::assignment::{
     AssignmentAspect, AssignmentRoleTimestamps, AssignmentRow,
     AssignmentRowEntry,
 };
+use crate::part_impl::repo::rdb_impl::schema::t_assignment::dsl::*;
+use crate::part_impl::repo::rdb_impl::schema::t_chapter::{
+    f_comic_id as chapter_comic_id, table as chapter_table,
+};
 use crate::part_impl::repo::rdb_impl::{RdbRepo, incl};
 use crate::part_impl::shared::result::{diesel, expected};
 use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::{RegularError, RegularResult};
 use crate::value::assignment::AssignmentInclOpt;
 use crate::value::role::RoleField;
-
-use crate::model::assignment::{
-    AssignmentEntry, AssignmentInfo, AssignmentInfoListSpec,
-    AssignmentRoleUpdate,
-};
-use crate::part_impl::repo::rdb_impl::schema::t_assignment::dsl::*;
-use crate::part_impl::repo::rdb_impl::schema::t_chapter::{
-    f_comic_id as chapter_comic_id, table as chapter_table,
-};
 
 impl AssignmentRepo<RdbContext> for RdbRepo {}
 

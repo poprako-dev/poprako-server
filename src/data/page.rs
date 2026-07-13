@@ -42,7 +42,7 @@ impl PageInfoVal {
     {
         let image_url = match (model.image_uploaded, &model.image_key) {
             //
-            (true, Some(key)) => image_pool.get_signed(key).await.ok(),
+            (true, Some(key)) => image_pool.gen_download_url(key).await.ok(),
 
             _ => None,
         };

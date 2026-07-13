@@ -7,9 +7,8 @@
 //!
 //! [`Prom`]: crate::part::prom::Prom
 
-use time::OffsetDateTime;
-
 use poprako_orchestra::{Oper, Step};
+use time::OffsetDateTime;
 
 use crate::part_impl::prom::rdb_impl::entity::{
     LocalMessageRow, LocalMessageStatus,

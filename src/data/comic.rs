@@ -91,7 +91,7 @@ impl ComicInfoVal {
     {
         let cover_url = match (model.cover_uploaded, &model.cover_key) {
             //
-            (true, Some(key)) => image_pool.get_signed(key).await.ok(),
+            (true, Some(key)) => image_pool.gen_download_url(key).await.ok(),
 
             _ => None,
         };

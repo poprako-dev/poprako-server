@@ -1,28 +1,49 @@
-//! Object-storage port for resolving signed URLs.
+//! Object-storage port for signed URL generation and object lifecycle
+//! management.
 
-use async_trait::async_trait;
+use std::future::Future;
+
 use url::Url;
 
 use crate::result::RegularResult;
 
-/// Abstraction over an image pool.
+/// Abstraction over an image pool — signed URL generation.
 ///
 /// Provides signed URLs for direct client-to-storage uploads and downloads,
 /// avoiding the need to proxy image bytes through the application server.
-#[async_trait]
-pub trait ImagePool {
-    // FIXME: bad names.
-
+pub trait ImagePool: Sync {
     /// Returns a signed download URL for the object at `key`.
-    async fn get_signed(&self, key: &str) -> RegularResult<Url>;
+    fn gen_download_url(
+        &self,
+        key: &str,
+    ) -> impl Future<Output = RegularResult<Url>> + Send;
 
     /// Returns a signed upload URL for writing an object at `key`.
-    async fn put_signed(&self, key: &str) -> RegularResult<Url>;
+    fn get_upload_url(
+        &self,
+        key: &str,
+    ) -> impl Future<Output = RegularResult<Url>> + Send;
+}
 
+/// Abstraction over image object lifecycle — metadata and deletion.
+///
+/// Handles existence checks and object removal from the storage backend.
+/// Used by the prom (background task) layer for deferred image cleanup
+/// and upload verification.
+///
+/// Methods return `impl Future + Send` so the futures can be spawned on
+/// the prom worker's async runtime.
+pub trait ImageManager {
     /// Check whether an object exists in storage.
-    async fn head_object(&self, key: &str) -> RegularResult<bool>;
+    fn head_object(
+        &self,
+        key: &str,
+    ) -> impl Future<Output = RegularResult<bool>> + Send;
 
     /// Delete an object from storage. Idempotent — succeeds if the
     /// object does not exist.
-    async fn delete_object(&self, key: &str) -> RegularResult<()>;
+    fn delete_object(
+        &self,
+        key: &str,
+    ) -> impl Future<Output = RegularResult<()>> + Send;
 }

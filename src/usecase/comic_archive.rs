@@ -1,10 +1,9 @@
 //! Use case for atomically archiving an active comic.
 
-use time::OffsetDateTime;
-
 use poprako_orchestra::{Nucl, run_proxy};
 use poprako_orchestra_extra::prom::oper::DeferBatch;
 use poprako_orchestra_extra::prom::task::Task;
+use time::OffsetDateTime;
 
 use crate::complex::comic_archive::{
     ComicArchiveComplex, ComicArchivePermComplex,
@@ -106,8 +105,7 @@ where
                 })
                 .collect();
 
-            prom.step(context, &DeferBatch::new(&delete_tasks))
-                .await?;
+            prom.step(context, &DeferBatch::new(&delete_tasks)).await?;
 
             repo.step(
                 context,
