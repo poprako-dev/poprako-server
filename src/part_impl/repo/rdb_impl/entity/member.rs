@@ -3,7 +3,7 @@
 use diesel::prelude::*;
 use time::OffsetDateTime;
 
-use crate::model::member_model;
+use crate::model::member::MemberInfo;
 use crate::part_impl::repo::rdb_impl::schema::t_member;
 use crate::value::role::{RoleField, RoleMask};
 
@@ -39,7 +39,7 @@ pub struct MemberRow {
 /// Insertable struct for creating a new record in the `t_member` table.
 #[derive(Insertable)]
 #[diesel(table_name = t_member)]
-pub struct MemberEntry<'a> {
+pub struct MemberRowEntry<'a> {
     pub f_id: &'a str,
     pub f_user_id: &'a str,
     pub f_user_nickname: &'a str,
@@ -197,7 +197,7 @@ impl<'a> MemberAspect<'a> {
 
 // ── Conversions ────────────────────────────────────────────────────────────
 
-impl From<MemberRow> for member_model::Info {
+impl From<MemberRow> for MemberInfo {
     fn from(v: MemberRow) -> Self {
         //
         let mut bits: u32 = 0;
@@ -237,7 +237,7 @@ impl From<MemberRow> for member_model::Info {
         let roles = RoleMask::try_from(bits)
             .unwrap_or_else(|_| RoleMask::from(RoleField::RAW_PROVIDER));
 
-        member_model::Info {
+        MemberInfo {
             id: v.f_id,
             user_id: v.f_user_id,
             user_nickname: v.f_user_nickname,

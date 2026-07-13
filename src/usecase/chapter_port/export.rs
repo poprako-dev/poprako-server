@@ -5,35 +5,41 @@ mod tests;
 
 use std::collections::HashMap;
 
+use poprako_orchestra::run_proxy;
+
 use crate::complex::chapter_port::{
     ChapterExportComplex, ChapterPortPermComplex,
 };
-use crate::data::{chapter_port_data, page_port_data, unit_port_data};
-use crate::model::{page_model, unit_model, user_model};
+use crate::data::chapter_port::ExportChapterTranslationPayload;
+use crate::data::page_port::PageTranslationExportPayload;
+use crate::data::unit_port::UnitTranslationExportPayload;
+use crate::model::page::PageInfo;
+use crate::model::unit::UnitInfo;
+use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
-use crate::part::repo::assignment::{
-    AssignmentRepo, AssignmentRepoTransactional,
-};
-use crate::part::repo::chapter::{ChapterRepo, ChapterRepoTransactional};
-use crate::part::repo::comic::{ComicRepo, ComicRepoTransactional};
-use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
-use crate::part::repo::page::{PageRepo, PageRepoTransactional};
-use crate::part::repo::step::chapter::ChapterStep;
-use crate::part::repo::step::comic::ComicStep;
-use crate::part::repo::step::page::PageStep;
-use crate::part::repo::step::unit::UnitStep;
-use crate::part::repo::unit::{UnitRepo, UnitRepoTransactional};
-use crate::part::repo::workset::{WorksetRepo, WorksetRepoTransactional};
+use crate::part::repo::assignment::AssignmentRepo;
+use crate::part::repo::chapter::ChapterRepo;
+use crate::part::repo::comic::ComicRepo;
+use crate::part::repo::member::MemberRepo;
+use crate::part::repo::oper::assignment::FindAssignmentInfo;
+use crate::part::repo::oper::chapter::GetChapterInfo;
+use crate::part::repo::oper::comic::GetComicInfo;
+use crate::part::repo::oper::member::FindMemberInfo;
+use crate::part::repo::oper::page::ListPageInfos;
+use crate::part::repo::oper::unit::ListUnitInfos;
+use crate::part::repo::oper::workset::GetWorksetInfo;
+use crate::part::repo::page::PageRepo;
+use crate::part::repo::unit::UnitRepo;
+use crate::part::repo::workset::WorksetRepo;
 use crate::result::RegularResult;
-use crate::util::DeriveTransactional;
 
 /// Exports one chapter as a JSON-safe translation payload.
 pub async fn export<C, R, I>(
     repo: &R,
     image_pool: &I,
-    token: user_model::Token,
+    token: UserToken,
     chapter_id: String,
-) -> RegularResult<chapter_port_data::TranslationExportVal>
+) -> RegularResult<ExportChapterTranslationPayload>
 where
     R: ChapterRepo<C>
         + ComicRepo<C>
@@ -43,43 +49,51 @@ where
         + PageRepo<C>
         + UnitRepo<C>
         + Sync,
-    <R as DeriveTransactional>::Transactional: ChapterRepoTransactional<C>
-        + ComicRepoTransactional<C>
-        + WorksetRepoTransactional<C>
-        + MemberRepoTransactional<C>
-        + AssignmentRepoTransactional<C>
-        + PageRepoTransactional<C>
-        + UnitRepoTransactional<C>,
     I: ImagePool,
 {
-    use crate::part::shared::proxy::AsProxyNonTransactional as _;
-
     ChapterPortPermComplex::can_user_export(
-        &mut repo.as_proxy(),
+        &mut run_proxy! {
+            repo =>
+                for<'a, 'b> GetChapterInfo<'a, 'b>,
+                for<'a, 'b> GetComicInfo<'a, 'b>,
+                for<'a> GetWorksetInfo<'a>,
+                for<'a> FindMemberInfo<'a>,
+                for<'a, 'b> FindAssignmentInfo<'a, 'b>;
+        },
         &token.user_id,
         &chapter_id,
     )
     .await?;
 
     let chapter_info = repo
-        .execute(&ChapterStep::get_info_by_id(&chapter_id, &[]))
+        .run(&GetChapterInfo {
+            id: &chapter_id,
+            incls: &[],
+        })
         .await?;
 
     let comic_info = repo
-        .execute(&ComicStep::get_info_by_id(&chapter_info.comic_id, &[]))
+        .run(&GetComicInfo {
+            id: &chapter_info.comic_id,
+            incls: &[],
+        })
         .await?;
 
-    let page_infos = repo
-        .execute(&PageStep::list_all_infos_by_chapter_id(&chapter_info.id))
-        .await?;
+    let list_page_infos = ListPageInfos::AllChapter {
+        chapter_id: &chapter_info.id,
+    };
+
+    let page_infos = repo.run(&list_page_infos).await?;
 
     let mut page_vals = Vec::with_capacity(page_infos.len());
 
     for page_info in page_infos {
         //
-        let unit_infos = repo
-            .execute(&UnitStep::list_all_infos_by_page_id(&page_info.id))
-            .await?;
+        let list_unit_infos = ListUnitInfos::AllPage {
+            page_id: &page_info.id,
+        };
+
+        let unit_infos = repo.run(&list_unit_infos).await?;
 
         let image_url = match (page_info.image_uploaded, &page_info.image_key) {
             //
@@ -95,7 +109,7 @@ where
             .map(|unit_info| make_unit_export(&page_info, unit_info))
             .collect();
 
-        page_vals.push(page_port_data::TranslationExportVal {
+        page_vals.push(PageTranslationExportPayload {
             page_id: page_info.id,
             page_index: page_info.index,
             image_url: image_url.map(Into::into),
@@ -103,7 +117,7 @@ where
         });
     }
 
-    Ok(chapter_port_data::TranslationExportVal {
+    Ok(ExportChapterTranslationPayload {
         chapter_id: chapter_info.id,
         chapter_index: chapter_info.index,
         chapter_subtitle: non_empty(chapter_info.subtitle),
@@ -116,7 +130,7 @@ where
 /// Exports one chapter as LabelPlus text.
 pub async fn export_label_plus<C, R>(
     repo: &R,
-    token: user_model::Token,
+    token: UserToken,
     chapter_id: String,
 ) -> RegularResult<String>
 where
@@ -128,37 +142,42 @@ where
         + PageRepo<C>
         + UnitRepo<C>
         + Sync,
-    <R as DeriveTransactional>::Transactional: ChapterRepoTransactional<C>
-        + ComicRepoTransactional<C>
-        + WorksetRepoTransactional<C>
-        + MemberRepoTransactional<C>
-        + AssignmentRepoTransactional<C>
-        + PageRepoTransactional<C>
-        + UnitRepoTransactional<C>,
 {
-    use crate::part::shared::proxy::AsProxyNonTransactional as _;
-
     ChapterPortPermComplex::can_user_export(
-        &mut repo.as_proxy(),
+        &mut run_proxy! {
+            repo =>
+                for<'a, 'b> GetChapterInfo<'a, 'b>,
+                for<'a, 'b> GetComicInfo<'a, 'b>,
+                for<'a> GetWorksetInfo<'a>,
+                for<'a> FindMemberInfo<'a>,
+                for<'a, 'b> FindAssignmentInfo<'a, 'b>;
+        },
         &token.user_id,
         &chapter_id,
     )
     .await?;
 
-    repo.execute(&ChapterStep::get_info_by_id(&chapter_id, &[]))
-        .await?;
+    repo.run(&GetChapterInfo {
+        id: &chapter_id,
+        incls: &[],
+    })
+    .await?;
 
-    let page_infos = repo
-        .execute(&PageStep::list_all_infos_by_chapter_id(&chapter_id))
-        .await?;
+    let list_page_infos = ListPageInfos::AllChapter {
+        chapter_id: &chapter_id,
+    };
+
+    let page_infos = repo.run(&list_page_infos).await?;
 
     let mut units_by_page_id = HashMap::new();
 
     for page_info in &page_infos {
         //
-        let unit_infos = repo
-            .execute(&UnitStep::list_all_infos_by_page_id(&page_info.id))
-            .await?;
+        let list_unit_infos = ListUnitInfos::AllPage {
+            page_id: &page_info.id,
+        };
+
+        let unit_infos = repo.run(&list_unit_infos).await?;
 
         units_by_page_id.insert(page_info.id.clone(), unit_infos);
     }
@@ -171,10 +190,10 @@ where
 
 /// Builds a [`UnitTranslationExportVal`] from page and unit info.
 fn make_unit_export(
-    page_info: &page_model::Info,
-    unit_info: unit_model::Info,
-) -> unit_port_data::TranslationExportVal {
-    unit_port_data::TranslationExportVal {
+    page_info: &PageInfo,
+    unit_info: UnitInfo,
+) -> UnitTranslationExportPayload {
+    UnitTranslationExportPayload {
         unit_id: unit_info.id,
         unit_index: unit_info.index,
         page_id: page_info.id.clone(),

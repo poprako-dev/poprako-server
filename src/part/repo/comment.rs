@@ -1,22 +1,16 @@
 //! Repository traits for the comment domain.
 
-use poprako_transactional::advance::Advance;
+use poprako_orchestra::{Run, Step};
 
-use crate::part::repo::step::comment::{Create, ListInfos};
-use crate::part::shared::execute::Execute;
+use crate::part::repo::oper::comment::{CreateComment, ListCommentInfos};
 use crate::result::RegularError;
-use crate::util::DeriveTransactional;
 
-/// Non-transactional comment repository.
+/// Comment repository operations.
+///
+/// Independent lists use [`Run`], while creation steps through the context
+/// coordinated by the caller.
 pub trait CommentRepo<C>:
-    DeriveTransactional + for<'a> Execute<ListInfos<'a>, Error = RegularError>
-where
-    Self::Transactional: CommentRepoTransactional<C>,
-{
-}
-
-/// Transactional comment repository.
-pub trait CommentRepoTransactional<C>:
-    for<'a> Advance<Create<'a>, C, Error = RegularError> + Sized
+    for<'a> Run<ListCommentInfos<'a>, Error = RegularError>
+    + for<'a> Step<CreateComment<'a>, C, Error = RegularError>
 {
 }

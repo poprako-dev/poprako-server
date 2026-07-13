@@ -1,227 +1,231 @@
-//! Mock implementations of `WorksetRepo` and `WorksetRepoTransactional` for in-memory testing.
+//! In-memory workset repository operations.
 
-use async_trait::async_trait;
+use poprako_orchestra::{Run, Step};
 
-use poprako_transactional::advance::Advance;
-
-use crate::model::workset_model;
-use crate::part::repo::step::workset::{
-    Create, Delete, GetInfoById, GetInfoExcluded, IncrComicNextIndex,
-    ListAllInfosByTeamIdExcluded, ListInfosByTeamId, UpdateComicCount,
-    UpdateInfo,
+use crate::model::workset::WorksetInfo;
+use crate::model::workset::WorksetInfoUpdate;
+use crate::part::repo::oper::workset::{
+    AllocateWorksetComicIndex, CreateWorkset, DeleteWorkset, GetWorksetInfo,
+    GetWorksetInfoExcluded, ListWorksetInfos, ListWorksetInfosExcluded,
+    UpdateWorkset, UpdateWorksetComicCount,
 };
-use crate::part::repo::workset::{WorksetRepo, WorksetRepoTransactional};
-use crate::part::shared::execute::Execute;
+use crate::part::repo::workset::WorksetRepo;
 use crate::part_impl::repo::mock_impl::{
-    Mock, MockContext, MockTransactional, expected, now,
+    Mock, MockContext, MockState, expected, now,
 };
-use crate::result::RegularError;
+use crate::result::{RegularError, RegularResult};
 
 impl WorksetRepo<MockContext> for Mock {}
 
-impl WorksetRepoTransactional<MockContext> for MockTransactional {}
-
-#[async_trait]
-impl<'a> Execute<GetInfoById<'a>> for Mock {
-    type Error = RegularError;
-
-    async fn execute(
-        &self,
-        step: &GetInfoById<'a>,
-    ) -> Result<workset_model::Info, Self::Error> {
-        //
-        let state = self.state.lock().unwrap();
-
-        state
-            .worksets
-            .iter()
-            .find(|workset| workset.id == step.id)
-            .cloned()
-            .ok_or_else(|| expected("error-workset-not-found"))
-    }
+fn get_workset_info(state: &MockState, id: &str) -> RegularResult<WorksetInfo> {
+    state
+        .worksets
+        .iter()
+        .find(|workset_info| workset_info.id == id)
+        .cloned()
+        .ok_or_else(|| expected("error-workset-not-found"))
 }
 
-#[async_trait]
-impl<'a> Execute<ListInfosByTeamId<'a>> for Mock {
-    type Error = RegularError;
+fn list_workset_infos(
+    state: &MockState,
+    oper: &ListWorksetInfos<'_>,
+) -> Vec<WorksetInfo> {
+    let mut workset_infos = state
+        .worksets
+        .iter()
+        .filter(|workset_info| workset_info.team_id == oper.team_id)
+        .cloned()
+        .collect::<Vec<_>>();
 
-    async fn execute(
-        &self,
-        step: &ListInfosByTeamId<'a>,
-    ) -> Result<Vec<workset_model::Info>, Self::Error> {
-        //
-        let state = self.state.lock().unwrap();
+    workset_infos.sort_by_key(|workset_info| workset_info.index);
 
-        let mut worksets = state
-            .worksets
-            .iter()
-            .filter(|workset| workset.team_id == step.team_id)
-            .cloned()
-            .collect::<Vec<_>>();
+    let Some(page) = oper.page else {
+        return workset_infos;
+    };
 
-        worksets.sort_by_key(|left| left.index);
+    let offset = page.offset as usize;
 
-        let offset = step.offset as usize;
+    let limit = page.limit as usize;
 
-        let limit = step.limit as usize;
+    match offset >= workset_infos.len() {
+        true => Vec::new(),
+        false => {
+            let end = std::cmp::min(offset + limit, workset_infos.len());
 
-        if offset >= worksets.len() {
-            return Ok(Vec::new());
+            workset_infos[offset..end].to_vec()
         }
-
-        let end = std::cmp::min(offset + limit, worksets.len());
-
-        Ok(worksets[offset..end].to_vec())
     }
 }
 
-#[async_trait]
-impl<'a> Execute<UpdateInfo<'a>> for Mock {
+fn update_workset(
+    state: &mut MockState,
+    update: &WorksetInfoUpdate,
+) -> RegularResult<()> {
+    let workset_info = state
+        .worksets
+        .iter_mut()
+        .find(|workset_info| workset_info.id == update.id)
+        .ok_or_else(|| expected("error-workset-not-found"))?;
+
+    workset_info.name = update.name.clone();
+
+    workset_info.description = update.description.clone();
+
+    workset_info.updated_at = now();
+
+    Ok(())
+}
+
+impl<'a> Run<GetWorksetInfo<'a>> for Mock {
     type Error = RegularError;
 
-    async fn execute(&self, step: &UpdateInfo<'a>) -> Result<(), Self::Error> {
-        //
+    async fn run(
+        &self,
+        oper: &GetWorksetInfo<'a>,
+    ) -> RegularResult<WorksetInfo> {
+        let state = self.state.lock().unwrap();
+
+        get_workset_info(&state, oper.id)
+    }
+}
+
+impl<'a> Run<ListWorksetInfos<'a>> for Mock {
+    type Error = RegularError;
+
+    async fn run(
+        &self,
+        oper: &ListWorksetInfos<'a>,
+    ) -> RegularResult<Vec<WorksetInfo>> {
+        let state = self.state.lock().unwrap();
+
+        Ok(list_workset_infos(&state, oper))
+    }
+}
+
+impl<'a> Run<UpdateWorkset<'a>> for Mock {
+    type Error = RegularError;
+
+    async fn run(&self, oper: &UpdateWorkset<'a>) -> RegularResult<()> {
         let mut state = self.state.lock().unwrap();
 
-        let workset = state
-            .worksets
-            .iter_mut()
-            .find(|workset| workset.id == step.update.id)
-            .ok_or_else(|| expected("error-workset-not-found"))?;
-
-        workset.name = step.update.name.clone();
-
-        workset.description = step.update.description.clone();
-
-        workset.updated_at = now();
-
-        Ok(())
+        update_workset(&mut state, oper.update)
     }
 }
 
-#[async_trait]
-impl<'a> Advance<Create<'a>, MockContext> for MockTransactional {
+impl<'a> Step<GetWorksetInfo<'a>, MockContext> for Mock {
     type Error = RegularError;
 
-    async fn advance(
+    async fn step(
         &self,
         context: &mut MockContext,
-        step: &Create<'a>,
-    ) -> Result<workset_model::Info, Self::Error> {
-        //
+        oper: &GetWorksetInfo<'a>,
+    ) -> RegularResult<WorksetInfo> {
+        get_workset_info(&context.state, oper.id)
+    }
+}
+
+impl<'a> Step<ListWorksetInfos<'a>, MockContext> for Mock {
+    type Error = RegularError;
+
+    async fn step(
+        &self,
+        context: &mut MockContext,
+        oper: &ListWorksetInfos<'a>,
+    ) -> RegularResult<Vec<WorksetInfo>> {
+        Ok(list_workset_infos(&context.state, oper))
+    }
+}
+
+impl<'a> Step<GetWorksetInfoExcluded<'a>, MockContext> for Mock {
+    type Error = RegularError;
+
+    async fn step(
+        &self,
+        context: &mut MockContext,
+        oper: &GetWorksetInfoExcluded<'a>,
+    ) -> RegularResult<WorksetInfo> {
+        get_workset_info(&context.state, oper.id)
+    }
+}
+
+impl<'a> Step<ListWorksetInfosExcluded<'a>, MockContext> for Mock {
+    type Error = RegularError;
+
+    async fn step(
+        &self,
+        context: &mut MockContext,
+        oper: &ListWorksetInfosExcluded<'a>,
+    ) -> RegularResult<Vec<WorksetInfo>> {
+        Ok(context
+            .state
+            .worksets
+            .iter()
+            .filter(|workset_info| workset_info.team_id == oper.team_id)
+            .cloned()
+            .collect())
+    }
+}
+
+impl<'a> Step<CreateWorkset<'a>, MockContext> for Mock {
+    type Error = RegularError;
+
+    async fn step(
+        &self,
+        context: &mut MockContext,
+        oper: &CreateWorkset<'a>,
+    ) -> RegularResult<WorksetInfo> {
         if context
             .state
             .worksets
             .iter()
-            .any(|workset| workset.id == step.form.id)
+            .any(|workset_info| workset_info.id == oper.entry.id)
         {
             return Err(expected("error-already-exists"));
         }
 
         let time = now();
 
-        let workset = workset_model::Info {
-            id: step.form.id.clone(),
-            team_id: step.form.team_id.clone(),
-            index: step.form.index,
-            name: step.form.name.clone(),
-            description: step.form.description.clone(),
+        let workset_info = WorksetInfo {
+            id: oper.entry.id.clone(),
+            team_id: oper.entry.team_id.clone(),
+            index: oper.entry.index,
+            name: oper.entry.name.clone(),
+            description: oper.entry.description.clone(),
             comic_count: 0,
             comic_next_index: 0,
             created_at: time,
             updated_at: time,
         };
 
-        context.state.worksets.push(workset.clone());
+        context.state.worksets.push(workset_info.clone());
 
-        Ok(workset)
+        Ok(workset_info)
     }
 }
 
-#[async_trait]
-impl<'a> Advance<ListAllInfosByTeamIdExcluded<'a>, MockContext>
-    for MockTransactional
-{
+impl<'a> Step<DeleteWorkset<'a>, MockContext> for Mock {
     type Error = RegularError;
 
-    async fn advance(
+    async fn step(
         &self,
         context: &mut MockContext,
-        step: &ListAllInfosByTeamIdExcluded<'a>,
-    ) -> Result<Vec<workset_model::Info>, Self::Error> {
-        Ok(context
+        oper: &DeleteWorkset<'a>,
+    ) -> RegularResult<()> {
+        let position = context
             .state
             .worksets
             .iter()
-            .filter(|workset| workset.team_id == step.team_id)
-            .cloned()
-            .collect())
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<GetInfoById<'a>, MockContext> for MockTransactional {
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut MockContext,
-        step: &GetInfoById<'a>,
-    ) -> Result<workset_model::Info, Self::Error> {
-        context
-            .state
-            .worksets
-            .iter()
-            .find(|workset| workset.id == step.id)
-            .cloned()
-            .ok_or_else(|| expected("error-workset-not-found"))
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<GetInfoExcluded<'a>, MockContext> for MockTransactional {
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut MockContext,
-        step: &GetInfoExcluded<'a>,
-    ) -> Result<workset_model::Info, Self::Error> {
-        context
-            .state
-            .worksets
-            .iter()
-            .find(|workset| workset.id == step.id)
-            .cloned()
-            .ok_or_else(|| expected("error-workset-not-found"))
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<Delete<'a>, MockContext> for MockTransactional {
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut MockContext,
-        step: &Delete<'a>,
-    ) -> Result<(), Self::Error> {
-        //
-        let pos = context
-            .state
-            .worksets
-            .iter()
-            .position(|workset| workset.id == step.id)
+            .position(|workset_info| workset_info.id == oper.id)
             .ok_or_else(|| expected("error-workset-not-found"))?;
 
-        let deleted_workset_id = context.state.worksets[pos].id.clone();
+        let deleted_workset_id = context.state.worksets[position].id.clone();
 
         let deleted_comic_ids = context
             .state
             .comics
             .iter()
-            .filter(|comic| comic.workset_id == deleted_workset_id)
-            .map(|comic| comic.id.clone())
+            .filter(|comic_info| comic_info.workset_id == deleted_workset_id)
+            .map(|comic_info| comic_info.id.clone())
             .collect::<Vec<_>>();
 
         let deleted_chapter_ids = context
@@ -229,89 +233,77 @@ impl<'a> Advance<Delete<'a>, MockContext> for MockTransactional {
             .chapters
             .iter()
             .filter(|chapter_info| {
-                deleted_comic_ids
-                    .iter()
-                    .any(|comic_id| comic_id == &chapter_info.comic_id)
+                deleted_comic_ids.contains(&chapter_info.comic_id)
             })
             .map(|chapter_info| chapter_info.id.clone())
             .collect::<Vec<_>>();
 
-        context.state.worksets.remove(pos);
+        context.state.worksets.remove(position);
 
         context
             .state
             .comics
-            .retain(|comic| comic.workset_id != deleted_workset_id);
+            .retain(|comic_info| comic_info.workset_id != deleted_workset_id);
 
         context.state.chapters.retain(|chapter_info| {
-            !deleted_comic_ids
-                .iter()
-                .any(|comic_id| comic_id == &chapter_info.comic_id)
+            !deleted_comic_ids.contains(&chapter_info.comic_id)
         });
 
         context.state.pages.retain(|page_info| {
-            !deleted_chapter_ids
-                .iter()
-                .any(|chapter_id| chapter_id == &page_info.chapter_id)
+            !deleted_chapter_ids.contains(&page_info.chapter_id)
         });
 
         context.state.assignments.retain(|assignment_info| {
-            !deleted_chapter_ids
-                .iter()
-                .any(|chapter_id| chapter_id == &assignment_info.chapter_id)
+            !deleted_chapter_ids.contains(&assignment_info.chapter_id)
         });
 
         Ok(())
     }
 }
 
-#[async_trait]
-impl<'a> Advance<IncrComicNextIndex<'a>, MockContext> for MockTransactional {
+impl<'a> Step<AllocateWorksetComicIndex<'a>, MockContext> for Mock {
     type Error = RegularError;
 
-    async fn advance(
+    async fn step(
         &self,
         context: &mut MockContext,
-        step: &IncrComicNextIndex<'a>,
-    ) -> Result<i32, Self::Error> {
-        //
-        let workset = context
+        oper: &AllocateWorksetComicIndex<'a>,
+    ) -> RegularResult<i32> {
+        let workset_info = context
             .state
             .worksets
             .iter_mut()
-            .find(|workset| workset.id == step.id)
+            .find(|workset_info| workset_info.id == oper.id)
             .ok_or_else(|| expected("error-workset-not-found"))?;
 
-        let index = workset.comic_next_index;
+        let index = workset_info.comic_next_index;
 
-        workset.comic_next_index += 1;
+        workset_info.comic_next_index += 1;
 
-        workset.updated_at = now();
+        workset_info.updated_at = now();
 
         Ok(index)
     }
 }
 
-#[async_trait]
-impl<'a> Advance<UpdateComicCount<'a>, MockContext> for MockTransactional {
+impl<'a> Step<UpdateWorksetComicCount<'a>, MockContext> for Mock {
     type Error = RegularError;
 
-    async fn advance(
+    async fn step(
         &self,
         context: &mut MockContext,
-        step: &UpdateComicCount<'a>,
-    ) -> Result<(), Self::Error> {
-        //
-        let workset = context
+        oper: &UpdateWorksetComicCount<'a>,
+    ) -> RegularResult<()> {
+        let workset_info = context
             .state
             .worksets
             .iter_mut()
-            .find(|workset| workset.id == step.id)
+            .find(|workset_info| workset_info.id == oper.id)
             .ok_or_else(|| expected("error-workset-not-found"))?;
 
-        workset.comic_count += step.delta;
+        workset_info.comic_count += oper.delta;
 
-        workset.updated_at = now();
+        workset_info.updated_at = now();
 
         Ok(())
     }

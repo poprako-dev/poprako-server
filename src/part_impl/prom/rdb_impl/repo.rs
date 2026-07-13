@@ -1,16 +1,15 @@
 //! Repository for prom task handling and `t_local_message` lifecycle operations.
 //!
-//! These step types and [`Advance`] implementations are used exclusively
+//! These operation types and [`Step`] implementations are used exclusively
 //! by the background handler. They are NOT part of the public [`Prom`]
-//! port trait — only [`Append`] is exposed through the port system.
+//! port trait — only producer-side defer operations are exposed through the
+//! port system.
 //!
 //! [`Prom`]: crate::part::prom::Prom
 
-use async_trait::async_trait;
 use time::OffsetDateTime;
 
-use poprako_transactional::advance::Advance;
-use poprako_transactional::step::Step;
+use poprako_orchestra::{Oper, Step};
 
 use crate::part_impl::prom::rdb_impl::entity::{
     LocalMessageRow, LocalMessageStatus,
@@ -19,7 +18,6 @@ use crate::part_impl::repo::rdb_impl::schema::t_local_message;
 use crate::part_impl::shared::RdbContext;
 use crate::part_impl::shared::result::diesel;
 use crate::result::{RegularError, RegularResult};
-use crate::util::DeriveTransactional;
 
 // ── Handle ──────────────────────────────────────────────────────────────────
 
@@ -38,26 +36,19 @@ impl<R> RdbPromRepo<R> {
     pub fn new(repo: R) -> Self {
         Self { repo }
     }
-}
 
-#[async_trait]
-impl<R> DeriveTransactional for RdbPromRepo<R>
-where
-    R: DeriveTransactional + Send + Sync,
-{
-    type Transactional = R::Transactional;
-
-    async fn derive_transactional(&self) -> Self::Transactional {
-        DeriveTransactional::derive_transactional(&self.repo).await
+    /// Returns the application repository used by topic handlers.
+    pub fn inner(&self) -> &R {
+        &self.repo
     }
 }
 
-// ── Steps ───────────────────────────────────────────────────────────────────
+// ── Operations ──────────────────────────────────────────────────────────────
 
 /// Poll for pending prom records that are visible now.
 pub struct PollPending;
 
-impl Step for PollPending {
+impl Oper for PollPending {
     type Output = Vec<LocalMessageRow>;
 }
 
@@ -65,63 +56,63 @@ impl Step for PollPending {
 ///
 /// Returns `true` if the claim succeeded (i.e. the row was still
 /// Pending), `false` if another worker claimed it first.
-pub struct ClaimStep<'a> {
+pub struct ClaimPending<'a> {
     id: &'a str,
 }
 
-impl<'a> ClaimStep<'a> {
-    /// Builds a step that claims the message identified by `id`.
+impl<'a> ClaimPending<'a> {
+    /// Builds an operation that claims the message identified by `id`.
     pub fn new(id: &'a str) -> Self {
         Self { id }
     }
 }
 
-impl Step for ClaimStep<'_> {
+impl Oper for ClaimPending<'_> {
     type Output = bool;
 }
 
 /// Mark a record as successfully completed.
-pub struct CompleteStep<'a> {
+pub struct CompleteMessage<'a> {
     id: &'a str,
 }
 
-impl<'a> CompleteStep<'a> {
-    /// Builds a step that completes the message identified by `id`.
+impl<'a> CompleteMessage<'a> {
+    /// Builds an operation that completes the message identified by `id`.
     pub fn new(id: &'a str) -> Self {
         Self { id }
     }
 }
 
-impl Step for CompleteStep<'_> {
+impl Oper for CompleteMessage<'_> {
     type Output = ();
 }
 
 /// Mark a record as dead with an error message.
-pub struct FailStep<'a> {
+pub struct FailMessage<'a> {
     id: &'a str,
     error: &'a str,
 }
 
-impl<'a> FailStep<'a> {
-    /// Builds a step that permanently fails the message identified by `id`.
+impl<'a> FailMessage<'a> {
+    /// Builds an operation that permanently fails the message identified by `id`.
     pub fn new(id: &'a str, error: &'a str) -> Self {
         Self { id, error }
     }
 }
 
-impl Step for FailStep<'_> {
+impl Oper for FailMessage<'_> {
     type Output = ();
 }
 
 /// Reset one failed processing attempt back to pending for a later retry.
-pub struct RetryStep<'a> {
+pub struct RetryMessage<'a> {
     id: &'a str,
     error: &'a str,
     visible_at: &'a OffsetDateTime,
 }
 
-impl<'a> RetryStep<'a> {
-    /// Builds a step that schedules the message identified by `id` for retry.
+impl<'a> RetryMessage<'a> {
+    /// Builds an operation that schedules the message identified by `id` for retry.
     pub fn new(
         id: &'a str,
         error: &'a str,
@@ -135,42 +126,41 @@ impl<'a> RetryStep<'a> {
     }
 }
 
-impl Step for RetryStep<'_> {
+impl Oper for RetryMessage<'_> {
     type Output = ();
 }
 
 /// Reset processing records stuck before a cutoff timestamp.
-pub struct ResetStuckStep<'a> {
+pub struct ResetStuck<'a> {
     before: &'a OffsetDateTime,
 }
 
-impl<'a> ResetStuckStep<'a> {
-    /// Builds a step that resets messages stuck before the cutoff.
+impl<'a> ResetStuck<'a> {
+    /// Builds an operation that resets messages stuck before the cutoff.
     pub fn new(before: &'a OffsetDateTime) -> Self {
         Self { before }
     }
 }
 
-impl Step for ResetStuckStep<'_> {
+impl Oper for ResetStuck<'_> {
     type Output = ();
 }
 
-// ── Advance impls ───────────────────────────────────────────────────────────
+// ── Step impls ──────────────────────────────────────────────────────────────
 
 /// Maximum number of pending records to poll in a single batch.
 const BATCH_SIZE: i64 = 10;
 
-#[async_trait]
-impl<R> Advance<PollPending, RdbContext> for RdbPromRepo<R>
+impl<R> Step<PollPending, RdbContext> for RdbPromRepo<R>
 where
     R: Sync,
 {
     type Error = RegularError;
 
-    async fn advance(
+    async fn step(
         &self,
         context: &mut RdbContext,
-        _step: &PollPending,
+        _oper: &PollPending,
     ) -> RegularResult<Vec<LocalMessageRow>> {
         //
         use diesel::prelude::*;
@@ -198,17 +188,16 @@ where
     }
 }
 
-#[async_trait]
-impl<'a, R> Advance<ClaimStep<'a>, RdbContext> for RdbPromRepo<R>
+impl<'a, R> Step<ClaimPending<'a>, RdbContext> for RdbPromRepo<R>
 where
     R: Sync,
 {
     type Error = RegularError;
 
-    async fn advance(
+    async fn step(
         &self,
         context: &mut RdbContext,
-        step: &ClaimStep<'a>,
+        oper: &ClaimPending<'a>,
     ) -> RegularResult<bool> {
         //
         use diesel::prelude::*;
@@ -217,7 +206,7 @@ where
 
         let updated = diesel::update(
             t_local_message::table
-                .filter(t_local_message::f_id.eq(step.id))
+                .filter(t_local_message::f_id.eq(oper.id))
                 .filter(
                     t_local_message::f_status
                         .eq(LocalMessageStatus::Pending.as_str()),
@@ -236,17 +225,16 @@ where
     }
 }
 
-#[async_trait]
-impl<'a, R> Advance<CompleteStep<'a>, RdbContext> for RdbPromRepo<R>
+impl<'a, R> Step<CompleteMessage<'a>, RdbContext> for RdbPromRepo<R>
 where
     R: Sync,
 {
     type Error = RegularError;
 
-    async fn advance(
+    async fn step(
         &self,
         context: &mut RdbContext,
-        step: &CompleteStep<'a>,
+        oper: &CompleteMessage<'a>,
     ) -> RegularResult<()> {
         //
         use diesel::prelude::*;
@@ -254,7 +242,7 @@ where
         use diesel_async::RunQueryDsl;
 
         diesel::update(
-            t_local_message::table.filter(t_local_message::f_id.eq(step.id)),
+            t_local_message::table.filter(t_local_message::f_id.eq(oper.id)),
         )
         .set((
             t_local_message::f_status
@@ -269,17 +257,16 @@ where
     }
 }
 
-#[async_trait]
-impl<'a, R> Advance<FailStep<'a>, RdbContext> for RdbPromRepo<R>
+impl<'a, R> Step<FailMessage<'a>, RdbContext> for RdbPromRepo<R>
 where
     R: Sync,
 {
     type Error = RegularError;
 
-    async fn advance(
+    async fn step(
         &self,
         context: &mut RdbContext,
-        step: &FailStep<'a>,
+        oper: &FailMessage<'a>,
     ) -> RegularResult<()> {
         //
         use diesel::prelude::*;
@@ -287,11 +274,11 @@ where
         use diesel_async::RunQueryDsl;
 
         diesel::update(
-            t_local_message::table.filter(t_local_message::f_id.eq(step.id)),
+            t_local_message::table.filter(t_local_message::f_id.eq(oper.id)),
         )
         .set((
             t_local_message::f_status.eq(LocalMessageStatus::Dead.as_str()),
-            t_local_message::f_last_error.eq(Some(step.error)),
+            t_local_message::f_last_error.eq(Some(oper.error)),
             t_local_message::f_updated_at.eq(OffsetDateTime::now_utc()),
         ))
         .execute(context.conn())
@@ -302,17 +289,16 @@ where
     }
 }
 
-#[async_trait]
-impl<'a, R> Advance<RetryStep<'a>, RdbContext> for RdbPromRepo<R>
+impl<'a, R> Step<RetryMessage<'a>, RdbContext> for RdbPromRepo<R>
 where
     R: Sync,
 {
     type Error = RegularError;
 
-    async fn advance(
+    async fn step(
         &self,
         context: &mut RdbContext,
-        step: &RetryStep<'a>,
+        oper: &RetryMessage<'a>,
     ) -> RegularResult<()> {
         //
         use diesel::prelude::*;
@@ -320,14 +306,14 @@ where
         use diesel_async::RunQueryDsl;
 
         diesel::update(
-            t_local_message::table.filter(t_local_message::f_id.eq(step.id)),
+            t_local_message::table.filter(t_local_message::f_id.eq(oper.id)),
         )
         .set((
             t_local_message::f_status.eq(LocalMessageStatus::Pending.as_str()),
-            t_local_message::f_last_error.eq(Some(step.error)),
+            t_local_message::f_last_error.eq(Some(oper.error)),
             t_local_message::f_retried_count
                 .eq(t_local_message::f_retried_count + 1),
-            t_local_message::f_visible_at.eq(*step.visible_at),
+            t_local_message::f_visible_at.eq(*oper.visible_at),
             t_local_message::f_updated_at.eq(OffsetDateTime::now_utc()),
         ))
         .execute(context.conn())
@@ -338,17 +324,16 @@ where
     }
 }
 
-#[async_trait]
-impl<'a, R> Advance<ResetStuckStep<'a>, RdbContext> for RdbPromRepo<R>
+impl<'a, R> Step<ResetStuck<'a>, RdbContext> for RdbPromRepo<R>
 where
     R: Sync,
 {
     type Error = RegularError;
 
-    async fn advance(
+    async fn step(
         &self,
         context: &mut RdbContext,
-        step: &ResetStuckStep<'a>,
+        oper: &ResetStuck<'a>,
     ) -> RegularResult<()> {
         //
         use diesel::prelude::*;
@@ -361,7 +346,7 @@ where
                     t_local_message::f_status
                         .eq(LocalMessageStatus::Processing.as_str()),
                 )
-                .filter(t_local_message::f_updated_at.le(*step.before))
+                .filter(t_local_message::f_updated_at.le(*oper.before))
                 .filter(t_local_message::f_lease.ge(3)),
         )
         .set((
@@ -380,7 +365,7 @@ where
                     t_local_message::f_status
                         .eq(LocalMessageStatus::Processing.as_str()),
                 )
-                .filter(t_local_message::f_updated_at.le(*step.before))
+                .filter(t_local_message::f_updated_at.le(*oper.before))
                 .filter(t_local_message::f_lease.lt(3)),
         )
         .set((

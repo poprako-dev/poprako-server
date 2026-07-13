@@ -1,6 +1,9 @@
 use async_trait::async_trait;
 
-use crate::model::{comic_model, team_model, user_model, workset_model};
+use crate::model::comic::ComicInfo;
+use crate::model::team::TeamInfo;
+use crate::model::user::UserInfo;
+use crate::model::workset::WorksetInfo;
 use crate::part_impl::repo::rdb_impl::incl::{
     self, Incl, TeamByIds, UserByIds, WorksetByIds,
 };
@@ -14,18 +17,15 @@ struct ComicWorksetIncl;
 
 #[async_trait]
 impl Incl for ComicWorksetIncl {
-    type Owner = comic_model::Info;
-    type Related = workset_model::Info;
+    type Owner = ComicInfo;
+    type Related = WorksetInfo;
     type Query = WorksetByIds;
 
-    fn resolve_key(comic_info: &comic_model::Info) -> Option<&str> {
+    fn resolve_key(comic_info: &ComicInfo) -> Option<&str> {
         Some(&comic_info.workset_id)
     }
 
-    fn inject(
-        comic_info: &mut comic_model::Info,
-        workset_info: Option<workset_model::Info>,
-    ) {
+    fn inject(comic_info: &mut ComicInfo, workset_info: Option<WorksetInfo>) {
         comic_info.workset = workset_info;
     }
 }
@@ -35,21 +35,18 @@ struct ComicWorksetTeamIncl;
 
 #[async_trait]
 impl Incl for ComicWorksetTeamIncl {
-    type Owner = comic_model::Info;
-    type Related = team_model::Info;
+    type Owner = ComicInfo;
+    type Related = TeamInfo;
     type Query = TeamByIds;
 
-    fn resolve_key(comic_info: &comic_model::Info) -> Option<&str> {
+    fn resolve_key(comic_info: &ComicInfo) -> Option<&str> {
         comic_info
             .workset
             .as_ref()
             .map(|workset_info| workset_info.team_id.as_str())
     }
 
-    fn inject(
-        comic_info: &mut comic_model::Info,
-        team_info: Option<team_model::Info>,
-    ) {
+    fn inject(comic_info: &mut ComicInfo, team_info: Option<TeamInfo>) {
         comic_info.team = team_info;
     }
 }
@@ -59,18 +56,15 @@ struct ComicCreatorIncl;
 
 #[async_trait]
 impl Incl for ComicCreatorIncl {
-    type Owner = comic_model::Info;
-    type Related = user_model::Info;
+    type Owner = ComicInfo;
+    type Related = UserInfo;
     type Query = UserByIds;
 
-    fn resolve_key(comic_info: &comic_model::Info) -> Option<&str> {
+    fn resolve_key(comic_info: &ComicInfo) -> Option<&str> {
         Some(&comic_info.creator_id)
     }
 
-    fn inject(
-        comic_info: &mut comic_model::Info,
-        user_info: Option<user_model::Info>,
-    ) {
+    fn inject(comic_info: &mut ComicInfo, user_info: Option<UserInfo>) {
         comic_info.creator = user_info;
     }
 }
@@ -78,7 +72,7 @@ impl Incl for ComicCreatorIncl {
 /// Populates comic query results with eagerly-loaded related entity data.
 pub async fn populate_comic_incls(
     conn: &mut RdbConn,
-    infos: &mut [comic_model::Info],
+    infos: &mut [ComicInfo],
     incl_opt: &[ComicInclOpt],
 ) -> RegularResult<()> {
     //

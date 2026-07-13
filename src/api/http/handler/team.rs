@@ -12,8 +12,14 @@ use crate::api::http::result::{
     Accept as _, HttpBody, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
-use crate::data::team_data;
-use crate::model::user_model;
+use crate::data::team::CreateTeamParams;
+use crate::data::team::ListTeamInfosParams;
+use crate::data::team::MarkTeamAvatarUploadedParams;
+use crate::data::team::ReserveTeamAvatarParams;
+use crate::data::team::ReserveTeamAvatarPayload;
+use crate::data::team::TeamInfoVal;
+use crate::data::team::UpdateTeamInfoParams;
+use crate::model::user::UserToken;
 use crate::usecase;
 
 /// `POST /api/v1/teams` — create a new team.
@@ -21,25 +27,25 @@ use crate::usecase;
     post,
     path = "/api/v1/teams",
     tag = "teams",
-    request_body = team_data::CreateData,
+    request_body = CreateTeamParams,
     responses(
-        (status = 201, description = "Team created", body = HttpBody<team_data::InfoVal>),
+        (status = 201, description = "Team created", body = HttpBody<TeamInfoVal>),
         (status = 401, description = "Authentication required"),
         (status = 403, description = "Only super-admins can create teams"),
     ),
 ))]
-#[instrument(err, skip(harn, data))]
+#[instrument(err, skip(harn, params))]
 pub async fn create(
     State(harn): State<AppHarn>,
-    Extension(user_token): Extension<user_model::Token>,
-    Json(data): Json<team_data::CreateData>,
-) -> HttpResult<team_data::InfoVal> {
+    Extension(user_token): Extension<UserToken>,
+    Json(params): Json<CreateTeamParams>,
+) -> HttpResult<TeamInfoVal> {
     usecase::team::create(
         harn.drive(),
         harn.repo(),
         harn.image_pool(),
         user_token,
-        data,
+        params,
     )
     .await?
     .accept(StatusCode::CREATED)
@@ -51,9 +57,9 @@ pub async fn create(
     path = "/api/v1/teams",
     tag = "teams",
     description = "Lists teams. Omit `user_id` to list all teams (super-admin only, otherwise `403`); supply `user_id` to list teams that user has joined. Examples: `/api/v1/teams?user_id=u_1&offset=0&limit=20`, `/api/v1/teams?offset=0&limit=20` (super-admin).",
-    params(team_data::ListInfosData),
+    params(ListTeamInfosParams),
     responses(
-        (status = 200, description = "Teams listed", body = HttpBody<Vec<team_data::InfoVal>>),
+        (status = 200, description = "Teams listed", body = HttpBody<Vec<TeamInfoVal>>),
         (status = 401, description = "Authentication required"),
         (status = 403, description = "Listing all teams requires super-admin"),
     ),
@@ -61,12 +67,17 @@ pub async fn create(
 #[instrument(err, skip(harn))]
 pub async fn list_infos(
     State(harn): State<AppHarn>,
-    Extension(user_token): Extension<user_model::Token>,
-    Query(data): Query<team_data::ListInfosData>,
-) -> HttpResult<Vec<team_data::InfoVal>> {
-    usecase::team::list_infos(harn.repo(), harn.image_pool(), user_token, data)
-        .await?
-        .accept(StatusCode::OK)
+    Extension(user_token): Extension<UserToken>,
+    Query(params): Query<ListTeamInfosParams>,
+) -> HttpResult<Vec<TeamInfoVal>> {
+    usecase::team::list_infos(
+        harn.repo(),
+        harn.image_pool(),
+        user_token,
+        params,
+    )
+    .await?
+    .accept(StatusCode::OK)
 }
 
 /// `GET /api/v1/teams/{team_id}` — fetch a team by id.
@@ -76,7 +87,7 @@ pub async fn list_infos(
     tag = "teams",
     params(("team_id" = String, Path, description = "Team ID")),
     responses(
-        (status = 200, description = "Team info retrieved", body = HttpBody<team_data::InfoVal>),
+        (status = 200, description = "Team info retrieved", body = HttpBody<TeamInfoVal>),
         (status = 401, description = "Authentication required"),
         (status = 404, description = "Team not found"),
     ),
@@ -85,7 +96,7 @@ pub async fn list_infos(
 pub async fn get_info(
     State(harn): State<AppHarn>,
     Path(team_id): Path<String>,
-) -> HttpResult<team_data::InfoVal> {
+) -> HttpResult<TeamInfoVal> {
     usecase::team::get_info(harn.repo(), harn.image_pool(), team_id)
         .await?
         .accept(StatusCode::OK)
@@ -97,7 +108,7 @@ pub async fn get_info(
     path = "/api/v1/teams/{team_id}",
     tag = "teams",
     params(("team_id" = String, Path, description = "Team ID")),
-    request_body = team_data::UpdateInfoData,
+    request_body = UpdateTeamInfoParams,
     responses(
         (status = 204, description = "Team updated"),
         (status = 422, description = "Path id does not match body id"),
@@ -105,17 +116,17 @@ pub async fn get_info(
         (status = 404, description = "Team not found"),
     ),
 ))]
-#[instrument(err, skip(harn, data))]
+#[instrument(err, skip(harn, params))]
 pub async fn update_info(
     State(harn): State<AppHarn>,
     Path(team_id): Path<String>,
-    Extension(user_token): Extension<user_model::Token>,
-    Json(data): Json<team_data::UpdateInfoData>,
+    Extension(user_token): Extension<UserToken>,
+    Json(params): Json<UpdateTeamInfoParams>,
 ) -> HttpNoContent {
     //
-    ensure_path_matches_body_id(&team_id, &data.id)?;
+    ensure_path_matches_body_id(&team_id, &params.id)?;
 
-    usecase::team::update_info(harn.repo(), user_token, data).await?;
+    usecase::team::update_info(harn.repo(), user_token, params).await?;
 
     no_content()
 }
@@ -126,20 +137,20 @@ pub async fn update_info(
     path = "/api/v1/teams/{team_id}/avatar/reserve",
     tag = "teams",
     params(("team_id" = String, Path, description = "Team ID")),
-    request_body = team_data::ReserveAvatarData,
+    request_body = ReserveTeamAvatarParams,
     responses(
-        (status = 200, description = "Avatar upload URL reserved", body = HttpBody<team_data::ReserveAvatarVal>),
+        (status = 200, description = "Avatar upload URL reserved", body = HttpBody<ReserveTeamAvatarPayload>),
         (status = 403, description = "No permission to modify this team's avatar"),
         (status = 404, description = "Team not found"),
     ),
 ))]
-#[instrument(err, skip(harn, data))]
+#[instrument(err, skip(harn, params))]
 pub async fn reserve_avatar(
     State(harn): State<AppHarn>,
     Path(team_id): Path<String>,
-    Extension(user_token): Extension<user_model::Token>,
-    Json(data): Json<team_data::ReserveAvatarData>,
-) -> HttpResult<team_data::ReserveAvatarVal> {
+    Extension(user_token): Extension<UserToken>,
+    Json(params): Json<ReserveTeamAvatarParams>,
+) -> HttpResult<ReserveTeamAvatarPayload> {
     usecase::team::reserve_avatar(
         harn.drive(),
         harn.repo(),
@@ -147,7 +158,7 @@ pub async fn reserve_avatar(
         harn.image_pool(),
         user_token,
         team_id,
-        data,
+        params,
     )
     .await?
     .accept(StatusCode::OK)
@@ -159,23 +170,28 @@ pub async fn reserve_avatar(
     path = "/api/v1/teams/{team_id}/avatar/mark-uploaded",
     tag = "teams",
     params(("team_id" = String, Path, description = "Team ID")),
-    request_body = team_data::MarkAvatarUploadedData,
+    request_body = MarkTeamAvatarUploadedParams,
     responses(
         (status = 204, description = "Avatar upload confirmed"),
         (status = 403, description = "No permission to modify this team's avatar"),
         (status = 404, description = "Team not found"),
     ),
 ))]
-#[instrument(err, skip(harn, data))]
+#[instrument(err, skip(harn, params))]
 pub async fn mark_avatar_uploaded(
     State(harn): State<AppHarn>,
     Path(team_id): Path<String>,
-    Extension(user_token): Extension<user_model::Token>,
-    Json(data): Json<team_data::MarkAvatarUploadedData>,
+    Extension(user_token): Extension<UserToken>,
+    Json(params): Json<MarkTeamAvatarUploadedParams>,
 ) -> HttpNoContent {
     //
-    usecase::team::mark_avatar_uploaded(harn.repo(), user_token, team_id, data)
-        .await?;
+    usecase::team::mark_avatar_uploaded(
+        harn.repo(),
+        user_token,
+        team_id,
+        params,
+    )
+    .await?;
 
     no_content()
 }
@@ -196,7 +212,7 @@ pub async fn mark_avatar_uploaded(
 pub async fn delete(
     State(harn): State<AppHarn>,
     Path(team_id): Path<String>,
-    Extension(user_token): Extension<user_model::Token>,
+    Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
     usecase::team::delete(

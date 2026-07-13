@@ -14,7 +14,10 @@ use crate::api::http::result::{
     Accept as _, HttpBody, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
-use crate::data::auth_data;
+use crate::data::auth::LoginAuthParams;
+use crate::data::auth::LoginAuthPayload;
+use crate::data::auth::RegisterAuthParams;
+use crate::data::auth::RegisterAuthPayload;
 use crate::usecase;
 
 /// Builds the `authorization-token` HttpOnly cookie carrying the bearer token.
@@ -34,25 +37,25 @@ fn auth_cookie(token: &str) -> Cookie<'static> {
     post,
     path = "/api/v1/auth/register",
     tag = "auth",
-    request_body = auth_data::RegisterData,
+    request_body = RegisterAuthParams,
     responses(
-        (status = 201, description = "Registration successful, sets auth cookie", body = HttpBody<auth_data::RegisterVal>),
+        (status = 201, description = "Registration successful, sets auth cookie", body = HttpBody<RegisterAuthPayload>),
         (status = 422, description = "Invalid request parameters"),
         (status = 401, description = "Invalid invitation code"),
     ),
 ))]
-#[instrument(err, skip(harn, data))]
+#[instrument(err, skip(harn, params))]
 pub async fn register(
     State(harn): State<AppHarn>,
-    Json(data): Json<auth_data::RegisterData>,
-) -> HttpResult<auth_data::RegisterVal> {
+    Json(params): Json<RegisterAuthParams>,
+) -> HttpResult<RegisterAuthPayload> {
     //
     let reply = usecase::auth::register(
         harn.drive(),
         harn.repo(),
         harn.auth(),
         harn.develop(),
-        data,
+        params,
     )
     .await?;
 
@@ -71,19 +74,19 @@ pub async fn register(
     post,
     path = "/api/v1/auth/login",
     tag = "auth",
-    request_body = auth_data::LoginData,
+    request_body = LoginAuthParams,
     responses(
-        (status = 200, description = "Login successful, sets auth cookie", body = HttpBody<auth_data::LoginVal>),
+        (status = 200, description = "Login successful, sets auth cookie", body = HttpBody<LoginAuthPayload>),
         (status = 401, description = "Invalid credentials"),
     ),
 ))]
-#[instrument(err, skip(harn, data))]
+#[instrument(err, skip(harn, params))]
 pub async fn login(
     State(harn): State<AppHarn>,
-    Json(data): Json<auth_data::LoginData>,
-) -> HttpResult<auth_data::LoginVal> {
+    Json(params): Json<LoginAuthParams>,
+) -> HttpResult<LoginAuthPayload> {
     //
-    let reply = usecase::auth::login(harn.repo(), harn.auth(), data).await?;
+    let reply = usecase::auth::login(harn.repo(), harn.auth(), params).await?;
 
     let cookie = auth_cookie(&reply.token);
 

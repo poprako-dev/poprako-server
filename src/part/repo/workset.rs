@@ -1,43 +1,27 @@
-//! Repository traits for the workset domain.
-//!
-//! Workset opers are always transactional — listing with a lock and
-//! cascade-deleting are composed with team opers.
+use poprako_orchestra::{Run, Step};
 
-use poprako_transactional::advance::Advance;
-
-use crate::part::repo::step::workset::{
-    Create, Delete, GetInfoById, GetInfoExcluded, IncrComicNextIndex,
-    ListAllInfosByTeamIdExcluded, ListInfosByTeamId, UpdateComicCount,
-    UpdateInfo,
+use crate::part::repo::oper::workset::{
+    AllocateWorksetComicIndex, CreateWorkset, DeleteWorkset, GetWorksetInfo,
+    GetWorksetInfoExcluded, ListWorksetInfos, ListWorksetInfosExcluded,
+    UpdateWorkset, UpdateWorksetComicCount,
 };
-use crate::part::shared::execute::Execute;
 use crate::result::RegularError;
-use crate::util::DeriveTransactional;
 
-/// Non-transactional workset repository.
+/// Workset repository operations.
 ///
-/// Has no standalone opers — delegates entirely to
-/// [`WorksetRepoTransactional`].
+/// Independent reads and updates use [`Run`]. Transactional reads, mutations,
+/// and pessimistic locks use [`Step`] with the caller-coordinated context.
 pub trait WorksetRepo<C>:
-    DeriveTransactional
-    + for<'a> Execute<GetInfoById<'a>, Error = RegularError>
-    + for<'a> Execute<ListInfosByTeamId<'a>, Error = RegularError>
-    + for<'a> Execute<UpdateInfo<'a>, Error = RegularError>
-where
-    Self::Transactional: WorksetRepoTransactional<C>,
-{
-}
-
-/// Transactional workset repository.
-pub trait WorksetRepoTransactional<C>:
-    for<'a> Advance<ListAllInfosByTeamIdExcluded<'a>, C, Error = RegularError>
-    + for<'a> Advance<GetInfoExcluded<'a>, C, Error = RegularError>
-    + for<'a> Advance<Delete<'a>, C, Error = RegularError>
-    + for<'a> Advance<GetInfoById<'a>, C, Error = RegularError>
-    + for<'a> Advance<Create<'a>, C, Error = RegularError>
-    // NOTE: As the concurrency is expected not to be so high in production environment,
-    // excluded row lock is acceptable now.
-    + for<'a> Advance<IncrComicNextIndex<'a>, C, Error = RegularError>
-    + for<'a> Advance<UpdateComicCount<'a>, C, Error = RegularError>
+    for<'a> Run<GetWorksetInfo<'a>, Error = RegularError>
+    + for<'a> Run<ListWorksetInfos<'a>, Error = RegularError>
+    + for<'a> Run<UpdateWorkset<'a>, Error = RegularError>
+    + for<'a> Step<GetWorksetInfo<'a>, C, Error = RegularError>
+    + for<'a> Step<ListWorksetInfos<'a>, C, Error = RegularError>
+    + for<'a> Step<GetWorksetInfoExcluded<'a>, C, Error = RegularError>
+    + for<'a> Step<ListWorksetInfosExcluded<'a>, C, Error = RegularError>
+    + for<'a> Step<CreateWorkset<'a>, C, Error = RegularError>
+    + for<'a> Step<DeleteWorkset<'a>, C, Error = RegularError>
+    + for<'a> Step<AllocateWorksetComicIndex<'a>, C, Error = RegularError>
+    + for<'a> Step<UpdateWorksetComicCount<'a>, C, Error = RegularError>
 {
 }

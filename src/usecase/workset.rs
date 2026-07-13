@@ -1,219 +1,194 @@
 //! Workset use cases — create, read, update, list, and deletion.
 
-use poprako_transactional::advance::Advance;
-use poprako_transactional::drive::Drive;
+use poprako_orchestra::{Nucl, run_proxy};
+
 use poprako_util::page::Page;
-use poprako_util::time::ToUnixMilli;
 
 use crate::complex::workset::{WorksetComplex, WorksetPermComplex};
-use crate::data::workset_data;
-use crate::model::{user_model, workset_model};
+use crate::data::workset::CreateWorksetParams;
+use crate::data::workset::CreateWorksetPayload;
+use crate::data::workset::ListWorksetInfosParams;
+use crate::data::workset::UpdateWorksetInfoParams;
+use crate::data::workset::WorksetInfoVal;
+use crate::model::user::UserToken;
+use crate::model::workset::WorksetEntry;
+use crate::model::workset::WorksetInfoUpdate;
 use crate::part::prom::Prom;
-use crate::part::repo::assignment::{
-    AssignmentRepo, AssignmentRepoTransactional,
+use crate::part::repo::assignment::AssignmentRepo;
+use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
+use crate::part::repo::chapter::ChapterRepo;
+use crate::part::repo::comic::ComicRepo;
+use crate::part::repo::member::MemberRepo;
+use crate::part::repo::oper::member::FindMemberInfo;
+use crate::part::repo::oper::team::AllocateTeamWorksetIndex;
+use crate::part::repo::oper::workset::{
+    CreateWorkset, GetWorksetInfo, ListWorksetInfos, UpdateWorkset,
 };
-use crate::part::repo::assignment_invitation::{
-    AssignmentInvitationRepo, AssignmentInvitationRepoTransactional,
-};
-use crate::part::repo::chapter::{ChapterRepo, ChapterRepoTransactional};
-use crate::part::repo::comic::{ComicRepo, ComicRepoTransactional};
-use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
-use crate::part::repo::page::{PageRepo, PageRepoTransactional};
-use crate::part::repo::step::team::TeamStep;
-use crate::part::repo::step::workset::WorksetStep;
-use crate::part::repo::team::{TeamRepo, TeamRepoTransactional};
-use crate::part::repo::unit::{UnitRepo, UnitRepoTransactional};
-use crate::part::repo::workset::{WorksetRepo, WorksetRepoTransactional};
+use crate::part::repo::page::PageRepo;
+use crate::part::repo::team::TeamRepo;
+use crate::part::repo::unit::UnitRepo;
+use crate::part::repo::workset::WorksetRepo;
 use crate::result::{RegularError, RegularResult};
-use crate::util::DeriveTransactional;
 
 #[cfg(test)]
 pub mod tests;
 
 /// Creates a new workset inside a team.
-pub async fn create<D, C, R>(
-    drive: &D,
+pub async fn create<N, C, R>(
+    nucl: &N,
     repo: &R,
-    token: user_model::Token,
-    data: workset_data::CreateData,
-) -> RegularResult<workset_data::CreateVal>
+    token: UserToken,
+    params: CreateWorksetParams,
+) -> RegularResult<CreateWorksetPayload>
 where
-    D: Drive<C>,
-    D::Error: Into<RegularError>,
+    N: Nucl<Context = C, Error = RegularError>,
     C: Send,
     R: TeamRepo<C> + WorksetRepo<C> + MemberRepo<C> + Send + Sync,
-    <R as DeriveTransactional>::Transactional: TeamRepoTransactional<C>
-        + WorksetRepoTransactional<C>
-        + MemberRepoTransactional<C>
-        + Send
-        + Sync,
 {
-    use crate::part::shared::proxy::AsProxyNonTransactional as _;
-
     WorksetPermComplex::can_user_create(
-        &mut repo.as_proxy(),
+        &mut run_proxy! {
+            repo => for<'a> FindMemberInfo<'a>;
+        },
         &token.user_id,
-        &data.team_id,
+        &params.team_id,
     )
     .await?;
 
-    let workset_id = drive
-        .with_context(async move |context| -> Result<String, RegularError> {
-            //
-            let repo = repo.derive_transactional().await;
-
+    let workset_id = nucl
+        .coord(async move |context| -> RegularResult<String> {
             let index = repo
-                .advance(
+                .step(
                     context,
-                    &TeamStep::increment_workset_next_index(&data.team_id),
+                    &AllocateTeamWorksetIndex {
+                        id: &params.team_id,
+                    },
                 )
                 .await?;
 
-            let workset_form = workset_model::Form {
+            let workset_entry = WorksetEntry {
                 id: WorksetComplex::gen_id(),
-                team_id: data.team_id,
+                team_id: params.team_id,
                 index,
-                name: data.name,
-                description: data.description,
+                name: params.name,
+                description: params.description,
             };
 
             let workset_info = repo
-                .advance(context, &WorksetStep::create(&workset_form))
+                .step(
+                    context,
+                    &CreateWorkset {
+                        entry: &workset_entry,
+                    },
+                )
                 .await?;
 
             Ok(workset_info.id)
         })
         .await?;
 
-    Ok(workset_data::CreateVal { id: workset_id })
+    Ok(CreateWorksetPayload { id: workset_id })
 }
 
 /// Fetches a workset by ID.
 pub async fn get_info<C, R>(
     repo: &R,
-    token: user_model::Token,
+    token: UserToken,
     id: String,
-) -> RegularResult<workset_data::InfoVal>
+) -> RegularResult<WorksetInfoVal>
 where
     R: WorksetRepo<C> + MemberRepo<C> + Sync,
-    <R as DeriveTransactional>::Transactional:
-        WorksetRepoTransactional<C> + MemberRepoTransactional<C>,
 {
-    use crate::part::shared::proxy::AsProxyNonTransactional as _;
-
     WorksetPermComplex::can_user_get_info(
-        &mut repo.as_proxy(),
+        &mut run_proxy! {
+            repo =>
+                for<'a> GetWorksetInfo<'a>,
+                for<'a> FindMemberInfo<'a>;
+        },
         &token.user_id,
         &id,
     )
     .await?;
 
-    let workset_info = repo.execute(&WorksetStep::get_info_by_id(&id)).await?;
+    let workset_info = repo.run(&GetWorksetInfo { id: &id }).await?;
 
-    Ok(workset_data::InfoVal {
-        id: workset_info.id,
-        team_id: workset_info.team_id,
-        index: workset_info.index,
-        name: workset_info.name,
-        description: workset_info.description,
-        comic_count: workset_info.comic_count,
-        comic_next_index: workset_info.comic_next_index,
-        created_at: workset_info.created_at.to_unix_milli(),
-        updated_at: workset_info.updated_at.to_unix_milli(),
-    })
+    Ok(workset_info.into())
 }
 
 /// Lists worksets for a team.
 pub async fn list_infos<C, R>(
     repo: &R,
-    token: user_model::Token,
-    data: workset_data::ListInfosData,
-) -> RegularResult<Vec<workset_data::InfoVal>>
+    token: UserToken,
+    params: ListWorksetInfosParams,
+) -> RegularResult<Vec<WorksetInfoVal>>
 where
     R: WorksetRepo<C> + MemberRepo<C> + Sync,
-    <R as DeriveTransactional>::Transactional:
-        WorksetRepoTransactional<C> + MemberRepoTransactional<C>,
 {
-    use crate::part::shared::proxy::AsProxyNonTransactional as _;
-
     WorksetPermComplex::can_user_list_infos(
-        &mut repo.as_proxy(),
+        &mut run_proxy! {
+            repo => for<'a> FindMemberInfo<'a>;
+        },
         &token.user_id,
-        &data.team_id,
+        &params.team_id,
     )
     .await?;
 
     let workset_infos = repo
-        .execute(&WorksetStep::list_infos_by_team_id(
-            &data.team_id,
-            Page {
-                offset: data.offset,
-                limit: data.limit,
-            },
-        ))
+        .run(&ListWorksetInfos {
+            team_id: &params.team_id,
+            page: Some(Page {
+                offset: params.offset,
+                limit: params.limit,
+            }),
+        })
         .await?;
 
-    let workset_info_vals = workset_infos
-        .into_iter()
-        .map(|workset_info| workset_data::InfoVal {
-            id: workset_info.id,
-            team_id: workset_info.team_id,
-            index: workset_info.index,
-            name: workset_info.name,
-            description: workset_info.description,
-            comic_count: workset_info.comic_count,
-            comic_next_index: workset_info.comic_next_index,
-            created_at: workset_info.created_at.to_unix_milli(),
-            updated_at: workset_info.updated_at.to_unix_milli(),
-        })
-        .collect();
-
-    Ok(workset_info_vals)
+    Ok(workset_infos.into_iter().map(Into::into).collect())
 }
 
 /// Updates a workset's name and description.
 pub async fn update_info<C, R>(
     repo: &R,
-    token: user_model::Token,
-    data: workset_data::UpdateInfoData,
+    token: UserToken,
+    params: UpdateWorksetInfoParams,
 ) -> RegularResult<()>
 where
     R: WorksetRepo<C> + MemberRepo<C> + Sync,
-    <R as DeriveTransactional>::Transactional:
-        WorksetRepoTransactional<C> + MemberRepoTransactional<C>,
 {
-    use crate::part::shared::proxy::AsProxyNonTransactional as _;
-
     WorksetPermComplex::can_user_update_info(
-        &mut repo.as_proxy(),
+        &mut run_proxy! {
+            repo =>
+                for<'a> GetWorksetInfo<'a>,
+                for<'a> FindMemberInfo<'a>;
+        },
         &token.user_id,
-        &data.id,
+        &params.id,
     )
     .await?;
 
-    let workset_info_update = workset_model::InfoUpdate {
-        id: data.id,
-        name: data.name,
-        description: data.description,
+    let workset_info_update = WorksetInfoUpdate {
+        id: params.id,
+        name: params.name,
+        description: params.description,
     };
 
-    repo.execute(&WorksetStep::update_info(&workset_info_update))
-        .await?;
+    repo.run(&UpdateWorkset {
+        update: &workset_info_update,
+    })
+    .await?;
 
     Ok(())
 }
 
 /// Deletes a workset and its child data.
-pub async fn delete<D, C, R, P>(
-    drive: &D,
+pub async fn delete<N, C, R, P>(
+    nucl: &N,
     repo: &R,
     prom: &P,
-    token: user_model::Token,
+    token: UserToken,
     id: String,
 ) -> RegularResult<()>
 where
-    D: Drive<C>,
-    D::Error: Into<RegularError>,
+    N: Nucl<Context = C, Error = RegularError>,
     C: Send,
     R: WorksetRepo<C>
         + ComicRepo<C>
@@ -225,48 +200,25 @@ where
         + UnitRepo<C>
         + Send
         + Sync,
-    <R as DeriveTransactional>::Transactional:
-        WorksetRepoTransactional<C>
-            + ComicRepoTransactional<C>
-            + MemberRepoTransactional<C>
-            + ChapterRepoTransactional<C>
-            + PageRepoTransactional<C>
-            + AssignmentInvitationRepoTransactional<C>
-            + AssignmentRepoTransactional<C>
-            + UnitRepoTransactional<C>
-            + Send
-            + Sync,
     P: Prom<C> + Send + Sync,
 {
-    use crate::part::shared::proxy::AsProxyNonTransactional as _;
-
     WorksetPermComplex::can_user_delete(
-        &mut repo.as_proxy(),
+        &mut run_proxy! {
+            repo =>
+                for<'a> GetWorksetInfo<'a>,
+                for<'a> FindMemberInfo<'a>;
+        },
         &token.user_id,
         &id,
     )
     .await?;
 
-    drive
-        .with_context(async move |context| -> Result<(), RegularError> {
-            //
-            let repo = repo.derive_transactional().await;
+    nucl.coord(async move |context| -> RegularResult<()> {
+        WorksetComplex::delete_cascade(repo, prom, context, &id).await?;
 
-            let workset_info = repo
-                .advance(context, &WorksetStep::get_info_excluded(&id))
-                .await?;
-
-            WorksetComplex::delete_cascade(
-                &repo,
-                prom,
-                context,
-                &workset_info.id,
-            )
-            .await?;
-
-            Ok(())
-        })
-        .await?;
+        Ok(())
+    })
+    .await?;
 
     Ok(())
 }

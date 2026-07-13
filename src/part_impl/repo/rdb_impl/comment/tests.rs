@@ -1,17 +1,15 @@
-// comment_roundtrip_reads_test_database_url(CommentStep)(positive): comment repo creates and lists included users in the local test database.
+// comment_roundtrip_reads_test_database_url(CreateComment, ListCommentInfos)(positive): comment repo creates and lists included users in the local test database.
 
 use super::*;
 
-use poprako_transactional::advance::Advance;
-use poprako_transactional::drive::Drive;
+use poprako_orchestra::{Nucl as _, Run as _, Step as _};
 
-use crate::model::comment_model;
-use crate::part::repo::step::comment::CommentStep;
-use crate::part::shared::execute::Execute;
+use crate::model::comment::CommentEntry;
+use crate::model::comment::CommentListSpec;
+use crate::part::repo::oper::comment::{CreateComment, ListCommentInfos};
 use crate::part_impl::drive::rdb_impl::RdbDrive;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
 use crate::result::RegularError;
-use crate::util::DeriveTransactional as _;
 use crate::value::comment::CommentInclOpt;
 
 const PREFIX: &str = "rdb-test-comment-domain-";
@@ -29,22 +27,20 @@ async fn comment_roundtrip_reads_test_database_url() {
 
     let drive = RdbDrive::new(shared.clone());
 
-    let transactional_repo = repo.derive_transactional().await;
-
-    let comment_form = comment_model::Form {
+    let comment_entry = CommentEntry {
         id: format!("{}comment", PREFIX),
-        team_id: team_fixture.team_form.id.clone(),
-        user_id: team_fixture.user_form.id.clone(),
+        team_id: team_fixture.team_entry.id.clone(),
+        user_id: team_fixture.user_entry.id.clone(),
         content: "comment".into(),
     };
 
     drive
-        .with_context(async |context| {
-            //
-            Advance::advance(
-                &transactional_repo,
+        .coord(async |context| {
+            repo.step(
                 context,
-                &CommentStep::create(&comment_form),
+                &CreateComment {
+                    entry: &comment_entry,
+                },
             )
             .await?;
 
@@ -54,24 +50,26 @@ async fn comment_roundtrip_reads_test_database_url() {
         .ok()
         .unwrap();
 
-    let comment_list_spec = comment_model::ListSpec {
-        team_id: team_fixture.team_form.id.clone(),
+    let comment_list_spec = CommentListSpec {
+        team_id: team_fixture.team_entry.id.clone(),
         incl_opt: vec![CommentInclOpt::User],
         offset: 0,
         limit: 10,
     };
 
-    let comment_infos =
-        Execute::execute(&repo, &CommentStep::list_infos(&comment_list_spec))
-            .await
-            .ok()
-            .unwrap();
+    let comment_infos = repo
+        .run(&ListCommentInfos {
+            spec: &comment_list_spec,
+        })
+        .await
+        .ok()
+        .unwrap();
 
     assert_eq!(comment_infos.len(), 1);
 
     assert_eq!(
         comment_infos[0].user.as_ref().unwrap().id,
-        team_fixture.user_form.id
+        team_fixture.user_entry.id
     );
 
     test_shared::cleanup(&shared, PREFIX).await.ok().unwrap();

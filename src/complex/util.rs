@@ -1,21 +1,14 @@
 //! Shared helpers for the complex layer.
 
+use poprako_orchestra::Proxy;
+
 use poprako_util::i18n::trl;
 
-use crate::part::repo::step::assignment::{
-    AssignmentStep, GetInfoByChapterIdAndUserId,
-};
-use crate::part::repo::step::chapter::{
-    ChapterStep, GetInfoById as ChapterGetInfoById,
-};
-use crate::part::repo::step::comic::{
-    ComicStep, GetInfoById as ComicGetInfoById,
-};
-use crate::part::repo::step::member::{FindInfoByUserIdAndTeamId, MemberStep};
-use crate::part::repo::step::workset::{
-    GetInfoById as WorksetGetInfoById, WorksetStep,
-};
-use crate::part::shared::proxy::ProxyExecute;
+use crate::part::repo::oper::assignment::FindAssignmentInfo;
+use crate::part::repo::oper::chapter::GetChapterInfo;
+use crate::part::repo::oper::comic::GetComicInfo;
+use crate::part::repo::oper::member::FindMemberInfo;
+use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::result::{ExpectedVariant, RegularError, RegularResult};
 use crate::value::role::RoleField;
 
@@ -26,15 +19,10 @@ pub async fn check_user_is_team_member<P>(
     team_id: &str,
 ) -> RegularResult<()>
 where
-    P: for<'a> ProxyExecute<
-            FindInfoByUserIdAndTeamId<'a>,
-            Error = RegularError,
-        >,
+    P: for<'a> Proxy<FindMemberInfo<'a>, Error = RegularError>,
 {
     let member_info = proxy
-        .execute(&MemberStep::find_info_by_user_id_and_team_id(
-            user_id, team_id,
-        ))
+        .exec(&FindMemberInfo::UserTeam { user_id, team_id })
         .await?;
 
     if member_info.is_none() {
@@ -54,15 +42,10 @@ pub async fn check_user_is_team_admin<P>(
     team_id: &str,
 ) -> RegularResult<()>
 where
-    P: for<'a> ProxyExecute<
-            FindInfoByUserIdAndTeamId<'a>,
-            Error = RegularError,
-        >,
+    P: for<'a> Proxy<FindMemberInfo<'a>, Error = RegularError>,
 {
     let member_info = proxy
-        .execute(&MemberStep::find_info_by_user_id_and_team_id(
-            user_id, team_id,
-        ))
+        .exec(&FindMemberInfo::UserTeam { user_id, team_id })
         .await?;
 
     let Some(member_info) = member_info else {
@@ -89,24 +72,29 @@ pub async fn check_user_is_team_member_by_chapter<P>(
     chapter_id: &str,
 ) -> RegularResult<()>
 where
-    P: for<'a> ProxyExecute<ChapterGetInfoById<'a>, Error = RegularError>
-        + for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RegularError>
-        + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RegularError>
-        + for<'a> ProxyExecute<
-            FindInfoByUserIdAndTeamId<'a>,
-            Error = RegularError,
-        >,
+    P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = RegularError>
+        + for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = RegularError>
+        + for<'a> Proxy<GetWorksetInfo<'a>, Error = RegularError>
+        + for<'a> Proxy<FindMemberInfo<'a>, Error = RegularError>,
 {
     let chapter_info = proxy
-        .execute(&ChapterStep::get_info_by_id(chapter_id, &[]))
+        .exec(&GetChapterInfo {
+            id: chapter_id,
+            incls: &[],
+        })
         .await?;
 
     let comic_info = proxy
-        .execute(&ComicStep::get_info_by_id(&chapter_info.comic_id, &[]))
+        .exec(&GetComicInfo {
+            id: &chapter_info.comic_id,
+            incls: &[],
+        })
         .await?;
 
     let workset_info = proxy
-        .execute(&WorksetStep::get_info_by_id(&comic_info.workset_id))
+        .exec(&GetWorksetInfo {
+            id: &comic_info.workset_id,
+        })
         .await?;
 
     check_user_is_team_member(proxy, user_id, &workset_info.team_id).await
@@ -119,16 +107,14 @@ pub async fn check_user_is_chapter_assignee<P>(
     chapter_id: &str,
 ) -> RegularResult<()>
 where
-    P: for<'a> ProxyExecute<
-            GetInfoByChapterIdAndUserId<'a>,
-            Error = RegularError,
-        >,
+    P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = RegularError>,
 {
-    let assignment_info = proxy
-        .execute(&AssignmentStep::get_info_by_chapter_id_and_user_id(
-            chapter_id, user_id,
-        ))
-        .await?;
+    let find_assignment_info = FindAssignmentInfo::ChapterUser {
+        chapter_id,
+        user_id,
+    };
+
+    let assignment_info = proxy.exec(&find_assignment_info).await?;
 
     if assignment_info.is_none() {
         return Err(chapter_assignee_required_error());
@@ -144,16 +130,14 @@ pub async fn check_user_is_chapter_translator_or_proofreader<P>(
     chapter_id: &str,
 ) -> RegularResult<()>
 where
-    P: for<'a> ProxyExecute<
-            GetInfoByChapterIdAndUserId<'a>,
-            Error = RegularError,
-        >,
+    P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = RegularError>,
 {
-    let assignment_info = proxy
-        .execute(&AssignmentStep::get_info_by_chapter_id_and_user_id(
-            chapter_id, user_id,
-        ))
-        .await?;
+    let find_assignment_info = FindAssignmentInfo::ChapterUser {
+        chapter_id,
+        user_id,
+    };
+
+    let assignment_info = proxy.exec(&find_assignment_info).await?;
 
     let Some(assignment_info) = assignment_info else {
         return Err(chapter_translator_or_proofreader_required_error());

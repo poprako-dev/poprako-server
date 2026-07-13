@@ -3,7 +3,8 @@
 use diesel::prelude::*;
 use time::OffsetDateTime;
 
-use crate::model::page_model;
+use crate::model::page::PageEntry;
+use crate::model::page::PageInfo;
 use crate::part_impl::repo::rdb_impl::schema::t_page;
 
 /// Raw database row for the `t_page` table. Returned by Diesel queries.
@@ -31,7 +32,7 @@ pub struct PageRow {
 /// Insertable struct for creating a new record in the `t_page` table.
 #[derive(Insertable)]
 #[diesel(table_name = t_page)]
-pub struct PageEntry<'a> {
+pub struct PageRowEntry<'a> {
     pub f_id: &'a str,
 
     pub f_chapter_id: &'a str,
@@ -115,7 +116,7 @@ impl<'a> PageAspect<'a> {
     }
 }
 
-impl From<PageRow> for page_model::Info {
+impl From<PageRow> for PageInfo {
     fn from(row: PageRow) -> Self {
         Self {
             id: row.f_id,
@@ -133,17 +134,17 @@ impl From<PageRow> for page_model::Info {
     }
 }
 
-impl<'a> From<&'a page_model::Form> for PageEntry<'a> {
-    fn from(form: &'a page_model::Form) -> Self {
+impl<'a> From<&'a PageEntry> for PageRowEntry<'a> {
+    fn from(entry: &'a PageEntry) -> Self {
         //
         let now = OffsetDateTime::now_utc();
 
         Self {
-            f_id: &form.id,
-            f_chapter_id: &form.chapter_id,
-            f_index: form.index,
-            f_image_key: form.image_key.as_deref(),
-            f_image_version: i64::from(form.image_version),
+            f_id: &entry.id,
+            f_chapter_id: &entry.chapter_id,
+            f_index: entry.index,
+            f_image_key: entry.image_key.as_deref(),
+            f_image_version: i64::from(entry.image_version),
             f_created_at: now,
             f_updated_at: now,
         }

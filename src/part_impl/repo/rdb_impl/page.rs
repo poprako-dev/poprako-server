@@ -1,29 +1,23 @@
 //! RDB-backed page repository.
 
-use async_trait::async_trait;
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use time::OffsetDateTime;
 
-use poprako_transactional::advance::Advance;
-
 use crate::complex::page::PageComplex;
-use crate::model::{page_model, unit_model};
-use crate::part::repo::page::{PageRepo, PageRepoTransactional};
-use crate::part::repo::step::page::{
-    CreateBatch, DeleteByChapterId, GetInfoById, GetInfoExcluded,
-    ListAllInfosByChapterId, ListInfosByChapterId, MarkImageUploaded,
-    ReserveImage, SetUnitCounters,
-};
-use crate::part::shared::execute::Execute;
+use crate::part::repo::page::PageRepo;
+use crate::part_impl::repo::rdb_impl::RdbRepo;
 use crate::part_impl::repo::rdb_impl::entity::page::{
-    PageAspect, PageEntry, PageRow,
+    PageAspect, PageRow, PageRowEntry,
 };
-use crate::part_impl::repo::rdb_impl::{RdbRepo, RdbRepoTransactional};
-use crate::part_impl::shared::result::{diesel, expected};
+use crate::part_impl::shared::result::{diesel, expected, version};
 use crate::part_impl::shared::{RdbConn, RdbContext};
-use crate::result::{RegularError, RegularResult};
+use crate::result::RegularResult;
 
+use crate::model::page::PageEntry;
+use crate::model::page::PageImageReservation;
+use crate::model::page::PageInfo;
+use crate::model::unit::UnitCounters;
 use crate::part_impl::repo::rdb_impl::schema::t_page::dsl::*;
 use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::{
     f_page_id as unit_f_page_id, t_unit,
@@ -31,13 +25,13 @@ use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::{
 
 impl PageRepo<RdbContext> for RdbRepo {}
 
-impl PageRepoTransactional<RdbContext> for RdbRepoTransactional {}
+mod orchestra;
 
 /// Load a single page info by ID.
 async fn get_info_by_id(
     conn: &mut RdbConn,
     id: &str,
-) -> RegularResult<page_model::Info> {
+) -> RegularResult<PageInfo> {
     //
     let row: PageRow = t_page
         .filter(f_id.eq(id))
@@ -55,7 +49,7 @@ async fn get_info_by_id(
 async fn get_info_excluded(
     conn: &mut RdbConn,
     id: &str,
-) -> RegularResult<page_model::Info> {
+) -> RegularResult<PageInfo> {
     //
     let row: PageRow = t_page
         .filter(f_id.eq(id))
@@ -76,7 +70,7 @@ async fn list_infos_by_chapter_id(
     chapter_id: &str,
     offset: u32,
     limit: u32,
-) -> RegularResult<Vec<page_model::Info>> {
+) -> RegularResult<Vec<PageInfo>> {
     //
     let rows: Vec<PageRow> = t_page
         .filter(f_chapter_id.eq(chapter_id))
@@ -95,7 +89,7 @@ async fn list_infos_by_chapter_id(
 async fn list_all_infos_by_chapter_id(
     conn: &mut RdbConn,
     chapter_id: &str,
-) -> RegularResult<Vec<page_model::Info>> {
+) -> RegularResult<Vec<PageInfo>> {
     //
     let rows: Vec<PageRow> = t_page
         .filter(f_chapter_id.eq(chapter_id))
@@ -108,13 +102,14 @@ async fn list_all_infos_by_chapter_id(
     Ok(rows.into_iter().map(Into::into).collect())
 }
 
-/// Batch-insert pages from a slice of forms and return the created infos.
+/// Batch-insert pages from a slice of model_entries and return the created infos.
 async fn create_batch(
     conn: &mut RdbConn,
-    forms: &[page_model::Form],
-) -> RegularResult<Vec<page_model::Info>> {
+    model_entries: &[PageEntry],
+) -> RegularResult<Vec<PageInfo>> {
     //
-    let entries: Vec<PageEntry> = forms.iter().map(PageEntry::from).collect();
+    let entries: Vec<PageRowEntry> =
+        model_entries.iter().map(PageRowEntry::from).collect();
 
     let rows: Vec<PageRow> = diesel::insert_into(t_page)
         .values(&entries)
@@ -132,11 +127,11 @@ async fn reserve_image(
     conn: &mut RdbConn,
     id: &str,
     file_ext: &str,
-) -> RegularResult<page_model::ImageReservation> {
+) -> RegularResult<PageImageReservation> {
     //
     let now = OffsetDateTime::now_utc();
 
-    let (chapter_id, prev_key, version): (String, Option<String>, i64) =
+    let (chapter_id, prev_key, raw_version): (String, Option<String>, i64) =
         diesel::update(t_page.filter(f_id.eq(id)))
             .set((
                 f_image_key.eq::<Option<&str>>(None),
@@ -149,10 +144,10 @@ async fn reserve_image(
             .await
             .map_err(diesel)?;
 
-    let version = crate::part_impl::shared::result::version(version)?;
+    let image_version = version(raw_version)?;
 
     let object_key =
-        PageComplex::gen_image_key(&chapter_id, id, version, file_ext);
+        PageComplex::gen_image_key(&chapter_id, id, image_version, file_ext);
 
     let aspect = PageAspect::new(now).image_key(Some(&object_key));
 
@@ -162,10 +157,10 @@ async fn reserve_image(
         .await
         .map_err(diesel)?;
 
-    Ok(page_model::ImageReservation {
+    Ok(PageImageReservation {
         object_key,
         prev_object_key: prev_key,
-        image_version: version,
+        image_version,
     })
 }
 
@@ -199,7 +194,7 @@ async fn mark_image_uploaded(
 async fn set_unit_counters(
     conn: &mut RdbConn,
     id: &str,
-    counters: unit_model::Counters,
+    counters: UnitCounters,
 ) -> RegularResult<()> {
     //
     let now = OffsetDateTime::now_utc();
@@ -246,173 +241,5 @@ async fn delete_by_chapter_id(
     Ok(())
 }
 
-#[async_trait]
-impl<'a> Execute<GetInfoById<'a>> for RdbRepo {
-    type Error = RegularError;
-
-    async fn execute(
-        &self,
-        step: &GetInfoById<'a>,
-    ) -> RegularResult<page_model::Info> {
-        submit_query!(self.core, get_info_by_id, step.id)
-    }
-}
-
-#[async_trait]
-impl<'a> Execute<ListInfosByChapterId<'a>> for RdbRepo {
-    type Error = RegularError;
-
-    async fn execute(
-        &self,
-        step: &ListInfosByChapterId<'a>,
-    ) -> RegularResult<Vec<page_model::Info>> {
-        submit_query!(
-            self.core,
-            list_infos_by_chapter_id,
-            step.chapter_id,
-            step.offset,
-            step.limit
-        )
-    }
-}
-
-#[async_trait]
-impl<'a> Execute<ListAllInfosByChapterId<'a>> for RdbRepo {
-    type Error = RegularError;
-
-    async fn execute(
-        &self,
-        step: &ListAllInfosByChapterId<'a>,
-    ) -> RegularResult<Vec<page_model::Info>> {
-        submit_query!(self.core, list_all_infos_by_chapter_id, step.chapter_id)
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<GetInfoById<'a>, RdbContext> for RdbRepoTransactional {
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut RdbContext,
-        step: &GetInfoById<'a>,
-    ) -> RegularResult<page_model::Info> {
-        get_info_by_id(context.conn(), step.id).await
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<GetInfoExcluded<'a>, RdbContext> for RdbRepoTransactional {
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut RdbContext,
-        step: &GetInfoExcluded<'a>,
-    ) -> RegularResult<page_model::Info> {
-        get_info_excluded(context.conn(), step.id).await
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<ListInfosByChapterId<'a>, RdbContext>
-    for RdbRepoTransactional
-{
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut RdbContext,
-        step: &ListInfosByChapterId<'a>,
-    ) -> RegularResult<Vec<page_model::Info>> {
-        list_infos_by_chapter_id(
-            context.conn(),
-            step.chapter_id,
-            step.offset,
-            step.limit,
-        )
-        .await
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<ListAllInfosByChapterId<'a>, RdbContext>
-    for RdbRepoTransactional
-{
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut RdbContext,
-        step: &ListAllInfosByChapterId<'a>,
-    ) -> RegularResult<Vec<page_model::Info>> {
-        list_all_infos_by_chapter_id(context.conn(), step.chapter_id).await
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<CreateBatch<'a>, RdbContext> for RdbRepoTransactional {
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut RdbContext,
-        step: &CreateBatch<'a>,
-    ) -> RegularResult<Vec<page_model::Info>> {
-        create_batch(context.conn(), step.forms).await
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<ReserveImage<'a>, RdbContext> for RdbRepoTransactional {
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut RdbContext,
-        step: &ReserveImage<'a>,
-    ) -> RegularResult<page_model::ImageReservation> {
-        reserve_image(context.conn(), step.id, step.file_ext).await
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<MarkImageUploaded<'a>, RdbContext> for RdbRepoTransactional {
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut RdbContext,
-        step: &MarkImageUploaded<'a>,
-    ) -> RegularResult<()> {
-        mark_image_uploaded(context.conn(), step.id, step.image_version).await
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<SetUnitCounters<'a>, RdbContext> for RdbRepoTransactional {
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut RdbContext,
-        step: &SetUnitCounters<'a>,
-    ) -> RegularResult<()> {
-        set_unit_counters(context.conn(), step.id, step.counters).await
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<DeleteByChapterId<'a>, RdbContext> for RdbRepoTransactional {
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut RdbContext,
-        step: &DeleteByChapterId<'a>,
-    ) -> RegularResult<()> {
-        delete_by_chapter_id(context.conn(), step.chapter_id).await
-    }
-}
 #[cfg(all(test, feature = "repo"))]
 mod tests;

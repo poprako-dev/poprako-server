@@ -10,34 +10,43 @@
 
 use super::*;
 
-use crate::model::{
-    assignment_invitation_model, assignment_model, chapter_model, comic_model,
-    member_model, team_model, user_model, workset_model,
-};
+use crate::data::assignment_invitation::CreateAssignmentInvitationParams;
+use crate::data::assignment_invitation::JoinAssignmentInvitationParams;
+use crate::data::assignment_invitation::ListAssignmentInvitationInfosParams;
+use crate::model::assignment::AssignmentInfo;
+use crate::model::assignment_invitation::AssignmentInvitationInfo;
+use crate::model::chapter::ChapterInfo;
+use crate::model::comic::ComicInfo;
+use crate::model::member::MemberInfo;
+use crate::model::team::TeamInfo;
+use crate::model::user::UserCredential;
+use crate::model::user::UserInfo;
+use crate::model::user::UserToken;
+use crate::model::workset::WorksetInfo;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::{assert_expected_variant, now};
 use crate::value::chapter::StageMask;
 use crate::value::role::{RoleField, RoleMask};
 
-fn token(user_id: &str) -> user_model::Token {
-    user_model::Token {
+fn token(user_id: &str) -> UserToken {
+    UserToken {
         user_id: user_id.into(),
     }
 }
 
-fn credential(user_id: &str) -> user_model::Credential {
-    user_model::Credential {
+fn credential(user_id: &str) -> UserCredential {
+    UserCredential {
         user_id: user_id.into(),
         password_hash: "hash".into(),
     }
 }
 
-fn user(id: &str, qid: &str, nickname: &str) -> user_model::Info {
+fn user(id: &str, qid: &str, nickname: &str) -> UserInfo {
     //
     let time = now();
 
-    user_model::Info {
+    UserInfo {
         id: id.into(),
         qid: qid.into(),
         nickname: nickname.into(),
@@ -51,11 +60,11 @@ fn user(id: &str, qid: &str, nickname: &str) -> user_model::Info {
     }
 }
 
-fn team(id: &str) -> team_model::Info {
+fn team(id: &str) -> TeamInfo {
     //
     let time = now();
 
-    team_model::Info {
+    TeamInfo {
         id: id.into(),
         name: id.into(),
         description: "description".into(),
@@ -68,11 +77,11 @@ fn team(id: &str) -> team_model::Info {
     }
 }
 
-fn workset(id: &str, team_id: &str) -> workset_model::Info {
+fn workset(id: &str, team_id: &str) -> WorksetInfo {
     //
     let time = now();
 
-    workset_model::Info {
+    WorksetInfo {
         id: id.into(),
         team_id: team_id.into(),
         index: 0,
@@ -85,11 +94,11 @@ fn workset(id: &str, team_id: &str) -> workset_model::Info {
     }
 }
 
-fn comic(id: &str, workset_id: &str) -> comic_model::Info {
+fn comic(id: &str, workset_id: &str) -> ComicInfo {
     //
     let time = now();
 
-    comic_model::Info {
+    ComicInfo {
         id: id.into(),
         workset_id: workset_id.into(),
         index: 0,
@@ -111,11 +120,11 @@ fn comic(id: &str, workset_id: &str) -> comic_model::Info {
     }
 }
 
-fn chapter(id: &str, comic_id: &str) -> chapter_model::Info {
+fn chapter(id: &str, comic_id: &str) -> ChapterInfo {
     //
     let time = now();
 
-    chapter_model::Info {
+    ChapterInfo {
         id: id.into(),
         comic_id: comic_id.into(),
         comic: None,
@@ -134,8 +143,8 @@ fn chapter(id: &str, comic_id: &str) -> chapter_model::Info {
     }
 }
 
-fn member(user_id: &str, role_mask: RoleMask) -> member_model::Info {
-    member_model::Info {
+fn member(user_id: &str, role_mask: RoleMask) -> MemberInfo {
+    MemberInfo {
         id: format!("member-{}", user_id),
         user_id: user_id.into(),
         user_nickname: user_id.into(),
@@ -151,11 +160,11 @@ fn assignment(
     chapter_id: &str,
     user_id: &str,
     role_mask: RoleMask,
-) -> assignment_model::Info {
+) -> AssignmentInfo {
     //
     let time = now();
 
-    assignment_model::Info {
+    AssignmentInfo {
         id: format!("assignment-{}-{}", chapter_id, user_id),
         chapter_id: chapter_id.into(),
         user_id: user_id.into(),
@@ -171,11 +180,11 @@ fn invitation(
     id: &str,
     invitee_qid: &str,
     role_mask: RoleMask,
-) -> assignment_invitation_model::Info {
+) -> AssignmentInvitationInfo {
     //
     let time = now();
 
-    assignment_invitation_model::Info {
+    AssignmentInvitationInfo {
         id: id.into(),
         chapter_id: "chapter-1".into(),
         inviter_id: "admin-user".into(),
@@ -192,8 +201,8 @@ fn role(role_field: RoleField) -> RoleMask {
     RoleMask::from(role_field)
 }
 
-fn list_data() -> assignment_invitation_data::ListInfosData {
-    assignment_invitation_data::ListInfosData {
+fn list_data() -> ListAssignmentInvitationInfosParams {
+    ListAssignmentInvitationInfosParams {
         chapter_id: "chapter-1".into(),
         pending: Some(true),
         offset: 0,
@@ -201,16 +210,16 @@ fn list_data() -> assignment_invitation_data::ListInfosData {
     }
 }
 
-fn create_data(invitee_qid: &str) -> assignment_invitation_data::CreateData {
-    assignment_invitation_data::CreateData {
+fn create_data(invitee_qid: &str) -> CreateAssignmentInvitationParams {
+    CreateAssignmentInvitationParams {
         chapter_id: "chapter-1".into(),
         invitee_qid: invitee_qid.into(),
         roles: role(RoleField::TRANSLATOR),
     }
 }
 
-fn join_data() -> assignment_invitation_data::JoinData {
-    assignment_invitation_data::JoinData {
+fn join_data() -> JoinAssignmentInvitationParams {
+    JoinAssignmentInvitationParams {
         code: "AINV123".into(),
     }
 }

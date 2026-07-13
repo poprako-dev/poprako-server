@@ -1,28 +1,44 @@
 //! Unit use cases — list and save page unit sequences.
 
-use poprako_transactional::advance::Advance;
-use poprako_transactional::drive::Drive;
+use poprako_orchestra::{Nucl, run_proxy, step_proxy};
+
 use poprako_util::i18n::trl;
 use poprako_util::page::Page;
 
 use crate::complex::unit::{UnitComplex, UnitPermComplex};
-use crate::data::unit_data;
-use crate::model::{unit_model, user_model};
-use crate::part::repo::assignment::{
-    AssignmentRepo, AssignmentRepoTransactional,
+use crate::data::unit::ListPageUnitInfosParams;
+use crate::data::unit::ListPageUnitInfosPayload;
+use crate::data::unit::SavePageUnitsParams;
+use crate::data::unit::SavePageUnitsPayload;
+use crate::data::unit::UnitInfoVal;
+use crate::model::unit::UnitApplyAck;
+use crate::model::unit::UnitCounterDelta;
+use crate::model::unit::UnitCounters;
+use crate::model::unit::UnitIdMapper;
+use crate::model::unit::UnitOper;
+use crate::model::user::UserToken;
+use crate::part::repo::assignment::AssignmentRepo;
+use crate::part::repo::chapter::ChapterRepo;
+use crate::part::repo::comic::ComicRepo;
+use crate::part::repo::member::MemberRepo;
+use crate::part::repo::oper::assignment::FindAssignmentInfo;
+use crate::part::repo::oper::chapter::{
+    AdjustChapterUnitCounters, GetChapterInfo,
 };
-use crate::part::repo::chapter::{ChapterRepo, ChapterRepoTransactional};
-use crate::part::repo::comic::{ComicRepo, ComicRepoTransactional};
-use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
-use crate::part::repo::page::{PageRepo, PageRepoTransactional};
-use crate::part::repo::step::chapter::ChapterStep;
-use crate::part::repo::step::comic::ComicStep;
-use crate::part::repo::step::page::PageStep;
-use crate::part::repo::step::unit::UnitStep;
-use crate::part::repo::unit::{UnitRepo, UnitRepoTransactional};
-use crate::part::repo::workset::{WorksetRepo, WorksetRepoTransactional};
+use crate::part::repo::oper::comic::{GetComicInfo, TouchComicLastActive};
+use crate::part::repo::oper::member::FindMemberInfo;
+use crate::part::repo::oper::page::{
+    GetPageInfo, GetPageInfoExcluded, SetPageUnitCounters,
+};
+use crate::part::repo::oper::unit::{
+    CountUnits, CreateUnit, DeleteUnit, ListUnitIndexes, ListUnitInfos,
+    SaveUnit, UpdateUnitIndexes,
+};
+use crate::part::repo::oper::workset::GetWorksetInfo;
+use crate::part::repo::page::PageRepo;
+use crate::part::repo::unit::UnitRepo;
+use crate::part::repo::workset::WorksetRepo;
 use crate::result::{ExpectedVariant, RegularError, RegularResult};
-use crate::util::DeriveTransactional;
 
 #[cfg(test)]
 mod tests;
@@ -30,9 +46,9 @@ mod tests;
 /// Lists units under one page.
 pub async fn list_infos<C, R>(
     repo: &R,
-    token: user_model::Token,
-    data: unit_data::ListPageInfosData,
-) -> RegularResult<unit_data::ListPageInfosVal>
+    token: UserToken,
+    params: ListPageUnitInfosParams,
+) -> RegularResult<ListPageUnitInfosPayload>
 where
     R: PageRepo<C>
         + UnitRepo<C>
@@ -42,42 +58,39 @@ where
         + MemberRepo<C>
         + AssignmentRepo<C>
         + Sync,
-    <R as DeriveTransactional>::Transactional: PageRepoTransactional<C>
-        + UnitRepoTransactional<C>
-        + ChapterRepoTransactional<C>
-        + ComicRepoTransactional<C>
-        + WorksetRepoTransactional<C>
-        + MemberRepoTransactional<C>
-        + AssignmentRepoTransactional<C>,
 {
     let page_info = repo
-        .execute(&PageStep::get_info_by_id(&data.page_id))
+        .run(&GetPageInfo {
+            id: &params.page_id,
+        })
         .await?;
 
-    use crate::part::shared::proxy::AsProxyNonTransactional as _;
-
     UnitPermComplex::can_user_list_infos(
-        &mut repo.as_proxy(),
+        &mut run_proxy! {
+            repo =>
+                for<'a, 'b> GetChapterInfo<'a, 'b>,
+                for<'a, 'b> GetComicInfo<'a, 'b>,
+                for<'a> GetWorksetInfo<'a>,
+                for<'a> FindMemberInfo<'a>,
+                for<'a, 'b> FindAssignmentInfo<'a, 'b>;
+        },
         &token.user_id,
         &page_info.chapter_id,
     )
     .await?;
 
-    let unit_infos = repo
-        .execute(&UnitStep::list_infos_by_page_id(
-            &page_info.id,
-            Page {
-                offset: data.offset,
-                limit: data.limit,
-            },
-        ))
-        .await?;
+    let list_unit_infos = ListUnitInfos::Page {
+        page_id: &page_info.id,
+        page: Page {
+            offset: params.offset,
+            limit: params.limit,
+        },
+    };
 
-    Ok(unit_data::ListPageInfosVal {
-        unit_infos: unit_infos
-            .into_iter()
-            .map(unit_data::InfoVal::from)
-            .collect(),
+    let unit_infos = repo.run(&list_unit_infos).await?;
+
+    Ok(ListPageUnitInfosPayload {
+        unit_infos: unit_infos.into_iter().map(UnitInfoVal::from).collect(),
         total_unit_count: page_info.total_unit_count,
         translated_unit_count: page_info.translated_unit_count,
         proofread_unit_count: page_info.proofread_unit_count,
@@ -85,15 +98,14 @@ where
 }
 
 /// Saves unit opers under one page.
-pub async fn save_infos<D, C, R>(
-    drive: &D,
+pub async fn save_infos<N, C, R>(
+    nucl: &N,
     repo: &R,
-    token: user_model::Token,
-    data: unit_data::SavePageData,
-) -> RegularResult<unit_data::SavePageVal>
+    token: UserToken,
+    params: SavePageUnitsParams,
+) -> RegularResult<SavePageUnitsPayload>
 where
-    D: Drive<C>,
-    D::Error: Into<RegularError>,
+    N: Nucl<Context = C, Error = RegularError>,
     C: Send,
     R: PageRepo<C>
         + UnitRepo<C>
@@ -102,15 +114,8 @@ where
         + AssignmentRepo<C>
         + Send
         + Sync,
-    <R as DeriveTransactional>::Transactional: PageRepoTransactional<C>
-        + UnitRepoTransactional<C>
-        + ChapterRepoTransactional<C>
-        + ComicRepoTransactional<C>
-        + AssignmentRepoTransactional<C>
-        + Send
-        + Sync,
 {
-    let unit_data::SavePageData { page_id, diff } = data;
+    let SavePageUnitsParams { page_id, diff } = params;
 
     if diff.page_id != page_id {
         return Err(unit_invalid_oper_error());
@@ -123,41 +128,40 @@ where
         local_id_maps,
     } = UnitApplyParts::from(UnitComplex::prepare_diff(unit_diff)?);
 
-    let save_units = drive
-        .with_context(
-            async move |context| -> RegularResult<unit_data::SavePageVal> {
-                //
-                let repo = repo.derive_transactional().await;
-
+    let save_units = nucl
+        .coord(
+            async move |context| -> RegularResult<SavePageUnitsPayload> {
                 let page_info = repo
-                    .advance(context, &PageStep::get_info_excluded(&page_id))
+                    .step(context, &GetPageInfoExcluded { id: &page_id })
                     .await?;
 
-                {
-                    use crate::part::shared::proxy::AsProxyTransactional as _;
-
-                    UnitPermComplex::can_user_save_infos(
-                        &mut repo.as_proxy(context),
-                        &token.user_id,
-                        &page_info.chapter_id,
-                    )
-                    .await?;
-                }
+                UnitPermComplex::can_user_save_infos(
+                    &mut step_proxy! {
+                        context;
+                        repo =>
+                            for<'a, 'b> FindAssignmentInfo<'a, 'b>;
+                    },
+                    &token.user_id,
+                    &page_info.chapter_id,
+                )
+                .await?;
 
                 let chapter_info = repo
-                    .advance(
+                    .step(
                         context,
-                        &ChapterStep::get_info_by_id(
-                            &page_info.chapter_id,
-                            &[],
-                        ),
+                        &GetChapterInfo {
+                            id: &page_info.chapter_id,
+                            incls: &[],
+                        },
                     )
                     .await?;
 
                 let current_indexes = repo
-                    .advance(
+                    .step(
                         context,
-                        &UnitStep::list_indexes_by_page_id(&page_info.id),
+                        &ListUnitIndexes {
+                            page_id: &page_info.id,
+                        },
                     )
                     .await?;
 
@@ -176,38 +180,37 @@ where
 
                 for oper in &opers {
                     match oper {
-                        //
-                        unit_model::Oper::Create { id, payload, .. } => {
-                            repo.advance(
+                        UnitOper::Create { id, payload, .. } => {
+                            repo.step(
                                 context,
-                                &UnitStep::create_info(
-                                    &page_info.id,
+                                &CreateUnit {
+                                    page_id: &page_info.id,
                                     id,
                                     payload,
-                                ),
+                                },
                             )
                             .await?;
                         }
 
-                        unit_model::Oper::Save { id, payload, .. } => {
-                            repo.advance(
+                        UnitOper::Save { id, payload, .. } => {
+                            repo.step(
                                 context,
-                                &UnitStep::save_info(
-                                    &page_info.id,
+                                &SaveUnit {
+                                    page_id: &page_info.id,
                                     id,
                                     payload,
-                                ),
+                                },
                             )
                             .await?;
                         }
 
-                        unit_model::Oper::Delete { id } => {
-                            repo.advance(
+                        UnitOper::Delete { id } => {
+                            repo.step(
                                 context,
-                                &UnitStep::delete_by_id_in_page(
-                                    &page_info.id,
+                                &DeleteUnit {
+                                    page_id: &page_info.id,
                                     id,
-                                ),
+                                },
                             )
                             .await?;
                         }
@@ -223,30 +226,35 @@ where
                 );
 
                 if !index_updates.is_empty() {
-                    repo.advance(
+                    repo.step(
                         context,
-                        &UnitStep::update_indexes_by_page_id(
-                            &page_info.id,
-                            &index_updates,
-                        ),
+                        &UpdateUnitIndexes {
+                            page_id: &page_info.id,
+                            updates: &index_updates,
+                        },
                     )
                     .await?;
                 }
 
                 let counters = repo
-                    .advance(
+                    .step(
                         context,
-                        &UnitStep::count_by_page_id(&page_info.id),
+                        &CountUnits {
+                            page_id: &page_info.id,
+                        },
                     )
                     .await?;
 
-                repo.advance(
+                repo.step(
                     context,
-                    &PageStep::set_unit_counters(&page_info.id, counters),
+                    &SetPageUnitCounters {
+                        id: &page_info.id,
+                        counters,
+                    },
                 )
                 .await?;
 
-                let old_counters = unit_model::Counters {
+                let old_counters = UnitCounters {
                     total_unit_count: page_info.total_unit_count,
                     translated_unit_count: page_info.translated_unit_count,
                     proofread_unit_count: page_info.proofread_unit_count,
@@ -254,22 +262,24 @@ where
 
                 let delta = counter_delta(old_counters, counters);
 
-                repo.advance(
+                repo.step(
                     context,
-                    &ChapterStep::adjust_unit_counters(
-                        &page_info.chapter_id,
+                    &AdjustChapterUnitCounters {
+                        id: &page_info.chapter_id,
                         delta,
-                    ),
+                    },
                 )
                 .await?;
 
-                repo.advance(
+                repo.step(
                     context,
-                    &ComicStep::touch_last_active(&chapter_info.comic_id),
+                    &TouchComicLastActive {
+                        id: &chapter_info.comic_id,
+                    },
                 )
                 .await?;
 
-                Ok(unit_data::SavePageVal::from_parts(local_id_maps, counters))
+                Ok(SavePageUnitsPayload::from_parts(local_id_maps, counters))
             },
         )
         .await?;
@@ -279,12 +289,12 @@ where
 
 /// Carries the validated opers and local ID maps produced by applying a diff.
 struct UnitApplyParts {
-    opers: Vec<unit_model::Oper>,
-    local_id_maps: Vec<unit_model::IdMapper>,
+    opers: Vec<UnitOper>,
+    local_id_maps: Vec<UnitIdMapper>,
 }
 
-impl From<unit_model::ApplyAck> for UnitApplyParts {
-    fn from(receipt: unit_model::ApplyAck) -> Self {
+impl From<UnitApplyAck> for UnitApplyParts {
+    fn from(receipt: UnitApplyAck) -> Self {
         Self {
             opers: receipt.opers,
             local_id_maps: receipt.local_id_map,
@@ -294,10 +304,10 @@ impl From<unit_model::ApplyAck> for UnitApplyParts {
 
 /// Computes the per-counter delta between old and new unit counters.
 fn counter_delta(
-    old_counters: unit_model::Counters,
-    new_counters: unit_model::Counters,
-) -> unit_model::CounterDelta {
-    unit_model::CounterDelta {
+    old_counters: UnitCounters,
+    new_counters: UnitCounters,
+) -> UnitCounterDelta {
+    UnitCounterDelta {
         total_unit_count: new_counters.total_unit_count
             - old_counters.total_unit_count,
         translated_unit_count: new_counters.translated_unit_count

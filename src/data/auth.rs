@@ -8,7 +8,7 @@ use utoipa::ToSchema;
 /// Input parameters for user registration.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct RegisterData {
+pub struct RegisterAuthParams {
     pub qid: String,
     pub nickname: String,
 
@@ -20,7 +20,7 @@ pub struct RegisterData {
 /// Return value from a successful registration.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct RegisterVal {
+pub struct RegisterAuthPayload {
     pub user_id: String,
     pub token: String,
 }
@@ -28,7 +28,7 @@ pub struct RegisterVal {
 /// Input parameters for user login.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct LoginData {
+pub struct LoginAuthParams {
     pub qid: String,
     pub password: String,
 }
@@ -36,7 +36,7 @@ pub struct LoginData {
 /// Return value from a successful login.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct LoginVal {
+pub struct LoginAuthPayload {
     pub user_id: String,
     pub token: String,
 }

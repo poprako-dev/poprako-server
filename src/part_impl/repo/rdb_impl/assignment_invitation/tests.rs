@@ -1,18 +1,19 @@
-// assignment_invitation_roundtrip_reads_test_database_url(AssignmentInvitationStep)(positive): assignment invitation repo creates, lists, and marks invitations used in the local test database.
+// assignment_invitation_roundtrip_reads_test_database_url(CreateAssignmentInvitation, ListAssignmentInvitationInfos, MarkAssignmentInvitationUsed)(positive): assignment invitation repo creates, lists, and marks invitations used in the local test database.
 
 use super::*;
 
-use poprako_transactional::advance::Advance;
-use poprako_transactional::drive::Drive;
+use poprako_orchestra::{Nucl as _, Run as _, Step as _};
+
 use poprako_util::page::Page;
 
-use crate::model::assignment_invitation_model;
-use crate::part::repo::step::assignment_invitation::AssignmentInvitationStep;
-use crate::part::shared::execute::Execute;
+use crate::model::assignment_invitation::AssignmentInvitationEntry;
+use crate::part::repo::oper::assignment_invitation::{
+    CreateAssignmentInvitation, ListAssignmentInvitationInfos,
+    MarkAssignmentInvitationUsed,
+};
 use crate::part_impl::drive::rdb_impl::RdbDrive;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
 use crate::result::RegularError;
-use crate::util::DeriveTransactional as _;
 use crate::value::role::{RoleField, RoleMask};
 
 const PREFIX: &str = "rdb-test-assignment-invitation-domain-";
@@ -30,11 +31,9 @@ async fn assignment_invitation_roundtrip_reads_test_database_url() {
 
     let drive = RdbDrive::new(shared.clone());
 
-    let transactional_repo = repo.derive_transactional().await;
-
-    let assignment_invitation_form = assignment_invitation_model::Form {
+    let assignment_invitation_entry = AssignmentInvitationEntry {
         id: format!("{}assignment-invitation", PREFIX),
-        chapter_id: chapter_fixture.chapter_form.id.clone(),
+        chapter_id: chapter_fixture.chapter_entry.id.clone(),
         inviter_id: chapter_fixture.creator_form.id.clone(),
         invitee_qid: format!("{}invitee", PREFIX),
         code: format!("{}code", PREFIX),
@@ -42,21 +41,20 @@ async fn assignment_invitation_roundtrip_reads_test_database_url() {
     };
 
     drive
-        .with_context(async |context| {
-            //
-            Advance::advance(
-                &transactional_repo,
+        .coord(async |context| {
+            repo.step(
                 context,
-                &AssignmentInvitationStep::create(&assignment_invitation_form),
+                &CreateAssignmentInvitation {
+                    entry: &assignment_invitation_entry,
+                },
             )
             .await?;
 
-            Advance::advance(
-                &transactional_repo,
+            repo.step(
                 context,
-                &AssignmentInvitationStep::mark_pending_as_used(
-                    &assignment_invitation_form.id,
-                ),
+                &MarkAssignmentInvitationUsed {
+                    id: &assignment_invitation_entry.id,
+                },
             )
             .await?;
 
@@ -71,17 +69,15 @@ async fn assignment_invitation_roundtrip_reads_test_database_url() {
         limit: 10,
     };
 
-    let assignment_invitation_infos = Execute::execute(
-        &repo,
-        &AssignmentInvitationStep::list_infos(
-            &chapter_fixture.chapter_form.id,
-            Some(false),
+    let assignment_invitation_infos = repo
+        .run(&ListAssignmentInvitationInfos {
+            chapter_id: &chapter_fixture.chapter_entry.id,
+            pending: Some(false),
             page,
-        ),
-    )
-    .await
-    .ok()
-    .unwrap();
+        })
+        .await
+        .ok()
+        .unwrap();
 
     assert_eq!(assignment_invitation_infos.len(), 1);
 

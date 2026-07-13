@@ -16,8 +16,9 @@ use super::*;
 
 use time::{Duration, OffsetDateTime};
 
-use crate::data::system_mail_data;
-use crate::model::{system_mail_model, user_model};
+use crate::data::system_mail::ListSystemMailInfosParams;
+use crate::model::system_mail::SystemMailInfo;
+use crate::model::user::UserToken;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;
@@ -28,8 +29,8 @@ fn mail(
     receiver_id: &str,
     read: bool,
     created_at: OffsetDateTime,
-) -> system_mail_model::Info {
-    system_mail_model::Info {
+) -> SystemMailInfo {
+    SystemMailInfo {
         id: id.into(),
         receiver_id: receiver_id.into(),
         read,
@@ -40,15 +41,15 @@ fn mail(
 }
 
 /// Builds a [`UserToken`] fixture.
-fn token(user_id: &str) -> user_model::Token {
-    user_model::Token {
+fn token(user_id: &str) -> UserToken {
+    UserToken {
         user_id: user_id.into(),
     }
 }
 
 /// Builds a [`ListSystemMailData`] for listing unread mails.
-fn list_unread_data(offset: u32, limit: u32) -> system_mail_data::ListData {
-    system_mail_data::ListData {
+fn list_unread_params(offset: u32, limit: u32) -> ListSystemMailInfosParams {
+    ListSystemMailInfosParams {
         read: Some(false),
         offset,
         limit,
@@ -68,7 +69,7 @@ async fn list_returns_current_user_unread_mails() {
 
     mock.seed_system_mail(mail("sys_mail-3", "user-2", false, time)); // other user
 
-    let mails = list_infos(&mock, token("user-1"), list_unread_data(0, 10))
+    let mails = list_infos(&mock, token("user-1"), list_unread_params(0, 10))
         .await
         .unwrap();
 
@@ -94,7 +95,7 @@ async fn list_applies_pagination_after_desc_sort() {
 
     mock.seed_system_mail(mail("sys_mail-3", "user-1", false, t2));
 
-    let mails = list_infos(&mock, token("user-1"), list_unread_data(0, 2))
+    let mails = list_infos(&mock, token("user-1"), list_unread_params(0, 2))
         .await
         .unwrap();
 
@@ -115,7 +116,7 @@ async fn list_returns_empty_for_missing_page() {
 
     mock.seed_system_mail(mail("sys_mail-1", "user-1", false, time));
 
-    let mails = list_infos(&mock, token("user-1"), list_unread_data(10, 10))
+    let mails = list_infos(&mock, token("user-1"), list_unread_params(10, 10))
         .await
         .unwrap();
 

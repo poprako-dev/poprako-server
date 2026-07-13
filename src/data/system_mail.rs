@@ -9,7 +9,7 @@ use utoipa::{IntoParams, ToSchema};
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
 #[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
-pub struct ListData {
+pub struct ListSystemMailInfosParams {
     pub read: Option<bool>,
 
     pub offset: u32,
@@ -22,7 +22,7 @@ pub struct ListData {
 /// and omits the internal `receiver_id` field.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct Val {
+pub struct SystemMailInfoVal {
     pub id: String,
 
     pub title: String,
@@ -36,6 +36,6 @@ pub struct Val {
 /// Input parameters for marking a batch of system mails as read.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct MarkReadData {
+pub struct MarkSystemMailReadParams {
     pub ids: Vec<String>,
 }

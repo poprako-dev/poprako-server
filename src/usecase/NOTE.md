@@ -30,4 +30,4 @@ when that detail belongs to the persistence operation.
 
 ## Use of `data` structs must be qualified with `*_data::`
 
-Use `user_data::InfoVal` instead of raw `InfoVal`, for example.
+Use `user_data::UserInfoVal` instead of raw `UserInfoVal`, for example.

@@ -11,11 +11,14 @@
 
 use super::*;
 
-use crate::model::unit_model;
+use crate::model::unit::UnitContent;
+use crate::model::unit::UnitDiff;
+use crate::model::unit::UnitIndex;
+use crate::model::unit::UnitOper;
 use crate::result::{ExpectedVariant, RegularError};
 
-fn payload(text: &str, proofread: bool) -> unit_model::Payload {
-    unit_model::Payload {
+fn payload(text: &str, proofread: bool) -> UnitContent {
+    UnitContent {
         is_bubble: true,
         is_proofread: proofread,
         x_coord: 1.0,
@@ -27,8 +30,8 @@ fn payload(text: &str, proofread: bool) -> unit_model::Payload {
     }
 }
 
-fn diff(opers: Vec<unit_model::Oper>) -> unit_model::Diff {
-    unit_model::Diff {
+fn diff(opers: Vec<UnitOper>) -> UnitDiff {
+    UnitDiff {
         page_id: "page-1".into(),
         opers,
     }
@@ -51,20 +54,20 @@ fn assert_args_error(error: RegularError) {
 fn prepare_diff_maps_create_ids_and_keeps_oper_order() {
     //
     let unit_diff = diff(vec![
-        unit_model::Oper::Save {
+        UnitOper::Save {
             id: "unit-a".into(),
             payload: payload("alpha", false),
             before_id: None,
         },
-        unit_model::Oper::Create {
+        UnitOper::Create {
             id: "local-x".into(),
             payload: payload("inserted", true),
             before_id: Some("unit-a".into()),
         },
-        unit_model::Oper::Delete {
+        UnitOper::Delete {
             id: "unit-b".into(),
         },
-        unit_model::Oper::Save {
+        UnitOper::Save {
             id: "unit-a".into(),
             payload: payload("alpha-later", false),
             before_id: None,
@@ -88,11 +91,11 @@ fn prepare_diff_maps_create_ids_and_keeps_oper_order() {
 
     match &receipt.opers[1] {
         //
-        unit_model::Oper::Create { id, .. } => {
+        UnitOper::Create { id, .. } => {
             assert_eq!(id, &receipt.local_id_map[0].unit_id);
         }
 
-        unit_model::Oper::Save { .. } | unit_model::Oper::Delete { .. } => {
+        UnitOper::Save { .. } | UnitOper::Delete { .. } => {
             panic!("expected create oper");
         }
     }
@@ -102,7 +105,7 @@ fn prepare_diff_maps_create_ids_and_keeps_oper_order() {
 fn prepare_diff_rejects_invalid_compact_diff() {
     //
     let empty_id_error =
-        UnitComplex::prepare_diff(diff(vec![unit_model::Oper::Save {
+        UnitComplex::prepare_diff(diff(vec![UnitOper::Save {
             id: String::new(),
             payload: payload("alpha", false),
             before_id: None,
@@ -113,12 +116,12 @@ fn prepare_diff_rejects_invalid_compact_diff() {
     assert_args_error(empty_id_error);
 
     let duplicate_local_id_error = UnitComplex::prepare_diff(diff(vec![
-        unit_model::Oper::Create {
+        UnitOper::Create {
             id: "local-x".into(),
             payload: payload("one", false),
             before_id: None,
         },
-        unit_model::Oper::Create {
+        UnitOper::Create {
             id: "local-x".into(),
             payload: payload("two", false),
             before_id: None,
@@ -133,18 +136,17 @@ fn prepare_diff_rejects_invalid_compact_diff() {
 #[test]
 fn prepare_diff_allows_empty_text_without_editor_id() {
     //
-    let unit_payload = unit_model::Payload {
+    let unit_payload = UnitContent {
         translated_text: Some(String::new()),
         last_translator_id: None,
         ..payload("seed", false)
     };
 
-    let result =
-        UnitComplex::prepare_diff(diff(vec![unit_model::Oper::Create {
-            id: "local-x".into(),
-            payload: unit_payload,
-            before_id: None,
-        }]));
+    let result = UnitComplex::prepare_diff(diff(vec![UnitOper::Create {
+        id: "local-x".into(),
+        payload: unit_payload,
+        before_id: None,
+    }]));
 
     assert!(result.is_ok());
 }
@@ -152,13 +154,13 @@ fn prepare_diff_allows_empty_text_without_editor_id() {
 #[test]
 fn prepare_diff_requires_editor_ids_for_non_empty_text() {
     //
-    let translated_payload = unit_model::Payload {
+    let translated_payload = UnitContent {
         last_translator_id: None,
         ..payload("translated", false)
     };
 
     let translated_error =
-        UnitComplex::prepare_diff(diff(vec![unit_model::Oper::Create {
+        UnitComplex::prepare_diff(diff(vec![UnitOper::Create {
             id: "local-x".into(),
             payload: translated_payload,
             before_id: None,
@@ -168,14 +170,14 @@ fn prepare_diff_requires_editor_ids_for_non_empty_text() {
 
     assert_args_error(translated_error);
 
-    let proofread_payload = unit_model::Payload {
+    let proofread_payload = UnitContent {
         proofread_text: Some("proofread".into()),
         last_proofreader_id: Some(String::new()),
         ..payload("translated", true)
     };
 
     let proofread_error =
-        UnitComplex::prepare_diff(diff(vec![unit_model::Oper::Save {
+        UnitComplex::prepare_diff(diff(vec![UnitOper::Save {
             id: "unit-a".into(),
             payload: proofread_payload,
             before_id: None,
@@ -190,10 +192,10 @@ fn prepare_diff_requires_editor_ids_for_non_empty_text() {
 fn prepare_diff_keeps_delete_and_later_save_for_ordered_replay() {
     //
     let receipt = match UnitComplex::prepare_diff(diff(vec![
-        unit_model::Oper::Delete {
+        UnitOper::Delete {
             id: "unit-a".into(),
         },
-        unit_model::Oper::Save {
+        UnitOper::Save {
             id: "unit-a".into(),
             payload: payload("alpha", false),
             before_id: None,
@@ -212,17 +214,17 @@ fn prepare_diff_keeps_delete_and_later_save_for_ordered_replay() {
 fn apply_opers_to_order_places_create_and_save_before_anchor_or_tail() {
     //
     let opers = vec![
-        unit_model::Oper::Create {
+        UnitOper::Create {
             id: "unit-x".into(),
             payload: payload("x", false),
             before_id: Some("unit-b".into()),
         },
-        unit_model::Oper::Save {
+        UnitOper::Save {
             id: "unit-a".into(),
             payload: payload("a", false),
             before_id: None,
         },
-        unit_model::Oper::Save {
+        UnitOper::Save {
             id: "unit-c".into(),
             payload: payload("c", false),
             before_id: Some("unit-missing".into()),
@@ -239,7 +241,7 @@ fn apply_opers_to_order_places_create_and_save_before_anchor_or_tail() {
 #[test]
 fn apply_opers_to_order_removes_deleted_unit_and_keeps_remaining_order() {
     //
-    let opers = vec![unit_model::Oper::Delete {
+    let opers = vec![UnitOper::Delete {
         id: "unit-b".into(),
     }];
 
@@ -253,7 +255,7 @@ fn apply_opers_to_order_removes_deleted_unit_and_keeps_remaining_order() {
 #[test]
 fn apply_opers_to_order_save_upsert_restores_missing_unit_at_tail() {
     //
-    let opers = vec![unit_model::Oper::Save {
+    let opers = vec![UnitOper::Save {
         id: "unit-z".into(),
         payload: payload("z", false),
         before_id: None,
@@ -270,23 +272,23 @@ fn apply_opers_to_order_save_upsert_restores_missing_unit_at_tail() {
 fn build_index_updates_compacts_server_order() {
     //
     let current_indexes = vec![
-        unit_model::Index {
+        UnitIndex {
             id: "unit-a".into(),
             index: 0,
         },
-        unit_model::Index {
+        UnitIndex {
             id: "unit-b".into(),
             index: 3,
         },
-        unit_model::Index {
+        UnitIndex {
             id: "unit-c".into(),
             index: 1,
         },
-        unit_model::Index {
+        UnitIndex {
             id: "unit-x".into(),
             index: 7,
         },
-        unit_model::Index {
+        UnitIndex {
             id: "unit-z".into(),
             index: 7,
         },
@@ -311,15 +313,15 @@ fn build_index_updates_compacts_server_order() {
 fn build_index_updates_skips_compact_server_order() {
     //
     let current_indexes = vec![
-        unit_model::Index {
+        UnitIndex {
             id: "unit-a".into(),
             index: 0,
         },
-        unit_model::Index {
+        UnitIndex {
             id: "unit-b".into(),
             index: 1,
         },
-        unit_model::Index {
+        UnitIndex {
             id: "unit-c".into(),
             index: 2,
         },

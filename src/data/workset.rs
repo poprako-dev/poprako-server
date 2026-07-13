@@ -8,9 +8,8 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "swagger-ui")]
 use utoipa::{IntoParams, ToSchema};
 
+use crate::model::workset::WorksetInfo;
 use poprako_util::time::ToUnixMilli;
-
-use crate::model::workset_model;
 
 /// Presentation-ready workset information.
 ///
@@ -19,7 +18,7 @@ use crate::model::workset_model;
 /// [`WorksetInfo`]: crate::model::workset::WorksetInfo
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct InfoVal {
+pub struct WorksetInfoVal {
     pub id: String,
     pub team_id: String,
 
@@ -36,8 +35,8 @@ pub struct InfoVal {
     pub updated_at: i64,
 }
 
-impl From<workset_model::Info> for InfoVal {
-    fn from(model: workset_model::Info) -> Self {
+impl From<WorksetInfo> for WorksetInfoVal {
+    fn from(model: WorksetInfo) -> Self {
         Self {
             id: model.id,
             team_id: model.team_id,
@@ -55,7 +54,7 @@ impl From<workset_model::Info> for InfoVal {
 /// Input parameters for creating a new workset inside a team.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct CreateData {
+pub struct CreateWorksetParams {
     pub team_id: String,
 
     pub name: String,
@@ -65,7 +64,7 @@ pub struct CreateData {
 /// Return value from a successful workset creation.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct CreateVal {
+pub struct CreateWorksetPayload {
     pub id: String,
 }
 
@@ -74,7 +73,7 @@ pub struct CreateVal {
 /// Cover and counter updates are handled internally by the repo layer.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct UpdateInfoData {
+pub struct UpdateWorksetInfoParams {
     pub id: String,
 
     pub name: String,
@@ -85,7 +84,7 @@ pub struct UpdateInfoData {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
 #[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
-pub struct ListInfosData {
+pub struct ListWorksetInfosParams {
     pub team_id: String,
 
     pub offset: u32,

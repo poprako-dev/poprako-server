@@ -1,25 +1,30 @@
 # Data struct naming
 
-Data structs must not repeat the name of their domain module. The public
-`*_data` module already supplies that qualification:
+Public data types must carry their domain in the type name. Their meaning must
+not depend on a `*_data::` path prefix:
 
 ```rust
-use crate::data::team_data;
+use crate::data::CreateTeamParams;
 
-fn create(data: team_data::CreateData) { /* ... */ }
+fn create(params: CreateTeamParams) { /* ... */ }
 ```
 
-In `src/data/team.rs`, write `CreateData` rather than `TeamCreateData`.
-Every data struct represents either an inbound request or an outbound value:
+In `src/data/team.rs`, write `CreateTeamParams`, not `CreateData`. Every public
+data type has one boundary role:
 
-- Request structs end in `Data`.
-- Response structs, including structs placed in a response's `val`, end in
-  `Val`.
+- Usecase and handler inputs end in `Params`.
+- Usecase return DTOs end in `Payload`.
+- `Val` is reserved for a serde representation converted from a model, such as
+  `TeamInfo -> TeamInfoVal`; it is not a generic response suffix.
+
+`Form` and the legacy `Data` suffix are forbidden. A persisted creation input
+belongs in the model layer as a domain-qualified `Entry`.
 
 Run the standalone checker from the repository root:
 
 ```bash
 uv run fmt/data-struct-naming/check.py
+uv run fmt/data-struct-naming/check.py --self-test
 ```
 
 The script contains its pinned Tree-sitter dependencies, reports violations

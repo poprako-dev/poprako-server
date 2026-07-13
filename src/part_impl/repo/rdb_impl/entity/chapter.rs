@@ -3,7 +3,8 @@
 use diesel::prelude::*;
 use time::OffsetDateTime;
 
-use crate::model::chapter_model;
+use crate::model::chapter::ChapterEntry;
+use crate::model::chapter::ChapterInfo;
 use crate::part_impl::repo::rdb_impl::schema::t_chapter;
 use crate::result::RegularError;
 use crate::value::chapter::{Stage, StageMask, StagePhase};
@@ -44,7 +45,7 @@ pub struct ChapterRow {
 /// Insertable struct for creating a new record in the `t_chapter` table.
 #[derive(Insertable)]
 #[diesel(table_name = t_chapter)]
-pub struct ChapterEntry<'a> {
+pub struct ChapterRowEntry<'a> {
     pub f_id: &'a str,
 
     pub f_comic_id: &'a str,
@@ -276,7 +277,7 @@ fn workflow_stage_mask_from_row(
     Ok(stages)
 }
 
-impl TryFrom<ChapterRow> for chapter_model::Info {
+impl TryFrom<ChapterRow> for ChapterInfo {
     type Error = RegularError;
 
     fn try_from(row: ChapterRow) -> Result<Self, Self::Error> {
@@ -303,18 +304,18 @@ impl TryFrom<ChapterRow> for chapter_model::Info {
     }
 }
 
-impl<'a> From<&'a chapter_model::Form> for ChapterEntry<'a> {
-    fn from(form: &'a chapter_model::Form) -> Self {
+impl<'a> From<&'a ChapterEntry> for ChapterRowEntry<'a> {
+    fn from(chapter_entry: &'a ChapterEntry) -> Self {
         //
         let now = OffsetDateTime::now_utc();
 
         Self {
-            f_id: &form.id,
-            f_comic_id: &form.comic_id,
-            f_is_pinned: form.is_pinned,
-            f_index: form.index,
-            f_subtitle: &form.subtitle,
-            f_creator_id: &form.creator_id,
+            f_id: &chapter_entry.id,
+            f_comic_id: &chapter_entry.comic_id,
+            f_is_pinned: chapter_entry.is_pinned,
+            f_index: chapter_entry.index,
+            f_subtitle: &chapter_entry.subtitle,
+            f_creator_id: &chapter_entry.creator_id,
             f_created_at: now,
             f_updated_at: now,
         }

@@ -2,17 +2,17 @@
 
 use time::OffsetDateTime;
 
-use crate::model::user_model;
+use crate::model::user::UserInfo;
 use crate::value::announcement::AnnouncementInclOpt;
 
 /// A team announcement as stored in the database, with optional included user data.
 #[cfg_attr(test, derive(Clone))]
-pub struct Info {
+pub struct AnnouncementInfo {
     pub id: String,
 
     pub team_id: String,
     pub user_id: String,
-    pub user: Option<user_model::Info>,
+    pub user: Option<UserInfo>,
 
     pub title: String,
     pub content: String,
@@ -22,7 +22,7 @@ pub struct Info {
 
 /// The data needed to insert a team announcement row.
 #[cfg_attr(test, derive(Clone))]
-pub struct Form {
+pub struct AnnouncementEntry {
     pub id: String,
 
     pub team_id: String,
@@ -33,7 +33,7 @@ pub struct Form {
 }
 
 /// Filtering, pagination, and include parameters for listing announcements.
-pub struct ListSpec {
+pub struct AnnouncementListSpec {
     pub team_id: String,
     pub incl_opt: Vec<AnnouncementInclOpt>,
 

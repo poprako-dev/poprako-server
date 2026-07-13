@@ -1,41 +1,38 @@
 //! RDB-backed unit repository.
 
-use async_trait::async_trait;
 use diesel::dsl::max;
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use time::OffsetDateTime;
 
-use poprako_transactional::advance::Advance;
 use poprako_util::page::Page;
 
-use crate::model::unit_model;
-use crate::part::repo::step::unit::{
-    CountByPageId, CreateInfo, DeleteByIdInPage, ListAllInfosByPageId,
-    ListIndexesByPageId, ListInfosByPageId, SaveInfo, UpdateIndexesByPageId,
-};
-use crate::part::repo::unit::{UnitRepo, UnitRepoTransactional};
-use crate::part::shared::execute::Execute;
+use crate::part::repo::unit::UnitRepo;
+use crate::part_impl::repo::rdb_impl::RdbRepo;
 use crate::part_impl::repo::rdb_impl::entity::unit::{
     UnitAspect, UnitEntry, UnitRow,
 };
-use crate::part_impl::repo::rdb_impl::{RdbRepo, RdbRepoTransactional};
 use crate::part_impl::shared::result::{diesel, expected};
 use crate::part_impl::shared::{RdbConn, RdbContext};
-use crate::result::{RegularError, RegularResult};
+use crate::result::RegularResult;
 
+use crate::model::unit::UnitContent;
+use crate::model::unit::UnitCounters;
+use crate::model::unit::UnitIndex;
+use crate::model::unit::UnitIndexUpdate;
+use crate::model::unit::UnitInfo;
 use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::*;
 
 impl UnitRepo<RdbContext> for RdbRepo {}
 
-impl UnitRepoTransactional<RdbContext> for RdbRepoTransactional {}
+mod orchestra;
 
 /// Query a paginated list of unit infos for a page, ordered by index then ID.
 async fn list_infos_by_page_id(
     conn: &mut RdbConn,
     page_id: &str,
     page: Page,
-) -> RegularResult<Vec<unit_model::Info>> {
+) -> RegularResult<Vec<UnitInfo>> {
     //
     let rows: Vec<UnitRow> = t_unit
         .filter(f_page_id.eq(page_id))
@@ -54,7 +51,7 @@ async fn list_infos_by_page_id(
 async fn list_all_infos_by_page_id(
     conn: &mut RdbConn,
     page_id: &str,
-) -> RegularResult<Vec<unit_model::Info>> {
+) -> RegularResult<Vec<UnitInfo>> {
     //
     let rows: Vec<UnitRow> = t_unit
         .filter(f_page_id.eq(page_id))
@@ -85,7 +82,7 @@ async fn create_unit(
     conn: &mut RdbConn,
     page_id: &str,
     id: &str,
-    payload: &unit_model::Payload,
+    payload: &UnitContent,
 ) -> RegularResult<()> {
     //
     let index = next_index(conn, page_id).await?;
@@ -106,7 +103,7 @@ async fn save_unit(
     conn: &mut RdbConn,
     page_id: &str,
     id: &str,
-    payload: &unit_model::Payload,
+    payload: &UnitContent,
 ) -> RegularResult<()> {
     //
     let existing_page_id: Option<String> = t_unit
@@ -157,7 +154,7 @@ async fn delete_by_id_in_page(
 async fn list_indexes_by_page_id(
     conn: &mut RdbConn,
     page_id: &str,
-) -> RegularResult<Vec<unit_model::Index>> {
+) -> RegularResult<Vec<UnitIndex>> {
     //
     let indexes: Vec<(String, i32)> = t_unit
         .filter(f_page_id.eq(page_id))
@@ -168,7 +165,7 @@ async fn list_indexes_by_page_id(
 
     Ok(indexes
         .into_iter()
-        .map(|(id, index)| unit_model::Index { id, index })
+        .map(|(id, index)| UnitIndex { id, index })
         .collect())
 }
 
@@ -177,7 +174,7 @@ async fn list_indexes_by_page_id(
 async fn update_indexes_by_page_id(
     conn: &mut RdbConn,
     page_id: &str,
-    updates: &[unit_model::IndexUpdate],
+    updates: &[UnitIndexUpdate],
 ) -> RegularResult<()> {
     //
     if updates.is_empty() {
@@ -234,12 +231,12 @@ async fn update_indexes_by_page_id(
 async fn count_by_page_id(
     conn: &mut RdbConn,
     page_id: &str,
-) -> RegularResult<unit_model::Counters> {
+) -> RegularResult<UnitCounters> {
     //
     let infos = list_all_infos_by_page_id(conn, page_id).await?;
 
     let counters = infos.iter().fold(
-        unit_model::Counters::default(),
+        UnitCounters::default(),
         |mut counters, unit_info| {
             //
             counters.total_unit_count += 1;
@@ -259,137 +256,5 @@ async fn count_by_page_id(
     Ok(counters)
 }
 
-#[async_trait]
-impl<'a> Execute<ListInfosByPageId<'a>> for RdbRepo {
-    type Error = RegularError;
-
-    async fn execute(
-        &self,
-        step: &ListInfosByPageId<'a>,
-    ) -> RegularResult<Vec<unit_model::Info>> {
-        submit_query!(self.core, list_infos_by_page_id, step.page_id, step.page)
-    }
-}
-
-#[async_trait]
-impl<'a> Execute<ListAllInfosByPageId<'a>> for RdbRepo {
-    type Error = RegularError;
-
-    async fn execute(
-        &self,
-        step: &ListAllInfosByPageId<'a>,
-    ) -> RegularResult<Vec<unit_model::Info>> {
-        submit_query!(self.core, list_all_infos_by_page_id, step.page_id)
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<ListInfosByPageId<'a>, RdbContext> for RdbRepoTransactional {
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut RdbContext,
-        step: &ListInfosByPageId<'a>,
-    ) -> RegularResult<Vec<unit_model::Info>> {
-        list_infos_by_page_id(context.conn(), step.page_id, step.page).await
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<ListAllInfosByPageId<'a>, RdbContext>
-    for RdbRepoTransactional
-{
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut RdbContext,
-        step: &ListAllInfosByPageId<'a>,
-    ) -> RegularResult<Vec<unit_model::Info>> {
-        list_all_infos_by_page_id(context.conn(), step.page_id).await
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<CreateInfo<'a>, RdbContext> for RdbRepoTransactional {
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut RdbContext,
-        step: &CreateInfo<'a>,
-    ) -> RegularResult<()> {
-        create_unit(context.conn(), step.page_id, step.id, step.payload).await
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<SaveInfo<'a>, RdbContext> for RdbRepoTransactional {
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut RdbContext,
-        step: &SaveInfo<'a>,
-    ) -> RegularResult<()> {
-        save_unit(context.conn(), step.page_id, step.id, step.payload).await
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<DeleteByIdInPage<'a>, RdbContext> for RdbRepoTransactional {
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut RdbContext,
-        step: &DeleteByIdInPage<'a>,
-    ) -> RegularResult<()> {
-        delete_by_id_in_page(context.conn(), step.page_id, step.id).await
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<ListIndexesByPageId<'a>, RdbContext> for RdbRepoTransactional {
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut RdbContext,
-        step: &ListIndexesByPageId<'a>,
-    ) -> RegularResult<Vec<unit_model::Index>> {
-        list_indexes_by_page_id(context.conn(), step.page_id).await
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<UpdateIndexesByPageId<'a>, RdbContext>
-    for RdbRepoTransactional
-{
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut RdbContext,
-        step: &UpdateIndexesByPageId<'a>,
-    ) -> RegularResult<()> {
-        update_indexes_by_page_id(context.conn(), step.page_id, step.updates)
-            .await
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<CountByPageId<'a>, RdbContext> for RdbRepoTransactional {
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut RdbContext,
-        step: &CountByPageId<'a>,
-    ) -> RegularResult<unit_model::Counters> {
-        count_by_page_id(context.conn(), step.page_id).await
-    }
-}
 #[cfg(all(test, feature = "repo"))]
 mod tests;

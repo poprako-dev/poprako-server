@@ -1,34 +1,22 @@
-//! Repository traits for the unit domain.
+//! Repository trait for the unit domain.
 
-use poprako_transactional::advance::Advance;
+use poprako_orchestra::{Run, Step};
 
-use crate::part::repo::step::unit::{
-    CountByPageId, CreateInfo, DeleteByIdInPage, ListAllInfosByPageId,
-    ListIndexesByPageId, ListInfosByPageId, SaveInfo, UpdateIndexesByPageId,
+use crate::part::repo::oper::unit::{
+    CountUnits, CreateUnit, DeleteUnit, ListUnitIndexes, ListUnitInfos,
+    SaveUnit, UpdateUnitIndexes,
 };
-use crate::part::shared::execute::Execute;
 use crate::result::RegularError;
-use crate::util::DeriveTransactional;
 
-/// Non-transactional unit repository.
+/// Unit repository operations over standalone runs and coordinated steps.
 pub trait UnitRepo<C>:
-    DeriveTransactional
-    + for<'a> Execute<ListInfosByPageId<'a>, Error = RegularError>
-    + for<'a> Execute<ListAllInfosByPageId<'a>, Error = RegularError>
-where
-    Self::Transactional: UnitRepoTransactional<C>,
-{
-}
-
-/// Transactional unit repository.
-pub trait UnitRepoTransactional<C>:
-    for<'a> Advance<ListInfosByPageId<'a>, C, Error = RegularError>
-    + for<'a> Advance<ListAllInfosByPageId<'a>, C, Error = RegularError>
-    + for<'a> Advance<CreateInfo<'a>, C, Error = RegularError>
-    + for<'a> Advance<SaveInfo<'a>, C, Error = RegularError>
-    + for<'a> Advance<DeleteByIdInPage<'a>, C, Error = RegularError>
-    + for<'a> Advance<ListIndexesByPageId<'a>, C, Error = RegularError>
-    + for<'a> Advance<UpdateIndexesByPageId<'a>, C, Error = RegularError>
-    + for<'a> Advance<CountByPageId<'a>, C, Error = RegularError>
+    for<'a> Run<ListUnitInfos<'a>, Error = RegularError>
+    + for<'a> Step<ListUnitInfos<'a>, C, Error = RegularError>
+    + for<'a> Step<CreateUnit<'a>, C, Error = RegularError>
+    + for<'a> Step<SaveUnit<'a>, C, Error = RegularError>
+    + for<'a> Step<DeleteUnit<'a>, C, Error = RegularError>
+    + for<'a> Step<ListUnitIndexes<'a>, C, Error = RegularError>
+    + for<'a> Step<UpdateUnitIndexes<'a>, C, Error = RegularError>
+    + for<'a> Step<CountUnits<'a>, C, Error = RegularError>
 {
 }

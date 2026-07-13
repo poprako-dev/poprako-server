@@ -2,17 +2,17 @@
 
 use time::OffsetDateTime;
 
-use crate::model::user_model;
+use crate::model::user::UserInfo;
 use crate::value::comment::CommentInclOpt;
 
 /// A team board comment as stored in the database, with optional included user data.
 #[cfg_attr(test, derive(Clone))]
-pub struct Info {
+pub struct CommentInfo {
     pub id: String,
 
     pub team_id: String,
     pub user_id: String,
-    pub user: Option<user_model::Info>,
+    pub user: Option<UserInfo>,
 
     pub content: String,
 
@@ -21,7 +21,7 @@ pub struct Info {
 
 /// The data needed to insert a team board comment row.
 #[cfg_attr(test, derive(Clone))]
-pub struct Form {
+pub struct CommentEntry {
     pub id: String,
 
     pub team_id: String,
@@ -31,7 +31,7 @@ pub struct Form {
 }
 
 /// Filtering, pagination, and include parameters for listing comments.
-pub struct ListSpec {
+pub struct CommentListSpec {
     pub team_id: String,
     pub incl_opt: Vec<CommentInclOpt>,
 

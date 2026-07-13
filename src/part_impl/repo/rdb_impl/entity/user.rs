@@ -3,7 +3,8 @@
 use diesel::prelude::*;
 use time::OffsetDateTime;
 
-use crate::model::user_model;
+use crate::model::user::UserCredential;
+use crate::model::user::UserInfo;
 use crate::part_impl::repo::rdb_impl::schema::t_user;
 
 // ── Queryable / Selectable ─────────────────────────────────────────────────
@@ -44,7 +45,7 @@ pub struct UserCredentialRow {
 /// Insertable struct for creating a new record in the `t_user` table.
 #[derive(Insertable)]
 #[diesel(table_name = t_user)]
-pub struct UserEntry<'a> {
+pub struct UserRowEntry<'a> {
     pub f_id: &'a str,
     pub f_nickname: &'a str,
     pub f_qid: &'a str,
@@ -133,9 +134,9 @@ impl<'a> UserAspect<'a> {
 
 // ── Conversions ────────────────────────────────────────────────────────────
 
-impl From<UserRow> for user_model::Info {
+impl From<UserRow> for UserInfo {
     fn from(v: UserRow) -> Self {
-        user_model::Info {
+        UserInfo {
             id: v.f_id,
             qid: v.f_qid,
             nickname: v.f_nickname,
@@ -150,9 +151,9 @@ impl From<UserRow> for user_model::Info {
     }
 }
 
-impl From<UserCredentialRow> for user_model::Credential {
+impl From<UserCredentialRow> for UserCredential {
     fn from(v: UserCredentialRow) -> Self {
-        user_model::Credential {
+        UserCredential {
             user_id: v.f_id,
             password_hash: v.f_password_hash,
         }

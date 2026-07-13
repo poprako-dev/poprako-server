@@ -1,48 +1,46 @@
 //! RDB-backed team repository — free query functions and thin trait impls.
 
-use async_trait::async_trait;
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use time::OffsetDateTime;
 
-use poprako_transactional::advance::Advance;
+use poprako_orchestra::{Run, Step};
 
 use crate::complex::team::TeamComplex;
-use crate::model::team_model;
-use crate::part::repo::step::team::{
-    Create, Delete, GetInfoById, GetInfoExcluded, IncrementWorksetNextIndex,
-    ListInfos, MarkAvatarUploaded, ReserveAvatar, UpdateInfo,
+use crate::model::team::TeamAvatarReservation;
+use crate::model::team::TeamEntry;
+use crate::model::team::TeamInfo;
+use crate::part::repo::oper::team::{
+    AllocateTeamWorksetIndex, CreateTeam, DeleteTeam, GetTeamInfo,
+    GetTeamInfoExcluded, ListTeamInfos, ReserveTeamAvatar, UpdateTeam,
 };
-use crate::part::repo::team::{TeamRepo, TeamRepoTransactional};
-use crate::part::shared::execute::Execute;
+use crate::part::repo::team::TeamRepo;
+use crate::part_impl::repo::rdb_impl::RdbRepo;
 use crate::part_impl::repo::rdb_impl::entity::team::{
-    TeamAspect, TeamEntry, TeamRow,
+    TeamAspect, TeamRow, TeamRowEntry,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_member;
 use crate::part_impl::repo::rdb_impl::schema::t_team::dsl::*;
-use crate::part_impl::repo::rdb_impl::{RdbRepo, RdbRepoTransactional};
-use crate::part_impl::shared::result::{diesel, expected};
+use crate::part_impl::shared::result::{diesel, expected, version};
 use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::{RegularError, RegularResult};
 
 impl TeamRepo<RdbContext> for RdbRepo {}
-
-impl TeamRepoTransactional<RdbContext> for RdbRepoTransactional {}
 
 // ── Free functions ──────────────────────────────────────────────────────────
 
 /// Insert a new team and return its info.
 async fn create(
     conn: &mut RdbConn,
-    form: &team_model::Form,
-) -> RegularResult<team_model::Info> {
+    entry: &TeamEntry,
+) -> RegularResult<TeamInfo> {
     //
     let now = OffsetDateTime::now_utc();
 
-    let entry = TeamEntry {
-        f_id: &form.id,
-        f_name: &form.name,
-        f_description: &form.description,
+    let entry = TeamRowEntry {
+        f_id: &entry.id,
+        f_name: &entry.name,
+        f_description: &entry.description,
         f_workset_next_index: 0,
         f_created_at: now,
         f_updated_at: now,
@@ -62,7 +60,7 @@ async fn create(
 async fn get_info_by_id(
     conn: &mut RdbConn,
     id: &str,
-) -> RegularResult<team_model::Info> {
+) -> RegularResult<TeamInfo> {
     //
     let row: TeamRow = t_team
         .filter(f_id.eq(id))
@@ -82,7 +80,7 @@ async fn list_infos(
     user_id: Option<&str>,
     offset: u32,
     limit: u32,
-) -> RegularResult<Vec<team_model::Info>> {
+) -> RegularResult<Vec<TeamInfo>> {
     //
     let mut query = t_team.into_boxed();
 
@@ -160,11 +158,11 @@ async fn reserve_avatar(
     conn: &mut RdbConn,
     id: &str,
     file_ext: &str,
-) -> RegularResult<team_model::AvatarReservation> {
+) -> RegularResult<TeamAvatarReservation> {
     //
     let now = OffsetDateTime::now_utc();
 
-    let (prev_key, version): (Option<String>, i64) =
+    let (prev_key, raw_version): (Option<String>, i64) =
         diesel::update(t_team.filter(f_id.eq(id)))
             .set((
                 f_avatar_key.eq::<Option<&str>>(None),
@@ -177,7 +175,7 @@ async fn reserve_avatar(
             .await
             .map_err(diesel)?;
 
-    let version = crate::part_impl::shared::result::version(version)?;
+    let version = version(raw_version)?;
 
     let object_key = TeamComplex::gen_avatar_key(id, version, file_ext);
 
@@ -187,7 +185,7 @@ async fn reserve_avatar(
         .await
         .map_err(diesel)?;
 
-    Ok(team_model::AvatarReservation {
+    Ok(TeamAvatarReservation {
         object_key,
         prev_object_key: prev_key,
         avatar_version: version,
@@ -198,7 +196,7 @@ async fn reserve_avatar(
 async fn get_info_excluded(
     conn: &mut RdbConn,
     id: &str,
-) -> RegularResult<team_model::Info> {
+) -> RegularResult<TeamInfo> {
     //
     let row: TeamRow = t_team
         .filter(f_id.eq(id))
@@ -240,161 +238,155 @@ async fn increment_workset_next_index(
     Ok(prev)
 }
 
-// ── Non-transactional: Execute impls ─────────────────────────────────────────
-
-#[async_trait]
-impl<'a> Execute<Create<'a>> for RdbRepo {
+impl<'a> Run<CreateTeam<'a>> for RdbRepo {
     type Error = RegularError;
 
-    async fn execute(
+    async fn run(
         &self,
-        step: &Create<'a>,
-    ) -> Result<team_model::Info, Self::Error> {
-        submit_query!(self.core, create, step.form)
+        oper: &CreateTeam<'a>,
+    ) -> Result<TeamInfo, Self::Error> {
+        submit_query!(self.core, create, oper.entry)
     }
 }
 
-#[async_trait]
-impl<'a> Execute<GetInfoById<'a>> for RdbRepo {
+impl<'a> Run<GetTeamInfo<'a>> for RdbRepo {
     type Error = RegularError;
 
-    async fn execute(
+    async fn run(
         &self,
-        step: &GetInfoById<'a>,
-    ) -> Result<team_model::Info, Self::Error> {
-        submit_query!(self.core, get_info_by_id, step.id)
+        oper: &GetTeamInfo<'a>,
+    ) -> Result<TeamInfo, Self::Error> {
+        match oper {
+            GetTeamInfo::Id { id } => {
+                submit_query!(self.core, get_info_by_id, id)
+            }
+        }
     }
 }
 
-#[async_trait]
-impl<'a> Execute<ListInfos<'a>> for RdbRepo {
+impl<'a> Run<ListTeamInfos<'a>> for RdbRepo {
     type Error = RegularError;
 
-    async fn execute(
+    async fn run(
         &self,
-        step: &ListInfos<'a>,
-    ) -> Result<Vec<team_model::Info>, Self::Error> {
+        oper: &ListTeamInfos<'a>,
+    ) -> Result<Vec<TeamInfo>, Self::Error> {
         submit_query!(
             self.core,
             list_infos,
-            step.user_id,
-            step.offset,
-            step.limit
+            oper.user_id,
+            oper.offset,
+            oper.limit
         )
     }
 }
 
-#[async_trait]
-impl<'a> Execute<UpdateInfo<'a>> for RdbRepo {
+impl<'a> Run<UpdateTeam<'a>> for RdbRepo {
     type Error = RegularError;
 
-    async fn execute(&self, step: &UpdateInfo<'a>) -> RegularResult<()> {
-        submit_query!(
-            self.core,
-            update_info,
-            step.id,
-            step.name,
-            step.description
-        )
+    async fn run(&self, oper: &UpdateTeam<'a>) -> RegularResult<()> {
+        match oper {
+            UpdateTeam::Info {
+                id,
+                name,
+                description,
+            } => submit_query!(self.core, update_info, id, name, description),
+
+            UpdateTeam::MarkAvatarUploaded { id, avatar_version } => {
+                submit_query!(
+                    self.core,
+                    mark_avatar_uploaded,
+                    id,
+                    *avatar_version
+                )
+            }
+        }
     }
 }
 
-#[async_trait]
-impl<'a> Execute<MarkAvatarUploaded<'a>> for RdbRepo {
+impl<'a> Step<CreateTeam<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
-    async fn execute(
+    async fn step(
         &self,
-        step: &MarkAvatarUploaded<'a>,
+        context: &mut RdbContext,
+        oper: &CreateTeam<'a>,
+    ) -> RegularResult<TeamInfo> {
+        create(context.conn(), oper.entry).await
+    }
+}
+
+impl<'a> Step<UpdateTeam<'a>, RdbContext> for RdbRepo {
+    type Error = RegularError;
+
+    async fn step(
+        &self,
+        context: &mut RdbContext,
+        oper: &UpdateTeam<'a>,
     ) -> RegularResult<()> {
-        submit_query!(
-            self.core,
-            mark_avatar_uploaded,
-            step.id,
-            step.avatar_version
-        )
+        match oper {
+            UpdateTeam::Info {
+                id,
+                name,
+                description,
+            } => update_info(context.conn(), id, name, description).await,
+
+            UpdateTeam::MarkAvatarUploaded { id, avatar_version } => {
+                mark_avatar_uploaded(context.conn(), id, *avatar_version).await
+            }
+        }
     }
 }
 
-// ── Transactional: Advance impls ─────────────────────────────────────────────
-
-#[async_trait]
-impl<'a> Advance<Create<'a>, RdbContext> for RdbRepoTransactional {
+impl<'a> Step<ReserveTeamAvatar<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
-    async fn advance(
+    async fn step(
         &self,
         context: &mut RdbContext,
-        step: &Create<'a>,
-    ) -> RegularResult<team_model::Info> {
-        create(context.conn(), step.form).await
+        oper: &ReserveTeamAvatar<'a>,
+    ) -> RegularResult<TeamAvatarReservation> {
+        reserve_avatar(context.conn(), oper.id, oper.file_ext).await
     }
 }
 
-#[async_trait]
-impl<'a> Advance<ReserveAvatar<'a>, RdbContext> for RdbRepoTransactional {
+impl<'a> Step<GetTeamInfoExcluded<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
-    async fn advance(
+    async fn step(
         &self,
         context: &mut RdbContext,
-        step: &ReserveAvatar<'a>,
-    ) -> RegularResult<team_model::AvatarReservation> {
-        reserve_avatar(context.conn(), step.id, step.file_extension).await
+        oper: &GetTeamInfoExcluded<'a>,
+    ) -> RegularResult<TeamInfo> {
+        match oper {
+            GetTeamInfoExcluded::Id { id } => {
+                get_info_excluded(context.conn(), id).await
+            }
+        }
     }
 }
 
-#[async_trait]
-impl<'a> Advance<MarkAvatarUploaded<'a>, RdbContext> for RdbRepoTransactional {
+impl<'a> Step<DeleteTeam<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
-    async fn advance(
+    async fn step(
         &self,
         context: &mut RdbContext,
-        step: &MarkAvatarUploaded<'a>,
+        oper: &DeleteTeam<'a>,
     ) -> RegularResult<()> {
-        mark_avatar_uploaded(context.conn(), step.id, step.avatar_version).await
+        delete(context.conn(), oper.id).await
     }
 }
 
-#[async_trait]
-impl<'a> Advance<GetInfoExcluded<'a>, RdbContext> for RdbRepoTransactional {
+impl<'a> Step<AllocateTeamWorksetIndex<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
-    async fn advance(
+    async fn step(
         &self,
         context: &mut RdbContext,
-        step: &GetInfoExcluded<'a>,
-    ) -> RegularResult<team_model::Info> {
-        get_info_excluded(context.conn(), step.id).await
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<Delete<'a>, RdbContext> for RdbRepoTransactional {
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut RdbContext,
-        step: &Delete<'a>,
-    ) -> RegularResult<()> {
-        delete(context.conn(), step.id).await
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<IncrementWorksetNextIndex<'a>, RdbContext>
-    for RdbRepoTransactional
-{
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut RdbContext,
-        step: &IncrementWorksetNextIndex<'a>,
+        oper: &AllocateTeamWorksetIndex<'a>,
     ) -> RegularResult<i32> {
-        increment_workset_next_index(context.conn(), step.id).await
+        increment_workset_next_index(context.conn(), oper.id).await
     }
 }
 #[cfg(all(test, feature = "repo"))]

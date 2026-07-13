@@ -14,12 +14,21 @@ use super::*;
 
 use time::OffsetDateTime;
 
-use crate::model::{
-    assignment_model, chapter_model, comic_model, member_model, page_model,
-    user_model, workset_model,
+use crate::data::page::ListPageInfosParams;
+use crate::data::page::MarkPageImageUploadedParams;
+use crate::data::page::ReserveChapterPagesParams;
+use crate::data::page::ReservePageImageParams;
+use crate::model::assignment::AssignmentInfo;
+use crate::model::chapter::ChapterInfo;
+use crate::model::comic::ComicInfo;
+use crate::model::member::MemberInfo;
+use crate::model::page::PageInfo;
+use crate::model::user::UserToken;
+use crate::model::workset::WorksetInfo;
+use crate::part::prom::payload::Payload;
+use crate::part::prom::payload::image::{
+    Payload as ImagePayload, ResourceKind,
 };
-use crate::part::prom::Payload;
-use crate::part::prom::task::{ImageKind, ImageTask};
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::{
@@ -29,17 +38,19 @@ use crate::test_util::{
 use crate::value::chapter::StageMask;
 use crate::value::role::{RoleField, RoleMask};
 
-fn token(user_id: &str) -> user_model::Token {
-    user_model::Token {
+mod upload_delete;
+
+fn token(user_id: &str) -> UserToken {
+    UserToken {
         user_id: user_id.into(),
     }
 }
 
-fn workset(id: &str, team_id: &str) -> workset_model::Info {
+fn workset(id: &str, team_id: &str) -> WorksetInfo {
     //
     let time = OffsetDateTime::now_utc();
 
-    workset_model::Info {
+    WorksetInfo {
         id: id.into(),
         team_id: team_id.into(),
         index: 0,
@@ -52,11 +63,11 @@ fn workset(id: &str, team_id: &str) -> workset_model::Info {
     }
 }
 
-fn comic(id: &str, workset_id: &str) -> comic_model::Info {
+fn comic(id: &str, workset_id: &str) -> ComicInfo {
     //
     let time = OffsetDateTime::now_utc();
 
-    comic_model::Info {
+    ComicInfo {
         id: id.into(),
         workset_id: workset_id.into(),
         index: 0,
@@ -78,11 +89,11 @@ fn comic(id: &str, workset_id: &str) -> comic_model::Info {
     }
 }
 
-fn chapter(id: &str, comic_id: &str, page_count: i32) -> chapter_model::Info {
+fn chapter(id: &str, comic_id: &str, page_count: i32) -> ChapterInfo {
     //
     let time = OffsetDateTime::now_utc();
 
-    chapter_model::Info {
+    ChapterInfo {
         id: id.into(),
         comic_id: comic_id.into(),
         comic: None,
@@ -101,8 +112,8 @@ fn chapter(id: &str, comic_id: &str, page_count: i32) -> chapter_model::Info {
     }
 }
 
-fn member(user_id: &str, role_mask: RoleMask) -> member_model::Info {
-    member_model::Info {
+fn member(user_id: &str, role_mask: RoleMask) -> MemberInfo {
+    MemberInfo {
         id: format!("member-{}", user_id),
         user_id: user_id.into(),
         user_nickname: user_id.into(),
@@ -118,11 +129,11 @@ fn assignment(
     chapter_id: &str,
     user_id: &str,
     role_mask: RoleMask,
-) -> assignment_model::Info {
+) -> AssignmentInfo {
     //
     let time = OffsetDateTime::now_utc();
 
-    assignment_model::Info {
+    AssignmentInfo {
         id: format!("assignment-{}-{}", chapter_id, user_id),
         chapter_id: chapter_id.into(),
         user_id: user_id.into(),
@@ -140,11 +151,11 @@ fn page(
     image_key: Option<&str>,
     image_uploaded: bool,
     image_version: u32,
-) -> page_model::Info {
+) -> PageInfo {
     //
     let time = OffsetDateTime::now_utc();
 
-    page_model::Info {
+    PageInfo {
         id: id.into(),
         chapter_id: "chapter-1".into(),
         index,
@@ -187,7 +198,7 @@ async fn reserve_chapter_pages_creates_pages_and_urls() {
         &mock,
         &mock,
         token("user-1"),
-        page_data::ReserveChapterData {
+        ReserveChapterPagesParams {
             chapter_id: "chapter-1".into(),
             page_count: 2,
             file_ext: "png".into(),
@@ -241,7 +252,7 @@ async fn reserve_chapter_pages_creates_pages_and_urls() {
 
         assert_one_image_check_record(
             &snapshot.prom_records,
-            ImageKind::PageImage,
+            ResourceKind::PageImage,
             &creation.page_id,
             object_key,
             creation.image_version,
@@ -262,7 +273,7 @@ async fn reserve_chapter_pages_rejects_invalid_count() {
         &mock,
         &mock,
         token("user-1"),
-        page_data::ReserveChapterData {
+        ReserveChapterPagesParams {
             chapter_id: "chapter-1".into(),
             page_count: 0,
             file_ext: "png".into(),
@@ -303,7 +314,7 @@ async fn reserve_image_replaces_key_and_enqueues_prom() {
         &mock,
         token("user-1"),
         "page-1".into(),
-        page_data::ReserveImageData {
+        ReservePageImageParams {
             file_ext: "jpg".into(),
         },
     )
@@ -337,12 +348,12 @@ async fn reserve_image_replaces_key_and_enqueues_prom() {
 
     assert!(matches!(
         snapshot.prom_records[0].payload(),
-        Payload::Image(ImageTask::Delete { object_key }) if object_key == "old.png"
+        Payload::Image(ImagePayload::Delete { object_key }) if object_key == "old.png"
     ));
 
     assert_one_image_check_record(
         &snapshot.prom_records,
-        ImageKind::PageImage,
+        ResourceKind::PageImage,
         "page-1",
         "chapter_chapter-1/page_page-1-2.jpg",
         2,
@@ -361,7 +372,7 @@ async fn reserve_image_rejects_missing_page() {
         &mock,
         token("user-1"),
         "missing".into(),
-        page_data::ReserveImageData {
+        ReservePageImageParams {
             file_ext: "jpg".into(),
         },
     )
@@ -389,7 +400,7 @@ async fn list_infos_sorts_and_resolves_uploaded_url() {
         &mock,
         &mock,
         token("user-1"),
-        page_data::ListInfosData {
+        ListPageInfosParams {
             chapter_id: "chapter-1".into(),
             offset: 0,
             limit: 10,
@@ -424,7 +435,7 @@ async fn list_infos_rejects_non_member_without_assignment() {
         &mock,
         &mock,
         token("user-1"),
-        page_data::ListInfosData {
+        ListPageInfosParams {
             chapter_id: "chapter-1".into(),
             offset: 0,
             limit: 10,
@@ -457,7 +468,7 @@ async fn mark_image_uploaded_marks_once_and_idempotent() {
         &mock,
         token("user-1"),
         "page-1".into(),
-        page_data::MarkImageUploadedData { image_version: 2 },
+        MarkPageImageUploadedParams { image_version: 2 },
     )
     .await;
 
@@ -468,7 +479,7 @@ async fn mark_image_uploaded_marks_once_and_idempotent() {
         &mock,
         token("user-1"),
         "page-1".into(),
-        page_data::MarkImageUploadedData { image_version: 2 },
+        MarkPageImageUploadedParams { image_version: 2 },
     )
     .await;
 
@@ -477,172 +488,4 @@ async fn mark_image_uploaded_marks_once_and_idempotent() {
     let snapshot = mock.snapshot();
 
     assert!(snapshot.pages[0].image_uploaded);
-}
-
-#[tokio::test]
-async fn mark_image_uploaded_rejects_stale_replay_then_accepts_current_version()
-{
-    let mock = Mock::new();
-
-    seed_scope(&mock);
-
-    mock.seed_page(page(
-        "page-1",
-        0,
-        Some("chapter_chapter-1/page_page-1-1.png"),
-        true,
-        1,
-    ));
-
-    mock.seed_assignment(assignment(
-        "chapter-1",
-        "user-1",
-        RoleMask::from(RoleField::RAW_PROVIDER),
-    ));
-
-    let reserved = reserve_image(
-        &mock,
-        &mock,
-        &mock,
-        &mock,
-        token("user-1"),
-        "page-1".into(),
-        page_data::ReserveImageData {
-            file_ext: "png".into(),
-        },
-    )
-    .await
-    .ok()
-    .unwrap();
-
-    assert_eq!(reserved.image_version, 2);
-
-    let err = mark_image_uploaded(
-        &mock,
-        &mock,
-        token("user-1"),
-        "page-1".into(),
-        page_data::MarkImageUploadedData { image_version: 1 },
-    )
-    .await
-    .err()
-    .unwrap();
-
-    let snapshot = mock.snapshot();
-
-    assert_expected_message(
-        err,
-        ExpectedVariant::Args,
-        "error-stale-page-image-upload",
-    );
-
-    assert!(!snapshot.pages[0].image_uploaded);
-
-    assert_eq!(snapshot.pages[0].image_version, 2);
-
-    mark_image_uploaded(
-        &mock,
-        &mock,
-        token("user-1"),
-        "page-1".into(),
-        page_data::MarkImageUploadedData { image_version: 2 },
-    )
-    .await
-    .unwrap();
-
-    assert!(mock.snapshot().pages[0].image_uploaded);
-}
-
-#[tokio::test]
-async fn mark_image_uploaded_rejects_non_raw_provider() {
-    //
-    let mock = Mock::new();
-
-    seed_scope(&mock);
-
-    mock.seed_page(page("page-1", 0, Some("one.png"), false, 1));
-
-    mock.seed_assignment(assignment(
-        "chapter-1",
-        "user-1",
-        RoleMask::from(RoleField::REVIEWER),
-    ));
-
-    let err = mark_image_uploaded(
-        &mock,
-        &mock,
-        token("user-1"),
-        "page-1".into(),
-        page_data::MarkImageUploadedData { image_version: 1 },
-    )
-    .await
-    .err()
-    .unwrap();
-
-    let snapshot = mock.snapshot();
-
-    assert_expected_variant(err, ExpectedVariant::Perm);
-
-    assert!(!snapshot.pages[0].image_uploaded);
-}
-
-#[tokio::test]
-async fn delete_by_chapter_deletes_pages_and_clears_counters() {
-    //
-    let mock = Mock::new();
-
-    seed_scope(&mock);
-
-    mock.seed_member(member("user-1", RoleMask::from(RoleField::ADMIN)));
-
-    mock.seed_page(page("page-1", 0, Some("one.png"), true, 1));
-
-    mock.seed_page(page("page-2", 1, None, false, 0));
-
-    let deleted =
-        delete(&mock, &mock, &mock, token("user-1"), "chapter-1".into()).await;
-
-    assert!(deleted.is_ok());
-
-    let snapshot = mock.snapshot();
-
-    assert!(snapshot.pages.is_empty());
-
-    assert_eq!(snapshot.chapters[0].page_count, 0);
-
-    assert_eq!(snapshot.chapters[0].total_unit_count, 0);
-
-    assert_eq!(snapshot.prom_records.len(), 1);
-
-    assert!(matches!(
-        snapshot.prom_records[0].payload(),
-        Payload::Image(ImageTask::Delete { object_key }) if object_key == "one.png"
-    ));
-}
-
-#[tokio::test]
-async fn delete_by_chapter_rejects_non_admin_and_rolls_back() {
-    //
-    let mock = Mock::new();
-
-    seed_scope(&mock);
-
-    mock.seed_member(member("user-1", RoleMask::from(RoleField::TRANSLATOR)));
-
-    mock.seed_page(page("page-1", 0, Some("one.png"), true, 1));
-
-    let err = delete(&mock, &mock, &mock, token("user-1"), "chapter-1".into())
-        .await
-        .err()
-        .unwrap();
-
-    let snapshot = mock.snapshot();
-
-    assert_expected_variant(err, ExpectedVariant::Perm);
-
-    assert_eq!(snapshot.pages.len(), 1);
-
-    assert_eq!(snapshot.chapters[0].page_count, 0);
-
-    assert!(snapshot.prom_records.is_empty());
 }

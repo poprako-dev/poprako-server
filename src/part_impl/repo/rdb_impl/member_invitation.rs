@@ -1,26 +1,25 @@
 //! RDB-backed member-invitation repository — free query functions and thin trait impls.
 
-use async_trait::async_trait;
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use time::OffsetDateTime;
 
-use poprako_transactional::advance::Advance;
+use poprako_orchestra::{Run, Step};
 
-use crate::model::member_invitation_model;
-use crate::part::repo::member_invitation::{
-    MemberInvitationRepo, MemberInvitationRepoTransactional,
+use crate::model::member_invitation::MemberInvitationEntry;
+use crate::model::member_invitation::MemberInvitationInfo;
+use crate::model::member_invitation::MemberInvitationListSpec;
+use crate::part::repo::member_invitation::MemberInvitationRepo;
+use crate::part::repo::oper::member_invitation::{
+    CreateMemberInvitation, DeleteMemberInvitation, GetMemberInvitationInfo,
+    GetMemberInvitationInfoExcluded, ListMemberInvitationInfos,
+    UpdateMemberInvitation,
 };
-use crate::part::repo::step::member_invitation::{
-    Create, Delete, GetInfoByCodeExcluded, GetInfoById, ListInfos,
-    MarkPendingAsUsed, UpdateInfo,
-};
-use crate::part::shared::execute::Execute;
 use crate::part_impl::repo::rdb_impl::entity::member_invitation::{
-    MemberInvitationAspect, MemberInvitationEntry, MemberInvitationRow,
+    MemberInvitationAspect, MemberInvitationRow, MemberInvitationRowEntry,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_member_invitation::dsl::*;
-use crate::part_impl::repo::rdb_impl::{RdbRepo, RdbRepoTransactional, incl};
+use crate::part_impl::repo::rdb_impl::{RdbRepo, incl};
 use crate::part_impl::shared::result::{diesel, expected};
 use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::{RegularError, RegularResult};
@@ -29,15 +28,13 @@ use crate::value::role::RoleMask;
 
 impl MemberInvitationRepo<RdbContext> for RdbRepo {}
 
-impl MemberInvitationRepoTransactional<RdbContext> for RdbRepoTransactional {}
-
 // ── Free functions ──────────────────────────────────────────────────────────
 
 /// Query member invitations matching the given list spec, with optional includes.
 async fn list_infos(
     conn: &mut RdbConn,
-    spec: &member_invitation_model::ListSpec,
-) -> RegularResult<Vec<member_invitation_model::Info>> {
+    spec: &MemberInvitationListSpec,
+) -> RegularResult<Vec<MemberInvitationInfo>> {
     //
     let mut query = t_member_invitation
         .filter(f_team_id.eq(spec.team_id.as_str()))
@@ -77,7 +74,7 @@ async fn get_info_by_id(
     conn: &mut RdbConn,
     id: &str,
     incl_opt: &[MemberInvitationInclOpt],
-) -> RegularResult<member_invitation_model::Info> {
+) -> RegularResult<MemberInvitationInfo> {
     //
     let row: MemberInvitationRow = t_member_invitation
         .filter(f_id.eq(id))
@@ -88,7 +85,7 @@ async fn get_info_by_id(
         .map_err(diesel)?
         .ok_or_else(|| expected("error-invitation-not-found"))?;
 
-    let mut info: member_invitation_model::Info = row.try_into()?;
+    let mut info: MemberInvitationInfo = row.try_into()?;
 
     incl::member_invitation::populate_member_invitation_incls(
         conn,
@@ -103,10 +100,10 @@ async fn get_info_by_id(
 /// Create a new member invitation and return its info.
 async fn create(
     conn: &mut RdbConn,
-    form: &member_invitation_model::Form,
-) -> RegularResult<member_invitation_model::Info> {
+    entry: &MemberInvitationEntry,
+) -> RegularResult<MemberInvitationInfo> {
     //
-    let entry = MemberInvitationEntry::from(form);
+    let entry = MemberInvitationRowEntry::from(entry);
 
     let row: MemberInvitationRow = diesel::insert_into(t_member_invitation)
         .values(&entry)
@@ -118,11 +115,29 @@ async fn create(
     row.try_into()
 }
 
+/// Look up a pending invitation by code.
+async fn get_info_by_code(
+    conn: &mut RdbConn,
+    code: &str,
+) -> RegularResult<MemberInvitationInfo> {
+    let row: MemberInvitationRow = t_member_invitation
+        .filter(f_code.eq(code))
+        .filter(f_pending.eq(true))
+        .select(MemberInvitationRow::as_select())
+        .get_result(conn)
+        .await
+        .optional()
+        .map_err(diesel)?
+        .ok_or_else(|| expected("error-invitation-not-found"))?;
+
+    row.try_into()
+}
+
 /// Look up a pending invitation by code, locking the row for update.
 async fn get_info_by_code_excluded(
     conn: &mut RdbConn,
     code: &str,
-) -> RegularResult<member_invitation_model::Info> {
+) -> RegularResult<MemberInvitationInfo> {
     //
     let row: MemberInvitationRow = t_member_invitation
         .filter(f_code.eq(code))
@@ -189,112 +204,114 @@ async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
     Ok(())
 }
 
-// ── Non-transactional: Execute impls ─────────────────────────────────────────
-
-#[async_trait]
-impl<'a> Execute<ListInfos<'a>> for RdbRepo {
+impl<'a> Run<ListMemberInvitationInfos<'a>> for RdbRepo {
     type Error = RegularError;
 
-    async fn execute(
+    async fn run(
         &self,
-        step: &ListInfos<'a>,
-    ) -> RegularResult<Vec<member_invitation_model::Info>> {
-        submit_query!(self.core, list_infos, step.spec)
+        oper: &ListMemberInvitationInfos<'a>,
+    ) -> RegularResult<Vec<MemberInvitationInfo>> {
+        submit_query!(self.core, list_infos, oper.spec)
     }
 }
 
-#[async_trait]
-impl<'a> Execute<GetInfoById<'a>> for RdbRepo {
+impl<'a, 'b> Run<GetMemberInvitationInfo<'a, 'b>> for RdbRepo {
     type Error = RegularError;
 
-    async fn execute(
+    async fn run(
         &self,
-        step: &GetInfoById<'a>,
-    ) -> RegularResult<member_invitation_model::Info> {
-        submit_query!(self.core, get_info_by_id, step.id, step.incl_opt)
+        oper: &GetMemberInvitationInfo<'a, 'b>,
+    ) -> RegularResult<MemberInvitationInfo> {
+        match oper {
+            GetMemberInvitationInfo::Id { id, incls } => {
+                submit_query!(self.core, get_info_by_id, id, incls)
+            }
+
+            GetMemberInvitationInfo::Code { code } => {
+                submit_query!(self.core, get_info_by_code, code)
+            }
+        }
     }
 }
 
-// ── Transactional: Advance impls ─────────────────────────────────────────────
-
-#[async_trait]
-impl<'a> Advance<Create<'a>, RdbContext> for RdbRepoTransactional {
+impl<'a> Step<CreateMemberInvitation<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
-    async fn advance(
+    async fn step(
         &self,
         context: &mut RdbContext,
-        step: &Create<'a>,
-    ) -> RegularResult<member_invitation_model::Info> {
-        create(context.conn(), step.form).await
+        oper: &CreateMemberInvitation<'a>,
+    ) -> RegularResult<MemberInvitationInfo> {
+        create(context.conn(), oper.entry).await
     }
 }
 
-#[async_trait]
-impl<'a> Advance<GetInfoByCodeExcluded<'a>, RdbContext>
-    for RdbRepoTransactional
-{
+impl<'a, 'b> Step<GetMemberInvitationInfo<'a, 'b>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
-    async fn advance(
+    async fn step(
         &self,
         context: &mut RdbContext,
-        step: &GetInfoByCodeExcluded<'a>,
-    ) -> RegularResult<member_invitation_model::Info> {
-        get_info_by_code_excluded(context.conn(), step.code).await
+        oper: &GetMemberInvitationInfo<'a, 'b>,
+    ) -> RegularResult<MemberInvitationInfo> {
+        match oper {
+            GetMemberInvitationInfo::Id { id, incls } => {
+                get_info_by_id(context.conn(), id, incls).await
+            }
+
+            GetMemberInvitationInfo::Code { code } => {
+                get_info_by_code(context.conn(), code).await
+            }
+        }
     }
 }
 
-#[async_trait]
-impl<'a> Advance<MarkPendingAsUsed<'a>, RdbContext> for RdbRepoTransactional {
+impl<'a> Step<UpdateMemberInvitation<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
-    async fn advance(
+    async fn step(
         &self,
         context: &mut RdbContext,
-        step: &MarkPendingAsUsed<'a>,
+        oper: &UpdateMemberInvitation<'a>,
     ) -> RegularResult<()> {
-        mark_pending_as_used(context.conn(), step.id).await
+        match oper {
+            UpdateMemberInvitation::Info { update } => {
+                update_info(context.conn(), update.id.as_str(), update.roles)
+                    .await
+            }
+
+            UpdateMemberInvitation::MarkUsed { id } => {
+                mark_pending_as_used(context.conn(), id).await
+            }
+        }
     }
 }
 
-#[async_trait]
-impl<'a> Advance<GetInfoById<'a>, RdbContext> for RdbRepoTransactional {
+impl<'a> Step<GetMemberInvitationInfoExcluded<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
-    async fn advance(
+    async fn step(
         &self,
         context: &mut RdbContext,
-        step: &GetInfoById<'a>,
-    ) -> RegularResult<member_invitation_model::Info> {
-        get_info_by_id(context.conn(), step.id, step.incl_opt).await
+        oper: &GetMemberInvitationInfoExcluded<'a>,
+    ) -> RegularResult<MemberInvitationInfo> {
+        match oper {
+            GetMemberInvitationInfoExcluded::Code { code } => {
+                get_info_by_code_excluded(context.conn(), code).await
+            }
+        }
     }
 }
 
-#[async_trait]
-impl<'a> Advance<UpdateInfo<'a>, RdbContext> for RdbRepoTransactional {
+impl<'a> Step<DeleteMemberInvitation<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
-    async fn advance(
+    async fn step(
         &self,
         context: &mut RdbContext,
-        step: &UpdateInfo<'a>,
+        oper: &DeleteMemberInvitation<'a>,
     ) -> RegularResult<()> {
-        update_info(context.conn(), step.update.id.as_str(), step.update.roles)
-            .await
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<Delete<'a>, RdbContext> for RdbRepoTransactional {
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut RdbContext,
-        step: &Delete<'a>,
-    ) -> RegularResult<()> {
-        delete(context.conn(), step.id).await
+        delete(context.conn(), oper.id).await
     }
 }
 #[cfg(all(test, feature = "repo"))]

@@ -4,13 +4,13 @@ use time::OffsetDateTime;
 
 /// A deserialized authentication token identifying a user session.
 #[derive(Clone, Debug)]
-pub struct Token {
+pub struct UserToken {
     pub user_id: String,
 }
 
 /// A borrowed reference to a user authentication token, used in middleware
 /// to avoid cloning the owned [UserToken].
-pub struct TokenRef<'a> {
+pub struct UserTokenRef<'a> {
     pub user_id: &'a str,
 }
 
@@ -22,7 +22,7 @@ pub struct TokenRef<'a> {
 ///
 /// [`UserInfoVal`]: crate::data::user::UserInfoVal
 #[derive(Clone)]
-pub struct Info {
+pub struct UserInfo {
     pub id: String,
 
     pub qid: String,
@@ -42,7 +42,7 @@ pub struct Info {
 
 /// The data needed to insert a new user row.
 #[cfg_attr(test, derive(Clone))]
-pub struct Form {
+pub struct UserEntry {
     pub id: String,
 
     pub qid: String,
@@ -57,7 +57,7 @@ pub struct Form {
 /// the previous key (if any) to clean up after the new upload succeeds,
 /// and the version number that must match when marking the upload complete.
 #[cfg_attr(test, derive(Clone))]
-pub struct AvatarReservation {
+pub struct UserAvatarReservation {
     pub object_key: String,
     pub prev_object_key: Option<String>,
     pub avatar_version: u32,
@@ -65,7 +65,7 @@ pub struct AvatarReservation {
 
 /// A stored password credential used during login verification.
 #[cfg_attr(test, derive(Clone))]
-pub struct Credential {
+pub struct UserCredential {
     pub user_id: String,
     pub password_hash: String,
 }

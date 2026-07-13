@@ -3,7 +3,8 @@
 use diesel::prelude::*;
 use time::OffsetDateTime;
 
-use crate::model::assignment_model;
+use crate::model::assignment::AssignmentEntry;
+use crate::model::assignment::AssignmentInfo;
 use crate::part_impl::repo::rdb_impl::schema::t_assignment;
 use crate::result::RegularError;
 use crate::value::role::{RoleField, RoleMask};
@@ -32,7 +33,7 @@ pub struct AssignmentRow {
 /// Insertable struct for creating a new record in the `t_assignment` table.
 #[derive(Insertable)]
 #[diesel(table_name = t_assignment)]
-pub struct AssignmentEntry<'a> {
+pub struct AssignmentRowEntry<'a> {
     pub f_id: &'a str,
     pub f_chapter_id: &'a str,
     pub f_user_id: &'a str,
@@ -136,7 +137,7 @@ impl AssignmentRoleTimestamps {
     }
 }
 
-impl TryFrom<AssignmentRow> for assignment_model::Info {
+impl TryFrom<AssignmentRow> for AssignmentInfo {
     type Error = RegularError;
 
     fn try_from(row: AssignmentRow) -> Result<Self, Self::Error> {
@@ -190,18 +191,19 @@ impl TryFrom<AssignmentRow> for assignment_model::Info {
     }
 }
 
-impl<'a> AssignmentEntry<'a> {
-    pub fn from_form(
-        form: &'a assignment_model::Form,
+impl<'a> AssignmentRowEntry<'a> {
+    pub fn from_model_entry(
+        model_entry: &'a AssignmentEntry,
         now: OffsetDateTime,
     ) -> Self {
         //
-        let timestamps = AssignmentRoleTimestamps::from_mask(form.roles, now);
+        let timestamps =
+            AssignmentRoleTimestamps::from_mask(model_entry.roles, now);
 
         Self {
-            f_id: &form.id,
-            f_chapter_id: &form.chapter_id,
-            f_user_id: &form.user_id,
+            f_id: &model_entry.id,
+            f_chapter_id: &model_entry.chapter_id,
+            f_user_id: &model_entry.user_id,
             f_assigned_raw_provider_at: timestamps.f_raw_provider,
             f_assigned_translator_at: timestamps.f_translator,
             f_assigned_proofreader_at: timestamps.f_proofreader,

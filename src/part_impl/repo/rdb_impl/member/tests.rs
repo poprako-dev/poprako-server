@@ -1,17 +1,18 @@
-// member_roundtrip_reads_test_database_url(MemberStep)(positive): member repo creates, lists, fetches, and updates roles in the local test database.
+// member_roundtrip_reads_test_database_url(MemberRepo)(positive): member repo creates, lists, fetches, and updates roles in the local test database.
 
 use super::*;
 
-use poprako_transactional::advance::Advance;
-use poprako_transactional::drive::Drive;
+use poprako_orchestra::{Nucl as _, Step as _};
 
-use crate::model::member_model;
-use crate::part::repo::step::member::MemberStep;
-use crate::part::shared::execute::Execute;
+use crate::model::member::MemberEntry;
+use crate::model::member::MemberListSpec;
+use crate::model::member::MemberRoleUpdate;
+use crate::part::repo::oper::member::{
+    CreateMember, GetMemberInfo, ListMemberInfos, UpdateMember,
+};
 use crate::part_impl::drive::rdb_impl::RdbDrive;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
 use crate::result::RegularError;
-use crate::util::DeriveTransactional as _;
 use crate::value::member::MemberInclOpt;
 use crate::value::role::{RoleField, RoleMask};
 
@@ -28,40 +29,37 @@ async fn member_roundtrip_reads_test_database_url() {
 
     let repo = RdbRepo::new(shared.clone());
 
-    let drive = RdbDrive::new(shared.clone());
-
-    let transactional_repo = repo.derive_transactional().await;
+    let nucl = RdbDrive::new(shared.clone());
 
     let admin_role = RoleMask::from(RoleField::ADMIN);
 
     let member_role = RoleMask::from(RoleField::TRANSLATOR);
 
-    let member_form = member_model::Form {
+    let member_entry = MemberEntry {
         id: format!("{}member", PREFIX),
-        user_id: team_fixture.user_form.id.clone(),
-        user_nickname: team_fixture.user_form.nickname.clone(),
-        team_id: team_fixture.team_form.id.clone(),
+        user_id: team_fixture.user_entry.id.clone(),
+        user_nickname: team_fixture.user_entry.nickname.clone(),
+        team_id: team_fixture.team_entry.id.clone(),
         roles: admin_role,
     };
 
-    drive
-        .with_context(async |context| {
-            //
-            Advance::advance(
-                &transactional_repo,
-                context,
-                &MemberStep::create(&member_form),
-            )
-            .await?;
+    nucl.coord(async |context| {
+        repo.step(
+            context,
+            &CreateMember {
+                entry: &member_entry,
+            },
+        )
+        .await?;
 
-            Ok::<(), RegularError>(())
-        })
-        .await
-        .ok()
-        .unwrap();
+        Ok::<(), RegularError>(())
+    })
+    .await
+    .ok()
+    .unwrap();
 
-    let member_list_spec = member_model::ListSpec::Team {
-        team_id: team_fixture.team_form.id.clone(),
+    let member_list_spec = MemberListSpec::Team {
+        team_id: team_fixture.team_entry.id.clone(),
         fuzzy_nickname: Some("RDB".into()),
         role: Some(RoleField::ADMIN),
         incl_opt: vec![MemberInclOpt::User],
@@ -69,47 +67,43 @@ async fn member_roundtrip_reads_test_database_url() {
         limit: 10,
     };
 
-    let member_infos =
-        Execute::execute(&repo, &MemberStep::list_infos(&member_list_spec))
-            .await
-            .ok()
-            .unwrap();
+    let list_member_infos = ListMemberInfos::Spec {
+        spec: &member_list_spec,
+    };
+
+    let member_infos = repo.run(&list_member_infos).await.ok().unwrap();
 
     assert_eq!(member_infos.len(), 1);
 
     assert_eq!(
         member_infos[0].user.as_ref().unwrap().id,
-        team_fixture.user_form.id
+        team_fixture.user_entry.id
     );
 
-    let member_role_update = member_model::RoleUpdate {
-        id: member_form.id.clone(),
+    let member_role_update = MemberRoleUpdate {
+        id: member_entry.id.clone(),
         roles: member_role,
     };
 
-    drive
-        .with_context(async |context| {
-            //
-            Advance::advance(
-                &transactional_repo,
-                context,
-                &MemberStep::update_role(&member_role_update),
-            )
-            .await?;
+    nucl.coord(async |context| {
+        let update_member = UpdateMember::Role {
+            update: &member_role_update,
+        };
 
-            Ok::<(), RegularError>(())
-        })
-        .await
-        .ok()
-        .unwrap();
+        repo.step(context, &update_member).await?;
 
-    let member_info = Execute::execute(
-        &repo,
-        &MemberStep::get_info_by_id(&member_form.id, &[MemberInclOpt::User]),
-    )
+        Ok::<(), RegularError>(())
+    })
     .await
     .ok()
     .unwrap();
+
+    let get_member_info = GetMemberInfo::Id {
+        id: &member_entry.id,
+        incls: &[MemberInclOpt::User],
+    };
+
+    let member_info = repo.run(&get_member_info).await.ok().unwrap();
 
     assert_eq!(member_info.roles, member_role);
 

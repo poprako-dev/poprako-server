@@ -1,17 +1,17 @@
-// chapter_roundtrip_reads_test_database_url(ChapterStep)(positive): chapter repo persists, lists, and finds pinned chapter rows in the local test database.
+// chapter_roundtrip_reads_test_database_url(ChapterRepo)(positive): chapter repo persists, lists, and finds pinned chapter rows in the local test database.
 
 use super::*;
 
-use poprako_transactional::advance::Advance;
-use poprako_transactional::drive::Drive;
+use poprako_orchestra::{Nucl, Run as _, Step as _};
 
-use crate::model::chapter_model;
-use crate::part::repo::step::chapter::ChapterStep;
-use crate::part::shared::execute::Execute;
+use crate::model::chapter::ChapterInfoListSpec;
+use crate::model::chapter::ChapterStageUpdate;
+use crate::part::repo::oper::chapter::{
+    FindPinnedChapterInfo, ListChapterInfos, UpdateChapterStage,
+};
 use crate::part_impl::drive::rdb_impl::RdbDrive;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
-use crate::result::RegularError;
-use crate::util::DeriveTransactional as _;
+use crate::result::accept;
 use crate::value::chapter::{ChapterInclOpt, StageMask};
 
 const PREFIX: &str = "rdb-test-chapter-domain-";
@@ -29,43 +29,43 @@ async fn chapter_roundtrip_reads_test_database_url() {
 
     let drive = RdbDrive::new(shared.clone());
 
-    let transactional_repo = repo.derive_transactional().await;
-
     let stage_mask = StageMask::try_from(0u32).ok().unwrap();
 
-    let chapter_stage_update = chapter_model::StageUpdate {
-        id: chapter_fixture.chapter_form.id.clone(),
+    let chapter_stage_update = ChapterStageUpdate {
+        id: chapter_fixture.chapter_entry.id.clone(),
         stages: stage_mask,
     };
 
     drive
-        .with_context(async |context| {
-            //
-            Advance::advance(
-                &transactional_repo,
+        .coord(async |context| {
+            repo.step(
                 context,
-                &ChapterStep::update_stage(&chapter_stage_update),
+                &UpdateChapterStage {
+                    update: &chapter_stage_update,
+                },
             )
             .await?;
 
-            Ok::<(), RegularError>(())
+            accept(())
         })
         .await
         .ok()
         .unwrap();
 
-    let chapter_list_spec = chapter_model::ListSpec {
-        comic_id: chapter_fixture.comic_form.id.clone(),
+    let chapter_list_spec = ChapterInfoListSpec {
+        comic_id: chapter_fixture.comic_entry.id.clone(),
         incl_opt: vec![ChapterInclOpt::Creator],
         offset: 0,
         limit: 10,
     };
 
-    let chapter_infos =
-        Execute::execute(&repo, &ChapterStep::list_infos(&chapter_list_spec))
-            .await
-            .ok()
-            .unwrap();
+    let chapter_infos = repo
+        .run(&ListChapterInfos {
+            spec: &chapter_list_spec,
+        })
+        .await
+        .ok()
+        .unwrap();
 
     assert_eq!(chapter_infos.len(), 1);
 
@@ -74,46 +74,46 @@ async fn chapter_roundtrip_reads_test_database_url() {
         chapter_fixture.creator_form.id
     );
 
-    let chapter_list_spec = chapter_model::ListSpec {
-        comic_id: chapter_fixture.comic_form.id.clone(),
+    let chapter_list_spec = ChapterInfoListSpec {
+        comic_id: chapter_fixture.comic_entry.id.clone(),
         incl_opt: vec![ChapterInclOpt::ComicWorksetTeam],
         offset: 0,
         limit: 10,
     };
 
-    let chapter_infos =
-        Execute::execute(&repo, &ChapterStep::list_infos(&chapter_list_spec))
-            .await
-            .ok()
-            .unwrap();
+    let chapter_infos = repo
+        .run(&ListChapterInfos {
+            spec: &chapter_list_spec,
+        })
+        .await
+        .ok()
+        .unwrap();
 
     let comic_info = chapter_infos[0].comic.as_ref().unwrap();
 
-    assert_eq!(comic_info.id, chapter_fixture.comic_form.id);
+    assert_eq!(comic_info.id, chapter_fixture.comic_entry.id);
 
     assert_eq!(
         comic_info.workset.as_ref().unwrap().id,
-        chapter_fixture.workset_form.id
+        chapter_fixture.workset_entry.id
     );
 
     assert_eq!(
         comic_info.team.as_ref().unwrap().id,
-        chapter_fixture.team_form.id
+        chapter_fixture.team_entry.id
     );
 
-    let pinned_chapter_info = Execute::execute(
-        &repo,
-        &ChapterStep::find_pinned_info_by_comic_id(
-            &chapter_fixture.comic_form.id,
-            &[ChapterInclOpt::Creator],
-        ),
-    )
-    .await
-    .ok()
-    .unwrap()
-    .unwrap();
+    let pinned_chapter_info = repo
+        .run(&FindPinnedChapterInfo {
+            comic_id: &chapter_fixture.comic_entry.id,
+            incls: &[ChapterInclOpt::Creator],
+        })
+        .await
+        .ok()
+        .unwrap()
+        .unwrap();
 
-    assert_eq!(pinned_chapter_info.id, chapter_fixture.chapter_form.id);
+    assert_eq!(pinned_chapter_info.id, chapter_fixture.chapter_entry.id);
 
     test_shared::cleanup(&shared, PREFIX).await.ok().unwrap();
 

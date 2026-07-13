@@ -1,24 +1,17 @@
-# Model struct qualification
+# Model struct imports
 
-Outside `src/data/` and `src/model/`, a model-layer type must be referred to
-through its public domain alias:
+Every model domain is a public module. Import the concrete type from it and
+use the type bare:
 
 ```rust
-use crate::model::team_model;
-
-fn create(form: team_model::Form) { /* ... */ }
+use crate::model::user::UserToken;
 ```
 
-Do not import individual model types, and do not use the private
-`crate::model::team` module path. The domain alias keeps generic model names
-such as `Info`, `Form`, and `ListSpec` unambiguous.
-
-Run the standalone checker from the repository root:
+`user_model`, any other `*_model` wrapper, root model re-exports, and module
+qualified uses such as `user::UserToken` are forbidden. The checker delegates
+to the shared Tree-sitter rule:
 
 ```bash
 uv run fmt/model-struct-qualification/check.py
+uv run fmt/model-struct-qualification/check.py --fix
 ```
-
-The script contains its pinned Tree-sitter dependencies, so `uv run` is the
-only preparation it needs. It reports violations only and never modifies a
-Rust file.

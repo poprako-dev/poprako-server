@@ -8,32 +8,37 @@ use super::*;
 
 use time::OffsetDateTime;
 
-use crate::data::comment_data;
-use crate::model::{comment_model, member_model, user_model};
+use crate::data::comment::CreateCommentParams;
+use crate::data::comment::ListCommentInfosParams;
+use crate::model::comment::CommentInfo;
+use crate::model::member::MemberInfo;
+use crate::model::user::UserCredential;
+use crate::model::user::UserInfo;
+use crate::model::user::UserToken;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::{assert_expected_variant, now};
 use crate::value::comment::CommentInclOpt;
 use crate::value::role::{RoleField, RoleMask};
 
-fn token(user_id: &str) -> user_model::Token {
-    user_model::Token {
+fn token(user_id: &str) -> UserToken {
+    UserToken {
         user_id: user_id.into(),
     }
 }
 
-fn credential(user_id: &str) -> user_model::Credential {
-    user_model::Credential {
+fn credential(user_id: &str) -> UserCredential {
+    UserCredential {
         user_id: user_id.into(),
         password_hash: "hash".into(),
     }
 }
 
-fn user(id: &str, nickname: &str) -> user_model::Info {
+fn user(id: &str, nickname: &str) -> UserInfo {
     //
     let time = now();
 
-    user_model::Info {
+    UserInfo {
         id: id.into(),
         qid: id.into(),
         nickname: nickname.into(),
@@ -52,8 +57,8 @@ fn member(
     user_id: &str,
     team_id: &str,
     role_mask: RoleMask,
-) -> member_model::Info {
-    member_model::Info {
+) -> MemberInfo {
+    MemberInfo {
         id: id.into(),
         user_id: user_id.into(),
         user_nickname: user_id.into(),
@@ -70,8 +75,8 @@ fn comment(
     team_id: &str,
     user_id: &str,
     created_at: OffsetDateTime,
-) -> comment_model::Info {
-    comment_model::Info {
+) -> CommentInfo {
+    CommentInfo {
         id: id.into(),
         team_id: team_id.into(),
         user_id: user_id.into(),
@@ -81,11 +86,11 @@ fn comment(
     }
 }
 
-fn list_data(
+fn list_params(
     team_id: &str,
     incl_opt: Vec<CommentInclOpt>,
-) -> comment_data::ListInfosData {
-    comment_data::ListInfosData {
+) -> ListCommentInfosParams {
+    ListCommentInfosParams {
         team_id: team_id.into(),
         incl_opt,
         offset: 0,
@@ -93,8 +98,8 @@ fn list_data(
     }
 }
 
-fn create_data(team_id: &str) -> comment_data::CreateData {
-    comment_data::CreateData {
+fn create_params(team_id: &str) -> CreateCommentParams {
+    CreateCommentParams {
         team_id: team_id.into(),
         content: "created".into(),
     }
@@ -126,7 +131,7 @@ async fn list_infos_team_member_lists_team_comments() {
         &mock,
         &mock,
         token("viewer-user"),
-        list_data("team-1", Vec::new()),
+        list_params("team-1", Vec::new()),
     )
     .await;
 
@@ -156,7 +161,7 @@ async fn list_infos_user_include_follows_request() {
         &mock,
         &mock,
         token("viewer-user"),
-        list_data("team-1", Vec::new()),
+        list_params("team-1", Vec::new()),
     )
     .await;
 
@@ -168,7 +173,7 @@ async fn list_infos_user_include_follows_request() {
         &mock,
         &mock,
         token("viewer-user"),
-        list_data("team-1", vec![CommentInclOpt::User]),
+        list_params("team-1", vec![CommentInclOpt::User]),
     )
     .await;
 
@@ -190,7 +195,7 @@ async fn list_infos_non_member_is_rejected() {
         &mock,
         &mock,
         token("outsider-user"),
-        list_data("team-1", Vec::new()),
+        list_params("team-1", Vec::new()),
     )
     .await
     .err()
@@ -207,7 +212,7 @@ async fn create_team_member_creates_comment() {
     seed_member(&mock, "viewer-user", "team-1");
 
     let created_comment =
-        create(&mock, &mock, token("viewer-user"), create_data("team-1"))
+        create(&mock, &mock, token("viewer-user"), create_params("team-1"))
             .await
             .ok()
             .unwrap();
@@ -228,11 +233,15 @@ async fn create_non_member_is_rejected_without_mutation() {
     //
     let mock = Mock::new();
 
-    let err =
-        create(&mock, &mock, token("outsider-user"), create_data("team-1"))
-            .await
-            .err()
-            .unwrap();
+    let err = create(
+        &mock,
+        &mock,
+        token("outsider-user"),
+        create_params("team-1"),
+    )
+    .await
+    .err()
+    .unwrap();
 
     assert_expected_variant(err, ExpectedVariant::Perm);
 

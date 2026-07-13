@@ -39,7 +39,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateAnnouncementData"
+                "$ref": "#/components/schemas/CreateAnnouncementParams"
               }
             }
           },
@@ -51,7 +51,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_CreateAnnouncementVal"
+                  "$ref": "#/components/schemas/HttpBody_CreateAnnouncementPayload"
                 }
               }
             }
@@ -76,7 +76,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateAssignmentInvitationData"
+                "$ref": "#/components/schemas/CreateAssignmentInvitationParams"
               }
             }
           },
@@ -88,7 +88,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_CreateAssignmentInvitationVal"
+                  "$ref": "#/components/schemas/HttpBody_CreateAssignmentInvitationPayload"
                 }
               }
             }
@@ -113,7 +113,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/JoinAssignmentInvitationData"
+                "$ref": "#/components/schemas/JoinAssignmentInvitationParams"
               }
             }
           },
@@ -227,7 +227,7 @@
             "required": true,
             "schema": {
               "type": "integer",
-              "format": "int64",
+              "format": "int32",
               "minimum": 0
             }
           },
@@ -237,7 +237,7 @@
             "required": true,
             "schema": {
               "type": "integer",
-              "format": "int64",
+              "format": "int32",
               "minimum": 0
             }
           }
@@ -273,7 +273,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/JoinChapterData"
+                "$ref": "#/components/schemas/JoinChapterAssignmentParams"
               }
             }
           },
@@ -342,7 +342,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/LoginData"
+                "$ref": "#/components/schemas/LoginAuthParams"
               }
             }
           },
@@ -354,7 +354,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_LoginVal"
+                  "$ref": "#/components/schemas/HttpBody_LoginAuthPayload"
                 }
               }
             }
@@ -392,7 +392,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/RegisterData"
+                "$ref": "#/components/schemas/RegisterAuthParams"
               }
             }
           },
@@ -404,7 +404,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_RegisterVal"
+                  "$ref": "#/components/schemas/HttpBody_RegisterAuthPayload"
                 }
               }
             }
@@ -429,7 +429,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateChapterData"
+                "$ref": "#/components/schemas/CreateChapterParams"
               }
             }
           },
@@ -441,7 +441,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_CreateChapterVal"
+                  "$ref": "#/components/schemas/HttpBody_CreateChapterPayload"
                 }
               }
             }
@@ -542,7 +542,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PatchChapterInfoData"
+                "$ref": "#/components/schemas/UpdateChapterInfoParams"
               }
             }
           },
@@ -598,7 +598,7 @@
             "required": true,
             "schema": {
               "type": "integer",
-              "format": "int64",
+              "format": "int32",
               "minimum": 0
             }
           },
@@ -609,7 +609,7 @@
             "required": true,
             "schema": {
               "type": "integer",
-              "format": "int64",
+              "format": "int32",
               "minimum": 0
             }
           }
@@ -662,7 +662,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateAssignmentRolesData"
+                "$ref": "#/components/schemas/UpdateAssignmentRolesParams"
               }
             }
           },
@@ -708,7 +708,7 @@
             "required": true,
             "schema": {
               "type": "integer",
-              "format": "int64",
+              "format": "int32",
               "minimum": 0
             }
           },
@@ -719,7 +719,7 @@
             "required": true,
             "schema": {
               "type": "integer",
-              "format": "int64",
+              "format": "int32",
               "minimum": 0
             }
           }
@@ -789,7 +789,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ReserveChapterPagesData"
+                "$ref": "#/components/schemas/ReserveChapterPagesParams"
               }
             }
           },
@@ -801,7 +801,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_ReserveChapterPagesVal"
+                  "$ref": "#/components/schemas/HttpBody_ReserveChapterPagesPayload"
                 }
               }
             }
@@ -837,7 +837,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateChapterStageData"
+                "$ref": "#/components/schemas/UpdateChapterStageParams"
               }
             }
           },
@@ -960,7 +960,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ChapterTranslationImportData"
+                "$ref": "#/components/schemas/ImportChapterTranslationParams"
               }
             }
           },
@@ -972,7 +972,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_ChapterTranslationImportVal"
+                  "$ref": "#/components/schemas/HttpBody_ImportChapterTranslationPayload"
                 }
               }
             }
@@ -997,7 +997,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateComicData"
+                "$ref": "#/components/schemas/CreateComicParams"
               }
             }
           },
@@ -1009,7 +1009,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_CreateComicVal"
+                  "$ref": "#/components/schemas/HttpBody_CreateComicPayload"
                 }
               }
             }
@@ -1081,7 +1081,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateComicInfoData"
+                "$ref": "#/components/schemas/UpdateComicInfoParams"
               }
             }
           },
@@ -1156,7 +1156,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_ArchiveComicVal"
+                  "$ref": "#/components/schemas/HttpBody_ArchiveComicPayload"
                 }
               }
             }
@@ -1207,7 +1207,7 @@
             "required": true,
             "schema": {
               "type": "integer",
-              "format": "int64",
+              "format": "int32",
               "minimum": 0
             }
           },
@@ -1218,7 +1218,7 @@
             "required": true,
             "schema": {
               "type": "integer",
-              "format": "int64",
+              "format": "int32",
               "minimum": 0
             }
           }
@@ -1297,7 +1297,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/MarkComicCoverUploadedData"
+                "$ref": "#/components/schemas/MarkComicCoverUploadedParams"
               }
             }
           },
@@ -1338,7 +1338,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ReserveComicCoverData"
+                "$ref": "#/components/schemas/ReserveComicCoverParams"
               }
             }
           },
@@ -1350,7 +1350,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_ReserveComicCoverVal"
+                  "$ref": "#/components/schemas/HttpBody_ReserveComicCoverPayload"
                 }
               }
             }
@@ -1375,7 +1375,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateCommentData"
+                "$ref": "#/components/schemas/CreateCommentParams"
               }
             }
           },
@@ -1387,7 +1387,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_CreateCommentVal"
+                  "$ref": "#/components/schemas/HttpBody_CreateCommentPayload"
                 }
               }
             }
@@ -1412,7 +1412,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateMemberInvitationData"
+                "$ref": "#/components/schemas/CreateMemberInvitationParams"
               }
             }
           },
@@ -1424,7 +1424,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_CreateMemberInvitationVal"
+                  "$ref": "#/components/schemas/HttpBody_CreateMemberInvitationPayload"
                 }
               }
             }
@@ -1491,7 +1491,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateMemberInvitationRolesData"
+                "$ref": "#/components/schemas/UpdateMemberInvitationRolesParams"
               }
             }
           },
@@ -1576,7 +1576,7 @@
             "required": true,
             "schema": {
               "type": "integer",
-              "format": "int64",
+              "format": "int32",
               "minimum": 0
             }
           },
@@ -1586,7 +1586,7 @@
             "required": true,
             "schema": {
               "type": "integer",
-              "format": "int64",
+              "format": "int32",
               "minimum": 0
             }
           }
@@ -1620,7 +1620,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateMemberData"
+                "$ref": "#/components/schemas/CreateMemberParams"
               }
             }
           },
@@ -1632,7 +1632,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_CreateMemberVal"
+                  "$ref": "#/components/schemas/HttpBody_CreateMemberPayload"
                 }
               }
             }
@@ -1660,7 +1660,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/JoinTeamData"
+                "$ref": "#/components/schemas/JoinTeamParams"
               }
             }
           },
@@ -1713,7 +1713,7 @@
             "required": true,
             "schema": {
               "type": "integer",
-              "format": "int64",
+              "format": "int32",
               "minimum": 0
             }
           },
@@ -1724,7 +1724,7 @@
             "required": true,
             "schema": {
               "type": "integer",
-              "format": "int64",
+              "format": "int32",
               "minimum": 0
             }
           }
@@ -1799,7 +1799,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateMemberRolesData"
+                "$ref": "#/components/schemas/UpdateMemberRolesParams"
               }
             }
           },
@@ -1843,7 +1843,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/MarkPageImageUploadedData"
+                "$ref": "#/components/schemas/MarkPageImageUploadedParams"
               }
             }
           },
@@ -1884,7 +1884,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ReservePageImageData"
+                "$ref": "#/components/schemas/ReservePageImageParams"
               }
             }
           },
@@ -1896,7 +1896,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_ReservePageImageVal"
+                  "$ref": "#/components/schemas/HttpBody_ReservePageImagePayload"
                 }
               }
             }
@@ -1934,7 +1934,7 @@
             "required": true,
             "schema": {
               "type": "integer",
-              "format": "int64",
+              "format": "int32",
               "minimum": 0
             }
           },
@@ -1945,7 +1945,7 @@
             "required": true,
             "schema": {
               "type": "integer",
-              "format": "int64",
+              "format": "int32",
               "minimum": 0
             }
           }
@@ -1956,7 +1956,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_ListPageUnitInfosVal"
+                  "$ref": "#/components/schemas/HttpBody_ListPageUnitInfosPayload"
                 }
               }
             }
@@ -1992,7 +1992,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SavePageUnitsData"
+                "$ref": "#/components/schemas/SavePageUnitsParams"
               }
             }
           },
@@ -2004,7 +2004,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_SavePageUnitsVal"
+                  "$ref": "#/components/schemas/HttpBody_SavePageUnitsPayload"
                 }
               }
             }
@@ -2040,7 +2040,7 @@
             "required": true,
             "schema": {
               "type": "integer",
-              "format": "int64",
+              "format": "int32",
               "minimum": 0
             }
           },
@@ -2050,7 +2050,7 @@
             "required": true,
             "schema": {
               "type": "integer",
-              "format": "int64",
+              "format": "int32",
               "minimum": 0
             }
           }
@@ -2061,7 +2061,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_Vec_SystemMailVal"
+                  "$ref": "#/components/schemas/HttpBody_Vec_SystemMailInfoVal"
                 }
               }
             }
@@ -2083,7 +2083,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/MarkSystemMailsReadData"
+                "$ref": "#/components/schemas/MarkSystemMailReadParams"
               }
             }
           },
@@ -2123,7 +2123,7 @@
             "required": true,
             "schema": {
               "type": "integer",
-              "format": "int64",
+              "format": "int32",
               "minimum": 0
             }
           },
@@ -2133,7 +2133,7 @@
             "required": true,
             "schema": {
               "type": "integer",
-              "format": "int64",
+              "format": "int32",
               "minimum": 0
             }
           }
@@ -2167,7 +2167,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateTeamData"
+                "$ref": "#/components/schemas/CreateTeamParams"
               }
             }
           },
@@ -2251,7 +2251,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateTeamInfoData"
+                "$ref": "#/components/schemas/UpdateTeamInfoParams"
               }
             }
           },
@@ -2339,7 +2339,7 @@
             "required": true,
             "schema": {
               "type": "integer",
-              "format": "int64",
+              "format": "int32",
               "minimum": 0
             }
           },
@@ -2350,7 +2350,7 @@
             "required": true,
             "schema": {
               "type": "integer",
-              "format": "int64",
+              "format": "int32",
               "minimum": 0
             }
           }
@@ -2394,7 +2394,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/MarkTeamAvatarUploadedData"
+                "$ref": "#/components/schemas/MarkTeamAvatarUploadedParams"
               }
             }
           },
@@ -2435,7 +2435,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ReserveTeamAvatarData"
+                "$ref": "#/components/schemas/ReserveTeamAvatarParams"
               }
             }
           },
@@ -2447,7 +2447,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_ReserveTeamAvatarVal"
+                  "$ref": "#/components/schemas/HttpBody_ReserveTeamAvatarPayload"
                 }
               }
             }
@@ -2498,7 +2498,7 @@
             "required": true,
             "schema": {
               "type": "integer",
-              "format": "int64",
+              "format": "int32",
               "minimum": 0
             }
           },
@@ -2509,7 +2509,7 @@
             "required": true,
             "schema": {
               "type": "integer",
-              "format": "int64",
+              "format": "int32",
               "minimum": 0
             }
           }
@@ -2577,7 +2577,7 @@
             "required": true,
             "schema": {
               "type": "integer",
-              "format": "int64",
+              "format": "int32",
               "minimum": 0
             }
           },
@@ -2588,7 +2588,7 @@
             "required": true,
             "schema": {
               "type": "integer",
-              "format": "int64",
+              "format": "int32",
               "minimum": 0
             }
           }
@@ -2634,7 +2634,7 @@
             "required": true,
             "schema": {
               "type": "integer",
-              "format": "int64",
+              "format": "int32",
               "minimum": 0
             }
           },
@@ -2645,7 +2645,7 @@
             "required": true,
             "schema": {
               "type": "integer",
-              "format": "int64",
+              "format": "int32",
               "minimum": 0
             }
           }
@@ -2752,7 +2752,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateUserInfoData"
+                "$ref": "#/components/schemas/UpdateUserInfoParams"
               }
             }
           },
@@ -2825,7 +2825,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/MarkUserAvatarUploadedData"
+                "$ref": "#/components/schemas/MarkUserAvatarUploadedParams"
               }
             }
           },
@@ -2863,7 +2863,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ReserveUserAvatarData"
+                "$ref": "#/components/schemas/ReserveUserAvatarParams"
               }
             }
           },
@@ -2875,7 +2875,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_ReserveUserAvatarVal"
+                  "$ref": "#/components/schemas/HttpBody_ReserveUserAvatarPayload"
                 }
               }
             }
@@ -2897,7 +2897,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateWorksetData"
+                "$ref": "#/components/schemas/CreateWorksetParams"
               }
             }
           },
@@ -2909,7 +2909,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_CreateWorksetVal"
+                  "$ref": "#/components/schemas/HttpBody_CreateWorksetPayload"
                 }
               }
             }
@@ -2987,7 +2987,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateWorksetInfoData"
+                "$ref": "#/components/schemas/UpdateWorksetInfoParams"
               }
             }
           },
@@ -3103,11 +3103,11 @@
           {
             "name": "offset",
             "in": "query",
-            "description": "FIXME: Paginate\nPagination offset (0-based).",
+            "description": "Pagination offset (0-based).",
             "required": true,
             "schema": {
               "type": "integer",
-              "format": "int64",
+              "format": "int32",
               "minimum": 0
             }
           },
@@ -3118,7 +3118,7 @@
             "required": true,
             "schema": {
               "type": "integer",
-              "format": "int64",
+              "format": "int32",
               "minimum": 0
             }
           }
@@ -3196,7 +3196,7 @@
           }
         }
       },
-      "ArchiveComicVal": {
+      "ArchiveComicPayload": {
         "type": "object",
         "description": "Value returned after an active comic has been archived atomically.",
         "required": [
@@ -3419,78 +3419,6 @@
           }
         }
       },
-      "ChapterTranslationExportVal": {
-        "type": "object",
-        "description": "JSON-safe export object for one translated chapter.",
-        "required": [
-          "chapter_id",
-          "chapter_index",
-          "comic_id",
-          "comic_title",
-          "pages"
-        ],
-        "properties": {
-          "chapter_id": {
-            "type": "string"
-          },
-          "chapter_index": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "chapter_subtitle": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "comic_id": {
-            "type": "string"
-          },
-          "comic_title": {
-            "type": "string"
-          },
-          "pages": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PageTranslationExportVal"
-            }
-          }
-        }
-      },
-      "ChapterTranslationImportData": {
-        "type": "object",
-        "description": "Request body for importing chapter translations.",
-        "required": [
-          "format",
-          "content"
-        ],
-        "properties": {
-          "content": {
-            "type": "string"
-          },
-          "format": {
-            "$ref": "#/components/schemas/TranslationFormat"
-          }
-        }
-      },
-      "ChapterTranslationImportVal": {
-        "type": "object",
-        "description": "Summary returned after importing chapter translations.",
-        "required": [
-          "imported_page_count",
-          "imported_unit_count"
-        ],
-        "properties": {
-          "imported_page_count": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "imported_unit_count": {
-            "type": "integer",
-            "format": "int32"
-          }
-        }
-      },
       "ComicInclOpt": {
         "type": "string",
         "description": "Incl opts for comic info queries.\n\nEach opt embeds additional related data into the returned\n[`ComicInfoVal`]. Dotted opts implicitly pull in the segments before the\ndot (e.g. `workset.team` also embeds `workset`).",
@@ -3664,7 +3592,7 @@
           }
         }
       },
-      "CreateAnnouncementData": {
+      "CreateAnnouncementParams": {
         "type": "object",
         "description": "Input parameters for creating an announcement.",
         "required": [
@@ -3684,7 +3612,7 @@
           }
         }
       },
-      "CreateAnnouncementVal": {
+      "CreateAnnouncementPayload": {
         "type": "object",
         "description": "Return value from creating an announcement.",
         "required": [
@@ -3696,7 +3624,7 @@
           }
         }
       },
-      "CreateAssignmentInvitationData": {
+      "CreateAssignmentInvitationParams": {
         "type": "object",
         "description": "Input parameters for creating an assignment invitation.",
         "required": [
@@ -3716,7 +3644,7 @@
           }
         }
       },
-      "CreateAssignmentInvitationVal": {
+      "CreateAssignmentInvitationPayload": {
         "type": "object",
         "description": "Return value from creating an assignment invitation.",
         "required": [
@@ -3732,7 +3660,7 @@
           }
         }
       },
-      "CreateChapterData": {
+      "CreateChapterParams": {
         "type": "object",
         "description": "Input parameters for creating a new chapter.",
         "required": [
@@ -3751,7 +3679,7 @@
           }
         }
       },
-      "CreateChapterVal": {
+      "CreateChapterPayload": {
         "type": "object",
         "description": "Return value from a successful chapter creation.",
         "required": [
@@ -3763,7 +3691,7 @@
           }
         }
       },
-      "CreateComicData": {
+      "CreateComicParams": {
         "type": "object",
         "description": "Input parameters for creating a new comic inside a workset.\n\nThe first chapter is created atomically with the comic. Its subtitle\ncan be customised via `first_chapter_subtitle`; when absent, a\nlocale-aware default (e.g. \"Ch. 1\") is generated.",
         "required": [
@@ -3796,7 +3724,7 @@
           }
         }
       },
-      "CreateComicVal": {
+      "CreateComicPayload": {
         "type": "object",
         "description": "Return value from a successful comic creation.\n\nIncludes the IDs of both the new comic and its auto-created first chapter.",
         "required": [
@@ -3812,7 +3740,7 @@
           }
         }
       },
-      "CreateCommentData": {
+      "CreateCommentParams": {
         "type": "object",
         "description": "Input parameters for creating a comment.",
         "required": [
@@ -3828,7 +3756,7 @@
           }
         }
       },
-      "CreateCommentVal": {
+      "CreateCommentPayload": {
         "type": "object",
         "description": "Return value from creating a comment.",
         "required": [
@@ -3840,27 +3768,7 @@
           }
         }
       },
-      "CreateMemberData": {
-        "type": "object",
-        "description": "Input parameters for creating a member.",
-        "required": [
-          "user_id",
-          "team_id",
-          "roles"
-        ],
-        "properties": {
-          "roles": {
-            "$ref": "#/components/schemas/RoleMask"
-          },
-          "team_id": {
-            "type": "string"
-          },
-          "user_id": {
-            "type": "string"
-          }
-        }
-      },
-      "CreateMemberInvitationData": {
+      "CreateMemberInvitationParams": {
         "type": "object",
         "description": "Input parameters for creating a new team invitation.\n\nThe invitation binds a specific QQ ID (`invitee_qid`) to a [`RoleMask`]\nthat will be granted upon acceptance. The actual in-app user lookup\nhappens during the registration flow.",
         "required": [
@@ -3882,7 +3790,7 @@
           }
         }
       },
-      "CreateMemberInvitationVal": {
+      "CreateMemberInvitationPayload": {
         "type": "object",
         "description": "Return value from a successful invitation creation.\n\nThe `code` is a short opaque token the invitee presents during\nregistration to claim the invitation.",
         "required": [
@@ -3898,7 +3806,27 @@
           }
         }
       },
-      "CreateMemberVal": {
+      "CreateMemberParams": {
+        "type": "object",
+        "description": "Input parameters for creating a member.",
+        "required": [
+          "user_id",
+          "team_id",
+          "roles"
+        ],
+        "properties": {
+          "roles": {
+            "$ref": "#/components/schemas/RoleMask"
+          },
+          "team_id": {
+            "type": "string"
+          },
+          "user_id": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateMemberPayload": {
         "type": "object",
         "description": "Return value from creating a member.",
         "required": [
@@ -3910,7 +3838,7 @@
           }
         }
       },
-      "CreateTeamData": {
+      "CreateTeamParams": {
         "type": "object",
         "description": "Input parameters for creating a new team.",
         "required": [
@@ -3926,7 +3854,7 @@
           }
         }
       },
-      "CreateWorksetData": {
+      "CreateWorksetParams": {
         "type": "object",
         "description": "Input parameters for creating a new workset inside a team.",
         "required": [
@@ -3948,7 +3876,7 @@
           }
         }
       },
-      "CreateWorksetVal": {
+      "CreateWorksetPayload": {
         "type": "object",
         "description": "Return value from a successful workset creation.",
         "required": [
@@ -3960,7 +3888,45 @@
           }
         }
       },
-      "HttpBody_ArchiveComicVal": {
+      "ExportChapterTranslationPayload": {
+        "type": "object",
+        "description": "JSON-safe export object for one translated chapter.",
+        "required": [
+          "chapter_id",
+          "chapter_index",
+          "comic_id",
+          "comic_title",
+          "pages"
+        ],
+        "properties": {
+          "chapter_id": {
+            "type": "string"
+          },
+          "chapter_index": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "chapter_subtitle": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "comic_id": {
+            "type": "string"
+          },
+          "comic_title": {
+            "type": "string"
+          },
+          "pages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PageTranslationExportPayload"
+            }
+          }
+        }
+      },
+      "HttpBody_ArchiveComicPayload": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -4161,94 +4127,6 @@
           }
         }
       },
-      "HttpBody_ChapterTranslationExportVal": {
-        "type": "object",
-        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
-        "required": [
-          "code",
-          "data"
-        ],
-        "properties": {
-          "code": {
-            "type": "integer",
-            "format": "int32",
-            "example": 0,
-            "minimum": 0
-          },
-          "data": {
-            "type": "object",
-            "description": "JSON-safe export object for one translated chapter.",
-            "required": [
-              "chapter_id",
-              "chapter_index",
-              "comic_id",
-              "comic_title",
-              "pages"
-            ],
-            "properties": {
-              "chapter_id": {
-                "type": "string"
-              },
-              "chapter_index": {
-                "type": "integer",
-                "format": "int32"
-              },
-              "chapter_subtitle": {
-                "type": [
-                  "string",
-                  "null"
-                ]
-              },
-              "comic_id": {
-                "type": "string"
-              },
-              "comic_title": {
-                "type": "string"
-              },
-              "pages": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/components/schemas/PageTranslationExportVal"
-                }
-              }
-            }
-          }
-        }
-      },
-      "HttpBody_ChapterTranslationImportVal": {
-        "type": "object",
-        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
-        "required": [
-          "code",
-          "data"
-        ],
-        "properties": {
-          "code": {
-            "type": "integer",
-            "format": "int32",
-            "example": 0,
-            "minimum": 0
-          },
-          "data": {
-            "type": "object",
-            "description": "Summary returned after importing chapter translations.",
-            "required": [
-              "imported_page_count",
-              "imported_unit_count"
-            ],
-            "properties": {
-              "imported_page_count": {
-                "type": "integer",
-                "format": "int32"
-              },
-              "imported_unit_count": {
-                "type": "integer",
-                "format": "int32"
-              }
-            }
-          }
-        }
-      },
       "HttpBody_ComicInfoVal": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
@@ -4376,7 +4254,7 @@
           }
         }
       },
-      "HttpBody_CreateAnnouncementVal": {
+      "HttpBody_CreateAnnouncementPayload": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -4404,7 +4282,7 @@
           }
         }
       },
-      "HttpBody_CreateAssignmentInvitationVal": {
+      "HttpBody_CreateAssignmentInvitationPayload": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -4436,7 +4314,7 @@
           }
         }
       },
-      "HttpBody_CreateChapterVal": {
+      "HttpBody_CreateChapterPayload": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -4464,7 +4342,7 @@
           }
         }
       },
-      "HttpBody_CreateComicVal": {
+      "HttpBody_CreateComicPayload": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -4496,7 +4374,7 @@
           }
         }
       },
-      "HttpBody_CreateCommentVal": {
+      "HttpBody_CreateCommentPayload": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -4524,7 +4402,7 @@
           }
         }
       },
-      "HttpBody_CreateMemberInvitationVal": {
+      "HttpBody_CreateMemberInvitationPayload": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -4556,7 +4434,7 @@
           }
         }
       },
-      "HttpBody_CreateMemberVal": {
+      "HttpBody_CreateMemberPayload": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -4584,7 +4462,7 @@
           }
         }
       },
-      "HttpBody_CreateWorksetVal": {
+      "HttpBody_CreateWorksetPayload": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -4612,7 +4490,95 @@
           }
         }
       },
-      "HttpBody_ListPageUnitInfosVal": {
+      "HttpBody_ExportChapterTranslationPayload": {
+        "type": "object",
+        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
+        "required": [
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "example": 0,
+            "minimum": 0
+          },
+          "data": {
+            "type": "object",
+            "description": "JSON-safe export object for one translated chapter.",
+            "required": [
+              "chapter_id",
+              "chapter_index",
+              "comic_id",
+              "comic_title",
+              "pages"
+            ],
+            "properties": {
+              "chapter_id": {
+                "type": "string"
+              },
+              "chapter_index": {
+                "type": "integer",
+                "format": "int32"
+              },
+              "chapter_subtitle": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "comic_id": {
+                "type": "string"
+              },
+              "comic_title": {
+                "type": "string"
+              },
+              "pages": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/PageTranslationExportPayload"
+                }
+              }
+            }
+          }
+        }
+      },
+      "HttpBody_ImportChapterTranslationPayload": {
+        "type": "object",
+        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
+        "required": [
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "example": 0,
+            "minimum": 0
+          },
+          "data": {
+            "type": "object",
+            "description": "Summary returned after importing chapter translations.",
+            "required": [
+              "imported_page_count",
+              "imported_unit_count"
+            ],
+            "properties": {
+              "imported_page_count": {
+                "type": "integer",
+                "format": "int32"
+              },
+              "imported_unit_count": {
+                "type": "integer",
+                "format": "int32"
+              }
+            }
+          }
+        }
+      },
+      "HttpBody_ListPageUnitInfosPayload": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -4658,7 +4624,7 @@
           }
         }
       },
-      "HttpBody_LoginVal": {
+      "HttpBody_LoginAuthPayload": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -4869,7 +4835,7 @@
           }
         }
       },
-      "HttpBody_RegisterVal": {
+      "HttpBody_RegisterAuthPayload": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -4901,7 +4867,7 @@
           }
         }
       },
-      "HttpBody_ReserveChapterPagesVal": {
+      "HttpBody_ReserveChapterPagesPayload": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -4925,14 +4891,14 @@
               "creations": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/components/schemas/PageCreationVal"
+                  "$ref": "#/components/schemas/PageCreationPayload"
                 }
               }
             }
           }
         }
       },
-      "HttpBody_ReserveComicCoverVal": {
+      "HttpBody_ReserveComicCoverPayload": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -4956,7 +4922,8 @@
             "properties": {
               "cover_version": {
                 "type": "integer",
-                "format": "int64"
+                "format": "int32",
+                "minimum": 0
               },
               "put_url": {
                 "type": "string"
@@ -4965,7 +4932,7 @@
           }
         }
       },
-      "HttpBody_ReservePageImageVal": {
+      "HttpBody_ReservePageImagePayload": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -4990,7 +4957,8 @@
             "properties": {
               "image_version": {
                 "type": "integer",
-                "format": "int64"
+                "format": "int32",
+                "minimum": 0
               },
               "page_id": {
                 "type": "string"
@@ -5002,7 +4970,7 @@
           }
         }
       },
-      "HttpBody_ReserveTeamAvatarVal": {
+      "HttpBody_ReserveTeamAvatarPayload": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -5026,7 +4994,8 @@
             "properties": {
               "avatar_version": {
                 "type": "integer",
-                "format": "int64"
+                "format": "int32",
+                "minimum": 0
               },
               "put_url": {
                 "type": "string"
@@ -5035,7 +5004,7 @@
           }
         }
       },
-      "HttpBody_ReserveUserAvatarVal": {
+      "HttpBody_ReserveUserAvatarPayload": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -5059,7 +5028,8 @@
             "properties": {
               "avatar_version": {
                 "type": "integer",
-                "format": "int64"
+                "format": "int32",
+                "minimum": 0
               },
               "put_url": {
                 "type": "string"
@@ -5068,7 +5038,7 @@
           }
         }
       },
-      "HttpBody_SavePageUnitsVal": {
+      "HttpBody_SavePageUnitsPayload": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -5130,7 +5100,7 @@
           },
           "data": {
             "type": "object",
-            "description": "Presentation-ready team profile information.\n\nConverts the raw [`TeamInfoModel`] timestamps to Unix milliseconds and\nresolves the avatar key to a signed download URL via [`ImagePool`] when\nthe avatar has been uploaded.",
+            "description": "Presentation-ready team profile information.\n\nConverts the raw [`TeamInfo`] timestamps to Unix milliseconds and\nresolves the avatar key to a signed download URL via [`ImagePool`] when\nthe avatar has been uploaded.",
             "required": [
               "id",
               "name",
@@ -5187,7 +5157,7 @@
           },
           "data": {
             "type": "object",
-            "description": "Presentation-ready user profile information.\n\nConverts the raw [`UserInfoModel`] timestamps to Unix milliseconds and\nresolves the avatar key to a signed download URL via [`ImagePool`] when\nthe avatar has been uploaded.",
+            "description": "Presentation-ready user profile information.\n\nConverts the raw [`UserInfo`] timestamps to Unix milliseconds and\nresolves the avatar key to a signed download URL via [`ImagePool`] when\nthe avatar has been uploaded.",
             "required": [
               "id",
               "nickname",
@@ -5934,7 +5904,7 @@
           }
         }
       },
-      "HttpBody_Vec_SystemMailVal": {
+      "HttpBody_Vec_SystemMailInfoVal": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -6000,7 +5970,7 @@
             "type": "array",
             "items": {
               "type": "object",
-              "description": "Presentation-ready team profile information.\n\nConverts the raw [`TeamInfoModel`] timestamps to Unix milliseconds and\nresolves the avatar key to a signed download URL via [`ImagePool`] when\nthe avatar has been uploaded.",
+              "description": "Presentation-ready team profile information.\n\nConverts the raw [`TeamInfo`] timestamps to Unix milliseconds and\nresolves the avatar key to a signed download URL via [`ImagePool`] when\nthe avatar has been uploaded.",
               "required": [
                 "id",
                 "name",
@@ -6193,7 +6163,41 @@
           }
         }
       },
-      "JoinAssignmentInvitationData": {
+      "ImportChapterTranslationParams": {
+        "type": "object",
+        "description": "Request body for importing chapter translations.",
+        "required": [
+          "format",
+          "content"
+        ],
+        "properties": {
+          "content": {
+            "type": "string"
+          },
+          "format": {
+            "$ref": "#/components/schemas/TranslationFormat"
+          }
+        }
+      },
+      "ImportChapterTranslationPayload": {
+        "type": "object",
+        "description": "Summary returned after importing chapter translations.",
+        "required": [
+          "imported_page_count",
+          "imported_unit_count"
+        ],
+        "properties": {
+          "imported_page_count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "imported_unit_count": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "JoinAssignmentInvitationParams": {
         "type": "object",
         "description": "Input parameters for joining an assignment through an invitation code.",
         "required": [
@@ -6205,7 +6209,7 @@
           }
         }
       },
-      "JoinChapterData": {
+      "JoinChapterAssignmentParams": {
         "type": "object",
         "description": "Input parameters for a user joining a chapter as a worker via role\nselection.\n\nThe role mask must contain role bits that are valid for volunteer\nassignment; the use case layer validates this before applying.",
         "required": [
@@ -6221,7 +6225,7 @@
           }
         }
       },
-      "JoinTeamData": {
+      "JoinTeamParams": {
         "type": "object",
         "description": "Input parameters for joining a team through a member invitation.",
         "required": [
@@ -6233,7 +6237,7 @@
           }
         }
       },
-      "ListPageUnitInfosVal": {
+      "ListPageUnitInfosPayload": {
         "type": "object",
         "description": "Return value for listing units under one page.",
         "required": [
@@ -6263,7 +6267,7 @@
           }
         }
       },
-      "LoginData": {
+      "LoginAuthParams": {
         "type": "object",
         "description": "Input parameters for user login.",
         "required": [
@@ -6279,7 +6283,7 @@
           }
         }
       },
-      "LoginVal": {
+      "LoginAuthPayload": {
         "type": "object",
         "description": "Return value from a successful login.",
         "required": [
@@ -6295,7 +6299,7 @@
           }
         }
       },
-      "MarkComicCoverUploadedData": {
+      "MarkComicCoverUploadedParams": {
         "type": "object",
         "description": "Input parameters for confirming a comic cover upload completed.\n\n`cover_version` must match the version returned by the reservation step.",
         "required": [
@@ -6304,11 +6308,12 @@
         "properties": {
           "cover_version": {
             "type": "integer",
-            "format": "int64"
+            "format": "int32",
+            "minimum": 0
           }
         }
       },
-      "MarkPageImageUploadedData": {
+      "MarkPageImageUploadedParams": {
         "type": "object",
         "description": "Input parameters for confirming a page image upload completed.",
         "required": [
@@ -6317,11 +6322,12 @@
         "properties": {
           "image_version": {
             "type": "integer",
-            "format": "int64"
+            "format": "int32",
+            "minimum": 0
           }
         }
       },
-      "MarkSystemMailsReadData": {
+      "MarkSystemMailReadParams": {
         "type": "object",
         "description": "Input parameters for marking a batch of system mails as read.",
         "required": [
@@ -6336,7 +6342,7 @@
           }
         }
       },
-      "MarkTeamAvatarUploadedData": {
+      "MarkTeamAvatarUploadedParams": {
         "type": "object",
         "description": "Input parameters for confirming a team avatar upload completed.",
         "required": [
@@ -6345,11 +6351,12 @@
         "properties": {
           "avatar_version": {
             "type": "integer",
-            "format": "int64"
+            "format": "int32",
+            "minimum": 0
           }
         }
       },
-      "MarkUserAvatarUploadedData": {
+      "MarkUserAvatarUploadedParams": {
         "type": "object",
         "description": "Input parameters for confirming an avatar upload completed.\n\n`avatar_version` must match the version returned by the reservation step.",
         "required": [
@@ -6358,7 +6365,8 @@
         "properties": {
           "avatar_version": {
             "type": "integer",
-            "format": "int64"
+            "format": "int32",
+            "minimum": 0
           }
         }
       },
@@ -6476,7 +6484,7 @@
           }
         }
       },
-      "PageCreationVal": {
+      "PageCreationPayload": {
         "type": "object",
         "description": "One reserved page upload target.",
         "required": [
@@ -6487,7 +6495,8 @@
         "properties": {
           "image_version": {
             "type": "integer",
-            "format": "int64"
+            "format": "int32",
+            "minimum": 0
           },
           "page_id": {
             "type": "string"
@@ -6549,7 +6558,7 @@
           }
         }
       },
-      "PageTranslationExportVal": {
+      "PageTranslationExportPayload": {
         "type": "object",
         "description": "JSON-safe export object for one page.",
         "required": [
@@ -6574,36 +6583,12 @@
           "units": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/UnitTranslationExportVal"
+              "$ref": "#/components/schemas/UnitTranslationExportPayload"
             }
           }
         }
       },
-      "PatchChapterInfoData": {
-        "type": "object",
-        "description": "Input parameters for partially updating a chapter's profile.",
-        "required": [
-          "id"
-        ],
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "pin": {
-            "type": [
-              "boolean",
-              "null"
-            ]
-          },
-          "subtitle": {
-            "type": [
-              "string",
-              "null"
-            ]
-          }
-        }
-      },
-      "RegisterData": {
+      "RegisterAuthParams": {
         "type": "object",
         "description": "Input parameters for user registration.",
         "required": [
@@ -6627,7 +6612,7 @@
           }
         }
       },
-      "RegisterVal": {
+      "RegisterAuthPayload": {
         "type": "object",
         "description": "Return value from a successful registration.",
         "required": [
@@ -6643,7 +6628,7 @@
           }
         }
       },
-      "ReserveChapterPagesData": {
+      "ReserveChapterPagesParams": {
         "type": "object",
         "description": "Input parameters for reserving all page images of a chapter.",
         "required": [
@@ -6664,7 +6649,7 @@
           }
         }
       },
-      "ReserveChapterPagesVal": {
+      "ReserveChapterPagesPayload": {
         "type": "object",
         "description": "Return value from successful chapter page reservations.",
         "required": [
@@ -6674,12 +6659,12 @@
           "creations": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/PageCreationVal"
+              "$ref": "#/components/schemas/PageCreationPayload"
             }
           }
         }
       },
-      "ReserveComicCoverData": {
+      "ReserveComicCoverParams": {
         "type": "object",
         "description": "Input parameters for reserving a new comic cover upload slot.\n\nThe file extension determines the object-storage key suffix. After\nreservation the client uploads directly to the returned PUT URL.",
         "required": [
@@ -6691,7 +6676,7 @@
           }
         }
       },
-      "ReserveComicCoverVal": {
+      "ReserveComicCoverPayload": {
         "type": "object",
         "description": "Return value from a successful cover reservation.\n\nThe client uses `put_url` to upload the cover image directly to object\nstorage. `cover_version` must be echoed back when confirming the upload.",
         "required": [
@@ -6701,14 +6686,15 @@
         "properties": {
           "cover_version": {
             "type": "integer",
-            "format": "int64"
+            "format": "int32",
+            "minimum": 0
           },
           "put_url": {
             "type": "string"
           }
         }
       },
-      "ReservePageImageData": {
+      "ReservePageImageParams": {
         "type": "object",
         "description": "Input parameters for reserving one page image.",
         "required": [
@@ -6720,7 +6706,7 @@
           }
         }
       },
-      "ReservePageImageVal": {
+      "ReservePageImagePayload": {
         "type": "object",
         "description": "Return value from a successful single-page image reservation.",
         "required": [
@@ -6731,7 +6717,8 @@
         "properties": {
           "image_version": {
             "type": "integer",
-            "format": "int64"
+            "format": "int32",
+            "minimum": 0
           },
           "page_id": {
             "type": "string"
@@ -6741,7 +6728,7 @@
           }
         }
       },
-      "ReserveTeamAvatarData": {
+      "ReserveTeamAvatarParams": {
         "type": "object",
         "description": "Input parameters for reserving a new team avatar upload slot.",
         "required": [
@@ -6753,7 +6740,7 @@
           }
         }
       },
-      "ReserveTeamAvatarVal": {
+      "ReserveTeamAvatarPayload": {
         "type": "object",
         "description": "Return value from a successful team avatar reservation.",
         "required": [
@@ -6763,14 +6750,15 @@
         "properties": {
           "avatar_version": {
             "type": "integer",
-            "format": "int64"
+            "format": "int32",
+            "minimum": 0
           },
           "put_url": {
             "type": "string"
           }
         }
       },
-      "ReserveUserAvatarData": {
+      "ReserveUserAvatarParams": {
         "type": "object",
         "description": "Input parameters for reserving a new avatar upload slot.",
         "required": [
@@ -6782,7 +6770,7 @@
           }
         }
       },
-      "ReserveUserAvatarVal": {
+      "ReserveUserAvatarPayload": {
         "type": "object",
         "description": "Return value from a successful avatar reservation.\n\nThe client uses `put_url` to upload the avatar image directly to object\nstorage. `avatar_version` must be echoed back when confirming the upload.",
         "required": [
@@ -6792,7 +6780,8 @@
         "properties": {
           "avatar_version": {
             "type": "integer",
-            "format": "int64"
+            "format": "int32",
+            "minimum": 0
           },
           "put_url": {
             "type": "string"
@@ -6813,7 +6802,7 @@
         "example": 34,
         "minimum": 0
       },
-      "SavePageUnitsData": {
+      "SavePageUnitsParams": {
         "type": "object",
         "description": "Input parameters for saving unit opers under one page.",
         "required": [
@@ -6822,14 +6811,14 @@
         ],
         "properties": {
           "diff": {
-            "$ref": "#/components/schemas/UnitDiffData"
+            "$ref": "#/components/schemas/UnitDiffParams"
           },
           "page_id": {
             "type": "string"
           }
         }
       },
-      "SavePageUnitsVal": {
+      "SavePageUnitsPayload": {
         "type": "object",
         "description": "Return value for saving unit opers under one page.",
         "required": [
@@ -6885,7 +6874,7 @@
           "revert"
         ]
       },
-      "SystemMailVal": {
+      "SystemMailInfoVal": {
         "type": "object",
         "description": "Presentation-ready system mail value.\n\nConverts the raw [`SystemMailInfo`] timestamp to Unix milliseconds\nand omits the internal `receiver_id` field.",
         "required": [
@@ -6916,7 +6905,7 @@
       },
       "TeamInfoVal": {
         "type": "object",
-        "description": "Presentation-ready team profile information.\n\nConverts the raw [`TeamInfoModel`] timestamps to Unix milliseconds and\nresolves the avatar key to a signed download URL via [`ImagePool`] when\nthe avatar has been uploaded.",
+        "description": "Presentation-ready team profile information.\n\nConverts the raw [`TeamInfo`] timestamps to Unix milliseconds and\nresolves the avatar key to a signed download URL via [`ImagePool`] when\nthe avatar has been uploaded.",
         "required": [
           "id",
           "name",
@@ -6963,7 +6952,7 @@
           "poprako"
         ]
       },
-      "UnitDiffData": {
+      "UnitDiffParams": {
         "type": "object",
         "description": "Transport-facing unit oper.",
         "required": [
@@ -6974,7 +6963,7 @@
           "opers": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/UnitOperData"
+              "$ref": "#/components/schemas/UnitOperParams"
             }
           },
           "page_id": {
@@ -7066,7 +7055,7 @@
           }
         }
       },
-      "UnitOperData": {
+      "UnitOperParams": {
         "oneOf": [
           {
             "type": "object",
@@ -7220,7 +7209,7 @@
         ],
         "description": "Transport-facing unit oper event."
       },
-      "UnitTranslationExportVal": {
+      "UnitTranslationExportPayload": {
         "type": "object",
         "description": "JSON-safe export object for one page unit.",
         "required": [
@@ -7288,7 +7277,7 @@
           }
         }
       },
-      "UpdateAssignmentRolesData": {
+      "UpdateAssignmentRolesParams": {
         "type": "object",
         "description": "Input parameters for updating assignment roles.",
         "required": [
@@ -7308,7 +7297,31 @@
           }
         }
       },
-      "UpdateChapterStageData": {
+      "UpdateChapterInfoParams": {
+        "type": "object",
+        "description": "Input parameters for partially updating a chapter's profile.",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "pin": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "subtitle": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "UpdateChapterStageParams": {
         "type": "object",
         "description": "Input parameters for updating a chapter's workflow stage.\n\nEncodes a single operation on a specific stage, e.g. \"start translating\"\non the `translate` stage. The use case layer validates that the\ntransition is legal for the current stage phase before applying it.",
         "required": [
@@ -7328,7 +7341,7 @@
           }
         }
       },
-      "UpdateComicInfoData": {
+      "UpdateComicInfoParams": {
         "type": "object",
         "description": "Input parameters for updating a comic's title, author, and description.\n\nCover updates are handled by dedicated endpoints.\n\n[`reserve_cover`]: crate::usecase::comic::reserve_cover",
         "required": [
@@ -7354,7 +7367,7 @@
           }
         }
       },
-      "UpdateMemberInvitationRolesData": {
+      "UpdateMemberInvitationRolesParams": {
         "type": "object",
         "description": "Input parameters for updating a pending invitation's roles.",
         "required": [
@@ -7370,7 +7383,7 @@
           }
         }
       },
-      "UpdateMemberRolesData": {
+      "UpdateMemberRolesParams": {
         "type": "object",
         "description": "Input parameters for updating a member's roles.",
         "required": [
@@ -7386,7 +7399,7 @@
           }
         }
       },
-      "UpdateTeamInfoData": {
+      "UpdateTeamInfoParams": {
         "type": "object",
         "description": "Input parameters for updating a team's profile.",
         "required": [
@@ -7406,7 +7419,7 @@
           }
         }
       },
-      "UpdateUserInfoData": {
+      "UpdateUserInfoParams": {
         "type": "object",
         "description": "Input parameters for updating a user's profile.",
         "required": [
@@ -7426,7 +7439,7 @@
           }
         }
       },
-      "UpdateWorksetInfoData": {
+      "UpdateWorksetInfoParams": {
         "type": "object",
         "description": "Input parameters for updating a workset's name and description.\n\nCover and counter updates are handled internally by the repo layer.",
         "required": [
@@ -7450,7 +7463,7 @@
       },
       "UserInfoVal": {
         "type": "object",
-        "description": "Presentation-ready user profile information.\n\nConverts the raw [`UserInfoModel`] timestamps to Unix milliseconds and\nresolves the avatar key to a signed download URL via [`ImagePool`] when\nthe avatar has been uploaded.",
+        "description": "Presentation-ready user profile information.\n\nConverts the raw [`UserInfo`] timestamps to Unix milliseconds and\nresolves the avatar key to a signed download URL via [`ImagePool`] when\nthe avatar has been uploaded.",
         "required": [
           "id",
           "nickname",

@@ -3,7 +3,7 @@
 use diesel::prelude::*;
 use time::OffsetDateTime;
 
-use crate::model::team_model;
+use crate::model::team::TeamInfo;
 use crate::part_impl::repo::rdb_impl::schema::t_team;
 
 // ── Queryable / Selectable ─────────────────────────────────────────────────
@@ -32,7 +32,7 @@ pub struct TeamRow {
 /// Insertable struct for creating a new record in the `t_team` table.
 #[derive(Insertable)]
 #[diesel(table_name = t_team)]
-pub struct TeamEntry<'a> {
+pub struct TeamRowEntry<'a> {
     pub f_id: &'a str,
     pub f_name: &'a str,
     pub f_description: &'a str,
@@ -109,9 +109,9 @@ impl<'a> TeamAspect<'a> {
 
 // ── Conversions ────────────────────────────────────────────────────────────
 
-impl From<TeamRow> for team_model::Info {
+impl From<TeamRow> for TeamInfo {
     fn from(v: TeamRow) -> Self {
-        team_model::Info {
+        TeamInfo {
             id: v.f_id,
             name: v.f_name,
             description: v.f_description.unwrap_or_default(),

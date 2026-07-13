@@ -2,14 +2,14 @@
 
 use poprako_util::time::ToUnixMilli;
 
-use crate::data::system_mail_data;
-use crate::model::user_model;
-use crate::part::repo::step::system_mail::SystemMailStep;
-use crate::part::repo::system_mail::{
-    SystemMailRepo, SystemMailRepoTransactional,
+use crate::data::system_mail::ListSystemMailInfosParams;
+use crate::data::system_mail::SystemMailInfoVal;
+use crate::model::user::UserToken;
+use crate::part::repo::oper::system_mail::{
+    ListSystemMailInfos, MarkSystemMailRead,
 };
+use crate::part::repo::system_mail::SystemMailRepo;
 use crate::result::RegularResult;
-use crate::util::DeriveTransactional;
 
 #[cfg(test)]
 mod tests;
@@ -17,7 +17,7 @@ mod tests;
 /// Lists system mails for the current user.
 ///
 /// Non-transactional read — returns mails ordered by creation time
-/// descending, filtered and paginated via [`ListSystemMailData`].
+/// descending, filtered and paginated via [`ListSystemMailInfosParams`].
 /// The `read` field controls status filtering: [`Some`] returns only
 /// matching status; [`None`] returns all.
 ///
@@ -25,27 +25,28 @@ mod tests;
 ///
 /// * `C` — Context anchor.
 /// * `R: SystemMailRepo<C>` — System mail storage.
+///
+/// [`ListSystemMailInfosParams`]: ListSystemMailInfosParams
 pub async fn list_infos<C, R>(
     repo: &R,
-    token: user_model::Token,
-    data: system_mail_data::ListData,
-) -> RegularResult<Vec<system_mail_data::Val>>
+    token: UserToken,
+    params: ListSystemMailInfosParams,
+) -> RegularResult<Vec<SystemMailInfoVal>>
 where
     R: SystemMailRepo<C>,
-    <R as DeriveTransactional>::Transactional: SystemMailRepoTransactional<C>,
 {
     let system_mail_infos = repo
-        .execute(&SystemMailStep::list_infos(
-            &token.user_id,
-            data.read,
-            data.offset,
-            data.limit,
-        ))
+        .run(&ListSystemMailInfos {
+            receiver_id: &token.user_id,
+            read: params.read,
+            offset: params.offset,
+            limit: params.limit,
+        })
         .await?;
 
     let system_mail_vals = system_mail_infos
         .into_iter()
-        .map(|system_mail_info| system_mail_data::Val {
+        .map(|system_mail_info| SystemMailInfoVal {
             id: system_mail_info.id,
             title: system_mail_info.title,
             content: system_mail_info.content,
@@ -69,16 +70,18 @@ where
 /// * `R: SystemMailRepo<C>` — System mail storage.
 pub async fn mark_read<C, R>(
     repo: &R,
-    token: user_model::Token,
+    token: UserToken,
     ids: Vec<String>,
 ) -> RegularResult<()>
 where
     R: SystemMailRepo<C>,
-    <R as DeriveTransactional>::Transactional: SystemMailRepoTransactional<C>,
 {
     for id in &ids {
-        repo.execute(&SystemMailStep::mark_read(id, &token.user_id))
-            .await?;
+        repo.run(&MarkSystemMailRead {
+            id,
+            user_id: &token.user_id,
+        })
+        .await?;
     }
 
     Ok(())

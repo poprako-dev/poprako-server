@@ -11,17 +11,11 @@ use tokio::sync::oneshot::{
 use tracing::{Level, instrument};
 
 use crate::part::effect::event::Event;
-use crate::part::repo::assignment::{
-    AssignmentRepo, AssignmentRepoTransactional,
-};
-use crate::part::repo::chapter::{ChapterRepo, ChapterRepoTransactional};
-use crate::part::repo::system_mail::{
-    SystemMailRepo, SystemMailRepoTransactional,
-};
-use crate::part::repo::team::{TeamRepo, TeamRepoTransactional};
-use crate::part::repo::user::{UserRepo, UserRepoTransactional};
-use crate::util::DeriveTransactional;
-
+use crate::part::repo::assignment::AssignmentRepo;
+use crate::part::repo::chapter::ChapterRepo;
+use crate::part::repo::system_mail::SystemMailRepo;
+use crate::part::repo::team::TeamRepo;
+use crate::part::repo::user::UserRepo;
 use crate::part_impl::effect::async_impl::dispatch::dispatch;
 
 /// Background event consumer that receives events from the channel and
@@ -63,11 +57,6 @@ impl<R> EffectHandler<R> {
             + UserRepo<C>
             + Send
             + Sync,
-        <R as DeriveTransactional>::Transactional: AssignmentRepoTransactional<C>
-            + ChapterRepoTransactional<C>
-            + TeamRepoTransactional<C>
-            + SystemMailRepoTransactional<C>
-            + UserRepoTransactional<C>,
     {
         loop {
             tokio::select! {

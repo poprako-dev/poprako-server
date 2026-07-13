@@ -5,11 +5,14 @@ use super::*;
 
 use time::OffsetDateTime;
 
-use crate::data::chapter_port_data;
-use crate::model::{
-    assignment_model, chapter_model, comic_model, page_model, unit_model,
-    user_model, workset_model,
-};
+use crate::data::chapter_port::ImportChapterTranslationParams;
+use crate::model::assignment::AssignmentInfo;
+use crate::model::chapter::ChapterInfo;
+use crate::model::comic::ComicInfo;
+use crate::model::page::PageInfo;
+use crate::model::unit::UnitInfo;
+use crate::model::user::UserToken;
+use crate::model::workset::WorksetInfo;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;
@@ -20,17 +23,17 @@ use crate::value::role::{RoleField, RoleMask};
 const LABEL_PLUS_MATERIAL: &str =
     include_str!("../../../../tests/materials/translations.lp.txt");
 
-fn token(user_id: &str) -> user_model::Token {
-    user_model::Token {
+fn token(user_id: &str) -> UserToken {
+    UserToken {
         user_id: user_id.into(),
     }
 }
 
-fn comic(id: &str) -> comic_model::Info {
+fn comic(id: &str) -> ComicInfo {
     //
     let time = OffsetDateTime::now_utc();
 
-    comic_model::Info {
+    ComicInfo {
         id: id.into(),
         workset_id: "workset-1".into(),
         index: 0,
@@ -52,11 +55,11 @@ fn comic(id: &str) -> comic_model::Info {
     }
 }
 
-fn workset(id: &str) -> workset_model::Info {
+fn workset(id: &str) -> WorksetInfo {
     //
     let time = OffsetDateTime::now_utc();
 
-    workset_model::Info {
+    WorksetInfo {
         id: id.into(),
         team_id: "team-1".into(),
         index: 0,
@@ -73,11 +76,11 @@ fn chapter(
     page_count: i32,
     total_unit_count: i32,
     proofread_unit_count: i32,
-) -> chapter_model::Info {
+) -> ChapterInfo {
     //
     let time = OffsetDateTime::now_utc();
 
-    chapter_model::Info {
+    ChapterInfo {
         id: "chapter-1".into(),
         comic_id: "comic-1".into(),
         is_pinned: true,
@@ -100,11 +103,11 @@ fn assignment(
     chapter_id: &str,
     user_id: &str,
     role_mask: RoleMask,
-) -> assignment_model::Info {
+) -> AssignmentInfo {
     //
     let time = OffsetDateTime::now_utc();
 
-    assignment_model::Info {
+    AssignmentInfo {
         id: format!("assignment-{}-{}", chapter_id, user_id),
         chapter_id: chapter_id.into(),
         user_id: user_id.into(),
@@ -121,11 +124,11 @@ fn page(
     index: i32,
     total_unit_count: i32,
     proofread_unit_count: i32,
-) -> page_model::Info {
+) -> PageInfo {
     //
     let time = OffsetDateTime::now_utc();
 
-    page_model::Info {
+    PageInfo {
         id: id.into(),
         chapter_id: "chapter-1".into(),
         index,
@@ -140,11 +143,11 @@ fn page(
     }
 }
 
-fn unit(id: &str, page_id: &str, index: i32, text: &str) -> unit_model::Info {
+fn unit(id: &str, page_id: &str, index: i32, text: &str) -> UnitInfo {
     //
     let time = OffsetDateTime::now_utc();
 
-    unit_model::Info {
+    UnitInfo {
         id: id.into(),
         page_id: page_id.into(),
         index,
@@ -204,7 +207,7 @@ async fn import_label_plus_material_updates_units_and_counters() {
         &mock,
         &mock,
         token("user-1"),
-        chapter_port_data::TranslationImportData {
+        ImportChapterTranslationParams {
             format: TranslationFormat::LabelPlus,
             content: LABEL_PLUS_MATERIAL.into(),
         },
@@ -276,7 +279,7 @@ async fn import_rejects_page_count_mismatch_without_mutation() {
         &mock,
         &mock,
         token("user-1"),
-        chapter_port_data::TranslationImportData {
+        ImportChapterTranslationParams {
             format: TranslationFormat::LabelPlus,
             content: LABEL_PLUS_MATERIAL.into(),
         },

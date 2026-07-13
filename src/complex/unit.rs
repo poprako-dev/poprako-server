@@ -2,6 +2,8 @@
 
 use std::collections::{HashMap, HashSet};
 
+use poprako_orchestra::Proxy;
+
 use poprako_util::i18n::trl;
 
 use crate::complex::util::{
@@ -9,13 +11,18 @@ use crate::complex::util::{
     check_user_is_chapter_translator_or_proofreader,
     check_user_is_team_member_by_chapter,
 };
-use crate::model::unit_model;
-use crate::part::repo::step::assignment::GetInfoByChapterIdAndUserId;
-use crate::part::repo::step::chapter::GetInfoById as ChapterGetInfoById;
-use crate::part::repo::step::comic::GetInfoById as ComicGetInfoById;
-use crate::part::repo::step::member::FindInfoByUserIdAndTeamId;
-use crate::part::repo::step::workset::GetInfoById as WorksetGetInfoById;
-use crate::part::shared::proxy::ProxyExecute;
+use crate::model::unit::UnitApplyAck;
+use crate::model::unit::UnitContent;
+use crate::model::unit::UnitDiff;
+use crate::model::unit::UnitIdMapper;
+use crate::model::unit::UnitIndex;
+use crate::model::unit::UnitIndexUpdate;
+use crate::model::unit::UnitOper;
+use crate::part::repo::oper::assignment::FindAssignmentInfo;
+use crate::part::repo::oper::chapter::GetChapterInfo;
+use crate::part::repo::oper::comic::GetComicInfo;
+use crate::part::repo::oper::member::FindMemberInfo;
+use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::result::{ExpectedVariant, RegularError, RegularResult};
 use crate::util::next_snowflake_id;
 
@@ -29,9 +36,7 @@ impl UnitComplex {
     }
 
     /// Validates one compact difference and resolves local create ids.
-    pub fn prepare_diff(
-        diff: unit_model::Diff,
-    ) -> RegularResult<unit_model::ApplyAck> {
+    pub fn prepare_diff(diff: UnitDiff) -> RegularResult<UnitApplyAck> {
         //
         validate_page_id(&diff.page_id)?;
 
@@ -44,7 +49,7 @@ impl UnitComplex {
         for unit_oper in diff.opers {
             match unit_oper {
                 //
-                unit_model::Oper::Create {
+                UnitOper::Create {
                     id,
                     payload,
                     before_id,
@@ -62,19 +67,19 @@ impl UnitComplex {
 
                     let unit_id = Self::gen_id();
 
-                    local_id_map.push(unit_model::IdMapper {
+                    local_id_map.push(UnitIdMapper {
                         local_id: id,
                         unit_id: unit_id.clone(),
                     });
 
-                    opers.push(unit_model::Oper::Create {
+                    opers.push(UnitOper::Create {
                         id: unit_id,
                         payload,
                         before_id,
                     });
                 }
 
-                unit_model::Oper::Save {
+                UnitOper::Save {
                     id,
                     payload,
                     before_id,
@@ -86,23 +91,23 @@ impl UnitComplex {
 
                     validate_payload(&payload)?;
 
-                    opers.push(unit_model::Oper::Save {
+                    opers.push(UnitOper::Save {
                         id,
                         payload,
                         before_id,
                     });
                 }
 
-                unit_model::Oper::Delete { id } => {
+                UnitOper::Delete { id } => {
                     //
                     validate_id(&id)?;
 
-                    opers.push(unit_model::Oper::Delete { id });
+                    opers.push(UnitOper::Delete { id });
                 }
             }
         }
 
-        Ok(unit_model::ApplyAck {
+        Ok(UnitApplyAck {
             opers,
             local_id_map,
         })
@@ -115,22 +120,22 @@ impl UnitComplex {
     /// absent from the surviving order appends the unit to the tail. Delete
     /// removes the unit. Units untouched by the diff keep their relative order.
     pub fn apply_opers_to_order(
-        opers: &[unit_model::Oper],
+        opers: &[UnitOper],
         mut current_order: Vec<String>,
     ) -> Vec<String> {
         //
         for oper in opers {
             match oper {
                 //
-                unit_model::Oper::Create { id, before_id, .. }
-                | unit_model::Oper::Save { before_id, id, .. } => {
+                UnitOper::Create { id, before_id, .. }
+                | UnitOper::Save { before_id, id, .. } => {
                     //
                     current_order.retain(|surviving_id| surviving_id != id);
 
                     insert_before(&mut current_order, id, before_id);
                 }
 
-                unit_model::Oper::Delete { id } => {
+                UnitOper::Delete { id } => {
                     current_order.retain(|surviving_id| surviving_id != id);
                 }
             }
@@ -143,8 +148,8 @@ impl UnitComplex {
     /// persisted indexes.
     pub fn build_index_updates_from_order(
         final_order: &[String],
-        current_indexes: &[unit_model::Index],
-    ) -> Vec<unit_model::IndexUpdate> {
+        current_indexes: &[UnitIndex],
+    ) -> Vec<UnitIndexUpdate> {
         //
         let current_map: HashMap<&String, i32> = current_indexes
             .iter()
@@ -162,7 +167,7 @@ impl UnitComplex {
                     return None;
                 }
 
-                Some(unit_model::IndexUpdate {
+                Some(UnitIndexUpdate {
                     id: id.clone(),
                     index,
                 })
@@ -172,8 +177,8 @@ impl UnitComplex {
 
     /// Builds compact index updates by compacting the current server order.
     pub fn build_index_updates(
-        current_indexes: Vec<unit_model::Index>,
-    ) -> Vec<unit_model::IndexUpdate> {
+        current_indexes: Vec<UnitIndex>,
+    ) -> Vec<UnitIndexUpdate> {
         //
         let mut sorted_indexes = current_indexes;
 
@@ -198,16 +203,11 @@ impl UnitPermComplex {
         chapter_id: &str,
     ) -> RegularResult<()>
     where
-        P: for<'a> ProxyExecute<ChapterGetInfoById<'a>, Error = RegularError>
-            + for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RegularError>
-            + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RegularError>
-            + for<'a> ProxyExecute<
-                FindInfoByUserIdAndTeamId<'a>,
-                Error = RegularError,
-            > + for<'a> ProxyExecute<
-                GetInfoByChapterIdAndUserId<'a>,
-                Error = RegularError,
-            >,
+        P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = RegularError>
+            + for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = RegularError>
+            + for<'a> Proxy<GetWorksetInfo<'a>, Error = RegularError>
+            + for<'a> Proxy<FindMemberInfo<'a>, Error = RegularError>
+            + for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = RegularError>,
     {
         let member_check =
             check_user_is_team_member_by_chapter(proxy, user_id, chapter_id)
@@ -237,10 +237,7 @@ impl UnitPermComplex {
         chapter_id: &str,
     ) -> RegularResult<()>
     where
-        P: for<'a> ProxyExecute<
-                GetInfoByChapterIdAndUserId<'a>,
-                Error = RegularError,
-            >,
+        P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = RegularError>,
     {
         match check_user_is_chapter_translator_or_proofreader(
             proxy, user_id, chapter_id,
@@ -285,7 +282,7 @@ fn validate_optional_id(id: &Option<String>) -> RegularResult<()> {
 }
 
 /// Validate editor identifiers required by non-empty unit text fields.
-fn validate_payload(payload: &unit_model::Payload) -> RegularResult<()> {
+fn validate_payload(payload: &UnitContent) -> RegularResult<()> {
     //
     validate_text_editor(
         &payload.translated_text,
@@ -356,8 +353,8 @@ fn insert_before(
 /// Build index updates by enumerating sorted unit indexes and emitting
 /// updates only for positions that differ from the stored index.
 fn compact_index_updates_from_order(
-    unit_indexes: Vec<unit_model::Index>,
-) -> Vec<unit_model::IndexUpdate> {
+    unit_indexes: Vec<UnitIndex>,
+) -> Vec<UnitIndexUpdate> {
     unit_indexes
         .into_iter()
         .enumerate()
@@ -369,7 +366,7 @@ fn compact_index_updates_from_order(
                 return None;
             }
 
-            Some(unit_model::IndexUpdate {
+            Some(UnitIndexUpdate {
                 id: unit_index.id,
                 index,
             })

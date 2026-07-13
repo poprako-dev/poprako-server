@@ -1,24 +1,25 @@
-// unit_roundtrip_reads_test_database_url(UnitStep)(positive): unit repo creates, saves, restores, reindexes, and lists units.
-// unit_roundtrip_reads_test_database_url(UnitStep)(negative): unit create rejects an existing server id without mutation.
+// unit_roundtrip_reads_test_database_url(UnitRepo)(positive): unit repo creates, saves, restores, reindexes, and lists units.
+// unit_roundtrip_reads_test_database_url(UnitRepo)(negative): unit create rejects an existing server id without mutation.
 
 use super::*;
 
-use poprako_transactional::advance::Advance;
-use poprako_transactional::drive::Drive;
+use poprako_orchestra::{Nucl as _, Run as _, Step as _};
+
 use poprako_util::page::Page;
 
-use crate::model::unit_model;
-use crate::part::repo::step::unit::UnitStep;
-use crate::part::shared::execute::Execute;
+use crate::model::unit::UnitContent;
+use crate::model::unit::UnitIndexUpdate;
+use crate::part::repo::oper::unit::{
+    CreateUnit, ListUnitInfos, SaveUnit, UpdateUnitIndexes,
+};
 use crate::part_impl::drive::rdb_impl::RdbDrive;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
-use crate::result::RegularError;
-use crate::util::DeriveTransactional as _;
+use crate::result::RegularResult;
 
 const PREFIX: &str = "rdb-test-unit-domain-";
 
-fn unit_payload(text: Option<&str>, proofread: bool) -> unit_model::Payload {
-    unit_model::Payload {
+fn unit_payload(text: Option<&str>, proofread: bool) -> UnitContent {
+    UnitContent {
         is_bubble: true,
         is_proofread: proofread,
         x_coord: 1.0,
@@ -32,7 +33,6 @@ fn unit_payload(text: Option<&str>, proofread: bool) -> unit_model::Payload {
 
 #[tokio::test]
 async fn unit_roundtrip_reads_test_database_url() {
-    //
     let shared = test_shared::shared().await;
 
     test_shared::reset(&shared, PREFIX).await;
@@ -41,9 +41,7 @@ async fn unit_roundtrip_reads_test_database_url() {
 
     let repo = RdbRepo::new(shared.clone());
 
-    let drive = RdbDrive::new(shared.clone());
-
-    let transactional_repo = repo.derive_transactional().await;
+    let nucl = RdbDrive::new(shared.clone());
 
     let unit_id = format!("{}unit", PREFIX);
 
@@ -55,73 +53,66 @@ async fn unit_roundtrip_reads_test_database_url() {
 
     let restored_unit_payload = unit_payload(Some("restored"), false);
 
-    let unit_index_updates = [unit_model::IndexUpdate {
+    let unit_index_updates = [UnitIndexUpdate {
         id: unit_id.clone(),
         index: 5,
     }];
 
-    drive
-        .with_context(async |context| {
-            //
-            Advance::advance(
-                &transactional_repo,
-                context,
-                &UnitStep::create_info(
-                    &page_fixture.page_form.id,
-                    &unit_id,
-                    &create_unit_payload,
-                ),
-            )
-            .await?;
+    nucl.coord(async |context| -> RegularResult<()> {
+        repo.step(
+            context,
+            &CreateUnit {
+                page_id: &page_fixture.page_entry.id,
+                id: &unit_id,
+                payload: &create_unit_payload,
+            },
+        )
+        .await?;
 
-            Advance::advance(
-                &transactional_repo,
-                context,
-                &UnitStep::save_info(
-                    &page_fixture.page_form.id,
-                    &unit_id,
-                    &save_unit_payload,
-                ),
-            )
-            .await?;
+        repo.step(
+            context,
+            &SaveUnit {
+                page_id: &page_fixture.page_entry.id,
+                id: &unit_id,
+                payload: &save_unit_payload,
+            },
+        )
+        .await?;
 
-            Advance::advance(
-                &transactional_repo,
-                context,
-                &UnitStep::save_info(
-                    &page_fixture.page_form.id,
-                    &restored_unit_id,
-                    &restored_unit_payload,
-                ),
-            )
-            .await?;
+        repo.step(
+            context,
+            &SaveUnit {
+                page_id: &page_fixture.page_entry.id,
+                id: &restored_unit_id,
+                payload: &restored_unit_payload,
+            },
+        )
+        .await?;
 
-            Advance::advance(
-                &transactional_repo,
-                context,
-                &UnitStep::update_indexes_by_page_id(
-                    &page_fixture.page_form.id,
-                    &unit_index_updates,
-                ),
-            )
-            .await?;
+        repo.step(
+            context,
+            &UpdateUnitIndexes {
+                page_id: &page_fixture.page_entry.id,
+                updates: &unit_index_updates,
+            },
+        )
+        .await?;
 
-            Ok::<(), RegularError>(())
-        })
-        .await
-        .ok()
-        .unwrap();
+        Ok(())
+    })
+    .await
+    .ok()
+    .unwrap();
 
-    let duplicate_create_result = drive
-        .with_context(async |context| {
-            Advance::advance(
-                &transactional_repo,
+    let duplicate_create_result = nucl
+        .coord(async |context| -> RegularResult<()> {
+            repo.step(
                 context,
-                &UnitStep::create_info(
-                    &page_fixture.page_form.id,
-                    &unit_id,
-                    &create_unit_payload,
-                ),
+                &CreateUnit {
+                    page_id: &page_fixture.page_entry.id,
+                    id: &unit_id,
+                    payload: &create_unit_payload,
+                },
             )
             .await
         })
@@ -129,19 +120,15 @@ async fn unit_roundtrip_reads_test_database_url() {
 
     assert!(duplicate_create_result.is_err());
 
-    let unit_infos = Execute::execute(
-        &repo,
-        &UnitStep::list_infos_by_page_id(
-            &page_fixture.page_form.id,
-            Page {
-                offset: 0,
-                limit: 10,
-            },
-        ),
-    )
-    .await
-    .ok()
-    .unwrap();
+    let list_unit_infos = ListUnitInfos::Page {
+        page_id: &page_fixture.page_entry.id,
+        page: Page {
+            offset: 0,
+            limit: 10,
+        },
+    };
+
+    let unit_infos = repo.run(&list_unit_infos).await.ok().unwrap();
 
     assert_eq!(unit_infos.len(), 2);
 

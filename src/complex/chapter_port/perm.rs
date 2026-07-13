@@ -1,3 +1,5 @@
+use poprako_orchestra::Proxy;
+
 use poprako_util::i18n::trl;
 
 use crate::complex::util::{
@@ -5,12 +7,11 @@ use crate::complex::util::{
     check_user_is_chapter_translator_or_proofreader,
     check_user_is_team_member_by_chapter,
 };
-use crate::part::repo::step::assignment::GetInfoByChapterIdAndUserId;
-use crate::part::repo::step::chapter::GetInfoById as ChapterGetInfoById;
-use crate::part::repo::step::comic::GetInfoById as ComicGetInfoById;
-use crate::part::repo::step::member::FindInfoByUserIdAndTeamId;
-use crate::part::repo::step::workset::GetInfoById as WorksetGetInfoById;
-use crate::part::shared::proxy::ProxyExecute;
+use crate::part::repo::oper::assignment::FindAssignmentInfo;
+use crate::part::repo::oper::chapter::GetChapterInfo;
+use crate::part::repo::oper::comic::GetComicInfo;
+use crate::part::repo::oper::member::FindMemberInfo;
+use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::result::{ExpectedVariant, RegularError, RegularResult};
 
 /// Chapter import and export permission rules.
@@ -24,16 +25,11 @@ impl ChapterPortPermComplex {
         chapter_id: &str,
     ) -> RegularResult<()>
     where
-        P: for<'a> ProxyExecute<ChapterGetInfoById<'a>, Error = RegularError>
-            + for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RegularError>
-            + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RegularError>
-            + for<'a> ProxyExecute<
-                FindInfoByUserIdAndTeamId<'a>,
-                Error = RegularError,
-            > + for<'a> ProxyExecute<
-                GetInfoByChapterIdAndUserId<'a>,
-                Error = RegularError,
-            >,
+        P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = RegularError>
+            + for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = RegularError>
+            + for<'a> Proxy<GetWorksetInfo<'a>, Error = RegularError>
+            + for<'a> Proxy<FindMemberInfo<'a>, Error = RegularError>
+            + for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = RegularError>,
     {
         let member_check =
             check_user_is_team_member_by_chapter(proxy, user_id, chapter_id)
@@ -63,10 +59,7 @@ impl ChapterPortPermComplex {
         chapter_id: &str,
     ) -> RegularResult<()>
     where
-        P: for<'a> ProxyExecute<
-                GetInfoByChapterIdAndUserId<'a>,
-                Error = RegularError,
-            >,
+        P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = RegularError>,
     {
         match check_user_is_chapter_translator_or_proofreader(
             proxy, user_id, chapter_id,
