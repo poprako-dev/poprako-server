@@ -1,4 +1,5 @@
 #![deny(unsafe_code)]
+#![recursion_limit = "256"]
 #![deny(clippy::correctness)]
 #![deny(clippy::suspicious)]
 #![deny(clippy::complexity)]
@@ -42,7 +43,6 @@ use poprako_server::{
 /// starting the server.
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    //
     // CLI: --swagger to print swagger.json.
     #[cfg(feature = "swagger-ui")]
     if std::env::args().any(|a| a == "--swagger") {
