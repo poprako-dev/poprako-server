@@ -2,11 +2,10 @@
 //!
 //! Dispatches image [`Payload`] variants to their concrete implementations.
 
+use poprako_orchestra::Nucl;
 use tracing::{Level, instrument};
 
-use poprako_orchestra::Nucl;
-
-use crate::part::image::ImagePool;
+use crate::part::image::ImageManager;
 use crate::part::prom::payload::image::{Payload, ResourceKind};
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::oper::comic::{
@@ -60,7 +59,7 @@ where
         + PageRepo<RdbContext>
         + Send
         + Sync,
-    I: ImagePool + Send + Sync,
+    I: ImageManager + Send + Sync,
 {
     match task {
         //
@@ -107,7 +106,7 @@ where
         + PageRepo<RdbContext>
         + Send
         + Sync,
-    I: ImagePool + Send + Sync,
+    I: ImageManager + Send + Sync,
 {
     let exists = match image_pool.head_object(object_key).await {
         //
@@ -152,7 +151,7 @@ where
         + PageRepo<RdbContext>
         + Send
         + Sync,
-    I: ImagePool + Send + Sync,
+    I: ImageManager + Send + Sync,
 {
     let resource_state =
         mark_current_or_classify(nucl, repo, kind, resource_id, image_version)
@@ -398,7 +397,7 @@ where
 #[instrument(skip(image_pool), level = Level::DEBUG)]
 async fn handle_delete<I>(image_pool: &I, object_key: &str) -> TaskFlow
 where
-    I: ImagePool + Send + Sync,
+    I: ImageManager + Send + Sync,
 {
     match image_pool.delete_object(object_key).await {
         //

@@ -3,14 +3,13 @@
 
 mod tests;
 
-use time::OffsetDateTime;
-
 use poprako_orchestra::{Nucl as _, Step};
 use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
 use poprako_orchestra_extra::prom::task::Task;
+use time::OffsetDateTime;
 
 use crate::model::user::{UserCredential, UserInfo};
-use crate::part::image::ImagePool;
+use crate::part::image::ImageManager;
 use crate::part::prom::Prom;
 use crate::part::prom::payload::{Payload, image};
 use crate::part::repo::oper::comic::{
@@ -359,7 +358,7 @@ async fn process_image_task(
             resource_id,
             object_key,
             version,
-        } => match ImagePool::head_object(image_pool, object_key).await? {
+        } => match image_pool.head_object(object_key).await? {
             //
             true => {
                 process_existing_image(
@@ -376,7 +375,7 @@ async fn process_image_task(
         },
 
         image::Payload::Delete { object_key } => {
-            ImagePool::delete_object(image_pool, object_key).await
+            image_pool.delete_object(object_key).await
         }
     }
 }
@@ -416,9 +415,7 @@ async fn process_existing_image(
         //
         ResourceState::Current | ResourceState::Stale => Ok(()),
 
-        ResourceState::Missing => {
-            ImagePool::delete_object(mock, object_key).await
-        }
+        ResourceState::Missing => mock.delete_object(object_key).await,
     }
 }
 

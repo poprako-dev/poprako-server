@@ -4,7 +4,6 @@ use std::collections::HashMap;
 
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
-
 use poprako_orchestra::Step;
 
 use crate::model::assignment::AssignmentInfo;

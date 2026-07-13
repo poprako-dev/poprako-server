@@ -2,11 +2,13 @@
 
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
+use poprako_orchestra::{Run, Step};
 use time::OffsetDateTime;
 
-use poprako_orchestra::{Run, Step};
-
 use crate::complex::user::UserComplex;
+use crate::model::user::{
+    UserAvatarReservation, UserCredential, UserEntry, UserInfo,
+};
 use crate::part::repo::oper::user::{
     CreateUser, DeleteUser, FindUserInfo, GetUserCredential, GetUserInfo,
     GetUserInfoExcluded, ReserveUserAvatar, UpdateUser,
@@ -16,14 +18,10 @@ use crate::part_impl::repo::rdb_impl::RdbRepo;
 use crate::part_impl::repo::rdb_impl::entity::user::{
     UserAspect, UserCredentialRow, UserRow, UserRowEntry,
 };
+use crate::part_impl::repo::rdb_impl::schema::t_user::dsl::*;
 use crate::part_impl::shared::result::{diesel, expected, version};
 use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::{RegularError, RegularResult};
-
-use crate::model::user::{
-    UserAvatarReservation, UserCredential, UserEntry, UserInfo,
-};
-use crate::part_impl::repo::rdb_impl::schema::t_user::dsl::*;
 
 impl UserRepo<RdbContext> for RdbRepo {}
 

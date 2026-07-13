@@ -4,10 +4,9 @@ use diesel_async::{AnsiTransactionManager, TransactionManager};
 use poprako_orchestra::Nucl;
 use poprako_orchestra::nucl::Error as NuclError;
 
-use crate::result::RegularError;
-
 use crate::part_impl::shared::result::diesel;
 use crate::part_impl::shared::{RdbContext, RdbCore};
+use crate::result::RegularError;
 
 /// Diesel-backed transaction driver that wraps operations in database transactions.
 ///

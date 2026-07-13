@@ -5,7 +5,6 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use cookie::time::Duration;
 use cookie::{Cookie, SameSite};
-
 use tracing::instrument;
 
 use crate::api::http::auth::AUTH_COOKIE_NAME;

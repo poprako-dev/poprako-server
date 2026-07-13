@@ -22,7 +22,6 @@
 use super::*;
 
 use fixture::*;
-
 use time::OffsetDateTime;
 
 use crate::data::comic::{ListComicInfosParams, UpdateComicInfoParams};
@@ -145,6 +144,11 @@ async fn get_info_returns_uploaded_cover_url() {
     assert_eq!(
         found.cover_url,
         Some("https://test.local/get/cover.png".into())
+    );
+
+    assert_eq!(
+        found.cover_thumbnail_url,
+        Some("https://test.local/cdn-cgi/image/width=300,fit=scale-down,quality=80,format=auto,metadata=none/cover.png".into())
     );
 }
 

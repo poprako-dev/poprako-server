@@ -26,6 +26,8 @@ pub struct TeamInfoVal {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub avatar_url: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub avatar_thumbnail_url: Option<String>,
 
     pub workset_next_index: i32,
 
@@ -49,18 +51,23 @@ impl TeamInfoVal {
     where
         P: ImagePool,
     {
-        let avatar_url = match (model.avatar_uploaded, &model.avatar_key) {
-            //
-            (true, Some(key)) => image_pool.get_signed(key).await.ok(),
+        let (avatar_url, avatar_thumbnail_url) =
+            match (model.avatar_uploaded, &model.avatar_key) {
+                //
+                (true, Some(key)) => (
+                    image_pool.gen_download_url(key).await.ok(),
+                    image_pool.gen_thumbnail_download_url(key).await.ok(),
+                ),
 
-            _ => None,
-        };
+                _ => (None, None),
+            };
 
         Ok(Self {
             id: model.id,
             name: model.name,
             description: model.description,
             avatar_url: avatar_url.map(Into::into),
+            avatar_thumbnail_url: avatar_thumbnail_url.map(Into::into),
             workset_next_index: model.workset_next_index,
             created_at: model.created_at.to_unix_milli(),
             updated_at: model.updated_at.to_unix_milli(),

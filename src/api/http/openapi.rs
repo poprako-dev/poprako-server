@@ -8,7 +8,6 @@ use utoipa::OpenApi;
 
 use crate::api::http::handler;
 use crate::api::http::result::HttpError;
-
 use crate::data::announcement::{
     AnnouncementInfoVal, CreateAnnouncementParams, CreateAnnouncementPayload,
 };

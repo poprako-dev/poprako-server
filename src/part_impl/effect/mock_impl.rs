@@ -1,7 +1,5 @@
 //! Mock implementation of [EffectDevelop] for testing event collection.
 
-use async_trait::async_trait;
-
 use crate::part::effect::{EffectDevelop, EventIter};
 use crate::part_impl::repo::mock_impl::Mock;
 
@@ -9,7 +7,6 @@ use crate::part_impl::repo::mock_impl::Mock;
 ///
 /// Collected events are stored in the mock's internal event buffer and can
 /// be drained via [Mock::drain_events] for assertion.
-#[async_trait]
 impl EffectDevelop for Mock {
     async fn develop<I>(&self, iter: I)
     where

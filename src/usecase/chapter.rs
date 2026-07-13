@@ -13,11 +13,11 @@ use crate::model::chapter::{
     ChapterEntry, ChapterInfoListSpec, ChapterInfoUpdate,
 };
 use crate::model::user::UserToken;
+use crate::part::effect::EffectDevelop;
 use crate::part::effect::event::Event;
 use crate::part::effect::event::chapter::{
     ChapterPublishedPayload, ChapterWorkflowCompletedPayload,
 };
-use crate::part::effect::{EffectDevelop, EffectEmit as _};
 use crate::part::image::ImagePool;
 use crate::part::prom::Prom;
 use crate::part::repo::assignment::AssignmentRepo;
@@ -476,7 +476,7 @@ where
         })
         .await?;
 
-    events.emit(develop).await;
+    develop.develop(events).await;
 
     accept(())
 }
