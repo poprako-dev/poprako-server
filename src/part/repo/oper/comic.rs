@@ -1,10 +1,6 @@
 use poprako_orchestra::Oper;
 
-use crate::model::comic::ComicCoverReservation;
-use crate::model::comic::ComicEntry;
-use crate::model::comic::ComicInfo;
-use crate::model::comic::ComicInfoListSpec;
-use crate::model::comic::ComicInfoUpdate;
+use crate::model::comic::{ComicCoverReservation, ComicEntry, ComicInfo, ComicInfoListSpec, ComicInfoUpdate};
 use crate::value::comic::ComicInclOpt;
 
 pub struct CreateComic<'a> {

@@ -1,12 +1,8 @@
 // comic_roundtrip_reads_test_database_url(ComicRepo)(positive): comic repo persists, lists by one-based display index, and refreshes composed search after update.
 
-use super::*;
-
 use poprako_orchestra::Run as _;
 
-use crate::model::comic::ComicInfoListKind;
-use crate::model::comic::ComicInfoListSpec;
-use crate::model::comic::ComicInfoUpdate;
+use crate::model::comic::{ComicInfoListKind,ComicInfoListSpec,ComicInfoUpdate};
 use crate::part::repo::oper::comic::{
     GetComicInfo, ListComicInfos, UpdateComic,
 };

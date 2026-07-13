@@ -3,12 +3,11 @@
 use poprako_orchestra::{Nucl, run_proxy};
 
 use crate::complex::comment::{CommentComplex, CommentPermComplex};
-use crate::data::comment::CommentInfoVal;
-use crate::data::comment::CreateCommentParams;
-use crate::data::comment::CreateCommentPayload;
-use crate::data::comment::ListCommentInfosParams;
-use crate::model::comment::CommentEntry;
-use crate::model::comment::CommentListSpec;
+use crate::data::comment::{
+    CommentInfoVal, CreateCommentParams, CreateCommentPayload,
+    ListCommentInfosParams,
+};
+use crate::model::comment::{CommentEntry, CommentListSpec};
 use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
 use crate::part::repo::comment::CommentRepo;
@@ -33,7 +32,7 @@ where
 {
     let comment_list_spec: CommentListSpec = params.into();
 
-    CommentPermComplex::can_user_list_infos(
+    CommentPermComplex::ensure_user_can_list_infos(
         &mut run_proxy! {
             repo => for<'a> FindMemberInfo<'a>;
         },
@@ -70,7 +69,7 @@ where
     C: Send,
     R: CommentRepo<C> + MemberRepo<C> + Send + Sync,
 {
-    CommentPermComplex::can_user_create(
+    CommentPermComplex::ensure_user_can_create(
         &mut run_proxy! {
             repo => for<'a> FindMemberInfo<'a>;
         },
@@ -81,6 +80,7 @@ where
 
     let comment_info = nucl
         .coord(async move |context| {
+            //
             let comment_entry = CommentEntry {
                 id: CommentComplex::gen_id(),
                 team_id: params.team_id,

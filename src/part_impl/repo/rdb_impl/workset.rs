@@ -20,14 +20,13 @@ use crate::part_impl::shared::result::{diesel, expected};
 use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::{RegularError, RegularResult};
 
-use crate::model::workset::WorksetEntry;
-use crate::model::workset::WorksetInfo;
-use crate::model::workset::WorksetInfoUpdate;
+use crate::model::workset::{WorksetEntry,WorksetInfo,WorksetInfoUpdate};
 use crate::part_impl::repo::rdb_impl::schema::t_workset::dsl::*;
 
 impl WorksetRepo<RdbContext> for RdbRepo {}
 
 async fn get_info(conn: &mut RdbConn, id: &str) -> RegularResult<WorksetInfo> {
+    //
     let row: WorksetRow = t_workset
         .filter(f_id.eq(id))
         .select(WorksetRow::as_select())
@@ -44,6 +43,7 @@ async fn list_infos(
     conn: &mut RdbConn,
     oper: &ListWorksetInfos<'_>,
 ) -> RegularResult<Vec<WorksetInfo>> {
+    //
     let mut query = t_workset
         .filter(f_team_id.eq(oper.team_id))
         .select(WorksetRow::as_select())
@@ -63,6 +63,7 @@ async fn update_info(
     conn: &mut RdbConn,
     update: &WorksetInfoUpdate,
 ) -> RegularResult<()> {
+    //
     let now = OffsetDateTime::now_utc();
 
     let aspect = WorksetAspect::new(now)
@@ -82,6 +83,7 @@ async fn list_infos_excluded(
     conn: &mut RdbConn,
     team_id: &str,
 ) -> RegularResult<Vec<WorksetInfo>> {
+    //
     let rows: Vec<WorksetRow> = t_workset
         .filter(f_team_id.eq(team_id))
         .select(WorksetRow::as_select())
@@ -97,6 +99,7 @@ async fn get_info_excluded(
     conn: &mut RdbConn,
     id: &str,
 ) -> RegularResult<WorksetInfo> {
+    //
     let row: WorksetRow = t_workset
         .filter(f_id.eq(id))
         .select(WorksetRow::as_select())
@@ -114,6 +117,7 @@ async fn create(
     conn: &mut RdbConn,
     workset_entry: &WorksetEntry,
 ) -> RegularResult<WorksetInfo> {
+    //
     let entry = WorksetRowEntry::from(workset_entry);
 
     let row: WorksetRow = diesel::insert_into(t_workset)
@@ -127,6 +131,7 @@ async fn create(
 }
 
 async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
+    //
     diesel::delete(t_workset.filter(f_id.eq(id)))
         .execute(conn)
         .await
@@ -139,6 +144,7 @@ async fn allocate_comic_index(
     conn: &mut RdbConn,
     id: &str,
 ) -> RegularResult<i32> {
+    //
     let index: i32 = diesel::update(t_workset.filter(f_id.eq(id)))
         .set(f_comic_next_index.eq(f_comic_next_index + 1))
         .returning(f_comic_next_index - 1)
@@ -154,6 +160,7 @@ async fn update_comic_count(
     id: &str,
     delta: i32,
 ) -> RegularResult<()> {
+    //
     diesel::update(t_workset.filter(f_id.eq(id)))
         .set(f_comic_count.eq(f_comic_count + delta))
         .execute(conn)

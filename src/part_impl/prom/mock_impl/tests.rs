@@ -4,6 +4,7 @@ use super::*;
 
 #[tokio::test]
 async fn defer_batch_records_payloads() {
+    //
     let mock = Mock::new();
 
     let prom = mock.clone();

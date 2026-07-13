@@ -9,8 +9,7 @@ use poprako_orchestra::{Nucl as _, Step};
 use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
 use poprako_orchestra_extra::prom::task::Task;
 
-use crate::model::user::UserCredential;
-use crate::model::user::UserInfo;
+use crate::model::user::{UserCredential, UserInfo};
 use crate::part::image::ImagePool;
 use crate::part::prom::Prom;
 use crate::part::prom::payload::{Payload, image};
@@ -70,6 +69,7 @@ impl<'a> Step<Defer<'a, String, Payload, ()>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &Defer<'a, String, Payload, ()>,
     ) -> Result<(), Self::Error> {
+        //
         let payload_json =
             serde_json::to_string(oper.task.payload).map_err(|error| {
                 RegularError::Unrecoverable {
@@ -101,6 +101,7 @@ impl<'t, 'a> Step<DeferBatch<'t, 'a, String, Payload, ()>, MockContext>
         context: &mut MockContext,
         oper: &DeferBatch<'t, 'a, String, Payload, ()>,
     ) -> Result<(), Self::Error> {
+        //
         for task in oper.tasks {
             self.step(
                 context,
@@ -123,6 +124,7 @@ async fn defer_payload(
     id: &str,
     payload: Payload,
 ) -> RegularResult<()> {
+    //
     let id = id.to_string();
 
     let task = Task {
@@ -214,6 +216,7 @@ async fn process_pending_marks_uploaded_image() {
     let prom = mock.clone();
 
     mock.coord(async move |context| {
+        //
         defer_payload(
             &prom,
             context,
@@ -251,6 +254,7 @@ async fn process_pending_keeps_stale_image_for_ordered_delete() {
     let prom = mock.clone();
 
     mock.coord(async move |context| {
+        //
         defer_payload(
             &prom,
             context,
@@ -287,6 +291,7 @@ async fn process_pending_deletes_missing_resource_image() {
     let prom = mock.clone();
 
     mock.coord(async move |context| {
+        //
         defer_payload(
             &prom,
             context,
@@ -348,12 +353,14 @@ async fn process_image_task(
     task: &image::Payload,
 ) -> RegularResult<()> {
     match task {
+        //
         image::Payload::CheckUpload {
             resource_kind,
             resource_id,
             object_key,
             version,
         } => match ImagePool::head_object(image_pool, object_key).await? {
+            //
             true => {
                 process_existing_image(
                     image_pool,
@@ -381,6 +388,7 @@ async fn process_existing_image(
     object_key: &str,
     image_version: u32,
 ) -> RegularResult<()> {
+    //
     let resource_state = mock
         .coord(async move |context| {
             match mark_uploaded(mock, context, kind, resource_id, image_version)
@@ -405,6 +413,7 @@ async fn process_existing_image(
         .await?;
 
     match resource_state {
+        //
         ResourceState::Current | ResourceState::Stale => Ok(()),
 
         ResourceState::Missing => {
@@ -421,7 +430,9 @@ async fn mark_uploaded(
     image_version: u32,
 ) -> RegularResult<()> {
     match kind {
+        //
         image::ResourceKind::UserAvatar => {
+            //
             let update_user = UpdateUser::MarkAvatarUploaded {
                 id: resource_id,
                 avatar_version: image_version,
@@ -431,6 +442,7 @@ async fn mark_uploaded(
         }
 
         image::ResourceKind::TeamAvatar => {
+            //
             let update_team = UpdateTeam::MarkAvatarUploaded {
                 id: resource_id,
                 avatar_version: image_version,
@@ -475,6 +487,7 @@ fn classify_current_version(
     error_message: &'static str,
 ) -> RegularResult<ResourceState> {
     match current_version == image_version {
+        //
         true => Err(RegularError::Unrecoverable {
             message: error_message.into(),
         }),
@@ -491,11 +504,14 @@ async fn classify_expected_mark(
     image_version: u32,
 ) -> RegularResult<ResourceState> {
     match kind {
+        //
         image::ResourceKind::UserAvatar => {
+            //
             let get_user_info_excluded =
                 GetUserInfoExcluded::Id { id: resource_id };
 
             match mock.step(context, &get_user_info_excluded).await {
+                //
                 Ok(user_info) => classify_current_version(
                     user_info.avatar_version,
                     image_version,
@@ -511,10 +527,12 @@ async fn classify_expected_mark(
         }
 
         image::ResourceKind::TeamAvatar => {
+            //
             let get_team_info_excluded =
                 GetTeamInfoExcluded::Id { id: resource_id };
 
             match mock.step(context, &get_team_info_excluded).await {
+                //
                 Ok(team_info) => classify_current_version(
                     team_info.avatar_version,
                     image_version,

@@ -17,18 +17,18 @@
 use super::*;
 
 use crate::complex::chapter::ChapterComplex;
-use crate::part::prom::payload::Payload;
+use crate::data::chapter::{
+    CreateChapterParams, ListChapterInfosParams, UpdateChapterInfoParams,
+    UpdateChapterStageParams,
+};
 use crate::part::prom::payload::image::Payload as ImagePayload;
+use crate::part::prom::payload::Payload;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;
 use crate::value::chapter::Stage;
 
 use self::fixture::*;
-use crate::data::chapter::CreateChapterParams;
-use crate::data::chapter::ListChapterInfosParams;
-use crate::data::chapter::UpdateChapterInfoParams;
-use crate::data::chapter::UpdateChapterStageParams;
 
 mod fixture;
 

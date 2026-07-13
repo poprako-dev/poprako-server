@@ -5,9 +5,7 @@ use std::cmp::Reverse;
 use poprako_orchestra::{Run, Step};
 
 use crate::complex::team::TeamComplex;
-use crate::model::team::TeamAvatarReservation;
-use crate::model::team::TeamEntry;
-use crate::model::team::TeamInfo;
+use crate::model::team::{TeamAvatarReservation,TeamEntry,TeamInfo};
 use crate::part::repo::oper::team::{
     AllocateTeamWorksetIndex, CreateTeam, DeleteTeam, GetTeamInfo,
     GetTeamInfoExcluded, ListTeamInfos, ReserveTeamAvatar, UpdateTeam,
@@ -24,6 +22,7 @@ fn create_team(
     state: &mut MockState,
     entry: &TeamEntry,
 ) -> RegularResult<TeamInfo> {
+    //
     if state.teams.iter().any(|team_info| team_info.id == entry.id) {
         return Err(expected("error-already-exists"));
     }
@@ -60,7 +59,9 @@ fn list_team_infos(
     state: &MockState,
     oper: &ListTeamInfos<'_>,
 ) -> Vec<TeamInfo> {
+    //
     let mut team_infos = match oper.user_id {
+        //
         Some(user_id) => state
             .teams
             .iter()
@@ -79,11 +80,15 @@ fn list_team_infos(
     team_infos.sort_by_key(|team_info| Reverse(team_info.created_at));
 
     let offset = oper.offset as usize;
+
     let limit = oper.limit as usize;
 
     match offset >= team_infos.len() {
+        //
         true => Vec::new(),
+
         false => {
+            //
             let end = std::cmp::min(offset + limit, team_infos.len());
 
             team_infos[offset..end].to_vec()
@@ -95,6 +100,7 @@ fn update_team(
     state: &mut MockState,
     oper: &UpdateTeam<'_>,
 ) -> RegularResult<()> {
+    //
     let team_info = state
         .teams
         .iter_mut()
@@ -105,14 +111,18 @@ fn update_team(
         .ok_or_else(|| expected("error-team-not-found"))?;
 
     match oper {
+        //
         UpdateTeam::Info {
             name, description, ..
         } => {
+            //
             team_info.name = name.to_string();
+
             team_info.description = description.to_string();
         }
 
         UpdateTeam::MarkAvatarUploaded { avatar_version, .. } => {
+            //
             if team_info.avatar_version != *avatar_version {
                 return Err(expected("error-stale-avatar-upload"));
             }
@@ -130,6 +140,7 @@ fn reserve_team_avatar(
     state: &mut MockState,
     oper: &ReserveTeamAvatar<'_>,
 ) -> RegularResult<TeamAvatarReservation> {
+    //
     let team_info = state
         .teams
         .iter_mut()
@@ -137,13 +148,18 @@ fn reserve_team_avatar(
         .ok_or_else(|| expected("error-team-not-found"))?;
 
     let avatar_version = team_info.avatar_version + 1;
+
     let object_key =
         TeamComplex::gen_avatar_key(oper.id, avatar_version, oper.file_ext);
+
     let prev_object_key = team_info.avatar_key.clone();
 
     team_info.avatar_key = Some(object_key.clone());
+
     team_info.avatar_uploaded = false;
+
     team_info.avatar_version = avatar_version;
+
     team_info.updated_at = now();
 
     Ok(TeamAvatarReservation {
@@ -154,6 +170,7 @@ fn reserve_team_avatar(
 }
 
 fn delete_team(state: &mut MockState, id: &str) -> RegularResult<()> {
+    //
     let position = state
         .teams
         .iter()
@@ -161,12 +178,14 @@ fn delete_team(state: &mut MockState, id: &str) -> RegularResult<()> {
         .ok_or_else(|| expected("error-team-not-found"))?;
 
     let deleted_team_id = state.teams[position].id.clone();
+
     let deleted_workset_ids = state
         .worksets
         .iter()
         .filter(|workset_info| workset_info.team_id == deleted_team_id)
         .map(|workset_info| workset_info.id.clone())
         .collect::<Vec<_>>();
+
     let deleted_comic_ids = state
         .comics
         .iter()
@@ -175,6 +194,7 @@ fn delete_team(state: &mut MockState, id: &str) -> RegularResult<()> {
         })
         .map(|comic_info| comic_info.id.clone())
         .collect::<Vec<_>>();
+
     let deleted_chapter_ids = state
         .chapters
         .iter()
@@ -185,24 +205,31 @@ fn delete_team(state: &mut MockState, id: &str) -> RegularResult<()> {
         .collect::<Vec<_>>();
 
     state.teams.remove(position);
+
     state
         .worksets
         .retain(|workset_info| workset_info.team_id != deleted_team_id);
+
     state
         .members
         .retain(|member_info| member_info.team_id != deleted_team_id);
+
     state.member_invitations.retain(|member_invitation_info| {
         member_invitation_info.team_id != deleted_team_id
     });
+
     state.comics.retain(|comic_info| {
         !deleted_workset_ids.contains(&comic_info.workset_id)
     });
+
     state.chapters.retain(|chapter_info| {
         !deleted_comic_ids.contains(&chapter_info.comic_id)
     });
+
     state.pages.retain(|page_info| {
         !deleted_chapter_ids.contains(&page_info.chapter_id)
     });
+
     state.assignments.retain(|assignment_info| {
         !deleted_chapter_ids.contains(&assignment_info.chapter_id)
     });
@@ -214,6 +241,7 @@ impl<'a> Run<CreateTeam<'a>> for Mock {
     type Error = RegularError;
 
     async fn run(&self, oper: &CreateTeam<'a>) -> RegularResult<TeamInfo> {
+        //
         let mut state = self.state.lock().unwrap();
 
         create_team(&mut state, oper.entry)
@@ -224,6 +252,7 @@ impl<'a> Run<GetTeamInfo<'a>> for Mock {
     type Error = RegularError;
 
     async fn run(&self, oper: &GetTeamInfo<'a>) -> RegularResult<TeamInfo> {
+        //
         let state = self.state.lock().unwrap();
 
         match oper {
@@ -239,6 +268,7 @@ impl<'a> Run<ListTeamInfos<'a>> for Mock {
         &self,
         oper: &ListTeamInfos<'a>,
     ) -> RegularResult<Vec<TeamInfo>> {
+        //
         let state = self.state.lock().unwrap();
 
         Ok(list_team_infos(&state, oper))
@@ -249,6 +279,7 @@ impl<'a> Run<UpdateTeam<'a>> for Mock {
     type Error = RegularError;
 
     async fn run(&self, oper: &UpdateTeam<'a>) -> RegularResult<()> {
+        //
         let mut state = self.state.lock().unwrap();
 
         update_team(&mut state, oper)
@@ -263,6 +294,7 @@ impl<'a> Step<CreateTeam<'a>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &CreateTeam<'a>,
     ) -> RegularResult<TeamInfo> {
+        //
         if context.create_team_failure {
             return Err(expected("failed"));
         }
@@ -329,6 +361,7 @@ impl<'a> Step<AllocateTeamWorksetIndex<'a>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &AllocateTeamWorksetIndex<'a>,
     ) -> RegularResult<i32> {
+        //
         let team_info = context
             .state
             .teams
@@ -339,6 +372,7 @@ impl<'a> Step<AllocateTeamWorksetIndex<'a>, MockContext> for Mock {
         let workset_index = team_info.workset_next_index;
 
         team_info.workset_next_index += 1;
+
         team_info.updated_at = now();
 
         Ok(workset_index)

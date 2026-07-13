@@ -10,8 +10,7 @@ use poprako_util::time::ToUnixMilli;
 
 use crate::data::team::TeamInfoVal;
 use crate::data::user::UserInfoVal;
-use crate::model::member::MemberInfo;
-use crate::model::member::MemberListSpec;
+use crate::model::member::{MemberInfo, MemberListSpec};
 use crate::part::image::ImagePool;
 use crate::result::{ExpectedVariant, RegularError, RegularResult};
 use crate::value::member::MemberInclOpt;

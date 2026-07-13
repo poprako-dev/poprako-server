@@ -6,33 +6,26 @@ use poprako_util::i18n::trl;
 use poprako_util::page::Page;
 
 use crate::complex::unit::{UnitComplex, UnitPermComplex};
-use crate::data::unit::ListPageUnitInfosParams;
-use crate::data::unit::ListPageUnitInfosPayload;
-use crate::data::unit::SavePageUnitsParams;
-use crate::data::unit::SavePageUnitsPayload;
-use crate::data::unit::UnitInfoVal;
-use crate::model::unit::UnitApplyAck;
-use crate::model::unit::UnitCounterDelta;
-use crate::model::unit::UnitCounters;
-use crate::model::unit::UnitIdMapper;
-use crate::model::unit::UnitOper;
+use crate::data::unit::{
+    ListPageUnitInfosParams, ListPageUnitInfosPayload, SavePageUnitsParams,
+    SavePageUnitsPayload, UnitInfoVal,
+};
+use crate::model::unit::{
+    UnitApplyAck, UnitCounterDelta, UnitCounters, UnitIdMapper, UnitOper,
+};
 use crate::model::user::UserToken;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::assignment::FindAssignmentInfo;
-use crate::part::repo::oper::chapter::{
-    AdjustChapterUnitCounters, GetChapterInfo,
-};
+use crate::part::repo::oper::chapter::{AdjustChapterUnitCounters, GetChapterInfo};
 use crate::part::repo::oper::comic::{GetComicInfo, TouchComicLastActive};
 use crate::part::repo::oper::member::FindMemberInfo;
-use crate::part::repo::oper::page::{
-    GetPageInfo, GetPageInfoExcluded, SetPageUnitCounters,
-};
+use crate::part::repo::oper::page::{GetPageInfo, GetPageInfoExcluded, SetPageUnitCounters};
 use crate::part::repo::oper::unit::{
-    CountUnits, CreateUnit, DeleteUnit, ListUnitIndexes, ListUnitInfos,
-    SaveUnit, UpdateUnitIndexes,
+    CountUnits, CreateUnit, DeleteUnit, ListUnitIndexes, ListUnitInfos, SaveUnit,
+    UpdateUnitIndexes,
 };
 use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::part::repo::page::PageRepo;
@@ -65,7 +58,7 @@ where
         })
         .await?;
 
-    UnitPermComplex::can_user_list_infos(
+    UnitPermComplex::ensure_user_can_list_infos(
         &mut run_proxy! {
             repo =>
                 for<'a, 'b> GetChapterInfo<'a, 'b>,
@@ -131,11 +124,12 @@ where
     let save_units = nucl
         .coord(
             async move |context| -> RegularResult<SavePageUnitsPayload> {
+                //
                 let page_info = repo
                     .step(context, &GetPageInfoExcluded { id: &page_id })
                     .await?;
 
-                UnitPermComplex::can_user_save_infos(
+                UnitPermComplex::ensure_user_can_save_infos(
                     &mut step_proxy! {
                         context;
                         repo =>
@@ -180,6 +174,7 @@ where
 
                 for oper in &opers {
                     match oper {
+                        //
                         UnitOper::Create { id, payload, .. } => {
                             repo.step(
                                 context,

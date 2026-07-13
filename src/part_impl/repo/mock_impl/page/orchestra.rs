@@ -1,8 +1,7 @@
 use poprako_orchestra::{Run, Step};
 
 use crate::complex::page::PageComplex;
-use crate::model::page::PageImageReservation;
-use crate::model::page::PageInfo;
+use crate::model::page::{PageImageReservation,PageInfo};
 use crate::part::repo::oper::page::{
     CreatePages, DeletePages, GetPageInfo, GetPageInfoExcluded, ListPageInfos,
     MarkPageImageUploaded, ReservePageImage, SetPageUnitCounters,
@@ -16,7 +15,9 @@ use crate::result::{RegularError, RegularResult};
 impl<'a> Run<GetPageInfo<'a>> for Mock {
     type Error = RegularError;
     async fn run(&self, oper: &GetPageInfo<'a>) -> RegularResult<PageInfo> {
+        //
         let state = self.state.lock().unwrap();
+
         get_page_by_id(&state, oper.id)
     }
 }
@@ -26,13 +27,17 @@ impl<'a> Run<ListPageInfos<'a>> for Mock {
         &self,
         oper: &ListPageInfos<'a>,
     ) -> RegularResult<Vec<PageInfo>> {
+        //
         let state = self.state.lock().unwrap();
+
         match oper {
+            //
             ListPageInfos::Chapter {
                 chapter_id,
                 offset,
                 limit,
             } => Ok(list_pages(&state, chapter_id, *offset, *limit)),
+
             ListPageInfos::AllChapter { chapter_id } => {
                 Ok(list_all_pages(&state, chapter_id))
             }
@@ -57,11 +62,13 @@ impl<'a> Step<ListPageInfos<'a>, MockContext> for Mock {
         oper: &ListPageInfos<'a>,
     ) -> RegularResult<Vec<PageInfo>> {
         match oper {
+            //
             ListPageInfos::Chapter {
                 chapter_id,
                 offset,
                 limit,
             } => Ok(list_pages(&context.state, chapter_id, *offset, *limit)),
+
             ListPageInfos::AllChapter { chapter_id } => {
                 Ok(list_all_pages(&context.state, chapter_id))
             }
@@ -75,6 +82,7 @@ impl<'a> Step<CreatePages<'a>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &CreatePages<'a>,
     ) -> RegularResult<Vec<PageInfo>> {
+        //
         if oper.entries.iter().any(|page_entry| {
             context
                 .state
@@ -87,7 +95,9 @@ impl<'a> Step<CreatePages<'a>, MockContext> for Mock {
 
         let infos =
             oper.entries.iter().map(page_from_entry).collect::<Vec<_>>();
+
         context.state.pages.extend(infos.clone());
+
         Ok(infos)
     }
 }
@@ -108,23 +118,31 @@ impl<'a> Step<ReservePageImage<'a>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &ReservePageImage<'a>,
     ) -> RegularResult<PageImageReservation> {
+        //
         let page_info = context
             .state
             .pages
             .iter_mut()
             .find(|info| info.id == oper.id)
             .ok_or_else(|| expected("error-page-not-found"))?;
+
         let prev_object_key = page_info.image_key.take();
+
         page_info.image_version += 1;
+
         page_info.image_uploaded = false;
+
         let object_key = PageComplex::gen_image_key(
             &page_info.chapter_id,
             oper.id,
             page_info.image_version,
             oper.file_ext,
         );
+
         page_info.image_key = Some(object_key.clone());
+
         page_info.updated_at = now();
+
         Ok(PageImageReservation {
             object_key,
             prev_object_key,
@@ -139,6 +157,7 @@ impl<'a> Step<MarkPageImageUploaded<'a>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &MarkPageImageUploaded<'a>,
     ) -> RegularResult<()> {
+        //
         let page_info = context
             .state
             .pages
@@ -151,7 +170,9 @@ impl<'a> Step<MarkPageImageUploaded<'a>, MockContext> for Mock {
         }
 
         page_info.image_uploaded = true;
+
         page_info.updated_at = now();
+
         Ok(())
     }
 }
@@ -162,16 +183,22 @@ impl<'a> Step<SetPageUnitCounters<'a>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &SetPageUnitCounters<'a>,
     ) -> RegularResult<()> {
+        //
         let page_info = context
             .state
             .pages
             .iter_mut()
             .find(|info| info.id == oper.id)
             .ok_or_else(|| expected("error-page-not-found"))?;
+
         page_info.total_unit_count = oper.counters.total_unit_count;
+
         page_info.translated_unit_count = oper.counters.translated_unit_count;
+
         page_info.proofread_unit_count = oper.counters.proofread_unit_count;
+
         page_info.updated_at = now();
+
         Ok(())
     }
 }
@@ -184,6 +211,7 @@ impl<'a> Step<DeletePages<'a>, MockContext> for Mock {
     ) -> RegularResult<()> {
         match oper {
             DeletePages::Chapter { chapter_id } => {
+                //
                 let ids = context
                     .state
                     .pages
@@ -191,14 +219,17 @@ impl<'a> Step<DeletePages<'a>, MockContext> for Mock {
                     .filter(|page_info| page_info.chapter_id == *chapter_id)
                     .map(|page_info| page_info.id.clone())
                     .collect::<Vec<_>>();
+
                 context
                     .state
                     .units
                     .retain(|unit_info| !ids.contains(&unit_info.page_id));
+
                 context
                     .state
                     .pages
                     .retain(|page_info| page_info.chapter_id != *chapter_id);
+
                 Ok(())
             }
         }

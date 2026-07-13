@@ -11,9 +11,7 @@ use crate::api::http::result::{
     Accept as _, HttpBody, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
-use crate::data::system_mail::ListSystemMailInfosParams;
-use crate::data::system_mail::MarkSystemMailReadParams;
-use crate::data::system_mail::SystemMailInfoVal;
+use crate::data::system_mail::{ListSystemMailInfosParams, MarkSystemMailReadParams, SystemMailInfoVal};
 use crate::model::user::UserToken;
 use crate::usecase;
 

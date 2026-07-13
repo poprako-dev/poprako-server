@@ -1,7 +1,6 @@
 use super::*;
-use crate::data::unit::ListPageUnitInfosParams;
-use crate::data::unit::SavePageUnitsParams;
-use crate::data::unit::UnitDiffParams;
+
+use crate::data::unit::{ListPageUnitInfosParams, SavePageUnitsParams, UnitDiffParams};
 
 #[tokio::test]
 async fn list_infos_returns_units_for_team_member() {

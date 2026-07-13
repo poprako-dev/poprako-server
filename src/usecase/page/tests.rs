@@ -14,10 +14,10 @@ use super::*;
 
 use time::OffsetDateTime;
 
-use crate::data::page::ListPageInfosParams;
-use crate::data::page::MarkPageImageUploadedParams;
-use crate::data::page::ReserveChapterPagesParams;
-use crate::data::page::ReservePageImageParams;
+use crate::data::page::{
+    ListPageInfosParams, MarkPageImageUploadedParams, ReserveChapterPagesParams,
+    ReservePageImageParams,
+};
 use crate::model::assignment::AssignmentInfo;
 use crate::model::chapter::ChapterInfo;
 use crate::model::comic::ComicInfo;
@@ -25,10 +25,8 @@ use crate::model::member::MemberInfo;
 use crate::model::page::PageInfo;
 use crate::model::user::UserToken;
 use crate::model::workset::WorksetInfo;
+use crate::part::prom::payload::image::{Payload as ImagePayload, ResourceKind};
 use crate::part::prom::payload::Payload;
-use crate::part::prom::payload::image::{
-    Payload as ImagePayload, ResourceKind,
-};
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::{

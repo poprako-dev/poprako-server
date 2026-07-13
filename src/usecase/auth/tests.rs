@@ -18,8 +18,7 @@
 
 use super::*;
 
-use crate::data::auth::LoginAuthParams;
-use crate::data::auth::RegisterAuthParams;
+use crate::data::auth::{LoginAuthParams, RegisterAuthParams};
 use crate::model::member_invitation::MemberInvitationInfo;
 use crate::part::effect::event::Event;
 use crate::part_impl::repo::mock_impl::Mock;

@@ -18,10 +18,7 @@ use crate::result::{RegularError, RegularResult};
 use crate::value::member::MemberInclOpt;
 use crate::value::role::{RoleField, RoleMask};
 
-use crate::model::member::MemberEntry;
-use crate::model::member::MemberInfo;
-use crate::model::member::MemberListSpec;
-use crate::model::member::MemberRoleUpdate;
+use crate::model::member::{MemberEntry, MemberInfo, MemberListSpec, MemberRoleUpdate};
 use crate::part_impl::repo::rdb_impl::schema::t_member::dsl::*;
 
 impl MemberRepo<RdbContext> for RdbRepo {}
@@ -379,6 +376,7 @@ async fn list_infos_by_user_id(
     conn: &mut RdbConn,
     user_id: &str,
 ) -> RegularResult<Vec<MemberInfo>> {
+    //
     let rows: Vec<MemberRow> = t_member
         .filter(f_user_id.eq(user_id))
         .select(MemberRow::as_select())

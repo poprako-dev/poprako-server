@@ -9,78 +9,66 @@ use utoipa::OpenApi;
 use crate::api::http::handler;
 use crate::api::http::result::HttpError;
 
-use crate::data::announcement::AnnouncementInfoVal;
-use crate::data::announcement::CreateAnnouncementParams;
-use crate::data::announcement::CreateAnnouncementPayload;
-use crate::data::assignment::AssignmentInfoVal;
-use crate::data::assignment::JoinChapterAssignmentParams;
-use crate::data::assignment::UpdateAssignmentRolesParams;
-use crate::data::assignment_invitation::AssignmentInvitationInfoVal;
-use crate::data::assignment_invitation::CreateAssignmentInvitationParams;
-use crate::data::assignment_invitation::CreateAssignmentInvitationPayload;
-use crate::data::assignment_invitation::JoinAssignmentInvitationParams;
-use crate::data::auth::LoginAuthParams;
-use crate::data::auth::LoginAuthPayload;
-use crate::data::auth::RegisterAuthParams;
-use crate::data::auth::RegisterAuthPayload;
-use crate::data::chapter::ChapterInfoVal;
-use crate::data::chapter::CreateChapterParams;
-use crate::data::chapter::CreateChapterPayload;
-use crate::data::chapter::UpdateChapterInfoParams;
-use crate::data::chapter::UpdateChapterStageParams;
-use crate::data::chapter_port::ExportChapterTranslationPayload;
-use crate::data::chapter_port::ImportChapterTranslationParams;
-use crate::data::chapter_port::ImportChapterTranslationPayload;
-use crate::data::comic::ComicInfoVal;
-use crate::data::comic::CreateComicParams;
-use crate::data::comic::CreateComicPayload;
-use crate::data::comic::MarkComicCoverUploadedParams;
-use crate::data::comic::ReserveComicCoverParams;
-use crate::data::comic::ReserveComicCoverPayload;
-use crate::data::comic::UpdateComicInfoParams;
+use crate::data::announcement::{
+    AnnouncementInfoVal, CreateAnnouncementParams, CreateAnnouncementPayload,
+};
+use crate::data::assignment::{
+    AssignmentInfoVal, JoinChapterAssignmentParams, UpdateAssignmentRolesParams,
+};
+use crate::data::assignment_invitation::{
+    AssignmentInvitationInfoVal, CreateAssignmentInvitationParams,
+    CreateAssignmentInvitationPayload, JoinAssignmentInvitationParams,
+};
+use crate::data::auth::{
+    LoginAuthParams, LoginAuthPayload, RegisterAuthParams, RegisterAuthPayload,
+};
+use crate::data::chapter::{
+    ChapterInfoVal, CreateChapterParams, CreateChapterPayload,
+    UpdateChapterInfoParams, UpdateChapterStageParams,
+};
+use crate::data::chapter_port::{
+    ExportChapterTranslationPayload, ImportChapterTranslationParams,
+    ImportChapterTranslationPayload,
+};
+use crate::data::comic::{
+    ComicInfoVal, CreateComicParams, CreateComicPayload,
+    MarkComicCoverUploadedParams, ReserveComicCoverParams,
+    ReserveComicCoverPayload, UpdateComicInfoParams,
+};
 use crate::data::comic_archive::ArchiveComicPayload;
-use crate::data::comment::CommentInfoVal;
-use crate::data::comment::CreateCommentParams;
-use crate::data::comment::CreateCommentPayload;
-use crate::data::member::CreateMemberParams;
-use crate::data::member::CreateMemberPayload;
-use crate::data::member::JoinTeamParams;
-use crate::data::member::MemberInfoVal;
-use crate::data::member::UpdateMemberRolesParams;
-use crate::data::member_invitation::CreateMemberInvitationParams;
-use crate::data::member_invitation::CreateMemberInvitationPayload;
-use crate::data::member_invitation::MemberInvitationInfoVal;
-use crate::data::member_invitation::UpdateMemberInvitationRolesParams;
-use crate::data::page::MarkPageImageUploadedParams;
-use crate::data::page::PageCreationPayload;
-use crate::data::page::PageInfoVal;
-use crate::data::page::ReserveChapterPagesParams;
-use crate::data::page::ReserveChapterPagesPayload;
-use crate::data::page::ReservePageImageParams;
-use crate::data::page::ReservePageImagePayload;
-use crate::data::system_mail::MarkSystemMailReadParams;
-use crate::data::system_mail::SystemMailInfoVal;
-use crate::data::team::CreateTeamParams;
-use crate::data::team::MarkTeamAvatarUploadedParams;
-use crate::data::team::ReserveTeamAvatarParams;
-use crate::data::team::ReserveTeamAvatarPayload;
-use crate::data::team::TeamInfoVal;
-use crate::data::team::UpdateTeamInfoParams;
-use crate::data::unit::ListPageUnitInfosPayload;
-use crate::data::unit::SavePageUnitsParams;
-use crate::data::unit::SavePageUnitsPayload;
-use crate::data::unit::UnitDiffParams;
-use crate::data::unit::UnitInfoVal;
-use crate::data::unit::UnitOperParams;
-use crate::data::user::MarkUserAvatarUploadedParams;
-use crate::data::user::ReserveUserAvatarParams;
-use crate::data::user::ReserveUserAvatarPayload;
-use crate::data::user::UpdateUserInfoParams;
-use crate::data::user::UserInfoVal;
-use crate::data::workset::CreateWorksetParams;
-use crate::data::workset::CreateWorksetPayload;
-use crate::data::workset::UpdateWorksetInfoParams;
-use crate::data::workset::WorksetInfoVal;
+use crate::data::comment::{
+    CommentInfoVal, CreateCommentParams, CreateCommentPayload,
+};
+use crate::data::member::{
+    CreateMemberParams, CreateMemberPayload, JoinTeamParams, MemberInfoVal,
+    UpdateMemberRolesParams,
+};
+use crate::data::member_invitation::{
+    CreateMemberInvitationParams, CreateMemberInvitationPayload,
+    MemberInvitationInfoVal, UpdateMemberInvitationRolesParams,
+};
+use crate::data::page::{
+    MarkPageImageUploadedParams, PageCreationPayload, PageInfoVal,
+    ReserveChapterPagesParams, ReserveChapterPagesPayload,
+    ReservePageImageParams, ReservePageImagePayload,
+};
+use crate::data::system_mail::{MarkSystemMailReadParams, SystemMailInfoVal};
+use crate::data::team::{
+    CreateTeamParams, MarkTeamAvatarUploadedParams, ReserveTeamAvatarParams,
+    ReserveTeamAvatarPayload, TeamInfoVal, UpdateTeamInfoParams,
+};
+use crate::data::unit::{
+    ListPageUnitInfosPayload, SavePageUnitsParams, SavePageUnitsPayload,
+    UnitDiffParams, UnitInfoVal, UnitOperParams,
+};
+use crate::data::user::{
+    MarkUserAvatarUploadedParams, ReserveUserAvatarParams,
+    ReserveUserAvatarPayload, UpdateUserInfoParams, UserInfoVal,
+};
+use crate::data::workset::{
+    CreateWorksetParams, CreateWorksetPayload, UpdateWorksetInfoParams,
+    WorksetInfoVal,
+};
 use crate::value::announcement::AnnouncementInclOpt;
 use crate::value::assignment::AssignmentInclOpt;
 use crate::value::chapter::ChapterInclOpt;

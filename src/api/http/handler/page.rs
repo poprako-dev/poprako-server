@@ -15,13 +15,11 @@ use crate::api::http::result::{
     Accept as _, HttpBody, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
-use crate::data::page::ListPageInfosParams;
-use crate::data::page::MarkPageImageUploadedParams;
-use crate::data::page::PageInfoVal;
-use crate::data::page::ReserveChapterPagesParams;
-use crate::data::page::ReserveChapterPagesPayload;
-use crate::data::page::ReservePageImageParams;
-use crate::data::page::ReservePageImagePayload;
+use crate::data::page::{
+    ListPageInfosParams, MarkPageImageUploadedParams, PageInfoVal,
+    ReserveChapterPagesParams, ReserveChapterPagesPayload,
+    ReservePageImageParams, ReservePageImagePayload,
+};
 use crate::model::user::UserToken;
 use crate::usecase;
 

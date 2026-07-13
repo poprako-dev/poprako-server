@@ -17,11 +17,11 @@ use crate::api::http::result::{
 };
 use crate::api::http::state::AppHarn;
 use crate::data::assignment::AssignmentInfoVal;
-use crate::data::assignment_invitation::AssignmentInvitationInfoVal;
-use crate::data::assignment_invitation::CreateAssignmentInvitationParams;
-use crate::data::assignment_invitation::CreateAssignmentInvitationPayload;
-use crate::data::assignment_invitation::JoinAssignmentInvitationParams;
-use crate::data::assignment_invitation::ListAssignmentInvitationInfosParams;
+use crate::data::assignment_invitation::{
+    AssignmentInvitationInfoVal, CreateAssignmentInvitationParams,
+    CreateAssignmentInvitationPayload, JoinAssignmentInvitationParams,
+    ListAssignmentInvitationInfosParams,
+};
 use crate::model::user::UserToken;
 use crate::usecase;
 

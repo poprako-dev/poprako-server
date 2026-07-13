@@ -10,8 +10,7 @@ use tracing::{Level, instrument};
 
 use poprako_util::i18n::trl;
 
-use crate::model::user::UserToken;
-use crate::model::user::UserTokenRef;
+use crate::model::user::{UserToken, UserTokenRef};
 use crate::part::auth::TokenAuth;
 use crate::result::{ExpectedVariant, RegularError, RegularResult};
 

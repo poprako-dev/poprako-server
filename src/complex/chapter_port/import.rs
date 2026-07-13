@@ -6,10 +6,8 @@ use poprako_util::i18n::trl;
 mod tests;
 
 use crate::model::chapter_port::ChapterPoprakoProjectImport;
-use crate::model::page_port::PageTranslationImport;
-use crate::model::page_port::PoprakoPageImport;
-use crate::model::unit::UnitContent;
-use crate::model::unit::UnitInfo;
+use crate::model::page_port::{PageTranslationImport, PoprakoPageImport};
+use crate::model::unit::{UnitContent, UnitInfo};
 use crate::model::unit_port::UnitTranslationImport;
 use crate::result::{ExpectedVariant, RegularError, RegularResult};
 

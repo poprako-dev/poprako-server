@@ -27,8 +27,9 @@ where
     let entry = params.try_into()?;
 
     match &entry {
+        //
         TermbaseEntry::Team { team_id, .. } => {
-            TermbasePermComplex::ensure_user_create_team_termbase(
+            TermbasePermComplex::ensure_user_can_create_team_termbase(
                 &mut run_proxy! {
                     repo => for<'a> FindMemberInfo<'a>;
                 },
@@ -37,8 +38,9 @@ where
             )
             .await?;
         }
+
         TermbaseEntry::Comic { comic_id, .. } => {
-            TermbasePermComplex::ensure_user_create_comic_termbase(
+            TermbasePermComplex::ensure_user_can_create_comic_termbase(
                 &mut run_proxy! {
                     repo =>
                         for<'a, 'b> FindAssignmentInfo<'a, 'b>,
@@ -67,6 +69,7 @@ where
     R: TermbaseRepo<C> + TermRepo<C> + Sync,
 {
     nucl.coord(async move |context| {
+        //
         TermbaseComplex::delete_cascade(
             &mut step_proxy! {
                 context;

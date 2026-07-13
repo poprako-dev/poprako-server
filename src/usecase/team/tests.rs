@@ -32,21 +32,16 @@ use super::*;
 
 use time::OffsetDateTime;
 
-use crate::data::team::CreateTeamParams;
-use crate::data::team::ListTeamInfosParams;
-use crate::data::team::MarkTeamAvatarUploadedParams;
-use crate::data::team::ReserveTeamAvatarParams;
-use crate::data::team::UpdateTeamInfoParams;
+use crate::data::team::{
+    CreateTeamParams, ListTeamInfosParams, MarkTeamAvatarUploadedParams,
+    ReserveTeamAvatarParams, UpdateTeamInfoParams,
+};
 use crate::model::comic::ComicInfo;
 use crate::model::member::MemberInfo;
 use crate::model::team::TeamInfo;
-use crate::model::user::UserCredential;
-use crate::model::user::UserInfo;
-use crate::model::user::UserToken;
+use crate::model::user::{UserCredential, UserInfo, UserToken};
+use crate::part::prom::payload::image::{Payload as ImagePayload, ResourceKind};
 use crate::part::prom::payload::Payload;
-use crate::part::prom::payload::image::{
-    Payload as ImagePayload, ResourceKind,
-};
 use crate::part_impl::prom::mock_impl::MockPromRecord;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;

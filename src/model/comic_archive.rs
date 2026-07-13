@@ -1,13 +1,14 @@
 //! Snapshot and persisted-record types for immutable comic archives.
 
+use bitcode::{Decode, Encode};
+use time::OffsetDateTime;
+
 use crate::model::assignment::AssignmentInfo;
 use crate::model::chapter::ChapterInfo;
 use crate::model::comic::ComicInfo;
 use crate::model::page::PageInfo;
 use crate::model::unit::UnitInfo;
 use crate::model::workset::WorksetInfo;
-use bitcode::{Decode, Encode};
-use time::OffsetDateTime;
 
 /// Fully locked active data used to build an immutable archive.
 pub struct ComicArchiveSnapshot {

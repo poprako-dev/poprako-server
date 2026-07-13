@@ -4,16 +4,12 @@ use poprako_orchestra::{Nucl, run_proxy};
 
 use crate::complex::assignment::AssignmentComplex;
 use crate::complex::chapter::{ChapterComplex, ChapterPermComplex};
-use crate::data::chapter::ChapterInfoVal;
-use crate::data::chapter::CreateChapterParams;
-use crate::data::chapter::CreateChapterPayload;
-use crate::data::chapter::ListChapterInfosParams;
-use crate::data::chapter::UpdateChapterInfoParams;
-use crate::data::chapter::UpdateChapterStageParams;
+use crate::data::chapter::{
+    ChapterInfoVal, CreateChapterParams, CreateChapterPayload,
+    ListChapterInfosParams, UpdateChapterInfoParams, UpdateChapterStageParams,
+};
 use crate::model::assignment::AssignmentEntry;
-use crate::model::chapter::ChapterEntry;
-use crate::model::chapter::ChapterInfoListSpec;
-use crate::model::chapter::ChapterInfoUpdate;
+use crate::model::chapter::{ChapterEntry, ChapterInfoListSpec, ChapterInfoUpdate};
 use crate::model::user::UserToken;
 use crate::part::effect::event::Event;
 use crate::part::effect::event::chapter::{
@@ -27,9 +23,7 @@ use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
-use crate::part::repo::oper::assignment::{
-    CreateAssignment, FindAssignmentInfo,
-};
+use crate::part::repo::oper::assignment::{CreateAssignment, FindAssignmentInfo};
 use crate::part::repo::oper::chapter::{
     CreateChapter, FindPinnedChapterInfo, GetChapterInfo,
     GetChapterInfoExcluded, ListChapterInfos, ListChapterInfosExcluded,
@@ -62,7 +56,7 @@ where
     R: ChapterRepo<C> + ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Sync,
     I: ImagePool,
 {
-    ChapterPermComplex::can_user_list_infos(
+    ChapterPermComplex::ensure_user_can_list_infos(
         &mut run_proxy! {
             repo =>
                 for<'a, 'b> GetComicInfo<'a, 'b>,
@@ -102,7 +96,7 @@ pub async fn get_info<C, R>(
 where
     R: ChapterRepo<C> + ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Sync,
 {
-    ChapterPermComplex::can_user_get_info(
+    ChapterPermComplex::ensure_user_can_get_info(
         &mut run_proxy! {
             repo =>
                 for<'a, 'b> GetChapterInfo<'a, 'b>,
@@ -134,7 +128,7 @@ pub async fn get_pinned<C, R>(
 where
     R: ChapterRepo<C> + ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Sync,
 {
-    ChapterPermComplex::can_user_get_pinned(
+    ChapterPermComplex::ensure_user_can_get_pinned(
         &mut run_proxy! {
             repo =>
                 for<'a, 'b> GetComicInfo<'a, 'b>,
@@ -174,7 +168,7 @@ where
         + Send
         + Sync,
 {
-    ChapterPermComplex::can_user_create(
+    ChapterPermComplex::ensure_user_can_create(
         &mut run_proxy! {
             repo =>
                 for<'a, 'b> GetComicInfo<'a, 'b>,
@@ -188,6 +182,7 @@ where
 
     let chapter_id = nucl
         .coord(async move |context| -> RegularResult<String> {
+            //
             repo.step(
                 context,
                 &ListChapterInfosExcluded {
@@ -288,7 +283,7 @@ where
     C: Send,
     R: ChapterRepo<C> + ComicRepo<C> + AssignmentRepo<C> + Send + Sync,
 {
-    ChapterPermComplex::can_user_update_info(
+    ChapterPermComplex::ensure_user_can_update_info(
         &mut run_proxy! {
             repo => for<'a, 'b> FindAssignmentInfo<'a, 'b>;
         },
@@ -298,6 +293,7 @@ where
     .await?;
 
     nucl.coord(async move |context| -> RegularResult<()> {
+        //
         let chapter_info = repo
             .step(
                 context,
@@ -382,7 +378,7 @@ where
     P: Prom<C> + Send + Sync,
     V: EffectDevelop + Send + Sync,
 {
-    ChapterPermComplex::can_user_update_stage(
+    ChapterPermComplex::ensure_user_can_update_stage(
         &mut run_proxy! {
             repo => for<'a, 'b> FindAssignmentInfo<'a, 'b>;
         },
@@ -395,6 +391,7 @@ where
 
     let events = nucl
         .coord(async move |context| -> RegularResult<Vec<Event>> {
+            //
             let chapter_info = repo
                 .step(
                     context,
@@ -503,7 +500,7 @@ where
         + Sync,
     P: Prom<C> + Send + Sync,
 {
-    ChapterPermComplex::can_user_delete(
+    ChapterPermComplex::ensure_user_can_delete(
         &mut run_proxy! {
             repo =>
                 for<'a, 'b> GetChapterInfo<'a, 'b>,
@@ -517,6 +514,7 @@ where
     .await?;
 
     nucl.coord(async move |context| -> RegularResult<()> {
+        //
         ChapterComplex::delete_cascade(repo, prom, context, &id).await?;
 
         accept(())

@@ -3,8 +3,7 @@
 use diesel::prelude::*;
 use time::OffsetDateTime;
 
-use crate::model::comment::CommentEntry;
-use crate::model::comment::CommentInfo;
+use crate::model::comment::{CommentEntry, CommentInfo};
 use crate::part_impl::repo::rdb_impl::schema::t_comment;
 
 /// Raw database row for the `t_comment` table. Returned by Diesel queries.

@@ -13,6 +13,7 @@ fn find_user(state: &MockState, user_id: &str) -> Option<UserInfo> {
 }
 
 fn find_chapter(state: &MockState, id: &str) -> Option<ChapterInfo> {
+    //
     let mut chapter_info = state
         .chapters
         .iter()
@@ -27,6 +28,7 @@ fn find_chapter(state: &MockState, id: &str) -> Option<ChapterInfo> {
 }
 
 fn find_comic(state: &MockState, id: &str) -> Option<ComicInfo> {
+    //
     let mut comic_info = state
         .comics
         .iter()
@@ -59,56 +61,75 @@ pub(super) fn apply_assignment_incls(
     assignment: &mut AssignmentInfo,
     incls: &[AssignmentInclOpt],
 ) {
+    //
     assignment.user = None;
 
     assignment.chapter = None;
 
     for incl in expand_incl_opts(incls) {
         match incl {
+            //
             AssignmentInclOpt::User => {
                 assignment.user = find_user(state, &assignment.user_id);
             }
+
             AssignmentInclOpt::Chapter => {
                 assignment.chapter =
                     find_chapter(state, &assignment.chapter_id);
             }
+
             AssignmentInclOpt::ChapterComic => {
+                //
                 let Some(chapter) = &mut assignment.chapter else {
                     continue;
                 };
+
                 chapter.comic = find_comic(state, &chapter.comic_id);
             }
+
             AssignmentInclOpt::ChapterComicWorkset => {
+                //
                 let Some(comic) =
                     assignment.chapter.as_mut().and_then(|v| v.comic.as_mut())
                 else {
                     continue;
                 };
+
                 comic.workset = find_workset(state, &comic.workset_id);
             }
+
             AssignmentInclOpt::ChapterComicWorksetTeam => {
+                //
                 let Some(comic) =
                     assignment.chapter.as_mut().and_then(|v| v.comic.as_mut())
                 else {
                     continue;
                 };
+
                 let Some(workset) = &comic.workset else {
                     continue;
                 };
+
                 comic.team = find_team(state, workset);
             }
+
             AssignmentInclOpt::ChapterCreator => {
+                //
                 let Some(chapter) = &mut assignment.chapter else {
                     continue;
                 };
+
                 chapter.creator = find_user(state, &chapter.creator_id);
             }
+
             AssignmentInclOpt::ChapterComicCreator => {
+                //
                 let Some(comic) =
                     assignment.chapter.as_mut().and_then(|v| v.comic.as_mut())
                 else {
                     continue;
                 };
+
                 comic.creator = find_user(state, &comic.creator_id);
             }
         }

@@ -11,10 +11,7 @@
 
 use super::*;
 
-use crate::model::unit::UnitContent;
-use crate::model::unit::UnitDiff;
-use crate::model::unit::UnitIndex;
-use crate::model::unit::UnitOper;
+use crate::model::unit::{UnitContent, UnitDiff, UnitIndex, UnitOper};
 use crate::result::{ExpectedVariant, RegularError};
 
 fn payload(text: &str, proofread: bool) -> UnitContent {

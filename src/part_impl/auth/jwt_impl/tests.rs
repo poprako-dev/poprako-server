@@ -3,9 +3,10 @@
 
 use super::*;
 
-use crate::model::user::UserTokenRef;
 use jsonwebtoken::{DecodingKey, Validation, decode};
 use serde::Deserialize;
+
+use crate::model::user::UserTokenRef;
 
 #[derive(Debug, Deserialize)]
 struct TestClaims {

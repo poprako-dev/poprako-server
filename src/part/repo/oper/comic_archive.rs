@@ -1,6 +1,6 @@
-use crate::model::comic_archive::ComicArchiveSnapshot;
-use crate::model::comic_archive::ComicArchiveWrite;
 use poprako_orchestra::Oper;
+
+use crate::model::comic_archive::{ComicArchiveSnapshot, ComicArchiveWrite};
 
 pub struct GetComicArchiveSnapshotExcluded<'a> {
     pub comic_id: &'a str,

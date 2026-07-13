@@ -6,9 +6,7 @@ use time::OffsetDateTime;
 
 use poprako_orchestra::{Run, Step};
 
-use crate::model::member_invitation::MemberInvitationEntry;
-use crate::model::member_invitation::MemberInvitationInfo;
-use crate::model::member_invitation::MemberInvitationListSpec;
+use crate::model::member_invitation::{MemberInvitationEntry,MemberInvitationInfo,MemberInvitationListSpec};
 use crate::part::repo::member_invitation::MemberInvitationRepo;
 use crate::part::repo::oper::member_invitation::{
     CreateMemberInvitation, DeleteMemberInvitation, GetMemberInvitationInfo,
@@ -120,6 +118,7 @@ async fn get_info_by_code(
     conn: &mut RdbConn,
     code: &str,
 ) -> RegularResult<MemberInvitationInfo> {
+    //
     let row: MemberInvitationRow = t_member_invitation
         .filter(f_code.eq(code))
         .filter(f_pending.eq(true))
@@ -223,6 +222,7 @@ impl<'a, 'b> Run<GetMemberInvitationInfo<'a, 'b>> for RdbRepo {
         oper: &GetMemberInvitationInfo<'a, 'b>,
     ) -> RegularResult<MemberInvitationInfo> {
         match oper {
+            //
             GetMemberInvitationInfo::Id { id, incls } => {
                 submit_query!(self.core, get_info_by_id, id, incls)
             }
@@ -255,6 +255,7 @@ impl<'a, 'b> Step<GetMemberInvitationInfo<'a, 'b>, RdbContext> for RdbRepo {
         oper: &GetMemberInvitationInfo<'a, 'b>,
     ) -> RegularResult<MemberInvitationInfo> {
         match oper {
+            //
             GetMemberInvitationInfo::Id { id, incls } => {
                 get_info_by_id(context.conn(), id, incls).await
             }
@@ -275,6 +276,7 @@ impl<'a> Step<UpdateMemberInvitation<'a>, RdbContext> for RdbRepo {
         oper: &UpdateMemberInvitation<'a>,
     ) -> RegularResult<()> {
         match oper {
+            //
             UpdateMemberInvitation::Info { update } => {
                 update_info(context.conn(), update.id.as_str(), update.roles)
                     .await

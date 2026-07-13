@@ -9,20 +9,18 @@
 
 use super::*;
 
-use crate::data::comic::MarkComicCoverUploadedParams;
-use crate::data::comic::ReserveComicCoverParams;
+use crate::data::comic::{MarkComicCoverUploadedParams, ReserveComicCoverParams};
 use crate::model::comic::ComicInfo;
 use crate::model::workset::WorksetInfo;
+use crate::part::prom::payload::image::{Payload as ImagePayload, ResourceKind};
 use crate::part::prom::payload::Payload;
-use crate::part::prom::payload::image::{
-    Payload as ImagePayload, ResourceKind,
-};
 use crate::test_util::{
     assert_expected_message, assert_one_image_check_record,
 };
 
 #[tokio::test]
 async fn reserve_cover_updates_state_enqueues_check_and_returns_put_url() {
+    //
     let mock = Mock::new();
 
     mock.seed_workset(workset("workset-1", "team-1"));
@@ -72,6 +70,7 @@ async fn reserve_cover_updates_state_enqueues_check_and_returns_put_url() {
 
 #[tokio::test]
 async fn reserve_cover_rolls_back_missing_comic() {
+    //
     let mock = Mock::new();
 
     let err = reserve_cover(
@@ -98,6 +97,7 @@ async fn reserve_cover_rolls_back_missing_comic() {
 
 #[tokio::test]
 async fn mark_cover_uploaded_marks_matching_version() {
+    //
     let mock = Mock::new();
 
     mock.seed_workset(workset("workset-1", "team-1"));
@@ -125,6 +125,7 @@ async fn mark_cover_uploaded_marks_matching_version() {
 
 #[tokio::test]
 async fn mark_cover_uploaded_accepts_repeated_matching_version() {
+    //
     let mock = Mock::new();
 
     mock.seed_workset(workset("workset-1", "team-1"));
@@ -162,6 +163,7 @@ async fn mark_cover_uploaded_accepts_repeated_matching_version() {
 
 #[tokio::test]
 async fn mark_cover_uploaded_rejects_stale_version() {
+    //
     let mock = Mock::new();
 
     mock.seed_workset(workset("workset-1", "team-1"));
@@ -195,6 +197,7 @@ async fn mark_cover_uploaded_rejects_stale_version() {
 
 #[tokio::test]
 async fn mark_cover_uploaded_rejects_old_reservation_replay() {
+    //
     let mock = Mock::new();
 
     mock.seed_workset(workset("workset-1", "team-1"));
@@ -250,6 +253,7 @@ async fn mark_cover_uploaded_rejects_old_reservation_replay() {
 
 #[tokio::test]
 async fn delete_removes_comic_updates_count_and_enqueues_cover_delete() {
+    //
     let mock = Mock::new();
 
     mock.seed_member(admin_member("user-1", "team-1"));
@@ -287,6 +291,7 @@ async fn delete_removes_comic_updates_count_and_enqueues_cover_delete() {
 
 #[tokio::test]
 async fn delete_rolls_back_missing_comic() {
+    //
     let mock = Mock::new();
 
     mock.seed_workset(workset("workset-1", "team-1"));

@@ -8,8 +8,7 @@ use utoipa::{IntoParams, ToSchema};
 use poprako_util::time::ToUnixMilli;
 
 use crate::data::user::UserInfoVal;
-use crate::model::comment::CommentInfo;
-use crate::model::comment::CommentListSpec;
+use crate::model::comment::{CommentInfo, CommentListSpec};
 use crate::part::image::ImagePool;
 use crate::result::RegularResult;
 use crate::value::comment::CommentInclOpt;

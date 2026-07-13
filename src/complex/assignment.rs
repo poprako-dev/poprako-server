@@ -6,9 +6,7 @@ use poprako_util::i18n::trl;
 
 use crate::complex::util::check_user_is_team_member;
 use crate::data::assignment::UpdateAssignmentRolesParams;
-use crate::model::assignment::AssignmentInfo;
-use crate::model::assignment::AssignmentInfoListSpec;
-use crate::model::assignment::AssignmentRoleUpdate;
+use crate::model::assignment::{AssignmentInfo, AssignmentInfoListSpec, AssignmentRoleUpdate};
 use crate::part::repo::oper::assignment::FindAssignmentInfo;
 use crate::part::repo::oper::chapter::GetChapterInfo;
 use crate::part::repo::oper::comic::GetComicInfo;
@@ -75,7 +73,7 @@ pub struct AssignmentPermComplex;
 
 impl AssignmentPermComplex {
     /// Verify the caller may list assignments selected by the list spec.
-    pub async fn can_user_list_infos<P>(
+    pub async fn ensure_user_can_list_infos<P>(
         proxy: &mut P,
         user_id: &str,
         assignment_list_spec: &AssignmentInfoListSpec,
@@ -101,7 +99,7 @@ impl AssignmentPermComplex {
     }
 
     /// Verify the caller may mutate assignment roles with the supplied data.
-    pub async fn can_user_update_roles<P>(
+    pub async fn ensure_user_can_update_roles<P>(
         proxy: &mut P,
         current_user_id: &str,
         data: &UpdateAssignmentRolesParams,
@@ -125,7 +123,7 @@ impl AssignmentPermComplex {
     }
 
     /// Verify the caller may delete the target assignment.
-    pub async fn can_user_delete<P>(
+    pub async fn ensure_user_can_delete<P>(
         proxy: &mut P,
         current_user_id: &str,
         assignment_info: &AssignmentInfo,
@@ -141,7 +139,7 @@ impl AssignmentPermComplex {
     }
 
     /// Verify the caller is an admin for the target chapter.
-    pub async fn can_user_admin<P>(
+    pub async fn ensure_user_can_admin<P>(
         proxy: &mut P,
         current_user_id: &str,
         chapter_id: &str,
@@ -153,7 +151,7 @@ impl AssignmentPermComplex {
     }
 
     /// Verify the target user may take the requested chapter assignment roles.
-    pub async fn can_user_take_roles<P>(
+    pub async fn ensure_user_can_take_roles<P>(
         proxy: &mut P,
         user_id: &str,
         chapter_id: &str,

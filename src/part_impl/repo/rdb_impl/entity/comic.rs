@@ -4,8 +4,7 @@ use diesel::prelude::*;
 use time::OffsetDateTime;
 
 use crate::complex::comic::ComicComplex;
-use crate::model::comic::ComicEntry;
-use crate::model::comic::ComicInfo;
+use crate::model::comic::{ComicEntry, ComicInfo};
 use crate::part_impl::repo::rdb_impl::schema::t_comic;
 
 // ── Queryable / Selectable ─────────────────────────────────────────────────

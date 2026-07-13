@@ -5,14 +5,12 @@ use poprako_orchestra::{Nucl, run_proxy};
 use poprako_util::page::Page;
 
 use crate::complex::workset::{WorksetComplex, WorksetPermComplex};
-use crate::data::workset::CreateWorksetParams;
-use crate::data::workset::CreateWorksetPayload;
-use crate::data::workset::ListWorksetInfosParams;
-use crate::data::workset::UpdateWorksetInfoParams;
-use crate::data::workset::WorksetInfoVal;
+use crate::data::workset::{
+    CreateWorksetParams, CreateWorksetPayload, ListWorksetInfosParams,
+    UpdateWorksetInfoParams, WorksetInfoVal,
+};
 use crate::model::user::UserToken;
-use crate::model::workset::WorksetEntry;
-use crate::model::workset::WorksetInfoUpdate;
+use crate::model::workset::{WorksetEntry, WorksetInfoUpdate};
 use crate::part::prom::Prom;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
@@ -45,7 +43,7 @@ where
     C: Send,
     R: TeamRepo<C> + WorksetRepo<C> + MemberRepo<C> + Send + Sync,
 {
-    WorksetPermComplex::can_user_create(
+    WorksetPermComplex::ensure_user_can_create(
         &mut run_proxy! {
             repo => for<'a> FindMemberInfo<'a>;
         },
@@ -56,6 +54,7 @@ where
 
     let workset_id = nucl
         .coord(async move |context| -> RegularResult<String> {
+            //
             let index = repo
                 .step(
                     context,
@@ -98,7 +97,7 @@ pub async fn get_info<C, R>(
 where
     R: WorksetRepo<C> + MemberRepo<C> + Sync,
 {
-    WorksetPermComplex::can_user_get_info(
+    WorksetPermComplex::ensure_user_can_get_info(
         &mut run_proxy! {
             repo =>
                 for<'a> GetWorksetInfo<'a>,
@@ -123,7 +122,7 @@ pub async fn list_infos<C, R>(
 where
     R: WorksetRepo<C> + MemberRepo<C> + Sync,
 {
-    WorksetPermComplex::can_user_list_infos(
+    WorksetPermComplex::ensure_user_can_list_infos(
         &mut run_proxy! {
             repo => for<'a> FindMemberInfo<'a>;
         },
@@ -154,7 +153,7 @@ pub async fn update_info<C, R>(
 where
     R: WorksetRepo<C> + MemberRepo<C> + Sync,
 {
-    WorksetPermComplex::can_user_update_info(
+    WorksetPermComplex::ensure_user_can_update_info(
         &mut run_proxy! {
             repo =>
                 for<'a> GetWorksetInfo<'a>,
@@ -202,7 +201,7 @@ where
         + Sync,
     P: Prom<C> + Send + Sync,
 {
-    WorksetPermComplex::can_user_delete(
+    WorksetPermComplex::ensure_user_can_delete(
         &mut run_proxy! {
             repo =>
                 for<'a> GetWorksetInfo<'a>,
@@ -214,6 +213,7 @@ where
     .await?;
 
     nucl.coord(async move |context| -> RegularResult<()> {
+        //
         WorksetComplex::delete_cascade(repo, prom, context, &id).await?;
 
         Ok(())

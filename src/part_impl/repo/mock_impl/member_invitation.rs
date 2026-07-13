@@ -2,9 +2,7 @@
 
 use poprako_orchestra::{Run, Step};
 
-use crate::model::member_invitation::MemberInvitationEntry;
-use crate::model::member_invitation::MemberInvitationInfo;
-use crate::model::member_invitation::MemberInvitationListSpec;
+use crate::model::member_invitation::{MemberInvitationEntry,MemberInvitationInfo,MemberInvitationListSpec};
 use crate::model::user::UserInfo;
 use crate::part::repo::member_invitation::MemberInvitationRepo;
 use crate::part::repo::oper::member_invitation::{
@@ -33,6 +31,7 @@ fn apply_invitor_incl(
     member_invitation_info: &mut MemberInvitationInfo,
     include_invitor: bool,
 ) {
+    //
     member_invitation_info.invitor = None;
 
     if include_invitor {
@@ -45,6 +44,7 @@ fn list_member_invitation_infos(
     state: &MockState,
     spec: &MemberInvitationListSpec,
 ) -> Vec<MemberInvitationInfo> {
+    //
     let mut member_invitation_infos = state
         .member_invitations
         .iter()
@@ -67,11 +67,15 @@ fn list_member_invitation_infos(
     }
 
     let offset = spec.offset as usize;
+
     let limit = spec.limit as usize;
 
     match offset >= member_invitation_infos.len() {
+        //
         true => Vec::new(),
+
         false => {
+            //
             let end =
                 std::cmp::min(offset + limit, member_invitation_infos.len());
 
@@ -85,7 +89,9 @@ fn get_member_invitation_info(
     oper: &GetMemberInvitationInfo<'_, '_>,
 ) -> RegularResult<MemberInvitationInfo> {
     match oper {
+        //
         GetMemberInvitationInfo::Id { id, incls } => {
+            //
             let mut member_invitation_info = state
                 .member_invitations
                 .iter()
@@ -121,6 +127,7 @@ fn create_member_invitation(
     state: &mut MockState,
     entry: &MemberInvitationEntry,
 ) -> RegularResult<MemberInvitationInfo> {
+    //
     if state
         .member_invitations
         .iter()
@@ -163,8 +170,11 @@ fn update_member_invitation(
     state: &mut MockState,
     oper: &UpdateMemberInvitation<'_>,
 ) -> RegularResult<()> {
+    //
     match oper {
+        //
         UpdateMemberInvitation::Info { update } => {
+            //
             let member_invitation_info = state
                 .member_invitations
                 .iter_mut()
@@ -177,6 +187,7 @@ fn update_member_invitation(
         }
 
         UpdateMemberInvitation::MarkUsed { id } => {
+            //
             let member_invitation_info = state
                 .member_invitations
                 .iter_mut()
@@ -200,6 +211,7 @@ impl<'a> Run<ListMemberInvitationInfos<'a>> for Mock {
         &self,
         oper: &ListMemberInvitationInfos<'a>,
     ) -> RegularResult<Vec<MemberInvitationInfo>> {
+        //
         let state = self.state.lock().unwrap();
 
         Ok(list_member_invitation_infos(&state, oper.spec))
@@ -213,6 +225,7 @@ impl<'a, 'b> Run<GetMemberInvitationInfo<'a, 'b>> for Mock {
         &self,
         oper: &GetMemberInvitationInfo<'a, 'b>,
     ) -> RegularResult<MemberInvitationInfo> {
+        //
         let state = self.state.lock().unwrap();
 
         get_member_invitation_info(&state, oper)
@@ -265,6 +278,7 @@ impl<'a> Step<GetMemberInvitationInfoExcluded<'a>, MockContext> for Mock {
     ) -> RegularResult<MemberInvitationInfo> {
         match oper {
             GetMemberInvitationInfoExcluded::Code { code } => {
+                //
                 let get_oper = GetMemberInvitationInfo::Code { code };
 
                 get_member_invitation_info(&context.state, &get_oper)
@@ -281,6 +295,7 @@ impl<'a> Step<DeleteMemberInvitation<'a>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &DeleteMemberInvitation<'a>,
     ) -> RegularResult<()> {
+        //
         let position = context
             .state
             .member_invitations

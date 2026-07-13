@@ -26,7 +26,9 @@ impl Nucl for Mock {
         };
 
         match f(&mut context).await {
+            //
             Ok(value) => {
+                //
                 *self.state.lock().unwrap() = context.state;
 
                 Ok(value)

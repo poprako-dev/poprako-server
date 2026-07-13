@@ -9,18 +9,17 @@ use poprako_orchestra_extra::prom::task::Task;
 use poprako_util::i18n::trl;
 
 use crate::complex::image::ImageComplex;
-use crate::data::user::MarkUserAvatarUploadedParams;
-use crate::data::user::ReserveUserAvatarParams;
-use crate::data::user::ReserveUserAvatarPayload;
-use crate::data::user::UpdateUserInfoParams;
-use crate::data::user::UserInfoVal;
+use crate::data::user::{
+    MarkUserAvatarUploadedParams, ReserveUserAvatarParams,
+    ReserveUserAvatarPayload, UpdateUserInfoParams, UserInfoVal,
+};
 use crate::model::user::UserToken;
 use crate::part::effect::event::Event;
 use crate::part::effect::event::user::UserActivePayload;
 use crate::part::effect::{EffectDevelop, EffectEmit as _};
 use crate::part::image::ImagePool;
 use crate::part::prom::Prom;
-use crate::part::prom::payload::{Payload, image};
+use crate::part::prom::payload::{image, Payload};
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::member::{
     DeleteMember, ListMemberInfosExcluded, UpdateMember,
@@ -107,6 +106,7 @@ where
     }
 
     nucl.coord(async move |context| -> Result<(), RegularError> {
+        //
         let update_user = UpdateUser::Info {
             id: &token.user_id,
             qid: &params.qid,
@@ -166,6 +166,7 @@ where
 {
     let (object_key, avatar_version) = nucl
         .coord(async move |context| -> RegularResult<(String, u32)> {
+            //
             let avatar_reservation = repo
                 .step(
                     context,
@@ -178,6 +179,7 @@ where
 
             // If replacing an existing avatar, schedule deletion of the old object.
             if let Some(prev_key) = &avatar_reservation.prev_object_key {
+                //
                 let delete_id = ImageComplex::gen_delete_id();
 
                 let delete_payload = Payload::Image(image::Payload::Delete {
@@ -256,6 +258,7 @@ where
     }
 
     nucl.coord(async move |context| -> Result<(), RegularError> {
+        //
         let update_user = UpdateUser::MarkAvatarUploaded {
             id: &id,
             avatar_version: params.avatar_version,
@@ -311,6 +314,7 @@ where
     }
 
     nucl.coord(async move |context| -> Result<(), RegularError> {
+        //
         let get_user_info_excluded = GetUserInfoExcluded::Id { id: &id };
 
         let user_info = repo.step(context, &get_user_info_excluded).await?;

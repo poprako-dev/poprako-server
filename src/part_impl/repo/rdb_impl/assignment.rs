@@ -22,10 +22,7 @@ use crate::result::{RegularError, RegularResult};
 use crate::value::assignment::AssignmentInclOpt;
 use crate::value::role::RoleField;
 
-use crate::model::assignment::AssignmentEntry;
-use crate::model::assignment::AssignmentInfo;
-use crate::model::assignment::AssignmentInfoListSpec;
-use crate::model::assignment::AssignmentRoleUpdate;
+use crate::model::assignment::{AssignmentEntry,AssignmentInfo,AssignmentInfoListSpec,AssignmentRoleUpdate};
 use crate::part_impl::repo::rdb_impl::schema::t_assignment::dsl::*;
 use crate::part_impl::repo::rdb_impl::schema::t_chapter::{
     f_comic_id as chapter_comic_id, table as chapter_table,
@@ -71,6 +68,7 @@ async fn find_info_by_user_id_and_comic_id(
     comic_id: &str,
     incls: &[AssignmentInclOpt],
 ) -> RegularResult<Option<AssignmentInfo>> {
+    //
     let row: Option<AssignmentRow> = t_assignment
         .inner_join(chapter_table)
         .filter(f_user_id.eq(user_id))
@@ -290,6 +288,7 @@ async fn list_chapter_assignments_excluded(
     conn: &mut RdbConn,
     chapter_id: &str,
 ) -> RegularResult<Vec<AssignmentInfo>> {
+    //
     let rows: Vec<AssignmentRow> = t_assignment
         .filter(f_chapter_id.eq(chapter_id))
         .select(AssignmentRow::as_select())
@@ -380,6 +379,7 @@ impl Run<FindAssignmentInfo<'_, '_>> for RdbRepo {
         oper: &FindAssignmentInfo<'_, '_>,
     ) -> RegularResult<Option<AssignmentInfo>> {
         match oper {
+            //
             FindAssignmentInfo::ChapterUser {
                 chapter_id,
                 user_id,
@@ -389,6 +389,7 @@ impl Run<FindAssignmentInfo<'_, '_>> for RdbRepo {
                 chapter_id,
                 user_id
             ),
+
             FindAssignmentInfo::UserComic {
                 user_id,
                 comic_id,
@@ -412,9 +413,11 @@ impl Run<ListAssignmentInfos<'_, '_>> for RdbRepo {
         oper: &ListAssignmentInfos<'_, '_>,
     ) -> RegularResult<Vec<AssignmentInfo>> {
         match oper {
+            //
             ListAssignmentInfos::Spec { spec } => {
                 submit_query!(self.core, list_infos, spec)
             }
+
             ListAssignmentInfos::Chapter {
                 chapter_id,
                 role,
@@ -450,9 +453,11 @@ impl Step<ListAssignmentInfos<'_, '_>, RdbContext> for RdbRepo {
         oper: &ListAssignmentInfos<'_, '_>,
     ) -> RegularResult<Vec<AssignmentInfo>> {
         match oper {
+            //
             ListAssignmentInfos::Spec { spec } => {
                 list_infos(context.conn(), spec).await
             }
+
             ListAssignmentInfos::Chapter {
                 chapter_id,
                 role,
@@ -479,6 +484,7 @@ impl Step<FindAssignmentInfo<'_, '_>, RdbContext> for RdbRepo {
         oper: &FindAssignmentInfo<'_, '_>,
     ) -> RegularResult<Option<AssignmentInfo>> {
         match oper {
+            //
             FindAssignmentInfo::ChapterUser {
                 chapter_id,
                 user_id,
@@ -490,6 +496,7 @@ impl Step<FindAssignmentInfo<'_, '_>, RdbContext> for RdbRepo {
                 )
                 .await
             }
+
             FindAssignmentInfo::UserComic {
                 user_id,
                 comic_id,
@@ -557,7 +564,9 @@ impl Step<DeleteAssignments<'_>, RdbContext> for RdbRepo {
         oper: &DeleteAssignments<'_>,
     ) -> RegularResult<()> {
         match oper {
+            //
             DeleteAssignments::Id { id } => delete(context.conn(), id).await,
+
             DeleteAssignments::Chapter { chapter_id } => {
                 delete_by_chapter_id(context.conn(), chapter_id).await
             }

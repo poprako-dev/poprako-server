@@ -4,9 +4,7 @@ use std::cmp::Reverse;
 
 use poprako_orchestra::{Run, Step};
 
-use crate::model::announcement::AnnouncementEntry;
-use crate::model::announcement::AnnouncementInfo;
-use crate::model::announcement::AnnouncementListSpec;
+use crate::model::announcement::{AnnouncementEntry,AnnouncementInfo,AnnouncementListSpec};
 use crate::model::user::UserInfo;
 use crate::part::repo::announcement::AnnouncementRepo;
 use crate::part::repo::oper::announcement::{
@@ -33,6 +31,7 @@ fn apply_user_incl(
     announcement_info: &mut AnnouncementInfo,
     include_user: bool,
 ) {
+    //
     announcement_info.user = None;
 
     if include_user {
@@ -44,6 +43,7 @@ fn list_announcements(
     state: &MockState,
     spec: &AnnouncementListSpec,
 ) -> Vec<AnnouncementInfo> {
+    //
     let include_user = spec.incl_opt.contains(&AnnouncementInclOpt::User);
 
     let mut announcement_infos = state
@@ -65,9 +65,11 @@ fn list_announcements(
     let limit = spec.limit as usize;
 
     match offset >= announcement_infos.len() {
+        //
         true => Vec::new(),
 
         false => {
+            //
             let end = std::cmp::min(offset + limit, announcement_infos.len());
 
             announcement_infos[offset..end].to_vec()
@@ -79,6 +81,7 @@ fn create_announcement(
     state: &mut MockState,
     entry: &AnnouncementEntry,
 ) -> RegularResult<AnnouncementInfo> {
+    //
     if state
         .announcements
         .iter()
@@ -109,6 +112,7 @@ impl Run<ListAnnouncementInfos<'_>> for Mock {
         &self,
         oper: &ListAnnouncementInfos<'_>,
     ) -> RegularResult<Vec<AnnouncementInfo>> {
+        //
         let state = self.state.lock().unwrap();
 
         Ok(list_announcements(&state, oper.spec))

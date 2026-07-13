@@ -12,19 +12,14 @@ use crate::complex::chapter::ChapterComplex;
 use crate::complex::comic::{ComicComplex, ComicPermComplex};
 use crate::complex::image::ImageComplex;
 use crate::data::chapter::ChapterInfoVal;
-use crate::data::comic::ComicInfoVal;
-use crate::data::comic::CreateComicParams;
-use crate::data::comic::CreateComicPayload;
-use crate::data::comic::ListComicInfosParams;
-use crate::data::comic::MarkComicCoverUploadedParams;
-use crate::data::comic::ReserveComicCoverParams;
-use crate::data::comic::ReserveComicCoverPayload;
-use crate::data::comic::UpdateComicInfoParams;
+use crate::data::comic::{
+    ComicInfoVal, CreateComicParams, CreateComicPayload, ListComicInfosParams,
+    MarkComicCoverUploadedParams, ReserveComicCoverParams,
+    ReserveComicCoverPayload, UpdateComicInfoParams,
+};
 use crate::model::assignment::AssignmentEntry;
 use crate::model::chapter::ChapterEntry;
-use crate::model::comic::ComicEntry;
-use crate::model::comic::ComicInfoListSpec;
-use crate::model::comic::ComicInfoUpdate;
+use crate::model::comic::{ComicEntry, ComicInfoListSpec, ComicInfoUpdate};
 use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
 use crate::part::prom::Prom;
@@ -85,7 +80,7 @@ where
         + Send
         + Sync,
 {
-    ComicPermComplex::can_user_create(
+    ComicPermComplex::ensure_user_can_create(
         &mut run_proxy! {
             repo =>
                 for<'a> GetWorksetInfo<'a>,
@@ -98,6 +93,7 @@ where
 
     let (comic_id, chapter_id) = nucl
         .coord(async move |context| -> RegularResult<(String, String)> {
+            //
             let index = repo
                 .step(
                     context,
@@ -227,7 +223,7 @@ where
     R: ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Sync,
     I: ImagePool,
 {
-    ComicPermComplex::can_user_get_info(
+    ComicPermComplex::ensure_user_can_get_info(
         &mut run_proxy! {
             repo =>
                 for<'a, 'b> GetComicInfo<'a, 'b>,
@@ -260,7 +256,7 @@ where
     R: ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + ChapterRepo<C> + Sync,
     I: ImagePool,
 {
-    ComicPermComplex::can_user_list_infos(
+    ComicPermComplex::ensure_user_can_list_infos(
         &mut run_proxy! {
             repo =>
                 for<'a> GetWorksetInfo<'a>,
@@ -281,7 +277,9 @@ where
     // NOTE: `with` cannot be executed elegantly by repo layer,
     // so we have to handle it in usecase layer.
     let mut pinned_chapters = match with_pinned_chapter {
+        //
         true => {
+            //
             let comic_ids: Vec<String> =
                 comic_infos.iter().map(|info| info.id.clone()).collect();
 
@@ -297,7 +295,9 @@ where
     let mut comic_info_vals = Vec::with_capacity(comic_infos.len());
 
     for comic_info in comic_infos {
+        //
         let pinned_chapter_val = match pinned_chapters.remove(&comic_info.id) {
+            //
             Some(chapter_info) => Some(
                 ChapterInfoVal::from_model(image_pool, chapter_info).await?,
             ),
@@ -327,7 +327,7 @@ pub async fn update_info<C, R>(
 where
     R: ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Sync,
 {
-    ComicPermComplex::can_user_update_info(
+    ComicPermComplex::ensure_user_can_update_info(
         &mut run_proxy! {
             repo =>
                 for<'a, 'b> GetComicInfo<'a, 'b>,
@@ -371,7 +371,7 @@ where
     P: Prom<C> + Send + Sync,
     I: ImagePool,
 {
-    ComicPermComplex::can_user_reserve_cover(
+    ComicPermComplex::ensure_user_can_reserve_cover(
         &mut run_proxy! {
             repo =>
                 for<'a, 'b> GetComicInfo<'a, 'b>,
@@ -385,6 +385,7 @@ where
 
     let (object_key, cover_version) = nucl
         .coord(async move |context| -> RegularResult<(String, u32)> {
+            //
             let cover_reservation = repo
                 .step(
                     context,
@@ -396,6 +397,7 @@ where
                 .await?;
 
             if let Some(prev_object_key) = &cover_reservation.prev_object_key {
+                //
                 let delete_id = ImageComplex::gen_delete_id();
 
                 let delete_payload = Payload::Image(image::Payload::Delete {
@@ -453,7 +455,7 @@ pub async fn mark_cover_uploaded<C, R>(
 where
     R: ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Sync,
 {
-    ComicPermComplex::can_user_mark_cover_uploaded(
+    ComicPermComplex::ensure_user_can_mark_cover_uploaded(
         &mut run_proxy! {
             repo =>
                 for<'a, 'b> GetComicInfo<'a, 'b>,
@@ -497,7 +499,7 @@ where
         + Sync,
     P: Prom<C> + Send + Sync,
 {
-    ComicPermComplex::can_user_delete(
+    ComicPermComplex::ensure_user_can_delete(
         &mut run_proxy! {
             repo =>
                 for<'a, 'b> GetComicInfo<'a, 'b>,
@@ -510,6 +512,7 @@ where
     .await?;
 
     nucl.coord(async move |context| -> RegularResult<()> {
+        //
         ComicComplex::delete_cascade(repo, prom, context, &id).await?;
 
         accept(())

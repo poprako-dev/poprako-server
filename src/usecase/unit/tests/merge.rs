@@ -1,7 +1,6 @@
 use super::*;
-use crate::data::unit::SavePageUnitsParams;
-use crate::data::unit::UnitDiffParams;
-use crate::data::unit::UnitOperParams;
+
+use crate::data::unit::{SavePageUnitsParams, UnitDiffParams, UnitOperParams};
 use crate::model::unit::UnitInfo;
 
 fn oracle_ids(units: &[OracleUnit]) -> Vec<String> {

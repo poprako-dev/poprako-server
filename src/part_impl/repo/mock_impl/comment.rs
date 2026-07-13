@@ -4,9 +4,7 @@ use std::cmp::Reverse;
 
 use poprako_orchestra::{Run, Step};
 
-use crate::model::comment::CommentEntry;
-use crate::model::comment::CommentInfo;
-use crate::model::comment::CommentListSpec;
+use crate::model::comment::{CommentEntry,CommentInfo,CommentListSpec};
 use crate::model::user::UserInfo;
 use crate::part::repo::comment::CommentRepo;
 use crate::part::repo::oper::comment::{CreateComment, ListCommentInfos};
@@ -31,6 +29,7 @@ fn apply_user_incl(
     comment_info: &mut CommentInfo,
     include_user: bool,
 ) {
+    //
     comment_info.user = None;
 
     if include_user {
@@ -42,6 +41,7 @@ fn list_comments(
     state: &MockState,
     spec: &CommentListSpec,
 ) -> Vec<CommentInfo> {
+    //
     let include_user = spec.incl_opt.contains(&CommentInclOpt::User);
 
     let mut comment_infos = state
@@ -62,9 +62,11 @@ fn list_comments(
     let limit = spec.limit as usize;
 
     match offset >= comment_infos.len() {
+        //
         true => Vec::new(),
 
         false => {
+            //
             let end = std::cmp::min(offset + limit, comment_infos.len());
 
             comment_infos[offset..end].to_vec()
@@ -76,6 +78,7 @@ fn create_comment(
     state: &mut MockState,
     entry: &CommentEntry,
 ) -> RegularResult<CommentInfo> {
+    //
     if state
         .comments
         .iter()
@@ -105,6 +108,7 @@ impl Run<ListCommentInfos<'_>> for Mock {
         &self,
         oper: &ListCommentInfos<'_>,
     ) -> RegularResult<Vec<CommentInfo>> {
+        //
         let state = self.state.lock().unwrap();
 
         Ok(list_comments(&state, oper.spec))

@@ -22,6 +22,7 @@ impl<'a> Run<ListMemberInfos<'a>> for RdbRepo {
         oper: &ListMemberInfos<'a>,
     ) -> RegularResult<Vec<MemberInfo>> {
         match oper {
+            //
             ListMemberInfos::Spec { spec } => {
                 submit_query!(self.core, list_infos, spec)
             }
@@ -69,6 +70,7 @@ impl<'a> Step<UpdateMember<'a>, RdbContext> for RdbRepo {
         oper: &UpdateMember<'a>,
     ) -> RegularResult<()> {
         match oper {
+            //
             UpdateMember::UserNickname {
                 user_id,
                 user_nickname,
@@ -93,6 +95,7 @@ impl<'a> Step<ListMemberInfos<'a>, RdbContext> for RdbRepo {
         oper: &ListMemberInfos<'a>,
     ) -> RegularResult<Vec<MemberInfo>> {
         match oper {
+            //
             ListMemberInfos::Spec { spec } => {
                 list_infos(context.conn(), spec).await
             }

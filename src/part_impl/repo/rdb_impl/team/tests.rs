@@ -2,8 +2,6 @@
 
 use super::*;
 
-use poprako_orchestra::Run as _;
-
 use crate::part::repo::oper::team::{GetTeamInfo, ListTeamInfos, UpdateTeam};
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
 

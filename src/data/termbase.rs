@@ -12,9 +12,11 @@ impl TryInto<TermbaseEntry> for CreateTermbaseParams {
     type Error = RegularError;
 
     fn try_into(self) -> RegularResult<TermbaseEntry> {
+        //
         let termbase_id = next_snowflake_id();
 
         match (self.team_id, self.comic_id) {
+            //
             (Some(team_id), None) => Ok(TermbaseEntry::Team {
                 id: termbase_id,
                 name: self.name,

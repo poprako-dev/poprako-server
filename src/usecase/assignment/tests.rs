@@ -1,15 +1,12 @@
 use super::*;
 
-use crate::data::assignment::ListAssignmentInfosParams;
-use crate::data::assignment::UpdateAssignmentRolesParams;
+use crate::data::assignment::{ListAssignmentInfosParams, UpdateAssignmentRolesParams};
 use crate::model::assignment::AssignmentInfo;
 use crate::model::chapter::ChapterInfo;
 use crate::model::comic::ComicInfo;
 use crate::model::member::MemberInfo;
 use crate::model::team::TeamInfo;
-use crate::model::user::UserCredential;
-use crate::model::user::UserInfo;
-use crate::model::user::UserToken;
+use crate::model::user::{UserCredential, UserInfo, UserToken};
 use crate::model::workset::WorksetInfo;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::test_util::now;

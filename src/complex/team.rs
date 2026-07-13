@@ -124,7 +124,7 @@ pub struct TeamPermComplex;
 impl TeamPermComplex {
     /// Verify the user has super-admin privileges required to list all teams.
     /// Returns an `Expected::Perm` error if the user is not a super-admin.
-    pub async fn can_user_update_info<P>(
+    pub async fn ensure_user_can_update_info<P>(
         proxy: &mut P,
         user_id: &str,
         team_id: &str,
@@ -136,7 +136,7 @@ impl TeamPermComplex {
     }
 
     /// Verify the caller is a team admin.
-    pub async fn can_user_reserve_avatar<P>(
+    pub async fn ensure_user_can_reserve_avatar<P>(
         proxy: &mut P,
         user_id: &str,
         team_id: &str,
@@ -148,7 +148,7 @@ impl TeamPermComplex {
     }
 
     /// Verify the caller is a team admin.
-    pub async fn can_user_mark_avatar_uploaded<P>(
+    pub async fn ensure_user_can_mark_avatar_uploaded<P>(
         proxy: &mut P,
         user_id: &str,
         team_id: &str,
@@ -160,7 +160,7 @@ impl TeamPermComplex {
     }
 
     /// Verify the caller is a team admin.
-    pub async fn can_user_delete<P>(
+    pub async fn ensure_user_can_delete<P>(
         proxy: &mut P,
         user_id: &str,
         team_id: &str,
@@ -172,7 +172,7 @@ impl TeamPermComplex {
     }
 
     /// Verify the user has super-admin privileges required to list all teams.
-    pub async fn can_user_list_all<P>(
+    pub async fn ensure_user_can_list_all<P>(
         proxy: &mut P,
         user_id: &str,
     ) -> RegularResult<()>

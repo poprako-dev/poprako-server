@@ -19,8 +19,7 @@ use poprako_util::i18n::{trl, trl_kv};
 use crate::complex::util::{
     check_user_is_team_admin, check_user_is_team_member,
 };
-use crate::model::chapter::ChapterInfo;
-use crate::model::chapter::ChapterStageUpdate;
+use crate::model::chapter::{ChapterInfo, ChapterStageUpdate};
 use crate::part::repo::oper::assignment::FindAssignmentInfo;
 use crate::part::repo::oper::chapter::GetChapterInfo;
 use crate::part::repo::oper::comic::GetComicInfo;
@@ -102,7 +101,7 @@ pub struct ChapterPermComplex;
 
 impl ChapterPermComplex {
     /// Verify the caller is a team member of the comic's owning workset.
-    pub async fn can_user_list_infos<P>(
+    pub async fn ensure_user_can_list_infos<P>(
         proxy: &mut P,
         user_id: &str,
         comic_id: &str,
@@ -116,7 +115,7 @@ impl ChapterPermComplex {
     }
 
     /// Verify the caller is a team member of the chapter's owning workset.
-    pub async fn can_user_get_info<P>(
+    pub async fn ensure_user_can_get_info<P>(
         proxy: &mut P,
         user_id: &str,
         chapter_id: &str,
@@ -133,7 +132,7 @@ impl ChapterPermComplex {
     /// Verify the caller is a team member of the comic's owning workset
     /// (same permission level as listing — pinned chapters are visible to
     /// all team members).
-    pub async fn can_user_get_pinned<P>(
+    pub async fn ensure_user_can_get_pinned<P>(
         proxy: &mut P,
         user_id: &str,
         comic_id: &str,
@@ -147,7 +146,7 @@ impl ChapterPermComplex {
     }
 
     /// Verify the caller is a team admin of the comic's owning workset.
-    pub async fn can_user_create<P>(
+    pub async fn ensure_user_can_create<P>(
         proxy: &mut P,
         user_id: &str,
         comic_id: &str,
@@ -161,7 +160,7 @@ impl ChapterPermComplex {
     }
 
     /// Verify the caller is assigned as a chapter admin for metadata updates.
-    pub async fn can_user_update_info<P>(
+    pub async fn ensure_user_can_update_info<P>(
         proxy: &mut P,
         user_id: &str,
         chapter_id: &str,
@@ -173,7 +172,7 @@ impl ChapterPermComplex {
     }
 
     /// Verify the caller has permission to apply a workflow operation.
-    pub async fn can_user_update_stage<P>(
+    pub async fn ensure_user_can_update_stage<P>(
         proxy: &mut P,
         user_id: &str,
         chapter_id: &str,
@@ -191,7 +190,7 @@ impl ChapterPermComplex {
     /// The caller must be a team member whose own [`RoleMask`] (from their
     /// membership) contains the requested role. Certain roles (e.g. `ADMIN`)
     /// are excluded from the join flow entirely.
-    pub async fn can_user_join<P>(
+    pub async fn ensure_user_can_join<P>(
         proxy: &mut P,
         user_id: &str,
         chapter_info: &ChapterInfo,
@@ -206,7 +205,7 @@ impl ChapterPermComplex {
     }
 
     /// Verify the caller is a team admin of the chapter's owning workset.
-    pub async fn can_user_delete<P>(
+    pub async fn ensure_user_can_delete<P>(
         proxy: &mut P,
         user_id: &str,
         chapter_id: &str,

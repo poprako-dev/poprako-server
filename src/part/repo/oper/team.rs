@@ -1,7 +1,6 @@
-use crate::model::team::TeamAvatarReservation;
-use crate::model::team::TeamEntry;
-use crate::model::team::TeamInfo;
 use poprako_orchestra::Oper;
+
+use crate::model::team::{TeamAvatarReservation, TeamEntry, TeamInfo};
 
 pub struct CreateTeam<'a> {
     pub entry: &'a TeamEntry,

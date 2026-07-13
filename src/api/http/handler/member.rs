@@ -17,12 +17,10 @@ use crate::api::http::result::{
     Accept as _, HttpBody, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
-use crate::data::member::CreateMemberParams;
-use crate::data::member::CreateMemberPayload;
-use crate::data::member::JoinTeamParams;
-use crate::data::member::ListMemberInfosParams;
-use crate::data::member::MemberInfoVal;
-use crate::data::member::UpdateMemberRolesParams;
+use crate::data::member::{
+    CreateMemberParams, CreateMemberPayload, JoinTeamParams,
+    ListMemberInfosParams, MemberInfoVal, UpdateMemberRolesParams,
+};
 use crate::model::user::UserToken;
 use crate::usecase;
 use crate::value::member::MemberInclOpt;

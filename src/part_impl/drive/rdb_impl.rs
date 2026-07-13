@@ -43,7 +43,9 @@ impl Nucl for RdbDrive {
             .map_err(|error| NuclError::Backend(diesel(error)))?;
 
         match f(&mut rdb_context).await {
+            //
             Ok(value) => {
+                //
                 AnsiTransactionManager::commit_transaction(rdb_context.conn())
                     .await
                     .map_err(|error| NuclError::Backend(diesel(error)))?;
@@ -52,6 +54,7 @@ impl Nucl for RdbDrive {
             }
 
             Err(error) => {
+                //
                 AnsiTransactionManager::rollback_transaction(
                     rdb_context.conn(),
                 )

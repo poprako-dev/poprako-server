@@ -2,8 +2,7 @@
 
 use std::cmp::Reverse;
 
-use crate::model::chapter::ChapterEntry;
-use crate::model::chapter::ChapterInfo;
+use crate::model::chapter::{ChapterEntry,ChapterInfo};
 use crate::model::comic::ComicInfo;
 use crate::model::team::TeamInfo;
 use crate::model::user::UserInfo;

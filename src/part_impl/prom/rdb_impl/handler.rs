@@ -320,6 +320,7 @@ where
     I: ImagePool + Send + Sync,
 {
     let payload: Payload = match serde_json::from_value(payload.clone()) {
+        //
         Ok(payload) => payload,
 
         Err(error) => {

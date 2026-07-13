@@ -70,6 +70,7 @@ impl<'a> LocalMessageEntry<'a> {
         task: &Task<'a, String, Payload>,
         now: OffsetDateTime,
     ) -> RegularResult<Self> {
+        //
         let f_payload =
             serde_json::to_value(task.payload).map_err(|error| {
                 RegularError::Unrecoverable {

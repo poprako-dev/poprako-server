@@ -18,14 +18,14 @@ use poprako_orchestra::Step as _;
 use poprako_orchestra_extra::prom::oper::Defer;
 use poprako_orchestra_extra::prom::task::Task;
 
-use crate::data::workset::CreateWorksetParams;
-use crate::data::workset::ListWorksetInfosParams;
-use crate::data::workset::UpdateWorksetInfoParams;
+use crate::data::workset::{
+    CreateWorksetParams, ListWorksetInfosParams, UpdateWorksetInfoParams,
+};
 use crate::model::comic::ComicInfo;
 use crate::model::member::MemberInfo;
 use crate::model::user::UserToken;
 use crate::model::workset::WorksetInfo;
-use crate::part::prom::payload::{Payload, image};
+use crate::part::prom::payload::{image, Payload};
 use crate::part::repo::oper::workset::DeleteWorkset;
 use crate::part_impl::prom::mock_impl::MockPromRecord;
 use crate::part_impl::repo::mock_impl::Mock;
@@ -377,6 +377,7 @@ async fn delete_does_not_create_prom_records_when_called_directly() {
     mock.seed_workset(workset("workset-1", "team-1", 0));
 
     mock.coord(async |context| -> RegularResult<()> {
+        //
         let id = "prom-1".to_string();
 
         let payload = Payload::Image(image::Payload::Delete {

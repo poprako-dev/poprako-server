@@ -3,6 +3,7 @@
 // join_team(join_team)(negative): duplicate membership should be rejected without consuming invitation.
 
 use super::*;
+
 use crate::data::member::JoinTeamParams;
 use crate::model::member_invitation::MemberInvitationInfo;
 

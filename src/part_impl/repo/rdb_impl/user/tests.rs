@@ -2,8 +2,6 @@
 
 use super::*;
 
-use poprako_orchestra::Run as _;
-
 use crate::part::repo::oper::user::{
     FindUserInfo, GetUserCredential, GetUserInfo,
 };

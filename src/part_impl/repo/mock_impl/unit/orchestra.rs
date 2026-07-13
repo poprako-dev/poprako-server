@@ -1,8 +1,6 @@
 use poprako_orchestra::{Run, Step};
 
-use crate::model::unit::UnitCounters;
-use crate::model::unit::UnitIndex;
-use crate::model::unit::UnitInfo;
+use crate::model::unit::{UnitCounters,UnitIndex,UnitInfo};
 use crate::part::repo::oper::unit::{
     CountUnits, CreateUnit, DeleteUnit, ListUnitIndexes, ListUnitInfos,
     SaveUnit, UpdateUnitIndexes,
@@ -19,11 +17,15 @@ impl<'a> Run<ListUnitInfos<'a>> for Mock {
         &self,
         oper: &ListUnitInfos<'a>,
     ) -> RegularResult<Vec<UnitInfo>> {
+        //
         let state = self.state.lock().unwrap();
+
         match oper {
+            //
             ListUnitInfos::Page { page_id, page } => {
                 Ok(list_units(&state, page_id, *page))
             }
+
             ListUnitInfos::AllPage { page_id } => {
                 Ok(list_all_units(&state, page_id))
             }
@@ -38,9 +40,11 @@ impl<'a> Step<ListUnitInfos<'a>, MockContext> for Mock {
         oper: &ListUnitInfos<'a>,
     ) -> RegularResult<Vec<UnitInfo>> {
         match oper {
+            //
             ListUnitInfos::Page { page_id, page } => {
                 Ok(list_units(&context.state, page_id, *page))
             }
+
             ListUnitInfos::AllPage { page_id } => {
                 Ok(list_all_units(&context.state, page_id))
             }
@@ -74,9 +78,11 @@ impl<'a> Step<DeleteUnit<'a>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &DeleteUnit<'a>,
     ) -> RegularResult<()> {
+        //
         context.state.units.retain(|info| {
             !(info.page_id == oper.page_id && info.id == oper.id)
         });
+
         Ok(())
     }
 }
@@ -106,7 +112,9 @@ impl<'a> Step<UpdateUnitIndexes<'a>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &UpdateUnitIndexes<'a>,
     ) -> RegularResult<()> {
+        //
         for update in oper.updates {
+            //
             let info = context
                 .state
                 .units
@@ -115,9 +123,12 @@ impl<'a> Step<UpdateUnitIndexes<'a>, MockContext> for Mock {
                     info.page_id == oper.page_id && info.id == update.id
                 })
                 .ok_or_else(|| expected("error-unit-not-found"))?;
+
             info.index = update.index;
+
             info.updated_at = now();
         }
+
         Ok(())
     }
 }

@@ -3,8 +3,7 @@
 use diesel::prelude::*;
 use time::OffsetDateTime;
 
-use crate::model::assignment::AssignmentEntry;
-use crate::model::assignment::AssignmentInfo;
+use crate::model::assignment::{AssignmentEntry, AssignmentInfo};
 use crate::part_impl::repo::rdb_impl::schema::t_assignment;
 use crate::result::RegularError;
 use crate::value::role::{RoleField, RoleMask};

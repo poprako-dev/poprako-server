@@ -20,10 +20,7 @@ use crate::part_impl::shared::result::{diesel, expected, version};
 use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::{RegularError, RegularResult};
 
-use crate::model::user::UserAvatarReservation;
-use crate::model::user::UserCredential;
-use crate::model::user::UserEntry;
-use crate::model::user::UserInfo;
+use crate::model::user::{UserAvatarReservation,UserCredential,UserEntry,UserInfo};
 use crate::part_impl::repo::rdb_impl::schema::t_user::dsl::*;
 
 impl UserRepo<RdbContext> for RdbRepo {}
@@ -294,6 +291,7 @@ impl<'a> Run<UpdateUser<'a>> for RdbRepo {
 
     async fn run(&self, oper: &UpdateUser<'a>) -> RegularResult<()> {
         match oper {
+            //
             UpdateUser::TouchLastActive { id } => {
                 submit_query!(self.core, touch_last_active, id)
             }
@@ -351,6 +349,7 @@ impl<'a> Step<UpdateUser<'a>, RdbContext> for RdbRepo {
         oper: &UpdateUser<'a>,
     ) -> RegularResult<()> {
         match oper {
+            //
             UpdateUser::Info { id, qid, nickname } => {
                 update_info(context.conn(), id, qid, nickname).await
             }

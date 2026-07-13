@@ -22,7 +22,7 @@ pub struct CommentPermComplex;
 
 impl CommentPermComplex {
     /// Verify the caller may list comments under the team.
-    pub async fn can_user_list_infos<P>(
+    pub async fn ensure_user_can_list_infos<P>(
         proxy: &mut P,
         user_id: &str,
         team_id: &str,
@@ -34,7 +34,7 @@ impl CommentPermComplex {
     }
 
     /// Verify the caller may create a comment under the team.
-    pub async fn can_user_create<P>(
+    pub async fn ensure_user_can_create<P>(
         proxy: &mut P,
         user_id: &str,
         team_id: &str,

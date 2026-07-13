@@ -17,12 +17,10 @@ use crate::api::http::result::{
     Accept as _, HttpBody, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
-use crate::data::chapter::ChapterInfoVal;
-use crate::data::chapter::CreateChapterParams;
-use crate::data::chapter::CreateChapterPayload;
-use crate::data::chapter::ListChapterInfosParams;
-use crate::data::chapter::UpdateChapterInfoParams;
-use crate::data::chapter::UpdateChapterStageParams;
+use crate::data::chapter::{
+    ChapterInfoVal, CreateChapterParams, CreateChapterPayload,
+    ListChapterInfosParams, UpdateChapterInfoParams, UpdateChapterStageParams,
+};
 use crate::model::user::UserToken;
 use crate::usecase;
 use crate::value::chapter::ChapterInclOpt;

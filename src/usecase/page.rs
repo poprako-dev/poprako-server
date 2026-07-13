@@ -10,19 +10,16 @@ use poprako_util::i18n::trl;
 
 use crate::complex::image::ImageComplex;
 use crate::complex::page::{PageComplex, PagePermComplex};
-use crate::data::page::ListPageInfosParams;
-use crate::data::page::MarkPageImageUploadedParams;
-use crate::data::page::PageCreationPayload;
-use crate::data::page::PageInfoVal;
-use crate::data::page::ReserveChapterPagesParams;
-use crate::data::page::ReserveChapterPagesPayload;
-use crate::data::page::ReservePageImageParams;
-use crate::data::page::ReservePageImagePayload;
+use crate::data::page::{
+    ListPageInfosParams, MarkPageImageUploadedParams, PageCreationPayload,
+    PageInfoVal, ReserveChapterPagesParams, ReserveChapterPagesPayload,
+    ReservePageImageParams, ReservePageImagePayload,
+};
 use crate::model::page::PageEntry;
 use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
 use crate::part::prom::Prom;
-use crate::part::prom::payload::{Payload, image};
+use crate::part::prom::payload::{image, Payload};
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::comic::ComicRepo;
@@ -75,7 +72,7 @@ where
         image_version: u32,
     }
 
-    PagePermComplex::can_user_reserve(
+    PagePermComplex::ensure_user_can_reserve(
         &mut run_proxy! {
             repo => for<'a, 'b> FindAssignmentInfo<'a, 'b>;
         },
@@ -87,6 +84,7 @@ where
     let reservations = nucl
         .coord(
             async move |context| -> RegularResult<Vec<PageReservation>> {
+                //
                 let chapter_info = repo
                     .step(
                         context,
@@ -227,7 +225,7 @@ where
 
     let page_info = repo.run(&GetPageInfo { id: &id }).await?;
 
-    PagePermComplex::can_user_reserve(
+    PagePermComplex::ensure_user_can_reserve(
         &mut run_proxy! {
             repo => for<'a, 'b> FindAssignmentInfo<'a, 'b>;
         },
@@ -240,6 +238,7 @@ where
 
     let (object_key, image_version) = nucl
         .coord(async move |context| -> RegularResult<(String, u32)> {
+            //
             let page_reservation = repo
                 .step(
                     context,
@@ -295,7 +294,7 @@ where
         + Sync,
     I: ImagePool,
 {
-    PagePermComplex::can_user_list_infos(
+    PagePermComplex::ensure_user_can_list_infos(
         &mut run_proxy! {
             repo =>
                 for<'a, 'b> GetChapterInfo<'a, 'b>,
@@ -342,7 +341,7 @@ where
 {
     let page_info = repo.run(&GetPageInfo { id: &id }).await?;
 
-    PagePermComplex::can_user_mark_image_uploaded(
+    PagePermComplex::ensure_user_can_mark_image_uploaded(
         &mut run_proxy! {
             repo => for<'a, 'b> FindAssignmentInfo<'a, 'b>;
         },
@@ -352,6 +351,7 @@ where
     .await?;
 
     nucl.coord(async move |context| -> RegularResult<()> {
+        //
         repo.step(
             context,
             &MarkPageImageUploaded {
@@ -389,7 +389,7 @@ where
         + Sync,
     P: Prom<C> + Send + Sync,
 {
-    PagePermComplex::can_user_delete(
+    PagePermComplex::ensure_user_can_delete(
         &mut run_proxy! {
             repo =>
                 for<'a, 'b> GetChapterInfo<'a, 'b>,
@@ -403,6 +403,7 @@ where
     .await?;
 
     nucl.coord(async move |context| -> RegularResult<()> {
+        //
         let chapter_info = repo
             .step(
                 context,

@@ -1,7 +1,8 @@
-use crate::model::page::PageInfo;
-use crate::model::unit::UnitInfo;
 use std::collections::HashMap;
 use std::fmt::Write as _;
+
+use crate::model::page::PageInfo;
+use crate::model::unit::UnitInfo;
 
 /// Chapter export formatting rules.
 pub struct ChapterExportComplex;

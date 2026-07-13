@@ -379,6 +379,7 @@ pub async fn create_user(shared: &RdbCore, user_entry: &UserEntry) {
     let nucl = RdbDrive::new(shared.clone());
 
     nucl.coord(async |context| {
+        //
         repo.step(context, &CreateUser { entry: user_entry })
             .await?;
 
@@ -434,6 +435,7 @@ pub async fn seed_workset(shared: &RdbCore, prefix: &str) -> WorksetFixture {
     let workset_entry = workset_entry(prefix, &team_fixture.team_entry);
 
     nucl.coord(async |context| {
+        //
         repo.step(
             context,
             &CreateWorkset {
@@ -478,6 +480,7 @@ pub async fn seed_comic(shared: &RdbCore, prefix: &str) -> ComicFixture {
         .unwrap();
 
     nucl.coord(async |context| {
+        //
         repo.step(
             context,
             &CreateWorkset {
@@ -523,6 +526,7 @@ pub async fn seed_chapter(shared: &RdbCore, prefix: &str) -> ChapterFixture {
     );
 
     nucl.coord(async |context| {
+        //
         repo.step(
             context,
             &CreateChapter {
@@ -557,6 +561,7 @@ pub async fn seed_page(shared: &RdbCore, prefix: &str) -> PageFixture {
     let page_entry = page_entry(prefix, &chapter_fixture.chapter_entry);
 
     nucl.coord(async |context| {
+        //
         repo.step(
             context,
             &CreatePages {

@@ -2,8 +2,7 @@
 
 use poprako_orchestra::{Run, Step};
 
-use crate::model::workset::WorksetInfo;
-use crate::model::workset::WorksetInfoUpdate;
+use crate::model::workset::{WorksetInfo,WorksetInfoUpdate};
 use crate::part::repo::oper::workset::{
     AllocateWorksetComicIndex, CreateWorkset, DeleteWorkset, GetWorksetInfo,
     GetWorksetInfoExcluded, ListWorksetInfos, ListWorksetInfosExcluded,
@@ -30,6 +29,7 @@ fn list_workset_infos(
     state: &MockState,
     oper: &ListWorksetInfos<'_>,
 ) -> Vec<WorksetInfo> {
+    //
     let mut workset_infos = state
         .worksets
         .iter()
@@ -48,8 +48,11 @@ fn list_workset_infos(
     let limit = page.limit as usize;
 
     match offset >= workset_infos.len() {
+        //
         true => Vec::new(),
+
         false => {
+            //
             let end = std::cmp::min(offset + limit, workset_infos.len());
 
             workset_infos[offset..end].to_vec()
@@ -61,6 +64,7 @@ fn update_workset(
     state: &mut MockState,
     update: &WorksetInfoUpdate,
 ) -> RegularResult<()> {
+    //
     let workset_info = state
         .worksets
         .iter_mut()
@@ -83,6 +87,7 @@ impl<'a> Run<GetWorksetInfo<'a>> for Mock {
         &self,
         oper: &GetWorksetInfo<'a>,
     ) -> RegularResult<WorksetInfo> {
+        //
         let state = self.state.lock().unwrap();
 
         get_workset_info(&state, oper.id)
@@ -96,6 +101,7 @@ impl<'a> Run<ListWorksetInfos<'a>> for Mock {
         &self,
         oper: &ListWorksetInfos<'a>,
     ) -> RegularResult<Vec<WorksetInfo>> {
+        //
         let state = self.state.lock().unwrap();
 
         Ok(list_workset_infos(&state, oper))
@@ -106,6 +112,7 @@ impl<'a> Run<UpdateWorkset<'a>> for Mock {
     type Error = RegularError;
 
     async fn run(&self, oper: &UpdateWorkset<'a>) -> RegularResult<()> {
+        //
         let mut state = self.state.lock().unwrap();
 
         update_workset(&mut state, oper.update)
@@ -174,6 +181,7 @@ impl<'a> Step<CreateWorkset<'a>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &CreateWorkset<'a>,
     ) -> RegularResult<WorksetInfo> {
+        //
         if context
             .state
             .worksets
@@ -211,6 +219,7 @@ impl<'a> Step<DeleteWorkset<'a>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &DeleteWorkset<'a>,
     ) -> RegularResult<()> {
+        //
         let position = context
             .state
             .worksets
@@ -269,6 +278,7 @@ impl<'a> Step<AllocateWorksetComicIndex<'a>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &AllocateWorksetComicIndex<'a>,
     ) -> RegularResult<i32> {
+        //
         let workset_info = context
             .state
             .worksets
@@ -294,6 +304,7 @@ impl<'a> Step<UpdateWorksetComicCount<'a>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &UpdateWorksetComicCount<'a>,
     ) -> RegularResult<()> {
+        //
         let workset_info = context
             .state
             .worksets

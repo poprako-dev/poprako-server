@@ -44,7 +44,7 @@ pub struct PagePermComplex;
 
 impl PagePermComplex {
     /// Verify the caller may reserve page images for the chapter.
-    pub async fn can_user_reserve<P>(
+    pub async fn ensure_user_can_reserve<P>(
         proxy: &mut P,
         user_id: &str,
         chapter_id: &str,
@@ -56,7 +56,7 @@ impl PagePermComplex {
     }
 
     /// Verify the caller may list pages under a chapter.
-    pub async fn can_user_list_infos<P>(
+    pub async fn ensure_user_can_list_infos<P>(
         proxy: &mut P,
         user_id: &str,
         chapter_id: &str,
@@ -100,7 +100,7 @@ impl PagePermComplex {
     }
 
     /// Verify the caller may confirm a page image upload.
-    pub async fn can_user_mark_image_uploaded<P>(
+    pub async fn ensure_user_can_mark_image_uploaded<P>(
         proxy: &mut P,
         user_id: &str,
         chapter_id: &str,
@@ -112,7 +112,7 @@ impl PagePermComplex {
     }
 
     /// Verify the caller may delete all pages under the chapter.
-    pub async fn can_user_delete<P>(
+    pub async fn ensure_user_can_delete<P>(
         proxy: &mut P,
         user_id: &str,
         chapter_id: &str,

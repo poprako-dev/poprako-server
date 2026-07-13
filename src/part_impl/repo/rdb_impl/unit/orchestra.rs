@@ -1,8 +1,6 @@
 use poprako_orchestra::{Run, Step};
 
-use crate::model::unit::UnitCounters;
-use crate::model::unit::UnitIndex;
-use crate::model::unit::UnitInfo;
+use crate::model::unit::{UnitCounters,UnitIndex,UnitInfo};
 use crate::part::repo::oper::unit::{
     CountUnits, CreateUnit, DeleteUnit, ListUnitIndexes, ListUnitInfos,
     SaveUnit, UpdateUnitIndexes,
@@ -23,9 +21,11 @@ impl<'a> Run<ListUnitInfos<'a>> for RdbRepo {
         oper: &ListUnitInfos<'a>,
     ) -> RegularResult<Vec<UnitInfo>> {
         match oper {
+            //
             ListUnitInfos::Page { page_id, page } => {
                 submit_query!(self.core, list_infos_by_page_id, page_id, *page)
             }
+
             ListUnitInfos::AllPage { page_id } => {
                 submit_query!(self.core, list_all_infos_by_page_id, page_id)
             }
@@ -41,9 +41,11 @@ impl<'a> Step<ListUnitInfos<'a>, RdbContext> for RdbRepo {
         oper: &ListUnitInfos<'a>,
     ) -> RegularResult<Vec<UnitInfo>> {
         match oper {
+            //
             ListUnitInfos::Page { page_id, page } => {
                 list_infos_by_page_id(context.conn(), page_id, *page).await
             }
+
             ListUnitInfos::AllPage { page_id } => {
                 list_all_infos_by_page_id(context.conn(), page_id).await
             }

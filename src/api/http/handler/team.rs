@@ -12,13 +12,11 @@ use crate::api::http::result::{
     Accept as _, HttpBody, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
-use crate::data::team::CreateTeamParams;
-use crate::data::team::ListTeamInfosParams;
-use crate::data::team::MarkTeamAvatarUploadedParams;
-use crate::data::team::ReserveTeamAvatarParams;
-use crate::data::team::ReserveTeamAvatarPayload;
-use crate::data::team::TeamInfoVal;
-use crate::data::team::UpdateTeamInfoParams;
+use crate::data::team::{
+    CreateTeamParams, ListTeamInfosParams, MarkTeamAvatarUploadedParams,
+    ReserveTeamAvatarParams, ReserveTeamAvatarPayload, TeamInfoVal,
+    UpdateTeamInfoParams,
+};
 use crate::model::user::UserToken;
 use crate::usecase;
 
