@@ -2,7 +2,9 @@
 
 use poprako_orchestra::{Run, Step};
 
-use crate::model::member_invitation::{MemberInvitationEntry,MemberInvitationInfo,MemberInvitationListSpec};
+use crate::model::member_invitation::{
+    MemberInvitationEntry, MemberInvitationInfo, MemberInvitationListSpec,
+};
 use crate::model::user::UserInfo;
 use crate::part::repo::member_invitation::MemberInvitationRepo;
 use crate::part::repo::oper::member_invitation::{
@@ -279,9 +281,11 @@ impl<'a> Step<GetMemberInvitationInfoExcluded<'a>, MockContext> for Mock {
         match oper {
             GetMemberInvitationInfoExcluded::Code { code } => {
                 //
-                let get_oper = GetMemberInvitationInfo::Code { code };
 
-                get_member_invitation_info(&context.state, &get_oper)
+                get_member_invitation_info(
+                    &context.state,
+                    &GetMemberInvitationInfo::Code { code },
+                )
             }
         }
     }

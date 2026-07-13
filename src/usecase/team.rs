@@ -19,7 +19,7 @@ use crate::model::team::{TeamEntry, TeamInfo};
 use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
 use crate::part::prom::Prom;
-use crate::part::prom::payload::{image, Payload};
+use crate::part::prom::payload::{Payload, image};
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
 use crate::part::repo::chapter::ChapterRepo;
@@ -80,10 +80,10 @@ where
     let team_info: TeamInfo = nucl
         .coord(async move |context| -> RegularResult<TeamInfo> {
             //
-            let get_user_info_excluded =
-                GetUserInfoExcluded::Id { id: &token.user_id };
 
-            let user_info = repo.step(context, &get_user_info_excluded).await?;
+            let user_info = repo
+                .step(context, &GetUserInfoExcluded::Id { id: &token.user_id })
+                .await?;
 
             let team_info = repo
                 .step(context, &CreateTeam { entry: &team_entry })
@@ -131,9 +131,11 @@ where
     R: TeamRepo<C>,
     I: ImagePool,
 {
-    let get_team_info = GetTeamInfo::Id { id: &id };
-
-    TeamInfoVal::from_model(image_pool, repo.run(&get_team_info).await?).await
+    TeamInfoVal::from_model(
+        image_pool,
+        repo.run(&GetTeamInfo::Id { id: &id }).await?,
+    )
+    .await
 }
 
 /// Lists teams with pagination.
@@ -211,13 +213,13 @@ where
     .await?;
 
     // FIXME: use TeamInfoUpdate instead.
-    let update_team = UpdateTeam::Info {
+
+    repo.run(&UpdateTeam::Info {
         id: &params.id,
         name: &params.name,
         description: &params.description,
-    };
-
-    repo.run(&update_team).await?;
+    })
+    .await?;
 
     Ok(())
 }
@@ -358,12 +360,11 @@ where
     )
     .await?;
 
-    let update_team = UpdateTeam::MarkAvatarUploaded {
+    repo.run(&UpdateTeam::MarkAvatarUploaded {
         id: &id,
         avatar_version: params.avatar_version,
-    };
-
-    repo.run(&update_team).await?;
+    })
+    .await?;
 
     Ok(())
 }

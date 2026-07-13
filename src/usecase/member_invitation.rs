@@ -59,22 +59,28 @@ where
     let (member_invitation_id, code) = nucl
         .coord(async move |context| -> RegularResult<(String, String)> {
             //
-            let find_invitee_user_info = FindUserInfo::Qid {
-                qid: &params.invitee_qid,
-            };
 
-            let invitee_user_info =
-                repo.step(context, &find_invitee_user_info).await?;
+            let invitee_user_info = repo
+                .step(
+                    context,
+                    &FindUserInfo::Qid {
+                        qid: &params.invitee_qid,
+                    },
+                )
+                .await?;
 
             if let Some(invitee_user_info) = invitee_user_info {
                 //
-                let find_invitee_member_info = FindMemberInfo::UserTeam {
-                    user_id: &invitee_user_info.id,
-                    team_id: &params.team_id,
-                };
 
-                let invitee_member_info =
-                    repo.step(context, &find_invitee_member_info).await?;
+                let invitee_member_info = repo
+                    .step(
+                        context,
+                        &FindMemberInfo::UserTeam {
+                            user_id: &invitee_user_info.id,
+                            team_id: &params.team_id,
+                        },
+                    )
+                    .await?;
 
                 if invitee_member_info.is_some() {
                     return Err(RegularError::Expected {
@@ -197,11 +203,13 @@ where
                 roles: params.roles,
             };
 
-            let update_member_invitation = UpdateMemberInvitation::Info {
-                update: &member_invitation_update,
-            };
-
-            repo.step(context, &update_member_invitation).await?;
+            repo.step(
+                context,
+                &UpdateMemberInvitation::Info {
+                    update: &member_invitation_update,
+                },
+            )
+            .await?;
 
             Ok(())
         })

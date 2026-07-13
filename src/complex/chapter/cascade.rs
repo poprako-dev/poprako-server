@@ -71,25 +71,32 @@ impl ChapterComplex {
         prom_image_deletes(repo, prom, context, &chapter_info.id).await?;
 
         // Delete leaf FKs first to satisfy ON DELETE RESTRICT constraints.
-        let delete_assignment_invitations =
-            DeleteAssignmentInvitations::Chapter {
+
+        repo.step(
+            context,
+            &DeleteAssignmentInvitations::Chapter {
                 chapter_id: &chapter_info.id,
-            };
+            },
+        )
+        .await?;
 
-        repo.step(context, &delete_assignment_invitations).await?;
-
-        let delete_assignments = DeleteAssignments::Chapter {
-            chapter_id: &chapter_info.id,
-        };
-
-        repo.step(context, &delete_assignments).await?;
+        repo.step(
+            context,
+            &DeleteAssignments::Chapter {
+                chapter_id: &chapter_info.id,
+            },
+        )
+        .await?;
 
         // DeletePages::Chapter deletes units then pages internally.
-        let delete_pages = DeletePages::Chapter {
-            chapter_id: &chapter_info.id,
-        };
 
-        repo.step(context, &delete_pages).await?;
+        repo.step(
+            context,
+            &DeletePages::Chapter {
+                chapter_id: &chapter_info.id,
+            },
+        )
+        .await?;
 
         repo.step(
             context,
@@ -137,9 +144,9 @@ where
     R: PageRepo<C> + Send + Sync,
     P: Prom<C> + Send + Sync,
 {
-    let list_page_infos = ListPageInfos::AllChapter { chapter_id };
-
-    let page_infos = repo.step(context, &list_page_infos).await?;
+    let page_infos = repo
+        .step(context, &ListPageInfos::AllChapter { chapter_id })
+        .await?;
 
     for page_info in page_infos {
         if let Some(image_key) = page_info.image_key

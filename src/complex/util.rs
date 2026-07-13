@@ -109,12 +109,12 @@ pub async fn check_user_is_chapter_assignee<P>(
 where
     P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = RegularError>,
 {
-    let find_assignment_info = FindAssignmentInfo::ChapterUser {
-        chapter_id,
-        user_id,
-    };
-
-    let assignment_info = proxy.exec(&find_assignment_info).await?;
+    let assignment_info = proxy
+        .exec(&FindAssignmentInfo::ChapterUser {
+            chapter_id,
+            user_id,
+        })
+        .await?;
 
     if assignment_info.is_none() {
         return Err(chapter_assignee_required_error());
@@ -132,12 +132,12 @@ pub async fn check_user_is_chapter_translator_or_proofreader<P>(
 where
     P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = RegularError>,
 {
-    let find_assignment_info = FindAssignmentInfo::ChapterUser {
-        chapter_id,
-        user_id,
-    };
-
-    let assignment_info = proxy.exec(&find_assignment_info).await?;
+    let assignment_info = proxy
+        .exec(&FindAssignmentInfo::ChapterUser {
+            chapter_id,
+            user_id,
+        })
+        .await?;
 
     let Some(assignment_info) = assignment_info else {
         return Err(chapter_translator_or_proofreader_required_error());

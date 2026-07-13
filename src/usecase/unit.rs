@@ -19,13 +19,17 @@ use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::assignment::FindAssignmentInfo;
-use crate::part::repo::oper::chapter::{AdjustChapterUnitCounters, GetChapterInfo};
+use crate::part::repo::oper::chapter::{
+    AdjustChapterUnitCounters, GetChapterInfo,
+};
 use crate::part::repo::oper::comic::{GetComicInfo, TouchComicLastActive};
 use crate::part::repo::oper::member::FindMemberInfo;
-use crate::part::repo::oper::page::{GetPageInfo, GetPageInfoExcluded, SetPageUnitCounters};
+use crate::part::repo::oper::page::{
+    GetPageInfo, GetPageInfoExcluded, SetPageUnitCounters,
+};
 use crate::part::repo::oper::unit::{
-    CountUnits, CreateUnit, DeleteUnit, ListUnitIndexes, ListUnitInfos, SaveUnit,
-    UpdateUnitIndexes,
+    CountUnits, CreateUnit, DeleteUnit, ListUnitIndexes, ListUnitInfos,
+    SaveUnit, UpdateUnitIndexes,
 };
 use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::part::repo::page::PageRepo;
@@ -72,15 +76,15 @@ where
     )
     .await?;
 
-    let list_unit_infos = ListUnitInfos::Page {
-        page_id: &page_info.id,
-        page: Page {
-            offset: params.offset,
-            limit: params.limit,
-        },
-    };
-
-    let unit_infos = repo.run(&list_unit_infos).await?;
+    let unit_infos = repo
+        .run(&ListUnitInfos::Page {
+            page_id: &page_info.id,
+            page: Page {
+                offset: params.offset,
+                limit: params.limit,
+            },
+        })
+        .await?;
 
     Ok(ListPageUnitInfosPayload {
         unit_infos: unit_infos.into_iter().map(UnitInfoVal::from).collect(),

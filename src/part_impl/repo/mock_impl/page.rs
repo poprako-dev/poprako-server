@@ -1,6 +1,6 @@
 //! Mock implementation of `PageRepo`.
 
-use crate::model::page::{PageEntry,PageInfo};
+use crate::model::page::{PageEntry, PageInfo};
 use crate::part::repo::page::PageRepo;
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,

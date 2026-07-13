@@ -4,7 +4,7 @@ use std::cmp::Reverse;
 
 use poprako_orchestra::{Run, Step};
 
-use crate::model::comment::{CommentEntry,CommentInfo,CommentListSpec};
+use crate::model::comment::{CommentEntry, CommentInfo, CommentListSpec};
 use crate::model::user::UserInfo;
 use crate::part::repo::comment::CommentRepo;
 use crate::part::repo::oper::comment::{CreateComment, ListCommentInfos};

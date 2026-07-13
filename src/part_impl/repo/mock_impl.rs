@@ -423,9 +423,7 @@ async fn run_reads_seeded_user() {
         },
     );
 
-    let get_user_info = GetUserInfo::Id { id: "user-1" };
-
-    let found = mock.run(&get_user_info).await;
+    let found = mock.run(&GetUserInfo::Id { id: "user-1" }).await;
 
     assert!(found.is_ok());
 

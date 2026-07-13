@@ -17,7 +17,10 @@ use crate::value::chapter::{Stage, StageMask, StagePhase};
 use crate::value::comic::ComicInclOpt;
 use crate::value::index::user_index_to_stored_index;
 
-use crate::model::comic::{ComicCoverReservation,ComicEntry,ComicInfo,ComicInfoListKind,ComicInfoListSpec,ComicInfoUpdate};
+use crate::model::comic::{
+    ComicCoverReservation, ComicEntry, ComicInfo, ComicInfoListKind,
+    ComicInfoListSpec, ComicInfoUpdate,
+};
 use crate::part_impl::repo::rdb_impl::schema::t_comic::dsl::*;
 
 impl ComicRepo<RdbContext> for RdbRepo {}

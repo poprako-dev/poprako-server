@@ -16,7 +16,9 @@ use crate::part_impl::shared::result::{diesel, expected};
 use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::RegularResult;
 
-use crate::model::unit::{UnitContent,UnitCounters,UnitIndex,UnitIndexUpdate,UnitInfo};
+use crate::model::unit::{
+    UnitContent, UnitCounters, UnitIndex, UnitIndexUpdate, UnitInfo,
+};
 use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::*;
 
 impl UnitRepo<RdbContext> for RdbRepo {}

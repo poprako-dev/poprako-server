@@ -9,7 +9,9 @@ use crate::data::member::{
     CreateMemberParams, CreateMemberPayload, JoinTeamParams,
     ListMemberInfosParams, MemberInfoVal, UpdateMemberRolesParams,
 };
-use crate::model::member::{MemberEntry, MemberInfo, MemberListSpec, MemberRoleUpdate};
+use crate::model::member::{
+    MemberEntry, MemberInfo, MemberListSpec, MemberRoleUpdate,
+};
 use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
 use crate::part::repo::member::MemberRepo;
@@ -59,25 +61,33 @@ where
     let member_id = nucl
         .coord(async move |context| -> RegularResult<String> {
             //
-            let get_user_info_excluded = GetUserInfoExcluded::Id {
-                id: &params.user_id,
-            };
 
-            let user_info = repo.step(context, &get_user_info_excluded).await?;
+            let user_info = repo
+                .step(
+                    context,
+                    &GetUserInfoExcluded::Id {
+                        id: &params.user_id,
+                    },
+                )
+                .await?;
 
-            let get_team_info_excluded = GetTeamInfoExcluded::Id {
-                id: &params.team_id,
-            };
+            repo.step(
+                context,
+                &GetTeamInfoExcluded::Id {
+                    id: &params.team_id,
+                },
+            )
+            .await?;
 
-            repo.step(context, &get_team_info_excluded).await?;
-
-            let find_member_info = FindMemberInfo::UserTeam {
-                user_id: &params.user_id,
-                team_id: &params.team_id,
-            };
-
-            let existing_member_info =
-                repo.step(context, &find_member_info).await?;
+            let existing_member_info = repo
+                .step(
+                    context,
+                    &FindMemberInfo::UserTeam {
+                        user_id: &params.user_id,
+                        team_id: &params.team_id,
+                    },
+                )
+                .await?;
 
             if existing_member_info.is_some() {
                 return Err(RegularError::Expected {
@@ -129,31 +139,38 @@ where
     let member_info = nucl
         .coord(async move |context| -> RegularResult<MemberInfo> {
             //
-            let get_current_user_info_excluded = GetUserInfoExcluded::Id {
-                id: &current_user_id,
-            };
 
-            let current_user_info =
-                repo.step(context, &get_current_user_info_excluded).await?;
-
-            let get_member_invitation_info_excluded =
-                GetMemberInvitationInfoExcluded::Code { code: &params.code };
+            let current_user_info = repo
+                .step(
+                    context,
+                    &GetUserInfoExcluded::Id {
+                        id: &current_user_id,
+                    },
+                )
+                .await?;
 
             let member_invitation_info = repo
-                .step(context, &get_member_invitation_info_excluded)
+                .step(
+                    context,
+                    &GetMemberInvitationInfoExcluded::Code {
+                        code: &params.code,
+                    },
+                )
                 .await?;
 
             if member_invitation_info.invitee_qid != current_user_info.qid {
                 return Err(invalid_invitation_error());
             }
 
-            let find_member_info = FindMemberInfo::UserTeam {
-                user_id: &current_user_id,
-                team_id: &member_invitation_info.team_id,
-            };
-
-            let existing_member_info =
-                repo.step(context, &find_member_info).await?;
+            let existing_member_info = repo
+                .step(
+                    context,
+                    &FindMemberInfo::UserTeam {
+                        user_id: &current_user_id,
+                        team_id: &member_invitation_info.team_id,
+                    },
+                )
+                .await?;
 
             if existing_member_info.is_some() {
                 return Err(already_team_member_error());
@@ -176,11 +193,13 @@ where
                 )
                 .await?;
 
-            let update_member_invitation = UpdateMemberInvitation::MarkUsed {
-                id: &member_invitation_info.id,
-            };
-
-            repo.step(context, &update_member_invitation).await?;
+            repo.step(
+                context,
+                &UpdateMemberInvitation::MarkUsed {
+                    id: &member_invitation_info.id,
+                },
+            )
+            .await?;
 
             Ok(member_info)
         })
@@ -215,11 +234,11 @@ where
         .await?;
     }
 
-    let list_member_infos = ListMemberInfos::Spec {
-        spec: &member_list_spec,
-    };
-
-    let member_infos = repo.run(&list_member_infos).await?;
+    let member_infos = repo
+        .run(&ListMemberInfos::Spec {
+            spec: &member_list_spec,
+        })
+        .await?;
 
     let mut member_info_vals = Vec::with_capacity(member_infos.len());
 
@@ -245,12 +264,12 @@ where
     C: Send,
     R: MemberRepo<C> + Send + Sync,
 {
-    let get_member_info = GetMemberInfo::Id {
-        id: &params.id,
-        incls: &[],
-    };
-
-    let member_info = repo.run(&get_member_info).await?;
+    let member_info = repo
+        .run(&GetMemberInfo::Id {
+            id: &params.id,
+            incls: &[],
+        })
+        .await?;
 
     MemberPermComplex::ensure_user_can_update_info(
         &mut run_proxy! {
@@ -269,11 +288,13 @@ where
                 roles: params.roles,
             };
 
-            let update_member = UpdateMember::Role {
-                update: &member_role_update,
-            };
-
-            repo.step(context, &update_member).await?;
+            repo.step(
+                context,
+                &UpdateMember::Role {
+                    update: &member_role_update,
+                },
+            )
+            .await?;
 
             Ok(())
         })
@@ -298,12 +319,12 @@ where
     C: Send,
     R: MemberRepo<C> + Send + Sync,
 {
-    let get_member_info = GetMemberInfo::Id {
-        id: &id,
-        incls: &[],
-    };
-
-    let member_info = repo.run(&get_member_info).await?;
+    let member_info = repo
+        .run(&GetMemberInfo::Id {
+            id: &id,
+            incls: &[],
+        })
+        .await?;
 
     MemberPermComplex::ensure_user_can_delete(
         &mut run_proxy! {

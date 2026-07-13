@@ -96,21 +96,28 @@ where
     let (assignment_invitation_id, code) = nucl
         .coord(async move |context| -> RegularResult<(String, String)> {
             //
-            let find_user_info = FindUserInfo::Qid {
-                qid: &params.invitee_qid,
-            };
 
-            let invitee_user_info = repo.step(context, &find_user_info).await?;
+            let invitee_user_info = repo
+                .step(
+                    context,
+                    &FindUserInfo::Qid {
+                        qid: &params.invitee_qid,
+                    },
+                )
+                .await?;
 
             if let Some(invitee_user_info) = invitee_user_info {
                 //
-                let find_assignment_info = FindAssignmentInfo::ChapterUser {
-                    chapter_id: &params.chapter_id,
-                    user_id: &invitee_user_info.id,
-                };
 
-                let existing_assignment_info =
-                    repo.step(context, &find_assignment_info).await?;
+                let existing_assignment_info = repo
+                    .step(
+                        context,
+                        &FindAssignmentInfo::ChapterUser {
+                            chapter_id: &params.chapter_id,
+                            user_id: &invitee_user_info.id,
+                        },
+                    )
+                    .await?;
 
                 if existing_assignment_info.is_some() {
                     return Err(invitee_assigned_error());
@@ -164,11 +171,9 @@ where
     C: Send,
     R: AssignmentInvitationRepo<C> + AssignmentRepo<C> + Send + Sync,
 {
-    let get_assignment_invitation_info =
-        GetAssignmentInvitationInfo::Id { id: &id };
-
-    let assignment_invitation_info =
-        repo.run(&get_assignment_invitation_info).await?;
+    let assignment_invitation_info = repo
+        .run(&GetAssignmentInvitationInfo::Id { id: &id })
+        .await?;
 
     ensure_user_admin(
         repo,
@@ -179,10 +184,9 @@ where
 
     nucl.coord(async move |context| -> RegularResult<()> {
         //
-        let delete_assignment_invitation =
-            DeleteAssignmentInvitations::Id { id: &id };
 
-        repo.step(context, &delete_assignment_invitation).await?;
+        repo.step(context, &DeleteAssignmentInvitations::Id { id: &id })
+            .await?;
 
         Ok(())
     })
@@ -218,12 +222,15 @@ where
     let assignment_info = nucl
         .coord(async move |context| -> RegularResult<AssignmentInfo> {
             //
-            let get_user_info_excluded = GetUserInfoExcluded::Id {
-                id: &current_user_id,
-            };
 
-            let current_user_info =
-                repo.step(context, &get_user_info_excluded).await?;
+            let current_user_info = repo
+                .step(
+                    context,
+                    &GetUserInfoExcluded::Id {
+                        id: &current_user_id,
+                    },
+                )
+                .await?;
 
             let assignment_invitation_info = repo
                 .step(
@@ -267,12 +274,15 @@ where
                 )
                 .await?;
 
-            let find_member_info = FindMemberInfo::UserTeam {
-                user_id: &current_user_id,
-                team_id: &workset_info.team_id,
-            };
-
-            let member_info = repo.step(context, &find_member_info).await?;
+            let member_info = repo
+                .step(
+                    context,
+                    &FindMemberInfo::UserTeam {
+                        user_id: &current_user_id,
+                        team_id: &workset_info.team_id,
+                    },
+                )
+                .await?;
 
             let Some(member_info) = member_info else {
                 return Err(assignment_role_not_assignable_perm_error());
@@ -285,13 +295,15 @@ where
                 return Err(assignment_role_not_assignable_perm_error());
             }
 
-            let find_assignment_info = FindAssignmentInfo::ChapterUser {
-                chapter_id: &assignment_invitation_info.chapter_id,
-                user_id: &current_user_id,
-            };
-
-            let existing_assignment_info =
-                repo.step(context, &find_assignment_info).await?;
+            let existing_assignment_info = repo
+                .step(
+                    context,
+                    &FindAssignmentInfo::ChapterUser {
+                        chapter_id: &assignment_invitation_info.chapter_id,
+                        user_id: &current_user_id,
+                    },
+                )
+                .await?;
 
             let assignment_info = match existing_assignment_info {
                 //
@@ -356,12 +368,12 @@ async fn ensure_user_admin<C, R>(
 where
     R: AssignmentRepo<C>,
 {
-    let find_assignment_info = FindAssignmentInfo::ChapterUser {
-        chapter_id,
-        user_id: current_user_id,
-    };
-
-    let assignment_info = repo.run(&find_assignment_info).await?;
+    let assignment_info = repo
+        .run(&FindAssignmentInfo::ChapterUser {
+            chapter_id,
+            user_id: current_user_id,
+        })
+        .await?;
 
     let Some(assignment_info) = assignment_info else {
         return Err(chapter_admin_error());

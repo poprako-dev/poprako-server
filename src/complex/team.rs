@@ -70,9 +70,9 @@ impl TeamComplex {
         // concurrent workset creations, preventing resource leaks from
         // worksets (and their subtrees) inserted between the listing and
         // the team delete.
-        let get_team_info_excluded = GetTeamInfoExcluded::Id { id };
 
-        let team_info = repo.step(context, &get_team_info_excluded).await?;
+        let team_info =
+            repo.step(context, &GetTeamInfoExcluded::Id { id }).await?;
 
         let workset_infos = repo
             .step(

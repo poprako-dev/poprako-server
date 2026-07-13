@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use poprako_orchestra::{Run, Step};
 
-use crate::model::chapter::{ChapterInfo,ChapterInfoListSpec};
+use crate::model::chapter::{ChapterInfo, ChapterInfoListSpec};
 use crate::part::repo::oper::chapter::{
     AdjustChapterUnitCounters, CreateChapter, DeleteChapter,
     FindPinnedChapterInfo, GetChapterInfo, GetChapterInfoExcluded,

@@ -75,13 +75,14 @@ where
                     String,
                 )> {
                     //
-                    let get_member_invitation_info_excluded =
-                        GetMemberInvitationInfoExcluded::Code {
-                            code: &params.code,
-                        };
 
                     let invitation_info = repo
-                        .step(context, &get_member_invitation_info_excluded)
+                        .step(
+                            context,
+                            &GetMemberInvitationInfoExcluded::Code {
+                                code: &params.code,
+                            },
+                        )
                         .await?;
 
                     // Verify the invitation was issued for this QQ ID.
@@ -122,12 +123,13 @@ where
                     )
                     .await?;
 
-                    let update_member_invitation =
-                        UpdateMemberInvitation::MarkUsed {
+                    repo.step(
+                        context,
+                        &UpdateMemberInvitation::MarkUsed {
                             id: &invitation_info.id,
-                        };
-
-                    repo.step(context, &update_member_invitation).await?;
+                        },
+                    )
+                    .await?;
 
                     Ok((
                         user_info.id,
@@ -175,9 +177,9 @@ where
     R: UserRepo<C>,
     A: TokenAuth,
 {
-    let get_user_credential = GetUserCredential::Qid { qid: &params.qid };
-
-    let user_credential = repo.run(&get_user_credential).await?;
+    let user_credential = repo
+        .run(&GetUserCredential::Qid { qid: &params.qid })
+        .await?;
 
     if !UserComplex::verify_password(
         &params.password,

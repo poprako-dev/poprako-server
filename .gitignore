@@ -20,4 +20,6 @@
 !.codex/prompts/**
 
 logs/
-fmt/use-style/__pycache__/
+__pycache__/
+*.py[cod]
+*.pyo

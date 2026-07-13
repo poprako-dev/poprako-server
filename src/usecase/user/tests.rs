@@ -36,8 +36,10 @@ use crate::data::user::{
 use crate::model::member::MemberInfo;
 use crate::model::user::{UserInfo, UserToken};
 use crate::part::effect::event::Event;
-use crate::part::prom::payload::image::{Payload as ImagePayload, ResourceKind};
 use crate::part::prom::payload::Payload;
+use crate::part::prom::payload::image::{
+    Payload as ImagePayload, ResourceKind,
+};
 use crate::part_impl::prom::mock_impl::MockPromRecord;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;

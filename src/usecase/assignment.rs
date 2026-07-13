@@ -11,7 +11,8 @@ use crate::data::assignment::{
     UpdateAssignmentRolesParams,
 };
 use crate::model::assignment::{
-    AssignmentEntry, AssignmentInfo, AssignmentInfoListSpec, AssignmentRoleUpdate,
+    AssignmentEntry, AssignmentInfo, AssignmentInfoListSpec,
+    AssignmentRoleUpdate,
 };
 use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
@@ -69,11 +70,11 @@ where
     )
     .await?;
 
-    let list_assignment_infos = ListAssignmentInfos::Spec {
-        spec: &assignment_list_spec,
-    };
-
-    let assignment_infos = repo.run(&list_assignment_infos).await?;
+    let assignment_infos = repo
+        .run(&ListAssignmentInfos::Spec {
+            spec: &assignment_list_spec,
+        })
+        .await?;
 
     let mut assignment_info_vals = Vec::with_capacity(assignment_infos.len());
 
@@ -142,13 +143,16 @@ where
     let assignment_info = nucl
         .coord(async move |context| -> RegularResult<AssignmentInfo> {
             //
-            let find_assignment_info = FindAssignmentInfo::ChapterUser {
-                chapter_id: &params.chapter_id,
-                user_id: &token.user_id,
-            };
 
-            let existing_assignment_info =
-                repo.step(context, &find_assignment_info).await?;
+            let existing_assignment_info = repo
+                .step(
+                    context,
+                    &FindAssignmentInfo::ChapterUser {
+                        chapter_id: &params.chapter_id,
+                        user_id: &token.user_id,
+                    },
+                )
+                .await?;
 
             match existing_assignment_info {
                 //
@@ -242,13 +246,15 @@ where
     let transaction_output = nucl
         .coord(async move |context| -> RegularResult<()> {
             //
-            let list_assignment_infos_excluded =
-                ListAssignmentInfosExcluded::Chapter {
-                    chapter_id: &params.chapter_id,
-                };
 
-            let assignment_infos =
-                repo.step(context, &list_assignment_infos_excluded).await?;
+            let assignment_infos = repo
+                .step(
+                    context,
+                    &ListAssignmentInfosExcluded::Chapter {
+                        chapter_id: &params.chapter_id,
+                    },
+                )
+                .await?;
 
             let existing_assignment_info =
                 assignment_infos.iter().find(|assignment_info| {
@@ -364,9 +370,9 @@ where
     let transaction_output = nucl
         .coord(async move |context| -> RegularResult<()> {
             //
-            let delete_assignment = DeleteAssignments::Id { id: &id };
 
-            repo.step(context, &delete_assignment).await?;
+            repo.step(context, &DeleteAssignments::Id { id: &id })
+                .await?;
 
             Ok(())
         })

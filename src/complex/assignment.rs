@@ -6,7 +6,9 @@ use poprako_util::i18n::trl;
 
 use crate::complex::util::check_user_is_team_member;
 use crate::data::assignment::UpdateAssignmentRolesParams;
-use crate::model::assignment::{AssignmentInfo, AssignmentInfoListSpec, AssignmentRoleUpdate};
+use crate::model::assignment::{
+    AssignmentInfo, AssignmentInfoListSpec, AssignmentRoleUpdate,
+};
 use crate::part::repo::oper::assignment::FindAssignmentInfo;
 use crate::part::repo::oper::chapter::GetChapterInfo;
 use crate::part::repo::oper::comic::GetComicInfo;
@@ -190,12 +192,12 @@ where
         return Ok(());
     }
 
-    let find_assignment_info = FindAssignmentInfo::ChapterUser {
-        chapter_id,
-        user_id,
-    };
-
-    let assignment_info = proxy.exec(&find_assignment_info).await?;
+    let assignment_info = proxy
+        .exec(&FindAssignmentInfo::ChapterUser {
+            chapter_id,
+            user_id,
+        })
+        .await?;
 
     if assignment_info.is_none() {
         return Err(assignment_list_permission_error());
@@ -218,11 +220,11 @@ where
         return Ok(());
     }
 
-    let get_user_info = GetUserInfo::Id {
-        id: current_user_id,
-    };
-
-    let user_info = proxy.exec(&get_user_info).await?;
+    let user_info = proxy
+        .exec(&GetUserInfo::Id {
+            id: current_user_id,
+        })
+        .await?;
 
     if !user_info.is_sadmin {
         return Err(assignment_list_permission_error());
@@ -240,12 +242,12 @@ async fn check_admin<P>(
 where
     P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = RegularError>,
 {
-    let find_assignment_info = FindAssignmentInfo::ChapterUser {
-        chapter_id,
-        user_id,
-    };
-
-    let assignment_info = proxy.exec(&find_assignment_info).await?;
+    let assignment_info = proxy
+        .exec(&FindAssignmentInfo::ChapterUser {
+            chapter_id,
+            user_id,
+        })
+        .await?;
 
     let Some(assignment_info) = assignment_info else {
         return Err(chapter_admin_error());
@@ -273,12 +275,12 @@ where
         return Err(assignment_self_reduce_error());
     }
 
-    let find_assignment_info = FindAssignmentInfo::ChapterUser {
-        chapter_id: &data.chapter_id,
-        user_id: &data.user_id,
-    };
-
-    let assignment_info = proxy.exec(&find_assignment_info).await?;
+    let assignment_info = proxy
+        .exec(&FindAssignmentInfo::ChapterUser {
+            chapter_id: &data.chapter_id,
+            user_id: &data.user_id,
+        })
+        .await?;
 
     let Some(assignment_info) = assignment_info else {
         return Err(assignment_self_reduce_error());
@@ -311,12 +313,12 @@ where
 
     let team_id = resolve_team_id(proxy, chapter_id).await?;
 
-    let find_member_info = FindMemberInfo::UserTeam {
-        user_id,
-        team_id: &team_id,
-    };
-
-    let member_info = proxy.exec(&find_member_info).await?;
+    let member_info = proxy
+        .exec(&FindMemberInfo::UserTeam {
+            user_id,
+            team_id: &team_id,
+        })
+        .await?;
 
     let Some(member_info) = member_info else {
         return Err(assignment_role_not_assignable_perm_error());

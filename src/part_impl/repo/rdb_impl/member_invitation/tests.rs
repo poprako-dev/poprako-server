@@ -4,7 +4,9 @@ use super::*;
 
 use poprako_orchestra::Nucl as _;
 
-use crate::model::member_invitation::{MemberInvitationEntry,MemberInvitationListSpec};
+use crate::model::member_invitation::{
+    MemberInvitationEntry, MemberInvitationListSpec,
+};
 use crate::part::repo::oper::member_invitation::{
     CreateMemberInvitation, ListMemberInvitationInfos, UpdateMemberInvitation,
 };
@@ -48,11 +50,13 @@ async fn member_invitation_roundtrip_reads_test_database_url() {
         )
         .await?;
 
-        let update_member_invitation = UpdateMemberInvitation::MarkUsed {
-            id: &member_invitation_entry.id,
-        };
-
-        repo.step(context, &update_member_invitation).await?;
+        repo.step(
+            context,
+            &UpdateMemberInvitation::MarkUsed {
+                id: &member_invitation_entry.id,
+            },
+        )
+        .await?;
 
         Ok::<(), RegularError>(())
     })

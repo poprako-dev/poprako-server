@@ -4,7 +4,7 @@ use std::cmp::Reverse;
 
 use poprako_orchestra::Run;
 
-use crate::model::system_mail::{SystemMailEntry,SystemMailInfo};
+use crate::model::system_mail::{SystemMailEntry, SystemMailInfo};
 use crate::part::repo::oper::system_mail::{
     ListSystemMailInfos, MarkSystemMailRead, SendSystemMail, SendSystemMails,
 };

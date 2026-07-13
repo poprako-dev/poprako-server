@@ -103,13 +103,12 @@ impl MemberInvitationPermComplex {
                 Error = RegularError,
             >,
     {
-        let get_member_invitation_info = GetMemberInvitationInfo::Id {
-            id: invitation_id,
-            incls: &[],
-        };
-
-        let member_invitation_info =
-            proxy.exec(&get_member_invitation_info).await?;
+        let member_invitation_info = proxy
+            .exec(&GetMemberInvitationInfo::Id {
+                id: invitation_id,
+                incls: &[],
+            })
+            .await?;
 
         Ok(member_invitation_info.team_id)
     }

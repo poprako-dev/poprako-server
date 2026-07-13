@@ -6,7 +6,9 @@ use time::OffsetDateTime;
 
 use poprako_orchestra::{Run, Step};
 
-use crate::model::member_invitation::{MemberInvitationEntry,MemberInvitationInfo,MemberInvitationListSpec};
+use crate::model::member_invitation::{
+    MemberInvitationEntry, MemberInvitationInfo, MemberInvitationListSpec,
+};
 use crate::part::repo::member_invitation::MemberInvitationRepo;
 use crate::part::repo::oper::member_invitation::{
     CreateMemberInvitation, DeleteMemberInvitation, GetMemberInvitationInfo,

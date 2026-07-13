@@ -4,7 +4,7 @@ use super::*;
 
 use poprako_orchestra::{Nucl as _, Step as _};
 
-use crate::model::member::{MemberEntry,MemberListSpec,MemberRoleUpdate};
+use crate::model::member::{MemberEntry, MemberListSpec, MemberRoleUpdate};
 use crate::part::repo::oper::member::{
     CreateMember, GetMemberInfo, ListMemberInfos, UpdateMember,
 };
@@ -66,11 +66,13 @@ async fn member_roundtrip_reads_test_database_url() {
         limit: 10,
     };
 
-    let list_member_infos = ListMemberInfos::Spec {
-        spec: &member_list_spec,
-    };
-
-    let member_infos = repo.run(&list_member_infos).await.ok().unwrap();
+    let member_infos = repo
+        .run(&ListMemberInfos::Spec {
+            spec: &member_list_spec,
+        })
+        .await
+        .ok()
+        .unwrap();
 
     assert_eq!(member_infos.len(), 1);
 
@@ -86,11 +88,14 @@ async fn member_roundtrip_reads_test_database_url() {
 
     nucl.coord(async |context| {
         //
-        let update_member = UpdateMember::Role {
-            update: &member_role_update,
-        };
 
-        repo.step(context, &update_member).await?;
+        repo.step(
+            context,
+            &UpdateMember::Role {
+                update: &member_role_update,
+            },
+        )
+        .await?;
 
         Ok::<(), RegularError>(())
     })
@@ -98,12 +103,14 @@ async fn member_roundtrip_reads_test_database_url() {
     .ok()
     .unwrap();
 
-    let get_member_info = GetMemberInfo::Id {
-        id: &member_entry.id,
-        incls: &[MemberInclOpt::User],
-    };
-
-    let member_info = repo.run(&get_member_info).await.ok().unwrap();
+    let member_info = repo
+        .run(&GetMemberInfo::Id {
+            id: &member_entry.id,
+            incls: &[MemberInclOpt::User],
+        })
+        .await
+        .ok()
+        .unwrap();
 
     assert_eq!(member_info.roles, member_role);
 

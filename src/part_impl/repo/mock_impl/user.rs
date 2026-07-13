@@ -3,7 +3,9 @@
 use poprako_orchestra::{Run, Step};
 
 use crate::complex::user::UserComplex;
-use crate::model::user::{UserAvatarReservation,UserCredential,UserEntry,UserInfo};
+use crate::model::user::{
+    UserAvatarReservation, UserCredential, UserEntry, UserInfo,
+};
 use crate::part::repo::oper::user::{
     CreateUser, DeleteUser, FindUserInfo, GetUserCredential, GetUserInfo,
     GetUserInfoExcluded, ReserveUserAvatar, UpdateUser,

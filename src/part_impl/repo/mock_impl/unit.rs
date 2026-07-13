@@ -2,7 +2,7 @@
 
 use poprako_util::page::Page;
 
-use crate::model::unit::{UnitContent,UnitCounters,UnitInfo};
+use crate::model::unit::{UnitContent, UnitCounters, UnitInfo};
 use crate::part::repo::unit::UnitRepo;
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,

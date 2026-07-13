@@ -79,21 +79,22 @@ where
         })
         .await?;
 
-    let list_page_infos = ListPageInfos::AllChapter {
-        chapter_id: &chapter_info.id,
-    };
-
-    let page_infos = repo.run(&list_page_infos).await?;
+    let page_infos = repo
+        .run(&ListPageInfos::AllChapter {
+            chapter_id: &chapter_info.id,
+        })
+        .await?;
 
     let mut page_vals = Vec::with_capacity(page_infos.len());
 
     for page_info in page_infos {
         //
-        let list_unit_infos = ListUnitInfos::AllPage {
-            page_id: &page_info.id,
-        };
 
-        let unit_infos = repo.run(&list_unit_infos).await?;
+        let unit_infos = repo
+            .run(&ListUnitInfos::AllPage {
+                page_id: &page_info.id,
+            })
+            .await?;
 
         let image_url = match (page_info.image_uploaded, &page_info.image_key) {
             //
@@ -163,21 +164,22 @@ where
     })
     .await?;
 
-    let list_page_infos = ListPageInfos::AllChapter {
-        chapter_id: &chapter_id,
-    };
-
-    let page_infos = repo.run(&list_page_infos).await?;
+    let page_infos = repo
+        .run(&ListPageInfos::AllChapter {
+            chapter_id: &chapter_id,
+        })
+        .await?;
 
     let mut units_by_page_id = HashMap::new();
 
     for page_info in &page_infos {
         //
-        let list_unit_infos = ListUnitInfos::AllPage {
-            page_id: &page_info.id,
-        };
 
-        let unit_infos = repo.run(&list_unit_infos).await?;
+        let unit_infos = repo
+            .run(&ListUnitInfos::AllPage {
+                page_id: &page_info.id,
+            })
+            .await?;
 
         units_by_page_id.insert(page_info.id.clone(), unit_infos);
     }

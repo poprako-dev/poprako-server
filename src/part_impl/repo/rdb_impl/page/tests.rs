@@ -47,13 +47,15 @@ async fn page_roundtrip_reads_test_database_url() {
         .ok()
         .unwrap();
 
-    let list_page_infos = ListPageInfos::Chapter {
-        chapter_id: &page_fixture.chapter_entry.id,
-        offset: 0,
-        limit: 10,
-    };
-
-    let page_infos = repo.run(&list_page_infos).await.ok().unwrap();
+    let page_infos = repo
+        .run(&ListPageInfos::Chapter {
+            chapter_id: &page_fixture.chapter_entry.id,
+            offset: 0,
+            limit: 10,
+        })
+        .await
+        .ok()
+        .unwrap();
 
     assert_eq!(page_infos.len(), 1);
 

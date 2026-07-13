@@ -7,9 +7,13 @@ use poprako_orchestra::{Nucl, run_proxy};
 
 use poprako_util::i18n::trl;
 
-use crate::complex::chapter_port::{ChapterImportComplex, ChapterPortPermComplex};
+use crate::complex::chapter_port::{
+    ChapterImportComplex, ChapterPortPermComplex,
+};
 use crate::complex::unit::UnitComplex;
-use crate::data::chapter_port::{ImportChapterTranslationParams, ImportChapterTranslationPayload};
+use crate::data::chapter_port::{
+    ImportChapterTranslationParams, ImportChapterTranslationPayload,
+};
 use crate::model::assignment::AssignmentInfo;
 use crate::model::page::PageInfo;
 use crate::model::unit::{UnitCounterDelta, UnitCounters, UnitInfo};
@@ -19,10 +23,14 @@ use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::oper::assignment::FindAssignmentInfo;
-use crate::part::repo::oper::chapter::{AdjustChapterUnitCounters, GetChapterInfo};
+use crate::part::repo::oper::chapter::{
+    AdjustChapterUnitCounters, GetChapterInfo,
+};
 use crate::part::repo::oper::comic::TouchComicLastActive;
 use crate::part::repo::oper::page::{ListPageInfos, SetPageUnitCounters};
-use crate::part::repo::oper::unit::{CountUnits, ListUnitIndexes, ListUnitInfos, SaveUnit, UpdateUnitIndexes};
+use crate::part::repo::oper::unit::{
+    CountUnits, ListUnitIndexes, ListUnitInfos, SaveUnit, UpdateUnitIndexes,
+};
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::unit::UnitRepo;
 use crate::result::{ExpectedVariant, RegularError, RegularResult};
@@ -57,13 +65,11 @@ where
     )
     .await?;
 
-    let find_assignment_info = FindAssignmentInfo::ChapterUser {
-        chapter_id: &chapter_id,
-        user_id: &token.user_id,
-    };
-
     let assignment_info = repo
-        .run(&find_assignment_info)
+        .run(&FindAssignmentInfo::ChapterUser {
+            chapter_id: &chapter_id,
+            user_id: &token.user_id,
+        })
         .await?
         .ok_or_else(unit_edit_permission_error)?;
 
@@ -97,12 +103,14 @@ where
                         )
                         .await?;
 
-                    let list_page_infos = ListPageInfos::AllChapter {
-                        chapter_id: &chapter_id,
-                    };
-
-                    let page_infos =
-                        repo.step(context, &list_page_infos).await?;
+                    let page_infos = repo
+                        .step(
+                            context,
+                            &ListPageInfos::AllChapter {
+                                chapter_id: &chapter_id,
+                            },
+                        )
+                        .await?;
 
                     ChapterImportComplex::validate_page_count(
                         imported_pages.len(),
@@ -116,12 +124,14 @@ where
                     {
                         let old_counters = page_counters(page_info);
 
-                        let list_unit_infos = ListUnitInfos::AllPage {
-                            page_id: &page_info.id,
-                        };
-
-                        let existing_unit_infos =
-                            repo.step(context, &list_unit_infos).await?;
+                        let existing_unit_infos = repo
+                            .step(
+                                context,
+                                &ListUnitInfos::AllPage {
+                                    page_id: &page_info.id,
+                                },
+                            )
+                            .await?;
 
                         let existing_by_id = existing_unit_infos
                             .iter()

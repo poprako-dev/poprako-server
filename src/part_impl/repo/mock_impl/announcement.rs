@@ -4,7 +4,9 @@ use std::cmp::Reverse;
 
 use poprako_orchestra::{Run, Step};
 
-use crate::model::announcement::{AnnouncementEntry,AnnouncementInfo,AnnouncementListSpec};
+use crate::model::announcement::{
+    AnnouncementEntry, AnnouncementInfo, AnnouncementListSpec,
+};
 use crate::model::user::UserInfo;
 use crate::part::repo::announcement::AnnouncementRepo;
 use crate::part::repo::oper::announcement::{

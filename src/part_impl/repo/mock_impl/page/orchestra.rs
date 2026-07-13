@@ -1,7 +1,7 @@
 use poprako_orchestra::{Run, Step};
 
 use crate::complex::page::PageComplex;
-use crate::model::page::{PageImageReservation,PageInfo};
+use crate::model::page::{PageImageReservation, PageInfo};
 use crate::part::repo::oper::page::{
     CreatePages, DeletePages, GetPageInfo, GetPageInfoExcluded, ListPageInfos,
     MarkPageImageUploaded, ReservePageImage, SetPageUnitCounters,

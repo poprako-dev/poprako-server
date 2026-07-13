@@ -2,7 +2,7 @@
 
 use poprako_orchestra::{Run, Step};
 
-use crate::model::member::{MemberEntry,MemberInfo,MemberListSpec};
+use crate::model::member::{MemberEntry, MemberInfo, MemberListSpec};
 use crate::model::team::TeamInfo;
 use crate::model::user::UserInfo;
 use crate::part::repo::member::MemberRepo;
