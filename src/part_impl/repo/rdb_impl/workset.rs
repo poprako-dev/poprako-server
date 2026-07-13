@@ -20,7 +20,7 @@ use crate::part_impl::shared::result::{diesel, expected};
 use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::{RegularError, RegularResult};
 
-use crate::model::workset::{WorksetEntry,WorksetInfo,WorksetInfoUpdate};
+use crate::model::workset::{WorksetEntry, WorksetInfo, WorksetInfoUpdate};
 use crate::part_impl::repo::rdb_impl::schema::t_workset::dsl::*;
 
 impl WorksetRepo<RdbContext> for RdbRepo {}

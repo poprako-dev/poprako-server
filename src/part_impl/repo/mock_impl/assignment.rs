@@ -15,7 +15,9 @@ use crate::value::assignment::AssignmentInclOpt;
 use crate::value::role::RoleField;
 
 use self::incl::apply_assignment_incls;
-use crate::model::assignment::{AssignmentEntry,AssignmentInfo,AssignmentInfoListSpec};
+use crate::model::assignment::{
+    AssignmentEntry, AssignmentInfo, AssignmentInfoListSpec,
+};
 
 mod incl;
 

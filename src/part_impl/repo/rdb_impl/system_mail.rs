@@ -17,7 +17,7 @@ use crate::part_impl::shared::result::{diesel, expected};
 use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::{ExpectedVariant, RegularError, RegularResult};
 
-use crate::model::system_mail::{SystemMailEntry,SystemMailInfo};
+use crate::model::system_mail::{SystemMailEntry, SystemMailInfo};
 use crate::part_impl::repo::rdb_impl::schema::t_system_mail::dsl::*;
 
 impl SystemMailRepo<RdbContext> for RdbRepo {}

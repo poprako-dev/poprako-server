@@ -1,7 +1,9 @@
 use poprako_orchestra::{Run, Step};
 
 use crate::complex::comic::ComicComplex;
-use crate::model::comic::{ComicCoverReservation,ComicInfo,ComicInfoListKind,ComicInfoListSpec};
+use crate::model::comic::{
+    ComicCoverReservation, ComicInfo, ComicInfoListKind, ComicInfoListSpec,
+};
 use crate::model::team::TeamInfo;
 use crate::model::user::UserInfo;
 use crate::model::workset::WorksetInfo;

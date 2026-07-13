@@ -34,19 +34,22 @@ async fn team_roundtrip_reads_test_database_url() {
             .any(|team_info| team_info.id == team_fixture.team_entry.id)
     );
 
-    let update_team = UpdateTeam::Info {
+    repo.run(&UpdateTeam::Info {
         id: &team_fixture.team_entry.id,
         name: "RDB Team Updated",
         description: "updated",
-    };
+    })
+    .await
+    .ok()
+    .unwrap();
 
-    repo.run(&update_team).await.ok().unwrap();
-
-    let get_team_info = GetTeamInfo::Id {
-        id: &team_fixture.team_entry.id,
-    };
-
-    let team_info = repo.run(&get_team_info).await.ok().unwrap();
+    let team_info = repo
+        .run(&GetTeamInfo::Id {
+            id: &team_fixture.team_entry.id,
+        })
+        .await
+        .ok()
+        .unwrap();
 
     assert_eq!(team_info.name, "RDB Team Updated");
 

@@ -5,7 +5,7 @@ use poprako_orchestra::{Nucl as _, Run as _, Step as _};
 
 use poprako_util::page::Page;
 
-use crate::model::unit::{UnitContent,UnitIndexUpdate};
+use crate::model::unit::{UnitContent, UnitIndexUpdate};
 use crate::part::repo::oper::unit::{
     CreateUnit, ListUnitInfos, SaveUnit, UpdateUnitIndexes,
 };
@@ -119,15 +119,17 @@ async fn unit_roundtrip_reads_test_database_url() {
 
     assert!(duplicate_create_result.is_err());
 
-    let list_unit_infos = ListUnitInfos::Page {
-        page_id: &page_fixture.page_entry.id,
-        page: Page {
-            offset: 0,
-            limit: 10,
-        },
-    };
-
-    let unit_infos = repo.run(&list_unit_infos).await.ok().unwrap();
+    let unit_infos = repo
+        .run(&ListUnitInfos::Page {
+            page_id: &page_fixture.page_entry.id,
+            page: Page {
+                offset: 0,
+                limit: 10,
+            },
+        })
+        .await
+        .ok()
+        .unwrap();
 
     assert_eq!(unit_infos.len(), 2);
 

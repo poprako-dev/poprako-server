@@ -24,11 +24,13 @@ pub async fn touch_last_active<C, R>(repo: &R, payload: UserActivePayload)
 where
     R: UserRepo<C>,
 {
-    let update_user = UpdateUser::TouchLastActive {
-        id: &payload.user_id,
-    };
-
-    if repo.run(&update_user).await.is_err() {
+    if repo
+        .run(&UpdateUser::TouchLastActive {
+            id: &payload.user_id,
+        })
+        .await
+        .is_err()
+    {
         tracing::warn!(
             user_id = %payload.user_id,
             "[AsyncEffectDevelop::touch_last_active] failed to update last-active timestamp",
@@ -41,11 +43,11 @@ pub async fn notify_invitor<C, R>(repo: &R, payload: UserSignedUpPayload)
 where
     R: TeamRepo<C> + SystemMailRepo<C>,
 {
-    let get_team_info = GetTeamInfo::Id {
-        id: &payload.team_id,
-    };
-
-    let team_info = repo.run(&get_team_info).await;
+    let team_info = repo
+        .run(&GetTeamInfo::Id {
+            id: &payload.team_id,
+        })
+        .await;
 
     let Ok(team_info) = team_info else {
         //

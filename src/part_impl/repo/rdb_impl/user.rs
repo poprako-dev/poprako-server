@@ -20,7 +20,9 @@ use crate::part_impl::shared::result::{diesel, expected, version};
 use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::{RegularError, RegularResult};
 
-use crate::model::user::{UserAvatarReservation,UserCredential,UserEntry,UserInfo};
+use crate::model::user::{
+    UserAvatarReservation, UserCredential, UserEntry, UserInfo,
+};
 use crate::part_impl::repo::rdb_impl::schema::t_user::dsl::*;
 
 impl UserRepo<RdbContext> for RdbRepo {}

@@ -4,7 +4,9 @@ use super::*;
 
 use poprako_orchestra::Nucl as _;
 
-use crate::model::assignment::{AssignmentEntry,AssignmentInfoListSpec,AssignmentRoleUpdate};
+use crate::model::assignment::{
+    AssignmentEntry, AssignmentInfoListSpec, AssignmentRoleUpdate,
+};
 use crate::part::repo::oper::assignment::{
     CreateAssignment, GetAssignmentInfo, ListAssignmentInfos,
     UpdateAssignmentRoles,
@@ -70,11 +72,13 @@ async fn assignment_roundtrip_reads_test_database_url() {
         limit: 10,
     };
 
-    let list_assignment_infos = ListAssignmentInfos::Spec {
-        spec: &assignment_list_spec,
-    };
-
-    let assignment_infos = repo.run(&list_assignment_infos).await.ok().unwrap();
+    let assignment_infos = repo
+        .run(&ListAssignmentInfos::Spec {
+            spec: &assignment_list_spec,
+        })
+        .await
+        .ok()
+        .unwrap();
 
     assert_eq!(assignment_infos.len(), 1);
 

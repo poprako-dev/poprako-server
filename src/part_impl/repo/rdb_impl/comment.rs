@@ -15,7 +15,7 @@ use crate::part_impl::shared::result::diesel;
 use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::{RegularError, RegularResult};
 
-use crate::model::comment::{CommentEntry,CommentInfo,CommentListSpec};
+use crate::model::comment::{CommentEntry, CommentInfo, CommentListSpec};
 use crate::part_impl::repo::rdb_impl::schema::t_comment::dsl::*;
 
 impl CommentRepo<RdbContext> for RdbRepo {}

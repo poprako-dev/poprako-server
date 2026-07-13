@@ -2,7 +2,7 @@
 
 use poprako_orchestra::{Run, Step};
 
-use crate::model::workset::{WorksetInfo,WorksetInfoUpdate};
+use crate::model::workset::{WorksetInfo, WorksetInfoUpdate};
 use crate::part::repo::oper::workset::{
     AllocateWorksetComicIndex, CreateWorkset, DeleteWorkset, GetWorksetInfo,
     GetWorksetInfoExcluded, ListWorksetInfos, ListWorksetInfosExcluded,

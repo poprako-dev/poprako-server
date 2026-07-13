@@ -2,7 +2,9 @@ use poprako_orchestra::Oper;
 
 use poprako_util::page::Page;
 
-use crate::model::assignment_invitation::{AssignmentInvitationEntry, AssignmentInvitationInfo};
+use crate::model::assignment_invitation::{
+    AssignmentInvitationEntry, AssignmentInvitationInfo,
+};
 
 pub struct CreateAssignmentInvitation<'a> {
     pub entry: &'a AssignmentInvitationEntry,

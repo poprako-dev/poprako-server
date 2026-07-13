@@ -306,12 +306,12 @@ async fn check_admin<P>(
 where
     P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = RegularError>,
 {
-    let find_assignment_info = FindAssignmentInfo::ChapterUser {
-        chapter_id,
-        user_id,
-    };
-
-    let assignment_info = proxy.exec(&find_assignment_info).await?;
+    let assignment_info = proxy
+        .exec(&FindAssignmentInfo::ChapterUser {
+            chapter_id,
+            user_id,
+        })
+        .await?;
 
     let Some(assignment_info) = assignment_info else {
         return Err(chapter_admin_error());
@@ -346,12 +346,12 @@ async fn check_workflow_role<P>(
 where
     P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = RegularError>,
 {
-    let find_assignment_info = FindAssignmentInfo::ChapterUser {
-        chapter_id,
-        user_id,
-    };
-
-    let assignment_info = proxy.exec(&find_assignment_info).await?;
+    let assignment_info = proxy
+        .exec(&FindAssignmentInfo::ChapterUser {
+            chapter_id,
+            user_id,
+        })
+        .await?;
 
     let Some(assignment_info) = assignment_info else {
         return Err(chapter_workflow_role_error());
@@ -422,12 +422,12 @@ where
     let team_id =
         resolve_team_id_from_comic(proxy, &chapter_info.comic_id).await?;
 
-    let find_member_info = FindMemberInfo::UserTeam {
-        user_id,
-        team_id: &team_id,
-    };
-
-    let member_info = proxy.exec(&find_member_info).await?;
+    let member_info = proxy
+        .exec(&FindMemberInfo::UserTeam {
+            user_id,
+            team_id: &team_id,
+        })
+        .await?;
 
     let Some(member_info) = member_info else {
         return Err(RegularError::Expected {

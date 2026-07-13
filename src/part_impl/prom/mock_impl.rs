@@ -433,22 +433,28 @@ async fn mark_uploaded(
         //
         image::ResourceKind::UserAvatar => {
             //
-            let update_user = UpdateUser::MarkAvatarUploaded {
-                id: resource_id,
-                avatar_version: image_version,
-            };
 
-            mock.step(context, &update_user).await
+            mock.step(
+                context,
+                &UpdateUser::MarkAvatarUploaded {
+                    id: resource_id,
+                    avatar_version: image_version,
+                },
+            )
+            .await
         }
 
         image::ResourceKind::TeamAvatar => {
             //
-            let update_team = UpdateTeam::MarkAvatarUploaded {
-                id: resource_id,
-                avatar_version: image_version,
-            };
 
-            mock.step(context, &update_team).await
+            mock.step(
+                context,
+                &UpdateTeam::MarkAvatarUploaded {
+                    id: resource_id,
+                    avatar_version: image_version,
+                },
+            )
+            .await
         }
 
         image::ResourceKind::ComicCover => {
@@ -507,10 +513,11 @@ async fn classify_expected_mark(
         //
         image::ResourceKind::UserAvatar => {
             //
-            let get_user_info_excluded =
-                GetUserInfoExcluded::Id { id: resource_id };
 
-            match mock.step(context, &get_user_info_excluded).await {
+            match mock
+                .step(context, &GetUserInfoExcluded::Id { id: resource_id })
+                .await
+            {
                 //
                 Ok(user_info) => classify_current_version(
                     user_info.avatar_version,
@@ -528,10 +535,11 @@ async fn classify_expected_mark(
 
         image::ResourceKind::TeamAvatar => {
             //
-            let get_team_info_excluded =
-                GetTeamInfoExcluded::Id { id: resource_id };
 
-            match mock.step(context, &get_team_info_excluded).await {
+            match mock
+                .step(context, &GetTeamInfoExcluded::Id { id: resource_id })
+                .await
+            {
                 //
                 Ok(team_info) => classify_current_version(
                     team_info.avatar_version,

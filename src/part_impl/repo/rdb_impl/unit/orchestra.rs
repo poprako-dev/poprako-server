@@ -1,6 +1,6 @@
 use poprako_orchestra::{Run, Step};
 
-use crate::model::unit::{UnitCounters,UnitIndex,UnitInfo};
+use crate::model::unit::{UnitCounters, UnitIndex, UnitInfo};
 use crate::part::repo::oper::unit::{
     CountUnits, CreateUnit, DeleteUnit, ListUnitIndexes, ListUnitInfos,
     SaveUnit, UpdateUnitIndexes,

@@ -5,7 +5,7 @@ use std::cmp::Reverse;
 use poprako_orchestra::{Run, Step};
 
 use crate::complex::team::TeamComplex;
-use crate::model::team::{TeamAvatarReservation,TeamEntry,TeamInfo};
+use crate::model::team::{TeamAvatarReservation, TeamEntry, TeamInfo};
 use crate::part::repo::oper::team::{
     AllocateTeamWorksetIndex, CreateTeam, DeleteTeam, GetTeamInfo,
     GetTeamInfoExcluded, ListTeamInfos, ReserveTeamAvatar, UpdateTeam,

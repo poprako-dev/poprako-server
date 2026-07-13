@@ -2,7 +2,9 @@ use poprako_orchestra::Oper;
 
 use poprako_util::page::Page;
 
-use crate::model::unit::{UnitContent, UnitCounters, UnitIndex, UnitIndexUpdate, UnitInfo};
+use crate::model::unit::{
+    UnitContent, UnitCounters, UnitIndex, UnitIndexUpdate, UnitInfo,
+};
 
 pub enum ListUnitInfos<'a> {
     Page { page_id: &'a str, page: Page },

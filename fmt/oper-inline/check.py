@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+import tempfile
 from pathlib import Path
 
 import tree_sitter
@@ -69,7 +70,15 @@ def constructor_name(source: bytes, value: tree_sitter.Node) -> str | None:
         name = value.child_by_field_name("name")
 
         if name is not None:
-            return text(source, name).split("::")[-1]
+            segments = text(source, name).split("::")
+
+            if len(segments) >= 2:
+                return segments[-2]
+
+            return segments[-1]
+
+    if value.type in {"identifier", "scoped_identifier"}:
+        return text(source, value).split("::")[-1]
 
     if value.type == "call_expression":
         function = value.child_by_field_name("function")
@@ -179,10 +188,14 @@ def apply_missing_borrows(paths: list[Path], names: set[str]) -> None:
         tree = PARSER.parse(source)
         edits: list[tuple[int, bytes]] = []
 
-        for expression in descendants(tree.root_node, "struct_expression"):
-            name = expression.child_by_field_name("name")
+        expressions = [
+            expression
+            for kind in {"identifier", "scoped_identifier", "struct_expression"}
+            for expression in descendants(tree.root_node, kind)
+        ]
 
-            if name is None or text(source, name).split("::")[-1] not in names:
+        for expression in expressions:
+            if constructor_name(source, expression) not in names:
                 continue
 
             parent = expression.parent
@@ -223,10 +236,69 @@ def check_file(path: Path, names: set[str], root: Path) -> list[str]:
 
         errors.append(
             f"{path.relative_to(root)}:{declaration.start_point.row + 1}: "
-            f"OPR001: construct {name} directly in its consuming run or step argument",
+            f"OPR001: construct {name} directly in its consuming call argument",
         )
 
     return errors
+
+
+def self_test() -> int:
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        source_dir = root / "src"
+        source_dir.mkdir()
+        fixture = source_dir / "fixture.rs"
+        fixture.write_text(
+            "trait Oper {}\n"
+            "struct Create;\n"
+            "impl Oper for Create {}\n"
+            "enum Get { Id { id: String } }\n"
+            "impl Oper for Get {}\n"
+            "fn valid() {\n"
+            "    consume(&Create);\n"
+            "    consume(&Get::Id { id: String::new() });\n"
+            "}\n",
+        )
+
+        if check_file(fixture, oper_names([fixture]), root):
+            print("self-test: inline operations were rejected", file=sys.stderr)
+            return 1
+
+        fixture.write_text(
+            "trait Oper {}\n"
+            "struct Create;\n"
+            "impl Oper for Create {}\n"
+            "enum Get { Id { id: String } }\n"
+            "impl Oper for Get {}\n"
+            "fn invalid() {\n"
+            "    let create = Create;\n"
+            "    consume(&create);\n"
+            "    let get = Get::Id { id: String::new() };\n"
+            "    consume(&get);\n"
+            "}\n",
+        )
+        diagnostics = check_file(fixture, oper_names([fixture]), root)
+
+        if len(diagnostics) != 2:
+            print("self-test: bound operations were not fully rejected", file=sys.stderr)
+            print("\n".join(diagnostics), file=sys.stderr)
+            return 1
+
+        names = oper_names([fixture])
+        apply_safe_fixes([fixture], names)
+        apply_missing_borrows([fixture], names)
+
+        if check_file(fixture, names, root):
+            print("self-test: safe fixes did not inline operations", file=sys.stderr)
+            return 1
+
+        fixed = fixture.read_text()
+
+        if "consume(&Get::Id" not in fixed:
+            print("self-test: safe fixes did not retain the operation borrow", file=sys.stderr)
+            return 1
+
+    return 0
 
 
 def main() -> int:
@@ -234,10 +306,14 @@ def main() -> int:
     parser.add_argument("--root", type=Path, default=ROOT)
     parser.add_argument("--fix-safe", action="store_true")
     parser.add_argument("--fix-borrows", action="store_true")
+    parser.add_argument("--self-test", action="store_true")
     args = parser.parse_args()
     root = args.root.resolve()
     paths = sorted((root / "src").rglob("*.rs"))
     names = oper_names(paths)
+
+    if args.self_test:
+        return self_test()
 
     if args.fix_safe:
         apply_safe_fixes(paths, names)

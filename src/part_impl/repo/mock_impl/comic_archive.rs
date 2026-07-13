@@ -2,7 +2,10 @@
 
 use poprako_orchestra::Step;
 
-use crate::model::comic_archive::{ComicArchiveChapterSnapshot,ComicArchivePageSnapshot,ComicArchiveSnapshot,ComicArchiveWrite};
+use crate::model::comic_archive::{
+    ComicArchiveChapterSnapshot, ComicArchivePageSnapshot,
+    ComicArchiveSnapshot, ComicArchiveWrite,
+};
 use crate::part::repo::comic_archive::ComicArchiveRepo;
 use crate::part::repo::oper::comic_archive::{
     CommitComicArchive, GetComicArchiveSnapshotExcluded,

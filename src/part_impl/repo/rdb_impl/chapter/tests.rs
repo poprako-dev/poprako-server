@@ -2,7 +2,7 @@
 
 use poprako_orchestra::{Nucl, Run as _, Step as _};
 
-use crate::model::chapter::{ChapterInfoListSpec,ChapterStageUpdate};
+use crate::model::chapter::{ChapterInfoListSpec, ChapterStageUpdate};
 use crate::part::repo::oper::chapter::{
     FindPinnedChapterInfo, ListChapterInfos, UpdateChapterStage,
 };

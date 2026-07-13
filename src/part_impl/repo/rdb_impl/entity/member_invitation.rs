@@ -3,7 +3,9 @@
 use diesel::prelude::*;
 use time::OffsetDateTime;
 
-use crate::model::member_invitation::{MemberInvitationEntry, MemberInvitationInfo};
+use crate::model::member_invitation::{
+    MemberInvitationEntry, MemberInvitationInfo,
+};
 use crate::part_impl::repo::rdb_impl::schema::t_member_invitation;
 use crate::result::RegularError;
 use crate::value::role::RoleMask;

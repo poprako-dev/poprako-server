@@ -9,7 +9,9 @@ use crate::data::chapter::{
     ListChapterInfosParams, UpdateChapterInfoParams, UpdateChapterStageParams,
 };
 use crate::model::assignment::AssignmentEntry;
-use crate::model::chapter::{ChapterEntry, ChapterInfoListSpec, ChapterInfoUpdate};
+use crate::model::chapter::{
+    ChapterEntry, ChapterInfoListSpec, ChapterInfoUpdate,
+};
 use crate::model::user::UserToken;
 use crate::part::effect::event::Event;
 use crate::part::effect::event::chapter::{
@@ -23,7 +25,9 @@ use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
-use crate::part::repo::oper::assignment::{CreateAssignment, FindAssignmentInfo};
+use crate::part::repo::oper::assignment::{
+    CreateAssignment, FindAssignmentInfo,
+};
 use crate::part::repo::oper::chapter::{
     CreateChapter, FindPinnedChapterInfo, GetChapterInfo,
     GetChapterInfoExcluded, ListChapterInfos, ListChapterInfosExcluded,

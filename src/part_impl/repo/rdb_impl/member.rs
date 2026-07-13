@@ -18,7 +18,9 @@ use crate::result::{RegularError, RegularResult};
 use crate::value::member::MemberInclOpt;
 use crate::value::role::{RoleField, RoleMask};
 
-use crate::model::member::{MemberEntry, MemberInfo, MemberListSpec, MemberRoleUpdate};
+use crate::model::member::{
+    MemberEntry, MemberInfo, MemberListSpec, MemberRoleUpdate,
+};
 use crate::part_impl::repo::rdb_impl::schema::t_member::dsl::*;
 
 impl MemberRepo<RdbContext> for RdbRepo {}

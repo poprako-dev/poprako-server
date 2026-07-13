@@ -19,7 +19,7 @@ use crate::model::page::PageEntry;
 use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
 use crate::part::prom::Prom;
-use crate::part::prom::payload::{image, Payload};
+use crate::part::prom::payload::{Payload, image};
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::comic::ComicRepo;
@@ -308,13 +308,13 @@ where
     )
     .await?;
 
-    let list_page_infos = ListPageInfos::Chapter {
-        chapter_id: &params.chapter_id,
-        offset: params.offset,
-        limit: params.limit,
-    };
-
-    let page_infos = repo.run(&list_page_infos).await?;
+    let page_infos = repo
+        .run(&ListPageInfos::Chapter {
+            chapter_id: &params.chapter_id,
+            offset: params.offset,
+            limit: params.limit,
+        })
+        .await?;
 
     futures_util::future::join_all(
         page_infos
@@ -414,11 +414,14 @@ where
             )
             .await?;
 
-        let list_page_infos = ListPageInfos::AllChapter {
-            chapter_id: &chapter_info.id,
-        };
-
-        let page_infos = repo.step(context, &list_page_infos).await?;
+        let page_infos = repo
+            .step(
+                context,
+                &ListPageInfos::AllChapter {
+                    chapter_id: &chapter_info.id,
+                },
+            )
+            .await?;
 
         for page_info in page_infos {
             if let Some(object_key) = page_info.image_key {
@@ -426,11 +429,13 @@ where
             }
         }
 
-        let delete_pages = DeletePages::Chapter {
-            chapter_id: &chapter_info.id,
-        };
-
-        repo.step(context, &delete_pages).await?;
+        repo.step(
+            context,
+            &DeletePages::Chapter {
+                chapter_id: &chapter_info.id,
+            },
+        )
+        .await?;
 
         repo.step(
             context,

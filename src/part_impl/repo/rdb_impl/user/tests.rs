@@ -20,28 +20,34 @@ async fn user_roundtrip_reads_test_database_url() {
 
     let repo = RdbRepo::new(shared.clone());
 
-    let get_user_info = GetUserInfo::Id {
-        id: &user_fixture.user_entry.id,
-    };
-
-    let user_info = repo.run(&get_user_info).await.ok().unwrap();
+    let user_info = repo
+        .run(&GetUserInfo::Id {
+            id: &user_fixture.user_entry.id,
+        })
+        .await
+        .ok()
+        .unwrap();
 
     assert_eq!(user_info.id, user_fixture.user_entry.id);
 
-    let get_user_credential = GetUserCredential::Qid {
-        qid: &user_fixture.user_entry.qid,
-    };
-
-    let user_credential = repo.run(&get_user_credential).await.ok().unwrap();
+    let user_credential = repo
+        .run(&GetUserCredential::Qid {
+            qid: &user_fixture.user_entry.qid,
+        })
+        .await
+        .ok()
+        .unwrap();
 
     assert_eq!(user_credential.user_id, user_fixture.user_entry.id);
 
-    let find_user_info = FindUserInfo::Qid {
-        qid: &user_fixture.user_entry.qid,
-    };
-
-    let found_user_info =
-        repo.run(&find_user_info).await.ok().unwrap().unwrap();
+    let found_user_info = repo
+        .run(&FindUserInfo::Qid {
+            qid: &user_fixture.user_entry.qid,
+        })
+        .await
+        .ok()
+        .unwrap()
+        .unwrap();
 
     assert_eq!(found_user_info.id, user_fixture.user_entry.id);
 

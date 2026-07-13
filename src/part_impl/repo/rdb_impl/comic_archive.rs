@@ -10,7 +10,10 @@ use poprako_orchestra::Step;
 use crate::model::assignment::AssignmentInfo;
 use crate::model::chapter::ChapterInfo;
 use crate::model::comic::ComicInfo;
-use crate::model::comic_archive::{ComicArchiveChapterSnapshot,ComicArchivePageSnapshot,ComicArchiveSnapshot,ComicArchiveWrite};
+use crate::model::comic_archive::{
+    ComicArchiveChapterSnapshot, ComicArchivePageSnapshot,
+    ComicArchiveSnapshot, ComicArchiveWrite,
+};
 use crate::model::page::PageInfo;
 use crate::model::unit::UnitInfo;
 use crate::model::user::UserInfo;

@@ -19,7 +19,7 @@ use crate::part::effect::event::user::UserActivePayload;
 use crate::part::effect::{EffectDevelop, EffectEmit as _};
 use crate::part::image::ImagePool;
 use crate::part::prom::Prom;
-use crate::part::prom::payload::{image, Payload};
+use crate::part::prom::payload::{Payload, image};
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::member::{
     DeleteMember, ListMemberInfosExcluded, UpdateMember,
@@ -107,20 +107,25 @@ where
 
     nucl.coord(async move |context| -> Result<(), RegularError> {
         //
-        let update_user = UpdateUser::Info {
-            id: &token.user_id,
-            qid: &params.qid,
-            nickname: &params.nickname,
-        };
 
-        repo.step(context, &update_user).await?;
+        repo.step(
+            context,
+            &UpdateUser::Info {
+                id: &token.user_id,
+                qid: &params.qid,
+                nickname: &params.nickname,
+            },
+        )
+        .await?;
 
-        let update_member = UpdateMember::UserNickname {
-            user_id: &token.user_id,
-            user_nickname: &params.nickname,
-        };
-
-        repo.step(context, &update_member).await?;
+        repo.step(
+            context,
+            &UpdateMember::UserNickname {
+                user_id: &token.user_id,
+                user_nickname: &params.nickname,
+            },
+        )
+        .await?;
 
         Ok(())
     })
@@ -259,12 +264,15 @@ where
 
     nucl.coord(async move |context| -> Result<(), RegularError> {
         //
-        let update_user = UpdateUser::MarkAvatarUploaded {
-            id: &id,
-            avatar_version: params.avatar_version,
-        };
 
-        repo.step(context, &update_user).await?;
+        repo.step(
+            context,
+            &UpdateUser::MarkAvatarUploaded {
+                id: &id,
+                avatar_version: params.avatar_version,
+            },
+        )
+        .await?;
 
         Ok(())
     })
@@ -315,16 +323,16 @@ where
 
     nucl.coord(async move |context| -> Result<(), RegularError> {
         //
-        let get_user_info_excluded = GetUserInfoExcluded::Id { id: &id };
 
-        let user_info = repo.step(context, &get_user_info_excluded).await?;
+        let user_info = repo
+            .step(context, &GetUserInfoExcluded::Id { id: &id })
+            .await?;
 
         // Delete all memberships before the user to satisfy FK constraints.
-        let list_member_infos_excluded =
-            ListMemberInfosExcluded::User { user_id: &id };
 
-        let member_infos =
-            repo.step(context, &list_member_infos_excluded).await?;
+        let member_infos = repo
+            .step(context, &ListMemberInfosExcluded::User { user_id: &id })
+            .await?;
 
         for member_info in &member_infos {
             repo.step(

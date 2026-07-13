@@ -141,13 +141,13 @@ async fn build_assignment_mails<C, R>(
 where
     R: AssignmentRepo<C>,
 {
-    let list_assignment_infos = ListAssignmentInfos::Chapter {
-        chapter_id: &chapter_info.id,
-        role: Some(receiver_role),
-        incls: &[],
-    };
-
-    let assignment_infos = repo.run(&list_assignment_infos).await;
+    let assignment_infos = repo
+        .run(&ListAssignmentInfos::Chapter {
+            chapter_id: &chapter_info.id,
+            role: Some(receiver_role),
+            incls: &[],
+        })
+        .await;
 
     let Ok(assignment_infos) = assignment_infos else {
         //

@@ -1,7 +1,8 @@
 use poprako_orchestra::Oper;
 
 use crate::model::member_invitation::{
-    MemberInvitationEntry, MemberInvitationInfo, MemberInvitationListSpec, MemberInvitationUpdate,
+    MemberInvitationEntry, MemberInvitationInfo, MemberInvitationListSpec,
+    MemberInvitationUpdate,
 };
 use crate::value::member_invitation::MemberInvitationInclOpt;
 

@@ -2,7 +2,9 @@
 
 use poprako_orchestra::Run as _;
 
-use crate::model::comic::{ComicInfoListKind,ComicInfoListSpec,ComicInfoUpdate};
+use crate::model::comic::{
+    ComicInfoListKind, ComicInfoListSpec, ComicInfoUpdate,
+};
 use crate::part::repo::oper::comic::{
     GetComicInfo, ListComicInfos, UpdateComic,
 };

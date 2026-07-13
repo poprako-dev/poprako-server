@@ -12,7 +12,10 @@ use crate::api::http::handler::util::{
 #[allow(unused_imports)]
 use crate::api::http::result::{Accept as _, HttpBody, HttpResult};
 use crate::api::http::state::AppHarn;
-use crate::data::unit::{ListPageUnitInfosParams, ListPageUnitInfosPayload, SavePageUnitsParams, SavePageUnitsPayload};
+use crate::data::unit::{
+    ListPageUnitInfosParams, ListPageUnitInfosPayload, SavePageUnitsParams,
+    SavePageUnitsPayload,
+};
 use crate::model::user::UserToken;
 use crate::usecase;
 
