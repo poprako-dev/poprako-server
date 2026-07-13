@@ -145,6 +145,24 @@ impl Oper for ResetStuck<'_> {
     type Output = ();
 }
 
+/// Delete completed records that have passed the retention cutoff.
+///
+/// Dead records deliberately remain available for manual investigation.
+pub struct PurgeCompleted<'a> {
+    before: &'a OffsetDateTime,
+}
+
+impl<'a> PurgeCompleted<'a> {
+    /// Builds an operation that removes completed messages before the cutoff.
+    pub fn new(before: &'a OffsetDateTime) -> Self {
+        Self { before }
+    }
+}
+
+impl Oper for PurgeCompleted<'_> {
+    type Output = usize;
+}
+
 // ── Step impls ──────────────────────────────────────────────────────────────
 
 /// Maximum number of pending records to poll in a single batch.
@@ -379,3 +397,38 @@ where
         Ok(())
     }
 }
+
+impl<'a, R> Step<PurgeCompleted<'a>, RdbContext> for RdbPromRepo<R>
+where
+    R: Sync,
+{
+    type Error = RegularError;
+
+    async fn step(
+        &self,
+        context: &mut RdbContext,
+        oper: &PurgeCompleted<'a>,
+    ) -> RegularResult<usize> {
+        //
+        use diesel::prelude::*;
+
+        use diesel_async::RunQueryDsl;
+
+        let purged_count = diesel::delete(
+            t_local_message::table
+                .filter(
+                    t_local_message::f_status
+                        .eq(LocalMessageStatus::Completed.as_str()),
+                )
+                .filter(t_local_message::f_updated_at.lt(*oper.before)),
+        )
+        .execute(context.conn())
+        .await
+        .map_err(diesel)?;
+
+        Ok(purged_count)
+    }
+}
+
+#[cfg(all(test, feature = "repo"))]
+mod tests;
