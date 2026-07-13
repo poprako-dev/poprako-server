@@ -3,7 +3,7 @@
 use std::time::Duration;
 
 use poprako_orchestra::{Nucl, run_proxy};
-use poprako_orchestra_extra::prom::oper::Defer;
+use poprako_orchestra_extra::prom::oper::DeferBatch;
 use poprako_orchestra_extra::prom::task::Task;
 
 use poprako_util::i18n::trl;
@@ -146,16 +146,35 @@ where
                 )
                 .await?;
 
+                let mut check_ids = Vec::new();
+
+                let mut check_payloads = Vec::new();
+
                 for reservation in &reservations {
-                    append_check_uploaded(
-                        prom,
-                        context,
-                        &reservation.page_id,
-                        &reservation.object_key,
-                        reservation.image_version,
-                    )
-                    .await?;
+                    check_ids.push(ImageComplex::gen_check_id());
+
+                    check_payloads.push(Payload::Image(
+                        image::Payload::CheckUpload {
+                            resource_kind: image::ResourceKind::PageImage,
+                            resource_id: reservation.page_id.clone(),
+                            object_key: reservation.object_key.clone(),
+                            version: reservation.image_version,
+                        },
+                    ));
                 }
+
+                let check_tasks: Vec<_> = check_ids
+                    .iter()
+                    .zip(check_payloads.iter())
+                    .map(|(id, payload)| Task {
+                        id,
+                        payload,
+                        delay: Some(Duration::from_secs(15 * 60)),
+                    })
+                    .collect();
+
+                prom.step(context, &DeferBatch::new(&check_tasks))
+                    .await?;
 
                 repo.step(
                     context,
@@ -249,20 +268,50 @@ where
                 )
                 .await?;
 
+            let mut batch_ids = Vec::new();
+
+            let mut batch_payloads = Vec::new();
+
+            let mut batch_delays = Vec::new();
+
             if let Some(prev_object_key) = &page_reservation.prev_object_key
                 && prev_object_key != &page_reservation.object_key
             {
-                append_delete(prom, context, prev_object_key).await?;
+                batch_ids.push(ImageComplex::gen_delete_id());
+
+                batch_payloads.push(Payload::Image(image::Payload::Delete {
+                    object_key: prev_object_key.clone(),
+                }));
+
+                batch_delays.push(None);
             }
 
-            append_check_uploaded(
-                prom,
-                context,
-                &page_info.id,
-                &page_reservation.object_key,
-                page_reservation.image_version,
-            )
-            .await?;
+            batch_ids.push(ImageComplex::gen_check_id());
+
+            batch_payloads.push(Payload::Image(
+                image::Payload::CheckUpload {
+                    resource_kind: image::ResourceKind::PageImage,
+                    resource_id: page_info.id.clone(),
+                    object_key: page_reservation.object_key.clone(),
+                    version: page_reservation.image_version,
+                },
+            ));
+
+            batch_delays.push(Some(Duration::from_secs(15 * 60)));
+
+            let batch_tasks: Vec<_> = batch_ids
+                .iter()
+                .zip(batch_payloads.iter())
+                .zip(batch_delays.iter())
+                .map(|((id, payload), delay)| Task {
+                    id,
+                    payload,
+                    delay: *delay,
+                })
+                .collect();
+
+            prom.step(context, &DeferBatch::new(&batch_tasks))
+                .await?;
 
             Ok((page_reservation.object_key, page_reservation.image_version))
         })
@@ -423,11 +472,32 @@ where
             )
             .await?;
 
+        let mut delete_ids = Vec::new();
+
+        let mut delete_payloads = Vec::new();
+
         for page_info in page_infos {
             if let Some(object_key) = page_info.image_key {
-                append_delete(prom, context, &object_key).await?;
+                delete_ids.push(ImageComplex::gen_delete_id());
+
+                delete_payloads.push(Payload::Image(image::Payload::Delete {
+                    object_key,
+                }));
             }
         }
+
+        let delete_tasks: Vec<_> = delete_ids
+            .iter()
+            .zip(delete_payloads.iter())
+            .map(|(id, payload)| Task {
+                id,
+                payload,
+                delay: None,
+            })
+            .collect();
+
+        prom.step(context, &DeferBatch::new(&delete_tasks))
+            .await?;
 
         repo.step(
             context,
@@ -477,57 +547,3 @@ fn validate_page_count(page_count: i32) -> RegularResult<()> {
     Ok(())
 }
 
-/// Defers an upload-check task for the given page image.
-async fn append_check_uploaded<C, P>(
-    prom: &P,
-    context: &mut C,
-    page_id: &str,
-    object_key: &str,
-    image_version: u32,
-) -> RegularResult<()>
-where
-    C: Send,
-    P: Prom<C> + Send + Sync,
-{
-    let check_id = ImageComplex::gen_check_id();
-
-    let payload = Payload::Image(image::Payload::CheckUpload {
-        resource_kind: image::ResourceKind::PageImage,
-        resource_id: page_id.to_string(),
-        object_key: object_key.to_string(),
-        version: image_version,
-    });
-
-    let task = Task {
-        id: &check_id,
-        payload: &payload,
-        delay: Some(Duration::from_secs(15 * 60)),
-    };
-
-    prom.step(context, &Defer::new(task)).await
-}
-
-/// Defers an image-delete task for the given object key.
-async fn append_delete<C, P>(
-    prom: &P,
-    context: &mut C,
-    object_key: &str,
-) -> RegularResult<()>
-where
-    C: Send,
-    P: Prom<C> + Send + Sync,
-{
-    let delete_id = ImageComplex::gen_delete_id();
-
-    let payload = Payload::Image(image::Payload::Delete {
-        object_key: object_key.to_string(),
-    });
-
-    let task = Task {
-        id: &delete_id,
-        payload: &payload,
-        delay: None,
-    };
-
-    prom.step(context, &Defer::new(task)).await
-}

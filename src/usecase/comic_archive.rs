@@ -3,7 +3,7 @@
 use time::OffsetDateTime;
 
 use poprako_orchestra::{Nucl, run_proxy};
-use poprako_orchestra_extra::prom::oper::Defer;
+use poprako_orchestra_extra::prom::oper::DeferBatch;
 use poprako_orchestra_extra::prom::task::Task;
 
 use crate::complex::comic_archive::{
@@ -84,22 +84,30 @@ where
 
             let archived_comic_id = comic_archive_write.comic_record.id.clone();
 
+            let mut delete_ids = Vec::new();
+
+            let mut delete_payloads = Vec::new();
+
             for image_key in image_keys {
-                //
-                let image_delete_id = next_snowflake_id();
+                delete_ids.push(next_snowflake_id());
 
-                let payload = Payload::Image(image::Payload::Delete {
+                delete_payloads.push(Payload::Image(image::Payload::Delete {
                     object_key: image_key,
-                });
-
-                let task = Task {
-                    id: &image_delete_id,
-                    payload: &payload,
-                    delay: None,
-                };
-
-                prom.step(context, &Defer::new(task)).await?;
+                }));
             }
+
+            let delete_tasks: Vec<_> = delete_ids
+                .iter()
+                .zip(delete_payloads.iter())
+                .map(|(id, payload)| Task {
+                    id,
+                    payload,
+                    delay: None,
+                })
+                .collect();
+
+            prom.step(context, &DeferBatch::new(&delete_tasks))
+                .await?;
 
             repo.step(
                 context,
