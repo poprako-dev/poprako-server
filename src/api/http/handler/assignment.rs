@@ -6,17 +6,15 @@ use axum::http::StatusCode;
 
 use tracing::instrument;
 
-#[cfg(feature = "swagger-ui")]
-use crate::api::http::result::HttpBody;
-
 use crate::api::http::handler::util::ensure_path_matches_body_id;
+#[allow(unused_imports)]
 use crate::api::http::result::{
-    Accept as _, HttpNoContent, HttpResult, no_content,
+    Accept as _, HttpBody, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
 use crate::data::assignment::{
-    AssignmentInfoVal, JoinChapterData, ListAssignmentInfosData,
-    UpdateAssignmentRolesData,
+    AssignmentInfoVal, JoinChapterAssignmentParams, ListAssignmentInfosParams,
+    UpdateAssignmentRolesParams,
 };
 use crate::model::user::UserToken;
 use crate::usecase;
@@ -27,7 +25,7 @@ use crate::usecase;
     path = "/api/v1/assignments",
     tag = "assignments",
     description = "Lists assignments. Exactly one of `chapter_id` or `owner_id` is required; `role` optionally narrows by a single role bit. `incl` embeds related rows; dotted values imply their parent segments. Examples: `/api/v1/assignments?chapter_id=c_1&role=1&incl=chapter.comic.workset.team`, `/api/v1/assignments?owner_id=u_1&incl=user`.",
-    params(ListAssignmentInfosData),
+    params(ListAssignmentInfosParams),
     responses(
         (status = 200, description = "Assignments listed", body = HttpBody<Vec<AssignmentInfoVal>>),
         (status = 422, description = "Exactly one of chapter_id or owner_id is required"),
@@ -38,13 +36,13 @@ use crate::usecase;
 pub async fn list_infos(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
-    Query(data): Query<ListAssignmentInfosData>,
+    Query(params): Query<ListAssignmentInfosParams>,
 ) -> HttpResult<Vec<AssignmentInfoVal>> {
     usecase::assignment::list_infos(
         harn.repo(),
         harn.image_pool(),
         user_token,
-        data,
+        params,
     )
     .await?
     .accept(StatusCode::OK)
@@ -59,7 +57,7 @@ pub async fn list_infos(
         ("chapter_id" = String, Path, description = "Chapter ID"),
         ("user_id" = String, Path, description = "Assignee user ID"),
     ),
-    request_body = UpdateAssignmentRolesData,
+    request_body = UpdateAssignmentRolesParams,
     responses(
         (status = 204, description = "Assignment roles updated"),
         (status = 422, description = "Path ids do not match body ids"),
@@ -67,23 +65,23 @@ pub async fn list_infos(
         (status = 404, description = "Assignment not found"),
     ),
 ))]
-#[instrument(err, skip(harn, data))]
+#[instrument(err, skip(harn, params))]
 pub async fn update_roles(
     State(harn): State<AppHarn>,
     Path((chapter_id, user_id)): Path<(String, String)>,
     Extension(user_token): Extension<UserToken>,
-    Json(data): Json<UpdateAssignmentRolesData>,
+    Json(params): Json<UpdateAssignmentRolesParams>,
 ) -> HttpNoContent {
     //
-    ensure_path_matches_body_id(&chapter_id, &data.chapter_id)?;
+    ensure_path_matches_body_id(&chapter_id, &params.chapter_id)?;
 
-    ensure_path_matches_body_id(&user_id, &data.user_id)?;
+    ensure_path_matches_body_id(&user_id, &params.user_id)?;
 
     usecase::assignment::update_roles(
         harn.drive(),
         harn.repo(),
         user_token,
-        data,
+        params,
     )
     .await?;
 
@@ -125,20 +123,20 @@ pub async fn delete(
     post,
     path = "/api/v1/assignments/join",
     tag = "assignments",
-    request_body = JoinChapterData,
+    request_body = JoinChapterAssignmentParams,
     responses(
         (status = 201, description = "Joined assignment", body = HttpBody<AssignmentInfoVal>),
         (status = 403, description = "Role not assignable or no permission"),
         (status = 404, description = "Chapter not found"),
     ),
 ))]
-#[instrument(err, skip(harn, data))]
+#[instrument(err, skip(harn, params))]
 pub async fn join(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
-    Json(data): Json<JoinChapterData>,
+    Json(params): Json<JoinChapterAssignmentParams>,
 ) -> HttpResult<AssignmentInfoVal> {
-    usecase::assignment::join(harn.drive(), harn.repo(), user_token, data)
+    usecase::assignment::join(harn.drive(), harn.repo(), user_token, params)
         .await?
         .accept(StatusCode::CREATED)
 }

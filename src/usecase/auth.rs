@@ -1,28 +1,29 @@
 //! Authentication use cases — registration and login.
 
-use poprako_transactional::advance::Advance;
-use poprako_transactional::drive::Drive;
+use poprako_orchestra::Nucl;
+
 use poprako_util::i18n::trl;
 
 use crate::complex::member::MemberComplex;
 use crate::complex::user::UserComplex;
-use crate::data::auth::{LoginData, LoginVal, RegisterData, RegisterVal};
-use crate::model::member::MemberForm;
-use crate::model::user::{UserForm, UserTokenRef};
+use crate::data::auth::{
+    LoginAuthParams, LoginAuthPayload, RegisterAuthParams, RegisterAuthPayload,
+};
+use crate::model::member::MemberEntry;
+use crate::model::user::{UserEntry, UserTokenRef};
 use crate::part::auth::TokenAuth;
 use crate::part::effect::event::Event;
 use crate::part::effect::event::user::UserSignedUpPayload;
 use crate::part::effect::{EffectDevelop, EffectEmit as _};
-use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
-use crate::part::repo::member_invitation::{
-    MemberInvitationRepo, MemberInvitationRepoTransactional,
+use crate::part::repo::member::MemberRepo;
+use crate::part::repo::member_invitation::MemberInvitationRepo;
+use crate::part::repo::oper::member::CreateMember;
+use crate::part::repo::oper::member_invitation::{
+    GetMemberInvitationInfoExcluded, UpdateMemberInvitation,
 };
-use crate::part::repo::step::member::MemberStep;
-use crate::part::repo::step::member_invitation::MemberInvitationStep;
-use crate::part::repo::step::user::UserStep;
-use crate::part::repo::user::{UserRepo, UserRepoTransactional};
+use crate::part::repo::oper::user::{CreateUser, GetUserCredential};
+use crate::part::repo::user::UserRepo;
 use crate::result::{ExpectedVariant, RegularError, RegularResult};
-use crate::util::DeriveTransactional;
 
 #[cfg(test)]
 mod tests;
@@ -33,8 +34,8 @@ mod tests;
 ///
 /// 1. Fetches and validates the invitation, ensuring the invitee QQ ID matches.
 /// 2. Hashes the password via [`UserComplex::hash_password`].
-/// 3. Inserts a new [`UserForm`] row.
-/// 4. Creates a [`MemberForm`] linking the new user to the inviting team with
+/// 3. Inserts a new [`UserEntry`] row.
+/// 4. Creates a [`MemberEntry`] linking the new user to the inviting team with
 ///    the role specified in the invitation.
 /// 5. Marks the invitation as consumed.
 ///
@@ -45,34 +46,28 @@ mod tests;
 ///
 /// # Type Parameters
 ///
-/// * `D: Drive<C>` — Drives the transaction lifecycle.
+/// * `N: Nucl<Context = C>` — Coordinates the transaction lifecycle.
 /// * `C` — Context anchor (see the [repo module](crate::part::repo) for details).
 /// * `R` — Repository bundle: [`UserRepo`], [`MemberRepo`], [`MemberInvitationRepo`].
 /// * `A: TokenAuth` — Signs the session token.
 /// * `V: EffectDevelop` — Processes the signup event.
-pub async fn register<D, C, R, A, V>(
-    drive: &D,
+pub async fn register<N, C, R, A, V>(
+    nucl: &N,
     repo: &R,
     auth: &A,
     develop: &V,
-    data: RegisterData,
-) -> RegularResult<RegisterVal>
+    params: RegisterAuthParams,
+) -> RegularResult<RegisterAuthPayload>
 where
-    D: Drive<C>,
-    D::Error: Into<RegularError>,
+    N: Nucl<Context = C, Error = RegularError>,
     C: Send,
     R: UserRepo<C> + MemberRepo<C> + MemberInvitationRepo<C> + Send + Sync,
-    <R as DeriveTransactional>::Transactional:
-        UserRepoTransactional<C>
-            + MemberRepoTransactional<C>
-            + MemberInvitationRepoTransactional<C>
-            + Send,
     A: TokenAuth,
     V: EffectDevelop + Send + Sync,
 {
     let (user_id, team_id, invitor_id, invitee_qid) =
-        drive
-            .with_context(
+        nucl
+            .coord(
                 async move |context| -> RegularResult<(
                     String,
                     String,
@@ -80,19 +75,18 @@ where
                     String,
                 )> {
                     //
-                    let repo = repo.derive_transactional().await;
 
                     let invitation_info = repo
-                        .advance(
+                        .step(
                             context,
-                            &MemberInvitationStep::get_info_by_code_excluded(
-                                &data.code,
-                            ),
+                            &GetMemberInvitationInfoExcluded::Code {
+                                code: &params.code,
+                            },
                         )
                         .await?;
 
                     // Verify the invitation was issued for this QQ ID.
-                    if invitation_info.invitee_qid != data.qid {
+                    if invitation_info.invitee_qid != params.qid {
                         return Err(RegularError::Expected {
                             variant: ExpectedVariant::Args,
                             message: trl("error-invalid-invitation-code"),
@@ -100,20 +94,20 @@ where
                     }
 
                     let password_hash =
-                        UserComplex::hash_password(&data.password)?;
+                        UserComplex::hash_password(&params.password)?;
 
-                    let user_form = UserForm {
+                    let user_entry = UserEntry {
                         id: UserComplex::gen_id(),
-                        qid: data.qid.clone(),
-                        nickname: data.nickname.clone(),
+                        qid: params.qid.clone(),
+                        nickname: params.nickname.clone(),
                         password_hash,
                     };
 
                     let user_info = repo
-                        .advance(context, &UserStep::create(&user_form))
+                        .step(context, &CreateUser { entry: &user_entry })
                         .await?;
 
-                    let member_form = MemberForm {
+                    let member_entry = MemberEntry {
                         id: MemberComplex::gen_id(),
                         user_id: user_info.id.clone(),
                         user_nickname: user_info.nickname.clone(),
@@ -121,14 +115,19 @@ where
                         roles: invitation_info.roles,
                     };
 
-                    repo.advance(context, &MemberStep::create(&member_form))
-                        .await?;
-
-                    repo.advance(
+                    repo.step(
                         context,
-                        &MemberInvitationStep::mark_pending_as_used(
-                            &invitation_info.id,
-                        ),
+                        &CreateMember {
+                            entry: &member_entry,
+                        },
+                    )
+                    .await?;
+
+                    repo.step(
+                        context,
+                        &UpdateMemberInvitation::MarkUsed {
+                            id: &invitation_info.id,
+                        },
                     )
                     .await?;
 
@@ -153,7 +152,7 @@ where
 
     let token = auth.sign_token(&UserTokenRef { user_id: &user_id })?;
 
-    Ok(RegisterVal { user_id, token })
+    Ok(RegisterAuthPayload { user_id, token })
 }
 
 /// Authenticates a user with QQ ID and password.
@@ -172,19 +171,18 @@ where
 pub async fn login<C, R, A>(
     repo: &R,
     auth: &A,
-    data: LoginData,
-) -> RegularResult<LoginVal>
+    params: LoginAuthParams,
+) -> RegularResult<LoginAuthPayload>
 where
     R: UserRepo<C>,
-    <R as DeriveTransactional>::Transactional: UserRepoTransactional<C>,
     A: TokenAuth,
 {
     let user_credential = repo
-        .execute(&UserStep::get_credential_by_qid(&data.qid))
+        .run(&GetUserCredential::Qid { qid: &params.qid })
         .await?;
 
     if !UserComplex::verify_password(
-        &data.password,
+        &params.password,
         &user_credential.password_hash,
     ) {
         return Err(RegularError::Expected {
@@ -197,7 +195,7 @@ where
         user_id: &user_credential.user_id,
     })?;
 
-    Ok(LoginVal {
+    Ok(LoginAuthPayload {
         user_id: user_credential.user_id,
         token,
     })

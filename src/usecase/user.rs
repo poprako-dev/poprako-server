@@ -1,29 +1,34 @@
 //! User use cases — profile, avatar management, activity tracking, and deletion.
 
-use time::{Duration, OffsetDateTime};
+use std::time::Duration;
 
-use poprako_transactional::advance::Advance;
-use poprako_transactional::drive::Drive;
+use poprako_orchestra::Nucl;
+use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
+use poprako_orchestra_extra::prom::task::Task;
+
 use poprako_util::i18n::trl;
 
 use crate::complex::image::ImageComplex;
 use crate::data::user::{
-    MarkUserAvatarUploadedData, ReserveUserAvatarData, ReserveUserAvatarVal,
-    UpdateUserInfoData, UserInfoVal,
+    MarkUserAvatarUploadedParams, ReserveUserAvatarParams,
+    ReserveUserAvatarPayload, UpdateUserInfoParams, UserInfoVal,
 };
 use crate::model::user::UserToken;
 use crate::part::effect::event::Event;
 use crate::part::effect::event::user::UserActivePayload;
 use crate::part::effect::{EffectDevelop, EffectEmit as _};
 use crate::part::image::ImagePool;
-use crate::part::prom::task::{IMAGE_TOPIC, ImageKind, ImageTask};
-use crate::part::prom::{Payload, Prom, PromStep};
-use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
-use crate::part::repo::step::member::MemberStep;
-use crate::part::repo::step::user::UserStep;
-use crate::part::repo::user::{UserRepo, UserRepoTransactional};
+use crate::part::prom::Prom;
+use crate::part::prom::payload::{Payload, image};
+use crate::part::repo::member::MemberRepo;
+use crate::part::repo::oper::member::{
+    DeleteMember, ListMemberInfosExcluded, UpdateMember,
+};
+use crate::part::repo::oper::user::{
+    DeleteUser, GetUserInfo, GetUserInfoExcluded, ReserveUserAvatar, UpdateUser,
+};
+use crate::part::repo::user::UserRepo;
 use crate::result::{ExpectedVariant, RegularError, RegularResult};
-use crate::util::DeriveTransactional;
 
 #[cfg(test)]
 mod tests;
@@ -49,11 +54,10 @@ pub async fn get_info<C, R, I, V>(
 ) -> RegularResult<UserInfoVal>
 where
     R: UserRepo<C>,
-    <R as DeriveTransactional>::Transactional: UserRepoTransactional<C>,
     I: ImagePool,
     V: EffectDevelop + Send + Sync,
 {
-    let user_info = repo.execute(&UserStep::get_info_by_id(&id)).await?;
+    let user_info = repo.run(&GetUserInfo::Id { id: &id }).await?;
 
     // Emit an activity event when the user reads their own profile.
     if token.user_id == id {
@@ -72,65 +76,60 @@ where
 /// Transactional flow:
 ///
 /// 1. **Permission check:** the caller (`token.user_id`) must match the
-///    target user (`data.id`). Returns `Perm` error on mismatch.
-/// 2. Updates the user's own record via [`UserStep::update_info`].
+///    target user (`params.id`). Returns `Perm` error on mismatch.
+/// 2. Updates the user's own record via [`UpdateUser::Info`].
 /// 3. Propagates the new nickname to all of the user's memberships via
-///    [`MemberStep::update_user_nickname`].
+///    [`UpdateMember::UserNickname`].
 ///
 /// # Type Parameters
 ///
-/// * `D: Drive<C>` — Transaction driver.
+/// * `N: Nucl<Context = C>` — Transaction coordinator.
 /// * `C` — Context anchor.
 /// * `R: UserRepo<C> + MemberRepo<C>` — User and member storage.
-pub async fn update_info<D, C, R>(
-    drive: &D,
+pub async fn update_info<N, C, R>(
+    nucl: &N,
     repo: &R,
     token: UserToken,
-    data: UpdateUserInfoData,
+    params: UpdateUserInfoParams,
 ) -> RegularResult<()>
 where
-    D: Drive<C>,
-    D::Error: Into<RegularError>,
+    N: Nucl<Context = C, Error = RegularError>,
     C: Send,
     R: UserRepo<C> + MemberRepo<C> + Send + Sync,
-    <R as DeriveTransactional>::Transactional:
-        UserRepoTransactional<C> + MemberRepoTransactional<C> + Send,
 {
     // Only the user themselves can update their own profile.
-    if token.user_id != data.id {
+    if token.user_id != params.id {
         return Err(RegularError::Expected {
             variant: ExpectedVariant::Perm,
             message: trl("error-forbidden"),
         });
     }
 
-    drive
-        .with_context(async move |context| -> Result<(), RegularError> {
-            //
-            let repo = repo.derive_transactional().await;
+    nucl.coord(async move |context| -> Result<(), RegularError> {
+        //
 
-            repo.advance(
-                context,
-                &UserStep::update_info(
-                    &token.user_id,
-                    &data.qid,
-                    &data.nickname,
-                ),
-            )
-            .await?;
-
-            repo.advance(
-                context,
-                &MemberStep::update_user_nickname(
-                    &token.user_id,
-                    &data.nickname,
-                ),
-            )
-            .await?;
-
-            Ok(())
-        })
+        repo.step(
+            context,
+            &UpdateUser::Info {
+                id: &token.user_id,
+                qid: &params.qid,
+                nickname: &params.nickname,
+            },
+        )
         .await?;
+
+        repo.step(
+            context,
+            &UpdateMember::UserNickname {
+                user_id: &token.user_id,
+                user_nickname: &params.nickname,
+            },
+        )
+        .await?;
+
+        Ok(())
+    })
+    .await?;
 
     Ok(())
 }
@@ -139,92 +138,93 @@ where
 ///
 /// Transactional flow (same pattern as [`team::reserve_avatar`]):
 ///
-/// 1. Calls [`UserStep::reserve_avatar`] — generates an object key, increments
+/// 1. Calls [`ReserveUserAvatar`] — generates an object key, increments
 ///    the version, and returns any previous avatar key.
-/// 2. If replacing, enqueues a [`Delete`](ImageTask::Delete) prom record.
-/// 3. Enqueues a [`CheckUploaded`](ImageTask::CheckUploaded) prom record
-///    (visible after 15 minutes).
+/// 2. If replacing, defers an image-delete payload.
+/// 3. Defers an image upload-check payload with a 15-minute delay.
 ///
 /// After commit, generates a signed PUT URL.
 ///
 /// # Type Parameters
 ///
-/// * `D: Drive<C>` — Transaction driver.
+/// * `N: Nucl<Context = C>` — Transaction coordinator.
 /// * `C` — Context anchor.
 /// * `R: UserRepo<C>` — User storage.
-/// * `P: PromTransactional<C>` — Prom enqueuer.
+/// * `P: Prom<C>` — Prom enqueuer.
 /// * `I: ImagePool` — Generates the signed upload URL.
 ///
 /// [`team::reserve_avatar`]: super::team::reserve_avatar
-pub async fn reserve_avatar<D, C, R, P, I>(
-    drive: &D,
+pub async fn reserve_avatar<N, C, R, P, I>(
+    nucl: &N,
     repo: &R,
     prom: &P,
     image_pool: &I,
     token: UserToken,
-    data: ReserveUserAvatarData,
-) -> RegularResult<ReserveUserAvatarVal>
+    params: ReserveUserAvatarParams,
+) -> RegularResult<ReserveUserAvatarPayload>
 where
-    D: Drive<C>,
-    D::Error: Into<RegularError>,
+    N: Nucl<Context = C, Error = RegularError>,
     C: Send,
     R: UserRepo<C> + Send + Sync,
-    <R as DeriveTransactional>::Transactional: UserRepoTransactional<C> + Send,
     P: Prom<C> + Send + Sync,
     I: ImagePool,
 {
-    let (object_key, avatar_version) = drive
-        .with_context(async move |context| -> RegularResult<(String, i64)> {
+    let (object_key, avatar_version) = nucl
+        .coord(async move |context| -> RegularResult<(String, u32)> {
             //
-            let repo = repo.derive_transactional().await;
-
             let avatar_reservation = repo
-                .advance(
+                .step(
                     context,
-                    &UserStep::reserve_avatar(&token.user_id, &data.file_ext),
+                    &ReserveUserAvatar {
+                        id: &token.user_id,
+                        file_ext: &params.file_ext,
+                    },
                 )
                 .await?;
 
-            let now = OffsetDateTime::now_utc();
+            let mut batch_ids = Vec::new();
+
+            let mut batch_payloads = Vec::new();
+
+            let mut batch_delays = Vec::new();
 
             // If replacing an existing avatar, schedule deletion of the old object.
             if let Some(prev_key) = &avatar_reservation.prev_object_key {
-                //
-                let delete_id = ImageComplex::gen_delete_id();
+                batch_ids.push(ImageComplex::gen_delete_id());
 
-                prom.advance(
-                    context,
-                    &PromStep::append(
-                        &delete_id,
-                        IMAGE_TOPIC,
-                        Payload::Image(ImageTask::Delete {
-                            object_key: prev_key.as_str(),
-                        }),
-                        &now,
-                    ),
-                )
-                .await?;
+                batch_payloads.push(Payload::Image(image::Payload::Delete {
+                    object_key: prev_key.clone(),
+                }));
+
+                batch_delays.push(None);
             }
 
-            let check_id = ImageComplex::gen_check_id();
+            batch_ids.push(ImageComplex::gen_check_id());
 
-            let check_visible_at = now + Duration::minutes(15);
+            batch_payloads.push(Payload::Image(
+                image::Payload::CheckUpload {
+                    resource_kind: image::ResourceKind::UserAvatar,
+                    resource_id: token.user_id.clone(),
+                    object_key: avatar_reservation.object_key.clone(),
+                    version: avatar_reservation.avatar_version,
+                },
+            ));
 
-            prom.advance(
-                context,
-                &PromStep::append(
-                    &check_id,
-                    IMAGE_TOPIC,
-                    Payload::Image(ImageTask::CheckUploaded {
-                        kind: ImageKind::UserAvatar,
-                        resource_id: &token.user_id,
-                        object_key: &avatar_reservation.object_key,
-                        image_version: avatar_reservation.avatar_version,
-                    }),
-                    &check_visible_at,
-                ),
-            )
-            .await?;
+            batch_delays.push(Some(Duration::from_secs(15 * 60)));
+
+            let batch_tasks: Vec<_> = batch_ids
+                .iter()
+                .zip(batch_payloads.iter())
+                .zip(batch_delays.iter())
+                .map(|((id, payload), delay)| Task {
+                    id,
+                    payload,
+                    delay: *delay,
+                })
+                .collect();
+
+            prom.step(context, &DeferBatch::new(&batch_tasks))
+                .await?;
 
             Ok((
                 avatar_reservation.object_key,
@@ -235,7 +235,7 @@ where
 
     let put_url = image_pool.put_signed(&object_key).await?.to_string();
 
-    Ok(ReserveUserAvatarVal {
+    Ok(ReserveUserAvatarPayload {
         put_url,
         avatar_version,
     })
@@ -249,22 +249,20 @@ where
 ///
 /// # Type Parameters
 ///
-/// * `D: Drive<C>` — Transaction driver.
+/// * `N: Nucl<Context = C>` — Transaction coordinator.
 /// * `C` — Context anchor.
 /// * `R: UserRepo<C>` — User storage.
-pub async fn mark_avatar_uploaded<D, C, R>(
-    drive: &D,
+pub async fn mark_avatar_uploaded<N, C, R>(
+    nucl: &N,
     repo: &R,
     token: UserToken,
     id: String,
-    data: MarkUserAvatarUploadedData,
+    params: MarkUserAvatarUploadedParams,
 ) -> RegularResult<()>
 where
-    D: Drive<C>,
-    D::Error: Into<RegularError>,
+    N: Nucl<Context = C, Error = RegularError>,
     C: Send,
     R: UserRepo<C> + Send + Sync,
-    <R as DeriveTransactional>::Transactional: UserRepoTransactional<C> + Send,
 {
     if token.user_id != id {
         return Err(RegularError::Expected {
@@ -273,25 +271,26 @@ where
         });
     }
 
-    drive
-        .with_context(async move |context| -> Result<(), RegularError> {
-            //
-            let repo = repo.derive_transactional().await;
+    nucl.coord(async move |context| -> Result<(), RegularError> {
+        //
 
-            repo.advance(
-                context,
-                &UserStep::mark_avatar_uploaded(&id, data.avatar_version),
-            )
-            .await?;
-
-            Ok(())
-        })
+        repo.step(
+            context,
+            &UpdateUser::MarkAvatarUploaded {
+                id: &id,
+                avatar_version: params.avatar_version,
+            },
+        )
         .await?;
+
+        Ok(())
+    })
+    .await?;
 
     Ok(())
 }
 
-/// Deletes a user account and all associated data.
+/// Deletes a user account and all associated params.
 ///
 /// Transactional cascade:
 ///
@@ -306,24 +305,21 @@ where
 ///
 /// # Type Parameters
 ///
-/// * `D: Drive<C>` — Transaction driver.
+/// * `N: Nucl<Context = C>` — Transaction coordinator.
 /// * `C` — Context anchor.
 /// * `R: UserRepo<C> + MemberRepo<C>` — User and member storage.
-/// * `P: PromTransactional<C>` — Prom enqueuer for deferred avatar deletion.
-pub async fn delete<D, C, R, P>(
-    drive: &D,
+/// * `P: Prom<C>` — Prom enqueuer for deferred avatar deletion.
+pub async fn delete<N, C, R, P>(
+    nucl: &N,
     repo: &R,
     prom: &P,
     token: UserToken,
     id: String,
 ) -> RegularResult<()>
 where
-    D: Drive<C>,
-    D::Error: Into<RegularError>,
+    N: Nucl<Context = C, Error = RegularError>,
     C: Send,
     R: UserRepo<C> + MemberRepo<C> + Send + Sync,
-    <R as DeriveTransactional>::Transactional:
-        UserRepoTransactional<C> + MemberRepoTransactional<C> + Send + Sync,
     P: Prom<C> + Send + Sync,
 {
     if token.user_id != id {
@@ -334,54 +330,53 @@ where
         });
     }
 
-    drive
-        .with_context(async move |context| -> Result<(), RegularError> {
-            //
-            let repo = repo.derive_transactional().await;
+    nucl.coord(async move |context| -> Result<(), RegularError> {
+        //
 
-            let user_info = repo
-                .advance(context, &UserStep::get_info_excluded(&id))
-                .await?;
+        let user_info = repo
+            .step(context, &GetUserInfoExcluded::Id { id: &id })
+            .await?;
 
-            // Delete all memberships before the user to satisfy FK constraints.
-            let member_infos = repo
-                .advance(
-                    context,
-                    &MemberStep::list_infos_by_user_id_excluded(&id),
-                )
-                .await?;
+        // Delete all memberships before the user to satisfy FK constraints.
 
-            for mi in &member_infos {
-                repo.advance(context, &MemberStep::delete(&mi.id)).await?;
-            }
+        let member_infos = repo
+            .step(context, &ListMemberInfosExcluded::User { user_id: &id })
+            .await?;
 
-            repo.advance(context, &UserStep::delete(&id)).await?;
+        for member_info in &member_infos {
+            repo.step(
+                context,
+                &DeleteMember {
+                    id: &member_info.id,
+                },
+            )
+            .await?;
+        }
 
-            // Enqueue avatar object deletion if one was uploaded.
-            if let Some(avatar_key) = &user_info.avatar_key
-                && user_info.avatar_uploaded
-            {
-                let now = OffsetDateTime::now_utc();
+        repo.step(context, &DeleteUser { id: &id }).await?;
 
-                let delete_id = ImageComplex::gen_delete_id();
+        // Enqueue avatar object deletion if one was uploaded.
+        if let Some(avatar_key) = &user_info.avatar_key
+            && user_info.avatar_uploaded
+        {
+            let delete_id = ImageComplex::gen_delete_id();
 
-                prom.advance(
-                    context,
-                    &PromStep::append(
-                        &delete_id,
-                        IMAGE_TOPIC,
-                        Payload::Image(ImageTask::Delete {
-                            object_key: avatar_key.as_str(),
-                        }),
-                        &now,
-                    ),
-                )
-                .await?;
-            }
+            let payload = Payload::Image(image::Payload::Delete {
+                object_key: avatar_key.clone(),
+            });
 
-            Ok(())
-        })
-        .await?;
+            let task = Task {
+                id: &delete_id,
+                payload: &payload,
+                delay: None,
+            };
+
+            prom.step(context, &Defer::new(task)).await?;
+        }
+
+        Ok(())
+    })
+    .await?;
 
     Ok(())
 }

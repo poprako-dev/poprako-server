@@ -1,16 +1,17 @@
 //! Chapter use cases — list, read, create, update, and deletion.
 
-use poprako_transactional::advance::Advance;
-use poprako_transactional::drive::Drive;
+use poprako_orchestra::{Nucl, run_proxy};
 
 use crate::complex::assignment::AssignmentComplex;
 use crate::complex::chapter::{ChapterComplex, ChapterPermComplex};
 use crate::data::chapter::{
-    ChapterInfoVal, CreateChapterData, CreateChapterVal, ListChapterInfosData,
-    PatchChapterInfoData, UpdateChapterStageData,
+    ChapterInfoVal, CreateChapterParams, CreateChapterPayload,
+    ListChapterInfosParams, UpdateChapterInfoParams, UpdateChapterStageParams,
 };
-use crate::model::assignment::AssignmentForm;
-use crate::model::chapter::{ChapterForm, ChapterInfoUpdate, ChapterListSpec};
+use crate::model::assignment::AssignmentEntry;
+use crate::model::chapter::{
+    ChapterEntry, ChapterInfoListSpec, ChapterInfoUpdate,
+};
 use crate::model::user::UserToken;
 use crate::part::effect::event::Event;
 use crate::part::effect::event::chapter::{
@@ -19,23 +20,29 @@ use crate::part::effect::event::chapter::{
 use crate::part::effect::{EffectDevelop, EffectEmit as _};
 use crate::part::image::ImagePool;
 use crate::part::prom::Prom;
-use crate::part::repo::assignment::{
-    AssignmentRepo, AssignmentRepoTransactional,
+use crate::part::repo::assignment::AssignmentRepo;
+use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
+use crate::part::repo::chapter::ChapterRepo;
+use crate::part::repo::comic::ComicRepo;
+use crate::part::repo::member::MemberRepo;
+use crate::part::repo::oper::assignment::{
+    CreateAssignment, FindAssignmentInfo,
 };
-use crate::part::repo::assignment_invitation::{
-    AssignmentInvitationRepo, AssignmentInvitationRepoTransactional,
+use crate::part::repo::oper::chapter::{
+    CreateChapter, FindPinnedChapterInfo, GetChapterInfo,
+    GetChapterInfoExcluded, ListChapterInfos, ListChapterInfosExcluded,
+    UnpinOtherChapters, UpdateChapter, UpdateChapterStage,
 };
-use crate::part::repo::chapter::{ChapterRepo, ChapterRepoTransactional};
-use crate::part::repo::comic::{ComicRepo, ComicRepoTransactional};
-use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
-use crate::part::repo::page::{PageRepo, PageRepoTransactional};
-use crate::part::repo::step::assignment::AssignmentStep;
-use crate::part::repo::step::chapter::ChapterStep;
-use crate::part::repo::step::comic::ComicStep;
-use crate::part::repo::unit::{UnitRepo, UnitRepoTransactional};
-use crate::part::repo::workset::{WorksetRepo, WorksetRepoTransactional};
-use crate::result::{RegularError, RegularResult};
-use crate::util::DeriveTransactional;
+use crate::part::repo::oper::comic::{
+    AllocateComicChapterIndex, GetComicInfo, TouchComicLastActive,
+    UpdateComicChapterCount,
+};
+use crate::part::repo::oper::member::FindMemberInfo;
+use crate::part::repo::oper::workset::GetWorksetInfo;
+use crate::part::repo::page::PageRepo;
+use crate::part::repo::unit::UnitRepo;
+use crate::part::repo::workset::WorksetRepo;
+use crate::result::{RegularError, RegularResult, accept};
 use crate::value::chapter::{Stage, StageOper, StagePhase};
 use crate::value::role::{RoleField, RoleMask};
 
@@ -47,33 +54,32 @@ pub async fn list_infos<C, R, I>(
     repo: &R,
     image_pool: &I,
     token: UserToken,
-    data: ListChapterInfosData,
+    params: ListChapterInfosParams,
 ) -> RegularResult<Vec<ChapterInfoVal>>
 where
     R: ChapterRepo<C> + ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Sync,
-    <R as DeriveTransactional>::Transactional: ChapterRepoTransactional<C>
-        + ComicRepoTransactional<C>
-        + WorksetRepoTransactional<C>
-        + MemberRepoTransactional<C>,
     I: ImagePool,
 {
-    use crate::part::shared::proxy::AsProxyNonTransactional as _;
-
-    ChapterPermComplex::can_user_list_infos(
-        &mut repo.as_proxy(),
+    ChapterPermComplex::ensure_user_can_list_infos(
+        &mut run_proxy! {
+            repo =>
+                for<'a, 'b> GetComicInfo<'a, 'b>,
+                for<'a> GetWorksetInfo<'a>,
+                for<'a> FindMemberInfo<'a>;
+        },
         &token.user_id,
-        &data.comic_id,
+        &params.comic_id,
     )
     .await?;
 
-    let spec = ChapterListSpec {
-        comic_id: data.comic_id,
-        incl_opt: data.incl_opt,
-        offset: data.offset,
-        limit: data.limit,
+    let spec = ChapterInfoListSpec {
+        comic_id: params.comic_id,
+        incl_opt: params.incl_opt,
+        offset: params.offset,
+        limit: params.limit,
     };
 
-    let chapter_infos = repo.execute(&ChapterStep::list_infos(&spec)).await?;
+    let chapter_infos = repo.run(&ListChapterInfos { spec: &spec }).await?;
 
     let mut chapter_info_vals = Vec::with_capacity(chapter_infos.len());
 
@@ -93,22 +99,26 @@ pub async fn get_info<C, R>(
 ) -> RegularResult<ChapterInfoVal>
 where
     R: ChapterRepo<C> + ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Sync,
-    <R as DeriveTransactional>::Transactional: ChapterRepoTransactional<C>
-        + ComicRepoTransactional<C>
-        + WorksetRepoTransactional<C>
-        + MemberRepoTransactional<C>,
 {
-    use crate::part::shared::proxy::AsProxyNonTransactional as _;
-
-    ChapterPermComplex::can_user_get_info(
-        &mut repo.as_proxy(),
+    ChapterPermComplex::ensure_user_can_get_info(
+        &mut run_proxy! {
+            repo =>
+                for<'a, 'b> GetChapterInfo<'a, 'b>,
+                for<'a, 'b> GetComicInfo<'a, 'b>,
+                for<'a> GetWorksetInfo<'a>,
+                for<'a> FindMemberInfo<'a>;
+        },
         &token.user_id,
         &id,
     )
     .await?;
 
-    let chapter_info =
-        repo.execute(&ChapterStep::get_info_by_id(&id, &[])).await?;
+    let chapter_info = repo
+        .run(&GetChapterInfo {
+            id: &id,
+            incls: &[],
+        })
+        .await?;
 
     Ok(ChapterInfoVal::from(chapter_info))
 }
@@ -121,37 +131,38 @@ pub async fn get_pinned<C, R>(
 ) -> RegularResult<Option<ChapterInfoVal>>
 where
     R: ChapterRepo<C> + ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Sync,
-    <R as DeriveTransactional>::Transactional: ChapterRepoTransactional<C>
-        + ComicRepoTransactional<C>
-        + WorksetRepoTransactional<C>
-        + MemberRepoTransactional<C>,
 {
-    use crate::part::shared::proxy::AsProxyNonTransactional as _;
-
-    ChapterPermComplex::can_user_get_pinned(
-        &mut repo.as_proxy(),
+    ChapterPermComplex::ensure_user_can_get_pinned(
+        &mut run_proxy! {
+            repo =>
+                for<'a, 'b> GetComicInfo<'a, 'b>,
+                for<'a> GetWorksetInfo<'a>,
+                for<'a> FindMemberInfo<'a>;
+        },
         &token.user_id,
         &comic_id,
     )
     .await?;
 
     let chapter_info = repo
-        .execute(&ChapterStep::find_pinned_info_by_comic_id(&comic_id, &[]))
+        .run(&FindPinnedChapterInfo {
+            comic_id: &comic_id,
+            incls: &[],
+        })
         .await?;
 
     Ok(chapter_info.map(ChapterInfoVal::from))
 }
 
 /// Creates a new chapter.
-pub async fn create<D, C, R>(
-    drive: &D,
+pub async fn create<N, C, R>(
+    nucl: &N,
     repo: &R,
     token: UserToken,
-    data: CreateChapterData,
-) -> RegularResult<CreateChapterVal>
+    params: CreateChapterParams,
+) -> RegularResult<CreateChapterPayload>
 where
-    D: Drive<C>,
-    D::Error: Into<RegularError>,
+    N: Nucl<Context = C, Error = RegularError>,
     C: Send,
     R: ChapterRepo<C>
         + ComicRepo<C>
@@ -160,57 +171,56 @@ where
         + AssignmentRepo<C>
         + Send
         + Sync,
-    <R as DeriveTransactional>::Transactional: ChapterRepoTransactional<C>
-        + ComicRepoTransactional<C>
-        + WorksetRepoTransactional<C>
-        + MemberRepoTransactional<C>
-        + AssignmentRepoTransactional<C>
-        + Send
-        + Sync,
 {
-    use crate::part::shared::proxy::AsProxyNonTransactional as _;
-
-    ChapterPermComplex::can_user_create(
-        &mut repo.as_proxy(),
+    ChapterPermComplex::ensure_user_can_create(
+        &mut run_proxy! {
+            repo =>
+                for<'a, 'b> GetComicInfo<'a, 'b>,
+                for<'a> GetWorksetInfo<'a>,
+                for<'a> FindMemberInfo<'a>;
+        },
         &token.user_id,
-        &data.comic_id,
+        &params.comic_id,
     )
     .await?;
 
-    let chapter_id = drive
-        .with_context(async move |context| -> RegularResult<String> {
+    let chapter_id = nucl
+        .coord(async move |context| -> RegularResult<String> {
             //
-            let repo = repo.derive_transactional().await;
-
-            repo.advance(
+            repo.step(
                 context,
-                &ChapterStep::list_all_infos_by_comic_id_excluded(
-                    &data.comic_id,
-                ),
+                &ListChapterInfosExcluded {
+                    comic_id: &params.comic_id,
+                },
             )
             .await?;
 
             let index = repo
-                .advance(
+                .step(
                     context,
-                    &ComicStep::incr_chapter_next_index(&data.comic_id),
+                    &AllocateComicChapterIndex {
+                        id: &params.comic_id,
+                    },
                 )
                 .await?;
 
             let subtitle =
-                ChapterComplex::subtitle_or_default(data.subtitle, index);
+                ChapterComplex::subtitle_or_default(params.subtitle, index);
 
             let chapter_id = ChapterComplex::gen_id();
 
-            repo.advance(
+            repo.step(
                 context,
-                &ChapterStep::unpin_others(&data.comic_id, &chapter_id),
+                &UnpinOtherChapters {
+                    comic_id: &params.comic_id,
+                    excluded_id: &chapter_id,
+                },
             )
             .await?;
 
-            let chapter_form = ChapterForm {
+            let chapter_entry = ChapterEntry {
                 id: chapter_id,
-                comic_id: data.comic_id,
+                comic_id: params.comic_id,
                 is_pinned: true,
                 index,
                 subtitle,
@@ -218,137 +228,150 @@ where
             };
 
             let chapter_info = repo
-                .advance(context, &ChapterStep::create(&chapter_form))
+                .step(
+                    context,
+                    &CreateChapter {
+                        entry: &chapter_entry,
+                    },
+                )
                 .await?;
 
-            repo.advance(
+            repo.step(
                 context,
-                &ComicStep::update_chapter_count(&chapter_info.comic_id, 1),
+                &UpdateComicChapterCount {
+                    id: &chapter_info.comic_id,
+                    delta: 1,
+                },
             )
             .await?;
 
-            repo.advance(
+            repo.step(
                 context,
-                &ComicStep::touch_last_active(&chapter_info.comic_id),
+                &TouchComicLastActive {
+                    id: &chapter_info.comic_id,
+                },
             )
             .await?;
 
-            let assignment_form = AssignmentForm {
+            let assignment_entry = AssignmentEntry {
                 id: AssignmentComplex::gen_id(),
                 chapter_id: chapter_info.id.clone(),
                 user_id: token.user_id,
                 roles: RoleMask::from(RoleField::ADMIN),
             };
 
-            repo.advance(context, &AssignmentStep::create(&assignment_form))
-                .await?;
+            repo.step(
+                context,
+                &CreateAssignment {
+                    entry: &assignment_entry,
+                },
+            )
+            .await?;
 
             Ok(chapter_info.id)
         })
         .await?;
 
-    Ok(CreateChapterVal { id: chapter_id })
+    Ok(CreateChapterPayload { id: chapter_id })
 }
 
 /// Updates chapter metadata.
-pub async fn update_info<D, C, R>(
-    drive: &D,
+pub async fn update_info<N, C, R>(
+    nucl: &N,
     repo: &R,
     token: UserToken,
-    data: PatchChapterInfoData,
+    params: UpdateChapterInfoParams,
 ) -> RegularResult<()>
 where
-    D: Drive<C>,
-    D::Error: Into<RegularError>,
+    N: Nucl<Context = C, Error = RegularError>,
     C: Send,
     R: ChapterRepo<C> + ComicRepo<C> + AssignmentRepo<C> + Send + Sync,
-    <R as DeriveTransactional>::Transactional: ChapterRepoTransactional<C>
-        + ComicRepoTransactional<C>
-        + AssignmentRepoTransactional<C>
-        + Send
-        + Sync,
 {
-    use crate::part::shared::proxy::AsProxyNonTransactional as _;
-
-    ChapterPermComplex::can_user_update_info(
-        &mut repo.as_proxy(),
+    ChapterPermComplex::ensure_user_can_update_info(
+        &mut run_proxy! {
+            repo => for<'a, 'b> FindAssignmentInfo<'a, 'b>;
+        },
         &token.user_id,
-        &data.id,
+        &params.id,
     )
     .await?;
 
-    drive
-        .with_context(async move |context| -> RegularResult<()> {
-            //
-            let repo = repo.derive_transactional().await;
+    nucl.coord(async move |context| -> RegularResult<()> {
+        //
+        let chapter_info = repo
+            .step(
+                context,
+                &GetChapterInfoExcluded {
+                    id: &params.id,
+                    incls: &[],
+                },
+            )
+            .await?;
 
-            let chapter_info = repo
-                .advance(
+        if params.subtitle.is_some() || params.pin.is_some() {
+            //
+            let chapter_info_update = ChapterInfoUpdate {
+                id: params.id.clone(),
+                subtitle: params.subtitle,
+                pin: params.pin,
+            };
+
+            if chapter_info_update.pin == Some(true) {
+                //
+
+                repo.step(
                     context,
-                    &ChapterStep::get_info_by_id_excluded(&data.id, &[]),
+                    &ListChapterInfosExcluded {
+                        comic_id: &chapter_info.comic_id,
+                    },
                 )
                 .await?;
 
-            if data.subtitle.is_some() || data.pin.is_some() {
-                //
-                let chapter_info_update = ChapterInfoUpdate {
-                    id: data.id.clone(),
-                    subtitle: data.subtitle,
-                    pin: data.pin,
-                };
-
-                if chapter_info_update.pin == Some(true) {
-                    //
-                    repo.advance(
-                        context,
-                        &ChapterStep::list_all_infos_by_comic_id_excluded(
-                            &chapter_info.comic_id,
-                        ),
-                    )
-                    .await?;
-
-                    repo.advance(
-                        context,
-                        &ChapterStep::unpin_others(
-                            &chapter_info.comic_id,
-                            &chapter_info.id,
-                        ),
-                    )
-                    .await?;
-                }
-
-                repo.advance(
+                repo.step(
                     context,
-                    &ChapterStep::update_info(&chapter_info_update),
+                    &UnpinOtherChapters {
+                        comic_id: &chapter_info.comic_id,
+                        excluded_id: &chapter_info.id,
+                    },
                 )
                 .await?;
             }
 
-            repo.advance(
+            repo.step(
                 context,
-                &ComicStep::touch_last_active(&chapter_info.comic_id),
+                &UpdateChapter {
+                    update: &chapter_info_update,
+                },
             )
             .await?;
+        }
 
-            Ok(())
-        })
+        repo.step(
+            context,
+            &TouchComicLastActive {
+                id: &chapter_info.comic_id,
+            },
+        )
         .await?;
 
-    Ok(())
+        accept(())
+    })
+    .await?;
+
+    accept(())
 }
 
 /// Updates chapter workflow state.
-pub async fn update_stage<D, C, R, P, V>(
-    drive: &D,
+pub async fn update_stage<N, C, R, P, V>(
+    nucl: &N,
     repo: &R,
     prom: &P,
     develop: &V,
     token: UserToken,
-    data: UpdateChapterStageData,
+    params: UpdateChapterStageParams,
 ) -> RegularResult<()>
 where
-    D: Drive<C>,
-    D::Error: Into<RegularError>,
+    N: Nucl<Context = C, Error = RegularError>,
     C: Send,
     R: ChapterRepo<C>
         + ComicRepo<C>
@@ -356,73 +379,71 @@ where
         + PageRepo<C>
         + Send
         + Sync,
-    <R as DeriveTransactional>::Transactional: ChapterRepoTransactional<C>
-        + ComicRepoTransactional<C>
-        + AssignmentRepoTransactional<C>
-        + PageRepoTransactional<C>
-        + Send
-        + Sync,
     P: Prom<C> + Send + Sync,
     V: EffectDevelop + Send + Sync,
 {
-    use crate::part::shared::proxy::AsProxyNonTransactional as _;
-
-    ChapterPermComplex::can_user_update_stage(
-        &mut repo.as_proxy(),
+    ChapterPermComplex::ensure_user_can_update_stage(
+        &mut run_proxy! {
+            repo => for<'a, 'b> FindAssignmentInfo<'a, 'b>;
+        },
         &token.user_id,
-        &data.id,
-        data.stage,
-        data.oper,
+        &params.id,
+        params.stage,
+        params.oper,
     )
     .await?;
 
-    let events = drive
-        .with_context(async move |context| -> RegularResult<Vec<Event>> {
+    let events = nucl
+        .coord(async move |context| -> RegularResult<Vec<Event>> {
             //
-            let repo = repo.derive_transactional().await;
-
             let chapter_info = repo
-                .advance(
+                .step(
                     context,
-                    &ChapterStep::get_info_by_id_excluded(&data.id, &[]),
+                    &GetChapterInfoExcluded {
+                        id: &params.id,
+                        incls: &[],
+                    },
                 )
                 .await?;
 
             let was_published = chapter_info.stages.get_phase(Stage::Publish)
                 == StagePhase::Completed;
 
-            let previous_phase = chapter_info.stages.get_phase(data.stage);
+            let previous_phase = chapter_info.stages.get_phase(params.stage);
 
             let chapter_stage_update = ChapterComplex::build_stage_update(
                 &chapter_info,
-                data.stage,
-                data.oper,
+                params.stage,
+                params.oper,
             )?;
 
-            let next_phase = chapter_stage_update.stages.get_phase(data.stage);
+            let next_phase =
+                chapter_stage_update.stages.get_phase(params.stage);
 
-            repo.advance(
+            repo.step(
                 context,
-                &ChapterStep::update_stage(&chapter_stage_update),
+                &UpdateChapterStage {
+                    update: &chapter_stage_update,
+                },
             )
             .await?;
 
             let mut events = Vec::new();
 
-            if data.oper == StageOper::Advance
+            if params.oper == StageOper::Advance
                 && previous_phase != StagePhase::Completed
                 && next_phase == StagePhase::Completed
             {
                 events.push(Event::ChapterWorkflowCompleted(
                     ChapterWorkflowCompletedPayload {
                         chapter_id: chapter_info.id.clone(),
-                        completed_stage: data.stage,
+                        completed_stage: params.stage,
                     },
                 ));
             }
 
-            if data.stage == Stage::Publish
-                && data.oper == StageOper::Advance
+            if params.stage == Stage::Publish
+                && params.oper == StageOper::Advance
                 && !was_published
                 && chapter_stage_update
                     .stages
@@ -431,7 +452,7 @@ where
                 // TODO: archive this chapter and relevant assignments.
 
                 ChapterComplex::clean_uploaded_images(
-                    &repo,
+                    repo,
                     prom,
                     context,
                     &chapter_info.id,
@@ -443,9 +464,11 @@ where
                 }));
             }
 
-            repo.advance(
+            repo.step(
                 context,
-                &ComicStep::touch_last_active(&chapter_info.comic_id),
+                &TouchComicLastActive {
+                    id: &chapter_info.comic_id,
+                },
             )
             .await?;
 
@@ -455,20 +478,19 @@ where
 
     events.emit(develop).await;
 
-    Ok(())
+    accept(())
 }
 
 /// Deletes one chapter and its descendant core records.
-pub async fn delete<D, C, R, P>(
-    drive: &D,
+pub async fn delete<N, C, R, P>(
+    nucl: &N,
     repo: &R,
     prom: &P,
     token: UserToken,
     id: String,
 ) -> RegularResult<()>
 where
-    D: Drive<C>,
-    D::Error: Into<RegularError>,
+    N: Nucl<Context = C, Error = RegularError>,
     C: Send,
     R: ChapterRepo<C>
         + ComicRepo<C>
@@ -480,38 +502,28 @@ where
         + UnitRepo<C>
         + Send
         + Sync,
-    <R as DeriveTransactional>::Transactional:
-        ChapterRepoTransactional<C>
-            + ComicRepoTransactional<C>
-            + WorksetRepoTransactional<C>
-            + MemberRepoTransactional<C>
-            + PageRepoTransactional<C>
-            + AssignmentInvitationRepoTransactional<C>
-            + AssignmentRepoTransactional<C>
-            + UnitRepoTransactional<C>
-            + Send
-            + Sync,
     P: Prom<C> + Send + Sync,
 {
-    use crate::part::shared::proxy::AsProxyNonTransactional as _;
-
-    ChapterPermComplex::can_user_delete(
-        &mut repo.as_proxy(),
+    ChapterPermComplex::ensure_user_can_delete(
+        &mut run_proxy! {
+            repo =>
+                for<'a, 'b> GetChapterInfo<'a, 'b>,
+                for<'a, 'b> GetComicInfo<'a, 'b>,
+                for<'a> GetWorksetInfo<'a>,
+                for<'a> FindMemberInfo<'a>;
+        },
         &token.user_id,
         &id,
     )
     .await?;
 
-    drive
-        .with_context(async move |context| -> RegularResult<()> {
-            //
-            let repo = repo.derive_transactional().await;
+    nucl.coord(async move |context| -> RegularResult<()> {
+        //
+        ChapterComplex::delete_cascade(repo, prom, context, &id).await?;
 
-            ChapterComplex::delete_cascade(&repo, prom, context, &id).await?;
+        accept(())
+    })
+    .await?;
 
-            Ok(())
-        })
-        .await?;
-
-    Ok(())
+    accept(())
 }

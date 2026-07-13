@@ -25,7 +25,7 @@ pub struct WorksetInfo {
 
 /// The data needed to create a new workset.
 #[cfg_attr(test, derive(Clone))]
-pub struct WorksetForm {
+pub struct WorksetEntry {
     pub id: String,
 
     pub team_id: String,

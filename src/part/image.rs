@@ -11,6 +11,8 @@ use crate::result::RegularResult;
 /// avoiding the need to proxy image bytes through the application server.
 #[async_trait]
 pub trait ImagePool {
+    // FIXME: bad names.
+
     /// Returns a signed download URL for the object at `key`.
     async fn get_signed(&self, key: &str) -> RegularResult<Url>;
 

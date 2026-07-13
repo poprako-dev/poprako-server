@@ -1,24 +1,24 @@
 //! In-memory comic archive repository operations for use-case tests.
 
-use async_trait::async_trait;
-
-use poprako_transactional::advance::Advance;
+use poprako_orchestra::Step;
 
 use crate::model::comic_archive::{
     ComicArchiveChapterSnapshot, ComicArchivePageSnapshot,
     ComicArchiveSnapshot, ComicArchiveWrite,
 };
-use crate::part::repo::comic_archive::ComicArchiveRepoTransactional;
-use crate::part::repo::step::comic_archive::{Commit, LockSnapshot};
+use crate::part::repo::comic_archive::ComicArchiveRepo;
+use crate::part::repo::oper::comic_archive::{
+    CommitComicArchive, GetComicArchiveSnapshotExcluded,
+};
 use crate::part_impl::repo::mock_impl::{
-    MockContext, MockTransactional, expected, unrecoverable,
+    Mock, MockContext, expected, unrecoverable,
 };
 use crate::result::{RegularError, RegularResult};
 
-impl ComicArchiveRepoTransactional<MockContext> for MockTransactional {}
+impl ComicArchiveRepo<MockContext> for Mock {}
 
 /// Clone a fully assembled archive snapshot from locked mock state.
-fn lock_snapshot(
+fn get_snapshot_excluded(
     context: &mut MockContext,
     source_comic_id: &str,
 ) -> RegularResult<ComicArchiveSnapshot> {
@@ -178,28 +178,26 @@ fn commit(
     Ok(())
 }
 
-#[async_trait]
-impl<'a> Advance<LockSnapshot<'a>, MockContext> for MockTransactional {
+impl<'a> Step<GetComicArchiveSnapshotExcluded<'a>, MockContext> for Mock {
     type Error = RegularError;
 
-    async fn advance(
+    async fn step(
         &self,
         context: &mut MockContext,
-        step: &LockSnapshot<'a>,
+        oper: &GetComicArchiveSnapshotExcluded<'a>,
     ) -> RegularResult<ComicArchiveSnapshot> {
-        lock_snapshot(context, step.comic_id)
+        get_snapshot_excluded(context, oper.comic_id)
     }
 }
 
-#[async_trait]
-impl<'a> Advance<Commit<'a>, MockContext> for MockTransactional {
+impl<'a> Step<CommitComicArchive<'a>, MockContext> for Mock {
     type Error = RegularError;
 
-    async fn advance(
+    async fn step(
         &self,
         context: &mut MockContext,
-        step: &Commit<'a>,
+        oper: &CommitComicArchive<'a>,
     ) -> RegularResult<()> {
-        commit(context, step.comic_archive_write)
+        commit(context, oper.write)
     }
 }

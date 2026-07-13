@@ -5,9 +5,9 @@ use poprako_util::i18n::trl;
 #[cfg(test)]
 mod tests;
 
-use crate::model::chapter_port::PoprakoProjectImport;
+use crate::model::chapter_port::ChapterPoprakoProjectImport;
 use crate::model::page_port::{PageTranslationImport, PoprakoPageImport};
-use crate::model::unit::{UnitInfo, UnitPayload};
+use crate::model::unit::{UnitContent, UnitInfo};
 use crate::model::unit_port::UnitTranslationImport;
 use crate::result::{ExpectedVariant, RegularError, RegularResult};
 
@@ -93,8 +93,10 @@ impl ChapterImportComplex {
         content: &str,
     ) -> RegularResult<Vec<PageTranslationImport>> {
         //
-        let project: PoprakoProjectImport = serde_json::from_str(content)
-            .map_err(|_| args_error("error-invalid-chapter-import-content"))?;
+        let project: ChapterPoprakoProjectImport =
+            serde_json::from_str(content).map_err(|_| {
+                args_error("error-invalid-chapter-import-content")
+            })?;
 
         if project.author.trim().is_empty() {
             return Err(args_error("error-invalid-chapter-import-content"));
@@ -133,7 +135,7 @@ impl ChapterImportComplex {
         user_id: &str,
         proofreader: bool,
         label_plus: bool,
-    ) -> UnitPayload {
+    ) -> UnitContent {
         //
         let mut unit_payload = existing_unit
             .map(payload_from_unit)
@@ -195,7 +197,7 @@ where
         return Err(args_error("error-invalid-chapter-import-content"));
     }
 
-    if lines.next().as_deref() != Some("-") {
+    if lines.next() != Some("-") {
         return Err(args_error("error-invalid-chapter-import-content"));
     }
 
@@ -385,8 +387,8 @@ fn normalize_string(text: String) -> Option<String> {
 
 /// Build a [`UnitPayload`] from an existing persisted [`UnitInfo`],
 /// preserving all stored text and metadata fields.
-fn payload_from_unit(unit_info: &UnitInfo) -> UnitPayload {
-    UnitPayload {
+fn payload_from_unit(unit_info: &UnitInfo) -> UnitContent {
+    UnitContent {
         is_bubble: unit_info.is_bubble,
         is_proofread: unit_info.is_proofread,
         x_coord: unit_info.x_coord,
@@ -400,8 +402,8 @@ fn payload_from_unit(unit_info: &UnitInfo) -> UnitPayload {
 
 /// Build a fresh [`UnitPayload`] from imported unit data with no existing
 /// text or metadata.
-fn payload_from_import(parsed_unit: &UnitTranslationImport) -> UnitPayload {
-    UnitPayload {
+fn payload_from_import(parsed_unit: &UnitTranslationImport) -> UnitContent {
+    UnitContent {
         is_bubble: parsed_unit.is_bubble,
         is_proofread: parsed_unit.is_proofread,
         x_coord: parsed_unit.x_coord,
@@ -416,7 +418,7 @@ fn payload_from_import(parsed_unit: &UnitTranslationImport) -> UnitPayload {
 /// Apply LabelPlus main text to the unit payload, assigning it as
 /// proofread or translated text based on the caller's role.
 fn apply_label_plus_text(
-    unit_payload: &mut UnitPayload,
+    unit_payload: &mut UnitContent,
     parsed_unit: &UnitTranslationImport,
     user_id: &str,
     proofreader: bool,
@@ -449,7 +451,7 @@ fn apply_label_plus_text(
 /// Apply PopRaKo JSON text fields to the unit payload, writing translated
 /// and proofread text according to the caller's role.
 fn apply_poprako_text(
-    unit_payload: &mut UnitPayload,
+    unit_payload: &mut UnitContent,
     parsed_unit: &UnitTranslationImport,
     user_id: &str,
     proofreader: bool,

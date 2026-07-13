@@ -1,40 +1,37 @@
 //! RDB-backed assignment repository.
 
-use async_trait::async_trait;
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use time::OffsetDateTime;
 
-use poprako_transactional::advance::Advance;
+use poprako_orchestra::{Run, Step};
 
-use crate::model::assignment::{
-    AssignmentForm, AssignmentInfo, AssignmentListSpec, AssignmentRoleUpdate,
+use crate::part::repo::assignment::AssignmentRepo;
+use crate::part::repo::oper::assignment::{
+    CreateAssignment, DeleteAssignments, FindAssignmentInfo, GetAssignmentInfo,
+    ListAssignmentInfos, ListAssignmentInfosExcluded, UpdateAssignmentRoles,
 };
-use crate::part::repo::assignment::{
-    AssignmentRepo, AssignmentRepoTransactional,
-};
-use crate::part::repo::step::assignment::{
-    Create, Delete, DeleteByChapterId, GetInfoByChapterIdAndUserId,
-    GetInfoById, ListAllInfosByChapter, ListInfos,
-    ListInfosByChapterIdExcluded, PutRoles,
-};
-use crate::part::shared::execute::Execute;
 use crate::part_impl::repo::rdb_impl::entity::assignment::{
-    AssignmentAspect, AssignmentEntry, AssignmentRoleTimestamps, AssignmentRow,
+    AssignmentAspect, AssignmentRoleTimestamps, AssignmentRow,
+    AssignmentRowEntry,
 };
-use crate::part_impl::repo::rdb_impl::{RdbRepo, RdbRepoTransactional, incl};
+use crate::part_impl::repo::rdb_impl::{RdbRepo, incl};
 use crate::part_impl::shared::result::{diesel, expected};
 use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::{RegularError, RegularResult};
 use crate::value::assignment::AssignmentInclOpt;
 use crate::value::role::RoleField;
 
+use crate::model::assignment::{
+    AssignmentEntry, AssignmentInfo, AssignmentInfoListSpec,
+    AssignmentRoleUpdate,
+};
 use crate::part_impl::repo::rdb_impl::schema::t_assignment::dsl::*;
+use crate::part_impl::repo::rdb_impl::schema::t_chapter::{
+    f_comic_id as chapter_comic_id, table as chapter_table,
+};
 
-// FIXME: simplify: For T
 impl AssignmentRepo<RdbContext> for RdbRepo {}
-
-impl AssignmentRepoTransactional<RdbContext> for RdbRepoTransactional {}
 
 /// Converts a single `AssignmentRow` into an `AssignmentInfo`.
 fn row_into_info(row: AssignmentRow) -> RegularResult<AssignmentInfo> {
@@ -65,6 +62,41 @@ async fn get_info_by_chapter_id_and_user_id(
         .map_err(diesel)?;
 
     row.map(row_into_info).transpose()
+}
+
+/// Queries one assignment for a user and comic, returning `None` if absent.
+async fn find_info_by_user_id_and_comic_id(
+    conn: &mut RdbConn,
+    user_id: &str,
+    comic_id: &str,
+    incls: &[AssignmentInclOpt],
+) -> RegularResult<Option<AssignmentInfo>> {
+    //
+    let row: Option<AssignmentRow> = t_assignment
+        .inner_join(chapter_table)
+        .filter(f_user_id.eq(user_id))
+        .filter(chapter_comic_id.eq(comic_id))
+        .select(AssignmentRow::as_select())
+        .order_by((f_created_at.desc(), f_id.asc()))
+        .get_result(conn)
+        .await
+        .optional()
+        .map_err(diesel)?;
+
+    let Some(row) = row else {
+        return Ok(None);
+    };
+
+    let mut assignment_info = row_into_info(row)?;
+
+    incl::assignment::populate_assignment_incls(
+        conn,
+        std::slice::from_mut(&mut assignment_info),
+        incls,
+    )
+    .await?;
+
+    Ok(Some(assignment_info))
 }
 
 /// Queries a single assignment row by ID and populates its includes.
@@ -98,12 +130,12 @@ async fn get_info_by_id(
 /// Queries assignment rows filtered by the given spec and populates includes.
 async fn list_infos(
     conn: &mut RdbConn,
-    spec: &AssignmentListSpec,
+    spec: &AssignmentInfoListSpec,
 ) -> RegularResult<Vec<AssignmentInfo>> {
     //
     let (role, incl_opt, offset, limit, mut query) = match spec {
         //
-        AssignmentListSpec::Chapter {
+        AssignmentInfoListSpec::Chapter {
             chapter_id,
             role,
             incl_opt,
@@ -119,7 +151,7 @@ async fn list_infos(
                 .into_boxed(),
         ),
 
-        AssignmentListSpec::User {
+        AssignmentInfoListSpec::User {
             owner_id,
             role,
             incl_opt,
@@ -255,7 +287,7 @@ async fn list_all_infos_by_chapter(
 }
 
 /// Queries all assignment rows for a chapter under `FOR UPDATE` lock.
-async fn list_infos_by_chapter_id_excluded(
+async fn list_chapter_assignments_excluded(
     conn: &mut RdbConn,
     chapter_id: &str,
 ) -> RegularResult<Vec<AssignmentInfo>> {
@@ -272,15 +304,15 @@ async fn list_infos_by_chapter_id_excluded(
     rows_into_infos(rows)
 }
 
-/// Inserts a new assignment row from the given form and returns the created info.
+/// Inserts a new assignment row from the given entry and returns the created info.
 async fn create(
     conn: &mut RdbConn,
-    form: &AssignmentForm,
+    model_entry: &AssignmentEntry,
 ) -> RegularResult<AssignmentInfo> {
     //
     let now = OffsetDateTime::now_utc();
 
-    let entry = AssignmentEntry::from_form(form, now);
+    let entry = AssignmentRowEntry::from_model_entry(model_entry, now);
 
     let row: AssignmentRow = diesel::insert_into(t_assignment)
         .values(&entry)
@@ -342,170 +374,206 @@ async fn delete_by_chapter_id(
     Ok(())
 }
 
-#[async_trait]
-impl<'a> Execute<GetInfoByChapterIdAndUserId<'a>> for RdbRepo {
+impl Run<FindAssignmentInfo<'_, '_>> for RdbRepo {
     type Error = RegularError;
 
-    async fn execute(
+    async fn run(
         &self,
-        step: &GetInfoByChapterIdAndUserId<'a>,
+        oper: &FindAssignmentInfo<'_, '_>,
     ) -> RegularResult<Option<AssignmentInfo>> {
-        submit_query!(
-            self.core,
-            get_info_by_chapter_id_and_user_id,
-            step.chapter_id,
-            step.user_id
-        )
+        match oper {
+            //
+            FindAssignmentInfo::ChapterUser {
+                chapter_id,
+                user_id,
+            } => submit_query!(
+                self.core,
+                get_info_by_chapter_id_and_user_id,
+                chapter_id,
+                user_id
+            ),
+
+            FindAssignmentInfo::UserComic {
+                user_id,
+                comic_id,
+                incls,
+            } => submit_query!(
+                self.core,
+                find_info_by_user_id_and_comic_id,
+                user_id,
+                comic_id,
+                incls
+            ),
+        }
     }
 }
 
-#[async_trait]
-impl<'a> Execute<ListInfos<'a>> for RdbRepo {
+impl Run<ListAssignmentInfos<'_, '_>> for RdbRepo {
     type Error = RegularError;
 
-    async fn execute(
+    async fn run(
         &self,
-        step: &ListInfos<'a>,
+        oper: &ListAssignmentInfos<'_, '_>,
     ) -> RegularResult<Vec<AssignmentInfo>> {
-        submit_query!(self.core, list_infos, step.spec)
+        match oper {
+            //
+            ListAssignmentInfos::Spec { spec } => {
+                submit_query!(self.core, list_infos, spec)
+            }
+
+            ListAssignmentInfos::Chapter {
+                chapter_id,
+                role,
+                incls,
+            } => submit_query!(
+                self.core,
+                list_all_infos_by_chapter,
+                chapter_id,
+                *role,
+                incls
+            ),
+        }
     }
 }
 
-#[async_trait]
-impl<'a> Execute<GetInfoById<'a>> for RdbRepo {
+impl Run<GetAssignmentInfo<'_, '_>> for RdbRepo {
     type Error = RegularError;
 
-    async fn execute(
+    async fn run(
         &self,
-        step: &GetInfoById<'a>,
+        oper: &GetAssignmentInfo<'_, '_>,
     ) -> RegularResult<AssignmentInfo> {
-        submit_query!(self.core, get_info_by_id, step.id, step.incl_opt)
+        submit_query!(self.core, get_info_by_id, oper.id, oper.incls)
     }
 }
 
-#[async_trait]
-impl<'a> Execute<ListAllInfosByChapter<'a>> for RdbRepo {
+impl Step<ListAssignmentInfos<'_, '_>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
-    async fn execute(
-        &self,
-        step: &ListAllInfosByChapter<'a>,
-    ) -> RegularResult<Vec<AssignmentInfo>> {
-        submit_query!(
-            self.core,
-            list_all_infos_by_chapter,
-            step.chapter_id,
-            step.role,
-            step.incl_opt
-        )
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<ListAllInfosByChapter<'a>, RdbContext>
-    for RdbRepoTransactional
-{
-    type Error = RegularError;
-
-    async fn advance(
+    async fn step(
         &self,
         context: &mut RdbContext,
-        step: &ListAllInfosByChapter<'a>,
+        oper: &ListAssignmentInfos<'_, '_>,
     ) -> RegularResult<Vec<AssignmentInfo>> {
-        list_all_infos_by_chapter(
-            context.conn(),
-            step.chapter_id,
-            step.role,
-            step.incl_opt,
-        )
-        .await
+        match oper {
+            //
+            ListAssignmentInfos::Spec { spec } => {
+                list_infos(context.conn(), spec).await
+            }
+
+            ListAssignmentInfos::Chapter {
+                chapter_id,
+                role,
+                incls,
+            } => {
+                list_all_infos_by_chapter(
+                    context.conn(),
+                    chapter_id,
+                    *role,
+                    incls,
+                )
+                .await
+            }
+        }
     }
 }
 
-#[async_trait]
-impl<'a> Advance<GetInfoByChapterIdAndUserId<'a>, RdbContext>
-    for RdbRepoTransactional
-{
+impl Step<FindAssignmentInfo<'_, '_>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
-    async fn advance(
+    async fn step(
         &self,
         context: &mut RdbContext,
-        step: &GetInfoByChapterIdAndUserId<'a>,
+        oper: &FindAssignmentInfo<'_, '_>,
     ) -> RegularResult<Option<AssignmentInfo>> {
-        get_info_by_chapter_id_and_user_id(
-            context.conn(),
-            step.chapter_id,
-            step.user_id,
-        )
-        .await
+        match oper {
+            //
+            FindAssignmentInfo::ChapterUser {
+                chapter_id,
+                user_id,
+            } => {
+                get_info_by_chapter_id_and_user_id(
+                    context.conn(),
+                    chapter_id,
+                    user_id,
+                )
+                .await
+            }
+
+            FindAssignmentInfo::UserComic {
+                user_id,
+                comic_id,
+                incls,
+            } => {
+                find_info_by_user_id_and_comic_id(
+                    context.conn(),
+                    user_id,
+                    comic_id,
+                    incls,
+                )
+                .await
+            }
+        }
     }
 }
 
-#[async_trait]
-impl<'a> Advance<ListInfosByChapterIdExcluded<'a>, RdbContext>
-    for RdbRepoTransactional
-{
+impl Step<ListAssignmentInfosExcluded<'_>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
-    async fn advance(
+    async fn step(
         &self,
         context: &mut RdbContext,
-        step: &ListInfosByChapterIdExcluded<'a>,
+        oper: &ListAssignmentInfosExcluded<'_>,
     ) -> RegularResult<Vec<AssignmentInfo>> {
-        list_infos_by_chapter_id_excluded(context.conn(), step.chapter_id).await
+        match oper {
+            ListAssignmentInfosExcluded::Chapter { chapter_id } => {
+                list_chapter_assignments_excluded(context.conn(), chapter_id)
+                    .await
+            }
+        }
     }
 }
 
-#[async_trait]
-impl<'a> Advance<Create<'a>, RdbContext> for RdbRepoTransactional {
+impl Step<CreateAssignment<'_>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
-    async fn advance(
+    async fn step(
         &self,
         context: &mut RdbContext,
-        step: &Create<'a>,
+        oper: &CreateAssignment<'_>,
     ) -> RegularResult<AssignmentInfo> {
-        create(context.conn(), step.form).await
+        create(context.conn(), oper.entry).await
     }
 }
 
-#[async_trait]
-impl<'a> Advance<PutRoles<'a>, RdbContext> for RdbRepoTransactional {
+impl Step<UpdateAssignmentRoles<'_>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
-    async fn advance(
+    async fn step(
         &self,
         context: &mut RdbContext,
-        step: &PutRoles<'a>,
+        oper: &UpdateAssignmentRoles<'_>,
     ) -> RegularResult<AssignmentInfo> {
-        put_roles(context.conn(), step.update).await
+        put_roles(context.conn(), oper.update).await
     }
 }
 
-#[async_trait]
-impl<'a> Advance<Delete<'a>, RdbContext> for RdbRepoTransactional {
+impl Step<DeleteAssignments<'_>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
-    async fn advance(
+    async fn step(
         &self,
         context: &mut RdbContext,
-        step: &Delete<'a>,
+        oper: &DeleteAssignments<'_>,
     ) -> RegularResult<()> {
-        delete(context.conn(), step.id).await
-    }
-}
+        match oper {
+            //
+            DeleteAssignments::Id { id } => delete(context.conn(), id).await,
 
-#[async_trait]
-impl<'a> Advance<DeleteByChapterId<'a>, RdbContext> for RdbRepoTransactional {
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut RdbContext,
-        step: &DeleteByChapterId<'a>,
-    ) -> RegularResult<()> {
-        delete_by_chapter_id(context.conn(), step.chapter_id).await
+            DeleteAssignments::Chapter { chapter_id } => {
+                delete_by_chapter_id(context.conn(), chapter_id).await
+            }
+        }
     }
 }
 #[cfg(all(test, feature = "repo"))]

@@ -41,7 +41,7 @@ pub struct AssignmentInfo {
 ///
 /// The `roles` mask specifies the initial set of roles.
 #[cfg_attr(test, derive(Clone))]
-pub struct AssignmentForm {
+pub struct AssignmentEntry {
     pub id: String,
 
     pub chapter_id: String,
@@ -65,19 +65,19 @@ pub struct AssignmentRoleUpdate {
 }
 
 /// Filtering and pagination parameters for listing chapter assignments.
-pub enum AssignmentListSpec {
+pub enum AssignmentInfoListSpec {
     Chapter {
         chapter_id: String,
         role: Option<RoleField>,
         incl_opt: Vec<AssignmentInclOpt>,
-        offset: u64,
-        limit: u64,
+        offset: u32,
+        limit: u32,
     },
     User {
         owner_id: String,
         role: Option<RoleField>,
         incl_opt: Vec<AssignmentInclOpt>,
-        offset: u64,
-        limit: u64,
+        offset: u32,
+        limit: u32,
     },
 }

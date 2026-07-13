@@ -11,17 +11,15 @@ use tracing::instrument;
 #[cfg(feature = "swagger-ui")]
 use utoipa::IntoParams;
 
-#[cfg(feature = "swagger-ui")]
-use crate::api::http::result::HttpBody;
-
 use crate::api::http::handler::util::ensure_path_matches_body_id;
+#[allow(unused_imports)]
 use crate::api::http::result::{
-    Accept as _, HttpNoContent, HttpResult, no_content,
+    Accept as _, HttpBody, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
 use crate::data::member::{
-    CreateMemberData, CreateMemberVal, JoinTeamData, ListMemberInfosData,
-    MemberInfoVal, UpdateMemberRolesData,
+    CreateMemberParams, CreateMemberPayload, JoinTeamParams,
+    ListMemberInfosParams, MemberInfoVal, UpdateMemberRolesParams,
 };
 use crate::model::user::UserToken;
 use crate::usecase;
@@ -45,10 +43,10 @@ pub struct MemberMeListQuery {
     pub incl_opt: Vec<MemberInclOpt>,
 
     /// Pagination offset (0-based).
-    pub offset: u64,
+    pub offset: u32,
 
     /// Maximum number of items to return.
-    pub limit: u64,
+    pub limit: u32,
 }
 
 /// `POST /api/v1/members` — create a member under a team.
@@ -56,21 +54,21 @@ pub struct MemberMeListQuery {
     post,
     path = "/api/v1/members",
     tag = "members",
-    request_body = CreateMemberData,
+    request_body = CreateMemberParams,
     responses(
-        (status = 201, description = "Member created", body = HttpBody<CreateMemberVal>),
+        (status = 201, description = "Member created", body = HttpBody<CreateMemberPayload>),
         (status = 403, description = "No permission to create members in this team"),
         (status = 404, description = "User or team not found"),
         (status = 409, description = "User is already a member"),
     ),
 ))]
-#[instrument(err, skip(harn, data))]
+#[instrument(err, skip(harn, params))]
 pub async fn create(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
-    Json(data): Json<CreateMemberData>,
-) -> HttpResult<CreateMemberVal> {
-    usecase::member::create(harn.drive(), harn.repo(), user_token, data)
+    Json(params): Json<CreateMemberParams>,
+) -> HttpResult<CreateMemberPayload> {
+    usecase::member::create(harn.drive(), harn.repo(), user_token, params)
         .await?
         .accept(StatusCode::CREATED)
 }
@@ -81,7 +79,7 @@ pub async fn create(
     path = "/api/v1/members",
     tag = "members",
     description = "Lists members. Exactly one of `owner_id` or `team_id` is required. In `owner_id` mode, `role` and `fuzzy_nickname` must be omitted. In `team_id` mode, `fuzzy_nickname` and `role` are optional. `incl` embeds related rows. Examples: `/api/v1/members?team_id=t_1&fuzzy_nickname=al&role=1&incl=user`, `/api/v1/members?owner_id=u_1&incl=team`.",
-    params(ListMemberInfosData),
+    params(ListMemberInfosParams),
     responses(
         (status = 200, description = "Members listed", body = HttpBody<Vec<MemberInfoVal>>),
         (status = 422, description = "Exactly one of owner_id or team_id is required, or owner_id combined with role/fuzzy_nickname"),
@@ -92,13 +90,13 @@ pub async fn create(
 pub async fn list_infos(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
-    Query(data): Query<ListMemberInfosData>,
+    Query(params): Query<ListMemberInfosParams>,
 ) -> HttpResult<Vec<MemberInfoVal>> {
     usecase::member::list_infos(
         harn.repo(),
         harn.image_pool(),
         user_token,
-        data,
+        params,
     )
     .await?
     .accept(StatusCode::OK)
@@ -122,7 +120,7 @@ pub async fn list_my_infos(
     Query(query): Query<MemberMeListQuery>,
 ) -> HttpResult<Vec<MemberInfoVal>> {
     //
-    let data = ListMemberInfosData {
+    let params = ListMemberInfosParams {
         owner_id: Some(user_token.user_id.clone()),
         team_id: None,
         fuzzy_nickname: None,
@@ -136,7 +134,7 @@ pub async fn list_my_infos(
         harn.repo(),
         harn.image_pool(),
         user_token,
-        data,
+        params,
     )
     .await?
     .accept(StatusCode::OK)
@@ -148,7 +146,7 @@ pub async fn list_my_infos(
     path = "/api/v1/members/{member_id}/roles",
     tag = "members",
     params(("member_id" = String, Path, description = "Member ID")),
-    request_body = UpdateMemberRolesData,
+    request_body = UpdateMemberRolesParams,
     responses(
         (status = 204, description = "Member roles updated"),
         (status = 422, description = "Path id does not match body id"),
@@ -156,18 +154,23 @@ pub async fn list_my_infos(
         (status = 404, description = "Member not found"),
     ),
 ))]
-#[instrument(err, skip(harn, data))]
+#[instrument(err, skip(harn, params))]
 pub async fn update_roles(
     State(harn): State<AppHarn>,
     Path(member_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Json(data): Json<UpdateMemberRolesData>,
+    Json(params): Json<UpdateMemberRolesParams>,
 ) -> HttpNoContent {
     //
-    ensure_path_matches_body_id(&member_id, &data.id)?;
+    ensure_path_matches_body_id(&member_id, &params.id)?;
 
-    usecase::member::update_roles(harn.drive(), harn.repo(), user_token, data)
-        .await?;
+    usecase::member::update_roles(
+        harn.drive(),
+        harn.repo(),
+        user_token,
+        params,
+    )
+    .await?;
 
     no_content()
 }
@@ -202,25 +205,25 @@ pub async fn delete(
     post,
     path = "/api/v1/members/join",
     tag = "members",
-    request_body = JoinTeamData,
+    request_body = JoinTeamParams,
     responses(
         (status = 201, description = "Joined team", body = HttpBody<MemberInfoVal>),
         (status = 422, description = "Invitation does not target this user or already a member"),
         (status = 404, description = "Invitation code not found"),
     ),
 ))]
-#[instrument(err, skip(harn, data))]
+#[instrument(err, skip(harn, params))]
 pub async fn join(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
-    Json(data): Json<JoinTeamData>,
+    Json(params): Json<JoinTeamParams>,
 ) -> HttpResult<MemberInfoVal> {
     usecase::member::join_team(
         harn.drive(),
         harn.repo(),
         harn.image_pool(),
         user_token,
-        data,
+        params,
     )
     .await?
     .accept(StatusCode::CREATED)

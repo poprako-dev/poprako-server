@@ -10,17 +10,15 @@ use crate::api::http::handler::util::{
     Pagination, ensure_path_matches_body_id,
 };
 
-#[cfg(feature = "swagger-ui")]
-use crate::api::http::result::HttpBody;
-
+#[allow(unused_imports)]
 use crate::api::http::result::{
-    Accept as _, HttpNoContent, HttpResult, no_content,
+    Accept as _, HttpBody, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
 use crate::data::page::{
-    ListPageInfosData, MarkPageImageUploadedData, PageInfoVal,
-    ReserveChapterPagesData, ReserveChapterPagesVal, ReservePageImageData,
-    ReservePageImageVal,
+    ListPageInfosParams, MarkPageImageUploadedParams, PageInfoVal,
+    ReserveChapterPagesParams, ReserveChapterPagesPayload,
+    ReservePageImageParams, ReservePageImagePayload,
 };
 use crate::model::user::UserToken;
 use crate::usecase;
@@ -44,15 +42,20 @@ pub async fn list_infos(
     Query(pagination): Query<Pagination>,
 ) -> HttpResult<Vec<PageInfoVal>> {
     //
-    let data = ListPageInfosData {
+    let params = ListPageInfosParams {
         chapter_id,
         offset: pagination.offset,
         limit: pagination.limit,
     };
 
-    usecase::page::list_infos(harn.repo(), harn.image_pool(), user_token, data)
-        .await?
-        .accept(StatusCode::OK)
+    usecase::page::list_infos(
+        harn.repo(),
+        harn.image_pool(),
+        user_token,
+        params,
+    )
+    .await?
+    .accept(StatusCode::OK)
 }
 
 /// `DELETE /api/v1/chapters/{chapter_id}/pages` — delete all pages in a chapter.
@@ -91,23 +94,23 @@ pub async fn delete(
     path = "/api/v1/chapters/{chapter_id}/pages/reserve",
     tag = "pages",
     params(("chapter_id" = String, Path, description = "Chapter ID")),
-    request_body = ReserveChapterPagesData,
+    request_body = ReserveChapterPagesParams,
     responses(
-        (status = 200, description = "Page upload slots reserved", body = HttpBody<ReserveChapterPagesVal>),
+        (status = 200, description = "Page upload slots reserved", body = HttpBody<ReserveChapterPagesPayload>),
         (status = 422, description = "Path id does not match body chapter id"),
         (status = 403, description = "No permission to reserve pages in this chapter"),
         (status = 422, description = "Chapter already has pages or invalid page count"),
     ),
 ))]
-#[instrument(err, skip(harn, data))]
+#[instrument(err, skip(harn, params))]
 pub async fn reserve_chapter_pages(
     State(harn): State<AppHarn>,
     Path(chapter_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Json(data): Json<ReserveChapterPagesData>,
-) -> HttpResult<ReserveChapterPagesVal> {
+    Json(params): Json<ReserveChapterPagesParams>,
+) -> HttpResult<ReserveChapterPagesPayload> {
     //
-    ensure_path_matches_body_id(&chapter_id, &data.chapter_id)?;
+    ensure_path_matches_body_id(&chapter_id, &params.chapter_id)?;
 
     usecase::page::reserve_chapter_pages(
         harn.drive(),
@@ -115,7 +118,7 @@ pub async fn reserve_chapter_pages(
         harn.prom(),
         harn.image_pool(),
         user_token,
-        data,
+        params,
     )
     .await?
     .accept(StatusCode::OK)
@@ -127,20 +130,20 @@ pub async fn reserve_chapter_pages(
     path = "/api/v1/pages/{page_id}/image/reserve",
     tag = "pages",
     params(("page_id" = String, Path, description = "Page ID")),
-    request_body = ReservePageImageData,
+    request_body = ReservePageImageParams,
     responses(
-        (status = 200, description = "Page image upload URL reserved", body = HttpBody<ReservePageImageVal>),
+        (status = 200, description = "Page image upload URL reserved", body = HttpBody<ReservePageImagePayload>),
         (status = 403, description = "No permission to modify this page's image"),
         (status = 404, description = "Page not found"),
     ),
 ))]
-#[instrument(err, skip(harn, data))]
+#[instrument(err, skip(harn, params))]
 pub async fn reserve_image(
     State(harn): State<AppHarn>,
     Path(page_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Json(data): Json<ReservePageImageData>,
-) -> HttpResult<ReservePageImageVal> {
+    Json(params): Json<ReservePageImageParams>,
+) -> HttpResult<ReservePageImagePayload> {
     usecase::page::reserve_image(
         harn.drive(),
         harn.repo(),
@@ -148,7 +151,7 @@ pub async fn reserve_image(
         harn.image_pool(),
         user_token,
         page_id,
-        data,
+        params,
     )
     .await?
     .accept(StatusCode::OK)
@@ -160,19 +163,19 @@ pub async fn reserve_image(
     path = "/api/v1/pages/{page_id}/image/mark-uploaded",
     tag = "pages",
     params(("page_id" = String, Path, description = "Page ID")),
-    request_body = MarkPageImageUploadedData,
+    request_body = MarkPageImageUploadedParams,
     responses(
         (status = 204, description = "Page image upload confirmed"),
         (status = 403, description = "No permission to modify this page's image"),
         (status = 404, description = "Page not found"),
     ),
 ))]
-#[instrument(err, skip(harn, data))]
+#[instrument(err, skip(harn, params))]
 pub async fn mark_image_uploaded(
     State(harn): State<AppHarn>,
     Path(page_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Json(data): Json<MarkPageImageUploadedData>,
+    Json(params): Json<MarkPageImageUploadedParams>,
 ) -> HttpNoContent {
     //
     usecase::page::mark_image_uploaded(
@@ -180,7 +183,7 @@ pub async fn mark_image_uploaded(
         harn.repo(),
         user_token,
         page_id,
-        data,
+        params,
     )
     .await?;
 

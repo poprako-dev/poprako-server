@@ -1,32 +1,28 @@
 //! RDB-backed announcement repository.
 
-use async_trait::async_trait;
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 
-use poprako_transactional::advance::Advance;
+use poprako_orchestra::{Run, Step};
 
-use crate::model::announcement::{
-    AnnouncementForm, AnnouncementInfo, AnnouncementListSpec,
+use crate::part::repo::announcement::AnnouncementRepo;
+use crate::part::repo::oper::announcement::{
+    CreateAnnouncement, ListAnnouncementInfos,
 };
-use crate::part::repo::announcement::{
-    AnnouncementRepo, AnnouncementRepoTransactional,
-};
-use crate::part::repo::step::announcement::{Create, ListInfos};
-use crate::part::shared::execute::Execute;
 use crate::part_impl::repo::rdb_impl::entity::announcement::{
-    AnnouncementEntry, AnnouncementRow,
+    AnnouncementRow, AnnouncementRowEntry,
 };
-use crate::part_impl::repo::rdb_impl::{RdbRepo, RdbRepoTransactional, incl};
+use crate::part_impl::repo::rdb_impl::{RdbRepo, incl};
 use crate::part_impl::shared::result::diesel;
 use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::{RegularError, RegularResult};
 
+use crate::model::announcement::{
+    AnnouncementEntry, AnnouncementInfo, AnnouncementListSpec,
+};
 use crate::part_impl::repo::rdb_impl::schema::t_announcement::dsl::*;
 
 impl AnnouncementRepo<RdbContext> for RdbRepo {}
-
-impl AnnouncementRepoTransactional<RdbContext> for RdbRepoTransactional {}
 
 /// Queries announcement rows filtered by team ID, ordered by creation time descending.
 async fn list_infos(
@@ -57,13 +53,13 @@ async fn list_infos(
     Ok(infos)
 }
 
-/// Inserts a new announcement row from the given form and returns the created info.
+/// Inserts a new announcement row from the given entry and returns the created info.
 async fn create(
     conn: &mut RdbConn,
-    form: &AnnouncementForm,
+    entry: &AnnouncementEntry,
 ) -> RegularResult<AnnouncementInfo> {
     //
-    let entry = AnnouncementEntry::from(form);
+    let entry = AnnouncementRowEntry::from(entry);
 
     let row: AnnouncementRow = diesel::insert_into(t_announcement)
         .values(&entry)
@@ -75,29 +71,28 @@ async fn create(
     Ok(row.into())
 }
 
-#[async_trait]
-impl<'a> Execute<ListInfos<'a>> for RdbRepo {
+impl Run<ListAnnouncementInfos<'_>> for RdbRepo {
     type Error = RegularError;
 
-    async fn execute(
+    async fn run(
         &self,
-        step: &ListInfos<'a>,
+        oper: &ListAnnouncementInfos<'_>,
     ) -> RegularResult<Vec<AnnouncementInfo>> {
-        submit_query!(self.core, list_infos, step.spec)
+        submit_query!(self.core, list_infos, oper.spec)
     }
 }
 
-#[async_trait]
-impl<'a> Advance<Create<'a>, RdbContext> for RdbRepoTransactional {
+impl Step<CreateAnnouncement<'_>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
-    async fn advance(
+    async fn step(
         &self,
         context: &mut RdbContext,
-        step: &Create<'a>,
+        oper: &CreateAnnouncement<'_>,
     ) -> RegularResult<AnnouncementInfo> {
-        create(context.conn(), step.form).await
+        create(context.conn(), oper.entry).await
     }
 }
+
 #[cfg(all(test, feature = "repo"))]
 mod tests;

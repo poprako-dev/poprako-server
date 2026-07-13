@@ -1,7 +1,7 @@
 //! Test fixtures and cases for the authentication use case module.
 //!
 //! Tests exercise the [`register`] and [`login`] functions against a
-//! [`Mock`] that doubles as the driver, repository, token authority,
+//! [`Mock`] that doubles as the coordinator, repository, token authority,
 //! and effect developer.
 //!
 //! [`register`]: super::register
@@ -18,6 +18,7 @@
 
 use super::*;
 
+use crate::data::auth::{LoginAuthParams, RegisterAuthParams};
 use crate::model::member_invitation::MemberInvitationInfo;
 use crate::part::effect::event::Event;
 use crate::part_impl::repo::mock_impl::Mock;
@@ -47,9 +48,9 @@ fn invitation(
     }
 }
 
-/// Builds a [`RegisterData`] fixture with a fixed password.
-fn register_data(qid: &str, nickname: &str, code: &str) -> RegisterData {
-    RegisterData {
+/// Builds a [`AuthRegisterData`] fixture with a fixed password.
+fn register_data(qid: &str, nickname: &str, code: &str) -> RegisterAuthParams {
+    RegisterAuthParams {
         qid: qid.into(),
         nickname: nickname.into(),
         password: "password".into(),
@@ -57,9 +58,9 @@ fn register_data(qid: &str, nickname: &str, code: &str) -> RegisterData {
     }
 }
 
-/// Builds a [`LoginData`] fixture.
-fn login_data(qid: &str, password: &str) -> LoginData {
-    LoginData {
+/// Builds a [`AuthLoginData`] fixture.
+fn login_data(qid: &str, password: &str) -> LoginAuthParams {
+    LoginAuthParams {
         qid: qid.into(),
         password: password.into(),
     }

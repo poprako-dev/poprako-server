@@ -5,13 +5,12 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "swagger-ui")]
 use utoipa::{IntoParams, ToSchema};
 
-use poprako_macro::Paginate;
 use poprako_util::i18n::trl;
 use poprako_util::time::ToUnixMilli;
 
 use crate::data::chapter::ChapterInfoVal;
 use crate::data::user::UserInfoVal;
-use crate::model::assignment::{AssignmentInfo, AssignmentListSpec};
+use crate::model::assignment::{AssignmentInfo, AssignmentInfoListSpec};
 use crate::part::image::ImagePool;
 use crate::result::{ExpectedVariant, RegularError, RegularResult};
 use crate::value::assignment::AssignmentInclOpt;
@@ -103,11 +102,10 @@ impl AssignmentInfoVal {
 /// embeds related rows; dotted values imply their parent segments.
 ///
 /// Example: `/api/v1/assignments?chapter_id=c_1&role=1&incl=chapter.comic.workset.team&offset=0&limit=20`.
-#[Paginate]
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
 #[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
-pub struct ListAssignmentInfosData {
+pub struct ListAssignmentInfosParams {
     /// Chapter mode: list assignments on this chapter. Mutually exclusive with
     /// `owner_id`.
     pub chapter_id: Option<String>,
@@ -130,12 +128,15 @@ pub struct ListAssignmentInfosData {
         deserialize_with = "crate::value::query::deserialize_vec"
     )]
     pub incl_opt: Vec<AssignmentInclOpt>,
+
+    pub offset: u32,
+    pub limit: u32,
 }
 
-impl TryInto<AssignmentListSpec> for ListAssignmentInfosData {
+impl TryInto<AssignmentInfoListSpec> for ListAssignmentInfosParams {
     type Error = RegularError;
 
-    fn try_into(self) -> RegularResult<AssignmentListSpec> {
+    fn try_into(self) -> RegularResult<AssignmentInfoListSpec> {
         //
         let invalid_args_err = || RegularError::Expected {
             variant: ExpectedVariant::Args,
@@ -147,7 +148,7 @@ impl TryInto<AssignmentListSpec> for ListAssignmentInfosData {
         }
 
         if let Some(chapter_id) = self.chapter_id {
-            return Ok(AssignmentListSpec::Chapter {
+            return Ok(AssignmentInfoListSpec::Chapter {
                 chapter_id,
                 role: self.role,
                 incl_opt: self.incl_opt,
@@ -156,7 +157,7 @@ impl TryInto<AssignmentListSpec> for ListAssignmentInfosData {
             });
         }
 
-        Ok(AssignmentListSpec::User {
+        Ok(AssignmentInfoListSpec::User {
             owner_id: self.owner_id.ok_or_else(invalid_args_err)?,
             role: self.role,
             incl_opt: self.incl_opt,
@@ -169,7 +170,7 @@ impl TryInto<AssignmentListSpec> for ListAssignmentInfosData {
 /// Input parameters for updating assignment roles.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct UpdateAssignmentRolesData {
+pub struct UpdateAssignmentRolesParams {
     pub chapter_id: String,
     pub user_id: String,
 
@@ -183,7 +184,7 @@ pub struct UpdateAssignmentRolesData {
 /// assignment; the use case layer validates this before applying.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct JoinChapterData {
+pub struct JoinChapterAssignmentParams {
     pub chapter_id: String,
 
     pub roles: RoleMask,

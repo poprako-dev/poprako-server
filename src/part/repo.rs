@@ -1,46 +1,31 @@
-//! Repository port abstraction with transactional support.
+//! Repository capabilities implemented with PopRaKo Orchestra.
 //!
 //! # The `C` type parameter
 //!
-//! The `C` generic parameter on repository traits is a **type-system anchor**.
-//! It never appears in method signatures directly — it exists solely to
-//! constrain the [`Transactional`](DeriveTransactional::Transactional)
-//! associated type, ensuring that non-transactional and transactional
-//! opers target the same backend session.
+//! The `C` generic parameter anchors [`Step`] operations to the context
+//! supplied by the matching [`Nucl`].
 //!
 //! This prevents, at compile time, wiring a production repository's
 //! transactional handle to a mock context (or vice versa). Within a single
 //! use case function scope, only one `C` implementation exists (either real
 //! or mock), and the type system resolves the correct path automatically.
 //!
-//! # Non-transactional vs transactional opers
+//! # Standalone and coordinated operations
 //!
-//! Operations implemented via [`Execute`] are **non-transactional**: each
-//! call uses its own database connection (obtained from a pool) and commits
-//! independently. These include simple reads and single-row writes that do
-//! not need atomicity with other opers.
+//! Operations implemented via [`Run`] are independent. Operations implemented
+//! via [`Step`] participate in the caller's [`Nucl::coord`] context and are
+//! committed or rolled back together.
 //!
-//! Operations implemented via [`Advance`] (grouped in `XxxRepoTransactional<C>`
-//! traits) are **transactional**: they run inside a [`Drive::with_context`]
-//! block, sharing a mutable context `C`. All advances within the same
-//! block are atomic — they commit or rollback together.
+//! Each domain exposes one `XxxRepo<C>` capability trait that aggregates its
+//! required `Run` and `Step` implementations.
 //!
-//! # Repository trait pattern
-//!
-//! Each domain has two traits:
-//!
-//! - `XxxRepo<C>` — the non-transactional surface. Bounds:
-//!   [`DeriveTransactional`] (to obtain the transactional handle) plus
-//!   [`Execute`] impls for standalone opers.
-//!
-//! - `XxxRepoTransactional<C>` — the transactional surface. Bounds:
-//!   [`Advance`] impls for opers that must participate in a transaction.
-//!
-//! The non-transactional trait constrains its transactional associated type
-//! with `Self::Transactional: XxxRepoTransactional<C>`, linking the two.
-//!
-//! [`Advance`]: poprako_transactional::advance::Advance
-//! [`Drive::with_context`]: poprako_transactional::drive::Drive::with_context
+//! [`Nucl`]: poprako_orchestra::Nucl
+//! [`Nucl::coord`]: poprako_orchestra::Nucl::coord
+//! [`Run`]: poprako_orchestra::Run
+//! [`Step`]: poprako_orchestra::Step
+
+/// Repository operation descriptors.
+pub mod oper;
 
 /// Announcement repository port.
 pub mod announcement;
@@ -62,12 +47,14 @@ pub mod member;
 pub mod member_invitation;
 /// Page repository port.
 pub mod page;
-/// Repository step descriptors.
-pub mod step;
 /// System mail repository port.
 pub mod system_mail;
 /// Team repository port.
 pub mod team;
+/// Term repository port.
+pub mod term;
+/// Termbase repository port.
+pub mod termbase;
 /// Unit repository port.
 pub mod unit;
 /// User repository port.

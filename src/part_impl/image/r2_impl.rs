@@ -86,14 +86,10 @@ impl R2ImagePool {
 
         Ok(Self::new(Client::from_conf(config), bucket, domain))
     }
-}
 
-#[async_trait]
-impl ImagePool for R2ImagePool {
-    #[instrument(err(Debug), skip(self), level = Level::DEBUG)]
-    async fn get_signed(&self, key: &str) -> RegularResult<Url> {
+    fn public_url(domain: &str, key: &str) -> RegularResult<Url> {
         //
-        if self.domain.is_empty() {
+        if domain.is_empty() {
             return Err(RegularError::Unrecoverable {
                 message:
                     "[R2ImagePool::get_signed] custom domain is not configured"
@@ -101,18 +97,16 @@ impl ImagePool for R2ImagePool {
             });
         }
 
-        let domain = self.domain.trim_end_matches('/');
+        let domain = domain.trim_end_matches('/');
 
-        // Tolerate a custom domain configured with or without an explicit
-        // `http://` / `https://` scheme. `Url::parse` rejects a bare host like
-        // `img.example.com/path` as a relative URL without a base, so prepend
-        // `https://` when no scheme is present.
-        let url_string = if domain.starts_with("http://")
-            || domain.starts_with("https://")
-        {
-            format!("{}/{}", domain, key)
-        } else {
-            format!("https://{}/{}", domain, key)
+        let url_string = match (
+            domain.starts_with("http://"),
+            domain.starts_with("https://"),
+        ) {
+            //
+            (true, _) | (_, true) => format!("{}/{}", domain, key),
+
+            _ => format!("https://{}/{}", domain, key),
         };
 
         Url::parse(&url_string).map_err(|err| RegularError::Unrecoverable {
@@ -121,6 +115,14 @@ impl ImagePool for R2ImagePool {
                 url_string, err
             ),
         })
+    }
+}
+
+#[async_trait]
+impl ImagePool for R2ImagePool {
+    #[instrument(err(Debug), skip(self), level = Level::DEBUG)]
+    async fn get_signed(&self, key: &str) -> RegularResult<Url> {
+        Self::public_url(&self.domain, key)
     }
 
     #[instrument(err(Debug), skip(self), level = Level::DEBUG)]

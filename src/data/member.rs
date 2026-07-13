@@ -5,7 +5,6 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "swagger-ui")]
 use utoipa::{IntoParams, ToSchema};
 
-use poprako_macro::Paginate;
 use poprako_util::i18n::trl;
 use poprako_util::time::ToUnixMilli;
 
@@ -54,7 +53,7 @@ impl From<MemberInfo> for MemberInfoVal {
 
 impl MemberInfoVal {
     /// Converts a member model into a presentation-ready value,
-    /// resolving included user/team data when present.
+    /// resolving included user/team params when present.
     pub async fn from_model<P>(
         image_pool: &P,
         model: MemberInfo,
@@ -96,7 +95,7 @@ impl MemberInfoVal {
 /// Input parameters for creating a member.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct CreateMemberData {
+pub struct CreateMemberParams {
     pub user_id: String,
     pub team_id: String,
 
@@ -106,14 +105,14 @@ pub struct CreateMemberData {
 /// Return value from creating a member.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct CreateMemberVal {
+pub struct CreateMemberPayload {
     pub id: String,
 }
 
 /// Input parameters for joining a team through a member invitation.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct JoinTeamData {
+pub struct JoinTeamParams {
     pub code: String,
 }
 
@@ -128,11 +127,10 @@ pub struct JoinTeamData {
 /// `incl` embeds related rows (`user`, `team`).
 ///
 /// Example: `/api/v1/members?team_id=t_1&fuzzy_nickname=al&role=1&incl=user&offset=0&limit=20`.
-#[Paginate]
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
 #[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
-pub struct ListMemberInfosData {
+pub struct ListMemberInfosParams {
     /// Owner-user mode: list teams/memberships owned by this user. Mutually
     /// exclusive with `team_id`; when set, `role` and `fuzzy_nickname` must be
     /// omitted.
@@ -156,9 +154,12 @@ pub struct ListMemberInfosData {
         deserialize_with = "crate::value::query::deserialize_vec"
     )]
     pub incl_opt: Vec<MemberInclOpt>,
+
+    pub offset: u32,
+    pub limit: u32,
 }
 
-impl TryInto<MemberListSpec> for ListMemberInfosData {
+impl TryInto<MemberListSpec> for ListMemberInfosParams {
     type Error = RegularError;
 
     fn try_into(self) -> RegularResult<MemberListSpec> {
@@ -199,7 +200,7 @@ impl TryInto<MemberListSpec> for ListMemberInfosData {
 /// Input parameters for updating a member's roles.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct UpdateMemberRolesData {
+pub struct UpdateMemberRolesParams {
     pub id: String,
     pub roles: RoleMask,
 }

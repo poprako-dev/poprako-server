@@ -11,17 +11,14 @@ use serde::Deserialize;
 
 use tracing::instrument;
 
-#[cfg(feature = "swagger-ui")]
-use crate::api::http::result::HttpBody;
-
-#[cfg(feature = "swagger-ui")]
-use crate::data::chapter_port::ChapterTranslationExportVal;
-
-use crate::api::http::result::{Accept as _, HttpError, HttpResult};
+#[allow(unused_imports)]
+use crate::api::http::result::{Accept as _, HttpBody, HttpError, HttpResult};
 use crate::api::http::state::AppHarn;
 use crate::data::chapter_port::{
-    ChapterTranslationImportData, ChapterTranslationImportVal,
+    ImportChapterTranslationParams, ImportChapterTranslationPayload,
 };
+#[allow(unused_imports)]
+use crate::data::chapter_port::ExportChapterTranslationPayload;
 use crate::model::user::UserToken;
 use crate::usecase;
 use crate::value::chapter_port::TranslationFormat;
@@ -39,25 +36,25 @@ pub struct TranslationExportQuery {
     path = "/api/v1/chapters/{chapter_id}/translations/import",
     tag = "chapter-port",
     params(("chapter_id" = String, Path, description = "Chapter ID")),
-    request_body = ChapterTranslationImportData,
+    request_body = ImportChapterTranslationParams,
     responses(
-        (status = 200, description = "Translations imported", body = HttpBody<ChapterTranslationImportVal>),
+        (status = 200, description = "Translations imported", body = HttpBody<ImportChapterTranslationPayload>),
         (status = 403, description = "No permission to import into this chapter"),
         (status = 422, description = "Invalid import content for the selected format"),
     ),
 ))]
-#[instrument(err, skip(harn, data))]
+#[instrument(err, skip(harn, params))]
 pub async fn import(
     State(harn): State<AppHarn>,
     Path(chapter_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Json(data): Json<ChapterTranslationImportData>,
-) -> HttpResult<ChapterTranslationImportVal> {
+    Json(params): Json<ImportChapterTranslationParams>,
+) -> HttpResult<ImportChapterTranslationPayload> {
     usecase::chapter_port::import(
         harn.drive(),
         harn.repo(),
         user_token,
-        data,
+        params,
         chapter_id,
     )
     .await?
@@ -77,7 +74,7 @@ pub async fn import(
         ("format" = TranslationFormat, Query, description = "Export format: poprako or label-plus"),
     ),
     responses(
-        (status = 200, description = "PopRaKo translation export", body = HttpBody<ChapterTranslationExportVal>, content_type = "application/json"),
+        (status = 200, description = "PopRaKo translation export", body = HttpBody<ExportChapterTranslationPayload>, content_type = "application/json"),
         (status = 200, description = "LabelPlus translation export", content_type = "text/plain"),
         (status = 403, description = "No permission to export this chapter"),
     ),

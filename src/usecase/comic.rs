@@ -1,11 +1,11 @@
 //! Comic use cases — create, read, update, cover management, and deletion.
 
 use std::collections::HashMap;
+use std::time::Duration;
 
-use time::{Duration, OffsetDateTime};
-
-use poprako_transactional::advance::Advance;
-use poprako_transactional::drive::Drive;
+use poprako_orchestra::{Nucl, run_proxy};
+use poprako_orchestra_extra::prom::oper::DeferBatch;
+use poprako_orchestra_extra::prom::task::Task;
 
 use crate::complex::assignment::AssignmentComplex;
 use crate::complex::chapter::ChapterComplex;
@@ -13,35 +13,39 @@ use crate::complex::comic::{ComicComplex, ComicPermComplex};
 use crate::complex::image::ImageComplex;
 use crate::data::chapter::ChapterInfoVal;
 use crate::data::comic::{
-    ComicInfoVal, CreateComicData, CreateComicVal, ListComicInfosData,
-    MarkComicCoverUploadedData, ReserveComicCoverData, ReserveComicCoverVal,
-    UpdateComicInfoData,
+    ComicInfoVal, CreateComicParams, CreateComicPayload, ListComicInfosParams,
+    MarkComicCoverUploadedParams, ReserveComicCoverParams,
+    ReserveComicCoverPayload, UpdateComicInfoParams,
 };
-use crate::model::assignment::AssignmentForm;
-use crate::model::chapter::ChapterForm;
-use crate::model::comic::{ComicForm, ComicInfoUpdate, ComicListSpec};
+use crate::model::assignment::AssignmentEntry;
+use crate::model::chapter::ChapterEntry;
+use crate::model::comic::{ComicEntry, ComicInfoListSpec, ComicInfoUpdate};
 use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
-use crate::part::prom::task::{IMAGE_TOPIC, ImageKind, ImageTask};
-use crate::part::prom::{Payload, Prom, PromStep};
-use crate::part::repo::assignment::{
-    AssignmentRepo, AssignmentRepoTransactional,
+use crate::part::prom::Prom;
+use crate::part::prom::payload::{Payload, image};
+use crate::part::repo::assignment::AssignmentRepo;
+use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
+use crate::part::repo::chapter::ChapterRepo;
+use crate::part::repo::comic::ComicRepo;
+use crate::part::repo::member::MemberRepo;
+use crate::part::repo::oper::assignment::CreateAssignment;
+use crate::part::repo::oper::chapter::{
+    CreateChapter, ListPinnedChapterInfos, UnpinOtherChapters,
 };
-use crate::part::repo::assignment_invitation::{
-    AssignmentInvitationRepo, AssignmentInvitationRepoTransactional,
+use crate::part::repo::oper::comic::{
+    AllocateComicChapterIndex, CreateComic, GetComicInfo, ListComicInfos,
+    MarkComicCoverUploaded, ReserveComicCover, TouchComicLastActive,
+    UpdateComic, UpdateComicChapterCount,
 };
-use crate::part::repo::chapter::{ChapterRepo, ChapterRepoTransactional};
-use crate::part::repo::comic::{ComicRepo, ComicRepoTransactional};
-use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
-use crate::part::repo::page::{PageRepo, PageRepoTransactional};
-use crate::part::repo::step::assignment::AssignmentStep;
-use crate::part::repo::step::chapter::ChapterStep;
-use crate::part::repo::step::comic::ComicStep;
-use crate::part::repo::step::workset::WorksetStep;
-use crate::part::repo::unit::{UnitRepo, UnitRepoTransactional};
-use crate::part::repo::workset::{WorksetRepo, WorksetRepoTransactional};
-use crate::result::{RegularError, RegularResult};
-use crate::util::DeriveTransactional;
+use crate::part::repo::oper::member::FindMemberInfo;
+use crate::part::repo::oper::workset::{
+    AllocateWorksetComicIndex, GetWorksetInfo, UpdateWorksetComicCount,
+};
+use crate::part::repo::page::PageRepo;
+use crate::part::repo::unit::UnitRepo;
+use crate::part::repo::workset::WorksetRepo;
+use crate::result::{RegularError, RegularResult, accept};
 use crate::value::comic::ComicWithOpt;
 use crate::value::role::{RoleField, RoleMask};
 
@@ -59,15 +63,14 @@ pub mod tests;
 /// 5. Updates the comic's denormalised chapter counter and last-activity
 ///    timestamp.
 /// 6. Creates an ADMIN assignment on the new chapter for the caller.
-pub async fn create<D, C, R>(
-    drive: &D,
+pub async fn create<N, C, R>(
+    nucl: &N,
     repo: &R,
     token: UserToken,
-    data: CreateComicData,
-) -> RegularResult<CreateComicVal>
+    params: CreateComicParams,
+) -> RegularResult<CreateComicPayload>
 where
-    D: Drive<C>,
-    D::Error: Into<RegularError>,
+    N: Nucl<Context = C, Error = RegularError>,
     C: Send,
     R: ComicRepo<C>
         + WorksetRepo<C>
@@ -76,68 +79,71 @@ where
         + AssignmentRepo<C>
         + Send
         + Sync,
-    <R as DeriveTransactional>::Transactional: ComicRepoTransactional<C>
-        + WorksetRepoTransactional<C>
-        + MemberRepoTransactional<C>
-        + ChapterRepoTransactional<C>
-        + AssignmentRepoTransactional<C>
-        + Send
-        + Sync,
 {
-    use crate::part::shared::proxy::AsProxyNonTransactional as _;
-
-    ComicPermComplex::can_user_create(
-        &mut repo.as_proxy(),
+    ComicPermComplex::ensure_user_can_create(
+        &mut run_proxy! {
+            repo =>
+                for<'a> GetWorksetInfo<'a>,
+                for<'a> FindMemberInfo<'a>;
+        },
         &token.user_id,
-        &data.workset_id,
+        &params.workset_id,
     )
     .await?;
 
-    let (comic_id, chapter_id) = drive
-        .with_context(async move |context| -> RegularResult<(String, String)> {
+    let (comic_id, chapter_id) = nucl
+        .coord(async move |context| -> RegularResult<(String, String)> {
             //
-            let repo = repo.derive_transactional().await;
-
             let index = repo
-                .advance(
+                .step(
                     context,
-                    &WorksetStep::incr_comic_next_index(&data.workset_id),
+                    &AllocateWorksetComicIndex {
+                        id: &params.workset_id,
+                    },
                 )
                 .await?;
 
-            let comic_form = ComicForm {
+            let comic_entry = ComicEntry {
                 id: ComicComplex::gen_id(),
-                workset_id: data.workset_id,
+                workset_id: params.workset_id,
                 index,
-                title: data.title,
-                author: data.author,
-                description: data.description,
+                title: params.title,
+                author: params.author,
+                description: params.description,
                 creator_id: token.user_id.clone(),
             };
 
             let comic_info = repo
-                .advance(context, &ComicStep::create(&comic_form))
+                .step(
+                    context,
+                    &CreateComic {
+                        entry: &comic_entry,
+                    },
+                )
                 .await?;
 
-            repo.advance(
+            repo.step(
                 context,
-                &WorksetStep::update_comic_count(&comic_form.workset_id, 1),
+                &UpdateWorksetComicCount {
+                    id: &comic_entry.workset_id,
+                    delta: 1,
+                },
             )
             .await?;
 
             let chapter_index = repo
-                .advance(
+                .step(
                     context,
-                    &ComicStep::incr_chapter_next_index(&comic_info.id),
+                    &AllocateComicChapterIndex { id: &comic_info.id },
                 )
                 .await?;
 
             let subtitle = ChapterComplex::subtitle_or_default(
-                data.first_chapter_subtitle,
+                params.first_chapter_subtitle,
                 chapter_index,
             );
 
-            let chapter_form = ChapterForm {
+            let chapter_entry = ChapterEntry {
                 id: ChapterComplex::gen_id(),
                 comic_id: comic_info.id.clone(),
                 is_pinned: true,
@@ -147,45 +153,60 @@ where
             };
 
             let chapter_info = repo
-                .advance(context, &ChapterStep::create(&chapter_form))
+                .step(
+                    context,
+                    &CreateChapter {
+                        entry: &chapter_entry,
+                    },
+                )
                 .await?;
 
-            repo.advance(
+            repo.step(
                 context,
-                &ChapterStep::unpin_others(
-                    &chapter_info.comic_id,
-                    &chapter_info.id,
-                ),
+                &UnpinOtherChapters {
+                    comic_id: &chapter_info.comic_id,
+                    excluded_id: &chapter_info.id,
+                },
             )
             .await?;
 
-            repo.advance(
+            repo.step(
                 context,
-                &ComicStep::update_chapter_count(&chapter_info.comic_id, 1),
+                &UpdateComicChapterCount {
+                    id: &chapter_info.comic_id,
+                    delta: 1,
+                },
             )
             .await?;
 
-            repo.advance(
+            repo.step(
                 context,
-                &ComicStep::touch_last_active(&chapter_info.comic_id),
+                &TouchComicLastActive {
+                    id: &chapter_info.comic_id,
+                },
             )
             .await?;
 
-            let assignment_form = AssignmentForm {
+            let assignment_entry = AssignmentEntry {
                 id: AssignmentComplex::gen_id(),
                 chapter_id: chapter_info.id.clone(),
                 user_id: token.user_id,
                 roles: RoleMask::from(RoleField::ADMIN),
             };
 
-            repo.advance(context, &AssignmentStep::create(&assignment_form))
-                .await?;
+            repo.step(
+                context,
+                &CreateAssignment {
+                    entry: &assignment_entry,
+                },
+            )
+            .await?;
 
             Ok((comic_info.id, chapter_info.id))
         })
         .await?;
 
-    Ok(CreateComicVal {
+    Ok(CreateComicPayload {
         id: comic_id,
         chapter_id,
     })
@@ -200,21 +221,26 @@ pub async fn get_info<C, R, I>(
 ) -> RegularResult<ComicInfoVal>
 where
     R: ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Sync,
-    <R as DeriveTransactional>::Transactional: ComicRepoTransactional<C>
-        + WorksetRepoTransactional<C>
-        + MemberRepoTransactional<C>,
     I: ImagePool,
 {
-    use crate::part::shared::proxy::AsProxyNonTransactional as _;
-
-    ComicPermComplex::can_user_get_info(
-        &mut repo.as_proxy(),
+    ComicPermComplex::ensure_user_can_get_info(
+        &mut run_proxy! {
+            repo =>
+                for<'a, 'b> GetComicInfo<'a, 'b>,
+                for<'a> GetWorksetInfo<'a>,
+                for<'a> FindMemberInfo<'a>;
+        },
         &token.user_id,
         &id,
     )
     .await?;
 
-    let comic_info = repo.execute(&ComicStep::get_info_by_id(&id, &[])).await?;
+    let comic_info = repo
+        .run(&GetComicInfo {
+            id: &id,
+            incls: &[],
+        })
+        .await?;
 
     ComicInfoVal::from_model(image_pool, comic_info, None).await
 }
@@ -224,43 +250,46 @@ pub async fn list_infos<C, R, I>(
     repo: &R,
     image_pool: &I,
     token: UserToken,
-    data: ListComicInfosData,
+    params: ListComicInfosParams,
 ) -> RegularResult<Vec<ComicInfoVal>>
 where
     R: ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + ChapterRepo<C> + Sync,
-    <R as DeriveTransactional>::Transactional: ComicRepoTransactional<C>
-        + WorksetRepoTransactional<C>
-        + MemberRepoTransactional<C>
-        + ChapterRepoTransactional<C>,
     I: ImagePool,
 {
-    use crate::part::shared::proxy::AsProxyNonTransactional as _;
-
-    ComicPermComplex::can_user_list_infos(
-        &mut repo.as_proxy(),
+    ComicPermComplex::ensure_user_can_list_infos(
+        &mut run_proxy! {
+            repo =>
+                for<'a> GetWorksetInfo<'a>,
+                for<'a> FindMemberInfo<'a>;
+        },
         &token.user_id,
-        &data.workset_id,
+        &params.workset_id,
     )
     .await?;
 
     let with_pinned_chapter =
-        data.with_opt.contains(&ComicWithOpt::PinnedChapter);
+        params.with_opt.contains(&ComicWithOpt::PinnedChapter);
 
-    let spec: ComicListSpec = data.try_into()?;
+    let spec: ComicInfoListSpec = params.try_into()?;
 
-    let comic_infos = repo.execute(&ComicStep::list_infos(&spec)).await?;
+    let comic_infos = repo.run(&ListComicInfos { spec: &spec }).await?;
 
     // NOTE: `with` cannot be executed elegantly by repo layer,
     // so we have to handle it in usecase layer.
-    let mut pinned_chapters = if with_pinned_chapter {
+    let mut pinned_chapters = match with_pinned_chapter {
         //
-        let comic_ids: Vec<String> =
-            comic_infos.iter().map(|info| info.id.clone()).collect();
+        true => {
+            //
+            let comic_ids: Vec<String> =
+                comic_infos.iter().map(|info| info.id.clone()).collect();
 
-        repo.execute(&ChapterStep::list_pinned_infos_by_comic_ids(&comic_ids))
+            repo.run(&ListPinnedChapterInfos {
+                comic_ids: &comic_ids,
+            })
             .await?
-    } else {
-        HashMap::new()
+        }
+
+        false => HashMap::new(),
     };
 
     let mut comic_info_vals = Vec::with_capacity(comic_infos.len());
@@ -293,119 +322,122 @@ where
 pub async fn update_info<C, R>(
     repo: &R,
     token: UserToken,
-    data: UpdateComicInfoData,
+    params: UpdateComicInfoParams,
 ) -> RegularResult<()>
 where
     R: ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Sync,
-    <R as DeriveTransactional>::Transactional: ComicRepoTransactional<C>
-        + WorksetRepoTransactional<C>
-        + MemberRepoTransactional<C>,
 {
-    use crate::part::shared::proxy::AsProxyNonTransactional as _;
-
-    ComicPermComplex::can_user_update_info(
-        &mut repo.as_proxy(),
+    ComicPermComplex::ensure_user_can_update_info(
+        &mut run_proxy! {
+            repo =>
+                for<'a, 'b> GetComicInfo<'a, 'b>,
+                for<'a> GetWorksetInfo<'a>,
+                for<'a> FindMemberInfo<'a>;
+        },
         &token.user_id,
-        &data.id,
+        &params.id,
     )
     .await?;
 
     let comic_info_update = ComicInfoUpdate {
-        id: data.id,
-        title: data.title,
-        author: data.author,
-        description: data.description,
+        id: params.id,
+        title: params.title,
+        author: params.author,
+        description: params.description,
     };
 
-    repo.execute(&ComicStep::update_info(&comic_info_update))
-        .await?;
+    repo.run(&UpdateComic {
+        update: &comic_info_update,
+    })
+    .await?;
 
-    Ok(())
+    accept(())
 }
 
 /// Reserves a new comic cover upload slot.
-pub async fn reserve_cover<D, C, R, P, I>(
-    drive: &D,
+pub async fn reserve_cover<N, C, R, P, I>(
+    nucl: &N,
     repo: &R,
     prom: &P,
     image_pool: &I,
     token: UserToken,
     id: String,
-    data: ReserveComicCoverData,
-) -> RegularResult<ReserveComicCoverVal>
+    params: ReserveComicCoverParams,
+) -> RegularResult<ReserveComicCoverPayload>
 where
-    D: Drive<C>,
-    D::Error: Into<RegularError>,
+    N: Nucl<Context = C, Error = RegularError>,
     C: Send,
     R: ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Send + Sync,
-    <R as DeriveTransactional>::Transactional: ComicRepoTransactional<C>
-        + WorksetRepoTransactional<C>
-        + MemberRepoTransactional<C>
-        + Send
-        + Sync,
     P: Prom<C> + Send + Sync,
     I: ImagePool,
 {
-    use crate::part::shared::proxy::AsProxyNonTransactional as _;
-
-    ComicPermComplex::can_user_reserve_cover(
-        &mut repo.as_proxy(),
+    ComicPermComplex::ensure_user_can_reserve_cover(
+        &mut run_proxy! {
+            repo =>
+                for<'a, 'b> GetComicInfo<'a, 'b>,
+                for<'a> GetWorksetInfo<'a>,
+                for<'a> FindMemberInfo<'a>;
+        },
         &token.user_id,
         &id,
     )
     .await?;
 
-    let (object_key, cover_version) = drive
-        .with_context(async move |context| -> RegularResult<(String, i64)> {
+    let (object_key, cover_version) = nucl
+        .coord(async move |context| -> RegularResult<(String, u32)> {
             //
-            let repo = repo.derive_transactional().await;
-
             let cover_reservation = repo
-                .advance(
+                .step(
                     context,
-                    &ComicStep::reserve_cover(&id, &data.file_ext),
+                    &ReserveComicCover {
+                        id: &id,
+                        file_extension: &params.file_ext,
+                    },
                 )
                 .await?;
 
-            let now = OffsetDateTime::now_utc();
+            let mut batch_ids = Vec::new();
 
-            if let Some(prev_key) = &cover_reservation.prev_object_key {
-                //
-                let delete_id = ImageComplex::gen_delete_id();
+            let mut batch_payloads = Vec::new();
 
-                prom.advance(
-                    context,
-                    &PromStep::append(
-                        &delete_id,
-                        IMAGE_TOPIC,
-                        Payload::Image(ImageTask::Delete {
-                            object_key: prev_key.as_str(),
-                        }),
-                        &now,
-                    ),
-                )
-                .await?;
+            let mut batch_delays = Vec::new();
+
+            if let Some(prev_object_key) = &cover_reservation.prev_object_key {
+                batch_ids.push(ImageComplex::gen_delete_id());
+
+                batch_payloads.push(Payload::Image(image::Payload::Delete {
+                    object_key: prev_object_key.clone(),
+                }));
+
+                batch_delays.push(None);
             }
 
-            let check_id = ImageComplex::gen_check_id();
+            batch_ids.push(ImageComplex::gen_check_id());
 
-            let check_visible_at = now + Duration::minutes(15);
+            batch_payloads.push(Payload::Image(
+                image::Payload::CheckUpload {
+                    resource_kind: image::ResourceKind::ComicCover,
+                    resource_id: id.clone(),
+                    object_key: cover_reservation.object_key.clone(),
+                    version: cover_reservation.cover_version,
+                },
+            ));
 
-            prom.advance(
-                context,
-                &PromStep::append(
-                    &check_id,
-                    IMAGE_TOPIC,
-                    Payload::Image(ImageTask::CheckUploaded {
-                        kind: ImageKind::ComicCover,
-                        resource_id: &id,
-                        object_key: &cover_reservation.object_key,
-                        image_version: cover_reservation.cover_version,
-                    }),
-                    &check_visible_at,
-                ),
-            )
-            .await?;
+            batch_delays.push(Some(Duration::from_secs(15 * 60)));
+
+            let batch_tasks: Vec<_> = batch_ids
+                .iter()
+                .zip(batch_payloads.iter())
+                .zip(batch_delays.iter())
+                .map(|((id, payload), delay)| Task {
+                    id,
+                    payload,
+                    delay: *delay,
+                })
+                .collect();
+
+            prom.step(context, &DeferBatch::new(&batch_tasks))
+                .await?;
 
             Ok((
                 cover_reservation.object_key,
@@ -416,7 +448,7 @@ where
 
     let put_url = image_pool.put_signed(&object_key).await?.to_string();
 
-    Ok(ReserveComicCoverVal {
+    Ok(ReserveComicCoverPayload {
         put_url,
         cover_version,
     })
@@ -427,40 +459,42 @@ pub async fn mark_cover_uploaded<C, R>(
     repo: &R,
     token: UserToken,
     id: String,
-    data: MarkComicCoverUploadedData,
+    params: MarkComicCoverUploadedParams,
 ) -> RegularResult<()>
 where
     R: ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Sync,
-    <R as DeriveTransactional>::Transactional: ComicRepoTransactional<C>
-        + WorksetRepoTransactional<C>
-        + MemberRepoTransactional<C>,
 {
-    use crate::part::shared::proxy::AsProxyNonTransactional as _;
-
-    ComicPermComplex::can_user_mark_cover_uploaded(
-        &mut repo.as_proxy(),
+    ComicPermComplex::ensure_user_can_mark_cover_uploaded(
+        &mut run_proxy! {
+            repo =>
+                for<'a, 'b> GetComicInfo<'a, 'b>,
+                for<'a> GetWorksetInfo<'a>,
+                for<'a> FindMemberInfo<'a>;
+        },
         &token.user_id,
         &id,
     )
     .await?;
 
-    repo.execute(&ComicStep::mark_cover_uploaded(&id, data.cover_version))
-        .await?;
+    repo.run(&MarkComicCoverUploaded {
+        id: &id,
+        cover_version: params.cover_version,
+    })
+    .await?;
 
-    Ok(())
+    accept(())
 }
 
 /// Deletes a comic and updates the parent workset counter.
-pub async fn delete<D, C, R, P>(
-    drive: &D,
+pub async fn delete<N, C, R, P>(
+    nucl: &N,
     repo: &R,
     prom: &P,
     token: UserToken,
     id: String,
 ) -> RegularResult<()>
 where
-    D: Drive<C>,
-    D::Error: Into<RegularError>,
+    N: Nucl<Context = C, Error = RegularError>,
     C: Send,
     R: ComicRepo<C>
         + WorksetRepo<C>
@@ -472,43 +506,27 @@ where
         + UnitRepo<C>
         + Send
         + Sync,
-    <R as DeriveTransactional>::Transactional:
-        ComicRepoTransactional<C>
-            + WorksetRepoTransactional<C>
-            + MemberRepoTransactional<C>
-            + ChapterRepoTransactional<C>
-            + PageRepoTransactional<C>
-            + AssignmentInvitationRepoTransactional<C>
-            + AssignmentRepoTransactional<C>
-            + UnitRepoTransactional<C>
-            + Send
-            + Sync,
     P: Prom<C> + Send + Sync,
 {
-    use crate::part::shared::proxy::AsProxyNonTransactional as _;
-
-    ComicPermComplex::can_user_delete(
-        &mut repo.as_proxy(),
+    ComicPermComplex::ensure_user_can_delete(
+        &mut run_proxy! {
+            repo =>
+                for<'a, 'b> GetComicInfo<'a, 'b>,
+                for<'a> GetWorksetInfo<'a>,
+                for<'a> FindMemberInfo<'a>;
+        },
         &token.user_id,
         &id,
     )
     .await?;
 
-    drive
-        .with_context(async move |context| -> RegularResult<()> {
-            //
-            let repo = repo.derive_transactional().await;
+    nucl.coord(async move |context| -> RegularResult<()> {
+        //
+        ComicComplex::delete_cascade(repo, prom, context, &id).await?;
 
-            let comic_info = repo
-                .advance(context, &ComicStep::get_info_excluded(&id, &[]))
-                .await?;
+        accept(())
+    })
+    .await?;
 
-            ComicComplex::delete_cascade(&repo, prom, context, &comic_info.id)
-                .await?;
-
-            Ok(())
-        })
-        .await?;
-
-    Ok(())
+    accept(())
 }

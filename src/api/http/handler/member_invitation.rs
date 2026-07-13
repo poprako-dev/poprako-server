@@ -11,18 +11,16 @@ use tracing::instrument;
 #[cfg(feature = "swagger-ui")]
 use utoipa::IntoParams;
 
-#[cfg(feature = "swagger-ui")]
-use crate::api::http::result::HttpBody;
-
 use crate::api::http::handler::util::ensure_path_matches_body_id;
+#[allow(unused_imports)]
 use crate::api::http::result::{
-    Accept as _, HttpNoContent, HttpResult, no_content,
+    Accept as _, HttpBody, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
 use crate::data::member_invitation::{
-    CreateMemberInvitationData, CreateMemberInvitationVal,
-    ListMemberInvitationInfosData, MemberInvitationInfoVal,
-    UpdateMemberInvitationRolesData,
+    CreateMemberInvitationParams, CreateMemberInvitationPayload,
+    ListMemberInvitationInfosParams, MemberInvitationInfoVal,
+    UpdateMemberInvitationRolesParams,
 };
 use crate::model::user::UserToken;
 use crate::usecase;
@@ -50,10 +48,10 @@ pub struct MemberInvitationListQuery {
     pub incl_opt: Vec<MemberInvitationInclOpt>,
 
     /// Pagination offset (0-based).
-    pub offset: u64,
+    pub offset: u32,
 
     /// Maximum number of items to return.
-    pub limit: u64,
+    pub limit: u32,
 }
 
 /// `POST /api/v1/member-invitations` — create a pending team invitation.
@@ -61,24 +59,24 @@ pub struct MemberInvitationListQuery {
     post,
     path = "/api/v1/member-invitations",
     tag = "member-invitations",
-    request_body = CreateMemberInvitationData,
+    request_body = CreateMemberInvitationParams,
     responses(
-        (status = 201, description = "Invitation created", body = HttpBody<CreateMemberInvitationVal>),
+        (status = 201, description = "Invitation created", body = HttpBody<CreateMemberInvitationPayload>),
         (status = 403, description = "No permission to create invitations in this team"),
         (status = 409, description = "Invitee is already a member"),
     ),
 ))]
-#[instrument(err, skip(harn, data))]
+#[instrument(err, skip(harn, params))]
 pub async fn create(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
-    Json(data): Json<CreateMemberInvitationData>,
-) -> HttpResult<CreateMemberInvitationVal> {
+    Json(params): Json<CreateMemberInvitationParams>,
+) -> HttpResult<CreateMemberInvitationPayload> {
     usecase::member_invitation::create(
         harn.drive(),
         harn.repo(),
         user_token,
-        data,
+        params,
     )
     .await?
     .accept(StatusCode::CREATED)
@@ -104,7 +102,7 @@ pub async fn list_infos(
     Query(query): Query<MemberInvitationListQuery>,
 ) -> HttpResult<Vec<MemberInvitationInfoVal>> {
     //
-    let data = ListMemberInvitationInfosData {
+    let params = ListMemberInvitationInfosParams {
         team_id,
         pending: query.pending,
         incl_opt: query.incl_opt,
@@ -116,7 +114,7 @@ pub async fn list_infos(
         harn.repo(),
         harn.image_pool(),
         user_token,
-        data,
+        params,
     )
     .await?
     .accept(StatusCode::OK)
@@ -128,7 +126,7 @@ pub async fn list_infos(
     path = "/api/v1/member-invitations/{member_invitation_id}/roles",
     tag = "member-invitations",
     params(("member_invitation_id" = String, Path, description = "Invitation ID")),
-    request_body = UpdateMemberInvitationRolesData,
+    request_body = UpdateMemberInvitationRolesParams,
     responses(
         (status = 204, description = "Invitation roles updated"),
         (status = 422, description = "Path id does not match body id"),
@@ -136,21 +134,21 @@ pub async fn list_infos(
         (status = 404, description = "Invitation not found"),
     ),
 ))]
-#[instrument(err, skip(harn, data))]
+#[instrument(err, skip(harn, params))]
 pub async fn update_roles(
     State(harn): State<AppHarn>,
     Path(member_invitation_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Json(data): Json<UpdateMemberInvitationRolesData>,
+    Json(params): Json<UpdateMemberInvitationRolesParams>,
 ) -> HttpNoContent {
     //
-    ensure_path_matches_body_id(&member_invitation_id, &data.id)?;
+    ensure_path_matches_body_id(&member_invitation_id, &params.id)?;
 
     usecase::member_invitation::update_roles(
         harn.drive(),
         harn.repo(),
         user_token,
-        data,
+        params,
     )
     .await?;
 

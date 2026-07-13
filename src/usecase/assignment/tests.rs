@@ -1,11 +1,14 @@
 use super::*;
 
+use crate::data::assignment::{
+    ListAssignmentInfosParams, UpdateAssignmentRolesParams,
+};
 use crate::model::assignment::AssignmentInfo;
 use crate::model::chapter::ChapterInfo;
 use crate::model::comic::ComicInfo;
 use crate::model::member::MemberInfo;
 use crate::model::team::TeamInfo;
-use crate::model::user::{UserCredential, UserInfo};
+use crate::model::user::{UserCredential, UserInfo, UserToken};
 use crate::model::workset::WorksetInfo;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::test_util::now;
@@ -172,8 +175,8 @@ fn assignment(
     }
 }
 
-fn list_by_chapter_data(chapter_id: &str) -> ListAssignmentInfosData {
-    ListAssignmentInfosData {
+fn list_by_chapter_data(chapter_id: &str) -> ListAssignmentInfosParams {
+    ListAssignmentInfosParams {
         incl_opt: Vec::new(),
         chapter_id: Some(chapter_id.into()),
         owner_id: None,
@@ -183,8 +186,8 @@ fn list_by_chapter_data(chapter_id: &str) -> ListAssignmentInfosData {
     }
 }
 
-fn list_by_user_data(owner_id: &str) -> ListAssignmentInfosData {
-    ListAssignmentInfosData {
+fn list_by_user_data(owner_id: &str) -> ListAssignmentInfosParams {
+    ListAssignmentInfosParams {
         incl_opt: Vec::new(),
         chapter_id: None,
         owner_id: Some(owner_id.into()),
@@ -198,8 +201,8 @@ fn update_roles_data(
     chapter_id: &str,
     user_id: &str,
     role_mask: RoleMask,
-) -> UpdateAssignmentRolesData {
-    UpdateAssignmentRolesData {
+) -> UpdateAssignmentRolesParams {
+    UpdateAssignmentRolesParams {
         chapter_id: chapter_id.into(),
         user_id: user_id.into(),
         roles: role_mask,

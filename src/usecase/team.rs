@@ -1,44 +1,41 @@
 //! Team use cases — create, read, update, avatar management, and deletion.
 
-use time::{Duration, OffsetDateTime};
+use std::time::Duration;
 
-use poprako_transactional::advance::Advance;
-use poprako_transactional::drive::Drive;
-use poprako_util::page::Page;
+use poprako_orchestra::{Nucl, run_proxy};
+use poprako_orchestra_extra::prom::oper::DeferBatch;
+use poprako_orchestra_extra::prom::task::Task;
 
 use crate::complex::image::ImageComplex;
 use crate::complex::member::MemberComplex;
 use crate::complex::team::{TeamComplex, TeamPermComplex};
 use crate::data::team::{
-    CreateTeamData, ListTeamInfosData, MarkTeamAvatarUploadedData,
-    ReserveTeamAvatarData, ReserveTeamAvatarVal, TeamInfoVal,
-    UpdateTeamInfoData,
+    CreateTeamParams, ListTeamInfosParams, MarkTeamAvatarUploadedParams,
+    ReserveTeamAvatarParams, ReserveTeamAvatarPayload, TeamInfoVal,
+    UpdateTeamInfoParams,
 };
-use crate::model::member::MemberForm;
-use crate::model::team::{TeamForm, TeamInfo};
+use crate::model::member::MemberEntry;
+use crate::model::team::{TeamEntry, TeamInfo};
 use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
-use crate::part::prom::task::{IMAGE_TOPIC, ImageKind, ImageTask};
-use crate::part::prom::{Payload, Prom, PromStep};
-use crate::part::repo::assignment::{
-    AssignmentRepo, AssignmentRepoTransactional,
+use crate::part::prom::Prom;
+use crate::part::prom::payload::{Payload, image};
+use crate::part::repo::assignment::AssignmentRepo;
+use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
+use crate::part::repo::chapter::ChapterRepo;
+use crate::part::repo::comic::ComicRepo;
+use crate::part::repo::member::MemberRepo;
+use crate::part::repo::oper::member::{CreateMember, FindMemberInfo};
+use crate::part::repo::oper::team::{
+    CreateTeam, GetTeamInfo, ListTeamInfos, ReserveTeamAvatar, UpdateTeam,
 };
-use crate::part::repo::assignment_invitation::{
-    AssignmentInvitationRepo, AssignmentInvitationRepoTransactional,
-};
-use crate::part::repo::chapter::{ChapterRepo, ChapterRepoTransactional};
-use crate::part::repo::comic::{ComicRepo, ComicRepoTransactional};
-use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
-use crate::part::repo::page::{PageRepo, PageRepoTransactional};
-use crate::part::repo::step::member::MemberStep;
-use crate::part::repo::step::team::TeamStep;
-use crate::part::repo::step::user::UserStep;
-use crate::part::repo::team::{TeamRepo, TeamRepoTransactional};
-use crate::part::repo::unit::{UnitRepo, UnitRepoTransactional};
-use crate::part::repo::user::{UserRepo, UserRepoTransactional};
-use crate::part::repo::workset::{WorksetRepo, WorksetRepoTransactional};
+use crate::part::repo::oper::user::{GetUserInfo, GetUserInfoExcluded};
+use crate::part::repo::page::PageRepo;
+use crate::part::repo::team::TeamRepo;
+use crate::part::repo::unit::UnitRepo;
+use crate::part::repo::user::UserRepo;
+use crate::part::repo::workset::WorksetRepo;
 use crate::result::{RegularError, RegularResult};
-use crate::util::DeriveTransactional;
 use crate::value::role::{RoleField, RoleMask};
 
 #[cfg(test)]
@@ -53,49 +50,46 @@ mod tests;
 /// * `C` — Context anchor.
 /// * `R: TeamRepo<C>` — Team storage.
 /// * `I: ImagePool` — Resolves the avatar signed URL.
-pub async fn create<D, C, R, I>(
-    drive: &D,
+pub async fn create<N, C, R, I>(
+    nucl: &N,
     repo: &R,
     image_pool: &I,
     token: UserToken,
-    data: CreateTeamData,
+    params: CreateTeamParams,
 ) -> RegularResult<TeamInfoVal>
 where
-    D: Drive<C>,
-    D::Error: Into<RegularError>,
+    N: Nucl<Context = C, Error = RegularError>,
     C: Send,
     R: TeamRepo<C> + UserRepo<C> + MemberRepo<C> + Send + Sync,
-    <R as DeriveTransactional>::Transactional: TeamRepoTransactional<C>
-        + UserRepoTransactional<C>
-        + MemberRepoTransactional<C>
-        + Send
-        + Sync,
     I: ImagePool,
 {
-    use crate::part::shared::proxy::AsProxyNonTransactional as _;
+    TeamPermComplex::ensure_user_can_list_all(
+        &mut run_proxy! {
+            repo => for<'a> GetUserInfo<'a>;
+        },
+        &token.user_id,
+    )
+    .await?;
 
-    TeamPermComplex::can_user_list_all(&mut repo.as_proxy(), &token.user_id)
-        .await?;
-
-    let team_form = TeamForm {
+    let team_entry = TeamEntry {
         id: TeamComplex::gen_id(),
-        name: data.name,
-        description: data.description,
+        name: params.name,
+        description: params.description,
     };
 
-    let team_info: TeamInfo = drive
-        .with_context(async move |context| -> RegularResult<TeamInfo> {
+    let team_info: TeamInfo = nucl
+        .coord(async move |context| -> RegularResult<TeamInfo> {
             //
-            let repo = repo.derive_transactional().await;
 
             let user_info = repo
-                .advance(context, &UserStep::get_info_excluded(&token.user_id))
+                .step(context, &GetUserInfoExcluded::Id { id: &token.user_id })
                 .await?;
 
-            let team_info =
-                repo.advance(context, &TeamStep::create(&team_form)).await?;
+            let team_info = repo
+                .step(context, &CreateTeam { entry: &team_entry })
+                .await?;
 
-            let member_form = MemberForm {
+            let member_entry = MemberEntry {
                 id: MemberComplex::gen_id(),
                 user_id: token.user_id,
                 user_nickname: user_info.nickname,
@@ -103,13 +97,19 @@ where
                 roles: RoleMask::from(RoleField::ADMIN),
             };
 
-            repo.advance(context, &MemberStep::create(&member_form))
-                .await?;
+            repo.step(
+                context,
+                &CreateMember {
+                    entry: &member_entry,
+                },
+            )
+            .await?;
 
             Ok(team_info)
         })
         .await?;
 
+    // FIXME: no need to use info val in create.
     TeamInfoVal::from_model(image_pool, team_info).await
 }
 
@@ -129,15 +129,15 @@ pub async fn get_info<C, R, I>(
 ) -> RegularResult<TeamInfoVal>
 where
     R: TeamRepo<C>,
-    <R as DeriveTransactional>::Transactional: TeamRepoTransactional<C>,
     I: ImagePool,
 {
     TeamInfoVal::from_model(
         image_pool,
-        repo.execute(&TeamStep::get_info_by_id(&id)).await?,
+        repo.run(&GetTeamInfo::Id { id: &id }).await?,
     )
     .await
 }
+
 /// Lists teams with pagination.
 ///
 /// Non-transactional read. Each team's avatar URL is resolved individually.
@@ -151,34 +151,28 @@ pub async fn list_infos<C, R, I>(
     repo: &R,
     image_pool: &I,
     token: UserToken,
-    data: ListTeamInfosData,
+    params: ListTeamInfosParams,
 ) -> RegularResult<Vec<TeamInfoVal>>
 where
     R: TeamRepo<C> + UserRepo<C> + Sync,
-    <R as DeriveTransactional>::Transactional:
-        TeamRepoTransactional<C> + UserRepoTransactional<C>,
     I: ImagePool,
 {
-    if data.user_id.is_none() {
-        //
-        // TODO: comment
-        use crate::part::shared::proxy::AsProxyNonTransactional as _;
-
-        TeamPermComplex::can_user_list_all(
-            &mut repo.as_proxy(),
+    if params.user_id.is_none() {
+        TeamPermComplex::ensure_user_can_list_all(
+            &mut run_proxy! {
+                repo => for<'a> GetUserInfo<'a>;
+            },
             &token.user_id,
         )
         .await?;
     }
 
     let team_infos = repo
-        .execute(&TeamStep::list_infos(
-            data.user_id.as_deref(),
-            Page {
-                offset: data.offset,
-                limit: data.limit,
-            },
-        ))
+        .run(&ListTeamInfos {
+            user_id: params.user_id.as_deref(),
+            offset: params.offset,
+            limit: params.limit,
+        })
         .await?;
 
     let team_info_vals = futures_util::future::join_all(
@@ -204,27 +198,27 @@ where
 pub async fn update_info<C, R>(
     repo: &R,
     token: UserToken,
-    data: UpdateTeamInfoData,
+    params: UpdateTeamInfoParams,
 ) -> RegularResult<()>
 where
     R: TeamRepo<C> + MemberRepo<C> + Sync,
-    <R as DeriveTransactional>::Transactional:
-        TeamRepoTransactional<C> + MemberRepoTransactional<C>,
 {
-    use crate::part::shared::proxy::AsProxyNonTransactional as _;
-
-    TeamPermComplex::can_user_update_info(
-        &mut repo.as_proxy(),
+    TeamPermComplex::ensure_user_can_update_info(
+        &mut run_proxy! {
+            repo => for<'a> FindMemberInfo<'a>;
+        },
         &token.user_id,
-        &data.id,
+        &params.id,
     )
     .await?;
 
-    repo.execute(&TeamStep::update_info(
-        &data.id,
-        &data.name,
-        &data.description,
-    ))
+    // FIXME: use TeamInfoUpdate instead.
+
+    repo.run(&UpdateTeam::Info {
+        id: &params.id,
+        name: &params.name,
+        description: &params.description,
+    })
     .await?;
 
     Ok(())
@@ -234,103 +228,102 @@ where
 ///
 /// Transactional flow:
 ///
-/// 1. Calls [`TeamStep::reserve_avatar`] — updates the avatar key, increments
+/// 1. Calls [`ReserveTeamAvatar`] — updates the avatar key, increments
 ///    the version, and returns any previous avatar key for cleanup.
-/// 2. If replacing an existing avatar, enqueues a [`Delete`](ImageTask::Delete)
-///    prom record (visible immediately) to remove the old object.
-/// 3. Enqueues a [`CheckUploaded`](ImageTask::CheckUploaded) prom record
-///    (visible after 15 minutes) to verify the client completed the upload.
+/// 2. If replacing an existing avatar, defers an immediate image-delete payload.
+/// 3. Defers an image upload-check payload with a 15-minute delay.
 ///
 /// After commit, generates a signed PUT URL for the client to upload to.
 ///
 /// # Type Parameters
 ///
-/// * `D: Drive<C>` — Transaction driver.
+/// * `N: Nucl<Context = C>` — Coordination nucleus.
 /// * `C` — Context anchor.
 /// * `R: TeamRepo<C>` — Team storage.
-/// * `P: PromTransactional<C>` — Prom enqueuer for deferred image opers.
+/// * `P: Prom<C>` — Prom enqueuer for deferred image opers.
 /// * `I: ImagePool` — Generates the signed upload URL.
-pub async fn reserve_avatar<D, C, R, P, I>(
-    drive: &D,
+pub async fn reserve_avatar<N, C, R, P, I>(
+    nucl: &N,
     repo: &R,
     prom: &P,
     image_pool: &I,
     token: UserToken,
     id: String,
-    data: ReserveTeamAvatarData,
-) -> RegularResult<ReserveTeamAvatarVal>
+    params: ReserveTeamAvatarParams,
+) -> RegularResult<ReserveTeamAvatarPayload>
 where
-    D: Drive<C>,
-    D::Error: Into<RegularError>,
+    N: Nucl<Context = C, Error = RegularError>,
     C: Send,
     R: TeamRepo<C> + MemberRepo<C> + Send + Sync,
-    <R as DeriveTransactional>::Transactional:
-        TeamRepoTransactional<C> + MemberRepoTransactional<C> + Send + Sync,
     P: Prom<C> + Send + Sync,
     I: ImagePool,
 {
-    use crate::part::shared::proxy::AsProxyNonTransactional as _;
-
-    TeamPermComplex::can_user_reserve_avatar(
-        &mut repo.as_proxy(),
+    TeamPermComplex::ensure_user_can_reserve_avatar(
+        &mut run_proxy! {
+            repo => for<'a> FindMemberInfo<'a>;
+        },
         &token.user_id,
         &id,
     )
     .await?;
 
-    let (object_key, avatar_version) = drive
-        .with_context(async move |context| -> RegularResult<(String, i64)> {
+    let (object_key, avatar_version) = nucl
+        .coord(async move |context| -> RegularResult<(String, u32)> {
             //
-            let repo = repo.derive_transactional().await;
-
             let avatar_reservation = repo
-                .advance(
+                .step(
                     context,
-                    &TeamStep::reserve_avatar(&id, &data.file_ext),
+                    &ReserveTeamAvatar {
+                        id: &id,
+                        file_ext: &params.file_ext,
+                    },
                 )
                 .await?;
 
-            let now = OffsetDateTime::now_utc();
+            let mut batch_ids = Vec::new();
+
+            let mut batch_payloads = Vec::new();
+
+            let mut batch_delays = Vec::new();
 
             // If replacing an existing avatar, schedule deletion of the old object.
             if let Some(prev_key) = &avatar_reservation.prev_object_key {
-                //
-                let delete_id = ImageComplex::gen_delete_id();
+                batch_ids.push(ImageComplex::gen_delete_id());
 
-                prom.advance(
-                    context,
-                    &PromStep::append(
-                        &delete_id,
-                        IMAGE_TOPIC,
-                        Payload::Image(ImageTask::Delete {
-                            object_key: prev_key.as_str(),
-                        }),
-                        &now,
-                    ),
-                )
-                .await?;
+                batch_payloads.push(Payload::Image(image::Payload::Delete {
+                    object_key: prev_key.clone(),
+                }));
+
+                batch_delays.push(None);
             }
 
             // Schedule an upload verification check 15 minutes from now.
-            let check_id = ImageComplex::gen_check_id();
+            batch_ids.push(ImageComplex::gen_check_id());
 
-            let check_visible_at = now + Duration::minutes(15);
+            batch_payloads.push(Payload::Image(
+                image::Payload::CheckUpload {
+                    resource_kind: image::ResourceKind::TeamAvatar,
+                    resource_id: id.clone(),
+                    object_key: avatar_reservation.object_key.clone(),
+                    version: avatar_reservation.avatar_version,
+                },
+            ));
 
-            prom.advance(
-                context,
-                &PromStep::append(
-                    &check_id,
-                    IMAGE_TOPIC,
-                    Payload::Image(ImageTask::CheckUploaded {
-                        kind: ImageKind::TeamAvatar,
-                        resource_id: &id,
-                        object_key: &avatar_reservation.object_key,
-                        image_version: avatar_reservation.avatar_version,
-                    }),
-                    &check_visible_at,
-                ),
-            )
-            .await?;
+            batch_delays.push(Some(Duration::from_secs(15 * 60)));
+
+            let batch_tasks: Vec<_> = batch_ids
+                .iter()
+                .zip(batch_payloads.iter())
+                .zip(batch_delays.iter())
+                .map(|((id, payload), delay)| Task {
+                    id,
+                    payload,
+                    delay: *delay,
+                })
+                .collect();
+
+            prom.step(context, &DeferBatch::new(&batch_tasks))
+                .await?;
 
             Ok((
                 avatar_reservation.object_key,
@@ -343,7 +336,7 @@ where
 
     let put_url = image_pool.put_signed(&object_key).await?.to_string();
 
-    Ok(ReserveTeamAvatarVal {
+    Ok(ReserveTeamAvatarPayload {
         put_url,
         avatar_version,
     })
@@ -362,29 +355,30 @@ pub async fn mark_avatar_uploaded<C, R>(
     repo: &R,
     token: UserToken,
     id: String,
-    data: MarkTeamAvatarUploadedData,
+    params: MarkTeamAvatarUploadedParams,
 ) -> RegularResult<()>
 where
     R: TeamRepo<C> + MemberRepo<C> + Sync,
-    <R as DeriveTransactional>::Transactional:
-        TeamRepoTransactional<C> + MemberRepoTransactional<C>,
 {
-    use crate::part::shared::proxy::AsProxyNonTransactional as _;
-
-    TeamPermComplex::can_user_mark_avatar_uploaded(
-        &mut repo.as_proxy(),
+    TeamPermComplex::ensure_user_can_mark_avatar_uploaded(
+        &mut run_proxy! {
+            repo => for<'a> FindMemberInfo<'a>;
+        },
         &token.user_id,
         &id,
     )
     .await?;
 
-    repo.execute(&TeamStep::mark_avatar_uploaded(&id, data.avatar_version))
-        .await?;
+    repo.run(&UpdateTeam::MarkAvatarUploaded {
+        id: &id,
+        avatar_version: params.avatar_version,
+    })
+    .await?;
 
     Ok(())
 }
 
-/// Deletes a team and all associated data.
+/// Deletes a team and all associated params.
 ///
 /// Transactional cascade:
 ///
@@ -396,20 +390,19 @@ where
 ///
 /// # Type Parameters
 ///
-/// * `D: Drive<C>` — Transaction driver.
+/// * `N: Nucl<Context = C>` — Coordination nucleus.
 /// * `C` — Context anchor.
 /// * `R: TeamRepo<C> + WorksetRepo<C> + ComicRepo<C>` — Team, workset, and comic storage.
-/// * `P: PromTransactional<C>` — Prom enqueuer for deferred avatar deletion.
-pub async fn delete<D, C, R, P>(
-    drive: &D,
+/// * `P: Prom<C>` — Prom enqueuer for deferred avatar deletion.
+pub async fn delete<N, C, R, P>(
+    nucl: &N,
     repo: &R,
     prom: &P,
     token: UserToken,
     id: String,
 ) -> RegularResult<()>
 where
-    D: Drive<C>,
-    D::Error: Into<RegularError>,
+    N: Nucl<Context = C, Error = RegularError>,
     C: Send,
     R: TeamRepo<C>
         + WorksetRepo<C>
@@ -422,35 +415,24 @@ where
         + UnitRepo<C>
         + Send
         + Sync,
-    <R as DeriveTransactional>::Transactional:
-        TeamRepoTransactional<C>
-            + WorksetRepoTransactional<C>
-            + ComicRepoTransactional<C>
-            + MemberRepoTransactional<C>
-            + ChapterRepoTransactional<C>
-            + PageRepoTransactional<C>
-            + AssignmentInvitationRepoTransactional<C>
-            + AssignmentRepoTransactional<C>
-            + UnitRepoTransactional<C>
-            + Send
-            + Sync,
     P: Prom<C> + Send + Sync,
 {
-    use crate::part::shared::proxy::AsProxyNonTransactional as _;
+    TeamPermComplex::ensure_user_can_delete(
+        &mut run_proxy! {
+            repo => for<'a> FindMemberInfo<'a>;
+        },
+        &token.user_id,
+        &id,
+    )
+    .await?;
 
-    TeamPermComplex::can_user_delete(&mut repo.as_proxy(), &token.user_id, &id)
-        .await?;
+    nucl.coord(async move |context| -> RegularResult<()> {
+        //
+        TeamComplex::delete_cascade(repo, prom, context, &id).await?;
 
-    drive
-        .with_context(async move |context| -> RegularResult<()> {
-            //
-            let repo = repo.derive_transactional().await;
-
-            TeamComplex::delete_cascade(&repo, prom, context, &id).await?;
-
-            Ok(())
-        })
-        .await?;
+        Ok(())
+    })
+    .await?;
 
     Ok(())
 }

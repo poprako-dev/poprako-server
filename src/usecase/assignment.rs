@@ -1,32 +1,37 @@
 //! Assignment use cases — list, join, role update, and deletion.
 
-use poprako_transactional::advance::Advance;
-use poprako_transactional::drive::Drive;
+use poprako_orchestra::{Nucl, run_proxy};
+
 use poprako_util::i18n::trl;
 
 use crate::complex::assignment::{AssignmentComplex, AssignmentPermComplex};
 use crate::complex::chapter::ChapterPermComplex;
 use crate::data::assignment::{
-    AssignmentInfoVal, JoinChapterData, ListAssignmentInfosData,
-    UpdateAssignmentRolesData,
+    AssignmentInfoVal, JoinChapterAssignmentParams, ListAssignmentInfosParams,
+    UpdateAssignmentRolesParams,
 };
 use crate::model::assignment::{
-    AssignmentForm, AssignmentInfo, AssignmentListSpec, AssignmentRoleUpdate,
+    AssignmentEntry, AssignmentInfo, AssignmentInfoListSpec,
+    AssignmentRoleUpdate,
 };
 use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
-use crate::part::repo::assignment::{
-    AssignmentRepo, AssignmentRepoTransactional,
+use crate::part::repo::assignment::AssignmentRepo;
+use crate::part::repo::chapter::ChapterRepo;
+use crate::part::repo::comic::ComicRepo;
+use crate::part::repo::member::MemberRepo;
+use crate::part::repo::oper::assignment::{
+    CreateAssignment, DeleteAssignments, FindAssignmentInfo, GetAssignmentInfo,
+    ListAssignmentInfos, ListAssignmentInfosExcluded, UpdateAssignmentRoles,
 };
-use crate::part::repo::chapter::{ChapterRepo, ChapterRepoTransactional};
-use crate::part::repo::comic::{ComicRepo, ComicRepoTransactional};
-use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
-use crate::part::repo::step::assignment::AssignmentStep;
-use crate::part::repo::step::chapter::ChapterStep;
-use crate::part::repo::user::{UserRepo, UserRepoTransactional};
-use crate::part::repo::workset::{WorksetRepo, WorksetRepoTransactional};
+use crate::part::repo::oper::chapter::GetChapterInfo;
+use crate::part::repo::oper::comic::GetComicInfo;
+use crate::part::repo::oper::member::FindMemberInfo;
+use crate::part::repo::oper::user::GetUserInfo;
+use crate::part::repo::oper::workset::GetWorksetInfo;
+use crate::part::repo::user::UserRepo;
+use crate::part::repo::workset::WorksetRepo;
 use crate::result::{ExpectedVariant, RegularError, RegularResult};
-use crate::util::DeriveTransactional;
 
 #[cfg(test)]
 mod tests;
@@ -36,7 +41,7 @@ pub async fn list_infos<C, R, I>(
     repo: &R,
     image_pool: &I,
     token: UserToken,
-    data: ListAssignmentInfosData,
+    params: ListAssignmentInfosParams,
 ) -> RegularResult<Vec<AssignmentInfoVal>>
 where
     R: AssignmentRepo<C>
@@ -46,27 +51,29 @@ where
         + MemberRepo<C>
         + UserRepo<C>
         + Sync,
-    <R as DeriveTransactional>::Transactional: AssignmentRepoTransactional<C>
-        + ChapterRepoTransactional<C>
-        + ComicRepoTransactional<C>
-        + WorksetRepoTransactional<C>
-        + MemberRepoTransactional<C>
-        + UserRepoTransactional<C>,
     I: ImagePool,
 {
-    let assignment_list_spec: AssignmentListSpec = data.try_into()?;
+    let assignment_list_spec: AssignmentInfoListSpec = params.try_into()?;
 
-    use crate::part::shared::proxy::AsProxyNonTransactional as _;
-
-    AssignmentPermComplex::can_user_list_infos(
-        &mut repo.as_proxy(),
+    AssignmentPermComplex::ensure_user_can_list_infos(
+        &mut run_proxy! {
+            repo =>
+                for<'a, 'b> GetChapterInfo<'a, 'b>,
+                for<'a, 'b> GetComicInfo<'a, 'b>,
+                for<'a> GetWorksetInfo<'a>,
+                for<'a> FindMemberInfo<'a>,
+                for<'a, 'b> FindAssignmentInfo<'a, 'b>,
+                for<'a> GetUserInfo<'a>;
+        },
         &token.user_id,
         &assignment_list_spec,
     )
     .await?;
 
     let assignment_infos = repo
-        .execute(&AssignmentStep::list_infos(&assignment_list_spec))
+        .run(&ListAssignmentInfos::Spec {
+            spec: &assignment_list_spec,
+        })
         .await?;
 
     let mut assignment_info_vals = Vec::with_capacity(assignment_infos.len());
@@ -81,15 +88,14 @@ where
 }
 
 /// Joins a chapter assignment with requested roles.
-pub async fn join<D, C, R>(
-    drive: &D,
+pub async fn join<N, C, R>(
+    nucl: &N,
     repo: &R,
     token: UserToken,
-    data: JoinChapterData,
+    params: JoinChapterAssignmentParams,
 ) -> RegularResult<AssignmentInfoVal>
 where
-    D: Drive<C>,
-    D::Error: Into<RegularError>,
+    N: Nucl<Context = C, Error = RegularError>,
     C: Send,
     R: ChapterRepo<C>
         + ComicRepo<C>
@@ -98,85 +104,92 @@ where
         + AssignmentRepo<C>
         + Send
         + Sync,
-    <R as DeriveTransactional>::Transactional: ChapterRepoTransactional<C>
-        + ComicRepoTransactional<C>
-        + WorksetRepoTransactional<C>
-        + MemberRepoTransactional<C>
-        + AssignmentRepoTransactional<C>
-        + Send
-        + Sync,
 {
     let chapter_info = repo
-        .execute(&ChapterStep::get_info_by_id(&data.chapter_id, &[]))
+        .run(&GetChapterInfo {
+            id: &params.chapter_id,
+            incls: &[],
+        })
         .await?;
 
-    use crate::part::shared::proxy::AsProxyNonTransactional as _;
-
-    ChapterPermComplex::can_user_join(
-        &mut repo.as_proxy(),
+    ChapterPermComplex::ensure_user_can_join(
+        &mut run_proxy! {
+            repo =>
+                for<'a, 'b> GetComicInfo<'a, 'b>,
+                for<'a> GetWorksetInfo<'a>,
+                for<'a> FindMemberInfo<'a>,
+                for<'a, 'b> GetChapterInfo<'a, 'b>;
+        },
         &token.user_id,
         &chapter_info,
-        data.roles,
+        params.roles,
     )
     .await?;
 
-    AssignmentPermComplex::can_user_take_roles(
-        &mut repo.as_proxy(),
+    AssignmentPermComplex::ensure_user_can_take_roles(
+        &mut run_proxy! {
+            repo =>
+                for<'a, 'b> GetComicInfo<'a, 'b>,
+                for<'a> GetWorksetInfo<'a>,
+                for<'a> FindMemberInfo<'a>,
+                for<'a, 'b> GetChapterInfo<'a, 'b>;
+        },
         &token.user_id,
-        &data.chapter_id,
-        data.roles,
+        &params.chapter_id,
+        params.roles,
     )
     .await?;
 
-    let assignment_info = drive
-        .with_context(async move |context| -> RegularResult<AssignmentInfo> {
+    let assignment_info = nucl
+        .coord(async move |context| -> RegularResult<AssignmentInfo> {
             //
-            let repo = repo.derive_transactional().await;
 
             let existing_assignment_info = repo
-                .advance(
+                .step(
                     context,
-                    &AssignmentStep::get_info_by_chapter_id_and_user_id(
-                        &data.chapter_id,
-                        &token.user_id,
-                    ),
+                    &FindAssignmentInfo::ChapterUser {
+                        chapter_id: &params.chapter_id,
+                        user_id: &token.user_id,
+                    },
                 )
                 .await?;
 
-            let assignment_info = match existing_assignment_info {
+            match existing_assignment_info {
                 //
                 Some(existing_assignment_info) => {
                     //
                     let assignment_role_update = AssignmentComplex::merge_roles(
                         &existing_assignment_info,
-                        data.roles,
+                        params.roles,
                     );
 
-                    repo.advance(
+                    repo.step(
                         context,
-                        &AssignmentStep::put_roles(&assignment_role_update),
+                        &UpdateAssignmentRoles {
+                            update: &assignment_role_update,
+                        },
                     )
-                    .await?
+                    .await
                 }
 
                 None => {
                     //
-                    let assignment_form = AssignmentForm {
+                    let assignment_entry = AssignmentEntry {
                         id: AssignmentComplex::gen_id(),
-                        chapter_id: data.chapter_id,
+                        chapter_id: params.chapter_id,
                         user_id: token.user_id,
-                        roles: data.roles,
+                        roles: params.roles,
                     };
 
-                    repo.advance(
+                    repo.step(
                         context,
-                        &AssignmentStep::create(&assignment_form),
+                        &CreateAssignment {
+                            entry: &assignment_entry,
+                        },
                     )
-                    .await?
+                    .await
                 }
-            };
-
-            Ok(assignment_info)
+            }
         })
         .await?;
 
@@ -184,15 +197,14 @@ where
 }
 
 /// Updates assignment roles.
-pub async fn update_roles<D, C, R>(
-    drive: &D,
+pub async fn update_roles<N, C, R>(
+    nucl: &N,
     repo: &R,
     token: UserToken,
-    data: UpdateAssignmentRolesData,
+    params: UpdateAssignmentRolesParams,
 ) -> RegularResult<()>
 where
-    D: Drive<C>,
-    D::Error: Into<RegularError>,
+    N: Nucl<Context = C, Error = RegularError>,
     C: Send,
     R: AssignmentRepo<C>
         + ChapterRepo<C>
@@ -201,48 +213,52 @@ where
         + MemberRepo<C>
         + Send
         + Sync,
-    <R as DeriveTransactional>::Transactional: AssignmentRepoTransactional<C>
-        + ChapterRepoTransactional<C>
-        + ComicRepoTransactional<C>
-        + WorksetRepoTransactional<C>
-        + MemberRepoTransactional<C>
-        + Send
-        + Sync,
 {
-    use crate::part::shared::proxy::AsProxyNonTransactional as _;
-
-    AssignmentPermComplex::can_user_update_roles(
-        &mut repo.as_proxy(),
+    AssignmentPermComplex::ensure_user_can_update_roles(
+        &mut run_proxy! {
+            repo =>
+                for<'a, 'b> GetChapterInfo<'a, 'b>,
+                for<'a, 'b> GetComicInfo<'a, 'b>,
+                for<'a> GetWorksetInfo<'a>,
+                for<'a> FindMemberInfo<'a>,
+                for<'a, 'b> FindAssignmentInfo<'a, 'b>;
+        },
         &token.user_id,
-        &data,
+        &params,
     )
     .await?;
 
-    AssignmentPermComplex::can_user_take_roles(
-        &mut repo.as_proxy(),
-        &data.user_id,
-        &data.chapter_id,
-        data.roles,
+    AssignmentPermComplex::ensure_user_can_take_roles(
+        &mut run_proxy! {
+            repo =>
+                for<'a, 'b> GetChapterInfo<'a, 'b>,
+                for<'a, 'b> GetComicInfo<'a, 'b>,
+                for<'a> GetWorksetInfo<'a>,
+                for<'a> FindMemberInfo<'a>,
+                for<'a, 'b> FindAssignmentInfo<'a, 'b>;
+        },
+        &params.user_id,
+        &params.chapter_id,
+        params.roles,
     )
     .await?;
 
-    drive
-        .with_context(async move |context| -> RegularResult<()> {
+    let transaction_output = nucl
+        .coord(async move |context| -> RegularResult<()> {
             //
-            let repo = repo.derive_transactional().await;
 
-            let locked_assignment_infos = repo
-                .advance(
+            let assignment_infos = repo
+                .step(
                     context,
-                    &AssignmentStep::list_infos_by_chapter_id_excluded(
-                        &data.chapter_id,
-                    ),
+                    &ListAssignmentInfosExcluded::Chapter {
+                        chapter_id: &params.chapter_id,
+                    },
                 )
                 .await?;
 
             let existing_assignment_info =
-                locked_assignment_infos.iter().find(|assignment_info| {
-                    assignment_info.user_id == data.user_id
+                assignment_infos.iter().find(|assignment_info| {
+                    assignment_info.user_id == params.user_id
                 });
 
             match existing_assignment_info {
@@ -252,27 +268,29 @@ where
                     if AssignmentComplex::is_self_admin_role_removal(
                         &token.user_id,
                         assignment_info,
-                        data.roles,
+                        params.roles,
                     ) {
                         return Err(assignment_admin_required_error());
                     }
 
                     if !AssignmentComplex::chapter_has_admin_after_role_update(
-                        &locked_assignment_infos,
-                        &data.user_id,
-                        data.roles,
+                        &assignment_infos,
+                        &params.user_id,
+                        params.roles,
                     ) {
                         return Err(assignment_admin_required_error());
                     }
 
                     let assignment_role_update = AssignmentRoleUpdate {
                         id: assignment_info.id.clone(),
-                        roles: data.roles,
+                        roles: params.roles,
                     };
 
-                    repo.advance(
+                    repo.step(
                         context,
-                        &AssignmentStep::put_roles(&assignment_role_update),
+                        &UpdateAssignmentRoles {
+                            update: &assignment_role_update,
+                        },
                     )
                     .await?;
                 }
@@ -280,23 +298,25 @@ where
                 None => {
                     //
                     if !AssignmentComplex::chapter_has_admin_after_role_update(
-                        &locked_assignment_infos,
-                        &data.user_id,
-                        data.roles,
+                        &assignment_infos,
+                        &params.user_id,
+                        params.roles,
                     ) {
                         return Err(assignment_admin_required_error());
                     }
 
-                    let assignment_form = AssignmentForm {
+                    let assignment_entry = AssignmentEntry {
                         id: AssignmentComplex::gen_id(),
-                        chapter_id: data.chapter_id,
-                        user_id: data.user_id,
-                        roles: data.roles,
+                        chapter_id: params.chapter_id,
+                        user_id: params.user_id,
+                        roles: params.roles,
                     };
 
-                    repo.advance(
+                    repo.step(
                         context,
-                        &AssignmentStep::create(&assignment_form),
+                        &CreateAssignment {
+                            entry: &assignment_entry,
+                        },
                     )
                     .await?;
                 }
@@ -305,6 +325,8 @@ where
             Ok(())
         })
         .await?;
+
+    let () = transaction_output;
 
     Ok(())
 }
@@ -318,43 +340,45 @@ fn assignment_admin_required_error() -> RegularError {
 }
 
 /// Deletes one assignment by identifier.
-pub async fn delete<D, C, R>(
-    drive: &D,
+pub async fn delete<N, C, R>(
+    nucl: &N,
     repo: &R,
     token: UserToken,
     id: String,
 ) -> RegularResult<()>
 where
-    D: Drive<C>,
-    D::Error: Into<RegularError>,
+    N: Nucl<Context = C, Error = RegularError>,
     C: Send,
     R: AssignmentRepo<C> + Send + Sync,
-    <R as DeriveTransactional>::Transactional:
-        AssignmentRepoTransactional<C> + Send + Sync,
 {
     let assignment_info = repo
-        .execute(&AssignmentStep::get_info_by_id(&id, &[]))
+        .run(&GetAssignmentInfo {
+            id: &id,
+            incls: &[],
+        })
         .await?;
 
-    use crate::part::shared::proxy::AsProxyNonTransactional as _;
-
-    AssignmentPermComplex::can_user_delete(
-        &mut repo.as_proxy(),
+    AssignmentPermComplex::ensure_user_can_delete(
+        &mut run_proxy! {
+            repo => for<'a, 'b> FindAssignmentInfo<'a, 'b>;
+        },
         &token.user_id,
         &assignment_info,
     )
     .await?;
 
-    drive
-        .with_context(async move |context| -> RegularResult<()> {
+    let transaction_output = nucl
+        .coord(async move |context| -> RegularResult<()> {
             //
-            let repo = repo.derive_transactional().await;
 
-            repo.advance(context, &AssignmentStep::delete(&id)).await?;
+            repo.step(context, &DeleteAssignments::Id { id: &id })
+                .await?;
 
             Ok(())
         })
         .await?;
+
+    let () = transaction_output;
 
     Ok(())
 }

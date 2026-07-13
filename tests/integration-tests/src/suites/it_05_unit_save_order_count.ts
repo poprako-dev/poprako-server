@@ -154,7 +154,7 @@ export async function runIt05Module(ctx: RunCtx): Promise<void> {
 
     // Poprako import is NOT tested because the export shape
     // (ChapterTranslationExportVal) differs from the import shape
-    // (PoprakoProjectImport) and the server rejects the mismatched JSON.
+    // (ChapterPoprakoProjectImport) and the server rejects the mismatched JSON.
     // The import endpoint's HTTP contract is verified via the invalid-format
     // negative above.
 

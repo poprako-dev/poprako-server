@@ -4,7 +4,7 @@ use diesel::prelude::*;
 use time::OffsetDateTime;
 
 use crate::model::member_invitation::{
-    MemberInvitationForm, MemberInvitationInfo,
+    MemberInvitationEntry, MemberInvitationInfo,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_member_invitation;
 use crate::result::RegularError;
@@ -35,7 +35,7 @@ pub struct MemberInvitationRow {
 /// Insertable struct for creating a new record in the `t_member_invitation` table.
 #[derive(Insertable)]
 #[diesel(table_name = t_member_invitation)]
-pub struct MemberInvitationEntry<'a> {
+pub struct MemberInvitationRowEntry<'a> {
     pub f_id: &'a str,
     pub f_inviter_id: &'a str,
     pub f_team_id: &'a str,
@@ -109,16 +109,16 @@ impl TryFrom<MemberInvitationRow> for MemberInvitationInfo {
     }
 }
 
-impl<'a> From<&'a MemberInvitationForm> for MemberInvitationEntry<'a> {
-    fn from(form: &'a MemberInvitationForm) -> Self {
+impl<'a> From<&'a MemberInvitationEntry> for MemberInvitationRowEntry<'a> {
+    fn from(entry: &'a MemberInvitationEntry) -> Self {
         Self {
-            f_id: &form.id,
-            f_inviter_id: &form.invitor_id,
-            f_team_id: &form.team_id,
-            f_invitee_qid: &form.invitee_qid,
-            f_code: &form.code,
+            f_id: &entry.id,
+            f_inviter_id: &entry.invitor_id,
+            f_team_id: &entry.team_id,
+            f_invitee_qid: &entry.invitee_qid,
+            f_code: &entry.code,
             f_pending: true,
-            f_role_mask: i64::from(u32::from(form.roles)),
+            f_role_mask: i64::from(u32::from(entry.roles)),
             f_created_at: OffsetDateTime::now_utc(),
             f_updated_at: OffsetDateTime::now_utc(),
         }

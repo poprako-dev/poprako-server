@@ -5,7 +5,6 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "swagger-ui")]
 use utoipa::ToSchema;
 
-use poprako_macro::Paginate;
 use poprako_util::time::ToUnixMilli;
 
 use crate::model::page::PageInfo;
@@ -65,7 +64,7 @@ impl PageInfoVal {
 /// Input parameters for reserving all page images of a chapter.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct ReserveChapterPagesData {
+pub struct ReserveChapterPagesParams {
     pub chapter_id: String,
     pub page_count: i32,
     pub file_ext: String,
@@ -74,46 +73,48 @@ pub struct ReserveChapterPagesData {
 /// Return value from successful chapter page reservations.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct ReserveChapterPagesVal {
-    pub creations: Vec<PageCreationVal>,
+pub struct ReserveChapterPagesPayload {
+    pub creations: Vec<PageCreationPayload>,
 }
 
 /// One reserved page upload target.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct PageCreationVal {
+pub struct PageCreationPayload {
     pub page_id: String,
     pub put_url: String,
-    pub image_version: i64,
+    pub image_version: u32,
 }
 
 /// Input parameters for reserving one page image.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct ReservePageImageData {
+pub struct ReservePageImageParams {
     pub file_ext: String,
 }
 
 /// Return value from a successful single-page image reservation.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct ReservePageImageVal {
+pub struct ReservePageImagePayload {
     pub page_id: String,
     pub put_url: String,
-    pub image_version: i64,
+    pub image_version: u32,
 }
 
 /// Input parameters for confirming a page image upload completed.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct MarkPageImageUploadedData {
-    pub image_version: i64,
+pub struct MarkPageImageUploadedParams {
+    pub image_version: u32,
 }
 
 /// Input parameters for listing pages under one chapter.
 ///
 /// Example: `/api/v1/chapters/{chapter_id}/pages?offset=0&limit=20`.
-#[Paginate]
-pub struct ListPageInfosData {
+pub struct ListPageInfosParams {
     pub chapter_id: String,
+
+    pub offset: u32,
+    pub limit: u32,
 }

@@ -12,16 +12,11 @@ use tokio::sync::oneshot::{
 
 use crate::part::effect::event::Event;
 use crate::part::effect::{EffectDevelop, EventIter};
-use crate::part::repo::assignment::{
-    AssignmentRepo, AssignmentRepoTransactional,
-};
-use crate::part::repo::chapter::{ChapterRepo, ChapterRepoTransactional};
-use crate::part::repo::system_mail::{
-    SystemMailRepo, SystemMailRepoTransactional,
-};
-use crate::part::repo::team::{TeamRepo, TeamRepoTransactional};
-use crate::part::repo::user::{UserRepo, UserRepoTransactional};
-use crate::util::DeriveTransactional;
+use crate::part::repo::assignment::AssignmentRepo;
+use crate::part::repo::chapter::ChapterRepo;
+use crate::part::repo::system_mail::SystemMailRepo;
+use crate::part::repo::team::TeamRepo;
+use crate::part::repo::user::UserRepo;
 
 /// Chapter event handlers.
 mod chapter;
@@ -58,11 +53,6 @@ impl AsyncEffectDevelop {
             + Send
             + Sync
             + 'static,
-        <R as DeriveTransactional>::Transactional: AssignmentRepoTransactional<C>
-            + ChapterRepoTransactional<C>
-            + TeamRepoTransactional<C>
-            + SystemMailRepoTransactional<C>
-            + UserRepoTransactional<C>,
     {
         let (send, recv) = tokio::sync::mpsc::channel(buffer_size);
 

@@ -119,7 +119,7 @@ pub struct ArchivedUserPayload {
     pub nickname: String,
     pub avatar_key: Option<String>,
     pub avatar_uploaded: bool,
-    pub avatar_version: i64,
+    pub avatar_version: u32,
     pub is_sadmin: bool,
     pub last_active_at: i64,
     pub created_at: i64,

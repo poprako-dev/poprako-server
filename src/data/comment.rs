@@ -5,7 +5,6 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "swagger-ui")]
 use utoipa::{IntoParams, ToSchema};
 
-use poprako_macro::Paginate;
 use poprako_util::time::ToUnixMilli;
 
 use crate::data::user::UserInfoVal;
@@ -64,11 +63,10 @@ impl CommentInfoVal {
 /// `incl` embeds related rows into each item.
 ///
 /// Example: `/api/v1/teams/{team_id}/comments?incl=user&offset=0&limit=20`.
-#[Paginate]
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
 #[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
-pub struct ListCommentInfosData {
+pub struct ListCommentInfosParams {
     /// Parent team whose comments to list.
     pub team_id: String,
 
@@ -79,15 +77,18 @@ pub struct ListCommentInfosData {
         deserialize_with = "crate::value::query::deserialize_vec"
     )]
     pub incl_opt: Vec<CommentInclOpt>,
+
+    pub offset: u32,
+    pub limit: u32,
 }
 
-impl From<ListCommentInfosData> for CommentListSpec {
-    fn from(data: ListCommentInfosData) -> Self {
+impl From<ListCommentInfosParams> for CommentListSpec {
+    fn from(params: ListCommentInfosParams) -> Self {
         Self {
-            team_id: data.team_id,
-            incl_opt: data.incl_opt,
-            offset: data.offset,
-            limit: data.limit,
+            team_id: params.team_id,
+            incl_opt: params.incl_opt,
+            offset: params.offset,
+            limit: params.limit,
         }
     }
 }
@@ -95,7 +96,7 @@ impl From<ListCommentInfosData> for CommentListSpec {
 /// Input parameters for creating a comment.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct CreateCommentData {
+pub struct CreateCommentParams {
     pub team_id: String,
     pub content: String,
 }
@@ -103,6 +104,6 @@ pub struct CreateCommentData {
 /// Return value from creating a comment.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct CreateCommentVal {
+pub struct CreateCommentPayload {
     pub id: String,
 }

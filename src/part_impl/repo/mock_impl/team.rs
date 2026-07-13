@@ -1,43 +1,38 @@
-//! Mock implementations of `TeamRepo` and `TeamRepoTransactional` for in-memory testing.
+//! Mock team repository operations.
 
 use std::cmp::Reverse;
 
-use async_trait::async_trait;
-
-use poprako_transactional::advance::Advance;
+use poprako_orchestra::{Run, Step};
 
 use crate::complex::team::TeamComplex;
-use crate::model::team::{TeamAvatarReservation, TeamInfo};
-use crate::part::repo::step::team::{
-    Create, Delete, GetInfoById, GetInfoExcluded, IncrementWorksetNextIndex,
-    ListInfos, MarkAvatarUploaded, ReserveAvatar, UpdateInfo,
+use crate::model::team::{TeamAvatarReservation, TeamEntry, TeamInfo};
+use crate::part::repo::oper::team::{
+    AllocateTeamWorksetIndex, CreateTeam, DeleteTeam, GetTeamInfo,
+    GetTeamInfoExcluded, ListTeamInfos, ReserveTeamAvatar, UpdateTeam,
 };
-use crate::part::repo::team::{TeamRepo, TeamRepoTransactional};
-use crate::part::shared::execute::Execute;
+use crate::part::repo::team::TeamRepo;
 use crate::part_impl::repo::mock_impl::{
-    Mock, MockContext, MockState, MockTransactional, expected, now,
+    Mock, MockContext, MockState, expected, now,
 };
 use crate::result::{RegularError, RegularResult};
 
 impl TeamRepo<MockContext> for Mock {}
 
-impl TeamRepoTransactional<MockContext> for MockTransactional {}
-
 fn create_team(
     state: &mut MockState,
-    step: &Create<'_>,
+    entry: &TeamEntry,
 ) -> RegularResult<TeamInfo> {
     //
-    if state.teams.iter().any(|team| team.id == step.form.id) {
+    if state.teams.iter().any(|team_info| team_info.id == entry.id) {
         return Err(expected("error-already-exists"));
     }
 
     let time = now();
 
-    let team = TeamInfo {
-        id: step.form.id.clone(),
-        name: step.form.name.clone(),
-        description: step.form.description.clone(),
+    let team_info = TeamInfo {
+        id: entry.id.clone(),
+        name: entry.name.clone(),
+        description: entry.description.clone(),
         avatar_key: None,
         avatar_uploaded: false,
         avatar_version: 0,
@@ -46,368 +41,340 @@ fn create_team(
         updated_at: time,
     };
 
-    state.teams.push(team.clone());
+    state.teams.push(team_info.clone());
 
-    Ok(team)
+    Ok(team_info)
 }
 
-/// Updates a team record to mark its avatar as uploaded, verifying the avatar version
-/// to detect stale uploads.
-fn mark_team_avatar_uploaded(
+fn get_team_info(state: &MockState, id: &str) -> RegularResult<TeamInfo> {
+    state
+        .teams
+        .iter()
+        .find(|team_info| team_info.id == id)
+        .cloned()
+        .ok_or_else(|| expected("error-team-not-found"))
+}
+
+fn list_team_infos(
+    state: &MockState,
+    oper: &ListTeamInfos<'_>,
+) -> Vec<TeamInfo> {
+    //
+    let mut team_infos = match oper.user_id {
+        //
+        Some(user_id) => state
+            .teams
+            .iter()
+            .filter(|team_info| {
+                state.members.iter().any(|member_info| {
+                    member_info.user_id == user_id
+                        && member_info.team_id == team_info.id
+                })
+            })
+            .cloned()
+            .collect(),
+
+        None => state.teams.clone(),
+    };
+
+    team_infos.sort_by_key(|team_info| Reverse(team_info.created_at));
+
+    let offset = oper.offset as usize;
+
+    let limit = oper.limit as usize;
+
+    match offset >= team_infos.len() {
+        //
+        true => Vec::new(),
+
+        false => {
+            //
+            let end = std::cmp::min(offset + limit, team_infos.len());
+
+            team_infos[offset..end].to_vec()
+        }
+    }
+}
+
+fn update_team(
     state: &mut MockState,
-    id: &str,
-    avatar_version: i64,
+    oper: &UpdateTeam<'_>,
 ) -> RegularResult<()> {
     //
-    let team = state
+    let team_info = state
         .teams
         .iter_mut()
-        .find(|team| team.id == id)
+        .find(|team_info| match oper {
+            UpdateTeam::Info { id, .. }
+            | UpdateTeam::MarkAvatarUploaded { id, .. } => team_info.id == *id,
+        })
         .ok_or_else(|| expected("error-team-not-found"))?;
 
-    if team.avatar_version != avatar_version {
-        return Err(expected("error-stale-avatar-upload"));
+    match oper {
+        //
+        UpdateTeam::Info {
+            name, description, ..
+        } => {
+            //
+            team_info.name = name.to_string();
+
+            team_info.description = description.to_string();
+        }
+
+        UpdateTeam::MarkAvatarUploaded { avatar_version, .. } => {
+            //
+            if team_info.avatar_version != *avatar_version {
+                return Err(expected("error-stale-avatar-upload"));
+            }
+
+            team_info.avatar_uploaded = true;
+        }
     }
 
-    team.avatar_uploaded = true;
-
-    team.updated_at = now();
+    team_info.updated_at = now();
 
     Ok(())
 }
 
-#[async_trait]
-impl<'a> Execute<Create<'a>> for Mock {
+fn reserve_team_avatar(
+    state: &mut MockState,
+    oper: &ReserveTeamAvatar<'_>,
+) -> RegularResult<TeamAvatarReservation> {
+    //
+    let team_info = state
+        .teams
+        .iter_mut()
+        .find(|team_info| team_info.id == oper.id)
+        .ok_or_else(|| expected("error-team-not-found"))?;
+
+    let avatar_version = team_info.avatar_version + 1;
+
+    let object_key =
+        TeamComplex::gen_avatar_key(oper.id, avatar_version, oper.file_ext);
+
+    let prev_object_key = team_info.avatar_key.clone();
+
+    team_info.avatar_key = Some(object_key.clone());
+
+    team_info.avatar_uploaded = false;
+
+    team_info.avatar_version = avatar_version;
+
+    team_info.updated_at = now();
+
+    Ok(TeamAvatarReservation {
+        object_key,
+        prev_object_key,
+        avatar_version,
+    })
+}
+
+fn delete_team(state: &mut MockState, id: &str) -> RegularResult<()> {
+    //
+    let position = state
+        .teams
+        .iter()
+        .position(|team_info| team_info.id == id)
+        .ok_or_else(|| expected("error-team-not-found"))?;
+
+    let deleted_team_id = state.teams[position].id.clone();
+
+    let deleted_workset_ids = state
+        .worksets
+        .iter()
+        .filter(|workset_info| workset_info.team_id == deleted_team_id)
+        .map(|workset_info| workset_info.id.clone())
+        .collect::<Vec<_>>();
+
+    let deleted_comic_ids = state
+        .comics
+        .iter()
+        .filter(|comic_info| {
+            deleted_workset_ids.contains(&comic_info.workset_id)
+        })
+        .map(|comic_info| comic_info.id.clone())
+        .collect::<Vec<_>>();
+
+    let deleted_chapter_ids = state
+        .chapters
+        .iter()
+        .filter(|chapter_info| {
+            deleted_comic_ids.contains(&chapter_info.comic_id)
+        })
+        .map(|chapter_info| chapter_info.id.clone())
+        .collect::<Vec<_>>();
+
+    state.teams.remove(position);
+
+    state
+        .worksets
+        .retain(|workset_info| workset_info.team_id != deleted_team_id);
+
+    state
+        .members
+        .retain(|member_info| member_info.team_id != deleted_team_id);
+
+    state.member_invitations.retain(|member_invitation_info| {
+        member_invitation_info.team_id != deleted_team_id
+    });
+
+    state.comics.retain(|comic_info| {
+        !deleted_workset_ids.contains(&comic_info.workset_id)
+    });
+
+    state.chapters.retain(|chapter_info| {
+        !deleted_comic_ids.contains(&chapter_info.comic_id)
+    });
+
+    state.pages.retain(|page_info| {
+        !deleted_chapter_ids.contains(&page_info.chapter_id)
+    });
+
+    state.assignments.retain(|assignment_info| {
+        !deleted_chapter_ids.contains(&assignment_info.chapter_id)
+    });
+
+    Ok(())
+}
+
+impl<'a> Run<CreateTeam<'a>> for Mock {
     type Error = RegularError;
 
-    async fn execute(
-        &self,
-        step: &Create<'a>,
-    ) -> Result<TeamInfo, Self::Error> {
+    async fn run(&self, oper: &CreateTeam<'a>) -> RegularResult<TeamInfo> {
         //
         let mut state = self.state.lock().unwrap();
 
-        create_team(&mut state, step)
+        create_team(&mut state, oper.entry)
     }
 }
 
-#[async_trait]
-impl<'a> Execute<GetInfoById<'a>> for Mock {
+impl<'a> Run<GetTeamInfo<'a>> for Mock {
     type Error = RegularError;
 
-    async fn execute(
-        &self,
-        step: &GetInfoById<'a>,
-    ) -> Result<TeamInfo, Self::Error> {
+    async fn run(&self, oper: &GetTeamInfo<'a>) -> RegularResult<TeamInfo> {
         //
         let state = self.state.lock().unwrap();
 
-        state
-            .teams
-            .iter()
-            .find(|team| team.id == step.id)
-            .cloned()
-            .ok_or_else(|| expected("error-team-not-found"))
+        match oper {
+            GetTeamInfo::Id { id } => get_team_info(&state, id),
+        }
     }
 }
 
-#[async_trait]
-impl<'a> Execute<ListInfos<'a>> for Mock {
+impl<'a> Run<ListTeamInfos<'a>> for Mock {
     type Error = RegularError;
 
-    async fn execute(
+    async fn run(
         &self,
-        step: &ListInfos<'a>,
-    ) -> Result<Vec<TeamInfo>, Self::Error> {
+        oper: &ListTeamInfos<'a>,
+    ) -> RegularResult<Vec<TeamInfo>> {
         //
         let state = self.state.lock().unwrap();
 
-        let mut teams = match step.user_id {
-            //
-            Some(user_id) => state
-                .teams
-                .iter()
-                .filter(|team| {
-                    state.members.iter().any(|member| {
-                        member.user_id == user_id && member.team_id == team.id
-                    })
-                })
-                .cloned()
-                .collect(),
+        Ok(list_team_infos(&state, oper))
+    }
+}
 
-            None => state.teams.clone(),
-        };
+impl<'a> Run<UpdateTeam<'a>> for Mock {
+    type Error = RegularError;
 
-        teams.sort_by_key(|right| Reverse(right.created_at));
+    async fn run(&self, oper: &UpdateTeam<'a>) -> RegularResult<()> {
+        //
+        let mut state = self.state.lock().unwrap();
 
-        let offset = step.offset as usize;
+        update_team(&mut state, oper)
+    }
+}
 
-        let limit = step.limit as usize;
+impl<'a> Step<CreateTeam<'a>, MockContext> for Mock {
+    type Error = RegularError;
 
-        if offset >= teams.len() {
-            return Ok(Vec::new());
+    async fn step(
+        &self,
+        context: &mut MockContext,
+        oper: &CreateTeam<'a>,
+    ) -> RegularResult<TeamInfo> {
+        //
+        if context.create_team_failure {
+            return Err(expected("failed"));
         }
 
-        let end = std::cmp::min(offset + limit, teams.len());
-
-        Ok(teams[offset..end].to_vec())
+        create_team(&mut context.state, oper.entry)
     }
 }
 
-#[async_trait]
-impl<'a> Execute<UpdateInfo<'a>> for Mock {
+impl<'a> Step<UpdateTeam<'a>, MockContext> for Mock {
     type Error = RegularError;
 
-    async fn execute(&self, step: &UpdateInfo<'a>) -> Result<(), Self::Error> {
+    async fn step(
+        &self,
+        context: &mut MockContext,
+        oper: &UpdateTeam<'a>,
+    ) -> RegularResult<()> {
+        update_team(&mut context.state, oper)
+    }
+}
+
+impl<'a> Step<ReserveTeamAvatar<'a>, MockContext> for Mock {
+    type Error = RegularError;
+
+    async fn step(
+        &self,
+        context: &mut MockContext,
+        oper: &ReserveTeamAvatar<'a>,
+    ) -> RegularResult<TeamAvatarReservation> {
+        reserve_team_avatar(&mut context.state, oper)
+    }
+}
+
+impl<'a> Step<GetTeamInfoExcluded<'a>, MockContext> for Mock {
+    type Error = RegularError;
+
+    async fn step(
+        &self,
+        context: &mut MockContext,
+        oper: &GetTeamInfoExcluded<'a>,
+    ) -> RegularResult<TeamInfo> {
+        match oper {
+            GetTeamInfoExcluded::Id { id } => get_team_info(&context.state, id),
+        }
+    }
+}
+
+impl<'a> Step<DeleteTeam<'a>, MockContext> for Mock {
+    type Error = RegularError;
+
+    async fn step(
+        &self,
+        context: &mut MockContext,
+        oper: &DeleteTeam<'a>,
+    ) -> RegularResult<()> {
+        delete_team(&mut context.state, oper.id)
+    }
+}
+
+impl<'a> Step<AllocateTeamWorksetIndex<'a>, MockContext> for Mock {
+    type Error = RegularError;
+
+    async fn step(
+        &self,
+        context: &mut MockContext,
+        oper: &AllocateTeamWorksetIndex<'a>,
+    ) -> RegularResult<i32> {
         //
-        let mut state = self.state.lock().unwrap();
-
-        let team = state
-            .teams
-            .iter_mut()
-            .find(|team| team.id == step.id)
-            .ok_or_else(|| expected("error-team-not-found"))?;
-
-        team.name = step.name.to_string();
-
-        team.description = step.description.to_string();
-
-        team.updated_at = now();
-
-        Ok(())
-    }
-}
-
-#[async_trait]
-impl<'a> Execute<MarkAvatarUploaded<'a>> for Mock {
-    type Error = RegularError;
-
-    async fn execute(
-        &self,
-        step: &MarkAvatarUploaded<'a>,
-    ) -> Result<(), Self::Error> {
-        //
-        let mut state = self.state.lock().unwrap();
-
-        mark_team_avatar_uploaded(&mut state, step.id, step.avatar_version)
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<ReserveAvatar<'a>, MockContext> for MockTransactional {
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut MockContext,
-        step: &ReserveAvatar<'a>,
-    ) -> Result<TeamAvatarReservation, Self::Error> {
-        //
-        let team = context
-            .state
-            .teams
-            .iter_mut()
-            .find(|team| team.id == step.id)
-            .ok_or_else(|| expected("error-team-not-found"))?;
-
-        let avatar_version = team.avatar_version + 1;
-
-        let object_key = TeamComplex::gen_avatar_key(
-            step.id,
-            avatar_version,
-            step.file_extension,
-        );
-
-        let prev_object_key = team.avatar_key.clone();
-
-        team.avatar_key = Some(object_key.clone());
-
-        team.avatar_uploaded = false;
-
-        team.avatar_version = avatar_version;
-
-        team.updated_at = now();
-
-        Ok(TeamAvatarReservation {
-            object_key,
-            prev_object_key,
-            avatar_version,
-        })
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<Create<'a>, MockContext> for MockTransactional {
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut MockContext,
-        step: &Create<'a>,
-    ) -> Result<TeamInfo, Self::Error> {
-        create_team(&mut context.state, step)
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<MarkAvatarUploaded<'a>, MockContext> for MockTransactional {
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut MockContext,
-        step: &MarkAvatarUploaded<'a>,
-    ) -> Result<(), Self::Error> {
-        mark_team_avatar_uploaded(
-            &mut context.state,
-            step.id,
-            step.avatar_version,
-        )
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<GetInfoExcluded<'a>, MockContext> for MockTransactional {
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut MockContext,
-        step: &GetInfoExcluded<'a>,
-    ) -> Result<TeamInfo, Self::Error> {
-        context
-            .state
-            .teams
-            .iter()
-            .find(|team| team.id == step.id)
-            .cloned()
-            .ok_or_else(|| expected("error-team-not-found"))
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<Delete<'a>, MockContext> for MockTransactional {
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut MockContext,
-        step: &Delete<'a>,
-    ) -> Result<(), Self::Error> {
-        //
-        let pos = context
-            .state
-            .teams
-            .iter()
-            .position(|team| team.id == step.id)
-            .ok_or_else(|| expected("error-team-not-found"))?;
-
-        let deleted_team_id = context.state.teams[pos].id.clone();
-
-        let deleted_workset_ids = context
-            .state
-            .worksets
-            .iter()
-            .filter(|workset| workset.team_id == deleted_team_id)
-            .map(|workset| workset.id.clone())
-            .collect::<Vec<_>>();
-
-        let deleted_comic_ids = context
-            .state
-            .comics
-            .iter()
-            .filter(|comic| {
-                deleted_workset_ids
-                    .iter()
-                    .any(|workset_id| workset_id == &comic.workset_id)
-            })
-            .map(|comic| comic.id.clone())
-            .collect::<Vec<_>>();
-
-        let deleted_chapter_ids = context
-            .state
-            .chapters
-            .iter()
-            .filter(|chapter_info| {
-                deleted_comic_ids
-                    .iter()
-                    .any(|comic_id| comic_id == &chapter_info.comic_id)
-            })
-            .map(|chapter_info| chapter_info.id.clone())
-            .collect::<Vec<_>>();
-
-        context.state.teams.remove(pos);
-
-        context
-            .state
-            .worksets
-            .retain(|workset| workset.team_id != deleted_team_id);
-
-        context
-            .state
-            .members
-            .retain(|member| member.team_id != deleted_team_id);
-
-        context
-            .state
-            .member_invitations
-            .retain(|member_invitation| {
-                member_invitation.team_id != deleted_team_id
-            });
-
-        context.state.comics.retain(|comic| {
-            !deleted_workset_ids
-                .iter()
-                .any(|workset_id| workset_id == &comic.workset_id)
-        });
-
-        context.state.chapters.retain(|chapter_info| {
-            !deleted_comic_ids
-                .iter()
-                .any(|comic_id| comic_id == &chapter_info.comic_id)
-        });
-
-        context.state.pages.retain(|page_info| {
-            !deleted_chapter_ids
-                .iter()
-                .any(|chapter_id| chapter_id == &page_info.chapter_id)
-        });
-
-        context.state.assignments.retain(|assignment_info| {
-            !deleted_chapter_ids
-                .iter()
-                .any(|chapter_id| chapter_id == &assignment_info.chapter_id)
-        });
-
-        Ok(())
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<IncrementWorksetNextIndex<'a>, MockContext>
-    for MockTransactional
-{
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut MockContext,
-        step: &IncrementWorksetNextIndex<'a>,
-    ) -> Result<i32, Self::Error> {
-        //
-        let team = context
+        let team_info = context
             .state
             .teams
             .iter_mut()
-            .find(|team| team.id == step.id)
+            .find(|team_info| team_info.id == oper.id)
             .ok_or_else(|| expected("error-team-not-found"))?;
 
-        let index = team.workset_next_index;
+        let workset_index = team_info.workset_next_index;
 
-        team.workset_next_index += 1;
+        team_info.workset_next_index += 1;
 
-        team.updated_at = now();
+        team_info.updated_at = now();
 
-        Ok(index)
+        Ok(workset_index)
     }
 }

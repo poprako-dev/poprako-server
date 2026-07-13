@@ -6,19 +6,17 @@ use axum::http::StatusCode;
 
 use tracing::instrument;
 
-#[cfg(feature = "swagger-ui")]
-use crate::api::http::result::HttpBody;
-
 use crate::api::http::handler::util::{
     ensure_current_user, ensure_path_matches_body_id,
 };
+#[allow(unused_imports)]
 use crate::api::http::result::{
-    Accept as _, HttpNoContent, HttpResult, no_content,
+    Accept as _, HttpBody, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
 use crate::data::user::{
-    MarkUserAvatarUploadedData, ReserveUserAvatarData, ReserveUserAvatarVal,
-    UpdateUserInfoData, UserInfoVal,
+    MarkUserAvatarUploadedParams, ReserveUserAvatarParams,
+    ReserveUserAvatarPayload, UpdateUserInfoParams, UserInfoVal,
 };
 use crate::model::user::UserToken;
 use crate::usecase;
@@ -87,7 +85,7 @@ pub async fn get_info(
     path = "/api/v1/users/{user_id}",
     tag = "users",
     params(("user_id" = String, Path, description = "Target user ID")),
-    request_body = UpdateUserInfoData,
+    request_body = UpdateUserInfoParams,
     responses(
         (status = 204, description = "Profile updated"),
         (status = 422, description = "Path id does not match body id"),
@@ -95,17 +93,17 @@ pub async fn get_info(
         (status = 409, description = "QID already taken"),
     ),
 ))]
-#[instrument(err, skip(harn, data))]
+#[instrument(err, skip(harn, params))]
 pub async fn update_info(
     State(harn): State<AppHarn>,
     Path(user_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Json(data): Json<UpdateUserInfoData>,
+    Json(params): Json<UpdateUserInfoParams>,
 ) -> HttpNoContent {
     //
-    ensure_path_matches_body_id(&user_id, &data.id)?;
+    ensure_path_matches_body_id(&user_id, &params.id)?;
 
-    usecase::user::update_info(harn.drive(), harn.repo(), user_token, data)
+    usecase::user::update_info(harn.drive(), harn.repo(), user_token, params)
         .await?;
 
     no_content()
@@ -148,19 +146,19 @@ pub async fn delete(
     path = "/api/v1/users/{user_id}/avatar/reserve",
     tag = "users",
     params(("user_id" = String, Path, description = "Target user ID (must match authenticated user)")),
-    request_body = ReserveUserAvatarData,
+    request_body = ReserveUserAvatarParams,
     responses(
-        (status = 200, description = "Avatar upload URL reserved", body = HttpBody<ReserveUserAvatarVal>),
+        (status = 200, description = "Avatar upload URL reserved", body = HttpBody<ReserveUserAvatarPayload>),
         (status = 403, description = "Cannot modify another user's avatar"),
     ),
 ))]
-#[instrument(err, skip(harn, data))]
+#[instrument(err, skip(harn, params))]
 pub async fn reserve_avatar(
     State(harn): State<AppHarn>,
     Path(user_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Json(data): Json<ReserveUserAvatarData>,
-) -> HttpResult<ReserveUserAvatarVal> {
+    Json(params): Json<ReserveUserAvatarParams>,
+) -> HttpResult<ReserveUserAvatarPayload> {
     //
     ensure_current_user(&user_id, &user_token)?;
 
@@ -170,7 +168,7 @@ pub async fn reserve_avatar(
         harn.prom(),
         harn.image_pool(),
         user_token,
-        data,
+        params,
     )
     .await?
     .accept(StatusCode::OK)
@@ -182,18 +180,18 @@ pub async fn reserve_avatar(
     path = "/api/v1/users/{user_id}/avatar/mark-uploaded",
     tag = "users",
     params(("user_id" = String, Path, description = "Target user ID (must match authenticated user)")),
-    request_body = MarkUserAvatarUploadedData,
+    request_body = MarkUserAvatarUploadedParams,
     responses(
         (status = 204, description = "Avatar upload confirmed"),
         (status = 403, description = "Cannot confirm another user's avatar"),
     ),
 ))]
-#[instrument(err, skip(harn, data))]
+#[instrument(err, skip(harn, params))]
 pub async fn mark_avatar_uploaded(
     State(harn): State<AppHarn>,
     Path(user_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Json(data): Json<MarkUserAvatarUploadedData>,
+    Json(params): Json<MarkUserAvatarUploadedParams>,
 ) -> HttpNoContent {
     //
     usecase::user::mark_avatar_uploaded(
@@ -201,7 +199,7 @@ pub async fn mark_avatar_uploaded(
         harn.repo(),
         user_token,
         user_id,
-        data,
+        params,
     )
     .await?;
 

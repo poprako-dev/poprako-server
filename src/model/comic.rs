@@ -12,8 +12,6 @@
 
 use time::OffsetDateTime;
 
-use poprako_macro::Paginate;
-
 use crate::model::team::TeamInfo;
 use crate::model::user::UserInfo;
 use crate::model::workset::WorksetInfo;
@@ -24,11 +22,11 @@ use crate::value::comic::ComicInclOpt;
 ///
 /// Each comic belongs to exactly one workset. Cover uploads follow a multi-step
 /// flow: a key is reserved via
-/// [`ComicStep::reserve_cover`], the client uploads to that key, then
-/// the upload is confirmed via [`ComicStep::mark_cover_uploaded`].
+/// [`ReserveComicCover`], the client uploads to that key, then
+/// the upload is confirmed via [`MarkComicCoverUploaded`].
 ///
-/// [`ComicStep::reserve_cover`]: crate::part::repo::step::comic::ComicStep::reserve_cover
-/// [`ComicStep::mark_cover_uploaded`]: crate::part::repo::step::comic::ComicStep::mark_cover_uploaded
+/// [`ReserveComicCover`]: crate::part::repo::oper::comic::ReserveComicCover
+/// [`MarkComicCoverUploaded`]: crate::part::repo::oper::comic::MarkComicCoverUploaded
 #[derive(Clone)]
 pub struct ComicInfo {
     pub id: String,
@@ -42,7 +40,7 @@ pub struct ComicInfo {
 
     pub cover_key: Option<String>,
     pub cover_uploaded: bool,
-    pub cover_version: i64,
+    pub cover_version: u32,
 
     pub chapter_count: i32,
     pub chapter_next_index: i32,
@@ -67,7 +65,7 @@ pub struct ComicInfo {
 ///
 /// [`ComicComplex::gen_id`]: crate::complex::comic::ComicComplex::gen_id
 #[cfg_attr(test, derive(Clone))]
-pub struct ComicForm {
+pub struct ComicEntry {
     pub id: String,
 
     pub workset_id: String,
@@ -91,18 +89,20 @@ pub struct ComicInfoUpdate {
 }
 
 /// Filtering and pagination parameters for listing comics within a workset.
-#[Paginate]
-pub struct ComicListSpec {
+pub struct ComicInfoListSpec {
     pub workset_id: String,
 
     pub fuzzy_title: Option<String>,
-    pub kind: ComicListKind,
+    pub kind: ComicInfoListKind,
 
     pub incl_opt: Vec<ComicInclOpt>,
+
+    pub offset: u32,
+    pub limit: u32,
 }
 
 /// Workflow-stage filtering mode for listing comics.
-pub enum ComicListKind {
+pub enum ComicInfoListKind {
     All,
     Stages(StageMask),
 }
@@ -119,5 +119,5 @@ pub enum ComicListKind {
 pub struct ComicCoverReservation {
     pub object_key: String,
     pub prev_object_key: Option<String>,
-    pub cover_version: i64,
+    pub cover_version: u32,
 }

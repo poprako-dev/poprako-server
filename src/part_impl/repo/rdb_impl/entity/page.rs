@@ -3,7 +3,7 @@
 use diesel::prelude::*;
 use time::OffsetDateTime;
 
-use crate::model::page::{PageForm, PageInfo};
+use crate::model::page::{PageEntry, PageInfo};
 use crate::part_impl::repo::rdb_impl::schema::t_page;
 
 /// Raw database row for the `t_page` table. Returned by Diesel queries.
@@ -17,7 +17,8 @@ pub struct PageRow {
 
     pub f_image_key: Option<String>,
     pub f_image_uploaded: bool,
-    pub f_image_version: i64,
+    #[diesel(deserialize_as = i64)]
+    pub f_image_version: u32,
 
     pub f_total_unit_count: i32,
     pub f_translated_unit_count: i32,
@@ -30,7 +31,7 @@ pub struct PageRow {
 /// Insertable struct for creating a new record in the `t_page` table.
 #[derive(Insertable)]
 #[diesel(table_name = t_page)]
-pub struct PageEntry<'a> {
+pub struct PageRowEntry<'a> {
     pub f_id: &'a str,
 
     pub f_chapter_id: &'a str,
@@ -85,9 +86,9 @@ impl<'a> PageAspect<'a> {
         self
     }
 
-    pub fn image_version(mut self, val: i64) -> Self {
+    pub fn image_version(mut self, val: u32) -> Self {
         //
-        self.f_image_version = Some(val);
+        self.f_image_version = Some(i64::from(val));
 
         self
     }
@@ -132,17 +133,17 @@ impl From<PageRow> for PageInfo {
     }
 }
 
-impl<'a> From<&'a PageForm> for PageEntry<'a> {
-    fn from(form: &'a PageForm) -> Self {
+impl<'a> From<&'a PageEntry> for PageRowEntry<'a> {
+    fn from(entry: &'a PageEntry) -> Self {
         //
         let now = OffsetDateTime::now_utc();
 
         Self {
-            f_id: &form.id,
-            f_chapter_id: &form.chapter_id,
-            f_index: form.index,
-            f_image_key: form.image_key.as_deref(),
-            f_image_version: form.image_version,
+            f_id: &entry.id,
+            f_chapter_id: &entry.chapter_id,
+            f_index: entry.index,
+            f_image_key: entry.image_key.as_deref(),
+            f_image_version: i64::from(entry.image_version),
             f_created_at: now,
             f_updated_at: now,
         }

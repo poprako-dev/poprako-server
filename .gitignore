@@ -20,3 +20,6 @@
 !.codex/prompts/**
 
 logs/
+__pycache__/
+*.py[cod]
+*.pyo

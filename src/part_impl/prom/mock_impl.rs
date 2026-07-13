@@ -1,28 +1,33 @@
-//! Mock implementations of [PromTransactional] for testing deferred action recording,
+//! Mock implementations of [`Prom`] for testing deferred action recording,
 //! plus an on-demand prom-record processor for integration tests.
 
-use async_trait::async_trait;
+mod tests;
+
 use time::OffsetDateTime;
 
-use poprako_transactional::advance::Advance;
-use poprako_transactional::drive::Drive;
+use poprako_orchestra::{Nucl as _, Step};
+use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
+use poprako_orchestra_extra::prom::task::Task;
 
 use crate::model::user::{UserCredential, UserInfo};
 use crate::part::image::ImagePool;
-use crate::part::prom::task::{IMAGE_TOPIC, ImageKind, ImageTask};
-use crate::part::prom::{Append, Payload, Prom};
-use crate::part::repo::step::comic::ComicStep;
-use crate::part::repo::step::page::PageStep;
-use crate::part::repo::step::team::TeamStep;
-use crate::part::repo::step::user::UserStep;
-use crate::part_impl::repo::mock_impl::{Mock, MockContext, MockTransactional};
+use crate::part::prom::Prom;
+use crate::part::prom::payload::{Payload, image};
+use crate::part::repo::oper::comic::{
+    GetComicInfoExcluded, MarkComicCoverUploaded,
+};
+use crate::part::repo::oper::page::{
+    GetPageInfoExcluded, MarkPageImageUploaded,
+};
+use crate::part::repo::oper::team::{GetTeamInfoExcluded, UpdateTeam};
+use crate::part::repo::oper::user::{GetUserInfoExcluded, UpdateUser};
+use crate::part_impl::repo::mock_impl::{Mock, MockContext};
 use crate::result::{RegularError, RegularResult};
 
 /// A recorded deferred action stored in the mock context during transactional testing.
 #[cfg_attr(test, derive(Clone))]
 pub struct MockPromRecord {
     id: String,
-    topic: String,
 
     /// Serialized JSON of the [`Payload`].
     ///
@@ -39,11 +44,6 @@ impl MockPromRecord {
         &self.id
     }
 
-    /// Returns the prom topic.
-    pub fn topic(&self) -> &str {
-        &self.topic
-    }
-
     /// Returns the deferred visibility time.
     pub fn visible_at(&self) -> OffsetDateTime {
         self.visible_at
@@ -51,87 +51,98 @@ impl MockPromRecord {
 
     /// Deserializes the stored JSON back into a [`Payload`].
     ///
-    /// The returned `Payload` borrows from `self`, so it's valid for
-    /// the duration of the borrow.
-    pub fn payload(&self) -> Payload<'_> {
+    pub fn payload(&self) -> Payload {
         serde_json::from_str(&self.payload_json)
             .expect("stored prom payload should deserialize successfully")
     }
 }
 
-/// Empty mock implementation of [PromTransactional] — actual advancement is handled by [Advance].
-impl Prom<MockContext> for MockTransactional {}
-
-/// Empty mock implementation of [PromTransactional] on [`Mock`] so tests can pass
-/// `&mock` directly as both repo and prom argument.
+/// Mock prom implementation used by coordinated tests.
 impl Prom<MockContext> for Mock {}
 
-/// Appends a [MockPromRecord] to the mock context state when a prom append is advanced.
-#[async_trait]
-impl<'a> Advance<Append<'a>, MockContext> for MockTransactional {
+/// Defers one record in the coordinated mock state.
+impl<'a> Step<Defer<'a, String, Payload, ()>, MockContext> for Mock {
     type Error = RegularError;
 
-    async fn advance(
+    async fn step(
         &self,
         context: &mut MockContext,
-        step: &Append<'a>,
+        oper: &Defer<'a, String, Payload, ()>,
     ) -> Result<(), Self::Error> {
         //
         let payload_json =
-            serde_json::to_string(&step.payload).map_err(|e| {
+            serde_json::to_string(oper.task.payload).map_err(|error| {
                 RegularError::Unrecoverable {
-                    message: format!("failed to serialize prom payload: {}", e),
+                    message: format!(
+                        "failed to serialize prom payload: {}",
+                        error
+                    ),
                 }
             })?;
 
         context.state.prom_records.push(MockPromRecord {
-            id: step.id.to_string(),
-            topic: step.topic.to_string(),
+            id: oper.task.id.to_string(),
             payload_json,
-            visible_at: *step.visible_at,
+            visible_at: OffsetDateTime::now_utc()
+                + oper.task.delay.unwrap_or_default(),
         });
 
         Ok(())
     }
 }
 
-/// Prom append on [`Mock`] delegates to the same mock state `prom_records`.
-#[async_trait]
-impl<'a> Advance<Append<'a>, MockContext> for Mock {
+impl<'t, 'a> Step<DeferBatch<'t, 'a, String, Payload, ()>, MockContext>
+    for Mock
+{
     type Error = RegularError;
 
-    async fn advance(
+    async fn step(
         &self,
         context: &mut MockContext,
-        step: &Append<'a>,
+        oper: &DeferBatch<'t, 'a, String, Payload, ()>,
     ) -> Result<(), Self::Error> {
         //
-        let payload_json =
-            serde_json::to_string(&step.payload).map_err(|e| {
-                RegularError::Unrecoverable {
-                    message: format!("failed to serialize prom payload: {}", e),
-                }
-            })?;
-
-        context.state.prom_records.push(MockPromRecord {
-            id: step.id.to_string(),
-            topic: step.topic.to_string(),
-            payload_json,
-            visible_at: *step.visible_at,
-        });
+        for task in oper.tasks {
+            self.step(
+                context,
+                &Defer::new(Task {
+                    id: task.id,
+                    payload: task.payload,
+                    delay: task.delay,
+                }),
+            )
+            .await?;
+        }
 
         Ok(())
     }
 }
 
-// append_records_payload(PromTransactional::advance)(positive): prom append should store the record in transaction state.
+async fn defer_payload(
+    mock: &Mock,
+    context: &mut MockContext,
+    id: &str,
+    payload: Payload,
+) -> RegularResult<()> {
+    //
+    let id = id.to_string();
+
+    let task = Task {
+        id: &id,
+        payload: &payload,
+        delay: None,
+    };
+
+    mock.step(context, &Defer::new(task)).await
+}
+
+// defer_records_payload(Prom::step)(positive): individual deferral should store the record in transaction state.
+// defer_batch_records_payloads(Prom::step)(positive): batch deferral should store every record in transaction state.
 // process_pending_marks_uploaded_image(process_pending)(positive): check-upload should mark matching uploaded image state.
 // process_pending_keeps_stale_image_for_ordered_delete(process_pending)(positive): stale check-upload should leave cleanup to ordered delete messages.
 // process_pending_deletes_missing_resource_image(process_pending)(positive): check-upload should delete an object when the owning resource disappeared.
 
-use crate::part::prom::PromStep;
-
-fn user_info(id: &str, avatar_key: &str, avatar_version: i64) -> UserInfo {
+fn user_info(id: &str, avatar_key: &str, avatar_version: u32) -> UserInfo {
     //
     let now = OffsetDateTime::now_utc();
 
@@ -157,26 +168,26 @@ fn user_credential(id: &str) -> UserCredential {
 }
 
 #[tokio::test]
-async fn append_records_payload() {
+async fn defer_records_payload() {
     //
     let mock = Mock::new();
 
-    let visible_at = OffsetDateTime::now_utc();
+    let before = OffsetDateTime::now_utc();
+
+    let prom = mock.clone();
 
     assert!(
-        Drive::with_context(&mock, async move |context| {
-            let transactional = MockTransactional;
-            Advance::advance(
-                &transactional,
+        mock.coord(async move |context| {
+            defer_payload(
+                &prom,
                 context,
-                &PromStep::append(
-                    "prom-1",
-                    "image",
-                    Payload::Image(ImageTask::Delete { object_key: "key" }),
-                    &visible_at,
-                ),
+                "prom-1",
+                Payload::Image(image::Payload::Delete {
+                    object_key: "key".to_string(),
+                }),
             )
             .await?;
+
             Ok::<(), RegularError>(())
         })
         .await
@@ -189,9 +200,7 @@ async fn append_records_payload() {
 
     assert_eq!(snapshot.prom_records[0].id(), "prom-1");
 
-    assert_eq!(snapshot.prom_records[0].topic(), "image");
-
-    assert_eq!(snapshot.prom_records[0].visible_at(), visible_at);
+    assert!(snapshot.prom_records[0].visible_at() >= before);
 }
 
 #[tokio::test]
@@ -199,31 +208,25 @@ async fn process_pending_marks_uploaded_image() {
     //
     let mock = Mock::new();
 
-    let visible_at = OffsetDateTime::now_utc();
-
     mock.seed_user(
         user_info("user-1", "avatar.png", 1),
         user_credential("user-1"),
     );
 
-    Drive::with_context(&mock, async move |context| {
-        //
-        let transactional = MockTransactional;
+    let prom = mock.clone();
 
-        Advance::advance(
-            &transactional,
+    mock.coord(async move |context| {
+        //
+        defer_payload(
+            &prom,
             context,
-            &PromStep::append(
-                "prom-1",
-                IMAGE_TOPIC,
-                Payload::Image(ImageTask::CheckUploaded {
-                    kind: ImageKind::UserAvatar,
-                    resource_id: "user-1",
-                    object_key: "avatar.png",
-                    image_version: 1,
-                }),
-                &visible_at,
-            ),
+            "prom-1",
+            Payload::Image(image::Payload::CheckUpload {
+                resource_kind: image::ResourceKind::UserAvatar,
+                resource_id: "user-1".to_string(),
+                object_key: "avatar.png".to_string(),
+                version: 1,
+            }),
         )
         .await?;
 
@@ -243,31 +246,25 @@ async fn process_pending_keeps_stale_image_for_ordered_delete() {
     //
     let mock = Mock::new();
 
-    let visible_at = OffsetDateTime::now_utc();
-
     mock.seed_user(
         user_info("user-1", "avatar-v2.png", 2),
         user_credential("user-1"),
     );
 
-    Drive::with_context(&mock, async move |context| {
-        //
-        let transactional = MockTransactional;
+    let prom = mock.clone();
 
-        Advance::advance(
-            &transactional,
+    mock.coord(async move |context| {
+        //
+        defer_payload(
+            &prom,
             context,
-            &PromStep::append(
-                "prom-1",
-                IMAGE_TOPIC,
-                Payload::Image(ImageTask::CheckUploaded {
-                    kind: ImageKind::UserAvatar,
-                    resource_id: "user-1",
-                    object_key: "avatar-v1.png",
-                    image_version: 1,
-                }),
-                &visible_at,
-            ),
+            "prom-1",
+            Payload::Image(image::Payload::CheckUpload {
+                resource_kind: image::ResourceKind::UserAvatar,
+                resource_id: "user-1".to_string(),
+                object_key: "avatar-v1.png".to_string(),
+                version: 1,
+            }),
         )
         .await?;
 
@@ -291,26 +288,20 @@ async fn process_pending_deletes_missing_resource_image() {
     //
     let mock = Mock::new();
 
-    let visible_at = OffsetDateTime::now_utc();
+    let prom = mock.clone();
 
-    Drive::with_context(&mock, async move |context| {
+    mock.coord(async move |context| {
         //
-        let transactional = MockTransactional;
-
-        Advance::advance(
-            &transactional,
+        defer_payload(
+            &prom,
             context,
-            &PromStep::append(
-                "prom-1",
-                IMAGE_TOPIC,
-                Payload::Image(ImageTask::CheckUploaded {
-                    kind: ImageKind::UserAvatar,
-                    resource_id: "missing-user",
-                    object_key: "orphan-avatar.png",
-                    image_version: 1,
-                }),
-                &visible_at,
-            ),
+            "prom-1",
+            Payload::Image(image::Payload::CheckUpload {
+                resource_kind: image::ResourceKind::UserAvatar,
+                resource_id: "missing-user".to_string(),
+                object_key: "orphan-avatar.png".to_string(),
+                version: 1,
+            }),
         )
         .await?;
 
@@ -332,7 +323,7 @@ async fn process_pending_deletes_missing_resource_image() {
 
 /// Process all pending prom records in mock state.
 ///
-/// Deserializes each record's stored payload, routes by topic, and
+/// Deserializes each record's stored payload and
 /// executes the same handler logic as the production handler against
 /// [`Mock`]'s in-memory implementations of all ports.
 ///
@@ -346,19 +337,9 @@ pub async fn process_pending(mock: &Mock) -> RegularResult<()> {
         //
         let payload = record.payload();
 
-        match record.topic() {
-            //
-            IMAGE_TOPIC => {
-                //
-                let Payload::Image(ref task) = payload;
-
-                process_image_task(mock, task).await?;
-            }
-
-            unknown => {
-                return Err(RegularError::Unrecoverable {
-                    message: format!("unknown prom topic in mock: {}", unknown),
-                });
+        match payload {
+            Payload::Image(task) => {
+                process_image_task(mock, &task).await?;
             }
         }
     }
@@ -368,25 +349,25 @@ pub async fn process_pending(mock: &Mock) -> RegularResult<()> {
 
 /// Process a single image task against the mock's in-memory image pool.
 async fn process_image_task(
-    mock: &Mock,
-    task: &ImageTask<'_>,
+    image_pool: &Mock,
+    task: &image::Payload,
 ) -> RegularResult<()> {
     match task {
         //
-        ImageTask::CheckUploaded {
-            kind,
+        image::Payload::CheckUpload {
+            resource_kind,
             resource_id,
             object_key,
-            image_version,
-        } => match ImagePool::head_object(mock, object_key).await? {
+            version,
+        } => match ImagePool::head_object(image_pool, object_key).await? {
             //
             true => {
                 process_existing_image(
-                    mock,
-                    *kind,
+                    image_pool,
+                    *resource_kind,
                     resource_id,
                     object_key,
-                    *image_version,
+                    *version,
                 )
                 .await
             }
@@ -394,122 +375,228 @@ async fn process_image_task(
             false => Ok(()),
         },
 
-        ImageTask::Delete { object_key } => {
-            ImagePool::delete_object(mock, object_key).await
+        image::Payload::Delete { object_key } => {
+            ImagePool::delete_object(image_pool, object_key).await
         }
     }
 }
 
 async fn process_existing_image(
     mock: &Mock,
-    kind: ImageKind,
+    kind: image::ResourceKind,
     resource_id: &str,
     object_key: &str,
-    image_version: i64,
+    image_version: u32,
 ) -> RegularResult<()> {
     //
-    let mark_result = Drive::with_context(mock, async move |context| {
-        //
-        let transactional = MockTransactional;
+    let resource_state = mock
+        .coord(async move |context| {
+            match mark_uploaded(mock, context, kind, resource_id, image_version)
+                .await
+            {
+                Ok(()) => Ok(ResourceState::Current),
 
-        mark_uploaded(&transactional, context, kind, resource_id, image_version)
-            .await
-    })
-    .await
-    .map_err(|e| e.into());
+                Err(RegularError::Expected { .. }) => {
+                    classify_expected_mark(
+                        mock,
+                        context,
+                        kind,
+                        resource_id,
+                        image_version,
+                    )
+                    .await
+                }
 
-    match mark_result {
-        //
-        Ok(()) => Ok(()),
-
-        Err(RegularError::Expected { .. }) => {
-            match mock_resource_exists(mock, kind, resource_id) {
-                //
-                true => Ok(()),
-
-                false => ImagePool::delete_object(mock, object_key).await,
+                Err(error) => Err(error),
             }
-        }
+        })
+        .await?;
 
-        Err(e) => Err(e),
+    match resource_state {
+        //
+        ResourceState::Current | ResourceState::Stale => Ok(()),
+
+        ResourceState::Missing => {
+            ImagePool::delete_object(mock, object_key).await
+        }
     }
 }
 
 async fn mark_uploaded(
-    transactional: &MockTransactional,
+    mock: &Mock,
     context: &mut MockContext,
-    kind: ImageKind,
+    kind: image::ResourceKind,
     resource_id: &str,
-    image_version: i64,
+    image_version: u32,
 ) -> RegularResult<()> {
     match kind {
         //
-        ImageKind::UserAvatar => {
-            Advance::advance(
-                transactional,
+        image::ResourceKind::UserAvatar => {
+            //
+
+            mock.step(
                 context,
-                &UserStep::mark_avatar_uploaded(resource_id, image_version),
+                &UpdateUser::MarkAvatarUploaded {
+                    id: resource_id,
+                    avatar_version: image_version,
+                },
             )
             .await
         }
 
-        ImageKind::TeamAvatar => {
-            Advance::advance(
-                transactional,
+        image::ResourceKind::TeamAvatar => {
+            //
+
+            mock.step(
                 context,
-                &TeamStep::mark_avatar_uploaded(resource_id, image_version),
+                &UpdateTeam::MarkAvatarUploaded {
+                    id: resource_id,
+                    avatar_version: image_version,
+                },
             )
             .await
         }
 
-        ImageKind::ComicCover => {
-            Advance::advance(
-                transactional,
+        image::ResourceKind::ComicCover => {
+            mock.step(
                 context,
-                &ComicStep::mark_cover_uploaded(resource_id, image_version),
+                &MarkComicCoverUploaded {
+                    id: resource_id,
+                    cover_version: image_version,
+                },
             )
             .await
         }
 
-        ImageKind::PageImage => {
-            Advance::advance(
-                transactional,
+        image::ResourceKind::PageImage => {
+            mock.step(
                 context,
-                &PageStep::mark_image_uploaded(resource_id, image_version),
+                &MarkPageImageUploaded {
+                    id: resource_id,
+                    image_version,
+                },
             )
             .await
         }
     }
 }
 
-fn mock_resource_exists(
-    mock: &Mock,
-    kind: ImageKind,
-    resource_id: &str,
-) -> bool {
-    //
-    let snapshot = mock.snapshot();
+enum ResourceState {
+    Current,
+    Stale,
+    Missing,
+}
 
+fn classify_current_version(
+    current_version: u32,
+    image_version: u32,
+    error_message: &'static str,
+) -> RegularResult<ResourceState> {
+    match current_version == image_version {
+        //
+        true => Err(RegularError::Unrecoverable {
+            message: error_message.into(),
+        }),
+
+        false => Ok(ResourceState::Stale),
+    }
+}
+
+async fn classify_expected_mark(
+    mock: &Mock,
+    context: &mut MockContext,
+    kind: image::ResourceKind,
+    resource_id: &str,
+    image_version: u32,
+) -> RegularResult<ResourceState> {
     match kind {
         //
-        ImageKind::UserAvatar => snapshot
-            .users
-            .iter()
-            .any(|user_info| user_info.id == resource_id),
+        image::ResourceKind::UserAvatar => {
+            //
 
-        ImageKind::TeamAvatar => snapshot
-            .teams
-            .iter()
-            .any(|team_info| team_info.id == resource_id),
+            match mock
+                .step(context, &GetUserInfoExcluded::Id { id: resource_id })
+                .await
+            {
+                //
+                Ok(user_info) => classify_current_version(
+                    user_info.avatar_version,
+                    image_version,
+                    "[MockProm::classify_expected_mark] current user avatar version failed to mark uploaded",
+                ),
 
-        ImageKind::ComicCover => snapshot
-            .comics
-            .iter()
-            .any(|comic_info| comic_info.id == resource_id),
+                Err(RegularError::Expected { .. }) => {
+                    Ok(ResourceState::Missing)
+                }
 
-        ImageKind::PageImage => snapshot
-            .pages
-            .iter()
-            .any(|page_info| page_info.id == resource_id),
+                Err(error) => Err(error),
+            }
+        }
+
+        image::ResourceKind::TeamAvatar => {
+            //
+
+            match mock
+                .step(context, &GetTeamInfoExcluded::Id { id: resource_id })
+                .await
+            {
+                //
+                Ok(team_info) => classify_current_version(
+                    team_info.avatar_version,
+                    image_version,
+                    "[MockProm::classify_expected_mark] current team avatar version failed to mark uploaded",
+                ),
+
+                Err(RegularError::Expected { .. }) => {
+                    Ok(ResourceState::Missing)
+                }
+
+                Err(error) => Err(error),
+            }
+        }
+
+        image::ResourceKind::ComicCover => {
+            match mock
+                .step(
+                    context,
+                    &GetComicInfoExcluded {
+                        id: resource_id,
+                        incls: &[],
+                    },
+                )
+                .await
+            {
+                Ok(comic_info) => classify_current_version(
+                    comic_info.cover_version,
+                    image_version,
+                    "[MockProm::classify_expected_mark] current comic cover version failed to mark uploaded",
+                ),
+
+                Err(RegularError::Expected { .. }) => {
+                    Ok(ResourceState::Missing)
+                }
+
+                Err(error) => Err(error),
+            }
+        }
+
+        image::ResourceKind::PageImage => {
+            match mock
+                .step(context, &GetPageInfoExcluded { id: resource_id })
+                .await
+            {
+                Ok(page_info) => classify_current_version(
+                    page_info.image_version,
+                    image_version,
+                    "[MockProm::classify_expected_mark] current page image version failed to mark uploaded",
+                ),
+
+                Err(RegularError::Expected { .. }) => {
+                    Ok(ResourceState::Missing)
+                }
+
+                Err(error) => Err(error),
+            }
+        }
     }
 }

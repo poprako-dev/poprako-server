@@ -16,10 +16,10 @@ use crate::model::comic_archive::{
 use crate::model::member::MemberInfo;
 use crate::model::page::PageInfo;
 use crate::model::unit::UnitInfo;
-use crate::model::user::{UserCredential, UserInfo};
+use crate::model::user::{UserCredential, UserInfo, UserToken};
 use crate::model::workset::WorksetInfo;
-use crate::part::prom::Payload;
-use crate::part::prom::task::ImageTask;
+use crate::part::prom::payload::Payload;
+use crate::part::prom::payload::image::Payload as ImagePayload;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;
@@ -281,7 +281,7 @@ async fn archive_retains_payloads_queues_images_and_deletes_active_data() {
         .iter()
         .filter_map(|prom_record| match prom_record.payload() {
             //
-            Payload::Image(ImageTask::Delete { object_key }) => {
+            Payload::Image(ImagePayload::Delete { object_key }) => {
                 Some(object_key.to_string())
             }
 

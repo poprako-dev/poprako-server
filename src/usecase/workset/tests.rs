@@ -14,19 +14,22 @@ use super::*;
 
 use time::OffsetDateTime;
 
-use poprako_transactional::advance::Advance;
-use poprako_transactional::drive::Drive;
+use poprako_orchestra::Step as _;
+use poprako_orchestra_extra::prom::oper::Defer;
+use poprako_orchestra_extra::prom::task::Task;
 
+use crate::data::workset::{
+    CreateWorksetParams, ListWorksetInfosParams, UpdateWorksetInfoParams,
+};
 use crate::model::comic::ComicInfo;
 use crate::model::member::MemberInfo;
 use crate::model::user::UserToken;
 use crate::model::workset::WorksetInfo;
-use crate::part::prom::task::ImageTask;
-use crate::part::prom::{Payload, PromStep};
-use crate::part::repo::step::workset;
+use crate::part::prom::payload::{Payload, image};
+use crate::part::repo::oper::workset::DeleteWorkset;
 use crate::part_impl::prom::mock_impl::MockPromRecord;
-use crate::part_impl::repo::mock_impl::{Mock, MockTransactional};
-use crate::result::{ExpectedVariant, RegularError};
+use crate::part_impl::repo::mock_impl::Mock;
+use crate::result::{ExpectedVariant, RegularResult};
 use crate::test_util::assert_expected_variant;
 use crate::test_util::fixture::team;
 use crate::value::role::{RoleField, RoleMask};
@@ -48,8 +51,8 @@ fn workset(id: &str, team_id: &str, index: i32) -> WorksetInfo {
     }
 }
 
-fn create_data(team_id: &str) -> CreateWorksetData {
-    CreateWorksetData {
+fn create_params(team_id: &str) -> CreateWorksetParams {
+    CreateWorksetParams {
         team_id: team_id.into(),
         name: "new".into(),
         description: Some("desc".into()),
@@ -111,7 +114,7 @@ fn count_delete_records(records: &[MockPromRecord], object_key: &str) -> usize {
         .filter(|record| {
             matches!(
                 record.payload(),
-                Payload::Image(ImageTask::Delete { object_key: key })
+                Payload::Image(image::Payload::Delete { object_key: key })
                     if key == object_key
             )
         })
@@ -127,9 +130,10 @@ async fn create_allocates_index_and_persists() {
 
     mock.seed_member(admin_member("user-1", "team-1"));
 
-    let created = create(&mock, &mock, token("user-1"), create_data("team-1"))
-        .await
-        .unwrap();
+    let created =
+        create(&mock, &mock, token("user-1"), create_params("team-1"))
+            .await
+            .unwrap();
 
     let snapshot = mock.snapshot();
 
@@ -151,7 +155,7 @@ async fn create_rolls_back_missing_team() {
 
     mock.seed_member(admin_member("user-1", "missing"));
 
-    let err = create(&mock, &mock, token("user-1"), create_data("missing"))
+    let err = create(&mock, &mock, token("user-1"), create_params("missing"))
         .await
         .err()
         .unwrap();
@@ -210,7 +214,7 @@ async fn list_infos_filters_and_sorts_by_index() {
     let list = list_infos(
         &mock,
         token("user-1"),
-        ListWorksetInfosData {
+        ListWorksetInfosParams {
             team_id: "team-1".into(),
             offset: 0,
             limit: 10,
@@ -236,7 +240,7 @@ async fn list_infos_returns_empty_for_missing_team_contents() {
     let list = list_infos(
         &mock,
         token("user-1"),
-        ListWorksetInfosData {
+        ListWorksetInfosParams {
             team_id: "missing".into(),
             offset: 0,
             limit: 10,
@@ -260,7 +264,7 @@ async fn update_info_updates_workset() {
     update_info(
         &mock,
         token("user-1"),
-        UpdateWorksetInfoData {
+        UpdateWorksetInfoParams {
             id: "workset-1".into(),
             name: "updated".into(),
             description: Some("updated-desc".into()),
@@ -287,7 +291,7 @@ async fn update_info_propagates_missing_workset() {
     let err = update_info(
         &mock,
         token("user-1"),
-        UpdateWorksetInfoData {
+        UpdateWorksetInfoParams {
             id: "missing".into(),
             name: "updated".into(),
             description: None,
@@ -372,32 +376,26 @@ async fn delete_does_not_create_prom_records_when_called_directly() {
 
     mock.seed_workset(workset("workset-1", "team-1", 0));
 
-    Drive::with_context(&mock, async move |context| {
+    mock.coord(async |context| -> RegularResult<()> {
         //
-        let transactional = MockTransactional;
+        let id = "prom-1".to_string();
 
-        Advance::advance(
-            &transactional,
-            context,
-            &PromStep::append(
-                "prom-1",
-                "image",
-                Payload::Image(ImageTask::Delete {
-                    object_key: "existing.png",
-                }),
-                &OffsetDateTime::now_utc(),
-            ),
-        )
-        .await?;
+        let payload = Payload::Image(image::Payload::Delete {
+            object_key: "existing.png".to_string(),
+        });
 
-        Advance::advance(
-            &transactional,
-            context,
-            &workset::WorksetStep::delete("workset-1"),
-        )
-        .await?;
+        let task = Task {
+            id: &id,
+            payload: &payload,
+            delay: None,
+        };
 
-        Ok::<(), RegularError>(())
+        mock.step(context, &Defer::new(task)).await?;
+
+        mock.step(context, &DeleteWorkset { id: "workset-1" })
+            .await?;
+
+        Ok(())
     })
     .await
     .ok()

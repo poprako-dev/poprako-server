@@ -10,13 +10,17 @@
 
 use super::*;
 
+use crate::data::assignment_invitation::{
+    CreateAssignmentInvitationParams, JoinAssignmentInvitationParams,
+    ListAssignmentInvitationInfosParams,
+};
 use crate::model::assignment::AssignmentInfo;
 use crate::model::assignment_invitation::AssignmentInvitationInfo;
 use crate::model::chapter::ChapterInfo;
 use crate::model::comic::ComicInfo;
 use crate::model::member::MemberInfo;
 use crate::model::team::TeamInfo;
-use crate::model::user::{UserCredential, UserInfo};
+use crate::model::user::{UserCredential, UserInfo, UserToken};
 use crate::model::workset::WorksetInfo;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
@@ -196,8 +200,8 @@ fn role(role_field: RoleField) -> RoleMask {
     RoleMask::from(role_field)
 }
 
-fn list_data() -> ListAssignmentInvitationInfosData {
-    ListAssignmentInvitationInfosData {
+fn list_data() -> ListAssignmentInvitationInfosParams {
+    ListAssignmentInvitationInfosParams {
         chapter_id: "chapter-1".into(),
         pending: Some(true),
         offset: 0,
@@ -205,16 +209,16 @@ fn list_data() -> ListAssignmentInvitationInfosData {
     }
 }
 
-fn create_data(invitee_qid: &str) -> CreateAssignmentInvitationData {
-    CreateAssignmentInvitationData {
+fn create_data(invitee_qid: &str) -> CreateAssignmentInvitationParams {
+    CreateAssignmentInvitationParams {
         chapter_id: "chapter-1".into(),
         invitee_qid: invitee_qid.into(),
         roles: role(RoleField::TRANSLATOR),
     }
 }
 
-fn join_data() -> JoinAssignmentInvitationData {
-    JoinAssignmentInvitationData {
+fn join_data() -> JoinAssignmentInvitationParams {
+    JoinAssignmentInvitationParams {
         code: "AINV123".into(),
     }
 }
