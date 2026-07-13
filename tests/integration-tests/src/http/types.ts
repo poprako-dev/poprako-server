@@ -7,6 +7,7 @@ export interface UserInfoVal {
     qid: string;
     is_sadmin: boolean;
     avatar_url: string | null;
+    avatar_thumbnail_url: string | null;
     created_at: number;
     updated_at: number;
 }
@@ -16,6 +17,7 @@ export interface TeamInfoVal {
     name: string;
     description: string;
     avatar_url: string | null;
+    avatar_thumbnail_url: string | null;
     workset_next_index: number;
     created_at: number;
     updated_at: number;
@@ -41,6 +43,7 @@ export interface ComicInfoVal {
     author: string;
     description: string | null;
     cover_url: string | null;
+    cover_thumbnail_url: string | null;
     chapter_count: number;
     chapter_next_index: number;
     creator_id: string;
@@ -76,6 +79,7 @@ export interface PageInfoVal {
     chapter_id: string;
     index: number;
     image_url: string | null;
+    image_thumbnail_url: string | null;
     image_version: number | null;
     total_unit_count: number;
     translated_unit_count: number;
@@ -257,8 +261,6 @@ export interface PoprakoExportUnit {
 export interface PoprakoExportPage {
     page_id: string;
     page_index: number;
-
-    image_url: string | null;
 
     units: PoprakoExportUnit[];
 }

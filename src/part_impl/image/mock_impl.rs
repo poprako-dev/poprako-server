@@ -28,6 +28,26 @@ impl ImagePool for Mock {
         Ok(Url::parse(&format!("https://test.local/get/{}", key)).unwrap())
     }
 
+    async fn gen_thumbnail_download_url(
+        &self,
+        original_key: &str,
+    ) -> RegularResult<Url> {
+        if self.flags.lock().unwrap().image_get_failure {
+            return Err(RegularError::Expected {
+                variant: ExpectedVariant::Args,
+                message: trl("error-image-get-failed"),
+            });
+        }
+
+        Ok(
+            Url::parse(&format!(
+                "https://test.local/cdn-cgi/image/width=300,fit=scale-down,quality=80,format=auto,metadata=none/{}",
+                original_key
+            ))
+            .unwrap(),
+        )
+    }
+
     async fn get_upload_url(&self, key: &str) -> RegularResult<Url> {
         //
         if self.flags.lock().unwrap().image_put_failure {

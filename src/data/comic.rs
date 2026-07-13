@@ -50,6 +50,8 @@ pub struct ComicInfoVal {
     /// no cover has been uploaded.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub cover_url: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cover_thumbnail_url: Option<String>,
 
     pub chapter_count: i32,
     pub chapter_next_index: i32,
@@ -89,12 +91,16 @@ impl ComicInfoVal {
     where
         P: ImagePool,
     {
-        let cover_url = match (model.cover_uploaded, &model.cover_key) {
-            //
-            (true, Some(key)) => image_pool.gen_download_url(key).await.ok(),
+        let (cover_url, cover_thumbnail_url) =
+            match (model.cover_uploaded, &model.cover_key) {
+                //
+                (true, Some(key)) => (
+                    image_pool.gen_download_url(key).await.ok(),
+                    image_pool.gen_thumbnail_download_url(key).await.ok(),
+                ),
 
-            _ => None,
-        };
+                _ => (None, None),
+            };
 
         let workset = model.workset.map(WorksetInfoVal::from);
 
@@ -124,6 +130,7 @@ impl ComicInfoVal {
             author: model.author,
             description: model.description,
             cover_url: cover_url.map(Into::into),
+            cover_thumbnail_url: cover_thumbnail_url.map(Into::into),
             chapter_count: model.chapter_count,
             chapter_next_index: model.chapter_next_index,
             creator_id: model.creator_id,

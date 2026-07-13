@@ -16,7 +16,6 @@ use crate::data::unit_port::UnitTranslationExportPayload;
 use crate::model::page::PageInfo;
 use crate::model::unit::UnitInfo;
 use crate::model::user::UserToken;
-use crate::part::image::ImagePool;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::comic::ComicRepo;
@@ -34,9 +33,8 @@ use crate::part::repo::workset::WorksetRepo;
 use crate::result::RegularResult;
 
 /// Exports one chapter as a JSON-safe translation payload.
-pub async fn export<C, R, I>(
+pub async fn export<C, R>(
     repo: &R,
-    image_pool: &I,
     token: UserToken,
     chapter_id: String,
 ) -> RegularResult<ExportChapterTranslationPayload>
@@ -49,7 +47,6 @@ where
         + PageRepo<C>
         + UnitRepo<C>
         + Sync,
-    I: ImagePool,
 {
     ChapterPortPermComplex::ensure_user_can_export(
         &mut run_proxy! {
@@ -96,15 +93,6 @@ where
             })
             .await?;
 
-        let image_url = match (page_info.image_uploaded, &page_info.image_key) {
-            //
-            (true, Some(image_key)) => {
-                image_pool.gen_download_url(image_key).await.ok()
-            }
-
-            _ => None,
-        };
-
         let unit_vals = unit_infos
             .into_iter()
             .map(|unit_info| make_unit_export(&page_info, unit_info))
@@ -113,7 +101,6 @@ where
         page_vals.push(PageTranslationExportPayload {
             page_id: page_info.id,
             page_index: page_info.index,
-            image_url: image_url.map(Into::into),
             units: unit_vals,
         });
     }

@@ -22,6 +22,8 @@ pub struct PageInfoVal {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub image_url: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub image_thumbnail_url: Option<String>,
 
     pub total_unit_count: i32,
     pub translated_unit_count: i32,
@@ -40,18 +42,23 @@ impl PageInfoVal {
     where
         P: ImagePool,
     {
-        let image_url = match (model.image_uploaded, &model.image_key) {
-            //
-            (true, Some(key)) => image_pool.gen_download_url(key).await.ok(),
+        let (image_url, image_thumbnail_url) =
+            match (model.image_uploaded, &model.image_key) {
+                //
+                (true, Some(key)) => (
+                    image_pool.gen_download_url(key).await.ok(),
+                    image_pool.gen_thumbnail_download_url(key).await.ok(),
+                ),
 
-            _ => None,
-        };
+                _ => (None, None),
+            };
 
         Ok(Self {
             id: model.id,
             chapter_id: model.chapter_id,
             index: model.index,
             image_url: image_url.map(Into::into),
+            image_thumbnail_url: image_thumbnail_url.map(Into::into),
             total_unit_count: model.total_unit_count,
             translated_unit_count: model.translated_unit_count,
             proofread_unit_count: model.proofread_unit_count,

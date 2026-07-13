@@ -314,6 +314,13 @@ async fn get_info_returns_uploaded_avatar_url() {
         val.avatar_url.as_deref(),
         Some("https://test.local/get/avatar-key")
     );
+
+    assert_eq!(
+        val.avatar_thumbnail_url.as_deref(),
+        Some(
+            "https://test.local/cdn-cgi/image/width=300,fit=scale-down,quality=80,format=auto,metadata=none/avatar-key"
+        )
+    );
 }
 
 #[tokio::test]
