@@ -23,8 +23,8 @@ use crate::part::repo::team::TeamRepo;
 use crate::part::repo::user::UserRepo;
 use crate::part_impl::prom::rdb_impl::entity::LocalMessageRow;
 use crate::part_impl::prom::rdb_impl::repo::{
-    ClaimPending, CompleteMessage, FailMessage, PollPending, RdbPromRepo,
-    ResetStuck, RetryMessage,
+    ClaimPending, CompleteMessage, FailMessage, PollPending, PurgeCompleted,
+    RdbPromRepo, ResetStuck, RetryMessage,
 };
 use crate::part_impl::shared::{RdbContext, RdbCore};
 use crate::result::{RegularError, RegularResult};
@@ -36,6 +36,8 @@ mod image;
 const POLL_INTERVAL: StdDuration = StdDuration::from_secs(5);
 const RETRY_DELAY: Duration = Duration::minutes(5);
 const PROCESSING_TIMEOUT: Duration = Duration::minutes(15);
+const COMPLETED_RETENTION: Duration = Duration::days(7);
+const COMPLETED_PURGE_INTERVAL: Duration = Duration::hours(1);
 
 pub enum TaskFlow {
     Complete,
@@ -93,8 +95,35 @@ where
     #[instrument(skip(self), level = Level::INFO)]
     pub async fn run(mut self) {
         //
+        let mut next_completed_purge_at = OffsetDateTime::now_utc();
+
         loop {
             //
+            let now = OffsetDateTime::now_utc();
+
+            if now >= next_completed_purge_at {
+                match self.purge_completed().await {
+                    //
+                    Ok(purged_count) => {
+                        if purged_count > 0 {
+                            tracing::info!(
+                                purged_count,
+                                "[RdbPromHandler::run] purged expired completed messages",
+                            );
+                        }
+                    }
+
+                    Err(error) => {
+                        tracing::error!(
+                            error = ?error,
+                            "[RdbPromHandler::run] purge completed failed",
+                        );
+                    }
+                }
+
+                next_completed_purge_at = now + COMPLETED_PURGE_INTERVAL;
+            }
+
             if let Err(e) = self.reset_stuck().await {
                 tracing::error!(
                     error = ?e,
@@ -296,6 +325,19 @@ where
 
         self.repo
             .step(&mut context, &ResetStuck::new(&before))
+            .await
+    }
+
+    async fn purge_completed(&self) -> RegularResult<usize> {
+        //
+        let conn = self.core.get().await?;
+
+        let mut context = RdbContext::new(conn);
+
+        let before = OffsetDateTime::now_utc() - COMPLETED_RETENTION;
+
+        self.repo
+            .step(&mut context, &PurgeCompleted::new(&before))
             .await
     }
 }

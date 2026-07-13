@@ -12,11 +12,18 @@ CREATE TABLE IF NOT EXISTS "t_local_message" (
     "f_updated_at" TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS "idx_local_message_claim"
-    ON "t_local_message" ("f_topic", "f_status", "f_visible_at", "f_created_at");
+CREATE INDEX IF NOT EXISTS "idx_local_message_pending_visible_created"
+    ON "t_local_message" ("f_visible_at", "f_created_at")
+    WHERE "f_status" = 'local_message_status:pending';
 
-CREATE INDEX IF NOT EXISTS "idx_local_message_dead"
-    ON "t_local_message" ("f_topic", "f_status", "f_updated_at");
+CREATE INDEX IF NOT EXISTS "idx_local_message_processing_updated_lease"
+    ON "t_local_message" ("f_updated_at", "f_lease")
+    WHERE "f_status" = 'local_message_status:processing';
 
-CREATE INDEX IF NOT EXISTS "idx_local_message_completed"
-    ON "t_local_message" ("f_topic", "f_status", "f_created_at");
+CREATE INDEX IF NOT EXISTS "idx_local_message_dead_updated"
+    ON "t_local_message" ("f_updated_at")
+    WHERE "f_status" = 'local_message_status:dead';
+
+CREATE INDEX IF NOT EXISTS "idx_local_message_completed_updated"
+    ON "t_local_message" ("f_updated_at")
+    WHERE "f_status" = 'local_message_status:completed';
