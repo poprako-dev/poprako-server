@@ -5,7 +5,6 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "swagger-ui")]
 use utoipa::{IntoParams, ToSchema};
 
-use poprako_macro::Paginate;
 use poprako_util::time::ToUnixMilli;
 
 use crate::data::user::UserInfoVal;
@@ -66,11 +65,10 @@ impl AnnouncementInfoVal {
 /// `incl` embeds related rows into each item.
 ///
 /// Example: `/api/v1/announcements?team_id=t_1&incl=user&offset=0&limit=20`.
-#[Paginate]
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
 #[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
-pub struct ListAnnouncementInfosData {
+pub struct ListAnnouncementInfosParams {
     /// Parent team whose announcements to list.
     pub team_id: String,
 
@@ -81,15 +79,18 @@ pub struct ListAnnouncementInfosData {
         deserialize_with = "crate::value::query::deserialize_vec"
     )]
     pub incl_opt: Vec<AnnouncementInclOpt>,
+
+    pub offset: u32,
+    pub limit: u32,
 }
 
-impl From<ListAnnouncementInfosData> for AnnouncementListSpec {
-    fn from(data: ListAnnouncementInfosData) -> Self {
+impl From<ListAnnouncementInfosParams> for AnnouncementListSpec {
+    fn from(params: ListAnnouncementInfosParams) -> Self {
         Self {
-            team_id: data.team_id,
-            incl_opt: data.incl_opt,
-            offset: data.offset,
-            limit: data.limit,
+            team_id: params.team_id,
+            incl_opt: params.incl_opt,
+            offset: params.offset,
+            limit: params.limit,
         }
     }
 }
@@ -97,7 +98,7 @@ impl From<ListAnnouncementInfosData> for AnnouncementListSpec {
 /// Input parameters for creating an announcement.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct CreateAnnouncementData {
+pub struct CreateAnnouncementParams {
     pub team_id: String,
 
     pub title: String,
@@ -107,6 +108,6 @@ pub struct CreateAnnouncementData {
 /// Return value from creating an announcement.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct CreateAnnouncementVal {
+pub struct CreateAnnouncementPayload {
     pub id: String,
 }

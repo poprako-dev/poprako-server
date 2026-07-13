@@ -35,7 +35,7 @@ impl UnitInfo {
 
 /// Complete mutable payload supplied by unit opers.
 #[cfg_attr(test, derive(Clone))]
-pub struct UnitPayload {
+pub struct UnitContent {
     pub is_bubble: bool,
     pub is_proofread: bool,
 
@@ -71,12 +71,12 @@ pub struct UnitDiff {
 pub enum UnitOper {
     Create {
         id: String,
-        payload: UnitPayload,
+        payload: UnitContent,
         before_id: Option<String>,
     },
     Save {
         id: String,
-        payload: UnitPayload,
+        payload: UnitContent,
         before_id: Option<String>,
     },
     Delete {

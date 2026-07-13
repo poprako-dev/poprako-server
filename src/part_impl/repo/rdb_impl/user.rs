@@ -1,36 +1,31 @@
 //! RDB-backed user repository — free query functions and thin trait impls.
 
-use async_trait::async_trait;
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use time::OffsetDateTime;
 
-use poprako_transactional::advance::Advance;
+use poprako_orchestra::{Run, Step};
 
 use crate::complex::user::UserComplex;
-use crate::model::user::{
-    UserAvatarReservation, UserCredential, UserForm, UserInfo,
+use crate::part::repo::oper::user::{
+    CreateUser, DeleteUser, FindUserInfo, GetUserCredential, GetUserInfo,
+    GetUserInfoExcluded, ReserveUserAvatar, UpdateUser,
 };
-use crate::part::repo::step::user::{
-    Create, Delete, FindInfoByQid, GetCredentialByQid, GetInfoById,
-    GetInfoExcluded, MarkAvatarUploaded, ReserveAvatar, TouchLastActive,
-    UpdateInfo,
-};
-use crate::part::repo::user::{UserRepo, UserRepoTransactional};
-use crate::part::shared::execute::Execute;
+use crate::part::repo::user::UserRepo;
+use crate::part_impl::repo::rdb_impl::RdbRepo;
 use crate::part_impl::repo::rdb_impl::entity::user::{
-    UserAspect, UserCredentialRow, UserEntry, UserRow,
+    UserAspect, UserCredentialRow, UserRow, UserRowEntry,
 };
-use crate::part_impl::repo::rdb_impl::{RdbRepo, RdbRepoTransactional};
-use crate::part_impl::shared::result::{diesel, expected};
+use crate::part_impl::shared::result::{diesel, expected, version};
 use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::{RegularError, RegularResult};
 
+use crate::model::user::{
+    UserAvatarReservation, UserCredential, UserEntry, UserInfo,
+};
 use crate::part_impl::repo::rdb_impl::schema::t_user::dsl::*;
 
 impl UserRepo<RdbContext> for RdbRepo {}
-
-impl UserRepoTransactional<RdbContext> for RdbRepoTransactional {}
 
 // ── Free functions ──────────────────────────────────────────────────────────
 
@@ -90,16 +85,16 @@ async fn find_info_by_qid(
 /// Insert a new user and return its info.
 async fn create(
     conn: &mut RdbConn,
-    form: &UserForm,
+    entry: &UserEntry,
 ) -> RegularResult<UserInfo> {
     //
     let now = OffsetDateTime::now_utc();
 
-    let entry = UserEntry {
-        f_id: &form.id,
-        f_nickname: &form.nickname,
-        f_qid: &form.qid,
-        f_password_hash: &form.password_hash,
+    let entry = UserRowEntry {
+        f_id: &entry.id,
+        f_nickname: &entry.nickname,
+        f_qid: &entry.qid,
+        f_password_hash: &entry.password_hash,
         f_last_active_at: now,
         f_created_at: now,
         f_updated_at: now,
@@ -146,7 +141,7 @@ async fn reserve_avatar(
     //
     let now = OffsetDateTime::now_utc();
 
-    let (prev_key, new_version): (Option<String>, i64) =
+    let (prev_key, raw_version): (Option<String>, i64) =
         diesel::update(t_user.filter(f_id.eq(id)))
             .set((
                 f_avatar_key.eq::<Option<&str>>(None),
@@ -159,7 +154,9 @@ async fn reserve_avatar(
             .await
             .map_err(diesel)?;
 
-    let object_key = UserComplex::gen_avatar_key(id, new_version, file_ext);
+    let version = version(raw_version)?;
+
+    let object_key = UserComplex::gen_avatar_key(id, version, file_ext);
 
     diesel::update(t_user.filter(f_id.eq(id)))
         .set((f_avatar_key.eq(Some(&object_key)), f_updated_at.eq(now)))
@@ -170,7 +167,7 @@ async fn reserve_avatar(
     Ok(UserAvatarReservation {
         object_key,
         prev_object_key: prev_key,
-        avatar_version: new_version,
+        avatar_version: version,
     })
 }
 
@@ -178,7 +175,7 @@ async fn reserve_avatar(
 async fn mark_avatar_uploaded(
     conn: &mut RdbConn,
     id: &str,
-    version: i64,
+    version: u32,
 ) -> RegularResult<()> {
     //
     let now = OffsetDateTime::now_utc();
@@ -186,7 +183,7 @@ async fn mark_avatar_uploaded(
     let affected = diesel::update(
         t_user
             .filter(f_id.eq(id))
-            .filter(f_avatar_version.eq(version)),
+            .filter(f_avatar_version.eq(i64::from(version))),
     )
     .set((f_avatar_uploaded.eq(true), f_updated_at.eq(now)))
     .execute(conn)
@@ -246,156 +243,167 @@ async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
     Ok(())
 }
 
-// ── Non-transactional: Execute impls ─────────────────────────────────────────
-
-#[async_trait]
-impl<'a> Execute<GetInfoById<'a>> for RdbRepo {
+impl<'a> Run<GetUserInfo<'a>> for RdbRepo {
     type Error = RegularError;
 
-    async fn execute(
+    async fn run(
         &self,
-        step: &GetInfoById<'a>,
+        oper: &GetUserInfo<'a>,
     ) -> Result<UserInfo, Self::Error> {
-        submit_query!(self.core, get_info_by_id, step.id)
+        match oper {
+            GetUserInfo::Id { id } => {
+                submit_query!(self.core, get_info_by_id, id)
+            }
+        }
     }
 }
 
-#[async_trait]
-impl<'a> Execute<GetCredentialByQid<'a>> for RdbRepo {
+impl<'a> Run<GetUserCredential<'a>> for RdbRepo {
     type Error = RegularError;
 
-    async fn execute(
+    async fn run(
         &self,
-        step: &GetCredentialByQid<'a>,
+        oper: &GetUserCredential<'a>,
     ) -> Result<UserCredential, Self::Error> {
-        submit_query!(self.core, get_credential_by_qid, step.qid)
+        match oper {
+            GetUserCredential::Qid { qid } => {
+                submit_query!(self.core, get_credential_by_qid, qid)
+            }
+        }
     }
 }
 
-#[async_trait]
-impl<'a> Execute<FindInfoByQid<'a>> for RdbRepo {
+impl<'a> Run<FindUserInfo<'a>> for RdbRepo {
     type Error = RegularError;
 
-    async fn execute(
+    async fn run(
         &self,
-        step: &FindInfoByQid<'a>,
+        oper: &FindUserInfo<'a>,
     ) -> Result<Option<UserInfo>, Self::Error> {
-        submit_query!(self.core, find_info_by_qid, step.qid)
+        match oper {
+            FindUserInfo::Qid { qid } => {
+                submit_query!(self.core, find_info_by_qid, qid)
+            }
+        }
     }
 }
 
-#[async_trait]
-impl<'a> Execute<TouchLastActive<'a>> for RdbRepo {
+impl<'a> Run<UpdateUser<'a>> for RdbRepo {
     type Error = RegularError;
 
-    async fn execute(&self, step: &TouchLastActive<'a>) -> RegularResult<()> {
-        submit_query!(self.core, touch_last_active, step.id)
+    async fn run(&self, oper: &UpdateUser<'a>) -> RegularResult<()> {
+        match oper {
+            //
+            UpdateUser::TouchLastActive { id } => {
+                submit_query!(self.core, touch_last_active, id)
+            }
+
+            UpdateUser::Info { id, qid, nickname } => {
+                submit_query!(self.core, update_info, id, qid, nickname)
+            }
+
+            UpdateUser::MarkAvatarUploaded { id, avatar_version } => {
+                submit_query!(
+                    self.core,
+                    mark_avatar_uploaded,
+                    id,
+                    *avatar_version
+                )
+            }
+        }
     }
 }
 
-// ── Transactional: Advance impls ─────────────────────────────────────────────
-
-#[async_trait]
-impl<'a> Advance<Create<'a>, RdbContext> for RdbRepoTransactional {
+impl<'a> Step<CreateUser<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
-    async fn advance(
+    async fn step(
         &self,
         context: &mut RdbContext,
-        step: &Create<'a>,
+        oper: &CreateUser<'a>,
     ) -> RegularResult<UserInfo> {
-        create(context.conn(), step.form).await
+        create(context.conn(), oper.entry).await
     }
 }
 
-#[async_trait]
-impl<'a> Advance<FindInfoByQid<'a>, RdbContext> for RdbRepoTransactional {
+impl<'a> Step<FindUserInfo<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
-    async fn advance(
+    async fn step(
         &self,
         context: &mut RdbContext,
-        step: &FindInfoByQid<'a>,
+        oper: &FindUserInfo<'a>,
     ) -> RegularResult<Option<UserInfo>> {
-        find_info_by_qid(context.conn(), step.qid).await
+        match oper {
+            FindUserInfo::Qid { qid } => {
+                find_info_by_qid(context.conn(), qid).await
+            }
+        }
     }
 }
 
-#[async_trait]
-impl<'a> Advance<UpdateInfo<'a>, RdbContext> for RdbRepoTransactional {
+impl<'a> Step<UpdateUser<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
-    async fn advance(
+    async fn step(
         &self,
         context: &mut RdbContext,
-        step: &UpdateInfo<'a>,
+        oper: &UpdateUser<'a>,
     ) -> RegularResult<()> {
-        update_info(context.conn(), step.id, step.qid, step.nickname).await
+        match oper {
+            //
+            UpdateUser::Info { id, qid, nickname } => {
+                update_info(context.conn(), id, qid, nickname).await
+            }
+
+            UpdateUser::MarkAvatarUploaded { id, avatar_version } => {
+                mark_avatar_uploaded(context.conn(), id, *avatar_version).await
+            }
+
+            UpdateUser::TouchLastActive { id } => {
+                touch_last_active(context.conn(), id).await
+            }
+        }
     }
 }
 
-#[async_trait]
-impl<'a> Advance<ReserveAvatar<'a>, RdbContext> for RdbRepoTransactional {
+impl<'a> Step<ReserveUserAvatar<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
-    async fn advance(
+    async fn step(
         &self,
         context: &mut RdbContext,
-        step: &ReserveAvatar<'a>,
+        oper: &ReserveUserAvatar<'a>,
     ) -> RegularResult<UserAvatarReservation> {
-        reserve_avatar(context.conn(), step.id, step.file_ext).await
+        reserve_avatar(context.conn(), oper.id, oper.file_ext).await
     }
 }
 
-#[async_trait]
-impl<'a> Advance<MarkAvatarUploaded<'a>, RdbContext> for RdbRepoTransactional {
+impl<'a> Step<GetUserInfoExcluded<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
-    async fn advance(
+    async fn step(
         &self,
         context: &mut RdbContext,
-        step: &MarkAvatarUploaded<'a>,
-    ) -> RegularResult<()> {
-        mark_avatar_uploaded(context.conn(), step.id, step.avatar_version).await
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<TouchLastActive<'a>, RdbContext> for RdbRepoTransactional {
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut RdbContext,
-        step: &TouchLastActive<'a>,
-    ) -> RegularResult<()> {
-        touch_last_active(context.conn(), step.id).await
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<GetInfoExcluded<'a>, RdbContext> for RdbRepoTransactional {
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut RdbContext,
-        step: &GetInfoExcluded<'a>,
+        oper: &GetUserInfoExcluded<'a>,
     ) -> RegularResult<UserInfo> {
-        get_info_by_id_excluded(context.conn(), step.id).await
+        match oper {
+            GetUserInfoExcluded::Id { id } => {
+                get_info_by_id_excluded(context.conn(), id).await
+            }
+        }
     }
 }
 
-#[async_trait]
-impl<'a> Advance<Delete<'a>, RdbContext> for RdbRepoTransactional {
+impl<'a> Step<DeleteUser<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
-    async fn advance(
+    async fn step(
         &self,
         context: &mut RdbContext,
-        step: &Delete<'a>,
+        oper: &DeleteUser<'a>,
     ) -> RegularResult<()> {
-        delete(context.conn(), step.id).await
+        delete(context.conn(), oper.id).await
     }
 }
 #[cfg(all(test, feature = "repo"))]

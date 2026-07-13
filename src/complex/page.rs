@@ -1,24 +1,17 @@
 //! Complex-domain opers for page entities.
 
+use poprako_orchestra::Proxy;
+
 use poprako_util::i18n::trl;
 
 use crate::complex::util::{
     check_user_is_team_admin, check_user_is_team_member,
 };
-use crate::part::repo::step::assignment::{
-    AssignmentStep, GetInfoByChapterIdAndUserId,
-};
-use crate::part::repo::step::chapter::{
-    ChapterStep, GetInfoById as ChapterGetInfoById,
-};
-use crate::part::repo::step::comic::{
-    ComicStep, GetInfoById as ComicGetInfoById,
-};
-use crate::part::repo::step::member::FindInfoByUserIdAndTeamId;
-use crate::part::repo::step::workset::{
-    GetInfoById as WorksetGetInfoById, WorksetStep,
-};
-use crate::part::shared::proxy::ProxyExecute;
+use crate::part::repo::oper::assignment::FindAssignmentInfo;
+use crate::part::repo::oper::chapter::GetChapterInfo;
+use crate::part::repo::oper::comic::GetComicInfo;
+use crate::part::repo::oper::member::FindMemberInfo;
+use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::result::{ExpectedVariant, RegularError, RegularResult};
 use crate::util::next_snowflake_id;
 use crate::value::role::RoleField;
@@ -36,7 +29,7 @@ impl PageComplex {
     pub fn gen_image_key(
         chapter_id: &str,
         page_id: &str,
-        image_version: i64,
+        image_version: u32,
         file_ext: &str,
     ) -> String {
         format!(
@@ -51,48 +44,48 @@ pub struct PagePermComplex;
 
 impl PagePermComplex {
     /// Verify the caller may reserve page images for the chapter.
-    pub async fn can_user_reserve<P>(
+    pub async fn ensure_user_can_reserve<P>(
         proxy: &mut P,
         user_id: &str,
         chapter_id: &str,
     ) -> RegularResult<()>
     where
-        P: for<'a> ProxyExecute<
-                GetInfoByChapterIdAndUserId<'a>,
-                Error = RegularError,
-            >,
+        P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = RegularError>,
     {
         check_reserve_role(proxy, user_id, chapter_id).await
     }
 
     /// Verify the caller may list pages under a chapter.
-    pub async fn can_user_list_infos<P>(
+    pub async fn ensure_user_can_list_infos<P>(
         proxy: &mut P,
         user_id: &str,
         chapter_id: &str,
     ) -> RegularResult<()>
     where
-        P: for<'a> ProxyExecute<ChapterGetInfoById<'a>, Error = RegularError>
-            + for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RegularError>
-            + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RegularError>
-            + for<'a> ProxyExecute<
-                FindInfoByUserIdAndTeamId<'a>,
-                Error = RegularError,
-            > + for<'a> ProxyExecute<
-                GetInfoByChapterIdAndUserId<'a>,
-                Error = RegularError,
-            >,
+        P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = RegularError>
+            + for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = RegularError>
+            + for<'a> Proxy<GetWorksetInfo<'a>, Error = RegularError>
+            + for<'a> Proxy<FindMemberInfo<'a>, Error = RegularError>
+            + for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = RegularError>,
     {
         let chapter_info = proxy
-            .execute(&ChapterStep::get_info_by_id(chapter_id, &[]))
+            .exec(&GetChapterInfo {
+                id: chapter_id,
+                incls: &[],
+            })
             .await?;
 
         let comic_info = proxy
-            .execute(&ComicStep::get_info_by_id(&chapter_info.comic_id, &[]))
+            .exec(&GetComicInfo {
+                id: &chapter_info.comic_id,
+                incls: &[],
+            })
             .await?;
 
         let workset_info = proxy
-            .execute(&WorksetStep::get_info_by_id(&comic_info.workset_id))
+            .exec(&GetWorksetInfo {
+                id: &comic_info.workset_id,
+            })
             .await?;
 
         let member_check =
@@ -107,45 +100,47 @@ impl PagePermComplex {
     }
 
     /// Verify the caller may confirm a page image upload.
-    pub async fn can_user_mark_image_uploaded<P>(
+    pub async fn ensure_user_can_mark_image_uploaded<P>(
         proxy: &mut P,
         user_id: &str,
         chapter_id: &str,
     ) -> RegularResult<()>
     where
-        P: for<'a> ProxyExecute<
-                GetInfoByChapterIdAndUserId<'a>,
-                Error = RegularError,
-            >,
+        P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = RegularError>,
     {
         check_upload_role(proxy, user_id, chapter_id).await
     }
 
     /// Verify the caller may delete all pages under the chapter.
-    pub async fn can_user_delete<P>(
+    pub async fn ensure_user_can_delete<P>(
         proxy: &mut P,
         user_id: &str,
         chapter_id: &str,
     ) -> RegularResult<()>
     where
-        P: for<'a> ProxyExecute<ChapterGetInfoById<'a>, Error = RegularError>
-            + for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RegularError>
-            + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RegularError>
-            + for<'a> ProxyExecute<
-                FindInfoByUserIdAndTeamId<'a>,
-                Error = RegularError,
-            >,
+        P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = RegularError>
+            + for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = RegularError>
+            + for<'a> Proxy<GetWorksetInfo<'a>, Error = RegularError>
+            + for<'a> Proxy<FindMemberInfo<'a>, Error = RegularError>,
     {
         let chapter_info = proxy
-            .execute(&ChapterStep::get_info_by_id(chapter_id, &[]))
+            .exec(&GetChapterInfo {
+                id: chapter_id,
+                incls: &[],
+            })
             .await?;
 
         let comic_info = proxy
-            .execute(&ComicStep::get_info_by_id(&chapter_info.comic_id, &[]))
+            .exec(&GetComicInfo {
+                id: &chapter_info.comic_id,
+                incls: &[],
+            })
             .await?;
 
         let workset_info = proxy
-            .execute(&WorksetStep::get_info_by_id(&comic_info.workset_id))
+            .exec(&GetWorksetInfo {
+                id: &comic_info.workset_id,
+            })
             .await?;
 
         check_user_is_team_admin(proxy, user_id, &workset_info.team_id).await
@@ -160,15 +155,13 @@ async fn check_reserve_role<P>(
     chapter_id: &str,
 ) -> RegularResult<()>
 where
-    P: for<'a> ProxyExecute<
-            GetInfoByChapterIdAndUserId<'a>,
-            Error = RegularError,
-        >,
+    P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = RegularError>,
 {
     let assignment_info = proxy
-        .execute(&AssignmentStep::get_info_by_chapter_id_and_user_id(
-            chapter_id, user_id,
-        ))
+        .exec(&FindAssignmentInfo::ChapterUser {
+            chapter_id,
+            user_id,
+        })
         .await?;
 
     let Some(assignment_info) = assignment_info else {
@@ -193,15 +186,13 @@ async fn check_upload_role<P>(
     chapter_id: &str,
 ) -> RegularResult<()>
 where
-    P: for<'a> ProxyExecute<
-            GetInfoByChapterIdAndUserId<'a>,
-            Error = RegularError,
-        >,
+    P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = RegularError>,
 {
     let assignment_info = proxy
-        .execute(&AssignmentStep::get_info_by_chapter_id_and_user_id(
-            chapter_id, user_id,
-        ))
+        .exec(&FindAssignmentInfo::ChapterUser {
+            chapter_id,
+            user_id,
+        })
         .await?;
 
     let Some(assignment_info) = assignment_info else {
@@ -225,15 +216,13 @@ async fn check_any_assignment<P>(
     chapter_id: &str,
 ) -> RegularResult<()>
 where
-    P: for<'a> ProxyExecute<
-            GetInfoByChapterIdAndUserId<'a>,
-            Error = RegularError,
-        >,
+    P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = RegularError>,
 {
     let assignment_info = proxy
-        .execute(&AssignmentStep::get_info_by_chapter_id_and_user_id(
-            chapter_id, user_id,
-        ))
+        .exec(&FindAssignmentInfo::ChapterUser {
+            chapter_id,
+            user_id,
+        })
         .await?;
 
     if assignment_info.is_none() {

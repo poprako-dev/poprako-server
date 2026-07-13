@@ -39,7 +39,7 @@ pub struct MemberRow {
 /// Insertable struct for creating a new record in the `t_member` table.
 #[derive(Insertable)]
 #[diesel(table_name = t_member)]
-pub struct MemberEntry<'a> {
+pub struct MemberRowEntry<'a> {
     pub f_id: &'a str,
     pub f_user_id: &'a str,
     pub f_user_nickname: &'a str,

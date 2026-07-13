@@ -30,7 +30,7 @@ pub struct PageInfo {
 
     pub image_key: Option<String>,
     pub image_uploaded: bool,
-    pub image_version: i64,
+    pub image_version: u32,
 
     pub total_unit_count: i32,
     pub translated_unit_count: i32,
@@ -42,14 +42,14 @@ pub struct PageInfo {
 
 /// The data needed to insert one page row.
 #[cfg_attr(test, derive(Clone))]
-pub struct PageForm {
+pub struct PageEntry {
     pub id: String,
 
     pub chapter_id: String,
     pub index: i32,
 
     pub image_key: Option<String>,
-    pub image_version: i64,
+    pub image_version: u32,
 }
 
 /// Image reservation result for a page.
@@ -57,5 +57,5 @@ pub struct PageForm {
 pub struct PageImageReservation {
     pub object_key: String,
     pub prev_object_key: Option<String>,
-    pub image_version: i64,
+    pub image_version: u32,
 }

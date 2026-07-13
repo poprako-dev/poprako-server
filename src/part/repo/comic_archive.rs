@@ -1,13 +1,15 @@
 //! Repository trait for immutable comic archive transactions.
 
-use poprako_transactional::advance::Advance;
+use poprako_orchestra::Step;
 
-use crate::part::repo::step::comic_archive::{Commit, LockSnapshot};
+use crate::part::repo::oper::comic_archive::{
+    CommitComicArchive, GetComicArchiveSnapshotExcluded,
+};
 use crate::result::RegularError;
 
-/// Transactional repository operations for one atomic comic archive.
-pub trait ComicArchiveRepoTransactional<C>:
-    for<'a> Advance<LockSnapshot<'a>, C, Error = RegularError>
-    + for<'a> Advance<Commit<'a>, C, Error = RegularError>
+/// Comic archive operations within a caller-coordinated transaction.
+pub trait ComicArchiveRepo<C>:
+    for<'a> Step<GetComicArchiveSnapshotExcluded<'a>, C, Error = RegularError>
+    + for<'a> Step<CommitComicArchive<'a>, C, Error = RegularError>
 {
 }

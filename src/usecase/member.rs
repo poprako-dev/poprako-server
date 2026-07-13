@@ -1,31 +1,33 @@
 //! Member use cases: create, join, list, role update, and deletion.
 
-use poprako_transactional::advance::Advance;
-use poprako_transactional::drive::Drive;
+use poprako_orchestra::{Nucl, run_proxy};
+
 use poprako_util::i18n::trl;
 
 use crate::complex::member::{MemberComplex, MemberPermComplex};
 use crate::data::member::{
-    CreateMemberData, CreateMemberVal, JoinTeamData, ListMemberInfosData,
-    MemberInfoVal, UpdateMemberRolesData,
+    CreateMemberParams, CreateMemberPayload, JoinTeamParams,
+    ListMemberInfosParams, MemberInfoVal, UpdateMemberRolesParams,
 };
 use crate::model::member::{
-    MemberForm, MemberInfo, MemberListSpec, MemberRoleUpdate,
+    MemberEntry, MemberInfo, MemberListSpec, MemberRoleUpdate,
 };
 use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
-use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
-use crate::part::repo::member_invitation::{
-    MemberInvitationRepo, MemberInvitationRepoTransactional,
+use crate::part::repo::member::MemberRepo;
+use crate::part::repo::member_invitation::MemberInvitationRepo;
+use crate::part::repo::oper::member::{
+    CreateMember, DeleteMember, FindMemberInfo, GetMemberInfo, ListMemberInfos,
+    UpdateMember,
 };
-use crate::part::repo::step::member::MemberStep;
-use crate::part::repo::step::member_invitation::MemberInvitationStep;
-use crate::part::repo::step::team::TeamStep;
-use crate::part::repo::step::user::UserStep;
-use crate::part::repo::team::{TeamRepo, TeamRepoTransactional};
-use crate::part::repo::user::{UserRepo, UserRepoTransactional};
+use crate::part::repo::oper::member_invitation::{
+    GetMemberInvitationInfoExcluded, UpdateMemberInvitation,
+};
+use crate::part::repo::oper::team::GetTeamInfoExcluded;
+use crate::part::repo::oper::user::GetUserInfoExcluded;
+use crate::part::repo::team::TeamRepo;
+use crate::part::repo::user::UserRepo;
 use crate::result::{ExpectedVariant, RegularError, RegularResult};
-use crate::util::DeriveTransactional;
 
 #[cfg(test)]
 mod tests;
@@ -34,53 +36,56 @@ mod tests;
 ///
 /// The caller must be a team admin. The target user and team are locked in
 /// the transaction before inserting the membership.
-pub async fn create<D, C, R>(
-    drive: &D,
+pub async fn create<N, C, R>(
+    nucl: &N,
     repo: &R,
     token: UserToken,
-    data: CreateMemberData,
-) -> RegularResult<CreateMemberVal>
+    params: CreateMemberParams,
+) -> RegularResult<CreateMemberPayload>
 where
-    D: Drive<C>,
-    D::Error: Into<RegularError>,
+    N: Nucl<Context = C, Error = RegularError>,
     C: Send,
     R: MemberRepo<C> + TeamRepo<C> + UserRepo<C> + Send + Sync,
-    <R as DeriveTransactional>::Transactional: MemberRepoTransactional<C>
-        + TeamRepoTransactional<C>
-        + UserRepoTransactional<C>
-        + Send
-        + Sync,
 {
-    let roles = data.roles;
+    let roles = params.roles;
 
-    use crate::part::shared::proxy::AsProxyNonTransactional as _;
-
-    MemberPermComplex::can_user_create(
-        &mut repo.as_proxy(),
+    MemberPermComplex::ensure_user_can_create(
+        &mut run_proxy! {
+            repo => for<'a> FindMemberInfo<'a>;
+        },
         &token.user_id,
-        &data.team_id,
+        &params.team_id,
     )
     .await?;
 
-    let member_id = drive
-        .with_context(async move |context| -> RegularResult<String> {
+    let member_id = nucl
+        .coord(async move |context| -> RegularResult<String> {
             //
-            let repo = repo.derive_transactional().await;
 
             let user_info = repo
-                .advance(context, &UserStep::get_info_excluded(&data.user_id))
+                .step(
+                    context,
+                    &GetUserInfoExcluded::Id {
+                        id: &params.user_id,
+                    },
+                )
                 .await?;
 
-            repo.advance(context, &TeamStep::get_info_excluded(&data.team_id))
-                .await?;
+            repo.step(
+                context,
+                &GetTeamInfoExcluded::Id {
+                    id: &params.team_id,
+                },
+            )
+            .await?;
 
             let existing_member_info = repo
-                .advance(
+                .step(
                     context,
-                    &MemberStep::find_info_by_user_id_and_team_id(
-                        &data.user_id,
-                        &data.team_id,
-                    ),
+                    &FindMemberInfo::UserTeam {
+                        user_id: &params.user_id,
+                        team_id: &params.team_id,
+                    },
                 )
                 .await?;
 
@@ -91,66 +96,65 @@ where
                 });
             }
 
-            let member_form = MemberForm {
+            let member_entry = MemberEntry {
                 id: MemberComplex::gen_id(),
-                user_id: data.user_id,
+                user_id: params.user_id,
                 user_nickname: user_info.nickname,
-                team_id: data.team_id,
+                team_id: params.team_id,
                 roles,
             };
 
             let member_info = repo
-                .advance(context, &MemberStep::create(&member_form))
+                .step(
+                    context,
+                    &CreateMember {
+                        entry: &member_entry,
+                    },
+                )
                 .await?;
 
             Ok(member_info.id)
         })
         .await?;
 
-    Ok(CreateMemberVal { id: member_id })
+    Ok(CreateMemberPayload { id: member_id })
 }
 
 /// Joins the current user to a team with a pending invitation code.
-pub async fn join_team<D, C, R, I>(
-    drive: &D,
+pub async fn join_team<N, C, R, I>(
+    nucl: &N,
     repo: &R,
     image_pool: &I,
     token: UserToken,
-    data: JoinTeamData,
+    params: JoinTeamParams,
 ) -> RegularResult<MemberInfoVal>
 where
-    D: Drive<C>,
-    D::Error: Into<RegularError>,
+    N: Nucl<Context = C, Error = RegularError>,
     C: Send,
     R: MemberRepo<C> + MemberInvitationRepo<C> + UserRepo<C> + Send + Sync,
-    <R as DeriveTransactional>::Transactional:
-        MemberRepoTransactional<C>
-            + MemberInvitationRepoTransactional<C>
-            + UserRepoTransactional<C>
-            + Send
-            + Sync,
     I: ImagePool,
 {
     let current_user_id = token.user_id;
 
-    let member_info = drive
-        .with_context(async move |context| -> RegularResult<MemberInfo> {
+    let member_info = nucl
+        .coord(async move |context| -> RegularResult<MemberInfo> {
             //
-            let repo = repo.derive_transactional().await;
 
             let current_user_info = repo
-                .advance(
+                .step(
                     context,
-                    &UserStep::get_info_excluded(&current_user_id),
+                    &GetUserInfoExcluded::Id {
+                        id: &current_user_id,
+                    },
                 )
                 .await?;
 
             let member_invitation_info = repo
-                .advance(
+                .step(
                     context,
-                    &MemberInvitationStep::get_info_by_code_excluded(
-                        &data.code,
-                    ),
+                    &GetMemberInvitationInfoExcluded::Code {
+                        code: &params.code,
+                    },
                 )
                 .await?;
 
@@ -159,12 +163,12 @@ where
             }
 
             let existing_member_info = repo
-                .advance(
+                .step(
                     context,
-                    &MemberStep::find_info_by_user_id_and_team_id(
-                        &current_user_id,
-                        &member_invitation_info.team_id,
-                    ),
+                    &FindMemberInfo::UserTeam {
+                        user_id: &current_user_id,
+                        team_id: &member_invitation_info.team_id,
+                    },
                 )
                 .await?;
 
@@ -172,7 +176,7 @@ where
                 return Err(already_team_member_error());
             }
 
-            let member_form = MemberForm {
+            let member_entry = MemberEntry {
                 id: MemberComplex::gen_id(),
                 user_id: current_user_id,
                 user_nickname: current_user_info.nickname,
@@ -181,14 +185,19 @@ where
             };
 
             let member_info = repo
-                .advance(context, &MemberStep::create(&member_form))
+                .step(
+                    context,
+                    &CreateMember {
+                        entry: &member_entry,
+                    },
+                )
                 .await?;
 
-            repo.advance(
+            repo.step(
                 context,
-                &MemberInvitationStep::mark_pending_as_used(
-                    &member_invitation_info.id,
-                ),
+                &UpdateMemberInvitation::MarkUsed {
+                    id: &member_invitation_info.id,
+                },
             )
             .await?;
 
@@ -206,22 +215,19 @@ pub async fn list_infos<C, R, I>(
     repo: &R,
     image_pool: &I,
     token: UserToken,
-    data: ListMemberInfosData,
+    params: ListMemberInfosParams,
 ) -> RegularResult<Vec<MemberInfoVal>>
 where
     R: MemberRepo<C> + Sync,
-    <R as DeriveTransactional>::Transactional: MemberRepoTransactional<C>,
     I: ImagePool,
 {
-    let member_list_spec: MemberListSpec = data.try_into()?;
+    let member_list_spec: MemberListSpec = params.try_into()?;
 
-    //
     if let MemberListSpec::Team { team_id, .. } = &member_list_spec {
-        //
-        use crate::part::shared::proxy::AsProxyNonTransactional as _;
-
-        MemberPermComplex::can_user_list_infos(
-            &mut repo.as_proxy(),
+        MemberPermComplex::ensure_user_can_list_infos(
+            &mut run_proxy! {
+                repo => for<'a> FindMemberInfo<'a>;
+            },
             &token.user_id,
             team_id,
         )
@@ -229,7 +235,9 @@ where
     }
 
     let member_infos = repo
-        .execute(&MemberStep::list_infos(&member_list_spec))
+        .run(&ListMemberInfos::Spec {
+            spec: &member_list_spec,
+        })
         .await?;
 
     let mut member_info_vals = Vec::with_capacity(member_infos.len());
@@ -245,46 +253,46 @@ where
 /// Updates one member's roles.
 ///
 /// The caller must be a team admin of the target member's team.
-pub async fn update_roles<D, C, R>(
-    drive: &D,
+pub async fn update_roles<N, C, R>(
+    nucl: &N,
     repo: &R,
     token: UserToken,
-    data: UpdateMemberRolesData,
+    params: UpdateMemberRolesParams,
 ) -> RegularResult<()>
 where
-    D: Drive<C>,
-    D::Error: Into<RegularError>,
+    N: Nucl<Context = C, Error = RegularError>,
     C: Send,
     R: MemberRepo<C> + Send + Sync,
-    <R as DeriveTransactional>::Transactional:
-        MemberRepoTransactional<C> + Send + Sync,
 {
     let member_info = repo
-        .execute(&MemberStep::get_info_by_id(&data.id, &[]))
+        .run(&GetMemberInfo::Id {
+            id: &params.id,
+            incls: &[],
+        })
         .await?;
 
-    use crate::part::shared::proxy::AsProxyNonTransactional as _;
-
-    MemberPermComplex::can_user_update_info(
-        &mut repo.as_proxy(),
+    MemberPermComplex::ensure_user_can_update_info(
+        &mut run_proxy! {
+            repo => for<'a> FindMemberInfo<'a>;
+        },
         &token.user_id,
         &member_info.team_id,
     )
     .await?;
 
-    drive
-        .with_context(async move |context| -> RegularResult<()> {
+    let transaction_output = nucl
+        .coord(async move |context| -> RegularResult<()> {
             //
-            let repo = repo.derive_transactional().await;
-
             let member_role_update = MemberRoleUpdate {
-                id: data.id,
-                roles: data.roles,
+                id: params.id,
+                roles: params.roles,
             };
 
-            repo.advance(
+            repo.step(
                 context,
-                &MemberStep::update_role(&member_role_update),
+                &UpdateMember::Role {
+                    update: &member_role_update,
+                },
             )
             .await?;
 
@@ -292,48 +300,51 @@ where
         })
         .await?;
 
+    let () = transaction_output;
+
     Ok(())
 }
 
 /// Deletes one member.
 ///
 /// The caller must be a team admin of the target member's team.
-pub async fn delete<D, C, R>(
-    drive: &D,
+pub async fn delete<N, C, R>(
+    nucl: &N,
     repo: &R,
     token: UserToken,
     id: String,
 ) -> RegularResult<()>
 where
-    D: Drive<C>,
-    D::Error: Into<RegularError>,
+    N: Nucl<Context = C, Error = RegularError>,
     C: Send,
     R: MemberRepo<C> + Send + Sync,
-    <R as DeriveTransactional>::Transactional:
-        MemberRepoTransactional<C> + Send + Sync,
 {
-    let member_info =
-        repo.execute(&MemberStep::get_info_by_id(&id, &[])).await?;
+    let member_info = repo
+        .run(&GetMemberInfo::Id {
+            id: &id,
+            incls: &[],
+        })
+        .await?;
 
-    use crate::part::shared::proxy::AsProxyNonTransactional as _;
-
-    MemberPermComplex::can_user_delete(
-        &mut repo.as_proxy(),
+    MemberPermComplex::ensure_user_can_delete(
+        &mut run_proxy! {
+            repo => for<'a> FindMemberInfo<'a>;
+        },
         &token.user_id,
         &member_info.team_id,
     )
     .await?;
 
-    drive
-        .with_context(async move |context| -> RegularResult<()> {
+    let transaction_output = nucl
+        .coord(async move |context| -> RegularResult<()> {
             //
-            let repo = repo.derive_transactional().await;
-
-            repo.advance(context, &MemberStep::delete(&id)).await?;
+            repo.step(context, &DeleteMember { id: &id }).await?;
 
             Ok(())
         })
         .await?;
+
+    let () = transaction_output;
 
     Ok(())
 }

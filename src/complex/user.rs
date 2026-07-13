@@ -55,7 +55,7 @@ impl UserComplex {
     /// Constructs the object storage key for a user's avatar image from the user ID, version counter, and file extension.
     pub fn gen_avatar_key(
         id: &str,
-        avatar_version: i64,
+        avatar_version: u32,
         file_ext: &str,
     ) -> String {
         format!("user_avatar/{}-{}.{}", id, avatar_version, file_ext)

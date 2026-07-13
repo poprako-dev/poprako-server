@@ -5,7 +5,6 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "swagger-ui")]
 use utoipa::{IntoParams, ToSchema};
 
-use poprako_macro::Paginate;
 use poprako_util::time::ToUnixMilli;
 
 use crate::data::comic::ComicInfoVal;
@@ -131,7 +130,7 @@ impl ChapterInfoVal {
 /// Input parameters for creating a new chapter.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct CreateChapterData {
+pub struct CreateChapterParams {
     pub comic_id: String,
 
     /// Optional display subtitle; defaults to a generated value
@@ -144,7 +143,7 @@ pub struct CreateChapterData {
 /// Return value from a successful chapter creation.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct CreateChapterVal {
+pub struct CreateChapterPayload {
     pub id: String,
 }
 
@@ -154,11 +153,10 @@ pub struct CreateChapterVal {
 /// in their parent segments.
 ///
 /// Example: `/api/v1/comics/{comic_id}/chapters?incl=comic.workset.team&incl=creator&offset=0&limit=20`.
-#[Paginate]
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
 #[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
-pub struct ListChapterInfosData {
+pub struct ListChapterInfosParams {
     /// Parent comic whose chapters to list.
     pub comic_id: String,
 
@@ -171,12 +169,15 @@ pub struct ListChapterInfosData {
         deserialize_with = "crate::value::query::deserialize_vec"
     )]
     pub incl_opt: Vec<ChapterInclOpt>,
+
+    pub offset: u32,
+    pub limit: u32,
 }
 
 /// Input parameters for partially updating a chapter's profile.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct PatchChapterInfoData {
+pub struct UpdateChapterInfoParams {
     pub id: String,
 
     pub subtitle: Option<String>,
@@ -190,7 +191,7 @@ pub struct PatchChapterInfoData {
 /// transition is legal for the current stage phase before applying it.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct UpdateChapterStageData {
+pub struct UpdateChapterStageParams {
     pub id: String,
 
     pub stage: Stage,

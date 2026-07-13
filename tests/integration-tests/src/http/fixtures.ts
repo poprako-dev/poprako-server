@@ -938,7 +938,7 @@ export async function exportLabelPlus(api: ApiClient, chapterId: string): Promis
 
 // Poprako JSON import content built from a poprako export. The export and
 // import shapes DIFFER (export is `ChapterTranslationExportVal`, import is
-// `PoprakoProjectImport` with `image_filename`/`x`/`y`/`index_in_page`/
+// `ChapterPoprakoProjectImport` with `image_filename`/`x`/`y`/`index_in_page`/
 // `is_inbox`/`prooved_text`/`is_prooved`), so convert here.
 export function buildPoprakoImportContent(
     exportVal: PoprakoExportVal,

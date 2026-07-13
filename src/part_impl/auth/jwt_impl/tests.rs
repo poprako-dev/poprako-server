@@ -6,6 +6,8 @@ use super::*;
 use jsonwebtoken::{DecodingKey, Validation, decode};
 use serde::Deserialize;
 
+use crate::model::user::UserTokenRef;
+
 #[derive(Debug, Deserialize)]
 struct TestClaims {
     sub: String,

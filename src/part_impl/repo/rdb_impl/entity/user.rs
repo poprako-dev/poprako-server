@@ -20,7 +20,8 @@ pub struct UserRow {
 
     pub f_avatar_key: Option<String>,
     pub f_avatar_uploaded: bool,
-    pub f_avatar_version: i64,
+    #[diesel(deserialize_as = i64)]
+    pub f_avatar_version: u32,
 
     pub f_last_active_at: OffsetDateTime,
 
@@ -43,7 +44,7 @@ pub struct UserCredentialRow {
 /// Insertable struct for creating a new record in the `t_user` table.
 #[derive(Insertable)]
 #[diesel(table_name = t_user)]
-pub struct UserEntry<'a> {
+pub struct UserRowEntry<'a> {
     pub f_id: &'a str,
     pub f_nickname: &'a str,
     pub f_qid: &'a str,
@@ -115,9 +116,9 @@ impl<'a> UserAspect<'a> {
         self
     }
 
-    pub fn avatar_version(mut self, val: i64) -> Self {
+    pub fn avatar_version(mut self, val: u32) -> Self {
         //
-        self.f_avatar_version = Some(val);
+        self.f_avatar_version = Some(i64::from(val));
 
         self
     }

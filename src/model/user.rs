@@ -30,7 +30,7 @@ pub struct UserInfo {
 
     pub avatar_key: Option<String>,
     pub avatar_uploaded: bool,
-    pub avatar_version: i64,
+    pub avatar_version: u32,
 
     pub is_sadmin: bool,
 
@@ -42,7 +42,7 @@ pub struct UserInfo {
 
 /// The data needed to insert a new user row.
 #[cfg_attr(test, derive(Clone))]
-pub struct UserForm {
+pub struct UserEntry {
     pub id: String,
 
     pub qid: String,
@@ -60,7 +60,7 @@ pub struct UserForm {
 pub struct UserAvatarReservation {
     pub object_key: String,
     pub prev_object_key: Option<String>,
-    pub avatar_version: i64,
+    pub avatar_version: u32,
 }
 
 /// A stored password credential used during login verification.

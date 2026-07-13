@@ -1,19 +1,12 @@
-// page_roundtrip_reads_test_database_url(PageStep)(positive): page repo persists, lists, and updates page counters in the local test database.
+// page_roundtrip_reads_test_database_url(SetPageUnitCounters, ListPageInfos)(positive): page repo persists, lists, and updates page counters in the local test database.
 
-use super::*;
-
-use poprako_transactional::advance::Advance;
-use poprako_transactional::drive::Drive;
-
-use poprako_util::page::Page;
+use poprako_orchestra::{Nucl as _, Run as _, Step as _};
 
 use crate::model::unit::UnitCounters;
-use crate::part::repo::step::page::PageStep;
-use crate::part::shared::execute::Execute;
+use crate::part::repo::oper::page::{ListPageInfos, SetPageUnitCounters};
 use crate::part_impl::drive::rdb_impl::RdbDrive;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
 use crate::result::RegularError;
-use crate::util::DeriveTransactional as _;
 
 const PREFIX: &str = "rdb-test-page-domain-";
 
@@ -30,8 +23,6 @@ async fn page_roundtrip_reads_test_database_url() {
 
     let drive = RdbDrive::new(shared.clone());
 
-    let transactional_repo = repo.derive_transactional().await;
-
     let unit_counters = UnitCounters {
         total_unit_count: 2,
         translated_unit_count: 1,
@@ -39,15 +30,14 @@ async fn page_roundtrip_reads_test_database_url() {
     };
 
     drive
-        .with_context(async |context| {
+        .coord(async |context| {
             //
-            Advance::advance(
-                &transactional_repo,
+            repo.step(
                 context,
-                &PageStep::set_unit_counters(
-                    &page_fixture.page_form.id,
-                    unit_counters,
-                ),
+                &SetPageUnitCounters {
+                    id: &page_fixture.page_entry.id,
+                    counters: unit_counters,
+                },
             )
             .await?;
 
@@ -57,21 +47,15 @@ async fn page_roundtrip_reads_test_database_url() {
         .ok()
         .unwrap();
 
-    let page = Page {
-        offset: 0,
-        limit: 10,
-    };
-
-    let page_infos = Execute::execute(
-        &repo,
-        &PageStep::list_infos_by_chapter_id(
-            &page_fixture.chapter_form.id,
-            page,
-        ),
-    )
-    .await
-    .ok()
-    .unwrap();
+    let page_infos = repo
+        .run(&ListPageInfos::Chapter {
+            chapter_id: &page_fixture.chapter_entry.id,
+            offset: 0,
+            limit: 10,
+        })
+        .await
+        .ok()
+        .unwrap();
 
     assert_eq!(page_infos.len(), 1);
 

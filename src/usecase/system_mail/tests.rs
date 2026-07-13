@@ -16,7 +16,7 @@ use super::*;
 
 use time::{Duration, OffsetDateTime};
 
-use crate::data::system_mail::ListSystemMailData;
+use crate::data::system_mail::ListSystemMailInfosParams;
 use crate::model::system_mail::SystemMailInfo;
 use crate::model::user::UserToken;
 use crate::part_impl::repo::mock_impl::Mock;
@@ -48,8 +48,8 @@ fn token(user_id: &str) -> UserToken {
 }
 
 /// Builds a [`ListSystemMailData`] for listing unread mails.
-fn list_unread_data(offset: u64, limit: u64) -> ListSystemMailData {
-    ListSystemMailData {
+fn list_unread_params(offset: u32, limit: u32) -> ListSystemMailInfosParams {
+    ListSystemMailInfosParams {
         read: Some(false),
         offset,
         limit,
@@ -69,7 +69,7 @@ async fn list_returns_current_user_unread_mails() {
 
     mock.seed_system_mail(mail("sys_mail-3", "user-2", false, time)); // other user
 
-    let mails = list_infos(&mock, token("user-1"), list_unread_data(0, 10))
+    let mails = list_infos(&mock, token("user-1"), list_unread_params(0, 10))
         .await
         .unwrap();
 
@@ -95,7 +95,7 @@ async fn list_applies_pagination_after_desc_sort() {
 
     mock.seed_system_mail(mail("sys_mail-3", "user-1", false, t2));
 
-    let mails = list_infos(&mock, token("user-1"), list_unread_data(0, 2))
+    let mails = list_infos(&mock, token("user-1"), list_unread_params(0, 2))
         .await
         .unwrap();
 
@@ -116,7 +116,7 @@ async fn list_returns_empty_for_missing_page() {
 
     mock.seed_system_mail(mail("sys_mail-1", "user-1", false, time));
 
-    let mails = list_infos(&mock, token("user-1"), list_unread_data(10, 10))
+    let mails = list_infos(&mock, token("user-1"), list_unread_params(10, 10))
         .await
         .unwrap();
 

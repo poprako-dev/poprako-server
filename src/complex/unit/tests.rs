@@ -11,11 +11,11 @@
 
 use super::*;
 
-use crate::model::unit::{UnitDiff, UnitIndex, UnitOper, UnitPayload};
+use crate::model::unit::{UnitContent, UnitDiff, UnitIndex, UnitOper};
 use crate::result::{ExpectedVariant, RegularError};
 
-fn payload(text: &str, proofread: bool) -> UnitPayload {
-    UnitPayload {
+fn payload(text: &str, proofread: bool) -> UnitContent {
+    UnitContent {
         is_bubble: true,
         is_proofread: proofread,
         x_coord: 1.0,
@@ -133,7 +133,7 @@ fn prepare_diff_rejects_invalid_compact_diff() {
 #[test]
 fn prepare_diff_allows_empty_text_without_editor_id() {
     //
-    let unit_payload = UnitPayload {
+    let unit_payload = UnitContent {
         translated_text: Some(String::new()),
         last_translator_id: None,
         ..payload("seed", false)
@@ -151,7 +151,7 @@ fn prepare_diff_allows_empty_text_without_editor_id() {
 #[test]
 fn prepare_diff_requires_editor_ids_for_non_empty_text() {
     //
-    let translated_payload = UnitPayload {
+    let translated_payload = UnitContent {
         last_translator_id: None,
         ..payload("translated", false)
     };
@@ -167,7 +167,7 @@ fn prepare_diff_requires_editor_ids_for_non_empty_text() {
 
     assert_args_error(translated_error);
 
-    let proofread_payload = UnitPayload {
+    let proofread_payload = UnitContent {
         proofread_text: Some("proofread".into()),
         last_proofreader_id: Some(String::new()),
         ..payload("translated", true)

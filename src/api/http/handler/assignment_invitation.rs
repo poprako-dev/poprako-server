@@ -11,18 +11,16 @@ use tracing::instrument;
 #[cfg(feature = "swagger-ui")]
 use utoipa::IntoParams;
 
-#[cfg(feature = "swagger-ui")]
-use crate::api::http::result::HttpBody;
-
+#[allow(unused_imports)]
 use crate::api::http::result::{
-    Accept as _, HttpNoContent, HttpResult, no_content,
+    Accept as _, HttpBody, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
 use crate::data::assignment::AssignmentInfoVal;
 use crate::data::assignment_invitation::{
-    AssignmentInvitationInfoVal, CreateAssignmentInvitationData,
-    CreateAssignmentInvitationVal, JoinAssignmentInvitationData,
-    ListAssignmentInvitationInfosData,
+    AssignmentInvitationInfoVal, CreateAssignmentInvitationParams,
+    CreateAssignmentInvitationPayload, JoinAssignmentInvitationParams,
+    ListAssignmentInvitationInfosParams,
 };
 use crate::model::user::UserToken;
 use crate::usecase;
@@ -39,10 +37,10 @@ pub struct AssignmentInvitationListQuery {
     pub pending: Option<bool>,
 
     /// Pagination offset (0-based).
-    pub offset: u64,
+    pub offset: u32,
 
     /// Maximum number of items to return.
-    pub limit: u64,
+    pub limit: u32,
 }
 
 /// `POST /api/v1/assignment-invitations` — create a pending assignment invitation.
@@ -50,24 +48,24 @@ pub struct AssignmentInvitationListQuery {
     post,
     path = "/api/v1/assignment-invitations",
     tag = "assignment-invitations",
-    request_body = CreateAssignmentInvitationData,
+    request_body = CreateAssignmentInvitationParams,
     responses(
-        (status = 201, description = "Invitation created", body = HttpBody<CreateAssignmentInvitationVal>),
+        (status = 201, description = "Invitation created", body = HttpBody<CreateAssignmentInvitationPayload>),
         (status = 403, description = "No permission to create invitations in this chapter"),
         (status = 409, description = "Invitee is already assigned"),
     ),
 ))]
-#[instrument(err, skip(harn, data))]
+#[instrument(err, skip(harn, params))]
 pub async fn create(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
-    Json(data): Json<CreateAssignmentInvitationData>,
-) -> HttpResult<CreateAssignmentInvitationVal> {
+    Json(params): Json<CreateAssignmentInvitationParams>,
+) -> HttpResult<CreateAssignmentInvitationPayload> {
     usecase::assignment_invitation::create(
         harn.drive(),
         harn.repo(),
         user_token,
-        data,
+        params,
     )
     .await?
     .accept(StatusCode::CREATED)
@@ -93,14 +91,14 @@ pub async fn list_infos(
     Query(query): Query<AssignmentInvitationListQuery>,
 ) -> HttpResult<Vec<AssignmentInvitationInfoVal>> {
     //
-    let data = ListAssignmentInvitationInfosData {
+    let params = ListAssignmentInvitationInfosParams {
         chapter_id,
         pending: query.pending,
         offset: query.offset,
         limit: query.limit,
     };
 
-    usecase::assignment_invitation::list_infos(harn.repo(), user_token, data)
+    usecase::assignment_invitation::list_infos(harn.repo(), user_token, params)
         .await?
         .accept(StatusCode::OK)
 }
@@ -140,7 +138,7 @@ pub async fn delete(
     post,
     path = "/api/v1/assignment-invitations/join",
     tag = "assignment-invitations",
-    request_body = JoinAssignmentInvitationData,
+    request_body = JoinAssignmentInvitationParams,
     responses(
         (status = 201, description = "Joined assignment", body = HttpBody<AssignmentInfoVal>),
         (status = 422, description = "Invitation does not target this user"),
@@ -148,18 +146,18 @@ pub async fn delete(
         (status = 404, description = "Invitation code not found"),
     ),
 ))]
-#[instrument(err, skip(harn, data))]
+#[instrument(err, skip(harn, params))]
 pub async fn join(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
-    Json(data): Json<JoinAssignmentInvitationData>,
+    Json(params): Json<JoinAssignmentInvitationParams>,
 ) -> HttpResult<AssignmentInfoVal> {
     usecase::assignment_invitation::join(
         harn.drive(),
         harn.repo(),
         harn.image_pool(),
         user_token,
-        data,
+        params,
     )
     .await?
     .accept(StatusCode::CREATED)

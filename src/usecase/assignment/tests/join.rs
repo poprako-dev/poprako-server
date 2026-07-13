@@ -4,6 +4,7 @@
 
 use super::*;
 
+use crate::data::assignment::JoinChapterAssignmentParams;
 use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;
 
@@ -20,7 +21,7 @@ async fn join_creates_assignment() {
         &mock,
         &mock,
         token("user-1"),
-        JoinChapterData {
+        JoinChapterAssignmentParams {
             chapter_id: "chapter-1".into(),
             roles: role(RoleField::TRANSLATOR),
         },
@@ -58,7 +59,7 @@ async fn join_unions_existing_assignment_roles() {
         &mock,
         &mock,
         token("user-1"),
-        JoinChapterData {
+        JoinChapterAssignmentParams {
             chapter_id: "chapter-1".into(),
             roles: role(RoleField::PROOFREADER),
         },
@@ -89,7 +90,7 @@ async fn join_rejects_role_outside_member_mask() {
         &mock,
         &mock,
         token("user-1"),
-        JoinChapterData {
+        JoinChapterAssignmentParams {
             chapter_id: "chapter-1".into(),
             roles: role(RoleField::PROOFREADER),
         },

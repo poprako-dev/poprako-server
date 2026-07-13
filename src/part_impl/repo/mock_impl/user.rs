@@ -1,49 +1,40 @@
-//! Mock implementations of `UserRepo` and `UserRepoTransactional` for in-memory testing.
+//! Mock user repository operations.
 
-use async_trait::async_trait;
-
-use poprako_transactional::advance::Advance;
+use poprako_orchestra::{Run, Step};
 
 use crate::complex::user::UserComplex;
 use crate::model::user::{
-    UserAvatarReservation, UserCredential, UserForm, UserInfo,
+    UserAvatarReservation, UserCredential, UserEntry, UserInfo,
 };
-use crate::part::repo::step::user::{
-    Create, Delete, FindInfoByQid, GetCredentialByQid, GetInfoById,
-    GetInfoExcluded, MarkAvatarUploaded, ReserveAvatar, TouchLastActive,
-    UpdateInfo,
+use crate::part::repo::oper::user::{
+    CreateUser, DeleteUser, FindUserInfo, GetUserCredential, GetUserInfo,
+    GetUserInfoExcluded, ReserveUserAvatar, UpdateUser,
 };
-use crate::part::repo::user::{UserRepo, UserRepoTransactional};
-use crate::part::shared::execute::Execute;
+use crate::part::repo::user::UserRepo;
 use crate::part_impl::repo::mock_impl::{
-    Mock, MockContext, MockState, MockTransactional, expected, now,
+    Mock, MockContext, MockState, expected, now,
 };
 use crate::result::{RegularError, RegularResult};
 
 impl UserRepo<MockContext> for Mock {}
 
-impl UserRepoTransactional<MockContext> for MockTransactional {}
-
-/// Inserts a new user with associated credentials, rejecting duplicate ids or qids.
 fn create_user(
     state: &mut MockState,
-    form: &UserForm,
+    entry: &UserEntry,
 ) -> RegularResult<UserInfo> {
     //
-    if state.users.iter().any(|user| user.id == form.id) {
-        return Err(expected("error-already-exists"));
-    }
-
-    if state.users.iter().any(|user| user.qid == form.qid) {
+    if state.users.iter().any(|user| user.id == entry.id)
+        || state.users.iter().any(|user| user.qid == entry.qid)
+    {
         return Err(expected("error-already-exists"));
     }
 
     let time = now();
 
-    let user = UserInfo {
-        id: form.id.clone(),
-        qid: form.qid.clone(),
-        nickname: form.nickname.clone(),
+    let user_info = UserInfo {
+        id: entry.id.clone(),
+        qid: entry.qid.clone(),
+        nickname: entry.nickname.clone(),
         avatar_key: None,
         avatar_uploaded: false,
         avatar_version: 0,
@@ -53,194 +44,228 @@ fn create_user(
         updated_at: time,
     };
 
-    state.users.push(user.clone());
+    state.users.push(user_info.clone());
 
     state.credentials.push(UserCredential {
-        user_id: form.id.clone(),
-        password_hash: form.password_hash.clone(),
+        user_id: entry.id.clone(),
+        password_hash: entry.password_hash.clone(),
     });
 
-    Ok(user)
+    Ok(user_info)
 }
 
-#[async_trait]
-impl<'a> Execute<GetInfoById<'a>> for Mock {
+fn get_user_info(state: &MockState, id: &str) -> RegularResult<UserInfo> {
+    state
+        .users
+        .iter()
+        .find(|user_info| user_info.id == id)
+        .cloned()
+        .ok_or_else(|| expected("error-user-not-found"))
+}
+
+fn find_user_info(state: &MockState, qid: &str) -> Option<UserInfo> {
+    state
+        .users
+        .iter()
+        .find(|user_info| user_info.qid == qid)
+        .cloned()
+}
+
+fn get_user_credential(
+    state: &MockState,
+    qid: &str,
+) -> RegularResult<UserCredential> {
+    //
+    let user_info = state
+        .users
+        .iter()
+        .find(|user_info| user_info.qid == qid)
+        .ok_or_else(|| expected("error-user-not-found"))?;
+
+    state
+        .credentials
+        .iter()
+        .find(|credential| credential.user_id == user_info.id)
+        .cloned()
+        .ok_or_else(|| expected("error-user-not-found"))
+}
+
+fn update_user(
+    state: &mut MockState,
+    oper: &UpdateUser<'_>,
+) -> RegularResult<()> {
+    //
+    let (id, update) = match oper {
+        //
+        UpdateUser::Info { id, qid, nickname } => {
+            (id, Some((qid, nickname, None)))
+        }
+
+        UpdateUser::MarkAvatarUploaded { id, avatar_version } => {
+            (id, Some((id, id, Some(*avatar_version))))
+        }
+
+        UpdateUser::TouchLastActive { id } => (id, None),
+    };
+
+    let user_info = state
+        .users
+        .iter_mut()
+        .find(|user_info| user_info.id == *id)
+        .ok_or_else(|| expected("error-user-not-found"))?;
+
+    match update {
+        //
+        Some((qid, nickname, None)) => {
+            //
+            user_info.qid = qid.to_string();
+
+            user_info.nickname = nickname.to_string();
+        }
+
+        Some((_, _, Some(avatar_version))) => {
+            //
+            if user_info.avatar_version != avatar_version {
+                return Err(expected("error-stale-avatar-upload"));
+            }
+
+            user_info.avatar_uploaded = true;
+        }
+
+        None => user_info.last_active_at = now(),
+    }
+
+    user_info.updated_at = now();
+
+    Ok(())
+}
+
+impl<'a> Run<GetUserInfo<'a>> for Mock {
     type Error = RegularError;
 
-    async fn execute(
-        &self,
-        step: &GetInfoById<'a>,
-    ) -> Result<UserInfo, Self::Error> {
+    async fn run(&self, oper: &GetUserInfo<'a>) -> RegularResult<UserInfo> {
         //
         let state = self.state.lock().unwrap();
 
-        state
-            .users
-            .iter()
-            .find(|user| user.id == step.id)
-            .cloned()
-            .ok_or_else(|| expected("error-user-not-found"))
+        match oper {
+            GetUserInfo::Id { id } => get_user_info(&state, id),
+        }
     }
 }
 
-#[async_trait]
-impl<'a> Execute<GetCredentialByQid<'a>> for Mock {
+impl<'a> Run<GetUserCredential<'a>> for Mock {
     type Error = RegularError;
 
-    async fn execute(
+    async fn run(
         &self,
-        step: &GetCredentialByQid<'a>,
-    ) -> Result<UserCredential, Self::Error> {
+        oper: &GetUserCredential<'a>,
+    ) -> RegularResult<UserCredential> {
         //
         let state = self.state.lock().unwrap();
 
-        let user = state
-            .users
-            .iter()
-            .find(|user| user.qid == step.qid)
-            .ok_or_else(|| expected("error-user-not-found"));
-
-        user.and_then(|user| {
-            state
-                .credentials
-                .iter()
-                .find(|credential| credential.user_id == user.id)
-                .cloned()
-                .ok_or_else(|| expected("error-user-not-found"))
-        })
+        match oper {
+            GetUserCredential::Qid { qid } => get_user_credential(&state, qid),
+        }
     }
 }
 
-#[async_trait]
-impl<'a> Execute<FindInfoByQid<'a>> for Mock {
+impl<'a> Run<FindUserInfo<'a>> for Mock {
     type Error = RegularError;
 
-    async fn execute(
+    async fn run(
         &self,
-        step: &FindInfoByQid<'a>,
-    ) -> Result<Option<UserInfo>, Self::Error> {
+        oper: &FindUserInfo<'a>,
+    ) -> RegularResult<Option<UserInfo>> {
         //
         let state = self.state.lock().unwrap();
 
-        Ok(state
-            .users
-            .iter()
-            .find(|user| user.qid == step.qid)
-            .cloned())
+        match oper {
+            FindUserInfo::Qid { qid } => Ok(find_user_info(&state, qid)),
+        }
     }
 }
 
-#[async_trait]
-impl<'a> Execute<TouchLastActive<'a>> for Mock {
+impl<'a> Run<UpdateUser<'a>> for Mock {
     type Error = RegularError;
 
-    async fn execute(&self, step: &TouchLastActive<'a>) -> RegularResult<()> {
+    async fn run(&self, oper: &UpdateUser<'a>) -> RegularResult<()> {
         //
         let mut state = self.state.lock().unwrap();
 
-        let user = state
-            .users
-            .iter_mut()
-            .find(|user| user.id == step.id)
-            .ok_or_else(|| expected("error-user-not-found"))?;
-
-        user.last_active_at = now();
-
-        user.updated_at = now();
-
-        Ok(())
+        update_user(&mut state, oper)
     }
 }
 
-#[async_trait]
-impl<'a> Advance<FindInfoByQid<'a>, MockContext> for MockTransactional {
+impl<'a> Step<CreateUser<'a>, MockContext> for Mock {
     type Error = RegularError;
 
-    async fn advance(
+    async fn step(
         &self,
         context: &mut MockContext,
-        step: &FindInfoByQid<'a>,
-    ) -> Result<Option<UserInfo>, Self::Error> {
-        Ok(context
-            .state
-            .users
-            .iter()
-            .find(|user| user.qid == step.qid)
-            .cloned())
+        oper: &CreateUser<'a>,
+    ) -> RegularResult<UserInfo> {
+        create_user(&mut context.state, oper.entry)
     }
 }
 
-#[async_trait]
-impl<'a> Advance<Create<'a>, MockContext> for MockTransactional {
+impl<'a> Step<FindUserInfo<'a>, MockContext> for Mock {
     type Error = RegularError;
 
-    async fn advance(
+    async fn step(
         &self,
         context: &mut MockContext,
-        step: &Create<'a>,
-    ) -> Result<UserInfo, Self::Error> {
-        create_user(&mut context.state, step.form)
+        oper: &FindUserInfo<'a>,
+    ) -> RegularResult<Option<UserInfo>> {
+        match oper {
+            FindUserInfo::Qid { qid } => {
+                Ok(find_user_info(&context.state, qid))
+            }
+        }
     }
 }
 
-#[async_trait]
-impl<'a> Advance<UpdateInfo<'a>, MockContext> for MockTransactional {
+impl<'a> Step<UpdateUser<'a>, MockContext> for Mock {
     type Error = RegularError;
 
-    async fn advance(
+    async fn step(
         &self,
         context: &mut MockContext,
-        step: &UpdateInfo<'a>,
-    ) -> Result<(), Self::Error> {
+        oper: &UpdateUser<'a>,
+    ) -> RegularResult<()> {
+        update_user(&mut context.state, oper)
+    }
+}
+
+impl<'a> Step<ReserveUserAvatar<'a>, MockContext> for Mock {
+    type Error = RegularError;
+
+    async fn step(
+        &self,
+        context: &mut MockContext,
+        oper: &ReserveUserAvatar<'a>,
+    ) -> RegularResult<UserAvatarReservation> {
         //
-        let user = context
+        let user_info = context
             .state
             .users
             .iter_mut()
-            .find(|user| user.id == step.id)
+            .find(|user_info| user_info.id == oper.id)
             .ok_or_else(|| expected("error-user-not-found"))?;
 
-        user.qid = step.qid.to_string();
-
-        user.nickname = step.nickname.to_string();
-
-        user.updated_at = now();
-
-        Ok(())
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<ReserveAvatar<'a>, MockContext> for MockTransactional {
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut MockContext,
-        step: &ReserveAvatar<'a>,
-    ) -> Result<UserAvatarReservation, Self::Error> {
-        //
-        let user = context
-            .state
-            .users
-            .iter_mut()
-            .find(|user| user.id == step.id)
-            .ok_or_else(|| expected("error-user-not-found"))?;
-
-        let avatar_version = user.avatar_version + 1;
+        let avatar_version = user_info.avatar_version + 1;
 
         let object_key =
-            UserComplex::gen_avatar_key(step.id, avatar_version, step.file_ext);
+            UserComplex::gen_avatar_key(oper.id, avatar_version, oper.file_ext);
 
-        let prev_object_key = user.avatar_key.clone();
+        let prev_object_key = user_info.avatar_key.clone();
 
-        user.avatar_key = Some(object_key.clone());
+        user_info.avatar_key = Some(object_key.clone());
 
-        user.avatar_uploaded = false;
+        user_info.avatar_uploaded = false;
 
-        user.avatar_version = avatar_version;
+        user_info.avatar_version = avatar_version;
 
-        user.updated_at = now();
+        user_info.updated_at = now();
 
         Ok(UserAvatarReservation {
             object_key,
@@ -250,119 +275,57 @@ impl<'a> Advance<ReserveAvatar<'a>, MockContext> for MockTransactional {
     }
 }
 
-#[async_trait]
-impl<'a> Advance<MarkAvatarUploaded<'a>, MockContext> for MockTransactional {
+impl<'a> Step<GetUserInfoExcluded<'a>, MockContext> for Mock {
     type Error = RegularError;
 
-    async fn advance(
+    async fn step(
         &self,
         context: &mut MockContext,
-        step: &MarkAvatarUploaded<'a>,
-    ) -> Result<(), Self::Error> {
-        //
-        let user = context
-            .state
-            .users
-            .iter_mut()
-            .find(|user| user.id == step.id)
-            .ok_or_else(|| expected("error-user-not-found"))?;
-
-        if user.avatar_version != step.avatar_version {
-            return Err(expected("error-stale-avatar-upload"));
+        oper: &GetUserInfoExcluded<'a>,
+    ) -> RegularResult<UserInfo> {
+        match oper {
+            GetUserInfoExcluded::Id { id } => get_user_info(&context.state, id),
         }
-
-        user.avatar_uploaded = true;
-
-        user.updated_at = now();
-
-        Ok(())
     }
 }
 
-#[async_trait]
-impl<'a> Advance<TouchLastActive<'a>, MockContext> for MockTransactional {
+impl<'a> Step<DeleteUser<'a>, MockContext> for Mock {
     type Error = RegularError;
 
-    async fn advance(
+    async fn step(
         &self,
         context: &mut MockContext,
-        step: &TouchLastActive<'a>,
-    ) -> Result<(), Self::Error> {
+        oper: &DeleteUser<'a>,
+    ) -> RegularResult<()> {
         //
-        let user = context
-            .state
-            .users
-            .iter_mut()
-            .find(|user| user.id == step.id)
-            .ok_or_else(|| expected("error-user-not-found"))?;
-
-        user.last_active_at = now();
-
-        user.updated_at = now();
-
-        Ok(())
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<GetInfoExcluded<'a>, MockContext> for MockTransactional {
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut MockContext,
-        step: &GetInfoExcluded<'a>,
-    ) -> Result<UserInfo, Self::Error> {
-        context
+        let position = context
             .state
             .users
             .iter()
-            .find(|user| user.id == step.id)
-            .cloned()
-            .ok_or_else(|| expected("error-user-not-found"))
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<Delete<'a>, MockContext> for MockTransactional {
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut MockContext,
-        step: &Delete<'a>,
-    ) -> Result<(), Self::Error> {
-        //
-        let pos = context
-            .state
-            .users
-            .iter()
-            .position(|user| user.id == step.id)
+            .position(|user_info| user_info.id == oper.id)
             .ok_or_else(|| expected("error-user-not-found"))?;
 
-        context.state.users.remove(pos);
+        context.state.users.remove(position);
 
         context
             .state
             .credentials
-            .retain(|credential| credential.user_id != step.id);
+            .retain(|credential| credential.user_id != oper.id);
 
         context
             .state
             .members
-            .retain(|member| member.user_id != step.id);
+            .retain(|member_info| member_info.user_id != oper.id);
 
         context
             .state
             .member_invitations
-            .retain(|member_invitation| {
-                member_invitation.invitor_id != step.id
-            });
+            .retain(|info| info.invitor_id != oper.id);
 
         context
             .state
             .system_mails
-            .retain(|system_mail| system_mail.receiver_id != step.id);
+            .retain(|mail| mail.receiver_id != oper.id);
 
         Ok(())
     }

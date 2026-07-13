@@ -2,11 +2,10 @@
 
 use std::collections::HashMap;
 
-use async_trait::async_trait;
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 
-use poprako_transactional::advance::Advance;
+use poprako_orchestra::Step;
 
 use crate::model::assignment::AssignmentInfo;
 use crate::model::chapter::ChapterInfo;
@@ -19,9 +18,11 @@ use crate::model::page::PageInfo;
 use crate::model::unit::UnitInfo;
 use crate::model::user::UserInfo;
 use crate::model::workset::WorksetInfo;
-use crate::part::repo::comic_archive::ComicArchiveRepoTransactional;
-use crate::part::repo::step::comic_archive::{Commit, LockSnapshot};
-use crate::part_impl::repo::rdb_impl::RdbRepoTransactional;
+use crate::part::repo::comic_archive::ComicArchiveRepo;
+use crate::part::repo::oper::comic_archive::{
+    CommitComicArchive, GetComicArchiveSnapshotExcluded,
+};
+use crate::part_impl::repo::rdb_impl::RdbRepo;
 use crate::part_impl::repo::rdb_impl::entity::assignment::AssignmentRow;
 use crate::part_impl::repo::rdb_impl::entity::chapter::ChapterRow;
 use crate::part_impl::repo::rdb_impl::entity::comic::ComicRow;
@@ -65,10 +66,10 @@ use crate::part_impl::shared::result::{diesel, expected};
 use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::{RegularError, RegularResult};
 
-impl ComicArchiveRepoTransactional<RdbContext> for RdbRepoTransactional {}
+impl ComicArchiveRepo<RdbContext> for RdbRepo {}
 
 /// Lock every active descendant needed by an archive transaction.
-async fn lock_snapshot(
+async fn get_snapshot_excluded(
     conn: &mut RdbConn,
     source_comic_id: &str,
 ) -> RegularResult<ComicArchiveSnapshot> {
@@ -349,29 +350,27 @@ async fn commit(
     Ok(())
 }
 
-#[async_trait]
-impl<'a> Advance<LockSnapshot<'a>, RdbContext> for RdbRepoTransactional {
+impl<'a> Step<GetComicArchiveSnapshotExcluded<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
-    async fn advance(
+    async fn step(
         &self,
         context: &mut RdbContext,
-        step: &LockSnapshot<'a>,
+        oper: &GetComicArchiveSnapshotExcluded<'a>,
     ) -> RegularResult<ComicArchiveSnapshot> {
-        lock_snapshot(context.conn(), step.comic_id).await
+        get_snapshot_excluded(context.conn(), oper.comic_id).await
     }
 }
 
-#[async_trait]
-impl<'a> Advance<Commit<'a>, RdbContext> for RdbRepoTransactional {
+impl<'a> Step<CommitComicArchive<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
-    async fn advance(
+    async fn step(
         &self,
         context: &mut RdbContext,
-        step: &Commit<'a>,
+        oper: &CommitComicArchive<'a>,
     ) -> RegularResult<()> {
-        commit(context.conn(), step.comic_archive_write).await
+        commit(context.conn(), oper.write).await
     }
 }
 

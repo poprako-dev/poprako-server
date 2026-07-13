@@ -16,159 +16,21 @@
 
 use super::*;
 
-use time::OffsetDateTime;
-
 use crate::complex::chapter::ChapterComplex;
-use crate::model::assignment::AssignmentInfo;
-use crate::model::chapter::ChapterInfo;
-use crate::model::comic::ComicInfo;
-use crate::model::member::MemberInfo;
-use crate::model::page::PageInfo;
-use crate::model::workset::WorksetInfo;
-use crate::part::prom::Payload;
-use crate::part::prom::task::ImageTask;
+use crate::data::chapter::{
+    CreateChapterParams, ListChapterInfosParams, UpdateChapterInfoParams,
+    UpdateChapterStageParams,
+};
+use crate::part::prom::payload::Payload;
+use crate::part::prom::payload::image::Payload as ImagePayload;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;
-use crate::value::chapter::{Stage, StageMask};
+use crate::value::chapter::Stage;
 
-fn token(user_id: &str) -> UserToken {
-    UserToken {
-        user_id: user_id.into(),
-    }
-}
+use self::fixture::*;
 
-fn workset(id: &str, team_id: &str) -> WorksetInfo {
-    //
-    let time = OffsetDateTime::now_utc();
-
-    WorksetInfo {
-        id: id.into(),
-        team_id: team_id.into(),
-        index: 0,
-        name: "workset".into(),
-        description: None,
-        comic_count: 1,
-        comic_next_index: 1,
-        created_at: time,
-        updated_at: time,
-    }
-}
-
-fn comic(id: &str, workset_id: &str) -> ComicInfo {
-    //
-    let time = OffsetDateTime::now_utc();
-
-    ComicInfo {
-        id: id.into(),
-        workset_id: workset_id.into(),
-        index: 1,
-        title: "comic".into(),
-        author: "author".into(),
-        description: None,
-        cover_key: None,
-        cover_uploaded: false,
-        cover_version: 0,
-        chapter_count: 2,
-        chapter_next_index: 2,
-        creator_id: "user-1".into(),
-        workset: None,
-        team: None,
-        creator: None,
-        last_active_at: time,
-        created_at: time,
-        updated_at: time,
-    }
-}
-
-fn chapter(
-    id: &str,
-    comic_id: &str,
-    index: i32,
-    is_pinned: bool,
-) -> ChapterInfo {
-    //
-    let time = OffsetDateTime::now_utc();
-
-    ChapterInfo {
-        id: id.into(),
-        comic_id: comic_id.into(),
-        comic: None,
-        is_pinned,
-        index,
-        subtitle: format!("chapter {}", index),
-        page_count: 0,
-        total_unit_count: 0,
-        translated_unit_count: 0,
-        proofread_unit_count: 0,
-        stages: StageMask::try_from(0u32).ok().unwrap(),
-        creator_id: "user-1".into(),
-        creator: None,
-        created_at: time,
-        updated_at: time,
-    }
-}
-
-fn member(user_id: &str, team_id: &str, role_mask: RoleMask) -> MemberInfo {
-    MemberInfo {
-        id: format!("member-{}-{}", user_id, team_id),
-        user_id: user_id.into(),
-        user_nickname: user_id.into(),
-        user_last_active_at: OffsetDateTime::now_utc(),
-        team_id: team_id.into(),
-        user: None,
-        team: None,
-        roles: role_mask,
-    }
-}
-
-fn assignment(
-    chapter_id: &str,
-    user_id: &str,
-    role_mask: RoleMask,
-) -> AssignmentInfo {
-    //
-    let time = OffsetDateTime::now_utc();
-
-    AssignmentInfo {
-        id: format!("assignment-{}-{}", chapter_id, user_id),
-        chapter_id: chapter_id.into(),
-        user_id: user_id.into(),
-        user: None,
-        chapter: None,
-        roles: role_mask,
-        created_at: time,
-        updated_at: time,
-    }
-}
-
-fn page(id: &str, chapter_id: &str, image_key: Option<&str>) -> PageInfo {
-    //
-    let time = OffsetDateTime::now_utc();
-
-    PageInfo {
-        id: id.into(),
-        chapter_id: chapter_id.into(),
-        index: 0,
-        image_key: image_key.map(Into::into),
-        image_uploaded: image_key.is_some(),
-        image_version: 1,
-        total_unit_count: 0,
-        translated_unit_count: 0,
-        proofread_unit_count: 0,
-        created_at: time,
-        updated_at: time,
-    }
-}
-
-fn seed_scope(mock: &Mock, user_id: &str, role_mask: RoleMask) {
-    //
-    mock.seed_workset(workset("workset-1", "team-1"));
-
-    mock.seed_comic(comic("comic-1", "workset-1"));
-
-    mock.seed_member(member(user_id, "team-1", role_mask));
-}
+mod fixture;
 
 #[tokio::test]
 async fn list_infos_paginates_sorted_chapters() {
@@ -187,7 +49,7 @@ async fn list_infos_paginates_sorted_chapters() {
         &mock,
         &mock,
         token("user-1"),
-        ListChapterInfosData {
+        ListChapterInfosParams {
             incl_opt: Vec::new(),
             comic_id: "comic-1".into(),
             offset: 1,
@@ -216,7 +78,7 @@ async fn list_infos_rejects_non_member() {
         &mock,
         &mock,
         token("user-1"),
-        ListChapterInfosData {
+        ListChapterInfosParams {
             incl_opt: Vec::new(),
             comic_id: "comic-1".into(),
             offset: 0,
@@ -314,7 +176,7 @@ async fn create_pins_chapter_and_creates_admin_assignment() {
         &mock,
         &mock,
         token("user-1"),
-        CreateChapterData {
+        CreateChapterParams {
             comic_id: "comic-1".into(),
             subtitle: None,
         },
@@ -368,7 +230,7 @@ async fn create_rolls_back_non_admin() {
         &mock,
         &mock,
         token("user-1"),
-        CreateChapterData {
+        CreateChapterParams {
             comic_id: "comic-1".into(),
             subtitle: Some("new".into()),
         },
@@ -407,7 +269,7 @@ async fn update_info_admin_updates_metadata() {
         &mock,
         &mock,
         token("user-1"),
-        PatchChapterInfoData {
+        UpdateChapterInfoParams {
             id: "chapter-1".into(),
             subtitle: Some("updated".into()),
             pin: Some(true),
@@ -437,7 +299,7 @@ async fn update_info_rejects_non_admin_metadata() {
         &mock,
         &mock,
         token("user-1"),
-        PatchChapterInfoData {
+        UpdateChapterInfoParams {
             id: "chapter-1".into(),
             subtitle: Some("updated".into()),
             pin: None,
@@ -471,7 +333,7 @@ async fn update_stage_workflow_role_advances_stage() {
         &mock,
         &mock,
         token("user-1"),
-        UpdateChapterStageData {
+        UpdateChapterStageParams {
             id: "chapter-1".into(),
             stage: Stage::Translate,
             oper: StageOper::Advance,
@@ -518,7 +380,7 @@ async fn update_stage_rejects_invalid_transition() {
         &mock,
         &mock,
         token("user-1"),
-        UpdateChapterStageData {
+        UpdateChapterStageParams {
             id: "chapter-1".into(),
             stage: Stage::Publish,
             oper: StageOper::Advance,
@@ -554,7 +416,7 @@ async fn update_stage_publish_enqueues_page_image_delete() {
         &mock,
         &mock,
         token("user-1"),
-        UpdateChapterStageData {
+        UpdateChapterStageParams {
             id: "chapter-1".into(),
             stage: Stage::Publish,
             oper: StageOper::Advance,
@@ -568,7 +430,7 @@ async fn update_stage_publish_enqueues_page_image_delete() {
 
     assert_eq!(snapshot.prom_records.len(), 1);
 
-    let Payload::Image(ImageTask::Delete { object_key }) =
+    let Payload::Image(ImagePayload::Delete { object_key }) =
         snapshot.prom_records[0].payload()
     else {
         panic!("expected image delete payload");

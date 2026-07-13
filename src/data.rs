@@ -1,9 +1,9 @@
 //! Data transfer objects that sit between the external world and use cases.
 //!
-//! Types suffixed with `Data` carry inbound request payloads. Types suffixed
-//! with `Val` carry presentation-ready outbound values — timestamps are
-//! converted to Unix milliseconds, and avatar URLs are resolved through
-//! [`ImagePool`].
+//! Types suffixed with `Params` carry use-case input, while types suffixed
+//! with `Payload` carry use-case output. `Val` is reserved for serde-facing
+//! representations converted from domain models — timestamps are converted
+//! to Unix milliseconds, and image keys are resolved through [`ImagePool`].
 //!
 //! [`ImagePool`]: crate::part::image::ImagePool
 
@@ -37,6 +37,8 @@ pub mod page_port;
 pub mod system_mail;
 /// Team request/response DTOs.
 pub mod team;
+/// Termbase request and response data types.
+pub mod termbase;
 /// Unit request/response DTOs.
 pub mod unit;
 /// Unit port DTOs.

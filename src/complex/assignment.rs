@@ -1,27 +1,20 @@
 //! Complex-domain opers for chapter assignments.
 
+use poprako_orchestra::Proxy;
+
 use poprako_util::i18n::trl;
 
 use crate::complex::util::check_user_is_team_member;
-use crate::data::assignment::UpdateAssignmentRolesData;
+use crate::data::assignment::UpdateAssignmentRolesParams;
 use crate::model::assignment::{
-    AssignmentInfo, AssignmentListSpec, AssignmentRoleUpdate,
+    AssignmentInfo, AssignmentInfoListSpec, AssignmentRoleUpdate,
 };
-use crate::part::repo::step::assignment::{
-    AssignmentStep, GetInfoByChapterIdAndUserId,
-};
-use crate::part::repo::step::chapter::{
-    ChapterStep, GetInfoById as ChapterGetInfoById,
-};
-use crate::part::repo::step::comic::{
-    ComicStep, GetInfoById as ComicGetInfoById,
-};
-use crate::part::repo::step::member::{FindInfoByUserIdAndTeamId, MemberStep};
-use crate::part::repo::step::user::{GetInfoById as UserGetInfoById, UserStep};
-use crate::part::repo::step::workset::{
-    GetInfoById as WorksetGetInfoById, WorksetStep,
-};
-use crate::part::shared::proxy::ProxyExecute;
+use crate::part::repo::oper::assignment::FindAssignmentInfo;
+use crate::part::repo::oper::chapter::GetChapterInfo;
+use crate::part::repo::oper::comic::GetComicInfo;
+use crate::part::repo::oper::member::FindMemberInfo;
+use crate::part::repo::oper::user::GetUserInfo;
+use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::result::{ExpectedVariant, RegularError, RegularResult};
 use crate::util::next_snowflake_id;
 use crate::value::role::{RoleField, RoleMask};
@@ -82,52 +75,43 @@ pub struct AssignmentPermComplex;
 
 impl AssignmentPermComplex {
     /// Verify the caller may list assignments selected by the list spec.
-    pub async fn can_user_list_infos<P>(
+    pub async fn ensure_user_can_list_infos<P>(
         proxy: &mut P,
         user_id: &str,
-        assignment_list_spec: &AssignmentListSpec,
+        assignment_list_spec: &AssignmentInfoListSpec,
     ) -> RegularResult<()>
     where
-        P: for<'a> ProxyExecute<ChapterGetInfoById<'a>, Error = RegularError>
-            + for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RegularError>
-            + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RegularError>
-            + for<'a> ProxyExecute<
-                FindInfoByUserIdAndTeamId<'a>,
-                Error = RegularError,
-            > + for<'a> ProxyExecute<
-                GetInfoByChapterIdAndUserId<'a>,
-                Error = RegularError,
-            > + for<'a> ProxyExecute<UserGetInfoById<'a>, Error = RegularError>,
+        P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = RegularError>
+            + for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = RegularError>
+            + for<'a> Proxy<GetWorksetInfo<'a>, Error = RegularError>
+            + for<'a> Proxy<FindMemberInfo<'a>, Error = RegularError>
+            + for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = RegularError>
+            + for<'a> Proxy<GetUserInfo<'a>, Error = RegularError>,
     {
         match assignment_list_spec {
             //
-            AssignmentListSpec::Chapter { chapter_id, .. } => {
+            AssignmentInfoListSpec::Chapter { chapter_id, .. } => {
                 check_list_by_chapter(proxy, user_id, chapter_id).await
             }
 
-            AssignmentListSpec::User { owner_id, .. } => {
+            AssignmentInfoListSpec::User { owner_id, .. } => {
                 check_list_by_user(proxy, user_id, owner_id).await
             }
         }
     }
 
     /// Verify the caller may mutate assignment roles with the supplied data.
-    pub async fn can_user_update_roles<P>(
+    pub async fn ensure_user_can_update_roles<P>(
         proxy: &mut P,
         current_user_id: &str,
-        data: &UpdateAssignmentRolesData,
+        data: &UpdateAssignmentRolesParams,
     ) -> RegularResult<()>
     where
-        P: for<'a> ProxyExecute<ChapterGetInfoById<'a>, Error = RegularError>
-            + for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RegularError>
-            + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RegularError>
-            + for<'a> ProxyExecute<
-                FindInfoByUserIdAndTeamId<'a>,
-                Error = RegularError,
-            > + for<'a> ProxyExecute<
-                GetInfoByChapterIdAndUserId<'a>,
-                Error = RegularError,
-            >,
+        P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = RegularError>
+            + for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = RegularError>
+            + for<'a> Proxy<GetWorksetInfo<'a>, Error = RegularError>
+            + for<'a> Proxy<FindMemberInfo<'a>, Error = RegularError>
+            + for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = RegularError>,
     {
         let admin_check =
             check_admin(proxy, current_user_id, &data.chapter_id).await;
@@ -141,16 +125,13 @@ impl AssignmentPermComplex {
     }
 
     /// Verify the caller may delete the target assignment.
-    pub async fn can_user_delete<P>(
+    pub async fn ensure_user_can_delete<P>(
         proxy: &mut P,
         current_user_id: &str,
         assignment_info: &AssignmentInfo,
     ) -> RegularResult<()>
     where
-        P: for<'a> ProxyExecute<
-                GetInfoByChapterIdAndUserId<'a>,
-                Error = RegularError,
-            >,
+        P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = RegularError>,
     {
         if current_user_id == assignment_info.user_id {
             return Ok(());
@@ -159,36 +140,18 @@ impl AssignmentPermComplex {
         check_admin(proxy, current_user_id, &assignment_info.chapter_id).await
     }
 
-    /// Verify the caller is an admin for the target chapter.
-    pub async fn can_user_admin<P>(
-        proxy: &mut P,
-        current_user_id: &str,
-        chapter_id: &str,
-    ) -> RegularResult<()>
-    where
-        P: for<'a> ProxyExecute<
-                GetInfoByChapterIdAndUserId<'a>,
-                Error = RegularError,
-            >,
-    {
-        check_admin(proxy, current_user_id, chapter_id).await
-    }
-
     /// Verify the target user may take the requested chapter assignment roles.
-    pub async fn can_user_take_roles<P>(
+    pub async fn ensure_user_can_take_roles<P>(
         proxy: &mut P,
         user_id: &str,
         chapter_id: &str,
         roles: RoleMask,
     ) -> RegularResult<()>
     where
-        P: for<'a> ProxyExecute<ChapterGetInfoById<'a>, Error = RegularError>
-            + for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RegularError>
-            + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RegularError>
-            + for<'a> ProxyExecute<
-                FindInfoByUserIdAndTeamId<'a>,
-                Error = RegularError,
-            >,
+        P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = RegularError>
+            + for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = RegularError>
+            + for<'a> Proxy<GetWorksetInfo<'a>, Error = RegularError>
+            + for<'a> Proxy<FindMemberInfo<'a>, Error = RegularError>,
     {
         check_target_roles(proxy, user_id, chapter_id, roles).await
     }
@@ -202,16 +165,11 @@ async fn check_list_by_chapter<P>(
     chapter_id: &str,
 ) -> RegularResult<()>
 where
-    P: for<'a> ProxyExecute<ChapterGetInfoById<'a>, Error = RegularError>
-        + for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RegularError>
-        + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RegularError>
-        + for<'a> ProxyExecute<
-            FindInfoByUserIdAndTeamId<'a>,
-            Error = RegularError,
-        > + for<'a> ProxyExecute<
-            GetInfoByChapterIdAndUserId<'a>,
-            Error = RegularError,
-        >,
+    P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = RegularError>
+        + for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = RegularError>
+        + for<'a> Proxy<GetWorksetInfo<'a>, Error = RegularError>
+        + for<'a> Proxy<FindMemberInfo<'a>, Error = RegularError>
+        + for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = RegularError>,
 {
     let team_id = resolve_team_id(proxy, chapter_id).await?;
 
@@ -223,9 +181,10 @@ where
     }
 
     let assignment_info = proxy
-        .execute(&AssignmentStep::get_info_by_chapter_id_and_user_id(
-            chapter_id, user_id,
-        ))
+        .exec(&FindAssignmentInfo::ChapterUser {
+            chapter_id,
+            user_id,
+        })
         .await?;
 
     if assignment_info.is_none() {
@@ -243,14 +202,16 @@ async fn check_list_by_user<P>(
     owner_id: &str,
 ) -> RegularResult<()>
 where
-    P: for<'a> ProxyExecute<UserGetInfoById<'a>, Error = RegularError>,
+    P: for<'a> Proxy<GetUserInfo<'a>, Error = RegularError>,
 {
     if current_user_id == owner_id {
         return Ok(());
     }
 
     let user_info = proxy
-        .execute(&UserStep::get_info_by_id(current_user_id))
+        .exec(&GetUserInfo::Id {
+            id: current_user_id,
+        })
         .await?;
 
     if !user_info.is_sadmin {
@@ -267,15 +228,13 @@ async fn check_admin<P>(
     chapter_id: &str,
 ) -> RegularResult<()>
 where
-    P: for<'a> ProxyExecute<
-            GetInfoByChapterIdAndUserId<'a>,
-            Error = RegularError,
-        >,
+    P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = RegularError>,
 {
     let assignment_info = proxy
-        .execute(&AssignmentStep::get_info_by_chapter_id_and_user_id(
-            chapter_id, user_id,
-        ))
+        .exec(&FindAssignmentInfo::ChapterUser {
+            chapter_id,
+            user_id,
+        })
         .await?;
 
     let Some(assignment_info) = assignment_info else {
@@ -295,23 +254,20 @@ where
 async fn check_self_reduce<P>(
     proxy: &mut P,
     current_user_id: &str,
-    data: &UpdateAssignmentRolesData,
+    data: &UpdateAssignmentRolesParams,
 ) -> RegularResult<()>
 where
-    P: for<'a> ProxyExecute<
-            GetInfoByChapterIdAndUserId<'a>,
-            Error = RegularError,
-        >,
+    P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = RegularError>,
 {
     if current_user_id != data.user_id {
         return Err(assignment_self_reduce_error());
     }
 
     let assignment_info = proxy
-        .execute(&AssignmentStep::get_info_by_chapter_id_and_user_id(
-            &data.chapter_id,
-            &data.user_id,
-        ))
+        .exec(&FindAssignmentInfo::ChapterUser {
+            chapter_id: &data.chapter_id,
+            user_id: &data.user_id,
+        })
         .await?;
 
     let Some(assignment_info) = assignment_info else {
@@ -334,13 +290,10 @@ async fn check_target_roles<P>(
     roles: RoleMask,
 ) -> RegularResult<()>
 where
-    P: for<'a> ProxyExecute<ChapterGetInfoById<'a>, Error = RegularError>
-        + for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RegularError>
-        + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RegularError>
-        + for<'a> ProxyExecute<
-            FindInfoByUserIdAndTeamId<'a>,
-            Error = RegularError,
-        >,
+    P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = RegularError>
+        + for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = RegularError>
+        + for<'a> Proxy<GetWorksetInfo<'a>, Error = RegularError>
+        + for<'a> Proxy<FindMemberInfo<'a>, Error = RegularError>,
 {
     if roles.has_any_role(&[RoleField::ADMIN]) {
         return Err(assignment_role_not_assignable_args_error());
@@ -349,9 +302,10 @@ where
     let team_id = resolve_team_id(proxy, chapter_id).await?;
 
     let member_info = proxy
-        .execute(&MemberStep::find_info_by_user_id_and_team_id(
-            user_id, &team_id,
-        ))
+        .exec(&FindMemberInfo::UserTeam {
+            user_id,
+            team_id: &team_id,
+        })
         .await?;
 
     let Some(member_info) = member_info else {
@@ -371,20 +325,28 @@ async fn resolve_team_id<P>(
     chapter_id: &str,
 ) -> RegularResult<String>
 where
-    P: for<'a> ProxyExecute<ChapterGetInfoById<'a>, Error = RegularError>
-        + for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RegularError>
-        + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RegularError>,
+    P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = RegularError>
+        + for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = RegularError>
+        + for<'a> Proxy<GetWorksetInfo<'a>, Error = RegularError>,
 {
     let chapter_info = proxy
-        .execute(&ChapterStep::get_info_by_id(chapter_id, &[]))
+        .exec(&GetChapterInfo {
+            id: chapter_id,
+            incls: &[],
+        })
         .await?;
 
     let comic_info = proxy
-        .execute(&ComicStep::get_info_by_id(&chapter_info.comic_id, &[]))
+        .exec(&GetComicInfo {
+            id: &chapter_info.comic_id,
+            incls: &[],
+        })
         .await?;
 
     let workset_info = proxy
-        .execute(&WorksetStep::get_info_by_id(&comic_info.workset_id))
+        .exec(&GetWorksetInfo {
+            id: &comic_info.workset_id,
+        })
         .await?;
 
     Ok(workset_info.team_id)

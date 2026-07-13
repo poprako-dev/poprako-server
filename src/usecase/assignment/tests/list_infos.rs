@@ -8,6 +8,7 @@
 
 use super::*;
 
+use crate::data::assignment::ListAssignmentInfosParams;
 use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;
 use crate::value::assignment::AssignmentInclOpt;
@@ -237,7 +238,7 @@ async fn list_infos_invalid_owner_combination_is_rejected() {
         &mock,
         &mock,
         token("viewer-user"),
-        ListAssignmentInfosData {
+        ListAssignmentInfosParams {
             incl_opt: Vec::new(),
             chapter_id: Some("chapter-1".into()),
             owner_id: Some("owner-user".into()),

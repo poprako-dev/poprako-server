@@ -2,8 +2,6 @@
 
 use time::OffsetDateTime;
 
-use poprako_macro::Paginate;
-
 use crate::model::user::UserInfo;
 use crate::value::announcement::AnnouncementInclOpt;
 
@@ -24,7 +22,7 @@ pub struct AnnouncementInfo {
 
 /// The data needed to insert a team announcement row.
 #[cfg_attr(test, derive(Clone))]
-pub struct AnnouncementForm {
+pub struct AnnouncementEntry {
     pub id: String,
 
     pub team_id: String,
@@ -35,8 +33,10 @@ pub struct AnnouncementForm {
 }
 
 /// Filtering, pagination, and include parameters for listing announcements.
-#[Paginate]
 pub struct AnnouncementListSpec {
     pub team_id: String,
     pub incl_opt: Vec<AnnouncementInclOpt>,
+
+    pub offset: u32,
+    pub limit: u32,
 }

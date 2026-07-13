@@ -6,8 +6,10 @@ use time::OffsetDateTime;
 
 use poprako_util::i18n::trl;
 
-use crate::part::prom::Payload;
-use crate::part::prom::task::{ImageKind, ImageTask};
+use crate::part::prom::payload::Payload;
+use crate::part::prom::payload::image::{
+    Payload as ImagePayload, ResourceKind,
+};
 use crate::part_impl::prom::mock_impl::MockPromRecord;
 use crate::result::{ExpectedVariant, RegularError};
 
@@ -58,25 +60,25 @@ pub fn assert_expected_message(
 /// Counts exact image upload-check prom records.
 pub fn count_image_check_records(
     records: &[MockPromRecord],
-    kind: ImageKind,
+    resource_kind: ResourceKind,
     resource_id: &str,
     object_key: &str,
-    image_version: i64,
+    image_version: u32,
 ) -> usize {
     records
         .iter()
         .filter(|record| {
             matches!(
                 record.payload(),
-                Payload::Image(ImageTask::CheckUploaded {
-                    kind: actual_kind,
+                Payload::Image(ImagePayload::CheckUpload {
+                    resource_kind: actual_resource_kind,
                     resource_id: actual_resource_id,
                     object_key: actual_object_key,
-                    image_version: actual_image_version,
-                }) if actual_kind == kind
+                    version: actual_version,
+                }) if actual_resource_kind == resource_kind
                     && actual_resource_id == resource_id
                     && actual_object_key == object_key
-                    && actual_image_version == image_version
+                    && actual_version == image_version
             )
         })
         .count()
@@ -85,15 +87,15 @@ pub fn count_image_check_records(
 /// Asserts that exactly one matching image upload-check prom record exists.
 pub fn assert_one_image_check_record(
     records: &[MockPromRecord],
-    kind: ImageKind,
+    resource_kind: ResourceKind,
     resource_id: &str,
     object_key: &str,
-    image_version: i64,
+    image_version: u32,
 ) {
     assert_eq!(
         count_image_check_records(
             records,
-            kind,
+            resource_kind,
             resource_id,
             object_key,
             image_version

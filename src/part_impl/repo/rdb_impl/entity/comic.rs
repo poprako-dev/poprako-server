@@ -4,7 +4,7 @@ use diesel::prelude::*;
 use time::OffsetDateTime;
 
 use crate::complex::comic::ComicComplex;
-use crate::model::comic::{ComicForm, ComicInfo};
+use crate::model::comic::{ComicEntry, ComicInfo};
 use crate::part_impl::repo::rdb_impl::schema::t_comic;
 
 // ── Queryable / Selectable ─────────────────────────────────────────────────
@@ -24,7 +24,8 @@ pub struct ComicRow {
 
     pub f_cover_key: Option<String>,
     pub f_cover_uploaded: bool,
-    pub f_cover_version: i64,
+    #[diesel(deserialize_as = i64)]
+    pub f_cover_version: u32,
 
     pub f_chapter_count: i32,
     pub f_chapter_next_index: i32,
@@ -42,7 +43,7 @@ pub struct ComicRow {
 /// Insertable struct for creating a new record in the `t_comic` table.
 #[derive(Insertable)]
 #[diesel(table_name = t_comic)]
-pub struct ComicEntry<'a> {
+pub struct ComicRowEntry<'a> {
     pub f_id: &'a str,
     pub f_workset_id: &'a str,
     pub f_index: i32,
@@ -142,9 +143,9 @@ impl<'a> ComicAspect<'a> {
         self
     }
 
-    pub fn cover_version(mut self, val: i64) -> Self {
+    pub fn cover_version(mut self, val: u32) -> Self {
         //
-        self.f_cover_version = Some(val);
+        self.f_cover_version = Some(i64::from(val));
 
         self
     }
@@ -198,21 +199,21 @@ impl From<ComicRow> for ComicInfo {
     }
 }
 
-impl<'a> From<&'a ComicForm> for ComicEntry<'a> {
-    fn from(form: &'a ComicForm) -> Self {
+impl<'a> From<&'a ComicEntry> for ComicRowEntry<'a> {
+    fn from(comic_entry: &'a ComicEntry) -> Self {
         Self {
-            f_id: &form.id,
-            f_workset_id: &form.workset_id,
-            f_index: form.index,
-            f_title: &form.title,
-            f_author: &form.author,
-            f_description: form.description.as_deref(),
+            f_id: &comic_entry.id,
+            f_workset_id: &comic_entry.workset_id,
+            f_index: comic_entry.index,
+            f_title: &comic_entry.title,
+            f_author: &comic_entry.author,
+            f_description: comic_entry.description.as_deref(),
             f_composed_title: ComicComplex::compose_title(
-                form.index,
-                &form.author,
-                &form.title,
+                comic_entry.index,
+                &comic_entry.author,
+                &comic_entry.title,
             ),
-            f_creator_id: &form.creator_id,
+            f_creator_id: &comic_entry.creator_id,
             f_last_active_at: OffsetDateTime::now_utc(),
             f_created_at: OffsetDateTime::now_utc(),
             f_updated_at: OffsetDateTime::now_utc(),

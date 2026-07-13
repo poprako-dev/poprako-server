@@ -6,8 +6,6 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "swagger-ui")]
 use utoipa::{IntoParams, ToSchema};
 
-use poprako_macro::Paginate;
-
 use crate::data::user::UserInfoVal;
 use crate::model::member_invitation::MemberInvitationInfo;
 use crate::part::image::ImagePool;
@@ -22,7 +20,7 @@ use crate::value::role::RoleMask;
 /// happens during the registration flow.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct CreateMemberInvitationData {
+pub struct CreateMemberInvitationParams {
     pub team_id: String,
 
     /// The QQ ID of the person being invited (not a user UUID).
@@ -39,7 +37,7 @@ pub struct CreateMemberInvitationData {
 /// registration to claim the invitation.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct CreateMemberInvitationVal {
+pub struct CreateMemberInvitationPayload {
     pub id: String,
     pub code: String,
 }
@@ -50,11 +48,10 @@ pub struct CreateMemberInvitationVal {
 /// `incl` embeds related rows into each item.
 ///
 /// Example: `/api/v1/teams/{team_id}/member-invitations?pending=true&incl=invitor&offset=0&limit=20`.
-#[Paginate]
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
 #[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
-pub struct ListMemberInvitationInfosData {
+pub struct ListMemberInvitationInfosParams {
     /// Parent team whose invitations to list.
     pub team_id: String,
 
@@ -69,6 +66,9 @@ pub struct ListMemberInvitationInfosData {
         deserialize_with = "crate::value::query::deserialize_vec"
     )]
     pub incl_opt: Vec<MemberInvitationInclOpt>,
+
+    pub offset: u32,
+    pub limit: u32,
 }
 
 /// Presentation-ready member invitation information.
@@ -146,7 +146,7 @@ impl MemberInvitationInfoVal {
 /// Input parameters for updating a pending invitation's roles.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct UpdateMemberInvitationRolesData {
+pub struct UpdateMemberInvitationRolesParams {
     pub id: String,
     pub roles: RoleMask,
 }

@@ -10,8 +10,6 @@
 
 use time::OffsetDateTime;
 
-use poprako_macro::Paginate;
-
 use crate::model::comic::ComicInfo;
 use crate::model::user::UserInfo;
 use crate::value::chapter::{ChapterInclOpt, StageMask};
@@ -70,7 +68,7 @@ pub struct ChapterInfo {
 ///
 /// [`ChapterComplex::gen_id`]: crate::complex::chapter::ChapterComplex::gen_id
 #[cfg_attr(test, derive(Clone))]
-pub struct ChapterForm {
+pub struct ChapterEntry {
     pub id: String,
     pub comic_id: String,
 
@@ -105,8 +103,10 @@ pub struct ChapterStageUpdate {
 }
 
 /// Filtering, pagination, and include parameters for listing chapters.
-#[Paginate]
-pub struct ChapterListSpec {
+pub struct ChapterInfoListSpec {
     pub comic_id: String,
     pub incl_opt: Vec<ChapterInclOpt>,
+
+    pub offset: u32,
+    pub limit: u32,
 }

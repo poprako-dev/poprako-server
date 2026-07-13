@@ -5,7 +5,7 @@ use super::*;
 
 use time::OffsetDateTime;
 
-use crate::data::chapter_port::ChapterTranslationImportData;
+use crate::data::chapter_port::ImportChapterTranslationParams;
 use crate::model::assignment::AssignmentInfo;
 use crate::model::chapter::ChapterInfo;
 use crate::model::comic::ComicInfo;
@@ -207,7 +207,7 @@ async fn import_label_plus_material_updates_units_and_counters() {
         &mock,
         &mock,
         token("user-1"),
-        ChapterTranslationImportData {
+        ImportChapterTranslationParams {
             format: TranslationFormat::LabelPlus,
             content: LABEL_PLUS_MATERIAL.into(),
         },
@@ -279,7 +279,7 @@ async fn import_rejects_page_count_mismatch_without_mutation() {
         &mock,
         &mock,
         token("user-1"),
-        ChapterTranslationImportData {
+        ImportChapterTranslationParams {
             format: TranslationFormat::LabelPlus,
             content: LABEL_PLUS_MATERIAL.into(),
         },

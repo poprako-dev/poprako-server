@@ -22,15 +22,19 @@ use super::*;
 
 use poprako_util::time::ToUnixMilli;
 
+use crate::data::member::{
+    CreateMemberParams, ListMemberInfosParams, UpdateMemberRolesParams,
+};
 use crate::model::member::{MemberInfo, MemberListSpec};
 use crate::model::team::TeamInfo;
-use crate::model::user::{UserCredential, UserInfo};
+use crate::model::user::{UserCredential, UserInfo, UserToken};
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::{self, assert_expected_variant};
 use crate::value::role::{RoleField, RoleMask};
 
 mod join_team;
+mod mutate;
 
 fn token(user_id: &str) -> UserToken {
     UserToken {
@@ -99,16 +103,16 @@ fn member(
     }
 }
 
-fn create_data(user_id: &str, team_id: &str) -> CreateMemberData {
-    CreateMemberData {
+fn create_params(user_id: &str, team_id: &str) -> CreateMemberParams {
+    CreateMemberParams {
         user_id: user_id.into(),
         team_id: team_id.into(),
         roles: RoleMask::from(RoleField::TRANSLATOR),
     }
 }
 
-fn list_data(team_id: &str) -> ListMemberInfosData {
-    ListMemberInfosData {
+fn list_params(team_id: &str) -> ListMemberInfosParams {
+    ListMemberInfosParams {
         owner_id: None,
         team_id: Some(team_id.into()),
         fuzzy_nickname: None,
@@ -119,8 +123,8 @@ fn list_data(team_id: &str) -> ListMemberInfosData {
     }
 }
 
-fn update_role_data(id: &str) -> UpdateMemberRolesData {
-    UpdateMemberRolesData {
+fn update_role_params(id: &str) -> UpdateMemberRolesParams {
+    UpdateMemberRolesParams {
         id: id.into(),
         roles: RoleMask::from(RoleField::REVIEWER),
     }
@@ -151,7 +155,7 @@ async fn create_admin_creates_member_with_target_user_nickname() {
         &mock,
         &mock,
         token("admin-user"),
-        create_data("target-user", "team-1"),
+        create_params("target-user", "team-1"),
     )
     .await;
 
@@ -200,7 +204,7 @@ async fn create_non_admin_is_rejected() {
         &mock,
         &mock,
         token("normal-user"),
-        create_data("target-user", "team-1"),
+        create_params("target-user", "team-1"),
     )
     .await
     .err()
@@ -234,7 +238,7 @@ async fn create_duplicate_member_is_rejected() {
         &mock,
         &mock,
         token("admin-user"),
-        create_data("target-user", "team-1"),
+        create_params("target-user", "team-1"),
     )
     .await
     .err()
@@ -267,7 +271,7 @@ async fn list_infos_member_lists_team_members() {
     mock.seed_member(translator_member_info);
 
     let member_info_vals =
-        list_infos(&mock, &mock, token("admin-user"), list_data("team-1"))
+        list_infos(&mock, &mock, token("admin-user"), list_params("team-1"))
             .await;
 
     assert!(member_info_vals.is_ok());
@@ -313,7 +317,7 @@ async fn list_infos_filters_by_role() {
         &mock,
         &mock,
         token("admin-user"),
-        ListMemberInfosData {
+        ListMemberInfosParams {
             owner_id: None,
             team_id: Some("team-1".into()),
             fuzzy_nickname: None,
@@ -361,7 +365,7 @@ async fn list_infos_applies_pagination_after_filtering() {
         &mock,
         &mock,
         token("admin-user"),
-        ListMemberInfosData {
+        ListMemberInfosParams {
             owner_id: None,
             team_id: Some("team-1".into()),
             fuzzy_nickname: None,
@@ -415,7 +419,7 @@ async fn list_infos_owner_lists_own_memberships() {
         &mock,
         &mock,
         token("user-1"),
-        ListMemberInfosData {
+        ListMemberInfosParams {
             owner_id: Some("user-1".into()),
             team_id: None,
             fuzzy_nickname: None,
@@ -452,7 +456,7 @@ async fn list_infos_non_member_is_rejected() {
     ));
 
     let err =
-        list_infos(&mock, &mock, token("stranger-user"), list_data("team-1"))
+        list_infos(&mock, &mock, token("stranger-user"), list_params("team-1"))
             .await
             .err()
             .unwrap();
@@ -463,7 +467,7 @@ async fn list_infos_non_member_is_rejected() {
 #[test]
 fn list_infos_rejects_invalid_combination() {
     //
-    let err = TryInto::<MemberListSpec>::try_into(ListMemberInfosData {
+    let err = TryInto::<MemberListSpec>::try_into(ListMemberInfosParams {
         owner_id: Some("user-1".into()),
         team_id: Some("team-1".into()),
         fuzzy_nickname: None,
@@ -481,7 +485,7 @@ fn list_infos_rejects_invalid_combination() {
 #[test]
 fn list_infos_converts_owner_combination_to_mine_spec() {
     //
-    let member_list_spec: MemberListSpec = ListMemberInfosData {
+    let member_list_spec: MemberListSpec = ListMemberInfosParams {
         owner_id: Some("user-1".into()),
         team_id: None,
         fuzzy_nickname: None,
@@ -509,188 +513,4 @@ fn list_infos_converts_owner_combination_to_mine_spec() {
     assert_eq!(offset, 3);
 
     assert_eq!(limit, 5);
-}
-
-#[tokio::test]
-async fn update_roles_admin_updates_member_role_mask() {
-    //
-    let mock = Mock::new();
-
-    seed_admin(&mock);
-
-    mock.seed_member(member(
-        "member-target",
-        "target-user",
-        "Target",
-        "team-1",
-        RoleMask::from(RoleField::TRANSLATOR),
-    ));
-
-    let update_member_role = update_roles(
-        &mock,
-        &mock,
-        token("admin-user"),
-        update_role_data("member-target"),
-    )
-    .await;
-
-    assert!(update_member_role.is_ok());
-
-    let snapshot = mock.snapshot();
-
-    let member_info = snapshot
-        .members
-        .iter()
-        .find(|m| m.id == "member-target")
-        .unwrap();
-
-    assert_eq!(member_info.roles, RoleMask::from(RoleField::REVIEWER));
-}
-
-#[tokio::test]
-async fn update_roles_non_admin_is_rejected() {
-    //
-    let mock = Mock::new();
-
-    mock.seed_member(member(
-        "member-normal",
-        "normal-user",
-        "Normal",
-        "team-1",
-        RoleMask::from(RoleField::TRANSLATOR),
-    ));
-
-    mock.seed_member(member(
-        "member-target",
-        "target-user",
-        "Target",
-        "team-1",
-        RoleMask::from(RoleField::TRANSLATOR),
-    ));
-
-    let err = update_roles(
-        &mock,
-        &mock,
-        token("normal-user"),
-        update_role_data("member-target"),
-    )
-    .await
-    .err()
-    .unwrap();
-
-    let snapshot = mock.snapshot();
-
-    let member_info = snapshot
-        .members
-        .iter()
-        .find(|m| m.id == "member-target")
-        .unwrap();
-
-    assert_expected_variant(err, ExpectedVariant::Perm);
-
-    assert_eq!(member_info.roles, RoleMask::from(RoleField::TRANSLATOR));
-}
-
-#[tokio::test]
-async fn update_roles_missing_member_is_rejected() {
-    //
-    let mock = Mock::new();
-
-    seed_admin(&mock);
-
-    let err = update_roles(
-        &mock,
-        &mock,
-        token("admin-user"),
-        update_role_data("member-missing"),
-    )
-    .await
-    .err()
-    .unwrap();
-
-    assert_expected_variant(err, ExpectedVariant::Args);
-}
-
-#[tokio::test]
-async fn delete_admin_deletes_member() {
-    //
-    let mock = Mock::new();
-
-    seed_admin(&mock);
-
-    mock.seed_member(member(
-        "member-target",
-        "target-user",
-        "Target",
-        "team-1",
-        RoleMask::from(RoleField::TRANSLATOR),
-    ));
-
-    let delete_member =
-        delete(&mock, &mock, token("admin-user"), "member-target".into()).await;
-
-    assert!(delete_member.is_ok());
-
-    assert!(
-        !mock
-            .snapshot()
-            .members
-            .iter()
-            .any(|member_info| member_info.id == "member-target")
-    );
-}
-
-#[tokio::test]
-async fn delete_non_admin_is_rejected() {
-    //
-    let mock = Mock::new();
-
-    mock.seed_member(member(
-        "member-normal",
-        "normal-user",
-        "Normal",
-        "team-1",
-        RoleMask::from(RoleField::TRANSLATOR),
-    ));
-
-    mock.seed_member(member(
-        "member-target",
-        "target-user",
-        "Target",
-        "team-1",
-        RoleMask::from(RoleField::TRANSLATOR),
-    ));
-
-    let err =
-        delete(&mock, &mock, token("normal-user"), "member-target".into())
-            .await
-            .err()
-            .unwrap();
-
-    assert_expected_variant(err, ExpectedVariant::Perm);
-
-    assert!(
-        mock.snapshot()
-            .members
-            .iter()
-            .any(|member_info| member_info.id == "member-target")
-    );
-}
-
-#[tokio::test]
-async fn delete_missing_member_is_rejected() {
-    //
-    let mock = Mock::new();
-
-    seed_admin(&mock);
-
-    let err =
-        delete(&mock, &mock, token("admin-user"), "member-missing".into())
-            .await
-            .err()
-            .unwrap();
-
-    assert_expected_variant(err, ExpectedVariant::Args);
-
-    assert_eq!(mock.snapshot().members.len(), 1);
 }

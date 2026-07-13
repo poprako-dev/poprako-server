@@ -10,16 +10,14 @@ use crate::api::http::handler::util::{
     Pagination, ensure_path_matches_body_id,
 };
 
-#[cfg(feature = "swagger-ui")]
-use crate::api::http::result::HttpBody;
-
+#[allow(unused_imports)]
 use crate::api::http::result::{
-    Accept as _, HttpNoContent, HttpResult, no_content,
+    Accept as _, HttpBody, HttpNoContent, HttpResult, no_content,
 };
 use crate::api::http::state::AppHarn;
 use crate::data::workset::{
-    CreateWorksetData, CreateWorksetVal, ListWorksetInfosData,
-    UpdateWorksetInfoData, WorksetInfoVal,
+    CreateWorksetParams, CreateWorksetPayload, ListWorksetInfosParams,
+    UpdateWorksetInfoParams, WorksetInfoVal,
 };
 use crate::model::user::UserToken;
 use crate::usecase;
@@ -29,21 +27,21 @@ use crate::usecase;
     post,
     path = "/api/v1/worksets",
     tag = "worksets",
-    request_body = CreateWorksetData,
+    request_body = CreateWorksetParams,
     responses(
-        (status = 201, description = "Workset created", body = HttpBody<CreateWorksetVal>),
+        (status = 201, description = "Workset created", body = HttpBody<CreateWorksetPayload>),
         (status = 401, description = "Authentication required"),
         (status = 403, description = "No permission to create worksets in this team"),
         (status = 404, description = "Team not found"),
     ),
 ))]
-#[instrument(err, skip(harn, data))]
+#[instrument(err, skip(harn, params))]
 pub async fn create(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
-    Json(data): Json<CreateWorksetData>,
-) -> HttpResult<CreateWorksetVal> {
-    usecase::workset::create(harn.drive(), harn.repo(), user_token, data)
+    Json(params): Json<CreateWorksetParams>,
+) -> HttpResult<CreateWorksetPayload> {
+    usecase::workset::create(harn.drive(), harn.repo(), user_token, params)
         .await?
         .accept(StatusCode::CREATED)
 }
@@ -68,13 +66,13 @@ pub async fn list_infos(
     Query(pagination): Query<Pagination>,
 ) -> HttpResult<Vec<WorksetInfoVal>> {
     //
-    let data = ListWorksetInfosData {
+    let params = ListWorksetInfosParams {
         team_id,
         offset: pagination.offset,
         limit: pagination.limit,
     };
 
-    usecase::workset::list_infos(harn.repo(), user_token, data)
+    usecase::workset::list_infos(harn.repo(), user_token, params)
         .await?
         .accept(StatusCode::OK)
 }
@@ -109,7 +107,7 @@ pub async fn get_info(
     path = "/api/v1/worksets/{workset_id}",
     tag = "worksets",
     params(("workset_id" = String, Path, description = "Workset ID")),
-    request_body = UpdateWorksetInfoData,
+    request_body = UpdateWorksetInfoParams,
     responses(
         (status = 204, description = "Workset updated"),
         (status = 422, description = "Path id does not match body id"),
@@ -117,17 +115,17 @@ pub async fn get_info(
         (status = 404, description = "Workset not found"),
     ),
 ))]
-#[instrument(err, skip(harn, data))]
+#[instrument(err, skip(harn, params))]
 pub async fn update_info(
     State(harn): State<AppHarn>,
     Path(workset_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Json(data): Json<UpdateWorksetInfoData>,
+    Json(params): Json<UpdateWorksetInfoParams>,
 ) -> HttpNoContent {
     //
-    ensure_path_matches_body_id(&workset_id, &data.id)?;
+    ensure_path_matches_body_id(&workset_id, &params.id)?;
 
-    usecase::workset::update_info(harn.repo(), user_token, data).await?;
+    usecase::workset::update_info(harn.repo(), user_token, params).await?;
 
     no_content()
 }

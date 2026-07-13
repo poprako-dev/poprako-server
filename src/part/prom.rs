@@ -1,89 +1,33 @@
-//! Prom (promise) port for deferred actions.
-//!
-//! Prom records are enqueued during a transaction and processed after the
-//! transaction commits. This allows side-effects that must not run inside
-//! the transaction — such as deleting old avatar files from object storage
-//! or checking whether an upload completed — to be scheduled atomically
-//! with the state change that triggers them.
-//!
-//! # Pattern
-//!
-//! 1. During a [`Drive::with_context`] block, use [`PromStep::append`]
-//!    to enqueue an [`Append`] step with a [`Payload`] and a `visible_at`
-//!    time.
-//! 2. After the transaction commits, a background worker processes the
-//!    prom table, executing the deferred actions once their `visible_at`
-//!    timestamp has passed.
-//!
-//! [`Drive::with_context`]: poprako_transactional::drive::Drive::with_context
+//! Deferred-action producer port.
 
-use serde::{Deserialize, Serialize};
-use time::OffsetDateTime;
+use poprako_orchestra::Step;
+use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
 
-use poprako_transactional::advance::Advance;
-use poprako_transactional::step::Step;
-
-use crate::part::prom::task::ImageTask;
+use crate::part::prom::payload::Payload;
 use crate::result::RegularError;
 
-/// Prom task type definitions.
-pub mod task;
+/// Deferred-action payloads.
+pub mod payload;
 
-/// A serializable deferred-action payload.
+/// Prom operations within a caller-coordinated transaction.
 ///
-/// Currently only carries [`ImageTask`] variants. Additional intention types
-/// can be added as new enum variants.
+/// Implementors persist individual and batch tasks against the shared
+/// transaction context `C` supplied by the application coordinator.
 ///
-/// All data is borrowed — no heap allocation on the append path.
-#[cfg_attr(test, derive(Debug, Clone, PartialEq, Eq))]
-#[derive(Serialize, Deserialize)]
-pub enum Payload<'a> {
-    #[serde(borrow)]
-    Image(ImageTask<'a>),
-}
-
-/// A [`Step`] that appends a deferred-action record.
+/// # SAFETY
 ///
-/// Enqueued during a transaction via [`PromStep::append`]. The prom worker
-/// will not process this record until `visible_at` has passed.
-pub struct Append<'a> {
-    pub id: &'a str,
-
-    pub topic: &'a str,
-    pub payload: Payload<'a>,
-
-    pub visible_at: &'a OffsetDateTime,
-}
-
-impl<'a> Step for Append<'a> {
-    type Output = ();
-}
-
-/// Factory for constructing [`Append`] steps.
-pub struct PromStep;
-
-impl PromStep {
-    /// Constructs an [`Append`] step that enqueues a deferred action.
-    pub fn append<'a>(
-        id: &'a str,
-        topic: &'a str,
-        payload: Payload<'a>,
-        visible_at: &'a OffsetDateTime,
-    ) -> Append<'a> {
-        Append {
-            id,
-            topic,
-            payload,
-            visible_at,
-        }
-    }
-}
-
-/// Transactional prom trait — can [`Advance`] an [`Append`] step.
-///
-/// This is the trait that the transactional handle must implement to
-/// support enqueuing deferred actions within a transaction.
+/// `DeferBatch` implementations **must** record every task in the exact
+/// order of the given slice. Callers rely on insertion order to express
+/// causal dependencies — for example a delete task that must be processed
+/// before the check-upload task that replaces the same resource. An
+/// implementation that reorders, interleaves, or drops tasks violates
+/// this contract and may cause orphaned storage objects or stale state.
 pub trait Prom<C>:
-    for<'a> Advance<Append<'a>, C, Error = RegularError>
+    for<'a> Step<Defer<'a, String, Payload, ()>, C, Error = RegularError>
+    + for<'t, 'a> Step<
+        DeferBatch<'t, 'a, String, Payload, ()>,
+        C,
+        Error = RegularError,
+    >
 {
 }

@@ -1,9 +1,5 @@
 //! Diesel-backed repository adapter.
 
-use async_trait::async_trait;
-
-use crate::util::DeriveTransactional;
-
 use crate::part_impl::shared::RdbCore;
 
 /// Allocates a connection and calls a free query function.
@@ -60,7 +56,7 @@ pub mod workset;
 #[cfg(all(test, feature = "repo"))]
 pub mod test_shared;
 
-/// Diesel-backed repository handle wrapping a connection pool for non-transactional operations.
+/// Diesel-backed repository handle wrapping a connection pool.
 pub struct RdbRepo {
     core: RdbCore,
 }
@@ -68,17 +64,5 @@ pub struct RdbRepo {
 impl RdbRepo {
     pub fn new(core: RdbCore) -> Self {
         Self { core }
-    }
-}
-
-/// Zero-sized marker type representing a live transaction handle for Diesel-backed repositories.
-pub struct RdbRepoTransactional;
-
-#[async_trait]
-impl DeriveTransactional for RdbRepo {
-    type Transactional = RdbRepoTransactional;
-
-    async fn derive_transactional(&self) -> Self::Transactional {
-        RdbRepoTransactional
     }
 }

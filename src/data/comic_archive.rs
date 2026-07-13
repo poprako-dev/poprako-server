@@ -8,6 +8,6 @@ use utoipa::ToSchema;
 /// Value returned after an active comic has been archived atomically.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct ArchiveComicVal {
+pub struct ArchiveComicPayload {
     pub archived_comic_id: String,
 }

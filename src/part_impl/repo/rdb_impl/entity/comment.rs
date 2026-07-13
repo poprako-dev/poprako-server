@@ -3,7 +3,7 @@
 use diesel::prelude::*;
 use time::OffsetDateTime;
 
-use crate::model::comment::{CommentForm, CommentInfo};
+use crate::model::comment::{CommentEntry, CommentInfo};
 use crate::part_impl::repo::rdb_impl::schema::t_comment;
 
 /// Raw database row for the `t_comment` table. Returned by Diesel queries.
@@ -23,7 +23,7 @@ pub struct CommentRow {
 /// Insertable struct for creating a new record in the `t_comment` table.
 #[derive(Insertable)]
 #[diesel(table_name = t_comment)]
-pub struct CommentEntry<'a> {
+pub struct CommentRowEntry<'a> {
     pub f_id: &'a str,
 
     pub f_team_id: &'a str,
@@ -47,13 +47,13 @@ impl From<CommentRow> for CommentInfo {
     }
 }
 
-impl<'a> From<&'a CommentForm> for CommentEntry<'a> {
-    fn from(form: &'a CommentForm) -> Self {
+impl<'a> From<&'a CommentEntry> for CommentRowEntry<'a> {
+    fn from(entry: &'a CommentEntry) -> Self {
         Self {
-            f_id: &form.id,
-            f_team_id: &form.team_id,
-            f_user_id: &form.user_id,
-            f_content: &form.content,
+            f_id: &entry.id,
+            f_team_id: &entry.team_id,
+            f_user_id: &entry.user_id,
+            f_content: &entry.content,
             f_created_at: OffsetDateTime::now_utc(),
         }
     }

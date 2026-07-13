@@ -4,6 +4,7 @@
 
 use super::*;
 
+use crate::data::member::JoinTeamParams;
 use crate::model::member_invitation::MemberInvitationInfo;
 
 fn invitation(id: &str, invitee_qid: &str) -> MemberInvitationInfo {
@@ -19,8 +20,8 @@ fn invitation(id: &str, invitee_qid: &str) -> MemberInvitationInfo {
     }
 }
 
-fn join_team_data() -> JoinTeamData {
-    JoinTeamData {
+fn join_team_params() -> JoinTeamParams {
+    JoinTeamParams {
         code: "INV123".into(),
     }
 }
@@ -39,7 +40,7 @@ async fn join_team_invited_user_creates_member_and_consumes_invitation() {
         &mock,
         &mock,
         token("target-user"),
-        join_team_data(),
+        join_team_params(),
     )
     .await
     .unwrap();
@@ -76,7 +77,7 @@ async fn join_team_mismatched_qid_is_rejected() {
         &mock,
         &mock,
         token("target-user"),
-        join_team_data(),
+        join_team_params(),
     )
     .await
     .err()
@@ -113,7 +114,7 @@ async fn join_team_duplicate_membership_is_rejected() {
         &mock,
         &mock,
         token("target-user"),
-        join_team_data(),
+        join_team_params(),
     )
     .await
     .err()

@@ -5,11 +5,10 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "swagger-ui")]
 use utoipa::ToSchema;
 
-use poprako_macro::Paginate;
 use poprako_util::time::ToUnixMilli;
 
 use crate::model::unit::{
-    UnitCounters, UnitDiff, UnitIdMapper, UnitInfo, UnitOper, UnitPayload,
+    UnitContent, UnitCounters, UnitDiff, UnitIdMapper, UnitInfo, UnitOper,
 };
 
 /// Presentation-ready unit information.
@@ -60,16 +59,18 @@ impl From<UnitInfo> for UnitInfoVal {
 }
 
 /// Input parameters for listing units under one page.
-#[Paginate]
 #[derive(Debug, Deserialize)]
-pub struct ListPageUnitInfosData {
+pub struct ListPageUnitInfosParams {
     pub page_id: String,
+
+    pub offset: u32,
+    pub limit: u32,
 }
 
 /// Return value for listing units under one page.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct ListPageUnitInfosVal {
+pub struct ListPageUnitInfosPayload {
     pub unit_infos: Vec<UnitInfoVal>,
 
     pub total_unit_count: i32,
@@ -80,15 +81,15 @@ pub struct ListPageUnitInfosVal {
 /// Input parameters for saving unit opers under one page.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct SavePageUnitsData {
+pub struct SavePageUnitsParams {
     pub page_id: String,
-    pub diff: UnitDiffData,
+    pub diff: UnitDiffParams,
 }
 
 /// Return value for saving unit opers under one page.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct SavePageUnitsVal {
+pub struct SavePageUnitsPayload {
     pub local_id_mappers: Vec<UnitIdMapperVal>,
 
     pub total_unit_count: i32,
@@ -99,16 +100,16 @@ pub struct SavePageUnitsVal {
 /// Transport-facing unit oper.
 #[derive(Debug, Clone, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct UnitDiffData {
+pub struct UnitDiffParams {
     pub page_id: String,
-    pub opers: Vec<UnitOperData>,
+    pub opers: Vec<UnitOperParams>,
 }
 
 /// Transport-facing unit oper event.
 #[derive(Debug, Clone, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
 #[serde(tag = "oper", rename_all = "snake_case", deny_unknown_fields)]
-pub enum UnitOperData {
+pub enum UnitOperParams {
     Create {
         local_id: String,
 
@@ -152,7 +153,7 @@ pub enum UnitOperData {
     },
 }
 
-impl UnitDiffData {
+impl UnitDiffParams {
     /// Converts transport-safe data into domain opers.
     pub fn into_model(self) -> Option<UnitDiff> {
         //
@@ -172,11 +173,11 @@ impl UnitDiffData {
     }
 }
 
-impl UnitOperData {
+impl UnitOperParams {
     fn into_model(self) -> UnitOper {
         match self {
             //
-            UnitOperData::Create {
+            UnitOperParams::Create {
                 local_id,
                 before_id,
                 is_bubble,
@@ -189,7 +190,7 @@ impl UnitOperData {
                 last_proofreader_id,
             } => UnitOper::Create {
                 id: local_id,
-                payload: UnitPayload {
+                payload: UnitContent {
                     is_bubble,
                     is_proofread,
                     x_coord,
@@ -203,7 +204,7 @@ impl UnitOperData {
             },
 
             //
-            UnitOperData::Save {
+            UnitOperParams::Save {
                 id,
                 before_id,
                 is_bubble,
@@ -216,7 +217,7 @@ impl UnitOperData {
                 last_proofreader_id,
             } => UnitOper::Save {
                 id,
-                payload: UnitPayload {
+                payload: UnitContent {
                     is_bubble,
                     is_proofread,
                     x_coord,
@@ -229,7 +230,7 @@ impl UnitOperData {
                 before_id,
             },
 
-            UnitOperData::Delete { id } => UnitOper::Delete { id },
+            UnitOperParams::Delete { id } => UnitOper::Delete { id },
         }
     }
 }
@@ -251,7 +252,7 @@ impl From<UnitIdMapper> for UnitIdMapperVal {
     }
 }
 
-impl SavePageUnitsVal {
+impl SavePageUnitsPayload {
     /// Builds a compact save response from mappings and counters.
     pub fn from_parts(
         local_id_mappers: Vec<UnitIdMapper>,

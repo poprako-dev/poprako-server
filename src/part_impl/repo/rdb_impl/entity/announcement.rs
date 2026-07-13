@@ -3,7 +3,7 @@
 use diesel::prelude::*;
 use time::OffsetDateTime;
 
-use crate::model::announcement::{AnnouncementForm, AnnouncementInfo};
+use crate::model::announcement::{AnnouncementEntry, AnnouncementInfo};
 use crate::part_impl::repo::rdb_impl::schema::t_announcement;
 
 /// Raw database row for the `t_announcement` table. Returned by Diesel queries.
@@ -24,7 +24,7 @@ pub struct AnnouncementRow {
 /// Insertable struct for creating a new record in the `t_announcement` table.
 #[derive(Insertable)]
 #[diesel(table_name = t_announcement)]
-pub struct AnnouncementEntry<'a> {
+pub struct AnnouncementRowEntry<'a> {
     pub f_id: &'a str,
 
     pub f_team_id: &'a str,
@@ -50,14 +50,14 @@ impl From<AnnouncementRow> for AnnouncementInfo {
     }
 }
 
-impl<'a> From<&'a AnnouncementForm> for AnnouncementEntry<'a> {
-    fn from(form: &'a AnnouncementForm) -> Self {
+impl<'a> From<&'a AnnouncementEntry> for AnnouncementRowEntry<'a> {
+    fn from(entry: &'a AnnouncementEntry) -> Self {
         Self {
-            f_id: &form.id,
-            f_team_id: &form.team_id,
-            f_user_id: &form.user_id,
-            f_title: &form.title,
-            f_content: &form.content,
+            f_id: &entry.id,
+            f_team_id: &entry.team_id,
+            f_user_id: &entry.user_id,
+            f_title: &entry.title,
+            f_content: &entry.content,
             f_created_at: OffsetDateTime::now_utc(),
         }
     }

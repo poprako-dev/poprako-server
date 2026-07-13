@@ -25,7 +25,7 @@ pub struct AssignmentInvitationInfo {
 }
 
 /// The data needed to insert an assignment invitation row.
-pub struct AssignmentInvitationForm {
+pub struct AssignmentInvitationEntry {
     pub id: String,
 
     pub chapter_id: String,

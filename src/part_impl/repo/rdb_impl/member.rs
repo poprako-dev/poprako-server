@@ -1,36 +1,31 @@
 //! RDB-backed member repository — free query functions and thin trait impls.
 
-use async_trait::async_trait;
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use time::OffsetDateTime;
 
-use poprako_transactional::advance::Advance;
+use poprako_orchestra::Run;
 
-use crate::model::member::{
-    MemberForm, MemberInfo, MemberListSpec, MemberRoleUpdate,
-};
-use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
-use crate::part::repo::step::member::{
-    Create, Delete, FindInfoByUserIdAndTeamId, GetInfoById, ListInfos,
-    ListInfosByUserIdExcluded, UpdateRole, UpdateUserNickname,
-};
-use crate::part::shared::execute::Execute;
+use crate::part::repo::member::MemberRepo;
+use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part_impl::repo::rdb_impl::entity::member::{
-    MemberAspect, MemberEntry, MemberRow,
+    MemberAspect, MemberRow, MemberRowEntry,
 };
-use crate::part_impl::repo::rdb_impl::{RdbRepo, RdbRepoTransactional, incl};
+use crate::part_impl::repo::rdb_impl::{RdbRepo, incl};
 use crate::part_impl::shared::result::{diesel, expected};
 use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::{RegularError, RegularResult};
 use crate::value::member::MemberInclOpt;
 use crate::value::role::{RoleField, RoleMask};
 
+use crate::model::member::{
+    MemberEntry, MemberInfo, MemberListSpec, MemberRoleUpdate,
+};
 use crate::part_impl::repo::rdb_impl::schema::t_member::dsl::*;
 
 impl MemberRepo<RdbContext> for RdbRepo {}
 
-impl MemberRepoTransactional<RdbContext> for RdbRepoTransactional {}
+mod orchestra;
 
 /// Per-role assignment timestamps extracted from a [`RoleMask`].
 struct RoleTimestamps {
@@ -69,20 +64,20 @@ fn role_timestamps_from_mask(
     }
 }
 
-/// Build a [`MemberEntry`] for insertion from a [`MemberForm`] and the
+/// Build a [`MemberRowEntry`] for insertion from a [`MemberEntry`] and the
 /// current timestamp.
-fn entry_from_form<'a>(
-    form: &'a MemberForm,
+fn entity_from_entry<'a>(
+    entry: &'a MemberEntry,
     now: OffsetDateTime,
-) -> MemberEntry<'a> {
+) -> MemberRowEntry<'a> {
     //
-    let timestamps = role_timestamps_from_mask(form.roles, now);
+    let timestamps = role_timestamps_from_mask(entry.roles, now);
 
-    MemberEntry {
-        f_id: &form.id,
-        f_user_id: &form.user_id,
-        f_user_nickname: &form.user_nickname,
-        f_team_id: &form.team_id,
+    MemberRowEntry {
+        f_id: &entry.id,
+        f_user_id: &entry.user_id,
+        f_user_nickname: &entry.user_nickname,
+        f_team_id: &entry.team_id,
         f_assigned_raw_provider_at: timestamps.raw_provider,
         f_assigned_translator_at: timestamps.translator,
         f_assigned_proofreader_at: timestamps.proofreader,
@@ -167,6 +162,26 @@ async fn find_info_by_user_id_and_team_id(
         .map_err(diesel)?;
 
     Ok(row.map(Into::into))
+}
+
+impl<'a> Run<FindMemberInfo<'a>> for RdbRepo {
+    type Error = RegularError;
+
+    async fn run(
+        &self,
+        oper: &FindMemberInfo<'a>,
+    ) -> RegularResult<Option<MemberInfo>> {
+        match oper {
+            FindMemberInfo::UserTeam { user_id, team_id } => {
+                submit_query!(
+                    self.core,
+                    find_info_by_user_id_and_team_id,
+                    user_id,
+                    team_id
+                )
+            }
+        }
+    }
 }
 
 /// Query a paginated, filtered list of member infos.
@@ -304,12 +319,12 @@ async fn get_info_by_id(
 /// Insert a new member and return its info.
 async fn create(
     conn: &mut RdbConn,
-    form: &MemberForm,
+    entry: &MemberEntry,
 ) -> RegularResult<MemberInfo> {
     //
     let now = OffsetDateTime::now_utc();
 
-    let entry = entry_from_form(form, now);
+    let entry = entity_from_entry(entry, now);
 
     let row: MemberRow = diesel::insert_into(t_member)
         .values(&entry)
@@ -358,6 +373,22 @@ async fn list_infos_by_user_id_excluded(
     Ok(rows.into_iter().map(Into::into).collect())
 }
 
+/// Query all member infos for a user without acquiring a lock.
+async fn list_infos_by_user_id(
+    conn: &mut RdbConn,
+    user_id: &str,
+) -> RegularResult<Vec<MemberInfo>> {
+    //
+    let rows: Vec<MemberRow> = t_member
+        .filter(f_user_id.eq(user_id))
+        .select(MemberRow::as_select())
+        .load(conn)
+        .await
+        .map_err(diesel)?;
+
+    Ok(rows.into_iter().map(Into::into).collect())
+}
+
 /// Update the role mask and refresh assignment timestamps for a member.
 async fn update_role(
     conn: &mut RdbConn,
@@ -388,137 +419,5 @@ async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
     Ok(())
 }
 
-// ── Non-transactional: Execute impls ─────────────────────────────────────────
-
-#[async_trait]
-impl<'a> Execute<FindInfoByUserIdAndTeamId<'a>> for RdbRepo {
-    type Error = RegularError;
-
-    async fn execute(
-        &self,
-        step: &FindInfoByUserIdAndTeamId<'a>,
-    ) -> RegularResult<Option<MemberInfo>> {
-        submit_query!(
-            self.core,
-            find_info_by_user_id_and_team_id,
-            step.user_id,
-            step.team_id
-        )
-    }
-}
-
-#[async_trait]
-impl<'a> Execute<ListInfos<'a>> for RdbRepo {
-    type Error = RegularError;
-
-    async fn execute(
-        &self,
-        step: &ListInfos<'a>,
-    ) -> RegularResult<Vec<MemberInfo>> {
-        submit_query!(self.core, list_infos, step.spec)
-    }
-}
-
-#[async_trait]
-impl<'a> Execute<GetInfoById<'a>> for RdbRepo {
-    type Error = RegularError;
-
-    async fn execute(
-        &self,
-        step: &GetInfoById<'a>,
-    ) -> RegularResult<MemberInfo> {
-        submit_query!(self.core, get_info_by_id, step.id, step.incl_opt)
-    }
-}
-
-// ── Transactional: Advance impls ─────────────────────────────────────────────
-
-#[async_trait]
-impl<'a> Advance<Create<'a>, RdbContext> for RdbRepoTransactional {
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut RdbContext,
-        step: &Create<'a>,
-    ) -> RegularResult<MemberInfo> {
-        create(context.conn(), step.form).await
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<UpdateUserNickname<'a>, RdbContext> for RdbRepoTransactional {
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut RdbContext,
-        step: &UpdateUserNickname<'a>,
-    ) -> RegularResult<()> {
-        update_user_nickname(context.conn(), step.user_id, step.user_nickname)
-            .await
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<ListInfosByUserIdExcluded<'a>, RdbContext>
-    for RdbRepoTransactional
-{
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut RdbContext,
-        step: &ListInfosByUserIdExcluded<'a>,
-    ) -> RegularResult<Vec<MemberInfo>> {
-        list_infos_by_user_id_excluded(context.conn(), step.user_id).await
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<FindInfoByUserIdAndTeamId<'a>, RdbContext>
-    for RdbRepoTransactional
-{
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut RdbContext,
-        step: &FindInfoByUserIdAndTeamId<'a>,
-    ) -> RegularResult<Option<MemberInfo>> {
-        find_info_by_user_id_and_team_id(
-            context.conn(),
-            step.user_id,
-            step.team_id,
-        )
-        .await
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<UpdateRole<'a>, RdbContext> for RdbRepoTransactional {
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut RdbContext,
-        step: &UpdateRole<'a>,
-    ) -> RegularResult<()> {
-        update_role(context.conn(), step.member_role_update).await
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<Delete<'a>, RdbContext> for RdbRepoTransactional {
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut RdbContext,
-        step: &Delete<'a>,
-    ) -> RegularResult<()> {
-        delete(context.conn(), step.id).await
-    }
-}
 #[cfg(all(test, feature = "repo"))]
 mod tests;

@@ -1,31 +1,32 @@
 //! Complex-domain opers for comic entities: identity generation,
 //! cover-storage key management, and permission gates.
 
-use time::OffsetDateTime;
+use poprako_orchestra::Proxy;
+use poprako_orchestra_extra::prom::oper::Defer;
+use poprako_orchestra_extra::prom::task::Task;
 
 use crate::complex::chapter::ChapterComplex;
 use crate::complex::image::ImageComplex;
 use crate::complex::util::{
     check_user_is_team_admin, check_user_is_team_member,
 };
-use crate::part::prom::task::{IMAGE_TOPIC, ImageTask};
-use crate::part::prom::{Payload, Prom, PromStep};
-use crate::part::repo::assignment::AssignmentRepoTransactional;
-use crate::part::repo::assignment_invitation::AssignmentInvitationRepoTransactional;
-use crate::part::repo::chapter::ChapterRepoTransactional;
-use crate::part::repo::comic::ComicRepoTransactional;
-use crate::part::repo::page::PageRepoTransactional;
-use crate::part::repo::step::chapter::ChapterStep;
-use crate::part::repo::step::comic::{
-    ComicStep, GetInfoById as ComicGetInfoById,
+use crate::part::prom::Prom;
+use crate::part::prom::payload::{Payload, image};
+use crate::part::repo::assignment::AssignmentRepo;
+use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
+use crate::part::repo::chapter::ChapterRepo;
+use crate::part::repo::comic::ComicRepo;
+use crate::part::repo::oper::chapter::ListChapterInfosExcluded;
+use crate::part::repo::oper::comic::{
+    DeleteComic, GetComicInfo, GetComicInfoExcluded,
 };
-use crate::part::repo::step::member::FindInfoByUserIdAndTeamId;
-use crate::part::repo::step::workset::{
-    GetInfoById as WorksetGetInfoById, WorksetStep,
+use crate::part::repo::oper::member::FindMemberInfo;
+use crate::part::repo::oper::workset::{
+    GetWorksetInfo, UpdateWorksetComicCount,
 };
-use crate::part::repo::unit::UnitRepoTransactional;
-use crate::part::repo::workset::WorksetRepoTransactional;
-use crate::part::shared::proxy::ProxyExecute;
+use crate::part::repo::page::PageRepo;
+use crate::part::repo::unit::UnitRepo;
+use crate::part::repo::workset::WorksetRepo;
 use crate::result::{RegularError, RegularResult};
 use crate::util::next_snowflake_id;
 use crate::value::index::stored_index_to_user_index;
@@ -43,7 +44,7 @@ impl ComicComplex {
     /// Construct the object-storage key for a comic cover image.
     ///
     /// Format: `comic_cover/{id}-{version}.{ext}`.
-    pub fn gen_cover_key(id: &str, version: i64, file_ext: &str) -> String {
+    pub fn gen_cover_key(id: &str, version: u32, file_ext: &str) -> String {
         // FIXME: change to cover/id/version/ext
         // All images needs fixes.
         format!("comic_cover/{}-{}.{}", id, version, file_ext)
@@ -63,13 +64,13 @@ impl ComicComplex {
     ) -> RegularResult<()>
     where
         C: Send,
-        R: ComicRepoTransactional<C>
-            + WorksetRepoTransactional<C>
-            + ChapterRepoTransactional<C>
-            + PageRepoTransactional<C>
-            + AssignmentInvitationRepoTransactional<C>
-            + AssignmentRepoTransactional<C>
-            + UnitRepoTransactional<C>
+        R: ComicRepo<C>
+            + WorksetRepo<C>
+            + ChapterRepo<C>
+            + PageRepo<C>
+            + AssignmentInvitationRepo<C>
+            + AssignmentRepo<C>
+            + UnitRepo<C>
             + Send
             + Sync,
         P: Prom<C> + Send + Sync,
@@ -78,16 +79,17 @@ impl ComicComplex {
         // concurrent chapter creations and cover uploads, preventing resource
         // leaks from chapters (and their page images) inserted between the
         // listing and the comic delete.
+
         let comic_info = repo
-            .advance(context, &ComicStep::get_info_excluded(id, &[]))
+            .step(context, &GetComicInfoExcluded { id, incls: &[] })
             .await?;
 
         let chapter_infos = repo
-            .advance(
+            .step(
                 context,
-                &ChapterStep::list_all_infos_by_comic_id_excluded(
-                    &comic_info.id,
-                ),
+                &ListChapterInfosExcluded {
+                    comic_id: &comic_info.id,
+                },
             )
             .await?;
 
@@ -106,28 +108,28 @@ impl ComicComplex {
         {
             let delete_id = ImageComplex::gen_delete_id();
 
-            let now = OffsetDateTime::now_utc();
+            let payload = Payload::Image(image::Payload::Delete {
+                object_key: cover_key.clone(),
+            });
 
-            prom.advance(
-                context,
-                &PromStep::append(
-                    &delete_id,
-                    IMAGE_TOPIC,
-                    Payload::Image(ImageTask::Delete {
-                        object_key: cover_key.as_str(),
-                    }),
-                    &now,
-                ),
-            )
-            .await?;
+            let task = Task {
+                id: &delete_id,
+                payload: &payload,
+                delay: None,
+            };
+
+            prom.step(context, &Defer::new(task)).await?;
         }
 
-        repo.advance(context, &ComicStep::delete(&comic_info.id))
+        repo.step(context, &DeleteComic { id: &comic_info.id })
             .await?;
 
-        repo.advance(
+        repo.step(
             context,
-            &WorksetStep::update_comic_count(&comic_info.workset_id, -1),
+            &UpdateWorksetComicCount {
+                id: &comic_info.workset_id,
+                delta: -1,
+            },
         )
         .await?;
 
@@ -140,17 +142,14 @@ pub struct ComicPermComplex;
 
 impl ComicPermComplex {
     /// Verify the caller is a team admin of the owning workset's team.
-    pub async fn can_user_create<P>(
+    pub async fn ensure_user_can_create<P>(
         proxy: &mut P,
         user_id: &str,
         workset_id: &str,
     ) -> RegularResult<()>
     where
-        P: for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RegularError>
-            + for<'a> ProxyExecute<
-                FindInfoByUserIdAndTeamId<'a>,
-                Error = RegularError,
-            >,
+        P: for<'a> Proxy<GetWorksetInfo<'a>, Error = RegularError>
+            + for<'a> Proxy<FindMemberInfo<'a>, Error = RegularError>,
     {
         let team_id =
             Self::resolve_team_id_from_workset(proxy, workset_id).await?;
@@ -159,17 +158,14 @@ impl ComicPermComplex {
     }
 
     /// Verify the caller is a team member of the owning workset's team.
-    pub async fn can_user_list_infos<P>(
+    pub async fn ensure_user_can_list_infos<P>(
         proxy: &mut P,
         user_id: &str,
         workset_id: &str,
     ) -> RegularResult<()>
     where
-        P: for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RegularError>
-            + for<'a> ProxyExecute<
-                FindInfoByUserIdAndTeamId<'a>,
-                Error = RegularError,
-            >,
+        P: for<'a> Proxy<GetWorksetInfo<'a>, Error = RegularError>
+            + for<'a> Proxy<FindMemberInfo<'a>, Error = RegularError>,
     {
         let team_id =
             Self::resolve_team_id_from_workset(proxy, workset_id).await?;
@@ -178,18 +174,15 @@ impl ComicPermComplex {
     }
 
     /// Verify the caller is a team member of the comic's team.
-    pub async fn can_user_get_info<P>(
+    pub async fn ensure_user_can_get_info<P>(
         proxy: &mut P,
         user_id: &str,
         comic_id: &str,
     ) -> RegularResult<()>
     where
-        P: for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RegularError>
-            + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RegularError>
-            + for<'a> ProxyExecute<
-                FindInfoByUserIdAndTeamId<'a>,
-                Error = RegularError,
-            >,
+        P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = RegularError>
+            + for<'a> Proxy<GetWorksetInfo<'a>, Error = RegularError>
+            + for<'a> Proxy<FindMemberInfo<'a>, Error = RegularError>,
     {
         let team_id = Self::resolve_team_id_from_comic(proxy, comic_id).await?;
 
@@ -197,18 +190,15 @@ impl ComicPermComplex {
     }
 
     /// Verify the caller is a team admin of the comic's team.
-    pub async fn can_user_update_info<P>(
+    pub async fn ensure_user_can_update_info<P>(
         proxy: &mut P,
         user_id: &str,
         comic_id: &str,
     ) -> RegularResult<()>
     where
-        P: for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RegularError>
-            + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RegularError>
-            + for<'a> ProxyExecute<
-                FindInfoByUserIdAndTeamId<'a>,
-                Error = RegularError,
-            >,
+        P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = RegularError>
+            + for<'a> Proxy<GetWorksetInfo<'a>, Error = RegularError>
+            + for<'a> Proxy<FindMemberInfo<'a>, Error = RegularError>,
     {
         let team_id = Self::resolve_team_id_from_comic(proxy, comic_id).await?;
 
@@ -216,18 +206,15 @@ impl ComicPermComplex {
     }
 
     /// Verify the caller is a team admin of the comic's team.
-    pub async fn can_user_reserve_cover<P>(
+    pub async fn ensure_user_can_reserve_cover<P>(
         proxy: &mut P,
         user_id: &str,
         comic_id: &str,
     ) -> RegularResult<()>
     where
-        P: for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RegularError>
-            + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RegularError>
-            + for<'a> ProxyExecute<
-                FindInfoByUserIdAndTeamId<'a>,
-                Error = RegularError,
-            >,
+        P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = RegularError>
+            + for<'a> Proxy<GetWorksetInfo<'a>, Error = RegularError>
+            + for<'a> Proxy<FindMemberInfo<'a>, Error = RegularError>,
     {
         let team_id = Self::resolve_team_id_from_comic(proxy, comic_id).await?;
 
@@ -235,18 +222,15 @@ impl ComicPermComplex {
     }
 
     /// Verify the caller is a team admin of the comic's team.
-    pub async fn can_user_mark_cover_uploaded<P>(
+    pub async fn ensure_user_can_mark_cover_uploaded<P>(
         proxy: &mut P,
         user_id: &str,
         comic_id: &str,
     ) -> RegularResult<()>
     where
-        P: for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RegularError>
-            + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RegularError>
-            + for<'a> ProxyExecute<
-                FindInfoByUserIdAndTeamId<'a>,
-                Error = RegularError,
-            >,
+        P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = RegularError>
+            + for<'a> Proxy<GetWorksetInfo<'a>, Error = RegularError>
+            + for<'a> Proxy<FindMemberInfo<'a>, Error = RegularError>,
     {
         let team_id = Self::resolve_team_id_from_comic(proxy, comic_id).await?;
 
@@ -254,18 +238,15 @@ impl ComicPermComplex {
     }
 
     /// Verify the caller is a team admin of the comic's team.
-    pub async fn can_user_delete<P>(
+    pub async fn ensure_user_can_delete<P>(
         proxy: &mut P,
         user_id: &str,
         comic_id: &str,
     ) -> RegularResult<()>
     where
-        P: for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RegularError>
-            + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RegularError>
-            + for<'a> ProxyExecute<
-                FindInfoByUserIdAndTeamId<'a>,
-                Error = RegularError,
-            >,
+        P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = RegularError>
+            + for<'a> Proxy<GetWorksetInfo<'a>, Error = RegularError>
+            + for<'a> Proxy<FindMemberInfo<'a>, Error = RegularError>,
     {
         let team_id = Self::resolve_team_id_from_comic(proxy, comic_id).await?;
 
@@ -278,11 +259,10 @@ impl ComicPermComplex {
         workset_id: &str,
     ) -> RegularResult<String>
     where
-        P: for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RegularError>,
+        P: for<'a> Proxy<GetWorksetInfo<'a>, Error = RegularError>,
     {
-        let workset_info = proxy
-            .execute(&WorksetStep::get_info_by_id(workset_id))
-            .await?;
+        let workset_info =
+            proxy.exec(&GetWorksetInfo { id: workset_id }).await?;
 
         Ok(workset_info.team_id)
     }
@@ -293,15 +273,20 @@ impl ComicPermComplex {
         comic_id: &str,
     ) -> RegularResult<String>
     where
-        P: for<'a> ProxyExecute<ComicGetInfoById<'a>, Error = RegularError>
-            + for<'a> ProxyExecute<WorksetGetInfoById<'a>, Error = RegularError>,
+        P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = RegularError>
+            + for<'a> Proxy<GetWorksetInfo<'a>, Error = RegularError>,
     {
         let comic_info = proxy
-            .execute(&ComicStep::get_info_by_id(comic_id, &[]))
+            .exec(&GetComicInfo {
+                id: comic_id,
+                incls: &[],
+            })
             .await?;
 
         let workset_info = proxy
-            .execute(&WorksetStep::get_info_by_id(&comic_info.workset_id))
+            .exec(&GetWorksetInfo {
+                id: &comic_info.workset_id,
+            })
             .await?;
 
         Ok(workset_info.team_id)

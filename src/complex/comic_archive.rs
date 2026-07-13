@@ -2,8 +2,11 @@
 
 use time::OffsetDateTime;
 
+use poprako_orchestra::Proxy;
+
 use poprako_util::time::ToUnixMilli;
 
+use crate::complex::util::check_user_is_team_admin;
 use crate::model::assignment::AssignmentInfo;
 use crate::model::comic_archive::{
     ArchivedAssignmentPayload, ArchivedChapterPayload, ArchivedComicPayload,
@@ -11,6 +14,9 @@ use crate::model::comic_archive::{
     ArchivedUserPayload, ArchivedWorksetPayload, ComicArchiveChapterSnapshot,
     ComicArchiveRecord, ComicArchiveSnapshot, ComicArchiveWrite,
 };
+use crate::part::repo::oper::comic::GetComicInfo;
+use crate::part::repo::oper::member::FindMemberInfo;
+use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::result::{RegularError, RegularResult};
 use crate::util::{compress_archive, next_snowflake_id};
 
@@ -104,6 +110,38 @@ impl ComicArchiveComplex {
             source_chapter_ids,
             source_page_ids,
         })
+    }
+}
+
+/// Permission gates for immutable comic archive operations.
+pub struct ComicArchivePermComplex;
+
+impl ComicArchivePermComplex {
+    /// Verify that the caller is an administrator of the comic's owning team.
+    pub async fn ensure_user_can_archive<P>(
+        proxy: &mut P,
+        user_id: &str,
+        comic_id: &str,
+    ) -> RegularResult<()>
+    where
+        P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = RegularError>
+            + for<'a> Proxy<GetWorksetInfo<'a>, Error = RegularError>
+            + for<'a> Proxy<FindMemberInfo<'a>, Error = RegularError>,
+    {
+        let comic_info = proxy
+            .exec(&GetComicInfo {
+                id: comic_id,
+                incls: &[],
+            })
+            .await?;
+
+        let workset_info = proxy
+            .exec(&GetWorksetInfo {
+                id: &comic_info.workset_id,
+            })
+            .await?;
+
+        check_user_is_team_admin(proxy, user_id, &workset_info.team_id).await
     }
 }
 

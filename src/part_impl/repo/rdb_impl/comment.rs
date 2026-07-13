@@ -1,28 +1,24 @@
 //! RDB-backed comment repository.
 
-use async_trait::async_trait;
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 
-use poprako_transactional::advance::Advance;
+use poprako_orchestra::{Run, Step};
 
-use crate::model::comment::{CommentForm, CommentInfo, CommentListSpec};
-use crate::part::repo::comment::{CommentRepo, CommentRepoTransactional};
-use crate::part::repo::step::comment::{Create, ListInfos};
-use crate::part::shared::execute::Execute;
+use crate::part::repo::comment::CommentRepo;
+use crate::part::repo::oper::comment::{CreateComment, ListCommentInfos};
 use crate::part_impl::repo::rdb_impl::entity::comment::{
-    CommentEntry, CommentRow,
+    CommentRow, CommentRowEntry,
 };
-use crate::part_impl::repo::rdb_impl::{RdbRepo, RdbRepoTransactional, incl};
+use crate::part_impl::repo::rdb_impl::{RdbRepo, incl};
 use crate::part_impl::shared::result::diesel;
 use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::{RegularError, RegularResult};
 
+use crate::model::comment::{CommentEntry, CommentInfo, CommentListSpec};
 use crate::part_impl::repo::rdb_impl::schema::t_comment::dsl::*;
 
 impl CommentRepo<RdbContext> for RdbRepo {}
-
-impl CommentRepoTransactional<RdbContext> for RdbRepoTransactional {}
 
 /// Query comment infos matching the given list spec, with optional includes.
 async fn list_infos(
@@ -49,13 +45,13 @@ async fn list_infos(
     Ok(infos)
 }
 
-/// Insert a new comment from the given form and return the created info.
+/// Insert a new comment from the given entry and return the created info.
 async fn create(
     conn: &mut RdbConn,
-    form: &CommentForm,
+    entry: &CommentEntry,
 ) -> RegularResult<CommentInfo> {
     //
-    let entry = CommentEntry::from(form);
+    let entry = CommentRowEntry::from(entry);
 
     let row: CommentRow = diesel::insert_into(t_comment)
         .values(&entry)
@@ -67,29 +63,28 @@ async fn create(
     Ok(row.into())
 }
 
-#[async_trait]
-impl<'a> Execute<ListInfos<'a>> for RdbRepo {
+impl Run<ListCommentInfos<'_>> for RdbRepo {
     type Error = RegularError;
 
-    async fn execute(
+    async fn run(
         &self,
-        step: &ListInfos<'a>,
+        oper: &ListCommentInfos<'_>,
     ) -> RegularResult<Vec<CommentInfo>> {
-        submit_query!(self.core, list_infos, step.spec)
+        submit_query!(self.core, list_infos, oper.spec)
     }
 }
 
-#[async_trait]
-impl<'a> Advance<Create<'a>, RdbContext> for RdbRepoTransactional {
+impl Step<CreateComment<'_>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
-    async fn advance(
+    async fn step(
         &self,
         context: &mut RdbContext,
-        step: &Create<'a>,
+        oper: &CreateComment<'_>,
     ) -> RegularResult<CommentInfo> {
-        create(context.conn(), step.form).await
+        create(context.conn(), oper.entry).await
     }
 }
+
 #[cfg(all(test, feature = "repo"))]
 mod tests;

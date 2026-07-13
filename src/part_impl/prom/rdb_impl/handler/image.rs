@@ -1,26 +1,28 @@
 //! Handler for the "image" prom topic.
 //!
-//! Dispatches [`ImageTask`] variants to their concrete implementations.
+//! Dispatches image [`Payload`] variants to their concrete implementations.
 
 use tracing::{Level, instrument};
 
-use poprako_transactional::advance::Advance;
-use poprako_transactional::drive::Drive;
+use poprako_orchestra::Nucl;
 
 use crate::part::image::ImagePool;
-use crate::part::prom::task::{ImageKind, ImageTask};
-use crate::part::repo::comic::ComicRepoTransactional;
-use crate::part::repo::page::PageRepoTransactional;
-use crate::part::repo::step::comic::ComicStep;
-use crate::part::repo::step::page::PageStep;
-use crate::part::repo::step::team::TeamStep;
-use crate::part::repo::step::user::UserStep;
-use crate::part::repo::team::TeamRepoTransactional;
-use crate::part::repo::user::UserRepoTransactional;
+use crate::part::prom::payload::image::{Payload, ResourceKind};
+use crate::part::repo::comic::ComicRepo;
+use crate::part::repo::oper::comic::{
+    GetComicInfoExcluded, MarkComicCoverUploaded,
+};
+use crate::part::repo::oper::page::{
+    GetPageInfoExcluded, MarkPageImageUploaded,
+};
+use crate::part::repo::oper::team::{GetTeamInfoExcluded, UpdateTeam};
+use crate::part::repo::oper::user::{GetUserInfoExcluded, UpdateUser};
+use crate::part::repo::page::PageRepo;
+use crate::part::repo::team::TeamRepo;
+use crate::part::repo::user::UserRepo;
 use crate::part_impl::prom::rdb_impl::handler::TaskFlow;
 use crate::part_impl::shared::RdbContext;
 use crate::result::{RegularError, RegularResult};
-use crate::util::DeriveTransactional;
 
 enum ResourceState {
     Current,
@@ -29,8 +31,8 @@ enum ResourceState {
 }
 
 fn classify_current_version(
-    current_version: i64,
-    image_version: i64,
+    current_version: u32,
+    image_version: u32,
     error_message: &'static str,
 ) -> RegularResult<ResourceState> {
     match current_version == image_version {
@@ -43,70 +45,66 @@ fn classify_current_version(
     }
 }
 
-/// Dispatch an [`ImageTask`] to its concrete handler.
-pub async fn handle<D, R, I>(
-    drive: &D,
+/// Dispatch an image [`Payload`] to its concrete handler.
+pub async fn handle<N, R, I>(
+    nucl: &N,
     repo: &R,
     image_pool: &I,
-    task: &ImageTask<'_>,
+    task: &Payload,
 ) -> TaskFlow
 where
-    D: Drive<RdbContext>,
-    D::Error: Into<RegularError>,
-    R: DeriveTransactional + Send + Sync,
-    <R as DeriveTransactional>::Transactional: UserRepoTransactional<RdbContext>
-        + TeamRepoTransactional<RdbContext>
-        + ComicRepoTransactional<RdbContext>
-        + PageRepoTransactional<RdbContext>
+    N: Nucl<Context = RdbContext, Error = RegularError>,
+    R: UserRepo<RdbContext>
+        + TeamRepo<RdbContext>
+        + ComicRepo<RdbContext>
+        + PageRepo<RdbContext>
         + Send
         + Sync,
     I: ImagePool + Send + Sync,
 {
     match task {
         //
-        ImageTask::CheckUploaded {
-            kind,
+        Payload::CheckUpload {
+            resource_kind,
             resource_id,
             object_key,
-            image_version,
+            version,
         } => {
             handle_check_uploaded(
-                drive,
+                nucl,
                 repo,
                 image_pool,
-                *kind,
+                *resource_kind,
                 resource_id,
                 object_key,
-                *image_version,
+                *version,
             )
             .await
         }
 
-        ImageTask::Delete { object_key } => {
+        Payload::Delete { object_key } => {
             handle_delete(image_pool, object_key).await
         }
     }
 }
 
 /// Verifies that an uploaded image object exists and confirms current DB ownership.
-#[instrument(skip(drive, repo, image_pool), level = Level::DEBUG)]
-async fn handle_check_uploaded<D, R, I>(
-    drive: &D,
+#[instrument(skip(nucl, repo, image_pool), level = Level::DEBUG)]
+async fn handle_check_uploaded<N, R, I>(
+    nucl: &N,
     repo: &R,
     image_pool: &I,
-    kind: ImageKind,
+    kind: ResourceKind,
     resource_id: &str,
     object_key: &str,
-    image_version: i64,
+    image_version: u32,
 ) -> TaskFlow
 where
-    D: Drive<RdbContext>,
-    D::Error: Into<RegularError>,
-    R: DeriveTransactional + Send + Sync,
-    <R as DeriveTransactional>::Transactional: UserRepoTransactional<RdbContext>
-        + TeamRepoTransactional<RdbContext>
-        + ComicRepoTransactional<RdbContext>
-        + PageRepoTransactional<RdbContext>
+    N: Nucl<Context = RdbContext, Error = RegularError>,
+    R: UserRepo<RdbContext>
+        + TeamRepo<RdbContext>
+        + ComicRepo<RdbContext>
+        + PageRepo<RdbContext>
         + Send
         + Sync,
     I: ImagePool + Send + Sync,
@@ -115,7 +113,7 @@ where
         //
         Ok(exists) => exists,
 
-        Err(e) => return TaskFlow::Retry(format!("{:?}", e)),
+        Err(error) => return TaskFlow::Retry(format!("{:?}", error)),
     };
 
     match exists {
@@ -124,7 +122,7 @@ where
 
         true => {
             process_existing_image(
-                drive,
+                nucl,
                 repo,
                 image_pool,
                 kind,
@@ -137,70 +135,63 @@ where
     }
 }
 
-async fn process_existing_image<D, R, I>(
-    drive: &D,
+async fn process_existing_image<N, R, I>(
+    nucl: &N,
     repo: &R,
     image_pool: &I,
-    kind: ImageKind,
+    kind: ResourceKind,
     resource_id: &str,
     object_key: &str,
-    image_version: i64,
+    image_version: u32,
 ) -> TaskFlow
 where
-    D: Drive<RdbContext>,
-    D::Error: Into<RegularError>,
-    R: DeriveTransactional + Send + Sync,
-    <R as DeriveTransactional>::Transactional: UserRepoTransactional<RdbContext>
-        + TeamRepoTransactional<RdbContext>
-        + ComicRepoTransactional<RdbContext>
-        + PageRepoTransactional<RdbContext>
+    N: Nucl<Context = RdbContext, Error = RegularError>,
+    R: UserRepo<RdbContext>
+        + TeamRepo<RdbContext>
+        + ComicRepo<RdbContext>
+        + PageRepo<RdbContext>
         + Send
         + Sync,
     I: ImagePool + Send + Sync,
 {
     let resource_state =
-        mark_current_or_classify(drive, repo, kind, resource_id, image_version)
+        mark_current_or_classify(nucl, repo, kind, resource_id, image_version)
             .await;
 
     match resource_state {
         //
-        Ok(ResourceState::Current) => TaskFlow::Complete,
-
-        Ok(ResourceState::Stale) => TaskFlow::Complete,
+        Ok(ResourceState::Current) | Ok(ResourceState::Stale) => {
+            TaskFlow::Complete
+        }
 
         Ok(ResourceState::Missing) => {
             handle_delete(image_pool, object_key).await
         }
 
-        Err(e) => TaskFlow::Retry(format!("{:?}", e)),
+        Err(error) => TaskFlow::Retry(format!("{:?}", error)),
     }
 }
 
-async fn mark_current_or_classify<D, R>(
-    drive: &D,
+async fn mark_current_or_classify<N, R>(
+    nucl: &N,
     repo: &R,
-    kind: ImageKind,
+    kind: ResourceKind,
     resource_id: &str,
-    image_version: i64,
+    image_version: u32,
 ) -> RegularResult<ResourceState>
 where
-    D: Drive<RdbContext>,
-    D::Error: Into<RegularError>,
-    R: DeriveTransactional + Send + Sync,
-    <R as DeriveTransactional>::Transactional: UserRepoTransactional<RdbContext>
-        + TeamRepoTransactional<RdbContext>
-        + ComicRepoTransactional<RdbContext>
-        + PageRepoTransactional<RdbContext>
+    N: Nucl<Context = RdbContext, Error = RegularError>,
+    R: UserRepo<RdbContext>
+        + TeamRepo<RdbContext>
+        + ComicRepo<RdbContext>
+        + PageRepo<RdbContext>
         + Send
         + Sync,
 {
-    drive
-        .with_context(async move |context| {
-            //
-            let transactional = repo.derive_transactional().await;
-
+    let resource_state = nucl
+        .coord(async move |context| {
             match mark_uploaded_by_kind(
-                &transactional,
+                repo,
                 context,
                 kind,
                 resource_id,
@@ -212,7 +203,7 @@ where
 
                 Err(RegularError::Expected { .. }) => {
                     classify_expected_mark(
-                        &transactional,
+                        repo,
                         context,
                         kind,
                         resource_id,
@@ -221,93 +212,106 @@ where
                     .await
                 }
 
-                Err(e) => Err(e),
+                Err(error) => Err(error),
             }
         })
-        .await
-        .map_err(|e| e.into())
+        .await?;
+
+    Ok(resource_state)
 }
 
-async fn mark_uploaded_by_kind<T>(
-    transactional: &T,
+async fn mark_uploaded_by_kind<R>(
+    repo: &R,
     context: &mut RdbContext,
-    kind: ImageKind,
+    kind: ResourceKind,
     resource_id: &str,
-    image_version: i64,
+    image_version: u32,
 ) -> RegularResult<()>
 where
-    T: UserRepoTransactional<RdbContext>
-        + TeamRepoTransactional<RdbContext>
-        + ComicRepoTransactional<RdbContext>
-        + PageRepoTransactional<RdbContext>
+    R: UserRepo<RdbContext>
+        + TeamRepo<RdbContext>
+        + ComicRepo<RdbContext>
+        + PageRepo<RdbContext>
         + Send
         + Sync,
 {
     match kind {
         //
-        ImageKind::UserAvatar => {
-            Advance::advance(
-                transactional,
+        ResourceKind::UserAvatar => {
+            //
+
+            repo.step(
                 context,
-                &UserStep::mark_avatar_uploaded(resource_id, image_version),
+                &UpdateUser::MarkAvatarUploaded {
+                    id: resource_id,
+                    avatar_version: image_version,
+                },
             )
             .await
         }
 
-        ImageKind::TeamAvatar => {
-            Advance::advance(
-                transactional,
+        ResourceKind::TeamAvatar => {
+            //
+
+            repo.step(
                 context,
-                &TeamStep::mark_avatar_uploaded(resource_id, image_version),
+                &UpdateTeam::MarkAvatarUploaded {
+                    id: resource_id,
+                    avatar_version: image_version,
+                },
             )
             .await
         }
 
-        ImageKind::ComicCover => {
-            Advance::advance(
-                transactional,
+        ResourceKind::ComicCover => {
+            repo.step(
                 context,
-                &ComicStep::mark_cover_uploaded(resource_id, image_version),
+                &MarkComicCoverUploaded {
+                    id: resource_id,
+                    cover_version: image_version,
+                },
             )
             .await
         }
 
-        ImageKind::PageImage => {
-            Advance::advance(
-                transactional,
+        ResourceKind::PageImage => {
+            repo.step(
                 context,
-                &PageStep::mark_image_uploaded(resource_id, image_version),
+                &MarkPageImageUploaded {
+                    id: resource_id,
+                    image_version,
+                },
             )
             .await
         }
     }
 }
 
-async fn classify_expected_mark<T>(
-    transactional: &T,
+async fn classify_expected_mark<R>(
+    repo: &R,
     context: &mut RdbContext,
-    kind: ImageKind,
+    kind: ResourceKind,
     resource_id: &str,
-    image_version: i64,
+    image_version: u32,
 ) -> RegularResult<ResourceState>
 where
-    T: UserRepoTransactional<RdbContext>
-        + TeamRepoTransactional<RdbContext>
-        + ComicRepoTransactional<RdbContext>
-        + PageRepoTransactional<RdbContext>
+    R: UserRepo<RdbContext>
+        + TeamRepo<RdbContext>
+        + ComicRepo<RdbContext>
+        + PageRepo<RdbContext>
         + Send
         + Sync,
 {
     match kind {
         //
-        ImageKind::UserAvatar => {
-            match Advance::advance(
-                transactional,
-                context,
-                &UserStep::get_info_excluded(resource_id),
-            )
-            .await
+        ResourceKind::UserAvatar => {
+            //
+
+            match repo
+                .step(context, &GetUserInfoExcluded::Id { id: resource_id })
+                .await
             {
+                //
                 Ok(user_info) => classify_current_version(
                     user_info.avatar_version,
                     image_version,
@@ -318,18 +322,18 @@ where
                     Ok(ResourceState::Missing)
                 }
 
-                Err(e) => Err(e),
+                Err(error) => Err(error),
             }
         }
 
-        ImageKind::TeamAvatar => {
-            match Advance::advance(
-                transactional,
-                context,
-                &TeamStep::get_info_excluded(resource_id),
-            )
-            .await
+        ResourceKind::TeamAvatar => {
+            //
+
+            match repo
+                .step(context, &GetTeamInfoExcluded::Id { id: resource_id })
+                .await
             {
+                //
                 Ok(team_info) => classify_current_version(
                     team_info.avatar_version,
                     image_version,
@@ -340,17 +344,20 @@ where
                     Ok(ResourceState::Missing)
                 }
 
-                Err(e) => Err(e),
+                Err(error) => Err(error),
             }
         }
 
-        ImageKind::ComicCover => {
-            match Advance::advance(
-                transactional,
-                context,
-                &ComicStep::get_info_excluded(resource_id, &[]),
-            )
-            .await
+        ResourceKind::ComicCover => {
+            match repo
+                .step(
+                    context,
+                    &GetComicInfoExcluded {
+                        id: resource_id,
+                        incls: &[],
+                    },
+                )
+                .await
             {
                 Ok(comic_info) => classify_current_version(
                     comic_info.cover_version,
@@ -362,17 +369,14 @@ where
                     Ok(ResourceState::Missing)
                 }
 
-                Err(e) => Err(e),
+                Err(error) => Err(error),
             }
         }
 
-        ImageKind::PageImage => {
-            match Advance::advance(
-                transactional,
-                context,
-                &PageStep::get_info_excluded(resource_id),
-            )
-            .await
+        ResourceKind::PageImage => {
+            match repo
+                .step(context, &GetPageInfoExcluded { id: resource_id })
+                .await
             {
                 Ok(page_info) => classify_current_version(
                     page_info.image_version,
@@ -384,7 +388,7 @@ where
                     Ok(ResourceState::Missing)
                 }
 
-                Err(e) => Err(e),
+                Err(error) => Err(error),
             }
         }
     }
@@ -400,6 +404,6 @@ where
         //
         Ok(()) => TaskFlow::Complete,
 
-        Err(e) => TaskFlow::Retry(format!("{:?}", e)),
+        Err(error) => TaskFlow::Retry(format!("{:?}", error)),
     }
 }

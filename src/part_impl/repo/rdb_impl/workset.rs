@@ -1,39 +1,31 @@
-//! RDB-backed workset repository — free query functions and thin trait impls.
+//! Diesel-backed workset repository operations.
 
-use async_trait::async_trait;
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use time::OffsetDateTime;
 
-use poprako_transactional::advance::Advance;
+use poprako_orchestra::{Run, Step};
 
-use crate::model::workset::{WorksetForm, WorksetInfo};
-use crate::part::repo::step::workset::{
-    Create, Delete, GetInfoById, GetInfoExcluded, IncrComicNextIndex,
-    ListAllInfosByTeamIdExcluded, ListInfosByTeamId, UpdateComicCount,
-    UpdateInfo,
+use crate::part::repo::oper::workset::{
+    AllocateWorksetComicIndex, CreateWorkset, DeleteWorkset, GetWorksetInfo,
+    GetWorksetInfoExcluded, ListWorksetInfos, ListWorksetInfosExcluded,
+    UpdateWorkset, UpdateWorksetComicCount,
 };
-use crate::part::repo::workset::{WorksetRepo, WorksetRepoTransactional};
-use crate::part::shared::execute::Execute;
+use crate::part::repo::workset::WorksetRepo;
+use crate::part_impl::repo::rdb_impl::RdbRepo;
 use crate::part_impl::repo::rdb_impl::entity::workset::{
-    WorksetAspect, WorksetEntry, WorksetRow,
+    WorksetAspect, WorksetRow, WorksetRowEntry,
 };
-use crate::part_impl::repo::rdb_impl::{RdbRepo, RdbRepoTransactional};
 use crate::part_impl::shared::result::{diesel, expected};
 use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::{RegularError, RegularResult};
 
+use crate::model::workset::{WorksetEntry, WorksetInfo, WorksetInfoUpdate};
 use crate::part_impl::repo::rdb_impl::schema::t_workset::dsl::*;
 
 impl WorksetRepo<RdbContext> for RdbRepo {}
 
-impl WorksetRepoTransactional<RdbContext> for RdbRepoTransactional {}
-
-/// Load a single workset info by ID.
-async fn get_info_by_id(
-    conn: &mut RdbConn,
-    id: &str,
-) -> RegularResult<WorksetInfo> {
+async fn get_info(conn: &mut RdbConn, id: &str) -> RegularResult<WorksetInfo> {
     //
     let row: WorksetRow = t_workset
         .filter(f_id.eq(id))
@@ -47,40 +39,38 @@ async fn get_info_by_id(
     Ok(row.into())
 }
 
-/// Query a paginated list of worksets for a team, ordered by index.
-async fn list_infos_by_team_id(
+async fn list_infos(
     conn: &mut RdbConn,
-    team_id: &str,
-    offset: u64,
-    limit: u64,
+    oper: &ListWorksetInfos<'_>,
 ) -> RegularResult<Vec<WorksetInfo>> {
     //
-    let rows: Vec<WorksetRow> = t_workset
-        .filter(f_team_id.eq(team_id))
+    let mut query = t_workset
+        .filter(f_team_id.eq(oper.team_id))
         .select(WorksetRow::as_select())
         .order_by(f_index.asc())
-        .offset(offset as i64)
-        .limit(limit as i64)
-        .load(conn)
-        .await
-        .map_err(diesel)?;
+        .into_boxed();
+
+    if let Some(page) = oper.page {
+        query = query.offset(page.offset as i64).limit(page.limit as i64);
+    }
+
+    let rows: Vec<WorksetRow> = query.load(conn).await.map_err(diesel)?;
 
     Ok(rows.into_iter().map(Into::into).collect())
 }
 
-/// Update a workset's name and optional description.
 async fn update_info(
     conn: &mut RdbConn,
-    id: &str,
-    name: &str,
-    description: Option<&str>,
+    update: &WorksetInfoUpdate,
 ) -> RegularResult<()> {
     //
     let now = OffsetDateTime::now_utc();
 
-    let aspect = WorksetAspect::new(now).name(name).description(description);
+    let aspect = WorksetAspect::new(now)
+        .name(&update.name)
+        .description(update.description.as_deref());
 
-    diesel::update(t_workset.filter(f_id.eq(id)))
+    diesel::update(t_workset.filter(f_id.eq(&update.id)))
         .set(&aspect)
         .execute(conn)
         .await
@@ -89,8 +79,7 @@ async fn update_info(
     Ok(())
 }
 
-/// Query all worksets for a team, locking the rows for update.
-async fn list_all_infos_by_team_id_excluded(
+async fn list_infos_excluded(
     conn: &mut RdbConn,
     team_id: &str,
 ) -> RegularResult<Vec<WorksetInfo>> {
@@ -106,7 +95,6 @@ async fn list_all_infos_by_team_id_excluded(
     Ok(rows.into_iter().map(Into::into).collect())
 }
 
-/// Load a workset info by ID, locking the row for update.
 async fn get_info_excluded(
     conn: &mut RdbConn,
     id: &str,
@@ -125,24 +113,12 @@ async fn get_info_excluded(
     Ok(row.into())
 }
 
-/// Delete a workset by ID.
-async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
-    //
-    diesel::delete(t_workset.filter(f_id.eq(id)))
-        .execute(conn)
-        .await
-        .map_err(diesel)?;
-
-    Ok(())
-}
-
-/// Insert a new workset and return its info.
 async fn create(
     conn: &mut RdbConn,
-    form: &WorksetForm,
+    workset_entry: &WorksetEntry,
 ) -> RegularResult<WorksetInfo> {
     //
-    let entry = WorksetEntry::from(form);
+    let entry = WorksetRowEntry::from(workset_entry);
 
     let row: WorksetRow = diesel::insert_into(t_workset)
         .values(&entry)
@@ -154,23 +130,31 @@ async fn create(
     Ok(row.into())
 }
 
-/// Atomically increment and return the previous comic-next-index for a workset.
-async fn incr_comic_next_index(
+async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
+    //
+    diesel::delete(t_workset.filter(f_id.eq(id)))
+        .execute(conn)
+        .await
+        .map_err(diesel)?;
+
+    Ok(())
+}
+
+async fn allocate_comic_index(
     conn: &mut RdbConn,
     id: &str,
 ) -> RegularResult<i32> {
     //
-    let prev: i32 = diesel::update(t_workset.filter(f_id.eq(id)))
+    let index: i32 = diesel::update(t_workset.filter(f_id.eq(id)))
         .set(f_comic_next_index.eq(f_comic_next_index + 1))
         .returning(f_comic_next_index - 1)
         .get_result(conn)
         .await
         .map_err(diesel)?;
 
-    Ok(prev)
+    Ok(index)
 }
 
-/// Adjust a workset's comic count by a delta (positive or negative).
 async fn update_comic_count(
     conn: &mut RdbConn,
     id: &str,
@@ -186,146 +170,128 @@ async fn update_comic_count(
     Ok(())
 }
 
-// ── Non-transactional: Execute impls ────────────────────────────────
-
-#[async_trait]
-impl<'a> Execute<GetInfoById<'a>> for RdbRepo {
+impl<'a> Run<GetWorksetInfo<'a>> for RdbRepo {
     type Error = RegularError;
 
-    async fn execute(
+    async fn run(
         &self,
-        step: &GetInfoById<'a>,
+        oper: &GetWorksetInfo<'a>,
     ) -> RegularResult<WorksetInfo> {
-        submit_query!(self.core, get_info_by_id, step.id)
+        submit_query!(self.core, get_info, oper.id)
     }
 }
 
-#[async_trait]
-impl<'a> Execute<ListInfosByTeamId<'a>> for RdbRepo {
+impl<'a> Run<ListWorksetInfos<'a>> for RdbRepo {
     type Error = RegularError;
 
-    async fn execute(
+    async fn run(
         &self,
-        step: &ListInfosByTeamId<'a>,
+        oper: &ListWorksetInfos<'a>,
     ) -> RegularResult<Vec<WorksetInfo>> {
-        submit_query!(
-            self.core,
-            list_infos_by_team_id,
-            step.team_id,
-            step.offset,
-            step.limit
-        )
+        submit_query!(self.core, list_infos, oper)
     }
 }
 
-#[async_trait]
-impl<'a> Execute<UpdateInfo<'a>> for RdbRepo {
+impl<'a> Run<UpdateWorkset<'a>> for RdbRepo {
     type Error = RegularError;
 
-    async fn execute(&self, step: &UpdateInfo<'a>) -> RegularResult<()> {
-        submit_query!(
-            self.core,
-            update_info,
-            step.update.id.as_str(),
-            &step.update.name,
-            step.update.description.as_deref()
-        )
+    async fn run(&self, oper: &UpdateWorkset<'a>) -> RegularResult<()> {
+        submit_query!(self.core, update_info, oper.update)
     }
 }
 
-// ── Transactional: Advance impls ───────────────────────────────────
-
-#[async_trait]
-impl<'a> Advance<ListAllInfosByTeamIdExcluded<'a>, RdbContext>
-    for RdbRepoTransactional
-{
+impl<'a> Step<GetWorksetInfo<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
-    async fn advance(
+    async fn step(
         &self,
         context: &mut RdbContext,
-        step: &ListAllInfosByTeamIdExcluded<'a>,
-    ) -> RegularResult<Vec<WorksetInfo>> {
-        list_all_infos_by_team_id_excluded(context.conn(), step.team_id).await
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<GetInfoExcluded<'a>, RdbContext> for RdbRepoTransactional {
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut RdbContext,
-        step: &GetInfoExcluded<'a>,
+        oper: &GetWorksetInfo<'a>,
     ) -> RegularResult<WorksetInfo> {
-        get_info_excluded(context.conn(), step.id).await
+        get_info(context.conn(), oper.id).await
     }
 }
 
-#[async_trait]
-impl<'a> Advance<Delete<'a>, RdbContext> for RdbRepoTransactional {
+impl<'a> Step<ListWorksetInfos<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
-    async fn advance(
+    async fn step(
         &self,
         context: &mut RdbContext,
-        step: &Delete<'a>,
+        oper: &ListWorksetInfos<'a>,
+    ) -> RegularResult<Vec<WorksetInfo>> {
+        list_infos(context.conn(), oper).await
+    }
+}
+
+impl<'a> Step<GetWorksetInfoExcluded<'a>, RdbContext> for RdbRepo {
+    type Error = RegularError;
+
+    async fn step(
+        &self,
+        context: &mut RdbContext,
+        oper: &GetWorksetInfoExcluded<'a>,
+    ) -> RegularResult<WorksetInfo> {
+        get_info_excluded(context.conn(), oper.id).await
+    }
+}
+
+impl<'a> Step<ListWorksetInfosExcluded<'a>, RdbContext> for RdbRepo {
+    type Error = RegularError;
+
+    async fn step(
+        &self,
+        context: &mut RdbContext,
+        oper: &ListWorksetInfosExcluded<'a>,
+    ) -> RegularResult<Vec<WorksetInfo>> {
+        list_infos_excluded(context.conn(), oper.team_id).await
+    }
+}
+
+impl<'a> Step<CreateWorkset<'a>, RdbContext> for RdbRepo {
+    type Error = RegularError;
+
+    async fn step(
+        &self,
+        context: &mut RdbContext,
+        oper: &CreateWorkset<'a>,
+    ) -> RegularResult<WorksetInfo> {
+        create(context.conn(), oper.entry).await
+    }
+}
+
+impl<'a> Step<DeleteWorkset<'a>, RdbContext> for RdbRepo {
+    type Error = RegularError;
+
+    async fn step(
+        &self,
+        context: &mut RdbContext,
+        oper: &DeleteWorkset<'a>,
     ) -> RegularResult<()> {
-        delete(context.conn(), step.id).await
+        delete(context.conn(), oper.id).await
     }
 }
 
-#[async_trait]
-impl<'a> Advance<GetInfoById<'a>, RdbContext> for RdbRepoTransactional {
+impl<'a> Step<AllocateWorksetComicIndex<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
-    async fn advance(
+    async fn step(
         &self,
         context: &mut RdbContext,
-        step: &GetInfoById<'a>,
-    ) -> RegularResult<WorksetInfo> {
-        get_info_by_id(context.conn(), step.id).await
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<Create<'a>, RdbContext> for RdbRepoTransactional {
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut RdbContext,
-        step: &Create<'a>,
-    ) -> RegularResult<WorksetInfo> {
-        create(context.conn(), step.form).await
-    }
-}
-
-#[async_trait]
-impl<'a> Advance<IncrComicNextIndex<'a>, RdbContext> for RdbRepoTransactional {
-    type Error = RegularError;
-
-    async fn advance(
-        &self,
-        context: &mut RdbContext,
-        step: &IncrComicNextIndex<'a>,
+        oper: &AllocateWorksetComicIndex<'a>,
     ) -> RegularResult<i32> {
-        incr_comic_next_index(context.conn(), step.id).await
+        allocate_comic_index(context.conn(), oper.id).await
     }
 }
 
-#[async_trait]
-impl<'a> Advance<UpdateComicCount<'a>, RdbContext> for RdbRepoTransactional {
+impl<'a> Step<UpdateWorksetComicCount<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
-    async fn advance(
+    async fn step(
         &self,
         context: &mut RdbContext,
-        step: &UpdateComicCount<'a>,
+        oper: &UpdateWorksetComicCount<'a>,
     ) -> RegularResult<()> {
-        update_comic_count(context.conn(), step.id, step.delta).await
+        update_comic_count(context.conn(), oper.id, oper.delta).await
     }
 }
-#[cfg(all(test, feature = "repo"))]
-mod tests;

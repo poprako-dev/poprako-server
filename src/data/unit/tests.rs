@@ -1,13 +1,13 @@
-// unit_diff_data_into_model(UnitDiffData::into_model)(positive): minimal create defaults optional state and content.
-// unit_diff_data_into_model(UnitDiffData::into_model)(positive): create and save preserve supplied complete content.
-// unit_diff_data_rejects_legacy_or_mixed_identifiers(UnitDiffData)(negative): legacy and mixed create-save identifiers are rejected.
+// unit_diff_params_into_model(UnitDiffParams::into_model)(positive): minimal create defaults optional state and content.
+// unit_diff_params_into_model(UnitDiffParams::into_model)(positive): create and save preserve supplied complete content.
+// unit_diff_params_rejects_legacy_or_mixed_identifiers(UnitDiffParams)(negative): legacy and mixed create-save identifiers are rejected.
 
 use super::*;
 
 use crate::model::unit::UnitOper;
 
 #[test]
-fn unit_diff_data_into_model_defaults_minimal_create() {
+fn unit_diff_params_into_model_defaults_minimal_create() {
     //
     let value = serde_json::json!({
         "page_id": "page-1",
@@ -20,10 +20,10 @@ fn unit_diff_data_into_model_defaults_minimal_create() {
         }]
     });
 
-    let unit_diff_data: UnitDiffData =
+    let unit_diff_params: UnitDiffParams =
         serde_json::from_value(value).ok().unwrap();
 
-    let unit_diff = unit_diff_data.into_model().unwrap();
+    let unit_diff = unit_diff_params.into_model().unwrap();
 
     match &unit_diff.opers[0] {
         //
@@ -57,7 +57,7 @@ fn unit_diff_data_into_model_defaults_minimal_create() {
 }
 
 #[test]
-fn unit_diff_data_into_model_preserves_create_and_save_content() {
+fn unit_diff_params_into_model_preserves_create_and_save_content() {
     //
     let value = serde_json::json!({
         "page_id": "page-1",
@@ -90,10 +90,10 @@ fn unit_diff_data_into_model_preserves_create_and_save_content() {
         ]
     });
 
-    let unit_diff_data: UnitDiffData =
+    let unit_diff_params: UnitDiffParams =
         serde_json::from_value(value).ok().unwrap();
 
-    let unit_diff = unit_diff_data.into_model().unwrap();
+    let unit_diff = unit_diff_params.into_model().unwrap();
 
     match &unit_diff.opers[0] {
         //
@@ -137,7 +137,7 @@ fn unit_diff_data_into_model_preserves_create_and_save_content() {
 }
 
 #[test]
-fn unit_diff_data_rejects_legacy_or_mixed_identifiers() {
+fn unit_diff_params_rejects_legacy_or_mixed_identifiers() {
     //
     let invalid_opers = [
         serde_json::json!({
@@ -172,7 +172,7 @@ fn unit_diff_data_rejects_legacy_or_mixed_identifiers() {
             "opers": [invalid_oper]
         });
 
-        let result = serde_json::from_value::<UnitDiffData>(value);
+        let result = serde_json::from_value::<UnitDiffParams>(value);
 
         assert!(result.is_err());
     }

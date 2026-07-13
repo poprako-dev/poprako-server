@@ -3,7 +3,7 @@
 use diesel::prelude::*;
 use time::OffsetDateTime;
 
-use crate::model::workset::{WorksetForm, WorksetInfo};
+use crate::model::workset::{WorksetEntry, WorksetInfo};
 use crate::part_impl::repo::rdb_impl::schema::t_workset;
 
 // ── Queryable / Selectable ─────────────────────────────────────────────────
@@ -31,7 +31,7 @@ pub struct WorksetRow {
 /// Insertable struct for creating a new record in the `t_workset` table.
 #[derive(Insertable)]
 #[diesel(table_name = t_workset)]
-pub struct WorksetEntry<'a> {
+pub struct WorksetRowEntry<'a> {
     pub f_id: &'a str,
     pub f_team_id: &'a str,
     pub f_index: i32,
@@ -116,14 +116,14 @@ impl From<WorksetRow> for WorksetInfo {
     }
 }
 
-impl<'a> From<&'a WorksetForm> for WorksetEntry<'a> {
-    fn from(form: &'a WorksetForm) -> Self {
+impl<'a> From<&'a WorksetEntry> for WorksetRowEntry<'a> {
+    fn from(workset_entry: &'a WorksetEntry) -> Self {
         Self {
-            f_id: &form.id,
-            f_team_id: &form.team_id,
-            f_index: form.index,
-            f_name: &form.name,
-            f_description: form.description.as_deref(),
+            f_id: &workset_entry.id,
+            f_team_id: &workset_entry.team_id,
+            f_index: workset_entry.index,
+            f_name: &workset_entry.name,
+            f_description: workset_entry.description.as_deref(),
             f_created_at: OffsetDateTime::now_utc(),
             f_updated_at: OffsetDateTime::now_utc(),
         }

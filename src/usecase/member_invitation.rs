@@ -1,32 +1,32 @@
 //! Member invitation use cases.
 
-use poprako_transactional::advance::Advance;
-use poprako_transactional::drive::Drive;
+use poprako_orchestra::{Nucl, run_proxy};
+
 use poprako_util::i18n::trl;
 
 use crate::complex::member_invitation::{
     MemberInvitationComplex, MemberInvitationPermComplex,
 };
 use crate::data::member_invitation::{
-    CreateMemberInvitationData, CreateMemberInvitationVal,
-    ListMemberInvitationInfosData, MemberInvitationInfoVal,
-    UpdateMemberInvitationRolesData,
+    CreateMemberInvitationParams, CreateMemberInvitationPayload,
+    ListMemberInvitationInfosParams, MemberInvitationInfoVal,
+    UpdateMemberInvitationRolesParams,
 };
 use crate::model::member_invitation::{
-    MemberInvitationForm, MemberInvitationListSpec, MemberInvitationUpdate,
+    MemberInvitationEntry, MemberInvitationListSpec, MemberInvitationUpdate,
 };
 use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
-use crate::part::repo::member::{MemberRepo, MemberRepoTransactional};
-use crate::part::repo::member_invitation::{
-    MemberInvitationRepo, MemberInvitationRepoTransactional,
+use crate::part::repo::member::MemberRepo;
+use crate::part::repo::member_invitation::MemberInvitationRepo;
+use crate::part::repo::oper::member::FindMemberInfo;
+use crate::part::repo::oper::member_invitation::{
+    CreateMemberInvitation, DeleteMemberInvitation, GetMemberInvitationInfo,
+    ListMemberInvitationInfos, UpdateMemberInvitation,
 };
-use crate::part::repo::step::member::MemberStep;
-use crate::part::repo::step::member_invitation::MemberInvitationStep;
-use crate::part::repo::step::user::UserStep;
-use crate::part::repo::user::{UserRepo, UserRepoTransactional};
+use crate::part::repo::oper::user::FindUserInfo;
+use crate::part::repo::user::UserRepo;
 use crate::result::{ExpectedVariant, RegularError, RegularResult};
-use crate::util::DeriveTransactional;
 
 #[cfg(test)]
 mod tests;
@@ -34,56 +34,51 @@ mod tests;
 // FIXME: invitations should be fired out after a period of time.
 
 /// Creates a pending invitation for a team.
-pub async fn create<D, C, R>(
-    drive: &D,
+pub async fn create<N, C, R>(
+    nucl: &N,
     repo: &R,
     token: UserToken,
-    data: CreateMemberInvitationData,
-) -> RegularResult<CreateMemberInvitationVal>
+    params: CreateMemberInvitationParams,
+) -> RegularResult<CreateMemberInvitationPayload>
 where
-    D: Drive<C>,
-    D::Error: Into<RegularError>,
+    N: Nucl<Context = C, Error = RegularError>,
     C: Send,
     R: MemberInvitationRepo<C> + MemberRepo<C> + UserRepo<C> + Send + Sync,
-    <R as DeriveTransactional>::Transactional:
-        MemberInvitationRepoTransactional<C>
-            + MemberRepoTransactional<C>
-            + UserRepoTransactional<C>
-            + Send
-            + Sync,
 {
-    let roles = data.roles;
+    let roles = params.roles;
 
-    use crate::part::shared::proxy::AsProxyNonTransactional as _;
-
-    MemberInvitationPermComplex::can_user_create(
-        &mut repo.as_proxy(),
+    MemberInvitationPermComplex::ensure_user_can_create(
+        &mut run_proxy! {
+            repo => for<'a> FindMemberInfo<'a>;
+        },
         &token.user_id,
-        &data.team_id,
+        &params.team_id,
     )
     .await?;
 
-    let (member_invitation_id, code) = drive
-        .with_context(async move |context| -> RegularResult<(String, String)> {
+    let (member_invitation_id, code) = nucl
+        .coord(async move |context| -> RegularResult<(String, String)> {
             //
-            let repo = repo.derive_transactional().await;
 
             let invitee_user_info = repo
-                .advance(
+                .step(
                     context,
-                    &UserStep::find_info_by_qid(&data.invitee_qid),
+                    &FindUserInfo::Qid {
+                        qid: &params.invitee_qid,
+                    },
                 )
                 .await?;
 
             if let Some(invitee_user_info) = invitee_user_info {
                 //
+
                 let invitee_member_info = repo
-                    .advance(
+                    .step(
                         context,
-                        &MemberStep::find_info_by_user_id_and_team_id(
-                            &invitee_user_info.id,
-                            &data.team_id,
-                        ),
+                        &FindMemberInfo::UserTeam {
+                            user_id: &invitee_user_info.id,
+                            team_id: &params.team_id,
+                        },
                     )
                     .await?;
 
@@ -99,19 +94,21 @@ where
 
             let code = MemberInvitationComplex::gen_code();
 
-            let member_invitation_form = MemberInvitationForm {
+            let member_invitation_entry = MemberInvitationEntry {
                 id: member_invitation_id,
-                team_id: data.team_id,
+                team_id: params.team_id,
                 invitor_id: token.user_id,
-                invitee_qid: data.invitee_qid,
+                invitee_qid: params.invitee_qid,
                 code,
                 roles,
             };
 
             let member_invitation_info = repo
-                .advance(
+                .step(
                     context,
-                    &MemberInvitationStep::create(&member_invitation_form),
+                    &CreateMemberInvitation {
+                        entry: &member_invitation_entry,
+                    },
                 )
                 .await?;
 
@@ -119,7 +116,7 @@ where
         })
         .await?;
 
-    Ok(CreateMemberInvitationVal {
+    Ok(CreateMemberInvitationPayload {
         id: member_invitation_id,
         code,
     })
@@ -130,84 +127,87 @@ pub async fn list_infos<C, R, I>(
     repo: &R,
     image_pool: &I,
     token: UserToken,
-    data: ListMemberInvitationInfosData,
+    params: ListMemberInvitationInfosParams,
 ) -> RegularResult<Vec<MemberInvitationInfoVal>>
 where
     R: MemberInvitationRepo<C> + MemberRepo<C> + Sync,
-    <R as DeriveTransactional>::Transactional:
-        MemberInvitationRepoTransactional<C> + MemberRepoTransactional<C>,
     I: ImagePool,
 {
-    use crate::part::shared::proxy::AsProxyNonTransactional as _;
-
-    MemberInvitationPermComplex::can_user_list_infos(
-        &mut repo.as_proxy(),
+    MemberInvitationPermComplex::ensure_user_can_list_infos(
+        &mut run_proxy! {
+            repo => for<'a> FindMemberInfo<'a>;
+        },
         &token.user_id,
-        &data.team_id,
+        &params.team_id,
     )
     .await?;
 
-    let spec = MemberInvitationListSpec {
-        team_id: data.team_id,
-        pending: data.pending,
-        incl_opt: data.incl_opt,
-        offset: data.offset,
-        limit: data.limit,
+    let member_invitation_list_spec = MemberInvitationListSpec {
+        team_id: params.team_id,
+        pending: params.pending,
+        incl_opt: params.incl_opt,
+        offset: params.offset,
+        limit: params.limit,
     };
 
-    let infos = repo
-        .execute(&MemberInvitationStep::list_infos(&spec))
+    let member_invitation_infos = repo
+        .run(&ListMemberInvitationInfos {
+            spec: &member_invitation_list_spec,
+        })
         .await?;
 
-    let mut vals = Vec::with_capacity(infos.len());
+    let mut member_invitation_info_vals =
+        Vec::with_capacity(member_invitation_infos.len());
 
-    for info in infos {
-        vals.push(MemberInvitationInfoVal::from_model(image_pool, info).await?);
+    for member_invitation_info in member_invitation_infos {
+        member_invitation_info_vals.push(
+            MemberInvitationInfoVal::from_model(
+                image_pool,
+                member_invitation_info,
+            )
+            .await?,
+        );
     }
 
-    Ok(vals)
+    Ok(member_invitation_info_vals)
 }
 
 /// Updates the roles of an invitation.
-pub async fn update_roles<D, C, R>(
-    drive: &D,
+pub async fn update_roles<N, C, R>(
+    nucl: &N,
     repo: &R,
     token: UserToken,
-    data: UpdateMemberInvitationRolesData,
+    params: UpdateMemberInvitationRolesParams,
 ) -> RegularResult<()>
 where
-    D: Drive<C>,
-    D::Error: Into<RegularError>,
+    N: Nucl<Context = C, Error = RegularError>,
     C: Send,
     R: MemberInvitationRepo<C> + MemberRepo<C> + Send + Sync,
-    <R as DeriveTransactional>::Transactional:
-        MemberInvitationRepoTransactional<C>
-            + MemberRepoTransactional<C>
-            + Send
-            + Sync,
 {
-    use crate::part::shared::proxy::AsProxyNonTransactional as _;
-
-    MemberInvitationPermComplex::can_user_update_info(
-        &mut repo.as_proxy(),
+    MemberInvitationPermComplex::ensure_user_can_update_info(
+        &mut run_proxy! {
+            repo =>
+                for<'a, 'b> GetMemberInvitationInfo<'a, 'b>,
+                for<'a> FindMemberInfo<'a>;
+        },
         &token.user_id,
-        &data.id,
+        &params.id,
     )
     .await?;
 
-    drive
-        .with_context(async move |context| -> RegularResult<()> {
+    let transaction_output = nucl
+        .coord(async move |context| -> RegularResult<()> {
             //
-            let repo = repo.derive_transactional().await;
-
             let member_invitation_update = MemberInvitationUpdate {
-                id: data.id,
-                roles: data.roles,
+                id: params.id,
+                roles: params.roles,
             };
 
-            repo.advance(
+            repo.step(
                 context,
-                &MemberInvitationStep::update_info(&member_invitation_update),
+                &UpdateMemberInvitation::Info {
+                    update: &member_invitation_update,
+                },
             )
             .await?;
 
@@ -215,47 +215,45 @@ where
         })
         .await?;
 
+    let () = transaction_output;
+
     Ok(())
 }
 
 /// Deletes an invitation.
-pub async fn delete<D, C, R>(
-    drive: &D,
+pub async fn delete<N, C, R>(
+    nucl: &N,
     repo: &R,
     token: UserToken,
     id: String,
 ) -> RegularResult<()>
 where
-    D: Drive<C>,
-    D::Error: Into<RegularError>,
+    N: Nucl<Context = C, Error = RegularError>,
     C: Send,
     R: MemberInvitationRepo<C> + MemberRepo<C> + Send + Sync,
-    <R as DeriveTransactional>::Transactional:
-        MemberInvitationRepoTransactional<C>
-            + MemberRepoTransactional<C>
-            + Send
-            + Sync,
 {
-    use crate::part::shared::proxy::AsProxyNonTransactional as _;
-
-    MemberInvitationPermComplex::can_user_delete(
-        &mut repo.as_proxy(),
+    MemberInvitationPermComplex::ensure_user_can_delete(
+        &mut run_proxy! {
+            repo =>
+                for<'a, 'b> GetMemberInvitationInfo<'a, 'b>,
+                for<'a> FindMemberInfo<'a>;
+        },
         &token.user_id,
         &id,
     )
     .await?;
 
-    drive
-        .with_context(async move |context| -> RegularResult<()> {
+    let transaction_output = nucl
+        .coord(async move |context| -> RegularResult<()> {
             //
-            let repo = repo.derive_transactional().await;
-
-            repo.advance(context, &MemberInvitationStep::delete(&id))
+            repo.step(context, &DeleteMemberInvitation { id: &id })
                 .await?;
 
             Ok(())
         })
         .await?;
+
+    let () = transaction_output;
 
     Ok(())
 }

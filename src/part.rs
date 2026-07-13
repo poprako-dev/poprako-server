@@ -27,6 +27,3 @@ pub mod image;
 pub mod prom;
 /// Repository port — persistent storage abstractions with transactional support.
 pub mod repo;
-
-/// Shared port helper traits (drive execution, proxy execution).
-pub mod shared;

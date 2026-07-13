@@ -7,7 +7,7 @@ use time::OffsetDateTime;
 /// Carries a raw [`OffsetDateTime`] timestamp; convert to [`SystemMailVal`] for
 /// presentation.
 ///
-/// [`SystemMailVal`]: crate::data::system_mail::SystemMailVal
+/// [`SystemMailInfoVal`]: crate::data::system_mail::SystemMailInfoVal
 #[cfg_attr(test, derive(Clone))]
 pub struct SystemMailInfo {
     pub id: String,
@@ -24,7 +24,7 @@ pub struct SystemMailInfo {
 
 /// The data needed to insert a new system mail row.
 #[cfg_attr(test, derive(Clone))]
-pub struct SystemMailForm {
+pub struct SystemMailEntry {
     pub id: String,
 
     pub receiver_id: String,

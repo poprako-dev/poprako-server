@@ -40,3 +40,8 @@ pub mod unit_port;
 pub mod user;
 /// Workset persisted entity model.
 pub mod workset;
+
+/// Termbase persisted entity models.
+pub mod termbase;
+
+pub mod term;

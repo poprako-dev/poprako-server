@@ -11,13 +11,12 @@ use tracing::instrument;
 #[cfg(feature = "swagger-ui")]
 use utoipa::IntoParams;
 
-#[cfg(feature = "swagger-ui")]
-use crate::api::http::result::HttpBody;
-
-use crate::api::http::result::{Accept as _, HttpResult};
+#[allow(unused_imports)]
+use crate::api::http::result::{Accept as _, HttpBody, HttpResult};
 use crate::api::http::state::AppHarn;
 use crate::data::comment::{
-    CommentInfoVal, CreateCommentData, CreateCommentVal, ListCommentInfosData,
+    CommentInfoVal, CreateCommentParams, CreateCommentPayload,
+    ListCommentInfosParams,
 };
 use crate::model::user::UserToken;
 use crate::usecase;
@@ -41,10 +40,10 @@ pub struct CommentListQuery {
     pub incl_opt: Vec<CommentInclOpt>,
 
     /// Pagination offset (0-based).
-    pub offset: u64,
+    pub offset: u32,
 
     /// Maximum number of items to return.
-    pub limit: u64,
+    pub limit: u32,
 }
 
 /// `POST /api/v1/comments` — create a team board comment.
@@ -52,20 +51,20 @@ pub struct CommentListQuery {
     post,
     path = "/api/v1/comments",
     tag = "comments",
-    request_body = CreateCommentData,
+    request_body = CreateCommentParams,
     responses(
-        (status = 201, description = "Comment created", body = HttpBody<CreateCommentVal>),
+        (status = 201, description = "Comment created", body = HttpBody<CreateCommentPayload>),
         (status = 403, description = "No permission to comment in this team"),
         (status = 404, description = "Team not found"),
     ),
 ))]
-#[instrument(err, skip(harn, data))]
+#[instrument(err, skip(harn, params))]
 pub async fn create(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
-    Json(data): Json<CreateCommentData>,
-) -> HttpResult<CreateCommentVal> {
-    usecase::comment::create(harn.drive(), harn.repo(), user_token, data)
+    Json(params): Json<CreateCommentParams>,
+) -> HttpResult<CreateCommentPayload> {
+    usecase::comment::create(harn.drive(), harn.repo(), user_token, params)
         .await?
         .accept(StatusCode::CREATED)
 }
@@ -90,7 +89,7 @@ pub async fn list_infos(
     Query(query): Query<CommentListQuery>,
 ) -> HttpResult<Vec<CommentInfoVal>> {
     //
-    let data = ListCommentInfosData {
+    let params = ListCommentInfosParams {
         team_id,
         incl_opt: query.incl_opt,
         offset: query.offset,
@@ -101,7 +100,7 @@ pub async fn list_infos(
         harn.repo(),
         harn.image_pool(),
         user_token,
-        data,
+        params,
     )
     .await?
     .accept(StatusCode::OK)

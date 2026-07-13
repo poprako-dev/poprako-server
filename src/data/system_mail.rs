@@ -5,15 +5,15 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "swagger-ui")]
 use utoipa::{IntoParams, ToSchema};
 
-use poprako_macro::Paginate;
-
 /// Input parameters for listing system mails.
-#[Paginate]
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
 #[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
-pub struct ListSystemMailData {
+pub struct ListSystemMailInfosParams {
     pub read: Option<bool>,
+
+    pub offset: u32,
+    pub limit: u32,
 }
 
 /// Presentation-ready system mail value.
@@ -22,7 +22,7 @@ pub struct ListSystemMailData {
 /// and omits the internal `receiver_id` field.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct SystemMailVal {
+pub struct SystemMailInfoVal {
     pub id: String,
 
     pub title: String,
@@ -36,6 +36,6 @@ pub struct SystemMailVal {
 /// Input parameters for marking a batch of system mails as read.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct MarkSystemMailsReadData {
+pub struct MarkSystemMailReadParams {
     pub ids: Vec<String>,
 }
