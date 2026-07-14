@@ -34,6 +34,8 @@ docker run \
     --detach \
     --platform linux/amd64 \
     --name "$container_name" \
+    --log-opt max-size=10m \
+    --log-opt max-file=5 \
     --env-file "$env_file" \
     --env "DATABASE_URL=$container_database_url" \
     --mount "type=bind,source=$env_file,target=/app/.env,readonly" \
