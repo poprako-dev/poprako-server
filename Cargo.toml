@@ -47,7 +47,6 @@ serde_json = "1.0.149"
 time = { version = "0.3.47", features = ["serde"] }
 tokio = { version = "1.52.1", features = ["full", "macros"] }
 tracing = "0.1.44"
-tracing-appender = "0.2"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter", "time"] }
 unic-langid = "0.9.6"
 url = "2.5.8"
