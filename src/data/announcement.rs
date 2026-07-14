@@ -7,10 +7,11 @@ use utoipa::{IntoParams, ToSchema};
 
 use poprako_util::time::ToUnixMilli;
 
+use futures::future::OptionFuture;
+
 use crate::data::user::UserInfoVal;
 use crate::model::announcement::{AnnouncementInfo, AnnouncementListSpec};
 use crate::part::image::ImagePool;
-use futures::future::OptionFuture;
 
 use crate::result::RegularResult;
 use crate::value::announcement::AnnouncementInclOpt;
