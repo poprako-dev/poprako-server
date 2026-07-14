@@ -46,14 +46,11 @@ pub struct ComicInfoVal {
 
     pub title: String,
     pub author: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
 
     /// Resolved signed download URL for the cover image, or [`None`] if
     /// no cover has been uploaded.
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub cover_url: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub cover_thumbnail_url: Option<String>,
 
     pub chapter_count: i32,
@@ -61,14 +58,10 @@ pub struct ComicInfoVal {
 
     pub creator_id: String,
 
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub workset: Option<WorksetInfoVal>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub team: Option<TeamInfoVal>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub creator: Option<UserInfoVal>,
 
-    #[serde(skip_serializing_if = "Option::is_none")]
     #[cfg_attr(feature = "swagger-ui", schema(no_recursion))]
     pub pinned_chapter: Option<ChapterInfoVal>,
 

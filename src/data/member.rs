@@ -31,9 +31,7 @@ pub struct MemberInfoVal {
 
     pub team_id: String,
 
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub user: Option<UserInfoVal>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub team: Option<TeamInfoVal>,
 
     pub roles: RoleMask,

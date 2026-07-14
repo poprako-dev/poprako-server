@@ -82,9 +82,8 @@ export async function runIt05Module(ctx: RunCtx): Promise<void> {
     // ---------- F2. before_id insert ----------
 
     const beforeIdOper = {
-        oper: "save" as const,
+        oper: "create" as const,
         local_id: "p0_lu_insert_before_02",
-        id: null,
         before_id: p0UnitIds[1],
         is_bubble: true,
         is_proofread: false,
