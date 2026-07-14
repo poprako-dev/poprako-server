@@ -34,7 +34,7 @@ use crate::usecase;
         (status = 404, description = "Team not found"),
     ),
 ))]
-#[instrument(err, skip(harn, params))]
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn create(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
@@ -57,7 +57,7 @@ pub async fn create(
         (status = 403, description = "No permission to list worksets in this team"),
     ),
 ))]
-#[instrument(err, skip(harn))]
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn list_infos(
     State(harn): State<AppHarn>,
     Path(team_id): Path<String>,
@@ -89,7 +89,7 @@ pub async fn list_infos(
         (status = 404, description = "Workset not found"),
     ),
 ))]
-#[instrument(err, skip(harn))]
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn get_info(
     State(harn): State<AppHarn>,
     Path(workset_id): Path<String>,
@@ -114,7 +114,7 @@ pub async fn get_info(
         (status = 404, description = "Workset not found"),
     ),
 ))]
-#[instrument(err, skip(harn, params))]
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn update_info(
     State(harn): State<AppHarn>,
     Path(workset_id): Path<String>,
@@ -141,7 +141,7 @@ pub async fn update_info(
         (status = 404, description = "Workset not found"),
     ),
 ))]
-#[instrument(err, skip(harn))]
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn delete(
     State(harn): State<AppHarn>,
     Path(workset_id): Path<String>,

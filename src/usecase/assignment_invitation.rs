@@ -1,5 +1,7 @@
 //! Assignment invitation use cases.
 
+use tracing::instrument;
+
 use poprako_orchestra::Nucl;
 
 use poprako_util::i18n::trl;
@@ -46,6 +48,7 @@ mod tests;
 // FIXME: invitations should be fired out after a period of time.
 
 /// Lists assignment invitations under one chapter.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn list_infos<C, R>(
     repo: &R,
     token: UserToken,
@@ -74,6 +77,7 @@ where
 }
 
 /// Creates a pending assignment invitation.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn create<N, C, R>(
     nucl: &N,
     repo: &R,
@@ -160,6 +164,7 @@ where
 }
 
 /// Deletes an assignment invitation.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn delete<N, C, R>(
     nucl: &N,
     repo: &R,
@@ -196,6 +201,7 @@ where
 }
 
 /// Joins a chapter assignment with a pending invitation code.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn join<N, C, R, I>(
     nucl: &N,
     repo: &R,
@@ -356,10 +362,11 @@ where
         })
         .await?;
 
-    AssignmentInfoVal::from_model(image_pool, assignment_info).await
+    AssignmentInfoVal::from_model(image_pool, assignment_info, None).await
 }
 
 /// Verifies that the current user is assigned as a chapter administrator.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn ensure_user_admin<C, R>(
     repo: &R,
     current_user_id: &str,

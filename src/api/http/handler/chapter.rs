@@ -62,7 +62,7 @@ pub struct ChapterListQuery {
         (status = 404, description = "Comic not found"),
     ),
 ))]
-#[instrument(err, skip(harn, params))]
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn create(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
@@ -85,7 +85,7 @@ pub async fn create(
         (status = 403, description = "No permission to list chapters in this comic"),
     ),
 ))]
-#[instrument(err, skip(harn))]
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn list_infos(
     State(harn): State<AppHarn>,
     Path(comic_id): Path<String>,
@@ -121,7 +121,7 @@ pub async fn list_infos(
         (status = 403, description = "No permission to view this comic's pinned chapter"),
     ),
 ))]
-#[instrument(err, skip(harn))]
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn get_pinned(
     State(harn): State<AppHarn>,
     Path(comic_id): Path<String>,
@@ -144,7 +144,7 @@ pub async fn get_pinned(
         (status = 404, description = "Chapter not found"),
     ),
 ))]
-#[instrument(err, skip(harn))]
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn get_info(
     State(harn): State<AppHarn>,
     Path(chapter_id): Path<String>,
@@ -169,7 +169,7 @@ pub async fn get_info(
         (status = 404, description = "Chapter not found"),
     ),
 ))]
-#[instrument(err, skip(harn, params))]
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn update_info(
     State(harn): State<AppHarn>,
     Path(chapter_id): Path<String>,
@@ -204,7 +204,7 @@ pub async fn update_info(
         (status = 422, description = "Illegal workflow transition"),
     ),
 ))]
-#[instrument(err, skip(harn, params))]
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn advance_stage(
     State(harn): State<AppHarn>,
     Path(chapter_id): Path<String>,
@@ -239,7 +239,7 @@ pub async fn advance_stage(
         (status = 404, description = "Chapter not found"),
     ),
 ))]
-#[instrument(err, skip(harn))]
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn delete(
     State(harn): State<AppHarn>,
     Path(chapter_id): Path<String>,

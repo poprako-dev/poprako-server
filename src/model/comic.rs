@@ -103,7 +103,9 @@ pub struct ComicInfoListSpec {
 
 /// Workflow-stage filtering mode for listing comics.
 pub enum ComicInfoListKind {
+    /// Include all comics regardless of workflow stage.
     All,
+    /// Include only comics whose chapters have any of the specified stages.
     Stages(StageMask),
 }
 

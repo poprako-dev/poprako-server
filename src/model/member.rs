@@ -50,12 +50,14 @@ pub struct MemberRoleUpdate {
 
 /// Filtering and pagination parameters for listing memberships.
 pub enum MemberListSpec {
+    /// List teams/memberships owned by a specific user.
     User {
         owner_id: String,
         incl_opt: Vec<MemberInclOpt>,
         offset: u32,
         limit: u32,
     },
+    /// List members of a specific team, optionally narrowed by role or nickname.
     Team {
         team_id: String,
         fuzzy_nickname: Option<String>,

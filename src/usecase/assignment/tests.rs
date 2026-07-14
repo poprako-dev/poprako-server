@@ -7,6 +7,7 @@ use crate::model::assignment::AssignmentInfo;
 use crate::model::chapter::ChapterInfo;
 use crate::model::comic::ComicInfo;
 use crate::model::member::MemberInfo;
+use crate::model::page::PageInfo;
 use crate::model::team::TeamInfo;
 use crate::model::user::{UserCredential, UserInfo, UserToken};
 use crate::model::workset::WorksetInfo;
@@ -170,6 +171,25 @@ fn assignment(
         user: None,
         chapter: None,
         roles: role_mask,
+        created_at: time,
+        updated_at: time,
+    }
+}
+
+fn page(id: &str, chapter_id: &str, image_key: &str) -> PageInfo {
+    //
+    let time = now();
+
+    PageInfo {
+        id: id.into(),
+        chapter_id: chapter_id.into(),
+        index: 0,
+        image_key: Some(image_key.into()),
+        image_uploaded: true,
+        image_version: 1,
+        total_unit_count: 0,
+        translated_unit_count: 0,
+        proofread_unit_count: 0,
         created_at: time,
         updated_at: time,
     }

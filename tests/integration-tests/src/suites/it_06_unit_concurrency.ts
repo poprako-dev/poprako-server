@@ -221,9 +221,8 @@ export async function runIt06Module(ctx: RunCtx): Promise<void> {
     const f8Results = await Promise.allSettled([
         savePageUnits(trans01.api, p1Id, [
             {
-                oper: "save",
+                oper: "create",
                 local_id: "A_before_anchor",
-                id: null,
                 before_id: f8Anchor,
                 is_bubble: true,
                 is_proofread: false,
@@ -237,9 +236,8 @@ export async function runIt06Module(ctx: RunCtx): Promise<void> {
         ]),
         savePageUnits(trans02.api, p1Id, [
             {
-                oper: "save",
+                oper: "create",
                 local_id: "B_before_anchor",
-                id: null,
                 before_id: f8Anchor,
                 is_bubble: true,
                 is_proofread: false,

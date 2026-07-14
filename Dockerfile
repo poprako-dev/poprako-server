@@ -11,11 +11,11 @@ RUN apk add --no-cache \
     pkgconf
 
 COPY Cargo.toml Cargo.lock ./
-COPY poprako-transactional ./poprako-transactional
 COPY poprako-util ./poprako-util
+COPY migrations ./migrations
 COPY src ./src
 
-RUN cargo build --release --bin poprako-r
+RUN cargo build --release --bin poprako-server
 
 FROM alpine:3.22 AS runtime
 
@@ -26,9 +26,9 @@ RUN apk add --no-cache \
     libgcc \
     libpq
 
-COPY --from=builder /work/target/release/poprako-r /app/poprako-r
-COPY deploy/poprako-sr/application_config.json /app/application_config.json
+COPY --from=builder /work/target/release/poprako-server /app/poprako-server
+COPY deploy/poprako-server/application_config.json /app/application_config.json
 
 EXPOSE 8888
 
-CMD ["/app/poprako-r"]
+CMD ["/app/poprako-server"]

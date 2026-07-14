@@ -1,4 +1,5 @@
 # TODOs
 
-- [ ] Split `ImagePool` and `ImageManager`.
-- [ ] Thumbnail for images.
+- [x] Split `ImagePool` and `ImageManager`.
+- [x] Thumbnail for images.
+- [ ] Update user password.

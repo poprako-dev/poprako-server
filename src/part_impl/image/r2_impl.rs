@@ -9,7 +9,7 @@ use aws_sdk_s3::error::SdkError;
 use aws_sdk_s3::operation::head_object::HeadObjectError;
 use aws_sdk_s3::presigning::PresigningConfig;
 use aws_sdk_s3::{Client, Config};
-use tracing::{Level, instrument};
+use tracing::instrument;
 use url::Url;
 
 use poprako_util::i18n::trl;
@@ -92,12 +92,12 @@ impl R2ImagePool {
 }
 
 impl ImagePool for R2ImagePool {
-    #[instrument(err(Debug), skip(self), level = Level::DEBUG)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn gen_download_url(&self, key: &str) -> RegularResult<Url> {
         build_public_url(&self.domain, key, "gen_download_url")
     }
 
-    #[instrument(err(Debug), skip(self), level = Level::DEBUG)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn gen_thumbnail_download_url(
         &self,
         original_key: &str,
@@ -112,7 +112,7 @@ impl ImagePool for R2ImagePool {
         )
     }
 
-    #[instrument(err(Debug), skip(self), level = Level::DEBUG)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn get_upload_url(&self, key: &str) -> RegularResult<Url> {
         //
         let content_type =
@@ -154,7 +154,7 @@ impl ImagePool for R2ImagePool {
 }
 
 impl ImageManager for R2ImagePool {
-    #[instrument(err(Debug), skip(self), level = Level::DEBUG)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn head_object(&self, key: &str) -> RegularResult<bool> {
         match self
             .client
@@ -181,7 +181,7 @@ impl ImageManager for R2ImagePool {
         }
     }
 
-    #[instrument(err(Debug), skip(self), level = Level::DEBUG)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn delete_object(&self, key: &str) -> RegularResult<()> {
         self.client
             .delete_object()

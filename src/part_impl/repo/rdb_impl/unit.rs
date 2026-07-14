@@ -4,6 +4,7 @@ use diesel::dsl::max;
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use time::OffsetDateTime;
+use tracing::instrument;
 
 use poprako_util::page::Page;
 
@@ -25,6 +26,7 @@ impl UnitRepo<RdbContext> for RdbRepo {}
 mod orchestra;
 
 /// Query a paginated list of unit infos for a page, ordered by index then ID.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn list_infos_by_page_id(
     conn: &mut RdbConn,
     page_id: &str,
@@ -45,6 +47,7 @@ async fn list_infos_by_page_id(
 }
 
 /// Query all unit infos for a page, ordered by index then ID (no pagination).
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn list_all_infos_by_page_id(
     conn: &mut RdbConn,
     page_id: &str,
@@ -62,6 +65,7 @@ async fn list_all_infos_by_page_id(
 }
 
 /// Compute the next available unit index for a page.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn next_index(conn: &mut RdbConn, page_id: &str) -> RegularResult<i32> {
     //
     let current: Option<i32> = t_unit
@@ -75,6 +79,7 @@ async fn next_index(conn: &mut RdbConn, page_id: &str) -> RegularResult<i32> {
 }
 
 /// Insert a new unit with the next available index for the given page.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn create_unit(
     conn: &mut RdbConn,
     page_id: &str,
@@ -96,6 +101,7 @@ async fn create_unit(
 }
 
 /// Upsert a unit: create if absent, otherwise update its payload.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn save_unit(
     conn: &mut RdbConn,
     page_id: &str,
@@ -133,6 +139,7 @@ async fn save_unit(
 }
 
 /// Delete a unit by its ID within the scope of a page.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn delete_by_id_in_page(
     conn: &mut RdbConn,
     page_id: &str,
@@ -148,6 +155,7 @@ async fn delete_by_id_in_page(
 }
 
 /// Query (id, index) pairs for all units in a page.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn list_indexes_by_page_id(
     conn: &mut RdbConn,
     page_id: &str,
@@ -168,6 +176,7 @@ async fn list_indexes_by_page_id(
 
 /// Reorder units in a page by assigning new indexes, safely handling cyclic
 /// dependencies via a two-phase shift-then-set strategy.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn update_indexes_by_page_id(
     conn: &mut RdbConn,
     page_id: &str,
@@ -225,6 +234,7 @@ async fn update_indexes_by_page_id(
 }
 
 /// Count total, translated, and proofread units for a page.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn count_by_page_id(
     conn: &mut RdbConn,
     page_id: &str,

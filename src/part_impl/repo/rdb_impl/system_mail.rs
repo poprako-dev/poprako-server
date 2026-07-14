@@ -4,6 +4,8 @@ use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use poprako_orchestra::Run;
 
+use tracing::instrument;
+
 use crate::model::system_mail::{SystemMailEntry, SystemMailInfo};
 use crate::part::repo::oper::system_mail::{
     ListSystemMailInfos, MarkSystemMailRead, SendSystemMail, SendSystemMails,
@@ -23,6 +25,7 @@ impl SystemMailRepo<RdbContext> for RdbRepo {}
 // ── Free functions ──────────────────────────────────────────────────────────
 
 /// Send a single system mail by inserting its row.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn send(
     conn: &mut RdbConn,
     entry: &SystemMailEntry,
@@ -40,6 +43,7 @@ async fn send(
 }
 
 /// Batch-send system mail by inserting rows for every entry.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn send_batch(
     conn: &mut RdbConn,
     entries: &[SystemMailEntry],
@@ -58,6 +62,7 @@ async fn send_batch(
 }
 
 /// Query system mail for a receiver, optionally filtered by read status.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn list_infos(
     conn: &mut RdbConn,
     receiver_id: &str,
@@ -87,6 +92,7 @@ async fn list_infos(
 }
 
 /// Mark a system mail as read, authorizing by the owning receiver.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn mark_read(
     conn: &mut RdbConn,
     id: &str,
@@ -122,6 +128,7 @@ async fn mark_read(
 impl Run<SendSystemMail<'_>> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(&self, oper: &SendSystemMail<'_>) -> RegularResult<()> {
         submit_query!(self.core, send, oper.entry)
     }
@@ -130,6 +137,7 @@ impl Run<SendSystemMail<'_>> for RdbRepo {
 impl Run<SendSystemMails<'_>> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(&self, oper: &SendSystemMails<'_>) -> RegularResult<()> {
         submit_query!(self.core, send_batch, oper.entries)
     }
@@ -138,6 +146,7 @@ impl Run<SendSystemMails<'_>> for RdbRepo {
 impl Run<ListSystemMailInfos<'_>> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &ListSystemMailInfos<'_>,
@@ -156,6 +165,7 @@ impl Run<ListSystemMailInfos<'_>> for RdbRepo {
 impl Run<MarkSystemMailRead<'_>> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(&self, oper: &MarkSystemMailRead<'_>) -> RegularResult<()> {
         submit_query!(self.core, mark_read, oper.id, oper.user_id)
     }

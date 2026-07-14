@@ -11,6 +11,8 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "swagger-ui")]
 use utoipa::{IntoParams, ToSchema};
 
+use futures::future::OptionFuture;
+
 use poprako_util::time::ToUnixMilli;
 
 use crate::data::chapter::ChapterInfoVal;
@@ -43,14 +45,11 @@ pub struct ComicInfoVal {
 
     pub title: String,
     pub author: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
 
     /// Resolved signed download URL for the cover image, or [`None`] if
     /// no cover has been uploaded.
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub cover_url: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub cover_thumbnail_url: Option<String>,
 
     pub chapter_count: i32,
@@ -58,16 +57,9 @@ pub struct ComicInfoVal {
 
     pub creator_id: String,
 
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub workset: Option<WorksetInfoVal>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub team: Option<TeamInfoVal>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub creator: Option<UserInfoVal>,
-
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[cfg_attr(feature = "swagger-ui", schema(no_recursion))]
-    pub pinned_chapter: Option<ChapterInfoVal>,
 
     pub last_active_at: i64,
 
@@ -86,41 +78,29 @@ impl ComicInfoVal {
     pub async fn from_model<P>(
         image_pool: &P,
         model: ComicInfo,
-        pinned_chapter: Option<ChapterInfoVal>,
+        fallback_cover_key: Option<&str>,
     ) -> RegularResult<Self>
     where
         P: ImagePool,
     {
-        let (cover_url, cover_thumbnail_url) =
-            match (model.cover_uploaded, &model.cover_key) {
-                //
-                (true, Some(key)) => (
-                    image_pool.gen_download_url(key).await.ok(),
-                    image_pool.gen_thumbnail_download_url(key).await.ok(),
-                ),
+        let cover_key = match (model.cover_uploaded, &model.cover_key) {
+            //
+            (true, Some(key)) => Some(key.as_str()),
 
-                _ => (None, None),
-            };
+            _ => fallback_cover_key,
+        };
+
+        let (cover_url, cover_thumbnail_url) = match cover_key {
+            //
+            Some(key) => (
+                image_pool.gen_download_url(key).await.ok(),
+                image_pool.gen_thumbnail_download_url(key).await.ok(),
+            ),
+
+            None => (None, None),
+        };
 
         let workset = model.workset.map(WorksetInfoVal::from);
-
-        let team = match model.team {
-            //
-            Some(team_info) => {
-                Some(TeamInfoVal::from_model(image_pool, team_info).await?)
-            }
-
-            None => None,
-        };
-
-        let creator = match model.creator {
-            //
-            Some(user_info) => {
-                Some(UserInfoVal::from_model(image_pool, user_info).await?)
-            }
-
-            None => None,
-        };
 
         Ok(Self {
             id: model.id,
@@ -135,9 +115,16 @@ impl ComicInfoVal {
             chapter_next_index: model.chapter_next_index,
             creator_id: model.creator_id,
             workset,
-            team,
-            creator,
-            pinned_chapter,
+            team: OptionFuture::from(model.team.map(|team_info| {
+                TeamInfoVal::from_model(image_pool, team_info)
+            }))
+            .await
+            .transpose()?,
+            creator: OptionFuture::from(model.creator.map(|user_info| {
+                UserInfoVal::from_model(image_pool, user_info)
+            }))
+            .await
+            .transpose()?,
             last_active_at: model.last_active_at.to_unix_milli(),
             created_at: model.created_at.to_unix_milli(),
             updated_at: model.updated_at.to_unix_milli(),
@@ -270,4 +257,16 @@ pub struct ReserveComicCoverPayload {
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
 pub struct MarkComicCoverUploadedParams {
     pub cover_version: u32,
+}
+
+/// Presentation-ready comic list and optional pinned chapters.
+///
+/// `pinned_chapters` is positionally aligned with `comics`. Its entries are
+/// populated only when the request includes `with=pinned_chapter`.
+#[derive(Debug, Serialize)]
+#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+pub struct ListComicInfosPayload {
+    pub comics: Vec<ComicInfoVal>,
+
+    pub pinned_chapters: Vec<Option<ChapterInfoVal>>,
 }

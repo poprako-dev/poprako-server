@@ -10,9 +10,11 @@ use crate::result::{ExpectedVariant, RegularError, RegularResult, accept};
 use crate::value::assignment::AssignmentInclOpt;
 use crate::value::role::RoleField;
 
+/// Domain operations for termbase entities.
 pub struct TermbaseComplex;
 
 impl TermbaseComplex {
+    /// Deletes a termbase and its child terms inside an existing transaction context.
     pub async fn delete_cascade<P>(proxy: &mut P, id: &str) -> RegularResult<()>
     where
         P: for<'a> Proxy<LockTermbaseExcluded<'a>, Error = RegularError>
@@ -31,9 +33,11 @@ impl TermbaseComplex {
     }
 }
 
+/// Permission-gate operations for termbase entities.
 pub struct TermbasePermComplex;
 
 impl TermbasePermComplex {
+    /// Verifies the caller is not a translator or proofreader (must be admin) for team-scoped termbases.
     pub async fn ensure_user_can_create_team_termbase<P>(
         proxy: &mut P,
         user_id: &str,
@@ -57,6 +61,8 @@ impl TermbasePermComplex {
         accept(())
     }
 
+    /// Verifies the caller can create a comic-scoped termbase by resolving the owning team
+    /// from the chapter's comic and delegating to the team-level check.
     pub async fn ensure_user_can_create_comic_termbase<P>(
         proxy: &mut P,
         user_id: &str,

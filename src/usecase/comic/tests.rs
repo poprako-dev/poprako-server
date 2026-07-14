@@ -31,6 +31,7 @@ use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;
 use crate::test_util::fixture::workset;
 use crate::value::chapter::{Stage, StageMask, StagePhase};
+use crate::value::comic::ComicWithOpt;
 use crate::value::role::RoleField;
 
 mod cover;
@@ -133,6 +134,14 @@ async fn get_info_returns_uploaded_cover_url() {
         "cover.png",
     ));
 
+    mock.seed_chapter(chapter(
+        "chapter-1",
+        "comic-1",
+        StageMask::try_from(0u32).ok().unwrap(),
+    ));
+
+    mock.seed_page(page("page-1", "chapter-1", 0, Some("fallback.png"), true));
+
     let found = get_info(&mock, &mock, token("user-1"), "comic-1".into()).await;
 
     assert!(found.is_ok());
@@ -149,6 +158,97 @@ async fn get_info_returns_uploaded_cover_url() {
     assert_eq!(
         found.cover_thumbnail_url,
         Some("https://test.local/cdn-cgi/image/width=300,fit=scale-down,quality=80,format=auto,metadata=none/cover.png".into())
+    );
+}
+
+#[tokio::test]
+async fn get_info_falls_back_to_uploaded_first_pinned_page() {
+    //
+    let mock = Mock::new();
+
+    mock.seed_workset(workset("workset-1", "team-1"));
+    mock.seed_member(admin_member("user-1", "team-1"));
+    mock.seed_comic(comic("comic-1", "workset-1", 0));
+    mock.seed_chapter(chapter(
+        "chapter-1",
+        "comic-1",
+        StageMask::try_from(0u32).ok().unwrap(),
+    ));
+    mock.seed_page(page("page-later", "chapter-1", 1, Some("later.png"), true));
+    mock.seed_page(page("page-first", "chapter-1", 0, Some("first.png"), true));
+
+    let found = get_info(&mock, &mock, token("user-1"), "comic-1".into())
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        found.cover_url,
+        Some("https://test.local/get/first.png".into())
+    );
+    assert_eq!(
+        found.cover_thumbnail_url,
+        Some("https://test.local/cdn-cgi/image/width=300,fit=scale-down,quality=80,format=auto,metadata=none/first.png".into())
+    );
+}
+
+#[tokio::test]
+async fn list_infos_omits_fallback_without_usable_first_pinned_page() {
+    //
+    let mock = Mock::new();
+
+    mock.seed_workset(workset("workset-1", "team-1"));
+    mock.seed_member(admin_member("user-1", "team-1"));
+    mock.seed_comic(comic("no-chapter", "workset-1", 0));
+    mock.seed_comic(comic("no-page", "workset-1", 1));
+    mock.seed_comic(comic("not-uploaded", "workset-1", 2));
+    mock.seed_chapter(chapter(
+        "chapter-no-page",
+        "no-page",
+        StageMask::try_from(0u32).ok().unwrap(),
+    ));
+    mock.seed_chapter(chapter(
+        "chapter-not-uploaded",
+        "not-uploaded",
+        StageMask::try_from(0u32).ok().unwrap(),
+    ));
+    mock.seed_page(page(
+        "page-not-uploaded",
+        "chapter-not-uploaded",
+        0,
+        Some("pending.png"),
+        false,
+    ));
+
+    let found = list_infos(
+        &mock,
+        &mock,
+        token("user-1"),
+        ListComicInfosParams {
+            workset_id: "workset-1".into(),
+            fuzzy_title: None,
+            stages: None,
+            incl_opt: Vec::new(),
+            with_opt: Vec::new(),
+            offset: 0,
+            limit: 10,
+        },
+    )
+    .await
+    .ok()
+    .unwrap();
+
+    assert!(
+        found
+            .comics
+            .iter()
+            .all(|comic_info| comic_info.cover_url.is_none())
+    );
+    assert!(
+        found
+            .comics
+            .iter()
+            .all(|comic_info| comic_info.cover_thumbnail_url.is_none())
     );
 }
 
@@ -180,13 +280,19 @@ async fn list_infos_filters_and_sorts_by_last_activity() {
 
     mock.seed_comic(comic("comic-other", "workset-2", 0));
 
+    mock.seed_chapter(chapter(
+        "chapter-1",
+        "comic-1",
+        StageMask::try_from(0u32).ok().unwrap(),
+    ));
+
     let list = list_infos(
         &mock,
         &mock,
         token("user-1"),
         ListComicInfosParams {
             incl_opt: Vec::new(),
-            with_opt: vec![],
+            with_opt: vec![ComicWithOpt::PinnedChapter],
             workset_id: "workset-1".into(),
             fuzzy_title: None,
             stages: None,
@@ -200,11 +306,17 @@ async fn list_infos_filters_and_sorts_by_last_activity() {
 
     let list = list.ok().unwrap();
 
-    assert_eq!(list.len(), 2);
+    assert_eq!(list.comics.len(), 2);
 
-    assert_eq!(list[0].id, "comic-1");
+    assert_eq!(list.comics[0].id, "comic-1");
 
-    assert_eq!(list[1].id, "comic-2");
+    assert_eq!(list.comics[1].id, "comic-2");
+
+    assert_eq!(list.pinned_chapters.len(), list.comics.len());
+
+    assert_eq!(list.pinned_chapters[0].as_ref().unwrap().id, "chapter-1");
+
+    assert!(list.pinned_chapters[1].is_none());
 }
 
 #[tokio::test]
@@ -234,7 +346,7 @@ async fn list_infos_returns_empty_for_workset_contents() {
 
     assert!(list.is_ok());
 
-    assert!(list.ok().unwrap().is_empty());
+    assert!(list.ok().unwrap().comics.is_empty());
 }
 
 #[tokio::test]
@@ -285,9 +397,9 @@ async fn list_infos_filters_by_fuzzy_title() {
 
     let list = list.ok().unwrap();
 
-    assert_eq!(list.len(), 1);
+    assert_eq!(list.comics.len(), 1);
 
-    assert_eq!(list[0].id, "comic-beta");
+    assert_eq!(list.comics[0].id, "comic-beta");
 
     // Match by author substring
     let list = list_infos(
@@ -310,9 +422,9 @@ async fn list_infos_filters_by_fuzzy_title() {
 
     let list = list.ok().unwrap();
 
-    assert_eq!(list.len(), 1);
+    assert_eq!(list.comics.len(), 1);
 
-    assert_eq!(list[0].id, "comic-gamma");
+    assert_eq!(list.comics[0].id, "comic-gamma");
 
     // Match by display index
     let list = list_infos(
@@ -335,9 +447,9 @@ async fn list_infos_filters_by_fuzzy_title() {
 
     let list = list.ok().unwrap();
 
-    assert_eq!(list.len(), 1);
+    assert_eq!(list.comics.len(), 1);
 
-    assert_eq!(list[0].id, "comic-alpha");
+    assert_eq!(list.comics[0].id, "comic-alpha");
 }
 
 #[tokio::test]
@@ -399,9 +511,9 @@ async fn list_infos_filters_by_pinned_chapter_stages() {
 
     let list = list.ok().unwrap();
 
-    assert_eq!(list.len(), 1);
+    assert_eq!(list.comics.len(), 1);
 
-    assert_eq!(list[0].id, "comic-active");
+    assert_eq!(list.comics[0].id, "comic-active");
 }
 
 #[tokio::test]
@@ -483,9 +595,9 @@ async fn list_infos_applies_pagination() {
 
     let list = list.ok().unwrap();
 
-    assert_eq!(list.len(), 1);
+    assert_eq!(list.comics.len(), 1);
 
-    assert_eq!(list[0].id, "comic-1");
+    assert_eq!(list.comics[0].id, "comic-1");
 }
 
 #[tokio::test]

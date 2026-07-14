@@ -27,7 +27,7 @@ use crate::usecase;
         (status = 401, description = "Authentication required"),
     ),
 ))]
-#[instrument(err, skip(harn))]
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn list_infos(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
@@ -49,7 +49,7 @@ pub async fn list_infos(
         (status = 403, description = "One or more mails do not belong to the user"),
     ),
 ))]
-#[instrument(err, skip(harn, params))]
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn mark_read(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,

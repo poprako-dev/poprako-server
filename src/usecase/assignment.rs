@@ -1,11 +1,14 @@
 //! Assignment use cases — list, join, role update, and deletion.
 
+use tracing::instrument;
+
 use poprako_orchestra::{Nucl, run_proxy};
 
 use poprako_util::i18n::trl;
 
 use crate::complex::assignment::{AssignmentComplex, AssignmentPermComplex};
 use crate::complex::chapter::ChapterPermComplex;
+use crate::complex::comic::ComicComplex;
 use crate::data::assignment::{
     AssignmentInfoVal, JoinChapterAssignmentParams, ListAssignmentInfosParams,
     UpdateAssignmentRolesParams,
@@ -24,11 +27,15 @@ use crate::part::repo::oper::assignment::{
     CreateAssignment, DeleteAssignments, FindAssignmentInfo, GetAssignmentInfo,
     ListAssignmentInfos, ListAssignmentInfosExcluded, UpdateAssignmentRoles,
 };
-use crate::part::repo::oper::chapter::GetChapterInfo;
+use crate::part::repo::oper::chapter::{
+    GetChapterInfo, ListPinnedChapterInfos,
+};
 use crate::part::repo::oper::comic::GetComicInfo;
 use crate::part::repo::oper::member::FindMemberInfo;
+use crate::part::repo::oper::page::ListFirstPageInfos;
 use crate::part::repo::oper::user::GetUserInfo;
 use crate::part::repo::oper::workset::GetWorksetInfo;
+use crate::part::repo::page::PageRepo;
 use crate::part::repo::user::UserRepo;
 use crate::part::repo::workset::WorksetRepo;
 use crate::result::{ExpectedVariant, RegularError, RegularResult};
@@ -37,6 +44,7 @@ use crate::result::{ExpectedVariant, RegularError, RegularResult};
 mod tests;
 
 /// Lists assignments by chapter or owner user.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn list_infos<C, R, I>(
     repo: &R,
     image_pool: &I,
@@ -50,6 +58,7 @@ where
         + WorksetRepo<C>
         + MemberRepo<C>
         + UserRepo<C>
+        + PageRepo<C>
         + Sync,
     I: ImagePool,
 {
@@ -76,11 +85,40 @@ where
         })
         .await?;
 
+    let comic_ids = assignment_infos
+        .iter()
+        .filter_map(|assignment_info| assignment_info.chapter.as_ref())
+        .filter_map(|chapter_info| chapter_info.comic.as_ref())
+        .map(|comic_info| comic_info.id.clone())
+        .collect::<Vec<_>>();
+
+    let fallback_cover_keys = ComicComplex::resolve_fallback_cover_keys(
+        &mut run_proxy! {
+            repo =>
+                for<'a> ListPinnedChapterInfos<'a>,
+                for<'a> ListFirstPageInfos<'a>;
+        },
+        &comic_ids,
+    )
+    .await?;
+
     let mut assignment_info_vals = Vec::with_capacity(assignment_infos.len());
 
     for assignment_info in assignment_infos {
+        let fallback_cover_key = assignment_info
+            .chapter
+            .as_ref()
+            .and_then(|chapter_info| chapter_info.comic.as_ref())
+            .and_then(|comic_info| fallback_cover_keys.get(&comic_info.id))
+            .map(String::as_str);
+
         assignment_info_vals.push(
-            AssignmentInfoVal::from_model(image_pool, assignment_info).await?,
+            AssignmentInfoVal::from_model(
+                image_pool,
+                assignment_info,
+                fallback_cover_key,
+            )
+            .await?,
         );
     }
 
@@ -88,6 +126,7 @@ where
 }
 
 /// Joins a chapter assignment with requested roles.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn join<N, C, R>(
     nucl: &N,
     repo: &R,
@@ -197,6 +236,7 @@ where
 }
 
 /// Updates assignment roles.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn update_roles<N, C, R>(
     nucl: &N,
     repo: &R,
@@ -243,90 +283,88 @@ where
     )
     .await?;
 
-    let transaction_output = nucl
-        .coord(async move |context| -> RegularResult<()> {
-            //
+    nucl.coord(async move |context| -> RegularResult<()> {
+        //
 
-            let assignment_infos = repo
-                .step(
+        let assignment_infos = repo
+            .step(
+                context,
+                &ListAssignmentInfosExcluded::Chapter {
+                    chapter_id: &params.chapter_id,
+                },
+            )
+            .await?;
+
+        let existing_assignment_info = assignment_infos
+            .iter()
+            .find(|assignment_info| assignment_info.user_id == params.user_id);
+
+        match existing_assignment_info {
+            //
+            Some(assignment_info) => {
+                //
+                if AssignmentComplex::is_self_admin_role_removal(
+                    &token.user_id,
+                    assignment_info,
+                    params.roles,
+                ) {
+                    return Err(assignment_admin_required_error());
+                }
+
+                if !AssignmentComplex::chapter_has_admin_after_role_update(
+                    &assignment_infos,
+                    &params.user_id,
+                    params.roles,
+                ) {
+                    return Err(assignment_admin_required_error());
+                }
+
+                let assignment_role_update = AssignmentRoleUpdate {
+                    id: assignment_info.id.clone(),
+                    roles: params.roles,
+                };
+
+                repo.step(
                     context,
-                    &ListAssignmentInfosExcluded::Chapter {
-                        chapter_id: &params.chapter_id,
+                    &UpdateAssignmentRoles {
+                        update: &assignment_role_update,
                     },
                 )
                 .await?;
-
-            let existing_assignment_info =
-                assignment_infos.iter().find(|assignment_info| {
-                    assignment_info.user_id == params.user_id
-                });
-
-            match existing_assignment_info {
-                //
-                Some(assignment_info) => {
-                    //
-                    if AssignmentComplex::is_self_admin_role_removal(
-                        &token.user_id,
-                        assignment_info,
-                        params.roles,
-                    ) {
-                        return Err(assignment_admin_required_error());
-                    }
-
-                    if !AssignmentComplex::chapter_has_admin_after_role_update(
-                        &assignment_infos,
-                        &params.user_id,
-                        params.roles,
-                    ) {
-                        return Err(assignment_admin_required_error());
-                    }
-
-                    let assignment_role_update = AssignmentRoleUpdate {
-                        id: assignment_info.id.clone(),
-                        roles: params.roles,
-                    };
-
-                    repo.step(
-                        context,
-                        &UpdateAssignmentRoles {
-                            update: &assignment_role_update,
-                        },
-                    )
-                    .await?;
-                }
-
-                None => {
-                    //
-                    if !AssignmentComplex::chapter_has_admin_after_role_update(
-                        &assignment_infos,
-                        &params.user_id,
-                        params.roles,
-                    ) {
-                        return Err(assignment_admin_required_error());
-                    }
-
-                    let assignment_entry = AssignmentEntry {
-                        id: AssignmentComplex::gen_id(),
-                        chapter_id: params.chapter_id,
-                        user_id: params.user_id,
-                        roles: params.roles,
-                    };
-
-                    repo.step(
-                        context,
-                        &CreateAssignment {
-                            entry: &assignment_entry,
-                        },
-                    )
-                    .await?;
-                }
             }
 
-            Ok(())
-        })
-        .await?;
+            None => {
+                //
+                if !AssignmentComplex::chapter_has_admin_after_role_update(
+                    &assignment_infos,
+                    &params.user_id,
+                    params.roles,
+                ) {
+                    return Err(assignment_admin_required_error());
+                }
 
-    let () = transaction_output;
+                let assignment_entry = AssignmentEntry {
+                    id: AssignmentComplex::gen_id(),
+                    chapter_id: params.chapter_id,
+                    user_id: params.user_id,
+                    roles: params.roles,
+                };
+
+                repo.step(
+                    context,
+                    &CreateAssignment {
+                        entry: &assignment_entry,
+                    },
+                )
+                .await?;
+            }
+        }
+
+        Ok(())
+    })
+    .await?;
+
+    let () = ();
 
     Ok(())
 }
@@ -340,6 +378,7 @@ fn assignment_admin_required_error() -> RegularError {
 }
 
 /// Deletes one assignment by identifier.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn delete<N, C, R>(
     nucl: &N,
     repo: &R,
@@ -367,18 +406,17 @@ where
     )
     .await?;
 
-    let transaction_output = nucl
-        .coord(async move |context| -> RegularResult<()> {
-            //
+    nucl.coord(async move |context| -> RegularResult<()> {
+        //
 
-            repo.step(context, &DeleteAssignments::Id { id: &id })
-                .await?;
+        repo.step(context, &DeleteAssignments::Id { id: &id })
+            .await?;
 
-            Ok(())
-        })
-        .await?;
+        Ok(())
+    })
+    .await?;
 
-    let () = transaction_output;
+    let () = ();
 
     Ok(())
 }

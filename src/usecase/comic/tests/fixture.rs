@@ -4,6 +4,7 @@ use crate::data::comic::CreateComicParams;
 use crate::model::chapter::ChapterInfo;
 use crate::model::comic::ComicInfo;
 use crate::model::member::MemberInfo;
+use crate::model::page::PageInfo;
 use crate::model::user::UserToken;
 use crate::value::role::{RoleField, RoleMask};
 
@@ -68,6 +69,31 @@ pub(super) fn chapter(
         stages: stage_mask,
         creator_id: "user-1".into(),
         creator: None,
+        created_at: time,
+        updated_at: time,
+    }
+}
+
+pub(super) fn page(
+    id: &str,
+    chapter_id: &str,
+    index: i32,
+    image_key: Option<&str>,
+    image_uploaded: bool,
+) -> PageInfo {
+    //
+    let time = OffsetDateTime::now_utc();
+
+    PageInfo {
+        id: id.into(),
+        chapter_id: chapter_id.into(),
+        index,
+        image_key: image_key.map(Into::into),
+        image_uploaded,
+        image_version: 1,
+        total_unit_count: 0,
+        translated_unit_count: 0,
+        proofread_unit_count: 0,
         created_at: time,
         updated_at: time,
     }

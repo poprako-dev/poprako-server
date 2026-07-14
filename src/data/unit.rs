@@ -25,14 +25,10 @@ pub struct UnitInfoVal {
     pub x_coord: f64,
     pub y_coord: f64,
 
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub translated_text: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub last_translator_id: Option<String>,
 
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub proofread_text: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub last_proofreader_id: Option<String>,
 
     pub created_at: i64,
@@ -110,6 +106,7 @@ pub struct UnitDiffParams {
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
 #[serde(tag = "oper", rename_all = "snake_case", deny_unknown_fields)]
 pub enum UnitOperParams {
+    /// Create a new unit with client-assigned local id and content payload.
     Create {
         local_id: String,
 
@@ -130,6 +127,7 @@ pub enum UnitOperParams {
         proofread_text: Option<String>,
         last_proofreader_id: Option<String>,
     },
+    /// Update an existing unit identified by server-assigned id with new content payload.
     Save {
         id: String,
 
@@ -148,9 +146,8 @@ pub enum UnitOperParams {
         proofread_text: Option<String>,
         last_proofreader_id: Option<String>,
     },
-    Delete {
-        id: String,
-    },
+    /// Remove an existing unit by server-assigned id.
+    Delete { id: String },
 }
 
 impl UnitDiffParams {

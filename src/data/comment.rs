@@ -5,11 +5,14 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "swagger-ui")]
 use utoipa::{IntoParams, ToSchema};
 
+use futures::future::OptionFuture;
+
 use poprako_util::time::ToUnixMilli;
 
 use crate::data::user::UserInfoVal;
 use crate::model::comment::{CommentInfo, CommentListSpec};
 use crate::part::image::ImagePool;
+
 use crate::result::RegularResult;
 use crate::value::comment::CommentInclOpt;
 
@@ -21,7 +24,6 @@ pub struct CommentInfoVal {
 
     pub team_id: String,
     pub user_id: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub user: Option<UserInfoVal>,
 
     pub content: String,
@@ -38,20 +40,15 @@ impl CommentInfoVal {
     where
         P: ImagePool,
     {
-        let user = match model.user {
-            //
-            Some(user_info) => {
-                Some(UserInfoVal::from_model(image_pool, user_info).await?)
-            }
-
-            None => None,
-        };
-
         Ok(Self {
             id: model.id,
             team_id: model.team_id,
             user_id: model.user_id,
-            user,
+            user: OptionFuture::from(model.user.map(|user_info| {
+                UserInfoVal::from_model(image_pool, user_info)
+            }))
+            .await
+            .transpose()?,
             content: model.content,
             created_at: model.created_at.to_unix_milli(),
         })

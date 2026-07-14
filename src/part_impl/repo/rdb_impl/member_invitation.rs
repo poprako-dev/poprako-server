@@ -5,6 +5,8 @@ use diesel_async::RunQueryDsl;
 use poprako_orchestra::{Run, Step};
 use time::OffsetDateTime;
 
+use tracing::instrument;
+
 use crate::model::member_invitation::{
     MemberInvitationEntry, MemberInvitationInfo, MemberInvitationListSpec,
 };
@@ -30,6 +32,7 @@ impl MemberInvitationRepo<RdbContext> for RdbRepo {}
 // ── Free functions ──────────────────────────────────────────────────────────
 
 /// Query member invitations matching the given list spec, with optional includes.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn list_infos(
     conn: &mut RdbConn,
     spec: &MemberInvitationListSpec,
@@ -69,6 +72,7 @@ async fn list_infos(
 }
 
 /// Load a single invitation info by ID with optional includes.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn get_info_by_id(
     conn: &mut RdbConn,
     id: &str,
@@ -97,6 +101,7 @@ async fn get_info_by_id(
 }
 
 /// Create a new member invitation and return its info.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn create(
     conn: &mut RdbConn,
     entry: &MemberInvitationEntry,
@@ -115,6 +120,7 @@ async fn create(
 }
 
 /// Look up a pending invitation by code.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn get_info_by_code(
     conn: &mut RdbConn,
     code: &str,
@@ -134,6 +140,7 @@ async fn get_info_by_code(
 }
 
 /// Look up a pending invitation by code, locking the row for update.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn get_info_by_code_excluded(
     conn: &mut RdbConn,
     code: &str,
@@ -154,6 +161,7 @@ async fn get_info_by_code_excluded(
 }
 
 /// Mark a pending invitation as used.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn mark_pending_as_used(
     conn: &mut RdbConn,
     id: &str,
@@ -173,6 +181,7 @@ async fn mark_pending_as_used(
 }
 
 /// Update the roles on an existing invitation.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn update_info(
     conn: &mut RdbConn,
     id: &str,
@@ -194,6 +203,7 @@ async fn update_info(
 }
 
 /// Delete a member invitation by ID.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
     //
     diesel::delete(t_member_invitation.filter(f_id.eq(id)))
@@ -207,6 +217,7 @@ async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
 impl<'a> Run<ListMemberInvitationInfos<'a>> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &ListMemberInvitationInfos<'a>,
@@ -218,6 +229,7 @@ impl<'a> Run<ListMemberInvitationInfos<'a>> for RdbRepo {
 impl<'a, 'b> Run<GetMemberInvitationInfo<'a, 'b>> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &GetMemberInvitationInfo<'a, 'b>,
@@ -238,6 +250,7 @@ impl<'a, 'b> Run<GetMemberInvitationInfo<'a, 'b>> for RdbRepo {
 impl<'a> Step<CreateMemberInvitation<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -250,6 +263,7 @@ impl<'a> Step<CreateMemberInvitation<'a>, RdbContext> for RdbRepo {
 impl<'a, 'b> Step<GetMemberInvitationInfo<'a, 'b>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -271,6 +285,7 @@ impl<'a, 'b> Step<GetMemberInvitationInfo<'a, 'b>, RdbContext> for RdbRepo {
 impl<'a> Step<UpdateMemberInvitation<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -293,6 +308,7 @@ impl<'a> Step<UpdateMemberInvitation<'a>, RdbContext> for RdbRepo {
 impl<'a> Step<GetMemberInvitationInfoExcluded<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -309,6 +325,7 @@ impl<'a> Step<GetMemberInvitationInfoExcluded<'a>, RdbContext> for RdbRepo {
 impl<'a> Step<DeleteMemberInvitation<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,

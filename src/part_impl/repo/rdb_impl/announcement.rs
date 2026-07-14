@@ -4,6 +4,8 @@ use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use poprako_orchestra::{Run, Step};
 
+use tracing::instrument;
+
 use crate::model::announcement::{
     AnnouncementEntry, AnnouncementInfo, AnnouncementListSpec,
 };
@@ -23,6 +25,7 @@ use crate::result::{RegularError, RegularResult};
 impl AnnouncementRepo<RdbContext> for RdbRepo {}
 
 /// Queries announcement rows filtered by team ID, ordered by creation time descending.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn list_infos(
     conn: &mut RdbConn,
     spec: &AnnouncementListSpec,
@@ -52,6 +55,7 @@ async fn list_infos(
 }
 
 /// Inserts a new announcement row from the given entry and returns the created info.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn create(
     conn: &mut RdbConn,
     entry: &AnnouncementEntry,
@@ -72,6 +76,7 @@ async fn create(
 impl Run<ListAnnouncementInfos<'_>> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &ListAnnouncementInfos<'_>,
@@ -83,6 +88,7 @@ impl Run<ListAnnouncementInfos<'_>> for RdbRepo {
 impl Step<CreateAnnouncement<'_>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,

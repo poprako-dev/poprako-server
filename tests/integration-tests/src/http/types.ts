@@ -50,10 +50,14 @@ export interface ComicInfoVal {
     workset: WorksetInfoVal | null;
     team: TeamInfoVal | null;
     creator: UserInfoVal | null;
-    pinned_chapter: ChapterInfoVal | null;
     last_active_at: number;
     created_at: number;
     updated_at: number;
+}
+
+export interface ListComicInfosPayload {
+    comics: ComicInfoVal[];
+    pinned_chapters: (ChapterInfoVal | null)[];
 }
 
 export interface ChapterInfoVal {

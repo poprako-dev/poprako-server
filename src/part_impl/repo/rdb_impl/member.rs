@@ -5,6 +5,8 @@ use diesel_async::RunQueryDsl;
 use poprako_orchestra::Run;
 use time::OffsetDateTime;
 
+use tracing::instrument;
+
 use crate::model::member::{
     MemberEntry, MemberInfo, MemberListSpec, MemberRoleUpdate,
 };
@@ -144,6 +146,7 @@ fn escape_ilike_pattern(input: &str) -> String {
 // ── Free functions ──────────────────────────────────────────────────────────
 
 /// Look up a member by user and team IDs.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn find_info_by_user_id_and_team_id(
     conn: &mut RdbConn,
     user_id: &str,
@@ -165,6 +168,7 @@ async fn find_info_by_user_id_and_team_id(
 impl<'a> Run<FindMemberInfo<'a>> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &FindMemberInfo<'a>,
@@ -183,6 +187,7 @@ impl<'a> Run<FindMemberInfo<'a>> for RdbRepo {
 }
 
 /// Query a paginated, filtered list of member infos.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn list_infos(
     conn: &mut RdbConn,
     spec: &MemberListSpec,
@@ -287,6 +292,7 @@ async fn list_infos(
 }
 
 /// Load a single member info by ID with optional includes.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn get_info_by_id(
     conn: &mut RdbConn,
     id: &str,
@@ -315,6 +321,7 @@ async fn get_info_by_id(
 }
 
 /// Insert a new member and return its info.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn create(
     conn: &mut RdbConn,
     entry: &MemberEntry,
@@ -335,6 +342,7 @@ async fn create(
 }
 
 /// Update the user-nickname for every member row owned by the given user.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn update_user_nickname(
     conn: &mut RdbConn,
     user_id: &str,
@@ -355,6 +363,7 @@ async fn update_user_nickname(
 }
 
 /// Query all member infos for a user, locking the rows for update.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn list_infos_by_user_id_excluded(
     conn: &mut RdbConn,
     user_id: &str,
@@ -372,6 +381,7 @@ async fn list_infos_by_user_id_excluded(
 }
 
 /// Query all member infos for a user without acquiring a lock.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn list_infos_by_user_id(
     conn: &mut RdbConn,
     user_id: &str,
@@ -388,6 +398,7 @@ async fn list_infos_by_user_id(
 }
 
 /// Update the role mask and refresh assignment timestamps for a member.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn update_role(
     conn: &mut RdbConn,
     update: &MemberRoleUpdate,
@@ -407,6 +418,7 @@ async fn update_role(
 }
 
 /// Delete a member by ID.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
     //
     diesel::delete(t_member.filter(f_id.eq(id)))

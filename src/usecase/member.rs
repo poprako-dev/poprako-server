@@ -1,5 +1,7 @@
 //! Member use cases: create, join, list, role update, and deletion.
 
+use tracing::instrument;
+
 use poprako_orchestra::{Nucl, run_proxy};
 
 use poprako_util::i18n::trl;
@@ -36,6 +38,7 @@ mod tests;
 ///
 /// The caller must be a team admin. The target user and team are locked in
 /// the transaction before inserting the membership.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn create<N, C, R>(
     nucl: &N,
     repo: &R,
@@ -121,6 +124,7 @@ where
 }
 
 /// Joins the current user to a team with a pending invitation code.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn join_team<N, C, R, I>(
     nucl: &N,
     repo: &R,
@@ -211,6 +215,7 @@ where
 /// Lists members under one team.
 ///
 /// The caller must already be a member of the target team.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn list_infos<C, R, I>(
     repo: &R,
     image_pool: &I,
@@ -253,6 +258,7 @@ where
 /// Updates one member's roles.
 ///
 /// The caller must be a team admin of the target member's team.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn update_roles<N, C, R>(
     nucl: &N,
     repo: &R,
@@ -280,27 +286,26 @@ where
     )
     .await?;
 
-    let transaction_output = nucl
-        .coord(async move |context| -> RegularResult<()> {
-            //
-            let member_role_update = MemberRoleUpdate {
-                id: params.id,
-                roles: params.roles,
-            };
+    nucl.coord(async move |context| -> RegularResult<()> {
+        //
+        let member_role_update = MemberRoleUpdate {
+            id: params.id,
+            roles: params.roles,
+        };
 
-            repo.step(
-                context,
-                &UpdateMember::Role {
-                    update: &member_role_update,
-                },
-            )
-            .await?;
-
-            Ok(())
-        })
+        repo.step(
+            context,
+            &UpdateMember::Role {
+                update: &member_role_update,
+            },
+        )
         .await?;
 
-    let () = transaction_output;
+        Ok(())
+    })
+    .await?;
+
+    let () = ();
 
     Ok(())
 }
@@ -308,6 +313,7 @@ where
 /// Deletes one member.
 ///
 /// The caller must be a team admin of the target member's team.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn delete<N, C, R>(
     nucl: &N,
     repo: &R,
@@ -335,16 +341,15 @@ where
     )
     .await?;
 
-    let transaction_output = nucl
-        .coord(async move |context| -> RegularResult<()> {
-            //
-            repo.step(context, &DeleteMember { id: &id }).await?;
+    nucl.coord(async move |context| -> RegularResult<()> {
+        //
+        repo.step(context, &DeleteMember { id: &id }).await?;
 
-            Ok(())
-        })
-        .await?;
+        Ok(())
+    })
+    .await?;
 
-    let () = transaction_output;
+    let () = ();
 
     Ok(())
 }

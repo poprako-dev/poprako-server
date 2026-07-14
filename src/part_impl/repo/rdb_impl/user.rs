@@ -5,6 +5,8 @@ use diesel_async::RunQueryDsl;
 use poprako_orchestra::{Run, Step};
 use time::OffsetDateTime;
 
+use tracing::instrument;
+
 use crate::complex::user::UserComplex;
 use crate::model::user::{
     UserAvatarReservation, UserCredential, UserEntry, UserInfo,
@@ -28,6 +30,7 @@ impl UserRepo<RdbContext> for RdbRepo {}
 // ── Free functions ──────────────────────────────────────────────────────────
 
 /// Load a single user info by ID.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn get_info_by_id(
     conn: &mut RdbConn,
     id: &str,
@@ -46,6 +49,7 @@ async fn get_info_by_id(
 }
 
 /// Load credential information (password hash etc.) for a user by QID.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn get_credential_by_qid(
     conn: &mut RdbConn,
     qid: &str,
@@ -64,6 +68,7 @@ async fn get_credential_by_qid(
 }
 
 /// Look up a user info by QID, returning None when not found.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn find_info_by_qid(
     conn: &mut RdbConn,
     qid: &str,
@@ -81,6 +86,7 @@ async fn find_info_by_qid(
 }
 
 /// Insert a new user and return its info.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn create(
     conn: &mut RdbConn,
     entry: &UserEntry,
@@ -109,6 +115,7 @@ async fn create(
 }
 
 /// Update a user's QID and nickname.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn update_info(
     conn: &mut RdbConn,
     id: &str,
@@ -131,6 +138,7 @@ async fn update_info(
 
 /// Reserve a new avatar slot for a user: bump version, generate object key,
 /// and return the reservation with previous key for cleanup.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn reserve_avatar(
     conn: &mut RdbConn,
     id: &str,
@@ -170,6 +178,7 @@ async fn reserve_avatar(
 }
 
 /// Mark a user avatar as uploaded, checking version staleness.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn mark_avatar_uploaded(
     conn: &mut RdbConn,
     id: &str,
@@ -196,6 +205,7 @@ async fn mark_avatar_uploaded(
 }
 
 /// Update the last-active timestamp for a user.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn touch_last_active(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
     //
     let now = OffsetDateTime::now_utc();
@@ -212,6 +222,7 @@ async fn touch_last_active(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
 }
 
 /// Load a user info by ID, locking the row for update.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn get_info_by_id_excluded(
     conn: &mut RdbConn,
     id: &str,
@@ -231,6 +242,7 @@ async fn get_info_by_id_excluded(
 }
 
 /// Delete a user by ID.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
     //
     diesel::delete(t_user.filter(f_id.eq(id)))
@@ -244,6 +256,7 @@ async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
 impl<'a> Run<GetUserInfo<'a>> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &GetUserInfo<'a>,
@@ -259,6 +272,7 @@ impl<'a> Run<GetUserInfo<'a>> for RdbRepo {
 impl<'a> Run<GetUserCredential<'a>> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &GetUserCredential<'a>,
@@ -274,6 +288,7 @@ impl<'a> Run<GetUserCredential<'a>> for RdbRepo {
 impl<'a> Run<FindUserInfo<'a>> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &FindUserInfo<'a>,
@@ -289,6 +304,7 @@ impl<'a> Run<FindUserInfo<'a>> for RdbRepo {
 impl<'a> Run<UpdateUser<'a>> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(&self, oper: &UpdateUser<'a>) -> RegularResult<()> {
         match oper {
             //
@@ -315,6 +331,7 @@ impl<'a> Run<UpdateUser<'a>> for RdbRepo {
 impl<'a> Step<CreateUser<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -327,6 +344,7 @@ impl<'a> Step<CreateUser<'a>, RdbContext> for RdbRepo {
 impl<'a> Step<FindUserInfo<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -343,6 +361,7 @@ impl<'a> Step<FindUserInfo<'a>, RdbContext> for RdbRepo {
 impl<'a> Step<UpdateUser<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -368,6 +387,7 @@ impl<'a> Step<UpdateUser<'a>, RdbContext> for RdbRepo {
 impl<'a> Step<ReserveUserAvatar<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -380,6 +400,7 @@ impl<'a> Step<ReserveUserAvatar<'a>, RdbContext> for RdbRepo {
 impl<'a> Step<GetUserInfoExcluded<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -396,6 +417,7 @@ impl<'a> Step<GetUserInfoExcluded<'a>, RdbContext> for RdbRepo {
 impl<'a> Step<DeleteUser<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,

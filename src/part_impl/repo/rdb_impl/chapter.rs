@@ -5,6 +5,7 @@ use std::collections::HashMap;
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use time::OffsetDateTime;
+use tracing::instrument;
 
 use crate::model::chapter::{
     ChapterEntry, ChapterInfo, ChapterInfoListSpec, ChapterInfoUpdate,
@@ -37,6 +38,7 @@ fn rows_into_infos(rows: Vec<ChapterRow>) -> RegularResult<Vec<ChapterInfo>> {
 }
 
 /// Queries a single chapter row by ID and populates its includes.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub(super) async fn get_info_by_id(
     conn: &mut RdbConn,
     id: &str,
@@ -65,6 +67,7 @@ pub(super) async fn get_info_by_id(
 }
 
 /// Queries a single chapter row by ID under `FOR UPDATE` lock.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub(super) async fn get_info_excluded(
     conn: &mut RdbConn,
     id: &str,
@@ -94,6 +97,7 @@ pub(super) async fn get_info_excluded(
 }
 
 /// Queries chapter rows for a given comic, ordered by index descending.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub(super) async fn list_infos(
     conn: &mut RdbConn,
     spec: &ChapterInfoListSpec,
@@ -118,6 +122,7 @@ pub(super) async fn list_infos(
 }
 
 /// Queries all chapter rows for a comic under `FOR UPDATE` lock.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub(super) async fn list_infos_excluded(
     conn: &mut RdbConn,
     comic_id: &str,
@@ -136,6 +141,7 @@ pub(super) async fn list_infos_excluded(
 }
 
 /// Finds the pinned chapter for a given comic ID, if one exists.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub(super) async fn find_pinned_info_by_comic_id(
     conn: &mut RdbConn,
     comic_id: &str,
@@ -168,6 +174,7 @@ pub(super) async fn find_pinned_info_by_comic_id(
 }
 
 /// Returns a map of comic ID to pinned chapter info for the given comic IDs.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub(super) async fn list_pinned_infos_by_comic_ids(
     conn: &mut RdbConn,
     comic_ids: &[String],
@@ -198,6 +205,7 @@ pub(super) async fn list_pinned_infos_by_comic_ids(
 }
 
 /// Inserts a new chapter row from the given entry and returns the created info.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub(super) async fn create(
     conn: &mut RdbConn,
     chapter_entry: &ChapterEntry,
@@ -216,6 +224,7 @@ pub(super) async fn create(
 }
 
 /// Updates the modifiable fields of a chapter row.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub(super) async fn update_info(
     conn: &mut RdbConn,
     update: &ChapterInfoUpdate,
@@ -243,6 +252,7 @@ pub(super) async fn update_info(
 }
 
 /// Updates the stage timestamps of a chapter row.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub(super) async fn update_stage(
     conn: &mut RdbConn,
     update: &ChapterStageUpdate,
@@ -262,6 +272,7 @@ pub(super) async fn update_stage(
 }
 
 /// Sets the page and unit counters on a chapter row.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub(super) async fn set_page_counters(
     conn: &mut RdbConn,
     id: &str,
@@ -289,6 +300,7 @@ pub(super) async fn set_page_counters(
 }
 
 /// Adjusts a chapter's unit counters by the given delta.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub(super) async fn adjust_unit_counters(
     conn: &mut RdbConn,
     id: &str,
@@ -314,6 +326,7 @@ pub(super) async fn adjust_unit_counters(
 }
 
 /// Unpins all chapters for a comic except the one with the given excluded ID.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub(super) async fn unpin_others(
     conn: &mut RdbConn,
     comic_id: &str,
@@ -336,6 +349,7 @@ pub(super) async fn unpin_others(
 }
 
 /// Deletes a single chapter row by ID.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub(super) async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
     //
     diesel::delete(t_chapter.filter(f_id.eq(id)))

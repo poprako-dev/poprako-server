@@ -2,25 +2,30 @@
 //! permission gates.
 
 use poprako_orchestra::Proxy;
+use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
 
 use crate::complex::comic::ComicComplex;
 use crate::complex::util::{
     check_user_is_team_admin, check_user_is_team_member,
 };
 use crate::model::comic::{ComicInfoListKind, ComicInfoListSpec};
-use crate::part::prom::Prom;
-use crate::part::repo::assignment::AssignmentRepo;
-use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
-use crate::part::repo::chapter::ChapterRepo;
-use crate::part::repo::comic::ComicRepo;
-use crate::part::repo::oper::comic::ListComicInfosExcluded;
+use crate::part::prom::payload::Payload;
+use crate::part::repo::oper::assignment::DeleteAssignments;
+use crate::part::repo::oper::assignment_invitation::DeleteAssignmentInvitations;
+use crate::part::repo::oper::chapter::{
+    DeleteChapter, GetChapterInfoExcluded, ListChapterInfosExcluded,
+    UnpinOtherChapters, UpdateChapter,
+};
+use crate::part::repo::oper::comic::{
+    DeleteComic, GetComicInfoExcluded, ListComicInfosExcluded,
+    TouchComicLastActive, UpdateComicChapterCount,
+};
 use crate::part::repo::oper::member::FindMemberInfo;
+use crate::part::repo::oper::page::{DeletePages, ListPageInfos};
 use crate::part::repo::oper::workset::{
     DeleteWorkset, GetWorksetInfo, GetWorksetInfoExcluded,
+    UpdateWorksetComicCount,
 };
-use crate::part::repo::page::PageRepo;
-use crate::part::repo::unit::UnitRepo;
-use crate::part::repo::workset::WorksetRepo;
 use crate::result::{RegularError, RegularResult};
 use crate::util::next_snowflake_id;
 
@@ -34,32 +39,41 @@ impl WorksetComplex {
     }
 
     /// Deletes a workset subtree inside an existing transaction context.
-    pub async fn delete_cascade<C, R, P>(
-        repo: &R,
-        prom: &P,
-        context: &mut C,
-        id: &str,
-    ) -> RegularResult<()>
+    pub async fn delete_cascade<P>(proxy: &mut P, id: &str) -> RegularResult<()>
     where
-        C: Send,
-        R: WorksetRepo<C>
-            + ComicRepo<C>
-            + ChapterRepo<C>
-            + PageRepo<C>
-            + AssignmentInvitationRepo<C>
-            + AssignmentRepo<C>
-            + UnitRepo<C>
-            + Send
-            + Sync,
-        P: Prom<C> + Send + Sync,
+        P: for<'a> Proxy<GetWorksetInfoExcluded<'a>, Error = RegularError>
+            + for<'a> Proxy<ListComicInfosExcluded<'a>, Error = RegularError>
+            + for<'a> Proxy<DeleteWorkset<'a>, Error = RegularError>
+            + for<'a, 'b> Proxy<
+                GetComicInfoExcluded<'a, 'b>,
+                Error = RegularError,
+            > + for<'a> Proxy<ListChapterInfosExcluded<'a>, Error = RegularError>
+            + for<'a> Proxy<DeleteComic<'a>, Error = RegularError>
+            + for<'a> Proxy<UpdateWorksetComicCount<'a>, Error = RegularError>
+            + for<'a, 'b> Proxy<
+                GetChapterInfoExcluded<'a, 'b>,
+                Error = RegularError,
+            > + for<'a> Proxy<ListPageInfos<'a>, Error = RegularError>
+            + for<'a> Proxy<DeleteAssignmentInvitations<'a>, Error = RegularError>
+            + for<'a> Proxy<DeleteAssignments<'a>, Error = RegularError>
+            + for<'a> Proxy<DeletePages<'a>, Error = RegularError>
+            + for<'a> Proxy<DeleteChapter<'a>, Error = RegularError>
+            + for<'a> Proxy<UpdateChapter<'a>, Error = RegularError>
+            + for<'a> Proxy<UnpinOtherChapters<'a>, Error = RegularError>
+            + for<'a> Proxy<UpdateComicChapterCount<'a>, Error = RegularError>
+            + for<'a> Proxy<TouchComicLastActive<'a>, Error = RegularError>
+            + for<'a> Proxy<Defer<'a, String, Payload, ()>, Error = RegularError>
+            + for<'t, 'a> Proxy<
+                DeferBatch<'t, 'a, String, Payload, ()>,
+                Error = RegularError,
+            >,
     {
         // SAFETY: Lock the root workset row (FOR UPDATE) to serialize with
         // concurrent comic creations (IncrComicNextIndex also locks this row),
         // preventing resource leaks from comics inserted between the last
         // paginated page and the workset delete.
 
-        let workset_info =
-            repo.step(context, &GetWorksetInfoExcluded { id }).await?;
+        let workset_info = proxy.exec(&GetWorksetInfoExcluded { id }).await?;
 
         const PAGE_SIZE: u32 = 50;
 
@@ -76,8 +90,8 @@ impl WorksetComplex {
                 limit: PAGE_SIZE,
             };
 
-            let comic_infos = repo
-                .step(context, &ListComicInfosExcluded { spec: &list_spec })
+            let comic_infos = proxy
+                .exec(&ListComicInfosExcluded { spec: &list_spec })
                 .await?;
 
             if comic_infos.is_empty() {
@@ -85,25 +99,17 @@ impl WorksetComplex {
             }
 
             for comic_info in comic_infos {
-                ComicComplex::delete_cascade(
-                    repo,
-                    prom,
-                    context,
-                    &comic_info.id,
-                )
-                .await?;
+                ComicComplex::delete_cascade(proxy, &comic_info.id).await?;
             }
 
             offset += PAGE_SIZE;
         }
 
-        repo.step(
-            context,
-            &DeleteWorkset {
+        proxy
+            .exec(&DeleteWorkset {
                 id: &workset_info.id,
-            },
-        )
-        .await?;
+            })
+            .await?;
 
         Ok(())
     }

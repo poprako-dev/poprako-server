@@ -3,9 +3,11 @@
 use std::collections::HashMap;
 use std::time::Duration;
 
-use poprako_orchestra::{Nucl, run_proxy};
-use poprako_orchestra_extra::prom::oper::DeferBatch;
+use poprako_orchestra::{Nucl, run_proxy, step_proxy};
+use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
 use poprako_orchestra_extra::prom::task::Task;
+
+use tracing::instrument;
 
 use crate::complex::assignment::AssignmentComplex;
 use crate::complex::chapter::ChapterComplex;
@@ -14,8 +16,8 @@ use crate::complex::image::ImageComplex;
 use crate::data::chapter::ChapterInfoVal;
 use crate::data::comic::{
     ComicInfoVal, CreateComicParams, CreateComicPayload, ListComicInfosParams,
-    MarkComicCoverUploadedParams, ReserveComicCoverParams,
-    ReserveComicCoverPayload, UpdateComicInfoParams,
+    ListComicInfosPayload, MarkComicCoverUploadedParams,
+    ReserveComicCoverParams, ReserveComicCoverPayload, UpdateComicInfoParams,
 };
 use crate::model::assignment::AssignmentEntry;
 use crate::model::chapter::ChapterEntry;
@@ -29,16 +31,25 @@ use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
-use crate::part::repo::oper::assignment::CreateAssignment;
+use crate::part::repo::oper::assignment::{
+    CreateAssignment, DeleteAssignments,
+};
+use crate::part::repo::oper::assignment_invitation::DeleteAssignmentInvitations;
 use crate::part::repo::oper::chapter::{
-    CreateChapter, ListPinnedChapterInfos, UnpinOtherChapters,
+    CreateChapter, DeleteChapter, GetChapterInfoExcluded,
+    ListChapterInfosExcluded, ListPinnedChapterInfos, UnpinOtherChapters,
+    UpdateChapter,
 };
 use crate::part::repo::oper::comic::{
-    AllocateComicChapterIndex, CreateComic, GetComicInfo, ListComicInfos,
-    MarkComicCoverUploaded, ReserveComicCover, TouchComicLastActive,
-    UpdateComic, UpdateComicChapterCount,
+    AllocateComicChapterIndex, CreateComic, DeleteComic, GetComicInfo,
+    GetComicInfoExcluded, ListComicInfos, MarkComicCoverUploaded,
+    ReserveComicCover, TouchComicLastActive, UpdateComic,
+    UpdateComicChapterCount,
 };
 use crate::part::repo::oper::member::FindMemberInfo;
+use crate::part::repo::oper::page::{
+    DeletePages, ListFirstPageInfos, ListPageInfos,
+};
 use crate::part::repo::oper::workset::{
     AllocateWorksetComicIndex, GetWorksetInfo, UpdateWorksetComicCount,
 };
@@ -63,6 +74,7 @@ pub mod tests;
 /// 5. Updates the comic's denormalised chapter counter and last-activity
 ///    timestamp.
 /// 6. Creates an ADMIN assignment on the new chapter for the caller.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn create<N, C, R>(
     nucl: &N,
     repo: &R,
@@ -213,6 +225,7 @@ where
 }
 
 /// Fetches a comic by ID with cover URL resolution.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn get_info<C, R, I>(
     repo: &R,
     image_pool: &I,
@@ -220,7 +233,12 @@ pub async fn get_info<C, R, I>(
     id: String,
 ) -> RegularResult<ComicInfoVal>
 where
-    R: ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Sync,
+    R: ComicRepo<C>
+        + WorksetRepo<C>
+        + MemberRepo<C>
+        + ChapterRepo<C>
+        + PageRepo<C>
+        + Sync,
     I: ImagePool,
 {
     ComicPermComplex::ensure_user_can_get_info(
@@ -242,18 +260,41 @@ where
         })
         .await?;
 
-    ComicInfoVal::from_model(image_pool, comic_info, None).await
+    let comic_ids = vec![comic_info.id.clone()];
+
+    let fallback_cover_keys = ComicComplex::resolve_fallback_cover_keys(
+        &mut run_proxy! {
+            repo =>
+                for<'a> ListPinnedChapterInfos<'a>,
+                for<'a> ListFirstPageInfos<'a>;
+        },
+        &comic_ids,
+    )
+    .await?;
+
+    ComicInfoVal::from_model(
+        image_pool,
+        comic_info,
+        fallback_cover_keys.get(&id).map(String::as_str),
+    )
+    .await
 }
 
 /// Lists comics for a workset with optional title filter, completion filter, and pagination.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn list_infos<C, R, I>(
     repo: &R,
     image_pool: &I,
     token: UserToken,
     params: ListComicInfosParams,
-) -> RegularResult<Vec<ComicInfoVal>>
+) -> RegularResult<ListComicInfosPayload>
 where
-    R: ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + ChapterRepo<C> + Sync,
+    R: ComicRepo<C>
+        + WorksetRepo<C>
+        + MemberRepo<C>
+        + ChapterRepo<C>
+        + PageRepo<C>
+        + Sync,
     I: ImagePool,
 {
     ComicPermComplex::ensure_user_can_list_infos(
@@ -274,9 +315,24 @@ where
 
     let comic_infos = repo.run(&ListComicInfos { spec: &spec }).await?;
 
+    let comic_ids = comic_infos
+        .iter()
+        .map(|comic_info| comic_info.id.clone())
+        .collect::<Vec<_>>();
+
+    let fallback_cover_keys = ComicComplex::resolve_fallback_cover_keys(
+        &mut run_proxy! {
+            repo =>
+                for<'a> ListPinnedChapterInfos<'a>,
+                for<'a> ListFirstPageInfos<'a>;
+        },
+        &comic_ids,
+    )
+    .await?;
+
     // NOTE: `with` cannot be executed elegantly by repo layer,
     // so we have to handle it in usecase layer.
-    let mut pinned_chapters = match with_pinned_chapter {
+    let mut pinned_chapter_infos = match with_pinned_chapter {
         //
         true => {
             //
@@ -294,31 +350,44 @@ where
 
     let mut comic_info_vals = Vec::with_capacity(comic_infos.len());
 
+    let mut pinned_chapter_vals = Vec::with_capacity(comic_infos.len());
+
     for comic_info in comic_infos {
         //
-        let pinned_chapter_val = match pinned_chapters.remove(&comic_info.id) {
-            //
-            Some(chapter_info) => Some(
-                ChapterInfoVal::from_model(image_pool, chapter_info).await?,
-            ),
+        let pinned_chapter_val =
+            match pinned_chapter_infos.remove(&comic_info.id) {
+                //
+                Some(chapter_info) => Some(
+                    ChapterInfoVal::from_model(image_pool, chapter_info, None)
+                        .await?,
+                ),
 
-            None => None,
-        };
+                None => None,
+            };
+
+        let fallback_cover_key =
+            fallback_cover_keys.get(&comic_info.id).map(String::as_str);
 
         comic_info_vals.push(
             ComicInfoVal::from_model(
                 image_pool,
                 comic_info,
-                pinned_chapter_val,
+                fallback_cover_key,
             )
             .await?,
         );
+
+        pinned_chapter_vals.push(pinned_chapter_val);
     }
 
-    Ok(comic_info_vals)
+    Ok(ListComicInfosPayload {
+        comics: comic_info_vals,
+        pinned_chapters: pinned_chapter_vals,
+    })
 }
 
 /// Updates a comic's title, author, and description.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn update_info<C, R>(
     repo: &R,
     token: UserToken,
@@ -355,6 +424,7 @@ where
 }
 
 /// Reserves a new comic cover upload slot.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn reserve_cover<N, C, R, P, I>(
     nucl: &N,
     repo: &R,
@@ -452,6 +522,7 @@ where
 }
 
 /// Marks a reserved comic cover as successfully uploaded.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn mark_cover_uploaded<C, R>(
     repo: &R,
     token: UserToken,
@@ -483,6 +554,7 @@ where
 }
 
 /// Deletes a comic and updates the parent workset counter.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn delete<N, C, R, P>(
     nucl: &N,
     repo: &R,
@@ -519,7 +591,31 @@ where
 
     nucl.coord(async move |context| -> RegularResult<()> {
         //
-        ComicComplex::delete_cascade(repo, prom, context, &id).await?;
+        ComicComplex::delete_cascade(
+            &mut step_proxy! {
+                context;
+                repo =>
+                    for<'a, 'b> GetComicInfoExcluded<'a, 'b>,
+                    for<'a> ListChapterInfosExcluded<'a>,
+                    for<'a> DeleteComic<'a>,
+                    for<'a> UpdateWorksetComicCount<'a>,
+                    for<'a, 'b> GetChapterInfoExcluded<'a, 'b>,
+                    for<'a> ListPageInfos<'a>,
+                    for<'a> DeleteAssignmentInvitations<'a>,
+                    for<'a> DeleteAssignments<'a>,
+                    for<'a> DeletePages<'a>,
+                    for<'a> DeleteChapter<'a>,
+                    for<'a> UpdateChapter<'a>,
+                    for<'a> UnpinOtherChapters<'a>,
+                    for<'a> UpdateComicChapterCount<'a>,
+                    for<'a> TouchComicLastActive<'a>;
+                prom =>
+                    for<'a> Defer<'a, String, Payload, ()>,
+                    for<'t, 'a> DeferBatch<'t, 'a, String, Payload, ()>;
+            },
+            &id,
+        )
+        .await?;
 
         accept(())
     })

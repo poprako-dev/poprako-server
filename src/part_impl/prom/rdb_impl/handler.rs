@@ -13,7 +13,7 @@ use tokio::sync::oneshot::{
     Receiver as OneshotReceiver, Sender as OneshotSender,
 };
 use tokio::time::sleep;
-use tracing::{Level, instrument};
+use tracing::instrument;
 
 use crate::part::image::ImageManager;
 use crate::part::prom::payload::Payload;
@@ -23,8 +23,8 @@ use crate::part::repo::team::TeamRepo;
 use crate::part::repo::user::UserRepo;
 use crate::part_impl::prom::rdb_impl::entity::LocalMessageRow;
 use crate::part_impl::prom::rdb_impl::repo::{
-    ClaimPending, CompleteMessage, FailMessage, PollPending, RdbPromRepo,
-    ResetStuck, RetryMessage,
+    ClaimPending, CompleteMessage, FailMessage, PollPending, PurgeCompleted,
+    RdbPromRepo, ResetStuck, RetryMessage,
 };
 use crate::part_impl::shared::{RdbContext, RdbCore};
 use crate::result::{RegularError, RegularResult};
@@ -36,10 +36,16 @@ mod image;
 const POLL_INTERVAL: StdDuration = StdDuration::from_secs(5);
 const RETRY_DELAY: Duration = Duration::minutes(5);
 const PROCESSING_TIMEOUT: Duration = Duration::minutes(15);
+const COMPLETED_RETENTION: Duration = Duration::days(7);
+const COMPLETED_PURGE_INTERVAL: Duration = Duration::hours(1);
 
+/// Outcome of processing one prom task — dictates how the handler updates the record.
 pub enum TaskFlow {
+    /// Task completed successfully; move record to Completed status.
     Complete,
+    /// Task encountered a transient error; schedule for retry.
     Retry(String),
+    /// Task encountered a fatal error; move record to Dead status.
     Dead(String),
 }
 
@@ -70,6 +76,7 @@ where
         + 'static,
     I: ImageManager + Send + Sync + 'static,
 {
+    /// Builds a new prom background handler from its core, nucl, repo, and lifecycle channels.
     pub fn new(
         core: RdbCore,
         nucl: D,
@@ -90,11 +97,39 @@ where
         }
     }
 
-    #[instrument(skip(self), level = Level::INFO)]
+    #[instrument(level = "info", skip_all)]
+    /// Runs the prom polling loop — polls, dispatches, completes, and purges until shutdown.
     pub async fn run(mut self) {
         //
+        let mut next_completed_purge_at = OffsetDateTime::now_utc();
+
         loop {
             //
+            let now = OffsetDateTime::now_utc();
+
+            if now >= next_completed_purge_at {
+                match self.purge_completed().await {
+                    //
+                    Ok(purged_count) => {
+                        if purged_count > 0 {
+                            tracing::info!(
+                                purged_count,
+                                "[RdbPromHandler::run] purged expired completed messages",
+                            );
+                        }
+                    }
+
+                    Err(error) => {
+                        tracing::error!(
+                            error = ?error,
+                            "[RdbPromHandler::run] purge completed failed",
+                        );
+                    }
+                }
+
+                next_completed_purge_at = now + COMPLETED_PURGE_INTERVAL;
+            }
+
             if let Err(e) = self.reset_stuck().await {
                 tracing::error!(
                     error = ?e,
@@ -152,6 +187,7 @@ where
         });
     }
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn poll(&self) -> RegularResult<Vec<LocalMessageRow>> {
         //
         let conn = self.core.get().await?;
@@ -161,6 +197,7 @@ where
         self.repo.step(&mut context, &PollPending).await
     }
 
+    #[instrument(level = "info", skip_all)]
     async fn process_row(&self, row: &LocalMessageRow) {
         //
         if let Err(e) = self.reset_stuck().await {
@@ -242,6 +279,7 @@ where
         }
     }
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn claim(&self, id: &str) -> RegularResult<bool> {
         //
         let conn = self.core.get().await?;
@@ -251,6 +289,7 @@ where
         self.repo.step(&mut context, &ClaimPending::new(id)).await
     }
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn complete(&self, id: &str) -> RegularResult<()> {
         //
         let conn = self.core.get().await?;
@@ -262,6 +301,7 @@ where
             .await
     }
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn fail(&self, id: &str, error: &str) -> RegularResult<()> {
         //
         let conn = self.core.get().await?;
@@ -273,6 +313,7 @@ where
             .await
     }
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn retry(&self, id: &str, error: &str) -> RegularResult<()> {
         //
         let conn = self.core.get().await?;
@@ -286,6 +327,7 @@ where
             .await
     }
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn reset_stuck(&self) -> RegularResult<()> {
         //
         let conn = self.core.get().await?;
@@ -298,9 +340,24 @@ where
             .step(&mut context, &ResetStuck::new(&before))
             .await
     }
+
+    #[instrument(level = "info", err(Debug), skip_all)]
+    async fn purge_completed(&self) -> RegularResult<usize> {
+        //
+        let conn = self.core.get().await?;
+
+        let mut context = RdbContext::new(conn);
+
+        let before = OffsetDateTime::now_utc() - COMPLETED_RETENTION;
+
+        self.repo
+            .step(&mut context, &PurgeCompleted::new(&before))
+            .await
+    }
 }
 
 /// Decodes and dispatches one persisted prom payload.
+#[instrument(level = "info", skip_all)]
 async fn dispatch_payload<D, R, I>(
     nucl: &D,
     repo: &R,

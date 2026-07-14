@@ -2,9 +2,11 @@
 
 use std::time::Duration;
 
-use poprako_orchestra::{Nucl, run_proxy};
-use poprako_orchestra_extra::prom::oper::DeferBatch;
+use poprako_orchestra::{Nucl, run_proxy, step_proxy};
+use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
 use poprako_orchestra_extra::prom::task::Task;
+
+use tracing::instrument;
 
 use crate::complex::image::ImageComplex;
 use crate::complex::member::MemberComplex;
@@ -25,11 +27,27 @@ use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
+use crate::part::repo::oper::assignment::DeleteAssignments;
+use crate::part::repo::oper::assignment_invitation::DeleteAssignmentInvitations;
+use crate::part::repo::oper::chapter::{
+    DeleteChapter, GetChapterInfoExcluded, ListChapterInfosExcluded,
+    UnpinOtherChapters, UpdateChapter,
+};
+use crate::part::repo::oper::comic::{
+    DeleteComic, GetComicInfoExcluded, ListComicInfosExcluded,
+    TouchComicLastActive, UpdateComicChapterCount,
+};
 use crate::part::repo::oper::member::{CreateMember, FindMemberInfo};
+use crate::part::repo::oper::page::{DeletePages, ListPageInfos};
 use crate::part::repo::oper::team::{
-    CreateTeam, GetTeamInfo, ListTeamInfos, ReserveTeamAvatar, UpdateTeam,
+    CreateTeam, DeleteTeam, GetTeamInfo, GetTeamInfoExcluded, ListTeamInfos,
+    ReserveTeamAvatar, UpdateTeam,
 };
 use crate::part::repo::oper::user::{GetUserInfo, GetUserInfoExcluded};
+use crate::part::repo::oper::workset::{
+    DeleteWorkset, GetWorksetInfoExcluded, ListWorksetInfosExcluded,
+    UpdateWorksetComicCount,
+};
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::unit::UnitRepo;
@@ -50,6 +68,7 @@ mod tests;
 /// * `C` — Context anchor.
 /// * `R: TeamRepo<C>` — Team storage.
 /// * `I: ImagePool` — Resolves the avatar signed URL.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn create<N, C, R, I>(
     nucl: &N,
     repo: &R,
@@ -122,6 +141,7 @@ where
 /// * `C` — Context anchor.
 /// * `R: TeamRepo<C>` — Team storage.
 /// * `I: ImagePool` — Resolves the avatar signed URL.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn get_info<C, R, I>(
     repo: &R,
     image_pool: &I,
@@ -147,6 +167,7 @@ where
 /// * `C` — Context anchor.
 /// * `R: TeamRepo<C>` — Team storage.
 /// * `I: ImagePool` — Resolves avatar signed URLs.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn list_infos<C, R, I>(
     repo: &R,
     image_pool: &I,
@@ -195,6 +216,7 @@ where
 ///
 /// * `C` — Context anchor.
 /// * `R: TeamRepo<C>` — Team storage.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn update_info<C, R>(
     repo: &R,
     token: UserToken,
@@ -242,6 +264,7 @@ where
 /// * `R: TeamRepo<C>` — Team storage.
 /// * `P: Prom<C>` — Prom enqueuer for deferred image opers.
 /// * `I: ImagePool` — Generates the signed upload URL.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn reserve_avatar<N, C, R, P, I>(
     nucl: &N,
     repo: &R,
@@ -348,6 +371,7 @@ where
 ///
 /// * `C` — Context anchor.
 /// * `R: TeamRepo<C>` — Team storage.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn mark_avatar_uploaded<C, R>(
     repo: &R,
     token: UserToken,
@@ -391,6 +415,7 @@ where
 /// * `C` — Context anchor.
 /// * `R: TeamRepo<C> + WorksetRepo<C> + ComicRepo<C>` — Team, workset, and comic storage.
 /// * `P: Prom<C>` — Prom enqueuer for deferred avatar deletion.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn delete<N, C, R, P>(
     nucl: &N,
     repo: &R,
@@ -425,7 +450,37 @@ where
 
     nucl.coord(async move |context| -> RegularResult<()> {
         //
-        TeamComplex::delete_cascade(repo, prom, context, &id).await?;
+        TeamComplex::delete_cascade(
+            &mut step_proxy! {
+                context;
+                repo =>
+                    for<'a> GetTeamInfoExcluded<'a>,
+                    for<'a> ListWorksetInfosExcluded<'a>,
+                    for<'a> DeleteTeam<'a>,
+                    for<'a> GetWorksetInfoExcluded<'a>,
+                    for<'a> ListComicInfosExcluded<'a>,
+                    for<'a> DeleteWorkset<'a>,
+                    for<'a, 'b> GetComicInfoExcluded<'a, 'b>,
+                    for<'a> ListChapterInfosExcluded<'a>,
+                    for<'a> DeleteComic<'a>,
+                    for<'a> UpdateWorksetComicCount<'a>,
+                    for<'a, 'b> GetChapterInfoExcluded<'a, 'b>,
+                    for<'a> ListPageInfos<'a>,
+                    for<'a> DeleteAssignmentInvitations<'a>,
+                    for<'a> DeleteAssignments<'a>,
+                    for<'a> DeletePages<'a>,
+                    for<'a> DeleteChapter<'a>,
+                    for<'a> UpdateChapter<'a>,
+                    for<'a> UnpinOtherChapters<'a>,
+                    for<'a> UpdateComicChapterCount<'a>,
+                    for<'a> TouchComicLastActive<'a>;
+                prom =>
+                    for<'a> Defer<'a, String, Payload, ()>,
+                    for<'t, 'a> DeferBatch<'t, 'a, String, Payload, ()>;
+            },
+            &id,
+        )
+        .await?;
 
         Ok(())
     })

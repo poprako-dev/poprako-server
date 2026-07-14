@@ -6,6 +6,8 @@ use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use poprako_orchestra::Step;
 
+use tracing::instrument;
+
 use crate::model::assignment::AssignmentInfo;
 use crate::model::chapter::ChapterInfo;
 use crate::model::comic::ComicInfo;
@@ -68,6 +70,7 @@ use crate::result::{RegularError, RegularResult};
 impl ComicArchiveRepo<RdbContext> for RdbRepo {}
 
 /// Lock every active descendant needed by an archive transaction.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn get_snapshot_excluded(
     conn: &mut RdbConn,
     source_comic_id: &str,
@@ -260,6 +263,7 @@ async fn get_snapshot_excluded(
 }
 
 /// Insert archive rows and remove the active comic subtree without touching workset counters.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn commit(
     conn: &mut RdbConn,
     comic_archive_write: &ComicArchiveWrite,
@@ -352,6 +356,7 @@ async fn commit(
 impl<'a> Step<GetComicArchiveSnapshotExcluded<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -364,6 +369,7 @@ impl<'a> Step<GetComicArchiveSnapshotExcluded<'a>, RdbContext> for RdbRepo {
 impl<'a> Step<CommitComicArchive<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
