@@ -59,7 +59,6 @@ fn seed_archive_scope(mock: &Mock, member_roles: RoleMask) {
         name: "workset".into(),
         description: Some("archive scope".into()),
         comic_count: 7,
-        comic_next_index: 9,
         created_at: archived_at,
         updated_at: archived_at,
     });
@@ -86,7 +85,6 @@ fn seed_archive_scope(mock: &Mock, member_roles: RoleMask) {
         cover_uploaded: false,
         cover_version: 5,
         chapter_count: 1,
-        chapter_next_index: 1,
         creator_id: "user-1".into(),
         workset: None,
         team: None,

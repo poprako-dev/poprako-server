@@ -4,7 +4,7 @@ use tracing::instrument;
 
 use crate::model::comic::{ComicCoverReservation, ComicInfo};
 use crate::part::repo::oper::comic::{
-    AllocateComicChapterIndex, CreateComic, DeleteComic, GetComicInfo,
+    AllocComicChapterIndex, CreateComic, DeleteComic, GetComicInfo,
     GetComicInfoExcluded, ListComicInfos, ListComicInfosExcluded,
     MarkComicCoverUploaded, ReserveComicCover, TouchComicLastActive,
     UpdateComic, UpdateComicChapterCount,
@@ -172,14 +172,14 @@ impl<'a> Step<DeleteComic<'a>, RdbContext> for RdbRepo {
     }
 }
 
-impl<'a> Step<AllocateComicChapterIndex<'a>, RdbContext> for RdbRepo {
+impl<'a> Step<AllocComicChapterIndex<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &AllocateComicChapterIndex<'a>,
+        oper: &AllocComicChapterIndex<'a>,
     ) -> RegularResult<i32> {
         incr_chapter_next_index(context.conn(), oper.id).await
     }

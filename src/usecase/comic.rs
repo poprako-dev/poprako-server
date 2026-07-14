@@ -41,7 +41,7 @@ use crate::part::repo::oper::chapter::{
     UpdateChapter,
 };
 use crate::part::repo::oper::comic::{
-    AllocateComicChapterIndex, CreateComic, DeleteComic, GetComicInfo,
+    AllocComicChapterIndex, CreateComic, DeleteComic, GetComicInfo,
     GetComicInfoExcluded, ListComicInfos, MarkComicCoverUploaded,
     ReserveComicCover, TouchComicLastActive, UpdateComic,
     UpdateComicChapterCount,
@@ -51,7 +51,7 @@ use crate::part::repo::oper::page::{
     DeletePages, ListFirstPageInfos, ListPageInfos,
 };
 use crate::part::repo::oper::workset::{
-    AllocateWorksetComicIndex, GetWorksetInfo, UpdateWorksetComicCount,
+    AllocWorksetComicIndex, GetWorksetInfo, UpdateWorksetComicCount,
 };
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::unit::UnitRepo;
@@ -109,7 +109,7 @@ where
             let index = repo
                 .step(
                     context,
-                    &AllocateWorksetComicIndex {
+                    &AllocWorksetComicIndex {
                         id: &params.workset_id,
                     },
                 )
@@ -144,10 +144,7 @@ where
             .await?;
 
             let chapter_index = repo
-                .step(
-                    context,
-                    &AllocateComicChapterIndex { id: &comic_info.id },
-                )
+                .step(context, &AllocComicChapterIndex { id: &comic_info.id })
                 .await?;
 
             let subtitle = ChapterComplex::subtitle_or_default(

@@ -21,10 +21,10 @@
 //   - chapter/comic/workset delete: team ADMIN (sadmin).
 //   - team delete: team admin (sadmin for the second team). Team delete
 //     cascades through worksets/comics/chapters/pages/units/members.
-//   - Deleting a chapter decreases comic.chapter_count by 1; chapter_next_index
-//     does NOT backfill.
-//   - Deleting a comic decreases workset.comic_count by 1; comic_next_index
-//     does NOT backfill. The comic's chapters become inaccessible (422/2).
+//   - Deleting a chapter decreases comic.chapter_count by 1.
+//     The chapter's pages/units become inaccessible (422/2).
+//   - Deleting a comic decreases workset.comic_count by 1.
+//     The comic's chapters become inaccessible (422/2).
 //   - Deleting a workset removes it from the team list; its comics/chapters
 //     become inaccessible (422/2).
 //
@@ -72,35 +72,31 @@ export async function runIt10Module(ctx: RunCtx): Promise<void> {
 
     const comicABefore = await getComic(ctx.sadmin, comicAId);
     const comicAChCountBefore = comicABefore.chapter_count;
-    const comicANextBefore = comicABefore.chapter_next_index;
 
     expectStatus(await ctx.sadmin.delete<null>(`/api/v1/chapters/${comicACh2}`), 204);
 
     // GET deleted chapter -> 422/2
     expectError(await ctx.sadmin.get<ErrorBody>(`/api/v1/chapters/${comicACh2}`), 422, 2);
 
-    // comic.chapter_count -1; chapter_next_index unchanged (no backfill)
+    // comic.chapter_count -1
     const comicAAfterChDelete = await getComic(ctx.sadmin, comicAId);
 
     assert.equal(comicAAfterChDelete.chapter_count, comicAChCountBefore - 1);
-    assert.equal(comicAAfterChDelete.chapter_next_index, comicANextBefore, "chapter_next_index no backfill");
 
     // ---------- C9.2 delete a comic (comicB) ----------
 
     const archiveWsBefore = await getWorkset(ctx.sadmin, archiveWsId);
     const wsComicCountBefore = archiveWsBefore.comic_count;
-    const wsComicNextBefore = archiveWsBefore.comic_next_index;
 
     expectStatus(await ctx.sadmin.delete<null>(`/api/v1/comics/${comicBId}`), 204);
 
     // GET deleted comic -> 422/2
     expectError(await ctx.sadmin.get<ErrorBody>(`/api/v1/comics/${comicBId}`), 422, 2);
 
-    // workset.comic_count -1; comic_next_index unchanged
+    // workset.comic_count -1
     const archiveWsAfterComicDelete = await getWorkset(ctx.sadmin, archiveWsId);
 
     assert.equal(archiveWsAfterComicDelete.comic_count, wsComicCountBefore - 1);
-    assert.equal(archiveWsAfterComicDelete.comic_next_index, wsComicNextBefore, "comic_next_index no backfill");
 
     // comicB's chapter (comicBCh1) -> 422/2
     expectError(await ctx.sadmin.get<ErrorBody>(`/api/v1/chapters/${comicBCh1}`), 422, 2);

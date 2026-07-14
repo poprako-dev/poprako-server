@@ -44,7 +44,6 @@ fn workset(id: &str, team_id: &str, index: i32) -> WorksetInfo {
         name: format!("workset-{}", index),
         description: None,
         comic_count: 0,
-        comic_next_index: 0,
         created_at: time,
         updated_at: time,
     }
@@ -96,7 +95,6 @@ fn comic_with_uploaded_cover(
         cover_uploaded: true,
         cover_version: 1,
         chapter_count: 0,
-        chapter_next_index: 0,
         creator_id: "user-1".into(),
         workset: None,
         team: None,
@@ -139,8 +137,6 @@ async fn create_allocates_index_and_persists() {
     assert_eq!(created.id, snapshot.worksets[0].id);
 
     assert_eq!(snapshot.worksets[0].index, 0);
-
-    assert_eq!(snapshot.teams[0].workset_next_index, 1);
 
     assert_eq!(snapshot.worksets.len(), 1);
 

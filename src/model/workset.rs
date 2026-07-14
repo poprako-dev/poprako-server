@@ -4,8 +4,7 @@ use time::OffsetDateTime;
 
 /// A minimal worksetrecord.
 ///
-/// Worksets are scoped to a team and keep denormalized comic counters for
-/// list views and comic index allocation.
+/// Worksets are scoped to a team and carry denormalized comic counters.
 #[derive(Clone)]
 pub struct WorksetInfo {
     pub id: String,
@@ -17,7 +16,6 @@ pub struct WorksetInfo {
     pub description: Option<String>,
 
     pub comic_count: i32,
-    pub comic_next_index: i32,
 
     pub created_at: OffsetDateTime,
     pub updated_at: OffsetDateTime,

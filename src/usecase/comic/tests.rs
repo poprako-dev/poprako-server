@@ -67,8 +67,6 @@ async fn create_allocates_index_and_updates_count() {
     // Workset
     assert_eq!(snapshot.worksets[0].comic_count, 1);
 
-    assert_eq!(snapshot.worksets[0].comic_next_index, 1);
-
     // First chapter
     assert_eq!(snapshot.chapters.len(), 1);
 
@@ -82,8 +80,6 @@ async fn create_allocates_index_and_updates_count() {
 
     // Denormalised chapter counters
     assert_eq!(snapshot.comics[0].chapter_count, 1);
-
-    assert_eq!(snapshot.comics[0].chapter_next_index, 1);
 
     // last_active_at should be set (not epoch)
     assert!(snapshot.comics[0].last_active_at.unix_timestamp() > 0);

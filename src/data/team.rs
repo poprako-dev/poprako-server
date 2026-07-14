@@ -27,8 +27,6 @@ pub struct TeamInfoVal {
     pub avatar_url: Option<String>,
     pub avatar_thumbnail_url: Option<String>,
 
-    pub workset_next_index: i32,
-
     pub created_at: i64,
     pub updated_at: i64,
 }
@@ -66,7 +64,6 @@ impl TeamInfoVal {
             description: model.description,
             avatar_url: avatar_url.map(Into::into),
             avatar_thumbnail_url: avatar_thumbnail_url.map(Into::into),
-            workset_next_index: model.workset_next_index,
             created_at: model.created_at.to_unix_milli(),
             updated_at: model.updated_at.to_unix_milli(),
         })

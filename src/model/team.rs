@@ -5,8 +5,7 @@ use time::OffsetDateTime;
 /// A teamrecord as stored in the database.
 ///
 /// Carries raw [`OffsetDateTime`] timestamps; convert to [`TeamInfoVal`] for
-/// presentation. The `workset_next_index` field is a monotonically increasing
-/// counter used to assign indices to new worksets within this team.
+/// presentation.
 ///
 /// [`TeamInfoVal`]: crate::data::team::TeamInfoVal
 #[derive(Clone)]
@@ -19,8 +18,6 @@ pub struct TeamInfo {
     pub avatar_key: Option<String>,
     pub avatar_uploaded: bool,
     pub avatar_version: u32,
-
-    pub workset_next_index: i32,
 
     pub created_at: OffsetDateTime,
     pub updated_at: OffsetDateTime,

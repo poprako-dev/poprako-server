@@ -71,7 +71,6 @@ fn team(id: &str) -> TeamInfo {
         avatar_key: None,
         avatar_uploaded: false,
         avatar_version: 0,
-        workset_next_index: 0,
         created_at: time,
         updated_at: time,
     }
@@ -88,7 +87,6 @@ fn workset(id: &str, team_id: &str) -> WorksetInfo {
         name: id.into(),
         description: None,
         comic_count: 0,
-        comic_next_index: 0,
         created_at: time,
         updated_at: time,
     }
@@ -109,7 +107,6 @@ fn comic(id: &str, workset_id: &str) -> ComicInfo {
         cover_uploaded: false,
         cover_version: 0,
         chapter_count: 1,
-        chapter_next_index: 1,
         creator_id: "creator-user".into(),
         workset: None,
         team: None,

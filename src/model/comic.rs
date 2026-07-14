@@ -1,11 +1,6 @@
 //! Domain models for comics inside worksets — core metadata, cover-storage
 //! tracking, and denormalised chapter counters.
 //!
-//! A comic is the primary grouping entity inside a workset: it owns chapters,
-//! pages, and a multi-step cover image upload flow. The `chapter_count` and
-//! `chapter_next_index` fields are denormalised counters refreshed by the
-//! chapter creation/deletion pipeline.
-//!
 //! Convert to [`ComicInfoVal`] for presentation outside the domain layer.
 //!
 //! [`ComicInfoVal`]: crate::data::comic::ComicInfoVal
@@ -43,7 +38,6 @@ pub struct ComicInfo {
     pub cover_version: u32,
 
     pub chapter_count: i32,
-    pub chapter_next_index: i32,
 
     pub creator_id: String,
 
@@ -60,8 +54,7 @@ pub struct ComicInfo {
 /// The data needed to insert a new comic row.
 ///
 /// Supplied at comic-creation time. The `id` is typically generated via
-/// [`ComicComplex::gen_id`]; the `index` is allocated by incrementing the
-/// parent workset's `comic_next_index` counter in the same transaction.
+/// [`ComicComplex::gen_id`]; the `index` is allocated by the repo layer.
 ///
 /// [`ComicComplex::gen_id`]: crate::complex::comic::ComicComplex::gen_id
 #[cfg_attr(test, derive(Clone))]

@@ -61,11 +61,11 @@ impl<'a> Oper for DeleteWorkset<'a> {
     type Output = ();
 }
 
-pub struct AllocateWorksetComicIndex<'a> {
+pub struct AllocWorksetComicIndex<'a> {
     pub id: &'a str,
 }
 
-impl<'a> Oper for AllocateWorksetComicIndex<'a> {
+impl<'a> Oper for AllocWorksetComicIndex<'a> {
     type Output = i32;
 }
 

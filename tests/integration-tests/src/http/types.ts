@@ -18,7 +18,6 @@ export interface TeamInfoVal {
     description: string;
     avatar_url: string | null;
     avatar_thumbnail_url: string | null;
-    workset_next_index: number;
     created_at: number;
     updated_at: number;
 }
@@ -30,7 +29,6 @@ export interface WorksetInfoVal {
     name: string;
     description: string | null;
     comic_count: number;
-    comic_next_index: number;
     created_at: number;
     updated_at: number;
 }
@@ -45,7 +43,6 @@ export interface ComicInfoVal {
     cover_url: string | null;
     cover_thumbnail_url: string | null;
     chapter_count: number;
-    chapter_next_index: number;
     creator_id: string;
     workset: WorksetInfoVal | null;
     team: TeamInfoVal | null;

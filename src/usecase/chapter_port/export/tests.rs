@@ -37,7 +37,6 @@ fn comic(id: &str) -> ComicInfo {
         cover_uploaded: false,
         cover_version: 0,
         chapter_count: 1,
-        chapter_next_index: 1,
         creator_id: "user-1".into(),
         workset: None,
         team: None,
@@ -59,7 +58,6 @@ fn workset(id: &str) -> WorksetInfo {
         name: "workset".into(),
         description: None,
         comic_count: 1,
-        comic_next_index: 1,
         created_at: time,
         updated_at: time,
     }
