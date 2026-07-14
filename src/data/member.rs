@@ -12,6 +12,7 @@ use futures::future::OptionFuture;
 
 use crate::data::team::TeamInfoVal;
 use crate::data::user::UserInfoVal;
+
 use crate::model::member::{MemberInfo, MemberListSpec};
 use crate::part::image::ImagePool;
 use crate::result::{ExpectedVariant, RegularError, RegularResult};
