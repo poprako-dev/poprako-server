@@ -88,7 +88,6 @@ pub struct MemberInvitationInfoVal {
     pub team_id: String,
 
     pub invitor_id: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub invitor: Option<UserInfoVal>,
 
     pub invitee_qid: String,

@@ -25,14 +25,10 @@ pub struct UnitInfoVal {
     pub x_coord: f64,
     pub y_coord: f64,
 
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub translated_text: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub last_translator_id: Option<String>,
 
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub proofread_text: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub last_proofreader_id: Option<String>,
 
     pub created_at: i64,

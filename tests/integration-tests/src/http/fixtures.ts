@@ -592,10 +592,23 @@ export async function deleteChapterPages(api: ApiClient, chapterId: string): Pro
 
 // ---------- unit ----------
 
+export interface UnitCreateOper {
+    oper: "create";
+    local_id: string;
+    before_id?: string | null;
+    is_bubble: boolean;
+    is_proofread: boolean;
+    x_coord: number;
+    y_coord: number;
+    translated_text?: string | null;
+    last_translator_id?: string | null;
+    proofread_text?: string | null;
+    last_proofreader_id?: string | null;
+}
+
 export interface UnitSaveOper {
     oper: "save";
-    local_id?: string;
-    id?: string | null;
+    id: string;
     before_id?: string | null;
     is_bubble: boolean;
     is_proofread: boolean;
@@ -612,18 +625,17 @@ export interface UnitDeleteOper {
     id: string;
 }
 
-export type UnitOper = UnitSaveOper | UnitDeleteOper;
+export type UnitOper = UnitCreateOper | UnitSaveOper | UnitDeleteOper;
 
 // Build a save oper for a brand-new bubble unit with no translation yet.
 export function newBubbleUnit(
     localId: string,
     xCoord: number,
     yCoord: number,
-): UnitSaveOper {
+): UnitCreateOper {
     return {
-        oper: "save",
+        oper: "create",
         local_id: localId,
-        id: null,
         before_id: null,
         is_bubble: true,
         is_proofread: false,

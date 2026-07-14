@@ -103,4 +103,4 @@ if [ ! -d node_modules ]; then
     pnpm install
 fi
 
-pnpm api
+./node_modules/.bin/tsx src/main.ts
