@@ -10,11 +10,13 @@ use poprako_util::time::ToUnixMilli;
 
 use crate::data::team::TeamInfoVal;
 use crate::data::user::UserInfoVal;
+
 use crate::model::member::{MemberInfo, MemberListSpec};
 use crate::part::image::ImagePool;
 use crate::result::{ExpectedVariant, RegularError, RegularResult};
 use crate::value::member::MemberInclOpt;
 use crate::value::role::{RoleField, RoleMask};
+use futures::future::OptionFuture;
 
 /// Presentation-ready membership information.
 #[derive(Debug, Serialize)]
@@ -61,32 +63,22 @@ impl MemberInfoVal {
     where
         P: ImagePool,
     {
-        let user = match model.user {
-            //
-            Some(user_info) => {
-                Some(UserInfoVal::from_model(image_pool, user_info).await?)
-            }
-
-            None => None,
-        };
-
-        let team = match model.team {
-            //
-            Some(team_info) => {
-                Some(TeamInfoVal::from_model(image_pool, team_info).await?)
-            }
-
-            None => None,
-        };
-
         Ok(Self {
             id: model.id,
             user_id: model.user_id,
             nickname: model.user_nickname,
             last_active_at: model.user_last_active_at.to_unix_milli(),
             team_id: model.team_id,
-            user,
-            team,
+            user: OptionFuture::from(model.user.map(|user_info| {
+                UserInfoVal::from_model(image_pool, user_info)
+            }))
+            .await
+            .transpose()?,
+            team: OptionFuture::from(model.team.map(|team_info| {
+                TeamInfoVal::from_model(image_pool, team_info)
+            }))
+            .await
+            .transpose()?,
             roles: model.roles,
         })
     }

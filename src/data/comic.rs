@@ -14,6 +14,7 @@ use utoipa::{IntoParams, ToSchema};
 use poprako_util::time::ToUnixMilli;
 
 use crate::data::chapter::ChapterInfoVal;
+
 use crate::data::team::TeamInfoVal;
 use crate::data::user::UserInfoVal;
 use crate::data::workset::WorksetInfoVal;
@@ -22,6 +23,7 @@ use crate::part::image::ImagePool;
 use crate::result::{RegularError, RegularResult};
 use crate::value::chapter::StageMask;
 use crate::value::comic::{ComicInclOpt, ComicWithOpt};
+use futures::future::OptionFuture;
 
 /// Presentation-ready comic information.
 ///
@@ -104,24 +106,6 @@ impl ComicInfoVal {
 
         let workset = model.workset.map(WorksetInfoVal::from);
 
-        let team = match model.team {
-            //
-            Some(team_info) => {
-                Some(TeamInfoVal::from_model(image_pool, team_info).await?)
-            }
-
-            None => None,
-        };
-
-        let creator = match model.creator {
-            //
-            Some(user_info) => {
-                Some(UserInfoVal::from_model(image_pool, user_info).await?)
-            }
-
-            None => None,
-        };
-
         Ok(Self {
             id: model.id,
             workset_id: model.workset_id,
@@ -135,8 +119,16 @@ impl ComicInfoVal {
             chapter_next_index: model.chapter_next_index,
             creator_id: model.creator_id,
             workset,
-            team,
-            creator,
+            team: OptionFuture::from(model.team.map(|team_info| {
+                TeamInfoVal::from_model(image_pool, team_info)
+            }))
+            .await
+            .transpose()?,
+            creator: OptionFuture::from(model.creator.map(|user_info| {
+                UserInfoVal::from_model(image_pool, user_info)
+            }))
+            .await
+            .transpose()?,
             pinned_chapter,
             last_active_at: model.last_active_at.to_unix_milli(),
             created_at: model.created_at.to_unix_milli(),
