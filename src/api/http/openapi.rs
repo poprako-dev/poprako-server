@@ -30,7 +30,7 @@ use crate::data::chapter_port::{
     ImportChapterTranslationPayload,
 };
 use crate::data::comic::{
-    ComicInfoVal, CreateComicParams, CreateComicPayload,
+    ComicInfoVal, CreateComicParams, CreateComicPayload, ListComicInfosPayload,
     MarkComicCoverUploadedParams, ReserveComicCoverParams,
     ReserveComicCoverPayload, UpdateComicInfoParams,
 };
@@ -175,6 +175,7 @@ use crate::value::role::RoleField;
         CreateWorksetPayload,
         UpdateWorksetInfoParams,
         ComicInfoVal,
+        ListComicInfosPayload,
         CreateComicParams,
         CreateComicPayload,
         UpdateComicInfoParams,

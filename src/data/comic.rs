@@ -15,10 +15,9 @@ use poprako_util::time::ToUnixMilli;
 
 use futures::future::OptionFuture;
 
-use crate::data::chapter::ChapterInfoVal;
-
 use crate::data::team::TeamInfoVal;
 use crate::data::user::UserInfoVal;
+use crate::data::chapter::ChapterInfoVal;
 use crate::data::workset::WorksetInfoVal;
 use crate::model::comic::{ComicInfo, ComicInfoListKind, ComicInfoListSpec};
 use crate::part::image::ImagePool;
@@ -62,9 +61,6 @@ pub struct ComicInfoVal {
     pub team: Option<TeamInfoVal>,
     pub creator: Option<UserInfoVal>,
 
-    #[cfg_attr(feature = "swagger-ui", schema(no_recursion))]
-    pub pinned_chapter: Option<ChapterInfoVal>,
-
     pub last_active_at: i64,
 
     pub created_at: i64,
@@ -82,7 +78,6 @@ impl ComicInfoVal {
     pub async fn from_model<P>(
         image_pool: &P,
         model: ComicInfo,
-        pinned_chapter: Option<ChapterInfoVal>,
         fallback_cover_key: Option<&str>,
     ) -> RegularResult<Self>
     where
@@ -130,7 +125,6 @@ impl ComicInfoVal {
             }))
             .await
             .transpose()?,
-            pinned_chapter,
             last_active_at: model.last_active_at.to_unix_milli(),
             created_at: model.created_at.to_unix_milli(),
             updated_at: model.updated_at.to_unix_milli(),
@@ -263,4 +257,16 @@ pub struct ReserveComicCoverPayload {
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
 pub struct MarkComicCoverUploadedParams {
     pub cover_version: u32,
+}
+
+/// Presentation-ready comic list and optional pinned chapters.
+///
+/// `pinned_chapters` is positionally aligned with `comics`. Its entries are
+/// populated only when the request includes `with=pinned_chapter`.
+#[derive(Debug, Serialize)]
+#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+pub struct ListComicInfosPayload {
+    pub comics: Vec<ComicInfoVal>,
+
+    pub pinned_chapters: Vec<Option<ChapterInfoVal>>,
 }

@@ -30,8 +30,7 @@ pub struct ChapterInfoVal {
     pub id: String,
     pub comic_id: String,
 
-    #[cfg_attr(feature = "swagger-ui", schema(no_recursion))]
-    pub comic: Option<Box<ComicInfoVal>>,
+    pub comic: Option<ComicInfoVal>,
 
     pub is_pinned: bool,
     pub index: i32,
@@ -92,13 +91,11 @@ impl ChapterInfoVal {
                 ComicInfoVal::from_model(
                     image_pool,
                     comic_info,
-                    None,
                     fallback_cover_key,
                 )
             }))
             .await
-            .transpose()?
-            .map(Box::new),
+            .transpose()?,
             is_pinned: model.is_pinned,
             index: model.index,
             subtitle: model.subtitle,

@@ -53,6 +53,7 @@ import {
     getWorkset,
     listComicChapters,
     listTeamWorksets,
+    listWorksetComicInfos,
     listWorksetComics,
     patchChapter,
     updateComic,
@@ -237,34 +238,37 @@ export async function runIt02Module(ctx: RunCtx): Promise<void> {
     }
 
     // workset comics list with with=pinned_chapter & incl=workset.team
-    const serialComics = await listWorksetComics(
+    const serialComicPayload = await listWorksetComicInfos(
         ctx.sadmin,
         serialWsId,
         "&with=pinned_chapter&incl=workset.team",
     );
 
+    const { comics: serialComics, pinned_chapters: pinnedChapters } = serialComicPayload;
+
     assert.equal(serialComics.length, 3);
 
-    for (const comic of serialComics) {
+    assert.equal(pinnedChapters.length, serialComics.length);
+
+    for (const [index, comic] of serialComics.entries()) {
         assert.ok(comic.workset, "incl=workset.team must embed workset");
         assert.equal(comic.workset?.id, serialWsId, "workset.id must be the parent workset");
         assert.equal(comic.workset?.team_id, teamId, "workset.team_id must be the default team");
         assert.ok(comic.team, "workset.team incl must populate comic.team");
         assert.equal(comic.team?.id, teamId, "comic.team.id must be the default team");
-        // New comics auto-pin their first chapter (server default). Accept
-        // either null or the first chapter; if non-null, it must be the
-        // first chapter id.
-        if (comic.pinned_chapter !== null) {
-            const firstChId = ctx.ids.firstChapterIds[
-                comicSpecs.find((spec) => ctx.ids.comicIds[spec.label] === comic.id)!.label
-            ];
+        const pinnedChapter = pinnedChapters[index];
 
-            assert.equal(
-                comic.pinned_chapter?.id,
-                firstChId,
-                "auto-pinned chapter must be the comic's first chapter",
-            );
-        }
+        assert.ok(pinnedChapter, "with=pinned_chapter must return a pinned chapter");
+
+        const firstChId = ctx.ids.firstChapterIds[
+            comicSpecs.find((spec) => ctx.ids.comicIds[spec.label] === comic.id)!.label
+        ];
+
+        assert.equal(
+            pinnedChapter.id,
+            firstChId,
+            "auto-pinned chapter must be the comic's first chapter",
+        );
     }
 
     // C3.6: non-admin create comic -> 403/4
