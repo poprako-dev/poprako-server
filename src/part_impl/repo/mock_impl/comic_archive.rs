@@ -183,7 +183,7 @@ fn commit(
 impl<'a> Step<GetComicArchiveSnapshotExcluded<'a>, MockContext> for Mock {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -196,7 +196,7 @@ impl<'a> Step<GetComicArchiveSnapshotExcluded<'a>, MockContext> for Mock {
 impl<'a> Step<CommitComicArchive<'a>, MockContext> for Mock {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,

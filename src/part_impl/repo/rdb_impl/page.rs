@@ -105,6 +105,29 @@ async fn list_all_infos_by_chapter_id(
     Ok(rows.into_iter().map(Into::into).collect())
 }
 
+/// Query the lowest-index page info for each requested chapter.
+#[instrument(level = "info", err(Debug), skip_all)]
+async fn list_first_infos_by_chapter_ids(
+    conn: &mut RdbConn,
+    chapter_ids: &[String],
+) -> RegularResult<HashMap<String, PageInfo>> {
+    //
+    let rows: Vec<PageRow> = t_page
+        .filter(f_chapter_id.eq_any(chapter_ids))
+        .select(PageRow::as_select())
+        .distinct_on(f_chapter_id)
+        .order_by((f_chapter_id.asc(), f_index.asc()))
+        .load(conn)
+        .await
+        .map_err(diesel)?;
+
+    Ok(rows
+        .into_iter()
+        .map(Into::into)
+        .map(|page_info: PageInfo| (page_info.chapter_id.clone(), page_info))
+        .collect())
+}
+
 /// Batch-insert pages from a slice of model_entries and return the created infos.
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn create_batch(
@@ -251,3 +274,4 @@ async fn delete_by_chapter_id(
 
 #[cfg(all(test, feature = "repo"))]
 mod tests;
+use std::collections::HashMap;

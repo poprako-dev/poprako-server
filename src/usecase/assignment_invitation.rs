@@ -362,7 +362,7 @@ where
         })
         .await?;
 
-    AssignmentInfoVal::from_model(image_pool, assignment_info).await
+    AssignmentInfoVal::from_model(image_pool, assignment_info, None).await
 }
 
 /// Verifies that the current user is assigned as a chapter administrator.

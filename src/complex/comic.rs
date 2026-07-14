@@ -1,8 +1,10 @@
 //! Complex-domain opers for comic entities: identity generation,
 //! cover-storage key management, and permission gates.
 
+use std::collections::HashMap;
+
 use poprako_orchestra::Proxy;
-use poprako_orchestra_extra::prom::oper::Defer;
+use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
 use poprako_orchestra_extra::prom::task::Task;
 
 use crate::complex::chapter::ChapterComplex;
@@ -10,23 +12,24 @@ use crate::complex::image::ImageComplex;
 use crate::complex::util::{
     check_user_is_team_admin, check_user_is_team_member,
 };
-use crate::part::prom::Prom;
 use crate::part::prom::payload::{Payload, image};
-use crate::part::repo::assignment::AssignmentRepo;
-use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
-use crate::part::repo::chapter::ChapterRepo;
-use crate::part::repo::comic::ComicRepo;
-use crate::part::repo::oper::chapter::ListChapterInfosExcluded;
+use crate::part::repo::oper::assignment::DeleteAssignments;
+use crate::part::repo::oper::assignment_invitation::DeleteAssignmentInvitations;
+use crate::part::repo::oper::chapter::{
+    DeleteChapter, GetChapterInfoExcluded, ListChapterInfosExcluded,
+    ListPinnedChapterInfos, UnpinOtherChapters, UpdateChapter,
+};
 use crate::part::repo::oper::comic::{
-    DeleteComic, GetComicInfo, GetComicInfoExcluded,
+    DeleteComic, GetComicInfo, GetComicInfoExcluded, TouchComicLastActive,
+    UpdateComicChapterCount,
 };
 use crate::part::repo::oper::member::FindMemberInfo;
+use crate::part::repo::oper::page::{
+    DeletePages, ListFirstPageInfos, ListPageInfos,
+};
 use crate::part::repo::oper::workset::{
     GetWorksetInfo, UpdateWorksetComicCount,
 };
-use crate::part::repo::page::PageRepo;
-use crate::part::repo::unit::UnitRepo;
-use crate::part::repo::workset::WorksetRepo;
 use crate::result::{RegularError, RegularResult};
 use crate::util::next_snowflake_id;
 use crate::value::index::stored_index_to_user_index;
@@ -53,52 +56,95 @@ impl ComicComplex {
         format!("{} {} {}", stored_index_to_user_index(index), author, title)
     }
 
-    /// Deletes a comic subtree inside an existing transaction context.
-    pub async fn delete_cascade<C, R, P>(
-        repo: &R,
-        prom: &P,
-        context: &mut C,
-        id: &str,
-    ) -> RegularResult<()>
+    /// Resolve uploaded first-page image keys for the comics' pinned chapters.
+    pub async fn resolve_fallback_cover_keys<P>(
+        proxy: &mut P,
+        comic_ids: &[String],
+    ) -> RegularResult<HashMap<String, String>>
     where
-        C: Send,
-        R: ComicRepo<C>
-            + WorksetRepo<C>
-            + ChapterRepo<C>
-            + PageRepo<C>
-            + AssignmentInvitationRepo<C>
-            + AssignmentRepo<C>
-            + UnitRepo<C>
-            + Send
-            + Sync,
-        P: Prom<C> + Send + Sync,
+        P: for<'a> Proxy<ListPinnedChapterInfos<'a>, Error = RegularError>
+            + for<'a> Proxy<ListFirstPageInfos<'a>, Error = RegularError>,
+    {
+        if comic_ids.is_empty() {
+            return Ok(HashMap::new());
+        }
+
+        let pinned_chapter_infos =
+            proxy.exec(&ListPinnedChapterInfos { comic_ids }).await?;
+
+        let chapter_ids = pinned_chapter_infos
+            .values()
+            .map(|chapter_info| chapter_info.id.clone())
+            .collect::<Vec<_>>();
+
+        let first_page_infos = proxy
+            .exec(&ListFirstPageInfos {
+                chapter_ids: &chapter_ids,
+            })
+            .await?;
+
+        let mut fallback_cover_keys = HashMap::new();
+
+        for (comic_id, chapter_info) in pinned_chapter_infos {
+            let Some(page_info) = first_page_infos.get(&chapter_info.id) else {
+                continue;
+            };
+
+            let (true, Some(image_key)) =
+                (page_info.image_uploaded, &page_info.image_key)
+            else {
+                continue;
+            };
+
+            fallback_cover_keys.insert(comic_id, image_key.clone());
+        }
+
+        Ok(fallback_cover_keys)
+    }
+
+    /// Deletes a comic subtree inside an existing transaction context.
+    pub async fn delete_cascade<P>(proxy: &mut P, id: &str) -> RegularResult<()>
+    where
+        P: for<'a, 'b> Proxy<
+                GetComicInfoExcluded<'a, 'b>,
+                Error = RegularError,
+            > + for<'a> Proxy<ListChapterInfosExcluded<'a>, Error = RegularError>
+            + for<'a> Proxy<DeleteComic<'a>, Error = RegularError>
+            + for<'a> Proxy<UpdateWorksetComicCount<'a>, Error = RegularError>
+            + for<'a, 'b> Proxy<
+                GetChapterInfoExcluded<'a, 'b>,
+                Error = RegularError,
+            > + for<'a> Proxy<ListPageInfos<'a>, Error = RegularError>
+            + for<'a> Proxy<DeleteAssignmentInvitations<'a>, Error = RegularError>
+            + for<'a> Proxy<DeleteAssignments<'a>, Error = RegularError>
+            + for<'a> Proxy<DeletePages<'a>, Error = RegularError>
+            + for<'a> Proxy<DeleteChapter<'a>, Error = RegularError>
+            + for<'a> Proxy<UpdateChapter<'a>, Error = RegularError>
+            + for<'a> Proxy<UnpinOtherChapters<'a>, Error = RegularError>
+            + for<'a> Proxy<UpdateComicChapterCount<'a>, Error = RegularError>
+            + for<'a> Proxy<TouchComicLastActive<'a>, Error = RegularError>
+            + for<'a> Proxy<Defer<'a, String, Payload, ()>, Error = RegularError>
+            + for<'t, 'a> Proxy<
+                DeferBatch<'t, 'a, String, Payload, ()>,
+                Error = RegularError,
+            >,
     {
         // SAFETY: Lock the root comic row (FOR UPDATE) to serialize with
         // concurrent chapter creations and cover uploads, preventing resource
         // leaks from chapters (and their page images) inserted between the
         // listing and the comic delete.
 
-        let comic_info = repo
-            .step(context, &GetComicInfoExcluded { id, incls: &[] })
-            .await?;
+        let comic_info =
+            proxy.exec(&GetComicInfoExcluded { id, incls: &[] }).await?;
 
-        let chapter_infos = repo
-            .step(
-                context,
-                &ListChapterInfosExcluded {
-                    comic_id: &comic_info.id,
-                },
-            )
+        let chapter_infos = proxy
+            .exec(&ListChapterInfosExcluded {
+                comic_id: &comic_info.id,
+            })
             .await?;
 
         for chapter_info in chapter_infos {
-            ChapterComplex::delete_cascade(
-                repo,
-                prom,
-                context,
-                &chapter_info.id,
-            )
-            .await?;
+            ChapterComplex::delete_cascade(proxy, &chapter_info.id).await?;
         }
 
         if let Some(cover_key) = &comic_info.cover_key
@@ -116,20 +162,17 @@ impl ComicComplex {
                 delay: None,
             };
 
-            prom.step(context, &Defer::new(task)).await?;
+            proxy.exec(&Defer::new(task)).await?;
         }
 
-        repo.step(context, &DeleteComic { id: &comic_info.id })
-            .await?;
+        proxy.exec(&DeleteComic { id: &comic_info.id }).await?;
 
-        repo.step(
-            context,
-            &UpdateWorksetComicCount {
+        proxy
+            .exec(&UpdateWorksetComicCount {
                 id: &comic_info.workset_id,
                 delta: -1,
-            },
-        )
-        .await?;
+            })
+            .await?;
 
         Ok(())
     }

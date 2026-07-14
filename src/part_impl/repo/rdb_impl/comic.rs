@@ -1,9 +1,9 @@
 use diesel::pg::Pg;
 use diesel::prelude::*;
-use tracing::instrument;
 use diesel::sql_types::Bool;
 use diesel_async::RunQueryDsl;
 use time::OffsetDateTime;
+use tracing::instrument;
 
 use crate::complex::comic::ComicComplex;
 use crate::model::comic::{

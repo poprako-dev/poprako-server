@@ -133,6 +133,14 @@ async fn get_info_returns_uploaded_cover_url() {
         "cover.png",
     ));
 
+    mock.seed_chapter(chapter(
+        "chapter-1",
+        "comic-1",
+        StageMask::try_from(0u32).ok().unwrap(),
+    ));
+
+    mock.seed_page(page("page-1", "chapter-1", 0, Some("fallback.png"), true));
+
     let found = get_info(&mock, &mock, token("user-1"), "comic-1".into()).await;
 
     assert!(found.is_ok());
@@ -149,6 +157,95 @@ async fn get_info_returns_uploaded_cover_url() {
     assert_eq!(
         found.cover_thumbnail_url,
         Some("https://test.local/cdn-cgi/image/width=300,fit=scale-down,quality=80,format=auto,metadata=none/cover.png".into())
+    );
+}
+
+#[tokio::test]
+async fn get_info_falls_back_to_uploaded_first_pinned_page() {
+    //
+    let mock = Mock::new();
+
+    mock.seed_workset(workset("workset-1", "team-1"));
+    mock.seed_member(admin_member("user-1", "team-1"));
+    mock.seed_comic(comic("comic-1", "workset-1", 0));
+    mock.seed_chapter(chapter(
+        "chapter-1",
+        "comic-1",
+        StageMask::try_from(0u32).ok().unwrap(),
+    ));
+    mock.seed_page(page("page-later", "chapter-1", 1, Some("later.png"), true));
+    mock.seed_page(page("page-first", "chapter-1", 0, Some("first.png"), true));
+
+    let found = get_info(&mock, &mock, token("user-1"), "comic-1".into())
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        found.cover_url,
+        Some("https://test.local/get/first.png".into())
+    );
+    assert_eq!(
+        found.cover_thumbnail_url,
+        Some("https://test.local/cdn-cgi/image/width=300,fit=scale-down,quality=80,format=auto,metadata=none/first.png".into())
+    );
+}
+
+#[tokio::test]
+async fn list_infos_omits_fallback_without_usable_first_pinned_page() {
+    //
+    let mock = Mock::new();
+
+    mock.seed_workset(workset("workset-1", "team-1"));
+    mock.seed_member(admin_member("user-1", "team-1"));
+    mock.seed_comic(comic("no-chapter", "workset-1", 0));
+    mock.seed_comic(comic("no-page", "workset-1", 1));
+    mock.seed_comic(comic("not-uploaded", "workset-1", 2));
+    mock.seed_chapter(chapter(
+        "chapter-no-page",
+        "no-page",
+        StageMask::try_from(0u32).ok().unwrap(),
+    ));
+    mock.seed_chapter(chapter(
+        "chapter-not-uploaded",
+        "not-uploaded",
+        StageMask::try_from(0u32).ok().unwrap(),
+    ));
+    mock.seed_page(page(
+        "page-not-uploaded",
+        "chapter-not-uploaded",
+        0,
+        Some("pending.png"),
+        false,
+    ));
+
+    let found = list_infos(
+        &mock,
+        &mock,
+        token("user-1"),
+        ListComicInfosParams {
+            workset_id: "workset-1".into(),
+            fuzzy_title: None,
+            stages: None,
+            incl_opt: Vec::new(),
+            with_opt: Vec::new(),
+            offset: 0,
+            limit: 10,
+        },
+    )
+    .await
+    .ok()
+    .unwrap();
+
+    assert!(
+        found
+            .iter()
+            .all(|comic_info| comic_info.cover_url.is_none())
+    );
+    assert!(
+        found
+            .iter()
+            .all(|comic_info| comic_info.cover_thumbnail_url.is_none())
     );
 }
 

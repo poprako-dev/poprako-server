@@ -176,7 +176,7 @@ where
 {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -214,7 +214,7 @@ where
 {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -252,7 +252,7 @@ where
 {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -285,7 +285,7 @@ where
 {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -318,7 +318,7 @@ where
 {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -354,7 +354,7 @@ where
 {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -412,7 +412,7 @@ where
 {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,

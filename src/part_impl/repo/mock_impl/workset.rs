@@ -85,7 +85,7 @@ fn update_workset(
 impl<'a> Run<GetWorksetInfo<'a>> for Mock {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &GetWorksetInfo<'a>,
@@ -100,7 +100,7 @@ impl<'a> Run<GetWorksetInfo<'a>> for Mock {
 impl<'a> Run<ListWorksetInfos<'a>> for Mock {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &ListWorksetInfos<'a>,
@@ -115,7 +115,7 @@ impl<'a> Run<ListWorksetInfos<'a>> for Mock {
 impl<'a> Run<UpdateWorkset<'a>> for Mock {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(&self, oper: &UpdateWorkset<'a>) -> RegularResult<()> {
         //
         let mut state = self.state.lock().unwrap();
@@ -127,7 +127,7 @@ impl<'a> Run<UpdateWorkset<'a>> for Mock {
 impl<'a> Step<GetWorksetInfo<'a>, MockContext> for Mock {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -140,7 +140,7 @@ impl<'a> Step<GetWorksetInfo<'a>, MockContext> for Mock {
 impl<'a> Step<ListWorksetInfos<'a>, MockContext> for Mock {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -153,7 +153,7 @@ impl<'a> Step<ListWorksetInfos<'a>, MockContext> for Mock {
 impl<'a> Step<GetWorksetInfoExcluded<'a>, MockContext> for Mock {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -166,7 +166,7 @@ impl<'a> Step<GetWorksetInfoExcluded<'a>, MockContext> for Mock {
 impl<'a> Step<ListWorksetInfosExcluded<'a>, MockContext> for Mock {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -185,7 +185,7 @@ impl<'a> Step<ListWorksetInfosExcluded<'a>, MockContext> for Mock {
 impl<'a> Step<CreateWorkset<'a>, MockContext> for Mock {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -224,7 +224,7 @@ impl<'a> Step<CreateWorkset<'a>, MockContext> for Mock {
 impl<'a> Step<DeleteWorkset<'a>, MockContext> for Mock {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -284,7 +284,7 @@ impl<'a> Step<DeleteWorkset<'a>, MockContext> for Mock {
 impl<'a> Step<AllocateWorksetComicIndex<'a>, MockContext> for Mock {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -311,7 +311,7 @@ impl<'a> Step<AllocateWorksetComicIndex<'a>, MockContext> for Mock {
 impl<'a> Step<UpdateWorksetComicCount<'a>, MockContext> for Mock {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,

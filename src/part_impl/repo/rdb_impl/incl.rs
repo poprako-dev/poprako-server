@@ -196,7 +196,7 @@ impl BatchByIds for UserByIds {
     type Row = UserRow;
     type Info = UserInfo;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn load(
         conn: &mut RdbConn,
         ids: Vec<&str>,
@@ -224,7 +224,7 @@ impl BatchByIds for TeamByIds {
     type Row = TeamRow;
     type Info = TeamInfo;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn load(
         conn: &mut RdbConn,
         ids: Vec<&str>,
@@ -252,7 +252,7 @@ impl BatchByIds for WorksetByIds {
     type Row = WorksetRow;
     type Info = WorksetInfo;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn load(
         conn: &mut RdbConn,
         ids: Vec<&str>,
@@ -280,7 +280,7 @@ impl BatchByIds for ComicByIds {
     type Row = ComicRow;
     type Info = ComicInfo;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn load(
         conn: &mut RdbConn,
         ids: Vec<&str>,
@@ -308,7 +308,7 @@ impl BatchByIds for ChapterByIds {
     type Row = ChapterRow;
     type Info = ChapterInfo;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn load(
         conn: &mut RdbConn,
         ids: Vec<&str>,

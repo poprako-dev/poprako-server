@@ -266,7 +266,7 @@ fn list_comic_infos(
 impl<'a, 'b> Run<GetComicInfo<'a, 'b>> for Mock {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &GetComicInfo<'a, 'b>,
@@ -281,7 +281,7 @@ impl<'a, 'b> Run<GetComicInfo<'a, 'b>> for Mock {
 impl<'a> Run<ListComicInfos<'a>> for Mock {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &ListComicInfos<'a>,
@@ -296,7 +296,7 @@ impl<'a> Run<ListComicInfos<'a>> for Mock {
 impl<'a> Run<UpdateComic<'a>> for Mock {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(&self, oper: &UpdateComic<'a>) -> Result<(), Self::Error> {
         //
         let mut state = self.state.lock().unwrap();
@@ -322,7 +322,7 @@ impl<'a> Run<UpdateComic<'a>> for Mock {
 impl<'a> Run<MarkComicCoverUploaded<'a>> for Mock {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &MarkComicCoverUploaded<'a>,
@@ -337,7 +337,7 @@ impl<'a> Run<MarkComicCoverUploaded<'a>> for Mock {
 impl<'a> Step<CreateComic<'a>, MockContext> for Mock {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -385,7 +385,7 @@ impl<'a> Step<CreateComic<'a>, MockContext> for Mock {
 impl<'a, 'b> Step<GetComicInfo<'a, 'b>, MockContext> for Mock {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -398,7 +398,7 @@ impl<'a, 'b> Step<GetComicInfo<'a, 'b>, MockContext> for Mock {
 impl<'a, 'b> Step<GetComicInfoExcluded<'a, 'b>, MockContext> for Mock {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -411,7 +411,7 @@ impl<'a, 'b> Step<GetComicInfoExcluded<'a, 'b>, MockContext> for Mock {
 impl<'a> Step<ListComicInfosExcluded<'a>, MockContext> for Mock {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -424,7 +424,7 @@ impl<'a> Step<ListComicInfosExcluded<'a>, MockContext> for Mock {
 impl<'a> Step<ListComicInfos<'a>, MockContext> for Mock {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -437,7 +437,7 @@ impl<'a> Step<ListComicInfos<'a>, MockContext> for Mock {
 impl<'a> Step<ReserveComicCover<'a>, MockContext> for Mock {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -480,7 +480,7 @@ impl<'a> Step<ReserveComicCover<'a>, MockContext> for Mock {
 impl<'a> Step<MarkComicCoverUploaded<'a>, MockContext> for Mock {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -497,7 +497,7 @@ impl<'a> Step<MarkComicCoverUploaded<'a>, MockContext> for Mock {
 impl<'a> Step<DeleteComic<'a>, MockContext> for Mock {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -547,7 +547,7 @@ impl<'a> Step<DeleteComic<'a>, MockContext> for Mock {
 impl<'a> Step<AllocateComicChapterIndex<'a>, MockContext> for Mock {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -574,7 +574,7 @@ impl<'a> Step<AllocateComicChapterIndex<'a>, MockContext> for Mock {
 impl<'a> Step<UpdateComicChapterCount<'a>, MockContext> for Mock {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -599,7 +599,7 @@ impl<'a> Step<UpdateComicChapterCount<'a>, MockContext> for Mock {
 impl<'a> Step<TouchComicLastActive<'a>, MockContext> for Mock {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,

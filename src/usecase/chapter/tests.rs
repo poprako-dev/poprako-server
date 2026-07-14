@@ -27,7 +27,7 @@ use crate::part::prom::payload::image::Payload as ImagePayload;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;
-use crate::value::chapter::Stage;
+use crate::value::chapter::{ChapterInclOpt, Stage};
 
 mod fixture;
 
@@ -64,6 +64,36 @@ async fn list_infos_paginates_sorted_chapters() {
     assert_eq!(list.len(), 1);
 
     assert_eq!(list[0].id, "chapter-2");
+}
+
+#[tokio::test]
+async fn list_infos_resolves_embedded_comic_fallback_cover() {
+    //
+    let mock = Mock::new();
+
+    seed_scope(&mock, "user-1", RoleMask::from(RoleField::TRANSLATOR));
+    mock.seed_chapter(chapter("chapter-1", "comic-1", 1, true));
+    mock.seed_page(page("page-1", "chapter-1", Some("page.png")));
+
+    let found = list_infos(
+        &mock,
+        &mock,
+        token("user-1"),
+        ListChapterInfosParams {
+            comic_id: "comic-1".into(),
+            incl_opt: vec![ChapterInclOpt::Comic],
+            offset: 0,
+            limit: 10,
+        },
+    )
+    .await
+    .ok()
+    .unwrap();
+
+    assert_eq!(
+        found[0].comic.as_ref().unwrap().cover_url,
+        Some("https://test.local/get/page.png".into())
+    );
 }
 
 #[tokio::test]

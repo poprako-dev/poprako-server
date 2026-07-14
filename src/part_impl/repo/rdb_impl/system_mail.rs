@@ -128,7 +128,7 @@ async fn mark_read(
 impl Run<SendSystemMail<'_>> for RdbRepo {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(&self, oper: &SendSystemMail<'_>) -> RegularResult<()> {
         submit_query!(self.core, send, oper.entry)
     }
@@ -137,7 +137,7 @@ impl Run<SendSystemMail<'_>> for RdbRepo {
 impl Run<SendSystemMails<'_>> for RdbRepo {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(&self, oper: &SendSystemMails<'_>) -> RegularResult<()> {
         submit_query!(self.core, send_batch, oper.entries)
     }
@@ -146,7 +146,7 @@ impl Run<SendSystemMails<'_>> for RdbRepo {
 impl Run<ListSystemMailInfos<'_>> for RdbRepo {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &ListSystemMailInfos<'_>,
@@ -165,7 +165,7 @@ impl Run<ListSystemMailInfos<'_>> for RdbRepo {
 impl Run<MarkSystemMailRead<'_>> for RdbRepo {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(&self, oper: &MarkSystemMailRead<'_>) -> RegularResult<()> {
         submit_query!(self.core, mark_read, oper.id, oper.user_id)
     }

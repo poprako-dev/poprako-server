@@ -387,7 +387,7 @@ async fn delete_by_chapter_id(
 impl Run<FindAssignmentInfo<'_, '_>> for RdbRepo {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &FindAssignmentInfo<'_, '_>,
@@ -422,7 +422,7 @@ impl Run<FindAssignmentInfo<'_, '_>> for RdbRepo {
 impl Run<ListAssignmentInfos<'_, '_>> for RdbRepo {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &ListAssignmentInfos<'_, '_>,
@@ -451,7 +451,7 @@ impl Run<ListAssignmentInfos<'_, '_>> for RdbRepo {
 impl Run<GetAssignmentInfo<'_, '_>> for RdbRepo {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &GetAssignmentInfo<'_, '_>,
@@ -463,7 +463,7 @@ impl Run<GetAssignmentInfo<'_, '_>> for RdbRepo {
 impl Step<ListAssignmentInfos<'_, '_>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -495,7 +495,7 @@ impl Step<ListAssignmentInfos<'_, '_>, RdbContext> for RdbRepo {
 impl Step<FindAssignmentInfo<'_, '_>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -535,7 +535,7 @@ impl Step<FindAssignmentInfo<'_, '_>, RdbContext> for RdbRepo {
 impl Step<ListAssignmentInfosExcluded<'_>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -553,7 +553,7 @@ impl Step<ListAssignmentInfosExcluded<'_>, RdbContext> for RdbRepo {
 impl Step<CreateAssignment<'_>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -566,7 +566,7 @@ impl Step<CreateAssignment<'_>, RdbContext> for RdbRepo {
 impl Step<UpdateAssignmentRoles<'_>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -579,7 +579,7 @@ impl Step<UpdateAssignmentRoles<'_>, RdbContext> for RdbRepo {
 impl Step<DeleteAssignments<'_>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,

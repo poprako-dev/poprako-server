@@ -1,11 +1,13 @@
 //! Chapter use cases — list, read, create, update, and deletion.
 
-use poprako_orchestra::{Nucl, run_proxy};
+use poprako_orchestra::{Nucl, run_proxy, step_proxy};
+use poprako_orchestra_extra::prom::oper::DeferBatch;
 
 use tracing::instrument;
 
 use crate::complex::assignment::AssignmentComplex;
 use crate::complex::chapter::{ChapterComplex, ChapterPermComplex};
+use crate::complex::comic::ComicComplex;
 use crate::data::chapter::{
     ChapterInfoVal, CreateChapterParams, CreateChapterPayload,
     ListChapterInfosParams, UpdateChapterInfoParams, UpdateChapterStageParams,
@@ -22,24 +24,30 @@ use crate::part::effect::event::chapter::{
 };
 use crate::part::image::ImagePool;
 use crate::part::prom::Prom;
+use crate::part::prom::payload::Payload;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::assignment::{
-    CreateAssignment, FindAssignmentInfo,
+    CreateAssignment, DeleteAssignments, FindAssignmentInfo,
 };
+use crate::part::repo::oper::assignment_invitation::DeleteAssignmentInvitations;
 use crate::part::repo::oper::chapter::{
-    CreateChapter, FindPinnedChapterInfo, GetChapterInfo,
+    CreateChapter, DeleteChapter, FindPinnedChapterInfo, GetChapterInfo,
     GetChapterInfoExcluded, ListChapterInfos, ListChapterInfosExcluded,
-    UnpinOtherChapters, UpdateChapter, UpdateChapterStage,
+    ListPinnedChapterInfos, UnpinOtherChapters, UpdateChapter,
+    UpdateChapterStage,
 };
 use crate::part::repo::oper::comic::{
     AllocateComicChapterIndex, GetComicInfo, TouchComicLastActive,
     UpdateComicChapterCount,
 };
 use crate::part::repo::oper::member::FindMemberInfo;
+use crate::part::repo::oper::page::{
+    DeletePages, ListFirstPageInfos, ListPageInfos,
+};
 use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::unit::UnitRepo;
@@ -60,7 +68,12 @@ pub async fn list_infos<C, R, I>(
     params: ListChapterInfosParams,
 ) -> RegularResult<Vec<ChapterInfoVal>>
 where
-    R: ChapterRepo<C> + ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Sync,
+    R: ChapterRepo<C>
+        + ComicRepo<C>
+        + WorksetRepo<C>
+        + MemberRepo<C>
+        + PageRepo<C>
+        + Sync,
     I: ImagePool,
 {
     ChapterPermComplex::ensure_user_can_list_infos(
@@ -84,11 +97,39 @@ where
 
     let chapter_infos = repo.run(&ListChapterInfos { spec: &spec }).await?;
 
+    let comic_ids = chapter_infos
+        .iter()
+        .filter_map(|chapter_info| chapter_info.comic.as_ref())
+        .map(|comic_info| comic_info.id.clone())
+        .collect::<Vec<_>>();
+
+    let fallback_cover_keys = ComicComplex::resolve_fallback_cover_keys(
+        &mut run_proxy! {
+            repo =>
+                for<'a> ListPinnedChapterInfos<'a>,
+                for<'a> ListFirstPageInfos<'a>;
+        },
+        &comic_ids,
+    )
+    .await?;
+
     let mut chapter_info_vals = Vec::with_capacity(chapter_infos.len());
 
     for chapter_info in chapter_infos {
-        chapter_info_vals
-            .push(ChapterInfoVal::from_model(image_pool, chapter_info).await?);
+        let fallback_cover_key = chapter_info
+            .comic
+            .as_ref()
+            .and_then(|comic_info| fallback_cover_keys.get(&comic_info.id))
+            .map(String::as_str);
+
+        chapter_info_vals.push(
+            ChapterInfoVal::from_model(
+                image_pool,
+                chapter_info,
+                fallback_cover_key,
+            )
+            .await?,
+        );
     }
 
     Ok(chapter_info_vals)
@@ -460,9 +501,11 @@ where
                 // TODO: archive this chapter and relevant assignments.
 
                 ChapterComplex::clean_uploaded_images(
-                    repo,
-                    prom,
-                    context,
+                    &mut step_proxy! {
+                        context;
+                        repo => for<'a> ListPageInfos<'a>;
+                        prom => for<'t, 'a> DeferBatch<'t, 'a, String, Payload, ()>;
+                    },
                     &chapter_info.id,
                 )
                 .await?;
@@ -528,7 +571,26 @@ where
 
     nucl.coord(async move |context| -> RegularResult<()> {
         //
-        ChapterComplex::delete_cascade(repo, prom, context, &id).await?;
+        ChapterComplex::delete_cascade(
+            &mut step_proxy! {
+                context;
+                repo =>
+                    for<'a, 'b> GetChapterInfoExcluded<'a, 'b>,
+                    for<'a> ListPageInfos<'a>,
+                    for<'a> DeleteAssignmentInvitations<'a>,
+                    for<'a> DeleteAssignments<'a>,
+                    for<'a> DeletePages<'a>,
+                    for<'a> DeleteChapter<'a>,
+                    for<'a> ListChapterInfosExcluded<'a>,
+                    for<'a> UpdateChapter<'a>,
+                    for<'a> UnpinOtherChapters<'a>,
+                    for<'a> UpdateComicChapterCount<'a>,
+                    for<'a> TouchComicLastActive<'a>;
+                prom => for<'t, 'a> DeferBatch<'t, 'a, String, Payload, ()>;
+            },
+            &id,
+        )
+        .await?;
 
         accept(())
     })

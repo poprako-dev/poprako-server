@@ -8,6 +8,7 @@ use tracing::instrument;
 
 use crate::complex::assignment::{AssignmentComplex, AssignmentPermComplex};
 use crate::complex::chapter::ChapterPermComplex;
+use crate::complex::comic::ComicComplex;
 use crate::data::assignment::{
     AssignmentInfoVal, JoinChapterAssignmentParams, ListAssignmentInfosParams,
     UpdateAssignmentRolesParams,
@@ -26,11 +27,15 @@ use crate::part::repo::oper::assignment::{
     CreateAssignment, DeleteAssignments, FindAssignmentInfo, GetAssignmentInfo,
     ListAssignmentInfos, ListAssignmentInfosExcluded, UpdateAssignmentRoles,
 };
-use crate::part::repo::oper::chapter::GetChapterInfo;
+use crate::part::repo::oper::chapter::{
+    GetChapterInfo, ListPinnedChapterInfos,
+};
 use crate::part::repo::oper::comic::GetComicInfo;
 use crate::part::repo::oper::member::FindMemberInfo;
+use crate::part::repo::oper::page::ListFirstPageInfos;
 use crate::part::repo::oper::user::GetUserInfo;
 use crate::part::repo::oper::workset::GetWorksetInfo;
+use crate::part::repo::page::PageRepo;
 use crate::part::repo::user::UserRepo;
 use crate::part::repo::workset::WorksetRepo;
 use crate::result::{ExpectedVariant, RegularError, RegularResult};
@@ -53,6 +58,7 @@ where
         + WorksetRepo<C>
         + MemberRepo<C>
         + UserRepo<C>
+        + PageRepo<C>
         + Sync,
     I: ImagePool,
 {
@@ -79,11 +85,40 @@ where
         })
         .await?;
 
+    let comic_ids = assignment_infos
+        .iter()
+        .filter_map(|assignment_info| assignment_info.chapter.as_ref())
+        .filter_map(|chapter_info| chapter_info.comic.as_ref())
+        .map(|comic_info| comic_info.id.clone())
+        .collect::<Vec<_>>();
+
+    let fallback_cover_keys = ComicComplex::resolve_fallback_cover_keys(
+        &mut run_proxy! {
+            repo =>
+                for<'a> ListPinnedChapterInfos<'a>,
+                for<'a> ListFirstPageInfos<'a>;
+        },
+        &comic_ids,
+    )
+    .await?;
+
     let mut assignment_info_vals = Vec::with_capacity(assignment_infos.len());
 
     for assignment_info in assignment_infos {
+        let fallback_cover_key = assignment_info
+            .chapter
+            .as_ref()
+            .and_then(|chapter_info| chapter_info.comic.as_ref())
+            .and_then(|comic_info| fallback_cover_keys.get(&comic_info.id))
+            .map(String::as_str);
+
         assignment_info_vals.push(
-            AssignmentInfoVal::from_model(image_pool, assignment_info).await?,
+            AssignmentInfoVal::from_model(
+                image_pool,
+                assignment_info,
+                fallback_cover_key,
+            )
+            .await?,
         );
     }
 

@@ -242,7 +242,7 @@ fn delete_team(state: &mut MockState, id: &str) -> RegularResult<()> {
 impl<'a> Run<CreateTeam<'a>> for Mock {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(&self, oper: &CreateTeam<'a>) -> RegularResult<TeamInfo> {
         //
         let mut state = self.state.lock().unwrap();
@@ -254,7 +254,7 @@ impl<'a> Run<CreateTeam<'a>> for Mock {
 impl<'a> Run<GetTeamInfo<'a>> for Mock {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(&self, oper: &GetTeamInfo<'a>) -> RegularResult<TeamInfo> {
         //
         let state = self.state.lock().unwrap();
@@ -268,7 +268,7 @@ impl<'a> Run<GetTeamInfo<'a>> for Mock {
 impl<'a> Run<ListTeamInfos<'a>> for Mock {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &ListTeamInfos<'a>,
@@ -283,7 +283,7 @@ impl<'a> Run<ListTeamInfos<'a>> for Mock {
 impl<'a> Run<UpdateTeam<'a>> for Mock {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(&self, oper: &UpdateTeam<'a>) -> RegularResult<()> {
         //
         let mut state = self.state.lock().unwrap();
@@ -295,7 +295,7 @@ impl<'a> Run<UpdateTeam<'a>> for Mock {
 impl<'a> Step<CreateTeam<'a>, MockContext> for Mock {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -313,7 +313,7 @@ impl<'a> Step<CreateTeam<'a>, MockContext> for Mock {
 impl<'a> Step<UpdateTeam<'a>, MockContext> for Mock {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -326,7 +326,7 @@ impl<'a> Step<UpdateTeam<'a>, MockContext> for Mock {
 impl<'a> Step<ReserveTeamAvatar<'a>, MockContext> for Mock {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -339,7 +339,7 @@ impl<'a> Step<ReserveTeamAvatar<'a>, MockContext> for Mock {
 impl<'a> Step<GetTeamInfoExcluded<'a>, MockContext> for Mock {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -354,7 +354,7 @@ impl<'a> Step<GetTeamInfoExcluded<'a>, MockContext> for Mock {
 impl<'a> Step<DeleteTeam<'a>, MockContext> for Mock {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -367,7 +367,7 @@ impl<'a> Step<DeleteTeam<'a>, MockContext> for Mock {
 impl<'a> Step<AllocateTeamWorksetIndex<'a>, MockContext> for Mock {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
