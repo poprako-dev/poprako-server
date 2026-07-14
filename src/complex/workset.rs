@@ -16,10 +16,9 @@ use crate::part::repo::oper::chapter::{
     DeleteChapter, GetChapterInfoExcluded, ListChapterInfosExcluded,
     UnpinOtherChapters, UpdateChapter,
 };
-use crate::part::repo::oper::comic::ListComicInfosExcluded;
 use crate::part::repo::oper::comic::{
-    DeleteComic, GetComicInfoExcluded, TouchComicLastActive,
-    UpdateComicChapterCount,
+    DeleteComic, GetComicInfoExcluded, ListComicInfosExcluded,
+    TouchComicLastActive, UpdateComicChapterCount,
 };
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::page::{DeletePages, ListPageInfos};

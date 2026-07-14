@@ -2,6 +2,7 @@ use crate::model::termbase::TermbaseEntry;
 use crate::result::{ExpectedVariant, RegularError, RegularResult};
 use crate::util::next_snowflake_id;
 
+/// Input parameters for creating a termbase, scoped to exactly one of team or comic.
 pub struct CreateTermbaseParams {
     pub name: String,
     pub team_id: Option<String>,

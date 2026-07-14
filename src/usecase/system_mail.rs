@@ -1,8 +1,8 @@
 //! System mail use cases — list unread and mark as read for the current user.
 
-use poprako_util::time::ToUnixMilli as _;
-
 use tracing::instrument;
+
+use poprako_util::time::ToUnixMilli as _;
 
 use crate::data::system_mail::{ListSystemMailInfosParams, SystemMailInfoVal};
 use crate::model::user::UserToken;

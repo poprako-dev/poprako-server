@@ -39,9 +39,13 @@ const PROCESSING_TIMEOUT: Duration = Duration::minutes(15);
 const COMPLETED_RETENTION: Duration = Duration::days(7);
 const COMPLETED_PURGE_INTERVAL: Duration = Duration::hours(1);
 
+/// Outcome of processing one prom task — dictates how the handler updates the record.
 pub enum TaskFlow {
+    /// Task completed successfully; move record to Completed status.
     Complete,
+    /// Task encountered a transient error; schedule for retry.
     Retry(String),
+    /// Task encountered a fatal error; move record to Dead status.
     Dead(String),
 }
 
@@ -72,6 +76,7 @@ where
         + 'static,
     I: ImageManager + Send + Sync + 'static,
 {
+    /// Builds a new prom background handler from its core, nucl, repo, and lifecycle channels.
     pub fn new(
         core: RdbCore,
         nucl: D,
@@ -93,6 +98,7 @@ where
     }
 
     #[instrument(level = "info", skip_all)]
+    /// Runs the prom polling loop — polls, dispatches, completes, and purges until shutdown.
     pub async fn run(mut self) {
         //
         let mut next_completed_purge_at = OffsetDateTime::now_utc();

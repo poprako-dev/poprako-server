@@ -1,11 +1,11 @@
 //! Unit use cases — list and save page unit sequences.
 
+use tracing::instrument;
+
 use poprako_orchestra::{Nucl, run_proxy, step_proxy};
 
 use poprako_util::i18n::trl;
 use poprako_util::page::Page;
-
-use tracing::instrument;
 
 use crate::complex::unit::{UnitComplex, UnitPermComplex};
 use crate::data::unit::{

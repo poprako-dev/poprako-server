@@ -1,11 +1,11 @@
 //! Assignment invitation use cases.
 
+use tracing::instrument;
+
 use poprako_orchestra::Nucl;
 
 use poprako_util::i18n::trl;
 use poprako_util::page::Page;
-
-use tracing::instrument;
 
 use crate::complex::assignment::AssignmentComplex;
 use crate::data::assignment::AssignmentInfoVal;

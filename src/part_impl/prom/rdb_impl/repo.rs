@@ -34,6 +34,7 @@ pub struct RdbPromRepo<R> {
 }
 
 impl<R> RdbPromRepo<R> {
+    /// Builds a new prom repository wrapping the given application repo.
     pub fn new(repo: R) -> Self {
         Self { repo }
     }

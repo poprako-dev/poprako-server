@@ -73,6 +73,7 @@ where
     I: ImagePool + Sync,
     V: EffectDevelop + Sync,
 {
+    /// Builds a new `Harn` from the given port implementations.
     pub fn new(
         drive: D,
         repo: R,
@@ -94,26 +95,32 @@ where
         }
     }
 
+    /// Returns a reference to the transaction driver.
     pub fn drive(&self) -> &D {
         &self.inner.drive
     }
 
+    /// Returns a reference to the repository bundle.
     pub fn repo(&self) -> &R {
         &self.inner.repo
     }
 
+    /// Returns a reference to the prom (deferred task) enqueuer.
     pub fn prom(&self) -> &P {
         &self.inner.prom
     }
 
+    /// Returns a reference to the auth (token signer).
     pub fn auth(&self) -> &A {
         &self.inner.auth
     }
 
+    /// Returns a reference to the image pool (upload/download URL signing).
     pub fn image_pool(&self) -> &I {
         &self.inner.image_pool
     }
 
+    /// Returns a reference to the side-effect (event) processor.
     pub fn develop(&self) -> &V {
         &self.inner.develop
     }

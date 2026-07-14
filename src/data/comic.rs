@@ -11,9 +11,9 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "swagger-ui")]
 use utoipa::{IntoParams, ToSchema};
 
-use poprako_util::time::ToUnixMilli;
-
 use futures::future::OptionFuture;
+
+use poprako_util::time::ToUnixMilli;
 
 use crate::data::team::TeamInfoVal;
 use crate::data::user::UserInfoVal;

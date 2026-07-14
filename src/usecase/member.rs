@@ -1,10 +1,10 @@
 //! Member use cases: create, join, list, role update, and deletion.
 
+use tracing::instrument;
+
 use poprako_orchestra::{Nucl, run_proxy};
 
 use poprako_util::i18n::trl;
-
-use tracing::instrument;
 
 use crate::complex::member::{MemberComplex, MemberPermComplex};
 use crate::data::member::{
@@ -286,7 +286,7 @@ where
     )
     .await?;
 
-    let transaction_output = nucl
+    nucl
         .coord(async move |context| -> RegularResult<()> {
             //
             let member_role_update = MemberRoleUpdate {
@@ -306,7 +306,7 @@ where
         })
         .await?;
 
-    let () = transaction_output;
+    let () = ();
 
     Ok(())
 }
@@ -342,7 +342,7 @@ where
     )
     .await?;
 
-    let transaction_output = nucl
+    nucl
         .coord(async move |context| -> RegularResult<()> {
             //
             repo.step(context, &DeleteMember { id: &id }).await?;
@@ -351,7 +351,7 @@ where
         })
         .await?;
 
-    let () = transaction_output;
+    let () = ();
 
     Ok(())
 }

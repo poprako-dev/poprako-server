@@ -19,6 +19,7 @@ pub struct RdbDrive {
 }
 
 impl RdbDrive {
+    /// Builds a new `RdbDrive` from an [`RdbCore`] connection pool.
     pub fn new(core: RdbCore) -> Self {
         Self { core }
     }

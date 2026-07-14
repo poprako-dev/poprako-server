@@ -1,11 +1,11 @@
 //! Workset use cases — create, read, update, list, and deletion.
 
+use tracing::instrument;
+
 use poprako_orchestra::{Nucl, run_proxy, step_proxy};
 use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
 
 use poprako_util::page::Page;
-
-use tracing::instrument;
 
 use crate::complex::workset::{WorksetComplex, WorksetPermComplex};
 use crate::data::workset::{
