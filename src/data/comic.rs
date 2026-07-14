@@ -15,9 +15,9 @@ use futures::future::OptionFuture;
 
 use poprako_util::time::ToUnixMilli;
 
+use crate::data::chapter::ChapterInfoVal;
 use crate::data::team::TeamInfoVal;
 use crate::data::user::UserInfoVal;
-use crate::data::chapter::ChapterInfoVal;
 use crate::data::workset::WorksetInfoVal;
 use crate::model::comic::{ComicInfo, ComicInfoListKind, ComicInfoListSpec};
 use crate::part::image::ImagePool;
