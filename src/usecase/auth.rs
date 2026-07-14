@@ -1,10 +1,10 @@
 //! Authentication use cases — registration and login.
 
+use tracing::instrument;
+
 use poprako_orchestra::Nucl;
 
 use poprako_util::i18n::trl;
-
-use tracing::instrument;
 
 use crate::complex::member::MemberComplex;
 use crate::complex::user::UserComplex;

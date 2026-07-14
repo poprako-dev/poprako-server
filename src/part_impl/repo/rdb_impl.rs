@@ -62,6 +62,7 @@ pub struct RdbRepo {
 }
 
 impl RdbRepo {
+    /// Builds a new `RdbRepo` from an [`RdbCore`] connection pool.
     pub fn new(core: RdbCore) -> Self {
         Self { core }
     }

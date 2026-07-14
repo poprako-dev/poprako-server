@@ -3,11 +3,11 @@ mod tests;
 
 use std::collections::HashMap;
 
+use tracing::instrument;
+
 use poprako_orchestra::{Nucl, run_proxy};
 
 use poprako_util::i18n::trl;
-
-use tracing::instrument;
 
 use crate::complex::chapter_port::{
     ChapterImportComplex, ChapterPortPermComplex,

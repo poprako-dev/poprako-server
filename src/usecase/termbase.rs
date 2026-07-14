@@ -1,6 +1,6 @@
-use poprako_orchestra::{Nucl, run_proxy, step_proxy};
-
 use tracing::instrument;
+
+use poprako_orchestra::{Nucl, run_proxy, step_proxy};
 
 use crate::complex::termbase::{TermbaseComplex, TermbasePermComplex};
 use crate::data::termbase::CreateTermbaseParams;
@@ -18,6 +18,7 @@ use crate::part::repo::term::TermRepo;
 use crate::part::repo::termbase::TermbaseRepo;
 use crate::result::{RegularError, RegularResult, accept};
 
+/// Creates a new termbase scoped to a team or comic.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn create_termbase<C, R>(
     repo: &R,
@@ -61,6 +62,7 @@ where
     accept(())
 }
 
+/// Deletes a termbase by id with cascade to its child terms.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn delete_termbase<C, N, R>(
     nucl: &N,

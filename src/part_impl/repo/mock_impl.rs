@@ -38,6 +38,7 @@ pub struct MockState {
 }
 
 #[cfg_attr(test, derive(Clone))]
+/// Immutable snapshot of the full mock state — used for asserting test outcomes.
 pub struct MockSnapshot {
     pub users: Vec<UserInfo>,
     pub credentials: Vec<UserCredential>,
@@ -97,6 +98,7 @@ pub struct MockContext {
 }
 
 #[cfg_attr(test, derive(Clone, Default))]
+/// Toggleable failure flags for testing error paths in mock adapters.
 pub struct MockFlags {
     pub token_failure: bool,
     pub image_get_failure: bool,

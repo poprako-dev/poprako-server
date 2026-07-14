@@ -5,6 +5,8 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "swagger-ui")]
 use utoipa::{IntoParams, ToSchema};
 
+use futures::future::OptionFuture;
+
 use poprako_util::time::ToUnixMilli;
 
 use crate::data::comic::ComicInfoVal;
@@ -14,7 +16,6 @@ use crate::model::chapter::ChapterInfo;
 use crate::part::image::ImagePool;
 use crate::result::RegularResult;
 use crate::value::chapter::{ChapterInclOpt, Stage, StageMask, StageOper};
-use futures::future::OptionFuture;
 
 /// Presentation-ready chapter information.
 ///

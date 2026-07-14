@@ -17,8 +17,11 @@ use crate::value::incl::InclOpt;
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
 #[serde(rename_all = "kebab-case")]
 pub enum StagePhase {
+    /// The stage has not started yet.
     Pending,
+    /// The stage is actively being worked on.
     Active,
+    /// The stage has been completed.
     Completed,
 }
 
@@ -141,9 +144,13 @@ pub fn try_modify_stage(
 pub struct StagePhaseField(u8);
 
 impl StagePhaseField {
+    /// Field value representing [`StagePhase::Pending`].
     pub const PENDING: Self = Self(0);
+    /// Field value representing [`StagePhase::Active`].
     pub const ACTIVE: Self = Self(1);
+    /// Field value representing [`StagePhase::Completed`].
     pub const COMPLETED: Self = Self(2);
+    /// Wildcard value that matches any phase — used in filter masks.
     pub const IGNORE: Self = Self(3);
 
     const VALID_VALUES: &'static [u8] = &[0, 1, 2, 3];

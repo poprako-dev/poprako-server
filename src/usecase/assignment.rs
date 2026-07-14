@@ -1,10 +1,10 @@
 //! Assignment use cases — list, join, role update, and deletion.
 
+use tracing::instrument;
+
 use poprako_orchestra::{Nucl, run_proxy};
 
 use poprako_util::i18n::trl;
-
-use tracing::instrument;
 
 use crate::complex::assignment::{AssignmentComplex, AssignmentPermComplex};
 use crate::complex::chapter::ChapterPermComplex;
@@ -283,7 +283,7 @@ where
     )
     .await?;
 
-    let transaction_output = nucl
+    nucl
         .coord(async move |context| -> RegularResult<()> {
             //
 
@@ -366,7 +366,7 @@ where
         })
         .await?;
 
-    let () = transaction_output;
+    let () = ();
 
     Ok(())
 }
@@ -408,7 +408,7 @@ where
     )
     .await?;
 
-    let transaction_output = nucl
+    nucl
         .coord(async move |context| -> RegularResult<()> {
             //
 
@@ -419,7 +419,7 @@ where
         })
         .await?;
 
-    let () = transaction_output;
+    let () = ();
 
     Ok(())
 }

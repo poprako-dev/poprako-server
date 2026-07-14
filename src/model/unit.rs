@@ -69,16 +69,19 @@ pub struct UnitDiff {
 /// anchor appends it to the tail.
 #[cfg_attr(test, derive(Clone))]
 pub enum UnitOper {
+    /// Create a new unit with a client id and content payload.
     Create {
         id: String,
         payload: UnitContent,
         before_id: Option<String>,
     },
+    /// Update an existing unit with new content payload.
     Save {
         id: String,
         payload: UnitContent,
         before_id: Option<String>,
     },
+    /// Remove an existing unit by server id.
     Delete {
         id: String,
     },

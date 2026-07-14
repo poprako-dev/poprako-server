@@ -47,6 +47,7 @@ impl<R> EffectHandler<R> {
     }
 
     #[instrument(level = "info", skip_all)]
+    /// Runs the event consumer loop, dispatching events until a shutdown signal is received.
     pub async fn run<C>(mut self)
     where
         C: Send,

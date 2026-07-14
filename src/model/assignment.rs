@@ -66,6 +66,7 @@ pub struct AssignmentRoleUpdate {
 
 /// Filtering and pagination parameters for listing chapter assignments.
 pub enum AssignmentInfoListSpec {
+    /// List assignments on a specific chapter, optionally filtered by role.
     Chapter {
         chapter_id: String,
         role: Option<RoleField>,
@@ -73,6 +74,7 @@ pub enum AssignmentInfoListSpec {
         offset: u32,
         limit: u32,
     },
+    /// List assignments owned by a specific user, optionally filtered by role.
     User {
         owner_id: String,
         role: Option<RoleField>,

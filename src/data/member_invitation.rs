@@ -6,6 +6,8 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "swagger-ui")]
 use utoipa::{IntoParams, ToSchema};
 
+use futures::future::OptionFuture;
+
 use crate::data::user::UserInfoVal;
 use crate::model::member_invitation::MemberInvitationInfo;
 use crate::part::image::ImagePool;
@@ -14,7 +16,6 @@ use crate::result::RegularResult;
 use crate::value::member_invitation::MemberInvitationInclOpt;
 
 use crate::value::role::RoleMask;
-use futures::future::OptionFuture;
 
 /// Input parameters for creating a new team invitation.
 ///

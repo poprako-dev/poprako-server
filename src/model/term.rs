@@ -1,3 +1,4 @@
+/// A single term entry carrying source text, translated target, and optional note.
 pub struct TermInfo {
     pub id: String,
 

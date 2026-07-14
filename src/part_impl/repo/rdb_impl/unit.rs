@@ -4,10 +4,9 @@ use diesel::dsl::max;
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use time::OffsetDateTime;
+use tracing::instrument;
 
 use poprako_util::page::Page;
-
-use tracing::instrument;
 
 use crate::model::unit::{
     UnitContent, UnitCounters, UnitIndex, UnitIndexUpdate, UnitInfo,

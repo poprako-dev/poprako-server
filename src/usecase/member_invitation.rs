@@ -1,10 +1,10 @@
 //! Member invitation use cases.
 
+use tracing::instrument;
+
 use poprako_orchestra::{Nucl, run_proxy};
 
 use poprako_util::i18n::trl;
-
-use tracing::instrument;
 
 use crate::complex::member_invitation::{
     MemberInvitationComplex, MemberInvitationPermComplex,
@@ -200,7 +200,7 @@ where
     )
     .await?;
 
-    let transaction_output = nucl
+    nucl
         .coord(async move |context| -> RegularResult<()> {
             //
             let member_invitation_update = MemberInvitationUpdate {
@@ -220,7 +220,7 @@ where
         })
         .await?;
 
-    let () = transaction_output;
+    let () = ();
 
     Ok(())
 }
@@ -249,7 +249,7 @@ where
     )
     .await?;
 
-    let transaction_output = nucl
+    nucl
         .coord(async move |context| -> RegularResult<()> {
             //
             repo.step(context, &DeleteMemberInvitation { id: &id })
@@ -259,7 +259,7 @@ where
         })
         .await?;
 
-    let () = transaction_output;
+    let () = ();
 
     Ok(())
 }
