@@ -286,25 +286,24 @@ where
     )
     .await?;
 
-    nucl
-        .coord(async move |context| -> RegularResult<()> {
-            //
-            let member_role_update = MemberRoleUpdate {
-                id: params.id,
-                roles: params.roles,
-            };
+    nucl.coord(async move |context| -> RegularResult<()> {
+        //
+        let member_role_update = MemberRoleUpdate {
+            id: params.id,
+            roles: params.roles,
+        };
 
-            repo.step(
-                context,
-                &UpdateMember::Role {
-                    update: &member_role_update,
-                },
-            )
-            .await?;
-
-            Ok(())
-        })
+        repo.step(
+            context,
+            &UpdateMember::Role {
+                update: &member_role_update,
+            },
+        )
         .await?;
+
+        Ok(())
+    })
+    .await?;
 
     let () = ();
 
@@ -342,14 +341,13 @@ where
     )
     .await?;
 
-    nucl
-        .coord(async move |context| -> RegularResult<()> {
-            //
-            repo.step(context, &DeleteMember { id: &id }).await?;
+    nucl.coord(async move |context| -> RegularResult<()> {
+        //
+        repo.step(context, &DeleteMember { id: &id }).await?;
 
-            Ok(())
-        })
-        .await?;
+        Ok(())
+    })
+    .await?;
 
     let () = ();
 

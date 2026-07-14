@@ -26,9 +26,7 @@ pub enum Error {
         message: String,
     },
     /// An unexpected system-level failure — cannot be recovered mid-request.
-    Unrecoverable {
-        message: String,
-    },
+    Unrecoverable { message: String },
 }
 
 /// Convenience alias for [`std::result::Result`] with the application's [`Error`] type.

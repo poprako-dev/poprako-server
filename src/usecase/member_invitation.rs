@@ -200,25 +200,24 @@ where
     )
     .await?;
 
-    nucl
-        .coord(async move |context| -> RegularResult<()> {
-            //
-            let member_invitation_update = MemberInvitationUpdate {
-                id: params.id,
-                roles: params.roles,
-            };
+    nucl.coord(async move |context| -> RegularResult<()> {
+        //
+        let member_invitation_update = MemberInvitationUpdate {
+            id: params.id,
+            roles: params.roles,
+        };
 
-            repo.step(
-                context,
-                &UpdateMemberInvitation::Info {
-                    update: &member_invitation_update,
-                },
-            )
-            .await?;
-
-            Ok(())
-        })
+        repo.step(
+            context,
+            &UpdateMemberInvitation::Info {
+                update: &member_invitation_update,
+            },
+        )
         .await?;
+
+        Ok(())
+    })
+    .await?;
 
     let () = ();
 
@@ -249,15 +248,14 @@ where
     )
     .await?;
 
-    nucl
-        .coord(async move |context| -> RegularResult<()> {
-            //
-            repo.step(context, &DeleteMemberInvitation { id: &id })
-                .await?;
+    nucl.coord(async move |context| -> RegularResult<()> {
+        //
+        repo.step(context, &DeleteMemberInvitation { id: &id })
+            .await?;
 
-            Ok(())
-        })
-        .await?;
+        Ok(())
+    })
+    .await?;
 
     let () = ();
 

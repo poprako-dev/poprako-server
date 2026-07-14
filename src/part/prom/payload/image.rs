@@ -24,7 +24,5 @@ pub enum Payload {
         version: u32,
     },
     /// Delete an image object by object-storage key.
-    Delete {
-        object_key: String,
-    },
+    Delete { object_key: String },
 }

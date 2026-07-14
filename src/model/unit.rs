@@ -82,9 +82,7 @@ pub enum UnitOper {
         before_id: Option<String>,
     },
     /// Remove an existing unit by server id.
-    Delete {
-        id: String,
-    },
+    Delete { id: String },
 }
 
 /// Persisted index for one surviving unit.

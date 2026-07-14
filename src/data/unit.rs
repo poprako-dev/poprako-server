@@ -147,9 +147,7 @@ pub enum UnitOperParams {
         last_proofreader_id: Option<String>,
     },
     /// Remove an existing unit by server-assigned id.
-    Delete {
-        id: String,
-    },
+    Delete { id: String },
 }
 
 impl UnitDiffParams {
