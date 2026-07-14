@@ -70,8 +70,8 @@ where
         + WorksetRepo<C>,
     P: Prom<C>,
     A: TokenAuth,
-    I: ImagePool,
-    V: EffectDevelop,
+    I: ImagePool + Sync,
+    V: EffectDevelop + Sync,
 {
     pub fn new(
         drive: D,

@@ -133,7 +133,7 @@ fn mark_system_mail_read(
 impl Run<SendSystemMail<'_>> for Mock {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(&self, oper: &SendSystemMail<'_>) -> RegularResult<()> {
         //
         let mut state = self.state.lock().unwrap();
@@ -145,7 +145,7 @@ impl Run<SendSystemMail<'_>> for Mock {
 impl Run<SendSystemMails<'_>> for Mock {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(&self, oper: &SendSystemMails<'_>) -> RegularResult<()> {
         //
         let mut state = self.state.lock().unwrap();
@@ -157,7 +157,7 @@ impl Run<SendSystemMails<'_>> for Mock {
 impl Run<ListSystemMailInfos<'_>> for Mock {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &ListSystemMailInfos<'_>,
@@ -172,7 +172,7 @@ impl Run<ListSystemMailInfos<'_>> for Mock {
 impl Run<MarkSystemMailRead<'_>> for Mock {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(&self, oper: &MarkSystemMailRead<'_>) -> RegularResult<()> {
         //
         let mut state = self.state.lock().unwrap();

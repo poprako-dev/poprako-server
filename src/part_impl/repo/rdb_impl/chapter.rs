@@ -3,9 +3,9 @@
 use std::collections::HashMap;
 
 use diesel::prelude::*;
-use tracing::instrument;
 use diesel_async::RunQueryDsl;
 use time::OffsetDateTime;
+use tracing::instrument;
 
 use crate::model::chapter::{
     ChapterEntry, ChapterInfo, ChapterInfoListSpec, ChapterInfoUpdate,

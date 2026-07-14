@@ -217,7 +217,7 @@ async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
 impl<'a> Run<ListMemberInvitationInfos<'a>> for RdbRepo {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &ListMemberInvitationInfos<'a>,
@@ -229,7 +229,7 @@ impl<'a> Run<ListMemberInvitationInfos<'a>> for RdbRepo {
 impl<'a, 'b> Run<GetMemberInvitationInfo<'a, 'b>> for RdbRepo {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &GetMemberInvitationInfo<'a, 'b>,
@@ -250,7 +250,7 @@ impl<'a, 'b> Run<GetMemberInvitationInfo<'a, 'b>> for RdbRepo {
 impl<'a> Step<CreateMemberInvitation<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -263,7 +263,7 @@ impl<'a> Step<CreateMemberInvitation<'a>, RdbContext> for RdbRepo {
 impl<'a, 'b> Step<GetMemberInvitationInfo<'a, 'b>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -285,7 +285,7 @@ impl<'a, 'b> Step<GetMemberInvitationInfo<'a, 'b>, RdbContext> for RdbRepo {
 impl<'a> Step<UpdateMemberInvitation<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -308,7 +308,7 @@ impl<'a> Step<UpdateMemberInvitation<'a>, RdbContext> for RdbRepo {
 impl<'a> Step<GetMemberInvitationInfoExcluded<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -325,7 +325,7 @@ impl<'a> Step<GetMemberInvitationInfoExcluded<'a>, RdbContext> for RdbRepo {
 impl<'a> Step<DeleteMemberInvitation<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,

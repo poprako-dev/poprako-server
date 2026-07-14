@@ -92,7 +92,7 @@ where
         }
     }
 
-#[instrument(level = "info", skip_all)]
+    #[instrument(level = "info", skip_all)]
     pub async fn run(mut self) {
         //
         let mut next_completed_purge_at = OffsetDateTime::now_utc();
@@ -181,7 +181,7 @@ where
         });
     }
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn poll(&self) -> RegularResult<Vec<LocalMessageRow>> {
         //
         let conn = self.core.get().await?;
@@ -273,7 +273,7 @@ where
         }
     }
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn claim(&self, id: &str) -> RegularResult<bool> {
         //
         let conn = self.core.get().await?;
@@ -283,7 +283,7 @@ where
         self.repo.step(&mut context, &ClaimPending::new(id)).await
     }
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn complete(&self, id: &str) -> RegularResult<()> {
         //
         let conn = self.core.get().await?;
@@ -295,7 +295,7 @@ where
             .await
     }
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn fail(&self, id: &str, error: &str) -> RegularResult<()> {
         //
         let conn = self.core.get().await?;
@@ -307,7 +307,7 @@ where
             .await
     }
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn retry(&self, id: &str, error: &str) -> RegularResult<()> {
         //
         let conn = self.core.get().await?;
@@ -321,7 +321,7 @@ where
             .await
     }
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn reset_stuck(&self) -> RegularResult<()> {
         //
         let conn = self.core.get().await?;
@@ -335,7 +335,7 @@ where
             .await
     }
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn purge_completed(&self) -> RegularResult<usize> {
         //
         let conn = self.core.get().await?;

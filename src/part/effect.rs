@@ -52,7 +52,7 @@ impl EventIter for Event {
 /// Implementations receive an iterator of [`Event`] values and dispatch
 /// them to the appropriate side-effect handlers (logging, analytics,
 /// notifications, etc.).
-pub trait EffectDevelop: Sync {
+pub trait EffectDevelop {
     fn develop<I>(&self, iter: I) -> impl Future<Output = ()> + Send
     where
         I: EventIter + Send;

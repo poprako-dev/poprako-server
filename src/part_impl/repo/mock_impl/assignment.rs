@@ -275,7 +275,7 @@ fn delete_assignments_by_chapter_id(
 impl Run<FindAssignmentInfo<'_, '_>> for Mock {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &FindAssignmentInfo<'_, '_>,
@@ -306,7 +306,7 @@ impl Run<FindAssignmentInfo<'_, '_>> for Mock {
 impl Run<ListAssignmentInfos<'_, '_>> for Mock {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &ListAssignmentInfos<'_, '_>,
@@ -336,7 +336,7 @@ impl Run<ListAssignmentInfos<'_, '_>> for Mock {
 impl Run<GetAssignmentInfo<'_, '_>> for Mock {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &GetAssignmentInfo<'_, '_>,
@@ -351,7 +351,7 @@ impl Run<GetAssignmentInfo<'_, '_>> for Mock {
 impl Step<FindAssignmentInfo<'_, '_>, MockContext> for Mock {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -384,7 +384,7 @@ impl Step<FindAssignmentInfo<'_, '_>, MockContext> for Mock {
 impl Step<ListAssignmentInfosExcluded<'_>, MockContext> for Mock {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -404,7 +404,7 @@ impl Step<ListAssignmentInfosExcluded<'_>, MockContext> for Mock {
 impl Step<ListAssignmentInfos<'_, '_>, MockContext> for Mock {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -436,7 +436,7 @@ impl Step<ListAssignmentInfos<'_, '_>, MockContext> for Mock {
 impl Step<CreateAssignment<'_>, MockContext> for Mock {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -449,7 +449,7 @@ impl Step<CreateAssignment<'_>, MockContext> for Mock {
 impl Step<UpdateAssignmentRoles<'_>, MockContext> for Mock {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -474,7 +474,7 @@ impl Step<UpdateAssignmentRoles<'_>, MockContext> for Mock {
 impl Step<DeleteAssignments<'_>, MockContext> for Mock {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,

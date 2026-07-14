@@ -46,7 +46,7 @@ impl<R> EffectHandler<R> {
         }
     }
 
-#[instrument(level = "info", skip_all)]
+    #[instrument(level = "info", skip_all)]
     pub async fn run<C>(mut self)
     where
         C: Send,

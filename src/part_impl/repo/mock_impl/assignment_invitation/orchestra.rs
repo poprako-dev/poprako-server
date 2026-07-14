@@ -66,7 +66,7 @@ fn list_infos(
 
 impl<'a> Run<ListAssignmentInvitationInfos<'a>> for Mock {
     type Error = RegularError;
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &ListAssignmentInvitationInfos<'a>,
@@ -79,7 +79,7 @@ impl<'a> Run<ListAssignmentInvitationInfos<'a>> for Mock {
 }
 impl<'a> Run<GetAssignmentInvitationInfo<'a>> for Mock {
     type Error = RegularError;
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &GetAssignmentInvitationInfo<'a>,
@@ -92,7 +92,7 @@ impl<'a> Run<GetAssignmentInvitationInfo<'a>> for Mock {
 }
 impl<'a> Step<CreateAssignmentInvitation<'a>, MockContext> for Mock {
     type Error = RegularError;
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -132,7 +132,7 @@ impl<'a> Step<CreateAssignmentInvitation<'a>, MockContext> for Mock {
 }
 impl<'a> Step<GetAssignmentInvitationInfo<'a>, MockContext> for Mock {
     type Error = RegularError;
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -143,7 +143,7 @@ impl<'a> Step<GetAssignmentInvitationInfo<'a>, MockContext> for Mock {
 }
 impl<'a> Step<GetAssignmentInvitationInfoExcluded<'a>, MockContext> for Mock {
     type Error = RegularError;
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -160,7 +160,7 @@ impl<'a> Step<GetAssignmentInvitationInfoExcluded<'a>, MockContext> for Mock {
 }
 impl<'a> Step<MarkAssignmentInvitationUsed<'a>, MockContext> for Mock {
     type Error = RegularError;
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -183,7 +183,7 @@ impl<'a> Step<MarkAssignmentInvitationUsed<'a>, MockContext> for Mock {
 }
 impl<'a> Step<DeleteAssignmentInvitations<'a>, MockContext> for Mock {
     type Error = RegularError;
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,

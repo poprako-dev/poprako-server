@@ -1,6 +1,7 @@
 //! Workset use cases — create, read, update, list, and deletion.
 
-use poprako_orchestra::{Nucl, run_proxy};
+use poprako_orchestra::{Nucl, run_proxy, step_proxy};
+use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
 
 use poprako_util::page::Page;
 
@@ -14,15 +15,28 @@ use crate::data::workset::{
 use crate::model::user::UserToken;
 use crate::model::workset::{WorksetEntry, WorksetInfoUpdate};
 use crate::part::prom::Prom;
+use crate::part::prom::payload::Payload;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
+use crate::part::repo::oper::assignment::DeleteAssignments;
+use crate::part::repo::oper::assignment_invitation::DeleteAssignmentInvitations;
+use crate::part::repo::oper::chapter::{
+    DeleteChapter, GetChapterInfoExcluded, ListChapterInfosExcluded,
+    UnpinOtherChapters, UpdateChapter,
+};
+use crate::part::repo::oper::comic::{
+    DeleteComic, GetComicInfoExcluded, ListComicInfosExcluded,
+    TouchComicLastActive, UpdateComicChapterCount,
+};
 use crate::part::repo::oper::member::FindMemberInfo;
+use crate::part::repo::oper::page::{DeletePages, ListPageInfos};
 use crate::part::repo::oper::team::AllocateTeamWorksetIndex;
 use crate::part::repo::oper::workset::{
-    CreateWorkset, GetWorksetInfo, ListWorksetInfos, UpdateWorkset,
+    CreateWorkset, DeleteWorkset, GetWorksetInfo, GetWorksetInfoExcluded,
+    ListWorksetInfos, UpdateWorkset, UpdateWorksetComicCount,
 };
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
@@ -221,7 +235,34 @@ where
 
     nucl.coord(async move |context| -> RegularResult<()> {
         //
-        WorksetComplex::delete_cascade(repo, prom, context, &id).await?;
+        WorksetComplex::delete_cascade(
+            &mut step_proxy! {
+                context;
+                repo =>
+                    for<'a> GetWorksetInfoExcluded<'a>,
+                    for<'a> ListComicInfosExcluded<'a>,
+                    for<'a> DeleteWorkset<'a>,
+                    for<'a, 'b> GetComicInfoExcluded<'a, 'b>,
+                    for<'a> ListChapterInfosExcluded<'a>,
+                    for<'a> DeleteComic<'a>,
+                    for<'a> UpdateWorksetComicCount<'a>,
+                    for<'a, 'b> GetChapterInfoExcluded<'a, 'b>,
+                    for<'a> ListPageInfos<'a>,
+                    for<'a> DeleteAssignmentInvitations<'a>,
+                    for<'a> DeleteAssignments<'a>,
+                    for<'a> DeletePages<'a>,
+                    for<'a> DeleteChapter<'a>,
+                    for<'a> UpdateChapter<'a>,
+                    for<'a> UnpinOtherChapters<'a>,
+                    for<'a> UpdateComicChapterCount<'a>,
+                    for<'a> TouchComicLastActive<'a>;
+                prom =>
+                    for<'a> Defer<'a, String, Payload, ()>,
+                    for<'t, 'a> DeferBatch<'t, 'a, String, Payload, ()>;
+            },
+            &id,
+        )
+        .await?;
 
         Ok(())
     })

@@ -96,7 +96,7 @@ impl RdbProm {
 
     /// Signals the background worker to stop and waits for in-flight work
     /// to complete.
-#[instrument(level = "info", skip_all)]
+    #[instrument(level = "info", skip_all)]
     pub async fn close(&self) {
         //
         if !self.accepting.swap(false, Ordering::AcqRel) {
@@ -132,7 +132,7 @@ impl RdbProm {
 impl<'a> Step<Defer<'a, String, Payload, ()>, RdbContext> for RdbProm {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -158,7 +158,7 @@ impl<'t, 'a> Step<DeferBatch<'t, 'a, String, Payload, ()>, RdbContext>
 {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,

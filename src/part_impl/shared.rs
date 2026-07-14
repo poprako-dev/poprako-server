@@ -68,7 +68,7 @@ impl RdbCore {
         })
     }
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     pub async fn get(&self) -> RegularResult<RdbPooledConn> {
         self.pool.get().await.map_err(pool_get)
     }

@@ -84,7 +84,7 @@ impl AsyncEffectDevelop {
     }
 
     /// Stops accepting new events and waits for queued events to finish.
-#[instrument(level = "info", skip_all)]
+    #[instrument(level = "info", skip_all)]
     pub async fn close(&self) {
         //
         if !self.accepting.swap(false, Ordering::AcqRel) {
@@ -118,7 +118,7 @@ impl AsyncEffectDevelop {
 }
 
 impl EffectDevelop for AsyncEffectDevelop {
-#[instrument(level = "info", skip_all)]
+    #[instrument(level = "info", skip_all)]
     async fn develop<I>(&self, iter: I)
     where
         I: EventIter + Send,

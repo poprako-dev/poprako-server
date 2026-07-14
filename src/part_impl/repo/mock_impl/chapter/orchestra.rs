@@ -100,7 +100,7 @@ fn list_pinned_chapter_infos(
 impl<'a> Run<ListChapterInfos<'a>> for Mock {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &ListChapterInfos<'a>,
@@ -115,7 +115,7 @@ impl<'a> Run<ListChapterInfos<'a>> for Mock {
 impl<'a, 'b> Run<GetChapterInfo<'a, 'b>> for Mock {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &GetChapterInfo<'a, 'b>,
@@ -130,7 +130,7 @@ impl<'a, 'b> Run<GetChapterInfo<'a, 'b>> for Mock {
 impl<'a, 'b> Run<FindPinnedChapterInfo<'a, 'b>> for Mock {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &FindPinnedChapterInfo<'a, 'b>,
@@ -145,7 +145,7 @@ impl<'a, 'b> Run<FindPinnedChapterInfo<'a, 'b>> for Mock {
 impl<'a> Run<ListPinnedChapterInfos<'a>> for Mock {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &ListPinnedChapterInfos<'a>,
@@ -160,7 +160,7 @@ impl<'a> Run<ListPinnedChapterInfos<'a>> for Mock {
 impl<'a, 'b> Step<GetChapterInfo<'a, 'b>, MockContext> for Mock {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -173,7 +173,7 @@ impl<'a, 'b> Step<GetChapterInfo<'a, 'b>, MockContext> for Mock {
 impl<'a, 'b> Step<GetChapterInfoExcluded<'a, 'b>, MockContext> for Mock {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -186,7 +186,7 @@ impl<'a, 'b> Step<GetChapterInfoExcluded<'a, 'b>, MockContext> for Mock {
 impl<'a> Step<ListChapterInfosExcluded<'a>, MockContext> for Mock {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -199,7 +199,7 @@ impl<'a> Step<ListChapterInfosExcluded<'a>, MockContext> for Mock {
 impl<'a, 'b> Step<FindPinnedChapterInfo<'a, 'b>, MockContext> for Mock {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -216,7 +216,7 @@ impl<'a, 'b> Step<FindPinnedChapterInfo<'a, 'b>, MockContext> for Mock {
 impl<'a> Step<CreateChapter<'a>, MockContext> for Mock {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -229,7 +229,7 @@ impl<'a> Step<CreateChapter<'a>, MockContext> for Mock {
 impl<'a> Step<UpdateChapter<'a>, MockContext> for Mock {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -260,7 +260,7 @@ impl<'a> Step<UpdateChapter<'a>, MockContext> for Mock {
 impl<'a> Step<UpdateChapterStage<'a>, MockContext> for Mock {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -285,7 +285,7 @@ impl<'a> Step<UpdateChapterStage<'a>, MockContext> for Mock {
 impl<'a> Step<SetChapterPageCounters<'a>, MockContext> for Mock {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -316,7 +316,7 @@ impl<'a> Step<SetChapterPageCounters<'a>, MockContext> for Mock {
 impl<'a> Step<AdjustChapterUnitCounters<'a>, MockContext> for Mock {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -345,7 +345,7 @@ impl<'a> Step<AdjustChapterUnitCounters<'a>, MockContext> for Mock {
 impl<'a> Step<UnpinOtherChapters<'a>, MockContext> for Mock {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -369,7 +369,7 @@ impl<'a> Step<UnpinOtherChapters<'a>, MockContext> for Mock {
 impl<'a> Step<DeleteChapter<'a>, MockContext> for Mock {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,

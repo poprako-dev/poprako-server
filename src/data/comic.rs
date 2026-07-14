@@ -13,6 +13,8 @@ use utoipa::{IntoParams, ToSchema};
 
 use poprako_util::time::ToUnixMilli;
 
+use futures::future::OptionFuture;
+
 use crate::data::chapter::ChapterInfoVal;
 use crate::data::team::TeamInfoVal;
 use crate::data::user::UserInfoVal;
@@ -87,40 +89,29 @@ impl ComicInfoVal {
         image_pool: &P,
         model: ComicInfo,
         pinned_chapter: Option<ChapterInfoVal>,
+        fallback_cover_key: Option<&str>,
     ) -> RegularResult<Self>
     where
         P: ImagePool,
     {
-        let (cover_url, cover_thumbnail_url) =
-            match (model.cover_uploaded, &model.cover_key) {
-                //
-                (true, Some(key)) => (
-                    image_pool.gen_download_url(key).await.ok(),
-                    image_pool.gen_thumbnail_download_url(key).await.ok(),
-                ),
+        let cover_key = match (model.cover_uploaded, &model.cover_key) {
+            //
+            (true, Some(key)) => Some(key.as_str()),
 
-                _ => (None, None),
-            };
+            _ => fallback_cover_key,
+        };
+
+        let (cover_url, cover_thumbnail_url) = match cover_key {
+            //
+            Some(key) => (
+                image_pool.gen_download_url(key).await.ok(),
+                image_pool.gen_thumbnail_download_url(key).await.ok(),
+            ),
+
+            None => (None, None),
+        };
 
         let workset = model.workset.map(WorksetInfoVal::from);
-
-        let team = match model.team {
-            //
-            Some(team_info) => {
-                Some(TeamInfoVal::from_model(image_pool, team_info).await?)
-            }
-
-            None => None,
-        };
-
-        let creator = match model.creator {
-            //
-            Some(user_info) => {
-                Some(UserInfoVal::from_model(image_pool, user_info).await?)
-            }
-
-            None => None,
-        };
 
         Ok(Self {
             id: model.id,
@@ -135,8 +126,16 @@ impl ComicInfoVal {
             chapter_next_index: model.chapter_next_index,
             creator_id: model.creator_id,
             workset,
-            team,
-            creator,
+            team: OptionFuture::from(model.team.map(|team_info| {
+                TeamInfoVal::from_model(image_pool, team_info)
+            }))
+            .await
+            .transpose()?,
+            creator: OptionFuture::from(model.creator.map(|user_info| {
+                UserInfoVal::from_model(image_pool, user_info)
+            }))
+            .await
+            .transpose()?,
             pinned_chapter,
             last_active_at: model.last_active_at.to_unix_milli(),
             created_at: model.created_at.to_unix_milli(),

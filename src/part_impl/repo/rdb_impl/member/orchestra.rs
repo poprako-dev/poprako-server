@@ -19,7 +19,7 @@ use crate::result::{RegularError, RegularResult};
 impl<'a> Run<ListMemberInfos<'a>> for RdbRepo {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &ListMemberInfos<'a>,
@@ -40,7 +40,7 @@ impl<'a> Run<ListMemberInfos<'a>> for RdbRepo {
 impl<'a, 'b> Run<GetMemberInfo<'a, 'b>> for RdbRepo {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &GetMemberInfo<'a, 'b>,
@@ -56,7 +56,7 @@ impl<'a, 'b> Run<GetMemberInfo<'a, 'b>> for RdbRepo {
 impl<'a> Step<CreateMember<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -69,7 +69,7 @@ impl<'a> Step<CreateMember<'a>, RdbContext> for RdbRepo {
 impl<'a> Step<UpdateMember<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -95,7 +95,7 @@ impl<'a> Step<UpdateMember<'a>, RdbContext> for RdbRepo {
 impl<'a> Step<ListMemberInfos<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -117,7 +117,7 @@ impl<'a> Step<ListMemberInfos<'a>, RdbContext> for RdbRepo {
 impl<'a> Step<FindMemberInfo<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -139,7 +139,7 @@ impl<'a> Step<FindMemberInfo<'a>, RdbContext> for RdbRepo {
 impl<'a, 'b> Step<GetMemberInfo<'a, 'b>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -156,7 +156,7 @@ impl<'a, 'b> Step<GetMemberInfo<'a, 'b>, RdbContext> for RdbRepo {
 impl<'a> Step<ListMemberInfosExcluded<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -173,7 +173,7 @@ impl<'a> Step<ListMemberInfosExcluded<'a>, RdbContext> for RdbRepo {
 impl<'a> Step<DeleteMember<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,

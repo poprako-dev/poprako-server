@@ -2,7 +2,7 @@
 //! generation, and permission checks.
 
 use poprako_orchestra::Proxy;
-use poprako_orchestra_extra::prom::oper::Defer;
+use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
 use poprako_orchestra_extra::prom::task::Task;
 
 use poprako_util::i18n::trl;
@@ -10,20 +10,25 @@ use poprako_util::i18n::trl;
 use crate::complex::image::ImageComplex;
 use crate::complex::util::check_user_is_team_admin;
 use crate::complex::workset::WorksetComplex;
-use crate::part::prom::Prom;
 use crate::part::prom::payload::{Payload, image};
-use crate::part::repo::assignment::AssignmentRepo;
-use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
-use crate::part::repo::chapter::ChapterRepo;
-use crate::part::repo::comic::ComicRepo;
+use crate::part::repo::oper::assignment::DeleteAssignments;
+use crate::part::repo::oper::assignment_invitation::DeleteAssignmentInvitations;
+use crate::part::repo::oper::chapter::{
+    DeleteChapter, GetChapterInfoExcluded, ListChapterInfosExcluded,
+    UnpinOtherChapters, UpdateChapter,
+};
+use crate::part::repo::oper::comic::{
+    DeleteComic, GetComicInfoExcluded, ListComicInfosExcluded,
+    TouchComicLastActive, UpdateComicChapterCount,
+};
 use crate::part::repo::oper::member::FindMemberInfo;
+use crate::part::repo::oper::page::{DeletePages, ListPageInfos};
 use crate::part::repo::oper::team::{DeleteTeam, GetTeamInfoExcluded};
 use crate::part::repo::oper::user::GetUserInfo;
-use crate::part::repo::oper::workset::ListWorksetInfosExcluded;
-use crate::part::repo::page::PageRepo;
-use crate::part::repo::team::TeamRepo;
-use crate::part::repo::unit::UnitRepo;
-use crate::part::repo::workset::WorksetRepo;
+use crate::part::repo::oper::workset::{
+    DeleteWorkset, GetWorksetInfoExcluded, ListWorksetInfosExcluded,
+    UpdateWorksetComicCount,
+};
 use crate::result::{ExpectedVariant, RegularError, RegularResult};
 use crate::util::next_snowflake_id;
 
@@ -46,51 +51,53 @@ impl TeamComplex {
     }
 
     /// Deletes a team subtree inside an existing transaction context.
-    pub async fn delete_cascade<C, R, P>(
-        repo: &R,
-        prom: &P,
-        context: &mut C,
-        id: &str,
-    ) -> RegularResult<()>
+    pub async fn delete_cascade<P>(proxy: &mut P, id: &str) -> RegularResult<()>
     where
-        C: Send,
-        R: TeamRepo<C>
-            + WorksetRepo<C>
-            + ComicRepo<C>
-            + ChapterRepo<C>
-            + PageRepo<C>
-            + AssignmentInvitationRepo<C>
-            + AssignmentRepo<C>
-            + UnitRepo<C>
-            + Send
-            + Sync,
-        P: Prom<C> + Send + Sync,
+        P: for<'a> Proxy<GetTeamInfoExcluded<'a>, Error = RegularError>
+            + for<'a> Proxy<ListWorksetInfosExcluded<'a>, Error = RegularError>
+            + for<'a> Proxy<DeleteTeam<'a>, Error = RegularError>
+            + for<'a> Proxy<GetWorksetInfoExcluded<'a>, Error = RegularError>
+            + for<'a> Proxy<ListComicInfosExcluded<'a>, Error = RegularError>
+            + for<'a> Proxy<DeleteWorkset<'a>, Error = RegularError>
+            + for<'a, 'b> Proxy<
+                GetComicInfoExcluded<'a, 'b>,
+                Error = RegularError,
+            > + for<'a> Proxy<ListChapterInfosExcluded<'a>, Error = RegularError>
+            + for<'a> Proxy<DeleteComic<'a>, Error = RegularError>
+            + for<'a> Proxy<UpdateWorksetComicCount<'a>, Error = RegularError>
+            + for<'a, 'b> Proxy<
+                GetChapterInfoExcluded<'a, 'b>,
+                Error = RegularError,
+            > + for<'a> Proxy<ListPageInfos<'a>, Error = RegularError>
+            + for<'a> Proxy<DeleteAssignmentInvitations<'a>, Error = RegularError>
+            + for<'a> Proxy<DeleteAssignments<'a>, Error = RegularError>
+            + for<'a> Proxy<DeletePages<'a>, Error = RegularError>
+            + for<'a> Proxy<DeleteChapter<'a>, Error = RegularError>
+            + for<'a> Proxy<UpdateChapter<'a>, Error = RegularError>
+            + for<'a> Proxy<UnpinOtherChapters<'a>, Error = RegularError>
+            + for<'a> Proxy<UpdateComicChapterCount<'a>, Error = RegularError>
+            + for<'a> Proxy<TouchComicLastActive<'a>, Error = RegularError>
+            + for<'a> Proxy<Defer<'a, String, Payload, ()>, Error = RegularError>
+            + for<'t, 'a> Proxy<
+                DeferBatch<'t, 'a, String, Payload, ()>,
+                Error = RegularError,
+            >,
     {
         // SAFETY: Lock the root team row (FOR UPDATE) to serialize with
         // concurrent workset creations, preventing resource leaks from
         // worksets (and their subtrees) inserted between the listing and
         // the team delete.
 
-        let team_info =
-            repo.step(context, &GetTeamInfoExcluded::Id { id }).await?;
+        let team_info = proxy.exec(&GetTeamInfoExcluded::Id { id }).await?;
 
-        let workset_infos = repo
-            .step(
-                context,
-                &ListWorksetInfosExcluded {
-                    team_id: &team_info.id,
-                },
-            )
+        let workset_infos = proxy
+            .exec(&ListWorksetInfosExcluded {
+                team_id: &team_info.id,
+            })
             .await?;
 
         for workset_info in workset_infos {
-            WorksetComplex::delete_cascade(
-                repo,
-                prom,
-                context,
-                &workset_info.id,
-            )
-            .await?;
+            WorksetComplex::delete_cascade(proxy, &workset_info.id).await?;
         }
 
         if let Some(avatar_key) = &team_info.avatar_key
@@ -108,11 +115,10 @@ impl TeamComplex {
                 delay: None,
             };
 
-            prom.step(context, &Defer::new(task)).await?;
+            proxy.exec(&Defer::new(task)).await?;
         }
 
-        repo.step(context, &DeleteTeam { id: &team_info.id })
-            .await?;
+        proxy.exec(&DeleteTeam { id: &team_info.id }).await?;
 
         Ok(())
     }

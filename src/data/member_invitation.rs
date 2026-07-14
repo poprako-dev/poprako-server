@@ -11,7 +11,9 @@ use crate::model::member_invitation::MemberInvitationInfo;
 use crate::part::image::ImagePool;
 use crate::result::RegularResult;
 use crate::value::member_invitation::MemberInvitationInclOpt;
+
 use crate::value::role::RoleMask;
+use futures::future::OptionFuture;
 
 /// Input parameters for creating a new team invitation.
 ///
@@ -121,20 +123,15 @@ impl MemberInvitationInfoVal {
     where
         P: ImagePool,
     {
-        let invitor = match model.invitor {
-            //
-            Some(user_info) => {
-                Some(UserInfoVal::from_model(image_pool, user_info).await?)
-            }
-
-            None => None,
-        };
-
         Ok(Self {
             id: model.id,
             team_id: model.team_id,
             invitor_id: model.invitor_id,
-            invitor,
+            invitor: OptionFuture::from(model.invitor.map(|user_info| {
+                UserInfoVal::from_model(image_pool, user_info)
+            }))
+            .await
+            .transpose()?,
             invitee_qid: model.invitee_qid,
             code: model.code,
             pending: model.pending,

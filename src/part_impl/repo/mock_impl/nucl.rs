@@ -11,7 +11,7 @@ impl Nucl for Mock {
 
     type Context = MockContext;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn coord<F, T, E>(&self, f: F) -> Result<T, NuclError<Self::Error, E>>
     where
         F: for<'cx> AsyncFnOnce(&'cx mut Self::Context) -> Result<T, E> + Send,

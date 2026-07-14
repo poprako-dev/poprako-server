@@ -68,7 +68,7 @@ async fn create(
 impl Run<ListCommentInfos<'_>> for RdbRepo {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &ListCommentInfos<'_>,
@@ -80,7 +80,7 @@ impl Run<ListCommentInfos<'_>> for RdbRepo {
 impl Step<CreateComment<'_>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
-#[instrument(level = "info", err(Debug), skip_all)]
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,

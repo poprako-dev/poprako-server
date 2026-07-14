@@ -11,7 +11,7 @@ use crate::result::RegularResult;
 ///
 /// Provides signed URLs for direct client-to-storage uploads and downloads,
 /// avoiding the need to proxy image bytes through the application server.
-pub trait ImagePool: Sync {
+pub trait ImagePool {
     /// Returns a signed download URL for the object at `key`.
     fn gen_download_url(
         &self,
