@@ -16,8 +16,8 @@ use crate::complex::image::ImageComplex;
 use crate::data::chapter::ChapterInfoVal;
 use crate::data::comic::{
     ComicInfoVal, CreateComicParams, CreateComicPayload, ListComicInfosParams,
-    MarkComicCoverUploadedParams, ReserveComicCoverParams,
-    ReserveComicCoverPayload, UpdateComicInfoParams,
+    ListComicInfosPayload, MarkComicCoverUploadedParams,
+    ReserveComicCoverParams, ReserveComicCoverPayload, UpdateComicInfoParams,
 };
 use crate::model::assignment::AssignmentEntry;
 use crate::model::chapter::ChapterEntry;
@@ -275,7 +275,6 @@ where
     ComicInfoVal::from_model(
         image_pool,
         comic_info,
-        None,
         fallback_cover_keys.get(&id).map(String::as_str),
     )
     .await
@@ -288,7 +287,7 @@ pub async fn list_infos<C, R, I>(
     image_pool: &I,
     token: UserToken,
     params: ListComicInfosParams,
-) -> RegularResult<Vec<ComicInfoVal>>
+) -> RegularResult<ListComicInfosPayload>
 where
     R: ComicRepo<C>
         + WorksetRepo<C>
@@ -333,7 +332,7 @@ where
 
     // NOTE: `with` cannot be executed elegantly by repo layer,
     // so we have to handle it in usecase layer.
-    let mut pinned_chapters = match with_pinned_chapter {
+    let mut pinned_chapter_infos = match with_pinned_chapter {
         //
         true => {
             //
@@ -351,17 +350,20 @@ where
 
     let mut comic_info_vals = Vec::with_capacity(comic_infos.len());
 
+    let mut pinned_chapter_vals = Vec::with_capacity(comic_infos.len());
+
     for comic_info in comic_infos {
         //
-        let pinned_chapter_val = match pinned_chapters.remove(&comic_info.id) {
-            //
-            Some(chapter_info) => Some(
-                ChapterInfoVal::from_model(image_pool, chapter_info, None)
-                    .await?,
-            ),
+        let pinned_chapter_val =
+            match pinned_chapter_infos.remove(&comic_info.id) {
+                //
+                Some(chapter_info) => Some(
+                    ChapterInfoVal::from_model(image_pool, chapter_info, None)
+                        .await?,
+                ),
 
-            None => None,
-        };
+                None => None,
+            };
 
         let fallback_cover_key =
             fallback_cover_keys.get(&comic_info.id).map(String::as_str);
@@ -370,14 +372,18 @@ where
             ComicInfoVal::from_model(
                 image_pool,
                 comic_info,
-                pinned_chapter_val,
                 fallback_cover_key,
             )
             .await?,
         );
+
+        pinned_chapter_vals.push(pinned_chapter_val);
     }
 
-    Ok(comic_info_vals)
+    Ok(ListComicInfosPayload {
+        comics: comic_info_vals,
+        pinned_chapters: pinned_chapter_vals,
+    })
 }
 
 /// Updates a comic's title, author, and description.

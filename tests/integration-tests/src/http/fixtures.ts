@@ -16,6 +16,7 @@ import type {
     ChapterInfoVal,
     CodeVal,
     ComicInfoVal,
+    ListComicInfosPayload,
     CommentInfoVal,
     CreateComicVal,
     IdVal,
@@ -392,10 +393,20 @@ export async function listWorksetComics(
     worksetId: string,
     extraQuery = "",
 ): Promise<ComicInfoVal[]> {
+    const payload = await listWorksetComicInfos(api, worksetId, extraQuery);
+
+    return payload.comics;
+}
+
+export async function listWorksetComicInfos(
+    api: ApiClient,
+    worksetId: string,
+    extraQuery = "",
+): Promise<ListComicInfosPayload> {
     const query = `?offset=0&limit=100${extraQuery}`;
 
-    return expectSuccessList(
-        await api.get<SuccessBody<ComicInfoVal[]>>(`/api/v1/worksets/${worksetId}/comics${query}`),
+    return expectSuccessData(
+        await api.get<SuccessBody<ListComicInfosPayload>>(`/api/v1/worksets/${worksetId}/comics${query}`),
         200,
     );
 }

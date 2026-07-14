@@ -17,8 +17,8 @@ use crate::api::http::result::{
 use crate::api::http::state::AppHarn;
 use crate::data::comic::{
     ComicInfoVal, CreateComicParams, CreateComicPayload, ListComicInfosParams,
-    MarkComicCoverUploadedParams, ReserveComicCoverParams,
-    ReserveComicCoverPayload, UpdateComicInfoParams,
+    ListComicInfosPayload, MarkComicCoverUploadedParams,
+    ReserveComicCoverParams, ReserveComicCoverPayload, UpdateComicInfoParams,
 };
 use crate::data::comic_archive::ArchiveComicPayload;
 use crate::model::user::UserToken;
@@ -29,7 +29,8 @@ use crate::value::comic::{ComicInclOpt, ComicWithOpt};
 ///
 /// When present, `stages` narrows the list by pinned chapter workflow state.
 ///
-/// `incl` embeds related rows into each item; `with` attaches derived rows.
+/// `incl` embeds related rows into each item; `with` populates derived rows
+/// in the parallel list payload.
 /// Dotted `incl` values implicitly pull in their parent segments.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
@@ -93,10 +94,10 @@ pub async fn create(
     get,
     path = "/api/v1/worksets/{workset_id}/comics",
     tag = "comics",
-    description = "Lists active comics in a workset with optional title and workflow-stage filters. `incl` embeds related rows and `with` attaches derived rows.",
+    description = "Lists active comics in a workset with optional title and workflow-stage filters. `incl` embeds related rows and `with` populates parallel derived rows.",
     params(("workset_id" = String, Path, description = "Workset ID"), ComicListQuery),
     responses(
-        (status = 200, description = "Comics listed", body = HttpBody<Vec<ComicInfoVal>>),
+        (status = 200, description = "Comics listed", body = HttpBody<ListComicInfosPayload>),
         (status = 403, description = "No permission to list comics in this workset"),
         (status = 422, description = "Invalid workflow-stage filter"),
     ),
@@ -107,7 +108,7 @@ pub async fn list_infos(
     Path(workset_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
     Query(query): Query<ComicListQuery>,
-) -> HttpResult<Vec<ComicInfoVal>> {
+) -> HttpResult<ListComicInfosPayload> {
     //
     let params = ListComicInfosParams {
         workset_id,
