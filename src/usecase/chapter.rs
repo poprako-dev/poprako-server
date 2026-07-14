@@ -41,7 +41,7 @@ use crate::part::repo::oper::chapter::{
     UpdateChapterStage,
 };
 use crate::part::repo::oper::comic::{
-    AllocateComicChapterIndex, GetComicInfo, TouchComicLastActive,
+    AllocComicChapterIndex, GetComicInfo, TouchComicLastActive,
     UpdateComicChapterCount,
 };
 use crate::part::repo::oper::member::FindMemberInfo;
@@ -245,7 +245,7 @@ where
             let index = repo
                 .step(
                     context,
-                    &AllocateComicChapterIndex {
+                    &AllocComicChapterIndex {
                         id: &params.comic_id,
                     },
                 )

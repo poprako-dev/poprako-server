@@ -29,7 +29,6 @@ pub struct WorksetInfoVal {
     pub description: Option<String>,
 
     pub comic_count: i32,
-    pub comic_next_index: i32,
 
     pub created_at: i64,
     pub updated_at: i64,
@@ -44,7 +43,6 @@ impl From<WorksetInfo> for WorksetInfoVal {
             name: model.name,
             description: model.description,
             comic_count: model.comic_count,
-            comic_next_index: model.comic_next_index,
             created_at: model.created_at.to_unix_milli(),
             updated_at: model.updated_at.to_unix_milli(),
         }

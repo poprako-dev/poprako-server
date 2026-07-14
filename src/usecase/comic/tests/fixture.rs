@@ -23,7 +23,6 @@ pub(super) fn comic(id: &str, workset_id: &str, index: i32) -> ComicInfo {
         cover_uploaded: false,
         cover_version: 0,
         chapter_count: 0,
-        chapter_next_index: 0,
         creator_id: "user-1".into(),
         workset: None,
         team: None,

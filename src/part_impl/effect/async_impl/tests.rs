@@ -31,7 +31,6 @@ fn team_info() -> TeamInfo {
         avatar_key: None,
         avatar_uploaded: false,
         avatar_version: 0,
-        workset_next_index: 0,
         created_at: time,
         updated_at: time,
     }
@@ -48,7 +47,6 @@ fn workset_info() -> WorksetInfo {
         name: "Workset One".to_string(),
         description: None,
         comic_count: 1,
-        comic_next_index: 1,
         created_at: time,
         updated_at: time,
     }
@@ -69,7 +67,6 @@ fn comic_info() -> ComicInfo {
         cover_uploaded: false,
         cover_version: 0,
         chapter_count: 1,
-        chapter_next_index: 1,
         creator_id: "creator-user".to_string(),
         workset: None,
         team: None,

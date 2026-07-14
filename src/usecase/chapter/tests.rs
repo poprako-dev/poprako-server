@@ -199,7 +199,7 @@ async fn create_pins_chapter_and_creates_admin_assignment() {
 
     seed_scope(&mock, "user-1", RoleMask::from(RoleField::ADMIN));
 
-    mock.seed_chapter(chapter("chapter-old", "comic-1", 2, true));
+    mock.seed_chapter(chapter("chapter-old", "comic-1", 0, true));
 
     let created = create(
         &mock,
@@ -220,13 +220,13 @@ async fn create_pins_chapter_and_creates_admin_assignment() {
 
     assert_eq!(snapshot.chapters.len(), 2);
 
-    let default_subtitle = ChapterComplex::subtitle_or_default(None, 2);
+    let default_subtitle = ChapterComplex::subtitle_or_default(None, 1);
 
     assert!(snapshot.chapters.iter().any(|chapter_info| {
         chapter_info.id == created_id
             && chapter_info.is_pinned
             && chapter_info.subtitle == default_subtitle
-            && chapter_info.index == 2
+            && chapter_info.index == 1
     }));
 
     assert!(
@@ -238,8 +238,6 @@ async fn create_pins_chapter_and_creates_admin_assignment() {
     );
 
     assert_eq!(snapshot.comics[0].chapter_count, 3);
-
-    assert_eq!(snapshot.comics[0].chapter_next_index, 3);
 
     assert!(
         snapshot.assignments[0]

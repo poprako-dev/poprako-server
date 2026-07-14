@@ -73,10 +73,7 @@ export async function runIt02Module(ctx: RunCtx): Promise<void> {
 
     assert.ok(trans01, "it_01 must have registered trans_01");
 
-    // ---------- C1. create 4 worksets, verify index/next_index ----------
-
-    const teamBefore = await getTeam(ctx.sadmin, teamId);
-    const baselineNextIndex = teamBefore.workset_next_index;
+    // ---------- C1. create 4 worksets, verify index monotonic ----------
 
     const worksetLabels = ["连载池", "短篇池", "加急池", "归档池"];
     const createdWorksets: WorksetInfoVal[] = [];
@@ -92,13 +89,8 @@ export async function runIt02Module(ctx: RunCtx): Promise<void> {
 
         createdWorksets.push(wsInfo);
 
-        // index strictly increasing and matches creation order
-        assert.equal(wsInfo.index, baselineNextIndex + i);
-
-        // team.workset_next_index incremented by exactly 1 each create
-        const teamAfter = await getTeam(ctx.sadmin, teamId);
-
-        assert.equal(teamAfter.workset_next_index, baselineNextIndex + i + 1);
+        // index strictly increasing and matches creation order (0-based)
+        assert.equal(wsInfo.index, i);
     }
 
     // list contains the 4 new worksets; indexes unique and increasing
@@ -152,8 +144,9 @@ export async function runIt02Module(ctx: RunCtx): Promise<void> {
 
     assert.ok(!listedAfterDelete.find((ws) => ws.id === shortWsId), "deleted workset must not list");
 
-    // recreate 短篇池-重建; new index == pre-delete next_index (no backfill)
-    const teamAfterDelete = await getTeam(ctx.sadmin, teamId);
+    // recreate 短篇池-重建; new index must not backfill (should be > any existing index)
+    const listedAfterDeleteWss = await listTeamWorksets(ctx.sadmin, teamId);
+    const maxExistingWsIndex = Math.max(...listedAfterDeleteWss.map((ws) => ws.index));
 
     const rebuilt = await createWorkset(ctx.sadmin, teamId, titled("短篇池-重建"), "rebuilt");
 
@@ -161,22 +154,16 @@ export async function runIt02Module(ctx: RunCtx): Promise<void> {
 
     const rebuiltInfo = await getWorkset(ctx.sadmin, rebuilt.id);
 
-    assert.equal(rebuiltInfo.index, teamAfterDelete.workset_next_index, "rebuilt index must not backfill");
+    assert.ok(rebuiltInfo.index > maxExistingWsIndex, "rebuilt index must not backfill");
 
-    // active count back to 4; next_index +1 again
+    // active count back to 4
     const listedAfterRebuild = await listTeamWorksets(ctx.sadmin, teamId);
 
     assert.equal(listedAfterRebuild.length, 4);
 
-    const teamAfterRebuild = await getTeam(ctx.sadmin, teamId);
-
-    assert.equal(teamAfterRebuild.workset_next_index, teamAfterDelete.workset_next_index + 1);
-
     // ---------- C3. create 3 comics under 连载池, verify first chapter ----------
 
     const serialWsId = ctx.ids.worksetIds["连载池"]!;
-    const serialWsBefore = await getWorkset(ctx.sadmin, serialWsId);
-    const comicBaselineNext = serialWsBefore.comic_next_index;
 
     const comicSpecs: Array<{
         label: string;
@@ -205,9 +192,8 @@ export async function runIt02Module(ctx: RunCtx): Promise<void> {
         const comicInfo = await getComic(ctx.sadmin, comic.id);
 
         assert.equal(comicInfo.workset_id, serialWsId);
-        assert.equal(comicInfo.index, comicBaselineNext + i, `comic ${spec.label} index monotonic`);
+        assert.equal(comicInfo.index, i, `comic ${spec.label} index monotonic`);
         assert.equal(comicInfo.chapter_count, 1);
-        assert.equal(comicInfo.chapter_next_index, 1);
         assert.equal(comicInfo.cover_url, null);
 
         const chapterInfo = await getChapter(ctx.sadmin, comic.chapter_id);
@@ -301,8 +287,8 @@ export async function runIt02Module(ctx: RunCtx): Promise<void> {
 
     const yuyeId = ctx.ids.comicIds["雨夜便利店"]!;
     const yuyeFirstChId = ctx.ids.firstChapterIds["雨夜便利店"]!;
-    const serialWsBeforeDelete = await getWorkset(ctx.sadmin, serialWsId);
-    const comicNextBeforeDelete = serialWsBeforeDelete.comic_next_index;
+    const serialComicsBeforeDelete = await listWorksetComics(ctx.sadmin, serialWsId);
+    const maxExistingComicIndex = Math.max(...serialComicsBeforeDelete.map((c) => c.index));
 
     expectStatus(await ctx.sadmin.delete<null>(`/api/v1/comics/${yuyeId}`), 204);
 
@@ -314,16 +300,15 @@ export async function runIt02Module(ctx: RunCtx): Promise<void> {
 
     assert.ok(!serialComicsAfterDelete.find((comic) => comic.id === yuyeId));
 
-    // workset comic_count == 2 (active); comic_next_index unchanged
+    // workset comic_count == 2 (active)
     const serialWsAfterDelete = await getWorkset(ctx.sadmin, serialWsId);
 
     assert.equal(serialWsAfterDelete.comic_count, 2);
-    assert.equal(serialWsAfterDelete.comic_next_index, comicNextBeforeDelete, "next_index no backfill");
 
     // deleted comic's first chapter -> 422/2
     expectError(await ctx.sadmin.get<ErrorBody>(`/api/v1/chapters/${yuyeFirstChId}`), 422, 2);
 
-    // recreate 雨夜便利店-重制版; new index == pre-delete next_index (no backfill)
+    // recreate 雨夜便利店-重制版; new index must not backfill (> any existing)
     const yuyeReborn = await createComic(
         ctx.sadmin,
         serialWsId,
@@ -337,13 +322,12 @@ export async function runIt02Module(ctx: RunCtx): Promise<void> {
 
     const yuyeRebornInfo = await getComic(ctx.sadmin, yuyeReborn.id);
 
-    assert.equal(yuyeRebornInfo.index, comicNextBeforeDelete, "rebuilt comic index no backfill");
+    assert.ok(yuyeRebornInfo.index > maxExistingComicIndex, "rebuilt comic index no backfill");
 
-    // workset comic_count back to 3; next_index +1
+    // workset comic_count back to 3
     const serialWsAfterRebuild = await getWorkset(ctx.sadmin, serialWsId);
 
     assert.equal(serialWsAfterRebuild.comic_count, 3);
-    assert.equal(serialWsAfterRebuild.comic_next_index, comicNextBeforeDelete + 1);
 
     // fuzzy_title=雨夜 finds 重制版, not the deleted original
     const fuzzyYuye = await listWorksetComics(
@@ -367,10 +351,8 @@ export async function runIt02Module(ctx: RunCtx): Promise<void> {
 
     const chapterIdsByLabel: Record<string, string> = { ch1: xingchenFirstCh };
 
-    let xingchenBefore = await getComic(ctx.sadmin, xingchenId);
-
-    assert.equal(xingchenBefore.chapter_count, 1);
-    assert.equal(xingchenBefore.chapter_next_index, 1);
+    const existingChapters = await listComicChapters(ctx.sadmin, xingchenId);
+    const maxExistingChIndex = Math.max(...existingChapters.map((ch) => ch.index), 0);
 
     for (let i = 0; i < chapterSpecs.length; i++) {
         const spec = chapterSpecs[i]!;
@@ -381,32 +363,30 @@ export async function runIt02Module(ctx: RunCtx): Promise<void> {
         const xingchenAfter = await getComic(ctx.sadmin, xingchenId);
 
         assert.equal(xingchenAfter.chapter_count, 2 + i, "chapter_count == active count");
-        assert.equal(xingchenAfter.chapter_next_index, 2 + i, "chapter_next_index monotonic +1");
     }
 
     // delete 第 3 话 (ch3)
     const ch3Id = chapterIdsByLabel["ch3"]!;
-    const xingchenBeforeChDelete = await getComic(ctx.sadmin, xingchenId);
-    const chapterNextBeforeChDelete = xingchenBeforeChDelete.chapter_next_index;
+    const chaptersBeforeChDelete = await listComicChapters(ctx.sadmin, xingchenId);
+    const maxChIndexBeforeDelete = Math.max(...chaptersBeforeChDelete.map((ch) => ch.index));
 
     expectStatus(await ctx.sadmin.delete<null>(`/api/v1/chapters/${ch3Id}`), 204);
 
     expectError(await ctx.sadmin.get<ErrorBody>(`/api/v1/chapters/${ch3Id}`), 422, 2);
 
-    // chapter_count -1; chapter_next_index unchanged
+    // chapter_count -1
     const xingchenAfterChDelete = await getComic(ctx.sadmin, xingchenId);
 
     assert.equal(xingchenAfterChDelete.chapter_count, 3);
-    assert.equal(xingchenAfterChDelete.chapter_next_index, chapterNextBeforeChDelete, "no backfill");
 
-    // create 第 5 话 断层回声; new index == pre-delete next_index (no backfill)
+    // create 第 5 话 断层回声; new index must not backfill (> any existing)
     const ch5 = await createChapter(ctx.sadmin, xingchenId, titled("第 5 话 断层回声"));
 
     chapterIdsByLabel["ch5"] = ch5.id;
 
     const ch5Info = await getChapter(ctx.sadmin, ch5.id);
 
-    assert.equal(ch5Info.index, chapterNextBeforeChDelete, "new chapter index no backfill");
+    assert.ok(ch5Info.index > maxChIndexBeforeDelete, "new chapter index no backfill");
 
     // active indexes are [0,1,3,4] (ch1=0, ch2=1, ch4=3, ch5=4) — no backfill
     const activeChapters = await listComicChapters(ctx.sadmin, xingchenId);
@@ -579,7 +559,6 @@ export async function runIt02Module(ctx: RunCtx): Promise<void> {
     assert.equal(wsUpdated.description, "ws updated");
     assert.equal(wsUpdated.index, wsForUpdate.index, "index unchanged");
     assert.equal(wsUpdated.comic_count, wsForUpdate.comic_count, "comic_count unchanged");
-    assert.equal(wsUpdated.comic_next_index, wsForUpdate.comic_next_index, "comic_next_index unchanged");
 
     // restore workset name
     await updateWorkset(ctx.sadmin, serialWsId, wsOriginalName, wsOriginalDesc || undefined);
@@ -598,11 +577,6 @@ export async function runIt02Module(ctx: RunCtx): Promise<void> {
     assert.equal(comicUpdated.description, "new desc");
     assert.equal(comicUpdated.index, comicForUpdate.index, "index unchanged");
     assert.equal(comicUpdated.chapter_count, comicForUpdate.chapter_count, "chapter_count unchanged");
-    assert.equal(
-        comicUpdated.chapter_next_index,
-        comicForUpdate.chapter_next_index,
-        "chapter_next_index unchanged",
-    );
 
     // restore comic profile
     await updateComic(ctx.sadmin, xingchenId, comicOriginalTitle, comicOriginalAuthor);

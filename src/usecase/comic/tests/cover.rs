@@ -264,7 +264,6 @@ async fn delete_removes_comic_updates_count_and_enqueues_cover_delete() {
 
     mock.seed_workset(WorksetInfo {
         comic_count: 1,
-        comic_next_index: 1,
         ..workset("workset-1", "team-1")
     });
 

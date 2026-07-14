@@ -1,7 +1,7 @@
 use poprako_orchestra::{Run, Step};
 
 use crate::part::repo::oper::workset::{
-    AllocateWorksetComicIndex, CreateWorkset, DeleteWorkset, GetWorksetInfo,
+    AllocWorksetComicIndex, CreateWorkset, DeleteWorkset, GetWorksetInfo,
     GetWorksetInfoExcluded, ListWorksetInfos, ListWorksetInfosExcluded,
     UpdateWorkset, UpdateWorksetComicCount,
 };
@@ -21,7 +21,7 @@ pub trait WorksetRepo<C>:
     + for<'a> Step<ListWorksetInfosExcluded<'a>, C, Error = RegularError>
     + for<'a> Step<CreateWorkset<'a>, C, Error = RegularError>
     + for<'a> Step<DeleteWorkset<'a>, C, Error = RegularError>
-    + for<'a> Step<AllocateWorksetComicIndex<'a>, C, Error = RegularError>
+    + for<'a> Step<AllocWorksetComicIndex<'a>, C, Error = RegularError>
     + for<'a> Step<UpdateWorksetComicCount<'a>, C, Error = RegularError>
 {
 }

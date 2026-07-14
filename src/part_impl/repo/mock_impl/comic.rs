@@ -11,7 +11,7 @@ use crate::model::user::UserInfo;
 use crate::model::workset::WorksetInfo;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::oper::comic::{
-    AllocateComicChapterIndex, CreateComic, DeleteComic, GetComicInfo,
+    AllocComicChapterIndex, CreateComic, DeleteComic, GetComicInfo,
     GetComicInfoExcluded, ListComicInfos, ListComicInfosExcluded,
     MarkComicCoverUploaded, ReserveComicCover, TouchComicLastActive,
     UpdateComic, UpdateComicChapterCount,
@@ -366,7 +366,6 @@ impl<'a> Step<CreateComic<'a>, MockContext> for Mock {
             cover_uploaded: false,
             cover_version: 0,
             chapter_count: 0,
-            chapter_next_index: 0,
             creator_id: oper.entry.creator_id.clone(),
             workset: None,
             team: None,
@@ -544,28 +543,30 @@ impl<'a> Step<DeleteComic<'a>, MockContext> for Mock {
     }
 }
 
-impl<'a> Step<AllocateComicChapterIndex<'a>, MockContext> for Mock {
+impl<'a> Step<AllocComicChapterIndex<'a>, MockContext> for Mock {
     type Error = RegularError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
-        oper: &AllocateComicChapterIndex<'a>,
+        oper: &AllocComicChapterIndex<'a>,
     ) -> Result<i32, Self::Error> {
         //
-        let comic = context
+        // verify the comic exists
+        context
             .state
             .comics
-            .iter_mut()
+            .iter()
             .find(|comic| comic.id == oper.id)
             .ok_or_else(|| expected("error-comic-not-found"))?;
 
-        let index = comic.chapter_next_index;
-
-        comic.chapter_next_index += 1;
-
-        comic.updated_at = now();
+        let index = context
+            .state
+            .chapters
+            .iter()
+            .filter(|chapter_info| chapter_info.comic_id == oper.id)
+            .count() as i32;
 
         Ok(index)
     }

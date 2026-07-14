@@ -10,7 +10,7 @@ use tracing::instrument;
 use crate::complex::team::TeamComplex;
 use crate::model::team::{TeamAvatarReservation, TeamEntry, TeamInfo};
 use crate::part::repo::oper::team::{
-    AllocateTeamWorksetIndex, CreateTeam, DeleteTeam, GetTeamInfo,
+    AllocTeamWorksetIndex, CreateTeam, DeleteTeam, GetTeamInfo,
     GetTeamInfoExcluded, ListTeamInfos, ReserveTeamAvatar, UpdateTeam,
 };
 use crate::part::repo::team::TeamRepo;
@@ -397,14 +397,14 @@ impl<'a> Step<DeleteTeam<'a>, RdbContext> for RdbRepo {
     }
 }
 
-impl<'a> Step<AllocateTeamWorksetIndex<'a>, RdbContext> for RdbRepo {
+impl<'a> Step<AllocTeamWorksetIndex<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &AllocateTeamWorksetIndex<'a>,
+        oper: &AllocTeamWorksetIndex<'a>,
     ) -> RegularResult<i32> {
         increment_workset_next_index(context.conn(), oper.id).await
     }

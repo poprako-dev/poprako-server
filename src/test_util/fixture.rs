@@ -62,7 +62,6 @@ pub fn team(id: &str, name: &str, description: &str) -> TeamInfo {
         avatar_key: None,
         avatar_uploaded: false,
         avatar_version: 0,
-        workset_next_index: 0,
         created_at: time,
         updated_at: time,
     }
@@ -80,7 +79,6 @@ pub fn workset(id: &str, team_id: &str) -> WorksetInfo {
         name: "workset".into(),
         description: None,
         comic_count: 0,
-        comic_next_index: 0,
         created_at: time,
         updated_at: time,
     }

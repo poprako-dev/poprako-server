@@ -70,10 +70,10 @@ impl<'a> Oper for DeleteTeam<'a> {
     type Output = ();
 }
 
-pub struct AllocateTeamWorksetIndex<'a> {
+pub struct AllocTeamWorksetIndex<'a> {
     pub id: &'a str,
 }
 
-impl<'a> Oper for AllocateTeamWorksetIndex<'a> {
+impl<'a> Oper for AllocTeamWorksetIndex<'a> {
     type Output = i32;
 }
