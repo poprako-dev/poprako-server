@@ -7,6 +7,8 @@ use utoipa::{IntoParams, ToSchema};
 
 use poprako_util::time::ToUnixMilli;
 
+use futures::future::OptionFuture;
+
 use crate::data::user::UserInfoVal;
 use crate::model::announcement::{AnnouncementInfo, AnnouncementListSpec};
 use crate::part::image::ImagePool;
@@ -39,20 +41,15 @@ impl AnnouncementInfoVal {
     where
         P: ImagePool,
     {
-        let user = match model.user {
-            //
-            Some(user_info) => {
-                Some(UserInfoVal::from_model(image_pool, user_info).await?)
-            }
-
-            None => None,
-        };
-
         Ok(Self {
             id: model.id,
             team_id: model.team_id,
             user_id: model.user_id,
-            user,
+            user: OptionFuture::from(model.user.map(|user_info| {
+                UserInfoVal::from_model(image_pool, user_info)
+            }))
+            .await
+            .transpose()?,
             title: model.title,
             content: model.content,
             created_at: model.created_at.to_unix_milli(),

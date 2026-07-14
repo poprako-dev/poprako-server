@@ -9,12 +9,14 @@ use poprako_util::i18n::trl;
 use poprako_util::time::ToUnixMilli;
 
 use crate::data::chapter::ChapterInfoVal;
+
 use crate::data::user::UserInfoVal;
 use crate::model::assignment::{AssignmentInfo, AssignmentInfoListSpec};
 use crate::part::image::ImagePool;
 use crate::result::{ExpectedVariant, RegularError, RegularResult};
 use crate::value::assignment::AssignmentInclOpt;
 use crate::value::role::{RoleField, RoleMask};
+use futures::future::OptionFuture;
 
 /// Presentation-ready chapter assignment information.
 #[derive(Debug, Serialize)]
@@ -61,30 +63,20 @@ impl AssignmentInfoVal {
     where
         P: ImagePool,
     {
-        let user = match model.user {
-            //
-            Some(user_info) => {
-                Some(UserInfoVal::from_model(image_pool, user_info).await?)
-            }
-
-            None => None,
-        };
-
-        let chapter = match model.chapter {
-            //
-            Some(chapter_info) => Some(
-                ChapterInfoVal::from_model(image_pool, chapter_info).await?,
-            ),
-
-            None => None,
-        };
-
         Ok(Self {
             id: model.id,
             chapter_id: model.chapter_id,
             user_id: model.user_id,
-            user,
-            chapter,
+            user: OptionFuture::from(model.user.map(|user_info| {
+                UserInfoVal::from_model(image_pool, user_info)
+            }))
+            .await
+            .transpose()?,
+            chapter: OptionFuture::from(model.chapter.map(|chapter_info| {
+                ChapterInfoVal::from_model(image_pool, chapter_info)
+            }))
+            .await
+            .transpose()?,
             roles: model.roles,
             created_at: model.created_at.to_unix_milli(),
             updated_at: model.updated_at.to_unix_milli(),
