@@ -243,6 +243,7 @@ where
 
 /// Trait form of [`accept`] so handlers can write `value.accept(StatusCode::OK)`.
 pub trait Accept {
+    /// The serializable data type returned in the HTTP response body.
     type Data: Serialize;
 
     /// Wraps `self` into an [`HttpResult`] carrying the provided status code.

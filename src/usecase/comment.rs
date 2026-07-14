@@ -2,6 +2,8 @@
 
 use poprako_orchestra::{Nucl, run_proxy};
 
+use tracing::instrument;
+
 use crate::complex::comment::{CommentComplex, CommentPermComplex};
 use crate::data::comment::{
     CommentInfoVal, CreateCommentParams, CreateCommentPayload,
@@ -20,6 +22,7 @@ use crate::result::{RegularError, RegularResult};
 mod tests;
 
 /// Lists comments under a team.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn list_infos<C, R, I>(
     repo: &R,
     image_pool: &I,
@@ -58,6 +61,7 @@ where
 }
 
 /// Creates a comment under a team.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn create<N, C, R>(
     nucl: &N,
     repo: &R,

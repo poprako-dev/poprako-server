@@ -67,6 +67,7 @@ async fn list_infos_deep_chapter_comic_workset_team_incl_fills_full_chain() {
         "member-user",
         role(RoleField::TRANSLATOR),
     ));
+    mock.seed_page(page("page-1", "chapter-1", "page.png"));
 
     let mut list_data = list_by_chapter_data("chapter-1");
 
@@ -89,6 +90,10 @@ async fn list_infos_deep_chapter_comic_workset_team_incl_fills_full_chain() {
     assert_eq!(comic_info_val.workset.as_ref().unwrap().id, "workset-1");
 
     assert_eq!(comic_info_val.team.as_ref().unwrap().id, "team-1");
+    assert_eq!(
+        comic_info_val.cover_url,
+        Some("https://test.local/get/page.png".into())
+    );
 }
 
 #[tokio::test]

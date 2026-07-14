@@ -3,6 +3,7 @@ use diesel::prelude::*;
 use diesel::sql_types::Bool;
 use diesel_async::RunQueryDsl;
 use time::OffsetDateTime;
+use tracing::instrument;
 
 use crate::complex::comic::ComicComplex;
 use crate::model::comic::{
@@ -150,6 +151,7 @@ fn stored_index_from_numeric_fuzzy(fuzzy_title_value: &str) -> Option<i32> {
 }
 
 /// Queries a single comic row by ID and populates its includes.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub(super) async fn get_info_by_id(
     conn: &mut RdbConn,
     id: &str,
@@ -178,6 +180,7 @@ pub(super) async fn get_info_by_id(
 }
 
 /// Queries comic rows filtered by workset, optional fuzzy title, and list kind.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub(super) async fn list_infos(
     conn: &mut RdbConn,
     spec: &ComicInfoListSpec,
@@ -223,6 +226,7 @@ pub(super) async fn list_infos(
 }
 
 /// Updates the title, author, description, and composed title of a comic row.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub(super) async fn update_info(
     conn: &mut RdbConn,
     update: &ComicInfoUpdate,
@@ -254,6 +258,7 @@ pub(super) async fn update_info(
 }
 
 /// Marks a comic's cover as uploaded, checking for version match.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub(super) async fn mark_cover_uploaded(
     conn: &mut RdbConn,
     id: &str,
@@ -280,6 +285,7 @@ pub(super) async fn mark_cover_uploaded(
 }
 
 /// Inserts a new comic row from the given entry and returns the created info.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub(super) async fn create(
     conn: &mut RdbConn,
     comic_entry: &ComicEntry,
@@ -298,6 +304,7 @@ pub(super) async fn create(
 }
 
 /// Locks a single comic row by ID.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub(super) async fn get_info_excluded(
     conn: &mut RdbConn,
     id: &str,
@@ -327,6 +334,7 @@ pub(super) async fn get_info_excluded(
 }
 
 /// Lists and locks the comic rows selected by a list spec.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub(super) async fn list_infos_excluded(
     conn: &mut RdbConn,
     spec: &ComicInfoListSpec,
@@ -377,6 +385,7 @@ pub(super) async fn list_infos_excluded(
 }
 
 /// Reserves a cover image key for a comic, incrementing the cover version.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub(super) async fn reserve_cover(
     conn: &mut RdbConn,
     id: &str,
@@ -416,6 +425,7 @@ pub(super) async fn reserve_cover(
 }
 
 /// Deletes a single comic row by ID.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub(super) async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
     //
     diesel::delete(t_comic.filter(f_id.eq(id)))
@@ -427,6 +437,7 @@ pub(super) async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
 }
 
 /// Atomically increments and returns the previous `chapter_next_index` value.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub(super) async fn incr_chapter_next_index(
     conn: &mut RdbConn,
     id: &str,
@@ -443,6 +454,7 @@ pub(super) async fn incr_chapter_next_index(
 }
 
 /// Adjusts a comic's chapter count by the given delta.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub(super) async fn update_chapter_count(
     conn: &mut RdbConn,
     id: &str,
@@ -459,6 +471,7 @@ pub(super) async fn update_chapter_count(
 }
 
 /// Updates the `last_active_at` timestamp on a comic row to now.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub(super) async fn touch_last_active(
     conn: &mut RdbConn,
     id: &str,

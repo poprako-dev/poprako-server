@@ -5,6 +5,8 @@ use diesel_async::RunQueryDsl;
 use poprako_orchestra::{Run, Step};
 use time::OffsetDateTime;
 
+use tracing::instrument;
+
 use crate::model::workset::{WorksetEntry, WorksetInfo, WorksetInfoUpdate};
 use crate::part::repo::oper::workset::{
     AllocateWorksetComicIndex, CreateWorkset, DeleteWorkset, GetWorksetInfo,
@@ -23,6 +25,7 @@ use crate::result::{RegularError, RegularResult};
 
 impl WorksetRepo<RdbContext> for RdbRepo {}
 
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn get_info(conn: &mut RdbConn, id: &str) -> RegularResult<WorksetInfo> {
     //
     let row: WorksetRow = t_workset
@@ -37,6 +40,7 @@ async fn get_info(conn: &mut RdbConn, id: &str) -> RegularResult<WorksetInfo> {
     Ok(row.into())
 }
 
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn list_infos(
     conn: &mut RdbConn,
     oper: &ListWorksetInfos<'_>,
@@ -57,6 +61,7 @@ async fn list_infos(
     Ok(rows.into_iter().map(Into::into).collect())
 }
 
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn update_info(
     conn: &mut RdbConn,
     update: &WorksetInfoUpdate,
@@ -77,6 +82,7 @@ async fn update_info(
     Ok(())
 }
 
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn list_infos_excluded(
     conn: &mut RdbConn,
     team_id: &str,
@@ -93,6 +99,7 @@ async fn list_infos_excluded(
     Ok(rows.into_iter().map(Into::into).collect())
 }
 
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn get_info_excluded(
     conn: &mut RdbConn,
     id: &str,
@@ -111,6 +118,7 @@ async fn get_info_excluded(
     Ok(row.into())
 }
 
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn create(
     conn: &mut RdbConn,
     workset_entry: &WorksetEntry,
@@ -128,6 +136,7 @@ async fn create(
     Ok(row.into())
 }
 
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
     //
     diesel::delete(t_workset.filter(f_id.eq(id)))
@@ -138,6 +147,7 @@ async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
     Ok(())
 }
 
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn allocate_comic_index(
     conn: &mut RdbConn,
     id: &str,
@@ -153,6 +163,7 @@ async fn allocate_comic_index(
     Ok(index)
 }
 
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn update_comic_count(
     conn: &mut RdbConn,
     id: &str,
@@ -171,6 +182,7 @@ async fn update_comic_count(
 impl<'a> Run<GetWorksetInfo<'a>> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &GetWorksetInfo<'a>,
@@ -182,6 +194,7 @@ impl<'a> Run<GetWorksetInfo<'a>> for RdbRepo {
 impl<'a> Run<ListWorksetInfos<'a>> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &ListWorksetInfos<'a>,
@@ -193,6 +206,7 @@ impl<'a> Run<ListWorksetInfos<'a>> for RdbRepo {
 impl<'a> Run<UpdateWorkset<'a>> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(&self, oper: &UpdateWorkset<'a>) -> RegularResult<()> {
         submit_query!(self.core, update_info, oper.update)
     }
@@ -201,6 +215,7 @@ impl<'a> Run<UpdateWorkset<'a>> for RdbRepo {
 impl<'a> Step<GetWorksetInfo<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -213,6 +228,7 @@ impl<'a> Step<GetWorksetInfo<'a>, RdbContext> for RdbRepo {
 impl<'a> Step<ListWorksetInfos<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -225,6 +241,7 @@ impl<'a> Step<ListWorksetInfos<'a>, RdbContext> for RdbRepo {
 impl<'a> Step<GetWorksetInfoExcluded<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -237,6 +254,7 @@ impl<'a> Step<GetWorksetInfoExcluded<'a>, RdbContext> for RdbRepo {
 impl<'a> Step<ListWorksetInfosExcluded<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -249,6 +267,7 @@ impl<'a> Step<ListWorksetInfosExcluded<'a>, RdbContext> for RdbRepo {
 impl<'a> Step<CreateWorkset<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -261,6 +280,7 @@ impl<'a> Step<CreateWorkset<'a>, RdbContext> for RdbRepo {
 impl<'a> Step<DeleteWorkset<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -273,6 +293,7 @@ impl<'a> Step<DeleteWorkset<'a>, RdbContext> for RdbRepo {
 impl<'a> Step<AllocateWorksetComicIndex<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -285,6 +306,7 @@ impl<'a> Step<AllocateWorksetComicIndex<'a>, RdbContext> for RdbRepo {
 impl<'a> Step<UpdateWorksetComicCount<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,

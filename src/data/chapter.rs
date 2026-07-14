@@ -5,9 +5,12 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "swagger-ui")]
 use utoipa::{IntoParams, ToSchema};
 
+use futures::future::OptionFuture;
+
 use poprako_util::time::ToUnixMilli;
 
 use crate::data::comic::ComicInfoVal;
+
 use crate::data::user::UserInfoVal;
 use crate::model::chapter::ChapterInfo;
 use crate::part::image::ImagePool;
@@ -28,9 +31,7 @@ pub struct ChapterInfoVal {
     pub id: String,
     pub comic_id: String,
 
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[cfg_attr(feature = "swagger-ui", schema(no_recursion))]
-    pub comic: Option<Box<ComicInfoVal>>,
+    pub comic: Option<ComicInfoVal>,
 
     pub is_pinned: bool,
     pub index: i32,
@@ -45,7 +46,6 @@ pub struct ChapterInfoVal {
 
     pub creator_id: String,
 
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub creator: Option<UserInfoVal>,
 
     pub created_at: i64,
@@ -80,37 +80,23 @@ impl ChapterInfoVal {
     pub async fn from_model<P>(
         image_pool: &P,
         model: ChapterInfo,
+        fallback_cover_key: Option<&str>,
     ) -> RegularResult<Self>
     where
         P: ImagePool,
     {
-        let creator = match model.creator {
-            //
-            Some(user_info) => {
-                Some(UserInfoVal::from_model(image_pool, user_info).await?)
-            }
-
-            None => None,
-        };
-
-        let comic = match model.comic {
-            //
-            Some(comic_info) => {
-                //
-                let comic =
-                    ComicInfoVal::from_model(image_pool, comic_info, None)
-                        .await?;
-
-                Some(Box::new(comic))
-            }
-
-            None => None,
-        };
-
         Ok(Self {
             id: model.id,
             comic_id: model.comic_id,
-            comic,
+            comic: OptionFuture::from(model.comic.map(|comic_info| {
+                ComicInfoVal::from_model(
+                    image_pool,
+                    comic_info,
+                    fallback_cover_key,
+                )
+            }))
+            .await
+            .transpose()?,
             is_pinned: model.is_pinned,
             index: model.index,
             subtitle: model.subtitle,
@@ -120,7 +106,11 @@ impl ChapterInfoVal {
             proofread_unit_count: model.proofread_unit_count,
             stages: model.stages,
             creator_id: model.creator_id,
-            creator,
+            creator: OptionFuture::from(model.creator.map(|user_info| {
+                UserInfoVal::from_model(image_pool, user_info)
+            }))
+            .await
+            .transpose()?,
             created_at: model.created_at.to_unix_milli(),
             updated_at: model.updated_at.to_unix_milli(),
         })

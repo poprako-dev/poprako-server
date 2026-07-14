@@ -31,7 +31,7 @@ use crate::usecase;
         (status = 403, description = "Only super-admins can create teams"),
     ),
 ))]
-#[instrument(err, skip(harn, params))]
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn create(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
@@ -61,7 +61,7 @@ pub async fn create(
         (status = 403, description = "Listing all teams requires super-admin"),
     ),
 ))]
-#[instrument(err, skip(harn))]
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn list_infos(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
@@ -89,7 +89,7 @@ pub async fn list_infos(
         (status = 404, description = "Team not found"),
     ),
 ))]
-#[instrument(err, skip(harn))]
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn get_info(
     State(harn): State<AppHarn>,
     Path(team_id): Path<String>,
@@ -113,7 +113,7 @@ pub async fn get_info(
         (status = 404, description = "Team not found"),
     ),
 ))]
-#[instrument(err, skip(harn, params))]
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn update_info(
     State(harn): State<AppHarn>,
     Path(team_id): Path<String>,
@@ -141,7 +141,7 @@ pub async fn update_info(
         (status = 404, description = "Team not found"),
     ),
 ))]
-#[instrument(err, skip(harn, params))]
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn reserve_avatar(
     State(harn): State<AppHarn>,
     Path(team_id): Path<String>,
@@ -174,7 +174,7 @@ pub async fn reserve_avatar(
         (status = 404, description = "Team not found"),
     ),
 ))]
-#[instrument(err, skip(harn, params))]
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn mark_avatar_uploaded(
     State(harn): State<AppHarn>,
     Path(team_id): Path<String>,
@@ -205,7 +205,7 @@ pub async fn mark_avatar_uploaded(
         (status = 404, description = "Team not found"),
     ),
 ))]
-#[instrument(err, skip(harn))]
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn delete(
     State(harn): State<AppHarn>,
     Path(team_id): Path<String>,

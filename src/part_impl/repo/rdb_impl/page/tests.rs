@@ -3,7 +3,9 @@
 use poprako_orchestra::{Nucl as _, Run as _, Step as _};
 
 use crate::model::unit::UnitCounters;
-use crate::part::repo::oper::page::{ListPageInfos, SetPageUnitCounters};
+use crate::part::repo::oper::page::{
+    CreatePages, ListFirstPageInfos, ListPageInfos, SetPageUnitCounters,
+};
 use crate::part_impl::drive::rdb_impl::RdbDrive;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
 use crate::result::RegularError;
@@ -60,6 +62,45 @@ async fn page_roundtrip_reads_test_database_url() {
     assert_eq!(page_infos.len(), 1);
 
     assert_eq!(page_infos[0].total_unit_count, 2);
+
+    let second_page_entry = crate::model::page::PageEntry {
+        id: format!("{}page-later", PREFIX),
+        chapter_id: page_fixture.chapter_entry.id.clone(),
+        index: 1,
+        image_key: None,
+        image_version: 0,
+    };
+
+    drive
+        .coord(async |context| {
+            repo.step(
+                context,
+                &CreatePages {
+                    entries: &[second_page_entry],
+                },
+            )
+            .await?;
+
+            Ok::<(), RegularError>(())
+        })
+        .await
+        .ok()
+        .unwrap();
+
+    let chapter_ids = vec![page_fixture.chapter_entry.id.clone()];
+
+    let first_page_infos = repo
+        .run(&ListFirstPageInfos {
+            chapter_ids: &chapter_ids,
+        })
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        first_page_infos[&page_fixture.chapter_entry.id].id,
+        page_fixture.page_entry.id
+    );
 
     test_shared::cleanup(&shared, PREFIX).await.ok().unwrap();
 

@@ -5,6 +5,8 @@ use poprako_orchestra_extra::prom::oper::DeferBatch;
 use poprako_orchestra_extra::prom::task::Task;
 use time::OffsetDateTime;
 
+use tracing::instrument;
+
 use crate::complex::comic_archive::{
     ComicArchiveComplex, ComicArchivePermComplex,
 };
@@ -30,6 +32,7 @@ use crate::util::next_snowflake_id;
 mod tests;
 
 /// Archive one active comic, its descendants, and all retained image keys.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn archive<N, C, R, P>(
     nucl: &N,
     repo: &R,

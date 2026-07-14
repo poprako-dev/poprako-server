@@ -5,10 +5,13 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "swagger-ui")]
 use utoipa::{IntoParams, ToSchema};
 
+use futures::future::OptionFuture;
+
 use poprako_util::i18n::trl;
 use poprako_util::time::ToUnixMilli;
 
 use crate::data::chapter::ChapterInfoVal;
+
 use crate::data::user::UserInfoVal;
 use crate::model::assignment::{AssignmentInfo, AssignmentInfoListSpec};
 use crate::part::image::ImagePool;
@@ -25,9 +28,7 @@ pub struct AssignmentInfoVal {
     pub chapter_id: String,
     pub user_id: String,
 
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub user: Option<UserInfoVal>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub chapter: Option<ChapterInfoVal>,
 
     pub roles: RoleMask,
@@ -57,34 +58,29 @@ impl AssignmentInfoVal {
     pub async fn from_model<P>(
         image_pool: &P,
         model: AssignmentInfo,
+        fallback_cover_key: Option<&str>,
     ) -> RegularResult<Self>
     where
         P: ImagePool,
     {
-        let user = match model.user {
-            //
-            Some(user_info) => {
-                Some(UserInfoVal::from_model(image_pool, user_info).await?)
-            }
-
-            None => None,
-        };
-
-        let chapter = match model.chapter {
-            //
-            Some(chapter_info) => Some(
-                ChapterInfoVal::from_model(image_pool, chapter_info).await?,
-            ),
-
-            None => None,
-        };
-
         Ok(Self {
             id: model.id,
             chapter_id: model.chapter_id,
             user_id: model.user_id,
-            user,
-            chapter,
+            user: OptionFuture::from(model.user.map(|user_info| {
+                UserInfoVal::from_model(image_pool, user_info)
+            }))
+            .await
+            .transpose()?,
+            chapter: OptionFuture::from(model.chapter.map(|chapter_info| {
+                ChapterInfoVal::from_model(
+                    image_pool,
+                    chapter_info,
+                    fallback_cover_key,
+                )
+            }))
+            .await
+            .transpose()?,
             roles: model.roles,
             created_at: model.created_at.to_unix_milli(),
             updated_at: model.updated_at.to_unix_milli(),

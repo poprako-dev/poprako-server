@@ -4,6 +4,8 @@ use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use poprako_orchestra::{Run, Step};
 
+use tracing::instrument;
+
 use crate::model::comment::{CommentEntry, CommentInfo, CommentListSpec};
 use crate::part::repo::comment::CommentRepo;
 use crate::part::repo::oper::comment::{CreateComment, ListCommentInfos};
@@ -19,6 +21,7 @@ use crate::result::{RegularError, RegularResult};
 impl CommentRepo<RdbContext> for RdbRepo {}
 
 /// Query comment infos matching the given list spec, with optional includes.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn list_infos(
     conn: &mut RdbConn,
     spec: &CommentListSpec,
@@ -44,6 +47,7 @@ async fn list_infos(
 }
 
 /// Insert a new comment from the given entry and return the created info.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn create(
     conn: &mut RdbConn,
     entry: &CommentEntry,
@@ -64,6 +68,7 @@ async fn create(
 impl Run<ListCommentInfos<'_>> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &ListCommentInfos<'_>,
@@ -75,6 +80,7 @@ impl Run<ListCommentInfos<'_>> for RdbRepo {
 impl Step<CreateComment<'_>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,

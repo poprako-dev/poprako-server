@@ -3,7 +3,7 @@ set -eu
 
 project_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 
-image_name="${IMAGE_NAME:-poprako-sr-prod:latest}"
+image_name="${IMAGE_NAME:-poprako-server-prod:latest}"
 platform="${PLATFORM:-linux/amd64}"
 
 if [ "${PUSH:-0}" = "1" ]; then

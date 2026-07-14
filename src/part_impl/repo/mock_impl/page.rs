@@ -1,5 +1,7 @@
 //! Mock implementation of `PageRepo`.
 
+use std::collections::HashMap;
+
 use crate::model::page::{PageEntry, PageInfo};
 use crate::part::repo::page::PageRepo;
 use crate::part_impl::repo::mock_impl::{
@@ -54,6 +56,22 @@ fn list_pages(
     let end = std::cmp::min(offset + limit, page_infos.len());
 
     page_infos[offset..end].to_vec()
+}
+
+fn list_first_pages(
+    state: &MockState,
+    chapter_ids: &[String],
+) -> HashMap<String, PageInfo> {
+    //
+    chapter_ids
+        .iter()
+        .filter_map(|chapter_id| {
+            list_all_pages(state, chapter_id)
+                .into_iter()
+                .next()
+                .map(|page_info| (chapter_id.clone(), page_info))
+        })
+        .collect()
 }
 
 fn page_from_entry(entry: &PageEntry) -> PageInfo {

@@ -43,12 +43,12 @@ impl InclOpt for ComicInclOpt {
 
 /// Extra data options for comic info queries.
 ///
-/// Unlike `ComicInclOpt`, `with` opts attach derived rather than
-/// directly related data (e.g. the chapter currently pinned to the comic).
+/// Unlike `ComicInclOpt`, `with` opts populate the separately returned
+/// derived data (e.g. the chapter currently pinned to each comic).
 #[derive(Debug, Deserialize, Clone, Copy, PartialEq, Eq)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
 #[serde(rename_all = "snake_case")]
 pub enum ComicWithOpt {
-    /// Embed the chapter currently pinned to each comic.
+    /// Populate the parallel pinned-chapter list.
     PinnedChapter,
 }

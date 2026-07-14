@@ -4,6 +4,8 @@ use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use time::OffsetDateTime;
 
+use tracing::instrument;
+
 use crate::complex::page::PageComplex;
 use crate::model::page::{PageEntry, PageImageReservation, PageInfo};
 use crate::model::unit::UnitCounters;
@@ -25,6 +27,7 @@ impl PageRepo<RdbContext> for RdbRepo {}
 mod orchestra;
 
 /// Load a single page info by ID.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn get_info_by_id(
     conn: &mut RdbConn,
     id: &str,
@@ -43,6 +46,7 @@ async fn get_info_by_id(
 }
 
 /// Load a page info by ID, locking the row for update.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn get_info_excluded(
     conn: &mut RdbConn,
     id: &str,
@@ -62,6 +66,7 @@ async fn get_info_excluded(
 }
 
 /// Query a paginated list of page infos for a chapter, ordered by index.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn list_infos_by_chapter_id(
     conn: &mut RdbConn,
     chapter_id: &str,
@@ -83,6 +88,7 @@ async fn list_infos_by_chapter_id(
 }
 
 /// Query all page infos for a chapter, ordered by index (no pagination).
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn list_all_infos_by_chapter_id(
     conn: &mut RdbConn,
     chapter_id: &str,
@@ -99,7 +105,31 @@ async fn list_all_infos_by_chapter_id(
     Ok(rows.into_iter().map(Into::into).collect())
 }
 
+/// Query the lowest-index page info for each requested chapter.
+#[instrument(level = "info", err(Debug), skip_all)]
+async fn list_first_infos_by_chapter_ids(
+    conn: &mut RdbConn,
+    chapter_ids: &[String],
+) -> RegularResult<HashMap<String, PageInfo>> {
+    //
+    let rows: Vec<PageRow> = t_page
+        .filter(f_chapter_id.eq_any(chapter_ids))
+        .select(PageRow::as_select())
+        .distinct_on(f_chapter_id)
+        .order_by((f_chapter_id.asc(), f_index.asc()))
+        .load(conn)
+        .await
+        .map_err(diesel)?;
+
+    Ok(rows
+        .into_iter()
+        .map(Into::into)
+        .map(|page_info: PageInfo| (page_info.chapter_id.clone(), page_info))
+        .collect())
+}
+
 /// Batch-insert pages from a slice of model_entries and return the created infos.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn create_batch(
     conn: &mut RdbConn,
     model_entries: &[PageEntry],
@@ -120,6 +150,7 @@ async fn create_batch(
 
 /// Reserve a new image slot for a page: bump version, generate object key,
 /// and return the reservation with previous key for cleanup.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn reserve_image(
     conn: &mut RdbConn,
     id: &str,
@@ -162,6 +193,7 @@ async fn reserve_image(
 }
 
 /// Mark a page's image as successfully uploaded, checking version staleness.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn mark_image_uploaded(
     conn: &mut RdbConn,
     id: &str,
@@ -188,6 +220,7 @@ async fn mark_image_uploaded(
 }
 
 /// Persist unit counters (total, translated, proofread) onto a page row.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn set_unit_counters(
     conn: &mut RdbConn,
     id: &str,
@@ -211,6 +244,7 @@ async fn set_unit_counters(
 }
 
 /// Delete all pages (and their child units) for a given chapter.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn delete_by_chapter_id(
     conn: &mut RdbConn,
     chapter_id: &str,
@@ -240,3 +274,4 @@ async fn delete_by_chapter_id(
 
 #[cfg(all(test, feature = "repo"))]
 mod tests;
+use std::collections::HashMap;

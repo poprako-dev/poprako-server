@@ -39,7 +39,7 @@ interface ActiveImageKeys {
 
 interface ArchiveAuditRow {
     f_archiver_id: string;
-    f_created_at: string;
+    f_created_at: Date;
 }
 
 export async function runIt11Module(ctx: RunCtx): Promise<void> {
@@ -191,15 +191,15 @@ export async function runIt11Module(ctx: RunCtx): Promise<void> {
     // All archive rows share the same created_at timestamp.
     for (const row of archive_rows.chapter_rows.rows) {
         assert.equal(
-            archive_rows.comic_rows.rows[0]!.f_created_at,
-            row.f_created_at,
+            archive_rows.comic_rows.rows[0]!.f_created_at.getTime(),
+            row.f_created_at.getTime(),
         );
     }
 
     for (const row of archive_rows.translation_rows.rows) {
         assert.equal(
-            archive_rows.comic_rows.rows[0]!.f_created_at,
-            row.f_created_at,
+            archive_rows.comic_rows.rows[0]!.f_created_at.getTime(),
+            row.f_created_at.getTime(),
         );
     }
 
@@ -214,7 +214,7 @@ export async function runIt11Module(ctx: RunCtx): Promise<void> {
     // All reserved page images across both chapters must have delete entries.
     // Two pages total → at least 2 page-key delete entries.
     const page_delete_keys = delete_keys.filter(
-        (object_key) => object_key.startsWith("page_image/"),
+        (object_key) => object_key.startsWith("chapter_"),
     );
 
     assert.ok(page_delete_keys.length >= 2, "all reserved page images must have delete entries");

@@ -7,8 +7,11 @@ use poprako_orchestra::nucl::Error as NuclError;
 /// Categorizes an expected application error by its origin domain.
 #[derive(Debug)]
 pub enum ExpectedVariant {
+    /// Invalid or missing arguments.
     Args,
+    /// Authentication failure.
     Auth,
+    /// Permission denied.
     Perm,
 }
 
@@ -17,18 +20,19 @@ pub enum ExpectedVariant {
 /// an unrecoverable system-level failure.
 #[derive(Debug)]
 pub enum Error {
+    /// An expected application condition — the error can be communicated to the client.
     Expected {
         variant: ExpectedVariant,
         message: String,
     },
-    Unrecoverable {
-        message: String,
-    },
+    /// An unexpected system-level failure — cannot be recovered mid-request.
+    Unrecoverable { message: String },
 }
 
 /// Convenience alias for [`std::result::Result`] with the application's [`Error`] type.
 pub type Result<T> = StdResult<T, Error>;
 
+/// Wraps a value in `Ok(...)` — the simplest use-case return.
 pub fn accept<T>(v: T) -> Result<T> {
     Ok(v)
 }

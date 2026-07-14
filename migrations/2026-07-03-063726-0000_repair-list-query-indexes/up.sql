@@ -24,7 +24,7 @@ CREATE INDEX IF NOT EXISTS "idx_comic_composed_title_trgm"
     ON "t_comic" USING GIN ("f_composed_title" gin_trgm_ops);
 
 CREATE INDEX IF NOT EXISTS "idx_comic_workset_last_active"
-    ON "t_comic" ("f_workset_id", "f_last_active_at" DESC);
+    ON "t_comic" ("f_workset_id", "f_last_active_at" DESC, "f_index" ASC);
 
 CREATE INDEX IF NOT EXISTS "idx_member_nickname_trgm"
     ON "t_member" USING GIN ("f_user_nickname" gin_trgm_ops);
@@ -69,7 +69,7 @@ CREATE INDEX IF NOT EXISTS "idx_team_created_at"
     ON "t_team" ("f_created_at" DESC);
 
 CREATE INDEX IF NOT EXISTS "idx_assignment_invitation_chapter_created_at"
-    ON "t_assignment_invitation" ("f_chapter_id", "f_created_at" DESC);
+    ON "t_assignment_invitation" ("f_chapter_id", "f_created_at" DESC, "f_id" ASC);
 
 CREATE INDEX IF NOT EXISTS "idx_assignment_invitation_chapter_pending_created_at"
-    ON "t_assignment_invitation" ("f_chapter_id", "f_pending", "f_created_at" DESC);
+    ON "t_assignment_invitation" ("f_chapter_id", "f_pending", "f_created_at" DESC, "f_id" ASC);

@@ -6,11 +6,15 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "swagger-ui")]
 use utoipa::{IntoParams, ToSchema};
 
+use futures::future::OptionFuture;
+
 use crate::data::user::UserInfoVal;
 use crate::model::member_invitation::MemberInvitationInfo;
 use crate::part::image::ImagePool;
 use crate::result::RegularResult;
+
 use crate::value::member_invitation::MemberInvitationInclOpt;
+
 use crate::value::role::RoleMask;
 
 /// Input parameters for creating a new team invitation.
@@ -85,7 +89,6 @@ pub struct MemberInvitationInfoVal {
     pub team_id: String,
 
     pub invitor_id: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub invitor: Option<UserInfoVal>,
 
     pub invitee_qid: String,
@@ -121,20 +124,15 @@ impl MemberInvitationInfoVal {
     where
         P: ImagePool,
     {
-        let invitor = match model.invitor {
-            //
-            Some(user_info) => {
-                Some(UserInfoVal::from_model(image_pool, user_info).await?)
-            }
-
-            None => None,
-        };
-
         Ok(Self {
             id: model.id,
             team_id: model.team_id,
             invitor_id: model.invitor_id,
-            invitor,
+            invitor: OptionFuture::from(model.invitor.map(|user_info| {
+                UserInfoVal::from_model(image_pool, user_info)
+            }))
+            .await
+            .transpose()?,
             invitee_qid: model.invitee_qid,
             code: model.code,
             pending: model.pending,

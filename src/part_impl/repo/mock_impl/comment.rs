@@ -4,6 +4,8 @@ use std::cmp::Reverse;
 
 use poprako_orchestra::{Run, Step};
 
+use tracing::instrument;
+
 use crate::model::comment::{CommentEntry, CommentInfo, CommentListSpec};
 use crate::model::user::UserInfo;
 use crate::part::repo::comment::CommentRepo;
@@ -104,6 +106,7 @@ fn create_comment(
 impl Run<ListCommentInfos<'_>> for Mock {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &ListCommentInfos<'_>,
@@ -118,6 +121,7 @@ impl Run<ListCommentInfos<'_>> for Mock {
 impl Step<CreateComment<'_>, MockContext> for Mock {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,

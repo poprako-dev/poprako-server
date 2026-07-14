@@ -2,6 +2,8 @@
 
 use poprako_orchestra::{Run, Step};
 
+use tracing::instrument;
+
 use crate::model::member_invitation::{
     MemberInvitationEntry, MemberInvitationInfo, MemberInvitationListSpec,
 };
@@ -209,6 +211,7 @@ fn update_member_invitation(
 impl<'a> Run<ListMemberInvitationInfos<'a>> for Mock {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &ListMemberInvitationInfos<'a>,
@@ -223,6 +226,7 @@ impl<'a> Run<ListMemberInvitationInfos<'a>> for Mock {
 impl<'a, 'b> Run<GetMemberInvitationInfo<'a, 'b>> for Mock {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &GetMemberInvitationInfo<'a, 'b>,
@@ -237,6 +241,7 @@ impl<'a, 'b> Run<GetMemberInvitationInfo<'a, 'b>> for Mock {
 impl<'a> Step<CreateMemberInvitation<'a>, MockContext> for Mock {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -249,6 +254,7 @@ impl<'a> Step<CreateMemberInvitation<'a>, MockContext> for Mock {
 impl<'a, 'b> Step<GetMemberInvitationInfo<'a, 'b>, MockContext> for Mock {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -261,6 +267,7 @@ impl<'a, 'b> Step<GetMemberInvitationInfo<'a, 'b>, MockContext> for Mock {
 impl<'a> Step<UpdateMemberInvitation<'a>, MockContext> for Mock {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -273,6 +280,7 @@ impl<'a> Step<UpdateMemberInvitation<'a>, MockContext> for Mock {
 impl<'a> Step<GetMemberInvitationInfoExcluded<'a>, MockContext> for Mock {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -294,6 +302,7 @@ impl<'a> Step<GetMemberInvitationInfoExcluded<'a>, MockContext> for Mock {
 impl<'a> Step<DeleteMemberInvitation<'a>, MockContext> for Mock {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,

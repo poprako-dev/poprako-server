@@ -1,19 +1,24 @@
 use poprako_orchestra::{Run, Step};
 
+use tracing::instrument;
+
 use crate::complex::page::PageComplex;
 use crate::model::page::{PageImageReservation, PageInfo};
 use crate::part::repo::oper::page::{
-    CreatePages, DeletePages, GetPageInfo, GetPageInfoExcluded, ListPageInfos,
-    MarkPageImageUploaded, ReservePageImage, SetPageUnitCounters,
+    CreatePages, DeletePages, GetPageInfo, GetPageInfoExcluded,
+    ListFirstPageInfos, ListPageInfos, MarkPageImageUploaded, ReservePageImage,
+    SetPageUnitCounters,
 };
 use crate::part_impl::repo::mock_impl::page::{
-    get_page_by_id, list_all_pages, list_pages, page_from_entry,
+    get_page_by_id, list_all_pages, list_first_pages, list_pages,
+    page_from_entry,
 };
 use crate::part_impl::repo::mock_impl::{Mock, MockContext, expected, now};
 use crate::result::{RegularError, RegularResult};
 
 impl<'a> Run<GetPageInfo<'a>> for Mock {
     type Error = RegularError;
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(&self, oper: &GetPageInfo<'a>) -> RegularResult<PageInfo> {
         //
         let state = self.state.lock().unwrap();
@@ -23,6 +28,7 @@ impl<'a> Run<GetPageInfo<'a>> for Mock {
 }
 impl<'a> Run<ListPageInfos<'a>> for Mock {
     type Error = RegularError;
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &ListPageInfos<'a>,
@@ -44,8 +50,24 @@ impl<'a> Run<ListPageInfos<'a>> for Mock {
         }
     }
 }
+
+impl<'a> Run<ListFirstPageInfos<'a>> for Mock {
+    type Error = RegularError;
+
+    #[instrument(level = "info", err(Debug), skip_all)]
+    async fn run(
+        &self,
+        oper: &ListFirstPageInfos<'a>,
+    ) -> RegularResult<std::collections::HashMap<String, PageInfo>> {
+        //
+        let state = self.state.lock().unwrap();
+
+        Ok(list_first_pages(&state, oper.chapter_ids))
+    }
+}
 impl<'a> Step<GetPageInfo<'a>, MockContext> for Mock {
     type Error = RegularError;
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -56,6 +78,7 @@ impl<'a> Step<GetPageInfo<'a>, MockContext> for Mock {
 }
 impl<'a> Step<ListPageInfos<'a>, MockContext> for Mock {
     type Error = RegularError;
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -77,6 +100,7 @@ impl<'a> Step<ListPageInfos<'a>, MockContext> for Mock {
 }
 impl<'a> Step<CreatePages<'a>, MockContext> for Mock {
     type Error = RegularError;
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -103,6 +127,7 @@ impl<'a> Step<CreatePages<'a>, MockContext> for Mock {
 }
 impl<'a> Step<GetPageInfoExcluded<'a>, MockContext> for Mock {
     type Error = RegularError;
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -113,6 +138,7 @@ impl<'a> Step<GetPageInfoExcluded<'a>, MockContext> for Mock {
 }
 impl<'a> Step<ReservePageImage<'a>, MockContext> for Mock {
     type Error = RegularError;
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -152,6 +178,7 @@ impl<'a> Step<ReservePageImage<'a>, MockContext> for Mock {
 }
 impl<'a> Step<MarkPageImageUploaded<'a>, MockContext> for Mock {
     type Error = RegularError;
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -178,6 +205,7 @@ impl<'a> Step<MarkPageImageUploaded<'a>, MockContext> for Mock {
 }
 impl<'a> Step<SetPageUnitCounters<'a>, MockContext> for Mock {
     type Error = RegularError;
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -204,6 +232,7 @@ impl<'a> Step<SetPageUnitCounters<'a>, MockContext> for Mock {
 }
 impl<'a> Step<DeletePages<'a>, MockContext> for Mock {
     type Error = RegularError;
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,

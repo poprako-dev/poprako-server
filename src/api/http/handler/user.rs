@@ -30,7 +30,7 @@ use crate::usecase;
         (status = 401, description = "Authentication required"),
     ),
 ))]
-#[instrument(err, skip(harn))]
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn get_my_info(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
@@ -61,7 +61,7 @@ pub async fn get_my_info(
         (status = 404, description = "User not found"),
     ),
 ))]
-#[instrument(err, skip(harn))]
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn get_info(
     State(harn): State<AppHarn>,
     Path(user_id): Path<String>,
@@ -92,7 +92,7 @@ pub async fn get_info(
         (status = 409, description = "QID already taken"),
     ),
 ))]
-#[instrument(err, skip(harn, params))]
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn update_info(
     State(harn): State<AppHarn>,
     Path(user_id): Path<String>,
@@ -120,7 +120,7 @@ pub async fn update_info(
         (status = 404, description = "User not found"),
     ),
 ))]
-#[instrument(err, skip(harn))]
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn delete(
     State(harn): State<AppHarn>,
     Path(user_id): Path<String>,
@@ -151,7 +151,7 @@ pub async fn delete(
         (status = 403, description = "Cannot modify another user's avatar"),
     ),
 ))]
-#[instrument(err, skip(harn, params))]
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn reserve_avatar(
     State(harn): State<AppHarn>,
     Path(user_id): Path<String>,
@@ -185,7 +185,7 @@ pub async fn reserve_avatar(
         (status = 403, description = "Cannot confirm another user's avatar"),
     ),
 ))]
-#[instrument(err, skip(harn, params))]
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn mark_avatar_uploaded(
     State(harn): State<AppHarn>,
     Path(user_id): Path<String>,

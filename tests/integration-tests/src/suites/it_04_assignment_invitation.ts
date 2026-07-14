@@ -404,7 +404,7 @@ export async function runIt04Module(ctx: RunCtx): Promise<void> {
                             is_bubble: true,
                             is_proofread: false,
                             local_id: "should-fail",
-                            oper: "save",
+                            oper: "create",
                             translated_text: null,
                             x_coord: 0.1,
                             y_coord: 0.1,

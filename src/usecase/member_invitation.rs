@@ -1,5 +1,7 @@
 //! Member invitation use cases.
 
+use tracing::instrument;
+
 use poprako_orchestra::{Nucl, run_proxy};
 
 use poprako_util::i18n::trl;
@@ -34,6 +36,7 @@ mod tests;
 // FIXME: invitations should be fired out after a period of time.
 
 /// Creates a pending invitation for a team.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn create<N, C, R>(
     nucl: &N,
     repo: &R,
@@ -123,6 +126,7 @@ where
 }
 
 /// Lists invitations for a team.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn list_infos<C, R, I>(
     repo: &R,
     image_pool: &I,
@@ -173,6 +177,7 @@ where
 }
 
 /// Updates the roles of an invitation.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn update_roles<N, C, R>(
     nucl: &N,
     repo: &R,
@@ -195,32 +200,32 @@ where
     )
     .await?;
 
-    let transaction_output = nucl
-        .coord(async move |context| -> RegularResult<()> {
-            //
-            let member_invitation_update = MemberInvitationUpdate {
-                id: params.id,
-                roles: params.roles,
-            };
+    nucl.coord(async move |context| -> RegularResult<()> {
+        //
+        let member_invitation_update = MemberInvitationUpdate {
+            id: params.id,
+            roles: params.roles,
+        };
 
-            repo.step(
-                context,
-                &UpdateMemberInvitation::Info {
-                    update: &member_invitation_update,
-                },
-            )
-            .await?;
-
-            Ok(())
-        })
+        repo.step(
+            context,
+            &UpdateMemberInvitation::Info {
+                update: &member_invitation_update,
+            },
+        )
         .await?;
 
-    let () = transaction_output;
+        Ok(())
+    })
+    .await?;
+
+    let () = ();
 
     Ok(())
 }
 
 /// Deletes an invitation.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn delete<N, C, R>(
     nucl: &N,
     repo: &R,
@@ -243,17 +248,16 @@ where
     )
     .await?;
 
-    let transaction_output = nucl
-        .coord(async move |context| -> RegularResult<()> {
-            //
-            repo.step(context, &DeleteMemberInvitation { id: &id })
-                .await?;
+    nucl.coord(async move |context| -> RegularResult<()> {
+        //
+        repo.step(context, &DeleteMemberInvitation { id: &id })
+            .await?;
 
-            Ok(())
-        })
-        .await?;
+        Ok(())
+    })
+    .await?;
 
-    let () = transaction_output;
+    let () = ();
 
     Ok(())
 }

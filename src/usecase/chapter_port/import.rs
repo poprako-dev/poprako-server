@@ -3,6 +3,8 @@ mod tests;
 
 use std::collections::HashMap;
 
+use tracing::instrument;
+
 use poprako_orchestra::{Nucl, run_proxy};
 
 use poprako_util::i18n::trl;
@@ -38,6 +40,7 @@ use crate::value::chapter_port::TranslationFormat;
 use crate::value::role::RoleField;
 
 /// Imports chapter translation text into existing pages.
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn import<N, C, R>(
     nucl: &N,
     repo: &R,

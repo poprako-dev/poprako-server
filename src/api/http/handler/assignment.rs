@@ -31,7 +31,7 @@ use crate::usecase;
         (status = 403, description = "No permission to list these assignments"),
     ),
 ))]
-#[instrument(err, skip(harn))]
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn list_infos(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
@@ -64,7 +64,7 @@ pub async fn list_infos(
         (status = 404, description = "Assignment not found"),
     ),
 ))]
-#[instrument(err, skip(harn, params))]
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn update_roles(
     State(harn): State<AppHarn>,
     Path((chapter_id, user_id)): Path<(String, String)>,
@@ -99,7 +99,7 @@ pub async fn update_roles(
         (status = 404, description = "Assignment not found"),
     ),
 ))]
-#[instrument(err, skip(harn))]
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn delete(
     State(harn): State<AppHarn>,
     Path(assignment_id): Path<String>,
@@ -129,7 +129,7 @@ pub async fn delete(
         (status = 404, description = "Chapter not found"),
     ),
 ))]
-#[instrument(err, skip(harn, params))]
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn join(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,

@@ -26,8 +26,10 @@ pub mod event;
 /// [`Vec<Event>`](Vec) (yielding a multi-element iterator), enabling
 /// both single-event and batched dispatch through [`EffectDevelop`].
 pub trait EventIter {
+    /// The iterator type yielded by [`into_iter`](EventIter::into_iter).
     type Iter: Iterator<Item = Event>;
 
+    /// Consumes self and returns an iterator of [`Event`] values.
     fn into_iter(self) -> Self::Iter;
 }
 
@@ -52,7 +54,8 @@ impl EventIter for Event {
 /// Implementations receive an iterator of [`Event`] values and dispatch
 /// them to the appropriate side-effect handlers (logging, analytics,
 /// notifications, etc.).
-pub trait EffectDevelop: Sync {
+pub trait EffectDevelop {
+    /// Dispatches each event in the provided iterator to the appropriate side-effect handlers.
     fn develop<I>(&self, iter: I) -> impl Future<Output = ()> + Send
     where
         I: EventIter + Send;

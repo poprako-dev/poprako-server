@@ -7,6 +7,8 @@ use diesel_async::AsyncPgConnection;
 use diesel_async::pooled_connection::AsyncDieselConnectionManager;
 use diesel_async::pooled_connection::deadpool::{Object, Pool};
 
+use tracing::instrument;
+
 use crate::result::{RegularError, RegularResult};
 
 /// Result helpers for Diesel-backed shared internals.
@@ -53,6 +55,7 @@ impl RdbCore {
         })
     }
 
+    /// Creates a connection pool from a raw database URL string.
     pub fn from_database_url(database_url: &str) -> RegularResult<Self> {
         //
         let manager = AsyncDieselConnectionManager::<AsyncPgConnection>::new(
@@ -66,6 +69,8 @@ impl RdbCore {
         })
     }
 
+    #[instrument(level = "info", err(Debug), skip_all)]
+    /// Retrieves a pooled connection, blocking until one is available.
     pub async fn get(&self) -> RegularResult<RdbPooledConn> {
         self.pool.get().await.map_err(pool_get)
     }
@@ -77,10 +82,12 @@ pub struct RdbContext {
 }
 
 impl RdbContext {
+    /// Builds a new context from a pooled connection.
     pub fn new(conn: RdbPooledConn) -> Self {
         Self { conn }
     }
 
+    /// Returns a mutable reference to the underlying pooled connection.
     pub fn conn(&mut self) -> &mut AsyncPgConnection {
         &mut self.conn
     }

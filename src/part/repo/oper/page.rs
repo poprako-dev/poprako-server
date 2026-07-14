@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use poprako_orchestra::Oper;
 
 use crate::model::page::{PageEntry, PageImageReservation, PageInfo};
@@ -24,6 +26,15 @@ pub enum ListPageInfos<'a> {
 
 impl<'a> Oper for ListPageInfos<'a> {
     type Output = Vec<PageInfo>;
+}
+
+/// Finds the lowest-index page for each requested chapter.
+pub struct ListFirstPageInfos<'a> {
+    pub chapter_ids: &'a [String],
+}
+
+impl<'a> Oper for ListFirstPageInfos<'a> {
+    type Output = HashMap<String, PageInfo>;
 }
 
 pub struct CreatePages<'a> {

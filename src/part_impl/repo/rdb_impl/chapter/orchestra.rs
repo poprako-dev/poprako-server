@@ -2,6 +2,8 @@ use std::collections::HashMap;
 
 use poprako_orchestra::{Run, Step};
 
+use tracing::instrument;
+
 use crate::model::chapter::ChapterInfo;
 use crate::part::repo::oper::chapter::{
     AdjustChapterUnitCounters, CreateChapter, DeleteChapter,
@@ -23,6 +25,7 @@ use crate::result::{RegularError, RegularResult};
 impl<'a, 'b> Run<GetChapterInfo<'a, 'b>> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &GetChapterInfo<'a, 'b>,
@@ -34,6 +37,7 @@ impl<'a, 'b> Run<GetChapterInfo<'a, 'b>> for RdbRepo {
 impl<'a> Run<ListChapterInfos<'a>> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &ListChapterInfos<'a>,
@@ -45,6 +49,7 @@ impl<'a> Run<ListChapterInfos<'a>> for RdbRepo {
 impl<'a, 'b> Run<FindPinnedChapterInfo<'a, 'b>> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &FindPinnedChapterInfo<'a, 'b>,
@@ -61,6 +66,7 @@ impl<'a, 'b> Run<FindPinnedChapterInfo<'a, 'b>> for RdbRepo {
 impl<'a> Run<ListPinnedChapterInfos<'a>> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &ListPinnedChapterInfos<'a>,
@@ -72,6 +78,7 @@ impl<'a> Run<ListPinnedChapterInfos<'a>> for RdbRepo {
 impl<'a, 'b> Step<GetChapterInfo<'a, 'b>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -84,6 +91,7 @@ impl<'a, 'b> Step<GetChapterInfo<'a, 'b>, RdbContext> for RdbRepo {
 impl<'a, 'b> Step<GetChapterInfoExcluded<'a, 'b>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -96,6 +104,7 @@ impl<'a, 'b> Step<GetChapterInfoExcluded<'a, 'b>, RdbContext> for RdbRepo {
 impl<'a> Step<ListChapterInfosExcluded<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -108,6 +117,7 @@ impl<'a> Step<ListChapterInfosExcluded<'a>, RdbContext> for RdbRepo {
 impl<'a, 'b> Step<FindPinnedChapterInfo<'a, 'b>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -121,6 +131,7 @@ impl<'a, 'b> Step<FindPinnedChapterInfo<'a, 'b>, RdbContext> for RdbRepo {
 impl<'a> Step<CreateChapter<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -133,6 +144,7 @@ impl<'a> Step<CreateChapter<'a>, RdbContext> for RdbRepo {
 impl<'a> Step<UpdateChapter<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -145,6 +157,7 @@ impl<'a> Step<UpdateChapter<'a>, RdbContext> for RdbRepo {
 impl<'a> Step<UpdateChapterStage<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -157,6 +170,7 @@ impl<'a> Step<UpdateChapterStage<'a>, RdbContext> for RdbRepo {
 impl<'a> Step<SetChapterPageCounters<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -177,6 +191,7 @@ impl<'a> Step<SetChapterPageCounters<'a>, RdbContext> for RdbRepo {
 impl<'a> Step<AdjustChapterUnitCounters<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -189,6 +204,7 @@ impl<'a> Step<AdjustChapterUnitCounters<'a>, RdbContext> for RdbRepo {
 impl<'a> Step<UnpinOtherChapters<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -201,6 +217,7 @@ impl<'a> Step<UnpinOtherChapters<'a>, RdbContext> for RdbRepo {
 impl<'a> Step<DeleteChapter<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,

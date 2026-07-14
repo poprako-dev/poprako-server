@@ -1,5 +1,7 @@
 use poprako_orchestra::{Run, Step};
 
+use tracing::instrument;
+
 use crate::model::unit::{UnitCounters, UnitIndex, UnitInfo};
 use crate::part::repo::oper::unit::{
     CountUnits, CreateUnit, DeleteUnit, ListUnitIndexes, ListUnitInfos,
@@ -13,6 +15,7 @@ use crate::result::{RegularError, RegularResult};
 
 impl<'a> Run<ListUnitInfos<'a>> for Mock {
     type Error = RegularError;
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &ListUnitInfos<'a>,
@@ -34,6 +37,7 @@ impl<'a> Run<ListUnitInfos<'a>> for Mock {
 }
 impl<'a> Step<ListUnitInfos<'a>, MockContext> for Mock {
     type Error = RegularError;
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -53,6 +57,7 @@ impl<'a> Step<ListUnitInfos<'a>, MockContext> for Mock {
 }
 impl<'a> Step<CreateUnit<'a>, MockContext> for Mock {
     type Error = RegularError;
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -63,6 +68,7 @@ impl<'a> Step<CreateUnit<'a>, MockContext> for Mock {
 }
 impl<'a> Step<SaveUnit<'a>, MockContext> for Mock {
     type Error = RegularError;
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -73,6 +79,7 @@ impl<'a> Step<SaveUnit<'a>, MockContext> for Mock {
 }
 impl<'a> Step<DeleteUnit<'a>, MockContext> for Mock {
     type Error = RegularError;
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -88,6 +95,7 @@ impl<'a> Step<DeleteUnit<'a>, MockContext> for Mock {
 }
 impl<'a> Step<ListUnitIndexes<'a>, MockContext> for Mock {
     type Error = RegularError;
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -107,6 +115,7 @@ impl<'a> Step<ListUnitIndexes<'a>, MockContext> for Mock {
 }
 impl<'a> Step<UpdateUnitIndexes<'a>, MockContext> for Mock {
     type Error = RegularError;
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
@@ -134,6 +143,7 @@ impl<'a> Step<UpdateUnitIndexes<'a>, MockContext> for Mock {
 }
 impl<'a> Step<CountUnits<'a>, MockContext> for Mock {
     type Error = RegularError;
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,

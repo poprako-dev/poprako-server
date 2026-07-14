@@ -33,7 +33,7 @@ use crate::usecase;
         (status = 403, description = "No permission to list pages in this chapter"),
     ),
 ))]
-#[instrument(err, skip(harn))]
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn list_infos(
     State(harn): State<AppHarn>,
     Path(chapter_id): Path<String>,
@@ -68,7 +68,7 @@ pub async fn list_infos(
         (status = 403, description = "No permission to delete pages in this chapter"),
     ),
 ))]
-#[instrument(err, skip(harn))]
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn delete(
     State(harn): State<AppHarn>,
     Path(chapter_id): Path<String>,
@@ -101,7 +101,7 @@ pub async fn delete(
         (status = 422, description = "Chapter already has pages or invalid page count"),
     ),
 ))]
-#[instrument(err, skip(harn, params))]
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn reserve_chapter_pages(
     State(harn): State<AppHarn>,
     Path(chapter_id): Path<String>,
@@ -136,7 +136,7 @@ pub async fn reserve_chapter_pages(
         (status = 404, description = "Page not found"),
     ),
 ))]
-#[instrument(err, skip(harn, params))]
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn reserve_image(
     State(harn): State<AppHarn>,
     Path(page_id): Path<String>,
@@ -169,7 +169,7 @@ pub async fn reserve_image(
         (status = 404, description = "Page not found"),
     ),
 ))]
-#[instrument(err, skip(harn, params))]
+#[instrument(level = "info", err(Debug), skip_all)]
 pub async fn mark_image_uploaded(
     State(harn): State<AppHarn>,
     Path(page_id): Path<String>,

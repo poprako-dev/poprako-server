@@ -5,6 +5,8 @@ use diesel_async::RunQueryDsl;
 use poprako_orchestra::{Run, Step};
 use time::OffsetDateTime;
 
+use tracing::instrument;
+
 use crate::model::assignment::{
     AssignmentEntry, AssignmentInfo, AssignmentInfoListSpec,
     AssignmentRoleUpdate,
@@ -44,6 +46,7 @@ fn rows_into_infos(
 }
 
 /// Queries a single assignment row by chapter ID and user ID, returning `None` if not found.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn get_info_by_chapter_id_and_user_id(
     conn: &mut RdbConn,
     chapter_id: &str,
@@ -63,6 +66,7 @@ async fn get_info_by_chapter_id_and_user_id(
 }
 
 /// Queries one assignment for a user and comic, returning `None` if absent.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn find_info_by_user_id_and_comic_id(
     conn: &mut RdbConn,
     user_id: &str,
@@ -98,6 +102,7 @@ async fn find_info_by_user_id_and_comic_id(
 }
 
 /// Queries a single assignment row by ID and populates its includes.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn get_info_by_id(
     conn: &mut RdbConn,
     id: &str,
@@ -126,6 +131,7 @@ async fn get_info_by_id(
 }
 
 /// Queries assignment rows filtered by the given spec and populates includes.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn list_infos(
     conn: &mut RdbConn,
     spec: &AssignmentInfoListSpec,
@@ -221,6 +227,7 @@ async fn list_infos(
 }
 
 /// Queries all assignment rows for a given chapter, optionally filtered by role.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn list_all_infos_by_chapter(
     conn: &mut RdbConn,
     chapter_id: &str,
@@ -285,6 +292,7 @@ async fn list_all_infos_by_chapter(
 }
 
 /// Queries all assignment rows for a chapter under `FOR UPDATE` lock.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn list_chapter_assignments_excluded(
     conn: &mut RdbConn,
     chapter_id: &str,
@@ -303,6 +311,7 @@ async fn list_chapter_assignments_excluded(
 }
 
 /// Inserts a new assignment row from the given entry and returns the created info.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn create(
     conn: &mut RdbConn,
     model_entry: &AssignmentEntry,
@@ -323,6 +332,7 @@ async fn create(
 }
 
 /// Updates the role timestamps for an assignment row.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn put_roles(
     conn: &mut RdbConn,
     update: &AssignmentRoleUpdate,
@@ -348,6 +358,7 @@ async fn put_roles(
 }
 
 /// Deletes a single assignment row by ID.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
     //
     diesel::delete(t_assignment.filter(f_id.eq(id)))
@@ -359,6 +370,7 @@ async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
 }
 
 /// Deletes all assignment rows for a given chapter ID.
+#[instrument(level = "info", err(Debug), skip_all)]
 async fn delete_by_chapter_id(
     conn: &mut RdbConn,
     chapter_id: &str,
@@ -375,6 +387,7 @@ async fn delete_by_chapter_id(
 impl Run<FindAssignmentInfo<'_, '_>> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &FindAssignmentInfo<'_, '_>,
@@ -409,6 +422,7 @@ impl Run<FindAssignmentInfo<'_, '_>> for RdbRepo {
 impl Run<ListAssignmentInfos<'_, '_>> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &ListAssignmentInfos<'_, '_>,
@@ -437,6 +451,7 @@ impl Run<ListAssignmentInfos<'_, '_>> for RdbRepo {
 impl Run<GetAssignmentInfo<'_, '_>> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &GetAssignmentInfo<'_, '_>,
@@ -448,6 +463,7 @@ impl Run<GetAssignmentInfo<'_, '_>> for RdbRepo {
 impl Step<ListAssignmentInfos<'_, '_>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -479,6 +495,7 @@ impl Step<ListAssignmentInfos<'_, '_>, RdbContext> for RdbRepo {
 impl Step<FindAssignmentInfo<'_, '_>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -518,6 +535,7 @@ impl Step<FindAssignmentInfo<'_, '_>, RdbContext> for RdbRepo {
 impl Step<ListAssignmentInfosExcluded<'_>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -535,6 +553,7 @@ impl Step<ListAssignmentInfosExcluded<'_>, RdbContext> for RdbRepo {
 impl Step<CreateAssignment<'_>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -547,6 +566,7 @@ impl Step<CreateAssignment<'_>, RdbContext> for RdbRepo {
 impl Step<UpdateAssignmentRoles<'_>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
@@ -559,6 +579,7 @@ impl Step<UpdateAssignmentRoles<'_>, RdbContext> for RdbRepo {
 impl Step<DeleteAssignments<'_>, RdbContext> for RdbRepo {
     type Error = RegularError;
 
+    #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
