@@ -8,12 +8,6 @@ pub struct UserToken {
     pub user_id: String,
 }
 
-/// A borrowed reference to a user authentication token, used in middleware
-/// to avoid cloning the owned [UserToken].
-pub struct UserTokenRef<'a> {
-    pub user_id: &'a str,
-}
-
 /// A userprofile record as stored in the database.
 ///
 /// Carries raw [`OffsetDateTime`] timestamps; convert to [`UserInfoVal`] for

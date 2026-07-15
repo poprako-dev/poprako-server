@@ -8,8 +8,7 @@ use poprako_server::{UserComplex, benchmark};
 
 fn benchmark_password_operations(criterion: &mut Criterion) {
     let password = "benchmark-password";
-    let runtime = Runtime::new()
-        .expect("benchmark runtime must initialize");
+    let runtime = Runtime::new().expect("benchmark runtime must initialize");
     let password_hash = runtime
         .block_on(UserComplex::hash_password(password))
         .expect("benchmark fixture password must hash");
@@ -37,8 +36,7 @@ fn benchmark_password_operations(criterion: &mut Criterion) {
 }
 
 fn benchmark_aggregation_operations(criterion: &mut Criterion) {
-    let runtime = Runtime::new()
-        .expect("benchmark runtime must initialize");
+    let runtime = Runtime::new().expect("benchmark runtime must initialize");
 
     let mut archive_group = criterion.benchmark_group("archive");
     archive_group.bench_function("prepare_write_8x8x48", |bencher| {

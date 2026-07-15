@@ -33,6 +33,7 @@ impl UserComplex {
     }
 
     /// Verifies a plaintext password on Tokio's blocking pool against an Argon2id-encoded hash.
+    /// TODO: no need to return bool.
     pub async fn verify_password(password: &str, password_hash: &str) -> bool {
         let password = password.to_owned();
         let password_hash = password_hash.to_owned();

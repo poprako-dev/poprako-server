@@ -10,7 +10,7 @@ use tracing::instrument;
 
 use poprako_util::i18n::trl;
 
-use crate::model::user::{UserToken, UserTokenRef};
+use crate::model::user::UserToken;
 use crate::part::auth::TokenAuth;
 use crate::result::{ExpectedVariant, RegularError, RegularResult};
 
@@ -93,7 +93,7 @@ impl JwtAuth {
 
 impl TokenAuth for JwtAuth {
     #[instrument(level = "info", err(Debug), skip_all)]
-    fn sign_token(&self, token: &UserTokenRef) -> RegularResult<String> {
+    fn sign_token(&self, token: &UserToken) -> RegularResult<String> {
         //
         let now = OffsetDateTime::now_utc();
 
@@ -103,8 +103,8 @@ impl TokenAuth for JwtAuth {
             (now.unix_timestamp() + self.expiration_seconds) as usize;
 
         let claims = SignClaims {
-            sub: token.user_id,
-            user_id: token.user_id,
+            sub: &token.user_id,
+            user_id: &token.user_id,
             iat: issued_at,
             nbf: issued_at,
             exp: expiration,

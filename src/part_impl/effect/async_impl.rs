@@ -1,13 +1,11 @@
 //! Async background dispatcher for side-effect events.
 
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use tokio::sync::mpsc::Sender;
 use tokio::sync::mpsc::error::TrySendError;
-use tokio::sync::oneshot::{
-    Receiver as OneshotReceiver, Sender as OneshotSender,
-};
+use tokio::sync::watch;
+use tokio_util::sync::CancellationToken;
 use tracing::instrument;
 
 use crate::part::effect::event::Event;
@@ -36,10 +34,9 @@ mod user;
 /// [`close`](AsyncEffectDevelop::close) before dropping to drain pending
 /// events gracefully.
 pub struct AsyncEffectDevelop {
-    accepting: Arc<AtomicBool>,
     send: Sender<Event>,
-    shutdown: Mutex<Option<OneshotSender<()>>>,
-    done: Mutex<Option<OneshotReceiver<()>>>,
+    token: CancellationToken,
+    done: watch::Receiver<bool>,
 }
 
 impl AsyncEffectDevelop {
@@ -58,63 +55,39 @@ impl AsyncEffectDevelop {
     {
         let (send, recv) = tokio::sync::mpsc::channel(buffer_size);
 
-        let (shutdown_send, shutdown_recv) = tokio::sync::oneshot::channel();
+        let token = CancellationToken::new();
 
-        let (done_send, done_recv) = tokio::sync::oneshot::channel();
+        let (done_send, done) = watch::channel(false);
 
-        let accepting = Arc::new(AtomicBool::new(true));
-
-        let handler = handler::EffectHandler::<R>::new(
-            repo,
-            recv,
-            shutdown_recv,
-            done_send,
-            Arc::clone(&accepting),
-        );
+        let handler =
+            handler::EffectHandler::<R>::new(repo, recv, token.clone());
 
         tokio::spawn(async move {
             handler.run().await;
+
+            done_send.send_replace(true);
         });
 
-        Self {
-            accepting,
-            send,
-            shutdown: Mutex::new(Some(shutdown_send)),
-            done: Mutex::new(Some(done_recv)),
-        }
+        Self { send, token, done }
     }
 
     /// Stops accepting new events and waits for queued events to finish.
     #[instrument(level = "info", skip_all)]
     pub async fn close(&self) {
-        //
-        if !self.accepting.swap(false, Ordering::AcqRel) {
-            return;
-        }
+        self.token.cancel();
 
-        let shutdown_send = self.shutdown.lock().unwrap().take();
+        let mut done = self.done.clone();
 
-        if let Some(shutdown_send) = shutdown_send {
-            shutdown_send.send(()).unwrap_or_else(|error| {
+        match done.wait_for(|done| *done).await {
+            Ok(_) => {}
+
+            Err(error) => {
                 tracing::error!(
-                    error = ?error,
-                    "[AsyncEffectDevelop::close] background task already terminated",
+                    error = %error,
+                    "[AsyncEffectDevelop::close] background task ended without completion",
                 );
-            });
-        }
-
-        let done_recv = self.done.lock().unwrap().take();
-
-        let Some(done_recv) = done_recv else {
-            return;
+            }
         };
-
-        done_recv.await.unwrap_or_else(|error| {
-            tracing::error!(
-                error = %error,
-                "[AsyncEffectDevelop::close] background task did not signal completion",
-            );
-        });
     }
 }
 
@@ -124,19 +97,27 @@ impl EffectDevelop for AsyncEffectDevelop {
     where
         I: EventIter + Send,
     {
-        if !self.accepting.load(Ordering::Acquire) {
+        if self.token.is_cancelled() {
             return;
         }
 
         for event in iter.into_iter() {
             if let Err(e) = self.send.try_send(event) {
                 match e {
+                    TrySendError::Full(_) if self.token.is_cancelled() => {
+                        break;
+                    }
+
                     //
                     TrySendError::Full(event) => {
                         tracing::warn!(
                             event = event_name(&event),
                             "[AsyncEffectDevelop::develop] event queue is full, dropping event",
                         );
+                    }
+
+                    TrySendError::Closed(_) if self.token.is_cancelled() => {
+                        break;
                     }
 
                     TrySendError::Closed(event) => {
@@ -151,6 +132,12 @@ impl EffectDevelop for AsyncEffectDevelop {
                 }
             }
         }
+    }
+}
+
+impl Drop for AsyncEffectDevelop {
+    fn drop(&mut self) {
+        self.token.cancel();
     }
 }
 
