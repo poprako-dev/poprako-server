@@ -2,7 +2,7 @@
 
 use poprako_util::i18n::trl;
 
-use crate::model::user::{UserToken, UserTokenRef};
+use crate::model::user::UserToken;
 use crate::part::auth::TokenAuth;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::{ExpectedVariant, RegularError, RegularResult};
@@ -12,7 +12,7 @@ use crate::result::{ExpectedVariant, RegularError, RegularResult};
 /// Returns a deterministic token (`"token:{user_id}"`) by default.
 /// Configure [Mock::with_token_failure] to test sign failures.
 impl TokenAuth for Mock {
-    fn sign_token(&self, token: &UserTokenRef) -> RegularResult<String> {
+    fn sign_token(&self, token: &UserToken) -> RegularResult<String> {
         //
         if self.flags.lock().unwrap().token_failure {
             return Err(RegularError::Expected {
@@ -48,8 +48,12 @@ fn sign_returns_stable_token() {
     //
     let mock = Mock::new();
 
-    let signed =
-        TokenAuth::sign_token(&mock, &UserTokenRef { user_id: "user-1" });
+    let signed = TokenAuth::sign_token(
+        &mock,
+        &UserToken {
+            user_id: "user-1".into(),
+        },
+    );
 
     assert!(signed.is_ok());
 
@@ -64,9 +68,14 @@ fn sign_failure_returns_expected_auth() {
     //
     let mock = Mock::new().with_token_failure();
 
-    let err = TokenAuth::sign_token(&mock, &UserTokenRef { user_id: "user-1" })
-        .err()
-        .unwrap();
+    let err = TokenAuth::sign_token(
+        &mock,
+        &UserToken {
+            user_id: "user-1".into(),
+        },
+    )
+    .err()
+    .unwrap();
 
     assert!(matches!(
         err,

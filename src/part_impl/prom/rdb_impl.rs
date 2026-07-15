@@ -7,16 +7,12 @@
 //!
 //! [`AsyncEffectDevelop`]: crate::part_impl::effect::async_impl::AsyncEffectDevelop
 
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex};
-
 use diesel_async::RunQueryDsl;
 use poprako_orchestra::Step;
 use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
 use time::OffsetDateTime;
-use tokio::sync::oneshot::{
-    Receiver as OneshotReceiver, Sender as OneshotSender,
-};
+use tokio::sync::watch;
+use tokio_util::sync::CancellationToken;
 use tracing::instrument;
 
 use crate::part::image::ImageManager;
@@ -43,12 +39,11 @@ mod repo;
 /// The constructor spawns a background worker that polls `t_local_message` and
 /// dispatches completed records by topic.
 ///
-/// Call [`close`](RdbProm::close) before dropping to drain pending work
-/// gracefully.
+/// Call [`close`](RdbProm::close) before dropping to finish in-flight work
+/// gracefully. Pending records remain durable for the next worker start.
 pub struct RdbProm {
-    accepting: Arc<AtomicBool>,
-    shutdown: Mutex<Option<OneshotSender<()>>>,
-    done: Mutex<Option<OneshotReceiver<()>>>,
+    token: CancellationToken,
+    done: watch::Receiver<bool>,
 }
 
 impl RdbProm {
@@ -60,11 +55,9 @@ impl RdbProm {
     where
         I: ImageManager + Send + Sync + 'static,
     {
-        let (shutdown_send, shutdown_recv) = tokio::sync::oneshot::channel();
+        let token = CancellationToken::new();
 
-        let (done_send, done_recv) = tokio::sync::oneshot::channel();
-
-        let accepting = Arc::new(AtomicBool::new(true));
+        let (done_send, done) = watch::channel(false);
 
         let drive = RdbDrive::new(core.clone());
 
@@ -75,54 +68,42 @@ impl RdbProm {
             drive,
             repo,
             image_pool,
-            shutdown_recv,
-            done_send,
-            Arc::clone(&accepting),
+            token.clone(),
         );
 
         tokio::spawn(async move {
             handler.run().await;
+
+            done_send.send_replace(true);
         });
 
-        Self {
-            accepting,
-            shutdown: Mutex::new(Some(shutdown_send)),
-            done: Mutex::new(Some(done_recv)),
-        }
+        Self { token, done }
     }
 
     /// Signals the background worker to stop and waits for in-flight work
     /// to complete.
     #[instrument(level = "info", skip_all)]
     pub async fn close(&self) {
-        //
-        if !self.accepting.swap(false, Ordering::AcqRel) {
-            return;
-        }
+        self.token.cancel();
 
-        let shutdown_send = self.shutdown.lock().unwrap().take();
+        let mut done = self.done.clone();
 
-        if let Some(shutdown_send) = shutdown_send {
-            shutdown_send.send(()).unwrap_or_else(|error| {
+        match done.wait_for(|done| *done).await {
+            Ok(_) => {}
+
+            Err(error) => {
                 tracing::error!(
-                    error = ?error,
-                    "[RdbProm::close] background task already terminated",
+                    error = %error,
+                    "[RdbProm::close] background task ended without completion",
                 );
-            });
-        }
-
-        let done_recv = self.done.lock().unwrap().take();
-
-        let Some(done_recv) = done_recv else {
-            return;
+            }
         };
+    }
+}
 
-        done_recv.await.unwrap_or_else(|error| {
-            tracing::error!(
-                error = %error,
-                "[RdbProm::close] background task did not signal completion",
-            );
-        });
+impl Drop for RdbProm {
+    fn drop(&mut self) {
+        self.token.cancel();
     }
 }
 

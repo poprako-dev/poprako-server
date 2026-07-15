@@ -102,5 +102,11 @@ async fn main() -> anyhow::Result<()> {
     .next()
     .context("no address resolved for HTTP listen address")?;
 
-    serve(harn, http_addr).await
+    let serve_result = serve(harn.clone(), http_addr).await;
+
+    harn.develop().close().await;
+
+    harn.prom().close().await;
+
+    serve_result
 }

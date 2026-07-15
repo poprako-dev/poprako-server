@@ -11,7 +11,7 @@ use crate::data::auth::{
     LoginAuthParams, LoginAuthPayload, RegisterAuthParams, RegisterAuthPayload,
 };
 use crate::model::member::MemberEntry;
-use crate::model::user::{UserEntry, UserTokenRef};
+use crate::model::user::{UserEntry, UserToken};
 use crate::part::auth::TokenAuth;
 use crate::part::effect::EffectDevelop;
 use crate::part::effect::event::Event;
@@ -152,9 +152,14 @@ where
 
     develop.develop(event).await;
 
-    let token = auth.sign_token(&UserTokenRef { user_id: &user_id })?;
+    let original_token = UserToken { user_id };
 
-    Ok(RegisterAuthPayload { user_id, token })
+    let token = auth.sign_token(&original_token)?;
+
+    Ok(RegisterAuthPayload {
+        user_id: original_token.user_id,
+        token,
+    })
 }
 
 /// Authenticates a user with QQ ID and password.
@@ -196,12 +201,14 @@ where
         });
     }
 
-    let token = auth.sign_token(&UserTokenRef {
-        user_id: &user_credential.user_id,
-    })?;
+    let original_token = UserToken {
+        user_id: user_credential.user_id,
+    };
+
+    let token = auth.sign_token(&original_token)?;
 
     Ok(LoginAuthPayload {
-        user_id: user_credential.user_id,
+        user_id: original_token.user_id,
         token,
     })
 }

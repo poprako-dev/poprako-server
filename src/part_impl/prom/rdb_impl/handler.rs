@@ -3,16 +3,12 @@
 //!
 //! Topic dispatch routes to [`image`].
 
-use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration as StdDuration;
 
 use poprako_orchestra::{Nucl, Step as _};
 use time::{Duration, OffsetDateTime};
-use tokio::sync::oneshot::{
-    Receiver as OneshotReceiver, Sender as OneshotSender,
-};
 use tokio::time::sleep;
+use tokio_util::sync::CancellationToken;
 use tracing::instrument;
 
 use crate::part::image::ImageManager;
@@ -212,9 +208,7 @@ pub struct RdbPromHandler<D, R, I> {
 
     image_pool: I,
 
-    shutdown_recv: OneshotReceiver<()>,
-    done_send: OneshotSender<()>,
-    accepting: Arc<AtomicBool>,
+    token: CancellationToken,
 }
 
 impl<D, R, I> RdbPromHandler<D, R, I>
@@ -237,28 +231,28 @@ where
         nucl: D,
         repo: RdbPromRepo<R>,
         image_pool: I,
-        shutdown_recv: OneshotReceiver<()>,
-        done_send: OneshotSender<()>,
-        accepting: Arc<AtomicBool>,
+        token: CancellationToken,
     ) -> Self {
         Self {
             core,
             nucl,
             repo,
             image_pool,
-            shutdown_recv,
-            done_send,
-            accepting,
+            token,
         }
     }
 
     #[instrument(level = "info", skip_all)]
-    /// Runs the prom polling loop — polls, dispatches, completes, and purges until shutdown.
-    pub async fn run(mut self) {
+    /// Runs the prom polling loop until cancellation, finishing the current cycle before exit.
+    pub async fn run(self) {
         //
         let mut next_completed_purge_at = OffsetDateTime::now_utc();
 
         loop {
+            if self.token.is_cancelled() {
+                break;
+            }
+
             //
             let now = OffsetDateTime::now_utc();
 
@@ -309,37 +303,11 @@ where
             }
 
             tokio::select! {
+                biased;
+                () = self.token.cancelled() => break,
                 _ = sleep(POLL_INTERVAL) => {}
-                _ = &mut self.shutdown_recv => {
-                    self.accepting.store(false, Ordering::Release);
-                    break;
-                }
             }
         }
-
-        // Drain one final poll cycle before exiting.
-        match self.poll().await {
-            //
-            Ok(rows) => {
-                for row in &rows {
-                    self.process_row(row).await;
-                }
-            }
-
-            Err(e) => {
-                tracing::error!(
-                    error = ?e,
-                    "[RdbPromHandler::run] final poll after shutdown failed",
-                );
-            }
-        }
-
-        self.done_send.send(()).unwrap_or_else(|error| {
-            tracing::warn!(
-                error = ?error,
-                "[RdbPromHandler::run] completion receiver already dropped",
-            );
-        });
     }
 
     #[instrument(level = "info", err(Debug), skip_all)]
