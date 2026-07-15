@@ -5,7 +5,7 @@ use poprako_orchestra::{Run, Step};
 use crate::part::repo::oper::member_invitation::{
     CreateMemberInvitation, DeleteMemberInvitation, GetMemberInvitationInfo,
     GetMemberInvitationInfoExcluded, ListMemberInvitationInfos,
-    UpdateMemberInvitation,
+    PurgeExpiredMemberInvitation, UpdateMemberInvitation,
 };
 use crate::result::RegularError;
 
@@ -20,6 +20,7 @@ pub trait MemberInvitationRepo<C>:
     + for<'a, 'b> Step<GetMemberInvitationInfo<'a, 'b>, C, Error = RegularError>
     + for<'a> Step<UpdateMemberInvitation<'a>, C, Error = RegularError>
     + for<'a> Step<GetMemberInvitationInfoExcluded<'a>, C, Error = RegularError>
+    + for<'a> Step<PurgeExpiredMemberInvitation<'a>, C, Error = RegularError>
     + for<'a> Step<DeleteMemberInvitation<'a>, C, Error = RegularError>
 {
 }

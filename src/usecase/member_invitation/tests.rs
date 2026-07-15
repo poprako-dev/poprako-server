@@ -17,6 +17,8 @@ use crate::data::member_invitation::{
 use crate::model::member::MemberInfo;
 use crate::model::member_invitation::MemberInvitationInfo;
 use crate::model::user::{UserCredential, UserInfo, UserToken};
+use crate::part::prom::payload::Payload;
+use crate::part::prom::payload::invitation::PurgeExpiredInvitation;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::fixture::team;
@@ -133,7 +135,10 @@ async fn create_admin_creates_pending_invitation() {
 
     mock.seed_user(user("invitee-user", "qid-2"), credential("invitee-user"));
 
+    let before = test_util::now();
+
     let created = create(
+        &mock,
         &mock,
         &mock,
         token("admin-user"),
@@ -153,6 +158,22 @@ async fn create_admin_creates_pending_invitation() {
     assert_eq!(snapshot.member_invitations[0].invitee_qid, "qid-2");
 
     assert!(snapshot.member_invitations[0].pending);
+
+    assert_eq!(snapshot.prom_records.len(), 1);
+
+    assert_eq!(
+        snapshot.prom_records[0].payload(),
+        Payload::PurgeExpiredInvitation(PurgeExpiredInvitation::Member {
+            invitation_id: created.id,
+        })
+    );
+
+    assert!(snapshot.prom_records[0].visible_at() >= before + EXPIRY_DELAY);
+
+    assert!(
+        snapshot.prom_records[0].visible_at()
+            <= test_util::now() + EXPIRY_DELAY
+    );
 }
 
 #[tokio::test]
@@ -170,6 +191,7 @@ async fn create_non_admin_is_rejected() {
     let err = create(
         &mock,
         &mock,
+        &mock,
         token("normal-user"),
         create_params("team-1", "qid-2"),
     )
@@ -180,6 +202,8 @@ async fn create_non_admin_is_rejected() {
     assert_expected_variant(err, ExpectedVariant::Perm);
 
     assert!(mock.snapshot().member_invitations.is_empty());
+
+    assert!(mock.snapshot().prom_records.is_empty());
 }
 
 #[tokio::test]

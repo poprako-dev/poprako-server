@@ -14,7 +14,7 @@ use crate::part::repo::member_invitation::MemberInvitationRepo;
 use crate::part::repo::oper::member_invitation::{
     CreateMemberInvitation, DeleteMemberInvitation, GetMemberInvitationInfo,
     GetMemberInvitationInfoExcluded, ListMemberInvitationInfos,
-    UpdateMemberInvitation,
+    PurgeExpiredMemberInvitation, UpdateMemberInvitation,
 };
 use crate::part_impl::repo::rdb_impl::entity::member_invitation::{
     MemberInvitationAspect, MemberInvitationRow, MemberInvitationRowEntry,
@@ -222,6 +222,22 @@ async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
     Ok(())
 }
 
+/// Deletes a member invitation only while it remains pending.
+#[instrument(level = "info", err(Debug), skip_all)]
+async fn purge_pending(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
+    //
+    diesel::delete(
+        t_member_invitation
+            .filter(f_id.eq(id))
+            .filter(f_pending.eq(true)),
+    )
+    .execute(conn)
+    .await
+    .map_err(diesel)?;
+
+    Ok(())
+}
+
 impl<'a> Run<ListMemberInvitationInfos<'a>> for RdbRepo {
     type Error = RegularError;
 
@@ -340,5 +356,18 @@ impl<'a> Step<DeleteMemberInvitation<'a>, RdbContext> for RdbRepo {
         oper: &DeleteMemberInvitation<'a>,
     ) -> RegularResult<()> {
         delete(context.conn(), oper.id).await
+    }
+}
+
+impl<'a> Step<PurgeExpiredMemberInvitation<'a>, RdbContext> for RdbRepo {
+    type Error = RegularError;
+
+    #[instrument(level = "info", err(Debug), skip_all)]
+    async fn step(
+        &self,
+        context: &mut RdbContext,
+        oper: &PurgeExpiredMemberInvitation<'a>,
+    ) -> RegularResult<()> {
+        purge_pending(context.conn(), oper.id).await
     }
 }

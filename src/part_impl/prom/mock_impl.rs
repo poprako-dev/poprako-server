@@ -9,10 +9,13 @@ use time::OffsetDateTime;
 use crate::model::user::{UserCredential, UserInfo};
 use crate::part::image::ImageManager;
 use crate::part::prom::Prom;
+use crate::part::prom::payload::invitation::PurgeExpiredInvitation;
 use crate::part::prom::payload::{Payload, image};
+use crate::part::repo::oper::assignment_invitation::PurgeExpiredAssignmentInvitation;
 use crate::part::repo::oper::comic::{
     GetComicInfoExcluded, MarkComicCoverUploaded,
 };
+use crate::part::repo::oper::member_invitation::PurgeExpiredMemberInvitation;
 use crate::part::repo::oper::page::{
     GetPageInfoExcluded, MarkPageImageUploaded,
 };
@@ -340,8 +343,38 @@ pub async fn process_pending(mock: &Mock) -> RegularResult<()> {
             Payload::Image(task) => {
                 process_image_task(mock, &task).await?;
             }
+
+            Payload::PurgeExpiredInvitation(event) => {
+                process_invitation_event(mock, &event).await?;
+            }
         }
     }
+
+    Ok(())
+}
+
+async fn process_invitation_event(
+    mock: &Mock,
+    event: &PurgeExpiredInvitation,
+) -> RegularResult<()> {
+    mock.coord(async move |context| match event {
+        PurgeExpiredInvitation::Assignment { invitation_id } => {
+            mock.step(
+                context,
+                &PurgeExpiredAssignmentInvitation { id: invitation_id },
+            )
+            .await
+        }
+
+        PurgeExpiredInvitation::Member { invitation_id } => {
+            mock.step(
+                context,
+                &PurgeExpiredMemberInvitation { id: invitation_id },
+            )
+            .await
+        }
+    })
+    .await?;
 
     Ok(())
 }

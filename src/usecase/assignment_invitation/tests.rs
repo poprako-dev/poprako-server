@@ -22,6 +22,8 @@ use crate::model::member::MemberInfo;
 use crate::model::team::TeamInfo;
 use crate::model::user::{UserCredential, UserInfo, UserToken};
 use crate::model::workset::WorksetInfo;
+use crate::part::prom::payload::Payload;
+use crate::part::prom::payload::invitation::PurgeExpiredInvitation;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::{assert_expected_variant, now};
@@ -298,10 +300,17 @@ async fn create_reviewer_creates_pending_invitation() {
         credential("target-user"),
     );
 
-    let val =
-        create(&mock, &mock, token("admin-user"), create_data("target-qid"))
-            .await
-            .unwrap();
+    let before = now();
+
+    let val = create(
+        &mock,
+        &mock,
+        &mock,
+        token("admin-user"),
+        create_data("target-qid"),
+    )
+    .await
+    .unwrap();
 
     let snapshot = mock.snapshot();
 
@@ -318,6 +327,19 @@ async fn create_reviewer_creates_pending_invitation() {
     assert_eq!(snapshot.assignment_invitations[0].invitee_qid, "target-qid");
 
     assert!(snapshot.assignment_invitations[0].pending);
+
+    assert_eq!(snapshot.prom_records.len(), 1);
+
+    assert_eq!(
+        snapshot.prom_records[0].payload(),
+        Payload::PurgeExpiredInvitation(PurgeExpiredInvitation::Assignment {
+            invitation_id: val.id,
+        })
+    );
+
+    assert!(snapshot.prom_records[0].visible_at() >= before + EXPIRY_DELAY);
+
+    assert!(snapshot.prom_records[0].visible_at() <= now() + EXPIRY_DELAY);
 }
 
 #[tokio::test]
@@ -340,15 +362,22 @@ async fn create_existing_assignment_is_rejected() {
         role(RoleField::TRANSLATOR),
     ));
 
-    let err =
-        create(&mock, &mock, token("admin-user"), create_data("target-qid"))
-            .await
-            .err()
-            .unwrap();
+    let err = create(
+        &mock,
+        &mock,
+        &mock,
+        token("admin-user"),
+        create_data("target-qid"),
+    )
+    .await
+    .err()
+    .unwrap();
 
     assert_expected_variant(err, ExpectedVariant::Args);
 
     assert!(mock.snapshot().assignment_invitations.is_empty());
+
+    assert!(mock.snapshot().prom_records.is_empty());
 }
 
 #[tokio::test]

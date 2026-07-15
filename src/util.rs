@@ -120,9 +120,7 @@ fn load_snowflake_node_id() -> u16 {
         Err(_) => return 0,
     };
 
-    let parsed: Result<u16, _> = value.parse();
-
-    match parsed {
+    match value.parse() {
         //
         Ok(instance) if instance <= 1023 => instance,
 

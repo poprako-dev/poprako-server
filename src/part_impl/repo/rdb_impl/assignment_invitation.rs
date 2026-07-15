@@ -174,6 +174,22 @@ async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
     Ok(())
 }
 
+/// Deletes an assignment invitation only while it remains pending.
+#[instrument(level = "info", err(Debug), skip_all)]
+async fn purge_pending(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
+    //
+    diesel::delete(
+        t_assignment_invitation
+            .filter(f_id.eq(id))
+            .filter(f_pending.eq(true)),
+    )
+    .execute(conn)
+    .await
+    .map_err(diesel)?;
+
+    Ok(())
+}
+
 /// Deletes all assignment invitation rows for a given chapter ID.
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn delete_by_chapter_id(

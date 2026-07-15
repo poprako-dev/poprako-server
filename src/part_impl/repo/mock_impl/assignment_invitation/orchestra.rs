@@ -8,6 +8,7 @@ use crate::part::repo::oper::assignment_invitation::{
     CreateAssignmentInvitation, DeleteAssignmentInvitations,
     GetAssignmentInvitationInfo, GetAssignmentInvitationInfoExcluded,
     ListAssignmentInvitationInfos, MarkAssignmentInvitationUsed,
+    PurgeExpiredAssignmentInvitation,
 };
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
@@ -223,5 +224,23 @@ impl<'a> Step<DeleteAssignmentInvitations<'a>, MockContext> for Mock {
                 Ok(())
             }
         }
+    }
+}
+
+impl<'a> Step<PurgeExpiredAssignmentInvitation<'a>, MockContext> for Mock {
+    type Error = RegularError;
+
+    #[instrument(level = "info", err(Debug), skip_all)]
+    async fn step(
+        &self,
+        context: &mut MockContext,
+        oper: &PurgeExpiredAssignmentInvitation<'a>,
+    ) -> RegularResult<()> {
+        context
+            .state
+            .assignment_invitations
+            .retain(|info| info.id != oper.id || !info.pending);
+
+        Ok(())
     }
 }
