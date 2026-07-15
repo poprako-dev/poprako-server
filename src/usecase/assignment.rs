@@ -13,8 +13,7 @@ use crate::data::assignment::{
     UpdateAssignmentRolesParams,
 };
 use crate::model::assignment::{
-    AssignmentEntry, AssignmentInfo, AssignmentInfoListSpec,
-    AssignmentRoleUpdate,
+    AssignmentEntry, AssignmentInfoListSpec, AssignmentRoleUpdate,
 };
 use crate::model::user::UserToken;
 use crate::part::image::ImagePool;

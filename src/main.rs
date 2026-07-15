@@ -70,7 +70,7 @@ async fn main() -> anyhow::Result<()> {
                 .from_env_lossy(),
         )
         .with_span_events(tracing_subscriber::fmt::format::FmtSpan::CLOSE)
-        .with_ansi(if cfg!(debug_assertion) { true } else { false })
+        .with_ansi(cfg!(debug_assertions))
         .init();
 
     let config = AppConfig::from_default_file()

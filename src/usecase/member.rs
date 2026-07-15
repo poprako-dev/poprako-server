@@ -10,9 +10,7 @@ use crate::data::member::{
     CreateMemberParams, CreateMemberPayload, JoinTeamParams,
     ListMemberInfosParams, MemberInfoVal, UpdateMemberRolesParams,
 };
-use crate::model::member::{
-    MemberEntry, MemberInfo, MemberListSpec, MemberRoleUpdate,
-};
+use crate::model::member::{MemberEntry, MemberListSpec, MemberRoleUpdate};
 use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
 use crate::part::repo::member::MemberRepo;
