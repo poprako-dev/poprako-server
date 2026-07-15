@@ -105,6 +105,7 @@ pub(super) fn create_params(workset_id: &str) -> CreateComicParams {
         author: "author".into(),
         description: Some("desc".into()),
         first_chapter_subtitle: None,
+        preset_assignment_roles: None,
     }
 }
 

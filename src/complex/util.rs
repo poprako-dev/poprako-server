@@ -10,7 +10,7 @@ use crate::part::repo::oper::comic::GetComicInfo;
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
-use crate::value::role::RoleField;
+use crate::value::role::{RoleField, RoleMask};
 
 /// Verify the user is a member of the given team; returns `Perm` error if not.
 pub async fn check_user_is_team_member<P>(
@@ -35,11 +35,12 @@ where
     accept(())
 }
 
-/// Verify the user is a team admin; returns `Perm` error if not.
-pub async fn check_user_is_team_admin<P>(
+/// Verify the user is a team admin and owns every optionally required role.
+pub async fn check_user_is_team_admin_with_roles<P>(
     proxy: &mut P,
     user_id: &str,
     team_id: &str,
+    required_roles: Option<RoleMask>,
 ) -> BaseResult<()>
 where
     P: for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
@@ -62,7 +63,28 @@ where
         });
     }
 
+    if required_roles
+        .is_some_and(|roles| !member_info.roles.contains_mask(roles))
+    {
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Perm,
+            message: trl("error-chapter-role-not-assignable"),
+        });
+    }
+
     accept(())
+}
+
+/// Verify the user is a team admin; returns `Perm` error if not.
+pub async fn check_user_is_team_admin<P>(
+    proxy: &mut P,
+    user_id: &str,
+    team_id: &str,
+) -> BaseResult<()>
+where
+    P: for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
+{
+    check_user_is_team_admin_with_roles(proxy, user_id, team_id, None).await
 }
 
 /// Verify the user is a team member for the chapter's owning team.
