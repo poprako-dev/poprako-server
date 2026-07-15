@@ -42,6 +42,7 @@ use poprako_server::{
 /// starting the server.
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    //
     // CLI: --swagger to print swagger.json.
     #[cfg(feature = "swagger-ui")]
     if std::env::args().any(|a| a == "--swagger") {

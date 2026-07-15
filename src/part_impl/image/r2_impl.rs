@@ -105,6 +105,7 @@ impl ImagePool for R2ImagePool {
         &self,
         original_key: &str,
     ) -> RegularResult<Url> {
+        //
         let thumbnail_path =
             format!("cdn-cgi/image/{}/{}", THUMBNAIL_TRANSFORM, original_key);
 
@@ -208,6 +209,7 @@ fn build_public_url(
     path: &str,
     operation: &str,
 ) -> RegularResult<Url> {
+    //
     if domain.is_empty() {
         return Err(RegularError::Unrecoverable {
             message: format!(
@@ -221,6 +223,7 @@ fn build_public_url(
 
     let url_string =
         match domain.starts_with("http://") || domain.starts_with("https://") {
+            //
             true => {
                 format!("{}/{}", domain, path)
             }

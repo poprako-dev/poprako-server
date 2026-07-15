@@ -94,6 +94,7 @@ async fn list_infos(
         TeamInfoListKind::All => query,
 
         TeamInfoListKind::JoinedBy { user_id } => {
+            //
             let member_team_ids = t_member::table
                 .filter(t_member::f_user_id.eq(user_id))
                 .select(t_member::f_team_id);

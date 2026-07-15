@@ -72,6 +72,7 @@ impl RdbProm {
         );
 
         tokio::spawn(async move {
+            //
             handler.run().await;
 
             done_send.send_replace(true);
@@ -84,11 +85,13 @@ impl RdbProm {
     /// to complete.
     #[instrument(level = "info", skip_all)]
     pub async fn close(&self) {
+        //
         self.token.cancel();
 
         let mut done = self.done.clone();
 
         match done.wait_for(|done| *done).await {
+            //
             Ok(_) => {}
 
             Err(error) => {
@@ -97,6 +100,8 @@ impl RdbProm {
                     "[RdbProm::close] background task ended without completion",
                 );
             }
+        }
+
         };
     }
 }

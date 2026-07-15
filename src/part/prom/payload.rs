@@ -22,6 +22,7 @@ impl Payload {
     /// Returns the routing topic string (e.g. `"image"`) for this payload.
     pub(crate) fn topic(&self) -> &'static str {
         match self {
+            //
             Self::Image(_) => "image",
 
             Self::PurgeExpiredInvitation(_) => "purge_expired_invitation",

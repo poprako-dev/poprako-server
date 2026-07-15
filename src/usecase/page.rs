@@ -153,6 +153,7 @@ where
                 let mut check_payloads = Vec::new();
 
                 for reservation in &reservations {
+                    //
                     check_ids.push(ImageComplex::gen_check_id());
 
                     check_payloads.push(Payload::Image(
@@ -480,6 +481,7 @@ where
 
         for page_info in page_infos {
             if let Some(object_key) = page_info.image_key {
+                //
                 delete_ids.push(ImageComplex::gen_delete_id());
 
                 delete_payloads.push(Payload::Image(image::Payload::Delete {

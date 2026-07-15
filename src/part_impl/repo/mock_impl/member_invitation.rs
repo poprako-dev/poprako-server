@@ -297,8 +297,6 @@ impl<'a> Step<GetMemberInvitationInfoExcluded<'a>, MockContext> for Mock {
     ) -> RegularResult<MemberInvitationInfo> {
         match oper {
             GetMemberInvitationInfoExcluded::Code { code } => {
-                //
-
                 get_member_invitation_info(
                     &context.state,
                     &GetMemberInvitationInfo::Code { code },
@@ -342,6 +340,7 @@ impl<'a> Step<PurgeExpiredMemberInvitation<'a>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &PurgeExpiredMemberInvitation<'a>,
     ) -> RegularResult<()> {
+        //
         context
             .state
             .member_invitations

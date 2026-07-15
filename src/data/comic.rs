@@ -29,6 +29,7 @@ mod tests {
 
     #[test]
     fn comic_info_val_omits_none_fields() {
+        //
         let comic_info_val = ComicInfoVal {
             id: "comic-1".into(),
             workset_id: "workset-1".into(),
@@ -49,6 +50,7 @@ mod tests {
         };
 
         let serialized = serde_json::to_value(comic_info_val).unwrap();
+
         let serde_json::Value::Object(object) = serialized else {
             panic!("comic info value must serialize as an object");
         };
@@ -67,6 +69,7 @@ mod tests {
 
     #[test]
     fn create_comic_params_deserializes_missing_optional_fields_as_none() {
+        //
         let create_comic_params =
             serde_json::from_value::<CreateComicParams>(serde_json::json!({
                 "workset_id": "workset-1",
@@ -76,6 +79,7 @@ mod tests {
             .unwrap();
 
         assert!(create_comic_params.description.is_none());
+
         assert!(create_comic_params.first_chapter_subtitle.is_none());
     }
 }

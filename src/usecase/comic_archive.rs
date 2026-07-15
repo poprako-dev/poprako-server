@@ -89,6 +89,7 @@ where
             let mut delete_payloads = Vec::new();
 
             for image_key in image_keys {
+                //
                 delete_ids.push(next_snowflake_id());
 
                 delete_payloads.push(Payload::Image(image::Payload::Delete {

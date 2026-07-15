@@ -30,6 +30,7 @@ impl ComicArchiveComplex {
         archived_at: OffsetDateTime,
     ) -> RegularResult<(ComicArchiveWrite, Vec<String>)> {
         tokio::task::spawn_blocking(move || {
+            //
             let image_keys = collect_image_keys(&comic_archive_snapshot);
 
             let comic_archive_write =
@@ -53,6 +54,7 @@ fn build_write(
     archiver_id: String,
     archived_at: OffsetDateTime,
 ) -> RegularResult<ComicArchiveWrite> {
+    //
     let archived_comic_id = next_snowflake_id();
 
     let archived_chapter_ids = comic_archive_snapshot
@@ -136,6 +138,7 @@ fn build_write(
 fn collect_image_keys(
     comic_archive_snapshot: &ComicArchiveSnapshot,
 ) -> Vec<String> {
+    //
     let mut image_keys = Vec::new();
 
     if let Some(cover_key) = &comic_archive_snapshot.comic_info.cover_key {

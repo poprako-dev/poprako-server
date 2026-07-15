@@ -469,6 +469,7 @@ where
             let mut batch_delays = Vec::new();
 
             if let Some(prev_object_key) = &cover_reservation.prev_object_key {
+                //
                 batch_ids.push(ImageComplex::gen_delete_id());
 
                 batch_payloads.push(Payload::Image(image::Payload::Delete {

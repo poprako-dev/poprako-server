@@ -143,6 +143,7 @@ fn update_user(
     match oper {
         //
         UpdateUser::PasswordHash { id, password_hash } => {
+            //
             let credential = state
                 .credentials
                 .iter_mut()

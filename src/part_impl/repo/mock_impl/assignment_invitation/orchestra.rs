@@ -236,6 +236,7 @@ impl<'a> Step<PurgeExpiredAssignmentInvitation<'a>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &PurgeExpiredAssignmentInvitation<'a>,
     ) -> RegularResult<()> {
+        //
         context
             .state
             .assignment_invitations

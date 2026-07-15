@@ -62,7 +62,6 @@ fn list_first_pages(
     state: &MockState,
     chapter_ids: &[String],
 ) -> HashMap<String, PageInfo> {
-    //
     chapter_ids
         .iter()
         .filter_map(|chapter_id| {

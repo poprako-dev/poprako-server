@@ -66,6 +66,7 @@ where
 
     // Dispatch an activity event when the user reads their own profile.
     if token.user_id == id {
+        //
         let event = Event::UserActive(UserActivePayload {
             user_id: token.user_id,
         });
@@ -259,6 +260,7 @@ where
 
             // If replacing an existing avatar, schedule deletion of the old object.
             if let Some(prev_key) = &avatar_reservation.prev_object_key {
+                //
                 batch_ids.push(ImageComplex::gen_delete_id());
 
                 batch_payloads.push(Payload::Image(image::Payload::Delete {
