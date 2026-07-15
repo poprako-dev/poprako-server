@@ -37,6 +37,7 @@ pub fn archive_input() -> Option<ArchiveInput> {
 
 /// Runs archive preparation for a pre-built large comic snapshot.
 pub async fn prepare_archive(archive_input: ArchiveInput) -> bool {
+    //
     let ArchiveInput(comic_archive_snapshot) = archive_input;
 
     ComicArchiveComplex::prepare_write(
@@ -100,14 +101,19 @@ pub fn build_unit_index_updates(unit_index_input: UnitIndexInput) -> bool {
 }
 
 fn archive_snapshot() -> Option<ComicArchiveSnapshot> {
+    //
     let stages = StageMask::try_from(0).ok()?;
+
     let archived_at = OffsetDateTime::UNIX_EPOCH;
 
     let mut chapter_snapshots = Vec::with_capacity(CHAPTER_COUNT);
 
     for chapter_index in 0..CHAPTER_COUNT {
+        //
         let chapter_id = format!("chapter-{}", chapter_index);
+
         let user_info = user_info(archived_at);
+
         let assignment_info = AssignmentInfo {
             id: format!("assignment-{}", chapter_index),
             chapter_id: chapter_id.clone(),
@@ -122,7 +128,9 @@ fn archive_snapshot() -> Option<ComicArchiveSnapshot> {
         let mut page_snapshots = Vec::with_capacity(PAGE_COUNT);
 
         for page_index in 0..PAGE_COUNT {
+            //
             let page_id = format!("page-{}-{}", chapter_index, page_index);
+
             let mut unit_infos = Vec::with_capacity(UNIT_COUNT);
 
             for unit_index in 0..UNIT_COUNT {
@@ -259,6 +267,7 @@ fn unit_info(
 }
 
 fn label_plus_content() -> &'static str {
+    //
     static CONTENT: OnceLock<String> = OnceLock::new();
 
     CONTENT
@@ -269,10 +278,12 @@ fn label_plus_content() -> &'static str {
 }
 
 fn poprako_content() -> &'static str {
+    //
     static CONTENT: OnceLock<String> = OnceLock::new();
 
     CONTENT
         .get_or_init(|| {
+            //
             let units = (1..=2_000)
                 .map(|index| {
                     format!(
@@ -293,12 +304,17 @@ fn poprako_content() -> &'static str {
 }
 
 fn export_input() -> LabelPlusExportInput {
+    //
     let archived_at = OffsetDateTime::UNIX_EPOCH;
+
     let mut pages = Vec::with_capacity(PAGE_COUNT * 8);
+
     let mut units_by_page_id = HashMap::new();
 
     for page_index in 0..(PAGE_COUNT * 8) {
+        //
         let page_id = format!("page-{}", page_index);
+
         let unit_infos = (0..UNIT_COUNT)
             .map(|unit_index| {
                 unit_info(&page_id, 0, page_index, unit_index, archived_at)

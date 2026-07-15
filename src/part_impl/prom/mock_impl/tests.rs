@@ -60,6 +60,7 @@ async fn defer_batch_records_payloads() {
 }
 
 fn assignment_invitation(id: &str, pending: bool) -> AssignmentInvitationInfo {
+    //
     let created_at = now();
 
     AssignmentInvitationInfo {

@@ -32,6 +32,7 @@ impl ImagePool for Mock {
         &self,
         original_key: &str,
     ) -> RegularResult<Url> {
+        //
         if self.flags.lock().unwrap().image_get_failure {
             return Err(RegularError::Expected {
                 variant: ExpectedVariant::Args,

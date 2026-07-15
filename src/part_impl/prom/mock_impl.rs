@@ -340,6 +340,7 @@ pub async fn process_pending(mock: &Mock) -> RegularResult<()> {
         let payload = record.payload();
 
         match payload {
+            //
             Payload::Image(task) => {
                 process_image_task(mock, &task).await?;
             }
@@ -357,7 +358,9 @@ async fn process_invitation_event(
     mock: &Mock,
     event: &PurgeExpiredInvitation,
 ) -> RegularResult<()> {
+    //
     mock.coord(async move |context| match event {
+        //
         PurgeExpiredInvitation::Assignment { invitation_id } => {
             mock.step(
                 context,
@@ -462,8 +465,6 @@ async fn mark_uploaded(
     match kind {
         //
         image::ResourceKind::UserAvatar => {
-            //
-
             mock.step(
                 context,
                 &UpdateUser::MarkAvatarUploaded {
@@ -475,8 +476,6 @@ async fn mark_uploaded(
         }
 
         image::ResourceKind::TeamAvatar => {
-            //
-
             mock.step(
                 context,
                 &UpdateTeam::MarkAvatarUploaded {
@@ -545,8 +544,6 @@ async fn classify_expected_mark(
     match kind {
         //
         image::ResourceKind::UserAvatar => {
-            //
-
             match mock
                 .step(context, &GetUserInfoExcluded::Id { id: resource_id })
                 .await
@@ -567,8 +564,6 @@ async fn classify_expected_mark(
         }
 
         image::ResourceKind::TeamAvatar => {
-            //
-
             match mock
                 .step(context, &GetTeamInfoExcluded::Id { id: resource_id })
                 .await

@@ -244,8 +244,6 @@ where
     match kind {
         //
         ResourceKind::UserAvatar => {
-            //
-
             repo.step(
                 context,
                 &UpdateUser::MarkAvatarUploaded {
@@ -257,8 +255,6 @@ where
         }
 
         ResourceKind::TeamAvatar => {
-            //
-
             repo.step(
                 context,
                 &UpdateTeam::MarkAvatarUploaded {
@@ -312,8 +308,6 @@ where
     match kind {
         //
         ResourceKind::UserAvatar => {
-            //
-
             match repo
                 .step(context, &GetUserInfoExcluded::Id { id: resource_id })
                 .await
@@ -334,8 +328,6 @@ where
         }
 
         ResourceKind::TeamAvatar => {
-            //
-
             match repo
                 .step(context, &GetTeamInfoExcluded::Id { id: resource_id })
                 .await

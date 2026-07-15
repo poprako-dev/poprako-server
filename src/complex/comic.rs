@@ -86,6 +86,7 @@ impl ComicComplex {
         let mut fallback_cover_keys = HashMap::new();
 
         for (comic_id, chapter_info) in pinned_chapter_infos {
+            //
             let Some(page_info) = first_page_infos.get(&chapter_info.id) else {
                 continue;
             };

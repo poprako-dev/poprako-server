@@ -184,6 +184,7 @@ where
         Some(user_id) => TeamInfoListKind::JoinedBy { user_id },
 
         None => {
+            //
             TeamPermComplex::ensure_user_can_list_all(
                 &mut run_proxy! {
                     repo => for<'a> GetUserInfo<'a>;
@@ -323,6 +324,7 @@ where
 
             // If replacing an existing avatar, schedule deletion of the old object.
             if let Some(prev_key) = &avatar_reservation.prev_object_key {
+                //
                 batch_ids.push(ImageComplex::gen_delete_id());
 
                 batch_payloads.push(Payload::Image(image::Payload::Delete {

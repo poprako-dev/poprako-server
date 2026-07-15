@@ -249,6 +249,7 @@ where
         let mut next_completed_purge_at = OffsetDateTime::now_utc();
 
         loop {
+            //
             if self.token.is_cancelled() {
                 break;
             }
@@ -257,6 +258,7 @@ where
             let now = OffsetDateTime::now_utc();
 
             if now >= next_completed_purge_at {
+                //
                 match self.purge_completed().await {
                     //
                     Ok(purged_count) => {
@@ -521,6 +523,7 @@ where
     }
 
     match payload {
+        //
         Payload::Image(task) => {
             image::handle(nucl, repo, image_pool, &task).await
         }

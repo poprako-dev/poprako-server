@@ -104,6 +104,7 @@ where
     let mut assignment_info_vals = Vec::with_capacity(assignment_infos.len());
 
     for assignment_info in assignment_infos {
+        //
         let fallback_cover_key = assignment_info
             .chapter
             .as_ref()

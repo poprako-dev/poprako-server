@@ -20,6 +20,7 @@ impl UserComplex {
 
     /// Hashes a plaintext password on Tokio's blocking pool and returns its Argon2id-encoded value.
     pub async fn hash_password(password: &str) -> RegularResult<String> {
+        //
         let password = password.to_owned();
 
         tokio::task::spawn_blocking(move || hash_password_sync(&password))
@@ -35,7 +36,9 @@ impl UserComplex {
     /// Verifies a plaintext password on Tokio's blocking pool against an Argon2id-encoded hash.
     /// TODO: no need to return bool.
     pub async fn verify_password(password: &str, password_hash: &str) -> bool {
+        //
         let password = password.to_owned();
+
         let password_hash = password_hash.to_owned();
 
         match tokio::task::spawn_blocking(move || {
@@ -46,6 +49,7 @@ impl UserComplex {
             Ok(is_valid) => is_valid,
 
             Err(error) => {
+                //
                 tracing::error!(
                     error = %error,
                     "[UserComplex::verify_password] blocking task failed",
@@ -75,6 +79,7 @@ impl UserComplex {
 }
 
 fn hash_password_sync(password: &str) -> RegularResult<String> {
+    //
     let salt = SaltString::generate(OsRng);
 
     Argon2::default()
@@ -89,6 +94,7 @@ fn hash_password_sync(password: &str) -> RegularResult<String> {
 }
 
 fn verify_password_sync(password: &str, password_hash: &str) -> bool {
+    //
     let Ok(parsed) = PasswordHash::new(password_hash) else {
         return false;
     };

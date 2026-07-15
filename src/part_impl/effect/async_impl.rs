@@ -63,6 +63,7 @@ impl AsyncEffectDevelop {
             handler::EffectHandler::<R>::new(repo, recv, token.clone());
 
         tokio::spawn(async move {
+            //
             handler.run().await;
 
             done_send.send_replace(true);
@@ -74,11 +75,13 @@ impl AsyncEffectDevelop {
     /// Stops accepting new events and waits for queued events to finish.
     #[instrument(level = "info", skip_all)]
     pub async fn close(&self) {
+        //
         self.token.cancel();
 
         let mut done = self.done.clone();
 
         match done.wait_for(|done| *done).await {
+            //
             Ok(_) => {}
 
             Err(error) => {
@@ -87,7 +90,7 @@ impl AsyncEffectDevelop {
                     "[AsyncEffectDevelop::close] background task ended without completion",
                 );
             }
-        };
+        }
     }
 }
 
@@ -104,6 +107,7 @@ impl EffectDevelop for AsyncEffectDevelop {
         for event in iter.into_iter() {
             if let Err(e) = self.send.try_send(event) {
                 match e {
+                    //
                     TrySendError::Full(_) if self.token.is_cancelled() => {
                         break;
                     }
