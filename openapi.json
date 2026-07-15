@@ -39,7 +39,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateData"
+                "$ref": "#/components/schemas/CreateAnnouncementParams"
               }
             }
           },
@@ -51,7 +51,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_CreateVal"
+                  "$ref": "#/components/schemas/HttpBody_CreateAnnouncementPayload"
                 }
               }
             }
@@ -76,7 +76,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateData"
+                "$ref": "#/components/schemas/CreateAssignmentInvitationParams"
               }
             }
           },
@@ -88,7 +88,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_CreateVal"
+                  "$ref": "#/components/schemas/HttpBody_CreateAssignmentInvitationPayload"
                 }
               }
             }
@@ -113,7 +113,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/JoinData"
+                "$ref": "#/components/schemas/JoinAssignmentInvitationParams"
               }
             }
           },
@@ -125,7 +125,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_InfoVal"
+                  "$ref": "#/components/schemas/HttpBody_AssignmentInfoVal"
                 }
               }
             }
@@ -248,7 +248,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_Vec_InfoVal"
+                  "$ref": "#/components/schemas/HttpBody_Vec_AssignmentInfoVal"
                 }
               }
             }
@@ -273,7 +273,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/JoinChapterData"
+                "$ref": "#/components/schemas/JoinChapterAssignmentParams"
               }
             }
           },
@@ -285,7 +285,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_InfoVal"
+                  "$ref": "#/components/schemas/HttpBody_AssignmentInfoVal"
                 }
               }
             }
@@ -342,7 +342,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/LoginData"
+                "$ref": "#/components/schemas/LoginAuthParams"
               }
             }
           },
@@ -354,7 +354,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_LoginVal"
+                  "$ref": "#/components/schemas/HttpBody_LoginAuthPayload"
                 }
               }
             }
@@ -392,7 +392,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/RegisterData"
+                "$ref": "#/components/schemas/RegisterAuthParams"
               }
             }
           },
@@ -404,7 +404,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_RegisterVal"
+                  "$ref": "#/components/schemas/HttpBody_RegisterAuthPayload"
                 }
               }
             }
@@ -429,7 +429,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateData"
+                "$ref": "#/components/schemas/CreateChapterParams"
               }
             }
           },
@@ -441,7 +441,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_CreateVal"
+                  "$ref": "#/components/schemas/HttpBody_CreateChapterPayload"
                 }
               }
             }
@@ -479,7 +479,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_InfoVal"
+                  "$ref": "#/components/schemas/HttpBody_ChapterInfoVal"
                 }
               }
             }
@@ -542,7 +542,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PatchInfoData"
+                "$ref": "#/components/schemas/UpdateChapterInfoParams"
               }
             }
           },
@@ -620,7 +620,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_Vec_InfoVal"
+                  "$ref": "#/components/schemas/HttpBody_Vec_AssignmentInvitationInfoVal"
                 }
               }
             }
@@ -662,7 +662,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateRolesData"
+                "$ref": "#/components/schemas/UpdateAssignmentRolesParams"
               }
             }
           },
@@ -730,7 +730,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_Vec_InfoVal"
+                  "$ref": "#/components/schemas/HttpBody_Vec_PageInfoVal"
                 }
               }
             }
@@ -789,7 +789,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ReserveChapterData"
+                "$ref": "#/components/schemas/ReserveChapterPagesParams"
               }
             }
           },
@@ -801,7 +801,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_ReserveChapterVal"
+                  "$ref": "#/components/schemas/HttpBody_ReserveChapterPagesPayload"
                 }
               }
             }
@@ -837,7 +837,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateStageData"
+                "$ref": "#/components/schemas/UpdateChapterStageParams"
               }
             }
           },
@@ -960,7 +960,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/TranslationImportData"
+                "$ref": "#/components/schemas/ImportChapterTranslationParams"
               }
             }
           },
@@ -972,7 +972,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_TranslationImportVal"
+                  "$ref": "#/components/schemas/HttpBody_ImportChapterTranslationPayload"
                 }
               }
             }
@@ -997,7 +997,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateData"
+                "$ref": "#/components/schemas/CreateComicParams"
               }
             }
           },
@@ -1009,7 +1009,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_CreateVal"
+                  "$ref": "#/components/schemas/HttpBody_CreateComicPayload"
                 }
               }
             }
@@ -1047,7 +1047,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_InfoVal"
+                  "$ref": "#/components/schemas/HttpBody_ComicInfoVal"
                 }
               }
             }
@@ -1081,7 +1081,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateInfoData"
+                "$ref": "#/components/schemas/UpdateComicInfoParams"
               }
             }
           },
@@ -1156,7 +1156,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_Val"
+                  "$ref": "#/components/schemas/HttpBody_ArchiveComicPayload"
                 }
               }
             }
@@ -1229,7 +1229,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_Vec_InfoVal"
+                  "$ref": "#/components/schemas/HttpBody_Vec_ChapterInfoVal"
                 }
               }
             }
@@ -1264,7 +1264,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_Option_InfoVal"
+                  "$ref": "#/components/schemas/HttpBody_Option_ChapterInfoVal"
                 }
               }
             }
@@ -1297,7 +1297,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/MarkCoverUploadedData"
+                "$ref": "#/components/schemas/MarkComicCoverUploadedParams"
               }
             }
           },
@@ -1338,7 +1338,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ReserveCoverData"
+                "$ref": "#/components/schemas/ReserveComicCoverParams"
               }
             }
           },
@@ -1350,7 +1350,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_ReserveCoverVal"
+                  "$ref": "#/components/schemas/HttpBody_ReserveComicCoverPayload"
                 }
               }
             }
@@ -1375,7 +1375,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateData"
+                "$ref": "#/components/schemas/CreateCommentParams"
               }
             }
           },
@@ -1387,7 +1387,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_CreateVal"
+                  "$ref": "#/components/schemas/HttpBody_CreateCommentPayload"
                 }
               }
             }
@@ -1412,7 +1412,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateData"
+                "$ref": "#/components/schemas/CreateMemberInvitationParams"
               }
             }
           },
@@ -1424,7 +1424,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_CreateVal"
+                  "$ref": "#/components/schemas/HttpBody_CreateMemberInvitationPayload"
                 }
               }
             }
@@ -1491,7 +1491,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateRolesData"
+                "$ref": "#/components/schemas/UpdateMemberInvitationRolesParams"
               }
             }
           },
@@ -1597,7 +1597,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_Vec_InfoVal"
+                  "$ref": "#/components/schemas/HttpBody_Vec_MemberInfoVal"
                 }
               }
             }
@@ -1620,7 +1620,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateData"
+                "$ref": "#/components/schemas/CreateMemberParams"
               }
             }
           },
@@ -1632,7 +1632,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_CreateVal"
+                  "$ref": "#/components/schemas/HttpBody_CreateMemberPayload"
                 }
               }
             }
@@ -1660,7 +1660,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/JoinTeamData"
+                "$ref": "#/components/schemas/JoinTeamParams"
               }
             }
           },
@@ -1672,7 +1672,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_InfoVal"
+                  "$ref": "#/components/schemas/HttpBody_MemberInfoVal"
                 }
               }
             }
@@ -1735,7 +1735,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_Vec_InfoVal"
+                  "$ref": "#/components/schemas/HttpBody_Vec_MemberInfoVal"
                 }
               }
             }
@@ -1799,7 +1799,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateRolesData"
+                "$ref": "#/components/schemas/UpdateMemberRolesParams"
               }
             }
           },
@@ -1843,7 +1843,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/MarkImageUploadedData"
+                "$ref": "#/components/schemas/MarkPageImageUploadedParams"
               }
             }
           },
@@ -1884,7 +1884,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ReserveImageData"
+                "$ref": "#/components/schemas/ReservePageImageParams"
               }
             }
           },
@@ -1896,7 +1896,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_ReserveImageVal"
+                  "$ref": "#/components/schemas/HttpBody_ReservePageImagePayload"
                 }
               }
             }
@@ -1956,7 +1956,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_ListPageInfosVal"
+                  "$ref": "#/components/schemas/HttpBody_ListPageUnitInfosPayload"
                 }
               }
             }
@@ -1992,7 +1992,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SavePageData"
+                "$ref": "#/components/schemas/SavePageUnitsParams"
               }
             }
           },
@@ -2004,7 +2004,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_SavePageVal"
+                  "$ref": "#/components/schemas/HttpBody_SavePageUnitsPayload"
                 }
               }
             }
@@ -2061,7 +2061,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_Vec_Val"
+                  "$ref": "#/components/schemas/HttpBody_Vec_SystemMailInfoVal"
                 }
               }
             }
@@ -2083,7 +2083,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/MarkReadData"
+                "$ref": "#/components/schemas/MarkSystemMailReadParams"
               }
             }
           },
@@ -2144,7 +2144,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_Vec_InfoVal"
+                  "$ref": "#/components/schemas/HttpBody_Vec_TeamInfoVal"
                 }
               }
             }
@@ -2167,7 +2167,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateData"
+                "$ref": "#/components/schemas/CreateTeamParams"
               }
             }
           },
@@ -2179,7 +2179,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_InfoVal"
+                  "$ref": "#/components/schemas/HttpBody_TeamInfoVal"
                 }
               }
             }
@@ -2217,7 +2217,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_InfoVal"
+                  "$ref": "#/components/schemas/HttpBody_TeamInfoVal"
                 }
               }
             }
@@ -2251,7 +2251,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateInfoData"
+                "$ref": "#/components/schemas/UpdateTeamInfoParams"
               }
             }
           },
@@ -2361,7 +2361,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_Vec_InfoVal"
+                  "$ref": "#/components/schemas/HttpBody_Vec_AnnouncementInfoVal"
                 }
               }
             }
@@ -2394,7 +2394,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/MarkAvatarUploadedData"
+                "$ref": "#/components/schemas/MarkTeamAvatarUploadedParams"
               }
             }
           },
@@ -2435,7 +2435,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ReserveAvatarData"
+                "$ref": "#/components/schemas/ReserveTeamAvatarParams"
               }
             }
           },
@@ -2447,7 +2447,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_ReserveAvatarVal"
+                  "$ref": "#/components/schemas/HttpBody_ReserveTeamAvatarPayload"
                 }
               }
             }
@@ -2520,7 +2520,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_Vec_InfoVal"
+                  "$ref": "#/components/schemas/HttpBody_Vec_CommentInfoVal"
                 }
               }
             }
@@ -2599,7 +2599,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_Vec_InfoVal"
+                  "$ref": "#/components/schemas/HttpBody_Vec_MemberInvitationInfoVal"
                 }
               }
             }
@@ -2656,7 +2656,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_Vec_InfoVal"
+                  "$ref": "#/components/schemas/HttpBody_Vec_WorksetInfoVal"
                 }
               }
             }
@@ -2683,7 +2683,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_InfoVal"
+                  "$ref": "#/components/schemas/HttpBody_UserInfoVal"
                 }
               }
             }
@@ -2718,7 +2718,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_InfoVal"
+                  "$ref": "#/components/schemas/HttpBody_UserInfoVal"
                 }
               }
             }
@@ -2752,7 +2752,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateInfoData"
+                "$ref": "#/components/schemas/UpdateUserInfoParams"
               }
             }
           },
@@ -2825,7 +2825,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/MarkAvatarUploadedData"
+                "$ref": "#/components/schemas/MarkUserAvatarUploadedParams"
               }
             }
           },
@@ -2863,7 +2863,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ReserveAvatarData"
+                "$ref": "#/components/schemas/ReserveUserAvatarParams"
               }
             }
           },
@@ -2875,13 +2875,54 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_ReserveAvatarVal"
+                  "$ref": "#/components/schemas/HttpBody_ReserveUserAvatarPayload"
                 }
               }
             }
           },
           "403": {
             "description": "Cannot modify another user's avatar"
+          }
+        }
+      }
+    },
+    "/api/v1/users/{user_id}/password": {
+      "put": {
+        "tags": [
+          "users"
+        ],
+        "summary": "`PUT /api/v1/users/{user_id}/password` — replace the current user's password.",
+        "operationId": "update_password",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "description": "Target user ID (must match authenticated user)",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserPasswordParams"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Password updated"
+          },
+          "401": {
+            "description": "Current password is incorrect"
+          },
+          "403": {
+            "description": "Cannot modify another user's password"
           }
         }
       }
@@ -2897,7 +2938,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateData"
+                "$ref": "#/components/schemas/CreateWorksetParams"
               }
             }
           },
@@ -2909,7 +2950,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_CreateVal"
+                  "$ref": "#/components/schemas/HttpBody_CreateWorksetPayload"
                 }
               }
             }
@@ -2950,7 +2991,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_InfoVal"
+                  "$ref": "#/components/schemas/HttpBody_WorksetInfoVal"
                 }
               }
             }
@@ -2987,7 +3028,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateInfoData"
+                "$ref": "#/components/schemas/UpdateWorksetInfoParams"
               }
             }
           },
@@ -3044,7 +3085,7 @@
           "comics"
         ],
         "summary": "`GET /api/v1/worksets/{workset_id}/comics` — list comics in a workset.",
-        "description": "Lists active comics in a workset with optional title and workflow-stage filters. `incl` embeds related rows and `with` attaches derived rows.",
+        "description": "Lists active comics in a workset with optional title and workflow-stage filters. `incl` embeds related rows and `with` populates parallel derived rows.",
         "operationId": "list_infos",
         "parameters": [
           {
@@ -3129,7 +3170,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_Vec_InfoVal"
+                  "$ref": "#/components/schemas/HttpBody_ListComicInfosPayload"
                 }
               }
             }
@@ -3153,6 +3194,61 @@
           "user"
         ]
       },
+      "AnnouncementInfoVal": {
+        "type": "object",
+        "description": "Presentation-ready team announcement information.",
+        "required": [
+          "id",
+          "team_id",
+          "user_id",
+          "title",
+          "content",
+          "created_at"
+        ],
+        "properties": {
+          "content": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "id": {
+            "type": "string"
+          },
+          "team_id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "user": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UserInfoVal"
+              }
+            ]
+          },
+          "user_id": {
+            "type": "string"
+          }
+        }
+      },
+      "ArchiveComicPayload": {
+        "type": "object",
+        "description": "Value returned after an active comic has been archived atomically.",
+        "required": [
+          "archived_comic_id"
+        ],
+        "properties": {
+          "archived_comic_id": {
+            "type": "string"
+          }
+        }
+      },
       "AssignmentInclOpt": {
         "type": "string",
         "description": "Incl opts for assignment info queries.\n\nEach opt embeds additional related data into the returned\n`AssignmentInfoVal`. Dotted opts implicitly pull in the segments before\nthe dot (e.g. `chapter.comic.workset.team` also embeds `chapter`,\n`chapter.comic`, and `chapter.comic.workset`).",
@@ -3166,6 +3262,106 @@
           "chapter.comic.creator"
         ]
       },
+      "AssignmentInfoVal": {
+        "type": "object",
+        "description": "Presentation-ready chapter assignment information.",
+        "required": [
+          "id",
+          "chapter_id",
+          "user_id",
+          "roles",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "chapter": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ChapterInfoVal"
+              }
+            ]
+          },
+          "chapter_id": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "id": {
+            "type": "string"
+          },
+          "roles": {
+            "$ref": "#/components/schemas/RoleMask"
+          },
+          "updated_at": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "user": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UserInfoVal"
+              }
+            ]
+          },
+          "user_id": {
+            "type": "string"
+          }
+        }
+      },
+      "AssignmentInvitationInfoVal": {
+        "type": "object",
+        "description": "Presentation-ready assignment invitation information.",
+        "required": [
+          "id",
+          "chapter_id",
+          "inviter_id",
+          "invitee_qid",
+          "code",
+          "pending",
+          "roles",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "chapter_id": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "id": {
+            "type": "string"
+          },
+          "invitee_qid": {
+            "type": "string"
+          },
+          "inviter_id": {
+            "type": "string"
+          },
+          "pending": {
+            "type": "boolean"
+          },
+          "roles": {
+            "$ref": "#/components/schemas/RoleMask"
+          },
+          "updated_at": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
       "ChapterInclOpt": {
         "type": "string",
         "description": "Incl opts for chapter info queries.\n\nEach opt embeds additional related data into the returned\n`ChapterInfoVal`. Dotted opts implicitly pull in the segments before the\ndot (e.g. `comic.workset.team` also embeds `comic` and `comic.workset`).",
@@ -3177,6 +3373,93 @@
           "creator"
         ]
       },
+      "ChapterInfoVal": {
+        "type": "object",
+        "description": "Presentation-ready chapter information.\n\nMirrors [`ChapterInfo`] but converts timestamps to Unix milliseconds\nand exposes the same grouped field layout as the API response.\n\nConstruct via [`From<ChapterInfo>`] — the conversion is infallible.\n\n[`ChapterInfo`]: crate::model::chapter::ChapterInfo",
+        "required": [
+          "id",
+          "comic_id",
+          "is_pinned",
+          "index",
+          "subtitle",
+          "page_count",
+          "total_unit_count",
+          "translated_unit_count",
+          "proofread_unit_count",
+          "stages",
+          "creator_id",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "comic": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ComicInfoVal"
+              }
+            ]
+          },
+          "comic_id": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "creator": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UserInfoVal"
+              }
+            ]
+          },
+          "creator_id": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "index": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "is_pinned": {
+            "type": "boolean"
+          },
+          "page_count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "proofread_unit_count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "stages": {
+            "$ref": "#/components/schemas/StageMask"
+          },
+          "subtitle": {
+            "type": "string"
+          },
+          "total_unit_count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "translated_unit_count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "updated_at": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
       "ComicInclOpt": {
         "type": "string",
         "description": "Incl opts for comic info queries.\n\nEach opt embeds additional related data into the returned\n[`ComicInfoVal`]. Dotted opts implicitly pull in the segments before the\ndot (e.g. `workset.team` also embeds `workset`).",
@@ -3186,9 +3469,111 @@
           "creator"
         ]
       },
+      "ComicInfoVal": {
+        "type": "object",
+        "description": "Presentation-ready comic information.\n\nMirrors [`ComicInfo`] but converts timestamps to Unix milliseconds and\nresolves the cover key to a signed download URL via [`ImagePool`] when\nthe cover has been uploaded.\n\nConstruct via [`ComicInfoVal::from_model`] — the conversion requires\nan [`ImagePool`] instance for URL signing.\n\n[`ComicInfo`]: crate::model::comic::ComicInfo",
+        "required": [
+          "id",
+          "workset_id",
+          "index",
+          "title",
+          "author",
+          "chapter_count",
+          "creator_id",
+          "last_active_at",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "author": {
+            "type": "string"
+          },
+          "chapter_count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "cover_thumbnail_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "cover_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Resolved signed download URL for the cover image, or [`None`] if\nno cover has been uploaded."
+          },
+          "created_at": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "creator": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UserInfoVal"
+              }
+            ]
+          },
+          "creator_id": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "index": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "last_active_at": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "team": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TeamInfoVal"
+              }
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "workset": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/WorksetInfoVal"
+              }
+            ]
+          },
+          "workset_id": {
+            "type": "string"
+          }
+        }
+      },
       "ComicWithOpt": {
         "type": "string",
-        "description": "Extra data options for comic info queries.\n\nUnlike `ComicInclOpt`, `with` opts attach derived rather than\ndirectly related data (e.g. the chapter currently pinned to the comic).",
+        "description": "Extra data options for comic info queries.\n\nUnlike `ComicInclOpt`, `with` opts populate the separately returned\nderived data (e.g. the chapter currently pinned to each comic).",
         "enum": [
           "pinned_chapter"
         ]
@@ -3200,7 +3585,222 @@
           "user"
         ]
       },
-      "CreateData": {
+      "CommentInfoVal": {
+        "type": "object",
+        "description": "Presentation-ready team board comment information.",
+        "required": [
+          "id",
+          "team_id",
+          "user_id",
+          "content",
+          "created_at"
+        ],
+        "properties": {
+          "content": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "id": {
+            "type": "string"
+          },
+          "team_id": {
+            "type": "string"
+          },
+          "user": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UserInfoVal"
+              }
+            ]
+          },
+          "user_id": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateAnnouncementParams": {
+        "type": "object",
+        "description": "Input parameters for creating an announcement.",
+        "required": [
+          "team_id",
+          "title",
+          "content"
+        ],
+        "properties": {
+          "content": {
+            "type": "string"
+          },
+          "team_id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateAnnouncementPayload": {
+        "type": "object",
+        "description": "Return value from creating an announcement.",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateAssignmentInvitationParams": {
+        "type": "object",
+        "description": "Input parameters for creating an assignment invitation.",
+        "required": [
+          "chapter_id",
+          "invitee_qid",
+          "roles"
+        ],
+        "properties": {
+          "chapter_id": {
+            "type": "string"
+          },
+          "invitee_qid": {
+            "type": "string"
+          },
+          "roles": {
+            "$ref": "#/components/schemas/RoleMask"
+          }
+        }
+      },
+      "CreateAssignmentInvitationPayload": {
+        "type": "object",
+        "description": "Return value from creating an assignment invitation.",
+        "required": [
+          "id",
+          "code"
+        ],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateChapterParams": {
+        "type": "object",
+        "description": "Input parameters for creating a new chapter.",
+        "required": [
+          "comic_id"
+        ],
+        "properties": {
+          "comic_id": {
+            "type": "string"
+          },
+          "subtitle": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional display subtitle; defaults to a generated value\nif omitted (see [`default_subtitle`]).\n\n[`default_subtitle`]: crate::complex::chapter::default_subtitle"
+          }
+        }
+      },
+      "CreateChapterPayload": {
+        "type": "object",
+        "description": "Return value from a successful chapter creation.",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateComicParams": {
+        "type": "object",
+        "description": "Input parameters for creating a new comic inside a workset.\n\nThe first chapter is created atomically with the comic. Its subtitle\ncan be customised via `first_chapter_subtitle`; when absent, a\nlocale-aware default (e.g. \"Ch. 1\") is generated.",
+        "required": [
+          "workset_id",
+          "title",
+          "author"
+        ],
+        "properties": {
+          "author": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "first_chapter_subtitle": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional subtitle for the first chapter created alongside the comic."
+          },
+          "title": {
+            "type": "string"
+          },
+          "workset_id": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateComicPayload": {
+        "type": "object",
+        "description": "Return value from a successful comic creation.\n\nIncludes the IDs of both the new comic and its auto-created first chapter.",
+        "required": [
+          "id",
+          "chapter_id"
+        ],
+        "properties": {
+          "chapter_id": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateCommentParams": {
+        "type": "object",
+        "description": "Input parameters for creating a comment.",
+        "required": [
+          "team_id",
+          "content"
+        ],
+        "properties": {
+          "content": {
+            "type": "string"
+          },
+          "team_id": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateCommentPayload": {
+        "type": "object",
+        "description": "Return value from creating a comment.",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateMemberInvitationParams": {
         "type": "object",
         "description": "Input parameters for creating a new team invitation.\n\nThe invitation binds a specific QQ ID (`invitee_qid`) to a [`RoleMask`]\nthat will be granted upon acceptance. The actual in-app user lookup\nhappens during the registration flow.",
         "required": [
@@ -3222,7 +3822,7 @@
           }
         }
       },
-      "CreateVal": {
+      "CreateMemberInvitationPayload": {
         "type": "object",
         "description": "Return value from a successful invitation creation.\n\nThe `code` is a short opaque token the invitee presents during\nregistration to claim the invitation.",
         "required": [
@@ -3238,47 +3838,594 @@
           }
         }
       },
-      "CreationVal": {
+      "CreateMemberParams": {
         "type": "object",
-        "description": "One reserved page upload target.",
+        "description": "Input parameters for creating a member.",
         "required": [
-          "page_id",
-          "put_url",
-          "image_version"
+          "user_id",
+          "team_id",
+          "roles"
         ],
         "properties": {
-          "image_version": {
-            "type": "integer",
-            "format": "int64"
+          "roles": {
+            "$ref": "#/components/schemas/RoleMask"
           },
-          "page_id": {
+          "team_id": {
             "type": "string"
           },
-          "put_url": {
+          "user_id": {
             "type": "string"
           }
         }
       },
-      "DiffData": {
+      "CreateMemberPayload": {
         "type": "object",
-        "description": "Transport-facing unit oper.",
+        "description": "Return value from creating a member.",
         "required": [
-          "page_id",
-          "opers"
+          "id"
         ],
         "properties": {
-          "opers": {
+          "id": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateTeamParams": {
+        "type": "object",
+        "description": "Input parameters for creating a new team.",
+        "required": [
+          "name",
+          "description"
+        ],
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateWorksetParams": {
+        "type": "object",
+        "description": "Input parameters for creating a new workset inside a team.",
+        "required": [
+          "team_id",
+          "name"
+        ],
+        "properties": {
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "team_id": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateWorksetPayload": {
+        "type": "object",
+        "description": "Return value from a successful workset creation.",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        }
+      },
+      "ExportChapterTranslationPayload": {
+        "type": "object",
+        "description": "JSON-safe export object for one translated chapter.",
+        "required": [
+          "chapter_id",
+          "chapter_index",
+          "comic_id",
+          "comic_title",
+          "pages"
+        ],
+        "properties": {
+          "chapter_id": {
+            "type": "string"
+          },
+          "chapter_index": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "chapter_subtitle": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "comic_id": {
+            "type": "string"
+          },
+          "comic_title": {
+            "type": "string"
+          },
+          "pages": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/OperData"
+              "$ref": "#/components/schemas/PageTranslationExportPayload"
             }
-          },
-          "page_id": {
-            "type": "string"
           }
         }
       },
-      "HttpBody_CreateVal": {
+      "HttpBody_ArchiveComicPayload": {
+        "type": "object",
+        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
+        "required": [
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "example": 0,
+            "minimum": 0
+          },
+          "data": {
+            "type": "object",
+            "description": "Value returned after an active comic has been archived atomically.",
+            "required": [
+              "archived_comic_id"
+            ],
+            "properties": {
+              "archived_comic_id": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "HttpBody_AssignmentInfoVal": {
+        "type": "object",
+        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
+        "required": [
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "example": 0,
+            "minimum": 0
+          },
+          "data": {
+            "type": "object",
+            "description": "Presentation-ready chapter assignment information.",
+            "required": [
+              "id",
+              "chapter_id",
+              "user_id",
+              "roles",
+              "created_at",
+              "updated_at"
+            ],
+            "properties": {
+              "chapter": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ChapterInfoVal"
+                  }
+                ]
+              },
+              "chapter_id": {
+                "type": "string"
+              },
+              "created_at": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "id": {
+                "type": "string"
+              },
+              "roles": {
+                "$ref": "#/components/schemas/RoleMask"
+              },
+              "updated_at": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "user": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/UserInfoVal"
+                  }
+                ]
+              },
+              "user_id": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "HttpBody_ChapterInfoVal": {
+        "type": "object",
+        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
+        "required": [
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "example": 0,
+            "minimum": 0
+          },
+          "data": {
+            "type": "object",
+            "description": "Presentation-ready chapter information.\n\nMirrors [`ChapterInfo`] but converts timestamps to Unix milliseconds\nand exposes the same grouped field layout as the API response.\n\nConstruct via [`From<ChapterInfo>`] — the conversion is infallible.\n\n[`ChapterInfo`]: crate::model::chapter::ChapterInfo",
+            "required": [
+              "id",
+              "comic_id",
+              "is_pinned",
+              "index",
+              "subtitle",
+              "page_count",
+              "total_unit_count",
+              "translated_unit_count",
+              "proofread_unit_count",
+              "stages",
+              "creator_id",
+              "created_at",
+              "updated_at"
+            ],
+            "properties": {
+              "comic": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ComicInfoVal"
+                  }
+                ]
+              },
+              "comic_id": {
+                "type": "string"
+              },
+              "created_at": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "creator": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/UserInfoVal"
+                  }
+                ]
+              },
+              "creator_id": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string"
+              },
+              "index": {
+                "type": "integer",
+                "format": "int32"
+              },
+              "is_pinned": {
+                "type": "boolean"
+              },
+              "page_count": {
+                "type": "integer",
+                "format": "int32"
+              },
+              "proofread_unit_count": {
+                "type": "integer",
+                "format": "int32"
+              },
+              "stages": {
+                "$ref": "#/components/schemas/StageMask"
+              },
+              "subtitle": {
+                "type": "string"
+              },
+              "total_unit_count": {
+                "type": "integer",
+                "format": "int32"
+              },
+              "translated_unit_count": {
+                "type": "integer",
+                "format": "int32"
+              },
+              "updated_at": {
+                "type": "integer",
+                "format": "int64"
+              }
+            }
+          }
+        }
+      },
+      "HttpBody_ComicInfoVal": {
+        "type": "object",
+        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
+        "required": [
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "example": 0,
+            "minimum": 0
+          },
+          "data": {
+            "type": "object",
+            "description": "Presentation-ready comic information.\n\nMirrors [`ComicInfo`] but converts timestamps to Unix milliseconds and\nresolves the cover key to a signed download URL via [`ImagePool`] when\nthe cover has been uploaded.\n\nConstruct via [`ComicInfoVal::from_model`] — the conversion requires\nan [`ImagePool`] instance for URL signing.\n\n[`ComicInfo`]: crate::model::comic::ComicInfo",
+            "required": [
+              "id",
+              "workset_id",
+              "index",
+              "title",
+              "author",
+              "chapter_count",
+              "creator_id",
+              "last_active_at",
+              "created_at",
+              "updated_at"
+            ],
+            "properties": {
+              "author": {
+                "type": "string"
+              },
+              "chapter_count": {
+                "type": "integer",
+                "format": "int32"
+              },
+              "cover_thumbnail_url": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "cover_url": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Resolved signed download URL for the cover image, or [`None`] if\nno cover has been uploaded."
+              },
+              "created_at": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "creator": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/UserInfoVal"
+                  }
+                ]
+              },
+              "creator_id": {
+                "type": "string"
+              },
+              "description": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "id": {
+                "type": "string"
+              },
+              "index": {
+                "type": "integer",
+                "format": "int32"
+              },
+              "last_active_at": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "team": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/TeamInfoVal"
+                  }
+                ]
+              },
+              "title": {
+                "type": "string"
+              },
+              "updated_at": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "workset": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/WorksetInfoVal"
+                  }
+                ]
+              },
+              "workset_id": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "HttpBody_CreateAnnouncementPayload": {
+        "type": "object",
+        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
+        "required": [
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "example": 0,
+            "minimum": 0
+          },
+          "data": {
+            "type": "object",
+            "description": "Return value from creating an announcement.",
+            "required": [
+              "id"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "HttpBody_CreateAssignmentInvitationPayload": {
+        "type": "object",
+        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
+        "required": [
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "example": 0,
+            "minimum": 0
+          },
+          "data": {
+            "type": "object",
+            "description": "Return value from creating an assignment invitation.",
+            "required": [
+              "id",
+              "code"
+            ],
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "HttpBody_CreateChapterPayload": {
+        "type": "object",
+        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
+        "required": [
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "example": 0,
+            "minimum": 0
+          },
+          "data": {
+            "type": "object",
+            "description": "Return value from a successful chapter creation.",
+            "required": [
+              "id"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "HttpBody_CreateComicPayload": {
+        "type": "object",
+        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
+        "required": [
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "example": 0,
+            "minimum": 0
+          },
+          "data": {
+            "type": "object",
+            "description": "Return value from a successful comic creation.\n\nIncludes the IDs of both the new comic and its auto-created first chapter.",
+            "required": [
+              "id",
+              "chapter_id"
+            ],
+            "properties": {
+              "chapter_id": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "HttpBody_CreateCommentPayload": {
+        "type": "object",
+        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
+        "required": [
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "example": 0,
+            "minimum": 0
+          },
+          "data": {
+            "type": "object",
+            "description": "Return value from creating a comment.",
+            "required": [
+              "id"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "HttpBody_CreateMemberInvitationPayload": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -3310,7 +4457,274 @@
           }
         }
       },
-      "HttpBody_InfoVal": {
+      "HttpBody_CreateMemberPayload": {
+        "type": "object",
+        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
+        "required": [
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "example": 0,
+            "minimum": 0
+          },
+          "data": {
+            "type": "object",
+            "description": "Return value from creating a member.",
+            "required": [
+              "id"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "HttpBody_CreateWorksetPayload": {
+        "type": "object",
+        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
+        "required": [
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "example": 0,
+            "minimum": 0
+          },
+          "data": {
+            "type": "object",
+            "description": "Return value from a successful workset creation.",
+            "required": [
+              "id"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "HttpBody_ExportChapterTranslationPayload": {
+        "type": "object",
+        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
+        "required": [
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "example": 0,
+            "minimum": 0
+          },
+          "data": {
+            "type": "object",
+            "description": "JSON-safe export object for one translated chapter.",
+            "required": [
+              "chapter_id",
+              "chapter_index",
+              "comic_id",
+              "comic_title",
+              "pages"
+            ],
+            "properties": {
+              "chapter_id": {
+                "type": "string"
+              },
+              "chapter_index": {
+                "type": "integer",
+                "format": "int32"
+              },
+              "chapter_subtitle": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "comic_id": {
+                "type": "string"
+              },
+              "comic_title": {
+                "type": "string"
+              },
+              "pages": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/PageTranslationExportPayload"
+                }
+              }
+            }
+          }
+        }
+      },
+      "HttpBody_ImportChapterTranslationPayload": {
+        "type": "object",
+        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
+        "required": [
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "example": 0,
+            "minimum": 0
+          },
+          "data": {
+            "type": "object",
+            "description": "Summary returned after importing chapter translations.",
+            "required": [
+              "imported_page_count",
+              "imported_unit_count"
+            ],
+            "properties": {
+              "imported_page_count": {
+                "type": "integer",
+                "format": "int32"
+              },
+              "imported_unit_count": {
+                "type": "integer",
+                "format": "int32"
+              }
+            }
+          }
+        }
+      },
+      "HttpBody_ListComicInfosPayload": {
+        "type": "object",
+        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
+        "required": [
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "example": 0,
+            "minimum": 0
+          },
+          "data": {
+            "type": "object",
+            "description": "Presentation-ready comic list and optional pinned chapters.\n\n`pinned_chapters` is positionally aligned with `comics`. Its entries are\npopulated only when the request includes `with=pinned_chapter`.",
+            "required": [
+              "comics",
+              "pinned_chapters"
+            ],
+            "properties": {
+              "comics": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ComicInfoVal"
+                }
+              },
+              "pinned_chapters": {
+                "type": "array",
+                "items": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ChapterInfoVal"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "HttpBody_ListPageUnitInfosPayload": {
+        "type": "object",
+        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
+        "required": [
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "example": 0,
+            "minimum": 0
+          },
+          "data": {
+            "type": "object",
+            "description": "Return value for listing units under one page.",
+            "required": [
+              "unit_infos",
+              "total_unit_count",
+              "translated_unit_count",
+              "proofread_unit_count"
+            ],
+            "properties": {
+              "proofread_unit_count": {
+                "type": "integer",
+                "format": "int32"
+              },
+              "total_unit_count": {
+                "type": "integer",
+                "format": "int32"
+              },
+              "translated_unit_count": {
+                "type": "integer",
+                "format": "int32"
+              },
+              "unit_infos": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/UnitInfoVal"
+                }
+              }
+            }
+          }
+        }
+      },
+      "HttpBody_LoginAuthPayload": {
+        "type": "object",
+        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
+        "required": [
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "example": 0,
+            "minimum": 0
+          },
+          "data": {
+            "type": "object",
+            "description": "Return value from a successful login.",
+            "required": [
+              "user_id",
+              "token"
+            ],
+            "properties": {
+              "token": {
+                "type": "string"
+              },
+              "user_id": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "HttpBody_MemberInfoVal": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -3355,7 +4769,7 @@
                     "type": "null"
                   },
                   {
-                    "$ref": "#/components/schemas/InfoVal"
+                    "$ref": "#/components/schemas/TeamInfoVal"
                   }
                 ]
               },
@@ -3368,7 +4782,7 @@
                     "type": "null"
                   },
                   {
-                    "$ref": "#/components/schemas/InfoVal"
+                    "$ref": "#/components/schemas/UserInfoVal"
                   }
                 ]
               },
@@ -3379,85 +4793,7 @@
           }
         }
       },
-      "HttpBody_ListPageInfosVal": {
-        "type": "object",
-        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
-        "required": [
-          "code",
-          "data"
-        ],
-        "properties": {
-          "code": {
-            "type": "integer",
-            "format": "int32",
-            "example": 0,
-            "minimum": 0
-          },
-          "data": {
-            "type": "object",
-            "description": "Return value for listing units under one page.",
-            "required": [
-              "unit_infos",
-              "total_unit_count",
-              "translated_unit_count",
-              "proofread_unit_count"
-            ],
-            "properties": {
-              "proofread_unit_count": {
-                "type": "integer",
-                "format": "int32"
-              },
-              "total_unit_count": {
-                "type": "integer",
-                "format": "int32"
-              },
-              "translated_unit_count": {
-                "type": "integer",
-                "format": "int32"
-              },
-              "unit_infos": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/components/schemas/InfoVal"
-                }
-              }
-            }
-          }
-        }
-      },
-      "HttpBody_LoginVal": {
-        "type": "object",
-        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
-        "required": [
-          "code",
-          "data"
-        ],
-        "properties": {
-          "code": {
-            "type": "integer",
-            "format": "int32",
-            "example": 0,
-            "minimum": 0
-          },
-          "data": {
-            "type": "object",
-            "description": "Return value from a successful login.",
-            "required": [
-              "user_id",
-              "token"
-            ],
-            "properties": {
-              "token": {
-                "type": "string"
-              },
-              "user_id": {
-                "type": "string"
-              }
-            }
-          }
-        }
-      },
-      "HttpBody_Option_InfoVal": {
+      "HttpBody_Option_ChapterInfoVal": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -3501,7 +4837,7 @@
                         "type": "null"
                       },
                       {
-                        "$ref": "#/components/schemas/InfoVal"
+                        "$ref": "#/components/schemas/ComicInfoVal"
                       }
                     ]
                   },
@@ -3518,7 +4854,7 @@
                         "type": "null"
                       },
                       {
-                        "$ref": "#/components/schemas/InfoVal"
+                        "$ref": "#/components/schemas/UserInfoVal"
                       }
                     ]
                   },
@@ -3567,7 +4903,7 @@
           }
         }
       },
-      "HttpBody_RegisterVal": {
+      "HttpBody_RegisterAuthPayload": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -3599,40 +4935,7 @@
           }
         }
       },
-      "HttpBody_ReserveAvatarVal": {
-        "type": "object",
-        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
-        "required": [
-          "code",
-          "data"
-        ],
-        "properties": {
-          "code": {
-            "type": "integer",
-            "format": "int32",
-            "example": 0,
-            "minimum": 0
-          },
-          "data": {
-            "type": "object",
-            "description": "Return value from a successful team avatar reservation.",
-            "required": [
-              "put_url",
-              "avatar_version"
-            ],
-            "properties": {
-              "avatar_version": {
-                "type": "integer",
-                "format": "int64"
-              },
-              "put_url": {
-                "type": "string"
-              }
-            }
-          }
-        }
-      },
-      "HttpBody_ReserveChapterVal": {
+      "HttpBody_ReserveChapterPagesPayload": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -3656,14 +4959,14 @@
               "creations": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/components/schemas/CreationVal"
+                  "$ref": "#/components/schemas/PageCreationPayload"
                 }
               }
             }
           }
         }
       },
-      "HttpBody_ReserveCoverVal": {
+      "HttpBody_ReserveComicCoverPayload": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -3687,7 +4990,8 @@
             "properties": {
               "cover_version": {
                 "type": "integer",
-                "format": "int64"
+                "format": "int32",
+                "minimum": 0
               },
               "put_url": {
                 "type": "string"
@@ -3696,7 +5000,7 @@
           }
         }
       },
-      "HttpBody_ReserveImageVal": {
+      "HttpBody_ReservePageImagePayload": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -3721,7 +5025,8 @@
             "properties": {
               "image_version": {
                 "type": "integer",
-                "format": "int64"
+                "format": "int32",
+                "minimum": 0
               },
               "page_id": {
                 "type": "string"
@@ -3733,7 +5038,75 @@
           }
         }
       },
-      "HttpBody_SavePageVal": {
+      "HttpBody_ReserveTeamAvatarPayload": {
+        "type": "object",
+        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
+        "required": [
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "example": 0,
+            "minimum": 0
+          },
+          "data": {
+            "type": "object",
+            "description": "Return value from a successful team avatar reservation.",
+            "required": [
+              "put_url",
+              "avatar_version"
+            ],
+            "properties": {
+              "avatar_version": {
+                "type": "integer",
+                "format": "int32",
+                "minimum": 0
+              },
+              "put_url": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "HttpBody_ReserveUserAvatarPayload": {
+        "type": "object",
+        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
+        "required": [
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "example": 0,
+            "minimum": 0
+          },
+          "data": {
+            "type": "object",
+            "description": "Return value from a successful avatar reservation.\n\nThe client uses `put_url` to upload the avatar image directly to object\nstorage. `avatar_version` must be echoed back when confirming the upload.",
+            "required": [
+              "put_url",
+              "avatar_version"
+            ],
+            "properties": {
+              "avatar_version": {
+                "type": "integer",
+                "format": "int32",
+                "minimum": 0
+              },
+              "put_url": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "HttpBody_SavePageUnitsPayload": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -3760,7 +5133,7 @@
               "local_id_mappers": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/components/schemas/IdMapperVal"
+                  "$ref": "#/components/schemas/UnitIdMapperVal"
                 }
               },
               "proofread_unit_count": {
@@ -3779,7 +5152,7 @@
           }
         }
       },
-      "HttpBody_TranslationExportVal": {
+      "HttpBody_TeamInfoVal": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -3795,45 +5168,178 @@
           },
           "data": {
             "type": "object",
-            "description": "JSON-safe export object for one translated chapter.",
+            "description": "Presentation-ready team profile information.\n\nConverts the raw [`TeamInfo`] timestamps to Unix milliseconds and\nresolves the avatar key to a signed download URL via [`ImagePool`] when\nthe avatar has been uploaded.",
             "required": [
-              "chapter_id",
-              "chapter_index",
-              "comic_id",
-              "comic_title",
-              "pages"
+              "id",
+              "name",
+              "description",
+              "created_at",
+              "updated_at"
             ],
             "properties": {
-              "chapter_id": {
-                "type": "string"
-              },
-              "chapter_index": {
-                "type": "integer",
-                "format": "int32"
-              },
-              "chapter_subtitle": {
+              "avatar_thumbnail_url": {
                 "type": [
                   "string",
                   "null"
                 ]
               },
-              "comic_id": {
+              "avatar_url": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "created_at": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "description": {
                 "type": "string"
               },
-              "comic_title": {
+              "id": {
                 "type": "string"
               },
-              "pages": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/components/schemas/TranslationExportVal"
+              "name": {
+                "type": "string"
+              },
+              "updated_at": {
+                "type": "integer",
+                "format": "int64"
+              }
+            }
+          }
+        }
+      },
+      "HttpBody_UserInfoVal": {
+        "type": "object",
+        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
+        "required": [
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "example": 0,
+            "minimum": 0
+          },
+          "data": {
+            "type": "object",
+            "description": "Presentation-ready user profile information.\n\nConverts the raw [`UserInfo`] timestamps to Unix milliseconds and\nresolves the avatar key to a signed download URL via [`ImagePool`] when\nthe avatar has been uploaded.",
+            "required": [
+              "id",
+              "nickname",
+              "qid",
+              "is_sadmin",
+              "last_active_at",
+              "created_at",
+              "updated_at"
+            ],
+            "properties": {
+              "avatar_thumbnail_url": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "avatar_url": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "created_at": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "id": {
+                "type": "string"
+              },
+              "is_sadmin": {
+                "type": "boolean"
+              },
+              "last_active_at": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "nickname": {
+                "type": "string"
+              },
+              "qid": {
+                "type": "string"
+              },
+              "updated_at": {
+                "type": "integer",
+                "format": "int64"
+              }
+            }
+          }
+        }
+      },
+      "HttpBody_Vec_AnnouncementInfoVal": {
+        "type": "object",
+        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
+        "required": [
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "example": 0,
+            "minimum": 0
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "Presentation-ready team announcement information.",
+              "required": [
+                "id",
+                "team_id",
+                "user_id",
+                "title",
+                "content",
+                "created_at"
+              ],
+              "properties": {
+                "content": {
+                  "type": "string"
+                },
+                "created_at": {
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "team_id": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "user": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "$ref": "#/components/schemas/UserInfoVal"
+                    }
+                  ]
+                },
+                "user_id": {
+                  "type": "string"
                 }
               }
             }
           }
         }
       },
-      "HttpBody_TranslationImportVal": {
+      "HttpBody_Vec_AssignmentInfoVal": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -3848,26 +5354,65 @@
             "minimum": 0
           },
           "data": {
-            "type": "object",
-            "description": "Summary returned after importing chapter translations.",
-            "required": [
-              "imported_page_count",
-              "imported_unit_count"
-            ],
-            "properties": {
-              "imported_page_count": {
-                "type": "integer",
-                "format": "int32"
-              },
-              "imported_unit_count": {
-                "type": "integer",
-                "format": "int32"
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "Presentation-ready chapter assignment information.",
+              "required": [
+                "id",
+                "chapter_id",
+                "user_id",
+                "roles",
+                "created_at",
+                "updated_at"
+              ],
+              "properties": {
+                "chapter": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ChapterInfoVal"
+                    }
+                  ]
+                },
+                "chapter_id": {
+                  "type": "string"
+                },
+                "created_at": {
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "roles": {
+                  "$ref": "#/components/schemas/RoleMask"
+                },
+                "updated_at": {
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "user": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "$ref": "#/components/schemas/UserInfoVal"
+                    }
+                  ]
+                },
+                "user_id": {
+                  "type": "string"
+                }
               }
             }
           }
         }
       },
-      "HttpBody_Val": {
+      "HttpBody_Vec_AssignmentInvitationInfoVal": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -3882,20 +5427,293 @@
             "minimum": 0
           },
           "data": {
-            "type": "object",
-            "description": "Value returned after an active comic has been archived atomically.",
-            "required": [
-              "archived_comic_id"
-            ],
-            "properties": {
-              "archived_comic_id": {
-                "type": "string"
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "Presentation-ready assignment invitation information.",
+              "required": [
+                "id",
+                "chapter_id",
+                "inviter_id",
+                "invitee_qid",
+                "code",
+                "pending",
+                "roles",
+                "created_at",
+                "updated_at"
+              ],
+              "properties": {
+                "chapter_id": {
+                  "type": "string"
+                },
+                "code": {
+                  "type": "string"
+                },
+                "created_at": {
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "invitee_qid": {
+                  "type": "string"
+                },
+                "inviter_id": {
+                  "type": "string"
+                },
+                "pending": {
+                  "type": "boolean"
+                },
+                "roles": {
+                  "$ref": "#/components/schemas/RoleMask"
+                },
+                "updated_at": {
+                  "type": "integer",
+                  "format": "int64"
+                }
               }
             }
           }
         }
       },
-      "HttpBody_Vec_InfoVal": {
+      "HttpBody_Vec_ChapterInfoVal": {
+        "type": "object",
+        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
+        "required": [
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "example": 0,
+            "minimum": 0
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "Presentation-ready chapter information.\n\nMirrors [`ChapterInfo`] but converts timestamps to Unix milliseconds\nand exposes the same grouped field layout as the API response.\n\nConstruct via [`From<ChapterInfo>`] — the conversion is infallible.\n\n[`ChapterInfo`]: crate::model::chapter::ChapterInfo",
+              "required": [
+                "id",
+                "comic_id",
+                "is_pinned",
+                "index",
+                "subtitle",
+                "page_count",
+                "total_unit_count",
+                "translated_unit_count",
+                "proofread_unit_count",
+                "stages",
+                "creator_id",
+                "created_at",
+                "updated_at"
+              ],
+              "properties": {
+                "comic": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ComicInfoVal"
+                    }
+                  ]
+                },
+                "comic_id": {
+                  "type": "string"
+                },
+                "created_at": {
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "creator": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "$ref": "#/components/schemas/UserInfoVal"
+                    }
+                  ]
+                },
+                "creator_id": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "index": {
+                  "type": "integer",
+                  "format": "int32"
+                },
+                "is_pinned": {
+                  "type": "boolean"
+                },
+                "page_count": {
+                  "type": "integer",
+                  "format": "int32"
+                },
+                "proofread_unit_count": {
+                  "type": "integer",
+                  "format": "int32"
+                },
+                "stages": {
+                  "$ref": "#/components/schemas/StageMask"
+                },
+                "subtitle": {
+                  "type": "string"
+                },
+                "total_unit_count": {
+                  "type": "integer",
+                  "format": "int32"
+                },
+                "translated_unit_count": {
+                  "type": "integer",
+                  "format": "int32"
+                },
+                "updated_at": {
+                  "type": "integer",
+                  "format": "int64"
+                }
+              }
+            }
+          }
+        }
+      },
+      "HttpBody_Vec_CommentInfoVal": {
+        "type": "object",
+        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
+        "required": [
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "example": 0,
+            "minimum": 0
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "Presentation-ready team board comment information.",
+              "required": [
+                "id",
+                "team_id",
+                "user_id",
+                "content",
+                "created_at"
+              ],
+              "properties": {
+                "content": {
+                  "type": "string"
+                },
+                "created_at": {
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "team_id": {
+                  "type": "string"
+                },
+                "user": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "$ref": "#/components/schemas/UserInfoVal"
+                    }
+                  ]
+                },
+                "user_id": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "HttpBody_Vec_MemberInfoVal": {
+        "type": "object",
+        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
+        "required": [
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "example": 0,
+            "minimum": 0
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "Presentation-ready membership information.",
+              "required": [
+                "id",
+                "user_id",
+                "nickname",
+                "last_active_at",
+                "team_id",
+                "roles"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "last_active_at": {
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "nickname": {
+                  "type": "string"
+                },
+                "roles": {
+                  "$ref": "#/components/schemas/RoleMask"
+                },
+                "team": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "$ref": "#/components/schemas/TeamInfoVal"
+                    }
+                  ]
+                },
+                "team_id": {
+                  "type": "string"
+                },
+                "user": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "$ref": "#/components/schemas/UserInfoVal"
+                    }
+                  ]
+                },
+                "user_id": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "HttpBody_Vec_MemberInvitationInfoVal": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -3939,7 +5757,7 @@
                       "type": "null"
                     },
                     {
-                      "$ref": "#/components/schemas/InfoVal"
+                      "$ref": "#/components/schemas/UserInfoVal"
                     }
                   ]
                 },
@@ -3960,7 +5778,84 @@
           }
         }
       },
-      "HttpBody_Vec_Val": {
+      "HttpBody_Vec_PageInfoVal": {
+        "type": "object",
+        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
+        "required": [
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "example": 0,
+            "minimum": 0
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "Presentation-ready page information.",
+              "required": [
+                "id",
+                "chapter_id",
+                "index",
+                "total_unit_count",
+                "translated_unit_count",
+                "proofread_unit_count",
+                "created_at",
+                "updated_at"
+              ],
+              "properties": {
+                "chapter_id": {
+                  "type": "string"
+                },
+                "created_at": {
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "image_thumbnail_url": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "image_url": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "index": {
+                  "type": "integer",
+                  "format": "int32"
+                },
+                "proofread_unit_count": {
+                  "type": "integer",
+                  "format": "int32"
+                },
+                "total_unit_count": {
+                  "type": "integer",
+                  "format": "int32"
+                },
+                "translated_unit_count": {
+                  "type": "integer",
+                  "format": "int32"
+                },
+                "updated_at": {
+                  "type": "integer",
+                  "format": "int64"
+                }
+              }
+            }
+          }
+        }
+      },
+      "HttpBody_Vec_SystemMailInfoVal": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
         "required": [
@@ -4008,6 +5903,194 @@
           }
         }
       },
+      "HttpBody_Vec_TeamInfoVal": {
+        "type": "object",
+        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
+        "required": [
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "example": 0,
+            "minimum": 0
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "Presentation-ready team profile information.\n\nConverts the raw [`TeamInfo`] timestamps to Unix milliseconds and\nresolves the avatar key to a signed download URL via [`ImagePool`] when\nthe avatar has been uploaded.",
+              "required": [
+                "id",
+                "name",
+                "description",
+                "created_at",
+                "updated_at"
+              ],
+              "properties": {
+                "avatar_thumbnail_url": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "avatar_url": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "created_at": {
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "updated_at": {
+                  "type": "integer",
+                  "format": "int64"
+                }
+              }
+            }
+          }
+        }
+      },
+      "HttpBody_Vec_WorksetInfoVal": {
+        "type": "object",
+        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
+        "required": [
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "example": 0,
+            "minimum": 0
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "Presentation-ready workset information.\n\nMirrors [`WorksetInfo`] with timestamps converted to Unix milliseconds.\n\n[`WorksetInfo`]: crate::model::workset::WorksetInfo",
+              "required": [
+                "id",
+                "team_id",
+                "index",
+                "name",
+                "comic_count",
+                "created_at",
+                "updated_at"
+              ],
+              "properties": {
+                "comic_count": {
+                  "type": "integer",
+                  "format": "int32"
+                },
+                "created_at": {
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "description": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "id": {
+                  "type": "string"
+                },
+                "index": {
+                  "type": "integer",
+                  "format": "int32"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "team_id": {
+                  "type": "string"
+                },
+                "updated_at": {
+                  "type": "integer",
+                  "format": "int64"
+                }
+              }
+            }
+          }
+        }
+      },
+      "HttpBody_WorksetInfoVal": {
+        "type": "object",
+        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
+        "required": [
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "example": 0,
+            "minimum": 0
+          },
+          "data": {
+            "type": "object",
+            "description": "Presentation-ready workset information.\n\nMirrors [`WorksetInfo`] with timestamps converted to Unix milliseconds.\n\n[`WorksetInfo`]: crate::model::workset::WorksetInfo",
+            "required": [
+              "id",
+              "team_id",
+              "index",
+              "name",
+              "comic_count",
+              "created_at",
+              "updated_at"
+            ],
+            "properties": {
+              "comic_count": {
+                "type": "integer",
+                "format": "int32"
+              },
+              "created_at": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "description": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "id": {
+                "type": "string"
+              },
+              "index": {
+                "type": "integer",
+                "format": "int32"
+              },
+              "name": {
+                "type": "string"
+              },
+              "team_id": {
+                "type": "string"
+              },
+              "updated_at": {
+                "type": "integer",
+                "format": "int64"
+              }
+            }
+          }
+        }
+      },
       "HttpError": {
         "type": "object",
         "description": "Business-level error envelope returned by all failing endpoints.",
@@ -4022,68 +6105,53 @@
           }
         }
       },
-      "IdMapperVal": {
+      "ImportChapterTranslationParams": {
         "type": "object",
-        "description": "Presentation-ready local-to-server id mapping.",
+        "description": "Request body for importing chapter translations.",
         "required": [
-          "local_id",
-          "unit_id"
+          "format",
+          "content"
         ],
         "properties": {
-          "local_id": {
+          "content": {
             "type": "string"
           },
-          "unit_id": {
+          "format": {
+            "$ref": "#/components/schemas/TranslationFormat"
+          }
+        }
+      },
+      "ImportChapterTranslationPayload": {
+        "type": "object",
+        "description": "Summary returned after importing chapter translations.",
+        "required": [
+          "imported_page_count",
+          "imported_unit_count"
+        ],
+        "properties": {
+          "imported_page_count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "imported_unit_count": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "JoinAssignmentInvitationParams": {
+        "type": "object",
+        "description": "Input parameters for joining an assignment through an invitation code.",
+        "required": [
+          "code"
+        ],
+        "properties": {
+          "code": {
             "type": "string"
           }
         }
       },
-      "InfoVal": {
-        "type": "object",
-        "description": "Presentation-ready user profile information.\n\nConverts the raw [`UserInfoModel`] timestamps to Unix milliseconds and\nresolves the avatar key to a signed download URL via [`ImagePool`] when\nthe avatar has been uploaded.",
-        "required": [
-          "id",
-          "nickname",
-          "qid",
-          "is_sadmin",
-          "last_active_at",
-          "created_at",
-          "updated_at"
-        ],
-        "properties": {
-          "avatar_url": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "created_at": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "id": {
-            "type": "string"
-          },
-          "is_sadmin": {
-            "type": "boolean"
-          },
-          "last_active_at": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "nickname": {
-            "type": "string"
-          },
-          "qid": {
-            "type": "string"
-          },
-          "updated_at": {
-            "type": "integer",
-            "format": "int64"
-          }
-        }
-      },
-      "JoinChapterData": {
+      "JoinChapterAssignmentParams": {
         "type": "object",
         "description": "Input parameters for a user joining a chapter as a worker via role\nselection.\n\nThe role mask must contain role bits that are valid for volunteer\nassignment; the use case layer validates this before applying.",
         "required": [
@@ -4099,19 +6167,7 @@
           }
         }
       },
-      "JoinData": {
-        "type": "object",
-        "description": "Input parameters for joining an assignment through an invitation code.",
-        "required": [
-          "code"
-        ],
-        "properties": {
-          "code": {
-            "type": "string"
-          }
-        }
-      },
-      "JoinTeamData": {
+      "JoinTeamParams": {
         "type": "object",
         "description": "Input parameters for joining a team through a member invitation.",
         "required": [
@@ -4123,7 +6179,36 @@
           }
         }
       },
-      "ListPageInfosVal": {
+      "ListComicInfosPayload": {
+        "type": "object",
+        "description": "Presentation-ready comic list and optional pinned chapters.\n\n`pinned_chapters` is positionally aligned with `comics`. Its entries are\npopulated only when the request includes `with=pinned_chapter`.",
+        "required": [
+          "comics",
+          "pinned_chapters"
+        ],
+        "properties": {
+          "comics": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ComicInfoVal"
+            }
+          },
+          "pinned_chapters": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "$ref": "#/components/schemas/ChapterInfoVal"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "ListPageUnitInfosPayload": {
         "type": "object",
         "description": "Return value for listing units under one page.",
         "required": [
@@ -4148,12 +6233,12 @@
           "unit_infos": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/InfoVal"
+              "$ref": "#/components/schemas/UnitInfoVal"
             }
           }
         }
       },
-      "LoginData": {
+      "LoginAuthParams": {
         "type": "object",
         "description": "Input parameters for user login.",
         "required": [
@@ -4169,7 +6254,7 @@
           }
         }
       },
-      "LoginVal": {
+      "LoginAuthPayload": {
         "type": "object",
         "description": "Return value from a successful login.",
         "required": [
@@ -4185,20 +6270,7 @@
           }
         }
       },
-      "MarkAvatarUploadedData": {
-        "type": "object",
-        "description": "Input parameters for confirming a team avatar upload completed.",
-        "required": [
-          "avatar_version"
-        ],
-        "properties": {
-          "avatar_version": {
-            "type": "integer",
-            "format": "int64"
-          }
-        }
-      },
-      "MarkCoverUploadedData": {
+      "MarkComicCoverUploadedParams": {
         "type": "object",
         "description": "Input parameters for confirming a comic cover upload completed.\n\n`cover_version` must match the version returned by the reservation step.",
         "required": [
@@ -4207,11 +6279,12 @@
         "properties": {
           "cover_version": {
             "type": "integer",
-            "format": "int64"
+            "format": "int32",
+            "minimum": 0
           }
         }
       },
-      "MarkImageUploadedData": {
+      "MarkPageImageUploadedParams": {
         "type": "object",
         "description": "Input parameters for confirming a page image upload completed.",
         "required": [
@@ -4220,11 +6293,12 @@
         "properties": {
           "image_version": {
             "type": "integer",
-            "format": "int64"
+            "format": "int32",
+            "minimum": 0
           }
         }
       },
-      "MarkReadData": {
+      "MarkSystemMailReadParams": {
         "type": "object",
         "description": "Input parameters for marking a batch of system mails as read.",
         "required": [
@@ -4239,6 +6313,34 @@
           }
         }
       },
+      "MarkTeamAvatarUploadedParams": {
+        "type": "object",
+        "description": "Input parameters for confirming a team avatar upload completed.",
+        "required": [
+          "avatar_version"
+        ],
+        "properties": {
+          "avatar_version": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          }
+        }
+      },
+      "MarkUserAvatarUploadedParams": {
+        "type": "object",
+        "description": "Input parameters for confirming an avatar upload completed.\n\n`avatar_version` must match the version returned by the reservation step.",
+        "required": [
+          "avatar_version"
+        ],
+        "properties": {
+          "avatar_version": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          }
+        }
+      },
       "MemberInclOpt": {
         "type": "string",
         "description": "Incl opts for member info queries.\n\nEach opt embeds additional related data into the returned\n`MemberInfoVal`.",
@@ -4247,6 +6349,59 @@
           "team"
         ]
       },
+      "MemberInfoVal": {
+        "type": "object",
+        "description": "Presentation-ready membership information.",
+        "required": [
+          "id",
+          "user_id",
+          "nickname",
+          "last_active_at",
+          "team_id",
+          "roles"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "last_active_at": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "nickname": {
+            "type": "string"
+          },
+          "roles": {
+            "$ref": "#/components/schemas/RoleMask"
+          },
+          "team": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TeamInfoVal"
+              }
+            ]
+          },
+          "team_id": {
+            "type": "string"
+          },
+          "user": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UserInfoVal"
+              }
+            ]
+          },
+          "user_id": {
+            "type": "string"
+          }
+        }
+      },
       "MemberInvitationInclOpt": {
         "type": "string",
         "description": "Incl opts for member invitation info queries.\n\nEach opt embeds additional related data into the returned\n`MemberInvitationInfoVal`.",
@@ -4254,10 +6409,629 @@
           "invitor"
         ]
       },
-      "OperData": {
+      "MemberInvitationInfoVal": {
+        "type": "object",
+        "description": "Presentation-ready member invitation information.\n\nMirrors [`MemberInvitationInfo`] with timestamps omitted (the domain\nmodel carries no timestamps).\n\n[`MemberInvitationInfo`]: crate::model::member_invitation::MemberInvitationInfo",
+        "required": [
+          "id",
+          "team_id",
+          "invitor_id",
+          "invitee_qid",
+          "code",
+          "pending",
+          "roles"
+        ],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "invitee_qid": {
+            "type": "string"
+          },
+          "invitor": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UserInfoVal"
+              }
+            ]
+          },
+          "invitor_id": {
+            "type": "string"
+          },
+          "pending": {
+            "type": "boolean"
+          },
+          "roles": {
+            "$ref": "#/components/schemas/RoleMask"
+          },
+          "team_id": {
+            "type": "string"
+          }
+        }
+      },
+      "PageCreationPayload": {
+        "type": "object",
+        "description": "One reserved page upload target.",
+        "required": [
+          "page_id",
+          "put_url",
+          "image_version"
+        ],
+        "properties": {
+          "image_version": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "page_id": {
+            "type": "string"
+          },
+          "put_url": {
+            "type": "string"
+          }
+        }
+      },
+      "PageInfoVal": {
+        "type": "object",
+        "description": "Presentation-ready page information.",
+        "required": [
+          "id",
+          "chapter_id",
+          "index",
+          "total_unit_count",
+          "translated_unit_count",
+          "proofread_unit_count",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "chapter_id": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "id": {
+            "type": "string"
+          },
+          "image_thumbnail_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "image_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "index": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "proofread_unit_count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "total_unit_count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "translated_unit_count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "updated_at": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "PageTranslationExportPayload": {
+        "type": "object",
+        "description": "JSON-safe export object for one page.",
+        "required": [
+          "page_id",
+          "page_index",
+          "units"
+        ],
+        "properties": {
+          "page_id": {
+            "type": "string"
+          },
+          "page_index": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "units": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UnitTranslationExportPayload"
+            }
+          }
+        }
+      },
+      "RegisterAuthParams": {
+        "type": "object",
+        "description": "Input parameters for user registration.",
+        "required": [
+          "qid",
+          "nickname",
+          "password",
+          "code"
+        ],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "nickname": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          },
+          "qid": {
+            "type": "string"
+          }
+        }
+      },
+      "RegisterAuthPayload": {
+        "type": "object",
+        "description": "Return value from a successful registration.",
+        "required": [
+          "user_id",
+          "token"
+        ],
+        "properties": {
+          "token": {
+            "type": "string"
+          },
+          "user_id": {
+            "type": "string"
+          }
+        }
+      },
+      "ReserveChapterPagesParams": {
+        "type": "object",
+        "description": "Input parameters for reserving all page images of a chapter.",
+        "required": [
+          "chapter_id",
+          "page_count",
+          "file_ext"
+        ],
+        "properties": {
+          "chapter_id": {
+            "type": "string"
+          },
+          "file_ext": {
+            "type": "string"
+          },
+          "page_count": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "ReserveChapterPagesPayload": {
+        "type": "object",
+        "description": "Return value from successful chapter page reservations.",
+        "required": [
+          "creations"
+        ],
+        "properties": {
+          "creations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PageCreationPayload"
+            }
+          }
+        }
+      },
+      "ReserveComicCoverParams": {
+        "type": "object",
+        "description": "Input parameters for reserving a new comic cover upload slot.\n\nThe file extension determines the object-storage key suffix. After\nreservation the client uploads directly to the returned PUT URL.",
+        "required": [
+          "file_ext"
+        ],
+        "properties": {
+          "file_ext": {
+            "type": "string"
+          }
+        }
+      },
+      "ReserveComicCoverPayload": {
+        "type": "object",
+        "description": "Return value from a successful cover reservation.\n\nThe client uses `put_url` to upload the cover image directly to object\nstorage. `cover_version` must be echoed back when confirming the upload.",
+        "required": [
+          "put_url",
+          "cover_version"
+        ],
+        "properties": {
+          "cover_version": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "put_url": {
+            "type": "string"
+          }
+        }
+      },
+      "ReservePageImageParams": {
+        "type": "object",
+        "description": "Input parameters for reserving one page image.",
+        "required": [
+          "file_ext"
+        ],
+        "properties": {
+          "file_ext": {
+            "type": "string"
+          }
+        }
+      },
+      "ReservePageImagePayload": {
+        "type": "object",
+        "description": "Return value from a successful single-page image reservation.",
+        "required": [
+          "page_id",
+          "put_url",
+          "image_version"
+        ],
+        "properties": {
+          "image_version": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "page_id": {
+            "type": "string"
+          },
+          "put_url": {
+            "type": "string"
+          }
+        }
+      },
+      "ReserveTeamAvatarParams": {
+        "type": "object",
+        "description": "Input parameters for reserving a new team avatar upload slot.",
+        "required": [
+          "file_ext"
+        ],
+        "properties": {
+          "file_ext": {
+            "type": "string"
+          }
+        }
+      },
+      "ReserveTeamAvatarPayload": {
+        "type": "object",
+        "description": "Return value from a successful team avatar reservation.",
+        "required": [
+          "put_url",
+          "avatar_version"
+        ],
+        "properties": {
+          "avatar_version": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "put_url": {
+            "type": "string"
+          }
+        }
+      },
+      "ReserveUserAvatarParams": {
+        "type": "object",
+        "description": "Input parameters for reserving a new avatar upload slot.",
+        "required": [
+          "file_ext"
+        ],
+        "properties": {
+          "file_ext": {
+            "type": "string"
+          }
+        }
+      },
+      "ReserveUserAvatarPayload": {
+        "type": "object",
+        "description": "Return value from a successful avatar reservation.\n\nThe client uses `put_url` to upload the avatar image directly to object\nstorage. `avatar_version` must be echoed back when confirming the upload.",
+        "required": [
+          "put_url",
+          "avatar_version"
+        ],
+        "properties": {
+          "avatar_version": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "put_url": {
+            "type": "string"
+          }
+        }
+      },
+      "RoleField": {
+        "type": "integer",
+        "format": "int32",
+        "description": "A singular role permission flag represented as a bit position.\n\nEach role is a single bit value:\n\n| Value | Name          | Description             |\n|-------|---------------|-------------------------|\n| 1     | `RAW_PROVIDER` | Raw provider            |\n| 2     | `TRANSLATOR`   | Translator              |\n| 4     | `PROOFREADER`  | Proofreader             |\n| 8     | `TYPESETTER`   | Typesetter              |\n| 16    | `REDRAWER`     | Redrawer                |\n| 32    | `REVIEWER`     | Reviewer                |\n| 64    | `PUBLISHER`    | Publisher               |\n| 128   | `ADMIN`        | Admin                   |\n| 256   | `BOT`          | Bot                     |\n\nOnly a **single** valid bit is accepted; composite values are rejected.",
+        "example": 2,
+        "minimum": 0
+      },
+      "RoleMask": {
+        "type": "integer",
+        "format": "int32",
+        "description": "A composite bitmask combining multiple role permission flags.\n\nBits are OR-ed together from the following role values:\n\n| Value | Name          | Description             |\n|-------|---------------|-------------------------|\n| 1     | `RAW_PROVIDER` | Raw provider            |\n| 2     | `TRANSLATOR`   | Translator              |\n| 4     | `PROOFREADER`  | Proofreader             |\n| 8     | `TYPESETTER`   | Typesetter              |\n| 16    | `REDRAWER`     | Redrawer                |\n| 32    | `REVIEWER`     | Reviewer                |\n| 64    | `PUBLISHER`    | Publisher               |\n| 128   | `ADMIN`        | Admin                   |\n| 256   | `BOT`          | Bot                     |\n\n**Examples:** `1` = RAW_PROVIDER, `6` = TRANSLATOR | PROOFREADER, `255` = all roles except BOT.",
+        "example": 34,
+        "minimum": 0
+      },
+      "SavePageUnitsParams": {
+        "type": "object",
+        "description": "Input parameters for saving unit opers under one page.",
+        "required": [
+          "page_id",
+          "diff"
+        ],
+        "properties": {
+          "diff": {
+            "$ref": "#/components/schemas/UnitDiffParams"
+          },
+          "page_id": {
+            "type": "string"
+          }
+        }
+      },
+      "SavePageUnitsPayload": {
+        "type": "object",
+        "description": "Return value for saving unit opers under one page.",
+        "required": [
+          "local_id_mappers",
+          "total_unit_count",
+          "translated_unit_count",
+          "proofread_unit_count"
+        ],
+        "properties": {
+          "local_id_mappers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UnitIdMapperVal"
+            }
+          },
+          "proofread_unit_count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "total_unit_count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "translated_unit_count": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "Stage": {
+        "type": "string",
+        "description": "Stage in the chapter production pipeline.",
+        "enum": [
+          "raw-provide",
+          "translate",
+          "proofread",
+          "typeset-redraw",
+          "review",
+          "publish"
+        ]
+      },
+      "StageMask": {
+        "type": "integer",
+        "format": "int32",
+        "description": "A composite bitmask storing the phase of all 6 workflow stages.\n\nEach stage occupies 2 bits (4 possible states matching\n[`StagePhaseField`]), ordered from low bits:\n\n| Stage | Bits | Field |\n|:---:|:---:|:---:|\n| RawProvide | 0–1 | `StagePhaseField` |\n| Translate | 2–3 | `StagePhaseField` |\n| Proofread | 4–5 | `StagePhaseField` |\n| TypesetRedraw | 6–7 | `StagePhaseField` |\n| Review | 8–9 | `StagePhaseField` |\n| Publish | 10–11 | `StagePhaseField` |",
+        "minimum": 0
+      },
+      "StageOper": {
+        "type": "string",
+        "description": "Operation applied to a workflow stage.",
+        "enum": [
+          "advance",
+          "revert"
+        ]
+      },
+      "SystemMailInfoVal": {
+        "type": "object",
+        "description": "Presentation-ready system mail value.\n\nConverts the raw [`SystemMailInfo`] timestamp to Unix milliseconds\nand omits the internal `receiver_id` field.",
+        "required": [
+          "id",
+          "title",
+          "content",
+          "read",
+          "created_at"
+        ],
+        "properties": {
+          "content": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "id": {
+            "type": "string"
+          },
+          "read": {
+            "type": "boolean"
+          },
+          "title": {
+            "type": "string"
+          }
+        }
+      },
+      "TeamInfoVal": {
+        "type": "object",
+        "description": "Presentation-ready team profile information.\n\nConverts the raw [`TeamInfo`] timestamps to Unix milliseconds and\nresolves the avatar key to a signed download URL via [`ImagePool`] when\nthe avatar has been uploaded.",
+        "required": [
+          "id",
+          "name",
+          "description",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "avatar_thumbnail_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "avatar_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_at": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "description": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "TranslationFormat": {
+        "type": "string",
+        "description": "Translation format used by a chapter port.\n\nDetermines the tooling and schema for the chapter's translation files.",
+        "enum": [
+          "label-plus",
+          "poprako"
+        ]
+      },
+      "UnitDiffParams": {
+        "type": "object",
+        "description": "Transport-facing unit oper.",
+        "required": [
+          "page_id",
+          "opers"
+        ],
+        "properties": {
+          "opers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UnitOperParams"
+            }
+          },
+          "page_id": {
+            "type": "string"
+          }
+        }
+      },
+      "UnitIdMapperVal": {
+        "type": "object",
+        "description": "Presentation-ready local-to-server id mapping.",
+        "required": [
+          "local_id",
+          "unit_id"
+        ],
+        "properties": {
+          "local_id": {
+            "type": "string"
+          },
+          "unit_id": {
+            "type": "string"
+          }
+        }
+      },
+      "UnitInfoVal": {
+        "type": "object",
+        "description": "Presentation-ready unit information.",
+        "required": [
+          "id",
+          "page_id",
+          "is_bubble",
+          "is_proofread",
+          "x_coord",
+          "y_coord",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "created_at": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "id": {
+            "type": "string"
+          },
+          "is_bubble": {
+            "type": "boolean"
+          },
+          "is_proofread": {
+            "type": "boolean"
+          },
+          "last_proofreader_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "last_translator_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "page_id": {
+            "type": "string"
+          },
+          "proofread_text": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "translated_text": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "updated_at": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "x_coord": {
+            "type": "number",
+            "format": "double"
+          },
+          "y_coord": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "UnitOperParams": {
         "oneOf": [
           {
             "type": "object",
+            "description": "Create a new unit with client-assigned local id and content payload.",
             "required": [
               "local_id",
               "is_bubble",
@@ -4323,6 +7097,7 @@
           },
           {
             "type": "object",
+            "description": "Update an existing unit identified by server-assigned id with new content payload.",
             "required": [
               "id",
               "is_bubble",
@@ -4389,6 +7164,7 @@
           },
           {
             "type": "object",
+            "description": "Remove an existing unit by server-assigned id.",
             "required": [
               "id",
               "oper"
@@ -4408,284 +7184,7 @@
         ],
         "description": "Transport-facing unit oper event."
       },
-      "PatchInfoData": {
-        "type": "object",
-        "description": "Input parameters for partially updating a chapter's profile.",
-        "required": [
-          "id"
-        ],
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "pin": {
-            "type": [
-              "boolean",
-              "null"
-            ]
-          },
-          "subtitle": {
-            "type": [
-              "string",
-              "null"
-            ]
-          }
-        }
-      },
-      "RegisterData": {
-        "type": "object",
-        "description": "Input parameters for user registration.",
-        "required": [
-          "qid",
-          "nickname",
-          "password",
-          "code"
-        ],
-        "properties": {
-          "code": {
-            "type": "string"
-          },
-          "nickname": {
-            "type": "string"
-          },
-          "password": {
-            "type": "string"
-          },
-          "qid": {
-            "type": "string"
-          }
-        }
-      },
-      "RegisterVal": {
-        "type": "object",
-        "description": "Return value from a successful registration.",
-        "required": [
-          "user_id",
-          "token"
-        ],
-        "properties": {
-          "token": {
-            "type": "string"
-          },
-          "user_id": {
-            "type": "string"
-          }
-        }
-      },
-      "ReserveAvatarData": {
-        "type": "object",
-        "description": "Input parameters for reserving a new team avatar upload slot.",
-        "required": [
-          "file_ext"
-        ],
-        "properties": {
-          "file_ext": {
-            "type": "string"
-          }
-        }
-      },
-      "ReserveAvatarVal": {
-        "type": "object",
-        "description": "Return value from a successful team avatar reservation.",
-        "required": [
-          "put_url",
-          "avatar_version"
-        ],
-        "properties": {
-          "avatar_version": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "put_url": {
-            "type": "string"
-          }
-        }
-      },
-      "ReserveChapterData": {
-        "type": "object",
-        "description": "Input parameters for reserving all page images of a chapter.",
-        "required": [
-          "chapter_id",
-          "page_count",
-          "file_ext"
-        ],
-        "properties": {
-          "chapter_id": {
-            "type": "string"
-          },
-          "file_ext": {
-            "type": "string"
-          },
-          "page_count": {
-            "type": "integer",
-            "format": "int32"
-          }
-        }
-      },
-      "ReserveChapterVal": {
-        "type": "object",
-        "description": "Return value from successful chapter page reservations.",
-        "required": [
-          "creations"
-        ],
-        "properties": {
-          "creations": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/CreationVal"
-            }
-          }
-        }
-      },
-      "ReserveCoverData": {
-        "type": "object",
-        "description": "Input parameters for reserving a new comic cover upload slot.\n\nThe file extension determines the object-storage key suffix. After\nreservation the client uploads directly to the returned PUT URL.",
-        "required": [
-          "file_ext"
-        ],
-        "properties": {
-          "file_ext": {
-            "type": "string"
-          }
-        }
-      },
-      "ReserveCoverVal": {
-        "type": "object",
-        "description": "Return value from a successful cover reservation.\n\nThe client uses `put_url` to upload the cover image directly to object\nstorage. `cover_version` must be echoed back when confirming the upload.",
-        "required": [
-          "put_url",
-          "cover_version"
-        ],
-        "properties": {
-          "cover_version": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "put_url": {
-            "type": "string"
-          }
-        }
-      },
-      "ReserveImageData": {
-        "type": "object",
-        "description": "Input parameters for reserving one page image.",
-        "required": [
-          "file_ext"
-        ],
-        "properties": {
-          "file_ext": {
-            "type": "string"
-          }
-        }
-      },
-      "ReserveImageVal": {
-        "type": "object",
-        "description": "Return value from a successful single-page image reservation.",
-        "required": [
-          "page_id",
-          "put_url",
-          "image_version"
-        ],
-        "properties": {
-          "image_version": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "page_id": {
-            "type": "string"
-          },
-          "put_url": {
-            "type": "string"
-          }
-        }
-      },
-      "RoleField": {
-        "type": "integer",
-        "format": "int32",
-        "description": "A singular role permission flag represented as a bit position.\n\nEach role is a single bit value:\n\n| Value | Name          | Description             |\n|-------|---------------|-------------------------|\n| 1     | `RAW_PROVIDER` | Raw provider            |\n| 2     | `TRANSLATOR`   | Translator              |\n| 4     | `PROOFREADER`  | Proofreader             |\n| 8     | `TYPESETTER`   | Typesetter              |\n| 16    | `REDRAWER`     | Redrawer                |\n| 32    | `REVIEWER`     | Reviewer                |\n| 64    | `PUBLISHER`    | Publisher               |\n| 128   | `ADMIN`        | Admin                   |\n| 256   | `BOT`          | Bot                     |\n\nOnly a **single** valid bit is accepted; composite values are rejected.",
-        "example": 2,
-        "minimum": 0
-      },
-      "RoleMask": {
-        "type": "integer",
-        "format": "int32",
-        "description": "A composite bitmask combining multiple role permission flags.\n\nBits are OR-ed together from the following role values:\n\n| Value | Name          | Description             |\n|-------|---------------|-------------------------|\n| 1     | `RAW_PROVIDER` | Raw provider            |\n| 2     | `TRANSLATOR`   | Translator              |\n| 4     | `PROOFREADER`  | Proofreader             |\n| 8     | `TYPESETTER`   | Typesetter              |\n| 16    | `REDRAWER`     | Redrawer                |\n| 32    | `REVIEWER`     | Reviewer                |\n| 64    | `PUBLISHER`    | Publisher               |\n| 128   | `ADMIN`        | Admin                   |\n| 256   | `BOT`          | Bot                     |\n\n**Examples:** `1` = RAW_PROVIDER, `6` = TRANSLATOR | PROOFREADER, `255` = all roles except BOT.",
-        "example": 34,
-        "minimum": 0
-      },
-      "SavePageData": {
-        "type": "object",
-        "description": "Input parameters for saving unit opers under one page.",
-        "required": [
-          "page_id",
-          "diff"
-        ],
-        "properties": {
-          "diff": {
-            "$ref": "#/components/schemas/DiffData"
-          },
-          "page_id": {
-            "type": "string"
-          }
-        }
-      },
-      "SavePageVal": {
-        "type": "object",
-        "description": "Return value for saving unit opers under one page.",
-        "required": [
-          "local_id_mappers",
-          "total_unit_count",
-          "translated_unit_count",
-          "proofread_unit_count"
-        ],
-        "properties": {
-          "local_id_mappers": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/IdMapperVal"
-            }
-          },
-          "proofread_unit_count": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "total_unit_count": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "translated_unit_count": {
-            "type": "integer",
-            "format": "int32"
-          }
-        }
-      },
-      "Stage": {
-        "type": "string",
-        "description": "Stage in the chapter production pipeline.",
-        "enum": [
-          "raw-provide",
-          "translate",
-          "proofread",
-          "typeset-redraw",
-          "review",
-          "publish"
-        ]
-      },
-      "StageMask": {
-        "type": "integer",
-        "format": "int32",
-        "description": "A composite bitmask storing the phase of all 6 workflow stages.\n\nEach stage occupies 2 bits (4 possible states matching\n[`StagePhaseField`]), ordered from low bits:\n\n| Stage | Bits | Field |\n|:---:|:---:|:---:|\n| RawProvide | 0–1 | `StagePhaseField` |\n| Translate | 2–3 | `StagePhaseField` |\n| Proofread | 4–5 | `StagePhaseField` |\n| TypesetRedraw | 6–7 | `StagePhaseField` |\n| Review | 8–9 | `StagePhaseField` |\n| Publish | 10–11 | `StagePhaseField` |",
-        "minimum": 0
-      },
-      "StageOper": {
-        "type": "string",
-        "description": "Operation applied to a workflow stage.",
-        "enum": [
-          "advance",
-          "revert"
-        ]
-      },
-      "TranslationExportVal": {
+      "UnitTranslationExportPayload": {
         "type": "object",
         "description": "JSON-safe export object for one page unit.",
         "required": [
@@ -4753,49 +7252,71 @@
           }
         }
       },
-      "TranslationFormat": {
-        "type": "string",
-        "description": "Translation format used by a chapter port.\n\nDetermines the tooling and schema for the chapter's translation files.",
-        "enum": [
-          "label-plus",
-          "poprako"
-        ]
-      },
-      "TranslationImportData": {
+      "UpdateAssignmentRolesParams": {
         "type": "object",
-        "description": "Request body for importing chapter translations.",
+        "description": "Input parameters for updating assignment roles.",
         "required": [
-          "format",
-          "content"
+          "chapter_id",
+          "user_id",
+          "roles"
         ],
         "properties": {
-          "content": {
+          "chapter_id": {
             "type": "string"
           },
-          "format": {
-            "$ref": "#/components/schemas/TranslationFormat"
+          "roles": {
+            "$ref": "#/components/schemas/RoleMask"
+          },
+          "user_id": {
+            "type": "string"
           }
         }
       },
-      "TranslationImportVal": {
+      "UpdateChapterInfoParams": {
         "type": "object",
-        "description": "Summary returned after importing chapter translations.",
+        "description": "Input parameters for partially updating a chapter's profile.",
         "required": [
-          "imported_page_count",
-          "imported_unit_count"
+          "id"
         ],
         "properties": {
-          "imported_page_count": {
-            "type": "integer",
-            "format": "int32"
+          "id": {
+            "type": "string"
           },
-          "imported_unit_count": {
-            "type": "integer",
-            "format": "int32"
+          "pin": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "subtitle": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         }
       },
-      "UpdateInfoData": {
+      "UpdateChapterStageParams": {
+        "type": "object",
+        "description": "Input parameters for updating a chapter's workflow stage.\n\nEncodes a single operation on a specific stage, e.g. \"start translating\"\non the `translate` stage. The use case layer validates that the\ntransition is legal for the current stage phase before applying it.",
+        "required": [
+          "id",
+          "stage",
+          "oper"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "oper": {
+            "$ref": "#/components/schemas/StageOper"
+          },
+          "stage": {
+            "$ref": "#/components/schemas/Stage"
+          }
+        }
+      },
+      "UpdateComicInfoParams": {
         "type": "object",
         "description": "Input parameters for updating a comic's title, author, and description.\n\nCover updates are handled by dedicated endpoints.\n\n[`reserve_cover`]: crate::usecase::comic::reserve_cover",
         "required": [
@@ -4821,7 +7342,7 @@
           }
         }
       },
-      "UpdateRolesData": {
+      "UpdateMemberInvitationRolesParams": {
         "type": "object",
         "description": "Input parameters for updating a pending invitation's roles.",
         "required": [
@@ -4837,39 +7358,124 @@
           }
         }
       },
-      "UpdateStageData": {
+      "UpdateMemberRolesParams": {
         "type": "object",
-        "description": "Input parameters for updating a chapter's workflow stage.\n\nEncodes a single operation on a specific stage, e.g. \"start translating\"\non the `translate` stage. The use case layer validates that the\ntransition is legal for the current stage phase before applying it.",
+        "description": "Input parameters for updating a member's roles.",
         "required": [
           "id",
-          "stage",
-          "oper"
+          "roles"
         ],
         "properties": {
           "id": {
             "type": "string"
           },
-          "oper": {
-            "$ref": "#/components/schemas/StageOper"
-          },
-          "stage": {
-            "$ref": "#/components/schemas/Stage"
+          "roles": {
+            "$ref": "#/components/schemas/RoleMask"
           }
         }
       },
-      "Val": {
+      "UpdateTeamInfoParams": {
         "type": "object",
-        "description": "Presentation-ready system mail value.\n\nConverts the raw [`SystemMailInfo`] timestamp to Unix milliseconds\nand omits the internal `receiver_id` field.",
+        "description": "Input parameters for updating a team's profile.",
         "required": [
           "id",
-          "title",
-          "content",
-          "read",
-          "created_at"
+          "name",
+          "description"
         ],
         "properties": {
-          "content": {
+          "description": {
             "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "UpdateUserInfoParams": {
+        "type": "object",
+        "description": "Input parameters for updating a user's profile.",
+        "required": [
+          "id",
+          "qid",
+          "nickname"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "nickname": {
+            "type": "string"
+          },
+          "qid": {
+            "type": "string"
+          }
+        }
+      },
+      "UpdateUserPasswordParams": {
+        "type": "object",
+        "description": "Input parameters for replacing the authenticated user's password.",
+        "required": [
+          "current_password",
+          "new_password"
+        ],
+        "properties": {
+          "current_password": {
+            "type": "string"
+          },
+          "new_password": {
+            "type": "string"
+          }
+        }
+      },
+      "UpdateWorksetInfoParams": {
+        "type": "object",
+        "description": "Input parameters for updating a workset's name and description.\n\nCover and counter updates are handled internally by the repo layer.",
+        "required": [
+          "id",
+          "name"
+        ],
+        "properties": {
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "UserInfoVal": {
+        "type": "object",
+        "description": "Presentation-ready user profile information.\n\nConverts the raw [`UserInfo`] timestamps to Unix milliseconds and\nresolves the avatar key to a signed download URL via [`ImagePool`] when\nthe avatar has been uploaded.",
+        "required": [
+          "id",
+          "nickname",
+          "qid",
+          "is_sadmin",
+          "last_active_at",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "avatar_thumbnail_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "avatar_url": {
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "created_at": {
             "type": "integer",
@@ -4878,11 +7484,68 @@
           "id": {
             "type": "string"
           },
-          "read": {
+          "is_sadmin": {
             "type": "boolean"
           },
-          "title": {
+          "last_active_at": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "nickname": {
             "type": "string"
+          },
+          "qid": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "WorksetInfoVal": {
+        "type": "object",
+        "description": "Presentation-ready workset information.\n\nMirrors [`WorksetInfo`] with timestamps converted to Unix milliseconds.\n\n[`WorksetInfo`]: crate::model::workset::WorksetInfo",
+        "required": [
+          "id",
+          "team_id",
+          "index",
+          "name",
+          "comic_count",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "comic_count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "created_at": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "index": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "team_id": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "integer",
+            "format": "int64"
           }
         }
       }

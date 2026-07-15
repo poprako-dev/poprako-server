@@ -10,7 +10,8 @@ use poprako_orchestra_extra::prom::task::Task;
 use crate::complex::chapter::ChapterComplex;
 use crate::complex::image::ImageComplex;
 use crate::complex::util::{
-    check_user_is_team_admin, check_user_is_team_member,
+    check_user_is_team_admin, check_user_is_team_admin_with_roles,
+    check_user_is_team_member,
 };
 use crate::part::prom::payload::{Payload, image};
 use crate::part::repo::oper::assignment::DeleteAssignments;
@@ -33,6 +34,7 @@ use crate::part::repo::oper::workset::{
 use crate::result::{BaseError, BaseResult, accept};
 use crate::util::next_snowflake_id;
 use crate::value::index::stored_index_to_user_index;
+use crate::value::role::RoleMask;
 
 /// Domain opers for comic entities: identity generation and
 /// cover-storage key management.
@@ -184,6 +186,7 @@ impl ComicPermComplex {
         proxy: &mut P,
         user_id: &str,
         workset_id: &str,
+        preset_assignment_roles: Option<RoleMask>,
     ) -> BaseResult<()>
     where
         P: for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
@@ -192,7 +195,13 @@ impl ComicPermComplex {
         let team_id =
             Self::resolve_team_id_from_workset(proxy, workset_id).await?;
 
-        check_user_is_team_admin(proxy, user_id, &team_id).await
+        check_user_is_team_admin_with_roles(
+            proxy,
+            user_id,
+            &team_id,
+            preset_assignment_roles,
+        )
+        .await
     }
 
     /// Verify the caller is a team member of the owning workset's team.

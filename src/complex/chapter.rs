@@ -17,7 +17,8 @@ use poprako_orchestra::Proxy;
 use poprako_util::i18n::{trl, trl_kv};
 
 use crate::complex::util::{
-    check_user_is_team_admin, check_user_is_team_member,
+    check_user_is_team_admin, check_user_is_team_admin_with_roles,
+    check_user_is_team_member,
 };
 use crate::model::chapter::{ChapterInfo, ChapterStageUpdate};
 use crate::part::repo::oper::assignment::FindAssignmentInfo;
@@ -150,13 +151,22 @@ impl ChapterPermComplex {
         proxy: &mut P,
         user_id: &str,
         comic_id: &str,
+        preset_assignment_roles: Option<RoleMask>,
     ) -> BaseResult<()>
     where
         P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
             + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
             + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
-        check_team_admin_by_comic(proxy, user_id, comic_id).await
+        let team_id = resolve_team_id_from_comic(proxy, comic_id).await?;
+
+        check_user_is_team_admin_with_roles(
+            proxy,
+            user_id,
+            &team_id,
+            preset_assignment_roles,
+        )
+        .await
     }
 
     /// Verify the caller is assigned as a chapter admin for metadata updates.
@@ -325,8 +335,8 @@ where
 }
 
 /// Verify the caller is permitted to perform the given workflow transition
-/// on the chapter. Reviewers bypass per-stage checks and are allowed any
-/// transition. Non-reviewer assignments are validated against a whitelist:
+/// on the chapter. Chapter admins bypass per-stage checks and are allowed any
+/// transition. Other assignments are validated against a whitelist:
 ///
 /// | Stage | Event | Required role |
 /// |---|---|---|
@@ -335,6 +345,7 @@ where
 /// | `Translate` | `Revert` | `PROOFREADER` |
 /// | `Proofread` | `Advance`/`Revert` | `PROOFREADER` |
 /// | `TypesetRedraw` | `Advance`/`Revert` | `TYPESETTER` or `REDRAWER` |
+/// | `Review` | `Advance`/`Revert` | `REVIEWER` |
 /// | `Publish` | `Advance` | `PUBLISHER` |
 async fn check_workflow_role<P>(
     proxy: &mut P,
@@ -359,7 +370,7 @@ where
 
     let roles = assignment_info.roles;
 
-    if roles.has_any_role(&[RoleField::REVIEWER]) {
+    if roles.has_any_role(&[RoleField::ADMIN]) {
         return accept(());
     }
 
@@ -383,6 +394,10 @@ where
 
         (Stage::TypesetRedraw, StageOper::Advance | StageOper::Revert) => {
             roles.has_any_role(&[RoleField::TYPESETTER, RoleField::REDRAWER])
+        }
+
+        (Stage::Review, StageOper::Advance | StageOper::Revert) => {
+            roles.has_any_role(&[RoleField::REVIEWER])
         }
 
         (Stage::Publish, StageOper::Advance) => {

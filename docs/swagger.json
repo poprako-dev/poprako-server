@@ -2886,6 +2886,47 @@
         }
       }
     },
+    "/api/v1/users/{user_id}/password": {
+      "put": {
+        "tags": [
+          "users"
+        ],
+        "summary": "`PUT /api/v1/users/{user_id}/password` — replace the current user's password.",
+        "operationId": "update_password",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "description": "Target user ID (must match authenticated user)",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserPasswordParams"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Password updated"
+          },
+          "401": {
+            "description": "Current password is incorrect"
+          },
+          "403": {
+            "description": "Cannot modify another user's password"
+          }
+        }
+      }
+    },
     "/api/v1/worksets": {
       "post": {
         "tags": [
@@ -3044,7 +3085,7 @@
           "comics"
         ],
         "summary": "`GET /api/v1/worksets/{workset_id}/comics` — list comics in a workset.",
-        "description": "Lists active comics in a workset with optional title and workflow-stage filters. `incl` embeds related rows and `with` attaches derived rows.",
+        "description": "Lists active comics in a workset with optional title and workflow-stage filters. `incl` embeds related rows and `with` populates parallel derived rows.",
         "operationId": "list_infos",
         "parameters": [
           {
@@ -3129,7 +3170,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_Vec_ComicInfoVal"
+                  "$ref": "#/components/schemas/HttpBody_ListComicInfosPayload"
                 }
               }
             }
@@ -3438,7 +3479,6 @@
           "title",
           "author",
           "chapter_count",
-          "chapter_next_index",
           "creator_id",
           "last_active_at",
           "created_at",
@@ -3449,10 +3489,6 @@
             "type": "string"
           },
           "chapter_count": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "chapter_next_index": {
             "type": "integer",
             "format": "int32"
           },
@@ -3503,16 +3539,6 @@
             "type": "integer",
             "format": "int64"
           },
-          "pinned_chapter": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/ChapterInfoVal"
-              }
-            ]
-          },
           "team": {
             "oneOf": [
               {
@@ -3547,7 +3573,7 @@
       },
       "ComicWithOpt": {
         "type": "string",
-        "description": "Extra data options for comic info queries.\n\nUnlike `ComicInclOpt`, `with` opts attach derived rather than\ndirectly related data (e.g. the chapter currently pinned to the comic).",
+        "description": "Extra data options for comic info queries.\n\nUnlike `ComicInclOpt`, `with` opts populate the separately returned\nderived data (e.g. the chapter currently pinned to each comic).",
         "enum": [
           "pinned_chapter"
         ]
@@ -4157,7 +4183,6 @@
               "title",
               "author",
               "chapter_count",
-              "chapter_next_index",
               "creator_id",
               "last_active_at",
               "created_at",
@@ -4168,10 +4193,6 @@
                 "type": "string"
               },
               "chapter_count": {
-                "type": "integer",
-                "format": "int32"
-              },
-              "chapter_next_index": {
                 "type": "integer",
                 "format": "int32"
               },
@@ -4221,16 +4242,6 @@
               "last_active_at": {
                 "type": "integer",
                 "format": "int64"
-              },
-              "pinned_chapter": {
-                "oneOf": [
-                  {
-                    "type": "null"
-                  },
-                  {
-                    "$ref": "#/components/schemas/ChapterInfoVal"
-                  }
-                ]
               },
               "team": {
                 "oneOf": [
@@ -4585,6 +4596,51 @@
               "imported_unit_count": {
                 "type": "integer",
                 "format": "int32"
+              }
+            }
+          }
+        }
+      },
+      "HttpBody_ListComicInfosPayload": {
+        "type": "object",
+        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
+        "required": [
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "example": 0,
+            "minimum": 0
+          },
+          "data": {
+            "type": "object",
+            "description": "Presentation-ready comic list and optional pinned chapters.\n\n`pinned_chapters` is positionally aligned with `comics`. Its entries are\npopulated only when the request includes `with=pinned_chapter`.",
+            "required": [
+              "comics",
+              "pinned_chapters"
+            ],
+            "properties": {
+              "comics": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ComicInfoVal"
+                }
+              },
+              "pinned_chapters": {
+                "type": "array",
+                "items": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ChapterInfoVal"
+                    }
+                  ]
+                }
               }
             }
           }
@@ -5117,7 +5173,6 @@
               "id",
               "name",
               "description",
-              "workset_next_index",
               "created_at",
               "updated_at"
             ],
@@ -5150,10 +5205,6 @@
               "updated_at": {
                 "type": "integer",
                 "format": "int64"
-              },
-              "workset_next_index": {
-                "type": "integer",
-                "format": "int32"
               }
             }
           }
@@ -5532,142 +5583,6 @@
           }
         }
       },
-      "HttpBody_Vec_ComicInfoVal": {
-        "type": "object",
-        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
-        "required": [
-          "code",
-          "data"
-        ],
-        "properties": {
-          "code": {
-            "type": "integer",
-            "format": "int32",
-            "example": 0,
-            "minimum": 0
-          },
-          "data": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "description": "Presentation-ready comic information.\n\nMirrors [`ComicInfo`] but converts timestamps to Unix milliseconds and\nresolves the cover key to a signed download URL via [`ImagePool`] when\nthe cover has been uploaded.\n\nConstruct via [`ComicInfoVal::from_model`] — the conversion requires\nan [`ImagePool`] instance for URL signing.\n\n[`ComicInfo`]: crate::model::comic::ComicInfo",
-              "required": [
-                "id",
-                "workset_id",
-                "index",
-                "title",
-                "author",
-                "chapter_count",
-                "chapter_next_index",
-                "creator_id",
-                "last_active_at",
-                "created_at",
-                "updated_at"
-              ],
-              "properties": {
-                "author": {
-                  "type": "string"
-                },
-                "chapter_count": {
-                  "type": "integer",
-                  "format": "int32"
-                },
-                "chapter_next_index": {
-                  "type": "integer",
-                  "format": "int32"
-                },
-                "cover_thumbnail_url": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "cover_url": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
-                  "description": "Resolved signed download URL for the cover image, or [`None`] if\nno cover has been uploaded."
-                },
-                "created_at": {
-                  "type": "integer",
-                  "format": "int64"
-                },
-                "creator": {
-                  "oneOf": [
-                    {
-                      "type": "null"
-                    },
-                    {
-                      "$ref": "#/components/schemas/UserInfoVal"
-                    }
-                  ]
-                },
-                "creator_id": {
-                  "type": "string"
-                },
-                "description": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                },
-                "id": {
-                  "type": "string"
-                },
-                "index": {
-                  "type": "integer",
-                  "format": "int32"
-                },
-                "last_active_at": {
-                  "type": "integer",
-                  "format": "int64"
-                },
-                "pinned_chapter": {
-                  "oneOf": [
-                    {
-                      "type": "null"
-                    },
-                    {
-                      "$ref": "#/components/schemas/ChapterInfoVal"
-                    }
-                  ]
-                },
-                "team": {
-                  "oneOf": [
-                    {
-                      "type": "null"
-                    },
-                    {
-                      "$ref": "#/components/schemas/TeamInfoVal"
-                    }
-                  ]
-                },
-                "title": {
-                  "type": "string"
-                },
-                "updated_at": {
-                  "type": "integer",
-                  "format": "int64"
-                },
-                "workset": {
-                  "oneOf": [
-                    {
-                      "type": "null"
-                    },
-                    {
-                      "$ref": "#/components/schemas/WorksetInfoVal"
-                    }
-                  ]
-                },
-                "workset_id": {
-                  "type": "string"
-                }
-              }
-            }
-          }
-        }
-      },
       "HttpBody_Vec_CommentInfoVal": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
@@ -6011,7 +5926,6 @@
                 "id",
                 "name",
                 "description",
-                "workset_next_index",
                 "created_at",
                 "updated_at"
               ],
@@ -6044,10 +5958,6 @@
                 "updated_at": {
                   "type": "integer",
                   "format": "int64"
-                },
-                "workset_next_index": {
-                  "type": "integer",
-                  "format": "int32"
                 }
               }
             }
@@ -6079,16 +5989,11 @@
                 "index",
                 "name",
                 "comic_count",
-                "comic_next_index",
                 "created_at",
                 "updated_at"
               ],
               "properties": {
                 "comic_count": {
-                  "type": "integer",
-                  "format": "int32"
-                },
-                "comic_next_index": {
                   "type": "integer",
                   "format": "int32"
                 },
@@ -6147,16 +6052,11 @@
               "index",
               "name",
               "comic_count",
-              "comic_next_index",
               "created_at",
               "updated_at"
             ],
             "properties": {
               "comic_count": {
-                "type": "integer",
-                "format": "int32"
-              },
-              "comic_next_index": {
                 "type": "integer",
                 "format": "int32"
               },
@@ -6276,6 +6176,35 @@
         "properties": {
           "code": {
             "type": "string"
+          }
+        }
+      },
+      "ListComicInfosPayload": {
+        "type": "object",
+        "description": "Presentation-ready comic list and optional pinned chapters.\n\n`pinned_chapters` is positionally aligned with `comics`. Its entries are\npopulated only when the request includes `with=pinned_chapter`.",
+        "required": [
+          "comics",
+          "pinned_chapters"
+        ],
+        "properties": {
+          "comics": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ComicInfoVal"
+            }
+          },
+          "pinned_chapters": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "$ref": "#/components/schemas/ChapterInfoVal"
+                }
+              ]
+            }
           }
         }
       },
@@ -6952,7 +6881,6 @@
           "id",
           "name",
           "description",
-          "workset_next_index",
           "created_at",
           "updated_at"
         ],
@@ -6985,10 +6913,6 @@
           "updated_at": {
             "type": "integer",
             "format": "int64"
-          },
-          "workset_next_index": {
-            "type": "integer",
-            "format": "int32"
           }
         }
       },
@@ -7107,6 +7031,7 @@
         "oneOf": [
           {
             "type": "object",
+            "description": "Create a new unit with client-assigned local id and content payload.",
             "required": [
               "local_id",
               "is_bubble",
@@ -7172,6 +7097,7 @@
           },
           {
             "type": "object",
+            "description": "Update an existing unit identified by server-assigned id with new content payload.",
             "required": [
               "id",
               "is_bubble",
@@ -7238,6 +7164,7 @@
           },
           {
             "type": "object",
+            "description": "Remove an existing unit by server-assigned id.",
             "required": [
               "id",
               "oper"
@@ -7487,6 +7414,22 @@
           }
         }
       },
+      "UpdateUserPasswordParams": {
+        "type": "object",
+        "description": "Input parameters for replacing the authenticated user's password.",
+        "required": [
+          "current_password",
+          "new_password"
+        ],
+        "properties": {
+          "current_password": {
+            "type": "string"
+          },
+          "new_password": {
+            "type": "string"
+          }
+        }
+      },
       "UpdateWorksetInfoParams": {
         "type": "object",
         "description": "Input parameters for updating a workset's name and description.\n\nCover and counter updates are handled internally by the repo layer.",
@@ -7569,16 +7512,11 @@
           "index",
           "name",
           "comic_count",
-          "comic_next_index",
           "created_at",
           "updated_at"
         ],
         "properties": {
           "comic_count": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "comic_next_index": {
             "type": "integer",
             "format": "int32"
           },

@@ -57,7 +57,6 @@ use crate::part::repo::unit::UnitRepo;
 use crate::part::repo::workset::WorksetRepo;
 use crate::result::{BaseError, BaseResult, accept};
 use crate::value::comic::ComicWithOpt;
-use crate::value::role::{RoleField, RoleMask};
 
 #[cfg(test)]
 pub mod tests;
@@ -99,6 +98,7 @@ where
         },
         &token.user_id,
         &params.workset_id,
+        params.preset_assignment_roles,
     )
     .await?;
 
@@ -199,7 +199,9 @@ where
                 id: AssignmentComplex::gen_id(),
                 chapter_id: chapter_info.id.clone(),
                 user_id: token.user_id,
-                roles: RoleMask::from(RoleField::ADMIN),
+                roles: AssignmentComplex::creator_roles(
+                    params.preset_assignment_roles,
+                ),
             };
 
             repo.step(
