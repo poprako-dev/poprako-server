@@ -2,11 +2,10 @@
 
 use std::time::Duration;
 
-use tracing::instrument;
-
 use poprako_orchestra::{Nucl, run_proxy};
 use poprako_orchestra_extra::prom::oper::DeferBatch;
 use poprako_orchestra_extra::prom::task::Task;
+use tracing::instrument;
 
 use poprako_util::i18n::trl;
 
@@ -166,7 +165,7 @@ where
                     ));
                 }
 
-                let check_tasks: Vec<_> = check_ids
+                let check_tasks: Vec<Task<'_, String, Payload>> = check_ids
                     .iter()
                     .zip(check_payloads.iter())
                     .map(|(id, payload)| Task {
@@ -300,7 +299,7 @@ where
 
             batch_delays.push(Some(Duration::from_secs(15 * 60)));
 
-            let batch_tasks: Vec<_> = batch_ids
+            let batch_tasks: Vec<Task<'_, String, Payload>> = batch_ids
                 .iter()
                 .zip(batch_payloads.iter())
                 .zip(batch_delays.iter())
@@ -489,7 +488,7 @@ where
             }
         }
 
-        let delete_tasks: Vec<_> = delete_ids
+        let delete_tasks: Vec<Task<'_, String, Payload>> = delete_ids
             .iter()
             .zip(delete_payloads.iter())
             .map(|(id, payload)| Task {

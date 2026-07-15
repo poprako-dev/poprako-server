@@ -21,7 +21,6 @@ use std::future::Future;
 
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
-
 use tracing::instrument;
 
 use crate::model::chapter::ChapterInfo;

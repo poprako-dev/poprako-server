@@ -3,7 +3,6 @@
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use poprako_orchestra::Run;
-
 use tracing::instrument;
 
 use crate::model::system_mail::{
@@ -22,6 +21,9 @@ use crate::part_impl::repo::rdb_impl::schema::t_system_mail::dsl::*;
 use crate::part_impl::shared::result::{diesel, expected};
 use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::{ExpectedVariant, RegularError, RegularResult};
+
+#[cfg(all(test, feature = "repo"))]
+mod tests;
 
 impl SystemMailRepo<RdbContext> for RdbRepo {}
 
@@ -168,6 +170,3 @@ impl Run<MarkSystemMailRead<'_>> for RdbRepo {
         submit_query!(self.core, mark_read, oper.id, oper.user_id)
     }
 }
-
-#[cfg(all(test, feature = "repo"))]
-mod tests;

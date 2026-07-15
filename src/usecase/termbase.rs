@@ -1,6 +1,5 @@
-use tracing::instrument;
-
 use poprako_orchestra::{Nucl, run_proxy, step_proxy};
+use tracing::instrument;
 
 use crate::complex::termbase::{TermbaseComplex, TermbasePermComplex};
 use crate::data::termbase::CreateTermbaseParams;

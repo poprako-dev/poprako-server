@@ -14,6 +14,9 @@ use crate::model::user::{UserToken, UserTokenRef};
 use crate::part::auth::TokenAuth;
 use crate::result::{ExpectedVariant, RegularError, RegularResult};
 
+#[cfg(test)]
+mod tests;
+
 /// JWT issuer for user session tokens.
 pub struct JwtAuth {
     expiration_seconds: i64,
@@ -143,6 +146,3 @@ impl TokenAuth for JwtAuth {
         })
     }
 }
-
-#[cfg(test)]
-mod tests;

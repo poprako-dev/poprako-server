@@ -2,12 +2,13 @@
 
 use std::sync::OnceLock;
 
+use crate::result::{RegularError, RegularResult};
+#[cfg(test)]
+use bitcode::Decode;
 use bitcode::Encode;
 
 #[cfg(test)]
-use bitcode::Decode;
-
-use crate::result::{RegularError, RegularResult};
+mod tests;
 
 /// Generate a unique time-ordered identifier in base62 format.
 ///
@@ -119,7 +120,7 @@ fn load_snowflake_node_id() -> u16 {
         Err(_) => return 0,
     };
 
-    let parsed = value.parse::<u16>();
+    let parsed: Result<u16, _> = value.parse();
 
     match parsed {
         //
@@ -128,6 +129,3 @@ fn load_snowflake_node_id() -> u16 {
         _ => unreachable!(),
     }
 }
-
-#[cfg(test)]
-mod tests;

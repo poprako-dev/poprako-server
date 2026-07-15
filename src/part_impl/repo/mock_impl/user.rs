@@ -1,7 +1,6 @@
 //! Mock user repository operations.
 
 use poprako_orchestra::{Run, Step};
-
 use tracing::instrument;
 
 use crate::complex::user::UserComplex;

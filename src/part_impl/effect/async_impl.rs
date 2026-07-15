@@ -8,7 +8,6 @@ use tokio::sync::mpsc::error::TrySendError;
 use tokio::sync::oneshot::{
     Receiver as OneshotReceiver, Sender as OneshotSender,
 };
-
 use tracing::instrument;
 
 use crate::part::effect::event::Event;
@@ -25,6 +24,8 @@ mod chapter;
 mod dispatch;
 /// Background event handler runner.
 mod handler;
+#[cfg(test)]
+mod tests;
 /// User event handlers.
 mod user;
 
@@ -166,6 +167,3 @@ fn event_name(event: &Event) -> &'static str {
         Event::ChapterWorkflowCompleted(_) => "chapter_workflow_completed",
     }
 }
-
-#[cfg(test)]
-mod tests;

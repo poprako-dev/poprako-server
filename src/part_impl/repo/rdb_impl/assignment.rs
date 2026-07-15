@@ -4,7 +4,6 @@ use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use poprako_orchestra::{Run, Step};
 use time::OffsetDateTime;
-
 use tracing::instrument;
 
 use crate::model::assignment::{
@@ -30,6 +29,9 @@ use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::{RegularError, RegularResult};
 use crate::value::assignment::AssignmentInclOpt;
 use crate::value::role::RoleField;
+
+#[cfg(all(test, feature = "repo"))]
+mod tests;
 
 impl AssignmentRepo<RdbContext> for RdbRepo {}
 
@@ -595,5 +597,3 @@ impl Step<DeleteAssignments<'_>, RdbContext> for RdbRepo {
         }
     }
 }
-#[cfg(all(test, feature = "repo"))]
-mod tests;

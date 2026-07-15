@@ -17,6 +17,7 @@ publish = false
 mod_module_files = "deny"
 
 [features]
+benchmark = []
 repo = []
 swagger-ui = ["utoipa-swagger-ui", "utoipa"]
 
@@ -59,8 +60,9 @@ poprako-orchestra = "0.2.0"
 poprako-orchestra-extra = { version = "0.2.0", features = ["promise"] }
 
 [dev-dependencies]
-criterion = "0.7"
+criterion = { version = "0.7", features = ["async_tokio"] }
 
 [[bench]]
 name = "test_benchmark"
 harness = false
+required-features = ["benchmark"]

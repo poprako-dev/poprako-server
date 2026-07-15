@@ -17,6 +17,9 @@ use poprako_util::i18n::trl;
 use crate::part::image::{ImageManager, ImagePool};
 use crate::result::{ExpectedVariant, RegularError, RegularResult};
 
+#[cfg(test)]
+mod tests;
+
 /// Expiration duration for presigned upload URLs (10 minutes).
 const PUT_SIGNED_EXPIRATION: Duration = Duration::from_secs(600);
 
@@ -261,6 +264,3 @@ fn detect_content_type(key: &str) -> Option<&'static str> {
         _ => None,
     }
 }
-
-#[cfg(test)]
-mod tests;

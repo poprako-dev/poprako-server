@@ -9,7 +9,6 @@
 
 use poprako_orchestra::{Oper, Step};
 use time::OffsetDateTime;
-
 use tracing::instrument;
 
 use crate::part_impl::prom::rdb_impl::entity::{
@@ -19,6 +18,9 @@ use crate::part_impl::repo::rdb_impl::schema::t_local_message;
 use crate::part_impl::shared::RdbContext;
 use crate::part_impl::shared::result::diesel;
 use crate::result::{RegularError, RegularResult};
+
+#[cfg(all(test, feature = "repo"))]
+mod tests;
 
 // ── Handle ──────────────────────────────────────────────────────────────────
 
@@ -439,6 +441,3 @@ where
         Ok(purged_count)
     }
 }
-
-#[cfg(all(test, feature = "repo"))]
-mod tests;

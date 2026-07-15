@@ -1,7 +1,6 @@
 //! In-memory comic archive repository operations for use-case tests.
 
 use poprako_orchestra::Step;
-
 use tracing::instrument;
 
 use crate::model::comic_archive::{

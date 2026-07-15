@@ -148,7 +148,7 @@ where
         }
     }
 
-    let tasks: Vec<_> = delete_ids
+    let tasks: Vec<Task<'_, String, Payload>> = delete_ids
         .iter()
         .zip(payloads.iter())
         .map(|(id, payload)| Task {

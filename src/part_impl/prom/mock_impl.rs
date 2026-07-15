@@ -1,8 +1,6 @@
 //! Mock implementations of [`Prom`] for testing deferred action recording,
 //! plus an on-demand prom-record processor for integration tests.
 
-mod tests;
-
 use poprako_orchestra::{Nucl as _, Step};
 use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
 use poprako_orchestra_extra::prom::task::Task;
@@ -22,6 +20,8 @@ use crate::part::repo::oper::team::{GetTeamInfoExcluded, UpdateTeam};
 use crate::part::repo::oper::user::{GetUserInfoExcluded, UpdateUser};
 use crate::part_impl::repo::mock_impl::{Mock, MockContext};
 use crate::result::{RegularError, RegularResult};
+
+mod tests;
 
 /// A recorded deferred action stored in the mock context during transactional testing.
 #[cfg_attr(test, derive(Clone))]
