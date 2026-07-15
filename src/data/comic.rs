@@ -27,8 +27,6 @@ use crate::value::comic::{ComicInclOpt, ComicWithOpt};
 mod tests {
     use super::*;
 
-    use serde_json::Value;
-
     #[test]
     fn comic_info_val_omits_none_fields() {
         let comic_info_val = ComicInfoVal {
@@ -51,7 +49,7 @@ mod tests {
         };
 
         let serialized = serde_json::to_value(comic_info_val).unwrap();
-        let Value::Object(object) = serialized else {
+        let serde_json::Value::Object(object) = serialized else {
             panic!("comic info value must serialize as an object");
         };
 

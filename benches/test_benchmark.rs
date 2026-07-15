@@ -2,11 +2,13 @@ use std::hint::black_box;
 
 use criterion::{BatchSize, Criterion, criterion_group, criterion_main};
 
+use tokio::runtime::Runtime;
+
 use poprako_server::{UserComplex, benchmark};
 
 fn benchmark_password_operations(criterion: &mut Criterion) {
     let password = "benchmark-password";
-    let runtime = tokio::runtime::Runtime::new()
+    let runtime = Runtime::new()
         .expect("benchmark runtime must initialize");
     let password_hash = runtime
         .block_on(UserComplex::hash_password(password))
@@ -35,7 +37,7 @@ fn benchmark_password_operations(criterion: &mut Criterion) {
 }
 
 fn benchmark_aggregation_operations(criterion: &mut Criterion) {
-    let runtime = tokio::runtime::Runtime::new()
+    let runtime = Runtime::new()
         .expect("benchmark runtime must initialize");
 
     let mut archive_group = criterion.benchmark_group("archive");

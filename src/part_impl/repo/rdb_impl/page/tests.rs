@@ -2,6 +2,7 @@
 
 use poprako_orchestra::{Nucl as _, Run as _, Step as _};
 
+use crate::model::page::PageEntry;
 use crate::model::unit::UnitCounters;
 use crate::part::repo::oper::page::{
     CreatePages, ListFirstPageInfos, ListPageInfos, SetPageUnitCounters,
@@ -63,7 +64,7 @@ async fn page_roundtrip_reads_test_database_url() {
 
     assert_eq!(page_infos[0].total_unit_count, 2);
 
-    let second_page_entry = crate::model::page::PageEntry {
+    let second_page_entry = PageEntry {
         id: format!("{}page-later", PREFIX),
         chapter_id: page_fixture.chapter_entry.id.clone(),
         index: 1,
