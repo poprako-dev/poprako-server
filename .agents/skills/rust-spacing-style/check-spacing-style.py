@@ -249,6 +249,10 @@ class RustSpacingChecker:
         for previous, current in zip(units, units[1:]):
             current_anchor = unit_anchor(container, current)
 
+            # 同一行上的两个 unit（如 `};`）之间不需要空行。
+            if previous.end_point.row == current_anchor.start_point.row:
+                continue
+
             if has_blank_line_between(lines, previous, current_anchor):
                 continue
 

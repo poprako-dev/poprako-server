@@ -16,7 +16,7 @@ use crate::data::assignment_invitation::{
     CreateAssignmentInvitationPayload, JoinAssignmentInvitationParams,
     ListAssignmentInvitationInfosParams,
 };
-use crate::model::assignment::{AssignmentEntry, AssignmentInfo};
+use crate::model::assignment::AssignmentEntry;
 use crate::model::assignment_invitation::{
     AssignmentInvitationEntry, AssignmentInvitationListKind,
     AssignmentInvitationListSpec,

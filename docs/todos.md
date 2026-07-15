@@ -2,4 +2,4 @@
 
 - [x] Split `ImagePool` and `ImageManager`.
 - [x] Thumbnail for images.
-- [ ] Update user password.
+- [x] Update user password.
