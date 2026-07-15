@@ -25,7 +25,7 @@ use crate::part_impl::prom::rdb_impl::repo::{
     RdbPromRepo, ResetStuck, RetryMessage,
 };
 use crate::part_impl::shared::{RdbContext, RdbCore};
-use crate::result::{RegularError, RegularResult};
+use crate::result::{BaseError, BaseResult};
 
 /// Prom image event handler.
 mod image;
@@ -213,7 +213,7 @@ pub struct RdbPromHandler<D, R, I> {
 
 impl<D, R, I> RdbPromHandler<D, R, I>
 where
-    D: Nucl<Context = RdbContext, Error = RegularError>,
+    D: Nucl<Context = RdbContext, Error = BaseError>,
     R: AssignmentInvitationRepo<RdbContext>
         + ComicRepo<RdbContext>
         + MemberInvitationRepo<RdbContext>
@@ -313,7 +313,7 @@ where
     }
 
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn poll(&self) -> RegularResult<Vec<LocalMessageRow>> {
+    async fn poll(&self) -> BaseResult<Vec<LocalMessageRow>> {
         //
         let conn = self.core.get().await?;
 
@@ -405,7 +405,7 @@ where
     }
 
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn claim(&self, id: &str) -> RegularResult<bool> {
+    async fn claim(&self, id: &str) -> BaseResult<bool> {
         //
         let conn = self.core.get().await?;
 
@@ -415,7 +415,7 @@ where
     }
 
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn complete(&self, id: &str) -> RegularResult<()> {
+    async fn complete(&self, id: &str) -> BaseResult<()> {
         //
         let conn = self.core.get().await?;
 
@@ -427,7 +427,7 @@ where
     }
 
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn fail(&self, id: &str, error: &str) -> RegularResult<()> {
+    async fn fail(&self, id: &str, error: &str) -> BaseResult<()> {
         //
         let conn = self.core.get().await?;
 
@@ -439,7 +439,7 @@ where
     }
 
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn retry(&self, id: &str, error: &str) -> RegularResult<()> {
+    async fn retry(&self, id: &str, error: &str) -> BaseResult<()> {
         //
         let conn = self.core.get().await?;
 
@@ -453,7 +453,7 @@ where
     }
 
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn reset_stuck(&self) -> RegularResult<()> {
+    async fn reset_stuck(&self) -> BaseResult<()> {
         //
         let conn = self.core.get().await?;
 
@@ -467,7 +467,7 @@ where
     }
 
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn purge_completed(&self) -> RegularResult<usize> {
+    async fn purge_completed(&self) -> BaseResult<usize> {
         //
         let conn = self.core.get().await?;
 
@@ -491,7 +491,7 @@ async fn dispatch_payload<D, R, I>(
     payload: &serde_json::Value,
 ) -> TaskFlow
 where
-    D: Nucl<Context = RdbContext, Error = RegularError>,
+    D: Nucl<Context = RdbContext, Error = BaseError>,
     R: AssignmentInvitationRepo<RdbContext>
         + ComicRepo<RdbContext>
         + MemberInvitationRepo<RdbContext>

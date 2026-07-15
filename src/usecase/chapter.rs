@@ -51,7 +51,7 @@ use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::unit::UnitRepo;
 use crate::part::repo::workset::WorksetRepo;
-use crate::result::{RegularError, RegularResult, accept};
+use crate::result::{BaseError, BaseResult, accept};
 use crate::value::chapter::{Stage, StageOper, StagePhase};
 use crate::value::role::{RoleField, RoleMask};
 
@@ -65,7 +65,7 @@ pub async fn list_infos<C, R, I>(
     image_pool: &I,
     token: UserToken,
     params: ListChapterInfosParams,
-) -> RegularResult<Vec<ChapterInfoVal>>
+) -> BaseResult<Vec<ChapterInfoVal>>
 where
     R: ChapterRepo<C>
         + ComicRepo<C>
@@ -132,7 +132,7 @@ where
         );
     }
 
-    Ok(chapter_info_vals)
+    accept(chapter_info_vals)
 }
 
 /// Fetches a chapter by ID.
@@ -141,7 +141,7 @@ pub async fn get_info<C, R>(
     repo: &R,
     token: UserToken,
     id: String,
-) -> RegularResult<ChapterInfoVal>
+) -> BaseResult<ChapterInfoVal>
 where
     R: ChapterRepo<C> + ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Sync,
 {
@@ -165,7 +165,7 @@ where
         })
         .await?;
 
-    Ok(ChapterInfoVal::from(chapter_info))
+    accept(ChapterInfoVal::from(chapter_info))
 }
 
 /// Fetches the pinned chapter under one comic.
@@ -174,7 +174,7 @@ pub async fn get_pinned<C, R>(
     repo: &R,
     token: UserToken,
     comic_id: String,
-) -> RegularResult<Option<ChapterInfoVal>>
+) -> BaseResult<Option<ChapterInfoVal>>
 where
     R: ChapterRepo<C> + ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Sync,
 {
@@ -197,7 +197,7 @@ where
         })
         .await?;
 
-    Ok(chapter_info.map(ChapterInfoVal::from))
+    accept(chapter_info.map(ChapterInfoVal::from))
 }
 
 /// Creates a new chapter.
@@ -207,9 +207,9 @@ pub async fn create<N, C, R>(
     repo: &R,
     token: UserToken,
     params: CreateChapterParams,
-) -> RegularResult<CreateChapterPayload>
+) -> BaseResult<CreateChapterPayload>
 where
-    N: Nucl<Context = C, Error = RegularError>,
+    N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     R: ChapterRepo<C>
         + ComicRepo<C>
@@ -232,7 +232,7 @@ where
     .await?;
 
     let chapter_id = nucl
-        .coord(async move |context| -> RegularResult<String> {
+        .coord(async move |context| {
             //
             repo.step(
                 context,
@@ -315,11 +315,11 @@ where
             )
             .await?;
 
-            Ok(chapter_info.id)
+            accept(chapter_info.id)
         })
         .await?;
 
-    Ok(CreateChapterPayload { id: chapter_id })
+    accept(CreateChapterPayload { id: chapter_id })
 }
 
 /// Updates chapter metadata.
@@ -329,9 +329,9 @@ pub async fn update_info<N, C, R>(
     repo: &R,
     token: UserToken,
     params: UpdateChapterInfoParams,
-) -> RegularResult<()>
+) -> BaseResult<()>
 where
-    N: Nucl<Context = C, Error = RegularError>,
+    N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     R: ChapterRepo<C> + ComicRepo<C> + AssignmentRepo<C> + Send + Sync,
 {
@@ -344,7 +344,7 @@ where
     )
     .await?;
 
-    nucl.coord(async move |context| -> RegularResult<()> {
+    nucl.coord(async move |context| {
         //
         let chapter_info = repo
             .step(
@@ -418,9 +418,9 @@ pub async fn update_stage<N, C, R, P, V>(
     develop: &V,
     token: UserToken,
     params: UpdateChapterStageParams,
-) -> RegularResult<()>
+) -> BaseResult<()>
 where
-    N: Nucl<Context = C, Error = RegularError>,
+    N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     R: ChapterRepo<C>
         + ComicRepo<C>
@@ -443,7 +443,7 @@ where
     .await?;
 
     let events = nucl
-        .coord(async move |context| -> RegularResult<Vec<Event>> {
+        .coord(async move |context| {
             //
             let chapter_info = repo
                 .step(
@@ -523,7 +523,7 @@ where
             )
             .await?;
 
-            Ok(events)
+            accept(events)
         })
         .await?;
 
@@ -540,9 +540,9 @@ pub async fn delete<N, C, R, P>(
     prom: &P,
     token: UserToken,
     id: String,
-) -> RegularResult<()>
+) -> BaseResult<()>
 where
-    N: Nucl<Context = C, Error = RegularError>,
+    N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     R: ChapterRepo<C>
         + ComicRepo<C>
@@ -569,7 +569,7 @@ where
     )
     .await?;
 
-    nucl.coord(async move |context| -> RegularResult<()> {
+    nucl.coord(async move |context| {
         //
         ChapterComplex::delete_cascade(
             &mut step_proxy! {

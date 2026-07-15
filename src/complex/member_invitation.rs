@@ -7,7 +7,7 @@ use crate::complex::util::{
 };
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::member_invitation::GetMemberInvitationInfo;
-use crate::result::{RegularError, RegularResult};
+use crate::result::{BaseError, BaseResult, accept};
 use crate::util::next_snowflake_id;
 
 /// Domain opers for member invitations.
@@ -39,9 +39,9 @@ impl MemberInvitationPermComplex {
         proxy: &mut P,
         user_id: &str,
         team_id: &str,
-    ) -> RegularResult<()>
+    ) -> BaseResult<()>
     where
-        P: for<'a> Proxy<FindMemberInfo<'a>, Error = RegularError>,
+        P: for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
         check_user_is_team_admin(proxy, user_id, team_id).await
     }
@@ -51,9 +51,9 @@ impl MemberInvitationPermComplex {
         proxy: &mut P,
         user_id: &str,
         team_id: &str,
-    ) -> RegularResult<()>
+    ) -> BaseResult<()>
     where
-        P: for<'a> Proxy<FindMemberInfo<'a>, Error = RegularError>,
+        P: for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
         check_user_is_team_member(proxy, user_id, team_id).await
     }
@@ -63,12 +63,12 @@ impl MemberInvitationPermComplex {
         proxy: &mut P,
         user_id: &str,
         invitation_id: &str,
-    ) -> RegularResult<()>
+    ) -> BaseResult<()>
     where
         P: for<'a, 'b> Proxy<
                 GetMemberInvitationInfo<'a, 'b>,
-                Error = RegularError,
-            > + for<'a> Proxy<FindMemberInfo<'a>, Error = RegularError>,
+                Error = BaseError,
+            > + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
         let team_id = Self::resolve_team_id(proxy, invitation_id).await?;
 
@@ -80,12 +80,12 @@ impl MemberInvitationPermComplex {
         proxy: &mut P,
         user_id: &str,
         invitation_id: &str,
-    ) -> RegularResult<()>
+    ) -> BaseResult<()>
     where
         P: for<'a, 'b> Proxy<
                 GetMemberInvitationInfo<'a, 'b>,
-                Error = RegularError,
-            > + for<'a> Proxy<FindMemberInfo<'a>, Error = RegularError>,
+                Error = BaseError,
+            > + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
         let team_id = Self::resolve_team_id(proxy, invitation_id).await?;
 
@@ -96,11 +96,11 @@ impl MemberInvitationPermComplex {
     async fn resolve_team_id<P>(
         proxy: &mut P,
         invitation_id: &str,
-    ) -> RegularResult<String>
+    ) -> BaseResult<String>
     where
         P: for<'a, 'b> Proxy<
                 GetMemberInvitationInfo<'a, 'b>,
-                Error = RegularError,
+                Error = BaseError,
             >,
     {
         let member_invitation_info = proxy
@@ -110,6 +110,6 @@ impl MemberInvitationPermComplex {
             })
             .await?;
 
-        Ok(member_invitation_info.team_id)
+        accept(member_invitation_info.team_id)
     }
 }

@@ -18,7 +18,7 @@ use crate::part_impl::repo::rdb_impl::entity::assignment_invitation::{
 use crate::part_impl::repo::rdb_impl::schema::t_assignment_invitation::dsl::*;
 use crate::part_impl::shared::result::{diesel, expected};
 use crate::part_impl::shared::{RdbConn, RdbContext};
-use crate::result::RegularResult;
+use crate::result::{BaseResult, accept};
 
 mod orchestra;
 #[cfg(all(test, feature = "repo"))]
@@ -29,14 +29,14 @@ impl AssignmentInvitationRepo<RdbContext> for RdbRepo {}
 /// Converts a single `AssignmentInvitationRow` into an `AssignmentInvitationInfo`.
 fn row_into_info(
     row: AssignmentInvitationRow,
-) -> RegularResult<AssignmentInvitationInfo> {
+) -> BaseResult<AssignmentInvitationInfo> {
     row.try_into()
 }
 
 /// Converts a vector of `AssignmentInvitationRow` values into `AssignmentInvitationInfo`.
 fn rows_into_infos(
     rows: Vec<AssignmentInvitationRow>,
-) -> RegularResult<Vec<AssignmentInvitationInfo>> {
+) -> BaseResult<Vec<AssignmentInvitationInfo>> {
     rows.into_iter().map(row_into_info).collect()
 }
 
@@ -45,7 +45,7 @@ fn rows_into_infos(
 async fn list_infos(
     conn: &mut RdbConn,
     spec: &AssignmentInvitationListSpec,
-) -> RegularResult<Vec<AssignmentInvitationInfo>> {
+) -> BaseResult<Vec<AssignmentInvitationInfo>> {
     //
     let mut query = t_assignment_invitation
         .filter(f_chapter_id.eq(spec.chapter_id.as_str()))
@@ -79,7 +79,7 @@ async fn list_infos(
 async fn get_info_by_id(
     conn: &mut RdbConn,
     id: &str,
-) -> RegularResult<AssignmentInvitationInfo> {
+) -> BaseResult<AssignmentInvitationInfo> {
     //
     let row: AssignmentInvitationRow = t_assignment_invitation
         .filter(f_id.eq(id))
@@ -98,7 +98,7 @@ async fn get_info_by_id(
 async fn get_info_by_code_excluded(
     conn: &mut RdbConn,
     code: &str,
-) -> RegularResult<AssignmentInvitationInfo> {
+) -> BaseResult<AssignmentInvitationInfo> {
     //
     let row: AssignmentInvitationRow = t_assignment_invitation
         .filter(f_code.eq(code))
@@ -119,7 +119,7 @@ async fn get_info_by_code_excluded(
 async fn create(
     conn: &mut RdbConn,
     model_entry: &AssignmentInvitationEntry,
-) -> RegularResult<AssignmentInvitationInfo> {
+) -> BaseResult<AssignmentInvitationInfo> {
     //
     let entry = AssignmentInvitationRowEntry::from(model_entry);
 
@@ -136,10 +136,7 @@ async fn create(
 
 /// Sets the pending flag to false on an invitation, marking it as used.
 #[instrument(level = "info", err(Debug), skip_all)]
-async fn mark_pending_as_used(
-    conn: &mut RdbConn,
-    id: &str,
-) -> RegularResult<()> {
+async fn mark_pending_as_used(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
     //
     let now = OffsetDateTime::now_utc();
 
@@ -159,24 +156,24 @@ async fn mark_pending_as_used(
         return Err(expected("error-invitation-not-found"));
     }
 
-    Ok(())
+    accept(())
 }
 
 /// Deletes a single assignment invitation row by ID.
 #[instrument(level = "info", err(Debug), skip_all)]
-async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
+async fn delete(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
     //
     diesel::delete(t_assignment_invitation.filter(f_id.eq(id)))
         .execute(conn)
         .await
         .map_err(diesel)?;
 
-    Ok(())
+    accept(())
 }
 
 /// Deletes an assignment invitation only while it remains pending.
 #[instrument(level = "info", err(Debug), skip_all)]
-async fn purge_pending(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
+async fn purge_pending(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
     //
     diesel::delete(
         t_assignment_invitation
@@ -187,7 +184,7 @@ async fn purge_pending(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
     .await
     .map_err(diesel)?;
 
-    Ok(())
+    accept(())
 }
 
 /// Deletes all assignment invitation rows for a given chapter ID.
@@ -195,12 +192,12 @@ async fn purge_pending(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
 async fn delete_by_chapter_id(
     conn: &mut RdbConn,
     chapter_id: &str,
-) -> RegularResult<()> {
+) -> BaseResult<()> {
     //
     diesel::delete(t_assignment_invitation.filter(f_chapter_id.eq(chapter_id)))
         .execute(conn)
         .await
         .map_err(diesel)?;
 
-    Ok(())
+    accept(())
 }

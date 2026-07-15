@@ -28,7 +28,7 @@ use crate::part::prom::payload::{Payload, image};
 use crate::part::repo::oper::workset::DeleteWorkset;
 use crate::part_impl::prom::mock_impl::MockPromRecord;
 use crate::part_impl::repo::mock_impl::Mock;
-use crate::result::{ExpectedVariant, RegularResult};
+use crate::result::{ExpectedVariant, accept};
 use crate::test_util::assert_expected_variant;
 use crate::test_util::fixture::team;
 use crate::value::role::{RoleField, RoleMask};
@@ -371,7 +371,7 @@ async fn delete_does_not_create_prom_records_when_called_directly() {
 
     mock.seed_workset(workset("workset-1", "team-1", 0));
 
-    mock.coord(async |context| -> RegularResult<()> {
+    mock.coord(async |context| {
         //
         let id = "prom-1".to_string();
 
@@ -390,7 +390,7 @@ async fn delete_does_not_create_prom_records_when_called_directly() {
         mock.step(context, &DeleteWorkset { id: "workset-1" })
             .await?;
 
-        Ok(())
+        accept(())
     })
     .await
     .ok()

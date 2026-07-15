@@ -10,7 +10,7 @@ use crate::part::repo::oper::assignment_invitation::PurgeExpiredAssignmentInvita
 use crate::part::repo::oper::member_invitation::PurgeExpiredMemberInvitation;
 use crate::part_impl::prom::rdb_impl::handler::TaskFlow;
 use crate::part_impl::shared::RdbContext;
-use crate::result::{RegularError, RegularResult};
+use crate::result::{BaseError, BaseResult, accept};
 
 /// Purges an expired invitation when it is still pending.
 #[instrument(level = "info", skip_all)]
@@ -20,7 +20,7 @@ pub async fn handle<N, R>(
     event: &PurgeExpiredInvitation,
 ) -> TaskFlow
 where
-    N: Nucl<Context = RdbContext, Error = RegularError>,
+    N: Nucl<Context = RdbContext, Error = BaseError>,
     R: AssignmentInvitationRepo<RdbContext>
         + MemberInvitationRepo<RdbContext>
         + Send
@@ -40,9 +40,9 @@ async fn execute<N, R>(
     nucl: &N,
     repo: &R,
     event: &PurgeExpiredInvitation,
-) -> RegularResult<()>
+) -> BaseResult<()>
 where
-    N: Nucl<Context = RdbContext, Error = RegularError>,
+    N: Nucl<Context = RdbContext, Error = BaseError>,
     R: AssignmentInvitationRepo<RdbContext>
         + MemberInvitationRepo<RdbContext>
         + Send
@@ -51,14 +51,14 @@ where
     nucl.coord(async move |context| purge(repo, context, event).await)
         .await?;
 
-    Ok(())
+    accept(())
 }
 
 async fn purge<R>(
     repo: &R,
     context: &mut RdbContext,
     event: &PurgeExpiredInvitation,
-) -> RegularResult<()>
+) -> BaseResult<()>
 where
     R: AssignmentInvitationRepo<RdbContext>
         + MemberInvitationRepo<RdbContext>

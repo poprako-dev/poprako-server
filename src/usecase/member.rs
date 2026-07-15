@@ -28,7 +28,7 @@ use crate::part::repo::oper::team::GetTeamInfoExcluded;
 use crate::part::repo::oper::user::GetUserInfoExcluded;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::user::UserRepo;
-use crate::result::{ExpectedVariant, RegularError, RegularResult};
+use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 
 #[cfg(test)]
 mod tests;
@@ -43,9 +43,9 @@ pub async fn create<N, C, R>(
     repo: &R,
     token: UserToken,
     params: CreateMemberParams,
-) -> RegularResult<CreateMemberPayload>
+) -> BaseResult<CreateMemberPayload>
 where
-    N: Nucl<Context = C, Error = RegularError>,
+    N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     R: MemberRepo<C> + TeamRepo<C> + UserRepo<C> + Send + Sync,
 {
@@ -61,7 +61,7 @@ where
     .await?;
 
     let member_id = nucl
-        .coord(async move |context| -> RegularResult<String> {
+        .coord(async move |context| {
             //
 
             let user_info = repo
@@ -92,7 +92,7 @@ where
                 .await?;
 
             if existing_member_info.is_some() {
-                return Err(RegularError::Expected {
+                return Err(BaseError::Expected {
                     variant: ExpectedVariant::Args,
                     message: trl("error-already-team-member"),
                 });
@@ -115,11 +115,11 @@ where
                 )
                 .await?;
 
-            Ok(member_info.id)
+            accept(member_info.id)
         })
         .await?;
 
-    Ok(CreateMemberPayload { id: member_id })
+    accept(CreateMemberPayload { id: member_id })
 }
 
 /// Joins the current user to a team with a pending invitation code.
@@ -130,9 +130,9 @@ pub async fn join_team<N, C, R, I>(
     image_pool: &I,
     token: UserToken,
     params: JoinTeamParams,
-) -> RegularResult<MemberInfoVal>
+) -> BaseResult<MemberInfoVal>
 where
-    N: Nucl<Context = C, Error = RegularError>,
+    N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     R: MemberRepo<C> + MemberInvitationRepo<C> + UserRepo<C> + Send + Sync,
     I: ImagePool,
@@ -140,7 +140,7 @@ where
     let current_user_id = token.user_id;
 
     let member_info = nucl
-        .coord(async move |context| -> RegularResult<MemberInfo> {
+        .coord(async move |context| {
             //
 
             let current_user_info = repo
@@ -204,7 +204,7 @@ where
             )
             .await?;
 
-            Ok(member_info)
+            accept(member_info)
         })
         .await?;
 
@@ -220,7 +220,7 @@ pub async fn list_infos<C, R, I>(
     image_pool: &I,
     token: UserToken,
     params: ListMemberInfosParams,
-) -> RegularResult<Vec<MemberInfoVal>>
+) -> BaseResult<Vec<MemberInfoVal>>
 where
     R: MemberRepo<C> + Sync,
     I: ImagePool,
@@ -251,7 +251,7 @@ where
             .push(MemberInfoVal::from_model(image_pool, member_info).await?);
     }
 
-    Ok(member_info_vals)
+    accept(member_info_vals)
 }
 
 /// Updates one member's roles.
@@ -263,9 +263,9 @@ pub async fn update_roles<N, C, R>(
     repo: &R,
     token: UserToken,
     params: UpdateMemberRolesParams,
-) -> RegularResult<()>
+) -> BaseResult<()>
 where
-    N: Nucl<Context = C, Error = RegularError>,
+    N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     R: MemberRepo<C> + Send + Sync,
 {
@@ -285,7 +285,7 @@ where
     )
     .await?;
 
-    nucl.coord(async move |context| -> RegularResult<()> {
+    nucl.coord(async move |context| {
         //
         let member_role_update = MemberRoleUpdate {
             id: params.id,
@@ -300,13 +300,13 @@ where
         )
         .await?;
 
-        Ok(())
+        accept(())
     })
     .await?;
 
     let () = ();
 
-    Ok(())
+    accept(())
 }
 
 /// Deletes one member.
@@ -318,9 +318,9 @@ pub async fn delete<N, C, R>(
     repo: &R,
     token: UserToken,
     id: String,
-) -> RegularResult<()>
+) -> BaseResult<()>
 where
-    N: Nucl<Context = C, Error = RegularError>,
+    N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     R: MemberRepo<C> + Send + Sync,
 {
@@ -340,30 +340,30 @@ where
     )
     .await?;
 
-    nucl.coord(async move |context| -> RegularResult<()> {
+    nucl.coord(async move |context| {
         //
         repo.step(context, &DeleteMember { id: &id }).await?;
 
-        Ok(())
+        accept(())
     })
     .await?;
 
     let () = ();
 
-    Ok(())
+    accept(())
 }
 
 /// Constructs an args error for an invalid invitation code.
-fn invalid_invitation_error() -> RegularError {
-    RegularError::Expected {
+fn invalid_invitation_error() -> BaseError {
+    BaseError::Expected {
         variant: ExpectedVariant::Args,
         message: trl("error-no-pending-invitation"),
     }
 }
 
 /// Constructs an args error for a user already in the team.
-fn already_team_member_error() -> RegularError {
-    RegularError::Expected {
+fn already_team_member_error() -> BaseError {
+    BaseError::Expected {
         variant: ExpectedVariant::Args,
         message: trl("error-already-team-member"),
     }

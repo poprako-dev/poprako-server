@@ -5,7 +5,7 @@ use time::OffsetDateTime;
 
 use crate::model::assignment::{AssignmentEntry, AssignmentInfo};
 use crate::part_impl::repo::rdb_impl::schema::t_assignment;
-use crate::result::RegularError;
+use crate::result::BaseError;
 use crate::value::role::{RoleField, RoleMask};
 
 /// Raw database row for the `t_assignment` table. Returned by Diesel queries.
@@ -137,7 +137,7 @@ impl AssignmentRoleTimestamps {
 }
 
 impl TryFrom<AssignmentRow> for AssignmentInfo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     fn try_from(row: AssignmentRow) -> Result<Self, Self::Error> {
         //

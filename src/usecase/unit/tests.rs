@@ -22,7 +22,7 @@ use crate::model::unit::UnitInfo;
 use crate::model::user::UserToken;
 use crate::model::workset::WorksetInfo;
 use crate::part_impl::repo::mock_impl::Mock;
-use crate::result::{ExpectedVariant, RegularError};
+use crate::result::{BaseError, ExpectedVariant, accept};
 use crate::value::chapter::StageMask;
 use crate::value::role::{RoleField, RoleMask};
 
@@ -292,27 +292,27 @@ fn sorted_unit_ids(units: &[UnitInfo]) -> Vec<String> {
         .collect()
 }
 
-fn assert_perm_error(error: RegularError) {
+fn assert_perm_error(error: BaseError) {
     match error {
         //
-        RegularError::Expected { variant, .. } => {
+        BaseError::Expected { variant, .. } => {
             assert!(matches!(variant, ExpectedVariant::Perm));
         }
 
-        RegularError::Unrecoverable { .. } => {
+        BaseError::Unrecoverable { .. } => {
             panic!("expected permission error");
         }
     }
 }
 
-fn assert_args_error(error: RegularError) {
+fn assert_args_error(error: BaseError) {
     match error {
         //
-        RegularError::Expected { variant, .. } => {
+        BaseError::Expected { variant, .. } => {
             assert!(matches!(variant, ExpectedVariant::Args));
         }
 
-        RegularError::Unrecoverable { .. } => {
+        BaseError::Unrecoverable { .. } => {
             panic!("expected argument error");
         }
     }

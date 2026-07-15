@@ -15,7 +15,7 @@ use crate::part::repo::comment::CommentRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::comment::{CreateComment, ListCommentInfos};
 use crate::part::repo::oper::member::FindMemberInfo;
-use crate::result::{RegularError, RegularResult};
+use crate::result::{BaseError, BaseResult, accept};
 
 #[cfg(test)]
 mod tests;
@@ -27,7 +27,7 @@ pub async fn list_infos<C, R, I>(
     image_pool: &I,
     token: UserToken,
     params: ListCommentInfosParams,
-) -> RegularResult<Vec<CommentInfoVal>>
+) -> BaseResult<Vec<CommentInfoVal>>
 where
     R: CommentRepo<C> + MemberRepo<C> + Sync,
     I: ImagePool,
@@ -56,7 +56,7 @@ where
             .push(CommentInfoVal::from_model(image_pool, comment_info).await?);
     }
 
-    Ok(comment_info_vals)
+    accept(comment_info_vals)
 }
 
 /// Creates a comment under a team.
@@ -66,9 +66,9 @@ pub async fn create<N, C, R>(
     repo: &R,
     token: UserToken,
     params: CreateCommentParams,
-) -> RegularResult<CreateCommentPayload>
+) -> BaseResult<CreateCommentPayload>
 where
-    N: Nucl<Context = C, Error = RegularError>,
+    N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     R: CommentRepo<C> + MemberRepo<C> + Send + Sync,
 {
@@ -101,7 +101,7 @@ where
         })
         .await?;
 
-    Ok(CreateCommentPayload {
+    accept(CreateCommentPayload {
         id: comment_info.id,
     })
 }

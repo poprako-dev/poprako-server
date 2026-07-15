@@ -328,7 +328,7 @@ async fn archive_rolls_back_when_archive_persistence_fails() {
 
     assert!(matches!(
         archive_result,
-        Err(RegularError::Unrecoverable { .. })
+        Err(BaseError::Unrecoverable { .. })
     ));
 
     let snapshot = mock.snapshot();

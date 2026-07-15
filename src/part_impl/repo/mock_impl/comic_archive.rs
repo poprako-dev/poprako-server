@@ -14,7 +14,7 @@ use crate::part::repo::oper::comic_archive::{
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, expected, unrecoverable,
 };
-use crate::result::{RegularError, RegularResult};
+use crate::result::{BaseError, BaseResult, accept};
 
 impl ComicArchiveRepo<MockContext> for Mock {}
 
@@ -22,7 +22,7 @@ impl ComicArchiveRepo<MockContext> for Mock {}
 fn get_snapshot_excluded(
     context: &mut MockContext,
     source_comic_id: &str,
-) -> RegularResult<ComicArchiveSnapshot> {
+) -> BaseResult<ComicArchiveSnapshot> {
     //
     let comic_info = context
         .state
@@ -70,9 +70,9 @@ fn get_snapshot_excluded(
                             .ok_or_else(|| expected("error-user-not-found"))?,
                     );
 
-                    Ok(assignment_info)
+                    accept(assignment_info)
                 })
-                .collect::<RegularResult<Vec<_>>>()?;
+                .collect::<BaseResult<Vec<_>>>()?;
 
             let page_snapshots = context
                 .state
@@ -97,15 +97,15 @@ fn get_snapshot_excluded(
                 })
                 .collect();
 
-            Ok(ComicArchiveChapterSnapshot {
+            accept(ComicArchiveChapterSnapshot {
                 chapter_info,
                 assignment_infos,
                 page_snapshots,
             })
         })
-        .collect::<RegularResult<Vec<_>>>()?;
+        .collect::<BaseResult<Vec<_>>>()?;
 
-    Ok(ComicArchiveSnapshot {
+    accept(ComicArchiveSnapshot {
         comic_info,
         workset_info,
         chapter_snapshots,
@@ -116,7 +116,7 @@ fn get_snapshot_excluded(
 fn commit(
     context: &mut MockContext,
     comic_archive_write: &ComicArchiveWrite,
-) -> RegularResult<()> {
+) -> BaseResult<()> {
     //
     if context.archive_commit_failure {
         return Err(unrecoverable(
@@ -176,31 +176,31 @@ fn commit(
         comic_info.id != comic_archive_write.source_comic_id
     });
 
-    Ok(())
+    accept(())
 }
 
 impl<'a> Step<GetComicArchiveSnapshotExcluded<'a>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &GetComicArchiveSnapshotExcluded<'a>,
-    ) -> RegularResult<ComicArchiveSnapshot> {
+    ) -> BaseResult<ComicArchiveSnapshot> {
         get_snapshot_excluded(context, oper.comic_id)
     }
 }
 
 impl<'a> Step<CommitComicArchive<'a>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &CommitComicArchive<'a>,
-    ) -> RegularResult<()> {
+    ) -> BaseResult<()> {
         commit(context, oper.write)
     }
 }

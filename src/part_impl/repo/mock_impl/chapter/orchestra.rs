@@ -17,7 +17,7 @@ use crate::part_impl::repo::mock_impl::chapter::{
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
 };
-use crate::result::{RegularError, RegularResult};
+use crate::result::{BaseError, BaseResult, accept};
 use crate::value::chapter::ChapterInclOpt;
 
 fn list_chapter_infos(
@@ -97,28 +97,28 @@ fn list_pinned_chapter_infos(
 }
 
 impl<'a> Run<ListChapterInfos<'a>> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &ListChapterInfos<'a>,
-    ) -> RegularResult<Vec<ChapterInfo>> {
+    ) -> BaseResult<Vec<ChapterInfo>> {
         //
         let state = self.state.lock().unwrap();
 
-        Ok(list_chapter_infos(&state, oper.spec))
+        accept(list_chapter_infos(&state, oper.spec))
     }
 }
 
 impl<'a, 'b> Run<GetChapterInfo<'a, 'b>> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &GetChapterInfo<'a, 'b>,
-    ) -> RegularResult<ChapterInfo> {
+    ) -> BaseResult<ChapterInfo> {
         //
         let state = self.state.lock().unwrap();
 
@@ -127,84 +127,84 @@ impl<'a, 'b> Run<GetChapterInfo<'a, 'b>> for Mock {
 }
 
 impl<'a, 'b> Run<FindPinnedChapterInfo<'a, 'b>> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &FindPinnedChapterInfo<'a, 'b>,
-    ) -> RegularResult<Option<ChapterInfo>> {
+    ) -> BaseResult<Option<ChapterInfo>> {
         //
         let state = self.state.lock().unwrap();
 
-        Ok(find_pinned_chapter_info(&state, oper.comic_id, oper.incls))
+        accept(find_pinned_chapter_info(&state, oper.comic_id, oper.incls))
     }
 }
 
 impl<'a> Run<ListPinnedChapterInfos<'a>> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &ListPinnedChapterInfos<'a>,
-    ) -> RegularResult<HashMap<String, ChapterInfo>> {
+    ) -> BaseResult<HashMap<String, ChapterInfo>> {
         //
         let state = self.state.lock().unwrap();
 
-        Ok(list_pinned_chapter_infos(&state, oper.comic_ids))
+        accept(list_pinned_chapter_infos(&state, oper.comic_ids))
     }
 }
 
 impl<'a, 'b> Step<GetChapterInfo<'a, 'b>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &GetChapterInfo<'a, 'b>,
-    ) -> RegularResult<ChapterInfo> {
+    ) -> BaseResult<ChapterInfo> {
         get_chapter_by_id(&context.state, oper.id, oper.incls)
     }
 }
 
 impl<'a, 'b> Step<GetChapterInfoExcluded<'a, 'b>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &GetChapterInfoExcluded<'a, 'b>,
-    ) -> RegularResult<ChapterInfo> {
+    ) -> BaseResult<ChapterInfo> {
         get_chapter_by_id(&context.state, oper.id, oper.incls)
     }
 }
 
 impl<'a> Step<ListChapterInfosExcluded<'a>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &ListChapterInfosExcluded<'a>,
-    ) -> RegularResult<Vec<ChapterInfo>> {
-        Ok(list_all_chapters(&context.state, oper.comic_id))
+    ) -> BaseResult<Vec<ChapterInfo>> {
+        accept(list_all_chapters(&context.state, oper.comic_id))
     }
 }
 
 impl<'a, 'b> Step<FindPinnedChapterInfo<'a, 'b>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &FindPinnedChapterInfo<'a, 'b>,
-    ) -> RegularResult<Option<ChapterInfo>> {
-        Ok(find_pinned_chapter_info(
+    ) -> BaseResult<Option<ChapterInfo>> {
+        accept(find_pinned_chapter_info(
             &context.state,
             oper.comic_id,
             oper.incls,
@@ -213,27 +213,27 @@ impl<'a, 'b> Step<FindPinnedChapterInfo<'a, 'b>, MockContext> for Mock {
 }
 
 impl<'a> Step<CreateChapter<'a>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &CreateChapter<'a>,
-    ) -> RegularResult<ChapterInfo> {
+    ) -> BaseResult<ChapterInfo> {
         create_chapter(&mut context.state, oper.entry)
     }
 }
 
 impl<'a> Step<UpdateChapter<'a>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &UpdateChapter<'a>,
-    ) -> RegularResult<()> {
+    ) -> BaseResult<()> {
         //
         let chapter_info = context
             .state
@@ -252,19 +252,19 @@ impl<'a> Step<UpdateChapter<'a>, MockContext> for Mock {
 
         chapter_info.updated_at = now();
 
-        Ok(())
+        accept(())
     }
 }
 
 impl<'a> Step<UpdateChapterStage<'a>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &UpdateChapterStage<'a>,
-    ) -> RegularResult<()> {
+    ) -> BaseResult<()> {
         //
         let chapter_info = context
             .state
@@ -277,19 +277,19 @@ impl<'a> Step<UpdateChapterStage<'a>, MockContext> for Mock {
 
         chapter_info.updated_at = now();
 
-        Ok(())
+        accept(())
     }
 }
 
 impl<'a> Step<SetChapterPageCounters<'a>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &SetChapterPageCounters<'a>,
-    ) -> RegularResult<()> {
+    ) -> BaseResult<()> {
         //
         let chapter_info = context
             .state
@@ -308,19 +308,19 @@ impl<'a> Step<SetChapterPageCounters<'a>, MockContext> for Mock {
 
         chapter_info.updated_at = now();
 
-        Ok(())
+        accept(())
     }
 }
 
 impl<'a> Step<AdjustChapterUnitCounters<'a>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &AdjustChapterUnitCounters<'a>,
-    ) -> RegularResult<()> {
+    ) -> BaseResult<()> {
         //
         let chapter_info = context
             .state
@@ -337,19 +337,19 @@ impl<'a> Step<AdjustChapterUnitCounters<'a>, MockContext> for Mock {
 
         chapter_info.updated_at = now();
 
-        Ok(())
+        accept(())
     }
 }
 
 impl<'a> Step<UnpinOtherChapters<'a>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &UnpinOtherChapters<'a>,
-    ) -> RegularResult<()> {
+    ) -> BaseResult<()> {
         //
         for chapter_info in &mut context.state.chapters {
             if chapter_info.comic_id == oper.comic_id
@@ -361,19 +361,19 @@ impl<'a> Step<UnpinOtherChapters<'a>, MockContext> for Mock {
             }
         }
 
-        Ok(())
+        accept(())
     }
 }
 
 impl<'a> Step<DeleteChapter<'a>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &DeleteChapter<'a>,
-    ) -> RegularResult<()> {
+    ) -> BaseResult<()> {
         //
         let position = context
             .state
@@ -406,6 +406,6 @@ impl<'a> Step<DeleteChapter<'a>, MockContext> for Mock {
             .assignments
             .retain(|assignment_info| assignment_info.chapter_id != oper.id);
 
-        Ok(())
+        accept(())
     }
 }

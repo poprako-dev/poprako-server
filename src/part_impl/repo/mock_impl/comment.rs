@@ -12,7 +12,7 @@ use crate::part::repo::oper::comment::{CreateComment, ListCommentInfos};
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
 };
-use crate::result::{RegularError, RegularResult};
+use crate::result::{BaseError, BaseResult, accept};
 use crate::value::comment::CommentInclOpt;
 
 impl CommentRepo<MockContext> for Mock {}
@@ -78,7 +78,7 @@ fn list_comments(
 fn create_comment(
     state: &mut MockState,
     entry: &CommentEntry,
-) -> RegularResult<CommentInfo> {
+) -> BaseResult<CommentInfo> {
     //
     if state
         .comments
@@ -99,33 +99,33 @@ fn create_comment(
 
     state.comments.push(comment_info.clone());
 
-    Ok(comment_info)
+    accept(comment_info)
 }
 
 impl Run<ListCommentInfos<'_>> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &ListCommentInfos<'_>,
-    ) -> RegularResult<Vec<CommentInfo>> {
+    ) -> BaseResult<Vec<CommentInfo>> {
         //
         let state = self.state.lock().unwrap();
 
-        Ok(list_comments(&state, oper.spec))
+        accept(list_comments(&state, oper.spec))
     }
 }
 
 impl Step<CreateComment<'_>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &CreateComment<'_>,
-    ) -> RegularResult<CommentInfo> {
+    ) -> BaseResult<CommentInfo> {
         create_comment(&mut context.state, oper.entry)
     }
 }

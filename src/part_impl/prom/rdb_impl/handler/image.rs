@@ -21,7 +21,7 @@ use crate::part::repo::team::TeamRepo;
 use crate::part::repo::user::UserRepo;
 use crate::part_impl::prom::rdb_impl::handler::TaskFlow;
 use crate::part_impl::shared::RdbContext;
-use crate::result::{RegularError, RegularResult};
+use crate::result::{BaseError, BaseResult, accept};
 
 enum ResourceState {
     /// The image version matches the current DB record.
@@ -36,14 +36,14 @@ fn classify_current_version(
     current_version: u32,
     image_version: u32,
     error_message: &'static str,
-) -> RegularResult<ResourceState> {
+) -> BaseResult<ResourceState> {
     match current_version == image_version {
         //
-        true => Err(RegularError::Unrecoverable {
+        true => Err(BaseError::Unrecoverable {
             message: error_message.into(),
         }),
 
-        false => Ok(ResourceState::Stale),
+        false => accept(ResourceState::Stale),
     }
 }
 
@@ -56,7 +56,7 @@ pub async fn handle<N, R, I>(
     task: &Payload,
 ) -> TaskFlow
 where
-    N: Nucl<Context = RdbContext, Error = RegularError>,
+    N: Nucl<Context = RdbContext, Error = BaseError>,
     R: UserRepo<RdbContext>
         + TeamRepo<RdbContext>
         + ComicRepo<RdbContext>
@@ -103,7 +103,7 @@ async fn handle_check_uploaded<N, R, I>(
     image_version: u32,
 ) -> TaskFlow
 where
-    N: Nucl<Context = RdbContext, Error = RegularError>,
+    N: Nucl<Context = RdbContext, Error = BaseError>,
     R: UserRepo<RdbContext>
         + TeamRepo<RdbContext>
         + ComicRepo<RdbContext>
@@ -149,7 +149,7 @@ async fn process_existing_image<N, R, I>(
     image_version: u32,
 ) -> TaskFlow
 where
-    N: Nucl<Context = RdbContext, Error = RegularError>,
+    N: Nucl<Context = RdbContext, Error = BaseError>,
     R: UserRepo<RdbContext>
         + TeamRepo<RdbContext>
         + ComicRepo<RdbContext>
@@ -183,9 +183,9 @@ async fn mark_current_or_classify<N, R>(
     kind: ResourceKind,
     resource_id: &str,
     image_version: u32,
-) -> RegularResult<ResourceState>
+) -> BaseResult<ResourceState>
 where
-    N: Nucl<Context = RdbContext, Error = RegularError>,
+    N: Nucl<Context = RdbContext, Error = BaseError>,
     R: UserRepo<RdbContext>
         + TeamRepo<RdbContext>
         + ComicRepo<RdbContext>
@@ -204,9 +204,9 @@ where
             )
             .await
             {
-                Ok(()) => Ok(ResourceState::Current),
+                Ok(()) => accept(ResourceState::Current),
 
-                Err(RegularError::Expected { .. }) => {
+                Err(BaseError::Expected { .. }) => {
                     classify_expected_mark(
                         repo,
                         context,
@@ -222,7 +222,7 @@ where
         })
         .await?;
 
-    Ok(resource_state)
+    accept(resource_state)
 }
 
 #[instrument(level = "info", skip_all)]
@@ -232,7 +232,7 @@ async fn mark_uploaded_by_kind<R>(
     kind: ResourceKind,
     resource_id: &str,
     image_version: u32,
-) -> RegularResult<()>
+) -> BaseResult<()>
 where
     R: UserRepo<RdbContext>
         + TeamRepo<RdbContext>
@@ -296,7 +296,7 @@ async fn classify_expected_mark<R>(
     kind: ResourceKind,
     resource_id: &str,
     image_version: u32,
-) -> RegularResult<ResourceState>
+) -> BaseResult<ResourceState>
 where
     R: UserRepo<RdbContext>
         + TeamRepo<RdbContext>
@@ -319,8 +319,8 @@ where
                     "[RdbPromImageHandler::classify_expected_mark] current user avatar version failed to mark uploaded",
                 ),
 
-                Err(RegularError::Expected { .. }) => {
-                    Ok(ResourceState::Missing)
+                Err(BaseError::Expected { .. }) => {
+                    accept(ResourceState::Missing)
                 }
 
                 Err(error) => Err(error),
@@ -339,8 +339,8 @@ where
                     "[RdbPromImageHandler::classify_expected_mark] current team avatar version failed to mark uploaded",
                 ),
 
-                Err(RegularError::Expected { .. }) => {
-                    Ok(ResourceState::Missing)
+                Err(BaseError::Expected { .. }) => {
+                    accept(ResourceState::Missing)
                 }
 
                 Err(error) => Err(error),
@@ -364,8 +364,8 @@ where
                     "[RdbPromImageHandler::classify_expected_mark] current comic cover version failed to mark uploaded",
                 ),
 
-                Err(RegularError::Expected { .. }) => {
-                    Ok(ResourceState::Missing)
+                Err(BaseError::Expected { .. }) => {
+                    accept(ResourceState::Missing)
                 }
 
                 Err(error) => Err(error),
@@ -383,8 +383,8 @@ where
                     "[RdbPromImageHandler::classify_expected_mark] current page image version failed to mark uploaded",
                 ),
 
-                Err(RegularError::Expected { .. }) => {
-                    Ok(ResourceState::Missing)
+                Err(BaseError::Expected { .. }) => {
+                    accept(ResourceState::Missing)
                 }
 
                 Err(error) => Err(error),

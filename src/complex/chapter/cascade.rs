@@ -16,43 +16,41 @@ use crate::part::repo::oper::comic::{
     TouchComicLastActive, UpdateComicChapterCount,
 };
 use crate::part::repo::oper::page::{DeletePages, ListPageInfos};
-use crate::result::{RegularError, RegularResult};
+use crate::result::{BaseError, BaseResult, accept};
 
 impl ChapterComplex {
     /// Appends page image deletes inside an existing transaction context.
     pub async fn clean_uploaded_images<P>(
         proxy: &mut P,
         chapter_id: &str,
-    ) -> RegularResult<()>
+    ) -> BaseResult<()>
     where
-        P: for<'a> Proxy<ListPageInfos<'a>, Error = RegularError>
+        P: for<'a> Proxy<ListPageInfos<'a>, Error = BaseError>
             + for<'t, 'a> Proxy<
                 DeferBatch<'t, 'a, String, Payload, ()>,
-                Error = RegularError,
+                Error = BaseError,
             >,
     {
         prom_image_deletes(proxy, chapter_id).await
     }
 
     /// Deletes a chapter subtree inside an existing transaction context.
-    pub async fn delete_cascade<P>(proxy: &mut P, id: &str) -> RegularResult<()>
+    pub async fn delete_cascade<P>(proxy: &mut P, id: &str) -> BaseResult<()>
     where
-        P: for<'a, 'b> Proxy<
-                GetChapterInfoExcluded<'a, 'b>,
-                Error = RegularError,
-            > + for<'a> Proxy<ListPageInfos<'a>, Error = RegularError>
-            + for<'a> Proxy<DeleteAssignmentInvitations<'a>, Error = RegularError>
-            + for<'a> Proxy<DeleteAssignments<'a>, Error = RegularError>
-            + for<'a> Proxy<DeletePages<'a>, Error = RegularError>
-            + for<'a> Proxy<DeleteChapter<'a>, Error = RegularError>
-            + for<'a> Proxy<ListChapterInfosExcluded<'a>, Error = RegularError>
-            + for<'a> Proxy<UpdateChapter<'a>, Error = RegularError>
-            + for<'a> Proxy<UnpinOtherChapters<'a>, Error = RegularError>
-            + for<'a> Proxy<UpdateComicChapterCount<'a>, Error = RegularError>
-            + for<'a> Proxy<TouchComicLastActive<'a>, Error = RegularError>
+        P: for<'a, 'b> Proxy<GetChapterInfoExcluded<'a, 'b>, Error = BaseError>
+            + for<'a> Proxy<ListPageInfos<'a>, Error = BaseError>
+            + for<'a> Proxy<DeleteAssignmentInvitations<'a>, Error = BaseError>
+            + for<'a> Proxy<DeleteAssignments<'a>, Error = BaseError>
+            + for<'a> Proxy<DeletePages<'a>, Error = BaseError>
+            + for<'a> Proxy<DeleteChapter<'a>, Error = BaseError>
+            + for<'a> Proxy<ListChapterInfosExcluded<'a>, Error = BaseError>
+            + for<'a> Proxy<UpdateChapter<'a>, Error = BaseError>
+            + for<'a> Proxy<UnpinOtherChapters<'a>, Error = BaseError>
+            + for<'a> Proxy<UpdateComicChapterCount<'a>, Error = BaseError>
+            + for<'a> Proxy<TouchComicLastActive<'a>, Error = BaseError>
             + for<'t, 'a> Proxy<
                 DeferBatch<'t, 'a, String, Payload, ()>,
-                Error = RegularError,
+                Error = BaseError,
             >,
     {
         // SAFETY: Lock the root chapter row (FOR UPDATE) to serialize with
@@ -111,7 +109,7 @@ impl ChapterComplex {
             })
             .await?;
 
-        Ok(())
+        accept(())
     }
 }
 
@@ -120,12 +118,12 @@ impl ChapterComplex {
 async fn prom_image_deletes<P>(
     proxy: &mut P,
     chapter_id: &str,
-) -> RegularResult<()>
+) -> BaseResult<()>
 where
-    P: for<'a> Proxy<ListPageInfos<'a>, Error = RegularError>
+    P: for<'a> Proxy<ListPageInfos<'a>, Error = BaseError>
         + for<'t, 'a> Proxy<
             DeferBatch<'t, 'a, String, Payload, ()>,
-            Error = RegularError,
+            Error = BaseError,
         >,
 {
     let page_infos = proxy
@@ -160,7 +158,7 @@ where
 
     proxy.exec(&DeferBatch::new(&tasks)).await?;
 
-    Ok(())
+    accept(())
 }
 
 /// After deleting a pinned chapter, repin the most recent remaining chapter
@@ -168,17 +166,17 @@ where
 async fn repin_latest_chapter<P>(
     proxy: &mut P,
     comic_id: &str,
-) -> RegularResult<()>
+) -> BaseResult<()>
 where
-    P: for<'a> Proxy<ListChapterInfosExcluded<'a>, Error = RegularError>
-        + for<'a> Proxy<UpdateChapter<'a>, Error = RegularError>
-        + for<'a> Proxy<UnpinOtherChapters<'a>, Error = RegularError>,
+    P: for<'a> Proxy<ListChapterInfosExcluded<'a>, Error = BaseError>
+        + for<'a> Proxy<UpdateChapter<'a>, Error = BaseError>
+        + for<'a> Proxy<UnpinOtherChapters<'a>, Error = BaseError>,
 {
     let chapter_infos =
         proxy.exec(&ListChapterInfosExcluded { comic_id }).await?;
 
     let Some(chapter_info) = chapter_infos.first() else {
-        return Ok(());
+        return accept(());
     };
 
     let chapter_info_update = ChapterInfoUpdate {
@@ -200,5 +198,5 @@ where
         })
         .await?;
 
-    Ok(())
+    accept(())
 }

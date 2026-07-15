@@ -15,7 +15,7 @@ use crate::part::repo::oper::assignment::{
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
 };
-use crate::result::{RegularError, RegularResult};
+use crate::result::{BaseError, BaseResult, accept};
 use crate::value::assignment::AssignmentInclOpt;
 use crate::value::role::RoleField;
 
@@ -76,7 +76,7 @@ fn get_assignment(
     state: &MockState,
     id: &str,
     incl_opt: &[AssignmentInclOpt],
-) -> RegularResult<AssignmentInfo> {
+) -> BaseResult<AssignmentInfo> {
     //
     let mut assignment_info = state
         .assignments
@@ -87,7 +87,7 @@ fn get_assignment(
 
     apply_assignment_incls(state, &mut assignment_info, incl_opt);
 
-    Ok(assignment_info)
+    accept(assignment_info)
 }
 
 fn list_assignments(
@@ -210,7 +210,7 @@ fn list_assignments_by_chapter_id_excluded(
 fn create_assignment(
     state: &mut MockState,
     entry: &AssignmentEntry,
-) -> RegularResult<AssignmentInfo> {
+) -> BaseResult<AssignmentInfo> {
     //
     if state
         .assignments
@@ -242,13 +242,10 @@ fn create_assignment(
 
     state.assignments.push(assignment_info.clone());
 
-    Ok(assignment_info)
+    accept(assignment_info)
 }
 
-fn delete_assignment_by_id(
-    state: &mut MockState,
-    id: &str,
-) -> RegularResult<()> {
+fn delete_assignment_by_id(state: &mut MockState, id: &str) -> BaseResult<()> {
     //
     let index = state
         .assignments
@@ -258,21 +255,21 @@ fn delete_assignment_by_id(
 
     state.assignments.remove(index);
 
-    Ok(())
+    accept(())
 }
 
 fn delete_assignments_by_chapter_id(
     state: &mut MockState,
     chapter_id: &str,
-) -> RegularResult<()> {
+) -> BaseResult<()> {
     //
     state.assignments.retain(|a| a.chapter_id != chapter_id);
 
-    Ok(())
+    accept(())
 }
 
 impl Run<FindAssignmentInfo<'_, '_>> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
@@ -298,12 +295,12 @@ impl Run<FindAssignmentInfo<'_, '_>> for Mock {
             ),
         };
 
-        Ok(assignment_info)
+        accept(assignment_info)
     }
 }
 
 impl Run<ListAssignmentInfos<'_, '_>> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
@@ -328,12 +325,12 @@ impl Run<ListAssignmentInfos<'_, '_>> for Mock {
             ),
         };
 
-        Ok(assignment_infos)
+        accept(assignment_infos)
     }
 }
 
 impl Run<GetAssignmentInfo<'_, '_>> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
@@ -348,7 +345,7 @@ impl Run<GetAssignmentInfo<'_, '_>> for Mock {
 }
 
 impl Step<FindAssignmentInfo<'_, '_>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
@@ -376,12 +373,12 @@ impl Step<FindAssignmentInfo<'_, '_>, MockContext> for Mock {
             ),
         };
 
-        Ok(assignment_info)
+        accept(assignment_info)
     }
 }
 
 impl Step<ListAssignmentInfosExcluded<'_>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
@@ -391,7 +388,7 @@ impl Step<ListAssignmentInfosExcluded<'_>, MockContext> for Mock {
     ) -> Result<Vec<AssignmentInfo>, Self::Error> {
         match oper {
             ListAssignmentInfosExcluded::Chapter { chapter_id } => {
-                Ok(list_assignments_by_chapter_id_excluded(
+                accept(list_assignments_by_chapter_id_excluded(
                     &context.state,
                     chapter_id,
                 ))
@@ -401,7 +398,7 @@ impl Step<ListAssignmentInfosExcluded<'_>, MockContext> for Mock {
 }
 
 impl Step<ListAssignmentInfos<'_, '_>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
@@ -428,12 +425,12 @@ impl Step<ListAssignmentInfos<'_, '_>, MockContext> for Mock {
             ),
         };
 
-        Ok(assignment_infos)
+        accept(assignment_infos)
     }
 }
 
 impl Step<CreateAssignment<'_>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
@@ -446,7 +443,7 @@ impl Step<CreateAssignment<'_>, MockContext> for Mock {
 }
 
 impl Step<UpdateAssignmentRoles<'_>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
@@ -466,12 +463,12 @@ impl Step<UpdateAssignmentRoles<'_>, MockContext> for Mock {
 
         assignment_info.updated_at = now();
 
-        Ok(assignment_info.clone())
+        accept(assignment_info.clone())
     }
 }
 
 impl Step<DeleteAssignments<'_>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(

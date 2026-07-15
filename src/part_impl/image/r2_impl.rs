@@ -15,7 +15,7 @@ use url::Url;
 use poprako_util::i18n::trl;
 
 use crate::part::image::{ImageManager, ImagePool};
-use crate::result::{ExpectedVariant, RegularError, RegularResult};
+use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 
 #[cfg(test)]
 mod tests;
@@ -96,7 +96,7 @@ impl R2ImagePool {
 
 impl ImagePool for R2ImagePool {
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn gen_download_url(&self, key: &str) -> RegularResult<Url> {
+    async fn gen_download_url(&self, key: &str) -> BaseResult<Url> {
         build_public_url(&self.domain, key, "gen_download_url")
     }
 
@@ -104,7 +104,7 @@ impl ImagePool for R2ImagePool {
     async fn gen_thumbnail_download_url(
         &self,
         original_key: &str,
-    ) -> RegularResult<Url> {
+    ) -> BaseResult<Url> {
         //
         let thumbnail_path =
             format!("cdn-cgi/image/{}/{}", THUMBNAIL_TRANSFORM, original_key);
@@ -117,16 +117,16 @@ impl ImagePool for R2ImagePool {
     }
 
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn get_upload_url(&self, key: &str) -> RegularResult<Url> {
+    async fn get_upload_url(&self, key: &str) -> BaseResult<Url> {
         //
         let content_type =
-            detect_content_type(key).ok_or_else(|| RegularError::Expected {
+            detect_content_type(key).ok_or_else(|| BaseError::Expected {
                 variant: ExpectedVariant::Args,
                 message: trl("error-unsupported-file-type"),
             })?;
 
         let presigning_config = PresigningConfig::expires_in(PUT_SIGNED_EXPIRATION)
-            .map_err(|err| RegularError::Unrecoverable {
+            .map_err(|err| BaseError::Unrecoverable {
                 message: format!(
                     "[R2ImagePool::get_upload_url] failed to build presigning config: {}",
                     err
@@ -141,14 +141,14 @@ impl ImagePool for R2ImagePool {
             .content_type(content_type)
             .presigned(presigning_config)
             .await
-            .map_err(|err| RegularError::Unrecoverable {
+            .map_err(|err| BaseError::Unrecoverable {
                 message: format!(
                     "[R2ImagePool::get_upload_url] failed to generate presigned put URL: {}",
                     err
                 ),
             })?;
 
-        Url::parse(presigned_request.uri()).map_err(|err| RegularError::Unrecoverable {
+        Url::parse(presigned_request.uri()).map_err(|err| BaseError::Unrecoverable {
             message: format!(
                 "[R2ImagePool::get_upload_url] failed to parse presigned URI: {}",
                 err
@@ -159,7 +159,7 @@ impl ImagePool for R2ImagePool {
 
 impl ImageManager for R2ImagePool {
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn head_object(&self, key: &str) -> RegularResult<bool> {
+    async fn head_object(&self, key: &str) -> BaseResult<bool> {
         match self
             .client
             .head_object()
@@ -168,15 +168,15 @@ impl ImageManager for R2ImagePool {
             .send()
             .await
         {
-            Ok(_) => Ok(true),
+            Ok(_) => accept(true),
 
             Err(SdkError::ServiceError(e))
                 if matches!(e.err(), HeadObjectError::NotFound(_)) =>
             {
-                Ok(false)
+                accept(false)
             }
 
-            Err(e) => Err(RegularError::Unrecoverable {
+            Err(e) => Err(BaseError::Unrecoverable {
                 message: format!(
                     "[R2ImagePool::head_object] failed to check '{}': {}",
                     key, e
@@ -186,7 +186,7 @@ impl ImageManager for R2ImagePool {
     }
 
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn delete_object(&self, key: &str) -> RegularResult<()> {
+    async fn delete_object(&self, key: &str) -> BaseResult<()> {
         self.client
             .delete_object()
             .bucket(&self.bucket)
@@ -194,7 +194,7 @@ impl ImageManager for R2ImagePool {
             .send()
             .await
             .map(|_| ())
-            .map_err(|e| RegularError::Unrecoverable {
+            .map_err(|e| BaseError::Unrecoverable {
                 message: format!(
                     "[R2ImagePool::delete_object] failed to delete '{}': {}",
                     key, e
@@ -208,10 +208,10 @@ fn build_public_url(
     domain: &str,
     path: &str,
     operation: &str,
-) -> RegularResult<Url> {
+) -> BaseResult<Url> {
     //
     if domain.is_empty() {
-        return Err(RegularError::Unrecoverable {
+        return Err(BaseError::Unrecoverable {
             message: format!(
                 "[R2ImagePool::{}] custom domain is not configured",
                 operation
@@ -233,7 +233,7 @@ fn build_public_url(
             }
         };
 
-    Url::parse(&url_string).map_err(|err| RegularError::Unrecoverable {
+    Url::parse(&url_string).map_err(|err| BaseError::Unrecoverable {
         message: format!(
             "[R2ImagePool::{}] failed to parse URL '{}': {}",
             operation, url_string, err

@@ -4,7 +4,7 @@ use crate::model::member_invitation::MemberInvitationInfo;
 use crate::model::user::UserInfo;
 use crate::part_impl::repo::rdb_impl::incl::{self, Incl, UserByIds};
 use crate::part_impl::shared::RdbConn;
-use crate::result::RegularResult;
+use crate::result::{BaseResult, accept};
 use crate::value::member_invitation::MemberInvitationInclOpt;
 
 /// Include struct for eager-loading invitor [`UserInfo`] into [`MemberInvitationInfo`] query results.
@@ -30,11 +30,11 @@ pub async fn populate_member_invitation_incls(
     conn: &mut RdbConn,
     infos: &mut [MemberInvitationInfo],
     incl_opt: &[MemberInvitationInclOpt],
-) -> RegularResult<()> {
+) -> BaseResult<()> {
     //
     if incl_opt.contains(&MemberInvitationInclOpt::Invitor) {
         incl::populate::<MemberInvitationInvitorIncl>(conn, infos).await?;
     }
 
-    Ok(())
+    accept(())
 }

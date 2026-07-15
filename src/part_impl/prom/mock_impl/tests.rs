@@ -44,7 +44,7 @@ async fn defer_batch_records_payloads() {
 
             prom.step(context, &DeferBatch::new(&tasks)).await?;
 
-            Ok::<(), RegularError>(())
+            Ok::<(), BaseError>(())
         })
         .await
         .is_ok()
@@ -163,7 +163,7 @@ async fn purge_expired_invitations() {
 
         prom.step(context, &DeferBatch::new(&tasks)).await?;
 
-        Ok::<(), RegularError>(())
+        Ok::<(), BaseError>(())
     })
     .await
     .ok()

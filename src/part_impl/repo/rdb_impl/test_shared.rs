@@ -25,7 +25,7 @@ use crate::part_impl::drive::rdb_impl::RdbDrive;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, schema};
 use crate::part_impl::shared::RdbCore;
 use crate::part_impl::shared::result::diesel as diesel_error;
-use crate::result::{RegularError, RegularResult};
+use crate::result::{BaseError, BaseResult, accept};
 
 pub use self::form::{
     chapter_entry, comic_entry, page_entry, team_entry, user_entry,
@@ -100,7 +100,7 @@ pub async fn reset(shared: &RdbCore, prefix: &str) {
     assert_no_leftovers(shared, prefix).await.unwrap();
 }
 
-pub async fn cleanup(shared: &RdbCore, prefix: &str) -> RegularResult<()> {
+pub async fn cleanup(shared: &RdbCore, prefix: &str) -> BaseResult<()> {
     //
     let mut conn = shared.get().await?;
 
@@ -221,13 +221,13 @@ pub async fn cleanup(shared: &RdbCore, prefix: &str) -> RegularResult<()> {
     .await
     .map_err(diesel_error)?;
 
-    Ok(())
+    accept(())
 }
 
 pub async fn assert_no_leftovers(
     shared: &RdbCore,
     prefix: &str,
-) -> RegularResult<()> {
+) -> BaseResult<()> {
     //
     let mut conn = shared.get().await?;
 
@@ -369,7 +369,7 @@ pub async fn assert_no_leftovers(
 
     assert_eq!(workset_count, 0);
 
-    Ok(())
+    accept(())
 }
 
 pub async fn create_user(shared: &RdbCore, user_entry: &UserEntry) {
@@ -383,7 +383,7 @@ pub async fn create_user(shared: &RdbCore, user_entry: &UserEntry) {
         repo.step(context, &CreateUser { entry: user_entry })
             .await?;
 
-        Ok::<(), RegularError>(())
+        Ok::<(), BaseError>(())
     })
     .await
     .ok()
@@ -444,7 +444,7 @@ pub async fn seed_workset(shared: &RdbCore, prefix: &str) -> WorksetFixture {
         )
         .await?;
 
-        Ok::<(), RegularError>(())
+        Ok::<(), BaseError>(())
     })
     .await
     .ok()
@@ -497,7 +497,7 @@ pub async fn seed_comic(shared: &RdbCore, prefix: &str) -> ComicFixture {
         )
         .await?;
 
-        Ok::<(), RegularError>(())
+        Ok::<(), BaseError>(())
     })
     .await
     .ok()
@@ -535,7 +535,7 @@ pub async fn seed_chapter(shared: &RdbCore, prefix: &str) -> ChapterFixture {
         )
         .await?;
 
-        Ok::<(), RegularError>(())
+        Ok::<(), BaseError>(())
     })
     .await
     .ok()
@@ -570,7 +570,7 @@ pub async fn seed_page(shared: &RdbCore, prefix: &str) -> PageFixture {
         )
         .await?;
 
-        Ok::<(), RegularError>(())
+        Ok::<(), BaseError>(())
     })
     .await
     .ok()

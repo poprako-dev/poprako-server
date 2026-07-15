@@ -20,7 +20,7 @@ use crate::part_impl::repo::rdb_impl::entity::system_mail::{
 use crate::part_impl::repo::rdb_impl::schema::t_system_mail::dsl::*;
 use crate::part_impl::shared::result::{diesel, expected};
 use crate::part_impl::shared::{RdbConn, RdbContext};
-use crate::result::{ExpectedVariant, RegularError, RegularResult};
+use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 
 #[cfg(all(test, feature = "repo"))]
 mod tests;
@@ -31,10 +31,7 @@ impl SystemMailRepo<RdbContext> for RdbRepo {}
 
 /// Send a single system mail by inserting its row.
 #[instrument(level = "info", err(Debug), skip_all)]
-async fn send(
-    conn: &mut RdbConn,
-    entry: &SystemMailEntry,
-) -> RegularResult<()> {
+async fn send(conn: &mut RdbConn, entry: &SystemMailEntry) -> BaseResult<()> {
     //
     let entry = SystemMailRowEntry::from(entry);
 
@@ -44,7 +41,7 @@ async fn send(
         .await
         .map_err(diesel)?;
 
-    Ok(())
+    accept(())
 }
 
 /// Batch-send system mail by inserting rows for every entry.
@@ -52,7 +49,7 @@ async fn send(
 async fn send_batch(
     conn: &mut RdbConn,
     entries: &[SystemMailEntry],
-) -> RegularResult<()> {
+) -> BaseResult<()> {
     //
     let entries: Vec<SystemMailRowEntry<'_>> =
         entries.iter().map(SystemMailRowEntry::from).collect();
@@ -63,7 +60,7 @@ async fn send_batch(
         .await
         .map_err(diesel)?;
 
-    Ok(())
+    accept(())
 }
 
 /// Query system mail selected by a list specification.
@@ -71,7 +68,7 @@ async fn send_batch(
 async fn list_infos(
     conn: &mut RdbConn,
     spec: &SystemMailInfoListSpec,
-) -> RegularResult<Vec<SystemMailInfo>> {
+) -> BaseResult<Vec<SystemMailInfo>> {
     //
     let mut query = t_system_mail
         .filter(f_receiver_id.eq(spec.receiver_id.as_str()))
@@ -95,7 +92,7 @@ async fn list_infos(
         .await
         .map_err(diesel)?;
 
-    Ok(rows.into_iter().map(Into::into).collect())
+    accept(rows.into_iter().map(Into::into).collect())
 }
 
 /// Mark a system mail as read, authorizing by the owning receiver.
@@ -104,7 +101,7 @@ async fn mark_read(
     conn: &mut RdbConn,
     id: &str,
     user_id: &str,
-) -> RegularResult<()> {
+) -> BaseResult<()> {
     //
     let row: Option<SystemMailRow> = t_system_mail
         .filter(f_id.eq(id))
@@ -117,7 +114,7 @@ async fn mark_read(
     let mail = row.ok_or_else(|| expected("error-system-mail-not-found"))?;
 
     if mail.f_receiver_id != user_id {
-        return Err(RegularError::Expected {
+        return Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
             message: "error-forbidden".into(),
         });
@@ -129,44 +126,44 @@ async fn mark_read(
         .await
         .map_err(diesel)?;
 
-    Ok(())
+    accept(())
 }
 
 impl Run<SendSystemMail<'_>> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn run(&self, oper: &SendSystemMail<'_>) -> RegularResult<()> {
+    async fn run(&self, oper: &SendSystemMail<'_>) -> BaseResult<()> {
         submit_query!(self.core, send, oper.entry)
     }
 }
 
 impl Run<SendSystemMails<'_>> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn run(&self, oper: &SendSystemMails<'_>) -> RegularResult<()> {
+    async fn run(&self, oper: &SendSystemMails<'_>) -> BaseResult<()> {
         submit_query!(self.core, send_batch, oper.entries)
     }
 }
 
 impl Run<ListSystemMailInfos<'_>> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &ListSystemMailInfos<'_>,
-    ) -> RegularResult<Vec<SystemMailInfo>> {
+    ) -> BaseResult<Vec<SystemMailInfo>> {
         submit_query!(self.core, list_infos, oper.spec)
     }
 }
 
 impl Run<MarkSystemMailRead<'_>> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn run(&self, oper: &MarkSystemMailRead<'_>) -> RegularResult<()> {
+    async fn run(&self, oper: &MarkSystemMailRead<'_>) -> BaseResult<()> {
         submit_query!(self.core, mark_read, oper.id, oper.user_id)
     }
 }

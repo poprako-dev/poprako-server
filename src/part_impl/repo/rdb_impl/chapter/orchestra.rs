@@ -19,40 +19,40 @@ use crate::part_impl::repo::rdb_impl::chapter::{
     update_info, update_stage,
 };
 use crate::part_impl::shared::RdbContext;
-use crate::result::{RegularError, RegularResult};
+use crate::result::{BaseError, BaseResult};
 
 impl<'a, 'b> Run<GetChapterInfo<'a, 'b>> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &GetChapterInfo<'a, 'b>,
-    ) -> RegularResult<ChapterInfo> {
+    ) -> BaseResult<ChapterInfo> {
         submit_query!(self.core, get_info_by_id, oper.id, oper.incls)
     }
 }
 
 impl<'a> Run<ListChapterInfos<'a>> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &ListChapterInfos<'a>,
-    ) -> RegularResult<Vec<ChapterInfo>> {
+    ) -> BaseResult<Vec<ChapterInfo>> {
         submit_query!(self.core, list_infos, oper.spec)
     }
 }
 
 impl<'a, 'b> Run<FindPinnedChapterInfo<'a, 'b>> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &FindPinnedChapterInfo<'a, 'b>,
-    ) -> RegularResult<Option<ChapterInfo>> {
+    ) -> BaseResult<Option<ChapterInfo>> {
         submit_query!(
             self.core,
             find_pinned_info_by_comic_id,
@@ -63,118 +63,118 @@ impl<'a, 'b> Run<FindPinnedChapterInfo<'a, 'b>> for RdbRepo {
 }
 
 impl<'a> Run<ListPinnedChapterInfos<'a>> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &ListPinnedChapterInfos<'a>,
-    ) -> RegularResult<HashMap<String, ChapterInfo>> {
+    ) -> BaseResult<HashMap<String, ChapterInfo>> {
         submit_query!(self.core, list_pinned_infos_by_comic_ids, oper.comic_ids)
     }
 }
 
 impl<'a, 'b> Step<GetChapterInfo<'a, 'b>, RdbContext> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
         oper: &GetChapterInfo<'a, 'b>,
-    ) -> RegularResult<ChapterInfo> {
+    ) -> BaseResult<ChapterInfo> {
         get_info_by_id(context.conn(), oper.id, oper.incls).await
     }
 }
 
 impl<'a, 'b> Step<GetChapterInfoExcluded<'a, 'b>, RdbContext> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
         oper: &GetChapterInfoExcluded<'a, 'b>,
-    ) -> RegularResult<ChapterInfo> {
+    ) -> BaseResult<ChapterInfo> {
         get_info_excluded(context.conn(), oper.id, oper.incls).await
     }
 }
 
 impl<'a> Step<ListChapterInfosExcluded<'a>, RdbContext> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
         oper: &ListChapterInfosExcluded<'a>,
-    ) -> RegularResult<Vec<ChapterInfo>> {
+    ) -> BaseResult<Vec<ChapterInfo>> {
         list_infos_excluded(context.conn(), oper.comic_id).await
     }
 }
 
 impl<'a, 'b> Step<FindPinnedChapterInfo<'a, 'b>, RdbContext> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
         oper: &FindPinnedChapterInfo<'a, 'b>,
-    ) -> RegularResult<Option<ChapterInfo>> {
+    ) -> BaseResult<Option<ChapterInfo>> {
         find_pinned_info_by_comic_id(context.conn(), oper.comic_id, oper.incls)
             .await
     }
 }
 
 impl<'a> Step<CreateChapter<'a>, RdbContext> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
         oper: &CreateChapter<'a>,
-    ) -> RegularResult<ChapterInfo> {
+    ) -> BaseResult<ChapterInfo> {
         create(context.conn(), oper.entry).await
     }
 }
 
 impl<'a> Step<UpdateChapter<'a>, RdbContext> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
         oper: &UpdateChapter<'a>,
-    ) -> RegularResult<()> {
+    ) -> BaseResult<()> {
         update_info(context.conn(), oper.update).await
     }
 }
 
 impl<'a> Step<UpdateChapterStage<'a>, RdbContext> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
         oper: &UpdateChapterStage<'a>,
-    ) -> RegularResult<()> {
+    ) -> BaseResult<()> {
         update_stage(context.conn(), oper.update).await
     }
 }
 
 impl<'a> Step<SetChapterPageCounters<'a>, RdbContext> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
         oper: &SetChapterPageCounters<'a>,
-    ) -> RegularResult<()> {
+    ) -> BaseResult<()> {
         set_page_counters(
             context.conn(),
             oper.id,
@@ -188,40 +188,40 @@ impl<'a> Step<SetChapterPageCounters<'a>, RdbContext> for RdbRepo {
 }
 
 impl<'a> Step<AdjustChapterUnitCounters<'a>, RdbContext> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
         oper: &AdjustChapterUnitCounters<'a>,
-    ) -> RegularResult<()> {
+    ) -> BaseResult<()> {
         adjust_unit_counters(context.conn(), oper.id, &oper.delta).await
     }
 }
 
 impl<'a> Step<UnpinOtherChapters<'a>, RdbContext> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
         oper: &UnpinOtherChapters<'a>,
-    ) -> RegularResult<()> {
+    ) -> BaseResult<()> {
         unpin_others(context.conn(), oper.comic_id, oper.excluded_id).await
     }
 }
 
 impl<'a> Step<DeleteChapter<'a>, RdbContext> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
         oper: &DeleteChapter<'a>,
-    ) -> RegularResult<()> {
+    ) -> BaseResult<()> {
         delete(context.conn(), oper.id).await
     }
 }

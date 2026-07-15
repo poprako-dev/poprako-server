@@ -24,7 +24,7 @@ use crate::part::repo::oper::member_invitation::{
 };
 use crate::part::repo::oper::user::{CreateUser, GetUserCredential};
 use crate::part::repo::user::UserRepo;
-use crate::result::{ExpectedVariant, RegularError, RegularResult};
+use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 
 #[cfg(test)]
 mod tests;
@@ -59,89 +59,81 @@ pub async fn register<N, C, R, A, V>(
     auth: &A,
     develop: &V,
     params: RegisterAuthParams,
-) -> RegularResult<RegisterAuthPayload>
+) -> BaseResult<RegisterAuthPayload>
 where
-    N: Nucl<Context = C, Error = RegularError>,
+    N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     R: UserRepo<C> + MemberRepo<C> + MemberInvitationRepo<C> + Send + Sync,
     A: TokenAuth,
     V: EffectDevelop + Send + Sync,
 {
-    let (user_id, team_id, invitor_id, invitee_qid) =
-        nucl
-            .coord(
-                async move |context| -> RegularResult<(
-                    String,
-                    String,
-                    String,
-                    String,
-                )> {
-                    //
+    let (user_id, team_id, invitor_id, invitee_qid) = nucl
+        .coord(async move |context| {
+            //
 
-                    let invitation_info = repo
-                        .step(
-                            context,
-                            &GetMemberInvitationInfoExcluded::Code {
-                                code: &params.code,
-                            },
-                        )
-                        .await?;
+            let invitation_info = repo
+                .step(
+                    context,
+                    &GetMemberInvitationInfoExcluded::Code {
+                        code: &params.code,
+                    },
+                )
+                .await?;
 
-                    // Verify the invitation was issued for this QQ ID.
-                    if invitation_info.invitee_qid != params.qid {
-                        return Err(RegularError::Expected {
-                            variant: ExpectedVariant::Args,
-                            message: trl("error-invalid-invitation-code"),
-                        });
-                    }
+            // Verify the invitation was issued for this QQ ID.
+            if invitation_info.invitee_qid != params.qid {
+                return Err(BaseError::Expected {
+                    variant: ExpectedVariant::Args,
+                    message: trl("error-invalid-invitation-code"),
+                });
+            }
 
-                    let password_hash =
-                        UserComplex::hash_password(&params.password).await?;
+            let password_hash =
+                UserComplex::hash_password(&params.password).await?;
 
-                    let user_entry = UserEntry {
-                        id: UserComplex::gen_id(),
-                        qid: params.qid.clone(),
-                        nickname: params.nickname.clone(),
-                        password_hash,
-                    };
+            let user_entry = UserEntry {
+                id: UserComplex::gen_id(),
+                qid: params.qid.clone(),
+                nickname: params.nickname.clone(),
+                password_hash,
+            };
 
-                    let user_info = repo
-                        .step(context, &CreateUser { entry: &user_entry })
-                        .await?;
+            let user_info = repo
+                .step(context, &CreateUser { entry: &user_entry })
+                .await?;
 
-                    let member_entry = MemberEntry {
-                        id: MemberComplex::gen_id(),
-                        user_id: user_info.id.clone(),
-                        user_nickname: user_info.nickname.clone(),
-                        team_id: invitation_info.team_id.clone(),
-                        roles: invitation_info.roles,
-                    };
+            let member_entry = MemberEntry {
+                id: MemberComplex::gen_id(),
+                user_id: user_info.id.clone(),
+                user_nickname: user_info.nickname.clone(),
+                team_id: invitation_info.team_id.clone(),
+                roles: invitation_info.roles,
+            };
 
-                    repo.step(
-                        context,
-                        &CreateMember {
-                            entry: &member_entry,
-                        },
-                    )
-                    .await?;
-
-                    repo.step(
-                        context,
-                        &UpdateMemberInvitation::MarkUsed {
-                            id: &invitation_info.id,
-                        },
-                    )
-                    .await?;
-
-                    Ok((
-                        user_info.id,
-                        invitation_info.team_id,
-                        invitation_info.invitor_id,
-                        invitation_info.invitee_qid,
-                    ))
+            repo.step(
+                context,
+                &CreateMember {
+                    entry: &member_entry,
                 },
             )
             .await?;
+
+            repo.step(
+                context,
+                &UpdateMemberInvitation::MarkUsed {
+                    id: &invitation_info.id,
+                },
+            )
+            .await?;
+
+            accept((
+                user_info.id,
+                invitation_info.team_id,
+                invitation_info.invitor_id,
+                invitation_info.invitee_qid,
+            ))
+        })
+        .await?;
 
     // Dispatch after successful commit so side effects do not run inside the transaction.
     let event = Event::UserSignedUp(UserSignedUpPayload {
@@ -156,7 +148,7 @@ where
 
     let token = auth.sign_token(&original_token)?;
 
-    Ok(RegisterAuthPayload {
+    accept(RegisterAuthPayload {
         user_id: original_token.user_id,
         token,
     })
@@ -180,7 +172,7 @@ pub async fn login<C, R, A>(
     repo: &R,
     auth: &A,
     params: LoginAuthParams,
-) -> RegularResult<LoginAuthPayload>
+) -> BaseResult<LoginAuthPayload>
 where
     R: UserRepo<C>,
     A: TokenAuth,
@@ -195,7 +187,7 @@ where
     )
     .await
     {
-        return Err(RegularError::Expected {
+        return Err(BaseError::Expected {
             variant: ExpectedVariant::Auth,
             message: trl("error-wrong-credentials"),
         });
@@ -207,7 +199,7 @@ where
 
     let token = auth.sign_token(&original_token)?;
 
-    Ok(LoginAuthPayload {
+    accept(LoginAuthPayload {
         user_id: original_token.user_id,
         token,
     })

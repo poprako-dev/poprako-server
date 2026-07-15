@@ -13,12 +13,12 @@ use crate::part::repo::oper::assignment_invitation::{
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
 };
-use crate::result::{RegularError, RegularResult};
+use crate::result::{BaseError, BaseResult, accept};
 
 fn get_info(
     state: &MockState,
     oper: &GetAssignmentInvitationInfo<'_>,
-) -> RegularResult<AssignmentInvitationInfo> {
+) -> BaseResult<AssignmentInvitationInfo> {
     state
         .assignment_invitations
         .iter()
@@ -74,25 +74,25 @@ fn list_infos(
 }
 
 impl<'a> Run<ListAssignmentInvitationInfos<'a>> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &ListAssignmentInvitationInfos<'a>,
-    ) -> RegularResult<Vec<AssignmentInvitationInfo>> {
+    ) -> BaseResult<Vec<AssignmentInvitationInfo>> {
         //
         let state = self.state.lock().unwrap();
 
-        Ok(list_infos(&state, oper))
+        accept(list_infos(&state, oper))
     }
 }
 impl<'a> Run<GetAssignmentInvitationInfo<'a>> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &GetAssignmentInvitationInfo<'a>,
-    ) -> RegularResult<AssignmentInvitationInfo> {
+    ) -> BaseResult<AssignmentInvitationInfo> {
         //
         let state = self.state.lock().unwrap();
 
@@ -100,13 +100,13 @@ impl<'a> Run<GetAssignmentInvitationInfo<'a>> for Mock {
     }
 }
 impl<'a> Step<CreateAssignmentInvitation<'a>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &CreateAssignmentInvitation<'a>,
-    ) -> RegularResult<AssignmentInvitationInfo> {
+    ) -> BaseResult<AssignmentInvitationInfo> {
         match context.state.assignment_invitations.iter().any(|info| {
             info.id == oper.entry.id
                 || (info.chapter_id == oper.entry.chapter_id
@@ -134,30 +134,30 @@ impl<'a> Step<CreateAssignmentInvitation<'a>, MockContext> for Mock {
 
                 context.state.assignment_invitations.push(info.clone());
 
-                Ok(info)
+                accept(info)
             }
         }
     }
 }
 impl<'a> Step<GetAssignmentInvitationInfo<'a>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &GetAssignmentInvitationInfo<'a>,
-    ) -> RegularResult<AssignmentInvitationInfo> {
+    ) -> BaseResult<AssignmentInvitationInfo> {
         get_info(&context.state, oper)
     }
 }
 impl<'a> Step<GetAssignmentInvitationInfoExcluded<'a>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &GetAssignmentInvitationInfoExcluded<'a>,
-    ) -> RegularResult<AssignmentInvitationInfo> {
+    ) -> BaseResult<AssignmentInvitationInfo> {
         context
             .state
             .assignment_invitations
@@ -168,13 +168,13 @@ impl<'a> Step<GetAssignmentInvitationInfoExcluded<'a>, MockContext> for Mock {
     }
 }
 impl<'a> Step<MarkAssignmentInvitationUsed<'a>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &MarkAssignmentInvitationUsed<'a>,
-    ) -> RegularResult<()> {
+    ) -> BaseResult<()> {
         //
         let info = context
             .state
@@ -187,17 +187,17 @@ impl<'a> Step<MarkAssignmentInvitationUsed<'a>, MockContext> for Mock {
 
         info.updated_at = now();
 
-        Ok(())
+        accept(())
     }
 }
 impl<'a> Step<DeleteAssignmentInvitations<'a>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &DeleteAssignmentInvitations<'a>,
-    ) -> RegularResult<()> {
+    ) -> BaseResult<()> {
         match oper {
             //
             DeleteAssignmentInvitations::Id { id } => {
@@ -211,7 +211,7 @@ impl<'a> Step<DeleteAssignmentInvitations<'a>, MockContext> for Mock {
 
                 context.state.assignment_invitations.remove(position);
 
-                Ok(())
+                accept(())
             }
 
             DeleteAssignmentInvitations::Chapter { chapter_id } => {
@@ -221,27 +221,27 @@ impl<'a> Step<DeleteAssignmentInvitations<'a>, MockContext> for Mock {
                     .assignment_invitations
                     .retain(|info| info.chapter_id != *chapter_id);
 
-                Ok(())
+                accept(())
             }
         }
     }
 }
 
 impl<'a> Step<PurgeExpiredAssignmentInvitation<'a>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &PurgeExpiredAssignmentInvitation<'a>,
-    ) -> RegularResult<()> {
+    ) -> BaseResult<()> {
         //
         context
             .state
             .assignment_invitations
             .retain(|info| info.id != oper.id || !info.pending);
 
-        Ok(())
+        accept(())
     }
 }

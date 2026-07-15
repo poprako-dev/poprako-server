@@ -22,7 +22,7 @@ use crate::part_impl::repo::rdb_impl::entity::user::{
 use crate::part_impl::repo::rdb_impl::schema::t_user::dsl::*;
 use crate::part_impl::shared::result::{diesel, expected, version};
 use crate::part_impl::shared::{RdbConn, RdbContext};
-use crate::result::{RegularError, RegularResult};
+use crate::result::{BaseError, BaseResult, accept};
 
 #[cfg(all(test, feature = "repo"))]
 mod tests;
@@ -33,10 +33,7 @@ impl UserRepo<RdbContext> for RdbRepo {}
 
 /// Load a single user info by ID.
 #[instrument(level = "info", err(Debug), skip_all)]
-async fn get_info_by_id(
-    conn: &mut RdbConn,
-    id: &str,
-) -> RegularResult<UserInfo> {
+async fn get_info_by_id(conn: &mut RdbConn, id: &str) -> BaseResult<UserInfo> {
     //
     let row: UserRow = t_user
         .filter(f_id.eq(id))
@@ -47,7 +44,7 @@ async fn get_info_by_id(
         .map_err(diesel)?
         .ok_or_else(|| expected("error-user-not-found"))?;
 
-    Ok(row.into())
+    accept(row.into())
 }
 
 /// Load credential information (password hash etc.) for a user by QID.
@@ -55,7 +52,7 @@ async fn get_info_by_id(
 async fn get_credential_by_qid(
     conn: &mut RdbConn,
     qid: &str,
-) -> RegularResult<UserCredential> {
+) -> BaseResult<UserCredential> {
     //
     let row: UserCredentialRow = t_user
         .filter(f_qid.eq(qid))
@@ -66,7 +63,7 @@ async fn get_credential_by_qid(
         .map_err(diesel)?
         .ok_or_else(|| expected("error-user-not-found"))?;
 
-    Ok(row.into())
+    accept(row.into())
 }
 
 /// Look up a user info by QID, returning None when not found.
@@ -74,7 +71,7 @@ async fn get_credential_by_qid(
 async fn find_info_by_qid(
     conn: &mut RdbConn,
     qid: &str,
-) -> RegularResult<Option<UserInfo>> {
+) -> BaseResult<Option<UserInfo>> {
     //
     let row: Option<UserRow> = t_user
         .filter(f_qid.eq(qid))
@@ -84,15 +81,12 @@ async fn find_info_by_qid(
         .optional()
         .map_err(diesel)?;
 
-    Ok(row.map(Into::into))
+    accept(row.map(Into::into))
 }
 
 /// Insert a new user and return its info.
 #[instrument(level = "info", err(Debug), skip_all)]
-async fn create(
-    conn: &mut RdbConn,
-    entry: &UserEntry,
-) -> RegularResult<UserInfo> {
+async fn create(conn: &mut RdbConn, entry: &UserEntry) -> BaseResult<UserInfo> {
     //
     let now = OffsetDateTime::now_utc();
 
@@ -113,7 +107,7 @@ async fn create(
         .await
         .map_err(diesel)?;
 
-    Ok(row.into())
+    accept(row.into())
 }
 
 /// Update a user's QID and nickname.
@@ -123,7 +117,7 @@ async fn update_info(
     id: &str,
     qid: &str,
     nickname: &str,
-) -> RegularResult<()> {
+) -> BaseResult<()> {
     //
     let now = OffsetDateTime::now_utc();
 
@@ -135,7 +129,7 @@ async fn update_info(
         .await
         .map_err(diesel)?;
 
-    Ok(())
+    accept(())
 }
 
 /// Replace a user's password hash.
@@ -144,7 +138,7 @@ async fn update_password_hash(
     conn: &mut RdbConn,
     id: &str,
     password_hash: &str,
-) -> RegularResult<()> {
+) -> BaseResult<()> {
     //
     let now = OffsetDateTime::now_utc();
 
@@ -154,7 +148,7 @@ async fn update_password_hash(
         .await
         .map_err(diesel)?;
 
-    Ok(())
+    accept(())
 }
 
 /// Reserve a new avatar slot for a user: bump version, generate object key,
@@ -164,7 +158,7 @@ async fn reserve_avatar(
     conn: &mut RdbConn,
     id: &str,
     file_ext: &str,
-) -> RegularResult<UserAvatarReservation> {
+) -> BaseResult<UserAvatarReservation> {
     //
     let now = OffsetDateTime::now_utc();
 
@@ -191,7 +185,7 @@ async fn reserve_avatar(
         .await
         .map_err(diesel)?;
 
-    Ok(UserAvatarReservation {
+    accept(UserAvatarReservation {
         object_key,
         prev_object_key: prev_key,
         avatar_version: version,
@@ -204,7 +198,7 @@ async fn mark_avatar_uploaded(
     conn: &mut RdbConn,
     id: &str,
     version: u32,
-) -> RegularResult<()> {
+) -> BaseResult<()> {
     //
     let now = OffsetDateTime::now_utc();
 
@@ -222,12 +216,12 @@ async fn mark_avatar_uploaded(
         return Err(expected("error-avatar-version-mismatch"));
     }
 
-    Ok(())
+    accept(())
 }
 
 /// Update the last-active timestamp for a user.
 #[instrument(level = "info", err(Debug), skip_all)]
-async fn touch_last_active(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
+async fn touch_last_active(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
     //
     let now = OffsetDateTime::now_utc();
 
@@ -239,7 +233,7 @@ async fn touch_last_active(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
         .await
         .map_err(diesel)?;
 
-    Ok(())
+    accept(())
 }
 
 /// Load a user info by ID, locking the row for update.
@@ -247,7 +241,7 @@ async fn touch_last_active(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
 async fn get_info_by_id_excluded(
     conn: &mut RdbConn,
     id: &str,
-) -> RegularResult<UserInfo> {
+) -> BaseResult<UserInfo> {
     //
     let row: UserRow = t_user
         .filter(f_id.eq(id))
@@ -259,23 +253,23 @@ async fn get_info_by_id_excluded(
         .map_err(diesel)?
         .ok_or_else(|| expected("error-user-not-found"))?;
 
-    Ok(row.into())
+    accept(row.into())
 }
 
 /// Delete a user by ID.
 #[instrument(level = "info", err(Debug), skip_all)]
-async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
+async fn delete(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
     //
     diesel::delete(t_user.filter(f_id.eq(id)))
         .execute(conn)
         .await
         .map_err(diesel)?;
 
-    Ok(())
+    accept(())
 }
 
 impl<'a> Run<GetUserInfo<'a>> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
@@ -291,7 +285,7 @@ impl<'a> Run<GetUserInfo<'a>> for RdbRepo {
 }
 
 impl<'a> Run<GetUserCredential<'a>> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
@@ -307,7 +301,7 @@ impl<'a> Run<GetUserCredential<'a>> for RdbRepo {
 }
 
 impl<'a> Run<FindUserInfo<'a>> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
@@ -323,10 +317,10 @@ impl<'a> Run<FindUserInfo<'a>> for RdbRepo {
 }
 
 impl<'a> Run<UpdateUser<'a>> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn run(&self, oper: &UpdateUser<'a>) -> RegularResult<()> {
+    async fn run(&self, oper: &UpdateUser<'a>) -> BaseResult<()> {
         match oper {
             //
             UpdateUser::TouchLastActive { id } => {
@@ -359,27 +353,27 @@ impl<'a> Run<UpdateUser<'a>> for RdbRepo {
 }
 
 impl<'a> Step<CreateUser<'a>, RdbContext> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
         oper: &CreateUser<'a>,
-    ) -> RegularResult<UserInfo> {
+    ) -> BaseResult<UserInfo> {
         create(context.conn(), oper.entry).await
     }
 }
 
 impl<'a> Step<FindUserInfo<'a>, RdbContext> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
         oper: &FindUserInfo<'a>,
-    ) -> RegularResult<Option<UserInfo>> {
+    ) -> BaseResult<Option<UserInfo>> {
         match oper {
             FindUserInfo::Qid { qid } => {
                 find_info_by_qid(context.conn(), qid).await
@@ -389,14 +383,14 @@ impl<'a> Step<FindUserInfo<'a>, RdbContext> for RdbRepo {
 }
 
 impl<'a> Step<UpdateUser<'a>, RdbContext> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
         oper: &UpdateUser<'a>,
-    ) -> RegularResult<()> {
+    ) -> BaseResult<()> {
         match oper {
             //
             UpdateUser::Info { id, qid, nickname } => {
@@ -419,27 +413,27 @@ impl<'a> Step<UpdateUser<'a>, RdbContext> for RdbRepo {
 }
 
 impl<'a> Step<ReserveUserAvatar<'a>, RdbContext> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
         oper: &ReserveUserAvatar<'a>,
-    ) -> RegularResult<UserAvatarReservation> {
+    ) -> BaseResult<UserAvatarReservation> {
         reserve_avatar(context.conn(), oper.id, oper.file_ext).await
     }
 }
 
 impl<'a> Step<GetUserInfoExcluded<'a>, RdbContext> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
         oper: &GetUserInfoExcluded<'a>,
-    ) -> RegularResult<UserInfo> {
+    ) -> BaseResult<UserInfo> {
         match oper {
             GetUserInfoExcluded::Id { id } => {
                 get_info_by_id_excluded(context.conn(), id).await
@@ -449,14 +443,14 @@ impl<'a> Step<GetUserInfoExcluded<'a>, RdbContext> for RdbRepo {
 }
 
 impl<'a> Step<DeleteUser<'a>, RdbContext> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
         oper: &DeleteUser<'a>,
-    ) -> RegularResult<()> {
+    ) -> BaseResult<()> {
         delete(context.conn(), oper.id).await
     }
 }

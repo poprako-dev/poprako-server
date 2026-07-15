@@ -90,7 +90,7 @@ impl AsyncEffectDevelop {
                     "[AsyncEffectDevelop::close] background task ended without completion",
                 );
             }
-        }
+        };
     }
 }
 

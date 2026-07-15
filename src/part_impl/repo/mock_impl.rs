@@ -30,7 +30,7 @@ use crate::part::prom::payload::{Payload, image};
 use crate::part::repo::oper::member::CreateMember;
 use crate::part::repo::oper::user::GetUserInfo;
 use crate::part_impl::prom::mock_impl::MockPromRecord;
-use crate::result::{ExpectedVariant, RegularError};
+use crate::result::{BaseError, ExpectedVariant};
 use crate::value::role::{RoleField, RoleMask};
 
 /// Mock implementations for announcement repository opers.
@@ -353,16 +353,16 @@ impl Mock {
 }
 
 /// Build an expected-args [RootError] with a translated message.
-pub fn expected(message: &str) -> RegularError {
-    RegularError::Expected {
+pub fn expected(message: &str) -> BaseError {
+    BaseError::Expected {
         variant: ExpectedVariant::Args,
         message: trl(message),
     }
 }
 
 /// Build an unrecoverable [RootError] with the given message.
-pub fn unrecoverable(message: &str) -> RegularError {
-    RegularError::Unrecoverable {
+pub fn unrecoverable(message: &str) -> BaseError {
+    BaseError::Unrecoverable {
         message: message.into(),
     }
 }
@@ -460,7 +460,7 @@ async fn nucl_coord_commits_repo_and_prom() {
 
             prom.step(context, &Defer::new(task)).await?;
 
-            Ok::<(), RegularError>(())
+            Ok::<(), BaseError>(())
         })
         .await
         .is_ok()
@@ -525,7 +525,7 @@ async fn nucl_coord_rolls_back_repo_and_prom() {
 
     assert!(matches!(
         err,
-        NuclError::Step(RegularError::Unrecoverable { .. })
+        NuclError::Step(BaseError::Unrecoverable { .. })
     ));
 
     let snapshot = mock.snapshot();
@@ -544,7 +544,7 @@ async fn nucl_coord_commits_state() {
         //
         context.state.users.push(user("user-1"));
 
-        Ok::<(), RegularError>(())
+        Ok::<(), BaseError>(())
     })
     .await
     .ok()
@@ -571,7 +571,7 @@ async fn nucl_coord_rolls_back_state() {
 
     assert!(matches!(
         error,
-        NuclError::Step(RegularError::Unrecoverable { .. })
+        NuclError::Step(BaseError::Unrecoverable { .. })
     ));
 
     let snapshot = mock.snapshot();

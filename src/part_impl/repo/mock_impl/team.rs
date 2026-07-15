@@ -17,14 +17,14 @@ use crate::part::repo::team::TeamRepo;
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
 };
-use crate::result::{RegularError, RegularResult};
+use crate::result::{BaseError, BaseResult, accept};
 
 impl TeamRepo<MockContext> for Mock {}
 
 fn create_team(
     state: &mut MockState,
     entry: &TeamEntry,
-) -> RegularResult<TeamInfo> {
+) -> BaseResult<TeamInfo> {
     //
     if state.teams.iter().any(|team_info| team_info.id == entry.id) {
         return Err(expected("error-already-exists"));
@@ -45,10 +45,10 @@ fn create_team(
 
     state.teams.push(team_info.clone());
 
-    Ok(team_info)
+    accept(team_info)
 }
 
-fn get_team_info(state: &MockState, id: &str) -> RegularResult<TeamInfo> {
+fn get_team_info(state: &MockState, id: &str) -> BaseResult<TeamInfo> {
     state
         .teams
         .iter()
@@ -98,10 +98,7 @@ fn list_team_infos(
     }
 }
 
-fn update_team(
-    state: &mut MockState,
-    oper: &UpdateTeam<'_>,
-) -> RegularResult<()> {
+fn update_team(state: &mut MockState, oper: &UpdateTeam<'_>) -> BaseResult<()> {
     //
     let team_info = state
         .teams
@@ -135,13 +132,13 @@ fn update_team(
 
     team_info.updated_at = now();
 
-    Ok(())
+    accept(())
 }
 
 fn reserve_team_avatar(
     state: &mut MockState,
     oper: &ReserveTeamAvatar<'_>,
-) -> RegularResult<TeamAvatarReservation> {
+) -> BaseResult<TeamAvatarReservation> {
     //
     let team_info = state
         .teams
@@ -164,14 +161,14 @@ fn reserve_team_avatar(
 
     team_info.updated_at = now();
 
-    Ok(TeamAvatarReservation {
+    accept(TeamAvatarReservation {
         object_key,
         prev_object_key,
         avatar_version,
     })
 }
 
-fn delete_team(state: &mut MockState, id: &str) -> RegularResult<()> {
+fn delete_team(state: &mut MockState, id: &str) -> BaseResult<()> {
     //
     let position = state
         .teams
@@ -236,14 +233,14 @@ fn delete_team(state: &mut MockState, id: &str) -> RegularResult<()> {
         !deleted_chapter_ids.contains(&assignment_info.chapter_id)
     });
 
-    Ok(())
+    accept(())
 }
 
 impl<'a> Run<CreateTeam<'a>> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn run(&self, oper: &CreateTeam<'a>) -> RegularResult<TeamInfo> {
+    async fn run(&self, oper: &CreateTeam<'a>) -> BaseResult<TeamInfo> {
         //
         let mut state = self.state.lock().unwrap();
 
@@ -252,10 +249,10 @@ impl<'a> Run<CreateTeam<'a>> for Mock {
 }
 
 impl<'a> Run<GetTeamInfo<'a>> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn run(&self, oper: &GetTeamInfo<'a>) -> RegularResult<TeamInfo> {
+    async fn run(&self, oper: &GetTeamInfo<'a>) -> BaseResult<TeamInfo> {
         //
         let state = self.state.lock().unwrap();
 
@@ -266,25 +263,22 @@ impl<'a> Run<GetTeamInfo<'a>> for Mock {
 }
 
 impl<'a> Run<ListTeamInfos<'a>> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn run(
-        &self,
-        oper: &ListTeamInfos<'a>,
-    ) -> RegularResult<Vec<TeamInfo>> {
+    async fn run(&self, oper: &ListTeamInfos<'a>) -> BaseResult<Vec<TeamInfo>> {
         //
         let state = self.state.lock().unwrap();
 
-        Ok(list_team_infos(&state, oper))
+        accept(list_team_infos(&state, oper))
     }
 }
 
 impl<'a> Run<UpdateTeam<'a>> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn run(&self, oper: &UpdateTeam<'a>) -> RegularResult<()> {
+    async fn run(&self, oper: &UpdateTeam<'a>) -> BaseResult<()> {
         //
         let mut state = self.state.lock().unwrap();
 
@@ -293,14 +287,14 @@ impl<'a> Run<UpdateTeam<'a>> for Mock {
 }
 
 impl<'a> Step<CreateTeam<'a>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &CreateTeam<'a>,
-    ) -> RegularResult<TeamInfo> {
+    ) -> BaseResult<TeamInfo> {
         //
         if context.create_team_failure {
             return Err(expected("failed"));
@@ -311,40 +305,40 @@ impl<'a> Step<CreateTeam<'a>, MockContext> for Mock {
 }
 
 impl<'a> Step<UpdateTeam<'a>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &UpdateTeam<'a>,
-    ) -> RegularResult<()> {
+    ) -> BaseResult<()> {
         update_team(&mut context.state, oper)
     }
 }
 
 impl<'a> Step<ReserveTeamAvatar<'a>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &ReserveTeamAvatar<'a>,
-    ) -> RegularResult<TeamAvatarReservation> {
+    ) -> BaseResult<TeamAvatarReservation> {
         reserve_team_avatar(&mut context.state, oper)
     }
 }
 
 impl<'a> Step<GetTeamInfoExcluded<'a>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &GetTeamInfoExcluded<'a>,
-    ) -> RegularResult<TeamInfo> {
+    ) -> BaseResult<TeamInfo> {
         match oper {
             GetTeamInfoExcluded::Id { id } => get_team_info(&context.state, id),
         }
@@ -352,27 +346,27 @@ impl<'a> Step<GetTeamInfoExcluded<'a>, MockContext> for Mock {
 }
 
 impl<'a> Step<DeleteTeam<'a>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &DeleteTeam<'a>,
-    ) -> RegularResult<()> {
+    ) -> BaseResult<()> {
         delete_team(&mut context.state, oper.id)
     }
 }
 
 impl<'a> Step<AllocTeamWorksetIndex<'a>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &AllocTeamWorksetIndex<'a>,
-    ) -> RegularResult<i32> {
+    ) -> BaseResult<i32> {
         //
         // verify the team exists
         context
@@ -389,6 +383,6 @@ impl<'a> Step<AllocTeamWorksetIndex<'a>, MockContext> for Mock {
             .filter(|workset_info| workset_info.team_id == oper.id)
             .count() as i32;
 
-        Ok(workset_index)
+        accept(workset_index)
     }
 }

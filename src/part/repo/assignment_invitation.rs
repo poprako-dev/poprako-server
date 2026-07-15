@@ -8,19 +8,16 @@ use crate::part::repo::oper::assignment_invitation::{
     ListAssignmentInvitationInfos, MarkAssignmentInvitationUsed,
     PurgeExpiredAssignmentInvitation,
 };
-use crate::result::RegularError;
+use crate::result::BaseError;
 
 /// Assignment invitation repository operations over standalone runs and coordinated steps.
-pub trait AssignmentInvitationRepo<C>: for<'a> Run<ListAssignmentInvitationInfos<'a>, Error = RegularError>
-    + for<'a> Run<GetAssignmentInvitationInfo<'a>, Error = RegularError>
-    + for<'a> Step<CreateAssignmentInvitation<'a>, C, Error = RegularError>
-    + for<'a> Step<GetAssignmentInvitationInfo<'a>, C, Error = RegularError>
-    + for<'a> Step<
-        GetAssignmentInvitationInfoExcluded<'a>,
-        C,
-        Error = RegularError,
-    > + for<'a> Step<MarkAssignmentInvitationUsed<'a>, C, Error = RegularError>
-    + for<'a> Step<PurgeExpiredAssignmentInvitation<'a>, C, Error = RegularError>
-    + for<'a> Step<DeleteAssignmentInvitations<'a>, C, Error = RegularError>
+pub trait AssignmentInvitationRepo<C>: for<'a> Run<ListAssignmentInvitationInfos<'a>, Error = BaseError>
+    + for<'a> Run<GetAssignmentInvitationInfo<'a>, Error = BaseError>
+    + for<'a> Step<CreateAssignmentInvitation<'a>, C, Error = BaseError>
+    + for<'a> Step<GetAssignmentInvitationInfo<'a>, C, Error = BaseError>
+    + for<'a> Step<GetAssignmentInvitationInfoExcluded<'a>, C, Error = BaseError>
+    + for<'a> Step<MarkAssignmentInvitationUsed<'a>, C, Error = BaseError>
+    + for<'a> Step<PurgeExpiredAssignmentInvitation<'a>, C, Error = BaseError>
+    + for<'a> Step<DeleteAssignmentInvitations<'a>, C, Error = BaseError>
 {
 }

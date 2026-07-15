@@ -15,12 +15,12 @@ use crate::part_impl::repo::mock_impl::page::{
     page_from_entry,
 };
 use crate::part_impl::repo::mock_impl::{Mock, MockContext, expected, now};
-use crate::result::{RegularError, RegularResult};
+use crate::result::{BaseError, BaseResult, accept};
 
 impl<'a> Run<GetPageInfo<'a>> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn run(&self, oper: &GetPageInfo<'a>) -> RegularResult<PageInfo> {
+    async fn run(&self, oper: &GetPageInfo<'a>) -> BaseResult<PageInfo> {
         //
         let state = self.state.lock().unwrap();
 
@@ -28,12 +28,9 @@ impl<'a> Run<GetPageInfo<'a>> for Mock {
     }
 }
 impl<'a> Run<ListPageInfos<'a>> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn run(
-        &self,
-        oper: &ListPageInfos<'a>,
-    ) -> RegularResult<Vec<PageInfo>> {
+    async fn run(&self, oper: &ListPageInfos<'a>) -> BaseResult<Vec<PageInfo>> {
         //
         let state = self.state.lock().unwrap();
 
@@ -43,70 +40,72 @@ impl<'a> Run<ListPageInfos<'a>> for Mock {
                 chapter_id,
                 offset,
                 limit,
-            } => Ok(list_pages(&state, chapter_id, *offset, *limit)),
+            } => accept(list_pages(&state, chapter_id, *offset, *limit)),
 
             ListPageInfos::AllChapter { chapter_id } => {
-                Ok(list_all_pages(&state, chapter_id))
+                accept(list_all_pages(&state, chapter_id))
             }
         }
     }
 }
 
 impl<'a> Run<ListFirstPageInfos<'a>> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &ListFirstPageInfos<'a>,
-    ) -> RegularResult<HashMap<String, PageInfo>> {
+    ) -> BaseResult<HashMap<String, PageInfo>> {
         //
         let state = self.state.lock().unwrap();
 
-        Ok(list_first_pages(&state, oper.chapter_ids))
+        accept(list_first_pages(&state, oper.chapter_ids))
     }
 }
 impl<'a> Step<GetPageInfo<'a>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &GetPageInfo<'a>,
-    ) -> RegularResult<PageInfo> {
+    ) -> BaseResult<PageInfo> {
         get_page_by_id(&context.state, oper.id)
     }
 }
 impl<'a> Step<ListPageInfos<'a>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &ListPageInfos<'a>,
-    ) -> RegularResult<Vec<PageInfo>> {
+    ) -> BaseResult<Vec<PageInfo>> {
         match oper {
             //
             ListPageInfos::Chapter {
                 chapter_id,
                 offset,
                 limit,
-            } => Ok(list_pages(&context.state, chapter_id, *offset, *limit)),
+            } => {
+                accept(list_pages(&context.state, chapter_id, *offset, *limit))
+            }
 
             ListPageInfos::AllChapter { chapter_id } => {
-                Ok(list_all_pages(&context.state, chapter_id))
+                accept(list_all_pages(&context.state, chapter_id))
             }
         }
     }
 }
 impl<'a> Step<CreatePages<'a>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &CreatePages<'a>,
-    ) -> RegularResult<Vec<PageInfo>> {
+    ) -> BaseResult<Vec<PageInfo>> {
         //
         if oper.entries.iter().any(|page_entry| {
             context
@@ -123,28 +122,28 @@ impl<'a> Step<CreatePages<'a>, MockContext> for Mock {
 
         context.state.pages.extend(infos.clone());
 
-        Ok(infos)
+        accept(infos)
     }
 }
 impl<'a> Step<GetPageInfoExcluded<'a>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &GetPageInfoExcluded<'a>,
-    ) -> RegularResult<PageInfo> {
+    ) -> BaseResult<PageInfo> {
         get_page_by_id(&context.state, oper.id)
     }
 }
 impl<'a> Step<ReservePageImage<'a>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &ReservePageImage<'a>,
-    ) -> RegularResult<PageImageReservation> {
+    ) -> BaseResult<PageImageReservation> {
         //
         let page_info = context
             .state
@@ -170,7 +169,7 @@ impl<'a> Step<ReservePageImage<'a>, MockContext> for Mock {
 
         page_info.updated_at = now();
 
-        Ok(PageImageReservation {
+        accept(PageImageReservation {
             object_key,
             prev_object_key,
             image_version: page_info.image_version,
@@ -178,13 +177,13 @@ impl<'a> Step<ReservePageImage<'a>, MockContext> for Mock {
     }
 }
 impl<'a> Step<MarkPageImageUploaded<'a>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &MarkPageImageUploaded<'a>,
-    ) -> RegularResult<()> {
+    ) -> BaseResult<()> {
         //
         let page_info = context
             .state
@@ -201,17 +200,17 @@ impl<'a> Step<MarkPageImageUploaded<'a>, MockContext> for Mock {
 
         page_info.updated_at = now();
 
-        Ok(())
+        accept(())
     }
 }
 impl<'a> Step<SetPageUnitCounters<'a>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &SetPageUnitCounters<'a>,
-    ) -> RegularResult<()> {
+    ) -> BaseResult<()> {
         //
         let page_info = context
             .state
@@ -228,17 +227,17 @@ impl<'a> Step<SetPageUnitCounters<'a>, MockContext> for Mock {
 
         page_info.updated_at = now();
 
-        Ok(())
+        accept(())
     }
 }
 impl<'a> Step<DeletePages<'a>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &DeletePages<'a>,
-    ) -> RegularResult<()> {
+    ) -> BaseResult<()> {
         match oper {
             DeletePages::Chapter { chapter_id } => {
                 //
@@ -260,7 +259,7 @@ impl<'a> Step<DeletePages<'a>, MockContext> for Mock {
                     .pages
                     .retain(|page_info| page_info.chapter_id != *chapter_id);
 
-                Ok(())
+                accept(())
             }
         }
     }

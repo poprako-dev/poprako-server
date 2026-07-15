@@ -55,7 +55,7 @@ use crate::part::repo::oper::workset::{
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::unit::UnitRepo;
 use crate::part::repo::workset::WorksetRepo;
-use crate::result::{RegularError, RegularResult, accept};
+use crate::result::{BaseError, BaseResult, accept};
 use crate::value::comic::ComicWithOpt;
 use crate::value::role::{RoleField, RoleMask};
 
@@ -79,9 +79,9 @@ pub async fn create<N, C, R>(
     repo: &R,
     token: UserToken,
     params: CreateComicParams,
-) -> RegularResult<CreateComicPayload>
+) -> BaseResult<CreateComicPayload>
 where
-    N: Nucl<Context = C, Error = RegularError>,
+    N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     R: ComicRepo<C>
         + WorksetRepo<C>
@@ -103,7 +103,7 @@ where
     .await?;
 
     let (comic_id, chapter_id) = nucl
-        .coord(async move |context| -> RegularResult<(String, String)> {
+        .coord(async move |context| {
             //
             let index = repo
                 .step(
@@ -210,11 +210,11 @@ where
             )
             .await?;
 
-            Ok((comic_info.id, chapter_info.id))
+            accept((comic_info.id, chapter_info.id))
         })
         .await?;
 
-    Ok(CreateComicPayload {
+    accept(CreateComicPayload {
         id: comic_id,
         chapter_id,
     })
@@ -227,7 +227,7 @@ pub async fn get_info<C, R, I>(
     image_pool: &I,
     token: UserToken,
     id: String,
-) -> RegularResult<ComicInfoVal>
+) -> BaseResult<ComicInfoVal>
 where
     R: ComicRepo<C>
         + WorksetRepo<C>
@@ -283,7 +283,7 @@ pub async fn list_infos<C, R, I>(
     image_pool: &I,
     token: UserToken,
     params: ListComicInfosParams,
-) -> RegularResult<ListComicInfosPayload>
+) -> BaseResult<ListComicInfosPayload>
 where
     R: ComicRepo<C>
         + WorksetRepo<C>
@@ -376,7 +376,7 @@ where
         pinned_chapter_vals.push(pinned_chapter_val);
     }
 
-    Ok(ListComicInfosPayload {
+    accept(ListComicInfosPayload {
         comics: comic_info_vals,
         pinned_chapters: pinned_chapter_vals,
     })
@@ -388,7 +388,7 @@ pub async fn update_info<C, R>(
     repo: &R,
     token: UserToken,
     params: UpdateComicInfoParams,
-) -> RegularResult<()>
+) -> BaseResult<()>
 where
     R: ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Sync,
 {
@@ -429,9 +429,9 @@ pub async fn reserve_cover<N, C, R, P, I>(
     token: UserToken,
     id: String,
     params: ReserveComicCoverParams,
-) -> RegularResult<ReserveComicCoverPayload>
+) -> BaseResult<ReserveComicCoverPayload>
 where
-    N: Nucl<Context = C, Error = RegularError>,
+    N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     R: ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Send + Sync,
     P: Prom<C> + Send + Sync,
@@ -450,7 +450,7 @@ where
     .await?;
 
     let (object_key, cover_version) = nucl
-        .coord(async move |context| -> RegularResult<(String, u32)> {
+        .coord(async move |context| {
             //
             let cover_reservation = repo
                 .step(
@@ -503,7 +503,7 @@ where
 
             prom.step(context, &DeferBatch::new(&batch_tasks)).await?;
 
-            Ok((
+            accept((
                 cover_reservation.object_key,
                 cover_reservation.cover_version,
             ))
@@ -512,7 +512,7 @@ where
 
     let put_url = image_pool.get_upload_url(&object_key).await?.to_string();
 
-    Ok(ReserveComicCoverPayload {
+    accept(ReserveComicCoverPayload {
         put_url,
         cover_version,
     })
@@ -525,7 +525,7 @@ pub async fn mark_cover_uploaded<C, R>(
     token: UserToken,
     id: String,
     params: MarkComicCoverUploadedParams,
-) -> RegularResult<()>
+) -> BaseResult<()>
 where
     R: ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Sync,
 {
@@ -558,9 +558,9 @@ pub async fn delete<N, C, R, P>(
     prom: &P,
     token: UserToken,
     id: String,
-) -> RegularResult<()>
+) -> BaseResult<()>
 where
-    N: Nucl<Context = C, Error = RegularError>,
+    N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     R: ComicRepo<C>
         + WorksetRepo<C>
@@ -586,7 +586,7 @@ where
     )
     .await?;
 
-    nucl.coord(async move |context| -> RegularResult<()> {
+    nucl.coord(async move |context| {
         //
         ComicComplex::delete_cascade(
             &mut step_proxy! {

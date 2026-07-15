@@ -14,7 +14,7 @@ use crate::data::chapter::ChapterInfoVal;
 use crate::data::user::UserInfoVal;
 use crate::model::assignment::{AssignmentInfo, AssignmentInfoListSpec};
 use crate::part::image::ImagePool;
-use crate::result::{ExpectedVariant, RegularError, RegularResult};
+use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 use crate::value::assignment::AssignmentInclOpt;
 use crate::value::role::{RoleField, RoleMask};
 
@@ -60,11 +60,11 @@ impl AssignmentInfoVal {
         image_pool: &P,
         model: AssignmentInfo,
         fallback_cover_key: Option<&str>,
-    ) -> RegularResult<Self>
+    ) -> BaseResult<Self>
     where
         P: ImagePool,
     {
-        Ok(Self {
+        accept(Self {
             id: model.id,
             chapter_id: model.chapter_id,
             user_id: model.user_id,
@@ -131,11 +131,11 @@ pub struct ListAssignmentInfosParams {
 }
 
 impl TryInto<AssignmentInfoListSpec> for ListAssignmentInfosParams {
-    type Error = RegularError;
+    type Error = BaseError;
 
-    fn try_into(self) -> RegularResult<AssignmentInfoListSpec> {
+    fn try_into(self) -> BaseResult<AssignmentInfoListSpec> {
         //
-        let invalid_args_err = || RegularError::Expected {
+        let invalid_args_err = || BaseError::Expected {
             variant: ExpectedVariant::Args,
             message: trl("error-chapter-or-user-required"),
         };
@@ -145,7 +145,7 @@ impl TryInto<AssignmentInfoListSpec> for ListAssignmentInfosParams {
         }
 
         if let Some(chapter_id) = self.chapter_id {
-            return Ok(AssignmentInfoListSpec::Chapter {
+            return accept(AssignmentInfoListSpec::Chapter {
                 chapter_id,
                 role: self.role,
                 incl_opt: self.incl_opt,
@@ -154,7 +154,7 @@ impl TryInto<AssignmentInfoListSpec> for ListAssignmentInfosParams {
             });
         }
 
-        Ok(AssignmentInfoListSpec::User {
+        accept(AssignmentInfoListSpec::User {
             owner_id: self.owner_id.ok_or_else(invalid_args_err)?,
             role: self.role,
             incl_opt: self.incl_opt,

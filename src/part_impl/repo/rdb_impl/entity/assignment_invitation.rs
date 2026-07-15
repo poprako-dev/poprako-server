@@ -7,7 +7,7 @@ use crate::model::assignment_invitation::{
     AssignmentInvitationEntry, AssignmentInvitationInfo,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_assignment_invitation;
-use crate::result::RegularError;
+use crate::result::BaseError;
 use crate::value::role::RoleMask;
 
 /// Raw database row for the `t_assignment_invitation` table. Returned by Diesel queries.
@@ -76,7 +76,7 @@ impl AssignmentInvitationAspect {
 }
 
 impl TryFrom<AssignmentInvitationRow> for AssignmentInvitationInfo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     fn try_from(row: AssignmentInvitationRow) -> Result<Self, Self::Error> {
         //

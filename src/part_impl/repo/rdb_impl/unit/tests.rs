@@ -11,7 +11,7 @@ use crate::part::repo::oper::unit::{
 };
 use crate::part_impl::drive::rdb_impl::RdbDrive;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
-use crate::result::RegularResult;
+use crate::result::{BaseResult, accept};
 
 const PREFIX: &str = "rdb-test-unit-domain-";
 
@@ -56,7 +56,7 @@ async fn unit_roundtrip_reads_test_database_url() {
         index: 5,
     }];
 
-    nucl.coord(async |context| -> RegularResult<()> {
+    nucl.coord(async |context| {
         //
         repo.step(
             context,
@@ -97,14 +97,14 @@ async fn unit_roundtrip_reads_test_database_url() {
         )
         .await?;
 
-        Ok(())
+        accept(())
     })
     .await
     .ok()
     .unwrap();
 
     let duplicate_create_result = nucl
-        .coord(async |context| -> RegularResult<()> {
+        .coord(async |context| {
             repo.step(
                 context,
                 &CreateUnit {

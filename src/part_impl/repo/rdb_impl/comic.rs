@@ -18,7 +18,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_comic::dsl::*;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, incl};
 use crate::part_impl::shared::result::{diesel, expected, version};
 use crate::part_impl::shared::{RdbConn, RdbContext};
-use crate::result::RegularResult;
+use crate::result::{BaseResult, accept};
 use crate::value::chapter::{Stage, StageMask, StagePhase};
 use crate::value::comic::ComicInclOpt;
 use crate::value::index::user_index_to_stored_index;
@@ -158,7 +158,7 @@ pub(super) async fn get_info_by_id(
     conn: &mut RdbConn,
     id: &str,
     incl_opt: &[ComicInclOpt],
-) -> RegularResult<ComicInfo> {
+) -> BaseResult<ComicInfo> {
     //
     let row: ComicRow = t_comic
         .filter(f_id.eq(id))
@@ -178,7 +178,7 @@ pub(super) async fn get_info_by_id(
     )
     .await?;
 
-    Ok(info)
+    accept(info)
 }
 
 /// Queries comic rows filtered by workset, optional fuzzy title, and list kind.
@@ -186,7 +186,7 @@ pub(super) async fn get_info_by_id(
 pub(super) async fn list_infos(
     conn: &mut RdbConn,
     spec: &ComicInfoListSpec,
-) -> RegularResult<Vec<ComicInfo>> {
+) -> BaseResult<Vec<ComicInfo>> {
     //
     let mut query = t_comic
         .filter(f_workset_id.eq(spec.workset_id.as_str()))
@@ -224,7 +224,7 @@ pub(super) async fn list_infos(
 
     incl::comic::populate_comic_incls(conn, &mut infos, &spec.incl_opt).await?;
 
-    Ok(infos)
+    accept(infos)
 }
 
 /// Updates the title, author, description, and composed title of a comic row.
@@ -232,7 +232,7 @@ pub(super) async fn list_infos(
 pub(super) async fn update_info(
     conn: &mut RdbConn,
     update: &ComicInfoUpdate,
-) -> RegularResult<()> {
+) -> BaseResult<()> {
     //
     let now = OffsetDateTime::now_utc();
 
@@ -256,7 +256,7 @@ pub(super) async fn update_info(
         .await
         .map_err(diesel)?;
 
-    Ok(())
+    accept(())
 }
 
 /// Marks a comic's cover as uploaded, checking for version match.
@@ -265,7 +265,7 @@ pub(super) async fn mark_cover_uploaded(
     conn: &mut RdbConn,
     id: &str,
     version: u32,
-) -> RegularResult<()> {
+) -> BaseResult<()> {
     //
     let now = OffsetDateTime::now_utc();
 
@@ -283,7 +283,7 @@ pub(super) async fn mark_cover_uploaded(
         return Err(expected("error-cover-version-mismatch"));
     }
 
-    Ok(())
+    accept(())
 }
 
 /// Inserts a new comic row from the given entry and returns the created info.
@@ -291,7 +291,7 @@ pub(super) async fn mark_cover_uploaded(
 pub(super) async fn create(
     conn: &mut RdbConn,
     comic_entry: &ComicEntry,
-) -> RegularResult<ComicInfo> {
+) -> BaseResult<ComicInfo> {
     //
     let entry = ComicRowEntry::from(comic_entry);
 
@@ -302,7 +302,7 @@ pub(super) async fn create(
         .await
         .map_err(diesel)?;
 
-    Ok(row.into())
+    accept(row.into())
 }
 
 /// Locks a single comic row by ID.
@@ -311,7 +311,7 @@ pub(super) async fn get_info_excluded(
     conn: &mut RdbConn,
     id: &str,
     incls: &[ComicInclOpt],
-) -> RegularResult<ComicInfo> {
+) -> BaseResult<ComicInfo> {
     //
     let row: ComicRow = t_comic
         .filter(f_id.eq(id))
@@ -332,7 +332,7 @@ pub(super) async fn get_info_excluded(
     )
     .await?;
 
-    Ok(comic_info)
+    accept(comic_info)
 }
 
 /// Lists and locks the comic rows selected by a list spec.
@@ -340,7 +340,7 @@ pub(super) async fn get_info_excluded(
 pub(super) async fn list_infos_excluded(
     conn: &mut RdbConn,
     spec: &ComicInfoListSpec,
-) -> RegularResult<Vec<ComicInfo>> {
+) -> BaseResult<Vec<ComicInfo>> {
     //
     let mut predicate: Box<
         dyn BoxableExpression<t_comic, Pg, SqlType = Bool> + '_,
@@ -383,7 +383,7 @@ pub(super) async fn list_infos_excluded(
     incl::comic::populate_comic_incls(conn, &mut comic_infos, &spec.incl_opt)
         .await?;
 
-    Ok(comic_infos)
+    accept(comic_infos)
 }
 
 /// Reserves a cover image key for a comic, incrementing the cover version.
@@ -392,7 +392,7 @@ pub(super) async fn reserve_cover(
     conn: &mut RdbConn,
     id: &str,
     file_ext: &str,
-) -> RegularResult<ComicCoverReservation> {
+) -> BaseResult<ComicCoverReservation> {
     //
     let now = OffsetDateTime::now_utc();
 
@@ -419,7 +419,7 @@ pub(super) async fn reserve_cover(
         .await
         .map_err(diesel)?;
 
-    Ok(ComicCoverReservation {
+    accept(ComicCoverReservation {
         object_key,
         prev_object_key: prev_key,
         cover_version,
@@ -428,14 +428,14 @@ pub(super) async fn reserve_cover(
 
 /// Deletes a single comic row by ID.
 #[instrument(level = "info", err(Debug), skip_all)]
-pub(super) async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
+pub(super) async fn delete(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
     //
     diesel::delete(t_comic.filter(f_id.eq(id)))
         .execute(conn)
         .await
         .map_err(diesel)?;
 
-    Ok(())
+    accept(())
 }
 
 /// Atomically increments and returns the previous `chapter_next_index` value.
@@ -443,7 +443,7 @@ pub(super) async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
 pub(super) async fn incr_chapter_next_index(
     conn: &mut RdbConn,
     id: &str,
-) -> RegularResult<i32> {
+) -> BaseResult<i32> {
     //
     let prev: i32 = diesel::update(t_comic.filter(f_id.eq(id)))
         .set(f_chapter_next_index.eq(f_chapter_next_index + 1))
@@ -452,7 +452,7 @@ pub(super) async fn incr_chapter_next_index(
         .await
         .map_err(diesel)?;
 
-    Ok(prev)
+    accept(prev)
 }
 
 /// Adjusts a comic's chapter count by the given delta.
@@ -461,7 +461,7 @@ pub(super) async fn update_chapter_count(
     conn: &mut RdbConn,
     id: &str,
     delta: i32,
-) -> RegularResult<()> {
+) -> BaseResult<()> {
     //
     diesel::update(t_comic.filter(f_id.eq(id)))
         .set(f_chapter_count.eq(f_chapter_count + delta))
@@ -469,7 +469,7 @@ pub(super) async fn update_chapter_count(
         .await
         .map_err(diesel)?;
 
-    Ok(())
+    accept(())
 }
 
 /// Updates the `last_active_at` timestamp on a comic row to now.
@@ -477,7 +477,7 @@ pub(super) async fn update_chapter_count(
 pub(super) async fn touch_last_active(
     conn: &mut RdbConn,
     id: &str,
-) -> RegularResult<()> {
+) -> BaseResult<()> {
     //
     let now = OffsetDateTime::now_utc();
 
@@ -489,5 +489,5 @@ pub(super) async fn touch_last_active(
         .await
         .map_err(diesel)?;
 
-    Ok(())
+    accept(())
 }

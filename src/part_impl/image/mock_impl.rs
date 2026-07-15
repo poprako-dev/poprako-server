@@ -7,7 +7,7 @@ use poprako_util::i18n::trl;
 
 use crate::part::image::{ImageManager, ImagePool};
 use crate::part_impl::repo::mock_impl::Mock;
-use crate::result::{ExpectedVariant, RegularError, RegularResult};
+use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 
 /// Mock implementation of [ImagePool].
 ///
@@ -16,31 +16,31 @@ use crate::result::{ExpectedVariant, RegularError, RegularResult};
 /// [Mock::with_image_get_failure] or [Mock::with_image_put_failure] to test
 /// error paths.
 impl ImagePool for Mock {
-    async fn gen_download_url(&self, key: &str) -> RegularResult<Url> {
+    async fn gen_download_url(&self, key: &str) -> BaseResult<Url> {
         //
         if self.flags.lock().unwrap().image_get_failure {
-            return Err(RegularError::Expected {
+            return Err(BaseError::Expected {
                 variant: ExpectedVariant::Args,
                 message: trl("error-image-get-failed"),
             });
         }
 
-        Ok(Url::parse(&format!("https://test.local/get/{}", key)).unwrap())
+        accept(Url::parse(&format!("https://test.local/get/{}", key)).unwrap())
     }
 
     async fn gen_thumbnail_download_url(
         &self,
         original_key: &str,
-    ) -> RegularResult<Url> {
+    ) -> BaseResult<Url> {
         //
         if self.flags.lock().unwrap().image_get_failure {
-            return Err(RegularError::Expected {
+            return Err(BaseError::Expected {
                 variant: ExpectedVariant::Args,
                 message: trl("error-image-get-failed"),
             });
         }
 
-        Ok(
+        accept(
             Url::parse(&format!(
                 "https://test.local/cdn-cgi/image/width=300,fit=scale-down,quality=80,format=auto,metadata=none/{}",
                 original_key
@@ -49,41 +49,41 @@ impl ImagePool for Mock {
         )
     }
 
-    async fn get_upload_url(&self, key: &str) -> RegularResult<Url> {
+    async fn get_upload_url(&self, key: &str) -> BaseResult<Url> {
         //
         if self.flags.lock().unwrap().image_put_failure {
-            return Err(RegularError::Expected {
+            return Err(BaseError::Expected {
                 variant: ExpectedVariant::Args,
                 message: trl("error-image-put-failed"),
             });
         }
 
-        Ok(Url::parse(&format!("https://test.local/put/{}", key)).unwrap())
+        accept(Url::parse(&format!("https://test.local/put/{}", key)).unwrap())
     }
 }
 
 /// Mock implementation of [ImageManager].
 impl ImageManager for Mock {
-    async fn head_object(&self, _key: &str) -> RegularResult<bool> {
+    async fn head_object(&self, _key: &str) -> BaseResult<bool> {
         //
         if self.flags.lock().unwrap().image_head_failure {
-            return Err(RegularError::Expected {
+            return Err(BaseError::Expected {
                 variant: ExpectedVariant::Args,
                 message: trl("error-image-head-failed"),
             });
         }
 
         if self.flags.lock().unwrap().image_head_absent {
-            return Ok(false);
+            return accept(false);
         }
 
-        Ok(true)
+        accept(true)
     }
 
-    async fn delete_object(&self, key: &str) -> RegularResult<()> {
+    async fn delete_object(&self, key: &str) -> BaseResult<()> {
         //
         if self.flags.lock().unwrap().image_delete_failure {
-            return Err(RegularError::Expected {
+            return Err(BaseError::Expected {
                 variant: ExpectedVariant::Args,
                 message: trl("error-image-delete-failed"),
             });
@@ -95,7 +95,7 @@ impl ImageManager for Mock {
             .deleted_image_keys
             .push(key.to_string());
 
-        Ok(())
+        accept(())
     }
 }
 
@@ -131,7 +131,7 @@ async fn gen_download_url_failure_returns_expected_error() {
 
     assert!(matches!(
         err,
-        RegularError::Expected {
+        BaseError::Expected {
             variant: ExpectedVariant::Args,
             ..
         }

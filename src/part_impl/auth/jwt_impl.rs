@@ -12,7 +12,7 @@ use poprako_util::i18n::trl;
 
 use crate::model::user::UserToken;
 use crate::part::auth::TokenAuth;
-use crate::result::{ExpectedVariant, RegularError, RegularResult};
+use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 
 #[cfg(test)]
 mod tests;
@@ -47,10 +47,10 @@ struct TokenClaims {
 
 impl JwtAuth {
     /// Creates a JWT signer from a shared secret and token lifetime.
-    pub fn new(secret: &str, expiration_hours: i64) -> RegularResult<Self> {
+    pub fn new(secret: &str, expiration_hours: i64) -> BaseResult<Self> {
         //
         if expiration_hours <= 0 {
-            return Err(RegularError::Unrecoverable {
+            return Err(BaseError::Unrecoverable {
                 message: "[JwtAuth::new] JWT_EXPIRATION_HOURS must be positive"
                     .to_string(),
             });
@@ -62,7 +62,7 @@ impl JwtAuth {
 
         let decoding_key = DecodingKey::from_secret(secret.as_bytes());
 
-        Ok(Self {
+        accept(Self {
             expiration_seconds,
             encoding_key,
             decoding_key,
@@ -83,8 +83,8 @@ impl JwtAuth {
             )?;
 
         Self::new(&secret, expiration_hours).map_err(|err| match err {
-            RegularError::Expected { message, .. }
-            | RegularError::Unrecoverable { message } => {
+            BaseError::Expected { message, .. }
+            | BaseError::Unrecoverable { message } => {
                 anyhow::anyhow!("{}", message)
             }
         })
@@ -93,7 +93,7 @@ impl JwtAuth {
 
 impl TokenAuth for JwtAuth {
     #[instrument(level = "info", err(Debug), skip_all)]
-    fn sign_token(&self, token: &UserToken) -> RegularResult<String> {
+    fn sign_token(&self, token: &UserToken) -> BaseResult<String> {
         //
         let now = OffsetDateTime::now_utc();
 
@@ -114,7 +114,7 @@ impl TokenAuth for JwtAuth {
         let header = Header::new(Algorithm::HS256);
 
         encode(&header, &claims, &self.encoding_key).map_err(|err| {
-            RegularError::Unrecoverable {
+            BaseError::Unrecoverable {
                 message: format!(
                     "[JwtAuth::sign_token] error when encoding: {}",
                     err
@@ -124,7 +124,7 @@ impl TokenAuth for JwtAuth {
     }
 
     #[instrument(level = "info", err(Debug), skip_all)]
-    fn verify_token(&self, raw: &str) -> RegularResult<UserToken> {
+    fn verify_token(&self, raw: &str) -> BaseResult<UserToken> {
         //
         let token_data = decode::<TokenClaims>(
             raw,
@@ -135,13 +135,13 @@ impl TokenAuth for JwtAuth {
             //
             tracing::debug!("[JwtAuth::verify_token] decode failed: {}", err);
 
-            RegularError::Expected {
+            BaseError::Expected {
                 variant: ExpectedVariant::Auth,
                 message: trl("error-unauthorized"),
             }
         })?;
 
-        Ok(UserToken {
+        accept(UserToken {
             user_id: token_data.claims.user_id,
         })
     }
