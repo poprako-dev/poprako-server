@@ -1,6 +1,10 @@
 //! Assignment invitation use cases.
 
+use std::time::Duration;
+
 use poprako_orchestra::Nucl;
+use poprako_orchestra_extra::prom::oper::Defer;
+use poprako_orchestra_extra::prom::task::Task;
 use tracing::instrument;
 
 use poprako_util::i18n::trl;
@@ -19,6 +23,9 @@ use crate::model::assignment_invitation::{
 };
 use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
+use crate::part::prom::Prom;
+use crate::part::prom::payload::Payload;
+use crate::part::prom::payload::invitation::PurgeExpiredInvitation;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
 use crate::part::repo::chapter::ChapterRepo;
@@ -46,7 +53,7 @@ use crate::value::role::{RoleField, RoleMask};
 #[cfg(test)]
 mod tests;
 
-// FIXME: invitations should be fired out after a period of time.
+const EXPIRY_DELAY: Duration = Duration::from_secs(3 * 24 * 60 * 60);
 
 /// Lists assignment invitations under one chapter.
 #[instrument(level = "info", err(Debug), skip_all)]
@@ -90,9 +97,10 @@ where
 
 /// Creates a pending assignment invitation.
 #[instrument(level = "info", err(Debug), skip_all)]
-pub async fn create<N, C, R>(
+pub async fn create<N, C, R, P>(
     nucl: &N,
     repo: &R,
+    prom: &P,
     token: UserToken,
     params: CreateAssignmentInvitationParams,
 ) -> RegularResult<CreateAssignmentInvitationPayload>
@@ -104,6 +112,7 @@ where
         + UserRepo<C>
         + Send
         + Sync,
+    P: Prom<C> + Send + Sync,
 {
     validate_roles(params.roles)?;
 
@@ -161,6 +170,22 @@ where
                     },
                 )
                 .await?;
+
+            let purge_event = PurgeExpiredInvitation::Assignment {
+                invitation_id: assignment_invitation_info.id.clone(),
+            };
+
+            let purge_payload = Payload::PurgeExpiredInvitation(purge_event);
+
+            let purge_task_id = next_snowflake_id();
+
+            let purge_task = Task {
+                id: &purge_task_id,
+                payload: &purge_payload,
+                delay: Some(EXPIRY_DELAY),
+            };
+
+            prom.step(context, &Defer::new(purge_task)).await?;
 
             Ok((
                 assignment_invitation_info.id,

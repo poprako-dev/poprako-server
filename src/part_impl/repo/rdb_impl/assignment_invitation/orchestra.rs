@@ -6,11 +6,12 @@ use crate::part::repo::oper::assignment_invitation::{
     CreateAssignmentInvitation, DeleteAssignmentInvitations,
     GetAssignmentInvitationInfo, GetAssignmentInvitationInfoExcluded,
     ListAssignmentInvitationInfos, MarkAssignmentInvitationUsed,
+    PurgeExpiredAssignmentInvitation,
 };
 use crate::part_impl::repo::rdb_impl::RdbRepo;
 use crate::part_impl::repo::rdb_impl::assignment_invitation::{
     create, delete, delete_by_chapter_id, get_info_by_code_excluded,
-    get_info_by_id, list_infos, mark_pending_as_used,
+    get_info_by_id, list_infos, mark_pending_as_used, purge_pending,
 };
 use crate::part_impl::shared::RdbContext;
 use crate::result::{RegularError, RegularResult};
@@ -87,6 +88,20 @@ impl<'a> Step<MarkAssignmentInvitationUsed<'a>, RdbContext> for RdbRepo {
         mark_pending_as_used(context.conn(), oper.id).await
     }
 }
+
+impl<'a> Step<PurgeExpiredAssignmentInvitation<'a>, RdbContext> for RdbRepo {
+    type Error = RegularError;
+
+    #[instrument(level = "info", err(Debug), skip_all)]
+    async fn step(
+        &self,
+        context: &mut RdbContext,
+        oper: &PurgeExpiredAssignmentInvitation<'a>,
+    ) -> RegularResult<()> {
+        purge_pending(context.conn(), oper.id).await
+    }
+}
+
 impl<'a> Step<DeleteAssignmentInvitations<'a>, RdbContext> for RdbRepo {
     type Error = RegularError;
     #[instrument(level = "info", err(Debug), skip_all)]

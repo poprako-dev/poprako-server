@@ -6,12 +6,12 @@ use crate::part::repo::oper::assignment_invitation::{
     CreateAssignmentInvitation, DeleteAssignmentInvitations,
     GetAssignmentInvitationInfo, GetAssignmentInvitationInfoExcluded,
     ListAssignmentInvitationInfos, MarkAssignmentInvitationUsed,
+    PurgeExpiredAssignmentInvitation,
 };
 use crate::result::RegularError;
 
 /// Assignment invitation repository operations over standalone runs and coordinated steps.
-pub trait AssignmentInvitationRepo<C>:
-    for<'a> Run<ListAssignmentInvitationInfos<'a>, Error = RegularError>
+pub trait AssignmentInvitationRepo<C>: for<'a> Run<ListAssignmentInvitationInfos<'a>, Error = RegularError>
     + for<'a> Run<GetAssignmentInvitationInfo<'a>, Error = RegularError>
     + for<'a> Step<CreateAssignmentInvitation<'a>, C, Error = RegularError>
     + for<'a> Step<GetAssignmentInvitationInfo<'a>, C, Error = RegularError>
@@ -20,6 +20,7 @@ pub trait AssignmentInvitationRepo<C>:
         C,
         Error = RegularError,
     > + for<'a> Step<MarkAssignmentInvitationUsed<'a>, C, Error = RegularError>
+    + for<'a> Step<PurgeExpiredAssignmentInvitation<'a>, C, Error = RegularError>
     + for<'a> Step<DeleteAssignmentInvitations<'a>, C, Error = RegularError>
 {
 }

@@ -1,6 +1,10 @@
 //! Member invitation use cases.
 
+use std::time::Duration;
+
 use poprako_orchestra::{Nucl, run_proxy};
+use poprako_orchestra_extra::prom::oper::Defer;
+use poprako_orchestra_extra::prom::task::Task;
 use tracing::instrument;
 
 use poprako_util::i18n::trl;
@@ -19,6 +23,9 @@ use crate::model::member_invitation::{
 };
 use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
+use crate::part::prom::Prom;
+use crate::part::prom::payload::Payload;
+use crate::part::prom::payload::invitation::PurgeExpiredInvitation;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::member_invitation::MemberInvitationRepo;
 use crate::part::repo::oper::member::FindMemberInfo;
@@ -29,17 +36,19 @@ use crate::part::repo::oper::member_invitation::{
 use crate::part::repo::oper::user::FindUserInfo;
 use crate::part::repo::user::UserRepo;
 use crate::result::{ExpectedVariant, RegularError, RegularResult};
+use crate::util::next_snowflake_id;
 
 #[cfg(test)]
 mod tests;
 
-// FIXME: invitations should be fired out after a period of time.
+const EXPIRY_DELAY: Duration = Duration::from_secs(5 * 24 * 60 * 60);
 
 /// Creates a pending invitation for a team.
 #[instrument(level = "info", err(Debug), skip_all)]
-pub async fn create<N, C, R>(
+pub async fn create<N, C, R, P>(
     nucl: &N,
     repo: &R,
+    prom: &P,
     token: UserToken,
     params: CreateMemberInvitationParams,
 ) -> RegularResult<CreateMemberInvitationPayload>
@@ -47,6 +56,7 @@ where
     N: Nucl<Context = C, Error = RegularError>,
     C: Send,
     R: MemberInvitationRepo<C> + MemberRepo<C> + UserRepo<C> + Send + Sync,
+    P: Prom<C> + Send + Sync,
 {
     let roles = params.roles;
 
@@ -114,6 +124,22 @@ where
                     },
                 )
                 .await?;
+
+            let purge_event = PurgeExpiredInvitation::Member {
+                invitation_id: member_invitation_info.id.clone(),
+            };
+
+            let purge_payload = Payload::PurgeExpiredInvitation(purge_event);
+
+            let purge_task_id = next_snowflake_id();
+
+            let purge_task = Task {
+                id: &purge_task_id,
+                payload: &purge_payload,
+                delay: Some(EXPIRY_DELAY),
+            };
+
+            prom.step(context, &Defer::new(purge_task)).await?;
 
             Ok((member_invitation_info.id, member_invitation_info.code))
         })

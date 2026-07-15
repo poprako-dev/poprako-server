@@ -17,7 +17,9 @@ use tracing::instrument;
 
 use crate::part::image::ImageManager;
 use crate::part::prom::payload::Payload;
+use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
 use crate::part::repo::comic::ComicRepo;
+use crate::part::repo::member_invitation::MemberInvitationRepo;
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::user::UserRepo;
@@ -31,6 +33,8 @@ use crate::result::{RegularError, RegularResult};
 
 /// Prom image event handler.
 mod image;
+/// Prom invitation event handler.
+mod invitation;
 #[cfg(all(test, feature = "repo"))]
 mod tests {
     // image_payloads_from_rdb_dispatch(dispatch_payload)(positive): payloads stored by the RDB defer path are decoded and dispatched by their topic.
@@ -182,7 +186,7 @@ mod tests {
 }
 
 /// Interval between successive poll cycles in the prom background worker.
-const POLL_INTERVAL: StdDuration = StdDuration::from_secs(5);
+const POLL_INTERVAL: StdDuration = StdDuration::from_secs(300);
 const RETRY_DELAY: Duration = Duration::minutes(5);
 const PROCESSING_TIMEOUT: Duration = Duration::minutes(15);
 const COMPLETED_RETENTION: Duration = Duration::days(7);
@@ -216,7 +220,9 @@ pub struct RdbPromHandler<D, R, I> {
 impl<D, R, I> RdbPromHandler<D, R, I>
 where
     D: Nucl<Context = RdbContext, Error = RegularError>,
-    R: ComicRepo<RdbContext>
+    R: AssignmentInvitationRepo<RdbContext>
+        + ComicRepo<RdbContext>
+        + MemberInvitationRepo<RdbContext>
         + PageRepo<RdbContext>
         + TeamRepo<RdbContext>
         + UserRepo<RdbContext>
@@ -516,7 +522,9 @@ async fn dispatch_payload<D, R, I>(
 ) -> TaskFlow
 where
     D: Nucl<Context = RdbContext, Error = RegularError>,
-    R: ComicRepo<RdbContext>
+    R: AssignmentInvitationRepo<RdbContext>
+        + ComicRepo<RdbContext>
+        + MemberInvitationRepo<RdbContext>
         + PageRepo<RdbContext>
         + TeamRepo<RdbContext>
         + UserRepo<RdbContext>
@@ -547,6 +555,10 @@ where
     match payload {
         Payload::Image(task) => {
             image::handle(nucl, repo, image_pool, &task).await
+        }
+
+        Payload::PurgeExpiredInvitation(event) => {
+            invitation::handle(nucl, repo, &event).await
         }
     }
 }

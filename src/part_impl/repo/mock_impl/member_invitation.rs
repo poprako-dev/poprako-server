@@ -12,7 +12,7 @@ use crate::part::repo::member_invitation::MemberInvitationRepo;
 use crate::part::repo::oper::member_invitation::{
     CreateMemberInvitation, DeleteMemberInvitation, GetMemberInvitationInfo,
     GetMemberInvitationInfoExcluded, ListMemberInvitationInfos,
-    UpdateMemberInvitation,
+    PurgeExpiredMemberInvitation, UpdateMemberInvitation,
 };
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected,
@@ -328,6 +328,27 @@ impl<'a> Step<DeleteMemberInvitation<'a>, MockContext> for Mock {
             .ok_or_else(|| expected("error-invitation-not-found"))?;
 
         context.state.member_invitations.remove(position);
+
+        Ok(())
+    }
+}
+
+impl<'a> Step<PurgeExpiredMemberInvitation<'a>, MockContext> for Mock {
+    type Error = RegularError;
+
+    #[instrument(level = "info", err(Debug), skip_all)]
+    async fn step(
+        &self,
+        context: &mut MockContext,
+        oper: &PurgeExpiredMemberInvitation<'a>,
+    ) -> RegularResult<()> {
+        context
+            .state
+            .member_invitations
+            .retain(|member_invitation_info| {
+                member_invitation_info.id != oper.id
+                    || !member_invitation_info.pending
+            });
 
         Ok(())
     }

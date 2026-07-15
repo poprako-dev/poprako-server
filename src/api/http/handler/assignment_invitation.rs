@@ -62,6 +62,7 @@ pub async fn create(
     usecase::assignment_invitation::create(
         harn.drive(),
         harn.repo(),
+        harn.prom(),
         user_token,
         params,
     )
