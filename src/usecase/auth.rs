@@ -97,7 +97,7 @@ where
                     }
 
                     let password_hash =
-                        UserComplex::hash_password(&params.password)?;
+                        UserComplex::hash_password(&params.password).await?;
 
                     let user_entry = UserEntry {
                         id: UserComplex::gen_id(),
@@ -188,7 +188,9 @@ where
     if !UserComplex::verify_password(
         &params.password,
         &user_credential.password_hash,
-    ) {
+    )
+    .await
+    {
         return Err(RegularError::Expected {
             variant: ExpectedVariant::Auth,
             message: trl("error-wrong-credentials"),

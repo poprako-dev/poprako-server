@@ -2,7 +2,9 @@ use poprako_orchestra::{Run, Step};
 
 use tracing::instrument;
 
-use crate::model::assignment_invitation::AssignmentInvitationInfo;
+use crate::model::assignment_invitation::{
+    AssignmentInvitationInfo, AssignmentInvitationListKind,
+};
 use crate::part::repo::oper::assignment_invitation::{
     CreateAssignmentInvitation, DeleteAssignmentInvitations,
     GetAssignmentInvitationInfo, GetAssignmentInvitationInfoExcluded,
@@ -39,8 +41,15 @@ fn list_infos(
         .assignment_invitations
         .iter()
         .filter(|info| {
-            info.chapter_id == oper.chapter_id
-                && oper.pending.is_none_or(|pending| info.pending == pending)
+            info.chapter_id == oper.spec.chapter_id
+                && match &oper.spec.kind {
+                    //
+                    AssignmentInvitationListKind::All => true,
+
+                    AssignmentInvitationListKind::Pending => info.pending,
+
+                    AssignmentInvitationListKind::Used => !info.pending,
+                }
         })
         .cloned()
         .collect::<Vec<_>>();
@@ -52,9 +61,9 @@ fn list_infos(
             .then_with(|| left.id.cmp(&right.id))
     });
 
-    let offset = oper.page.offset as usize;
+    let offset = oper.spec.offset as usize;
 
-    let end = std::cmp::min(offset + oper.page.limit as usize, infos.len());
+    let end = std::cmp::min(offset + oper.spec.limit as usize, infos.len());
 
     match offset >= infos.len() {
         //

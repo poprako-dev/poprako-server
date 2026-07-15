@@ -108,6 +108,8 @@ fn update_user(
         }
 
         UpdateUser::TouchLastActive { id } => (id, None),
+
+        UpdateUser::PasswordHash { id, .. } => (id, None),
     };
 
     let user_info = state
@@ -138,6 +140,23 @@ fn update_user(
     }
 
     user_info.updated_at = now();
+
+    match oper {
+        //
+        UpdateUser::PasswordHash { id, password_hash } => {
+            let credential = state
+                .credentials
+                .iter_mut()
+                .find(|credential| credential.user_id == *id)
+                .ok_or_else(|| expected("error-user-not-found"))?;
+
+            credential.password_hash = password_hash.to_string();
+        }
+
+        UpdateUser::Info { .. }
+        | UpdateUser::MarkAvatarUploaded { .. }
+        | UpdateUser::TouchLastActive { .. } => {}
+    }
 
     Ok(())
 }

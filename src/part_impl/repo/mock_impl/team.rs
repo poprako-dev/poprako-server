@@ -7,7 +7,9 @@ use poprako_orchestra::{Run, Step};
 use tracing::instrument;
 
 use crate::complex::team::TeamComplex;
-use crate::model::team::{TeamAvatarReservation, TeamEntry, TeamInfo};
+use crate::model::team::{
+    TeamAvatarReservation, TeamEntry, TeamInfo, TeamInfoListKind,
+};
 use crate::part::repo::oper::team::{
     AllocTeamWorksetIndex, CreateTeam, DeleteTeam, GetTeamInfo,
     GetTeamInfoExcluded, ListTeamInfos, ReserveTeamAvatar, UpdateTeam,
@@ -61,28 +63,28 @@ fn list_team_infos(
     oper: &ListTeamInfos<'_>,
 ) -> Vec<TeamInfo> {
     //
-    let mut team_infos = match oper.user_id {
+    let mut team_infos = match &oper.spec.kind {
         //
-        Some(user_id) => state
+        TeamInfoListKind::JoinedBy { user_id } => state
             .teams
             .iter()
             .filter(|team_info| {
                 state.members.iter().any(|member_info| {
-                    member_info.user_id == user_id
+                    member_info.user_id == user_id.as_str()
                         && member_info.team_id == team_info.id
                 })
             })
             .cloned()
             .collect(),
 
-        None => state.teams.clone(),
+        TeamInfoListKind::All => state.teams.clone(),
     };
 
     team_infos.sort_by_key(|team_info| Reverse(team_info.created_at));
 
-    let offset = oper.offset as usize;
+    let offset = oper.spec.offset as usize;
 
-    let limit = oper.limit as usize;
+    let limit = oper.spec.limit as usize;
 
     match offset >= team_infos.len() {
         //

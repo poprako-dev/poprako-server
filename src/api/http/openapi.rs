@@ -62,7 +62,8 @@ use crate::data::unit::{
 };
 use crate::data::user::{
     MarkUserAvatarUploadedParams, ReserveUserAvatarParams,
-    ReserveUserAvatarPayload, UpdateUserInfoParams, UserInfoVal,
+    ReserveUserAvatarPayload, UpdateUserInfoParams, UpdateUserPasswordParams,
+    UserInfoVal,
 };
 use crate::data::workset::{
     CreateWorksetParams, CreateWorksetPayload, UpdateWorksetInfoParams,
@@ -88,6 +89,7 @@ use crate::value::role::RoleField;
         handler::user::get_my_info,
         handler::user::get_info,
         handler::user::update_info,
+        handler::user::update_password,
         handler::user::delete,
         handler::user::reserve_avatar,
         handler::user::mark_avatar_uploaded,
@@ -161,6 +163,7 @@ use crate::value::role::RoleField;
         LoginAuthPayload,
         UserInfoVal,
         UpdateUserInfoParams,
+        UpdateUserPasswordParams,
         ReserveUserAvatarParams,
         ReserveUserAvatarPayload,
         MarkUserAvatarUploadedParams,

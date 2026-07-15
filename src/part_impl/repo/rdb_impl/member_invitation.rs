@@ -8,7 +8,8 @@ use time::OffsetDateTime;
 use tracing::instrument;
 
 use crate::model::member_invitation::{
-    MemberInvitationEntry, MemberInvitationInfo, MemberInvitationListSpec,
+    MemberInvitationEntry, MemberInvitationInfo, MemberInvitationListKind,
+    MemberInvitationListSpec,
 };
 use crate::part::repo::member_invitation::MemberInvitationRepo;
 use crate::part::repo::oper::member_invitation::{
@@ -43,9 +44,14 @@ async fn list_infos(
         .select(MemberInvitationRow::as_select())
         .into_boxed();
 
-    if let Some(is_pending) = spec.pending {
-        query = query.filter(f_pending.eq(is_pending));
-    }
+    query = match &spec.kind {
+        //
+        MemberInvitationListKind::All => query,
+
+        MemberInvitationListKind::Pending => query.filter(f_pending.eq(true)),
+
+        MemberInvitationListKind::Used => query.filter(f_pending.eq(false)),
+    };
 
     let rows: Vec<MemberInvitationRow> = query
         .order_by(f_created_at.desc())

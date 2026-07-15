@@ -5,6 +5,9 @@ use tracing::instrument;
 use poprako_util::time::ToUnixMilli as _;
 
 use crate::data::system_mail::{ListSystemMailInfosParams, SystemMailInfoVal};
+use crate::model::system_mail::{
+    SystemMailInfoListKind, SystemMailInfoListSpec,
+};
 use crate::model::user::UserToken;
 use crate::part::repo::oper::system_mail::{
     ListSystemMailInfos, MarkSystemMailRead,
@@ -37,12 +40,25 @@ pub async fn list_infos<C, R>(
 where
     R: SystemMailRepo<C>,
 {
+    let kind = match params.read {
+        //
+        Some(true) => SystemMailInfoListKind::Read,
+
+        Some(false) => SystemMailInfoListKind::Unread,
+
+        None => SystemMailInfoListKind::All,
+    };
+
+    let system_mail_list_spec = SystemMailInfoListSpec {
+        receiver_id: token.user_id,
+        kind,
+        offset: params.offset,
+        limit: params.limit,
+    };
+
     let system_mail_infos = repo
         .run(&ListSystemMailInfos {
-            receiver_id: &token.user_id,
-            read: params.read,
-            offset: params.offset,
-            limit: params.limit,
+            spec: &system_mail_list_spec,
         })
         .await?;
 

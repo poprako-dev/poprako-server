@@ -1,6 +1,8 @@
 use poprako_orchestra::Oper;
 
-use crate::model::team::{TeamAvatarReservation, TeamEntry, TeamInfo};
+use crate::model::team::{
+    TeamAvatarReservation, TeamEntry, TeamInfo, TeamInfoListSpec,
+};
 
 pub struct CreateTeam<'a> {
     pub entry: &'a TeamEntry,
@@ -19,10 +21,7 @@ impl<'a> Oper for GetTeamInfo<'a> {
 }
 
 pub struct ListTeamInfos<'a> {
-    pub user_id: Option<&'a str>,
-
-    pub offset: u32,
-    pub limit: u32,
+    pub spec: &'a TeamInfoListSpec,
 }
 
 impl<'a> Oper for ListTeamInfos<'a> {

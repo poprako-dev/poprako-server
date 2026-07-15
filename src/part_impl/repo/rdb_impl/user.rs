@@ -136,6 +136,25 @@ async fn update_info(
     Ok(())
 }
 
+/// Replace a user's password hash.
+#[instrument(level = "info", err(Debug), skip_all)]
+async fn update_password_hash(
+    conn: &mut RdbConn,
+    id: &str,
+    password_hash: &str,
+) -> RegularResult<()> {
+    //
+    let now = OffsetDateTime::now_utc();
+
+    diesel::update(t_user.filter(f_id.eq(id)))
+        .set((f_password_hash.eq(password_hash), f_updated_at.eq(now)))
+        .execute(conn)
+        .await
+        .map_err(diesel)?;
+
+    Ok(())
+}
+
 /// Reserve a new avatar slot for a user: bump version, generate object key,
 /// and return the reservation with previous key for cleanup.
 #[instrument(level = "info", err(Debug), skip_all)]
@@ -324,6 +343,15 @@ impl<'a> Run<UpdateUser<'a>> for RdbRepo {
                     *avatar_version
                 )
             }
+
+            UpdateUser::PasswordHash { id, password_hash } => {
+                submit_query!(
+                    self.core,
+                    update_password_hash,
+                    id,
+                    password_hash
+                )
+            }
         }
     }
 }
@@ -379,6 +407,10 @@ impl<'a> Step<UpdateUser<'a>, RdbContext> for RdbRepo {
 
             UpdateUser::TouchLastActive { id } => {
                 touch_last_active(context.conn(), id).await
+            }
+
+            UpdateUser::PasswordHash { id, password_hash } => {
+                update_password_hash(context.conn(), id, password_hash).await
             }
         }
     }

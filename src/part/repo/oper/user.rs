@@ -49,6 +49,10 @@ pub enum UpdateUser<'a> {
     TouchLastActive {
         id: &'a str,
     },
+    PasswordHash {
+        id: &'a str,
+        password_hash: &'a str,
+    },
 }
 
 impl<'a> Oper for UpdateUser<'a> {
