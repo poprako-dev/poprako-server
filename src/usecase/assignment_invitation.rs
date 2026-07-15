@@ -1,8 +1,7 @@
 //! Assignment invitation use cases.
 
-use tracing::instrument;
-
 use poprako_orchestra::Nucl;
+use tracing::instrument;
 
 use poprako_util::i18n::trl;
 

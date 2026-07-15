@@ -4,13 +4,15 @@ use std::result::Result;
 
 use serde::{Deserialize, Serialize, Serializer};
 
+use poprako_util::i18n::trl;
 #[cfg(feature = "swagger-ui")]
 use utoipa::ToSchema;
 
-use poprako_util::i18n::trl;
-
 use crate::result::{ExpectedVariant, RegularError, RegularResult};
 use crate::value::incl::InclOpt;
+
+#[cfg(test)]
+mod tests;
 
 /// Phase a workflow stage can be in.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -500,6 +502,3 @@ impl InclOpt for ChapterInclOpt {
         }
     }
 }
-
-#[cfg(test)]
-mod tests;

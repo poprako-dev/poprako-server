@@ -10,7 +10,6 @@ use futures::future::OptionFuture;
 use poprako_util::time::ToUnixMilli;
 
 use crate::data::comic::ComicInfoVal;
-
 use crate::data::user::UserInfoVal;
 use crate::model::chapter::ChapterInfo;
 use crate::part::image::ImagePool;

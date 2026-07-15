@@ -23,9 +23,11 @@ use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::RegularResult;
 use crate::value::chapter::ChapterInclOpt;
 
-impl ChapterRepo<RdbContext> for RdbRepo {}
-
 mod orchestra;
+#[cfg(all(test, feature = "repo"))]
+mod tests;
+
+impl ChapterRepo<RdbContext> for RdbRepo {}
 
 /// Converts a single `ChapterRow` into a `ChapterInfo`.
 fn row_into_info(row: ChapterRow) -> RegularResult<ChapterInfo> {
@@ -359,6 +361,3 @@ pub(super) async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
 
     Ok(())
 }
-
-#[cfg(all(test, feature = "repo"))]
-mod tests;

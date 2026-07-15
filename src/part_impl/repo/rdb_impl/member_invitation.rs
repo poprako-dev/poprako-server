@@ -4,7 +4,6 @@ use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use poprako_orchestra::{Run, Step};
 use time::OffsetDateTime;
-
 use tracing::instrument;
 
 use crate::model::member_invitation::{
@@ -27,6 +26,9 @@ use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::{RegularError, RegularResult};
 use crate::value::member_invitation::MemberInvitationInclOpt;
 use crate::value::role::RoleMask;
+
+#[cfg(all(test, feature = "repo"))]
+mod tests;
 
 impl MemberInvitationRepo<RdbContext> for RdbRepo {}
 
@@ -340,5 +342,3 @@ impl<'a> Step<DeleteMemberInvitation<'a>, RdbContext> for RdbRepo {
         delete(context.conn(), oper.id).await
     }
 }
-#[cfg(all(test, feature = "repo"))]
-mod tests;

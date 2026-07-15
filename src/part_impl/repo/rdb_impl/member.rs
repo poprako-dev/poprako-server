@@ -4,7 +4,6 @@ use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use poprako_orchestra::Run;
 use time::OffsetDateTime;
-
 use tracing::instrument;
 
 use crate::model::member::{
@@ -23,9 +22,11 @@ use crate::result::{RegularError, RegularResult};
 use crate::value::member::MemberInclOpt;
 use crate::value::role::{RoleField, RoleMask};
 
-impl MemberRepo<RdbContext> for RdbRepo {}
-
 mod orchestra;
+#[cfg(all(test, feature = "repo"))]
+mod tests;
+
+impl MemberRepo<RdbContext> for RdbRepo {}
 
 /// Per-role assignment timestamps extracted from a [`RoleMask`].
 struct RoleTimestamps {
@@ -428,6 +429,3 @@ async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
 
     Ok(())
 }
-
-#[cfg(all(test, feature = "repo"))]
-mod tests;

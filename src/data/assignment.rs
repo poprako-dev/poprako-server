@@ -11,7 +11,6 @@ use poprako_util::i18n::trl;
 use poprako_util::time::ToUnixMilli;
 
 use crate::data::chapter::ChapterInfoVal;
-
 use crate::data::user::UserInfoVal;
 use crate::model::assignment::{AssignmentInfo, AssignmentInfoListSpec};
 use crate::part::image::ImagePool;

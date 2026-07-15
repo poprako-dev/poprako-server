@@ -3,7 +3,6 @@
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use time::OffsetDateTime;
-
 use tracing::instrument;
 
 use crate::model::assignment_invitation::{
@@ -21,9 +20,11 @@ use crate::part_impl::shared::result::{diesel, expected};
 use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::RegularResult;
 
-impl AssignmentInvitationRepo<RdbContext> for RdbRepo {}
-
 mod orchestra;
+#[cfg(all(test, feature = "repo"))]
+mod tests;
+
+impl AssignmentInvitationRepo<RdbContext> for RdbRepo {}
 
 /// Converts a single `AssignmentInvitationRow` into an `AssignmentInvitationInfo`.
 fn row_into_info(
@@ -187,6 +188,3 @@ async fn delete_by_chapter_id(
 
     Ok(())
 }
-
-#[cfg(all(test, feature = "repo"))]
-mod tests;

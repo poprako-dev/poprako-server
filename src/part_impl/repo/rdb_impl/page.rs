@@ -1,9 +1,10 @@
 //! RDB-backed page repository.
 
+use std::collections::HashMap;
+
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use time::OffsetDateTime;
-
 use tracing::instrument;
 
 use crate::complex::page::PageComplex;
@@ -22,9 +23,11 @@ use crate::part_impl::shared::result::{diesel, expected, version};
 use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::RegularResult;
 
-impl PageRepo<RdbContext> for RdbRepo {}
-
 mod orchestra;
+#[cfg(all(test, feature = "repo"))]
+mod tests;
+
+impl PageRepo<RdbContext> for RdbRepo {}
 
 /// Load a single page info by ID.
 #[instrument(level = "info", err(Debug), skip_all)]
@@ -271,7 +274,3 @@ async fn delete_by_chapter_id(
 
     Ok(())
 }
-
-#[cfg(all(test, feature = "repo"))]
-mod tests;
-use std::collections::HashMap;

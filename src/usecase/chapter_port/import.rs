@@ -1,11 +1,7 @@
-#[cfg(test)]
-mod tests;
-
 use std::collections::HashMap;
 
-use tracing::instrument;
-
 use poprako_orchestra::{Nucl, run_proxy};
+use tracing::instrument;
 
 use poprako_util::i18n::trl;
 
@@ -38,6 +34,9 @@ use crate::part::repo::unit::UnitRepo;
 use crate::result::{ExpectedVariant, RegularError, RegularResult};
 use crate::value::chapter_port::TranslationFormat;
 use crate::value::role::RoleField;
+
+#[cfg(test)]
+mod tests;
 
 /// Imports chapter translation text into existing pages.
 #[instrument(level = "info", err(Debug), skip_all)]

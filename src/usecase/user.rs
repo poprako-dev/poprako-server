@@ -5,7 +5,6 @@ use std::time::Duration;
 use poprako_orchestra::Nucl;
 use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
 use poprako_orchestra_extra::prom::task::Task;
-
 use tracing::instrument;
 
 use poprako_util::i18n::trl;
@@ -280,7 +279,7 @@ where
 
             batch_delays.push(Some(Duration::from_secs(15 * 60)));
 
-            let batch_tasks: Vec<_> = batch_ids
+            let batch_tasks: Vec<Task<'_, String, Payload>> = batch_ids
                 .iter()
                 .zip(batch_payloads.iter())
                 .zip(batch_delays.iter())

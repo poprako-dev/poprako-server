@@ -4,7 +4,6 @@ use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use poprako_orchestra::{Run, Step};
 use time::OffsetDateTime;
-
 use tracing::instrument;
 
 use crate::complex::team::TeamComplex;
@@ -26,6 +25,9 @@ use crate::part_impl::repo::rdb_impl::schema::t_team::dsl::*;
 use crate::part_impl::shared::result::{diesel, expected, version};
 use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::{RegularError, RegularResult};
+
+#[cfg(all(test, feature = "repo"))]
+mod tests;
 
 impl TeamRepo<RdbContext> for RdbRepo {}
 
@@ -408,5 +410,3 @@ impl<'a> Step<AllocTeamWorksetIndex<'a>, RdbContext> for RdbRepo {
         increment_workset_next_index(context.conn(), oper.id).await
     }
 }
-#[cfg(all(test, feature = "repo"))]
-mod tests;

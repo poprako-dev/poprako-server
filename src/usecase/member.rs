@@ -1,8 +1,7 @@
 //! Member use cases: create, join, list, role update, and deletion.
 
-use tracing::instrument;
-
 use poprako_orchestra::{Nucl, run_proxy};
+use tracing::instrument;
 
 use poprako_util::i18n::trl;
 

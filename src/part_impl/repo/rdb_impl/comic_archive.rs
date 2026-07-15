@@ -5,7 +5,6 @@ use std::collections::HashMap;
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use poprako_orchestra::Step;
-
 use tracing::instrument;
 
 use crate::model::assignment::AssignmentInfo;
@@ -66,6 +65,9 @@ use crate::part_impl::repo::rdb_impl::schema::{
 use crate::part_impl::shared::result::{diesel, expected};
 use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::{RegularError, RegularResult};
+
+#[cfg(all(test, feature = "repo"))]
+mod tests;
 
 impl ComicArchiveRepo<RdbContext> for RdbRepo {}
 
@@ -378,6 +380,3 @@ impl<'a> Step<CommitComicArchive<'a>, RdbContext> for RdbRepo {
         commit(context.conn(), oper.write).await
     }
 }
-
-#[cfg(all(test, feature = "repo"))]
-mod tests;

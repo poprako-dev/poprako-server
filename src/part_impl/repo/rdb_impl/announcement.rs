@@ -3,7 +3,6 @@
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use poprako_orchestra::{Run, Step};
-
 use tracing::instrument;
 
 use crate::model::announcement::{
@@ -21,6 +20,9 @@ use crate::part_impl::repo::rdb_impl::{RdbRepo, incl};
 use crate::part_impl::shared::result::diesel;
 use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::{RegularError, RegularResult};
+
+#[cfg(all(test, feature = "repo"))]
+mod tests;
 
 impl AnnouncementRepo<RdbContext> for RdbRepo {}
 
@@ -97,6 +99,3 @@ impl Step<CreateAnnouncement<'_>, RdbContext> for RdbRepo {
         create(context.conn(), oper.entry).await
     }
 }
-
-#[cfg(all(test, feature = "repo"))]
-mod tests;

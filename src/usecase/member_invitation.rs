@@ -1,8 +1,7 @@
 //! Member invitation use cases.
 
-use tracing::instrument;
-
 use poprako_orchestra::{Nucl, run_proxy};
+use tracing::instrument;
 
 use poprako_util::i18n::trl;
 

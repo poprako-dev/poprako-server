@@ -3,7 +3,6 @@
 use std::cmp::Reverse;
 
 use poprako_orchestra::{Run, Step};
-
 use tracing::instrument;
 
 use crate::model::announcement::{

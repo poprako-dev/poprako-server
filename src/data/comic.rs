@@ -6,12 +6,10 @@
 //!
 //! [`ImagePool`]: crate::part::image::ImagePool
 
+use futures::future::OptionFuture;
 use serde::{Deserialize, Serialize};
-
 #[cfg(feature = "swagger-ui")]
 use utoipa::{IntoParams, ToSchema};
-
-use futures::future::OptionFuture;
 
 use poprako_util::time::ToUnixMilli;
 
@@ -24,6 +22,65 @@ use crate::part::image::ImagePool;
 use crate::result::{RegularError, RegularResult};
 use crate::value::chapter::StageMask;
 use crate::value::comic::{ComicInclOpt, ComicWithOpt};
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use serde_json::Value;
+
+    #[test]
+    fn comic_info_val_omits_none_fields() {
+        let comic_info_val = ComicInfoVal {
+            id: "comic-1".into(),
+            workset_id: "workset-1".into(),
+            index: 1,
+            title: "Comic".into(),
+            author: "Author".into(),
+            description: None,
+            cover_url: None,
+            cover_thumbnail_url: None,
+            chapter_count: 0,
+            creator_id: "user-1".into(),
+            workset: None,
+            team: None,
+            creator: None,
+            last_active_at: 0,
+            created_at: 0,
+            updated_at: 0,
+        };
+
+        let serialized = serde_json::to_value(comic_info_val).unwrap();
+        let Value::Object(object) = serialized else {
+            panic!("comic info value must serialize as an object");
+        };
+
+        for field_name in [
+            "description",
+            "cover_url",
+            "cover_thumbnail_url",
+            "workset",
+            "team",
+            "creator",
+        ] {
+            assert!(!object.contains_key(field_name));
+        }
+    }
+
+    #[test]
+    fn create_comic_params_deserializes_missing_optional_fields_as_none() {
+        let create_comic_params =
+            serde_json::from_value::<CreateComicParams>(serde_json::json!({
+                "workset_id": "workset-1",
+                "title": "Comic",
+                "author": "Author",
+            }))
+            .unwrap();
+
+        assert!(create_comic_params.description.is_none());
+        assert!(create_comic_params.first_chapter_subtitle.is_none());
+    }
+}
 
 /// Presentation-ready comic information.
 ///
@@ -241,65 +298,6 @@ impl TryFrom<ListComicInfosParams> for ComicInfoListSpec {
             offset: params.offset,
             limit: params.limit,
         })
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use serde_json::Value;
-
-    use super::{ComicInfoVal, CreateComicParams};
-
-    #[test]
-    fn comic_info_val_omits_none_fields() {
-        let comic_info_val = ComicInfoVal {
-            id: "comic-1".into(),
-            workset_id: "workset-1".into(),
-            index: 1,
-            title: "Comic".into(),
-            author: "Author".into(),
-            description: None,
-            cover_url: None,
-            cover_thumbnail_url: None,
-            chapter_count: 0,
-            creator_id: "user-1".into(),
-            workset: None,
-            team: None,
-            creator: None,
-            last_active_at: 0,
-            created_at: 0,
-            updated_at: 0,
-        };
-
-        let serialized = serde_json::to_value(comic_info_val).unwrap();
-        let Value::Object(object) = serialized else {
-            panic!("comic info value must serialize as an object");
-        };
-
-        for field_name in [
-            "description",
-            "cover_url",
-            "cover_thumbnail_url",
-            "workset",
-            "team",
-            "creator",
-        ] {
-            assert!(!object.contains_key(field_name));
-        }
-    }
-
-    #[test]
-    fn create_comic_params_deserializes_missing_optional_fields_as_none() {
-        let create_comic_params =
-            serde_json::from_value::<CreateComicParams>(serde_json::json!({
-                "workset_id": "workset-1",
-                "title": "Comic",
-                "author": "Author",
-            }))
-            .unwrap();
-
-        assert!(create_comic_params.description.is_none());
-        assert!(create_comic_params.first_chapter_subtitle.is_none());
     }
 }
 

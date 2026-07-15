@@ -21,9 +21,11 @@ use crate::part_impl::shared::result::{diesel, expected};
 use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::RegularResult;
 
-impl UnitRepo<RdbContext> for RdbRepo {}
-
 mod orchestra;
+#[cfg(all(test, feature = "repo"))]
+mod tests;
+
+impl UnitRepo<RdbContext> for RdbRepo {}
 
 /// Query a paginated list of unit infos for a page, ordered by index then ID.
 #[instrument(level = "info", err(Debug), skip_all)]
@@ -262,6 +264,3 @@ async fn count_by_page_id(
 
     Ok(counters)
 }
-
-#[cfg(all(test, feature = "repo"))]
-mod tests;
