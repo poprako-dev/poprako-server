@@ -37,3 +37,22 @@ pub struct AssignmentInvitationEntry {
 
     pub roles: RoleMask,
 }
+
+/// Filtering and pagination parameters for listing assignment invitations.
+pub struct AssignmentInvitationListSpec {
+    pub chapter_id: String,
+    pub kind: AssignmentInvitationListKind,
+
+    pub offset: u32,
+    pub limit: u32,
+}
+
+/// Consumption-status filtering mode for listing assignment invitations.
+pub enum AssignmentInvitationListKind {
+    /// Include invitations regardless of consumption status.
+    All,
+    /// Include only invitations that have not yet been consumed.
+    Pending,
+    /// Include only invitations that have already been consumed.
+    Used,
+}

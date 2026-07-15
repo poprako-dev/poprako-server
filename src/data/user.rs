@@ -87,6 +87,14 @@ pub struct UpdateUserInfoParams {
     pub nickname: String,
 }
 
+/// Input parameters for replacing the authenticated user's password.
+#[derive(Debug, Deserialize)]
+#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+pub struct UpdateUserPasswordParams {
+    pub current_password: String,
+    pub new_password: String,
+}
+
 /// Input parameters for reserving a new avatar upload slot.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]

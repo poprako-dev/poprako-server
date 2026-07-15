@@ -8,7 +8,10 @@ use time::OffsetDateTime;
 use tracing::instrument;
 
 use crate::complex::team::TeamComplex;
-use crate::model::team::{TeamAvatarReservation, TeamEntry, TeamInfo};
+use crate::model::team::{
+    TeamAvatarReservation, TeamEntry, TeamInfo, TeamInfoListKind,
+    TeamInfoListSpec,
+};
 use crate::part::repo::oper::team::{
     AllocTeamWorksetIndex, CreateTeam, DeleteTeam, GetTeamInfo,
     GetTeamInfoExcluded, ListTeamInfos, ReserveTeamAvatar, UpdateTeam,
@@ -75,31 +78,33 @@ async fn get_info_by_id(
     Ok(row.into())
 }
 
-/// Query teams, optionally filtered to those a user is a member of.
+/// Query teams selected by a list specification.
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn list_infos(
     conn: &mut RdbConn,
-    user_id: Option<&str>,
-    offset: u32,
-    limit: u32,
+    spec: &TeamInfoListSpec,
 ) -> RegularResult<Vec<TeamInfo>> {
     //
     let mut query = t_team.into_boxed();
 
-    if let Some(user_id) = user_id {
+    query = match &spec.kind {
         //
-        let member_team_ids = t_member::table
-            .filter(t_member::f_user_id.eq(user_id))
-            .select(t_member::f_team_id);
+        TeamInfoListKind::All => query,
 
-        query = query.filter(f_id.eq_any(member_team_ids));
-    }
+        TeamInfoListKind::JoinedBy { user_id } => {
+            let member_team_ids = t_member::table
+                .filter(t_member::f_user_id.eq(user_id))
+                .select(t_member::f_team_id);
+
+            query.filter(f_id.eq_any(member_team_ids))
+        }
+    };
 
     let rows: Vec<TeamRow> = query
         .select(TeamRow::as_select())
         .order_by(f_created_at.desc())
-        .offset(offset as i64)
-        .limit(limit as i64)
+        .offset(spec.offset as i64)
+        .limit(spec.limit as i64)
         .load(conn)
         .await
         .map_err(diesel)?;
@@ -282,13 +287,7 @@ impl<'a> Run<ListTeamInfos<'a>> for RdbRepo {
         &self,
         oper: &ListTeamInfos<'a>,
     ) -> Result<Vec<TeamInfo>, Self::Error> {
-        submit_query!(
-            self.core,
-            list_infos,
-            oper.user_id,
-            oper.offset,
-            oper.limit
-        )
+        submit_query!(self.core, list_infos, oper.spec)
     }
 }
 

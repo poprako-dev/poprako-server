@@ -32,3 +32,22 @@ pub struct SystemMailEntry {
     pub title: String,
     pub content: String,
 }
+
+/// Filtering and pagination parameters for listing a user's system mail.
+pub struct SystemMailInfoListSpec {
+    pub receiver_id: String,
+    pub kind: SystemMailInfoListKind,
+
+    pub offset: u32,
+    pub limit: u32,
+}
+
+/// Read-status filtering mode for listing system mail.
+pub enum SystemMailInfoListKind {
+    /// Include mail regardless of read status.
+    All,
+    /// Include only read mail.
+    Read,
+    /// Include only unread mail.
+    Unread,
+}

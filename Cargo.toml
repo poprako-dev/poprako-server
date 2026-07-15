@@ -57,3 +57,10 @@ governor = "0.6"
 futures = "0.3.32"
 poprako-orchestra = "0.2.0"
 poprako-orchestra-extra = { version = "0.2.0", features = ["promise"] }
+
+[dev-dependencies]
+criterion = "0.7"
+
+[[bench]]
+name = "test_benchmark"
+harness = false

@@ -23,14 +23,7 @@ impl<'a> Run<ListAssignmentInvitationInfos<'a>> for RdbRepo {
         &self,
         oper: &ListAssignmentInvitationInfos<'a>,
     ) -> RegularResult<Vec<AssignmentInvitationInfo>> {
-        submit_query!(
-            self.core,
-            list_infos,
-            oper.chapter_id,
-            oper.pending,
-            oper.page.offset,
-            oper.page.limit
-        )
+        submit_query!(self.core, list_infos, oper.spec)
     }
 }
 impl<'a> Run<GetAssignmentInvitationInfo<'a>> for RdbRepo {

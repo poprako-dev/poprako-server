@@ -23,6 +23,22 @@ pub struct TeamInfo {
     pub updated_at: OffsetDateTime,
 }
 
+/// Filtering and pagination parameters for listing teams.
+pub struct TeamInfoListSpec {
+    pub kind: TeamInfoListKind,
+
+    pub offset: u32,
+    pub limit: u32,
+}
+
+/// Membership filtering mode for listing teams.
+pub enum TeamInfoListKind {
+    /// Include all teams.
+    All,
+    /// Include only teams joined by the specified user.
+    JoinedBy { user_id: String },
+}
+
 /// The data needed to create a new team.
 #[cfg_attr(test, derive(Clone))]
 pub struct TeamEntry {

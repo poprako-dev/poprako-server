@@ -119,7 +119,7 @@ fn load_snowflake_node_id() -> u16 {
         Err(_) => return 0,
     };
 
-    let parsed: Result<u16, _> = value.parse();
+    let parsed = value.parse::<u16>();
 
     match parsed {
         //

@@ -2,9 +2,10 @@
 
 use poprako_orchestra::{Nucl as _, Run as _, Step as _};
 
-use poprako_util::page::Page;
-
-use crate::model::assignment_invitation::AssignmentInvitationEntry;
+use crate::model::assignment_invitation::{
+    AssignmentInvitationEntry, AssignmentInvitationListKind,
+    AssignmentInvitationListSpec,
+};
 use crate::part::repo::oper::assignment_invitation::{
     CreateAssignmentInvitation, ListAssignmentInvitationInfos,
     MarkAssignmentInvitationUsed,
@@ -63,16 +64,16 @@ async fn assignment_invitation_roundtrip_reads_test_database_url() {
         .ok()
         .unwrap();
 
-    let page = Page {
+    let assignment_invitation_list_spec = AssignmentInvitationListSpec {
+        chapter_id: chapter_fixture.chapter_entry.id.clone(),
+        kind: AssignmentInvitationListKind::Used,
         offset: 0,
         limit: 10,
     };
 
     let assignment_invitation_infos = repo
         .run(&ListAssignmentInvitationInfos {
-            chapter_id: &chapter_fixture.chapter_entry.id,
-            pending: Some(false),
-            page,
+            spec: &assignment_invitation_list_spec,
         })
         .await
         .ok()

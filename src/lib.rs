@@ -8,6 +8,7 @@ mod config;
 pub use api::http::openapi::ApiDoc;
 pub use api::http::server::serve;
 pub use api::http::state::AppHarn;
+pub use complex::user::UserComplex;
 pub use config::AppConfig;
 pub use harn::Harn;
 pub use part_impl::auth::jwt_impl::JwtAuth;

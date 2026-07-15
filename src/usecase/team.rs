@@ -17,7 +17,9 @@ use crate::data::team::{
     UpdateTeamInfoParams,
 };
 use crate::model::member::MemberEntry;
-use crate::model::team::{TeamEntry, TeamInfo};
+use crate::model::team::{
+    TeamEntry, TeamInfo, TeamInfoListKind, TeamInfoListSpec,
+};
 use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
 use crate::part::prom::Prom;
@@ -178,21 +180,32 @@ where
     R: TeamRepo<C> + UserRepo<C> + Sync,
     I: ImagePool,
 {
-    if params.user_id.is_none() {
-        TeamPermComplex::ensure_user_can_list_all(
-            &mut run_proxy! {
-                repo => for<'a> GetUserInfo<'a>;
-            },
-            &token.user_id,
-        )
-        .await?;
-    }
+    let kind = match params.user_id {
+        //
+        Some(user_id) => TeamInfoListKind::JoinedBy { user_id },
+
+        None => {
+            TeamPermComplex::ensure_user_can_list_all(
+                &mut run_proxy! {
+                    repo => for<'a> GetUserInfo<'a>;
+                },
+                &token.user_id,
+            )
+            .await?;
+
+            TeamInfoListKind::All
+        }
+    };
+
+    let team_info_list_spec = TeamInfoListSpec {
+        kind,
+        offset: params.offset,
+        limit: params.limit,
+    };
 
     let team_infos = repo
         .run(&ListTeamInfos {
-            user_id: params.user_id.as_deref(),
-            offset: params.offset,
-            limit: params.limit,
+            spec: &team_info_list_spec,
         })
         .await?;
 

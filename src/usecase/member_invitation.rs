@@ -15,7 +15,8 @@ use crate::data::member_invitation::{
     UpdateMemberInvitationRolesParams,
 };
 use crate::model::member_invitation::{
-    MemberInvitationEntry, MemberInvitationListSpec, MemberInvitationUpdate,
+    MemberInvitationEntry, MemberInvitationListKind, MemberInvitationListSpec,
+    MemberInvitationUpdate,
 };
 use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
@@ -146,9 +147,18 @@ where
     )
     .await?;
 
+    let kind = match params.pending {
+        //
+        Some(true) => MemberInvitationListKind::Pending,
+
+        Some(false) => MemberInvitationListKind::Used,
+
+        None => MemberInvitationListKind::All,
+    };
+
     let member_invitation_list_spec = MemberInvitationListSpec {
         team_id: params.team_id,
-        pending: params.pending,
+        kind,
         incl_opt: params.incl_opt,
         offset: params.offset,
         limit: params.limit,
