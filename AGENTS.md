@@ -4,6 +4,8 @@
 management. The executable is active: `src/main.rs` wires the production
 harness and starts the Axum HTTP server.
 
+`cargo fmt` is NECESSARY every time you make edit.
+
 ## Active Architecture
 
 `src/lib.rs` is the authoritative module graph.

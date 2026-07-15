@@ -9,7 +9,7 @@ use poprako_util::time::ToUnixMilli;
 
 use crate::model::team::TeamInfo;
 use crate::part::image::ImagePool;
-use crate::result::RegularResult;
+use crate::result::{BaseResult, accept};
 
 /// Presentation-ready team profile information.
 ///
@@ -45,7 +45,7 @@ impl TeamInfoVal {
     pub async fn from_model<P>(
         image_pool: &P,
         model: TeamInfo,
-    ) -> RegularResult<Self>
+    ) -> BaseResult<Self>
     where
         P: ImagePool,
     {
@@ -60,7 +60,7 @@ impl TeamInfoVal {
                 _ => (None, None),
             };
 
-        Ok(Self {
+        accept(Self {
             id: model.id,
             name: model.name,
             description: model.description,

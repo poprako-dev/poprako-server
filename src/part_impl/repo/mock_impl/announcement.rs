@@ -16,7 +16,7 @@ use crate::part::repo::oper::announcement::{
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
 };
-use crate::result::{RegularError, RegularResult};
+use crate::result::{BaseError, BaseResult, accept};
 use crate::value::announcement::AnnouncementInclOpt;
 
 impl AnnouncementRepo<MockContext> for Mock {}
@@ -83,7 +83,7 @@ fn list_announcements(
 fn create_announcement(
     state: &mut MockState,
     entry: &AnnouncementEntry,
-) -> RegularResult<AnnouncementInfo> {
+) -> BaseResult<AnnouncementInfo> {
     //
     if state
         .announcements
@@ -105,33 +105,33 @@ fn create_announcement(
 
     state.announcements.push(announcement_info.clone());
 
-    Ok(announcement_info)
+    accept(announcement_info)
 }
 
 impl Run<ListAnnouncementInfos<'_>> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &ListAnnouncementInfos<'_>,
-    ) -> RegularResult<Vec<AnnouncementInfo>> {
+    ) -> BaseResult<Vec<AnnouncementInfo>> {
         //
         let state = self.state.lock().unwrap();
 
-        Ok(list_announcements(&state, oper.spec))
+        accept(list_announcements(&state, oper.spec))
     }
 }
 
 impl Step<CreateAnnouncement<'_>, MockContext> for Mock {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut MockContext,
         oper: &CreateAnnouncement<'_>,
-    ) -> RegularResult<AnnouncementInfo> {
+    ) -> BaseResult<AnnouncementInfo> {
         create_announcement(&mut context.state, oper.entry)
     }
 }

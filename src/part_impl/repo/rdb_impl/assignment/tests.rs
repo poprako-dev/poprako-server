@@ -13,7 +13,7 @@ use crate::part::repo::oper::assignment::{
 };
 use crate::part_impl::drive::rdb_impl::RdbDrive;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
-use crate::result::RegularError;
+use crate::result::BaseError;
 use crate::value::assignment::AssignmentInclOpt;
 use crate::value::role::{RoleField, RoleMask};
 
@@ -58,7 +58,7 @@ async fn assignment_roundtrip_reads_test_database_url() {
             )
             .await?;
 
-            Ok::<(), RegularError>(())
+            Ok::<(), BaseError>(())
         })
         .await
         .ok()
@@ -103,7 +103,7 @@ async fn assignment_roundtrip_reads_test_database_url() {
             )
             .await?;
 
-            Ok::<(), RegularError>(())
+            Ok::<(), BaseError>(())
         })
         .await
         .ok()

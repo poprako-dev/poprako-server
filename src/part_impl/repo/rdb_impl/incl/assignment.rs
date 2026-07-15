@@ -10,7 +10,7 @@ use crate::part_impl::repo::rdb_impl::incl::{
     self, ChapterByIds, ComicByIds, Incl, TeamByIds, UserByIds, WorksetByIds,
 };
 use crate::part_impl::shared::RdbConn;
-use crate::result::RegularResult;
+use crate::result::{BaseResult, accept};
 use crate::value::assignment::AssignmentInclOpt;
 use crate::value::incl::expand_incl_opts;
 
@@ -216,7 +216,7 @@ pub async fn populate_assignment_incls(
     conn: &mut RdbConn,
     infos: &mut [AssignmentInfo],
     incl_opt: &[AssignmentInclOpt],
-) -> RegularResult<()> {
+) -> BaseResult<()> {
     //
     for incl_opt in expand_incl_opts(incl_opt) {
         match incl_opt {
@@ -258,5 +258,5 @@ pub async fn populate_assignment_incls(
         }
     }
 
-    Ok(())
+    accept(())
 }

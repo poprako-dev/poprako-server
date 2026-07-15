@@ -19,7 +19,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_announcement::dsl::*;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, incl};
 use crate::part_impl::shared::result::diesel;
 use crate::part_impl::shared::{RdbConn, RdbContext};
-use crate::result::{RegularError, RegularResult};
+use crate::result::{BaseError, BaseResult, accept};
 
 #[cfg(all(test, feature = "repo"))]
 mod tests;
@@ -31,7 +31,7 @@ impl AnnouncementRepo<RdbContext> for RdbRepo {}
 async fn list_infos(
     conn: &mut RdbConn,
     spec: &AnnouncementListSpec,
-) -> RegularResult<Vec<AnnouncementInfo>> {
+) -> BaseResult<Vec<AnnouncementInfo>> {
     //
     let rows: Vec<AnnouncementRow> = t_announcement
         .filter(f_team_id.eq(spec.team_id.as_str()))
@@ -53,7 +53,7 @@ async fn list_infos(
     )
     .await?;
 
-    Ok(infos)
+    accept(infos)
 }
 
 /// Inserts a new announcement row from the given entry and returns the created info.
@@ -61,7 +61,7 @@ async fn list_infos(
 async fn create(
     conn: &mut RdbConn,
     entry: &AnnouncementEntry,
-) -> RegularResult<AnnouncementInfo> {
+) -> BaseResult<AnnouncementInfo> {
     //
     let entry = AnnouncementRowEntry::from(entry);
 
@@ -72,30 +72,30 @@ async fn create(
         .await
         .map_err(diesel)?;
 
-    Ok(row.into())
+    accept(row.into())
 }
 
 impl Run<ListAnnouncementInfos<'_>> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &ListAnnouncementInfos<'_>,
-    ) -> RegularResult<Vec<AnnouncementInfo>> {
+    ) -> BaseResult<Vec<AnnouncementInfo>> {
         submit_query!(self.core, list_infos, oper.spec)
     }
 }
 
 impl Step<CreateAnnouncement<'_>, RdbContext> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
         oper: &CreateAnnouncement<'_>,
-    ) -> RegularResult<AnnouncementInfo> {
+    ) -> BaseResult<AnnouncementInfo> {
         create(context.conn(), oper.entry).await
     }
 }

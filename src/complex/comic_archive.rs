@@ -16,7 +16,7 @@ use crate::model::comic_archive::{
 use crate::part::repo::oper::comic::GetComicInfo;
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::workset::GetWorksetInfo;
-use crate::result::{RegularError, RegularResult};
+use crate::result::{BaseError, BaseResult, accept};
 use crate::util::{compress_archive, next_snowflake_id};
 
 /// Constructs immutable comic archive records from a fully locked snapshot.
@@ -28,7 +28,7 @@ impl ComicArchiveComplex {
         comic_archive_snapshot: ComicArchiveSnapshot,
         archiver_id: String,
         archived_at: OffsetDateTime,
-    ) -> RegularResult<(ComicArchiveWrite, Vec<String>)> {
+    ) -> BaseResult<(ComicArchiveWrite, Vec<String>)> {
         tokio::task::spawn_blocking(move || {
             //
             let image_keys = collect_image_keys(&comic_archive_snapshot);
@@ -36,10 +36,10 @@ impl ComicArchiveComplex {
             let comic_archive_write =
                 build_write(comic_archive_snapshot, archiver_id, archived_at)?;
 
-            Ok((comic_archive_write, image_keys))
+            accept((comic_archive_write, image_keys))
         })
         .await
-        .map_err(|error| RegularError::Unrecoverable {
+        .map_err(|error| BaseError::Unrecoverable {
             message: format!(
                 "[ComicArchiveComplex::prepare_write] blocking task failed: {}",
                 error
@@ -53,7 +53,7 @@ fn build_write(
     comic_archive_snapshot: ComicArchiveSnapshot,
     archiver_id: String,
     archived_at: OffsetDateTime,
-) -> RegularResult<ComicArchiveWrite> {
+) -> BaseResult<ComicArchiveWrite> {
     //
     let archived_comic_id = next_snowflake_id();
 
@@ -124,7 +124,7 @@ fn build_write(
         );
     }
 
-    Ok(ComicArchiveWrite {
+    accept(ComicArchiveWrite {
         comic_record,
         chapter_records,
         translation_records,
@@ -169,11 +169,11 @@ impl ComicArchivePermComplex {
         proxy: &mut P,
         user_id: &str,
         comic_id: &str,
-    ) -> RegularResult<()>
+    ) -> BaseResult<()>
     where
-        P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = RegularError>
-            + for<'a> Proxy<GetWorksetInfo<'a>, Error = RegularError>
-            + for<'a> Proxy<FindMemberInfo<'a>, Error = RegularError>,
+        P: for<'a, 'b> Proxy<GetComicInfo<'a, 'b>, Error = BaseError>
+            + for<'a> Proxy<GetWorksetInfo<'a>, Error = BaseError>
+            + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
     {
         let comic_info = proxy
             .exec(&GetComicInfo {
@@ -233,7 +233,7 @@ fn build_comic_payload(
 fn build_chapter_payload(
     chapter_snapshot: &ComicArchiveChapterSnapshot,
     archived_comic_id: &str,
-) -> RegularResult<ArchivedChapterPayload> {
+) -> BaseResult<ArchivedChapterPayload> {
     //
     let chapter_info = &chapter_snapshot.chapter_info;
 
@@ -241,9 +241,9 @@ fn build_chapter_payload(
         .assignment_infos
         .iter()
         .map(build_assignment_payload)
-        .collect::<RegularResult<Vec<_>>>()?;
+        .collect::<BaseResult<Vec<_>>>()?;
 
-    Ok(ArchivedChapterPayload {
+    accept(ArchivedChapterPayload {
         source_chapter_id: chapter_info.id.clone(),
         archived_comic_id: archived_comic_id.into(),
         is_pinned: chapter_info.is_pinned,
@@ -264,15 +264,15 @@ fn build_chapter_payload(
 /// Convert an assignment and its directly loaded user into archive data.
 fn build_assignment_payload(
     assignment_info: &AssignmentInfo,
-) -> RegularResult<ArchivedAssignmentPayload> {
+) -> BaseResult<ArchivedAssignmentPayload> {
     //
     let user_info = assignment_info.user.as_ref().ok_or_else(|| {
-        RegularError::Unrecoverable {
+        BaseError::Unrecoverable {
             message: "[ComicArchiveComplex::build_assignment_payload] assignment user was not loaded".into(),
         }
     })?;
 
-    Ok(ArchivedAssignmentPayload {
+    accept(ArchivedAssignmentPayload {
         source_assignment_id: assignment_info.id.clone(),
         user_id: assignment_info.user_id.clone(),
         roles: u32::from(assignment_info.roles),

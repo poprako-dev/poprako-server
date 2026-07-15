@@ -14,7 +14,7 @@ use crate::data::team::TeamInfoVal;
 use crate::data::user::UserInfoVal;
 use crate::model::member::{MemberInfo, MemberListSpec};
 use crate::part::image::ImagePool;
-use crate::result::{ExpectedVariant, RegularError, RegularResult};
+use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 use crate::value::member::MemberInclOpt;
 use crate::value::role::{RoleField, RoleMask};
 
@@ -59,11 +59,11 @@ impl MemberInfoVal {
     pub async fn from_model<P>(
         image_pool: &P,
         model: MemberInfo,
-    ) -> RegularResult<Self>
+    ) -> BaseResult<Self>
     where
         P: ImagePool,
     {
-        Ok(Self {
+        accept(Self {
             id: model.id,
             user_id: model.user_id,
             nickname: model.user_nickname,
@@ -152,11 +152,11 @@ pub struct ListMemberInfosParams {
 }
 
 impl TryInto<MemberListSpec> for ListMemberInfosParams {
-    type Error = RegularError;
+    type Error = BaseError;
 
-    fn try_into(self) -> RegularResult<MemberListSpec> {
+    fn try_into(self) -> BaseResult<MemberListSpec> {
         //
-        let invalid_args_err = || RegularError::Expected {
+        let invalid_args_err = || BaseError::Expected {
             variant: ExpectedVariant::Args,
             message: trl("error-team-or-user-required"),
         };
@@ -170,7 +170,7 @@ impl TryInto<MemberListSpec> for ListMemberInfosParams {
         }
 
         if let Some(owner_id) = self.owner_id {
-            return Ok(MemberListSpec::User {
+            return accept(MemberListSpec::User {
                 owner_id,
                 incl_opt: self.incl_opt,
                 offset: self.offset,
@@ -178,7 +178,7 @@ impl TryInto<MemberListSpec> for ListMemberInfosParams {
             });
         }
 
-        Ok(MemberListSpec::Team {
+        accept(MemberListSpec::Team {
             team_id: self.team_id.ok_or_else(invalid_args_err)?,
             fuzzy_nickname: self.fuzzy_nickname,
             role: self.role,

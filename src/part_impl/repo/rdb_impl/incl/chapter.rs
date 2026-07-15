@@ -9,7 +9,7 @@ use crate::part_impl::repo::rdb_impl::incl::{
     self, ComicByIds, Incl, TeamByIds, UserByIds, WorksetByIds,
 };
 use crate::part_impl::shared::RdbConn;
-use crate::result::RegularResult;
+use crate::result::{BaseResult, accept};
 use crate::value::chapter::ChapterInclOpt;
 use crate::value::incl::expand_incl_opts;
 
@@ -132,7 +132,7 @@ pub async fn populate_chapter_incls(
     conn: &mut RdbConn,
     infos: &mut [ChapterInfo],
     incl_opt: &[ChapterInclOpt],
-) -> RegularResult<()> {
+) -> BaseResult<()> {
     //
     for incl_opt in expand_incl_opts(incl_opt) {
         match incl_opt {
@@ -160,5 +160,5 @@ pub async fn populate_chapter_incls(
         }
     }
 
-    Ok(())
+    accept(())
 }

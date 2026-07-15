@@ -8,7 +8,7 @@ use poprako_util::i18n::trl;
 #[cfg(feature = "swagger-ui")]
 use utoipa::ToSchema;
 
-use crate::result::{ExpectedVariant, RegularError, RegularResult};
+use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 use crate::value::incl::InclOpt;
 
 #[cfg(test)]
@@ -78,12 +78,12 @@ pub enum StageOper {
 pub fn try_modify_stage(
     current: (Stage, StagePhase),
     oper: StageOper,
-) -> RegularResult<StagePhase> {
+) -> BaseResult<StagePhase> {
     //
     let (stage, phase) = current;
 
     if !is_valid_stage_phase(stage, phase) {
-        return Err(RegularError::Expected {
+        return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
             message: trl("error-invalid-stage-phase"),
         });
@@ -92,7 +92,7 @@ pub fn try_modify_stage(
     let next_phase = match (stage, phase, oper) {
         //
         (Stage::Publish, _, StageOper::Revert) => {
-            return Err(RegularError::Expected {
+            return Err(BaseError::Expected {
                 variant: ExpectedVariant::Args,
                 message: trl("error-invalid-workflow-transition"),
             });
@@ -115,7 +115,7 @@ pub fn try_modify_stage(
         (_, StagePhase::Active, StageOper::Advance) => StagePhase::Completed,
 
         (_, StagePhase::Completed, StageOper::Advance) => {
-            return Err(RegularError::Expected {
+            return Err(BaseError::Expected {
                 variant: ExpectedVariant::Args,
                 message: trl("error-invalid-workflow-transition"),
             });
@@ -129,13 +129,13 @@ pub fn try_modify_stage(
     };
 
     if !is_valid_stage_phase(stage, next_phase) {
-        return Err(RegularError::Expected {
+        return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
             message: trl("error-invalid-stage-phase"),
         });
     }
 
-    Ok(next_phase)
+    accept(next_phase)
 }
 
 /// A singular stage phase value (pending, active, completed, or ignore).
@@ -174,18 +174,18 @@ impl StagePhaseField {
 }
 
 impl TryFrom<u8> for StagePhaseField {
-    type Error = RegularError;
+    type Error = BaseError;
 
-    fn try_from(value: u8) -> RegularResult<Self> {
+    fn try_from(value: u8) -> BaseResult<Self> {
         //
         if !Self::VALID_VALUES.contains(&value) {
-            return Err(RegularError::Expected {
+            return Err(BaseError::Expected {
                 variant: ExpectedVariant::Args,
                 message: trl("error-invalid-stage-phase"),
             });
         }
 
-        Ok(Self(value))
+        accept(Self(value))
     }
 }
 
@@ -267,7 +267,7 @@ impl StageMask {
     fn field_for_stage_value(
         value: u32,
         stage: Stage,
-    ) -> RegularResult<StagePhaseField> {
+    ) -> BaseResult<StagePhaseField> {
         StagePhaseField::try_from(
             ((value >> Self::stage_shift(stage)) & 0b11) as u8,
         )
@@ -281,44 +281,41 @@ impl StageMask {
         stage: Stage,
         field: StagePhaseField,
         allow_ignore: bool,
-    ) -> RegularResult<()> {
+    ) -> BaseResult<()> {
         //
         if field == StagePhaseField::IGNORE {
             //
             if allow_ignore {
-                return Ok(());
+                return accept(());
             }
 
-            return Err(RegularError::Expected {
+            return Err(BaseError::Expected {
                 variant: ExpectedVariant::Args,
                 message: trl("error-invalid-stage-phase"),
             });
         }
 
         let Some(phase) = field.as_phase() else {
-            return Err(RegularError::Expected {
+            return Err(BaseError::Expected {
                 variant: ExpectedVariant::Args,
                 message: trl("error-invalid-stage-phase"),
             });
         };
 
         if !is_valid_stage_phase(stage, phase) {
-            return Err(RegularError::Expected {
+            return Err(BaseError::Expected {
                 variant: ExpectedVariant::Args,
                 message: trl("error-invalid-stage-phase"),
             });
         }
 
-        Ok(())
+        accept(())
     }
 
-    fn validate_mask_value(
-        value: u32,
-        allow_ignore: bool,
-    ) -> RegularResult<()> {
+    fn validate_mask_value(value: u32, allow_ignore: bool) -> BaseResult<()> {
         //
         if value & !Self::VALID_BITS != 0 {
-            return Err(RegularError::Expected {
+            return Err(BaseError::Expected {
                 variant: ExpectedVariant::Args,
                 message: trl("error-invalid-stage"),
             });
@@ -331,18 +328,18 @@ impl StageMask {
             Self::validate_stage_field(*stage, field, allow_ignore)?;
         }
 
-        Ok(())
+        accept(())
     }
 
     /// Construct a filter mask from raw bits.
     ///
     /// Filter masks may use `IGNORE` fields as wildcards, but they still
     /// reject stage-phase combinations that are impossible for real workflow.
-    pub fn try_filter_from(value: u32) -> RegularResult<Self> {
+    pub fn try_filter_from(value: u32) -> BaseResult<Self> {
         //
         Self::validate_mask_value(value, true)?;
 
-        Ok(Self(value))
+        accept(Self(value))
     }
 
     /// Return workflow stages in mask bit order.
@@ -362,10 +359,10 @@ impl StageMask {
         &self,
         stage: Stage,
         phase: StagePhase,
-    ) -> RegularResult<Self> {
+    ) -> BaseResult<Self> {
         //
         if !is_valid_stage_phase(stage, phase) {
-            return Err(RegularError::Expected {
+            return Err(BaseError::Expected {
                 variant: ExpectedVariant::Args,
                 message: trl("error-invalid-stage-phase"),
             });
@@ -428,13 +425,13 @@ impl StageMask {
 }
 
 impl TryFrom<u32> for StageMask {
-    type Error = RegularError;
+    type Error = BaseError;
 
-    fn try_from(value: u32) -> RegularResult<Self> {
+    fn try_from(value: u32) -> BaseResult<Self> {
         //
         Self::validate_mask_value(value, false)?;
 
-        Ok(Self(value))
+        accept(Self(value))
     }
 }
 

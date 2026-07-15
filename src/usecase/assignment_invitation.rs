@@ -46,7 +46,7 @@ use crate::part::repo::oper::user::{FindUserInfo, GetUserInfoExcluded};
 use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::part::repo::user::UserRepo;
 use crate::part::repo::workset::WorksetRepo;
-use crate::result::{ExpectedVariant, RegularError, RegularResult};
+use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
 use crate::value::role::{RoleField, RoleMask};
 
@@ -61,7 +61,7 @@ pub async fn list_infos<C, R>(
     repo: &R,
     token: UserToken,
     params: ListAssignmentInvitationInfosParams,
-) -> RegularResult<Vec<AssignmentInvitationInfoVal>>
+) -> BaseResult<Vec<AssignmentInvitationInfoVal>>
 where
     R: AssignmentInvitationRepo<C> + AssignmentRepo<C> + Sync,
 {
@@ -89,10 +89,12 @@ where
         })
         .await?;
 
-    Ok(assignment_invitation_infos
-        .into_iter()
-        .map(AssignmentInvitationInfoVal::from)
-        .collect())
+    accept(
+        assignment_invitation_infos
+            .into_iter()
+            .map(AssignmentInvitationInfoVal::from)
+            .collect(),
+    )
 }
 
 /// Creates a pending assignment invitation.
@@ -103,9 +105,9 @@ pub async fn create<N, C, R, P>(
     prom: &P,
     token: UserToken,
     params: CreateAssignmentInvitationParams,
-) -> RegularResult<CreateAssignmentInvitationPayload>
+) -> BaseResult<CreateAssignmentInvitationPayload>
 where
-    N: Nucl<Context = C, Error = RegularError>,
+    N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     R: AssignmentInvitationRepo<C>
         + AssignmentRepo<C>
@@ -119,7 +121,7 @@ where
     ensure_user_admin(repo, &token.user_id, &params.chapter_id).await?;
 
     let (assignment_invitation_id, code) = nucl
-        .coord(async move |context| -> RegularResult<(String, String)> {
+        .coord(async move |context| {
             //
 
             let invitee_user_info = repo
@@ -187,14 +189,14 @@ where
 
             prom.step(context, &Defer::new(purge_task)).await?;
 
-            Ok((
+            accept((
                 assignment_invitation_info.id,
                 assignment_invitation_info.code,
             ))
         })
         .await?;
 
-    Ok(CreateAssignmentInvitationPayload {
+    accept(CreateAssignmentInvitationPayload {
         id: assignment_invitation_id,
         code,
     })
@@ -207,9 +209,9 @@ pub async fn delete<N, C, R>(
     repo: &R,
     token: UserToken,
     id: String,
-) -> RegularResult<()>
+) -> BaseResult<()>
 where
-    N: Nucl<Context = C, Error = RegularError>,
+    N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     R: AssignmentInvitationRepo<C> + AssignmentRepo<C> + Send + Sync,
 {
@@ -224,17 +226,17 @@ where
     )
     .await?;
 
-    nucl.coord(async move |context| -> RegularResult<()> {
+    nucl.coord(async move |context| {
         //
 
         repo.step(context, &DeleteAssignmentInvitations::Id { id: &id })
             .await?;
 
-        Ok(())
+        accept(())
     })
     .await?;
 
-    Ok(())
+    accept(())
 }
 
 /// Joins a chapter assignment with a pending invitation code.
@@ -245,9 +247,9 @@ pub async fn join<N, C, R, I>(
     image_pool: &I,
     token: UserToken,
     params: JoinAssignmentInvitationParams,
-) -> RegularResult<AssignmentInfoVal>
+) -> BaseResult<AssignmentInfoVal>
 where
-    N: Nucl<Context = C, Error = RegularError>,
+    N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     R: AssignmentInvitationRepo<C>
         + AssignmentRepo<C>
@@ -263,7 +265,7 @@ where
     let current_user_id = token.user_id;
 
     let assignment_info = nucl
-        .coord(async move |context| -> RegularResult<AssignmentInfo> {
+        .coord(async move |context| {
             //
 
             let current_user_info = repo
@@ -395,7 +397,7 @@ where
             )
             .await?;
 
-            Ok(assignment_info)
+            accept(assignment_info)
         })
         .await?;
 
@@ -408,7 +410,7 @@ async fn ensure_user_admin<C, R>(
     repo: &R,
     current_user_id: &str,
     chapter_id: &str,
-) -> RegularResult<()>
+) -> BaseResult<()>
 where
     R: AssignmentRepo<C>,
 {
@@ -427,7 +429,7 @@ where
         return Err(chapter_admin_error());
     }
 
-    Ok(())
+    accept(())
 }
 
 /// Generates a snowflake ID for a new invitation.
@@ -450,50 +452,50 @@ fn gen_code() -> String {
 }
 
 /// Validates that the roles mask is non-empty and does not contain ADMIN.
-fn validate_roles(roles: RoleMask) -> RegularResult<()> {
+fn validate_roles(roles: RoleMask) -> BaseResult<()> {
     //
     if u32::from(roles) == 0 || roles.has_any_role(&[RoleField::ADMIN]) {
         return Err(assignment_role_not_assignable_args_error());
     }
 
-    Ok(())
+    accept(())
 }
 
 /// Constructs an args error for an invalid invitation code.
-fn invalid_invitation_error() -> RegularError {
-    RegularError::Expected {
+fn invalid_invitation_error() -> BaseError {
+    BaseError::Expected {
         variant: ExpectedVariant::Args,
         message: trl("error-no-pending-invitation"),
     }
 }
 
 /// Constructs an args error for an already assigned invitee.
-fn invitee_assigned_error() -> RegularError {
-    RegularError::Expected {
+fn invitee_assigned_error() -> BaseError {
+    BaseError::Expected {
         variant: ExpectedVariant::Args,
         message: trl("error-assignment-already-exists"),
     }
 }
 
 /// Constructs a permission error when the caller is not a chapter admin.
-fn chapter_admin_error() -> RegularError {
-    RegularError::Expected {
+fn chapter_admin_error() -> BaseError {
+    BaseError::Expected {
         variant: ExpectedVariant::Perm,
         message: trl("error-chapter-admin-required"),
     }
 }
 
 /// Constructs an args error for unassignable chapter roles.
-fn assignment_role_not_assignable_args_error() -> RegularError {
-    RegularError::Expected {
+fn assignment_role_not_assignable_args_error() -> BaseError {
+    BaseError::Expected {
         variant: ExpectedVariant::Args,
         message: trl("error-chapter-role-not-assignable"),
     }
 }
 
 /// Constructs a permission error for unassignable chapter roles.
-fn assignment_role_not_assignable_perm_error() -> RegularError {
-    RegularError::Expected {
+fn assignment_role_not_assignable_perm_error() -> BaseError {
+    BaseError::Expected {
         variant: ExpectedVariant::Perm,
         message: trl("error-chapter-role-not-assignable"),
     }

@@ -15,7 +15,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_comment::dsl::*;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, incl};
 use crate::part_impl::shared::result::diesel;
 use crate::part_impl::shared::{RdbConn, RdbContext};
-use crate::result::{RegularError, RegularResult};
+use crate::result::{BaseError, BaseResult, accept};
 
 #[cfg(all(test, feature = "repo"))]
 mod tests;
@@ -27,7 +27,7 @@ impl CommentRepo<RdbContext> for RdbRepo {}
 async fn list_infos(
     conn: &mut RdbConn,
     spec: &CommentListSpec,
-) -> RegularResult<Vec<CommentInfo>> {
+) -> BaseResult<Vec<CommentInfo>> {
     //
     let rows: Vec<CommentRow> = t_comment
         .filter(f_team_id.eq(spec.team_id.as_str()))
@@ -45,7 +45,7 @@ async fn list_infos(
     incl::comment::populate_comment_incls(conn, &mut infos, &spec.incl_opt)
         .await?;
 
-    Ok(infos)
+    accept(infos)
 }
 
 /// Insert a new comment from the given entry and return the created info.
@@ -53,7 +53,7 @@ async fn list_infos(
 async fn create(
     conn: &mut RdbConn,
     entry: &CommentEntry,
-) -> RegularResult<CommentInfo> {
+) -> BaseResult<CommentInfo> {
     //
     let entry = CommentRowEntry::from(entry);
 
@@ -64,30 +64,30 @@ async fn create(
         .await
         .map_err(diesel)?;
 
-    Ok(row.into())
+    accept(row.into())
 }
 
 impl Run<ListCommentInfos<'_>> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &ListCommentInfos<'_>,
-    ) -> RegularResult<Vec<CommentInfo>> {
+    ) -> BaseResult<Vec<CommentInfo>> {
         submit_query!(self.core, list_infos, oper.spec)
     }
 }
 
 impl Step<CreateComment<'_>, RdbContext> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
         oper: &CreateComment<'_>,
-    ) -> RegularResult<CommentInfo> {
+    ) -> BaseResult<CommentInfo> {
         create(context.conn(), oper.entry).await
     }
 }

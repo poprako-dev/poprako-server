@@ -8,7 +8,7 @@ use crate::model::comment::{CommentEntry, CommentListSpec};
 use crate::part::repo::oper::comment::{CreateComment, ListCommentInfos};
 use crate::part_impl::drive::rdb_impl::RdbDrive;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
-use crate::result::RegularError;
+use crate::result::BaseError;
 use crate::value::comment::CommentInclOpt;
 
 const PREFIX: &str = "rdb-test-comment-domain-";
@@ -44,7 +44,7 @@ async fn comment_roundtrip_reads_test_database_url() {
             )
             .await?;
 
-            Ok::<(), RegularError>(())
+            Ok::<(), BaseError>(())
         })
         .await
         .ok()

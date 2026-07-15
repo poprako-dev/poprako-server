@@ -37,7 +37,7 @@ use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::user::UserRepo;
 use crate::part::repo::workset::WorksetRepo;
-use crate::result::{ExpectedVariant, RegularError, RegularResult};
+use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 
 #[cfg(test)]
 mod tests;
@@ -49,7 +49,7 @@ pub async fn list_infos<C, R, I>(
     image_pool: &I,
     token: UserToken,
     params: ListAssignmentInfosParams,
-) -> RegularResult<Vec<AssignmentInfoVal>>
+) -> BaseResult<Vec<AssignmentInfoVal>>
 where
     R: AssignmentRepo<C>
         + ChapterRepo<C>
@@ -122,7 +122,7 @@ where
         );
     }
 
-    Ok(assignment_info_vals)
+    accept(assignment_info_vals)
 }
 
 /// Joins a chapter assignment with requested roles.
@@ -132,9 +132,9 @@ pub async fn join<N, C, R>(
     repo: &R,
     token: UserToken,
     params: JoinChapterAssignmentParams,
-) -> RegularResult<AssignmentInfoVal>
+) -> BaseResult<AssignmentInfoVal>
 where
-    N: Nucl<Context = C, Error = RegularError>,
+    N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     R: ChapterRepo<C>
         + ComicRepo<C>
@@ -180,7 +180,7 @@ where
     .await?;
 
     let assignment_info = nucl
-        .coord(async move |context| -> RegularResult<AssignmentInfo> {
+        .coord(async move |context| {
             //
 
             let existing_assignment_info = repo
@@ -232,7 +232,7 @@ where
         })
         .await?;
 
-    Ok(AssignmentInfoVal::from(assignment_info))
+    accept(AssignmentInfoVal::from(assignment_info))
 }
 
 /// Updates assignment roles.
@@ -242,9 +242,9 @@ pub async fn update_roles<N, C, R>(
     repo: &R,
     token: UserToken,
     params: UpdateAssignmentRolesParams,
-) -> RegularResult<()>
+) -> BaseResult<()>
 where
-    N: Nucl<Context = C, Error = RegularError>,
+    N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     R: AssignmentRepo<C>
         + ChapterRepo<C>
@@ -283,7 +283,7 @@ where
     )
     .await?;
 
-    nucl.coord(async move |context| -> RegularResult<()> {
+    nucl.coord(async move |context| {
         //
 
         let assignment_infos = repo
@@ -360,18 +360,18 @@ where
             }
         }
 
-        Ok(())
+        accept(())
     })
     .await?;
 
     let () = ();
 
-    Ok(())
+    accept(())
 }
 
 /// Constructs a permission error for admin-role removal.
-fn assignment_admin_required_error() -> RegularError {
-    RegularError::Expected {
+fn assignment_admin_required_error() -> BaseError {
+    BaseError::Expected {
         variant: ExpectedVariant::Perm,
         message: trl("error-forbidden"),
     }
@@ -384,9 +384,9 @@ pub async fn delete<N, C, R>(
     repo: &R,
     token: UserToken,
     id: String,
-) -> RegularResult<()>
+) -> BaseResult<()>
 where
-    N: Nucl<Context = C, Error = RegularError>,
+    N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     R: AssignmentRepo<C> + Send + Sync,
 {
@@ -406,17 +406,17 @@ where
     )
     .await?;
 
-    nucl.coord(async move |context| -> RegularResult<()> {
+    nucl.coord(async move |context| {
         //
 
         repo.step(context, &DeleteAssignments::Id { id: &id })
             .await?;
 
-        Ok(())
+        accept(())
     })
     .await?;
 
     let () = ();
 
-    Ok(())
+    accept(())
 }

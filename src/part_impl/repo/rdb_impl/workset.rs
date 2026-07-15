@@ -20,12 +20,12 @@ use crate::part_impl::repo::rdb_impl::entity::workset::{
 use crate::part_impl::repo::rdb_impl::schema::t_workset::dsl::*;
 use crate::part_impl::shared::result::{diesel, expected};
 use crate::part_impl::shared::{RdbConn, RdbContext};
-use crate::result::{RegularError, RegularResult};
+use crate::result::{BaseError, BaseResult, accept};
 
 impl WorksetRepo<RdbContext> for RdbRepo {}
 
 #[instrument(level = "info", err(Debug), skip_all)]
-async fn get_info(conn: &mut RdbConn, id: &str) -> RegularResult<WorksetInfo> {
+async fn get_info(conn: &mut RdbConn, id: &str) -> BaseResult<WorksetInfo> {
     //
     let row: WorksetRow = t_workset
         .filter(f_id.eq(id))
@@ -36,14 +36,14 @@ async fn get_info(conn: &mut RdbConn, id: &str) -> RegularResult<WorksetInfo> {
         .map_err(diesel)?
         .ok_or_else(|| expected("error-workset-not-found"))?;
 
-    Ok(row.into())
+    accept(row.into())
 }
 
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn list_infos(
     conn: &mut RdbConn,
     oper: &ListWorksetInfos<'_>,
-) -> RegularResult<Vec<WorksetInfo>> {
+) -> BaseResult<Vec<WorksetInfo>> {
     //
     let mut query = t_workset
         .filter(f_team_id.eq(oper.team_id))
@@ -57,14 +57,14 @@ async fn list_infos(
 
     let rows: Vec<WorksetRow> = query.load(conn).await.map_err(diesel)?;
 
-    Ok(rows.into_iter().map(Into::into).collect())
+    accept(rows.into_iter().map(Into::into).collect())
 }
 
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn update_info(
     conn: &mut RdbConn,
     update: &WorksetInfoUpdate,
-) -> RegularResult<()> {
+) -> BaseResult<()> {
     //
     let now = OffsetDateTime::now_utc();
 
@@ -78,14 +78,14 @@ async fn update_info(
         .await
         .map_err(diesel)?;
 
-    Ok(())
+    accept(())
 }
 
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn list_infos_excluded(
     conn: &mut RdbConn,
     team_id: &str,
-) -> RegularResult<Vec<WorksetInfo>> {
+) -> BaseResult<Vec<WorksetInfo>> {
     //
     let rows: Vec<WorksetRow> = t_workset
         .filter(f_team_id.eq(team_id))
@@ -95,14 +95,14 @@ async fn list_infos_excluded(
         .await
         .map_err(diesel)?;
 
-    Ok(rows.into_iter().map(Into::into).collect())
+    accept(rows.into_iter().map(Into::into).collect())
 }
 
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn get_info_excluded(
     conn: &mut RdbConn,
     id: &str,
-) -> RegularResult<WorksetInfo> {
+) -> BaseResult<WorksetInfo> {
     //
     let row: WorksetRow = t_workset
         .filter(f_id.eq(id))
@@ -114,14 +114,14 @@ async fn get_info_excluded(
         .map_err(diesel)?
         .ok_or_else(|| expected("error-workset-not-found"))?;
 
-    Ok(row.into())
+    accept(row.into())
 }
 
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn create(
     conn: &mut RdbConn,
     workset_entry: &WorksetEntry,
-) -> RegularResult<WorksetInfo> {
+) -> BaseResult<WorksetInfo> {
     //
     let entry = WorksetRowEntry::from(workset_entry);
 
@@ -132,22 +132,22 @@ async fn create(
         .await
         .map_err(diesel)?;
 
-    Ok(row.into())
+    accept(row.into())
 }
 
 #[instrument(level = "info", err(Debug), skip_all)]
-async fn delete(conn: &mut RdbConn, id: &str) -> RegularResult<()> {
+async fn delete(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
     //
     diesel::delete(t_workset.filter(f_id.eq(id)))
         .execute(conn)
         .await
         .map_err(diesel)?;
 
-    Ok(())
+    accept(())
 }
 
 #[instrument(level = "info", err(Debug), skip_all)]
-async fn alloc_comic_index(conn: &mut RdbConn, id: &str) -> RegularResult<i32> {
+async fn alloc_comic_index(conn: &mut RdbConn, id: &str) -> BaseResult<i32> {
     //
     let index: i32 = diesel::update(t_workset.filter(f_id.eq(id)))
         .set(f_comic_next_index.eq(f_comic_next_index + 1))
@@ -156,7 +156,7 @@ async fn alloc_comic_index(conn: &mut RdbConn, id: &str) -> RegularResult<i32> {
         .await
         .map_err(diesel)?;
 
-    Ok(index)
+    accept(index)
 }
 
 #[instrument(level = "info", err(Debug), skip_all)]
@@ -164,7 +164,7 @@ async fn update_comic_count(
     conn: &mut RdbConn,
     id: &str,
     delta: i32,
-) -> RegularResult<()> {
+) -> BaseResult<()> {
     //
     diesel::update(t_workset.filter(f_id.eq(id)))
         .set(f_comic_count.eq(f_comic_count + delta))
@@ -172,142 +172,139 @@ async fn update_comic_count(
         .await
         .map_err(diesel)?;
 
-    Ok(())
+    accept(())
 }
 
 impl<'a> Run<GetWorksetInfo<'a>> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn run(
-        &self,
-        oper: &GetWorksetInfo<'a>,
-    ) -> RegularResult<WorksetInfo> {
+    async fn run(&self, oper: &GetWorksetInfo<'a>) -> BaseResult<WorksetInfo> {
         submit_query!(self.core, get_info, oper.id)
     }
 }
 
 impl<'a> Run<ListWorksetInfos<'a>> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
         oper: &ListWorksetInfos<'a>,
-    ) -> RegularResult<Vec<WorksetInfo>> {
+    ) -> BaseResult<Vec<WorksetInfo>> {
         submit_query!(self.core, list_infos, oper)
     }
 }
 
 impl<'a> Run<UpdateWorkset<'a>> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn run(&self, oper: &UpdateWorkset<'a>) -> RegularResult<()> {
+    async fn run(&self, oper: &UpdateWorkset<'a>) -> BaseResult<()> {
         submit_query!(self.core, update_info, oper.update)
     }
 }
 
 impl<'a> Step<GetWorksetInfo<'a>, RdbContext> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
         oper: &GetWorksetInfo<'a>,
-    ) -> RegularResult<WorksetInfo> {
+    ) -> BaseResult<WorksetInfo> {
         get_info(context.conn(), oper.id).await
     }
 }
 
 impl<'a> Step<ListWorksetInfos<'a>, RdbContext> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
         oper: &ListWorksetInfos<'a>,
-    ) -> RegularResult<Vec<WorksetInfo>> {
+    ) -> BaseResult<Vec<WorksetInfo>> {
         list_infos(context.conn(), oper).await
     }
 }
 
 impl<'a> Step<GetWorksetInfoExcluded<'a>, RdbContext> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
         oper: &GetWorksetInfoExcluded<'a>,
-    ) -> RegularResult<WorksetInfo> {
+    ) -> BaseResult<WorksetInfo> {
         get_info_excluded(context.conn(), oper.id).await
     }
 }
 
 impl<'a> Step<ListWorksetInfosExcluded<'a>, RdbContext> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
         oper: &ListWorksetInfosExcluded<'a>,
-    ) -> RegularResult<Vec<WorksetInfo>> {
+    ) -> BaseResult<Vec<WorksetInfo>> {
         list_infos_excluded(context.conn(), oper.team_id).await
     }
 }
 
 impl<'a> Step<CreateWorkset<'a>, RdbContext> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
         oper: &CreateWorkset<'a>,
-    ) -> RegularResult<WorksetInfo> {
+    ) -> BaseResult<WorksetInfo> {
         create(context.conn(), oper.entry).await
     }
 }
 
 impl<'a> Step<DeleteWorkset<'a>, RdbContext> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
         oper: &DeleteWorkset<'a>,
-    ) -> RegularResult<()> {
+    ) -> BaseResult<()> {
         delete(context.conn(), oper.id).await
     }
 }
 
 impl<'a> Step<AllocWorksetComicIndex<'a>, RdbContext> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
         oper: &AllocWorksetComicIndex<'a>,
-    ) -> RegularResult<i32> {
+    ) -> BaseResult<i32> {
         alloc_comic_index(context.conn(), oper.id).await
     }
 }
 
 impl<'a> Step<UpdateWorksetComicCount<'a>, RdbContext> for RdbRepo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
         oper: &UpdateWorksetComicCount<'a>,
-    ) -> RegularResult<()> {
+    ) -> BaseResult<()> {
         update_comic_count(context.conn(), oper.id, oper.delta).await
     }
 }

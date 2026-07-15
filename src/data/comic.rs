@@ -19,7 +19,7 @@ use crate::data::user::UserInfoVal;
 use crate::data::workset::WorksetInfoVal;
 use crate::model::comic::{ComicInfo, ComicInfoListKind, ComicInfoListSpec};
 use crate::part::image::ImagePool;
-use crate::result::{RegularError, RegularResult};
+use crate::result::{BaseError, BaseResult, accept};
 use crate::value::chapter::StageMask;
 use crate::value::comic::{ComicInclOpt, ComicWithOpt};
 
@@ -143,7 +143,7 @@ impl ComicInfoVal {
         image_pool: &P,
         model: ComicInfo,
         fallback_cover_key: Option<&str>,
-    ) -> RegularResult<Self>
+    ) -> BaseResult<Self>
     where
         P: ImagePool,
     {
@@ -166,7 +166,7 @@ impl ComicInfoVal {
 
         let workset = model.workset.map(WorksetInfoVal::from);
 
-        Ok(Self {
+        accept(Self {
             id: model.id,
             workset_id: model.workset_id,
             index: model.index,
@@ -278,9 +278,9 @@ pub struct ListComicInfosPayload {
 }
 
 impl TryFrom<ListComicInfosParams> for ComicInfoListSpec {
-    type Error = RegularError;
+    type Error = BaseError;
 
-    fn try_from(params: ListComicInfosParams) -> RegularResult<Self> {
+    fn try_from(params: ListComicInfosParams) -> BaseResult<Self> {
         //
         let stages =
             params.stages.map(StageMask::try_filter_from).transpose()?;
@@ -292,7 +292,7 @@ impl TryFrom<ListComicInfosParams> for ComicInfoListSpec {
             None => ComicInfoListKind::All,
         };
 
-        Ok(Self {
+        accept(Self {
             workset_id: params.workset_id,
             fuzzy_title: params.fuzzy_title,
             kind,

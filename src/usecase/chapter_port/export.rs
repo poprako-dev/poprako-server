@@ -28,7 +28,7 @@ use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::unit::UnitRepo;
 use crate::part::repo::workset::WorksetRepo;
-use crate::result::RegularResult;
+use crate::result::{BaseResult, accept};
 
 #[cfg(test)]
 mod tests;
@@ -39,7 +39,7 @@ pub async fn export<C, R>(
     repo: &R,
     token: UserToken,
     chapter_id: String,
-) -> RegularResult<ExportChapterTranslationPayload>
+) -> BaseResult<ExportChapterTranslationPayload>
 where
     R: ChapterRepo<C>
         + ComicRepo<C>
@@ -107,7 +107,7 @@ where
         });
     }
 
-    Ok(ExportChapterTranslationPayload {
+    accept(ExportChapterTranslationPayload {
         chapter_id: chapter_info.id,
         chapter_index: chapter_info.index,
         chapter_subtitle: non_empty(chapter_info.subtitle),
@@ -123,7 +123,7 @@ pub async fn export_label_plus<C, R>(
     repo: &R,
     token: UserToken,
     chapter_id: String,
-) -> RegularResult<String>
+) -> BaseResult<String>
 where
     R: ChapterRepo<C>
         + ComicRepo<C>
@@ -174,7 +174,7 @@ where
         units_by_page_id.insert(page_info.id.clone(), unit_infos);
     }
 
-    Ok(ChapterExportComplex::make_label_plus(
+    accept(ChapterExportComplex::make_label_plus(
         &page_infos,
         &units_by_page_id,
     ))

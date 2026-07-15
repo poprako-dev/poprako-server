@@ -13,7 +13,7 @@ use crate::part::repo::oper::system_mail::{
     ListSystemMailInfos, MarkSystemMailRead,
 };
 use crate::part::repo::system_mail::SystemMailRepo;
-use crate::result::RegularResult;
+use crate::result::{BaseResult, accept};
 
 #[cfg(test)]
 mod tests;
@@ -36,7 +36,7 @@ pub async fn list_infos<C, R>(
     repo: &R,
     token: UserToken,
     params: ListSystemMailInfosParams,
-) -> RegularResult<Vec<SystemMailInfoVal>>
+) -> BaseResult<Vec<SystemMailInfoVal>>
 where
     R: SystemMailRepo<C>,
 {
@@ -73,7 +73,7 @@ where
         })
         .collect();
 
-    Ok(system_mail_vals)
+    accept(system_mail_vals)
 }
 
 /// Marks a batch of system mails as read for the current user.
@@ -91,7 +91,7 @@ pub async fn mark_read<C, R>(
     repo: &R,
     token: UserToken,
     ids: Vec<String>,
-) -> RegularResult<()>
+) -> BaseResult<()>
 where
     R: SystemMailRepo<C>,
 {
@@ -103,5 +103,5 @@ where
         .await?;
     }
 
-    Ok(())
+    accept(())
 }

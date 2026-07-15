@@ -32,7 +32,7 @@ use crate::part::repo::oper::user::{
     ReserveUserAvatar, UpdateUser,
 };
 use crate::part::repo::user::UserRepo;
-use crate::result::{ExpectedVariant, RegularError, RegularResult};
+use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 
 #[cfg(test)]
 mod tests;
@@ -56,7 +56,7 @@ pub async fn get_info<C, R, I, V>(
     develop: &V,
     token: UserToken,
     id: String,
-) -> RegularResult<UserInfoVal>
+) -> BaseResult<UserInfoVal>
 where
     R: UserRepo<C>,
     I: ImagePool,
@@ -98,23 +98,22 @@ pub async fn update_info<N, C, R>(
     repo: &R,
     token: UserToken,
     params: UpdateUserInfoParams,
-) -> RegularResult<()>
+) -> BaseResult<()>
 where
-    N: Nucl<Context = C, Error = RegularError>,
+    N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     R: UserRepo<C> + MemberRepo<C> + Send + Sync,
 {
     // Only the user themselves can update their own profile.
     if token.user_id != params.id {
-        return Err(RegularError::Expected {
+        return Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
             message: trl("error-forbidden"),
         });
     }
 
-    nucl.coord(async move |context| -> Result<(), RegularError> {
+    nucl.coord(async move |context| -> Result<(), BaseError> {
         //
-
         repo.step(
             context,
             &UpdateUser::Info {
@@ -134,11 +133,11 @@ where
         )
         .await?;
 
-        Ok(())
+        accept(())
     })
     .await?;
 
-    Ok(())
+    accept(())
 }
 
 /// Replaces a user's password after verifying their current password.
@@ -149,14 +148,14 @@ pub async fn update_password<N, C, R>(
     token: UserToken,
     user_id: String,
     params: UpdateUserPasswordParams,
-) -> RegularResult<()>
+) -> BaseResult<()>
 where
-    N: Nucl<Context = C, Error = RegularError>,
+    N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     R: UserRepo<C> + Send + Sync,
 {
     if token.user_id != user_id {
-        return Err(RegularError::Expected {
+        return Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
             message: trl("error-forbidden"),
         });
@@ -176,7 +175,7 @@ where
     )
     .await
     {
-        return Err(RegularError::Expected {
+        return Err(BaseError::Expected {
             variant: ExpectedVariant::Auth,
             message: trl("error-wrong-credentials"),
         });
@@ -185,7 +184,7 @@ where
     let password_hash =
         UserComplex::hash_password(&params.new_password).await?;
 
-    nucl.coord(async move |context| -> RegularResult<()> {
+    nucl.coord(async move |context| {
         //
         repo.step(
             context,
@@ -196,11 +195,11 @@ where
         )
         .await?;
 
-        Ok(())
+        accept(())
     })
     .await?;
 
-    Ok(())
+    accept(())
 }
 
 /// Reserves a new avatar upload slot for a user.
@@ -231,16 +230,16 @@ pub async fn reserve_avatar<N, C, R, P, I>(
     image_pool: &I,
     token: UserToken,
     params: ReserveUserAvatarParams,
-) -> RegularResult<ReserveUserAvatarPayload>
+) -> BaseResult<ReserveUserAvatarPayload>
 where
-    N: Nucl<Context = C, Error = RegularError>,
+    N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     R: UserRepo<C> + Send + Sync,
     P: Prom<C> + Send + Sync,
     I: ImagePool,
 {
     let (object_key, avatar_version) = nucl
-        .coord(async move |context| -> RegularResult<(String, u32)> {
+        .coord(async move |context| {
             //
             let avatar_reservation = repo
                 .step(
@@ -294,7 +293,7 @@ where
 
             prom.step(context, &DeferBatch::new(&batch_tasks)).await?;
 
-            Ok((
+            accept((
                 avatar_reservation.object_key,
                 avatar_reservation.avatar_version,
             ))
@@ -303,7 +302,7 @@ where
 
     let put_url = image_pool.get_upload_url(&object_key).await?.to_string();
 
-    Ok(ReserveUserAvatarPayload {
+    accept(ReserveUserAvatarPayload {
         put_url,
         avatar_version,
     })
@@ -327,20 +326,20 @@ pub async fn mark_avatar_uploaded<N, C, R>(
     token: UserToken,
     id: String,
     params: MarkUserAvatarUploadedParams,
-) -> RegularResult<()>
+) -> BaseResult<()>
 where
-    N: Nucl<Context = C, Error = RegularError>,
+    N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     R: UserRepo<C> + Send + Sync,
 {
     if token.user_id != id {
-        return Err(RegularError::Expected {
+        return Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
             message: trl("error-forbidden"),
         });
     }
 
-    nucl.coord(async move |context| -> Result<(), RegularError> {
+    nucl.coord(async move |context| -> Result<(), BaseError> {
         //
 
         repo.step(
@@ -352,11 +351,11 @@ where
         )
         .await?;
 
-        Ok(())
+        accept(())
     })
     .await?;
 
-    Ok(())
+    accept(())
 }
 
 /// Deletes a user account and all associated params.
@@ -385,22 +384,22 @@ pub async fn delete<N, C, R, P>(
     prom: &P,
     token: UserToken,
     id: String,
-) -> RegularResult<()>
+) -> BaseResult<()>
 where
-    N: Nucl<Context = C, Error = RegularError>,
+    N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     R: UserRepo<C> + MemberRepo<C> + Send + Sync,
     P: Prom<C> + Send + Sync,
 {
     if token.user_id != id {
         // TODO: perm check.
-        return Err(RegularError::Expected {
+        return Err(BaseError::Expected {
             variant: ExpectedVariant::Perm,
             message: trl("error-forbidden"),
         });
     }
 
-    nucl.coord(async move |context| -> Result<(), RegularError> {
+    nucl.coord(async move |context| -> Result<(), BaseError> {
         //
 
         let user_info = repo
@@ -444,9 +443,9 @@ where
             prom.step(context, &Defer::new(task)).await?;
         }
 
-        Ok(())
+        accept(())
     })
     .await?;
 
-    Ok(())
+    accept(())
 }

@@ -15,7 +15,7 @@ use crate::part::repo::oper::termbase::{
 };
 use crate::part::repo::term::TermRepo;
 use crate::part::repo::termbase::TermbaseRepo;
-use crate::result::{RegularError, RegularResult, accept};
+use crate::result::{BaseError, BaseResult, accept};
 
 /// Creates a new termbase scoped to a team or comic.
 #[instrument(level = "info", err(Debug), skip_all)]
@@ -23,7 +23,7 @@ pub async fn create_termbase<C, R>(
     repo: &R,
     token: UserToken,
     params: CreateTermbaseParams,
-) -> RegularResult<()>
+) -> BaseResult<()>
 where
     R: TermbaseRepo<C> + MemberRepo<C> + AssignmentRepo<C> + Send + Sync,
 {
@@ -68,9 +68,9 @@ pub async fn delete_termbase<C, N, R>(
     repo: &R,
     _token: UserToken,
     id: String,
-) -> RegularResult<()>
+) -> BaseResult<()>
 where
-    N: Nucl<Context = C, Error = RegularError>,
+    N: Nucl<Context = C, Error = BaseError>,
     R: TermbaseRepo<C> + TermRepo<C> + Sync,
 {
     nucl.coord(async move |context| {

@@ -36,7 +36,7 @@ use crate::part_impl::repo::rdb_impl::entity::workset::WorksetRow;
 use crate::part_impl::repo::rdb_impl::schema;
 use crate::part_impl::shared::RdbConn;
 use crate::part_impl::shared::result::diesel;
-use crate::result::RegularResult;
+use crate::result::{BaseResult, accept};
 
 /// Include logic for announcements.
 pub mod announcement;
@@ -69,10 +69,10 @@ pub trait BatchByIds {
     fn load(
         conn: &mut RdbConn,
         ids: Vec<&str>,
-    ) -> impl Future<Output = RegularResult<Vec<Self::Row>>> + Send;
+    ) -> impl Future<Output = BaseResult<Vec<Self::Row>>> + Send;
 
     /// Convert a row into its id key and domain info.
-    fn into_entry(row: Self::Row) -> RegularResult<(String, Self::Info)>;
+    fn into_entry(row: Self::Row) -> BaseResult<(String, Self::Info)>;
 }
 
 // ── Incl trait ──────────────────────────────────────────────────────────────
@@ -110,7 +110,7 @@ pub trait Incl {
 pub async fn populate<I: Incl>(
     conn: &mut RdbConn,
     infos: &mut [I::Owner],
-) -> RegularResult<()> {
+) -> BaseResult<()> {
     //
     let mut key_counts = HashMap::new();
 
@@ -124,7 +124,7 @@ pub async fn populate<I: Incl>(
     }
 
     if key_counts.is_empty() {
-        return Ok(());
+        return accept(());
     }
 
     let id_refs = key_counts.keys().map(String::as_str).collect::<Vec<_>>();
@@ -140,7 +140,7 @@ pub async fn populate<I: Incl>(
         I::inject(owner, related);
     }
 
-    Ok(())
+    accept(())
 }
 
 /// Decrements a reference count and takes ownership of a loaded related entity
@@ -170,7 +170,7 @@ fn take_loaded_related<Related: Clone>(
 async fn batch_load<B: BatchByIds>(
     conn: &mut RdbConn,
     ids: Vec<&str>,
-) -> RegularResult<HashMap<String, B::Info>> {
+) -> BaseResult<HashMap<String, B::Info>> {
     //
     let rows = B::load(conn, ids).await?;
 
@@ -183,7 +183,7 @@ async fn batch_load<B: BatchByIds>(
         map.insert(id, info);
     }
 
-    Ok(map)
+    accept(map)
 }
 
 // ── Reusable BatchByIds impls (one per table) ───────────────────────────────
@@ -199,7 +199,7 @@ impl BatchByIds for UserByIds {
     async fn load(
         conn: &mut RdbConn,
         ids: Vec<&str>,
-    ) -> RegularResult<Vec<UserRow>> {
+    ) -> BaseResult<Vec<UserRow>> {
         schema::t_user::table
             .filter(schema::t_user::f_id.eq_any(ids))
             .select(UserRow::as_select())
@@ -208,11 +208,11 @@ impl BatchByIds for UserByIds {
             .map_err(diesel)
     }
 
-    fn into_entry(row: UserRow) -> RegularResult<(String, UserInfo)> {
+    fn into_entry(row: UserRow) -> BaseResult<(String, UserInfo)> {
         //
         let id = row.f_id.clone();
 
-        Ok((id, UserInfo::from(row)))
+        accept((id, UserInfo::from(row)))
     }
 }
 
@@ -227,7 +227,7 @@ impl BatchByIds for TeamByIds {
     async fn load(
         conn: &mut RdbConn,
         ids: Vec<&str>,
-    ) -> RegularResult<Vec<TeamRow>> {
+    ) -> BaseResult<Vec<TeamRow>> {
         schema::t_team::table
             .filter(schema::t_team::f_id.eq_any(ids))
             .select(TeamRow::as_select())
@@ -236,11 +236,11 @@ impl BatchByIds for TeamByIds {
             .map_err(diesel)
     }
 
-    fn into_entry(row: TeamRow) -> RegularResult<(String, TeamInfo)> {
+    fn into_entry(row: TeamRow) -> BaseResult<(String, TeamInfo)> {
         //
         let id = row.f_id.clone();
 
-        Ok((id, TeamInfo::from(row)))
+        accept((id, TeamInfo::from(row)))
     }
 }
 
@@ -255,7 +255,7 @@ impl BatchByIds for WorksetByIds {
     async fn load(
         conn: &mut RdbConn,
         ids: Vec<&str>,
-    ) -> RegularResult<Vec<WorksetRow>> {
+    ) -> BaseResult<Vec<WorksetRow>> {
         schema::t_workset::table
             .filter(schema::t_workset::f_id.eq_any(ids))
             .select(WorksetRow::as_select())
@@ -264,11 +264,11 @@ impl BatchByIds for WorksetByIds {
             .map_err(diesel)
     }
 
-    fn into_entry(row: WorksetRow) -> RegularResult<(String, WorksetInfo)> {
+    fn into_entry(row: WorksetRow) -> BaseResult<(String, WorksetInfo)> {
         //
         let id = row.f_id.clone();
 
-        Ok((id, WorksetInfo::from(row)))
+        accept((id, WorksetInfo::from(row)))
     }
 }
 
@@ -283,7 +283,7 @@ impl BatchByIds for ComicByIds {
     async fn load(
         conn: &mut RdbConn,
         ids: Vec<&str>,
-    ) -> RegularResult<Vec<ComicRow>> {
+    ) -> BaseResult<Vec<ComicRow>> {
         schema::t_comic::table
             .filter(schema::t_comic::f_id.eq_any(ids))
             .select(ComicRow::as_select())
@@ -292,11 +292,11 @@ impl BatchByIds for ComicByIds {
             .map_err(diesel)
     }
 
-    fn into_entry(row: ComicRow) -> RegularResult<(String, ComicInfo)> {
+    fn into_entry(row: ComicRow) -> BaseResult<(String, ComicInfo)> {
         //
         let id = row.f_id.clone();
 
-        Ok((id, ComicInfo::from(row)))
+        accept((id, ComicInfo::from(row)))
     }
 }
 
@@ -311,7 +311,7 @@ impl BatchByIds for ChapterByIds {
     async fn load(
         conn: &mut RdbConn,
         ids: Vec<&str>,
-    ) -> RegularResult<Vec<ChapterRow>> {
+    ) -> BaseResult<Vec<ChapterRow>> {
         schema::t_chapter::table
             .filter(schema::t_chapter::f_id.eq_any(ids))
             .select(ChapterRow::as_select())
@@ -320,12 +320,12 @@ impl BatchByIds for ChapterByIds {
             .map_err(diesel)
     }
 
-    fn into_entry(row: ChapterRow) -> RegularResult<(String, ChapterInfo)> {
+    fn into_entry(row: ChapterRow) -> BaseResult<(String, ChapterInfo)> {
         //
         let id = row.f_id.clone();
 
         let chapter_info = ChapterInfo::try_from(row)?;
 
-        Ok((id, chapter_info))
+        accept((id, chapter_info))
     }
 }

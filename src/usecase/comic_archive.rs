@@ -23,7 +23,7 @@ use crate::part::repo::oper::comic_archive::{
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::part::repo::workset::WorksetRepo;
-use crate::result::{RegularError, RegularResult, accept};
+use crate::result::{BaseError, BaseResult, accept};
 use crate::util::next_snowflake_id;
 
 #[cfg(test)]
@@ -37,9 +37,9 @@ pub async fn archive<N, C, R, P>(
     prom: &P,
     token: UserToken,
     comic_id: String,
-) -> RegularResult<ArchiveComicPayload>
+) -> BaseResult<ArchiveComicPayload>
 where
-    N: Nucl<Context = C, Error = RegularError>,
+    N: Nucl<Context = C, Error = BaseError>,
     R: ComicRepo<C>
         + ComicArchiveRepo<C>
         + WorksetRepo<C>
@@ -61,7 +61,7 @@ where
     .await?;
 
     let archive_comic_val = nucl
-        .coord(async move |context| -> RegularResult<ArchiveComicPayload> {
+        .coord(async move |context| {
             //
             let comic_archive_snapshot = repo
                 .step(
@@ -117,7 +117,7 @@ where
             )
             .await?;
 
-            Ok(ArchiveComicPayload { archived_comic_id })
+            accept(ArchiveComicPayload { archived_comic_id })
         })
         .await?;
 

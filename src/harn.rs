@@ -21,7 +21,7 @@ use crate::part::repo::team::TeamRepo;
 use crate::part::repo::unit::UnitRepo;
 use crate::part::repo::user::UserRepo;
 use crate::part::repo::workset::WorksetRepo;
-use crate::result::RegularError;
+use crate::result::BaseError;
 
 /// Central application harness that wires together all port implementations.
 ///
@@ -53,7 +53,7 @@ struct HarnInner<C, D, R, P, A, I, V> {
 
 impl<C, D, R, P, A, I, V> Harn<C, D, R, P, A, I, V>
 where
-    D: Nucl<Context = C, Error = RegularError>,
+    D: Nucl<Context = C, Error = BaseError>,
     R: AnnouncementRepo<C>
         + AssignmentRepo<C>
         + AssignmentInvitationRepo<C>

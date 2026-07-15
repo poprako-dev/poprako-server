@@ -25,7 +25,7 @@ use crate::part_impl::repo::rdb_impl::RdbRepo;
 use crate::part_impl::repo::rdb_impl::schema::t_local_message;
 use crate::part_impl::shared::result::diesel;
 use crate::part_impl::shared::{RdbContext, RdbCore};
-use crate::result::{RegularError, RegularResult};
+use crate::result::{BaseError, BaseResult, accept};
 
 mod entity;
 mod handler;
@@ -100,8 +100,6 @@ impl RdbProm {
                     "[RdbProm::close] background task ended without completion",
                 );
             }
-        }
-
         };
     }
 }
@@ -113,14 +111,14 @@ impl Drop for RdbProm {
 }
 
 impl<'a> Step<Defer<'a, String, Payload, ()>, RdbContext> for RdbProm {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
         oper: &Defer<'a, String, Payload, ()>,
-    ) -> RegularResult<()> {
+    ) -> BaseResult<()> {
         //
         let now = OffsetDateTime::now_utc();
 
@@ -132,24 +130,24 @@ impl<'a> Step<Defer<'a, String, Payload, ()>, RdbContext> for RdbProm {
             .await
             .map_err(diesel)?;
 
-        Ok(())
+        accept(())
     }
 }
 
 impl<'t, 'a> Step<DeferBatch<'t, 'a, String, Payload, ()>, RdbContext>
     for RdbProm
 {
-    type Error = RegularError;
+    type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
         oper: &DeferBatch<'t, 'a, String, Payload, ()>,
-    ) -> RegularResult<()> {
+    ) -> BaseResult<()> {
         //
         if oper.tasks.is_empty() {
-            return Ok(());
+            return accept(());
         }
 
         let now = OffsetDateTime::now_utc();
@@ -158,7 +156,7 @@ impl<'t, 'a> Step<DeferBatch<'t, 'a, String, Payload, ()>, RdbContext>
             .tasks
             .iter()
             .map(|task| LocalMessageEntry::from_task(task, now))
-            .collect::<RegularResult<Vec<_>>>()?;
+            .collect::<BaseResult<Vec<_>>>()?;
 
         diesel::insert_into(t_local_message::table)
             .values(&entries)
@@ -166,7 +164,7 @@ impl<'t, 'a> Step<DeferBatch<'t, 'a, String, Payload, ()>, RdbContext>
             .await
             .map_err(diesel)?;
 
-        Ok(())
+        accept(())
     }
 }
 

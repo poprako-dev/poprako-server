@@ -35,7 +35,7 @@ use crate::part::repo::oper::member_invitation::{
 };
 use crate::part::repo::oper::user::FindUserInfo;
 use crate::part::repo::user::UserRepo;
-use crate::result::{ExpectedVariant, RegularError, RegularResult};
+use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
 
 #[cfg(test)]
@@ -51,9 +51,9 @@ pub async fn create<N, C, R, P>(
     prom: &P,
     token: UserToken,
     params: CreateMemberInvitationParams,
-) -> RegularResult<CreateMemberInvitationPayload>
+) -> BaseResult<CreateMemberInvitationPayload>
 where
-    N: Nucl<Context = C, Error = RegularError>,
+    N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     R: MemberInvitationRepo<C> + MemberRepo<C> + UserRepo<C> + Send + Sync,
     P: Prom<C> + Send + Sync,
@@ -70,7 +70,7 @@ where
     .await?;
 
     let (member_invitation_id, code) = nucl
-        .coord(async move |context| -> RegularResult<(String, String)> {
+        .coord(async move |context| {
             //
 
             let invitee_user_info = repo
@@ -96,7 +96,7 @@ where
                     .await?;
 
                 if invitee_member_info.is_some() {
-                    return Err(RegularError::Expected {
+                    return Err(BaseError::Expected {
                         variant: ExpectedVariant::Args,
                         message: trl("error-already-team-member"),
                     });
@@ -141,11 +141,11 @@ where
 
             prom.step(context, &Defer::new(purge_task)).await?;
 
-            Ok((member_invitation_info.id, member_invitation_info.code))
+            accept((member_invitation_info.id, member_invitation_info.code))
         })
         .await?;
 
-    Ok(CreateMemberInvitationPayload {
+    accept(CreateMemberInvitationPayload {
         id: member_invitation_id,
         code,
     })
@@ -158,7 +158,7 @@ pub async fn list_infos<C, R, I>(
     image_pool: &I,
     token: UserToken,
     params: ListMemberInvitationInfosParams,
-) -> RegularResult<Vec<MemberInvitationInfoVal>>
+) -> BaseResult<Vec<MemberInvitationInfoVal>>
 where
     R: MemberInvitationRepo<C> + MemberRepo<C> + Sync,
     I: ImagePool,
@@ -208,7 +208,7 @@ where
         );
     }
 
-    Ok(member_invitation_info_vals)
+    accept(member_invitation_info_vals)
 }
 
 /// Updates the roles of an invitation.
@@ -218,9 +218,9 @@ pub async fn update_roles<N, C, R>(
     repo: &R,
     token: UserToken,
     params: UpdateMemberInvitationRolesParams,
-) -> RegularResult<()>
+) -> BaseResult<()>
 where
-    N: Nucl<Context = C, Error = RegularError>,
+    N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     R: MemberInvitationRepo<C> + MemberRepo<C> + Send + Sync,
 {
@@ -235,7 +235,7 @@ where
     )
     .await?;
 
-    nucl.coord(async move |context| -> RegularResult<()> {
+    nucl.coord(async move |context| {
         //
         let member_invitation_update = MemberInvitationUpdate {
             id: params.id,
@@ -250,13 +250,13 @@ where
         )
         .await?;
 
-        Ok(())
+        accept(())
     })
     .await?;
 
     let () = ();
 
-    Ok(())
+    accept(())
 }
 
 /// Deletes an invitation.
@@ -266,9 +266,9 @@ pub async fn delete<N, C, R>(
     repo: &R,
     token: UserToken,
     id: String,
-) -> RegularResult<()>
+) -> BaseResult<()>
 where
-    N: Nucl<Context = C, Error = RegularError>,
+    N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     R: MemberInvitationRepo<C> + MemberRepo<C> + Send + Sync,
 {
@@ -283,16 +283,16 @@ where
     )
     .await?;
 
-    nucl.coord(async move |context| -> RegularResult<()> {
+    nucl.coord(async move |context| {
         //
         repo.step(context, &DeleteMemberInvitation { id: &id })
             .await?;
 
-        Ok(())
+        accept(())
     })
     .await?;
 
     let () = ();
 
-    Ok(())
+    accept(())
 }

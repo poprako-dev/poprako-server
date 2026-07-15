@@ -47,5 +47,5 @@ fn new_rejects_non_positive_expiration() {
     //
     let err = JwtAuth::new("test-secret", 0).err().unwrap();
 
-    assert!(matches!(err, RegularError::Unrecoverable { .. }));
+    assert!(matches!(err, BaseError::Unrecoverable { .. }));
 }

@@ -5,7 +5,7 @@ use time::OffsetDateTime;
 
 use crate::model::chapter::{ChapterEntry, ChapterInfo};
 use crate::part_impl::repo::rdb_impl::schema::t_chapter;
-use crate::result::RegularError;
+use crate::result::BaseError;
 use crate::value::chapter::{Stage, StageMask, StagePhase};
 
 /// Raw database row for the `t_chapter` table. Returned by Diesel queries.
@@ -248,7 +248,7 @@ fn phase_from_two_step(
 /// its corresponding `StagePhase`.
 fn workflow_stage_mask_from_row(
     row: &ChapterRow,
-) -> Result<StageMask, RegularError> {
+) -> Result<StageMask, BaseError> {
     //
     let stages = StageMask::try_from(0u32)?
         .try_set_phase(
@@ -277,7 +277,7 @@ fn workflow_stage_mask_from_row(
 }
 
 impl TryFrom<ChapterRow> for ChapterInfo {
-    type Error = RegularError;
+    type Error = BaseError;
 
     fn try_from(row: ChapterRow) -> Result<Self, Self::Error> {
         //

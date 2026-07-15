@@ -6,7 +6,7 @@ use argon2::password_hash::{
     PasswordHash, PasswordHasher as _, PasswordVerifier as _, SaltString,
 };
 
-use crate::result::{RegularError, RegularResult};
+use crate::result::{BaseError, BaseResult};
 use crate::util::next_snowflake_id;
 
 /// Domain opers for [User] aggregates: password hashing and verification via Argon2id, ID generation, and avatar storage key computation.
@@ -19,13 +19,13 @@ impl UserComplex {
     }
 
     /// Hashes a plaintext password on Tokio's blocking pool and returns its Argon2id-encoded value.
-    pub async fn hash_password(password: &str) -> RegularResult<String> {
+    pub async fn hash_password(password: &str) -> BaseResult<String> {
         //
         let password = password.to_owned();
 
         tokio::task::spawn_blocking(move || hash_password_sync(&password))
             .await
-            .map_err(|error| RegularError::Unrecoverable {
+            .map_err(|error| BaseError::Unrecoverable {
                 message: format!(
                     "[UserComplex::hash_password] blocking task failed: {}",
                     error
@@ -62,9 +62,7 @@ impl UserComplex {
 
     /// Hashes a plaintext password using the sync runtime (test-only helper).
     #[cfg(test)]
-    pub(crate) fn hash_password_for_test(
-        password: &str,
-    ) -> RegularResult<String> {
+    pub(crate) fn hash_password_for_test(password: &str) -> BaseResult<String> {
         hash_password_sync(password)
     }
 
@@ -78,14 +76,14 @@ impl UserComplex {
     }
 }
 
-fn hash_password_sync(password: &str) -> RegularResult<String> {
+fn hash_password_sync(password: &str) -> BaseResult<String> {
     //
     let salt = SaltString::generate(OsRng);
 
     Argon2::default()
         .hash_password(password.as_bytes(), &salt)
         .map(|h| h.to_string())
-        .map_err(|e| RegularError::Unrecoverable {
+        .map_err(|e| BaseError::Unrecoverable {
             message: format!(
                 "[UserComplex::hash_password] argon2 hashing failed: {}",
                 e
