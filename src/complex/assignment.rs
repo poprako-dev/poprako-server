@@ -30,6 +30,7 @@ impl AssignmentComplex {
 
     /// Build the creator assignment roles, always preserving chapter admin.
     pub fn creator_roles(preset_roles: Option<RoleMask>) -> RoleMask {
+        //
         let admin_roles = RoleMask::from(RoleField::ADMIN);
 
         preset_roles

@@ -294,7 +294,9 @@ fn sorted_unit_ids(units: &[UnitInfo]) -> Vec<String> {
 }
 
 async fn wait_for_stage(mock: &Mock, stage: Stage, phase: StagePhase) {
+    //
     for _ in 0..100 {
+        //
         if mock.snapshot().chapters[0].stages.has_phase(stage, phase) {
             return;
         }

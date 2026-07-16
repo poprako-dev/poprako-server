@@ -8,7 +8,6 @@
 use axum::Router;
 use axum::middleware::{from_fn, from_fn_with_state};
 use axum::routing::{delete, get, post, put};
-use tower_http::trace::TraceLayer;
 
 use crate::api::http::handler::{
     announcement, assignment, assignment_invitation, auth, chapter,
@@ -17,7 +16,11 @@ use crate::api::http::handler::{
 };
 use crate::api::http::middleware::auth::authorize;
 use crate::api::http::middleware::latency::log_latency;
+use crate::api::http::middleware::metric::record_response_metric;
 use crate::api::http::middleware::rate_limit::rate_limit;
+use crate::api::http::middleware::trace::{
+    propagate_request_id, set_request_id, trace_request,
+};
 #[cfg(feature = "swagger-ui")]
 use crate::api::http::openapi::ApiDoc;
 use crate::api::http::state::AppHarn;
@@ -229,7 +232,10 @@ pub fn new(harn: AppHarn) -> Router<AppHarn> {
         .nest("/api/v1", v1_public.merge(v1_protected))
         .layer(from_fn(log_latency))
         .layer(from_fn(rate_limit))
-        .layer(TraceLayer::new_for_http());
+        .layer(propagate_request_id())
+        .layer(trace_request())
+        .layer(set_request_id())
+        .layer(from_fn(record_response_metric));
 
     // Health endpoint — always available
     let router = router.route("/api/health", get(health::check_health));
