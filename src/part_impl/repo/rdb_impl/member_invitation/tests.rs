@@ -5,7 +5,7 @@ use super::*;
 use poprako_orchestra::Nucl as _;
 
 use crate::model::member_invitation::{
-    MemberInvitationEntry, MemberInvitationListSpec,
+    MemberInvitationEntry, MemberInvitationListKind, MemberInvitationListSpec,
 };
 use crate::part::repo::oper::member_invitation::{
     CreateMemberInvitation, ListMemberInvitationInfos, UpdateMemberInvitation,
@@ -66,7 +66,7 @@ async fn member_invitation_roundtrip_reads_test_database_url() {
 
     let member_invitation_list_spec = MemberInvitationListSpec {
         team_id: team_fixture.team_entry.id.clone(),
-        pending: Some(false),
+        kind: MemberInvitationListKind::Used,
         incl_opt: vec![MemberInvitationInclOpt::Invitor],
         offset: 0,
         limit: 10,

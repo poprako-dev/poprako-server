@@ -7,7 +7,7 @@ use crate::model::chapter::{
     ChapterStageUpdate,
 };
 use crate::model::unit::UnitCounterDelta;
-use crate::value::chapter::ChapterInclOpt;
+use crate::value::chapter::{ChapterInclOpt, Stage};
 
 pub struct CreateChapter<'a> {
     pub entry: &'a ChapterEntry,
@@ -82,6 +82,25 @@ pub struct UpdateChapterStage<'a> {
 
 impl<'a> Oper for UpdateChapterStage<'a> {
     type Output = ();
+}
+
+/// Atomically starts a two-step chapter stage when it is still pending.
+pub struct StartChapterStage<'a> {
+    pub id: &'a str,
+    pub stage: Stage,
+}
+
+impl<'a> Oper for StartChapterStage<'a> {
+    type Output = bool;
+}
+
+/// Completes raw provision when every page image has been uploaded.
+pub struct CompleteChapterRawProvide<'a> {
+    pub id: &'a str,
+}
+
+impl<'a> Oper for CompleteChapterRawProvide<'a> {
+    type Output = bool;
 }
 
 pub struct SetChapterPageCounters<'a> {

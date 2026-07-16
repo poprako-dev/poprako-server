@@ -3,7 +3,7 @@
 use std::time::Duration;
 
 use poprako_orchestra::{Nucl, run_proxy};
-use poprako_orchestra_extra::prom::oper::DeferBatch;
+use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
 use poprako_orchestra_extra::prom::task::Task;
 use tracing::instrument;
 
@@ -20,6 +20,7 @@ use crate::model::page::PageEntry;
 use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
 use crate::part::prom::Prom;
+use crate::part::prom::payload::chapter::CheckUploadFinish;
 use crate::part::prom::payload::{Payload, image};
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
@@ -39,6 +40,7 @@ use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::workset::WorksetRepo;
 use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
+use crate::util::next_snowflake_id;
 
 #[cfg(test)]
 mod tests;
@@ -176,6 +178,21 @@ where
                 .collect();
 
             prom.step(context, &DeferBatch::new(&check_tasks)).await?;
+
+            let advance_id = next_snowflake_id();
+
+            let advance_payload =
+                Payload::CheckChapterUploadFinish(CheckUploadFinish {
+                    chapter_id: chapter_info.id.clone(),
+                });
+
+            let advance_task = Task {
+                id: &advance_id,
+                payload: &advance_payload,
+                delay: Some(Duration::from_secs(20 * 60)),
+            };
+
+            prom.step(context, &Defer::new(advance_task)).await?;
 
             repo.step(
                 context,

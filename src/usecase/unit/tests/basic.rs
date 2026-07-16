@@ -126,7 +126,7 @@ async fn save_infos_creates_updates_and_deletes_by_typed_opers() {
 
     mock.seed_unit(unit("unit-b", "page-1", 1, "beta", Some("proof"), true));
 
-    let saved = save_infos(
+    let saved = save(
         &mock,
         &mock,
         token("user-1"),
@@ -151,6 +151,8 @@ async fn save_infos_creates_updates_and_deletes_by_typed_opers() {
         Err(_) => panic!("expected save success"),
     };
 
+    wait_for_stage(&mock, Stage::Translate, StagePhase::Active).await;
+
     let snapshot = mock.snapshot();
 
     let created_id = saved.local_id_mappers[0].unit_id.clone();
@@ -171,6 +173,63 @@ async fn save_infos_creates_updates_and_deletes_by_typed_opers() {
     assert_eq!(snapshot.chapters[0].total_unit_count, 2);
 
     assert!(snapshot.comics[0].last_active_at > snapshot.comics[0].created_at);
+
+    assert!(
+        snapshot.chapters[0]
+            .stages
+            .has_phase(Stage::Translate, StagePhase::Active)
+    );
+}
+
+#[tokio::test]
+async fn save_infos_starts_proofread_after_transaction() {
+    //
+    let mock = Mock::new();
+
+    seed_scope(&mock, 1, 1, 0);
+
+    mock.seed_assignment(assignment(
+        "chapter-1",
+        "user-1",
+        RoleMask::from(RoleField::PROOFREADER),
+    ));
+
+    mock.seed_unit(unit("unit-a", "page-1", 0, "alpha", None, false));
+
+    let saved = save(
+        &mock,
+        &mock,
+        token("user-1"),
+        SavePageUnitsParams {
+            page_id: "page-1".into(),
+            diff: UnitDiffParams {
+                page_id: "page-1".into(),
+                opers: vec![UnitOperParams::Save {
+                    id: "unit-a".into(),
+                    before_id: None,
+                    is_bubble: true,
+                    is_proofread: true,
+                    x_coord: 1.0,
+                    y_coord: 2.0,
+                    translated_text: Some("alpha".into()),
+                    last_translator_id: Some("translator-1".into()),
+                    proofread_text: Some("alpha proof".into()),
+                    last_proofreader_id: Some("user-1".into()),
+                }],
+            },
+        },
+    )
+    .await;
+
+    assert!(saved.is_ok());
+
+    wait_for_stage(&mock, Stage::Proofread, StagePhase::Active).await;
+
+    assert!(
+        mock.snapshot().chapters[0]
+            .stages
+            .has_phase(Stage::Proofread, StagePhase::Active)
+    );
 }
 
 #[tokio::test]
@@ -190,7 +249,7 @@ async fn save_infos_places_unit_before_anchor_or_at_tail_by_before_id() {
 
     mock.seed_unit(unit("unit-b", "page-1", 1, "beta", None, false));
 
-    let saved = save_infos(
+    let saved = save(
         &mock,
         &mock,
         token("user-1"),

@@ -332,7 +332,7 @@ async fn apply_save_to_mock(
     opers: &[UnitOperParams],
 ) -> BaseResult<()> {
     //
-    save_infos(
+    save(
         mock,
         mock,
         token("user-1"),

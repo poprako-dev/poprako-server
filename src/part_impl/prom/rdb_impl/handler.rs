@@ -8,12 +8,14 @@ use std::time::Duration as StdDuration;
 use poprako_orchestra::{Nucl, Step as _};
 use time::{Duration, OffsetDateTime};
 use tokio::time::sleep;
-use tokio_util::sync::CancellationToken;
 use tracing::instrument;
+
+use tokio_util::sync::CancellationToken;
 
 use crate::part::image::ImageManager;
 use crate::part::prom::payload::Payload;
 use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
+use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member_invitation::MemberInvitationRepo;
 use crate::part::repo::page::PageRepo;
@@ -27,6 +29,8 @@ use crate::part_impl::prom::rdb_impl::repo::{
 use crate::part_impl::shared::{RdbContext, RdbCore};
 use crate::result::{BaseError, BaseResult};
 
+/// Prom chapter workflow handler.
+mod chapter;
 /// Prom image event handler.
 mod image;
 /// Prom invitation event handler.
@@ -215,6 +219,7 @@ impl<D, R, I> RdbPromHandler<D, R, I>
 where
     D: Nucl<Context = RdbContext, Error = BaseError>,
     R: AssignmentInvitationRepo<RdbContext>
+        + ChapterRepo<RdbContext>
         + ComicRepo<RdbContext>
         + MemberInvitationRepo<RdbContext>
         + PageRepo<RdbContext>
@@ -493,6 +498,7 @@ async fn dispatch_payload<D, R, I>(
 where
     D: Nucl<Context = RdbContext, Error = BaseError>,
     R: AssignmentInvitationRepo<RdbContext>
+        + ChapterRepo<RdbContext>
         + ComicRepo<RdbContext>
         + MemberInvitationRepo<RdbContext>
         + PageRepo<RdbContext>
@@ -524,6 +530,10 @@ where
 
     match payload {
         //
+        Payload::CheckChapterUploadFinish(task) => {
+            chapter::handle(repo, &task).await
+        }
+
         Payload::Image(task) => {
             image::handle(nucl, repo, image_pool, &task).await
         }

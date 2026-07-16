@@ -1,11 +1,11 @@
 use poprako_orchestra::{Run, Step};
 
 use crate::part::repo::oper::chapter::{
-    AdjustChapterUnitCounters, CreateChapter, DeleteChapter,
-    FindPinnedChapterInfo, GetChapterInfo, GetChapterInfoExcluded,
-    ListChapterInfos, ListChapterInfosExcluded, ListPinnedChapterInfos,
-    SetChapterPageCounters, UnpinOtherChapters, UpdateChapter,
-    UpdateChapterStage,
+    AdjustChapterUnitCounters, CompleteChapterRawProvide, CreateChapter,
+    DeleteChapter, FindPinnedChapterInfo, GetChapterInfo,
+    GetChapterInfoExcluded, ListChapterInfos, ListChapterInfosExcluded,
+    ListPinnedChapterInfos, SetChapterPageCounters, StartChapterStage,
+    UnpinOtherChapters, UpdateChapter, UpdateChapterStage,
 };
 use crate::result::BaseError;
 
@@ -18,6 +18,8 @@ pub trait ChapterRepo<C>:
     + for<'a> Run<ListChapterInfos<'a>, Error = BaseError>
     + for<'a, 'b> Run<FindPinnedChapterInfo<'a, 'b>, Error = BaseError>
     + for<'a> Run<ListPinnedChapterInfos<'a>, Error = BaseError>
+    + for<'a> Run<StartChapterStage<'a>, Error = BaseError>
+    + for<'a> Run<CompleteChapterRawProvide<'a>, Error = BaseError>
     + for<'a, 'b> Step<GetChapterInfo<'a, 'b>, C, Error = BaseError>
     + for<'a, 'b> Step<GetChapterInfoExcluded<'a, 'b>, C, Error = BaseError>
     + for<'a> Step<ListChapterInfosExcluded<'a>, C, Error = BaseError>
