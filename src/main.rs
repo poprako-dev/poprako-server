@@ -69,7 +69,6 @@ async fn main() -> anyhow::Result<()> {
                 )
                 .from_env_lossy(),
         )
-        .with_span_events(tracing_subscriber::fmt::format::FmtSpan::CLOSE)
         .with_ansi(cfg!(debug_assertions))
         .init();
 

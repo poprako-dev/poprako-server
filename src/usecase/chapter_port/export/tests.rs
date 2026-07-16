@@ -177,7 +177,9 @@ fn seed_scope(mock: &Mock) {
 }
 
 async fn wait_for_typeset_redraw(mock: &Mock) {
+    //
     for _ in 0..100 {
+        //
         if mock.snapshot().chapters[0]
             .stages
             .has_phase(Stage::TypesetRedraw, StagePhase::Active)

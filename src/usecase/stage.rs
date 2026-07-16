@@ -13,8 +13,8 @@ where
         + 'static,
 {
     tokio::spawn(async move {
-        //
         for stage in stages {
+            //
             let result = repo
                 .run(&StartChapterStage {
                     id: &chapter_id,

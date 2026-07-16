@@ -10,13 +10,14 @@ use crate::part_impl::repo::mock_impl::{
 use crate::result::{BaseResult, accept};
 
 mod orchestra;
+
 #[cfg(test)]
 mod tests {
+    use super::*;
+
     // create_unit(create_unit)(positive): a new id is inserted once.
     // create_unit(create_unit)(negative): an existing id is rejected without mutation.
     // save_unit(save_unit)(positive): a missing id is created and an existing id is updated.
-
-    use super::*;
 
     fn payload(text: &str, proofread: bool) -> UnitContent {
         UnitContent {
@@ -230,3 +231,5 @@ fn save_unit(
 
     accept(())
 }
+
+
