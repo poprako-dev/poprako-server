@@ -6,6 +6,7 @@ use crate::part::repo::oper::member_invitation::PurgeExpiredMemberInvitation;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::{BaseResult, accept};
 
+/// Process a [`PurgeExpiredInvitation`] event by dispatching to the matching repo step.
 pub(super) async fn process(
     mock: &Mock,
     event: &PurgeExpiredInvitation,
