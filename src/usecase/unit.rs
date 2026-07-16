@@ -37,6 +37,8 @@ use crate::part::repo::page::PageRepo;
 use crate::part::repo::unit::UnitRepo;
 use crate::part::repo::workset::WorksetRepo;
 use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
+use crate::usecase::stage::spawn_starts;
+use crate::value::chapter::Stage;
 
 #[cfg(test)]
 mod tests;
@@ -98,7 +100,7 @@ where
 
 /// Saves unit opers under one page.
 #[instrument(level = "info", err(Debug), skip_all)]
-pub async fn save_infos<N, C, R>(
+pub async fn save<N, C, R>(
     nucl: &N,
     repo: &R,
     token: UserToken,
@@ -112,8 +114,10 @@ where
         + ChapterRepo<C>
         + ComicRepo<C>
         + AssignmentRepo<C>
+        + Clone
         + Send
-        + Sync,
+        + Sync
+        + 'static,
 {
     let SavePageUnitsParams { page_id, diff } = params;
 
@@ -128,7 +132,9 @@ where
         local_id_maps,
     } = UnitApplyParts::from(UnitComplex::prepare_diff(unit_diff)?);
 
-    let save_units = nucl
+    let stages = submitted_stage_starts(&opers);
+
+    let save_result = nucl
         .coord(async move |context| {
             //
             let page_info = repo
@@ -280,11 +286,24 @@ where
             )
             .await?;
 
-            accept(SavePageUnitsPayload::from_parts(local_id_maps, counters))
+            accept(SavePageUnitsResult {
+                payload: SavePageUnitsPayload::from_parts(
+                    local_id_maps,
+                    counters,
+                ),
+                chapter_id: page_info.chapter_id,
+            })
         })
         .await?;
 
-    accept(save_units)
+    spawn_starts((*repo).clone(), save_result.chapter_id, stages);
+
+    accept(save_result.payload)
+}
+
+struct SavePageUnitsResult {
+    payload: SavePageUnitsPayload,
+    chapter_id: String,
 }
 
 /// Carries the validated opers and local ID maps produced by applying a diff.
@@ -300,6 +319,46 @@ impl From<UnitApplyAck> for UnitApplyParts {
             local_id_maps: receipt.local_id_map,
         }
     }
+}
+
+fn submitted_stage_starts(opers: &[UnitOper]) -> Vec<Stage> {
+    //
+    let translated = opers.iter().any(|oper| match oper {
+        //
+        UnitOper::Create { payload, .. } | UnitOper::Save { payload, .. } => {
+            has_text(&payload.translated_text)
+                && has_text(&payload.last_translator_id)
+        }
+
+        UnitOper::Delete { .. } => false,
+    });
+
+    let proofread = opers.iter().any(|oper| match oper {
+        //
+        UnitOper::Create { payload, .. } | UnitOper::Save { payload, .. } => {
+            payload.is_proofread && has_text(&payload.last_proofreader_id)
+        }
+
+        UnitOper::Delete { .. } => false,
+    });
+
+    let mut stages = Vec::with_capacity(2);
+
+    if translated {
+        stages.push(Stage::Translate);
+    }
+
+    if proofread {
+        stages.push(Stage::Proofread);
+    }
+
+    stages
+}
+
+fn has_text(text: &Option<String>) -> bool {
+    text.as_ref()
+        .map(|value| !value.trim().is_empty())
+        .unwrap_or(false)
 }
 
 /// Computes the per-counter delta between old and new unit counters.

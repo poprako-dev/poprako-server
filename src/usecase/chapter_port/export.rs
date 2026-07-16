@@ -29,6 +29,8 @@ use crate::part::repo::page::PageRepo;
 use crate::part::repo::unit::UnitRepo;
 use crate::part::repo::workset::WorksetRepo;
 use crate::result::{BaseResult, accept};
+use crate::usecase::stage::spawn_starts;
+use crate::value::chapter::Stage;
 
 #[cfg(test)]
 mod tests;
@@ -48,7 +50,10 @@ where
         + AssignmentRepo<C>
         + PageRepo<C>
         + UnitRepo<C>
-        + Sync,
+        + Clone
+        + Send
+        + Sync
+        + 'static,
 {
     ChapterPortPermComplex::ensure_user_can_export(
         &mut run_proxy! {
@@ -107,14 +112,22 @@ where
         });
     }
 
-    accept(ExportChapterTranslationPayload {
+    let payload = ExportChapterTranslationPayload {
         chapter_id: chapter_info.id,
         chapter_index: chapter_info.index,
         chapter_subtitle: non_empty(chapter_info.subtitle),
         comic_id: chapter_info.comic_id,
         comic_title: comic_info.title,
         pages: page_vals,
-    })
+    };
+
+    spawn_starts(
+        (*repo).clone(),
+        payload.chapter_id.clone(),
+        vec![Stage::TypesetRedraw],
+    );
+
+    accept(payload)
 }
 
 /// Exports one chapter as LabelPlus text.
@@ -132,7 +145,10 @@ where
         + AssignmentRepo<C>
         + PageRepo<C>
         + UnitRepo<C>
-        + Sync,
+        + Clone
+        + Send
+        + Sync
+        + 'static,
 {
     ChapterPortPermComplex::ensure_user_can_export(
         &mut run_proxy! {
@@ -174,10 +190,12 @@ where
         units_by_page_id.insert(page_info.id.clone(), unit_infos);
     }
 
-    accept(ChapterExportComplex::make_label_plus(
-        &page_infos,
-        &units_by_page_id,
-    ))
+    let content =
+        ChapterExportComplex::make_label_plus(&page_infos, &units_by_page_id);
+
+    spawn_starts((*repo).clone(), chapter_id, vec![Stage::TypesetRedraw]);
+
+    accept(content)
 }
 
 /// Builds a [`UnitTranslationExportVal`] from page and unit info.

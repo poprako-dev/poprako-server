@@ -8,7 +8,7 @@ use crate::model::workset::WorksetEntry;
 pub fn user_entry(prefix: &str, name: &str) -> UserEntry {
     UserEntry {
         id: format!("{}user-{}", prefix, name),
-        nickname: format!("RDB User {}", name),
+        nickname: format!("{}user-{}", prefix, name),
         qid: format!("{}qid-{}", prefix, name),
         password_hash: "hash".into(),
     }
@@ -17,7 +17,7 @@ pub fn user_entry(prefix: &str, name: &str) -> UserEntry {
 pub fn team_entry(prefix: &str) -> TeamEntry {
     TeamEntry {
         id: format!("{}team", prefix),
-        name: "RDB Team".into(),
+        name: format!("{}team", prefix),
         description: "team".into(),
     }
 }

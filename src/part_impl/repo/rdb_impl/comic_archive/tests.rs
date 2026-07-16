@@ -70,11 +70,12 @@ async fn comic_archive_roundtrip_reads_test_database_url() {
                 )
                 .await?;
 
-            let comic_archive_write = ComicArchiveComplex::build_write(
+            let (comic_archive_write, _) = ComicArchiveComplex::prepare_write(
                 comic_archive_snapshot,
                 archiver_id.clone(),
                 OffsetDateTime::now_utc(),
-            )?;
+            )
+            .await?;
 
             repo.step(
                 context,

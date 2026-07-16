@@ -75,7 +75,7 @@ pub async fn save_infos(
 
     ensure_path_matches_body_id(&page_id, &params.diff.page_id)?;
 
-    usecase::unit::save_infos(harn.drive(), harn.repo(), user_token, params)
+    usecase::unit::save(harn.drive(), harn.repo(), user_token, params)
         .await?
         .accept(StatusCode::OK)
 }
