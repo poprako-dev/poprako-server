@@ -381,6 +381,23 @@ async fn list_infos_by_user_id_excluded(
     accept(rows.into_iter().map(Into::into).collect())
 }
 
+/// Query all member infos for a team, locking the rows for update.
+#[instrument(level = "info", err(Debug), skip_all)]
+async fn list_infos_by_team_id_excluded(
+    conn: &mut RdbConn,
+    team_id: &str,
+) -> BaseResult<Vec<MemberInfo>> {
+    let rows: Vec<MemberRow> = t_member
+        .filter(f_team_id.eq(team_id))
+        .select(MemberRow::as_select())
+        .for_update()
+        .load(conn)
+        .await
+        .map_err(diesel)?;
+
+    accept(rows.into_iter().map(Into::into).collect())
+}
+
 /// Query all member infos for a user without acquiring a lock.
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn list_infos_by_user_id(

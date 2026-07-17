@@ -1,0 +1,204 @@
+//! Terminology-base handlers.
+
+use axum::Json;
+use axum::extract::{Extension, Path, Query, State};
+use axum::http::StatusCode;
+use serde::Deserialize;
+use tracing::instrument;
+
+#[cfg(feature = "swagger-ui")]
+use utoipa::IntoParams;
+
+use crate::api::http::handler::util::ensure_path_matches_body_id;
+#[allow(unused_imports)]
+use crate::api::http::result::{
+    Accept as _, HttpBody, HttpNoContent, HttpResult, no_content,
+};
+use crate::api::http::state::AppHarn;
+use crate::data::termbase::{
+    CreateTermbaseParams, CreateTermbasePayload, ListComicTermbaseInfosParams,
+    ListTeamTermbaseInfosParams, TermbaseInfoVal, UpdateTermbaseInfoParams,
+};
+use crate::model::user::UserToken;
+use crate::usecase;
+
+/// Query parameters for terminology-base lists.
+#[derive(Debug, Deserialize)]
+#[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
+#[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
+pub struct TermbaseListQuery {
+    /// Optional case-insensitive name substring.
+    pub fuzzy_name: Option<String>,
+
+    pub offset: u32,
+    pub limit: u32,
+}
+
+/// `POST /api/v1/termbases` — create a terminology base.
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
+    post,
+    path = "/api/v1/termbases",
+    tag = "termbases",
+    request_body = CreateTermbaseParams,
+    responses(
+        (status = 201, description = "Termbase created", body = HttpBody<CreateTermbasePayload>),
+        (status = 403, description = "Team proofreader role required"),
+        (status = 422, description = "Invalid scope, parent, or duplicate name"),
+    ),
+))]
+#[instrument(level = "info", err(Debug), skip_all)]
+pub async fn create(
+    State(harn): State<AppHarn>,
+    Extension(user_token): Extension<UserToken>,
+    Json(params): Json<CreateTermbaseParams>,
+) -> HttpResult<CreateTermbasePayload> {
+    usecase::termbase::create(harn.drive(), harn.repo(), user_token, params)
+        .await?
+        .accept(StatusCode::CREATED)
+}
+
+/// `GET /api/v1/teams/{team_id}/termbases` — list team terminology bases.
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
+    get,
+    path = "/api/v1/teams/{team_id}/termbases",
+    tag = "termbases",
+    params(("team_id" = String, Path, description = "Team ID"), TermbaseListQuery),
+    responses(
+        (status = 200, description = "Team termbases listed", body = HttpBody<Vec<TermbaseInfoVal>>),
+        (status = 403, description = "Team membership required"),
+    ),
+))]
+#[instrument(level = "info", err(Debug), skip_all)]
+pub async fn list_team_infos(
+    State(harn): State<AppHarn>,
+    Path(team_id): Path<String>,
+    Extension(user_token): Extension<UserToken>,
+    Query(query): Query<TermbaseListQuery>,
+) -> HttpResult<Vec<TermbaseInfoVal>> {
+    let params = ListTeamTermbaseInfosParams {
+        team_id,
+        fuzzy_name: query.fuzzy_name,
+        offset: query.offset,
+        limit: query.limit,
+    };
+
+    usecase::termbase::list_team_infos(harn.repo(), user_token, params)
+        .await?
+        .accept(StatusCode::OK)
+}
+
+/// `GET /api/v1/comics/{comic_id}/termbases` — list visible terminology bases.
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
+    get,
+    path = "/api/v1/comics/{comic_id}/termbases",
+    tag = "termbases",
+    params(("comic_id" = String, Path, description = "Comic ID"), TermbaseListQuery),
+    responses(
+        (status = 200, description = "Comic-visible termbases listed", body = HttpBody<Vec<TermbaseInfoVal>>),
+        (status = 403, description = "Team membership required"),
+        (status = 422, description = "Comic not found"),
+    ),
+))]
+#[instrument(level = "info", err(Debug), skip_all)]
+pub async fn list_comic_infos(
+    State(harn): State<AppHarn>,
+    Path(comic_id): Path<String>,
+    Extension(user_token): Extension<UserToken>,
+    Query(query): Query<TermbaseListQuery>,
+) -> HttpResult<Vec<TermbaseInfoVal>> {
+    let params = ListComicTermbaseInfosParams {
+        comic_id,
+        fuzzy_name: query.fuzzy_name,
+        offset: query.offset,
+        limit: query.limit,
+    };
+
+    usecase::termbase::list_comic_infos(harn.repo(), user_token, params)
+        .await?
+        .accept(StatusCode::OK)
+}
+
+/// `GET /api/v1/termbases/{termbase_id}` — fetch a terminology base.
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
+    get,
+    path = "/api/v1/termbases/{termbase_id}",
+    tag = "termbases",
+    params(("termbase_id" = String, Path, description = "Termbase ID")),
+    responses(
+        (status = 200, description = "Termbase retrieved", body = HttpBody<TermbaseInfoVal>),
+        (status = 403, description = "Team membership required"),
+        (status = 422, description = "Termbase not found"),
+    ),
+))]
+#[instrument(level = "info", err(Debug), skip_all)]
+pub async fn get_info(
+    State(harn): State<AppHarn>,
+    Path(termbase_id): Path<String>,
+    Extension(user_token): Extension<UserToken>,
+) -> HttpResult<TermbaseInfoVal> {
+    usecase::termbase::get_info(harn.repo(), user_token, termbase_id)
+        .await?
+        .accept(StatusCode::OK)
+}
+
+/// `PUT /api/v1/termbases/{termbase_id}` — replace editable fields.
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
+    put,
+    path = "/api/v1/termbases/{termbase_id}",
+    tag = "termbases",
+    params(("termbase_id" = String, Path, description = "Termbase ID")),
+    request_body = UpdateTermbaseInfoParams,
+    responses(
+        (status = 204, description = "Termbase updated"),
+        (status = 403, description = "Team proofreader role required"),
+        (status = 422, description = "Invalid input, duplicate name, or path mismatch"),
+    ),
+))]
+#[instrument(level = "info", err(Debug), skip_all)]
+pub async fn update_info(
+    State(harn): State<AppHarn>,
+    Path(termbase_id): Path<String>,
+    Extension(user_token): Extension<UserToken>,
+    Json(params): Json<UpdateTermbaseInfoParams>,
+) -> HttpNoContent {
+    ensure_path_matches_body_id(&termbase_id, &params.id)?;
+
+    usecase::termbase::update_info(
+        harn.drive(),
+        harn.repo(),
+        user_token,
+        params,
+    )
+    .await?;
+
+    no_content()
+}
+
+/// `DELETE /api/v1/termbases/{termbase_id}` — delete a terminology base.
+#[cfg_attr(feature = "swagger-ui", utoipa::path(
+    delete,
+    path = "/api/v1/termbases/{termbase_id}",
+    tag = "termbases",
+    params(("termbase_id" = String, Path, description = "Termbase ID")),
+    responses(
+        (status = 204, description = "Termbase and terms deleted"),
+        (status = 403, description = "Team proofreader role required"),
+        (status = 422, description = "Termbase not found"),
+    ),
+))]
+#[instrument(level = "info", err(Debug), skip_all)]
+pub async fn delete(
+    State(harn): State<AppHarn>,
+    Path(termbase_id): Path<String>,
+    Extension(user_token): Extension<UserToken>,
+) -> HttpNoContent {
+    usecase::termbase::delete(
+        harn.drive(),
+        harn.repo(),
+        user_token,
+        termbase_id,
+    )
+    .await?;
+
+    no_content()
+}

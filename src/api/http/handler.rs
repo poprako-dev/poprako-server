@@ -42,6 +42,12 @@ pub mod system_mail;
 /// Team request handlers.
 pub mod team;
 
+/// Term request handlers.
+pub mod term;
+
+/// Termbase request handlers.
+pub mod termbase;
+
 /// Unit request handlers.
 pub mod unit;
 

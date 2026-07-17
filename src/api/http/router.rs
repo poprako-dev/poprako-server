@@ -12,7 +12,7 @@ use axum::routing::{delete, get, post, put};
 use crate::api::http::handler::{
     announcement, assignment, assignment_invitation, auth, chapter,
     chapter_port, comic, comment, health, member, member_invitation, page,
-    system_mail, team, unit, user, workset,
+    system_mail, team, term, termbase, unit, user, workset,
 };
 use crate::api::http::middleware::auth::authorize;
 use crate::api::http::middleware::metric::record_response_metric;
@@ -72,7 +72,8 @@ pub fn new(harn: AppHarn) -> Router<AppHarn> {
             "/teams/{team_id}/member-invitations",
             get(member_invitation::list_infos),
         )
-        .route("/teams/{team_id}/worksets", get(workset::list_infos));
+        .route("/teams/{team_id}/worksets", get(workset::list_infos))
+        .route("/teams/{team_id}/termbases", get(termbase::list_team_infos));
 
     let v1_member = Router::new()
         .route("/members", get(member::list_infos).post(member::create))
@@ -104,6 +105,10 @@ pub fn new(harn: AppHarn) -> Router<AppHarn> {
     let v1_comic = Router::new()
         .route("/comics", post(comic::create))
         .route("/worksets/{workset_id}/comics", get(comic::list_infos))
+        .route(
+            "/comics/{comic_id}/termbases",
+            get(termbase::list_comic_infos),
+        )
         .route(
             "/comics/{comic_id}",
             get(comic::get_info)
@@ -211,6 +216,23 @@ pub fn new(harn: AppHarn) -> Router<AppHarn> {
         .route("/comments", post(comment::create))
         .route("/teams/{team_id}/comments", get(comment::list_infos));
 
+    let v1_termbase = Router::new()
+        .route("/termbases", post(termbase::create))
+        .route(
+            "/termbases/{termbase_id}",
+            get(termbase::get_info)
+                .put(termbase::update_info)
+                .delete(termbase::delete),
+        )
+        .route("/termbases/{termbase_id}/terms", get(term::list_infos));
+
+    let v1_term = Router::new().route("/terms", post(term::create)).route(
+        "/terms/{term_id}",
+        get(term::get_info)
+            .put(term::update_info)
+            .delete(term::delete),
+    );
+
     let v1_protected = v1_user
         .merge(v1_team)
         .merge(v1_member)
@@ -225,6 +247,8 @@ pub fn new(harn: AppHarn) -> Router<AppHarn> {
         .merge(v1_system_mail)
         .merge(v1_announcement)
         .merge(v1_comment)
+        .merge(v1_termbase)
+        .merge(v1_term)
         .layer(from_fn_with_state(harn.clone(), authorize));
 
     let router = Router::new()

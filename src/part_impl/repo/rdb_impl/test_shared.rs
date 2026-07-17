@@ -64,6 +64,7 @@ pub struct ChapterFixture {
 }
 
 pub struct PageFixture {
+    pub team_entry: TeamEntry,
     pub chapter_entry: ChapterEntry,
     pub page_entry: PageEntry,
 }
@@ -155,6 +156,21 @@ pub async fn cleanup(shared: &RdbCore, prefix: &str) -> BaseResult<()> {
     diesel::delete(
         schema::t_chapter::table
             .filter(schema::t_chapter::f_id.like(&id_pattern)),
+    )
+    .execute(&mut conn)
+    .await
+    .map_err(diesel_error)?;
+
+    diesel::delete(
+        schema::t_term::table.filter(schema::t_term::f_id.like(&id_pattern)),
+    )
+    .execute(&mut conn)
+    .await
+    .map_err(diesel_error)?;
+
+    diesel::delete(
+        schema::t_termbase::table
+            .filter(schema::t_termbase::f_id.like(&id_pattern)),
     )
     .execute(&mut conn)
     .await
@@ -577,6 +593,7 @@ pub async fn seed_page(shared: &RdbCore, prefix: &str) -> PageFixture {
     .unwrap();
 
     PageFixture {
+        team_entry: chapter_fixture.team_entry,
         chapter_entry: chapter_fixture.chapter_entry,
         page_entry,
     }

@@ -1,43 +1,97 @@
-use crate::model::termbase::TermbaseEntry;
-use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
-use crate::util::next_snowflake_id;
+//! Request and response DTOs for terminology-base use cases.
 
-/// Input parameters for creating a termbase, scoped to exactly one of team or comic.
-pub struct CreateTermbaseParams {
-    pub name: String,
+use serde::{Deserialize, Serialize};
+
+#[cfg(feature = "swagger-ui")]
+use utoipa::ToSchema;
+
+use poprako_util::time::ToUnixMilli as _;
+
+use crate::model::termbase::TermbaseInfo;
+
+/// Presentation-ready terminology-base information.
+#[derive(Debug, Serialize)]
+#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+pub struct TermbaseInfoVal {
+    pub id: String,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub team_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub comic_id: Option<String>,
+
+    pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+
+    pub term_count: i32,
+
+    pub creator_id: String,
+
+    pub created_at: i64,
+    pub updated_at: i64,
 }
 
-impl TryInto<TermbaseEntry> for CreateTermbaseParams {
-    type Error = BaseError;
-
-    fn try_into(self) -> BaseResult<TermbaseEntry> {
-        //
-        let termbase_id = next_snowflake_id();
-
-        match (self.team_id, self.comic_id) {
-            //
-            (Some(team_id), None) => accept(TermbaseEntry::Team {
-                id: termbase_id,
-                name: self.name,
-                team_id,
-            }),
-
-            (None, Some(comic_id)) => accept(TermbaseEntry::Comic {
-                id: termbase_id,
-                name: self.name,
-                comic_id,
-            }),
-
-            _ => Err(invalid_termbase_scope_error()),
+impl From<TermbaseInfo> for TermbaseInfoVal {
+    fn from(model: TermbaseInfo) -> Self {
+        Self {
+            id: model.id,
+            team_id: model.team_id,
+            comic_id: model.comic_id,
+            name: model.name,
+            description: model.description,
+            term_count: model.term_count,
+            creator_id: model.creator_id,
+            created_at: model.created_at.to_unix_milli(),
+            updated_at: model.updated_at.to_unix_milli(),
         }
     }
 }
 
-fn invalid_termbase_scope_error() -> BaseError {
-    BaseError::Expected {
-        variant: ExpectedVariant::Args,
-        message: "exactly one of team_id or comic_id must be provided".into(),
-    }
+/// Input parameters for creating a terminology base.
+#[derive(Debug, Deserialize)]
+#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+pub struct CreateTermbaseParams {
+    pub team_id: Option<String>,
+    pub comic_id: Option<String>,
+
+    pub name: String,
+    pub description: Option<String>,
+}
+
+/// Return value from creating a terminology base.
+#[derive(Debug, Serialize)]
+#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+pub struct CreateTermbasePayload {
+    pub id: String,
+}
+
+/// Input parameters for replacing terminology-base profile fields.
+#[derive(Debug, Deserialize)]
+#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+pub struct UpdateTermbaseInfoParams {
+    pub id: String,
+
+    pub name: String,
+    pub description: Option<String>,
+}
+
+/// Input parameters for listing team-owned terminology bases.
+pub struct ListTeamTermbaseInfosParams {
+    pub team_id: String,
+
+    pub fuzzy_name: Option<String>,
+
+    pub offset: u32,
+    pub limit: u32,
+}
+
+/// Input parameters for listing terminology bases visible from a comic.
+pub struct ListComicTermbaseInfosParams {
+    pub comic_id: String,
+
+    pub fuzzy_name: Option<String>,
+
+    pub offset: u32,
+    pub limit: u32,
 }

@@ -22,6 +22,10 @@ use crate::part::repo::oper::comic::{
 };
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::page::{DeletePages, ListPageInfos};
+use crate::part::repo::oper::term::DeleteTerms;
+use crate::part::repo::oper::termbase::{
+    DeleteTermbase, GetTermbaseInfoExcluded, ListTermbaseInfosExcluded,
+};
 use crate::part::repo::oper::workset::{
     DeleteWorkset, GetWorksetInfo, GetWorksetInfoExcluded,
     UpdateWorksetComicCount,
@@ -58,6 +62,10 @@ impl WorksetComplex {
             + for<'a> Proxy<UnpinOtherChapters<'a>, Error = BaseError>
             + for<'a> Proxy<UpdateComicChapterCount<'a>, Error = BaseError>
             + for<'a> Proxy<TouchComicLastActive<'a>, Error = BaseError>
+            + for<'a> Proxy<ListTermbaseInfosExcluded<'a>, Error = BaseError>
+            + for<'a> Proxy<GetTermbaseInfoExcluded<'a>, Error = BaseError>
+            + for<'a> Proxy<DeleteTerms<'a>, Error = BaseError>
+            + for<'a> Proxy<DeleteTermbase<'a>, Error = BaseError>
             + for<'a> Proxy<Defer<'a, String, Payload, ()>, Error = BaseError>
             + for<'t, 'a> Proxy<
                 DeferBatch<'t, 'a, String, Payload, ()>,

@@ -27,6 +27,8 @@ pub mod page;
 pub mod system_mail;
 /// Team business rules and permission checks.
 pub mod team;
+/// Terminology-entry construction and validation rules.
+pub mod term;
 /// Termbase permission checks and cascade rules.
 pub mod termbase;
 /// Unit ordering and diff business rules.

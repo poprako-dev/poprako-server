@@ -37,6 +37,8 @@ pub mod page_port;
 pub mod system_mail;
 /// Team request/response DTOs.
 pub mod team;
+/// Term request and response DTOs.
+pub mod term;
 /// Termbase request and response data types.
 pub mod termbase;
 /// Unit request/response DTOs.

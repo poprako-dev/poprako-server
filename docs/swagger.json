@@ -15,15 +15,46 @@
         "tags": [
           "health"
         ],
-        "summary": "`GET /api/health` — returns `204` for loopback callers, `404` otherwise.",
+        "summary": "`GET /api/health` — returns recent HTTP metrics to loopback callers.",
         "description": "Available in both debug and release builds. Non-loopback requests get a\nbody-less `404` so the endpoint is not advertised externally.",
         "operationId": "check_health",
         "responses": {
-          "204": {
-            "description": "Service is running normally (loopback only)"
+          "200": {
+            "description": "Service is running normally (loopback only)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetricTotal"
+                }
+              }
+            }
           },
           "404": {
             "description": "Not found (non-loopback request)"
+          }
+        }
+      }
+    },
+    "/api/health/detailed-metrics": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "`GET /api/health/detailed-metrics` — renders Prometheus metrics locally.",
+        "description": "Non-loopback requests receive a body-less `404` so the endpoint is not\nadvertised externally.",
+        "operationId": "detailed_metrics",
+        "responses": {
+          "200": {
+            "description": "Prometheus metrics (loopback only)",
+            "content": {
+              "text/plain": {}
+            }
+          },
+          "404": {
+            "description": "Not found (non-loopback request)"
+          },
+          "503": {
+            "description": "Metrics recorder unavailable"
           }
         }
       }
@@ -1364,6 +1395,73 @@
         }
       }
     },
+    "/api/v1/comics/{comic_id}/termbases": {
+      "get": {
+        "tags": [
+          "termbases"
+        ],
+        "summary": "`GET /api/v1/comics/{comic_id}/termbases` — list visible terminology bases.",
+        "operationId": "list_comic_infos",
+        "parameters": [
+          {
+            "name": "comic_id",
+            "in": "path",
+            "description": "Comic ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fuzzy_name",
+            "in": "query",
+            "description": "Optional case-insensitive name substring.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Comic-visible termbases listed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpBody_Vec_TermbaseInfoVal"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Team membership required"
+          },
+          "422": {
+            "description": "Comic not found"
+          }
+        }
+      }
+    },
     "/api/v1/comments": {
       "post": {
         "tags": [
@@ -2610,6 +2708,70 @@
         }
       }
     },
+    "/api/v1/teams/{team_id}/termbases": {
+      "get": {
+        "tags": [
+          "termbases"
+        ],
+        "summary": "`GET /api/v1/teams/{team_id}/termbases` — list team terminology bases.",
+        "operationId": "list_team_infos",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fuzzy_name",
+            "in": "query",
+            "description": "Optional case-insensitive name substring.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Team termbases listed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpBody_Vec_TermbaseInfoVal"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Team membership required"
+          }
+        }
+      }
+    },
     "/api/v1/teams/{team_id}/worksets": {
       "get": {
         "tags": [
@@ -2666,6 +2828,359 @@
           },
           "403": {
             "description": "No permission to list worksets in this team"
+          }
+        }
+      }
+    },
+    "/api/v1/termbases": {
+      "post": {
+        "tags": [
+          "termbases"
+        ],
+        "summary": "`POST /api/v1/termbases` — create a terminology base.",
+        "operationId": "create",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTermbaseParams"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Termbase created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpBody_CreateTermbasePayload"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Team proofreader role required"
+          },
+          "422": {
+            "description": "Invalid scope, parent, or duplicate name"
+          }
+        }
+      }
+    },
+    "/api/v1/termbases/{termbase_id}": {
+      "get": {
+        "tags": [
+          "termbases"
+        ],
+        "summary": "`GET /api/v1/termbases/{termbase_id}` — fetch a terminology base.",
+        "operationId": "get_info",
+        "parameters": [
+          {
+            "name": "termbase_id",
+            "in": "path",
+            "description": "Termbase ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Termbase retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpBody_TermbaseInfoVal"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Team membership required"
+          },
+          "422": {
+            "description": "Termbase not found"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "termbases"
+        ],
+        "summary": "`PUT /api/v1/termbases/{termbase_id}` — replace editable fields.",
+        "operationId": "update_info",
+        "parameters": [
+          {
+            "name": "termbase_id",
+            "in": "path",
+            "description": "Termbase ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTermbaseInfoParams"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Termbase updated"
+          },
+          "403": {
+            "description": "Team proofreader role required"
+          },
+          "422": {
+            "description": "Invalid input, duplicate name, or path mismatch"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "termbases"
+        ],
+        "summary": "`DELETE /api/v1/termbases/{termbase_id}` — delete a terminology base.",
+        "operationId": "delete",
+        "parameters": [
+          {
+            "name": "termbase_id",
+            "in": "path",
+            "description": "Termbase ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Termbase and terms deleted"
+          },
+          "403": {
+            "description": "Team proofreader role required"
+          },
+          "422": {
+            "description": "Termbase not found"
+          }
+        }
+      }
+    },
+    "/api/v1/termbases/{termbase_id}/terms": {
+      "get": {
+        "tags": [
+          "terms"
+        ],
+        "summary": "`GET /api/v1/termbases/{termbase_id}/terms` — list terms in one base.",
+        "operationId": "list_infos",
+        "parameters": [
+          {
+            "name": "termbase_id",
+            "in": "path",
+            "description": "Termbase ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fuzzy_source",
+            "in": "query",
+            "description": "Optional case-insensitive source substring.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Terms listed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpBody_Vec_TermInfoVal"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Team membership required"
+          },
+          "422": {
+            "description": "Termbase not found"
+          }
+        }
+      }
+    },
+    "/api/v1/terms": {
+      "post": {
+        "tags": [
+          "terms"
+        ],
+        "summary": "`POST /api/v1/terms` — create a terminology entry.",
+        "operationId": "create",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTermParams"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Term created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpBody_CreateTermPayload"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Team proofreader role required"
+          },
+          "422": {
+            "description": "Invalid term, duplicate source, or missing termbase"
+          }
+        }
+      }
+    },
+    "/api/v1/terms/{term_id}": {
+      "get": {
+        "tags": [
+          "terms"
+        ],
+        "summary": "`GET /api/v1/terms/{term_id}` — fetch a terminology entry.",
+        "operationId": "get_info",
+        "parameters": [
+          {
+            "name": "term_id",
+            "in": "path",
+            "description": "Term ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Term retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpBody_TermInfoVal"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Team membership required"
+          },
+          "422": {
+            "description": "Term not found"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "terms"
+        ],
+        "summary": "`PUT /api/v1/terms/{term_id}` — replace terminology-entry fields.",
+        "operationId": "update_info",
+        "parameters": [
+          {
+            "name": "term_id",
+            "in": "path",
+            "description": "Term ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTermInfoParams"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Term updated"
+          },
+          "403": {
+            "description": "Team proofreader role required"
+          },
+          "422": {
+            "description": "Invalid term, duplicate source, or path mismatch"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "terms"
+        ],
+        "summary": "`DELETE /api/v1/terms/{term_id}` — delete a terminology entry.",
+        "operationId": "delete",
+        "parameters": [
+          {
+            "name": "term_id",
+            "in": "path",
+            "description": "Term ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Term deleted"
+          },
+          "403": {
+            "description": "Team proofreader role required"
+          },
+          "422": {
+            "description": "Term not found"
           }
         }
       }
@@ -3702,6 +4217,17 @@
           "comic_id": {
             "type": "string"
           },
+          "preset_assignment_roles": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RoleMask",
+                "description": "Roles assigned to the creator in addition to the mandatory admin role.\nEvery requested role must exist on the creator's team membership."
+              }
+            ]
+          },
           "subtitle": {
             "type": [
               "string",
@@ -3747,6 +4273,17 @@
               "null"
             ],
             "description": "Optional subtitle for the first chapter created alongside the comic."
+          },
+          "preset_assignment_roles": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RoleMask",
+                "description": "Roles assigned to the creator on the first chapter in addition to the\nmandatory admin role. Every requested role must exist on the creator's\nteam membership."
+              }
+            ]
           },
           "title": {
             "type": "string"
@@ -3882,6 +4419,89 @@
             "type": "string"
           },
           "name": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateTermParams": {
+        "type": "object",
+        "description": "Input parameters for creating a terminology entry.",
+        "required": [
+          "termbase_id",
+          "source",
+          "targets"
+        ],
+        "properties": {
+          "comment": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "source": {
+            "type": "string"
+          },
+          "targets": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "termbase_id": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateTermPayload": {
+        "type": "object",
+        "description": "Return value from creating a terminology entry.",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateTermbaseParams": {
+        "type": "object",
+        "description": "Input parameters for creating a terminology base.",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "comic_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "team_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "CreateTermbasePayload": {
+        "type": "object",
+        "description": "Return value from creating a terminology base.",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
             "type": "string"
           }
         }
@@ -4474,6 +5094,62 @@
           "data": {
             "type": "object",
             "description": "Return value from creating a member.",
+            "required": [
+              "id"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "HttpBody_CreateTermPayload": {
+        "type": "object",
+        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
+        "required": [
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "example": 0,
+            "minimum": 0
+          },
+          "data": {
+            "type": "object",
+            "description": "Return value from creating a terminology entry.",
+            "required": [
+              "id"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "HttpBody_CreateTermbasePayload": {
+        "type": "object",
+        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
+        "required": [
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "example": 0,
+            "minimum": 0
+          },
+          "data": {
+            "type": "object",
+            "description": "Return value from creating a terminology base.",
             "required": [
               "id"
             ],
@@ -5201,6 +5877,138 @@
               },
               "name": {
                 "type": "string"
+              },
+              "updated_at": {
+                "type": "integer",
+                "format": "int64"
+              }
+            }
+          }
+        }
+      },
+      "HttpBody_TermInfoVal": {
+        "type": "object",
+        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
+        "required": [
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "example": 0,
+            "minimum": 0
+          },
+          "data": {
+            "type": "object",
+            "description": "Presentation-ready terminology-entry information.",
+            "required": [
+              "id",
+              "termbase_id",
+              "source",
+              "targets",
+              "creator_id",
+              "created_at",
+              "updated_at"
+            ],
+            "properties": {
+              "comment": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "created_at": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "creator_id": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string"
+              },
+              "source": {
+                "type": "string"
+              },
+              "targets": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "termbase_id": {
+                "type": "string"
+              },
+              "updated_at": {
+                "type": "integer",
+                "format": "int64"
+              }
+            }
+          }
+        }
+      },
+      "HttpBody_TermbaseInfoVal": {
+        "type": "object",
+        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
+        "required": [
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "example": 0,
+            "minimum": 0
+          },
+          "data": {
+            "type": "object",
+            "description": "Presentation-ready terminology-base information.",
+            "required": [
+              "id",
+              "name",
+              "term_count",
+              "creator_id",
+              "created_at",
+              "updated_at"
+            ],
+            "properties": {
+              "comic_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "created_at": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "creator_id": {
+                "type": "string"
+              },
+              "description": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "team_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "term_count": {
+                "type": "integer",
+                "format": "int32"
               },
               "updated_at": {
                 "type": "integer",
@@ -5964,6 +6772,144 @@
           }
         }
       },
+      "HttpBody_Vec_TermInfoVal": {
+        "type": "object",
+        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
+        "required": [
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "example": 0,
+            "minimum": 0
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "Presentation-ready terminology-entry information.",
+              "required": [
+                "id",
+                "termbase_id",
+                "source",
+                "targets",
+                "creator_id",
+                "created_at",
+                "updated_at"
+              ],
+              "properties": {
+                "comment": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "created_at": {
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "creator_id": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "source": {
+                  "type": "string"
+                },
+                "targets": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "termbase_id": {
+                  "type": "string"
+                },
+                "updated_at": {
+                  "type": "integer",
+                  "format": "int64"
+                }
+              }
+            }
+          }
+        }
+      },
+      "HttpBody_Vec_TermbaseInfoVal": {
+        "type": "object",
+        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
+        "required": [
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "example": 0,
+            "minimum": 0
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "Presentation-ready terminology-base information.",
+              "required": [
+                "id",
+                "name",
+                "term_count",
+                "creator_id",
+                "created_at",
+                "updated_at"
+              ],
+              "properties": {
+                "comic_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "created_at": {
+                  "type": "integer",
+                  "format": "int64"
+                },
+                "creator_id": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "team_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "term_count": {
+                  "type": "integer",
+                  "format": "int32"
+                },
+                "updated_at": {
+                  "type": "integer",
+                  "format": "int64"
+                }
+              }
+            }
+          }
+        }
+      },
       "HttpBody_Vec_WorksetInfoVal": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
@@ -6455,6 +7401,83 @@
           }
         }
       },
+      "MetricMinute": {
+        "type": "object",
+        "description": "Aggregate metrics for one minute in the recent sliding window.",
+        "required": [
+          "minute",
+          "total",
+          "average_latency_ms"
+        ],
+        "properties": {
+          "average_latency_ms": {
+            "type": "number",
+            "format": "double"
+          },
+          "minute": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "MetricTotal": {
+        "type": "object",
+        "description": "Aggregate metrics for the current time window.",
+        "required": [
+          "total",
+          "average_latency_ms",
+          "by_error",
+          "by_path",
+          "minutes"
+        ],
+        "properties": {
+          "average_latency_ms": {
+            "type": "number",
+            "format": "double"
+          },
+          "by_error": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 0
+            },
+            "propertyNames": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          },
+          "by_path": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 0
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "minutes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MetricMinute"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
       "PageCreationPayload": {
         "type": "object",
         "description": "One reserved page upload target.",
@@ -6909,6 +7932,106 @@
           },
           "name": {
             "type": "string"
+          },
+          "updated_at": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "TermInfoVal": {
+        "type": "object",
+        "description": "Presentation-ready terminology-entry information.",
+        "required": [
+          "id",
+          "termbase_id",
+          "source",
+          "targets",
+          "creator_id",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "comment": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_at": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "creator_id": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "targets": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "termbase_id": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "TermbaseInfoVal": {
+        "type": "object",
+        "description": "Presentation-ready terminology-base information.",
+        "required": [
+          "id",
+          "name",
+          "term_count",
+          "creator_id",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "comic_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_at": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "creator_id": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "team_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "term_count": {
+            "type": "integer",
+            "format": "int32"
           },
           "updated_at": {
             "type": "integer",
@@ -7385,6 +8508,57 @@
         "properties": {
           "description": {
             "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "UpdateTermInfoParams": {
+        "type": "object",
+        "description": "Input parameters for replacing terminology-entry fields.",
+        "required": [
+          "id",
+          "source",
+          "targets"
+        ],
+        "properties": {
+          "comment": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "targets": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "UpdateTermbaseInfoParams": {
+        "type": "object",
+        "description": "Input parameters for replacing terminology-base profile fields.",
+        "required": [
+          "id",
+          "name"
+        ],
+        "properties": {
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "id": {
             "type": "string"
