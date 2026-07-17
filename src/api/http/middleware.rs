@@ -3,8 +3,8 @@
 
 /// Authorization token middleware.
 pub mod auth;
-/// Request latency logging middleware.
-pub mod latency;
+// Custom request latency logging is disabled in favor of `TraceLayer`.
+// pub mod latency;
 /// Sliding-window HTTP response metrics.
 pub mod metric;
 /// Rate limiting middleware.

@@ -30,7 +30,7 @@ use utoipa::OpenApi as _;
 
 use poprako_server::{
     AppConfig, AppHarn, AsyncEffectDevelop, Harn, JwtAuth, R2ImagePool,
-    RdbCore, RdbDrive, RdbProm, RdbRepo, serve,
+    RdbCore, RdbDrive, RdbProm, RdbRepo, init_prometheus, serve,
 };
 
 /// Application entry point.
@@ -71,6 +71,8 @@ async fn main() -> anyhow::Result<()> {
         )
         .with_ansi(cfg!(debug_assertions))
         .init();
+
+    init_prometheus()?;
 
     let config = AppConfig::from_default_file()
         .await
