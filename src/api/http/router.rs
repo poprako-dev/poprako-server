@@ -15,7 +15,6 @@ use crate::api::http::handler::{
     system_mail, team, unit, user, workset,
 };
 use crate::api::http::middleware::auth::authorize;
-use crate::api::http::middleware::latency::log_latency;
 use crate::api::http::middleware::metric::record_response_metric;
 use crate::api::http::middleware::rate_limit::rate_limit;
 use crate::api::http::middleware::trace::{
@@ -230,7 +229,7 @@ pub fn new(harn: AppHarn) -> Router<AppHarn> {
 
     let router = Router::new()
         .nest("/api/v1", v1_public.merge(v1_protected))
-        .layer(from_fn(log_latency))
+        // .layer(from_fn(log_latency))
         .layer(from_fn(rate_limit))
         .layer(propagate_request_id())
         .layer(trace_request())
@@ -238,7 +237,12 @@ pub fn new(harn: AppHarn) -> Router<AppHarn> {
         .layer(from_fn(record_response_metric));
 
     // Health endpoint — always available
-    let router = router.route("/api/health", get(health::check_health));
+    let router = router
+        .route("/api/health", get(health::check_health))
+        .route(
+            "/api/health/detailed-metrics",
+            get(health::detailed_metrics),
+        );
 
     // Swagger UI — debug builds only
     #[cfg(feature = "swagger-ui")]

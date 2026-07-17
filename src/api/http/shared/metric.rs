@@ -22,15 +22,32 @@ mod tests {
         //
         let metric_window = MetricWindow::new();
 
-        metric_window.record(100, 200, Some("/api/v1/users/{user_id}"));
+        metric_window.record(
+            100,
+            200,
+            Some("/api/v1/users/{user_id}"),
+            std::time::Duration::from_millis(10),
+        );
 
-        metric_window.record(101, 422, Some("/api/v1/users/{user_id}"));
+        metric_window.record(
+            101,
+            422,
+            Some("/api/v1/users/{user_id}"),
+            std::time::Duration::from_millis(20),
+        );
 
-        metric_window.record(101, 500, Some("/api/v1/comics/{comic_id}"));
+        metric_window.record(
+            101,
+            500,
+            Some("/api/v1/comics/{comic_id}"),
+            std::time::Duration::from_millis(30),
+        );
 
         let metric_total = metric_window.read(101);
 
         assert_eq!(metric_total.total, 3);
+
+        assert_eq!(metric_total.average_latency_ms, 20.0);
 
         assert_eq!(metric_total.by_error.get(&422), Some(&1));
 
@@ -45,6 +62,18 @@ mod tests {
             metric_total.by_path.get("/api/v1/comics/{comic_id}"),
             Some(&1),
         );
+
+        assert_eq!(metric_total.minutes.len(), RECENT_MINUTE_COUNT);
+
+        let current_minute = metric_total
+            .minutes
+            .iter()
+            .find(|metric_minute| metric_minute.minute == 101)
+            .expect("current minute should be present");
+
+        assert_eq!(current_minute.total, 2);
+
+        assert_eq!(current_minute.average_latency_ms, 25.0);
     }
 
     #[test]
@@ -52,13 +81,33 @@ mod tests {
         //
         let metric_window = MetricWindow::new();
 
-        metric_window.record(39, 200, Some("/expired"));
+        metric_window.record(
+            39,
+            200,
+            Some("/expired"),
+            std::time::Duration::from_millis(10),
+        );
 
-        metric_window.record(40, 200, Some("/expired"));
+        metric_window.record(
+            40,
+            200,
+            Some("/expired"),
+            std::time::Duration::from_millis(10),
+        );
 
-        metric_window.record(100, 200, Some("/current"));
+        metric_window.record(
+            100,
+            200,
+            Some("/current"),
+            std::time::Duration::from_millis(10),
+        );
 
-        metric_window.record(161, 200, Some("/future"));
+        metric_window.record(
+            161,
+            200,
+            Some("/future"),
+            std::time::Duration::from_millis(10),
+        );
 
         let metric_total = metric_window.read(100);
 
@@ -76,7 +125,12 @@ mod tests {
         //
         let metric_window = MetricWindow::new();
 
-        metric_window.record(100, 404, None);
+        metric_window.record(
+            100,
+            404,
+            None,
+            std::time::Duration::from_millis(10),
+        );
 
         let metric_total = metric_window.read(100);
 
@@ -89,6 +143,7 @@ mod tests {
 }
 
 const BUCKET_COUNT: usize = 60;
+const RECENT_MINUTE_COUNT: usize = 30;
 const SECONDS_PER_BUCKET: u64 = 60;
 
 static METRIC_WINDOW: LazyLock<MetricWindow> = LazyLock::new(MetricWindow::new);
@@ -98,14 +153,30 @@ static METRIC_WINDOW: LazyLock<MetricWindow> = LazyLock::new(MetricWindow::new);
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
 pub(crate) struct MetricTotal {
     pub(crate) total: u64,
+    pub(crate) average_latency_ms: f64,
+
+    #[serde(skip)]
+    total_latency_micros: u64,
+
     pub(crate) by_error: HashMap<u16, u64>,
     pub(crate) by_path: HashMap<String, u64>,
+    pub(crate) minutes: Vec<MetricMinute>,
+}
+
+/// Aggregate metrics for one minute in the recent sliding window.
+#[derive(Debug, Serialize)]
+#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+pub(crate) struct MetricMinute {
+    pub(crate) minute: u64,
+    pub(crate) total: u64,
+    pub(crate) average_latency_ms: f64,
 }
 
 #[derive(Default)]
 struct MetricBucket {
     minute: u64,
     total: u64,
+    total_latency_micros: u64,
     by_error: HashMap<u16, u64>,
     by_path: HashMap<String, u64>,
 }
@@ -118,8 +189,11 @@ impl MetricTotal {
     fn new() -> Self {
         Self {
             total: 0,
+            average_latency_ms: 0.0,
+            total_latency_micros: 0,
             by_error: HashMap::new(),
             by_path: HashMap::new(),
+            minutes: Vec::new(),
         }
     }
 }
@@ -130,6 +204,8 @@ impl MetricBucket {
         self.minute = minute;
 
         self.total = 0;
+
+        self.total_latency_micros = 0;
 
         self.by_error.clear();
 
@@ -146,7 +222,13 @@ impl MetricWindow {
         }
     }
 
-    fn record(&self, minute: u64, status: u16, matched_path: Option<&str>) {
+    fn record(
+        &self,
+        minute: u64,
+        status: u16,
+        matched_path: Option<&str>,
+        latency: std::time::Duration,
+    ) {
         //
         let bucket_index = minute as usize % BUCKET_COUNT;
 
@@ -160,6 +242,11 @@ impl MetricWindow {
         }
 
         bucket.total = bucket.total.saturating_add(1);
+
+        let latency_micros = latency.as_micros().try_into().unwrap_or(u64::MAX);
+
+        bucket.total_latency_micros =
+            bucket.total_latency_micros.saturating_add(latency_micros);
 
         if status >= 400 {
             //
@@ -195,12 +282,54 @@ impl MetricWindow {
             metric_total.total =
                 metric_total.total.saturating_add(bucket.total);
 
+            metric_total.total_latency_micros = metric_total
+                .total_latency_micros
+                .saturating_add(bucket.total_latency_micros);
+
             merge_totals(&mut metric_total.by_error, &bucket.by_error);
 
             merge_totals(&mut metric_total.by_path, &bucket.by_path);
         }
 
+        metric_total.average_latency_ms = average_latency_ms(
+            metric_total.total_latency_micros,
+            metric_total.total,
+        );
+
+        metric_total.minutes = self.read_recent_minutes(minute);
+
         metric_total
+    }
+
+    fn read_recent_minutes(&self, minute: u64) -> Vec<MetricMinute> {
+        let first_minute =
+            minute.saturating_sub(RECENT_MINUTE_COUNT as u64 - 1);
+
+        (first_minute..=minute)
+            .map(|window_minute| {
+                let bucket_index = window_minute as usize % BUCKET_COUNT;
+
+                let bucket = lock_bucket(&self.buckets[bucket_index]);
+
+                MetricMinute::from_bucket(window_minute, &bucket)
+            })
+            .collect()
+    }
+}
+
+impl MetricMinute {
+    fn from_bucket(minute: u64, bucket: &MetricBucket) -> Self {
+        let (total, total_latency_micros) = match bucket.minute == minute {
+            true => (bucket.total, bucket.total_latency_micros),
+
+            false => (0, 0),
+        };
+
+        Self {
+            minute,
+            total,
+            average_latency_ms: average_latency_ms(total_latency_micros, total),
+        }
     }
 }
 
@@ -210,23 +339,24 @@ impl MetricWindow {
 pub(crate) fn record_response(
     response: &Response,
     matched_path: Option<&MatchedPath>,
+    latency: std::time::Duration,
 ) {
     //
-    let minute = current_minute();
+    let minute = curr_minute();
 
     let status = response.status().as_u16();
 
     let matched_path = matched_path.map(MatchedPath::as_str);
 
-    METRIC_WINDOW.record(minute, status, matched_path);
+    METRIC_WINDOW.record(minute, status, matched_path, latency);
 }
 
 /// Returns an approximate snapshot covering the current and previous 59 minutes.
 pub(crate) fn read_total() -> MetricTotal {
-    METRIC_WINDOW.read(current_minute())
+    METRIC_WINDOW.read(curr_minute())
 }
 
-fn current_minute() -> u64 {
+fn curr_minute() -> u64 {
     //
     let elapsed = SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -241,6 +371,14 @@ fn lock_bucket(bucket: &Mutex<MetricBucket>) -> MutexGuard<'_, MetricBucket> {
         Ok(bucket) => bucket,
 
         Err(poisoned) => poisoned.into_inner(),
+    }
+}
+
+fn average_latency_ms(total_latency_micros: u64, total: u64) -> f64 {
+    match total {
+        0 => 0.0,
+
+        _ => total_latency_micros as f64 / total as f64 / 1_000.0,
     }
 }
 

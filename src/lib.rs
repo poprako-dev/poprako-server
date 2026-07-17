@@ -3,6 +3,7 @@
 //! Crate root: explicit public re-exports and internal module organization for
 //! the PopRaKo application core.
 
+pub use api::http::init_prometheus;
 #[cfg(feature = "swagger-ui")]
 pub use api::http::openapi::ApiDoc;
 pub use api::http::server::serve;

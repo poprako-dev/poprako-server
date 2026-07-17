@@ -1,15 +1,20 @@
 //! HTTP request correlation and tracing middleware.
 
+use std::net::SocketAddr;
 use std::time::Duration;
 
-use axum::extract::Request;
+use axum::extract::{ConnectInfo, Request};
+use axum::http::header::USER_AGENT;
 use axum::response::Response;
 use tower_http::classify::ServerErrorsFailureClass;
 use tower_http::request_id::{
     MakeRequestUuid, PropagateRequestIdLayer, SetRequestIdLayer,
 };
-use tower_http::trace::{HttpMakeClassifier, TraceLayer};
-use tracing::Span;
+use tower_http::trace::{
+    DefaultOnFailure, DefaultOnResponse, HttpMakeClassifier, OnFailure as _,
+    OnResponse as _, TraceLayer,
+};
+use tracing::{Level, Span};
 
 /// Builds the request-ID propagation layer.
 pub fn propagate_request_id() -> PropagateRequestIdLayer {
@@ -34,15 +39,12 @@ type HttpTraceLayer = TraceLayer<
 /// Builds the HTTP tracing layer with the request correlation fields.
 pub fn trace_request() -> HttpTraceLayer {
     TraceLayer::new_for_http()
-        .make_span_with(make_request_span as fn(&Request) -> Span)
-        .on_request(record_request_started as fn(&Request, &Span))
-        .on_response(record_request_response as fn(&Response, Duration, &Span))
+        .make_span_with(make_request_span as _)
+        .on_request(record_request_started as _)
+        .on_response(record_request_response as _)
         .on_body_chunk(())
         .on_eos(())
-        .on_failure(
-            record_request_failure
-                as fn(ServerErrorsFailureClass, Duration, &Span),
-        )
+        .on_failure(record_request_failure as _)
 }
 
 /// Creates the top-level span for one HTTP request.
@@ -54,19 +56,34 @@ fn make_request_span(request: &Request) -> Span {
         .and_then(|header_value| header_value.to_str().ok())
         .unwrap_or("invalid");
 
+    let user_agent = request
+        .headers()
+        .get(USER_AGENT)
+        .and_then(|header_value| header_value.to_str().ok())
+        .unwrap_or("unknown");
+
+    let remote_addr = request
+        .extensions()
+        .get::<ConnectInfo<SocketAddr>>()
+        .map(|connect_info| connect_info.0)
+        .map(|addr| addr.to_string())
+        .unwrap_or_else(|| "unknown".to_owned());
+
     tracing::info_span!(
         "request",
         request_id = %request_id,
         method = %request.method(),
         uri = %request.uri(),
         version = ?request.version(),
+        user_agent = %user_agent,
+        remote_addr = %remote_addr,
     )
 }
 
 /// Records a received HTTP request.
 fn record_request_started(request: &Request, _span: &Span) {
     metrics::counter!(
-        "http_requests_started_total",
+        "http_requests_started",
         "method" => request.method().to_string(),
     )
     .increment(1);
@@ -75,28 +92,33 @@ fn record_request_started(request: &Request, _span: &Span) {
 /// Records an HTTP response and its latency.
 fn record_request_response(
     response: &Response,
-    _latency: Duration,
-    _span: &Span,
+    latency: Duration,
+    span: &Span,
 ) {
+    //
     metrics::counter!(
-        "http_requests_total",
+        "http_requests",
         "status" => response.status().as_u16().to_string(),
     )
     .increment(1);
 
-    // metrics::histogram!("http_request_duration_seconds")
-    //     .record(latency.as_secs_f64());
+    DefaultOnResponse::new()
+        .level(Level::INFO)
+        .on_response(response, latency, span);
 }
 
 /// Records an HTTP server-error response.
 fn record_request_failure(
     failure: ServerErrorsFailureClass,
-    _latency: Duration,
-    _span: &Span,
+    latency: Duration,
+    span: &Span,
 ) {
+    //
     metrics::counter!(
-        "http_request_failures_total",
+        "http_request_failures",
         "class" => failure.to_string(),
     )
     .increment(1);
+
+    DefaultOnFailure::new().on_failure(failure, latency, span);
 }
