@@ -12,7 +12,7 @@ async fn mark_image_uploaded_rejects_stale_replay_then_accepts_current_version()
     mock.seed_page(page(
         "page-1",
         0,
-        Some("chapter_chapter-1/page_page-1-1.png"),
+        Some("page/chapter_chapter-1/page-1-1.png"),
         true,
         1,
     ));
