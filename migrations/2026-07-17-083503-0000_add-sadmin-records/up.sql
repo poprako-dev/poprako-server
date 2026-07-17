@@ -5,7 +5,7 @@ INSERT INTO "t_user" (
     "f_is_sadmin",
     "f_password_hash"
 ) VALUES (
-    'user-00000000-0000-0000-0000-000000000001',
+    'user-11111111111',
     'SuperAdmin-OvO',
     '123456',
     TRUE,
@@ -27,10 +27,10 @@ INSERT INTO "t_member" (
     "f_assigned_admin_at",
     "f_assigned_bot_at"
 ) VALUES (
-    'member-00000000-0000-0000-0000-000000000001',
-    'user-00000000-0000-0000-0000-000000000001',
+    'member-11111111111',
+    'user-11111111111',
     'SuperAdmin-OvO',
-    'team-00000000-0000-0000-0000-000000000001',
+    'team-11111111111',
     NOW(),
     NOW(),
     NOW(),
