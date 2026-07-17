@@ -104,6 +104,7 @@ diesel::table! {
         f_title -> Text,
         f_author -> Text,
         f_description -> Nullable<Text>,
+        f_composed_title -> Text,
         f_cover_key -> Nullable<Text>,
         f_cover_uploaded -> Bool,
         f_cover_version -> Int8,
@@ -113,7 +114,16 @@ diesel::table! {
         f_last_active_at -> Timestamptz,
         f_created_at -> Timestamptz,
         f_updated_at -> Timestamptz,
-        f_composed_title -> Text,
+    }
+}
+
+diesel::table! {
+    t_comic_archive (f_id) {
+        f_id -> Text,
+        f_team_id -> Text,
+        f_archived_bytes -> Bytea,
+        f_archiver_id -> Text,
+        f_created_at -> Timestamptz,
     }
 }
 
@@ -277,6 +287,7 @@ diesel::joinable!(t_chapter -> t_comic (f_comic_id));
 diesel::joinable!(t_chapter -> t_user (f_creator_id));
 diesel::joinable!(t_comic -> t_user (f_creator_id));
 diesel::joinable!(t_comic -> t_workset (f_workset_id));
+diesel::joinable!(t_comic_archive -> t_team (f_team_id));
 diesel::joinable!(t_comment -> t_team (f_team_id));
 diesel::joinable!(t_comment -> t_user (f_user_id));
 diesel::joinable!(t_member -> t_team (f_team_id));
@@ -297,6 +308,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     t_assignment_invitation,
     t_chapter,
     t_comic,
+    t_comic_archive,
     t_comment,
     t_local_message,
     t_member,

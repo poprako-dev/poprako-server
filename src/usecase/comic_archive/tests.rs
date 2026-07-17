@@ -10,9 +10,7 @@ use crate::model::assignment::AssignmentInfo;
 use crate::model::assignment_invitation::AssignmentInvitationInfo;
 use crate::model::chapter::ChapterInfo;
 use crate::model::comic::ComicInfo;
-use crate::model::comic_archive::{
-    ArchivedChapterPayload, ArchivedComicPayload, ArchivedTranslationPayload,
-};
+use crate::model::comic_archive::ArchivedComicPayload;
 use crate::model::member::MemberInfo;
 use crate::model::page::PageInfo;
 use crate::model::unit::UnitInfo;
@@ -202,75 +200,44 @@ async fn archive_retains_payloads_queues_images_and_deletes_active_data() {
 
     assert_eq!(snapshot.worksets[0].comic_count, 7);
 
-    assert_eq!(snapshot.archived_comics.len(), 1);
+    assert_eq!(snapshot.comic_archives.len(), 1);
 
-    assert_eq!(snapshot.archived_chapters.len(), 1);
+    assert_eq!(snapshot.comic_archives[0].team_id, "team-1");
 
-    assert_eq!(snapshot.archived_translations.len(), 1);
-
-    assert_eq!(snapshot.archived_comics[0].archiver_id, "user-1");
-
-    assert_eq!(
-        snapshot.archived_comics[0].created_at,
-        snapshot.archived_chapters[0].created_at
-    );
-
-    assert_eq!(
-        snapshot.archived_comics[0].created_at,
-        snapshot.archived_translations[0].created_at
-    );
+    assert_eq!(snapshot.comic_archives[0].archiver_id, "user-1");
 
     let archived_comic_payload: ArchivedComicPayload =
-        decompress_archive(&snapshot.archived_comics[0].archived_bytes)
-            .unwrap();
-
-    let archived_chapter_payload: ArchivedChapterPayload =
-        decompress_archive(&snapshot.archived_chapters[0].archived_bytes)
-            .unwrap();
-
-    let archived_translation_payload: ArchivedTranslationPayload =
-        decompress_archive(&snapshot.archived_translations[0].archived_bytes)
-            .unwrap();
+        decompress_archive(&snapshot.comic_archives[0].archived_bytes).unwrap();
 
     assert_eq!(archived_comic_payload.source_comic_id, "comic-1");
 
     assert_eq!(archived_comic_payload.workset.id, "workset-1");
 
+    assert_eq!(archived_comic_payload.chapters.len(), 1);
+
     assert_eq!(
-        archived_comic_payload.chapter_archive_ids,
-        vec![snapshot.archived_chapters[0].id.clone()]
+        archived_comic_payload.chapters[0].source_chapter_id,
+        "chapter-1"
     );
 
-    assert_eq!(archived_chapter_payload.source_chapter_id, "chapter-1");
+    assert_eq!(archived_comic_payload.chapters[0].assignments.len(), 1);
 
     assert_eq!(
-        archived_chapter_payload.archived_comic_id,
-        archive_comic_val.archived_comic_id
-    );
-
-    assert_eq!(archived_chapter_payload.assignments.len(), 1);
-
-    assert_eq!(
-        archived_chapter_payload.assignments[0].user.nickname,
+        archived_comic_payload.chapters[0].assignments[0]
+            .user
+            .nickname,
         "archiver"
     );
 
-    assert_eq!(archived_translation_payload.source_chapter_id, "chapter-1");
+    assert_eq!(archived_comic_payload.chapters[0].pages.len(), 1);
 
     assert_eq!(
-        archived_translation_payload.archived_chapter_id,
-        snapshot.archived_chapters[0].id
-    );
-
-    assert_eq!(archived_translation_payload.pages.len(), 1);
-
-    assert_eq!(
-        archived_translation_payload.pages[0].source_page_id,
+        archived_comic_payload.chapters[0].pages[0].source_page_id,
         "page-1"
     );
 
     assert_eq!(
-        archived_translation_payload.pages[0].units[0].source_unit_id,
+        archived_comic_payload.chapters[0].pages[0].units[0].source_unit_id,
         "unit-1"
     );
 
@@ -311,7 +278,7 @@ async fn archive_rejects_non_admin_without_writing_or_deleting() {
 
     assert_eq!(snapshot.comics.len(), 1);
 
-    assert_eq!(snapshot.archived_comics.len(), 0);
+    assert_eq!(snapshot.comic_archives.len(), 0);
 
     assert_eq!(snapshot.prom_records.len(), 0);
 }
@@ -347,11 +314,7 @@ async fn archive_rolls_back_when_archive_persistence_fails() {
 
     assert_eq!(snapshot.worksets[0].comic_count, 7);
 
-    assert_eq!(snapshot.archived_comics.len(), 0);
-
-    assert_eq!(snapshot.archived_chapters.len(), 0);
-
-    assert_eq!(snapshot.archived_translations.len(), 0);
+    assert_eq!(snapshot.comic_archives.len(), 0);
 
     assert_eq!(snapshot.prom_records.len(), 0);
 }
