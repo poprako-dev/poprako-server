@@ -11,10 +11,9 @@ use tower_http::request_id::{
     MakeRequestUuid, PropagateRequestIdLayer, SetRequestIdLayer,
 };
 use tower_http::trace::{
-    DefaultOnFailure, DefaultOnResponse, HttpMakeClassifier, OnFailure as _,
-    OnResponse as _, TraceLayer,
+    DefaultOnFailure, HttpMakeClassifier, OnFailure as _, TraceLayer,
 };
-use tracing::{Level, Span};
+use tracing::Span;
 
 /// Builds the request-ID propagation layer.
 pub fn propagate_request_id() -> PropagateRequestIdLayer {
@@ -93,7 +92,7 @@ fn record_request_started(request: &Request, _span: &Span) {
 fn record_request_response(
     response: &Response,
     latency: Duration,
-    span: &Span,
+    _span: &Span,
 ) {
     //
     metrics::counter!(
@@ -102,9 +101,11 @@ fn record_request_response(
     )
     .increment(1);
 
-    DefaultOnResponse::new()
-        .level(Level::INFO)
-        .on_response(response, latency, span);
+    tracing::info!(
+        status = response.status().as_u16(),
+        latency_millis = latency.as_secs_f64() * 1_000.0,
+        "request completed",
+    );
 }
 
 /// Records an HTTP server-error response.

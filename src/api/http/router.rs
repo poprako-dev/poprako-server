@@ -229,20 +229,17 @@ pub fn new(harn: AppHarn) -> Router<AppHarn> {
 
     let router = Router::new()
         .nest("/api/v1", v1_public.merge(v1_protected))
+        .route("/api/health", get(health::check_health))
+        .route(
+            "/api/health/detailed-metrics",
+            get(health::detailed_metrics),
+        )
         // .layer(from_fn(log_latency))
         .layer(from_fn(rate_limit))
         .layer(propagate_request_id())
         .layer(trace_request())
         .layer(set_request_id())
         .layer(from_fn(record_response_metric));
-
-    // Health endpoint — always available
-    let router = router
-        .route("/api/health", get(health::check_health))
-        .route(
-            "/api/health/detailed-metrics",
-            get(health::detailed_metrics),
-        );
 
     // Swagger UI — debug builds only
     #[cfg(feature = "swagger-ui")]
