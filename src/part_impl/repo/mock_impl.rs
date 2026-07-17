@@ -82,9 +82,7 @@ pub struct MockState {
     pub pages: Vec<PageInfo>,
     pub units: Vec<UnitInfo>,
     pub system_mails: Vec<SystemMailInfo>,
-    pub archived_comics: Vec<ComicArchiveRecord>,
-    pub archived_chapters: Vec<ComicArchiveRecord>,
-    pub archived_translations: Vec<ComicArchiveRecord>,
+    pub comic_archives: Vec<ComicArchiveRecord>,
     pub prom_records: Vec<MockPromRecord>,
     pub deleted_image_keys: Vec<String>,
 }
@@ -107,9 +105,7 @@ pub struct MockSnapshot {
     pub pages: Vec<PageInfo>,
     pub units: Vec<UnitInfo>,
     pub system_mails: Vec<SystemMailInfo>,
-    pub archived_comics: Vec<ComicArchiveRecord>,
-    pub archived_chapters: Vec<ComicArchiveRecord>,
-    pub archived_translations: Vec<ComicArchiveRecord>,
+    pub comic_archives: Vec<ComicArchiveRecord>,
     pub prom_records: Vec<MockPromRecord>,
     pub deleted_image_keys: Vec<String>,
 }
@@ -132,9 +128,7 @@ impl From<MockState> for MockSnapshot {
             pages: state.pages,
             units: state.units,
             system_mails: state.system_mails,
-            archived_comics: state.archived_comics,
-            archived_chapters: state.archived_chapters,
-            archived_translations: state.archived_translations,
+            comic_archives: state.comic_archives,
             prom_records: state.prom_records,
             deleted_image_keys: state.deleted_image_keys,
         }

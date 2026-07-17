@@ -13,3 +13,6 @@ CREATE TABLE IF NOT EXISTS "t_team" (
     "f_created_at" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     "f_updated_at" TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+CREATE INDEX IF NOT EXISTS "idx_team_created_at"
+    ON "t_team" ("f_created_at" DESC);

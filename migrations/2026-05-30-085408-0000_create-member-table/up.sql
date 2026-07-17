@@ -59,3 +59,42 @@ CREATE INDEX IF NOT EXISTS "idx_member_team_admin"
 CREATE INDEX IF NOT EXISTS "idx_member_team_bot"
     ON "t_member" ("f_team_id")
     WHERE "f_assigned_bot_at" IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS "idx_member_nickname_trgm"
+    ON "t_member" USING GIN ("f_user_nickname" gin_trgm_ops);
+
+CREATE INDEX IF NOT EXISTS "idx_member_team_raw_provider_last_active"
+    ON "t_member" ("f_team_id", "f_user_last_active_at" DESC)
+    WHERE "f_assigned_raw_provider_at" IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS "idx_member_team_translator_last_active"
+    ON "t_member" ("f_team_id", "f_user_last_active_at" DESC)
+    WHERE "f_assigned_translator_at" IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS "idx_member_team_proofreader_last_active"
+    ON "t_member" ("f_team_id", "f_user_last_active_at" DESC)
+    WHERE "f_assigned_proofreader_at" IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS "idx_member_team_typesetter_last_active"
+    ON "t_member" ("f_team_id", "f_user_last_active_at" DESC)
+    WHERE "f_assigned_typesetter_at" IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS "idx_member_team_redrawer_last_active"
+    ON "t_member" ("f_team_id", "f_user_last_active_at" DESC)
+    WHERE "f_assigned_redrawer_at" IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS "idx_member_team_reviewer_last_active"
+    ON "t_member" ("f_team_id", "f_user_last_active_at" DESC)
+    WHERE "f_assigned_reviewer_at" IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS "idx_member_team_publisher_last_active"
+    ON "t_member" ("f_team_id", "f_user_last_active_at" DESC)
+    WHERE "f_assigned_publisher_at" IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS "idx_member_team_admin_last_active"
+    ON "t_member" ("f_team_id", "f_user_last_active_at" DESC)
+    WHERE "f_assigned_admin_at" IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS "idx_member_team_bot_last_active"
+    ON "t_member" ("f_team_id", "f_user_last_active_at" DESC)
+    WHERE "f_assigned_bot_at" IS NOT NULL;
