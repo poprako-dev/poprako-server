@@ -1,4 +1,3 @@
--- Your SQL goes here
 CREATE TABLE IF NOT EXISTS "t_local_message" (
     "f_id" TEXT PRIMARY KEY,
     "f_topic" TEXT NOT NULL,

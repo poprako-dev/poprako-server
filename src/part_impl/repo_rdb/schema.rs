@@ -12,33 +12,6 @@ diesel::table! {
 }
 
 diesel::table! {
-    t_archived_chapter (f_id) {
-        f_id -> Text,
-        f_archived_bytes -> Bytea,
-        f_archiver_id -> Text,
-        f_created_at -> Timestamptz,
-    }
-}
-
-diesel::table! {
-    t_archived_comic (f_id) {
-        f_id -> Text,
-        f_archived_bytes -> Bytea,
-        f_archiver_id -> Text,
-        f_created_at -> Timestamptz,
-    }
-}
-
-diesel::table! {
-    t_archived_translation (f_id) {
-        f_id -> Text,
-        f_archived_bytes -> Bytea,
-        f_archiver_id -> Text,
-        f_created_at -> Timestamptz,
-    }
-}
-
-diesel::table! {
     t_assignment (f_id) {
         f_id -> Text,
         f_chapter_id -> Text,
@@ -301,9 +274,6 @@ diesel::joinable!(t_workset -> t_team (f_team_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
     t_announcement,
-    t_archived_chapter,
-    t_archived_comic,
-    t_archived_translation,
     t_assignment,
     t_assignment_invitation,
     t_chapter,
