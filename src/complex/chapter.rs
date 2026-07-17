@@ -80,7 +80,9 @@ fn default_subtitle(index: i32) -> String {
 
     args.insert(
         Cow::Borrowed("number"),
-        FluentValue::from(stored_index_to_user_index(index)),
+        FluentValue::String(Cow::Owned(
+            stored_index_to_user_index(index).to_string(),
+        )),
     );
 
     trl_kv("chapter-default-subtitle", &args)
