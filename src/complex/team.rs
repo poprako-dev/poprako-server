@@ -8,6 +8,7 @@ use poprako_orchestra_extra::prom::task::Task;
 use poprako_util::i18n::trl;
 
 use crate::complex::image::ImageComplex;
+use crate::complex::termbase::TermbaseComplex;
 use crate::complex::util::check_user_is_team_admin;
 use crate::complex::workset::WorksetComplex;
 use crate::part::prom::payload::{Payload, image};
@@ -21,9 +22,15 @@ use crate::part::repo::oper::comic::{
     DeleteComic, GetComicInfoExcluded, ListComicInfosExcluded,
     TouchComicLastActive, UpdateComicChapterCount,
 };
-use crate::part::repo::oper::member::FindMemberInfo;
+use crate::part::repo::oper::member::{
+    DeleteMember, FindMemberInfo, ListMemberInfosExcluded,
+};
 use crate::part::repo::oper::page::{DeletePages, ListPageInfos};
 use crate::part::repo::oper::team::{DeleteTeam, GetTeamInfoExcluded};
+use crate::part::repo::oper::term::DeleteTerms;
+use crate::part::repo::oper::termbase::{
+    DeleteTermbase, GetTermbaseInfoExcluded, ListTermbaseInfosExcluded,
+};
 use crate::part::repo::oper::user::GetUserInfo;
 use crate::part::repo::oper::workset::{
     DeleteWorkset, GetWorksetInfoExcluded, ListWorksetInfosExcluded,
@@ -73,6 +80,12 @@ impl TeamComplex {
             + for<'a> Proxy<UnpinOtherChapters<'a>, Error = BaseError>
             + for<'a> Proxy<UpdateComicChapterCount<'a>, Error = BaseError>
             + for<'a> Proxy<TouchComicLastActive<'a>, Error = BaseError>
+            + for<'a> Proxy<ListTermbaseInfosExcluded<'a>, Error = BaseError>
+            + for<'a> Proxy<GetTermbaseInfoExcluded<'a>, Error = BaseError>
+            + for<'a> Proxy<DeleteTerms<'a>, Error = BaseError>
+            + for<'a> Proxy<DeleteTermbase<'a>, Error = BaseError>
+            + for<'a> Proxy<ListMemberInfosExcluded<'a>, Error = BaseError>
+            + for<'a> Proxy<DeleteMember<'a>, Error = BaseError>
             + for<'a> Proxy<Defer<'a, String, Payload, ()>, Error = BaseError>
             + for<'t, 'a> Proxy<
                 DeferBatch<'t, 'a, String, Payload, ()>,
@@ -85,6 +98,8 @@ impl TeamComplex {
         // the team delete.
 
         let team_info = proxy.exec(&GetTeamInfoExcluded::Id { id }).await?;
+
+        TermbaseComplex::delete_team_cascade(proxy, &team_info.id).await?;
 
         let workset_infos = proxy
             .exec(&ListWorksetInfosExcluded {
@@ -112,6 +127,20 @@ impl TeamComplex {
             };
 
             proxy.exec(&Defer::new(task)).await?;
+        }
+
+        let member_infos = proxy
+            .exec(&ListMemberInfosExcluded::Team {
+                team_id: &team_info.id,
+            })
+            .await?;
+
+        for member_info in member_infos {
+            proxy
+                .exec(&DeleteMember {
+                    id: &member_info.id,
+                })
+                .await?;
         }
 
         proxy.exec(&DeleteTeam { id: &team_info.id }).await?;

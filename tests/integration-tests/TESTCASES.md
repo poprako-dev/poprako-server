@@ -42,6 +42,7 @@ the seed-only state in its `finally` block. Every current module exports
 | it_09 | `it_09_cross_team_permission.ts` | Cross-team authorization isolation. |
 | it_10 | `it_10_cascade_delete_cleanup.ts` | Cascade deletion and cleanup side effects. |
 | it_11 | `it_11_comic_archive.ts` | Immutable comic archive rows and image-delete prom records. |
+| it_12 | `it_12_termbase_term.ts` | Termbase/term lifecycle, inherited lookup, fuzzy isolation, proofreader permissions, response contracts, and termbase/comic/team cascades. |
 
 ## Shared fixtures and invariants
 

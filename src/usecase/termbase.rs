@@ -1,89 +1,346 @@
+//! Terminology-base use cases.
+
 use poprako_orchestra::{Nucl, run_proxy, step_proxy};
 use tracing::instrument;
 
 use crate::complex::termbase::{TermbaseComplex, TermbasePermComplex};
-use crate::data::termbase::CreateTermbaseParams;
-use crate::model::termbase::TermbaseEntry;
-use crate::model::user::UserToken;
-use crate::part::repo::assignment::AssignmentRepo;
-use crate::part::repo::member::MemberRepo;
-use crate::part::repo::oper::assignment::FindAssignmentInfo;
-use crate::part::repo::oper::member::FindMemberInfo;
-use crate::part::repo::oper::term::DeleteTerms;
-use crate::part::repo::oper::termbase::{
-    CreateTermbase, DeleteTermbase, LockTermbaseExcluded,
+use crate::data::termbase::{
+    CreateTermbaseParams, CreateTermbasePayload, ListComicTermbaseInfosParams,
+    ListTeamTermbaseInfosParams, TermbaseInfoVal, UpdateTermbaseInfoParams,
 };
+use crate::model::termbase::TermbaseInfoListSpec;
+use crate::model::user::UserToken;
+use crate::part::repo::comic::ComicRepo;
+use crate::part::repo::member::MemberRepo;
+use crate::part::repo::oper::comic::{GetComicInfo, GetComicInfoExcluded};
+use crate::part::repo::oper::member::FindMemberInfo;
+use crate::part::repo::oper::team::GetTeamInfoExcluded;
+use crate::part::repo::oper::term::DeleteTerms;
+#[cfg(test)]
+use crate::part::repo::oper::termbase::ListTermbaseInfosExcluded;
+use crate::part::repo::oper::termbase::{
+    CreateTermbase, DeleteTermbase, GetTermbaseInfo, GetTermbaseInfoExcluded,
+    ListTermbaseInfos, UpdateTermbase,
+};
+use crate::part::repo::oper::workset::GetWorksetInfo;
+use crate::part::repo::team::TeamRepo;
 use crate::part::repo::term::TermRepo;
 use crate::part::repo::termbase::TermbaseRepo;
+use crate::part::repo::workset::WorksetRepo;
 use crate::result::{BaseError, BaseResult, accept};
 
-/// Creates a new termbase scoped to a team or comic.
+#[cfg(test)]
+mod tests;
+
+/// Creates a terminology base scoped to a team or comic.
 #[instrument(level = "info", err(Debug), skip_all)]
-pub async fn create_termbase<C, R>(
+pub async fn create<N, C, R>(
+    nucl: &N,
     repo: &R,
     token: UserToken,
     params: CreateTermbaseParams,
-) -> BaseResult<()>
+) -> BaseResult<CreateTermbasePayload>
 where
-    R: TermbaseRepo<C> + MemberRepo<C> + AssignmentRepo<C> + Send + Sync,
+    N: Nucl<Context = C, Error = BaseError>,
+    C: Send,
+    R: TeamRepo<C>
+        + ComicRepo<C>
+        + WorksetRepo<C>
+        + MemberRepo<C>
+        + TermbaseRepo<C>
+        + Send
+        + Sync,
 {
-    let entry = params.try_into()?;
+    let termbase_entry = TermbaseComplex::build_entry(
+        params.team_id,
+        params.comic_id,
+        params.name,
+        params.description,
+        token.user_id.clone(),
+    )?;
 
-    match &entry {
-        //
-        TermbaseEntry::Team { team_id, .. } => {
-            TermbasePermComplex::ensure_user_can_create_team_termbase(
-                &mut run_proxy! {
+    let termbase_id = nucl
+        .coord(async move |context| {
+            let team_id =
+                match (&termbase_entry.team_id, &termbase_entry.comic_id) {
+                    (Some(team_id), None) => {
+                        let team_info = repo
+                            .step(
+                                context,
+                                &GetTeamInfoExcluded::Id { id: team_id },
+                            )
+                            .await?;
+
+                        team_info.id
+                    }
+                    (None, Some(comic_id)) => {
+                        let comic_info = repo
+                            .step(
+                                context,
+                                &GetComicInfoExcluded {
+                                    id: comic_id,
+                                    incls: &[],
+                                },
+                            )
+                            .await?;
+
+                        let workset_info = repo
+                            .step(
+                                context,
+                                &GetWorksetInfo {
+                                    id: &comic_info.workset_id,
+                                },
+                            )
+                            .await?;
+
+                        workset_info.team_id
+                    }
+                    _ => unreachable!(),
+                };
+
+            TermbasePermComplex::ensure_user_can_write_team(
+                &mut step_proxy! {
+                    context;
                     repo => for<'a> FindMemberInfo<'a>;
                 },
                 &token.user_id,
-                team_id,
+                &team_id,
             )
             .await?;
-        }
 
-        TermbaseEntry::Comic { comic_id, .. } => {
-            TermbasePermComplex::ensure_user_can_create_comic_termbase(
-                &mut run_proxy! {
-                    repo =>
-                        for<'a, 'b> FindAssignmentInfo<'a, 'b>,
-                        for<'a> FindMemberInfo<'a>;
+            let termbase_info = repo
+                .step(
+                    context,
+                    &CreateTermbase {
+                        entry: &termbase_entry,
+                    },
+                )
+                .await?;
+
+            accept(termbase_info.id)
+        })
+        .await?;
+
+    accept(CreateTermbasePayload { id: termbase_id })
+}
+
+/// Fetches a terminology base by ID.
+#[instrument(level = "info", err(Debug), skip_all)]
+pub async fn get_info<C, R>(
+    repo: &R,
+    token: UserToken,
+    id: String,
+) -> BaseResult<TermbaseInfoVal>
+where
+    R: TermbaseRepo<C> + ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Sync,
+{
+    let termbase_info = repo.run(&GetTermbaseInfo { id: &id }).await?;
+
+    TermbasePermComplex::ensure_user_can_read(
+        &mut run_proxy! {
+            repo =>
+                for<'a, 'b> GetComicInfo<'a, 'b>,
+                for<'a> GetWorksetInfo<'a>,
+                for<'a> FindMemberInfo<'a>;
+        },
+        &token.user_id,
+        &termbase_info,
+    )
+    .await?;
+
+    accept(termbase_info.into())
+}
+
+/// Lists terminology bases directly owned by a team.
+#[instrument(level = "info", err(Debug), skip_all)]
+pub async fn list_team_infos<C, R>(
+    repo: &R,
+    token: UserToken,
+    params: ListTeamTermbaseInfosParams,
+) -> BaseResult<Vec<TermbaseInfoVal>>
+where
+    R: TermbaseRepo<C> + MemberRepo<C> + Sync,
+{
+    TermbasePermComplex::ensure_user_can_read_team(
+        &mut run_proxy! {
+            repo => for<'a> FindMemberInfo<'a>;
+        },
+        &token.user_id,
+        &params.team_id,
+    )
+    .await?;
+
+    let termbase_info_list_spec = TermbaseInfoListSpec::Team {
+        team_id: params.team_id,
+        fuzzy_name: TermbaseComplex::normalize_fuzzy_name(params.fuzzy_name),
+        offset: params.offset,
+        limit: params.limit,
+    };
+
+    let termbase_infos = repo
+        .run(&ListTermbaseInfos {
+            spec: &termbase_info_list_spec,
+        })
+        .await?;
+
+    accept(termbase_infos.into_iter().map(Into::into).collect())
+}
+
+/// Lists team and comic terminology bases visible from a comic.
+#[instrument(level = "info", err(Debug), skip_all)]
+pub async fn list_comic_infos<C, R>(
+    repo: &R,
+    token: UserToken,
+    params: ListComicTermbaseInfosParams,
+) -> BaseResult<Vec<TermbaseInfoVal>>
+where
+    R: TermbaseRepo<C> + ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Sync,
+{
+    let mut proxy = run_proxy! {
+        repo =>
+            for<'a, 'b> GetComicInfo<'a, 'b>,
+            for<'a> GetWorksetInfo<'a>,
+            for<'a> FindMemberInfo<'a>;
+    };
+
+    let team_id = TermbasePermComplex::resolve_team_id_from_comic(
+        &mut proxy,
+        &params.comic_id,
+    )
+    .await?;
+
+    TermbasePermComplex::ensure_user_can_read_team(
+        &mut proxy,
+        &token.user_id,
+        &team_id,
+    )
+    .await?;
+
+    let termbase_info_list_spec = TermbaseInfoListSpec::Comic {
+        team_id,
+        comic_id: params.comic_id,
+        fuzzy_name: TermbaseComplex::normalize_fuzzy_name(params.fuzzy_name),
+        offset: params.offset,
+        limit: params.limit,
+    };
+
+    let termbase_infos = repo
+        .run(&ListTermbaseInfos {
+            spec: &termbase_info_list_spec,
+        })
+        .await?;
+
+    accept(termbase_infos.into_iter().map(Into::into).collect())
+}
+
+/// Replaces a terminology base's name and description.
+#[instrument(level = "info", err(Debug), skip_all)]
+pub async fn update_info<N, C, R>(
+    nucl: &N,
+    repo: &R,
+    token: UserToken,
+    params: UpdateTermbaseInfoParams,
+) -> BaseResult<()>
+where
+    N: Nucl<Context = C, Error = BaseError>,
+    C: Send,
+    R: TermbaseRepo<C>
+        + ComicRepo<C>
+        + WorksetRepo<C>
+        + MemberRepo<C>
+        + Send
+        + Sync,
+{
+    let termbase_info_update = TermbaseComplex::build_update(
+        params.id,
+        params.name,
+        params.description,
+    )?;
+
+    nucl.coord(async move |context| {
+        let termbase_info = repo
+            .step(
+                context,
+                &GetTermbaseInfoExcluded {
+                    id: &termbase_info_update.id,
                 },
-                &token.user_id,
-                comic_id,
             )
             .await?;
-        }
-    }
 
-    repo.run(&CreateTermbase { entry: &entry }).await?;
+        TermbasePermComplex::ensure_user_can_write(
+            &mut step_proxy! {
+                context;
+                repo =>
+                    for<'a, 'b> GetComicInfo<'a, 'b>,
+                    for<'a> GetWorksetInfo<'a>,
+                    for<'a> FindMemberInfo<'a>;
+            },
+            &token.user_id,
+            &termbase_info,
+        )
+        .await?;
+
+        repo.step(
+            context,
+            &UpdateTermbase {
+                update: &termbase_info_update,
+            },
+        )
+        .await?;
+
+        accept(())
+    })
+    .await?;
 
     accept(())
 }
 
-/// Deletes a termbase by id with cascade to its child terms.
+/// Deletes a terminology base and all child terms.
 #[instrument(level = "info", err(Debug), skip_all)]
-pub async fn delete_termbase<C, N, R>(
+pub async fn delete<N, C, R>(
     nucl: &N,
     repo: &R,
-    _token: UserToken,
+    token: UserToken,
     id: String,
 ) -> BaseResult<()>
 where
     N: Nucl<Context = C, Error = BaseError>,
-    R: TermbaseRepo<C> + TermRepo<C> + Sync,
+    C: Send,
+    R: TermbaseRepo<C>
+        + TermRepo<C>
+        + ComicRepo<C>
+        + WorksetRepo<C>
+        + MemberRepo<C>
+        + Send
+        + Sync,
 {
     nucl.coord(async move |context| {
-        //
+        let termbase_info = repo
+            .step(context, &GetTermbaseInfoExcluded { id: &id })
+            .await?;
+
+        TermbasePermComplex::ensure_user_can_write(
+            &mut step_proxy! {
+                context;
+                repo =>
+                    for<'a, 'b> GetComicInfo<'a, 'b>,
+                    for<'a> GetWorksetInfo<'a>,
+                    for<'a> FindMemberInfo<'a>;
+            },
+            &token.user_id,
+            &termbase_info,
+        )
+        .await?;
+
         TermbaseComplex::delete_cascade(
             &mut step_proxy! {
                 context;
                 repo =>
-                    for<'a> LockTermbaseExcluded<'a>,
-                    for<'v, 'a> DeleteTerms<'v, 'a>,
+                    for<'a> GetTermbaseInfoExcluded<'a>,
+                    for<'a> DeleteTerms<'a>,
                     for<'a> DeleteTermbase<'a>;
             },
-            &id,
+            &termbase_info.id,
         )
         .await?;
 

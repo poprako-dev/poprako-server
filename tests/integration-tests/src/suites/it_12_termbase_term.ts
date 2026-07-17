@@ -1,0 +1,290 @@
+// it_12 — Termbase and term lifecycle, lookup, permissions, and cascades.
+//
+// Preconditions:
+//   - The default team, main comic, proofreader, and translator exist.
+//
+// Postconditions:
+//   - All terminology fixtures and temporary comic/team roots are deleted.
+//
+// Covers team/comic scopes, comic inheritance, name/source-only fuzzy search,
+// full replacement, target order, counters, permission isolation, path/body
+// identity, duplicate normalization, and comic/termbase cascade cleanup.
+
+import assert from "node:assert/strict";
+
+import { expectError, expectNoContent, expectSuccessData, expectSuccessList } from "../http/assertions.js";
+import type { ErrorBody, SuccessBody } from "../http/apiClient.js";
+import {
+    createComic,
+    createTeam,
+    createWorkset,
+    deleteWorkset,
+    listMyMembers,
+    updateMemberRoles,
+} from "../http/fixtures.js";
+import type { IdVal, TermbaseInfoVal, TermInfoVal } from "../http/types.js";
+import { titled } from "../state/prefix.js";
+import { ROLE } from "../state/roles.js";
+import type { RunCtx } from "../state/runCtx.js";
+
+export const IMPLEMENTED = true as const;
+
+async function createTermbase(
+    api: RunCtx["sadmin"],
+    scope: { team_id: string; comic_id?: never } | { team_id?: never; comic_id: string },
+    name: string,
+    description: string | null,
+): Promise<IdVal> {
+    return expectSuccessData(
+        await api.post<SuccessBody<IdVal>>("/api/v1/termbases", {
+            ...scope,
+            description,
+            name,
+        }),
+        201,
+    );
+}
+
+async function createTerm(
+    api: RunCtx["sadmin"],
+    termbaseId: string,
+    source: string,
+    targets: string[],
+    comment: string | null,
+): Promise<IdVal> {
+    return expectSuccessData(
+        await api.post<SuccessBody<IdVal>>("/api/v1/terms", {
+            comment,
+            source,
+            targets,
+            termbase_id: termbaseId,
+        }),
+        201,
+    );
+}
+
+async function getTermbase(api: RunCtx["sadmin"], termbaseId: string): Promise<TermbaseInfoVal> {
+    return expectSuccessData(await api.get(`/api/v1/termbases/${termbaseId}`), 200);
+}
+
+async function getTerm(api: RunCtx["sadmin"], termId: string): Promise<TermInfoVal> {
+    return expectSuccessData(await api.get(`/api/v1/terms/${termId}`), 200);
+}
+
+export async function runIt12Module(ctx: RunCtx): Promise<void> {
+    const mainComicId = ctx.ids.comicIds["星尘旅人"];
+    const proofreader = ctx.users.get("proof_01");
+    const translator = ctx.users.get("trans_01");
+
+    assert.ok(mainComicId, "it_02 must have created the main comic");
+    assert.ok(proofreader, "proof_01 must exist");
+    assert.ok(translator, "trans_01 must exist");
+
+    const teamTermbase = await createTermbase(
+        proofreader.api,
+        { team_id: ctx.ids.defaultTeamId },
+        " Shared Glossary ",
+        "team description",
+    );
+    const comicTermbase = await createTermbase(
+        proofreader.api,
+        { comic_id: mainComicId },
+        " Main Comic Glossary ",
+        "comic description",
+    );
+
+    const teamInfo = await getTermbase(translator.api, teamTermbase.id);
+
+    assert.equal(teamInfo.name, "Shared Glossary");
+    assert.equal(teamInfo.team_id, ctx.ids.defaultTeamId);
+    assert.equal(teamInfo.comic_id, undefined);
+    assert.equal(teamInfo.term_count, 0);
+
+    const visibleFromComic = expectSuccessList<TermbaseInfoVal>(
+        await translator.api.get<SuccessBody<TermbaseInfoVal[]>>(
+            `/api/v1/comics/${mainComicId}/termbases?offset=0&limit=20`,
+        ),
+        200,
+    );
+
+    assert.deepEqual(
+        new Set(visibleFromComic.map((termbase) => termbase.id)),
+        new Set([teamTermbase.id, comicTermbase.id]),
+    );
+
+    const fuzzyByName = expectSuccessList<TermbaseInfoVal>(
+        await translator.api.get<SuccessBody<TermbaseInfoVal[]>>(
+            `/api/v1/comics/${mainComicId}/termbases?fuzzy_name=${encodeURIComponent("main comic")}&offset=0&limit=20`,
+        ),
+        200,
+    );
+
+    assert.deepEqual(fuzzyByName.map((termbase) => termbase.id), [comicTermbase.id]);
+
+    const fuzzyByDescription = expectSuccessList<TermbaseInfoVal>(
+        await translator.api.get<SuccessBody<TermbaseInfoVal[]>>(
+            `/api/v1/comics/${mainComicId}/termbases?fuzzy_name=${encodeURIComponent("description")}&offset=0&limit=20`,
+        ),
+        200,
+    );
+
+    assert.equal(fuzzyByDescription.length, 0);
+
+    expectError(
+        await translator.api.post<ErrorBody>("/api/v1/terms", {
+            comment: null,
+            source: "Denied",
+            targets: ["拒绝"],
+            termbase_id: comicTermbase.id,
+        }),
+        403,
+        4,
+    );
+
+    const term = await createTerm(
+        proofreader.api,
+        comicTermbase.id,
+        " Hero ",
+        [" 勇者 ", "英雄"],
+        " main character ",
+    );
+    const termInfo = await getTerm(translator.api, term.id);
+
+    assert.equal(termInfo.source, "Hero");
+    assert.deepEqual(termInfo.targets, ["勇者", "英雄"]);
+    assert.equal(termInfo.comment, "main character");
+    assert.equal((await getTermbase(translator.api, comicTermbase.id)).term_count, 1);
+
+    expectError(
+        await proofreader.api.post<ErrorBody>("/api/v1/terms", {
+            comment: null,
+            source: " hero ",
+            targets: ["重复"],
+            termbase_id: comicTermbase.id,
+        }),
+        422,
+        2,
+    );
+
+    expectError(
+        await proofreader.api.put<ErrorBody>(`/api/v1/terms/${term.id}`, {
+            comment: null,
+            id: "different-id",
+            source: "Heroine",
+            targets: ["女主角"],
+        }),
+        422,
+        7,
+    );
+
+    expectNoContent(
+        await proofreader.api.put<null>(`/api/v1/terms/${term.id}`, {
+            comment: "   ",
+            id: term.id,
+            source: " Heroine ",
+            targets: [" 女主角 ", "主角"],
+        }),
+    );
+
+    const updatedTerm = await getTerm(translator.api, term.id);
+
+    assert.equal(updatedTerm.source, "Heroine");
+    assert.deepEqual(updatedTerm.targets, ["女主角", "主角"]);
+    assert.equal(updatedTerm.comment, undefined);
+
+    const termFuzzy = expectSuccessList<TermInfoVal>(
+        await translator.api.get<SuccessBody<TermInfoVal[]>>(
+            `/api/v1/termbases/${comicTermbase.id}/terms?fuzzy_source=heroine&offset=0&limit=20`,
+        ),
+        200,
+    );
+
+    assert.deepEqual(termFuzzy.map((listedTerm) => listedTerm.id), [term.id]);
+
+    const targetFuzzy = expectSuccessList<TermInfoVal>(
+        await translator.api.get<SuccessBody<TermInfoVal[]>>(
+            `/api/v1/termbases/${comicTermbase.id}/terms?fuzzy_source=${encodeURIComponent("女主角")}&offset=0&limit=20`,
+        ),
+        200,
+    );
+
+    assert.equal(targetFuzzy.length, 0);
+
+    expectNoContent(await proofreader.api.delete<null>(`/api/v1/terms/${term.id}`));
+    assert.equal((await getTermbase(translator.api, comicTermbase.id)).term_count, 0);
+
+    const cascadeWorkset = await createWorkset(
+        ctx.sadmin,
+        ctx.ids.defaultTeamId,
+        titled("termbase-cascade-workset"),
+    );
+    const cascadeComic = await createComic(
+        ctx.sadmin,
+        cascadeWorkset.id,
+        titled("termbase-cascade-comic"),
+        "integration",
+    );
+    const cascadeTermbase = await createTermbase(
+        proofreader.api,
+        { comic_id: cascadeComic.id },
+        "Cascade Comic Glossary",
+        null,
+    );
+    const cascadeTerm = await createTerm(
+        proofreader.api,
+        cascadeTermbase.id,
+        "Cascade",
+        ["级联"],
+        null,
+    );
+
+    expectNoContent(await ctx.sadmin.delete<null>(`/api/v1/comics/${cascadeComic.id}`));
+    expectError(await translator.api.get<ErrorBody>(`/api/v1/termbases/${cascadeTermbase.id}`), 422, 2);
+    expectError(await translator.api.get<ErrorBody>(`/api/v1/terms/${cascadeTerm.id}`), 422, 2);
+    await deleteWorkset(ctx.sadmin, cascadeWorkset.id);
+
+    const cascadeTeam = await createTeam(ctx.sadmin, titled("termbase-cascade-team"), "cascade");
+
+    expectError(
+        await ctx.sadmin.post<ErrorBody>("/api/v1/termbases", {
+            comic_id: null,
+            description: null,
+            name: "Sadmin Must Not Bypass",
+            team_id: cascadeTeam.id,
+        }),
+        403,
+        4,
+    );
+
+    const memberships = await listMyMembers(ctx.sadmin);
+    const cascadeMembership = memberships.find((member) => member.team_id === cascadeTeam.id);
+
+    assert.ok(cascadeMembership, "team creator membership must exist");
+
+    await updateMemberRoles(
+        ctx.sadmin,
+        cascadeMembership.id,
+        ROLE.ADMIN | ROLE.PROOFREADER,
+    );
+
+    const cascadeTeamTermbase = await createTermbase(
+        ctx.sadmin,
+        { team_id: cascadeTeam.id },
+        "Cascade Team Glossary",
+        null,
+    );
+    const cascadeTeamTerm = await createTerm(
+        ctx.sadmin,
+        cascadeTeamTermbase.id,
+        "Team Cascade",
+        ["团队级联"],
+        null,
+    );
+
+    expectNoContent(await ctx.sadmin.delete<null>(`/api/v1/teams/${cascadeTeam.id}`));
+    expectError(await ctx.sadmin.get<ErrorBody>(`/api/v1/termbases/${cascadeTeamTermbase.id}`), 422, 2);
+    expectError(await ctx.sadmin.get<ErrorBody>(`/api/v1/terms/${cascadeTeamTerm.id}`), 422, 2);
+
+    expectNoContent(await proofreader.api.delete<null>(`/api/v1/termbases/${comicTermbase.id}`));
+    expectNoContent(await proofreader.api.delete<null>(`/api/v1/termbases/${teamTermbase.id}`));
+}

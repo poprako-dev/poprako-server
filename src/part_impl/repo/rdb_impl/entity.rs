@@ -24,6 +24,10 @@ pub mod page;
 pub mod system_mail;
 /// Team Diesel entity types.
 pub mod team;
+/// Term Diesel entity types.
+pub mod term;
+/// Termbase Diesel entity types.
+pub mod termbase;
 /// Unit Diesel entity types.
 pub mod unit;
 /// User Diesel entity types.

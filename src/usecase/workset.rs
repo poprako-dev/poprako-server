@@ -33,12 +33,18 @@ use crate::part::repo::oper::comic::{
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::page::{DeletePages, ListPageInfos};
 use crate::part::repo::oper::team::AllocTeamWorksetIndex;
+use crate::part::repo::oper::term::DeleteTerms;
+use crate::part::repo::oper::termbase::{
+    DeleteTermbase, GetTermbaseInfoExcluded, ListTermbaseInfosExcluded,
+};
 use crate::part::repo::oper::workset::{
     CreateWorkset, DeleteWorkset, GetWorksetInfo, GetWorksetInfoExcluded,
     ListWorksetInfos, UpdateWorkset, UpdateWorksetComicCount,
 };
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
+use crate::part::repo::term::TermRepo;
+use crate::part::repo::termbase::TermbaseRepo;
 use crate::part::repo::unit::UnitRepo;
 use crate::part::repo::workset::WorksetRepo;
 use crate::result::{BaseError, BaseResult, accept};
@@ -217,6 +223,8 @@ where
         + AssignmentInvitationRepo<C>
         + AssignmentRepo<C>
         + UnitRepo<C>
+        + TermbaseRepo<C>
+        + TermRepo<C>
         + Send
         + Sync,
     P: Prom<C> + Send + Sync,
@@ -254,7 +262,11 @@ where
                     for<'a> UpdateChapter<'a>,
                     for<'a> UnpinOtherChapters<'a>,
                     for<'a> UpdateComicChapterCount<'a>,
-                    for<'a> TouchComicLastActive<'a>;
+                    for<'a> TouchComicLastActive<'a>,
+                    for<'a> ListTermbaseInfosExcluded<'a>,
+                    for<'a> GetTermbaseInfoExcluded<'a>,
+                    for<'a> DeleteTerms<'a>,
+                    for<'a> DeleteTermbase<'a>;
                 prom =>
                     for<'a> Defer<'a, String, Payload, ()>,
                     for<'t, 'a> DeferBatch<'t, 'a, String, Payload, ()>;

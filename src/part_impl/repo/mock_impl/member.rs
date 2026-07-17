@@ -424,6 +424,15 @@ impl<'a> Step<ListMemberInfosExcluded<'a>, MockContext> for Mock {
             ListMemberInfosExcluded::User { user_id } => {
                 accept(list_member_infos_by_user(&context.state, user_id))
             }
+            ListMemberInfosExcluded::Team { team_id } => accept(
+                context
+                    .state
+                    .members
+                    .iter()
+                    .filter(|member_info| member_info.team_id == *team_id)
+                    .cloned()
+                    .collect(),
+            ),
         }
     }
 }

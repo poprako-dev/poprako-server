@@ -35,6 +35,36 @@ where
     accept(())
 }
 
+/// Verify the user is a proofreader in the given team.
+pub async fn check_user_is_team_proofreader<P>(
+    proxy: &mut P,
+    user_id: &str,
+    team_id: &str,
+) -> BaseResult<()>
+where
+    P: for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
+{
+    let member_info = proxy
+        .exec(&FindMemberInfo::UserTeam { user_id, team_id })
+        .await?;
+
+    let Some(member_info) = member_info else {
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Perm,
+            message: trl("error-team-proofreader-required"),
+        });
+    };
+
+    if !member_info.roles.has_any_role(&[RoleField::PROOFREADER]) {
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Perm,
+            message: trl("error-team-proofreader-required"),
+        });
+    }
+
+    accept(())
+}
+
 /// Verify the user is a team admin and owns every optionally required role.
 pub async fn check_user_is_team_admin_with_roles<P>(
     proxy: &mut P,
