@@ -117,8 +117,8 @@ docker run \
 health_attempt=1
 
 while [ "$health_attempt" -le 30 ]; do
-    if docker exec "$container_name" sh -c 'wget -q -S -O - http://127.0.0.1:8888/api/health 2>&1' \
-        | grep -q 'HTTP/1.1 204 No Content'; then
+    if docker exec "$container_name" \
+        wget -q -O /dev/null http://127.0.0.1:8888/api/health; then
         docker ps --filter "name=^/${container_name}$" --format '{{.Names}} {{.Status}} {{.Ports}}'
         exit 0
     fi
