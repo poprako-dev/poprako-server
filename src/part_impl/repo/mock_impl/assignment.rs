@@ -200,6 +200,35 @@ fn list_all_assignments_by_chapter(
     assignment_infos
 }
 
+fn list_all_assignments_by_chapters(
+    state: &MockState,
+    chapter_ids: &[String],
+    incl_opt: &[AssignmentInclOpt],
+) -> Vec<AssignmentInfo> {
+    //
+    let mut assignment_infos = state
+        .assignments
+        .iter()
+        .filter(|assignment_info| {
+            chapter_ids.contains(&assignment_info.chapter_id)
+        })
+        .cloned()
+        .collect::<Vec<_>>();
+
+    for assignment_info in &mut assignment_infos {
+        apply_assignment_incls(state, assignment_info, incl_opt);
+    }
+
+    assignment_infos.sort_by(|left, right| {
+        right
+            .created_at
+            .cmp(&left.created_at)
+            .then_with(|| left.id.cmp(&right.id))
+    });
+
+    assignment_infos
+}
+
 fn list_assignments_by_chapter_id_excluded(
     state: &MockState,
     chapter_id: &str,
@@ -323,6 +352,10 @@ impl Run<ListAssignmentInfos<'_, '_>> for Mock {
             } => list_all_assignments_by_chapter(
                 &state, chapter_id, *role, incls,
             ),
+
+            ListAssignmentInfos::Chapters { chapter_ids, incls } => {
+                list_all_assignments_by_chapters(&state, chapter_ids, incls)
+            }
         };
 
         accept(assignment_infos)
@@ -423,6 +456,14 @@ impl Step<ListAssignmentInfos<'_, '_>, MockContext> for Mock {
                 *role,
                 incls,
             ),
+
+            ListAssignmentInfos::Chapters { chapter_ids, incls } => {
+                list_all_assignments_by_chapters(
+                    &context.state,
+                    chapter_ids,
+                    incls,
+                )
+            }
         };
 
         accept(assignment_infos)

@@ -1,6 +1,7 @@
 use super::*;
 
 use crate::data::comic::CreateComicParams;
+use crate::model::assignment::AssignmentInfo;
 use crate::model::chapter::ChapterInfo;
 use crate::model::comic::ComicInfo;
 use crate::model::member::MemberInfo;
@@ -64,6 +65,22 @@ pub fn chapter(id: &str, comic_id: &str, stage_mask: StageMask) -> ChapterInfo {
         stages: stage_mask,
         creator_id: "user-1".into(),
         creator: None,
+        created_at: time,
+        updated_at: time,
+    }
+}
+
+pub fn assignment(id: &str, chapter_id: &str, user_id: &str) -> AssignmentInfo {
+    //
+    let time = OffsetDateTime::now_utc();
+
+    AssignmentInfo {
+        id: id.into(),
+        chapter_id: chapter_id.into(),
+        user_id: user_id.into(),
+        user: None,
+        chapter: None,
+        roles: RoleMask::from(RoleField::TRANSLATOR),
         created_at: time,
         updated_at: time,
     }

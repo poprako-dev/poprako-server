@@ -9,3 +9,4 @@
 - [ ] Hash to dedup upload images.
 - [ ] Batch list for assignments.
 - [ ] for<..> to <'\_>.
+- [ ] Makeup migration SQLs.

@@ -1,4 +1,4 @@
-// assignment_roundtrip_uses_testcontainer(CreateAssignment, ListAssignmentInfos, GetAssignmentInfo, UpdateAssignmentRoles)(positive): assignment repo creates, lists, fetches, and updates roles in an isolated PostgreSQL container.
+// assignment_roundtrip_uses_testcontainer(CreateAssignment, ListAssignmentInfos::Spec, ListAssignmentInfos::Chapters, GetAssignmentInfo, UpdateAssignmentRoles)(positive): assignment repo creates, lists, fetches, and updates roles in an isolated PostgreSQL container.
 
 use super::*;
 
@@ -83,6 +83,21 @@ pub async fn assignment_roundtrip_uses_testcontainer(shared: RdbCore) {
         assignment_infos[0].user.as_ref().unwrap().id,
         assignee_form.id
     );
+
+    let chapter_ids = vec![chapter_fixture.chapter_entry.id.clone()];
+
+    let assignment_infos = repo
+        .run(&ListAssignmentInfos::Chapters {
+            chapter_ids: &chapter_ids,
+            incls: &[],
+        })
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(assignment_infos.len(), 1);
+
+    assert_eq!(assignment_infos[0].id, assignment_entry.id);
 
     let assignment_role_update = AssignmentRoleUpdate {
         id: assignment_entry.id.clone(),
