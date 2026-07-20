@@ -28,9 +28,9 @@ use crate::result::BaseError;
 
 /// Background worker that polls the `t_local_message` table, dispatches by topic,
 /// and completes or fails each record.
-pub struct RdbPromHandler<D, R, I> {
+pub struct RdbPromHandler<N, R, I> {
     pub(super) core: RdbCore,
-    pub(super) nucl: D,
+    pub(super) nucl: N,
 
     pub(super) repo: RdbPromRepo<R>,
 
@@ -39,9 +39,9 @@ pub struct RdbPromHandler<D, R, I> {
     pub(super) token: CancellationToken,
 }
 
-impl<D, R, I> RdbPromHandler<D, R, I>
+impl<N, R, I> RdbPromHandler<N, R, I>
 where
-    D: Nucl<Context = RdbContext, Error = BaseError>,
+    N: Nucl<Context = RdbContext, Error = BaseError>,
     R: AssignmentInvitationRepo<RdbContext>
         + ChapterRepo<RdbContext>
         + ComicRepo<RdbContext>
@@ -57,7 +57,7 @@ where
     /// Builds a new prom background handler from its core, nucl, repo, and lifecycle channels.
     pub fn new(
         core: RdbCore,
-        nucl: D,
+        nucl: N,
         repo: RdbPromRepo<R>,
         image_pool: I,
         token: CancellationToken,
@@ -74,15 +74,15 @@ where
 
 /// Decodes and dispatches one persisted prom payload.
 #[instrument(level = "info", skip_all)]
-pub async fn dispatch_payload<D, R, I>(
-    nucl: &D,
+pub async fn dispatch_payload<N, R, I>(
+    nucl: &N,
     repo: &R,
     image_pool: &I,
     topic: &str,
     payload: &serde_json::Value,
 ) -> TaskFlow
 where
-    D: Nucl<Context = RdbContext, Error = BaseError>,
+    N: Nucl<Context = RdbContext, Error = BaseError>,
     R: AssignmentInvitationRepo<RdbContext>
         + ChapterRepo<RdbContext>
         + ComicRepo<RdbContext>
