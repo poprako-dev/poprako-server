@@ -99,9 +99,9 @@ fn update_user(state: &mut MockState, oper: &UpdateUser<'_>) -> BaseResult<()> {
             (id, Some((qid, nickname, None)))
         }
 
-        UpdateUser::MarkAvatarUploaded { id, avatar_version } => {
-            (id, Some((id, id, Some(*avatar_version))))
-        }
+        UpdateUser::MarkAvatarUploaded {
+            id, avatar_version, ..
+        } => (id, Some((id, id, Some(*avatar_version)))),
 
         UpdateUser::TouchLastActive { id } => (id, None),
 
@@ -125,7 +125,15 @@ fn update_user(state: &mut MockState, oper: &UpdateUser<'_>) -> BaseResult<()> {
 
         Some((_, _, Some(avatar_version))) => {
             //
-            if user_info.avatar_version != avatar_version {
+            if user_info.avatar_version != avatar_version
+                || matches!(
+                    oper,
+                    UpdateUser::MarkAvatarUploaded {
+                        avatar_key: Some(avatar_key),
+                        ..
+                    } if user_info.avatar_key.as_deref() != Some(*avatar_key)
+                )
+            {
                 return Err(expected("error-stale-avatar-upload"));
             }
 

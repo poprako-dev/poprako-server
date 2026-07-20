@@ -1,4 +1,6 @@
 // completed_message_purge_preserves_non_completed_records(PurgeCompleted)(positive): expired completed records are purged while recent completed, pending, and dead records remain.
+// poll_pending_selects_one_visible_message_per_idle_topic(PollPending)(positive): polling is fair across topics and skips topics with processing work.
+// retry_message_allows_later_topic_message_to_advance(RetryMessage)(positive): delayed retries are equivalent to re-enqueueing behind visible work.
 
 use super::*;
 
@@ -11,6 +13,177 @@ use crate::part_impl::repo::rdb_impl::{RdbRepo, schema, test_shared};
 use crate::part_impl::shared::RdbContext;
 
 const PREFIX: &str = "rdb-test-prom-purge-";
+const POLL_PREFIX: &str = "rdb-test-prom-poll-";
+
+fn local_message_entry(
+    id: &'static str,
+    topic: &'static str,
+    status: LocalMessageStatus,
+    created_at: OffsetDateTime,
+) -> LocalMessageEntry<'static> {
+    LocalMessageEntry {
+        f_id: id,
+        f_topic: topic,
+        f_status: status,
+        f_payload: serde_json::json!({}),
+        f_visible_at: created_at,
+        f_created_at: created_at,
+        f_updated_at: created_at,
+    }
+}
+
+#[tokio::test]
+async fn poll_pending_selects_one_visible_message_per_idle_topic() {
+    //
+    let shared = test_shared::shared().await;
+
+    test_shared::reset(&shared, POLL_PREFIX).await;
+
+    let now = OffsetDateTime::now_utc();
+
+    let entries = [
+        local_message_entry(
+            "rdb-test-prom-poll-image-first",
+            "rdb-test-prom-poll-image",
+            LocalMessageStatus::Pending,
+            now - Duration::minutes(5),
+        ),
+        local_message_entry(
+            "rdb-test-prom-poll-image-second",
+            "rdb-test-prom-poll-image",
+            LocalMessageStatus::Pending,
+            now - Duration::minutes(4),
+        ),
+        local_message_entry(
+            "rdb-test-prom-poll-invitation",
+            "rdb-test-prom-poll-invitation",
+            LocalMessageStatus::Pending,
+            now - Duration::minutes(3),
+        ),
+        local_message_entry(
+            "rdb-test-prom-poll-chapter-processing",
+            "rdb-test-prom-poll-chapter",
+            LocalMessageStatus::Processing,
+            now - Duration::minutes(2),
+        ),
+        local_message_entry(
+            "rdb-test-prom-poll-chapter-pending",
+            "rdb-test-prom-poll-chapter",
+            LocalMessageStatus::Pending,
+            now - Duration::minutes(1),
+        ),
+    ];
+
+    let mut conn = shared.get().await.ok().unwrap();
+
+    diesel::insert_into(schema::t_local_message::table)
+        .values(&entries)
+        .execute(&mut conn)
+        .await
+        .ok()
+        .unwrap();
+
+    let repo = RdbPromRepo::new(RdbRepo::new(shared.clone()));
+
+    let mut context = RdbContext::new(shared.get().await.ok().unwrap());
+
+    let mut rows = repo.step(&mut context, &PollPending).await.ok().unwrap();
+
+    rows.retain(|row| row.f_id.starts_with(POLL_PREFIX));
+
+    rows.sort_by(|left, right| left.f_id.cmp(&right.f_id));
+
+    assert_eq!(
+        rows.into_iter().map(|row| row.f_id).collect::<Vec<_>>(),
+        vec![
+            "rdb-test-prom-poll-image-first".to_string(),
+            "rdb-test-prom-poll-invitation".to_string(),
+        ]
+    );
+
+    test_shared::cleanup(&shared, POLL_PREFIX)
+        .await
+        .ok()
+        .unwrap();
+
+    test_shared::assert_no_leftovers(&shared, POLL_PREFIX)
+        .await
+        .ok()
+        .unwrap();
+}
+
+#[tokio::test]
+async fn retry_message_allows_later_topic_message_to_advance() {
+    //
+    let shared = test_shared::shared().await;
+
+    test_shared::reset(&shared, POLL_PREFIX).await;
+
+    let now = OffsetDateTime::now_utc();
+
+    let entries = [
+        local_message_entry(
+            "rdb-test-prom-poll-image-retry",
+            "rdb-test-prom-poll-retry-image",
+            LocalMessageStatus::Processing,
+            now - Duration::minutes(2),
+        ),
+        local_message_entry(
+            "rdb-test-prom-poll-image-next",
+            "rdb-test-prom-poll-retry-image",
+            LocalMessageStatus::Pending,
+            now - Duration::minutes(1),
+        ),
+    ];
+
+    let mut conn = shared.get().await.ok().unwrap();
+
+    diesel::insert_into(schema::t_local_message::table)
+        .values(&entries)
+        .execute(&mut conn)
+        .await
+        .ok()
+        .unwrap();
+
+    let repo = RdbPromRepo::new(RdbRepo::new(shared.clone()));
+
+    let retry_visible_at = now + Duration::minutes(5);
+
+    let mut context = RdbContext::new(shared.get().await.ok().unwrap());
+
+    repo.step(
+        &mut context,
+        &RetryMessage::new(
+            "rdb-test-prom-poll-image-retry",
+            "temporary failure",
+            &retry_visible_at,
+        ),
+    )
+    .await
+    .ok()
+    .unwrap();
+
+    let rows = repo.step(&mut context, &PollPending).await.ok().unwrap();
+
+    let rows = rows
+        .into_iter()
+        .filter(|row| row.f_id.starts_with(POLL_PREFIX))
+        .collect::<Vec<_>>();
+
+    assert_eq!(rows.len(), 1);
+
+    assert_eq!(rows[0].f_id, "rdb-test-prom-poll-image-next");
+
+    test_shared::cleanup(&shared, POLL_PREFIX)
+        .await
+        .ok()
+        .unwrap();
+
+    test_shared::assert_no_leftovers(&shared, POLL_PREFIX)
+        .await
+        .ok()
+        .unwrap();
+}
 
 #[tokio::test]
 async fn completed_message_purge_preserves_non_completed_records() {

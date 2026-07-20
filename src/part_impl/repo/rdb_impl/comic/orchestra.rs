@@ -56,7 +56,8 @@ impl<'a> Run<MarkComicCoverUploaded<'a>> for RdbRepo {
             self.core,
             mark_cover_uploaded,
             oper.id,
-            oper.cover_version
+            oper.cover_version,
+            oper.cover_key
         )
     }
 }
@@ -148,7 +149,13 @@ impl<'a> Step<MarkComicCoverUploaded<'a>, RdbContext> for RdbRepo {
         context: &mut RdbContext,
         oper: &MarkComicCoverUploaded<'a>,
     ) -> BaseResult<()> {
-        mark_cover_uploaded(context.conn(), oper.id, oper.cover_version).await
+        mark_cover_uploaded(
+            context.conn(),
+            oper.id,
+            oper.cover_version,
+            oper.cover_key,
+        )
+        .await
     }
 }
 

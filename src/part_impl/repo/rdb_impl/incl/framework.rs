@@ -96,9 +96,11 @@ pub async fn populate<I: Incl>(
     conn: &mut RdbConn,
     infos: &mut [I::Owner],
 ) -> BaseResult<()> {
+    //
     let mut key_counts = HashMap::new();
 
     for owner in infos.iter() {
+        //
         let Some(key) = I::resolve_key(owner) else {
             continue;
         };
@@ -115,6 +117,7 @@ pub async fn populate<I: Incl>(
     let mut map = batch_load::<I::Query>(conn, id_refs).await?;
 
     for owner in infos.iter_mut() {
+        //
         let related = I::resolve_key(owner).and_then(|key| {
             take_loaded_related(&mut map, &mut key_counts, key)
         });
@@ -132,9 +135,11 @@ fn take_loaded_related<Related: Clone>(
     key_counts: &mut HashMap<String, usize>,
     key: &str,
 ) -> Option<Related> {
+    //
     let count = key_counts.get_mut(key)?;
 
     if *count <= 1 {
+        //
         key_counts.remove(key);
 
         return map.remove(key);
@@ -151,11 +156,13 @@ async fn batch_load<B: BatchByIds>(
     conn: &mut RdbConn,
     ids: Vec<&str>,
 ) -> BaseResult<HashMap<String, B::Info>> {
+    //
     let rows = B::load(conn, ids).await?;
 
     let mut map = HashMap::new();
 
     for row in rows {
+        //
         let (id, info) = B::into_entry(row)?;
 
         map.insert(id, info);
@@ -187,6 +194,7 @@ impl BatchByIds for UserByIds {
     }
 
     fn into_entry(row: UserRow) -> BaseResult<(String, UserInfo)> {
+        //
         let id = row.f_id.clone();
 
         accept((id, UserInfo::from(row)))
@@ -214,6 +222,7 @@ impl BatchByIds for TeamByIds {
     }
 
     fn into_entry(row: TeamRow) -> BaseResult<(String, TeamInfo)> {
+        //
         let id = row.f_id.clone();
 
         accept((id, TeamInfo::from(row)))
@@ -241,6 +250,7 @@ impl BatchByIds for WorksetByIds {
     }
 
     fn into_entry(row: WorksetRow) -> BaseResult<(String, WorksetInfo)> {
+        //
         let id = row.f_id.clone();
 
         accept((id, WorksetInfo::from(row)))
@@ -268,6 +278,7 @@ impl BatchByIds for ComicByIds {
     }
 
     fn into_entry(row: ComicRow) -> BaseResult<(String, ComicInfo)> {
+        //
         let id = row.f_id.clone();
 
         accept((id, ComicInfo::from(row)))
@@ -295,6 +306,7 @@ impl BatchByIds for ChapterByIds {
     }
 
     fn into_entry(row: ChapterRow) -> BaseResult<(String, ChapterInfo)> {
+        //
         let id = row.f_id.clone();
 
         let chapter_info = ChapterInfo::try_from(row)?;

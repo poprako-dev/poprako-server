@@ -16,6 +16,7 @@ pub fn version(value: i64) -> BaseResult<u32> {
 
 /// Converts and increments a persisted version without overflowing.
 pub fn next_version(value: i64) -> BaseResult<u32> {
+    //
     let current_version = version(value)?;
 
     current_version

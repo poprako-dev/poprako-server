@@ -165,7 +165,13 @@ impl<'a> Step<MarkPageImageUploaded<'a>, RdbContext> for RdbRepo {
         context: &mut RdbContext,
         oper: &MarkPageImageUploaded<'a>,
     ) -> BaseResult<()> {
-        mark_image_uploaded(context.conn(), oper.id, oper.image_version).await
+        mark_image_uploaded(
+            context.conn(),
+            oper.id,
+            oper.image_version,
+            oper.image_key,
+        )
+        .await
     }
 }
 

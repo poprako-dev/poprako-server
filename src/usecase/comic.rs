@@ -15,9 +15,10 @@ use crate::complex::image::ImageComplex;
 use crate::data::chapter::ChapterInfoVal;
 use crate::data::comic::{
     ComicInfoVal, CreateComicParams, CreateComicPayload, ListComicInfosParams,
-    ListComicInfosPayload, MarkComicCoverUploadedParams,
-    ReserveComicCoverParams, ReserveComicCoverPayload, UpdateComicInfoParams,
+    MarkComicCoverUploadedParams, ReserveComicCoverParams,
+    ReserveComicCoverPayload, UpdateComicInfoParams,
 };
+use crate::data::comic_list::ListComicInfosPayload;
 use crate::model::assignment::AssignmentEntry;
 use crate::model::chapter::ChapterEntry;
 use crate::model::comic::{ComicEntry, ComicInfoListSpec, ComicInfoUpdate};
@@ -552,6 +553,7 @@ where
     repo.run(&MarkComicCoverUploaded {
         id: &id,
         cover_version: params.cover_version,
+        cover_key: None,
     })
     .await?;
 

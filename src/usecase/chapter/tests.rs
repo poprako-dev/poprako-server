@@ -14,6 +14,10 @@
 // update_stage(update_stage)(negative): reviewer cannot advance another role's stage.
 // update_stage(update_stage)(negative): invalid workflow transition is rejected.
 // update_stage(update_stage)(positive): publishing enqueues page image deletion.
+// update_stage(update_stage)(positive): role holder advances own stage.
+// update_stage(update_stage)(negative): admin cannot advance when no role holder exists.
+// update_stage(update_stage)(positive): admin with workflow role advances when they hold the role.
+// update_stage(update_stage)(positive): admin reverts stage even when no role holder exists.
 // delete(delete)(positive): admin deletes chapter descendants, enqueues page image deletion, repins latest remaining chapter, and decrements comic.
 // delete(delete)(negative): non-admin delete rolls back.
 
@@ -368,6 +372,12 @@ async fn update_stage_admin_advances_any_stage() {
         RoleMask::from(RoleField::ADMIN),
     ));
 
+    mock.seed_assignment(assignment(
+        "chapter-1",
+        "user-2",
+        RoleMask::from(RoleField::PUBLISHER),
+    ));
+
     update_stage(
         &mock,
         &mock,
@@ -384,10 +394,11 @@ async fn update_stage_admin_advances_any_stage() {
     .ok()
     .unwrap();
 
-    assert_eq!(
-        mock.snapshot().chapters[0].stages.get_phase(Stage::Publish),
-        StagePhase::Completed
-    );
+    let snapshot = mock.snapshot();
+
+    let stages = &snapshot.chapters[0].stages;
+
+    assert_eq!(stages.get_phase(Stage::Publish), StagePhase::Completed);
 }
 
 #[tokio::test]
@@ -590,4 +601,169 @@ async fn delete_rolls_back_non_admin() {
     assert_eq!(snapshot.pages.len(), 1);
 
     assert!(snapshot.prom_records.is_empty());
+}
+
+#[tokio::test]
+async fn update_stage_role_holder_advances_own_stage() {
+    //
+    let mock = Mock::new();
+
+    seed_scope(&mock, "user-1", RoleMask::from(RoleField::TRANSLATOR));
+
+    mock.seed_chapter(chapter("chapter-1", "comic-1", 1, false));
+
+    mock.seed_assignment(assignment(
+        "chapter-1",
+        "user-1",
+        RoleMask::from(RoleField::TRANSLATOR),
+    ));
+
+    update_stage(
+        &mock,
+        &mock,
+        &mock,
+        &mock,
+        token("user-1"),
+        UpdateChapterStageParams {
+            id: "chapter-1".into(),
+            stage: Stage::Translate,
+            oper: StageOper::Advance,
+        },
+    )
+    .await
+    .ok()
+    .unwrap();
+
+    assert_eq!(
+        mock.snapshot().chapters[0]
+            .stages
+            .get_phase(Stage::Translate),
+        StagePhase::Active
+    );
+}
+
+#[tokio::test]
+async fn update_stage_admin_rejected_when_no_role_holder() {
+    //
+    let mock = Mock::new();
+
+    seed_scope(&mock, "user-1", RoleMask::from(RoleField::ADMIN));
+
+    mock.seed_chapter(chapter("chapter-1", "comic-1", 1, false));
+
+    mock.seed_assignment(assignment(
+        "chapter-1",
+        "user-1",
+        RoleMask::from(RoleField::ADMIN),
+    ));
+
+    let err = update_stage(
+        &mock,
+        &mock,
+        &mock,
+        &mock,
+        token("user-1"),
+        UpdateChapterStageParams {
+            id: "chapter-1".into(),
+            stage: Stage::Translate,
+            oper: StageOper::Advance,
+        },
+    )
+    .await
+    .err()
+    .unwrap();
+
+    assert_expected_variant(err, ExpectedVariant::Perm);
+}
+
+#[tokio::test]
+async fn update_stage_admin_with_workflow_role_advances() {
+    //
+    let mock = Mock::new();
+
+    seed_scope(
+        &mock,
+        "user-1",
+        RoleMask::from(RoleField::ADMIN)
+            .union(RoleMask::from(RoleField::TRANSLATOR)),
+    );
+
+    mock.seed_chapter(chapter("chapter-1", "comic-1", 1, false));
+
+    mock.seed_assignment(assignment(
+        "chapter-1",
+        "user-1",
+        RoleMask::from(RoleField::ADMIN)
+            .union(RoleMask::from(RoleField::TRANSLATOR)),
+    ));
+
+    update_stage(
+        &mock,
+        &mock,
+        &mock,
+        &mock,
+        token("user-1"),
+        UpdateChapterStageParams {
+            id: "chapter-1".into(),
+            stage: Stage::Translate,
+            oper: StageOper::Advance,
+        },
+    )
+    .await
+    .ok()
+    .unwrap();
+
+    assert_eq!(
+        mock.snapshot().chapters[0]
+            .stages
+            .get_phase(Stage::Translate),
+        StagePhase::Active
+    );
+}
+
+#[tokio::test]
+async fn update_stage_admin_reverts_without_role_holder() {
+    //
+    let mock = Mock::new();
+
+    seed_scope(&mock, "user-1", RoleMask::from(RoleField::ADMIN));
+
+    let mut chapter_info = chapter("chapter-1", "comic-1", 1, false);
+
+    chapter_info.stages = chapter_info
+        .stages
+        .try_set_phase(Stage::Translate, StagePhase::Active)
+        .ok()
+        .unwrap();
+
+    mock.seed_chapter(chapter_info);
+
+    mock.seed_assignment(assignment(
+        "chapter-1",
+        "user-1",
+        RoleMask::from(RoleField::ADMIN),
+    ));
+
+    update_stage(
+        &mock,
+        &mock,
+        &mock,
+        &mock,
+        token("user-1"),
+        UpdateChapterStageParams {
+            id: "chapter-1".into(),
+            stage: Stage::Translate,
+            oper: StageOper::Revert,
+        },
+    )
+    .await
+    .ok()
+    .unwrap();
+
+    assert_eq!(
+        mock.snapshot().chapters[0]
+            .stages
+            .get_phase(Stage::Translate),
+        StagePhase::Pending
+    );
 }

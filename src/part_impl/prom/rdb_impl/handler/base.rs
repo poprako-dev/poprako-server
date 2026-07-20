@@ -1,0 +1,131 @@
+//! Shared types and dispatch logic for the prom handler submodules.
+//!
+//! Defined here so that both the parent [`handler`] and its child modules
+//! (notably [`pool`]) can import without creating an upward ancestor
+//! dependency.
+//!
+//! [`handler`]: crate::part_impl::prom::rdb_impl::handler
+//! [`pool`]: crate::part_impl::prom::rdb_impl::handler::pool
+
+use poprako_orchestra::Nucl;
+use tokio_util::sync::CancellationToken;
+use tracing::instrument;
+
+use crate::part::image::ImageManager;
+use crate::part::prom::payload::Payload;
+use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
+use crate::part::repo::chapter::ChapterRepo;
+use crate::part::repo::comic::ComicRepo;
+use crate::part::repo::member_invitation::MemberInvitationRepo;
+use crate::part::repo::page::PageRepo;
+use crate::part::repo::team::TeamRepo;
+use crate::part::repo::user::UserRepo;
+use crate::part_impl::prom::rdb_impl::handler::task_flow::TaskFlow;
+use crate::part_impl::prom::rdb_impl::handler::{chapter, image, invitation};
+use crate::part_impl::prom::rdb_impl::repo::RdbPromRepo;
+use crate::part_impl::shared::{RdbContext, RdbCore};
+use crate::result::BaseError;
+
+/// Background worker that polls the `t_local_message` table, dispatches by topic,
+/// and completes or fails each record.
+pub struct RdbPromHandler<D, R, I> {
+    pub(super) core: RdbCore,
+    pub(super) nucl: D,
+
+    pub(super) repo: RdbPromRepo<R>,
+
+    pub(super) image_pool: I,
+
+    pub(super) token: CancellationToken,
+}
+
+impl<D, R, I> RdbPromHandler<D, R, I>
+where
+    D: Nucl<Context = RdbContext, Error = BaseError>,
+    R: AssignmentInvitationRepo<RdbContext>
+        + ChapterRepo<RdbContext>
+        + ComicRepo<RdbContext>
+        + MemberInvitationRepo<RdbContext>
+        + PageRepo<RdbContext>
+        + TeamRepo<RdbContext>
+        + UserRepo<RdbContext>
+        + Send
+        + Sync
+        + 'static,
+    I: ImageManager + Send + Sync + 'static,
+{
+    /// Builds a new prom background handler from its core, nucl, repo, and lifecycle channels.
+    pub fn new(
+        core: RdbCore,
+        nucl: D,
+        repo: RdbPromRepo<R>,
+        image_pool: I,
+        token: CancellationToken,
+    ) -> Self {
+        Self {
+            core,
+            nucl,
+            repo,
+            image_pool,
+            token,
+        }
+    }
+}
+
+/// Decodes and dispatches one persisted prom payload.
+#[instrument(level = "info", skip_all)]
+pub async fn dispatch_payload<D, R, I>(
+    nucl: &D,
+    repo: &R,
+    image_pool: &I,
+    topic: &str,
+    payload: &serde_json::Value,
+) -> TaskFlow
+where
+    D: Nucl<Context = RdbContext, Error = BaseError>,
+    R: AssignmentInvitationRepo<RdbContext>
+        + ChapterRepo<RdbContext>
+        + ComicRepo<RdbContext>
+        + MemberInvitationRepo<RdbContext>
+        + PageRepo<RdbContext>
+        + TeamRepo<RdbContext>
+        + UserRepo<RdbContext>
+        + Send
+        + Sync,
+    I: ImageManager + Send + Sync,
+{
+    let payload: Payload = match serde_json::from_value(payload.clone()) {
+        //
+        Ok(payload) => payload,
+
+        Err(error) => {
+            return TaskFlow::Dead(format!(
+                "failed to deserialize prom payload: {}",
+                error
+            ));
+        }
+    };
+
+    if payload.topic() != topic {
+        return TaskFlow::Dead(format!(
+            "prom topic {} does not match payload topic {}",
+            topic,
+            payload.topic()
+        ));
+    }
+
+    match payload {
+        //
+        Payload::CheckChapterUploadFinish(task) => {
+            chapter::handle(repo, &task).await
+        }
+
+        Payload::Image(task) => {
+            image::handle(nucl, repo, image_pool, &task).await
+        }
+
+        Payload::PurgeExpiredInvitation(event) => {
+            invitation::handle(nucl, repo, &event).await
+        }
+    }
+}

@@ -49,7 +49,12 @@ impl<R> RdbPromRepo<R> {
 
 // ── Operations ──────────────────────────────────────────────────────────────
 
-/// Poll for pending prom records that are visible now.
+/// Poll the oldest visible pending record from each topic without processing work.
+///
+/// A delayed retry is excluded before the per-topic selection, allowing later
+/// visible work from the same topic to advance. A processing record blocks only
+/// its own topic so separate application instances cannot consume that topic
+/// concurrently.
 pub struct PollPending;
 
 impl Oper for PollPending {
@@ -170,9 +175,6 @@ impl Oper for PurgeCompleted<'_> {
 
 // ── Step impls ──────────────────────────────────────────────────────────────
 
-/// Maximum number of pending records to poll in a single batch.
-const BATCH_SIZE: i64 = 10;
-
 impl<R> Step<PollPending, RdbContext> for RdbPromRepo<R>
 where
     R: Sync,
@@ -190,14 +192,34 @@ where
 
         use diesel_async::RunQueryDsl;
 
+        let processing_message =
+            diesel::alias!(t_local_message as processing_message);
+
+        let processing_topic = processing_message
+            .filter(
+                processing_message
+                    .field(t_local_message::f_status)
+                    .eq(LocalMessageStatus::Processing.as_str()),
+            )
+            .filter(
+                processing_message
+                    .field(t_local_message::f_topic)
+                    .eq(t_local_message::f_topic),
+            );
+
         let local_message_rows: Vec<LocalMessageRow> = t_local_message::table
             .filter(
                 t_local_message::f_status
                     .eq(LocalMessageStatus::Pending.as_str()),
             )
             .filter(t_local_message::f_visible_at.le(OffsetDateTime::now_utc()))
-            .order_by(t_local_message::f_created_at.asc())
-            .limit(BATCH_SIZE)
+            .filter(diesel::dsl::not(diesel::dsl::exists(processing_topic)))
+            .distinct_on(t_local_message::f_topic)
+            .order_by((
+                t_local_message::f_topic.asc(),
+                t_local_message::f_created_at.asc(),
+                t_local_message::f_id.asc(),
+            ))
             .select((
                 t_local_message::f_id,
                 t_local_message::f_topic,
