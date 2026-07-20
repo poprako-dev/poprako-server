@@ -30,6 +30,10 @@ use crate::result::{BaseError, BaseResult, accept};
 mod entity;
 mod handler;
 mod repo;
+#[cfg(all(test, feature = "rdb", feature = "prom_impl"))]
+mod test_shared;
+#[cfg(all(test, feature = "rdb", feature = "prom_impl"))]
+mod tests;
 
 // ── Handle type ────────────────────────────────────────────────────────────
 

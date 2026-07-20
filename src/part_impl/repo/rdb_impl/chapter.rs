@@ -6,7 +6,7 @@ use crate::part_impl::shared::RdbContext;
 
 mod orchestra;
 mod step_impl;
-#[cfg(all(test, feature = "repo"))]
-mod tests;
+#[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
+pub mod tests;
 
 impl ChapterRepo<RdbContext> for RdbRepo {}

@@ -1,4 +1,4 @@
-// system_mail_roundtrip_reads_test_database_url(SystemMailRepo)(positive): system mail repo sends, lists, and marks mail read in the local test database.
+// system_mail_roundtrip_uses_testcontainer(SystemMailRepo)(positive): system mail repo sends, lists, and marks mail read in an isolated PostgreSQL container.
 
 use super::*;
 
@@ -9,14 +9,11 @@ use crate::part::repo::oper::system_mail::{
     ListSystemMailInfos, MarkSystemMailRead, SendSystemMail,
 };
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
+use crate::part_impl::shared::RdbCore;
 
 const PREFIX: &str = "rdb-test-system-mail-domain-";
 
-#[tokio::test]
-async fn system_mail_roundtrip_reads_test_database_url() {
-    //
-    let shared = test_shared::shared().await;
-
+pub async fn system_mail_roundtrip_uses_testcontainer(shared: RdbCore) {
     test_shared::reset(&shared, PREFIX).await;
 
     let user_fixture = test_shared::seed_user(&shared, PREFIX).await;

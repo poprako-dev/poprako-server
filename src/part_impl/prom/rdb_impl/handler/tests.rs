@@ -1,5 +1,6 @@
 // image_payloads_from_rdb_dispatch(dispatch_payload)(positive): payloads stored by the RDB defer path are decoded and dispatched by their topic.
 
+#[allow(unused_imports)]
 use super::*;
 
 use diesel::prelude::*;
@@ -7,21 +8,20 @@ use diesel_async::RunQueryDsl;
 use poprako_orchestra_extra::prom::task::Task;
 use time::OffsetDateTime;
 
-use crate::part::prom::payload::image;
+use crate::part::prom::payload::{Payload, image};
 use crate::part_impl::drive::rdb_impl::RdbDrive;
 use crate::part_impl::prom::rdb_impl::entity::LocalMessageEntry;
 use crate::part_impl::prom::rdb_impl::handler::base::dispatch_payload;
 use crate::part_impl::prom::rdb_impl::handler::task_flow::TaskFlow;
+use crate::part_impl::prom::rdb_impl::repo::RdbPromRepo;
+use crate::part_impl::prom::rdb_impl::test_shared;
 use crate::part_impl::repo::mock_impl::Mock;
-use crate::part_impl::repo::rdb_impl::{RdbRepo, schema, test_shared};
+use crate::part_impl::repo::rdb_impl::{RdbRepo, schema};
+use crate::part_impl::shared::RdbCore;
 
 const PREFIX: &str = "rdb-test-prom-handler-";
 
-#[tokio::test]
-async fn image_payloads_from_rdb_dispatch() {
-    //
-    let shared = test_shared::shared().await;
-
+pub async fn image_payloads_from_rdb_dispatch(shared: RdbCore) {
     test_shared::reset(&shared, PREFIX).await;
 
     let delete_id = "rdb-test-prom-handler-delete".to_string();
@@ -36,12 +36,10 @@ async fn image_payloads_from_rdb_dispatch() {
         delay: None,
     };
 
-    let delete_local_message_entry = LocalMessageEntry::from_task(
-        &delete_task,
-        OffsetDateTime::now_utc(),
-    )
-    .ok()
-    .unwrap();
+    let delete_local_message_entry =
+        LocalMessageEntry::from_task(&delete_task, OffsetDateTime::now_utc())
+            .ok()
+            .unwrap();
 
     let mut conn = shared.get().await.ok().unwrap();
 
@@ -54,8 +52,7 @@ async fn image_payloads_from_rdb_dispatch() {
 
     let delete_payload: serde_json::Value = schema::t_local_message::table
         .filter(
-            schema::t_local_message::f_id
-                .eq("rdb-test-prom-handler-delete"),
+            schema::t_local_message::f_id.eq("rdb-test-prom-handler-delete"),
         )
         .select(schema::t_local_message::f_payload)
         .first(&mut conn)
@@ -100,12 +97,10 @@ async fn image_payloads_from_rdb_dispatch() {
         delay: None,
     };
 
-    let check_uploaded_local_message_entry = LocalMessageEntry::from_task(
-        &check_task,
-        OffsetDateTime::now_utc(),
-    )
-    .ok()
-    .unwrap();
+    let check_uploaded_local_message_entry =
+        LocalMessageEntry::from_task(&check_task, OffsetDateTime::now_utc())
+            .ok()
+            .unwrap();
 
     diesel::insert_into(schema::t_local_message::table)
         .values(&check_uploaded_local_message_entry)
@@ -116,15 +111,15 @@ async fn image_payloads_from_rdb_dispatch() {
 
     let check_uploaded_payload: serde_json::Value =
         schema::t_local_message::table
-                .filter(
-                    schema::t_local_message::f_id
-                        .eq("rdb-test-prom-handler-check-uploaded"),
-                )
-                .select(schema::t_local_message::f_payload)
-                .first(&mut conn)
-                .await
-                .ok()
-                .unwrap();
+            .filter(
+                schema::t_local_message::f_id
+                    .eq("rdb-test-prom-handler-check-uploaded"),
+            )
+            .select(schema::t_local_message::f_payload)
+            .first(&mut conn)
+            .await
+            .ok()
+            .unwrap();
 
     let image_pool = Mock::new().with_image_head_absent();
 

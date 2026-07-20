@@ -1,4 +1,4 @@
-// comment_roundtrip_reads_test_database_url(CreateComment, ListCommentInfos)(positive): comment repo creates and lists included users in the local test database.
+// comment_roundtrip_uses_testcontainer(CreateComment, ListCommentInfos)(positive): comment repo creates and lists included users in an isolated PostgreSQL container.
 
 use super::*;
 
@@ -8,16 +8,13 @@ use crate::model::comment::{CommentEntry, CommentListSpec};
 use crate::part::repo::oper::comment::{CreateComment, ListCommentInfos};
 use crate::part_impl::drive::rdb_impl::RdbDrive;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
+use crate::part_impl::shared::RdbCore;
 use crate::result::BaseError;
 use crate::value::comment::CommentInclOpt;
 
 const PREFIX: &str = "rdb-test-comment-domain-";
 
-#[tokio::test]
-async fn comment_roundtrip_reads_test_database_url() {
-    //
-    let shared = test_shared::shared().await;
-
+pub async fn comment_roundtrip_uses_testcontainer(shared: RdbCore) {
     test_shared::reset(&shared, PREFIX).await;
 
     let team_fixture = test_shared::seed_user_and_team(&shared, PREFIX).await;

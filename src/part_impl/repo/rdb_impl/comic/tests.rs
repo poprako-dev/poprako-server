@@ -1,4 +1,4 @@
-// comic_roundtrip_reads_test_database_url(ComicRepo)(positive): comic repo persists, lists by one-based display index, and refreshes composed search after update.
+// comic_roundtrip_uses_testcontainer(ComicRepo)(positive): comic repo persists, lists by one-based display index, and refreshes composed search after update.
 
 use poprako_orchestra::Run as _;
 
@@ -9,15 +9,12 @@ use crate::part::repo::oper::comic::{
     GetComicInfo, ListComicInfos, UpdateComic,
 };
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
+use crate::part_impl::shared::RdbCore;
 use crate::value::comic::ComicInclOpt;
 
 const PREFIX: &str = "rdb-test-comic-domain-";
 
-#[tokio::test]
-async fn comic_roundtrip_reads_test_database_url() {
-    //
-    let shared = test_shared::shared().await;
-
+pub async fn comic_roundtrip_uses_testcontainer(shared: RdbCore) {
     test_shared::reset(&shared, PREFIX).await;
 
     let comic_fixture = test_shared::seed_comic(&shared, PREFIX).await;

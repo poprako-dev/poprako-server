@@ -9,7 +9,7 @@ use crate::part_impl::prom::rdb_impl::handler::task_flow::TaskFlow;
 use crate::part_impl::shared::RdbContext;
 use crate::result::BaseResult;
 
-#[cfg(test)]
+#[cfg(all(test, feature = "rdb", feature = "prom_impl"))]
 mod tests;
 
 /// Completes raw provision or retries while chapter uploads are incomplete.
