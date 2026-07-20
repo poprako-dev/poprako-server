@@ -9,8 +9,9 @@ use diesel_async::RunQueryDsl;
 use time::Duration;
 
 use crate::part_impl::prom::rdb_impl::entity::LocalMessageEntry;
-use crate::part_impl::repo::rdb_impl::{RdbRepo, schema, test_shared};
-use crate::part_impl::shared::RdbContext;
+use crate::part_impl::prom::rdb_impl::test_shared;
+use crate::part_impl::repo::rdb_impl::{RdbRepo, schema};
+use crate::part_impl::shared::{RdbContext, RdbCore};
 
 const PREFIX: &str = "rdb-test-prom-purge-";
 const POLL_PREFIX: &str = "rdb-test-prom-poll-";
@@ -32,11 +33,9 @@ fn local_message_entry(
     }
 }
 
-#[tokio::test]
-async fn poll_pending_selects_one_visible_message_per_idle_topic() {
-    //
-    let shared = test_shared::shared().await;
-
+pub async fn poll_pending_selects_one_visible_message_per_idle_topic(
+    shared: RdbCore,
+) {
     test_shared::reset(&shared, POLL_PREFIX).await;
 
     let now = OffsetDateTime::now_utc();
@@ -112,11 +111,9 @@ async fn poll_pending_selects_one_visible_message_per_idle_topic() {
         .unwrap();
 }
 
-#[tokio::test]
-async fn retry_message_allows_later_topic_message_to_advance() {
-    //
-    let shared = test_shared::shared().await;
-
+pub async fn retry_message_allows_later_topic_message_to_advance(
+    shared: RdbCore,
+) {
     test_shared::reset(&shared, POLL_PREFIX).await;
 
     let now = OffsetDateTime::now_utc();
@@ -185,11 +182,9 @@ async fn retry_message_allows_later_topic_message_to_advance() {
         .unwrap();
 }
 
-#[tokio::test]
-async fn completed_message_purge_preserves_non_completed_records() {
-    //
-    let shared = test_shared::shared().await;
-
+pub async fn completed_message_purge_preserves_non_completed_records(
+    shared: RdbCore,
+) {
     test_shared::reset(&shared, PREFIX).await;
 
     let now = OffsetDateTime::now_utc();

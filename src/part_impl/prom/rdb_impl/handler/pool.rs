@@ -25,7 +25,7 @@ use crate::part_impl::repo::rdb_impl::RdbRepo;
 use crate::part_impl::shared::RdbContext;
 use crate::result::BaseResult;
 
-#[cfg(test)]
+#[cfg(all(test, feature = "rdb", feature = "prom_impl"))]
 mod tests;
 
 const WORKER_COUNT: usize = 4;

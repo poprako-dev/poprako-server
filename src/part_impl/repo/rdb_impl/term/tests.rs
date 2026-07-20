@@ -10,15 +10,12 @@ use crate::part::repo::oper::term::{CreateTerm, GetTermInfo, ListTermInfos};
 use crate::part::repo::oper::termbase::CreateTermbase;
 use crate::part_impl::drive::rdb_impl::RdbDrive;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
+use crate::part_impl::shared::RdbCore;
 use crate::result::BaseError;
 
 const PREFIX: &str = "rdb-test-term-domain-";
 
-#[tokio::test]
-async fn term_array_unique_and_fuzzy_roundtrip() {
-    //
-    let shared = test_shared::shared().await;
-
+pub async fn term_array_unique_and_fuzzy_roundtrip(shared: RdbCore) {
     let comic_fixture = test_shared::seed_comic(&shared, PREFIX).await;
 
     let repo = RdbRepo::new(shared.clone());

@@ -1,4 +1,4 @@
-// page_roundtrip_reads_test_database_url(SetPageUnitCounters, ReservePageImage, ListPageInfos)(positive): page repo persists, returns the replaced image key, and updates page counters in the local test database.
+// page_roundtrip_uses_testcontainer(SetPageUnitCounters, ReservePageImage, ListPageInfos)(positive): page repo persists, returns the replaced image key, and updates page counters in an isolated PostgreSQL container.
 
 use super::*;
 
@@ -12,15 +12,12 @@ use crate::part::repo::oper::page::{
 };
 use crate::part_impl::drive::rdb_impl::RdbDrive;
 use crate::part_impl::repo::rdb_impl::test_shared;
+use crate::part_impl::shared::RdbCore;
 use crate::result::BaseError;
 
 const PREFIX: &str = "rdb-test-page-domain-";
 
-#[tokio::test]
-async fn page_roundtrip_reads_test_database_url() {
-    //
-    let shared = test_shared::shared().await;
-
+pub async fn page_roundtrip_uses_testcontainer(shared: RdbCore) {
     test_shared::reset(&shared, PREFIX).await;
 
     let page_fixture = test_shared::seed_page(&shared, PREFIX).await;

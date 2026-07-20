@@ -112,12 +112,7 @@ fn record_without_matched_path_changes_only_total() {
     //
     let metric_window = MetricWindow::new();
 
-    metric_window.record(
-        100,
-        404,
-        None,
-        std::time::Duration::from_millis(10),
-    );
+    metric_window.record(100, 404, None, std::time::Duration::from_millis(10));
 
     let metric_total = metric_window.read(100);
 

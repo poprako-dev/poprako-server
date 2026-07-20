@@ -19,8 +19,8 @@ use crate::part_impl::shared::RdbContext;
 use crate::part_impl::shared::result::diesel;
 use crate::result::{BaseError, BaseResult, accept};
 
-#[cfg(all(test, feature = "repo"))]
-mod tests;
+#[cfg(all(test, feature = "rdb", feature = "prom_impl"))]
+pub mod tests;
 
 // ── Handle ──────────────────────────────────────────────────────────────────
 

@@ -1,5 +1,5 @@
-// unit_roundtrip_reads_test_database_url(UnitRepo)(positive): unit repo creates, saves, restores, reindexes, and lists units.
-// unit_roundtrip_reads_test_database_url(UnitRepo)(negative): unit create rejects an existing server id without mutation.
+// unit_roundtrip_uses_testcontainer(UnitRepo)(positive): unit repo creates, saves, restores, reindexes, and lists units.
+// unit_roundtrip_uses_testcontainer(UnitRepo)(negative): unit create rejects an existing server id without mutation.
 
 use poprako_orchestra::{Nucl as _, Run as _, Step as _};
 
@@ -11,7 +11,8 @@ use crate::part::repo::oper::unit::{
 };
 use crate::part_impl::drive::rdb_impl::RdbDrive;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
-use crate::result::{BaseResult, accept};
+use crate::part_impl::shared::RdbCore;
+use crate::result::accept;
 
 const PREFIX: &str = "rdb-test-unit-domain-";
 
@@ -28,11 +29,7 @@ fn unit_payload(text: Option<&str>, proofread: bool) -> UnitContent {
     }
 }
 
-#[tokio::test]
-async fn unit_roundtrip_reads_test_database_url() {
-    //
-    let shared = test_shared::shared().await;
-
+pub async fn unit_roundtrip_uses_testcontainer(shared: RdbCore) {
     test_shared::reset(&shared, PREFIX).await;
 
     let page_fixture = test_shared::seed_page(&shared, PREFIX).await;

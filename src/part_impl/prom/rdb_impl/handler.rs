@@ -14,6 +14,6 @@ mod image;
 /// Prom invitation event handler.
 mod invitation;
 mod pool;
-#[cfg(all(test, feature = "repo"))]
-mod tests;
 mod task_flow;
+#[cfg(all(test, feature = "rdb", feature = "prom_impl"))]
+pub mod tests;

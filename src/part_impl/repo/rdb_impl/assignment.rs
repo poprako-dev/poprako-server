@@ -30,8 +30,8 @@ use crate::result::{BaseError, BaseResult, accept};
 use crate::value::assignment::AssignmentInclOpt;
 use crate::value::role::RoleField;
 
-#[cfg(all(test, feature = "repo"))]
-mod tests;
+#[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
+pub mod tests;
 
 impl AssignmentRepo<RdbContext> for RdbRepo {}
 

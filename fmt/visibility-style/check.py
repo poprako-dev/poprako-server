@@ -473,7 +473,7 @@ def self_test() -> int:
             "pub struct Named { pub value: i32, pub(crate) other: i32 }\n"
             "pub struct Tuple(pub i32, pub(super) i32);\n"
             "#[cfg(test)] pub(crate) fn ignored() {}\n"
-            "#[cfg(all(test, feature = \"repo\"))] pub struct TestOnly { pub value: i32 }\n",
+            "#[cfg(all(test, feature = \"rdb\"))] pub struct TestOnly { pub value: i32 }\n",
         )
         diagnostics = check_root(root)
         codes = diagnostic_codes(diagnostics)
