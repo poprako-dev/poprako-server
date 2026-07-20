@@ -16,6 +16,7 @@ const PREFIX: &str = "rdb-test-term-domain-";
 
 #[tokio::test]
 async fn term_array_unique_and_fuzzy_roundtrip() {
+    //
     let shared = test_shared::shared().await;
 
     let comic_fixture = test_shared::seed_comic(&shared, PREFIX).await;
@@ -35,6 +36,7 @@ async fn term_array_unique_and_fuzzy_roundtrip() {
 
     drive
         .coord(async |context| {
+            //
             repo.step(
                 context,
                 &CreateTermbase {
@@ -60,6 +62,7 @@ async fn term_array_unique_and_fuzzy_roundtrip() {
 
     drive
         .coord(async |context| {
+            //
             repo.step(&mut *context, &CreateTerm { entry: &term_entry })
                 .await?;
 

@@ -75,6 +75,7 @@ pub async fn list_team_infos(
     Extension(user_token): Extension<UserToken>,
     Query(query): Query<TermbaseListQuery>,
 ) -> HttpResult<Vec<TermbaseInfoVal>> {
+    //
     let params = ListTeamTermbaseInfosParams {
         team_id,
         fuzzy_name: query.fuzzy_name,
@@ -106,6 +107,7 @@ pub async fn list_comic_infos(
     Extension(user_token): Extension<UserToken>,
     Query(query): Query<TermbaseListQuery>,
 ) -> HttpResult<Vec<TermbaseInfoVal>> {
+    //
     let params = ListComicTermbaseInfosParams {
         comic_id,
         fuzzy_name: query.fuzzy_name,
@@ -161,6 +163,7 @@ pub async fn update_info(
     Extension(user_token): Extension<UserToken>,
     Json(params): Json<UpdateTermbaseInfoParams>,
 ) -> HttpNoContent {
+    //
     ensure_path_matches_body_id(&termbase_id, &params.id)?;
 
     usecase::termbase::update_info(
@@ -192,6 +195,7 @@ pub async fn delete(
     Path(termbase_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
+    //
     usecase::termbase::delete(
         harn.drive(),
         harn.repo(),

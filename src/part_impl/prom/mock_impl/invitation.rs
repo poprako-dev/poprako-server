@@ -7,7 +7,7 @@ use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::{BaseResult, accept};
 
 /// Process a [`PurgeExpiredInvitation`] event by dispatching to the matching repo step.
-pub(super) async fn process(
+pub async fn process(
     mock: &Mock,
     event: &PurgeExpiredInvitation,
 ) -> BaseResult<()> {

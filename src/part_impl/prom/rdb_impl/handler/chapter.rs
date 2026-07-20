@@ -5,7 +5,7 @@ use tracing::instrument;
 use crate::part::prom::payload::chapter::CheckUploadFinish;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::oper::chapter::CompleteChapterRawProvide;
-use crate::part_impl::prom::rdb_impl::handler::TaskFlow;
+use crate::part_impl::prom::rdb_impl::handler::task_flow::TaskFlow;
 use crate::part_impl::shared::RdbContext;
 
 /// Completes raw provision only when all chapter pages are uploaded.

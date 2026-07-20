@@ -1,11 +1,9 @@
 //! Diesel-backed terminology-base repository operations.
 
-use diesel::BoolExpressionMethods as _;
-use diesel::ExpressionMethods as _;
-use diesel::OptionalExtension as _;
-use diesel::PgTextExpressionMethods as _;
-use diesel::QueryDsl as _;
-use diesel::SelectableHelper as _;
+use diesel::{
+    BoolExpressionMethods as _, ExpressionMethods as _, OptionalExtension as _,
+    PgTextExpressionMethods as _, QueryDsl as _, SelectableHelper as _,
+};
 use diesel_async::RunQueryDsl as _;
 use poprako_orchestra::{Run, Step};
 use time::OffsetDateTime;
@@ -43,6 +41,7 @@ fn escape_ilike_pattern(input: &str) -> String {
 
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn get_info(conn: &mut RdbConn, id: &str) -> BaseResult<TermbaseInfo> {
+    //
     let row: TermbaseRow = t_termbase
         .filter(f_id.eq(id))
         .select(TermbaseRow::as_select())
@@ -60,6 +59,7 @@ async fn get_info_excluded(
     conn: &mut RdbConn,
     id: &str,
 ) -> BaseResult<TermbaseInfo> {
+    //
     let row: TermbaseRow = t_termbase
         .filter(f_id.eq(id))
         .select(TermbaseRow::as_select())
@@ -78,19 +78,23 @@ async fn list_infos(
     conn: &mut RdbConn,
     spec: &TermbaseInfoListSpec,
 ) -> BaseResult<Vec<TermbaseInfo>> {
+    //
     let mut query = t_termbase.select(TermbaseRow::as_select()).into_boxed();
 
     let (fuzzy_name, offset, limit) = match spec {
+        //
         TermbaseInfoListSpec::Team {
             team_id,
             fuzzy_name,
             offset,
             limit,
         } => {
+            //
             query = query.filter(f_team_id.eq(team_id));
 
             (fuzzy_name, offset, limit)
         }
+
         TermbaseInfoListSpec::Comic {
             team_id,
             comic_id,
@@ -98,6 +102,7 @@ async fn list_infos(
             offset,
             limit,
         } => {
+            //
             query =
                 query.filter(f_team_id.eq(team_id).or(f_comic_id.eq(comic_id)));
 
@@ -106,6 +111,7 @@ async fn list_infos(
     };
 
     if let Some(fuzzy_name) = fuzzy_name {
+        //
         let escaped = escape_ilike_pattern(fuzzy_name);
 
         let pattern = format!("%{}%", escaped);
@@ -129,7 +135,9 @@ async fn list_infos_excluded(
     conn: &mut RdbConn,
     oper: &ListTermbaseInfosExcluded<'_>,
 ) -> BaseResult<Vec<TermbaseInfo>> {
+    //
     let rows: Vec<TermbaseRow> = match oper {
+        //
         ListTermbaseInfosExcluded::Team { team_id } => t_termbase
             .filter(f_team_id.eq(team_id))
             .select(TermbaseRow::as_select())
@@ -137,6 +145,7 @@ async fn list_infos_excluded(
             .load(conn)
             .await
             .map_err(diesel)?,
+
         ListTermbaseInfosExcluded::Comic { comic_id } => t_termbase
             .filter(f_comic_id.eq(comic_id))
             .select(TermbaseRow::as_select())
@@ -154,6 +163,7 @@ async fn create(
     conn: &mut RdbConn,
     termbase_entry: &TermbaseEntry,
 ) -> BaseResult<TermbaseInfo> {
+    //
     let entry = TermbaseRowEntry::from(termbase_entry);
 
     let row: TermbaseRow = diesel::insert_into(t_termbase)
@@ -171,6 +181,7 @@ async fn update_info(
     conn: &mut RdbConn,
     update: &TermbaseInfoUpdate,
 ) -> BaseResult<()> {
+    //
     diesel::update(t_termbase.filter(f_id.eq(&update.id)))
         .set((
             f_name.eq(&update.name),
@@ -190,6 +201,7 @@ async fn update_term_count(
     id: &str,
     delta: i32,
 ) -> BaseResult<()> {
+    //
     diesel::update(t_termbase.filter(f_id.eq(id)))
         .set((
             f_term_count.eq(f_term_count + delta),
@@ -204,6 +216,7 @@ async fn update_term_count(
 
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn touch(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
+    //
     diesel::update(t_termbase.filter(f_id.eq(id)))
         .set(f_updated_at.eq(OffsetDateTime::now_utc()))
         .execute(conn)
@@ -215,6 +228,7 @@ async fn touch(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
 
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn delete(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
+    //
     diesel::delete(t_termbase.filter(f_id.eq(id)))
         .execute(conn)
         .await

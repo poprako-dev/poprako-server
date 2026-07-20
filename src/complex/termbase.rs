@@ -33,6 +33,7 @@ fn empty_name_error() -> BaseError {
 }
 
 fn normalize_name(name: String) -> BaseResult<String> {
+    //
     let name = name.trim().to_string();
 
     if name.is_empty() {
@@ -44,10 +45,13 @@ fn normalize_name(name: String) -> BaseResult<String> {
 
 fn normalize_optional(value: Option<String>) -> Option<String> {
     value.and_then(|value| {
+        //
         let value = value.trim().to_string();
 
         match value.is_empty() {
+            //
             true => None,
+
             false => Some(value),
         }
     })
@@ -70,8 +74,11 @@ impl TermbaseComplex {
         description: Option<String>,
         creator_id: String,
     ) -> BaseResult<TermbaseEntry> {
+        //
         match (&team_id, &comic_id) {
+            //
             (Some(_), None) | (None, Some(_)) => {}
+
             _ => return Err(invalid_scope_error()),
         }
 
@@ -95,6 +102,7 @@ impl TermbaseComplex {
         name: String,
         description: Option<String>,
     ) -> BaseResult<TermbaseInfoUpdate> {
+        //
         let name = normalize_name(name)?;
 
         let description = normalize_optional(description);

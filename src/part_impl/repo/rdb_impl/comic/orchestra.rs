@@ -9,7 +9,7 @@ use crate::part::repo::oper::comic::{
     UpdateComic, UpdateComicChapterCount,
 };
 use crate::part_impl::repo::rdb_impl::RdbRepo;
-use crate::part_impl::repo::rdb_impl::comic::{
+use crate::part_impl::repo::rdb_impl::comic::step_impl::{
     create, delete, get_info_by_id, get_info_excluded, incr_chapter_next_index,
     list_infos, list_infos_excluded, mark_cover_uploaded, reserve_cover,
     touch_last_active, update_chapter_count, update_info,

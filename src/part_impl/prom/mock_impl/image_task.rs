@@ -1,5 +1,5 @@
 /// Tracks whether an image resource is up-to-date, stale, or missing.
-pub(super) enum ResourceState {
+pub enum ResourceState {
     /// The image version matches the current DB record.
     Current,
     /// The image version is outdated; the resource has been superseded.

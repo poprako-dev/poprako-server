@@ -61,9 +61,12 @@ where
 
     let termbase_id = nucl
         .coord(async move |context| {
+            //
             let team_id =
                 match (&termbase_entry.team_id, &termbase_entry.comic_id) {
+                    //
                     (Some(team_id), None) => {
+                        //
                         let team_info = repo
                             .step(
                                 context,
@@ -73,7 +76,9 @@ where
 
                         team_info.id
                     }
+
                     (None, Some(comic_id)) => {
+                        //
                         let comic_info = repo
                             .step(
                                 context,
@@ -95,6 +100,7 @@ where
 
                         workset_info.team_id
                     }
+
                     _ => unreachable!(),
                 };
 
@@ -196,21 +202,24 @@ pub async fn list_comic_infos<C, R>(
 where
     R: TermbaseRepo<C> + ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Sync,
 {
-    let mut proxy = run_proxy! {
-        repo =>
-            for<'a, 'b> GetComicInfo<'a, 'b>,
-            for<'a> GetWorksetInfo<'a>,
-            for<'a> FindMemberInfo<'a>;
-    };
-
     let team_id = TermbasePermComplex::resolve_team_id_from_comic(
-        &mut proxy,
+        &mut run_proxy! {
+            repo =>
+                for<'a, 'b> GetComicInfo<'a, 'b>,
+                for<'a> GetWorksetInfo<'a>,
+                for<'a> FindMemberInfo<'a>;
+        },
         &params.comic_id,
     )
     .await?;
 
     TermbasePermComplex::ensure_user_can_read_team(
-        &mut proxy,
+        &mut run_proxy! {
+            repo =>
+                for<'a, 'b> GetComicInfo<'a, 'b>,
+                for<'a> GetWorksetInfo<'a>,
+                for<'a> FindMemberInfo<'a>;
+        },
         &token.user_id,
         &team_id,
     )
@@ -258,6 +267,7 @@ where
     )?;
 
     nucl.coord(async move |context| {
+        //
         let termbase_info = repo
             .step(
                 context,
@@ -315,6 +325,7 @@ where
         + Sync,
 {
     nucl.coord(async move |context| {
+        //
         let termbase_info = repo
             .step(context, &GetTermbaseInfoExcluded { id: &id })
             .await?;

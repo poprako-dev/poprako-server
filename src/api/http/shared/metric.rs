@@ -302,11 +302,13 @@ impl MetricWindow {
     }
 
     fn read_recent_minutes(&self, minute: u64) -> Vec<MetricMinute> {
+        //
         let first_minute =
             minute.saturating_sub(RECENT_MINUTE_COUNT as u64 - 1);
 
         (first_minute..=minute)
             .map(|window_minute| {
+                //
                 let bucket_index = window_minute as usize % BUCKET_COUNT;
 
                 let bucket = lock_bucket(&self.buckets[bucket_index]);
@@ -319,7 +321,9 @@ impl MetricWindow {
 
 impl MetricMinute {
     fn from_bucket(minute: u64, bucket: &MetricBucket) -> Self {
+        //
         let (total, total_latency_micros) = match bucket.minute == minute {
+            //
             true => (bucket.total, bucket.total_latency_micros),
 
             false => (0, 0),
@@ -376,6 +380,7 @@ fn lock_bucket(bucket: &Mutex<MetricBucket>) -> MutexGuard<'_, MetricBucket> {
 
 fn average_latency_ms(total_latency_micros: u64, total: u64) -> f64 {
     match total {
+        //
         0 => 0.0,
 
         _ => total_latency_micros as f64 / total as f64 / 1_000.0,

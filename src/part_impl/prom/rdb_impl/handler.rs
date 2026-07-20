@@ -8,9 +8,8 @@ use std::time::Duration as StdDuration;
 use poprako_orchestra::{Nucl, Step as _};
 use time::{Duration, OffsetDateTime};
 use tokio::time::sleep;
-use tracing::instrument;
-
 use tokio_util::sync::CancellationToken;
+use tracing::instrument;
 
 use crate::part::image::ImageManager;
 use crate::part::prom::payload::Payload;
@@ -192,15 +191,9 @@ const PROCESSING_TIMEOUT: Duration = Duration::minutes(15);
 const COMPLETED_RETENTION: Duration = Duration::days(7);
 const COMPLETED_PURGE_INTERVAL: Duration = Duration::hours(1);
 
-/// Outcome of processing one prom task — dictates how the handler updates the record.
-pub enum TaskFlow {
-    /// Task completed successfully; move record to Completed status.
-    Complete,
-    /// Task encountered a transient error; schedule for retry.
-    Retry(String),
-    /// Task encountered a fatal error; move record to Dead status.
-    Dead(String),
-}
+mod task_flow;
+
+use task_flow::TaskFlow;
 
 /// Background worker that polls the `t_local_message` table, dispatches by topic,
 /// and completes or fails each record.

@@ -9,7 +9,7 @@ use crate::part::repo::oper::assignment_invitation::{
     PurgeExpiredAssignmentInvitation,
 };
 use crate::part_impl::repo::rdb_impl::RdbRepo;
-use crate::part_impl::repo::rdb_impl::assignment_invitation::{
+use crate::part_impl::repo::rdb_impl::assignment_invitation::step_impl::{
     create, delete, delete_by_chapter_id, get_info_by_code_excluded,
     get_info_by_id, list_infos, mark_pending_as_used, purge_pending,
 };

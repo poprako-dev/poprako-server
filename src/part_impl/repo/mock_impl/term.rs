@@ -39,6 +39,7 @@ fn source_conflicts(
 }
 
 fn list_infos(state: &MockState, spec: &TermInfoListSpec) -> Vec<TermInfo> {
+    //
     let mut term_infos = state
         .terms
         .iter()
@@ -47,6 +48,7 @@ fn list_infos(state: &MockState, spec: &TermInfoListSpec) -> Vec<TermInfo> {
         .collect::<Vec<_>>();
 
     if let Some(fuzzy_source) = &spec.fuzzy_source {
+        //
         let fuzzy_source = fuzzy_source.to_lowercase();
 
         term_infos.retain(|term_info| {
@@ -68,6 +70,7 @@ impl<'a> Run<GetTermInfo<'a>> for Mock {
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(&self, oper: &GetTermInfo<'a>) -> BaseResult<TermInfo> {
+        //
         let state = self.state.lock().unwrap();
 
         get_info(&state, oper.id)
@@ -79,6 +82,7 @@ impl<'a> Run<ListTermInfos<'a>> for Mock {
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(&self, oper: &ListTermInfos<'a>) -> BaseResult<Vec<TermInfo>> {
+        //
         let state = self.state.lock().unwrap();
 
         accept(list_infos(&state, oper.spec))
@@ -94,6 +98,7 @@ impl<'a> Step<CreateTerm<'a>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &CreateTerm<'a>,
     ) -> BaseResult<TermInfo> {
+        //
         if source_conflicts(
             &context.state,
             None,
@@ -153,6 +158,7 @@ impl<'a> Step<UpdateTerm<'a>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &UpdateTerm<'a>,
     ) -> BaseResult<()> {
+        //
         let current = get_info(&context.state, &oper.update.id)?;
 
         if source_conflicts(
@@ -192,6 +198,7 @@ impl<'a> Step<DeleteTerm<'a>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &DeleteTerm<'a>,
     ) -> BaseResult<()> {
+        //
         let position = context
             .state
             .terms
@@ -214,6 +221,7 @@ impl<'a> Step<DeleteTerms<'a>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &DeleteTerms<'a>,
     ) -> BaseResult<()> {
+        //
         context
             .state
             .terms

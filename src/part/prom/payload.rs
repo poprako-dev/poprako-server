@@ -26,7 +26,7 @@ pub enum Payload {
 
 impl Payload {
     /// Returns the routing topic string (e.g. `"image"`) for this payload.
-    pub(crate) fn topic(&self) -> &'static str {
+    pub fn topic(&self) -> &'static str {
         match self {
             //
             Self::CheckChapterUploadFinish(_) => "check_chapter_upload_finish",

@@ -117,6 +117,7 @@ async fn comic_archive_roundtrip_reads_test_database_url() {
         decompress_archive(&comic_archived_bytes).unwrap();
 
     assert_eq!(archive_team_id, page_fixture.team_entry.id);
+
     assert_eq!(comic_archiver_id, archiver_id);
 
     assert_eq!(comic_created_at, comic_archive_write.record.created_at);
