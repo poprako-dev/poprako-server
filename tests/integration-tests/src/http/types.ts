@@ -78,6 +78,7 @@ export interface TermInfoVal {
 export interface ListComicInfosPayload {
     comics: ComicInfoVal[];
     pinned_chapters: (ChapterInfoVal | null)[];
+    pinned_chapter_assignments: AssignmentInfoVal[][];
 }
 
 export interface ChapterInfoVal {

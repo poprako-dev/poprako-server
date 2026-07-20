@@ -51,4 +51,8 @@ impl InclOpt for ComicInclOpt {
 pub enum ComicWithOpt {
     /// Populate the parallel pinned-chapter list.
     PinnedChapter,
+
+    /// Populate assignments for each pinned chapter. Requires
+    /// `pinned_chapter` in the same request.
+    PinnedChapterAssignment,
 }
