@@ -58,7 +58,7 @@ fn find_team(state: &MockState, workset: &WorksetInfo) -> Option<TeamInfo> {
 
 /// Applies the requested include options to an [`AssignmentInfo`], resolving
 /// user, chapter, comic, workset, team, and creator relations from the mock state.
-pub(super) fn apply_assignment_incls(
+pub fn apply_assignment_incls(
     state: &MockState,
     assignment: &mut AssignmentInfo,
     incls: &[AssignmentInclOpt],

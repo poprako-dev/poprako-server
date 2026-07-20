@@ -41,7 +41,6 @@ pub struct ComicArchiveRecord {
 }
 
 /// Archive rows and the source IDs that must be deleted atomically.
-// FIXME: bad naming.
 pub struct ComicArchiveWrite {
     pub record: ComicArchiveRecord,
     pub source_comic_id: String,

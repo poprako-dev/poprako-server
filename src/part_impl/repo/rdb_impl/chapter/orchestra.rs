@@ -12,7 +12,7 @@ use crate::part::repo::oper::chapter::{
     UnpinOtherChapters, UpdateChapter, UpdateChapterStage,
 };
 use crate::part_impl::repo::rdb_impl::RdbRepo;
-use crate::part_impl::repo::rdb_impl::chapter::{
+use crate::part_impl::repo::rdb_impl::chapter::step_impl::{
     adjust_unit_counters, complete_raw_provide, create, delete,
     find_pinned_info_by_comic_id, get_info_by_id, get_info_excluded,
     list_infos, list_infos_excluded, list_pinned_infos_by_comic_ids,

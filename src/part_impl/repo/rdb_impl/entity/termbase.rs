@@ -62,6 +62,7 @@ impl From<TermbaseRow> for TermbaseInfo {
 
 impl<'a> From<&'a TermbaseEntry> for TermbaseRowEntry<'a> {
     fn from(termbase_entry: &'a TermbaseEntry) -> Self {
+        //
         let now = OffsetDateTime::now_utc();
 
         Self {

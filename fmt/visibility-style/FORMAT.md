@@ -5,10 +5,21 @@ Hand-written production Rust under the root crate's `src/` uses either plain
 `pub(self)`, and `pub(in ...)`) are forbidden (`VIS001`). Put a plain-public
 item behind a private module when its effective interface is crate-local.
 
-Struct fields are private outside the `model` and `data` module trees
-(`VIS002`). This applies to named and tuple fields. Expose construction and
-access through functions instead of widening fields. Fields in `model` and
-`data` may use plain `pub`, but restricted visibility remains forbidden.
+Struct fields are private outside the public-field contract modules (`VIS002`).
+This applies to named and tuple fields. The following module trees may use
+plain-public fields:
+
+- `model` and `data`;
+- `part::repo::oper`;
+- `part_impl::repo::rdb_impl::entity` and
+  `part_impl::prom::rdb_impl::entity`;
+- `part::effect::event`;
+- `config`; and
+- `part::prom::payload::chapter`.
+
+Restricted visibility remains forbidden in every allowlisted module. Other
+modules expose construction and access through functions instead of widening
+fields.
 
 ```rust
 mod shared;
@@ -16,7 +27,7 @@ mod shared;
 // In shared.rs: visible through the private module boundary.
 pub fn normalize() {}
 
-// Outside model/data, construction is controlled by the type.
+// Outside public-field contract modules, construction is controlled by the type.
 pub struct Service {
     state: State,
 }
