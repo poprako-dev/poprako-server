@@ -2,13 +2,17 @@
 
 use std::collections::HashMap;
 
+use diesel::dsl::sql;
 use diesel::prelude::*;
+use diesel::sql_types::Integer;
 use diesel_async::RunQueryDsl;
 use time::OffsetDateTime;
 use tracing::instrument;
 
 use crate::complex::page::PageComplex;
-use crate::model::page::{PageEntry, PageImageReservation, PageInfo};
+use crate::model::page::{
+    PageEntry, PageImageReservation, PageInfo, PageManifestUpdate,
+};
 use crate::model::unit::UnitCounters;
 use crate::part_impl::repo::rdb_impl::entity::page::{
     PageAspect, PageRow, PageRowEntry,
@@ -19,7 +23,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::{
 };
 use crate::part_impl::shared::RdbConn;
 use crate::part_impl::shared::result::{diesel, expected, next_version};
-use crate::result::{BaseResult, accept};
+use crate::result::{BaseError, BaseResult, accept};
 
 /// Load a single page info by ID.
 #[instrument(level = "info", err(Debug), skip_all)]
@@ -37,7 +41,7 @@ pub async fn get_info_by_id(
         .map_err(diesel)?
         .ok_or_else(|| expected("error-page-not-found"))?;
 
-    accept(row.into())
+    row.try_into()
 }
 
 /// Load a page info by ID, locking the row for update.
@@ -57,7 +61,7 @@ pub async fn get_info_excluded(
         .map_err(diesel)?
         .ok_or_else(|| expected("error-page-not-found"))?;
 
-    accept(row.into())
+    row.try_into()
 }
 
 /// Query a paginated list of page infos for a chapter, ordered by index.
@@ -79,7 +83,7 @@ pub async fn list_infos_by_chapter_id(
         .await
         .map_err(diesel)?;
 
-    accept(rows.into_iter().map(Into::into).collect())
+    rows.into_iter().map(TryInto::try_into).collect()
 }
 
 /// Query all page infos for a chapter, ordered by index (no pagination).
@@ -97,7 +101,71 @@ pub async fn list_all_infos_by_chapter_id(
         .await
         .map_err(diesel)?;
 
-    accept(rows.into_iter().map(Into::into).collect())
+    rows.into_iter().map(TryInto::try_into).collect()
+}
+
+/// Lists all pages while retaining row locks for a manifest transaction.
+#[instrument(level = "info", err(Debug), skip_all)]
+pub async fn list_all_infos_excluded_by_chapter_id(
+    conn: &mut RdbConn,
+    chapter_id: &str,
+) -> BaseResult<Vec<PageInfo>> {
+    let rows: Vec<PageRow> = t_page
+        .filter(f_chapter_id.eq(chapter_id))
+        .select(PageRow::as_select())
+        .order_by((f_index.asc(), f_id.asc()))
+        .for_update()
+        .load(conn)
+        .await
+        .map_err(diesel)?;
+
+    rows.into_iter().map(TryInto::try_into).collect()
+}
+
+/// Places every normal page index into the temporary negative range.
+#[instrument(level = "info", err(Debug), skip_all)]
+pub async fn shift_indexes_temporary(
+    conn: &mut RdbConn,
+    chapter_id: &str,
+) -> BaseResult<()> {
+    diesel::update(t_page.filter(f_chapter_id.eq(chapter_id)).filter(f_index.ge(0)))
+        .set(f_index.eq(sql::<Integer>("-f_index - 1")))
+        .execute(conn)
+        .await
+        .map_err(diesel)?;
+
+    accept(())
+}
+
+/// Persists the final index and image identity for one manifest page.
+#[instrument(level = "info", err(Debug), skip_all)]
+pub async fn update_manifest(
+    conn: &mut RdbConn,
+    update: &PageManifestUpdate,
+) -> BaseResult<PageInfo> {
+    let now = OffsetDateTime::now_utc();
+    let image_hash = update.image_hash.bytes();
+    let image_byte_length = i64::try_from(update.image_byte_length).map_err(|_| BaseError::Unrecoverable {
+        message: "[update_manifest] image byte length exceeds PostgreSQL BIGINT".into(),
+    })?;
+
+    let row: PageRow = diesel::update(t_page.filter(f_id.eq(&update.id)))
+        .set((
+            f_index.eq(update.index),
+            f_image_key.eq(update.image_key.as_deref()),
+            f_image_uploaded.eq(update.image_uploaded),
+            f_image_version.eq(i64::from(update.image_version)),
+            f_image_hash.eq(image_hash.to_vec()),
+            f_image_byte_length.eq(image_byte_length),
+            f_image_extension.eq(update.image_extension.suffix()),
+            f_updated_at.eq(now),
+        ))
+        .returning(PageRow::as_returning())
+        .get_result(conn)
+        .await
+        .map_err(diesel)?;
+
+    row.try_into()
 }
 
 /// Query the lowest-index page info for each requested chapter.
@@ -118,8 +186,10 @@ pub async fn list_first_infos_by_chapter_ids(
 
     accept(
         rows.into_iter()
-            .map(Into::into)
-            .map(|page_info: PageInfo| {
+            .map(TryInto::try_into)
+            .collect::<BaseResult<Vec<PageInfo>>>()?
+            .into_iter()
+            .map(|page_info| {
                 (page_info.chapter_id.clone(), page_info)
             })
             .collect(),
@@ -133,8 +203,10 @@ pub async fn create_batch(
     model_entries: &[PageEntry],
 ) -> BaseResult<Vec<PageInfo>> {
     //
-    let entries: Vec<PageRowEntry> =
-        model_entries.iter().map(PageRowEntry::from).collect();
+    let entries: Vec<PageRowEntry> = model_entries
+        .iter()
+        .map(PageRowEntry::try_from)
+        .collect::<BaseResult<_>>()?;
 
     let rows: Vec<PageRow> = diesel::insert_into(t_page)
         .values(&entries)
@@ -143,7 +215,7 @@ pub async fn create_batch(
         .await
         .map_err(diesel)?;
 
-    accept(rows.into_iter().map(Into::into).collect())
+    rows.into_iter().map(TryInto::try_into).collect()
 }
 
 /// Reserve a new image slot for a page: bump version, generate object key,
@@ -280,6 +352,26 @@ pub async fn delete_by_chapter_id(
     }
 
     diesel::delete(t_page.filter(f_chapter_id.eq(chapter_id)))
+        .execute(conn)
+        .await
+        .map_err(diesel)?;
+
+    accept(())
+}
+
+/// Deletes selected pages after deleting their child units.
+#[instrument(level = "info", err(Debug), skip_all)]
+pub async fn delete_by_ids(conn: &mut RdbConn, ids: &[String]) -> BaseResult<()> {
+    if ids.is_empty() {
+        return accept(());
+    }
+
+    diesel::delete(t_unit.filter(unit_f_page_id.eq_any(ids)))
+        .execute(conn)
+        .await
+        .map_err(diesel)?;
+
+    diesel::delete(t_page.filter(f_id.eq_any(ids)))
         .execute(conn)
         .await
         .map_err(diesel)?;

@@ -2,6 +2,8 @@
 pub mod announcement;
 /// Assignment value types.
 pub mod assignment;
+/// Image content identity value types.
+pub mod image;
 /// Comment value types.
 pub mod comment;
 /// Include declarations for repo queries.

@@ -170,8 +170,10 @@ async fn get_snapshot_excluded(
         .await
         .map_err(diesel)?;
 
-    let page_infos: Vec<PageInfo> =
-        page_rows.into_iter().map(Into::into).collect::<Vec<_>>();
+    let page_infos: Vec<PageInfo> = page_rows
+        .into_iter()
+        .map(TryInto::try_into)
+        .collect::<BaseResult<_>>()?;
 
     let source_page_ids = page_infos
         .iter()

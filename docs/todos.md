@@ -10,3 +10,4 @@
 - [ ] Batch list for assignments.
 - [ ] for<..> to <'\_>.
 - [ ] Makeup migration SQLs.
+- [ ] Async comic archive.

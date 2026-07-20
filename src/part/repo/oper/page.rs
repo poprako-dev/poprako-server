@@ -2,7 +2,9 @@ use std::collections::HashMap;
 
 use poprako_orchestra::Oper;
 
-use crate::model::page::{PageEntry, PageImageReservation, PageInfo};
+use crate::model::page::{
+    PageEntry, PageImageReservation, PageInfo, PageManifestUpdate,
+};
 use crate::model::unit::UnitCounters;
 
 pub struct GetPageInfo<'a> {
@@ -49,6 +51,33 @@ pub struct GetPageInfoExcluded<'a> {
     pub id: &'a str,
 }
 
+/// Lists all chapter pages in stable order while holding row locks.
+pub struct ListPageInfosExcluded<'a> {
+    pub chapter_id: &'a str,
+}
+
+impl<'a> Oper for ListPageInfosExcluded<'a> {
+    type Output = Vec<PageInfo>;
+}
+
+/// Moves normal indexes into the transaction-local negative range.
+pub struct ShiftPageIndexesTemporary<'a> {
+    pub chapter_id: &'a str,
+}
+
+impl<'a> Oper for ShiftPageIndexesTemporary<'a> {
+    type Output = ();
+}
+
+/// Updates one retained page to its final manifest identity and position.
+pub struct UpdatePageManifest<'a> {
+    pub update: &'a PageManifestUpdate,
+}
+
+impl<'a> Oper for UpdatePageManifest<'a> {
+    type Output = PageInfo;
+}
+
 impl<'a> Oper for GetPageInfoExcluded<'a> {
     type Output = PageInfo;
 }
@@ -83,6 +112,7 @@ impl<'a> Oper for SetPageUnitCounters<'a> {
 
 pub enum DeletePages<'a> {
     Chapter { chapter_id: &'a str },
+    Ids { ids: &'a [String] },
 }
 
 impl<'a> Oper for DeletePages<'a> {
