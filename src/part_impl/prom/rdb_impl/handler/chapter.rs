@@ -10,19 +10,7 @@ use crate::part_impl::shared::RdbContext;
 use crate::result::BaseResult;
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn incomplete_uploads_are_retried() {
-        assert!(matches!(resolve_task_flow(Ok(false)), TaskFlow::Retry(_)));
-    }
-
-    #[test]
-    fn resolved_uploads_are_completed() {
-        assert!(matches!(resolve_task_flow(Ok(true)), TaskFlow::Complete));
-    }
-}
+mod tests;
 
 /// Completes raw provision or retries while chapter uploads are incomplete.
 #[instrument(level = "info", skip_all)]
