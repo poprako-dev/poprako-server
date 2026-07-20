@@ -185,7 +185,7 @@ mod tests {
 }
 
 /// Interval between successive poll cycles in the prom background worker.
-const POLL_INTERVAL: StdDuration = StdDuration::from_secs(300);
+const POLL_INTERVAL: StdDuration = StdDuration::from_secs(60);
 const RETRY_DELAY: Duration = Duration::minutes(5);
 const PROCESSING_TIMEOUT: Duration = Duration::minutes(15);
 const COMPLETED_RETENTION: Duration = Duration::days(7);

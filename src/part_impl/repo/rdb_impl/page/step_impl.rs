@@ -18,7 +18,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::{
     f_page_id as unit_f_page_id, t_unit,
 };
 use crate::part_impl::shared::RdbConn;
-use crate::part_impl::shared::result::{diesel, expected, version};
+use crate::part_impl::shared::result::{diesel, expected, next_version};
 use crate::result::{BaseResult, accept};
 
 /// Load a single page info by ID.
@@ -158,27 +158,26 @@ pub async fn reserve_image(
     let now = OffsetDateTime::now_utc();
 
     let (chapter_id, prev_key, raw_version): (String, Option<String>, i64) =
-        diesel::update(t_page.filter(f_id.eq(id)))
-            .set((
-                f_image_key.eq::<Option<&str>>(None),
-                f_image_uploaded.eq(false),
-                f_image_version.eq(f_image_version + 1),
-                f_updated_at.eq(now),
-            ))
-            .returning((f_chapter_id, f_image_key, f_image_version))
+        t_page
+            .filter(f_id.eq(id))
+            .select((f_chapter_id, f_image_key, f_image_version))
+            .for_update()
             .get_result(conn)
             .await
             .map_err(diesel)?;
 
-    let image_version = version(raw_version)?;
+    let image_version = next_version(raw_version)?;
 
     let object_key =
         PageComplex::gen_image_key(&chapter_id, id, image_version, file_ext);
 
-    let aspect = PageAspect::new(now).image_key(Some(&object_key));
-
     diesel::update(t_page.filter(f_id.eq(id)))
-        .set(&aspect)
+        .set((
+            f_image_key.eq(Some(&object_key)),
+            f_image_uploaded.eq(false),
+            f_image_version.eq(i64::from(image_version)),
+            f_updated_at.eq(now),
+        ))
         .execute(conn)
         .await
         .map_err(diesel)?;

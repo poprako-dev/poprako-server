@@ -22,7 +22,7 @@ use crate::part_impl::repo::rdb_impl::entity::team::{
 };
 use crate::part_impl::repo::rdb_impl::schema::t_member;
 use crate::part_impl::repo::rdb_impl::schema::t_team::dsl::*;
-use crate::part_impl::shared::result::{diesel, expected, version};
+use crate::part_impl::shared::result::{diesel, expected, next_version};
 use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::{BaseError, BaseResult, accept};
 
@@ -169,25 +169,25 @@ async fn reserve_avatar(
     //
     let now = OffsetDateTime::now_utc();
 
-    let (prev_key, raw_version): (Option<String>, i64) =
-        diesel::update(t_team.filter(f_id.eq(id)))
-            .set((
-                f_avatar_key.eq::<Option<&str>>(None),
-                f_avatar_uploaded.eq(false),
-                f_avatar_version.eq(f_avatar_version + 1),
-                f_updated_at.eq(now),
-            ))
-            .returning((f_avatar_key, f_avatar_version))
-            .get_result(conn)
-            .await
-            .map_err(diesel)?;
+    let (prev_key, raw_version): (Option<String>, i64) = t_team
+        .filter(f_id.eq(id))
+        .select((f_avatar_key, f_avatar_version))
+        .for_update()
+        .get_result(conn)
+        .await
+        .map_err(diesel)?;
 
-    let version = version(raw_version)?;
+    let version = next_version(raw_version)?;
 
     let object_key = TeamComplex::gen_avatar_key(id, version, file_ext);
 
     diesel::update(t_team.filter(f_id.eq(id)))
-        .set((f_avatar_key.eq(Some(&object_key)), f_updated_at.eq(now)))
+        .set((
+            f_avatar_key.eq(Some(&object_key)),
+            f_avatar_uploaded.eq(false),
+            f_avatar_version.eq(i64::from(version)),
+            f_updated_at.eq(now),
+        ))
         .execute(conn)
         .await
         .map_err(diesel)?;

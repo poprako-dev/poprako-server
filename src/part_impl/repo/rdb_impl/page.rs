@@ -9,4 +9,5 @@ mod step_impl;
 #[cfg(all(test, feature = "repo"))]
 mod tests;
 
+// FIXME: use impl xxx for T
 impl PageRepo<RdbContext> for RdbRepo {}
