@@ -195,18 +195,36 @@ pub async fn mark_image_uploaded(
     conn: &mut RdbConn,
     id: &str,
     version: u32,
+    image_key: Option<&str>,
 ) -> BaseResult<()> {
     //
     let now = OffsetDateTime::now_utc();
 
-    let affected = diesel::update(
-        t_page
-            .filter(f_id.eq(id))
-            .filter(f_image_version.eq(i64::from(version))),
-    )
-    .set((f_image_uploaded.eq(true), f_updated_at.eq(now)))
-    .execute(conn)
-    .await
+    let affected = match image_key {
+        //
+        Some(image_key) => {
+            diesel::update(
+                t_page
+                    .filter(f_id.eq(id))
+                    .filter(f_image_version.eq(i64::from(version)))
+                    .filter(f_image_key.eq(image_key)),
+            )
+            .set((f_image_uploaded.eq(true), f_updated_at.eq(now)))
+            .execute(conn)
+            .await
+        }
+
+        None => {
+            diesel::update(
+                t_page
+                    .filter(f_id.eq(id))
+                    .filter(f_image_version.eq(i64::from(version))),
+            )
+            .set((f_image_uploaded.eq(true), f_updated_at.eq(now)))
+            .execute(conn)
+            .await
+        }
+    }
     .map_err(diesel)?;
 
     if affected == 0 {

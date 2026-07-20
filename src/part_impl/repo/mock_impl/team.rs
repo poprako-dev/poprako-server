@@ -120,9 +120,17 @@ fn update_team(state: &mut MockState, oper: &UpdateTeam<'_>) -> BaseResult<()> {
             team_info.description = description.to_string();
         }
 
-        UpdateTeam::MarkAvatarUploaded { avatar_version, .. } => {
+        UpdateTeam::MarkAvatarUploaded {
+            avatar_version,
+            avatar_key,
+            ..
+        } => {
             //
-            if team_info.avatar_version != *avatar_version {
+            if team_info.avatar_version != *avatar_version
+                || avatar_key.is_some_and(|avatar_key| {
+                    team_info.avatar_key.as_deref() != Some(avatar_key)
+                })
+            {
                 return Err(expected("error-stale-avatar-upload"));
             }
 

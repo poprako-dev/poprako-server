@@ -9,6 +9,21 @@ use crate::part_impl::prom::rdb_impl::handler::task_flow::TaskFlow;
 use crate::part_impl::shared::RdbContext;
 use crate::result::BaseResult;
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn incomplete_uploads_are_retried() {
+        assert!(matches!(resolve_task_flow(Ok(false)), TaskFlow::Retry(_)));
+    }
+
+    #[test]
+    fn resolved_uploads_are_completed() {
+        assert!(matches!(resolve_task_flow(Ok(true)), TaskFlow::Complete));
+    }
+}
+
 /// Completes raw provision or retries while chapter uploads are incomplete.
 #[instrument(level = "info", skip_all)]
 pub async fn handle<R>(repo: &R, task: &CheckUploadFinish) -> TaskFlow
@@ -34,20 +49,5 @@ fn resolve_task_flow(result: BaseResult<bool>) -> TaskFlow {
         }
 
         Err(error) => TaskFlow::Retry(format!("{:?}", error)),
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn incomplete_uploads_are_retried() {
-        assert!(matches!(resolve_task_flow(Ok(false)), TaskFlow::Retry(_)));
-    }
-
-    #[test]
-    fn resolved_uploads_are_completed() {
-        assert!(matches!(resolve_task_flow(Ok(true)), TaskFlow::Complete));
     }
 }

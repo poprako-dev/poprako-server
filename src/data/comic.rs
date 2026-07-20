@@ -13,7 +13,6 @@ use utoipa::{IntoParams, ToSchema};
 
 use poprako_util::time::ToUnixMilli;
 
-use crate::data::chapter::ChapterInfoVal;
 use crate::data::team::TeamInfoVal;
 use crate::data::user::UserInfoVal;
 use crate::data::workset::WorksetInfoVal;
@@ -270,17 +269,6 @@ pub struct ListComicInfosParams {
 
     pub offset: u32,
     pub limit: u32,
-}
-
-/// Presentation-ready comic list and optional pinned chapters.
-///
-/// `pinned_chapters` is positionally aligned with `comics`. Its entries are
-/// populated only when the request includes `with=pinned_chapter`.
-#[derive(Debug, Serialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct ListComicInfosPayload {
-    pub comics: Vec<ComicInfoVal>,
-    pub pinned_chapters: Vec<Option<ChapterInfoVal>>,
 }
 
 impl TryFrom<ListComicInfosParams> for ComicInfoListSpec {

@@ -6,4 +6,6 @@ pub enum ResourceState {
     Stale,
     /// The referenced resource no longer exists.
     Missing,
+    /// The version is current but the persisted object key differs.
+    Mismatched,
 }

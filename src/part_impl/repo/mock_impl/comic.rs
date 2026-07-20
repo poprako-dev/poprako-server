@@ -178,6 +178,7 @@ fn mark_comic_cover_uploaded(
     state: &mut MockState,
     id: &str,
     cover_version: u32,
+    cover_key: Option<&str>,
 ) -> BaseResult<()> {
     //
     let comic = state
@@ -186,7 +187,11 @@ fn mark_comic_cover_uploaded(
         .find(|comic| comic.id == id)
         .ok_or_else(|| expected("error-comic-not-found"))?;
 
-    if comic.cover_version != cover_version {
+    if comic.cover_version != cover_version
+        || cover_key.is_some_and(|cover_key| {
+            comic.cover_key.as_deref() != Some(cover_key)
+        })
+    {
         return Err(expected("error-stale-cover-upload"));
     }
 
@@ -329,7 +334,12 @@ impl<'a> Run<MarkComicCoverUploaded<'a>> for Mock {
         //
         let mut state = self.state.lock().unwrap();
 
-        mark_comic_cover_uploaded(&mut state, oper.id, oper.cover_version)
+        mark_comic_cover_uploaded(
+            &mut state,
+            oper.id,
+            oper.cover_version,
+            oper.cover_key,
+        )
     }
 }
 
@@ -488,6 +498,7 @@ impl<'a> Step<MarkComicCoverUploaded<'a>, MockContext> for Mock {
             &mut context.state,
             oper.id,
             oper.cover_version,
+            oper.cover_key,
         )
     }
 }

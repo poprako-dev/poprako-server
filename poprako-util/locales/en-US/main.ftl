@@ -42,6 +42,7 @@ error-invalid-stage-phase = Invalid workflow stage phase
 error-chapter-admin-required = Chapter admin role is required
 error-chapter-reviewer-required = Chapter reviewer role is required
 error-chapter-workflow-role-required = Required chapter workflow role is missing
+error-chapter-no-role-holder = No one on the chapter holds the required workflow role
 error-chapter-assignee-required = Chapter assignment is required
 error-chapter-translator-or-proofreader-required = Chapter translator or proofreader assignment is required
 error-chapter-role-not-assignable = Chapter role is not assignable

@@ -49,8 +49,9 @@ pub struct RdbProm {
 impl RdbProm {
     /// Creates the prom adapter and starts its background consumer task.
     ///
-    /// The worker polls `t_local_message` on a fixed interval, dispatches
-    /// records by topic, and updates their lifecycle status.
+    /// The supervisor polls `t_local_message` and routes each topic to one of four
+    /// serial worker tasks. Different topics can run concurrently, while messages
+    /// from one topic never execute concurrently in this process.
     pub fn new<I>(core: RdbCore, image_pool: I) -> Self
     where
         I: ImageManager + Send + Sync + 'static,

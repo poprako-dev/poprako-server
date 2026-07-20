@@ -17,10 +17,11 @@ use crate::api::http::result::{
 use crate::api::http::state::AppHarn;
 use crate::data::comic::{
     ComicInfoVal, CreateComicParams, CreateComicPayload, ListComicInfosParams,
-    ListComicInfosPayload, MarkComicCoverUploadedParams,
-    ReserveComicCoverParams, ReserveComicCoverPayload, UpdateComicInfoParams,
+    MarkComicCoverUploadedParams, ReserveComicCoverParams,
+    ReserveComicCoverPayload, UpdateComicInfoParams,
 };
 use crate::data::comic_archive::ArchiveComicPayload;
+use crate::data::comic_list::ListComicInfosPayload;
 use crate::model::user::UserToken;
 use crate::usecase;
 use crate::value::comic::{ComicInclOpt, ComicWithOpt};

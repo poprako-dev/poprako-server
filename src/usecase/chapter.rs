@@ -31,6 +31,7 @@ use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::assignment::{
     CreateAssignment, DeleteAssignments, FindAssignmentInfo,
+    ListAssignmentInfos,
 };
 use crate::part::repo::oper::assignment_invitation::DeleteAssignmentInvitations;
 use crate::part::repo::oper::chapter::{
@@ -435,7 +436,9 @@ where
 {
     ChapterPermComplex::ensure_user_can_update_stage(
         &mut run_proxy! {
-            repo => for<'a, 'b> FindAssignmentInfo<'a, 'b>;
+            repo =>
+                for<'a, 'b> FindAssignmentInfo<'a, 'b>,
+                for<'a, 'b> ListAssignmentInfos<'a, 'b>;
         },
         &token.user_id,
         &params.id,

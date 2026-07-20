@@ -37,6 +37,7 @@ pub enum UpdateTeam<'a> {
     MarkAvatarUploaded {
         id: &'a str,
         avatar_version: u32,
+        avatar_key: Option<&'a str>,
     },
 }
 

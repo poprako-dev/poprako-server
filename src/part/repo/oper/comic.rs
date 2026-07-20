@@ -68,6 +68,7 @@ impl<'a> Oper for ReserveComicCover<'a> {
 pub struct MarkComicCoverUploaded<'a> {
     pub id: &'a str,
     pub cover_version: u32,
+    pub cover_key: Option<&'a str>,
 }
 
 impl<'a> Oper for MarkComicCoverUploaded<'a> {

@@ -142,7 +142,8 @@ async fn defer_payload(
 // defer_records_payload(Prom::step)(positive): individual deferral should store the record in transaction state.
 // defer_batch_records_payloads(Prom::step)(positive): batch deferral should store every record in transaction state.
 // process_pending_marks_uploaded_image(process_pending)(positive): check-upload should mark matching uploaded image state.
-// process_pending_keeps_stale_image_for_ordered_delete(process_pending)(positive): stale check-upload should leave cleanup to ordered delete messages.
+// process_pending_ignores_stale_image_check(process_pending)(positive): stale check-upload should not mutate the current resource or delete its old object.
+// process_pending_rejects_mismatched_image_key(process_pending)(negative): current-version check-upload should require the persisted object key.
 // process_pending_deletes_missing_resource_image(process_pending)(positive): check-upload should delete an object when the owning resource disappeared.
 
 fn user_info(id: &str, avatar_key: &str, avatar_version: u32) -> UserInfo {
@@ -245,7 +246,7 @@ async fn process_pending_marks_uploaded_image() {
 }
 
 #[tokio::test]
-async fn process_pending_keeps_stale_image_for_ordered_delete() {
+async fn process_pending_ignores_stale_image_check() {
     //
     let mock = Mock::new();
 
@@ -284,6 +285,44 @@ async fn process_pending_keeps_stale_image_for_ordered_delete() {
     assert!(!snapshot.users[0].avatar_uploaded);
 
     assert!(snapshot.deleted_image_keys.is_empty());
+}
+
+#[tokio::test]
+async fn process_pending_rejects_mismatched_image_key() {
+    //
+    let mock = Mock::new();
+
+    mock.seed_user(
+        user_info("user-1", "avatar-current.png", 1),
+        user_credential("user-1"),
+    );
+
+    let prom = mock.clone();
+
+    mock.coord(async move |context| {
+        //
+        defer_payload(
+            &prom,
+            context,
+            "prom-1",
+            Payload::Image(image::Payload::CheckUpload {
+                resource_kind: image::ResourceKind::UserAvatar,
+                resource_id: "user-1".to_string(),
+                object_key: "avatar-other.png".to_string(),
+                version: 1,
+            }),
+        )
+        .await?;
+
+        Ok::<(), BaseError>(())
+    })
+    .await
+    .ok()
+    .unwrap();
+
+    assert!(process_pending(&mock).await.is_err());
+
+    assert!(!mock.snapshot().users[0].avatar_uploaded);
 }
 
 #[tokio::test]
@@ -403,8 +442,15 @@ async fn process_existing_image(
     //
     let resource_state = mock
         .coord(async move |context| {
-            match mark_uploaded(mock, context, kind, resource_id, image_version)
-                .await
+            match mark_uploaded(
+                mock,
+                context,
+                kind,
+                resource_id,
+                object_key,
+                image_version,
+            )
+            .await
             {
                 Ok(()) => accept(ResourceState::Current),
 
@@ -414,6 +460,7 @@ async fn process_existing_image(
                         context,
                         kind,
                         resource_id,
+                        object_key,
                         image_version,
                     )
                     .await
@@ -429,6 +476,11 @@ async fn process_existing_image(
         ResourceState::Current | ResourceState::Stale => accept(()),
 
         ResourceState::Missing => mock.delete_object(object_key).await,
+
+        ResourceState::Mismatched => Err(BaseError::Unrecoverable {
+            message: "prom image identity does not match current resource"
+                .into(),
+        }),
     }
 }
 
@@ -437,6 +489,7 @@ async fn mark_uploaded(
     context: &mut MockContext,
     kind: image::ResourceKind,
     resource_id: &str,
+    object_key: &str,
     image_version: u32,
 ) -> BaseResult<()> {
     match kind {
@@ -447,6 +500,7 @@ async fn mark_uploaded(
                 &UpdateUser::MarkAvatarUploaded {
                     id: resource_id,
                     avatar_version: image_version,
+                    avatar_key: Some(object_key),
                 },
             )
             .await
@@ -458,6 +512,7 @@ async fn mark_uploaded(
                 &UpdateTeam::MarkAvatarUploaded {
                     id: resource_id,
                     avatar_version: image_version,
+                    avatar_key: Some(object_key),
                 },
             )
             .await
@@ -469,6 +524,7 @@ async fn mark_uploaded(
                 &MarkComicCoverUploaded {
                     id: resource_id,
                     cover_version: image_version,
+                    cover_key: Some(object_key),
                 },
             )
             .await
@@ -480,6 +536,7 @@ async fn mark_uploaded(
                 &MarkPageImageUploaded {
                     id: resource_id,
                     image_version,
+                    image_key: Some(object_key),
                 },
             )
             .await
@@ -487,18 +544,25 @@ async fn mark_uploaded(
     }
 }
 
-fn classify_current_version(
+fn classify_current_identity(
     current_version: u32,
+    current_object_key: Option<&str>,
     image_version: u32,
+    object_key: &str,
     error_message: &'static str,
 ) -> BaseResult<ResourceState> {
-    match current_version == image_version {
+    match (
+        current_version == image_version,
+        current_object_key == Some(object_key),
+    ) {
         //
-        true => Err(BaseError::Unrecoverable {
+        (false, _) => accept(ResourceState::Stale),
+
+        (true, false) => accept(ResourceState::Mismatched),
+
+        (true, true) => Err(BaseError::Unrecoverable {
             message: error_message.into(),
         }),
-
-        false => accept(ResourceState::Stale),
     }
 }
 
@@ -507,6 +571,7 @@ async fn classify_expected_mark(
     context: &mut MockContext,
     kind: image::ResourceKind,
     resource_id: &str,
+    object_key: &str,
     image_version: u32,
 ) -> BaseResult<ResourceState> {
     match kind {
@@ -517,9 +582,11 @@ async fn classify_expected_mark(
                 .await
             {
                 //
-                Ok(user_info) => classify_current_version(
+                Ok(user_info) => classify_current_identity(
                     user_info.avatar_version,
+                    user_info.avatar_key.as_deref(),
                     image_version,
+                    object_key,
                     "[MockProm::classify_expected_mark] current user avatar version failed to mark uploaded",
                 ),
 
@@ -537,9 +604,11 @@ async fn classify_expected_mark(
                 .await
             {
                 //
-                Ok(team_info) => classify_current_version(
+                Ok(team_info) => classify_current_identity(
                     team_info.avatar_version,
+                    team_info.avatar_key.as_deref(),
                     image_version,
+                    object_key,
                     "[MockProm::classify_expected_mark] current team avatar version failed to mark uploaded",
                 ),
 
@@ -562,9 +631,11 @@ async fn classify_expected_mark(
                 )
                 .await
             {
-                Ok(comic_info) => classify_current_version(
+                Ok(comic_info) => classify_current_identity(
                     comic_info.cover_version,
+                    comic_info.cover_key.as_deref(),
                     image_version,
+                    object_key,
                     "[MockProm::classify_expected_mark] current comic cover version failed to mark uploaded",
                 ),
 
@@ -581,9 +652,11 @@ async fn classify_expected_mark(
                 .step(context, &GetPageInfoExcluded { id: resource_id })
                 .await
             {
-                Ok(page_info) => classify_current_version(
+                Ok(page_info) => classify_current_identity(
                     page_info.image_version,
+                    page_info.image_key.as_deref(),
                     image_version,
+                    object_key,
                     "[MockProm::classify_expected_mark] current page image version failed to mark uploaded",
                 ),
 

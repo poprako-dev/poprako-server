@@ -426,6 +426,7 @@ where
             &MarkPageImageUploaded {
                 id: &id,
                 image_version: params.image_version,
+                image_key: None,
             },
         )
         .await?;

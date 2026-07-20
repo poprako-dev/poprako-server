@@ -1,6 +1,7 @@
 //! RDB-backed member repository — free query functions and thin trait impls.
 
 use poprako_orchestra::Run;
+use step_impl::*;
 use tracing::instrument;
 
 use crate::model::member::MemberInfo;
@@ -12,7 +13,6 @@ use crate::result::{BaseError, BaseResult};
 
 mod orchestra;
 mod step_impl;
-use step_impl::*;
 #[cfg(all(test, feature = "repo"))]
 mod tests;
 
