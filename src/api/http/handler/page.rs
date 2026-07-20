@@ -17,7 +17,7 @@ use crate::api::http::state::AppHarn;
 use crate::data::page::{
     ListPageInfosParams, MarkPageImageUploadedParams, PageInfoVal,
     ReserveChapterPagesParams, ReserveChapterPagesPayload,
-    ReservePageImageParams, ReservePageImagePayload,
+    ReservePageImageParams, ReservedPagePayload,
 };
 use crate::model::user::UserToken;
 use crate::usecase;
@@ -131,7 +131,7 @@ pub async fn reserve_chapter_pages(
     params(("page_id" = String, Path, description = "Page ID")),
     request_body = ReservePageImageParams,
     responses(
-        (status = 200, description = "Page image upload URL reserved", body = HttpBody<ReservePageImagePayload>),
+        (status = 200, description = "Page image upload URL reserved", body = HttpBody<ReservedPagePayload>),
         (status = 403, description = "No permission to modify this page's image"),
         (status = 404, description = "Page not found"),
     ),
@@ -142,7 +142,7 @@ pub async fn reserve_image(
     Path(page_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
     Json(params): Json<ReservePageImageParams>,
-) -> HttpResult<ReservePageImagePayload> {
+) -> HttpResult<ReservedPagePayload> {
     usecase::page::reserve_image(
         harn.drive(),
         harn.repo(),

@@ -3251,6 +3251,7 @@ dependencies = [
  "aws-sdk-s3",
  "axum",
  "base62",
+ "base64",
  "bitcode",
  "cookie",
  "criterion",

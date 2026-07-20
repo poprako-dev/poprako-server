@@ -10,6 +10,8 @@
 
 use time::OffsetDateTime;
 
+use crate::value::image::{ImageExtension, ImageHash};
+
 /// A pagerecord as stored in the database.
 ///
 /// Progress is tracked via three denormalised counters (`total_unit_count`,
@@ -31,6 +33,9 @@ pub struct PageInfo {
     pub image_key: Option<String>,
     pub image_uploaded: bool,
     pub image_version: u32,
+    pub image_hash: ImageHash,
+    pub image_byte_length: u64,
+    pub image_extension: ImageExtension,
 
     pub total_unit_count: i32,
     pub translated_unit_count: i32,
@@ -50,6 +55,9 @@ pub struct PageEntry {
 
     pub image_key: Option<String>,
     pub image_version: u32,
+    pub image_hash: ImageHash,
+    pub image_byte_length: u64,
+    pub image_extension: ImageExtension,
 }
 
 /// Image reservation result for a page.
@@ -58,4 +66,17 @@ pub struct PageImageReservation {
     pub object_key: String,
     pub prev_object_key: Option<String>,
     pub image_version: u32,
+}
+
+/// Persisted manifest state for one retained or newly created page.
+pub struct PageManifestUpdate {
+    pub id: String,
+    pub index: i32,
+
+    pub image_key: Option<String>,
+    pub image_uploaded: bool,
+    pub image_version: u32,
+    pub image_hash: ImageHash,
+    pub image_byte_length: u64,
+    pub image_extension: ImageExtension,
 }

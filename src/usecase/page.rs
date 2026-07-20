@@ -12,9 +12,9 @@ use poprako_util::i18n::trl;
 use crate::complex::image::ImageComplex;
 use crate::complex::page::{PageComplex, PagePermComplex};
 use crate::data::page::{
-    ListPageInfosParams, MarkPageImageUploadedParams, PageCreationPayload,
+    ListPageInfosParams, MarkPageImageUploadedParams, PageImageUploadPayload,
     PageInfoVal, ReserveChapterPagesParams, ReserveChapterPagesPayload,
-    ReservePageImageParams, ReservePageImagePayload,
+    ReservePageImageParams, ReservedPagePayload,
 };
 use crate::model::page::PageEntry;
 use crate::model::user::UserToken;
@@ -67,13 +67,22 @@ where
     P: Prom<C> + Send + Sync,
     I: ImagePool,
 {
-    validate_page_count(params.page_count)?;
+    let page_count = i32::try_from(params.pages.len()).map_err(|_| BaseError::Expected {
+        variant: ExpectedVariant::Args,
+        message: trl("error-invalid-page-count"),
+    })?;
+
+    validate_page_count(page_count)?;
 
     /// Holds the ID, storage key, and version for one reserved page upload.
     struct PageReservation {
         page_id: String,
+        index: u32,
         object_key: String,
         image_version: u32,
+        image_hash: crate::value::image::ImageHash,
+        byte_length: u64,
+        extension: crate::value::image::ImageExtension,
     }
 
     PagePermComplex::ensure_user_can_reserve(
@@ -106,13 +115,18 @@ where
             }
 
             let mut page_entries =
-                Vec::with_capacity(params.page_count as usize);
+                Vec::with_capacity(page_count as usize);
 
             let mut reservations =
-                Vec::with_capacity(params.page_count as usize);
+                Vec::with_capacity(page_count as usize);
 
-            for index in 0..params.page_count {
+            for (raw_index, page_input) in params.pages.iter().enumerate() {
                 //
+                let index = i32::try_from(raw_index).map_err(|_| BaseError::Expected {
+                    variant: ExpectedVariant::Args,
+                    message: trl("error-invalid-page-count"),
+                })?;
+
                 let page_id = PageComplex::gen_id();
 
                 let image_version = 1;
@@ -121,7 +135,7 @@ where
                     &chapter_info.id,
                     &page_id,
                     image_version,
-                    &params.file_ext,
+                    page_input.extension.suffix(),
                 );
 
                 let page_entry = PageEntry {
@@ -130,14 +144,23 @@ where
                     index,
                     image_key: Some(object_key.clone()),
                     image_version,
+                    image_hash: page_input.image_hash.clone(),
+                    image_byte_length: page_input.byte_length,
+                    image_extension: page_input.extension,
                 };
 
                 page_entries.push(page_entry);
 
                 reservations.push(PageReservation {
                     page_id,
+                    index: u32::try_from(index).map_err(|_| BaseError::Unrecoverable {
+                        message: "[reserve_chapter_pages] page index must be non-negative".into(),
+                    })?,
                     object_key,
                     image_version,
+                    image_hash: page_input.image_hash.clone(),
+                    byte_length: page_input.byte_length,
+                    extension: page_input.extension,
                 });
             }
 
@@ -198,7 +221,7 @@ where
                 context,
                 &SetChapterPageCounters {
                     id: &chapter_info.id,
-                    page_count: params.page_count,
+                    page_count,
                     total_unit_count: 0,
                     translated_unit_count: 0,
                     proofread_unit_count: 0,
@@ -218,7 +241,7 @@ where
         })
         .await?;
 
-    let creations = futures_util::future::join_all(
+    let pages = futures_util::future::join_all(
         reservations.into_iter().map(|reservation| async move {
             //
             let put_url = image_pool
@@ -226,10 +249,29 @@ where
                 .await?
                 .to_string();
 
-            accept(PageCreationPayload {
+            let mut headers = std::collections::BTreeMap::new();
+
+            headers.insert(
+                "content-type".into(),
+                reservation.extension.content_type().into(),
+            );
+
+            headers.insert(
+                "x-amz-checksum-sha256".into(),
+                reservation.image_hash.to_base64(),
+            );
+
+            accept(ReservedPagePayload {
                 page_id: reservation.page_id,
-                put_url,
-                image_version: reservation.image_version,
+                index: reservation.index,
+                image_hash: reservation.image_hash,
+                byte_length: reservation.byte_length,
+                extension: reservation.extension,
+                upload: Some(PageImageUploadPayload {
+                    put_url,
+                    image_version: reservation.image_version,
+                    headers,
+                }),
             })
         }),
     )
@@ -237,7 +279,7 @@ where
     .into_iter()
     .collect::<BaseResult<Vec<_>>>()?;
 
-    accept(ReserveChapterPagesPayload { creations })
+    accept(ReserveChapterPagesPayload { pages })
 }
 
 /// Reserves a replacement image upload slot for one page.
@@ -250,7 +292,7 @@ pub async fn reserve_image<N, C, R, P, I>(
     token: UserToken,
     id: String,
     params: ReservePageImageParams,
-) -> BaseResult<ReservePageImagePayload>
+) -> BaseResult<ReservedPagePayload>
 where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
@@ -271,7 +313,7 @@ where
     )
     .await?;
 
-    let file_ext = params.file_ext;
+    let file_ext = params.extension.suffix();
 
     let (object_key, image_version) = nucl
         .coord(async move |context| {
@@ -281,7 +323,7 @@ where
                     context,
                     &ReservePageImage {
                         id: &id,
-                        file_ext: &file_ext,
+                        file_ext,
                     },
                 )
                 .await?;
@@ -337,10 +379,24 @@ where
 
     let put_url = image_pool.get_upload_url(&object_key).await?.to_string();
 
-    accept(ReservePageImagePayload {
+    let mut headers = std::collections::BTreeMap::new();
+
+    headers.insert("content-type".into(), params.extension.content_type().into());
+    headers.insert("x-amz-checksum-sha256".into(), params.image_hash.to_base64());
+
+    accept(ReservedPagePayload {
         page_id,
-        put_url,
-        image_version,
+        index: u32::try_from(page_info.index).map_err(|_| BaseError::Unrecoverable {
+            message: "[reserve_image] page index must be non-negative".into(),
+        })?,
+        image_hash: params.image_hash,
+        byte_length: params.byte_length,
+        extension: params.extension,
+        upload: Some(PageImageUploadPayload {
+            put_url,
+            image_version,
+            headers,
+        }),
     })
 }
 
@@ -559,7 +615,7 @@ where
 /// Validates that the page count is positive.
 fn validate_page_count(page_count: i32) -> BaseResult<()> {
     //
-    if page_count <= 0 {
+    if !(1..=200).contains(&page_count) {
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
             message: trl("error-invalid-page-count"),

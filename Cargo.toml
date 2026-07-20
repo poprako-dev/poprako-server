@@ -44,6 +44,7 @@ jsonwebtoken = { version = "10.4.0", features = ["rust_crypto"] }
 metrics = "0.24.6"
 metrics-exporter-prometheus = "0.18.3"
 base62 = "2.2.4"
+base64 = "0.22"
 bitcode = "=0.6.9"
 k-snowflake = "2.1.1"
 poprako-util = { path = "poprako-util" }
