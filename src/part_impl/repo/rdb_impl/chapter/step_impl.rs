@@ -323,7 +323,10 @@ pub async fn start_stage(
     accept(updated_count > 0)
 }
 
-/// Atomically completes raw provision when every reserved page is uploaded.
+/// Atomically resolves raw provision when every reserved page is uploaded.
+///
+/// Missing and already completed chapters are resolved idempotently. A
+/// pending chapter returns `false` while at least one upload is incomplete.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn complete_raw_provide(
     conn: &mut RdbConn,
@@ -348,7 +351,19 @@ pub async fn complete_raw_provide(
     .await
     .map_err(diesel)?;
 
-    accept(updated_count > 0)
+    if updated_count > 0 {
+        return accept(true);
+    }
+
+    let uploaded = t_chapter
+        .filter(f_id.eq(id))
+        .select(f_uploaded_at.is_not_null())
+        .first::<bool>(conn)
+        .await
+        .optional()
+        .map_err(diesel)?;
+
+    accept(uploaded.unwrap_or(true))
 }
 
 /// Sets the page and unit counters on a chapter row.

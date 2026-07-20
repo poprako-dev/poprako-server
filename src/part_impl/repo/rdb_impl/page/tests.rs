@@ -1,14 +1,17 @@
-// page_roundtrip_reads_test_database_url(SetPageUnitCounters, ListPageInfos)(positive): page repo persists, lists, and updates page counters in the local test database.
+// page_roundtrip_reads_test_database_url(SetPageUnitCounters, ReservePageImage, ListPageInfos)(positive): page repo persists, returns the replaced image key, and updates page counters in the local test database.
+
+use super::*;
 
 use poprako_orchestra::{Nucl as _, Run as _, Step as _};
 
 use crate::model::page::PageEntry;
 use crate::model::unit::UnitCounters;
 use crate::part::repo::oper::page::{
-    CreatePages, ListFirstPageInfos, ListPageInfos, SetPageUnitCounters,
+    CreatePages, GetPageInfo, ListFirstPageInfos, ListPageInfos,
+    ReservePageImage, SetPageUnitCounters,
 };
 use crate::part_impl::drive::rdb_impl::RdbDrive;
-use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
+use crate::part_impl::repo::rdb_impl::test_shared;
 use crate::result::BaseError;
 
 const PREFIX: &str = "rdb-test-page-domain-";
@@ -68,9 +71,11 @@ async fn page_roundtrip_reads_test_database_url() {
         id: format!("{}page-later", PREFIX),
         chapter_id: page_fixture.chapter_entry.id.clone(),
         index: 1,
-        image_key: None,
-        image_version: 0,
+        image_key: Some("page/previous.png".into()),
+        image_version: 1,
     };
+
+    let second_page_id = second_page_entry.id.clone();
 
     drive
         .coord(async |context| {
@@ -88,6 +93,43 @@ async fn page_roundtrip_reads_test_database_url() {
         .await
         .ok()
         .unwrap();
+
+    let image_reservation = drive
+        .coord(async |context| {
+            repo.step(
+                context,
+                &ReservePageImage {
+                    id: &second_page_id,
+                    file_ext: "jpg",
+                },
+            )
+            .await
+        })
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        image_reservation.prev_object_key,
+        Some("page/previous.png".into())
+    );
+
+    assert_eq!(image_reservation.image_version, 2);
+
+    let replaced_page_info = repo
+        .run(&GetPageInfo {
+            id: &second_page_id,
+        })
+        .await
+        .ok()
+        .unwrap();
+
+    assert_eq!(
+        replaced_page_info.image_key,
+        Some(image_reservation.object_key)
+    );
+
+    assert!(!replaced_page_info.image_uploaded);
 
     let chapter_ids = vec![page_fixture.chapter_entry.id.clone()];
 

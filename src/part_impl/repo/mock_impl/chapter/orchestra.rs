@@ -200,6 +200,21 @@ impl<'a> Run<CompleteChapterRawProvide<'a>> for Mock {
         //
         let mut state = self.state.lock().unwrap();
 
+        let Some(chapter_index) = state
+            .chapters
+            .iter()
+            .position(|chapter_info| chapter_info.id == oper.id)
+        else {
+            return accept(true);
+        };
+
+        if !state.chapters[chapter_index]
+            .stages
+            .has_phase(Stage::RawProvide, StagePhase::Pending)
+        {
+            return accept(true);
+        }
+
         let page_count = state
             .pages
             .iter()
@@ -215,20 +230,7 @@ impl<'a> Run<CompleteChapterRawProvide<'a>> for Mock {
             return accept(false);
         }
 
-        let Some(chapter_info) = state
-            .chapters
-            .iter_mut()
-            .find(|chapter_info| chapter_info.id == oper.id)
-        else {
-            return accept(false);
-        };
-
-        if !chapter_info
-            .stages
-            .has_phase(Stage::RawProvide, StagePhase::Pending)
-        {
-            return accept(false);
-        }
+        let chapter_info = &mut state.chapters[chapter_index];
 
         chapter_info.stages = chapter_info
             .stages

@@ -16,7 +16,7 @@ use crate::part_impl::repo::rdb_impl::entity::comic::{
 use crate::part_impl::repo::rdb_impl::incl;
 use crate::part_impl::repo::rdb_impl::schema::t_comic::dsl::*;
 use crate::part_impl::shared::RdbConn;
-use crate::part_impl::shared::result::{diesel, expected, version};
+use crate::part_impl::shared::result::{diesel, expected, next_version};
 use crate::result::{BaseResult, accept};
 use crate::value::chapter::{Stage, StageMask, StagePhase};
 use crate::value::comic::ComicInclOpt;
@@ -389,25 +389,25 @@ pub async fn reserve_cover(
     //
     let now = OffsetDateTime::now_utc();
 
-    let (prev_key, raw_version): (Option<String>, i64) =
-        diesel::update(t_comic.filter(f_id.eq(id)))
-            .set((
-                f_cover_key.eq::<Option<&str>>(None),
-                f_cover_uploaded.eq(false),
-                f_cover_version.eq(f_cover_version + 1),
-                f_updated_at.eq(now),
-            ))
-            .returning((f_cover_key, f_cover_version))
-            .get_result(conn)
-            .await
-            .map_err(diesel)?;
+    let (prev_key, raw_version): (Option<String>, i64) = t_comic
+        .filter(f_id.eq(id))
+        .select((f_cover_key, f_cover_version))
+        .for_update()
+        .get_result(conn)
+        .await
+        .map_err(diesel)?;
 
-    let cover_version = version(raw_version)?;
+    let cover_version = next_version(raw_version)?;
 
     let object_key = ComicComplex::gen_cover_key(id, cover_version, file_ext);
 
     diesel::update(t_comic.filter(f_id.eq(id)))
-        .set((f_cover_key.eq(Some(&object_key)), f_updated_at.eq(now)))
+        .set((
+            f_cover_key.eq(Some(&object_key)),
+            f_cover_uploaded.eq(false),
+            f_cover_version.eq(i64::from(cover_version)),
+            f_updated_at.eq(now),
+        ))
         .execute(conn)
         .await
         .map_err(diesel)?;

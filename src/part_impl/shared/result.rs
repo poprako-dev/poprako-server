@@ -14,6 +14,17 @@ pub fn version(value: i64) -> BaseResult<u32> {
     })
 }
 
+/// Converts and increments a persisted version without overflowing.
+pub fn next_version(value: i64) -> BaseResult<u32> {
+    let current_version = version(value)?;
+
+    current_version
+        .checked_add(1)
+        .ok_or_else(|| BaseError::Unrecoverable {
+            message: "persisted version cannot be incremented".into(),
+        })
+}
+
 /// Converts a pool build error into an unrecoverable `RegularError`.
 pub fn pool_build(err: BuildError) -> BaseError {
     BaseError::Unrecoverable {
