@@ -15,13 +15,13 @@ use crate::part_impl::repo::rdb_impl::member::step_impl::{
 use crate::part_impl::shared::RdbContext;
 use crate::result::{BaseError, BaseResult};
 
-impl<'a> Run<ListMemberInfos<'a>> for RdbRepo {
+impl Run<ListMemberInfos<'_>> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
-        oper: &ListMemberInfos<'a>,
+        oper: &ListMemberInfos<'_>,
     ) -> BaseResult<Vec<MemberInfo>> {
         match oper {
             //
@@ -36,13 +36,13 @@ impl<'a> Run<ListMemberInfos<'a>> for RdbRepo {
     }
 }
 
-impl<'a, 'b> Run<GetMemberInfo<'a, 'b>> for RdbRepo {
+impl Run<GetMemberInfo<'_, '_>> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
-        oper: &GetMemberInfo<'a, 'b>,
+        oper: &GetMemberInfo<'_, '_>,
     ) -> BaseResult<MemberInfo> {
         match oper {
             GetMemberInfo::Id { id, incls } => {
@@ -52,27 +52,27 @@ impl<'a, 'b> Run<GetMemberInfo<'a, 'b>> for RdbRepo {
     }
 }
 
-impl<'a> Step<CreateMember<'a>, RdbContext> for RdbRepo {
+impl Step<CreateMember<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &CreateMember<'a>,
+        oper: &CreateMember<'_>,
     ) -> BaseResult<MemberInfo> {
         create(context.conn(), oper.entry).await
     }
 }
 
-impl<'a> Step<UpdateMember<'a>, RdbContext> for RdbRepo {
+impl Step<UpdateMember<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &UpdateMember<'a>,
+        oper: &UpdateMember<'_>,
     ) -> BaseResult<()> {
         match oper {
             //
@@ -91,14 +91,14 @@ impl<'a> Step<UpdateMember<'a>, RdbContext> for RdbRepo {
     }
 }
 
-impl<'a> Step<ListMemberInfos<'a>, RdbContext> for RdbRepo {
+impl Step<ListMemberInfos<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &ListMemberInfos<'a>,
+        oper: &ListMemberInfos<'_>,
     ) -> BaseResult<Vec<MemberInfo>> {
         match oper {
             //
@@ -113,14 +113,14 @@ impl<'a> Step<ListMemberInfos<'a>, RdbContext> for RdbRepo {
     }
 }
 
-impl<'a> Step<FindMemberInfo<'a>, RdbContext> for RdbRepo {
+impl Step<FindMemberInfo<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &FindMemberInfo<'a>,
+        oper: &FindMemberInfo<'_>,
     ) -> BaseResult<Option<MemberInfo>> {
         match oper {
             FindMemberInfo::UserTeam { user_id, team_id } => {
@@ -135,14 +135,14 @@ impl<'a> Step<FindMemberInfo<'a>, RdbContext> for RdbRepo {
     }
 }
 
-impl<'a, 'b> Step<GetMemberInfo<'a, 'b>, RdbContext> for RdbRepo {
+impl Step<GetMemberInfo<'_, '_>, RdbContext> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &GetMemberInfo<'a, 'b>,
+        oper: &GetMemberInfo<'_, '_>,
     ) -> BaseResult<MemberInfo> {
         match oper {
             GetMemberInfo::Id { id, incls } => {
@@ -152,14 +152,14 @@ impl<'a, 'b> Step<GetMemberInfo<'a, 'b>, RdbContext> for RdbRepo {
     }
 }
 
-impl<'a> Step<ListMemberInfosExcluded<'a>, RdbContext> for RdbRepo {
+impl Step<ListMemberInfosExcluded<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &ListMemberInfosExcluded<'a>,
+        oper: &ListMemberInfosExcluded<'_>,
     ) -> BaseResult<Vec<MemberInfo>> {
         match oper {
             //
@@ -174,14 +174,14 @@ impl<'a> Step<ListMemberInfosExcluded<'a>, RdbContext> for RdbRepo {
     }
 }
 
-impl<'a> Step<DeleteMember<'a>, RdbContext> for RdbRepo {
+impl Step<DeleteMember<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &DeleteMember<'a>,
+        oper: &DeleteMember<'_>,
     ) -> BaseResult<()> {
         delete(context.conn(), oper.id).await
     }

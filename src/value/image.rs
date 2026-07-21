@@ -6,6 +6,9 @@ use serde::de::Error as _;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::str::FromStr;
 
+#[cfg(test)]
+mod tests;
+
 #[cfg(feature = "swagger-ui")]
 use utoipa::ToSchema;
 
@@ -48,21 +51,25 @@ impl<'de> Deserialize<'de> for ImageHash {
         let encoded = String::deserialize(deserializer)?;
 
         if encoded.len() != 44 {
-            return Err(D::Error::custom("image hash must be 44 Base64 characters"));
+            return Err(D::Error::custom(
+                "image hash must be 44 Base64 characters",
+            ));
         }
 
-        let decoded = STANDARD
-            .decode(&encoded)
-            .map_err(|_| D::Error::custom("image hash must use padded RFC 4648 Base64"))?;
+        let decoded = STANDARD.decode(&encoded).map_err(|_| {
+            D::Error::custom("image hash must use padded RFC 4648 Base64")
+        })?;
 
-        let bytes: [u8; 32] = decoded
-            .try_into()
-            .map_err(|_| D::Error::custom("image hash must decode to 32 bytes"))?;
+        let bytes: [u8; 32] = decoded.try_into().map_err(|_| {
+            D::Error::custom("image hash must decode to 32 bytes")
+        })?;
 
         let image_hash = Self(bytes);
 
         if image_hash.to_base64() != encoded {
-            return Err(D::Error::custom("image hash must use canonical Base64"));
+            return Err(D::Error::custom(
+                "image hash must use canonical Base64",
+            ));
         }
 
         Ok(image_hash)
@@ -73,7 +80,7 @@ impl<'de> Deserialize<'de> for ImageHash {
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
 #[serde(rename_all = "lowercase")]
-pub enum ImageExtension {
+pub enum ImageExt {
     Jpg,
     Jpeg,
     Png,
@@ -86,7 +93,7 @@ pub enum ImageExtension {
     Tiff,
 }
 
-impl ImageExtension {
+impl ImageExt {
     /// Parses a supported lowercase object-key suffix.
     pub fn parse(value: &str) -> Option<Self> {
         match value {
@@ -135,7 +142,7 @@ impl ImageExtension {
     }
 }
 
-impl FromStr for ImageExtension {
+impl FromStr for ImageExt {
     type Err = ();
 
     fn from_str(value: &str) -> Result<Self, Self::Err> {
@@ -143,39 +150,3 @@ impl FromStr for ImageExtension {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn image_hash_round_trips_canonical_base64() {
-        let encoded = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
-        let image_hash = serde_json::from_str::<ImageHash>(&format!("\"{}\"", encoded)).unwrap();
-
-        assert_eq!(image_hash.to_base64(), encoded);
-        assert_eq!(image_hash.bytes(), [0; 32]);
-    }
-
-    #[test]
-    fn image_hash_rejects_noncanonical_encodings() {
-        let invalid_hashes = [
-            "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-            "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-            "__________________________________________8=",
-            "00000000000000000000000000000000000000000000",
-        ];
-
-        for invalid_hash in invalid_hashes {
-            let result = serde_json::from_str::<ImageHash>(&format!("\"{}\"", invalid_hash));
-
-            assert!(result.is_err());
-        }
-    }
-
-    #[test]
-    fn image_extensions_provide_fixed_content_types() {
-        assert_eq!(ImageExtension::Png.content_type(), "image/png");
-        assert_eq!(ImageExtension::Svg.suffix(), "svg");
-        assert!(ImageExtension::parse("exe").is_none());
-    }
-}

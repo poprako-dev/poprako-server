@@ -235,25 +235,25 @@ async fn purge_pending(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
     accept(())
 }
 
-impl<'a> Run<ListMemberInvitationInfos<'a>> for RdbRepo {
+impl Run<ListMemberInvitationInfos<'_>> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
-        oper: &ListMemberInvitationInfos<'a>,
+        oper: &ListMemberInvitationInfos<'_>,
     ) -> BaseResult<Vec<MemberInvitationInfo>> {
         submit_query!(self.core, list_infos, oper.spec)
     }
 }
 
-impl<'a, 'b> Run<GetMemberInvitationInfo<'a, 'b>> for RdbRepo {
+impl Run<GetMemberInvitationInfo<'_, '_>> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
-        oper: &GetMemberInvitationInfo<'a, 'b>,
+        oper: &GetMemberInvitationInfo<'_, '_>,
     ) -> BaseResult<MemberInvitationInfo> {
         match oper {
             //
@@ -268,27 +268,27 @@ impl<'a, 'b> Run<GetMemberInvitationInfo<'a, 'b>> for RdbRepo {
     }
 }
 
-impl<'a> Step<CreateMemberInvitation<'a>, RdbContext> for RdbRepo {
+impl Step<CreateMemberInvitation<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &CreateMemberInvitation<'a>,
+        oper: &CreateMemberInvitation<'_>,
     ) -> BaseResult<MemberInvitationInfo> {
         create(context.conn(), oper.entry).await
     }
 }
 
-impl<'a, 'b> Step<GetMemberInvitationInfo<'a, 'b>, RdbContext> for RdbRepo {
+impl Step<GetMemberInvitationInfo<'_, '_>, RdbContext> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &GetMemberInvitationInfo<'a, 'b>,
+        oper: &GetMemberInvitationInfo<'_, '_>,
     ) -> BaseResult<MemberInvitationInfo> {
         match oper {
             //
@@ -303,14 +303,14 @@ impl<'a, 'b> Step<GetMemberInvitationInfo<'a, 'b>, RdbContext> for RdbRepo {
     }
 }
 
-impl<'a> Step<UpdateMemberInvitation<'a>, RdbContext> for RdbRepo {
+impl Step<UpdateMemberInvitation<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &UpdateMemberInvitation<'a>,
+        oper: &UpdateMemberInvitation<'_>,
     ) -> BaseResult<()> {
         match oper {
             //
@@ -326,14 +326,14 @@ impl<'a> Step<UpdateMemberInvitation<'a>, RdbContext> for RdbRepo {
     }
 }
 
-impl<'a> Step<GetMemberInvitationInfoExcluded<'a>, RdbContext> for RdbRepo {
+impl Step<GetMemberInvitationInfoExcluded<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &GetMemberInvitationInfoExcluded<'a>,
+        oper: &GetMemberInvitationInfoExcluded<'_>,
     ) -> BaseResult<MemberInvitationInfo> {
         match oper {
             GetMemberInvitationInfoExcluded::Code { code } => {
@@ -343,27 +343,27 @@ impl<'a> Step<GetMemberInvitationInfoExcluded<'a>, RdbContext> for RdbRepo {
     }
 }
 
-impl<'a> Step<DeleteMemberInvitation<'a>, RdbContext> for RdbRepo {
+impl Step<DeleteMemberInvitation<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &DeleteMemberInvitation<'a>,
+        oper: &DeleteMemberInvitation<'_>,
     ) -> BaseResult<()> {
         delete(context.conn(), oper.id).await
     }
 }
 
-impl<'a> Step<PurgeExpiredMemberInvitation<'a>, RdbContext> for RdbRepo {
+impl Step<PurgeExpiredMemberInvitation<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &PurgeExpiredMemberInvitation<'a>,
+        oper: &PurgeExpiredMemberInvitation<'_>,
     ) -> BaseResult<()> {
         purge_pending(context.conn(), oper.id).await
     }

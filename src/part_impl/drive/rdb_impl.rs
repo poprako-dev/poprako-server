@@ -32,7 +32,7 @@ impl Nucl for RdbDrive {
     #[instrument(level = "info", skip_all)]
     async fn coord<F, T, E>(&self, f: F) -> Result<T, NuclError<Self::Error, E>>
     where
-        F: for<'cx> AsyncFnOnce(&'cx mut Self::Context) -> Result<T, E> + Send,
+        F: AsyncFnOnce(&mut Self::Context) -> Result<T, E> + Send,
         T: Send,
         E: Send,
     {

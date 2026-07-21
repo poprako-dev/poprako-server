@@ -13,7 +13,7 @@ pub struct CreateChapter<'a> {
     pub entry: &'a ChapterEntry,
 }
 
-impl<'a> Oper for CreateChapter<'a> {
+impl Oper for CreateChapter<'_> {
     type Output = ChapterInfo;
 }
 
@@ -22,7 +22,7 @@ pub struct GetChapterInfo<'a, 'b> {
     pub incls: &'b [ChapterInclOpt],
 }
 
-impl<'a, 'b> Oper for GetChapterInfo<'a, 'b> {
+impl Oper for GetChapterInfo<'_, '_> {
     type Output = ChapterInfo;
 }
 
@@ -31,7 +31,7 @@ pub struct GetChapterInfoExcluded<'a, 'b> {
     pub incls: &'b [ChapterInclOpt],
 }
 
-impl<'a, 'b> Oper for GetChapterInfoExcluded<'a, 'b> {
+impl Oper for GetChapterInfoExcluded<'_, '_> {
     type Output = ChapterInfo;
 }
 
@@ -39,7 +39,7 @@ pub struct ListChapterInfos<'a> {
     pub spec: &'a ChapterInfoListSpec,
 }
 
-impl<'a> Oper for ListChapterInfos<'a> {
+impl Oper for ListChapterInfos<'_> {
     type Output = Vec<ChapterInfo>;
 }
 
@@ -47,7 +47,7 @@ pub struct ListChapterInfosExcluded<'a> {
     pub comic_id: &'a str,
 }
 
-impl<'a> Oper for ListChapterInfosExcluded<'a> {
+impl Oper for ListChapterInfosExcluded<'_> {
     type Output = Vec<ChapterInfo>;
 }
 
@@ -56,7 +56,7 @@ pub struct FindPinnedChapterInfo<'a, 'b> {
     pub incls: &'b [ChapterInclOpt],
 }
 
-impl<'a, 'b> Oper for FindPinnedChapterInfo<'a, 'b> {
+impl Oper for FindPinnedChapterInfo<'_, '_> {
     type Output = Option<ChapterInfo>;
 }
 
@@ -64,7 +64,7 @@ pub struct ListPinnedChapterInfos<'a> {
     pub comic_ids: &'a [String],
 }
 
-impl<'a> Oper for ListPinnedChapterInfos<'a> {
+impl Oper for ListPinnedChapterInfos<'_> {
     type Output = HashMap<String, ChapterInfo>;
 }
 
@@ -72,7 +72,7 @@ pub struct UpdateChapter<'a> {
     pub update: &'a ChapterInfoUpdate,
 }
 
-impl<'a> Oper for UpdateChapter<'a> {
+impl Oper for UpdateChapter<'_> {
     type Output = ();
 }
 
@@ -80,7 +80,7 @@ pub struct UpdateChapterStage<'a> {
     pub update: &'a ChapterStageUpdate,
 }
 
-impl<'a> Oper for UpdateChapterStage<'a> {
+impl Oper for UpdateChapterStage<'_> {
     type Output = ();
 }
 
@@ -90,7 +90,7 @@ pub struct StartChapterStage<'a> {
     pub stage: Stage,
 }
 
-impl<'a> Oper for StartChapterStage<'a> {
+impl Oper for StartChapterStage<'_> {
     type Output = bool;
 }
 
@@ -101,7 +101,7 @@ pub struct CompleteChapterRawProvide<'a> {
     pub id: &'a str,
 }
 
-impl<'a> Oper for CompleteChapterRawProvide<'a> {
+impl Oper for CompleteChapterRawProvide<'_> {
     type Output = bool;
 }
 
@@ -113,7 +113,7 @@ pub struct SetChapterPageCounters<'a> {
     pub proofread_unit_count: i32,
 }
 
-impl<'a> Oper for SetChapterPageCounters<'a> {
+impl Oper for SetChapterPageCounters<'_> {
     type Output = ();
 }
 
@@ -122,7 +122,7 @@ pub struct AdjustChapterUnitCounters<'a> {
     pub delta: UnitCounterDelta,
 }
 
-impl<'a> Oper for AdjustChapterUnitCounters<'a> {
+impl Oper for AdjustChapterUnitCounters<'_> {
     type Output = ();
 }
 
@@ -131,7 +131,7 @@ pub struct UnpinOtherChapters<'a> {
     pub excluded_id: &'a str,
 }
 
-impl<'a> Oper for UnpinOtherChapters<'a> {
+impl Oper for UnpinOtherChapters<'_> {
     type Output = ();
 }
 
@@ -139,6 +139,6 @@ pub struct DeleteChapter<'a> {
     pub id: &'a str,
 }
 
-impl<'a> Oper for DeleteChapter<'a> {
+impl Oper for DeleteChapter<'_> {
     type Output = ();
 }

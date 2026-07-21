@@ -17,9 +17,10 @@ use super::*;
 use time::{Duration as TimeDuration, OffsetDateTime};
 
 use crate::data::page::{
-    ListPageInfosParams, MarkPageImageUploadedParams,
+    ListPageInfosParams, MarkPageImageUploadedParams, PageImageInput,
     ReserveChapterPagesParams, ReservePageImageParams,
 };
+use crate::value::image::{ImageExt, ImageHash};
 use crate::model::assignment::AssignmentInfo;
 use crate::model::chapter::ChapterInfo;
 use crate::model::comic::ComicInfo;
@@ -164,6 +165,9 @@ fn page(
         image_key: image_key.map(Into::into),
         image_uploaded,
         image_version,
+        image_hash: ImageHash::new([0u8; 32]),
+        image_byte_length: 4096,
+        image_extension: ImageExt::Png,
         total_unit_count: 0,
         translated_unit_count: 0,
         proofread_unit_count: 0,
@@ -204,8 +208,20 @@ async fn reserve_chapter_pages_creates_pages_and_urls() {
         token("user-1"),
         ReserveChapterPagesParams {
             chapter_id: "chapter-1".into(),
-            page_count: 2,
-            file_ext: "png".into(),
+            pages: vec![
+                PageImageInput {
+                    page_id: None,
+                    image_hash: ImageHash::new([0u8; 32]),
+                    byte_length: 4096,
+                    extension: ImageExt::Png,
+                },
+                PageImageInput {
+                    page_id: None,
+                    image_hash: ImageHash::new([0u8; 32]),
+                    byte_length: 4096,
+                    extension: ImageExt::Png,
+                },
+            ],
         },
     )
     .await;
@@ -216,7 +232,7 @@ async fn reserve_chapter_pages_creates_pages_and_urls() {
 
     let snapshot = mock.snapshot();
 
-    assert_eq!(reserved.creations.len(), 2);
+    assert_eq!(reserved.pages.len(), 2);
 
     assert_eq!(snapshot.pages.len(), 2);
 
@@ -228,9 +244,23 @@ async fn reserve_chapter_pages_creates_pages_and_urls() {
 
     assert_eq!(snapshot.pages[1].image_version, 1);
 
-    assert_eq!(reserved.creations[0].image_version, 1);
+    assert_eq!(
+        reserved.pages[0]
+            .upload
+            .as_ref()
+            .unwrap()
+            .image_version,
+        1
+    );
 
-    assert_eq!(reserved.creations[1].image_version, 1);
+    assert_eq!(
+        reserved.pages[1]
+            .upload
+            .as_ref()
+            .unwrap()
+            .image_version,
+        1
+    );
 
     assert_eq!(snapshot.chapters[0].page_count, 2);
 
@@ -252,12 +282,15 @@ async fn reserve_chapter_pages_creates_pages_and_urls() {
     assert!(advance_record.visible_at() - before >= TimeDuration::minutes(20));
 
     assert!(
-        reserved.creations[0]
+        reserved.pages[0]
+            .upload
+            .as_ref()
+            .unwrap()
             .put_url
             .contains("https://test.local/put/page/chapter_chapter-1/")
     );
 
-    for creation in &reserved.creations {
+    for creation in &reserved.pages {
         //
         let page_info = snapshot
             .pages
@@ -274,7 +307,7 @@ async fn reserve_chapter_pages_creates_pages_and_urls() {
             ResourceKind::PageImage,
             &creation.page_id,
             object_key,
-            creation.image_version,
+            creation.upload.as_ref().unwrap().image_version,
         );
     }
 
@@ -317,8 +350,20 @@ async fn reserve_chapter_pages_keeps_raw_pending_when_uploads_are_missing() {
         token("user-1"),
         ReserveChapterPagesParams {
             chapter_id: "chapter-1".into(),
-            page_count: 2,
-            file_ext: "png".into(),
+            pages: vec![
+                PageImageInput {
+                    page_id: None,
+                    image_hash: ImageHash::new([0u8; 32]),
+                    byte_length: 4096,
+                    extension: ImageExt::Png,
+                },
+                PageImageInput {
+                    page_id: None,
+                    image_hash: ImageHash::new([0u8; 32]),
+                    byte_length: 4096,
+                    extension: ImageExt::Png,
+                },
+            ],
         },
     )
     .await;
@@ -358,8 +403,7 @@ async fn reserve_chapter_pages_rejects_invalid_count() {
         token("user-1"),
         ReserveChapterPagesParams {
             chapter_id: "chapter-1".into(),
-            page_count: 0,
-            file_ext: "png".into(),
+            pages: Vec::new(),
         },
     )
     .await
@@ -398,7 +442,9 @@ async fn reserve_image_replaces_key_and_enqueues_prom() {
         token("user-1"),
         "page-1".into(),
         ReservePageImageParams {
-            file_ext: "jpg".into(),
+            image_hash: ImageHash::new([1u8; 32]),
+            byte_length: 8192,
+            extension: ImageExt::Jpg,
         },
     )
     .await;
@@ -411,10 +457,10 @@ async fn reserve_image_replaces_key_and_enqueues_prom() {
 
     assert_eq!(reserved.page_id, "page-1");
 
-    assert_eq!(reserved.image_version, 2);
+    assert_eq!(reserved.upload.as_ref().unwrap().image_version, 2);
 
     assert_eq!(
-        reserved.put_url,
+        reserved.upload.as_ref().unwrap().put_url,
         "https://test.local/put/page/chapter_chapter-1/page-1-2.jpg"
     );
 
@@ -456,7 +502,9 @@ async fn reserve_image_rejects_missing_page() {
         token("user-1"),
         "missing".into(),
         ReservePageImageParams {
-            file_ext: "jpg".into(),
+            image_hash: ImageHash::new([1u8; 32]),
+            byte_length: 8192,
+            extension: ImageExt::Jpg,
         },
     )
     .await

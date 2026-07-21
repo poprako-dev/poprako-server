@@ -293,8 +293,8 @@ impl<'a> Step<UpdatePageManifest<'a>, MockContext> for Mock {
         page_info.image_uploaded = oper.update.image_uploaded;
         page_info.image_version = oper.update.image_version;
         page_info.image_hash = oper.update.image_hash.clone();
-        page_info.image_byte_length = oper.update.image_byte_length;
-        page_info.image_extension = oper.update.image_extension;
+        page_info.image_byte_length = oper.update.image_byte_len;
+        page_info.image_extension = oper.update.image_ext;
         page_info.updated_at = now();
 
         accept(page_info.clone())

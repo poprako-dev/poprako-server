@@ -1,6 +1,7 @@
 use crate::model::chapter::ChapterEntry;
 use crate::model::comic::ComicEntry;
 use crate::model::page::PageEntry;
+use crate::value::image::ImageExt;
 use crate::model::team::TeamEntry;
 use crate::model::user::UserEntry;
 use crate::model::workset::WorksetEntry;
@@ -70,5 +71,8 @@ pub fn page_entry(prefix: &str, chapter_entry: &ChapterEntry) -> PageEntry {
         index: 0,
         image_key: None,
         image_version: 0,
+        image_hash: Default::default(),
+        image_byte_len: 1,
+        image_ext: ImageExt::Jpg,
     }
 }

@@ -4,7 +4,7 @@
 management. The executable is active: `src/main.rs` wires the production
 harness and starts the Axum HTTP server.
 
-`cargo fmt` is NECESSARY every time you make edit. But not to run fmt/ unless user ask you to do so.
+`cargo fmt` & `cargo check --all-features` is NECESSARY every time you make edit. But not to run fmt/ unless user ask you to do so.
 
 ## Active Architecture
 

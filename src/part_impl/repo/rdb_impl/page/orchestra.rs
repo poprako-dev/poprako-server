@@ -21,20 +21,20 @@ use crate::part_impl::repo::rdb_impl::page::step_impl::{
 use crate::part_impl::shared::RdbContext;
 use crate::result::{BaseError, BaseResult};
 
-impl<'a> Run<GetPageInfo<'a>> for RdbRepo {
+impl Run<GetPageInfo<'_>> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn run(&self, oper: &GetPageInfo<'a>) -> BaseResult<PageInfo> {
+    async fn run(&self, oper: &GetPageInfo<'_>) -> BaseResult<PageInfo> {
         submit_query!(self.core, get_info_by_id, oper.id)
     }
 }
 
-impl<'a> Run<ListPageInfos<'a>> for RdbRepo {
+impl Run<ListPageInfos<'_>> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn run(&self, oper: &ListPageInfos<'a>) -> BaseResult<Vec<PageInfo>> {
+    async fn run(&self, oper: &ListPageInfos<'_>) -> BaseResult<Vec<PageInfo>> {
         match oper {
             //
             ListPageInfos::Chapter {
@@ -62,13 +62,13 @@ impl<'a> Run<ListPageInfos<'a>> for RdbRepo {
     }
 }
 
-impl<'a> Run<ListFirstPageInfos<'a>> for RdbRepo {
+impl Run<ListFirstPageInfos<'_>> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
-        oper: &ListFirstPageInfos<'a>,
+        oper: &ListFirstPageInfos<'_>,
     ) -> BaseResult<HashMap<String, PageInfo>> {
         submit_query!(
             self.core,
@@ -78,27 +78,27 @@ impl<'a> Run<ListFirstPageInfos<'a>> for RdbRepo {
     }
 }
 
-impl<'a> Step<GetPageInfo<'a>, RdbContext> for RdbRepo {
+impl Step<GetPageInfo<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &GetPageInfo<'a>,
+        oper: &GetPageInfo<'_>,
     ) -> BaseResult<PageInfo> {
         get_info_by_id(context.conn(), oper.id).await
     }
 }
 
-impl<'a> Step<ListPageInfos<'a>, RdbContext> for RdbRepo {
+impl Step<ListPageInfos<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &ListPageInfos<'a>,
+        oper: &ListPageInfos<'_>,
     ) -> BaseResult<Vec<PageInfo>> {
         match oper {
             //
@@ -123,62 +123,62 @@ impl<'a> Step<ListPageInfos<'a>, RdbContext> for RdbRepo {
     }
 }
 
-impl<'a> Step<ListPageInfosExcluded<'a>, RdbContext> for RdbRepo {
+impl Step<ListPageInfosExcluded<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &ListPageInfosExcluded<'a>,
+        oper: &ListPageInfosExcluded<'_>,
     ) -> BaseResult<Vec<PageInfo>> {
         list_all_infos_excluded_by_chapter_id(context.conn(), oper.chapter_id).await
     }
 }
 
-impl<'a> Step<CreatePages<'a>, RdbContext> for RdbRepo {
+impl Step<CreatePages<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &CreatePages<'a>,
+        oper: &CreatePages<'_>,
     ) -> BaseResult<Vec<PageInfo>> {
         create_batch(context.conn(), oper.entries).await
     }
 }
 
-impl<'a> Step<GetPageInfoExcluded<'a>, RdbContext> for RdbRepo {
+impl Step<GetPageInfoExcluded<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &GetPageInfoExcluded<'a>,
+        oper: &GetPageInfoExcluded<'_>,
     ) -> BaseResult<PageInfo> {
         get_info_excluded(context.conn(), oper.id).await
     }
 }
 
-impl<'a> Step<ReservePageImage<'a>, RdbContext> for RdbRepo {
+impl Step<ReservePageImage<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &ReservePageImage<'a>,
+        oper: &ReservePageImage<'_>,
     ) -> BaseResult<PageImageReservation> {
         reserve_image(context.conn(), oper.id, oper.file_ext).await
     }
 }
 
-impl<'a> Step<MarkPageImageUploaded<'a>, RdbContext> for RdbRepo {
+impl Step<MarkPageImageUploaded<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &MarkPageImageUploaded<'a>,
+        oper: &MarkPageImageUploaded<'_>,
     ) -> BaseResult<()> {
         mark_image_uploaded(
             context.conn(),
@@ -190,51 +190,51 @@ impl<'a> Step<MarkPageImageUploaded<'a>, RdbContext> for RdbRepo {
     }
 }
 
-impl<'a> Step<SetPageUnitCounters<'a>, RdbContext> for RdbRepo {
+impl Step<SetPageUnitCounters<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &SetPageUnitCounters<'a>,
+        oper: &SetPageUnitCounters<'_>,
     ) -> BaseResult<()> {
         set_unit_counters(context.conn(), oper.id, oper.counters).await
     }
 }
 
-impl<'a> Step<ShiftPageIndexesTemporary<'a>, RdbContext> for RdbRepo {
+impl Step<ShiftPageIndexesTemporary<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &ShiftPageIndexesTemporary<'a>,
+        oper: &ShiftPageIndexesTemporary<'_>,
     ) -> BaseResult<()> {
         shift_indexes_temporary(context.conn(), oper.chapter_id).await
     }
 }
 
-impl<'a> Step<UpdatePageManifest<'a>, RdbContext> for RdbRepo {
+impl Step<UpdatePageManifest<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &UpdatePageManifest<'a>,
+        oper: &UpdatePageManifest<'_>,
     ) -> BaseResult<PageInfo> {
         update_manifest(context.conn(), oper.update).await
     }
 }
 
-impl<'a> Step<DeletePages<'a>, RdbContext> for RdbRepo {
+impl Step<DeletePages<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &DeletePages<'a>,
+        oper: &DeletePages<'_>,
     ) -> BaseResult<()> {
         match oper {
             DeletePages::Chapter { chapter_id } => {

@@ -15,6 +15,7 @@ use crate::part_impl::repo::mock_impl::Mock;
 use crate::test_util::now;
 use crate::value::chapter::StageMask;
 use crate::value::role::{RoleField, RoleMask};
+use crate::value::image::{ImageHash, ImageExt};
 
 mod delete;
 mod join;
@@ -184,6 +185,9 @@ fn page(id: &str, chapter_id: &str, image_key: &str) -> PageInfo {
         image_key: Some(image_key.into()),
         image_uploaded: true,
         image_version: 1,
+        image_hash: ImageHash::new([0u8; 32]),
+        image_byte_length: 4096,
+        image_extension: ImageExt::Png,
         total_unit_count: 0,
         translated_unit_count: 0,
         proofread_unit_count: 0,

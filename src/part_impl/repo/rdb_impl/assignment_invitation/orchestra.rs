@@ -16,22 +16,22 @@ use crate::part_impl::repo::rdb_impl::assignment_invitation::step_impl::{
 use crate::part_impl::shared::RdbContext;
 use crate::result::{BaseError, BaseResult};
 
-impl<'a> Run<ListAssignmentInvitationInfos<'a>> for RdbRepo {
+impl Run<ListAssignmentInvitationInfos<'_>> for RdbRepo {
     type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
-        oper: &ListAssignmentInvitationInfos<'a>,
+        oper: &ListAssignmentInvitationInfos<'_>,
     ) -> BaseResult<Vec<AssignmentInvitationInfo>> {
         submit_query!(self.core, list_infos, oper.spec)
     }
 }
-impl<'a> Run<GetAssignmentInvitationInfo<'a>> for RdbRepo {
+impl Run<GetAssignmentInvitationInfo<'_>> for RdbRepo {
     type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
-        oper: &GetAssignmentInvitationInfo<'a>,
+        oper: &GetAssignmentInvitationInfo<'_>,
     ) -> BaseResult<AssignmentInvitationInfo> {
         match oper {
             GetAssignmentInvitationInfo::Id { id } => {
@@ -40,24 +40,24 @@ impl<'a> Run<GetAssignmentInvitationInfo<'a>> for RdbRepo {
         }
     }
 }
-impl<'a> Step<CreateAssignmentInvitation<'a>, RdbContext> for RdbRepo {
+impl Step<CreateAssignmentInvitation<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &CreateAssignmentInvitation<'a>,
+        oper: &CreateAssignmentInvitation<'_>,
     ) -> BaseResult<AssignmentInvitationInfo> {
         create(context.conn(), oper.entry).await
     }
 }
-impl<'a> Step<GetAssignmentInvitationInfo<'a>, RdbContext> for RdbRepo {
+impl Step<GetAssignmentInvitationInfo<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &GetAssignmentInvitationInfo<'a>,
+        oper: &GetAssignmentInvitationInfo<'_>,
     ) -> BaseResult<AssignmentInvitationInfo> {
         match oper {
             GetAssignmentInvitationInfo::Id { id } => {
@@ -66,49 +66,49 @@ impl<'a> Step<GetAssignmentInvitationInfo<'a>, RdbContext> for RdbRepo {
         }
     }
 }
-impl<'a> Step<GetAssignmentInvitationInfoExcluded<'a>, RdbContext> for RdbRepo {
+impl Step<GetAssignmentInvitationInfoExcluded<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &GetAssignmentInvitationInfoExcluded<'a>,
+        oper: &GetAssignmentInvitationInfoExcluded<'_>,
     ) -> BaseResult<AssignmentInvitationInfo> {
         get_info_by_code_excluded(context.conn(), oper.code).await
     }
 }
-impl<'a> Step<MarkAssignmentInvitationUsed<'a>, RdbContext> for RdbRepo {
+impl Step<MarkAssignmentInvitationUsed<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &MarkAssignmentInvitationUsed<'a>,
+        oper: &MarkAssignmentInvitationUsed<'_>,
     ) -> BaseResult<()> {
         mark_pending_as_used(context.conn(), oper.id).await
     }
 }
 
-impl<'a> Step<PurgeExpiredAssignmentInvitation<'a>, RdbContext> for RdbRepo {
+impl Step<PurgeExpiredAssignmentInvitation<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &PurgeExpiredAssignmentInvitation<'a>,
+        oper: &PurgeExpiredAssignmentInvitation<'_>,
     ) -> BaseResult<()> {
         purge_pending(context.conn(), oper.id).await
     }
 }
 
-impl<'a> Step<DeleteAssignmentInvitations<'a>, RdbContext> for RdbRepo {
+impl Step<DeleteAssignmentInvitations<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &DeleteAssignmentInvitations<'a>,
+        oper: &DeleteAssignmentInvitations<'_>,
     ) -> BaseResult<()> {
         match oper {
             //
