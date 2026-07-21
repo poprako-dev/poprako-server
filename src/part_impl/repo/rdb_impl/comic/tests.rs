@@ -14,7 +14,10 @@ use crate::value::comic::ComicInclOpt;
 
 const PREFIX: &str = "rdb-test-comic-domain-";
 
+/// Verifies comic roundtrip via testcontainers.
+/// Verifies comic roundtrip via testcontainers.
 pub async fn comic_roundtrip_uses_testcontainer(shared: RdbCore) {
+    //
     test_shared::reset(&shared, PREFIX).await;
 
     let comic_fixture = test_shared::seed_comic(&shared, PREFIX).await;

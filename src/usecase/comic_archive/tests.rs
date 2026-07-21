@@ -23,8 +23,8 @@ use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;
 use crate::util::decompress_archive;
 use crate::value::chapter::StageMask;
+use crate::value::image::{ImageExtension, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
-use crate::value::image::{ImageHash, ImageExt};
 
 fn seed_archive_scope(mock: &Mock, member_roles: RoleMask) {
     //
@@ -143,7 +143,7 @@ fn seed_archive_scope(mock: &Mock, member_roles: RoleMask) {
         image_version: 4,
         image_hash: ImageHash::new([0u8; 32]),
         image_byte_length: 4096,
-        image_extension: ImageExt::Webp,
+        image_extension: ImageExtension::Webp,
         total_unit_count: 1,
         translated_unit_count: 1,
         proofread_unit_count: 1,

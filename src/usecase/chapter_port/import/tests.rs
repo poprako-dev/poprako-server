@@ -18,8 +18,8 @@ use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;
 use crate::value::chapter::StageMask;
 use crate::value::chapter_port::TranslationFormat;
+use crate::value::image::{ImageExtension, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
-use crate::value::image::{ImageHash, ImageExt};
 
 const LABEL_PLUS_MATERIAL: &str =
     include_str!("../../../../tests/materials/translations.lp.txt");
@@ -136,7 +136,7 @@ fn page(
         image_version: 1,
         image_hash: ImageHash::new([0u8; 32]),
         image_byte_length: 4096,
-        image_extension: ImageExt::Png,
+        image_extension: ImageExtension::Png,
         total_unit_count,
         translated_unit_count: total_unit_count,
         proofread_unit_count,

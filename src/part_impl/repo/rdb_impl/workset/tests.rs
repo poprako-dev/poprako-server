@@ -13,7 +13,10 @@ use crate::part_impl::shared::RdbCore;
 
 const PREFIX: &str = "rdb-test-workset-domain-";
 
+/// Verifies workset roundtrip via testcontainers.
+/// Verifies workset roundtrip via testcontainers.
 pub async fn workset_roundtrip_uses_testcontainer(shared: RdbCore) {
+    //
     test_shared::reset(&shared, PREFIX).await;
 
     let workset_fixture = test_shared::seed_workset(&shared, PREFIX).await;

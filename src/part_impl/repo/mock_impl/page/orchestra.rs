@@ -6,10 +6,10 @@ use tracing::instrument;
 use crate::complex::page::PageComplex;
 use crate::model::page::{PageImageReservation, PageInfo};
 use crate::part::repo::oper::page::{
-    CreatePages, DeletePages, GetPageInfo, GetPageInfoExcluded,
-    ListFirstPageInfos, ListPageInfos, ListPageInfosExcluded,
-    MarkPageImageUploaded, ReservePageImage, SetPageUnitCounters,
-    ShiftPageIndexesTemporary, UpdatePageManifest,
+    ClearPageImagesForPublish, CreatePages, DeletePages, GetPageInfo,
+    GetPageInfoExcluded, ListFirstPageInfos, ListPageInfos,
+    ListPageInfosExcluded, MarkPageImageUploaded, ReservePageImage,
+    SetPageUnitCounters, ShiftPageIndexesTemporary, UpdatePageManifest,
 };
 use crate::part_impl::repo::mock_impl::page::{
     get_page_by_id, list_all_pages, list_first_pages, list_pages,
@@ -258,13 +258,13 @@ impl<'a> Step<ShiftPageIndexesTemporary<'a>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &ShiftPageIndexesTemporary<'a>,
     ) -> BaseResult<()> {
-        for page_info in context
-            .state
-            .pages
-            .iter_mut()
-            .filter(|page_info| page_info.chapter_id == oper.chapter_id && page_info.index >= 0)
-        {
+        //
+        for page_info in context.state.pages.iter_mut().filter(|page_info| {
+            page_info.chapter_id == oper.chapter_id && page_info.index >= 0
+        }) {
+            //
             page_info.index = -page_info.index - 1;
+
             page_info.updated_at = now();
         }
 
@@ -281,6 +281,7 @@ impl<'a> Step<UpdatePageManifest<'a>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &UpdatePageManifest<'a>,
     ) -> BaseResult<PageInfo> {
+        //
         let page_info = context
             .state
             .pages
@@ -289,15 +290,62 @@ impl<'a> Step<UpdatePageManifest<'a>, MockContext> for Mock {
             .ok_or_else(|| expected("error-page-not-found"))?;
 
         page_info.index = oper.update.index;
+
         page_info.image_key = oper.update.image_key.clone();
+
         page_info.image_uploaded = oper.update.image_uploaded;
+
         page_info.image_version = oper.update.image_version;
+
         page_info.image_hash = oper.update.image_hash.clone();
+
         page_info.image_byte_length = oper.update.image_byte_len;
+
         page_info.image_extension = oper.update.image_ext;
+
         page_info.updated_at = now();
 
         accept(page_info.clone())
+    }
+}
+
+impl<'a> Step<ClearPageImagesForPublish<'a>, MockContext> for Mock {
+    type Error = BaseError;
+
+    #[instrument(level = "info", err(Debug), skip_all)]
+    async fn step(
+        &self,
+        context: &mut MockContext,
+        oper: &ClearPageImagesForPublish<'a>,
+    ) -> BaseResult<Vec<String>> {
+        //
+        let mut object_keys = Vec::new();
+
+        for page_info in context
+            .state
+            .pages
+            .iter_mut()
+            .filter(|page_info| page_info.chapter_id == oper.chapter_id)
+        {
+            if let Some(object_key) = page_info.image_key.take() {
+                object_keys.push(object_key);
+            }
+
+            page_info.image_uploaded = false;
+
+            page_info.image_version = page_info
+                .image_version
+                .checked_add(1)
+                .ok_or_else(|| BaseError::Unrecoverable {
+                    message:
+                        "[ClearPageImagesForPublish] image version overflow"
+                            .into(),
+                })?;
+
+            page_info.updated_at = now();
+        }
+
+        accept(object_keys)
     }
 }
 impl<'a> Step<DeletePages<'a>, MockContext> for Mock {
@@ -309,6 +357,7 @@ impl<'a> Step<DeletePages<'a>, MockContext> for Mock {
         oper: &DeletePages<'a>,
     ) -> BaseResult<()> {
         match oper {
+            //
             DeletePages::Chapter { chapter_id } => {
                 //
                 let ids = context
@@ -333,8 +382,17 @@ impl<'a> Step<DeletePages<'a>, MockContext> for Mock {
             }
 
             DeletePages::Ids { ids } => {
-                context.state.units.retain(|unit_info| !ids.contains(&unit_info.page_id));
-                context.state.pages.retain(|page_info| !ids.contains(&page_info.id));
+                //
+                context
+                    .state
+                    .units
+                    .retain(|unit_info| !ids.contains(&unit_info.page_id));
+
+                context
+                    .state
+                    .pages
+                    .retain(|page_info| !ids.contains(&page_info.id));
+
                 accept(())
             }
         }

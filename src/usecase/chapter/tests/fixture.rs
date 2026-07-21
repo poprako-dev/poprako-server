@@ -10,7 +10,7 @@ use crate::model::page::PageInfo;
 use crate::model::user::UserToken;
 use crate::model::workset::WorksetInfo;
 use crate::value::chapter::StageMask;
-use crate::value::image::{ImageHash, ImageExt};
+use crate::value::image::{ImageExtension, ImageHash};
 
 pub fn token(user_id: &str) -> UserToken {
     UserToken {
@@ -133,7 +133,7 @@ pub fn page(id: &str, chapter_id: &str, image_key: Option<&str>) -> PageInfo {
         image_version: 1,
         image_hash: ImageHash::new([0u8; 32]),
         image_byte_length: 4096,
-        image_extension: ImageExt::Png,
+        image_extension: ImageExtension::Png,
         total_unit_count: 0,
         translated_unit_count: 0,
         proofread_unit_count: 0,

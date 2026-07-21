@@ -6,6 +6,7 @@ use tracing::instrument;
 use poprako_util::i18n::trl;
 use poprako_util::page::Page;
 
+use crate::complex::chapter::ChapterComplex;
 use crate::complex::unit::{UnitComplex, UnitPermComplex};
 use crate::data::unit::{
     ListPageUnitInfosParams, ListPageUnitInfosPayload, SavePageUnitsParams,
@@ -21,7 +22,7 @@ use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::assignment::FindAssignmentInfo;
 use crate::part::repo::oper::chapter::{
-    AdjustChapterUnitCounters, GetChapterInfo,
+    AdjustChapterUnitCounters, GetChapterInfo, GetChapterInfoExcluded,
 };
 use crate::part::repo::oper::comic::{GetComicInfo, TouchComicLastActive};
 use crate::part::repo::oper::member::FindMemberInfo;
@@ -134,9 +135,23 @@ where
 
     let stages = submitted_stage_starts(&opers);
 
+    let page_scope = repo.run(&GetPageInfo { id: &page_id }).await?;
+
     let save_result = nucl
         .coord(async move |context| {
             //
+            let chapter_info = repo
+                .step(
+                    context,
+                    &GetChapterInfoExcluded {
+                        id: &page_scope.chapter_id,
+                        incls: &[],
+                    },
+                )
+                .await?;
+
+            ChapterComplex::ensure_user_write_allowed(&chapter_info)?;
+
             let page_info = repo
                 .step(context, &GetPageInfoExcluded { id: &page_id })
                 .await?;
@@ -151,16 +166,6 @@ where
                 &page_info.chapter_id,
             )
             .await?;
-
-            let chapter_info = repo
-                .step(
-                    context,
-                    &GetChapterInfo {
-                        id: &page_info.chapter_id,
-                        incls: &[],
-                    },
-                )
-                .await?;
 
             let current_indexes = repo
                 .step(

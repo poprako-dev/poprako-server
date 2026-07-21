@@ -98,7 +98,7 @@ pub async fn delete(
         (status = 200, description = "Page upload slots reserved", body = HttpBody<ReserveChapterPagesPayload>),
         (status = 422, description = "Path id does not match body chapter id"),
         (status = 403, description = "No permission to reserve pages in this chapter"),
-        (status = 422, description = "Chapter already has pages or invalid page count"),
+        (status = 422, description = "Invalid authoritative manifest, duplicate page identity, image metadata, or published chapter"),
     ),
 ))]
 #[instrument(level = "info", err(Debug), skip_all)]
@@ -133,7 +133,7 @@ pub async fn reserve_chapter_pages(
     responses(
         (status = 200, description = "Page image upload URL reserved", body = HttpBody<ReservedPagePayload>),
         (status = 403, description = "No permission to modify this page's image"),
-        (status = 404, description = "Page not found"),
+        (status = 422, description = "Page not found, conflicting image metadata, or published chapter"),
     ),
 ))]
 #[instrument(level = "info", err(Debug), skip_all)]
@@ -166,7 +166,7 @@ pub async fn reserve_image(
     responses(
         (status = 204, description = "Page image upload confirmed"),
         (status = 403, description = "No permission to modify this page's image"),
-        (status = 404, description = "Page not found"),
+        (status = 422, description = "Page, image identity, storage object, or published chapter is invalid"),
     ),
 ))]
 #[instrument(level = "info", err(Debug), skip_all)]
@@ -180,6 +180,7 @@ pub async fn mark_image_uploaded(
     usecase::page::mark_image_uploaded(
         harn.drive(),
         harn.repo(),
+        harn.image_pool(),
         user_token,
         page_id,
         params,

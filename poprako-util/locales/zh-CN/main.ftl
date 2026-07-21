@@ -76,6 +76,11 @@ error-comic-not-found = 该漫画不存在
 error-avatar-version-mismatch = 头像图片版本不匹配
 error-cover-version-mismatch = 封面图片版本不匹配
 error-chapter-pages-already-reserved = 该章节已预留页面
+error-duplicate-page-id = 页面清单包含重复的显式页面 ID
+error-invalid-page-image-identity = 页面图片元数据与内容哈希冲突
+error-invalid-image-byte-length = 页面图片大小必须为 1 字节至 20 MiB
+error-page-image-object-invalid = 页面图片对象不存在或内容身份不匹配
+error-chapter-published-frozen = 已发布章节不可修改
 
 chapter-default-subtitle = 第{ $number }话
 

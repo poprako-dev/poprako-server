@@ -27,7 +27,7 @@ use crate::part::prom::payload::invitation::PurgeExpiredInvitation;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::{assert_expected_variant, now};
-use crate::value::chapter::StageMask;
+use crate::value::chapter::{Stage, StageMask, StagePhase};
 use crate::value::role::{RoleField, RoleMask};
 
 fn token(user_id: &str) -> UserToken {
@@ -340,6 +340,38 @@ async fn create_reviewer_creates_pending_invitation() {
     assert!(snapshot.prom_records[0].visible_at() >= before + EXPIRY_DELAY);
 
     assert!(snapshot.prom_records[0].visible_at() <= now() + EXPIRY_DELAY);
+}
+
+#[tokio::test]
+async fn create_rejects_published_chapter() {
+    //
+    let mock = Mock::new();
+
+    seed_scope(&mock);
+
+    seed_admin(&mock);
+
+    {
+        let mut state = mock.state.lock().unwrap();
+
+        state.chapters[0].stages = state.chapters[0]
+            .stages
+            .try_set_phase(Stage::Publish, StagePhase::Completed)
+            .unwrap();
+    }
+
+    let result = create(
+        &mock,
+        &mock,
+        &mock,
+        token("admin-user"),
+        create_data("target-qid"),
+    )
+    .await;
+
+    assert!(matches!(result, Err(BaseError::Expected { .. })));
+
+    assert!(mock.snapshot().assignment_invitations.is_empty());
 }
 
 #[tokio::test]

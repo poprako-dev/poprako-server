@@ -66,6 +66,26 @@ export async function runIt07Module(ctx: RunCtx): Promise<void> {
     const review02 = ctx.users.get("review_02")!;
     const publish01 = ctx.users.get("publish_01")!;
 
+    // Earlier page uploads and unit saves intentionally auto-start workflow
+    // stages. Normalize this shared fixture through the public revert API so
+    // this module can exercise every transition from Pending.
+    const resettableStages = [
+        "raw-provide",
+        "translate",
+        "proofread",
+        "typeset-redraw",
+        "review",
+    ] as const;
+
+    for (const stage of resettableStages) {
+        let chapter = await getChapter(sadmin, mainChapterId);
+
+        while (stagePhase(chapter.stages, stage) !== PHASE.PENDING) {
+            await revertStage(sadmin, mainChapterId, stage);
+            chapter = await getChapter(sadmin, mainChapterId);
+        }
+    }
+
     // ---------- G1. initial workflow state ----------
 
     const initial = await getChapter(sadmin, mainChapterId);

@@ -21,7 +21,10 @@ use crate::part_impl::shared::RdbCore;
 
 const PREFIX: &str = "rdb-test-prom-handler-";
 
+/// Verifies that payloads stored by the RDB defer path are decoded and
+/// dispatched by their topic.
 pub async fn image_payloads_from_rdb_dispatch(shared: RdbCore) {
+    //
     test_shared::reset(&shared, PREFIX).await;
 
     let delete_id = "rdb-test-prom-handler-delete".to_string();
@@ -140,4 +143,26 @@ pub async fn image_payloads_from_rdb_dispatch(shared: RdbCore) {
         .await
         .ok()
         .unwrap();
+}
+
+#[test]
+fn fourth_failure_becomes_dead() {
+    //
+    let task_flow =
+        enforce_retry_limit(TaskFlow::Retry("failed".into()), 3);
+
+    assert!(matches!(task_flow, TaskFlow::Dead(_)));
+}
+
+#[test]
+fn first_three_failures_remain_retryable() {
+    for retried_count in 0..3 {
+        //
+        let task_flow = enforce_retry_limit(
+            TaskFlow::Retry("failed".into()),
+            retried_count,
+        );
+
+        assert!(matches!(task_flow, TaskFlow::Retry(_)));
+    }
 }

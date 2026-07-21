@@ -5,7 +5,6 @@ use super::*;
 use poprako_orchestra::{Nucl as _, Run as _, Step as _};
 
 use crate::model::page::PageEntry;
-use crate::value::image::ImageExt;
 use crate::model::unit::UnitCounters;
 use crate::part::repo::oper::page::{
     CreatePages, GetPageInfo, ListFirstPageInfos, ListPageInfos,
@@ -15,10 +14,14 @@ use crate::part_impl::drive::rdb_impl::RdbDrive;
 use crate::part_impl::repo::rdb_impl::test_shared;
 use crate::part_impl::shared::RdbCore;
 use crate::result::BaseError;
+use crate::value::image::ImageExtension;
 
 const PREFIX: &str = "rdb-test-page-domain-";
 
+/// Verifies page roundtrip via testcontainers.
+/// Verifies page roundtrip via testcontainers.
 pub async fn page_roundtrip_uses_testcontainer(shared: RdbCore) {
+    //
     test_shared::reset(&shared, PREFIX).await;
 
     let page_fixture = test_shared::seed_page(&shared, PREFIX).await;
@@ -73,7 +76,7 @@ pub async fn page_roundtrip_uses_testcontainer(shared: RdbCore) {
         image_version: 1,
         image_hash: Default::default(),
         image_byte_len: 1,
-        image_ext: ImageExt::Jpg,
+        image_ext: ImageExtension::Jpg,
     };
 
     let second_page_id = second_page_entry.id.clone();

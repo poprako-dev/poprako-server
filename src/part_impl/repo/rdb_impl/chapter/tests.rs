@@ -15,7 +15,10 @@ use crate::value::chapter::{ChapterInclOpt, Stage, StageMask, StagePhase};
 
 const PREFIX: &str = "rdb-test-chapter-domain-";
 
+/// Verifies chapter roundtrip via testcontainers.
+/// Verifies chapter roundtrip via testcontainers.
 pub async fn chapter_roundtrip_uses_testcontainer(shared: RdbCore) {
+    //
     test_shared::reset(&shared, PREFIX).await;
 
     let chapter_fixture = test_shared::seed_chapter(&shared, PREFIX).await;

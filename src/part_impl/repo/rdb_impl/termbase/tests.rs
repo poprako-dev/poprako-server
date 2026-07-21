@@ -34,7 +34,10 @@ async fn create_termbase(
         .unwrap()
 }
 
+/// Verifies termbase constraints and query roundtrip.
+/// Verifies termbase constraints and query roundtrip.
 pub async fn termbase_constraints_and_query_roundtrip(shared: RdbCore) {
+    //
     let comic_fixture = test_shared::seed_comic(&shared, PREFIX).await;
 
     let repo = RdbRepo::new(shared.clone());

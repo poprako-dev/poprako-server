@@ -10,7 +10,10 @@ use poprako_util::time::ToUnixMilli;
 use crate::model::page::PageInfo;
 use crate::part::image::ImagePool;
 use crate::result::{BaseResult, accept};
-use crate::value::image::{ImageExt, ImageHash};
+use crate::value::image::{ImageExtension, ImageHash};
+
+#[cfg(test)]
+mod tests;
 
 /// Presentation-ready page information.
 #[derive(Debug, Serialize)]
@@ -28,7 +31,7 @@ pub struct PageInfoVal {
 
     pub image_hash: ImageHash,
     pub byte_length: u64,
-    pub extension: ImageExt,
+    pub extension: ImageExtension,
 
     pub total_unit_count: i32,
     pub translated_unit_count: i32,
@@ -81,17 +84,17 @@ impl PageInfoVal {
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
 pub struct ReserveChapterPagesParams {
     pub chapter_id: String,
-    pub pages: Vec<PageImageInput>,
+    pub pages: Vec<PageImageParams>,
 }
 
 /// One page image in a complete chapter manifest.
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
-pub struct PageImageInput {
+pub struct PageImageParams {
     pub page_id: Option<String>,
     pub image_hash: ImageHash,
     pub byte_length: u64,
-    pub extension: ImageExt,
+    pub extension: ImageExtension,
 }
 
 /// Return value from successful chapter page reservations.
@@ -109,7 +112,7 @@ pub struct ReservedPagePayload {
     pub index: u32,
     pub image_hash: ImageHash,
     pub byte_length: u64,
-    pub extension: ImageExt,
+    pub extension: ImageExtension,
     pub upload: Option<PageImageUploadPayload>,
 }
 
@@ -128,7 +131,7 @@ pub struct PageImageUploadPayload {
 pub struct ReservePageImageParams {
     pub image_hash: ImageHash,
     pub byte_length: u64,
-    pub extension: ImageExt,
+    pub extension: ImageExtension,
 }
 
 /// Input parameters for confirming a page image upload completed.

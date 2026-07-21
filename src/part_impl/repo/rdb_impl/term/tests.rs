@@ -15,7 +15,10 @@ use crate::result::BaseError;
 
 const PREFIX: &str = "rdb-test-term-domain-";
 
+/// Verifies term array unique and fuzzy roundtrip.
+/// Verifies term array unique and fuzzy roundtrip.
 pub async fn term_array_unique_and_fuzzy_roundtrip(shared: RdbCore) {
+    //
     let comic_fixture = test_shared::seed_comic(&shared, PREFIX).await;
 
     let repo = RdbRepo::new(shared.clone());

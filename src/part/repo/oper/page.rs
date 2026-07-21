@@ -74,6 +74,15 @@ pub struct UpdatePageManifest<'a> {
     pub update: &'a PageManifestUpdate,
 }
 
+/// Invalidates all page image keys after chapter publication.
+pub struct ClearPageImagesForPublish<'a> {
+    pub chapter_id: &'a str,
+}
+
+impl Oper for ClearPageImagesForPublish<'_> {
+    type Output = Vec<String>;
+}
+
 impl Oper for UpdatePageManifest<'_> {
     type Output = PageInfo;
 }

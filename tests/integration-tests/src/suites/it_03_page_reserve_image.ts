@@ -43,6 +43,7 @@ import {
     listChapterPages,
     markPageImageUploaded,
     newBubbleUnit,
+    newPageManifest,
     reserveChapterPages,
     reservePageImage,
     savePageUnits,
@@ -68,24 +69,24 @@ export async function runIt03Module(ctx: RunCtx): Promise<void> {
 
     // ---------- D1. batch reserve 8 pages on main ----------
 
-    const reserveVal = await reserveChapterPages(ctx.sadmin, mainChapterId, 8, "jpg");
+    const reserveVal = await reserveChapterPages(ctx.sadmin, mainChapterId, newPageManifest(8, "jpg"));
 
-    assert.equal(reserveVal.creations.length, 8);
+    assert.equal(reserveVal.pages.length, 8);
 
     const pageIds: string[] = [];
     const pageVersions = new Map<string, number>();
     const seenPageIds = new Set<string>();
 
-    for (const creation of reserveVal.creations) {
+    for (const creation of reserveVal.pages) {
         assert.ok(creation.page_id);
-        assert.ok(creation.put_url.startsWith("http"), "put_url must be an http url");
-        assert.ok(Number.isInteger(creation.image_version) && creation.image_version > 0);
+        assert.ok(creation.upload?.put_url.startsWith("http"), "put_url must be an http url");
+        assert.ok(Number.isInteger(creation.upload?.image_version) && creation.upload!.image_version > 0);
 
         assert.ok(!seenPageIds.has(creation.page_id), "page ids must be unique");
         seenPageIds.add(creation.page_id);
 
         pageIds.push(creation.page_id);
-        pageVersions.set(creation.page_id, creation.image_version);
+        pageVersions.set(creation.page_id, creation.upload!.image_version);
     }
 
     ctx.main.pageIds = pageIds;
@@ -112,12 +113,24 @@ export async function runIt03Module(ctx: RunCtx): Promise<void> {
     assert.equal(mainChapter.translated_unit_count, 0);
     assert.equal(mainChapter.proofread_unit_count, 0);
 
-    // reserve again on same chapter -> 422/2 (already reserved)
+    // duplicate explicit page ids are rejected before the manifest transaction
     expectError(
         await ctx.sadmin.post<ErrorBody>(`/api/v1/chapters/${mainChapterId}/pages/reserve`, {
             chapter_id: mainChapterId,
-            file_ext: "jpg",
-            page_count: 1,
+            pages: [
+                {
+                    page_id: pageIds[0],
+                    image_hash: sortedPages[0]!.image_hash,
+                    byte_length: sortedPages[0]!.byte_length,
+                    extension: sortedPages[0]!.extension,
+                },
+                {
+                    page_id: pageIds[0],
+                    image_hash: sortedPages[0]!.image_hash,
+                    byte_length: sortedPages[0]!.byte_length,
+                    extension: sortedPages[0]!.extension,
+                },
+            ],
         }),
         422,
         2,
@@ -127,8 +140,7 @@ export async function runIt03Module(ctx: RunCtx): Promise<void> {
     expectError(
         await ctx.sadmin.post<ErrorBody>(`/api/v1/chapters/${mainChapterId}/pages/reserve`, {
             chapter_id: mainChapterId,
-            file_ext: "jpg",
-            page_count: 0,
+            pages: [],
         }),
         422,
         2,
@@ -138,8 +150,7 @@ export async function runIt03Module(ctx: RunCtx): Promise<void> {
     expectError(
         await ctx.sadmin.post<ErrorBody>(`/api/v1/chapters/${mainChapterId}/pages/reserve`, {
             chapter_id: "not-the-path-id",
-            file_ext: "jpg",
-            page_count: 1,
+            pages: newPageManifest(1, "jpg"),
         }),
         422,
         7,
@@ -175,10 +186,10 @@ export async function runIt03Module(ctx: RunCtx): Promise<void> {
     const p2Reserve = await reservePageImage(ctx.sadmin, p2Id, "png");
 
     assert.equal(p2Reserve.page_id, p2Id);
-    assert.ok(p2Reserve.put_url.startsWith("http"));
-    assert.ok(p2Reserve.image_version !== undefined && p2Reserve.image_version > p2OldVersion, "new image_version must exceed old");
+    assert.ok(p2Reserve.upload?.put_url.startsWith("http"));
+    assert.ok(p2Reserve.upload && p2Reserve.upload.image_version > p2OldVersion, "new image_version must exceed old");
 
-    const p2NewVersion = p2Reserve.image_version!;
+    const p2NewVersion = p2Reserve.upload!.image_version;
 
     // mark new version
     expectStatus(
@@ -213,7 +224,9 @@ export async function runIt03Module(ctx: RunCtx): Promise<void> {
 
     expectError(
         await guest01.api.post<ErrorBody>(`/api/v1/pages/${p2Id}/image/reserve`, {
-            file_ext: "jpg",
+            image_hash: sortedPages[2]!.image_hash,
+            byte_length: sortedPages[2]!.byte_length,
+            extension: sortedPages[2]!.extension,
         }),
         403,
         4,
@@ -222,7 +235,9 @@ export async function runIt03Module(ctx: RunCtx): Promise<void> {
     // D2.7: non-existent page_id reserve/mark -> 422/2
     expectError(
         await ctx.sadmin.post<ErrorBody>("/api/v1/pages/page-does-not-exist/image/reserve", {
-            file_ext: "jpg",
+            image_hash: sortedPages[0]!.image_hash,
+            byte_length: sortedPages[0]!.byte_length,
+            extension: sortedPages[0]!.extension,
         }),
         422,
         2,
@@ -259,11 +274,11 @@ export async function runIt03Module(ctx: RunCtx): Promise<void> {
     ctx.auxChapters.set("d3", d3Refs);
 
     // reserve 3 pages on d3
-    const d3Reserve = await reserveChapterPages(ctx.sadmin, d3ChapterId, 3, "jpg");
+    const d3Reserve = await reserveChapterPages(ctx.sadmin, d3ChapterId, newPageManifest(3, "jpg"));
 
-    assert.equal(d3Reserve.creations.length, 3);
+    assert.equal(d3Reserve.pages.length, 3);
 
-    const d3PageIds = d3Reserve.creations.map((c) => c.page_id);
+    const d3PageIds = d3Reserve.pages.map((c) => c.page_id);
 
     d3Refs.pageIds = d3PageIds;
 
@@ -301,9 +316,9 @@ export async function runIt03Module(ctx: RunCtx): Promise<void> {
     assert.equal(d3ChapterAfter.proofread_unit_count, 0);
 
     // rebuild: reserve 2 pages
-    const d3RebuildReserve = await reserveChapterPages(ctx.sadmin, d3ChapterId, 2, "jpg");
+    const d3RebuildReserve = await reserveChapterPages(ctx.sadmin, d3ChapterId, newPageManifest(2, "jpg"));
 
-    assert.equal(d3RebuildReserve.creations.length, 2);
+    assert.equal(d3RebuildReserve.pages.length, 2);
 
     const d3RebuildPages = await listChapterPages(ctx.sadmin, d3ChapterId);
 
@@ -327,14 +342,16 @@ export async function runIt03Module(ctx: RunCtx): Promise<void> {
     // old page id image reserve -> 422/2
     expectError(
         await ctx.sadmin.post<ErrorBody>(`/api/v1/pages/${oldD3PageId}/image/reserve`, {
-            file_ext: "jpg",
+            image_hash: sortedPages[0]!.image_hash,
+            byte_length: sortedPages[0]!.byte_length,
+            extension: sortedPages[0]!.extension,
         }),
         422,
         2,
     );
 
     // update d3Refs pageIds to the rebuilt pages
-    d3Refs.pageIds = d3RebuildReserve.creations.map((c) => c.page_id);
+    d3Refs.pageIds = d3RebuildReserve.pages.map((c) => c.page_id);
 
     await assertChapterInvariant(ctx.sadmin, d3ChapterId);
     await assertChapterPageCountersConsistent(ctx.sadmin, d3ChapterId);
@@ -355,31 +372,28 @@ export async function runIt03Module(ctx: RunCtx): Promise<void> {
     const cascadeACh2Reserve = await reserveChapterPages(
         ctx.sadmin,
         cascadeRefs.chapterId,
-        2,
-        "jpg",
+        newPageManifest(2, "jpg"),
     );
 
-    assert.equal(cascadeACh2Reserve.creations.length, 2);
+    assert.equal(cascadeACh2Reserve.pages.length, 2);
 
-    cascadeRefs.pageIds = cascadeACh2Reserve.creations.map((c) => c.page_id);
+    cascadeRefs.pageIds = cascadeACh2Reserve.pages.map((c) => c.page_id);
 
     // reserve 2 pages on cascadeComicACh1 and cascadeComicBCh1 too
     const reserveACh1 = await reserveChapterPages(
         ctx.sadmin,
         cascadeExtraIds.cascadeComicACh1,
-        2,
-        "jpg",
+        newPageManifest(2, "jpg"),
     );
 
     const reserveBCh1 = await reserveChapterPages(
         ctx.sadmin,
         cascadeExtraIds.cascadeComicBCh1,
-        2,
-        "jpg",
+        newPageManifest(2, "jpg"),
     );
 
-    assert.equal(reserveACh1.creations.length, 2);
-    assert.equal(reserveBCh1.creations.length, 2);
+    assert.equal(reserveACh1.pages.length, 2);
+    assert.equal(reserveBCh1.pages.length, 2);
 
     // sanity: main chapter invariant still holds
     await assertChapterInvariant(ctx.sadmin, mainChapterId);

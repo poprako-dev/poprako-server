@@ -8,8 +8,8 @@ use crate::part::repo::oper::chapter::{
     AdjustChapterUnitCounters, CompleteChapterRawProvide, CreateChapter,
     DeleteChapter, FindPinnedChapterInfo, GetChapterInfo,
     GetChapterInfoExcluded, ListChapterInfos, ListChapterInfosExcluded,
-    ListPinnedChapterInfos, SetChapterPageCounters, StartChapterStage,
-    UnpinOtherChapters, UpdateChapter, UpdateChapterStage,
+    ListPinnedChapterInfos, ResetChapterRawProvide, SetChapterPageCounters,
+    StartChapterStage, UnpinOtherChapters, UpdateChapter, UpdateChapterStage,
 };
 use crate::part_impl::repo::mock_impl::chapter::{
     apply_chapter_incls, create_chapter, get_chapter_by_id, list_all_chapters,
@@ -172,6 +172,13 @@ impl<'a> Run<StartChapterStage<'a>> for Mock {
             return accept(false);
         };
 
+        if chapter_info
+            .stages
+            .has_phase(Stage::Publish, StagePhase::Completed)
+        {
+            return accept(false);
+        }
+
         if !chapter_info
             .stages
             .has_phase(oper.stage, StagePhase::Pending)
@@ -239,6 +246,87 @@ impl<'a> Run<CompleteChapterRawProvide<'a>> for Mock {
         chapter_info.updated_at = now();
 
         accept(true)
+    }
+}
+
+impl<'a> Step<CompleteChapterRawProvide<'a>, MockContext> for Mock {
+    type Error = BaseError;
+
+    #[instrument(level = "info", err(Debug), skip_all)]
+    async fn step(
+        &self,
+        context: &mut MockContext,
+        oper: &CompleteChapterRawProvide<'a>,
+    ) -> BaseResult<bool> {
+        //
+        let Some(chapter_index) = context
+            .state
+            .chapters
+            .iter()
+            .position(|chapter_info| chapter_info.id == oper.id)
+        else {
+            return accept(true);
+        };
+
+        if !context.state.chapters[chapter_index]
+            .stages
+            .has_phase(Stage::RawProvide, StagePhase::Pending)
+        {
+            return accept(true);
+        }
+
+        let page_count = context
+            .state
+            .pages
+            .iter()
+            .filter(|page_info| page_info.chapter_id == oper.id)
+            .count();
+
+        let all_pages_uploaded = page_count > 0
+            && context.state.pages.iter().all(|page_info| {
+                page_info.chapter_id != oper.id || page_info.image_uploaded
+            });
+
+        if !all_pages_uploaded {
+            return accept(false);
+        }
+
+        let chapter_info = &mut context.state.chapters[chapter_index];
+
+        chapter_info.stages = chapter_info
+            .stages
+            .try_set_phase(Stage::RawProvide, StagePhase::Completed)?;
+
+        chapter_info.updated_at = now();
+
+        accept(true)
+    }
+}
+
+impl<'a> Step<ResetChapterRawProvide<'a>, MockContext> for Mock {
+    type Error = BaseError;
+
+    #[instrument(level = "info", err(Debug), skip_all)]
+    async fn step(
+        &self,
+        context: &mut MockContext,
+        oper: &ResetChapterRawProvide<'a>,
+    ) -> BaseResult<()> {
+        //
+        let chapter_info = context
+            .state
+            .chapters
+            .iter_mut()
+            .find(|chapter_info| chapter_info.id == oper.id)
+            .ok_or_else(|| expected("error-chapter-not-found"))?;
+
+        chapter_info.stages = chapter_info
+            .stages
+            .try_set_phase(Stage::RawProvide, StagePhase::Pending)?;
+
+        chapter_info.updated_at = now();
+
+        accept(())
     }
 }
 

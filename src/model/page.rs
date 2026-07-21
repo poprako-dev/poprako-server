@@ -10,7 +10,7 @@
 
 use time::OffsetDateTime;
 
-use crate::value::image::{ImageExt, ImageHash};
+use crate::value::image::{ImageExtension, ImageHash};
 
 /// A pagerecord as stored in the database.
 ///
@@ -35,7 +35,7 @@ pub struct PageInfo {
     pub image_version: u32,
     pub image_hash: ImageHash,
     pub image_byte_length: u64,
-    pub image_extension: ImageExt,
+    pub image_extension: ImageExtension,
 
     pub total_unit_count: i32,
     pub translated_unit_count: i32,
@@ -57,7 +57,7 @@ pub struct PageEntry {
     pub image_version: u32,
     pub image_hash: ImageHash,
     pub image_byte_len: u64,
-    pub image_ext: ImageExt,
+    pub image_ext: ImageExtension,
 }
 
 /// Image reservation result for a page.
@@ -78,5 +78,5 @@ pub struct PageManifestUpdate {
     pub image_version: u32,
     pub image_hash: ImageHash,
     pub image_byte_len: u64,
-    pub image_ext: ImageExt,
+    pub image_ext: ImageExtension,
 }

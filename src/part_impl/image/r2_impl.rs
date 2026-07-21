@@ -8,14 +8,19 @@ use aws_sdk_s3::config::{BehaviorVersion, Region};
 use aws_sdk_s3::error::SdkError;
 use aws_sdk_s3::operation::head_object::HeadObjectError;
 use aws_sdk_s3::presigning::PresigningConfig;
+use aws_sdk_s3::types::ChecksumMode;
 use aws_sdk_s3::{Client, Config};
 use tracing::instrument;
 use url::Url;
 
 use poprako_util::i18n::trl;
 
-use crate::part::image::{ImageManager, ImagePool};
+use crate::part::image::{
+    ImageManager, ImageObjectInfo, ImagePool, ImageUploadSpec,
+    ImageUploadTarget,
+};
 use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
+use crate::value::image::ImageHash;
 
 #[cfg(test)]
 mod tests;
@@ -155,25 +160,116 @@ impl ImagePool for R2ImagePool {
             ),
         })
     }
+
+    #[instrument(level = "info", err(Debug), skip_all)]
+    async fn get_upload_target(
+        &self,
+        spec: ImageUploadSpec<'_>,
+    ) -> BaseResult<ImageUploadTarget> {
+        //
+        let content_length = i64::try_from(spec.content_length).map_err(|_| {
+            BaseError::Unrecoverable {
+                message: "[R2ImagePool::get_upload_target] content length exceeds i64"
+                    .into(),
+            }
+        })?;
+
+        let checksum_sha256 = spec.checksum_sha256.to_base64();
+
+        let presigning_config = PresigningConfig::expires_in(PUT_SIGNED_EXPIRATION)
+            .map_err(|err| BaseError::Unrecoverable {
+                message: format!(
+                    "[R2ImagePool::get_upload_target] failed to build presigning config: {}",
+                    err
+                ),
+            })?;
+
+        let presigned_request = self
+            .client
+            .put_object()
+            .bucket(&self.bucket)
+            .key(spec.object_key)
+            .content_type(spec.content_type)
+            .content_length(content_length)
+            .checksum_sha256(&checksum_sha256)
+            .presigned(presigning_config)
+            .await
+            .map_err(|err| BaseError::Unrecoverable {
+                message: format!(
+                    "[R2ImagePool::get_upload_target] failed to generate presigned put URL: {}",
+                    err
+                ),
+            })?;
+
+        let url = Url::parse(presigned_request.uri()).map_err(|err| {
+            BaseError::Unrecoverable {
+                message: format!(
+                    "[R2ImagePool::get_upload_target] failed to parse presigned URI: {}",
+                    err
+                ),
+            }
+        })?;
+
+        let mut headers = std::collections::BTreeMap::new();
+
+        headers.insert("content-type".into(), spec.content_type.into());
+
+        headers.insert("x-amz-checksum-sha256".into(), checksum_sha256);
+
+        accept(ImageUploadTarget { url, headers })
+    }
 }
 
 impl ImageManager for R2ImagePool {
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn head_object(&self, key: &str) -> BaseResult<bool> {
+    async fn head_object(
+        &self,
+        key: &str,
+    ) -> BaseResult<Option<ImageObjectInfo>> {
         match self
             .client
             .head_object()
             .bucket(&self.bucket)
             .key(key)
+            .checksum_mode(ChecksumMode::Enabled)
             .send()
             .await
         {
-            Ok(_) => accept(true),
+            Ok(output) => {
+                //
+                let byte_length = u64::try_from(
+                    output.content_length().ok_or_else(|| BaseError::Unrecoverable {
+                        message: "[R2ImagePool::head_object] object length is missing".into(),
+                    })?,
+                )
+                .map_err(|_| BaseError::Unrecoverable {
+                    message: "[R2ImagePool::head_object] object length is negative".into(),
+                })?;
+
+                let checksum = output.checksum_sha256().ok_or_else(|| {
+                    BaseError::Unrecoverable {
+                        message: "[R2ImagePool::head_object] SHA-256 checksum is missing"
+                            .into(),
+                    }
+                })?;
+
+                let checksum_sha256 = ImageHash::parse(checksum).ok_or_else(|| {
+                    BaseError::Unrecoverable {
+                        message: "[R2ImagePool::head_object] SHA-256 checksum is invalid"
+                            .into(),
+                    }
+                })?;
+
+                accept(Some(ImageObjectInfo {
+                    byte_length,
+                    checksum_sha256,
+                }))
+            }
 
             Err(SdkError::ServiceError(e))
                 if matches!(e.err(), HeadObjectError::NotFound(_)) =>
             {
-                accept(false)
+                accept(None)
             }
 
             Err(e) => Err(BaseError::Unrecoverable {

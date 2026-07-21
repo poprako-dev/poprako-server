@@ -105,7 +105,9 @@ export interface PageInfoVal {
     index: number;
     image_url: string | null;
     image_thumbnail_url: string | null;
-    image_version: number | null;
+    image_hash: string;
+    byte_length: number;
+    extension: ImageExtension;
     total_unit_count: number;
     translated_unit_count: number;
     proofread_unit_count: number;
@@ -216,14 +218,32 @@ export interface ArchiveComicVal {
     archived_comic_id: string;
 }
 
-export interface PageCreationVal {
-    page_id: string;
+export type ImageExtension = "jpg" | "jpeg" | "png" | "gif" | "webp" | "svg" | "avif" | "bmp" | "tif" | "tiff";
+
+export interface PageImageInput {
+    page_id: string | null;
+    image_hash: string;
+    byte_length: number;
+    extension: ImageExtension;
+}
+
+export interface PageImageUploadVal {
     put_url: string;
     image_version: number;
+    headers: Record<string, string>;
+}
+
+export interface ReservedPageVal {
+    page_id: string;
+    index: number;
+    image_hash: string;
+    byte_length: number;
+    extension: ImageExtension;
+    upload: PageImageUploadVal | null;
 }
 
 export interface ReserveChapterPagesVal {
-    creations: PageCreationVal[];
+    pages: ReservedPageVal[];
 }
 
 export interface ReserveVersionVal {

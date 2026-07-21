@@ -6,7 +6,7 @@ use tracing::instrument;
 use poprako_util::i18n::trl;
 
 use crate::complex::assignment::{AssignmentComplex, AssignmentPermComplex};
-use crate::complex::chapter::ChapterPermComplex;
+use crate::complex::chapter::{ChapterComplex, ChapterPermComplex};
 use crate::complex::comic::ComicComplex;
 use crate::data::assignment::{
     AssignmentInfoVal, JoinChapterAssignmentParams, ListAssignmentInfosParams,
@@ -26,7 +26,7 @@ use crate::part::repo::oper::assignment::{
     ListAssignmentInfos, ListAssignmentInfosExcluded, UpdateAssignmentRoles,
 };
 use crate::part::repo::oper::chapter::{
-    GetChapterInfo, ListPinnedChapterInfos,
+    GetChapterInfo, GetChapterInfoExcluded, ListPinnedChapterInfos,
 };
 use crate::part::repo::oper::comic::GetComicInfo;
 use crate::part::repo::oper::member::FindMemberInfo;
@@ -181,6 +181,17 @@ where
     let assignment_info = nucl
         .coord(async move |context| {
             //
+            let chapter_info = repo
+                .step(
+                    context,
+                    &GetChapterInfoExcluded {
+                        id: &params.chapter_id,
+                        incls: &[],
+                    },
+                )
+                .await?;
+
+            ChapterComplex::ensure_user_write_allowed(&chapter_info)?;
 
             let existing_assignment_info = repo
                 .step(
@@ -284,6 +295,17 @@ where
 
     nucl.coord(async move |context| {
         //
+        let chapter_info = repo
+            .step(
+                context,
+                &GetChapterInfoExcluded {
+                    id: &params.chapter_id,
+                    incls: &[],
+                },
+            )
+            .await?;
+
+        ChapterComplex::ensure_user_write_allowed(&chapter_info)?;
 
         let assignment_infos = repo
             .step(

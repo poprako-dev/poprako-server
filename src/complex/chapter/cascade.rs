@@ -15,7 +15,9 @@ use crate::part::repo::oper::chapter::{
 use crate::part::repo::oper::comic::{
     TouchComicLastActive, UpdateComicChapterCount,
 };
-use crate::part::repo::oper::page::{DeletePages, ListPageInfos};
+use crate::part::repo::oper::page::{
+    ClearPageImagesForPublish, DeletePages, ListPageInfos,
+};
 use crate::result::{BaseError, BaseResult, accept};
 
 impl ChapterComplex {
@@ -25,13 +27,17 @@ impl ChapterComplex {
         chapter_id: &str,
     ) -> BaseResult<()>
     where
-        P: for<'a> Proxy<ListPageInfos<'a>, Error = BaseError>
+        P: for<'a> Proxy<ClearPageImagesForPublish<'a>, Error = BaseError>
             + for<'t, 'a> Proxy<
                 DeferBatch<'t, 'a, String, Payload, ()>,
                 Error = BaseError,
             >,
     {
-        prom_image_deletes(proxy, chapter_id).await
+        let object_keys = proxy
+            .exec(&ClearPageImagesForPublish { chapter_id })
+            .await?;
+
+        defer_image_deletes(proxy, object_keys).await
     }
 
     /// Deletes a chapter subtree inside an existing transaction context.
@@ -130,21 +136,33 @@ where
         .exec(&ListPageInfos::AllChapter { chapter_id })
         .await?;
 
-    let mut delete_ids = Vec::new();
+    let object_keys = page_infos
+        .into_iter()
+        .filter_map(|page_info| page_info.image_key)
+        .collect();
 
-    let mut payloads = Vec::new();
+    defer_image_deletes(proxy, object_keys).await
+}
 
-    for page_info in page_infos {
-        if let Some(image_key) = page_info.image_key
-            && page_info.image_uploaded
-        {
-            delete_ids.push(ImageComplex::gen_delete_id());
+async fn defer_image_deletes<P>(
+    proxy: &mut P,
+    object_keys: Vec<String>,
+) -> BaseResult<()>
+where
+    P: for<'t, 'a> Proxy<
+            DeferBatch<'t, 'a, String, Payload, ()>,
+            Error = BaseError,
+        >,
+{
+    let delete_ids = object_keys
+        .iter()
+        .map(|_| ImageComplex::gen_delete_id())
+        .collect::<Vec<_>>();
 
-            payloads.push(Payload::Image(image::Payload::Delete {
-                object_key: image_key,
-            }));
-        }
-    }
+    let payloads = object_keys
+        .into_iter()
+        .map(|object_key| Payload::Image(image::Payload::Delete { object_key }))
+        .collect::<Vec<_>>();
 
     let tasks: Vec<Task<'_, String, Payload>> = delete_ids
         .iter()
