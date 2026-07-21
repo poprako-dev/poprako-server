@@ -8,7 +8,8 @@ use crate::part::repo::oper::page::{
     ClearPageImagesForPublish, CreatePages, DeletePages, GetPageInfo,
     GetPageInfoExcluded, ListFirstPageInfos, ListPageInfos,
     ListPageInfosExcluded, MarkPageImageUploaded, ReservePageImage,
-    SetPageUnitCounters, ShiftPageIndexesTemporary, UpdatePageManifest,
+    SetPageImageUploaded, SetPageUnitCounters, ShiftPageIndexesTemporary,
+    UpdatePageManifest,
 };
 use crate::part_impl::repo::rdb_impl::RdbRepo;
 use crate::part_impl::repo::rdb_impl::page::step_impl::{
@@ -16,7 +17,8 @@ use crate::part_impl::repo::rdb_impl::page::step_impl::{
     delete_by_ids, get_info_by_id, get_info_excluded,
     list_all_infos_by_chapter_id, list_all_infos_excluded_by_chapter_id,
     list_first_infos_by_chapter_ids, mark_image_uploaded, reserve_image,
-    set_unit_counters, shift_indexes_temporary, update_manifest,
+    set_image_uploaded, set_unit_counters, shift_indexes_temporary,
+    update_manifest,
 };
 use crate::part_impl::shared::RdbContext;
 use crate::result::{BaseError, BaseResult};
@@ -144,6 +146,25 @@ impl Step<MarkPageImageUploaded<'_>, RdbContext> for RdbRepo {
             oper.id,
             oper.image_version,
             oper.image_key,
+        )
+        .await
+    }
+}
+
+impl Step<SetPageImageUploaded<'_>, RdbContext> for RdbRepo {
+    type Error = BaseError;
+    #[instrument(level = "info", err(Debug), skip_all)]
+    async fn step(
+        &self,
+        context: &mut RdbContext,
+        oper: &SetPageImageUploaded<'_>,
+    ) -> BaseResult<()> {
+        set_image_uploaded(
+            context.conn(),
+            oper.id,
+            oper.image_version,
+            oper.image_key,
+            oper.image_uploaded,
         )
         .await
     }

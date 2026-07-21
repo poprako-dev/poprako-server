@@ -173,7 +173,6 @@ pub async fn mark_image_uploaded(
     usecase::page::mark_image_uploaded(
         harn.drive(),
         harn.repo(),
-        harn.image_pool(),
         user_token,
         page_id,
         params,

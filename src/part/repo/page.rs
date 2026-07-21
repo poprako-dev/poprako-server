@@ -6,7 +6,8 @@ use crate::part::repo::oper::page::{
     ClearPageImagesForPublish, CreatePages, DeletePages, GetPageInfo,
     GetPageInfoExcluded, ListFirstPageInfos, ListPageInfos,
     ListPageInfosExcluded, MarkPageImageUploaded, ReservePageImage,
-    SetPageUnitCounters, ShiftPageIndexesTemporary, UpdatePageManifest,
+    SetPageImageUploaded, SetPageUnitCounters, ShiftPageIndexesTemporary,
+    UpdatePageManifest,
 };
 use crate::result::BaseError;
 
@@ -22,6 +23,7 @@ pub trait PageRepo<C>:
     + for<'a> Step<GetPageInfoExcluded<'a>, C, Error = BaseError>
     + for<'a> Step<ReservePageImage<'a>, C, Error = BaseError>
     + for<'a> Step<MarkPageImageUploaded<'a>, C, Error = BaseError>
+    + for<'a> Step<SetPageImageUploaded<'a>, C, Error = BaseError>
     + for<'a> Step<SetPageUnitCounters<'a>, C, Error = BaseError>
     + for<'a> Step<ShiftPageIndexesTemporary<'a>, C, Error = BaseError>
     + for<'a> Step<UpdatePageManifest<'a>, C, Error = BaseError>

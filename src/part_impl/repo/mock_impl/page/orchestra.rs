@@ -9,7 +9,8 @@ use crate::part::repo::oper::page::{
     ClearPageImagesForPublish, CreatePages, DeletePages, GetPageInfo,
     GetPageInfoExcluded, ListFirstPageInfos, ListPageInfos,
     ListPageInfosExcluded, MarkPageImageUploaded, ReservePageImage,
-    SetPageUnitCounters, ShiftPageIndexesTemporary, UpdatePageManifest,
+    SetPageImageUploaded, SetPageUnitCounters, ShiftPageIndexesTemporary,
+    UpdatePageManifest,
 };
 use crate::part_impl::repo::mock_impl::page::{
     get_page_by_id, list_all_pages, list_first_pages, page_from_entry,
@@ -190,6 +191,35 @@ impl<'a> Step<MarkPageImageUploaded<'a>, MockContext> for Mock {
         }
 
         page_info.image_uploaded = true;
+
+        page_info.updated_at = now();
+
+        accept(())
+    }
+}
+impl<'a> Step<SetPageImageUploaded<'a>, MockContext> for Mock {
+    type Error = BaseError;
+    #[instrument(level = "info", err(Debug), skip_all)]
+    async fn step(
+        &self,
+        context: &mut MockContext,
+        oper: &SetPageImageUploaded<'a>,
+    ) -> BaseResult<()> {
+        //
+        let page_info = context
+            .state
+            .pages
+            .iter_mut()
+            .find(|info| info.id == oper.id)
+            .ok_or_else(|| expected("error-page-not-found"))?;
+
+        if page_info.image_version != oper.image_version
+            || page_info.image_key.as_deref() != Some(oper.image_key)
+        {
+            return Err(expected("error-stale-page-image-upload"));
+        }
+
+        page_info.image_uploaded = oper.image_uploaded;
 
         page_info.updated_at = now();
 

@@ -19,7 +19,7 @@ use crate::data::page::{
 };
 use crate::model::page::PageManifestUpdate;
 use crate::model::user::UserToken;
-use crate::part::image::{ImageManager, ImagePool, ImageUploadSpec};
+use crate::part::image::{ImagePool, ImageUploadSpec};
 use crate::part::prom::Prom;
 use crate::part::prom::payload::{Payload, image};
 use crate::part::repo::assignment::AssignmentRepo;
@@ -28,8 +28,8 @@ use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::assignment::FindAssignmentInfo;
 use crate::part::repo::oper::chapter::{
-    CompleteChapterRawProvide, GetChapterInfo, GetChapterInfoExcluded,
-    ResetChapterRawProvide, SetChapterPageCounters,
+    GetChapterInfo, GetChapterInfoExcluded, ResetChapterRawProvide,
+    SetChapterPageCounters,
 };
 use crate::part::repo::oper::comic::{GetComicInfo, TouchComicLastActive};
 use crate::part::repo::oper::member::FindMemberInfo;
@@ -316,10 +316,9 @@ where
 
 /// Marks one page image as uploaded.
 #[instrument(level = "info", err(Debug), skip_all)]
-pub async fn mark_image_uploaded<N, C, R, I>(
+pub async fn mark_image_uploaded<N, C, R>(
     nucl: &N,
     repo: &R,
-    image_manager: &I,
     token: UserToken,
     id: String,
     params: MarkPageImageUploadedParams,
@@ -328,7 +327,6 @@ where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     R: ChapterRepo<C> + PageRepo<C> + AssignmentRepo<C> + Send + Sync,
-    I: ImageManager,
 {
     let page_info = repo.run(&GetPageInfo { id: &id }).await?;
 
@@ -356,24 +354,6 @@ where
                 variant: ExpectedVariant::Args,
                 message: trl("error-stale-page-image-upload"),
             })?;
-
-    let object_info =
-        image_manager
-            .head_object(&image_key)
-            .await?
-            .ok_or_else(|| BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                message: trl("error-page-image-object-invalid"),
-            })?;
-
-    if object_info.byte_length != page_info.image_byte_length
-        || object_info.checksum_sha256 != page_info.image_hash
-    {
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            message: trl("error-page-image-object-invalid"),
-        });
-    }
 
     nucl.coord(async move |context| {
         //
@@ -409,14 +389,6 @@ where
                 id: &id,
                 image_version: params.image_version,
                 image_key: Some(image_key.as_str()),
-            },
-        )
-        .await?;
-
-        repo.step(
-            context,
-            &CompleteChapterRawProvide {
-                id: &page_info.chapter_id,
             },
         )
         .await?;
