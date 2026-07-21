@@ -40,11 +40,11 @@ use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 use crate::usecase::stage::spawn_starts;
 use crate::value::chapter::Stage;
 
-/// Maximum number of units allowed on a single page.
-const MAX_UNITS_PER_PAGE: usize = 100;
-
 #[cfg(test)]
 mod tests;
+
+/// Maximum number of units allowed on a single page.
+const MAX_UNITS_PER_PAGE: usize = 100;
 
 /// Lists all units under one page.
 #[instrument(level = "info", err(Debug), skip_all)]
