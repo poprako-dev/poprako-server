@@ -110,6 +110,52 @@ async fn list_infos_rejects_unrelated_user() {
 }
 
 #[tokio::test]
+async fn save_infos_rejects_published_chapter_without_mutation() {
+    //
+    let mock = Mock::new();
+
+    seed_scope(&mock, 1, 1, 0);
+
+    mock.seed_assignment(assignment(
+        "chapter-1",
+        "user-1",
+        RoleMask::from(RoleField::TRANSLATOR),
+    ));
+
+    mock.seed_unit(unit("unit-a", "page-1", 0, "alpha", None, false));
+
+    {
+        let mut state = mock.state.lock().unwrap();
+
+        state.chapters[0].stages = state.chapters[0]
+            .stages
+            .try_set_phase(Stage::Publish, StagePhase::Completed)
+            .unwrap();
+    }
+
+    let result = save(
+        &mock,
+        &mock,
+        token("user-1"),
+        SavePageUnitsParams {
+            page_id: "page-1".into(),
+            diff: UnitDiffParams {
+                page_id: "page-1".into(),
+                opers: vec![save_oper("unit-a", "changed", None)],
+            },
+        },
+    )
+    .await;
+
+    assert!(matches!(result, Err(BaseError::Expected { .. })));
+
+    assert_eq!(
+        mock.snapshot().units[0].translated_text.as_deref(),
+        Some("alpha")
+    );
+}
+
+#[tokio::test]
 async fn save_infos_creates_updates_and_deletes_by_typed_opers() {
     //
     let mock = Mock::new();

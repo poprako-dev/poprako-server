@@ -19,7 +19,10 @@ use crate::value::role::{RoleField, RoleMask};
 
 const PREFIX: &str = "rdb-test-member-invitation-domain-";
 
+/// Verifies member invitation roundtrip via testcontainers.
+/// Verifies member invitation roundtrip via testcontainers.
 pub async fn member_invitation_roundtrip_uses_testcontainer(shared: RdbCore) {
+    //
     test_shared::reset(&shared, PREFIX).await;
 
     let team_fixture = test_shared::seed_user_and_team(&shared, PREFIX).await;

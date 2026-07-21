@@ -23,7 +23,10 @@ use crate::util::decompress_archive;
 
 const PREFIX: &str = "rdb-test-comic-archive-domain-";
 
+/// Verifies comic archive roundtrip via testcontainers.
+/// Verifies comic archive roundtrip via testcontainers.
 pub async fn comic_archive_roundtrip_uses_testcontainer(shared: RdbCore) {
+    //
     test_shared::reset(&shared, PREFIX).await;
 
     let page_fixture = test_shared::seed_page(&shared, PREFIX).await;

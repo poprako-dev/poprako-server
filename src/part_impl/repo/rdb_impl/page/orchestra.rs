@@ -5,18 +5,19 @@ use tracing::instrument;
 
 use crate::model::page::{PageImageReservation, PageInfo};
 use crate::part::repo::oper::page::{
-    CreatePages, DeletePages, GetPageInfo, GetPageInfoExcluded,
-    ListFirstPageInfos, ListPageInfos, ListPageInfosExcluded,
-    MarkPageImageUploaded, ReservePageImage, SetPageUnitCounters,
-    ShiftPageIndexesTemporary, UpdatePageManifest,
+    ClearPageImagesForPublish, CreatePages, DeletePages, GetPageInfo,
+    GetPageInfoExcluded, ListFirstPageInfos, ListPageInfos,
+    ListPageInfosExcluded, MarkPageImageUploaded, ReservePageImage,
+    SetPageUnitCounters, ShiftPageIndexesTemporary, UpdatePageManifest,
 };
 use crate::part_impl::repo::rdb_impl::RdbRepo;
 use crate::part_impl::repo::rdb_impl::page::step_impl::{
-    create_batch, delete_by_chapter_id, delete_by_ids, get_info_by_id, get_info_excluded,
-    list_all_infos_by_chapter_id, list_first_infos_by_chapter_ids,
-    list_all_infos_excluded_by_chapter_id, list_infos_by_chapter_id,
-    mark_image_uploaded, reserve_image, set_unit_counters, shift_indexes_temporary,
-    update_manifest,
+    clear_images_for_publish, create_batch, delete_by_chapter_id,
+    delete_by_ids, get_info_by_id, get_info_excluded,
+    list_all_infos_by_chapter_id, list_all_infos_excluded_by_chapter_id,
+    list_first_infos_by_chapter_ids, list_infos_by_chapter_id,
+    mark_image_uploaded, reserve_image, set_unit_counters,
+    shift_indexes_temporary, update_manifest,
 };
 use crate::part_impl::shared::RdbContext;
 use crate::result::{BaseError, BaseResult};
@@ -132,7 +133,8 @@ impl Step<ListPageInfosExcluded<'_>, RdbContext> for RdbRepo {
         context: &mut RdbContext,
         oper: &ListPageInfosExcluded<'_>,
     ) -> BaseResult<Vec<PageInfo>> {
-        list_all_infos_excluded_by_chapter_id(context.conn(), oper.chapter_id).await
+        list_all_infos_excluded_by_chapter_id(context.conn(), oper.chapter_id)
+            .await
     }
 }
 
@@ -228,6 +230,19 @@ impl Step<UpdatePageManifest<'_>, RdbContext> for RdbRepo {
     }
 }
 
+impl Step<ClearPageImagesForPublish<'_>, RdbContext> for RdbRepo {
+    type Error = BaseError;
+
+    #[instrument(level = "info", err(Debug), skip_all)]
+    async fn step(
+        &self,
+        context: &mut RdbContext,
+        oper: &ClearPageImagesForPublish<'_>,
+    ) -> BaseResult<Vec<String>> {
+        clear_images_for_publish(context.conn(), oper.chapter_id).await
+    }
+}
+
 impl Step<DeletePages<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]
@@ -237,11 +252,14 @@ impl Step<DeletePages<'_>, RdbContext> for RdbRepo {
         oper: &DeletePages<'_>,
     ) -> BaseResult<()> {
         match oper {
+            //
             DeletePages::Chapter { chapter_id } => {
                 delete_by_chapter_id(context.conn(), chapter_id).await
             }
 
-            DeletePages::Ids { ids } => delete_by_ids(context.conn(), ids).await,
+            DeletePages::Ids { ids } => {
+                delete_by_ids(context.conn(), ids).await
+            }
         }
     }
 }

@@ -228,7 +228,7 @@ export async function assertPageUnitInvariant(api: ApiClient, pageId: string): P
 
         assert.equal(unit.page_id, pageId);
 
-        if (unit.translated_text !== null && unit.translated_text !== "") {
+        if (unit.translated_text != null && unit.translated_text !== "") {
             translatedByText += 1;
         }
 

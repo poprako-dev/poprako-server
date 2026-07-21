@@ -1,11 +1,33 @@
 //! Object-storage port for signed URL generation and object lifecycle
 //! management.
 
+use std::collections::BTreeMap;
 use std::future::Future;
 
 use url::Url;
 
 use crate::result::BaseResult;
+use crate::value::image::ImageHash;
+
+/// Constraints bound into a presigned image upload request.
+pub struct ImageUploadSpec<'a> {
+    pub object_key: &'a str,
+    pub content_type: &'static str,
+    pub checksum_sha256: &'a ImageHash,
+    pub content_length: u64,
+}
+
+/// A presigned upload URL and the headers the client must send unchanged.
+pub struct ImageUploadTarget {
+    pub url: Url,
+    pub headers: BTreeMap<String, String>,
+}
+
+/// Verified object identity returned from storage metadata.
+pub struct ImageObjectInfo {
+    pub byte_length: u64,
+    pub checksum_sha256: ImageHash,
+}
 
 /// Abstraction over an image pool — signed URL generation.
 ///
@@ -29,6 +51,12 @@ pub trait ImagePool {
         &self,
         key: &str,
     ) -> impl Future<Output = BaseResult<Url>> + Send;
+
+    /// Returns an upload target whose signature binds content identity.
+    fn get_upload_target(
+        &self,
+        spec: ImageUploadSpec<'_>,
+    ) -> impl Future<Output = BaseResult<ImageUploadTarget>> + Send;
 }
 
 /// Abstraction over image object lifecycle — metadata and deletion.
@@ -40,11 +68,11 @@ pub trait ImagePool {
 /// Methods return `impl Future + Send` so the futures can be spawned on
 /// the prom worker's async runtime.
 pub trait ImageManager {
-    /// Check whether an object exists in storage.
+    /// Returns verified object metadata, or `None` when the object is absent.
     fn head_object(
         &self,
         key: &str,
-    ) -> impl Future<Output = BaseResult<bool>> + Send;
+    ) -> impl Future<Output = BaseResult<Option<ImageObjectInfo>>> + Send;
 
     /// Delete an object from storage. Idempotent — succeeds if the
     /// object does not exist.

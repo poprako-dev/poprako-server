@@ -6,7 +6,7 @@ use time::OffsetDateTime;
 use crate::model::page::{PageEntry, PageInfo};
 use crate::part_impl::repo::rdb_impl::schema::t_page;
 use crate::result::BaseError;
-use crate::value::image::{ImageExt, ImageHash};
+use crate::value::image::{ImageExtension, ImageHash};
 
 /// Raw database row for the `t_page` table. Returned by Diesel queries.
 #[derive(Queryable, Selectable)]
@@ -89,7 +89,9 @@ impl<'a> PageAspect<'a> {
     }
 
     pub fn index(mut self, val: i32) -> Self {
+        //
         self.f_index = Some(val);
+
         self
     }
 
@@ -113,7 +115,6 @@ impl<'a> PageAspect<'a> {
 
         self
     }
-
 
     pub fn total_unit_count(mut self, val: i32) -> Self {
         //
@@ -141,17 +142,25 @@ impl TryFrom<PageRow> for PageInfo {
     type Error = BaseError;
 
     fn try_from(row: PageRow) -> Result<Self, Self::Error> {
-        let image_hash_bytes: [u8; 32] = row.f_image_hash.try_into().map_err(|_| BaseError::Unrecoverable {
-            message: "[PageRow] f_image_hash must contain 32 bytes".into(),
-        })?;
+        //
+        let image_hash_bytes: [u8; 32] =
+            row.f_image_hash.try_into().map_err(|_| {
+                BaseError::Unrecoverable {
+                    message: "[PageRow] f_image_hash must contain 32 bytes"
+                        .into(),
+                }
+            })?;
 
-        let image_byte_length = u64::try_from(row.f_image_byte_length).map_err(|_| BaseError::Unrecoverable {
-            message: "[PageRow] f_image_byte_length must be non-negative".into(),
-        })?;
+        let image_byte_length = u64::try_from(row.f_image_byte_length)
+            .map_err(|_| BaseError::Unrecoverable {
+                message: "[PageRow] f_image_byte_length must be non-negative"
+                    .into(),
+            })?;
 
-        let image_extension = ImageExt::parse(&row.f_image_extension).ok_or_else(|| BaseError::Unrecoverable {
-            message: "[PageRow] f_image_extension must be supported".into(),
-        })?;
+        let image_extension = ImageExtension::parse(&row.f_image_extension)
+            .ok_or_else(|| BaseError::Unrecoverable {
+                message: "[PageRow] f_image_extension must be supported".into(),
+            })?;
 
         Ok(Self {
             id: row.f_id,
@@ -179,9 +188,14 @@ impl<'a> TryFrom<&'a PageEntry> for PageRowEntry<'a> {
         //
         let now = OffsetDateTime::now_utc();
 
-        let image_byte_length = i64::try_from(entry.image_byte_len).map_err(|_| BaseError::Unrecoverable {
-            message: "[PageRowEntry] image byte length exceeds PostgreSQL BIGINT".into(),
-        })?;
+        let image_byte_length =
+            i64::try_from(entry.image_byte_len).map_err(|_| {
+                BaseError::Unrecoverable {
+                message:
+                    "[PageRowEntry] image byte length exceeds PostgreSQL BIGINT"
+                        .into(),
+            }
+            })?;
 
         Ok(Self {
             f_id: &entry.id,

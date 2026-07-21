@@ -101,3 +101,37 @@ async fn join_rejects_role_outside_member_mask() {
 
     assert_expected_variant(err, ExpectedVariant::Perm);
 }
+
+#[tokio::test]
+async fn join_rejects_published_chapter() {
+    //
+    let mock = Mock::new();
+
+    seed_scope(&mock);
+
+    mock.seed_member(member("user-1", role(RoleField::TRANSLATOR)));
+
+    {
+        let mut state = mock.state.lock().unwrap();
+
+        state.chapters[0].stages = state.chapters[0]
+            .stages
+            .try_set_phase(Stage::Publish, StagePhase::Completed)
+            .unwrap();
+    }
+
+    let result = join(
+        &mock,
+        &mock,
+        token("user-1"),
+        JoinChapterAssignmentParams {
+            chapter_id: "chapter-1".into(),
+            roles: role(RoleField::TRANSLATOR),
+        },
+    )
+    .await;
+
+    assert!(matches!(result, Err(BaseError::Expected { .. })));
+
+    assert!(mock.snapshot().assignments.is_empty());
+}

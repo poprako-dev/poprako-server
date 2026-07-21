@@ -29,7 +29,10 @@ fn unit_payload(text: Option<&str>, proofread: bool) -> UnitContent {
     }
 }
 
+/// Verifies unit roundtrip via testcontainers.
+/// Verifies unit roundtrip via testcontainers.
 pub async fn unit_roundtrip_uses_testcontainer(shared: RdbCore) {
+    //
     test_shared::reset(&shared, PREFIX).await;
 
     let page_fixture = test_shared::seed_page(&shared, PREFIX).await;

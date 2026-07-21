@@ -110,6 +110,7 @@ pub async fn list_all_infos_excluded_by_chapter_id(
     conn: &mut RdbConn,
     chapter_id: &str,
 ) -> BaseResult<Vec<PageInfo>> {
+    //
     let rows: Vec<PageRow> = t_page
         .filter(f_chapter_id.eq(chapter_id))
         .select(PageRow::as_select())
@@ -128,11 +129,16 @@ pub async fn shift_indexes_temporary(
     conn: &mut RdbConn,
     chapter_id: &str,
 ) -> BaseResult<()> {
-    diesel::update(t_page.filter(f_chapter_id.eq(chapter_id)).filter(f_index.ge(0)))
-        .set(f_index.eq(sql::<Integer>("-f_index - 1")))
-        .execute(conn)
-        .await
-        .map_err(diesel)?;
+    //
+    diesel::update(
+        t_page
+            .filter(f_chapter_id.eq(chapter_id))
+            .filter(f_index.ge(0)),
+    )
+    .set(f_index.eq(sql::<Integer>("-f_index - 1")))
+    .execute(conn)
+    .await
+    .map_err(diesel)?;
 
     accept(())
 }
@@ -143,11 +149,19 @@ pub async fn update_manifest(
     conn: &mut RdbConn,
     update: &PageManifestUpdate,
 ) -> BaseResult<PageInfo> {
+    //
     let now = OffsetDateTime::now_utc();
+
     let image_hash = update.image_hash.bytes();
-    let image_byte_length = i64::try_from(update.image_byte_len).map_err(|_| BaseError::Unrecoverable {
-        message: "[update_manifest] image byte length exceeds PostgreSQL BIGINT".into(),
-    })?;
+
+    let image_byte_length =
+        i64::try_from(update.image_byte_len).map_err(|_| {
+            BaseError::Unrecoverable {
+            message:
+                "[update_manifest] image byte length exceeds PostgreSQL BIGINT"
+                    .into(),
+        }
+        })?;
 
     let row: PageRow = diesel::update(t_page.filter(f_id.eq(&update.id)))
         .set((
@@ -166,6 +180,60 @@ pub async fn update_manifest(
         .map_err(diesel)?;
 
     row.try_into()
+}
+
+/// Invalidates every page image identity after chapter publication.
+#[instrument(level = "info", err(Debug), skip_all)]
+pub async fn clear_images_for_publish(
+    conn: &mut RdbConn,
+    chapter_id: &str,
+) -> BaseResult<Vec<String>> {
+    //
+    let rows: Vec<PageRow> = t_page
+        .filter(f_chapter_id.eq(chapter_id))
+        .select(PageRow::as_select())
+        .order_by((f_index.asc(), f_id.asc()))
+        .for_update()
+        .load(conn)
+        .await
+        .map_err(diesel)?;
+
+    let page_infos = rows
+        .into_iter()
+        .map(TryInto::try_into)
+        .collect::<BaseResult<Vec<PageInfo>>>()?;
+
+    let object_keys = page_infos
+        .iter()
+        .filter_map(|page_info| page_info.image_key.clone())
+        .collect::<Vec<_>>();
+
+    let now = OffsetDateTime::now_utc();
+
+    for page_info in page_infos {
+        //
+        let image_version =
+            page_info.image_version.checked_add(1).ok_or_else(|| {
+                BaseError::Unrecoverable {
+                    message:
+                        "[clear_images_for_publish] image version overflow"
+                            .into(),
+                }
+            })?;
+
+        diesel::update(t_page.filter(f_id.eq(&page_info.id)))
+            .set((
+                f_image_key.eq(None::<String>),
+                f_image_uploaded.eq(false),
+                f_image_version.eq(i64::from(image_version)),
+                f_updated_at.eq(now),
+            ))
+            .execute(conn)
+            .await
+            .map_err(diesel)?;
+    }
+
+    accept(object_keys)
 }
 
 /// Query the lowest-index page info for each requested chapter.
@@ -189,9 +257,7 @@ pub async fn list_first_infos_by_chapter_ids(
             .map(TryInto::try_into)
             .collect::<BaseResult<Vec<PageInfo>>>()?
             .into_iter()
-            .map(|page_info| {
-                (page_info.chapter_id.clone(), page_info)
-            })
+            .map(|page_info| (page_info.chapter_id.clone(), page_info))
             .collect(),
     )
 }
@@ -361,7 +427,11 @@ pub async fn delete_by_chapter_id(
 
 /// Deletes selected pages after deleting their child units.
 #[instrument(level = "info", err(Debug), skip_all)]
-pub async fn delete_by_ids(conn: &mut RdbConn, ids: &[String]) -> BaseResult<()> {
+pub async fn delete_by_ids(
+    conn: &mut RdbConn,
+    ids: &[String],
+) -> BaseResult<()> {
+    //
     if ids.is_empty() {
         return accept(());
     }

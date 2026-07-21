@@ -24,6 +24,7 @@ import {
     exportPoprako,
     getChapter,
     newBubbleUnit,
+    newPageManifest,
     reserveChapterPages,
     savePageUnits,
 } from "../http/fixtures.js";
@@ -135,11 +136,10 @@ export async function runIt05Module(ctx: RunCtx): Promise<void> {
     const f10Reserve = await reserveChapterPages(
         ctx.sadmin,
         f10Chapter.id,
-        mainExport.pages.length,
-        "jpg",
+        newPageManifest(mainExport.pages.length, "jpg"),
     );
 
-    assert.equal(f10Reserve.creations.length, mainExport.pages.length);
+    assert.equal(f10Reserve.pages.length, mainExport.pages.length);
 
     // invalid format -> 422/2
     expectError(

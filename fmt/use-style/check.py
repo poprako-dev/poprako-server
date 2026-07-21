@@ -721,6 +721,40 @@ def check_test_super_imports(
     return diagnostics
 
 
+def check_single_test_module(
+    path: Path,
+    root: Path,
+    source: bytes,
+) -> list[str]:
+    """Each file may have at most one #[cfg(test)] mod declaration."""
+    tree = PARSER.parse(source)
+    diagnostics: list[str] = []
+    test_mod_nodes: list[tree_sitter.Node] = []
+
+    for node in descendants(tree.root_node, "mod_item"):
+        for attr in leading_attributes(node):
+            condition = normalized_cfg(source, attr)
+
+            if condition == "cfg(test)":
+                test_mod_nodes.append(node)
+                break
+
+    if len(test_mod_nodes) > 1:
+        for node in test_mod_nodes[1:]:
+            diagnostics.append(
+                line(
+                    path,
+                    root,
+                    source,
+                    node.start_byte,
+                    "USE_MULTIPLE_TEST_MODS",
+                    "only one #[cfg(test)] mod declaration is allowed per file; merge all tests into mod tests",
+                ),
+            )
+
+    return diagnostics
+
+
 def check_file(path: Path, root: Path, local_crates: set[str]) -> tuple[list[str], list[tuple[int, int, bytes]]]:
     source = path.read_bytes()
     statements = collect_uses(path, source)
@@ -739,6 +773,7 @@ def check_file(path: Path, root: Path, local_crates: set[str]) -> tuple[list[str
     diagnostics.extend(check_test_super_imports(path, root, source, statements))
     diagnostics.extend(check_use_block_boundaries(path, root, source, statements))
     diagnostics.extend(check_item_order(path, root, source))
+    diagnostics.extend(check_single_test_module(path, root, source))
 
     for block in contiguous_blocks(source, statements):
         for segment in condition_segments(block):

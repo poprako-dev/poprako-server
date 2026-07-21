@@ -2,10 +2,10 @@
 pub mod announcement;
 /// Assignment value types.
 pub mod assignment;
-/// Image content identity value types.
-pub mod image;
 /// Comment value types.
 pub mod comment;
+/// Image content identity value types.
+pub mod image;
 /// Include declarations for repo queries.
 pub mod incl;
 /// Index computation helpers.

@@ -5,6 +5,7 @@ use tracing::instrument;
 
 use poprako_util::i18n::trl;
 
+use crate::complex::chapter::ChapterComplex;
 use crate::complex::chapter_port::{
     ChapterImportComplex, ChapterPortPermComplex,
 };
@@ -22,7 +23,7 @@ use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::oper::assignment::FindAssignmentInfo;
 use crate::part::repo::oper::chapter::{
-    AdjustChapterUnitCounters, GetChapterInfo,
+    AdjustChapterUnitCounters, GetChapterInfoExcluded,
 };
 use crate::part::repo::oper::comic::TouchComicLastActive;
 use crate::part::repo::oper::page::{ListPageInfos, SetPageUnitCounters};
@@ -94,12 +95,14 @@ where
             let chapter_info = repo
                 .step(
                     context,
-                    &GetChapterInfo {
+                    &GetChapterInfoExcluded {
                         id: &chapter_id,
                         incls: &[],
                     },
                 )
                 .await?;
+
+            ChapterComplex::ensure_user_write_allowed(&chapter_info)?;
 
             let page_infos = repo
                 .step(

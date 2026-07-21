@@ -16,6 +16,9 @@ use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
 use crate::value::role::RoleField;
 
+/// Pure chapter-page manifest matching.
+pub mod manifest;
+
 /// Domain opers for page entities.
 pub struct PageComplex;
 

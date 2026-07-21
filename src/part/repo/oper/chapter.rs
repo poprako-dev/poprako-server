@@ -105,6 +105,15 @@ impl Oper for CompleteChapterRawProvide<'_> {
     type Output = bool;
 }
 
+/// Clears raw-provision completion without changing any other stage.
+pub struct ResetChapterRawProvide<'a> {
+    pub id: &'a str,
+}
+
+impl Oper for ResetChapterRawProvide<'_> {
+    type Output = ();
+}
+
 pub struct SetChapterPageCounters<'a> {
     pub id: &'a str,
     pub page_count: i32,

@@ -108,6 +108,7 @@ where
         match with_pinned_chapter_assignment {
             //
             true => {
+                //
                 let chapter_ids = pinned_chapter_infos
                     .values()
                     .map(|chapter_info| chapter_info.id.clone())
@@ -143,10 +144,12 @@ where
         Vec::with_capacity(comic_infos.len());
 
     for comic_info in comic_infos {
+        //
         let (pinned_chapter_val, pinned_chapter_assignment_val) =
             match pinned_chapter_infos.remove(&comic_info.id) {
                 //
                 Some(chapter_info) => {
+                    //
                     let assignment_vals = pinned_chapter_assignment_infos
                         .remove(&chapter_info.id)
                         .unwrap_or_default()

@@ -22,6 +22,9 @@ use crate::part_impl::shared::result::{diesel, expected};
 use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::{BaseError, BaseResult, accept};
 
+#[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
+pub mod tests;
+
 impl WorksetRepo<RdbContext> for RdbRepo {}
 
 #[instrument(level = "info", err(Debug), skip_all)]
@@ -308,6 +311,3 @@ impl Step<UpdateWorksetComicCount<'_>, RdbContext> for RdbRepo {
         update_comic_count(context.conn(), oper.id, oper.delta).await
     }
 }
-
-#[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
-pub mod tests;

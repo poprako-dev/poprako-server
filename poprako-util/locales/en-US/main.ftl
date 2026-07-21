@@ -74,6 +74,11 @@ error-comic-not-found = Comic not found
 error-avatar-version-mismatch = Avatar image version does not match
 error-cover-version-mismatch = Cover image version does not match
 error-chapter-pages-already-reserved = Chapter pages have already been reserved
+error-duplicate-page-id = Page manifest contains a duplicate explicit page id
+error-invalid-page-image-identity = Page image metadata conflicts with its content hash
+error-invalid-image-byte-length = Page image length must be between 1 byte and 20 MiB
+error-page-image-object-invalid = Uploaded page image is missing or has invalid content identity
+error-chapter-published-frozen = Published chapters cannot be modified
 
 chapter-default-subtitle = Ch. { $number }
 
