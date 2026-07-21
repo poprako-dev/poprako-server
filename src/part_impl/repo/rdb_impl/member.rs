@@ -18,13 +18,13 @@ pub mod tests;
 
 impl MemberRepo<RdbContext> for RdbRepo {}
 
-impl<'a> Run<FindMemberInfo<'a>> for RdbRepo {
+impl Run<FindMemberInfo<'_>> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
-        oper: &FindMemberInfo<'a>,
+        oper: &FindMemberInfo<'_>,
     ) -> BaseResult<Option<MemberInfo>> {
         match oper {
             FindMemberInfo::UserTeam { user_id, team_id } => {

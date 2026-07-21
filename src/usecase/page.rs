@@ -67,10 +67,11 @@ where
     P: Prom<C> + Send + Sync,
     I: ImagePool,
 {
-    let page_count = i32::try_from(params.pages.len()).map_err(|_| BaseError::Expected {
-        variant: ExpectedVariant::Args,
-        message: trl("error-invalid-page-count"),
-    })?;
+    let page_count =
+        i32::try_from(params.pages.len()).map_err(|_| BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message: trl("error-invalid-page-count"),
+        })?;
 
     validate_page_count(page_count)?;
 
@@ -82,7 +83,7 @@ where
         image_version: u32,
         image_hash: crate::value::image::ImageHash,
         byte_length: u64,
-        extension: crate::value::image::ImageExtension,
+        extension: crate::value::image::ImageExt,
     }
 
     PagePermComplex::ensure_user_can_reserve(
@@ -145,8 +146,8 @@ where
                     image_key: Some(object_key.clone()),
                     image_version,
                     image_hash: page_input.image_hash.clone(),
-                    image_byte_length: page_input.byte_length,
-                    image_extension: page_input.extension,
+                    image_byte_len: page_input.byte_length,
+                    image_ext: page_input.extension,
                 };
 
                 page_entries.push(page_entry);
@@ -241,8 +242,8 @@ where
         })
         .await?;
 
-    let pages = futures_util::future::join_all(
-        reservations.into_iter().map(|reservation| async move {
+    let pages = futures_util::future::join_all(reservations.into_iter().map(
+        |reservation| async move {
             //
             let put_url = image_pool
                 .get_upload_url(&reservation.object_key)
@@ -273,8 +274,8 @@ where
                     headers,
                 }),
             })
-        }),
-    )
+        },
+    ))
     .await
     .into_iter()
     .collect::<BaseResult<Vec<_>>>()?;
@@ -319,13 +320,7 @@ where
         .coord(async move |context| {
             //
             let page_reservation = repo
-                .step(
-                    context,
-                    &ReservePageImage {
-                        id: &id,
-                        file_ext,
-                    },
-                )
+                .step(context, &ReservePageImage { id: &id, file_ext })
                 .await?;
 
             let mut batch_ids = Vec::new();
@@ -381,13 +376,22 @@ where
 
     let mut headers = std::collections::BTreeMap::new();
 
-    headers.insert("content-type".into(), params.extension.content_type().into());
-    headers.insert("x-amz-checksum-sha256".into(), params.image_hash.to_base64());
+    headers.insert(
+        "content-type".into(),
+        params.extension.content_type().into(),
+    );
+    headers.insert(
+        "x-amz-checksum-sha256".into(),
+        params.image_hash.to_base64(),
+    );
 
     accept(ReservedPagePayload {
         page_id,
-        index: u32::try_from(page_info.index).map_err(|_| BaseError::Unrecoverable {
-            message: "[reserve_image] page index must be non-negative".into(),
+        index: u32::try_from(page_info.index).map_err(|_| {
+            BaseError::Unrecoverable {
+                message: "[reserve_image] page index must be non-negative"
+                    .into(),
+            }
         })?,
         image_hash: params.image_hash,
         byte_length: params.byte_length,

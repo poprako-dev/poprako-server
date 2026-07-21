@@ -8,6 +8,7 @@ use crate::model::member::MemberInfo;
 use crate::model::page::PageInfo;
 use crate::model::user::UserToken;
 use crate::value::role::{RoleField, RoleMask};
+use crate::value::image::{ImageHash, ImageExt};
 
 pub fn comic(id: &str, workset_id: &str, index: i32) -> ComicInfo {
     //
@@ -103,6 +104,9 @@ pub fn page(
         image_key: image_key.map(Into::into),
         image_uploaded,
         image_version: 1,
+        image_hash: ImageHash::new([0u8; 32]),
+        image_byte_length: 4096,
+        image_extension: ImageExt::Png,
         total_unit_count: 0,
         translated_unit_count: 0,
         proofread_unit_count: 0,

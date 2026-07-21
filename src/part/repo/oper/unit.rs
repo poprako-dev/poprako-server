@@ -11,7 +11,7 @@ pub enum ListUnitInfos<'a> {
     AllPage { page_id: &'a str },
 }
 
-impl<'a> Oper for ListUnitInfos<'a> {
+impl Oper for ListUnitInfos<'_> {
     type Output = Vec<UnitInfo>;
 }
 
@@ -21,7 +21,7 @@ pub struct CreateUnit<'a> {
     pub payload: &'a UnitContent,
 }
 
-impl<'a> Oper for CreateUnit<'a> {
+impl Oper for CreateUnit<'_> {
     type Output = ();
 }
 
@@ -31,7 +31,7 @@ pub struct SaveUnit<'a> {
     pub payload: &'a UnitContent,
 }
 
-impl<'a> Oper for SaveUnit<'a> {
+impl Oper for SaveUnit<'_> {
     type Output = ();
 }
 
@@ -40,7 +40,7 @@ pub struct DeleteUnit<'a> {
     pub id: &'a str,
 }
 
-impl<'a> Oper for DeleteUnit<'a> {
+impl Oper for DeleteUnit<'_> {
     type Output = ();
 }
 
@@ -48,7 +48,7 @@ pub struct ListUnitIndexes<'a> {
     pub page_id: &'a str,
 }
 
-impl<'a> Oper for ListUnitIndexes<'a> {
+impl Oper for ListUnitIndexes<'_> {
     type Output = Vec<UnitIndex>;
 }
 
@@ -57,7 +57,7 @@ pub struct UpdateUnitIndexes<'a> {
     pub updates: &'a [UnitIndexUpdate],
 }
 
-impl<'a> Oper for UpdateUnitIndexes<'a> {
+impl Oper for UpdateUnitIndexes<'_> {
     type Output = ();
 }
 
@@ -65,6 +65,6 @@ pub struct CountUnits<'a> {
     pub page_id: &'a str,
 }
 
-impl<'a> Oper for CountUnits<'a> {
+impl Oper for CountUnits<'_> {
     type Output = UnitCounters;
 }

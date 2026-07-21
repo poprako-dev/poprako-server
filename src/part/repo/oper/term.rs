@@ -8,7 +8,7 @@ pub struct CreateTerm<'a> {
     pub entry: &'a TermEntry,
 }
 
-impl<'a> Oper for CreateTerm<'a> {
+impl Oper for CreateTerm<'_> {
     type Output = TermInfo;
 }
 
@@ -16,7 +16,7 @@ pub struct GetTermInfo<'a> {
     pub id: &'a str,
 }
 
-impl<'a> Oper for GetTermInfo<'a> {
+impl Oper for GetTermInfo<'_> {
     type Output = TermInfo;
 }
 
@@ -24,7 +24,7 @@ pub struct ListTermInfos<'a> {
     pub spec: &'a TermInfoListSpec,
 }
 
-impl<'a> Oper for ListTermInfos<'a> {
+impl Oper for ListTermInfos<'_> {
     type Output = Vec<TermInfo>;
 }
 
@@ -32,7 +32,7 @@ pub struct GetTermInfoExcluded<'a> {
     pub id: &'a str,
 }
 
-impl<'a> Oper for GetTermInfoExcluded<'a> {
+impl Oper for GetTermInfoExcluded<'_> {
     type Output = TermInfo;
 }
 
@@ -40,7 +40,7 @@ pub struct UpdateTerm<'a> {
     pub update: &'a TermInfoUpdate,
 }
 
-impl<'a> Oper for UpdateTerm<'a> {
+impl Oper for UpdateTerm<'_> {
     type Output = ();
 }
 
@@ -48,7 +48,7 @@ pub struct DeleteTerm<'a> {
     pub id: &'a str,
 }
 
-impl<'a> Oper for DeleteTerm<'a> {
+impl Oper for DeleteTerm<'_> {
     type Output = ();
 }
 
@@ -56,6 +56,6 @@ pub struct DeleteTerms<'a> {
     pub termbase_id: &'a str,
 }
 
-impl<'a> Oper for DeleteTerms<'a> {
+impl Oper for DeleteTerms<'_> {
     type Output = ();
 }

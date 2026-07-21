@@ -11,7 +11,7 @@ pub struct GetPageInfo<'a> {
     pub id: &'a str,
 }
 
-impl<'a> Oper for GetPageInfo<'a> {
+impl Oper for GetPageInfo<'_> {
     type Output = PageInfo;
 }
 
@@ -26,7 +26,7 @@ pub enum ListPageInfos<'a> {
     },
 }
 
-impl<'a> Oper for ListPageInfos<'a> {
+impl Oper for ListPageInfos<'_> {
     type Output = Vec<PageInfo>;
 }
 
@@ -35,7 +35,7 @@ pub struct ListFirstPageInfos<'a> {
     pub chapter_ids: &'a [String],
 }
 
-impl<'a> Oper for ListFirstPageInfos<'a> {
+impl Oper for ListFirstPageInfos<'_> {
     type Output = HashMap<String, PageInfo>;
 }
 
@@ -43,7 +43,7 @@ pub struct CreatePages<'a> {
     pub entries: &'a [PageEntry],
 }
 
-impl<'a> Oper for CreatePages<'a> {
+impl Oper for CreatePages<'_> {
     type Output = Vec<PageInfo>;
 }
 
@@ -56,7 +56,7 @@ pub struct ListPageInfosExcluded<'a> {
     pub chapter_id: &'a str,
 }
 
-impl<'a> Oper for ListPageInfosExcluded<'a> {
+impl Oper for ListPageInfosExcluded<'_> {
     type Output = Vec<PageInfo>;
 }
 
@@ -65,7 +65,7 @@ pub struct ShiftPageIndexesTemporary<'a> {
     pub chapter_id: &'a str,
 }
 
-impl<'a> Oper for ShiftPageIndexesTemporary<'a> {
+impl Oper for ShiftPageIndexesTemporary<'_> {
     type Output = ();
 }
 
@@ -74,11 +74,11 @@ pub struct UpdatePageManifest<'a> {
     pub update: &'a PageManifestUpdate,
 }
 
-impl<'a> Oper for UpdatePageManifest<'a> {
+impl Oper for UpdatePageManifest<'_> {
     type Output = PageInfo;
 }
 
-impl<'a> Oper for GetPageInfoExcluded<'a> {
+impl Oper for GetPageInfoExcluded<'_> {
     type Output = PageInfo;
 }
 
@@ -87,7 +87,7 @@ pub struct ReservePageImage<'a> {
     pub file_ext: &'a str,
 }
 
-impl<'a> Oper for ReservePageImage<'a> {
+impl Oper for ReservePageImage<'_> {
     type Output = PageImageReservation;
 }
 
@@ -97,7 +97,7 @@ pub struct MarkPageImageUploaded<'a> {
     pub image_key: Option<&'a str>,
 }
 
-impl<'a> Oper for MarkPageImageUploaded<'a> {
+impl Oper for MarkPageImageUploaded<'_> {
     type Output = ();
 }
 
@@ -106,7 +106,7 @@ pub struct SetPageUnitCounters<'a> {
     pub counters: UnitCounters,
 }
 
-impl<'a> Oper for SetPageUnitCounters<'a> {
+impl Oper for SetPageUnitCounters<'_> {
     type Output = ();
 }
 
@@ -115,6 +115,6 @@ pub enum DeletePages<'a> {
     Ids { ids: &'a [String] },
 }
 
-impl<'a> Oper for DeletePages<'a> {
+impl Oper for DeletePages<'_> {
     type Output = ();
 }

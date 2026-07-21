@@ -5,6 +5,7 @@ use super::*;
 use poprako_orchestra::{Nucl as _, Run as _, Step as _};
 
 use crate::model::page::PageEntry;
+use crate::value::image::ImageExt;
 use crate::model::unit::UnitCounters;
 use crate::part::repo::oper::page::{
     CreatePages, GetPageInfo, ListFirstPageInfos, ListPageInfos,
@@ -70,6 +71,9 @@ pub async fn page_roundtrip_uses_testcontainer(shared: RdbCore) {
         index: 1,
         image_key: Some("page/previous.png".into()),
         image_version: 1,
+        image_hash: Default::default(),
+        image_byte_len: 1,
+        image_ext: ImageExt::Jpg,
     };
 
     let second_page_id = second_page_entry.id.clone();

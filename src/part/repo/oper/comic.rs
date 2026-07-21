@@ -10,7 +10,7 @@ pub struct CreateComic<'a> {
     pub entry: &'a ComicEntry,
 }
 
-impl<'a> Oper for CreateComic<'a> {
+impl Oper for CreateComic<'_> {
     type Output = ComicInfo;
 }
 
@@ -19,7 +19,7 @@ pub struct GetComicInfo<'a, 'b> {
     pub incls: &'b [ComicInclOpt],
 }
 
-impl<'a, 'b> Oper for GetComicInfo<'a, 'b> {
+impl Oper for GetComicInfo<'_, '_> {
     type Output = ComicInfo;
 }
 
@@ -27,7 +27,7 @@ pub struct ListComicInfos<'a> {
     pub spec: &'a ComicInfoListSpec,
 }
 
-impl<'a> Oper for ListComicInfos<'a> {
+impl Oper for ListComicInfos<'_> {
     type Output = Vec<ComicInfo>;
 }
 
@@ -36,7 +36,7 @@ pub struct GetComicInfoExcluded<'a, 'b> {
     pub incls: &'b [ComicInclOpt],
 }
 
-impl<'a, 'b> Oper for GetComicInfoExcluded<'a, 'b> {
+impl Oper for GetComicInfoExcluded<'_, '_> {
     type Output = ComicInfo;
 }
 
@@ -44,7 +44,7 @@ pub struct ListComicInfosExcluded<'a> {
     pub spec: &'a ComicInfoListSpec,
 }
 
-impl<'a> Oper for ListComicInfosExcluded<'a> {
+impl Oper for ListComicInfosExcluded<'_> {
     type Output = Vec<ComicInfo>;
 }
 
@@ -52,7 +52,7 @@ pub struct UpdateComic<'a> {
     pub update: &'a ComicInfoUpdate,
 }
 
-impl<'a> Oper for UpdateComic<'a> {
+impl Oper for UpdateComic<'_> {
     type Output = ();
 }
 
@@ -61,7 +61,7 @@ pub struct ReserveComicCover<'a> {
     pub file_extension: &'a str,
 }
 
-impl<'a> Oper for ReserveComicCover<'a> {
+impl Oper for ReserveComicCover<'_> {
     type Output = ComicCoverReservation;
 }
 
@@ -71,7 +71,7 @@ pub struct MarkComicCoverUploaded<'a> {
     pub cover_key: Option<&'a str>,
 }
 
-impl<'a> Oper for MarkComicCoverUploaded<'a> {
+impl Oper for MarkComicCoverUploaded<'_> {
     type Output = ();
 }
 
@@ -79,7 +79,7 @@ pub struct DeleteComic<'a> {
     pub id: &'a str,
 }
 
-impl<'a> Oper for DeleteComic<'a> {
+impl Oper for DeleteComic<'_> {
     type Output = ();
 }
 
@@ -87,7 +87,7 @@ pub struct AllocComicChapterIndex<'a> {
     pub id: &'a str,
 }
 
-impl<'a> Oper for AllocComicChapterIndex<'a> {
+impl Oper for AllocComicChapterIndex<'_> {
     type Output = i32;
 }
 
@@ -96,7 +96,7 @@ pub struct UpdateComicChapterCount<'a> {
     pub delta: i32,
 }
 
-impl<'a> Oper for UpdateComicChapterCount<'a> {
+impl Oper for UpdateComicChapterCount<'_> {
     type Output = ();
 }
 
@@ -104,6 +104,6 @@ pub struct TouchComicLastActive<'a> {
     pub id: &'a str,
 }
 
-impl<'a> Oper for TouchComicLastActive<'a> {
+impl Oper for TouchComicLastActive<'_> {
     type Output = ();
 }

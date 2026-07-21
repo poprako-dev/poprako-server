@@ -10,7 +10,7 @@ use poprako_util::time::ToUnixMilli;
 use crate::model::page::PageInfo;
 use crate::part::image::ImagePool;
 use crate::result::{BaseResult, accept};
-use crate::value::image::{ImageExtension, ImageHash};
+use crate::value::image::{ImageExt, ImageHash};
 
 /// Presentation-ready page information.
 #[derive(Debug, Serialize)]
@@ -28,7 +28,7 @@ pub struct PageInfoVal {
 
     pub image_hash: ImageHash,
     pub byte_length: u64,
-    pub extension: ImageExtension,
+    pub extension: ImageExt,
 
     pub total_unit_count: i32,
     pub translated_unit_count: i32,
@@ -91,7 +91,7 @@ pub struct PageImageInput {
     pub page_id: Option<String>,
     pub image_hash: ImageHash,
     pub byte_length: u64,
-    pub extension: ImageExtension,
+    pub extension: ImageExt,
 }
 
 /// Return value from successful chapter page reservations.
@@ -109,7 +109,7 @@ pub struct ReservedPagePayload {
     pub index: u32,
     pub image_hash: ImageHash,
     pub byte_length: u64,
-    pub extension: ImageExtension,
+    pub extension: ImageExt,
     pub upload: Option<PageImageUploadPayload>,
 }
 
@@ -128,7 +128,7 @@ pub struct PageImageUploadPayload {
 pub struct ReservePageImageParams {
     pub image_hash: ImageHash,
     pub byte_length: u64,
-    pub extension: ImageExtension,
+    pub extension: ImageExt,
 }
 
 /// Input parameters for confirming a page image upload completed.

@@ -10,7 +10,7 @@ pub struct CreateMemberInvitation<'a> {
     pub entry: &'a MemberInvitationEntry,
 }
 
-impl<'a> Oper for CreateMemberInvitation<'a> {
+impl Oper for CreateMemberInvitation<'_> {
     type Output = MemberInvitationInfo;
 }
 
@@ -18,7 +18,7 @@ pub struct ListMemberInvitationInfos<'a> {
     pub spec: &'a MemberInvitationListSpec,
 }
 
-impl<'a> Oper for ListMemberInvitationInfos<'a> {
+impl Oper for ListMemberInvitationInfos<'_> {
     type Output = Vec<MemberInvitationInfo>;
 }
 
@@ -32,7 +32,7 @@ pub enum GetMemberInvitationInfo<'a, 'b> {
     },
 }
 
-impl<'a, 'b> Oper for GetMemberInvitationInfo<'a, 'b> {
+impl Oper for GetMemberInvitationInfo<'_, '_> {
     type Output = MemberInvitationInfo;
 }
 
@@ -41,7 +41,7 @@ pub enum UpdateMemberInvitation<'a> {
     MarkUsed { id: &'a str },
 }
 
-impl<'a> Oper for UpdateMemberInvitation<'a> {
+impl Oper for UpdateMemberInvitation<'_> {
     type Output = ();
 }
 
@@ -49,7 +49,7 @@ pub enum GetMemberInvitationInfoExcluded<'a> {
     Code { code: &'a str },
 }
 
-impl<'a> Oper for GetMemberInvitationInfoExcluded<'a> {
+impl Oper for GetMemberInvitationInfoExcluded<'_> {
     type Output = MemberInvitationInfo;
 }
 
@@ -57,7 +57,7 @@ pub struct DeleteMemberInvitation<'a> {
     pub id: &'a str,
 }
 
-impl<'a> Oper for DeleteMemberInvitation<'a> {
+impl Oper for DeleteMemberInvitation<'_> {
     type Output = ();
 }
 
@@ -66,6 +66,6 @@ pub struct PurgeExpiredMemberInvitation<'a> {
     pub id: &'a str,
 }
 
-impl<'a> Oper for PurgeExpiredMemberInvitation<'a> {
+impl Oper for PurgeExpiredMemberInvitation<'_> {
     type Output = ();
 }

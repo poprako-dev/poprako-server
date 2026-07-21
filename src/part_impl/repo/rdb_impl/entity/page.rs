@@ -6,7 +6,7 @@ use time::OffsetDateTime;
 use crate::model::page::{PageEntry, PageInfo};
 use crate::part_impl::repo::rdb_impl::schema::t_page;
 use crate::result::BaseError;
-use crate::value::image::{ImageExtension, ImageHash};
+use crate::value::image::{ImageExt, ImageHash};
 
 /// Raw database row for the `t_page` table. Returned by Diesel queries.
 #[derive(Queryable, Selectable)]
@@ -149,7 +149,7 @@ impl TryFrom<PageRow> for PageInfo {
             message: "[PageRow] f_image_byte_length must be non-negative".into(),
         })?;
 
-        let image_extension = ImageExtension::parse(&row.f_image_extension).ok_or_else(|| BaseError::Unrecoverable {
+        let image_extension = ImageExt::parse(&row.f_image_extension).ok_or_else(|| BaseError::Unrecoverable {
             message: "[PageRow] f_image_extension must be supported".into(),
         })?;
 
@@ -179,7 +179,7 @@ impl<'a> TryFrom<&'a PageEntry> for PageRowEntry<'a> {
         //
         let now = OffsetDateTime::now_utc();
 
-        let image_byte_length = i64::try_from(entry.image_byte_length).map_err(|_| BaseError::Unrecoverable {
+        let image_byte_length = i64::try_from(entry.image_byte_len).map_err(|_| BaseError::Unrecoverable {
             message: "[PageRowEntry] image byte length exceeds PostgreSQL BIGINT".into(),
         })?;
 
@@ -191,7 +191,7 @@ impl<'a> TryFrom<&'a PageEntry> for PageRowEntry<'a> {
             f_image_version: i64::from(entry.image_version),
             f_image_hash: entry.image_hash.bytes().to_vec(),
             f_image_byte_length: image_byte_length,
-            f_image_extension: entry.image_extension.suffix(),
+            f_image_extension: entry.image_ext.suffix(),
             f_created_at: now,
             f_updated_at: now,
         })

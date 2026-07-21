@@ -272,19 +272,19 @@ impl<'a> Run<CreateTeam<'a>> for RdbRepo {
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
-        oper: &CreateTeam<'a>,
+        oper: &CreateTeam<'_>,
     ) -> Result<TeamInfo, Self::Error> {
         submit_query!(self.core, create, oper.entry)
     }
 }
 
-impl<'a> Run<GetTeamInfo<'a>> for RdbRepo {
+impl Run<GetTeamInfo<'_>> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
-        oper: &GetTeamInfo<'a>,
+        oper: &GetTeamInfo<'_>,
     ) -> Result<TeamInfo, Self::Error> {
         match oper {
             GetTeamInfo::Id { id } => {
@@ -294,23 +294,23 @@ impl<'a> Run<GetTeamInfo<'a>> for RdbRepo {
     }
 }
 
-impl<'a> Run<ListTeamInfos<'a>> for RdbRepo {
+impl Run<ListTeamInfos<'_>> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
-        oper: &ListTeamInfos<'a>,
+        oper: &ListTeamInfos<'_>,
     ) -> Result<Vec<TeamInfo>, Self::Error> {
         submit_query!(self.core, list_infos, oper.spec)
     }
 }
 
-impl<'a> Run<UpdateTeam<'a>> for RdbRepo {
+impl Run<UpdateTeam<'_>> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn run(&self, oper: &UpdateTeam<'a>) -> BaseResult<()> {
+    async fn run(&self, oper: &UpdateTeam<'_>) -> BaseResult<()> {
         match oper {
             //
             UpdateTeam::Info {
@@ -336,27 +336,27 @@ impl<'a> Run<UpdateTeam<'a>> for RdbRepo {
     }
 }
 
-impl<'a> Step<CreateTeam<'a>, RdbContext> for RdbRepo {
+impl Step<CreateTeam<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &CreateTeam<'a>,
+        oper: &CreateTeam<'_>,
     ) -> BaseResult<TeamInfo> {
         create(context.conn(), oper.entry).await
     }
 }
 
-impl<'a> Step<UpdateTeam<'a>, RdbContext> for RdbRepo {
+impl Step<UpdateTeam<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &UpdateTeam<'a>,
+        oper: &UpdateTeam<'_>,
     ) -> BaseResult<()> {
         match oper {
             //
@@ -383,27 +383,27 @@ impl<'a> Step<UpdateTeam<'a>, RdbContext> for RdbRepo {
     }
 }
 
-impl<'a> Step<ReserveTeamAvatar<'a>, RdbContext> for RdbRepo {
+impl Step<ReserveTeamAvatar<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &ReserveTeamAvatar<'a>,
+        oper: &ReserveTeamAvatar<'_>,
     ) -> BaseResult<TeamAvatarReservation> {
         reserve_avatar(context.conn(), oper.id, oper.file_ext).await
     }
 }
 
-impl<'a> Step<GetTeamInfoExcluded<'a>, RdbContext> for RdbRepo {
+impl Step<GetTeamInfoExcluded<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &GetTeamInfoExcluded<'a>,
+        oper: &GetTeamInfoExcluded<'_>,
     ) -> BaseResult<TeamInfo> {
         match oper {
             GetTeamInfoExcluded::Id { id } => {
@@ -413,27 +413,27 @@ impl<'a> Step<GetTeamInfoExcluded<'a>, RdbContext> for RdbRepo {
     }
 }
 
-impl<'a> Step<DeleteTeam<'a>, RdbContext> for RdbRepo {
+impl Step<DeleteTeam<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &DeleteTeam<'a>,
+        oper: &DeleteTeam<'_>,
     ) -> BaseResult<()> {
         delete(context.conn(), oper.id).await
     }
 }
 
-impl<'a> Step<AllocTeamWorksetIndex<'a>, RdbContext> for RdbRepo {
+impl Step<AllocTeamWorksetIndex<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &AllocTeamWorksetIndex<'a>,
+        oper: &AllocTeamWorksetIndex<'_>,
     ) -> BaseResult<i32> {
         increment_workset_next_index(context.conn(), oper.id).await
     }

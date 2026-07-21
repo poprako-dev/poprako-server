@@ -1,6 +1,7 @@
 use super::*;
 
 use crate::data::page::{MarkPageImageUploadedParams, ReservePageImageParams};
+use crate::value::image::{ImageExt, ImageHash};
 
 #[tokio::test]
 async fn mark_image_uploaded_rejects_stale_replay_then_accepts_current_version()
@@ -31,14 +32,16 @@ async fn mark_image_uploaded_rejects_stale_replay_then_accepts_current_version()
         token("user-1"),
         "page-1".into(),
         ReservePageImageParams {
-            file_ext: "png".into(),
+            image_hash: ImageHash::new([1u8; 32]),
+            byte_length: 8192,
+            extension: ImageExt::Png,
         },
     )
     .await
     .ok()
     .unwrap();
 
-    assert_eq!(reserved.image_version, 2);
+    assert_eq!(reserved.upload.as_ref().unwrap().image_version, 2);
 
     let err = mark_image_uploaded(
         &mock,

@@ -325,27 +325,27 @@ async fn commit(
     accept(())
 }
 
-impl<'a> Step<GetComicArchiveSnapshotExcluded<'a>, RdbContext> for RdbRepo {
+impl Step<GetComicArchiveSnapshotExcluded<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &GetComicArchiveSnapshotExcluded<'a>,
+        oper: &GetComicArchiveSnapshotExcluded<'_>,
     ) -> BaseResult<ComicArchiveSnapshot> {
         get_snapshot_excluded(context.conn(), oper.comic_id).await
     }
 }
 
-impl<'a> Step<CommitComicArchive<'a>, RdbContext> for RdbRepo {
+impl Step<CommitComicArchive<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &CommitComicArchive<'a>,
+        oper: &CommitComicArchive<'_>,
     ) -> BaseResult<()> {
         commit(context.conn(), oper.write).await
     }

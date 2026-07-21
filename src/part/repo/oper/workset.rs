@@ -8,7 +8,7 @@ pub struct CreateWorkset<'a> {
     pub entry: &'a WorksetEntry,
 }
 
-impl<'a> Oper for CreateWorkset<'a> {
+impl Oper for CreateWorkset<'_> {
     type Output = WorksetInfo;
 }
 
@@ -16,7 +16,7 @@ pub struct GetWorksetInfo<'a> {
     pub id: &'a str,
 }
 
-impl<'a> Oper for GetWorksetInfo<'a> {
+impl Oper for GetWorksetInfo<'_> {
     type Output = WorksetInfo;
 }
 
@@ -25,7 +25,7 @@ pub struct ListWorksetInfos<'a> {
     pub page: Option<Page>,
 }
 
-impl<'a> Oper for ListWorksetInfos<'a> {
+impl Oper for ListWorksetInfos<'_> {
     type Output = Vec<WorksetInfo>;
 }
 
@@ -33,7 +33,7 @@ pub struct GetWorksetInfoExcluded<'a> {
     pub id: &'a str,
 }
 
-impl<'a> Oper for GetWorksetInfoExcluded<'a> {
+impl Oper for GetWorksetInfoExcluded<'_> {
     type Output = WorksetInfo;
 }
 
@@ -41,7 +41,7 @@ pub struct ListWorksetInfosExcluded<'a> {
     pub team_id: &'a str,
 }
 
-impl<'a> Oper for ListWorksetInfosExcluded<'a> {
+impl Oper for ListWorksetInfosExcluded<'_> {
     type Output = Vec<WorksetInfo>;
 }
 
@@ -49,7 +49,7 @@ pub struct UpdateWorkset<'a> {
     pub update: &'a WorksetInfoUpdate,
 }
 
-impl<'a> Oper for UpdateWorkset<'a> {
+impl Oper for UpdateWorkset<'_> {
     type Output = ();
 }
 
@@ -57,7 +57,7 @@ pub struct DeleteWorkset<'a> {
     pub id: &'a str,
 }
 
-impl<'a> Oper for DeleteWorkset<'a> {
+impl Oper for DeleteWorkset<'_> {
     type Output = ();
 }
 
@@ -65,7 +65,7 @@ pub struct AllocWorksetComicIndex<'a> {
     pub id: &'a str,
 }
 
-impl<'a> Oper for AllocWorksetComicIndex<'a> {
+impl Oper for AllocWorksetComicIndex<'_> {
     type Output = i32;
 }
 
@@ -74,6 +74,6 @@ pub struct UpdateWorksetComicCount<'a> {
     pub delta: i32,
 }
 
-impl<'a> Oper for UpdateWorksetComicCount<'a> {
+impl Oper for UpdateWorksetComicCount<'_> {
     type Output = ();
 }

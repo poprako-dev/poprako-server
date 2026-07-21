@@ -145,7 +145,7 @@ pub async fn update_manifest(
 ) -> BaseResult<PageInfo> {
     let now = OffsetDateTime::now_utc();
     let image_hash = update.image_hash.bytes();
-    let image_byte_length = i64::try_from(update.image_byte_length).map_err(|_| BaseError::Unrecoverable {
+    let image_byte_length = i64::try_from(update.image_byte_len).map_err(|_| BaseError::Unrecoverable {
         message: "[update_manifest] image byte length exceeds PostgreSQL BIGINT".into(),
     })?;
 
@@ -157,7 +157,7 @@ pub async fn update_manifest(
             f_image_version.eq(i64::from(update.image_version)),
             f_image_hash.eq(image_hash.to_vec()),
             f_image_byte_length.eq(image_byte_length),
-            f_image_extension.eq(update.image_extension.suffix()),
+            f_image_extension.eq(update.image_ext.suffix()),
             f_updated_at.eq(now),
         ))
         .returning(PageRow::as_returning())

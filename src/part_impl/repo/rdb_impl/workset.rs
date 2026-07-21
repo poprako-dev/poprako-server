@@ -175,135 +175,135 @@ async fn update_comic_count(
     accept(())
 }
 
-impl<'a> Run<GetWorksetInfo<'a>> for RdbRepo {
+impl Run<GetWorksetInfo<'_>> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn run(&self, oper: &GetWorksetInfo<'a>) -> BaseResult<WorksetInfo> {
+    async fn run(&self, oper: &GetWorksetInfo<'_>) -> BaseResult<WorksetInfo> {
         submit_query!(self.core, get_info, oper.id)
     }
 }
 
-impl<'a> Run<ListWorksetInfos<'a>> for RdbRepo {
+impl Run<ListWorksetInfos<'_>> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(
         &self,
-        oper: &ListWorksetInfos<'a>,
+        oper: &ListWorksetInfos<'_>,
     ) -> BaseResult<Vec<WorksetInfo>> {
         submit_query!(self.core, list_infos, oper)
     }
 }
 
-impl<'a> Run<UpdateWorkset<'a>> for RdbRepo {
+impl Run<UpdateWorkset<'_>> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn run(&self, oper: &UpdateWorkset<'a>) -> BaseResult<()> {
+    async fn run(&self, oper: &UpdateWorkset<'_>) -> BaseResult<()> {
         submit_query!(self.core, update_info, oper.update)
     }
 }
 
-impl<'a> Step<GetWorksetInfo<'a>, RdbContext> for RdbRepo {
+impl Step<GetWorksetInfo<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &GetWorksetInfo<'a>,
+        oper: &GetWorksetInfo<'_>,
     ) -> BaseResult<WorksetInfo> {
         get_info(context.conn(), oper.id).await
     }
 }
 
-impl<'a> Step<ListWorksetInfos<'a>, RdbContext> for RdbRepo {
+impl Step<ListWorksetInfos<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &ListWorksetInfos<'a>,
+        oper: &ListWorksetInfos<'_>,
     ) -> BaseResult<Vec<WorksetInfo>> {
         list_infos(context.conn(), oper).await
     }
 }
 
-impl<'a> Step<GetWorksetInfoExcluded<'a>, RdbContext> for RdbRepo {
+impl Step<GetWorksetInfoExcluded<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &GetWorksetInfoExcluded<'a>,
+        oper: &GetWorksetInfoExcluded<'_>,
     ) -> BaseResult<WorksetInfo> {
         get_info_excluded(context.conn(), oper.id).await
     }
 }
 
-impl<'a> Step<ListWorksetInfosExcluded<'a>, RdbContext> for RdbRepo {
+impl Step<ListWorksetInfosExcluded<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &ListWorksetInfosExcluded<'a>,
+        oper: &ListWorksetInfosExcluded<'_>,
     ) -> BaseResult<Vec<WorksetInfo>> {
         list_infos_excluded(context.conn(), oper.team_id).await
     }
 }
 
-impl<'a> Step<CreateWorkset<'a>, RdbContext> for RdbRepo {
+impl Step<CreateWorkset<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &CreateWorkset<'a>,
+        oper: &CreateWorkset<'_>,
     ) -> BaseResult<WorksetInfo> {
         create(context.conn(), oper.entry).await
     }
 }
 
-impl<'a> Step<DeleteWorkset<'a>, RdbContext> for RdbRepo {
+impl Step<DeleteWorkset<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &DeleteWorkset<'a>,
+        oper: &DeleteWorkset<'_>,
     ) -> BaseResult<()> {
         delete(context.conn(), oper.id).await
     }
 }
 
-impl<'a> Step<AllocWorksetComicIndex<'a>, RdbContext> for RdbRepo {
+impl Step<AllocWorksetComicIndex<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &AllocWorksetComicIndex<'a>,
+        oper: &AllocWorksetComicIndex<'_>,
     ) -> BaseResult<i32> {
         alloc_comic_index(context.conn(), oper.id).await
     }
 }
 
-impl<'a> Step<UpdateWorksetComicCount<'a>, RdbContext> for RdbRepo {
+impl Step<UpdateWorksetComicCount<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &UpdateWorksetComicCount<'a>,
+        oper: &UpdateWorksetComicCount<'_>,
     ) -> BaseResult<()> {
         update_comic_count(context.conn(), oper.id, oper.delta).await
     }
