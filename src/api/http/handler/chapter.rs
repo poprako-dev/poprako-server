@@ -1,7 +1,7 @@
 //! Chapter handlers: CRUD, pinned chapter, and workflow stage advance.
 
 use axum::Json;
-use axum::extract::{Extension, Path, Query, State};
+use axum::extract::{Extension, Path, State};
 use axum::http::StatusCode;
 use serde::Deserialize;
 use tracing::instrument;
@@ -22,6 +22,7 @@ use crate::data::chapter::{
 use crate::model::user::UserToken;
 use crate::usecase;
 use crate::value::chapter::ChapterInclOpt;
+use crate::value::query::GroupedQuery;
 
 /// Query for listing chapters within a comic.
 ///
@@ -90,7 +91,7 @@ pub async fn list_infos(
     State(harn): State<AppHarn>,
     Path(comic_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Query(query): Query<ChapterListQuery>,
+    GroupedQuery(query): GroupedQuery<ChapterListQuery>,
 ) -> HttpResult<Vec<ChapterInfoVal>> {
     //
     let params = ListChapterInfosParams {

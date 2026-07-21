@@ -4,7 +4,6 @@ use poprako_orchestra::{Nucl, run_proxy, step_proxy};
 use tracing::instrument;
 
 use poprako_util::i18n::trl;
-use poprako_util::page::Page;
 
 use crate::complex::chapter::ChapterComplex;
 use crate::complex::unit::{UnitComplex, UnitPermComplex};
@@ -44,9 +43,9 @@ use crate::value::chapter::Stage;
 #[cfg(test)]
 mod tests;
 
-/// Lists units under one page.
+/// Lists all units under one page.
 #[instrument(level = "info", err(Debug), skip_all)]
-pub async fn list_infos<C, R>(
+pub async fn list_all_infos<C, R>(
     repo: &R,
     token: UserToken,
     params: ListPageUnitInfosParams,
@@ -82,12 +81,8 @@ where
     .await?;
 
     let unit_infos = repo
-        .run(&ListUnitInfos::Page {
+        .run(&ListUnitInfos {
             page_id: &page_info.id,
-            page: Page {
-                offset: params.offset,
-                limit: params.limit,
-            },
         })
         .await?;
 
@@ -132,6 +127,14 @@ where
         opers,
         local_id_maps,
     } = UnitApplyParts::from(UnitComplex::prepare_diff(unit_diff)?);
+
+    // A single unit save batch must not exceed 100 operations.
+    //
+    // TODO: add a total-unit-count limit check on the page so that unit save
+    // cannot push the page beyond a configured maximum number of units.
+    if !(1..=100).contains(&opers.len()) {
+        return Err(unit_invalid_oper_error());
+    }
 
     let stages = submitted_stage_starts(&opers);
 

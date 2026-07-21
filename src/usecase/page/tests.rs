@@ -423,14 +423,12 @@ async fn list_infos_sorts_and_resolves_uploaded_url() {
 
     mock.seed_page(page("page-1", 1, Some("one.png"), false, 1));
 
-    let list = list_infos(
+    let list = list_all_infos(
         &mock,
         &mock,
         token("user-1"),
         ListPageInfosParams {
             chapter_id: "chapter-1".into(),
-            offset: 0,
-            limit: 10,
         },
     )
     .await;
@@ -465,14 +463,12 @@ async fn list_infos_rejects_non_member_without_assignment() {
 
     seed_scope(&mock);
 
-    let err = list_infos(
+    let err = list_all_infos(
         &mock,
         &mock,
         token("user-1"),
         ListPageInfosParams {
             chapter_id: "chapter-1".into(),
-            offset: 0,
-            limit: 10,
         },
     )
     .await

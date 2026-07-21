@@ -3,8 +3,6 @@
 
 use poprako_orchestra::{Nucl as _, Run as _, Step as _};
 
-use poprako_util::page::Page;
-
 use crate::model::unit::{UnitContent, UnitIndexUpdate};
 use crate::part::repo::oper::unit::{
     CreateUnit, ListUnitInfos, SaveUnit, UpdateUnitIndexes,
@@ -120,12 +118,8 @@ pub async fn unit_roundtrip_uses_testcontainer(shared: RdbCore) {
     assert!(duplicate_create_result.is_err());
 
     let unit_infos = repo
-        .run(&ListUnitInfos::Page {
+        .run(&ListUnitInfos {
             page_id: &page_fixture.page_entry.id,
-            page: Page {
-                offset: 0,
-                limit: 10,
-            },
         })
         .await
         .ok()

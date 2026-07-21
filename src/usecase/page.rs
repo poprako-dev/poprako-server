@@ -267,7 +267,8 @@ where
 
 /// Lists pages under one chapter.
 #[instrument(level = "info", err(Debug), skip_all)]
-pub async fn list_infos<C, R, I>(
+/// Lists all pages for a chapter.
+pub async fn list_all_infos<C, R, I>(
     repo: &R,
     image_pool: &I,
     token: UserToken,
@@ -298,10 +299,8 @@ where
     .await?;
 
     let page_infos = repo
-        .run(&ListPageInfos::Chapter {
+        .run(&ListPageInfos {
             chapter_id: &params.chapter_id,
-            offset: params.offset,
-            limit: params.limit,
         })
         .await?;
 
@@ -479,7 +478,7 @@ where
         let page_infos = repo
             .step(
                 context,
-                &ListPageInfos::AllChapter {
+                &ListPageInfos {
                     chapter_id: &chapter_info.id,
                 },
             )

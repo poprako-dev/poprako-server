@@ -158,7 +158,7 @@ pub fn new(harn: AppHarn) -> Router<AppHarn> {
     let v1_page = Router::new()
         .route(
             "/chapters/{chapter_id}/pages",
-            get(page::list_infos).delete(page::delete),
+            get(page::list_all_infos).delete(page::delete),
         )
         .route(
             "/chapters/{chapter_id}/pages/reserve",
@@ -171,7 +171,7 @@ pub fn new(harn: AppHarn) -> Router<AppHarn> {
         );
 
     let v1_unit = Router::new()
-        .route("/pages/{page_id}/units", get(unit::list_infos))
+        .route("/pages/{page_id}/units", get(unit::list_all_infos))
         .route("/pages/{page_id}/units/save", post(unit::save_infos));
 
     let v1_assignment = Router::new()

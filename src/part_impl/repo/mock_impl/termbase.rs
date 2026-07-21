@@ -56,7 +56,7 @@ fn page_infos(
 ) -> Vec<TermbaseInfo> {
     //
     termbase_infos
-        .sort_by(|left, right| right.updated_at.cmp(&left.updated_at));
+        .sort_by_key(|right| std::cmp::Reverse(right.updated_at));
 
     termbase_infos
         .into_iter()

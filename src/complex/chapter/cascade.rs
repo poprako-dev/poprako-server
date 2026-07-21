@@ -133,7 +133,7 @@ where
         >,
 {
     let page_infos = proxy
-        .exec(&ListPageInfos::AllChapter { chapter_id })
+        .exec(&ListPageInfos { chapter_id })
         .await?;
 
     let object_keys = page_infos

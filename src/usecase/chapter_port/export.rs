@@ -84,7 +84,7 @@ where
         .await?;
 
     let page_infos = repo
-        .run(&ListPageInfos::AllChapter {
+        .run(&ListPageInfos {
             chapter_id: &chapter_info.id,
         })
         .await?;
@@ -95,7 +95,7 @@ where
         //
 
         let unit_infos = repo
-            .run(&ListUnitInfos::AllPage {
+            .run(&ListUnitInfos {
                 page_id: &page_info.id,
             })
             .await?;
@@ -171,7 +171,7 @@ where
     .await?;
 
     let page_infos = repo
-        .run(&ListPageInfos::AllChapter {
+        .run(&ListPageInfos {
             chapter_id: &chapter_id,
         })
         .await?;
@@ -182,7 +182,7 @@ where
         //
 
         let unit_infos = repo
-            .run(&ListUnitInfos::AllPage {
+            .run(&ListUnitInfos {
                 page_id: &page_info.id,
             })
             .await?;

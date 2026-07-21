@@ -48,15 +48,13 @@ async fn list_infos(
     oper: &ListWorksetInfos<'_>,
 ) -> BaseResult<Vec<WorksetInfo>> {
     //
-    let mut query = t_workset
+    let query = t_workset
         .filter(f_team_id.eq(oper.team_id))
         .select(WorksetRow::as_select())
         .order_by(f_index.asc())
+        .offset(oper.offset as i64)
+        .limit(oper.limit as i64)
         .into_boxed();
-
-    if let Some(page) = oper.page {
-        query = query.offset(page.offset as i64).limit(page.limit as i64);
-    }
 
     let rows: Vec<WorksetRow> = query.load(conn).await.map_err(diesel)?;
 

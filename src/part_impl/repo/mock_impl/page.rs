@@ -36,28 +36,6 @@ fn list_all_pages(state: &MockState, chapter_id: &str) -> Vec<PageInfo> {
     page_infos
 }
 
-fn list_pages(
-    state: &MockState,
-    chapter_id: &str,
-    offset: u32,
-    limit: u32,
-) -> Vec<PageInfo> {
-    //
-    let page_infos = list_all_pages(state, chapter_id);
-
-    let offset = offset as usize;
-
-    let limit = limit as usize;
-
-    if offset >= page_infos.len() {
-        return Vec::new();
-    }
-
-    let end = std::cmp::min(offset + limit, page_infos.len());
-
-    page_infos[offset..end].to_vec()
-}
-
 fn list_first_pages(
     state: &MockState,
     chapter_ids: &[String],

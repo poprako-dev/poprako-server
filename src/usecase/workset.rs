@@ -4,8 +4,6 @@ use poprako_orchestra::{Nucl, run_proxy, step_proxy};
 use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
 use tracing::instrument;
 
-use poprako_util::page::Page;
-
 use crate::complex::workset::{WorksetComplex, WorksetPermComplex};
 use crate::data::workset::{
     CreateWorksetParams, CreateWorksetPayload, ListWorksetInfosParams,
@@ -158,10 +156,8 @@ where
     let workset_infos = repo
         .run(&ListWorksetInfos {
             team_id: &params.team_id,
-            page: Some(Page {
-                offset: params.offset,
-                limit: params.limit,
-            }),
+            offset: params.offset,
+            limit: params.limit,
         })
         .await?;
 

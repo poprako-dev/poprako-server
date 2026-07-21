@@ -64,29 +64,7 @@ pub async fn get_info_excluded(
     row.try_into()
 }
 
-/// Query a paginated list of page infos for a chapter, ordered by index.
-#[instrument(level = "info", err(Debug), skip_all)]
-pub async fn list_infos_by_chapter_id(
-    conn: &mut RdbConn,
-    chapter_id: &str,
-    offset: u32,
-    limit: u32,
-) -> BaseResult<Vec<PageInfo>> {
-    //
-    let rows: Vec<PageRow> = t_page
-        .filter(f_chapter_id.eq(chapter_id))
-        .select(PageRow::as_select())
-        .order_by(f_index.asc())
-        .offset(offset as i64)
-        .limit(limit as i64)
-        .load(conn)
-        .await
-        .map_err(diesel)?;
-
-    rows.into_iter().map(TryInto::try_into).collect()
-}
-
-/// Query all page infos for a chapter, ordered by index (no pagination).
+/// Query all page infos for a chapter, ordered by index.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn list_all_infos_by_chapter_id(
     conn: &mut RdbConn,

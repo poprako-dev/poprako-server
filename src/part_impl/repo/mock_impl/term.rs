@@ -56,7 +56,7 @@ fn list_infos(state: &MockState, spec: &TermInfoListSpec) -> Vec<TermInfo> {
         });
     }
 
-    term_infos.sort_by(|left, right| right.updated_at.cmp(&left.updated_at));
+    term_infos.sort_by_key(|right| std::cmp::Reverse(right.updated_at));
 
     term_infos
         .into_iter()

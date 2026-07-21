@@ -120,8 +120,7 @@ pub fn build(
 
     let matches = assigned_existing_indexes
         .into_iter()
-        .enumerate()
-        .map(|(_, existing_index)| ManifestMatch { existing_index })
+        .map(|existing_index| ManifestMatch { existing_index })
         .collect();
 
     let deleted_existing_indexes = (0..existing_page_infos.len())

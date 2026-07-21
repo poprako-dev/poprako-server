@@ -55,10 +55,8 @@ pub async fn page_roundtrip_uses_testcontainer(shared: RdbCore) {
         .unwrap();
 
     let page_infos = repo
-        .run(&ListPageInfos::Chapter {
+        .run(&ListPageInfos {
             chapter_id: &page_fixture.chapter_entry.id,
-            offset: 0,
-            limit: 10,
         })
         .await
         .ok()

@@ -107,7 +107,7 @@ where
             let page_infos = repo
                 .step(
                     context,
-                    &ListPageInfos::AllChapter {
+                    &ListPageInfos {
                         chapter_id: &chapter_id,
                     },
                 )
@@ -128,7 +128,7 @@ where
                 let existing_unit_infos = repo
                     .step(
                         context,
-                        &ListUnitInfos::AllPage {
+                        &ListUnitInfos {
                             page_id: &page_info.id,
                         },
                     )
