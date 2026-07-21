@@ -103,6 +103,18 @@ impl Oper for MarkPageImageUploaded<'_> {
     type Output = ();
 }
 
+/// Sets one page image's verified upload state for its current identity.
+pub struct SetPageImageUploaded<'a> {
+    pub id: &'a str,
+    pub image_version: u32,
+    pub image_key: &'a str,
+    pub image_uploaded: bool,
+}
+
+impl Oper for SetPageImageUploaded<'_> {
+    type Output = ();
+}
+
 pub struct SetPageUnitCounters<'a> {
     pub id: &'a str,
     pub counters: UnitCounters,

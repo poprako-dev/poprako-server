@@ -10,13 +10,14 @@ use crate::part::prom::payload::image::{Payload, ResourceKind};
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::oper::chapter::{
-    CompleteChapterRawProvide, GetChapterInfoExcluded,
+    CompleteChapterRawProvide, GetChapterInfoExcluded, ResetChapterRawProvide,
 };
 use crate::part::repo::oper::comic::{
     GetComicInfoExcluded, MarkComicCoverUploaded,
 };
 use crate::part::repo::oper::page::{
     GetPageInfo, GetPageInfoExcluded, MarkPageImageUploaded,
+    SetPageImageUploaded,
 };
 use crate::part::repo::oper::team::{GetTeamInfoExcluded, UpdateTeam};
 use crate::part::repo::oper::user::{GetUserInfoExcluded, UpdateUser};
@@ -136,7 +137,21 @@ where
 
     match object_info {
         //
-        None => TaskFlow::Complete,
+        None => match kind {
+            //
+            ResourceKind::PageImage => {
+                process_unverified_page_image(
+                    nucl,
+                    repo,
+                    resource_id,
+                    object_key,
+                    image_version,
+                )
+                .await
+            }
+
+            _ => TaskFlow::Complete,
+        },
 
         Some(object_info) => {
             //
@@ -208,7 +223,23 @@ where
     if page_info.image_byte_length != object_info.byte_length
         || page_info.image_hash != object_info.checksum_sha256
     {
-        return handle_delete(image_pool, object_key).await;
+        let verification_result = process_unverified_page_image(
+            nucl,
+            repo,
+            resource_id,
+            object_key,
+            image_version,
+        )
+        .await;
+
+        match verification_result {
+            //
+            TaskFlow::Complete => {
+                return handle_delete(image_pool, object_key).await;
+            }
+
+            _ => return verification_result,
+        }
     }
 
     let result: BaseResult<bool> = nucl
@@ -267,6 +298,88 @@ where
         Ok(_) => TaskFlow::Complete,
 
         Err(BaseError::Expected { .. }) => TaskFlow::Complete,
+
+        Err(error) => TaskFlow::Retry(format!("{:?}", error)),
+    }
+}
+
+/// Clears an unverified current page image and returns raw provision to pending.
+#[instrument(level = "info", skip_all)]
+async fn process_unverified_page_image<N, R>(
+    nucl: &N,
+    repo: &R,
+    resource_id: &str,
+    object_key: &str,
+    image_version: u32,
+) -> TaskFlow
+where
+    N: Nucl<Context = RdbContext, Error = BaseError>,
+    R: ChapterRepo<RdbContext> + PageRepo<RdbContext> + Send + Sync,
+{
+    let page_info = match repo.run(&GetPageInfo { id: resource_id }).await {
+        //
+        Ok(page_info) => page_info,
+
+        Err(BaseError::Expected { .. }) => return TaskFlow::Complete,
+
+        Err(error) => return TaskFlow::Retry(format!("{:?}", error)),
+    };
+
+    if page_info.image_version != image_version
+        || page_info.image_key.as_deref() != Some(object_key)
+    {
+        return TaskFlow::Complete;
+    }
+
+    let result: BaseResult<()> = nucl
+        .coord(async move |context| {
+            //
+            repo.step(
+                context,
+                &GetChapterInfoExcluded {
+                    id: &page_info.chapter_id,
+                    incls: &[],
+                },
+            )
+            .await?;
+
+            let locked_page_info = repo
+                .step(context, &GetPageInfoExcluded { id: resource_id })
+                .await?;
+
+            if locked_page_info.image_version != image_version
+                || locked_page_info.image_key.as_deref() != Some(object_key)
+            {
+                return accept(());
+            }
+
+            repo.step(
+                context,
+                &SetPageImageUploaded {
+                    id: resource_id,
+                    image_version,
+                    image_key: object_key,
+                    image_uploaded: false,
+                },
+            )
+            .await?;
+
+            repo.step(
+                context,
+                &ResetChapterRawProvide {
+                    id: &page_info.chapter_id,
+                },
+            )
+            .await?;
+
+            accept(())
+        })
+        .await
+        .map_err(Into::into);
+
+    match result {
+        //
+        Ok(()) | Err(BaseError::Expected { .. }) => TaskFlow::Complete,
 
         Err(error) => TaskFlow::Retry(format!("{:?}", error)),
     }

@@ -6,7 +6,7 @@
 // reserve_image(reserve_image)(negative): missing page propagates an argument error.
 // list_infos(list_infos)(positive): team member lists pages sorted by index with uploaded-image URLs only.
 // list_infos(list_infos)(negative): non-member without assignment cannot list pages.
-// mark_image_uploaded(mark_image_uploaded)(positive): raw provider confirms matching upload version and repeated confirmation is idempotent.
+// mark_image_uploaded(mark_image_uploaded)(positive): raw provider records matching upload version without storage I/O and repeated confirmation is idempotent.
 // mark_image_uploaded(mark_image_uploaded)(negative): stale upload version cannot confirm or pollute current image state.
 // mark_image_uploaded(mark_image_uploaded)(negative): non-raw-provider cannot confirm upload.
 // delete(delete)(positive): team admin deletes pages, enqueues image deletes, clears counters, and touches comic.
@@ -496,7 +496,6 @@ async fn mark_image_uploaded_marks_once_and_idempotent() {
     let first = mark_image_uploaded(
         &mock,
         &mock,
-        &mock,
         token("user-1"),
         "page-1".into(),
         MarkPageImageUploadedParams { image_version: 2 },
@@ -506,7 +505,6 @@ async fn mark_image_uploaded_marks_once_and_idempotent() {
     assert!(first.is_ok());
 
     let second = mark_image_uploaded(
-        &mock,
         &mock,
         &mock,
         token("user-1"),

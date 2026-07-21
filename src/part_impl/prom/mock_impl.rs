@@ -14,13 +14,13 @@ use crate::part::image::ImageManager;
 use crate::part::prom::Prom;
 use crate::part::prom::payload::{Payload, image};
 use crate::part::repo::oper::chapter::{
-    CompleteChapterRawProvide, GetChapterInfoExcluded,
+    CompleteChapterRawProvide, GetChapterInfoExcluded, ResetChapterRawProvide,
 };
 use crate::part::repo::oper::comic::{
     GetComicInfoExcluded, MarkComicCoverUploaded,
 };
 use crate::part::repo::oper::page::{
-    GetPageInfoExcluded, MarkPageImageUploaded,
+    GetPageInfoExcluded, MarkPageImageUploaded, SetPageImageUploaded,
 };
 use crate::part::repo::oper::team::{GetTeamInfoExcluded, UpdateTeam};
 use crate::part::repo::oper::user::{GetUserInfoExcluded, UpdateUser};
@@ -202,6 +202,14 @@ async fn process_image_task(
                         || page_info.image_byte_length
                             != object_info.byte_length
                     {
+                        mark_page_image_unverified(
+                            image_pool,
+                            resource_id,
+                            object_key,
+                            *version,
+                        )
+                        .await?;
+
                         return image_pool.delete_object(object_key).await;
                     }
                 }
@@ -216,13 +224,95 @@ async fn process_image_task(
                 .await
             }
 
-            None => accept(()),
+            None => match resource_kind {
+                //
+                image::ResourceKind::PageImage => {
+                    mark_page_image_unverified(
+                        image_pool,
+                        resource_id,
+                        object_key,
+                        *version,
+                    )
+                    .await
+                }
+
+                _ => accept(()),
+            },
         },
 
         image::Payload::Delete { object_key } => {
             image_pool.delete_object(object_key).await
         }
     }
+}
+
+async fn mark_page_image_unverified(
+    mock: &Mock,
+    resource_id: &str,
+    object_key: &str,
+    image_version: u32,
+) -> BaseResult<()> {
+    //
+    let page_info = mock
+        .snapshot()
+        .pages
+        .into_iter()
+        .find(|page_info| page_info.id == resource_id)
+        .ok_or_else(|| BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message: trl("error-page-not-found"),
+        })?;
+
+    if page_info.image_version != image_version
+        || page_info.image_key.as_deref() != Some(object_key)
+    {
+        return accept(());
+    }
+
+    mock.coord(async move |context| {
+        //
+        mock.step(
+            context,
+            &GetChapterInfoExcluded {
+                id: &page_info.chapter_id,
+                incls: &[],
+            },
+        )
+        .await?;
+
+        let locked_page_info = mock
+            .step(context, &GetPageInfoExcluded { id: resource_id })
+            .await?;
+
+        if locked_page_info.image_version != image_version
+            || locked_page_info.image_key.as_deref() != Some(object_key)
+        {
+            return accept(());
+        }
+
+        mock.step(
+            context,
+            &SetPageImageUploaded {
+                id: resource_id,
+                image_version,
+                image_key: object_key,
+                image_uploaded: false,
+            },
+        )
+        .await?;
+
+        mock.step(
+            context,
+            &ResetChapterRawProvide {
+                id: &page_info.chapter_id,
+            },
+        )
+        .await?;
+
+        accept(())
+    })
+    .await
+    .map_err(Into::into)
 }
 
 async fn process_existing_image(

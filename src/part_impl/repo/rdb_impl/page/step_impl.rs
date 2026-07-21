@@ -350,6 +350,36 @@ pub async fn mark_image_uploaded(
     accept(())
 }
 
+/// Sets the verified upload flag for one current page image identity.
+#[instrument(level = "info", err(Debug), skip_all)]
+pub async fn set_image_uploaded(
+    conn: &mut RdbConn,
+    id: &str,
+    version: u32,
+    image_key: &str,
+    image_uploaded: bool,
+) -> BaseResult<()> {
+    //
+    let now = OffsetDateTime::now_utc();
+
+    let affected = diesel::update(
+        t_page
+            .filter(f_id.eq(id))
+            .filter(f_image_version.eq(i64::from(version)))
+            .filter(f_image_key.eq(image_key)),
+    )
+    .set((f_image_uploaded.eq(image_uploaded), f_updated_at.eq(now)))
+    .execute(conn)
+    .await
+    .map_err(diesel)?;
+
+    if affected == 0 {
+        return Err(expected("error-stale-page-image-upload"));
+    }
+
+    accept(())
+}
+
 /// Persist unit counters (total, translated, proofread) onto a page row.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn set_unit_counters(
