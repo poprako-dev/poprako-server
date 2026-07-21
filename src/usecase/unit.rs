@@ -40,6 +40,9 @@ use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 use crate::usecase::stage::spawn_starts;
 use crate::value::chapter::Stage;
 
+/// Maximum number of units allowed on a single page.
+const MAX_UNITS_PER_PAGE: usize = 100;
+
 #[cfg(test)]
 mod tests;
 
@@ -129,9 +132,6 @@ where
     } = UnitApplyParts::from(UnitComplex::prepare_diff(unit_diff)?);
 
     // A single unit save batch must not exceed 100 operations.
-    //
-    // TODO: add a total-unit-count limit check on the page so that unit save
-    // cannot push the page beyond a configured maximum number of units.
     if !(1..=100).contains(&opers.len()) {
         return Err(unit_invalid_oper_error());
     }
@@ -139,6 +139,22 @@ where
     let stages = submitted_stage_starts(&opers);
 
     let page_scope = repo.run(&GetPageInfo { id: &page_id }).await?;
+
+    let net_create_count = opers
+        .iter()
+        .filter(|oper| matches!(oper, UnitOper::Create { .. }))
+        .count()
+        - opers
+            .iter()
+            .filter(|oper| matches!(oper, UnitOper::Delete { .. }))
+            .count();
+
+    let resulting_count =
+        page_scope.total_unit_count as usize + net_create_count;
+
+    if resulting_count > MAX_UNITS_PER_PAGE {
+        return Err(unit_invalid_oper_error());
+    }
 
     let save_result = nucl
         .coord(async move |context| {
