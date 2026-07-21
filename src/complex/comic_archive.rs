@@ -258,7 +258,6 @@ fn build_assignment_payload(
 fn build_page_payloads(
     chapter_snapshot: &ComicArchiveChapterSnapshot,
 ) -> Vec<ArchivedPagePayload> {
-    //
     chapter_snapshot
         .page_snapshots
         .iter()
