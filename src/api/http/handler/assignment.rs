@@ -1,9 +1,11 @@
 //! Assignment handlers: list, join, role update, and deletion.
 
 use axum::Json;
-use axum::extract::{Extension, Path, Query, State};
+use axum::extract::{Extension, Path, State};
 use axum::http::StatusCode;
 use tracing::instrument;
+
+use crate::value::query::GroupedQuery;
 
 use crate::api::http::handler::util::ensure_path_matches_body_id;
 #[allow(unused_imports)]
@@ -35,7 +37,7 @@ use crate::usecase;
 pub async fn list_infos(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
-    Query(params): Query<ListAssignmentInfosParams>,
+    GroupedQuery(params): GroupedQuery<ListAssignmentInfosParams>,
 ) -> HttpResult<Vec<AssignmentInfoVal>> {
     usecase::assignment::list_infos(
         harn.repo(),

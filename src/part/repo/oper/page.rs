@@ -15,15 +15,8 @@ impl Oper for GetPageInfo<'_> {
     type Output = PageInfo;
 }
 
-pub enum ListPageInfos<'a> {
-    Chapter {
-        chapter_id: &'a str,
-        offset: u32,
-        limit: u32,
-    },
-    AllChapter {
-        chapter_id: &'a str,
-    },
+pub struct ListPageInfos<'a> {
+    pub chapter_id: &'a str,
 }
 
 impl Oper for ListPageInfos<'_> {

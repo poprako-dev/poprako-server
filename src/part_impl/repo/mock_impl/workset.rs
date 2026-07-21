@@ -40,13 +40,9 @@ fn list_workset_infos(
 
     workset_infos.sort_by_key(|workset_info| workset_info.index);
 
-    let Some(page) = oper.page else {
-        return workset_infos;
-    };
+    let offset = oper.offset as usize;
 
-    let offset = page.offset as usize;
-
-    let limit = page.limit as usize;
+    let limit = oper.limit as usize;
 
     match offset >= workset_infos.len() {
         //

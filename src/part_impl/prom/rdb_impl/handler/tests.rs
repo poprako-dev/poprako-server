@@ -3,6 +3,8 @@
 #[allow(unused_imports)]
 use super::*;
 
+use super::pool::enforce_retry_limit;
+
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use poprako_orchestra_extra::prom::task::Task;

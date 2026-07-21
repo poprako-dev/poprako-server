@@ -259,7 +259,7 @@ fn build_page_payloads(
     chapter_snapshot: &ComicArchiveChapterSnapshot,
 ) -> Vec<ArchivedPagePayload> {
     //
-    let pages = chapter_snapshot
+    chapter_snapshot
         .page_snapshots
         .iter()
         .map(|page_snapshot| {
@@ -298,7 +298,5 @@ fn build_page_payloads(
                     .collect(),
             }
         })
-        .collect();
-
-    pages
+        .collect()
 }

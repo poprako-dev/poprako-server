@@ -57,7 +57,11 @@ pub(super) fn validate_image_byte_length(byte_length: u64) -> BaseResult<()> {
     accept(())
 }
 
-/// Validates that the page count is positive.
+/// Validates that the page count is in the valid range.
+///
+/// The maximum is 200 because page reservation for a single chapter can never
+/// exceed this number — the manifest-based flow sets a hard cap for practical
+/// upload and review capacity.
 pub(super) fn validate_page_count(page_count: i32) -> BaseResult<()> {
     //
     if !(1..=200).contains(&page_count) {

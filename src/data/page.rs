@@ -141,12 +141,7 @@ pub struct MarkPageImageUploadedParams {
     pub image_version: u32,
 }
 
-/// Input parameters for listing pages under one chapter.
-///
-/// Example: `/api/v1/chapters/{chapter_id}/pages?offset=0&limit=20`.
+/// Input parameters for listing all pages under one chapter.
 pub struct ListPageInfosParams {
     pub chapter_id: String,
-
-    pub offset: u32,
-    pub limit: u32,
 }

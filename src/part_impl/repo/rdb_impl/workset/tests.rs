@@ -2,8 +2,6 @@
 
 use super::*;
 
-use poprako_util::page::Page;
-
 use crate::model::workset::WorksetInfoUpdate;
 use crate::part::repo::oper::workset::{
     GetWorksetInfo, ListWorksetInfos, UpdateWorkset,
@@ -26,10 +24,8 @@ pub async fn workset_roundtrip_uses_testcontainer(shared: RdbCore) {
     let workset_infos = repo
         .run(&ListWorksetInfos {
             team_id: &workset_fixture.team_entry.id,
-            page: Some(Page {
-                offset: 0,
-                limit: 10,
-            }),
+            offset: 0,
+            limit: 10,
         })
         .await
         .ok()

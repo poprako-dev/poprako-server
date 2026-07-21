@@ -1,7 +1,5 @@
 use poprako_orchestra::Oper;
 
-use poprako_util::page::Page;
-
 use crate::model::workset::{WorksetEntry, WorksetInfo, WorksetInfoUpdate};
 
 pub struct CreateWorkset<'a> {
@@ -22,7 +20,8 @@ impl Oper for GetWorksetInfo<'_> {
 
 pub struct ListWorksetInfos<'a> {
     pub team_id: &'a str,
-    pub page: Option<Page>,
+    pub offset: u32,
+    pub limit: u32,
 }
 
 impl Oper for ListWorksetInfos<'_> {

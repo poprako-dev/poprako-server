@@ -1,7 +1,7 @@
 //! Comic handlers: CRUD, cover upload flow, and immutable archiving.
 
 use axum::Json;
-use axum::extract::{Extension, Path, Query, State};
+use axum::extract::{Extension, Path, State};
 use axum::http::StatusCode;
 use serde::Deserialize;
 use tracing::instrument;
@@ -25,6 +25,7 @@ use crate::data::comic_list::ListComicInfosPayload;
 use crate::model::user::UserToken;
 use crate::usecase;
 use crate::value::comic::{ComicInclOpt, ComicWithOpt};
+use crate::value::query::GroupedQuery;
 
 /// Query for listing comics within a workset.
 ///
@@ -110,7 +111,7 @@ pub async fn list_infos(
     State(harn): State<AppHarn>,
     Path(workset_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Query(query): Query<ComicListQuery>,
+    GroupedQuery(query): GroupedQuery<ComicListQuery>,
 ) -> HttpResult<ListComicInfosPayload> {
     //
     let params = ListComicInfosParams {

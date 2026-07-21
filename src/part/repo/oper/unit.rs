@@ -1,14 +1,11 @@
 use poprako_orchestra::Oper;
 
-use poprako_util::page::Page;
-
 use crate::model::unit::{
     UnitContent, UnitCounters, UnitIndex, UnitIndexUpdate, UnitInfo,
 };
 
-pub enum ListUnitInfos<'a> {
-    Page { page_id: &'a str, page: Page },
-    AllPage { page_id: &'a str },
+pub struct ListUnitInfos<'a> {
+    pub page_id: &'a str,
 }
 
 impl Oper for ListUnitInfos<'_> {

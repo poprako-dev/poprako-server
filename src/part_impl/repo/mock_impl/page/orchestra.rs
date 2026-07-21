@@ -12,8 +12,7 @@ use crate::part::repo::oper::page::{
     SetPageUnitCounters, ShiftPageIndexesTemporary, UpdatePageManifest,
 };
 use crate::part_impl::repo::mock_impl::page::{
-    get_page_by_id, list_all_pages, list_first_pages, list_pages,
-    page_from_entry,
+    get_page_by_id, list_all_pages, list_first_pages, page_from_entry,
 };
 use crate::part_impl::repo::mock_impl::{Mock, MockContext, expected, now};
 use crate::result::{BaseError, BaseResult, accept};
@@ -35,18 +34,7 @@ impl<'a> Run<ListPageInfos<'a>> for Mock {
         //
         let state = self.state.lock().unwrap();
 
-        match oper {
-            //
-            ListPageInfos::Chapter {
-                chapter_id,
-                offset,
-                limit,
-            } => accept(list_pages(&state, chapter_id, *offset, *limit)),
-
-            ListPageInfos::AllChapter { chapter_id } => {
-                accept(list_all_pages(&state, chapter_id))
-            }
-        }
+        accept(list_all_pages(&state, oper.chapter_id))
     }
 }
 
@@ -83,20 +71,7 @@ impl<'a> Step<ListPageInfos<'a>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &ListPageInfos<'a>,
     ) -> BaseResult<Vec<PageInfo>> {
-        match oper {
-            //
-            ListPageInfos::Chapter {
-                chapter_id,
-                offset,
-                limit,
-            } => {
-                accept(list_pages(&context.state, chapter_id, *offset, *limit))
-            }
-
-            ListPageInfos::AllChapter { chapter_id } => {
-                accept(list_all_pages(&context.state, chapter_id))
-            }
-        }
+        accept(list_all_pages(&context.state, oper.chapter_id))
     }
 }
 

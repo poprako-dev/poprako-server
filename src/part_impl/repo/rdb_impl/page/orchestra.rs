@@ -15,9 +15,8 @@ use crate::part_impl::repo::rdb_impl::page::step_impl::{
     clear_images_for_publish, create_batch, delete_by_chapter_id,
     delete_by_ids, get_info_by_id, get_info_excluded,
     list_all_infos_by_chapter_id, list_all_infos_excluded_by_chapter_id,
-    list_first_infos_by_chapter_ids, list_infos_by_chapter_id,
-    mark_image_uploaded, reserve_image, set_unit_counters,
-    shift_indexes_temporary, update_manifest,
+    list_first_infos_by_chapter_ids, mark_image_uploaded, reserve_image,
+    set_unit_counters, shift_indexes_temporary, update_manifest,
 };
 use crate::part_impl::shared::RdbContext;
 use crate::result::{BaseError, BaseResult};
@@ -36,30 +35,7 @@ impl Run<ListPageInfos<'_>> for RdbRepo {
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(&self, oper: &ListPageInfos<'_>) -> BaseResult<Vec<PageInfo>> {
-        match oper {
-            //
-            ListPageInfos::Chapter {
-                chapter_id,
-                offset,
-                limit,
-            } => {
-                submit_query!(
-                    self.core,
-                    list_infos_by_chapter_id,
-                    chapter_id,
-                    *offset,
-                    *limit
-                )
-            }
-
-            ListPageInfos::AllChapter { chapter_id } => {
-                submit_query!(
-                    self.core,
-                    list_all_infos_by_chapter_id,
-                    chapter_id
-                )
-            }
-        }
+        submit_query!(self.core, list_all_infos_by_chapter_id, oper.chapter_id)
     }
 }
 
@@ -101,26 +77,7 @@ impl Step<ListPageInfos<'_>, RdbContext> for RdbRepo {
         context: &mut RdbContext,
         oper: &ListPageInfos<'_>,
     ) -> BaseResult<Vec<PageInfo>> {
-        match oper {
-            //
-            ListPageInfos::Chapter {
-                chapter_id,
-                offset,
-                limit,
-            } => {
-                list_infos_by_chapter_id(
-                    context.conn(),
-                    chapter_id,
-                    *offset,
-                    *limit,
-                )
-                .await
-            }
-
-            ListPageInfos::AllChapter { chapter_id } => {
-                list_all_infos_by_chapter_id(context.conn(), chapter_id).await
-            }
-        }
+        list_all_infos_by_chapter_id(context.conn(), oper.chapter_id).await
     }
 }
 

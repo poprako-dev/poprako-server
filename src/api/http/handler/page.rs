@@ -1,13 +1,11 @@
 //! Page handlers: list, delete, batch reserve, and single image upload flow.
 
 use axum::Json;
-use axum::extract::{Extension, Path, Query, State};
+use axum::extract::{Extension, Path, State};
 use axum::http::StatusCode;
 use tracing::instrument;
 
-use crate::api::http::handler::util::{
-    Pagination, ensure_path_matches_body_id,
-};
+use crate::api::http::handler::util::ensure_path_matches_body_id;
 
 #[allow(unused_imports)]
 use crate::api::http::result::{
@@ -22,32 +20,27 @@ use crate::data::page::{
 use crate::model::user::UserToken;
 use crate::usecase;
 
-/// `GET /api/v1/chapters/{chapter_id}/pages` — list pages in a chapter.
+/// `GET /api/v1/chapters/{chapter_id}/pages` — list all pages in a chapter.
 #[cfg_attr(feature = "swagger-ui", utoipa::path(
     get,
     path = "/api/v1/chapters/{chapter_id}/pages",
     tag = "pages",
-    params(("chapter_id" = String, Path, description = "Chapter ID"), Pagination),
+    params(("chapter_id" = String, Path, description = "Chapter ID")),
     responses(
         (status = 200, description = "Pages listed", body = HttpBody<Vec<PageInfoVal>>),
         (status = 403, description = "No permission to list pages in this chapter"),
     ),
 ))]
 #[instrument(level = "info", err(Debug), skip_all)]
-pub async fn list_infos(
+pub async fn list_all_infos(
     State(harn): State<AppHarn>,
     Path(chapter_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    Query(pagination): Query<Pagination>,
 ) -> HttpResult<Vec<PageInfoVal>> {
     //
-    let params = ListPageInfosParams {
-        chapter_id,
-        offset: pagination.offset,
-        limit: pagination.limit,
-    };
+    let params = ListPageInfosParams { chapter_id };
 
-    usecase::page::list_infos(
+    usecase::page::list_all_infos(
         harn.repo(),
         harn.image_pool(),
         user_token,
