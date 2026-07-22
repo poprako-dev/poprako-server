@@ -9,13 +9,10 @@ use crate::part::repo::oper::workset::{
     GetWorksetInfoExcluded, ListWorksetInfos, ListWorksetInfosExcluded,
     UpdateWorkset, UpdateWorksetComicCount,
 };
-use crate::part::repo::workset::WorksetRepo;
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
 };
 use crate::result::{BaseError, BaseResult, accept};
-
-impl WorksetRepo<MockContext> for Mock {}
 
 fn get_workset_info(state: &MockState, id: &str) -> BaseResult<WorksetInfo> {
     state

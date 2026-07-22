@@ -1,9 +1,8 @@
 //! Mock implementation of `UnitRepo`.
 
 use crate::model::unit::{UnitContent, UnitCounters, UnitInfo};
-use crate::part::repo::unit::UnitRepo;
 use crate::part_impl::repo::mock_impl::{
-    Mock, MockContext, MockState, expected, now,
+    MockState, expected, now,
 };
 use crate::result::{BaseResult, accept};
 
@@ -11,8 +10,6 @@ mod orchestra;
 
 #[cfg(test)]
 mod tests;
-
-impl UnitRepo<MockContext> for Mock {}
 
 fn list_all_units(state: &MockState, page_id: &str) -> Vec<UnitInfo> {
     //

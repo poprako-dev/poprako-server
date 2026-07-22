@@ -24,3 +24,18 @@ pub trait TermbaseRepo<C>:
     + for<'a> Step<DeleteTermbase<'a>, C, Error = BaseError>
 {
 }
+
+impl<T, C> TermbaseRepo<C> for T
+where
+    T: for<'a> Run<GetTermbaseInfo<'a>, Error = BaseError>
+       + for<'a> Run<ListTermbaseInfos<'a>, Error = BaseError>
+       + for<'a> Step<CreateTermbase<'a>, C, Error = BaseError>
+       + for<'a> Step<GetTermbaseInfo<'a>, C, Error = BaseError>
+       + for<'a> Step<GetTermbaseInfoExcluded<'a>, C, Error = BaseError>
+       + for<'a> Step<ListTermbaseInfosExcluded<'a>, C, Error = BaseError>
+       + for<'a> Step<UpdateTermbase<'a>, C, Error = BaseError>
+       + for<'a> Step<UpdateTermbaseTermCount<'a>, C, Error = BaseError>
+       + for<'a> Step<TouchTermbase<'a>, C, Error = BaseError>
+       + for<'a> Step<DeleteTermbase<'a>, C, Error = BaseError>,
+{
+}

@@ -16,7 +16,6 @@ use crate::part::repo::oper::term::{
     CreateTerm, DeleteTerm, DeleteTerms, GetTermInfo, GetTermInfoExcluded,
     ListTermInfos, UpdateTerm,
 };
-use crate::part::repo::term::TermRepo;
 use crate::part_impl::repo::rdb_impl::RdbRepo;
 use crate::part_impl::repo::rdb_impl::entity::term::{TermRow, TermRowEntry};
 use crate::part_impl::repo::rdb_impl::schema::t_term::dsl::*;
@@ -26,8 +25,6 @@ use crate::result::{BaseError, BaseResult, accept};
 
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
 pub mod tests;
-
-impl TermRepo<RdbContext> for RdbRepo {}
 
 fn escape_ilike_pattern(input: &str) -> String {
     input

@@ -7,17 +7,14 @@ use crate::model::comic::ComicInfo;
 use crate::model::team::TeamInfo;
 use crate::model::user::UserInfo;
 use crate::model::workset::WorksetInfo;
-use crate::part::repo::chapter::ChapterRepo;
 use crate::part_impl::repo::mock_impl::{
-    Mock, MockContext, MockState, expected, now,
+    MockState, expected, now,
 };
 use crate::result::{BaseResult, accept};
 use crate::value::chapter::{ChapterInclOpt, StageMask};
 use crate::value::incl::expand_incl_opts;
 
 mod orchestra;
-
-impl ChapterRepo<MockContext> for Mock {}
 
 /// Looks up a chapter by id from the mock state, applying include options to resolve relations.
 pub fn get_chapter_by_id(

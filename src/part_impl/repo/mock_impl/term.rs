@@ -8,13 +8,10 @@ use crate::part::repo::oper::term::{
     CreateTerm, DeleteTerm, DeleteTerms, GetTermInfo, GetTermInfoExcluded,
     ListTermInfos, UpdateTerm,
 };
-use crate::part::repo::term::TermRepo;
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
 };
 use crate::result::{BaseError, BaseResult, accept};
-
-impl TermRepo<MockContext> for Mock {}
 
 fn get_info(state: &MockState, id: &str) -> BaseResult<TermInfo> {
     state

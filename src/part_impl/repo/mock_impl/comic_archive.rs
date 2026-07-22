@@ -7,7 +7,6 @@ use crate::model::comic_archive::{
     ComicArchiveChapterSnapshot, ComicArchivePageSnapshot,
     ComicArchiveSnapshot, ComicArchiveWrite,
 };
-use crate::part::repo::comic_archive::ComicArchiveRepo;
 use crate::part::repo::oper::comic_archive::{
     CommitComicArchive, GetComicArchiveSnapshotExcluded,
 };
@@ -15,8 +14,6 @@ use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, expected, unrecoverable,
 };
 use crate::result::{BaseError, BaseResult, accept};
-
-impl ComicArchiveRepo<MockContext> for Mock {}
 
 /// Clone a fully assembled archive snapshot from locked mock state.
 fn get_snapshot_excluded(

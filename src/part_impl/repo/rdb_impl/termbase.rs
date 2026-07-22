@@ -17,7 +17,6 @@ use crate::part::repo::oper::termbase::{
     ListTermbaseInfos, ListTermbaseInfosExcluded, TouchTermbase,
     UpdateTermbase, UpdateTermbaseTermCount,
 };
-use crate::part::repo::termbase::TermbaseRepo;
 use crate::part_impl::repo::rdb_impl::RdbRepo;
 use crate::part_impl::repo::rdb_impl::entity::termbase::{
     TermbaseRow, TermbaseRowEntry,
@@ -29,8 +28,6 @@ use crate::result::{BaseError, BaseResult, accept};
 
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
 pub mod tests;
-
-impl TermbaseRepo<RdbContext> for RdbRepo {}
 
 fn escape_ilike_pattern(input: &str) -> String {
     input

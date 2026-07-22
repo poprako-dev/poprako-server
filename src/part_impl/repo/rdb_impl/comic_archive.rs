@@ -18,7 +18,6 @@ use crate::model::page::PageInfo;
 use crate::model::unit::UnitInfo;
 use crate::model::user::UserInfo;
 use crate::model::workset::WorksetInfo;
-use crate::part::repo::comic_archive::ComicArchiveRepo;
 use crate::part::repo::oper::comic_archive::{
     CommitComicArchive, GetComicArchiveSnapshotExcluded,
 };
@@ -64,8 +63,6 @@ use crate::result::{BaseError, BaseResult, accept};
 
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
 pub mod tests;
-
-impl ComicArchiveRepo<RdbContext> for RdbRepo {}
 
 /// Lock every active descendant needed by an archive transaction.
 #[instrument(level = "info", err(Debug), skip_all)]

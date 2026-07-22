@@ -12,7 +12,6 @@ use crate::part::repo::oper::workset::{
     GetWorksetInfoExcluded, ListWorksetInfos, ListWorksetInfosExcluded,
     UpdateWorkset, UpdateWorksetComicCount,
 };
-use crate::part::repo::workset::WorksetRepo;
 use crate::part_impl::repo::rdb_impl::RdbRepo;
 use crate::part_impl::repo::rdb_impl::entity::workset::{
     WorksetAspect, WorksetRow, WorksetRowEntry,
@@ -24,8 +23,6 @@ use crate::result::{BaseError, BaseResult, accept};
 
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
 pub mod tests;
-
-impl WorksetRepo<RdbContext> for RdbRepo {}
 
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn get_info(conn: &mut RdbConn, id: &str) -> BaseResult<WorksetInfo> {

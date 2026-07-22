@@ -25,3 +25,18 @@ pub trait TeamRepo<C>:
     + for<'a> Step<AllocTeamWorksetIndex<'a>, C, Error = BaseError>
 {
 }
+
+impl<T, C> TeamRepo<C> for T
+where
+    T: for<'a> Run<CreateTeam<'a>, Error = BaseError>
+       + for<'a> Run<GetTeamInfo<'a>, Error = BaseError>
+       + for<'a> Run<ListTeamInfos<'a>, Error = BaseError>
+       + for<'a> Run<UpdateTeam<'a>, Error = BaseError>
+       + for<'a> Step<CreateTeam<'a>, C, Error = BaseError>
+       + for<'a> Step<UpdateTeam<'a>, C, Error = BaseError>
+       + for<'a> Step<ReserveTeamAvatar<'a>, C, Error = BaseError>
+       + for<'a> Step<GetTeamInfoExcluded<'a>, C, Error = BaseError>
+       + for<'a> Step<DeleteTeam<'a>, C, Error = BaseError>
+       + for<'a> Step<AllocTeamWorksetIndex<'a>, C, Error = BaseError>,
+{
+}

@@ -14,3 +14,10 @@ pub trait CommentRepo<C>:
     + for<'a> Step<CreateComment<'a>, C, Error = BaseError>
 {
 }
+
+impl<T, C> CommentRepo<C> for T
+where
+    T: for<'a> Run<ListCommentInfos<'a>, Error = BaseError>
+       + for<'a> Step<CreateComment<'a>, C, Error = BaseError>,
+{
+}

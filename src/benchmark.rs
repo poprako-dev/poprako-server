@@ -251,7 +251,7 @@ fn unit_info(
         id: format!("unit-{}-{}-{}", chapter_index, page_index, unit_index),
         page_id: page_id.into(),
         index: unit_index as i32,
-        is_bubble: unit_index % 2 == 0,
+        is_bubble: unit_index.is_multiple_of(2),
         is_proofread: true,
         x_coord: unit_index as f64,
         y_coord: page_index as f64,

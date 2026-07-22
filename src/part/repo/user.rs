@@ -25,3 +25,18 @@ pub trait UserRepo<C>:
     + for<'a> Step<DeleteUser<'a>, C, Error = BaseError>
 {
 }
+
+impl<T, C> UserRepo<C> for T
+where
+    T: for<'a> Run<GetUserInfo<'a>, Error = BaseError>
+       + for<'a> Run<GetUserCredential<'a>, Error = BaseError>
+       + for<'a> Run<FindUserInfo<'a>, Error = BaseError>
+       + for<'a> Run<UpdateUser<'a>, Error = BaseError>
+       + for<'a> Step<CreateUser<'a>, C, Error = BaseError>
+       + for<'a> Step<FindUserInfo<'a>, C, Error = BaseError>
+       + for<'a> Step<UpdateUser<'a>, C, Error = BaseError>
+       + for<'a> Step<ReserveUserAvatar<'a>, C, Error = BaseError>
+       + for<'a> Step<GetUserInfoExcluded<'a>, C, Error = BaseError>
+       + for<'a> Step<DeleteUser<'a>, C, Error = BaseError>,
+{
+}
