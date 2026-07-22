@@ -5,6 +5,8 @@ use serde::Deserialize;
 #[cfg(feature = "swagger-ui")]
 use utoipa::ToSchema;
 
+use crate::value::incl::InclOpt;
+
 /// Incl opts for comment info queries.
 ///
 /// Each opt embeds additional related data into the returned
@@ -15,4 +17,12 @@ use utoipa::ToSchema;
 pub enum CommentInclOpt {
     /// Embed the comment's author (`user`).
     User,
+}
+
+impl InclOpt for CommentInclOpt {
+    fn path(self) -> &'static [Self] {
+        match self {
+            Self::User => &[Self::User],
+        }
+    }
 }

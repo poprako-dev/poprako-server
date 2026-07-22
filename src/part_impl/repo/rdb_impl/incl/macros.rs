@@ -1,0 +1,218 @@
+macro_rules! preload_by_ids {
+    (
+        $(
+            $loader:ident {
+                row: $row:ty,
+                info: $info:ty,
+                table: $table:ident,
+                convert: $convert:ident,
+            }
+        )*
+    ) => {
+        $(
+            pub struct $loader;
+
+            impl BatchByIds for $loader {
+                type Row = $row;
+                type Info = $info;
+
+                #[tracing::instrument(level = "info", err(Debug), skip_all)]
+                async fn load(
+                    conn: &mut RdbConn,
+                    ids: Vec<&str>,
+                ) -> BaseResult<Vec<$row>> {
+                    $table::table
+                        .filter($table::f_id.eq_any(ids))
+                        .select(<$row>::as_select())
+                        .load(conn)
+                        .await
+                        .map_err(diesel)
+                }
+
+                fn into_entry(row: $row) -> BaseResult<(String, $info)> {
+                    let id = row.f_id.clone();
+
+                    let info: $info = preload_by_ids!(@convert $convert $info, row);
+
+                    Ok((id, info))
+                }
+            }
+        )*
+    };
+
+    (@convert From $info:ty, $row:ident) => {
+        <$info>::from($row)
+    };
+
+    (@convert TryFrom $info:ty, $row:ident) => {
+        <$info>::try_from($row)?
+    };
+}
+
+macro_rules! preloadable_resolve_path {
+    ($owner:expr; [] => $field:ident) => {
+        Some($owner.$field.as_str())
+    };
+
+    ($owner:expr; [$head:ident $(, $tail:ident)*] => $field:ident) => {
+        $owner.$head.as_ref().and_then(|owner| {
+            preloadable_resolve_path!(owner; [$($tail),*] => $field)
+        })
+    };
+}
+
+macro_rules! preloadable_inject_path {
+    ($owner:ident, $related:ident; [] => $field:ident) => {
+        $owner.$field = $related;
+    };
+
+    ($owner:ident, $related:ident; [$head:ident $(, $tail:ident)*] => $field:ident) => {
+        let Some($owner) = $owner.$head.as_mut() else {
+            return;
+        };
+
+        preloadable_inject_path!($owner, $related; [$($tail),*] => $field);
+    };
+}
+
+macro_rules! preloadable_variant {
+    (
+        $owner:ty;
+        $marker:ident => $query:ident {
+            resolve: path [$($resolve_path:ident),*] => $resolve_field:ident,
+            inject: path [$($inject_path:ident),*] => $inject_field:ident,
+        }
+    ) => {
+        struct $marker;
+
+        impl Incl for $marker {
+            type Owner = $owner;
+            type Related = <$query as BatchByIds>::Info;
+            type Query = $query;
+
+            fn resolve_key(owner: &Self::Owner) -> Option<&str> {
+                preloadable_resolve_path!(owner; [$($resolve_path),*] => $resolve_field)
+            }
+
+            fn inject(owner: &mut Self::Owner, related: Option<Self::Related>) {
+                preloadable_inject_path!(owner, related; [$($inject_path),*] => $inject_field);
+            }
+        }
+    };
+
+    (
+        $owner:ty;
+        $marker:ident => $query:ident {
+            resolve: with |$resolve_owner:ident| $resolve:expr,
+            inject: path [$($inject_path:ident),*] => $inject_field:ident,
+        }
+    ) => {
+        struct $marker;
+
+        impl Incl for $marker {
+            type Owner = $owner;
+            type Related = <$query as BatchByIds>::Info;
+            type Query = $query;
+
+            fn resolve_key(owner: &Self::Owner) -> Option<&str> {
+                let $resolve_owner = owner;
+
+                $resolve
+            }
+
+            fn inject(owner: &mut Self::Owner, related: Option<Self::Related>) {
+                preloadable_inject_path!(owner, related; [$($inject_path),*] => $inject_field);
+            }
+        }
+    };
+
+    (
+        $owner:ty;
+        $marker:ident => $query:ident {
+            resolve: path [$($resolve_path:ident),*] => $resolve_field:ident,
+            inject: with |$inject_owner:ident, $inject_related:ident| $inject:expr,
+        }
+    ) => {
+        struct $marker;
+
+        impl Incl for $marker {
+            type Owner = $owner;
+            type Related = <$query as BatchByIds>::Info;
+            type Query = $query;
+
+            fn resolve_key(owner: &Self::Owner) -> Option<&str> {
+                preloadable_resolve_path!(owner; [$($resolve_path),*] => $resolve_field)
+            }
+
+            fn inject(owner: &mut Self::Owner, related: Option<Self::Related>) {
+                let $inject_owner = owner;
+                let $inject_related = related;
+
+                $inject;
+            }
+        }
+    };
+
+    (
+        $owner:ty;
+        $marker:ident => $query:ident {
+            resolve: with |$resolve_owner:ident| $resolve:expr,
+            inject: with |$inject_owner:ident, $inject_related:ident| $inject:expr,
+        }
+    ) => {
+        struct $marker;
+
+        impl Incl for $marker {
+            type Owner = $owner;
+            type Related = <$query as BatchByIds>::Info;
+            type Query = $query;
+
+            fn resolve_key(owner: &Self::Owner) -> Option<&str> {
+                let $resolve_owner = owner;
+
+                $resolve
+            }
+
+            fn inject(owner: &mut Self::Owner, related: Option<Self::Related>) {
+                let $inject_owner = owner;
+                let $inject_related = related;
+
+                $inject;
+            }
+        }
+    };
+}
+
+macro_rules! preloadable {
+    (
+        owner: $owner:ty,
+        opt: $opt:ident,
+        populate: $populate:ident,
+        variants: {
+            $(
+                $marker:ident => $query:ident { $($body:tt)* },
+            )*
+        },
+    ) => {
+        $(
+            preloadable_variant!($owner; $marker => $query { $($body)* });
+        )*
+
+        #[tracing::instrument(level = "info", err(Debug), skip_all)]
+        pub async fn $populate(
+            conn: &mut RdbConn,
+            infos: &mut [$owner],
+            incl_opt: &[$opt],
+        ) -> BaseResult<()> {
+            for incl_opt in expand_incl_opts(incl_opt) {
+                match incl_opt {
+                    $(
+                        $opt::$marker => populate::<$marker>(conn, infos).await?,
+                    )*
+                }
+            }
+
+            Ok(())
+        }
+    };
+}
