@@ -10,7 +10,6 @@ use crate::model::member_invitation::{
     MemberInvitationEntry, MemberInvitationInfo, MemberInvitationListKind,
     MemberInvitationListSpec,
 };
-use crate::part::repo::member_invitation::MemberInvitationRepo;
 use crate::part::repo::oper::member_invitation::{
     CreateMemberInvitation, DeleteMemberInvitation, GetMemberInvitationInfo,
     GetMemberInvitationInfoExcluded, ListMemberInvitationInfos,
@@ -29,8 +28,6 @@ use crate::value::role::RoleMask;
 
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
 pub mod tests;
-
-impl MemberInvitationRepo<RdbContext> for RdbRepo {}
 
 // ── Free functions ──────────────────────────────────────────────────────────
 

@@ -13,3 +13,10 @@ pub trait ComicArchiveRepo<C>:
     + for<'a> Step<CommitComicArchive<'a>, C, Error = BaseError>
 {
 }
+
+impl<T, C> ComicArchiveRepo<C> for T
+where
+    T: for<'a> Step<GetComicArchiveSnapshotExcluded<'a>, C, Error = BaseError>
+       + for<'a> Step<CommitComicArchive<'a>, C, Error = BaseError>,
+{
+}

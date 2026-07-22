@@ -3,15 +3,12 @@
 use std::collections::HashMap;
 
 use crate::model::page::{PageEntry, PageInfo};
-use crate::part::repo::page::PageRepo;
 use crate::part_impl::repo::mock_impl::{
-    Mock, MockContext, MockState, expected, now,
+    MockState, expected, now,
 };
 use crate::result::BaseResult;
 
 mod orchestra;
-
-impl PageRepo<MockContext> for Mock {}
 
 fn get_page_by_id(state: &MockState, id: &str) -> BaseResult<PageInfo> {
     state

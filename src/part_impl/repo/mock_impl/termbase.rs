@@ -9,13 +9,10 @@ use crate::part::repo::oper::termbase::{
     ListTermbaseInfos, ListTermbaseInfosExcluded, TouchTermbase,
     UpdateTermbase, UpdateTermbaseTermCount,
 };
-use crate::part::repo::termbase::TermbaseRepo;
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
 };
 use crate::result::{BaseError, BaseResult, accept};
-
-impl TermbaseRepo<MockContext> for Mock {}
 
 fn get_info(state: &MockState, id: &str) -> BaseResult<TermbaseInfo> {
     state

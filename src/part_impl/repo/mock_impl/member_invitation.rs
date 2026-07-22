@@ -8,7 +8,6 @@ use crate::model::member_invitation::{
     MemberInvitationListSpec,
 };
 use crate::model::user::UserInfo;
-use crate::part::repo::member_invitation::MemberInvitationRepo;
 use crate::part::repo::oper::member_invitation::{
     CreateMemberInvitation, DeleteMemberInvitation, GetMemberInvitationInfo,
     GetMemberInvitationInfoExcluded, ListMemberInvitationInfos,
@@ -19,8 +18,6 @@ use crate::part_impl::repo::mock_impl::{
 };
 use crate::result::{BaseError, BaseResult, accept};
 use crate::value::member_invitation::MemberInvitationInclOpt;
-
-impl MemberInvitationRepo<MockContext> for Mock {}
 
 fn find_user(state: &MockState, user_id: &str) -> Option<UserInfo> {
     state

@@ -8,7 +8,6 @@ use crate::model::comic::{
 use crate::model::team::TeamInfo;
 use crate::model::user::UserInfo;
 use crate::model::workset::WorksetInfo;
-use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::oper::comic::{
     AllocComicChapterIndex, CreateComic, DeleteComic, GetComicInfo,
     GetComicInfoExcluded, ListComicInfos, ListComicInfosExcluded,
@@ -22,8 +21,6 @@ use crate::result::{BaseError, BaseResult, accept};
 use crate::value::comic::ComicInclOpt;
 use crate::value::incl::expand_incl_opts;
 use crate::value::index::user_index_to_stored_index;
-
-impl ComicRepo<MockContext> for Mock {}
 
 fn find_workset(state: &MockState, workset_id: &str) -> Option<WorksetInfo> {
     state

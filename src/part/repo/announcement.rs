@@ -16,3 +16,10 @@ pub trait AnnouncementRepo<C>:
     + for<'a> Step<CreateAnnouncement<'a>, C, Error = BaseError>
 {
 }
+
+impl<T, C> AnnouncementRepo<C> for T
+where
+    T: for<'a> Run<ListAnnouncementInfos<'a>, Error = BaseError>
+       + for<'a> Step<CreateAnnouncement<'a>, C, Error = BaseError>,
+{
+}

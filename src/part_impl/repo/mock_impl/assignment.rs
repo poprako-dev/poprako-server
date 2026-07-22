@@ -7,7 +7,6 @@ use self::incl::apply_assignment_incls;
 use crate::model::assignment::{
     AssignmentEntry, AssignmentInfo, AssignmentInfoListSpec,
 };
-use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::oper::assignment::{
     CreateAssignment, DeleteAssignments, FindAssignmentInfo, GetAssignmentInfo,
     ListAssignmentInfos, ListAssignmentInfosExcluded, UpdateAssignmentRoles,
@@ -20,8 +19,6 @@ use crate::value::assignment::AssignmentInclOpt;
 use crate::value::role::RoleField;
 
 mod incl;
-
-impl AssignmentRepo<MockContext> for Mock {}
 
 fn find_assignment(
     state: &MockState,

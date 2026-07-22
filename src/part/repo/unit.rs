@@ -20,3 +20,16 @@ pub trait UnitRepo<C>:
     + for<'a> Step<CountUnits<'a>, C, Error = BaseError>
 {
 }
+
+impl<T, C> UnitRepo<C> for T
+where
+    T: for<'a> Run<ListUnitInfos<'a>, Error = BaseError>
+       + for<'a> Step<ListUnitInfos<'a>, C, Error = BaseError>
+       + for<'a> Step<CreateUnit<'a>, C, Error = BaseError>
+       + for<'a> Step<SaveUnit<'a>, C, Error = BaseError>
+       + for<'a> Step<DeleteUnit<'a>, C, Error = BaseError>
+       + for<'a> Step<ListUnitIndexes<'a>, C, Error = BaseError>
+       + for<'a> Step<UpdateUnitIndexes<'a>, C, Error = BaseError>
+       + for<'a> Step<CountUnits<'a>, C, Error = BaseError>,
+{
+}

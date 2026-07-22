@@ -11,7 +11,6 @@ use crate::model::assignment::{
     AssignmentEntry, AssignmentInfo, AssignmentInfoListSpec,
     AssignmentRoleUpdate,
 };
-use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::oper::assignment::{
     CreateAssignment, DeleteAssignments, FindAssignmentInfo, GetAssignmentInfo,
     ListAssignmentInfos, ListAssignmentInfosExcluded, UpdateAssignmentRoles,
@@ -35,8 +34,6 @@ use crate::value::role::RoleField;
 pub mod tests;
 
 mod list;
-
-impl AssignmentRepo<RdbContext> for RdbRepo {}
 
 /// Converts a single `AssignmentRow` into an `AssignmentInfo`.
 fn row_into_info(row: AssignmentRow) -> BaseResult<AssignmentInfo> {
