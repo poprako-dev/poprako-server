@@ -365,3 +365,15 @@ impl Step<PurgeExpiredMemberInvitation<'_>, RdbContext> for RdbRepo {
         purge_pending(context.conn(), oper.id).await
     }
 }
+
+impl Run<PurgeExpiredMemberInvitation<'_>> for RdbRepo {
+    type Error = BaseError;
+
+    #[instrument(level = "info", err(Debug), skip_all)]
+    async fn run(
+        &self,
+        oper: &PurgeExpiredMemberInvitation<'_>,
+    ) -> BaseResult<()> {
+        submit_query!(self.core, purge_pending, oper.id)
+    }
+}

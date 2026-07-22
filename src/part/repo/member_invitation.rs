@@ -16,6 +16,7 @@ use crate::result::BaseError;
 pub trait MemberInvitationRepo<C>:
     for<'a> Run<ListMemberInvitationInfos<'a>, Error = BaseError>
     + for<'a, 'b> Run<GetMemberInvitationInfo<'a, 'b>, Error = BaseError>
+    + for<'a> Run<PurgeExpiredMemberInvitation<'a>, Error = BaseError>
     + for<'a> Step<CreateMemberInvitation<'a>, C, Error = BaseError>
     + for<'a, 'b> Step<GetMemberInvitationInfo<'a, 'b>, C, Error = BaseError>
     + for<'a> Step<UpdateMemberInvitation<'a>, C, Error = BaseError>
@@ -29,6 +30,7 @@ impl<T, C> MemberInvitationRepo<C> for T
 where
     T: for<'a> Run<ListMemberInvitationInfos<'a>, Error = BaseError>
        + for<'a, 'b> Run<GetMemberInvitationInfo<'a, 'b>, Error = BaseError>
+       + for<'a> Run<PurgeExpiredMemberInvitation<'a>, Error = BaseError>
        + for<'a> Step<CreateMemberInvitation<'a>, C, Error = BaseError>
        + for<'a, 'b> Step<GetMemberInvitationInfo<'a, 'b>, C, Error = BaseError>
        + for<'a> Step<UpdateMemberInvitation<'a>, C, Error = BaseError>

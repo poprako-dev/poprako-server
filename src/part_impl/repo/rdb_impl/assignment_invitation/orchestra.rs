@@ -102,6 +102,18 @@ impl Step<PurgeExpiredAssignmentInvitation<'_>, RdbContext> for RdbRepo {
     }
 }
 
+impl Run<PurgeExpiredAssignmentInvitation<'_>> for RdbRepo {
+    type Error = BaseError;
+
+    #[instrument(level = "info", err(Debug), skip_all)]
+    async fn run(
+        &self,
+        oper: &PurgeExpiredAssignmentInvitation<'_>,
+    ) -> BaseResult<()> {
+        submit_query!(self.core, purge_pending, oper.id)
+    }
+}
+
 impl Step<DeleteAssignmentInvitations<'_>, RdbContext> for RdbRepo {
     type Error = BaseError;
     #[instrument(level = "info", err(Debug), skip_all)]

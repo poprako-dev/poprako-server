@@ -10,7 +10,7 @@ use crate::part::prom::payload::image::{Payload, ResourceKind};
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::oper::chapter::{
-    CompleteChapterRawProvide, GetChapterInfoExcluded, ResetChapterRawProvide,
+    CompleteChapterRawProvide, ResetChapterRawProvide,
 };
 use crate::part::repo::oper::comic::{
     GetComicInfoExcluded, MarkComicCoverUploaded,
@@ -247,31 +247,6 @@ where
             //
             repo.step(
                 context,
-                &GetChapterInfoExcluded {
-                    id: &page_info.chapter_id,
-                    incls: &[],
-                },
-            )
-            .await?;
-
-            let locked_page_info = repo
-                .step(context, &GetPageInfoExcluded { id: resource_id })
-                .await?;
-
-            if locked_page_info.image_version != image_version
-                || locked_page_info.image_key.as_deref() != Some(object_key)
-            {
-                return accept(false);
-            }
-
-            if locked_page_info.image_byte_length != object_info.byte_length
-                || locked_page_info.image_hash != object_info.checksum_sha256
-            {
-                return accept(false);
-            }
-
-            repo.step(
-                context,
                 &MarkPageImageUploaded {
                     id: resource_id,
                     image_version,
@@ -334,25 +309,6 @@ where
     let result: BaseResult<()> = nucl
         .coord(async move |context| {
             //
-            repo.step(
-                context,
-                &GetChapterInfoExcluded {
-                    id: &page_info.chapter_id,
-                    incls: &[],
-                },
-            )
-            .await?;
-
-            let locked_page_info = repo
-                .step(context, &GetPageInfoExcluded { id: resource_id })
-                .await?;
-
-            if locked_page_info.image_version != image_version
-                || locked_page_info.image_key.as_deref() != Some(object_key)
-            {
-                return accept(());
-            }
-
             repo.step(
                 context,
                 &SetPageImageUploaded {

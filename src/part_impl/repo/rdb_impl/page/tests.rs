@@ -3,14 +3,13 @@
 use poprako_orchestra::{Nucl as _, Run as _, Step as _};
 
 use crate::model::page::PageEntry;
-use crate::part_impl::repo::rdb_impl::RdbRepo;
 use crate::model::unit::UnitCounters;
 use crate::part::repo::oper::page::{
     CreatePages, GetPageInfo, ListFirstPageInfos, ListPageInfos,
     ReservePageImage, SetPageUnitCounters,
 };
 use crate::part_impl::drive::rdb_impl::RdbDrive;
-use crate::part_impl::repo::rdb_impl::test_shared;
+use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
 use crate::part_impl::shared::RdbCore;
 use crate::result::BaseError;
 use crate::value::image::ImageExtension;
