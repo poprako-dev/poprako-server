@@ -245,3 +245,22 @@ impl<'a> Step<PurgeExpiredAssignmentInvitation<'a>, MockContext> for Mock {
         accept(())
     }
 }
+
+impl<'a> Run<PurgeExpiredAssignmentInvitation<'a>> for Mock {
+    type Error = BaseError;
+
+    #[instrument(level = "info", err(Debug), skip_all)]
+    async fn run(
+        &self,
+        oper: &PurgeExpiredAssignmentInvitation<'a>,
+    ) -> BaseResult<()> {
+        //
+        let mut state = self.state.lock().unwrap();
+
+        state
+            .assignment_invitations
+            .retain(|info| info.id != oper.id || !info.pending);
+
+        accept(())
+    }
+}

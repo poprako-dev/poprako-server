@@ -349,3 +349,25 @@ impl<'a> Step<PurgeExpiredMemberInvitation<'a>, MockContext> for Mock {
         accept(())
     }
 }
+
+impl<'a> Run<PurgeExpiredMemberInvitation<'a>> for Mock {
+    type Error = BaseError;
+
+    #[instrument(level = "info", err(Debug), skip_all)]
+    async fn run(
+        &self,
+        oper: &PurgeExpiredMemberInvitation<'a>,
+    ) -> BaseResult<()> {
+        //
+        let mut state = self.state.lock().unwrap();
+
+        state
+            .member_invitations
+            .retain(|member_invitation_info| {
+                member_invitation_info.id != oper.id
+                    || !member_invitation_info.pending
+            });
+
+        accept(())
+    }
+}
