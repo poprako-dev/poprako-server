@@ -5,6 +5,8 @@ use serde::Deserialize;
 #[cfg(feature = "swagger-ui")]
 use utoipa::ToSchema;
 
+use crate::value::incl::InclOpt;
+
 /// Incl opts for member info queries.
 ///
 /// Each opt embeds additional related data into the returned
@@ -17,4 +19,15 @@ pub enum MemberInclOpt {
     User,
     /// Embed the member's team (`team`).
     Team,
+}
+
+impl InclOpt for MemberInclOpt {
+    fn path(self) -> &'static [Self] {
+        match self {
+            //
+            Self::User => &[Self::User],
+
+            Self::Team => &[Self::Team],
+        }
+    }
 }

@@ -1,5 +1,8 @@
 //! Incl path planning shared by incl opt enums.
 
+#[cfg(test)]
+mod tests;
+
 /// Incl opt that can expand itself into the full dependency path.
 pub trait InclOpt: Eq {
     /// Returns the dependency-ordered path required to populate this option.
