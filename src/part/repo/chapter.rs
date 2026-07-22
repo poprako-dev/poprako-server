@@ -36,26 +36,25 @@ pub trait ChapterRepo<C>:
 {
 }
 
-impl<T, C> ChapterRepo<C> for T
-where
+impl<T, C> ChapterRepo<C> for T where
     T: for<'a, 'b> Run<GetChapterInfo<'a, 'b>, Error = BaseError>
-       + for<'a> Run<ListChapterInfos<'a>, Error = BaseError>
-       + for<'a, 'b> Run<FindPinnedChapterInfo<'a, 'b>, Error = BaseError>
-       + for<'a> Run<ListPinnedChapterInfos<'a>, Error = BaseError>
-       + for<'a> Run<StartChapterStage<'a>, Error = BaseError>
-       + for<'a> Run<CompleteChapterRawProvide<'a>, Error = BaseError>
-       + for<'a, 'b> Step<GetChapterInfo<'a, 'b>, C, Error = BaseError>
-       + for<'a, 'b> Step<GetChapterInfoExcluded<'a, 'b>, C, Error = BaseError>
-       + for<'a> Step<ListChapterInfosExcluded<'a>, C, Error = BaseError>
-       + for<'a, 'b> Step<FindPinnedChapterInfo<'a, 'b>, C, Error = BaseError>
-       + for<'a> Step<CreateChapter<'a>, C, Error = BaseError>
-       + for<'a> Step<UpdateChapter<'a>, C, Error = BaseError>
-       + for<'a> Step<UpdateChapterStage<'a>, C, Error = BaseError>
-       + for<'a> Step<CompleteChapterRawProvide<'a>, C, Error = BaseError>
-       + for<'a> Step<ResetChapterRawProvide<'a>, C, Error = BaseError>
-       + for<'a> Step<SetChapterPageCounters<'a>, C, Error = BaseError>
-       + for<'a> Step<AdjustChapterUnitCounters<'a>, C, Error = BaseError>
-       + for<'a> Step<UnpinOtherChapters<'a>, C, Error = BaseError>
-       + for<'a> Step<DeleteChapter<'a>, C, Error = BaseError>,
+        + for<'a> Run<ListChapterInfos<'a>, Error = BaseError>
+        + for<'a, 'b> Run<FindPinnedChapterInfo<'a, 'b>, Error = BaseError>
+        + for<'a> Run<ListPinnedChapterInfos<'a>, Error = BaseError>
+        + for<'a> Run<StartChapterStage<'a>, Error = BaseError>
+        + for<'a> Run<CompleteChapterRawProvide<'a>, Error = BaseError>
+        + for<'a, 'b> Step<GetChapterInfo<'a, 'b>, C, Error = BaseError>
+        + for<'a, 'b> Step<GetChapterInfoExcluded<'a, 'b>, C, Error = BaseError>
+        + for<'a> Step<ListChapterInfosExcluded<'a>, C, Error = BaseError>
+        + for<'a, 'b> Step<FindPinnedChapterInfo<'a, 'b>, C, Error = BaseError>
+        + for<'a> Step<CreateChapter<'a>, C, Error = BaseError>
+        + for<'a> Step<UpdateChapter<'a>, C, Error = BaseError>
+        + for<'a> Step<UpdateChapterStage<'a>, C, Error = BaseError>
+        + for<'a> Step<CompleteChapterRawProvide<'a>, C, Error = BaseError>
+        + for<'a> Step<ResetChapterRawProvide<'a>, C, Error = BaseError>
+        + for<'a> Step<SetChapterPageCounters<'a>, C, Error = BaseError>
+        + for<'a> Step<AdjustChapterUnitCounters<'a>, C, Error = BaseError>
+        + for<'a> Step<UnpinOtherChapters<'a>, C, Error = BaseError>
+        + for<'a> Step<DeleteChapter<'a>, C, Error = BaseError>
 {
 }

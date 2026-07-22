@@ -47,7 +47,10 @@ type WorkerSender = mpsc::UnboundedSender<LocalMessageRow>;
 /// When the task has been retried 3 or more times, transitions from
 /// [`TaskFlow::Retry`] to [`TaskFlow::Dead`] so the message is not
 /// requeued indefinitely.
-pub(super) fn enforce_retry_limit(task_flow: TaskFlow, retried_count: i64) -> TaskFlow {
+pub(super) fn enforce_retry_limit(
+    task_flow: TaskFlow,
+    retried_count: i64,
+) -> TaskFlow {
     match (task_flow, retried_count >= 3) {
         //
         (TaskFlow::Retry(error), true) => TaskFlow::Dead(error),

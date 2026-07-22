@@ -150,8 +150,7 @@ pub async fn image_payloads_from_rdb_dispatch(shared: RdbCore) {
 #[test]
 fn fourth_failure_becomes_dead() {
     //
-    let task_flow =
-        enforce_retry_limit(TaskFlow::Retry("failed".into()), 3);
+    let task_flow = enforce_retry_limit(TaskFlow::Retry("failed".into()), 3);
 
     assert!(matches!(task_flow, TaskFlow::Dead(_)));
 }

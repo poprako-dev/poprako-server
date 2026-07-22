@@ -8,16 +8,19 @@ use poprako_util::time::ToUnixMilli;
 use crate::complex::util::check_user_is_team_admin;
 use crate::model::assignment::AssignmentInfo;
 use crate::model::comic_archive::{
-    ArchivedAssignmentPayload, ArchivedChapterPayload, ArchivedComicPayload,
-    ArchivedPagePayload, ArchivedUnitPayload, ArchivedUserPayload,
-    ArchivedWorksetPayload, ComicArchiveChapterSnapshot, ComicArchiveRecord,
-    ComicArchiveSnapshot, ComicArchiveWrite,
+    ComicArchiveChapterSnapshot, ComicArchiveRecord, ComicArchiveSnapshot,
+    ComicArchiveWrite,
 };
 use crate::part::repo::oper::comic::GetComicInfo;
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::result::{BaseError, BaseResult, accept};
-use crate::util::{compress_archive, next_snowflake_id};
+use crate::util::next_snowflake_id;
+use crate::value::comic_archive::{
+    ArchivedAssignmentPayload, ArchivedChapterPayload, ArchivedComicPayload,
+    ArchivedPagePayload, ArchivedUnitPayload, ArchivedUserPayload,
+    ArchivedWorksetPayload,
+};
 
 /// Constructs one immutable comic archive record from a fully locked snapshot.
 pub struct ComicArchiveComplex;
@@ -62,7 +65,14 @@ fn build_write(
     let record = ComicArchiveRecord {
         id: archived_comic_id.clone(),
         team_id: comic_archive_snapshot.workset_info.team_id.clone(),
-        archived_bytes: compress_archive(&comic_payload)?,
+        archived_payload: serde_json::to_string(&comic_payload).map_err(|error| {
+            BaseError::Unrecoverable {
+                message: format!(
+                    "[ComicArchiveComplex::build_write] failed to serialize archive payload: {}",
+                    error
+                ),
+            }
+        })?,
         archiver_id,
         created_at: archived_at,
     };
@@ -121,6 +131,18 @@ fn collect_image_keys(
 pub struct ComicArchivePermComplex;
 
 impl ComicArchivePermComplex {
+    /// Verify that the caller is an administrator of the requested team.
+    pub async fn ensure_user_can_export<P>(
+        proxy: &mut P,
+        user_id: &str,
+        team_id: &str,
+    ) -> BaseResult<()>
+    where
+        P: for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
+    {
+        check_user_is_team_admin(proxy, user_id, team_id).await
+    }
+
     /// Verify that the caller is an administrator of the comic's owning team.
     pub async fn ensure_user_can_archive<P>(
         proxy: &mut P,

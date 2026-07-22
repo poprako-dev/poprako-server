@@ -15,17 +15,13 @@ pub async fn process(
     match event {
         //
         PurgeExpiredInvitation::Assignment { invitation_id } => {
-            mock.run(&PurgeExpiredAssignmentInvitation {
-                id: invitation_id,
-            })
-            .await
+            mock.run(&PurgeExpiredAssignmentInvitation { id: invitation_id })
+                .await
         }
 
         PurgeExpiredInvitation::Member { invitation_id } => {
-            mock.run(&PurgeExpiredMemberInvitation {
-                id: invitation_id,
-            })
-            .await
+            mock.run(&PurgeExpiredMemberInvitation { id: invitation_id })
+                .await
         }
     }
 }

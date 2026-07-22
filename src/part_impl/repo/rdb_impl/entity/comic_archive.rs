@@ -12,7 +12,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_comic_archive;
 pub struct ComicArchiveEntry<'a> {
     pub f_id: &'a str,
     pub f_team_id: &'a str,
-    pub f_archived_bytes: &'a [u8],
+    pub f_archived_payload: &'a str,
     pub f_archiver_id: &'a str,
     pub f_created_at: OffsetDateTime,
 }
@@ -22,7 +22,7 @@ impl<'a> From<&'a ComicArchiveRecord> for ComicArchiveEntry<'a> {
         Self {
             f_id: &comic_archive_record.id,
             f_team_id: &comic_archive_record.team_id,
-            f_archived_bytes: &comic_archive_record.archived_bytes,
+            f_archived_payload: &comic_archive_record.archived_payload,
             f_archiver_id: &comic_archive_record.archiver_id,
             f_created_at: comic_archive_record.created_at,
         }

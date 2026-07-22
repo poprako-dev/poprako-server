@@ -1,6 +1,7 @@
 // archive(archive)(positive): archive should retain immutable payloads, queue every image key, and remove active descendants.
 // archive(archive)(negative): non-admin callers should not create archive rows or delete active data.
 // archive(archive)(negative): archive persistence failure should roll back payload, outbox, and active-data changes.
+// export(export)(positive): retained month slots should return stored JSON strings without decoding.
 
 use super::*;
 
@@ -10,7 +11,6 @@ use crate::model::assignment::AssignmentInfo;
 use crate::model::assignment_invitation::AssignmentInvitationInfo;
 use crate::model::chapter::ChapterInfo;
 use crate::model::comic::ComicInfo;
-use crate::model::comic_archive::ArchivedComicPayload;
 use crate::model::member::MemberInfo;
 use crate::model::page::PageInfo;
 use crate::model::unit::UnitInfo;
@@ -21,7 +21,6 @@ use crate::part::prom::payload::image::Payload as ImagePayload;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;
-use crate::util::decompress_archive;
 use crate::value::chapter::StageMask;
 use crate::value::image::{ImageExtension, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
@@ -210,38 +209,52 @@ async fn archive_retains_payloads_queues_images_and_deletes_active_data() {
 
     assert_eq!(snapshot.comic_archives[0].archiver_id, "user-1");
 
-    let archived_comic_payload: ArchivedComicPayload =
-        decompress_archive(&snapshot.comic_archives[0].archived_bytes).unwrap();
+    let archived_comic_payload: serde_json::Value =
+        serde_json::from_str(&snapshot.comic_archives[0].archived_payload)
+            .unwrap();
 
-    assert_eq!(archived_comic_payload.source_comic_id, "comic-1");
+    assert_eq!(archived_comic_payload["source_comic_id"], "comic-1");
 
-    assert_eq!(archived_comic_payload.workset.id, "workset-1");
-
-    assert_eq!(archived_comic_payload.chapters.len(), 1);
+    assert_eq!(archived_comic_payload["workset"]["id"], "workset-1");
 
     assert_eq!(
-        archived_comic_payload.chapters[0].source_chapter_id,
+        archived_comic_payload["chapters"].as_array().unwrap().len(),
+        1
+    );
+
+    assert_eq!(
+        archived_comic_payload["chapters"][0]["source_chapter_id"],
         "chapter-1"
     );
 
-    assert_eq!(archived_comic_payload.chapters[0].assignments.len(), 1);
+    assert_eq!(
+        archived_comic_payload["chapters"][0]["assignments"]
+            .as_array()
+            .unwrap()
+            .len(),
+        1
+    );
 
     assert_eq!(
-        archived_comic_payload.chapters[0].assignments[0]
-            .user
-            .nickname,
+        archived_comic_payload["chapters"][0]["assignments"][0]["user"]["nickname"],
         "archiver"
     );
 
-    assert_eq!(archived_comic_payload.chapters[0].pages.len(), 1);
+    assert_eq!(
+        archived_comic_payload["chapters"][0]["pages"]
+            .as_array()
+            .unwrap()
+            .len(),
+        1
+    );
 
     assert_eq!(
-        archived_comic_payload.chapters[0].pages[0].source_page_id,
+        archived_comic_payload["chapters"][0]["pages"][0]["source_page_id"],
         "page-1"
     );
 
     assert_eq!(
-        archived_comic_payload.chapters[0].pages[0].units[0].source_unit_id,
+        archived_comic_payload["chapters"][0]["pages"][0]["units"][0]["source_unit_id"],
         "unit-1"
     );
 
@@ -264,6 +277,36 @@ async fn archive_retains_payloads_queues_images_and_deletes_active_data() {
         deleted_image_keys,
         vec!["covers/reserved.png", "pages/reserved.png"]
     );
+}
+
+#[tokio::test]
+async fn export_returns_stored_strings_grouped_by_month() {
+    let mock = Mock::new();
+
+    seed_archive_scope(&mock, RoleMask::from(RoleField::ADMIN));
+
+    archive(&mock, &mock, &mock, token(), "comic-1".into())
+        .await
+        .unwrap();
+
+    let now = OffsetDateTime::now_utc();
+
+    let month = format!("{:04}-{:02}", now.year(), u8::from(now.month()));
+
+    let payload = export(
+        &mock,
+        token(),
+        "team-1".into(),
+        ExportComicArchivesParams {
+            months: vec![month.clone()],
+        },
+    )
+    .await
+    .unwrap();
+
+    let stored = &mock.snapshot().comic_archives[0].archived_payload;
+
+    assert_eq!(payload.0[&month], vec![stored.clone()]);
 }
 
 #[tokio::test]

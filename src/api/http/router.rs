@@ -125,6 +125,11 @@ pub fn new(harn: AppHarn) -> Router<AppHarn> {
         )
         .route("/comics/{comic_id}/archive", post(comic::archive));
 
+    let v1_comic_archive = Router::new().route(
+        "/teams/{team_id}/comic-archives/export",
+        get(comic::export_archives),
+    );
+
     let v1_chapter = Router::new()
         .route("/chapters", post(chapter::create))
         .route("/comics/{comic_id}/chapters", get(chapter::list_infos))
@@ -239,6 +244,7 @@ pub fn new(harn: AppHarn) -> Router<AppHarn> {
         .merge(v1_member_invitation)
         .merge(v1_workset)
         .merge(v1_comic)
+        .merge(v1_comic_archive)
         .merge(v1_chapter)
         .merge(v1_page)
         .merge(v1_unit)

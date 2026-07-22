@@ -19,6 +19,7 @@ pub use part_impl::effect::async_impl::AsyncEffectDevelop;
 pub use part_impl::image::r2_impl::R2ImagePool;
 pub use part_impl::prom::rdb_impl::RdbProm;
 pub use part_impl::repo::rdb_impl::RdbRepo;
+pub use part_impl::sched::RdbSched;
 pub use part_impl::shared::RdbCore;
 
 /// HTTP API layer (handlers, middleware, server, router, OpenAPI).

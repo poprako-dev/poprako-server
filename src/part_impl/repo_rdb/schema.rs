@@ -94,7 +94,7 @@ diesel::table! {
     t_comic_archive (f_id) {
         f_id -> Text,
         f_team_id -> Text,
-        f_archived_bytes -> Bytea,
+        f_archived_payload -> Text,
         f_archiver_id -> Text,
         f_created_at -> Timestamptz,
     }

@@ -79,6 +79,10 @@ error-invalid-page-image-identity = Page image metadata conflicts with its conte
 error-invalid-image-byte-length = Page image length must be between 1 byte and 20 MiB
 error-page-image-object-invalid = Uploaded page image is missing or has invalid content identity
 error-chapter-published-frozen = Published chapters cannot be modified
+error-invalid-comic-archive-month-count = Select between 1 and 12 archive months
+error-invalid-comic-archive-month = Archive month must use YYYY-MM format
+error-duplicate-comic-archive-month = Archive months must be distinct
+error-comic-archive-month-not-retained = Archive month is outside the retention window
 
 chapter-default-subtitle = Ch. { $number }
 
@@ -93,3 +97,5 @@ mail-workflow-review = review
 mail-workflow-publish = publish
 mail-chapter-progress-title = Your assigned comic "{ $comic_title }" chapter #{ $chapter_index } has a progress update
 mail-chapter-progress-body = "{ $team_name }" - "{ $workset_name }" comic #{ $comic_index } "{ $comic_title }" chapter #{ $chapter_index } "{ $workflow }" is complete.
+mail-comic-archive-purged-title = Comic archives purged
+mail-comic-archive-purged-body = Expired comic archives were purged by the retention policy

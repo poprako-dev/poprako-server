@@ -7,17 +7,18 @@
 // Postconditions:
 //   - An independent archive workset remains active for final cleanup.
 //   - The archived comic subtree is absent from active tables and represented
-//     by one compressed immutable archive row.
+//     by one immutable JSON-text archive row.
 //
 // Covers archive creation, permission rejection (non-admin member),
-// repeated-archive failure, child-resource inaccessibility, audit fields,
-// outbox delete records, active-data cleanup, and stable workset comic counts.
+// repeated-archive failure, retained month export, child-resource
+// inaccessibility, audit fields, outbox delete records, active-data cleanup,
+// and stable workset comic counts.
 
 import assert from "node:assert/strict";
 
 import { grantChapterWorkerRoles, withDatabaseClient } from "../db/seed.js";
-import { expectError } from "../http/assertions.js";
-import type { ErrorBody } from "../http/apiClient.js";
+import { expectError, expectSuccessData } from "../http/assertions.js";
+import type { ErrorBody, SuccessBody } from "../http/apiClient.js";
 import {
     archiveComic,
     createChapter,
@@ -110,6 +111,23 @@ export async function runIt11Module(ctx: RunCtx): Promise<void> {
     const archive_comic_val = await archiveComic(ctx.sadmin, comic.id);
 
     assert.notEqual(archive_comic_val.archived_comic_id, comic.id);
+
+    // ---------- export selected retained month ----------
+
+    const archive_month = new Date().toISOString().slice(0, 7);
+    const export_response = await ctx.sadmin.get<
+        SuccessBody<Record<string, string[]>>
+    >(
+        `/api/v1/teams/${ctx.ids.defaultTeamId}/comic-archives/export?month=${archive_month}`,
+    );
+    const exported_months = expectSuccessData<Record<string, string[]>>(
+        export_response,
+        200,
+    );
+    const exported_comics = exported_months[archive_month]!;
+
+    assert.equal(exported_comics.length, 1);
+    assert.equal(JSON.parse(exported_comics[0]!).source_comic_id, comic.id);
 
     // ---------- active-comic and its chapters are inaccessible ----------
 

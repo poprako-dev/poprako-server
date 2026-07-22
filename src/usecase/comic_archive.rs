@@ -1,4 +1,6 @@
-//! Use case for atomically archiving an active comic.
+//! Use cases for immutable comic archives.
+
+use std::collections::BTreeMap;
 
 use poprako_orchestra::{Nucl, run_proxy};
 use poprako_orchestra_extra::prom::oper::DeferBatch;
@@ -9,7 +11,9 @@ use tracing::instrument;
 use crate::complex::comic_archive::{
     ComicArchiveComplex, ComicArchivePermComplex,
 };
-use crate::data::comic_archive::ArchiveComicPayload;
+use crate::data::comic_archive::{
+    ArchiveComicPayload, ExportComicArchivesParams, ExportComicArchivesPayload,
+};
 use crate::model::user::UserToken;
 use crate::part::prom::Prom;
 use crate::part::prom::payload::{Payload, image};
@@ -19,15 +23,72 @@ use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::comic::GetComicInfo;
 use crate::part::repo::oper::comic_archive::{
     CommitComicArchive, GetComicArchiveSnapshotExcluded,
+    ListComicArchivePayloads,
 };
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::part::repo::workset::WorksetRepo;
 use crate::result::{BaseError, BaseResult, accept};
 use crate::util::next_snowflake_id;
+use crate::value::comic_archive::ComicArchiveMonth;
 
 #[cfg(test)]
 mod tests;
+
+/// Exports selected retained UTC month slots for one team.
+#[instrument(level = "info", err(Debug), skip_all)]
+pub async fn export<C, R>(
+    repo: &R,
+    token: UserToken,
+    team_id: String,
+    params: ExportComicArchivesParams,
+) -> BaseResult<ExportComicArchivesPayload>
+where
+    R: ComicArchiveRepo<C> + MemberRepo<C> + Sync,
+{
+    ComicArchivePermComplex::ensure_user_can_export(
+        &mut run_proxy! {
+            repo => for<'a> FindMemberInfo<'a>;
+        },
+        &token.user_id,
+        &team_id,
+    )
+    .await?;
+
+    let months = ComicArchiveMonth::parse_retained(
+        params.months,
+        OffsetDateTime::now_utc(),
+    )?;
+
+    let records = repo
+        .run(&ListComicArchivePayloads {
+            team_id: &team_id,
+            months: &months,
+        })
+        .await?;
+
+    let mut exports = months
+        .iter()
+        .map(|month| (month.label.clone(), Vec::new()))
+        .collect::<BTreeMap<_, _>>();
+
+    for (created_at, archived_payload) in records {
+        let month = months
+            .iter()
+            .find(|month| created_at >= month.start && created_at < month.end);
+
+        let Some(month) = month else {
+            continue;
+        };
+
+        exports
+            .entry(month.label.clone())
+            .or_default()
+            .push(archived_payload);
+    }
+
+    accept(ExportComicArchivesPayload(exports))
+}
 
 /// Archive one active comic, its descendants, and all retained image keys.
 #[instrument(level = "info", err(Debug), skip_all)]

@@ -1,6 +1,5 @@
 //! Snapshot and persisted-record types for immutable comic archives.
 
-use bitcode::{Decode, Encode};
 use time::OffsetDateTime;
 
 use crate::model::assignment::AssignmentInfo;
@@ -35,7 +34,7 @@ pub struct ComicArchivePageSnapshot {
 pub struct ComicArchiveRecord {
     pub id: String,
     pub team_id: String,
-    pub archived_bytes: Vec<u8>,
+    pub archived_payload: String,
     pub archiver_id: String,
     pub created_at: OffsetDateTime,
 }
@@ -46,111 +45,4 @@ pub struct ComicArchiveWrite {
     pub source_comic_id: String,
     pub source_chapter_ids: Vec<String>,
     pub source_page_ids: Vec<String>,
-}
-
-/// Complete immutable comic payload stored in `t_comic_archive`.
-#[derive(Debug, PartialEq, Encode, Decode)]
-pub struct ArchivedComicPayload {
-    pub source_comic_id: String,
-    pub workset: ArchivedWorksetPayload,
-    pub index: i32,
-    pub title: String,
-    pub author: String,
-    pub description: Option<String>,
-    pub chapter_count: i32,
-    pub chapter_next_index: i32,
-    pub creator_id: String,
-    pub last_active_at: i64,
-    pub created_at: i64,
-    pub updated_at: i64,
-    pub chapters: Vec<ArchivedChapterPayload>,
-}
-
-/// Embedded workset snapshot belonging to an archived comic.
-#[derive(Debug, PartialEq, Encode, Decode)]
-pub struct ArchivedWorksetPayload {
-    pub id: String,
-    pub team_id: String,
-    pub index: i32,
-    pub name: String,
-    pub description: Option<String>,
-    pub comic_count: i32,
-    pub comic_next_index: i32,
-    pub created_at: i64,
-    pub updated_at: i64,
-}
-
-/// Immutable chapter payload embedded in a comic archive.
-#[derive(Debug, PartialEq, Encode, Decode)]
-pub struct ArchivedChapterPayload {
-    pub source_chapter_id: String,
-    pub is_pinned: bool,
-    pub index: i32,
-    pub subtitle: String,
-    pub page_count: i32,
-    pub total_unit_count: i32,
-    pub translated_unit_count: i32,
-    pub proofread_unit_count: i32,
-    pub stages: u32,
-    pub creator_id: String,
-    pub created_at: i64,
-    pub updated_at: i64,
-    pub assignments: Vec<ArchivedAssignmentPayload>,
-    pub pages: Vec<ArchivedPagePayload>,
-}
-
-/// Assignment role snapshot paired with the complete assigned-user profile.
-#[derive(Debug, PartialEq, Encode, Decode)]
-pub struct ArchivedAssignmentPayload {
-    pub source_assignment_id: String,
-    pub user_id: String,
-    pub roles: u32,
-    pub created_at: i64,
-    pub updated_at: i64,
-    pub user: ArchivedUserPayload,
-}
-
-/// User profile embedded in a chapter archive.
-#[derive(Debug, PartialEq, Encode, Decode)]
-pub struct ArchivedUserPayload {
-    pub id: String,
-    pub qid: String,
-    pub nickname: String,
-    pub avatar_key: Option<String>,
-    pub avatar_uploaded: bool,
-    pub avatar_version: u32,
-    pub is_sadmin: bool,
-    pub last_active_at: i64,
-    pub created_at: i64,
-    pub updated_at: i64,
-}
-
-/// Page snapshot excluding object-storage state and image metadata.
-#[derive(Debug, PartialEq, Encode, Decode)]
-pub struct ArchivedPagePayload {
-    pub source_page_id: String,
-    pub index: i32,
-    pub total_unit_count: i32,
-    pub translated_unit_count: i32,
-    pub proofread_unit_count: i32,
-    pub created_at: i64,
-    pub updated_at: i64,
-    pub units: Vec<ArchivedUnitPayload>,
-}
-
-/// Unit snapshot retained in its page order.
-#[derive(Debug, PartialEq, Encode, Decode)]
-pub struct ArchivedUnitPayload {
-    pub source_unit_id: String,
-    pub index: i32,
-    pub is_bubble: bool,
-    pub is_proofread: bool,
-    pub x_coord: f64,
-    pub y_coord: f64,
-    pub translated_text: Option<String>,
-    pub last_translator_id: Option<String>,
-    pub proofread_text: Option<String>,
-    pub last_proofreader_id: Option<String>,
-    pub created_at: i64,
-    pub updated_at: i64,
 }

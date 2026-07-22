@@ -4,7 +4,8 @@ use std::collections::HashMap;
 
 use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
-use poprako_orchestra::Step;
+use poprako_orchestra::{Run, Step};
+use time::OffsetDateTime;
 use tracing::instrument;
 
 use crate::model::assignment::AssignmentInfo;
@@ -20,6 +21,7 @@ use crate::model::user::UserInfo;
 use crate::model::workset::WorksetInfo;
 use crate::part::repo::oper::comic_archive::{
     CommitComicArchive, GetComicArchiveSnapshotExcluded,
+    ListComicArchivePayloads,
 };
 use crate::part_impl::repo::rdb_impl::RdbRepo;
 use crate::part_impl::repo::rdb_impl::entity::assignment::AssignmentRow;
@@ -60,9 +62,59 @@ use crate::part_impl::repo::rdb_impl::schema::t_workset::dsl::{
 use crate::part_impl::shared::result::{diesel, expected};
 use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::{BaseError, BaseResult, accept};
+use crate::value::comic_archive::ComicArchiveMonth;
 
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
 pub mod tests;
+
+#[instrument(level = "info", err(Debug), skip_all)]
+async fn list_payloads(
+    conn: &mut RdbConn,
+    team_id: &str,
+    months: &[ComicArchiveMonth],
+) -> BaseResult<Vec<(OffsetDateTime, String)>> {
+    #[derive(Queryable)]
+    struct ArchivePayloadRow {
+        created_at: OffsetDateTime,
+        payload: String,
+    }
+
+    use crate::part_impl::repo::rdb_impl::schema::t_comic_archive::dsl::{
+        f_archived_payload, f_created_at, f_team_id, t_comic_archive,
+    };
+
+    let Some(first_month) = months.first() else {
+        return accept(Vec::new());
+    };
+
+    let Some(last_month) = months.last() else {
+        return accept(Vec::new());
+    };
+
+    let query = t_comic_archive
+        .filter(f_team_id.eq(team_id))
+        .filter(f_created_at.ge(first_month.start))
+        .filter(f_created_at.lt(last_month.end))
+        .select((f_created_at, f_archived_payload))
+        .into_boxed();
+
+    let rows: Vec<ArchivePayloadRow> = query
+        .order_by(f_created_at.asc())
+        .load(conn)
+        .await
+        .map_err(diesel)?;
+
+    accept(
+        rows.into_iter()
+            .filter(|row| {
+                months.iter().any(|month| {
+                    row.created_at >= month.start && row.created_at < month.end
+                })
+            })
+            .map(|row| (row.created_at, row.payload))
+            .collect(),
+    )
+}
 
 /// Lock every active descendant needed by an archive transaction.
 #[instrument(level = "info", err(Debug), skip_all)]
@@ -332,6 +384,18 @@ impl Step<GetComicArchiveSnapshotExcluded<'_>, RdbContext> for RdbRepo {
         oper: &GetComicArchiveSnapshotExcluded<'_>,
     ) -> BaseResult<ComicArchiveSnapshot> {
         get_snapshot_excluded(context.conn(), oper.comic_id).await
+    }
+}
+
+impl Run<ListComicArchivePayloads<'_>> for RdbRepo {
+    type Error = BaseError;
+
+    #[instrument(level = "info", err(Debug), skip_all)]
+    async fn run(
+        &self,
+        oper: &ListComicArchivePayloads<'_>,
+    ) -> BaseResult<Vec<(OffsetDateTime, String)>> {
+        submit_query!(self.core, list_payloads, oper.team_id, oper.months)
     }
 }
 

@@ -2,7 +2,6 @@
 pub mod auth;
 /// Transaction driver implementation (RDBMS-based).
 pub mod drive;
-// TODO:
 /// Effect processing implementation (async dispatch, mock).
 pub mod effect;
 /// Image pool implementation (R2 object storage, mock).
@@ -11,6 +10,7 @@ pub mod image;
 pub mod prom;
 /// Repository implementations (RDBMS, mock).
 pub mod repo;
-pub mod schd;
+// TODO:
+pub mod sched;
 /// Shared utilities for part implementations.
 pub mod shared;
