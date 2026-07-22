@@ -7,10 +7,10 @@ use diesel_async::RunQueryDsl;
 use poprako_orchestra::Nucl;
 use time::{Date, Month, OffsetDateTime, PrimitiveDateTime, Time};
 use tokio::sync::watch;
+use tokio_util::sync::CancellationToken;
 use tracing::instrument;
 
 use poprako_util::i18n::trl;
-use tokio_util::sync::CancellationToken;
 
 use crate::model::system_mail::SystemMailEntry;
 use crate::part_impl::drive::rdb_impl::RdbDrive;
@@ -27,6 +27,9 @@ use crate::part_impl::shared::{RdbConn, RdbCore};
 use crate::result::{BaseError, BaseResult, accept};
 use crate::util::next_snowflake_id;
 
+#[cfg(test)]
+mod tests;
+
 const PURGE_INTERVAL: StdDuration = StdDuration::from_secs(7 * 24 * 60 * 60);
 
 struct ExpiredSlot {
@@ -35,6 +38,7 @@ struct ExpiredSlot {
 }
 
 fn retained_cutoff(now: OffsetDateTime) -> BaseResult<OffsetDateTime> {
+    //
     let date = Date::from_calendar_date(now.year() - 1, now.month(), 1)
         .map_err(|error| BaseError::Unrecoverable {
             message: format!(
@@ -47,8 +51,11 @@ fn retained_cutoff(now: OffsetDateTime) -> BaseResult<OffsetDateTime> {
 }
 
 fn next_month(start: OffsetDateTime) -> BaseResult<OffsetDateTime> {
+    //
     let next = match start.month() {
+        //
         Month::December => (start.year() + 1, Month::January),
+
         month => (
             start.year(),
             Month::try_from(u8::from(month) + 1).map_err(|error| {
@@ -80,6 +87,7 @@ async fn list_expired_slots(
     conn: &mut RdbConn,
     cutoff: OffsetDateTime,
 ) -> BaseResult<Vec<ExpiredSlot>> {
+    //
     #[derive(QueryableByName)]
     struct ExpiredSlotRow {
         #[diesel(sql_type = diesel::sql_types::Text)]
@@ -111,6 +119,7 @@ async fn purge_slot(
     conn: &mut RdbConn,
     slot: &ExpiredSlot,
 ) -> BaseResult<usize> {
+    //
     let end = next_month(slot.start)?;
 
     let admin_ids: Vec<String> = t_member
@@ -181,6 +190,7 @@ async fn purge_slot(
 
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn purge_once(core: &RdbCore) -> BaseResult<usize> {
+    //
     let mut conn = core.get().await?;
 
     let cutoff = retained_cutoff(OffsetDateTime::now_utc())?;
@@ -192,6 +202,7 @@ async fn purge_once(core: &RdbCore) -> BaseResult<usize> {
     let drive = RdbDrive::new(core.clone());
 
     for slot in slots {
+        //
         let deleted_count = drive
             .coord(async |context| purge_slot(context.conn(), &slot).await)
             .await?;
@@ -211,6 +222,7 @@ pub struct RdbSched {
 impl RdbSched {
     /// Starts the retention loop and performs the first purge immediately.
     pub fn new(core: RdbCore) -> Self {
+        //
         let token = CancellationToken::new();
 
         let (done_send, done) = watch::channel(false);
@@ -218,8 +230,11 @@ impl RdbSched {
         let runner_token = token.clone();
 
         tokio::spawn(async move {
+            //
             loop {
+                //
                 match purge_once(&core).await {
+                    //
                     Ok(deleted_count) if deleted_count > 0 => {
                         tracing::info!(
                             deleted_count,
@@ -251,6 +266,7 @@ impl RdbSched {
 
     /// Stops the scheduler and waits for its current purge to finish.
     pub async fn close(&self) {
+        //
         self.token.cancel();
 
         let mut done = self.done.clone();
@@ -262,38 +278,5 @@ impl RdbSched {
 impl Drop for RdbSched {
     fn drop(&mut self) {
         self.token.cancel();
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn retained_cutoff_keeps_the_same_month_from_last_year() {
-        let now = OffsetDateTime::from_unix_timestamp(1_784_678_400).unwrap();
-
-        let cutoff = retained_cutoff(now).unwrap();
-
-        assert_eq!(cutoff.year(), 2025);
-
-        assert_eq!(cutoff.month(), Month::July);
-
-        assert_eq!(cutoff.day(), 1);
-    }
-
-    #[test]
-    fn next_month_crosses_the_year_boundary() {
-        let start = PrimitiveDateTime::new(
-            Date::from_calendar_date(2025, Month::December, 1).unwrap(),
-            Time::MIDNIGHT,
-        )
-        .assume_utc();
-
-        let end = next_month(start).unwrap();
-
-        assert_eq!(end.year(), 2026);
-
-        assert_eq!(end.month(), Month::January);
     }
 }

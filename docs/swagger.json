@@ -720,8 +720,8 @@
         "tags": [
           "pages"
         ],
-        "summary": "`GET /api/v1/chapters/{chapter_id}/pages` — list pages in a chapter.",
-        "operationId": "list_infos",
+        "summary": "`GET /api/v1/chapters/{chapter_id}/pages` — list all pages in a chapter.",
+        "operationId": "list_all_infos",
         "parameters": [
           {
             "name": "chapter_id",
@@ -730,28 +730,6 @@
             "required": true,
             "schema": {
               "type": "string"
-            }
-          },
-          {
-            "name": "offset",
-            "in": "query",
-            "description": "Zero-based offset for paginated results.",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int32",
-              "minimum": 0
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "description": "Maximum number of items to return.",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int32",
-              "minimum": 0
             }
           }
         ],
@@ -841,7 +819,7 @@
             "description": "No permission to reserve pages in this chapter"
           },
           "422": {
-            "description": "Chapter already has pages or invalid page count"
+            "description": "Invalid authoritative manifest, duplicate page identity, image metadata, or published chapter"
           }
         }
       }
@@ -1954,8 +1932,8 @@
           "403": {
             "description": "No permission to modify this page's image"
           },
-          "404": {
-            "description": "Page not found"
+          "422": {
+            "description": "Page, image identity, storage object, or published chapter is invalid"
           }
         }
       }
@@ -1994,7 +1972,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HttpBody_ReservePageImagePayload"
+                  "$ref": "#/components/schemas/HttpBody_ReservedPagePayload"
                 }
               }
             }
@@ -2002,8 +1980,8 @@
           "403": {
             "description": "No permission to modify this page's image"
           },
-          "404": {
-            "description": "Page not found"
+          "422": {
+            "description": "Page not found, conflicting image metadata, or published chapter"
           }
         }
       }
@@ -2013,8 +1991,8 @@
         "tags": [
           "units"
         ],
-        "summary": "`GET /api/v1/pages/{page_id}/units` — list units under a page.",
-        "operationId": "list_infos",
+        "summary": "`GET /api/v1/pages/{page_id}/units` — list all units under a page.",
+        "operationId": "list_all_infos",
         "parameters": [
           {
             "name": "page_id",
@@ -2023,28 +2001,6 @@
             "required": true,
             "schema": {
               "type": "string"
-            }
-          },
-          {
-            "name": "offset",
-            "in": "query",
-            "description": "Zero-based offset for paginated results.",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int32",
-              "minimum": 0
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "description": "Maximum number of items to return.",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int32",
-              "minimum": 0
             }
           }
         ],
@@ -2555,6 +2511,55 @@
           },
           "404": {
             "description": "Team not found"
+          }
+        }
+      }
+    },
+    "/api/v1/teams/{team_id}/comic-archives/export": {
+      "get": {
+        "tags": [
+          "comics"
+        ],
+        "summary": "`GET /api/v1/teams/{team_id}/comic-archives/export` — export retained archive month slots.",
+        "operationId": "export_archives",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "description": "Team ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "month",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Archive JSON strings grouped by UTC month",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpBody_ExportComicArchivesPayload"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No permission to export this team's archives"
+          },
+          "422": {
+            "description": "Invalid or expired month selection"
           }
         }
       }
@@ -3647,7 +3652,7 @@
           {
             "name": "with",
             "in": "query",
-            "description": "Derived rows to attach. Repeatable. Values: `pinned_chapter`.",
+            "description": "Derived rows to attach. Repeatable. Values: `pinned_chapter`,\n`pinned_chapter_assignment`. The assignment option requires the chapter\noption.",
             "required": false,
             "schema": {
               "type": "array",
@@ -3694,7 +3699,7 @@
             "description": "No permission to list comics in this workset"
           },
           "422": {
-            "description": "Invalid workflow-stage filter"
+            "description": "Invalid query option combination or workflow-stage filter"
           }
         }
       }
@@ -4090,7 +4095,8 @@
         "type": "string",
         "description": "Extra data options for comic info queries.\n\nUnlike `ComicInclOpt`, `with` opts populate the separately returned\nderived data (e.g. the chapter currently pinned to each comic).",
         "enum": [
-          "pinned_chapter"
+          "pinned_chapter",
+          "pinned_chapter_assignment"
         ]
       },
       "CommentInclOpt": {
@@ -4576,6 +4582,19 @@
               "$ref": "#/components/schemas/PageTranslationExportPayload"
             }
           }
+        }
+      },
+      "ExportComicArchivesPayload": {
+        "type": "object",
+        "description": "JSON archive payloads grouped by their UTC `YYYY-MM` month slot.",
+        "additionalProperties": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "propertyNames": {
+          "type": "string"
         }
       },
       "HttpBody_ArchiveComicPayload": {
@@ -5243,6 +5262,35 @@
           }
         }
       },
+      "HttpBody_ExportComicArchivesPayload": {
+        "type": "object",
+        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
+        "required": [
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "example": 0,
+            "minimum": 0
+          },
+          "data": {
+            "type": "object",
+            "description": "JSON archive payloads grouped by their UTC `YYYY-MM` month slot.",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          }
+        }
+      },
       "HttpBody_ImportChapterTranslationPayload": {
         "type": "object",
         "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
@@ -5293,16 +5341,26 @@
           },
           "data": {
             "type": "object",
-            "description": "Presentation-ready comic list and optional pinned chapters.\n\n`pinned_chapters` is positionally aligned with `comics`. Its entries are\npopulated only when the request includes `with=pinned_chapter`.",
+            "description": "Presentation-ready comic list and optional pinned chapters.\n\n`pinned_chapters` and `pinned_chapter_assignments` are positionally aligned\nwith `comics`. Their entries are populated only when the corresponding\n`with` options are requested.",
             "required": [
               "comics",
-              "pinned_chapters"
+              "pinned_chapters",
+              "pinned_chapter_assignments"
             ],
             "properties": {
               "comics": {
                 "type": "array",
                 "items": {
                   "$ref": "#/components/schemas/ComicInfoVal"
+                }
+              },
+              "pinned_chapter_assignments": {
+                "type": "array",
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AssignmentInfoVal"
+                  }
                 }
               },
               "pinned_chapters": {
@@ -5629,13 +5687,13 @@
             "type": "object",
             "description": "Return value from successful chapter page reservations.",
             "required": [
-              "creations"
+              "pages"
             ],
             "properties": {
-              "creations": {
+              "pages": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/components/schemas/PageCreationPayload"
+                  "$ref": "#/components/schemas/ReservedPagePayload"
                 }
               }
             }
@@ -5668,44 +5726,6 @@
                 "type": "integer",
                 "format": "int32",
                 "minimum": 0
-              },
-              "put_url": {
-                "type": "string"
-              }
-            }
-          }
-        }
-      },
-      "HttpBody_ReservePageImagePayload": {
-        "type": "object",
-        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
-        "required": [
-          "code",
-          "data"
-        ],
-        "properties": {
-          "code": {
-            "type": "integer",
-            "format": "int32",
-            "example": 0,
-            "minimum": 0
-          },
-          "data": {
-            "type": "object",
-            "description": "Return value from a successful single-page image reservation.",
-            "required": [
-              "page_id",
-              "put_url",
-              "image_version"
-            ],
-            "properties": {
-              "image_version": {
-                "type": "integer",
-                "format": "int32",
-                "minimum": 0
-              },
-              "page_id": {
-                "type": "string"
               },
               "put_url": {
                 "type": "string"
@@ -5777,6 +5797,64 @@
               },
               "put_url": {
                 "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "HttpBody_ReservedPagePayload": {
+        "type": "object",
+        "description": "Success response body wrapping a usecase value.\n\nSerializes as the standard JSON success envelope. HTTP metadata such as\nstatus code, extra headers, and `Set-Cookie` values are not part of the JSON\nbody.",
+        "required": [
+          "code",
+          "data"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "example": 0,
+            "minimum": 0
+          },
+          "data": {
+            "type": "object",
+            "description": "One reserved page upload target.",
+            "required": [
+              "page_id",
+              "index",
+              "image_hash",
+              "byte_length",
+              "extension"
+            ],
+            "properties": {
+              "byte_length": {
+                "type": "integer",
+                "format": "int64",
+                "minimum": 0
+              },
+              "extension": {
+                "$ref": "#/components/schemas/ImageExtension"
+              },
+              "image_hash": {
+                "$ref": "#/components/schemas/ImageHash"
+              },
+              "index": {
+                "type": "integer",
+                "format": "int32",
+                "minimum": 0
+              },
+              "page_id": {
+                "type": "string"
+              },
+              "upload": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/PageImageUploadPayload"
+                  }
+                ]
               }
             }
           }
@@ -6609,6 +6687,9 @@
                 "id",
                 "chapter_id",
                 "index",
+                "image_hash",
+                "byte_length",
+                "extension",
                 "total_unit_count",
                 "translated_unit_count",
                 "proofread_unit_count",
@@ -6616,6 +6697,11 @@
                 "updated_at"
               ],
               "properties": {
+                "byte_length": {
+                  "type": "integer",
+                  "format": "int64",
+                  "minimum": 0
+                },
                 "chapter_id": {
                   "type": "string"
                 },
@@ -6623,8 +6709,14 @@
                   "type": "integer",
                   "format": "int64"
                 },
+                "extension": {
+                  "$ref": "#/components/schemas/ImageExtension"
+                },
                 "id": {
                   "type": "string"
+                },
+                "image_hash": {
+                  "$ref": "#/components/schemas/ImageHash"
                 },
                 "image_thumbnail_url": {
                   "type": [
@@ -7051,6 +7143,31 @@
           }
         }
       },
+      "ImageExtension": {
+        "type": "string",
+        "description": "Supported page image filename extensions and their media types.",
+        "enum": [
+          "jpg",
+          "jpeg",
+          "png",
+          "gif",
+          "webp",
+          "svg",
+          "avif",
+          "bmp",
+          "tif",
+          "tiff"
+        ]
+      },
+      "ImageHash": {
+        "type": "array",
+        "items": {
+          "type": "integer",
+          "format": "int32",
+          "minimum": 0
+        },
+        "description": "SHA-256 content hash encoded as canonical padded RFC 4648 Base64."
+      },
       "ImportChapterTranslationParams": {
         "type": "object",
         "description": "Request body for importing chapter translations.",
@@ -7127,16 +7244,26 @@
       },
       "ListComicInfosPayload": {
         "type": "object",
-        "description": "Presentation-ready comic list and optional pinned chapters.\n\n`pinned_chapters` is positionally aligned with `comics`. Its entries are\npopulated only when the request includes `with=pinned_chapter`.",
+        "description": "Presentation-ready comic list and optional pinned chapters.\n\n`pinned_chapters` and `pinned_chapter_assignments` are positionally aligned\nwith `comics`. Their entries are populated only when the corresponding\n`with` options are requested.",
         "required": [
           "comics",
-          "pinned_chapters"
+          "pinned_chapters",
+          "pinned_chapter_assignments"
         ],
         "properties": {
           "comics": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ComicInfoVal"
+            }
+          },
+          "pinned_chapter_assignments": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/AssignmentInfoVal"
+              }
             }
           },
           "pinned_chapters": {
@@ -7478,22 +7605,56 @@
           }
         }
       },
-      "PageCreationPayload": {
+      "PageImageParams": {
         "type": "object",
-        "description": "One reserved page upload target.",
+        "description": "One page image in a complete chapter manifest.",
         "required": [
-          "page_id",
-          "put_url",
-          "image_version"
+          "image_hash",
+          "byte_length",
+          "extension"
         ],
         "properties": {
+          "byte_length": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "extension": {
+            "$ref": "#/components/schemas/ImageExtension"
+          },
+          "image_hash": {
+            "$ref": "#/components/schemas/ImageHash"
+          },
+          "page_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "PageImageUploadPayload": {
+        "type": "object",
+        "description": "Presigned target for a pending page-image upload.",
+        "required": [
+          "put_url",
+          "image_version",
+          "headers"
+        ],
+        "properties": {
+          "headers": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
           "image_version": {
             "type": "integer",
             "format": "int32",
             "minimum": 0
-          },
-          "page_id": {
-            "type": "string"
           },
           "put_url": {
             "type": "string"
@@ -7507,6 +7668,9 @@
           "id",
           "chapter_id",
           "index",
+          "image_hash",
+          "byte_length",
+          "extension",
           "total_unit_count",
           "translated_unit_count",
           "proofread_unit_count",
@@ -7514,6 +7678,11 @@
           "updated_at"
         ],
         "properties": {
+          "byte_length": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
           "chapter_id": {
             "type": "string"
           },
@@ -7521,8 +7690,14 @@
             "type": "integer",
             "format": "int64"
           },
+          "extension": {
+            "$ref": "#/components/schemas/ImageExtension"
+          },
           "id": {
             "type": "string"
+          },
+          "image_hash": {
+            "$ref": "#/components/schemas/ImageHash"
           },
           "image_thumbnail_url": {
             "type": [
@@ -7627,19 +7802,17 @@
         "description": "Input parameters for reserving all page images of a chapter.",
         "required": [
           "chapter_id",
-          "page_count",
-          "file_ext"
+          "pages"
         ],
         "properties": {
           "chapter_id": {
             "type": "string"
           },
-          "file_ext": {
-            "type": "string"
-          },
-          "page_count": {
-            "type": "integer",
-            "format": "int32"
+          "pages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PageImageParams"
+            }
           }
         }
       },
@@ -7647,13 +7820,13 @@
         "type": "object",
         "description": "Return value from successful chapter page reservations.",
         "required": [
-          "creations"
+          "pages"
         ],
         "properties": {
-          "creations": {
+          "pages": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/PageCreationPayload"
+              "$ref": "#/components/schemas/ReservedPagePayload"
             }
           }
         }
@@ -7692,33 +7865,21 @@
         "type": "object",
         "description": "Input parameters for reserving one page image.",
         "required": [
-          "file_ext"
+          "image_hash",
+          "byte_length",
+          "extension"
         ],
         "properties": {
-          "file_ext": {
-            "type": "string"
-          }
-        }
-      },
-      "ReservePageImagePayload": {
-        "type": "object",
-        "description": "Return value from a successful single-page image reservation.",
-        "required": [
-          "page_id",
-          "put_url",
-          "image_version"
-        ],
-        "properties": {
-          "image_version": {
+          "byte_length": {
             "type": "integer",
-            "format": "int32",
+            "format": "int64",
             "minimum": 0
           },
-          "page_id": {
-            "type": "string"
+          "extension": {
+            "$ref": "#/components/schemas/ImageExtension"
           },
-          "put_url": {
-            "type": "string"
+          "image_hash": {
+            "$ref": "#/components/schemas/ImageHash"
           }
         }
       },
@@ -7779,6 +7940,48 @@
           },
           "put_url": {
             "type": "string"
+          }
+        }
+      },
+      "ReservedPagePayload": {
+        "type": "object",
+        "description": "One reserved page upload target.",
+        "required": [
+          "page_id",
+          "index",
+          "image_hash",
+          "byte_length",
+          "extension"
+        ],
+        "properties": {
+          "byte_length": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "extension": {
+            "$ref": "#/components/schemas/ImageExtension"
+          },
+          "image_hash": {
+            "$ref": "#/components/schemas/ImageHash"
+          },
+          "index": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "page_id": {
+            "type": "string"
+          },
+          "upload": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PageImageUploadPayload"
+              }
+            ]
           }
         }
       },

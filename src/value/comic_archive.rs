@@ -9,6 +9,9 @@ use poprako_util::i18n::trl;
 
 use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 
+#[cfg(test)]
+mod tests;
+
 /// Maximum number of month slots accepted by one export request.
 pub const MAX_EXPORT_MONTHS: usize = 12;
 
@@ -30,6 +33,7 @@ pub struct ArchivedComicPayload {
     pub chapters: Vec<ArchivedChapterPayload>,
 }
 
+/// Immutable workset payload serialized into an archive entry.
 #[derive(Serialize)]
 pub struct ArchivedWorksetPayload {
     pub id: String,
@@ -43,6 +47,7 @@ pub struct ArchivedWorksetPayload {
     pub updated_at: i64,
 }
 
+/// Immutable chapter payload serialized into an archive entry.
 #[derive(Serialize)]
 pub struct ArchivedChapterPayload {
     pub source_chapter_id: String,
@@ -61,6 +66,7 @@ pub struct ArchivedChapterPayload {
     pub pages: Vec<ArchivedPagePayload>,
 }
 
+/// Immutable assignment payload serialized into an archive entry.
 #[derive(Serialize)]
 pub struct ArchivedAssignmentPayload {
     pub source_assignment_id: String,
@@ -71,6 +77,7 @@ pub struct ArchivedAssignmentPayload {
     pub user: ArchivedUserPayload,
 }
 
+/// Immutable user payload serialized into an archive entry.
 #[derive(Serialize)]
 pub struct ArchivedUserPayload {
     pub id: String,
@@ -85,6 +92,7 @@ pub struct ArchivedUserPayload {
     pub updated_at: i64,
 }
 
+/// Immutable page payload serialized into an archive entry.
 #[derive(Serialize)]
 pub struct ArchivedPagePayload {
     pub source_page_id: String,
@@ -97,6 +105,7 @@ pub struct ArchivedPagePayload {
     pub units: Vec<ArchivedUnitPayload>,
 }
 
+/// Immutable unit payload serialized into an archive entry.
 #[derive(Serialize)]
 pub struct ArchivedUnitPayload {
     pub source_unit_id: String,
@@ -127,6 +136,7 @@ impl ComicArchiveMonth {
         labels: Vec<String>,
         now: OffsetDateTime,
     ) -> BaseResult<Vec<Self>> {
+        //
         if labels.is_empty() || labels.len() > MAX_EXPORT_MONTHS {
             return Err(args("error-invalid-comic-archive-month-count"));
         }
@@ -140,6 +150,7 @@ impl ComicArchiveMonth {
         let mut months = Vec::with_capacity(labels.len());
 
         for label in labels {
+            //
             if !unique_labels.insert(label.clone()) {
                 return Err(args("error-duplicate-comic-archive-month"));
             }
@@ -159,6 +170,7 @@ impl ComicArchiveMonth {
     }
 
     fn new(label: String, year: i32, month: u8) -> BaseResult<Self> {
+        //
         let month = Month::try_from(month)
             .map_err(|_| args("error-invalid-comic-archive-month"))?;
 
@@ -166,7 +178,9 @@ impl ComicArchiveMonth {
             .map_err(|_| args("error-invalid-comic-archive-month"))?;
 
         let next = match month {
+            //
             Month::December => (year + 1, Month::January),
+
             _ => (
                 year,
                 Month::try_from(u8::from(month) + 1)
@@ -187,6 +201,7 @@ impl ComicArchiveMonth {
 }
 
 fn parse_label(label: &str) -> BaseResult<(i32, u8)> {
+    //
     let Some((year, month)) = label.split_once('-') else {
         return Err(args("error-invalid-comic-archive-month"));
     };
@@ -210,35 +225,5 @@ fn args(key: &str) -> BaseError {
     BaseError::Expected {
         variant: ExpectedVariant::Args,
         message: trl(key),
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn parse_retained_accepts_distinct_selected_slots() {
-        let now = OffsetDateTime::from_unix_timestamp(1_784_678_400).unwrap();
-
-        let months = ComicArchiveMonth::parse_retained(
-            vec!["2026-06".into(), "2025-07".into()],
-            now,
-        )
-        .unwrap();
-
-        assert_eq!(months[0].label, "2025-07");
-
-        assert_eq!(months[1].label, "2026-06");
-    }
-
-    #[test]
-    fn parse_retained_rejects_expired_slots() {
-        let now = OffsetDateTime::from_unix_timestamp(1_784_678_400).unwrap();
-
-        let result =
-            ComicArchiveMonth::parse_retained(vec!["2025-06".into()], now);
-
-        assert!(matches!(result, Err(BaseError::Expected { .. })));
     }
 }
