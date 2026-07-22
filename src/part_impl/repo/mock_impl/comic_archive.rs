@@ -24,6 +24,7 @@ impl Run<ListComicArchivePayloads<'_>> for Mock {
         &self,
         oper: &ListComicArchivePayloads<'_>,
     ) -> BaseResult<Vec<(time::OffsetDateTime, String)>> {
+        //
         let state = self.state.lock().unwrap();
 
         let payloads = state

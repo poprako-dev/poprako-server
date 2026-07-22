@@ -281,6 +281,7 @@ async fn archive_retains_payloads_queues_images_and_deletes_active_data() {
 
 #[tokio::test]
 async fn export_returns_stored_strings_grouped_by_month() {
+    //
     let mock = Mock::new();
 
     seed_archive_scope(&mock, RoleMask::from(RoleField::ADMIN));

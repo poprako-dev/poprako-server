@@ -48,6 +48,10 @@ prod-ci-build:
 deploy-release:
     sh scripts/deploy-release.sh
 
+# Generate swagger.json from the annotated OpenAPI spec.
+swagger:
+    cargo run --features swagger-ui -- --swagger > docs/swagger.json
+
 # Run all fmt/*/check.py checkers in order, continuing on failure.
 fmt-check:
     bash fmt/run-check.sh

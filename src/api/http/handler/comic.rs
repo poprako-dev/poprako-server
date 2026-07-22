@@ -20,9 +20,8 @@ use crate::data::comic::{
     MarkComicCoverUploadedParams, ReserveComicCoverParams,
     ReserveComicCoverPayload, UpdateComicInfoParams,
 };
-use crate::data::comic_archive::ArchiveComicPayload;
 use crate::data::comic_archive::{
-    ExportComicArchivesParams, ExportComicArchivesPayload,
+    ArchiveComicPayload, ExportComicArchivesParams, ExportComicArchivesPayload,
 };
 use crate::data::comic_list::ListComicInfosPayload;
 use crate::model::user::UserToken;

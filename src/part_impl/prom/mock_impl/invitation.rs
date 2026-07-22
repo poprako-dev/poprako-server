@@ -11,7 +11,6 @@ pub async fn process(
     mock: &Mock,
     event: &PurgeExpiredInvitation,
 ) -> BaseResult<()> {
-    //
     match event {
         //
         PurgeExpiredInvitation::Assignment { invitation_id } => {
