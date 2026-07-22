@@ -3,9 +3,7 @@
 use std::collections::HashMap;
 
 use crate::model::page::{PageEntry, PageInfo};
-use crate::part_impl::repo::mock_impl::{
-    MockState, expected, now,
-};
+use crate::part_impl::repo::mock_impl::{MockState, expected, now};
 use crate::result::BaseResult;
 
 mod orchestra;

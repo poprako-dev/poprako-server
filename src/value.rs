@@ -17,6 +17,8 @@ pub mod role;
 pub mod chapter;
 /// Comic value types.
 pub mod comic;
+/// Comic archive month-slot values.
+pub mod comic_archive;
 /// Member value types.
 pub mod member;
 /// Member invitation value types.

@@ -361,12 +361,10 @@ impl<'a> Run<PurgeExpiredMemberInvitation<'a>> for Mock {
         //
         let mut state = self.state.lock().unwrap();
 
-        state
-            .member_invitations
-            .retain(|member_invitation_info| {
-                member_invitation_info.id != oper.id
-                    || !member_invitation_info.pending
-            });
+        state.member_invitations.retain(|member_invitation_info| {
+            member_invitation_info.id != oper.id
+                || !member_invitation_info.pending
+        });
 
         accept(())
     }

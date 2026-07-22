@@ -17,9 +17,8 @@ pub trait AnnouncementRepo<C>:
 {
 }
 
-impl<T, C> AnnouncementRepo<C> for T
-where
+impl<T, C> AnnouncementRepo<C> for T where
     T: for<'a> Run<ListAnnouncementInfos<'a>, Error = BaseError>
-       + for<'a> Step<CreateAnnouncement<'a>, C, Error = BaseError>,
+        + for<'a> Step<CreateAnnouncement<'a>, C, Error = BaseError>
 {
 }

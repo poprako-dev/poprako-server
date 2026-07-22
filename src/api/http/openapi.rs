@@ -121,6 +121,7 @@ use crate::value::role::RoleField;
         handler::comic::reserve_cover,
         handler::comic::mark_cover_uploaded,
         handler::comic::archive,
+        handler::comic::export_archives,
         handler::comic::delete,
         handler::chapter::create,
         handler::chapter::list_infos,

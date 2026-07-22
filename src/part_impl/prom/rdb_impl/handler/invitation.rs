@@ -12,10 +12,7 @@ use crate::part_impl::shared::RdbContext;
 
 /// Purges an expired invitation when it is still pending.
 #[instrument(level = "info", skip_all)]
-pub async fn handle<R>(
-    repo: &R,
-    event: &PurgeExpiredInvitation,
-) -> TaskFlow
+pub async fn handle<R>(repo: &R, event: &PurgeExpiredInvitation) -> TaskFlow
 where
     R: AssignmentInvitationRepo<RdbContext>
         + MemberInvitationRepo<RdbContext>
@@ -25,17 +22,13 @@ where
     let result = match event {
         //
         PurgeExpiredInvitation::Assignment { invitation_id } => {
-            repo.run(&PurgeExpiredAssignmentInvitation {
-                id: invitation_id,
-            })
-            .await
+            repo.run(&PurgeExpiredAssignmentInvitation { id: invitation_id })
+                .await
         }
 
         PurgeExpiredInvitation::Member { invitation_id } => {
-            repo.run(&PurgeExpiredMemberInvitation {
-                id: invitation_id,
-            })
-            .await
+            repo.run(&PurgeExpiredMemberInvitation { id: invitation_id })
+                .await
         }
     };
 

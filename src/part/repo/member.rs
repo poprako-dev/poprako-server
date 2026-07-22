@@ -29,17 +29,16 @@ pub trait MemberRepo<C>:
 {
 }
 
-impl<T, C> MemberRepo<C> for T
-where
+impl<T, C> MemberRepo<C> for T where
     T: for<'a> Run<FindMemberInfo<'a>, Error = BaseError>
-       + for<'a> Run<ListMemberInfos<'a>, Error = BaseError>
-       + for<'a, 'b> Run<GetMemberInfo<'a, 'b>, Error = BaseError>
-       + for<'a> Step<CreateMember<'a>, C, Error = BaseError>
-       + for<'a> Step<UpdateMember<'a>, C, Error = BaseError>
-       + for<'a> Step<ListMemberInfos<'a>, C, Error = BaseError>
-       + for<'a> Step<FindMemberInfo<'a>, C, Error = BaseError>
-       + for<'a, 'b> Step<GetMemberInfo<'a, 'b>, C, Error = BaseError>
-       + for<'a> Step<ListMemberInfosExcluded<'a>, C, Error = BaseError>
-       + for<'a> Step<DeleteMember<'a>, C, Error = BaseError>,
+        + for<'a> Run<ListMemberInfos<'a>, Error = BaseError>
+        + for<'a, 'b> Run<GetMemberInfo<'a, 'b>, Error = BaseError>
+        + for<'a> Step<CreateMember<'a>, C, Error = BaseError>
+        + for<'a> Step<UpdateMember<'a>, C, Error = BaseError>
+        + for<'a> Step<ListMemberInfos<'a>, C, Error = BaseError>
+        + for<'a> Step<FindMemberInfo<'a>, C, Error = BaseError>
+        + for<'a, 'b> Step<GetMemberInfo<'a, 'b>, C, Error = BaseError>
+        + for<'a> Step<ListMemberInfosExcluded<'a>, C, Error = BaseError>
+        + for<'a> Step<DeleteMember<'a>, C, Error = BaseError>
 {
 }

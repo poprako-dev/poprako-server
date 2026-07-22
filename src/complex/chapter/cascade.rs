@@ -132,9 +132,7 @@ where
             Error = BaseError,
         >,
 {
-    let page_infos = proxy
-        .exec(&ListPageInfos { chapter_id })
-        .await?;
+    let page_infos = proxy.exec(&ListPageInfos { chapter_id }).await?;
 
     let object_keys = page_infos
         .into_iter()

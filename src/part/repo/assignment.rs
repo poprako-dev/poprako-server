@@ -25,16 +25,15 @@ pub trait AssignmentRepo<C>:
 {
 }
 
-impl<T, C> AssignmentRepo<C> for T
-where
+impl<T, C> AssignmentRepo<C> for T where
     T: for<'a, 'b> Run<FindAssignmentInfo<'a, 'b>, Error = BaseError>
-       + for<'a, 'b> Run<GetAssignmentInfo<'a, 'b>, Error = BaseError>
-       + for<'a, 'b> Run<ListAssignmentInfos<'a, 'b>, Error = BaseError>
-       + for<'a, 'b> Step<FindAssignmentInfo<'a, 'b>, C, Error = BaseError>
-       + for<'a, 'b> Step<ListAssignmentInfos<'a, 'b>, C, Error = BaseError>
-       + for<'a> Step<ListAssignmentInfosExcluded<'a>, C, Error = BaseError>
-       + for<'a> Step<CreateAssignment<'a>, C, Error = BaseError>
-       + for<'a> Step<UpdateAssignmentRoles<'a>, C, Error = BaseError>
-       + for<'a> Step<DeleteAssignments<'a>, C, Error = BaseError>,
+        + for<'a, 'b> Run<GetAssignmentInfo<'a, 'b>, Error = BaseError>
+        + for<'a, 'b> Run<ListAssignmentInfos<'a, 'b>, Error = BaseError>
+        + for<'a, 'b> Step<FindAssignmentInfo<'a, 'b>, C, Error = BaseError>
+        + for<'a, 'b> Step<ListAssignmentInfos<'a, 'b>, C, Error = BaseError>
+        + for<'a> Step<ListAssignmentInfosExcluded<'a>, C, Error = BaseError>
+        + for<'a> Step<CreateAssignment<'a>, C, Error = BaseError>
+        + for<'a> Step<UpdateAssignmentRoles<'a>, C, Error = BaseError>
+        + for<'a> Step<DeleteAssignments<'a>, C, Error = BaseError>
 {
 }

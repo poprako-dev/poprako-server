@@ -30,7 +30,7 @@ use utoipa::OpenApi as _;
 
 use poprako_server::{
     AppConfig, AppHarn, AsyncEffectDevelop, Harn, JwtAuth, R2ImagePool,
-    RdbCore, RdbDrive, RdbProm, RdbRepo, init_prometheus, serve,
+    RdbCore, RdbDrive, RdbProm, RdbRepo, RdbSched, init_prometheus, serve,
 };
 
 /// Application entry point.
@@ -92,6 +92,8 @@ async fn main() -> anyhow::Result<()> {
 
     let prom = RdbProm::new(core.clone(), image_pool.clone());
 
+    let sched = RdbSched::new(core.clone());
+
     let develop = AsyncEffectDevelop::new(repo_effect, 1024);
 
     let harn: AppHarn = Harn::new(drive, repo, prom, auth, image_pool, develop);
@@ -109,6 +111,8 @@ async fn main() -> anyhow::Result<()> {
     harn.develop().close().await;
 
     harn.prom().close().await;
+
+    sched.close().await;
 
     serve_result
 }

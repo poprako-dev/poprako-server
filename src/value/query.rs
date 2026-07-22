@@ -24,8 +24,8 @@ use std::fmt;
 use std::marker::PhantomData;
 
 use axum::extract::FromRequestParts;
-use axum::http::request::Parts;
 use axum::http::StatusCode;
+use axum::http::request::Parts;
 use serde::Deserialize as _;
 use serde::de::{self, DeserializeOwned, Deserializer, SeqAccess, Visitor};
 
@@ -129,9 +129,8 @@ pub fn from_grouped_query<T: DeserializeOwned>(
         obj.insert(key, entry);
     }
 
-    serde_json::from_value(serde_json::Value::Object(obj)).map_err(|e| {
-        format!("{}", e)
-    })
+    serde_json::from_value(serde_json::Value::Object(obj))
+        .map_err(|e| format!("{}", e))
 }
 
 /// Deserialise `Vec<T>` from a query-string value that may be a **single
