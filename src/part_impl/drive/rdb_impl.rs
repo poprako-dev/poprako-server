@@ -14,6 +14,7 @@ use crate::result::BaseError;
 /// Each call to [`Nucl::coord`] opens a new connection, begins a transaction,
 /// runs the closure, and commits or rolls back on success or failure.
 pub struct RdbDrive {
+    /// Shared database connection pool and driver state.
     core: RdbCore,
 }
 

@@ -13,12 +13,15 @@ mod tests;
 
 /// One manifest position and the old page assigned to it, when any.
 pub struct ManifestMatch {
+    /// Index of the matched existing page in the input slice, or `None` for a new page.
     pub existing_index: Option<usize>,
 }
 
 /// Stable matching result for an authoritative page manifest.
 pub struct ManifestPlan {
+    /// Ordered match results aligning each input page to an existing page or a new slot.
     pub matches: Vec<ManifestMatch>,
+    /// Indexes of existing pages that were not matched and should be removed.
     pub deleted_existing_indexes: Vec<usize>,
 }
 

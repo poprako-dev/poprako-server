@@ -19,10 +19,13 @@ mod tests;
 
 /// JWT issuer for user session tokens.
 pub struct JwtAuth {
+    /// Token lifetime in seconds from issuance.
     expiration_seconds: i64,
 
+    /// RSA/DSA key material used to sign outgoing tokens.
     encoding_key: EncodingKey,
 
+    /// RSA/DSA key material used to verify incoming tokens.
     decoding_key: DecodingKey,
 }
 

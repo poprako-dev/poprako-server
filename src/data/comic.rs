@@ -39,13 +39,19 @@ mod tests;
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ComicInfoVal {
+    /// Unique comic identifier.
     pub id: String,
 
+    /// Parent workset identifier this comic belongs to.
     pub workset_id: String,
+    /// Ordinal position of the comic within its workset.
     pub index: i32,
 
+    /// Comic title.
     pub title: String,
+    /// Comic author name.
     pub author: String,
+    /// Optional description or synopsis of the comic content.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
 
@@ -53,23 +59,33 @@ pub struct ComicInfoVal {
     /// no cover has been uploaded.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub cover_url: Option<String>,
+    /// Resolved signed download URL for the cover thumbnail, or [`None`] if
+    /// no cover has been uploaded.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub cover_thumbnail_url: Option<String>,
 
+    /// Total number of chapters in this comic.
     pub chapter_count: i32,
 
+    /// Identifier of the user who created the comic entry.
     pub creator_id: String,
 
+    /// Resolved workset summary, included when the `workset` expansion option is requested.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub workset: Option<WorksetInfoVal>,
+    /// Resolved team summary for the owning workset, included when the `team` expansion option is requested.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub team: Option<TeamInfoVal>,
+    /// Resolved creator profile, included when the `creator` expansion option is requested.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub creator: Option<UserInfoVal>,
 
+    /// Timestamp of the most recent activity on the comic, in milliseconds since Unix epoch.
     pub last_active_at: i64,
 
+    /// Timestamp of comic creation, in milliseconds since Unix epoch.
     pub created_at: i64,
+    /// Timestamp of the last comic update, in milliseconds since Unix epoch.
     pub updated_at: i64,
 }
 
