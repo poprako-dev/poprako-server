@@ -65,11 +65,7 @@ pub struct ListMemberInvitationInfosParams {
     pub pending: Option<bool>,
 
     /// Related rows to embed. Repeatable. Values: `invitor`.
-    #[serde(
-        default,
-        rename = "incl",
-        deserialize_with = "crate::value::query::deserialize_vec"
-    )]
+    #[serde(default, rename = "incl")]
     pub incl_opt: Vec<MemberInvitationInclOpt>,
 
     /// Pagination offset.

@@ -1,11 +1,11 @@
 //! Pure matching for authoritative chapter page manifests.
 
+use std::cmp::Ordering;
 use std::collections::HashSet;
 
 use poprako_util::i18n::trl;
 
-use crate::data::page::PageImageParams;
-use crate::model::page::PageInfo;
+use crate::model::page::{PageImageSpec, PageInfo};
 use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 
 #[cfg(test)]
@@ -34,12 +34,12 @@ fn args_err(key: &str) -> BaseError {
 
 fn validate_same_hash_metadata(
     page_info: &PageInfo,
-    page_input: &PageImageParams,
+    page_spec: &PageImageSpec,
 ) -> BaseResult<()> {
     //
-    if page_info.image_hash == page_input.image_hash
-        && (page_info.image_byte_length != page_input.byte_length
-            || page_info.image_ext != page_input.ext)
+    if page_info.image_hash == page_spec.image_hash
+        && (page_info.image_byte_length != page_spec.byte_length
+            || page_info.image_ext != page_spec.ext)
     {
         return Err(args_err("error-invalid-page-image-identity"));
     }
@@ -47,7 +47,7 @@ fn validate_same_hash_metadata(
     accept(())
 }
 
-fn candidate_order(left: &PageInfo, right: &PageInfo) -> std::cmp::Ordering {
+fn candidate_order(left: &PageInfo, right: &PageInfo) -> Ordering {
     right
         .total_unit_count
         .gt(&0)
@@ -61,16 +61,16 @@ fn candidate_order(left: &PageInfo, right: &PageInfo) -> std::cmp::Ordering {
 pub fn build(
     chapter_id: &str,
     existing_page_infos: &[PageInfo],
-    page_inputs: &[PageImageParams],
+    page_specs: &[PageImageSpec],
 ) -> BaseResult<ManifestPlan> {
     //
-    let mut assigned_existing_indexes = vec![None; page_inputs.len()];
+    let mut assigned_existing_indexes = vec![None; page_specs.len()];
 
     let mut consumed_existing_indexes = HashSet::new();
 
-    for (request_index, page_input) in page_inputs.iter().enumerate() {
+    for (request_index, page_spec) in page_specs.iter().enumerate() {
         //
-        let Some(page_id) = &page_input.page_id else {
+        let Some(page_id) = &page_spec.page_id else {
             continue;
         };
 
@@ -83,7 +83,7 @@ pub fn build(
 
         validate_same_hash_metadata(
             &existing_page_infos[existing_index],
-            page_input,
+            page_spec,
         )?;
 
         consumed_existing_indexes.insert(existing_index);
@@ -91,9 +91,9 @@ pub fn build(
         assigned_existing_indexes[request_index] = Some(existing_index);
     }
 
-    for (request_index, page_input) in page_inputs.iter().enumerate() {
+    for (request_index, page_spec) in page_specs.iter().enumerate() {
         //
-        if page_input.page_id.is_some() {
+        if page_spec.page_id.is_some() {
             continue;
         }
 
@@ -102,7 +102,7 @@ pub fn build(
             .enumerate()
             .filter(|(existing_index, page_info)| {
                 !consumed_existing_indexes.contains(existing_index)
-                    && page_info.image_hash == page_input.image_hash
+                    && page_info.image_hash == page_spec.image_hash
             })
             .min_by(|(_, left), (_, right)| candidate_order(left, right))
             .map(|(existing_index, _)| existing_index);
@@ -113,7 +113,7 @@ pub fn build(
 
         validate_same_hash_metadata(
             &existing_page_infos[existing_index],
-            page_input,
+            page_spec,
         )?;
 
         consumed_existing_indexes.insert(existing_index);

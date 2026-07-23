@@ -3,6 +3,7 @@
 use axum::Json;
 use axum::extract::{Extension, Path, State};
 use axum::http::StatusCode;
+use axum_extra::extract::Query;
 use serde::Deserialize;
 use tracing::instrument;
 
@@ -23,7 +24,6 @@ use crate::data::member_invitation::{
 use crate::model::user::UserToken;
 use crate::usecase;
 use crate::value::member_invitation::MemberInvitationInclOpt;
-use crate::value::query::GroupedQuery;
 
 /// Query for listing invitations within a team.
 ///
@@ -39,11 +39,7 @@ pub struct MemberInvitationListQuery {
     pub pending: Option<bool>,
 
     /// Related rows to embed. Repeatable. Values: `invitor`.
-    #[serde(
-        default,
-        rename = "incl",
-        deserialize_with = "crate::value::query::deserialize_vec"
-    )]
+    #[serde(default, rename = "incl")]
     pub incl_opt: Vec<MemberInvitationInclOpt>,
 
     /// Pagination offset (0-based).
@@ -99,7 +95,7 @@ pub async fn list_infos(
     State(harn): State<AppHarn>,
     Path(team_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    GroupedQuery(query): GroupedQuery<MemberInvitationListQuery>,
+    Query(query): Query<MemberInvitationListQuery>,
 ) -> HttpResult<Vec<MemberInvitationInfoVal>> {
     //
     let params = ListMemberInvitationInfosParams {

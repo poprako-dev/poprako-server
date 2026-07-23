@@ -3,6 +3,7 @@
 use axum::Json;
 use axum::extract::{Extension, Path, State};
 use axum::http::StatusCode;
+use axum_extra::extract::Query;
 use serde::Deserialize;
 use tracing::instrument;
 
@@ -22,7 +23,6 @@ use crate::data::chapter::{
 use crate::model::user::UserToken;
 use crate::usecase;
 use crate::value::chapter::ChapterInclOpt;
-use crate::value::query::GroupedQuery;
 
 /// Query for listing chapters within a comic.
 ///
@@ -37,11 +37,7 @@ pub struct ChapterListQuery {
     /// Related rows to embed. Repeatable. Values: `comic`, `comic.workset`,
     /// `comic.workset.team`, `comic.creator`, `creator`. Dotted values imply
     /// their parent segments.
-    #[serde(
-        default,
-        rename = "incl",
-        deserialize_with = "crate::value::query::deserialize_vec"
-    )]
+    #[serde(default, rename = "incl")]
     pub incl_opt: Vec<ChapterInclOpt>,
 
     /// Pagination offset (0-based).
@@ -91,7 +87,7 @@ pub async fn list_infos(
     State(harn): State<AppHarn>,
     Path(comic_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    GroupedQuery(query): GroupedQuery<ChapterListQuery>,
+    Query(query): Query<ChapterListQuery>,
 ) -> HttpResult<Vec<ChapterInfoVal>> {
     //
     let params = ListChapterInfosParams {

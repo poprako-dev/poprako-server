@@ -14,8 +14,8 @@ use crate::complex::chapter::ChapterComplex;
 use crate::complex::image::ImageComplex;
 use crate::complex::page::{PageComplex, PagePermComplex};
 use crate::data::page::{
-    ListPageInfosParams, MarkPageImageUploadedParams, PageInfoVal,
-    ReservePageImageParams, ReservedPagePayload, PageSlotVal,
+    ListPageInfosParams, MarkPageImageUploadedParams, PageInfoVal, PageSlotVal,
+    ReservePageImageParams, ReservedPagePayload,
 };
 use crate::model::page::PageManifestUpdate;
 use crate::model::user::UserToken;

@@ -5,7 +5,6 @@ use poprako_orchestra::Proxy;
 use poprako_util::i18n::trl;
 
 use crate::complex::util::check_user_is_team_member;
-use crate::data::assignment::UpdateAssignmentRolesParams;
 use crate::model::assignment::{
     AssignmentInfo, AssignmentInfoListSpec, AssignmentRoleUpdate,
 };
@@ -114,7 +113,9 @@ impl AssignmentPermComplex {
     pub async fn ensure_user_can_update_roles<P>(
         proxy: &mut P,
         current_user_id: &str,
-        data: &UpdateAssignmentRolesParams,
+        target_user_id: &str,
+        chapter_id: &str,
+        roles: RoleMask,
     ) -> BaseResult<()>
     where
         P: for<'a, 'b> Proxy<GetChapterInfo<'a, 'b>, Error = BaseError>
@@ -123,15 +124,20 @@ impl AssignmentPermComplex {
             + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>
             + for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>,
     {
-        let admin_check =
-            check_admin(proxy, current_user_id, &data.chapter_id).await;
+        let admin_check = check_admin(proxy, current_user_id, chapter_id).await;
 
         if admin_check.is_err() {
-            check_self_reduce(proxy, current_user_id, data).await?;
+            check_self_reduce(
+                proxy,
+                current_user_id,
+                target_user_id,
+                chapter_id,
+                roles,
+            )
+            .await?;
         }
 
-        check_target_roles(proxy, &data.user_id, &data.chapter_id, data.roles)
-            .await
+        check_target_roles(proxy, target_user_id, chapter_id, roles).await
     }
 
     /// Verify the caller may delete the target assignment.
@@ -264,19 +270,21 @@ where
 async fn check_self_reduce<P>(
     proxy: &mut P,
     current_user_id: &str,
-    data: &UpdateAssignmentRolesParams,
+    target_user_id: &str,
+    chapter_id: &str,
+    roles: RoleMask,
 ) -> BaseResult<()>
 where
     P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>,
 {
-    if current_user_id != data.user_id {
+    if current_user_id != target_user_id {
         return Err(assignment_self_reduce_err());
     }
 
     let assignment_info = proxy
         .exec(&FindAssignmentInfo::ChapterUser {
-            chapter_id: &data.chapter_id,
-            user_id: &data.user_id,
+            chapter_id,
+            user_id: target_user_id,
         })
         .await?;
 
@@ -284,7 +292,7 @@ where
         return Err(assignment_self_reduce_err());
     };
 
-    if !assignment_info.roles.contains_mask(data.roles) {
+    if !assignment_info.roles.contains_mask(roles) {
         return Err(assignment_self_reduce_err());
     }
 

@@ -15,10 +15,10 @@ use crate::complex::image::ImageComplex;
 use crate::complex::page::manifest::build;
 use crate::complex::page::{PageComplex, PagePermComplex};
 use crate::data::page::{
-    ReserveChapterPagesParams, ReserveChapterPagesPayload, ReservedPagePayload,
-    PageSlotVal,
+    PageSlotVal, ReserveChapterPagesParams, ReserveChapterPagesPayload,
+    ReservedPagePayload,
 };
-use crate::model::page::{PageEntry, PageManifestUpdate};
+use crate::model::page::{PageEntry, PageImageSpec, PageManifestUpdate};
 use crate::model::user::UserToken;
 use crate::part::image::{ImagePool, ImageUploadSpec};
 use crate::part::prom::Prom;
@@ -96,23 +96,30 @@ where
     P: Prom<C> + Send + Sync,
     I: ImagePool,
 {
+    let ReserveChapterPagesParams { chapter_id, pages } = params;
+
+    let page_specs = pages
+        .into_iter()
+        .map(PageImageSpec::from)
+        .collect::<Vec<_>>();
+
     let page_count =
-        i32::try_from(params.pages.len()).map_err(|_| BaseError::Expected {
+        i32::try_from(page_specs.len()).map_err(|_| BaseError::Expected {
             variant: ExpectedVariant::Args,
             message: trl("error-invalid-page-count"),
         })?;
 
     validate_page_count(page_count)?;
 
-    for page_input in &params.pages {
-        validate_image_byte_length(page_input.byte_length)?;
+    for page_spec in &page_specs {
+        validate_image_byte_length(page_spec.byte_length)?;
     }
 
     let mut explicit_page_ids = HashSet::new();
 
-    for page_input in &params.pages {
+    for page_spec in &page_specs {
         //
-        let Some(page_id) = &page_input.page_id else {
+        let Some(page_id) = &page_spec.page_id else {
             continue;
         };
 
@@ -140,7 +147,7 @@ where
             repo => for<'a, 'b> FindAssignmentInfo<'a, 'b>;
         },
         &token.user_id,
-        &params.chapter_id,
+        &chapter_id,
     )
     .await?;
 
@@ -151,7 +158,7 @@ where
                 .step(
                     context,
                     &GetChapterInfoExcluded {
-                        id: &params.chapter_id,
+                        id: &chapter_id,
                         incls: &[],
                     },
                 )
@@ -171,7 +178,7 @@ where
             let manifest_plan = build(
                 &chapter_info.id,
                 &existing_page_infos,
-                &params.pages,
+                &page_specs,
             )?;
 
             repo.step(
@@ -196,7 +203,7 @@ where
 
             let mut proofread_unit_count = 0;
 
-            for (raw_index, page_input) in params.pages.iter().enumerate() {
+            for (raw_index, page_spec) in page_specs.iter().enumerate() {
                 //
                 let index = i32::try_from(raw_index).map_err(|_| BaseError::Expected {
                     variant: ExpectedVariant::Args,
@@ -217,7 +224,7 @@ where
                     proofread_unit_count += existing_page_info.proofread_unit_count;
 
                     let identity_changed =
-                        existing_page_info.image_hash != page_input.image_hash;
+                        existing_page_info.image_hash != page_spec.image_hash;
 
                     let image_version = match identity_changed {
                         //
@@ -238,7 +245,7 @@ where
                             &chapter_info.id,
                             &existing_page_info.id,
                             image_version,
-                            page_input.ext.suffix(),
+                            page_spec.ext.suffix(),
                         )),
 
                         false => existing_page_info.image_key.clone(),
@@ -263,9 +270,9 @@ where
                         image_key: image_key.clone(),
                         image_uploaded,
                         image_version,
-                        image_hash: page_input.image_hash.clone(),
-                        image_byte_len: page_input.byte_length,
-                        image_ext: page_input.ext,
+                        image_hash: page_spec.image_hash.clone(),
+                        image_byte_len: page_spec.byte_length,
+                        image_ext: page_spec.ext,
                     };
 
                     repo.step(
@@ -293,9 +300,9 @@ where
                             })?),
                         },
                         image_version,
-                        image_hash: page_input.image_hash.clone(),
-                        byte_length: page_input.byte_length,
-                        ext: page_input.ext,
+                        image_hash: page_spec.image_hash.clone(),
+                        byte_length: page_spec.byte_length,
+                        ext: page_spec.ext,
                     });
 
                     continue;
@@ -309,7 +316,7 @@ where
                     &chapter_info.id,
                     &page_id,
                     image_version,
-                    page_input.ext.suffix(),
+                    page_spec.ext.suffix(),
                 );
 
                 let page_entry = PageEntry {
@@ -318,9 +325,9 @@ where
                     index,
                     image_key: Some(object_key.clone()),
                     image_version,
-                    image_hash: page_input.image_hash.clone(),
-                    image_byte_len: page_input.byte_length,
-                    image_ext: page_input.ext,
+                    image_hash: page_spec.image_hash.clone(),
+                    image_byte_len: page_spec.byte_length,
+                    image_ext: page_spec.ext,
                 };
 
                 page_entries.push(page_entry);
@@ -332,9 +339,9 @@ where
                     })?,
                     object_key: Some(object_key),
                     image_version,
-                    image_hash: page_input.image_hash.clone(),
-                    byte_length: page_input.byte_length,
-                    ext: page_input.ext,
+                    image_hash: page_spec.image_hash.clone(),
+                    byte_length: page_spec.byte_length,
+                    ext: page_spec.ext,
                 });
             }
 

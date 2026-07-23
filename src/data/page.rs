@@ -1,5 +1,7 @@
 //! Data transfer objects for page use cases.
 
+use std::collections::BTreeMap;
+
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "swagger")]
@@ -7,7 +9,7 @@ use utoipa::ToSchema;
 
 use poprako_util::time::ToUnixMilli;
 
-use crate::model::page::PageInfo;
+use crate::model::page::{PageImageSpec, PageInfo};
 use crate::part::image::ImagePool;
 use crate::result::{BaseResult, accept};
 use crate::value::image::{ImageExt, ImageHash};
@@ -116,6 +118,17 @@ pub struct PageImageParams {
     pub ext: ImageExt,
 }
 
+impl From<PageImageParams> for PageImageSpec {
+    fn from(params: PageImageParams) -> Self {
+        Self {
+            page_id: params.page_id,
+            image_hash: params.image_hash,
+            byte_length: params.byte_length,
+            ext: params.ext,
+        }
+    }
+}
+
 /// Return value from successful chapter page reservations.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
@@ -151,7 +164,7 @@ pub struct PageSlotVal {
     /// Monotonic version number for idempotent upload confirmation.
     pub image_version: u32,
     /// Required HTTP headers for the presigned PUT request.
-    pub headers: std::collections::BTreeMap<String, String>,
+    pub headers: BTreeMap<String, String>,
 }
 
 /// Input parameters for reserving one page image.

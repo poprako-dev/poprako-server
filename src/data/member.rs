@@ -153,11 +153,7 @@ pub struct ListMemberInfosParams {
     pub role: Option<RoleField>,
 
     /// Related rows to embed. Repeatable. Values: `user`, `team`.
-    #[serde(
-        default,
-        rename = "incl",
-        deserialize_with = "crate::value::query::deserialize_vec"
-    )]
+    #[serde(default, rename = "incl")]
     pub incl_opt: Vec<MemberInclOpt>,
 
     /// Pagination offset.

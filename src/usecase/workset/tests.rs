@@ -7,6 +7,7 @@
 // update_info(update_info)(positive): existing workset should update name and description.
 // update_info(update_info)(negative): missing workset should propagate an argument error.
 // delete(delete)(positive): deleting a workset with covered comics should enqueue cover deletions.
+// delete(delete)(positive): deleting more than one comic batch should enqueue every cover deletion.
 // delete(delete)(positive): direct repo delete should not create prom records.
 // delete(delete)(negative): missing workset should rollback state.
 
@@ -339,6 +340,41 @@ async fn delete_removes_workset_and_enqueues_child_cover_deletes() {
         count_delete_records(&snapshot.prom_records, "cover-2.png"),
         1
     );
+}
+
+#[tokio::test]
+async fn delete_enqueues_cover_deletes_across_multiple_comic_batches() {
+    //
+    let mock = Mock::new();
+
+    mock.seed_workset(workset("workset-1", "team-1", 0));
+
+    mock.seed_member(admin_member("user-1", "team-1"));
+
+    for comic_index in 0..=50 {
+        //
+        let comic_id = format!("comic-{}", comic_index);
+
+        let cover_key = format!("cover-{}.png", comic_index);
+
+        mock.seed_comic(comic_with_uploaded_cover(
+            &comic_id,
+            "workset-1",
+            &cover_key,
+        ));
+    }
+
+    delete(&mock, &mock, &mock, token("user-1"), "workset-1".into())
+        .await
+        .unwrap();
+
+    let snapshot = mock.snapshot();
+
+    assert!(snapshot.worksets.is_empty());
+
+    assert!(snapshot.comics.is_empty());
+
+    assert_eq!(snapshot.prom_records.len(), 51);
 }
 
 #[tokio::test]

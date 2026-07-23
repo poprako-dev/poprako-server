@@ -81,8 +81,6 @@ impl WorksetComplex {
 
         const PAGE_SIZE: u32 = 50;
 
-        let mut offset: u32 = 0;
-
         loop {
             //
             let list_spec = ComicInfoListSpec {
@@ -90,7 +88,7 @@ impl WorksetComplex {
                 fuzzy_title: None,
                 kind: ComicInfoListKind::All,
                 incl_opt: Vec::new(),
-                offset,
+                offset: 0,
                 limit: PAGE_SIZE,
             };
 
@@ -105,8 +103,6 @@ impl WorksetComplex {
             for comic_info in comic_infos {
                 ComicComplex::delete_cascade(proxy, &comic_info.id).await?;
             }
-
-            offset += PAGE_SIZE;
         }
 
         proxy

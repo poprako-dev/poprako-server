@@ -26,6 +26,3 @@ pub mod member_invitation;
 
 /// Chapter port value types.
 pub mod chapter_port;
-
-/// Query parameter value types.
-pub mod query;
