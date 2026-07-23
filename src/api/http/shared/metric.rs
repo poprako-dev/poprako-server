@@ -120,9 +120,9 @@ impl MetricWindow {
 
         if status >= 400 {
             //
-            let error_total = bucket.by_error.entry(status).or_default();
+            let err_total = bucket.by_error.entry(status).or_default();
 
-            *error_total = error_total.saturating_add(1);
+            *err_total = err_total.saturating_add(1);
         }
 
         let Some(matched_path) = matched_path else {

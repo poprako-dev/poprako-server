@@ -22,19 +22,27 @@ use crate::value::role::{RoleField, RoleMask};
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct MemberInfoVal {
+    /// Unique member identifier.
     pub id: String,
 
+    /// Owning user identifier.
     pub user_id: String,
+    /// Display nickname of the member.
     pub nickname: String,
+    /// Unix timestamp of the last activity, in milliseconds.
     pub last_active_at: i64,
 
+    /// Team identifier this membership belongs to.
     pub team_id: String,
 
+    /// Resolved user detail, present when the `user` include option is requested.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub user: Option<UserInfoVal>,
+    /// Resolved team detail, present when the `team` include option is requested.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub team: Option<TeamInfoVal>,
 
+    /// Bitmask of roles assigned to this member.
     pub roles: RoleMask,
 }
 
@@ -88,9 +96,12 @@ impl MemberInfoVal {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateMemberParams {
+    /// User identifier for the new membership.
     pub user_id: String,
+    /// Team identifier for the new membership.
     pub team_id: String,
 
+    /// Initial role bitmask for the member.
     pub roles: RoleMask,
 }
 
@@ -98,6 +109,7 @@ pub struct CreateMemberParams {
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateMemberPayload {
+    /// Identifier of the created member.
     pub id: String,
 }
 
@@ -105,6 +117,7 @@ pub struct CreateMemberPayload {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct JoinTeamParams {
+    /// Invitation code to join the team.
     pub code: String,
 }
 
@@ -147,7 +160,9 @@ pub struct ListMemberInfosParams {
     )]
     pub incl_opt: Vec<MemberInclOpt>,
 
+    /// Pagination offset.
     pub offset: u32,
+    /// Maximum number of results per page.
     pub limit: u32,
 }
 
@@ -156,17 +171,17 @@ impl TryInto<MemberListSpec> for ListMemberInfosParams {
 
     fn try_into(self) -> BaseResult<MemberListSpec> {
         //
-        let invalid_args_err = || BaseError::Expected {
+        let invalid_args = || BaseError::Expected {
             variant: ExpectedVariant::Args,
             message: trl("error-team-or-user-required"),
         };
 
         if self.owner_id.is_some() == self.team_id.is_some() {
-            return Err(invalid_args_err());
+            return Err(invalid_args());
         }
 
         if self.owner_id.is_some() && self.role.is_some() {
-            return Err(invalid_args_err());
+            return Err(invalid_args());
         }
 
         if let Some(owner_id) = self.owner_id {
@@ -179,7 +194,7 @@ impl TryInto<MemberListSpec> for ListMemberInfosParams {
         }
 
         accept(MemberListSpec::Team {
-            team_id: self.team_id.ok_or_else(invalid_args_err)?,
+            team_id: self.team_id.ok_or_else(invalid_args)?,
             fuzzy_nickname: self.fuzzy_nickname,
             role: self.role,
             incl_opt: self.incl_opt,
@@ -193,6 +208,8 @@ impl TryInto<MemberListSpec> for ListMemberInfosParams {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UpdateMemberRolesParams {
+    /// Member identifier to update.
     pub id: String,
+    /// New role bitmask to assign.
     pub roles: RoleMask,
 }

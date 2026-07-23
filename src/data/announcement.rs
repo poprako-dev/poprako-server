@@ -19,16 +19,23 @@ use crate::value::announcement::AnnouncementInclOpt;
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct AnnouncementInfoVal {
+    /// Unique identifier.
     pub id: String,
 
+    /// Owning team identifier.
     pub team_id: String,
+    /// Authoring user identifier.
     pub user_id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
+    /// Authoring user information, omitted when not requested.
     pub user: Option<UserInfoVal>,
 
+    /// Announcement title.
     pub title: String,
+    /// Announcement body content.
     pub content: String,
 
+    /// Timestamp of creation in Unix milliseconds.
     pub created_at: i64,
 }
 
@@ -77,7 +84,9 @@ pub struct ListAnnouncementInfosParams {
     )]
     pub incl_opt: Vec<AnnouncementInclOpt>,
 
+    /// Pagination offset.
     pub offset: u32,
+    /// Maximum number of results per page.
     pub limit: u32,
 }
 
@@ -96,9 +105,12 @@ impl From<ListAnnouncementInfosParams> for AnnouncementListSpec {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateAnnouncementParams {
+    /// Target team identifier.
     pub team_id: String,
 
+    /// Announcement title.
     pub title: String,
+    /// Announcement body content.
     pub content: String,
 }
 
@@ -106,5 +118,6 @@ pub struct CreateAnnouncementParams {
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateAnnouncementPayload {
+    /// Identifier of the created announcement.
     pub id: String,
 }

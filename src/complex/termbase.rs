@@ -18,14 +18,14 @@ use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
 
-fn invalid_scope_error() -> BaseError {
+fn invalid_scope_err() -> BaseError {
     BaseError::Expected {
         variant: ExpectedVariant::Args,
         message: trl("error-invalid-termbase-scope"),
     }
 }
 
-fn empty_name_error() -> BaseError {
+fn empty_name_err() -> BaseError {
     BaseError::Expected {
         variant: ExpectedVariant::Args,
         message: trl("error-termbase-name-required"),
@@ -37,7 +37,7 @@ fn normalize_name(name: String) -> BaseResult<String> {
     let name = name.trim().to_string();
 
     if name.is_empty() {
-        return Err(empty_name_error());
+        return Err(empty_name_err());
     }
 
     accept(name)
@@ -79,7 +79,7 @@ impl TermbaseComplex {
             //
             (Some(_), None) | (None, Some(_)) => {}
 
-            _ => return Err(invalid_scope_error()),
+            _ => return Err(invalid_scope_err()),
         }
 
         let name = normalize_name(name)?;
@@ -226,7 +226,7 @@ impl TermbasePermComplex {
         }
 
         let Some(comic_id) = &termbase_info.comic_id else {
-            return Err(invalid_scope_error());
+            return Err(invalid_scope_err());
         };
 
         Self::resolve_team_id_from_comic(proxy, comic_id).await

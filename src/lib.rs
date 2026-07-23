@@ -3,7 +3,6 @@
 //! Crate root: explicit public re-exports and internal module organization for
 //! the PopRaKo application core.
 
-pub use api::http::init_prometheus;
 #[cfg(feature = "swagger")]
 pub use api::http::openapi::ApiDoc;
 pub use api::http::server::serve;
@@ -13,6 +12,7 @@ pub use api::http::state::AppHarn;
 pub use complex::user::UserComplex;
 pub use config::AppConfig;
 pub use harn::Harn;
+pub use log::init_log;
 pub use part_impl::auth::jwt_impl::JwtAuth;
 pub use part_impl::drive::rdb_impl::RdbDrive;
 pub use part_impl::effect::async_impl::AsyncEffectDevelop;
@@ -35,6 +35,8 @@ mod config;
 mod data;
 /// Application harness wiring all ports together for production and test use.
 mod harn;
+/// Tracing-subscriber initialisation shared across binaries.
+mod log;
 /// Persisted business entity model definitions backed by database tables.
 mod model;
 /// Port trait definitions (repo, auth, image, prom, effect) for the application

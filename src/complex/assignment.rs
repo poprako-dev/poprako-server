@@ -198,7 +198,7 @@ where
         .await?;
 
     if assignment_info.is_none() {
-        return Err(assignment_list_permission_error());
+        return Err(assignment_list_permission_err());
     }
 
     accept(())
@@ -225,7 +225,7 @@ where
         .await?;
 
     if !user_info.is_sadmin {
-        return Err(assignment_list_permission_error());
+        return Err(assignment_list_permission_err());
     }
 
     accept(())
@@ -248,11 +248,11 @@ where
         .await?;
 
     let Some(assignment_info) = assignment_info else {
-        return Err(chapter_admin_error());
+        return Err(chapter_admin_err());
     };
 
     if !assignment_info.roles.has_any_role(&[RoleField::ADMIN]) {
-        return Err(chapter_admin_error());
+        return Err(chapter_admin_err());
     }
 
     accept(())
@@ -270,7 +270,7 @@ where
     P: for<'a, 'b> Proxy<FindAssignmentInfo<'a, 'b>, Error = BaseError>,
 {
     if current_user_id != data.user_id {
-        return Err(assignment_self_reduce_error());
+        return Err(assignment_self_reduce_err());
     }
 
     let assignment_info = proxy
@@ -281,11 +281,11 @@ where
         .await?;
 
     let Some(assignment_info) = assignment_info else {
-        return Err(assignment_self_reduce_error());
+        return Err(assignment_self_reduce_err());
     };
 
     if !assignment_info.roles.contains_mask(data.roles) {
-        return Err(assignment_self_reduce_error());
+        return Err(assignment_self_reduce_err());
     }
 
     accept(())
@@ -306,7 +306,7 @@ where
         + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
 {
     if roles.has_any_role(&[RoleField::ADMIN]) {
-        return Err(assignment_role_not_assignable_args_error());
+        return Err(assignment_role_not_assignable_args_err());
     }
 
     let team_id = resolve_team_id(proxy, chapter_id).await?;
@@ -319,11 +319,11 @@ where
         .await?;
 
     let Some(member_info) = member_info else {
-        return Err(assignment_role_not_assignable_perm_error());
+        return Err(assignment_role_not_assignable_perm_err());
     };
 
     if !member_info.roles.contains_mask(roles) {
-        return Err(assignment_role_not_assignable_perm_error());
+        return Err(assignment_role_not_assignable_perm_err());
     }
 
     accept(())
@@ -363,7 +363,7 @@ where
 }
 
 /// Construct a generic "assignment list forbidden" permission error.
-fn assignment_list_permission_error() -> BaseError {
+fn assignment_list_permission_err() -> BaseError {
     BaseError::Expected {
         variant: ExpectedVariant::Perm,
         message: trl("error-forbidden"),
@@ -371,7 +371,7 @@ fn assignment_list_permission_error() -> BaseError {
 }
 
 /// Construct a "chapter admin required" permission error.
-fn chapter_admin_error() -> BaseError {
+fn chapter_admin_err() -> BaseError {
     BaseError::Expected {
         variant: ExpectedVariant::Perm,
         message: trl("error-chapter-admin-required"),
@@ -379,7 +379,7 @@ fn chapter_admin_error() -> BaseError {
 }
 
 /// Construct a "assignment self-reduce forbidden" permission error.
-fn assignment_self_reduce_error() -> BaseError {
+fn assignment_self_reduce_err() -> BaseError {
     BaseError::Expected {
         variant: ExpectedVariant::Perm,
         message: trl("error-forbidden"),
@@ -387,7 +387,7 @@ fn assignment_self_reduce_error() -> BaseError {
 }
 
 /// Construct an "admin role cannot be assigned through this flow" args error.
-fn assignment_role_not_assignable_args_error() -> BaseError {
+fn assignment_role_not_assignable_args_err() -> BaseError {
     BaseError::Expected {
         variant: ExpectedVariant::Args,
         message: trl("error-chapter-role-not-assignable"),
@@ -395,7 +395,7 @@ fn assignment_role_not_assignable_args_error() -> BaseError {
 }
 
 /// Construct a "role not assignable because member lacks permission" error.
-fn assignment_role_not_assignable_perm_error() -> BaseError {
+fn assignment_role_not_assignable_perm_err() -> BaseError {
     BaseError::Expected {
         variant: ExpectedVariant::Perm,
         message: trl("error-chapter-role-not-assignable"),

@@ -23,6 +23,7 @@ use crate::value::role::RoleMask;
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateMemberInvitationParams {
+    /// Owning team identifier.
     pub team_id: String,
 
     /// The QQ ID of the person being invited (not a user UUID).
@@ -40,7 +41,9 @@ pub struct CreateMemberInvitationParams {
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateMemberInvitationPayload {
+    /// Unique identifier of the created invitation.
     pub id: String,
+    /// Opaque invitation code presented by the invitee to claim the invitation.
     pub code: String,
 }
 
@@ -69,7 +72,9 @@ pub struct ListMemberInvitationInfosParams {
     )]
     pub incl_opt: Vec<MemberInvitationInclOpt>,
 
+    /// Pagination offset.
     pub offset: u32,
+    /// Maximum number of results per page.
     pub limit: u32,
 }
 
@@ -82,19 +87,27 @@ pub struct ListMemberInvitationInfosParams {
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct MemberInvitationInfoVal {
+    /// Unique identifier.
     pub id: String,
 
+    /// Owning team identifier.
     pub team_id: String,
 
+    /// Identifier of the user who created the invitation.
     pub invitor_id: String,
+    /// Resolved invitor user information, present only when requested via incl.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub invitor: Option<UserInfoVal>,
 
+    /// QQ ID of the person being invited.
     pub invitee_qid: String,
+    /// Opaque invitation code.
     pub code: String,
 
+    /// Whether the invitation has not yet been consumed.
     pub pending: bool,
 
+    /// Role mask assigned to the invitee upon acceptance.
     pub roles: RoleMask,
 }
 
@@ -144,6 +157,8 @@ impl MemberInvitationInfoVal {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UpdateMemberInvitationRolesParams {
+    /// Invitation identifier.
     pub id: String,
+    /// New role mask for the invitation.
     pub roles: RoleMask,
 }

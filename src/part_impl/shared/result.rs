@@ -27,24 +27,24 @@ pub fn next_version(value: i64) -> BaseResult<u32> {
 }
 
 /// Converts a pool build error into an unrecoverable `RegularError`.
-pub fn pool_build(err: BuildError) -> BaseError {
+pub fn pool_build(source: BuildError) -> BaseError {
     BaseError::Unrecoverable {
-        message: format!("failed to build pool: {}", err),
+        message: format!("failed to build pool: {}", source),
     }
 }
 
 /// Converts a pool checkout error into an unrecoverable `RegularError`.
-pub fn pool_get(err: PoolError) -> BaseError {
+pub fn pool_get(source: PoolError) -> BaseError {
     BaseError::Unrecoverable {
-        message: format!("failed to get conn: {}", err),
+        message: format!("failed to get conn: {}", source),
     }
 }
 
 /// Converts a Diesel error into the appropriate `RegularError` variant.
 ///
 /// Unique violations and `NotFound` map to `Expected`; all others are `Unrecoverable`.
-pub fn diesel(err: DieselError) -> BaseError {
-    match err {
+pub fn diesel(source: DieselError) -> BaseError {
+    match source {
         //
         DieselError::DatabaseError(DatabaseErrorKind::UniqueViolation, _) => {
             BaseError::Expected {

@@ -44,7 +44,7 @@ fn classify_current_identity(
     current_object_key: Option<&str>,
     image_version: u32,
     object_key: &str,
-    error_message: &'static str,
+    err_message: &'static str,
 ) -> BaseResult<ResourceState> {
     match (
         current_version == image_version,
@@ -56,7 +56,7 @@ fn classify_current_identity(
         (true, false) => accept(ResourceState::Mismatched),
 
         (true, true) => Err(BaseError::Unrecoverable {
-            message: error_message.into(),
+            message: err_message.into(),
         }),
     }
 }
@@ -223,7 +223,7 @@ where
     if page_info.image_byte_length != object_info.byte_length
         || page_info.image_hash != object_info.checksum_sha256
     {
-        let verification_result = process_unverified_page_image(
+        let verification_outcome = process_unverified_page_image(
             nucl,
             repo,
             resource_id,
@@ -232,17 +232,17 @@ where
         )
         .await;
 
-        match verification_result {
+        match verification_outcome {
             //
             TaskFlow::Complete => {
                 return handle_delete(image_pool, object_key).await;
             }
 
-            _ => return verification_result,
+            _ => return verification_outcome,
         }
     }
 
-    let result: BaseResult<bool> = nucl
+    let outcome: BaseResult<bool> = nucl
         .coord(async move |context| {
             //
             repo.step(
@@ -268,7 +268,7 @@ where
         .await
         .map_err(Into::into);
 
-    match result {
+    match outcome {
         //
         Ok(_) => TaskFlow::Complete,
 
@@ -306,7 +306,7 @@ where
         return TaskFlow::Complete;
     }
 
-    let result: BaseResult<()> = nucl
+    let outcome: BaseResult<()> = nucl
         .coord(async move |context| {
             //
             repo.step(
@@ -333,7 +333,7 @@ where
         .await
         .map_err(Into::into);
 
-    match result {
+    match outcome {
         //
         Ok(()) | Err(BaseError::Expected { .. }) => TaskFlow::Complete,
 

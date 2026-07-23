@@ -92,8 +92,8 @@ impl HttpError {
 }
 
 impl From<RegularError> for HttpError {
-    fn from(err: RegularError) -> Self {
-        match err {
+    fn from(source: RegularError) -> Self {
+        match source {
             //
             RegularError::Expected { variant, message } => {
                 //

@@ -68,7 +68,7 @@ fn sign_failure_returns_expected_auth() {
     //
     let mock = Mock::new().with_token_failure();
 
-    let err = TokenAuth::sign_token(
+    let err_token = TokenAuth::sign_token(
         &mock,
         &UserToken {
             user_id: "user-1".into(),
@@ -78,7 +78,7 @@ fn sign_failure_returns_expected_auth() {
     .unwrap();
 
     assert!(matches!(
-        err,
+        err_token,
         BaseError::Expected {
             variant: ExpectedVariant::Auth,
             ..
