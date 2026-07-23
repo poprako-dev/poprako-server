@@ -29,13 +29,16 @@ mod tests;
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct HttpError {
+    /// HTTP status code returned to the client (e.g. 404, 500).
     #[serde(skip)]
     #[cfg_attr(feature = "swagger", schema(ignore))]
     status: StatusCode,
 
+    /// Business error code identifying the failure reason.
     #[cfg_attr(feature = "swagger", schema(value_type = u16))]
     code: NonZeroU16,
 
+    /// Human-readable error detail, omitted when absent.
     #[serde(skip_serializing_if = "Option::is_none")]
     #[cfg_attr(feature = "swagger", schema(ignore))]
     message: Option<String>,
@@ -132,17 +135,21 @@ impl IntoResponse for HttpError {
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct HttpBody<T> {
+    /// HTTP status code set on the response (e.g. 200, 201).
     #[serde(skip)]
     #[cfg_attr(feature = "swagger", schema(ignore))]
     status: StatusCode,
 
+    /// Extra HTTP headers merged into the response (e.g. Set-Cookie).
     #[serde(skip)]
     #[cfg_attr(feature = "swagger", schema(ignore))]
     headers: HeaderMap,
 
+    /// Application-level success code, 0 for normal success.
     #[cfg_attr(feature = "swagger", schema(value_type = u16, example = 0))]
     code: u16,
 
+    /// Business payload returned to the client.
     data: T,
 }
 
@@ -191,6 +198,7 @@ where
 /// Carries optional headers (e.g. `Set-Cookie`) that are merged into the
 /// final response.
 pub struct NoContent {
+    /// Extra HTTP headers merged into the 204 response.
     headers: HeaderMap,
 }
 

@@ -30,13 +30,19 @@ use crate::value::chapter::{ChapterInclOpt, StageMask};
 /// [`StagePhase`] values independently.
 #[derive(Clone)]
 pub struct ChapterInfo {
+    /// Unique identifier for the chapter.
     pub id: String,
+    /// Foreign key to the parent comic this chapter belongs to.
     pub comic_id: String,
 
+    /// Optional joined comic data included when the query specifies comic expansion.
     pub comic: Option<ComicInfo>,
 
+    /// Marks this chapter as the currently active chapter within its comic.
     pub is_pinned: bool,
+    /// Ordinal position of this chapter within the comic, used for sorting.
     pub index: i32,
+    /// Human-readable chapter subtitle or number, such as "Chapter 5".
     pub subtitle: String,
 
     /// Denormalised total count of units in this chapter.
@@ -48,13 +54,18 @@ pub struct ChapterInfo {
     /// Denormalised number of units with a completed proofread.
     pub proofread_unit_count: i32,
 
+    /// Bitmask tracking the completion phase of each workflow stage.
     pub stages: StageMask,
 
+    /// Foreign key to the user who created this chapter record.
     pub creator_id: String,
 
+    /// Optional joined user data for the chapter creator.
     pub creator: Option<UserInfo>,
 
+    /// Timestamp when the chapter was created.
     pub created_at: OffsetDateTime,
+    /// Timestamp of the last modification to the chapter.
     pub updated_at: OffsetDateTime,
 }
 
@@ -69,13 +80,19 @@ pub struct ChapterInfo {
 /// [`ChapterComplex::gen_id`]: crate::complex::chapter::ChapterComplex::gen_id
 #[cfg_attr(test, derive(Clone))]
 pub struct ChapterEntry {
+    /// Unique identifier to insert for the new chapter.
     pub id: String,
+    /// Foreign key identifying the parent comic.
     pub comic_id: String,
 
+    /// Whether the new chapter should be set as the active chapter immediately.
     pub is_pinned: bool,
+    /// Ordinal position assigned to the new chapter within the comic.
     pub index: i32,
+    /// Chapter subtitle or number for display.
     pub subtitle: String,
 
+    /// Foreign key identifying the user creating the chapter.
     pub creator_id: String,
 }
 
@@ -86,9 +103,12 @@ pub struct ChapterEntry {
 /// [`ChapterStageUpdate`] instead.
 #[cfg_attr(test, derive(Clone))]
 pub struct ChapterInfoUpdate {
+    /// Unique identifier of the chapter whose profile fields are being changed.
     pub id: String,
 
+    /// New subtitle value, or `None` to leave unchanged.
     pub subtitle: Option<String>,
+    /// New pinned state, or `None` to leave unchanged.
     pub pin: Option<bool>,
 }
 
@@ -97,16 +117,23 @@ pub struct ChapterInfoUpdate {
 /// The use case layer validates transition legality before building this update.
 #[cfg_attr(test, derive(Clone))]
 pub struct ChapterStageUpdate {
+    /// Unique identifier of the chapter whose stages are being transitioned.
     pub id: String,
 
+    /// Updated workflow stage mask after applying the transition.
     pub stages: StageMask,
 }
 
 /// Filtering, pagination, and include parameters for listing chapters.
 pub struct ChapterInfoListSpec {
+    /// Foreign key scoping the chapter listing to a single comic.
     pub comic_id: String,
+    /// Flags controlling which optional associations (such as comic or creator
+    /// data) are joined into results.
     pub incl_opt: Vec<ChapterInclOpt>,
 
+    /// Number of records to skip for pagination.
     pub offset: u32,
+    /// Maximum number of records to return.
     pub limit: u32,
 }

@@ -37,6 +37,7 @@ pub type RdbConn = AsyncPgConnection;
 /// Wraps an `RdbPool` behind an `Arc` for shared ownership across the application.
 #[derive(Clone)]
 pub struct RdbCore {
+    /// Arc-wrapped Diesel connection pool shared across the application.
     pool: Arc<RdbPool>,
 }
 
@@ -82,6 +83,7 @@ impl RdbCore {
 
 /// Transactional context holding a single pooled connection for the duration of a transaction.
 pub struct RdbContext {
+    /// Diesel pooled connection used within a single transaction scope.
     conn: RdbPooledConn,
 }
 

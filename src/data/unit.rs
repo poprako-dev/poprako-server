@@ -17,27 +17,39 @@ mod tests;
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UnitInfoVal {
+    /// Unique unit identifier.
     pub id: String,
 
+    /// Parent page identifier this unit belongs to.
     pub page_id: String,
 
+    /// Whether this unit represents a speech bubble area on the page.
     pub is_bubble: bool,
+    /// Whether this unit has an approved proofread version.
     pub is_proofread: bool,
 
+    /// Horizontal coordinate of the unit bounding box on the page.
     pub x_coord: f64,
+    /// Vertical coordinate of the unit bounding box on the page.
     pub y_coord: f64,
 
+    /// Translated text content, or [`None`] if not yet translated.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub translated_text: Option<String>,
+    /// Identifier of the user who last modified the translation, or [`None`].
     #[serde(skip_serializing_if = "Option::is_none")]
     pub last_translator_id: Option<String>,
 
+    /// Proofread text content, or [`None`] if not yet proofread.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub proofread_text: Option<String>,
+    /// Identifier of the user who last modified the proofread, or [`None`].
     #[serde(skip_serializing_if = "Option::is_none")]
     pub last_proofreader_id: Option<String>,
 
+    /// Timestamp of unit creation, in milliseconds since Unix epoch.
     pub created_at: i64,
+    /// Timestamp of the last unit update, in milliseconds since Unix epoch.
     pub updated_at: i64,
 }
 
@@ -63,6 +75,7 @@ impl From<UnitInfo> for UnitInfoVal {
 /// Input parameters for listing all units under one page.
 #[derive(Debug, Deserialize)]
 pub struct ListPageUnitInfosParams {
+    /// Parent page identifier to list units for.
     pub page_id: String,
 }
 
@@ -70,10 +83,14 @@ pub struct ListPageUnitInfosParams {
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ListPageUnitInfosPayload {
+    /// All units belonging to the requested page.
     pub unit_infos: Vec<UnitInfoVal>,
 
+    /// Total number of units on the page.
     pub total_unit_count: i32,
+    /// Number of units that have a translation.
     pub translated_unit_count: i32,
+    /// Number of units that have been proofread.
     pub proofread_unit_count: i32,
 }
 
@@ -81,7 +98,9 @@ pub struct ListPageUnitInfosPayload {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct SavePageUnitsParams {
+    /// Parent page identifier to save units under.
     pub page_id: String,
+    /// Batch of unit operations to apply (create, save, delete).
     pub diff: UnitDiffParams,
 }
 
@@ -89,10 +108,14 @@ pub struct SavePageUnitsParams {
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct SavePageUnitsPayload {
+    /// Mappings from client-assigned local IDs to server-assigned unit IDs.
     pub local_id_mappers: Vec<UnitIdMapperVal>,
 
+    /// Total number of units on the page after the save.
     pub total_unit_count: i32,
+    /// Number of translated units after the save.
     pub translated_unit_count: i32,
+    /// Number of proofread units after the save.
     pub proofread_unit_count: i32,
 }
 
@@ -100,7 +123,9 @@ pub struct SavePageUnitsPayload {
 #[derive(Debug, Clone, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UnitDiffParams {
+    /// Parent page identifier the operations apply to.
     pub page_id: String,
+    /// Ordered list of unit operations to apply.
     pub opers: Vec<UnitOperParams>,
 }
 
@@ -111,46 +136,69 @@ pub struct UnitDiffParams {
 pub enum UnitOperParams {
     /// Create a new unit with client-assigned local id and content payload.
     Create {
+        /// Client-assigned temporary identifier mapped to the server-assigned id after creation.
         local_id: String,
 
+        /// Identifier of the unit to insert before in ordering, or [`None`] to append.
         #[serde(default)]
         before_id: Option<String>,
 
+        /// Whether this unit represents a speech bubble area.
         is_bubble: bool,
 
+        /// Whether this unit should be marked as proofread immediately.
         #[serde(default)]
         is_proofread: bool,
 
+        /// Horizontal position of the unit on the page.
         x_coord: f64,
+        /// Vertical position of the unit on the page.
         y_coord: f64,
 
+        /// Initial translated text content, or [`None`].
         translated_text: Option<String>,
+        /// Identifier of the user providing the initial translation, or [`None`].
         last_translator_id: Option<String>,
 
+        /// Initial proofread text content, or [`None`].
         proofread_text: Option<String>,
+        /// Identifier of the user providing the initial proofread, or [`None`].
         last_proofreader_id: Option<String>,
     },
     /// Update an existing unit identified by server-assigned id with new content payload.
     Save {
+        /// Server-assigned identifier of the unit to update.
         id: String,
 
+        /// Identifier of the unit to insert before in ordering, or [`None`] to keep current position.
         #[serde(default)]
         before_id: Option<String>,
 
+        /// Whether this unit represents a speech bubble area.
         is_bubble: bool,
+        /// Whether this unit has an approved proofread version.
         is_proofread: bool,
 
+        /// Updated horizontal position of the unit on the page.
         x_coord: f64,
+        /// Updated vertical position of the unit on the page.
         y_coord: f64,
 
+        /// Updated translated text content, or [`None`] to leave unchanged.
         translated_text: Option<String>,
+        /// Identifier of the user providing the updated translation, or [`None`].
         last_translator_id: Option<String>,
 
+        /// Updated proofread text content, or [`None`] to leave unchanged.
         proofread_text: Option<String>,
+        /// Identifier of the user providing the updated proofread, or [`None`].
         last_proofreader_id: Option<String>,
     },
     /// Remove an existing unit by server-assigned id.
-    Delete { id: String },
+    Delete {
+        /// Server-assigned identifier of the unit to remove.
+        id: String,
+    },
 }
 
 impl UnitDiffParams {
@@ -239,7 +287,9 @@ impl UnitOperParams {
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UnitIdMapperVal {
+    /// Client-assigned temporary unit identifier.
     pub local_id: String,
+    /// Server-assigned permanent unit identifier.
     pub unit_id: String,
 }
 

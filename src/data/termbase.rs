@@ -76,6 +76,7 @@ pub struct CreateTermbaseParams {
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateTermbasePayload {
+    /// Identifier of the newly created terminology base.
     pub id: String,
 }
 
@@ -83,28 +84,39 @@ pub struct CreateTermbasePayload {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UpdateTermbaseInfoParams {
+    /// Terminology-base identifier to update.
     pub id: String,
 
+    /// Updated human-readable name for the terminology base.
     pub name: String,
+    /// Updated description for the terminology base.
     pub description: Option<String>,
 }
 
 /// Input parameters for listing team-owned terminology bases.
 pub struct ListTeamTermbaseInfosParams {
+    /// Owning team identifier.
     pub team_id: String,
 
+    /// Optional fuzzy name filter for termbase search.
     pub fuzzy_name: Option<String>,
 
+    /// Pagination offset.
     pub offset: u32,
+    /// Maximum number of results per page.
     pub limit: u32,
 }
 
 /// Input parameters for listing terminology bases visible from a comic.
 pub struct ListComicTermbaseInfosParams {
+    /// Owning comic identifier.
     pub comic_id: String,
 
+    /// Optional fuzzy name filter for termbase search.
     pub fuzzy_name: Option<String>,
 
+    /// Pagination offset.
     pub offset: u32,
+    /// Maximum number of results per page.
     pub limit: u32,
 }

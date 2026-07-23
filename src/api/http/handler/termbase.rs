@@ -30,7 +30,9 @@ pub struct TermbaseListQuery {
     /// Optional case-insensitive name substring.
     pub fuzzy_name: Option<String>,
 
+    /// Number of records to skip for pagination.
     pub offset: u32,
+    /// Maximum number of records to return.
     pub limit: u32,
 }
 

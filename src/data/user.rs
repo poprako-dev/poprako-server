@@ -19,20 +19,31 @@ use crate::result::{BaseResult, accept};
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UserInfoVal {
+    /// Unique user identifier.
     pub id: String,
 
+    /// User display nickname.
     pub nickname: String,
+    /// Unique qualified identifier used for login lookup.
     pub qid: String,
 
+    /// Resolved signed download URL for the avatar image, or [`None`] if
+    /// no avatar has been uploaded.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub avatar_url: Option<String>,
+    /// Resolved signed download URL for the avatar thumbnail, or [`None`] if
+    /// no avatar has been uploaded.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub avatar_thumbnail_url: Option<String>,
 
+    /// Whether this user has super-admin privileges.
     pub is_sadmin: bool,
+    /// Timestamp of the user's most recent activity, in milliseconds since Unix epoch.
     pub last_active_at: i64,
 
+    /// Timestamp of user account creation, in milliseconds since Unix epoch.
     pub created_at: i64,
+    /// Timestamp of the last profile update, in milliseconds since Unix epoch.
     pub updated_at: i64,
 }
 
@@ -81,9 +92,12 @@ impl UserInfoVal {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UpdateUserInfoParams {
+    /// User identifier to update.
     pub id: String,
 
+    /// Updated qualified identifier for login.
     pub qid: String,
+    /// Updated display nickname.
     pub nickname: String,
 }
 
@@ -91,7 +105,9 @@ pub struct UpdateUserInfoParams {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UpdateUserPasswordParams {
+    /// Current password for verification before change.
     pub current_password: String,
+    /// Desired new password.
     pub new_password: String,
 }
 
@@ -99,6 +115,7 @@ pub struct UpdateUserPasswordParams {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ReserveUserAvatarParams {
+    /// File extension for the avatar image (determines object-storage key suffix).
     pub file_ext: String,
 }
 
@@ -109,7 +126,9 @@ pub struct ReserveUserAvatarParams {
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ReserveUserAvatarPayload {
+    /// Signed PUT URL for uploading the avatar image to object storage.
     pub put_url: String,
+    /// Version token that must be echoed when confirming the upload.
     pub avatar_version: u32,
 }
 
@@ -119,5 +138,6 @@ pub struct ReserveUserAvatarPayload {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct MarkUserAvatarUploadedParams {
+    /// Avatar version returned by the reservation step.
     pub avatar_version: u32,
 }

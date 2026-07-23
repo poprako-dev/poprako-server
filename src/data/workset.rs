@@ -20,18 +20,26 @@ use crate::model::workset::WorksetInfo;
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct WorksetInfoVal {
+    /// Unique workset identifier.
     pub id: String,
+    /// Owning team identifier.
     pub team_id: String,
 
+    /// Ordinal position of the workset within its team.
     pub index: i32,
 
+    /// Workset display name.
     pub name: String,
+    /// Optional description of the workset content or purpose.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
 
+    /// Total number of comics in this workset.
     pub comic_count: i32,
 
+    /// Timestamp of workset creation, in milliseconds since Unix epoch.
     pub created_at: i64,
+    /// Timestamp of the last workset update, in milliseconds since Unix epoch.
     pub updated_at: i64,
 }
 
@@ -54,9 +62,12 @@ impl From<WorksetInfo> for WorksetInfoVal {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateWorksetParams {
+    /// Owning team identifier to create the workset under.
     pub team_id: String,
 
+    /// Display name for the new workset.
     pub name: String,
+    /// Optional description for the new workset.
     pub description: Option<String>,
 }
 
@@ -64,6 +75,7 @@ pub struct CreateWorksetParams {
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateWorksetPayload {
+    /// Identifier of the newly created workset.
     pub id: String,
 }
 
@@ -73,9 +85,12 @@ pub struct CreateWorksetPayload {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UpdateWorksetInfoParams {
+    /// Workset identifier to update.
     pub id: String,
 
+    /// Updated workset display name.
     pub name: String,
+    /// Updated workset description.
     pub description: Option<String>,
 }
 
@@ -84,8 +99,11 @@ pub struct UpdateWorksetInfoParams {
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct ListWorksetInfosParams {
+    /// Owning team identifier to list worksets for.
     pub team_id: String,
 
+    /// Pagination offset.
     pub offset: u32,
+    /// Maximum number of results per page.
     pub limit: u32,
 }

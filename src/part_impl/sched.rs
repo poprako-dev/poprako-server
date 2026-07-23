@@ -217,7 +217,9 @@ async fn purge_once(core: &RdbCore) -> BaseResult<usize> {
 ///
 /// FIXME: bad naming.
 pub struct RdbSched {
+    /// Cancellation token to signal graceful shutdown of the scheduler.
     token: CancellationToken,
+    /// Watch receiver that signals when the background loop drains.
     done: watch::Receiver<bool>,
 }
 
