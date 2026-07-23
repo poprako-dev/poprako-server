@@ -29,8 +29,8 @@ fn page(
     }
 }
 
-fn input(page_id: Option<&str>, hash: u8) -> PageImageParams {
-    PageImageParams {
+fn input(page_id: Option<&str>, hash: u8) -> PageImageSpec {
+    PageImageSpec {
         page_id: page_id.map(Into::into),
         image_hash: ImageHash::new([hash; 32]),
         byte_length: 4096,

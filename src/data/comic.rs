@@ -225,19 +225,11 @@ pub struct ListComicInfosParams {
     pub stages: Option<u32>,
 
     /// Optional related data to include in results.
-    #[serde(
-        default,
-        rename = "incl",
-        deserialize_with = "crate::value::query::deserialize_vec"
-    )]
+    #[serde(default, rename = "incl")]
     pub incl_opt: Vec<ComicInclOpt>,
 
     /// Optional expansion options for the result set.
-    #[serde(
-        default,
-        rename = "with",
-        deserialize_with = "crate::value::query::deserialize_vec"
-    )]
+    #[serde(default, rename = "with")]
     pub with_opt: Vec<ComicWithOpt>,
 
     /// Pagination offset.

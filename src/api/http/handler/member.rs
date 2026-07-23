@@ -3,6 +3,7 @@
 use axum::Json;
 use axum::extract::{Extension, Path, State};
 use axum::http::StatusCode;
+use axum_extra::extract::Query;
 use serde::Deserialize;
 use tracing::instrument;
 
@@ -22,7 +23,9 @@ use crate::data::member::{
 use crate::model::user::UserToken;
 use crate::usecase;
 use crate::value::member::MemberInclOpt;
-use crate::value::query::GroupedQuery;
+
+#[cfg(test)]
+mod tests;
 
 /// Query for the current-user memberships list endpoint (`/members/me`).
 ///
@@ -34,11 +37,7 @@ use crate::value::query::GroupedQuery;
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct MemberMeListQuery {
     /// Related rows to embed. Repeatable. Values: `user`, `team`.
-    #[serde(
-        default,
-        rename = "incl",
-        deserialize_with = "crate::value::query::deserialize_vec"
-    )]
+    #[serde(default, rename = "incl")]
     pub incl_opt: Vec<MemberInclOpt>,
 
     /// Pagination offset (0-based).
@@ -89,7 +88,7 @@ pub async fn create(
 pub async fn list_infos(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
-    GroupedQuery(params): GroupedQuery<ListMemberInfosParams>,
+    Query(params): Query<ListMemberInfosParams>,
 ) -> HttpResult<Vec<MemberInfoVal>> {
     usecase::member::list_infos(
         harn.repo(),
@@ -116,7 +115,7 @@ pub async fn list_infos(
 pub async fn list_my_infos(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
-    GroupedQuery(query): GroupedQuery<MemberMeListQuery>,
+    Query(query): Query<MemberMeListQuery>,
 ) -> HttpResult<Vec<MemberInfoVal>> {
     //
     let params = ListMemberInfosParams {

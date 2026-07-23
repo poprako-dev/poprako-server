@@ -20,11 +20,7 @@ pub struct ArchiveComicPayload {
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct ExportComicArchivesParams {
-    #[serde(
-        default,
-        rename = "month",
-        deserialize_with = "crate::value::query::deserialize_vec"
-    )]
+    #[serde(default, rename = "month")]
     /// UTC month slots in `YYYY-MM` format to filter retained archives by.
     pub months: Vec<String>,
 }

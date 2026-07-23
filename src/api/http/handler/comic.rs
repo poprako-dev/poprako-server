@@ -3,6 +3,7 @@
 use axum::Json;
 use axum::extract::{Extension, Path, State};
 use axum::http::StatusCode;
+use axum_extra::extract::Query;
 use serde::Deserialize;
 use tracing::instrument;
 
@@ -27,7 +28,6 @@ use crate::data::comic_list::ListComicInfosPayload;
 use crate::model::user::UserToken;
 use crate::usecase;
 use crate::value::comic::{ComicInclOpt, ComicWithOpt};
-use crate::value::query::GroupedQuery;
 
 /// `GET /api/v1/teams/{team_id}/comic-archives/export` — export retained archive month slots.
 #[cfg_attr(feature = "swagger", utoipa::path(
@@ -49,7 +49,7 @@ pub async fn export_archives(
     State(harn): State<AppHarn>,
     Path(team_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    GroupedQuery(params): GroupedQuery<ExportComicArchivesParams>,
+    Query(params): Query<ExportComicArchivesParams>,
 ) -> HttpResult<ExportComicArchivesPayload> {
     usecase::comic_archive::export(harn.repo(), user_token, team_id, params)
         .await?
@@ -75,21 +75,13 @@ pub struct ComicListQuery {
 
     /// Related rows to embed. Repeatable. Values: `workset`, `workset.team`,
     /// `creator`. Dotted values imply their parent segments.
-    #[serde(
-        default,
-        rename = "incl",
-        deserialize_with = "crate::value::query::deserialize_vec"
-    )]
+    #[serde(default, rename = "incl")]
     pub incl_opt: Vec<ComicInclOpt>,
 
     /// Derived rows to attach. Repeatable. Values: `pinned_chapter`,
     /// `pinned_chapter_assignment`. The assignment option requires the chapter
     /// option.
-    #[serde(
-        default,
-        rename = "with",
-        deserialize_with = "crate::value::query::deserialize_vec"
-    )]
+    #[serde(default, rename = "with")]
     pub with_opt: Vec<ComicWithOpt>,
 
     /// Pagination offset (0-based).
@@ -140,7 +132,7 @@ pub async fn list_infos(
     State(harn): State<AppHarn>,
     Path(workset_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
-    GroupedQuery(query): GroupedQuery<ComicListQuery>,
+    Query(query): Query<ComicListQuery>,
 ) -> HttpResult<ListComicInfosPayload> {
     //
     let params = ListComicInfosParams {

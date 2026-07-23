@@ -3,9 +3,8 @@
 use axum::Json;
 use axum::extract::{Extension, Path, State};
 use axum::http::StatusCode;
+use axum_extra::extract::Query;
 use tracing::instrument;
-
-use crate::value::query::GroupedQuery;
 
 use crate::api::http::handler::util::ensure_path_matches_body_id;
 #[allow(unused_imports)]
@@ -37,7 +36,7 @@ use crate::usecase;
 pub async fn list_infos(
     State(harn): State<AppHarn>,
     Extension(user_token): Extension<UserToken>,
-    GroupedQuery(params): GroupedQuery<ListAssignmentInfosParams>,
+    Query(params): Query<ListAssignmentInfosParams>,
 ) -> HttpResult<Vec<AssignmentInfoVal>> {
     usecase::assignment::list_infos(
         harn.repo(),

@@ -82,6 +82,18 @@ pub struct PageEntry {
     pub image_ext: ImageExt,
 }
 
+/// One page-image identity supplied to manifest planning.
+pub struct PageImageSpec {
+    /// Existing page identifier, if the manifest retains a known page.
+    pub page_id: Option<String>,
+    /// Content-addressable hash of the page image file.
+    pub image_hash: ImageHash,
+    /// File size of the page image in bytes.
+    pub byte_length: u64,
+    /// File format of the page image.
+    pub ext: ImageExt,
+}
+
 /// Image reservation result for a page.
 #[cfg_attr(test, derive(Clone))]
 pub struct PageImageReservation {

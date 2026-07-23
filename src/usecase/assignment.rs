@@ -274,7 +274,9 @@ where
                 for<'a, 'b> FindAssignmentInfo<'a, 'b>;
         },
         &token.user_id,
-        &params,
+        &params.user_id,
+        &params.chapter_id,
+        params.roles,
     )
     .await?;
 

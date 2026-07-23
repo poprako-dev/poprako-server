@@ -127,11 +127,7 @@ pub struct ListAssignmentInfosParams {
     /// `chapter.comic`, `chapter.comic.workset`, `chapter.comic.workset.team`,
     /// `chapter.creator`, `chapter.comic.creator`. Dotted values imply their
     /// parent segments.
-    #[serde(
-        default,
-        rename = "incl",
-        deserialize_with = "crate::value::query::deserialize_vec"
-    )]
+    #[serde(default, rename = "incl")]
     pub incl_opt: Vec<AssignmentInclOpt>,
 
     /// Pagination offset.

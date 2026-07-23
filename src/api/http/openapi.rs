@@ -48,9 +48,9 @@ use crate::data::member_invitation::{
     MemberInvitationInfoVal, UpdateMemberInvitationRolesParams,
 };
 use crate::data::page::{
-    MarkPageImageUploadedParams, PageImageParams, PageInfoVal,
+    MarkPageImageUploadedParams, PageImageParams, PageInfoVal, PageSlotVal,
     ReserveChapterPagesParams, ReserveChapterPagesPayload,
-    ReservePageImageParams, ReservedPagePayload, PageSlotVal,
+    ReservePageImageParams, ReservedPagePayload,
 };
 use crate::data::system_mail::{MarkSystemMailReadParams, SystemMailInfoVal};
 use crate::data::team::{

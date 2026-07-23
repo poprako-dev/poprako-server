@@ -29,6 +29,7 @@ aws-config = { version = "1" }
 aws-credential-types = { version = "1" }
 aws-sdk-s3 = { version = "1" }
 axum = "0.8.9"
+axum-extra = { version = "0.12.6", features = ["query"] }
 tower = "0.5"
 tower-http = { version = "0.6", features = ["request-id", "trace"] }
 argon2 = "0.5"
