@@ -565,11 +565,11 @@ export function newPageManifest(pageCount: number, extension: ImageExtension): P
 
 async function uploadReservedPages(reservedPages: ReservedPageVal[]): Promise<void> {
     for (const reservedPage of reservedPages) {
-        if (!reservedPage.upload) continue;
+        if (!reservedPage.slot) continue;
 
-        const response = await fetch(reservedPage.upload.put_url, {
+        const response = await fetch(reservedPage.slot.put_url, {
             method: "PUT",
-            headers: reservedPage.upload.headers,
+            headers: reservedPage.slot.headers,
             body: TEST_PAGE_BYTES,
         });
 
@@ -623,10 +623,10 @@ export async function reservePageImage(
         200,
     );
 
-    if (reserved.upload) {
-        const response = await fetch(reserved.upload.put_url, {
+    if (reserved.slot) {
+        const response = await fetch(reserved.slot.put_url, {
             method: "PUT",
-            headers: reserved.upload.headers,
+            headers: reserved.slot.headers,
             body: imageBytes,
         });
 

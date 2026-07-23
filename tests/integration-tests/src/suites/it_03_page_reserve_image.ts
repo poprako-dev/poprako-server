@@ -79,14 +79,14 @@ export async function runIt03Module(ctx: RunCtx): Promise<void> {
 
     for (const creation of reserveVal.pages) {
         assert.ok(creation.page_id);
-        assert.ok(creation.upload?.put_url.startsWith("http"), "put_url must be an http url");
-        assert.ok(Number.isInteger(creation.upload?.image_version) && creation.upload!.image_version > 0);
+        assert.ok(creation.slot?.put_url.startsWith("http"), "put_url must be an http url");
+        assert.ok(Number.isInteger(creation.slot?.image_version) && creation.slot!.image_version > 0);
 
         assert.ok(!seenPageIds.has(creation.page_id), "page ids must be unique");
         seenPageIds.add(creation.page_id);
 
         pageIds.push(creation.page_id);
-        pageVersions.set(creation.page_id, creation.upload!.image_version);
+        pageVersions.set(creation.page_id, creation.slot!.image_version);
     }
 
     ctx.main.pageIds = pageIds;
@@ -186,10 +186,10 @@ export async function runIt03Module(ctx: RunCtx): Promise<void> {
     const p2Reserve = await reservePageImage(ctx.sadmin, p2Id, "png");
 
     assert.equal(p2Reserve.page_id, p2Id);
-    assert.ok(p2Reserve.upload?.put_url.startsWith("http"));
-    assert.ok(p2Reserve.upload && p2Reserve.upload.image_version > p2OldVersion, "new image_version must exceed old");
+    assert.ok(p2Reserve.slot?.put_url.startsWith("http"));
+    assert.ok(p2Reserve.slot && p2Reserve.slot.image_version > p2OldVersion, "new image_version must exceed old");
 
-    const p2NewVersion = p2Reserve.upload!.image_version;
+    const p2NewVersion = p2Reserve.slot!.image_version;
 
     // mark new version
     expectStatus(

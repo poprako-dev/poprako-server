@@ -22,7 +22,7 @@ pub struct ImageUploadSpec<'a> {
 }
 
 /// A presigned upload URL and the headers the client must send unchanged.
-pub struct ImageUploadTarget {
+pub struct ImageUploadSlot {
     /// Presigned URL the client uses for the direct upload.
     pub url: Url,
     /// HTTP headers the client must include verbatim with the upload request.
@@ -61,10 +61,10 @@ pub trait ImagePool {
     ) -> impl Future<Output = BaseResult<Url>> + Send;
 
     /// Returns an upload target whose signature binds content identity.
-    fn get_upload_target(
+    fn get_upload_slot(
         &self,
         spec: ImageUploadSpec<'_>,
-    ) -> impl Future<Output = BaseResult<ImageUploadTarget>> + Send;
+    ) -> impl Future<Output = BaseResult<ImageUploadSlot>> + Send;
 }
 
 /// Abstraction over image object lifecycle — metadata and deletion.

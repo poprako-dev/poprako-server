@@ -12,7 +12,7 @@ use crate::part_impl::drive::rdb_impl::RdbDrive;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
 use crate::part_impl::shared::RdbCore;
 use crate::result::BaseError;
-use crate::value::image::ImageExtension;
+use crate::value::image::ImageExt;
 
 const PREFIX: &str = "rdb-test-page-domain-";
 
@@ -72,7 +72,7 @@ pub async fn page_roundtrip_uses_testcontainer(shared: RdbCore) {
         image_version: 1,
         image_hash: Default::default(),
         image_byte_len: 1,
-        image_ext: ImageExtension::Jpg,
+        image_ext: ImageExt::Jpg,
     };
 
     let second_page_id = second_page_entry.id.clone();

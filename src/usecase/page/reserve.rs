@@ -15,8 +15,8 @@ use crate::complex::image::ImageComplex;
 use crate::complex::page::manifest::build;
 use crate::complex::page::{PageComplex, PagePermComplex};
 use crate::data::page::{
-    PageImageUploadPayload, ReserveChapterPagesParams,
-    ReserveChapterPagesPayload, ReservedPagePayload,
+    ReserveChapterPagesParams, ReserveChapterPagesPayload, ReservedPagePayload,
+    PageSlotVal,
 };
 use crate::model::page::{PageEntry, PageManifestUpdate};
 use crate::model::user::UserToken;
@@ -40,7 +40,7 @@ use crate::part::repo::oper::page::{
 use crate::part::repo::page::PageRepo;
 use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
-use crate::value::image::{ImageExtension, ImageHash};
+use crate::value::image::{ImageExt, ImageHash};
 
 const MAX_IMAGE_BYTE_LENGTH: u64 = 20 * 1024 * 1024;
 
@@ -132,7 +132,7 @@ where
         image_version: u32,
         image_hash: ImageHash,
         byte_length: u64,
-        extension: ImageExtension,
+        ext: ImageExt,
     }
 
     PagePermComplex::ensure_user_can_reserve(
@@ -238,7 +238,7 @@ where
                             &chapter_info.id,
                             &existing_page_info.id,
                             image_version,
-                            page_input.extension.suffix(),
+                            page_input.ext.suffix(),
                         )),
 
                         false => existing_page_info.image_key.clone(),
@@ -265,7 +265,7 @@ where
                         image_version,
                         image_hash: page_input.image_hash.clone(),
                         image_byte_len: page_input.byte_length,
-                        image_ext: page_input.extension,
+                        image_ext: page_input.ext,
                     };
 
                     repo.step(
@@ -295,7 +295,7 @@ where
                         image_version,
                         image_hash: page_input.image_hash.clone(),
                         byte_length: page_input.byte_length,
-                        extension: page_input.extension,
+                        ext: page_input.ext,
                     });
 
                     continue;
@@ -309,7 +309,7 @@ where
                     &chapter_info.id,
                     &page_id,
                     image_version,
-                    page_input.extension.suffix(),
+                    page_input.ext.suffix(),
                 );
 
                 let page_entry = PageEntry {
@@ -320,7 +320,7 @@ where
                     image_version,
                     image_hash: page_input.image_hash.clone(),
                     image_byte_len: page_input.byte_length,
-                    image_ext: page_input.extension,
+                    image_ext: page_input.ext,
                 };
 
                 page_entries.push(page_entry);
@@ -334,7 +334,7 @@ where
                     image_version,
                     image_hash: page_input.image_hash.clone(),
                     byte_length: page_input.byte_length,
-                    extension: page_input.extension,
+                    ext: page_input.ext,
                 });
             }
 
@@ -491,21 +491,21 @@ where
     let pages = futures_util::future::join_all(reservations.into_iter().map(
         |reservation| async move {
             //
-            let upload = match reservation.object_key {
+            let slot = match reservation.object_key {
                 //
                 Some(object_key) => {
                     //
                     let upload_spec = ImageUploadSpec {
                         object_key: &object_key,
-                        content_type: reservation.extension.content_type(),
+                        content_type: reservation.ext.content_type(),
                         checksum_sha256: &reservation.image_hash,
                         content_length: reservation.byte_length,
                     };
 
                     let upload_target =
-                        image_pool.get_upload_target(upload_spec).await?;
+                        image_pool.get_upload_slot(upload_spec).await?;
 
-                    Some(PageImageUploadPayload {
+                    Some(PageSlotVal {
                         put_url: upload_target.url.to_string(),
                         image_version: reservation.image_version,
                         headers: upload_target.headers,
@@ -520,8 +520,8 @@ where
                 index: reservation.index,
                 image_hash: reservation.image_hash,
                 byte_length: reservation.byte_length,
-                extension: reservation.extension,
-                upload,
+                ext: reservation.ext,
+                slot,
             })
         },
     ))

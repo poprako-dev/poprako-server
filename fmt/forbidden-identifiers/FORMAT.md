@@ -1,12 +1,12 @@
 # Forbidden identifiers
 
-Function names, local variables, parameters, constants, statics,
-and enum variants must not contain forbidden word segments. Type names
-(struct, enum, trait, type alias, union) and **struct fields** are
-**not** checked.
+Function names, local variables, parameters, constants, statics, enum
+variants, type names (struct, enum, trait, type alias, union), and struct
+fields must not contain forbidden word segments.
 
 Identifiers inside `#[cfg(test)]` modules (including `tests.rs` and `tests/`
-directories) are skipped entirely.
+directories) and repository-layer files (`src/part/repo/`,
+`src/part_impl/repo/`) are skipped entirely.
 
 ## Forbidden word segments
 
@@ -22,6 +22,7 @@ boundaries. Every segment is checked:
 | `connection` | FBD006 | forbidden — use `conn`                            |
 | `txn`        | FBD007 | forbidden abbreviation of `transaction`           |
 | `tx`         | FBD008 | forbidden abbreviation of `transaction`           |
+| `extension`  | FBD010 | forbidden — use `ext`                             |
 
 ## `err` rules (FBD004)
 

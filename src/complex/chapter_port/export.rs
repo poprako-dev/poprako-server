@@ -88,16 +88,14 @@ impl ChapterExportComplex {
 /// file extension (defaults to `jpg` when the image key has no extension).
 fn label_plus_image_name(page_info: &PageInfo) -> String {
     //
-    let extension = page_info
+    let ext = page_info
         .image_key
         .as_deref()
-        .and_then(|image_key| {
-            image_key.rsplit_once('.').map(|(_, extension)| extension)
-        })
-        .filter(|extension| !extension.is_empty())
+        .and_then(|image_key| image_key.rsplit_once('.').map(|(_, ext)| ext))
+        .filter(|ext| !ext.is_empty())
         .unwrap_or("jpg");
 
-    format!("{:03}.{}", page_info.index, extension)
+    format!("{:03}.{}", page_info.index, ext)
 }
 
 /// Return the proofread text if non-empty, falling back to translated text

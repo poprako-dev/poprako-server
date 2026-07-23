@@ -6,8 +6,7 @@ use url::Url;
 use poprako_util::i18n::trl;
 
 use crate::part::image::{
-    ImageManager, ImageObjectInfo, ImagePool, ImageUploadSpec,
-    ImageUploadTarget,
+    ImageManager, ImageObjectInfo, ImagePool, ImageUploadSlot, ImageUploadSpec,
 };
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
@@ -65,10 +64,10 @@ impl ImagePool for Mock {
         accept(Url::parse(&format!("https://test.local/put/{}", key)).unwrap())
     }
 
-    async fn get_upload_target(
+    async fn get_upload_slot(
         &self,
         spec: ImageUploadSpec<'_>,
-    ) -> BaseResult<ImageUploadTarget> {
+    ) -> BaseResult<ImageUploadSlot> {
         //
         if self.flags.lock().unwrap().image_put_failure {
             return Err(BaseError::Expected {
@@ -90,7 +89,7 @@ impl ImagePool for Mock {
             spec.checksum_sha256.to_base64(),
         );
 
-        accept(ImageUploadTarget { url, headers })
+        accept(ImageUploadSlot { url, headers })
     }
 }
 
