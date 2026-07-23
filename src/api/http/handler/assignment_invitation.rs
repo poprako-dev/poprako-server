@@ -6,7 +6,7 @@ use axum::http::StatusCode;
 use serde::Deserialize;
 use tracing::instrument;
 
-#[cfg(feature = "swagger-ui")]
+#[cfg(feature = "swagger")]
 use utoipa::IntoParams;
 
 #[allow(unused_imports)]
@@ -27,8 +27,8 @@ use crate::usecase;
 ///
 /// Example: `?pending=true&offset=0&limit=20`.
 #[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
-#[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
+#[cfg_attr(feature = "swagger", derive(IntoParams))]
+#[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct AssignmentInvitationListQuery {
     /// When `Some(true)`, returns only unconsumed invitations;
     /// `Some(false)` returns only consumed ones; `None` returns all.
@@ -42,7 +42,7 @@ pub struct AssignmentInvitationListQuery {
 }
 
 /// `POST /api/v1/assignment-invitations` — create a pending assignment invitation.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     post,
     path = "/api/v1/assignment-invitations",
     tag = "assignment-invitations",
@@ -71,7 +71,7 @@ pub async fn create(
 }
 
 /// `GET /api/v1/chapters/{chapter_id}/assignment-invitations` — list invitations.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     get,
     path = "/api/v1/chapters/{chapter_id}/assignment-invitations",
     tag = "assignment-invitations",
@@ -103,7 +103,7 @@ pub async fn list_infos(
 }
 
 /// `DELETE /api/v1/assignment-invitations/{assignment_invitation_id}` — delete.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     delete,
     path = "/api/v1/assignment-invitations/{assignment_invitation_id}",
     tag = "assignment-invitations",
@@ -133,7 +133,7 @@ pub async fn delete(
 }
 
 /// `POST /api/v1/assignment-invitations/join` — join via invitation code.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     post,
     path = "/api/v1/assignment-invitations/join",
     tag = "assignment-invitations",

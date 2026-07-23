@@ -2,7 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 
-#[cfg(feature = "swagger-ui")]
+#[cfg(feature = "swagger")]
 use utoipa::{IntoParams, ToSchema};
 
 use poprako_util::time::ToUnixMilli;
@@ -12,7 +12,7 @@ use crate::value::role::RoleMask;
 
 /// Presentation-ready assignment invitation information.
 #[derive(Debug, Serialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct AssignmentInvitationInfoVal {
     pub id: String,
 
@@ -51,8 +51,8 @@ impl From<AssignmentInvitationInfo> for AssignmentInvitationInfoVal {
 ///
 /// Example: `/api/v1/assignment-invitations?chapter_id=c_1&pending=true&offset=0&limit=20`.
 #[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
-#[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
+#[cfg_attr(feature = "swagger", derive(IntoParams))]
+#[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct ListAssignmentInvitationInfosParams {
     /// Parent chapter whose assignment invitations to list.
     pub chapter_id: String,
@@ -67,7 +67,7 @@ pub struct ListAssignmentInvitationInfosParams {
 
 /// Input parameters for creating an assignment invitation.
 #[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateAssignmentInvitationParams {
     pub chapter_id: String,
     pub invitee_qid: String,
@@ -76,7 +76,7 @@ pub struct CreateAssignmentInvitationParams {
 
 /// Return value from creating an assignment invitation.
 #[derive(Debug, Serialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateAssignmentInvitationPayload {
     pub id: String,
     pub code: String,
@@ -84,7 +84,7 @@ pub struct CreateAssignmentInvitationPayload {
 
 /// Input parameters for joining an assignment through an invitation code.
 #[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct JoinAssignmentInvitationParams {
     pub code: String,
 }

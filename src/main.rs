@@ -19,13 +19,13 @@
 #![warn(clippy::pedantic)]
 #![warn(clippy::nursery)]
 
-#[cfg(feature = "swagger-ui")]
+#[cfg(feature = "swagger")]
 use std::io::Write as _;
 use std::net::{SocketAddr, ToSocketAddrs};
 use std::sync::Arc;
 
 use anyhow::Context as _;
-#[cfg(feature = "swagger-ui")]
+#[cfg(feature = "swagger")]
 use utoipa::OpenApi as _;
 
 use poprako_server::{
@@ -43,22 +43,6 @@ use poprako_server::{
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     //
-    // CLI: --swagger to print swagger.json.
-    #[cfg(feature = "swagger-ui")]
-    if std::env::args().any(|a| a == "--swagger") {
-        //
-        #[allow(clippy::print_stdout)]
-        {
-            let doc = poprako_server::ApiDoc::openapi();
-
-            let swagger_json = serde_json::to_string_pretty(&doc)?;
-
-            std::io::stdout().write_all(swagger_json.as_bytes())?;
-        }
-
-        return Ok(());
-    }
-
     dotenvy::dotenv().expect(".env file should be valid");
 
     tracing_subscriber::fmt()

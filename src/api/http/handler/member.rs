@@ -6,7 +6,7 @@ use axum::http::StatusCode;
 use serde::Deserialize;
 use tracing::instrument;
 
-#[cfg(feature = "swagger-ui")]
+#[cfg(feature = "swagger")]
 use utoipa::IntoParams;
 
 use crate::api::http::handler::util::ensure_path_matches_body_id;
@@ -30,8 +30,8 @@ use crate::value::query::GroupedQuery;
 ///
 /// Example: `?incl=user&incl=team&offset=0&limit=20`.
 #[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
-#[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
+#[cfg_attr(feature = "swagger", derive(IntoParams))]
+#[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct MemberMeListQuery {
     /// Related rows to embed. Repeatable. Values: `user`, `team`.
     #[serde(
@@ -49,7 +49,7 @@ pub struct MemberMeListQuery {
 }
 
 /// `POST /api/v1/members` — create a member under a team.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     post,
     path = "/api/v1/members",
     tag = "members",
@@ -73,7 +73,7 @@ pub async fn create(
 }
 
 /// `GET /api/v1/members` — list members by team or owner.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     get,
     path = "/api/v1/members",
     tag = "members",
@@ -102,7 +102,7 @@ pub async fn list_infos(
 }
 
 /// `GET /api/v1/members/me` — list the current user's memberships.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     get,
     path = "/api/v1/members/me",
     tag = "members",
@@ -140,7 +140,7 @@ pub async fn list_my_infos(
 }
 
 /// `PUT /api/v1/members/{member_id}/roles` — update a member's roles.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     put,
     path = "/api/v1/members/{member_id}/roles",
     tag = "members",
@@ -175,7 +175,7 @@ pub async fn update_roles(
 }
 
 /// `DELETE /api/v1/members/{member_id}` — delete a member.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     delete,
     path = "/api/v1/members/{member_id}",
     tag = "members",
@@ -200,7 +200,7 @@ pub async fn delete(
 }
 
 /// `POST /api/v1/members/join` — join a team via invitation code.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     post,
     path = "/api/v1/members/join",
     tag = "members",

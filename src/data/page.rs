@@ -2,7 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 
-#[cfg(feature = "swagger-ui")]
+#[cfg(feature = "swagger")]
 use utoipa::ToSchema;
 
 use poprako_util::time::ToUnixMilli;
@@ -17,7 +17,7 @@ mod tests;
 
 /// Presentation-ready page information.
 #[derive(Debug, Serialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct PageInfoVal {
     pub id: String,
 
@@ -81,7 +81,7 @@ impl PageInfoVal {
 
 /// Input parameters for reserving all page images of a chapter.
 #[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ReserveChapterPagesParams {
     pub chapter_id: String,
     pub pages: Vec<PageImageParams>,
@@ -89,7 +89,7 @@ pub struct ReserveChapterPagesParams {
 
 /// One page image in a complete chapter manifest.
 #[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct PageImageParams {
     pub page_id: Option<String>,
     pub image_hash: ImageHash,
@@ -99,14 +99,14 @@ pub struct PageImageParams {
 
 /// Return value from successful chapter page reservations.
 #[derive(Debug, Serialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ReserveChapterPagesPayload {
     pub pages: Vec<ReservedPagePayload>,
 }
 
 /// One reserved page upload target.
 #[derive(Debug, Serialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ReservedPagePayload {
     pub page_id: String,
     pub index: u32,
@@ -118,7 +118,7 @@ pub struct ReservedPagePayload {
 
 /// Presigned target for a pending page-image upload.
 #[derive(Debug, Serialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct PageImageUploadPayload {
     pub put_url: String,
     pub image_version: u32,
@@ -127,7 +127,7 @@ pub struct PageImageUploadPayload {
 
 /// Input parameters for reserving one page image.
 #[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ReservePageImageParams {
     pub image_hash: ImageHash,
     pub byte_length: u64,
@@ -136,7 +136,7 @@ pub struct ReservePageImageParams {
 
 /// Input parameters for confirming a page image upload completed.
 #[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct MarkPageImageUploadedParams {
     pub image_version: u32,
 }

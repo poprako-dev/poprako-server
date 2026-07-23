@@ -6,7 +6,7 @@ use axum::http::StatusCode;
 use serde::Deserialize;
 use tracing::instrument;
 
-#[cfg(feature = "swagger-ui")]
+#[cfg(feature = "swagger")]
 use utoipa::IntoParams;
 
 use crate::api::http::handler::util::ensure_path_matches_body_id;
@@ -30,7 +30,7 @@ use crate::value::comic::{ComicInclOpt, ComicWithOpt};
 use crate::value::query::GroupedQuery;
 
 /// `GET /api/v1/teams/{team_id}/comic-archives/export` — export retained archive month slots.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     get,
     path = "/api/v1/teams/{team_id}/comic-archives/export",
     tag = "comics",
@@ -64,8 +64,8 @@ pub async fn export_archives(
 /// in the parallel list payload.
 /// Dotted `incl` values implicitly pull in their parent segments.
 #[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
-#[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
+#[cfg_attr(feature = "swagger", derive(IntoParams))]
+#[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct ComicListQuery {
     /// Fuzzy title substring filter (case-insensitive).
     pub fuzzy_title: Option<String>,
@@ -100,7 +100,7 @@ pub struct ComicListQuery {
 }
 
 /// `POST /api/v1/comics` — create a comic (and its first chapter).
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     post,
     path = "/api/v1/comics",
     tag = "comics",
@@ -123,7 +123,7 @@ pub async fn create(
 }
 
 /// `GET /api/v1/worksets/{workset_id}/comics` — list comics in a workset.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     get,
     path = "/api/v1/worksets/{workset_id}/comics",
     tag = "comics",
@@ -164,7 +164,7 @@ pub async fn list_infos(
 }
 
 /// `GET /api/v1/comics/{comic_id}` — fetch a comic by id.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     get,
     path = "/api/v1/comics/{comic_id}",
     tag = "comics",
@@ -192,7 +192,7 @@ pub async fn get_info(
 }
 
 /// `PUT /api/v1/comics/{comic_id}` — update a comic's profile.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     put,
     path = "/api/v1/comics/{comic_id}",
     tag = "comics",
@@ -221,7 +221,7 @@ pub async fn update_info(
 }
 
 /// `POST /api/v1/comics/{comic_id}/cover/reserve` — reserve a cover upload slot.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     post,
     path = "/api/v1/comics/{comic_id}/cover/reserve",
     tag = "comics",
@@ -254,7 +254,7 @@ pub async fn reserve_cover(
 }
 
 /// `POST /api/v1/comics/{comic_id}/cover/mark-uploaded` — confirm a cover upload.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     post,
     path = "/api/v1/comics/{comic_id}/cover/mark-uploaded",
     tag = "comics",
@@ -286,7 +286,7 @@ pub async fn mark_cover_uploaded(
 }
 
 /// `POST /api/v1/comics/{comic_id}/archive` — archive and remove one active comic.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     post,
     path = "/api/v1/comics/{comic_id}/archive",
     tag = "comics",
@@ -315,7 +315,7 @@ pub async fn archive(
 }
 
 /// `DELETE /api/v1/comics/{comic_id}` — delete a comic and descendants.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     delete,
     path = "/api/v1/comics/{comic_id}",
     tag = "comics",

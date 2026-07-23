@@ -4,7 +4,7 @@
 //! the PopRaKo application core.
 
 pub use api::http::init_prometheus;
-#[cfg(feature = "swagger-ui")]
+#[cfg(feature = "swagger")]
 pub use api::http::openapi::ApiDoc;
 pub use api::http::server::serve;
 pub use api::http::state::AppHarn;

@@ -6,7 +6,7 @@ use axum::http::StatusCode;
 use serde::Deserialize;
 use tracing::instrument;
 
-#[cfg(feature = "swagger-ui")]
+#[cfg(feature = "swagger")]
 use utoipa::IntoParams;
 
 #[allow(unused_imports)]
@@ -27,8 +27,8 @@ use crate::value::query::GroupedQuery;
 ///
 /// Example: `?incl=user&offset=0&limit=20`.
 #[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
-#[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
+#[cfg_attr(feature = "swagger", derive(IntoParams))]
+#[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct AnnouncementListQuery {
     /// Related rows to embed. Repeatable. Values: `user`.
     #[serde(
@@ -46,7 +46,7 @@ pub struct AnnouncementListQuery {
 }
 
 /// `POST /api/v1/announcements` — create a team announcement.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     post,
     path = "/api/v1/announcements",
     tag = "announcements",
@@ -69,7 +69,7 @@ pub async fn create(
 }
 
 /// `GET /api/v1/teams/{team_id}/announcements` — list a team's announcements.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     get,
     path = "/api/v1/teams/{team_id}/announcements",
     tag = "announcements",

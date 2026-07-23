@@ -2,7 +2,7 @@
 
 use serde::Deserialize;
 
-#[cfg(feature = "swagger-ui")]
+#[cfg(feature = "swagger")]
 use utoipa::ToSchema;
 
 use crate::value::incl::InclOpt;
@@ -14,7 +14,7 @@ use crate::value::incl::InclOpt;
 /// the dot (e.g. `chapter.comic.workset.team` also embeds `chapter`,
 /// `chapter.comic`, and `chapter.comic.workset`).
 #[derive(Debug, Deserialize, Clone, Copy, PartialEq, Eq)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub enum AssignmentInclOpt {
     /// Embed the assigned user (`user`).
     #[serde(rename = "user")]

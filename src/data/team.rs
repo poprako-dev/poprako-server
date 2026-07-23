@@ -2,7 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 
-#[cfg(feature = "swagger-ui")]
+#[cfg(feature = "swagger")]
 use utoipa::{IntoParams, ToSchema};
 
 use poprako_util::time::ToUnixMilli;
@@ -17,7 +17,7 @@ use crate::result::{BaseResult, accept};
 /// resolves the avatar key to a signed download URL via [`ImagePool`] when
 /// the avatar has been uploaded.
 #[derive(Debug, Serialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct TeamInfoVal {
     pub id: String,
 
@@ -74,7 +74,7 @@ impl TeamInfoVal {
 
 /// Input parameters for creating a new team.
 #[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateTeamParams {
     pub name: String,
     pub description: String,
@@ -89,8 +89,8 @@ pub struct CreateTeamParams {
 ///
 /// Example: `/api/v1/teams?user_id=u_123&offset=0&limit=20`.
 #[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
-#[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
+#[cfg_attr(feature = "swagger", derive(IntoParams))]
+#[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct ListTeamInfosParams {
     /// Filter to teams joined by this user. Omit to list all teams
     /// (super-admin only).
@@ -102,7 +102,7 @@ pub struct ListTeamInfosParams {
 
 /// Input parameters for updating a team's profile.
 #[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UpdateTeamInfoParams {
     pub id: String,
 
@@ -112,14 +112,14 @@ pub struct UpdateTeamInfoParams {
 
 /// Input parameters for reserving a new team avatar upload slot.
 #[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ReserveTeamAvatarParams {
     pub file_ext: String,
 }
 
 /// Return value from a successful team avatar reservation.
 #[derive(Debug, Serialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ReserveTeamAvatarPayload {
     pub put_url: String,
     pub avatar_version: u32,
@@ -127,7 +127,7 @@ pub struct ReserveTeamAvatarPayload {
 
 /// Input parameters for confirming a team avatar upload completed.
 #[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct MarkTeamAvatarUploadedParams {
     pub avatar_version: u32,
 }

@@ -2,7 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 
-#[cfg(feature = "swagger-ui")]
+#[cfg(feature = "swagger")]
 use utoipa::ToSchema;
 
 use poprako_util::time::ToUnixMilli as _;
@@ -11,7 +11,7 @@ use crate::model::term::TermInfo;
 
 /// Presentation-ready terminology-entry information.
 #[derive(Debug, Serialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct TermInfoVal {
     pub id: String,
 
@@ -45,7 +45,7 @@ impl From<TermInfo> for TermInfoVal {
 
 /// Input parameters for creating a terminology entry.
 #[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateTermParams {
     pub termbase_id: String,
 
@@ -56,14 +56,14 @@ pub struct CreateTermParams {
 
 /// Return value from creating a terminology entry.
 #[derive(Debug, Serialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateTermPayload {
     pub id: String,
 }
 
 /// Input parameters for replacing terminology-entry fields.
 #[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UpdateTermInfoParams {
     pub id: String,
 

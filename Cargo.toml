@@ -1,5 +1,5 @@
 [workspace]
-members = [".", "poprako-util"]
+members = [".", "poprako-util", "poprako-swagger"]
 resolver = "3"
 
 [package]
@@ -21,7 +21,7 @@ benchmark = []
 rdb = []
 prom_impl = []
 repo_impl = []
-swagger-ui = ["utoipa-swagger-ui", "utoipa"]
+swagger = ["utoipa-swagger-ui", "utoipa"]
 
 [dependencies]
 anyhow = "1.0.102"

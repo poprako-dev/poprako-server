@@ -2,13 +2,13 @@
 
 use serde::{Deserialize, Serialize};
 
-#[cfg(feature = "swagger-ui")]
+#[cfg(feature = "swagger")]
 use utoipa::{IntoParams, ToSchema};
 
 /// Input parameters for listing system mails.
 #[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
-#[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
+#[cfg_attr(feature = "swagger", derive(IntoParams))]
+#[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct ListSystemMailInfosParams {
     pub read: Option<bool>,
 
@@ -21,7 +21,7 @@ pub struct ListSystemMailInfosParams {
 /// Converts the raw [`SystemMailInfo`] timestamp to Unix milliseconds
 /// and omits the internal `receiver_id` field.
 #[derive(Debug, Serialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct SystemMailInfoVal {
     pub id: String,
 
@@ -35,7 +35,7 @@ pub struct SystemMailInfoVal {
 
 /// Input parameters for marking a batch of system mails as read.
 #[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct MarkSystemMailReadParams {
     pub ids: Vec<String>,
 }

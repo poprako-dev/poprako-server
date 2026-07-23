@@ -2,7 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 
-#[cfg(feature = "swagger-ui")]
+#[cfg(feature = "swagger")]
 use utoipa::{IntoParams, ToSchema};
 
 use futures::future::OptionFuture;
@@ -20,7 +20,7 @@ use crate::value::role::{RoleField, RoleMask};
 
 /// Presentation-ready chapter assignment information.
 #[derive(Debug, Serialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct AssignmentInfoVal {
     pub id: String,
 
@@ -100,8 +100,8 @@ impl AssignmentInfoVal {
 ///
 /// Example: `/api/v1/assignments?chapter_id=c_1&role=1&incl=chapter.comic.workset.team&offset=0&limit=20`.
 #[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
-#[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
+#[cfg_attr(feature = "swagger", derive(IntoParams))]
+#[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct ListAssignmentInfosParams {
     /// Chapter mode: list assignments on this chapter. Mutually exclusive with
     /// `owner_id`.
@@ -166,7 +166,7 @@ impl TryInto<AssignmentInfoListSpec> for ListAssignmentInfosParams {
 
 /// Input parameters for updating assignment roles.
 #[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UpdateAssignmentRolesParams {
     pub chapter_id: String,
     pub user_id: String,
@@ -180,7 +180,7 @@ pub struct UpdateAssignmentRolesParams {
 /// The role mask must contain role bits that are valid for volunteer
 /// assignment; the use case layer validates this before applying.
 #[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct JoinChapterAssignmentParams {
     pub chapter_id: String,
 

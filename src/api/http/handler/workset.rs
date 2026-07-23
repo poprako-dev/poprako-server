@@ -22,7 +22,7 @@ use crate::model::user::UserToken;
 use crate::usecase;
 
 /// `POST /api/v1/worksets` — create a workset inside a team.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     post,
     path = "/api/v1/worksets",
     tag = "worksets",
@@ -46,7 +46,7 @@ pub async fn create(
 }
 
 /// `GET /api/v1/teams/{team_id}/worksets` — list worksets in a team.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     get,
     path = "/api/v1/teams/{team_id}/worksets",
     tag = "worksets",
@@ -77,7 +77,7 @@ pub async fn list_infos(
 }
 
 /// `GET /api/v1/worksets/{workset_id}` — fetch a workset by id.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     get,
     path = "/api/v1/worksets/{workset_id}",
     tag = "worksets",
@@ -101,7 +101,7 @@ pub async fn get_info(
 }
 
 /// `PUT /api/v1/worksets/{workset_id}` — update a workset's profile.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     put,
     path = "/api/v1/worksets/{workset_id}",
     tag = "worksets",
@@ -130,7 +130,7 @@ pub async fn update_info(
 }
 
 /// `DELETE /api/v1/worksets/{workset_id}` — delete a workset and descendants.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     delete,
     path = "/api/v1/worksets/{workset_id}",
     tag = "worksets",

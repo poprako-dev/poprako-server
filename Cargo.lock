@@ -3246,6 +3246,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "poprako-swagger"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "poprako-server",
+ "serde_json",
+ "utoipa",
+]
+
+[[package]]
 name = "poprako-util"
 version = "0.1.0"
 dependencies = [

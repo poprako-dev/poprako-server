@@ -2,7 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 
-#[cfg(feature = "swagger-ui")]
+#[cfg(feature = "swagger")]
 use utoipa::ToSchema;
 
 use crate::data::page_port::PageTranslationExportPayload;
@@ -10,7 +10,7 @@ use crate::value::chapter_port::TranslationFormat;
 
 /// Request body for importing chapter translations.
 #[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ImportChapterTranslationParams {
     pub format: TranslationFormat,
     pub content: String,
@@ -18,7 +18,7 @@ pub struct ImportChapterTranslationParams {
 
 /// JSON-safe export object for one translated chapter.
 #[derive(Debug, Serialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ExportChapterTranslationPayload {
     pub chapter_id: String,
     pub chapter_index: i32,
@@ -33,7 +33,7 @@ pub struct ExportChapterTranslationPayload {
 
 /// Summary returned after importing chapter translations.
 #[derive(Debug, Serialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ImportChapterTranslationPayload {
     pub imported_page_count: i32,
     pub imported_unit_count: i32,

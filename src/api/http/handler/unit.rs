@@ -17,7 +17,7 @@ use crate::model::user::UserToken;
 use crate::usecase;
 
 /// `GET /api/v1/pages/{page_id}/units` — list all units under a page.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     get,
     path = "/api/v1/pages/{page_id}/units",
     tag = "units",
@@ -43,7 +43,7 @@ pub async fn list_all_infos(
 }
 
 /// `POST /api/v1/pages/{page_id}/units/save` — save unit opers.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     post,
     path = "/api/v1/pages/{page_id}/units/save",
     tag = "units",

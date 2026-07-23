@@ -2,7 +2,7 @@
 
 use serde::Serialize;
 
-#[cfg(feature = "swagger-ui")]
+#[cfg(feature = "swagger")]
 use utoipa::ToSchema;
 
 use crate::data::assignment::AssignmentInfoVal;
@@ -15,7 +15,7 @@ use crate::data::comic::ComicInfoVal;
 /// with `comics`. Their entries are populated only when the corresponding
 /// `with` options are requested.
 #[derive(Debug, Serialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ListComicInfosPayload {
     pub comics: Vec<ComicInfoVal>,
     pub pinned_chapters: Vec<Option<ChapterInfoVal>>,
