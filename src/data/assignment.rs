@@ -22,19 +22,27 @@ use crate::value::role::{RoleField, RoleMask};
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct AssignmentInfoVal {
+    /// Unique identifier of the assignment.
     pub id: String,
 
+    /// Owning chapter identifier.
     pub chapter_id: String,
+    /// Assigned user identifier.
     pub user_id: String,
 
     #[serde(skip_serializing_if = "Option::is_none")]
+    /// Resolved user information, when included.
     pub user: Option<UserInfoVal>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    /// Resolved chapter information, when included.
     pub chapter: Option<ChapterInfoVal>,
 
+    /// Role mask assigned to this user for the chapter.
     pub roles: RoleMask,
 
+    /// Timestamp of creation in milliseconds.
     pub created_at: i64,
+    /// Timestamp of last update in milliseconds.
     pub updated_at: i64,
 }
 
@@ -126,7 +134,9 @@ pub struct ListAssignmentInfosParams {
     )]
     pub incl_opt: Vec<AssignmentInclOpt>,
 
+    /// Pagination offset.
     pub offset: u32,
+    /// Maximum number of results per page.
     pub limit: u32,
 }
 
@@ -135,13 +145,13 @@ impl TryInto<AssignmentInfoListSpec> for ListAssignmentInfosParams {
 
     fn try_into(self) -> BaseResult<AssignmentInfoListSpec> {
         //
-        let invalid_args_err = || BaseError::Expected {
+        let invalid_args = || BaseError::Expected {
             variant: ExpectedVariant::Args,
             message: trl("error-chapter-or-user-required"),
         };
 
         if self.chapter_id.is_some() == self.owner_id.is_some() {
-            return Err(invalid_args_err());
+            return Err(invalid_args());
         }
 
         if let Some(chapter_id) = self.chapter_id {
@@ -155,7 +165,7 @@ impl TryInto<AssignmentInfoListSpec> for ListAssignmentInfosParams {
         }
 
         accept(AssignmentInfoListSpec::User {
-            owner_id: self.owner_id.ok_or_else(invalid_args_err)?,
+            owner_id: self.owner_id.ok_or_else(invalid_args)?,
             role: self.role,
             incl_opt: self.incl_opt,
             offset: self.offset,
@@ -168,9 +178,12 @@ impl TryInto<AssignmentInfoListSpec> for ListAssignmentInfosParams {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UpdateAssignmentRolesParams {
+    /// Target chapter identifier.
     pub chapter_id: String,
+    /// Target user identifier.
     pub user_id: String,
 
+    /// New role mask to apply.
     pub roles: RoleMask,
 }
 
@@ -182,7 +195,9 @@ pub struct UpdateAssignmentRolesParams {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct JoinChapterAssignmentParams {
+    /// Chapter to join as an assignee.
     pub chapter_id: String,
 
+    /// Volunteer role mask.
     pub roles: RoleMask,
 }

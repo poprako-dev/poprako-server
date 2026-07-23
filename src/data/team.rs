@@ -19,17 +19,24 @@ use crate::result::{BaseResult, accept};
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct TeamInfoVal {
+    /// Unique team identifier.
     pub id: String,
 
+    /// Team display name.
     pub name: String,
+    /// Team description text.
     pub description: String,
 
+    /// Signed avatar download URL, when one has been uploaded.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub avatar_url: Option<String>,
+    /// Signed avatar thumbnail download URL, when one has been uploaded.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub avatar_thumbnail_url: Option<String>,
 
+    /// Timestamp of creation, in Unix milliseconds.
     pub created_at: i64,
+    /// Timestamp of last update, in Unix milliseconds.
     pub updated_at: i64,
 }
 
@@ -76,7 +83,9 @@ impl TeamInfoVal {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateTeamParams {
+    /// Team display name.
     pub name: String,
+    /// Team description text.
     pub description: String,
 }
 
@@ -96,7 +105,9 @@ pub struct ListTeamInfosParams {
     /// (super-admin only).
     pub user_id: Option<String>,
 
+    /// Pagination offset.
     pub offset: u32,
+    /// Maximum number of results per page.
     pub limit: u32,
 }
 
@@ -104,9 +115,12 @@ pub struct ListTeamInfosParams {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UpdateTeamInfoParams {
+    /// Team identifier.
     pub id: String,
 
+    /// Updated team display name.
     pub name: String,
+    /// Updated team description text.
     pub description: String,
 }
 
@@ -114,6 +128,7 @@ pub struct UpdateTeamInfoParams {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ReserveTeamAvatarParams {
+    /// File extension of the avatar image (e.g. "png", "jpg").
     pub file_ext: String,
 }
 
@@ -121,7 +136,9 @@ pub struct ReserveTeamAvatarParams {
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ReserveTeamAvatarPayload {
+    /// Pre-signed PUT URL for uploading the avatar file.
     pub put_url: String,
+    /// Version number assigned to the upload slot.
     pub avatar_version: u32,
 }
 
@@ -129,5 +146,6 @@ pub struct ReserveTeamAvatarPayload {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct MarkTeamAvatarUploadedParams {
+    /// Version number that was returned by the reservation.
     pub avatar_version: u32,
 }

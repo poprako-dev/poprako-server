@@ -19,15 +19,21 @@ use crate::value::comment::CommentInclOpt;
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CommentInfoVal {
+    /// Unique comment identifier.
     pub id: String,
 
+    /// Owning team identifier.
     pub team_id: String,
+    /// Authoring user identifier.
     pub user_id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
+    /// Author user information, present when requested via inclusion options.
     pub user: Option<UserInfoVal>,
 
+    /// Comment body text.
     pub content: String,
 
+    /// Timestamp of creation in milliseconds since Unix epoch.
     pub created_at: i64,
 }
 
@@ -75,7 +81,9 @@ pub struct ListCommentInfosParams {
     )]
     pub incl_opt: Vec<CommentInclOpt>,
 
+    /// Pagination offset.
     pub offset: u32,
+    /// Maximum number of results per page.
     pub limit: u32,
 }
 
@@ -94,7 +102,9 @@ impl From<ListCommentInfosParams> for CommentListSpec {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateCommentParams {
+    /// Target team identifier.
     pub team_id: String,
+    /// Comment body text.
     pub content: String,
 }
 
@@ -102,5 +112,6 @@ pub struct CreateCommentParams {
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateCommentPayload {
+    /// Identifier of the newly created comment.
     pub id: String,
 }

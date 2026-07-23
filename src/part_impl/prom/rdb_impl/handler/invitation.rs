@@ -19,7 +19,7 @@ where
         + Send
         + Sync,
 {
-    let result = match event {
+    let outcome = match event {
         //
         PurgeExpiredInvitation::Assignment { invitation_id } => {
             repo.run(&PurgeExpiredAssignmentInvitation { id: invitation_id })
@@ -32,7 +32,7 @@ where
         }
     };
 
-    match result {
+    match outcome {
         //
         Ok(()) => TaskFlow::Complete,
 

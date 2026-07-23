@@ -17,7 +17,13 @@ use crate::data::comic::ComicInfoVal;
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ListComicInfosPayload {
+    /// Comic information for the listed comics.
     pub comics: Vec<ComicInfoVal>,
+
+    /// Pinned chapter for each comic, positionally aligned with `comics`.
+    /// `None` when the comic has no pinned chapter.
     pub pinned_chapters: Vec<Option<ChapterInfoVal>>,
+
+    /// Assignments for each pinned chapter, positionally aligned with `comics`.
     pub pinned_chapter_assignments: Vec<Vec<AssignmentInfoVal>>,
 }

@@ -145,10 +145,14 @@ impl ComicInfoVal {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateComicParams {
+    /// Parent workset identifier.
     pub workset_id: String,
 
+    /// Comic title.
     pub title: String,
+    /// Comic author name.
     pub author: String,
+    /// Optional description of the comic.
     pub description: Option<String>,
 
     /// Optional subtitle for the first chapter created alongside the comic.
@@ -166,7 +170,9 @@ pub struct CreateComicParams {
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateComicPayload {
+    /// Newly created comic identifier.
     pub id: String,
+    /// Identifier of the auto-created first chapter.
     pub chapter_id: String,
 }
 
@@ -178,10 +184,14 @@ pub struct CreateComicPayload {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UpdateComicInfoParams {
+    /// Comic identifier.
     pub id: String,
 
+    /// Updated comic title.
     pub title: String,
+    /// Updated author name.
     pub author: String,
+    /// Updated description.
     pub description: Option<String>,
 }
 
@@ -190,11 +200,15 @@ pub struct UpdateComicInfoParams {
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct ListComicInfosParams {
+    /// Parent workset identifier.
     pub workset_id: String,
 
+    /// Optional fuzzy title filter.
     pub fuzzy_title: Option<String>,
+    /// Optional stage mask filter.
     pub stages: Option<u32>,
 
+    /// Optional related data to include in results.
     #[serde(
         default,
         rename = "incl",
@@ -202,6 +216,7 @@ pub struct ListComicInfosParams {
     )]
     pub incl_opt: Vec<ComicInclOpt>,
 
+    /// Optional expansion options for the result set.
     #[serde(
         default,
         rename = "with",
@@ -209,7 +224,9 @@ pub struct ListComicInfosParams {
     )]
     pub with_opt: Vec<ComicWithOpt>,
 
+    /// Pagination offset.
     pub offset: u32,
+    /// Maximum number of results per page.
     pub limit: u32,
 }
 
@@ -246,6 +263,7 @@ impl TryFrom<ListComicInfosParams> for ComicInfoListSpec {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ReserveComicCoverParams {
+    /// File extension for the cover image (determines object-storage key suffix).
     pub file_ext: String,
 }
 
@@ -256,7 +274,9 @@ pub struct ReserveComicCoverParams {
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ReserveComicCoverPayload {
+    /// Signed PUT URL for uploading the cover image to object storage.
     pub put_url: String,
+    /// Version token that must be echoed when confirming the upload.
     pub cover_version: u32,
 }
 
@@ -266,5 +286,6 @@ pub struct ReserveComicCoverPayload {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct MarkComicCoverUploadedParams {
+    /// Cover version returned by the reservation step.
     pub cover_version: u32,
 }

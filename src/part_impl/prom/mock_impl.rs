@@ -463,7 +463,7 @@ fn classify_current_identity(
     current_object_key: Option<&str>,
     image_version: u32,
     object_key: &str,
-    error_message: &'static str,
+    err_message: &'static str,
 ) -> BaseResult<ResourceState> {
     match (
         current_version == image_version,

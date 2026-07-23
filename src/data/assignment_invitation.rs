@@ -14,20 +14,29 @@ use crate::value::role::RoleMask;
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct AssignmentInvitationInfoVal {
+    /// Unique identifier of the invitation.
     pub id: String,
 
+    /// Identifier of the chapter this invitation belongs to.
     pub chapter_id: String,
 
+    /// User identifier of the inviter who created this invitation.
     pub inviter_id: String,
+    /// Qualified identifier of the user being invited.
     pub invitee_qid: String,
 
+    /// Secret invitation code used for joining.
     pub code: String,
 
+    /// Whether the invitation has not yet been consumed.
     pub pending: bool,
 
+    /// Role mask assigned to the invitation.
     pub roles: RoleMask,
 
+    /// Timestamp of creation in milliseconds.
     pub created_at: i64,
+    /// Timestamp of last update in milliseconds.
     pub updated_at: i64,
 }
 
@@ -61,7 +70,9 @@ pub struct ListAssignmentInvitationInfosParams {
     /// `Some(false)` returns only consumed ones; `None` returns all.
     pub pending: Option<bool>,
 
+    /// Pagination offset.
     pub offset: u32,
+    /// Maximum number of results per page.
     pub limit: u32,
 }
 
@@ -69,8 +80,11 @@ pub struct ListAssignmentInvitationInfosParams {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateAssignmentInvitationParams {
+    /// Identifier of the chapter to create the invitation for.
     pub chapter_id: String,
+    /// Qualified identifier of the user being invited.
     pub invitee_qid: String,
+    /// Role mask to assign to the invitee upon joining.
     pub roles: RoleMask,
 }
 
@@ -78,7 +92,9 @@ pub struct CreateAssignmentInvitationParams {
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateAssignmentInvitationPayload {
+    /// Unique identifier of the newly created invitation.
     pub id: String,
+    /// Secret invitation code for the invitee to use.
     pub code: String,
 }
 
@@ -86,5 +102,6 @@ pub struct CreateAssignmentInvitationPayload {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct JoinAssignmentInvitationParams {
+    /// Secret invitation code to join with.
     pub code: String,
 }

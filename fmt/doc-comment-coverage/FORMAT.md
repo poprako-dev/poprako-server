@@ -34,7 +34,7 @@ exported item without reading the implementation.
 - Files named `entity.rs` — Diesel entity definitions.
 - The `main` function in `src/main.rs`.
 - Diesel-generated `schema.rs`.
-- Struct fields — a missing per-field comment is rarely a defect.
+- (none — struct / enum / union fields are now checked)
 - Inner doc comments (`//!`, `/*!`) — they document the enclosing module,
   not the following item.
 

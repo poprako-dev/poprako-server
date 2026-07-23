@@ -347,11 +347,11 @@ where
         .await?;
 
     let Some(assignment_info) = assignment_info else {
-        return Err(chapter_admin_error());
+        return Err(chapter_admin_err());
     };
 
     if !assignment_info.roles.has_any_role(&[RoleField::ADMIN]) {
-        return Err(chapter_admin_error());
+        return Err(chapter_admin_err());
     }
 
     accept(())
@@ -429,7 +429,7 @@ where
         .any(|info| info.roles.has_any_role(required_roles));
 
     if !has_holder {
-        return Err(chapter_no_role_holder_error());
+        return Err(chapter_no_role_holder_err());
     }
 
     accept(())
@@ -462,7 +462,7 @@ where
         .await?;
 
     let Some(assignment_info) = assignment_info else {
-        return Err(chapter_workflow_role_error());
+        return Err(chapter_workflow_role_err());
     };
 
     // Domain invariant: a workflow stage cannot be advanced unless at least
@@ -482,11 +482,11 @@ where
     let required_roles = required_roles_for_transition(stage, oper);
 
     if required_roles.is_empty() {
-        return Err(chapter_workflow_role_error());
+        return Err(chapter_workflow_role_err());
     }
 
     if !roles.has_any_role(required_roles) {
-        return Err(chapter_workflow_role_error());
+        return Err(chapter_workflow_role_err());
     }
 
     accept(())
@@ -509,7 +509,7 @@ where
         + for<'a> Proxy<FindMemberInfo<'a>, Error = BaseError>,
 {
     if roles.has_any_role(&[RoleField::ADMIN]) {
-        return Err(chapter_role_not_assignable_args_error());
+        return Err(chapter_role_not_assignable_args_err());
     }
 
     let team_id =
@@ -565,7 +565,7 @@ where
 }
 
 /// Construct a "chapter admin required" permission error.
-fn chapter_admin_error() -> BaseError {
+fn chapter_admin_err() -> BaseError {
     BaseError::Expected {
         variant: ExpectedVariant::Perm,
         message: trl("error-chapter-admin-required"),
@@ -573,7 +573,7 @@ fn chapter_admin_error() -> BaseError {
 }
 
 /// Construct a "workflow role required for this transition" permission error.
-fn chapter_workflow_role_error() -> BaseError {
+fn chapter_workflow_role_err() -> BaseError {
     BaseError::Expected {
         variant: ExpectedVariant::Perm,
         message: trl("error-chapter-workflow-role-required"),
@@ -582,7 +582,7 @@ fn chapter_workflow_role_error() -> BaseError {
 
 /// Construct a "no one holds the required workflow role on this chapter"
 /// permission error.
-fn chapter_no_role_holder_error() -> BaseError {
+fn chapter_no_role_holder_err() -> BaseError {
     BaseError::Expected {
         variant: ExpectedVariant::Perm,
         message: trl("error-chapter-no-role-holder"),
@@ -590,7 +590,7 @@ fn chapter_no_role_holder_error() -> BaseError {
 }
 
 /// Construct an "admin role not assignable through join" args error.
-fn chapter_role_not_assignable_args_error() -> BaseError {
+fn chapter_role_not_assignable_args_err() -> BaseError {
     BaseError::Expected {
         variant: ExpectedVariant::Args,
         message: trl("error-chapter-role-not-assignable"),

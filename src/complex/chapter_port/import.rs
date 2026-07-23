@@ -54,7 +54,7 @@ impl ChapterImportComplex {
             if let Some(unit) = parse_label_plus_unit_header(line)? {
                 //
                 if current_page.is_none() {
-                    return Err(args_error(
+                    return Err(args_err(
                         "error-invalid-chapter-import-content",
                     ));
                 }
@@ -95,15 +95,15 @@ impl ChapterImportComplex {
         //
         let project: ChapterPoprakoProjectImport =
             serde_json::from_str(content).map_err(|_| {
-                args_error("error-invalid-chapter-import-content")
+                args_err("error-invalid-chapter-import-content")
             })?;
 
         if project.author.trim().is_empty() {
-            return Err(args_error("error-invalid-chapter-import-content"));
+            return Err(args_err("error-invalid-chapter-import-content"));
         }
 
         if project.title.trim().is_empty() {
-            return Err(args_error("error-invalid-chapter-import-content"));
+            return Err(args_err("error-invalid-chapter-import-content"));
         }
 
         let pages = project
@@ -122,7 +122,7 @@ impl ChapterImportComplex {
     ) -> BaseResult<()> {
         //
         if imported_page_count != existing_page_count {
-            return Err(args_error("error-chapter-import-page-count-mismatch"));
+            return Err(args_err("error-chapter-import-page-count-mismatch"));
         }
 
         accept(())
@@ -185,7 +185,7 @@ where
     I: Iterator<Item = &'a str>,
 {
     let Some(version_line) = lines.next() else {
-        return Err(args_error("error-invalid-chapter-import-content"));
+        return Err(args_err("error-invalid-chapter-import-content"));
     };
 
     if !version_line
@@ -194,11 +194,11 @@ where
         .map(|value| value.is_ascii_digit())
         .unwrap_or(false)
     {
-        return Err(args_error("error-invalid-chapter-import-content"));
+        return Err(args_err("error-invalid-chapter-import-content"));
     }
 
     if lines.next() != Some("-") {
-        return Err(args_error("error-invalid-chapter-import-content"));
+        return Err(args_err("error-invalid-chapter-import-content"));
     }
 
     let mut found_separator = false;
@@ -213,11 +213,11 @@ where
     }
 
     if !found_separator {
-        return Err(args_error("error-invalid-chapter-import-content"));
+        return Err(args_err("error-invalid-chapter-import-content"));
     }
 
     if lines.next().is_none() {
-        return Err(args_error("error-invalid-chapter-import-content"));
+        return Err(args_err("error-invalid-chapter-import-content"));
     }
 
     accept(())
@@ -240,30 +240,30 @@ fn parse_label_plus_unit_header(
     };
 
     let Some((index_text, rest)) = rest.split_once("]----------------[") else {
-        return Err(args_error("error-invalid-chapter-import-content"));
+        return Err(args_err("error-invalid-chapter-import-content"));
     };
 
     let Some(coord_text) = rest.strip_suffix(']') else {
-        return Err(args_error("error-invalid-chapter-import-content"));
+        return Err(args_err("error-invalid-chapter-import-content"));
     };
 
     let parts = coord_text.split(',').collect::<Vec<_>>();
 
     if parts.len() != 3 {
-        return Err(args_error("error-invalid-chapter-import-content"));
+        return Err(args_err("error-invalid-chapter-import-content"));
     }
 
     let index: i32 = index_text
         .parse()
-        .map_err(|_| args_error("error-invalid-chapter-import-content"))?;
+        .map_err(|_| args_err("error-invalid-chapter-import-content"))?;
 
     let x_coord: f64 = parts[0]
         .parse()
-        .map_err(|_| args_error("error-invalid-chapter-import-content"))?;
+        .map_err(|_| args_err("error-invalid-chapter-import-content"))?;
 
     let y_coord: f64 = parts[1]
         .parse()
-        .map_err(|_| args_error("error-invalid-chapter-import-content"))?;
+        .map_err(|_| args_err("error-invalid-chapter-import-content"))?;
 
     let is_bubble = match parts[2] {
         //
@@ -271,7 +271,7 @@ fn parse_label_plus_unit_header(
 
         "2" => false,
 
-        _ => return Err(args_error("error-invalid-chapter-import-content")),
+        _ => return Err(args_err("error-invalid-chapter-import-content")),
     };
 
     accept(Some(LabelPlusUnit {
@@ -296,7 +296,7 @@ fn flush_label_plus_unit(
     };
 
     let Some(page_units) = current_page.as_mut() else {
-        return Err(args_error("error-invalid-chapter-import-content"));
+        return Err(args_err("error-invalid-chapter-import-content"));
     };
 
     let main_text = normalize_string(main_text_lines.join("\n"));
@@ -325,7 +325,7 @@ fn parse_poprako_page(
 ) -> BaseResult<PageTranslationImport> {
     //
     if page.image_filename.trim().is_empty() {
-        return Err(args_error("error-invalid-chapter-import-content"));
+        return Err(args_err("error-invalid-chapter-import-content"));
     }
 
     let mut seen_indexes = HashMap::new();
@@ -335,19 +335,19 @@ fn parse_poprako_page(
     for unit in page.units {
         //
         if unit.id.trim().is_empty() {
-            return Err(args_error("error-invalid-chapter-import-content"));
+            return Err(args_err("error-invalid-chapter-import-content"));
         }
 
         if unit.index_in_page < 1 {
-            return Err(args_error("error-invalid-chapter-import-content"));
+            return Err(args_err("error-invalid-chapter-import-content"));
         }
 
         if !unit.x.is_finite() || !unit.y.is_finite() {
-            return Err(args_error("error-invalid-chapter-import-content"));
+            return Err(args_err("error-invalid-chapter-import-content"));
         }
 
         if seen_indexes.insert(unit.index_in_page, ()).is_some() {
-            return Err(args_error("error-invalid-chapter-import-content"));
+            return Err(args_err("error-invalid-chapter-import-content"));
         }
 
         units.push(UnitTranslationImport {
@@ -485,7 +485,7 @@ fn apply_poprako_text(
 }
 
 /// Construct an `Expected::Args` error with the given i18n message key.
-fn args_error(key: &str) -> BaseError {
+fn args_err(key: &str) -> BaseError {
     BaseError::Expected {
         variant: ExpectedVariant::Args,
         message: trl(key),

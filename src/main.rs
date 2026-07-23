@@ -30,33 +30,21 @@ use utoipa::OpenApi as _;
 
 use poprako_server::{
     AppConfig, AppHarn, AsyncEffectDevelop, Harn, JwtAuth, R2ImagePool,
-    RdbCore, RdbDrive, RdbProm, RdbRepo, RdbSched, init_prometheus, serve,
+    RdbCore, RdbDrive, RdbProm, RdbRepo, RdbSched, init_log, serve,
 };
 
 /// Application entry point.
 ///
 /// Parses CLI flags, loads configuration, initializes runtime dependencies
-/// (database pool, authentication, image pool, effect dispatcher, Prometheus
-/// collector), wires them into an application harness, and starts the HTTP
-/// server. Pass `--swagger` to print the `OpenAPI` spec to stdout instead of
-/// starting the server.
+/// (database pool, authentication, image pool, effect dispatcher), wires them
+/// into an application harness, and starts the HTTP server. Pass `--swagger`
+/// to print the `OpenAPI` spec to stdout instead of starting the server.
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     //
     dotenvy::dotenv().expect(".env file should be valid");
 
-    tracing_subscriber::fmt()
-        .with_env_filter(
-            tracing_subscriber::EnvFilter::builder()
-                .with_default_directive(
-                    tracing_subscriber::filter::LevelFilter::INFO.into(),
-                )
-                .from_env_lossy(),
-        )
-        .with_ansi(cfg!(debug_assertions))
-        .init();
-
-    init_prometheus()?;
+    init_log();
 
     let config = AppConfig::from_default_file()
         .await
@@ -90,7 +78,7 @@ async fn main() -> anyhow::Result<()> {
     .next()
     .context("no address resolved for HTTP listen address")?;
 
-    let serve_result = serve(harn.clone(), http_addr).await;
+    let serve_outcome = serve(harn.clone(), http_addr).await;
 
     harn.develop().close().await;
 
@@ -98,5 +86,5 @@ async fn main() -> anyhow::Result<()> {
 
     sched.close().await;
 
-    serve_result
+    serve_outcome
 }

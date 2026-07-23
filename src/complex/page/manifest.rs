@@ -22,7 +22,7 @@ pub struct ManifestPlan {
     pub deleted_existing_indexes: Vec<usize>,
 }
 
-fn args_error(key: &str) -> BaseError {
+fn args_err(key: &str) -> BaseError {
     BaseError::Expected {
         variant: ExpectedVariant::Args,
         message: trl(key),
@@ -38,7 +38,7 @@ fn validate_same_hash_metadata(
         && (page_info.image_byte_length != page_input.byte_length
             || page_info.image_extension != page_input.extension)
     {
-        return Err(args_error("error-invalid-page-image-identity"));
+        return Err(args_err("error-invalid-page-image-identity"));
     }
 
     accept(())
@@ -76,7 +76,7 @@ pub fn build(
             .position(|page_info| {
                 page_info.id == *page_id && page_info.chapter_id == chapter_id
             })
-            .ok_or_else(|| args_error("error-page-not-found"))?;
+            .ok_or_else(|| args_err("error-page-not-found"))?;
 
         validate_same_hash_metadata(
             &existing_page_infos[existing_index],

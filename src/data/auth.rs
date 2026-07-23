@@ -9,11 +9,15 @@ use utoipa::ToSchema;
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct RegisterAuthParams {
+    /// Unique user identifier for authentication.
     pub qid: String,
+    /// Display name for the user.
     pub nickname: String,
 
+    /// User password.
     pub password: String,
 
+    /// Verification code.
     pub code: String,
 }
 
@@ -21,7 +25,9 @@ pub struct RegisterAuthParams {
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct RegisterAuthPayload {
+    /// Unique user identifier.
     pub user_id: String,
+    /// Authentication token.
     pub token: String,
 }
 
@@ -29,7 +35,9 @@ pub struct RegisterAuthPayload {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct LoginAuthParams {
+    /// Unique user identifier for authentication.
     pub qid: String,
+    /// User password.
     pub password: String,
 }
 
@@ -37,6 +45,8 @@ pub struct LoginAuthParams {
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct LoginAuthPayload {
+    /// Unique user identifier.
     pub user_id: String,
+    /// Authentication token.
     pub token: String,
 }

@@ -11,6 +11,7 @@ use utoipa::{IntoParams, ToSchema};
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ArchiveComicPayload {
+    /// Identifier of the archived comic.
     pub archived_comic_id: String,
 }
 
@@ -24,6 +25,7 @@ pub struct ExportComicArchivesParams {
         rename = "month",
         deserialize_with = "crate::value::query::deserialize_vec"
     )]
+    /// UTC month slots in `YYYY-MM` format to filter retained archives by.
     pub months: Vec<String>,
 }
 

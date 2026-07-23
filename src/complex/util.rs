@@ -169,7 +169,7 @@ where
         .await?;
 
     if assignment_info.is_none() {
-        return Err(chapter_assignee_required_error());
+        return Err(chapter_assignee_required_err());
     }
 
     accept(())
@@ -192,21 +192,21 @@ where
         .await?;
 
     let Some(assignment_info) = assignment_info else {
-        return Err(chapter_translator_or_proofreader_required_error());
+        return Err(chapter_translator_or_proofreader_required_err());
     };
 
     if !assignment_info
         .roles
         .has_any_role(&[RoleField::TRANSLATOR, RoleField::PROOFREADER])
     {
-        return Err(chapter_translator_or_proofreader_required_error());
+        return Err(chapter_translator_or_proofreader_required_err());
     }
 
     accept(())
 }
 
 /// Construct a "chapter assignee required" permission error.
-fn chapter_assignee_required_error() -> BaseError {
+fn chapter_assignee_required_err() -> BaseError {
     BaseError::Expected {
         variant: ExpectedVariant::Perm,
         message: trl("error-chapter-assignee-required"),
@@ -214,7 +214,7 @@ fn chapter_assignee_required_error() -> BaseError {
 }
 
 /// Construct a "translator or proofreader required" permission error.
-fn chapter_translator_or_proofreader_required_error() -> BaseError {
+fn chapter_translator_or_proofreader_required_err() -> BaseError {
     BaseError::Expected {
         variant: ExpectedVariant::Perm,
         message: trl("error-chapter-translator-or-proofreader-required"),

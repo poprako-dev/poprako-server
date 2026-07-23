@@ -104,8 +104,8 @@ pub struct FailMessage<'a> {
 
 impl<'a> FailMessage<'a> {
     /// Builds an operation that permanently fails the message identified by `id`.
-    pub fn new(id: &'a str, error: &'a str) -> Self {
-        Self { id, error }
+    pub fn new(id: &'a str, err_msg: &'a str) -> Self {
+        Self { id, error: err_msg }
     }
 }
 
@@ -124,12 +124,12 @@ impl<'a> RetryMessage<'a> {
     /// Builds an operation that schedules the message identified by `id` for retry.
     pub fn new(
         id: &'a str,
-        error: &'a str,
+        err_msg: &'a str,
         visible_at: &'a OffsetDateTime,
     ) -> Self {
         Self {
             id,
-            error,
+            error: err_msg,
             visible_at,
         }
     }

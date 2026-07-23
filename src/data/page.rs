@@ -19,25 +19,38 @@ mod tests;
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct PageInfoVal {
+    /// Unique page identifier.
     pub id: String,
 
+    /// Owning chapter identifier.
     pub chapter_id: String,
+    /// Ordinal position within the chapter.
     pub index: i32,
 
     #[serde(skip_serializing_if = "Option::is_none")]
+    /// Presigned download URL for the full image, if uploaded.
     pub image_url: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    /// Presigned download URL for the thumbnail, if uploaded.
     pub image_thumbnail_url: Option<String>,
 
+    /// Content hash of the page image.
     pub image_hash: ImageHash,
+    /// Size of the page image in bytes.
     pub byte_length: u64,
+    /// File extension of the page image.
     pub extension: ImageExtension,
 
+    /// Total number of translation units on this page.
     pub total_unit_count: i32,
+    /// Number of translated units on this page.
     pub translated_unit_count: i32,
+    /// Number of proofread units on this page.
     pub proofread_unit_count: i32,
 
+    /// Timestamp of creation, in Unix milliseconds.
     pub created_at: i64,
+    /// Timestamp of last update, in Unix milliseconds.
     pub updated_at: i64,
 }
 
@@ -83,7 +96,9 @@ impl PageInfoVal {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ReserveChapterPagesParams {
+    /// Target chapter identifier.
     pub chapter_id: String,
+    /// Page images to reserve for the chapter.
     pub pages: Vec<PageImageParams>,
 }
 
@@ -91,9 +106,13 @@ pub struct ReserveChapterPagesParams {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct PageImageParams {
+    /// Existing page identifier, if updating an existing page.
     pub page_id: Option<String>,
+    /// Content hash of the page image.
     pub image_hash: ImageHash,
+    /// Size of the page image in bytes.
     pub byte_length: u64,
+    /// File extension of the page image.
     pub extension: ImageExtension,
 }
 
@@ -101,6 +120,7 @@ pub struct PageImageParams {
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ReserveChapterPagesPayload {
+    /// Reserved pages with upload targets.
     pub pages: Vec<ReservedPagePayload>,
 }
 
@@ -108,11 +128,17 @@ pub struct ReserveChapterPagesPayload {
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ReservedPagePayload {
+    /// Reserved page identifier.
     pub page_id: String,
+    /// Ordinal position within the chapter.
     pub index: u32,
+    /// Content hash of the page image.
     pub image_hash: ImageHash,
+    /// Size of the page image in bytes.
     pub byte_length: u64,
+    /// File extension of the page image.
     pub extension: ImageExtension,
+    /// Presigned upload target, if a new image must be uploaded.
     pub upload: Option<PageImageUploadPayload>,
 }
 
@@ -120,8 +146,11 @@ pub struct ReservedPagePayload {
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct PageImageUploadPayload {
+    /// Presigned PUT URL for the image upload.
     pub put_url: String,
+    /// Monotonic version number for idempotent upload confirmation.
     pub image_version: u32,
+    /// Required HTTP headers for the presigned PUT request.
     pub headers: std::collections::BTreeMap<String, String>,
 }
 
@@ -129,8 +158,11 @@ pub struct PageImageUploadPayload {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ReservePageImageParams {
+    /// Content hash of the page image to reserve.
     pub image_hash: ImageHash,
+    /// Size of the page image in bytes.
     pub byte_length: u64,
+    /// File extension of the page image.
     pub extension: ImageExtension,
 }
 
@@ -138,10 +170,12 @@ pub struct ReservePageImageParams {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct MarkPageImageUploadedParams {
+    /// Image version from the reservation, used as an idempotency guard.
     pub image_version: u32,
 }
 
 /// Input parameters for listing all pages under one chapter.
 pub struct ListPageInfosParams {
+    /// Chapter whose pages to list.
     pub chapter_id: String,
 }

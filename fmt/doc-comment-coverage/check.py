@@ -51,6 +51,7 @@ ITEM_KINDS = (
     "const_item",
     "enum_item",
     "enum_variant",
+    "field_declaration",
     "function_item",
     "function_signature_item",
     "macro_definition",
@@ -124,6 +125,26 @@ def is_public(declaration: tree_sitter.Node, source: bytes) -> bool:
 
     if declaration.type == "enum_variant":
         return True
+
+    if declaration.type == "field_declaration":
+        current = declaration.parent
+
+        while current is not None:
+            if current.type == "struct_item":
+
+                for child in current.children:
+                    if child.type == "visibility_modifier":
+                        return True
+
+            if current.type in ("enum_item", "union_item"):
+
+                for child in current.children:
+                    if child.type == "visibility_modifier":
+                        return True
+
+            current = current.parent
+
+        return False
 
     current = declaration.parent
 

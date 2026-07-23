@@ -1,8 +1,6 @@
 //! Active HTTP API module: result types, auth token constants, middleware,
 //! handlers, router, OpenAPI, and server entry point.
 
-pub use shared::prometheus::init_prometheus;
-
 mod shared;
 
 // FIXME: why all pub?

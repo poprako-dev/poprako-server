@@ -18,7 +18,7 @@ use crate::part_impl::prom::rdb_impl::handler::task_flow::TaskFlow;
 use crate::part_impl::prom::rdb_impl::repo::RdbPromRepo;
 use crate::part_impl::prom::rdb_impl::test_shared;
 use crate::part_impl::repo::mock_impl::Mock;
-use crate::part_impl::repo::rdb_impl::{RdbRepo, schema};
+use crate::part_impl::repo::rdb_impl::RdbRepo;
 use crate::part_impl::shared::RdbCore;
 
 const PREFIX: &str = "rdb-test-prom-handler-";
@@ -48,18 +48,20 @@ pub async fn image_payloads_from_rdb_dispatch(shared: RdbCore) {
 
     let mut conn = shared.get().await.ok().unwrap();
 
-    diesel::insert_into(schema::t_local_message::table)
-        .values(&delete_local_message_entry)
-        .execute(&mut conn)
-        .await
-        .ok()
-        .unwrap();
+    diesel::insert_into(
+        crate::part_impl::repo::rdb_impl::schema::t_local_message::table,
+    )
+    .values(&delete_local_message_entry)
+    .execute(&mut conn)
+    .await
+    .ok()
+    .unwrap();
 
-    let delete_payload: serde_json::Value = schema::t_local_message::table
+    let delete_payload: serde_json::Value = crate::part_impl::repo::rdb_impl::schema::t_local_message::table
         .filter(
-            schema::t_local_message::f_id.eq("rdb-test-prom-handler-delete"),
+            crate::part_impl::repo::rdb_impl::schema::t_local_message::f_id.eq("rdb-test-prom-handler-delete"),
         )
-        .select(schema::t_local_message::f_payload)
+        .select(crate::part_impl::repo::rdb_impl::schema::t_local_message::f_payload)
         .first(&mut conn)
         .await
         .ok()
@@ -107,20 +109,22 @@ pub async fn image_payloads_from_rdb_dispatch(shared: RdbCore) {
             .ok()
             .unwrap();
 
-    diesel::insert_into(schema::t_local_message::table)
-        .values(&check_uploaded_local_message_entry)
-        .execute(&mut conn)
-        .await
-        .ok()
-        .unwrap();
+    diesel::insert_into(
+        crate::part_impl::repo::rdb_impl::schema::t_local_message::table,
+    )
+    .values(&check_uploaded_local_message_entry)
+    .execute(&mut conn)
+    .await
+    .ok()
+    .unwrap();
 
     let check_uploaded_payload: serde_json::Value =
-        schema::t_local_message::table
+        crate::part_impl::repo::rdb_impl::schema::t_local_message::table
             .filter(
-                schema::t_local_message::f_id
+                crate::part_impl::repo::rdb_impl::schema::t_local_message::f_id
                     .eq("rdb-test-prom-handler-check-uploaded"),
             )
-            .select(schema::t_local_message::f_payload)
+            .select(crate::part_impl::repo::rdb_impl::schema::t_local_message::f_payload)
             .first(&mut conn)
             .await
             .ok()

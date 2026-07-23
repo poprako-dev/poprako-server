@@ -9,6 +9,7 @@ use std::io::Write as _;
 use utoipa::OpenApi as _;
 
 fn main() -> anyhow::Result<()> {
+    //
     let doc = poprako_server::ApiDoc::openapi();
 
     let swagger_json = serde_json::to_string_pretty(&doc)?;

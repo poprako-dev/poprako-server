@@ -175,7 +175,7 @@ impl ImageManager for Mock {
 
 // gen_download_url_returns_stable_url(ImagePool::gen_download_url)(positive): download URLs should be deterministic for assertions.
 // get_upload_url_returns_stable_url(ImagePool::get_upload_url)(positive): upload URLs should be deterministic for assertions.
-// gen_download_url_failure_returns_expected_error(ImagePool::gen_download_url)(negative): configured get failures should return an expected error.
+// gen_download_url_failure_returns_expected_err(ImagePool::gen_download_url)(negative): configured get failures should return an expected error.
 
 /// Mock helper that returns a stable deterministic upload URL.
 #[tokio::test]
@@ -194,17 +194,17 @@ async fn get_upload_url_returns_stable_url() {
 
 /// Mock helper that returns an expected error when download failure is configured.
 #[tokio::test]
-async fn gen_download_url_failure_returns_expected_error() {
+async fn gen_download_url_failure_returns_expected_err() {
     //
     let mock = Mock::new().with_image_get_failure();
 
-    let err = ImagePool::gen_download_url(&mock, "avatar.png")
+    let err_download = ImagePool::gen_download_url(&mock, "avatar.png")
         .await
         .err()
         .unwrap();
 
     assert!(matches!(
-        err,
+        err_download,
         BaseError::Expected {
             variant: ExpectedVariant::Args,
             ..

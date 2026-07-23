@@ -214,6 +214,8 @@ async fn purge_once(core: &RdbCore) -> BaseResult<usize> {
 }
 
 /// Weekly comic archive retention scheduler.
+///
+/// FIXME: bad naming.
 pub struct RdbSched {
     token: CancellationToken,
     done: watch::Receiver<bool>,

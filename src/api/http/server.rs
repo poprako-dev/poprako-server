@@ -7,6 +7,7 @@ use tokio::net::{TcpListener, ToSocketAddrs};
 use tokio::signal;
 
 use crate::api::http::router;
+use crate::api::http::shared::prometheus::init_prometheus;
 use crate::api::http::state::AppHarn;
 
 /// Installs Ctrl+C and (on unix) SIGTERM handlers that stop the server.
@@ -46,6 +47,8 @@ pub async fn serve<A>(harn: AppHarn, addr: A) -> anyhow::Result<()>
 where
     A: ToSocketAddrs + std::fmt::Debug,
 {
+    init_prometheus()?;
+
     let listener = TcpListener::bind(&addr)
         .await
         .with_context(|| format!("failed to bind listener on {:?}", addr))?;

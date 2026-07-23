@@ -336,19 +336,19 @@ where
     }
 
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn fail(&self, id: &str, error: &str) -> BaseResult<()> {
+    async fn fail(&self, id: &str, message: &str) -> BaseResult<()> {
         //
         let conn = self.core.get().await?;
 
         let mut context = RdbContext::new(conn);
 
         self.repo
-            .step(&mut context, &FailMessage::new(id, error))
+            .step(&mut context, &FailMessage::new(id, message))
             .await
     }
 
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn retry(&self, id: &str, error: &str) -> BaseResult<()> {
+    async fn retry(&self, id: &str, message: &str) -> BaseResult<()> {
         //
         let conn = self.core.get().await?;
 
@@ -357,7 +357,7 @@ where
         let visible_at = OffsetDateTime::now_utc() + RETRY_DELAY;
 
         self.repo
-            .step(&mut context, &RetryMessage::new(id, error, &visible_at))
+            .step(&mut context, &RetryMessage::new(id, message, &visible_at))
             .await
     }
 
