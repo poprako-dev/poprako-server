@@ -20,7 +20,7 @@ pub mod router;
 pub mod server;
 
 /// OpenAPI documentation types.
-#[cfg(feature = "swagger-ui")]
+#[cfg(feature = "swagger")]
 pub mod openapi;
 
 /// HTTP result types and response utilities.

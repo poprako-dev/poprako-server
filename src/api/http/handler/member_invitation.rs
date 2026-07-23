@@ -6,7 +6,7 @@ use axum::http::StatusCode;
 use serde::Deserialize;
 use tracing::instrument;
 
-#[cfg(feature = "swagger-ui")]
+#[cfg(feature = "swagger")]
 use utoipa::IntoParams;
 
 use crate::api::http::handler::util::ensure_path_matches_body_id;
@@ -31,8 +31,8 @@ use crate::value::query::GroupedQuery;
 ///
 /// Example: `?pending=true&incl=invitor&offset=0&limit=20`.
 #[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
-#[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
+#[cfg_attr(feature = "swagger", derive(IntoParams))]
+#[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct MemberInvitationListQuery {
     /// When `Some(true)`, returns only unconsumed invitations;
     /// `Some(false)` returns only consumed ones; `None` returns all.
@@ -54,7 +54,7 @@ pub struct MemberInvitationListQuery {
 }
 
 /// `POST /api/v1/member-invitations` — create a pending team invitation.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     post,
     path = "/api/v1/member-invitations",
     tag = "member-invitations",
@@ -83,7 +83,7 @@ pub async fn create(
 }
 
 /// `GET /api/v1/teams/{team_id}/member-invitations` — list a team's invitations.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     get,
     path = "/api/v1/teams/{team_id}/member-invitations",
     tag = "member-invitations",
@@ -121,7 +121,7 @@ pub async fn list_infos(
 }
 
 /// `PUT /api/v1/member-invitations/{member_invitation_id}/roles` — update invitation roles.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     put,
     path = "/api/v1/member-invitations/{member_invitation_id}/roles",
     tag = "member-invitations",
@@ -156,7 +156,7 @@ pub async fn update_roles(
 }
 
 /// `DELETE /api/v1/member-invitations/{member_invitation_id}` — delete an invitation.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     delete,
     path = "/api/v1/member-invitations/{member_invitation_id}",
     tag = "member-invitations",

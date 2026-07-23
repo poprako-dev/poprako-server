@@ -3,7 +3,7 @@
 use serde::{Deserialize, Serialize};
 
 use poprako_util::time::ToUnixMilli;
-#[cfg(feature = "swagger-ui")]
+#[cfg(feature = "swagger")]
 use utoipa::ToSchema;
 
 use crate::model::unit::{
@@ -15,7 +15,7 @@ mod tests;
 
 /// Presentation-ready unit information.
 #[derive(Debug, Serialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UnitInfoVal {
     pub id: String,
 
@@ -68,7 +68,7 @@ pub struct ListPageUnitInfosParams {
 
 /// Return value for listing units under one page.
 #[derive(Debug, Serialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ListPageUnitInfosPayload {
     pub unit_infos: Vec<UnitInfoVal>,
 
@@ -79,7 +79,7 @@ pub struct ListPageUnitInfosPayload {
 
 /// Input parameters for saving unit opers under one page.
 #[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct SavePageUnitsParams {
     pub page_id: String,
     pub diff: UnitDiffParams,
@@ -87,7 +87,7 @@ pub struct SavePageUnitsParams {
 
 /// Return value for saving unit opers under one page.
 #[derive(Debug, Serialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct SavePageUnitsPayload {
     pub local_id_mappers: Vec<UnitIdMapperVal>,
 
@@ -98,7 +98,7 @@ pub struct SavePageUnitsPayload {
 
 /// Transport-facing unit oper.
 #[derive(Debug, Clone, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UnitDiffParams {
     pub page_id: String,
     pub opers: Vec<UnitOperParams>,
@@ -106,7 +106,7 @@ pub struct UnitDiffParams {
 
 /// Transport-facing unit oper event.
 #[derive(Debug, Clone, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[serde(tag = "oper", rename_all = "snake_case", deny_unknown_fields)]
 pub enum UnitOperParams {
     /// Create a new unit with client-assigned local id and content payload.
@@ -237,7 +237,7 @@ impl UnitOperParams {
 
 /// Presentation-ready local-to-server id mapping.
 #[derive(Debug, Serialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UnitIdMapperVal {
     pub local_id: String,
     pub unit_id: String,

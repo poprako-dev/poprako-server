@@ -2,7 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 
-#[cfg(feature = "swagger-ui")]
+#[cfg(feature = "swagger")]
 use utoipa::{IntoParams, ToSchema};
 
 use futures::future::OptionFuture;
@@ -20,7 +20,7 @@ use crate::value::role::{RoleField, RoleMask};
 
 /// Presentation-ready membership information.
 #[derive(Debug, Serialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct MemberInfoVal {
     pub id: String,
 
@@ -86,7 +86,7 @@ impl MemberInfoVal {
 
 /// Input parameters for creating a member.
 #[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateMemberParams {
     pub user_id: String,
     pub team_id: String,
@@ -96,14 +96,14 @@ pub struct CreateMemberParams {
 
 /// Return value from creating a member.
 #[derive(Debug, Serialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateMemberPayload {
     pub id: String,
 }
 
 /// Input parameters for joining a team through a member invitation.
 #[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct JoinTeamParams {
     pub code: String,
 }
@@ -120,8 +120,8 @@ pub struct JoinTeamParams {
 ///
 /// Example: `/api/v1/members?team_id=t_1&fuzzy_nickname=al&role=1&incl=user&offset=0&limit=20`.
 #[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
-#[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
+#[cfg_attr(feature = "swagger", derive(IntoParams))]
+#[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct ListMemberInfosParams {
     /// Owner-user mode: list teams/memberships owned by this user. Mutually
     /// exclusive with `team_id`; when set, `role` and `fuzzy_nickname` must be
@@ -191,7 +191,7 @@ impl TryInto<MemberListSpec> for ListMemberInfosParams {
 
 /// Input parameters for updating a member's roles.
 #[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UpdateMemberRolesParams {
     pub id: String,
     pub roles: RoleMask,

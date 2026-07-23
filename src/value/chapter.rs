@@ -5,7 +5,7 @@ use std::result::Result;
 use serde::{Deserialize, Serialize, Serializer};
 
 use poprako_util::i18n::trl;
-#[cfg(feature = "swagger-ui")]
+#[cfg(feature = "swagger")]
 use utoipa::ToSchema;
 
 use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
@@ -16,7 +16,7 @@ mod tests;
 
 /// Phase a workflow stage can be in.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[serde(rename_all = "kebab-case")]
 pub enum StagePhase {
     /// The stage has not started yet.
@@ -29,7 +29,7 @@ pub enum StagePhase {
 
 /// Stage in the chapter production pipeline.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[serde(rename_all = "kebab-case")]
 pub enum Stage {
     /// Raw provide phase.
@@ -64,7 +64,7 @@ pub fn is_valid_stage_phase(stage: Stage, phase: StagePhase) -> bool {
 
 /// Operation applied to a workflow stage.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[serde(rename_all = "kebab-case")]
 pub enum StageOper {
     /// Advance to the next phase.
@@ -232,7 +232,7 @@ impl Serialize for StagePhaseField {
 /// | Review | 8–9 | `StagePhaseField` |
 /// | Publish | 10–11 | `StagePhaseField` |
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct StageMask(u32);
 
 impl StageMask {
@@ -456,7 +456,7 @@ impl Serialize for StageMask {
 /// `ChapterInfoVal`. Dotted opts implicitly pull in the segments before the
 /// dot (e.g. `comic.workset.team` also embeds `comic` and `comic.workset`).
 #[derive(Debug, Deserialize, Clone, Copy, PartialEq, Eq)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub enum ChapterInclOpt {
     /// Embed the parent comic (`comic`).
     #[serde(rename = "comic")]

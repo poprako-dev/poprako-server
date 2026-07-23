@@ -17,7 +17,7 @@ use crate::model::user::UserToken;
 use crate::usecase;
 
 /// `GET /api/v1/system-mails` — list the current user's system mails.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     get,
     path = "/api/v1/system-mails",
     tag = "system-mails",
@@ -39,7 +39,7 @@ pub async fn list_infos(
 }
 
 /// `POST /api/v1/system-mails/mark-read` — mark a batch of mails as read.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     post,
     path = "/api/v1/system-mails/mark-read",
     tag = "system-mails",

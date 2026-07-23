@@ -6,7 +6,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use axum::extract::MatchedPath;
 use axum::response::Response;
 use serde::Serialize;
-#[cfg(feature = "swagger-ui")]
+#[cfg(feature = "swagger")]
 use utoipa::ToSchema;
 
 #[cfg(test)]
@@ -20,7 +20,7 @@ static METRIC_WINDOW: LazyLock<MetricWindow> = LazyLock::new(MetricWindow::new);
 
 /// Aggregate metrics for the current time window.
 #[derive(Debug, Serialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub(crate) struct MetricTotal {
     pub(crate) total: u64,
     pub(crate) average_latency_ms: f64,
@@ -35,7 +35,7 @@ pub(crate) struct MetricTotal {
 
 /// Aggregate metrics for one minute in the recent sliding window.
 #[derive(Debug, Serialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub(crate) struct MetricMinute {
     pub(crate) minute: u64,
     pub(crate) total: u64,

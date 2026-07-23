@@ -21,7 +21,7 @@ use crate::model::user::UserToken;
 use crate::usecase;
 
 /// `GET /api/v1/chapters/{chapter_id}/pages` — list all pages in a chapter.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     get,
     path = "/api/v1/chapters/{chapter_id}/pages",
     tag = "pages",
@@ -51,7 +51,7 @@ pub async fn list_all_infos(
 }
 
 /// `DELETE /api/v1/chapters/{chapter_id}/pages` — delete all pages in a chapter.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     delete,
     path = "/api/v1/chapters/{chapter_id}/pages",
     tag = "pages",
@@ -81,7 +81,7 @@ pub async fn delete(
 }
 
 /// `POST /api/v1/chapters/{chapter_id}/pages/reserve` — reserve all page images.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     post,
     path = "/api/v1/chapters/{chapter_id}/pages/reserve",
     tag = "pages",
@@ -117,7 +117,7 @@ pub async fn reserve_chapter_pages(
 }
 
 /// `POST /api/v1/pages/{page_id}/image/reserve` — reserve a replacement page image.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     post,
     path = "/api/v1/pages/{page_id}/image/reserve",
     tag = "pages",
@@ -150,7 +150,7 @@ pub async fn reserve_image(
 }
 
 /// `POST /api/v1/pages/{page_id}/image/mark-uploaded` — confirm a page image upload.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     post,
     path = "/api/v1/pages/{page_id}/image/mark-uploaded",
     tag = "pages",

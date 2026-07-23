@@ -21,7 +21,7 @@ use crate::model::user::UserToken;
 use crate::usecase;
 
 /// `GET /api/v1/assignments` — list assignments by chapter or owner.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     get,
     path = "/api/v1/assignments",
     tag = "assignments",
@@ -50,7 +50,7 @@ pub async fn list_infos(
 }
 
 /// `PUT /api/v1/chapters/{chapter_id}/assignments/{user_id}/roles` — update roles.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     put,
     path = "/api/v1/chapters/{chapter_id}/assignments/{user_id}/roles",
     tag = "assignments",
@@ -90,7 +90,7 @@ pub async fn update_roles(
 }
 
 /// `DELETE /api/v1/assignments/{assignment_id}` — delete an assignment.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     delete,
     path = "/api/v1/assignments/{assignment_id}",
     tag = "assignments",
@@ -120,7 +120,7 @@ pub async fn delete(
 }
 
 /// `POST /api/v1/assignments/join` — join a chapter assignment with roles.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     post,
     path = "/api/v1/assignments/join",
     tag = "assignments",

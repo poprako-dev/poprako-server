@@ -5,7 +5,7 @@
 
 use serde::{Deserialize, Serialize};
 
-#[cfg(feature = "swagger-ui")]
+#[cfg(feature = "swagger")]
 use utoipa::{IntoParams, ToSchema};
 
 use poprako_util::time::ToUnixMilli;
@@ -18,7 +18,7 @@ use crate::model::workset::WorksetInfo;
 ///
 /// [`WorksetInfo`]: crate::model::workset::WorksetInfo
 #[derive(Debug, Serialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct WorksetInfoVal {
     pub id: String,
     pub team_id: String,
@@ -52,7 +52,7 @@ impl From<WorksetInfo> for WorksetInfoVal {
 
 /// Input parameters for creating a new workset inside a team.
 #[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateWorksetParams {
     pub team_id: String,
 
@@ -62,7 +62,7 @@ pub struct CreateWorksetParams {
 
 /// Return value from a successful workset creation.
 #[derive(Debug, Serialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateWorksetPayload {
     pub id: String,
 }
@@ -71,7 +71,7 @@ pub struct CreateWorksetPayload {
 ///
 /// Cover and counter updates are handled internally by the repo layer.
 #[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UpdateWorksetInfoParams {
     pub id: String,
 
@@ -81,8 +81,8 @@ pub struct UpdateWorksetInfoParams {
 
 /// Input parameters for listing worksets within a team.
 #[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
-#[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
+#[cfg_attr(feature = "swagger", derive(IntoParams))]
+#[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct ListWorksetInfosParams {
     pub team_id: String,
 

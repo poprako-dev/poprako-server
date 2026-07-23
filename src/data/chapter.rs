@@ -2,7 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 
-#[cfg(feature = "swagger-ui")]
+#[cfg(feature = "swagger")]
 use utoipa::{IntoParams, ToSchema};
 
 use futures::future::OptionFuture;
@@ -26,7 +26,7 @@ use crate::value::role::RoleMask;
 ///
 /// [`ChapterInfo`]: crate::model::chapter::ChapterInfo
 #[derive(Debug, Serialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ChapterInfoVal {
     pub id: String,
     pub comic_id: String,
@@ -121,7 +121,7 @@ impl ChapterInfoVal {
 
 /// Input parameters for creating a new chapter.
 #[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateChapterParams {
     pub comic_id: String,
 
@@ -138,7 +138,7 @@ pub struct CreateChapterParams {
 
 /// Return value from a successful chapter creation.
 #[derive(Debug, Serialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateChapterPayload {
     pub id: String,
 }
@@ -150,8 +150,8 @@ pub struct CreateChapterPayload {
 ///
 /// Example: `/api/v1/comics/{comic_id}/chapters?incl=comic.workset.team&incl=creator&offset=0&limit=20`.
 #[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
-#[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
+#[cfg_attr(feature = "swagger", derive(IntoParams))]
+#[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct ListChapterInfosParams {
     /// Parent comic whose chapters to list.
     pub comic_id: String,
@@ -172,7 +172,7 @@ pub struct ListChapterInfosParams {
 
 /// Input parameters for partially updating a chapter's profile.
 #[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UpdateChapterInfoParams {
     pub id: String,
 
@@ -186,7 +186,7 @@ pub struct UpdateChapterInfoParams {
 /// on the `translate` stage. The use case layer validates that the
 /// transition is legal for the current stage phase before applying it.
 #[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UpdateChapterStageParams {
     pub id: String,
 

@@ -2,12 +2,12 @@
 
 use serde::Serialize;
 
-#[cfg(feature = "swagger-ui")]
+#[cfg(feature = "swagger")]
 use utoipa::ToSchema;
 
 /// JSON-safe export object for one page unit.
 #[derive(Debug, Serialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UnitTranslationExportPayload {
     pub unit_id: String,
     pub unit_index: i32,

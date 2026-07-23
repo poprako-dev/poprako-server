@@ -6,7 +6,7 @@ use base64::Engine as _;
 use base64::engine::general_purpose::STANDARD;
 use serde::de::Error as _;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-#[cfg(feature = "swagger-ui")]
+#[cfg(feature = "swagger")]
 use utoipa::ToSchema;
 
 #[cfg(test)]
@@ -14,7 +14,7 @@ mod tests;
 
 /// SHA-256 content hash encoded as canonical padded RFC 4648 Base64.
 #[derive(Debug, Clone, Default, Eq, PartialEq, Hash)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ImageHash([u8; 32]);
 
 impl ImageHash {
@@ -81,7 +81,7 @@ impl<'de> Deserialize<'de> for ImageHash {
 
 /// Supported page image filename extensions and their media types.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(ToSchema))]
+#[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[serde(rename_all = "lowercase")]
 pub enum ImageExtension {
     /// The JPEG image format.

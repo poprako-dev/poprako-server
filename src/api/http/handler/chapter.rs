@@ -6,7 +6,7 @@ use axum::http::StatusCode;
 use serde::Deserialize;
 use tracing::instrument;
 
-#[cfg(feature = "swagger-ui")]
+#[cfg(feature = "swagger")]
 use utoipa::IntoParams;
 
 use crate::api::http::handler::util::ensure_path_matches_body_id;
@@ -31,8 +31,8 @@ use crate::value::query::GroupedQuery;
 ///
 /// Example: `?incl=comic.workset.team&incl=creator&offset=0&limit=20`.
 #[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
-#[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
+#[cfg_attr(feature = "swagger", derive(IntoParams))]
+#[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct ChapterListQuery {
     /// Related rows to embed. Repeatable. Values: `comic`, `comic.workset`,
     /// `comic.workset.team`, `comic.creator`, `creator`. Dotted values imply
@@ -52,7 +52,7 @@ pub struct ChapterListQuery {
 }
 
 /// `POST /api/v1/chapters` — create a chapter under a comic.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     post,
     path = "/api/v1/chapters",
     tag = "chapters",
@@ -75,7 +75,7 @@ pub async fn create(
 }
 
 /// `GET /api/v1/comics/{comic_id}/chapters` — list chapters in a comic.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     get,
     path = "/api/v1/comics/{comic_id}/chapters",
     tag = "chapters",
@@ -112,7 +112,7 @@ pub async fn list_infos(
 }
 
 /// `GET /api/v1/comics/{comic_id}/chapters/pinned` — fetch the pinned chapter.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     get,
     path = "/api/v1/comics/{comic_id}/chapters/pinned",
     tag = "chapters",
@@ -134,7 +134,7 @@ pub async fn get_pinned(
 }
 
 /// `GET /api/v1/chapters/{chapter_id}` — fetch a chapter by id.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     get,
     path = "/api/v1/chapters/{chapter_id}",
     tag = "chapters",
@@ -157,7 +157,7 @@ pub async fn get_info(
 }
 
 /// `PATCH /api/v1/chapters/{chapter_id}` — partially update a chapter's profile.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     patch,
     path = "/api/v1/chapters/{chapter_id}",
     tag = "chapters",
@@ -192,7 +192,7 @@ pub async fn update_info(
 }
 
 /// `POST /api/v1/chapters/{chapter_id}/stage/advance` — advance a workflow stage.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     post,
     path = "/api/v1/chapters/{chapter_id}/stage/advance",
     tag = "chapters",
@@ -229,7 +229,7 @@ pub async fn advance_stage(
 }
 
 /// `DELETE /api/v1/chapters/{chapter_id}` — delete a chapter and descendants.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     delete,
     path = "/api/v1/chapters/{chapter_id}",
     tag = "chapters",

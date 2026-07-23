@@ -50,7 +50,7 @@ deploy-release:
 
 # Generate swagger.json from the annotated OpenAPI spec.
 swagger:
-    cargo run --features swagger-ui -- --swagger > docs/swagger.json
+    cargo run -p poprako-swagger > docs/swagger.json
 
 # Run all fmt/*/check.py checkers in order, continuing on failure.
 fmt-check:

@@ -6,7 +6,7 @@ use axum::http::StatusCode;
 use serde::Deserialize;
 use tracing::instrument;
 
-#[cfg(feature = "swagger-ui")]
+#[cfg(feature = "swagger")]
 use utoipa::IntoParams;
 
 use crate::api::http::handler::util::ensure_path_matches_body_id;
@@ -24,8 +24,8 @@ use crate::usecase;
 
 /// Query parameters for terminology-base lists.
 #[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger-ui", derive(IntoParams))]
-#[cfg_attr(feature = "swagger-ui", into_params(parameter_in = Query))]
+#[cfg_attr(feature = "swagger", derive(IntoParams))]
+#[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct TermbaseListQuery {
     /// Optional case-insensitive name substring.
     pub fuzzy_name: Option<String>,
@@ -35,7 +35,7 @@ pub struct TermbaseListQuery {
 }
 
 /// `POST /api/v1/termbases` — create a terminology base.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     post,
     path = "/api/v1/termbases",
     tag = "termbases",
@@ -58,7 +58,7 @@ pub async fn create(
 }
 
 /// `GET /api/v1/teams/{team_id}/termbases` — list team terminology bases.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     get,
     path = "/api/v1/teams/{team_id}/termbases",
     tag = "termbases",
@@ -89,7 +89,7 @@ pub async fn list_team_infos(
 }
 
 /// `GET /api/v1/comics/{comic_id}/termbases` — list visible terminology bases.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     get,
     path = "/api/v1/comics/{comic_id}/termbases",
     tag = "termbases",
@@ -121,7 +121,7 @@ pub async fn list_comic_infos(
 }
 
 /// `GET /api/v1/termbases/{termbase_id}` — fetch a terminology base.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     get,
     path = "/api/v1/termbases/{termbase_id}",
     tag = "termbases",
@@ -144,7 +144,7 @@ pub async fn get_info(
 }
 
 /// `PUT /api/v1/termbases/{termbase_id}` — replace editable fields.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     put,
     path = "/api/v1/termbases/{termbase_id}",
     tag = "termbases",
@@ -178,7 +178,7 @@ pub async fn update_info(
 }
 
 /// `DELETE /api/v1/termbases/{termbase_id}` — delete a terminology base.
-#[cfg_attr(feature = "swagger-ui", utoipa::path(
+#[cfg_attr(feature = "swagger", utoipa::path(
     delete,
     path = "/api/v1/termbases/{termbase_id}",
     tag = "termbases",
