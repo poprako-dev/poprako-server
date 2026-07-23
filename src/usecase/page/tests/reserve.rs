@@ -28,13 +28,13 @@ async fn reserve_chapter_pages_creates_pages_and_urls() {
                     page_id: None,
                     image_hash: ImageHash::new([0u8; 32]),
                     byte_length: 4096,
-                    extension: ImageExtension::Png,
+                    ext: ImageExt::Png,
                 },
                 PageImageParams {
                     page_id: None,
                     image_hash: ImageHash::new([0u8; 32]),
                     byte_length: 4096,
-                    extension: ImageExtension::Png,
+                    ext: ImageExt::Png,
                 },
             ],
         },
@@ -59,9 +59,9 @@ async fn reserve_chapter_pages_creates_pages_and_urls() {
 
     assert_eq!(snapshot.pages[1].image_version, 1);
 
-    assert_eq!(reserved.pages[0].upload.as_ref().unwrap().image_version, 1);
+    assert_eq!(reserved.pages[0].slot.as_ref().unwrap().image_version, 1);
 
-    assert_eq!(reserved.pages[1].upload.as_ref().unwrap().image_version, 1);
+    assert_eq!(reserved.pages[1].slot.as_ref().unwrap().image_version, 1);
 
     assert_eq!(snapshot.chapters[0].page_count, 2);
 
@@ -84,7 +84,7 @@ async fn reserve_chapter_pages_creates_pages_and_urls() {
 
     assert!(
         reserved.pages[0]
-            .upload
+            .slot
             .as_ref()
             .unwrap()
             .put_url
@@ -108,7 +108,7 @@ async fn reserve_chapter_pages_creates_pages_and_urls() {
             ResourceKind::PageImage,
             &creation.page_id,
             object_key,
-            creation.upload.as_ref().unwrap().image_version,
+            creation.slot.as_ref().unwrap().image_version,
         );
     }
 
@@ -164,13 +164,13 @@ async fn reserve_chapter_pages_replaces_existing_manifest() {
                     page_id: Some("page-1".into()),
                     image_hash: ImageHash::new([0; 32]),
                     byte_length: 4096,
-                    extension: ImageExtension::Png,
+                    ext: ImageExt::Png,
                 },
                 PageImageParams {
                     page_id: None,
                     image_hash: ImageHash::new([1; 32]),
                     byte_length: 4096,
-                    extension: ImageExtension::Png,
+                    ext: ImageExt::Png,
                 },
             ],
         },
@@ -193,7 +193,7 @@ async fn reserve_chapter_pages_replaces_existing_manifest() {
 
     assert_eq!(payload.pages[0].page_id, "page-1");
 
-    assert!(payload.pages[0].upload.is_none());
+    assert!(payload.pages[0].slot.is_none());
 }
 
 #[tokio::test]
@@ -227,7 +227,7 @@ async fn reserve_chapter_pages_replaces_explicit_image_and_deletes_old_key() {
                 page_id: Some("page-1".into()),
                 image_hash: ImageHash::new([1; 32]),
                 byte_length: 8192,
-                extension: ImageExtension::Jpg,
+                ext: ImageExt::Jpg,
             }],
         },
     )
@@ -244,7 +244,7 @@ async fn reserve_chapter_pages_replaces_explicit_image_and_deletes_old_key() {
 
     assert_eq!(snapshot.chapters[0].total_unit_count, 4);
 
-    assert_eq!(reserved.pages[0].upload.as_ref().unwrap().image_version, 8);
+    assert_eq!(reserved.pages[0].slot.as_ref().unwrap().image_version, 8);
 
     assert!(snapshot.prom_records.iter().any(|record| {
         matches!(
@@ -281,13 +281,13 @@ async fn reserve_chapter_pages_keeps_raw_pending_when_uploads_are_missing() {
                     page_id: None,
                     image_hash: ImageHash::new([0u8; 32]),
                     byte_length: 4096,
-                    extension: ImageExtension::Png,
+                    ext: ImageExt::Png,
                 },
                 PageImageParams {
                     page_id: None,
                     image_hash: ImageHash::new([0u8; 32]),
                     byte_length: 4096,
-                    extension: ImageExtension::Png,
+                    ext: ImageExt::Png,
                 },
             ],
         },

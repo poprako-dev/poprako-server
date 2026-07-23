@@ -16,8 +16,7 @@ use url::Url;
 use poprako_util::i18n::trl;
 
 use crate::part::image::{
-    ImageManager, ImageObjectInfo, ImagePool, ImageUploadSpec,
-    ImageUploadTarget,
+    ImageManager, ImageObjectInfo, ImagePool, ImageUploadSlot, ImageUploadSpec,
 };
 use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 use crate::value::image::ImageHash;
@@ -165,24 +164,26 @@ impl ImagePool for R2ImagePool {
     }
 
     #[instrument(level = "info", err(Debug), skip_all)]
-    async fn get_upload_target(
+    async fn get_upload_slot(
         &self,
         spec: ImageUploadSpec<'_>,
-    ) -> BaseResult<ImageUploadTarget> {
+    ) -> BaseResult<ImageUploadSlot> {
         //
-        let content_length = i64::try_from(spec.content_length).map_err(|_| {
-            BaseError::Unrecoverable {
-                message: "[R2ImagePool::get_upload_target] content length exceeds i64"
-                    .into(),
+        let content_length =
+            i64::try_from(spec.content_length).map_err(|_| {
+                BaseError::Unrecoverable {
+                message:
+                    "[R2ImagePool::get_upload_slot] content length exceeds i64"
+                        .into(),
             }
-        })?;
+            })?;
 
         let checksum_sha256 = spec.checksum_sha256.to_base64();
 
         let presigning_config = PresigningConfig::expires_in(PUT_SIGNED_EXPIRATION)
             .map_err(|err| BaseError::Unrecoverable {
                 message: format!(
-                    "[R2ImagePool::get_upload_target] failed to build presigning config: {}",
+                    "[R2ImagePool::get_upload_slot] failed to build presigning config: {}",
                     err
                 ),
             })?;
@@ -199,7 +200,7 @@ impl ImagePool for R2ImagePool {
             .await
             .map_err(|err| BaseError::Unrecoverable {
                 message: format!(
-                    "[R2ImagePool::get_upload_target] failed to generate presigned put URL: {}",
+                    "[R2ImagePool::get_upload_slot] failed to generate presigned put URL: {}",
                     err
                 ),
             })?;
@@ -207,7 +208,7 @@ impl ImagePool for R2ImagePool {
         let url = Url::parse(presigned_request.uri()).map_err(|err| {
             BaseError::Unrecoverable {
                 message: format!(
-                    "[R2ImagePool::get_upload_target] failed to parse presigned URI: {}",
+                    "[R2ImagePool::get_upload_slot] failed to parse presigned URI: {}",
                     err
                 ),
             }
@@ -219,7 +220,7 @@ impl ImagePool for R2ImagePool {
 
         headers.insert("x-amz-checksum-sha256".into(), checksum_sha256);
 
-        accept(ImageUploadTarget { url, headers })
+        accept(ImageUploadSlot { url, headers })
     }
 }
 
@@ -343,9 +344,9 @@ fn build_public_url(
 /// Maps a file extension to its MIME content type for upload requests.
 fn detect_content_type(key: &str) -> Option<&'static str> {
     //
-    let extension = key.rsplit('.').next()?.to_lowercase();
+    let ext = key.rsplit('.').next()?.to_lowercase();
 
-    match extension.as_str() {
+    match ext.as_str() {
         //
         "jpg" | "jpeg" => Some("image/jpeg"),
 

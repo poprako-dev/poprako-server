@@ -39,7 +39,7 @@ fn validate_same_hash_metadata(
     //
     if page_info.image_hash == page_input.image_hash
         && (page_info.image_byte_length != page_input.byte_length
-            || page_info.image_extension != page_input.extension)
+            || page_info.image_ext != page_input.ext)
     {
         return Err(args_err("error-invalid-page-image-identity"));
     }

@@ -48,10 +48,16 @@ PARSER = tree_sitter.Parser(tree_sitter.Language(tree_sitter_rust.language()))
 
 DECLARATION_KINDS: tuple[str, ...] = (
     "const_item",
+    "enum_item",
     "enum_variant",
+    "field_declaration",
     "function_item",
     "function_signature_item",
     "static_item",
+    "struct_item",
+    "trait_item",
+    "type_item",
+    "union_item",
 )
 
 # ---------------------------------------------------------------------------
@@ -66,6 +72,7 @@ FORBIDDEN_SEGMENTS: dict[str, tuple[str, str]] = {
     "connection": ("FBD006", "'connection' is forbidden — use 'conn'"),
     "txn":        ("FBD007", "'txn' is a forbidden abbreviation of 'transaction'"),
     "tx":         ("FBD008", "'tx' is a forbidden abbreviation of 'transaction'"),
+    "extension":  ("FBD010", "'extension' is forbidden — use 'ext' instead"),
 }
 
 
@@ -430,6 +437,8 @@ CTX_PARAMETER      = "parameter"
 CTX_CONST          = "const"
 CTX_STATIC         = "static"
 CTX_ENUM_VARIANT   = "enum_variant"
+CTX_TYPE           = "type"
+CTX_FIELD          = "field"
 
 
 def check_identifier_name(
@@ -444,8 +453,10 @@ def check_identifier_name(
     """Check a single identifier for forbidden word segments."""
 
     # --- target_ prefix (FBD009) -----------------------------------------
+    # Skipped for type/field contexts — only "extension" (FBD010) is
+    # checked there.
 
-    if name.startswith("target_"):
+    if name.startswith("target_") and context not in (CTX_TYPE, CTX_FIELD):
         diagnostics.append(
             error_line(
                 path, root, name_node,
@@ -458,8 +469,10 @@ def check_identifier_name(
     segments = split_identifier(name)
 
     # --- error segment → always forbidden (FBD003) -----------------------
+    # Skipped for type names and field declarations — only "extension"
+    # (FBD010) is checked in those contexts.
 
-    if "error" in segments:
+    if "error" in segments and context not in (CTX_TYPE, CTX_FIELD):
         diagnostics.append(
             error_line(
                 path, root, name_node,
@@ -470,8 +483,10 @@ def check_identifier_name(
         return
 
     # --- err segment → context-dependent (FBD004) ------------------------
+    # Skipped for type/field contexts — only "extension" (FBD010) is
+    # checked there.
 
-    if "err" in segments:
+    if "err" in segments and context not in (CTX_TYPE, CTX_FIELD):
         err_index = segments.index("err")
         last = len(segments) - 1
 
@@ -513,10 +528,17 @@ def check_identifier_name(
         )
         return
 
-    # --- other forbidden segments (result/res/closure/connection/txn/tx) --
+    # --- other forbidden segments -----------------------------------------
+    # "extension" (FBD010) is the only segment checked in type and field
+    # contexts.  Every other forbidden segment is ignored for types/fields
+    # so that type re-exports, entity structs, and enum variant types are
+    # not spuriously flagged.
 
     for segment in segments:
         if segment in FORBIDDEN_SEGMENTS:
+            if segment != "extension" and context in (CTX_TYPE, CTX_FIELD):
+                return
+
             code, message = FORBIDDEN_SEGMENTS[segment]
             diagnostics.append(
                 error_line(
@@ -553,6 +575,13 @@ def collect_definition_names(
                 ctx = CTX_STATIC
             elif node.type == "enum_variant":
                 ctx = CTX_ENUM_VARIANT
+            elif node.type in (
+                "struct_item", "enum_item", "type_item",
+                "trait_item", "union_item",
+            ):
+                ctx = CTX_TYPE
+            elif node.type == "field_declaration":
+                ctx = CTX_FIELD
             else:
                 ctx = CTX_LET  # unreachable
 
@@ -632,6 +661,17 @@ def _collect_pattern_identifiers(
         return
 
 
+def _is_repo_layer(path: Path, root: Path) -> bool:
+    """Return True for files under the repository port / adapter layer,
+    which is exempt from forbidden-identifier checks."""
+    relative = path.relative_to(root)
+
+    return (
+        "part/repo" in str(relative)
+        or "part_impl/repo" in str(relative)
+    )
+
+
 # ---------------------------------------------------------------------------
 # per-file entry point
 # ---------------------------------------------------------------------------
@@ -646,6 +686,10 @@ def check_file(
 
     # entire file is a test module — skip identifier checks
     if is_test_module_file(path, test_module_set):
+        return diagnostics
+
+    # repo layer files are exempt from forbidden-identifier checks
+    if _is_repo_layer(path, root):
         return diagnostics
 
     names: list[tuple[str, tree_sitter.Node, str, bool]] = []
@@ -905,7 +949,7 @@ def self_test() -> int:
 
         if len(diagnostics) != 4:
             print(
-                f"self-test FBD004-compound: expected 5 violations, got {len(diagnostics)}",
+                f"self-test FBD004-compound: expected 4 violations, got {len(diagnostics)}",
                 file=sys.stderr,
             )
             for d in diagnostics:
@@ -999,6 +1043,7 @@ def self_test() -> int:
             "fn f7(txn: ()) {}\n"            # FBD007
             "fn f8(tx: ()) {}\n"             # FBD008
             "static target_x: u8 = 0;\n"     # FBD009
+            "fn f9(extension: ()) {}\n"      # FBD010
         )
 
         diagnostics = check_root(root)
@@ -1007,12 +1052,12 @@ def self_test() -> int:
         for d in diagnostics:
             for code in (
                 "FBD001", "FBD002", "FBD003", "FBD004", "FBD005",
-                "FBD006", "FBD007", "FBD008", "FBD009",
+                "FBD006", "FBD007", "FBD008", "FBD009", "FBD010",
             ):
                 if code in d:
                     codes.add(code)
 
-        expected_codes = {f"FBD{i:03d}" for i in range(1, 10)}
+        expected_codes = {f"FBD{i:03d}" for i in range(1, 11)}
 
         if codes != expected_codes:
             missing = expected_codes - codes

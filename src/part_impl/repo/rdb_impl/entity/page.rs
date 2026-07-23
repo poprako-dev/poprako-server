@@ -6,7 +6,7 @@ use time::OffsetDateTime;
 use crate::model::page::{PageEntry, PageInfo};
 use crate::part_impl::repo::rdb_impl::schema::t_page;
 use crate::result::BaseError;
-use crate::value::image::{ImageExtension, ImageHash};
+use crate::value::image::{ImageExt, ImageHash};
 
 /// Raw database row for the `t_page` table. Returned by Diesel queries.
 #[derive(Queryable, Selectable)]
@@ -157,7 +157,7 @@ impl TryFrom<PageRow> for PageInfo {
                     .into(),
             })?;
 
-        let image_extension = ImageExtension::parse(&row.f_image_extension)
+        let image_extension = ImageExt::parse(&row.f_image_extension)
             .ok_or_else(|| BaseError::Unrecoverable {
                 message: "[PageRow] f_image_extension must be supported".into(),
             })?;
@@ -171,7 +171,7 @@ impl TryFrom<PageRow> for PageInfo {
             image_version: row.f_image_version,
             image_hash: ImageHash::new(image_hash_bytes),
             image_byte_length,
-            image_extension,
+            image_ext: image_extension,
             total_unit_count: row.f_total_unit_count,
             translated_unit_count: row.f_translated_unit_count,
             proofread_unit_count: row.f_proofread_unit_count,

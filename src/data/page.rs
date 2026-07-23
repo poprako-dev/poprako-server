@@ -10,7 +10,7 @@ use poprako_util::time::ToUnixMilli;
 use crate::model::page::PageInfo;
 use crate::part::image::ImagePool;
 use crate::result::{BaseResult, accept};
-use crate::value::image::{ImageExtension, ImageHash};
+use crate::value::image::{ImageExt, ImageHash};
 
 #[cfg(test)]
 mod tests;
@@ -38,8 +38,8 @@ pub struct PageInfoVal {
     pub image_hash: ImageHash,
     /// Size of the page image in bytes.
     pub byte_length: u64,
-    /// File extension of the page image.
-    pub extension: ImageExtension,
+    /// File format.
+    pub ext: ImageExt,
 
     /// Total number of translation units on this page.
     pub total_unit_count: i32,
@@ -82,7 +82,7 @@ impl PageInfoVal {
             image_thumbnail_url: image_thumbnail_url.map(Into::into),
             image_hash: model.image_hash,
             byte_length: model.image_byte_length,
-            extension: model.image_extension,
+            ext: model.image_ext,
             total_unit_count: model.total_unit_count,
             translated_unit_count: model.translated_unit_count,
             proofread_unit_count: model.proofread_unit_count,
@@ -112,8 +112,8 @@ pub struct PageImageParams {
     pub image_hash: ImageHash,
     /// Size of the page image in bytes.
     pub byte_length: u64,
-    /// File extension of the page image.
-    pub extension: ImageExtension,
+    /// File format.
+    pub ext: ImageExt,
 }
 
 /// Return value from successful chapter page reservations.
@@ -136,16 +136,16 @@ pub struct ReservedPagePayload {
     pub image_hash: ImageHash,
     /// Size of the page image in bytes.
     pub byte_length: u64,
-    /// File extension of the page image.
-    pub extension: ImageExtension,
-    /// Presigned upload target, if a new image must be uploaded.
-    pub upload: Option<PageImageUploadPayload>,
+    /// File format.
+    pub ext: ImageExt,
+    /// Presigned upload slot, if a new image must be uploaded.
+    pub slot: Option<PageSlotVal>,
 }
 
-/// Presigned target for a pending page-image upload.
+/// Presigned slot for a pending page-image upload.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
-pub struct PageImageUploadPayload {
+pub struct PageSlotVal {
     /// Presigned PUT URL for the image upload.
     pub put_url: String,
     /// Monotonic version number for idempotent upload confirmation.
@@ -162,8 +162,8 @@ pub struct ReservePageImageParams {
     pub image_hash: ImageHash,
     /// Size of the page image in bytes.
     pub byte_length: u64,
-    /// File extension of the page image.
-    pub extension: ImageExtension,
+    /// File format.
+    pub ext: ImageExt,
 }
 
 /// Input parameters for confirming a page image upload completed.

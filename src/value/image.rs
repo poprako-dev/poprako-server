@@ -83,7 +83,7 @@ impl<'de> Deserialize<'de> for ImageHash {
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 #[serde(rename_all = "lowercase")]
-pub enum ImageExtension {
+pub enum ImageExt {
     /// The JPEG image format.
     Jpg,
     /// The JPEG image format (explicit `image/jpeg` content type).
@@ -106,7 +106,7 @@ pub enum ImageExtension {
     Tiff,
 }
 
-impl ImageExtension {
+impl ImageExt {
     /// Parses a supported lowercase object-key suffix.
     pub fn parse(value: &str) -> Option<Self> {
         match value {
@@ -184,7 +184,7 @@ impl ImageExtension {
     }
 }
 
-impl FromStr for ImageExtension {
+impl FromStr for ImageExt {
     type Err = ();
 
     fn from_str(value: &str) -> Result<Self, Self::Err> {
