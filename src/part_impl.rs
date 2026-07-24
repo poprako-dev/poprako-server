@@ -10,7 +10,6 @@ pub mod image;
 pub mod prom;
 /// Repository implementations (RDBMS, mock).
 pub mod repo;
-// TODO:
 pub mod sched;
 /// Shared utilities for part implementations.
 pub mod shared;

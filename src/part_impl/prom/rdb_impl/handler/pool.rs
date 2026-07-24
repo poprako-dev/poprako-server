@@ -81,16 +81,11 @@ where
         drop(worker_senders);
 
         for worker_handle in worker_handles {
-            match worker_handle.await {
-                //
-                Ok(()) => {}
-
-                Err(error) => {
-                    tracing::error!(
-                        error = ?error,
-                        "[RdbPromHandler::run] worker task failed",
-                    );
-                }
+            if let Err(error) = worker_handle.await {
+                tracing::error!(
+                    error = ?error,
+                    "[RdbPromHandler::run] worker task failed",
+                );
             }
         }
     }
@@ -386,15 +381,14 @@ where
 
     async fn log_purge_completed(&self) {
         match self.purge_completed().await {
-            //
-            Ok(purged_count) if purged_count > 0 => {
-                tracing::info!(
-                    purged_count,
-                    "[RdbPromHandler::run] purged expired completed messages",
-                );
+            Ok(purged_count) => {
+                if purged_count > 0 {
+                    tracing::info!(
+                        purged_count,
+                        "[RdbPromHandler::run] purged expired completed messages",
+                    );
+                }
             }
-
-            Ok(_) => {}
 
             Err(error) => {
                 tracing::error!(

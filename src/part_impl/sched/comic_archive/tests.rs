@@ -1,4 +1,4 @@
-// Weekly database retention scheduler unit tests.
+// Comic archive retention calendar-boundary tests.
 
 use super::*;
 
