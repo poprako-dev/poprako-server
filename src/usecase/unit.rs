@@ -48,7 +48,7 @@ const MAX_UNITS_PER_PAGE: usize = 100;
 
 /// Lists all units under one page.
 #[instrument(level = "info", err(Debug), skip_all)]
-pub async fn list_all_infos<C, R>(
+pub async fn list_infos<C, R>(
     repo: &R,
     token: UserToken,
     params: ListPageUnitInfosParams,
@@ -169,7 +169,7 @@ where
                 )
                 .await?;
 
-            ChapterComplex::ensure_user_write_allowed(&chapter_info)?;
+            ChapterComplex::ensure_chapter_writable(&chapter_info)?;
 
             let page_info = repo
                 .step(context, &GetPageInfoExcluded { id: &page_id })

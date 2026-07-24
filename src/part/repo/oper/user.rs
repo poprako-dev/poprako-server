@@ -3,6 +3,7 @@ use poprako_orchestra::Oper;
 use crate::model::user::{
     UserAvatarReservation, UserCredential, UserEntry, UserInfo,
 };
+use crate::value::image::{ImageExt, ImageHash};
 
 pub struct CreateUser<'a> {
     pub entry: &'a UserEntry,
@@ -46,6 +47,7 @@ pub enum UpdateUser<'a> {
         id: &'a str,
         avatar_version: u32,
         avatar_key: Option<&'a str>,
+        avatar_uploaded: bool,
     },
     TouchLastActive {
         id: &'a str,
@@ -62,7 +64,8 @@ impl Oper for UpdateUser<'_> {
 
 pub struct ReserveUserAvatar<'a> {
     pub id: &'a str,
-    pub file_ext: &'a str,
+    pub image_hash: &'a ImageHash,
+    pub image_ext: ImageExt,
 }
 
 impl Oper for ReserveUserAvatar<'_> {

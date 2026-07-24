@@ -20,7 +20,7 @@ use crate::data::page::{
 use crate::model::user::UserToken;
 use crate::usecase;
 
-/// `GET /api/v1/chapters/{chapter_id}/pages` — list all pages in a chapter.
+/// `GET /api/v1/chapters/{chapter_id}/pages` — list pages in a chapter.
 #[cfg_attr(feature = "swagger", utoipa::path(
     get,
     path = "/api/v1/chapters/{chapter_id}/pages",
@@ -32,7 +32,7 @@ use crate::usecase;
     ),
 ))]
 #[instrument(level = "info", err(Debug), skip_all)]
-pub async fn list_all_infos(
+pub async fn list_infos(
     State(harn): State<AppHarn>,
     Path(chapter_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
@@ -40,7 +40,7 @@ pub async fn list_all_infos(
     //
     let params = ListPageInfosParams { chapter_id };
 
-    usecase::page::list_all_infos(
+    usecase::page::list_infos(
         harn.repo(),
         harn.image_pool(),
         user_token,
@@ -173,6 +173,7 @@ pub async fn mark_image_uploaded(
     usecase::page::mark_image_uploaded(
         harn.drive(),
         harn.repo(),
+        harn.image_pool(),
         user_token,
         page_id,
         params,

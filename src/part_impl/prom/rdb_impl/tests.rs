@@ -22,6 +22,11 @@ async fn prom_rdb_impls_use_testcontainer() {
     )
     .await;
 
+    repo::tests::stale_attempt_finalization_preserves_newer_lease(
+        shared.clone(),
+    )
+    .await;
+
     repo::tests::completed_message_purge_preserves_non_completed_records(
         shared,
     )

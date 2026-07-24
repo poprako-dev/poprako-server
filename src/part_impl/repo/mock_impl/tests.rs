@@ -16,6 +16,8 @@ fn user(id: &str) -> UserInfo {
         avatar_key: None,
         avatar_uploaded: false,
         avatar_version: 0,
+        avatar_hash: crate::value::image::ImageHash::default(),
+        avatar_ext: crate::value::image::ImageExt::Png,
         is_sadmin: false,
         last_active_at: time,
         created_at: time,
@@ -78,6 +80,8 @@ async fn nucl_coord_commits_repo_and_prom() {
                 resource_id: "user-1".to_string(),
                 object_key: "key".to_string(),
                 version: 1,
+                image_hash: crate::value::image::ImageHash::default(),
+                image_ext: crate::value::image::ImageExt::Png,
             });
 
             let task = Task {

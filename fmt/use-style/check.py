@@ -1036,7 +1036,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("paths", nargs="*", type=Path)
     parser.add_argument("--root", type=Path, default=ROOT)
-    parser.add_argument("--fix", action="store_true")
+    parser.add_argument("--fix", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--self-test", action="store_true")
     args = parser.parse_args()
 

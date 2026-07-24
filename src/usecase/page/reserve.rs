@@ -14,23 +14,22 @@ use crate::complex::chapter::ChapterComplex;
 use crate::complex::image::ImageComplex;
 use crate::complex::page::manifest::build;
 use crate::complex::page::{PageComplex, PagePermComplex};
+use crate::data::image::ImageUploadSlotVal;
 use crate::data::page::{
-    PageSlotVal, ReserveChapterPagesParams, ReserveChapterPagesPayload,
-    ReservedPagePayload,
+    ReserveChapterPagesParams, ReserveChapterPagesPayload, ReservedPagePayload,
 };
 use crate::model::page::{PageEntry, PageImageSpec, PageManifestUpdate};
 use crate::model::user::UserToken;
 use crate::part::image::{ImagePool, ImageUploadSpec};
 use crate::part::prom::Prom;
-use crate::part::prom::payload::chapter::CheckUploadFinish;
+use crate::part::prom::payload::chapter::AdvanceRawProvide;
 use crate::part::prom::payload::{Payload, image};
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::oper::assignment::FindAssignmentInfo;
 use crate::part::repo::oper::chapter::{
-    CompleteChapterRawProvide, GetChapterInfoExcluded, ResetChapterRawProvide,
-    SetChapterPageCounters,
+    GetChapterInfoExcluded, SetChapterPageCounters,
 };
 use crate::part::repo::oper::comic::TouchComicLastActive;
 use crate::part::repo::oper::page::{
@@ -41,21 +40,6 @@ use crate::part::repo::page::PageRepo;
 use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
 use crate::value::image::{ImageExt, ImageHash};
-
-const MAX_IMAGE_BYTE_LENGTH: u64 = 20 * 1024 * 1024;
-
-/// Validates that the image byte length is within range.
-pub(super) fn validate_image_byte_length(byte_length: u64) -> BaseResult<()> {
-    //
-    if !(1..=MAX_IMAGE_BYTE_LENGTH).contains(&byte_length) {
-        return Err(BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            message: trl("error-invalid-image-byte-length"),
-        });
-    }
-
-    accept(())
-}
 
 /// Validates that the page count is in the valid range.
 ///
@@ -112,7 +96,10 @@ where
     validate_page_count(page_count)?;
 
     for page_spec in &page_specs {
-        validate_image_byte_length(page_spec.byte_length)?;
+        ImageComplex::ensure_byte_length(
+            page_spec.byte_length,
+            image::ResourceKind::PageImage,
+        )?;
     }
 
     let mut explicit_page_ids = HashSet::new();
@@ -154,6 +141,8 @@ where
     let reservations = nucl
         .coord(async move |context| {
             //
+            // NOTE: Chapter -> Page is the shared lock order that prevents
+            // both deadlocks and page-aggregate counter races.
             let chapter_info = repo
                 .step(
                     context,
@@ -164,7 +153,7 @@ where
                 )
                 .await?;
 
-            ChapterComplex::ensure_user_write_allowed(&chapter_info)?;
+            ChapterComplex::ensure_chapter_writable(&chapter_info)?;
 
             let existing_page_infos = repo
                 .step(
@@ -271,7 +260,6 @@ where
                         image_uploaded,
                         image_version,
                         image_hash: page_spec.image_hash.clone(),
-                        image_byte_len: page_spec.byte_length,
                         image_ext: page_spec.ext,
                     };
 
@@ -326,7 +314,6 @@ where
                     image_key: Some(object_key.clone()),
                     image_version,
                     image_hash: page_spec.image_hash.clone(),
-                    image_byte_len: page_spec.byte_length,
                     image_ext: page_spec.ext,
                 };
 
@@ -407,6 +394,8 @@ where
                         resource_id: reservation.page_id.clone(),
                         object_key: object_key.clone(),
                         version: reservation.image_version,
+                        image_hash: reservation.image_hash.clone(),
+                        image_ext: reservation.ext,
                     },
                 ));
 
@@ -440,48 +429,20 @@ where
             )
             .await?;
 
-            let has_pending_page = reservations
-                .iter()
-                .any(|reservation| reservation.object_key.is_some());
+            let advance_id = next_snowflake_id();
 
-            match has_pending_page {
-                //
-                true => {
-                    //
-                    repo.step(
-                        context,
-                        &ResetChapterRawProvide {
-                            id: &chapter_info.id,
-                        },
-                    )
-                    .await?;
+            let advance_payload =
+                Payload::AdvanceRawProvide(AdvanceRawProvide {
+                    chapter_id: chapter_info.id.clone(),
+                });
 
-                    let advance_id = next_snowflake_id();
+            let advance_task = Task {
+                id: &advance_id,
+                payload: &advance_payload,
+                delay: Some(Duration::from_secs(20 * 60)),
+            };
 
-                    let advance_payload =
-                        Payload::CheckChapterUploadFinish(CheckUploadFinish {
-                            chapter_id: chapter_info.id.clone(),
-                        });
-
-                    let advance_task = Task {
-                        id: &advance_id,
-                        payload: &advance_payload,
-                        delay: Some(Duration::from_secs(20 * 60)),
-                    };
-
-                    prom.step(context, &Defer::new(advance_task)).await?;
-                }
-
-                false => {
-                    repo.step(
-                        context,
-                        &CompleteChapterRawProvide {
-                            id: &chapter_info.id,
-                        },
-                    )
-                    .await?;
-                }
-            }
+            prom.step(context, &Defer::new(advance_task)).await?;
 
             repo.step(
                 context,
@@ -512,7 +473,7 @@ where
                     let upload_target =
                         image_pool.get_upload_slot(upload_spec).await?;
 
-                    Some(PageSlotVal {
+                    Some(ImageUploadSlotVal {
                         put_url: upload_target.url.to_string(),
                         image_version: reservation.image_version,
                         headers: upload_target.headers,
@@ -526,7 +487,6 @@ where
                 page_id: reservation.page_id,
                 index: reservation.index,
                 image_hash: reservation.image_hash,
-                byte_length: reservation.byte_length,
                 ext: reservation.ext,
                 slot,
             })

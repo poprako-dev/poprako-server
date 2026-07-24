@@ -36,6 +36,8 @@ fn create_user(
         avatar_key: None,
         avatar_uploaded: false,
         avatar_version: 0,
+        avatar_hash: crate::value::image::ImageHash::default(),
+        avatar_ext: crate::value::image::ImageExt::Png,
         is_sadmin: false,
         last_active_at: time,
         created_at: time,
@@ -134,7 +136,14 @@ fn update_user(state: &mut MockState, oper: &UpdateUser<'_>) -> BaseResult<()> {
                 return Err(expected("error-stale-avatar-upload"));
             }
 
-            user_info.avatar_uploaded = true;
+            let UpdateUser::MarkAvatarUploaded {
+                avatar_uploaded, ..
+            } = oper
+            else {
+                unreachable!();
+            };
+
+            user_info.avatar_uploaded = *avatar_uploaded;
         }
 
         None => user_info.last_active_at = now(),
@@ -283,10 +292,37 @@ impl<'a> Step<ReserveUserAvatar<'a>, MockContext> for Mock {
             .find(|user_info| user_info.id == oper.id)
             .ok_or_else(|| expected("error-user-not-found"))?;
 
+        let same_hash = user_info.avatar_key.is_some()
+            && user_info.avatar_hash == *oper.image_hash;
+
+        if same_hash && user_info.avatar_ext != oper.image_ext {
+            return Err(expected("error-invalid-image-extension"));
+        }
+
+        if same_hash {
+            //
+            let object_key = user_info.avatar_key.clone().ok_or_else(|| {
+                BaseError::Unrecoverable {
+                    message: "[Mock::ReserveUserAvatar] avatar key is missing"
+                        .into(),
+                }
+            })?;
+
+            return accept(UserAvatarReservation {
+                object_key,
+                prev_object_key: None,
+                avatar_version: user_info.avatar_version,
+                upload_required: !user_info.avatar_uploaded,
+            });
+        }
+
         let avatar_version = user_info.avatar_version + 1;
 
-        let object_key =
-            UserComplex::gen_avatar_key(oper.id, avatar_version, oper.file_ext);
+        let object_key = UserComplex::gen_avatar_key(
+            oper.id,
+            avatar_version,
+            oper.image_ext.suffix(),
+        );
 
         let prev_object_key = user_info.avatar_key.clone();
 
@@ -296,12 +332,17 @@ impl<'a> Step<ReserveUserAvatar<'a>, MockContext> for Mock {
 
         user_info.avatar_version = avatar_version;
 
+        user_info.avatar_hash = oper.image_hash.clone();
+
+        user_info.avatar_ext = oper.image_ext;
+
         user_info.updated_at = now();
 
         accept(UserAvatarReservation {
             object_key,
             prev_object_key,
             avatar_version,
+            upload_required: true,
         })
     }
 }

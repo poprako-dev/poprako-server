@@ -11,6 +11,12 @@ use crate::model::team::TeamInfo;
 use crate::part::image::ImagePool;
 use crate::result::{BaseResult, accept};
 
+pub use crate::data::image::{
+    MarkImageUploadedParams as MarkTeamAvatarUploadedParams,
+    ReserveImageParams as ReserveTeamAvatarParams,
+    ReserveImagePayload as ReserveTeamAvatarPayload,
+};
+
 /// Presentation-ready team profile information.
 ///
 /// Converts the raw [`TeamInfo`] timestamps to Unix milliseconds and
@@ -122,30 +128,4 @@ pub struct UpdateTeamInfoParams {
     pub name: String,
     /// Updated team description text.
     pub description: String,
-}
-
-/// Input parameters for reserving a new team avatar upload slot.
-#[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
-pub struct ReserveTeamAvatarParams {
-    /// File extension of the avatar image (e.g. "png", "jpg").
-    pub file_ext: String,
-}
-
-/// Return value from a successful team avatar reservation.
-#[derive(Debug, Serialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
-pub struct ReserveTeamAvatarPayload {
-    /// Pre-signed PUT URL for uploading the avatar file.
-    pub put_url: String,
-    /// Version number assigned to the upload slot.
-    pub avatar_version: u32,
-}
-
-/// Input parameters for confirming a team avatar upload completed.
-#[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
-pub struct MarkTeamAvatarUploadedParams {
-    /// Version number that was returned by the reservation.
-    pub avatar_version: u32,
 }

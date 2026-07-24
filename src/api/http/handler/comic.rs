@@ -267,7 +267,9 @@ pub async fn mark_cover_uploaded(
 ) -> HttpNoContent {
     //
     usecase::comic::mark_cover_uploaded(
+        harn.drive(),
         harn.repo(),
+        harn.image_pool(),
         user_token,
         comic_id,
         params,

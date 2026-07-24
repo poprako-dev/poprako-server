@@ -60,6 +60,8 @@ fn user(id: &str, nickname: &str) -> UserInfo {
         avatar_key: None,
         avatar_uploaded: false,
         avatar_version: 0,
+        avatar_hash: crate::value::image::ImageHash::default(),
+        avatar_ext: crate::value::image::ImageExt::Png,
         is_sadmin: false,
         last_active_at: time,
         created_at: time,
@@ -78,6 +80,8 @@ fn team(id: &str) -> TeamInfo {
         avatar_key: None,
         avatar_uploaded: false,
         avatar_version: 0,
+        avatar_hash: crate::value::image::ImageHash::default(),
+        avatar_ext: crate::value::image::ImageExt::Png,
         created_at: time,
         updated_at: time,
     }

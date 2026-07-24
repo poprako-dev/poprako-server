@@ -3,24 +3,25 @@
 use std::time::Duration;
 
 use poprako_orchestra::{Nucl, run_proxy};
-use poprako_orchestra_extra::prom::oper::DeferBatch;
+use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
 use poprako_orchestra_extra::prom::task::Task;
 use tracing::instrument;
 
 use poprako_util::i18n::trl;
 
-use self::reserve::validate_image_byte_length;
 use crate::complex::chapter::ChapterComplex;
 use crate::complex::image::ImageComplex;
 use crate::complex::page::{PageComplex, PagePermComplex};
+use crate::data::image::ImageUploadSlotVal;
 use crate::data::page::{
-    ListPageInfosParams, MarkPageImageUploadedParams, PageInfoVal, PageSlotVal,
+    ListPageInfosParams, MarkPageImageUploadedParams, PageInfoVal,
     ReservePageImageParams, ReservedPagePayload,
 };
 use crate::model::page::PageManifestUpdate;
 use crate::model::user::UserToken;
-use crate::part::image::{ImagePool, ImageUploadSpec};
+use crate::part::image::{ImageManager, ImagePool, ImageUploadSpec};
 use crate::part::prom::Prom;
+use crate::part::prom::payload::chapter::AdvanceRawProvide;
 use crate::part::prom::payload::{Payload, image};
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
@@ -28,8 +29,7 @@ use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::assignment::FindAssignmentInfo;
 use crate::part::repo::oper::chapter::{
-    GetChapterInfo, GetChapterInfoExcluded, ResetChapterRawProvide,
-    SetChapterPageCounters,
+    GetChapterInfo, GetChapterInfoExcluded, SetChapterPageCounters,
 };
 use crate::part::repo::oper::comic::{GetComicInfo, TouchComicLastActive};
 use crate::part::repo::oper::member::FindMemberInfo;
@@ -41,6 +41,7 @@ use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::workset::WorksetRepo;
 use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
+use crate::util::next_snowflake_id;
 
 pub use reserve::reserve_chapter_pages;
 
@@ -66,7 +67,10 @@ where
     P: Prom<C> + Send + Sync,
     I: ImagePool,
 {
-    validate_image_byte_length(params.byte_length)?;
+    ImageComplex::ensure_byte_length(
+        params.byte_length,
+        image::ResourceKind::PageImage,
+    )?;
 
     let page_info = repo.run(&GetPageInfo { id: &id }).await?;
 
@@ -82,6 +86,8 @@ where
     let reservation = nucl
         .coord(async move |context| {
             //
+            // NOTE: Chapter -> Page is the shared lock order that prevents
+            // both deadlocks and page-aggregate counter races.
             repo.step(
                 context,
                 &GetChapterInfoExcluded {
@@ -91,7 +97,7 @@ where
             )
             .await
             .and_then(|chapter_info| {
-                ChapterComplex::ensure_user_write_allowed(&chapter_info)
+                ChapterComplex::ensure_chapter_writable(&chapter_info)
             })?;
 
             let locked_page_info = repo
@@ -100,10 +106,7 @@ where
 
             let same_hash = locked_page_info.image_hash == params.image_hash;
 
-            if same_hash
-                && (locked_page_info.image_byte_length != params.byte_length
-                    || locked_page_info.image_ext != params.ext)
-            {
+            if same_hash && locked_page_info.image_ext != params.ext {
                 return Err(BaseError::Expected {
                     variant: ExpectedVariant::Args,
                     message: trl("error-invalid-page-image-identity"),
@@ -158,7 +161,6 @@ where
                 image_uploaded: false,
                 image_version,
                 image_hash: params.image_hash.clone(),
-                image_byte_len: params.byte_length,
                 image_ext: params.ext,
             };
 
@@ -170,14 +172,6 @@ where
                     },
                 )
                 .await?;
-
-            repo.step(
-                context,
-                &ResetChapterRawProvide {
-                    id: &locked_page_info.chapter_id,
-                },
-            )
-            .await?;
 
             let mut task_ids = Vec::new();
 
@@ -203,9 +197,24 @@ where
                 resource_id: locked_page_info.id.clone(),
                 object_key: image_key.clone(),
                 version: image_version,
+                image_hash: params.image_hash.clone(),
+                image_ext: params.ext,
             }));
 
             task_delays.push(Some(Duration::from_secs(15 * 60)));
+
+            let advance_id = next_snowflake_id();
+
+            let advance_payload =
+                Payload::AdvanceRawProvide(AdvanceRawProvide {
+                    chapter_id: locked_page_info.chapter_id.clone(),
+                });
+
+            let advance_task = Task {
+                id: &advance_id,
+                payload: &advance_payload,
+                delay: Some(Duration::from_secs(20 * 60)),
+            };
 
             let image_tasks: Vec<Task<'_, String, Payload>> = task_ids
                 .iter()
@@ -220,10 +229,13 @@ where
 
             prom.step(context, &DeferBatch::new(&image_tasks)).await?;
 
+            prom.step(context, &Defer::new(advance_task)).await?;
+
             accept((updated_page_info, Some(image_key)))
         })
         .await?;
 
+    // FIXME: bad taste. No explicit deconstructure of tuples.
     let (page_info, object_key) = reservation;
 
     let slot = match object_key {
@@ -234,12 +246,12 @@ where
                 object_key: &object_key,
                 content_type: page_info.image_ext.content_type(),
                 checksum_sha256: &page_info.image_hash,
-                content_length: page_info.image_byte_length,
+                content_length: params.byte_length,
             };
 
             let upload_target = image_pool.get_upload_slot(upload_spec).await?;
 
-            Some(PageSlotVal {
+            Some(ImageUploadSlotVal {
                 put_url: upload_target.url.to_string(),
                 image_version: page_info.image_version,
                 headers: upload_target.headers,
@@ -258,7 +270,6 @@ where
             }
         })?,
         image_hash: page_info.image_hash,
-        byte_length: page_info.image_byte_length,
         ext: page_info.image_ext,
         slot,
     })
@@ -266,8 +277,7 @@ where
 
 /// Lists pages under one chapter.
 #[instrument(level = "info", err(Debug), skip_all)]
-/// Lists all pages for a chapter.
-pub async fn list_all_infos<C, R, I>(
+pub async fn list_infos<C, R, I>(
     repo: &R,
     image_pool: &I,
     token: UserToken,
@@ -315,9 +325,10 @@ where
 
 /// Marks one page image as uploaded.
 #[instrument(level = "info", err(Debug), skip_all)]
-pub async fn mark_image_uploaded<N, C, R>(
+pub async fn mark_image_uploaded<N, C, R, I>(
     nucl: &N,
     repo: &R,
+    image_manager: &I,
     token: UserToken,
     id: String,
     params: MarkPageImageUploadedParams,
@@ -326,6 +337,7 @@ where
     N: Nucl<Context = C, Error = BaseError>,
     C: Send,
     R: ChapterRepo<C> + PageRepo<C> + AssignmentRepo<C> + Send + Sync,
+    I: ImageManager,
 {
     let page_info = repo.run(&GetPageInfo { id: &id }).await?;
 
@@ -345,6 +357,10 @@ where
         });
     }
 
+    if page_info.image_uploaded {
+        return accept(());
+    }
+
     let image_key =
         page_info
             .image_key
@@ -354,8 +370,26 @@ where
                 message: trl("error-stale-page-image-upload"),
             })?;
 
+    let object_info =
+        image_manager
+            .head_object(&image_key)
+            .await?
+            .ok_or_else(|| BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message: trl("error-stale-page-image-upload"),
+            })?;
+
+    if object_info.checksum_sha256 != page_info.image_hash {
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message: trl("error-invalid-page-image-identity"),
+        });
+    }
+
     nucl.coord(async move |context| {
         //
+        // NOTE: Chapter -> Page is the shared lock order that prevents both
+        // deadlocks and chapter upload-summary races.
         let chapter_info = repo
             .step(
                 context,
@@ -366,7 +400,7 @@ where
             )
             .await?;
 
-        ChapterComplex::ensure_user_write_allowed(&chapter_info)?;
+        ChapterComplex::ensure_chapter_writable(&chapter_info)?;
 
         let locked_page_info =
             repo.step(context, &GetPageInfoExcluded { id: &id }).await?;
@@ -374,7 +408,7 @@ where
         if locked_page_info.image_version != params.image_version
             || locked_page_info.image_key.as_deref() != Some(&image_key)
             || locked_page_info.image_hash != page_info.image_hash
-            || locked_page_info.image_byte_length != page_info.image_byte_length
+            || locked_page_info.image_ext != page_info.image_ext
         {
             return Err(BaseError::Expected {
                 variant: ExpectedVariant::Args,

@@ -41,7 +41,7 @@ pub async fn prepare_archive(archive_input: ArchiveInput) -> bool {
     //
     let ArchiveInput(comic_archive_snapshot) = archive_input;
 
-    ComicArchiveComplex::prepare_write(
+    ComicArchiveComplex::prepare_entry(
         comic_archive_snapshot,
         "benchmark-user".into(),
         OffsetDateTime::UNIX_EPOCH,
@@ -158,7 +158,6 @@ fn archive_snapshot() -> Option<ComicArchiveSnapshot> {
                     image_uploaded: true,
                     image_version: 1,
                     image_hash: ImageHash::new([0u8; 32]),
-                    image_byte_length: 4096,
                     image_ext: ImageExt::Webp,
                     total_unit_count: UNIT_COUNT as i32,
                     translated_unit_count: UNIT_COUNT as i32,
@@ -204,6 +203,8 @@ fn archive_snapshot() -> Option<ComicArchiveSnapshot> {
             cover_key: Some("covers/comic-1.webp".into()),
             cover_uploaded: true,
             cover_version: 1,
+            cover_hash: crate::value::image::ImageHash::default(),
+            cover_ext: crate::value::image::ImageExt::Webp,
             chapter_count: CHAPTER_COUNT as i32,
             creator_id: "user-1".into(),
             workset: None,
@@ -235,6 +236,8 @@ fn user_info(archived_at: OffsetDateTime) -> UserInfo {
         avatar_key: None,
         avatar_uploaded: false,
         avatar_version: 0,
+        avatar_hash: crate::value::image::ImageHash::default(),
+        avatar_ext: crate::value::image::ImageExt::Png,
         is_sadmin: false,
         last_active_at: archived_at,
         created_at: archived_at,
@@ -335,7 +338,6 @@ fn export_input() -> LabelPlusExportInput {
             image_uploaded: true,
             image_version: 1,
             image_hash: ImageHash::new([0u8; 32]),
-            image_byte_length: 4096,
             image_ext: ImageExt::Png,
             total_unit_count: UNIT_COUNT as i32,
             translated_unit_count: UNIT_COUNT as i32,

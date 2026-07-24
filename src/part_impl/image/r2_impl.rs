@@ -216,6 +216,8 @@ impl ImagePool for R2ImagePool {
 
         let mut headers = std::collections::BTreeMap::new();
 
+        headers.insert("content-length".into(), content_length.to_string());
+
         headers.insert("content-type".into(), spec.content_type.into());
 
         headers.insert("x-amz-checksum-sha256".into(), checksum_sha256);
@@ -257,7 +259,7 @@ impl ImageManager for R2ImagePool {
                     }
                 })?;
 
-                let checksum_sha256 = ImageHash::parse(checksum).ok_or_else(|| {
+                let checksum_sha256 = ImageHash::parse_rfc4648(checksum).ok_or_else(|| {
                     BaseError::Unrecoverable {
                         message: "[R2ImagePool::head_object] SHA-256 checksum is invalid"
                             .into(),

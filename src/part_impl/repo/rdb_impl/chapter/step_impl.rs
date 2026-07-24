@@ -136,6 +136,24 @@ pub async fn list_infos_excluded(
     rows_into_infos(rows)
 }
 
+/// Locks all chapter rows belonging to a comic.
+#[instrument(level = "info", err(Debug), skip_all)]
+pub async fn lock_chapters(
+    conn: &mut RdbConn,
+    comic_id: &str,
+) -> BaseResult<()> {
+    //
+    let _: Vec<String> = t_chapter
+        .filter(f_comic_id.eq(comic_id))
+        .select(f_id)
+        .for_update()
+        .load(conn)
+        .await
+        .map_err(diesel)?;
+
+    accept(())
+}
+
 /// Finds the pinned chapter for a given comic ID, if one exists.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn find_pinned_info_by_comic_id(
@@ -354,19 +372,7 @@ pub async fn complete_raw_provide(
     .await
     .map_err(diesel)?;
 
-    if updated_count > 0 {
-        return accept(true);
-    }
-
-    let uploaded = t_chapter
-        .filter(f_id.eq(id))
-        .select(f_uploaded_at.is_not_null())
-        .first::<bool>(conn)
-        .await
-        .optional()
-        .map_err(diesel)?;
-
-    accept(uploaded.unwrap_or(true))
+    accept(updated_count > 0)
 }
 
 /// Clears raw-provision completion while preserving every other stage.

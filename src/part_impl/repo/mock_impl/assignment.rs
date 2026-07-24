@@ -16,7 +16,6 @@ use crate::part_impl::repo::mock_impl::{
 };
 use crate::result::{BaseError, BaseResult, accept};
 use crate::value::assignment::AssignmentInclOpt;
-use crate::value::role::RoleField;
 
 mod incl;
 
@@ -87,101 +86,93 @@ fn get_assignment(
     accept(assignment_info)
 }
 
-fn list_assignments(
+fn list_infos(
     state: &MockState,
-    spec: &AssignmentInfoListSpec,
+    oper: &ListAssignmentInfos<'_, '_>,
 ) -> Vec<AssignmentInfo> {
     //
-    let (offset, limit, incl_opt, mut assignment_infos) = match spec {
+    let (role, incl_opt, page, mut assignment_infos) = match oper {
         //
-        AssignmentInfoListSpec::Chapter {
+        ListAssignmentInfos::Spec { spec } => match spec {
+            //
+            AssignmentInfoListSpec::Chapter {
+                chapter_id,
+                role,
+                incl_opt,
+                offset,
+                limit,
+            } => (
+                *role,
+                incl_opt.as_slice(),
+                Some((*offset as usize, *limit as usize)),
+                state
+                    .assignments
+                    .iter()
+                    .filter(|assignment_info| {
+                        assignment_info.chapter_id == *chapter_id
+                    })
+                    .cloned()
+                    .collect::<Vec<_>>(),
+            ),
+
+            AssignmentInfoListSpec::User {
+                owner_id,
+                role,
+                incl_opt,
+                offset,
+                limit,
+            } => (
+                *role,
+                incl_opt.as_slice(),
+                Some((*offset as usize, *limit as usize)),
+                state
+                    .assignments
+                    .iter()
+                    .filter(|assignment_info| {
+                        assignment_info.user_id == *owner_id
+                    })
+                    .cloned()
+                    .collect::<Vec<_>>(),
+            ),
+        },
+
+        ListAssignmentInfos::Chapter {
             chapter_id,
             role,
-            incl_opt,
-            offset,
-            limit,
+            incls,
         } => (
-            *offset,
-            *limit,
-            incl_opt,
+            *role,
+            *incls,
+            None,
             state
                 .assignments
                 .iter()
                 .filter(|assignment_info| {
                     assignment_info.chapter_id == *chapter_id
                 })
-                .filter(|assignment_info| {
-                    role.map(|role| assignment_info.roles.has_any_role(&[role]))
-                        .unwrap_or(true)
-                })
                 .cloned()
                 .collect::<Vec<_>>(),
         ),
 
-        AssignmentInfoListSpec::User {
-            owner_id,
-            role,
-            incl_opt,
-            offset,
-            limit,
-        } => (
-            *offset,
-            *limit,
-            incl_opt,
+        ListAssignmentInfos::Chapters { chapter_ids, incls } => (
+            None,
+            *incls,
+            None,
             state
                 .assignments
                 .iter()
-                .filter(|assignment_info| assignment_info.user_id == *owner_id)
                 .filter(|assignment_info| {
-                    role.map(|role| assignment_info.roles.has_any_role(&[role]))
-                        .unwrap_or(true)
+                    chapter_ids.contains(&assignment_info.chapter_id)
                 })
                 .cloned()
                 .collect::<Vec<_>>(),
         ),
     };
 
-    for assignment_info in &mut assignment_infos {
-        apply_assignment_incls(state, assignment_info, incl_opt);
-    }
-
-    assignment_infos.sort_by(|left, right| {
-        right
-            .created_at
-            .cmp(&left.created_at)
-            .then_with(|| left.id.cmp(&right.id))
+    assignment_infos.retain(|assignment_info| {
+        role.map(|role| assignment_info.roles.has_any_role(&[role]))
+            .unwrap_or(true)
     });
-
-    let offset = offset as usize;
-
-    let limit = limit as usize;
-
-    if offset >= assignment_infos.len() {
-        return Vec::new();
-    }
-
-    let end = std::cmp::min(offset + limit, assignment_infos.len());
-
-    assignment_infos[offset..end].to_vec()
-}
-
-fn list_all_assignments_by_chapter(
-    state: &MockState,
-    chapter_id: &str,
-    role: Option<RoleField>,
-    incl_opt: &[AssignmentInclOpt],
-) -> Vec<AssignmentInfo> {
-    //
-    let mut assignment_infos = state
-        .assignments
-        .iter()
-        .filter(|assignment_info| assignment_info.chapter_id == chapter_id)
-        .filter(|assignment_info| {
-            role.map(|role| assignment_info.roles.has_any_role(&[role]))
-                .unwrap_or(true)
-        })
-        .cloned()
-        .collect::<Vec<_>>();
 
     for assignment_info in &mut assignment_infos {
         apply_assignment_incls(state, assignment_info, incl_opt);
@@ -194,43 +185,35 @@ fn list_all_assignments_by_chapter(
             .then_with(|| left.id.cmp(&right.id))
     });
 
-    assignment_infos
-}
+    match page {
+        //
+        Some((offset, limit)) => match offset >= assignment_infos.len() {
+            //
+            true => Vec::new(),
 
-fn list_all_assignments_by_chapters(
-    state: &MockState,
-    chapter_ids: &[String],
-    incl_opt: &[AssignmentInclOpt],
-) -> Vec<AssignmentInfo> {
-    //
-    let mut assignment_infos = state
-        .assignments
-        .iter()
-        .filter(|assignment_info| {
-            chapter_ids.contains(&assignment_info.chapter_id)
-        })
-        .cloned()
-        .collect::<Vec<_>>();
+            false => {
+                //
+                let end = std::cmp::min(offset + limit, assignment_infos.len());
 
-    for assignment_info in &mut assignment_infos {
-        apply_assignment_incls(state, assignment_info, incl_opt);
+                assignment_infos[offset..end].to_vec()
+            }
+        },
+
+        None => assignment_infos,
     }
-
-    assignment_infos.sort_by(|left, right| {
-        right
-            .created_at
-            .cmp(&left.created_at)
-            .then_with(|| left.id.cmp(&right.id))
-    });
-
-    assignment_infos
 }
 
-fn list_assignments_by_chapter_id_excluded(
+fn list_infos_excluded(
     state: &MockState,
     chapter_id: &str,
 ) -> Vec<AssignmentInfo> {
-    list_all_assignments_by_chapter(state, chapter_id, None, &[])
+    let oper = ListAssignmentInfos::Chapter {
+        chapter_id,
+        role: None,
+        incls: &[],
+    };
+
+    list_infos(state, &oper)
 }
 
 fn create_assignment(
@@ -336,24 +319,7 @@ impl Run<ListAssignmentInfos<'_, '_>> for Mock {
         //
         let state = self.state.lock().unwrap();
 
-        let assignment_infos = match oper {
-            //
-            ListAssignmentInfos::Spec { spec } => {
-                list_assignments(&state, spec)
-            }
-
-            ListAssignmentInfos::Chapter {
-                chapter_id,
-                role,
-                incls,
-            } => list_all_assignments_by_chapter(
-                &state, chapter_id, *role, incls,
-            ),
-
-            ListAssignmentInfos::Chapters { chapter_ids, incls } => {
-                list_all_assignments_by_chapters(&state, chapter_ids, incls)
-            }
-        };
+        let assignment_infos = list_infos(&state, oper);
 
         accept(assignment_infos)
     }
@@ -418,10 +384,7 @@ impl Step<ListAssignmentInfosExcluded<'_>, MockContext> for Mock {
     ) -> Result<Vec<AssignmentInfo>, Self::Error> {
         match oper {
             ListAssignmentInfosExcluded::Chapter { chapter_id } => {
-                accept(list_assignments_by_chapter_id_excluded(
-                    &context.state,
-                    chapter_id,
-                ))
+                accept(list_infos_excluded(&context.state, chapter_id))
             }
         }
     }
@@ -437,31 +400,7 @@ impl Step<ListAssignmentInfos<'_, '_>, MockContext> for Mock {
         oper: &ListAssignmentInfos<'_, '_>,
     ) -> Result<Vec<AssignmentInfo>, Self::Error> {
         //
-        let assignment_infos = match oper {
-            //
-            ListAssignmentInfos::Spec { spec } => {
-                list_assignments(&context.state, spec)
-            }
-
-            ListAssignmentInfos::Chapter {
-                chapter_id,
-                role,
-                incls,
-            } => list_all_assignments_by_chapter(
-                &context.state,
-                chapter_id,
-                *role,
-                incls,
-            ),
-
-            ListAssignmentInfos::Chapters { chapter_ids, incls } => {
-                list_all_assignments_by_chapters(
-                    &context.state,
-                    chapter_ids,
-                    incls,
-                )
-            }
-        };
+        let assignment_infos = list_infos(&context.state, oper);
 
         accept(assignment_infos)
     }

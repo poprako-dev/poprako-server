@@ -21,6 +21,15 @@ use crate::part::prom::payload::image::{
 use crate::test_util::{
     assert_expected_message, assert_one_image_check_record,
 };
+use crate::value::image::{ImageExt, ImageHash};
+
+fn reserve_params(ext: ImageExt, hash_byte: u8) -> ReserveComicCoverParams {
+    ReserveComicCoverParams {
+        image_hash: ImageHash::new([hash_byte; 32]),
+        byte_length: 4096,
+        ext,
+    }
+}
 
 #[tokio::test]
 async fn reserve_cover_updates_state_enqueues_check_and_returns_put_url() {
@@ -40,9 +49,7 @@ async fn reserve_cover_updates_state_enqueues_check_and_returns_put_url() {
         &mock,
         token("user-1"),
         "comic-1".into(),
-        ReserveComicCoverParams {
-            file_ext: "png".into(),
-        },
+        reserve_params(ImageExt::Png, 1),
     )
     .await;
 
@@ -52,10 +59,10 @@ async fn reserve_cover_updates_state_enqueues_check_and_returns_put_url() {
 
     let snapshot = mock.snapshot();
 
-    assert_eq!(reserved.cover_version, 1);
+    assert_eq!(reserved.slot.as_ref().unwrap().image_version, 1);
 
     assert_eq!(
-        reserved.put_url,
+        reserved.slot.as_ref().unwrap().put_url,
         "https://test.local/put/comic_cover/comic-1-1.png"
     );
 
@@ -84,9 +91,7 @@ async fn reserve_cover_rolls_back_missing_comic() {
         &mock,
         token("user-1"),
         "missing".into(),
-        ReserveComicCoverParams {
-            file_ext: "png".into(),
-        },
+        reserve_params(ImageExt::Png, 1),
     )
     .await
     .err()
@@ -116,9 +121,11 @@ async fn mark_cover_uploaded_marks_matching_version() {
 
     mark_cover_uploaded(
         &mock,
+        &mock,
+        &mock,
         token("user-1"),
         "comic-1".into(),
-        MarkComicCoverUploadedParams { cover_version: 2 },
+        MarkComicCoverUploadedParams { image_version: 2 },
     )
     .await
     .ok()
@@ -144,9 +151,11 @@ async fn mark_cover_uploaded_accepts_repeated_matching_version() {
 
     let first = mark_cover_uploaded(
         &mock,
+        &mock,
+        &mock,
         token("user-1"),
         "comic-1".into(),
-        MarkComicCoverUploadedParams { cover_version: 2 },
+        MarkComicCoverUploadedParams { image_version: 2 },
     )
     .await;
 
@@ -154,9 +163,11 @@ async fn mark_cover_uploaded_accepts_repeated_matching_version() {
 
     let second = mark_cover_uploaded(
         &mock,
+        &mock,
+        &mock,
         token("user-1"),
         "comic-1".into(),
-        MarkComicCoverUploadedParams { cover_version: 2 },
+        MarkComicCoverUploadedParams { image_version: 2 },
     )
     .await;
 
@@ -182,9 +193,11 @@ async fn mark_cover_uploaded_rejects_stale_version() {
 
     let err = mark_cover_uploaded(
         &mock,
+        &mock,
+        &mock,
         token("user-1"),
         "comic-1".into(),
-        MarkComicCoverUploadedParams { cover_version: 1 },
+        MarkComicCoverUploadedParams { image_version: 1 },
     )
     .await
     .err()
@@ -222,21 +235,21 @@ async fn mark_cover_uploaded_rejects_old_reservation_replay() {
         &mock,
         token("user-1"),
         "comic-1".into(),
-        ReserveComicCoverParams {
-            file_ext: "png".into(),
-        },
+        reserve_params(ImageExt::Png, 1),
     )
     .await
     .ok()
     .unwrap();
 
-    assert_eq!(reserved.cover_version, 2);
+    assert_eq!(reserved.slot.as_ref().unwrap().image_version, 2);
 
     let err = mark_cover_uploaded(
         &mock,
+        &mock,
+        &mock,
         token("user-1"),
         "comic-1".into(),
-        MarkComicCoverUploadedParams { cover_version: 1 },
+        MarkComicCoverUploadedParams { image_version: 1 },
     )
     .await
     .err()

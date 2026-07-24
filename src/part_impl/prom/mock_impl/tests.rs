@@ -218,6 +218,8 @@ fn user_info(id: &str, avatar_key: &str, avatar_version: u32) -> UserInfo {
         avatar_key: Some(avatar_key.to_string()),
         avatar_uploaded: false,
         avatar_version,
+        avatar_hash: crate::value::image::ImageHash::default(),
+        avatar_ext: crate::value::image::ImageExt::Png,
         is_sadmin: false,
         last_active_at: now,
         created_at: now,
@@ -291,6 +293,8 @@ async fn process_pending_marks_uploaded_image() {
                 resource_id: "user-1".to_string(),
                 object_key: "avatar.png".to_string(),
                 version: 1,
+                image_hash: crate::value::image::ImageHash::default(),
+                image_ext: crate::value::image::ImageExt::Png,
             }),
         )
         .await?;
@@ -329,6 +333,8 @@ async fn process_pending_ignores_stale_image_check() {
                 resource_id: "user-1".to_string(),
                 object_key: "avatar-v1.png".to_string(),
                 version: 1,
+                image_hash: crate::value::image::ImageHash::default(),
+                image_ext: crate::value::image::ImageExt::Png,
             }),
         )
         .await?;
@@ -371,6 +377,8 @@ async fn process_pending_rejects_mismatched_image_key() {
                 resource_id: "user-1".to_string(),
                 object_key: "avatar-other.png".to_string(),
                 version: 1,
+                image_hash: crate::value::image::ImageHash::default(),
+                image_ext: crate::value::image::ImageExt::Png,
             }),
         )
         .await?;
@@ -387,7 +395,7 @@ async fn process_pending_rejects_mismatched_image_key() {
 }
 
 #[tokio::test]
-async fn process_pending_deletes_missing_resource_image() {
+async fn process_pending_keeps_missing_resource_image() {
     //
     let mock = Mock::new();
 
@@ -404,6 +412,8 @@ async fn process_pending_deletes_missing_resource_image() {
                 resource_id: "missing-user".to_string(),
                 object_key: "orphan-avatar.png".to_string(),
                 version: 1,
+                image_hash: crate::value::image::ImageHash::default(),
+                image_ext: crate::value::image::ImageExt::Png,
             }),
         )
         .await?;
@@ -416,8 +426,5 @@ async fn process_pending_deletes_missing_resource_image() {
 
     process_pending(&mock).await.ok().unwrap();
 
-    assert_eq!(
-        mock.snapshot().deleted_image_keys,
-        vec!["orphan-avatar.png".to_string()]
-    );
+    assert!(mock.snapshot().deleted_image_keys.is_empty());
 }

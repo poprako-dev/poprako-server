@@ -1,7 +1,5 @@
 //! Data transfer objects for page use cases.
 
-use std::collections::BTreeMap;
-
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "swagger")]
@@ -9,6 +7,7 @@ use utoipa::ToSchema;
 
 use poprako_util::time::ToUnixMilli;
 
+use crate::data::image::ImageUploadSlotVal;
 use crate::model::page::{PageImageSpec, PageInfo};
 use crate::part::image::ImagePool;
 use crate::result::{BaseResult, accept};
@@ -38,8 +37,6 @@ pub struct PageInfoVal {
 
     /// Content hash of the page image.
     pub image_hash: ImageHash,
-    /// Size of the page image in bytes.
-    pub byte_length: u64,
     /// File format.
     pub ext: ImageExt,
 
@@ -83,7 +80,6 @@ impl PageInfoVal {
             image_url: image_url.map(Into::into),
             image_thumbnail_url: image_thumbnail_url.map(Into::into),
             image_hash: model.image_hash,
-            byte_length: model.image_byte_length,
             ext: model.image_ext,
             total_unit_count: model.total_unit_count,
             translated_unit_count: model.translated_unit_count,
@@ -112,7 +108,7 @@ pub struct PageImageParams {
     pub page_id: Option<String>,
     /// Content hash of the page image.
     pub image_hash: ImageHash,
-    /// Size of the page image in bytes.
+    /// Size used to constrain the presigned upload.
     pub byte_length: u64,
     /// File format.
     pub ext: ImageExt,
@@ -147,24 +143,10 @@ pub struct ReservedPagePayload {
     pub index: u32,
     /// Content hash of the page image.
     pub image_hash: ImageHash,
-    /// Size of the page image in bytes.
-    pub byte_length: u64,
     /// File format.
     pub ext: ImageExt,
     /// Presigned upload slot, if a new image must be uploaded.
-    pub slot: Option<PageSlotVal>,
-}
-
-/// Presigned slot for a pending page-image upload.
-#[derive(Debug, Serialize)]
-#[cfg_attr(feature = "swagger", derive(ToSchema))]
-pub struct PageSlotVal {
-    /// Presigned PUT URL for the image upload.
-    pub put_url: String,
-    /// Monotonic version number for idempotent upload confirmation.
-    pub image_version: u32,
-    /// Required HTTP headers for the presigned PUT request.
-    pub headers: BTreeMap<String, String>,
+    pub slot: Option<ImageUploadSlotVal>,
 }
 
 /// Input parameters for reserving one page image.

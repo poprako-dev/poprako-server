@@ -2,6 +2,8 @@
 
 use time::OffsetDateTime;
 
+use crate::value::image::{ImageExt, ImageHash};
+
 /// A teamrecord as stored in the database.
 ///
 /// Carries raw [`OffsetDateTime`] timestamps; convert to [`TeamInfoVal`] for
@@ -24,6 +26,10 @@ pub struct TeamInfo {
     pub avatar_uploaded: bool,
     /// Monotonically increasing version counter for the avatar.
     pub avatar_version: u32,
+    /// SHA-256 identity of the reserved avatar content.
+    pub avatar_hash: ImageHash,
+    /// File format persisted with the avatar identity.
+    pub avatar_ext: ImageExt,
 
     /// Timestamp when this team was created.
     pub created_at: OffsetDateTime,
@@ -80,6 +86,8 @@ pub struct TeamAvatarReservation {
     pub prev_object_key: Option<String>,
     /// The new version number that must match on upload confirmation.
     pub avatar_version: u32,
+    /// Whether a PUT capability and delayed check are required.
+    pub upload_required: bool,
 }
 
 // TODO: update

@@ -8,7 +8,7 @@ use poprako_orchestra::Nucl as _;
 use time::OffsetDateTime;
 
 use crate::complex::comic_archive::ComicArchiveComplex;
-use crate::model::comic_archive::ComicArchiveWrite;
+use crate::model::comic_archive::ComicArchiveEntry;
 use crate::part::repo::oper::comic_archive::{
     CommitComicArchive, GetComicArchiveSnapshotExcluded,
 };
@@ -53,7 +53,7 @@ pub async fn comic_archive_roundtrip_uses_testcontainer(shared: RdbCore) {
             .unwrap()
     };
 
-    let comic_archive_write = drive
+    let comic_archive_entry = drive
         .coord(async |context| {
             //
             let comic_archive_snapshot = repo
@@ -65,7 +65,7 @@ pub async fn comic_archive_roundtrip_uses_testcontainer(shared: RdbCore) {
                 )
                 .await?;
 
-            let (comic_archive_write, _) = ComicArchiveComplex::prepare_write(
+            let (comic_archive_entry, _) = ComicArchiveComplex::prepare_entry(
                 comic_archive_snapshot,
                 archiver_id.clone(),
                 OffsetDateTime::now_utc(),
@@ -75,12 +75,12 @@ pub async fn comic_archive_roundtrip_uses_testcontainer(shared: RdbCore) {
             repo.step(
                 context,
                 &CommitComicArchive {
-                    write: &comic_archive_write,
+                    entry: &comic_archive_entry,
                 },
             )
             .await?;
 
-            Ok::<ComicArchiveWrite, BaseError>(comic_archive_write)
+            Ok::<ComicArchiveEntry, BaseError>(comic_archive_entry)
         })
         .await
         .ok()
@@ -94,7 +94,7 @@ pub async fn comic_archive_roundtrip_uses_testcontainer(shared: RdbCore) {
         comic_archiver_id,
         comic_created_at,
     ) = t_comic_archive::table
-        .filter(t_comic_archive::f_id.eq(&comic_archive_write.record.id))
+        .filter(t_comic_archive::f_id.eq(&comic_archive_entry.record.id))
         .select((
             t_comic_archive::f_team_id,
             t_comic_archive::f_archived_payload,
@@ -119,7 +119,7 @@ pub async fn comic_archive_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     assert_eq!(comic_archiver_id, archiver_id);
 
-    assert_eq!(comic_created_at, comic_archive_write.record.created_at);
+    assert_eq!(comic_created_at, comic_archive_entry.record.created_at);
 
     assert_eq!(archived_comic_payload["source_comic_id"], source_comic_id);
 
@@ -175,7 +175,7 @@ pub async fn comic_archive_roundtrip_uses_testcontainer(shared: RdbCore) {
 
     diesel::delete(
         t_comic_archive::table
-            .filter(t_comic_archive::f_id.eq(&comic_archive_write.record.id)),
+            .filter(t_comic_archive::f_id.eq(&comic_archive_entry.record.id)),
     )
     .execute(&mut conn)
     .await

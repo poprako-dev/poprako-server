@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::part::prom::payload::chapter::CheckUploadFinish;
+use crate::part::prom::payload::chapter::AdvanceRawProvide;
 use crate::part::prom::payload::image::Payload as ImagePayload;
 use crate::part::prom::payload::invitation::PurgeExpiredInvitation;
 
@@ -13,9 +13,10 @@ pub mod invitation;
 
 /// Deferred-action payload grouped by resource domain.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+// FIXME: bad grouping and naming.
 pub enum Payload {
     /// Advance raw provision after every chapter page is uploaded.
-    CheckChapterUploadFinish(CheckUploadFinish),
+    AdvanceRawProvide(AdvanceRawProvide),
 
     /// Image-domain deferred action.
     Image(ImagePayload),
@@ -29,7 +30,7 @@ impl Payload {
     pub fn topic(&self) -> &'static str {
         match self {
             //
-            Self::CheckChapterUploadFinish(_) => "check_chapter_upload_finish",
+            Self::AdvanceRawProvide(_) => "advance_raw_provide",
 
             Self::Image(_) => "image",
 

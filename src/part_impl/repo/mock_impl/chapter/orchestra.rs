@@ -8,11 +8,12 @@ use crate::part::repo::oper::chapter::{
     AdjustChapterUnitCounters, CompleteChapterRawProvide, CreateChapter,
     DeleteChapter, FindPinnedChapterInfo, GetChapterInfo,
     GetChapterInfoExcluded, ListChapterInfos, ListChapterInfosExcluded,
-    ListPinnedChapterInfos, ResetChapterRawProvide, SetChapterPageCounters,
-    StartChapterStage, UnpinOtherChapters, UpdateChapter, UpdateChapterStage,
+    ListPinnedChapterInfos, LockChapters, ResetChapterRawProvide,
+    SetChapterPageCounters, StartChapterStage, UnpinOtherChapters,
+    UpdateChapter, UpdateChapterStage,
 };
 use crate::part_impl::repo::mock_impl::chapter::{
-    apply_chapter_incls, create_chapter, get_chapter_by_id, list_all_chapters,
+    apply_chapter_incls, create_chapter, get_chapter_by_id, list_infos,
 };
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
@@ -25,7 +26,7 @@ fn list_chapter_infos(
     spec: &ChapterInfoListSpec,
 ) -> Vec<ChapterInfo> {
     //
-    let mut chapter_infos = list_all_chapters(state, &spec.comic_id);
+    let mut chapter_infos = list_infos(state, &spec.comic_id);
 
     for chapter_info in &mut chapter_infos {
         apply_chapter_incls(state, chapter_info, &spec.incl_opt);
@@ -212,14 +213,14 @@ impl<'a> Run<CompleteChapterRawProvide<'a>> for Mock {
             .iter()
             .position(|chapter_info| chapter_info.id == oper.id)
         else {
-            return accept(true);
+            return accept(false);
         };
 
         if !state.chapters[chapter_index]
             .stages
             .has_phase(Stage::RawProvide, StagePhase::Pending)
         {
-            return accept(true);
+            return accept(false);
         }
 
         let page_count = state
@@ -265,14 +266,14 @@ impl<'a> Step<CompleteChapterRawProvide<'a>, MockContext> for Mock {
             .iter()
             .position(|chapter_info| chapter_info.id == oper.id)
         else {
-            return accept(true);
+            return accept(false);
         };
 
         if !context.state.chapters[chapter_index]
             .stages
             .has_phase(Stage::RawProvide, StagePhase::Pending)
         {
-            return accept(true);
+            return accept(false);
         }
 
         let page_count = context
@@ -365,7 +366,20 @@ impl<'a> Step<ListChapterInfosExcluded<'a>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &ListChapterInfosExcluded<'a>,
     ) -> BaseResult<Vec<ChapterInfo>> {
-        accept(list_all_chapters(&context.state, oper.comic_id))
+        accept(list_infos(&context.state, oper.comic_id))
+    }
+}
+
+impl<'a> Step<LockChapters<'a>, MockContext> for Mock {
+    type Error = BaseError;
+
+    #[instrument(level = "info", err(Debug), skip_all)]
+    async fn step(
+        &self,
+        _: &mut MockContext,
+        _: &LockChapters<'a>,
+    ) -> BaseResult<()> {
+        accept(())
     }
 }
 

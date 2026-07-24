@@ -33,11 +33,8 @@ pub fn get_chapter_by_id(
     accept(chapter_info)
 }
 
-/// Returns all chapters for a comic from the mock state, sorted by index descending.
-pub fn list_all_chapters(
-    state: &MockState,
-    comic_id: &str,
-) -> Vec<ChapterInfo> {
+/// Returns chapters for a comic from the mock state, sorted by index descending.
+pub fn list_infos(state: &MockState, comic_id: &str) -> Vec<ChapterInfo> {
     //
     let mut chapter_infos = state
         .chapters

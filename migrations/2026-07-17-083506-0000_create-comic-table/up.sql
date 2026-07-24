@@ -12,6 +12,8 @@ CREATE TABLE IF NOT EXISTS "t_comic" (
     "f_cover_key"           TEXT,
     "f_cover_uploaded"      BOOLEAN     NOT NULL DEFAULT FALSE,
     "f_cover_version"       BIGINT      NOT NULL DEFAULT 0,
+    "f_cover_hash"          BYTEA       NOT NULL DEFAULT decode(repeat('00', 32), 'hex'),
+    "f_cover_extension"     TEXT        NOT NULL DEFAULT 'png',
 
     "f_chapter_count"       INTEGER     NOT NULL DEFAULT 0,
     "f_chapter_next_index"  INTEGER     NOT NULL DEFAULT 0,
@@ -20,7 +22,9 @@ CREATE TABLE IF NOT EXISTS "t_comic" (
 
     "f_last_active_at"      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     "f_created_at"          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    "f_updated_at"          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    "f_updated_at"          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CHECK (octet_length("f_cover_hash") = 32)
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS "uidx_comic_workset_id_index"

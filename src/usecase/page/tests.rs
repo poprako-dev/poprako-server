@@ -28,7 +28,7 @@ use crate::model::page::PageInfo;
 use crate::model::user::UserToken;
 use crate::model::workset::WorksetInfo;
 use crate::part::prom::payload::Payload;
-use crate::part::prom::payload::chapter::CheckUploadFinish;
+use crate::part::prom::payload::chapter::AdvanceRawProvide;
 use crate::part::prom::payload::image::{
     Payload as ImagePayload, ResourceKind,
 };
@@ -83,6 +83,8 @@ fn comic(id: &str, workset_id: &str) -> ComicInfo {
         cover_key: None,
         cover_uploaded: false,
         cover_version: 0,
+        cover_hash: crate::value::image::ImageHash::default(),
+        cover_ext: crate::value::image::ImageExt::Png,
         chapter_count: 1,
         creator_id: "user-1".into(),
         workset: None,
@@ -168,7 +170,6 @@ fn page(
         image_uploaded,
         image_version,
         image_hash: ImageHash::new([0u8; 32]),
-        image_byte_length: 4096,
         image_ext: ImageExt::Png,
         total_unit_count: 0,
         translated_unit_count: 0,
@@ -241,7 +242,7 @@ async fn reserve_image_replaces_key_and_enqueues_prom() {
 
     assert_eq!(snapshot.pages[0].image_version, 2);
 
-    assert_eq!(snapshot.prom_records.len(), 2);
+    assert_eq!(snapshot.prom_records.len(), 3);
 
     assert!(matches!(
         snapshot.prom_records[0].payload(),
@@ -373,7 +374,7 @@ async fn reserve_image_rejects_same_hash_with_conflicting_metadata() {
         ReservePageImageParams {
             image_hash: ImageHash::new([0; 32]),
             byte_length: 4097,
-            ext: ImageExt::Png,
+            ext: ImageExt::Webp,
         },
     )
     .await;
@@ -423,7 +424,7 @@ async fn list_infos_sorts_and_resolves_uploaded_url() {
 
     mock.seed_page(page("page-1", 1, Some("one.png"), false, 1));
 
-    let list = list_all_infos(
+    let list = list_infos(
         &mock,
         &mock,
         token("user-1"),
@@ -463,7 +464,7 @@ async fn list_infos_rejects_non_member_without_assignment() {
 
     seed_scope(&mock);
 
-    let err = list_all_infos(
+    let err = list_infos(
         &mock,
         &mock,
         token("user-1"),
@@ -496,6 +497,7 @@ async fn mark_image_uploaded_marks_once_and_idempotent() {
     let first = mark_image_uploaded(
         &mock,
         &mock,
+        &mock,
         token("user-1"),
         "page-1".into(),
         MarkPageImageUploadedParams { image_version: 2 },
@@ -505,6 +507,7 @@ async fn mark_image_uploaded_marks_once_and_idempotent() {
     assert!(first.is_ok());
 
     let second = mark_image_uploaded(
+        &mock,
         &mock,
         &mock,
         token("user-1"),

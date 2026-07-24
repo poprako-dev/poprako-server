@@ -2,6 +2,8 @@
 
 use time::OffsetDateTime;
 
+use crate::value::image::{ImageExt, ImageHash};
+
 /// A deserialized authentication token identifying a user session.
 #[derive(Clone, Debug)]
 pub struct UserToken {
@@ -32,6 +34,10 @@ pub struct UserInfo {
     pub avatar_uploaded: bool,
     /// Monotonically increasing version number for cache-busting the avatar URL.
     pub avatar_version: u32,
+    /// SHA-256 identity of the reserved avatar content.
+    pub avatar_hash: ImageHash,
+    /// File format persisted with the avatar identity.
+    pub avatar_ext: ImageExt,
 
     /// Whether this user has super-administrator privileges.
     pub is_sadmin: bool,
@@ -73,6 +79,8 @@ pub struct UserAvatarReservation {
     pub prev_object_key: Option<String>,
     /// Expected version number that must match when confirming the upload.
     pub avatar_version: u32,
+    /// Whether a PUT capability and delayed check are required.
+    pub upload_required: bool,
 }
 
 /// A stored password credential used during login verification.

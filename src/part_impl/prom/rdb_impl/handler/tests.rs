@@ -77,6 +77,7 @@ pub async fn image_payloads_from_rdb_dispatch(shared: RdbCore) {
         &nucl,
         rdb_prom_repo.inner(),
         &image_pool,
+        &image_pool,
         "image",
         &delete_payload,
     )
@@ -96,6 +97,8 @@ pub async fn image_payloads_from_rdb_dispatch(shared: RdbCore) {
         resource_id: "missing-user".to_string(),
         object_key: "new-avatar.png".to_string(),
         version: 1,
+        image_hash: crate::value::image::ImageHash::default(),
+        image_ext: crate::value::image::ImageExt::Png,
     });
 
     let check_task = Task {
@@ -135,6 +138,7 @@ pub async fn image_payloads_from_rdb_dispatch(shared: RdbCore) {
     let check_uploaded_task_flow = dispatch_payload(
         &nucl,
         rdb_prom_repo.inner(),
+        &image_pool,
         &image_pool,
         "image",
         &check_uploaded_payload,

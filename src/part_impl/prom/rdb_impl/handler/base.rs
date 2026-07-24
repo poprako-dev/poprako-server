@@ -11,6 +11,7 @@ use poprako_orchestra::Nucl;
 use tokio_util::sync::CancellationToken;
 use tracing::instrument;
 
+use crate::part::effect::EffectDevelop;
 use crate::part::image::ImageManager;
 use crate::part::prom::payload::Payload;
 use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
@@ -28,7 +29,7 @@ use crate::result::BaseError;
 
 /// Background worker that polls the `t_local_message` table, dispatches by topic,
 /// and completes or fails each record.
-pub struct RdbPromHandler<N, R, I> {
+pub struct RdbPromHandler<N, R, I, V> {
     /// Database connection pool for handler-internal queries.
     pub(super) core: RdbCore,
     /// Transaction coordinator used for handler-level database operations.
@@ -39,12 +40,14 @@ pub struct RdbPromHandler<N, R, I> {
 
     /// Object storage client for image verification and cleanup.
     pub(super) image_pool: I,
+    /// Shared side-effect developer for automatic workflow events.
+    pub(super) develop: V,
 
     /// Shutdown signal propagated from the owning [`RdbProm`].
     pub(super) token: CancellationToken,
 }
 
-impl<N, R, I> RdbPromHandler<N, R, I>
+impl<N, R, I, V> RdbPromHandler<N, R, I, V>
 where
     N: Nucl<Context = RdbContext, Error = BaseError>,
     R: AssignmentInvitationRepo<RdbContext>
@@ -58,6 +61,7 @@ where
         + Sync
         + 'static,
     I: ImageManager + Send + Sync + 'static,
+    V: EffectDevelop + Send + Sync + 'static,
 {
     /// Builds a new prom background handler from its core, nucl, repo, and lifecycle channels.
     pub fn new(
@@ -65,6 +69,7 @@ where
         nucl: N,
         repo: RdbPromRepo<R>,
         image_pool: I,
+        develop: V,
         token: CancellationToken,
     ) -> Self {
         Self {
@@ -72,6 +77,7 @@ where
             nucl,
             repo,
             image_pool,
+            develop,
             token,
         }
     }
@@ -83,6 +89,7 @@ pub async fn dispatch_payload<N, R, I>(
     nucl: &N,
     repo: &R,
     image_pool: &I,
+    develop: &(impl EffectDevelop + Sync),
     topic: &str,
     payload: &serde_json::Value,
 ) -> TaskFlow
@@ -121,8 +128,8 @@ where
 
     match payload {
         //
-        Payload::CheckChapterUploadFinish(task) => {
-            chapter::handle(repo, &task).await
+        Payload::AdvanceRawProvide(task) => {
+            chapter::handle(nucl, repo, develop, &task).await
         }
 
         Payload::Image(task) => {

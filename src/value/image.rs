@@ -28,13 +28,18 @@ impl ImageHash {
         self.0
     }
 
+    /// Borrows the raw SHA-256 bytes.
+    pub fn as_bytes(&self) -> &[u8; 32] {
+        &self.0
+    }
+
     /// Returns canonical padded RFC 4648 Base64.
     pub fn to_base64(&self) -> String {
         STANDARD.encode(self.0)
     }
 
     /// Parses a canonical padded RFC 4648 Base64 SHA-256 hash.
-    pub fn parse(encoded: &str) -> Option<Self> {
+    pub fn parse_rfc4648(encoded: &str) -> Option<Self> {
         //
         if encoded.len() != 44 {
             return None;
@@ -71,7 +76,7 @@ impl<'de> Deserialize<'de> for ImageHash {
     {
         let encoded = String::deserialize(deserializer)?;
 
-        Self::parse(&encoded).ok_or_else(|| {
+        Self::parse_rfc4648(&encoded).ok_or_else(|| {
             D::Error::custom(
                 "image hash must be canonical padded RFC 4648 Base64 for 32 bytes",
             )

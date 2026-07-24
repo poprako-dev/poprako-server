@@ -33,9 +33,8 @@ use crate::part::repo::oper::assignment::{
 };
 use crate::part::repo::oper::chapter::{
     CreateChapter, FindPinnedChapterInfo, GetChapterInfo,
-    GetChapterInfoExcluded, ListChapterInfos, ListChapterInfosExcluded,
-    ListPinnedChapterInfos, UnpinOtherChapters, UpdateChapter,
-    UpdateChapterStage,
+    GetChapterInfoExcluded, ListChapterInfos, ListPinnedChapterInfos,
+    LockChapters, UnpinOtherChapters, UpdateChapter, UpdateChapterStage,
 };
 use crate::part::repo::oper::comic::{
     AllocComicChapterIndex, GetComicInfo, TouchComicLastActive,
@@ -236,7 +235,7 @@ where
             //
             repo.step(
                 context,
-                &ListChapterInfosExcluded {
+                &LockChapters {
                     comic_id: &params.comic_id,
                 },
             )
@@ -358,7 +357,7 @@ where
             )
             .await?;
 
-        ChapterComplex::ensure_user_write_allowed(&chapter_info)?;
+        ChapterComplex::ensure_chapter_writable(&chapter_info)?;
 
         if params.subtitle.is_some() || params.pin.is_some() {
             //
@@ -373,7 +372,7 @@ where
 
                 repo.step(
                     context,
-                    &ListChapterInfosExcluded {
+                    &LockChapters {
                         comic_id: &chapter_info.comic_id,
                     },
                 )
@@ -461,7 +460,7 @@ where
                 )
                 .await?;
 
-            ChapterComplex::ensure_user_write_allowed(&chapter_info)?;
+            ChapterComplex::ensure_chapter_writable(&chapter_info)?;
 
             let was_published = chapter_info.stages.get_phase(Stage::Publish)
                 == StagePhase::Completed;

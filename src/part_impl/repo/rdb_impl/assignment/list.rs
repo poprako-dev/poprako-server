@@ -2,14 +2,14 @@ use diesel::prelude::*;
 use diesel_async::RunQueryDsl;
 use tracing::instrument;
 
-use crate::model::assignment::AssignmentInfo;
+use crate::model::assignment::{AssignmentInfo, AssignmentInfoListSpec};
+use crate::part::repo::oper::assignment::ListAssignmentInfos;
 use crate::part_impl::repo::rdb_impl::entity::assignment::AssignmentRow;
 use crate::part_impl::repo::rdb_impl::incl;
 use crate::part_impl::repo::rdb_impl::schema::t_assignment::dsl::*;
 use crate::part_impl::shared::RdbConn;
 use crate::part_impl::shared::result::diesel;
 use crate::result::{BaseResult, accept};
-use crate::value::assignment::AssignmentInclOpt;
 use crate::value::role::RoleField;
 
 fn row_into_info(row: AssignmentRow) -> BaseResult<AssignmentInfo> {
@@ -22,18 +22,70 @@ fn rows_into_infos(
     rows.into_iter().map(row_into_info).collect()
 }
 
-/// Queries all assignment rows for a given chapter, optionally filtered by role.
+/// Queries assignment infos selected by the repository operation.
 #[instrument(level = "info", err(Debug), skip_all)]
-pub async fn list_all_infos_by_chapter(
+pub async fn list_infos(
     conn: &mut RdbConn,
-    chapter_id: &str,
-    role: Option<RoleField>,
-    incl_opt: &[AssignmentInclOpt],
+    oper: &ListAssignmentInfos<'_, '_>,
 ) -> BaseResult<Vec<AssignmentInfo>> {
     //
-    let mut query = t_assignment
-        .filter(f_chapter_id.eq(chapter_id))
-        .into_boxed();
+    let (role, incl_opt, page, mut query) = match oper {
+        //
+        ListAssignmentInfos::Spec { spec } => match spec {
+            //
+            AssignmentInfoListSpec::Chapter {
+                chapter_id,
+                role,
+                incl_opt,
+                offset,
+                limit,
+            } => (
+                *role,
+                incl_opt.as_slice(),
+                Some((*offset, *limit)),
+                t_assignment
+                    .filter(f_chapter_id.eq(chapter_id.as_str()))
+                    .into_boxed(),
+            ),
+
+            AssignmentInfoListSpec::User {
+                owner_id,
+                role,
+                incl_opt,
+                offset,
+                limit,
+            } => (
+                *role,
+                incl_opt.as_slice(),
+                Some((*offset, *limit)),
+                t_assignment
+                    .filter(f_user_id.eq(owner_id.as_str()))
+                    .into_boxed(),
+            ),
+        },
+
+        ListAssignmentInfos::Chapter {
+            chapter_id,
+            role,
+            incls,
+        } => (
+            *role,
+            *incls,
+            None,
+            t_assignment
+                .filter(f_chapter_id.eq(*chapter_id))
+                .into_boxed(),
+        ),
+
+        ListAssignmentInfos::Chapters { chapter_ids, incls } => (
+            None,
+            *incls,
+            None,
+            t_assignment
+                .filter(f_chapter_id.eq_any(*chapter_ids))
+                .into_boxed(),
+        ),
+    };
 
     if let Some(role) = role {
         query = match role {
@@ -72,36 +124,23 @@ pub async fn list_all_infos_by_chapter(
         };
     }
 
-    let rows: Vec<AssignmentRow> = query
+    let query = query
         .select(AssignmentRow::as_select())
-        .order_by((f_created_at.desc(), f_id.asc()))
-        .load(conn)
-        .await
-        .map_err(diesel)?;
+        .order_by((f_created_at.desc(), f_id.asc()));
 
-    let mut infos = rows_into_infos(rows)?;
+    let rows: Vec<AssignmentRow> = match page {
+        //
+        Some((offset, limit)) => {
+            query
+                .offset(offset as i64)
+                .limit(limit as i64)
+                .load(conn)
+                .await
+        }
 
-    incl::assignment::populate_assignment_incls(conn, &mut infos, incl_opt)
-        .await?;
-
-    accept(infos)
-}
-
-/// Queries all assignment rows for the given chapters.
-#[instrument(level = "info", err(Debug), skip_all)]
-pub async fn list_all_infos_by_chapters(
-    conn: &mut RdbConn,
-    chapter_ids: &[String],
-    incl_opt: &[AssignmentInclOpt],
-) -> BaseResult<Vec<AssignmentInfo>> {
-    //
-    let rows: Vec<AssignmentRow> = t_assignment
-        .filter(f_chapter_id.eq_any(chapter_ids))
-        .select(AssignmentRow::as_select())
-        .order_by((f_created_at.desc(), f_id.asc()))
-        .load(conn)
-        .await
-        .map_err(diesel)?;
+        None => query.load(conn).await,
+    }
+    .map_err(diesel)?;
 
     let mut infos = rows_into_infos(rows)?;
 

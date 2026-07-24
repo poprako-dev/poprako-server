@@ -7,6 +7,8 @@ use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
 use poprako_orchestra_extra::prom::task::Task;
 use tracing::instrument;
 
+use poprako_util::i18n::trl;
+
 use crate::complex::assignment::AssignmentComplex;
 use crate::complex::chapter::ChapterComplex;
 use crate::complex::comic::{ComicComplex, ComicPermComplex};
@@ -16,11 +18,12 @@ use crate::data::comic::{
     MarkComicCoverUploadedParams, ReserveComicCoverParams,
     ReserveComicCoverPayload, UpdateComicInfoParams,
 };
+use crate::data::image::ImageUploadSlotVal;
 use crate::model::assignment::AssignmentEntry;
 use crate::model::chapter::ChapterEntry;
 use crate::model::comic::{ComicEntry, ComicInfoUpdate};
 use crate::model::user::UserToken;
-use crate::part::image::ImagePool;
+use crate::part::image::{ImageManager, ImagePool, ImageUploadSpec};
 use crate::part::prom::Prom;
 use crate::part::prom::payload::{Payload, image};
 use crate::part::repo::assignment::AssignmentRepo;
@@ -58,7 +61,7 @@ use crate::part::repo::term::TermRepo;
 use crate::part::repo::termbase::TermbaseRepo;
 use crate::part::repo::unit::UnitRepo;
 use crate::part::repo::workset::WorksetRepo;
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 
 pub use list::list_infos;
 
@@ -338,6 +341,19 @@ where
     P: Prom<C> + Send + Sync,
     I: ImagePool,
 {
+    ImageComplex::ensure_byte_length(
+        params.byte_length,
+        image::ResourceKind::ComicCover,
+    )?;
+
+    let image_hash = params.image_hash.clone();
+
+    let transaction_image_hash = image_hash.clone();
+
+    let image_ext = params.ext;
+
+    let byte_length = params.byte_length;
+
     ComicPermComplex::ensure_user_can_reserve_cover(
         &mut run_proxy! {
             repo =>
@@ -350,7 +366,7 @@ where
     )
     .await?;
 
-    let (object_key, cover_version) = nucl
+    let (object_key, cover_version, upload_required) = nucl
         .coord(async move |context| {
             //
             let cover_reservation = repo
@@ -358,10 +374,19 @@ where
                     context,
                     &ReserveComicCover {
                         id: &id,
-                        file_extension: &params.file_ext,
+                        image_hash: &transaction_image_hash,
+                        image_ext,
                     },
                 )
                 .await?;
+
+            if !cover_reservation.upload_required {
+                return accept((
+                    cover_reservation.object_key,
+                    cover_reservation.cover_version,
+                    false,
+                ));
+            }
 
             let mut batch_ids = Vec::new();
 
@@ -387,6 +412,8 @@ where
                 resource_id: id.clone(),
                 object_key: cover_reservation.object_key.clone(),
                 version: cover_reservation.cover_version,
+                image_hash: transaction_image_hash.clone(),
+                image_ext,
             }));
 
             batch_delays.push(Some(Duration::from_secs(15 * 60)));
@@ -407,28 +434,52 @@ where
             accept((
                 cover_reservation.object_key,
                 cover_reservation.cover_version,
+                true,
             ))
         })
         .await?;
 
-    let put_url = image_pool.get_upload_url(&object_key).await?.to_string();
+    let slot = match upload_required {
+        //
+        true => {
+            //
+            let upload_spec = ImageUploadSpec {
+                object_key: &object_key,
+                content_type: image_ext.content_type(),
+                checksum_sha256: &image_hash,
+                content_length: byte_length,
+            };
 
-    accept(ReserveComicCoverPayload {
-        put_url,
-        cover_version,
-    })
+            let upload_slot = image_pool.get_upload_slot(upload_spec).await?;
+
+            Some(ImageUploadSlotVal {
+                put_url: upload_slot.url.to_string(),
+                image_version: cover_version,
+                headers: upload_slot.headers,
+            })
+        }
+
+        false => None,
+    };
+
+    accept(ReserveComicCoverPayload { slot })
 }
 
 /// Marks a reserved comic cover as successfully uploaded.
 #[instrument(level = "info", err(Debug), skip_all)]
-pub async fn mark_cover_uploaded<C, R>(
+pub async fn mark_cover_uploaded<N, C, R, I>(
+    nucl: &N,
     repo: &R,
+    image_manager: &I,
     token: UserToken,
     id: String,
     params: MarkComicCoverUploadedParams,
 ) -> BaseResult<()>
 where
-    R: ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Sync,
+    N: Nucl<Context = C, Error = BaseError>,
+    C: Send,
+    R: ComicRepo<C> + WorksetRepo<C> + MemberRepo<C> + Send + Sync,
+    I: ImageManager,
 {
     ComicPermComplex::ensure_user_can_mark_cover_uploaded(
         &mut run_proxy! {
@@ -442,10 +493,84 @@ where
     )
     .await?;
 
-    repo.run(&MarkComicCoverUploaded {
-        id: &id,
-        cover_version: params.cover_version,
-        cover_key: None,
+    let comic_info = repo
+        .run(&GetComicInfo {
+            id: &id,
+            incls: &[],
+        })
+        .await?;
+
+    if comic_info.cover_version != params.image_version {
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message: trl("error-stale-cover-upload"),
+        });
+    }
+
+    if comic_info.cover_uploaded {
+        return accept(());
+    }
+
+    let cover_key =
+        comic_info
+            .cover_key
+            .clone()
+            .ok_or_else(|| BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message: trl("error-stale-cover-upload"),
+            })?;
+
+    let object_info =
+        image_manager
+            .head_object(&cover_key)
+            .await?
+            .ok_or_else(|| BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message: trl("error-stale-cover-upload"),
+            })?;
+
+    if object_info.checksum_sha256 != comic_info.cover_hash {
+        return Err(BaseError::Expected {
+            variant: ExpectedVariant::Args,
+            message: trl("error-invalid-image-hash"),
+        });
+    }
+
+    nucl.coord(async move |context| {
+        //
+        let locked_comic_info = repo
+            .step(
+                context,
+                &GetComicInfoExcluded {
+                    id: &id,
+                    incls: &[],
+                },
+            )
+            .await?;
+
+        if locked_comic_info.cover_version != params.image_version
+            || locked_comic_info.cover_key.as_deref() != Some(&cover_key)
+            || locked_comic_info.cover_hash != comic_info.cover_hash
+            || locked_comic_info.cover_ext != comic_info.cover_ext
+        {
+            return Err(BaseError::Expected {
+                variant: ExpectedVariant::Args,
+                message: trl("error-stale-cover-upload"),
+            });
+        }
+
+        repo.step(
+            context,
+            &MarkComicCoverUploaded {
+                id: &id,
+                cover_version: params.image_version,
+                cover_key: Some(&cover_key),
+                cover_uploaded: true,
+            },
+        )
+        .await?;
+
+        accept(())
     })
     .await?;
 

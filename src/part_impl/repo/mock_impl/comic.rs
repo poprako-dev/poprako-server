@@ -176,6 +176,7 @@ fn mark_comic_cover_uploaded(
     id: &str,
     cover_version: u32,
     cover_key: Option<&str>,
+    cover_uploaded: bool,
 ) -> BaseResult<()> {
     //
     let comic = state
@@ -192,7 +193,7 @@ fn mark_comic_cover_uploaded(
         return Err(expected("error-stale-cover-upload"));
     }
 
-    comic.cover_uploaded = true;
+    comic.cover_uploaded = cover_uploaded;
 
     comic.updated_at = now();
 
@@ -336,6 +337,7 @@ impl<'a> Run<MarkComicCoverUploaded<'a>> for Mock {
             oper.id,
             oper.cover_version,
             oper.cover_key,
+            oper.cover_uploaded,
         )
     }
 }
@@ -371,6 +373,8 @@ impl<'a> Step<CreateComic<'a>, MockContext> for Mock {
             cover_key: None,
             cover_uploaded: false,
             cover_version: 0,
+            cover_hash: crate::value::image::ImageHash::default(),
+            cover_ext: crate::value::image::ImageExt::Png,
             chapter_count: 0,
             creator_id: oper.entry.creator_id.clone(),
             workset: None,
@@ -456,12 +460,36 @@ impl<'a> Step<ReserveComicCover<'a>, MockContext> for Mock {
             .find(|comic| comic.id == oper.id)
             .ok_or_else(|| expected("error-comic-not-found"))?;
 
+        let same_hash =
+            comic.cover_key.is_some() && comic.cover_hash == *oper.image_hash;
+
+        if same_hash && comic.cover_ext != oper.image_ext {
+            return Err(expected("error-invalid-image-extension"));
+        }
+
+        if same_hash {
+            //
+            let object_key = comic.cover_key.clone().ok_or_else(|| {
+                BaseError::Unrecoverable {
+                    message: "[Mock::ReserveComicCover] cover key is missing"
+                        .into(),
+                }
+            })?;
+
+            return accept(ComicCoverReservation {
+                object_key,
+                prev_object_key: None,
+                cover_version: comic.cover_version,
+                upload_required: !comic.cover_uploaded,
+            });
+        }
+
         let cover_version = comic.cover_version + 1;
 
         let object_key = ComicComplex::gen_cover_key(
             oper.id,
             cover_version,
-            oper.file_extension,
+            oper.image_ext.suffix(),
         );
 
         let prev_object_key = comic.cover_key.clone();
@@ -472,12 +500,17 @@ impl<'a> Step<ReserveComicCover<'a>, MockContext> for Mock {
 
         comic.cover_version = cover_version;
 
+        comic.cover_hash = oper.image_hash.clone();
+
+        comic.cover_ext = oper.image_ext;
+
         comic.updated_at = now();
 
         accept(ComicCoverReservation {
             object_key,
             prev_object_key,
             cover_version,
+            upload_required: true,
         })
     }
 }
@@ -496,6 +529,7 @@ impl<'a> Step<MarkComicCoverUploaded<'a>, MockContext> for Mock {
             oper.id,
             oper.cover_version,
             oper.cover_key,
+            oper.cover_uploaded,
         )
     }
 }

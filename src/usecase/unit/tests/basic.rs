@@ -17,7 +17,7 @@ async fn list_infos_returns_units_for_team_member() {
 
     mock.seed_unit(unit("unit-a", "page-1", 0, "", Some("proof"), true));
 
-    let listed = list_all_infos(
+    let listed = list_infos(
         &mock,
         token("user-1"),
         ListPageUnitInfosParams {
@@ -61,7 +61,7 @@ async fn list_infos_returns_units_for_assignment_fallback() {
 
     mock.seed_unit(unit("unit-a", "page-1", 0, "alpha", None, false));
 
-    let listed = list_all_infos(
+    let listed = list_infos(
         &mock,
         token("user-2"),
         ListPageUnitInfosParams {
@@ -89,7 +89,7 @@ async fn list_infos_rejects_unrelated_user() {
 
     seed_scope(&mock, 0, 0, 0);
 
-    let e = list_all_infos(
+    let e = list_infos(
         &mock,
         token("user-2"),
         ListPageUnitInfosParams {

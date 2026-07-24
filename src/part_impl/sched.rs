@@ -1,7 +1,6 @@
 //! Fixed production composition for periodic background jobs.
 
 use tokio::sync::watch;
-
 use tokio_util::sync::CancellationToken;
 
 use crate::part_impl::shared::RdbCore;

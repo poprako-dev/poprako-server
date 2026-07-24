@@ -21,10 +21,10 @@ async fn reserve_avatar_updates_state_enqueues_check_and_returns_put_url() {
     .await
     .unwrap();
 
-    assert_eq!(val.avatar_version, 1);
+    assert_eq!(val.slot.as_ref().unwrap().image_version, 1);
 
     assert_eq!(
-        val.put_url,
+        val.slot.as_ref().unwrap().put_url,
         "https://test.local/put/team_avatar/team-1-1.png"
     );
 
@@ -154,6 +154,8 @@ async fn mark_avatar_uploaded_marks_matching_version() {
 
     mark_avatar_uploaded(
         &mock,
+        &mock,
+        &mock,
         token("user-1"),
         "team-1".into(),
         mark_params(2),
@@ -175,6 +177,8 @@ async fn mark_avatar_uploaded_accepts_repeated_matching_version() {
 
     let first = mark_avatar_uploaded(
         &mock,
+        &mock,
+        &mock,
         token("user-1"),
         "team-1".into(),
         mark_params(2),
@@ -184,6 +188,8 @@ async fn mark_avatar_uploaded_accepts_repeated_matching_version() {
     assert!(first.is_ok());
 
     let second = mark_avatar_uploaded(
+        &mock,
+        &mock,
         &mock,
         token("user-1"),
         "team-1".into(),
@@ -206,6 +212,8 @@ async fn mark_avatar_uploaded_rejects_stale_version() {
     mock.seed_member(member("member-1", "user-1", "team-1"));
 
     let err = mark_avatar_uploaded(
+        &mock,
+        &mock,
         &mock,
         token("user-1"),
         "team-1".into(),
@@ -248,9 +256,11 @@ async fn mark_avatar_uploaded_rejects_old_reservation_replay() {
     .ok()
     .unwrap();
 
-    assert_eq!(reserved.avatar_version, 2);
+    assert_eq!(reserved.slot.as_ref().unwrap().image_version, 2);
 
     let err = mark_avatar_uploaded(
+        &mock,
+        &mock,
         &mock,
         token("user-1"),
         "team-1".into(),

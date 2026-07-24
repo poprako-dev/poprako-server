@@ -13,9 +13,7 @@ use crate::model::user::{UserCredential, UserInfo};
 use crate::part::image::ImageManager;
 use crate::part::prom::Prom;
 use crate::part::prom::payload::{Payload, image};
-use crate::part::repo::oper::chapter::{
-    CompleteChapterRawProvide, GetChapterInfoExcluded, ResetChapterRawProvide,
-};
+use crate::part::repo::oper::chapter::GetChapterInfoExcluded;
 use crate::part::repo::oper::comic::{
     GetComicInfoExcluded, MarkComicCoverUploaded,
 };
@@ -150,8 +148,8 @@ pub async fn process_pending(mock: &Mock) -> BaseResult<()> {
 
         match payload {
             //
-            Payload::CheckChapterUploadFinish(task) => {
-                chapter::process_check_upload_finish(mock, &task).await?;
+            Payload::AdvanceRawProvide(task) => {
+                chapter::process_advance_raw_provide(mock, &task).await?;
             }
 
             Payload::Image(task) => {
@@ -179,6 +177,8 @@ async fn process_image_task(
             resource_id,
             object_key,
             version,
+            image_hash,
+            image_ext,
         } => match image_pool.head_object(object_key).await? {
             //
             Some(object_info) => {
@@ -191,19 +191,34 @@ async fn process_image_task(
                         .into_iter()
                         .find(|page_info| page_info.id == *resource_id);
 
+                    // SAFETY: stale payload keys are cleaned only by
+                    // dedicated Delete tasks.
                     let Some(page_info) = page_info else {
-                        return image_pool.delete_object(object_key).await;
+                        return accept(());
                     };
 
                     if page_info.image_version != *version {
                         return accept(());
                     }
 
-                    if page_info.image_key.as_deref() != Some(object_key)
-                        || page_info.image_hash != object_info.checksum_sha256
-                        || page_info.image_byte_length
-                            != object_info.byte_length
+                    if page_info.image_key.as_deref() != Some(object_key) {
+                        return Err(BaseError::Unrecoverable {
+                            message: "prom page image version matches but object key differs"
+                                .into(),
+                        });
+                    }
+
+                    if page_info.image_hash != *image_hash
+                        || page_info.image_ext != *image_ext
                     {
+                        return Err(BaseError::Unrecoverable {
+                            message: "prom page image payload identity differs from current resource"
+                                .into(),
+                        });
+                    }
+
+                    if *image_hash != object_info.checksum_sha256 {
+                        //
                         mark_page_image_unverified(
                             image_pool,
                             resource_id,
@@ -222,6 +237,10 @@ async fn process_image_task(
                     resource_id,
                     object_key,
                     *version,
+                    image_hash,
+                    *image_ext,
+                    object_info.checksum_sha256 == *image_hash,
+                    object_info.checksum_sha256 != *image_hash,
                 )
                 .await
             }
@@ -238,7 +257,20 @@ async fn process_image_task(
                     .await
                 }
 
-                _ => accept(()),
+                _ => {
+                    process_existing_image(
+                        image_pool,
+                        *resource_kind,
+                        resource_id,
+                        object_key,
+                        *version,
+                        image_hash,
+                        *image_ext,
+                        false,
+                        false,
+                    )
+                    .await
+                }
             },
         },
 
@@ -265,10 +297,22 @@ async fn mark_page_image_unverified(
             message: trl("error-page-not-found"),
         })?;
 
-    if page_info.image_version != image_version
-        || page_info.image_key.as_deref() != Some(object_key)
-    {
-        return accept(());
+    match (
+        page_info.image_version == image_version,
+        page_info.image_key.as_deref() == Some(object_key),
+    ) {
+        //
+        (false, _) => return accept(()),
+
+        (true, false) => {
+            return Err(BaseError::Unrecoverable {
+                message:
+                    "prom page image version matches but object key differs"
+                        .into(),
+            });
+        }
+
+        (true, true) => {}
     }
 
     mock.coord(async move |context| {
@@ -303,14 +347,6 @@ async fn mark_page_image_unverified(
         )
         .await?;
 
-        mock.step(
-            context,
-            &ResetChapterRawProvide {
-                id: &page_info.chapter_id,
-            },
-        )
-        .await?;
-
         accept(())
     })
     .await
@@ -323,44 +359,57 @@ async fn process_existing_image(
     resource_id: &str,
     object_key: &str,
     image_version: u32,
+    image_hash: &crate::value::image::ImageHash,
+    image_ext: crate::value::image::ImageExt,
+    image_uploaded: bool,
+    delete_mismatch: bool,
 ) -> BaseResult<()> {
     //
     let resource_state = mock
         .coord(async move |context| {
-            match mark_uploaded(
+            //
+            let resource_state = classify_expected_mark(
                 mock,
                 context,
                 kind,
                 resource_id,
                 object_key,
                 image_version,
+                image_hash,
+                image_ext,
             )
-            .await
-            {
-                Ok(()) => accept(ResourceState::Current),
+            .await?;
 
-                Err(BaseError::Expected { .. }) => {
-                    classify_expected_mark(
-                        mock,
-                        context,
-                        kind,
-                        resource_id,
-                        object_key,
-                        image_version,
-                    )
-                    .await
-                }
-
-                Err(error) => Err(error),
+            if !matches!(resource_state, ResourceState::Current) {
+                return accept(resource_state);
             }
+
+            mark_uploaded(
+                mock,
+                context,
+                kind,
+                resource_id,
+                object_key,
+                image_version,
+                image_uploaded,
+            )
+            .await?;
+
+            accept(ResourceState::Current)
         })
         .await?;
 
     match resource_state {
         //
+        ResourceState::Current if delete_mismatch => {
+            mock.delete_object(object_key).await
+        }
+
         ResourceState::Current | ResourceState::Stale => accept(()),
 
-        ResourceState::Missing => mock.delete_object(object_key).await,
+        // SAFETY: stale and deleted resource keys belong exclusively to
+        // dedicated Delete tasks.
+        ResourceState::Missing => accept(()),
 
         ResourceState::Mismatched => Err(BaseError::Unrecoverable {
             message: "prom image identity does not match current resource"
@@ -376,6 +425,7 @@ async fn mark_uploaded(
     resource_id: &str,
     object_key: &str,
     image_version: u32,
+    image_uploaded: bool,
 ) -> BaseResult<()> {
     match kind {
         //
@@ -386,6 +436,7 @@ async fn mark_uploaded(
                     id: resource_id,
                     avatar_version: image_version,
                     avatar_key: Some(object_key),
+                    avatar_uploaded: image_uploaded,
                 },
             )
             .await
@@ -398,6 +449,7 @@ async fn mark_uploaded(
                     id: resource_id,
                     avatar_version: image_version,
                     avatar_key: Some(object_key),
+                    avatar_uploaded: image_uploaded,
                 },
             )
             .await
@@ -410,6 +462,7 @@ async fn mark_uploaded(
                     id: resource_id,
                     cover_version: image_version,
                     cover_key: Some(object_key),
+                    cover_uploaded: image_uploaded,
                 },
             )
             .await
@@ -447,14 +500,6 @@ async fn mark_uploaded(
             )
             .await?;
 
-            mock.step(
-                context,
-                &CompleteChapterRawProvide {
-                    id: &page_info.chapter_id,
-                },
-            )
-            .await?;
-
             accept(())
         }
     }
@@ -465,20 +510,23 @@ fn classify_current_identity(
     current_object_key: Option<&str>,
     image_version: u32,
     object_key: &str,
-    err_message: &'static str,
+    current_hash: &crate::value::image::ImageHash,
+    current_ext: crate::value::image::ImageExt,
+    image_hash: &crate::value::image::ImageHash,
+    image_ext: crate::value::image::ImageExt,
 ) -> BaseResult<ResourceState> {
     match (
         current_version == image_version,
-        current_object_key == Some(object_key),
+        current_object_key == Some(object_key)
+            && current_hash == image_hash
+            && current_ext == image_ext,
     ) {
         //
         (false, _) => accept(ResourceState::Stale),
 
         (true, false) => accept(ResourceState::Mismatched),
 
-        (true, true) => Err(BaseError::Unrecoverable {
-            message: err_message.into(),
-        }),
+        (true, true) => accept(ResourceState::Current),
     }
 }
 
@@ -489,6 +537,8 @@ async fn classify_expected_mark(
     resource_id: &str,
     object_key: &str,
     image_version: u32,
+    image_hash: &crate::value::image::ImageHash,
+    image_ext: crate::value::image::ImageExt,
 ) -> BaseResult<ResourceState> {
     match kind {
         //
@@ -503,7 +553,10 @@ async fn classify_expected_mark(
                     user_info.avatar_key.as_deref(),
                     image_version,
                     object_key,
-                    "[MockProm::classify_expected_mark] current user avatar version failed to mark uploaded",
+                    &user_info.avatar_hash,
+                    user_info.avatar_ext,
+                    image_hash,
+                    image_ext,
                 ),
 
                 Err(BaseError::Expected { .. }) => {
@@ -525,7 +578,10 @@ async fn classify_expected_mark(
                     team_info.avatar_key.as_deref(),
                     image_version,
                     object_key,
-                    "[MockProm::classify_expected_mark] current team avatar version failed to mark uploaded",
+                    &team_info.avatar_hash,
+                    team_info.avatar_ext,
+                    image_hash,
+                    image_ext,
                 ),
 
                 Err(BaseError::Expected { .. }) => {
@@ -552,7 +608,10 @@ async fn classify_expected_mark(
                     comic_info.cover_key.as_deref(),
                     image_version,
                     object_key,
-                    "[MockProm::classify_expected_mark] current comic cover version failed to mark uploaded",
+                    &comic_info.cover_hash,
+                    comic_info.cover_ext,
+                    image_hash,
+                    image_ext,
                 ),
 
                 Err(BaseError::Expected { .. }) => {
@@ -573,7 +632,10 @@ async fn classify_expected_mark(
                     page_info.image_key.as_deref(),
                     image_version,
                     object_key,
-                    "[MockProm::classify_expected_mark] current page image version failed to mark uploaded",
+                    &page_info.image_hash,
+                    page_info.image_ext,
+                    image_hash,
+                    image_ext,
                 ),
 
                 Err(BaseError::Expected { .. }) => {

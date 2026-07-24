@@ -121,14 +121,14 @@ export async function runIt03Module(ctx: RunCtx): Promise<void> {
                 {
                     page_id: pageIds[0],
                     image_hash: sortedPages[0]!.image_hash,
-                    byte_length: sortedPages[0]!.byte_length,
-                    extension: sortedPages[0]!.extension,
+                    byte_length: 1,
+                    ext: sortedPages[0]!.ext,
                 },
                 {
                     page_id: pageIds[0],
                     image_hash: sortedPages[0]!.image_hash,
-                    byte_length: sortedPages[0]!.byte_length,
-                    extension: sortedPages[0]!.extension,
+                    byte_length: 1,
+                    ext: sortedPages[0]!.ext,
                 },
             ],
         }),
@@ -225,8 +225,8 @@ export async function runIt03Module(ctx: RunCtx): Promise<void> {
     expectError(
         await guest01.api.post<ErrorBody>(`/api/v1/pages/${p2Id}/image/reserve`, {
             image_hash: sortedPages[2]!.image_hash,
-            byte_length: sortedPages[2]!.byte_length,
-            extension: sortedPages[2]!.extension,
+            byte_length: 1,
+            ext: sortedPages[2]!.ext,
         }),
         403,
         4,
@@ -236,8 +236,8 @@ export async function runIt03Module(ctx: RunCtx): Promise<void> {
     expectError(
         await ctx.sadmin.post<ErrorBody>("/api/v1/pages/page-does-not-exist/image/reserve", {
             image_hash: sortedPages[0]!.image_hash,
-            byte_length: sortedPages[0]!.byte_length,
-            extension: sortedPages[0]!.extension,
+            byte_length: 1,
+            ext: sortedPages[0]!.ext,
         }),
         422,
         2,
@@ -343,8 +343,8 @@ export async function runIt03Module(ctx: RunCtx): Promise<void> {
     expectError(
         await ctx.sadmin.post<ErrorBody>(`/api/v1/pages/${oldD3PageId}/image/reserve`, {
             image_hash: sortedPages[0]!.image_hash,
-            byte_length: sortedPages[0]!.byte_length,
-            extension: sortedPages[0]!.extension,
+            byte_length: 1,
+            ext: sortedPages[0]!.ext,
         }),
         422,
         2,

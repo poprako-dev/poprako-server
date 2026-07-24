@@ -230,6 +230,7 @@ pub async fn mark_avatar_uploaded(
     usecase::user::mark_avatar_uploaded(
         harn.drive(),
         harn.repo(),
+        harn.image_pool(),
         user_token,
         user_id,
         params,

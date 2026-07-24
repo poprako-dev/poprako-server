@@ -202,8 +202,19 @@ impl TeamPermComplex {
         check_user_is_team_admin(proxy, user_id, team_id).await
     }
 
-    /// Verify the user has super-admin privileges required to list all teams.
-    pub async fn ensure_user_can_list_all<P>(
+    /// Verify the user can create a team.
+    pub async fn ensure_user_can_create<P>(
+        proxy: &mut P,
+        user_id: &str,
+    ) -> BaseResult<()>
+    where
+        P: for<'a> Proxy<GetUserInfo<'a>, Error = BaseError>,
+    {
+        Self::check_user_is_sadmin(proxy, user_id).await
+    }
+
+    /// Verify the user can list team infos.
+    pub async fn ensure_user_can_list_infos<P>(
         proxy: &mut P,
         user_id: &str,
     ) -> BaseResult<()>

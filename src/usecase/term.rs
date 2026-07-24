@@ -16,8 +16,7 @@ use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::comic::GetComicInfo;
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::term::{
-    CreateTerm, DeleteTerm, GetTermInfo, GetTermInfoExcluded, ListTermInfos,
-    UpdateTerm,
+    CreateTerm, DeleteTerm, GetTermInfo, ListTermInfos, LockTerm, UpdateTerm,
 };
 use crate::part::repo::oper::termbase::{
     GetTermbaseInfo, GetTermbaseInfoExcluded, TouchTermbase,
@@ -249,7 +248,7 @@ where
 
         repo.step(
             context,
-            &GetTermInfoExcluded {
+            &LockTerm {
                 id: &term_info_update.id,
             },
         )
@@ -323,9 +322,7 @@ where
         )
         .await?;
 
-        let term_info = repo
-            .step(context, &GetTermInfoExcluded { id: &term_info.id })
-            .await?;
+        repo.step(context, &LockTerm { id: &term_info.id }).await?;
 
         repo.step(context, &DeleteTerm { id: &term_info.id })
             .await?;

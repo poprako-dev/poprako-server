@@ -27,6 +27,8 @@ pub mod comic_archive;
 pub mod comic_list;
 /// Comment request/response DTOs.
 pub mod comment;
+/// Shared image-upload request and response DTOs.
+pub mod image;
 /// Member request/response DTOs.
 pub mod member;
 /// Member invitation request/response DTOs.

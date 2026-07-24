@@ -183,7 +183,9 @@ pub async fn mark_avatar_uploaded(
 ) -> HttpNoContent {
     //
     usecase::team::mark_avatar_uploaded(
+        harn.drive(),
         harn.repo(),
+        harn.image_pool(),
         user_token,
         team_id,
         params,

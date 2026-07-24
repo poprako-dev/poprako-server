@@ -776,11 +776,12 @@ def main() -> int:
 
     parser.add_argument(
         "--fix",
-        action="store_true",
+        action=argparse.BooleanOptionalAction,
+        default=True,
         help=(
             "Apply BLK000, BLK001, and BLK002 fixes in place, "
             "then run the checker again. Files containing Rust "
-            "parse errors are not changed."
+            "parse errors are not changed. Pass --no-fix to check only."
         ),
     )
 
