@@ -14,14 +14,9 @@ use crate::part::effect::EffectDevelop;
 use crate::part::image::ImageManager;
 use crate::part_impl::drive::rdb_impl::RdbDrive;
 use crate::part_impl::prom::rdb_impl::entity::LocalMessageRow;
-use crate::part_impl::prom::rdb_impl::handler::base::{
-    RdbPromHandler, dispatch_payload,
-};
+use crate::part_impl::prom::rdb_impl::handler::base::{RdbPromHandler, dispatch_payload};
 use crate::part_impl::prom::rdb_impl::handler::task_flow::TaskFlow;
-use crate::part_impl::prom::rdb_impl::repo::{
-    ClaimPending, CompleteMessage, FailMessage, PollPending, PurgeCompleted,
-    ResetStuck, RetryMessage,
-};
+use crate::part_impl::prom::rdb_impl::repo::{ClaimPending, CompleteMessage, FailMessage, PollPending, PurgeCompleted, ResetStuck, RetryMessage};
 use crate::part_impl::repo::rdb_impl::RdbRepo;
 use crate::part_impl::shared::RdbContext;
 use crate::result::BaseResult;
@@ -48,7 +43,7 @@ type WorkerSender = mpsc::UnboundedSender<LocalMessageRow>;
 /// When the task has been retried 3 or more times, transitions from
 /// [`TaskFlow::Retry`] to [`TaskFlow::Dead`] so the message is not
 /// requeued indefinitely.
-pub(super) fn enforce_retry_limit(
+pub fn enforce_retry_limit(
     task_flow: TaskFlow,
     retried_count: i64,
 ) -> TaskFlow {

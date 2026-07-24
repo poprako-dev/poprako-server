@@ -36,7 +36,6 @@ pub struct UnitTranslationExportPayload {
 
     /// Whether this unit has been proofread.
     pub is_proofread: bool,
-
     /// Proofread text content, or [`None`] if not proofread.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub proofread_text: Option<String>,

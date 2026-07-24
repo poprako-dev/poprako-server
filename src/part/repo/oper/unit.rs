@@ -1,8 +1,6 @@
 use poprako_orchestra::Oper;
 
-use crate::model::unit::{
-    UnitContent, UnitCounters, UnitIndex, UnitIndexUpdate, UnitInfo,
-};
+use crate::model::unit::{UnitContent, UnitCounters, UnitIndex, UnitIndexUpdate, UnitInfo};
 
 pub struct ListUnitInfos<'a> {
     pub page_id: &'a str,

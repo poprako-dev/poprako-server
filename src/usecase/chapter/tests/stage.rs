@@ -157,7 +157,7 @@ async fn update_stage_publish_enqueues_page_image_delete() {
 
     assert_eq!(snapshot.prom_records.len(), 1);
 
-    let Payload::Image(ImagePayload::Delete { object_key }) =
+    let TaskPayload::Image(ImagePayload::Delete { object_key }) =
         snapshot.prom_records[0].payload()
     else {
         panic!("expected image delete payload");

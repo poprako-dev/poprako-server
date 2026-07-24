@@ -4,10 +4,7 @@ use poprako_orchestra::{Nucl, run_proxy};
 use tracing::instrument;
 
 use crate::complex::comment::{CommentComplex, CommentPermComplex};
-use crate::data::comment::{
-    CommentInfoVal, CreateCommentParams, CreateCommentPayload,
-    ListCommentInfosParams,
-};
+use crate::data::comment::{CommentInfoVal, CreateCommentParams, CreateCommentPayload, ListCommentInfosParams};
 use crate::model::comment::{CommentEntry, CommentListSpec};
 use crate::model::user::UserToken;
 use crate::part::image::ImagePool;

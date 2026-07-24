@@ -9,18 +9,12 @@
 
 use super::*;
 
-use crate::data::comic::{
-    MarkComicCoverUploadedParams, ReserveComicCoverParams,
-};
+use crate::data::comic::{MarkComicCoverUploadedParams, ReserveComicCoverParams};
 use crate::model::comic::ComicInfo;
 use crate::model::workset::WorksetInfo;
-use crate::part::prom::payload::Payload;
-use crate::part::prom::payload::image::{
-    Payload as ImagePayload, ResourceKind,
-};
-use crate::test_util::{
-    assert_expected_message, assert_one_image_check_record,
-};
+use crate::part::prom::payload::TaskPayload;
+use crate::part::prom::payload::image::{ImagePayload, ResourceKind};
+use crate::test_util::{assert_expected_message, assert_one_image_check_record};
 use crate::value::image::{ImageExt, ImageHash};
 
 fn reserve_params(ext: ImageExt, hash_byte: u8) -> ReserveComicCoverParams {
@@ -301,7 +295,7 @@ async fn delete_removes_comic_updates_count_and_enqueues_cover_delete() {
 
     assert!(matches!(
         snapshot.prom_records[0].payload(),
-        Payload::Image(ImagePayload::Delete { object_key }) if object_key == "cover.png"
+        TaskPayload::Image(ImagePayload::Delete { object_key }) if object_key == "cover.png"
     ));
 }
 

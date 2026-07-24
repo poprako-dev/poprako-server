@@ -32,26 +32,18 @@ use super::*;
 
 use time::OffsetDateTime;
 
-use crate::data::team::{
-    CreateTeamParams, ListTeamInfosParams, MarkTeamAvatarUploadedParams,
-    ReserveTeamAvatarParams, UpdateTeamInfoParams,
-};
+use crate::data::team::{CreateTeamParams, ListTeamInfosParams, MarkTeamAvatarUploadedParams, ReserveTeamAvatarParams, UpdateTeamInfoParams};
 use crate::model::comic::ComicInfo;
 use crate::model::member::MemberInfo;
 use crate::model::team::TeamInfo;
 use crate::model::user::{UserCredential, UserInfo, UserToken};
-use crate::part::prom::payload::Payload;
-use crate::part::prom::payload::image::{
-    Payload as ImagePayload, ResourceKind,
-};
+use crate::part::prom::payload::TaskPayload;
+use crate::part::prom::payload::image::{ImagePayload, ResourceKind};
 use crate::part_impl::prom::mock_impl::MockPromRecord;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::fixture::{team, workset};
-use crate::test_util::{
-    assert_expected_message, assert_expected_variant,
-    assert_one_image_check_record,
-};
+use crate::test_util::{assert_expected_message, assert_expected_variant, assert_one_image_check_record};
 use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
 
@@ -107,8 +99,8 @@ fn comic_with_uploaded_cover(
         cover_key: Some(cover_key.into()),
         cover_uploaded: true,
         cover_version: 1,
-        cover_hash: crate::value::image::ImageHash::default(),
-        cover_ext: crate::value::image::ImageExt::Png,
+        cover_hash: ImageHash::default(),
+        cover_ext: ImageExt::Png,
         chapter_count: 0,
         creator_id: "user-1".into(),
         workset: None,
@@ -147,8 +139,8 @@ fn user(id: &str, is_sadmin: bool) -> UserInfo {
         avatar_key: None,
         avatar_uploaded: false,
         avatar_version: 0,
-        avatar_hash: crate::value::image::ImageHash::default(),
-        avatar_ext: crate::value::image::ImageExt::Png,
+        avatar_hash: ImageHash::default(),
+        avatar_ext: ImageExt::Png,
         is_sadmin,
         last_active_at: time,
         created_at: time,
@@ -203,7 +195,7 @@ fn count_delete_records(records: &[MockPromRecord], object_key: &str) -> usize {
         .filter(|record| {
             matches!(
                 record.payload(),
-                Payload::Image(ImagePayload::Delete { object_key: key })
+                TaskPayload::Image(ImagePayload::Delete { object_key: key })
                     if key == object_key
             )
         })

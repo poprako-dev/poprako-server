@@ -1,5 +1,6 @@
 //! Cloudflare R2-backed image URL signer.
 
+use std::collections::BTreeMap;
 use std::time::Duration;
 
 use anyhow::Context as _;
@@ -15,9 +16,7 @@ use url::Url;
 
 use poprako_util::i18n::trl;
 
-use crate::part::image::{
-    ImageManager, ImageObjectInfo, ImagePool, ImageUploadSlot, ImageUploadSpec,
-};
+use crate::part::image::{ImageManager, ImageObjectInfo, ImagePool, ImageUploadSlot, ImageUploadSpec};
 use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 use crate::value::image::ImageHash;
 
@@ -214,7 +213,7 @@ impl ImagePool for R2ImagePool {
             }
         })?;
 
-        let mut headers = std::collections::BTreeMap::new();
+        let mut headers = BTreeMap::new();
 
         headers.insert("content-length".into(), content_length.to_string());
 

@@ -5,19 +5,12 @@ use poprako_orchestra_extra::prom::task::Task;
 use crate::complex::chapter::ChapterComplex;
 use crate::complex::image::ImageComplex;
 use crate::model::chapter::ChapterInfoUpdate;
-use crate::part::prom::payload::{Payload, image};
+use crate::part::prom::payload::{TaskPayload, image};
 use crate::part::repo::oper::assignment::DeleteAssignments;
 use crate::part::repo::oper::assignment_invitation::DeleteAssignmentInvitations;
-use crate::part::repo::oper::chapter::{
-    DeleteChapter, GetChapterInfoExcluded, ListChapterInfosExcluded,
-    UnpinOtherChapters, UpdateChapter,
-};
-use crate::part::repo::oper::comic::{
-    TouchComicLastActive, UpdateComicChapterCount,
-};
-use crate::part::repo::oper::page::{
-    ClearPageImagesForPublish, DeletePages, ListPageInfos,
-};
+use crate::part::repo::oper::chapter::{DeleteChapter, GetChapterInfoExcluded, ListChapterInfosExcluded, UnpinOtherChapters, UpdateChapter};
+use crate::part::repo::oper::comic::{TouchComicLastActive, UpdateComicChapterCount};
+use crate::part::repo::oper::page::{ClearPageImagesForPublish, DeletePages, ListPageInfos};
 use crate::result::{BaseError, BaseResult, accept};
 
 impl ChapterComplex {
@@ -29,7 +22,7 @@ impl ChapterComplex {
     where
         P: for<'a> Proxy<ClearPageImagesForPublish<'a>, Error = BaseError>
             + for<'t, 'a> Proxy<
-                DeferBatch<'t, 'a, String, Payload, ()>,
+                DeferBatch<'t, 'a, String, TaskPayload, ()>,
                 Error = BaseError,
             >,
     {
@@ -55,7 +48,7 @@ impl ChapterComplex {
             + for<'a> Proxy<UpdateComicChapterCount<'a>, Error = BaseError>
             + for<'a> Proxy<TouchComicLastActive<'a>, Error = BaseError>
             + for<'t, 'a> Proxy<
-                DeferBatch<'t, 'a, String, Payload, ()>,
+                DeferBatch<'t, 'a, String, TaskPayload, ()>,
                 Error = BaseError,
             >,
     {
@@ -128,7 +121,7 @@ async fn prom_image_deletes<P>(
 where
     P: for<'a> Proxy<ListPageInfos<'a>, Error = BaseError>
         + for<'t, 'a> Proxy<
-            DeferBatch<'t, 'a, String, Payload, ()>,
+            DeferBatch<'t, 'a, String, TaskPayload, ()>,
             Error = BaseError,
         >,
 {
@@ -148,7 +141,7 @@ async fn defer_image_deletes<P>(
 ) -> BaseResult<()>
 where
     P: for<'t, 'a> Proxy<
-            DeferBatch<'t, 'a, String, Payload, ()>,
+            DeferBatch<'t, 'a, String, TaskPayload, ()>,
             Error = BaseError,
         >,
 {
@@ -159,10 +152,10 @@ where
 
     let payloads = object_keys
         .into_iter()
-        .map(|object_key| Payload::Image(image::Payload::Delete { object_key }))
+        .map(|object_key| TaskPayload::Image(image::ImagePayload::Delete { object_key }))
         .collect::<Vec<_>>();
 
-    let tasks: Vec<Task<'_, String, Payload>> = delete_ids
+    let tasks: Vec<Task<'_, String, TaskPayload>> = delete_ids
         .iter()
         .zip(payloads.iter())
         .map(|(id, payload)| Task {

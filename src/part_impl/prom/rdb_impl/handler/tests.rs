@@ -1,8 +1,4 @@
-// image_payloads_from_rdb_dispatch(dispatch_payload)(positive): payloads stored by the RDB defer path are decoded and dispatched by their topic.
-
-#[allow(unused_imports)]
 use super::*;
-
 use super::pool::enforce_retry_limit;
 
 use diesel::prelude::*;
@@ -10,7 +6,7 @@ use diesel_async::RunQueryDsl;
 use poprako_orchestra_extra::prom::task::Task;
 use time::OffsetDateTime;
 
-use crate::part::prom::payload::{Payload, image};
+use crate::part::prom::payload::{TaskPayload, image};
 use crate::part_impl::drive::rdb_impl::RdbDrive;
 use crate::part_impl::prom::rdb_impl::entity::LocalMessageEntry;
 use crate::part_impl::prom::rdb_impl::handler::base::dispatch_payload;
@@ -18,6 +14,8 @@ use crate::part_impl::prom::rdb_impl::handler::task_flow::TaskFlow;
 use crate::part_impl::prom::rdb_impl::repo::RdbPromRepo;
 use crate::part_impl::prom::rdb_impl::test_shared;
 use crate::part_impl::repo::mock_impl::Mock;
+use crate::part_impl::repo::rdb_impl::schema::t_local_message;
+use crate::value::image::{ImageExt, ImageHash};
 use crate::part_impl::repo::rdb_impl::RdbRepo;
 use crate::part_impl::shared::RdbCore;
 
@@ -31,7 +29,7 @@ pub async fn image_payloads_from_rdb_dispatch(shared: RdbCore) {
 
     let delete_id = "rdb-test-prom-handler-delete".to_string();
 
-    let delete_payload = Payload::Image(image::Payload::Delete {
+    let delete_payload = TaskPayload::Image(image::ImagePayload::Delete {
         object_key: "old-avatar.png".to_string(),
     });
 
@@ -49,7 +47,7 @@ pub async fn image_payloads_from_rdb_dispatch(shared: RdbCore) {
     let mut conn = shared.get().await.ok().unwrap();
 
     diesel::insert_into(
-        crate::part_impl::repo::rdb_impl::schema::t_local_message::table,
+        t_local_message::table,
     )
     .values(&delete_local_message_entry)
     .execute(&mut conn)
@@ -57,11 +55,11 @@ pub async fn image_payloads_from_rdb_dispatch(shared: RdbCore) {
     .ok()
     .unwrap();
 
-    let delete_payload: serde_json::Value = crate::part_impl::repo::rdb_impl::schema::t_local_message::table
+    let delete_payload: serde_json::Value = t_local_message::table
         .filter(
-            crate::part_impl::repo::rdb_impl::schema::t_local_message::f_id.eq("rdb-test-prom-handler-delete"),
+            t_local_message::f_id.eq("rdb-test-prom-handler-delete"),
         )
-        .select(crate::part_impl::repo::rdb_impl::schema::t_local_message::f_payload)
+        .select(t_local_message::f_payload)
         .first(&mut conn)
         .await
         .ok()
@@ -92,13 +90,13 @@ pub async fn image_payloads_from_rdb_dispatch(shared: RdbCore) {
 
     let check_id = "rdb-test-prom-handler-check-uploaded".to_string();
 
-    let check_payload = Payload::Image(image::Payload::CheckUpload {
+    let check_payload = TaskPayload::Image(image::ImagePayload::CheckUpload {
         resource_kind: image::ResourceKind::UserAvatar,
         resource_id: "missing-user".to_string(),
         object_key: "new-avatar.png".to_string(),
         version: 1,
-        image_hash: crate::value::image::ImageHash::default(),
-        image_ext: crate::value::image::ImageExt::Png,
+        image_hash: ImageHash::default(),
+        image_ext: ImageExt::Png,
     });
 
     let check_task = Task {
@@ -113,7 +111,7 @@ pub async fn image_payloads_from_rdb_dispatch(shared: RdbCore) {
             .unwrap();
 
     diesel::insert_into(
-        crate::part_impl::repo::rdb_impl::schema::t_local_message::table,
+        t_local_message::table,
     )
     .values(&check_uploaded_local_message_entry)
     .execute(&mut conn)
@@ -122,12 +120,12 @@ pub async fn image_payloads_from_rdb_dispatch(shared: RdbCore) {
     .unwrap();
 
     let check_uploaded_payload: serde_json::Value =
-        crate::part_impl::repo::rdb_impl::schema::t_local_message::table
+        t_local_message::table
             .filter(
-                crate::part_impl::repo::rdb_impl::schema::t_local_message::f_id
+                t_local_message::f_id
                     .eq("rdb-test-prom-handler-check-uploaded"),
             )
-            .select(crate::part_impl::repo::rdb_impl::schema::t_local_message::f_payload)
+            .select(t_local_message::f_payload)
             .first(&mut conn)
             .await
             .ok()

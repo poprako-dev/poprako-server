@@ -9,9 +9,7 @@ use super::*;
 
 use time::OffsetDateTime;
 
-use crate::data::announcement::{
-    CreateAnnouncementParams, ListAnnouncementInfosParams,
-};
+use crate::data::announcement::{CreateAnnouncementParams, ListAnnouncementInfosParams};
 use crate::model::announcement::AnnouncementInfo;
 use crate::model::member::MemberInfo;
 use crate::model::user::{UserCredential, UserInfo, UserToken};
@@ -19,6 +17,7 @@ use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::{assert_expected_variant, now};
 use crate::value::announcement::AnnouncementInclOpt;
+use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
 
 fn token(user_id: &str) -> UserToken {
@@ -45,8 +44,8 @@ fn user(id: &str, nickname: &str) -> UserInfo {
         avatar_key: None,
         avatar_uploaded: false,
         avatar_version: 0,
-        avatar_hash: crate::value::image::ImageHash::default(),
-        avatar_ext: crate::value::image::ImageExt::Png,
+        avatar_hash: ImageHash::default(),
+        avatar_ext: ImageExt::Png,
         is_sadmin: false,
         last_active_at: time,
         created_at: time,

@@ -31,25 +31,17 @@ use super::*;
 use time::OffsetDateTime;
 
 use crate::complex::user::UserComplex;
-use crate::data::user::{
-    MarkUserAvatarUploadedParams, ReserveUserAvatarParams,
-    UpdateUserInfoParams, UpdateUserPasswordParams,
-};
+use crate::data::user::{MarkUserAvatarUploadedParams, ReserveUserAvatarParams, UpdateUserInfoParams, UpdateUserPasswordParams};
 use crate::model::member::MemberInfo;
 use crate::model::user::{UserInfo, UserToken};
 use crate::part::effect::event::Event;
-use crate::part::prom::payload::Payload;
-use crate::part::prom::payload::image::{
-    Payload as ImagePayload, ResourceKind,
-};
+use crate::part::prom::payload::TaskPayload;
+use crate::part::prom::payload::image::{ImagePayload, ResourceKind};
 use crate::part_impl::prom::mock_impl::MockPromRecord;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::fixture::{credential, user};
-use crate::test_util::{
-    assert_expected_message, assert_expected_variant,
-    assert_one_image_check_record,
-};
+use crate::test_util::{assert_expected_message, assert_expected_variant, assert_one_image_check_record};
 use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
 
@@ -139,7 +131,7 @@ fn count_delete_records(records: &[MockPromRecord], object_key: &str) -> usize {
         .filter(|record| {
             matches!(
                 record.payload(),
-                Payload::Image(ImagePayload::Delete { object_key: key })
+                TaskPayload::Image(ImagePayload::Delete { object_key: key })
                     if key == object_key
             )
         })

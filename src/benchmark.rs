@@ -5,17 +5,13 @@ use std::sync::OnceLock;
 
 use time::OffsetDateTime;
 
-use crate::complex::chapter_port::{
-    ChapterExportComplex, ChapterImportComplex,
-};
+use crate::complex::chapter_port::{ChapterExportComplex, ChapterImportComplex};
 use crate::complex::comic_archive::ComicArchiveComplex;
 use crate::complex::unit::UnitComplex;
 use crate::model::assignment::AssignmentInfo;
 use crate::model::chapter::ChapterInfo;
 use crate::model::comic::ComicInfo;
-use crate::model::comic_archive::{
-    ComicArchiveChapterSnapshot, ComicArchivePageSnapshot, ComicArchiveSnapshot,
-};
+use crate::model::comic_archive::{ComicArchiveChapterSnapshot, ComicArchivePageSnapshot, ComicArchiveSnapshot};
 use crate::model::page::PageInfo;
 use crate::model::unit::{UnitIndex, UnitInfo};
 use crate::model::user::UserInfo;
@@ -203,8 +199,8 @@ fn archive_snapshot() -> Option<ComicArchiveSnapshot> {
             cover_key: Some("covers/comic-1.webp".into()),
             cover_uploaded: true,
             cover_version: 1,
-            cover_hash: crate::value::image::ImageHash::default(),
-            cover_ext: crate::value::image::ImageExt::Webp,
+            cover_hash: ImageHash::default(),
+            cover_ext: ImageExt::Webp,
             chapter_count: CHAPTER_COUNT as i32,
             creator_id: "user-1".into(),
             workset: None,
@@ -236,8 +232,8 @@ fn user_info(archived_at: OffsetDateTime) -> UserInfo {
         avatar_key: None,
         avatar_uploaded: false,
         avatar_version: 0,
-        avatar_hash: crate::value::image::ImageHash::default(),
-        avatar_ext: crate::value::image::ImageExt::Png,
+        avatar_hash: ImageHash::default(),
+        avatar_ext: ImageExt::Png,
         is_sadmin: false,
         last_active_at: archived_at,
         created_at: archived_at,

@@ -73,7 +73,7 @@ async fn reserve_chapter_pages_creates_pages_and_urls() {
         .find(|record| {
             matches!(
                 record.payload(),
-                Payload::AdvanceRawProvide(AdvanceRawProvide {
+                TaskPayload::Chapter(ChapterPayload::TryAdvanceRawProvideStage {
                     chapter_id
                 }) if chapter_id == "chapter-1"
             )
@@ -249,7 +249,7 @@ async fn reserve_chapter_pages_replaces_explicit_image_and_deletes_old_key() {
     assert!(snapshot.prom_records.iter().any(|record| {
         matches!(
             record.payload(),
-            Payload::Image(ImagePayload::Delete { object_key })
+            TaskPayload::Image(ImagePayload::Delete { object_key })
                 if object_key == "old.png"
         )
     }));

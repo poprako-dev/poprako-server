@@ -2,10 +2,7 @@
 
 use poprako_orchestra::{Run, Step};
 
-use crate::part::repo::oper::unit::{
-    CountUnits, CreateUnit, DeleteUnit, ListUnitIndexes, ListUnitInfos,
-    SaveUnit, UpdateUnitIndexes,
-};
+use crate::part::repo::oper::unit::{CountUnits, CreateUnit, DeleteUnit, ListUnitIndexes, ListUnitInfos, SaveUnit, UpdateUnitIndexes};
 use crate::result::BaseError;
 
 /// Unit repository operations over standalone runs and coordinated steps.

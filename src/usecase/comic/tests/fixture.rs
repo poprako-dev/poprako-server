@@ -24,8 +24,8 @@ pub fn comic(id: &str, workset_id: &str, index: i32) -> ComicInfo {
         cover_key: None,
         cover_uploaded: false,
         cover_version: 0,
-        cover_hash: crate::value::image::ImageHash::default(),
-        cover_ext: crate::value::image::ImageExt::Png,
+        cover_hash: ImageHash::default(),
+        cover_ext: ImageExt::Png,
         chapter_count: 0,
         creator_id: "user-1".into(),
         workset: None,
@@ -46,8 +46,8 @@ pub fn comic_with_uploaded_cover(
         cover_key: Some(cover_key.into()),
         cover_uploaded: true,
         cover_version: 1,
-        cover_hash: crate::value::image::ImageHash::default(),
-        cover_ext: crate::value::image::ImageExt::Png,
+        cover_hash: ImageHash::default(),
+        cover_ext: ImageExt::Png,
         ..comic(id, workset_id, 0)
     }
 }

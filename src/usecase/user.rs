@@ -12,26 +12,17 @@ use poprako_util::i18n::trl;
 use crate::complex::image::ImageComplex;
 use crate::complex::user::UserComplex;
 use crate::data::image::ImageUploadSlotVal;
-use crate::data::user::{
-    MarkUserAvatarUploadedParams, ReserveUserAvatarParams,
-    ReserveUserAvatarPayload, UpdateUserInfoParams, UpdateUserPasswordParams,
-    UserInfoVal,
-};
+use crate::data::user::{MarkUserAvatarUploadedParams, ReserveUserAvatarParams, ReserveUserAvatarPayload, UpdateUserInfoParams, UpdateUserPasswordParams, UserInfoVal};
 use crate::model::user::UserToken;
 use crate::part::effect::EffectDevelop;
 use crate::part::effect::event::Event;
 use crate::part::effect::event::user::UserActivePayload;
 use crate::part::image::{ImageManager, ImagePool, ImageUploadSpec};
 use crate::part::prom::Prom;
-use crate::part::prom::payload::{Payload, image};
+use crate::part::prom::payload::{TaskPayload, image};
 use crate::part::repo::member::MemberRepo;
-use crate::part::repo::oper::member::{
-    DeleteMember, ListMemberInfosExcluded, UpdateMember,
-};
-use crate::part::repo::oper::user::{
-    DeleteUser, GetUserCredential, GetUserInfo, GetUserInfoExcluded,
-    ReserveUserAvatar, UpdateUser,
-};
+use crate::part::repo::oper::member::{DeleteMember, ListMemberInfosExcluded, UpdateMember};
+use crate::part::repo::oper::user::{DeleteUser, GetUserCredential, GetUserInfo, GetUserInfoExcluded, ReserveUserAvatar, UpdateUser};
 use crate::part::repo::user::UserRepo;
 use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 
@@ -284,7 +275,7 @@ where
                 //
                 batch_ids.push(ImageComplex::gen_delete_id());
 
-                batch_payloads.push(Payload::Image(image::Payload::Delete {
+                batch_payloads.push(TaskPayload::Image(image::ImagePayload::Delete {
                     object_key: prev_key.clone(),
                 }));
 
@@ -293,7 +284,7 @@ where
 
             batch_ids.push(ImageComplex::gen_check_id());
 
-            batch_payloads.push(Payload::Image(image::Payload::CheckUpload {
+            batch_payloads.push(TaskPayload::Image(image::ImagePayload::CheckUpload {
                 resource_kind: image::ResourceKind::UserAvatar,
                 resource_id: token.user_id.clone(),
                 object_key: avatar_reservation.object_key.clone(),
@@ -304,7 +295,7 @@ where
 
             batch_delays.push(Some(Duration::from_secs(15 * 60)));
 
-            let batch_tasks: Vec<Task<'_, String, Payload>> = batch_ids
+            let batch_tasks: Vec<Task<'_, String, TaskPayload>> = batch_ids
                 .iter()
                 .zip(batch_payloads.iter())
                 .zip(batch_delays.iter())
@@ -528,7 +519,7 @@ where
         {
             let delete_id = ImageComplex::gen_delete_id();
 
-            let payload = Payload::Image(image::Payload::Delete {
+            let payload = TaskPayload::Image(image::ImagePayload::Delete {
                 object_key: avatar_key.clone(),
             });
 

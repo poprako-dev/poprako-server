@@ -1,8 +1,6 @@
 use poprako_orchestra::Oper;
 
-use crate::model::user::{
-    UserAvatarReservation, UserCredential, UserEntry, UserInfo,
-};
+use crate::model::user::{UserAvatarReservation, UserCredential, UserEntry, UserInfo};
 use crate::value::image::{ImageExt, ImageHash};
 
 pub struct CreateUser<'a> {

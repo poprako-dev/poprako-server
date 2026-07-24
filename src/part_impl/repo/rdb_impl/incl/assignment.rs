@@ -1,8 +1,5 @@
 use crate::model::assignment::AssignmentInfo;
-use crate::part_impl::repo::rdb_impl::incl::framework::{
-    BatchByIds, ChapterByIds, ComicByIds, Incl, TeamByIds, UserByIds,
-    WorksetByIds, populate,
-};
+use crate::part_impl::repo::rdb_impl::incl::framework::{BatchByIds, ChapterByIds, ComicByIds, Incl, TeamByIds, UserByIds, WorksetByIds, populate};
 use crate::part_impl::shared::RdbConn;
 use crate::result::BaseResult;
 use crate::value::assignment::AssignmentInclOpt;

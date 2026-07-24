@@ -15,27 +15,20 @@ use crate::complex::image::ImageComplex;
 use crate::complex::page::manifest::build;
 use crate::complex::page::{PageComplex, PagePermComplex};
 use crate::data::image::ImageUploadSlotVal;
-use crate::data::page::{
-    ReserveChapterPagesParams, ReserveChapterPagesPayload, ReservedPagePayload,
-};
+use crate::data::page::{ReserveChapterPagesParams, ReserveChapterPagesPayload, ReservedPagePayload};
 use crate::model::page::{PageEntry, PageImageSpec, PageManifestUpdate};
 use crate::model::user::UserToken;
 use crate::part::image::{ImagePool, ImageUploadSpec};
 use crate::part::prom::Prom;
-use crate::part::prom::payload::chapter::AdvanceRawProvide;
-use crate::part::prom::payload::{Payload, image};
+use crate::part::prom::payload::chapter::ChapterPayload;
+use crate::part::prom::payload::{TaskPayload, image};
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::oper::assignment::FindAssignmentInfo;
-use crate::part::repo::oper::chapter::{
-    GetChapterInfoExcluded, SetChapterPageCounters,
-};
+use crate::part::repo::oper::chapter::{GetChapterInfoExcluded, SetChapterPageCounters};
 use crate::part::repo::oper::comic::TouchComicLastActive;
-use crate::part::repo::oper::page::{
-    CreatePages, DeletePages, ListPageInfosExcluded, ShiftPageIndexesTemporary,
-    UpdatePageManifest,
-};
+use crate::part::repo::oper::page::{CreatePages, DeletePages, ListPageInfosExcluded, ShiftPageIndexesTemporary, UpdatePageManifest};
 use crate::part::repo::page::PageRepo;
 use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
@@ -46,7 +39,7 @@ use crate::value::image::{ImageExt, ImageHash};
 /// The maximum is 200 because page reservation for a single chapter can never
 /// exceed this number — the manifest-based flow sets a hard cap for practical
 /// upload and review capacity.
-pub(super) fn validate_page_count(page_count: i32) -> BaseResult<()> {
+pub fn validate_page_count(page_count: i32) -> BaseResult<()> {
     //
     if !(1..=200).contains(&page_count) {
         return Err(BaseError::Expected {
@@ -373,7 +366,7 @@ where
                 //
                 task_ids.push(ImageComplex::gen_delete_id());
 
-                task_payloads.push(Payload::Image(image::Payload::Delete {
+                task_payloads.push(TaskPayload::Image(image::ImagePayload::Delete {
                     object_key: object_key.clone(),
                 }));
 
@@ -388,8 +381,8 @@ where
 
                 task_ids.push(ImageComplex::gen_check_id());
 
-                task_payloads.push(Payload::Image(
-                    image::Payload::CheckUpload {
+                task_payloads.push(TaskPayload::Image(
+                    image::ImagePayload::CheckUpload {
                         resource_kind: image::ResourceKind::PageImage,
                         resource_id: reservation.page_id.clone(),
                         object_key: object_key.clone(),
@@ -402,7 +395,7 @@ where
                 task_delays.push(Some(Duration::from_secs(15 * 60)));
             }
 
-            let image_tasks: Vec<Task<'_, String, Payload>> = task_ids
+            let image_tasks: Vec<Task<'_, String, TaskPayload>> = task_ids
                 .iter()
                 .zip(task_payloads.iter())
                 .zip(task_delays.iter())
@@ -432,7 +425,7 @@ where
             let advance_id = next_snowflake_id();
 
             let advance_payload =
-                Payload::AdvanceRawProvide(AdvanceRawProvide {
+                TaskPayload::Chapter(ChapterPayload::RawProvide {
                     chapter_id: chapter_info.id.clone(),
                 });
 

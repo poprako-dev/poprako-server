@@ -22,15 +22,14 @@ use super::*;
 
 use poprako_util::time::ToUnixMilli;
 
-use crate::data::member::{
-    CreateMemberParams, ListMemberInfosParams, UpdateMemberRolesParams,
-};
+use crate::data::member::{CreateMemberParams, ListMemberInfosParams, UpdateMemberRolesParams};
 use crate::model::member::{MemberInfo, MemberListSpec};
 use crate::model::team::TeamInfo;
 use crate::model::user::{UserCredential, UserInfo, UserToken};
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::{self, assert_expected_variant};
+use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
 
 mod join_team;
@@ -60,8 +59,8 @@ fn user(id: &str, nickname: &str) -> UserInfo {
         avatar_key: None,
         avatar_uploaded: false,
         avatar_version: 0,
-        avatar_hash: crate::value::image::ImageHash::default(),
-        avatar_ext: crate::value::image::ImageExt::Png,
+        avatar_hash: ImageHash::default(),
+        avatar_ext: ImageExt::Png,
         is_sadmin: false,
         last_active_at: time,
         created_at: time,
@@ -80,8 +79,8 @@ fn team(id: &str) -> TeamInfo {
         avatar_key: None,
         avatar_uploaded: false,
         avatar_version: 0,
-        avatar_hash: crate::value::image::ImageHash::default(),
-        avatar_ext: crate::value::image::ImageExt::Png,
+        avatar_hash: ImageHash::default(),
+        avatar_ext: ImageExt::Png,
         created_at: time,
         updated_at: time,
     }

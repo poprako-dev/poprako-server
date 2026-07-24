@@ -12,18 +12,15 @@ use self::image_task::ResourceState;
 use crate::model::user::{UserCredential, UserInfo};
 use crate::part::image::ImageManager;
 use crate::part::prom::Prom;
-use crate::part::prom::payload::{Payload, image};
+use crate::part::prom::payload::{TaskPayload, image};
 use crate::part::repo::oper::chapter::GetChapterInfoExcluded;
-use crate::part::repo::oper::comic::{
-    GetComicInfoExcluded, MarkComicCoverUploaded,
-};
-use crate::part::repo::oper::page::{
-    GetPageInfoExcluded, MarkPageImageUploaded, SetPageImageUploaded,
-};
+use crate::part::repo::oper::comic::{GetComicInfoExcluded, MarkComicCoverUploaded};
+use crate::part::repo::oper::page::{GetPageInfoExcluded, MarkPageImageUploaded, SetPageImageUploaded};
 use crate::part::repo::oper::team::{GetTeamInfoExcluded, UpdateTeam};
 use crate::part::repo::oper::user::{GetUserInfoExcluded, UpdateUser};
 use crate::part_impl::repo::mock_impl::{Mock, MockContext};
 use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
+use crate::value::image::{ImageExt, ImageHash};
 
 mod chapter;
 mod image_task;
@@ -36,7 +33,7 @@ pub struct MockPromRecord {
     /// Server-assigned unique identifier for the prom record.
     id: String,
 
-    /// Serialized JSON of the [`Payload`].
+    /// Serialized JSON of the [`TaskPayload`].
     ///
     /// Call [`payload`](MockPromRecord::payload) to deserialize on-the-fly
     /// for assertions.
@@ -57,9 +54,9 @@ impl MockPromRecord {
         self.visible_at
     }
 
-    /// Deserializes the stored JSON back into a [`Payload`].
+    /// Deserializes the stored JSON back into a [`TaskPayload`].
     ///
-    pub fn payload(&self) -> Payload {
+    pub fn payload(&self) -> TaskPayload {
         serde_json::from_str(&self.payload_json)
             .expect("stored prom payload should deserialize successfully")
     }
@@ -69,13 +66,13 @@ impl MockPromRecord {
 impl Prom<MockContext> for Mock {}
 
 /// Defers one record in the coordinated mock state.
-impl<'a> Step<Defer<'a, String, Payload, ()>, MockContext> for Mock {
+impl<'a> Step<Defer<'a, String, TaskPayload, ()>, MockContext> for Mock {
     type Error = BaseError;
 
     async fn step(
         &self,
         context: &mut MockContext,
-        oper: &Defer<'a, String, Payload, ()>,
+        oper: &Defer<'a, String, TaskPayload, ()>,
     ) -> Result<(), Self::Error> {
         //
         let payload_json =
@@ -99,7 +96,7 @@ impl<'a> Step<Defer<'a, String, Payload, ()>, MockContext> for Mock {
     }
 }
 
-impl<'t, 'a> Step<DeferBatch<'t, 'a, String, Payload, ()>, MockContext>
+impl<'t, 'a> Step<DeferBatch<'t, 'a, String, TaskPayload, ()>, MockContext>
     for Mock
 {
     type Error = BaseError;
@@ -107,7 +104,7 @@ impl<'t, 'a> Step<DeferBatch<'t, 'a, String, Payload, ()>, MockContext>
     async fn step(
         &self,
         context: &mut MockContext,
-        oper: &DeferBatch<'t, 'a, String, Payload, ()>,
+        oper: &DeferBatch<'t, 'a, String, TaskPayload, ()>,
     ) -> Result<(), Self::Error> {
         //
         for task in oper.tasks {
@@ -148,15 +145,15 @@ pub async fn process_pending(mock: &Mock) -> BaseResult<()> {
 
         match payload {
             //
-            Payload::AdvanceRawProvide(task) => {
-                chapter::process_advance_raw_provide(mock, &task).await?;
+            TaskPayload::Chapter(task) => {
+                chapter::process(mock, &task).await?;
             }
 
-            Payload::Image(task) => {
+            TaskPayload::Image(task) => {
                 process_image_task(mock, &task).await?;
             }
 
-            Payload::PurgeExpiredInvitation(event) => {
+            TaskPayload::Invitation(event) => {
                 invitation::process(mock, &event).await?;
             }
         }
@@ -168,11 +165,11 @@ pub async fn process_pending(mock: &Mock) -> BaseResult<()> {
 /// Process a single image task against the mock's in-memory image pool.
 async fn process_image_task(
     image_pool: &Mock,
-    task: &image::Payload,
+    task: &image::ImagePayload,
 ) -> BaseResult<()> {
     match task {
         //
-        image::Payload::CheckUpload {
+        image::ImagePayload::CheckUpload {
             resource_kind,
             resource_id,
             object_key,
@@ -274,7 +271,7 @@ async fn process_image_task(
             },
         },
 
-        image::Payload::Delete { object_key } => {
+        image::ImagePayload::Delete { object_key } => {
             image_pool.delete_object(object_key).await
         }
     }
@@ -359,8 +356,8 @@ async fn process_existing_image(
     resource_id: &str,
     object_key: &str,
     image_version: u32,
-    image_hash: &crate::value::image::ImageHash,
-    image_ext: crate::value::image::ImageExt,
+    image_hash: &ImageHash,
+    image_ext: ImageExt,
     image_uploaded: bool,
     delete_mismatch: bool,
 ) -> BaseResult<()> {
@@ -510,10 +507,10 @@ fn classify_current_identity(
     current_object_key: Option<&str>,
     image_version: u32,
     object_key: &str,
-    current_hash: &crate::value::image::ImageHash,
-    current_ext: crate::value::image::ImageExt,
-    image_hash: &crate::value::image::ImageHash,
-    image_ext: crate::value::image::ImageExt,
+    current_hash: &ImageHash,
+    current_ext: ImageExt,
+    image_hash: &ImageHash,
+    image_ext: ImageExt,
 ) -> BaseResult<ResourceState> {
     match (
         current_version == image_version,
@@ -537,8 +534,8 @@ async fn classify_expected_mark(
     resource_id: &str,
     object_key: &str,
     image_version: u32,
-    image_hash: &crate::value::image::ImageHash,
-    image_ext: crate::value::image::ImageExt,
+    image_hash: &ImageHash,
+    image_ext: ImageExt,
 ) -> BaseResult<ResourceState> {
     match kind {
         //

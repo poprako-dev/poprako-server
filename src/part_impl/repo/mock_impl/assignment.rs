@@ -4,16 +4,9 @@ use poprako_orchestra::{Run, Step};
 use tracing::instrument;
 
 use self::incl::apply_assignment_incls;
-use crate::model::assignment::{
-    AssignmentEntry, AssignmentInfo, AssignmentInfoListSpec,
-};
-use crate::part::repo::oper::assignment::{
-    CreateAssignment, DeleteAssignments, FindAssignmentInfo, GetAssignmentInfo,
-    ListAssignmentInfos, ListAssignmentInfosExcluded, UpdateAssignmentRoles,
-};
-use crate::part_impl::repo::mock_impl::{
-    Mock, MockContext, MockState, expected, now,
-};
+use crate::model::assignment::{AssignmentEntry, AssignmentInfo, AssignmentInfoListSpec};
+use crate::part::repo::oper::assignment::{CreateAssignment, DeleteAssignments, FindAssignmentInfo, GetAssignmentInfo, ListAssignmentInfos, ListAssignmentInfosExcluded, UpdateAssignmentRoles};
+use crate::part_impl::repo::mock_impl::{Mock, MockContext, MockState, expected, now};
 use crate::result::{BaseError, BaseResult, accept};
 use crate::value::assignment::AssignmentInclOpt;
 
@@ -207,13 +200,14 @@ fn list_infos_excluded(
     state: &MockState,
     chapter_id: &str,
 ) -> Vec<AssignmentInfo> {
-    let oper = ListAssignmentInfos::Chapter {
-        chapter_id,
-        role: None,
-        incls: &[],
-    };
-
-    list_infos(state, &oper)
+    list_infos(
+        state,
+        &ListAssignmentInfos::Chapter {
+            chapter_id,
+            role: None,
+            incls: &[],
+        },
+    )
 }
 
 fn create_assignment(

@@ -4,9 +4,7 @@ use poprako_orchestra::Proxy;
 
 use poprako_util::i18n::trl;
 
-use crate::complex::util::{
-    check_user_is_team_admin, check_user_is_team_member,
-};
+use crate::complex::util::{check_user_is_team_admin, check_user_is_team_member};
 use crate::part::repo::oper::assignment::FindAssignmentInfo;
 use crate::part::repo::oper::chapter::GetChapterInfo;
 use crate::part::repo::oper::comic::GetComicInfo;

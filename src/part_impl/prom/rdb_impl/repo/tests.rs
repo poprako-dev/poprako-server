@@ -12,6 +12,7 @@ use time::Duration;
 use crate::part_impl::prom::rdb_impl::entity::LocalMessageEntry;
 use crate::part_impl::prom::rdb_impl::test_shared;
 use crate::part_impl::repo::rdb_impl::RdbRepo;
+use crate::part_impl::repo::rdb_impl::schema::t_local_message;
 use crate::part_impl::shared::{RdbContext, RdbCore};
 
 const PREFIX: &str = "rdb-test-prom-purge-";
@@ -81,7 +82,7 @@ pub async fn poll_pending_selects_one_visible_message_per_idle_topic(
     let mut conn = shared.get().await.ok().unwrap();
 
     diesel::insert_into(
-        crate::part_impl::repo::rdb_impl::schema::t_local_message::table,
+        t_local_message::table,
     )
     .values(&entries)
     .execute(&mut conn)
@@ -146,7 +147,7 @@ pub async fn retry_message_allows_later_topic_message_to_advance(
     let mut conn = shared.get().await.ok().unwrap();
 
     diesel::insert_into(
-        crate::part_impl::repo::rdb_impl::schema::t_local_message::table,
+        t_local_message::table,
     )
     .values(&entries)
     .execute(&mut conn)
@@ -227,7 +228,7 @@ pub async fn stale_attempt_finalization_preserves_newer_lease(shared: RdbCore) {
     let mut conn = shared.get().await.ok().unwrap();
 
     diesel::insert_into(
-        crate::part_impl::repo::rdb_impl::schema::t_local_message::table,
+        t_local_message::table,
     )
     .values(&entries)
     .execute(&mut conn)
@@ -236,14 +237,14 @@ pub async fn stale_attempt_finalization_preserves_newer_lease(shared: RdbCore) {
     .unwrap();
 
     diesel::update(
-        crate::part_impl::repo::rdb_impl::schema::t_local_message::table
+        t_local_message::table
             .filter(
-                crate::part_impl::repo::rdb_impl::schema::t_local_message::f_id
+                t_local_message::f_id
                     .like(format!("{}%", LEASE_PREFIX)),
             ),
     )
     .set(
-        crate::part_impl::repo::rdb_impl::schema::t_local_message::f_lease
+        t_local_message::f_lease
             .eq(1_i64),
     )
     .execute(&mut conn)
@@ -287,20 +288,20 @@ pub async fn stale_attempt_finalization_preserves_newer_lease(shared: RdbCore) {
     .unwrap();
 
     let rows: Vec<(String, String, i64, i64)> =
-        crate::part_impl::repo::rdb_impl::schema::t_local_message::table
+        t_local_message::table
             .filter(
-                crate::part_impl::repo::rdb_impl::schema::t_local_message::f_id
+                t_local_message::f_id
                     .like(format!("{}%", LEASE_PREFIX)),
             )
             .order_by(
-                crate::part_impl::repo::rdb_impl::schema::t_local_message::f_id
+                t_local_message::f_id
                     .asc(),
             )
             .select((
-                crate::part_impl::repo::rdb_impl::schema::t_local_message::f_id,
-                crate::part_impl::repo::rdb_impl::schema::t_local_message::f_status,
-                crate::part_impl::repo::rdb_impl::schema::t_local_message::f_retried_count,
-                crate::part_impl::repo::rdb_impl::schema::t_local_message::f_lease,
+                t_local_message::f_id,
+                t_local_message::f_status,
+                t_local_message::f_retried_count,
+                t_local_message::f_lease,
             ))
             .load(&mut conn)
             .await
@@ -405,7 +406,7 @@ pub async fn completed_message_purge_preserves_non_completed_records(
     let mut conn = shared.get().await.ok().unwrap();
 
     diesel::insert_into(
-        crate::part_impl::repo::rdb_impl::schema::t_local_message::table,
+        t_local_message::table,
     )
     .values(&[
         stale_completed_entry,
@@ -439,17 +440,17 @@ pub async fn completed_message_purge_preserves_non_completed_records(
     assert_eq!(purged_count, 2);
 
     let remaining_ids: Vec<String> =
-        crate::part_impl::repo::rdb_impl::schema::t_local_message::table
+        t_local_message::table
             .filter(
-                crate::part_impl::repo::rdb_impl::schema::t_local_message::f_id
+                t_local_message::f_id
                     .like(format!("{}%", PREFIX)),
             )
             .order_by(
-                crate::part_impl::repo::rdb_impl::schema::t_local_message::f_id
+                t_local_message::f_id
                     .asc(),
             )
             .select(
-                crate::part_impl::repo::rdb_impl::schema::t_local_message::f_id,
+                t_local_message::f_id,
             )
             .load(&mut conn)
             .await

@@ -13,7 +13,7 @@ use tracing::instrument;
 
 use crate::part::effect::EffectDevelop;
 use crate::part::image::ImageManager;
-use crate::part::prom::payload::Payload;
+use crate::part::prom::payload::TaskPayload;
 use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::comic::ComicRepo;
@@ -31,20 +31,20 @@ use crate::result::BaseError;
 /// and completes or fails each record.
 pub struct RdbPromHandler<N, R, I, V> {
     /// Database connection pool for handler-internal queries.
-    pub(super) core: RdbCore,
+    pub core: RdbCore,
     /// Transaction coordinator used for handler-level database operations.
-    pub(super) nucl: N,
+    pub nucl: N,
 
     /// Repository wrapping message lifecycle and domain queries.
-    pub(super) repo: RdbPromRepo<R>,
+    pub repo: RdbPromRepo<R>,
 
     /// Object storage client for image verification and cleanup.
-    pub(super) image_pool: I,
+    pub image_pool: I,
     /// Shared side-effect developer for automatic workflow events.
-    pub(super) develop: V,
+    pub develop: V,
 
     /// Shutdown signal propagated from the owning [`RdbProm`].
-    pub(super) token: CancellationToken,
+    pub token: CancellationToken,
 }
 
 impl<N, R, I, V> RdbPromHandler<N, R, I, V>
@@ -106,7 +106,7 @@ where
         + Sync,
     I: ImageManager + Send + Sync,
 {
-    let payload: Payload = match serde_json::from_value(payload.clone()) {
+    let payload: TaskPayload = match serde_json::from_value(payload.clone()) {
         //
         Ok(payload) => payload,
 
@@ -128,15 +128,15 @@ where
 
     match payload {
         //
-        Payload::AdvanceRawProvide(task) => {
+        TaskPayload::Chapter(task) => {
             chapter::handle(nucl, repo, develop, &task).await
         }
 
-        Payload::Image(task) => {
+        TaskPayload::Image(task) => {
             image::handle(nucl, repo, image_pool, &task).await
         }
 
-        Payload::PurgeExpiredInvitation(event) => {
+        TaskPayload::Invitation(event) => {
             invitation::handle(repo, &event).await
         }
     }

@@ -10,19 +10,17 @@
 
 use super::*;
 
-use crate::data::member_invitation::{
-    CreateMemberInvitationParams, ListMemberInvitationInfosParams,
-    UpdateMemberInvitationRolesParams,
-};
+use crate::data::member_invitation::{CreateMemberInvitationParams, ListMemberInvitationInfosParams, UpdateMemberInvitationRolesParams};
 use crate::model::member::MemberInfo;
 use crate::model::member_invitation::MemberInvitationInfo;
 use crate::model::user::{UserCredential, UserInfo, UserToken};
-use crate::part::prom::payload::Payload;
-use crate::part::prom::payload::invitation::PurgeExpiredInvitation;
+use crate::part::prom::payload::TaskPayload;
+use crate::part::prom::payload::invitation::InvitationPayload;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::fixture::team;
 use crate::test_util::{self, assert_expected_variant};
+use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
 
 fn token(user_id: &str) -> UserToken {
@@ -49,8 +47,8 @@ fn user(id: &str, qid: &str) -> UserInfo {
         avatar_key: None,
         avatar_uploaded: false,
         avatar_version: 0,
-        avatar_hash: crate::value::image::ImageHash::default(),
-        avatar_ext: crate::value::image::ImageExt::Png,
+        avatar_hash: ImageHash::default(),
+        avatar_ext: ImageExt::Png,
         is_sadmin: false,
         last_active_at: time,
         created_at: time,
@@ -165,7 +163,7 @@ async fn create_admin_creates_pending_invitation() {
 
     assert_eq!(
         snapshot.prom_records[0].payload(),
-        Payload::PurgeExpiredInvitation(PurgeExpiredInvitation::Member {
+        TaskPayload::Invitation(InvitationPayload::Member {
             invitation_id: created.id,
         })
     );

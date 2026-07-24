@@ -5,16 +5,10 @@ use std::cmp::Reverse;
 use poprako_orchestra::Run;
 use tracing::instrument;
 
-use crate::model::system_mail::{
-    SystemMailEntry, SystemMailInfo, SystemMailInfoListKind,
-};
-use crate::part::repo::oper::system_mail::{
-    ListSystemMailInfos, MarkSystemMailRead, SendSystemMail, SendSystemMails,
-};
+use crate::model::system_mail::{SystemMailEntry, SystemMailInfo, SystemMailInfoListKind};
+use crate::part::repo::oper::system_mail::{ListSystemMailInfos, MarkSystemMailRead, SendSystemMail, SendSystemMails};
 use crate::part::repo::system_mail::SystemMailRepo;
-use crate::part_impl::repo::mock_impl::{
-    Mock, MockContext, MockState, expected, now,
-};
+use crate::part_impl::repo::mock_impl::{Mock, MockContext, MockState, expected, now};
 use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 
 impl SystemMailRepo<MockContext> for Mock {}

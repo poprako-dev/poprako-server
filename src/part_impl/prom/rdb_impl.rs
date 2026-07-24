@@ -18,7 +18,7 @@ use tracing::instrument;
 use crate::part::effect::EffectDevelop;
 use crate::part::image::ImageManager;
 use crate::part::prom::Prom;
-use crate::part::prom::payload::Payload;
+use crate::part::prom::payload::TaskPayload;
 use crate::part_impl::drive::rdb_impl::RdbDrive;
 use crate::part_impl::prom::rdb_impl::entity::LocalMessageEntry;
 use crate::part_impl::prom::rdb_impl::repo::RdbPromRepo;
@@ -115,14 +115,14 @@ impl Drop for RdbProm {
     }
 }
 
-impl<'a> Step<Defer<'a, String, Payload, ()>, RdbContext> for RdbProm {
+impl<'a> Step<Defer<'a, String, TaskPayload, ()>, RdbContext> for RdbProm {
     type Error = BaseError;
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &Defer<'a, String, Payload, ()>,
+        oper: &Defer<'a, String, TaskPayload, ()>,
     ) -> BaseResult<()> {
         //
         let now = OffsetDateTime::now_utc();
@@ -139,7 +139,7 @@ impl<'a> Step<Defer<'a, String, Payload, ()>, RdbContext> for RdbProm {
     }
 }
 
-impl<'t, 'a> Step<DeferBatch<'t, 'a, String, Payload, ()>, RdbContext>
+impl<'t, 'a> Step<DeferBatch<'t, 'a, String, TaskPayload, ()>, RdbContext>
     for RdbProm
 {
     type Error = BaseError;
@@ -148,7 +148,7 @@ impl<'t, 'a> Step<DeferBatch<'t, 'a, String, Payload, ()>, RdbContext>
     async fn step(
         &self,
         context: &mut RdbContext,
-        oper: &DeferBatch<'t, 'a, String, Payload, ()>,
+        oper: &DeferBatch<'t, 'a, String, TaskPayload, ()>,
     ) -> BaseResult<()> {
         //
         if oper.tasks.is_empty() {
