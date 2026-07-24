@@ -5,12 +5,8 @@ use tracing::instrument;
 
 use crate::part::prom::payload::image::ResourceKind;
 use crate::part::repo::comic::ComicRepo;
-use crate::part::repo::oper::comic::{
-    GetComicInfoExcluded, MarkComicCoverUploaded,
-};
-use crate::part::repo::oper::page::{
-    GetPageInfoExcluded, MarkPageImageUploaded,
-};
+use crate::part::repo::oper::comic::{GetComicInfoExcluded, MarkComicCoverUploaded};
+use crate::part::repo::oper::page::{GetPageInfoExcluded, MarkPageImageUploaded};
 use crate::part::repo::oper::team::{GetTeamInfoExcluded, UpdateTeam};
 use crate::part::repo::oper::user::{GetUserInfoExcluded, UpdateUser};
 use crate::part::repo::page::PageRepo;
@@ -21,7 +17,7 @@ use crate::result::{BaseError, BaseResult, accept};
 use crate::value::image::{ImageExt, ImageHash};
 
 /// Classification of a deferred image payload against persisted identity.
-pub(super) enum ResourceState {
+pub enum ResourceState {
     /// The image version and full identity match the current record.
     Current,
     /// The image version has been superseded.
@@ -59,7 +55,7 @@ fn classify_current_identity(
 
 /// Classifies a payload under lock and applies its uploaded state when current.
 #[instrument(level = "info", skip_all)]
-pub(super) async fn mark_current_or_classify<N, R>(
+pub async fn mark_current_or_classify<N, R>(
     nucl: &N,
     repo: &R,
     kind: ResourceKind,

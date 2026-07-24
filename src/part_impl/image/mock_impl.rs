@@ -1,13 +1,13 @@
 //! Mock implementation of [ImagePool] and [ImageManager] for testing
 //! signed URL resolution with deterministic output.
 
+use std::collections::BTreeMap;
+
 use url::Url;
 
 use poprako_util::i18n::trl;
 
-use crate::part::image::{
-    ImageManager, ImageObjectInfo, ImagePool, ImageUploadSlot, ImageUploadSpec,
-};
+use crate::part::image::{ImageManager, ImageObjectInfo, ImagePool, ImageUploadSlot, ImageUploadSpec};
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 use crate::value::image::ImageHash;
@@ -80,7 +80,7 @@ impl ImagePool for Mock {
             Url::parse(&format!("https://test.local/put/{}", spec.object_key))
                 .unwrap();
 
-        let mut headers = std::collections::BTreeMap::new();
+        let mut headers = BTreeMap::new();
 
         headers
             .insert("content-length".into(), spec.content_length.to_string());

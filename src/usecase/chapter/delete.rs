@@ -7,7 +7,7 @@ use tracing::instrument;
 use crate::complex::chapter::{ChapterComplex, ChapterPermComplex};
 use crate::model::user::UserToken;
 use crate::part::prom::Prom;
-use crate::part::prom::payload::Payload;
+use crate::part::prom::payload::TaskPayload;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
 use crate::part::repo::chapter::ChapterRepo;
@@ -15,13 +15,8 @@ use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::assignment::DeleteAssignments;
 use crate::part::repo::oper::assignment_invitation::DeleteAssignmentInvitations;
-use crate::part::repo::oper::chapter::{
-    DeleteChapter, GetChapterInfo, GetChapterInfoExcluded,
-    ListChapterInfosExcluded, UnpinOtherChapters, UpdateChapter,
-};
-use crate::part::repo::oper::comic::{
-    GetComicInfo, TouchComicLastActive, UpdateComicChapterCount,
-};
+use crate::part::repo::oper::chapter::{DeleteChapter, GetChapterInfo, GetChapterInfoExcluded, ListChapterInfosExcluded, UnpinOtherChapters, UpdateChapter};
+use crate::part::repo::oper::comic::{GetComicInfo, TouchComicLastActive, UpdateComicChapterCount};
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::page::{DeletePages, ListPageInfos};
 use crate::part::repo::oper::workset::GetWorksetInfo;
@@ -84,7 +79,7 @@ where
                     for<'a> UnpinOtherChapters<'a>,
                     for<'a> UpdateComicChapterCount<'a>,
                     for<'a> TouchComicLastActive<'a>;
-                prom => for<'t, 'a> DeferBatch<'t, 'a, String, Payload, ()>;
+                prom => for<'t, 'a> DeferBatch<'t, 'a, String, TaskPayload, ()>;
             },
             &id,
         )

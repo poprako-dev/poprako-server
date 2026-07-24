@@ -1,10 +1,6 @@
 use poprako_orchestra::{Run, Step};
 
-use crate::part::repo::oper::termbase::{
-    CreateTermbase, DeleteTermbase, GetTermbaseInfo, GetTermbaseInfoExcluded,
-    ListTermbaseInfos, ListTermbaseInfosExcluded, TouchTermbase,
-    UpdateTermbase, UpdateTermbaseTermCount,
-};
+use crate::part::repo::oper::termbase::{CreateTermbase, DeleteTermbase, GetTermbaseInfo, GetTermbaseInfoExcluded, ListTermbaseInfos, ListTermbaseInfosExcluded, TouchTermbase, UpdateTermbase, UpdateTermbaseTermCount};
 use crate::result::BaseError;
 
 /// Terminology-base repository operations.

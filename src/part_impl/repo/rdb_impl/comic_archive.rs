@@ -11,18 +11,12 @@ use tracing::instrument;
 use crate::model::assignment::AssignmentInfo;
 use crate::model::chapter::ChapterInfo;
 use crate::model::comic::ComicInfo;
-use crate::model::comic_archive::{
-    ComicArchiveChapterSnapshot, ComicArchiveEntry, ComicArchivePageSnapshot,
-    ComicArchiveSnapshot,
-};
+use crate::model::comic_archive::{ComicArchiveChapterSnapshot, ComicArchiveEntry, ComicArchivePageSnapshot, ComicArchiveSnapshot};
 use crate::model::page::PageInfo;
 use crate::model::unit::UnitInfo;
 use crate::model::user::UserInfo;
 use crate::model::workset::WorksetInfo;
-use crate::part::repo::oper::comic_archive::{
-    CommitComicArchive, GetComicArchiveSnapshotExcluded,
-    ListComicArchivePayloads,
-};
+use crate::part::repo::oper::comic_archive::{CommitComicArchive, GetComicArchiveSnapshotExcluded, ListComicArchivePayloads};
 use crate::part_impl::repo::rdb_impl::RdbRepo;
 use crate::part_impl::repo::rdb_impl::entity::assignment::AssignmentRow;
 use crate::part_impl::repo::rdb_impl::entity::chapter::ChapterRow;
@@ -32,33 +26,15 @@ use crate::part_impl::repo::rdb_impl::entity::page::PageRow;
 use crate::part_impl::repo::rdb_impl::entity::unit::UnitRow;
 use crate::part_impl::repo::rdb_impl::entity::user::UserRow;
 use crate::part_impl::repo::rdb_impl::entity::workset::WorksetRow;
-use crate::part_impl::repo::rdb_impl::schema::t_assignment::dsl::{
-    f_chapter_id as assignment_chapter_id, t_assignment,
-};
-use crate::part_impl::repo::rdb_impl::schema::t_assignment_invitation::dsl::{
-    f_chapter_id as invitation_chapter_id, f_id as invitation_id,
-    t_assignment_invitation,
-};
-use crate::part_impl::repo::rdb_impl::schema::t_chapter::dsl::{
-    f_comic_id as chapter_comic_id, f_id as chapter_id, t_chapter,
-};
-use crate::part_impl::repo::rdb_impl::schema::t_comic::dsl::{
-    f_id as comic_id, t_comic,
-};
+use crate::part_impl::repo::rdb_impl::schema::t_assignment::dsl::{f_chapter_id as assignment_chapter_id, t_assignment};
+use crate::part_impl::repo::rdb_impl::schema::t_assignment_invitation::dsl::{f_chapter_id as invitation_chapter_id, f_id as invitation_id, t_assignment_invitation};
+use crate::part_impl::repo::rdb_impl::schema::t_chapter::dsl::{f_comic_id as chapter_comic_id, f_id as chapter_id, t_chapter};
+use crate::part_impl::repo::rdb_impl::schema::t_comic::dsl::{f_id as comic_id, t_comic};
 use crate::part_impl::repo::rdb_impl::schema::t_comic_archive;
-use crate::part_impl::repo::rdb_impl::schema::t_page::dsl::{
-    f_chapter_id as page_chapter_id, f_id as page_id, f_index as page_index,
-    t_page,
-};
-use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::{
-    f_index as unit_index, f_page_id as unit_page_id, t_unit,
-};
-use crate::part_impl::repo::rdb_impl::schema::t_user::dsl::{
-    f_id as user_id, t_user,
-};
-use crate::part_impl::repo::rdb_impl::schema::t_workset::dsl::{
-    f_id as workset_id, t_workset,
-};
+use crate::part_impl::repo::rdb_impl::schema::t_page::dsl::{f_chapter_id as page_chapter_id, f_id as page_id, f_index as page_index, t_page};
+use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::{f_index as unit_index, f_page_id as unit_page_id, t_unit};
+use crate::part_impl::repo::rdb_impl::schema::t_user::dsl::{f_id as user_id, t_user};
+use crate::part_impl::repo::rdb_impl::schema::t_workset::dsl::{f_id as workset_id, t_workset};
 use crate::part_impl::shared::result::{diesel, expected};
 use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::{BaseError, BaseResult, accept};

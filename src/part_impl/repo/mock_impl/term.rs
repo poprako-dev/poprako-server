@@ -6,13 +6,8 @@ use poprako_orchestra::{Run, Step};
 use tracing::instrument;
 
 use crate::model::term::{TermInfo, TermInfoListSpec};
-use crate::part::repo::oper::term::{
-    CreateTerm, DeleteTerm, DeleteTerms, GetTermInfo, GetTermInfoExcluded,
-    ListTermInfos, LockTerm, UpdateTerm,
-};
-use crate::part_impl::repo::mock_impl::{
-    Mock, MockContext, MockState, expected, now,
-};
+use crate::part::repo::oper::term::{CreateTerm, DeleteTerm, DeleteTerms, GetTermInfo, GetTermInfoExcluded, ListTermInfos, LockTerm, UpdateTerm};
+use crate::part_impl::repo::mock_impl::{Mock, MockContext, MockState, expected, now};
 use crate::result::{BaseError, BaseResult, accept};
 
 fn get_info(state: &MockState, id: &str) -> BaseResult<TermInfo> {
@@ -157,6 +152,7 @@ impl<'a> Step<LockTerm<'a>, MockContext> for Mock {
         context: &mut MockContext,
         oper: &LockTerm<'a>,
     ) -> BaseResult<()> {
+        //
         get_info(&context.state, oper.id)?;
 
         accept(())

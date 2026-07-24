@@ -13,19 +13,13 @@ use crate::complex::image::ImageComplex;
 use crate::complex::member::MemberComplex;
 use crate::complex::team::{TeamComplex, TeamPermComplex};
 use crate::data::image::ImageUploadSlotVal;
-use crate::data::team::{
-    CreateTeamParams, ListTeamInfosParams, MarkTeamAvatarUploadedParams,
-    ReserveTeamAvatarParams, ReserveTeamAvatarPayload, TeamInfoVal,
-    UpdateTeamInfoParams,
-};
+use crate::data::team::{CreateTeamParams, ListTeamInfosParams, MarkTeamAvatarUploadedParams, ReserveTeamAvatarParams, ReserveTeamAvatarPayload, TeamInfoVal, UpdateTeamInfoParams};
 use crate::model::member::MemberEntry;
-use crate::model::team::{
-    TeamEntry, TeamInfo, TeamInfoListKind, TeamInfoListSpec,
-};
+use crate::model::team::{TeamEntry, TeamInfo, TeamInfoListKind, TeamInfoListSpec};
 use crate::model::user::UserToken;
 use crate::part::image::{ImageManager, ImagePool, ImageUploadSpec};
 use crate::part::prom::Prom;
-use crate::part::prom::payload::{Payload, image};
+use crate::part::prom::payload::{TaskPayload, image};
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
 use crate::part::repo::chapter::ChapterRepo;
@@ -33,31 +27,15 @@ use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::assignment::DeleteAssignments;
 use crate::part::repo::oper::assignment_invitation::DeleteAssignmentInvitations;
-use crate::part::repo::oper::chapter::{
-    DeleteChapter, GetChapterInfoExcluded, ListChapterInfosExcluded,
-    UnpinOtherChapters, UpdateChapter,
-};
-use crate::part::repo::oper::comic::{
-    DeleteComic, GetComicInfoExcluded, ListComicInfosExcluded,
-    TouchComicLastActive, UpdateComicChapterCount,
-};
-use crate::part::repo::oper::member::{
-    CreateMember, DeleteMember, FindMemberInfo, ListMemberInfosExcluded,
-};
+use crate::part::repo::oper::chapter::{DeleteChapter, GetChapterInfoExcluded, ListChapterInfosExcluded, UnpinOtherChapters, UpdateChapter};
+use crate::part::repo::oper::comic::{DeleteComic, GetComicInfoExcluded, ListComicInfosExcluded, TouchComicLastActive, UpdateComicChapterCount};
+use crate::part::repo::oper::member::{CreateMember, DeleteMember, FindMemberInfo, ListMemberInfosExcluded};
 use crate::part::repo::oper::page::{DeletePages, ListPageInfos};
-use crate::part::repo::oper::team::{
-    CreateTeam, DeleteTeam, GetTeamInfo, GetTeamInfoExcluded, ListTeamInfos,
-    ReserveTeamAvatar, UpdateTeam,
-};
+use crate::part::repo::oper::team::{CreateTeam, DeleteTeam, GetTeamInfo, GetTeamInfoExcluded, ListTeamInfos, ReserveTeamAvatar, UpdateTeam};
 use crate::part::repo::oper::term::DeleteTerms;
-use crate::part::repo::oper::termbase::{
-    DeleteTermbase, GetTermbaseInfoExcluded, ListTermbaseInfosExcluded,
-};
+use crate::part::repo::oper::termbase::{DeleteTermbase, GetTermbaseInfoExcluded, ListTermbaseInfosExcluded};
 use crate::part::repo::oper::user::{GetUserInfo, GetUserInfoExcluded};
-use crate::part::repo::oper::workset::{
-    DeleteWorkset, GetWorksetInfoExcluded, ListWorksetInfosExcluded,
-    UpdateWorksetComicCount,
-};
+use crate::part::repo::oper::workset::{DeleteWorkset, GetWorksetInfoExcluded, ListWorksetInfosExcluded, UpdateWorksetComicCount};
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::term::TermRepo;
@@ -367,7 +345,7 @@ where
                 //
                 batch_ids.push(ImageComplex::gen_delete_id());
 
-                batch_payloads.push(Payload::Image(image::Payload::Delete {
+                batch_payloads.push(TaskPayload::Image(image::ImagePayload::Delete {
                     object_key: prev_key.clone(),
                 }));
 
@@ -377,7 +355,7 @@ where
             // Schedule an upload verification check 15 minutes from now.
             batch_ids.push(ImageComplex::gen_check_id());
 
-            batch_payloads.push(Payload::Image(image::Payload::CheckUpload {
+            batch_payloads.push(TaskPayload::Image(image::ImagePayload::CheckUpload {
                 resource_kind: image::ResourceKind::TeamAvatar,
                 resource_id: id.clone(),
                 object_key: avatar_reservation.object_key.clone(),
@@ -388,7 +366,7 @@ where
 
             batch_delays.push(Some(Duration::from_secs(15 * 60)));
 
-            let batch_tasks: Vec<Task<'_, String, Payload>> = batch_ids
+            let batch_tasks: Vec<Task<'_, String, TaskPayload>> = batch_ids
                 .iter()
                 .zip(batch_payloads.iter())
                 .zip(batch_delays.iter())
@@ -626,8 +604,8 @@ where
                     for<'a> ListMemberInfosExcluded<'a>,
                     for<'a> DeleteMember<'a>;
                 prom =>
-                    for<'a> Defer<'a, String, Payload, ()>,
-                    for<'t, 'a> DeferBatch<'t, 'a, String, Payload, ()>;
+                    for<'a> Defer<'a, String, TaskPayload, ()>,
+                    for<'t, 'a> DeferBatch<'t, 'a, String, TaskPayload, ()>;
             },
             &id,
         )

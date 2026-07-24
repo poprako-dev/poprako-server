@@ -21,8 +21,8 @@ use crate::model::page::PageManifestUpdate;
 use crate::model::user::UserToken;
 use crate::part::image::{ImageManager, ImagePool, ImageUploadSpec};
 use crate::part::prom::Prom;
-use crate::part::prom::payload::chapter::AdvanceRawProvide;
-use crate::part::prom::payload::{Payload, image};
+use crate::part::prom::payload::chapter::ChapterPayload;
+use crate::part::prom::payload::{TaskPayload, image};
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::comic::ComicRepo;
@@ -183,7 +183,7 @@ where
                 //
                 task_ids.push(ImageComplex::gen_delete_id());
 
-                task_payloads.push(Payload::Image(image::Payload::Delete {
+                task_payloads.push(TaskPayload::Image(image::ImagePayload::Delete {
                     object_key: previous_image_key,
                 }));
 
@@ -192,7 +192,7 @@ where
 
             task_ids.push(ImageComplex::gen_check_id());
 
-            task_payloads.push(Payload::Image(image::Payload::CheckUpload {
+            task_payloads.push(TaskPayload::Image(image::ImagePayload::CheckUpload {
                 resource_kind: image::ResourceKind::PageImage,
                 resource_id: locked_page_info.id.clone(),
                 object_key: image_key.clone(),
@@ -206,7 +206,7 @@ where
             let advance_id = next_snowflake_id();
 
             let advance_payload =
-                Payload::AdvanceRawProvide(AdvanceRawProvide {
+                TaskPayload::Chapter(ChapterPayload::TryAdvanceRawProvideStage {
                     chapter_id: locked_page_info.chapter_id.clone(),
                 });
 
@@ -216,7 +216,7 @@ where
                 delay: Some(Duration::from_secs(20 * 60)),
             };
 
-            let image_tasks: Vec<Task<'_, String, Payload>> = task_ids
+            let image_tasks: Vec<Task<'_, String, TaskPayload>> = task_ids
                 .iter()
                 .zip(task_payloads.iter())
                 .zip(task_delays.iter())
@@ -498,13 +498,13 @@ where
                 //
                 delete_ids.push(ImageComplex::gen_delete_id());
 
-                delete_payloads.push(Payload::Image(image::Payload::Delete {
-                    object_key,
-                }));
+                delete_payloads.push(TaskPayload::Image(
+                    image::ImagePayload::Delete { object_key },
+                ));
             }
         }
 
-        let delete_tasks: Vec<Task<'_, String, Payload>> = delete_ids
+        let delete_tasks: Vec<Task<'_, String, TaskPayload>> = delete_ids
             .iter()
             .zip(delete_payloads.iter())
             .map(|(id, payload)| Task {

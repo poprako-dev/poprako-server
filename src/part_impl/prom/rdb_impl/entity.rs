@@ -10,7 +10,7 @@ use diesel::sql_types::Text;
 use poprako_orchestra_extra::prom::task::Task;
 use time::OffsetDateTime;
 
-use crate::part::prom::payload::Payload;
+use crate::part::prom::payload::TaskPayload;
 use crate::part_impl::repo::rdb_impl::schema::t_local_message;
 use crate::result::{BaseError, BaseResult, accept};
 
@@ -66,7 +66,7 @@ pub struct LocalMessageEntry<'a> {
 
 impl<'a> LocalMessageEntry<'a> {
     pub fn from_task(
-        task: &Task<'a, String, Payload>,
+        task: &Task<'a, String, TaskPayload>,
         now: OffsetDateTime,
     ) -> BaseResult<Self> {
         //

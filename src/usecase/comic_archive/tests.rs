@@ -16,8 +16,8 @@ use crate::model::page::PageInfo;
 use crate::model::unit::UnitInfo;
 use crate::model::user::{UserCredential, UserInfo, UserToken};
 use crate::model::workset::WorksetInfo;
-use crate::part::prom::payload::Payload;
-use crate::part::prom::payload::image::Payload as ImagePayload;
+use crate::part::prom::payload::TaskPayload;
+use crate::part::prom::payload::image::ImagePayload;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;
@@ -39,8 +39,8 @@ fn seed_archive_scope(mock: &Mock, member_roles: RoleMask) {
             avatar_key: Some("avatars/user-1.png".into()),
             avatar_uploaded: true,
             avatar_version: 3,
-            avatar_hash: crate::value::image::ImageHash::default(),
-            avatar_ext: crate::value::image::ImageExt::Png,
+            avatar_hash: ImageHash::default(),
+            avatar_ext: ImageExt::Png,
             is_sadmin: false,
             last_active_at: archived_at,
             created_at: archived_at,
@@ -84,8 +84,8 @@ fn seed_archive_scope(mock: &Mock, member_roles: RoleMask) {
         cover_key: Some("covers/reserved.png".into()),
         cover_uploaded: false,
         cover_version: 5,
-        cover_hash: crate::value::image::ImageHash::default(),
-        cover_ext: crate::value::image::ImageExt::Png,
+        cover_hash: ImageHash::default(),
+        cover_ext: ImageExt::Png,
         chapter_count: 1,
         creator_id: "user-1".into(),
         workset: None,
@@ -266,7 +266,7 @@ async fn archive_retains_payloads_queues_images_and_deletes_active_data() {
         .iter()
         .filter_map(|prom_record| match prom_record.payload() {
             //
-            Payload::Image(ImagePayload::Delete { object_key }) => {
+            TaskPayload::Image(ImagePayload::Delete { object_key }) => {
                 Some(object_key.to_string())
             }
 

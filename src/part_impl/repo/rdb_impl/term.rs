@@ -1,21 +1,13 @@
 //! Diesel-backed terminology-entry repository operations.
 
-use diesel::{
-    ExpressionMethods as _, OptionalExtension as _,
-    PgTextExpressionMethods as _, QueryDsl as _, SelectableHelper as _,
-};
+use diesel::{ExpressionMethods as _, OptionalExtension as _, PgTextExpressionMethods as _, QueryDsl as _, SelectableHelper as _};
 use diesel_async::RunQueryDsl as _;
 use poprako_orchestra::{Run, Step};
 use time::OffsetDateTime;
 use tracing::instrument;
 
-use crate::model::term::{
-    TermEntry, TermInfo, TermInfoListSpec, TermInfoUpdate,
-};
-use crate::part::repo::oper::term::{
-    CreateTerm, DeleteTerm, DeleteTerms, GetTermInfo, GetTermInfoExcluded,
-    ListTermInfos, LockTerm, UpdateTerm,
-};
+use crate::model::term::{TermEntry, TermInfo, TermInfoListSpec, TermInfoUpdate};
+use crate::part::repo::oper::term::{CreateTerm, DeleteTerm, DeleteTerms, GetTermInfo, GetTermInfoExcluded, ListTermInfos, LockTerm, UpdateTerm};
 use crate::part_impl::repo::rdb_impl::RdbRepo;
 use crate::part_impl::repo::rdb_impl::entity::term::{TermRow, TermRowEntry};
 use crate::part_impl::repo::rdb_impl::schema::t_term::dsl::*;

@@ -4,10 +4,8 @@ use time::OffsetDateTime;
 
 use poprako_util::i18n::trl;
 
-use crate::part::prom::payload::Payload;
-use crate::part::prom::payload::image::{
-    Payload as ImagePayload, ResourceKind,
-};
+use crate::part::prom::payload::TaskPayload;
+use crate::part::prom::payload::image::{ImagePayload, ResourceKind};
 use crate::part_impl::prom::mock_impl::MockPromRecord;
 use crate::result::{BaseError, ExpectedVariant};
 
@@ -70,7 +68,7 @@ pub fn count_image_check_records(
         .filter(|record| {
             matches!(
                 record.payload(),
-                Payload::Image(ImagePayload::CheckUpload {
+                TaskPayload::Image(ImagePayload::CheckUpload {
                     resource_kind: actual_resource_kind,
                     resource_id: actual_resource_id,
                     object_key: actual_object_key,

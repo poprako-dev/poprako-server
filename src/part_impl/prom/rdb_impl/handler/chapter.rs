@@ -6,7 +6,7 @@ use tracing::instrument;
 use crate::part::effect::EffectDevelop;
 use crate::part::effect::event::Event;
 use crate::part::effect::event::chapter::ChapterWorkflowCompletedPayload;
-use crate::part::prom::payload::chapter::AdvanceRawProvide;
+use crate::part::prom::payload::chapter::ChapterPayload;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::oper::chapter::{
     CompleteChapterRawProvide, GetChapterInfoExcluded,
@@ -22,7 +22,26 @@ pub async fn handle<N, R, V>(
     nucl: &N,
     repo: &R,
     develop: &V,
-    task: &AdvanceRawProvide,
+    task: &ChapterPayload,
+) -> TaskFlow
+where
+    N: Nucl<Context = RdbContext, Error = BaseError>,
+    R: ChapterRepo<RdbContext> + Send + Sync,
+    V: EffectDevelop + Sync,
+{
+    match task {
+        //
+        ChapterPayload::TryAdvanceRawProvideStage { chapter_id } => {
+            handle_raw_provide(nucl, repo, develop, chapter_id).await
+        }
+    }
+}
+
+async fn handle_raw_provide<N, R, V>(
+    nucl: &N,
+    repo: &R,
+    develop: &V,
+    chapter_id: &str,
 ) -> TaskFlow
 where
     N: Nucl<Context = RdbContext, Error = BaseError>,
@@ -37,19 +56,14 @@ where
             repo.step(
                 context,
                 &GetChapterInfoExcluded {
-                    id: &task.chapter_id,
+                    id: chapter_id,
                     incls: &[],
                 },
             )
             .await?;
 
             let advanced = repo
-                .step(
-                    context,
-                    &CompleteChapterRawProvide {
-                        id: &task.chapter_id,
-                    },
-                )
+                .step(context, &CompleteChapterRawProvide { id: chapter_id })
                 .await?;
 
             accept(advanced)
@@ -64,7 +78,7 @@ where
             develop
                 .develop(Event::ChapterWorkflowCompleted(
                     ChapterWorkflowCompletedPayload {
-                        chapter_id: task.chapter_id.clone(),
+                        chapter_id: chapter_id.to_string(),
                         completed_stage: Stage::RawProvide,
                     },
                 ))

@@ -1,8 +1,6 @@
 use super::*;
 
-use crate::data::assignment::{
-    ListAssignmentInfosParams, UpdateAssignmentRolesParams,
-};
+use crate::data::assignment::{ListAssignmentInfosParams, UpdateAssignmentRolesParams};
 use crate::model::assignment::AssignmentInfo;
 use crate::model::chapter::ChapterInfo;
 use crate::model::comic::ComicInfo;
@@ -47,8 +45,8 @@ fn user(id: &str, is_sadmin: bool) -> UserInfo {
         avatar_key: None,
         avatar_uploaded: false,
         avatar_version: 0,
-        avatar_hash: crate::value::image::ImageHash::default(),
-        avatar_ext: crate::value::image::ImageExt::Png,
+        avatar_hash: ImageHash::default(),
+        avatar_ext: ImageExt::Png,
         is_sadmin,
         last_active_at: time,
         created_at: time,
@@ -74,8 +72,8 @@ fn team(id: &str) -> TeamInfo {
         avatar_key: None,
         avatar_uploaded: false,
         avatar_version: 0,
-        avatar_hash: crate::value::image::ImageHash::default(),
-        avatar_ext: crate::value::image::ImageExt::Png,
+        avatar_hash: ImageHash::default(),
+        avatar_ext: ImageExt::Png,
         created_at: time,
         updated_at: time,
     }
@@ -111,8 +109,8 @@ fn comic(id: &str, workset_id: &str) -> ComicInfo {
         cover_key: None,
         cover_uploaded: false,
         cover_version: 0,
-        cover_hash: crate::value::image::ImageHash::default(),
-        cover_ext: crate::value::image::ImageExt::Png,
+        cover_hash: ImageHash::default(),
+        cover_ext: ImageExt::Png,
         chapter_count: 1,
         creator_id: "creator-user".into(),
         workset: None,

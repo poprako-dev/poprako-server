@@ -8,7 +8,7 @@ use axum::http::{HeaderValue, StatusCode, header};
 use axum::response::{IntoResponse as _, Response};
 use tracing::instrument;
 
-use crate::api::http::shared::metric::{MetricTotal, read_total};
+use crate::api::http::shared::{MetricTotal, read_total};
 use crate::api::http::shared::prometheus::render_detailed_metrics;
 
 #[cfg(test)]

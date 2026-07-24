@@ -1,17 +1,13 @@
 //! In-memory terminology-base repository operations.
 
+use std::cmp::Reverse;
+
 use poprako_orchestra::{Run, Step};
 use tracing::instrument;
 
 use crate::model::termbase::{TermbaseInfo, TermbaseInfoListSpec};
-use crate::part::repo::oper::termbase::{
-    CreateTermbase, DeleteTermbase, GetTermbaseInfo, GetTermbaseInfoExcluded,
-    ListTermbaseInfos, ListTermbaseInfosExcluded, TouchTermbase,
-    UpdateTermbase, UpdateTermbaseTermCount,
-};
-use crate::part_impl::repo::mock_impl::{
-    Mock, MockContext, MockState, expected, now,
-};
+use crate::part::repo::oper::termbase::{CreateTermbase, DeleteTermbase, GetTermbaseInfo, GetTermbaseInfoExcluded, ListTermbaseInfos, ListTermbaseInfosExcluded, TouchTermbase, UpdateTermbase, UpdateTermbaseTermCount};
+use crate::part_impl::repo::mock_impl::{Mock, MockContext, MockState, expected, now};
 use crate::result::{BaseError, BaseResult, accept};
 
 fn get_info(state: &MockState, id: &str) -> BaseResult<TermbaseInfo> {
@@ -52,7 +48,7 @@ fn page_infos(
     limit: u32,
 ) -> Vec<TermbaseInfo> {
     //
-    termbase_infos.sort_by_key(|right| std::cmp::Reverse(right.updated_at));
+    termbase_infos.sort_by_key(|right| Reverse(right.updated_at));
 
     termbase_infos
         .into_iter()

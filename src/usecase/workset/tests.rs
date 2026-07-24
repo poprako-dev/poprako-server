@@ -18,20 +18,19 @@ use poprako_orchestra_extra::prom::oper::Defer;
 use poprako_orchestra_extra::prom::task::Task;
 use time::OffsetDateTime;
 
-use crate::data::workset::{
-    CreateWorksetParams, ListWorksetInfosParams, UpdateWorksetInfoParams,
-};
+use crate::data::workset::{CreateWorksetParams, ListWorksetInfosParams, UpdateWorksetInfoParams};
 use crate::model::comic::ComicInfo;
 use crate::model::member::MemberInfo;
 use crate::model::user::UserToken;
 use crate::model::workset::WorksetInfo;
-use crate::part::prom::payload::{Payload, image};
+use crate::part::prom::payload::{TaskPayload, image};
 use crate::part::repo::oper::workset::DeleteWorkset;
 use crate::part_impl::prom::mock_impl::MockPromRecord;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::{ExpectedVariant, accept};
 use crate::test_util::assert_expected_variant;
 use crate::test_util::fixture::team;
+use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
 
 fn workset(id: &str, team_id: &str, index: i32) -> WorksetInfo {
@@ -95,8 +94,8 @@ fn comic_with_uploaded_cover(
         cover_key: Some(cover_key.into()),
         cover_uploaded: true,
         cover_version: 1,
-        cover_hash: crate::value::image::ImageHash::default(),
-        cover_ext: crate::value::image::ImageExt::Png,
+        cover_hash: ImageHash::default(),
+        cover_ext: ImageExt::Png,
         chapter_count: 0,
         creator_id: "user-1".into(),
         workset: None,
@@ -114,7 +113,7 @@ fn count_delete_records(records: &[MockPromRecord], object_key: &str) -> usize {
         .filter(|record| {
             matches!(
                 record.payload(),
-                Payload::Image(image::Payload::Delete { object_key: key })
+                TaskPayload::Image(image::ImagePayload::Delete { object_key: key })
                     if key == object_key
             )
         })
@@ -413,7 +412,7 @@ async fn delete_does_not_create_prom_records_when_called_directly() {
         //
         let id = "prom-1".to_string();
 
-        let payload = Payload::Image(image::Payload::Delete {
+        let payload = TaskPayload::Image(image::ImagePayload::Delete {
             object_key: "existing.png".to_string(),
         });
 

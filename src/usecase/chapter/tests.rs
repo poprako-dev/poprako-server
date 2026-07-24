@@ -25,12 +25,9 @@ use super::*;
 
 use self::fixture::*;
 use crate::complex::chapter::ChapterComplex;
-use crate::data::chapter::{
-    CreateChapterParams, ListChapterInfosParams, UpdateChapterInfoParams,
-    UpdateChapterStageParams,
-};
-use crate::part::prom::payload::Payload;
-use crate::part::prom::payload::image::Payload as ImagePayload;
+use crate::data::chapter::{CreateChapterParams, ListChapterInfosParams, UpdateChapterInfoParams, UpdateChapterStageParams};
+use crate::part::prom::payload::TaskPayload;
+use crate::part::prom::payload::image::ImagePayload;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::assert_expected_variant;

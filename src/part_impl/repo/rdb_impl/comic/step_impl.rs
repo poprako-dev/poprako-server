@@ -4,30 +4,14 @@ use time::OffsetDateTime;
 use tracing::instrument;
 
 use crate::complex::comic::ComicComplex;
-use crate::model::comic::{
-    ComicCoverReservation, ComicEntry, ComicInfo, ComicInfoListKind,
-    ComicInfoListSpec, ComicInfoUpdate,
-};
-use crate::part_impl::repo::rdb_impl::entity::comic::{
-    ComicAspect, ComicRow, ComicRowEntry,
-};
+use crate::model::comic::{ComicCoverReservation, ComicEntry, ComicInfo, ComicInfoListKind, ComicInfoListSpec, ComicInfoUpdate};
+use crate::part_impl::repo::rdb_impl::entity::comic::{ComicAspect, ComicRow, ComicRowEntry};
 use crate::part_impl::repo::rdb_impl::incl;
-use crate::part_impl::repo::rdb_impl::schema::t_chapter::dsl::{
-    f_comic_id as chapter_comic_id, f_is_pinned as chapter_is_pinned,
-    f_proofread_at as chapter_proofread_at,
-    f_proofreading_at as chapter_proofreading_at,
-    f_published_at as chapter_published_at,
-    f_reviewed_at as chapter_reviewed_at,
-    f_translated_at as chapter_translated_at,
-    f_translating_at as chapter_translating_at,
-    f_typeset_at as chapter_typeset_at,
-    f_typesetting_at as chapter_typesetting_at,
-    f_uploaded_at as chapter_uploaded_at, t_chapter,
-};
+use crate::part_impl::repo::rdb_impl::schema::t_chapter::dsl::{f_comic_id as chapter_comic_id, f_is_pinned as chapter_is_pinned, f_proofread_at as chapter_proofread_at, f_proofreading_at as chapter_proofreading_at, f_published_at as chapter_published_at, f_reviewed_at as chapter_reviewed_at, f_translated_at as chapter_translated_at, f_translating_at as chapter_translating_at, f_typeset_at as chapter_typeset_at, f_typesetting_at as chapter_typesetting_at, f_uploaded_at as chapter_uploaded_at, t_chapter};
 use crate::part_impl::repo::rdb_impl::schema::t_comic::dsl::*;
 use crate::part_impl::shared::RdbConn;
 use crate::part_impl::shared::result::{diesel, expected, next_version};
-use crate::result::{BaseResult, accept};
+use crate::result::{BaseError, BaseResult, accept};
 use crate::value::chapter::{Stage, StageMask, StagePhase};
 use crate::value::comic::ComicInclOpt;
 use crate::value::image::{ImageExt, ImageHash};
@@ -496,7 +480,7 @@ pub async fn reserve_cover(
     if same_hash {
         //
         let object_key = prev_key.ok_or_else(|| {
-            crate::result::BaseError::Unrecoverable {
+            BaseError::Unrecoverable {
                 message: "[reserve_cover] pending cover key is missing".into(),
             }
         })?;
@@ -505,7 +489,7 @@ pub async fn reserve_cover(
             object_key,
             prev_object_key: None,
             cover_version: u32::try_from(raw_version).map_err(|_| {
-                crate::result::BaseError::Unrecoverable {
+                BaseError::Unrecoverable {
                     message: "[reserve_cover] cover version is invalid".into(),
                 }
             })?,

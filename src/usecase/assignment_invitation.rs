@@ -12,34 +12,21 @@ use poprako_util::i18n::trl;
 use crate::complex::assignment::AssignmentComplex;
 use crate::complex::chapter::ChapterComplex;
 use crate::data::assignment::AssignmentInfoVal;
-use crate::data::assignment_invitation::{
-    AssignmentInvitationInfoVal, CreateAssignmentInvitationParams,
-    CreateAssignmentInvitationPayload, JoinAssignmentInvitationParams,
-    ListAssignmentInvitationInfosParams,
-};
+use crate::data::assignment_invitation::{AssignmentInvitationInfoVal, CreateAssignmentInvitationParams, CreateAssignmentInvitationPayload, JoinAssignmentInvitationParams, ListAssignmentInvitationInfosParams};
 use crate::model::assignment::AssignmentEntry;
-use crate::model::assignment_invitation::{
-    AssignmentInvitationEntry, AssignmentInvitationListKind,
-    AssignmentInvitationListSpec,
-};
+use crate::model::assignment_invitation::{AssignmentInvitationEntry, AssignmentInvitationListKind, AssignmentInvitationListSpec};
 use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
 use crate::part::prom::Prom;
-use crate::part::prom::payload::Payload;
-use crate::part::prom::payload::invitation::PurgeExpiredInvitation;
+use crate::part::prom::payload::TaskPayload;
+use crate::part::prom::payload::invitation::InvitationPayload;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
-use crate::part::repo::oper::assignment::{
-    CreateAssignment, FindAssignmentInfo, UpdateAssignmentRoles,
-};
-use crate::part::repo::oper::assignment_invitation::{
-    CreateAssignmentInvitation, DeleteAssignmentInvitations,
-    GetAssignmentInvitationInfo, GetAssignmentInvitationInfoExcluded,
-    ListAssignmentInvitationInfos, MarkAssignmentInvitationUsed,
-};
+use crate::part::repo::oper::assignment::{CreateAssignment, FindAssignmentInfo, UpdateAssignmentRoles};
+use crate::part::repo::oper::assignment_invitation::{CreateAssignmentInvitation, DeleteAssignmentInvitations, GetAssignmentInvitationInfo, GetAssignmentInvitationInfoExcluded, ListAssignmentInvitationInfos, MarkAssignmentInvitationUsed};
 use crate::part::repo::oper::chapter::GetChapterInfoExcluded;
 use crate::part::repo::oper::comic::GetComicInfo;
 use crate::part::repo::oper::member::FindMemberInfo;
@@ -186,11 +173,11 @@ where
                 )
                 .await?;
 
-            let purge_event = PurgeExpiredInvitation::Assignment {
+            let purge_event = InvitationPayload::Assignment {
                 invitation_id: assignment_invitation_info.id.clone(),
             };
 
-            let purge_payload = Payload::PurgeExpiredInvitation(purge_event);
+            let purge_payload = TaskPayload::Invitation(purge_event);
 
             let purge_task_id = next_snowflake_id();
 

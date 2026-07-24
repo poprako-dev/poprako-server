@@ -1,8 +1,6 @@
 use poprako_orchestra::Oper;
 
-use crate::model::team::{
-    TeamAvatarReservation, TeamEntry, TeamInfo, TeamInfoListSpec,
-};
+use crate::model::team::{TeamAvatarReservation, TeamEntry, TeamInfo, TeamInfoListSpec};
 use crate::value::image::{ImageExt, ImageHash};
 
 pub struct CreateTeam<'a> {

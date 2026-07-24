@@ -15,9 +15,9 @@ pub enum ResourceKind {
     PageImage,
 }
 
-/// Deferred image operation payload.
+/// Deferred image payload.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub enum Payload {
+pub enum ImagePayload {
     /// Verify that an uploaded image object exists and confirm the current DB ownership.
     CheckUpload {
         /// Discriminator for the resource type that owns this image.

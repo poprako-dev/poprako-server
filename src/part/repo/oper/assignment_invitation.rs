@@ -1,9 +1,6 @@
 use poprako_orchestra::Oper;
 
-use crate::model::assignment_invitation::{
-    AssignmentInvitationEntry, AssignmentInvitationInfo,
-    AssignmentInvitationListSpec,
-};
+use crate::model::assignment_invitation::{AssignmentInvitationEntry, AssignmentInvitationInfo, AssignmentInvitationListSpec};
 
 pub struct CreateAssignmentInvitation<'a> {
     pub entry: &'a AssignmentInvitationEntry,

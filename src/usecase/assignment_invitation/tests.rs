@@ -10,10 +10,7 @@
 
 use super::*;
 
-use crate::data::assignment_invitation::{
-    CreateAssignmentInvitationParams, JoinAssignmentInvitationParams,
-    ListAssignmentInvitationInfosParams,
-};
+use crate::data::assignment_invitation::{CreateAssignmentInvitationParams, JoinAssignmentInvitationParams, ListAssignmentInvitationInfosParams};
 use crate::model::assignment::AssignmentInfo;
 use crate::model::assignment_invitation::AssignmentInvitationInfo;
 use crate::model::chapter::ChapterInfo;
@@ -22,12 +19,13 @@ use crate::model::member::MemberInfo;
 use crate::model::team::TeamInfo;
 use crate::model::user::{UserCredential, UserInfo, UserToken};
 use crate::model::workset::WorksetInfo;
-use crate::part::prom::payload::Payload;
-use crate::part::prom::payload::invitation::PurgeExpiredInvitation;
+use crate::part::prom::payload::TaskPayload;
+use crate::part::prom::payload::invitation::InvitationPayload;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::{assert_expected_variant, now};
 use crate::value::chapter::{Stage, StageMask, StagePhase};
+use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
 
 fn token(user_id: &str) -> UserToken {
@@ -54,8 +52,8 @@ fn user(id: &str, qid: &str, nickname: &str) -> UserInfo {
         avatar_key: None,
         avatar_uploaded: false,
         avatar_version: 0,
-        avatar_hash: crate::value::image::ImageHash::default(),
-        avatar_ext: crate::value::image::ImageExt::Png,
+        avatar_hash: ImageHash::default(),
+        avatar_ext: ImageExt::Png,
         is_sadmin: false,
         last_active_at: time,
         created_at: time,
@@ -74,8 +72,8 @@ fn team(id: &str) -> TeamInfo {
         avatar_key: None,
         avatar_uploaded: false,
         avatar_version: 0,
-        avatar_hash: crate::value::image::ImageHash::default(),
-        avatar_ext: crate::value::image::ImageExt::Png,
+        avatar_hash: ImageHash::default(),
+        avatar_ext: ImageExt::Png,
         created_at: time,
         updated_at: time,
     }
@@ -111,8 +109,8 @@ fn comic(id: &str, workset_id: &str) -> ComicInfo {
         cover_key: None,
         cover_uploaded: false,
         cover_version: 0,
-        cover_hash: crate::value::image::ImageHash::default(),
-        cover_ext: crate::value::image::ImageExt::Png,
+        cover_hash: ImageHash::default(),
+        cover_ext: ImageExt::Png,
         chapter_count: 1,
         creator_id: "creator-user".into(),
         workset: None,
@@ -338,7 +336,7 @@ async fn create_reviewer_creates_pending_invitation() {
 
     assert_eq!(
         snapshot.prom_records[0].payload(),
-        Payload::PurgeExpiredInvitation(PurgeExpiredInvitation::Assignment {
+        TaskPayload::Invitation(InvitationPayload::Assignment {
             invitation_id: val.id,
         })
     );

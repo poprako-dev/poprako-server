@@ -8,10 +8,12 @@ pub struct UnitTranslationImport {
     pub id: Option<String>,
     /// Import ordering index within the page.
     pub index: i32,
+
     /// Horizontal coordinate of this unit on the page image.
     pub x_coord: f64,
     /// Vertical coordinate of this unit on the page image.
     pub y_coord: f64,
+
     /// Whether this unit is a speech bubble contour.
     pub is_bubble: bool,
     /// Original untranslated text from the source material.

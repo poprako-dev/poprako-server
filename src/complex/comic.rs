@@ -10,32 +10,17 @@ use poprako_orchestra_extra::prom::task::Task;
 use crate::complex::chapter::ChapterComplex;
 use crate::complex::image::ImageComplex;
 use crate::complex::termbase::TermbaseComplex;
-use crate::complex::util::{
-    check_user_is_team_admin, check_user_is_team_admin_with_roles,
-    check_user_is_team_member,
-};
-use crate::part::prom::payload::{Payload, image};
+use crate::complex::util::{check_user_is_team_admin, check_user_is_team_admin_with_roles, check_user_is_team_member};
+use crate::part::prom::payload::{TaskPayload, image};
 use crate::part::repo::oper::assignment::DeleteAssignments;
 use crate::part::repo::oper::assignment_invitation::DeleteAssignmentInvitations;
-use crate::part::repo::oper::chapter::{
-    DeleteChapter, GetChapterInfoExcluded, ListChapterInfosExcluded,
-    ListPinnedChapterInfos, UnpinOtherChapters, UpdateChapter,
-};
-use crate::part::repo::oper::comic::{
-    DeleteComic, GetComicInfo, GetComicInfoExcluded, TouchComicLastActive,
-    UpdateComicChapterCount,
-};
+use crate::part::repo::oper::chapter::{DeleteChapter, GetChapterInfoExcluded, ListChapterInfosExcluded, ListPinnedChapterInfos, UnpinOtherChapters, UpdateChapter};
+use crate::part::repo::oper::comic::{DeleteComic, GetComicInfo, GetComicInfoExcluded, TouchComicLastActive, UpdateComicChapterCount};
 use crate::part::repo::oper::member::FindMemberInfo;
-use crate::part::repo::oper::page::{
-    DeletePages, ListFirstPageInfos, ListPageInfos,
-};
+use crate::part::repo::oper::page::{DeletePages, ListFirstPageInfos, ListPageInfos};
 use crate::part::repo::oper::term::DeleteTerms;
-use crate::part::repo::oper::termbase::{
-    DeleteTermbase, GetTermbaseInfoExcluded, ListTermbaseInfosExcluded,
-};
-use crate::part::repo::oper::workset::{
-    GetWorksetInfo, UpdateWorksetComicCount,
-};
+use crate::part::repo::oper::termbase::{DeleteTermbase, GetTermbaseInfoExcluded, ListTermbaseInfosExcluded};
+use crate::part::repo::oper::workset::{GetWorksetInfo, UpdateWorksetComicCount};
 use crate::result::{BaseError, BaseResult, accept};
 use crate::util::next_snowflake_id;
 use crate::value::index::stored_index_to_user_index;
@@ -131,9 +116,9 @@ impl ComicComplex {
             + for<'a> Proxy<GetTermbaseInfoExcluded<'a>, Error = BaseError>
             + for<'a> Proxy<DeleteTerms<'a>, Error = BaseError>
             + for<'a> Proxy<DeleteTermbase<'a>, Error = BaseError>
-            + for<'a> Proxy<Defer<'a, String, Payload, ()>, Error = BaseError>
+            + for<'a> Proxy<Defer<'a, String, TaskPayload, ()>, Error = BaseError>
             + for<'t, 'a> Proxy<
-                DeferBatch<'t, 'a, String, Payload, ()>,
+                DeferBatch<'t, 'a, String, TaskPayload, ()>,
                 Error = BaseError,
             >,
     {
@@ -162,7 +147,7 @@ impl ComicComplex {
         {
             let delete_id = ImageComplex::gen_delete_id();
 
-            let payload = Payload::Image(image::Payload::Delete {
+            let payload = TaskPayload::Image(image::ImagePayload::Delete {
                 object_key: cover_key.clone(),
             });
 

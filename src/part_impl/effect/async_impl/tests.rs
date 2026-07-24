@@ -13,12 +13,11 @@ use crate::model::chapter::ChapterInfo;
 use crate::model::comic::ComicInfo;
 use crate::model::team::TeamInfo;
 use crate::model::workset::WorksetInfo;
-use crate::part::effect::event::chapter::{
-    ChapterPublishedPayload, ChapterWorkflowCompletedPayload,
-};
+use crate::part::effect::event::chapter::{ChapterPublishedPayload, ChapterWorkflowCompletedPayload};
 use crate::part::effect::event::user::UserSignedUpPayload;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::value::chapter::{Stage, StageMask};
+use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
 
 fn team_info() -> TeamInfo {
@@ -32,8 +31,8 @@ fn team_info() -> TeamInfo {
         avatar_key: None,
         avatar_uploaded: false,
         avatar_version: 0,
-        avatar_hash: crate::value::image::ImageHash::default(),
-        avatar_ext: crate::value::image::ImageExt::Png,
+        avatar_hash: ImageHash::default(),
+        avatar_ext: ImageExt::Png,
         created_at: time,
         updated_at: time,
     }
@@ -69,8 +68,8 @@ fn comic_info() -> ComicInfo {
         cover_key: None,
         cover_uploaded: false,
         cover_version: 0,
-        cover_hash: crate::value::image::ImageHash::default(),
-        cover_ext: crate::value::image::ImageExt::Png,
+        cover_hash: ImageHash::default(),
+        cover_ext: ImageExt::Png,
         chapter_count: 1,
         creator_id: "creator-user".to_string(),
         workset: None,

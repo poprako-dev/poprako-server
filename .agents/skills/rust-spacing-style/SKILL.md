@@ -36,6 +36,12 @@ fn resolve_id(id: &str) -> Result<Id> {
 }
 ```
 
+### Related spacing rules
+
+The checker also enforces a bare `//` after a non-standalone opening `{` in
+multi-statement blocks and multi-field structs, and one blank line between
+adjacent direct statements, match arms, and enum variants.
+
 ### Why
 
 Single-statement blocks are simple enough that a `//` separator adds visual

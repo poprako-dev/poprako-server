@@ -5,13 +5,9 @@ use tracing::instrument;
 use poprako_util::time::ToUnixMilli as _;
 
 use crate::data::system_mail::{ListSystemMailInfosParams, SystemMailInfoVal};
-use crate::model::system_mail::{
-    SystemMailInfoListKind, SystemMailInfoListSpec,
-};
+use crate::model::system_mail::{SystemMailInfoListKind, SystemMailInfoListSpec};
 use crate::model::user::UserToken;
-use crate::part::repo::oper::system_mail::{
-    ListSystemMailInfos, MarkSystemMailRead,
-};
+use crate::part::repo::oper::system_mail::{ListSystemMailInfos, MarkSystemMailRead};
 use crate::part::repo::system_mail::SystemMailRepo;
 use crate::result::{BaseResult, accept};
 

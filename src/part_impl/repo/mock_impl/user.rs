@@ -4,17 +4,11 @@ use poprako_orchestra::{Run, Step};
 use tracing::instrument;
 
 use crate::complex::user::UserComplex;
-use crate::model::user::{
-    UserAvatarReservation, UserCredential, UserEntry, UserInfo,
-};
-use crate::part::repo::oper::user::{
-    CreateUser, DeleteUser, FindUserInfo, GetUserCredential, GetUserInfo,
-    GetUserInfoExcluded, ReserveUserAvatar, UpdateUser,
-};
-use crate::part_impl::repo::mock_impl::{
-    Mock, MockContext, MockState, expected, now,
-};
+use crate::model::user::{UserAvatarReservation, UserCredential, UserEntry, UserInfo};
+use crate::part::repo::oper::user::{CreateUser, DeleteUser, FindUserInfo, GetUserCredential, GetUserInfo, GetUserInfoExcluded, ReserveUserAvatar, UpdateUser};
+use crate::part_impl::repo::mock_impl::{Mock, MockContext, MockState, expected, now};
 use crate::result::{BaseError, BaseResult, accept};
+use crate::value::image::{ImageExt, ImageHash};
 
 fn create_user(
     state: &mut MockState,
@@ -36,8 +30,8 @@ fn create_user(
         avatar_key: None,
         avatar_uploaded: false,
         avatar_version: 0,
-        avatar_hash: crate::value::image::ImageHash::default(),
-        avatar_ext: crate::value::image::ImageExt::Png,
+        avatar_hash: ImageHash::default(),
+        avatar_ext: ImageExt::Png,
         is_sadmin: false,
         last_active_at: time,
         created_at: time,

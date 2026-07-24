@@ -2,24 +2,16 @@ use poprako_orchestra::{Run, Step};
 use tracing::instrument;
 
 use crate::complex::comic::ComicComplex;
-use crate::model::comic::{
-    ComicCoverReservation, ComicInfo, ComicInfoListKind, ComicInfoListSpec,
-};
+use crate::model::comic::{ComicCoverReservation, ComicInfo, ComicInfoListKind, ComicInfoListSpec};
 use crate::model::team::TeamInfo;
 use crate::model::user::UserInfo;
 use crate::model::workset::WorksetInfo;
-use crate::part::repo::oper::comic::{
-    AllocComicChapterIndex, CreateComic, DeleteComic, GetComicInfo,
-    GetComicInfoExcluded, ListComicInfos, ListComicInfosExcluded,
-    MarkComicCoverUploaded, ReserveComicCover, TouchComicLastActive,
-    UpdateComic, UpdateComicChapterCount,
-};
-use crate::part_impl::repo::mock_impl::{
-    Mock, MockContext, MockState, expected, now,
-};
+use crate::part::repo::oper::comic::{AllocComicChapterIndex, CreateComic, DeleteComic, GetComicInfo, GetComicInfoExcluded, ListComicInfos, ListComicInfosExcluded, MarkComicCoverUploaded, ReserveComicCover, TouchComicLastActive, UpdateComic, UpdateComicChapterCount};
+use crate::part_impl::repo::mock_impl::{Mock, MockContext, MockState, expected, now};
 use crate::result::{BaseError, BaseResult, accept};
 use crate::value::comic::ComicInclOpt;
 use crate::value::incl::expand_incl_opts;
+use crate::value::image::{ImageExt, ImageHash};
 use crate::value::index::user_index_to_stored_index;
 
 fn find_workset(state: &MockState, workset_id: &str) -> Option<WorksetInfo> {
@@ -373,8 +365,8 @@ impl<'a> Step<CreateComic<'a>, MockContext> for Mock {
             cover_key: None,
             cover_uploaded: false,
             cover_version: 0,
-            cover_hash: crate::value::image::ImageHash::default(),
-            cover_ext: crate::value::image::ImageExt::Png,
+            cover_hash: ImageHash::default(),
+            cover_ext: ImageExt::Png,
             chapter_count: 0,
             creator_id: oper.entry.creator_id.clone(),
             workset: None,

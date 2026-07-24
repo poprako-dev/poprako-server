@@ -1,37 +1,34 @@
 //! Handler for the "image" prom topic.
 //!
-//! Dispatches image [`Payload`] variants to their concrete implementations.
+//! Dispatches image [`ImagePayload`] variants to their concrete implementations.
 
 use poprako_orchestra::Nucl;
 use tracing::instrument;
 
 use crate::part::image::{ImageManager, ImageObjectInfo};
-use crate::part::prom::payload::image::{Payload, ResourceKind};
+use crate::part::prom::payload::image::{ImagePayload, ResourceKind};
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::oper::chapter::GetChapterInfoExcluded;
-use crate::part::repo::oper::page::{
-    GetPageInfo, GetPageInfoExcluded, MarkPageImageUploaded,
-    SetPageImageUploaded,
-};
+use crate::part::repo::oper::page::{GetPageInfo, GetPageInfoExcluded, MarkPageImageUploaded, SetPageImageUploaded};
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::user::UserRepo;
 use crate::part_impl::prom::rdb_impl::handler::image::resource::ResourceState;
 use crate::part_impl::prom::rdb_impl::handler::task_flow::TaskFlow;
 use crate::part_impl::shared::RdbContext;
-use crate::result::{BaseError, BaseResult, accept};
+use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 use crate::value::image::{ImageExt, ImageHash};
 
 mod resource;
 
-/// Dispatch an image [`Payload`] to its concrete handler.
+/// Dispatch an image [`ImagePayload`] to its concrete handler.
 #[instrument(level = "info", skip_all)]
 pub async fn handle<N, R, I>(
     nucl: &N,
     repo: &R,
     image_pool: &I,
-    task: &Payload,
+    task: &ImagePayload,
 ) -> TaskFlow
 where
     N: Nucl<Context = RdbContext, Error = BaseError>,
@@ -46,7 +43,7 @@ where
 {
     match task {
         //
-        Payload::CheckUpload {
+        ImagePayload::CheckUpload {
             resource_kind,
             resource_id,
             object_key,
@@ -68,7 +65,7 @@ where
             .await
         }
 
-        Payload::Delete { object_key } => {
+        ImagePayload::Delete { object_key } => {
             handle_delete(image_pool, object_key).await
         }
     }
@@ -318,7 +315,7 @@ where
                 || locked_page_info.image_ext != page_info.image_ext
             {
                 return Err(BaseError::Expected {
-                    variant: crate::result::ExpectedVariant::Args,
+                    variant: ExpectedVariant::Args,
                     message: "stale page image identity".into(),
                 });
             }
@@ -419,7 +416,7 @@ where
                 || locked_page_info.image_ext != page_info.image_ext
             {
                 return Err(BaseError::Expected {
-                    variant: crate::result::ExpectedVariant::Args,
+                    variant: ExpectedVariant::Args,
                     message: "stale page image identity".into(),
                 });
             }

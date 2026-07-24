@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::hash::Hash;
 use std::sync::{LazyLock, Mutex, MutexGuard};
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use axum::extract::MatchedPath;
 use axum::response::Response;
@@ -21,34 +21,34 @@ static METRIC_WINDOW: LazyLock<MetricWindow> = LazyLock::new(MetricWindow::new);
 /// Aggregate metrics for the current time window.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
-pub(crate) struct MetricTotal {
+pub struct MetricTotal {
     /// Total request count in the current sliding window.
-    pub(crate) total: u64,
+    pub total: u64,
     /// Mean latency across all requests in the window, in milliseconds.
-    pub(crate) average_latency_ms: f64,
+    pub average_latency_ms: f64,
 
     /// Accumulated latency in microseconds used to compute the average.
     #[serde(skip)]
     total_latency_micros: u64,
 
     /// Count of 4xx/5xx responses grouped by their HTTP status code.
-    pub(crate) by_error: HashMap<u16, u64>,
+    pub by_error: HashMap<u16, u64>,
     /// Count of requests grouped by the matched route template.
-    pub(crate) by_path: HashMap<String, u64>,
+    pub by_path: HashMap<String, u64>,
     /// Per-minute breakdown for the most recent 30 minutes.
-    pub(crate) minutes: Vec<MetricMinute>,
+    pub minutes: Vec<MetricMinute>,
 }
 
 /// Aggregate metrics for one minute in the recent sliding window.
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
-pub(crate) struct MetricMinute {
+pub struct MetricMinute {
     /// Unix timestamp truncated to minute granularity.
-    pub(crate) minute: u64,
+    pub minute: u64,
     /// Request count recorded in this minute.
-    pub(crate) total: u64,
+    pub total: u64,
     /// Mean latency for requests in this minute, in milliseconds.
-    pub(crate) average_latency_ms: f64,
+    pub average_latency_ms: f64,
 }
 
 #[derive(Default)]
@@ -106,7 +106,7 @@ impl MetricWindow {
         minute: u64,
         status: u16,
         matched_path: Option<&str>,
-        latency: std::time::Duration,
+        latency: Duration,
     ) {
         //
         let bucket_index = minute as usize % BUCKET_COUNT;
@@ -216,10 +216,10 @@ impl MetricMinute {
 /// Records one response in the current minute bucket.
 ///
 /// The path dimension is populated only from axum's matched route template.
-pub(crate) fn record_response(
+pub fn record_response(
     response: &Response,
     matched_path: Option<&MatchedPath>,
-    latency: std::time::Duration,
+    latency: Duration,
 ) {
     //
     let minute = curr_minute();
@@ -232,7 +232,7 @@ pub(crate) fn record_response(
 }
 
 /// Returns an approximate snapshot covering the current and previous 59 minutes.
-pub(crate) fn read_total() -> MetricTotal {
+pub fn read_total() -> MetricTotal {
     METRIC_WINDOW.read(curr_minute())
 }
 

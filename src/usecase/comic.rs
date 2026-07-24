@@ -13,11 +13,7 @@ use crate::complex::assignment::AssignmentComplex;
 use crate::complex::chapter::ChapterComplex;
 use crate::complex::comic::{ComicComplex, ComicPermComplex};
 use crate::complex::image::ImageComplex;
-use crate::data::comic::{
-    ComicInfoVal, CreateComicParams, CreateComicPayload,
-    MarkComicCoverUploadedParams, ReserveComicCoverParams,
-    ReserveComicCoverPayload, UpdateComicInfoParams,
-};
+use crate::data::comic::{ComicInfoVal, CreateComicParams, CreateComicPayload, MarkComicCoverUploadedParams, ReserveComicCoverParams, ReserveComicCoverPayload, UpdateComicInfoParams};
 use crate::data::image::ImageUploadSlotVal;
 use crate::model::assignment::AssignmentEntry;
 use crate::model::chapter::ChapterEntry;
@@ -25,37 +21,21 @@ use crate::model::comic::{ComicEntry, ComicInfoUpdate};
 use crate::model::user::UserToken;
 use crate::part::image::{ImageManager, ImagePool, ImageUploadSpec};
 use crate::part::prom::Prom;
-use crate::part::prom::payload::{Payload, image};
+use crate::part::prom::payload::{TaskPayload, image};
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
-use crate::part::repo::oper::assignment::{
-    CreateAssignment, DeleteAssignments,
-};
+use crate::part::repo::oper::assignment::{CreateAssignment, DeleteAssignments};
 use crate::part::repo::oper::assignment_invitation::DeleteAssignmentInvitations;
-use crate::part::repo::oper::chapter::{
-    CreateChapter, DeleteChapter, GetChapterInfoExcluded,
-    ListChapterInfosExcluded, ListPinnedChapterInfos, UnpinOtherChapters,
-    UpdateChapter,
-};
-use crate::part::repo::oper::comic::{
-    AllocComicChapterIndex, CreateComic, DeleteComic, GetComicInfo,
-    GetComicInfoExcluded, MarkComicCoverUploaded, ReserveComicCover,
-    TouchComicLastActive, UpdateComic, UpdateComicChapterCount,
-};
+use crate::part::repo::oper::chapter::{CreateChapter, DeleteChapter, GetChapterInfoExcluded, ListChapterInfosExcluded, ListPinnedChapterInfos, UnpinOtherChapters, UpdateChapter};
+use crate::part::repo::oper::comic::{AllocComicChapterIndex, CreateComic, DeleteComic, GetComicInfo, GetComicInfoExcluded, MarkComicCoverUploaded, ReserveComicCover, TouchComicLastActive, UpdateComic, UpdateComicChapterCount};
 use crate::part::repo::oper::member::FindMemberInfo;
-use crate::part::repo::oper::page::{
-    DeletePages, ListFirstPageInfos, ListPageInfos,
-};
+use crate::part::repo::oper::page::{DeletePages, ListFirstPageInfos, ListPageInfos};
 use crate::part::repo::oper::term::DeleteTerms;
-use crate::part::repo::oper::termbase::{
-    DeleteTermbase, GetTermbaseInfoExcluded, ListTermbaseInfosExcluded,
-};
-use crate::part::repo::oper::workset::{
-    AllocWorksetComicIndex, GetWorksetInfo, UpdateWorksetComicCount,
-};
+use crate::part::repo::oper::termbase::{DeleteTermbase, GetTermbaseInfoExcluded, ListTermbaseInfosExcluded};
+use crate::part::repo::oper::workset::{AllocWorksetComicIndex, GetWorksetInfo, UpdateWorksetComicCount};
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::term::TermRepo;
 use crate::part::repo::termbase::TermbaseRepo;
@@ -398,7 +378,7 @@ where
                 //
                 batch_ids.push(ImageComplex::gen_delete_id());
 
-                batch_payloads.push(Payload::Image(image::Payload::Delete {
+                batch_payloads.push(TaskPayload::Image(image::ImagePayload::Delete {
                     object_key: prev_object_key.clone(),
                 }));
 
@@ -407,7 +387,7 @@ where
 
             batch_ids.push(ImageComplex::gen_check_id());
 
-            batch_payloads.push(Payload::Image(image::Payload::CheckUpload {
+            batch_payloads.push(TaskPayload::Image(image::ImagePayload::CheckUpload {
                 resource_kind: image::ResourceKind::ComicCover,
                 resource_id: id.clone(),
                 object_key: cover_reservation.object_key.clone(),
@@ -418,7 +398,7 @@ where
 
             batch_delays.push(Some(Duration::from_secs(15 * 60)));
 
-            let batch_tasks: Vec<Task<'_, String, Payload>> = batch_ids
+            let batch_tasks: Vec<Task<'_, String, TaskPayload>> = batch_ids
                 .iter()
                 .zip(batch_payloads.iter())
                 .zip(batch_delays.iter())
@@ -640,8 +620,8 @@ where
                     for<'a> DeleteTerms<'a>,
                     for<'a> DeleteTermbase<'a>;
                 prom =>
-                    for<'a> Defer<'a, String, Payload, ()>,
-                    for<'t, 'a> DeferBatch<'t, 'a, String, Payload, ()>;
+                    for<'a> Defer<'a, String, TaskPayload, ()>,
+                    for<'t, 'a> DeferBatch<'t, 'a, String, TaskPayload, ()>;
             },
             &id,
         )

@@ -2,9 +2,7 @@
 
 use poprako_orchestra::{Run, Step};
 
-use crate::part::repo::oper::announcement::{
-    CreateAnnouncement, ListAnnouncementInfos,
-};
+use crate::part::repo::oper::announcement::{CreateAnnouncement, ListAnnouncementInfos};
 use crate::result::BaseError;
 
 /// Announcement repository operations.

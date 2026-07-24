@@ -16,10 +16,7 @@ use super::*;
 
 use time::{Duration as TimeDuration, OffsetDateTime};
 
-use crate::data::page::{
-    ListPageInfosParams, MarkPageImageUploadedParams, PageImageParams,
-    ReserveChapterPagesParams, ReservePageImageParams,
-};
+use crate::data::page::{ListPageInfosParams, MarkPageImageUploadedParams, PageImageParams, ReserveChapterPagesParams, ReservePageImageParams};
 use crate::model::assignment::AssignmentInfo;
 use crate::model::chapter::ChapterInfo;
 use crate::model::comic::ComicInfo;
@@ -27,18 +24,13 @@ use crate::model::member::MemberInfo;
 use crate::model::page::PageInfo;
 use crate::model::user::UserToken;
 use crate::model::workset::WorksetInfo;
-use crate::part::prom::payload::Payload;
-use crate::part::prom::payload::chapter::AdvanceRawProvide;
-use crate::part::prom::payload::image::{
-    Payload as ImagePayload, ResourceKind,
-};
+use crate::part::prom::payload::TaskPayload;
+use crate::part::prom::payload::chapter::ChapterPayload;
+use crate::part::prom::payload::image::{ImagePayload, ResourceKind};
 use crate::part_impl::prom::mock_impl::process_pending;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
-use crate::test_util::{
-    assert_expected_message, assert_expected_variant,
-    assert_one_image_check_record,
-};
+use crate::test_util::{assert_expected_message, assert_expected_variant, assert_one_image_check_record};
 use crate::value::chapter::{Stage, StageMask, StagePhase};
 use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
@@ -83,8 +75,8 @@ fn comic(id: &str, workset_id: &str) -> ComicInfo {
         cover_key: None,
         cover_uploaded: false,
         cover_version: 0,
-        cover_hash: crate::value::image::ImageHash::default(),
-        cover_ext: crate::value::image::ImageExt::Png,
+        cover_hash: ImageHash::default(),
+        cover_ext: ImageExt::Png,
         chapter_count: 1,
         creator_id: "user-1".into(),
         workset: None,
@@ -246,7 +238,7 @@ async fn reserve_image_replaces_key_and_enqueues_prom() {
 
     assert!(matches!(
         snapshot.prom_records[0].payload(),
-        Payload::Image(ImagePayload::Delete { object_key }) if object_key == "old.png"
+        TaskPayload::Image(ImagePayload::Delete { object_key }) if object_key == "old.png"
     ));
 
     assert_one_image_check_record(

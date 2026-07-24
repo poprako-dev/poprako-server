@@ -6,13 +6,9 @@ use tracing::instrument;
 use poprako_util::i18n::trl;
 
 use crate::complex::chapter::ChapterComplex;
-use crate::complex::chapter_port::{
-    ChapterImportComplex, ChapterPortPermComplex,
-};
+use crate::complex::chapter_port::{ChapterImportComplex, ChapterPortPermComplex};
 use crate::complex::unit::UnitComplex;
-use crate::data::chapter_port::{
-    ImportChapterTranslationParams, ImportChapterTranslationPayload,
-};
+use crate::data::chapter_port::{ImportChapterTranslationParams, ImportChapterTranslationPayload};
 use crate::model::assignment::AssignmentInfo;
 use crate::model::page::PageInfo;
 use crate::model::unit::{UnitCounterDelta, UnitCounters, UnitInfo};
@@ -22,14 +18,10 @@ use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::oper::assignment::FindAssignmentInfo;
-use crate::part::repo::oper::chapter::{
-    AdjustChapterUnitCounters, GetChapterInfoExcluded,
-};
+use crate::part::repo::oper::chapter::{AdjustChapterUnitCounters, GetChapterInfoExcluded};
 use crate::part::repo::oper::comic::TouchComicLastActive;
 use crate::part::repo::oper::page::{ListPageInfos, SetPageUnitCounters};
-use crate::part::repo::oper::unit::{
-    CountUnits, ListUnitIndexes, ListUnitInfos, SaveUnit, UpdateUnitIndexes,
-};
+use crate::part::repo::oper::unit::{CountUnits, ListUnitIndexes, ListUnitInfos, SaveUnit, UpdateUnitIndexes};
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::unit::UnitRepo;
 use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};

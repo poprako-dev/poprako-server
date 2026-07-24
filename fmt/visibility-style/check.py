@@ -508,17 +508,20 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> int:
-    # Temperarily comment out.
-    # args = parse_args()
-    #
-    # if args.self_test:
-    #     return self_test()
-    #
-    # diagnostics = check_root(args.root.resolve())
-    #
-    # if diagnostics:
-    #     print("\n".join(diagnostics), file=sys.stderr)
-    #     return 1
+    args = parse_args()
+
+    if args.self_test:
+        return self_test()
+
+    diagnostics = [
+        diagnostic
+        for diagnostic in check_root(args.root.resolve())
+        if ": VIS001: " in diagnostic
+    ]
+
+    if diagnostics:
+        print("\n".join(diagnostics), file=sys.stderr)
+        return 1
 
     return 0
 

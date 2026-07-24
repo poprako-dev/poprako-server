@@ -89,6 +89,56 @@ class RustSpacingCheckerTest(unittest.TestCase):
 """,
         )
 
+    def test_enum_variants_require_a_blank_line(self) -> None:
+        source = """enum Payload {
+    /// First payload.
+    First,
+    /// Second payload.
+    Second,
+}
+"""
+        analysis = self.analyze(source, build_fixes=True)
+        fixed = CHECKER_MODULE.apply_edits(source.encode(), analysis.edits)
+
+        self.assertEqual(
+            [diagnostic.code for diagnostic in analysis.diagnostics],
+            ["BLK001"],
+        )
+        self.assertEqual(
+            fixed.decode(),
+            """enum Payload {
+    /// First payload.
+    First,
+
+    /// Second payload.
+    Second,
+}
+""",
+        )
+
+    def test_multi_field_struct_requires_a_block_start_separator(self) -> None:
+        source = """struct Payload {
+    first: String,
+    second: String,
+}
+"""
+        analysis = self.analyze(source, build_fixes=True)
+        fixed = CHECKER_MODULE.apply_edits(source.encode(), analysis.edits)
+
+        self.assertEqual(
+            [diagnostic.code for diagnostic in analysis.diagnostics],
+            ["BLK000"],
+        )
+        self.assertEqual(
+            fixed.decode(),
+            """struct Payload {
+    //
+    first: String,
+    second: String,
+}
+""",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

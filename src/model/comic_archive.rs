@@ -42,12 +42,14 @@ pub struct ComicArchivePageSnapshot {
 pub struct ComicArchiveRecord {
     /// Unique identifier for the archive record.
     pub id: String,
+
     /// The team that owns the archived comic.
     pub team_id: String,
     /// Serialised JSON snapshot of the comic, its chapters, pages, and units.
     pub archived_payload: String,
     /// The user who triggered the archiving operation.
     pub archiver_id: String,
+
     /// When this archive record was created.
     pub created_at: OffsetDateTime,
 }
