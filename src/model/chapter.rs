@@ -30,6 +30,7 @@ use crate::value::chapter::{ChapterInclOpt, StageMask};
 /// [`StagePhase`] values independently.
 #[derive(Clone)]
 pub struct ChapterInfo {
+    //
     /// Unique identifier for the chapter.
     pub id: String,
     /// Foreign key to the parent comic this chapter belongs to.
@@ -80,6 +81,7 @@ pub struct ChapterInfo {
 /// [`ChapterComplex::gen_id`]: crate::complex::chapter::ChapterComplex::gen_id
 #[cfg_attr(test, derive(Clone))]
 pub struct ChapterEntry {
+    //
     /// Unique identifier to insert for the new chapter.
     pub id: String,
     /// Foreign key identifying the parent comic.
@@ -103,6 +105,7 @@ pub struct ChapterEntry {
 /// [`ChapterStageUpdate`] instead.
 #[cfg_attr(test, derive(Clone))]
 pub struct ChapterInfoUpdate {
+    //
     /// Unique identifier of the chapter whose profile fields are being changed.
     pub id: String,
 
@@ -117,6 +120,7 @@ pub struct ChapterInfoUpdate {
 /// The use case layer validates transition legality before building this update.
 #[cfg_attr(test, derive(Clone))]
 pub struct ChapterStageUpdate {
+    //
     /// Unique identifier of the chapter whose stages are being transitioned.
     pub id: String,
 
@@ -126,6 +130,7 @@ pub struct ChapterStageUpdate {
 
 /// Filtering, pagination, and include parameters for listing chapters.
 pub struct ChapterInfoListSpec {
+    //
     /// Foreign key scoping the chapter listing to a single comic.
     pub comic_id: String,
     /// Flags controlling which optional associations (such as comic or creator

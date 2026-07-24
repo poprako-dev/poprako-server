@@ -33,6 +33,7 @@ const THUMBNAIL_TRANSFORM: &str =
 /// Cloudflare R2-backed image pool.
 #[derive(Clone)]
 pub struct R2ImagePool {
+    //
     /// HTTP client configured for Cloudflare R2 API requests.
     client: Client,
     /// Name of the R2 bucket used for image storage.

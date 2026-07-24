@@ -18,6 +18,7 @@ pub const MAX_EXPORT_MONTHS: usize = 12;
 /// Complete immutable comic payload serialized once when archiving.
 #[derive(Serialize)]
 pub struct ArchivedComicPayload {
+    //
     /// Original database identifier of the comic before archiving.
     pub source_comic_id: String,
     /// Workset the comic belonged to at archiving time.
@@ -49,6 +50,7 @@ pub struct ArchivedComicPayload {
 /// Immutable workset payload serialized into an archive entry.
 #[derive(Serialize)]
 pub struct ArchivedWorksetPayload {
+    //
     /// Original database identifier of the workset.
     pub id: String,
     /// Identifier of the team that owns this workset.
@@ -72,6 +74,7 @@ pub struct ArchivedWorksetPayload {
 /// Immutable chapter payload serialized into an archive entry.
 #[derive(Serialize)]
 pub struct ArchivedChapterPayload {
+    //
     /// Original database identifier of the chapter before archiving.
     pub source_chapter_id: String,
     /// Whether the chapter was pinned at the top of its comic.
@@ -105,6 +108,7 @@ pub struct ArchivedChapterPayload {
 /// Immutable assignment payload serialized into an archive entry.
 #[derive(Serialize)]
 pub struct ArchivedAssignmentPayload {
+    //
     /// Original database identifier of the assignment before archiving.
     pub source_assignment_id: String,
     /// Identifier of the user assigned to this chapter.
@@ -122,6 +126,7 @@ pub struct ArchivedAssignmentPayload {
 /// Immutable user payload serialized into an archive entry.
 #[derive(Serialize)]
 pub struct ArchivedUserPayload {
+    //
     /// Original database identifier of the user.
     pub id: String,
     /// Qualified user identifier used for login and display.
@@ -147,6 +152,7 @@ pub struct ArchivedUserPayload {
 /// Immutable page payload serialized into an archive entry.
 #[derive(Serialize)]
 pub struct ArchivedPagePayload {
+    //
     /// Original database identifier of the page before archiving.
     pub source_page_id: String,
     /// Display ordering index of the page within its chapter.
@@ -168,6 +174,7 @@ pub struct ArchivedPagePayload {
 /// Immutable unit payload serialized into an archive entry.
 #[derive(Serialize)]
 pub struct ArchivedUnitPayload {
+    //
     /// Original database identifier of the unit before archiving.
     pub source_unit_id: String,
     /// Display ordering index of the unit within its page.
@@ -196,6 +203,7 @@ pub struct ArchivedUnitPayload {
 
 /// One validated UTC calendar-month range.
 pub struct ComicArchiveMonth {
+    //
     /// Human-readable label in "YYYY-MM" format for this month slot.
     pub label: String,
 

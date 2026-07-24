@@ -29,16 +29,19 @@ pub struct UserFixture {
 }
 
 pub struct TeamFixture {
+    //
     pub user_entry: UserEntry,
     pub team_entry: TeamEntry,
 }
 
 pub struct WorksetFixture {
+    //
     pub team_entry: TeamEntry,
     pub workset_entry: WorksetEntry,
 }
 
 pub struct ComicFixture {
+    //
     pub creator_form: UserEntry,
     pub team_entry: TeamEntry,
     pub workset_entry: WorksetEntry,
@@ -46,6 +49,7 @@ pub struct ComicFixture {
 }
 
 pub struct ChapterFixture {
+    //
     pub creator_form: UserEntry,
     pub team_entry: TeamEntry,
     pub workset_entry: WorksetEntry,
@@ -54,6 +58,7 @@ pub struct ChapterFixture {
 }
 
 pub struct PageFixture {
+    //
     pub team_entry: TeamEntry,
     pub chapter_entry: ChapterEntry,
     pub page_entry: PageEntry,

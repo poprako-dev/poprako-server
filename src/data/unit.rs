@@ -15,6 +15,7 @@ mod tests;
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UnitInfoVal {
+    //
     /// Unique unit identifier.
     pub id: String,
 
@@ -81,6 +82,7 @@ pub struct ListPageUnitInfosParams {
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ListPageUnitInfosPayload {
+    //
     /// All units belonging to the requested page.
     pub unit_infos: Vec<UnitInfoVal>,
 
@@ -96,6 +98,7 @@ pub struct ListPageUnitInfosPayload {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct SavePageUnitsParams {
+    //
     /// Parent page identifier to save units under.
     pub page_id: String,
     /// Batch of unit operations to apply (create, save, delete).
@@ -106,6 +109,7 @@ pub struct SavePageUnitsParams {
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct SavePageUnitsPayload {
+    //
     /// Mappings from client-assigned local IDs to server-assigned unit IDs.
     pub local_id_mappers: Vec<UnitIdMapperVal>,
 
@@ -121,6 +125,7 @@ pub struct SavePageUnitsPayload {
 #[derive(Debug, Clone, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UnitDiffParams {
+    //
     /// Parent page identifier the operations apply to.
     pub page_id: String,
     /// Ordered list of unit operations to apply.
@@ -134,6 +139,7 @@ pub struct UnitDiffParams {
 pub enum UnitOperParams {
     /// Create a new unit with client-assigned local id and content payload.
     Create {
+        //
         /// Client-assigned temporary identifier mapped to the server-assigned id after creation.
         local_id: String,
 
@@ -163,8 +169,10 @@ pub enum UnitOperParams {
         /// Identifier of the user providing the initial proofread, or [`None`].
         last_proofreader_id: Option<String>,
     },
+
     /// Update an existing unit identified by server-assigned id with new content payload.
     Save {
+        //
         /// Server-assigned identifier of the unit to update.
         id: String,
 
@@ -192,6 +200,7 @@ pub enum UnitOperParams {
         /// Identifier of the user providing the updated proofread, or [`None`].
         last_proofreader_id: Option<String>,
     },
+
     /// Remove an existing unit by server-assigned id.
     Delete {
         /// Server-assigned identifier of the unit to remove.
@@ -285,6 +294,7 @@ impl UnitOperParams {
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UnitIdMapperVal {
+    //
     /// Client-assigned temporary unit identifier.
     pub local_id: String,
     /// Server-assigned permanent unit identifier.

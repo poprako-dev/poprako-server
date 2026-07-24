@@ -12,7 +12,6 @@ use crate::value::chapter::Stage;
 /// Process a [`ChapterPayload`] task.
 pub async fn process(mock: &Mock, task: &ChapterPayload) -> BaseResult<()> {
     match task {
-        //
         ChapterPayload::TryAdvanceRawProvideStage { chapter_id } => {
             process_raw_provide(mock, chapter_id).await
         }

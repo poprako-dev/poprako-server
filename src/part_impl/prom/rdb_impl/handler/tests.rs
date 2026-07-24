@@ -1,4 +1,3 @@
-use super::*;
 use super::pool::enforce_retry_limit;
 
 use diesel::prelude::*;
@@ -14,10 +13,10 @@ use crate::part_impl::prom::rdb_impl::handler::task_flow::TaskFlow;
 use crate::part_impl::prom::rdb_impl::repo::RdbPromRepo;
 use crate::part_impl::prom::rdb_impl::test_shared;
 use crate::part_impl::repo::mock_impl::Mock;
-use crate::part_impl::repo::rdb_impl::schema::t_local_message;
-use crate::value::image::{ImageExt, ImageHash};
 use crate::part_impl::repo::rdb_impl::RdbRepo;
+use crate::part_impl::repo::rdb_impl::schema::t_local_message;
 use crate::part_impl::shared::RdbCore;
+use crate::value::image::{ImageExt, ImageHash};
 
 const PREFIX: &str = "rdb-test-prom-handler-";
 
@@ -46,19 +45,15 @@ pub async fn image_payloads_from_rdb_dispatch(shared: RdbCore) {
 
     let mut conn = shared.get().await.ok().unwrap();
 
-    diesel::insert_into(
-        t_local_message::table,
-    )
-    .values(&delete_local_message_entry)
-    .execute(&mut conn)
-    .await
-    .ok()
-    .unwrap();
+    diesel::insert_into(t_local_message::table)
+        .values(&delete_local_message_entry)
+        .execute(&mut conn)
+        .await
+        .ok()
+        .unwrap();
 
     let delete_payload: serde_json::Value = t_local_message::table
-        .filter(
-            t_local_message::f_id.eq("rdb-test-prom-handler-delete"),
-        )
+        .filter(t_local_message::f_id.eq("rdb-test-prom-handler-delete"))
         .select(t_local_message::f_payload)
         .first(&mut conn)
         .await
@@ -110,26 +105,22 @@ pub async fn image_payloads_from_rdb_dispatch(shared: RdbCore) {
             .ok()
             .unwrap();
 
-    diesel::insert_into(
-        t_local_message::table,
-    )
-    .values(&check_uploaded_local_message_entry)
-    .execute(&mut conn)
-    .await
-    .ok()
-    .unwrap();
+    diesel::insert_into(t_local_message::table)
+        .values(&check_uploaded_local_message_entry)
+        .execute(&mut conn)
+        .await
+        .ok()
+        .unwrap();
 
-    let check_uploaded_payload: serde_json::Value =
-        t_local_message::table
-            .filter(
-                t_local_message::f_id
-                    .eq("rdb-test-prom-handler-check-uploaded"),
-            )
-            .select(t_local_message::f_payload)
-            .first(&mut conn)
-            .await
-            .ok()
-            .unwrap();
+    let check_uploaded_payload: serde_json::Value = t_local_message::table
+        .filter(
+            t_local_message::f_id.eq("rdb-test-prom-handler-check-uploaded"),
+        )
+        .select(t_local_message::f_payload)
+        .first(&mut conn)
+        .await
+        .ok()
+        .unwrap();
 
     let image_pool = Mock::new().with_image_head_absent();
 

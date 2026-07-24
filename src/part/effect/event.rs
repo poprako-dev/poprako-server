@@ -16,10 +16,13 @@ pub mod user;
 pub enum Event {
     /// Emitted when a user shows activity (e.g., views their own profile).
     UserActive(UserActivePayload),
+
     /// Emitted when a new user signs up via an invitation.
     UserSignedUp(UserSignedUpPayload),
+
     /// Emitted when a chapter reaches publish completion.
     ChapterPublished(ChapterPublishedPayload),
+
     /// Emitted when one chapter workflow stage reaches completion.
     ChapterWorkflowCompleted(ChapterWorkflowCompletedPayload),
 }

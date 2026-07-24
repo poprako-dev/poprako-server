@@ -10,6 +10,7 @@ const MIGRATIONS: EmbeddedMigrations =
     diesel_migrations::embed_migrations!("migrations");
 
 pub struct TestRdb {
+    //
     core: RdbCore,
     _container: ContainerAsync<Postgres>,
 }

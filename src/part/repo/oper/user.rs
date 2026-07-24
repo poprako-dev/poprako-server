@@ -37,20 +37,26 @@ impl Oper for FindUserInfo<'_> {
 
 pub enum UpdateUser<'a> {
     Info {
+        //
         id: &'a str,
         qid: &'a str,
         nickname: &'a str,
     },
+
     MarkAvatarUploaded {
+        //
         id: &'a str,
         avatar_version: u32,
         avatar_key: Option<&'a str>,
         avatar_uploaded: bool,
     },
+
     TouchLastActive {
         id: &'a str,
     },
+
     PasswordHash {
+        //
         id: &'a str,
         password_hash: &'a str,
     },
@@ -61,6 +67,7 @@ impl Oper for UpdateUser<'_> {
 }
 
 pub struct ReserveUserAvatar<'a> {
+    //
     pub id: &'a str,
     pub image_hash: &'a ImageHash,
     pub image_ext: ImageExt,

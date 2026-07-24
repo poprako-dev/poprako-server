@@ -9,6 +9,7 @@ use utoipa::ToSchema;
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UnitTranslationExportPayload {
+    //
     /// Unique unit identifier for the exported unit.
     pub unit_id: String,
     /// Ordinal index of the unit within its page.

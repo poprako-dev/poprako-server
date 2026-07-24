@@ -5,6 +5,7 @@ use time::OffsetDateTime;
 /// A persisted terminology base.
 #[cfg_attr(test, derive(Clone))]
 pub struct TermbaseInfo {
+    //
     /// The unique identifier for this terminology base.
     pub id: String,
 
@@ -33,6 +34,7 @@ pub struct TermbaseInfo {
 /// The data needed to create a terminology base.
 #[cfg_attr(test, derive(Clone))]
 pub struct TermbaseEntry {
+    //
     /// The unique identifier for the new terminology base.
     pub id: String,
 
@@ -53,6 +55,7 @@ pub struct TermbaseEntry {
 /// Mutable terminology-base profile fields.
 #[cfg_attr(test, derive(Clone))]
 pub struct TermbaseInfoUpdate {
+    //
     /// The unique identifier of the termbase to update.
     pub id: String,
 
@@ -66,6 +69,7 @@ pub struct TermbaseInfoUpdate {
 pub enum TermbaseInfoListSpec {
     /// List terminology bases directly owned by a team.
     Team {
+        //
         /// ID of the team whose termbases to list.
         team_id: String,
         /// Optional fuzzy name filter.
@@ -75,8 +79,10 @@ pub enum TermbaseInfoListSpec {
         /// Maximum number of records to return.
         limit: u32,
     },
+
     /// List terminology bases visible from a comic.
     Comic {
+        //
         /// ID of the team that owns the comic.
         team_id: String,
         /// ID of the comic whose associated termbases to list.

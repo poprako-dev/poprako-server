@@ -91,22 +91,31 @@ impl<'de> Deserialize<'de> for ImageHash {
 pub enum ImageExt {
     /// The JPEG image format.
     Jpg,
+
     /// The JPEG image format (explicit `image/jpeg` content type).
     Jpeg,
+
     /// The PNG image format.
     Png,
+
     /// The GIF image format.
     Gif,
+
     /// The WebP image format.
     Webp,
+
     /// The SVG image format.
     Svg,
+
     /// The AVIF image format.
     Avif,
+
     /// The BMP image format.
     Bmp,
+
     /// The TIFF image format.
     Tif,
+
     /// The TIFF image format (explicit `image/tiff` content type).
     Tiff,
 }

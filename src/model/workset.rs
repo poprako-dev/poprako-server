@@ -7,6 +7,7 @@ use time::OffsetDateTime;
 /// Worksets are scoped to a team and carry denormalized comic counters.
 #[derive(Clone)]
 pub struct WorksetInfo {
+    //
     /// Server-assigned unique workset identifier.
     pub id: String,
 
@@ -32,6 +33,7 @@ pub struct WorksetInfo {
 /// The data needed to create a new workset.
 #[cfg_attr(test, derive(Clone))]
 pub struct WorksetEntry {
+    //
     /// Server-assigned unique workset identifier.
     pub id: String,
 
@@ -49,6 +51,7 @@ pub struct WorksetEntry {
 /// Mutable profile fields for a workset.
 #[cfg_attr(test, derive(Clone))]
 pub struct WorksetInfoUpdate {
+    //
     /// Server-assigned identifier of the workset to update.
     pub id: String,
     /// Updated human-readable workset name.

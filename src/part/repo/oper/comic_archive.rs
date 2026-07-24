@@ -6,6 +6,7 @@ use crate::value::comic_archive::ComicArchiveMonth;
 
 /// Lists archive JSON strings for selected retained month slots.
 pub struct ListComicArchivePayloads<'a> {
+    //
     pub team_id: &'a str,
 
     pub months: &'a [ComicArchiveMonth],

@@ -314,12 +314,14 @@ where
 }
 
 struct SavePageUnitsResult {
+    //
     payload: SavePageUnitsPayload,
     chapter_id: String,
 }
 
 /// Carries the validated opers and local ID maps produced by applying a diff.
 struct UnitApplyParts {
+    //
     opers: Vec<UnitOper>,
     local_id_maps: Vec<UnitIdMapper>,
 }

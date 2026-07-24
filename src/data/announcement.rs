@@ -19,6 +19,7 @@ use crate::value::announcement::AnnouncementInclOpt;
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct AnnouncementInfoVal {
+    //
     /// Unique identifier.
     pub id: String,
 
@@ -73,6 +74,7 @@ impl AnnouncementInfoVal {
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct ListAnnouncementInfosParams {
+    //
     /// Parent team whose announcements to list.
     pub team_id: String,
 
@@ -101,6 +103,7 @@ impl From<ListAnnouncementInfosParams> for AnnouncementListSpec {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateAnnouncementParams {
+    //
     /// Target team identifier.
     pub team_id: String,
 

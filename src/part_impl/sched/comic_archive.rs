@@ -30,6 +30,7 @@ mod tests;
 const PURGE_INTERVAL: Duration = Duration::from_secs(7 * 24 * 60 * 60);
 
 struct ExpiredSlot {
+    //
     team_id: String,
     start: OffsetDateTime,
 }

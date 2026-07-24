@@ -29,11 +29,14 @@ impl Oper for ListTeamInfos<'_> {
 
 pub enum UpdateTeam<'a> {
     Info {
+        //
         id: &'a str,
         name: &'a str,
         description: &'a str,
     },
+
     MarkAvatarUploaded {
+        //
         id: &'a str,
         avatar_version: u32,
         avatar_key: Option<&'a str>,
@@ -46,6 +49,7 @@ impl Oper for UpdateTeam<'_> {
 }
 
 pub struct ReserveTeamAvatar<'a> {
+    //
     pub id: &'a str,
     pub image_hash: &'a ImageHash,
     pub image_ext: ImageExt,

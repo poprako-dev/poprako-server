@@ -8,6 +8,7 @@ use crate::value::announcement::AnnouncementInclOpt;
 /// A team announcement as stored in the database, with optional included user data.
 #[cfg_attr(test, derive(Clone))]
 pub struct AnnouncementInfo {
+    //
     /// Unique identifier for the announcement row.
     pub id: String,
 
@@ -30,6 +31,7 @@ pub struct AnnouncementInfo {
 /// The data needed to insert a team announcement row.
 #[cfg_attr(test, derive(Clone))]
 pub struct AnnouncementEntry {
+    //
     /// Unique identifier to insert for the new announcement row.
     pub id: String,
 
@@ -46,6 +48,7 @@ pub struct AnnouncementEntry {
 
 /// Filtering, pagination, and include parameters for listing announcements.
 pub struct AnnouncementListSpec {
+    //
     /// Scopes the listing to announcements within this team.
     pub team_id: String,
     /// Flags controlling which optional associations (such as user data) are

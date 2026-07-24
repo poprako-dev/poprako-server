@@ -20,6 +20,7 @@ pub struct UserToken {
 /// [`UserInfoVal`]: crate::data::user::UserInfoVal
 #[derive(Clone)]
 pub struct UserInfo {
+    //
     /// Server-assigned unique user identifier.
     pub id: String,
 
@@ -54,6 +55,7 @@ pub struct UserInfo {
 /// The data needed to insert a new user row.
 #[cfg_attr(test, derive(Clone))]
 pub struct UserEntry {
+    //
     /// Server-assigned unique user identifier.
     pub id: String,
 
@@ -73,6 +75,7 @@ pub struct UserEntry {
 /// and the version number that must match when marking the upload complete.
 #[cfg_attr(test, derive(Clone))]
 pub struct UserAvatarReservation {
+    //
     /// Generated object-storage key for the client to upload the new avatar to.
     pub object_key: String,
     /// Previous avatar key to delete after the new upload succeeds, absent when there was no prior avatar.
@@ -86,6 +89,7 @@ pub struct UserAvatarReservation {
 /// A stored password credential used during login verification.
 #[cfg_attr(test, derive(Clone))]
 pub struct UserCredential {
+    //
     /// Foreign key referencing the user this credential belongs to.
     pub user_id: String,
     /// Bcrypt or similar hashed password for login verification.

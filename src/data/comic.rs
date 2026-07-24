@@ -41,6 +41,7 @@ mod tests;
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ComicInfoVal {
+    //
     /// Unique comic identifier.
     pub id: String,
 
@@ -163,6 +164,7 @@ impl ComicInfoVal {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateComicParams {
+    //
     /// Parent workset identifier.
     pub workset_id: String,
 
@@ -188,6 +190,7 @@ pub struct CreateComicParams {
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateComicPayload {
+    //
     /// Newly created comic identifier.
     pub id: String,
     /// Identifier of the auto-created first chapter.
@@ -202,6 +205,7 @@ pub struct CreateComicPayload {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UpdateComicInfoParams {
+    //
     /// Comic identifier.
     pub id: String,
 
@@ -218,6 +222,7 @@ pub struct UpdateComicInfoParams {
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct ListComicInfosParams {
+    //
     /// Parent workset identifier.
     pub workset_id: String,
 

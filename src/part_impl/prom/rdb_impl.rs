@@ -47,6 +47,7 @@ mod tests;
 /// Call [`close`](RdbProm::close) before dropping to finish in-flight work
 /// gracefully. Pending records remain durable for the next worker start.
 pub struct RdbProm {
+    //
     /// Cancellation token to signal graceful shutdown of the prom processor.
     token: CancellationToken,
     /// Watch receiver that signals when background processing drains.

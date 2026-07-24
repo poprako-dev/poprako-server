@@ -14,6 +14,7 @@ use crate::value::image::{ImageExt, ImageHash};
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_user)]
 pub struct UserRow {
+    //
     pub f_id: String,
     pub f_nickname: String,
     pub f_qid: String,
@@ -38,6 +39,7 @@ pub struct UserRow {
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_user)]
 pub struct UserCredentialRow {
+    //
     pub f_id: String,
 
     pub f_password_hash: String,
@@ -49,6 +51,7 @@ pub struct UserCredentialRow {
 #[derive(Insertable)]
 #[diesel(table_name = t_user)]
 pub struct UserRowEntry<'a> {
+    //
     pub f_id: &'a str,
     pub f_nickname: &'a str,
     pub f_qid: &'a str,
@@ -67,6 +70,7 @@ pub struct UserRowEntry<'a> {
 #[derive(AsChangeset)]
 #[diesel(table_name = t_user)]
 pub struct UserAspect<'a> {
+    //
     pub f_nickname: Option<&'a str>,
     pub f_qid: Option<&'a str>,
 

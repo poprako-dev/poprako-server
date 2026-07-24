@@ -30,6 +30,7 @@ use crate::result::BaseError;
 /// Background worker that polls the `t_local_message` table, dispatches by topic,
 /// and completes or fails each record.
 pub struct RdbPromHandler<N, R, I, V> {
+    //
     /// Database connection pool for handler-internal queries.
     pub core: RdbCore,
     /// Transaction coordinator used for handler-level database operations.

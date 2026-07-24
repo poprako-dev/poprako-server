@@ -17,6 +17,7 @@ use crate::data::comic::ComicInfoVal;
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ListComicInfosPayload {
+    //
     /// Comic information for the listed comics.
     pub comics: Vec<ComicInfoVal>,
 

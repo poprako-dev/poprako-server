@@ -11,6 +11,7 @@ use crate::model::workset::WorksetInfo;
 
 /// Fully locked active data used to build an immutable archive.
 pub struct ComicArchiveSnapshot {
+    //
     /// The comic record being archived.
     pub comic_info: ComicInfo,
     /// The workset that contains the archived comic.
@@ -21,6 +22,7 @@ pub struct ComicArchiveSnapshot {
 
 /// Active descendants belonging to one archived chapter.
 pub struct ComicArchiveChapterSnapshot {
+    //
     /// The chapter record being archived.
     pub chapter_info: ChapterInfo,
     /// Assignments linked to this chapter at the time of archiving.
@@ -31,6 +33,7 @@ pub struct ComicArchiveChapterSnapshot {
 
 /// Active page data and its ordered text units.
 pub struct ComicArchivePageSnapshot {
+    //
     /// The page record being archived.
     pub page_info: PageInfo,
     /// Ordered text units belonging to this page at the time of archiving.
@@ -40,6 +43,7 @@ pub struct ComicArchivePageSnapshot {
 /// One compressed row to persist in an archive table.
 #[derive(Clone)]
 pub struct ComicArchiveRecord {
+    //
     /// Unique identifier for the archive record.
     pub id: String,
 
@@ -56,6 +60,7 @@ pub struct ComicArchiveRecord {
 
 /// Archive rows and the source IDs that must be deleted atomically.
 pub struct ComicArchiveEntry {
+    //
     /// The archive record to insert.
     pub record: ComicArchiveRecord,
     /// The archived comic's original ID — this record will be deleted after archiving.

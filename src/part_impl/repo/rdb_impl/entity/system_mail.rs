@@ -12,6 +12,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_system_mail;
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_system_mail)]
 pub struct SystemMailRow {
+    //
     pub f_id: String,
     pub f_receiver_id: String,
 
@@ -29,6 +30,7 @@ pub struct SystemMailRow {
 #[derive(Insertable)]
 #[diesel(table_name = t_system_mail)]
 pub struct SystemMailRowEntry<'a> {
+    //
     pub f_id: &'a str,
     pub f_receiver_id: &'a str,
 

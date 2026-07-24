@@ -10,6 +10,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_termbase;
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_termbase)]
 pub struct TermbaseRow {
+    //
     pub f_id: String,
 
     pub f_team_id: Option<String>,
@@ -30,6 +31,7 @@ pub struct TermbaseRow {
 #[derive(Insertable)]
 #[diesel(table_name = t_termbase)]
 pub struct TermbaseRowEntry<'a> {
+    //
     pub f_id: &'a str,
 
     pub f_team_id: Option<&'a str>,

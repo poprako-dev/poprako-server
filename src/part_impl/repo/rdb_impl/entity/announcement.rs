@@ -10,6 +10,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_announcement;
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_announcement)]
 pub struct AnnouncementRow {
+    //
     pub f_id: String,
 
     pub f_team_id: String,
@@ -25,6 +26,7 @@ pub struct AnnouncementRow {
 #[derive(Insertable)]
 #[diesel(table_name = t_announcement)]
 pub struct AnnouncementRowEntry<'a> {
+    //
     pub f_id: &'a str,
 
     pub f_team_id: &'a str,

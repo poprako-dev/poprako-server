@@ -13,6 +13,7 @@ use crate::value::role::{RoleField, RoleMask};
 /// only the identifiers and a cached nickname for display purposes.
 #[cfg_attr(test, derive(Clone))]
 pub struct MemberInfo {
+    //
     /// Unique identifier for the membership record.
     pub id: String,
 
@@ -40,6 +41,7 @@ pub struct MemberInfo {
 /// Includes a [`RoleMask`] specifying the member's permissions within the team.
 #[cfg_attr(test, derive(Clone))]
 pub struct MemberEntry {
+    //
     /// Unique identifier for the new membership record.
     pub id: String,
 
@@ -57,6 +59,7 @@ pub struct MemberEntry {
 
 /// Mutable fields for a membership record.
 pub struct MemberRoleUpdate {
+    //
     /// Identifies which membership record to update.
     pub id: String,
     /// Updated bitmask of roles and permissions for the member.
@@ -67,6 +70,7 @@ pub struct MemberRoleUpdate {
 pub enum MemberListSpec {
     /// List teams/memberships owned by a specific user.
     User {
+        //
         /// ID of the user whose memberships to list.
         owner_id: String,
         /// Optional include flags for related data.
@@ -76,8 +80,10 @@ pub enum MemberListSpec {
         /// Maximum number of records to return.
         limit: u32,
     },
+
     /// List members of a specific team, optionally narrowed by role or nickname.
     Team {
+        //
         /// ID of the team whose members to list.
         team_id: String,
         /// Fuzzy filter by member nickname.

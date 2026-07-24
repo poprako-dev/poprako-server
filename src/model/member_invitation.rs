@@ -11,6 +11,7 @@ use crate::value::role::RoleMask;
 /// and the [`RoleMask`] that will be assigned upon acceptance.
 #[cfg_attr(test, derive(Clone))]
 pub struct MemberInvitationInfo {
+    //
     /// Unique identifier for the invitation record.
     pub id: String,
 
@@ -37,6 +38,7 @@ pub struct MemberInvitationInfo {
 
 /// The data needed to insert a member invitation row.
 pub struct MemberInvitationEntry {
+    //
     /// Unique identifier for the new invitation record.
     pub id: String,
 
@@ -57,6 +59,7 @@ pub struct MemberInvitationEntry {
 
 /// Mutable fields for a member invitation.
 pub struct MemberInvitationUpdate {
+    //
     /// Identifies which invitation record to update.
     pub id: String,
     /// Updated role mask to assign upon acceptance.
@@ -65,6 +68,7 @@ pub struct MemberInvitationUpdate {
 
 /// Filtering, pagination, and include parameters for listing invitations.
 pub struct MemberInvitationListSpec {
+    //
     /// The team whose invitations should be listed.
     pub team_id: String,
     /// Consumption-status filter narrowing which invitations to return.
@@ -82,8 +86,10 @@ pub struct MemberInvitationListSpec {
 pub enum MemberInvitationListKind {
     /// Include invitations regardless of consumption status.
     All,
+
     /// Include only invitations that have not yet been consumed.
     Pending,
+
     /// Include only invitations that have already been consumed.
     Used,
 }

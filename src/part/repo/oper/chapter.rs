@@ -15,6 +15,7 @@ impl Oper for CreateChapter<'_> {
 }
 
 pub struct GetChapterInfo<'a, 'b> {
+    //
     pub id: &'a str,
     pub incls: &'b [ChapterInclOpt],
 }
@@ -24,6 +25,7 @@ impl Oper for GetChapterInfo<'_, '_> {
 }
 
 pub struct GetChapterInfoExcluded<'a, 'b> {
+    //
     pub id: &'a str,
     pub incls: &'b [ChapterInclOpt],
 }
@@ -58,6 +60,7 @@ impl Oper for LockChapters<'_> {
 }
 
 pub struct FindPinnedChapterInfo<'a, 'b> {
+    //
     pub comic_id: &'a str,
     pub incls: &'b [ChapterInclOpt],
 }
@@ -92,6 +95,7 @@ impl Oper for UpdateChapterStage<'_> {
 
 /// Atomically starts a two-step chapter stage when it is still pending.
 pub struct StartChapterStage<'a> {
+    //
     pub id: &'a str,
     pub stage: Stage,
 }
@@ -121,6 +125,7 @@ impl Oper for ResetChapterRawProvide<'_> {
 }
 
 pub struct SetChapterPageCounters<'a> {
+    //
     pub id: &'a str,
     pub page_count: i32,
     pub total_unit_count: i32,
@@ -133,6 +138,7 @@ impl Oper for SetChapterPageCounters<'_> {
 }
 
 pub struct AdjustChapterUnitCounters<'a> {
+    //
     pub id: &'a str,
     pub delta: UnitCounterDelta,
 }
@@ -142,6 +148,7 @@ impl Oper for AdjustChapterUnitCounters<'_> {
 }
 
 pub struct UnpinOtherChapters<'a> {
+    //
     pub comic_id: &'a str,
     pub excluded_id: &'a str,
 }

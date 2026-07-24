@@ -75,6 +75,7 @@ pub mod workset;
 /// In-memory state holding all mock repository records.
 #[cfg_attr(test, derive(Clone, Default))]
 pub struct MockState {
+    //
     /// Mock storage for user records.
     pub users: Vec<UserInfo>,
     /// Mock storage for user credential records.
@@ -120,6 +121,7 @@ pub struct MockState {
 #[cfg_attr(test, derive(Clone))]
 /// Immutable snapshot of the full mock state — used for asserting test outcomes.
 pub struct MockSnapshot {
+    //
     /// Snapshot of user records at the capture time.
     pub users: Vec<UserInfo>,
     /// Snapshot of credential records at the capture time.
@@ -192,6 +194,7 @@ impl From<MockState> for MockSnapshot {
 /// The transactional context passed to [`Nucl::coord`] calls,
 /// providing mutable access to the mock state during a simulated transaction.
 pub struct MockContext {
+    //
     /// Mutable mock repository state visible within the current transaction.
     pub state: MockState,
     /// When true, archive persistence will fail before transaction commit.
@@ -203,6 +206,7 @@ pub struct MockContext {
 #[cfg_attr(test, derive(Clone, Default))]
 /// Toggleable failure flags for testing error paths in mock adapters.
 pub struct MockFlags {
+    //
     /// Simulates a token authentication failure.
     pub token_failure: bool,
     /// Simulates an image retrieval failure from object storage.
@@ -232,6 +236,7 @@ pub struct MockFlags {
 /// `Arc<Mutex<...>>` for concurrent test access.
 #[cfg_attr(test, derive(Clone, Default))]
 pub struct Mock {
+    //
     /// Shared mutable mock repository state for concurrent test access.
     pub state: Arc<Mutex<MockState>>,
     /// Shared mutable mock failure flags for testing error paths.

@@ -12,14 +12,19 @@ use crate::value::incl::{InclOpt, expand_incl_opts};
 pub(super) enum MacroTestInclOpt {
     /// Tests direct field paths.
     Direct,
+
     /// Tests nested optional paths.
     Nested,
+
     /// Tests distinct resolve and inject paths.
     Asymmetric,
+
     /// Tests the resolve escape hatch.
     ResolveEscape,
+
     /// Tests the inject escape hatch.
     InjectEscape,
+
     /// Tests both escape hatches together.
     BothEscapes,
 }
@@ -44,12 +49,14 @@ impl InclOpt for MacroTestInclOpt {
 }
 
 struct MacroNestedInfo {
+    //
     user_id: String,
     user: Option<UserInfo>,
 }
 
 /// Owner fixture used to compile-test macro expansion.
 pub(super) struct MacroTestInfo {
+    //
     /// User ID used in the preloadable macro expansion test.
     user_id: String,
     /// Optional user info for testing nested preloadable expansion.

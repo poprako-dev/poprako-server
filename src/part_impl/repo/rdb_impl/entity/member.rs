@@ -13,6 +13,7 @@ use crate::value::role::{RoleField, RoleMask};
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_member)]
 pub struct MemberRow {
+    //
     pub f_id: String,
     pub f_user_id: String,
     pub f_user_nickname: String,
@@ -40,6 +41,7 @@ pub struct MemberRow {
 #[derive(Insertable)]
 #[diesel(table_name = t_member)]
 pub struct MemberRowEntry<'a> {
+    //
     pub f_id: &'a str,
     pub f_user_id: &'a str,
     pub f_user_nickname: &'a str,
@@ -67,6 +69,7 @@ pub struct MemberRowEntry<'a> {
 #[derive(AsChangeset)]
 #[diesel(table_name = t_member)]
 pub struct MemberAspect<'a> {
+    //
     pub f_user_nickname: Option<&'a str>,
 
     pub f_user_last_active_at: Option<OffsetDateTime>,
