@@ -2,9 +2,7 @@
 
 use std::collections::HashMap;
 
-use diesel::dsl::sql;
 use diesel::prelude::*;
-use diesel::sql_types::Integer;
 use diesel_async::RunQueryDsl;
 use time::OffsetDateTime;
 use tracing::instrument;
@@ -113,7 +111,7 @@ pub async fn shift_indexes_temporary(
             .filter(f_chapter_id.eq(chapter_id))
             .filter(f_index.ge(0)),
     )
-    .set(f_index.eq(sql::<Integer>("-f_index - 1")))
+    .set(f_index.eq(f_index * -1 - 1))
     .execute(conn)
     .await
     .map_err(diesel)?;

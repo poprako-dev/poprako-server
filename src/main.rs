@@ -19,18 +19,14 @@
 #![warn(clippy::pedantic)]
 #![warn(clippy::nursery)]
 
-#[cfg(feature = "swagger")]
-use std::io::Write as _;
 use std::net::{SocketAddr, ToSocketAddrs};
 use std::sync::Arc;
 
 use anyhow::Context as _;
-#[cfg(feature = "swagger")]
-use utoipa::OpenApi as _;
 
 use poprako_server::{
-    AppConfig, AppHarn, AsyncEffectDevelop, Harn, JwtAuth, R2ImagePool,
-    RdbCore, RdbDrive, RdbProm, RdbRepo, RdbSched, init_log, serve,
+    AppConfig, AppHarn, AsyncEffectDevelop, GeneralSched, Harn, JwtAuth,
+    R2ImagePool, RdbCore, RdbDrive, RdbProm, RdbRepo,
 };
 
 /// Application entry point.
@@ -44,7 +40,7 @@ async fn main() -> anyhow::Result<()> {
     //
     dotenvy::dotenv().expect(".env file should be valid");
 
-    init_log();
+    poprako_server::init_log();
 
     let config = AppConfig::from_default_file()
         .await
@@ -64,7 +60,7 @@ async fn main() -> anyhow::Result<()> {
 
     let prom = RdbProm::new(core.clone(), image_pool.clone());
 
-    let sched = RdbSched::new(core.clone());
+    let sched = GeneralSched::new(core.clone());
 
     let develop = AsyncEffectDevelop::new(repo_effect, 1024);
 
@@ -78,7 +74,7 @@ async fn main() -> anyhow::Result<()> {
     .next()
     .context("no address resolved for HTTP listen address")?;
 
-    let serve_outcome = serve(harn.clone(), http_addr).await;
+    let serve_outcome = poprako_server::serve(harn.clone(), http_addr).await;
 
     harn.develop().close().await;
 

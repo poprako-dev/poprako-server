@@ -113,11 +113,8 @@ impl MetricWindow {
 
         let mut bucket = lock_bucket(&self.buckets[bucket_index]);
 
-        match bucket.minute == minute {
-            //
-            true => {}
-
-            false => bucket.reset(minute),
+        if bucket.minute != minute {
+            bucket.reset(minute);
         }
 
         bucket.total = bucket.total.saturating_add(1);

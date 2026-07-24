@@ -83,17 +83,12 @@ impl AsyncEffectDevelop {
 
         let mut done = self.done.clone();
 
-        match done.wait_for(|done| *done).await {
-            //
-            Ok(_) => {}
-
-            Err(error) => {
-                tracing::error!(
-                    error = %error,
-                    "[AsyncEffectDevelop::close] background task ended without completion",
-                );
-            }
-        };
+        if let Err(error) = done.wait_for(|done| *done).await {
+            tracing::error!(
+                error = %error,
+                "[AsyncEffectDevelop::close] background task ended without completion",
+            );
+        }
     }
 }
 
