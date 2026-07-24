@@ -11,12 +11,14 @@ use crate::model::team::{
 };
 use crate::part::repo::oper::team::{
     AllocTeamWorksetIndex, CreateTeam, DeleteTeam, GetTeamInfo,
-    GetTeamInfoExcluded, ListTeamInfos, ReserveTeamAvatar, UpdateTeam,
+    GetTeamInfoExcluded, ListTeamInfos, LockTeam, ReserveTeamAvatar,
+    UpdateTeam,
 };
 use crate::part_impl::repo::mock_impl::{
     Mock, MockContext, MockState, expected, now,
 };
 use crate::result::{BaseError, BaseResult, accept};
+use crate::value::image::{ImageExt, ImageHash};
 
 fn create_team(
     state: &mut MockState,
@@ -36,6 +38,8 @@ fn create_team(
         avatar_key: None,
         avatar_uploaded: false,
         avatar_version: 0,
+        avatar_hash: ImageHash::default(),
+        avatar_ext: ImageExt::Png,
         created_at: time,
         updated_at: time,
     };
@@ -120,6 +124,7 @@ fn update_team(state: &mut MockState, oper: &UpdateTeam<'_>) -> BaseResult<()> {
         UpdateTeam::MarkAvatarUploaded {
             avatar_version,
             avatar_key,
+            avatar_uploaded,
             ..
         } => {
             //
@@ -131,7 +136,7 @@ fn update_team(state: &mut MockState, oper: &UpdateTeam<'_>) -> BaseResult<()> {
                 return Err(expected("error-stale-avatar-upload"));
             }
 
-            team_info.avatar_uploaded = true;
+            team_info.avatar_uploaded = *avatar_uploaded;
         }
     }
 
@@ -151,10 +156,36 @@ fn reserve_team_avatar(
         .find(|team_info| team_info.id == oper.id)
         .ok_or_else(|| expected("error-team-not-found"))?;
 
+    let same_hash = team_info.avatar_key.is_some()
+        && team_info.avatar_hash == *oper.image_hash;
+
+    if same_hash && team_info.avatar_ext != oper.image_ext {
+        return Err(expected("error-invalid-image-extension"));
+    }
+
+    if same_hash {
+        //
+        let object_key = team_info.avatar_key.clone().ok_or_else(|| {
+            BaseError::Unrecoverable {
+                message: "[reserve_team_avatar] avatar key is missing".into(),
+            }
+        })?;
+
+        return accept(TeamAvatarReservation {
+            object_key,
+            prev_object_key: None,
+            avatar_version: team_info.avatar_version,
+            upload_required: !team_info.avatar_uploaded,
+        });
+    }
+
     let avatar_version = team_info.avatar_version + 1;
 
-    let object_key =
-        TeamComplex::gen_avatar_key(oper.id, avatar_version, oper.file_ext);
+    let object_key = TeamComplex::gen_avatar_key(
+        oper.id,
+        avatar_version,
+        oper.image_ext.suffix(),
+    );
 
     let prev_object_key = team_info.avatar_key.clone();
 
@@ -164,12 +195,17 @@ fn reserve_team_avatar(
 
     team_info.avatar_version = avatar_version;
 
+    team_info.avatar_hash = oper.image_hash.clone();
+
+    team_info.avatar_ext = oper.image_ext;
+
     team_info.updated_at = now();
 
     accept(TeamAvatarReservation {
         object_key,
         prev_object_key,
         avatar_version,
+        upload_required: true,
     })
 }
 
@@ -347,6 +383,21 @@ impl<'a> Step<GetTeamInfoExcluded<'a>, MockContext> for Mock {
         match oper {
             GetTeamInfoExcluded::Id { id } => get_team_info(&context.state, id),
         }
+    }
+}
+
+impl<'a> Step<LockTeam<'a>, MockContext> for Mock {
+    type Error = BaseError;
+
+    #[instrument(level = "info", err(Debug), skip_all)]
+    async fn step(
+        &self,
+        context: &mut MockContext,
+        oper: &LockTeam<'a>,
+    ) -> BaseResult<()> {
+        get_team_info(&context.state, oper.id)?;
+
+        accept(())
     }
 }
 

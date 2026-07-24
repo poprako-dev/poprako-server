@@ -41,8 +41,6 @@ pub struct PageInfo {
     pub image_version: u32,
     /// Content-addressable hash of the uploaded image file.
     pub image_hash: ImageHash,
-    /// File size of the uploaded page image in bytes.
-    pub image_byte_length: u64,
     /// File format.
     pub image_ext: ImageExt,
 
@@ -76,8 +74,6 @@ pub struct PageEntry {
     pub image_version: u32,
     /// Content-addressable hash of the initial image file.
     pub image_hash: ImageHash,
-    /// File size of the initial page image in bytes.
-    pub image_byte_len: u64,
     /// File format extension of the initial page image.
     pub image_ext: ImageExt,
 }
@@ -120,8 +116,6 @@ pub struct PageManifestUpdate {
     pub image_version: u32,
     /// Updated content hash of the page image file.
     pub image_hash: ImageHash,
-    /// Updated file size of the page image in bytes.
-    pub image_byte_len: u64,
     /// Updated file format extension of the page image.
     pub image_ext: ImageExt,
 }

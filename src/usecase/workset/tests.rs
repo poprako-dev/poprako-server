@@ -95,6 +95,8 @@ fn comic_with_uploaded_cover(
         cover_key: Some(cover_key.into()),
         cover_uploaded: true,
         cover_version: 1,
+        cover_hash: crate::value::image::ImageHash::default(),
+        cover_ext: crate::value::image::ImageExt::Png,
         chapter_count: 0,
         creator_id: "user-1".into(),
         workset: None,

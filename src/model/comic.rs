@@ -12,6 +12,7 @@ use crate::model::user::UserInfo;
 use crate::model::workset::WorksetInfo;
 use crate::value::chapter::StageMask;
 use crate::value::comic::ComicInclOpt;
+use crate::value::image::{ImageExt, ImageHash};
 
 /// A comicrecord as stored in the database.
 ///
@@ -45,6 +46,10 @@ pub struct ComicInfo {
     pub cover_uploaded: bool,
     /// Monotonically increasing version counter for optimistic concurrency on cover updates.
     pub cover_version: u32,
+    /// SHA-256 identity of the reserved cover content.
+    pub cover_hash: ImageHash,
+    /// File format persisted with the cover identity.
+    pub cover_ext: ImageExt,
 
     /// Denormalised count of chapters attached to this comic.
     pub chapter_count: i32,
@@ -152,4 +157,6 @@ pub struct ComicCoverReservation {
     pub prev_object_key: Option<String>,
     /// Version that must match when the upload is marked as complete.
     pub cover_version: u32,
+    /// Whether a PUT capability and delayed check are required.
+    pub upload_required: bool,
 }

@@ -73,10 +73,10 @@ export async function runIt08Module(ctx: RunCtx): Promise<void> {
     // team avatar
     const teamAvatarReserve = await reserveTeamAvatar(ctx.sadmin, teamId, "png");
 
-    assert.ok(teamAvatarReserve.put_url.startsWith("http"));
-    assert.ok(Number.isInteger(teamAvatarReserve.avatar_version));
+    assert.ok(teamAvatarReserve.slot?.put_url.startsWith("http"));
+    assert.ok(Number.isInteger(teamAvatarReserve.slot?.image_version));
 
-    await markTeamAvatarUploaded(ctx.sadmin, teamId, teamAvatarReserve.avatar_version!);
+    await markTeamAvatarUploaded(ctx.sadmin, teamId, teamAvatarReserve.slot!.image_version);
 
     const teamAfterAvatar = await getTeam(ctx.sadmin, teamId);
 
@@ -85,7 +85,7 @@ export async function runIt08Module(ctx: RunCtx): Promise<void> {
     // stale avatar version -> 422/2
     expectError(
         await ctx.sadmin.post<ErrorBody>(`/api/v1/teams/${teamId}/avatar/mark-uploaded`, {
-            avatar_version: teamAvatarReserve.avatar_version! - 1,
+            image_version: teamAvatarReserve.slot!.image_version - 1,
         }),
         422,
         2,
@@ -94,9 +94,9 @@ export async function runIt08Module(ctx: RunCtx): Promise<void> {
     // user avatar: self only. trans_01 reserves + marks own avatar.
     const trans01AvatarReserve = await reserveUserAvatar(trans01.api, trans01.userId, "png");
 
-    assert.ok(trans01AvatarReserve.put_url.startsWith("http"));
+    assert.ok(trans01AvatarReserve.slot?.put_url.startsWith("http"));
 
-    await markUserAvatarUploaded(trans01.api, trans01.userId, trans01AvatarReserve.avatar_version!);
+    await markUserAvatarUploaded(trans01.api, trans01.userId, trans01AvatarReserve.slot!.image_version);
 
     const trans01AfterAvatar = await getUserInfo(ctx.sadmin, trans01.userId);
 
@@ -105,7 +105,9 @@ export async function runIt08Module(ctx: RunCtx): Promise<void> {
     // non-owner reserve trans_01's avatar -> 403/4 (trans_02 tries)
     expectError(
         await trans02.api.post<ErrorBody>(`/api/v1/users/${trans01.userId}/avatar/reserve`, {
-            file_ext: "png",
+            image_hash: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+            byte_length: 1,
+            ext: "png",
         }),
         403,
         4,
@@ -116,10 +118,10 @@ export async function runIt08Module(ctx: RunCtx): Promise<void> {
 
     const coverReserve = await reserveComicCover(ctx.sadmin, xingchenId, "png");
 
-    assert.ok(coverReserve.put_url.startsWith("http"));
-    assert.ok(Number.isInteger(coverReserve.cover_version));
+    assert.ok(coverReserve.slot?.put_url.startsWith("http"));
+    assert.ok(Number.isInteger(coverReserve.slot?.image_version));
 
-    await markComicCoverUploaded(ctx.sadmin, xingchenId, coverReserve.cover_version!);
+    await markComicCoverUploaded(ctx.sadmin, xingchenId, coverReserve.slot!.image_version);
 
     const comicAfterCover = await getComic(ctx.sadmin, xingchenId);
 
@@ -128,7 +130,9 @@ export async function runIt08Module(ctx: RunCtx): Promise<void> {
     // non-admin (trans_01) reserve comic cover -> 403/4
     expectError(
         await trans01.api.post<ErrorBody>(`/api/v1/comics/${xingchenId}/cover/reserve`, {
-            file_ext: "png",
+            image_hash: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+            byte_length: 1,
+            ext: "png",
         }),
         403,
         4,
@@ -137,7 +141,9 @@ export async function runIt08Module(ctx: RunCtx): Promise<void> {
     // non-existent team avatar reserve -> 403/4 (permission check for non-existing team returns perm error)
     expectError(
         await ctx.sadmin.post<ErrorBody>("/api/v1/teams/team-does-not-exist/avatar/reserve", {
-            file_ext: "png",
+            image_hash: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+            byte_length: 1,
+            ext: "png",
         }),
         403,
         4,

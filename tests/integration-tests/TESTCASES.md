@@ -38,7 +38,7 @@ the seed-only state in its `finally` block. Every current module exports
 | it_05 | `it_05_unit_save_order_count.ts` | Unit ordering, counts, and translation import/export. |
 | it_06 | `it_06_unit_concurrency.ts` | Parallel unit writes, merge behavior, and replay. |
 | it_07 | `it_07_workflow_sysmail.ts` | Workflow transitions and deferred system mail. |
-| it_08 | `it_08_info_update_upload_mark.ts` | Resource updates, uploads, announcements, comments, and profiles. |
+| it_08 | `it_08_info_update_upload_mark.ts` | Resource updates, checksum-bound avatar/cover PUTs before version-only mark requests, stale upload rejection, announcements, comments, and profiles. |
 | it_09 | `it_09_cross_team_permission.ts` | Cross-team authorization isolation. |
 | it_10 | `it_10_cascade_delete_cleanup.ts` | Cascade deletion and cleanup side effects. |
 | it_11 | `it_11_comic_archive.ts` | Immutable JSON-text comic archives, retained month export, and image-delete prom records. |
@@ -48,7 +48,8 @@ the seed-only state in its `finally` block. Every current module exports
 
 - `src/db/seed.ts` owns reset, cleanup, and seed-only assertions.
 - `src/http/fixtures.ts` owns reusable API operations, deterministic SHA-256
-  page manifests, and direct PUT uploads using every signed response header.
+  image requests, and direct page/avatar/cover PUT uploads using every signed
+  response header before mark-uploaded confirmation.
 - `src/http/invariants.ts` owns counter, index, workflow, export, and mail
   consistency assertions.
 - `src/state/runCtx.ts` is the shared state passed between modules.

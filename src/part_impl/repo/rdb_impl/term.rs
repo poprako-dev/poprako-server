@@ -14,7 +14,7 @@ use crate::model::term::{
 };
 use crate::part::repo::oper::term::{
     CreateTerm, DeleteTerm, DeleteTerms, GetTermInfo, GetTermInfoExcluded,
-    ListTermInfos, UpdateTerm,
+    ListTermInfos, LockTerm, UpdateTerm,
 };
 use crate::part_impl::repo::rdb_impl::RdbRepo;
 use crate::part_impl::repo::rdb_impl::entity::term::{TermRow, TermRowEntry};
@@ -65,6 +65,23 @@ async fn get_info_excluded(
         .ok_or_else(|| expected("error-term-not-found"))?;
 
     accept(row.into())
+}
+
+/// Locks a term row.
+#[instrument(level = "info", err(Debug), skip_all)]
+async fn lock_term(conn: &mut RdbConn, id: &str) -> BaseResult<()> {
+    //
+    let _: String = t_term
+        .filter(f_id.eq(id))
+        .select(f_id)
+        .for_update()
+        .get_result(conn)
+        .await
+        .optional()
+        .map_err(diesel)?
+        .ok_or_else(|| expected("error-term-not-found"))?;
+
+    accept(())
 }
 
 #[instrument(level = "info", err(Debug), skip_all)]
@@ -205,6 +222,19 @@ impl Step<GetTermInfoExcluded<'_>, RdbContext> for RdbRepo {
         oper: &GetTermInfoExcluded<'_>,
     ) -> BaseResult<TermInfo> {
         get_info_excluded(context.conn(), oper.id).await
+    }
+}
+
+impl Step<LockTerm<'_>, RdbContext> for RdbRepo {
+    type Error = BaseError;
+
+    #[instrument(level = "info", err(Debug), skip_all)]
+    async fn step(
+        &self,
+        context: &mut RdbContext,
+        oper: &LockTerm<'_>,
+    ) -> BaseResult<()> {
+        lock_term(context.conn(), oper.id).await
     }
 }
 

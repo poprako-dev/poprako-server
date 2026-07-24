@@ -72,7 +72,6 @@ pub fn page_entry(prefix: &str, chapter_entry: &ChapterEntry) -> PageEntry {
         image_key: None,
         image_version: 0,
         image_hash: Default::default(),
-        image_byte_len: 1,
         image_ext: ImageExt::Jpg,
     }
 }

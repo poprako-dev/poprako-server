@@ -36,6 +36,15 @@ impl Oper for GetTermInfoExcluded<'_> {
     type Output = TermInfo;
 }
 
+/// Locks a term row.
+pub struct LockTerm<'a> {
+    pub id: &'a str,
+}
+
+impl Oper for LockTerm<'_> {
+    type Output = ();
+}
+
 pub struct UpdateTerm<'a> {
     pub update: &'a TermInfoUpdate,
 }

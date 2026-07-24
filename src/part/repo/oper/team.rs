@@ -3,6 +3,7 @@ use poprako_orchestra::Oper;
 use crate::model::team::{
     TeamAvatarReservation, TeamEntry, TeamInfo, TeamInfoListSpec,
 };
+use crate::value::image::{ImageExt, ImageHash};
 
 pub struct CreateTeam<'a> {
     pub entry: &'a TeamEntry,
@@ -38,6 +39,7 @@ pub enum UpdateTeam<'a> {
         id: &'a str,
         avatar_version: u32,
         avatar_key: Option<&'a str>,
+        avatar_uploaded: bool,
     },
 }
 
@@ -47,7 +49,8 @@ impl Oper for UpdateTeam<'_> {
 
 pub struct ReserveTeamAvatar<'a> {
     pub id: &'a str,
-    pub file_ext: &'a str,
+    pub image_hash: &'a ImageHash,
+    pub image_ext: ImageExt,
 }
 
 impl Oper for ReserveTeamAvatar<'_> {
@@ -60,6 +63,15 @@ pub enum GetTeamInfoExcluded<'a> {
 
 impl Oper for GetTeamInfoExcluded<'_> {
     type Output = TeamInfo;
+}
+
+/// Locks a team row.
+pub struct LockTeam<'a> {
+    pub id: &'a str,
+}
+
+impl Oper for LockTeam<'_> {
+    type Output = ();
 }
 
 pub struct DeleteTeam<'a> {

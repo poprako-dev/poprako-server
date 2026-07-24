@@ -51,6 +51,15 @@ impl Oper for ListChapterInfosExcluded<'_> {
     type Output = Vec<ChapterInfo>;
 }
 
+/// Locks all chapter rows belonging to a comic.
+pub struct LockChapters<'a> {
+    pub comic_id: &'a str,
+}
+
+impl Oper for LockChapters<'_> {
+    type Output = ();
+}
+
 pub struct FindPinnedChapterInfo<'a, 'b> {
     pub comic_id: &'a str,
     pub incls: &'b [ChapterInclOpt],

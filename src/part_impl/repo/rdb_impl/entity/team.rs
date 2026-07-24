@@ -5,6 +5,8 @@ use time::OffsetDateTime;
 
 use crate::model::team::TeamInfo;
 use crate::part_impl::repo::rdb_impl::schema::t_team;
+use crate::result::{BaseError, BaseResult, accept};
+use crate::value::image::{ImageExt, ImageHash};
 
 // ── Queryable / Selectable ─────────────────────────────────────────────────
 
@@ -20,6 +22,8 @@ pub struct TeamRow {
     pub f_avatar_uploaded: bool,
     #[diesel(deserialize_as = i64)]
     pub f_avatar_version: u32,
+    pub f_avatar_hash: Vec<u8>,
+    pub f_avatar_extension: String,
 
     pub f_workset_next_index: i32,
 
@@ -55,6 +59,8 @@ pub struct TeamAspect<'a> {
     pub f_avatar_key: Option<&'a str>,
     pub f_avatar_uploaded: Option<bool>,
     pub f_avatar_version: Option<i64>,
+    pub f_avatar_hash: Option<&'a [u8]>,
+    pub f_avatar_extension: Option<&'a str>,
 
     pub f_updated_at: OffsetDateTime,
 }
@@ -67,6 +73,8 @@ impl<'a> TeamAspect<'a> {
             f_avatar_key: None,
             f_avatar_uploaded: None,
             f_avatar_version: None,
+            f_avatar_hash: None,
+            f_avatar_extension: None,
             f_updated_at: updated_at,
         }
     }
@@ -105,21 +113,56 @@ impl<'a> TeamAspect<'a> {
 
         self
     }
+
+    pub fn avatar_hash(mut self, val: &'a ImageHash) -> Self {
+        //
+        self.f_avatar_hash = Some(val.as_bytes());
+
+        self
+    }
+
+    pub fn avatar_ext(mut self, val: ImageExt) -> Self {
+        //
+        self.f_avatar_extension = Some(val.suffix());
+
+        self
+    }
 }
 
 // ── Conversions ────────────────────────────────────────────────────────────
 
-impl From<TeamRow> for TeamInfo {
-    fn from(v: TeamRow) -> Self {
-        TeamInfo {
+impl TryFrom<TeamRow> for TeamInfo {
+    type Error = BaseError;
+
+    fn try_from(v: TeamRow) -> BaseResult<Self> {
+        //
+        let avatar_hash_bytes: [u8; 32] =
+            v.f_avatar_hash.try_into().map_err(|_| {
+                BaseError::Unrecoverable {
+                    message: "[TeamRow] f_avatar_hash must contain 32 bytes"
+                        .into(),
+                }
+            })?;
+
+        let avatar_ext =
+            ImageExt::parse(&v.f_avatar_extension).ok_or_else(|| {
+                BaseError::Unrecoverable {
+                    message: "[TeamRow] f_avatar_extension must be supported"
+                        .into(),
+                }
+            })?;
+
+        accept(TeamInfo {
             id: v.f_id,
             name: v.f_name,
             description: v.f_description.unwrap_or_default(),
             avatar_key: v.f_avatar_key,
             avatar_uploaded: v.f_avatar_uploaded,
             avatar_version: v.f_avatar_version,
+            avatar_hash: ImageHash::new(avatar_hash_bytes),
+            avatar_ext,
             created_at: v.f_created_at,
             updated_at: v.f_updated_at,
-        }
+        })
     }
 }

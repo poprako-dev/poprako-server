@@ -53,7 +53,7 @@ pub struct ComicArchiveRecord {
 }
 
 /// Archive rows and the source IDs that must be deleted atomically.
-pub struct ComicArchiveWrite {
+pub struct ComicArchiveEntry {
     /// The archive record to insert.
     pub record: ComicArchiveRecord,
     /// The archived comic's original ID — this record will be deleted after archiving.

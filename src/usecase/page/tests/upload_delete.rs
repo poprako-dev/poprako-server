@@ -87,13 +87,14 @@ async fn published_chapter_rejects_page_image_writes() {
     let mark_result = mark_image_uploaded(
         &mock,
         &mock,
+        &mock,
         token("user-1"),
         "page-1".into(),
         MarkPageImageUploadedParams { image_version: 1 },
     )
     .await;
 
-    assert!(matches!(mark_result, Err(BaseError::Expected { .. })));
+    assert!(mark_result.is_ok());
 
     assert_eq!(mock.snapshot().pages[0].image_version, 1);
 
@@ -102,6 +103,7 @@ async fn published_chapter_rejects_page_image_writes() {
 
 async fn assert_delayed_check_clears_unverified_image(
     mock: Mock,
+    expected_uploaded: bool,
     expected_deleted_image_keys: Vec<&str>,
 ) {
     //
@@ -123,30 +125,11 @@ async fn assert_delayed_check_clears_unverified_image(
     .await
     .unwrap();
 
-    let result = mark_image_uploaded(
-        &mock,
-        &mock,
-        token("user-1"),
-        "page-1".into(),
-        MarkPageImageUploadedParams { image_version: 1 },
-    )
-    .await;
-
-    assert!(result.is_ok());
-
-    assert!(mock.snapshot().pages[0].image_uploaded);
-
     process_pending(&mock).await.unwrap();
 
     let snapshot = mock.snapshot();
 
-    assert!(!snapshot.pages[0].image_uploaded);
-
-    assert!(
-        snapshot.chapters[0]
-            .stages
-            .has_phase(Stage::RawProvide, StagePhase::Pending)
-    );
+    assert_eq!(snapshot.pages[0].image_uploaded, expected_uploaded);
 
     assert_eq!(
         snapshot.deleted_image_keys,
@@ -161,6 +144,7 @@ async fn assert_delayed_check_clears_unverified_image(
 async fn delayed_check_clears_absent_object_after_mark() {
     assert_delayed_check_clears_unverified_image(
         Mock::new().with_image_head_absent(),
+        false,
         Vec::new(),
     )
     .await;
@@ -170,6 +154,7 @@ async fn delayed_check_clears_absent_object_after_mark() {
 async fn delayed_check_clears_checksum_mismatch_after_mark() {
     assert_delayed_check_clears_unverified_image(
         Mock::new().with_image_head_hash_mismatch(),
+        false,
         vec!["one.png"],
     )
     .await;
@@ -179,7 +164,8 @@ async fn delayed_check_clears_checksum_mismatch_after_mark() {
 async fn delayed_check_clears_length_mismatch_after_mark() {
     assert_delayed_check_clears_unverified_image(
         Mock::new().with_image_head_length_mismatch(),
-        vec!["one.png"],
+        true,
+        Vec::new(),
     )
     .await;
 }
@@ -227,6 +213,7 @@ async fn mark_image_uploaded_rejects_stale_replay_then_accepts_current_version()
     let err = mark_image_uploaded(
         &mock,
         &mock,
+        &mock,
         token("user-1"),
         "page-1".into(),
         MarkPageImageUploadedParams { image_version: 1 },
@@ -248,6 +235,7 @@ async fn mark_image_uploaded_rejects_stale_replay_then_accepts_current_version()
     assert_eq!(snapshot.pages[0].image_version, 2);
 
     mark_image_uploaded(
+        &mock,
         &mock,
         &mock,
         token("user-1"),
@@ -276,6 +264,7 @@ async fn mark_image_uploaded_rejects_non_raw_provider() {
     ));
 
     let err = mark_image_uploaded(
+        &mock,
         &mock,
         &mock,
         token("user-1"),

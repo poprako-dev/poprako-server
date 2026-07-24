@@ -14,13 +14,12 @@ use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::comic::{GetComicInfo, GetComicInfoExcluded};
 use crate::part::repo::oper::member::FindMemberInfo;
-use crate::part::repo::oper::team::GetTeamInfoExcluded;
+use crate::part::repo::oper::team::LockTeam;
 use crate::part::repo::oper::term::DeleteTerms;
-#[cfg(test)]
-use crate::part::repo::oper::termbase::ListTermbaseInfosExcluded;
+#[allow(unused_imports)]
 use crate::part::repo::oper::termbase::{
     CreateTermbase, DeleteTermbase, GetTermbaseInfo, GetTermbaseInfoExcluded,
-    ListTermbaseInfos, UpdateTermbase,
+    ListTermbaseInfos, ListTermbaseInfosExcluded, UpdateTermbase,
 };
 use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::part::repo::team::TeamRepo;
@@ -67,14 +66,9 @@ where
                     //
                     (Some(team_id), None) => {
                         //
-                        let team_info = repo
-                            .step(
-                                context,
-                                &GetTeamInfoExcluded::Id { id: team_id },
-                            )
-                            .await?;
+                        repo.step(context, &LockTeam { id: team_id }).await?;
 
-                        team_info.id
+                        team_id.clone()
                     }
 
                     (None, Some(comic_id)) => {

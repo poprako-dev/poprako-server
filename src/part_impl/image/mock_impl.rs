@@ -82,6 +82,9 @@ impl ImagePool for Mock {
 
         let mut headers = std::collections::BTreeMap::new();
 
+        headers
+            .insert("content-length".into(), spec.content_length.to_string());
+
         headers.insert("content-type".into(), spec.content_type.into());
 
         headers.insert(
@@ -113,31 +116,47 @@ impl ImageManager for Mock {
 
         let flags = self.flags.lock().unwrap().clone();
 
-        let page_identity = self
-            .state
-            .lock()
-            .unwrap()
+        let state = self.state.lock().unwrap();
+
+        let expected_checksum_sha256 = state
             .pages
             .iter()
             .find(|page_info| page_info.image_key.as_deref() == Some(key))
-            .map(|page_info| {
-                (page_info.image_byte_length, page_info.image_hash.clone())
-            });
-
-        let expected_byte_length = page_identity
-            .as_ref()
-            .map(|(byte_length, _)| *byte_length)
-            .unwrap_or(4096);
-
-        let expected_checksum_sha256 = page_identity
-            .map(|(_, checksum_sha256)| checksum_sha256)
+            .map(|page_info| page_info.image_hash.clone())
+            .or_else(|| {
+                state
+                    .users
+                    .iter()
+                    .find(|user_info| {
+                        user_info.avatar_key.as_deref() == Some(key)
+                    })
+                    .map(|user_info| user_info.avatar_hash.clone())
+            })
+            .or_else(|| {
+                state
+                    .teams
+                    .iter()
+                    .find(|team_info| {
+                        team_info.avatar_key.as_deref() == Some(key)
+                    })
+                    .map(|team_info| team_info.avatar_hash.clone())
+            })
+            .or_else(|| {
+                state
+                    .comics
+                    .iter()
+                    .find(|comic_info| {
+                        comic_info.cover_key.as_deref() == Some(key)
+                    })
+                    .map(|comic_info| comic_info.cover_hash.clone())
+            })
             .unwrap_or_else(|| ImageHash::new([0; 32]));
 
         let byte_length = match flags.image_head_length_mismatch {
             //
             true => 1,
 
-            false => expected_byte_length,
+            false => 4096,
         };
 
         let checksum_sha256 = match flags.image_head_hash_mismatch {

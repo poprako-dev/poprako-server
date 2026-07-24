@@ -136,15 +136,15 @@ where
 
             let archived_at = OffsetDateTime::now_utc();
 
-            let (comic_archive_write, image_keys) =
-                ComicArchiveComplex::prepare_write(
+            let (comic_archive_entry, image_keys) =
+                ComicArchiveComplex::prepare_entry(
                     comic_archive_snapshot,
                     token.user_id,
                     archived_at,
                 )
                 .await?;
 
-            let archived_comic_id = comic_archive_write.record.id.clone();
+            let archived_comic_id = comic_archive_entry.record.id.clone();
 
             let mut delete_ids = Vec::new();
 
@@ -174,7 +174,7 @@ where
             repo.step(
                 context,
                 &CommitComicArchive {
-                    write: &comic_archive_write,
+                    entry: &comic_archive_entry,
                 },
             )
             .await?;

@@ -12,8 +12,8 @@ use crate::model::assignment::AssignmentInfo;
 use crate::model::chapter::ChapterInfo;
 use crate::model::comic::ComicInfo;
 use crate::model::comic_archive::{
-    ComicArchiveChapterSnapshot, ComicArchivePageSnapshot,
-    ComicArchiveSnapshot, ComicArchiveWrite,
+    ComicArchiveChapterSnapshot, ComicArchiveEntry, ComicArchivePageSnapshot,
+    ComicArchiveSnapshot,
 };
 use crate::model::page::PageInfo;
 use crate::model::unit::UnitInfo;
@@ -27,7 +27,7 @@ use crate::part_impl::repo::rdb_impl::RdbRepo;
 use crate::part_impl::repo::rdb_impl::entity::assignment::AssignmentRow;
 use crate::part_impl::repo::rdb_impl::entity::chapter::ChapterRow;
 use crate::part_impl::repo::rdb_impl::entity::comic::ComicRow;
-use crate::part_impl::repo::rdb_impl::entity::comic_archive::ComicArchiveEntry;
+use crate::part_impl::repo::rdb_impl::entity::comic_archive::ComicArchiveRow;
 use crate::part_impl::repo::rdb_impl::entity::page::PageRow;
 use crate::part_impl::repo::rdb_impl::entity::unit::UnitRow;
 use crate::part_impl::repo::rdb_impl::entity::user::UserRow;
@@ -134,7 +134,7 @@ async fn get_snapshot_excluded(
         .map_err(diesel)?
         .ok_or_else(|| expected("error-comic-not-found"))?;
 
-    let comic_info: ComicInfo = comic_row.into();
+    let comic_info: ComicInfo = comic_row.try_into()?;
 
     let workset_row: WorksetRow = t_workset
         .filter(workset_id.eq(&comic_info.workset_id))
@@ -205,11 +205,11 @@ async fn get_snapshot_excluded(
         .into_iter()
         .map(|user_row| {
             //
-            let user_info: UserInfo = user_row.into();
+            let user_info: UserInfo = user_row.try_into()?;
 
-            (user_info.id.clone(), user_info)
+            Ok((user_info.id.clone(), user_info))
         })
-        .collect::<HashMap<_, _>>();
+        .collect::<BaseResult<HashMap<_, _>>>()?;
 
     let page_rows: Vec<PageRow> = t_page
         .filter(page_chapter_id.eq_any(&source_chapter_ids))
@@ -316,27 +316,26 @@ async fn get_snapshot_excluded(
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn commit(
     conn: &mut RdbConn,
-    comic_archive_write: &ComicArchiveWrite,
+    comic_archive_entry: &ComicArchiveEntry,
 ) -> BaseResult<()> {
     //
-    let comic_archive_entry =
-        ComicArchiveEntry::from(&comic_archive_write.record);
+    let comic_archive_row = ComicArchiveRow::from(&comic_archive_entry.record);
 
     diesel::insert_into(t_comic_archive::table)
-        .values(&comic_archive_entry)
+        .values(&comic_archive_row)
         .execute(conn)
         .await
         .map_err(diesel)?;
 
     diesel::delete(t_assignment_invitation.filter(
-        invitation_chapter_id.eq_any(&comic_archive_write.source_chapter_ids),
+        invitation_chapter_id.eq_any(&comic_archive_entry.source_chapter_ids),
     ))
     .execute(conn)
     .await
     .map_err(diesel)?;
 
     diesel::delete(t_assignment.filter(
-        assignment_chapter_id.eq_any(&comic_archive_write.source_chapter_ids),
+        assignment_chapter_id.eq_any(&comic_archive_entry.source_chapter_ids),
     ))
     .execute(conn)
     .await
@@ -344,14 +343,14 @@ async fn commit(
 
     diesel::delete(
         t_unit
-            .filter(unit_page_id.eq_any(&comic_archive_write.source_page_ids)),
+            .filter(unit_page_id.eq_any(&comic_archive_entry.source_page_ids)),
     )
     .execute(conn)
     .await
     .map_err(diesel)?;
 
     diesel::delete(t_page.filter(
-        page_chapter_id.eq_any(&comic_archive_write.source_chapter_ids),
+        page_chapter_id.eq_any(&comic_archive_entry.source_chapter_ids),
     ))
     .execute(conn)
     .await
@@ -359,14 +358,14 @@ async fn commit(
 
     diesel::delete(
         t_chapter
-            .filter(chapter_id.eq_any(&comic_archive_write.source_chapter_ids)),
+            .filter(chapter_id.eq_any(&comic_archive_entry.source_chapter_ids)),
     )
     .execute(conn)
     .await
     .map_err(diesel)?;
 
     diesel::delete(
-        t_comic.filter(comic_id.eq(&comic_archive_write.source_comic_id)),
+        t_comic.filter(comic_id.eq(&comic_archive_entry.source_comic_id)),
     )
     .execute(conn)
     .await
@@ -409,6 +408,6 @@ impl Step<CommitComicArchive<'_>, RdbContext> for RdbRepo {
         context: &mut RdbContext,
         oper: &CommitComicArchive<'_>,
     ) -> BaseResult<()> {
-        commit(context.conn(), oper.write).await
+        commit(context.conn(), oper.entry).await
     }
 }

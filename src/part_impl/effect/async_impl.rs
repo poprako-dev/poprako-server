@@ -42,6 +42,16 @@ pub struct AsyncEffectDevelop {
     done: watch::Receiver<bool>,
 }
 
+impl Clone for AsyncEffectDevelop {
+    fn clone(&self) -> Self {
+        Self {
+            send: self.send.clone(),
+            token: self.token.clone(),
+            done: self.done.clone(),
+        }
+    }
+}
+
 impl AsyncEffectDevelop {
     /// Creates a dispatcher and starts its background task.
     pub fn new<C, R>(repo: Arc<R>, buffer_size: usize) -> Self

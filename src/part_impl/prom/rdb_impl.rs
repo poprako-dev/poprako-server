@@ -15,6 +15,7 @@ use tokio::sync::watch;
 use tokio_util::sync::CancellationToken;
 use tracing::instrument;
 
+use crate::part::effect::EffectDevelop;
 use crate::part::image::ImageManager;
 use crate::part::prom::Prom;
 use crate::part::prom::payload::Payload;
@@ -58,9 +59,10 @@ impl RdbProm {
     /// The supervisor polls `t_local_message` and routes each topic to one of four
     /// serial worker tasks. Different topics can run concurrently, while messages
     /// from one topic never execute concurrently in this process.
-    pub fn new<I>(core: RdbCore, image_pool: I) -> Self
+    pub fn new<I, V>(core: RdbCore, image_pool: I, develop: V) -> Self
     where
         I: ImageManager + Send + Sync + 'static,
+        V: EffectDevelop + Send + Sync + 'static,
     {
         let token = CancellationToken::new();
 
@@ -75,6 +77,7 @@ impl RdbProm {
             drive,
             repo,
             image_pool,
+            develop,
             token.clone(),
         );
 

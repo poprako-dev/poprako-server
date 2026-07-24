@@ -15,10 +15,9 @@ use crate::part_impl::repo::rdb_impl::RdbRepo;
 use crate::part_impl::repo::rdb_impl::page::step_impl::{
     clear_images_for_publish, create_batch, delete_by_chapter_id,
     delete_by_ids, get_info_by_id, get_info_excluded,
-    list_all_infos_by_chapter_id, list_all_infos_excluded_by_chapter_id,
-    list_first_infos_by_chapter_ids, mark_image_uploaded, reserve_image,
-    set_image_uploaded, set_unit_counters, shift_indexes_temporary,
-    update_manifest,
+    list_first_infos_by_chapter_ids, list_infos, list_infos_excluded,
+    mark_image_uploaded, reserve_image, set_image_uploaded, set_unit_counters,
+    shift_indexes_temporary, update_manifest,
 };
 use crate::part_impl::shared::RdbContext;
 use crate::result::{BaseError, BaseResult};
@@ -37,7 +36,7 @@ impl Run<ListPageInfos<'_>> for RdbRepo {
 
     #[instrument(level = "info", err(Debug), skip_all)]
     async fn run(&self, oper: &ListPageInfos<'_>) -> BaseResult<Vec<PageInfo>> {
-        submit_query!(self.core, list_all_infos_by_chapter_id, oper.chapter_id)
+        submit_query!(self.core, list_infos, oper.chapter_id)
     }
 }
 
@@ -79,7 +78,7 @@ impl Step<ListPageInfos<'_>, RdbContext> for RdbRepo {
         context: &mut RdbContext,
         oper: &ListPageInfos<'_>,
     ) -> BaseResult<Vec<PageInfo>> {
-        list_all_infos_by_chapter_id(context.conn(), oper.chapter_id).await
+        list_infos(context.conn(), oper.chapter_id).await
     }
 }
 
@@ -92,8 +91,7 @@ impl Step<ListPageInfosExcluded<'_>, RdbContext> for RdbRepo {
         context: &mut RdbContext,
         oper: &ListPageInfosExcluded<'_>,
     ) -> BaseResult<Vec<PageInfo>> {
-        list_all_infos_excluded_by_chapter_id(context.conn(), oper.chapter_id)
-            .await
+        list_infos_excluded(context.conn(), oper.chapter_id).await
     }
 }
 

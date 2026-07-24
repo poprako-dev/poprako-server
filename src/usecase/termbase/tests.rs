@@ -70,6 +70,8 @@ fn comic(id: &str, workset_id: &str) -> ComicInfo {
         cover_key: None,
         cover_uploaded: false,
         cover_version: 0,
+        cover_hash: crate::value::image::ImageHash::default(),
+        cover_ext: crate::value::image::ImageExt::Png,
         chapter_count: 0,
         creator_id: "user-1".into(),
         workset: None,

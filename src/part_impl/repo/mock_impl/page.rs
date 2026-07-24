@@ -17,7 +17,7 @@ fn get_page_by_id(state: &MockState, id: &str) -> BaseResult<PageInfo> {
         .ok_or_else(|| expected("error-page-not-found"))
 }
 
-fn list_all_pages(state: &MockState, chapter_id: &str) -> Vec<PageInfo> {
+fn list_infos(state: &MockState, chapter_id: &str) -> Vec<PageInfo> {
     //
     let mut page_infos = state
         .pages
@@ -38,7 +38,7 @@ fn list_first_pages(
     chapter_ids
         .iter()
         .filter_map(|chapter_id| {
-            list_all_pages(state, chapter_id)
+            list_infos(state, chapter_id)
                 .into_iter()
                 .next()
                 .map(|page_info| (chapter_id.clone(), page_info))
@@ -58,7 +58,6 @@ fn page_from_entry(entry: &PageEntry) -> PageInfo {
         image_uploaded: false,
         image_version: entry.image_version,
         image_hash: entry.image_hash.clone(),
-        image_byte_length: entry.image_byte_len,
         image_ext: entry.image_ext,
         total_unit_count: 0,
         translated_unit_count: 0,

@@ -99,4 +99,5 @@ pub struct LocalMessageRow {
     pub f_topic: String,
     pub f_payload: serde_json::Value,
     pub f_retried_count: i64,
+    pub f_lease: i64,
 }

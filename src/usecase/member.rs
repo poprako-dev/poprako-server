@@ -22,7 +22,7 @@ use crate::part::repo::oper::member::{
 use crate::part::repo::oper::member_invitation::{
     GetMemberInvitationInfoExcluded, UpdateMemberInvitation,
 };
-use crate::part::repo::oper::team::GetTeamInfoExcluded;
+use crate::part::repo::oper::team::LockTeam;
 use crate::part::repo::oper::user::GetUserInfoExcluded;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::user::UserRepo;
@@ -73,7 +73,7 @@ where
 
             repo.step(
                 context,
-                &GetTeamInfoExcluded::Id {
+                &LockTeam {
                     id: &params.team_id,
                 },
             )

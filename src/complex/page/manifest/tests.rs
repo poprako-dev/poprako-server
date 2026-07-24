@@ -19,7 +19,6 @@ fn page(
         image_uploaded,
         image_version: 1,
         image_hash: ImageHash::new([hash; 32]),
-        image_byte_length: 4096,
         image_ext: ImageExt::Png,
         total_unit_count,
         translated_unit_count: 0,
@@ -102,7 +101,7 @@ fn same_hash_with_conflicting_metadata_is_rejected() {
 
     let mut page_input = input(None, 0);
 
-    page_input.byte_length = 4097;
+    page_input.ext = ImageExt::Jpg;
 
     let result = build("chapter-1", &existing_page_infos, &[page_input]);
 

@@ -5,6 +5,8 @@ use time::OffsetDateTime;
 
 use crate::model::user::{UserCredential, UserInfo};
 use crate::part_impl::repo::rdb_impl::schema::t_user;
+use crate::result::{BaseError, BaseResult, accept};
+use crate::value::image::{ImageExt, ImageHash};
 
 // ── Queryable / Selectable ─────────────────────────────────────────────────
 
@@ -22,6 +24,8 @@ pub struct UserRow {
     pub f_avatar_uploaded: bool,
     #[diesel(deserialize_as = i64)]
     pub f_avatar_version: u32,
+    pub f_avatar_hash: Vec<u8>,
+    pub f_avatar_extension: String,
 
     pub f_last_active_at: OffsetDateTime,
 
@@ -69,6 +73,8 @@ pub struct UserAspect<'a> {
     pub f_avatar_key: Option<&'a str>,
     pub f_avatar_uploaded: Option<bool>,
     pub f_avatar_version: Option<i64>,
+    pub f_avatar_hash: Option<&'a [u8]>,
+    pub f_avatar_extension: Option<&'a str>,
 
     pub f_last_active_at: Option<OffsetDateTime>,
 
@@ -83,6 +89,8 @@ impl<'a> UserAspect<'a> {
             f_avatar_key: None,
             f_avatar_uploaded: None,
             f_avatar_version: None,
+            f_avatar_hash: None,
+            f_avatar_extension: None,
             f_last_active_at: None,
             f_updated_at: updated_at,
         }
@@ -123,6 +131,20 @@ impl<'a> UserAspect<'a> {
         self
     }
 
+    pub fn avatar_hash(mut self, val: &'a ImageHash) -> Self {
+        //
+        self.f_avatar_hash = Some(val.as_bytes());
+
+        self
+    }
+
+    pub fn avatar_ext(mut self, val: ImageExt) -> Self {
+        //
+        self.f_avatar_extension = Some(val.suffix());
+
+        self
+    }
+
     pub fn last_active_at(mut self, val: OffsetDateTime) -> Self {
         //
         self.f_last_active_at = Some(val);
@@ -133,20 +155,41 @@ impl<'a> UserAspect<'a> {
 
 // ── Conversions ────────────────────────────────────────────────────────────
 
-impl From<UserRow> for UserInfo {
-    fn from(v: UserRow) -> Self {
-        UserInfo {
+impl TryFrom<UserRow> for UserInfo {
+    type Error = BaseError;
+
+    fn try_from(v: UserRow) -> BaseResult<Self> {
+        //
+        let avatar_hash_bytes: [u8; 32] =
+            v.f_avatar_hash.try_into().map_err(|_| {
+                BaseError::Unrecoverable {
+                    message: "[UserRow] f_avatar_hash must contain 32 bytes"
+                        .into(),
+                }
+            })?;
+
+        let avatar_ext =
+            ImageExt::parse(&v.f_avatar_extension).ok_or_else(|| {
+                BaseError::Unrecoverable {
+                    message: "[UserRow] f_avatar_extension must be supported"
+                        .into(),
+                }
+            })?;
+
+        accept(UserInfo {
             id: v.f_id,
             qid: v.f_qid,
             nickname: v.f_nickname,
             avatar_key: v.f_avatar_key,
             avatar_uploaded: v.f_avatar_uploaded,
             avatar_version: v.f_avatar_version,
+            avatar_hash: ImageHash::new(avatar_hash_bytes),
+            avatar_ext,
             is_sadmin: v.f_is_sadmin,
             last_active_at: v.f_last_active_at,
             created_at: v.f_created_at,
             updated_at: v.f_updated_at,
-        }
+        })
     }
 }
 

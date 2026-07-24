@@ -4,7 +4,8 @@ use poprako_orchestra::{Run, Step};
 
 use crate::part::repo::oper::team::{
     AllocTeamWorksetIndex, CreateTeam, DeleteTeam, GetTeamInfo,
-    GetTeamInfoExcluded, ListTeamInfos, ReserveTeamAvatar, UpdateTeam,
+    GetTeamInfoExcluded, ListTeamInfos, LockTeam, ReserveTeamAvatar,
+    UpdateTeam,
 };
 use crate::result::BaseError;
 
@@ -21,6 +22,7 @@ pub trait TeamRepo<C>:
     + for<'a> Step<UpdateTeam<'a>, C, Error = BaseError>
     + for<'a> Step<ReserveTeamAvatar<'a>, C, Error = BaseError>
     + for<'a> Step<GetTeamInfoExcluded<'a>, C, Error = BaseError>
+    + for<'a> Step<LockTeam<'a>, C, Error = BaseError>
     + for<'a> Step<DeleteTeam<'a>, C, Error = BaseError>
     + for<'a> Step<AllocTeamWorksetIndex<'a>, C, Error = BaseError>
 {
@@ -35,6 +37,7 @@ impl<T, C> TeamRepo<C> for T where
         + for<'a> Step<UpdateTeam<'a>, C, Error = BaseError>
         + for<'a> Step<ReserveTeamAvatar<'a>, C, Error = BaseError>
         + for<'a> Step<GetTeamInfoExcluded<'a>, C, Error = BaseError>
+        + for<'a> Step<LockTeam<'a>, C, Error = BaseError>
         + for<'a> Step<DeleteTeam<'a>, C, Error = BaseError>
         + for<'a> Step<AllocTeamWorksetIndex<'a>, C, Error = BaseError>
 {

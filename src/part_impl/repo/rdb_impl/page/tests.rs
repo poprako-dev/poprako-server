@@ -71,7 +71,6 @@ pub async fn page_roundtrip_uses_testcontainer(shared: RdbCore) {
         image_key: Some("page/previous.png".into()),
         image_version: 1,
         image_hash: Default::default(),
-        image_byte_len: 1,
         image_ext: ImageExt::Jpg,
     };
 

@@ -32,6 +32,8 @@ fn team_info() -> TeamInfo {
         avatar_key: None,
         avatar_uploaded: false,
         avatar_version: 0,
+        avatar_hash: crate::value::image::ImageHash::default(),
+        avatar_ext: crate::value::image::ImageExt::Png,
         created_at: time,
         updated_at: time,
     }
@@ -67,6 +69,8 @@ fn comic_info() -> ComicInfo {
         cover_key: None,
         cover_uploaded: false,
         cover_version: 0,
+        cover_hash: crate::value::image::ImageHash::default(),
+        cover_ext: crate::value::image::ImageExt::Png,
         chapter_count: 1,
         creator_id: "creator-user".to_string(),
         workset: None,

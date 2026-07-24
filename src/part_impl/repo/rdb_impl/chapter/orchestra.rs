@@ -8,16 +8,17 @@ use crate::part::repo::oper::chapter::{
     AdjustChapterUnitCounters, CompleteChapterRawProvide, CreateChapter,
     DeleteChapter, FindPinnedChapterInfo, GetChapterInfo,
     GetChapterInfoExcluded, ListChapterInfos, ListChapterInfosExcluded,
-    ListPinnedChapterInfos, ResetChapterRawProvide, SetChapterPageCounters,
-    StartChapterStage, UnpinOtherChapters, UpdateChapter, UpdateChapterStage,
+    ListPinnedChapterInfos, LockChapters, ResetChapterRawProvide,
+    SetChapterPageCounters, StartChapterStage, UnpinOtherChapters,
+    UpdateChapter, UpdateChapterStage,
 };
 use crate::part_impl::repo::rdb_impl::RdbRepo;
 use crate::part_impl::repo::rdb_impl::chapter::step_impl::{
     adjust_unit_counters, complete_raw_provide, create, delete,
     find_pinned_info_by_comic_id, get_info_by_id, get_info_excluded,
     list_infos, list_infos_excluded, list_pinned_infos_by_comic_ids,
-    reset_raw_provide, set_page_counters, start_stage, unpin_others,
-    update_info, update_stage,
+    lock_chapters, reset_raw_provide, set_page_counters, start_stage,
+    unpin_others, update_info, update_stage,
 };
 use crate::part_impl::shared::RdbContext;
 use crate::result::{BaseError, BaseResult};
@@ -158,6 +159,19 @@ impl Step<ListChapterInfosExcluded<'_>, RdbContext> for RdbRepo {
         oper: &ListChapterInfosExcluded<'_>,
     ) -> BaseResult<Vec<ChapterInfo>> {
         list_infos_excluded(context.conn(), oper.comic_id).await
+    }
+}
+
+impl Step<LockChapters<'_>, RdbContext> for RdbRepo {
+    type Error = BaseError;
+
+    #[instrument(level = "info", err(Debug), skip_all)]
+    async fn step(
+        &self,
+        context: &mut RdbContext,
+        oper: &LockChapters<'_>,
+    ) -> BaseResult<()> {
+        lock_chapters(context.conn(), oper.comic_id).await
     }
 }
 

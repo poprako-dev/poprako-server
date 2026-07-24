@@ -73,7 +73,7 @@ async fn reserve_chapter_pages_creates_pages_and_urls() {
         .find(|record| {
             matches!(
                 record.payload(),
-                Payload::CheckChapterUploadFinish(CheckUploadFinish {
+                Payload::AdvanceRawProvide(AdvanceRawProvide {
                     chapter_id
                 }) if chapter_id == "chapter-1"
             )

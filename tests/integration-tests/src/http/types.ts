@@ -106,8 +106,7 @@ export interface PageInfoVal {
     image_url: string | null;
     image_thumbnail_url: string | null;
     image_hash: string;
-    byte_length: number;
-    extension: ImageExtension;
+    ext: ImageExtension;
     total_unit_count: number;
     translated_unit_count: number;
     proofread_unit_count: number;
@@ -224,10 +223,10 @@ export interface PageImageInput {
     page_id: string | null;
     image_hash: string;
     byte_length: number;
-    extension: ImageExtension;
+    ext: ImageExtension;
 }
 
-export interface PageImageUploadVal {
+export interface UploadSlotVal {
     put_url: string;
     image_version: number;
     headers: Record<string, string>;
@@ -237,21 +236,16 @@ export interface ReservedPageVal {
     page_id: string;
     index: number;
     image_hash: string;
-    byte_length: number;
-    extension: ImageExtension;
-    upload: PageImageUploadVal | null;
+    ext: ImageExtension;
+    slot: UploadSlotVal | null;
 }
 
 export interface ReserveChapterPagesVal {
     pages: ReservedPageVal[];
 }
 
-export interface ReserveVersionVal {
-    put_url: string;
-    page_id?: string;
-    avatar_version?: number;
-    cover_version?: number;
-    image_version?: number;
+export interface ReserveImagePayload {
+    slot: UploadSlotVal | null;
 }
 
 export interface UnitIdMapperVal {
