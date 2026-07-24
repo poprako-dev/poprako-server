@@ -21,6 +21,7 @@ pub use crate::data::image::{MarkImageUploadedParams as MarkUserAvatarUploadedPa
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UserInfoVal {
+    //
     /// Unique user identifier.
     pub id: String,
 
@@ -94,6 +95,7 @@ impl UserInfoVal {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UpdateUserInfoParams {
+    //
     /// User identifier to update.
     pub id: String,
 
@@ -107,6 +109,7 @@ pub struct UpdateUserInfoParams {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UpdateUserPasswordParams {
+    //
     /// Current password for verification before change.
     pub current_password: String,
     /// Desired new password.

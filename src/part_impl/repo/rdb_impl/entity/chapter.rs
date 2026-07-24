@@ -12,6 +12,7 @@ use crate::value::chapter::{Stage, StageMask, StagePhase};
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_chapter)]
 pub struct ChapterRow {
+    //
     pub f_id: String,
 
     pub f_comic_id: String,
@@ -45,6 +46,7 @@ pub struct ChapterRow {
 #[derive(Insertable)]
 #[diesel(table_name = t_chapter)]
 pub struct ChapterRowEntry<'a> {
+    //
     pub f_id: &'a str,
 
     pub f_comic_id: &'a str,
@@ -63,6 +65,7 @@ pub struct ChapterRowEntry<'a> {
 #[derive(AsChangeset)]
 #[diesel(table_name = t_chapter)]
 pub struct ChapterAspect<'a> {
+    //
     pub f_is_pinned: Option<bool>,
     pub f_subtitle: Option<&'a str>,
     pub f_uploaded_at: Option<Option<OffsetDateTime>>,

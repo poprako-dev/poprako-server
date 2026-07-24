@@ -28,6 +28,7 @@ use crate::value::role::RoleMask;
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ChapterInfoVal {
+    //
     /// Unique chapter identifier.
     pub id: String,
     /// Owning comic identifier.
@@ -140,6 +141,7 @@ impl ChapterInfoVal {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateChapterParams {
+    //
     /// Identifier of the parent comic to create the chapter in.
     pub comic_id: String,
 
@@ -172,6 +174,7 @@ pub struct CreateChapterPayload {
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct ListChapterInfosParams {
+    //
     /// Parent comic whose chapters to list.
     pub comic_id: String,
 
@@ -192,6 +195,7 @@ pub struct ListChapterInfosParams {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UpdateChapterInfoParams {
+    //
     /// Chapter identifier to update.
     pub id: String,
 
@@ -209,6 +213,7 @@ pub struct UpdateChapterInfoParams {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UpdateChapterStageParams {
+    //
     /// Chapter identifier to update.
     pub id: String,
 

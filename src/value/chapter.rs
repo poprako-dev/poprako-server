@@ -21,8 +21,10 @@ mod tests;
 pub enum StagePhase {
     /// The stage has not started yet.
     Pending,
+
     /// The stage is actively being worked on.
     Active,
+
     /// The stage has been completed.
     Completed,
 }
@@ -34,14 +36,19 @@ pub enum StagePhase {
 pub enum Stage {
     /// Raw provide phase.
     RawProvide,
+
     /// Translate phase.
     Translate,
+
     /// Proofread phase.
     Proofread,
+
     /// Typeset and redraw phase.
     TypesetRedraw,
+
     /// Review phase.
     Review,
+
     /// Publish phase.
     Publish,
 }
@@ -69,6 +76,7 @@ pub fn is_valid_stage_phase(stage: Stage, phase: StagePhase) -> bool {
 pub enum StageOper {
     /// Advance to the next phase.
     Advance,
+
     /// Revert to the previous phase.
     Revert,
 }

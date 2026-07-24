@@ -21,6 +21,7 @@ pub use crate::data::image::{MarkImageUploadedParams as MarkTeamAvatarUploadedPa
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct TeamInfoVal {
+    //
     /// Unique team identifier.
     pub id: String,
 
@@ -85,6 +86,7 @@ impl TeamInfoVal {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateTeamParams {
+    //
     /// Team display name.
     pub name: String,
     /// Team description text.
@@ -103,6 +105,7 @@ pub struct CreateTeamParams {
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct ListTeamInfosParams {
+    //
     /// Filter to teams joined by this user. Omit to list all teams
     /// (super-admin only).
     pub user_id: Option<String>,
@@ -117,6 +120,7 @@ pub struct ListTeamInfosParams {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UpdateTeamInfoParams {
+    //
     /// Team identifier.
     pub id: String,
 

@@ -19,6 +19,7 @@ impl Oper for GetWorksetInfo<'_> {
 }
 
 pub struct ListWorksetInfos<'a> {
+    //
     pub team_id: &'a str,
     pub offset: u32,
     pub limit: u32,
@@ -69,6 +70,7 @@ impl Oper for AllocWorksetComicIndex<'_> {
 }
 
 pub struct UpdateWorksetComicCount<'a> {
+    //
     pub id: &'a str,
     pub delta: i32,
 }

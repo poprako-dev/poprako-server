@@ -20,6 +20,7 @@ mod tests;
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct PageInfoVal {
+    //
     /// Unique page identifier.
     pub id: String,
 
@@ -94,6 +95,7 @@ impl PageInfoVal {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ReserveChapterPagesParams {
+    //
     /// Target chapter identifier.
     pub chapter_id: String,
     /// Page images to reserve for the chapter.
@@ -104,6 +106,7 @@ pub struct ReserveChapterPagesParams {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct PageImageParams {
+    //
     /// Existing page identifier, if updating an existing page.
     pub page_id: Option<String>,
     /// Content hash of the page image.
@@ -137,6 +140,7 @@ pub struct ReserveChapterPagesPayload {
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ReservedPagePayload {
+    //
     /// Reserved page identifier.
     pub page_id: String,
 
@@ -155,6 +159,7 @@ pub struct ReservedPagePayload {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ReservePageImageParams {
+    //
     /// Content hash of the page image to reserve.
     pub image_hash: ImageHash,
     /// Size of the page image in bytes.

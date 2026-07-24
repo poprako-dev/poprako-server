@@ -139,6 +139,36 @@ class RustSpacingCheckerTest(unittest.TestCase):
 """,
         )
 
+    def test_nested_variant_struct_and_following_variant_do_not_overlap(self) -> None:
+        source = """enum Payload {
+    First {
+        first: String,
+        second: String,
+    },
+    Second,
+}
+"""
+        analysis = self.analyze(source, build_fixes=True)
+        fixed = CHECKER_MODULE.apply_edits(source.encode(), analysis.edits)
+
+        self.assertEqual(
+            [diagnostic.code for diagnostic in analysis.diagnostics],
+            ["BLK000", "BLK001"],
+        )
+        self.assertEqual(
+            fixed.decode(),
+            """enum Payload {
+    First {
+        //
+        first: String,
+        second: String,
+    },
+
+    Second,
+}
+""",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

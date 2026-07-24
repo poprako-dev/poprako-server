@@ -53,6 +53,7 @@ impl Oper for PurgeExpiredAssignmentInvitation<'_> {
 
 pub enum DeleteAssignmentInvitations<'a> {
     Id { id: &'a str },
+
     Chapter { chapter_id: &'a str },
 }
 

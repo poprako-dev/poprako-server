@@ -14,6 +14,7 @@ use crate::value::image::{ImageExt, ImageHash};
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = t_team)]
 pub struct TeamRow {
+    //
     pub f_id: String,
     pub f_name: String,
     pub f_description: Option<String>,
@@ -37,6 +38,7 @@ pub struct TeamRow {
 #[derive(Insertable)]
 #[diesel(table_name = t_team)]
 pub struct TeamRowEntry<'a> {
+    //
     pub f_id: &'a str,
     pub f_name: &'a str,
     pub f_description: &'a str,
@@ -53,6 +55,7 @@ pub struct TeamRowEntry<'a> {
 #[derive(AsChangeset)]
 #[diesel(table_name = t_team)]
 pub struct TeamAspect<'a> {
+    //
     pub f_name: Option<&'a str>,
     pub f_description: Option<&'a str>,
 

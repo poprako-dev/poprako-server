@@ -12,6 +12,7 @@ use crate::value::image::{ImageExt, ImageHash};
 /// [`TeamInfoVal`]: crate::data::team::TeamInfoVal
 #[derive(Clone)]
 pub struct TeamInfo {
+    //
     /// The unique identifier for this team.
     pub id: String,
 
@@ -39,6 +40,7 @@ pub struct TeamInfo {
 
 /// Filtering and pagination parameters for listing teams.
 pub struct TeamInfoListSpec {
+    //
     /// Membership filter mode for the team listing.
     pub kind: TeamInfoListKind,
 
@@ -52,6 +54,7 @@ pub struct TeamInfoListSpec {
 pub enum TeamInfoListKind {
     /// Include all teams.
     All,
+
     /// Include only teams joined by the specified user.
     JoinedBy {
         /// ID of the user whose team memberships to list.
@@ -62,6 +65,7 @@ pub enum TeamInfoListKind {
 /// The data needed to create a new team.
 #[cfg_attr(test, derive(Clone))]
 pub struct TeamEntry {
+    //
     /// The unique identifier for the new team.
     pub id: String,
 
@@ -80,6 +84,7 @@ pub struct TeamEntry {
 /// [`UserAvatarReservation`]: crate::model::user::UserAvatarReservation
 #[cfg_attr(test, derive(Clone))]
 pub struct TeamAvatarReservation {
+    //
     /// Newly generated object-storage key for the avatar upload slot.
     pub object_key: String,
     /// Previous avatar key that should be cleaned up from storage, if any.

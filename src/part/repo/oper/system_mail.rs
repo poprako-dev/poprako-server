@@ -31,6 +31,7 @@ impl Oper for ListSystemMailInfos<'_> {
 
 /// Marks one system mail as read after verifying receiver ownership.
 pub struct MarkSystemMailRead<'a> {
+    //
     pub id: &'a str,
 
     pub user_id: &'a str,

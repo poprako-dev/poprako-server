@@ -13,6 +13,7 @@ pub struct PageTranslationImport {
 /// PopRaKo JSON import page.
 #[derive(Deserialize)]
 pub struct PoprakoPageImport {
+    //
     /// Filename of the page image from the import archive.
     pub image_filename: String,
     /// Import units belonging to this page in PopRaKo format.

@@ -13,6 +13,7 @@ use crate::model::term::TermInfo;
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct TermInfoVal {
+    //
     /// Unique identifier of the terminology entry.
     pub id: String,
 
@@ -55,6 +56,7 @@ impl From<TermInfo> for TermInfoVal {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateTermParams {
+    //
     /// Parent terminology base identifier.
     pub termbase_id: String,
 
@@ -78,6 +80,7 @@ pub struct CreateTermPayload {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UpdateTermInfoParams {
+    //
     /// Identifier of the terminology entry to update.
     pub id: String,
 
@@ -91,6 +94,7 @@ pub struct UpdateTermInfoParams {
 
 /// Input parameters for listing terms inside one terminology base.
 pub struct ListTermInfosParams {
+    //
     /// Parent terminology base identifier.
     pub termbase_id: String,
 

@@ -124,6 +124,7 @@ pub async fn export_download(
 
 /// Internal payload carrying the serialised export content and its metadata.
 struct TranslationExportPayload {
+    //
     /// MIME type of the response body.
     content_type: &'static str,
     /// File extension for download filenames.

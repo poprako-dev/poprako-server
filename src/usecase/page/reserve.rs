@@ -15,7 +15,9 @@ use crate::complex::image::ImageComplex;
 use crate::complex::page::manifest::build;
 use crate::complex::page::{PageComplex, PagePermComplex};
 use crate::data::image::ImageUploadSlotVal;
-use crate::data::page::{ReserveChapterPagesParams, ReserveChapterPagesPayload, ReservedPagePayload};
+use crate::data::page::{
+    ReserveChapterPagesParams, ReserveChapterPagesPayload, ReservedPagePayload,
+};
 use crate::model::page::{PageEntry, PageImageSpec, PageManifestUpdate};
 use crate::model::user::UserToken;
 use crate::part::image::{ImagePool, ImageUploadSpec};
@@ -26,9 +28,14 @@ use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::oper::assignment::FindAssignmentInfo;
-use crate::part::repo::oper::chapter::{GetChapterInfoExcluded, SetChapterPageCounters};
+use crate::part::repo::oper::chapter::{
+    GetChapterInfoExcluded, SetChapterPageCounters,
+};
 use crate::part::repo::oper::comic::TouchComicLastActive;
-use crate::part::repo::oper::page::{CreatePages, DeletePages, ListPageInfosExcluded, ShiftPageIndexesTemporary, UpdatePageManifest};
+use crate::part::repo::oper::page::{
+    CreatePages, DeletePages, ListPageInfosExcluded, ShiftPageIndexesTemporary,
+    UpdatePageManifest,
+};
 use crate::part::repo::page::PageRepo;
 use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
@@ -113,6 +120,7 @@ where
 
     /// Holds the ID, storage key, and version for one reserved page upload.
     struct PageReservation {
+        //
         page_id: String,
         index: u32,
         object_key: Option<String>,
@@ -425,7 +433,7 @@ where
             let advance_id = next_snowflake_id();
 
             let advance_payload =
-                TaskPayload::Chapter(ChapterPayload::RawProvide {
+                TaskPayload::Chapter(ChapterPayload::TryAdvanceRawProvideStage {
                     chapter_id: chapter_info.id.clone(),
                 });
 

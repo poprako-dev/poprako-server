@@ -7,10 +7,13 @@ use crate::value::image::{ImageExt, ImageHash};
 pub enum ResourceKind {
     /// Avatar image for a user.
     UserAvatar,
+
     /// Avatar image for a team.
     TeamAvatar,
+
     /// Cover image for a comic.
     ComicCover,
+
     /// Page image for a chapter page.
     PageImage,
 }
@@ -20,6 +23,7 @@ pub enum ResourceKind {
 pub enum ImagePayload {
     /// Verify that an uploaded image object exists and confirm the current DB ownership.
     CheckUpload {
+        //
         /// Discriminator for the resource type that owns this image.
         resource_kind: ResourceKind,
         /// ID of the resource that owns this image.
@@ -33,6 +37,7 @@ pub enum ImagePayload {
         /// Persisted file format for this version.
         image_ext: ImageExt,
     },
+
     /// Delete an image object by object-storage key.
     Delete {
         /// Object-storage key of the image to delete.

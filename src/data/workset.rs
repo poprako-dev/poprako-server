@@ -20,6 +20,7 @@ use crate::model::workset::WorksetInfo;
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct WorksetInfoVal {
+    //
     /// Unique workset identifier.
     pub id: String,
     /// Owning team identifier.
@@ -62,6 +63,7 @@ impl From<WorksetInfo> for WorksetInfoVal {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct CreateWorksetParams {
+    //
     /// Owning team identifier to create the workset under.
     pub team_id: String,
 
@@ -85,6 +87,7 @@ pub struct CreateWorksetPayload {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct UpdateWorksetInfoParams {
+    //
     /// Workset identifier to update.
     pub id: String,
 
@@ -99,6 +102,7 @@ pub struct UpdateWorksetInfoParams {
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct ListWorksetInfosParams {
+    //
     /// Owning team identifier to list worksets for.
     pub team_id: String,
 

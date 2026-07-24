@@ -5,6 +5,7 @@ use time::OffsetDateTime;
 /// A persisted terminology entry.
 #[cfg_attr(test, derive(Clone))]
 pub struct TermInfo {
+    //
     /// The unique identifier for this terminology entry.
     pub id: String,
 
@@ -30,6 +31,7 @@ pub struct TermInfo {
 /// The data needed to create a terminology entry.
 #[cfg_attr(test, derive(Clone))]
 pub struct TermEntry {
+    //
     /// The unique identifier for the new terminology entry.
     pub id: String,
 
@@ -50,6 +52,7 @@ pub struct TermEntry {
 /// Mutable terminology-entry fields.
 #[cfg_attr(test, derive(Clone))]
 pub struct TermInfoUpdate {
+    //
     /// The unique identifier of the term to update.
     pub id: String,
 
@@ -63,6 +66,7 @@ pub struct TermInfoUpdate {
 
 /// Filtering and pagination parameters for terms inside one terminology base.
 pub struct TermInfoListSpec {
+    //
     /// The terminology base whose terms are being queried.
     pub termbase_id: String,
 

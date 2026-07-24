@@ -8,6 +8,7 @@ fn oracle_ids(units: &[OracleUnit]) -> Vec<String> {
 }
 
 struct OracleUnit {
+    //
     id: String,
     text: String,
     proofread: bool,

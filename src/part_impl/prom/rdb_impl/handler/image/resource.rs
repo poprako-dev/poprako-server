@@ -1,5 +1,7 @@
 //! Resource-specific image identity checks and updates.
 
+use super::ImageIdentity;
+
 use poprako_orchestra::Nucl;
 use tracing::instrument;
 
@@ -20,29 +22,34 @@ use crate::value::image::{ImageExt, ImageHash};
 pub enum ResourceState {
     /// The image version and full identity match the current record.
     Current,
+
     /// The image version has been superseded.
     Stale,
+
     /// The referenced resource no longer exists.
     Missing,
+
     /// The version is current but another identity field differs.
     Mismatched,
 }
 
-fn classify_current_identity(
-    current_version: u32,
-    current_object_key: Option<&str>,
-    image_version: u32,
-    object_key: &str,
-    current_hash: &ImageHash,
-    current_ext: ImageExt,
-    image_hash: &ImageHash,
+/// Current image identity read from a persisted resource record.
+struct CurrentImageIdentity<'a> {
+    version: u32,
+    object_key: Option<&'a str>,
+    image_hash: &'a ImageHash,
     image_ext: ImageExt,
+}
+
+fn classify_current_identity(
+    current_identity: CurrentImageIdentity<'_>,
+    image_identity: ImageIdentity<'_>,
 ) -> BaseResult<ResourceState> {
     match (
-        current_version == image_version,
-        current_object_key == Some(object_key)
-            && current_hash == image_hash
-            && current_ext == image_ext,
+        current_identity.version == image_identity.version,
+        current_identity.object_key == Some(image_identity.object_key)
+            && current_identity.image_hash == image_identity.image_hash
+            && current_identity.image_ext == image_identity.image_ext,
     ) {
         //
         (false, _) => accept(ResourceState::Stale),
@@ -58,12 +65,7 @@ fn classify_current_identity(
 pub async fn mark_current_or_classify<N, R>(
     nucl: &N,
     repo: &R,
-    kind: ResourceKind,
-    resource_id: &str,
-    object_key: &str,
-    image_version: u32,
-    image_hash: &ImageHash,
-    image_ext: ImageExt,
+    image_identity: ImageIdentity<'_>,
     image_uploaded: bool,
 ) -> BaseResult<ResourceState>
 where
@@ -81,12 +83,7 @@ where
             let resource_state = classify_expected_mark(
                 repo,
                 context,
-                kind,
-                resource_id,
-                object_key,
-                image_version,
-                image_hash,
-                image_ext,
+                image_identity,
             )
             .await?;
 
@@ -97,10 +94,7 @@ where
             mark_uploaded_by_kind(
                 repo,
                 context,
-                kind,
-                resource_id,
-                object_key,
-                image_version,
+                image_identity,
                 image_uploaded,
             )
             .await?;
@@ -115,10 +109,7 @@ where
 async fn mark_uploaded_by_kind<R>(
     repo: &R,
     context: &mut RdbContext,
-    kind: ResourceKind,
-    resource_id: &str,
-    object_key: &str,
-    image_version: u32,
+    image_identity: ImageIdentity<'_>,
     image_uploaded: bool,
 ) -> BaseResult<()>
 where
@@ -129,15 +120,15 @@ where
         + Send
         + Sync,
 {
-    match kind {
+    match image_identity.kind {
         //
         ResourceKind::UserAvatar => {
             repo.step(
                 context,
                 &UpdateUser::MarkAvatarUploaded {
-                    id: resource_id,
-                    avatar_version: image_version,
-                    avatar_key: Some(object_key),
+                    id: image_identity.resource_id,
+                    avatar_version: image_identity.version,
+                    avatar_key: Some(image_identity.object_key),
                     avatar_uploaded: image_uploaded,
                 },
             )
@@ -148,9 +139,9 @@ where
             repo.step(
                 context,
                 &UpdateTeam::MarkAvatarUploaded {
-                    id: resource_id,
-                    avatar_version: image_version,
-                    avatar_key: Some(object_key),
+                    id: image_identity.resource_id,
+                    avatar_version: image_identity.version,
+                    avatar_key: Some(image_identity.object_key),
                     avatar_uploaded: image_uploaded,
                 },
             )
@@ -161,9 +152,9 @@ where
             repo.step(
                 context,
                 &MarkComicCoverUploaded {
-                    id: resource_id,
-                    cover_version: image_version,
-                    cover_key: Some(object_key),
+                    id: image_identity.resource_id,
+                    cover_version: image_identity.version,
+                    cover_key: Some(image_identity.object_key),
                     cover_uploaded: image_uploaded,
                 },
             )
@@ -174,9 +165,9 @@ where
             repo.step(
                 context,
                 &MarkPageImageUploaded {
-                    id: resource_id,
-                    image_version,
-                    image_key: Some(object_key),
+                    id: image_identity.resource_id,
+                    image_version: image_identity.version,
+                    image_key: Some(image_identity.object_key),
                 },
             )
             .await
@@ -187,12 +178,7 @@ where
 async fn classify_expected_mark<R>(
     repo: &R,
     context: &mut RdbContext,
-    kind: ResourceKind,
-    resource_id: &str,
-    object_key: &str,
-    image_version: u32,
-    image_hash: &ImageHash,
-    image_ext: ImageExt,
+    image_identity: ImageIdentity<'_>,
 ) -> BaseResult<ResourceState>
 where
     R: UserRepo<RdbContext>
@@ -202,24 +188,29 @@ where
         + Send
         + Sync,
 {
-    match kind {
+    match image_identity.kind {
         //
         ResourceKind::UserAvatar => {
             match repo
-                .step(context, &GetUserInfoExcluded::Id { id: resource_id })
+                .step(
+                    context,
+                    &GetUserInfoExcluded::Id {
+                        id: image_identity.resource_id,
+                    },
+                )
                 .await
             {
                 //
-                Ok(info) => classify_current_identity(
-                    info.avatar_version,
-                    info.avatar_key.as_deref(),
-                    image_version,
-                    object_key,
-                    &info.avatar_hash,
-                    info.avatar_ext,
-                    image_hash,
-                    image_ext,
-                ),
+                Ok(info) => {
+                    let current_identity = CurrentImageIdentity {
+                        version: info.avatar_version,
+                        object_key: info.avatar_key.as_deref(),
+                        image_hash: &info.avatar_hash,
+                        image_ext: info.avatar_ext,
+                    };
+
+                    classify_current_identity(current_identity, image_identity)
+                }
 
                 Err(BaseError::Expected { .. }) => {
                     accept(ResourceState::Missing)
@@ -231,20 +222,25 @@ where
 
         ResourceKind::TeamAvatar => {
             match repo
-                .step(context, &GetTeamInfoExcluded::Id { id: resource_id })
+                .step(
+                    context,
+                    &GetTeamInfoExcluded::Id {
+                        id: image_identity.resource_id,
+                    },
+                )
                 .await
             {
                 //
-                Ok(info) => classify_current_identity(
-                    info.avatar_version,
-                    info.avatar_key.as_deref(),
-                    image_version,
-                    object_key,
-                    &info.avatar_hash,
-                    info.avatar_ext,
-                    image_hash,
-                    image_ext,
-                ),
+                Ok(info) => {
+                    let current_identity = CurrentImageIdentity {
+                        version: info.avatar_version,
+                        object_key: info.avatar_key.as_deref(),
+                        image_hash: &info.avatar_hash,
+                        image_ext: info.avatar_ext,
+                    };
+
+                    classify_current_identity(current_identity, image_identity)
+                }
 
                 Err(BaseError::Expected { .. }) => {
                     accept(ResourceState::Missing)
@@ -259,23 +255,23 @@ where
                 .step(
                     context,
                     &GetComicInfoExcluded {
-                        id: resource_id,
+                        id: image_identity.resource_id,
                         incls: &[],
                     },
                 )
                 .await
             {
                 //
-                Ok(info) => classify_current_identity(
-                    info.cover_version,
-                    info.cover_key.as_deref(),
-                    image_version,
-                    object_key,
-                    &info.cover_hash,
-                    info.cover_ext,
-                    image_hash,
-                    image_ext,
-                ),
+                Ok(info) => {
+                    let current_identity = CurrentImageIdentity {
+                        version: info.cover_version,
+                        object_key: info.cover_key.as_deref(),
+                        image_hash: &info.cover_hash,
+                        image_ext: info.cover_ext,
+                    };
+
+                    classify_current_identity(current_identity, image_identity)
+                }
 
                 Err(BaseError::Expected { .. }) => {
                     accept(ResourceState::Missing)
@@ -287,20 +283,25 @@ where
 
         ResourceKind::PageImage => {
             match repo
-                .step(context, &GetPageInfoExcluded { id: resource_id })
+                .step(
+                    context,
+                    &GetPageInfoExcluded {
+                        id: image_identity.resource_id,
+                    },
+                )
                 .await
             {
                 //
-                Ok(info) => classify_current_identity(
-                    info.image_version,
-                    info.image_key.as_deref(),
-                    image_version,
-                    object_key,
-                    &info.image_hash,
-                    info.image_ext,
-                    image_hash,
-                    image_ext,
-                ),
+                Ok(info) => {
+                    let current_identity = CurrentImageIdentity {
+                        version: info.image_version,
+                        object_key: info.image_key.as_deref(),
+                        image_hash: &info.image_hash,
+                        image_ext: info.image_ext,
+                    };
+
+                    classify_current_identity(current_identity, image_identity)
+                }
 
                 Err(BaseError::Expected { .. }) => {
                     accept(ResourceState::Missing)

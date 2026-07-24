@@ -13,6 +13,7 @@ use crate::value::image::{ImageExt, ImageHash};
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ReserveImageParams {
+    //
     /// SHA-256 identity of the exact upload bytes.
     pub image_hash: ImageHash,
     /// Upload size used only for validation and PUT signing.
@@ -25,6 +26,7 @@ pub struct ReserveImageParams {
 #[derive(Debug, Serialize)]
 #[cfg_attr(feature = "swagger", derive(ToSchema))]
 pub struct ImageUploadSlotVal {
+    //
     /// Presigned PUT URL.
     pub put_url: String,
     /// Monotonic image identity version.

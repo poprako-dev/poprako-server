@@ -171,6 +171,7 @@ impl ChapterImportComplex {
 /// Internal representation of a parsed LabelPlus unit header containing
 /// the unit's page-relative index, coordinates, and bubble flag.
 struct LabelPlusUnit {
+    //
     index: i32,
     x_coord: f64,
     y_coord: f64,

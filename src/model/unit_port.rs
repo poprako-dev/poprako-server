@@ -4,6 +4,7 @@ use serde::Deserialize;
 
 /// One parsed import unit.
 pub struct UnitTranslationImport {
+    //
     /// Optional server identifier; absent for brand-new imports.
     pub id: Option<String>,
     /// Import ordering index within the page.
@@ -30,6 +31,7 @@ pub struct UnitTranslationImport {
 /// PopRaKo JSON import unit.
 #[derive(Deserialize)]
 pub struct PoprakoUnitImport {
+    //
     /// Server-assigned identifier for the imported unit.
     pub id: String,
 

@@ -25,6 +25,7 @@ use crate::value::image::{ImageExt, ImageHash};
 /// [`MarkComicCoverUploaded`]: crate::part::repo::oper::comic::MarkComicCoverUploaded
 #[derive(Clone)]
 pub struct ComicInfo {
+    //
     /// Unique identifier for the comic record.
     pub id: String,
 
@@ -81,6 +82,7 @@ pub struct ComicInfo {
 /// [`ComicComplex::gen_id`]: crate::complex::comic::ComicComplex::gen_id
 #[cfg_attr(test, derive(Clone))]
 pub struct ComicEntry {
+    //
     /// Unique identifier for the new comic.
     pub id: String,
 
@@ -103,6 +105,7 @@ pub struct ComicEntry {
 /// Mutable profile (non-cover, non-counter) fields for a comic.
 #[cfg_attr(test, derive(Clone))]
 pub struct ComicInfoUpdate {
+    //
     /// Identifies which comic record to update.
     pub id: String,
 
@@ -116,6 +119,7 @@ pub struct ComicInfoUpdate {
 
 /// Filtering and pagination parameters for listing comics within a workset.
 pub struct ComicInfoListSpec {
+    //
     /// The workset whose comics should be listed.
     pub workset_id: String,
 
@@ -137,6 +141,7 @@ pub struct ComicInfoListSpec {
 pub enum ComicInfoListKind {
     /// Include all comics regardless of workflow stage.
     All,
+
     /// Include only comics whose chapters have any of the specified stages.
     Stages(StageMask),
 }
@@ -151,6 +156,7 @@ pub enum ComicInfoListKind {
 /// [`TeamAvatarReservation`]: crate::model::team::TeamAvatarReservation
 #[cfg_attr(test, derive(Clone))]
 pub struct ComicCoverReservation {
+    //
     /// The newly generated object-storage key the client should upload the cover to.
     pub object_key: String,
     /// The previous cover key that should be cleaned up after a successful upload, if any.

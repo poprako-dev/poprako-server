@@ -59,6 +59,7 @@ pub async fn export_archives(
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct ComicListQuery {
+    //
     /// Fuzzy title substring filter (case-insensitive).
     pub fuzzy_title: Option<String>,
 

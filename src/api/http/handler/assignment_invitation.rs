@@ -24,6 +24,7 @@ use crate::usecase;
 #[cfg_attr(feature = "swagger", derive(IntoParams))]
 #[cfg_attr(feature = "swagger", into_params(parameter_in = Query))]
 pub struct AssignmentInvitationListQuery {
+    //
     /// When `Some(true)`, returns only unconsumed invitations;
     /// `Some(false)` returns only consumed ones; `None` returns all.
     pub pending: Option<bool>,

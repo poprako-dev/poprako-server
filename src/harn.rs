@@ -44,6 +44,7 @@ impl<C, N, R, P, A, I, V> Clone for Harn<C, N, R, P, A, I, V> {
 
 /// Inner, non-cloneable state shared across all `Harn` clones via `Arc`.
 struct HarnInner<C, N, R, P, A, I, V> {
+    //
     drive: N,
     repo: R,
     prom: P,

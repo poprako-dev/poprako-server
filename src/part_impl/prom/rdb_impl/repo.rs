@@ -65,6 +65,7 @@ impl Oper for PollPending {
 /// Returns `true` if the claim succeeded (i.e. the row was still
 /// Pending), `false` if another worker claimed it first.
 pub struct ClaimPending<'a> {
+    //
     /// ID of the local-message row to claim.
     id: &'a str,
     /// Lease observed by the poller.
@@ -84,6 +85,7 @@ impl Oper for ClaimPending<'_> {
 
 /// Mark a record as successfully completed.
 pub struct CompleteMessage<'a> {
+    //
     /// ID of the local-message row to mark complete.
     id: &'a str,
     /// Lease owned by the worker attempt.
@@ -103,6 +105,7 @@ impl Oper for CompleteMessage<'_> {
 
 /// Mark a record as dead with an error message.
 pub struct FailMessage<'a> {
+    //
     /// ID of the local-message row to mark as failed.
     id: &'a str,
     /// Lease owned by the worker attempt.
@@ -128,6 +131,7 @@ impl Oper for FailMessage<'_> {
 
 /// Reset one failed processing attempt back to pending for a later retry.
 pub struct RetryMessage<'a> {
+    //
     /// ID of the local-message row to retry.
     id: &'a str,
     /// Lease owned by the worker attempt.
@@ -178,6 +182,7 @@ impl Oper for ResetStuck<'_> {
 
 /// Deletes completed and dead records after their independent retention cutoffs.
 pub struct PurgeCompleted<'a> {
+    //
     /// Cutoff timestamp for completed records to purge.
     completed_before: &'a OffsetDateTime,
     /// Cutoff timestamp for dead records to purge.

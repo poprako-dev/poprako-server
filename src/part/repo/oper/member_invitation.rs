@@ -21,9 +21,11 @@ impl Oper for ListMemberInvitationInfos<'_> {
 
 pub enum GetMemberInvitationInfo<'a, 'b> {
     Id {
+        //
         id: &'a str,
         incls: &'b [MemberInvitationInclOpt],
     },
+
     Code {
         code: &'a str,
     },
@@ -35,6 +37,7 @@ impl Oper for GetMemberInvitationInfo<'_, '_> {
 
 pub enum UpdateMemberInvitation<'a> {
     Info { update: &'a MemberInvitationUpdate },
+
     MarkUsed { id: &'a str },
 }
 

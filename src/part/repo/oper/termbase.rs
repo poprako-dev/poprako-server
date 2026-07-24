@@ -36,6 +36,7 @@ impl Oper for GetTermbaseInfoExcluded<'_> {
 
 pub enum ListTermbaseInfosExcluded<'a> {
     Team { team_id: &'a str },
+
     Comic { comic_id: &'a str },
 }
 
@@ -52,6 +53,7 @@ impl Oper for UpdateTermbase<'_> {
 }
 
 pub struct UpdateTermbaseTermCount<'a> {
+    //
     pub id: &'a str,
     pub delta: i32,
 }
