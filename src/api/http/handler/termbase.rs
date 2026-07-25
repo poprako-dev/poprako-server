@@ -11,14 +11,9 @@ use utoipa::IntoParams;
 
 use crate::api::http::handler::util::ensure_path_matches_body_id;
 #[allow(unused_imports)]
-use crate::api::http::result::{
-    Accept as _, HttpBody, HttpNoContent, HttpResult, no_content,
-};
+use crate::api::http::result::{Accept as _, HttpBody, HttpNoContent, HttpResult, no_content};
 use crate::api::http::state::AppHarn;
-use crate::data::termbase::{
-    CreateTermbaseParams, CreateTermbasePayload, ListComicTermbaseInfosParams,
-    ListTeamTermbaseInfosParams, TermbaseInfoVal, UpdateTermbaseInfoParams,
-};
+use crate::data::termbase::{CreateTermbaseParams, CreateTermbasePayload, ListComicTermbaseInfosParams, ListTeamTermbaseInfosParams, TermbaseInfoVal, UpdateTermbaseInfoParams};
 use crate::model::user::UserToken;
 use crate::usecase;
 

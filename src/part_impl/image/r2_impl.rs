@@ -15,9 +15,7 @@ use url::Url;
 
 use poprako_util::i18n::trl;
 
-use crate::part::image::{
-    ImageManager, ImagePool, ImageUploadSlot, ImageUploadSpec,
-};
+use crate::part::image::{ImageManager, ImagePool, ImageUploadSlot, ImageUploadSpec};
 use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 
 #[cfg(test)]

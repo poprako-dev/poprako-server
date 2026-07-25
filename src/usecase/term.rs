@@ -5,23 +5,15 @@ use tracing::instrument;
 
 use crate::complex::term::TermComplex;
 use crate::complex::termbase::TermbasePermComplex;
-use crate::data::term::{
-    CreateTermParams, CreateTermPayload, ListTermInfosParams, TermInfoVal,
-    UpdateTermInfoParams,
-};
+use crate::data::term::{CreateTermParams, CreateTermPayload, ListTermInfosParams, TermInfoVal, UpdateTermInfoParams};
 use crate::model::term::TermInfoListSpec;
 use crate::model::user::UserToken;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::comic::GetComicInfo;
 use crate::part::repo::oper::member::FindMemberInfo;
-use crate::part::repo::oper::term::{
-    CreateTerm, DeleteTerm, GetTermInfo, ListTermInfos, LockTerm, UpdateTerm,
-};
-use crate::part::repo::oper::termbase::{
-    GetTermbaseInfo, GetTermbaseInfoExcluded, TouchTermbase,
-    UpdateTermbaseTermCount,
-};
+use crate::part::repo::oper::term::{CreateTerm, DeleteTerm, GetTermInfo, ListTermInfos, LockTerm, UpdateTerm};
+use crate::part::repo::oper::termbase::{GetTermbaseInfo, GetTermbaseInfoExcluded, TouchTermbase, UpdateTermbaseTermCount};
 use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::part::repo::term::TermRepo;
 use crate::part::repo::termbase::TermbaseRepo;

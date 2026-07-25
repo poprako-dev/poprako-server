@@ -7,9 +7,7 @@ use poprako_util::i18n::trl;
 
 use crate::complex::member::MemberComplex;
 use crate::complex::user::UserComplex;
-use crate::data::auth::{
-    LoginAuthParams, LoginAuthPayload, RegisterAuthParams, RegisterAuthPayload,
-};
+use crate::data::auth::{LoginAuthParams, LoginAuthPayload, RegisterAuthParams, RegisterAuthPayload};
 use crate::model::member::MemberEntry;
 use crate::model::user::{UserEntry, UserToken};
 use crate::part::auth::TokenAuth;
@@ -19,9 +17,7 @@ use crate::part::effect::event::user::UserSignedUpPayload;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::member_invitation::MemberInvitationRepo;
 use crate::part::repo::oper::member::CreateMember;
-use crate::part::repo::oper::member_invitation::{
-    GetMemberInvitationInfoExcluded, UpdateMemberInvitation,
-};
+use crate::part::repo::oper::member_invitation::{GetMemberInvitationInfoExcluded, UpdateMemberInvitation};
 use crate::part::repo::oper::user::{CreateUser, GetUserCredential};
 use crate::part::repo::user::UserRepo;
 use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};

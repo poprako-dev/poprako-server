@@ -18,9 +18,7 @@ use poprako_orchestra_extra::prom::oper::Defer;
 use poprako_orchestra_extra::prom::task::Task;
 use time::OffsetDateTime;
 
-use crate::data::workset::{
-    CreateWorksetParams, ListWorksetInfosParams, UpdateWorksetInfoParams,
-};
+use crate::data::workset::{CreateWorksetParams, ListWorksetInfosParams, UpdateWorksetInfoParams};
 use crate::model::comic::ComicInfo;
 use crate::model::member::MemberInfo;
 use crate::model::user::UserToken;

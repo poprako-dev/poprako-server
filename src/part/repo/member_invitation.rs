@@ -2,11 +2,7 @@
 
 use poprako_orchestra::{Run, Step};
 
-use crate::part::repo::oper::member_invitation::{
-    CreateMemberInvitation, DeleteMemberInvitation, GetMemberInvitationInfo,
-    GetMemberInvitationInfoExcluded, ListMemberInvitationInfos,
-    PurgeExpiredMemberInvitation, UpdateMemberInvitation,
-};
+use crate::part::repo::oper::member_invitation::{CreateMemberInvitation, DeleteMemberInvitation, GetMemberInvitationInfo, GetMemberInvitationInfoExcluded, ListMemberInvitationInfos, PurgeExpiredMemberInvitation, UpdateMemberInvitation};
 use crate::result::BaseError;
 
 /// Member-invitation repository operations.

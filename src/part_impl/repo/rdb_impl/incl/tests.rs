@@ -2,9 +2,7 @@
 use super::*;
 
 use crate::model::user::UserInfo;
-use crate::part_impl::repo::rdb_impl::incl::framework::{
-    BatchByIds, Incl, UserByIds, populate,
-};
+use crate::part_impl::repo::rdb_impl::incl::framework::{BatchByIds, Incl, UserByIds, populate};
 use crate::part_impl::shared::RdbConn;
 use crate::result::BaseResult;
 use crate::value::incl::{InclOpt, expand_incl_opts};

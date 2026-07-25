@@ -10,10 +10,7 @@ use crate::part::prom::payload::image::{ImagePayload, ResourceKind};
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::oper::chapter::GetChapterInfoExcluded;
-use crate::part::repo::oper::page::{
-    GetPageInfo, GetPageInfoExcluded, MarkPageImageUploaded,
-    SetPageImageUploaded,
-};
+use crate::part::repo::oper::page::{GetPageInfo, GetPageInfoExcluded, MarkPageImageUploaded, SetPageImageUploaded};
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::user::UserRepo;

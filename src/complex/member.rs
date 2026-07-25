@@ -2,9 +2,7 @@
 
 use poprako_orchestra::Proxy;
 
-use crate::complex::util::{
-    check_user_is_team_admin, check_user_is_team_member,
-};
+use crate::complex::util::{check_user_is_team_admin, check_user_is_team_member};
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::result::{BaseError, BaseResult};
 use crate::util::next_snowflake_id;

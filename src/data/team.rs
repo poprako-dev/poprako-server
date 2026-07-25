@@ -11,11 +11,7 @@ use crate::model::team::TeamInfo;
 use crate::part::image::ImagePool;
 use crate::result::{BaseResult, accept};
 
-pub use crate::data::image::{
-    MarkImageUploadedParams as MarkTeamAvatarUploadedParams,
-    ReserveImageParams as ReserveTeamAvatarParams,
-    ReserveImagePayload as ReserveTeamAvatarPayload,
-};
+pub use crate::data::image::{MarkImageUploadedParams as MarkTeamAvatarUploadedParams, ReserveImageParams as ReserveTeamAvatarParams, ReserveImagePayload as ReserveTeamAvatarPayload};
 
 /// Presentation-ready team profile information.
 ///
