@@ -14,25 +14,14 @@ use crate::part::repo::oper::page::{GetPageInfo, GetPageInfoExcluded, MarkPageIm
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::user::UserRepo;
+use crate::part_impl::prom::rdb_impl::handler::image::identity::ImageIdentity;
 use crate::part_impl::prom::rdb_impl::handler::image::resource::ResourceState;
 use crate::part_impl::prom::rdb_impl::handler::task_flow::TaskFlow;
 use crate::part_impl::shared::RdbContext;
 use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
-use crate::value::image::{ImageExt, ImageHash};
 
+mod identity;
 mod resource;
-
-/// Identity carried by an image-verification task.
-#[derive(Clone, Copy)]
-struct ImageIdentity<'a> {
-    //
-    kind: ResourceKind,
-    resource_id: &'a str,
-    object_key: &'a str,
-    version: u32,
-    image_hash: &'a ImageHash,
-    image_ext: ImageExt,
-}
 
 /// Dispatch an image [`ImagePayload`] to its concrete handler.
 #[instrument(level = "info", skip_all)]

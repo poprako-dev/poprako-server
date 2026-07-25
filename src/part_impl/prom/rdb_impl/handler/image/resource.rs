@@ -1,7 +1,5 @@
 //! Resource-specific image identity checks and updates.
 
-use super::ImageIdentity;
-
 use poprako_orchestra::Nucl;
 use tracing::instrument;
 
@@ -14,6 +12,7 @@ use crate::part::repo::oper::user::{GetUserInfoExcluded, UpdateUser};
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::user::UserRepo;
+use crate::part_impl::prom::rdb_impl::handler::image::identity::ImageIdentity;
 use crate::part_impl::shared::RdbContext;
 use crate::result::{BaseError, BaseResult, accept};
 use crate::value::image::{ImageExt, ImageHash};
