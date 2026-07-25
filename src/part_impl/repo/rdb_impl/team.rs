@@ -7,19 +7,10 @@ use time::OffsetDateTime;
 use tracing::instrument;
 
 use crate::complex::team::TeamComplex;
-use crate::model::team::{
-    TeamAvatarReservation, TeamEntry, TeamInfo, TeamInfoListKind,
-    TeamInfoListSpec,
-};
-use crate::part::repo::oper::team::{
-    AllocTeamWorksetIndex, CreateTeam, DeleteTeam, GetTeamInfo,
-    GetTeamInfoExcluded, ListTeamInfos, LockTeam, ReserveTeamAvatar,
-    UpdateTeam,
-};
+use crate::model::team::{TeamAvatarReservation, TeamEntry, TeamInfo, TeamInfoListKind, TeamInfoListSpec};
+use crate::part::repo::oper::team::{AllocTeamWorksetIndex, CreateTeam, DeleteTeam, GetTeamInfo, GetTeamInfoExcluded, ListTeamInfos, LockTeam, ReserveTeamAvatar, UpdateTeam};
 use crate::part_impl::repo::rdb_impl::RdbRepo;
-use crate::part_impl::repo::rdb_impl::entity::team::{
-    TeamAspect, TeamRow, TeamRowEntry,
-};
+use crate::part_impl::repo::rdb_impl::entity::team::{TeamAspect, TeamRow, TeamRowEntry};
 use crate::part_impl::repo::rdb_impl::schema::t_member;
 use crate::part_impl::repo::rdb_impl::schema::t_team::dsl::*;
 use crate::part_impl::shared::result::{diesel, expected, next_version};

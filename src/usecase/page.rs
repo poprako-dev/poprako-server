@@ -13,10 +13,7 @@ use crate::complex::chapter::ChapterComplex;
 use crate::complex::image::ImageComplex;
 use crate::complex::page::{PageComplex, PagePermComplex};
 use crate::data::image::ImageUploadSlotVal;
-use crate::data::page::{
-    ListPageInfosParams, MarkPageImageUploadedParams, PageInfoVal,
-    ReservePageImageParams, ReservedPagePayload,
-};
+use crate::data::page::{ListPageInfosParams, MarkPageImageUploadedParams, PageInfoVal, ReservePageImageParams, ReservedPagePayload};
 use crate::model::page::PageManifestUpdate;
 use crate::model::user::UserToken;
 use crate::part::image::{ImageManager, ImagePool, ImageUploadSpec};
@@ -28,15 +25,10 @@ use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::assignment::FindAssignmentInfo;
-use crate::part::repo::oper::chapter::{
-    GetChapterInfo, GetChapterInfoExcluded, SetChapterPageCounters,
-};
+use crate::part::repo::oper::chapter::{GetChapterInfo, GetChapterInfoExcluded, SetChapterPageCounters};
 use crate::part::repo::oper::comic::{GetComicInfo, TouchComicLastActive};
 use crate::part::repo::oper::member::FindMemberInfo;
-use crate::part::repo::oper::page::{
-    DeletePages, GetPageInfo, GetPageInfoExcluded, ListPageInfos,
-    MarkPageImageUploaded, UpdatePageManifest,
-};
+use crate::part::repo::oper::page::{DeletePages, GetPageInfo, GetPageInfoExcluded, ListPageInfos, MarkPageImageUploaded, UpdatePageManifest};
 use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::workset::WorksetRepo;
@@ -65,7 +57,7 @@ where
     I: ImagePool,
 {
     ImageComplex::ensure_byte_length(
-        params.byte_length,
+        params.new_byte_len,
         image::ResourceKind::PageImage,
     )?;
 
@@ -101,20 +93,15 @@ where
                 .step(context, &GetPageInfoExcluded { id: &id })
                 .await?;
 
-            let same_hash = locked_page_info.image_hash == params.image_hash;
+            let same_identity =
+                locked_page_info.image_hash == params.image_hash
+                    && locked_page_info.image_ext == params.ext;
 
-            if same_hash && locked_page_info.image_ext != params.ext {
-                return Err(BaseError::Expected {
-                    variant: ExpectedVariant::Args,
-                    message: trl("error-invalid-page-image-identity"),
-                });
-            }
-
-            if same_hash && locked_page_info.image_uploaded {
+            if same_identity && locked_page_info.image_uploaded {
                 return accept((locked_page_info, None));
             }
 
-            let (image_key, image_version, previous_image_key) = match same_hash {
+            let (image_key, image_version, previous_image_key) = match same_identity {
                 //
                 true => (
                     locked_page_info.image_key.clone().ok_or_else(|| {
@@ -243,7 +230,7 @@ where
                 object_key: &object_key,
                 content_type: page_info.image_ext.content_type(),
                 checksum_sha256: &page_info.image_hash,
-                content_length: params.byte_length,
+                content_length: params.new_byte_len,
             };
 
             let upload_target = image_pool.get_upload_slot(upload_spec).await?;

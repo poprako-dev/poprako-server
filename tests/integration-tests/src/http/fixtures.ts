@@ -201,7 +201,7 @@ async function reserveAndUploadImage(
     const reserved = expectSuccessData(
         await api.post<SuccessBody<ReserveImagePayload>>(path, {
             image_hash: imageHash,
-            byte_length: imageBytes.byteLength,
+            new_byte_len: imageBytes.byteLength,
             ext,
         }),
         200,
@@ -590,7 +590,7 @@ export function newPageManifest(pageCount: number, ext: ImageExtension): PageIma
     return Array.from({ length: pageCount }, () => ({
         page_id: null,
         image_hash: TEST_PAGE_HASH,
-        byte_length: TEST_PAGE_BYTES.byteLength,
+        new_byte_len: TEST_PAGE_BYTES.byteLength,
         ext,
     }));
 }
@@ -649,7 +649,7 @@ export async function reservePageImage(
     const reserved = expectSuccessData(
         await api.post<SuccessBody<ReservedPageVal>>(`/api/v1/pages/${pageId}/image/reserve`, {
             image_hash: imageHash,
-            byte_length: imageBytes.byteLength,
+            new_byte_len: imageBytes.byteLength,
             ext,
         }),
         200,

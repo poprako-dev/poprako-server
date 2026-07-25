@@ -2,9 +2,7 @@
 
 use poprako_orchestra::Run;
 
-use crate::part::repo::oper::system_mail::{
-    ListSystemMailInfos, MarkSystemMailRead, SendSystemMail, SendSystemMails,
-};
+use crate::part::repo::oper::system_mail::{ListSystemMailInfos, MarkSystemMailRead, SendSystemMail, SendSystemMails};
 use crate::result::BaseError;
 
 /// System mail repository operations.

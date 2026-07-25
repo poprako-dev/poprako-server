@@ -7,12 +7,8 @@ use diesel_async::RunQueryDsl;
 use time::OffsetDateTime;
 use tracing::instrument;
 
-use crate::model::unit::{
-    UnitContent, UnitCounters, UnitIndex, UnitIndexUpdate, UnitInfo,
-};
-use crate::part_impl::repo::rdb_impl::entity::unit::{
-    UnitAspect, UnitEntry, UnitRow,
-};
+use crate::model::unit::{UnitContent, UnitCounters, UnitIndex, UnitIndexUpdate, UnitInfo};
+use crate::part_impl::repo::rdb_impl::entity::unit::{UnitAspect, UnitEntry, UnitRow};
 use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::*;
 use crate::part_impl::shared::RdbConn;
 use crate::part_impl::shared::result::{diesel, expected};

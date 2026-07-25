@@ -9,11 +9,11 @@ reservation identity, verification rules, and delayed correction semantics.
 An image reservation request contains:
 
 - `image_hash`: the SHA-256 digest of the exact object bytes;
-- `byte_length`: the expected object size, from 1 MiB through 20 MiB;
+- `new_byte_len`: the expected object size, from 1 MiB through 20 MiB;
 - `ext`: the normalized file extension.
 
 The persisted upload identity is the complete tuple `(owner id, image_version,
-key, image_hash, ext)`. `byte_length` is not part of that identity. It is used
+key, image_hash, ext)`. `new_byte_len` is not part of that identity. It is used
 only to validate a reserve request and constrain a presigned PUT. It is neither
 persisted nor returned and is never compared with object metadata after upload.
 
@@ -29,16 +29,20 @@ batch responses retain one optional slot per page.
 
 For an existing owner:
 
-- A matching hash with a different extension is rejected as an argument error.
 - A matching, uploaded identity returns no slot and changes no state or task.
 - A matching, pending identity keeps its key and version, issues a new PUT
   capability, and replaces the delayed checks for that identity.
-- A changed hash increments the version, creates a versioned key, sets
+- A changed hash or extension increments the version, creates a versioned key, sets
   `uploaded` to false, and atomically creates a dedicated Delete task for the
   previous key.
 
 The owner tables persist non-null hash and extension fields. A page does not
-persist byte length.
+persist `new_byte_len`.
+
+Chapter manifest entries may omit `new_byte_len` only when they retain an
+existing page without requesting an upload slot. A pending page with
+`new_byte_len` reuses its key and version and receives a fresh slot. New pages
+and changed identities require `new_byte_len`.
 
 ## Lock order and transaction boundary
 

@@ -2,14 +2,8 @@
 
 use poprako_orchestra::{Nucl as _, Run as _, Step as _};
 
-use crate::model::assignment_invitation::{
-    AssignmentInvitationEntry, AssignmentInvitationListKind,
-    AssignmentInvitationListSpec,
-};
-use crate::part::repo::oper::assignment_invitation::{
-    CreateAssignmentInvitation, ListAssignmentInvitationInfos,
-    MarkAssignmentInvitationUsed,
-};
+use crate::model::assignment_invitation::{AssignmentInvitationEntry, AssignmentInvitationListKind, AssignmentInvitationListSpec};
+use crate::part::repo::oper::assignment_invitation::{CreateAssignmentInvitation, ListAssignmentInvitationInfos, MarkAssignmentInvitationUsed};
 use crate::part_impl::drive::rdb_impl::RdbDrive;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
 use crate::part_impl::shared::RdbCore;

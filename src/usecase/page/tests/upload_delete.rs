@@ -54,7 +54,7 @@ async fn published_chapter_rejects_page_image_writes() {
             pages: vec![PageImageParams {
                 page_id: Some("page-1".into()),
                 image_hash: ImageHash::new([0; 32]),
-                byte_length: Some(4096),
+                new_byte_len: Some(4096),
                 ext: ImageExt::Png,
             }],
         },
@@ -68,7 +68,7 @@ async fn published_chapter_rejects_page_image_writes() {
         "page-1".into(),
         ReservePageImageParams {
             image_hash: ImageHash::new([1; 32]),
-            byte_length: 4096,
+            new_byte_len: 4096,
             ext: ImageExt::Png,
         },
     )
@@ -103,7 +103,7 @@ async fn assert_delayed_check_clears_unverified_image(
         "page-1".into(),
         ReservePageImageParams {
             image_hash: ImageHash::new([0; 32]),
-            byte_length: 4096,
+            new_byte_len: 4096,
             ext: ImageExt::Png,
         },
     )
@@ -146,7 +146,7 @@ async fn delayed_check_clears_checksum_mismatch_after_mark() {
 }
 
 #[tokio::test]
-async fn delayed_check_clears_length_mismatch_after_mark() {
+async fn delayed_check_ignores_object_length_mismatch() {
     assert_delayed_check_clears_unverified_image(
         Mock::new().with_image_head_length_mismatch(),
         true,
@@ -181,7 +181,7 @@ async fn mark_image_uploaded_rejects_stale_replay_then_accepts_current_version()
         "page-1".into(),
         ReservePageImageParams {
             image_hash: ImageHash::new([1u8; 32]),
-            byte_length: 8192,
+            new_byte_len: 8192,
             ext: ImageExt::Png,
         },
     )

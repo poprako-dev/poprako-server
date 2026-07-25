@@ -13,9 +13,7 @@ use crate::model::chapter::ChapterInfo;
 use crate::model::comic::ComicInfo;
 use crate::model::team::TeamInfo;
 use crate::model::workset::WorksetInfo;
-use crate::part::effect::event::chapter::{
-    ChapterPublishedPayload, ChapterWorkflowCompletedPayload,
-};
+use crate::part::effect::event::chapter::{ChapterPublishedPayload, ChapterWorkflowCompletedPayload};
 use crate::part::effect::event::user::UserSignedUpPayload;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::value::chapter::{Stage, StageMask};

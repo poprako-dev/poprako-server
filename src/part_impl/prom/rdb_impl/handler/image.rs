@@ -10,10 +10,7 @@ use crate::part::prom::payload::image::{ImagePayload, ResourceKind};
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::oper::chapter::GetChapterInfoExcluded;
-use crate::part::repo::oper::page::{
-    GetPageInfo, GetPageInfoExcluded, MarkPageImageUploaded,
-    SetPageImageUploaded,
-};
+use crate::part::repo::oper::page::{GetPageInfo, GetPageInfoExcluded, MarkPageImageUploaded, SetPageImageUploaded};
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::user::UserRepo;
@@ -28,6 +25,7 @@ mod resource;
 /// Identity carried by an image-verification task.
 #[derive(Clone, Copy)]
 struct ImageIdentity<'a> {
+    //
     kind: ResourceKind,
     resource_id: &'a str,
     object_key: &'a str,
@@ -65,6 +63,7 @@ where
             image_hash,
             image_ext,
         } => {
+            //
             let image_identity = ImageIdentity {
                 kind: *resource_kind,
                 resource_id,

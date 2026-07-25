@@ -4,16 +4,12 @@ use poprako_orchestra::Proxy;
 
 use poprako_util::i18n::trl;
 
-use crate::complex::util::{
-    check_user_is_team_member, check_user_is_team_proofreader,
-};
+use crate::complex::util::{check_user_is_team_member, check_user_is_team_proofreader};
 use crate::model::termbase::{TermbaseEntry, TermbaseInfo, TermbaseInfoUpdate};
 use crate::part::repo::oper::comic::GetComicInfo;
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::term::DeleteTerms;
-use crate::part::repo::oper::termbase::{
-    DeleteTermbase, GetTermbaseInfoExcluded, ListTermbaseInfosExcluded,
-};
+use crate::part::repo::oper::termbase::{DeleteTermbase, GetTermbaseInfoExcluded, ListTermbaseInfosExcluded};
 use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;

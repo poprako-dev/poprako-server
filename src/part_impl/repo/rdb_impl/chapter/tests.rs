@@ -3,10 +3,7 @@
 use poprako_orchestra::{Nucl, Run as _, Step as _};
 
 use crate::model::chapter::{ChapterInfoListSpec, ChapterStageUpdate};
-use crate::part::repo::oper::chapter::{
-    FindPinnedChapterInfo, GetChapterInfo, ListChapterInfos, StartChapterStage,
-    UpdateChapterStage,
-};
+use crate::part::repo::oper::chapter::{FindPinnedChapterInfo, GetChapterInfo, ListChapterInfos, StartChapterStage, UpdateChapterStage};
 use crate::part_impl::drive::rdb_impl::RdbDrive;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
 use crate::part_impl::shared::RdbCore;

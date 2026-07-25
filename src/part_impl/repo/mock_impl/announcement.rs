@@ -5,16 +5,10 @@ use std::cmp::Reverse;
 use poprako_orchestra::{Run, Step};
 use tracing::instrument;
 
-use crate::model::announcement::{
-    AnnouncementEntry, AnnouncementInfo, AnnouncementListSpec,
-};
+use crate::model::announcement::{AnnouncementEntry, AnnouncementInfo, AnnouncementListSpec};
 use crate::model::user::UserInfo;
-use crate::part::repo::oper::announcement::{
-    CreateAnnouncement, ListAnnouncementInfos,
-};
-use crate::part_impl::repo::mock_impl::{
-    Mock, MockContext, MockState, expected, now,
-};
+use crate::part::repo::oper::announcement::{CreateAnnouncement, ListAnnouncementInfos};
+use crate::part_impl::repo::mock_impl::{Mock, MockContext, MockState, expected, now};
 use crate::result::{BaseError, BaseResult, accept};
 use crate::value::announcement::AnnouncementInclOpt;
 

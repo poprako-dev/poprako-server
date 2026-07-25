@@ -13,15 +13,9 @@ use crate::complex::image::ImageComplex;
 use crate::complex::member::MemberComplex;
 use crate::complex::team::{TeamComplex, TeamPermComplex};
 use crate::data::image::ImageUploadSlotVal;
-use crate::data::team::{
-    CreateTeamParams, ListTeamInfosParams, MarkTeamAvatarUploadedParams,
-    ReserveTeamAvatarParams, ReserveTeamAvatarPayload, TeamInfoVal,
-    UpdateTeamInfoParams,
-};
+use crate::data::team::{CreateTeamParams, ListTeamInfosParams, MarkTeamAvatarUploadedParams, ReserveTeamAvatarParams, ReserveTeamAvatarPayload, TeamInfoVal, UpdateTeamInfoParams};
 use crate::model::member::MemberEntry;
-use crate::model::team::{
-    TeamEntry, TeamInfo, TeamInfoListKind, TeamInfoListSpec,
-};
+use crate::model::team::{TeamEntry, TeamInfo, TeamInfoListKind, TeamInfoListSpec};
 use crate::model::user::UserToken;
 use crate::part::image::{ImageManager, ImagePool, ImageUploadSpec};
 use crate::part::prom::Prom;
@@ -33,31 +27,15 @@ use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::assignment::DeleteAssignments;
 use crate::part::repo::oper::assignment_invitation::DeleteAssignmentInvitations;
-use crate::part::repo::oper::chapter::{
-    DeleteChapter, GetChapterInfoExcluded, ListChapterInfosExcluded,
-    UnpinOtherChapters, UpdateChapter,
-};
-use crate::part::repo::oper::comic::{
-    DeleteComic, GetComicInfoExcluded, ListComicInfosExcluded,
-    TouchComicLastActive, UpdateComicChapterCount,
-};
-use crate::part::repo::oper::member::{
-    CreateMember, DeleteMember, FindMemberInfo, ListMemberInfosExcluded,
-};
+use crate::part::repo::oper::chapter::{DeleteChapter, GetChapterInfoExcluded, ListChapterInfosExcluded, UnpinOtherChapters, UpdateChapter};
+use crate::part::repo::oper::comic::{DeleteComic, GetComicInfoExcluded, ListComicInfosExcluded, TouchComicLastActive, UpdateComicChapterCount};
+use crate::part::repo::oper::member::{CreateMember, DeleteMember, FindMemberInfo, ListMemberInfosExcluded};
 use crate::part::repo::oper::page::{DeletePages, ListPageInfos};
-use crate::part::repo::oper::team::{
-    CreateTeam, DeleteTeam, GetTeamInfo, GetTeamInfoExcluded, ListTeamInfos,
-    ReserveTeamAvatar, UpdateTeam,
-};
+use crate::part::repo::oper::team::{CreateTeam, DeleteTeam, GetTeamInfo, GetTeamInfoExcluded, ListTeamInfos, ReserveTeamAvatar, UpdateTeam};
 use crate::part::repo::oper::term::DeleteTerms;
-use crate::part::repo::oper::termbase::{
-    DeleteTermbase, GetTermbaseInfoExcluded, ListTermbaseInfosExcluded,
-};
+use crate::part::repo::oper::termbase::{DeleteTermbase, GetTermbaseInfoExcluded, ListTermbaseInfosExcluded};
 use crate::part::repo::oper::user::{GetUserInfo, GetUserInfoExcluded};
-use crate::part::repo::oper::workset::{
-    DeleteWorkset, GetWorksetInfoExcluded, ListWorksetInfosExcluded,
-    UpdateWorksetComicCount,
-};
+use crate::part::repo::oper::workset::{DeleteWorkset, GetWorksetInfoExcluded, ListWorksetInfosExcluded, UpdateWorksetComicCount};
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::term::TermRepo;
@@ -306,7 +284,7 @@ where
     I: ImagePool,
 {
     ImageComplex::ensure_byte_length(
-        params.byte_length,
+        params.new_byte_len,
         image::ResourceKind::TeamAvatar,
     )?;
 
@@ -316,7 +294,7 @@ where
 
     let image_ext = params.ext;
 
-    let byte_length = params.byte_length;
+    let new_byte_len = params.new_byte_len;
 
     TeamPermComplex::ensure_user_can_reserve_avatar(
         &mut run_proxy! {
@@ -416,7 +394,7 @@ where
                 object_key: &object_key,
                 content_type: image_ext.content_type(),
                 checksum_sha256: &image_hash,
-                content_length: byte_length,
+                content_length: new_byte_len,
             };
 
             let upload_slot = image_pool.get_upload_slot(upload_spec).await?;

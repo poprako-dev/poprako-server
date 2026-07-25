@@ -121,13 +121,13 @@ export async function runIt03Module(ctx: RunCtx): Promise<void> {
                 {
                     page_id: pageIds[0],
                     image_hash: sortedPages[0]!.image_hash,
-                    byte_length: 1,
+                    new_byte_len: 1,
                     ext: sortedPages[0]!.ext,
                 },
                 {
                     page_id: pageIds[0],
                     image_hash: sortedPages[0]!.image_hash,
-                    byte_length: 1,
+                    new_byte_len: 1,
                     ext: sortedPages[0]!.ext,
                 },
             ],
@@ -179,6 +179,58 @@ export async function runIt03Module(ctx: RunCtx): Promise<void> {
         assert.ok(page.image_url, `page ${page.id} must have image_url after mark`);
     }
 
+    const retainedManifest = await reserveChapterPages(
+        ctx.sadmin,
+        mainChapterId,
+        [...markedPages]
+            .sort((a, b) => a.index - b.index)
+            .map((page) => ({
+                page_id: page.id,
+                image_hash: page.image_hash,
+                ext: page.ext,
+            })),
+    );
+
+    assert.ok(
+        retainedManifest.pages.every((page) => page.slot === null),
+        "unchanged uploaded manifest entries without new_byte_len must not receive slots",
+    );
+
+    expectError(
+        await ctx.sadmin.post<ErrorBody>(`/api/v1/chapters/${mainChapterId}/pages/reserve`, {
+            chapter_id: mainChapterId,
+            pages: [
+                {
+                    page_id: pageIds[0],
+                    image_hash: markedPages.find((page) => page.id === pageIds[0])!.image_hash,
+                    ext: "png",
+                },
+            ],
+        }),
+        422,
+        2,
+    );
+
+    expectError(
+        await ctx.sadmin.post<ErrorBody>(`/api/v1/chapters/${mainChapterId}/pages/reserve`, {
+            chapter_id: mainChapterId,
+            pages: [
+                ...markedPages.map((page) => ({
+                    page_id: page.id,
+                    image_hash: page.image_hash,
+                    ext: page.ext,
+                })),
+                {
+                    page_id: null,
+                    image_hash: markedPages[0]!.image_hash,
+                    ext: "png",
+                },
+            ],
+        }),
+        422,
+        2,
+    );
+
     // single page replace on page index 2 (p2)
     const p2Id = pageIds[2]!;
     const p2OldVersion = pageVersions.get(p2Id)!;
@@ -225,7 +277,7 @@ export async function runIt03Module(ctx: RunCtx): Promise<void> {
     expectError(
         await guest01.api.post<ErrorBody>(`/api/v1/pages/${p2Id}/image/reserve`, {
             image_hash: sortedPages[2]!.image_hash,
-            byte_length: 1,
+            new_byte_len: 1,
             ext: sortedPages[2]!.ext,
         }),
         403,
@@ -236,7 +288,7 @@ export async function runIt03Module(ctx: RunCtx): Promise<void> {
     expectError(
         await ctx.sadmin.post<ErrorBody>("/api/v1/pages/page-does-not-exist/image/reserve", {
             image_hash: sortedPages[0]!.image_hash,
-            byte_length: 1,
+            new_byte_len: 1,
             ext: sortedPages[0]!.ext,
         }),
         422,
@@ -343,7 +395,7 @@ export async function runIt03Module(ctx: RunCtx): Promise<void> {
     expectError(
         await ctx.sadmin.post<ErrorBody>(`/api/v1/pages/${oldD3PageId}/image/reserve`, {
             image_hash: sortedPages[0]!.image_hash,
-            byte_length: 1,
+            new_byte_len: 1,
             ext: sortedPages[0]!.ext,
         }),
         422,

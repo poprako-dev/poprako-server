@@ -33,7 +33,7 @@ the seed-only state in its `finally` block. Every current module exports
 | it_00 | `it_00_bootstrap_auth_default_seed.ts` | Seed data, login, and unauthenticated access. |
 | it_01 | `it_01_member_invitation_register_roles.ts` | Invitations, registration, member lists, and role permissions. |
 | it_02 | `it_02_workset_comic_chapter_index.ts` | Workset, comic, chapter indexes, pinning, profile updates, and positionally aligned comic/pinned-chapter list payloads. |
-| it_03 | `it_03_page_reserve_image.ts` | Authoritative hash manifests, duplicate-ID and count validation, checksum-bound uploads, image confirmation, replacement, deletion, and page rebuilds. |
+| it_03 | `it_03_page_reserve_image.ts` | Authoritative hash-plus-extension manifests, optional `new_byte_len` retention, required upload lengths, duplicate-ID and count validation, checksum-bound uploads, image confirmation, replacement, deletion, and page rebuilds. |
 | it_04 | `it_04_assignment_invitation.ts` | Assignment joins, invitations, role updates, self role removal, and deletion. |
 | it_05 | `it_05_unit_save_order_count.ts` | Unit ordering, counts, and translation import/export. |
 | it_06 | `it_06_unit_concurrency.ts` | Parallel unit writes, merge behavior, and replay. |

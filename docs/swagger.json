@@ -8005,16 +8005,9 @@
         "description": "One page image in a complete chapter manifest.",
         "required": [
           "image_hash",
-          "byte_length",
           "ext"
         ],
         "properties": {
-          "byte_length": {
-            "type": "integer",
-            "format": "int64",
-            "description": "Size used to constrain the presigned upload.",
-            "minimum": 0
-          },
           "ext": {
             "$ref": "#/components/schemas/ImageExt",
             "description": "File format."
@@ -8022,6 +8015,15 @@
           "image_hash": {
             "$ref": "#/components/schemas/ImageHash",
             "description": "Content hash of the page image."
+          },
+          "new_byte_len": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Size used to constrain a newly requested upload slot.\n\nExisting manifest entries may omit this when no upload slot is needed.",
+            "minimum": 0
           },
           "page_id": {
             "type": [
@@ -8225,16 +8227,10 @@
         "description": "Content-bound image reservation request.",
         "required": [
           "image_hash",
-          "byte_length",
+          "new_byte_len",
           "ext"
         ],
         "properties": {
-          "byte_length": {
-            "type": "integer",
-            "format": "int64",
-            "description": "Upload size used only for validation and PUT signing.",
-            "minimum": 0
-          },
           "ext": {
             "$ref": "#/components/schemas/ImageExt",
             "description": "File format persisted as part of the image identity."
@@ -8242,6 +8238,12 @@
           "image_hash": {
             "$ref": "#/components/schemas/ImageHash",
             "description": "SHA-256 identity of the exact upload bytes."
+          },
+          "new_byte_len": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Upload size used only for validation and PUT signing.",
+            "minimum": 0
           }
         }
       },
@@ -8267,16 +8269,10 @@
         "description": "Input parameters for reserving one page image.",
         "required": [
           "image_hash",
-          "byte_length",
+          "new_byte_len",
           "ext"
         ],
         "properties": {
-          "byte_length": {
-            "type": "integer",
-            "format": "int64",
-            "description": "Size of the page image in bytes.",
-            "minimum": 0
-          },
           "ext": {
             "$ref": "#/components/schemas/ImageExt",
             "description": "File format."
@@ -8284,6 +8280,12 @@
           "image_hash": {
             "$ref": "#/components/schemas/ImageHash",
             "description": "Content hash of the page image to reserve."
+          },
+          "new_byte_len": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Size of the page image in bytes.",
+            "minimum": 0
           }
         }
       },

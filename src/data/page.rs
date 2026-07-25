@@ -111,10 +111,10 @@ pub struct PageImageParams {
     pub page_id: Option<String>,
     /// Content hash of the page image.
     pub image_hash: ImageHash,
-    /// Size used to constrain a requested upload slot.
+    /// Size used to constrain a newly requested upload slot.
     ///
     /// Existing manifest entries may omit this when no upload slot is needed.
-    pub byte_length: Option<u64>,
+    pub new_byte_len: Option<u64>,
     /// File format.
     pub ext: ImageExt,
 }
@@ -124,7 +124,7 @@ impl From<PageImageParams> for PageImageSpec {
         Self {
             page_id: params.page_id,
             image_hash: params.image_hash,
-            byte_length: params.byte_length,
+            new_byte_len: params.new_byte_len,
             ext: params.ext,
         }
     }
@@ -165,7 +165,7 @@ pub struct ReservePageImageParams {
     /// Content hash of the page image to reserve.
     pub image_hash: ImageHash,
     /// Size of the page image in bytes.
-    pub byte_length: u64,
+    pub new_byte_len: u64,
     /// File format.
     pub ext: ImageExt,
 }

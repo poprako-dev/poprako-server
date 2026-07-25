@@ -16,12 +16,8 @@ use poprako_util::i18n::trl;
 use crate::model::system_mail::SystemMailEntry;
 use crate::part_impl::drive::rdb_impl::RdbDrive;
 use crate::part_impl::repo::rdb_impl::entity::system_mail::SystemMailRowEntry;
-use crate::part_impl::repo::rdb_impl::schema::t_comic_archive::dsl::{
-    f_created_at, f_team_id, t_comic_archive,
-};
-use crate::part_impl::repo::rdb_impl::schema::t_member::dsl::{
-    f_assigned_admin_at, f_team_id as member_team_id, f_user_id, t_member,
-};
+use crate::part_impl::repo::rdb_impl::schema::t_comic_archive::dsl::{f_created_at, f_team_id, t_comic_archive};
+use crate::part_impl::repo::rdb_impl::schema::t_member::dsl::{f_assigned_admin_at, f_team_id as member_team_id, f_user_id, t_member};
 use crate::part_impl::repo::rdb_impl::schema::t_system_mail;
 use crate::part_impl::shared::result::diesel;
 use crate::part_impl::shared::{RdbConn, RdbCore};

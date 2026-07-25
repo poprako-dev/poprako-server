@@ -9,17 +9,11 @@ use axum::Router;
 use axum::middleware::{from_fn, from_fn_with_state};
 use axum::routing::{delete, get, post, put};
 
-use crate::api::http::handler::{
-    announcement, assignment, assignment_invitation, auth, chapter,
-    chapter_port, comic, comment, health, member, member_invitation, page,
-    system_mail, team, term, termbase, unit, user, workset,
-};
+use crate::api::http::handler::{announcement, assignment, assignment_invitation, auth, chapter, chapter_port, comic, comment, health, member, member_invitation, page, system_mail, team, term, termbase, unit, user, workset};
 use crate::api::http::middleware::auth::authorize;
 use crate::api::http::middleware::rate_limit::rate_limit;
 use crate::api::http::middleware::record_response_metric;
-use crate::api::http::middleware::trace::{
-    propagate_request_id, set_request_id, trace_request,
-};
+use crate::api::http::middleware::trace::{propagate_request_id, set_request_id, trace_request};
 #[cfg(feature = "swagger")]
 use crate::api::http::openapi::ApiDoc;
 use crate::api::http::state::AppHarn;

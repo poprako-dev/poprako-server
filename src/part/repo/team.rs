@@ -2,11 +2,7 @@
 
 use poprako_orchestra::{Run, Step};
 
-use crate::part::repo::oper::team::{
-    AllocTeamWorksetIndex, CreateTeam, DeleteTeam, GetTeamInfo,
-    GetTeamInfoExcluded, ListTeamInfos, LockTeam, ReserveTeamAvatar,
-    UpdateTeam,
-};
+use crate::part::repo::oper::team::{AllocTeamWorksetIndex, CreateTeam, DeleteTeam, GetTeamInfo, GetTeamInfoExcluded, ListTeamInfos, LockTeam, ReserveTeamAvatar, UpdateTeam};
 use crate::result::BaseError;
 
 /// Team repository operations.

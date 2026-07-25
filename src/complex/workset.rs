@@ -5,31 +5,18 @@ use poprako_orchestra::Proxy;
 use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
 
 use crate::complex::comic::ComicComplex;
-use crate::complex::util::{
-    check_user_is_team_admin, check_user_is_team_member,
-};
+use crate::complex::util::{check_user_is_team_admin, check_user_is_team_member};
 use crate::model::comic::{ComicInfoListKind, ComicInfoListSpec};
 use crate::part::prom::payload::TaskPayload;
 use crate::part::repo::oper::assignment::DeleteAssignments;
 use crate::part::repo::oper::assignment_invitation::DeleteAssignmentInvitations;
-use crate::part::repo::oper::chapter::{
-    DeleteChapter, GetChapterInfoExcluded, ListChapterInfosExcluded,
-    UnpinOtherChapters, UpdateChapter,
-};
-use crate::part::repo::oper::comic::{
-    DeleteComic, GetComicInfoExcluded, ListComicInfosExcluded,
-    TouchComicLastActive, UpdateComicChapterCount,
-};
+use crate::part::repo::oper::chapter::{DeleteChapter, GetChapterInfoExcluded, ListChapterInfosExcluded, UnpinOtherChapters, UpdateChapter};
+use crate::part::repo::oper::comic::{DeleteComic, GetComicInfoExcluded, ListComicInfosExcluded, TouchComicLastActive, UpdateComicChapterCount};
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::page::{DeletePages, ListPageInfos};
 use crate::part::repo::oper::term::DeleteTerms;
-use crate::part::repo::oper::termbase::{
-    DeleteTermbase, GetTermbaseInfoExcluded, ListTermbaseInfosExcluded,
-};
-use crate::part::repo::oper::workset::{
-    DeleteWorkset, GetWorksetInfo, GetWorksetInfoExcluded,
-    UpdateWorksetComicCount,
-};
+use crate::part::repo::oper::termbase::{DeleteTermbase, GetTermbaseInfoExcluded, ListTermbaseInfosExcluded};
+use crate::part::repo::oper::workset::{DeleteWorkset, GetWorksetInfo, GetWorksetInfoExcluded, UpdateWorksetComicCount};
 use crate::result::{BaseError, BaseResult, accept};
 use crate::util::next_snowflake_id;
 
