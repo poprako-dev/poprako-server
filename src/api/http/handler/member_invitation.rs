@@ -12,9 +12,15 @@ use utoipa::IntoParams;
 
 use crate::api::http::handler::util::ensure_path_matches_body_id;
 #[allow(unused_imports)]
-use crate::api::http::result::{Accept as _, HttpBody, HttpNoContent, HttpResult, no_content};
+use crate::api::http::result::{
+    Accept as _, HttpBody, HttpNoContent, HttpResult, no_content,
+};
 use crate::api::http::state::AppHarn;
-use crate::data::member_invitation::{CreateMemberInvitationParams, CreateMemberInvitationPayload, ListMemberInvitationInfosParams, MemberInvitationInfoVal, UpdateMemberInvitationRolesParams};
+use crate::data::member_invitation::{
+    CreateMemberInvitationParams, CreateMemberInvitationPayload,
+    ListMemberInvitationInfosParams, MemberInvitationInfoVal,
+    UpdateMemberInvitationRolesParams,
+};
 use crate::model::user::UserToken;
 use crate::usecase;
 use crate::value::member_invitation::MemberInvitationInclOpt;
@@ -62,10 +68,7 @@ pub async fn create(
     Extension(user_token): Extension<UserToken>,
     Json(params): Json<CreateMemberInvitationParams>,
 ) -> HttpResult<CreateMemberInvitationPayload> {
-    usecase::member_invitation::create(
-        harn.drive(),
-        harn.repo(),
-        harn.prom(),
+    usecase::member_invitation::create((harn.drive(), harn.repo(), harn.prom(),),
         user_token,
         params,
     )
@@ -101,9 +104,7 @@ pub async fn list_infos(
         limit: query.limit,
     };
 
-    usecase::member_invitation::list_infos(
-        harn.repo(),
-        harn.image_pool(),
+    usecase::member_invitation::list_infos((harn.repo(), harn.image_pool(),),
         user_token,
         params,
     )
@@ -135,9 +136,7 @@ pub async fn update_roles(
     //
     ensure_path_matches_body_id(&member_invitation_id, &params.id)?;
 
-    usecase::member_invitation::update_roles(
-        harn.drive(),
-        harn.repo(),
+    usecase::member_invitation::update_roles((harn.drive(), harn.repo(),),
         user_token,
         params,
     )
@@ -165,9 +164,7 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    usecase::member_invitation::delete(
-        harn.drive(),
-        harn.repo(),
+    usecase::member_invitation::delete((harn.drive(), harn.repo(),),
         user_token,
         member_invitation_id,
     )

@@ -6,14 +6,22 @@ use tracing::instrument;
 use poprako_util::i18n::trl;
 
 use crate::complex::member::{MemberComplex, MemberPermComplex};
-use crate::data::member::{CreateMemberParams, CreateMemberPayload, JoinTeamParams, ListMemberInfosParams, MemberInfoVal, UpdateMemberRolesParams};
+use crate::data::member::{
+    CreateMemberParams, CreateMemberPayload, JoinTeamParams,
+    ListMemberInfosParams, MemberInfoVal, UpdateMemberRolesParams,
+};
 use crate::model::member::{MemberEntry, MemberListSpec, MemberRoleUpdate};
 use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::member_invitation::MemberInvitationRepo;
-use crate::part::repo::oper::member::{CreateMember, DeleteMember, FindMemberInfo, GetMemberInfo, ListMemberInfos, UpdateMember};
-use crate::part::repo::oper::member_invitation::{GetMemberInvitationInfoExcluded, UpdateMemberInvitation};
+use crate::part::repo::oper::member::{
+    CreateMember, DeleteMember, FindMemberInfo, GetMemberInfo, ListMemberInfos,
+    UpdateMember,
+};
+use crate::part::repo::oper::member_invitation::{
+    GetMemberInvitationInfoExcluded, UpdateMemberInvitation,
+};
 use crate::part::repo::oper::team::LockTeam;
 use crate::part::repo::oper::user::GetUserInfoExcluded;
 use crate::part::repo::team::TeamRepo;
@@ -29,8 +37,7 @@ mod tests;
 /// the transaction before inserting the membership.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn create<N, C, R>(
-    nucl: &N,
-    repo: &R,
+    (nucl, repo): (&N, &R),
     token: UserToken,
     params: CreateMemberParams,
 ) -> BaseResult<CreateMemberPayload>
@@ -115,9 +122,7 @@ where
 /// Joins the current user to a team with a pending invitation code.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn join_team<N, C, R, I>(
-    nucl: &N,
-    repo: &R,
-    image_pool: &I,
+    (nucl, repo, image_pool): (&N, &R, &I),
     token: UserToken,
     params: JoinTeamParams,
 ) -> BaseResult<MemberInfoVal>
@@ -206,8 +211,7 @@ where
 /// The caller must already be a member of the target team.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn list_infos<C, R, I>(
-    repo: &R,
-    image_pool: &I,
+    (repo, image_pool): (&R, &I),
     token: UserToken,
     params: ListMemberInfosParams,
 ) -> BaseResult<Vec<MemberInfoVal>>
@@ -249,8 +253,7 @@ where
 /// The caller must be a team admin of the target member's team.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn update_roles<N, C, R>(
-    nucl: &N,
-    repo: &R,
+    (nucl, repo): (&N, &R),
     token: UserToken,
     params: UpdateMemberRolesParams,
 ) -> BaseResult<()>
@@ -304,8 +307,7 @@ where
 /// The caller must be a team admin of the target member's team.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn delete<N, C, R>(
-    nucl: &N,
-    repo: &R,
+    (nucl, repo): (&N, &R),
     token: UserToken,
     id: String,
 ) -> BaseResult<()>

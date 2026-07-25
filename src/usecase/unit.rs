@@ -7,19 +7,31 @@ use poprako_util::i18n::trl;
 
 use crate::complex::chapter::ChapterComplex;
 use crate::complex::unit::{UnitComplex, UnitPermComplex};
-use crate::data::unit::{ListPageUnitInfosParams, ListPageUnitInfosPayload, SavePageUnitsParams, SavePageUnitsPayload, UnitInfoVal};
-use crate::model::unit::{UnitApplyAck, UnitCounterDelta, UnitCounters, UnitIdMapper, UnitOper};
+use crate::data::unit::{
+    ListPageUnitInfosParams, ListPageUnitInfosPayload, SavePageUnitsParams,
+    SavePageUnitsPayload, UnitInfoVal,
+};
+use crate::model::unit::{
+    UnitApplyAck, UnitCounterDelta, UnitCounters, UnitIdMapper, UnitOper,
+};
 use crate::model::user::UserToken;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::assignment::FindAssignmentInfo;
-use crate::part::repo::oper::chapter::{AdjustChapterUnitCounters, GetChapterInfo, GetChapterInfoExcluded};
+use crate::part::repo::oper::chapter::{
+    AdjustChapterUnitCounters, GetChapterInfo, GetChapterInfoExcluded,
+};
 use crate::part::repo::oper::comic::{GetComicInfo, TouchComicLastActive};
 use crate::part::repo::oper::member::FindMemberInfo;
-use crate::part::repo::oper::page::{GetPageInfo, GetPageInfoExcluded, SetPageUnitCounters};
-use crate::part::repo::oper::unit::{CountUnits, CreateUnit, DeleteUnit, ListUnitIndexes, ListUnitInfos, SaveUnit, UpdateUnitIndexes};
+use crate::part::repo::oper::page::{
+    GetPageInfo, GetPageInfoExcluded, SetPageUnitCounters,
+};
+use crate::part::repo::oper::unit::{
+    CountUnits, CreateUnit, DeleteUnit, ListUnitIndexes, ListUnitInfos,
+    SaveUnit, UpdateUnitIndexes,
+};
 use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::unit::UnitRepo;
@@ -37,7 +49,7 @@ const MAX_UNITS_PER_PAGE: usize = 100;
 /// Lists all units under one page.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn list_infos<C, R>(
-    repo: &R,
+    (repo,): (&R,),
     token: UserToken,
     params: ListPageUnitInfosParams,
 ) -> BaseResult<ListPageUnitInfosPayload>
@@ -88,8 +100,7 @@ where
 /// Saves unit opers under one page.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn save<N, C, R>(
-    nucl: &N,
-    repo: &R,
+    (nucl, repo): (&N, &R),
     token: UserToken,
     params: SavePageUnitsParams,
 ) -> BaseResult<SavePageUnitsPayload>
@@ -308,7 +319,7 @@ where
         })
         .await?;
 
-    spawn_starts((*repo).clone(), saved_units.chapter_id, stages);
+    spawn_starts(((*repo).clone(),), saved_units.chapter_id, stages);
 
     accept(saved_units.payload)
 }

@@ -12,7 +12,11 @@ use poprako_util::i18n::trl;
 use crate::complex::image::ImageComplex;
 use crate::complex::user::UserComplex;
 use crate::data::image::ImageUploadSlotVal;
-use crate::data::user::{MarkUserAvatarUploadedParams, ReserveUserAvatarParams, ReserveUserAvatarPayload, UpdateUserInfoParams, UpdateUserPasswordParams, UserInfoVal};
+use crate::data::user::{
+    MarkUserAvatarUploadedParams, ReserveUserAvatarParams,
+    ReserveUserAvatarPayload, UpdateUserInfoParams, UpdateUserPasswordParams,
+    UserInfoVal,
+};
 use crate::model::user::UserToken;
 use crate::part::effect::EffectDevelop;
 use crate::part::effect::event::Event;
@@ -21,8 +25,13 @@ use crate::part::image::{ImageManager, ImagePool, ImageUploadSpec};
 use crate::part::prom::Prom;
 use crate::part::prom::payload::{TaskPayload, image};
 use crate::part::repo::member::MemberRepo;
-use crate::part::repo::oper::member::{DeleteMember, ListMemberInfosExcluded, UpdateMember};
-use crate::part::repo::oper::user::{DeleteUser, GetUserCredential, GetUserInfo, GetUserInfoExcluded, ReserveUserAvatar, UpdateUser};
+use crate::part::repo::oper::member::{
+    DeleteMember, ListMemberInfosExcluded, UpdateMember,
+};
+use crate::part::repo::oper::user::{
+    DeleteUser, GetUserCredential, GetUserInfo, GetUserInfoExcluded,
+    ReserveUserAvatar, UpdateUser,
+};
 use crate::part::repo::user::UserRepo;
 use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 
@@ -43,9 +52,7 @@ mod tests;
 /// * `V: EffectDevelop` — Processes the activity event (only for self-reads).
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn get_info<C, R, I, V>(
-    repo: &R,
-    image_pool: &I,
-    develop: &V,
+    (repo, image_pool, develop): (&R, &I, &V),
     token: UserToken,
     id: String,
 ) -> BaseResult<UserInfoVal>
@@ -86,8 +93,7 @@ where
 /// * `R: UserRepo<C> + MemberRepo<C>` — User and member storage.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn update_info<N, C, R>(
-    nucl: &N,
-    repo: &R,
+    (nucl, repo): (&N, &R),
     token: UserToken,
     params: UpdateUserInfoParams,
 ) -> BaseResult<()>
@@ -135,8 +141,7 @@ where
 /// Replaces a user's password after verifying their current password.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn update_password<N, C, R>(
-    nucl: &N,
-    repo: &R,
+    (nucl, repo): (&N, &R),
     token: UserToken,
     user_id: String,
     params: UpdateUserPasswordParams,
@@ -216,10 +221,7 @@ where
 /// [`team::reserve_avatar`]: super::team::reserve_avatar
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn reserve_avatar<N, C, R, P, I>(
-    nucl: &N,
-    repo: &R,
-    prom: &P,
-    image_pool: &I,
+    (nucl, repo, prom, image_pool): (&N, &R, &P, &I),
     token: UserToken,
     params: ReserveUserAvatarParams,
 ) -> BaseResult<ReserveUserAvatarPayload>
@@ -275,23 +277,27 @@ where
                 //
                 batch_ids.push(ImageComplex::gen_delete_id());
 
-                batch_payloads.push(TaskPayload::Image(image::ImagePayload::Delete {
-                    object_key: prev_key.clone(),
-                }));
+                batch_payloads.push(TaskPayload::Image(
+                    image::ImagePayload::Delete {
+                        object_key: prev_key.clone(),
+                    },
+                ));
 
                 batch_delays.push(None);
             }
 
             batch_ids.push(ImageComplex::gen_check_id());
 
-            batch_payloads.push(TaskPayload::Image(image::ImagePayload::CheckUpload {
-                resource_kind: image::ResourceKind::UserAvatar,
-                resource_id: token.user_id.clone(),
-                object_key: avatar_reservation.object_key.clone(),
-                version: avatar_reservation.avatar_version,
-                image_hash: transaction_image_hash.clone(),
-                image_ext,
-            }));
+            batch_payloads.push(TaskPayload::Image(
+                image::ImagePayload::CheckUpload {
+                    resource_kind: image::ResourceKind::UserAvatar,
+                    resource_id: token.user_id.clone(),
+                    object_key: avatar_reservation.object_key.clone(),
+                    version: avatar_reservation.avatar_version,
+                    image_hash: transaction_image_hash.clone(),
+                    image_ext,
+                },
+            ));
 
             batch_delays.push(Some(Duration::from_secs(15 * 60)));
 
@@ -355,9 +361,7 @@ where
 /// * `R: UserRepo<C>` — User storage.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn mark_avatar_uploaded<N, C, R, I>(
-    nucl: &N,
-    repo: &R,
-    image_manager: &I,
+    (nucl, repo, image_manager): (&N, &R, &I),
     token: UserToken,
     id: String,
     params: MarkUserAvatarUploadedParams,
@@ -468,9 +472,7 @@ where
 /// * `P: Prom<C>` — Prom enqueuer for deferred avatar deletion.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn delete<N, C, R, P>(
-    nucl: &N,
-    repo: &R,
-    prom: &P,
+    (nucl, repo, prom): (&N, &R, &P),
     token: UserToken,
     id: String,
 ) -> BaseResult<()>

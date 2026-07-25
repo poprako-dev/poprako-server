@@ -17,9 +17,7 @@ async fn join_creates_assignment() {
 
     mock.seed_member(member("user-1", role(RoleField::TRANSLATOR)));
 
-    let joined = join(
-        &mock,
-        &mock,
+    let joined = join((&mock, &mock,),
         token("user-1"),
         JoinChapterAssignmentParams {
             chapter_id: "chapter-1".into(),
@@ -55,9 +53,7 @@ async fn join_unions_existing_assignment_roles() {
         role(RoleField::TRANSLATOR),
     ));
 
-    let joined = join(
-        &mock,
-        &mock,
+    let joined = join((&mock, &mock,),
         token("user-1"),
         JoinChapterAssignmentParams {
             chapter_id: "chapter-1".into(),
@@ -86,9 +82,7 @@ async fn join_rejects_role_outside_member_mask() {
 
     mock.seed_member(member("user-1", role(RoleField::TRANSLATOR)));
 
-    let err = join(
-        &mock,
-        &mock,
+    let err = join((&mock, &mock,),
         token("user-1"),
         JoinChapterAssignmentParams {
             chapter_id: "chapter-1".into(),
@@ -120,9 +114,7 @@ async fn join_rejects_published_chapter() {
             .unwrap();
     }
 
-    let result = join(
-        &mock,
-        &mock,
+    let result = join((&mock, &mock,),
         token("user-1"),
         JoinChapterAssignmentParams {
             chapter_id: "chapter-1".into(),

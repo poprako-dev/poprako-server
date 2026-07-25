@@ -12,9 +12,14 @@ use utoipa::IntoParams;
 
 use crate::api::http::handler::util::ensure_path_matches_body_id;
 #[allow(unused_imports)]
-use crate::api::http::result::{Accept as _, HttpBody, HttpNoContent, HttpResult, no_content};
+use crate::api::http::result::{
+    Accept as _, HttpBody, HttpNoContent, HttpResult, no_content,
+};
 use crate::api::http::state::AppHarn;
-use crate::data::chapter::{ChapterInfoVal, CreateChapterParams, CreateChapterPayload, ListChapterInfosParams, UpdateChapterInfoParams, UpdateChapterStageParams};
+use crate::data::chapter::{
+    ChapterInfoVal, CreateChapterParams, CreateChapterPayload,
+    ListChapterInfosParams, UpdateChapterInfoParams, UpdateChapterStageParams,
+};
 use crate::model::user::UserToken;
 use crate::usecase;
 use crate::value::chapter::ChapterInclOpt;
@@ -61,7 +66,7 @@ pub async fn create(
     Extension(user_token): Extension<UserToken>,
     Json(params): Json<CreateChapterParams>,
 ) -> HttpResult<CreateChapterPayload> {
-    usecase::chapter::create(harn.drive(), harn.repo(), user_token, params)
+    usecase::chapter::create((harn.drive(), harn.repo(),), user_token, params)
         .await?
         .accept(StatusCode::CREATED)
 }
@@ -93,9 +98,7 @@ pub async fn list_infos(
         limit: query.limit,
     };
 
-    usecase::chapter::list_infos(
-        harn.repo(),
-        harn.image_pool(),
+    usecase::chapter::list_infos((harn.repo(), harn.image_pool(),),
         user_token,
         params,
     )
@@ -120,7 +123,7 @@ pub async fn get_pinned(
     Path(comic_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
 ) -> HttpResult<Option<ChapterInfoVal>> {
-    usecase::chapter::get_pinned(harn.repo(), user_token, comic_id)
+    usecase::chapter::get_pinned((harn.repo(),), user_token, comic_id)
         .await?
         .accept(StatusCode::OK)
 }
@@ -143,7 +146,7 @@ pub async fn get_info(
     Path(chapter_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
 ) -> HttpResult<ChapterInfoVal> {
-    usecase::chapter::get_info(harn.repo(), user_token, chapter_id)
+    usecase::chapter::get_info((harn.repo(),), user_token, chapter_id)
         .await?
         .accept(StatusCode::OK)
 }
@@ -172,9 +175,7 @@ pub async fn update_info(
     //
     ensure_path_matches_body_id(&chapter_id, &params.id)?;
 
-    usecase::chapter::update_info(
-        harn.drive(),
-        harn.repo(),
+    usecase::chapter::update_info((harn.drive(), harn.repo(),),
         user_token,
         params,
     )
@@ -207,11 +208,7 @@ pub async fn advance_stage(
     //
     ensure_path_matches_body_id(&chapter_id, &params.id)?;
 
-    usecase::chapter::update_stage(
-        harn.drive(),
-        harn.repo(),
-        harn.prom(),
-        harn.develop(),
+    usecase::chapter::update_stage((harn.drive(), harn.repo(), harn.prom(), harn.develop(),),
         user_token,
         params,
     )
@@ -239,10 +236,7 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    usecase::chapter::delete(
-        harn.drive(),
-        harn.repo(),
-        harn.prom(),
+    usecase::chapter::delete((harn.drive(), harn.repo(), harn.prom(),),
         user_token,
         chapter_id,
     )

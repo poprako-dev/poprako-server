@@ -13,7 +13,11 @@ use crate::complex::assignment::AssignmentComplex;
 use crate::complex::chapter::ChapterComplex;
 use crate::complex::comic::{ComicComplex, ComicPermComplex};
 use crate::complex::image::ImageComplex;
-use crate::data::comic::{ComicInfoVal, CreateComicParams, CreateComicPayload, MarkComicCoverUploadedParams, ReserveComicCoverParams, ReserveComicCoverPayload, UpdateComicInfoParams};
+use crate::data::comic::{
+    ComicInfoVal, CreateComicParams, CreateComicPayload,
+    MarkComicCoverUploadedParams, ReserveComicCoverParams,
+    ReserveComicCoverPayload, UpdateComicInfoParams,
+};
 use crate::data::image::ImageUploadSlotVal;
 use crate::model::assignment::AssignmentEntry;
 use crate::model::chapter::ChapterEntry;
@@ -27,15 +31,31 @@ use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
-use crate::part::repo::oper::assignment::{CreateAssignment, DeleteAssignments};
+use crate::part::repo::oper::assignment::{
+    CreateAssignment, DeleteAssignments,
+};
 use crate::part::repo::oper::assignment_invitation::DeleteAssignmentInvitations;
-use crate::part::repo::oper::chapter::{CreateChapter, DeleteChapter, GetChapterInfoExcluded, ListChapterInfosExcluded, ListPinnedChapterInfos, UnpinOtherChapters, UpdateChapter};
-use crate::part::repo::oper::comic::{AllocComicChapterIndex, CreateComic, DeleteComic, GetComicInfo, GetComicInfoExcluded, MarkComicCoverUploaded, ReserveComicCover, TouchComicLastActive, UpdateComic, UpdateComicChapterCount};
+use crate::part::repo::oper::chapter::{
+    CreateChapter, DeleteChapter, GetChapterInfoExcluded,
+    ListChapterInfosExcluded, ListPinnedChapterInfos, UnpinOtherChapters,
+    UpdateChapter,
+};
+use crate::part::repo::oper::comic::{
+    AllocComicChapterIndex, CreateComic, DeleteComic, GetComicInfo,
+    GetComicInfoExcluded, MarkComicCoverUploaded, ReserveComicCover,
+    TouchComicLastActive, UpdateComic, UpdateComicChapterCount,
+};
 use crate::part::repo::oper::member::FindMemberInfo;
-use crate::part::repo::oper::page::{DeletePages, ListFirstPageInfos, ListPageInfos};
+use crate::part::repo::oper::page::{
+    DeletePages, ListFirstPageInfos, ListPageInfos,
+};
 use crate::part::repo::oper::term::DeleteTerms;
-use crate::part::repo::oper::termbase::{DeleteTermbase, GetTermbaseInfoExcluded, ListTermbaseInfosExcluded};
-use crate::part::repo::oper::workset::{AllocWorksetComicIndex, GetWorksetInfo, UpdateWorksetComicCount};
+use crate::part::repo::oper::termbase::{
+    DeleteTermbase, GetTermbaseInfoExcluded, ListTermbaseInfosExcluded,
+};
+use crate::part::repo::oper::workset::{
+    AllocWorksetComicIndex, GetWorksetInfo, UpdateWorksetComicCount,
+};
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::term::TermRepo;
 use crate::part::repo::termbase::TermbaseRepo;
@@ -62,8 +82,7 @@ pub mod tests;
 /// 6. Creates an ADMIN assignment on the new chapter for the caller.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn create<N, C, R>(
-    nucl: &N,
-    repo: &R,
+    (nucl, repo): (&N, &R),
     token: UserToken,
     params: CreateComicParams,
 ) -> BaseResult<CreateComicPayload>
@@ -213,8 +232,7 @@ where
 /// Fetches a comic by ID with cover URL resolution.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn get_info<C, R, I>(
-    repo: &R,
-    image_pool: &I,
+    (repo, image_pool): (&R, &I),
     token: UserToken,
     id: String,
 ) -> BaseResult<ComicInfoVal>
@@ -269,7 +287,7 @@ where
 /// Updates a comic's title, author, and description.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn update_info<C, R>(
-    repo: &R,
+    (repo,): (&R,),
     token: UserToken,
     params: UpdateComicInfoParams,
 ) -> BaseResult<()>
@@ -306,10 +324,7 @@ where
 /// Reserves a new comic cover upload slot.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn reserve_cover<N, C, R, P, I>(
-    nucl: &N,
-    repo: &R,
-    prom: &P,
-    image_pool: &I,
+    (nucl, repo, prom, image_pool): (&N, &R, &P, &I),
     token: UserToken,
     id: String,
     params: ReserveComicCoverParams,
@@ -378,23 +393,27 @@ where
                 //
                 batch_ids.push(ImageComplex::gen_delete_id());
 
-                batch_payloads.push(TaskPayload::Image(image::ImagePayload::Delete {
-                    object_key: prev_object_key.clone(),
-                }));
+                batch_payloads.push(TaskPayload::Image(
+                    image::ImagePayload::Delete {
+                        object_key: prev_object_key.clone(),
+                    },
+                ));
 
                 batch_delays.push(None);
             }
 
             batch_ids.push(ImageComplex::gen_check_id());
 
-            batch_payloads.push(TaskPayload::Image(image::ImagePayload::CheckUpload {
-                resource_kind: image::ResourceKind::ComicCover,
-                resource_id: id.clone(),
-                object_key: cover_reservation.object_key.clone(),
-                version: cover_reservation.cover_version,
-                image_hash: transaction_image_hash.clone(),
-                image_ext,
-            }));
+            batch_payloads.push(TaskPayload::Image(
+                image::ImagePayload::CheckUpload {
+                    resource_kind: image::ResourceKind::ComicCover,
+                    resource_id: id.clone(),
+                    object_key: cover_reservation.object_key.clone(),
+                    version: cover_reservation.cover_version,
+                    image_hash: transaction_image_hash.clone(),
+                    image_ext,
+                },
+            ));
 
             batch_delays.push(Some(Duration::from_secs(15 * 60)));
 
@@ -448,9 +467,7 @@ where
 /// Marks a reserved comic cover as successfully uploaded.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn mark_cover_uploaded<N, C, R, I>(
-    nucl: &N,
-    repo: &R,
-    image_manager: &I,
+    (nucl, repo, image_manager): (&N, &R, &I),
     token: UserToken,
     id: String,
     params: MarkComicCoverUploadedParams,
@@ -560,9 +577,7 @@ where
 /// Deletes a comic and updates the parent workset counter.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn delete<N, C, R, P>(
-    nucl: &N,
-    repo: &R,
-    prom: &P,
+    (nucl, repo, prom): (&N, &R, &P),
     token: UserToken,
     id: String,
 ) -> BaseResult<()>

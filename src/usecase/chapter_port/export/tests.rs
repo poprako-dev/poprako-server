@@ -209,7 +209,7 @@ async fn export_returns_chapter_pages_and_units() {
 
     mock.seed_unit(unit("unit-a", "page-1", 0, "alpha", Some("alpha proof")));
 
-    let exported = export(&mock, token("user-1"), "chapter-1".into()).await;
+    let exported = export((&mock,), token("user-1"), "chapter-1".into()).await;
 
     let exported = match exported {
         //
@@ -256,7 +256,7 @@ async fn export_label_plus_returns_text_payload() {
     mock.seed_unit(unit("unit-a", "page-1", 0, "alpha", Some("alpha proof")));
 
     let exported =
-        export_label_plus(&mock, token("user-1"), "chapter-1".into()).await;
+        export_label_plus((&mock,), token("user-1"), "chapter-1".into()).await;
 
     let exported = match exported {
         //

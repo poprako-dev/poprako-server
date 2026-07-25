@@ -184,7 +184,7 @@ async fn archive_retains_payloads_queues_images_and_deletes_active_data() {
     seed_archive_scope(&mock, RoleMask::from(RoleField::ADMIN));
 
     let archive_comic_val =
-        archive(&mock, &mock, &mock, token(), "comic-1".into())
+        archive((&mock, &mock, &mock,), token(), "comic-1".into())
             .await
             .unwrap();
 
@@ -289,7 +289,7 @@ async fn export_returns_stored_strings_grouped_by_month() {
 
     seed_archive_scope(&mock, RoleMask::from(RoleField::ADMIN));
 
-    archive(&mock, &mock, &mock, token(), "comic-1".into())
+    archive((&mock, &mock, &mock,), token(), "comic-1".into())
         .await
         .unwrap();
 
@@ -297,8 +297,7 @@ async fn export_returns_stored_strings_grouped_by_month() {
 
     let month = format!("{:04}-{:02}", now.year(), u8::from(now.month()));
 
-    let payload = export(
-        &mock,
+    let payload = export((&mock,),
         token(),
         "team-1".into(),
         ExportComicArchivesParams {
@@ -321,7 +320,7 @@ async fn archive_rejects_non_admin_without_writing_or_deleting() {
     seed_archive_scope(&mock, RoleMask::from(RoleField::TRANSLATOR));
 
     let archive_result =
-        archive(&mock, &mock, &mock, token(), "comic-1".into()).await;
+        archive((&mock, &mock, &mock,), token(), "comic-1".into()).await;
 
     assert_expected_variant(archive_result.unwrap_err(), ExpectedVariant::Perm);
 
@@ -342,7 +341,7 @@ async fn archive_rolls_back_when_archive_persistence_fails() {
     seed_archive_scope(&mock, RoleMask::from(RoleField::ADMIN));
 
     let archive_result =
-        archive(&mock, &mock, &mock, token(), "comic-1".into()).await;
+        archive((&mock, &mock, &mock,), token(), "comic-1".into()).await;
 
     assert!(matches!(
         archive_result,

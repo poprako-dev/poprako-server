@@ -81,14 +81,12 @@ pub async fn poll_pending_selects_one_visible_message_per_idle_topic(
 
     let mut conn = shared.get().await.ok().unwrap();
 
-    diesel::insert_into(
-        t_local_message::table,
-    )
-    .values(&entries)
-    .execute(&mut conn)
-    .await
-    .ok()
-    .unwrap();
+    diesel::insert_into(t_local_message::table)
+        .values(&entries)
+        .execute(&mut conn)
+        .await
+        .ok()
+        .unwrap();
 
     let repo = RdbPromRepo::new(RdbRepo::new(shared.clone()));
 
@@ -146,14 +144,12 @@ pub async fn retry_message_allows_later_topic_message_to_advance(
 
     let mut conn = shared.get().await.ok().unwrap();
 
-    diesel::insert_into(
-        t_local_message::table,
-    )
-    .values(&entries)
-    .execute(&mut conn)
-    .await
-    .ok()
-    .unwrap();
+    diesel::insert_into(t_local_message::table)
+        .values(&entries)
+        .execute(&mut conn)
+        .await
+        .ok()
+        .unwrap();
 
     let repo = RdbPromRepo::new(RdbRepo::new(shared.clone()));
 
@@ -227,26 +223,18 @@ pub async fn stale_attempt_finalization_preserves_newer_lease(shared: RdbCore) {
 
     let mut conn = shared.get().await.ok().unwrap();
 
-    diesel::insert_into(
-        t_local_message::table,
-    )
-    .values(&entries)
-    .execute(&mut conn)
-    .await
-    .ok()
-    .unwrap();
+    diesel::insert_into(t_local_message::table)
+        .values(&entries)
+        .execute(&mut conn)
+        .await
+        .ok()
+        .unwrap();
 
     diesel::update(
         t_local_message::table
-            .filter(
-                t_local_message::f_id
-                    .like(format!("{}%", LEASE_PREFIX)),
-            ),
+            .filter(t_local_message::f_id.like(format!("{}%", LEASE_PREFIX))),
     )
-    .set(
-        t_local_message::f_lease
-            .eq(1_i64),
-    )
+    .set(t_local_message::f_lease.eq(1_i64))
     .execute(&mut conn)
     .await
     .ok()
@@ -287,26 +275,19 @@ pub async fn stale_attempt_finalization_preserves_newer_lease(shared: RdbCore) {
     .ok()
     .unwrap();
 
-    let rows: Vec<(String, String, i64, i64)> =
-        t_local_message::table
-            .filter(
-                t_local_message::f_id
-                    .like(format!("{}%", LEASE_PREFIX)),
-            )
-            .order_by(
-                t_local_message::f_id
-                    .asc(),
-            )
-            .select((
-                t_local_message::f_id,
-                t_local_message::f_status,
-                t_local_message::f_retried_count,
-                t_local_message::f_lease,
-            ))
-            .load(&mut conn)
-            .await
-            .ok()
-            .unwrap();
+    let rows: Vec<(String, String, i64, i64)> = t_local_message::table
+        .filter(t_local_message::f_id.like(format!("{}%", LEASE_PREFIX)))
+        .order_by(t_local_message::f_id.asc())
+        .select((
+            t_local_message::f_id,
+            t_local_message::f_status,
+            t_local_message::f_retried_count,
+            t_local_message::f_lease,
+        ))
+        .load(&mut conn)
+        .await
+        .ok()
+        .unwrap();
 
     assert_eq!(
         rows,
@@ -405,20 +386,18 @@ pub async fn completed_message_purge_preserves_non_completed_records(
 
     let mut conn = shared.get().await.ok().unwrap();
 
-    diesel::insert_into(
-        t_local_message::table,
-    )
-    .values(&[
-        stale_completed_entry,
-        recent_completed_entry,
-        pending_entry,
-        dead_entry,
-        stale_dead_entry,
-    ])
-    .execute(&mut conn)
-    .await
-    .ok()
-    .unwrap();
+    diesel::insert_into(t_local_message::table)
+        .values(&[
+            stale_completed_entry,
+            recent_completed_entry,
+            pending_entry,
+            dead_entry,
+            stale_dead_entry,
+        ])
+        .execute(&mut conn)
+        .await
+        .ok()
+        .unwrap();
 
     let repo = RdbPromRepo::new(RdbRepo::new(shared.clone()));
 
@@ -439,23 +418,14 @@ pub async fn completed_message_purge_preserves_non_completed_records(
 
     assert_eq!(purged_count, 2);
 
-    let remaining_ids: Vec<String> =
-        t_local_message::table
-            .filter(
-                t_local_message::f_id
-                    .like(format!("{}%", PREFIX)),
-            )
-            .order_by(
-                t_local_message::f_id
-                    .asc(),
-            )
-            .select(
-                t_local_message::f_id,
-            )
-            .load(&mut conn)
-            .await
-            .ok()
-            .unwrap();
+    let remaining_ids: Vec<String> = t_local_message::table
+        .filter(t_local_message::f_id.like(format!("{}%", PREFIX)))
+        .order_by(t_local_message::f_id.asc())
+        .select(t_local_message::f_id)
+        .load(&mut conn)
+        .await
+        .ok()
+        .unwrap();
 
     assert_eq!(
         remaining_ids,

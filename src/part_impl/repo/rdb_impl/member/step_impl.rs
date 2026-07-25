@@ -5,8 +5,12 @@ use diesel_async::RunQueryDsl;
 use time::OffsetDateTime;
 use tracing::instrument;
 
-use crate::model::member::{MemberEntry, MemberInfo, MemberListSpec, MemberRoleUpdate};
-use crate::part_impl::repo::rdb_impl::entity::member::{MemberAspect, MemberRow, MemberRowEntry};
+use crate::model::member::{
+    MemberEntry, MemberInfo, MemberListSpec, MemberRoleUpdate,
+};
+use crate::part_impl::repo::rdb_impl::entity::member::{
+    MemberAspect, MemberRow, MemberRowEntry,
+};
 use crate::part_impl::repo::rdb_impl::incl;
 use crate::part_impl::repo::rdb_impl::schema::t_member::dsl::*;
 use crate::part_impl::shared::RdbConn;

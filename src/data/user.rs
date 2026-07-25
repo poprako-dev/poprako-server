@@ -11,7 +11,11 @@ use crate::model::user::UserInfo;
 use crate::part::image::ImagePool;
 use crate::result::{BaseResult, accept};
 
-pub use crate::data::image::{MarkImageUploadedParams as MarkUserAvatarUploadedParams, ReserveImageParams as ReserveUserAvatarParams, ReserveImagePayload as ReserveUserAvatarPayload};
+pub use crate::data::image::{
+    MarkImageUploadedParams as MarkUserAvatarUploadedParams,
+    ReserveImageParams as ReserveUserAvatarParams,
+    ReserveImagePayload as ReserveUserAvatarPayload,
+};
 
 /// Presentation-ready user profile information.
 ///

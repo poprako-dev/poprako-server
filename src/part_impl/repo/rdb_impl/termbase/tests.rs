@@ -5,7 +5,9 @@ use super::*;
 use poprako_orchestra::Nucl as _;
 
 use crate::model::termbase::{TermbaseEntry, TermbaseInfoListSpec};
-use crate::part::repo::oper::termbase::{CreateTermbase, GetTermbaseInfo, ListTermbaseInfos, UpdateTermbaseTermCount};
+use crate::part::repo::oper::termbase::{
+    CreateTermbase, GetTermbaseInfo, ListTermbaseInfos, UpdateTermbaseTermCount,
+};
 use crate::part_impl::drive::rdb_impl::RdbDrive;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
 use crate::part_impl::shared::RdbCore;

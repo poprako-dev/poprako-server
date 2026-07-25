@@ -15,11 +15,7 @@ async fn reserve_chapter_pages_creates_pages_and_urls() {
 
     let before = OffsetDateTime::now_utc();
 
-    let reserved = reserve_chapter_pages(
-        &mock,
-        &mock,
-        &mock,
-        &mock,
+    let reserved = reserve_chapter_pages((&mock, &mock, &mock, &mock,),
         token("user-1"),
         ReserveChapterPagesParams {
             chapter_id: "chapter-1".into(),
@@ -27,13 +23,13 @@ async fn reserve_chapter_pages_creates_pages_and_urls() {
                 PageImageParams {
                     page_id: None,
                     image_hash: ImageHash::new([0u8; 32]),
-                    byte_length: 4096,
+                    byte_length: Some(4096),
                     ext: ImageExt::Png,
                 },
                 PageImageParams {
                     page_id: None,
                     image_hash: ImageHash::new([0u8; 32]),
-                    byte_length: 4096,
+                    byte_length: Some(4096),
                     ext: ImageExt::Png,
                 },
             ],
@@ -151,11 +147,7 @@ async fn reserve_chapter_pages_replaces_existing_manifest() {
         1,
     ));
 
-    let result = reserve_chapter_pages(
-        &mock,
-        &mock,
-        &mock,
-        &mock,
+    let result = reserve_chapter_pages((&mock, &mock, &mock, &mock,),
         token("user-1"),
         ReserveChapterPagesParams {
             chapter_id: "chapter-1".into(),
@@ -163,13 +155,13 @@ async fn reserve_chapter_pages_replaces_existing_manifest() {
                 PageImageParams {
                     page_id: Some("page-1".into()),
                     image_hash: ImageHash::new([0; 32]),
-                    byte_length: 4096,
+                    byte_length: None,
                     ext: ImageExt::Png,
                 },
                 PageImageParams {
                     page_id: None,
                     image_hash: ImageHash::new([1; 32]),
-                    byte_length: 4096,
+                    byte_length: Some(4096),
                     ext: ImageExt::Png,
                 },
             ],
@@ -215,18 +207,14 @@ async fn reserve_chapter_pages_replaces_explicit_image_and_deletes_old_key() {
 
     mock.seed_page(existing_page_info);
 
-    let reserved = reserve_chapter_pages(
-        &mock,
-        &mock,
-        &mock,
-        &mock,
+    let reserved = reserve_chapter_pages((&mock, &mock, &mock, &mock,),
         token("user-1"),
         ReserveChapterPagesParams {
             chapter_id: "chapter-1".into(),
             pages: vec![PageImageParams {
                 page_id: Some("page-1".into()),
                 image_hash: ImageHash::new([1; 32]),
-                byte_length: 8192,
+                byte_length: Some(8192),
                 ext: ImageExt::Jpg,
             }],
         },
@@ -268,11 +256,7 @@ async fn reserve_chapter_pages_keeps_raw_pending_when_uploads_are_missing() {
         RoleMask::from(RoleField::RAW_PROVIDER),
     ));
 
-    let reserved = reserve_chapter_pages(
-        &mock,
-        &mock,
-        &mock,
-        &mock,
+    let reserved = reserve_chapter_pages((&mock, &mock, &mock, &mock,),
         token("user-1"),
         ReserveChapterPagesParams {
             chapter_id: "chapter-1".into(),
@@ -280,13 +264,13 @@ async fn reserve_chapter_pages_keeps_raw_pending_when_uploads_are_missing() {
                 PageImageParams {
                     page_id: None,
                     image_hash: ImageHash::new([0u8; 32]),
-                    byte_length: 4096,
+                    byte_length: Some(4096),
                     ext: ImageExt::Png,
                 },
                 PageImageParams {
                     page_id: None,
                     image_hash: ImageHash::new([0u8; 32]),
-                    byte_length: 4096,
+                    byte_length: Some(4096),
                     ext: ImageExt::Png,
                 },
             ],
@@ -321,11 +305,7 @@ async fn reserve_chapter_pages_rejects_invalid_count() {
 
     seed_scope(&mock);
 
-    let err = reserve_chapter_pages(
-        &mock,
-        &mock,
-        &mock,
-        &mock,
+    let err = reserve_chapter_pages((&mock, &mock, &mock, &mock,),
         token("user-1"),
         ReserveChapterPagesParams {
             chapter_id: "chapter-1".into(),

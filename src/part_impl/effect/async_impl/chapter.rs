@@ -11,7 +11,9 @@ use poprako_util::i18n::{trl, trl_kv};
 use crate::complex::system_mail::SystemMailComplex;
 use crate::model::chapter::ChapterInfo;
 use crate::model::system_mail::SystemMailEntry;
-use crate::part::effect::event::chapter::{ChapterPublishedPayload, ChapterWorkflowCompletedPayload};
+use crate::part::effect::event::chapter::{
+    ChapterPublishedPayload, ChapterWorkflowCompletedPayload,
+};
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::oper::assignment::ListAssignmentInfos;

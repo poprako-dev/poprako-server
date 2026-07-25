@@ -7,10 +7,7 @@ use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::BaseResult;
 
 /// Process a [`InvitationPayload`] event by dispatching to the matching repo run.
-pub async fn process(
-    mock: &Mock,
-    event: &InvitationPayload,
-) -> BaseResult<()> {
+pub async fn process(mock: &Mock, event: &InvitationPayload) -> BaseResult<()> {
     match event {
         //
         InvitationPayload::Assignment { invitation_id } => {

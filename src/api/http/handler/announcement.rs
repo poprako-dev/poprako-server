@@ -13,7 +13,10 @@ use utoipa::IntoParams;
 #[allow(unused_imports)]
 use crate::api::http::result::{Accept as _, HttpBody, HttpResult};
 use crate::api::http::state::AppHarn;
-use crate::data::announcement::{AnnouncementInfoVal, CreateAnnouncementParams, CreateAnnouncementPayload, ListAnnouncementInfosParams};
+use crate::data::announcement::{
+    AnnouncementInfoVal, CreateAnnouncementParams, CreateAnnouncementPayload,
+    ListAnnouncementInfosParams,
+};
 use crate::model::user::UserToken;
 use crate::usecase;
 use crate::value::announcement::AnnouncementInclOpt;
@@ -57,9 +60,13 @@ pub async fn create(
     Extension(user_token): Extension<UserToken>,
     Json(params): Json<CreateAnnouncementParams>,
 ) -> HttpResult<CreateAnnouncementPayload> {
-    usecase::announcement::create(harn.drive(), harn.repo(), user_token, params)
-        .await?
-        .accept(StatusCode::CREATED)
+    usecase::announcement::create(
+        (harn.drive(), harn.repo()),
+        user_token,
+        params,
+    )
+    .await?
+    .accept(StatusCode::CREATED)
 }
 
 /// `GET /api/v1/teams/{team_id}/announcements` — list a team's announcements.
@@ -90,8 +97,7 @@ pub async fn list_infos(
     };
 
     usecase::announcement::list_infos(
-        harn.repo(),
-        harn.image_pool(),
+        (harn.repo(), harn.image_pool()),
         user_token,
         params,
     )

@@ -77,14 +77,15 @@ async fn nucl_coord_commits_repo_and_prom() {
 
             let prom_id = "prom-1".to_string();
 
-            let payload = TaskPayload::Image(image::ImagePayload::CheckUpload {
-                resource_kind: image::ResourceKind::UserAvatar,
-                resource_id: "user-1".to_string(),
-                object_key: "key".to_string(),
-                version: 1,
-                image_hash: ImageHash::default(),
-                image_ext: ImageExt::Png,
-            });
+            let payload =
+                TaskPayload::Image(image::ImagePayload::CheckUpload {
+                    resource_kind: image::ResourceKind::UserAvatar,
+                    resource_id: "user-1".to_string(),
+                    object_key: "key".to_string(),
+                    version: 1,
+                    image_hash: ImageHash::default(),
+                    image_ext: ImageExt::Png,
+                });
 
             let task = Task {
                 id: &prom_id,

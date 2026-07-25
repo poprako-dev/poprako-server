@@ -1,15 +1,26 @@
 //! Diesel-backed terminology-base repository operations.
 
-use diesel::{BoolExpressionMethods as _, ExpressionMethods as _, OptionalExtension as _, PgTextExpressionMethods as _, QueryDsl as _, SelectableHelper as _};
+use diesel::{
+    BoolExpressionMethods as _, ExpressionMethods as _, OptionalExtension as _,
+    PgTextExpressionMethods as _, QueryDsl as _, SelectableHelper as _,
+};
 use diesel_async::RunQueryDsl as _;
 use poprako_orchestra::{Run, Step};
 use time::OffsetDateTime;
 use tracing::instrument;
 
-use crate::model::termbase::{TermbaseEntry, TermbaseInfo, TermbaseInfoListSpec, TermbaseInfoUpdate};
-use crate::part::repo::oper::termbase::{CreateTermbase, DeleteTermbase, GetTermbaseInfo, GetTermbaseInfoExcluded, ListTermbaseInfos, ListTermbaseInfosExcluded, TouchTermbase, UpdateTermbase, UpdateTermbaseTermCount};
+use crate::model::termbase::{
+    TermbaseEntry, TermbaseInfo, TermbaseInfoListSpec, TermbaseInfoUpdate,
+};
+use crate::part::repo::oper::termbase::{
+    CreateTermbase, DeleteTermbase, GetTermbaseInfo, GetTermbaseInfoExcluded,
+    ListTermbaseInfos, ListTermbaseInfosExcluded, TouchTermbase,
+    UpdateTermbase, UpdateTermbaseTermCount,
+};
 use crate::part_impl::repo::rdb_impl::RdbRepo;
-use crate::part_impl::repo::rdb_impl::entity::termbase::{TermbaseRow, TermbaseRowEntry};
+use crate::part_impl::repo::rdb_impl::entity::termbase::{
+    TermbaseRow, TermbaseRowEntry,
+};
 use crate::part_impl::repo::rdb_impl::schema::t_termbase::dsl::*;
 use crate::part_impl::shared::result::{diesel, expected};
 use crate::part_impl::shared::{RdbConn, RdbContext};

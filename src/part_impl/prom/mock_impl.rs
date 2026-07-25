@@ -14,8 +14,12 @@ use crate::part::image::ImageManager;
 use crate::part::prom::Prom;
 use crate::part::prom::payload::{TaskPayload, image};
 use crate::part::repo::oper::chapter::GetChapterInfoExcluded;
-use crate::part::repo::oper::comic::{GetComicInfoExcluded, MarkComicCoverUploaded};
-use crate::part::repo::oper::page::{GetPageInfoExcluded, MarkPageImageUploaded, SetPageImageUploaded};
+use crate::part::repo::oper::comic::{
+    GetComicInfoExcluded, MarkComicCoverUploaded,
+};
+use crate::part::repo::oper::page::{
+    GetPageInfoExcluded, MarkPageImageUploaded, SetPageImageUploaded,
+};
 use crate::part::repo::oper::team::{GetTeamInfoExcluded, UpdateTeam};
 use crate::part::repo::oper::user::{GetUserInfoExcluded, UpdateUser};
 use crate::part_impl::repo::mock_impl::{Mock, MockContext};
@@ -225,7 +229,9 @@ async fn process_image_task(
                         return accept(());
                     }
 
-                    if page_info.image_key.as_deref() != Some(image_identity.object_key) {
+                    if page_info.image_key.as_deref()
+                        != Some(image_identity.object_key)
+                    {
                         return Err(BaseError::Unrecoverable {
                             message: "prom page image version matches but object key differs"
                                 .into(),
@@ -241,7 +247,8 @@ async fn process_image_task(
                         });
                     }
 
-                    if *image_identity.image_hash != object_info.checksum_sha256 {
+                    if *image_identity.image_hash != object_info.checksum_sha256
+                    {
                         //
                         mark_page_image_unverified(
                             image_pool,
@@ -251,7 +258,9 @@ async fn process_image_task(
                         )
                         .await?;
 
-                        return image_pool.delete_object(image_identity.object_key).await;
+                        return image_pool
+                            .delete_object(image_identity.object_key)
+                            .await;
                     }
                 }
 
@@ -386,24 +395,15 @@ async fn process_existing_image(
     let resource_state = mock
         .coord(async move |context| {
             //
-            let resource_state = classify_expected_mark(
-                mock,
-                context,
-                image_identity,
-            )
-            .await?;
+            let resource_state =
+                classify_expected_mark(mock, context, image_identity).await?;
 
             if !matches!(resource_state, ResourceState::Current) {
                 return accept(resource_state);
             }
 
-            mark_uploaded(
-                mock,
-                context,
-                image_identity,
-                image_uploaded,
-            )
-            .await?;
+            mark_uploaded(mock, context, image_identity, image_uploaded)
+                .await?;
 
             accept(ResourceState::Current)
         })

@@ -2,8 +2,12 @@
 
 use super::*;
 
-use crate::model::system_mail::{SystemMailEntry, SystemMailInfoListKind, SystemMailInfoListSpec};
-use crate::part::repo::oper::system_mail::{ListSystemMailInfos, MarkSystemMailRead, SendSystemMail};
+use crate::model::system_mail::{
+    SystemMailEntry, SystemMailInfoListKind, SystemMailInfoListSpec,
+};
+use crate::part::repo::oper::system_mail::{
+    ListSystemMailInfos, MarkSystemMailRead, SendSystemMail,
+};
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
 use crate::part_impl::shared::RdbCore;
 

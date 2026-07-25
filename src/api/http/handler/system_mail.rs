@@ -6,9 +6,13 @@ use axum::http::StatusCode;
 use tracing::instrument;
 
 #[allow(unused_imports)]
-use crate::api::http::result::{Accept as _, HttpBody, HttpNoContent, HttpResult, no_content};
+use crate::api::http::result::{
+    Accept as _, HttpBody, HttpNoContent, HttpResult, no_content,
+};
 use crate::api::http::state::AppHarn;
-use crate::data::system_mail::{ListSystemMailInfosParams, MarkSystemMailReadParams, SystemMailInfoVal};
+use crate::data::system_mail::{
+    ListSystemMailInfosParams, MarkSystemMailReadParams, SystemMailInfoVal,
+};
 use crate::model::user::UserToken;
 use crate::usecase;
 
@@ -29,7 +33,7 @@ pub async fn list_infos(
     Extension(user_token): Extension<UserToken>,
     Query(params): Query<ListSystemMailInfosParams>,
 ) -> HttpResult<Vec<SystemMailInfoVal>> {
-    usecase::system_mail::list_infos(harn.repo(), user_token, params)
+    usecase::system_mail::list_infos((harn.repo(),), user_token, params)
         .await?
         .accept(StatusCode::OK)
 }
@@ -52,7 +56,7 @@ pub async fn mark_read(
     Json(params): Json<MarkSystemMailReadParams>,
 ) -> HttpNoContent {
     //
-    usecase::system_mail::mark_read(harn.repo(), user_token, params.ids)
+    usecase::system_mail::mark_read((harn.repo(),), user_token, params.ids)
         .await?;
 
     no_content()

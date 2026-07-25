@@ -4,8 +4,13 @@ use super::*;
 
 use poprako_orchestra::Nucl as _;
 
-use crate::model::assignment::{AssignmentEntry, AssignmentInfoListSpec, AssignmentRoleUpdate};
-use crate::part::repo::oper::assignment::{CreateAssignment, GetAssignmentInfo, ListAssignmentInfos, UpdateAssignmentRoles};
+use crate::model::assignment::{
+    AssignmentEntry, AssignmentInfoListSpec, AssignmentRoleUpdate,
+};
+use crate::part::repo::oper::assignment::{
+    CreateAssignment, GetAssignmentInfo, ListAssignmentInfos,
+    UpdateAssignmentRoles,
+};
 use crate::part_impl::drive::rdb_impl::RdbDrive;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
 use crate::part_impl::shared::RdbCore;

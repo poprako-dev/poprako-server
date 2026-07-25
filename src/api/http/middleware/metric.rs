@@ -12,10 +12,7 @@ use crate::api::http::shared::record_response;
 mod tests;
 
 /// Records the response status and matched route template.
-pub async fn record_response_metric(
-    request: Request,
-    next: Next,
-) -> Response {
+pub async fn record_response_metric(request: Request, next: Next) -> Response {
     //
     let start = Instant::now();
 

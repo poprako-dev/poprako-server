@@ -35,9 +35,7 @@ async fn list_infos_returns_pinned_chapter_assignments_in_comic_order() {
 
     mock.seed_assignment(assignment("assignment-3", "chapter-2", "user-3"));
 
-    let list = list_infos(
-        &mock,
-        &mock,
+    let list = list_infos((&mock, &mock,),
         token("user-1"),
         ListComicInfosParams {
             incl_opt: Vec::new(),
@@ -83,9 +81,7 @@ async fn list_infos_rejects_assignments_without_pinned_chapters() {
     //
     let mock = Mock::new();
 
-    let err = list_infos(
-        &mock,
-        &mock,
+    let err = list_infos((&mock, &mock,),
         token("user-1"),
         ListComicInfosParams {
             incl_opt: Vec::new(),
@@ -131,9 +127,7 @@ async fn list_infos_filters_by_fuzzy_title() {
         ..comic("comic-gamma", "workset-1", 2)
     });
 
-    let list = list_infos(
-        &mock,
-        &mock,
+    let list = list_infos((&mock, &mock,),
         token("user-1"),
         ListComicInfosParams {
             incl_opt: Vec::new(),
@@ -153,9 +147,7 @@ async fn list_infos_filters_by_fuzzy_title() {
 
     assert_eq!(list.comics[0].id, "comic-beta");
 
-    let list = list_infos(
-        &mock,
-        &mock,
+    let list = list_infos((&mock, &mock,),
         token("user-1"),
         ListComicInfosParams {
             incl_opt: Vec::new(),
@@ -175,9 +167,7 @@ async fn list_infos_filters_by_fuzzy_title() {
 
     assert_eq!(list.comics[0].id, "comic-gamma");
 
-    let list = list_infos(
-        &mock,
-        &mock,
+    let list = list_infos((&mock, &mock,),
         token("user-1"),
         ListComicInfosParams {
             incl_opt: Vec::new(),

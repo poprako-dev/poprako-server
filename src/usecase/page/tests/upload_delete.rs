@@ -47,18 +47,14 @@ async fn published_chapter_rejects_page_image_writes() {
 
     seed_published_scope(&mock);
 
-    let manifest_result = reserve_chapter_pages(
-        &mock,
-        &mock,
-        &mock,
-        &mock,
+    let manifest_result = reserve_chapter_pages((&mock, &mock, &mock, &mock,),
         token("user-1"),
         ReserveChapterPagesParams {
             chapter_id: "chapter-1".into(),
             pages: vec![PageImageParams {
                 page_id: Some("page-1".into()),
                 image_hash: ImageHash::new([0; 32]),
-                byte_length: 4096,
+                byte_length: Some(4096),
                 ext: ImageExt::Png,
             }],
         },
@@ -67,11 +63,7 @@ async fn published_chapter_rejects_page_image_writes() {
 
     assert!(matches!(manifest_result, Err(BaseError::Expected { .. })));
 
-    let reserve_result = reserve_image(
-        &mock,
-        &mock,
-        &mock,
-        &mock,
+    let reserve_result = reserve_image((&mock, &mock, &mock, &mock,),
         token("user-1"),
         "page-1".into(),
         ReservePageImageParams {
@@ -84,10 +76,7 @@ async fn published_chapter_rejects_page_image_writes() {
 
     assert!(matches!(reserve_result, Err(BaseError::Expected { .. })));
 
-    let mark_result = mark_image_uploaded(
-        &mock,
-        &mock,
-        &mock,
+    let mark_result = mark_image_uploaded((&mock, &mock, &mock,),
         token("user-1"),
         "page-1".into(),
         MarkPageImageUploadedParams { image_version: 1 },
@@ -109,11 +98,7 @@ async fn assert_delayed_check_clears_unverified_image(
     //
     seed_mark_scope(&mock);
 
-    reserve_image(
-        &mock,
-        &mock,
-        &mock,
-        &mock,
+    reserve_image((&mock, &mock, &mock, &mock,),
         token("user-1"),
         "page-1".into(),
         ReservePageImageParams {
@@ -191,11 +176,7 @@ async fn mark_image_uploaded_rejects_stale_replay_then_accepts_current_version()
         RoleMask::from(RoleField::RAW_PROVIDER),
     ));
 
-    let reserved = reserve_image(
-        &mock,
-        &mock,
-        &mock,
-        &mock,
+    let reserved = reserve_image((&mock, &mock, &mock, &mock,),
         token("user-1"),
         "page-1".into(),
         ReservePageImageParams {
@@ -210,10 +191,7 @@ async fn mark_image_uploaded_rejects_stale_replay_then_accepts_current_version()
 
     assert_eq!(reserved.slot.as_ref().unwrap().image_version, 2);
 
-    let err = mark_image_uploaded(
-        &mock,
-        &mock,
-        &mock,
+    let err = mark_image_uploaded((&mock, &mock, &mock,),
         token("user-1"),
         "page-1".into(),
         MarkPageImageUploadedParams { image_version: 1 },
@@ -234,10 +212,7 @@ async fn mark_image_uploaded_rejects_stale_replay_then_accepts_current_version()
 
     assert_eq!(snapshot.pages[0].image_version, 2);
 
-    mark_image_uploaded(
-        &mock,
-        &mock,
-        &mock,
+    mark_image_uploaded((&mock, &mock, &mock,),
         token("user-1"),
         "page-1".into(),
         MarkPageImageUploadedParams { image_version: 2 },
@@ -263,10 +238,7 @@ async fn mark_image_uploaded_rejects_non_raw_provider() {
         RoleMask::from(RoleField::REVIEWER),
     ));
 
-    let err = mark_image_uploaded(
-        &mock,
-        &mock,
-        &mock,
+    let err = mark_image_uploaded((&mock, &mock, &mock,),
         token("user-1"),
         "page-1".into(),
         MarkPageImageUploadedParams { image_version: 1 },
@@ -296,7 +268,7 @@ async fn delete_by_chapter_deletes_pages_and_clears_counters() {
     mock.seed_page(page("page-2", 1, None, false, 0));
 
     let deleted =
-        delete(&mock, &mock, &mock, token("user-1"), "chapter-1".into()).await;
+        delete((&mock, &mock, &mock,), token("user-1"), "chapter-1".into()).await;
 
     assert!(deleted.is_ok());
 
@@ -327,7 +299,7 @@ async fn delete_by_chapter_rejects_non_admin_and_rolls_back() {
 
     mock.seed_page(page("page-1", 0, Some("one.png"), true, 1));
 
-    let err = delete(&mock, &mock, &mock, token("user-1"), "chapter-1".into())
+    let err = delete((&mock, &mock, &mock,), token("user-1"), "chapter-1".into())
         .await
         .err()
         .unwrap();

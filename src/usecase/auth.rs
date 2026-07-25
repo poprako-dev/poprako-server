@@ -7,7 +7,9 @@ use poprako_util::i18n::trl;
 
 use crate::complex::member::MemberComplex;
 use crate::complex::user::UserComplex;
-use crate::data::auth::{LoginAuthParams, LoginAuthPayload, RegisterAuthParams, RegisterAuthPayload};
+use crate::data::auth::{
+    LoginAuthParams, LoginAuthPayload, RegisterAuthParams, RegisterAuthPayload,
+};
 use crate::model::member::MemberEntry;
 use crate::model::user::{UserEntry, UserToken};
 use crate::part::auth::TokenAuth;
@@ -17,7 +19,9 @@ use crate::part::effect::event::user::UserSignedUpPayload;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::member_invitation::MemberInvitationRepo;
 use crate::part::repo::oper::member::CreateMember;
-use crate::part::repo::oper::member_invitation::{GetMemberInvitationInfoExcluded, UpdateMemberInvitation};
+use crate::part::repo::oper::member_invitation::{
+    GetMemberInvitationInfoExcluded, UpdateMemberInvitation,
+};
 use crate::part::repo::oper::user::{CreateUser, GetUserCredential};
 use crate::part::repo::user::UserRepo;
 use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
@@ -50,10 +54,7 @@ mod tests;
 /// * `V: EffectDevelop` — Processes the signup event.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn register<N, C, R, A, V>(
-    nucl: &N,
-    repo: &R,
-    auth: &A,
-    develop: &V,
+    (nucl, repo, auth, develop): (&N, &R, &A, &V),
     params: RegisterAuthParams,
 ) -> BaseResult<RegisterAuthPayload>
 where
@@ -165,8 +166,7 @@ where
 /// * `A: TokenAuth` — Signs the session token.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn login<C, R, A>(
-    repo: &R,
-    auth: &A,
+    (repo, auth): (&R, &A),
     params: LoginAuthParams,
 ) -> BaseResult<LoginAuthPayload>
 where

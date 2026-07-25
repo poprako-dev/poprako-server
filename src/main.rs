@@ -24,7 +24,10 @@ use std::sync::Arc;
 
 use anyhow::Context as _;
 
-use poprako_server::{AppConfig, AppHarn, AsyncEffectDevelop, GeneralSched, Harn, JwtAuth, R2ImagePool, RdbCore, RdbDrive, RdbProm, RdbRepo};
+use poprako_server::{
+    AppConfig, AppHarn, AsyncEffectDevelop, GeneralSched, Harn, JwtAuth,
+    R2ImagePool, RdbCore, RdbDrive, RdbProm, RdbRepo,
+};
 
 /// Application entry point.
 ///

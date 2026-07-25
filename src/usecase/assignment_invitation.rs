@@ -12,9 +12,16 @@ use poprako_util::i18n::trl;
 use crate::complex::assignment::AssignmentComplex;
 use crate::complex::chapter::ChapterComplex;
 use crate::data::assignment::AssignmentInfoVal;
-use crate::data::assignment_invitation::{AssignmentInvitationInfoVal, CreateAssignmentInvitationParams, CreateAssignmentInvitationPayload, JoinAssignmentInvitationParams, ListAssignmentInvitationInfosParams};
+use crate::data::assignment_invitation::{
+    AssignmentInvitationInfoVal, CreateAssignmentInvitationParams,
+    CreateAssignmentInvitationPayload, JoinAssignmentInvitationParams,
+    ListAssignmentInvitationInfosParams,
+};
 use crate::model::assignment::AssignmentEntry;
-use crate::model::assignment_invitation::{AssignmentInvitationEntry, AssignmentInvitationListKind, AssignmentInvitationListSpec};
+use crate::model::assignment_invitation::{
+    AssignmentInvitationEntry, AssignmentInvitationListKind,
+    AssignmentInvitationListSpec,
+};
 use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
 use crate::part::prom::Prom;
@@ -25,8 +32,14 @@ use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
-use crate::part::repo::oper::assignment::{CreateAssignment, FindAssignmentInfo, UpdateAssignmentRoles};
-use crate::part::repo::oper::assignment_invitation::{CreateAssignmentInvitation, DeleteAssignmentInvitations, GetAssignmentInvitationInfo, GetAssignmentInvitationInfoExcluded, ListAssignmentInvitationInfos, MarkAssignmentInvitationUsed};
+use crate::part::repo::oper::assignment::{
+    CreateAssignment, FindAssignmentInfo, UpdateAssignmentRoles,
+};
+use crate::part::repo::oper::assignment_invitation::{
+    CreateAssignmentInvitation, DeleteAssignmentInvitations,
+    GetAssignmentInvitationInfo, GetAssignmentInvitationInfoExcluded,
+    ListAssignmentInvitationInfos, MarkAssignmentInvitationUsed,
+};
 use crate::part::repo::oper::chapter::GetChapterInfoExcluded;
 use crate::part::repo::oper::comic::GetComicInfo;
 use crate::part::repo::oper::member::FindMemberInfo;
@@ -46,7 +59,7 @@ const EXPIRY_DELAY: Duration = Duration::from_secs(3 * 24 * 60 * 60);
 /// Lists assignment invitations under one chapter.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn list_infos<C, R>(
-    repo: &R,
+    (repo,): (&R,),
     token: UserToken,
     params: ListAssignmentInvitationInfosParams,
 ) -> BaseResult<Vec<AssignmentInvitationInfoVal>>
@@ -88,9 +101,7 @@ where
 /// Creates a pending assignment invitation.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn create<N, C, R, P>(
-    nucl: &N,
-    repo: &R,
-    prom: &P,
+    (nucl, repo, prom): (&N, &R, &P),
     token: UserToken,
     params: CreateAssignmentInvitationParams,
 ) -> BaseResult<CreateAssignmentInvitationPayload>
@@ -205,8 +216,7 @@ where
 /// Deletes an assignment invitation.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn delete<N, C, R>(
-    nucl: &N,
-    repo: &R,
+    (nucl, repo): (&N, &R),
     token: UserToken,
     id: String,
 ) -> BaseResult<()>
@@ -242,9 +252,7 @@ where
 /// Joins a chapter assignment with a pending invitation code.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn join<N, C, R, I>(
-    nucl: &N,
-    repo: &R,
-    image_pool: &I,
+    (nucl, repo, image_pool): (&N, &R, &I),
     token: UserToken,
     params: JoinAssignmentInvitationParams,
 ) -> BaseResult<AssignmentInfoVal>

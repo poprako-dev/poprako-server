@@ -9,7 +9,9 @@ use super::*;
 
 use time::OffsetDateTime;
 
-use crate::data::announcement::{CreateAnnouncementParams, ListAnnouncementInfosParams};
+use crate::data::announcement::{
+    CreateAnnouncementParams, ListAnnouncementInfosParams,
+};
 use crate::model::announcement::AnnouncementInfo;
 use crate::model::member::MemberInfo;
 use crate::model::user::{UserCredential, UserInfo, UserToken};
@@ -141,8 +143,7 @@ async fn list_infos_team_member_lists_team_announcements() {
     ));
 
     let announcement_info_vals = list_infos(
-        &mock,
-        &mock,
+        (&mock, &mock),
         token("viewer-user"),
         list_params("team-1", Vec::new()),
     )
@@ -178,8 +179,7 @@ async fn list_infos_user_include_follows_request() {
     ));
 
     let without_user = list_infos(
-        &mock,
-        &mock,
+        (&mock, &mock),
         token("viewer-user"),
         list_params("team-1", Vec::new()),
     )
@@ -189,8 +189,7 @@ async fn list_infos_user_include_follows_request() {
     assert!(without_user[0].user.is_none());
 
     let with_user = list_infos(
-        &mock,
-        &mock,
+        (&mock, &mock),
         token("viewer-user"),
         list_params("team-1", vec![AnnouncementInclOpt::User]),
     )
@@ -213,8 +212,7 @@ async fn list_infos_non_member_is_rejected() {
     ));
 
     let err = list_infos(
-        &mock,
-        &mock,
+        (&mock, &mock),
         token("outsider-user"),
         list_params("team-1", Vec::new()),
     )
@@ -238,7 +236,7 @@ async fn create_team_admin_creates_announcement() {
     );
 
     let created_announcement =
-        create(&mock, &mock, token("admin-user"), create_params("team-1"))
+        create((&mock, &mock), token("admin-user"), create_params("team-1"))
             .await
             .unwrap();
 
@@ -265,11 +263,14 @@ async fn create_non_admin_member_is_rejected_without_mutation() {
         RoleMask::from(RoleField::TRANSLATOR),
     );
 
-    let err =
-        create(&mock, &mock, token("member-user"), create_params("team-1"))
-            .await
-            .err()
-            .unwrap();
+    let err = create(
+        (&mock, &mock),
+        token("member-user"),
+        create_params("team-1"),
+    )
+    .await
+    .err()
+    .unwrap();
 
     assert_expected_variant(err, ExpectedVariant::Perm);
 
@@ -282,8 +283,7 @@ async fn create_non_member_is_rejected_without_mutation() {
     let mock = Mock::new();
 
     let err = create(
-        &mock,
-        &mock,
+        (&mock, &mock),
         token("outsider-user"),
         create_params("team-1"),
     )

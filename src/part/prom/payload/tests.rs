@@ -4,9 +4,10 @@ use super::*;
 #[test]
 fn preserves_persisted_tags() {
     //
-    let chapter_task = TaskPayload::Chapter(ChapterPayload::TryAdvanceRawProvideStage {
-        chapter_id: "chapter-1".to_string(),
-    });
+    let chapter_task =
+        TaskPayload::Chapter(ChapterPayload::TryAdvanceRawProvideStage {
+            chapter_id: "chapter-1".to_string(),
+        });
 
     let chapter_json = serde_json::to_value(&chapter_task).unwrap();
 

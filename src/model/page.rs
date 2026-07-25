@@ -87,8 +87,8 @@ pub struct PageImageSpec {
     pub page_id: Option<String>,
     /// Content-addressable hash of the page image file.
     pub image_hash: ImageHash,
-    /// File size of the page image in bytes.
-    pub byte_length: u64,
+    /// File size when this manifest entry requests an upload slot.
+    pub byte_length: Option<u64>,
     /// File format of the page image.
     pub ext: ImageExt,
 }

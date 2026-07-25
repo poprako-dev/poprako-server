@@ -14,7 +14,7 @@ async fn create_rejects_preset_role_missing_from_membership() {
     params.preset_assignment_roles =
         Some(RoleMask::from(RoleField::TRANSLATOR));
 
-    let err = create(&mock, &mock, token("user-1"), params)
+    let err = create((&mock, &mock,), token("user-1"), params)
         .await
         .err()
         .unwrap();

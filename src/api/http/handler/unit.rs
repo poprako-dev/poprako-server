@@ -9,7 +9,10 @@ use crate::api::http::handler::util::ensure_path_matches_body_id;
 #[allow(unused_imports)]
 use crate::api::http::result::{Accept as _, HttpBody, HttpResult};
 use crate::api::http::state::AppHarn;
-use crate::data::unit::{ListPageUnitInfosParams, ListPageUnitInfosPayload, SavePageUnitsParams, SavePageUnitsPayload};
+use crate::data::unit::{
+    ListPageUnitInfosParams, ListPageUnitInfosPayload, SavePageUnitsParams,
+    SavePageUnitsPayload,
+};
 use crate::model::user::UserToken;
 use crate::usecase;
 
@@ -34,7 +37,7 @@ pub async fn list_infos(
     //
     let params = ListPageUnitInfosParams { page_id };
 
-    usecase::unit::list_infos(harn.repo(), user_token, params)
+    usecase::unit::list_infos((harn.repo(),), user_token, params)
         .await?
         .accept(StatusCode::OK)
 }
@@ -65,7 +68,7 @@ pub async fn save_infos(
 
     ensure_path_matches_body_id(&page_id, &params.diff.page_id)?;
 
-    usecase::unit::save(harn.drive(), harn.repo(), user_token, params)
+    usecase::unit::save((harn.drive(), harn.repo(),), user_token, params)
         .await?
         .accept(StatusCode::OK)
 }

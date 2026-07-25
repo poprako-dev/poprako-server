@@ -1,6 +1,8 @@
 use poprako_orchestra::Oper;
 
-use crate::model::member::{MemberEntry, MemberInfo, MemberListSpec, MemberRoleUpdate};
+use crate::model::member::{
+    MemberEntry, MemberInfo, MemberListSpec, MemberRoleUpdate,
+};
 use crate::value::member::MemberInclOpt;
 
 pub struct CreateMember<'a> {

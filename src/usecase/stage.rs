@@ -5,7 +5,7 @@ use crate::result::BaseError;
 use crate::value::chapter::Stage;
 
 /// Starts requested chapter stages in a detached best-effort task.
-pub fn spawn_starts<R>(repo: R, chapter_id: String, stages: Vec<Stage>)
+pub fn spawn_starts<R>((repo,): (R,), chapter_id: String, stages: Vec<Stage>)
 where
     R: for<'a> Run<StartChapterStage<'a>, Error = BaseError>
         + Send

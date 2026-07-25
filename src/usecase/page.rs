@@ -13,7 +13,10 @@ use crate::complex::chapter::ChapterComplex;
 use crate::complex::image::ImageComplex;
 use crate::complex::page::{PageComplex, PagePermComplex};
 use crate::data::image::ImageUploadSlotVal;
-use crate::data::page::{ListPageInfosParams, MarkPageImageUploadedParams, PageInfoVal, ReservePageImageParams, ReservedPagePayload};
+use crate::data::page::{
+    ListPageInfosParams, MarkPageImageUploadedParams, PageInfoVal,
+    ReservePageImageParams, ReservedPagePayload,
+};
 use crate::model::page::PageManifestUpdate;
 use crate::model::user::UserToken;
 use crate::part::image::{ImageManager, ImagePool, ImageUploadSpec};
@@ -25,10 +28,15 @@ use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::assignment::FindAssignmentInfo;
-use crate::part::repo::oper::chapter::{GetChapterInfo, GetChapterInfoExcluded, SetChapterPageCounters};
+use crate::part::repo::oper::chapter::{
+    GetChapterInfo, GetChapterInfoExcluded, SetChapterPageCounters,
+};
 use crate::part::repo::oper::comic::{GetComicInfo, TouchComicLastActive};
 use crate::part::repo::oper::member::FindMemberInfo;
-use crate::part::repo::oper::page::{DeletePages, GetPageInfo, GetPageInfoExcluded, ListPageInfos, MarkPageImageUploaded, UpdatePageManifest};
+use crate::part::repo::oper::page::{
+    DeletePages, GetPageInfo, GetPageInfoExcluded, ListPageInfos,
+    MarkPageImageUploaded, UpdatePageManifest,
+};
 use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::workset::WorksetRepo;
@@ -44,10 +52,7 @@ mod tests;
 /// Reserves a replacement image upload slot for one page.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn reserve_image<N, C, R, P, I>(
-    nucl: &N,
-    repo: &R,
-    prom: &P,
-    image_pool: &I,
+    (nucl, repo, prom, image_pool): (&N, &R, &P, &I),
     token: UserToken,
     id: String,
     params: ReservePageImageParams,
@@ -270,8 +275,7 @@ where
 /// Lists pages under one chapter.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn list_infos<C, R, I>(
-    repo: &R,
-    image_pool: &I,
+    (repo, image_pool): (&R, &I),
     token: UserToken,
     params: ListPageInfosParams,
 ) -> BaseResult<Vec<PageInfoVal>>
@@ -318,9 +322,7 @@ where
 /// Marks one page image as uploaded.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn mark_image_uploaded<N, C, R, I>(
-    nucl: &N,
-    repo: &R,
-    image_manager: &I,
+    (nucl, repo, image_manager): (&N, &R, &I),
     token: UserToken,
     id: String,
     params: MarkPageImageUploadedParams,
@@ -428,9 +430,7 @@ where
 /// Deletes all pages under one chapter.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn delete<N, C, R, P>(
-    nucl: &N,
-    repo: &R,
-    prom: &P,
+    (nucl, repo, prom): (&N, &R, &P),
     token: UserToken,
     chapter_id: String,
 ) -> BaseResult<()>

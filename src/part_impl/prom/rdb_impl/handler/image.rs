@@ -10,7 +10,10 @@ use crate::part::prom::payload::image::{ImagePayload, ResourceKind};
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::oper::chapter::GetChapterInfoExcluded;
-use crate::part::repo::oper::page::{GetPageInfo, GetPageInfoExcluded, MarkPageImageUploaded, SetPageImageUploaded};
+use crate::part::repo::oper::page::{
+    GetPageInfo, GetPageInfoExcluded, MarkPageImageUploaded,
+    SetPageImageUploaded,
+};
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::user::UserRepo;
@@ -99,34 +102,23 @@ where
         + Sync,
     I: ImageManager + Send + Sync,
 {
-    let object_info = match image_pool.head_object(image_identity.object_key).await {
-        //
-        Ok(object_info) => object_info,
+    let object_info =
+        match image_pool.head_object(image_identity.object_key).await {
+            //
+            Ok(object_info) => object_info,
 
-        Err(error) => return TaskFlow::Retry(format!("{:?}", error)),
-    };
+            Err(error) => return TaskFlow::Retry(format!("{:?}", error)),
+        };
 
     match object_info {
         //
         None => match image_identity.kind {
             //
             ResourceKind::PageImage => {
-                process_unverified_page_image(
-                    nucl,
-                    repo,
-                    image_identity,
-                )
-                .await
+                process_unverified_page_image(nucl, repo, image_identity).await
             }
 
-            _ => {
-                process_missing_image(
-                    nucl,
-                    repo,
-                    image_identity,
-                )
-                .await
-            }
+            _ => process_missing_image(nucl, repo, image_identity).await,
         },
 
         Some(object_info) => {
@@ -169,13 +161,8 @@ where
         + Send
         + Sync,
 {
-    match resource::mark_current_or_classify(
-        nucl,
-        repo,
-        image_identity,
-        false,
-    )
-    .await
+    match resource::mark_current_or_classify(nucl, repo, image_identity, false)
+        .await
     {
         //
         Ok(
@@ -249,17 +236,14 @@ where
 
     if *image_identity.image_hash != object_info.checksum_sha256 {
         //
-        let verification_outcome = process_unverified_page_image(
-            nucl,
-            repo,
-            image_identity,
-        )
-        .await;
+        let verification_outcome =
+            process_unverified_page_image(nucl, repo, image_identity).await;
 
         match verification_outcome {
             //
             TaskFlow::Complete => {
-                return handle_delete(image_pool, image_identity.object_key).await;
+                return handle_delete(image_pool, image_identity.object_key)
+                    .await;
             }
 
             _ => return verification_outcome,

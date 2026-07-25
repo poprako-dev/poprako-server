@@ -3,14 +3,21 @@
 use poprako_orchestra::{Nucl, run_proxy};
 use tracing::instrument;
 
-use crate::complex::announcement::{AnnouncementComplex, AnnouncementPermComplex};
-use crate::data::announcement::{AnnouncementInfoVal, CreateAnnouncementParams, CreateAnnouncementPayload, ListAnnouncementInfosParams};
+use crate::complex::announcement::{
+    AnnouncementComplex, AnnouncementPermComplex,
+};
+use crate::data::announcement::{
+    AnnouncementInfoVal, CreateAnnouncementParams, CreateAnnouncementPayload,
+    ListAnnouncementInfosParams,
+};
 use crate::model::announcement::{AnnouncementEntry, AnnouncementListSpec};
 use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
 use crate::part::repo::announcement::AnnouncementRepo;
 use crate::part::repo::member::MemberRepo;
-use crate::part::repo::oper::announcement::{CreateAnnouncement, ListAnnouncementInfos};
+use crate::part::repo::oper::announcement::{
+    CreateAnnouncement, ListAnnouncementInfos,
+};
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::result::{BaseError, BaseResult, accept};
 
@@ -20,8 +27,7 @@ mod tests;
 /// Lists announcements under a team.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn list_infos<C, R, I>(
-    repo: &R,
-    image_pool: &I,
+    (repo, image_pool): (&R, &I),
     token: UserToken,
     params: ListAnnouncementInfosParams,
 ) -> BaseResult<Vec<AnnouncementInfoVal>>
@@ -62,8 +68,7 @@ where
 /// Creates an announcement under a team.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn create<N, C, R>(
-    nucl: &N,
-    repo: &R,
+    (nucl, repo): (&N, &R),
     token: UserToken,
     params: CreateAnnouncementParams,
 ) -> BaseResult<CreateAnnouncementPayload>
