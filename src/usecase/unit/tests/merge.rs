@@ -333,7 +333,8 @@ async fn apply_save_to_mock(
     opers: &[UnitOperParams],
 ) -> BaseResult<()> {
     //
-    save((mock, mock,),
+    save(
+        (mock, mock),
         token("user-1"),
         SavePageUnitsParams {
             page_id: "page-1".into(),

@@ -195,7 +195,8 @@ async fn reserve_image_replaces_key_and_enqueues_prom() {
         RoleMask::from(RoleField::RAW_PROVIDER),
     ));
 
-    let reserved = reserve_image((&mock, &mock, &mock, &mock,),
+    let reserved = reserve_image(
+        (&mock, &mock, &mock, &mock),
         token("user-1"),
         "page-1".into(),
         ReservePageImageParams {
@@ -261,7 +262,8 @@ async fn reserve_image_reuses_same_uploaded_identity_without_version_bump() {
         RoleMask::from(RoleField::RAW_PROVIDER),
     ));
 
-    let reserved = reserve_image((&mock, &mock, &mock, &mock,),
+    let reserved = reserve_image(
+        (&mock, &mock, &mock, &mock),
         token("user-1"),
         "page-1".into(),
         ReservePageImageParams {
@@ -295,7 +297,8 @@ async fn reserve_image_resigns_same_pending_identity() {
         RoleMask::from(RoleField::RAW_PROVIDER),
     ));
 
-    let reserved = reserve_image((&mock, &mock, &mock, &mock,),
+    let reserved = reserve_image(
+        (&mock, &mock, &mock, &mock),
         token("user-1"),
         "page-1".into(),
         ReservePageImageParams {
@@ -344,7 +347,8 @@ async fn reserve_image_replaces_same_hash_with_different_extension() {
         RoleMask::from(RoleField::RAW_PROVIDER),
     ));
 
-    let reserved = reserve_image((&mock, &mock, &mock, &mock,),
+    let reserved = reserve_image(
+        (&mock, &mock, &mock, &mock),
         token("user-1"),
         "page-1".into(),
         ReservePageImageParams {
@@ -386,7 +390,8 @@ async fn reserve_image_rejects_missing_page() {
     //
     let mock = Mock::new();
 
-    let err = reserve_image((&mock, &mock, &mock, &mock,),
+    let err = reserve_image(
+        (&mock, &mock, &mock, &mock),
         token("user-1"),
         "missing".into(),
         ReservePageImageParams {
@@ -415,7 +420,8 @@ async fn list_infos_sorts_and_resolves_uploaded_url() {
 
     mock.seed_page(page("page-1", 1, Some("one.png"), false, 1));
 
-    let list = list_infos((&mock, &mock,),
+    let list = list_infos(
+        (&mock, &mock),
         token("user-1"),
         ListPageInfosParams {
             chapter_id: "chapter-1".into(),
@@ -453,7 +459,8 @@ async fn list_infos_rejects_non_member_without_assignment() {
 
     seed_scope(&mock);
 
-    let err = list_infos((&mock, &mock,),
+    let err = list_infos(
+        (&mock, &mock),
         token("user-1"),
         ListPageInfosParams {
             chapter_id: "chapter-1".into(),
@@ -481,7 +488,8 @@ async fn mark_image_uploaded_marks_once_and_idempotent() {
         RoleMask::from(RoleField::RAW_PROVIDER),
     ));
 
-    let first = mark_image_uploaded((&mock, &mock, &mock,),
+    let first = mark_image_uploaded(
+        (&mock, &mock, &mock),
         token("user-1"),
         "page-1".into(),
         MarkPageImageUploadedParams { image_version: 2 },
@@ -490,7 +498,8 @@ async fn mark_image_uploaded_marks_once_and_idempotent() {
 
     assert!(first.is_ok());
 
-    let second = mark_image_uploaded((&mock, &mock, &mock,),
+    let second = mark_image_uploaded(
+        (&mock, &mock, &mock),
         token("user-1"),
         "page-1".into(),
         MarkPageImageUploadedParams { image_version: 2 },

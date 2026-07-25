@@ -33,7 +33,7 @@ pub async fn create(
     Extension(user_token): Extension<UserToken>,
     Json(params): Json<CreateWorksetParams>,
 ) -> HttpResult<CreateWorksetPayload> {
-    usecase::workset::create((harn.drive(), harn.repo(),), user_token, params)
+    usecase::workset::create((harn.drive(), harn.repo()), user_token, params)
         .await?
         .accept(StatusCode::CREATED)
 }
@@ -141,7 +141,8 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    usecase::workset::delete((harn.drive(), harn.repo(), harn.prom(),),
+    usecase::workset::delete(
+        (harn.drive(), harn.repo(), harn.prom()),
         user_token,
         workset_id,
     )

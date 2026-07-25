@@ -1,7 +1,5 @@
 use serde::{Deserialize, Serialize};
 
-use crate::value::image::{ImageExt, ImageHash};
-
 /// Image-owning resource discriminator.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ResourceKind {
@@ -32,10 +30,6 @@ pub enum ImagePayload {
         object_key: String,
         /// Version counter for optimistic concurrency.
         version: u32,
-        /// SHA-256 content identity reserved for this version.
-        image_hash: ImageHash,
-        /// Persisted file format for this version.
-        image_ext: ImageExt,
     },
 
     /// Delete an image object by object-storage key.

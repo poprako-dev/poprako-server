@@ -17,7 +17,8 @@ async fn save_infos_rolls_back_without_edit_role() {
 
     mock.seed_unit(unit("unit-a", "page-1", 0, "alpha", None, false));
 
-    let e = save((&mock, &mock,),
+    let e = save(
+        (&mock, &mock),
         token("user-1"),
         SavePageUnitsParams {
             page_id: "page-1".into(),
@@ -59,7 +60,8 @@ async fn save_infos_rolls_back_invalid_diff() {
 
     let before_snapshot = mock.snapshot();
 
-    let e = save((&mock, &mock,),
+    let e = save(
+        (&mock, &mock),
         token("user-1"),
         SavePageUnitsParams {
             page_id: "page-1".into(),
@@ -97,7 +99,8 @@ async fn save_infos_rejects_missing_text_editor_ids_before_transaction() {
     //
     let mock = Mock::new();
 
-    let create_error = save((&mock, &mock,),
+    let create_error = save(
+        (&mock, &mock),
         token("user-1"),
         SavePageUnitsParams {
             page_id: "page-1".into(),
@@ -124,7 +127,8 @@ async fn save_infos_rejects_missing_text_editor_ids_before_transaction() {
 
     assert_args_error(create_error);
 
-    let save_error = save((&mock, &mock,),
+    let save_error = save(
+        (&mock, &mock),
         token("user-1"),
         SavePageUnitsParams {
             page_id: "page-1".into(),

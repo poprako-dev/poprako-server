@@ -218,10 +218,6 @@ pub struct MockFlags {
     pub image_head_failure: bool,
     /// Simulates the head-object reporting the object as absent.
     pub image_head_absent: bool,
-    /// Simulates a SHA-256 hash mismatch in head-object response.
-    pub image_head_hash_mismatch: bool,
-    /// Simulates a content-length mismatch in head-object response.
-    pub image_head_length_mismatch: bool,
 
     /// Simulates a failure in object deletion from storage.
     pub image_delete_failure: bool,
@@ -393,24 +389,6 @@ impl Mock {
     pub fn with_image_head_absent(self) -> Self {
         //
         self.flags.lock().unwrap().image_head_absent = true;
-
-        self
-    }
-
-    /// Report a mismatching SHA-256 checksum from head-object opers.
-    #[allow(dead_code)]
-    pub fn with_image_head_hash_mismatch(self) -> Self {
-        //
-        self.flags.lock().unwrap().image_head_hash_mismatch = true;
-
-        self
-    }
-
-    /// Report a mismatching content length from head-object opers.
-    #[allow(dead_code)]
-    pub fn with_image_head_length_mismatch(self) -> Self {
-        //
-        self.flags.lock().unwrap().image_head_length_mismatch = true;
 
         self
     }

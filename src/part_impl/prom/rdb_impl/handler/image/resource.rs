@@ -15,11 +15,10 @@ use crate::part::repo::user::UserRepo;
 use crate::part_impl::prom::rdb_impl::handler::image::identity::ImageIdentity;
 use crate::part_impl::shared::RdbContext;
 use crate::result::{BaseError, BaseResult, accept};
-use crate::value::image::{ImageExt, ImageHash};
 
 /// Classification of a deferred image payload against persisted identity.
 pub enum ResourceState {
-    /// The image version and full identity match the current record.
+    /// The image version and object key match the current record.
     Current,
 
     /// The image version has been superseded.
@@ -37,8 +36,6 @@ struct CurrentImageIdentity<'a> {
     //
     version: u32,
     object_key: Option<&'a str>,
-    image_hash: &'a ImageHash,
-    image_ext: ImageExt,
 }
 
 fn classify_current_identity(
@@ -47,9 +44,7 @@ fn classify_current_identity(
 ) -> BaseResult<ResourceState> {
     match (
         current_identity.version == image_identity.version,
-        current_identity.object_key == Some(image_identity.object_key)
-            && current_identity.image_hash == image_identity.image_hash
-            && current_identity.image_ext == image_identity.image_ext,
+        current_identity.object_key == Some(image_identity.object_key),
     ) {
         //
         (false, _) => accept(ResourceState::Stale),
@@ -202,8 +197,6 @@ where
                     let current_identity = CurrentImageIdentity {
                         version: info.avatar_version,
                         object_key: info.avatar_key.as_deref(),
-                        image_hash: &info.avatar_hash,
-                        image_ext: info.avatar_ext,
                     };
 
                     classify_current_identity(current_identity, image_identity)
@@ -233,8 +226,6 @@ where
                     let current_identity = CurrentImageIdentity {
                         version: info.avatar_version,
                         object_key: info.avatar_key.as_deref(),
-                        image_hash: &info.avatar_hash,
-                        image_ext: info.avatar_ext,
                     };
 
                     classify_current_identity(current_identity, image_identity)
@@ -265,8 +256,6 @@ where
                     let current_identity = CurrentImageIdentity {
                         version: info.cover_version,
                         object_key: info.cover_key.as_deref(),
-                        image_hash: &info.cover_hash,
-                        image_ext: info.cover_ext,
                     };
 
                     classify_current_identity(current_identity, image_identity)
@@ -296,8 +285,6 @@ where
                     let current_identity = CurrentImageIdentity {
                         version: info.image_version,
                         object_key: info.image_key.as_deref(),
-                        image_hash: &info.image_hash,
-                        image_ext: info.image_ext,
                     };
 
                     classify_current_identity(current_identity, image_identity)

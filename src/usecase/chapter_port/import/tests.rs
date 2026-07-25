@@ -206,7 +206,8 @@ async fn import_label_plus_material_updates_units_and_counters() {
 
     seed_material_pages(&mock);
 
-    let imported = import((&mock, &mock,),
+    let imported = import(
+        (&mock, &mock),
         token("user-1"),
         ImportChapterTranslationParams {
             format: TranslationFormat::LabelPlus,
@@ -276,7 +277,8 @@ async fn import_rejects_page_count_mismatch_without_mutation() {
 
     mock.seed_unit(unit("unit-a", "page-1", 0, "old"));
 
-    let err = import((&mock, &mock,),
+    let err = import(
+        (&mock, &mock),
         token("user-1"),
         ImportChapterTranslationParams {
             format: TranslationFormat::LabelPlus,

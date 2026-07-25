@@ -34,7 +34,8 @@ pub async fn list_infos(
     //
     let params = ListPageInfosParams { chapter_id };
 
-    usecase::page::list_infos((harn.repo(), harn.image_pool(),),
+    usecase::page::list_infos(
+        (harn.repo(), harn.image_pool()),
         user_token,
         params,
     )
@@ -60,7 +61,8 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    usecase::page::delete((harn.drive(), harn.repo(), harn.prom(),),
+    usecase::page::delete(
+        (harn.drive(), harn.repo(), harn.prom()),
         user_token,
         chapter_id,
     )
@@ -93,7 +95,8 @@ pub async fn reserve_chapter_pages(
     //
     ensure_path_matches_body_id(&chapter_id, &params.chapter_id)?;
 
-    usecase::page::reserve_chapter_pages((harn.drive(), harn.repo(), harn.prom(), harn.image_pool(),),
+    usecase::page::reserve_chapter_pages(
+        (harn.drive(), harn.repo(), harn.prom(), harn.image_pool()),
         user_token,
         params,
     )
@@ -121,7 +124,8 @@ pub async fn reserve_image(
     Extension(user_token): Extension<UserToken>,
     Json(params): Json<ReservePageImageParams>,
 ) -> HttpResult<ReservedPagePayload> {
-    usecase::page::reserve_image((harn.drive(), harn.repo(), harn.prom(), harn.image_pool(),),
+    usecase::page::reserve_image(
+        (harn.drive(), harn.repo(), harn.prom(), harn.image_pool()),
         user_token,
         page_id,
         params,
@@ -151,7 +155,8 @@ pub async fn mark_image_uploaded(
     Json(params): Json<MarkPageImageUploadedParams>,
 ) -> HttpNoContent {
     //
-    usecase::page::mark_image_uploaded((harn.drive(), harn.repo(), harn.image_pool(),),
+    usecase::page::mark_image_uploaded(
+        (harn.drive(), harn.repo(), harn.image_pool()),
         user_token,
         page_id,
         params,

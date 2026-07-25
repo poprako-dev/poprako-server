@@ -20,7 +20,8 @@ async fn delete_owner_deletes_own_assignment() {
         role(RoleField::TRANSLATOR),
     ));
 
-    delete((&mock, &mock,),
+    delete(
+        (&mock, &mock),
         token("worker-user"),
         "assignment-chapter-1-worker-user".into(),
     )
@@ -49,7 +50,8 @@ async fn delete_reviewer_deletes_another_user_assignment() {
         role(RoleField::TRANSLATOR),
     ));
 
-    delete((&mock, &mock,),
+    delete(
+        (&mock, &mock),
         token("admin-user"),
         "assignment-chapter-1-target-user".into(),
     )
@@ -78,7 +80,8 @@ async fn delete_non_reviewer_does_not_delete_another_user_assignment() {
         role(RoleField::PROOFREADER),
     ));
 
-    let err = delete((&mock, &mock,),
+    let err = delete(
+        (&mock, &mock),
         token("worker-user"),
         "assignment-chapter-1-target-user".into(),
     )

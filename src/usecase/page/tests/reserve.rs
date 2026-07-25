@@ -15,7 +15,8 @@ async fn reserve_chapter_pages_creates_pages_and_urls() {
 
     let before = OffsetDateTime::now_utc();
 
-    let reserved = reserve_chapter_pages((&mock, &mock, &mock, &mock,),
+    let reserved = reserve_chapter_pages(
+        (&mock, &mock, &mock, &mock),
         token("user-1"),
         ReserveChapterPagesParams {
             chapter_id: "chapter-1".into(),
@@ -147,7 +148,8 @@ async fn reserve_chapter_pages_replaces_existing_manifest() {
         1,
     ));
 
-    let result = reserve_chapter_pages((&mock, &mock, &mock, &mock,),
+    let result = reserve_chapter_pages(
+        (&mock, &mock, &mock, &mock),
         token("user-1"),
         ReserveChapterPagesParams {
             chapter_id: "chapter-1".into(),
@@ -209,7 +211,8 @@ async fn reserve_chapter_pages_preserves_pending_page_without_new_byte_len() {
         2,
     ));
 
-    let reserved = reserve_chapter_pages((&mock, &mock, &mock, &mock,),
+    let reserved = reserve_chapter_pages(
+        (&mock, &mock, &mock, &mock),
         token("user-1"),
         ReserveChapterPagesParams {
             chapter_id: "chapter-1".into(),
@@ -261,7 +264,8 @@ async fn reserve_chapter_pages_resigns_pending_page_with_new_byte_len() {
         2,
     ));
 
-    let reserved = reserve_chapter_pages((&mock, &mock, &mock, &mock,),
+    let reserved = reserve_chapter_pages(
+        (&mock, &mock, &mock, &mock),
         token("user-1"),
         ReserveChapterPagesParams {
             chapter_id: "chapter-1".into(),
@@ -278,10 +282,7 @@ async fn reserve_chapter_pages_resigns_pending_page_with_new_byte_len() {
 
     let snapshot = mock.snapshot();
 
-    assert_eq!(
-        reserved.pages[0].slot.as_ref().unwrap().image_version,
-        2
-    );
+    assert_eq!(reserved.pages[0].slot.as_ref().unwrap().image_version, 2);
 
     assert_eq!(snapshot.pages[0].image_version, 2);
 
@@ -315,7 +316,8 @@ async fn reserve_chapter_pages_rejects_new_page_without_new_byte_len() {
         RoleMask::from(RoleField::RAW_PROVIDER),
     ));
 
-    let err = reserve_chapter_pages((&mock, &mock, &mock, &mock,),
+    let err = reserve_chapter_pages(
+        (&mock, &mock, &mock, &mock),
         token("user-1"),
         ReserveChapterPagesParams {
             chapter_id: "chapter-1".into(),
@@ -361,7 +363,8 @@ async fn reserve_chapter_pages_rejects_replacement_without_new_byte_len() {
         2,
     ));
 
-    let err = reserve_chapter_pages((&mock, &mock, &mock, &mock,),
+    let err = reserve_chapter_pages(
+        (&mock, &mock, &mock, &mock),
         token("user-1"),
         ReserveChapterPagesParams {
             chapter_id: "chapter-1".into(),
@@ -409,7 +412,8 @@ async fn reserve_chapter_pages_replaces_explicit_image_and_deletes_old_key() {
 
     mock.seed_page(existing_page_info);
 
-    let reserved = reserve_chapter_pages((&mock, &mock, &mock, &mock,),
+    let reserved = reserve_chapter_pages(
+        (&mock, &mock, &mock, &mock),
         token("user-1"),
         ReserveChapterPagesParams {
             chapter_id: "chapter-1".into(),
@@ -458,7 +462,8 @@ async fn reserve_chapter_pages_keeps_raw_pending_when_uploads_are_missing() {
         RoleMask::from(RoleField::RAW_PROVIDER),
     ));
 
-    let reserved = reserve_chapter_pages((&mock, &mock, &mock, &mock,),
+    let reserved = reserve_chapter_pages(
+        (&mock, &mock, &mock, &mock),
         token("user-1"),
         ReserveChapterPagesParams {
             chapter_id: "chapter-1".into(),
@@ -507,7 +512,8 @@ async fn reserve_chapter_pages_rejects_invalid_count() {
 
     seed_scope(&mock);
 
-    let err = reserve_chapter_pages((&mock, &mock, &mock, &mock,),
+    let err = reserve_chapter_pages(
+        (&mock, &mock, &mock, &mock),
         token("user-1"),
         ReserveChapterPagesParams {
             chapter_id: "chapter-1".into(),

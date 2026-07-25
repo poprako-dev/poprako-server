@@ -57,7 +57,7 @@ pub async fn create(
     Extension(user_token): Extension<UserToken>,
     Json(params): Json<CreateCommentParams>,
 ) -> HttpResult<CreateCommentPayload> {
-    usecase::comment::create((harn.drive(), harn.repo(),), user_token, params)
+    usecase::comment::create((harn.drive(), harn.repo()), user_token, params)
         .await?
         .accept(StatusCode::CREATED)
 }
@@ -89,7 +89,8 @@ pub async fn list_infos(
         limit: query.limit,
     };
 
-    usecase::comment::list_infos((harn.repo(), harn.image_pool(),),
+    usecase::comment::list_infos(
+        (harn.repo(), harn.image_pool()),
         user_token,
         params,
     )

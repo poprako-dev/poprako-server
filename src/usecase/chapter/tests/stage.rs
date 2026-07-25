@@ -21,7 +21,8 @@ async fn update_stage_admin_advances_any_stage() {
         RoleMask::from(RoleField::PUBLISHER),
     ));
 
-    update_stage((&mock, &mock, &mock, &mock,),
+    update_stage(
+        (&mock, &mock, &mock, &mock),
         token("user-1"),
         UpdateChapterStageParams {
             id: "chapter-1".into(),
@@ -55,7 +56,8 @@ async fn update_stage_rejects_reviewer_outside_review_stage() {
         RoleMask::from(RoleField::REVIEWER),
     ));
 
-    let err = update_stage((&mock, &mock, &mock, &mock,),
+    let err = update_stage(
+        (&mock, &mock, &mock, &mock),
         token("user-1"),
         UpdateChapterStageParams {
             id: "chapter-1".into(),
@@ -93,7 +95,8 @@ async fn update_stage_rejects_invalid_transition() {
         RoleMask::from(RoleField::PUBLISHER),
     ));
 
-    let err = update_stage((&mock, &mock, &mock, &mock,),
+    let err = update_stage(
+        (&mock, &mock, &mock, &mock),
         token("user-1"),
         UpdateChapterStageParams {
             id: "chapter-1".into(),
@@ -125,7 +128,8 @@ async fn update_stage_publish_enqueues_page_image_delete() {
 
     mock.seed_page(page("page-1", "chapter-1", Some("page-1.png")));
 
-    update_stage((&mock, &mock, &mock, &mock,),
+    update_stage(
+        (&mock, &mock, &mock, &mock),
         token("user-1"),
         UpdateChapterStageParams {
             id: "chapter-1".into(),
@@ -190,7 +194,8 @@ async fn published_chapter_rejects_metadata_and_stage_updates() {
         RoleMask::from(RoleField::ADMIN),
     ));
 
-    let info_result = update_info((&mock, &mock,),
+    let info_result = update_info(
+        (&mock, &mock),
         token("user-1"),
         UpdateChapterInfoParams {
             id: "chapter-1".into(),
@@ -202,7 +207,8 @@ async fn published_chapter_rejects_metadata_and_stage_updates() {
 
     assert!(matches!(info_result, Err(BaseError::Expected { .. })));
 
-    let stage_result = update_stage((&mock, &mock, &mock, &mock,),
+    let stage_result = update_stage(
+        (&mock, &mock, &mock, &mock),
         token("user-1"),
         UpdateChapterStageParams {
             id: "chapter-1".into(),

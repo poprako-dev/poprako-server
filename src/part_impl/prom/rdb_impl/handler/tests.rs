@@ -16,7 +16,6 @@ use crate::part_impl::repo::mock_impl::Mock;
 use crate::part_impl::repo::rdb_impl::RdbRepo;
 use crate::part_impl::repo::rdb_impl::schema::t_local_message;
 use crate::part_impl::shared::RdbCore;
-use crate::value::image::{ImageExt, ImageHash};
 
 const PREFIX: &str = "rdb-test-prom-handler-";
 
@@ -90,8 +89,6 @@ pub async fn image_payloads_from_rdb_dispatch(shared: RdbCore) {
         resource_id: "missing-user".to_string(),
         object_key: "new-avatar.png".to_string(),
         version: 1,
-        image_hash: ImageHash::default(),
-        image_ext: ImageExt::Png,
     });
 
     let check_task = Task {

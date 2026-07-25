@@ -145,7 +145,7 @@ async fn create_normalizes_and_persists_for_proofreader() {
         RoleMask::from(RoleField::PROOFREADER),
     ));
 
-    let payload = create((&mock, &mock,), token("user-1"), create_params())
+    let payload = create((&mock, &mock), token("user-1"), create_params())
         .await
         .unwrap();
 
@@ -173,7 +173,7 @@ async fn create_rejects_admin_without_proofreader() {
         RoleMask::from(RoleField::ADMIN),
     ));
 
-    let error = create((&mock, &mock,), token("user-1"), create_params())
+    let error = create((&mock, &mock), token("user-1"), create_params())
         .await
         .unwrap_err();
 
@@ -194,7 +194,7 @@ async fn create_rejects_invalid_scope() {
         description: None,
     };
 
-    let error = create((&mock, &mock,), token("user-1"), params)
+    let error = create((&mock, &mock), token("user-1"), params)
         .await
         .unwrap_err();
 
@@ -327,7 +327,7 @@ async fn delete_removes_child_terms() {
 
     mock.seed_term(term("term-1", "termbase-1"));
 
-    delete((&mock, &mock,), token("user-1"), "termbase-1".into())
+    delete((&mock, &mock), token("user-1"), "termbase-1".into())
         .await
         .unwrap();
 

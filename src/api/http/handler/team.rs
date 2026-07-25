@@ -31,7 +31,8 @@ pub async fn create(
     Extension(user_token): Extension<UserToken>,
     Json(params): Json<CreateTeamParams>,
 ) -> HttpResult<TeamInfoVal> {
-    usecase::team::create((harn.drive(), harn.repo(), harn.image_pool(),),
+    usecase::team::create(
+        (harn.drive(), harn.repo(), harn.image_pool()),
         user_token,
         params,
     )
@@ -58,7 +59,8 @@ pub async fn list_infos(
     Extension(user_token): Extension<UserToken>,
     Query(params): Query<ListTeamInfosParams>,
 ) -> HttpResult<Vec<TeamInfoVal>> {
-    usecase::team::list_infos((harn.repo(), harn.image_pool(),),
+    usecase::team::list_infos(
+        (harn.repo(), harn.image_pool()),
         user_token,
         params,
     )
@@ -83,7 +85,7 @@ pub async fn get_info(
     State(harn): State<AppHarn>,
     Path(team_id): Path<String>,
 ) -> HttpResult<TeamInfoVal> {
-    usecase::team::get_info((harn.repo(), harn.image_pool(),), team_id)
+    usecase::team::get_info((harn.repo(), harn.image_pool()), team_id)
         .await?
         .accept(StatusCode::OK)
 }
@@ -137,7 +139,8 @@ pub async fn reserve_avatar(
     Extension(user_token): Extension<UserToken>,
     Json(params): Json<ReserveTeamAvatarParams>,
 ) -> HttpResult<ReserveTeamAvatarPayload> {
-    usecase::team::reserve_avatar((harn.drive(), harn.repo(), harn.prom(), harn.image_pool(),),
+    usecase::team::reserve_avatar(
+        (harn.drive(), harn.repo(), harn.prom(), harn.image_pool()),
         user_token,
         team_id,
         params,
@@ -167,7 +170,8 @@ pub async fn mark_avatar_uploaded(
     Json(params): Json<MarkTeamAvatarUploadedParams>,
 ) -> HttpNoContent {
     //
-    usecase::team::mark_avatar_uploaded((harn.drive(), harn.repo(), harn.image_pool(),),
+    usecase::team::mark_avatar_uploaded(
+        (harn.drive(), harn.repo(), harn.image_pool()),
         user_token,
         team_id,
         params,
@@ -196,7 +200,8 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    usecase::team::delete((harn.drive(), harn.repo(), harn.prom(),),
+    usecase::team::delete(
+        (harn.drive(), harn.repo(), harn.prom()),
         user_token,
         team_id,
     )

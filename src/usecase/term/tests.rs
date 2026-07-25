@@ -77,7 +77,7 @@ async fn create_normalizes_and_increments_count() {
 
     seed_proofreader_scope(&mock);
 
-    let payload = create((&mock, &mock,), token("user-1"), create_params())
+    let payload = create((&mock, &mock), token("user-1"), create_params())
         .await
         .unwrap();
 
@@ -108,7 +108,7 @@ async fn create_rejects_duplicate_normalized_targets() {
         ..create_params()
     };
 
-    let error = create((&mock, &mock,), token("user-1"), params)
+    let error = create((&mock, &mock), token("user-1"), params)
         .await
         .unwrap_err();
 
@@ -128,7 +128,7 @@ async fn list_infos_searches_only_source() {
 
     seed_proofreader_scope(&mock);
 
-    create((&mock, &mock,), token("user-1"), create_params())
+    create((&mock, &mock), token("user-1"), create_params())
         .await
         .unwrap();
 
@@ -166,7 +166,7 @@ async fn update_replaces_fields_and_touches_parent() {
 
     seed_proofreader_scope(&mock);
 
-    let payload = create((&mock, &mock,), token("user-1"), create_params())
+    let payload = create((&mock, &mock), token("user-1"), create_params())
         .await
         .unwrap();
 
@@ -179,7 +179,7 @@ async fn update_replaces_fields_and_touches_parent() {
         comment: Some(" Comment ".into()),
     };
 
-    update_info((&mock, &mock,), token("user-1"), params)
+    update_info((&mock, &mock), token("user-1"), params)
         .await
         .unwrap();
 
@@ -201,11 +201,11 @@ async fn delete_removes_term_and_decrements_count() {
 
     seed_proofreader_scope(&mock);
 
-    let payload = create((&mock, &mock,), token("user-1"), create_params())
+    let payload = create((&mock, &mock), token("user-1"), create_params())
         .await
         .unwrap();
 
-    delete((&mock, &mock,), token("user-1"), payload.id)
+    delete((&mock, &mock), token("user-1"), payload.id)
         .await
         .unwrap();
 

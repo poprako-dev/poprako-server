@@ -290,8 +290,6 @@ async fn process_pending_marks_uploaded_image() {
                 resource_id: "user-1".to_string(),
                 object_key: "avatar.png".to_string(),
                 version: 1,
-                image_hash: ImageHash::default(),
-                image_ext: ImageExt::Png,
             }),
         )
         .await?;
@@ -330,8 +328,6 @@ async fn process_pending_ignores_stale_image_check() {
                 resource_id: "user-1".to_string(),
                 object_key: "avatar-v1.png".to_string(),
                 version: 1,
-                image_hash: ImageHash::default(),
-                image_ext: ImageExt::Png,
             }),
         )
         .await?;
@@ -374,8 +370,6 @@ async fn process_pending_rejects_mismatched_image_key() {
                 resource_id: "user-1".to_string(),
                 object_key: "avatar-other.png".to_string(),
                 version: 1,
-                image_hash: ImageHash::default(),
-                image_ext: ImageExt::Png,
             }),
         )
         .await?;
@@ -409,8 +403,6 @@ async fn process_pending_keeps_missing_resource_image() {
                 resource_id: "missing-user".to_string(),
                 object_key: "orphan-avatar.png".to_string(),
                 version: 1,
-                image_hash: ImageHash::default(),
-                image_ext: ImageExt::Png,
             }),
         )
         .await?;

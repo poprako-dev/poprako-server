@@ -181,8 +181,6 @@ where
                 resource_id: locked_page_info.id.clone(),
                 object_key: image_key.clone(),
                 version: image_version,
-                image_hash: params.image_hash.clone(),
-                image_ext: params.ext,
             }));
 
             task_delays.push(Some(Duration::from_secs(15 * 60)));
@@ -229,7 +227,6 @@ where
             let upload_spec = ImageUploadSpec {
                 object_key: &object_key,
                 content_type: page_info.image_ext.content_type(),
-                checksum_sha256: &page_info.image_hash,
                 content_length: params.new_byte_len,
             };
 
@@ -351,19 +348,10 @@ where
                 message: trl("error-stale-page-image-upload"),
             })?;
 
-    let object_info =
-        image_manager
-            .head_object(&image_key)
-            .await?
-            .ok_or_else(|| BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                message: trl("error-stale-page-image-upload"),
-            })?;
-
-    if object_info.checksum_sha256 != page_info.image_hash {
+    if !image_manager.object_exists(&image_key).await? {
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message: trl("error-invalid-page-image-identity"),
+            message: trl("error-stale-page-image-upload"),
         });
     }
 
@@ -388,8 +376,6 @@ where
 
         if locked_page_info.image_version != params.image_version
             || locked_page_info.image_key.as_deref() != Some(&image_key)
-            || locked_page_info.image_hash != page_info.image_hash
-            || locked_page_info.image_ext != page_info.image_ext
         {
             return Err(BaseError::Expected {
                 variant: ExpectedVariant::Args,

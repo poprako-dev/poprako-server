@@ -63,7 +63,7 @@ async fn create_allocates_index_and_updates_count() {
     params.preset_assignment_roles =
         Some(RoleMask::from(RoleField::TRANSLATOR));
 
-    let created = create((&mock, &mock,), token("user-1"), params).await;
+    let created = create((&mock, &mock), token("user-1"), params).await;
 
     assert!(created.is_ok());
 
@@ -119,7 +119,7 @@ async fn create_rolls_back_missing_workset() {
     //
     let mock = Mock::new();
 
-    let err = create((&mock, &mock,), token("user-1"), create_params("missing"))
+    let err = create((&mock, &mock), token("user-1"), create_params("missing"))
         .await
         .err()
         .unwrap();
@@ -154,7 +154,8 @@ async fn get_info_returns_uploaded_cover_url() {
 
     mock.seed_page(page("page-1", "chapter-1", 0, Some("fallback.png"), true));
 
-    let found = get_info((&mock, &mock,), token("user-1"), "comic-1".into()).await;
+    let found =
+        get_info((&mock, &mock), token("user-1"), "comic-1".into()).await;
 
     assert!(found.is_ok());
 
@@ -194,7 +195,7 @@ async fn get_info_falls_back_to_uploaded_first_pinned_page() {
 
     mock.seed_page(page("page-first", "chapter-1", 0, Some("first.png"), true));
 
-    let found = get_info((&mock, &mock,), token("user-1"), "comic-1".into())
+    let found = get_info((&mock, &mock), token("user-1"), "comic-1".into())
         .await
         .ok()
         .unwrap();
@@ -245,7 +246,8 @@ async fn list_infos_omits_fallback_without_usable_first_pinned_page() {
         false,
     ));
 
-    let found = list_infos((&mock, &mock,),
+    let found = list_infos(
+        (&mock, &mock),
         token("user-1"),
         ListComicInfosParams {
             workset_id: "workset-1".into(),
@@ -281,7 +283,7 @@ async fn get_info_propagates_missing_comic() {
     //
     let mock = Mock::new();
 
-    let err = get_info((&mock, &mock,), token("user-1"), "missing".into())
+    let err = get_info((&mock, &mock), token("user-1"), "missing".into())
         .await
         .err()
         .unwrap();
@@ -310,7 +312,8 @@ async fn list_infos_filters_and_sorts_by_last_activity() {
         StageMask::try_from(0u32).ok().unwrap(),
     ));
 
-    let list = list_infos((&mock, &mock,),
+    let list = list_infos(
+        (&mock, &mock),
         token("user-1"),
         ListComicInfosParams {
             incl_opt: Vec::new(),
@@ -356,7 +359,8 @@ async fn list_infos_returns_empty_for_workset_contents() {
 
     mock.seed_member(admin_member("user-1", "team-1"));
 
-    let list = list_infos((&mock, &mock,),
+    let list = list_infos(
+        (&mock, &mock),
         token("user-1"),
         ListComicInfosParams {
             incl_opt: Vec::new(),
@@ -414,7 +418,8 @@ async fn list_infos_filters_by_pinned_chapter_stages() {
         .ok()
         .unwrap();
 
-    let list = list_infos((&mock, &mock,),
+    let list = list_infos(
+        (&mock, &mock),
         token("user-1"),
         ListComicInfosParams {
             incl_opt: Vec::new(),
@@ -446,7 +451,8 @@ async fn list_infos_rejects_invalid_stages_filter() {
 
     mock.seed_member(admin_member("user-1", "team-1"));
 
-    let err = list_infos((&mock, &mock,),
+    let err = list_infos(
+        (&mock, &mock),
         token("user-1"),
         ListComicInfosParams {
             incl_opt: Vec::new(),
@@ -494,7 +500,8 @@ async fn list_infos_applies_pagination() {
 
     mock.seed_comic(comic_2_info);
 
-    let list = list_infos((&mock, &mock,),
+    let list = list_infos(
+        (&mock, &mock),
         token("user-1"),
         ListComicInfosParams {
             incl_opt: Vec::new(),
@@ -528,7 +535,8 @@ async fn update_info_updates_comic() {
 
     mock.seed_comic(comic("comic-1", "workset-1", 0));
 
-    update_info((&mock,),
+    update_info(
+        (&mock,),
         token("user-1"),
         UpdateComicInfoParams {
             id: "comic-1".into(),
@@ -555,7 +563,8 @@ async fn update_info_propagates_missing_comic() {
     //
     let mock = Mock::new();
 
-    let err = update_info((&mock,),
+    let err = update_info(
+        (&mock,),
         token("user-1"),
         UpdateComicInfoParams {
             id: "missing".into(),
