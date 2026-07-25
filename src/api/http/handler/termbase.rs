@@ -11,9 +11,14 @@ use utoipa::IntoParams;
 
 use crate::api::http::handler::util::ensure_path_matches_body_id;
 #[allow(unused_imports)]
-use crate::api::http::result::{Accept as _, HttpBody, HttpNoContent, HttpResult, no_content};
+use crate::api::http::result::{
+    Accept as _, HttpBody, HttpNoContent, HttpResult, no_content,
+};
 use crate::api::http::state::AppHarn;
-use crate::data::termbase::{CreateTermbaseParams, CreateTermbasePayload, ListComicTermbaseInfosParams, ListTeamTermbaseInfosParams, TermbaseInfoVal, UpdateTermbaseInfoParams};
+use crate::data::termbase::{
+    CreateTermbaseParams, CreateTermbasePayload, ListComicTermbaseInfosParams,
+    ListTeamTermbaseInfosParams, TermbaseInfoVal, UpdateTermbaseInfoParams,
+};
 use crate::model::user::UserToken;
 use crate::usecase;
 
@@ -50,7 +55,7 @@ pub async fn create(
     Extension(user_token): Extension<UserToken>,
     Json(params): Json<CreateTermbaseParams>,
 ) -> HttpResult<CreateTermbasePayload> {
-    usecase::termbase::create(harn.drive(), harn.repo(), user_token, params)
+    usecase::termbase::create((harn.drive(), harn.repo(),), user_token, params)
         .await?
         .accept(StatusCode::CREATED)
 }
@@ -81,7 +86,7 @@ pub async fn list_team_infos(
         limit: query.limit,
     };
 
-    usecase::termbase::list_team_infos(harn.repo(), user_token, params)
+    usecase::termbase::list_team_infos((harn.repo(),), user_token, params)
         .await?
         .accept(StatusCode::OK)
 }
@@ -113,7 +118,7 @@ pub async fn list_comic_infos(
         limit: query.limit,
     };
 
-    usecase::termbase::list_comic_infos(harn.repo(), user_token, params)
+    usecase::termbase::list_comic_infos((harn.repo(),), user_token, params)
         .await?
         .accept(StatusCode::OK)
 }
@@ -136,7 +141,7 @@ pub async fn get_info(
     Path(termbase_id): Path<String>,
     Extension(user_token): Extension<UserToken>,
 ) -> HttpResult<TermbaseInfoVal> {
-    usecase::termbase::get_info(harn.repo(), user_token, termbase_id)
+    usecase::termbase::get_info((harn.repo(),), user_token, termbase_id)
         .await?
         .accept(StatusCode::OK)
 }
@@ -164,9 +169,7 @@ pub async fn update_info(
     //
     ensure_path_matches_body_id(&termbase_id, &params.id)?;
 
-    usecase::termbase::update_info(
-        harn.drive(),
-        harn.repo(),
+    usecase::termbase::update_info((harn.drive(), harn.repo(),),
         user_token,
         params,
     )
@@ -194,9 +197,7 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    usecase::termbase::delete(
-        harn.drive(),
-        harn.repo(),
+    usecase::termbase::delete((harn.drive(), harn.repo(),),
         user_token,
         termbase_id,
     )

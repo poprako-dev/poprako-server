@@ -13,9 +13,15 @@ use crate::complex::image::ImageComplex;
 use crate::complex::member::MemberComplex;
 use crate::complex::team::{TeamComplex, TeamPermComplex};
 use crate::data::image::ImageUploadSlotVal;
-use crate::data::team::{CreateTeamParams, ListTeamInfosParams, MarkTeamAvatarUploadedParams, ReserveTeamAvatarParams, ReserveTeamAvatarPayload, TeamInfoVal, UpdateTeamInfoParams};
+use crate::data::team::{
+    CreateTeamParams, ListTeamInfosParams, MarkTeamAvatarUploadedParams,
+    ReserveTeamAvatarParams, ReserveTeamAvatarPayload, TeamInfoVal,
+    UpdateTeamInfoParams,
+};
 use crate::model::member::MemberEntry;
-use crate::model::team::{TeamEntry, TeamInfo, TeamInfoListKind, TeamInfoListSpec};
+use crate::model::team::{
+    TeamEntry, TeamInfo, TeamInfoListKind, TeamInfoListSpec,
+};
 use crate::model::user::UserToken;
 use crate::part::image::{ImageManager, ImagePool, ImageUploadSpec};
 use crate::part::prom::Prom;
@@ -27,15 +33,31 @@ use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::assignment::DeleteAssignments;
 use crate::part::repo::oper::assignment_invitation::DeleteAssignmentInvitations;
-use crate::part::repo::oper::chapter::{DeleteChapter, GetChapterInfoExcluded, ListChapterInfosExcluded, UnpinOtherChapters, UpdateChapter};
-use crate::part::repo::oper::comic::{DeleteComic, GetComicInfoExcluded, ListComicInfosExcluded, TouchComicLastActive, UpdateComicChapterCount};
-use crate::part::repo::oper::member::{CreateMember, DeleteMember, FindMemberInfo, ListMemberInfosExcluded};
+use crate::part::repo::oper::chapter::{
+    DeleteChapter, GetChapterInfoExcluded, ListChapterInfosExcluded,
+    UnpinOtherChapters, UpdateChapter,
+};
+use crate::part::repo::oper::comic::{
+    DeleteComic, GetComicInfoExcluded, ListComicInfosExcluded,
+    TouchComicLastActive, UpdateComicChapterCount,
+};
+use crate::part::repo::oper::member::{
+    CreateMember, DeleteMember, FindMemberInfo, ListMemberInfosExcluded,
+};
 use crate::part::repo::oper::page::{DeletePages, ListPageInfos};
-use crate::part::repo::oper::team::{CreateTeam, DeleteTeam, GetTeamInfo, GetTeamInfoExcluded, ListTeamInfos, ReserveTeamAvatar, UpdateTeam};
+use crate::part::repo::oper::team::{
+    CreateTeam, DeleteTeam, GetTeamInfo, GetTeamInfoExcluded, ListTeamInfos,
+    ReserveTeamAvatar, UpdateTeam,
+};
 use crate::part::repo::oper::term::DeleteTerms;
-use crate::part::repo::oper::termbase::{DeleteTermbase, GetTermbaseInfoExcluded, ListTermbaseInfosExcluded};
+use crate::part::repo::oper::termbase::{
+    DeleteTermbase, GetTermbaseInfoExcluded, ListTermbaseInfosExcluded,
+};
 use crate::part::repo::oper::user::{GetUserInfo, GetUserInfoExcluded};
-use crate::part::repo::oper::workset::{DeleteWorkset, GetWorksetInfoExcluded, ListWorksetInfosExcluded, UpdateWorksetComicCount};
+use crate::part::repo::oper::workset::{
+    DeleteWorkset, GetWorksetInfoExcluded, ListWorksetInfosExcluded,
+    UpdateWorksetComicCount,
+};
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::term::TermRepo;
@@ -60,9 +82,7 @@ mod tests;
 /// * `I: ImagePool` — Resolves the avatar signed URL.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn create<N, C, R, I>(
-    nucl: &N,
-    repo: &R,
-    image_pool: &I,
+    (nucl, repo, image_pool): (&N, &R, &I),
     token: UserToken,
     params: CreateTeamParams,
 ) -> BaseResult<TeamInfoVal>
@@ -132,8 +152,7 @@ where
 /// * `I: ImagePool` — Resolves the avatar signed URL.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn get_info<C, R, I>(
-    repo: &R,
-    image_pool: &I,
+    (repo, image_pool): (&R, &I),
     id: String,
 ) -> BaseResult<TeamInfoVal>
 where
@@ -158,8 +177,7 @@ where
 /// * `I: ImagePool` — Resolves avatar signed URLs.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn list_infos<C, R, I>(
-    repo: &R,
-    image_pool: &I,
+    (repo, image_pool): (&R, &I),
     token: UserToken,
     // FIXME: use try_into()?
     params: ListTeamInfosParams,
@@ -227,7 +245,7 @@ where
 /// * `R: TeamRepo<C>` — Team storage.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn update_info<C, R>(
-    repo: &R,
+    (repo,): (&R,),
     token: UserToken,
     params: UpdateTeamInfoParams,
 ) -> BaseResult<()>
@@ -275,10 +293,7 @@ where
 /// * `I: ImagePool` — Generates the signed upload URL.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn reserve_avatar<N, C, R, P, I>(
-    nucl: &N,
-    repo: &R,
-    prom: &P,
-    image_pool: &I,
+    (nucl, repo, prom, image_pool): (&N, &R, &P, &I),
     token: UserToken,
     id: String,
     params: ReserveTeamAvatarParams,
@@ -345,9 +360,11 @@ where
                 //
                 batch_ids.push(ImageComplex::gen_delete_id());
 
-                batch_payloads.push(TaskPayload::Image(image::ImagePayload::Delete {
-                    object_key: prev_key.clone(),
-                }));
+                batch_payloads.push(TaskPayload::Image(
+                    image::ImagePayload::Delete {
+                        object_key: prev_key.clone(),
+                    },
+                ));
 
                 batch_delays.push(None);
             }
@@ -355,14 +372,16 @@ where
             // Schedule an upload verification check 15 minutes from now.
             batch_ids.push(ImageComplex::gen_check_id());
 
-            batch_payloads.push(TaskPayload::Image(image::ImagePayload::CheckUpload {
-                resource_kind: image::ResourceKind::TeamAvatar,
-                resource_id: id.clone(),
-                object_key: avatar_reservation.object_key.clone(),
-                version: avatar_reservation.avatar_version,
-                image_hash: transaction_image_hash.clone(),
-                image_ext,
-            }));
+            batch_payloads.push(TaskPayload::Image(
+                image::ImagePayload::CheckUpload {
+                    resource_kind: image::ResourceKind::TeamAvatar,
+                    resource_id: id.clone(),
+                    object_key: avatar_reservation.object_key.clone(),
+                    version: avatar_reservation.avatar_version,
+                    image_hash: transaction_image_hash.clone(),
+                    image_ext,
+                },
+            ));
 
             batch_delays.push(Some(Duration::from_secs(15 * 60)));
 
@@ -426,9 +445,7 @@ where
 /// * `R: TeamRepo<C>` — Team storage.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn mark_avatar_uploaded<N, C, R, I>(
-    nucl: &N,
-    repo: &R,
-    image_manager: &I,
+    (nucl, repo, image_manager): (&N, &R, &I),
     token: UserToken,
     id: String,
     params: MarkTeamAvatarUploadedParams,
@@ -538,9 +555,7 @@ where
 /// * `P: Prom<C>` — Prom enqueuer for deferred avatar deletion.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn delete<N, C, R, P>(
-    nucl: &N,
-    repo: &R,
-    prom: &P,
+    (nucl, repo, prom): (&N, &R, &P),
     token: UserToken,
     id: String,
 ) -> BaseResult<()>

@@ -10,7 +10,10 @@
 
 use super::*;
 
-use crate::data::assignment_invitation::{CreateAssignmentInvitationParams, JoinAssignmentInvitationParams, ListAssignmentInvitationInfosParams};
+use crate::data::assignment_invitation::{
+    CreateAssignmentInvitationParams, JoinAssignmentInvitationParams,
+    ListAssignmentInvitationInfosParams,
+};
 use crate::model::assignment::AssignmentInfo;
 use crate::model::assignment_invitation::AssignmentInvitationInfo;
 use crate::model::chapter::ChapterInfo;
@@ -260,7 +263,7 @@ async fn list_infos_reviewer_lists_chapter_invitations() {
         role(RoleField::TRANSLATOR),
     ));
 
-    let val = list_infos(&mock, token("admin-user"), list_data())
+    let val = list_infos((&mock,), token("admin-user"), list_data())
         .await
         .unwrap();
 
@@ -282,7 +285,7 @@ async fn list_infos_non_reviewer_is_rejected() {
         role(RoleField::TRANSLATOR),
     ));
 
-    let err = list_infos(&mock, token("normal-user"), list_data())
+    let err = list_infos((&mock,), token("normal-user"), list_data())
         .await
         .err()
         .unwrap();
@@ -306,10 +309,7 @@ async fn create_reviewer_creates_pending_invitation() {
 
     let before = now();
 
-    let val = create(
-        &mock,
-        &mock,
-        &mock,
+    let val = create((&mock, &mock, &mock,),
         token("admin-user"),
         create_data("target-qid"),
     )
@@ -364,10 +364,7 @@ async fn create_rejects_published_chapter() {
             .unwrap();
     }
 
-    let result = create(
-        &mock,
-        &mock,
-        &mock,
+    let result = create((&mock, &mock, &mock,),
         token("admin-user"),
         create_data("target-qid"),
     )
@@ -398,10 +395,7 @@ async fn create_existing_assignment_is_rejected() {
         role(RoleField::TRANSLATOR),
     ));
 
-    let err = create(
-        &mock,
-        &mock,
-        &mock,
+    let err = create((&mock, &mock, &mock,),
         token("admin-user"),
         create_data("target-qid"),
     )
@@ -431,7 +425,7 @@ async fn delete_reviewer_deletes_invitation() {
         role(RoleField::TRANSLATOR),
     ));
 
-    delete(&mock, &mock, token("admin-user"), "invitation-1".into())
+    delete((&mock, &mock,), token("admin-user"), "invitation-1".into())
         .await
         .unwrap();
 
@@ -451,7 +445,7 @@ async fn delete_non_reviewer_is_rejected() {
         role(RoleField::TRANSLATOR),
     ));
 
-    let err = delete(&mock, &mock, token("normal-user"), "invitation-1".into())
+    let err = delete((&mock, &mock,), token("normal-user"), "invitation-1".into())
         .await
         .err()
         .unwrap();
@@ -481,7 +475,7 @@ async fn join_invited_user_creates_assignment_and_consumes_invitation() {
         role(RoleField::TRANSLATOR),
     ));
 
-    join(&mock, &mock, &mock, token("target-user"), join_data())
+    join((&mock, &mock, &mock,), token("target-user"), join_data())
         .await
         .unwrap();
 
@@ -527,7 +521,7 @@ async fn join_existing_assignment_merges_roles() {
         role(RoleField::PROOFREADER),
     ));
 
-    join(&mock, &mock, &mock, token("target-user"), join_data())
+    join((&mock, &mock, &mock,), token("target-user"), join_data())
         .await
         .unwrap();
 
@@ -564,7 +558,7 @@ async fn join_mismatched_qid_is_rejected() {
         role(RoleField::TRANSLATOR),
     ));
 
-    let err = join(&mock, &mock, &mock, token("target-user"), join_data())
+    let err = join((&mock, &mock, &mock,), token("target-user"), join_data())
         .await
         .err()
         .unwrap();

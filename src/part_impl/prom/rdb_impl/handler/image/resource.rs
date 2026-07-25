@@ -7,8 +7,12 @@ use tracing::instrument;
 
 use crate::part::prom::payload::image::ResourceKind;
 use crate::part::repo::comic::ComicRepo;
-use crate::part::repo::oper::comic::{GetComicInfoExcluded, MarkComicCoverUploaded};
-use crate::part::repo::oper::page::{GetPageInfoExcluded, MarkPageImageUploaded};
+use crate::part::repo::oper::comic::{
+    GetComicInfoExcluded, MarkComicCoverUploaded,
+};
+use crate::part::repo::oper::page::{
+    GetPageInfoExcluded, MarkPageImageUploaded,
+};
 use crate::part::repo::oper::team::{GetTeamInfoExcluded, UpdateTeam};
 use crate::part::repo::oper::user::{GetUserInfoExcluded, UpdateUser};
 use crate::part::repo::page::PageRepo;
@@ -80,12 +84,8 @@ where
     let resource_state = nucl
         .coord(async move |context| {
             //
-            let resource_state = classify_expected_mark(
-                repo,
-                context,
-                image_identity,
-            )
-            .await?;
+            let resource_state =
+                classify_expected_mark(repo, context, image_identity).await?;
 
             if !matches!(resource_state, ResourceState::Current) {
                 return accept(resource_state);

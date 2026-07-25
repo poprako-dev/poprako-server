@@ -31,7 +31,10 @@ use super::*;
 use time::OffsetDateTime;
 
 use crate::complex::user::UserComplex;
-use crate::data::user::{MarkUserAvatarUploadedParams, ReserveUserAvatarParams, UpdateUserInfoParams, UpdateUserPasswordParams};
+use crate::data::user::{
+    MarkUserAvatarUploadedParams, ReserveUserAvatarParams,
+    UpdateUserInfoParams, UpdateUserPasswordParams,
+};
 use crate::model::member::MemberInfo;
 use crate::model::user::{UserInfo, UserToken};
 use crate::part::effect::event::Event;
@@ -41,7 +44,10 @@ use crate::part_impl::prom::mock_impl::MockPromRecord;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::fixture::{credential, user};
-use crate::test_util::{assert_expected_message, assert_expected_variant, assert_one_image_check_record};
+use crate::test_util::{
+    assert_expected_message, assert_expected_variant,
+    assert_one_image_check_record,
+};
 use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
 
@@ -148,7 +154,7 @@ async fn get_info_emits_active_for_self() {
         credential("user-1", "password"),
     );
 
-    let val = get_info(&mock, &mock, &mock, token("user-1"), "user-1".into())
+    let val = get_info((&mock, &mock, &mock,), token("user-1"), "user-1".into())
         .await
         .unwrap();
 
@@ -177,7 +183,7 @@ async fn get_info_does_not_emit_active_for_other_user() {
         credential("user-2", "password"),
     );
 
-    get_info(&mock, &mock, &mock, token("user-1"), "user-2".into())
+    get_info((&mock, &mock, &mock,), token("user-1"), "user-2".into())
         .await
         .unwrap();
 
@@ -189,7 +195,7 @@ async fn get_info_propagates_missing_user() {
     //
     let mock = Mock::new();
 
-    let err = get_info(&mock, &mock, &mock, token("user-1"), "user-1".into())
+    let err = get_info((&mock, &mock, &mock,), token("user-1"), "user-1".into())
         .await
         .err()
         .unwrap();
@@ -209,9 +215,7 @@ async fn update_info_updates_user_and_member_nickname() {
 
     mock.seed_member(member("member-1", "user-1", "Old", "team-1"));
 
-    update_info(
-        &mock,
-        &mock,
+    update_info((&mock, &mock,),
         token("user-1"),
         update_params("user-1", "qid-new", "New"),
     )
@@ -237,9 +241,7 @@ async fn update_info_rejects_non_owner_without_mutation() {
         credential("user-1", "password"),
     );
 
-    let err = update_info(
-        &mock,
-        &mock,
+    let err = update_info((&mock, &mock,),
         token("user-2"),
         update_params("user-1", "qid-new", "New"),
     )
@@ -261,9 +263,7 @@ async fn update_info_rolls_back_missing_user() {
     //
     let mock = Mock::new();
 
-    let err = update_info(
-        &mock,
-        &mock,
+    let err = update_info((&mock, &mock,),
         token("user-1"),
         update_params("user-1", "qid-new", "New"),
     )
@@ -286,9 +286,7 @@ async fn update_password_replaces_the_verified_password() {
         credential("user-1", "old-password"),
     );
 
-    update_password(
-        &mock,
-        &mock,
+    update_password((&mock, &mock,),
         token("user-1"),
         "user-1".into(),
         update_password_params("old-password", "new-password"),
@@ -325,9 +323,7 @@ async fn update_password_rejects_an_incorrect_current_password() {
         credential("user-1", "old-password"),
     );
 
-    let err = update_password(
-        &mock,
-        &mock,
+    let err = update_password((&mock, &mock,),
         token("user-1"),
         "user-1".into(),
         update_password_params("wrong-password", "new-password"),
@@ -359,11 +355,7 @@ async fn reserve_avatar_updates_state_enqueues_check_and_returns_put_url() {
         credential("user-1", "password"),
     );
 
-    let val = reserve_avatar(
-        &mock,
-        &mock,
-        &mock,
-        &mock,
+    let val = reserve_avatar((&mock, &mock, &mock, &mock,),
         token("user-1"),
         reserve_params("png"),
     )
@@ -405,11 +397,7 @@ async fn reserve_avatar_replacing_avatar_enqueues_delete_and_check() {
         credential("user-1", "password"),
     );
 
-    reserve_avatar(
-        &mock,
-        &mock,
-        &mock,
-        &mock,
+    reserve_avatar((&mock, &mock, &mock, &mock,),
         token("user-1"),
         reserve_params("jpg"),
     )
@@ -434,11 +422,7 @@ async fn reserve_avatar_rolls_back_missing_user() {
     //
     let mock = Mock::new();
 
-    let err = reserve_avatar(
-        &mock,
-        &mock,
-        &mock,
-        &mock,
+    let err = reserve_avatar((&mock, &mock, &mock, &mock,),
         token("user-1"),
         reserve_params("png"),
     )
@@ -465,11 +449,7 @@ async fn reserve_avatar_propagates_put_url_failure_after_commit() {
         credential("user-1", "password"),
     );
 
-    let err = reserve_avatar(
-        &mock,
-        &mock,
-        &mock,
-        &mock,
+    let err = reserve_avatar((&mock, &mock, &mock, &mock,),
         token("user-1"),
         reserve_params("png"),
     )
@@ -499,10 +479,7 @@ async fn mark_avatar_uploaded_marks_matching_version() {
         credential("user-1", "password"),
     );
 
-    mark_avatar_uploaded(
-        &mock,
-        &mock,
-        &mock,
+    mark_avatar_uploaded((&mock, &mock, &mock,),
         token("user-1"),
         "user-1".into(),
         mark_params(2),
@@ -523,10 +500,7 @@ async fn mark_avatar_uploaded_accepts_repeated_matching_version() {
         credential("user-1", "password"),
     );
 
-    let first = mark_avatar_uploaded(
-        &mock,
-        &mock,
-        &mock,
+    let first = mark_avatar_uploaded((&mock, &mock, &mock,),
         token("user-1"),
         "user-1".into(),
         mark_params(2),
@@ -535,10 +509,7 @@ async fn mark_avatar_uploaded_accepts_repeated_matching_version() {
 
     assert!(first.is_ok());
 
-    let second = mark_avatar_uploaded(
-        &mock,
-        &mock,
-        &mock,
+    let second = mark_avatar_uploaded((&mock, &mock, &mock,),
         token("user-1"),
         "user-1".into(),
         mark_params(2),
@@ -560,10 +531,7 @@ async fn mark_avatar_uploaded_rejects_non_owner() {
         credential("user-1", "password"),
     );
 
-    let err = mark_avatar_uploaded(
-        &mock,
-        &mock,
-        &mock,
+    let err = mark_avatar_uploaded((&mock, &mock, &mock,),
         token("user-2"),
         "user-1".into(),
         mark_params(2),
@@ -587,10 +555,7 @@ async fn mark_avatar_uploaded_rolls_back_stale_version() {
         credential("user-1", "password"),
     );
 
-    let err = mark_avatar_uploaded(
-        &mock,
-        &mock,
-        &mock,
+    let err = mark_avatar_uploaded((&mock, &mock, &mock,),
         token("user-1"),
         "user-1".into(),
         mark_params(1),
@@ -618,11 +583,7 @@ async fn mark_avatar_uploaded_rejects_old_reservation_replay() {
         credential("user-1", "password"),
     );
 
-    let reserved = reserve_avatar(
-        &mock,
-        &mock,
-        &mock,
-        &mock,
+    let reserved = reserve_avatar((&mock, &mock, &mock, &mock,),
         token("user-1"),
         reserve_params("png"),
     )
@@ -632,10 +593,7 @@ async fn mark_avatar_uploaded_rejects_old_reservation_replay() {
 
     assert_eq!(reserved.slot.as_ref().unwrap().image_version, 2);
 
-    let err = mark_avatar_uploaded(
-        &mock,
-        &mock,
-        &mock,
+    let err = mark_avatar_uploaded((&mock, &mock, &mock,),
         token("user-1"),
         "user-1".into(),
         mark_params(1),

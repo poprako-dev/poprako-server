@@ -14,7 +14,9 @@ use crate::api::http::result::{Accept as _, HttpBody, HttpError, HttpResult};
 use crate::api::http::state::AppHarn;
 #[allow(unused_imports)]
 use crate::data::chapter_port::ExportChapterTranslationPayload;
-use crate::data::chapter_port::{ImportChapterTranslationParams, ImportChapterTranslationPayload};
+use crate::data::chapter_port::{
+    ImportChapterTranslationParams, ImportChapterTranslationPayload,
+};
 use crate::model::user::UserToken;
 use crate::usecase;
 use crate::value::chapter_port::TranslationFormat;
@@ -46,9 +48,7 @@ pub async fn import(
     Extension(user_token): Extension<UserToken>,
     Json(params): Json<ImportChapterTranslationParams>,
 ) -> HttpResult<ImportChapterTranslationPayload> {
-    usecase::chapter_port::import(
-        harn.drive(),
-        harn.repo(),
+    usecase::chapter_port::import((harn.drive(), harn.repo(),),
         user_token,
         params,
         chapter_id,
@@ -146,8 +146,7 @@ async fn export_payload(
         //
         TranslationFormat::PopRaKo => {
             //
-            let val = usecase::chapter_port::export(
-                harn.repo(),
+            let val = usecase::chapter_port::export((harn.repo(),),
                 user_token,
                 chapter_id,
             )
@@ -172,8 +171,7 @@ async fn export_payload(
 
         TranslationFormat::LabelPlus => {
             //
-            let content = usecase::chapter_port::export_label_plus(
-                harn.repo(),
+            let content = usecase::chapter_port::export_label_plus((harn.repo(),),
                 user_token,
                 chapter_id,
             )

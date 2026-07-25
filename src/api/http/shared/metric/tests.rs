@@ -70,33 +70,13 @@ fn read_excludes_buckets_outside_current_window() {
     //
     let metric_window = MetricWindow::new();
 
-    metric_window.record(
-        39,
-        200,
-        Some("/expired"),
-        Duration::from_millis(10),
-    );
+    metric_window.record(39, 200, Some("/expired"), Duration::from_millis(10));
 
-    metric_window.record(
-        40,
-        200,
-        Some("/expired"),
-        Duration::from_millis(10),
-    );
+    metric_window.record(40, 200, Some("/expired"), Duration::from_millis(10));
 
-    metric_window.record(
-        100,
-        200,
-        Some("/current"),
-        Duration::from_millis(10),
-    );
+    metric_window.record(100, 200, Some("/current"), Duration::from_millis(10));
 
-    metric_window.record(
-        161,
-        200,
-        Some("/future"),
-        Duration::from_millis(10),
-    );
+    metric_window.record(161, 200, Some("/future"), Duration::from_millis(10));
 
     let metric_total = metric_window.read(100);
 

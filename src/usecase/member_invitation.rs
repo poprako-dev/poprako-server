@@ -9,9 +9,18 @@ use tracing::instrument;
 
 use poprako_util::i18n::trl;
 
-use crate::complex::member_invitation::{MemberInvitationComplex, MemberInvitationPermComplex};
-use crate::data::member_invitation::{CreateMemberInvitationParams, CreateMemberInvitationPayload, ListMemberInvitationInfosParams, MemberInvitationInfoVal, UpdateMemberInvitationRolesParams};
-use crate::model::member_invitation::{MemberInvitationEntry, MemberInvitationListKind, MemberInvitationListSpec, MemberInvitationUpdate};
+use crate::complex::member_invitation::{
+    MemberInvitationComplex, MemberInvitationPermComplex,
+};
+use crate::data::member_invitation::{
+    CreateMemberInvitationParams, CreateMemberInvitationPayload,
+    ListMemberInvitationInfosParams, MemberInvitationInfoVal,
+    UpdateMemberInvitationRolesParams,
+};
+use crate::model::member_invitation::{
+    MemberInvitationEntry, MemberInvitationListKind, MemberInvitationListSpec,
+    MemberInvitationUpdate,
+};
 use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
 use crate::part::prom::Prom;
@@ -20,7 +29,10 @@ use crate::part::prom::payload::invitation::InvitationPayload;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::member_invitation::MemberInvitationRepo;
 use crate::part::repo::oper::member::FindMemberInfo;
-use crate::part::repo::oper::member_invitation::{CreateMemberInvitation, DeleteMemberInvitation, GetMemberInvitationInfo, ListMemberInvitationInfos, UpdateMemberInvitation};
+use crate::part::repo::oper::member_invitation::{
+    CreateMemberInvitation, DeleteMemberInvitation, GetMemberInvitationInfo,
+    ListMemberInvitationInfos, UpdateMemberInvitation,
+};
 use crate::part::repo::oper::user::FindUserInfo;
 use crate::part::repo::user::UserRepo;
 use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
@@ -34,9 +46,7 @@ const EXPIRY_DELAY: Duration = Duration::from_secs(5 * 24 * 60 * 60);
 /// Creates a pending invitation for a team.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn create<N, C, R, P>(
-    nucl: &N,
-    repo: &R,
-    prom: &P,
+    (nucl, repo, prom): (&N, &R, &P),
     token: UserToken,
     params: CreateMemberInvitationParams,
 ) -> BaseResult<CreateMemberInvitationPayload>
@@ -142,8 +152,7 @@ where
 /// Lists invitations for a team.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn list_infos<C, R, I>(
-    repo: &R,
-    image_pool: &I,
+    (repo, image_pool): (&R, &I),
     token: UserToken,
     params: ListMemberInvitationInfosParams,
 ) -> BaseResult<Vec<MemberInvitationInfoVal>>
@@ -202,8 +211,7 @@ where
 /// Updates the roles of an invitation.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn update_roles<N, C, R>(
-    nucl: &N,
-    repo: &R,
+    (nucl, repo): (&N, &R),
     token: UserToken,
     params: UpdateMemberInvitationRolesParams,
 ) -> BaseResult<()>
@@ -250,8 +258,7 @@ where
 /// Deletes an invitation.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn delete<N, C, R>(
-    nucl: &N,
-    repo: &R,
+    (nucl, repo): (&N, &R),
     token: UserToken,
     id: String,
 ) -> BaseResult<()>

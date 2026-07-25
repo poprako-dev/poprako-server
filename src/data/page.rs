@@ -111,8 +111,10 @@ pub struct PageImageParams {
     pub page_id: Option<String>,
     /// Content hash of the page image.
     pub image_hash: ImageHash,
-    /// Size used to constrain the presigned upload.
-    pub byte_length: u64,
+    /// Size used to constrain a requested upload slot.
+    ///
+    /// Existing manifest entries may omit this when no upload slot is needed.
+    pub byte_length: Option<u64>,
     /// File format.
     pub ext: ImageExt,
 }

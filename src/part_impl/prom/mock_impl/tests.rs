@@ -121,16 +121,12 @@ async fn purge_expired_invitations() {
         ];
 
         let payloads = [
-            TaskPayload::Invitation(
-                InvitationPayload::Assignment {
-                    invitation_id: "assignment-pending".to_string(),
-                },
-            ),
-            TaskPayload::Invitation(
-                InvitationPayload::Assignment {
-                    invitation_id: "assignment-accepted".to_string(),
-                },
-            ),
+            TaskPayload::Invitation(InvitationPayload::Assignment {
+                invitation_id: "assignment-pending".to_string(),
+            }),
+            TaskPayload::Invitation(InvitationPayload::Assignment {
+                invitation_id: "assignment-accepted".to_string(),
+            }),
             TaskPayload::Invitation(InvitationPayload::Member {
                 invitation_id: "member-pending".to_string(),
             }),

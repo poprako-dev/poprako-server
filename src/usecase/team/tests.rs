@@ -32,7 +32,10 @@ use super::*;
 
 use time::OffsetDateTime;
 
-use crate::data::team::{CreateTeamParams, ListTeamInfosParams, MarkTeamAvatarUploadedParams, ReserveTeamAvatarParams, UpdateTeamInfoParams};
+use crate::data::team::{
+    CreateTeamParams, ListTeamInfosParams, MarkTeamAvatarUploadedParams,
+    ReserveTeamAvatarParams, UpdateTeamInfoParams,
+};
 use crate::model::comic::ComicInfo;
 use crate::model::member::MemberInfo;
 use crate::model::team::TeamInfo;
@@ -43,7 +46,10 @@ use crate::part_impl::prom::mock_impl::MockPromRecord;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::fixture::{team, workset};
-use crate::test_util::{assert_expected_message, assert_expected_variant, assert_one_image_check_record};
+use crate::test_util::{
+    assert_expected_message, assert_expected_variant,
+    assert_one_image_check_record,
+};
 use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
 
@@ -209,10 +215,7 @@ async fn create_persists_team_and_returns_info() {
 
     mock.seed_user(user("user-1", true), credential("user-1"));
 
-    let val = create(
-        &mock,
-        &mock,
-        &mock,
+    let val = create((&mock, &mock, &mock,),
         token("user-1"),
         CreateTeamParams {
             name: "Team".into(),
@@ -240,10 +243,7 @@ async fn create_makes_creator_admin_member() {
 
     mock.seed_user(user("user-1", true), credential("user-1"));
 
-    let val = create(
-        &mock,
-        &mock,
-        &mock,
+    let val = create((&mock, &mock, &mock,),
         token("user-1"),
         CreateTeamParams {
             name: "Team".into(),
@@ -273,10 +273,7 @@ async fn create_propagates_repo_failure() {
 
     mock.seed_user(user("user-1", true), credential("user-1"));
 
-    let err = create(
-        &mock,
-        &mock,
-        &mock,
+    let err = create((&mock, &mock, &mock,),
         token("user-1"),
         CreateTeamParams {
             name: "Team".into(),
@@ -304,7 +301,7 @@ async fn get_info_returns_uploaded_avatar_url() {
         2,
     ));
 
-    let val = get_info(&mock, &mock, "team-1".into()).await.unwrap();
+    let val = get_info((&mock, &mock,), "team-1".into()).await.unwrap();
 
     assert_eq!(val.id, "team-1");
 
@@ -326,7 +323,7 @@ async fn get_info_propagates_missing_team() {
     //
     let mock = Mock::new();
 
-    let err = get_info(&mock, &mock, "team-1".into()).await.err().unwrap();
+    let err = get_info((&mock, &mock,), "team-1".into()).await.err().unwrap();
 
     assert_expected_variant(err, ExpectedVariant::Args);
 }
@@ -348,9 +345,7 @@ async fn list_infos_returns_paged_teams() {
 
     mock.seed_member(member("member-3", "user-2", "team-1"));
 
-    let val = list_infos(
-        &mock,
-        &mock,
+    let val = list_infos((&mock, &mock,),
         token("user-1"),
         list_params(Some("user-1"), 0, 1),
     )
@@ -369,9 +364,7 @@ async fn list_infos_returns_empty_page_when_offset_exceeds_data() {
 
     mock.seed_team(team("team-1", "A", "Desc"));
 
-    let val = list_infos(
-        &mock,
-        &mock,
+    let val = list_infos((&mock, &mock,),
         token("user-1"),
         list_params(Some("user-1"), 10, 10),
     )
@@ -391,7 +384,7 @@ async fn list_infos_all_teams_requires_sadmin() {
     mock.seed_user(user("user-1", false), credential("user-1"));
 
     let err =
-        list_infos(&mock, &mock, token("user-1"), list_params(None, 0, 10))
+        list_infos((&mock, &mock,), token("user-1"), list_params(None, 0, 10))
             .await
             .err()
             .unwrap();
@@ -408,8 +401,7 @@ async fn update_info_updates_team() {
 
     mock.seed_member(member("member-1", "user-1", "team-1"));
 
-    update_info(
-        &mock,
+    update_info((&mock,),
         token("user-1"),
         update_params("team-1", "New", "New Desc"),
     )
@@ -430,8 +422,7 @@ async fn update_info_propagates_missing_team() {
 
     mock.seed_member(member("member-1", "user-1", "team-1"));
 
-    let err = update_info(
-        &mock,
+    let err = update_info((&mock,),
         token("user-1"),
         update_params("team-1", "New", "New Desc"),
     )

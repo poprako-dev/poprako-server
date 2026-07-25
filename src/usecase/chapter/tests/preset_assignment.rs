@@ -7,9 +7,7 @@ async fn create_rejects_preset_role_missing_from_membership() {
 
     seed_scope(&mock, "user-1", RoleMask::from(RoleField::ADMIN));
 
-    let err = create(
-        &mock,
-        &mock,
+    let err = create((&mock, &mock,),
         token("user-1"),
         CreateChapterParams {
             comic_id: "comic-1".into(),

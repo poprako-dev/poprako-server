@@ -7,13 +7,20 @@ use tracing::instrument;
 use crate::complex::assignment::AssignmentComplex;
 use crate::complex::chapter::{ChapterComplex, ChapterPermComplex};
 use crate::complex::comic::ComicComplex;
-use crate::data::chapter::{ChapterInfoVal, CreateChapterParams, CreateChapterPayload, ListChapterInfosParams, UpdateChapterInfoParams, UpdateChapterStageParams};
+use crate::data::chapter::{
+    ChapterInfoVal, CreateChapterParams, CreateChapterPayload,
+    ListChapterInfosParams, UpdateChapterInfoParams, UpdateChapterStageParams,
+};
 use crate::model::assignment::AssignmentEntry;
-use crate::model::chapter::{ChapterEntry, ChapterInfoListSpec, ChapterInfoUpdate};
+use crate::model::chapter::{
+    ChapterEntry, ChapterInfoListSpec, ChapterInfoUpdate,
+};
 use crate::model::user::UserToken;
 use crate::part::effect::EffectDevelop;
 use crate::part::effect::event::Event;
-use crate::part::effect::event::chapter::{ChapterPublishedPayload, ChapterWorkflowCompletedPayload};
+use crate::part::effect::event::chapter::{
+    ChapterPublishedPayload, ChapterWorkflowCompletedPayload,
+};
 use crate::part::image::ImagePool;
 use crate::part::prom::Prom;
 use crate::part::prom::payload::TaskPayload;
@@ -21,11 +28,22 @@ use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
-use crate::part::repo::oper::assignment::{CreateAssignment, FindAssignmentInfo, ListAssignmentInfos};
-use crate::part::repo::oper::chapter::{CreateChapter, FindPinnedChapterInfo, GetChapterInfo, GetChapterInfoExcluded, ListChapterInfos, ListPinnedChapterInfos, LockChapters, UnpinOtherChapters, UpdateChapter, UpdateChapterStage};
-use crate::part::repo::oper::comic::{AllocComicChapterIndex, GetComicInfo, TouchComicLastActive, UpdateComicChapterCount};
+use crate::part::repo::oper::assignment::{
+    CreateAssignment, FindAssignmentInfo, ListAssignmentInfos,
+};
+use crate::part::repo::oper::chapter::{
+    CreateChapter, FindPinnedChapterInfo, GetChapterInfo,
+    GetChapterInfoExcluded, ListChapterInfos, ListPinnedChapterInfos,
+    LockChapters, UnpinOtherChapters, UpdateChapter, UpdateChapterStage,
+};
+use crate::part::repo::oper::comic::{
+    AllocComicChapterIndex, GetComicInfo, TouchComicLastActive,
+    UpdateComicChapterCount,
+};
 use crate::part::repo::oper::member::FindMemberInfo;
-use crate::part::repo::oper::page::{ClearPageImagesForPublish, ListFirstPageInfos};
+use crate::part::repo::oper::page::{
+    ClearPageImagesForPublish, ListFirstPageInfos,
+};
 use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::workset::WorksetRepo;
@@ -41,8 +59,7 @@ mod tests;
 /// Lists chapters under one comic.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn list_infos<C, R, I>(
-    repo: &R,
-    image_pool: &I,
+    (repo, image_pool): (&R, &I),
     token: UserToken,
     params: ListChapterInfosParams,
 ) -> BaseResult<Vec<ChapterInfoVal>>
@@ -118,7 +135,7 @@ where
 /// Fetches a chapter by ID.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn get_info<C, R>(
-    repo: &R,
+    (repo,): (&R,),
     token: UserToken,
     id: String,
 ) -> BaseResult<ChapterInfoVal>
@@ -151,7 +168,7 @@ where
 /// Fetches the pinned chapter under one comic.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn get_pinned<C, R>(
-    repo: &R,
+    (repo,): (&R,),
     token: UserToken,
     comic_id: String,
 ) -> BaseResult<Option<ChapterInfoVal>>
@@ -183,8 +200,7 @@ where
 /// Creates a new chapter.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn create<N, C, R>(
-    nucl: &N,
-    repo: &R,
+    (nucl, repo): (&N, &R),
     token: UserToken,
     params: CreateChapterParams,
 ) -> BaseResult<CreateChapterPayload>
@@ -308,8 +324,7 @@ where
 /// Updates chapter metadata.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn update_info<N, C, R>(
-    nucl: &N,
-    repo: &R,
+    (nucl, repo): (&N, &R),
     token: UserToken,
     params: UpdateChapterInfoParams,
 ) -> BaseResult<()>
@@ -397,10 +412,7 @@ where
 /// Updates chapter workflow state.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn update_stage<N, C, R, P, V>(
-    nucl: &N,
-    repo: &R,
-    prom: &P,
-    develop: &V,
+    (nucl, repo, prom, develop): (&N, &R, &P, &V),
     token: UserToken,
     params: UpdateChapterStageParams,
 ) -> BaseResult<()>

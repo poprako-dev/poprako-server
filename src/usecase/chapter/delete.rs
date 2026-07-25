@@ -15,8 +15,13 @@ use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::assignment::DeleteAssignments;
 use crate::part::repo::oper::assignment_invitation::DeleteAssignmentInvitations;
-use crate::part::repo::oper::chapter::{DeleteChapter, GetChapterInfo, GetChapterInfoExcluded, ListChapterInfosExcluded, UnpinOtherChapters, UpdateChapter};
-use crate::part::repo::oper::comic::{GetComicInfo, TouchComicLastActive, UpdateComicChapterCount};
+use crate::part::repo::oper::chapter::{
+    DeleteChapter, GetChapterInfo, GetChapterInfoExcluded,
+    ListChapterInfosExcluded, UnpinOtherChapters, UpdateChapter,
+};
+use crate::part::repo::oper::comic::{
+    GetComicInfo, TouchComicLastActive, UpdateComicChapterCount,
+};
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::page::{DeletePages, ListPageInfos};
 use crate::part::repo::oper::workset::GetWorksetInfo;
@@ -28,9 +33,7 @@ use crate::result::{BaseError, BaseResult, accept};
 /// Deletes one chapter and its descendant core records.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn delete<N, C, R, P>(
-    nucl: &N,
-    repo: &R,
-    prom: &P,
+    (nucl, repo, prom): (&N, &R, &P),
     token: UserToken,
     id: String,
 ) -> BaseResult<()>

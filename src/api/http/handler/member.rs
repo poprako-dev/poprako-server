@@ -12,9 +12,14 @@ use utoipa::IntoParams;
 
 use crate::api::http::handler::util::ensure_path_matches_body_id;
 #[allow(unused_imports)]
-use crate::api::http::result::{Accept as _, HttpBody, HttpNoContent, HttpResult, no_content};
+use crate::api::http::result::{
+    Accept as _, HttpBody, HttpNoContent, HttpResult, no_content,
+};
 use crate::api::http::state::AppHarn;
-use crate::data::member::{CreateMemberParams, CreateMemberPayload, JoinTeamParams, ListMemberInfosParams, MemberInfoVal, UpdateMemberRolesParams};
+use crate::data::member::{
+    CreateMemberParams, CreateMemberPayload, JoinTeamParams,
+    ListMemberInfosParams, MemberInfoVal, UpdateMemberRolesParams,
+};
 use crate::model::user::UserToken;
 use crate::usecase;
 use crate::value::member::MemberInclOpt;
@@ -62,7 +67,7 @@ pub async fn create(
     Extension(user_token): Extension<UserToken>,
     Json(params): Json<CreateMemberParams>,
 ) -> HttpResult<CreateMemberPayload> {
-    usecase::member::create(harn.drive(), harn.repo(), user_token, params)
+    usecase::member::create((harn.drive(), harn.repo(),), user_token, params)
         .await?
         .accept(StatusCode::CREATED)
 }
@@ -86,9 +91,7 @@ pub async fn list_infos(
     Extension(user_token): Extension<UserToken>,
     Query(params): Query<ListMemberInfosParams>,
 ) -> HttpResult<Vec<MemberInfoVal>> {
-    usecase::member::list_infos(
-        harn.repo(),
-        harn.image_pool(),
+    usecase::member::list_infos((harn.repo(), harn.image_pool(),),
         user_token,
         params,
     )
@@ -124,9 +127,7 @@ pub async fn list_my_infos(
         limit: query.limit,
     };
 
-    usecase::member::list_infos(
-        harn.repo(),
-        harn.image_pool(),
+    usecase::member::list_infos((harn.repo(), harn.image_pool(),),
         user_token,
         params,
     )
@@ -158,9 +159,7 @@ pub async fn update_roles(
     //
     ensure_path_matches_body_id(&member_id, &params.id)?;
 
-    usecase::member::update_roles(
-        harn.drive(),
-        harn.repo(),
+    usecase::member::update_roles((harn.drive(), harn.repo(),),
         user_token,
         params,
     )
@@ -188,7 +187,7 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    usecase::member::delete(harn.drive(), harn.repo(), user_token, member_id)
+    usecase::member::delete((harn.drive(), harn.repo(),), user_token, member_id)
         .await?;
 
     no_content()
@@ -212,10 +211,7 @@ pub async fn join(
     Extension(user_token): Extension<UserToken>,
     Json(params): Json<JoinTeamParams>,
 ) -> HttpResult<MemberInfoVal> {
-    usecase::member::join_team(
-        harn.drive(),
-        harn.repo(),
-        harn.image_pool(),
+    usecase::member::join_team((harn.drive(), harn.repo(), harn.image_pool(),),
         user_token,
         params,
     )

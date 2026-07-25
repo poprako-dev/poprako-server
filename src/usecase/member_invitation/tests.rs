@@ -10,7 +10,10 @@
 
 use super::*;
 
-use crate::data::member_invitation::{CreateMemberInvitationParams, ListMemberInvitationInfosParams, UpdateMemberInvitationRolesParams};
+use crate::data::member_invitation::{
+    CreateMemberInvitationParams, ListMemberInvitationInfosParams,
+    UpdateMemberInvitationRolesParams,
+};
 use crate::model::member::MemberInfo;
 use crate::model::member_invitation::MemberInvitationInfo;
 use crate::model::user::{UserCredential, UserInfo, UserToken};
@@ -137,10 +140,7 @@ async fn create_admin_creates_pending_invitation() {
 
     let before = test_util::now();
 
-    let created = create(
-        &mock,
-        &mock,
-        &mock,
+    let created = create((&mock, &mock, &mock,),
         token("admin-user"),
         create_params("team-1", "qid-2"),
     )
@@ -188,10 +188,7 @@ async fn create_non_admin_is_rejected() {
         RoleMask::from(RoleField::TRANSLATOR),
     ));
 
-    let err = create(
-        &mock,
-        &mock,
-        &mock,
+    let err = create((&mock, &mock, &mock,),
         token("normal-user"),
         create_params("team-1", "qid-2"),
     )
@@ -221,7 +218,7 @@ async fn list_infos_member_lists_invitations() {
     mock.seed_member_invitation(invitation("inv-1", "team-1", "qid-2"));
 
     let listed =
-        list_infos(&mock, &mock, token("member-user"), list_params("team-1"))
+        list_infos((&mock, &mock,), token("member-user"), list_params("team-1"))
             .await
             .unwrap();
 
@@ -243,7 +240,7 @@ async fn list_infos_empty_returns_after_membership() {
     ));
 
     let listed =
-        list_infos(&mock, &mock, token("member-user"), list_params("team-1"))
+        list_infos((&mock, &mock,), token("member-user"), list_params("team-1"))
             .await
             .unwrap();
 
@@ -258,7 +255,7 @@ async fn list_infos_non_member_is_rejected() {
     mock.seed_member_invitation(invitation("inv-1", "team-1", "qid-2"));
 
     let err =
-        list_infos(&mock, &mock, token("stranger"), list_params("team-1"))
+        list_infos((&mock, &mock,), token("stranger"), list_params("team-1"))
             .await
             .err()
             .unwrap();
@@ -280,7 +277,7 @@ async fn update_roles_admin_updates_role_mask() {
 
     mock.seed_member_invitation(invitation("inv-1", "team-1", "qid-2"));
 
-    update_roles(&mock, &mock, token("admin-user"), update_params("inv-1"))
+    update_roles((&mock, &mock,), token("admin-user"), update_params("inv-1"))
         .await
         .unwrap();
 
@@ -304,9 +301,7 @@ async fn update_roles_non_admin_is_rejected() {
 
     mock.seed_member_invitation(invitation("inv-1", "team-1", "qid-2"));
 
-    let err = update_roles(
-        &mock,
-        &mock,
+    let err = update_roles((&mock, &mock,),
         token("normal-user"),
         update_params("inv-1"),
     )
@@ -331,7 +326,7 @@ async fn delete_admin_deletes_invitation() {
 
     mock.seed_member_invitation(invitation("inv-1", "team-1", "qid-2"));
 
-    delete(&mock, &mock, token("admin-user"), "inv-1".into())
+    delete((&mock, &mock,), token("admin-user"), "inv-1".into())
         .await
         .unwrap();
 
@@ -352,7 +347,7 @@ async fn delete_non_admin_is_rejected() {
 
     mock.seed_member_invitation(invitation("inv-1", "team-1", "qid-2"));
 
-    let err = delete(&mock, &mock, token("normal-user"), "inv-1".into())
+    let err = delete((&mock, &mock,), token("normal-user"), "inv-1".into())
         .await
         .err()
         .unwrap();

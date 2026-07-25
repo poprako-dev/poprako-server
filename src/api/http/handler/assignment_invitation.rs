@@ -10,10 +10,16 @@ use tracing::instrument;
 use utoipa::IntoParams;
 
 #[allow(unused_imports)]
-use crate::api::http::result::{Accept as _, HttpBody, HttpNoContent, HttpResult, no_content};
+use crate::api::http::result::{
+    Accept as _, HttpBody, HttpNoContent, HttpResult, no_content,
+};
 use crate::api::http::state::AppHarn;
 use crate::data::assignment::AssignmentInfoVal;
-use crate::data::assignment_invitation::{AssignmentInvitationInfoVal, CreateAssignmentInvitationParams, CreateAssignmentInvitationPayload, JoinAssignmentInvitationParams, ListAssignmentInvitationInfosParams};
+use crate::data::assignment_invitation::{
+    AssignmentInvitationInfoVal, CreateAssignmentInvitationParams,
+    CreateAssignmentInvitationPayload, JoinAssignmentInvitationParams,
+    ListAssignmentInvitationInfosParams,
+};
 use crate::model::user::UserToken;
 use crate::usecase;
 
@@ -54,10 +60,7 @@ pub async fn create(
     Extension(user_token): Extension<UserToken>,
     Json(params): Json<CreateAssignmentInvitationParams>,
 ) -> HttpResult<CreateAssignmentInvitationPayload> {
-    usecase::assignment_invitation::create(
-        harn.drive(),
-        harn.repo(),
-        harn.prom(),
+    usecase::assignment_invitation::create((harn.drive(), harn.repo(), harn.prom(),),
         user_token,
         params,
     )
@@ -92,7 +95,7 @@ pub async fn list_infos(
         limit: query.limit,
     };
 
-    usecase::assignment_invitation::list_infos(harn.repo(), user_token, params)
+    usecase::assignment_invitation::list_infos((harn.repo(),), user_token, params)
         .await?
         .accept(StatusCode::OK)
 }
@@ -116,9 +119,7 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    usecase::assignment_invitation::delete(
-        harn.drive(),
-        harn.repo(),
+    usecase::assignment_invitation::delete((harn.drive(), harn.repo(),),
         user_token,
         assignment_invitation_id,
     )
@@ -146,10 +147,7 @@ pub async fn join(
     Extension(user_token): Extension<UserToken>,
     Json(params): Json<JoinAssignmentInvitationParams>,
 ) -> HttpResult<AssignmentInfoVal> {
-    usecase::assignment_invitation::join(
-        harn.drive(),
-        harn.repo(),
-        harn.image_pool(),
+    usecase::assignment_invitation::join((harn.drive(), harn.repo(), harn.image_pool(),),
         user_token,
         params,
     )

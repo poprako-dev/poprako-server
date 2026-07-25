@@ -2,7 +2,10 @@ use std::collections::HashMap;
 
 use poprako_orchestra::Oper;
 
-use crate::model::chapter::{ChapterEntry, ChapterInfo, ChapterInfoListSpec, ChapterInfoUpdate, ChapterStageUpdate};
+use crate::model::chapter::{
+    ChapterEntry, ChapterInfo, ChapterInfoListSpec, ChapterInfoUpdate,
+    ChapterStageUpdate,
+};
 use crate::model::unit::UnitCounterDelta;
 use crate::value::chapter::{ChapterInclOpt, Stage};
 

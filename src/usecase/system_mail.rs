@@ -5,9 +5,13 @@ use tracing::instrument;
 use poprako_util::time::ToUnixMilli as _;
 
 use crate::data::system_mail::{ListSystemMailInfosParams, SystemMailInfoVal};
-use crate::model::system_mail::{SystemMailInfoListKind, SystemMailInfoListSpec};
+use crate::model::system_mail::{
+    SystemMailInfoListKind, SystemMailInfoListSpec,
+};
 use crate::model::user::UserToken;
-use crate::part::repo::oper::system_mail::{ListSystemMailInfos, MarkSystemMailRead};
+use crate::part::repo::oper::system_mail::{
+    ListSystemMailInfos, MarkSystemMailRead,
+};
 use crate::part::repo::system_mail::SystemMailRepo;
 use crate::result::{BaseResult, accept};
 
@@ -29,7 +33,7 @@ mod tests;
 /// [`ListSystemMailInfosParams`]: ListSystemMailInfosParams
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn list_infos<C, R>(
-    repo: &R,
+    (repo,): (&R,),
     token: UserToken,
     params: ListSystemMailInfosParams,
 ) -> BaseResult<Vec<SystemMailInfoVal>>
@@ -84,7 +88,7 @@ where
 /// * `R: SystemMailRepo<C>` — System mail storage.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn mark_read<C, R>(
-    repo: &R,
+    (repo,): (&R,),
     token: UserToken,
     ids: Vec<String>,
 ) -> BaseResult<()>

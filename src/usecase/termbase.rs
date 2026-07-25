@@ -4,7 +4,10 @@ use poprako_orchestra::{Nucl, run_proxy, step_proxy};
 use tracing::instrument;
 
 use crate::complex::termbase::{TermbaseComplex, TermbasePermComplex};
-use crate::data::termbase::{CreateTermbaseParams, CreateTermbasePayload, ListComicTermbaseInfosParams, ListTeamTermbaseInfosParams, TermbaseInfoVal, UpdateTermbaseInfoParams};
+use crate::data::termbase::{
+    CreateTermbaseParams, CreateTermbasePayload, ListComicTermbaseInfosParams,
+    ListTeamTermbaseInfosParams, TermbaseInfoVal, UpdateTermbaseInfoParams,
+};
 use crate::model::termbase::TermbaseInfoListSpec;
 use crate::model::user::UserToken;
 use crate::part::repo::comic::ComicRepo;
@@ -14,7 +17,10 @@ use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::team::LockTeam;
 use crate::part::repo::oper::term::DeleteTerms;
 #[allow(unused_imports)]
-use crate::part::repo::oper::termbase::{CreateTermbase, DeleteTermbase, GetTermbaseInfo, GetTermbaseInfoExcluded, ListTermbaseInfos, ListTermbaseInfosExcluded, UpdateTermbase};
+use crate::part::repo::oper::termbase::{
+    CreateTermbase, DeleteTermbase, GetTermbaseInfo, GetTermbaseInfoExcluded,
+    ListTermbaseInfos, ListTermbaseInfosExcluded, UpdateTermbase,
+};
 use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::term::TermRepo;
@@ -28,8 +34,7 @@ mod tests;
 /// Creates a terminology base scoped to a team or comic.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn create<N, C, R>(
-    nucl: &N,
-    repo: &R,
+    (nucl, repo): (&N, &R),
     token: UserToken,
     params: CreateTermbaseParams,
 ) -> BaseResult<CreateTermbasePayload>
@@ -121,7 +126,7 @@ where
 /// Fetches a terminology base by ID.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn get_info<C, R>(
-    repo: &R,
+    (repo,): (&R,),
     token: UserToken,
     id: String,
 ) -> BaseResult<TermbaseInfoVal>
@@ -148,7 +153,7 @@ where
 /// Lists terminology bases directly owned by a team.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn list_team_infos<C, R>(
-    repo: &R,
+    (repo,): (&R,),
     token: UserToken,
     params: ListTeamTermbaseInfosParams,
 ) -> BaseResult<Vec<TermbaseInfoVal>>
@@ -183,7 +188,7 @@ where
 /// Lists team and comic terminology bases visible from a comic.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn list_comic_infos<C, R>(
-    repo: &R,
+    (repo,): (&R,),
     token: UserToken,
     params: ListComicTermbaseInfosParams,
 ) -> BaseResult<Vec<TermbaseInfoVal>>
@@ -233,8 +238,7 @@ where
 /// Replaces a terminology base's name and description.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn update_info<N, C, R>(
-    nucl: &N,
-    repo: &R,
+    (nucl, repo): (&N, &R),
     token: UserToken,
     params: UpdateTermbaseInfoParams,
 ) -> BaseResult<()>
@@ -296,8 +300,7 @@ where
 /// Deletes a terminology base and all child terms.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn delete<N, C, R>(
-    nucl: &N,
-    repo: &R,
+    (nucl, repo): (&N, &R),
     token: UserToken,
     id: String,
 ) -> BaseResult<()>

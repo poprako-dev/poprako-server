@@ -5,7 +5,10 @@ use poprako_orchestra_extra::prom::oper::{Defer, DeferBatch};
 use tracing::instrument;
 
 use crate::complex::workset::{WorksetComplex, WorksetPermComplex};
-use crate::data::workset::{CreateWorksetParams, CreateWorksetPayload, ListWorksetInfosParams, UpdateWorksetInfoParams, WorksetInfoVal};
+use crate::data::workset::{
+    CreateWorksetParams, CreateWorksetPayload, ListWorksetInfosParams,
+    UpdateWorksetInfoParams, WorksetInfoVal,
+};
 use crate::model::user::UserToken;
 use crate::model::workset::{WorksetEntry, WorksetInfoUpdate};
 use crate::part::prom::Prom;
@@ -17,14 +20,25 @@ use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::assignment::DeleteAssignments;
 use crate::part::repo::oper::assignment_invitation::DeleteAssignmentInvitations;
-use crate::part::repo::oper::chapter::{DeleteChapter, GetChapterInfoExcluded, ListChapterInfosExcluded, UnpinOtherChapters, UpdateChapter};
-use crate::part::repo::oper::comic::{DeleteComic, GetComicInfoExcluded, ListComicInfosExcluded, TouchComicLastActive, UpdateComicChapterCount};
+use crate::part::repo::oper::chapter::{
+    DeleteChapter, GetChapterInfoExcluded, ListChapterInfosExcluded,
+    UnpinOtherChapters, UpdateChapter,
+};
+use crate::part::repo::oper::comic::{
+    DeleteComic, GetComicInfoExcluded, ListComicInfosExcluded,
+    TouchComicLastActive, UpdateComicChapterCount,
+};
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::page::{DeletePages, ListPageInfos};
 use crate::part::repo::oper::team::AllocTeamWorksetIndex;
 use crate::part::repo::oper::term::DeleteTerms;
-use crate::part::repo::oper::termbase::{DeleteTermbase, GetTermbaseInfoExcluded, ListTermbaseInfosExcluded};
-use crate::part::repo::oper::workset::{CreateWorkset, DeleteWorkset, GetWorksetInfo, GetWorksetInfoExcluded, ListWorksetInfos, UpdateWorkset, UpdateWorksetComicCount};
+use crate::part::repo::oper::termbase::{
+    DeleteTermbase, GetTermbaseInfoExcluded, ListTermbaseInfosExcluded,
+};
+use crate::part::repo::oper::workset::{
+    CreateWorkset, DeleteWorkset, GetWorksetInfo, GetWorksetInfoExcluded,
+    ListWorksetInfos, UpdateWorkset, UpdateWorksetComicCount,
+};
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::term::TermRepo;
@@ -39,8 +53,7 @@ pub mod tests;
 /// Creates a new workset inside a team.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn create<N, C, R>(
-    nucl: &N,
-    repo: &R,
+    (nucl, repo): (&N, &R),
     token: UserToken,
     params: CreateWorksetParams,
 ) -> BaseResult<CreateWorksetPayload>
@@ -97,7 +110,7 @@ where
 /// Fetches a workset by ID.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn get_info<C, R>(
-    repo: &R,
+    (repo,): (&R,),
     token: UserToken,
     id: String,
 ) -> BaseResult<WorksetInfoVal>
@@ -123,7 +136,7 @@ where
 /// Lists worksets for a team.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn list_infos<C, R>(
-    repo: &R,
+    (repo,): (&R,),
     token: UserToken,
     params: ListWorksetInfosParams,
 ) -> BaseResult<Vec<WorksetInfoVal>>
@@ -153,7 +166,7 @@ where
 /// Updates a workset's name and description.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn update_info<C, R>(
-    repo: &R,
+    (repo,): (&R,),
     token: UserToken,
     params: UpdateWorksetInfoParams,
 ) -> BaseResult<()>
@@ -188,9 +201,7 @@ where
 /// Deletes a workset and its child data.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn delete<N, C, R, P>(
-    nucl: &N,
-    repo: &R,
-    prom: &P,
+    (nucl, repo, prom): (&N, &R, &P),
     token: UserToken,
     id: String,
 ) -> BaseResult<()>

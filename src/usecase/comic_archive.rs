@@ -8,8 +8,12 @@ use poprako_orchestra_extra::prom::task::Task;
 use time::OffsetDateTime;
 use tracing::instrument;
 
-use crate::complex::comic_archive::{ComicArchiveComplex, ComicArchivePermComplex};
-use crate::data::comic_archive::{ArchiveComicPayload, ExportComicArchivesParams, ExportComicArchivesPayload};
+use crate::complex::comic_archive::{
+    ComicArchiveComplex, ComicArchivePermComplex,
+};
+use crate::data::comic_archive::{
+    ArchiveComicPayload, ExportComicArchivesParams, ExportComicArchivesPayload,
+};
 use crate::model::user::UserToken;
 use crate::part::prom::Prom;
 use crate::part::prom::payload::{TaskPayload, image};
@@ -17,7 +21,10 @@ use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::comic_archive::ComicArchiveRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::comic::GetComicInfo;
-use crate::part::repo::oper::comic_archive::{CommitComicArchive, GetComicArchiveSnapshotExcluded, ListComicArchivePayloads};
+use crate::part::repo::oper::comic_archive::{
+    CommitComicArchive, GetComicArchiveSnapshotExcluded,
+    ListComicArchivePayloads,
+};
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::part::repo::workset::WorksetRepo;
@@ -31,7 +38,7 @@ mod tests;
 /// Exports selected retained UTC month slots for one team.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn export<C, R>(
-    repo: &R,
+    (repo,): (&R,),
     token: UserToken,
     team_id: String,
     params: ExportComicArchivesParams,
@@ -87,9 +94,7 @@ where
 /// Archive one active comic, its descendants, and all retained image keys.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn archive<N, C, R, P>(
-    nucl: &N,
-    repo: &R,
-    prom: &P,
+    (nucl, repo, prom): (&N, &R, &P),
     token: UserToken,
     comic_id: String,
 ) -> BaseResult<ArchiveComicPayload>
@@ -147,9 +152,11 @@ where
                 //
                 delete_ids.push(next_snowflake_id());
 
-                delete_payloads.push(TaskPayload::Image(image::ImagePayload::Delete {
-                    object_key: image_key,
-                }));
+                delete_payloads.push(TaskPayload::Image(
+                    image::ImagePayload::Delete {
+                        object_key: image_key,
+                    },
+                ));
             }
 
             let delete_tasks: Vec<Task<'_, String, TaskPayload>> = delete_ids

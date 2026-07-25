@@ -61,10 +61,7 @@ pub fn validate_page_count(page_count: i32) -> BaseResult<()> {
 /// Reserves upload slots for all pages in an empty chapter.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn reserve_chapter_pages<N, C, R, P, I>(
-    nucl: &N,
-    repo: &R,
-    prom: &P,
-    image_pool: &I,
+    (nucl, repo, prom, image_pool): (&N, &R, &P, &I),
     token: UserToken,
     params: ReserveChapterPagesParams,
 ) -> BaseResult<ReserveChapterPagesPayload>
@@ -95,9 +92,12 @@ where
 
     validate_page_count(page_count)?;
 
-    for page_spec in &page_specs {
+    for byte_length in page_specs
+        .iter()
+        .filter_map(|page_spec| page_spec.byte_length)
+    {
         ImageComplex::ensure_byte_length(
-            page_spec.byte_length,
+            byte_length,
             image::ResourceKind::PageImage,
         )?;
     }
@@ -118,15 +118,21 @@ where
         }
     }
 
-    /// Holds the ID, storage key, and version for one reserved page upload.
+    /// Holds one requested upload target within a page reservation.
+    struct PageUploadReservation {
+        object_key: String,
+        byte_length: u64,
+    }
+
+    /// Holds the identity and optional upload request for one reserved page.
     struct PageReservation {
         //
         page_id: String,
         index: u32,
-        object_key: Option<String>,
+
+        upload: Option<PageUploadReservation>,
         image_version: u32,
         image_hash: ImageHash,
-        byte_length: u64,
         ext: ImageExt,
     }
 
@@ -216,6 +222,13 @@ where
                     let identity_changed =
                         existing_page_info.image_hash != page_spec.image_hash;
 
+                    if identity_changed && page_spec.byte_length.is_none() {
+                        return Err(BaseError::Expected {
+                            variant: ExpectedVariant::Args,
+                            message: trl("error-invalid-image-byte-length"),
+                        });
+                    }
+
                     let image_version = match identity_changed {
                         //
                         true => existing_page_info
@@ -277,25 +290,36 @@ where
                         index: u32::try_from(index).map_err(|_| BaseError::Unrecoverable {
                             message: "[reserve_chapter_pages] page index must be non-negative".into(),
                         })?,
-                        object_key: match image_uploaded {
+                        upload: match (image_uploaded, page_spec.byte_length) {
                             //
-                            true => None,
+                            (true, _) | (false, None) => None,
 
-                            false => Some(image_key.ok_or_else(|| {
-                                BaseError::Unrecoverable {
-                                    message: "[reserve_chapter_pages] pending page image key is missing"
-                                        .into(),
-                                }
-                            })?),
+                            (false, Some(byte_length)) => {
+                                Some(PageUploadReservation {
+                                    object_key: image_key.ok_or_else(|| {
+                                        BaseError::Unrecoverable {
+                                            message: "[reserve_chapter_pages] pending page image key is missing"
+                                                .into(),
+                                        }
+                                    })?,
+                                    byte_length,
+                                })
+                            }
                         },
                         image_version,
                         image_hash: page_spec.image_hash.clone(),
-                        byte_length: page_spec.byte_length,
                         ext: page_spec.ext,
                     });
 
                     continue;
                 }
+
+                let byte_length = page_spec.byte_length.ok_or_else(|| {
+                    BaseError::Expected {
+                        variant: ExpectedVariant::Args,
+                        message: trl("error-invalid-image-byte-length"),
+                    }
+                })?;
 
                 let page_id = PageComplex::gen_id();
 
@@ -325,10 +349,12 @@ where
                     index: u32::try_from(index).map_err(|_| BaseError::Unrecoverable {
                         message: "[reserve_chapter_pages] page index must be non-negative".into(),
                     })?,
-                    object_key: Some(object_key),
+                    upload: Some(PageUploadReservation {
+                        object_key,
+                        byte_length,
+                    }),
                     image_version,
                     image_hash: page_spec.image_hash.clone(),
-                    byte_length: page_spec.byte_length,
                     ext: page_spec.ext,
                 });
             }
@@ -383,7 +409,7 @@ where
 
             for reservation in &reservations {
                 //
-                let Some(object_key) = &reservation.object_key else {
+                let Some(upload) = &reservation.upload else {
                     continue;
                 };
 
@@ -393,7 +419,7 @@ where
                     image::ImagePayload::CheckUpload {
                         resource_kind: image::ResourceKind::PageImage,
                         resource_id: reservation.page_id.clone(),
-                        object_key: object_key.clone(),
+                        object_key: upload.object_key.clone(),
                         version: reservation.image_version,
                         image_hash: reservation.image_hash.clone(),
                         image_ext: reservation.ext,
@@ -460,15 +486,15 @@ where
     let pages = futures_util::future::join_all(reservations.into_iter().map(
         |reservation| async move {
             //
-            let slot = match reservation.object_key {
+            let slot = match reservation.upload {
                 //
-                Some(object_key) => {
+                Some(upload) => {
                     //
                     let upload_spec = ImageUploadSpec {
-                        object_key: &object_key,
+                        object_key: &upload.object_key,
                         content_type: reservation.ext.content_type(),
                         checksum_sha256: &reservation.image_hash,
-                        content_length: reservation.byte_length,
+                        content_length: upload.byte_length,
                     };
 
                     let upload_target =

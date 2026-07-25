@@ -5,11 +5,19 @@ use axum::extract::{Extension, Path, State};
 use axum::http::StatusCode;
 use tracing::instrument;
 
-use crate::api::http::handler::util::{ensure_current_user, ensure_path_matches_body_id};
+use crate::api::http::handler::util::{
+    ensure_current_user, ensure_path_matches_body_id,
+};
 #[allow(unused_imports)]
-use crate::api::http::result::{Accept as _, HttpBody, HttpNoContent, HttpResult, no_content};
+use crate::api::http::result::{
+    Accept as _, HttpBody, HttpNoContent, HttpResult, no_content,
+};
 use crate::api::http::state::AppHarn;
-use crate::data::user::{MarkUserAvatarUploadedParams, ReserveUserAvatarParams, ReserveUserAvatarPayload, UpdateUserInfoParams, UpdateUserPasswordParams, UserInfoVal};
+use crate::data::user::{
+    MarkUserAvatarUploadedParams, ReserveUserAvatarParams,
+    ReserveUserAvatarPayload, UpdateUserInfoParams, UpdateUserPasswordParams,
+    UserInfoVal,
+};
 use crate::model::user::UserToken;
 use crate::usecase;
 
@@ -31,10 +39,7 @@ pub async fn get_my_info(
     //
     let id = user_token.user_id.clone();
 
-    usecase::user::get_info(
-        harn.repo(),
-        harn.image_pool(),
-        harn.develop(),
+    usecase::user::get_info((harn.repo(), harn.image_pool(), harn.develop(),),
         user_token,
         id,
     )
@@ -60,10 +65,7 @@ pub async fn get_info(
     Path(user_id): Path<String>,
     Extension(token): Extension<UserToken>,
 ) -> HttpResult<UserInfoVal> {
-    usecase::user::get_info(
-        harn.repo(),
-        harn.image_pool(),
-        harn.develop(),
+    usecase::user::get_info((harn.repo(), harn.image_pool(), harn.develop(),),
         token,
         user_id,
     )
@@ -95,7 +97,7 @@ pub async fn update_info(
     //
     ensure_path_matches_body_id(&user_id, &params.id)?;
 
-    usecase::user::update_info(harn.drive(), harn.repo(), user_token, params)
+    usecase::user::update_info((harn.drive(), harn.repo(),), user_token, params)
         .await?;
 
     no_content()
@@ -122,9 +124,7 @@ pub async fn update_password(
     Json(params): Json<UpdateUserPasswordParams>,
 ) -> HttpNoContent {
     //
-    usecase::user::update_password(
-        harn.drive(),
-        harn.repo(),
+    usecase::user::update_password((harn.drive(), harn.repo(),),
         user_token,
         user_id,
         params,
@@ -153,10 +153,7 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    usecase::user::delete(
-        harn.drive(),
-        harn.repo(),
-        harn.prom(),
+    usecase::user::delete((harn.drive(), harn.repo(), harn.prom(),),
         user_token,
         user_id,
     )
@@ -187,11 +184,7 @@ pub async fn reserve_avatar(
     //
     ensure_current_user(&user_id, &user_token)?;
 
-    usecase::user::reserve_avatar(
-        harn.drive(),
-        harn.repo(),
-        harn.prom(),
-        harn.image_pool(),
+    usecase::user::reserve_avatar((harn.drive(), harn.repo(), harn.prom(), harn.image_pool(),),
         user_token,
         params,
     )
@@ -219,10 +212,7 @@ pub async fn mark_avatar_uploaded(
     Json(params): Json<MarkUserAvatarUploadedParams>,
 ) -> HttpNoContent {
     //
-    usecase::user::mark_avatar_uploaded(
-        harn.drive(),
-        harn.repo(),
-        harn.image_pool(),
+    usecase::user::mark_avatar_uploaded((harn.drive(), harn.repo(), harn.image_pool(),),
         user_token,
         user_id,
         params,

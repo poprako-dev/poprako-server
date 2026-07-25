@@ -5,7 +5,9 @@ use std::collections::HashMap;
 use poprako_orchestra::run_proxy;
 use tracing::instrument;
 
-use crate::complex::chapter_port::{ChapterExportComplex, ChapterPortPermComplex};
+use crate::complex::chapter_port::{
+    ChapterExportComplex, ChapterPortPermComplex,
+};
 use crate::data::chapter_port::ExportChapterTranslationPayload;
 use crate::data::page_port::PageTranslationExportPayload;
 use crate::data::unit_port::UnitTranslationExportPayload;
@@ -36,7 +38,7 @@ mod tests;
 /// Exports one chapter as a JSON-safe translation payload.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn export<C, R>(
-    repo: &R,
+    (repo,): (&R,),
     token: UserToken,
     chapter_id: String,
 ) -> BaseResult<ExportChapterTranslationPayload>
@@ -120,7 +122,7 @@ where
     };
 
     spawn_starts(
-        (*repo).clone(),
+        ((*repo).clone(),),
         payload.chapter_id.clone(),
         vec![Stage::TypesetRedraw],
     );
@@ -131,7 +133,7 @@ where
 /// Exports one chapter as LabelPlus text.
 #[instrument(level = "info", err(Debug), skip_all)]
 pub async fn export_label_plus<C, R>(
-    repo: &R,
+    (repo,): (&R,),
     token: UserToken,
     chapter_id: String,
 ) -> BaseResult<String>
@@ -191,7 +193,7 @@ where
     let content =
         ChapterExportComplex::make_label_plus(&page_infos, &units_by_page_id);
 
-    spawn_starts((*repo).clone(), chapter_id, vec![Stage::TypesetRedraw]);
+    spawn_starts(((*repo).clone(),), chapter_id, vec![Stage::TypesetRedraw]);
 
     accept(content)
 }

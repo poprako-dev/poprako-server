@@ -7,9 +7,15 @@ use tracing::instrument;
 
 use crate::api::http::handler::util::ensure_path_matches_body_id;
 #[allow(unused_imports)]
-use crate::api::http::result::{Accept as _, HttpBody, HttpNoContent, HttpResult, no_content};
+use crate::api::http::result::{
+    Accept as _, HttpBody, HttpNoContent, HttpResult, no_content,
+};
 use crate::api::http::state::AppHarn;
-use crate::data::team::{CreateTeamParams, ListTeamInfosParams, MarkTeamAvatarUploadedParams, ReserveTeamAvatarParams, ReserveTeamAvatarPayload, TeamInfoVal, UpdateTeamInfoParams};
+use crate::data::team::{
+    CreateTeamParams, ListTeamInfosParams, MarkTeamAvatarUploadedParams,
+    ReserveTeamAvatarParams, ReserveTeamAvatarPayload, TeamInfoVal,
+    UpdateTeamInfoParams,
+};
 use crate::model::user::UserToken;
 use crate::usecase;
 
@@ -31,10 +37,7 @@ pub async fn create(
     Extension(user_token): Extension<UserToken>,
     Json(params): Json<CreateTeamParams>,
 ) -> HttpResult<TeamInfoVal> {
-    usecase::team::create(
-        harn.drive(),
-        harn.repo(),
-        harn.image_pool(),
+    usecase::team::create((harn.drive(), harn.repo(), harn.image_pool(),),
         user_token,
         params,
     )
@@ -61,9 +64,7 @@ pub async fn list_infos(
     Extension(user_token): Extension<UserToken>,
     Query(params): Query<ListTeamInfosParams>,
 ) -> HttpResult<Vec<TeamInfoVal>> {
-    usecase::team::list_infos(
-        harn.repo(),
-        harn.image_pool(),
+    usecase::team::list_infos((harn.repo(), harn.image_pool(),),
         user_token,
         params,
     )
@@ -88,7 +89,7 @@ pub async fn get_info(
     State(harn): State<AppHarn>,
     Path(team_id): Path<String>,
 ) -> HttpResult<TeamInfoVal> {
-    usecase::team::get_info(harn.repo(), harn.image_pool(), team_id)
+    usecase::team::get_info((harn.repo(), harn.image_pool(),), team_id)
         .await?
         .accept(StatusCode::OK)
 }
@@ -117,7 +118,7 @@ pub async fn update_info(
     //
     ensure_path_matches_body_id(&team_id, &params.id)?;
 
-    usecase::team::update_info(harn.repo(), user_token, params).await?;
+    usecase::team::update_info((harn.repo(),), user_token, params).await?;
 
     no_content()
 }
@@ -142,11 +143,7 @@ pub async fn reserve_avatar(
     Extension(user_token): Extension<UserToken>,
     Json(params): Json<ReserveTeamAvatarParams>,
 ) -> HttpResult<ReserveTeamAvatarPayload> {
-    usecase::team::reserve_avatar(
-        harn.drive(),
-        harn.repo(),
-        harn.prom(),
-        harn.image_pool(),
+    usecase::team::reserve_avatar((harn.drive(), harn.repo(), harn.prom(), harn.image_pool(),),
         user_token,
         team_id,
         params,
@@ -176,10 +173,7 @@ pub async fn mark_avatar_uploaded(
     Json(params): Json<MarkTeamAvatarUploadedParams>,
 ) -> HttpNoContent {
     //
-    usecase::team::mark_avatar_uploaded(
-        harn.drive(),
-        harn.repo(),
-        harn.image_pool(),
+    usecase::team::mark_avatar_uploaded((harn.drive(), harn.repo(), harn.image_pool(),),
         user_token,
         team_id,
         params,
@@ -208,10 +202,7 @@ pub async fn delete(
     Extension(user_token): Extension<UserToken>,
 ) -> HttpNoContent {
     //
-    usecase::team::delete(
-        harn.drive(),
-        harn.repo(),
-        harn.prom(),
+    usecase::team::delete((harn.drive(), harn.repo(), harn.prom(),),
         user_token,
         team_id,
     )

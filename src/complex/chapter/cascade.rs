@@ -8,9 +8,16 @@ use crate::model::chapter::ChapterInfoUpdate;
 use crate::part::prom::payload::{TaskPayload, image};
 use crate::part::repo::oper::assignment::DeleteAssignments;
 use crate::part::repo::oper::assignment_invitation::DeleteAssignmentInvitations;
-use crate::part::repo::oper::chapter::{DeleteChapter, GetChapterInfoExcluded, ListChapterInfosExcluded, UnpinOtherChapters, UpdateChapter};
-use crate::part::repo::oper::comic::{TouchComicLastActive, UpdateComicChapterCount};
-use crate::part::repo::oper::page::{ClearPageImagesForPublish, DeletePages, ListPageInfos};
+use crate::part::repo::oper::chapter::{
+    DeleteChapter, GetChapterInfoExcluded, ListChapterInfosExcluded,
+    UnpinOtherChapters, UpdateChapter,
+};
+use crate::part::repo::oper::comic::{
+    TouchComicLastActive, UpdateComicChapterCount,
+};
+use crate::part::repo::oper::page::{
+    ClearPageImagesForPublish, DeletePages, ListPageInfos,
+};
 use crate::result::{BaseError, BaseResult, accept};
 
 impl ChapterComplex {
@@ -152,7 +159,9 @@ where
 
     let payloads = object_keys
         .into_iter()
-        .map(|object_key| TaskPayload::Image(image::ImagePayload::Delete { object_key }))
+        .map(|object_key| {
+            TaskPayload::Image(image::ImagePayload::Delete { object_key })
+        })
         .collect::<Vec<_>>();
 
     let tasks: Vec<Task<'_, String, TaskPayload>> = delete_ids

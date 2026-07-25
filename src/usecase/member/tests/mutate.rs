@@ -15,9 +15,7 @@ async fn update_roles_admin_updates_member_role_mask() {
         RoleMask::from(RoleField::TRANSLATOR),
     ));
 
-    let update_member_role = update_roles(
-        &mock,
-        &mock,
+    let update_member_role = update_roles((&mock, &mock,),
         token("admin-user"),
         update_role_params("member-target"),
     )
@@ -57,9 +55,7 @@ async fn update_roles_non_admin_is_rejected() {
         RoleMask::from(RoleField::TRANSLATOR),
     ));
 
-    let err = update_roles(
-        &mock,
-        &mock,
+    let err = update_roles((&mock, &mock,),
         token("normal-user"),
         update_role_params("member-target"),
     )
@@ -87,9 +83,7 @@ async fn update_roles_missing_member_is_rejected() {
 
     seed_admin(&mock);
 
-    let err = update_roles(
-        &mock,
-        &mock,
+    let err = update_roles((&mock, &mock,),
         token("admin-user"),
         update_role_params("member-missing"),
     )
@@ -116,7 +110,7 @@ async fn delete_admin_deletes_member() {
     ));
 
     let delete_member =
-        delete(&mock, &mock, token("admin-user"), "member-target".into()).await;
+        delete((&mock, &mock,), token("admin-user"), "member-target".into()).await;
 
     assert!(delete_member.is_ok());
 
@@ -151,7 +145,7 @@ async fn delete_non_admin_is_rejected() {
     ));
 
     let err =
-        delete(&mock, &mock, token("normal-user"), "member-target".into())
+        delete((&mock, &mock,), token("normal-user"), "member-target".into())
             .await
             .err()
             .unwrap();
@@ -174,7 +168,7 @@ async fn delete_missing_member_is_rejected() {
     seed_admin(&mock);
 
     let err =
-        delete(&mock, &mock, token("admin-user"), "member-missing".into())
+        delete((&mock, &mock,), token("admin-user"), "member-missing".into())
             .await
             .err()
             .unwrap();

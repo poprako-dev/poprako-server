@@ -9,9 +9,13 @@ use tracing::instrument;
 
 use crate::api::http::auth::AUTH_COOKIE_NAME;
 #[allow(unused_imports)]
-use crate::api::http::result::{Accept as _, HttpBody, HttpNoContent, HttpResult, no_content};
+use crate::api::http::result::{
+    Accept as _, HttpBody, HttpNoContent, HttpResult, no_content,
+};
 use crate::api::http::state::AppHarn;
-use crate::data::auth::{LoginAuthParams, LoginAuthPayload, RegisterAuthParams, RegisterAuthPayload};
+use crate::data::auth::{
+    LoginAuthParams, LoginAuthPayload, RegisterAuthParams, RegisterAuthPayload,
+};
 use crate::usecase;
 
 /// Builds the `authorization-token` HttpOnly cookie carrying the bearer token.
@@ -44,11 +48,7 @@ pub async fn register(
     Json(params): Json<RegisterAuthParams>,
 ) -> HttpResult<RegisterAuthPayload> {
     //
-    let reply = usecase::auth::register(
-        harn.drive(),
-        harn.repo(),
-        harn.auth(),
-        harn.develop(),
+    let reply = usecase::auth::register((harn.drive(), harn.repo(), harn.auth(), harn.develop(),),
         params,
     )
     .await?;
@@ -80,7 +80,7 @@ pub async fn login(
     Json(params): Json<LoginAuthParams>,
 ) -> HttpResult<LoginAuthPayload> {
     //
-    let reply = usecase::auth::login(harn.repo(), harn.auth(), params).await?;
+    let reply = usecase::auth::login((harn.repo(), harn.auth(),), params).await?;
 
     let cookie = auth_cookie(&reply.token);
 

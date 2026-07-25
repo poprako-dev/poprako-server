@@ -3,10 +3,19 @@
 use poprako_orchestra::{Run, Step};
 use tracing::instrument;
 
-use crate::model::member_invitation::{MemberInvitationEntry, MemberInvitationInfo, MemberInvitationListKind, MemberInvitationListSpec};
+use crate::model::member_invitation::{
+    MemberInvitationEntry, MemberInvitationInfo, MemberInvitationListKind,
+    MemberInvitationListSpec,
+};
 use crate::model::user::UserInfo;
-use crate::part::repo::oper::member_invitation::{CreateMemberInvitation, DeleteMemberInvitation, GetMemberInvitationInfo, GetMemberInvitationInfoExcluded, ListMemberInvitationInfos, PurgeExpiredMemberInvitation, UpdateMemberInvitation};
-use crate::part_impl::repo::mock_impl::{Mock, MockContext, MockState, expected};
+use crate::part::repo::oper::member_invitation::{
+    CreateMemberInvitation, DeleteMemberInvitation, GetMemberInvitationInfo,
+    GetMemberInvitationInfoExcluded, ListMemberInvitationInfos,
+    PurgeExpiredMemberInvitation, UpdateMemberInvitation,
+};
+use crate::part_impl::repo::mock_impl::{
+    Mock, MockContext, MockState, expected,
+};
 use crate::result::{BaseError, BaseResult, accept};
 use crate::value::member_invitation::MemberInvitationInclOpt;
 

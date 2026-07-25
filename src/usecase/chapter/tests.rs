@@ -25,7 +25,10 @@ use super::*;
 
 use self::fixture::*;
 use crate::complex::chapter::ChapterComplex;
-use crate::data::chapter::{CreateChapterParams, ListChapterInfosParams, UpdateChapterInfoParams, UpdateChapterStageParams};
+use crate::data::chapter::{
+    CreateChapterParams, ListChapterInfosParams, UpdateChapterInfoParams,
+    UpdateChapterStageParams,
+};
 use crate::part::prom::payload::TaskPayload;
 use crate::part::prom::payload::image::ImagePayload;
 use crate::part_impl::repo::mock_impl::Mock;
@@ -52,9 +55,7 @@ async fn list_infos_paginates_sorted_chapters() {
 
     mock.seed_chapter(chapter("chapter-2", "comic-1", 2, false));
 
-    let list = list_infos(
-        &mock,
-        &mock,
+    let list = list_infos((&mock, &mock,),
         token("user-1"),
         ListChapterInfosParams {
             incl_opt: Vec::new(),
@@ -85,9 +86,7 @@ async fn list_infos_resolves_embedded_comic_fallback_cover() {
 
     mock.seed_page(page("page-1", "chapter-1", Some("page.png")));
 
-    let found = list_infos(
-        &mock,
-        &mock,
+    let found = list_infos((&mock, &mock,),
         token("user-1"),
         ListChapterInfosParams {
             comic_id: "comic-1".into(),
@@ -113,9 +112,7 @@ async fn list_infos_rejects_non_member() {
 
     seed_scope(&mock, "other", RoleMask::from(RoleField::TRANSLATOR));
 
-    let err = list_infos(
-        &mock,
-        &mock,
+    let err = list_infos((&mock, &mock,),
         token("user-1"),
         ListChapterInfosParams {
             incl_opt: Vec::new(),
@@ -140,7 +137,7 @@ async fn get_info_returns_chapter() {
 
     mock.seed_chapter(chapter("chapter-1", "comic-1", 1, true));
 
-    let found = get_info(&mock, token("user-1"), "chapter-1".into()).await;
+    let found = get_info((&mock,), token("user-1"), "chapter-1".into()).await;
 
     assert!(found.is_ok());
 
@@ -152,7 +149,7 @@ async fn get_info_rejects_missing_chapter() {
     //
     let mock = Mock::new();
 
-    let err = get_info(&mock, token("user-1"), "missing".into())
+    let err = get_info((&mock,), token("user-1"), "missing".into())
         .await
         .err()
         .unwrap();
@@ -169,7 +166,7 @@ async fn get_pinned_returns_some_and_none() {
 
     mock.seed_chapter(chapter("chapter-1", "comic-1", 1, true));
 
-    let found = get_pinned(&mock, token("user-1"), "comic-1".into()).await;
+    let found = get_pinned((&mock,), token("user-1"), "comic-1".into()).await;
 
     assert!(found.is_ok());
 
@@ -180,7 +177,7 @@ async fn get_pinned_returns_some_and_none() {
     seed_scope(&empty_mock, "user-1", RoleMask::from(RoleField::TRANSLATOR));
 
     let found =
-        get_pinned(&empty_mock, token("user-1"), "comic-1".into()).await;
+        get_pinned((&empty_mock,), token("user-1"), "comic-1".into()).await;
 
     assert!(found.is_ok());
 
@@ -194,7 +191,7 @@ async fn get_pinned_rejects_non_member() {
 
     seed_scope(&mock, "other", RoleMask::from(RoleField::TRANSLATOR));
 
-    let err = get_pinned(&mock, token("user-1"), "comic-1".into())
+    let err = get_pinned((&mock,), token("user-1"), "comic-1".into())
         .await
         .err()
         .unwrap();
@@ -214,9 +211,7 @@ async fn create_pins_chapter_and_creates_admin_assignment() {
 
     mock.seed_chapter(chapter("chapter-old", "comic-1", 0, true));
 
-    let created = create(
-        &mock,
-        &mock,
+    let created = create((&mock, &mock,),
         token("user-1"),
         CreateChapterParams {
             comic_id: "comic-1".into(),
@@ -269,9 +264,7 @@ async fn create_rolls_back_non_admin() {
 
     seed_scope(&mock, "user-1", RoleMask::from(RoleField::TRANSLATOR));
 
-    let err = create(
-        &mock,
-        &mock,
+    let err = create((&mock, &mock,),
         token("user-1"),
         CreateChapterParams {
             comic_id: "comic-1".into(),
@@ -309,9 +302,7 @@ async fn update_info_admin_updates_metadata() {
         RoleMask::from(RoleField::ADMIN),
     ));
 
-    update_info(
-        &mock,
-        &mock,
+    update_info((&mock, &mock,),
         token("user-1"),
         UpdateChapterInfoParams {
             id: "chapter-1".into(),
@@ -339,9 +330,7 @@ async fn update_info_rejects_non_admin_metadata() {
 
     mock.seed_chapter(chapter("chapter-1", "comic-1", 1, false));
 
-    let err = update_info(
-        &mock,
-        &mock,
+    let err = update_info((&mock, &mock,),
         token("user-1"),
         UpdateChapterInfoParams {
             id: "chapter-1".into(),
@@ -375,7 +364,7 @@ async fn delete_removes_descendants_and_repins_latest_chapter() {
 
     mock.seed_page(page("page-1", "chapter-1", Some("page-1.png")));
 
-    delete(&mock, &mock, &mock, token("user-1"), "chapter-1".into())
+    delete((&mock, &mock, &mock,), token("user-1"), "chapter-1".into())
         .await
         .ok()
         .unwrap();
@@ -408,7 +397,7 @@ async fn delete_rolls_back_non_admin() {
 
     mock.seed_page(page("page-1", "chapter-1", Some("page-1.png")));
 
-    let err = delete(&mock, &mock, &mock, token("user-1"), "chapter-1".into())
+    let err = delete((&mock, &mock, &mock,), token("user-1"), "chapter-1".into())
         .await
         .err()
         .unwrap();
@@ -439,11 +428,7 @@ async fn update_stage_role_holder_advances_own_stage() {
         RoleMask::from(RoleField::TRANSLATOR),
     ));
 
-    update_stage(
-        &mock,
-        &mock,
-        &mock,
-        &mock,
+    update_stage((&mock, &mock, &mock, &mock,),
         token("user-1"),
         UpdateChapterStageParams {
             id: "chapter-1".into(),
@@ -478,11 +463,7 @@ async fn update_stage_admin_rejected_when_no_role_holder() {
         RoleMask::from(RoleField::ADMIN),
     ));
 
-    let err = update_stage(
-        &mock,
-        &mock,
-        &mock,
-        &mock,
+    let err = update_stage((&mock, &mock, &mock, &mock,),
         token("user-1"),
         UpdateChapterStageParams {
             id: "chapter-1".into(),
@@ -518,11 +499,7 @@ async fn update_stage_admin_with_workflow_role_advances() {
             .union(RoleMask::from(RoleField::TRANSLATOR)),
     ));
 
-    update_stage(
-        &mock,
-        &mock,
-        &mock,
-        &mock,
+    update_stage((&mock, &mock, &mock, &mock,),
         token("user-1"),
         UpdateChapterStageParams {
             id: "chapter-1".into(),
@@ -565,11 +542,7 @@ async fn update_stage_admin_reverts_without_role_holder() {
         RoleMask::from(RoleField::ADMIN),
     ));
 
-    update_stage(
-        &mock,
-        &mock,
-        &mock,
-        &mock,
+    update_stage((&mock, &mock, &mock, &mock,),
         token("user-1"),
         UpdateChapterStageParams {
             id: "chapter-1".into(),
