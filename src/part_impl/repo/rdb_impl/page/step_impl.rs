@@ -8,11 +8,17 @@ use time::OffsetDateTime;
 use tracing::instrument;
 
 use crate::complex::page::PageComplex;
-use crate::model::page::{PageEntry, PageImageReservation, PageInfo, PageManifestUpdate};
+use crate::model::page::{
+    PageEntry, PageImageReservation, PageInfo, PageManifestUpdate,
+};
 use crate::model::unit::UnitCounters;
-use crate::part_impl::repo::rdb_impl::entity::page::{PageAspect, PageRow, PageRowEntry};
+use crate::part_impl::repo::rdb_impl::entity::page::{
+    PageAspect, PageRow, PageRowEntry,
+};
 use crate::part_impl::repo::rdb_impl::schema::t_page::dsl::*;
-use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::{f_page_id as unit_f_page_id, t_unit};
+use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::{
+    f_page_id as unit_f_page_id, t_unit,
+};
 use crate::part_impl::shared::RdbConn;
 use crate::part_impl::shared::result::{diesel, expected, next_version};
 use crate::result::{BaseError, BaseResult, accept};

@@ -6,9 +6,17 @@ use poprako_orchestra::{Run, Step};
 use tracing::instrument;
 
 use crate::complex::team::TeamComplex;
-use crate::model::team::{TeamAvatarReservation, TeamEntry, TeamInfo, TeamInfoListKind};
-use crate::part::repo::oper::team::{AllocTeamWorksetIndex, CreateTeam, DeleteTeam, GetTeamInfo, GetTeamInfoExcluded, ListTeamInfos, LockTeam, ReserveTeamAvatar, UpdateTeam};
-use crate::part_impl::repo::mock_impl::{Mock, MockContext, MockState, expected, now};
+use crate::model::team::{
+    TeamAvatarReservation, TeamEntry, TeamInfo, TeamInfoListKind,
+};
+use crate::part::repo::oper::team::{
+    AllocTeamWorksetIndex, CreateTeam, DeleteTeam, GetTeamInfo,
+    GetTeamInfoExcluded, ListTeamInfos, LockTeam, ReserveTeamAvatar,
+    UpdateTeam,
+};
+use crate::part_impl::repo::mock_impl::{
+    Mock, MockContext, MockState, expected, now,
+};
 use crate::result::{BaseError, BaseResult, accept};
 use crate::value::image::{ImageExt, ImageHash};
 

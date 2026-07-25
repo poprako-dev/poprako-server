@@ -22,7 +22,9 @@ use super::*;
 
 use poprako_util::time::ToUnixMilli;
 
-use crate::data::member::{CreateMemberParams, ListMemberInfosParams, UpdateMemberRolesParams};
+use crate::data::member::{
+    CreateMemberParams, ListMemberInfosParams, UpdateMemberRolesParams,
+};
 use crate::model::member::{MemberInfo, MemberListSpec};
 use crate::model::team::TeamInfo;
 use crate::model::user::{UserCredential, UserInfo, UserToken};

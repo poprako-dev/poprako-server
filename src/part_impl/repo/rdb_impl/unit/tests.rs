@@ -4,7 +4,9 @@
 use poprako_orchestra::{Nucl as _, Run as _, Step as _};
 
 use crate::model::unit::{UnitContent, UnitIndexUpdate};
-use crate::part::repo::oper::unit::{CreateUnit, ListUnitInfos, SaveUnit, UpdateUnitIndexes};
+use crate::part::repo::oper::unit::{
+    CreateUnit, ListUnitInfos, SaveUnit, UpdateUnitIndexes,
+};
 use crate::part_impl::drive::rdb_impl::RdbDrive;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
 use crate::part_impl::shared::RdbCore;

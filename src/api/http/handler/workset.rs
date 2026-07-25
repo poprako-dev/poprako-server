@@ -5,12 +5,19 @@ use axum::extract::{Extension, Path, Query, State};
 use axum::http::StatusCode;
 use tracing::instrument;
 
-use crate::api::http::handler::util::{Pagination, ensure_path_matches_body_id};
+use crate::api::http::handler::util::{
+    Pagination, ensure_path_matches_body_id,
+};
 
 #[allow(unused_imports)]
-use crate::api::http::result::{Accept as _, HttpBody, HttpNoContent, HttpResult, no_content};
+use crate::api::http::result::{
+    Accept as _, HttpBody, HttpNoContent, HttpResult, no_content,
+};
 use crate::api::http::state::AppHarn;
-use crate::data::workset::{CreateWorksetParams, CreateWorksetPayload, ListWorksetInfosParams, UpdateWorksetInfoParams, WorksetInfoVal};
+use crate::data::workset::{
+    CreateWorksetParams, CreateWorksetPayload, ListWorksetInfosParams,
+    UpdateWorksetInfoParams, WorksetInfoVal,
+};
 use crate::model::user::UserToken;
 use crate::usecase;
 

@@ -4,7 +4,10 @@ use poprako_orchestra::{Nucl, run_proxy, step_proxy};
 use tracing::instrument;
 
 use crate::complex::termbase::{TermbaseComplex, TermbasePermComplex};
-use crate::data::termbase::{CreateTermbaseParams, CreateTermbasePayload, ListComicTermbaseInfosParams, ListTeamTermbaseInfosParams, TermbaseInfoVal, UpdateTermbaseInfoParams};
+use crate::data::termbase::{
+    CreateTermbaseParams, CreateTermbasePayload, ListComicTermbaseInfosParams,
+    ListTeamTermbaseInfosParams, TermbaseInfoVal, UpdateTermbaseInfoParams,
+};
 use crate::model::termbase::TermbaseInfoListSpec;
 use crate::model::user::UserToken;
 use crate::part::repo::comic::ComicRepo;
@@ -14,7 +17,10 @@ use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::team::LockTeam;
 use crate::part::repo::oper::term::DeleteTerms;
 #[allow(unused_imports)]
-use crate::part::repo::oper::termbase::{CreateTermbase, DeleteTermbase, GetTermbaseInfo, GetTermbaseInfoExcluded, ListTermbaseInfos, ListTermbaseInfosExcluded, UpdateTermbase};
+use crate::part::repo::oper::termbase::{
+    CreateTermbase, DeleteTermbase, GetTermbaseInfo, GetTermbaseInfoExcluded,
+    ListTermbaseInfos, ListTermbaseInfosExcluded, UpdateTermbase,
+};
 use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::part::repo::team::TeamRepo;
 use crate::part::repo::term::TermRepo;

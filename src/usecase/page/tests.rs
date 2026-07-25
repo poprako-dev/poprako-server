@@ -6,6 +6,8 @@
 // reserve_image(reserve_image)(negative): missing page propagates an argument error.
 // list_infos(list_infos)(positive): team member lists pages sorted by index with uploaded-image URLs only.
 // list_infos(list_infos)(negative): non-member without assignment cannot list pages.
+// get_info(get_info)(positive): team member receives one uploaded page with download URLs.
+// get_info(get_info)(negative): non-member without assignment cannot read a page.
 // mark_image_uploaded(mark_image_uploaded)(positive): raw provider records matching upload version without storage I/O and repeated confirmation is idempotent.
 // mark_image_uploaded(mark_image_uploaded)(negative): stale upload version cannot confirm or pollute current image state.
 // mark_image_uploaded(mark_image_uploaded)(negative): non-raw-provider cannot confirm upload.
@@ -16,7 +18,10 @@ use super::*;
 
 use time::{Duration as TimeDuration, OffsetDateTime};
 
-use crate::data::page::{ListPageInfosParams, MarkPageImageUploadedParams, PageImageParams, ReserveChapterPagesParams, ReservePageImageParams};
+use crate::data::page::{
+    ListPageInfosParams, MarkPageImageUploadedParams, PageImageParams,
+    ReserveChapterPagesParams, ReservePageImageParams,
+};
 use crate::model::assignment::AssignmentInfo;
 use crate::model::chapter::ChapterInfo;
 use crate::model::comic::ComicInfo;
@@ -30,7 +35,10 @@ use crate::part::prom::payload::image::{ImagePayload, ResourceKind};
 use crate::part_impl::prom::mock_impl::process_pending;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
-use crate::test_util::{assert_expected_message, assert_expected_variant, assert_one_image_check_record};
+use crate::test_util::{
+    assert_expected_message, assert_expected_variant,
+    assert_one_image_check_record,
+};
 use crate::value::chapter::{Stage, StageMask, StagePhase};
 use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
@@ -469,6 +477,51 @@ async fn list_infos_rejects_non_member_without_assignment() {
     .await
     .err()
     .unwrap();
+
+    assert_expected_variant(err, ExpectedVariant::Perm);
+}
+
+#[tokio::test]
+async fn get_info_resolves_uploaded_urls() {
+    //
+    let mock = Mock::new();
+
+    seed_scope(&mock);
+
+    mock.seed_member(member("user-1", RoleMask::from(RoleField::TRANSLATOR)));
+
+    mock.seed_page(page("page-1", 0, Some("one.png"), true, 1));
+
+    let found = get_info((&mock, &mock), token("user-1"), "page-1".into())
+        .await
+        .unwrap();
+
+    assert_eq!(found.id, "page-1");
+
+    assert_eq!(
+        found.image_url,
+        Some("https://test.local/get/one.png".into())
+    );
+
+    assert_eq!(
+        found.image_thumbnail_url,
+        Some("https://test.local/cdn-cgi/image/width=300,fit=scale-down,quality=80,format=auto,metadata=none/one.png".into())
+    );
+}
+
+#[tokio::test]
+async fn get_info_rejects_non_member_without_assignment() {
+    //
+    let mock = Mock::new();
+
+    seed_scope(&mock);
+
+    mock.seed_page(page("page-1", 0, Some("one.png"), true, 1));
+
+    let err = get_info((&mock, &mock), token("user-1"), "page-1".into())
+        .await
+        .err()
+        .unwrap();
 
     assert_expected_variant(err, ExpectedVariant::Perm);
 }

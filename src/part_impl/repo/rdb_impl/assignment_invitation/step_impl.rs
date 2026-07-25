@@ -5,8 +5,14 @@ use diesel_async::RunQueryDsl;
 use time::OffsetDateTime;
 use tracing::instrument;
 
-use crate::model::assignment_invitation::{AssignmentInvitationEntry, AssignmentInvitationInfo, AssignmentInvitationListKind, AssignmentInvitationListSpec};
-use crate::part_impl::repo::rdb_impl::entity::assignment_invitation::{AssignmentInvitationAspect, AssignmentInvitationRow, AssignmentInvitationRowEntry};
+use crate::model::assignment_invitation::{
+    AssignmentInvitationEntry, AssignmentInvitationInfo,
+    AssignmentInvitationListKind, AssignmentInvitationListSpec,
+};
+use crate::part_impl::repo::rdb_impl::entity::assignment_invitation::{
+    AssignmentInvitationAspect, AssignmentInvitationRow,
+    AssignmentInvitationRowEntry,
+};
 use crate::part_impl::repo::rdb_impl::schema::t_assignment_invitation::dsl::*;
 use crate::part_impl::shared::RdbConn;
 use crate::part_impl::shared::result::{diesel, expected};

@@ -25,7 +25,10 @@ use super::*;
 
 use self::fixture::*;
 use crate::complex::chapter::ChapterComplex;
-use crate::data::chapter::{CreateChapterParams, ListChapterInfosParams, UpdateChapterInfoParams, UpdateChapterStageParams};
+use crate::data::chapter::{
+    CreateChapterParams, ListChapterInfosParams, UpdateChapterInfoParams,
+    UpdateChapterStageParams,
+};
 use crate::part::prom::payload::TaskPayload;
 use crate::part::prom::payload::image::ImagePayload;
 use crate::part_impl::repo::mock_impl::Mock;

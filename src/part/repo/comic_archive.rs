@@ -2,7 +2,10 @@
 
 use poprako_orchestra::{Run, Step};
 
-use crate::part::repo::oper::comic_archive::{CommitComicArchive, GetComicArchiveSnapshotExcluded, ListComicArchivePayloads};
+use crate::part::repo::oper::comic_archive::{
+    CommitComicArchive, GetComicArchiveSnapshotExcluded,
+    ListComicArchivePayloads,
+};
 use crate::result::BaseError;
 
 /// Comic archive operations within a caller-coordinated transaction.

@@ -13,7 +13,10 @@ use crate::complex::chapter::ChapterComplex;
 use crate::complex::image::ImageComplex;
 use crate::complex::page::{PageComplex, PagePermComplex};
 use crate::data::image::ImageUploadSlotVal;
-use crate::data::page::{ListPageInfosParams, MarkPageImageUploadedParams, PageInfoVal, ReservePageImageParams, ReservedPagePayload};
+use crate::data::page::{
+    ListPageInfosParams, MarkPageImageUploadedParams, PageInfoVal,
+    ReservePageImageParams, ReservedPagePayload,
+};
 use crate::model::page::PageManifestUpdate;
 use crate::model::user::UserToken;
 use crate::part::image::{ImageManager, ImagePool, ImageUploadSpec};
@@ -25,10 +28,15 @@ use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::assignment::FindAssignmentInfo;
-use crate::part::repo::oper::chapter::{GetChapterInfo, GetChapterInfoExcluded, SetChapterPageCounters};
+use crate::part::repo::oper::chapter::{
+    GetChapterInfo, GetChapterInfoExcluded, SetChapterPageCounters,
+};
 use crate::part::repo::oper::comic::{GetComicInfo, TouchComicLastActive};
 use crate::part::repo::oper::member::FindMemberInfo;
-use crate::part::repo::oper::page::{DeletePages, GetPageInfo, GetPageInfoExcluded, ListPageInfos, MarkPageImageUploaded, UpdatePageManifest};
+use crate::part::repo::oper::page::{
+    DeletePages, GetPageInfo, GetPageInfoExcluded, ListPageInfos,
+    MarkPageImageUploaded, UpdatePageManifest,
+};
 use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::workset::WorksetRepo;
@@ -301,6 +309,42 @@ where
     .await
     .into_iter()
     .collect()
+}
+
+/// Fetches one page by ID.
+#[instrument(level = "info", err(Debug), skip_all)]
+pub async fn get_info<C, R, I>(
+    (repo, image_pool): (&R, &I),
+    token: UserToken,
+    id: String,
+) -> BaseResult<PageInfoVal>
+where
+    R: PageRepo<C>
+        + ChapterRepo<C>
+        + ComicRepo<C>
+        + WorksetRepo<C>
+        + MemberRepo<C>
+        + AssignmentRepo<C>
+        + Sync,
+    I: ImagePool,
+{
+    let page_info = repo.run(&GetPageInfo { id: &id }).await?;
+
+    PagePermComplex::ensure_user_can_list_infos(
+        &mut run_proxy! {
+            repo =>
+                for<'a, 'b> GetChapterInfo<'a, 'b>,
+                for<'a, 'b> GetComicInfo<'a, 'b>,
+                for<'a> GetWorksetInfo<'a>,
+                for<'a> FindMemberInfo<'a>,
+                for<'a, 'b> FindAssignmentInfo<'a, 'b>;
+        },
+        &token.user_id,
+        &page_info.chapter_id,
+    )
+    .await?;
+
+    PageInfoVal::from_model(image_pool, page_info).await
 }
 
 /// Marks one page image as uploaded.

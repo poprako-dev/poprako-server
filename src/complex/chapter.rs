@@ -16,9 +16,14 @@ use poprako_orchestra::Proxy;
 
 use poprako_util::i18n::{trl, trl_kv};
 
-use crate::complex::util::{check_user_is_team_admin, check_user_is_team_admin_with_roles, check_user_is_team_member};
+use crate::complex::util::{
+    check_user_is_team_admin, check_user_is_team_admin_with_roles,
+    check_user_is_team_member,
+};
 use crate::model::chapter::{ChapterInfo, ChapterStageUpdate};
-use crate::part::repo::oper::assignment::{FindAssignmentInfo, ListAssignmentInfos};
+use crate::part::repo::oper::assignment::{
+    FindAssignmentInfo, ListAssignmentInfos,
+};
 use crate::part::repo::oper::chapter::GetChapterInfo;
 use crate::part::repo::oper::comic::GetComicInfo;
 use crate::part::repo::oper::member::FindMemberInfo;
