@@ -7,9 +7,7 @@ use tracing::instrument;
 
 use crate::model::comment::{CommentEntry, CommentInfo, CommentListSpec};
 use crate::part::repo::oper::comment::{CreateComment, ListCommentInfos};
-use crate::part_impl::repo::rdb_impl::entity::comment::{
-    CommentRow, CommentRowEntry,
-};
+use crate::part_impl::repo::rdb_impl::entity::comment::{CommentRow, CommentRowEntry};
 use crate::part_impl::repo::rdb_impl::schema::t_comment::dsl::*;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, incl};
 use crate::part_impl::shared::result::diesel;

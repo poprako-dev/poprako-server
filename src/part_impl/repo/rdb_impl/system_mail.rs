@@ -5,18 +5,11 @@ use diesel_async::RunQueryDsl;
 use poprako_orchestra::Run;
 use tracing::instrument;
 
-use crate::model::system_mail::{
-    SystemMailEntry, SystemMailInfo, SystemMailInfoListKind,
-    SystemMailInfoListSpec,
-};
-use crate::part::repo::oper::system_mail::{
-    ListSystemMailInfos, MarkSystemMailRead, SendSystemMail, SendSystemMails,
-};
+use crate::model::system_mail::{SystemMailEntry, SystemMailInfo, SystemMailInfoListKind, SystemMailInfoListSpec};
+use crate::part::repo::oper::system_mail::{ListSystemMailInfos, MarkSystemMailRead, SendSystemMail, SendSystemMails};
 use crate::part::repo::system_mail::SystemMailRepo;
 use crate::part_impl::repo::rdb_impl::RdbRepo;
-use crate::part_impl::repo::rdb_impl::entity::system_mail::{
-    SystemMailRow, SystemMailRowEntry,
-};
+use crate::part_impl::repo::rdb_impl::entity::system_mail::{SystemMailRow, SystemMailRowEntry};
 use crate::part_impl::repo::rdb_impl::schema::t_system_mail::dsl::*;
 use crate::part_impl::shared::result::{diesel, expected};
 use crate::part_impl::shared::{RdbConn, RdbContext};

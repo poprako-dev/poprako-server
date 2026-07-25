@@ -2,10 +2,7 @@
 
 use poprako_orchestra::{Run, Step};
 
-use crate::part::repo::oper::assignment::{
-    CreateAssignment, DeleteAssignments, FindAssignmentInfo, GetAssignmentInfo,
-    ListAssignmentInfos, ListAssignmentInfosExcluded, UpdateAssignmentRoles,
-};
+use crate::part::repo::oper::assignment::{CreateAssignment, DeleteAssignments, FindAssignmentInfo, GetAssignmentInfo, ListAssignmentInfos, ListAssignmentInfosExcluded, UpdateAssignmentRoles};
 use crate::result::BaseError;
 
 /// Assignment repository operations.

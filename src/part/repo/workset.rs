@@ -1,10 +1,6 @@
 use poprako_orchestra::{Run, Step};
 
-use crate::part::repo::oper::workset::{
-    AllocWorksetComicIndex, CreateWorkset, DeleteWorkset, GetWorksetInfo,
-    GetWorksetInfoExcluded, ListWorksetInfos, ListWorksetInfosExcluded,
-    UpdateWorkset, UpdateWorksetComicCount,
-};
+use crate::part::repo::oper::workset::{AllocWorksetComicIndex, CreateWorkset, DeleteWorkset, GetWorksetInfo, GetWorksetInfoExcluded, ListWorksetInfos, ListWorksetInfosExcluded, UpdateWorkset, UpdateWorksetComicCount};
 use crate::result::BaseError;
 
 /// Workset repository operations.

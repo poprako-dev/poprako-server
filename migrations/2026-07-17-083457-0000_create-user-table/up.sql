@@ -22,6 +22,3 @@ CREATE TABLE IF NOT EXISTS "t_user" (
 
     CHECK (octet_length("f_avatar_hash") = 32)
 );
-
-CREATE UNIQUE INDEX IF NOT EXISTS "uidx_user_qid"
-    ON "t_user" ("f_qid");

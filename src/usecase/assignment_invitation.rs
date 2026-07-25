@@ -12,16 +12,9 @@ use poprako_util::i18n::trl;
 use crate::complex::assignment::AssignmentComplex;
 use crate::complex::chapter::ChapterComplex;
 use crate::data::assignment::AssignmentInfoVal;
-use crate::data::assignment_invitation::{
-    AssignmentInvitationInfoVal, CreateAssignmentInvitationParams,
-    CreateAssignmentInvitationPayload, JoinAssignmentInvitationParams,
-    ListAssignmentInvitationInfosParams,
-};
+use crate::data::assignment_invitation::{AssignmentInvitationInfoVal, CreateAssignmentInvitationParams, CreateAssignmentInvitationPayload, JoinAssignmentInvitationParams, ListAssignmentInvitationInfosParams};
 use crate::model::assignment::AssignmentEntry;
-use crate::model::assignment_invitation::{
-    AssignmentInvitationEntry, AssignmentInvitationListKind,
-    AssignmentInvitationListSpec,
-};
+use crate::model::assignment_invitation::{AssignmentInvitationEntry, AssignmentInvitationListKind, AssignmentInvitationListSpec};
 use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
 use crate::part::prom::Prom;
@@ -32,14 +25,8 @@ use crate::part::repo::assignment_invitation::AssignmentInvitationRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
-use crate::part::repo::oper::assignment::{
-    CreateAssignment, FindAssignmentInfo, UpdateAssignmentRoles,
-};
-use crate::part::repo::oper::assignment_invitation::{
-    CreateAssignmentInvitation, DeleteAssignmentInvitations,
-    GetAssignmentInvitationInfo, GetAssignmentInvitationInfoExcluded,
-    ListAssignmentInvitationInfos, MarkAssignmentInvitationUsed,
-};
+use crate::part::repo::oper::assignment::{CreateAssignment, FindAssignmentInfo, UpdateAssignmentRoles};
+use crate::part::repo::oper::assignment_invitation::{CreateAssignmentInvitation, DeleteAssignmentInvitations, GetAssignmentInvitationInfo, GetAssignmentInvitationInfoExcluded, ListAssignmentInvitationInfos, MarkAssignmentInvitationUsed};
 use crate::part::repo::oper::chapter::GetChapterInfoExcluded;
 use crate::part::repo::oper::comic::GetComicInfo;
 use crate::part::repo::oper::member::FindMemberInfo;

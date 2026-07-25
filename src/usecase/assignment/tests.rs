@@ -1,8 +1,6 @@
 use super::*;
 
-use crate::data::assignment::{
-    ListAssignmentInfosParams, UpdateAssignmentRolesParams,
-};
+use crate::data::assignment::{ListAssignmentInfosParams, UpdateAssignmentRolesParams};
 use crate::model::assignment::AssignmentInfo;
 use crate::model::chapter::ChapterInfo;
 use crate::model::comic::ComicInfo;

@@ -6,22 +6,14 @@ use tracing::instrument;
 use poprako_util::i18n::trl;
 
 use crate::complex::member::{MemberComplex, MemberPermComplex};
-use crate::data::member::{
-    CreateMemberParams, CreateMemberPayload, JoinTeamParams,
-    ListMemberInfosParams, MemberInfoVal, UpdateMemberRolesParams,
-};
+use crate::data::member::{CreateMemberParams, CreateMemberPayload, JoinTeamParams, ListMemberInfosParams, MemberInfoVal, UpdateMemberRolesParams};
 use crate::model::member::{MemberEntry, MemberListSpec, MemberRoleUpdate};
 use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::member_invitation::MemberInvitationRepo;
-use crate::part::repo::oper::member::{
-    CreateMember, DeleteMember, FindMemberInfo, GetMemberInfo, ListMemberInfos,
-    UpdateMember,
-};
-use crate::part::repo::oper::member_invitation::{
-    GetMemberInvitationInfoExcluded, UpdateMemberInvitation,
-};
+use crate::part::repo::oper::member::{CreateMember, DeleteMember, FindMemberInfo, GetMemberInfo, ListMemberInfos, UpdateMember};
+use crate::part::repo::oper::member_invitation::{GetMemberInvitationInfoExcluded, UpdateMemberInvitation};
 use crate::part::repo::oper::team::LockTeam;
 use crate::part::repo::oper::user::GetUserInfoExcluded;
 use crate::part::repo::team::TeamRepo;

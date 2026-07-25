@@ -16,10 +16,7 @@ use super::*;
 
 use time::{Duration as TimeDuration, OffsetDateTime};
 
-use crate::data::page::{
-    ListPageInfosParams, MarkPageImageUploadedParams, PageImageParams,
-    ReserveChapterPagesParams, ReservePageImageParams,
-};
+use crate::data::page::{ListPageInfosParams, MarkPageImageUploadedParams, PageImageParams, ReserveChapterPagesParams, ReservePageImageParams};
 use crate::model::assignment::AssignmentInfo;
 use crate::model::chapter::ChapterInfo;
 use crate::model::comic::ComicInfo;
@@ -33,10 +30,7 @@ use crate::part::prom::payload::image::{ImagePayload, ResourceKind};
 use crate::part_impl::prom::mock_impl::process_pending;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
-use crate::test_util::{
-    assert_expected_message, assert_expected_variant,
-    assert_one_image_check_record,
-};
+use crate::test_util::{assert_expected_message, assert_expected_variant, assert_one_image_check_record};
 use crate::value::chapter::{Stage, StageMask, StagePhase};
 use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
@@ -206,7 +200,7 @@ async fn reserve_image_replaces_key_and_enqueues_prom() {
         "page-1".into(),
         ReservePageImageParams {
             image_hash: ImageHash::new([1u8; 32]),
-            byte_length: 8192,
+            new_byte_len: 8192,
             ext: ImageExt::Jpg,
         },
     )
@@ -272,7 +266,7 @@ async fn reserve_image_reuses_same_uploaded_identity_without_version_bump() {
         "page-1".into(),
         ReservePageImageParams {
             image_hash: ImageHash::new([0; 32]),
-            byte_length: 4096,
+            new_byte_len: 4096,
             ext: ImageExt::Png,
         },
     )
@@ -306,7 +300,7 @@ async fn reserve_image_resigns_same_pending_identity() {
         "page-1".into(),
         ReservePageImageParams {
             image_hash: ImageHash::new([0; 32]),
-            byte_length: 4096,
+            new_byte_len: 4096,
             ext: ImageExt::Png,
         },
     )
@@ -336,7 +330,7 @@ async fn reserve_image_resigns_same_pending_identity() {
 }
 
 #[tokio::test]
-async fn reserve_image_rejects_same_hash_with_conflicting_metadata() {
+async fn reserve_image_replaces_same_hash_with_different_extension() {
     //
     let mock = Mock::new();
 
@@ -350,22 +344,41 @@ async fn reserve_image_rejects_same_hash_with_conflicting_metadata() {
         RoleMask::from(RoleField::RAW_PROVIDER),
     ));
 
-    let result = reserve_image((&mock, &mock, &mock, &mock,),
+    let reserved = reserve_image((&mock, &mock, &mock, &mock,),
         token("user-1"),
         "page-1".into(),
         ReservePageImageParams {
             image_hash: ImageHash::new([0; 32]),
-            byte_length: 4097,
+            new_byte_len: 4097,
             ext: ImageExt::Webp,
         },
     )
-    .await;
+    .await
+    .unwrap();
 
-    assert!(matches!(result, Err(BaseError::Expected { .. })));
+    let snapshot = mock.snapshot();
 
-    assert_eq!(mock.snapshot().pages[0].image_version, 4);
+    assert_eq!(reserved.slot.as_ref().unwrap().image_version, 5);
 
-    assert!(mock.snapshot().prom_records.is_empty());
+    assert_eq!(snapshot.pages[0].image_version, 5);
+
+    assert_eq!(snapshot.pages[0].image_ext, ImageExt::Webp);
+
+    assert!(snapshot.prom_records.iter().any(|record| {
+        matches!(
+            record.payload(),
+            TaskPayload::Image(ImagePayload::Delete { object_key })
+                if object_key == "same.png"
+        )
+    }));
+
+    assert_one_image_check_record(
+        &snapshot.prom_records,
+        ResourceKind::PageImage,
+        "page-1",
+        snapshot.pages[0].image_key.as_deref().unwrap(),
+        5,
+    );
 }
 
 #[tokio::test]
@@ -378,7 +391,7 @@ async fn reserve_image_rejects_missing_page() {
         "missing".into(),
         ReservePageImageParams {
             image_hash: ImageHash::new([1u8; 32]),
-            byte_length: 8192,
+            new_byte_len: 8192,
             ext: ImageExt::Jpg,
         },
     )

@@ -17,6 +17,3 @@ CREATE TABLE IF NOT EXISTS "t_team" (
 
     CHECK (octet_length("f_avatar_hash") = 32)
 );
-
-CREATE INDEX IF NOT EXISTS "idx_team_created_at"
-    ON "t_team" ("f_created_at" DESC);

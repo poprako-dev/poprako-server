@@ -12,11 +12,7 @@ use poprako_util::i18n::trl;
 use crate::complex::image::ImageComplex;
 use crate::complex::user::UserComplex;
 use crate::data::image::ImageUploadSlotVal;
-use crate::data::user::{
-    MarkUserAvatarUploadedParams, ReserveUserAvatarParams,
-    ReserveUserAvatarPayload, UpdateUserInfoParams, UpdateUserPasswordParams,
-    UserInfoVal,
-};
+use crate::data::user::{MarkUserAvatarUploadedParams, ReserveUserAvatarParams, ReserveUserAvatarPayload, UpdateUserInfoParams, UpdateUserPasswordParams, UserInfoVal};
 use crate::model::user::UserToken;
 use crate::part::effect::EffectDevelop;
 use crate::part::effect::event::Event;
@@ -25,13 +21,8 @@ use crate::part::image::{ImageManager, ImagePool, ImageUploadSpec};
 use crate::part::prom::Prom;
 use crate::part::prom::payload::{TaskPayload, image};
 use crate::part::repo::member::MemberRepo;
-use crate::part::repo::oper::member::{
-    DeleteMember, ListMemberInfosExcluded, UpdateMember,
-};
-use crate::part::repo::oper::user::{
-    DeleteUser, GetUserCredential, GetUserInfo, GetUserInfoExcluded,
-    ReserveUserAvatar, UpdateUser,
-};
+use crate::part::repo::oper::member::{DeleteMember, ListMemberInfosExcluded, UpdateMember};
+use crate::part::repo::oper::user::{DeleteUser, GetUserCredential, GetUserInfo, GetUserInfoExcluded, ReserveUserAvatar, UpdateUser};
 use crate::part::repo::user::UserRepo;
 use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 
@@ -233,7 +224,7 @@ where
     I: ImagePool,
 {
     ImageComplex::ensure_byte_length(
-        params.byte_length,
+        params.new_byte_len,
         image::ResourceKind::UserAvatar,
     )?;
 
@@ -243,7 +234,7 @@ where
 
     let image_ext = params.ext;
 
-    let byte_length = params.byte_length;
+    let new_byte_len = params.new_byte_len;
 
     let (object_key, avatar_version, upload_required) = nucl
         .coord(async move |context| {
@@ -330,7 +321,7 @@ where
                 object_key: &object_key,
                 content_type: image_ext.content_type(),
                 checksum_sha256: &image_hash,
-                content_length: byte_length,
+                content_length: new_byte_len,
             };
 
             let upload_slot = image_pool.get_upload_slot(upload_spec).await?;

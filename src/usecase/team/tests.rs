@@ -32,10 +32,7 @@ use super::*;
 
 use time::OffsetDateTime;
 
-use crate::data::team::{
-    CreateTeamParams, ListTeamInfosParams, MarkTeamAvatarUploadedParams,
-    ReserveTeamAvatarParams, UpdateTeamInfoParams,
-};
+use crate::data::team::{CreateTeamParams, ListTeamInfosParams, MarkTeamAvatarUploadedParams, ReserveTeamAvatarParams, UpdateTeamInfoParams};
 use crate::model::comic::ComicInfo;
 use crate::model::member::MemberInfo;
 use crate::model::team::TeamInfo;
@@ -46,10 +43,7 @@ use crate::part_impl::prom::mock_impl::MockPromRecord;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::fixture::{team, workset};
-use crate::test_util::{
-    assert_expected_message, assert_expected_variant,
-    assert_one_image_check_record,
-};
+use crate::test_util::{assert_expected_message, assert_expected_variant, assert_one_image_check_record};
 use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
 
@@ -171,7 +165,7 @@ fn list_params(
 fn reserve_params(file_ext: &str) -> ReserveTeamAvatarParams {
     ReserveTeamAvatarParams {
         image_hash: ImageHash::new([1; 32]),
-        byte_length: 4096,
+        new_byte_len: 4096,
         ext: ImageExt::parse(file_ext).unwrap(),
     }
 }

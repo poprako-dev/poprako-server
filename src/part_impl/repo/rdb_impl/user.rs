@@ -7,17 +7,10 @@ use time::OffsetDateTime;
 use tracing::instrument;
 
 use crate::complex::user::UserComplex;
-use crate::model::user::{
-    UserAvatarReservation, UserCredential, UserEntry, UserInfo,
-};
-use crate::part::repo::oper::user::{
-    CreateUser, DeleteUser, FindUserInfo, GetUserCredential, GetUserInfo,
-    GetUserInfoExcluded, ReserveUserAvatar, UpdateUser,
-};
+use crate::model::user::{UserAvatarReservation, UserCredential, UserEntry, UserInfo};
+use crate::part::repo::oper::user::{CreateUser, DeleteUser, FindUserInfo, GetUserCredential, GetUserInfo, GetUserInfoExcluded, ReserveUserAvatar, UpdateUser};
 use crate::part_impl::repo::rdb_impl::RdbRepo;
-use crate::part_impl::repo::rdb_impl::entity::user::{
-    UserAspect, UserCredentialRow, UserRow, UserRowEntry,
-};
+use crate::part_impl::repo::rdb_impl::entity::user::{UserAspect, UserCredentialRow, UserRow, UserRowEntry};
 use crate::part_impl::repo::rdb_impl::schema::t_user::dsl::*;
 use crate::part_impl::shared::result::{diesel, expected, next_version};
 use crate::part_impl::shared::{RdbConn, RdbContext};

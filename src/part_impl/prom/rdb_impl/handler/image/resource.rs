@@ -7,12 +7,8 @@ use tracing::instrument;
 
 use crate::part::prom::payload::image::ResourceKind;
 use crate::part::repo::comic::ComicRepo;
-use crate::part::repo::oper::comic::{
-    GetComicInfoExcluded, MarkComicCoverUploaded,
-};
-use crate::part::repo::oper::page::{
-    GetPageInfoExcluded, MarkPageImageUploaded,
-};
+use crate::part::repo::oper::comic::{GetComicInfoExcluded, MarkComicCoverUploaded};
+use crate::part::repo::oper::page::{GetPageInfoExcluded, MarkPageImageUploaded};
 use crate::part::repo::oper::team::{GetTeamInfoExcluded, UpdateTeam};
 use crate::part::repo::oper::user::{GetUserInfoExcluded, UpdateUser};
 use crate::part::repo::page::PageRepo;
@@ -39,6 +35,7 @@ pub enum ResourceState {
 
 /// Current image identity read from a persisted resource record.
 struct CurrentImageIdentity<'a> {
+    //
     version: u32,
     object_key: Option<&'a str>,
     image_hash: &'a ImageHash,
@@ -202,6 +199,7 @@ where
             {
                 //
                 Ok(info) => {
+                    //
                     let current_identity = CurrentImageIdentity {
                         version: info.avatar_version,
                         object_key: info.avatar_key.as_deref(),
@@ -232,6 +230,7 @@ where
             {
                 //
                 Ok(info) => {
+                    //
                     let current_identity = CurrentImageIdentity {
                         version: info.avatar_version,
                         object_key: info.avatar_key.as_deref(),
@@ -263,6 +262,7 @@ where
             {
                 //
                 Ok(info) => {
+                    //
                     let current_identity = CurrentImageIdentity {
                         version: info.cover_version,
                         object_key: info.cover_key.as_deref(),
@@ -293,6 +293,7 @@ where
             {
                 //
                 Ok(info) => {
+                    //
                     let current_identity = CurrentImageIdentity {
                         version: info.image_version,
                         object_key: info.image_key.as_deref(),

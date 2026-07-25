@@ -17,7 +17,7 @@ pub struct ReserveImageParams {
     /// SHA-256 identity of the exact upload bytes.
     pub image_hash: ImageHash,
     /// Upload size used only for validation and PUT signing.
-    pub byte_length: u64,
+    pub new_byte_len: u64,
     /// File format persisted as part of the image identity.
     pub ext: ImageExt,
 }

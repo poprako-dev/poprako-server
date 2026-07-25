@@ -2,15 +2,9 @@ use poprako_orchestra::{Run, Step};
 use tracing::instrument;
 
 use crate::model::unit::{UnitCounters, UnitIndex, UnitInfo};
-use crate::part::repo::oper::unit::{
-    CountUnits, CreateUnit, DeleteUnit, ListUnitIndexes, ListUnitInfos,
-    SaveUnit, UpdateUnitIndexes,
-};
+use crate::part::repo::oper::unit::{CountUnits, CreateUnit, DeleteUnit, ListUnitIndexes, ListUnitInfos, SaveUnit, UpdateUnitIndexes};
 use crate::part_impl::repo::rdb_impl::RdbRepo;
-use crate::part_impl::repo::rdb_impl::unit::step_impl::{
-    count_by_page_id, create_unit, delete_by_id_in_page,
-    list_indexes_by_page_id, list_infos, save_unit, update_indexes_by_page_id,
-};
+use crate::part_impl::repo::rdb_impl::unit::step_impl::{count_by_page_id, create_unit, delete_by_id_in_page, list_indexes_by_page_id, list_infos, save_unit, update_indexes_by_page_id};
 use crate::part_impl::shared::RdbContext;
 use crate::result::{BaseError, BaseResult};
 

@@ -6,9 +6,7 @@ use poprako_util::time::ToUnixMilli;
 #[cfg(feature = "swagger")]
 use utoipa::ToSchema;
 
-use crate::model::unit::{
-    UnitContent, UnitCounters, UnitDiff, UnitIdMapper, UnitInfo, UnitOper,
-};
+use crate::model::unit::{UnitContent, UnitCounters, UnitDiff, UnitIdMapper, UnitInfo, UnitOper};
 
 #[cfg(test)]
 mod tests;

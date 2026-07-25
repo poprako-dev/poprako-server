@@ -23,13 +23,13 @@ async fn reserve_chapter_pages_creates_pages_and_urls() {
                 PageImageParams {
                     page_id: None,
                     image_hash: ImageHash::new([0u8; 32]),
-                    byte_length: Some(4096),
+                    new_byte_len: Some(4096),
                     ext: ImageExt::Png,
                 },
                 PageImageParams {
                     page_id: None,
                     image_hash: ImageHash::new([0u8; 32]),
-                    byte_length: Some(4096),
+                    new_byte_len: Some(4096),
                     ext: ImageExt::Png,
                 },
             ],
@@ -155,13 +155,13 @@ async fn reserve_chapter_pages_replaces_existing_manifest() {
                 PageImageParams {
                     page_id: Some("page-1".into()),
                     image_hash: ImageHash::new([0; 32]),
-                    byte_length: None,
+                    new_byte_len: None,
                     ext: ImageExt::Png,
                 },
                 PageImageParams {
                     page_id: None,
                     image_hash: ImageHash::new([1; 32]),
-                    byte_length: Some(4096),
+                    new_byte_len: Some(4096),
                     ext: ImageExt::Png,
                 },
             ],
@@ -186,6 +186,208 @@ async fn reserve_chapter_pages_replaces_existing_manifest() {
     assert_eq!(payload.pages[0].page_id, "page-1");
 
     assert!(payload.pages[0].slot.is_none());
+}
+
+#[tokio::test]
+async fn reserve_chapter_pages_preserves_pending_page_without_new_byte_len() {
+    //
+    let mock = Mock::new();
+
+    seed_scope(&mock);
+
+    mock.seed_assignment(assignment(
+        "chapter-1",
+        "user-1",
+        RoleMask::from(RoleField::RAW_PROVIDER),
+    ));
+
+    mock.seed_page(page(
+        "page-1",
+        0,
+        Some("page/chapter_chapter-1/page-1-2.png"),
+        false,
+        2,
+    ));
+
+    let reserved = reserve_chapter_pages((&mock, &mock, &mock, &mock,),
+        token("user-1"),
+        ReserveChapterPagesParams {
+            chapter_id: "chapter-1".into(),
+            pages: vec![PageImageParams {
+                page_id: Some("page-1".into()),
+                image_hash: ImageHash::new([0; 32]),
+                new_byte_len: None,
+                ext: ImageExt::Png,
+            }],
+        },
+    )
+    .await
+    .unwrap();
+
+    let snapshot = mock.snapshot();
+
+    assert!(reserved.pages[0].slot.is_none());
+
+    assert_eq!(snapshot.pages[0].image_version, 2);
+
+    assert!(!snapshot.pages[0].image_uploaded);
+
+    assert!(
+        snapshot
+            .prom_records
+            .iter()
+            .all(|record| !matches!(record.payload(), TaskPayload::Image(_)))
+    );
+}
+
+#[tokio::test]
+async fn reserve_chapter_pages_resigns_pending_page_with_new_byte_len() {
+    //
+    let mock = Mock::new();
+
+    seed_scope(&mock);
+
+    mock.seed_assignment(assignment(
+        "chapter-1",
+        "user-1",
+        RoleMask::from(RoleField::RAW_PROVIDER),
+    ));
+
+    mock.seed_page(page(
+        "page-1",
+        0,
+        Some("page/chapter_chapter-1/page-1-2.png"),
+        false,
+        2,
+    ));
+
+    let reserved = reserve_chapter_pages((&mock, &mock, &mock, &mock,),
+        token("user-1"),
+        ReserveChapterPagesParams {
+            chapter_id: "chapter-1".into(),
+            pages: vec![PageImageParams {
+                page_id: Some("page-1".into()),
+                image_hash: ImageHash::new([0; 32]),
+                new_byte_len: Some(4096),
+                ext: ImageExt::Png,
+            }],
+        },
+    )
+    .await
+    .unwrap();
+
+    let snapshot = mock.snapshot();
+
+    assert_eq!(
+        reserved.pages[0].slot.as_ref().unwrap().image_version,
+        2
+    );
+
+    assert_eq!(snapshot.pages[0].image_version, 2);
+
+    assert!(!snapshot.pages[0].image_uploaded);
+
+    assert!(snapshot.prom_records.iter().any(|record| {
+        matches!(
+            record.payload(),
+            TaskPayload::Image(ImagePayload::CheckUpload {
+                resource_id,
+                object_key,
+                version,
+                ..
+            }) if resource_id == "page-1"
+                && object_key == "page/chapter_chapter-1/page-1-2.png"
+                && version == 2
+        )
+    }));
+}
+
+#[tokio::test]
+async fn reserve_chapter_pages_rejects_new_page_without_new_byte_len() {
+    //
+    let mock = Mock::new();
+
+    seed_scope(&mock);
+
+    mock.seed_assignment(assignment(
+        "chapter-1",
+        "user-1",
+        RoleMask::from(RoleField::RAW_PROVIDER),
+    ));
+
+    let err = reserve_chapter_pages((&mock, &mock, &mock, &mock,),
+        token("user-1"),
+        ReserveChapterPagesParams {
+            chapter_id: "chapter-1".into(),
+            pages: vec![PageImageParams {
+                page_id: None,
+                image_hash: ImageHash::new([1; 32]),
+                new_byte_len: None,
+                ext: ImageExt::Jpg,
+            }],
+        },
+    )
+    .await
+    .err()
+    .unwrap();
+
+    let snapshot = mock.snapshot();
+
+    assert_expected_variant(err, ExpectedVariant::Args);
+
+    assert!(snapshot.pages.is_empty());
+
+    assert!(snapshot.prom_records.is_empty());
+}
+
+#[tokio::test]
+async fn reserve_chapter_pages_rejects_replacement_without_new_byte_len() {
+    //
+    let mock = Mock::new();
+
+    seed_scope(&mock);
+
+    mock.seed_assignment(assignment(
+        "chapter-1",
+        "user-1",
+        RoleMask::from(RoleField::RAW_PROVIDER),
+    ));
+
+    mock.seed_page(page(
+        "page-1",
+        0,
+        Some("page/chapter_chapter-1/page-1-2.png"),
+        true,
+        2,
+    ));
+
+    let err = reserve_chapter_pages((&mock, &mock, &mock, &mock,),
+        token("user-1"),
+        ReserveChapterPagesParams {
+            chapter_id: "chapter-1".into(),
+            pages: vec![PageImageParams {
+                page_id: Some("page-1".into()),
+                image_hash: ImageHash::new([1; 32]),
+                new_byte_len: None,
+                ext: ImageExt::Jpg,
+            }],
+        },
+    )
+    .await
+    .err()
+    .unwrap();
+
+    let snapshot = mock.snapshot();
+
+    assert_expected_variant(err, ExpectedVariant::Args);
+
+    assert_eq!(snapshot.pages[0].image_hash, ImageHash::new([0; 32]));
+
+    assert_eq!(snapshot.pages[0].image_version, 2);
+
+    assert!(snapshot.pages[0].image_uploaded);
+
+    assert!(snapshot.prom_records.is_empty());
 }
 
 #[tokio::test]
@@ -214,7 +416,7 @@ async fn reserve_chapter_pages_replaces_explicit_image_and_deletes_old_key() {
             pages: vec![PageImageParams {
                 page_id: Some("page-1".into()),
                 image_hash: ImageHash::new([1; 32]),
-                byte_length: Some(8192),
+                new_byte_len: Some(8192),
                 ext: ImageExt::Jpg,
             }],
         },
@@ -264,13 +466,13 @@ async fn reserve_chapter_pages_keeps_raw_pending_when_uploads_are_missing() {
                 PageImageParams {
                     page_id: None,
                     image_hash: ImageHash::new([0u8; 32]),
-                    byte_length: Some(4096),
+                    new_byte_len: Some(4096),
                     ext: ImageExt::Png,
                 },
                 PageImageParams {
                     page_id: None,
                     image_hash: ImageHash::new([0u8; 32]),
-                    byte_length: Some(4096),
+                    new_byte_len: Some(4096),
                     ext: ImageExt::Png,
                 },
             ],

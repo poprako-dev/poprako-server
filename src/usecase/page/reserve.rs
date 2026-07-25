@@ -15,9 +15,7 @@ use crate::complex::image::ImageComplex;
 use crate::complex::page::manifest::build;
 use crate::complex::page::{PageComplex, PagePermComplex};
 use crate::data::image::ImageUploadSlotVal;
-use crate::data::page::{
-    ReserveChapterPagesParams, ReserveChapterPagesPayload, ReservedPagePayload,
-};
+use crate::data::page::{ReserveChapterPagesParams, ReserveChapterPagesPayload, ReservedPagePayload};
 use crate::model::page::{PageEntry, PageImageSpec, PageManifestUpdate};
 use crate::model::user::UserToken;
 use crate::part::image::{ImagePool, ImageUploadSpec};
@@ -28,14 +26,9 @@ use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::oper::assignment::FindAssignmentInfo;
-use crate::part::repo::oper::chapter::{
-    GetChapterInfoExcluded, SetChapterPageCounters,
-};
+use crate::part::repo::oper::chapter::{GetChapterInfoExcluded, SetChapterPageCounters};
 use crate::part::repo::oper::comic::TouchComicLastActive;
-use crate::part::repo::oper::page::{
-    CreatePages, DeletePages, ListPageInfosExcluded, ShiftPageIndexesTemporary,
-    UpdatePageManifest,
-};
+use crate::part::repo::oper::page::{CreatePages, DeletePages, ListPageInfosExcluded, ShiftPageIndexesTemporary, UpdatePageManifest};
 use crate::part::repo::page::PageRepo;
 use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
@@ -92,12 +85,12 @@ where
 
     validate_page_count(page_count)?;
 
-    for byte_length in page_specs
+    for new_byte_len in page_specs
         .iter()
-        .filter_map(|page_spec| page_spec.byte_length)
+        .filter_map(|page_spec| page_spec.new_byte_len)
     {
         ImageComplex::ensure_byte_length(
-            byte_length,
+            new_byte_len,
             image::ResourceKind::PageImage,
         )?;
     }
@@ -120,8 +113,9 @@ where
 
     /// Holds one requested upload target within a page reservation.
     struct PageUploadReservation {
+        //
         object_key: String,
-        byte_length: u64,
+        new_byte_len: u64,
     }
 
     /// Holds the identity and optional upload request for one reserved page.
@@ -220,9 +214,10 @@ where
                     proofread_unit_count += existing_page_info.proofread_unit_count;
 
                     let identity_changed =
-                        existing_page_info.image_hash != page_spec.image_hash;
+                        existing_page_info.image_hash != page_spec.image_hash
+                            || existing_page_info.image_ext != page_spec.ext;
 
-                    if identity_changed && page_spec.byte_length.is_none() {
+                    if identity_changed && page_spec.new_byte_len.is_none() {
                         return Err(BaseError::Expected {
                             variant: ExpectedVariant::Args,
                             message: trl("error-invalid-image-byte-length"),
@@ -290,11 +285,11 @@ where
                         index: u32::try_from(index).map_err(|_| BaseError::Unrecoverable {
                             message: "[reserve_chapter_pages] page index must be non-negative".into(),
                         })?,
-                        upload: match (image_uploaded, page_spec.byte_length) {
+                        upload: match (image_uploaded, page_spec.new_byte_len) {
                             //
                             (true, _) | (false, None) => None,
 
-                            (false, Some(byte_length)) => {
+                            (false, Some(new_byte_len)) => {
                                 Some(PageUploadReservation {
                                     object_key: image_key.ok_or_else(|| {
                                         BaseError::Unrecoverable {
@@ -302,7 +297,7 @@ where
                                                 .into(),
                                         }
                                     })?,
-                                    byte_length,
+                                    new_byte_len,
                                 })
                             }
                         },
@@ -314,7 +309,7 @@ where
                     continue;
                 }
 
-                let byte_length = page_spec.byte_length.ok_or_else(|| {
+                let new_byte_len = page_spec.new_byte_len.ok_or_else(|| {
                     BaseError::Expected {
                         variant: ExpectedVariant::Args,
                         message: trl("error-invalid-image-byte-length"),
@@ -351,7 +346,7 @@ where
                     })?,
                     upload: Some(PageUploadReservation {
                         object_key,
-                        byte_length,
+                        new_byte_len,
                     }),
                     image_version,
                     image_hash: page_spec.image_hash.clone(),
@@ -494,7 +489,7 @@ where
                         object_key: &upload.object_key,
                         content_type: reservation.ext.content_type(),
                         checksum_sha256: &reservation.image_hash,
-                        content_length: upload.byte_length,
+                        content_length: upload.new_byte_len,
                     };
 
                     let upload_target =

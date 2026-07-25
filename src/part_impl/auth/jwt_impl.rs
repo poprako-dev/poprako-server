@@ -1,9 +1,7 @@
 //! JWT-backed authentication token signer.
 
 use anyhow::Context as _;
-use jsonwebtoken::{
-    Algorithm, DecodingKey, EncodingKey, Header, Validation, decode, encode,
-};
+use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, Validation, decode, encode};
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 use tracing::instrument;

@@ -5,9 +5,7 @@ use super::*;
 use poprako_orchestra::{Nucl as _, Step as _};
 
 use crate::model::member::{MemberEntry, MemberListSpec, MemberRoleUpdate};
-use crate::part::repo::oper::member::{
-    CreateMember, GetMemberInfo, ListMemberInfos, UpdateMember,
-};
+use crate::part::repo::oper::member::{CreateMember, GetMemberInfo, ListMemberInfos, UpdateMember};
 use crate::part_impl::drive::rdb_impl::RdbDrive;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
 use crate::part_impl::shared::RdbCore;

@@ -16,9 +16,7 @@ use url::Url;
 
 use poprako_util::i18n::trl;
 
-use crate::part::image::{
-    ImageManager, ImageObjectInfo, ImagePool, ImageUploadSlot, ImageUploadSpec,
-};
+use crate::part::image::{ImageManager, ImageObjectInfo, ImagePool, ImageUploadSlot, ImageUploadSpec};
 use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 use crate::value::image::ImageHash;
 

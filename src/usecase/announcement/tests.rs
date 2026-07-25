@@ -9,9 +9,7 @@ use super::*;
 
 use time::OffsetDateTime;
 
-use crate::data::announcement::{
-    CreateAnnouncementParams, ListAnnouncementInfosParams,
-};
+use crate::data::announcement::{CreateAnnouncementParams, ListAnnouncementInfosParams};
 use crate::model::announcement::AnnouncementInfo;
 use crate::model::member::MemberInfo;
 use crate::model::user::{UserCredential, UserInfo, UserToken};

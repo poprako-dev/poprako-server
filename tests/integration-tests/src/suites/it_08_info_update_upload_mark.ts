@@ -106,7 +106,7 @@ export async function runIt08Module(ctx: RunCtx): Promise<void> {
     expectError(
         await trans02.api.post<ErrorBody>(`/api/v1/users/${trans01.userId}/avatar/reserve`, {
             image_hash: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
-            byte_length: 1,
+            new_byte_len: 1,
             ext: "png",
         }),
         403,
@@ -131,7 +131,7 @@ export async function runIt08Module(ctx: RunCtx): Promise<void> {
     expectError(
         await trans01.api.post<ErrorBody>(`/api/v1/comics/${xingchenId}/cover/reserve`, {
             image_hash: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
-            byte_length: 1,
+            new_byte_len: 1,
             ext: "png",
         }),
         403,
@@ -142,7 +142,7 @@ export async function runIt08Module(ctx: RunCtx): Promise<void> {
     expectError(
         await ctx.sadmin.post<ErrorBody>("/api/v1/teams/team-does-not-exist/avatar/reserve", {
             image_hash: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
-            byte_length: 1,
+            new_byte_len: 1,
             ext: "png",
         }),
         403,

@@ -222,7 +222,7 @@ export type ImageExtension = "jpg" | "jpeg" | "png" | "gif" | "webp" | "svg" | "
 export interface PageImageInput {
     page_id: string | null;
     image_hash: string;
-    byte_length: number;
+    new_byte_len?: number;
     ext: ImageExtension;
 }
 

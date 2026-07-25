@@ -7,12 +7,8 @@ use axum::extract::{ConnectInfo, Request};
 use axum::http::header::USER_AGENT;
 use axum::response::Response;
 use tower_http::classify::ServerErrorsFailureClass;
-use tower_http::request_id::{
-    MakeRequestUuid, PropagateRequestIdLayer, SetRequestIdLayer,
-};
-use tower_http::trace::{
-    DefaultOnFailure, HttpMakeClassifier, OnFailure as _, TraceLayer,
-};
+use tower_http::request_id::{MakeRequestUuid, PropagateRequestIdLayer, SetRequestIdLayer};
+use tower_http::trace::{DefaultOnFailure, HttpMakeClassifier, OnFailure as _, TraceLayer};
 use tracing::Span;
 
 /// Builds the request-ID propagation layer.

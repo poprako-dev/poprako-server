@@ -8,9 +8,7 @@ use crate::part::effect::event::Event;
 use crate::part::effect::event::chapter::ChapterWorkflowCompletedPayload;
 use crate::part::prom::payload::chapter::ChapterPayload;
 use crate::part::repo::chapter::ChapterRepo;
-use crate::part::repo::oper::chapter::{
-    CompleteChapterRawProvide, GetChapterInfoExcluded,
-};
+use crate::part::repo::oper::chapter::{CompleteChapterRawProvide, GetChapterInfoExcluded};
 use crate::part_impl::prom::rdb_impl::handler::task_flow::TaskFlow;
 use crate::part_impl::shared::RdbContext;
 use crate::result::{BaseError, BaseResult, accept};

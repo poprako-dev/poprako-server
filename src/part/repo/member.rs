@@ -5,10 +5,7 @@
 
 use poprako_orchestra::{Run, Step};
 
-use crate::part::repo::oper::member::{
-    CreateMember, DeleteMember, FindMemberInfo, GetMemberInfo, ListMemberInfos,
-    ListMemberInfosExcluded, UpdateMember,
-};
+use crate::part::repo::oper::member::{CreateMember, DeleteMember, FindMemberInfo, GetMemberInfo, ListMemberInfos, ListMemberInfosExcluded, UpdateMember};
 use crate::result::BaseError;
 
 /// Member repository operations.

@@ -31,10 +31,7 @@ use super::*;
 use time::OffsetDateTime;
 
 use crate::complex::user::UserComplex;
-use crate::data::user::{
-    MarkUserAvatarUploadedParams, ReserveUserAvatarParams,
-    UpdateUserInfoParams, UpdateUserPasswordParams,
-};
+use crate::data::user::{MarkUserAvatarUploadedParams, ReserveUserAvatarParams, UpdateUserInfoParams, UpdateUserPasswordParams};
 use crate::model::member::MemberInfo;
 use crate::model::user::{UserInfo, UserToken};
 use crate::part::effect::event::Event;
@@ -44,10 +41,7 @@ use crate::part_impl::prom::mock_impl::MockPromRecord;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
 use crate::test_util::fixture::{credential, user};
-use crate::test_util::{
-    assert_expected_message, assert_expected_variant,
-    assert_one_image_check_record,
-};
+use crate::test_util::{assert_expected_message, assert_expected_variant, assert_one_image_check_record};
 use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};
 
@@ -120,7 +114,7 @@ fn update_password_params(
 fn reserve_params(file_ext: &str) -> ReserveUserAvatarParams {
     ReserveUserAvatarParams {
         image_hash: ImageHash::new([1; 32]),
-        byte_length: 4096,
+        new_byte_len: 4096,
         ext: ImageExt::parse(file_ext).unwrap(),
     }
 }

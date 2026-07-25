@@ -14,12 +14,8 @@ use crate::part::image::ImageManager;
 use crate::part::prom::Prom;
 use crate::part::prom::payload::{TaskPayload, image};
 use crate::part::repo::oper::chapter::GetChapterInfoExcluded;
-use crate::part::repo::oper::comic::{
-    GetComicInfoExcluded, MarkComicCoverUploaded,
-};
-use crate::part::repo::oper::page::{
-    GetPageInfoExcluded, MarkPageImageUploaded, SetPageImageUploaded,
-};
+use crate::part::repo::oper::comic::{GetComicInfoExcluded, MarkComicCoverUploaded};
+use crate::part::repo::oper::page::{GetPageInfoExcluded, MarkPageImageUploaded, SetPageImageUploaded};
 use crate::part::repo::oper::team::{GetTeamInfoExcluded, UpdateTeam};
 use crate::part::repo::oper::user::{GetUserInfoExcluded, UpdateUser};
 use crate::part_impl::repo::mock_impl::{Mock, MockContext};
@@ -33,6 +29,7 @@ mod tests;
 
 #[derive(Clone, Copy)]
 struct ImageIdentity<'a> {
+    //
     kind: image::ResourceKind,
     resource_id: &'a str,
     object_key: &'a str,
@@ -42,6 +39,7 @@ struct ImageIdentity<'a> {
 }
 
 struct CurrentImageIdentity<'a> {
+    //
     version: u32,
     object_key: Option<&'a str>,
     image_hash: &'a ImageHash,
@@ -201,6 +199,7 @@ async fn process_image_task(
         } => match image_pool.head_object(object_key).await? {
             //
             Some(object_info) => {
+                //
                 let image_identity = ImageIdentity {
                     kind: *resource_kind,
                     resource_id,
@@ -286,6 +285,7 @@ async fn process_image_task(
                 }
 
                 _ => {
+                    //
                     let image_identity = ImageIdentity {
                         kind: *resource_kind,
                         resource_id,
@@ -550,6 +550,7 @@ async fn classify_expected_mark(
             {
                 //
                 Ok(user_info) => {
+                    //
                     let current_identity = CurrentImageIdentity {
                         version: user_info.avatar_version,
                         object_key: user_info.avatar_key.as_deref(),
@@ -580,6 +581,7 @@ async fn classify_expected_mark(
             {
                 //
                 Ok(team_info) => {
+                    //
                     let current_identity = CurrentImageIdentity {
                         version: team_info.avatar_version,
                         object_key: team_info.avatar_key.as_deref(),
@@ -610,6 +612,7 @@ async fn classify_expected_mark(
                 .await
             {
                 Ok(comic_info) => {
+                    //
                     let current_identity = CurrentImageIdentity {
                         version: comic_info.cover_version,
                         object_key: comic_info.cover_key.as_deref(),
@@ -639,6 +642,7 @@ async fn classify_expected_mark(
                 .await
             {
                 Ok(page_info) => {
+                    //
                     let current_identity = CurrentImageIdentity {
                         version: page_info.image_version,
                         object_key: page_info.image_key.as_deref(),
