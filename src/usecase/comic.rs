@@ -321,9 +321,7 @@ where
         image::ResourceKind::ComicCover,
     )?;
 
-    let image_hash = params.image_hash.clone();
-
-    let transaction_image_hash = image_hash.clone();
+    let transaction_image_hash = params.image_hash.clone();
 
     let image_ext = params.ext;
 
@@ -390,8 +388,6 @@ where
                     resource_id: id.clone(),
                     object_key: cover_reservation.object_key.clone(),
                     version: cover_reservation.cover_version,
-                    image_hash: transaction_image_hash.clone(),
-                    image_ext,
                 },
             ));
 
@@ -425,7 +421,6 @@ where
             let upload_spec = ImageUploadSpec {
                 object_key: &object_key,
                 content_type: image_ext.content_type(),
-                checksum_sha256: &image_hash,
                 content_length: new_byte_len,
             };
 
@@ -497,19 +492,10 @@ where
                 message: trl("error-stale-cover-upload"),
             })?;
 
-    let object_info =
-        image_manager
-            .head_object(&cover_key)
-            .await?
-            .ok_or_else(|| BaseError::Expected {
-                variant: ExpectedVariant::Args,
-                message: trl("error-stale-cover-upload"),
-            })?;
-
-    if object_info.checksum_sha256 != comic_info.cover_hash {
+    if !image_manager.object_exists(&cover_key).await? {
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message: trl("error-invalid-image-hash"),
+            message: trl("error-stale-cover-upload"),
         });
     }
 
@@ -527,8 +513,6 @@ where
 
         if locked_comic_info.cover_version != params.image_version
             || locked_comic_info.cover_key.as_deref() != Some(&cover_key)
-            || locked_comic_info.cover_hash != comic_info.cover_hash
-            || locked_comic_info.cover_ext != comic_info.cover_ext
         {
             return Err(BaseError::Expected {
                 variant: ExpectedVariant::Args,

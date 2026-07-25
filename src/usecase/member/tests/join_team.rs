@@ -35,7 +35,8 @@ async fn join_team_invited_user_creates_member_and_consumes_invitation() {
 
     mock.seed_member_invitation(invitation("invitation-1", "target-user"));
 
-    super::join_team((&mock, &mock, &mock,),
+    super::join_team(
+        (&mock, &mock, &mock),
         token("target-user"),
         join_team_params(),
     )
@@ -69,7 +70,8 @@ async fn join_team_mismatched_qid_is_rejected() {
 
     mock.seed_member_invitation(invitation("invitation-1", "other-qid"));
 
-    let err = super::join_team((&mock, &mock, &mock,),
+    let err = super::join_team(
+        (&mock, &mock, &mock),
         token("target-user"),
         join_team_params(),
     )
@@ -103,7 +105,8 @@ async fn join_team_duplicate_membership_is_rejected() {
 
     mock.seed_member_invitation(invitation("invitation-1", "target-user"));
 
-    let err = super::join_team((&mock, &mock, &mock,),
+    let err = super::join_team(
+        (&mock, &mock, &mock),
         token("target-user"),
         join_team_params(),
     )

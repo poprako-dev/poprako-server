@@ -153,7 +153,8 @@ async fn create_admin_creates_member_with_target_user_nickname() {
 
     mock.seed_user(user("target-user", "Target"), credential("target-user"));
 
-    let create_outcome = create((&mock, &mock,),
+    let create_outcome = create(
+        (&mock, &mock),
         token("admin-user"),
         create_params("target-user", "team-1"),
     )
@@ -200,7 +201,8 @@ async fn create_non_admin_is_rejected() {
 
     mock.seed_user(user("target-user", "Target"), credential("target-user"));
 
-    let err = create((&mock, &mock,),
+    let err = create(
+        (&mock, &mock),
         token("normal-user"),
         create_params("target-user", "team-1"),
     )
@@ -232,7 +234,8 @@ async fn create_duplicate_member_is_rejected() {
         RoleMask::from(RoleField::TRANSLATOR),
     ));
 
-    let err = create((&mock, &mock,),
+    let err = create(
+        (&mock, &mock),
         token("admin-user"),
         create_params("target-user", "team-1"),
     )
@@ -267,7 +270,7 @@ async fn list_infos_member_lists_team_members() {
     mock.seed_member(translator_member_info);
 
     let member_info_vals =
-        list_infos((&mock, &mock,), token("admin-user"), list_params("team-1"))
+        list_infos((&mock, &mock), token("admin-user"), list_params("team-1"))
             .await;
 
     assert!(member_info_vals.is_ok());
@@ -309,7 +312,8 @@ async fn list_infos_filters_by_role() {
         RoleMask::from(RoleField::TRANSLATOR),
     ));
 
-    let member_info_vals = list_infos((&mock, &mock,),
+    let member_info_vals = list_infos(
+        (&mock, &mock),
         token("admin-user"),
         ListMemberInfosParams {
             owner_id: None,
@@ -355,7 +359,8 @@ async fn list_infos_applies_pagination_after_filtering() {
         RoleMask::from(RoleField::TRANSLATOR),
     ));
 
-    let member_info_vals = list_infos((&mock, &mock,),
+    let member_info_vals = list_infos(
+        (&mock, &mock),
         token("admin-user"),
         ListMemberInfosParams {
             owner_id: None,
@@ -407,7 +412,8 @@ async fn list_infos_owner_lists_own_memberships() {
         RoleMask::from(RoleField::ADMIN),
     ));
 
-    let member_info_vals = list_infos((&mock, &mock,),
+    let member_info_vals = list_infos(
+        (&mock, &mock),
         token("user-1"),
         ListMemberInfosParams {
             owner_id: Some("user-1".into()),
@@ -445,11 +451,14 @@ async fn list_infos_non_member_is_rejected() {
         RoleMask::from(RoleField::TRANSLATOR),
     ));
 
-    let err =
-        list_infos((&mock, &mock,), token("stranger-user"), list_params("team-1"))
-            .await
-            .err()
-            .unwrap();
+    let err = list_infos(
+        (&mock, &mock),
+        token("stranger-user"),
+        list_params("team-1"),
+    )
+    .await
+    .err()
+    .unwrap();
 
     assert_expected_variant(err, ExpectedVariant::Perm);
 }

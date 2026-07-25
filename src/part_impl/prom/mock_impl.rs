@@ -20,7 +20,6 @@ use crate::part::repo::oper::team::{GetTeamInfoExcluded, UpdateTeam};
 use crate::part::repo::oper::user::{GetUserInfoExcluded, UpdateUser};
 use crate::part_impl::repo::mock_impl::{Mock, MockContext};
 use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
-use crate::value::image::{ImageExt, ImageHash};
 
 mod chapter;
 mod image_task;
@@ -34,16 +33,12 @@ struct ImageIdentity<'a> {
     resource_id: &'a str,
     object_key: &'a str,
     version: u32,
-    image_hash: &'a ImageHash,
-    image_ext: ImageExt,
 }
 
 struct CurrentImageIdentity<'a> {
     //
     version: u32,
     object_key: Option<&'a str>,
-    image_hash: &'a ImageHash,
-    image_ext: ImageExt,
 }
 
 /// A recorded deferred action stored in the mock context during transactional testing.
@@ -194,19 +189,15 @@ async fn process_image_task(
             resource_id,
             object_key,
             version,
-            image_hash,
-            image_ext,
-        } => match image_pool.head_object(object_key).await? {
+        } => match image_pool.object_exists(object_key).await? {
             //
-            Some(object_info) => {
+            true => {
                 //
                 let image_identity = ImageIdentity {
                     kind: *resource_kind,
                     resource_id,
                     object_key,
                     version: *version,
-                    image_hash,
-                    image_ext: *image_ext,
                 };
 
                 //
@@ -233,46 +224,15 @@ async fn process_image_task(
                     {
                         return Err(BaseError::Unrecoverable {
                             message: "prom page image version matches but object key differs"
-                                .into(),
+                            .into(),
                         });
-                    }
-
-                    if page_info.image_hash != *image_identity.image_hash
-                        || page_info.image_ext != image_identity.image_ext
-                    {
-                        return Err(BaseError::Unrecoverable {
-                            message: "prom page image payload identity differs from current resource"
-                                .into(),
-                        });
-                    }
-
-                    if *image_identity.image_hash != object_info.checksum_sha256
-                    {
-                        //
-                        mark_page_image_unverified(
-                            image_pool,
-                            image_identity.resource_id,
-                            image_identity.object_key,
-                            image_identity.version,
-                        )
-                        .await?;
-
-                        return image_pool
-                            .delete_object(image_identity.object_key)
-                            .await;
                     }
                 }
 
-                process_existing_image(
-                    image_pool,
-                    image_identity,
-                    object_info.checksum_sha256 == *image_identity.image_hash,
-                    object_info.checksum_sha256 != *image_identity.image_hash,
-                )
-                .await
+                process_existing_image(image_pool, image_identity, true).await
             }
 
-            None => match resource_kind {
+            false => match resource_kind {
                 //
                 image::ResourceKind::PageImage => {
                     mark_page_image_unverified(
@@ -291,17 +251,10 @@ async fn process_image_task(
                         resource_id,
                         object_key,
                         version: *version,
-                        image_hash,
-                        image_ext: *image_ext,
                     };
 
-                    process_existing_image(
-                        image_pool,
-                        image_identity,
-                        false,
-                        false,
-                    )
-                    .await
+                    process_existing_image(image_pool, image_identity, false)
+                        .await
                 }
             },
         },
@@ -389,7 +342,6 @@ async fn process_existing_image(
     mock: &Mock,
     image_identity: ImageIdentity<'_>,
     image_uploaded: bool,
-    delete_mismatch: bool,
 ) -> BaseResult<()> {
     //
     let resource_state = mock
@@ -411,10 +363,6 @@ async fn process_existing_image(
 
     match resource_state {
         //
-        ResourceState::Current if delete_mismatch => {
-            mock.delete_object(image_identity.object_key).await
-        }
-
         ResourceState::Current | ResourceState::Stale => accept(()),
 
         // SAFETY: stale and deleted resource keys belong exclusively to
@@ -518,9 +466,7 @@ fn classify_current_identity(
 ) -> BaseResult<ResourceState> {
     match (
         current_identity.version == image_identity.version,
-        current_identity.object_key == Some(image_identity.object_key)
-            && current_identity.image_hash == image_identity.image_hash
-            && current_identity.image_ext == image_identity.image_ext,
+        current_identity.object_key == Some(image_identity.object_key),
     ) {
         //
         (false, _) => accept(ResourceState::Stale),
@@ -554,8 +500,6 @@ async fn classify_expected_mark(
                     let current_identity = CurrentImageIdentity {
                         version: user_info.avatar_version,
                         object_key: user_info.avatar_key.as_deref(),
-                        image_hash: &user_info.avatar_hash,
-                        image_ext: user_info.avatar_ext,
                     };
 
                     classify_current_identity(current_identity, image_identity)
@@ -585,8 +529,6 @@ async fn classify_expected_mark(
                     let current_identity = CurrentImageIdentity {
                         version: team_info.avatar_version,
                         object_key: team_info.avatar_key.as_deref(),
-                        image_hash: &team_info.avatar_hash,
-                        image_ext: team_info.avatar_ext,
                     };
 
                     classify_current_identity(current_identity, image_identity)
@@ -616,8 +558,6 @@ async fn classify_expected_mark(
                     let current_identity = CurrentImageIdentity {
                         version: comic_info.cover_version,
                         object_key: comic_info.cover_key.as_deref(),
-                        image_hash: &comic_info.cover_hash,
-                        image_ext: comic_info.cover_ext,
                     };
 
                     classify_current_identity(current_identity, image_identity)
@@ -646,8 +586,6 @@ async fn classify_expected_mark(
                     let current_identity = CurrentImageIdentity {
                         version: page_info.image_version,
                         object_key: page_info.image_key.as_deref(),
-                        image_hash: &page_info.image_hash,
-                        image_ext: page_info.image_ext,
                     };
 
                     classify_current_identity(current_identity, image_identity)

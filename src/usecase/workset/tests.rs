@@ -130,7 +130,7 @@ async fn create_allocates_index_and_persists() {
     mock.seed_member(admin_member("user-1", "team-1"));
 
     let created =
-        create((&mock, &mock,), token("user-1"), create_params("team-1"))
+        create((&mock, &mock), token("user-1"), create_params("team-1"))
             .await
             .unwrap();
 
@@ -152,7 +152,7 @@ async fn create_rolls_back_missing_team() {
 
     mock.seed_member(admin_member("user-1", "missing"));
 
-    let err = create((&mock, &mock,), token("user-1"), create_params("missing"))
+    let err = create((&mock, &mock), token("user-1"), create_params("missing"))
         .await
         .err()
         .unwrap();
@@ -208,7 +208,8 @@ async fn list_infos_filters_and_sorts_by_index() {
 
     mock.seed_workset(workset("workset-other", "team-2", 0));
 
-    let list = list_infos((&mock,),
+    let list = list_infos(
+        (&mock,),
         token("user-1"),
         ListWorksetInfosParams {
             team_id: "team-1".into(),
@@ -233,7 +234,8 @@ async fn list_infos_returns_empty_for_missing_team_contents() {
 
     mock.seed_member(admin_member("user-1", "missing"));
 
-    let list = list_infos((&mock,),
+    let list = list_infos(
+        (&mock,),
         token("user-1"),
         ListWorksetInfosParams {
             team_id: "missing".into(),
@@ -256,7 +258,8 @@ async fn update_info_updates_workset() {
 
     mock.seed_member(admin_member("user-1", "team-1"));
 
-    update_info((&mock,),
+    update_info(
+        (&mock,),
         token("user-1"),
         UpdateWorksetInfoParams {
             id: "workset-1".into(),
@@ -282,7 +285,8 @@ async fn update_info_propagates_missing_workset() {
     //
     let mock = Mock::new();
 
-    let err = update_info((&mock,),
+    let err = update_info(
+        (&mock,),
         token("user-1"),
         UpdateWorksetInfoParams {
             id: "missing".into(),
@@ -318,7 +322,7 @@ async fn delete_removes_workset_and_enqueues_child_cover_deletes() {
         "cover-2.png",
     ));
 
-    delete((&mock, &mock, &mock,), token("user-1"), "workset-1".into())
+    delete((&mock, &mock, &mock), token("user-1"), "workset-1".into())
         .await
         .unwrap();
 
@@ -361,7 +365,7 @@ async fn delete_enqueues_cover_deletes_across_multiple_comic_batches() {
         ));
     }
 
-    delete((&mock, &mock, &mock,), token("user-1"), "workset-1".into())
+    delete((&mock, &mock, &mock), token("user-1"), "workset-1".into())
         .await
         .unwrap();
 
@@ -383,7 +387,7 @@ async fn delete_rolls_back_missing_workset() {
 
     mock.seed_member(admin_member("user-1", "team-1"));
 
-    let err = delete((&mock, &mock, &mock,), token("user-1"), "missing".into())
+    let err = delete((&mock, &mock, &mock), token("user-1"), "missing".into())
         .await
         .err()
         .unwrap();

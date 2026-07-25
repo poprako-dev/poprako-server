@@ -5,7 +5,7 @@
 use poprako_orchestra::Nucl;
 use tracing::instrument;
 
-use crate::part::image::{ImageManager, ImageObjectInfo};
+use crate::part::image::ImageManager;
 use crate::part::prom::payload::image::{ImagePayload, ResourceKind};
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::comic::ComicRepo;
@@ -49,8 +49,6 @@ where
             resource_id,
             object_key,
             version,
-            image_hash,
-            image_ext,
         } => {
             //
             let image_identity = ImageIdentity {
@@ -58,8 +56,6 @@ where
                 resource_id,
                 object_key,
                 version: *version,
-                image_hash,
-                image_ext: *image_ext,
             };
 
             handle_check_uploaded(nucl, repo, image_pool, image_identity).await
@@ -90,17 +86,17 @@ where
         + Sync,
     I: ImageManager + Send + Sync,
 {
-    let object_info =
-        match image_pool.head_object(image_identity.object_key).await {
+    let object_exists =
+        match image_pool.object_exists(image_identity.object_key).await {
             //
             Ok(object_info) => object_info,
 
             Err(error) => return TaskFlow::Retry(format!("{:?}", error)),
         };
 
-    match object_info {
+    match object_exists {
         //
-        None => match image_identity.kind {
+        false => match image_identity.kind {
             //
             ResourceKind::PageImage => {
                 process_unverified_page_image(nucl, repo, image_identity).await
@@ -109,27 +105,14 @@ where
             _ => process_missing_image(nucl, repo, image_identity).await,
         },
 
-        Some(object_info) => {
+        true => {
             //
             if image_identity.kind == ResourceKind::PageImage {
-                return process_existing_page_image(
-                    nucl,
-                    repo,
-                    image_pool,
-                    image_identity,
-                    object_info,
-                )
-                .await;
+                return process_existing_page_image(nucl, repo, image_identity)
+                    .await;
             }
 
-            process_existing_image(
-                nucl,
-                repo,
-                image_pool,
-                image_identity,
-                object_info,
-            )
-            .await
+            process_existing_image(nucl, repo, image_identity).await
         }
     }
 }
@@ -168,17 +151,14 @@ where
 }
 
 #[instrument(level = "info", skip_all)]
-async fn process_existing_page_image<N, R, I>(
+async fn process_existing_page_image<N, R>(
     nucl: &N,
     repo: &R,
-    image_pool: &I,
     image_identity: ImageIdentity<'_>,
-    object_info: ImageObjectInfo,
 ) -> TaskFlow
 where
     N: Nucl<Context = RdbContext, Error = BaseError>,
     R: ChapterRepo<RdbContext> + PageRepo<RdbContext> + Send + Sync,
-    I: ImageManager + Send + Sync,
 {
     let page_info = match repo
         .run(&GetPageInfo {
@@ -213,31 +193,6 @@ where
         (true, true) => {}
     }
 
-    if page_info.image_hash != *image_identity.image_hash
-        || page_info.image_ext != image_identity.image_ext
-    {
-        return TaskFlow::Dead(
-            "prom page image payload identity differs from current resource"
-                .into(),
-        );
-    }
-
-    if *image_identity.image_hash != object_info.checksum_sha256 {
-        //
-        let verification_outcome =
-            process_unverified_page_image(nucl, repo, image_identity).await;
-
-        match verification_outcome {
-            //
-            TaskFlow::Complete => {
-                return handle_delete(image_pool, image_identity.object_key)
-                    .await;
-            }
-
-            _ => return verification_outcome,
-        }
-    }
-
     let outcome: BaseResult<()> = nucl
         .coord(async move |context| {
             //
@@ -264,8 +219,6 @@ where
             if locked_page_info.image_version != image_identity.version
                 || locked_page_info.image_key.as_deref()
                     != Some(image_identity.object_key)
-                || locked_page_info.image_hash != page_info.image_hash
-                || locked_page_info.image_ext != page_info.image_ext
             {
                 return Err(BaseError::Expected {
                     variant: ExpectedVariant::Args,
@@ -339,15 +292,6 @@ where
         (true, true) => {}
     }
 
-    if page_info.image_hash != *image_identity.image_hash
-        || page_info.image_ext != image_identity.image_ext
-    {
-        return TaskFlow::Dead(
-            "prom page image payload identity differs from current resource"
-                .into(),
-        );
-    }
-
     let outcome: BaseResult<()> = nucl
         .coord(async move |context| {
             //
@@ -374,8 +318,6 @@ where
             if locked_page_info.image_version != image_identity.version
                 || locked_page_info.image_key.as_deref()
                     != Some(image_identity.object_key)
-                || locked_page_info.image_hash != page_info.image_hash
-                || locked_page_info.image_ext != page_info.image_ext
             {
                 return Err(BaseError::Expected {
                     variant: ExpectedVariant::Args,
@@ -408,12 +350,10 @@ where
 }
 
 #[instrument(level = "info", skip_all)]
-async fn process_existing_image<N, R, I>(
+async fn process_existing_image<N, R>(
     nucl: &N,
     repo: &R,
-    image_pool: &I,
     image_identity: ImageIdentity<'_>,
-    object_info: ImageObjectInfo,
 ) -> TaskFlow
 where
     N: Nucl<Context = RdbContext, Error = BaseError>,
@@ -424,24 +364,13 @@ where
         + PageRepo<RdbContext>
         + Send
         + Sync,
-    I: ImageManager + Send + Sync,
 {
-    let resource_state = resource::mark_current_or_classify(
-        nucl,
-        repo,
-        image_identity,
-        object_info.checksum_sha256 == *image_identity.image_hash,
-    )
-    .await;
+    let resource_state =
+        resource::mark_current_or_classify(nucl, repo, image_identity, true)
+            .await;
 
     match resource_state {
         //
-        Ok(ResourceState::Current)
-            if object_info.checksum_sha256 != *image_identity.image_hash =>
-        {
-            handle_delete(image_pool, image_identity.object_key).await
-        }
-
         Ok(ResourceState::Current) | Ok(ResourceState::Stale) => {
             TaskFlow::Complete
         }

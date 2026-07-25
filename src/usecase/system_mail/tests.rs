@@ -69,9 +69,10 @@ async fn list_returns_current_user_unread_mails() {
 
     mock.seed_system_mail(mail("sys_mail-3", "user-2", false, time)); // other user
 
-    let mails = list_infos((&mock,), token("user-1"), list_unread_params(0, 10))
-        .await
-        .unwrap();
+    let mails =
+        list_infos((&mock,), token("user-1"), list_unread_params(0, 10))
+            .await
+            .unwrap();
 
     assert_eq!(mails.len(), 1);
 
@@ -116,9 +117,10 @@ async fn list_returns_empty_for_missing_page() {
 
     mock.seed_system_mail(mail("sys_mail-1", "user-1", false, time));
 
-    let mails = list_infos((&mock,), token("user-1"), list_unread_params(10, 10))
-        .await
-        .unwrap();
+    let mails =
+        list_infos((&mock,), token("user-1"), list_unread_params(10, 10))
+            .await
+            .unwrap();
 
     assert!(mails.is_empty());
 }
@@ -134,7 +136,8 @@ async fn mark_read_marks_batch_of_mails() {
 
     mock.seed_system_mail(mail("sys_mail-2", "user-1", false, time));
 
-    mark_read((&mock,),
+    mark_read(
+        (&mock,),
         token("user-1"),
         vec!["sys_mail-1".into(), "sys_mail-2".into()],
     )
@@ -157,7 +160,8 @@ async fn mark_read_short_circuits_on_missing_id() {
 
     mock.seed_system_mail(mail("sys_mail-1", "user-1", false, time));
 
-    let err = mark_read((&mock,),
+    let err = mark_read(
+        (&mock,),
         token("user-1"),
         vec!["sys_mail-1".into(), "sys_mail-nonexistent".into()],
     )

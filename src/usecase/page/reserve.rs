@@ -416,8 +416,6 @@ where
                         resource_id: reservation.page_id.clone(),
                         object_key: upload.object_key.clone(),
                         version: reservation.image_version,
-                        image_hash: reservation.image_hash.clone(),
-                        image_ext: reservation.ext,
                     },
                 ));
 
@@ -488,7 +486,6 @@ where
                     let upload_spec = ImageUploadSpec {
                         object_key: &upload.object_key,
                         content_type: reservation.ext.content_type(),
-                        checksum_sha256: &reservation.image_hash,
                         content_length: upload.new_byte_len,
                     };
 

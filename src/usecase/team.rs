@@ -288,9 +288,7 @@ where
         image::ResourceKind::TeamAvatar,
     )?;
 
-    let image_hash = params.image_hash.clone();
-
-    let transaction_image_hash = image_hash.clone();
+    let transaction_image_hash = params.image_hash.clone();
 
     let image_ext = params.ext;
 
@@ -356,8 +354,6 @@ where
                     resource_id: id.clone(),
                     object_key: avatar_reservation.object_key.clone(),
                     version: avatar_reservation.avatar_version,
-                    image_hash: transaction_image_hash.clone(),
-                    image_ext,
                 },
             ));
 
@@ -393,7 +389,6 @@ where
             let upload_spec = ImageUploadSpec {
                 object_key: &object_key,
                 content_type: image_ext.content_type(),
-                checksum_sha256: &image_hash,
                 content_length: new_byte_len,
             };
 
@@ -465,18 +460,10 @@ where
                 message: trl("error-stale-avatar-upload"),
             })?;
 
-    let object_info = image_manager
-        .head_object(&avatar_key)
-        .await?
-        .ok_or_else(|| BaseError::Expected {
-            variant: ExpectedVariant::Args,
-            message: trl("error-stale-avatar-upload"),
-        })?;
-
-    if object_info.checksum_sha256 != team_info.avatar_hash {
+    if !image_manager.object_exists(&avatar_key).await? {
         return Err(BaseError::Expected {
             variant: ExpectedVariant::Args,
-            message: trl("error-invalid-image-hash"),
+            message: trl("error-stale-avatar-upload"),
         });
     }
 
@@ -488,8 +475,6 @@ where
 
         if locked_team_info.avatar_version != params.image_version
             || locked_team_info.avatar_key.as_deref() != Some(&avatar_key)
-            || locked_team_info.avatar_hash != team_info.avatar_hash
-            || locked_team_info.avatar_ext != team_info.avatar_ext
         {
             return Err(BaseError::Expected {
                 variant: ExpectedVariant::Args,

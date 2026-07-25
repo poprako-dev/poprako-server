@@ -1,5 +1,4 @@
 use crate::part::prom::payload::image::ResourceKind;
-use crate::value::image::{ImageExt, ImageHash};
 
 /// Identity carried by an image-verification task.
 #[derive(Clone, Copy)]
@@ -16,10 +15,4 @@ pub struct ImageIdentity<'a> {
 
     /// The resource image version.
     pub version: u32,
-
-    /// The expected image hash.
-    pub image_hash: &'a ImageHash,
-
-    /// The expected image extension.
-    pub image_ext: ImageExt,
 }

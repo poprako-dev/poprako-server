@@ -7,10 +7,9 @@ use url::Url;
 
 use poprako_util::i18n::trl;
 
-use crate::part::image::{ImageManager, ImageObjectInfo, ImagePool, ImageUploadSlot, ImageUploadSpec};
+use crate::part::image::{ImageManager, ImagePool, ImageUploadSlot, ImageUploadSpec};
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
-use crate::value::image::ImageHash;
 
 /// Mock implementation of [ImagePool].
 ///
@@ -87,21 +86,13 @@ impl ImagePool for Mock {
 
         headers.insert("content-type".into(), spec.content_type.into());
 
-        headers.insert(
-            "x-amz-checksum-sha256".into(),
-            spec.checksum_sha256.to_base64(),
-        );
-
         accept(ImageUploadSlot { url, headers })
     }
 }
 
 /// Mock implementation of [ImageManager].
 impl ImageManager for Mock {
-    async fn head_object(
-        &self,
-        key: &str,
-    ) -> BaseResult<Option<ImageObjectInfo>> {
+    async fn object_exists(&self, _: &str) -> BaseResult<bool> {
         //
         if self.flags.lock().unwrap().image_head_failure {
             return Err(BaseError::Expected {
@@ -111,65 +102,10 @@ impl ImageManager for Mock {
         }
 
         if self.flags.lock().unwrap().image_head_absent {
-            return accept(None);
+            return accept(false);
         }
 
-        let flags = self.flags.lock().unwrap().clone();
-
-        let state = self.state.lock().unwrap();
-
-        let expected_checksum_sha256 = state
-            .pages
-            .iter()
-            .find(|page_info| page_info.image_key.as_deref() == Some(key))
-            .map(|page_info| page_info.image_hash.clone())
-            .or_else(|| {
-                state
-                    .users
-                    .iter()
-                    .find(|user_info| {
-                        user_info.avatar_key.as_deref() == Some(key)
-                    })
-                    .map(|user_info| user_info.avatar_hash.clone())
-            })
-            .or_else(|| {
-                state
-                    .teams
-                    .iter()
-                    .find(|team_info| {
-                        team_info.avatar_key.as_deref() == Some(key)
-                    })
-                    .map(|team_info| team_info.avatar_hash.clone())
-            })
-            .or_else(|| {
-                state
-                    .comics
-                    .iter()
-                    .find(|comic_info| {
-                        comic_info.cover_key.as_deref() == Some(key)
-                    })
-                    .map(|comic_info| comic_info.cover_hash.clone())
-            })
-            .unwrap_or_else(|| ImageHash::new([0; 32]));
-
-        let byte_length = match flags.image_head_length_mismatch {
-            //
-            true => 1,
-
-            false => 4096,
-        };
-
-        let checksum_sha256 = match flags.image_head_hash_mismatch {
-            //
-            true => ImageHash::new([255; 32]),
-
-            false => expected_checksum_sha256,
-        };
-
-        accept(Some(ImageObjectInfo {
-            byte_length,
-            checksum_sha256,
-        }))
+        accept(true)
     }
 
     async fn delete_object(&self, key: &str) -> BaseResult<()> {
