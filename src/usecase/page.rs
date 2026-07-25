@@ -13,10 +13,7 @@ use crate::complex::chapter::ChapterComplex;
 use crate::complex::image::ImageComplex;
 use crate::complex::page::{PageComplex, PagePermComplex};
 use crate::data::image::ImageUploadSlotVal;
-use crate::data::page::{
-    ListPageInfosParams, MarkPageImageUploadedParams, PageInfoVal,
-    ReservePageImageParams, ReservedPagePayload,
-};
+use crate::data::page::{ListPageInfosParams, MarkPageImageUploadedParams, PageInfoVal, ReservePageImageParams, ReservedPagePayload};
 use crate::model::page::PageManifestUpdate;
 use crate::model::user::UserToken;
 use crate::part::image::{ImageManager, ImagePool, ImageUploadSpec};
@@ -28,15 +25,10 @@ use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::assignment::FindAssignmentInfo;
-use crate::part::repo::oper::chapter::{
-    GetChapterInfo, GetChapterInfoExcluded, SetChapterPageCounters,
-};
+use crate::part::repo::oper::chapter::{GetChapterInfo, GetChapterInfoExcluded, SetChapterPageCounters};
 use crate::part::repo::oper::comic::{GetComicInfo, TouchComicLastActive};
 use crate::part::repo::oper::member::FindMemberInfo;
-use crate::part::repo::oper::page::{
-    DeletePages, GetPageInfo, GetPageInfoExcluded, ListPageInfos,
-    MarkPageImageUploaded, UpdatePageManifest,
-};
+use crate::part::repo::oper::page::{DeletePages, GetPageInfo, GetPageInfoExcluded, ListPageInfos, MarkPageImageUploaded, UpdatePageManifest};
 use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::workset::WorksetRepo;

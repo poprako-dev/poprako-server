@@ -7,14 +7,9 @@ use diesel_async::RunQueryDsl;
 use time::OffsetDateTime;
 use tracing::instrument;
 
-use crate::model::chapter::{
-    ChapterEntry, ChapterInfo, ChapterInfoListSpec, ChapterInfoUpdate,
-    ChapterStageUpdate,
-};
+use crate::model::chapter::{ChapterEntry, ChapterInfo, ChapterInfoListSpec, ChapterInfoUpdate, ChapterStageUpdate};
 use crate::model::unit::UnitCounterDelta;
-use crate::part_impl::repo::rdb_impl::entity::chapter::{
-    ChapterAspect, ChapterRow, ChapterRowEntry,
-};
+use crate::part_impl::repo::rdb_impl::entity::chapter::{ChapterAspect, ChapterRow, ChapterRowEntry};
 use crate::part_impl::repo::rdb_impl::incl;
 use crate::part_impl::repo::rdb_impl::schema::t_chapter::dsl::*;
 use crate::part_impl::repo::rdb_impl::schema::t_page;

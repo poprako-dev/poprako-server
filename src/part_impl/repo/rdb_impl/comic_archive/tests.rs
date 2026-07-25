@@ -9,13 +9,9 @@ use time::OffsetDateTime;
 
 use crate::complex::comic_archive::ComicArchiveComplex;
 use crate::model::comic_archive::ComicArchiveEntry;
-use crate::part::repo::oper::comic_archive::{
-    CommitComicArchive, GetComicArchiveSnapshotExcluded,
-};
+use crate::part::repo::oper::comic_archive::{CommitComicArchive, GetComicArchiveSnapshotExcluded};
 use crate::part_impl::drive::rdb_impl::RdbDrive;
-use crate::part_impl::repo::rdb_impl::schema::{
-    t_chapter, t_comic, t_comic_archive, t_page, t_workset,
-};
+use crate::part_impl::repo::rdb_impl::schema::{t_chapter, t_comic, t_comic_archive, t_page, t_workset};
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
 use crate::part_impl::shared::RdbCore;
 use crate::result::BaseError;

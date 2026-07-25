@@ -1,11 +1,6 @@
 use poprako_orchestra::{Run, Step};
 
-use crate::part::repo::oper::comic::{
-    AllocComicChapterIndex, CreateComic, DeleteComic, GetComicInfo,
-    GetComicInfoExcluded, ListComicInfos, ListComicInfosExcluded,
-    MarkComicCoverUploaded, ReserveComicCover, TouchComicLastActive,
-    UpdateComic, UpdateComicChapterCount,
-};
+use crate::part::repo::oper::comic::{AllocComicChapterIndex, CreateComic, DeleteComic, GetComicInfo, GetComicInfoExcluded, ListComicInfos, ListComicInfosExcluded, MarkComicCoverUploaded, ReserveComicCover, TouchComicLastActive, UpdateComic, UpdateComicChapterCount};
 use crate::result::BaseError;
 
 /// Comic repository operations.

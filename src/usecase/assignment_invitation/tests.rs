@@ -10,10 +10,7 @@
 
 use super::*;
 
-use crate::data::assignment_invitation::{
-    CreateAssignmentInvitationParams, JoinAssignmentInvitationParams,
-    ListAssignmentInvitationInfosParams,
-};
+use crate::data::assignment_invitation::{CreateAssignmentInvitationParams, JoinAssignmentInvitationParams, ListAssignmentInvitationInfosParams};
 use crate::model::assignment::AssignmentInfo;
 use crate::model::assignment_invitation::AssignmentInvitationInfo;
 use crate::model::chapter::ChapterInfo;

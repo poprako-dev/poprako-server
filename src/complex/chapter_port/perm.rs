@@ -2,11 +2,7 @@ use poprako_orchestra::Proxy;
 
 use poprako_util::i18n::trl;
 
-use crate::complex::util::{
-    check_user_is_chapter_assignee,
-    check_user_is_chapter_translator_or_proofreader,
-    check_user_is_team_member_by_chapter,
-};
+use crate::complex::util::{check_user_is_chapter_assignee, check_user_is_chapter_translator_or_proofreader, check_user_is_team_member_by_chapter};
 use crate::part::repo::oper::assignment::FindAssignmentInfo;
 use crate::part::repo::oper::chapter::GetChapterInfo;
 use crate::part::repo::oper::comic::GetComicInfo;

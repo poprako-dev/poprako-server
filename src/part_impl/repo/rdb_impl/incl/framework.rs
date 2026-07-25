@@ -33,9 +33,7 @@ use crate::part_impl::repo::rdb_impl::entity::comic::ComicRow;
 use crate::part_impl::repo::rdb_impl::entity::team::TeamRow;
 use crate::part_impl::repo::rdb_impl::entity::user::UserRow;
 use crate::part_impl::repo::rdb_impl::entity::workset::WorksetRow;
-use crate::part_impl::repo::rdb_impl::schema::{
-    t_chapter, t_comic, t_team, t_user, t_workset,
-};
+use crate::part_impl::repo::rdb_impl::schema::{t_chapter, t_comic, t_team, t_user, t_workset};
 use crate::part_impl::shared::RdbConn;
 use crate::part_impl::shared::result::diesel;
 use crate::result::{BaseResult, accept};

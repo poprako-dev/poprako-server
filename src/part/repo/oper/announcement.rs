@@ -1,8 +1,6 @@
 use poprako_orchestra::Oper;
 
-use crate::model::announcement::{
-    AnnouncementEntry, AnnouncementInfo, AnnouncementListSpec,
-};
+use crate::model::announcement::{AnnouncementEntry, AnnouncementInfo, AnnouncementListSpec};
 
 /// Lists announcement infos selected by a query specification.
 pub struct ListAnnouncementInfos<'a> {

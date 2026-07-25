@@ -1,9 +1,6 @@
 use poprako_orchestra::{Run, Step};
 
-use crate::part::repo::oper::term::{
-    CreateTerm, DeleteTerm, DeleteTerms, GetTermInfo, GetTermInfoExcluded,
-    ListTermInfos, LockTerm, UpdateTerm,
-};
+use crate::part::repo::oper::term::{CreateTerm, DeleteTerm, DeleteTerms, GetTermInfo, GetTermInfoExcluded, ListTermInfos, LockTerm, UpdateTerm};
 use crate::result::BaseError;
 
 /// Terminology-entry repository operations.

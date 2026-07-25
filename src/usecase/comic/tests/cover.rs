@@ -9,16 +9,12 @@
 
 use super::*;
 
-use crate::data::comic::{
-    MarkComicCoverUploadedParams, ReserveComicCoverParams,
-};
+use crate::data::comic::{MarkComicCoverUploadedParams, ReserveComicCoverParams};
 use crate::model::comic::ComicInfo;
 use crate::model::workset::WorksetInfo;
 use crate::part::prom::payload::TaskPayload;
 use crate::part::prom::payload::image::{ImagePayload, ResourceKind};
-use crate::test_util::{
-    assert_expected_message, assert_one_image_check_record,
-};
+use crate::test_util::{assert_expected_message, assert_one_image_check_record};
 use crate::value::image::{ImageExt, ImageHash};
 
 fn reserve_params(ext: ImageExt, hash_byte: u8) -> ReserveComicCoverParams {
