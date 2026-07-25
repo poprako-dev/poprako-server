@@ -1,6 +1,9 @@
 use poprako_orchestra::Oper;
 
-use crate::model::assignment::{AssignmentEntry, AssignmentInfo, AssignmentInfoListSpec, AssignmentRoleUpdate};
+use crate::model::assignment::{
+    AssignmentEntry, AssignmentInfo, AssignmentInfoListSpec,
+    AssignmentRoleUpdate,
+};
 use crate::value::assignment::AssignmentInclOpt;
 use crate::value::role::RoleField;
 

@@ -7,11 +7,21 @@ use time::OffsetDateTime;
 use tracing::instrument;
 
 use self::list::list_infos;
-use crate::model::assignment::{AssignmentEntry, AssignmentInfo, AssignmentRoleUpdate};
-use crate::part::repo::oper::assignment::{CreateAssignment, DeleteAssignments, FindAssignmentInfo, GetAssignmentInfo, ListAssignmentInfos, ListAssignmentInfosExcluded, UpdateAssignmentRoles};
-use crate::part_impl::repo::rdb_impl::entity::assignment::{AssignmentAspect, AssignmentRoleTimestamps, AssignmentRow, AssignmentRowEntry};
+use crate::model::assignment::{
+    AssignmentEntry, AssignmentInfo, AssignmentRoleUpdate,
+};
+use crate::part::repo::oper::assignment::{
+    CreateAssignment, DeleteAssignments, FindAssignmentInfo, GetAssignmentInfo,
+    ListAssignmentInfos, ListAssignmentInfosExcluded, UpdateAssignmentRoles,
+};
+use crate::part_impl::repo::rdb_impl::entity::assignment::{
+    AssignmentAspect, AssignmentRoleTimestamps, AssignmentRow,
+    AssignmentRowEntry,
+};
 use crate::part_impl::repo::rdb_impl::schema::t_assignment::dsl::*;
-use crate::part_impl::repo::rdb_impl::schema::t_chapter::{f_comic_id as chapter_comic_id, table as chapter_table};
+use crate::part_impl::repo::rdb_impl::schema::t_chapter::{
+    f_comic_id as chapter_comic_id, table as chapter_table,
+};
 use crate::part_impl::repo::rdb_impl::{RdbRepo, incl};
 use crate::part_impl::shared::result::{diesel, expected};
 use crate::part_impl::shared::{RdbConn, RdbContext};

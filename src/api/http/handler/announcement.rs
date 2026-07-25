@@ -13,7 +13,10 @@ use utoipa::IntoParams;
 #[allow(unused_imports)]
 use crate::api::http::result::{Accept as _, HttpBody, HttpResult};
 use crate::api::http::state::AppHarn;
-use crate::data::announcement::{AnnouncementInfoVal, CreateAnnouncementParams, CreateAnnouncementPayload, ListAnnouncementInfosParams};
+use crate::data::announcement::{
+    AnnouncementInfoVal, CreateAnnouncementParams, CreateAnnouncementPayload,
+    ListAnnouncementInfosParams,
+};
 use crate::model::user::UserToken;
 use crate::usecase;
 use crate::value::announcement::AnnouncementInclOpt;

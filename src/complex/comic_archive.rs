@@ -7,13 +7,20 @@ use poprako_util::time::ToUnixMilli;
 
 use crate::complex::util::check_user_is_team_admin;
 use crate::model::assignment::AssignmentInfo;
-use crate::model::comic_archive::{ComicArchiveChapterSnapshot, ComicArchiveEntry, ComicArchiveRecord, ComicArchiveSnapshot};
+use crate::model::comic_archive::{
+    ComicArchiveChapterSnapshot, ComicArchiveEntry, ComicArchiveRecord,
+    ComicArchiveSnapshot,
+};
 use crate::part::repo::oper::comic::GetComicInfo;
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::result::{BaseError, BaseResult, accept};
 use crate::util::next_snowflake_id;
-use crate::value::comic_archive::{ArchivedAssignmentPayload, ArchivedChapterPayload, ArchivedComicPayload, ArchivedPagePayload, ArchivedUnitPayload, ArchivedUserPayload, ArchivedWorksetPayload};
+use crate::value::comic_archive::{
+    ArchivedAssignmentPayload, ArchivedChapterPayload, ArchivedComicPayload,
+    ArchivedPagePayload, ArchivedUnitPayload, ArchivedUserPayload,
+    ArchivedWorksetPayload,
+};
 
 /// Constructs one immutable comic archive record from a fully locked snapshot.
 pub struct ComicArchiveComplex;

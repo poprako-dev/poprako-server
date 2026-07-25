@@ -14,15 +14,28 @@ use crate::complex::workset::WorksetComplex;
 use crate::part::prom::payload::{TaskPayload, image};
 use crate::part::repo::oper::assignment::DeleteAssignments;
 use crate::part::repo::oper::assignment_invitation::DeleteAssignmentInvitations;
-use crate::part::repo::oper::chapter::{DeleteChapter, GetChapterInfoExcluded, ListChapterInfosExcluded, UnpinOtherChapters, UpdateChapter};
-use crate::part::repo::oper::comic::{DeleteComic, GetComicInfoExcluded, ListComicInfosExcluded, TouchComicLastActive, UpdateComicChapterCount};
-use crate::part::repo::oper::member::{DeleteMember, FindMemberInfo, ListMemberInfosExcluded};
+use crate::part::repo::oper::chapter::{
+    DeleteChapter, GetChapterInfoExcluded, ListChapterInfosExcluded,
+    UnpinOtherChapters, UpdateChapter,
+};
+use crate::part::repo::oper::comic::{
+    DeleteComic, GetComicInfoExcluded, ListComicInfosExcluded,
+    TouchComicLastActive, UpdateComicChapterCount,
+};
+use crate::part::repo::oper::member::{
+    DeleteMember, FindMemberInfo, ListMemberInfosExcluded,
+};
 use crate::part::repo::oper::page::{DeletePages, ListPageInfos};
 use crate::part::repo::oper::team::{DeleteTeam, GetTeamInfoExcluded};
 use crate::part::repo::oper::term::DeleteTerms;
-use crate::part::repo::oper::termbase::{DeleteTermbase, GetTermbaseInfoExcluded, ListTermbaseInfosExcluded};
+use crate::part::repo::oper::termbase::{
+    DeleteTermbase, GetTermbaseInfoExcluded, ListTermbaseInfosExcluded,
+};
 use crate::part::repo::oper::user::GetUserInfo;
-use crate::part::repo::oper::workset::{DeleteWorkset, GetWorksetInfoExcluded, ListWorksetInfosExcluded, UpdateWorksetComicCount};
+use crate::part::repo::oper::workset::{
+    DeleteWorkset, GetWorksetInfoExcluded, ListWorksetInfosExcluded,
+    UpdateWorksetComicCount,
+};
 use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 use crate::util::next_snowflake_id;
 

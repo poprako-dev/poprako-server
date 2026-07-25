@@ -20,7 +20,10 @@ use crate::part_impl::shared::RdbCore;
 use crate::part_impl::shared::result::diesel as diesel_error;
 use crate::result::{BaseError, BaseResult, accept};
 
-pub use self::form::{chapter_entry, comic_entry, page_entry, team_entry, user_entry, workset_entry};
+pub use self::form::{
+    chapter_entry, comic_entry, page_entry, team_entry, user_entry,
+    workset_entry,
+};
 
 mod form;
 

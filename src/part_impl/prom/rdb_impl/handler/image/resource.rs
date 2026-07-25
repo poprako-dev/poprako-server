@@ -5,8 +5,12 @@ use tracing::instrument;
 
 use crate::part::prom::payload::image::ResourceKind;
 use crate::part::repo::comic::ComicRepo;
-use crate::part::repo::oper::comic::{GetComicInfoExcluded, MarkComicCoverUploaded};
-use crate::part::repo::oper::page::{GetPageInfoExcluded, MarkPageImageUploaded};
+use crate::part::repo::oper::comic::{
+    GetComicInfoExcluded, MarkComicCoverUploaded,
+};
+use crate::part::repo::oper::page::{
+    GetPageInfoExcluded, MarkPageImageUploaded,
+};
 use crate::part::repo::oper::team::{GetTeamInfoExcluded, UpdateTeam};
 use crate::part::repo::oper::user::{GetUserInfoExcluded, UpdateUser};
 use crate::part::repo::page::PageRepo;

@@ -10,7 +10,10 @@
 
 use super::*;
 
-use crate::data::member_invitation::{CreateMemberInvitationParams, ListMemberInvitationInfosParams, UpdateMemberInvitationRolesParams};
+use crate::data::member_invitation::{
+    CreateMemberInvitationParams, ListMemberInvitationInfosParams,
+    UpdateMemberInvitationRolesParams,
+};
 use crate::model::member::MemberInfo;
 use crate::model::member_invitation::MemberInvitationInfo;
 use crate::model::user::{UserCredential, UserInfo, UserToken};

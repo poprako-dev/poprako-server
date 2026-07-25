@@ -7,7 +7,9 @@ use url::Url;
 
 use poprako_util::i18n::trl;
 
-use crate::part::image::{ImageManager, ImagePool, ImageUploadSlot, ImageUploadSpec};
+use crate::part::image::{
+    ImageManager, ImagePool, ImageUploadSlot, ImageUploadSpec,
+};
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 

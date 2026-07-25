@@ -2,7 +2,9 @@
 
 use super::*;
 
-use crate::part::repo::oper::user::{FindUserInfo, GetUserCredential, GetUserInfo};
+use crate::part::repo::oper::user::{
+    FindUserInfo, GetUserCredential, GetUserInfo,
+};
 use crate::part_impl::repo::rdb_impl::{RdbRepo, test_shared};
 use crate::part_impl::shared::RdbCore;
 

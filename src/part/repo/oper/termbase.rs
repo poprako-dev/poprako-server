@@ -1,6 +1,8 @@
 use poprako_orchestra::Oper;
 
-use crate::model::termbase::{TermbaseEntry, TermbaseInfo, TermbaseInfoListSpec, TermbaseInfoUpdate};
+use crate::model::termbase::{
+    TermbaseEntry, TermbaseInfo, TermbaseInfoListSpec, TermbaseInfoUpdate,
+};
 
 pub struct CreateTermbase<'a> {
     pub entry: &'a TermbaseEntry,
