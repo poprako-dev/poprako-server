@@ -1,6 +1,8 @@
 use poprako_orchestra::Oper;
 
-use crate::model::term::{TermEntry, TermInfo, TermInfoListSpec, TermInfoUpdate};
+use crate::model::term::{
+    TermEntry, TermInfo, TermInfoListSpec, TermInfoUpdate,
+};
 
 pub struct CreateTerm<'a> {
     pub entry: &'a TermEntry,

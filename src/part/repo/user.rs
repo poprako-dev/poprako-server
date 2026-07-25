@@ -2,7 +2,10 @@
 
 use poprako_orchestra::{Run, Step};
 
-use crate::part::repo::oper::user::{CreateUser, DeleteUser, FindUserInfo, GetUserCredential, GetUserInfo, GetUserInfoExcluded, ReserveUserAvatar, UpdateUser};
+use crate::part::repo::oper::user::{
+    CreateUser, DeleteUser, FindUserInfo, GetUserCredential, GetUserInfo,
+    GetUserInfoExcluded, ReserveUserAvatar, UpdateUser,
+};
 use crate::result::BaseError;
 
 /// User repository operations.

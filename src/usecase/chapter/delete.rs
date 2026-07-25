@@ -15,8 +15,13 @@ use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
 use crate::part::repo::oper::assignment::DeleteAssignments;
 use crate::part::repo::oper::assignment_invitation::DeleteAssignmentInvitations;
-use crate::part::repo::oper::chapter::{DeleteChapter, GetChapterInfo, GetChapterInfoExcluded, ListChapterInfosExcluded, UnpinOtherChapters, UpdateChapter};
-use crate::part::repo::oper::comic::{GetComicInfo, TouchComicLastActive, UpdateComicChapterCount};
+use crate::part::repo::oper::chapter::{
+    DeleteChapter, GetChapterInfo, GetChapterInfoExcluded,
+    ListChapterInfosExcluded, UnpinOtherChapters, UpdateChapter,
+};
+use crate::part::repo::oper::comic::{
+    GetComicInfo, TouchComicLastActive, UpdateComicChapterCount,
+};
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::page::{DeletePages, ListPageInfos};
 use crate::part::repo::oper::workset::GetWorksetInfo;

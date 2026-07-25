@@ -10,17 +10,32 @@ use poprako_orchestra_extra::prom::task::Task;
 use crate::complex::chapter::ChapterComplex;
 use crate::complex::image::ImageComplex;
 use crate::complex::termbase::TermbaseComplex;
-use crate::complex::util::{check_user_is_team_admin, check_user_is_team_admin_with_roles, check_user_is_team_member};
+use crate::complex::util::{
+    check_user_is_team_admin, check_user_is_team_admin_with_roles,
+    check_user_is_team_member,
+};
 use crate::part::prom::payload::{TaskPayload, image};
 use crate::part::repo::oper::assignment::DeleteAssignments;
 use crate::part::repo::oper::assignment_invitation::DeleteAssignmentInvitations;
-use crate::part::repo::oper::chapter::{DeleteChapter, GetChapterInfoExcluded, ListChapterInfosExcluded, ListPinnedChapterInfos, UnpinOtherChapters, UpdateChapter};
-use crate::part::repo::oper::comic::{DeleteComic, GetComicInfo, GetComicInfoExcluded, TouchComicLastActive, UpdateComicChapterCount};
+use crate::part::repo::oper::chapter::{
+    DeleteChapter, GetChapterInfoExcluded, ListChapterInfosExcluded,
+    ListPinnedChapterInfos, UnpinOtherChapters, UpdateChapter,
+};
+use crate::part::repo::oper::comic::{
+    DeleteComic, GetComicInfo, GetComicInfoExcluded, TouchComicLastActive,
+    UpdateComicChapterCount,
+};
 use crate::part::repo::oper::member::FindMemberInfo;
-use crate::part::repo::oper::page::{DeletePages, ListFirstPageInfos, ListPageInfos};
+use crate::part::repo::oper::page::{
+    DeletePages, ListFirstPageInfos, ListPageInfos,
+};
 use crate::part::repo::oper::term::DeleteTerms;
-use crate::part::repo::oper::termbase::{DeleteTermbase, GetTermbaseInfoExcluded, ListTermbaseInfosExcluded};
-use crate::part::repo::oper::workset::{GetWorksetInfo, UpdateWorksetComicCount};
+use crate::part::repo::oper::termbase::{
+    DeleteTermbase, GetTermbaseInfoExcluded, ListTermbaseInfosExcluded,
+};
+use crate::part::repo::oper::workset::{
+    GetWorksetInfo, UpdateWorksetComicCount,
+};
 use crate::result::{BaseError, BaseResult, accept};
 use crate::util::next_snowflake_id;
 use crate::value::index::stored_index_to_user_index;

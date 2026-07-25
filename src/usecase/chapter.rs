@@ -7,13 +7,20 @@ use tracing::instrument;
 use crate::complex::assignment::AssignmentComplex;
 use crate::complex::chapter::{ChapterComplex, ChapterPermComplex};
 use crate::complex::comic::ComicComplex;
-use crate::data::chapter::{ChapterInfoVal, CreateChapterParams, CreateChapterPayload, ListChapterInfosParams, UpdateChapterInfoParams, UpdateChapterStageParams};
+use crate::data::chapter::{
+    ChapterInfoVal, CreateChapterParams, CreateChapterPayload,
+    ListChapterInfosParams, UpdateChapterInfoParams, UpdateChapterStageParams,
+};
 use crate::model::assignment::AssignmentEntry;
-use crate::model::chapter::{ChapterEntry, ChapterInfoListSpec, ChapterInfoUpdate};
+use crate::model::chapter::{
+    ChapterEntry, ChapterInfoListSpec, ChapterInfoUpdate,
+};
 use crate::model::user::UserToken;
 use crate::part::effect::EffectDevelop;
 use crate::part::effect::event::Event;
-use crate::part::effect::event::chapter::{ChapterPublishedPayload, ChapterWorkflowCompletedPayload};
+use crate::part::effect::event::chapter::{
+    ChapterPublishedPayload, ChapterWorkflowCompletedPayload,
+};
 use crate::part::image::ImagePool;
 use crate::part::prom::Prom;
 use crate::part::prom::payload::TaskPayload;
@@ -21,11 +28,22 @@ use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
-use crate::part::repo::oper::assignment::{CreateAssignment, FindAssignmentInfo, ListAssignmentInfos};
-use crate::part::repo::oper::chapter::{CreateChapter, FindPinnedChapterInfo, GetChapterInfo, GetChapterInfoExcluded, ListChapterInfos, ListPinnedChapterInfos, LockChapters, UnpinOtherChapters, UpdateChapter, UpdateChapterStage};
-use crate::part::repo::oper::comic::{AllocComicChapterIndex, GetComicInfo, TouchComicLastActive, UpdateComicChapterCount};
+use crate::part::repo::oper::assignment::{
+    CreateAssignment, FindAssignmentInfo, ListAssignmentInfos,
+};
+use crate::part::repo::oper::chapter::{
+    CreateChapter, FindPinnedChapterInfo, GetChapterInfo,
+    GetChapterInfoExcluded, ListChapterInfos, ListPinnedChapterInfos,
+    LockChapters, UnpinOtherChapters, UpdateChapter, UpdateChapterStage,
+};
+use crate::part::repo::oper::comic::{
+    AllocComicChapterIndex, GetComicInfo, TouchComicLastActive,
+    UpdateComicChapterCount,
+};
 use crate::part::repo::oper::member::FindMemberInfo;
-use crate::part::repo::oper::page::{ClearPageImagesForPublish, ListFirstPageInfos};
+use crate::part::repo::oper::page::{
+    ClearPageImagesForPublish, ListFirstPageInfos,
+};
 use crate::part::repo::oper::workset::GetWorksetInfo;
 use crate::part::repo::page::PageRepo;
 use crate::part::repo::workset::WorksetRepo;

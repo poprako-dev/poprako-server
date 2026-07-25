@@ -5,9 +5,15 @@ use diesel_async::RunQueryDsl;
 use poprako_orchestra::{Run, Step};
 use tracing::instrument;
 
-use crate::model::announcement::{AnnouncementEntry, AnnouncementInfo, AnnouncementListSpec};
-use crate::part::repo::oper::announcement::{CreateAnnouncement, ListAnnouncementInfos};
-use crate::part_impl::repo::rdb_impl::entity::announcement::{AnnouncementRow, AnnouncementRowEntry};
+use crate::model::announcement::{
+    AnnouncementEntry, AnnouncementInfo, AnnouncementListSpec,
+};
+use crate::part::repo::oper::announcement::{
+    CreateAnnouncement, ListAnnouncementInfos,
+};
+use crate::part_impl::repo::rdb_impl::entity::announcement::{
+    AnnouncementRow, AnnouncementRowEntry,
+};
 use crate::part_impl::repo::rdb_impl::schema::t_announcement::dsl::*;
 use crate::part_impl::repo::rdb_impl::{RdbRepo, incl};
 use crate::part_impl::shared::result::diesel;

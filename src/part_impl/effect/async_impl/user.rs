@@ -10,7 +10,9 @@ use poprako_util::i18n::{trl, trl_kv};
 
 use crate::complex::system_mail::SystemMailComplex;
 use crate::model::system_mail::SystemMailEntry;
-use crate::part::effect::event::user::{UserActivePayload, UserSignedUpPayload};
+use crate::part::effect::event::user::{
+    UserActivePayload, UserSignedUpPayload,
+};
 use crate::part::repo::oper::system_mail::SendSystemMail;
 use crate::part::repo::oper::team::GetTeamInfo;
 use crate::part::repo::oper::user::UpdateUser;

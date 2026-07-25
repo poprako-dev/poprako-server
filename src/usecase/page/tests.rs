@@ -18,7 +18,10 @@ use super::*;
 
 use time::{Duration as TimeDuration, OffsetDateTime};
 
-use crate::data::page::{ListPageInfosParams, MarkPageImageUploadedParams, PageImageParams, ReserveChapterPagesParams, ReservePageImageParams};
+use crate::data::page::{
+    ListPageInfosParams, MarkPageImageUploadedParams, PageImageParams,
+    ReserveChapterPagesParams, ReservePageImageParams,
+};
 use crate::model::assignment::AssignmentInfo;
 use crate::model::chapter::ChapterInfo;
 use crate::model::comic::ComicInfo;
@@ -32,7 +35,10 @@ use crate::part::prom::payload::image::{ImagePayload, ResourceKind};
 use crate::part_impl::prom::mock_impl::process_pending;
 use crate::part_impl::repo::mock_impl::Mock;
 use crate::result::ExpectedVariant;
-use crate::test_util::{assert_expected_message, assert_expected_variant, assert_one_image_check_record};
+use crate::test_util::{
+    assert_expected_message, assert_expected_variant,
+    assert_one_image_check_record,
+};
 use crate::value::chapter::{Stage, StageMask, StagePhase};
 use crate::value::image::{ImageExt, ImageHash};
 use crate::value::role::{RoleField, RoleMask};

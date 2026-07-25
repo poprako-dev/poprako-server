@@ -8,16 +8,26 @@ use poprako_util::i18n::trl;
 use crate::complex::assignment::{AssignmentComplex, AssignmentPermComplex};
 use crate::complex::chapter::{ChapterComplex, ChapterPermComplex};
 use crate::complex::comic::ComicComplex;
-use crate::data::assignment::{AssignmentInfoVal, JoinChapterAssignmentParams, ListAssignmentInfosParams, UpdateAssignmentRolesParams};
-use crate::model::assignment::{AssignmentEntry, AssignmentInfoListSpec, AssignmentRoleUpdate};
+use crate::data::assignment::{
+    AssignmentInfoVal, JoinChapterAssignmentParams, ListAssignmentInfosParams,
+    UpdateAssignmentRolesParams,
+};
+use crate::model::assignment::{
+    AssignmentEntry, AssignmentInfoListSpec, AssignmentRoleUpdate,
+};
 use crate::model::user::UserToken;
 use crate::part::image::ImagePool;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
 use crate::part::repo::comic::ComicRepo;
 use crate::part::repo::member::MemberRepo;
-use crate::part::repo::oper::assignment::{CreateAssignment, DeleteAssignments, FindAssignmentInfo, GetAssignmentInfo, ListAssignmentInfos, ListAssignmentInfosExcluded, UpdateAssignmentRoles};
-use crate::part::repo::oper::chapter::{GetChapterInfo, GetChapterInfoExcluded, ListPinnedChapterInfos};
+use crate::part::repo::oper::assignment::{
+    CreateAssignment, DeleteAssignments, FindAssignmentInfo, GetAssignmentInfo,
+    ListAssignmentInfos, ListAssignmentInfosExcluded, UpdateAssignmentRoles,
+};
+use crate::part::repo::oper::chapter::{
+    GetChapterInfo, GetChapterInfoExcluded, ListPinnedChapterInfos,
+};
 use crate::part::repo::oper::comic::GetComicInfo;
 use crate::part::repo::oper::member::FindMemberInfo;
 use crate::part::repo::oper::page::ListFirstPageInfos;

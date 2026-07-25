@@ -23,7 +23,11 @@ use crate::value::chapter::StageMask;
 use crate::value::comic::{ComicInclOpt, ComicWithOpt};
 use crate::value::role::RoleMask;
 
-pub use crate::data::image::{MarkImageUploadedParams as MarkComicCoverUploadedParams, ReserveImageParams as ReserveComicCoverParams, ReserveImagePayload as ReserveComicCoverPayload};
+pub use crate::data::image::{
+    MarkImageUploadedParams as MarkComicCoverUploadedParams,
+    ReserveImageParams as ReserveComicCoverParams,
+    ReserveImagePayload as ReserveComicCoverPayload,
+};
 
 #[cfg(test)]
 mod tests;
