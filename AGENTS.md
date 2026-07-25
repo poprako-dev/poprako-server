@@ -1,5 +1,7 @@
 # poprako-server - Agent Context
 
+MUST FOLLOW `just deploy-release` WHEN GENERATING RELEASE.
+
 `poprako-server` is the Rust 2024 backend for manga translation project
 management. The executable is active: `src/main.rs` wires the production
 harness and starts the Axum HTTP server.

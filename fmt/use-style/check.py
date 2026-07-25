@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import re
+import subprocess
 import sys
 import tempfile
 from dataclasses import dataclass, replace
@@ -1036,7 +1037,12 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("paths", nargs="*", type=Path)
     parser.add_argument("--root", type=Path, default=ROOT)
-    parser.add_argument("--fix", action=argparse.BooleanOptionalAction, default=True)
+    parser.add_argument(
+        "--fix",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="rewrite use declarations, then format them with cargo fmt (default: enabled)",
+    )
     parser.add_argument("--self-test", action="store_true")
     args = parser.parse_args()
 
@@ -1047,12 +1053,16 @@ def main() -> int:
     local_crates = workspace_crates(root)
     diagnostics: list[str] = []
 
-    for path in rust_files(root, args.paths):
-        errors, edits = check_file(path, root, local_crates)
+    paths = rust_files(root, args.paths)
 
-        if args.fix:
-            errors = fix_file(path, root, local_crates)
+    if args.fix:
+        for path in paths:
+            fix_file(path, root, local_crates)
 
+        subprocess.run(["cargo", "fmt", "--all"], cwd=root, check=True)
+
+    for path in paths:
+        errors, _ = check_file(path, root, local_crates)
         diagnostics.extend(errors)
 
     if diagnostics:

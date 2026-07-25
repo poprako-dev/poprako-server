@@ -17,7 +17,7 @@ impl ImageComplex {
     /// | `UserAvatar` | 512 KiB     |
     /// | `TeamAvatar` | 512 KiB     |
     /// | `ComicCover` | 2 MiB       |
-    /// | `PageImage`  | 5 MiB       |
+    /// | `PageImage`  | 15 MiB       |
     pub fn ensure_byte_length(
         byte_length: u64,
         kind: ResourceKind,
@@ -29,7 +29,7 @@ impl ImageComplex {
 
             ResourceKind::ComicCover => 2 * 1024 * 1024,
 
-            ResourceKind::PageImage => 5 * 1024 * 1024,
+            ResourceKind::PageImage => 15 * 1024 * 1024,
         };
 
         if !(1..=max_length).contains(&byte_length) {
