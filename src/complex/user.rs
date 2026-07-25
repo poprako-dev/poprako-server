@@ -2,7 +2,9 @@
 
 use argon2::Argon2;
 use argon2::password_hash::rand_core::OsRng;
-use argon2::password_hash::{PasswordHash, PasswordHasher as _, PasswordVerifier as _, SaltString};
+use argon2::password_hash::{
+    PasswordHash, PasswordHasher as _, PasswordVerifier as _, SaltString,
+};
 
 use crate::result::{BaseError, BaseResult};
 use crate::util::next_snowflake_id;

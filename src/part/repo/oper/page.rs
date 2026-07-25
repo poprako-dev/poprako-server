@@ -2,7 +2,9 @@ use std::collections::HashMap;
 
 use poprako_orchestra::Oper;
 
-use crate::model::page::{PageEntry, PageImageReservation, PageInfo, PageManifestUpdate};
+use crate::model::page::{
+    PageEntry, PageImageReservation, PageInfo, PageManifestUpdate,
+};
 use crate::model::unit::UnitCounters;
 
 pub struct GetPageInfo<'a> {

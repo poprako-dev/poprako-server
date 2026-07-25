@@ -10,10 +10,16 @@ use tracing::instrument;
 use utoipa::IntoParams;
 
 #[allow(unused_imports)]
-use crate::api::http::result::{Accept as _, HttpBody, HttpNoContent, HttpResult, no_content};
+use crate::api::http::result::{
+    Accept as _, HttpBody, HttpNoContent, HttpResult, no_content,
+};
 use crate::api::http::state::AppHarn;
 use crate::data::assignment::AssignmentInfoVal;
-use crate::data::assignment_invitation::{AssignmentInvitationInfoVal, CreateAssignmentInvitationParams, CreateAssignmentInvitationPayload, JoinAssignmentInvitationParams, ListAssignmentInvitationInfosParams};
+use crate::data::assignment_invitation::{
+    AssignmentInvitationInfoVal, CreateAssignmentInvitationParams,
+    CreateAssignmentInvitationPayload, JoinAssignmentInvitationParams,
+    ListAssignmentInvitationInfosParams,
+};
 use crate::model::user::UserToken;
 use crate::usecase;
 

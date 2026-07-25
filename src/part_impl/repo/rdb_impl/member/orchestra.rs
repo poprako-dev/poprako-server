@@ -2,9 +2,16 @@ use poprako_orchestra::{Run, Step};
 use tracing::instrument;
 
 use crate::model::member::MemberInfo;
-use crate::part::repo::oper::member::{CreateMember, DeleteMember, FindMemberInfo, GetMemberInfo, ListMemberInfos, ListMemberInfosExcluded, UpdateMember};
+use crate::part::repo::oper::member::{
+    CreateMember, DeleteMember, FindMemberInfo, GetMemberInfo, ListMemberInfos,
+    ListMemberInfosExcluded, UpdateMember,
+};
 use crate::part_impl::repo::rdb_impl::RdbRepo;
-use crate::part_impl::repo::rdb_impl::member::step_impl::{create, delete, find_info_by_user_id_and_team_id, get_info_by_id, list_infos, list_infos_by_team_id_excluded, list_infos_by_user_id, list_infos_by_user_id_excluded, update_role, update_user_nickname};
+use crate::part_impl::repo::rdb_impl::member::step_impl::{
+    create, delete, find_info_by_user_id_and_team_id, get_info_by_id,
+    list_infos, list_infos_by_team_id_excluded, list_infos_by_user_id,
+    list_infos_by_user_id_excluded, update_role, update_user_nickname,
+};
 use crate::part_impl::shared::RdbContext;
 use crate::result::{BaseError, BaseResult};
 

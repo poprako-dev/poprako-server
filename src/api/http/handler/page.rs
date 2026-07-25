@@ -8,9 +8,15 @@ use tracing::instrument;
 use crate::api::http::handler::util::ensure_path_matches_body_id;
 
 #[allow(unused_imports)]
-use crate::api::http::result::{Accept as _, HttpBody, HttpNoContent, HttpResult, no_content};
+use crate::api::http::result::{
+    Accept as _, HttpBody, HttpNoContent, HttpResult, no_content,
+};
 use crate::api::http::state::AppHarn;
-use crate::data::page::{ListPageInfosParams, MarkPageImageUploadedParams, PageInfoVal, ReserveChapterPagesParams, ReserveChapterPagesPayload, ReservePageImageParams, ReservedPagePayload};
+use crate::data::page::{
+    ListPageInfosParams, MarkPageImageUploadedParams, PageInfoVal,
+    ReserveChapterPagesParams, ReserveChapterPagesPayload,
+    ReservePageImageParams, ReservedPagePayload,
+};
 use crate::model::user::UserToken;
 use crate::usecase;
 
@@ -38,6 +44,33 @@ pub async fn list_infos(
         (harn.repo(), harn.image_pool()),
         user_token,
         params,
+    )
+    .await?
+    .accept(StatusCode::OK)
+}
+
+/// `GET /api/v1/pages/{page_id}` — fetch one page.
+#[cfg_attr(feature = "swagger", utoipa::path(
+    get,
+    path = "/api/v1/pages/{page_id}",
+    tag = "pages",
+    params(("page_id" = String, Path, description = "Page ID")),
+    responses(
+        (status = 200, description = "Page info retrieved", body = HttpBody<PageInfoVal>),
+        (status = 403, description = "No permission to view this page"),
+        (status = 404, description = "Page not found"),
+    ),
+))]
+#[instrument(level = "info", err(Debug), skip_all)]
+pub async fn get_info(
+    State(harn): State<AppHarn>,
+    Path(page_id): Path<String>,
+    Extension(user_token): Extension<UserToken>,
+) -> HttpResult<PageInfoVal> {
+    usecase::page::get_info(
+        (harn.repo(), harn.image_pool()),
+        user_token,
+        page_id,
     )
     .await?
     .accept(StatusCode::OK)

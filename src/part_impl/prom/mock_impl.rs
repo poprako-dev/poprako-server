@@ -14,8 +14,12 @@ use crate::part::image::ImageManager;
 use crate::part::prom::Prom;
 use crate::part::prom::payload::{TaskPayload, image};
 use crate::part::repo::oper::chapter::GetChapterInfoExcluded;
-use crate::part::repo::oper::comic::{GetComicInfoExcluded, MarkComicCoverUploaded};
-use crate::part::repo::oper::page::{GetPageInfoExcluded, MarkPageImageUploaded, SetPageImageUploaded};
+use crate::part::repo::oper::comic::{
+    GetComicInfoExcluded, MarkComicCoverUploaded,
+};
+use crate::part::repo::oper::page::{
+    GetPageInfoExcluded, MarkPageImageUploaded, SetPageImageUploaded,
+};
 use crate::part::repo::oper::team::{GetTeamInfoExcluded, UpdateTeam};
 use crate::part::repo::oper::user::{GetUserInfoExcluded, UpdateUser};
 use crate::part_impl::repo::mock_impl::{Mock, MockContext};

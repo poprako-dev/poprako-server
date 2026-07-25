@@ -1,6 +1,8 @@
 use poprako_orchestra::Oper;
 
-use crate::model::system_mail::{SystemMailEntry, SystemMailInfo, SystemMailInfoListSpec};
+use crate::model::system_mail::{
+    SystemMailEntry, SystemMailInfo, SystemMailInfoListSpec,
+};
 
 /// Sends one system mail.
 pub struct SendSystemMail<'a> {

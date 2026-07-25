@@ -12,7 +12,11 @@ use poprako_util::i18n::trl;
 use crate::complex::image::ImageComplex;
 use crate::complex::user::UserComplex;
 use crate::data::image::ImageUploadSlotVal;
-use crate::data::user::{MarkUserAvatarUploadedParams, ReserveUserAvatarParams, ReserveUserAvatarPayload, UpdateUserInfoParams, UpdateUserPasswordParams, UserInfoVal};
+use crate::data::user::{
+    MarkUserAvatarUploadedParams, ReserveUserAvatarParams,
+    ReserveUserAvatarPayload, UpdateUserInfoParams, UpdateUserPasswordParams,
+    UserInfoVal,
+};
 use crate::model::user::UserToken;
 use crate::part::effect::EffectDevelop;
 use crate::part::effect::event::Event;
@@ -21,8 +25,13 @@ use crate::part::image::{ImageManager, ImagePool, ImageUploadSpec};
 use crate::part::prom::Prom;
 use crate::part::prom::payload::{TaskPayload, image};
 use crate::part::repo::member::MemberRepo;
-use crate::part::repo::oper::member::{DeleteMember, ListMemberInfosExcluded, UpdateMember};
-use crate::part::repo::oper::user::{DeleteUser, GetUserCredential, GetUserInfo, GetUserInfoExcluded, ReserveUserAvatar, UpdateUser};
+use crate::part::repo::oper::member::{
+    DeleteMember, ListMemberInfosExcluded, UpdateMember,
+};
+use crate::part::repo::oper::user::{
+    DeleteUser, GetUserCredential, GetUserInfo, GetUserInfoExcluded,
+    ReserveUserAvatar, UpdateUser,
+};
 use crate::part::repo::user::UserRepo;
 use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 
