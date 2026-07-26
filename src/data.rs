@@ -53,3 +53,5 @@ pub mod unit_port;
 pub mod user;
 /// Workset request/response DTOs.
 pub mod workset;
+
+pub mod unit_v2;

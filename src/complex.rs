@@ -40,3 +40,5 @@ pub mod unit;
 pub mod user;
 /// Workset lifecycle business rules and permission checks.
 pub mod workset;
+
+pub mod unit_v2;

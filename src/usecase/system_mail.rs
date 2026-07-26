@@ -31,7 +31,7 @@ mod tests;
 /// * `R: SystemMailRepo<C>` — System mail storage.
 ///
 /// [`ListSystemMailInfosParams`]: ListSystemMailInfosParams
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", err(Debug), skip(repo))]
 pub async fn list_infos<C, R>(
     (repo,): (&R,),
     token: UserToken,
@@ -86,7 +86,7 @@ where
 ///
 /// * `C` — Context anchor.
 /// * `R: SystemMailRepo<C>` — System mail storage.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", err(Debug), skip(repo))]
 pub async fn mark_read<C, R>(
     (repo,): (&R,),
     token: UserToken,

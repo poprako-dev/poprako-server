@@ -72,3 +72,5 @@ pub mod unit;
 pub mod user;
 /// Workset lifecycle use cases.
 pub mod workset;
+
+pub mod unit_v2;

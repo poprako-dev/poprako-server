@@ -50,7 +50,7 @@ mod tests;
 /// * `R: UserRepo<C>` — User storage.
 /// * `I: ImagePool` — Resolves the avatar signed URL.
 /// * `V: EffectDevelop` — Processes the activity event (only for self-reads).
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", err(Debug), skip(repo, image_pool, develop))]
 pub async fn get_info<C, R, I, V>(
     (repo, image_pool, develop): (&R, &I, &V),
     token: UserToken,
@@ -91,7 +91,7 @@ where
 /// * `N: Nucl<Context = C>` — Transaction coordinator.
 /// * `C` — Context anchor.
 /// * `R: UserRepo<C> + MemberRepo<C>` — User and member storage.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", err(Debug), skip(nucl, repo))]
 pub async fn update_info<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
@@ -139,7 +139,12 @@ where
 }
 
 /// Replaces a user's password after verifying their current password.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(
+    level = "info",
+    err(Debug),
+    skip(nucl, repo, params),
+    fields(current_password = "[REDACTED]", new_password = "[REDACTED]",)
+)]
 pub async fn update_password<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
@@ -219,7 +224,7 @@ where
 /// * `I: ImagePool` — Generates the signed upload URL.
 ///
 /// [`team::reserve_avatar`]: super::team::reserve_avatar
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", err(Debug), skip(nucl, repo, prom, image_pool))]
 pub async fn reserve_avatar<N, C, R, P, I>(
     (nucl, repo, prom, image_pool): (&N, &R, &P, &I),
     token: UserToken,
@@ -354,7 +359,7 @@ where
 /// * `N: Nucl<Context = C>` — Transaction coordinator.
 /// * `C` — Context anchor.
 /// * `R: UserRepo<C>` — User storage.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", err(Debug), skip(nucl, repo, image_manager))]
 pub async fn mark_avatar_uploaded<N, C, R, I>(
     (nucl, repo, image_manager): (&N, &R, &I),
     token: UserToken,
@@ -455,7 +460,7 @@ where
 /// * `C` — Context anchor.
 /// * `R: UserRepo<C> + MemberRepo<C>` — User and member storage.
 /// * `P: Prom<C>` — Prom enqueuer for deferred avatar deletion.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", err(Debug), skip(nucl, repo, prom))]
 pub async fn delete<N, C, R, P>(
     (nucl, repo, prom): (&N, &R, &P),
     token: UserToken,

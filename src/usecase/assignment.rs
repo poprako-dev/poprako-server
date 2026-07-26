@@ -42,7 +42,7 @@ use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 mod tests;
 
 /// Lists assignments by chapter or owner user.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", err(Debug), skip(repo, image_pool))]
 pub async fn list_infos<C, R, I>(
     (repo, image_pool): (&R, &I),
     token: UserToken,
@@ -124,7 +124,7 @@ where
 }
 
 /// Joins a chapter assignment with requested roles.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", err(Debug), skip(nucl, repo))]
 pub async fn join<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
@@ -244,7 +244,7 @@ where
 }
 
 /// Updates assignment roles.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", err(Debug), skip(nucl, repo))]
 pub async fn update_roles<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
@@ -398,7 +398,7 @@ fn assignment_admin_required_err() -> BaseError {
 }
 
 /// Deletes one assignment by identifier.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", err(Debug), skip(nucl, repo))]
 pub async fn delete<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,

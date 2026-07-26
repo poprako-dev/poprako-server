@@ -9,6 +9,7 @@ exported item without reading the implementation.
 
 | Declaration kind         | Scope                          |
 | ------------------------ | ------------------------------ |
+| `pub mod`                | module-level module declaration |
 | `pub fn`                 | module-level and impl methods  |
 | `pub struct`             | module-level                   |
 | `pub enum`               | module-level                   |

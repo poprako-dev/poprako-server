@@ -32,6 +32,9 @@ pub mod page_port;
 pub mod system_mail;
 /// Team persisted entity model.
 pub mod team;
+pub mod term;
+/// Termbase persisted entity models.
+pub mod termbase;
 /// Unit persisted entity model.
 pub mod unit;
 /// Unit port persisted entity model.
@@ -41,7 +44,7 @@ pub mod user;
 /// Workset persisted entity model.
 pub mod workset;
 
-/// Termbase persisted entity models.
-pub mod termbase;
+pub mod shared;
 
-pub mod term;
+pub mod read;
+pub mod write;

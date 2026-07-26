@@ -11,11 +11,11 @@
 
 use super::*;
 
-use crate::model::unit::{UnitContent, UnitDiff, UnitIndex, UnitOper};
+use crate::model::unit::{UnitBody, UnitDiff, UnitIndex, UnitMdf};
 use crate::result::{BaseError, ExpectedVariant};
 
-fn payload(text: &str, proofread: bool) -> UnitContent {
-    UnitContent {
+fn payload(text: &str, proofread: bool) -> UnitBody {
+    UnitBody {
         is_bubble: true,
         is_proofread: proofread,
         x_coord: 1.0,
@@ -27,10 +27,10 @@ fn payload(text: &str, proofread: bool) -> UnitContent {
     }
 }
 
-fn diff(opers: Vec<UnitOper>) -> UnitDiff {
+fn diff(opers: Vec<UnitMdf>) -> UnitDiff {
     UnitDiff {
         page_id: "page-1".into(),
-        opers,
+        mdfs: opers,
     }
 }
 
@@ -51,22 +51,22 @@ fn assert_args_error(error: BaseError) {
 fn prepare_diff_maps_create_ids_and_keeps_oper_order() {
     //
     let unit_diff = diff(vec![
-        UnitOper::Save {
+        UnitMdf::Save {
             id: "unit-a".into(),
-            payload: payload("alpha", false),
+            body: payload("alpha", false),
             before_id: None,
         },
-        UnitOper::Create {
+        UnitMdf::Create {
             id: "local-x".into(),
-            payload: payload("inserted", true),
+            body: payload("inserted", true),
             before_id: Some("unit-a".into()),
         },
-        UnitOper::Delete {
+        UnitMdf::Delete {
             id: "unit-b".into(),
         },
-        UnitOper::Save {
+        UnitMdf::Save {
             id: "unit-a".into(),
-            payload: payload("alpha-later", false),
+            body: payload("alpha-later", false),
             before_id: None,
         },
     ]);
@@ -88,11 +88,11 @@ fn prepare_diff_maps_create_ids_and_keeps_oper_order() {
 
     match &receipt.opers[1] {
         //
-        UnitOper::Create { id, .. } => {
+        UnitMdf::Create { id, .. } => {
             assert_eq!(id, &receipt.local_id_map[0].unit_id);
         }
 
-        UnitOper::Save { .. } | UnitOper::Delete { .. } => {
+        UnitMdf::Save { .. } | UnitMdf::Delete { .. } => {
             panic!("expected create oper");
         }
     }
@@ -101,26 +101,25 @@ fn prepare_diff_maps_create_ids_and_keeps_oper_order() {
 #[test]
 fn prepare_diff_rejects_invalid_compact_diff() {
     //
-    let empty_id_error =
-        UnitComplex::prepare_diff(diff(vec![UnitOper::Save {
-            id: String::new(),
-            payload: payload("alpha", false),
-            before_id: None,
-        }]))
-        .err()
-        .unwrap();
+    let empty_id_error = UnitComplex::prepare_diff(diff(vec![UnitMdf::Save {
+        id: String::new(),
+        body: payload("alpha", false),
+        before_id: None,
+    }]))
+    .err()
+    .unwrap();
 
     assert_args_error(empty_id_error);
 
     let duplicate_local_id_error = UnitComplex::prepare_diff(diff(vec![
-        UnitOper::Create {
+        UnitMdf::Create {
             id: "local-x".into(),
-            payload: payload("one", false),
+            body: payload("one", false),
             before_id: None,
         },
-        UnitOper::Create {
+        UnitMdf::Create {
             id: "local-x".into(),
-            payload: payload("two", false),
+            body: payload("two", false),
             before_id: None,
         },
     ]))
@@ -133,15 +132,15 @@ fn prepare_diff_rejects_invalid_compact_diff() {
 #[test]
 fn prepare_diff_allows_empty_text_without_editor_id() {
     //
-    let unit_payload = UnitContent {
+    let unit_payload = UnitBody {
         translated_text: Some(String::new()),
         last_translator_id: None,
         ..payload("seed", false)
     };
 
-    let result = UnitComplex::prepare_diff(diff(vec![UnitOper::Create {
+    let result = UnitComplex::prepare_diff(diff(vec![UnitMdf::Create {
         id: "local-x".into(),
-        payload: unit_payload,
+        body: unit_payload,
         before_id: None,
     }]));
 
@@ -151,15 +150,15 @@ fn prepare_diff_allows_empty_text_without_editor_id() {
 #[test]
 fn prepare_diff_requires_editor_ids_for_non_empty_text() {
     //
-    let translated_payload = UnitContent {
+    let translated_payload = UnitBody {
         last_translator_id: None,
         ..payload("translated", false)
     };
 
     let translated_error =
-        UnitComplex::prepare_diff(diff(vec![UnitOper::Create {
+        UnitComplex::prepare_diff(diff(vec![UnitMdf::Create {
             id: "local-x".into(),
-            payload: translated_payload,
+            body: translated_payload,
             before_id: None,
         }]))
         .err()
@@ -167,16 +166,16 @@ fn prepare_diff_requires_editor_ids_for_non_empty_text() {
 
     assert_args_error(translated_error);
 
-    let proofread_payload = UnitContent {
+    let proofread_payload = UnitBody {
         proofread_text: Some("proofread".into()),
         last_proofreader_id: Some(String::new()),
         ..payload("translated", true)
     };
 
     let proofread_error =
-        UnitComplex::prepare_diff(diff(vec![UnitOper::Save {
+        UnitComplex::prepare_diff(diff(vec![UnitMdf::Save {
             id: "unit-a".into(),
-            payload: proofread_payload,
+            body: proofread_payload,
             before_id: None,
         }]))
         .err()
@@ -189,12 +188,12 @@ fn prepare_diff_requires_editor_ids_for_non_empty_text() {
 fn prepare_diff_keeps_delete_and_later_save_for_ordered_replay() {
     //
     let receipt = match UnitComplex::prepare_diff(diff(vec![
-        UnitOper::Delete {
+        UnitMdf::Delete {
             id: "unit-a".into(),
         },
-        UnitOper::Save {
+        UnitMdf::Save {
             id: "unit-a".into(),
-            payload: payload("alpha", false),
+            body: payload("alpha", false),
             before_id: None,
         },
     ])) {
@@ -211,19 +210,19 @@ fn prepare_diff_keeps_delete_and_later_save_for_ordered_replay() {
 fn apply_opers_to_order_places_create_and_save_before_anchor_or_tail() {
     //
     let opers = vec![
-        UnitOper::Create {
+        UnitMdf::Create {
             id: "unit-x".into(),
-            payload: payload("x", false),
+            body: payload("x", false),
             before_id: Some("unit-b".into()),
         },
-        UnitOper::Save {
+        UnitMdf::Save {
             id: "unit-a".into(),
-            payload: payload("a", false),
+            body: payload("a", false),
             before_id: None,
         },
-        UnitOper::Save {
+        UnitMdf::Save {
             id: "unit-c".into(),
-            payload: payload("c", false),
+            body: payload("c", false),
             before_id: Some("unit-missing".into()),
         },
     ];
@@ -238,7 +237,7 @@ fn apply_opers_to_order_places_create_and_save_before_anchor_or_tail() {
 #[test]
 fn apply_opers_to_order_removes_deleted_unit_and_keeps_remaining_order() {
     //
-    let opers = vec![UnitOper::Delete {
+    let opers = vec![UnitMdf::Delete {
         id: "unit-b".into(),
     }];
 
@@ -252,9 +251,9 @@ fn apply_opers_to_order_removes_deleted_unit_and_keeps_remaining_order() {
 #[test]
 fn apply_opers_to_order_save_upsert_restores_missing_unit_at_tail() {
     //
-    let opers = vec![UnitOper::Save {
+    let opers = vec![UnitMdf::Save {
         id: "unit-z".into(),
-        payload: payload("z", false),
+        body: payload("z", false),
         before_id: None,
     }];
 

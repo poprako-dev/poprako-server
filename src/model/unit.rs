@@ -49,7 +49,7 @@ impl UnitInfo {
 
 /// Complete mutable payload supplied by unit opers.
 #[cfg_attr(test, derive(Clone))]
-pub struct UnitContent {
+pub struct UnitBody {
     //
     /// Whether this unit is a speech bubble contour.
     pub is_bubble: bool,
@@ -83,7 +83,7 @@ pub struct UnitDiff {
     /// Foreign key of the page being diffed.
     pub page_id: String,
     /// Ordered list of unit operations to apply.
-    pub opers: Vec<UnitOper>,
+    pub mdfs: Vec<UnitMdf>,
 }
 
 /// One ordered unit oper submitted by a client.
@@ -94,14 +94,14 @@ pub struct UnitDiff {
 /// created or saved unit relative to the surviving order; `None` or an absent
 /// anchor appends it to the tail.
 #[cfg_attr(test, derive(Clone))]
-pub enum UnitOper {
+pub enum UnitMdf {
     /// Create a new unit with a client id and content payload.
     Create {
         //
         /// Client-assigned local identifier for the new unit.
         id: String,
         /// Text content and translation state for the unit.
-        payload: UnitContent,
+        body: UnitBody,
         /// Optional unit ID to place this new unit before in ordering.
         before_id: Option<String>,
     },
@@ -112,7 +112,7 @@ pub enum UnitOper {
         /// Server-assigned identifier of the unit to update.
         id: String,
         /// Updated text content and translation state.
-        payload: UnitContent,
+        body: UnitBody,
         /// Optional unit ID to reorder this unit before.
         before_id: Option<String>,
     },
@@ -184,7 +184,7 @@ pub struct UnitIdMapper {
 pub struct UnitApplyAck {
     //
     /// Final set of applied unit operations.
-    pub opers: Vec<UnitOper>,
+    pub opers: Vec<UnitMdf>,
     /// Mappings from client local ids to resolved server ids.
     pub local_id_map: Vec<UnitIdMapper>,
 }

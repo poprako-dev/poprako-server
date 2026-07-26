@@ -179,6 +179,7 @@ pub struct MarkPageImageUploadedParams {
 }
 
 /// Input parameters for listing all pages under one chapter.
+#[derive(Debug)]
 pub struct ListPageInfosParams {
     /// Chapter whose pages to list.
     pub chapter_id: String,

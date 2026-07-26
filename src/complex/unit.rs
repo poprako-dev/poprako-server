@@ -12,8 +12,8 @@ use crate::complex::util::{
     check_user_is_team_member_by_chapter,
 };
 use crate::model::unit::{
-    UnitApplyAck, UnitContent, UnitDiff, UnitIdMapper, UnitIndex,
-    UnitIndexUpdate, UnitOper,
+    UnitApplyAck, UnitBody, UnitDiff, UnitIdMapper, UnitIndex, UnitIndexUpdate,
+    UnitMdf,
 };
 use crate::part::repo::oper::assignment::FindAssignmentInfo;
 use crate::part::repo::oper::chapter::GetChapterInfo;
@@ -44,14 +44,14 @@ impl UnitComplex {
 
         let mut local_id_map = Vec::new();
 
-        let mut opers = Vec::with_capacity(diff.opers.len());
+        let mut opers = Vec::with_capacity(diff.mdfs.len());
 
-        for unit_oper in diff.opers {
+        for unit_oper in diff.mdfs {
             match unit_oper {
                 //
-                UnitOper::Create {
+                UnitMdf::Create {
                     id,
-                    payload,
+                    body: payload,
                     before_id,
                 } => {
                     //
@@ -72,16 +72,16 @@ impl UnitComplex {
                         unit_id: unit_id.clone(),
                     });
 
-                    opers.push(UnitOper::Create {
+                    opers.push(UnitMdf::Create {
                         id: unit_id,
-                        payload,
+                        body: payload,
                         before_id,
                     });
                 }
 
-                UnitOper::Save {
+                UnitMdf::Save {
                     id,
-                    payload,
+                    body: payload,
                     before_id,
                 } => {
                     //
@@ -91,18 +91,18 @@ impl UnitComplex {
 
                     validate_payload(&payload)?;
 
-                    opers.push(UnitOper::Save {
+                    opers.push(UnitMdf::Save {
                         id,
-                        payload,
+                        body: payload,
                         before_id,
                     });
                 }
 
-                UnitOper::Delete { id } => {
+                UnitMdf::Delete { id } => {
                     //
                     validate_id(&id)?;
 
-                    opers.push(UnitOper::Delete { id });
+                    opers.push(UnitMdf::Delete { id });
                 }
             }
         }
@@ -120,22 +120,22 @@ impl UnitComplex {
     /// absent from the surviving order appends the unit to the tail. Delete
     /// removes the unit. Units untouched by the diff keep their relative order.
     pub fn apply_opers_to_order(
-        opers: &[UnitOper],
+        opers: &[UnitMdf],
         mut current_order: Vec<String>,
     ) -> Vec<String> {
         //
         for oper in opers {
             match oper {
                 //
-                UnitOper::Create { id, before_id, .. }
-                | UnitOper::Save { before_id, id, .. } => {
+                UnitMdf::Create { id, before_id, .. }
+                | UnitMdf::Save { before_id, id, .. } => {
                     //
                     current_order.retain(|surviving_id| surviving_id != id);
 
                     insert_before(&mut current_order, id, before_id);
                 }
 
-                UnitOper::Delete { id } => {
+                UnitMdf::Delete { id } => {
                     current_order.retain(|surviving_id| surviving_id != id);
                 }
             }
@@ -282,7 +282,7 @@ fn validate_optional_id(id: &Option<String>) -> BaseResult<()> {
 }
 
 /// Validate editor identifiers required by non-empty unit text fields.
-fn validate_payload(payload: &UnitContent) -> BaseResult<()> {
+fn validate_payload(payload: &UnitBody) -> BaseResult<()> {
     //
     validate_text_editor(
         &payload.translated_text,
