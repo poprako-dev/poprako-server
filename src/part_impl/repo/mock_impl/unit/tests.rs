@@ -4,8 +4,8 @@ use super::*;
 // create_unit(create_unit)(negative): an existing id is rejected without mutation.
 // save_unit(save_unit)(positive): a missing id is created and an existing id is updated.
 
-fn payload(text: &str, proofread: bool) -> UnitContent {
-    UnitContent {
+fn payload(text: &str, proofread: bool) -> UnitBody {
+    UnitBody {
         is_bubble: true,
         is_proofread: proofread,
         x_coord: 1.0,

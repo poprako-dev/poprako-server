@@ -4,7 +4,7 @@ use poprako_util::i18n::trl;
 
 use crate::model::chapter_port::ChapterPoprakoProjectImport;
 use crate::model::page_port::{PageTranslationImport, PoprakoPageImport};
-use crate::model::unit::{UnitContent, UnitInfo};
+use crate::model::unit::{UnitBody, UnitInfo};
 use crate::model::unit_port::UnitTranslationImport;
 use crate::result::{BaseError, BaseResult, ExpectedVariant, accept};
 
@@ -135,7 +135,7 @@ impl ChapterImportComplex {
         user_id: &str,
         proofreader: bool,
         label_plus: bool,
-    ) -> UnitContent {
+    ) -> UnitBody {
         //
         let mut unit_payload = existing_unit
             .map(payload_from_unit)
@@ -388,8 +388,8 @@ fn normalize_string(text: String) -> Option<String> {
 
 /// Build a [`UnitPayload`] from an existing persisted [`UnitInfo`],
 /// preserving all stored text and metadata fields.
-fn payload_from_unit(unit_info: &UnitInfo) -> UnitContent {
-    UnitContent {
+fn payload_from_unit(unit_info: &UnitInfo) -> UnitBody {
+    UnitBody {
         is_bubble: unit_info.is_bubble,
         is_proofread: unit_info.is_proofread,
         x_coord: unit_info.x_coord,
@@ -403,8 +403,8 @@ fn payload_from_unit(unit_info: &UnitInfo) -> UnitContent {
 
 /// Build a fresh [`UnitPayload`] from imported unit data with no existing
 /// text or metadata.
-fn payload_from_import(parsed_unit: &UnitTranslationImport) -> UnitContent {
-    UnitContent {
+fn payload_from_import(parsed_unit: &UnitTranslationImport) -> UnitBody {
+    UnitBody {
         is_bubble: parsed_unit.is_bubble,
         is_proofread: parsed_unit.is_proofread,
         x_coord: parsed_unit.x_coord,
@@ -419,7 +419,7 @@ fn payload_from_import(parsed_unit: &UnitTranslationImport) -> UnitContent {
 /// Apply LabelPlus main text to the unit payload, assigning it as
 /// proofread or translated text based on the caller's role.
 fn apply_label_plus_text(
-    unit_payload: &mut UnitContent,
+    unit_payload: &mut UnitBody,
     parsed_unit: &UnitTranslationImport,
     user_id: &str,
     proofreader: bool,
@@ -452,7 +452,7 @@ fn apply_label_plus_text(
 /// Apply PopRaKo JSON text fields to the unit payload, writing translated
 /// and proofread text according to the caller's role.
 fn apply_poprako_text(
-    unit_payload: &mut UnitContent,
+    unit_payload: &mut UnitBody,
     parsed_unit: &UnitTranslationImport,
     user_id: &str,
     proofreader: bool,

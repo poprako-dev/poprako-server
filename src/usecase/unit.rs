@@ -12,7 +12,7 @@ use crate::data::unit::{
     SavePageUnitsPayload, UnitInfoVal,
 };
 use crate::model::unit::{
-    UnitApplyAck, UnitCounterDelta, UnitCounters, UnitIdMapper, UnitOper,
+    UnitApplyAck, UnitCounterDelta, UnitCounters, UnitIdMapper, UnitMdf,
 };
 use crate::model::user::UserToken;
 use crate::part::repo::assignment::AssignmentRepo;
@@ -47,7 +47,7 @@ mod tests;
 const MAX_UNITS_PER_PAGE: usize = 100;
 
 /// Lists all units under one page.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", err(Debug), skip(repo))]
 pub async fn list_infos<C, R>(
     (repo,): (&R,),
     token: UserToken,
@@ -98,7 +98,7 @@ where
 }
 
 /// Saves unit opers under one page.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", err(Debug), skip(nucl, repo))]
 pub async fn save<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,
@@ -141,11 +141,11 @@ where
 
     let net_create_count = opers
         .iter()
-        .filter(|oper| matches!(oper, UnitOper::Create { .. }))
+        .filter(|oper| matches!(oper, UnitMdf::Create { .. }))
         .count()
         - opers
             .iter()
-            .filter(|oper| matches!(oper, UnitOper::Delete { .. }))
+            .filter(|oper| matches!(oper, UnitMdf::Delete { .. }))
             .count();
 
     let resulting_count =
@@ -210,7 +210,7 @@ where
             for oper in &opers {
                 match oper {
                     //
-                    UnitOper::Create { id, payload, .. } => {
+                    UnitMdf::Create { id, body, .. } => {
                         repo.step(
                             context,
                             &CreateUnit {
@@ -222,7 +222,7 @@ where
                         .await?;
                     }
 
-                    UnitOper::Save { id, payload, .. } => {
+                    UnitMdf::Save { id, body, .. } => {
                         repo.step(
                             context,
                             &SaveUnit {
@@ -234,7 +234,7 @@ where
                         .await?;
                     }
 
-                    UnitOper::Delete { id } => {
+                    UnitMdf::Delete { id } => {
                         repo.step(
                             context,
                             &DeleteUnit {
@@ -333,7 +333,7 @@ struct SavePageUnitsResult {
 /// Carries the validated opers and local ID maps produced by applying a diff.
 struct UnitApplyParts {
     //
-    opers: Vec<UnitOper>,
+    opers: Vec<UnitMdf>,
     local_id_maps: Vec<UnitIdMapper>,
 }
 
@@ -346,25 +346,27 @@ impl From<UnitApplyAck> for UnitApplyParts {
     }
 }
 
-fn submitted_stage_starts(opers: &[UnitOper]) -> Vec<Stage> {
+fn submitted_stage_starts(opers: &[UnitMdf]) -> Vec<Stage> {
     //
     let translated = opers.iter().any(|oper| match oper {
         //
-        UnitOper::Create { payload, .. } | UnitOper::Save { payload, .. } => {
+        UnitMdf::Create { body: payload, .. }
+        | UnitMdf::Save { body: payload, .. } => {
             has_text(&payload.translated_text)
                 && has_text(&payload.last_translator_id)
         }
 
-        UnitOper::Delete { .. } => false,
+        UnitMdf::Delete { .. } => false,
     });
 
     let proofread = opers.iter().any(|oper| match oper {
         //
-        UnitOper::Create { payload, .. } | UnitOper::Save { payload, .. } => {
+        UnitMdf::Create { body: payload, .. }
+        | UnitMdf::Save { body: payload, .. } => {
             payload.is_proofread && has_text(&payload.last_proofreader_id)
         }
 
-        UnitOper::Delete { .. } => false,
+        UnitMdf::Delete { .. } => false,
     });
 
     let mut stages = Vec::with_capacity(2);

@@ -21,7 +21,7 @@ use crate::result::{BaseError, BaseResult, accept};
 mod tests;
 
 /// Lists comments under a team.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", err(Debug), skip(repo, image_pool))]
 pub async fn list_infos<C, R, I>(
     (repo, image_pool): (&R, &I),
     token: UserToken,
@@ -59,7 +59,7 @@ where
 }
 
 /// Creates a comment under a team.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", err(Debug), skip(nucl, repo))]
 pub async fn create<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,

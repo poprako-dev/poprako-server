@@ -40,7 +40,7 @@ use crate::value::role::RoleField;
 mod tests;
 
 /// Imports chapter translation text into existing pages.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", err(Debug), skip(nucl, repo))]
 pub async fn import<N, C, R>(
     (nucl, repo): (&N, &R),
     token: UserToken,

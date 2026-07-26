@@ -7,7 +7,7 @@ use poprako_util::time::ToUnixMilli;
 use utoipa::ToSchema;
 
 use crate::model::unit::{
-    UnitContent, UnitCounters, UnitDiff, UnitIdMapper, UnitInfo, UnitOper,
+    UnitBody, UnitCounters, UnitDiff, UnitIdMapper, UnitInfo, UnitMdf,
 };
 
 #[cfg(test)]
@@ -225,13 +225,13 @@ impl UnitDiffParams {
 
         Some(UnitDiff {
             page_id: self.page_id,
-            opers,
+            mdfs: opers,
         })
     }
 }
 
 impl UnitOperParams {
-    fn into_model(self) -> UnitOper {
+    fn into_model(self) -> UnitMdf {
         match self {
             //
             UnitOperParams::Create {
@@ -245,9 +245,9 @@ impl UnitOperParams {
                 last_translator_id,
                 proofread_text,
                 last_proofreader_id,
-            } => UnitOper::Create {
+            } => UnitMdf::Create {
                 id: local_id,
-                payload: UnitContent {
+                body: UnitBody {
                     is_bubble,
                     is_proofread,
                     x_coord,
@@ -272,9 +272,9 @@ impl UnitOperParams {
                 last_translator_id,
                 proofread_text,
                 last_proofreader_id,
-            } => UnitOper::Save {
+            } => UnitMdf::Save {
                 id,
-                payload: UnitContent {
+                body: UnitBody {
                     is_bubble,
                     is_proofread,
                     x_coord,
@@ -287,7 +287,7 @@ impl UnitOperParams {
                 before_id,
             },
 
-            UnitOperParams::Delete { id } => UnitOper::Delete { id },
+            UnitOperParams::Delete { id } => UnitMdf::Delete { id },
         }
     }
 }

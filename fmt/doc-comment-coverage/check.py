@@ -14,8 +14,8 @@ public items whose declaration is not immediately preceded by a `///` or
 
 Covered declaration kinds
 -------------------------
-- Module-level items:  function, struct, enum, trait, type alias, const,
-  static, macro definition, union.
+- Module-level items:  module declaration, function, struct, enum, trait,
+  type alias, const, static, macro definition, union.
 - Trait members:       associated functions, type aliases, and constants
   inside a trait definition (implicitly public).
 - Enum variants:       each variant of an enum (implicitly public).
@@ -55,6 +55,7 @@ ITEM_KINDS = (
     "function_item",
     "function_signature_item",
     "macro_definition",
+    "mod_item",
     "static_item",
     "struct_item",
     "trait_item",
@@ -332,6 +333,9 @@ def self_test() -> int:
             "\n"
             "/// A documented const.\n"
             "pub const ANSWER: u32 = 42;\n"
+            "\n"
+            "/// A documented module.\n"
+            "pub mod documented_mod;\n"
         )
 
         if check_root(root):
@@ -360,6 +364,8 @@ def self_test() -> int:
             "\n"
             "// This is a regular comment, NOT a doc comment.\n"
             "pub fn still_undocumented() {}\n"
+            "\n"
+            "pub mod undocumented_mod;\n"
         )
 
         diagnostics = check_root(root)
@@ -373,7 +379,8 @@ def self_test() -> int:
         #   6. FirstVariant             (enum_variant)
         #   7. UndocumentedType         (type_item)
         #   8. still_undocumented       (function_item with // comment)
-        expected = 8
+        #   9. undocumented_mod         (mod_item)
+        expected = 9
 
         if len(diagnostics) != expected:
             print(
@@ -402,6 +409,7 @@ def self_test() -> int:
         fixture.write_text(
             "fn private_fn() {}\n"
             "struct PrivateStruct;\n"
+            "mod private_mod;\n"
         )
 
         if check_root(root):

@@ -93,6 +93,7 @@ pub struct UpdateTermInfoParams {
 }
 
 /// Input parameters for listing terms inside one terminology base.
+#[derive(Debug)]
 pub struct ListTermInfosParams {
     //
     /// Parent terminology base identifier.

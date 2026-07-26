@@ -3,7 +3,7 @@
 
 use poprako_orchestra::{Nucl as _, Run as _, Step as _};
 
-use crate::model::unit::{UnitContent, UnitIndexUpdate};
+use crate::model::unit::{UnitBody, UnitIndexUpdate};
 use crate::part::repo::oper::unit::{
     CreateUnit, ListUnitInfos, SaveUnit, UpdateUnitIndexes,
 };
@@ -14,8 +14,8 @@ use crate::result::accept;
 
 const PREFIX: &str = "rdb-test-unit-domain-";
 
-fn unit_payload(text: Option<&str>, proofread: bool) -> UnitContent {
-    UnitContent {
+fn unit_payload(text: Option<&str>, proofread: bool) -> UnitBody {
+    UnitBody {
         is_bubble: true,
         is_proofread: proofread,
         x_coord: 1.0,

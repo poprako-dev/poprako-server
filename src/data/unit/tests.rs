@@ -4,7 +4,7 @@
 
 use super::*;
 
-use crate::model::unit::UnitOper;
+use crate::model::unit::UnitMdf;
 
 #[test]
 fn unit_diff_params_into_model_defaults_minimal_create() {
@@ -25,11 +25,11 @@ fn unit_diff_params_into_model_defaults_minimal_create() {
 
     let unit_diff = unit_diff_params.into_model().unwrap();
 
-    match &unit_diff.opers[0] {
+    match &unit_diff.mdfs[0] {
         //
-        UnitOper::Create {
+        UnitMdf::Create {
             id: local_id,
-            payload,
+            body: payload,
             before_id,
         } => {
             //
@@ -50,7 +50,7 @@ fn unit_diff_params_into_model_defaults_minimal_create() {
             assert!(payload.last_proofreader_id.is_none());
         }
 
-        UnitOper::Save { .. } | UnitOper::Delete { .. } => {
+        UnitMdf::Save { .. } | UnitMdf::Delete { .. } => {
             panic!("expected create oper");
         }
     }
@@ -95,10 +95,12 @@ fn unit_diff_params_into_model_preserves_create_and_save_content() {
 
     let unit_diff = unit_diff_params.into_model().unwrap();
 
-    match &unit_diff.opers[0] {
+    match &unit_diff.mdfs[0] {
         //
-        UnitOper::Create {
-            payload, before_id, ..
+        UnitMdf::Create {
+            body: payload,
+            before_id,
+            ..
         } => {
             //
             assert_eq!(before_id.as_deref(), Some("unit-a"));
@@ -114,14 +116,16 @@ fn unit_diff_params_into_model_preserves_create_and_save_content() {
             assert_eq!(payload.last_proofreader_id.as_deref(), Some("user-2"));
         }
 
-        UnitOper::Save { .. } | UnitOper::Delete { .. } => {
+        UnitMdf::Save { .. } | UnitMdf::Delete { .. } => {
             panic!("expected create oper");
         }
     }
 
-    match &unit_diff.opers[1] {
+    match &unit_diff.mdfs[1] {
         //
-        UnitOper::Save { id, payload, .. } => {
+        UnitMdf::Save {
+            id, body: payload, ..
+        } => {
             //
             assert_eq!(id, "unit-a");
 
@@ -130,7 +134,7 @@ fn unit_diff_params_into_model_preserves_create_and_save_content() {
             assert!(payload.translated_text.is_none());
         }
 
-        UnitOper::Create { .. } | UnitOper::Delete { .. } => {
+        UnitMdf::Create { .. } | UnitMdf::Delete { .. } => {
             panic!("expected save oper");
         }
     }

@@ -1,7 +1,7 @@
 use poprako_orchestra::Oper;
 
 use crate::model::unit::{
-    UnitContent, UnitCounters, UnitIndex, UnitIndexUpdate, UnitInfo,
+    UnitBody, UnitCounters, UnitIndex, UnitIndexUpdate, UnitInfo,
 };
 
 pub struct ListUnitInfos<'a> {
@@ -16,7 +16,7 @@ pub struct CreateUnit<'a> {
     //
     pub page_id: &'a str,
     pub id: &'a str,
-    pub payload: &'a UnitContent,
+    pub payload: &'a UnitBody,
 }
 
 impl Oper for CreateUnit<'_> {
@@ -27,7 +27,7 @@ pub struct SaveUnit<'a> {
     //
     pub page_id: &'a str,
     pub id: &'a str,
-    pub payload: &'a UnitContent,
+    pub payload: &'a UnitBody,
 }
 
 impl Oper for SaveUnit<'_> {

@@ -8,7 +8,7 @@ use time::OffsetDateTime;
 use tracing::instrument;
 
 use crate::model::unit::{
-    UnitContent, UnitCounters, UnitIndex, UnitIndexUpdate, UnitInfo,
+    UnitBody, UnitCounters, UnitIndex, UnitIndexUpdate, UnitInfo,
 };
 use crate::part_impl::repo::rdb_impl::entity::unit::{
     UnitAspect, UnitEntry, UnitRow,
@@ -56,7 +56,7 @@ pub async fn create_unit(
     conn: &mut RdbConn,
     page_id: &str,
     id: &str,
-    payload: &UnitContent,
+    payload: &UnitBody,
 ) -> BaseResult<()> {
     //
     let index = next_index(conn, page_id).await?;
@@ -78,7 +78,7 @@ pub async fn save_unit(
     conn: &mut RdbConn,
     page_id: &str,
     id: &str,
-    payload: &UnitContent,
+    payload: &UnitBody,
 ) -> BaseResult<()> {
     //
     let existing_page_id: Option<String> = t_unit

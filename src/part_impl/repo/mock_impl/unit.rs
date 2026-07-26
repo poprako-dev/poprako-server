@@ -1,6 +1,6 @@
 //! Mock implementation of `UnitRepo`.
 
-use crate::model::unit::{UnitContent, UnitCounters, UnitInfo};
+use crate::model::unit::{UnitBody, UnitCounters, UnitInfo};
 use crate::part_impl::repo::mock_impl::{MockState, expected, now};
 use crate::result::{BaseResult, accept};
 
@@ -59,7 +59,7 @@ fn next_index(state: &MockState, page_id: &str) -> i32 {
         .unwrap_or(0)
 }
 
-fn write_payload(unit_info: &mut UnitInfo, payload: &UnitContent) {
+fn write_payload(unit_info: &mut UnitInfo, payload: &UnitBody) {
     //
     unit_info.is_bubble = payload.is_bubble;
 
@@ -84,7 +84,7 @@ fn unit_from_payload(
     page_id: &str,
     id: &str,
     index: i32,
-    payload: &UnitContent,
+    payload: &UnitBody,
 ) -> UnitInfo {
     //
     let time = now();
@@ -110,7 +110,7 @@ fn create_unit(
     state: &mut MockState,
     page_id: &str,
     id: &str,
-    payload: &UnitContent,
+    payload: &UnitBody,
 ) -> BaseResult<()> {
     //
     if state.units.iter().any(|unit_info| unit_info.id == id) {
@@ -130,7 +130,7 @@ fn save_unit(
     state: &mut MockState,
     page_id: &str,
     id: &str,
-    payload: &UnitContent,
+    payload: &UnitBody,
 ) -> BaseResult<()> {
     //
     let existing_position =

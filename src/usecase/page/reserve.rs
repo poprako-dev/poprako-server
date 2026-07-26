@@ -59,7 +59,7 @@ pub fn validate_page_count(page_count: i32) -> BaseResult<()> {
 }
 
 /// Reserves upload slots for all pages in an empty chapter.
-#[instrument(level = "info", err(Debug), skip_all)]
+#[instrument(level = "info", err(Debug), skip(nucl, repo, prom, image_pool))]
 pub async fn reserve_chapter_pages<N, C, R, P, I>(
     (nucl, repo, prom, image_pool): (&N, &R, &P, &I),
     token: UserToken,

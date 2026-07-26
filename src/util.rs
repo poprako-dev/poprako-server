@@ -78,3 +78,15 @@ fn load_snowflake_node_id() -> u16 {
         _ => unreachable!(),
     }
 }
+
+pub enum PatchField<T> {
+    Clear,
+    Assign(T),
+    Skip,
+}
+
+impl<T> PatchField<T> {
+    pub const fn is_skip(&self) -> bool {
+        matches!(self, Self::Skip)
+    }
+}
