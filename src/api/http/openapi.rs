@@ -66,8 +66,8 @@ use crate::data::termbase::{
     UpdateTermbaseInfoParams,
 };
 use crate::data::unit::{
-    ListPageUnitInfosPayload, SavePageUnitsParams, SavePageUnitsPayload,
-    UnitDiffParams, UnitInfoVal, UnitOperParams,
+    ListPageUnitInfosPayload, UnitCoordVal, UnitEditVal, UnitInfoVal,
+    UnitRevisionVal, UnitTranslationVal,
 };
 use crate::data::user::{
     MarkUserAvatarUploadedParams, ReserveUserAvatarParams,
@@ -227,10 +227,10 @@ use crate::value::role::RoleField;
         MarkPageImageUploadedParams,
         UnitInfoVal,
         ListPageUnitInfosPayload,
-        SavePageUnitsParams,
-        SavePageUnitsPayload,
-        UnitDiffParams,
-        UnitOperParams,
+        UnitEditVal,
+        UnitCoordVal,
+        UnitTranslationVal,
+        UnitRevisionVal,
         AssignmentInfoVal,
         JoinChapterAssignmentParams,
         UpdateAssignmentRolesParams,

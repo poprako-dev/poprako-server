@@ -117,7 +117,6 @@ export interface PageInfoVal {
 export interface UnitInfoVal {
     id: string;
     page_id: string;
-    index: number;
     is_bubble: boolean;
     is_proofread: boolean;
     x_coord: number;
@@ -246,18 +245,6 @@ export interface ReserveChapterPagesVal {
 
 export interface ReserveImagePayload {
     slot: UploadSlotVal | null;
-}
-
-export interface UnitIdMapperVal {
-    local_id: string;
-    unit_id: string;
-}
-
-export interface SavePageUnitsVal {
-    local_id_mappers: UnitIdMapperVal[];
-    total_unit_count: number;
-    translated_unit_count: number;
-    proofread_unit_count: number;
 }
 
 export interface ListPageUnitInfosVal {

@@ -12,7 +12,7 @@ use crate::data::chapter_port::ExportChapterTranslationPayload;
 use crate::data::page_port::PageTranslationExportPayload;
 use crate::data::unit_port::UnitTranslationExportPayload;
 use crate::model::page::PageInfo;
-use crate::model::unit::UnitInfo;
+use crate::model::read::proj::unit::UnitInfo;
 use crate::model::user::UserToken;
 use crate::part::repo::assignment::AssignmentRepo;
 use crate::part::repo::chapter::ChapterRepo;
@@ -102,7 +102,10 @@ where
 
         let unit_vals = unit_infos
             .into_iter()
-            .map(|unit_info| make_unit_export(&page_info, unit_info))
+            .enumerate()
+            .map(|(index, unit_info)| {
+                make_unit_export(&page_info, index, unit_info)
+            })
             .collect();
 
         page_vals.push(PageTranslationExportPayload {
@@ -201,15 +204,16 @@ where
 /// Builds a [`UnitTranslationExportVal`] from page and unit info.
 fn make_unit_export(
     page_info: &PageInfo,
+    index: usize,
     unit_info: UnitInfo,
 ) -> UnitTranslationExportPayload {
     UnitTranslationExportPayload {
         unit_id: unit_info.id,
-        unit_index: unit_info.index,
+        unit_index: index as i32,
         page_id: page_info.id.clone(),
         page_index: page_info.index,
-        x_coord: unit_info.x_coord,
-        y_coord: unit_info.y_coord,
+        x_coord: unit_info.coord.x_coord,
+        y_coord: unit_info.coord.y_coord,
         is_bubble: unit_info.is_bubble,
         translated_text: unit_info.translated_text,
         translator_id: unit_info.last_translator_id,

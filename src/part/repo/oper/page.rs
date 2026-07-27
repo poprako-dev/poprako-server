@@ -5,7 +5,7 @@ use poprako_orchestra::Oper;
 use crate::model::page::{
     PageEntry, PageImageReservation, PageInfo, PageManifestUpdate,
 };
-use crate::model::unit::UnitCounters;
+use crate::model::read::proj::unit::UnitCounters;
 
 pub struct GetPageInfo<'a> {
     pub id: &'a str,

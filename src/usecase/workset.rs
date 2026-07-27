@@ -47,6 +47,7 @@ use crate::part::repo::unit::UnitRepo;
 use crate::part::repo::workset::WorksetRepo;
 use crate::result::{BaseError, BaseResult, accept};
 
+/// Workset use-case test helpers.
 #[cfg(test)]
 pub mod tests;
 

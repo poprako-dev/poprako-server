@@ -1,71 +1,25 @@
 use poprako_orchestra::Oper;
 
-use crate::model::unit::{
-    UnitBody, UnitCounters, UnitIndex, UnitIndexUpdate, UnitInfo,
-};
+use crate::model::read::proj::unit::{UnitCounters, UnitInfo, UnitOrder};
+use crate::model::write::unit::UnitEdit;
 
+#[derive(Oper)]
+#[oper(output = Vec<UnitInfo>)]
 pub struct ListUnitInfos<'a> {
     pub page_id: &'a str,
 }
 
-impl Oper for ListUnitInfos<'_> {
-    type Output = Vec<UnitInfo>;
+#[derive(Oper)]
+#[oper(output = Vec<UnitOrder>)]
+pub struct ListUnitOrders<'a> {
+    pub page_id: &'a str,
 }
 
-pub struct CreateUnit<'a> {
+#[derive(Oper)]
+#[oper(output = UnitCounters)]
+pub struct ApplyUnitEdits<'a> {
     //
     pub page_id: &'a str,
-    pub id: &'a str,
-    pub payload: &'a UnitBody,
-}
-
-impl Oper for CreateUnit<'_> {
-    type Output = ();
-}
-
-pub struct SaveUnit<'a> {
-    //
-    pub page_id: &'a str,
-    pub id: &'a str,
-    pub payload: &'a UnitBody,
-}
-
-impl Oper for SaveUnit<'_> {
-    type Output = ();
-}
-
-pub struct DeleteUnit<'a> {
-    //
-    pub page_id: &'a str,
-    pub id: &'a str,
-}
-
-impl Oper for DeleteUnit<'_> {
-    type Output = ();
-}
-
-pub struct ListUnitIndexes<'a> {
-    pub page_id: &'a str,
-}
-
-impl Oper for ListUnitIndexes<'_> {
-    type Output = Vec<UnitIndex>;
-}
-
-pub struct UpdateUnitIndexes<'a> {
-    //
-    pub page_id: &'a str,
-    pub updates: &'a [UnitIndexUpdate],
-}
-
-impl Oper for UpdateUnitIndexes<'_> {
-    type Output = ();
-}
-
-pub struct CountUnits<'a> {
-    pub page_id: &'a str,
-}
-
-impl Oper for CountUnits<'_> {
-    type Output = UnitCounters;
+    pub orders: &'a [UnitOrder],
+    pub edits: &'a [UnitEdit],
 }

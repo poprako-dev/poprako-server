@@ -15,5 +15,6 @@ mod image;
 mod invitation;
 mod pool;
 mod task_flow;
+/// RDB prom handler integration tests.
 #[cfg(all(test, feature = "rdb", feature = "prom_impl"))]
 pub mod tests;

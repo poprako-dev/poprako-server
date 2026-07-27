@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::fmt::Write as _;
 
 use crate::model::page::PageInfo;
-use crate::model::unit::UnitInfo;
+use crate::model::read::proj::unit::UnitInfo;
 
 /// Chapter export formatting rules.
 pub struct ChapterExportComplex;
@@ -58,8 +58,8 @@ impl ChapterExportComplex {
                     output,
                     "----------------[{}]----------------[{:.4},{:.4},{}]",
                     index + 1,
-                    unit_info.x_coord,
-                    unit_info.y_coord,
+                    unit_info.coord.x_coord,
+                    unit_info.coord.y_coord,
                     group
                 )
                 .unwrap_or_else(|error| {

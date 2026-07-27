@@ -22,7 +22,5 @@ CREATE TABLE IF NOT EXISTS "t_comic" (
 
     "f_last_active_at"      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     "f_created_at"          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    "f_updated_at"          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-
-    CHECK (octet_length("f_cover_hash") = 32)
+    "f_updated_at"          TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

@@ -1,12 +1,16 @@
 //! In-memory comic archive repository operations for use-case tests.
 
+use std::collections::HashMap;
+
 use poprako_orchestra::{Run, Step};
+use time::OffsetDateTime;
 use tracing::instrument;
 
 use crate::model::comic_archive::{
     ComicArchiveChapterSnapshot, ComicArchiveEntry, ComicArchivePageSnapshot,
     ComicArchiveSnapshot,
 };
+use crate::model::read::proj::unit::UnitInfo;
 use crate::part::repo::oper::comic_archive::{
     CommitComicArchive, GetComicArchiveSnapshotExcluded,
     ListComicArchivePayloads,
@@ -16,6 +20,77 @@ use crate::part_impl::repo::mock_impl::{
 };
 use crate::result::{BaseError, BaseResult, accept};
 
+fn order_unit_infos(unit_infos: Vec<UnitInfo>) -> BaseResult<Vec<UnitInfo>> {
+    //
+    if unit_infos.is_empty() {
+        return accept(Vec::new());
+    }
+
+    let mut infos_by_id = unit_infos
+        .into_iter()
+        .map(|unit_info| (unit_info.id.clone(), unit_info))
+        .collect::<HashMap<_, _>>();
+
+    let mut predecessor_counts = infos_by_id
+        .keys()
+        .map(|id| (id.clone(), 0_usize))
+        .collect::<HashMap<_, _>>();
+
+    for unit_info in infos_by_id.values() {
+        //
+        let Some(next_id) = unit_info.next_id.as_ref() else {
+            continue;
+        };
+
+        if next_id == &unit_info.id {
+            return Err(unrecoverable("persisted Unit chain is corrupt"));
+        }
+
+        let Some(predecessor_count) = predecessor_counts.get_mut(next_id)
+        else {
+            return Err(unrecoverable("persisted Unit chain is corrupt"));
+        };
+
+        *predecessor_count += 1;
+
+        if *predecessor_count > 1 {
+            return Err(unrecoverable("persisted Unit chain is corrupt"));
+        }
+    }
+
+    let head_ids = predecessor_counts
+        .iter()
+        .filter_map(|(id, count)| (*count == 0).then_some(id.as_str()))
+        .collect::<Vec<_>>();
+
+    let [head_id] = head_ids.as_slice() else {
+        return Err(unrecoverable("persisted Unit chain is corrupt"));
+    };
+
+    let mut current_id = Some((*head_id).to_string());
+
+    let mut visible_infos = Vec::with_capacity(infos_by_id.len());
+
+    while let Some(id) = current_id {
+        //
+        let Some(unit_info) = infos_by_id.remove(&id) else {
+            return Err(unrecoverable("persisted Unit chain is corrupt"));
+        };
+
+        current_id = unit_info.next_id.clone();
+
+        if unit_info.hidden_at.is_none() {
+            visible_infos.push(unit_info);
+        }
+    }
+
+    if !infos_by_id.is_empty() {
+        return Err(unrecoverable("persisted Unit chain is corrupt"));
+    }
+
+    accept(visible_infos)
+}
+
 impl Run<ListComicArchivePayloads<'_>> for Mock {
     type Error = BaseError;
 
@@ -23,7 +98,7 @@ impl Run<ListComicArchivePayloads<'_>> for Mock {
     async fn run(
         &self,
         oper: &ListComicArchivePayloads<'_>,
-    ) -> BaseResult<Vec<(time::OffsetDateTime, String)>> {
+    ) -> BaseResult<Vec<(OffsetDateTime, String)>> {
         //
         let state = self.state.lock().unwrap();
 
@@ -108,7 +183,7 @@ fn get_snapshot_excluded(
                 .cloned()
                 .map(|page_info| {
                     //
-                    let unit_infos = context
+                    let unordered_unit_infos = context
                         .state
                         .units
                         .iter()
@@ -116,12 +191,14 @@ fn get_snapshot_excluded(
                         .cloned()
                         .collect();
 
-                    ComicArchivePageSnapshot {
+                    let unit_infos = order_unit_infos(unordered_unit_infos)?;
+
+                    accept(ComicArchivePageSnapshot {
                         page_info,
                         unit_infos,
-                    }
+                    })
                 })
-                .collect();
+                .collect::<BaseResult<Vec<_>>>()?;
 
             accept(ComicArchiveChapterSnapshot {
                 chapter_info,

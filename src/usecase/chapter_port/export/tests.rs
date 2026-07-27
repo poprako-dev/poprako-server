@@ -9,7 +9,8 @@ use crate::model::assignment::AssignmentInfo;
 use crate::model::chapter::ChapterInfo;
 use crate::model::comic::ComicInfo;
 use crate::model::page::PageInfo;
-use crate::model::unit::UnitInfo;
+use crate::model::read::proj::unit::UnitInfo;
+use crate::model::shared::unit::UnitCoord;
 use crate::model::user::UserToken;
 use crate::model::workset::WorksetInfo;
 use crate::part_impl::repo::mock_impl::Mock;
@@ -138,7 +139,7 @@ fn page(
 fn unit(
     id: &str,
     page_id: &str,
-    index: i32,
+    next_id: Option<&str>,
     text: &str,
     proofread_text: Option<&str>,
 ) -> UnitInfo {
@@ -148,15 +149,18 @@ fn unit(
     UnitInfo {
         id: id.into(),
         page_id: page_id.into(),
-        index,
+        next_id: next_id.map(str::to_string),
         is_bubble: true,
         is_proofread: proofread_text.is_some(),
-        x_coord: 0.25,
-        y_coord: 0.75,
+        coord: UnitCoord {
+            x_coord: 0.25,
+            y_coord: 0.75,
+        },
         translated_text: Some(text.into()),
         last_translator_id: Some("translator-1".into()),
         proofread_text: proofread_text.map(Into::into),
         last_proofreader_id: Some("proofreader-1".into()),
+        hidden_at: None,
         created_at: time,
         updated_at: time,
     }
@@ -205,9 +209,15 @@ async fn export_returns_chapter_pages_and_units() {
 
     seed_scope(&mock);
 
-    mock.seed_unit(unit("unit-b", "page-1", 1, "beta", None));
+    mock.seed_unit(unit("unit-b", "page-1", None, "beta", None));
 
-    mock.seed_unit(unit("unit-a", "page-1", 0, "alpha", Some("alpha proof")));
+    mock.seed_unit(unit(
+        "unit-a",
+        "page-1",
+        Some("unit-b"),
+        "alpha",
+        Some("alpha proof"),
+    ));
 
     let exported = export((&mock,), token("user-1"), "chapter-1".into()).await;
 
@@ -253,7 +263,13 @@ async fn export_label_plus_returns_text_payload() {
 
     seed_scope(&mock);
 
-    mock.seed_unit(unit("unit-a", "page-1", 0, "alpha", Some("alpha proof")));
+    mock.seed_unit(unit(
+        "unit-a",
+        "page-1",
+        None,
+        "alpha",
+        Some("alpha proof"),
+    ));
 
     let exported =
         export_label_plus((&mock,), token("user-1"), "chapter-1".into()).await;

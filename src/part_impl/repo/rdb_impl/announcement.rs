@@ -20,6 +20,7 @@ use crate::part_impl::shared::result::diesel;
 use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::{BaseError, BaseResult, accept};
 
+/// Announcement RDB integration tests.
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
 pub mod tests;
 
@@ -40,8 +41,8 @@ async fn list_infos(
         .await
         .map_err(diesel)?;
 
-    let mut infos: Vec<AnnouncementInfo> =
-        rows.into_iter().map(Into::into).collect();
+    let mut infos =
+        rows.into_iter().map(Into::into).collect::<Vec<AnnouncementInfo>>();
 
     incl::announcement::populate_announcement_incls(
         conn,

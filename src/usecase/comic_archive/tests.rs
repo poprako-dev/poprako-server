@@ -13,7 +13,8 @@ use crate::model::chapter::ChapterInfo;
 use crate::model::comic::ComicInfo;
 use crate::model::member::MemberInfo;
 use crate::model::page::PageInfo;
-use crate::model::unit::UnitInfo;
+use crate::model::read::proj::unit::UnitInfo;
+use crate::model::shared::unit::UnitCoord;
 use crate::model::user::{UserCredential, UserInfo, UserToken};
 use crate::model::workset::WorksetInfo;
 use crate::part::prom::payload::TaskPayload;
@@ -156,15 +157,18 @@ fn seed_archive_scope(mock: &Mock, member_roles: RoleMask) {
     mock.seed_unit(UnitInfo {
         id: "unit-1".into(),
         page_id: "page-1".into(),
-        index: 0,
+        next_id: None,
         is_bubble: true,
         is_proofread: true,
-        x_coord: 1.5,
-        y_coord: 2.5,
+        coord: UnitCoord {
+            x_coord: 1.5,
+            y_coord: 2.5,
+        },
         translated_text: Some("translated".into()),
         last_translator_id: Some("user-1".into()),
         proofread_text: Some("proofread".into()),
         last_proofreader_id: Some("user-1".into()),
+        hidden_at: None,
         created_at: archived_at,
         updated_at: archived_at,
     });

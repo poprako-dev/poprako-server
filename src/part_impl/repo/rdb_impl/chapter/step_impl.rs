@@ -11,7 +11,7 @@ use crate::model::chapter::{
     ChapterEntry, ChapterInfo, ChapterInfoListSpec, ChapterInfoUpdate,
     ChapterStageUpdate,
 };
-use crate::model::unit::UnitCounterDelta;
+use crate::model::read::proj::unit::UnitCounterDelta;
 use crate::part_impl::repo::rdb_impl::entity::chapter::{
     ChapterAspect, ChapterRow, ChapterRowEntry,
 };

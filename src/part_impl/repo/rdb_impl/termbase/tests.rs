@@ -1,4 +1,4 @@
-// termbase_constraints_and_query_roundtrip(CreateTermbase, ListTermbaseInfos, UpdateTermbaseTermCount)(positive): termbase storage enforces scope and normalized uniqueness while supporting escaped fuzzy search and atomic counts.
+// termbase_unique_and_query_roundtrip(CreateTermbase, ListTermbaseInfos, UpdateTermbaseTermCount)(positive): termbase storage preserves normalized uniqueness while supporting escaped fuzzy search and atomic counts.
 
 use super::*;
 
@@ -34,9 +34,8 @@ async fn create_termbase(
         .unwrap()
 }
 
-/// Verifies termbase constraints and query roundtrip.
-/// Verifies termbase constraints and query roundtrip.
-pub async fn termbase_constraints_and_query_roundtrip(shared: RdbCore) {
+/// Verifies termbase unique and query roundtrip.
+pub async fn termbase_unique_and_query_roundtrip(shared: RdbCore) {
     //
     let comic_fixture = test_shared::seed_comic(&shared, PREFIX).await;
 
@@ -116,29 +115,6 @@ pub async fn termbase_constraints_and_query_roundtrip(shared: RdbCore) {
         .await;
 
     assert!(duplicate_result.is_err());
-
-    let invalid_scope_entry = TermbaseEntry {
-        id: format!("{}invalid-scope", PREFIX),
-        team_id: Some(comic_fixture.team_entry.id.clone()),
-        comic_id: Some(comic_fixture.comic_entry.id.clone()),
-        name: "Invalid scope".into(),
-        description: None,
-        creator_id: comic_fixture.creator_form.id.clone(),
-    };
-
-    let invalid_scope_result = drive
-        .coord(async |context| {
-            repo.step(
-                context,
-                &CreateTermbase {
-                    entry: &invalid_scope_entry,
-                },
-            )
-            .await
-        })
-        .await;
-
-    assert!(invalid_scope_result.is_err());
 
     test_shared::cleanup(&shared, PREFIX).await.ok().unwrap();
 

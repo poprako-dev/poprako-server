@@ -159,7 +159,7 @@ where
                 ));
             }
 
-            let delete_tasks: Vec<Task<'_, String, TaskPayload>> = delete_ids
+            let delete_tasks = delete_ids
                 .iter()
                 .zip(delete_payloads.iter())
                 .map(|(id, payload)| Task {
@@ -167,7 +167,7 @@ where
                     payload,
                     delay: None,
                 })
-                .collect();
+                .collect::<Vec<Task<'_, String, TaskPayload>>>();
 
             prom.step(context, &DeferBatch::new(&delete_tasks)).await?;
 

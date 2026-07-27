@@ -24,6 +24,7 @@ pub use part_impl::shared::RdbCore;
 
 /// HTTP API layer (handlers, middleware, server, router, OpenAPI).
 mod api;
+/// Benchmark entry points.
 #[cfg(feature = "benchmark")]
 #[doc(hidden)]
 pub mod benchmark;

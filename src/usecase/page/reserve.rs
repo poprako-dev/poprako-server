@@ -429,7 +429,7 @@ where
                 task_delays.push(Some(Duration::from_secs(15 * 60)));
             }
 
-            let image_tasks: Vec<Task<'_, String, TaskPayload>> = task_ids
+            let image_tasks = task_ids
                 .iter()
                 .zip(task_payloads.iter())
                 .zip(task_delays.iter())
@@ -438,7 +438,7 @@ where
                     payload,
                     delay: *delay,
                 })
-                .collect();
+                .collect::<Vec<Task<'_, String, TaskPayload>>>();
 
             prom.step(context, &DeferBatch::new(&image_tasks)).await?;
 

@@ -1,27 +1,31 @@
 use crate::model::shared::unit::{UnitCoord, UnitRevision, UnitTranslation};
 use crate::util::PatchField;
 
+/// One normalized Unit mutation.
+#[derive(Debug, Clone, PartialEq)]
 pub enum UnitEdit {
-    /// Upsert a unit with given content payload.
+    /// Create, restore, or patch one Unit.
     Save {
+        //
+        /// Permanent target Unit ID.
         id: String,
-        /// Optional unit ID to place this new unit before in ordering.
+        /// Three-state successor pointer patch.
         next_id: PatchField<String>,
 
-        /// Whether this unit is a speech bubble contour.
-        is_bubble: bool,
-        /// Whether the proofread text has been reviewed and accepted.
-        is_proofread: bool,
+        /// Optional speech-bubble flag replacement.
+        is_bubble: Option<bool>,
+        /// Optional coordinate replacement.
+        coord: Option<UnitCoord>,
 
-        coord: UnitCoord,
-
+        /// Three-state translation patch.
         translation: PatchField<UnitTranslation>,
+        /// Three-state revision patch.
         revision: PatchField<UnitRevision>,
     },
 
-    /// Remove an existing unit by server id.
+    /// Hide one persisted Unit while retaining its chain node and content.
     Delete {
-        /// Server-assigned identifier of the unit to **hide**.
+        /// Permanent target Unit ID.
         id: String,
     },
 }

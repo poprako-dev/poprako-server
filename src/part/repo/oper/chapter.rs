@@ -6,7 +6,7 @@ use crate::model::chapter::{
     ChapterEntry, ChapterInfo, ChapterInfoListSpec, ChapterInfoUpdate,
     ChapterStageUpdate,
 };
-use crate::model::unit::UnitCounterDelta;
+use crate::model::read::proj::unit::UnitCounterDelta;
 use crate::value::chapter::{ChapterInclOpt, Stage};
 
 pub struct CreateChapter<'a> {

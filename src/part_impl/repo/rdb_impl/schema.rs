@@ -238,7 +238,8 @@ diesel::table! {
     t_unit (f_id) {
         f_id -> Text,
         f_page_id -> Text,
-        f_index -> Int4,
+        f_next_id -> Nullable<Text>,
+        f_hidden_at -> Nullable<Timestamptz>,
         f_is_bubble -> Bool,
         f_is_proofread -> Bool,
         f_x_coord -> Float8,

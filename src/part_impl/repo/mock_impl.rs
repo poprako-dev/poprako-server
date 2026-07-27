@@ -20,11 +20,11 @@ use crate::model::comment::CommentInfo;
 use crate::model::member::{MemberEntry, MemberInfo};
 use crate::model::member_invitation::MemberInvitationInfo;
 use crate::model::page::PageInfo;
+use crate::model::read::proj::unit::UnitInfo;
 use crate::model::system_mail::SystemMailInfo;
 use crate::model::team::TeamInfo;
 use crate::model::term::TermInfo;
 use crate::model::termbase::TermbaseInfo;
-use crate::model::unit::UnitInfo;
 use crate::model::user::{UserCredential, UserInfo};
 use crate::model::workset::WorksetInfo;
 use crate::part::effect::event::Event;
@@ -43,6 +43,7 @@ pub mod assignment;
 pub mod assignment_invitation;
 /// Mock implementations for chapter repository operations.
 pub mod chapter;
+/// Mock implementations for comic repository operations.
 pub mod comic;
 /// Mock implementations for immutable comic archive repository operations.
 pub mod comic_archive;

@@ -16,7 +16,7 @@ use crate::model::comic_archive::{
     ComicArchiveSnapshot,
 };
 use crate::model::page::PageInfo;
-use crate::model::unit::UnitInfo;
+use crate::model::read::proj::unit::UnitInfo;
 use crate::model::user::UserInfo;
 use crate::model::workset::WorksetInfo;
 use crate::part::repo::oper::comic_archive::{
@@ -51,7 +51,7 @@ use crate::part_impl::repo::rdb_impl::schema::t_page::dsl::{
     t_page,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_unit::dsl::{
-    f_index as unit_index, f_page_id as unit_page_id, t_unit,
+    f_page_id as unit_page_id, t_unit,
 };
 use crate::part_impl::repo::rdb_impl::schema::t_user::dsl::{
     f_id as user_id, t_user,
@@ -64,8 +64,86 @@ use crate::part_impl::shared::{RdbConn, RdbContext};
 use crate::result::{BaseError, BaseResult, accept};
 use crate::value::comic_archive::ComicArchiveMonth;
 
+/// Comic archive RDB integration tests.
 #[cfg(all(test, feature = "rdb", feature = "repo_impl"))]
 pub mod tests;
+
+fn order_unit_infos(unit_infos: Vec<UnitInfo>) -> BaseResult<Vec<UnitInfo>> {
+    //
+    if unit_infos.is_empty() {
+        return accept(Vec::new());
+    }
+
+    let mut infos_by_id = unit_infos
+        .into_iter()
+        .map(|unit_info| (unit_info.id.clone(), unit_info))
+        .collect::<HashMap<_, _>>();
+
+    let mut predecessor_counts = infos_by_id
+        .keys()
+        .map(|id| (id.clone(), 0_usize))
+        .collect::<HashMap<_, _>>();
+
+    for unit_info in infos_by_id.values() {
+        //
+        let Some(next_id) = unit_info.next_id.as_ref() else {
+            continue;
+        };
+
+        if next_id == &unit_info.id {
+            return Err(corrupt_unit_chain_err());
+        }
+
+        let Some(predecessor_count) = predecessor_counts.get_mut(next_id)
+        else {
+            return Err(corrupt_unit_chain_err());
+        };
+
+        *predecessor_count += 1;
+
+        if *predecessor_count > 1 {
+            return Err(corrupt_unit_chain_err());
+        }
+    }
+
+    let head_ids = predecessor_counts
+        .iter()
+        .filter_map(|(id, count)| (*count == 0).then_some(id.as_str()))
+        .collect::<Vec<_>>();
+
+    let [head_id] = head_ids.as_slice() else {
+        return Err(corrupt_unit_chain_err());
+    };
+
+    let mut current_id = Some((*head_id).to_string());
+
+    let mut visible_infos = Vec::with_capacity(infos_by_id.len());
+
+    while let Some(id) = current_id {
+        //
+        let Some(unit_info) = infos_by_id.remove(&id) else {
+            return Err(corrupt_unit_chain_err());
+        };
+
+        current_id = unit_info.next_id.clone();
+
+        if unit_info.hidden_at.is_none() {
+            visible_infos.push(unit_info);
+        }
+    }
+
+    if !infos_by_id.is_empty() {
+        return Err(corrupt_unit_chain_err());
+    }
+
+    accept(visible_infos)
+}
+
+fn corrupt_unit_chain_err() -> BaseError {
+    BaseError::Unrecoverable {
+        message: "persisted Unit chain is corrupt".to_string(),
+    }
+}
 
 #[instrument(level = "info", err(Debug), skip_all)]
 async fn list_payloads(
@@ -234,7 +312,7 @@ async fn get_snapshot_excluded(
     let unit_rows: Vec<UnitRow> = t_unit
         .filter(unit_page_id.eq_any(&source_page_ids))
         .select(UnitRow::as_select())
-        .order_by((unit_page_id.asc(), unit_index.asc()))
+        .order_by(unit_page_id.asc())
         .for_update()
         .load(conn)
         .await
@@ -274,8 +352,10 @@ async fn get_snapshot_excluded(
 
     for page_info in page_infos {
         //
-        let unit_infos =
+        let unordered_unit_infos =
             unit_infos_by_page.remove(&page_info.id).unwrap_or_default();
+
+        let unit_infos = order_unit_infos(unordered_unit_infos)?;
 
         page_snapshots_by_chapter
             .entry(page_info.chapter_id.clone())
